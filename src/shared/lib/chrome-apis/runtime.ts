@@ -30,15 +30,21 @@ export function sendMessage<T = unknown>(
   );
 }
 
-export function onMessage(
-  callback: (
-    message: unknown,
-    sender: chrome.runtime.MessageSender,
-    sendResponse: (response?: unknown) => void,
-  ) => boolean | Promise<unknown> | void,
-): void {
-  if (typeof chrome === 'undefined' || !chrome.runtime?.onMessage) return;
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises -- adapter contract intentionally tolerates Promise returns; Chrome ignores them
+type MessageListener = Parameters<typeof chrome.runtime.onMessage.addListener>[0];
+
+/** Non-extension contexts (design showcase, jsdom) keep listeners here so a
+ *  mock backend can push messages (e.g. RESOURCE_IMPORT_PROGRESS). */
+function listenerRegistry(): Set<MessageListener> {
+  const g = globalThis as { __cellOnMessageListeners?: Set<MessageListener> };
+  if (!g.__cellOnMessageListeners) g.__cellOnMessageListeners = new Set();
+  return g.__cellOnMessageListeners;
+}
+
+export function onMessage(callback: MessageListener): void {
+  if (typeof chrome === 'undefined' || !chrome.runtime?.onMessage) {
+    listenerRegistry().add(callback);
+    return;
+  }
   chrome.runtime.onMessage.addListener(callback);
 }
 
@@ -63,9 +69,9 @@ export function onInstalled(
 }
 
 /** Remove a message listener. */
-export function removeOnMessageListener(
-  callback: Parameters<typeof chrome.runtime.onMessage.addListener>[0],
-): void {
+export function removeOnMessageListener(callback: MessageListener): void {
+  const g = globalThis as { __cellOnMessageListeners?: Set<MessageListener> };
+  if (g.__cellOnMessageListeners) g.__cellOnMessageListeners.delete(callback);
   if (typeof chrome === 'undefined' || !chrome.runtime?.onMessage) return;
   chrome.runtime.onMessage.removeListener(callback);
 }

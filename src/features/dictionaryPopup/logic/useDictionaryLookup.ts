@@ -10,6 +10,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { LookupResult, LookupRequest, WordStatus, DefinitionEntry } from '@/entities/dictionary';
 import type { MessageResponse } from '@/entities/message';
+import { subscribeResourceChanges } from '@/features/dictionary';
 import { nextStatus } from '@/features/dictionary/services/wordStatusStore';
 import { initDefinitionSelection, getSelectedDefinitions } from './definitionSelection';
 import { t } from '@/shared/i18n';
@@ -124,6 +125,9 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
 
   const requestIdRef = useRef<string | null>(null);
   const latestSearchRef = useRef<string>(initialResult?.term ?? initialTerm ?? '');
+  /** Last submitted lookup (term + sentence + offset) — replayed verbatim when
+   *  resources change so the visible result tracks enabled dictionaries. */
+  const latestLookupRef = useRef<{ term: string; sentence: string; offset: number } | null>(null);
 
   const resetResultState = useCallback((): void => {
     setCurrentResult(null);
@@ -181,6 +185,7 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
 
     const sentence = (ctxSentence?.trim() || trimmed).slice(0, 500);
     const off = offset ?? 0;
+    latestLookupRef.current = { term: trimmed, sentence, offset: off };
 
     const request: LookupRequest = {
       term: trimmed,
@@ -316,6 +321,17 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
   useEffect(() => {
     if (initialTerm) setSearchTerm(initialTerm);
   }, [initialTerm]);
+
+  // Re-run the last lookup when resources change in this context (enable /
+  // disable / delete / reorder / import) — the background re-reads IDB per
+  // request, so a plain re-search returns the fresh view.
+  useEffect(() => {
+    return subscribeResourceChanges((changed) => {
+      if (changed !== langCode) return;
+      const last = latestLookupRef.current;
+      if (last) search(last.term, last.sentence, last.offset);
+    });
+  }, [langCode, search]);
 
   return {
     searchTerm,

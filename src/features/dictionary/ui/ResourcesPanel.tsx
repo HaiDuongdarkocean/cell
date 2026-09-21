@@ -1,15 +1,18 @@
-// ResourcesPanel — 2 sections (dictionary + frequency) + list + import (ADR-023, spec F11).
+// ResourcesPanel — 2 sections (dictionary + frequency) + per-file job rows + import (ADR-023, spec F11).
 //
-// Each section has independent import state (importing/progress/error/success/
-// duplicate prompt) so dictionary + frequency can import in parallel.
-// Duplicate imports are resolved in-React: importFile's onDuplicate callback
-// stashes { file, existing, resolve } and the user's choice resolves the
-// pending promise — the orchestrator stays clean.
+// Every dropped/picked file becomes one ImportJob row inside its section's
+// list area. A single global FIFO queue runs jobs under dual bounds
+// (≤MAX_CONCURRENT_IMPORTS running AND <MAX_INFLIGHT_BYTES in-flight bytes —
+// the byte bound protects SW memory on low-RAM devices). The panel never
+// blocks: dropzones stay enabled, and each job resolves to its own outcome.
+// Duplicate prompts park their job until the user answers; a soft refresh
+// (no skeleton flash) runs per completion.
 
 import { useState, useCallback, useEffect, useRef, type ReactElement, type ReactNode } from 'react';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui';
 import { Heading } from '@/shared/ui/Heading';
+import { VisuallyHidden } from '@/shared/ui/VisuallyHidden';
 import { Dropzone } from './Dropzone';
 import { ResourceCard, ResourceCardSkeleton } from './ResourceCard';
 import { ImportProgress } from './ImportProgress';
@@ -17,67 +20,39 @@ import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { FrequencyBandsEditor } from './FrequencyBandsEditor';
 // Proxied via background: IndexedDB is origin-isolated — direct repo calls
 // from this in-page panel would touch the page's IDB, invisible to lookups.
+import { Icon } from '@/shared/ui/Icon';
 import {
   listResources,
   importResourceFile as importFile,
   deleteResource as deleteResourceCascade,
   reorderResources,
-  setResourceProfiles,
 } from '@/features/dictionary/services/resourceClient';
 import { getUserMessage, isImportError } from '@/features/dictionary/logic/importErrors';
+import { useSectionDrag } from './useSectionDrag';
+import { computeSignature } from '@/features/dictionary/logic/signatureGenerator';
+import { getExtension, MAX_FILE_SIZE } from '@/features/dictionary/logic/fileDetector';
 import type { ReadableFile } from '@/features/dictionary/logic/fileDetector';
-import type {
-  DuplicateDecision,
-  ImportOptions,
-  ResourceInfo,
-  ResourceType,
-} from '@/entities/dictionary';
+import { formatBytes } from '@/shared/lib/formatBytes';
+import type { DuplicateDecision, ResourceInfo, ResourceType } from '@/entities/dictionary';
 import type { FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
+import { isRunningJob, makeJobId, type ImportJob } from './importJobTypes';
 import styles from './ResourcesPanel.module.css';
 
 const SUCCESS_DISMISS_MS = 4000;
 
+/** Scheduler bounds — see spec REQ-3/NFR-1 memory rationale. */
+const MAX_CONCURRENT_IMPORTS = 2;
+const MAX_INFLIGHT_BYTES = 256 * 1024 * 1024;
+
 interface ResourcesPanelProps {
   readonly langCode: string;
-  /** Active language profile id. When set, the list is filtered to resources
-   *  usable by that profile (`profileIds` empty = all profiles) and imports
-   *  are auto-scoped to it. Omit to show/manage everything. */
-  readonly activeProfileId?: string | null;
   /** Settings.frequencyBands — wired through SettingsDialogContent. */
   readonly frequencyBands?: FrequencyBandThresholds;
   readonly onFrequencyBandsChange?: (bands: FrequencyBandThresholds) => void;
+  /** Right-column lookup surface (DictionaryPanelView, composed by the
+   *  settings layer — this panel only owns the slot, not the dependency). */
+  readonly lookupPanel?: ReactNode;
 }
-
-/** A pending duplicate-import decision, shown as a warning Alert. */
-interface DuplicatePrompt {
-  readonly file: ReadableFile;
-  readonly existing: ResourceInfo;
-  /**
-   * Resolves the in-flight importFile onDuplicate promise. Absent when the
-   * prompt comes from a `skippedAsDuplicate` result — "Thay thế" then re-runs
-   * the import with onDuplicate forced to 'replace'.
-   */
-  readonly resolve?: (choice: DuplicateDecision) => void;
-}
-
-/** Per-section import state — dictionary + frequency are independent. */
-interface ImportState {
-  readonly importing: boolean;
-  readonly progress: number;
-  readonly progressTotal: number;
-  readonly error: string | null;
-  readonly success: string | null;
-  readonly duplicate: DuplicatePrompt | null;
-}
-
-const IDLE_IMPORT: ImportState = {
-  importing: false,
-  progress: 0,
-  progressTotal: 0,
-  error: null,
-  success: null,
-  duplicate: null,
-};
 
 interface SectionCopy {
   readonly title: string;
@@ -95,8 +70,8 @@ const SECTION_COPY: Record<ResourceType, SectionCopy> = {
     title: 'Từ điển',
     subtitle: 'Tra nghĩa, phiên âm, phát âm.',
     dropLabel: 'Thêm từ điển',
-    dropHint: 'Kéo thả hoặc chọn file · .json, .zip (Yomitan)',
-    accept: '.json,.zip',
+    dropHint: 'Kéo thả hoặc chọn file · .json, .zip, .db.gz',
+    accept: '.json,.zip,.db,.gz',
     empty: 'Chưa có từ điển nào.',
     noun: 'từ điển',
   },
@@ -123,16 +98,23 @@ function sortByPriority(list: readonly ResourceInfo[]): ResourceInfo[] {
   });
 }
 
+function allowedExtensions(accept: string): Set<string> {
+  return new Set(accept.split(',').map((ext) => ext.trim().replace(/^\./, '').toLowerCase()).filter(Boolean));
+}
+
 interface ResourceSectionProps {
   readonly copy: SectionCopy;
   readonly sectionId: 'dictionary' | 'frequency';
   readonly resources: readonly ResourceInfo[];
-  readonly state: ImportState;
+  readonly jobs: readonly ImportJob[];
   readonly loading: boolean;
   readonly onFiles: (files: File[]) => void;
-  readonly onResolveDuplicate: (choice: DuplicateDecision) => void;
+  readonly onResolveDuplicate: (jobId: string, choice: DuplicateDecision) => void;
+  readonly onRerunReplace: (jobId: string) => void;
   readonly onDelete: (resource: ResourceInfo) => void;
+  readonly onDeleteMany: (ids: readonly number[]) => void;
   readonly onMove: (index: number, direction: -1 | 1) => void;
+  readonly onReorder: (fromIndex: number, toIndex: number) => void;
   readonly onChanged: () => void;
   readonly onDeleteAll: () => void;
   readonly footer?: ReactNode;
@@ -142,101 +124,159 @@ function ResourceSection({
   copy,
   sectionId,
   resources,
-  state,
+  jobs,
   loading,
   onFiles,
   onResolveDuplicate,
+  onRerunReplace,
   onDelete,
+  onDeleteMany,
   onMove,
+  onReorder,
   onChanged,
   onDeleteAll,
   footer,
 }: ResourceSectionProps): ReactElement {
+  const [editing, setEditing] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<number>>(new Set());
+  const isEditing = editing && resources.length > 0;
+  const { listRef, drag, beginDrag } = useSectionDrag((draggedId, toIndex) => {
+    const from = resources.findIndex((r) => r.id === draggedId);
+    if (from >= 0) onReorder(from, toIndex);
+  });
+  const selectedCount = resources.reduce(
+    (n, r) => (r.id != null && selectedIds.has(r.id) ? n + 1 : n),
+    0,
+  );
+
+  const toggleEditing = (): void => {
+    setEditing((v) => !v);
+    setSelectedIds(new Set());
+  };
+
+  const toggleSelect = (id: number): void => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleContextualDelete = (): void => {
+    const ids = resources
+      .filter((r) => r.id != null && selectedIds.has(r.id))
+      .map((r) => r.id as number);
+    if (ids.length > 0) onDeleteMany(ids);
+    else onDeleteAll();
+  };
+
   return (
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
-        <Heading level={2} size={3} className={styles.sectionTitle}>{copy.title}</Heading>
-        <p className={styles.sectionSubtitle}>{copy.subtitle}</p>
+        <div className={styles.sectionHeaderText}>
+          <Heading level={2} size={3} className={styles.sectionTitle}>{copy.title}</Heading>
+          <p className={styles.sectionSubtitle}>{copy.subtitle}</p>
+        </div>
+        {resources.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            active={isEditing}
+            aria-pressed={isEditing}
+            aria-label={isEditing ? `Xong chỉnh sửa ${copy.title}` : `Chỉnh sửa ${copy.title}`}
+            title={isEditing ? 'Xong' : 'Chỉnh sửa'}
+            onClick={toggleEditing}
+            data-cell-id={`edit-${sectionId}`}
+          >
+            <Icon name="pencil" size="xs" />
+          </Button>
+        )}
       </div>
 
-      {state.error && (
-        <Alert variant="error" description={state.error} data-cell-id={`import-error-${sectionId}`} />
-      )}
-      {state.success && (
-        <Alert variant="success" description={state.success} role="status" data-cell-id={`import-success-${sectionId}`} />
-      )}
-      {state.duplicate && (
-        <Alert
-          variant="warning"
-          data-cell-id={`import-duplicate-${sectionId}`}
-          description={
-            <span className={styles.duplicateBody}>
-              <span>Đã có sẵn &quot;{state.duplicate.existing.name}&quot; — chọn thay thế hoặc bỏ qua.</span>
-              <span className={styles.duplicateActions}>
-                <Button
-                  variant="outline"
-                  size="xs"
-                  onClick={() => onResolveDuplicate('replace')}
-                  data-cell-id="duplicate-replace"
-                >
-                  Thay thế
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => onResolveDuplicate('skip')}
-                  data-cell-id="duplicate-skip"
-                >
-                  Bỏ qua
-                </Button>
-              </span>
-            </span>
-          }
-        />
-      )}
-      {state.importing && (
-        <ImportProgress processed={state.progress} total={state.progressTotal} error={null} />
-      )}
       <Dropzone
         label={copy.dropLabel}
         hint={copy.dropHint}
         accept={copy.accept}
-        disabled={state.importing}
+        disabled={false}
         onFiles={onFiles}
       />
-      <div className={styles.resourceList} role="list">
+      <div className={styles.resourceList} role="list" ref={listRef}>
+        {jobs.map((job) => (
+          <ImportProgress
+            key={job.jobId}
+            job={job}
+            onResolveDuplicate={onResolveDuplicate}
+            onRerunReplace={onRerunReplace}
+          />
+        ))}
         {loading ? (
           <>
             <ResourceCardSkeleton />
             <ResourceCardSkeleton />
           </>
-        ) : resources.length === 0 ? (
+        ) : resources.length === 0 && jobs.length === 0 ? (
           <p className={styles.empty}>{copy.empty}</p>
         ) : (
-          resources.map((r, i) => (
-            <ResourceCard
-              key={r.id}
-              resource={r}
-              index={i}
-              sectionSize={resources.length}
-              onDelete={() => onDelete(r)}
-              onMove={(dir) => onMove(i, dir)}
-              onChanged={onChanged}
-            />
-          ))
+          <>
+            {resources.map((r, i) => {
+              const dragged = drag != null && r.id === drag.draggedId;
+              const dragFrom = drag ? resources.findIndex((x) => x.id === drag.draggedId) : -1;
+              const collapsedPos = drag && dragFrom >= 0 && i > dragFrom ? i - 1 : i;
+              const shiftY = drag && !dragged && collapsedPos >= drag.toIndex
+                ? drag.cardHeight + drag.gap
+                : 0;
+              return (
+                <div
+                  key={r.id}
+                  data-cell-id={`slot-${r.id}`}
+                  data-dragging={dragged || undefined}
+                  className={`${styles.slot} ${dragged ? styles.slotDragging : ''} ${drag?.settling ? styles.slotSettling : ''}`}
+                  style={drag
+                    ? dragged
+                      ? { top: drag.fromTop, transform: `translateY(${drag.offsetY}px)` }
+                      : { transform: `translateY(${shiftY}px)` }
+                    : undefined}
+                >
+                  <ResourceCard
+                    resource={r}
+                    sectionSize={resources.length}
+                    editing={isEditing}
+                    selected={r.id != null && selectedIds.has(r.id)}
+                    onSelect={() => { if (r.id != null) toggleSelect(r.id); }}
+                    onDelete={() => onDelete(r)}
+                    onMove={(dir) => onMove(i, dir)}
+                    onGripPointerDown={(e) => { if (r.id != null) beginDrag(i, r.id, e); }}
+                    dragging={dragged}
+                    onChanged={onChanged}
+                  />
+                </div>
+              );
+            })}
+            {drag && (
+              <div
+                className={styles.dropPlaceholder}
+                style={{ top: drag.slotTop, height: drag.cardHeight }}
+                data-cell-id="drag-placeholder"
+                aria-hidden="true"
+              />
+            )}
+          </>
         )}
       </div>
 
       {resources.length > 0 && (
         <div className={styles.sectionFooter}>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={onDeleteAll}
-            data-cell-id={`delete-all-${sectionId}`}
-          >
-            Xóa tất cả
-          </Button>
+          {isEditing && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleContextualDelete}
+              data-cell-id={`delete-selected-${sectionId}`}
+            >
+              {selectedCount > 0 ? `Xóa ${selectedCount} đã chọn` : 'Xóa tất cả'}
+            </Button>
+          )}
           {footer}
         </div>
       )}
@@ -245,155 +285,232 @@ function ResourceSection({
   );
 }
 
-export function ResourcesPanel({ langCode, activeProfileId, frequencyBands, onFrequencyBandsChange }: ResourcesPanelProps): ReactElement {
+export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChange, lookupPanel }: ResourcesPanelProps): ReactElement {
   const [resources, setResources] = useState<ResourceInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [importStates, setImportStates] = useState<Record<ResourceType, ImportState>>({
-    DICTIONARY: { ...IDLE_IMPORT },
-    FREQUENCY: { ...IDLE_IMPORT },
-  });
+  const [jobs, setJobsState] = useState<ImportJob[]>([]);
+  const [panelAlert, setPanelAlert] = useState<{ variant: 'success' | 'error'; text: string } | null>(null);
+  const [announcement, setAnnouncement] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<ResourceInfo | null>(null);
   const [deleteAllTarget, setDeleteAllTarget] = useState<ResourceType | null>(null);
-  const successTimers = useRef<Partial<Record<ResourceType, ReturnType<typeof setTimeout>>>>({});
+  const [deleteManyTarget, setDeleteManyTarget] = useState<{ type: ResourceType; ids: readonly number[] } | null>(null);
+  const jobsRef = useRef<ImportJob[]>([]);
+  const successTimers = useRef<Partial<Record<string, ReturnType<typeof setTimeout>>>>({});
+  const alertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
+  // jobsRef is the SSOT — updated synchronously so pump()/runJob() read the
+  // freshest queue inside the same event tick (a setState updater would only
+  // run during React's next render).
+  const setJobs = useCallback((updater: (prev: ImportJob[]) => ImportJob[]) => {
+    const next = updater(jobsRef.current);
+    jobsRef.current = next;
+    setJobsState(next);
+  }, []);
+
+  const patchJob = useCallback((jobId: string, patch: Partial<ImportJob>) => {
+    setJobs((prev) => prev.map((j) => (j.jobId === jobId ? { ...j, ...patch } : j)));
+  }, [setJobs]);
+
+  const announce = useCallback((text: string) => {
+    setAnnouncement('');
+    // Re-set on the next tick so identical consecutive messages re-announce.
+    setTimeout(() => setAnnouncement(text), 50);
+  }, []);
+
+  const showPanelAlert = useCallback((variant: 'success' | 'error', text: string) => {
+    if (alertTimer.current) clearTimeout(alertTimer.current);
+    setPanelAlert({ variant, text });
+    alertTimer.current = setTimeout(() => setPanelAlert(null), SUCCESS_DISMISS_MS);
+  }, []);
+
+  const refresh = useCallback(async (soft = false) => {
+    if (!soft) setLoading(true);
     try {
       const list = await listResources(langCode);
-      const filtered = activeProfileId
-        ? list.filter((r) => !r.profileIds?.length || r.profileIds.includes(activeProfileId))
-        : list;
-      setResources(filtered);
+      setResources(list);
     } catch (e) {
-      setImportStates((prev) => ({
-        ...prev,
-        DICTIONARY: { ...prev.DICTIONARY, error: `Không thể tải danh sách tài nguyên: ${String(e)}` },
-      }));
+      showPanelAlert('error', `Không thể tải danh sách tài nguyên: ${String(e)}`);
     } finally {
-      setLoading(false);
+      if (!soft) setLoading(false);
     }
-  }, [langCode, activeProfileId]);
+  }, [langCode, showPanelAlert]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  // Clear pending success auto-dismiss timers on unmount.
+  // Clear pending auto-dismiss timers on unmount.
   useEffect(() => {
     const timers = successTimers.current;
     return () => {
-      for (const key of Object.keys(timers) as ResourceType[]) {
+      for (const key of Object.keys(timers)) {
         const t = timers[key];
         if (t) clearTimeout(t);
       }
+      if (alertTimer.current) clearTimeout(alertTimer.current);
     };
   }, []);
 
-  const patchState = useCallback((type: ResourceType, patch: Partial<ImportState>) => {
-    setImportStates((prev) => ({ ...prev, [type]: { ...prev[type], ...patch } }));
+  const runJobRef = useRef<(jobId: string) => Promise<void>>(async () => {});
+
+  /** Start queued jobs while the dual bound allows. */
+  const pump = useCallback(() => {
+    const jobs = jobsRef.current;
+    const running = jobs.filter(isRunningJob);
+    if (running.length >= MAX_CONCURRENT_IMPORTS) return;
+    let inflightBytes = running.reduce((sum, j) => sum + j.file.size, 0);
+    for (const job of jobs) {
+      if (running.length >= MAX_CONCURRENT_IMPORTS) break;
+      if (job.status !== 'queued') continue;
+      if (inflightBytes + job.file.size > MAX_INFLIGHT_BYTES) continue;
+      running.push(job);
+      inflightBytes += job.file.size;
+      void runJobRef.current(job.jobId);
+    }
   }, []);
 
-  /** Set a success message that auto-dismisses after ~4s. */
-  const showSuccess = useCallback((type: ResourceType, message: string) => {
-    const existing = successTimers.current[type];
-    if (existing) clearTimeout(existing);
-    patchState(type, { success: message });
-    successTimers.current[type] = setTimeout(() => {
-      patchState(type, { success: null });
-      successTimers.current[type] = undefined;
-    }, SUCCESS_DISMISS_MS);
-  }, [patchState]);
+  /** Import one job end-to-end; every callback patches only its own row. */
+  const runJob = useCallback(async (jobId: string): Promise<void> => {
+    const job = jobsRef.current.find((j) => j.jobId === jobId);
+    if (!job) return;
 
-  /** Import one file; when forceReplace, onDuplicate resolves 'replace' immediately. */
-  const importOne = useCallback(async (file: ReadableFile, resourceType: ResourceType, forceReplace = false): Promise<void> => {
-    // Whether the user was already prompted for this import — distinguishes an
-    // onDuplicate-answered 'skip' result (stay quiet) from a result-shaped skip
-    // (surface the warning with a replace re-run path).
-    let prompted = false;
-
-    const options: ImportOptions = {
-      langCode,
-      onProgress: (processed) => patchState(resourceType, { progress: processed }),
-      onResourceCreated: () => patchState(resourceType, { progressTotal: 100 }),
-      onDuplicate: forceReplace
-        ? () => 'replace'
-        : (existing) => {
-            prompted = true;
-            return new Promise<DuplicateDecision>((resolve) => {
-              patchState(resourceType, { duplicate: { file, existing, resolve } });
-            });
-          },
-    };
-
-    const result = await importFile(file, resourceType, options);
-
-    if (result.skippedAsDuplicate) {
-      if (!prompted && result.existingResource) {
-        patchState(resourceType, { duplicate: { file, existing: result.existingResource } });
-      }
-      return;
-    }
-    // Resources follow the profile: scope the freshly imported resource to
-    // the active profile so other profiles don't see it by default.
-    if (activeProfileId && result.resourceId) {
-      await setResourceProfiles(langCode, result.resourceId, [activeProfileId]).catch(() => {});
-    }
-    showSuccess(resourceType, `Đã thêm "${file.name}" — ${result.wordCount} từ.`);
-  }, [langCode, activeProfileId, patchState, showSuccess]);
-
-  /** Returns false when the import errored (so multi-file loops can stop). */
-  const runImport = useCallback(async (file: ReadableFile, resourceType: ResourceType, forceReplace = false): Promise<boolean> => {
-    setImportStates((prev) => ({
-      ...prev,
-      [resourceType]: { ...IDLE_IMPORT, importing: true },
-    }));
+    patchJob(jobId, { status: 'uploading', error: null });
     try {
-      await importOne(file, resourceType, forceReplace);
-      return true;
+      const result = await importFile(job.file as ReadableFile, job.resourceType, {
+        langCode,
+        jobId,
+        onUploadProgress: (sent, total) => patchJob(jobId, { uploadSent: sent, uploadTotal: total }),
+        onResourceCreated: (resourceId) => patchJob(jobId, { status: 'importing', resourceId }),
+        onProgress: (processed, total) => patchJob(jobId, { status: 'importing', processed, total }),
+        onDuplicate: job.forceReplace
+          ? () => 'replace'
+          : (existing) => new Promise<DuplicateDecision>((resolve) => {
+              patchJob(jobId, { status: 'duplicate', duplicate: { existing, resolve } });
+            }),
+      });
+
+      if (result.skippedAsDuplicate) {
+        patchJob(jobId, {
+          status: 'skipped',
+          duplicate: result.existingResource ? { existing: result.existingResource } : null,
+        });
+        announce(`"${job.file.name}" đã bỏ qua — đã tồn tại.`);
+      } else {
+        patchJob(jobId, { status: 'success', wordCount: result.wordCount });
+        announce(`"${job.file.name}" đã thêm xong — ${result.wordCount} từ.`);
+        successTimers.current[jobId] = setTimeout(() => {
+          setJobs((prev) => prev.filter((j) => j.jobId !== jobId));
+          successTimers.current[jobId] = undefined;
+        }, SUCCESS_DISMISS_MS);
+      }
+      void refresh(true);
     } catch (e) {
       const msg = isImportError(e)
         ? getUserMessage(e)
-        : `Lỗi import "${file.name}": ${String(e)}`;
-      patchState(resourceType, { error: msg });
-      return false;
+        : `Lỗi import "${job.file.name}": ${String(e)}`;
+      patchJob(jobId, { status: 'error', error: msg });
+      announce(`"${job.file.name}" lỗi: ${msg}`);
+      void refresh(true);
     } finally {
-      patchState(resourceType, { importing: false });
+      pump();
     }
-  }, [importOne, patchState]);
+  }, [langCode, patchJob, announce, refresh, pump, setJobs]);
 
-  const handleFiles = useCallback((files: File[], resourceType: ResourceType) => {
+  // Keep the scheduler's lazy reference fresh every render.
+  runJobRef.current = runJob;
+
+  /** Drop/pick handler — validate, dedupe, enqueue, then let the scheduler run. */
+  const handleFiles = useCallback(async (files: File[], resourceType: ResourceType) => {
     if (files.length === 0) return;
-    void (async () => {
-      for (const file of files) {
-        // Sequential per section: keep progress + duplicate prompts readable.
-        const ok = await runImport(file, resourceType);
-        if (!ok) break;
+
+    const allowed = allowedExtensions(SECTION_COPY[resourceType].accept);
+    const activeSignatures = new Set(
+      jobsRef.current.filter((j) => j.status === 'queued' || isRunningJob(j)).map((j) => j.signature),
+    );
+    const seen = new Set<string>();
+    const newJobs: ImportJob[] = [];
+
+    for (const file of files) {
+      const jobId = makeJobId();
+      const base: ImportJob = {
+        jobId,
+        file,
+        resourceType,
+        signature: '',
+        forceReplace: false,
+        status: 'queued',
+        processed: 0,
+        total: 0,
+        uploadSent: 0,
+        uploadTotal: 0,
+        error: null,
+        wordCount: null,
+        resourceId: null,
+        duplicate: null,
+      };
+
+      if (!allowed.has(getExtension(file.name))) {
+        newJobs.push({ ...base, status: 'error', error: `Định dạng "${file.name}" không được hỗ trợ.` });
+        continue;
       }
-      void refresh();
-    })();
-  }, [runImport, refresh]);
+      if (file.size > MAX_FILE_SIZE) {
+        newJobs.push({ ...base, status: 'error', error: `"${file.name}" ${formatBytes(file.size)} — vượt quá giới hạn 500MB.` });
+        continue;
+      }
 
-  const resolveDuplicate = (type: ResourceType, choice: DuplicateDecision): void => {
-    const pending = importStates[type].duplicate;
-    if (!pending) return;
-    patchState(type, { duplicate: null });
-    if (pending.resolve) {
-      // In-flight import — hand the choice back to the orchestrator.
-      pending.resolve(choice);
-    } else if (choice === 'replace') {
-      // Result-shaped skip — re-run the same file forcing 'replace'.
-      void runImport(pending.file, type, true);
+      const signature = await computeSignature(file);
+      if (activeSignatures.has(signature) || seen.has(signature)) {
+        newJobs.push({ ...base, signature, status: 'skipped' });
+        continue;
+      }
+      seen.add(signature);
+      newJobs.push({ ...base, signature });
     }
-  };
 
-  const handleMove = useCallback((type: ResourceType, index: number, direction: -1 | 1) => {
+    // A new drop clears persisted error rows.
+    setJobs((prev) => [...prev.filter((j) => j.status !== 'error'), ...newJobs]);
+    pump();
+  }, [pump, setJobs]);
+
+  const resolveDuplicate = useCallback((jobId: string, choice: DuplicateDecision): void => {
+    const job = jobsRef.current.find((j) => j.jobId === jobId);
+    const pending = job?.duplicate;
+    if (!job || !pending) return;
+    patchJob(jobId, {
+      duplicate: null,
+      status: choice === 'replace' ? 'uploading' : 'skipped',
+    });
+    if (pending.resolve) {
+      pending.resolve(choice);
+    }
+    if (choice === 'skip') pump();
+  }, [patchJob, pump]);
+
+  /** Skipped row "Thay thế" — re-run the same file forcing 'replace' on its row. */
+  const rerunReplace = useCallback((jobId: string): void => {
+    const job = jobsRef.current.find((j) => j.jobId === jobId);
+    if (!job) return;
+    patchJob(jobId, {
+      status: 'queued',
+      forceReplace: true,
+      duplicate: null,
+      error: null,
+      processed: 0,
+      total: 0,
+      uploadSent: 0,
+      uploadTotal: 0,
+    });
+    pump();
+  }, [patchJob, pump]);
+
+  const applyReorder = useCallback((type: ResourceType, fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
     const list = sortByPriority(resources.filter((r) => r.type === type));
-    const target = index + direction;
-    if (target < 0 || target >= list.length) return;
+    if (fromIndex < 0 || fromIndex >= list.length || toIndex < 0 || toIndex >= list.length) return;
 
     const reordered = [...list];
-    const [moved] = reordered.splice(index, 1);
-    reordered.splice(target, 0, moved!);
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved!);
     const orderedIds = reordered
       .map((r) => r.id)
       .filter((id): id is number => id != null);
@@ -407,19 +524,40 @@ export function ResourcesPanel({ langCode, activeProfileId, frequencyBands, onFr
     );
     void reorderResources(langCode, type, orderedIds)
       .catch(() => { /* refresh restores persisted order */ })
-      .finally(() => void refresh());
+      .finally(() => void refresh(true));
   }, [resources, langCode, refresh]);
+
+  const handleMove = useCallback((type: ResourceType, index: number, direction: -1 | 1) => {
+    applyReorder(type, index, index + direction);
+  }, [applyReorder]);
 
   const handleDelete = useCallback(async (resource: ResourceInfo) => {
     try {
       await deleteResourceCascade(langCode, resource.id!);
-      showSuccess(resource.type, `Đã xóa "${resource.name}".`);
-      void refresh();
+      showPanelAlert('success', `Đã xóa "${resource.name}".`);
+      void refresh(true);
     } catch (e) {
-      patchState(resource.type, { error: `Không thể xóa: ${String(e)}` });
+      showPanelAlert('error', `Không thể xóa: ${String(e)}`);
     }
     setDeleteTarget(null);
-  }, [langCode, refresh, showSuccess, patchState]);
+  }, [langCode, refresh, showPanelAlert]);
+
+  const handleDeleteMany = useCallback(async (type: ResourceType, ids: readonly number[]) => {
+    setDeleteManyTarget(null);
+    const wanted = new Set(ids);
+    const doomed = resources.filter((r) => r.type === type && r.id != null && wanted.has(r.id));
+    if (doomed.length === 0) return;
+    try {
+      for (const r of doomed) {
+        await deleteResourceCascade(langCode, r.id!);
+      }
+      showPanelAlert('success', `Đã xóa ${doomed.length} ${SECTION_COPY[type].noun}.`);
+      void refresh(true);
+    } catch (e) {
+      showPanelAlert('error', `Không thể xóa: ${String(e)}`);
+      void refresh(true);
+    }
+  }, [resources, langCode, refresh, showPanelAlert]);
 
   const handleDeleteAll = useCallback(async (type: ResourceType) => {
     setDeleteAllTarget(null);
@@ -431,16 +569,18 @@ export function ResourcesPanel({ langCode, activeProfileId, frequencyBands, onFr
       for (const r of doomed) {
         await deleteResourceCascade(langCode, r.id!);
       }
-      showSuccess(type, `Đã xóa ${doomed.length} ${SECTION_COPY[type].noun}.`);
-      void refresh();
+      showPanelAlert('success', `Đã xóa ${doomed.length} ${SECTION_COPY[type].noun}.`);
+      void refresh(true);
     } catch (e) {
-      patchState(type, { error: `Không thể xóa tất cả: ${String(e)}` });
-      void refresh();
+      showPanelAlert('error', `Không thể xóa tất cả: ${String(e)}`);
+      void refresh(true);
     }
-  }, [resources, langCode, refresh, showSuccess, patchState]);
+  }, [resources, langCode, refresh, showPanelAlert]);
 
   const dictionaryResources = sortByPriority(resources.filter((r) => r.type === 'DICTIONARY'));
   const frequencyResources = sortByPriority(resources.filter((r) => r.type === 'FREQUENCY'));
+  const dictionaryJobs = jobs.filter((j) => j.resourceType === 'DICTIONARY');
+  const frequencyJobs = jobs.filter((j) => j.resourceType === 'FREQUENCY');
 
   const bandsFooter = (
     <FrequencyBandsEditor value={frequencyBands} onChange={onFrequencyBandsChange} />
@@ -448,34 +588,63 @@ export function ResourcesPanel({ langCode, activeProfileId, frequencyBands, onFr
 
   return (
     <div className={styles.panel} data-cell-id="resources-panel">
-      <ResourceSection
-        copy={SECTION_COPY.DICTIONARY}
-        sectionId="dictionary"
-        resources={dictionaryResources}
-        state={importStates.DICTIONARY}
-        loading={loading}
-        onFiles={(files) => handleFiles(files, 'DICTIONARY')}
-        onResolveDuplicate={(choice) => resolveDuplicate('DICTIONARY', choice)}
-        onDelete={setDeleteTarget}
-        onMove={(i, dir) => handleMove('DICTIONARY', i, dir)}
-        onChanged={() => void refresh()}
-        onDeleteAll={() => setDeleteAllTarget('DICTIONARY')}
-      />
+      <VisuallyHidden>
+        <span role="status" aria-live="polite">{announcement}</span>
+      </VisuallyHidden>
 
-      <ResourceSection
-        copy={SECTION_COPY.FREQUENCY}
-        sectionId="frequency"
-        resources={frequencyResources}
-        state={importStates.FREQUENCY}
-        loading={loading}
-        onFiles={(files) => handleFiles(files, 'FREQUENCY')}
-        onResolveDuplicate={(choice) => resolveDuplicate('FREQUENCY', choice)}
-        onDelete={setDeleteTarget}
-        onMove={(i, dir) => handleMove('FREQUENCY', i, dir)}
-        onChanged={() => void refresh()}
-        onDeleteAll={() => setDeleteAllTarget('FREQUENCY')}
-        footer={bandsFooter}
-      />
+      {panelAlert && (
+        <Alert
+          variant={panelAlert.variant}
+          description={panelAlert.text}
+          role="status"
+          data-cell-id="panel-alert"
+        />
+      )}
+
+      <div className={styles.columns}>
+        <div className={styles.sections}>
+          <ResourceSection
+            copy={SECTION_COPY.DICTIONARY}
+            sectionId="dictionary"
+            resources={dictionaryResources}
+            jobs={dictionaryJobs}
+            loading={loading}
+            onFiles={(files) => void handleFiles(files, 'DICTIONARY')}
+            onResolveDuplicate={resolveDuplicate}
+            onRerunReplace={rerunReplace}
+            onDelete={setDeleteTarget}
+            onDeleteMany={(ids) => setDeleteManyTarget({ type: 'DICTIONARY', ids })}
+            onMove={(i, dir) => handleMove('DICTIONARY', i, dir)}
+            onReorder={(from, to) => applyReorder('DICTIONARY', from, to)}
+            onChanged={() => void refresh(true)}
+            onDeleteAll={() => setDeleteAllTarget('DICTIONARY')}
+          />
+
+          <ResourceSection
+            copy={SECTION_COPY.FREQUENCY}
+            sectionId="frequency"
+            resources={frequencyResources}
+            jobs={frequencyJobs}
+            loading={loading}
+            onFiles={(files) => void handleFiles(files, 'FREQUENCY')}
+            onResolveDuplicate={resolveDuplicate}
+            onRerunReplace={rerunReplace}
+            onDelete={setDeleteTarget}
+            onDeleteMany={(ids) => setDeleteManyTarget({ type: 'FREQUENCY', ids })}
+            onMove={(i, dir) => handleMove('FREQUENCY', i, dir)}
+            onReorder={(from, to) => applyReorder('FREQUENCY', from, to)}
+            onChanged={() => void refresh(true)}
+            onDeleteAll={() => setDeleteAllTarget('FREQUENCY')}
+            footer={bandsFooter}
+          />
+        </div>
+
+        {lookupPanel && (
+          <aside className={styles.lookupColumn} data-cell-id="resources-lookup-column">
+            {lookupPanel}
+          </aside>
+        )}
+      </div>
 
       {deleteTarget && (
         <DeleteConfirmModal
@@ -490,6 +659,14 @@ export function ResourcesPanel({ langCode, activeProfileId, frequencyBands, onFr
           description={`Xóa vĩnh viễn toàn bộ ${SECTION_COPY[deleteAllTarget].noun} trong mục này và dữ liệu của chúng.`}
           onConfirm={() => void handleDeleteAll(deleteAllTarget)}
           onCancel={() => setDeleteAllTarget(null)}
+        />
+      )}
+      {deleteManyTarget && (
+        <DeleteConfirmModal
+          title={`Xóa ${deleteManyTarget.ids.length} ${SECTION_COPY[deleteManyTarget.type].noun} đã chọn?`}
+          description={`Xóa vĩnh viễn các ${SECTION_COPY[deleteManyTarget.type].noun} đã chọn và dữ liệu của chúng.`}
+          onConfirm={() => void handleDeleteMany(deleteManyTarget.type, deleteManyTarget.ids)}
+          onCancel={() => setDeleteManyTarget(null)}
         />
       )}
     </div>

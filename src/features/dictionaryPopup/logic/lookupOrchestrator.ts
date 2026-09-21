@@ -57,7 +57,6 @@ import type {
 import { tokenizeSentence } from '@/features/dictionary/logic/phraseMatcher';
 import { pickBestFrequencyEntry } from '@/shared/lib/frequencyBand';
 import type { Settings } from '@/entities/settings';
-import { getActiveProfileSettings } from '@/entities/settings';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { ResourceInfo } from '@/entities/dictionary';
@@ -134,13 +133,11 @@ export function clearDictionaryProbeCache(): void {
 
 /** Runtime context for resource filtering + priority across a single lookup.
  *  Built once per lookup so every stage (probe, phrase indexes, frequency,
- *  dictionary entries) uses the same enabled/profile/priority view. */
+ *  dictionary entries) uses the same enabled/priority view. */
 type ResourceContext = {
   /** Settings snapshot used for this lookup. */
   readonly settings: Settings;
-  /** Active language profile id, or null when no profile is selected. */
-  readonly activeProfileId: string | null;
-  /** All resources allowed by enabled + active profile filters. */
+  /** All resources allowed by the enabled filter. */
   readonly resources: readonly ResourceInfo[];
   /** DICTIONARY resources allowed for this lookup. */
   readonly dictionaryResources: readonly ResourceInfo[];
@@ -176,18 +173,14 @@ function buildResourcePriority(resources: readonly ResourceInfo[]): number[] {
     .filter((id): id is number => id !== undefined);
 }
 
-/** Load all resources for a lang and apply enabled + active profile filters.
- *  Returns a context shared by probe, phrase matching, and frequency lookup. */
+/** Load all resources for a lang and apply the enabled filter. Returns a
+ *  context shared by probe, phrase matching, and frequency lookup. */
 async function buildResourceContext(langCode: string, settings: Settings): Promise<ResourceContext> {
   const allResources = await getAllResources(langCode);
-  const activeProfile = getActiveProfileSettings(settings);
-  const activeProfileId = activeProfile?.id ?? null;
 
   const isAllowed = (r: ResourceInfo): boolean => {
+    if (r.installationFinished === false) return false;
     if (r.enabled === false) return false;
-    if (activeProfileId && r.profileIds && r.profileIds.length > 0) {
-      return r.profileIds.includes(activeProfileId);
-    }
     return true;
   };
 
@@ -204,7 +197,6 @@ async function buildResourceContext(langCode: string, settings: Settings): Promi
 
   return {
     settings,
-    activeProfileId,
     resources,
     dictionaryResources,
     allowedResourceIds,
@@ -231,7 +223,7 @@ function buildResourceCacheKey(context: ResourceContext): string {
     .filter((id): id is number => id !== undefined)
     .sort((a, b) => a - b)
     .join(',');
-  return `${context.activeProfileId ?? 'none'}:${ids}`;
+  return ids;
 }
 
 export async function createDictionaryProbeAsync(
@@ -240,9 +232,9 @@ export async function createDictionaryProbeAsync(
 ): Promise<TermProbe> {
   const resolvedContext = context ?? await buildResourceContext(langCode, await loadSettings().catch(() => DEFAULT_SETTINGS));
 
-  // T23: Return cached probe if available. Cache key includes active profile
-  // and allowed dictionary resource ids so enabling/disabling resources or
-  // switching profiles invalidates the cache.
+  // T23: Return cached probe if available. The cache key is the set of
+  // allowed dictionary resource ids so enabling/disabling resources
+  // invalidates the cache.
   const cacheKey = buildResourceCacheKey(resolvedContext);
   const cached = probeCache.get(cacheKey);
   if (cached) return cached;

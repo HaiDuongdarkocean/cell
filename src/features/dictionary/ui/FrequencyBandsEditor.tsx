@@ -5,7 +5,7 @@
 // self-loads via loadSettings and persists via saveSettings.
 
 import { useEffect, useState, type ReactElement } from 'react';
-import { Input, Label } from '@/shared/ui';
+import { Button, Input } from '@/shared/ui';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_FREQUENCY_BANDS } from '@/shared/config/config';
 import type { FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
@@ -16,11 +16,11 @@ interface FrequencyBandsEditorProps {
   readonly onChange?: (bands: FrequencyBandThresholds) => void;
 }
 
-const FIELDS: readonly { key: keyof FrequencyBandThresholds; label: string }[] = [
-  { key: 'core', label: 'Phổ biến ≤' },
-  { key: 'common', label: 'Thường gặp ≤' },
-  { key: 'general', label: 'Chung ≤' },
-  { key: 'advanced', label: 'Nâng cao ≤' },
+const FIELDS: readonly { key: keyof FrequencyBandThresholds; label: string; hint: string }[] = [
+  { key: 'core', label: 'Phổ biến', hint: 'từ dùng hằng ngày' },
+  { key: 'common', label: 'Thường gặp', hint: 'hay gặp trong sách và phim' },
+  { key: 'general', label: 'Chung', hint: 'vốn từ của người lớn' },
+  { key: 'advanced', label: 'Nâng cao', hint: 'từ học thuật, ít gặp' },
 ];
 
 export function FrequencyBandsEditor({ value, onChange }: FrequencyBandsEditorProps): ReactElement {
@@ -42,10 +42,7 @@ export function FrequencyBandsEditor({ value, onChange }: FrequencyBandsEditorPr
     return () => { alive = false; };
   }, [controlled]);
 
-  const commit = (key: keyof FrequencyBandThresholds, raw: string): void => {
-    const n = Number.parseInt(raw, 10);
-    if (!Number.isFinite(n) || n < 0) return;
-    const next: FrequencyBandThresholds = { ...bands, [key]: n };
+  const apply = (next: FrequencyBandThresholds): void => {
     if (onChange) {
       onChange(next);
     } else {
@@ -54,23 +51,58 @@ export function FrequencyBandsEditor({ value, onChange }: FrequencyBandsEditorPr
     }
   };
 
+  const commit = (key: keyof FrequencyBandThresholds, raw: string): void => {
+    const n = Number.parseInt(raw, 10);
+    if (!Number.isFinite(n) || n < 0) return;
+    apply({ ...bands, [key]: n });
+  };
+
+  const reset = (): void => apply({ ...DEFAULT_FREQUENCY_BANDS });
+
+  const isDefault = FIELDS.every(({ key }) => bands[key] === DEFAULT_FREQUENCY_BANDS[key]);
+
   return (
     <div className={styles.bands} data-cell-id="frequency-bands-editor">
-      {FIELDS.map(({ key, label }) => (
-        <Label key={key} className={styles.bandField}>
-          <span className={styles.bandLabel}>{label}</span>
-          <Input
-            type="number"
-            size="sm"
-            className={styles.bandInput}
-            min={0}
-            step={100}
-            value={bands[key]}
-            onChange={(e) => commit(key, e.target.value)}
-            data-cell-id={`band-input-${key}`}
-          />
-        </Label>
-      ))}
+      <div className={styles.bandsHead}>
+        <span className={styles.bandsTitle}>Ngưỡng độ phổ biến</span>
+        <p className={styles.bandsHint}>
+          Mỗi từ có một hạng trong danh sách — hạng càng nhỏ từ càng phổ biến.
+        </p>
+      </div>
+
+      <div className={styles.bandRows}>
+        {FIELDS.map(({ key, label, hint }) => (
+          <div key={key} className={styles.bandRow}>
+            <span className={styles.bandName}>{label}</span>
+            <span className={styles.bandDesc}>{hint}</span>
+            <span className={styles.bandInputWrap}>
+              <span className={styles.bandPrefix}>top ≤</span>
+              <Input
+                type="number"
+                size="sm"
+                className={styles.bandInput}
+                min={0}
+                step={100}
+                value={bands[key]}
+                onChange={(e) => commit(key, e.target.value)}
+                aria-label={`Ngưỡng ${label}`}
+                data-cell-id={`band-input-${key}`}
+              />
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {!isDefault && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={reset}
+          data-cell-id="bands-reset"
+        >
+          Đặt lại mặc định
+        </Button>
+      )}
     </div>
   );
 }

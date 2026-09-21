@@ -83,6 +83,7 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
     }
 
     try {
+      this.reportTotal(this.countEntries(db));
       if (this.resourceType === 'DICTIONARY') {
         yield* this.parseDictionaryTable(db);
       } else {
@@ -90,6 +91,25 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
       }
     } finally {
       db.close();
+    }
+  }
+
+  /** Exact row count on the table the parse path selects from (0 = unknown). */
+  private countEntries(db: Database): number {
+    try {
+      if (this.resourceType === 'DICTIONARY') {
+        const r = db.exec('SELECT COUNT(*) AS c FROM langResourceEntry');
+        return toCount(r);
+      }
+      try {
+        const r = db.exec('SELECT COUNT(*) AS c FROM langFrequencyEntry');
+        return toCount(r);
+      } catch {
+        const r = db.exec('SELECT COUNT(*) AS c FROM entries');
+        return toCount(r);
+      }
+    } catch {
+      return 0;
     }
   }
 
@@ -192,6 +212,11 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
       );
     }
   }
+}
+
+function toCount(result: QueryExecResult[] | undefined): number {
+  const n = Number(result?.[0]?.values[0]?.[0] ?? 0);
+  return Number.isFinite(n) ? n : 0;
 }
 
 /** Lazy-load sql.js — returns the SQL static with Database constructor. */

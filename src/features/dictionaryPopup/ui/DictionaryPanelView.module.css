@@ -46,6 +46,15 @@
   overscroll-behavior: auto;
 }
 
+/* Integrated mode keeps overflow-y:auto (it scrolls itself inside a flex
+   parent like DictionaryTab's .leftPane or the resources lookupColumn) but
+   drops overscroll-behavior:contain — in an unbounded host the panel has no
+   scroll range, and `contain` would swallow wheel events instead of chaining
+   to the real page/panel scroller. */
+.integratedMode {
+  overscroll-behavior: auto;
+}
+
 .searchRow {
   display: flex;
   gap: var(--space-2);

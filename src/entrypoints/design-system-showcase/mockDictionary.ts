@@ -253,11 +253,39 @@ function mockResourceList(langCode: string): ResourceInfo[] {
   return getMockResourcesForLang(langCode);
 }
 
-function handleResourceImport(payload: Record<string, unknown>): ImportResult {
+const MOCK_IMPORT_TOTAL = 12000;
+const MOCK_IMPORT_STEPS = [2000, 6000, 10000];
+
+function pushMessage(message: unknown): void {
+  const listeners = (globalThis as { __cellOnMessageListeners?: Set<(m: unknown) => void> }).__cellOnMessageListeners;
+  listeners?.forEach((cb) => { cb(message); });
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Simulate a real import: RESOURCE_CREATED + RESOURCE_IMPORT_PROGRESS pushes
+ *  with the production message shape, then the final ImportResult. Filenames
+ *  containing "fail" exercise the per-job error path. */
+async function handleResourceImport(payload: Record<string, unknown>): Promise<ImportResult> {
   const resourceType = payload.resourceType as 'DICTIONARY' | 'FREQUENCY';
+  const jobId = String(payload.jobId ?? '');
+  pushMessage({
+    type: MESSAGE_TYPES.RESOURCE_IMPORT_PROGRESS,
+    payload: { jobId, phase: 'created', resourceId: 999 },
+  });
+  for (const processed of MOCK_IMPORT_STEPS) {
+    await delay(350);
+    pushMessage({
+      type: MESSAGE_TYPES.RESOURCE_IMPORT_PROGRESS,
+      payload: { jobId, phase: 'progress', processed, total: MOCK_IMPORT_TOTAL },
+    });
+  }
+  await delay(150);
   return {
     resourceId: 999,
-    wordCount: 0,
+    wordCount: MOCK_IMPORT_TOTAL,
     format: resourceType === 'DICTIONARY' ? 'json-array' : 'txt',
     skippedAsDuplicate: false,
   };
@@ -349,9 +377,19 @@ async function mockSendMessage(message: unknown): Promise<unknown> {
     }
 
     case MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK: {
+      const p = m.payload ?? {};
+      const isLast = Number(p.seq) === Number(p.total) - 1;
+      if (!isLast) {
+        await delay(80);
+        const result: MessageResponse<{ received: number }> = { success: true, data: { received: Number(p.seq) + 1 } };
+        return result;
+      }
+      if (/fail/i.test(String(p.fileName ?? ''))) {
+        return { success: false, error: `Mock import failed for ${String(p.fileName)}` };
+      }
       const result: MessageResponse<ImportResult> = {
         success: true,
-        data: handleResourceImport(m.payload ?? {}),
+        data: await handleResourceImport(p),
       };
       return result;
     }

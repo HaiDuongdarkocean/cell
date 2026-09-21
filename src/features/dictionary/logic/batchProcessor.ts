@@ -13,12 +13,18 @@ export type FlushCallback<T> = (batch: ReadonlyArray<T>) => Promise<void>;
 export class BatchProcessor<T> {
   private buffer: T[] = [];
   private totalProcessed = 0;
+  private total = 0;
   private readonly flushCallback: FlushCallback<T>;
-  private readonly onProgress?: (processed: number) => void;
+  private readonly onProgress?: (processed: number, total: number) => void;
 
-  constructor(flushCallback: FlushCallback<T>, onProgress?: (processed: number) => void) {
+  constructor(flushCallback: FlushCallback<T>, onProgress?: (processed: number, total: number) => void) {
     this.flushCallback = flushCallback;
     this.onProgress = onProgress;
+  }
+
+  /** Set the exact attempted-entry total once known (0 = unknown). */
+  setTotal(total: number): void {
+    this.total = Math.max(0, total);
   }
 
   /** Add an entry. Auto-flush when buffer reaches BATCH_SIZE. */
@@ -36,7 +42,7 @@ export class BatchProcessor<T> {
     this.buffer = [];
     await this.flushCallback(batch);
     this.totalProcessed += batch.length;
-    this.onProgress?.(this.totalProcessed);
+    this.onProgress?.(this.totalProcessed, this.total);
   }
 
   /** Total entries processed (flushed). */

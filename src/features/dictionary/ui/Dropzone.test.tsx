@@ -11,13 +11,13 @@ describe('Dropzone', () => {
     render(
       <Dropzone
         label="Thêm từ điển"
-        hint="Kéo thả hoặc chọn file · .json, .zip (Yomitan)"
+        hint="Kéo thả hoặc chọn file · .json, .zip, .db.gz"
         accept=".json,.zip"
         disabled={false}
         onFiles={jest.fn()}
       />,
     );
-    expect(screen.getByText('Kéo thả hoặc chọn file · .json, .zip (Yomitan)')).toBeInTheDocument();
+    expect(screen.getByText('Kéo thả hoặc chọn file · .json, .zip, .db.gz')).toBeInTheDocument();
   });
 
   it('omits the hint line when not provided', () => {

@@ -164,4 +164,46 @@ describe('useDictionaryLookup', () => {
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBeNull();
   });
+
+  it('re-runs the last lookup when a resource mutation notifies a change', async () => {
+    const { setResourceEnabled } = await import('@/features/dictionary');
+    mockSendMessage.mockResolvedValue({ success: true, data: [makeResult('hello')] });
+
+    const { result } = renderHook(() => useDictionaryLookup({ langCode: 'en', sourceLang: 'en', targetLang: 'vi' }));
+    act(() => { result.current.search('hello'); });
+    await waitFor(() => expect(result.current.currentResult?.term).toBe('hello'));
+
+    const lookupsBefore = mockSendMessage.mock.calls
+      .filter((c) => (c[0] as { type?: string }).type === 'LOOKUP_REQUEST').length;
+
+    await act(async () => {
+      await setResourceEnabled('en', 1, false);
+    });
+
+    await waitFor(() => {
+      const lookups = mockSendMessage.mock.calls
+        .filter((c) => (c[0] as { type?: string }).type === 'LOOKUP_REQUEST').length;
+      expect(lookups).toBeGreaterThan(lookupsBefore);
+    });
+  });
+
+  it('ignores resource changes for a different langCode', async () => {
+    const { setResourceEnabled } = await import('@/features/dictionary');
+    mockSendMessage.mockResolvedValue({ success: true, data: [makeResult('hello')] });
+
+    const { result } = renderHook(() => useDictionaryLookup({ langCode: 'en', sourceLang: 'en', targetLang: 'vi' }));
+    act(() => { result.current.search('hello'); });
+    await waitFor(() => expect(result.current.currentResult?.term).toBe('hello'));
+
+    const lookupsBefore = mockSendMessage.mock.calls
+      .filter((c) => (c[0] as { type?: string }).type === 'LOOKUP_REQUEST').length;
+
+    await act(async () => {
+      await setResourceEnabled('zh', 1, false);
+    });
+
+    const lookups = mockSendMessage.mock.calls
+      .filter((c) => (c[0] as { type?: string }).type === 'LOOKUP_REQUEST').length;
+    expect(lookups).toBe(lookupsBefore);
+  });
 });

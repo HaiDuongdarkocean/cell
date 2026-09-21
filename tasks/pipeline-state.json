@@ -1,5 +1,5 @@
 {
-  "active": null,
+  "active": "resources-import-ux",
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -311,6 +311,58 @@
       "owner": null,
       "worktree": null,
       "updated": "2026-09-20T22:01:51.069Z"
+    },
+    "resources-import-ux": {
+      "stage": "deliver",
+      "mode": "interactive",
+      "uiSurface": "yes",
+      "artifacts": {
+        "spec": "docs/specs/resources-import-ux.md",
+        "plan": "tasks/plan-resources-import-ux.md"
+      },
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-09-21T08:25:53.232Z"
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-09-21T08:14:03.160Z"
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-09-21T08:14:03.242Z"
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-09-21T08:14:03.319Z"
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-09-21T08:14:03.403Z"
+        }
+      },
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [
+        {
+          "flag": "ownership-handoff",
+          "note": "devin-1-1789951811 → devin-cli — user instructed: rerun stale/missing gates on deliver item — owner session ended",
+          "at": "2026-09-21T07:14:29.014Z"
+        },
+        {
+          "flag": "ownership-handoff",
+          "note": "devin-cli → devin-1-1789951811 — owner session alive — ResourcesPanel.tsx actively edited during gate re-runs; returning ownership. Fixed en route: subscribeResourceChanges arity (typecheck), dict-adapters lint (unused import + expression), Icon import restored",
+          "at": "2026-09-21T07:19:01.071Z"
+        }
+      ],
+      "loops": 0,
+      "owner": {
+        "id": "devin-1-1789951811",
+        "since": "2026-09-21T07:19:01.071Z"
+      },
+      "worktree": null,
+      "updated": "2026-09-21T08:25:53.233Z"
     }
   }
 }

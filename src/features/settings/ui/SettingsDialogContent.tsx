@@ -19,6 +19,7 @@ import { AudioPanel } from '@/features/audio/ui/AudioPanel';
 import { ThemePanel } from '@/features/theme/ui/ThemePanel';
 import { DEFAULT_TTS_SETTINGS } from '@/features/tts/ui/TtsVoiceManagerPanel';
 import { ResourcesPanel } from '@/features/dictionary/ui/ResourcesPanel';
+import { Dictionary } from '@/features/dictionaryPopup';
 import { Toggle } from '@/shared/ui/Toggle';
 import { Label } from '@/shared/ui/Label';
 import { ShortcutInput } from '@/shared/ui/ShortcutInput';
@@ -719,9 +720,17 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                 ) : (
                   <ResourcesPanel
                     langCode={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
-                    activeProfileId={activeProfile?.id ?? null}
                     frequencyBands={settings.frequencyBands}
                     onFrequencyBandsChange={(bands) => update('frequencyBands', bands)}
+                    lookupPanel={
+                      <Dictionary
+                        variant="integrated"
+                        langCode={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
+                        sourceLang={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
+                        targetLang={activeProfile?.native ?? settings.universalNativeLanguage}
+                        isOpen={false}
+                      />
+                    }
                   />
                 )}
               </VStack>

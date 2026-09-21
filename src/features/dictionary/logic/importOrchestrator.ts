@@ -91,7 +91,7 @@ export async function importFile(
 
   // 8. Execute strategy
   try {
-    const strategy = createStrategy(format, resourceType, { resourceId, langCode, onProgress: onProgress as ((processed: number) => void) | undefined }, { data, fileName: file.name });
+    const strategy = createStrategy(format, resourceType, { resourceId, langCode, onProgress }, { data, fileName: file.name });
     const result = await strategy.execute();
 
     // 9. Build phrase index for Cambridge dictionaries (ADR-037 §7.2).

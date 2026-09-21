@@ -51,6 +51,11 @@ export class TxtLineStrategy extends BaseFrequencyStrategy {
     if (this.unzipError) throw this.unzipError;
     const text = decodeText(this.data);
     const lines = text.split(/\r?\n/);
+    let nonEmpty = 0;
+    for (const line of lines) {
+      if (line.trim().length > 0) nonEmpty++;
+    }
+    this.reportTotal(nonEmpty);
     let lineNum = 0;
     for (const line of lines) {
       lineNum++;

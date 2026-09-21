@@ -64,13 +64,17 @@ describe('sqliteStrategy — frequency (langFrequencyEntry)', () => {
   });
 
   it('falls back to legacy entries table if langFrequencyEntry missing', async () => {
-    // First exec (langFrequencyEntry) throws, second (entries) returns data
-    const exec = jest.fn()
-      .mockImplementationOnce(() => { throw new Error('no such table'); })
-      .mockReturnValueOnce([{
+    // Any query on langFrequencyEntry throws (COUNT + SELECT); entries works.
+    const exec = jest.fn().mockImplementation((sql: string) => {
+      if (sql.includes('langFrequencyEntry')) throw new Error('no such table');
+      if (sql.startsWith('SELECT COUNT')) {
+        return [{ columns: ['c'], values: [[1]] }];
+      }
+      return [{
         columns: ['term', 'reading', 'frequency'],
         values: [['hello', 'hello', 1]],
-      }]);
+      }];
+    });
      
     const sqlJs = require('sql.js');
     sqlJs.default.mockResolvedValue({

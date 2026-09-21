@@ -1,30 +1,74 @@
 .bands {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--space-3);
   padding-top: var(--space-2);
+  width: 100%;
 }
 
-/* (0,2,0) beats shared Label's .label chrome — the field stays a column
-   stack and inherits the surrounding font (the inner .bandLabel span sets
-   its own size/color). */
-.bands .bandField {
+.bandsHead {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   gap: var(--space-0-5);
-  font: inherit;
 }
 
-.bandLabel {
+.bandsTitle {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  font-family: var(--font-family);
+}
+
+.bandsHint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+}
+
+.bandRows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.bandRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target-mobile);
+}
+
+.bandName {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  white-space: nowrap;
+}
+
+.bandDesc {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+}
+
+.bandInputWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  flex-shrink: 0;
+}
+
+.bandPrefix {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   font-family: var(--font-family);
   white-space: nowrap;
 }
 
-/* Shared Input covers padding/border/radius/focus via tokens — only the
-   fixed field width is local. (0,2,0) beats Input's width:100%. */
 .bands .bandInput {
   width: calc(var(--space-10) * 3);
 }

@@ -94,7 +94,6 @@ describe('SettingsDialogContent — resources ↔ profile binding', () => {
     const panel = container.querySelector('[data-cell-id="resources-panel"]');
     expect(panel).toBeInTheDocument();
     expect(panel).toHaveAttribute('data-lang-code', 'en');
-    expect(panel).toHaveAttribute('data-active-profile', 'p-en');
   });
 });
 

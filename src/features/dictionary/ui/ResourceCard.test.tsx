@@ -41,7 +41,6 @@ function renderCard(resource: ResourceInfo, extra: Partial<Parameters<typeof Res
   return render(
     <ResourceCard
       resource={resource}
-      index={0}
       sectionSize={1}
       onDelete={jest.fn()}
       {...extra}
@@ -54,10 +53,17 @@ beforeEach(() => {
 });
 
 describe('ResourceCard', () => {
-  it('renders name + meta "{wordCount} từ · format · relative time"', () => {
+  it('renders the filename stem + "{wordCount} từ" meta only', () => {
     renderCard(makeResource({ name: 'words.txt', wordCount: 42, format: 'txt' }));
-    expect(screen.getByText('words.txt')).toBeInTheDocument();
-    expect(screen.getByText(/42 từ · txt · hôm nay/)).toBeInTheDocument();
+    expect(screen.getByText('words')).toBeInTheDocument();
+    expect(screen.queryByText('words.txt')).not.toBeInTheDocument();
+    expect(screen.getByText('42 từ')).toBeInTheDocument();
+    expect(screen.queryByText(/txt ·|hôm nay/)).not.toBeInTheDocument();
+  });
+
+  it('strips compound extensions like .db.gz and .normalized.json', () => {
+    renderCard(makeResource({ name: 'JMdict.normalized.json' }));
+    expect(screen.getByText('JMdict')).toBeInTheDocument();
   });
 
   it('shows "đang thêm" when installationFinished is false', () => {
@@ -65,16 +71,18 @@ describe('ResourceCard', () => {
     expect(screen.getByText(/đang thêm/)).toBeInTheDocument();
   });
 
-  it('calls onDelete when the icon-only delete button is clicked', () => {
-    const onDelete = jest.fn();
-    renderCard(makeResource({ name: 'words.txt' }), { onDelete });
-    fireEvent.click(screen.getByTestId('delete-button-1'));
-    expect(onDelete).toHaveBeenCalled();
+  it('hides the delete button outside edit mode', () => {
+    renderCard(makeResource({ id: 1 }));
+    expect(screen.queryByTestId('delete-button-1')).not.toBeInTheDocument();
   });
 
-  it('has accessible aria-label for delete button', () => {
-    renderCard(makeResource({ name: 'words.txt' }));
-    expect(screen.getByLabelText('Xóa words.txt')).toBeInTheDocument();
+  it('calls onDelete from the delete button inside edit mode', () => {
+    const onDelete = jest.fn();
+    renderCard(makeResource({ id: 1, name: 'words.txt' }), { editing: true, onDelete });
+    const button = screen.getByTestId('delete-button-1');
+    expect(screen.getByLabelText('Xóa words')).toBe(button);
+    fireEvent.click(button);
+    expect(onDelete).toHaveBeenCalled();
   });
 
   it('toggle calls setResourceEnabled then onChanged', async () => {
@@ -96,21 +104,45 @@ describe('ResourceCard', () => {
     expect(screen.getByTestId('resource-card-9').className).toContain('cardDisabled');
   });
 
-  it('shows reorder buttons + priority hint when section has >1 resource', () => {
-    const onMove = jest.fn();
-    renderCard(makeResource({ id: 2 }), { index: 0, sectionSize: 2, onMove });
-    expect(screen.getByText('Ưu tiên 1')).toBeInTheDocument();
-    const up = screen.getByTestId('move-up-2');
-    const down = screen.getByTestId('move-down-2');
-    expect(up).toBeDisabled(); // first item can't go up
-    fireEvent.click(down);
-    expect(onMove).toHaveBeenCalledWith(1);
+  it('shows drag handle when section has >1 resource outside edit mode', () => {
+    renderCard(makeResource({ id: 2 }), { sectionSize: 2, onGripPointerDown: jest.fn(), onMove: jest.fn() });
+    expect(screen.getByTestId('drag-2')).toBeInTheDocument();
+    expect(screen.queryByText(/Ưu tiên/)).not.toBeInTheDocument();
   });
 
-  it('hides reorder controls for a single-resource section', () => {
-    renderCard(makeResource({ id: 3 }), { sectionSize: 1, onMove: jest.fn() });
-    expect(screen.queryByTestId('move-up-3')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('move-down-3')).not.toBeInTheDocument();
+  it('hides the grip inside edit mode (selection replaces reordering)', () => {
+    renderCard(makeResource({ id: 2 }), { sectionSize: 2, editing: true, onGripPointerDown: jest.fn() });
+    expect(screen.queryByTestId('drag-2')).not.toBeInTheDocument();
+  });
+
+  it('hides the drag handle for a single-resource section', () => {
+    renderCard(makeResource({ id: 3 }), { sectionSize: 1, onGripPointerDown: jest.fn(), onMove: jest.fn() });
+    expect(screen.queryByTestId('drag-3')).not.toBeInTheDocument();
+  });
+
+  it('grip pointerdown delegates to onGripPointerDown (section drag session)', () => {
+    const onGripPointerDown = jest.fn();
+    renderCard(makeResource({ id: 2 }), { sectionSize: 2, onGripPointerDown });
+    fireEvent(screen.getByTestId('drag-2'), new MouseEvent('pointerdown', { bubbles: true, clientY: 10 }));
+    expect(onGripPointerDown).toHaveBeenCalled();
+  });
+
+  it('keyboard reorder: ArrowUp/ArrowDown on the grip call onMove', () => {
+    const onMove = jest.fn();
+    renderCard(makeResource({ id: 2 }), { sectionSize: 2, onGripPointerDown: jest.fn(), onMove });
+    const grip = screen.getByTestId('drag-2');
+    fireEvent.keyDown(grip, { key: 'ArrowDown' });
+    expect(onMove).toHaveBeenCalledWith(1);
+    fireEvent.keyDown(grip, { key: 'ArrowUp' });
+    expect(onMove).toHaveBeenCalledWith(-1);
+  });
+
+  it('edit mode selects via the name button and does not expand', async () => {
+    const onSelect = jest.fn();
+    renderCard(makeResource({ id: 4 }), { editing: true, onSelect });
+    fireEvent.click(screen.getByTestId('select-4'));
+    expect(onSelect).toHaveBeenCalled();
+    await waitFor(() => expect(sampleFrequencyEntriesMock).not.toHaveBeenCalled());
   });
 
   it('lazy-loads sample entries only when expanded', async () => {

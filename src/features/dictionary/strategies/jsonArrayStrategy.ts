@@ -44,6 +44,11 @@ export class JsonArrayStrategy extends BaseFrequencyStrategy {
 
     // Streaming parse: extract strings one at a time via regex
     // Matches "..." strings inside the array. Use JSON.parse for correct unescape.
+    const countRegex = /"((?:[^"\\]|\\.)*)"/g;
+    let matchCount = 0;
+    while (countRegex.exec(trimmed) !== null) matchCount++;
+    this.reportTotal(matchCount);
+
     const stringRegex = /"((?:[^"\\]|\\.)*)"/g;
     let match: RegExpExecArray | null;
     let index = 0;

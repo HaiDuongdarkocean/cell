@@ -28,8 +28,8 @@
 
 .sm .gripDots {
   width: var(--iconbutton-icon-xs);
-  height: var(--iconbutton-icon-xs);
-  background-size: var(--space-1-5) var(--space-1-5);
+  height: calc(var(--iconbutton-icon-xs) / 3 * 2);
+  background-size: calc(var(--iconbutton-icon-xs) / 3) calc(var(--iconbutton-icon-xs) / 3);
 }
 
 .md {
@@ -39,8 +39,8 @@
 
 .md .gripDots {
   width: var(--iconbutton-icon-sm);
-  height: var(--iconbutton-icon-sm);
-  background-size: var(--space-2) var(--space-2);
+  height: calc(var(--iconbutton-icon-sm) / 3 * 2);
+  background-size: calc(var(--iconbutton-icon-sm) / 3) calc(var(--iconbutton-icon-sm) / 3);
 }
 
 .lg {
@@ -50,8 +50,8 @@
 
 .lg .gripDots {
   width: var(--iconbutton-icon-md);
-  height: var(--iconbutton-icon-md);
-  background-size: var(--space-2-5) var(--space-2-5);
+  height: calc(var(--iconbutton-icon-md) / 3 * 2);
+  background-size: calc(var(--iconbutton-icon-md) / 3) calc(var(--iconbutton-icon-md) / 3);
 }
 
 .dragHandle:hover {
@@ -68,7 +68,7 @@
   outline-offset: var(--space-0-5);
 }
 
-/* === Grip dots — two columns × three rows (6 dots via radial-gradient) === */
+/* === Grip dots — three columns × two rows (6 dots via radial-gradient) === */
 .gripDots {
   background-image: radial-gradient(circle, currentColor 1.5px, transparent 1.6px);
   background-position: center;

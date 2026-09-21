@@ -770,7 +770,7 @@ describe('lookupOrchestrator — resource controls', () => {
     expect(result.definitions).toEqual([]);
   });
 
-  it('filters dictionary resources by active language profile', async () => {
+  it('includes resources bound to other profiles (profile scoping removed)', async () => {
     const globalId = await addResource('en', {
       name: 'global.json',
       langCode: 'en',
@@ -810,7 +810,7 @@ describe('lookupOrchestrator — resource controls', () => {
       reading: '',
       altterm: '',
       pronunciation: '',
-      definition: 'should not appear for p2',
+      definition: 'profile-bound entries still appear',
       pos: 'noun',
       examples: '',
       audio: '',
@@ -828,7 +828,8 @@ describe('lookupOrchestrator — resource controls', () => {
     );
 
     expect(result.term).toBe('unknownword');
-    expect(result.definitions).toEqual([]);
+    expect(result.definitions).not.toEqual([]);
+    expect(result.definitions?.[0]?.text).toBe('profile-bound entries still appear');
   });
 
   it('uses explicit resource priority over resourceId descending', async () => {

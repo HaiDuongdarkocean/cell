@@ -29,9 +29,13 @@ const IMPORT_CHUNK_SIZE = 4 * 1024 * 1024;
 
 interface ImportCallbacks {
   readonly langCode: string;
+  /** Panel-minted job id — the row tracking this import. Falls back to an internal id. */
+  readonly jobId?: string;
   readonly onProgress?: ImportProgressCallback;
   readonly onResourceCreated?: (resourceId: number) => void;
   readonly onDuplicate?: (existing: ResourceInfo) => DuplicateDecision | Promise<DuplicateDecision>;
+  /** Called after each base64 chunk is acknowledged by the background. */
+  readonly onUploadProgress?: (sent: number, total: number) => void;
 }
 
 async function request<T>(type: string, payload: unknown): Promise<T> {
@@ -40,6 +44,20 @@ async function request<T>(type: string, payload: unknown): Promise<T> {
     throw new Error(res?.error ?? `${type} failed`);
   }
   return res.data as T;
+}
+
+type ResourceChangeListener = (langCode: string) => void;
+const changeListeners = new Set<ResourceChangeListener>();
+
+/** Subscribe to in-context resource mutations (same document). Returns an
+ *  unsubscribe fn — surfaces hosting a live lookup re-run it on change. */
+export function subscribeResourceChanges(listener: ResourceChangeListener): () => void {
+  changeListeners.add(listener);
+  return () => { changeListeners.delete(listener); };
+}
+
+function notifyResourcesChanged(langCode: string): void {
+  for (const listener of changeListeners) listener(langCode);
 }
 
 export async function listResources(langCode: string): Promise<ResourceInfo[]> {
@@ -56,6 +74,7 @@ export async function listResources(langCode: string): Promise<ResourceInfo[]> {
 
 export async function deleteResource(langCode: string, resourceId: number): Promise<void> {
   await request(MESSAGE_TYPES.RESOURCE_DELETE, { langCode, resourceId });
+  notifyResourcesChanged(langCode);
 }
 
 export async function reorderResources(
@@ -64,10 +83,12 @@ export async function reorderResources(
   orderedIds: readonly number[],
 ): Promise<void> {
   await request(MESSAGE_TYPES.RESOURCE_REORDER, { langCode, resourceType, orderedIds: [...orderedIds] });
+  notifyResourcesChanged(langCode);
 }
 
 export async function setResourceEnabled(langCode: string, resourceId: number, enabled: boolean): Promise<void> {
   await request(MESSAGE_TYPES.RESOURCE_SET_ENABLED, { langCode, resourceId, enabled });
+  notifyResourcesChanged(langCode);
 }
 
 export async function setResourceProfiles(
@@ -76,6 +97,7 @@ export async function setResourceProfiles(
   profileIds: readonly string[],
 ): Promise<void> {
   await request(MESSAGE_TYPES.RESOURCE_SET_PROFILES, { langCode, resourceId, profileIds: [...profileIds] });
+  notifyResourcesChanged(langCode);
 }
 
 export async function sampleDictionaryEntries(
@@ -145,7 +167,7 @@ export async function importResourceFile(
   resourceType: ResourceType,
   options: ImportCallbacks,
 ): Promise<ImportResult> {
-  const { langCode, onProgress, onResourceCreated, onDuplicate } = options;
+  const { langCode, jobId: providedJobId, onProgress, onResourceCreated, onDuplicate, onUploadProgress } = options;
 
   const signature = await computeSignature(file);
   const existing = (await listResources(langCode)).find((r) => r.signature === signature);
@@ -166,7 +188,7 @@ export async function importResourceFile(
   // ponytail: uniqueness only needs to disambiguate concurrent in-flight
   // imports on this page — time + random is enough (crypto.randomUUID is
   // unavailable in the jsdom test env).
-  const jobId = `imp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  const jobId = providedJobId ?? `imp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   const onProgressMessage = (message: unknown): void => {
     const msg = message as { type?: string; payload?: { jobId?: string; phase?: string; processed?: number; total?: number; resourceId?: number } };
     if (msg?.type !== MESSAGE_TYPES.RESOURCE_IMPORT_PROGRESS || msg.payload?.jobId !== jobId) return;
@@ -198,8 +220,10 @@ export async function importResourceFile(
           duplicateDecision: decision === 'replace' ? 'replace' : undefined,
         },
       );
+      onUploadProgress?.(seq + 1, total);
       if (last) result = res as ImportResult;
     }
+    if (!result!.skippedAsDuplicate) notifyResourcesChanged(langCode);
     return result!;
   } finally {
     removeOnMessageListener(onProgressMessage);

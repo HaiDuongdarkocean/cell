@@ -40,7 +40,8 @@ export interface StrategyResult {
 export interface StrategyOptions {
   readonly resourceId: number;
   readonly langCode: string;
-  readonly onProgress?: (processed: number) => void;
+  /** Progress: processed entries so far + exact attempted-entry total (0 = unknown). */
+  readonly onProgress?: (processed: number, total: number) => void;
   readonly signal?: AbortSignal;
 }
 
@@ -92,6 +93,12 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
 
   /** Hook 3: flush batch to repository. */
   protected abstract flushBatch(batch: ReadonlyArray<TStored>): Promise<void>;
+
+  /** Report the exact attempted-entry total once known (before first insert). */
+  protected reportTotal(total: number): void {
+    this.batchProcessor.setTotal(total);
+    this.options.onProgress?.(0, total);
+  }
 
   /** Helper: check if word is valid (non-empty after normalization). */
   protected isValidWord(word: string): boolean {

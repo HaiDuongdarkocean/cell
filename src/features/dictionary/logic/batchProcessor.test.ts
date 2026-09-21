@@ -42,15 +42,25 @@ describe('batchProcessor', () => {
     expect(flush).not.toHaveBeenCalled();
   });
 
-  it('calls onProgress after each flush', async () => {
+  it('calls onProgress after each flush with processed + total', async () => {
     const flush = jest.fn().mockResolvedValue(undefined);
     const onProgress = jest.fn();
     const bp = new BatchProcessor<number>(flush, onProgress);
+    bp.setTotal(6000);
     for (let i = 0; i < BATCH_SIZE; i++) await bp.add(i);
-    expect(onProgress).toHaveBeenCalledWith(BATCH_SIZE);
+    expect(onProgress).toHaveBeenCalledWith(BATCH_SIZE, 6000);
     for (let i = 0; i < 500; i++) await bp.add(i);
     await bp.flush();
-    expect(onProgress).toHaveBeenLastCalledWith(BATCH_SIZE + 500);
+    expect(onProgress).toHaveBeenLastCalledWith(BATCH_SIZE + 500, 6000);
+  });
+
+  it('reports 0 total until setTotal is called', async () => {
+    const flush = jest.fn().mockResolvedValue(undefined);
+    const onProgress = jest.fn();
+    const bp = new BatchProcessor<number>(flush, onProgress);
+    await bp.add(1);
+    await bp.flush();
+    expect(onProgress).toHaveBeenCalledWith(1, 0);
   });
 
   it('handles multiple flushes correctly', async () => {

@@ -108,13 +108,27 @@ export function DictionaryPanelView({
 
   const { searchTerm, setSearchTerm, search } = panel;
 
+  const restoredInitialRef = useRef(false);
   useEffect(() => {
     let cancelled = false;
     void loadSearchHistory().then((history) => {
-      if (!cancelled && history.length > 0) setSearchHistory(history);
+      if (cancelled || history.length === 0) return;
+      setSearchHistory(history);
+      // Integrated surfaces reopen on the last looked-up term so the panel is
+      // never blank on mount — and resource-change re-lookups have a term to
+      // replay. The popup variant always carries its own initialTerm.
+      if (
+        !restoredInitialRef.current
+        && variant === 'integrated'
+        && !initialTerm
+        && !initialResult
+      ) {
+        restoredInitialRef.current = true;
+        search(history[0]!);
+      }
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [variant, initialTerm, initialResult, search]);
 
   useEffect(() => {
     const term = panel.currentResult?.term;
@@ -281,7 +295,7 @@ export function DictionaryPanelView({
   }, [allCandidates, onCandidateChange]);
 
   return (
-    <div ref={containerRef} className={`${styles.dictionaryPanel} ${variant === 'popup' ? styles.popupMode : ''}`} data-cell-id="dictionary-panel">
+    <div ref={containerRef} className={`${styles.dictionaryPanel} ${variant === 'popup' ? styles.popupMode : styles.integratedMode}`} data-cell-id="dictionary-panel">
       {variant !== 'popup' && (
         <div className={styles.searchRow}>
           <SearchField

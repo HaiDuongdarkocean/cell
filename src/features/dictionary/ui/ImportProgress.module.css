@@ -1,28 +1,122 @@
-.progress {
+/* ImportProgress — water-fill job row. Pending = dashed frame + dimmed title;
+ * a primary-subtle fill rises from the bottom edge as entries stream in. */
+
+.job {
+  position: relative;
+  overflow: hidden;
+  border: var(--border-width-hairline) dashed var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-card);
+  min-height: 48px;
+}
+
+.jobQueued {
+  opacity: 0.7;
+}
+
+.jobError {
+  border-style: solid;
+  border-color: var(--color-destructive);
+}
+
+.jobDup {
+  border-style: solid;
+  border-color: var(--color-warning);
+}
+
+.fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-primary-subtle);
+  transition: height var(--duration-normal) var(--ease-standard);
+  pointer-events: none;
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  min-height: 48px;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metaMuted {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.metaOk {
+  font-size: var(--font-size-xs);
+  color: var(--color-leaf);
+}
+
+.metaErr {
+  font-size: var(--font-size-xs);
+  color: var(--color-destructive);
+}
+
+.metaDup {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-surface-card);
-  border: none;
-  border-radius: var(--radius-dialog);
-}
-
-.bar {
-  flex: 1;
-  min-width: var(--space-20);
-}
-
-.label {
+  gap: var(--space-2);
   font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  white-space: nowrap;
-  font-family: var(--font-family);
-  letter-spacing: var(--tracking-normal);
+  color: var(--color-warning);
 }
 
-/* Extra breathing room when the error alert wraps below the row. */
-.error {
-  margin-top: var(--space-2);
+.dupActions {
+  display: inline-flex;
+  gap: var(--space-2);
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.pct {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.iconOk {
+  color: var(--color-leaf);
+}
+
+.iconErr {
+  color: var(--color-destructive);
+}
+
+.iconDup {
+  color: var(--color-warning);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    transition: none;
+  }
 }

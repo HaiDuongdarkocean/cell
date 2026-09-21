@@ -2,6 +2,46 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-10);
+  container-type: inline-size;
+}
+
+/* Two-column surface: resource sections left, integrated lookup right.
+   Container query (not viewport): inside the ~480px settings dialog the
+   columns must stack, while a wide universal panel gets them side by side. */
+.columns {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.lookupColumn {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+@container (min-width: 860px) {
+  .columns {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .lookupColumn {
+    flex: 0 0 360px;
+    position: sticky;
+    top: var(--space-4);
+    max-height: calc(100vh - var(--space-8));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
 }
 
 /* Plain section group — no card surface (the parent Settings card already
@@ -14,8 +54,16 @@
 
 .sectionHeader {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.sectionHeaderText {
+  display: flex;
   flex-direction: column;
   gap: var(--space-0-5);
+  min-width: 0;
 }
 
 .sectionTitle {
@@ -56,6 +104,48 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  position: relative;
+}
+
+/* Drag session (useSectionDrag): the grabbed slot leaves the flow as a
+   floating ghost tracking the pointer, siblings translate to open the target
+   gap, and the dashed placeholder slides to that gap. Transforms transition
+   on .slot so every shift/settle animates; the ghost opts out while it tracks
+   the pointer 1:1 and re-joins transitions during settle. */
+.slot {
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.slotDragging {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  transition: none;
+  pointer-events: none;
+}
+
+.slotSettling {
+  transition: transform var(--duration-normal) var(--ease-standard);
+}
+
+.dropPlaceholder {
+  position: absolute;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  border: var(--border-width-hairline) dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+  transition: top var(--duration-fast) var(--ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot,
+  .slotSettling,
+  .dropPlaceholder {
+    transition: none;
+  }
 }
 
 .empty {
@@ -64,7 +154,7 @@
   padding: var(--space-4);
   text-align: center;
   background: var(--color-surface);
-  border-radius: var(--radius-dialog);
+  border-radius: var(--radius-lg);
   border: var(--border-width-hairline) dashed var(--color-border);
 }
 
