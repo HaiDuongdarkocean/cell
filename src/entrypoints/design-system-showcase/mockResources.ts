@@ -31,7 +31,7 @@ function makeResource(
 
 function buildFullResources(): ResourceInfo[] {
   return [
-    makeResource(1, 'CC-CEDICT (en)', 'DICTIONARY', 'yomitan', 'en', 0),
+    makeResource(1, 'CC-CEDICT (en)', 'DICTIONARY', 'term-bank', 'en', 0),
     makeResource(2, 'Oxford English Dictionary', 'DICTIONARY', 'json-array', 'en', 1),
     makeResource(3, 'Wordfreq top 50k', 'FREQUENCY', 'txt', 'en', 2),
   ];

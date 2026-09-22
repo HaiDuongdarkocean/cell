@@ -1,0 +1,21 @@
+{
+  "id": "i18n-t-call-module-scope-freezes-locale",
+  "title": "t() ở module scope đóng băng locale — option labels phải store MessageKey, resolve t() lúc render",
+  "category": ["rendering", "ux"],
+  "tags": ["i18n", "t()", "module-scope", "locale", "select-options", "pills", "frozen-translation"],
+  "trigger": "Bất kỳ options/labels/config record nào chứa chuỗi dịch được khai báo const ở top-level module (ngoài component/hook)",
+  "principle": "t() resolve theo locale TẠI THỜI ĐIỂM GỌI. Module-level const chạy một lần lúc import — trước khi language override/settings được apply — nên label bị đóng băng ở locale lúc import (thường English/fallback), bất kể UI sau đó đổi ngôn ngữ. Pattern đúng: module scope chỉ giữ MessageKey (type keyof en.json), map qua t() bên trong render/hook. Sweep pattern: grep `: t('` và `= t('` ở top-level (không nằm trong function) trong mọi file i18n hoá.",
+  "cases": [
+    {
+      "context": "Settings audit (settings-ux): WordBadgeSettingsPanel + DictionaryPopupSettingsPanel hiển thị English trong UI vi — nav/card title thì vi đúng",
+      "bad": "const POSITION_OPTIONS = [\n  { value: 'top', label: t('settings.wordBadge.position.top') },\n];\nconst TRIGGER_LABELS: Record<string, string> = {\n  click: t('settings.dictionaryPopup.openWith.click'),\n};",
+      "good": "const POSITION_OPTIONS: readonly { value: string; labelKey: MessageKey }[] = [\n  { value: 'top', labelKey: 'settings.wordBadge.position.top' },\n];\n// render: options={POSITION_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey) }))}"
+    }
+  ],
+  "applyFor": [
+    "Option arrays cho Select/MultiSelect/pills/segmented controls",
+    "Step/timeline config objects (STEPS, SECTION_COPY) chứa label/desc/ariaLabel",
+    "Records map enum→label ở module scope",
+    "Bất kỳ module nào gọi t() ngoài function body — kể cả trong map() chain ở top-level"
+  ]
+}

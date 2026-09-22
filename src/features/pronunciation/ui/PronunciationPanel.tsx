@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { t } from '@/shared/i18n';
 import { Button } from '@/shared/ui/Button';
 import { decodeAudioUrl } from '../services/audioDecoder';
 import { playPhoneme } from '../services/phonemeAudioPlayer';
@@ -104,7 +105,7 @@ export function PronunciationPanel({
   if (!pronunciation) return null;
 
   return (
-    <section className={styles.pronunciation} aria-label="Phonemes">
+    <section className={styles.pronunciation} aria-label={t('pronunciation.panel.aria')}>
       {pronunciation.ipa && (
         <div className={styles.ipa} data-cell-id="pronunciation-ipa">
           /{pronunciation.ipa}/

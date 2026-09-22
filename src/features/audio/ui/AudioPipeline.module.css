@@ -1,6 +1,8 @@
 .pipeline {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1) 0;
@@ -10,6 +12,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-0-5);
+  flex: 0 0 auto;
 }
 
 /* (0,2,0) beats shared Button's .button/.transparent chrome — the module
@@ -86,20 +89,6 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   user-select: none;
-}
-
-/* Mobile: scroll the pipeline horizontally instead of wrapping. */
-@media (max-width: 599px) {
-  .pipeline {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    padding-bottom: var(--space-1);
-  }
-
-  .stepWrapper {
-    flex: 0 0 auto;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

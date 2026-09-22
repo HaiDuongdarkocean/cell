@@ -154,9 +154,11 @@ export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlace
 
     let align: 'left' | 'right';
     if (menuAlign === 'left') {
-      align = menuWidth <= leftAvailable ? 'left' : 'right';
+      align =
+        menuWidth <= leftAvailable || leftAvailable >= rightAvailable ? 'left' : 'right';
     } else if (menuAlign === 'right') {
-      align = menuWidth <= rightAvailable ? 'right' : 'left';
+      align =
+        menuWidth <= rightAvailable || rightAvailable >= leftAvailable ? 'right' : 'left';
     } else {
       align = spaceRight >= spaceLeft ? 'right' : 'left';
       if (align === 'left' && menuWidth > leftAvailable) {

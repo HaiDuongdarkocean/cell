@@ -29,10 +29,15 @@ const VIEWPORT_OPTIONS: ViewportOption[] = [
 const HEIGHT_OPTIONS = [580, 720, 850];
 
 // ?lang=vi|en — lets QA exercise the localized strings in-context.
-setUiLanguageOverride(new URLSearchParams(location.search).get('lang') ?? '');
+const langParam = new URLSearchParams(location.search).get('lang');
+setUiLanguageOverride(langParam ?? '');
+const seededUiLanguage = langParam === 'en' || langParam === 'vi' ? langParam : null;
 
 export function Showcase(): ReactElement {
-  const [settings, setSettings] = useState<Settings>(getMockSettings());
+  const [settings, setSettings] = useState<Settings>(() => {
+    const base = getMockSettings();
+    return seededUiLanguage ? { ...base, uiLanguage: seededUiLanguage } : base;
+  });
   const [viewportWidth, setViewportWidth] = useState<ViewportWidth>(840);
   const [canvasHeight, setCanvasHeight] = useState<number>(720);
   const [viewMode, setViewMode] = useState<'direct' | 'dialog'>('direct');

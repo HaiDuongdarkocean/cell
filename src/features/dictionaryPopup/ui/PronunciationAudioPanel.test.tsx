@@ -1,7 +1,33 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { PronunciationAudioPanel } from './PronunciationAudioPanel';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { AudioItem } from '@/entities/dictionary';
+
+jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
+  sendMessage: jest.fn(async () => ({ success: true })),
+}));
+
+const mockSendMessage = jest.mocked(sendMessage);
+
+const audioPlaySpy = (): { constructed: string[]; plays: number; restore: () => void } => {
+  const rec = { constructed: [] as string[], plays: 0 };
+  const Orig = window.Audio;
+  (window as unknown as { Audio: typeof Audio }).Audio = class extends Orig {
+    constructor(url?: string) {
+      super(url);
+      rec.constructed.push(String(url));
+      const origPlay = this.play.bind(this);
+      this.play = (): Promise<void> => { rec.plays += 1; return origPlay().catch(() => undefined); };
+    }
+  } as typeof Audio;
+  return {
+    constructed: rec.constructed,
+    get plays() { return rec.plays; },
+    restore: () => { (window as unknown as { Audio: typeof Audio }).Audio = Orig; },
+  };
+};
 
 function makeAudio(id: string, kind: AudioItem['kind'], label: string, url?: string, selected = false): AudioItem {
   return {
@@ -88,7 +114,7 @@ describe('PronunciationAudioPanel', () => {
     expect(onTtsSentence).toHaveBeenCalled();
   });
 
-  it('renders word audio items by default and toggles selection', () => {
+  it('renders word audio items by default and toggles selection via the checkbox', () => {
     const onToggle = jest.fn();
     const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
     render(
@@ -103,11 +129,11 @@ describe('PronunciationAudioPanel', () => {
     const panel = screen.getByTestId('dictionary-audio-panel');
     expect(within(panel).getByText('Test')).toBeInTheDocument();
 
-    fireEvent.click(within(panel).getByText('Test'));
+    fireEvent.click(within(panel).getByRole('checkbox'));
     expect(onToggle).toHaveBeenCalledWith('a1', true);
   });
 
-  it('renders the label as plain text — the row itself is the checkbox host', () => {
+  it('renders the label as plain text — the row plays, the check box selects', () => {
     const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
     render(
       <PronunciationAudioPanel
@@ -120,64 +146,84 @@ describe('PronunciationAudioPanel', () => {
     const panel = screen.getByTestId('dictionary-audio-panel');
     expect(within(panel).getByText('Test').closest('button')).toBeNull();
 
-    const row = within(panel).getByRole('checkbox');
-    expect(row).toHaveAttribute('aria-checked', 'true');
+    const box = within(panel).getByRole('checkbox');
+    expect(box).toHaveAttribute('aria-checked', 'true');
   });
 
-  it('toggles selection when clicking the row outside the label', () => {
-    const onToggle = jest.fn();
-    const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
-    render(
-      <PronunciationAudioPanel
-        {...baseProps}
-        items={[item]}
-        selection={selection([['a1', false]])}
-        onToggle={onToggle}
-      />,
-    );
+  it('plays the item when clicking the row or the label', () => {
+    const spy = audioPlaySpy();
+    try {
+      const onToggle = jest.fn();
+      const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
+      render(
+        <PronunciationAudioPanel
+          {...baseProps}
+          items={[item]}
+          selection={selection([['a1', false]])}
+          onToggle={onToggle}
+        />,
+      );
 
-    const panel = screen.getByTestId('dictionary-audio-panel');
-    fireEvent.click(within(panel).getByRole('checkbox'));
-    expect(onToggle).toHaveBeenCalledWith('a1', true);
+      const panel = screen.getByTestId('dictionary-audio-panel');
+      fireEvent.click(within(panel).getByText('Test'));
+      expect(spy.constructed).toEqual(['https://audio/1']);
+      expect(onToggle).not.toHaveBeenCalled();
+
+      fireEvent.click(within(panel).getByRole('button', { name: /Play Test · forvo/i }));
+      expect(spy.constructed.length).toBe(2);
+    } finally {
+      spy.restore();
+    }
   });
 
-  it('does not toggle selection when clicking the play button', () => {
-    const onToggle = jest.fn();
-    const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
-    render(
-      <PronunciationAudioPanel
-        {...baseProps}
-        items={[item]}
-        selection={selection([['a1', false]])}
-        onToggle={onToggle}
-      />,
-    );
+  it('does not toggle selection when clicking the row play button', () => {
+    const spy = audioPlaySpy();
+    try {
+      const onToggle = jest.fn();
+      const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
+      render(
+        <PronunciationAudioPanel
+          {...baseProps}
+          items={[item]}
+          selection={selection([['a1', false]])}
+          onToggle={onToggle}
+        />,
+      );
 
-    const panel = screen.getByTestId('dictionary-audio-panel');
-    fireEvent.click(within(panel).getByRole('button', { name: /Play Test · forvo/i }));
-    expect(onToggle).not.toHaveBeenCalled();
+      const panel = screen.getByTestId('dictionary-audio-panel');
+      fireEvent.click(within(panel).getByRole('button', { name: /Play Test · forvo/i }));
+      expect(onToggle).not.toHaveBeenCalled();
+      expect(spy.constructed).toEqual(['https://audio/1']);
+    } finally {
+      spy.restore();
+    }
   });
 
-  it('toggles on Space/Enter from the row but not from the play button', () => {
-    const onToggle = jest.fn();
-    const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
-    render(
-      <PronunciationAudioPanel
-        {...baseProps}
-        items={[item]}
-        selection={selection([['a1', false]])}
-        onToggle={onToggle}
-      />,
-    );
+  it('plays on Space/Enter from the row and toggles from the checkbox', () => {
+    const spy = audioPlaySpy();
+    try {
+      const onToggle = jest.fn();
+      const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
+      render(
+        <PronunciationAudioPanel
+          {...baseProps}
+          items={[item]}
+          selection={selection([['a1', false]])}
+          onToggle={onToggle}
+        />,
+      );
 
-    const panel = screen.getByTestId('dictionary-audio-panel');
-    const row = within(panel).getByRole('checkbox');
-    fireEvent.keyDown(row, { key: ' ' });
-    expect(onToggle).toHaveBeenCalledWith('a1', true);
+      const panel = screen.getByTestId('dictionary-audio-panel');
+      const box = within(panel).getByRole('checkbox');
+      fireEvent.keyDown(box, { key: ' ' });
+      expect(onToggle).toHaveBeenCalledWith('a1', true);
 
-    onToggle.mockClear();
-    fireEvent.keyDown(within(panel).getByRole('button', { name: /Play/i }), { key: ' ' });
-    expect(onToggle).not.toHaveBeenCalled();
+      const row = within(panel).getByRole('button', { name: /Play Test · forvo/i });
+      fireEvent.keyDown(row, { key: 'Enter' });
+      expect(spy.constructed.length).toBeGreaterThanOrEqual(1);
+    } finally {
+      spy.restore();
+    }
   });
 
   it('switches to sentence audio group and renders sentence items', () => {
@@ -213,5 +259,34 @@ describe('PronunciationAudioPanel', () => {
     // TTS fallback for sentence: "hello world · TTS"
     expect(within(panel).getByText('hello world')).toBeInTheDocument();
     expect(within(panel).getByText('TTS')).toBeInTheDocument();
+  });
+
+  it('shows a reconnect hint and asks background to open the Cell page', () => {
+    mockSendMessage.mockClear();
+    render(
+      <PronunciationAudioPanel
+        {...baseProps}
+        items={[]}
+        localAudioNeedsRegrant
+      />,
+    );
+
+    const hint = screen.getByTestId('local-audio-reconnect');
+    fireEvent.click(hint);
+    expect(mockSendMessage).toHaveBeenCalledWith({
+      type: MESSAGE_TYPES.LOCAL_AUDIO_OPEN_RECONNECT,
+      payload: {},
+    });
+  });
+
+  it('hides the reconnect hint when local audio does not need it', () => {
+    render(
+      <PronunciationAudioPanel
+        {...baseProps}
+        items={[]}
+      />,
+    );
+
+    expect(screen.queryByTestId('local-audio-reconnect')).not.toBeInTheDocument();
   });
 });

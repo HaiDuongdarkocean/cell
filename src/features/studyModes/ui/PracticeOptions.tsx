@@ -1,5 +1,6 @@
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import { Text, Chip, Select, HStack, VStack } from '@/shared/ui';
+import { t, type MessageKey } from '@/shared/i18n';
 import type { SubtitlePracticeMode } from '../lib/subtitlePractice';
 import styles from './PracticeOptions.module.css';
 
@@ -11,10 +12,10 @@ const SPEED_OPTIONS = [
   { value: '1.5', label: '1.5x' },
 ];
 
-const MODE_LABEL: Record<SubtitlePracticeMode, string> = {
-  off: 'Off',
-  dictation: 'Dictation',
-  cloze: 'Cloze',
+const MODE_KEYS: Record<SubtitlePracticeMode, MessageKey> = {
+  off: 'studyModes.practice.off',
+  dictation: 'studyModes.practice.dictation',
+  cloze: 'studyModes.practice.cloze',
 };
 
 export interface PracticeOptionsProps {
@@ -32,9 +33,9 @@ export function PracticeOptions({
 }: PracticeOptionsProps): React.JSX.Element {
   return (
     <VStack className={styles.practiceOptions} data-cell-id="practice-options" gap="2">
-      <HStack align="center" gap="2" className={styles.row} role="radiogroup" aria-label="Practice mode">
+      <HStack align="center" gap="2" className={styles.row} role="radiogroup" aria-label={t('studyModes.practice.optionsAria')}>
         <Text variant="label" color="secondary" className={styles.eyebrow} as="span">
-          Practice
+          {t('studyModes.practice.title')}
         </Text>
         <HStack align="center" gap="2" className={styles.chipRow}>
           {(['off', 'dictation', 'cloze'] as const).map((candidate) => (
@@ -51,20 +52,20 @@ export function PracticeOptions({
               type="button"
               onClick={() => onModeChange(candidate)}
             >
-              {MODE_LABEL[candidate]}
+              {t(MODE_KEYS[candidate])}
             </Chip>
           ))}
         </HStack>
       </HStack>
       <HStack align="center" gap="2" className={styles.row}>
         <Text variant="label" color="secondary" className={styles.eyebrow} as="span">
-          Speed
+          {t('studyModes.step.speed')}
         </Text>
         <div className={styles.speedSelect}>
           <Select
             id="practice-speed"
             data-cell-id="practice-speed"
-            aria-label="Playback speed"
+            aria-label={t('studyModes.speed.aria')}
             size="sm"
             value={String(playbackSpeed)}
             options={SPEED_OPTIONS}

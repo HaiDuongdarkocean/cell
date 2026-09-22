@@ -1,19 +1,19 @@
 /**
  * Lingvo DSL (.dsl) audio parser.
  *
- * Extracts headword -> audio file path mappings from a Lingvo DSL dictionary.
- * Assumes the conventional entry shape where the headword itself is the opening
- * tag:
+ * Standard Lingvo layout: headword lines start at column 0, card body lines
+ * are indented with a space or tab. A card is one or more consecutive
+ * headword lines (alternative spellings of the same entry) followed by its
+ * indented body:
  *
- *   [hello]
- *     [m] ... [s]audio.mp3[/s] ... [/m]
- *   [/hello]
+ *   hello
+ *   	[m1][s]en/jessica/hello.mp3[/s] [i]jessica[/i][/m1]
  *
- * Tolerant of unknown inner tags and missing sections — any `[s]...[/s]`
- * inside an entry is collected as an audio path.
+ * Sound references are `[s]path[/s]` tags inside the body. `#` header
+ * directives and blank lines carry no card content.
  *
  * ponytail: loads the entire `.dsl` text into memory. For a ~38 MB index this
- * is fine in MVP; replace with a streaming TextDecoder if packages grow > 50 MB.
+ * is fine; replace with a streaming TextDecoder if packages grow > 50 MB.
  */
 
 export interface LingvoDslIndexEntry {
@@ -27,74 +27,68 @@ export interface LingvoDslIndexEntry {
   readonly audioPaths: readonly string[];
 }
 
-const TAG_OPEN_RE = /^\[([^\]\s]+)\]\s*$/;
-const TAG_CLOSE_RE = /^\[\/([^\]\s]+)\]\s*$/;
+const DIRECTIVE_RE = /^#[A-Z_]+/;
+const BODY_LINE_RE = /^[ \t]/;
 const SOUND_TAG_RE = /\[s\]([^[\]]+)\[\/s\]/g;
+const ESCAPE_RE = /\\(.)/g;
 
 /** Normalize a headword for lookup: NFC, lowercase, trim whitespace. */
 function normalizeTerm(term: string): string {
   return term.normalize('NFC').trim().toLowerCase();
 }
 
+/** DSL escapes punctuation in headwords: `\[` `\]` `\(` `\)` `\\` `\~`. */
+function unescapeHeadword(raw: string): string {
+  return raw.replace(ESCAPE_RE, '$1');
+}
+
 /** Parse a raw `.dsl` string into index entries. */
 export function parseLingvoDsl(text: string, packageId: string): LingvoDslIndexEntry[] {
-  const entries: LingvoDslIndexEntry[] = [];
-  const lines = text.split(/\r?\n/);
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
 
-  let currentHeadword: string | null = null;
-  let currentBuffer = '';
+  const pathsByTerm = new Map<string, Set<string>>();
+  let headwords: string[] = [];
+  let buffer = '';
 
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line) continue;
-
-    // Header / directive lines appear outside entries.
-    if (line.startsWith('#')) continue;
-
-    const openMatch: RegExpExecArray | null = !currentHeadword ? TAG_OPEN_RE.exec(line) : null;
-    if (openMatch) {
-      currentHeadword = openMatch[1];
-      currentBuffer = '';
-      continue;
-    }
-
-    const closeMatch: RegExpExecArray | null = currentHeadword ? TAG_CLOSE_RE.exec(line) : null;
-    if (closeMatch && currentHeadword && closeMatch[1] === currentHeadword) {
-      const audioPaths = extractAudioPaths(currentBuffer);
-      if (audioPaths.length > 0) {
-        const term = normalizeTerm(currentHeadword);
-        entries.push({
-          id: `${packageId}:${term}`,
-          packageId,
-          term,
-          audioPaths,
-        });
-      }
-      currentHeadword = null;
-      currentBuffer = '';
-      continue;
-    }
-
-    if (currentHeadword) {
-      currentBuffer += `${line}\n`;
-    }
-  }
-
-  // Flush any dangling entry.
-  if (currentHeadword) {
-    const audioPaths = extractAudioPaths(currentBuffer);
+  const flush = (): void => {
+    const audioPaths = extractAudioPaths(buffer);
+    buffer = '';
     if (audioPaths.length > 0) {
-      const term = normalizeTerm(currentHeadword);
-      entries.push({
-        id: `${packageId}:${term}`,
-        packageId,
-        term,
-        audioPaths,
-      });
+      for (const raw of headwords) {
+        const term = normalizeTerm(unescapeHeadword(raw));
+        if (!term) continue;
+        let set = pathsByTerm.get(term);
+        if (!set) {
+          set = new Set();
+          pathsByTerm.set(term, set);
+        }
+        for (const path of audioPaths) set.add(path);
+      }
     }
-  }
+    headwords = [];
+  };
 
-  return entries;
+  for (const line of text.split(/\r?\n/)) {
+    if (line.trim() === '') {
+      flush();
+      continue;
+    }
+    if (DIRECTIVE_RE.test(line)) continue;
+    if (BODY_LINE_RE.test(line)) {
+      if (headwords.length > 0) buffer += `${line}\n`;
+      continue;
+    }
+    if (buffer !== '') flush();
+    headwords.push(line);
+  }
+  flush();
+
+  return [...pathsByTerm.entries()].map(([term, paths]) => ({
+    id: `${packageId}:${term}`,
+    packageId,
+    term,
+    audioPaths: [...paths],
+  }));
 }
 
 function extractAudioPaths(buffer: string): readonly string[] {

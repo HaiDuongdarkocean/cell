@@ -1,0 +1,20 @@
+{
+  "id": "unpacked-ext-sw-stale-bytecode",
+  "title": "Unpacked-extension service worker keeps running stale code after rebuild — verify the running bundle before trusting measurements",
+  "category": ["testing", "process"],
+  "tags": ["service-worker", "mv3", "quetta", "load-extension", "stale-code", "measurement", "profiling", "version-bump"],
+  "trigger": "E2E/browser measurements don't change after rebuilding dist, or instrumentation markers never appear in the SW global scope",
+  "principle": "Quetta (and Chromium forks) can keep an unpacked extension's service worker on the previously registered script across browser restarts and even across `registration.update()` — the loader file is re-served from cache. Content scripts DO load fresh per page, so UI-side changes appear to work while every SW-side change is silently dead. Hours of profiling can measure old code. Reliable invalidation: bump `manifest.version` in the source manifest (dist differs → extension update → SW reinstall). Verify the running code with a module-load marker (e.g. `globalThis.__orchLoaded = Date.now()` at module top) read back via `serviceWorker.evaluate()` — if the marker is absent after a lookup, the SW is stale. Note `--load-extension` pointing at a different directory with the same extension ID is ignored when the profile already has that ID registered.",
+  "cases": [
+    {
+      "context": "Dictionary lookup optimization on real Quetta: phraseIndexCache + ArrayBuffer blob changes built into dist, loader pointed at the new hashed bundle, yet all LOOKUP_REQUEST timings stayed ~1.3-1.8s and __lt/__orchLoaded markers stayed undefined — the SW was executing the pre-change bundle the whole time.",
+      "bad": "Rebuild dist → relaunch browser with --load-extension=dist → measure → conclude the optimization didn't help.",
+      "good": "Bump manifest version (or relaunch until the SW re-registers) → confirm a load-marker global exists in sw.evaluate() → THEN measure. world cold 679ms / warm 10ms on the new code vs ~1.3s phantom 'warm' on the old code."
+    }
+  ],
+  "applyFor": [
+    "Any real-browser verification of SW-side changes on an unpacked MV3 extension",
+    "When UI metrics improve but message-level/SW metrics don't move after a rebuild",
+    "Before claiming a performance regression or fix — always prove which code the SW ran"
+  ]
+}

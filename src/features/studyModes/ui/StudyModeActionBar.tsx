@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { t } from '@/shared/i18n';
 import { HStack, Button, Icon } from '@/shared/ui';
 import { PRESETS } from '@/entities/studyMode/constants';
 import type { StudyMode } from '@/entities/studyMode';
@@ -101,7 +102,7 @@ export function StudyModeActionBar({
           variant="secondary"
           ripple={false}
           className={styles.arrow}
-          aria-label="Scroll study modes left"
+          aria-label={t('studyModes.actionBar.scrollLeft')}
           data-cell-id="study-mode-scroll-left"
           onClick={() => scrollBy(-1)}
         >
@@ -113,7 +114,7 @@ export function StudyModeActionBar({
         className={styles.scrollTrack}
         data-cell-id="study-mode-scroll-track"
         role="tablist"
-        aria-label="Study modes"
+        aria-label={t('studyModes.actionBar.aria')}
         aria-orientation="horizontal"
         onKeyDown={handleKeyDown}
         onBlur={handleBlur}
@@ -126,7 +127,7 @@ export function StudyModeActionBar({
             variant={activeModeId === mode.id ? 'primary' : 'secondary'}
             active={activeModeId === mode.id}
             ripple={false}
-            aria-label={mode.title}
+            aria-label={mode.titleKey ? t(mode.titleKey) : mode.title}
             aria-selected={activeModeId === mode.id}
             role="tab"
             tabIndex={focusId === mode.id ? 0 : -1}
@@ -146,7 +147,7 @@ export function StudyModeActionBar({
           variant="secondary"
           ripple={false}
           className={styles.arrow}
-          aria-label="Scroll study modes right"
+          aria-label={t('studyModes.actionBar.scrollRight')}
           data-cell-id="study-mode-scroll-right"
           onClick={() => scrollBy(1)}
         >

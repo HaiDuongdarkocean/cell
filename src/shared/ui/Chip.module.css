@@ -26,7 +26,7 @@
 /* === Variants === */
 .default {
   background: var(--color-field);
-  color: var(--color-text-secondary);
+  color: var(--color-text);
 }
 
 .outline {
@@ -47,7 +47,7 @@
 
 .primary {
   background: var(--color-primary-subtle);
-  color: var(--color-primary);
+  color: var(--color-text-accent-strong);
 }
 
 .warning {
@@ -63,7 +63,7 @@
 /* === Selected state === */
 .selected {
   background: var(--color-primary-subtle);
-  color: var(--color-primary);
+  color: var(--color-text-accent-strong);
 }
 
 /* === Interactive (button) hover/active === */

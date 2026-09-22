@@ -19,6 +19,7 @@ import type {
   ImageItem,
   ExternalDictLink,
   FetchImagesResponse,
+  LocalAudioStateResponse,
   TtsFetchAudioResponse,
 } from '@/entities/dictionary';
 import { t } from '@/shared/i18n';
@@ -69,6 +70,7 @@ export interface UseDictionaryToolbarReturn {
   readonly audioItems: readonly AudioItem[];
   readonly audioLoading: boolean;
   readonly audioError: string | null;
+  readonly localAudioNeedsRegrant: boolean;
   readonly audioSelection: Map<string, boolean>;
   readonly toggleAudio: (id: string, selected: boolean) => void;
   readonly selectedAudioCount: number;
@@ -131,6 +133,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   const [audioItems, setAudioItems] = useState<readonly AudioItem[]>(initialAudioItems ?? []);
   const [audioLoading, setAudioLoading] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const [localAudioNeedsRegrant, setLocalAudioNeedsRegrant] = useState(false);
   const [audioSelection, setAudioSelection] = useState<Map<string, boolean>>(
     initialAudioSelection ? new Map(initialAudioSelection) : new Map(),
   );
@@ -171,6 +174,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     setAudioItems(nextAudioItems ?? []);
     setAudioLoading(false);
     setAudioError(null);
+    setLocalAudioNeedsRegrant(false);
     setAudioSelection(nextAudioSelection ? new Map(nextAudioSelection) : new Map());
     setImageItems(nextImageItems ?? []);
     setImageLoading(false);
@@ -207,16 +211,27 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     return (async (): Promise<readonly AudioItem[]> => {
       try {
         // If loadSettings hangs, fall back to defaults so the audio API still gets a chance.
-        const [settings, sentenceTtsRes] = await Promise.all([
-          withTimeout(loadSettings(), 5_000).catch(() => DEFAULT_SETTINGS),
-          withTimeout(
-            sendMessage<MessageResponse<TtsFetchAudioResponse>>({
-              type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
-              payload: { tabId: 0, text: contextSentence.trim() || result.term, langCode: result.langCode },
-            }),
-            8_000,
-          ).catch(() => undefined),
-        ]);
+        const settingsP = withTimeout(loadSettings(), 5_000).catch(() => DEFAULT_SETTINGS);
+        const sentenceTtsP = withTimeout(
+          sendMessage<MessageResponse<TtsFetchAudioResponse>>({
+            type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
+            payload: { tabId: 0, text: contextSentence.trim() || result.term, langCode: result.langCode },
+          }),
+          8_000,
+        ).catch(() => undefined);
+        const localAudioStateP = withTimeout(
+          sendMessage<MessageResponse<LocalAudioStateResponse>>({
+            type: MESSAGE_TYPES.LOCAL_AUDIO_STATE,
+            payload: {},
+          }),
+          8_000,
+        ).catch(() => undefined);
+
+        const [settings, localAudioState] = await Promise.all([settingsP, localAudioStateP]);
+
+        const needsRegrant = localAudioState?.success === true
+          && localAudioState.data?.configured === true
+          && (localAudioState.data.permission === 'prompt' || localAudioState.data.permission === 'denied');
 
         const orchestrator = new PronunciationAudioOrchestrator(
           settings.pronunciation ?? DEFAULT_PRONUNCIATION_SETTINGS,
@@ -226,9 +241,18 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
           15_000,
         );
 
-        const sentenceItems: AudioItem[] = [];
+        if (mountedRef.current) {
+          setLocalAudioNeedsRegrant(needsRegrant);
+          if (wordItems.length > 0 || audioItems.length > 0) {
+            setAudioItems(wordItems);
+            setAudioSelection(new Map());
+          }
+        }
+
+        const sentenceTtsRes = await sentenceTtsP;
+        const items: AudioItem[] = [...wordItems];
         if (sentenceTtsRes?.success && sentenceTtsRes.data?.url) {
-          sentenceItems.push({
+          items.push({
             id: `tts-sentence-${result.term}`,
             kind: 'sentence',
             source: 'system-tts',
@@ -239,16 +263,14 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
           });
         }
 
-        const items: AudioItem[] = [...wordItems, ...sentenceItems];
-
         if (items.length === 0) {
           if (sentenceTtsRes?.error) console.warn('[dict] audio fetch failed:', sentenceTtsRes.error);
           setAudioError(t('dict.error.audio'));
         }
 
-        if (mountedRef.current && (items.length > 0 || audioItems.length > 0)) {
+        if (mountedRef.current && items.length !== wordItems.length) {
           setAudioItems(items);
-          setAudioSelection(new Map());
+          if (wordItems.length === 0) setAudioSelection(new Map());
         }
 
         return items;
@@ -417,6 +439,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     audioItems,
     audioLoading,
     audioError,
+    localAudioNeedsRegrant,
     audioSelection,
     toggleAudio,
     selectedAudioCount,

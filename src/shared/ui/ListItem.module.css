@@ -19,7 +19,7 @@
   }
   .active:hover {
     background: var(--color-primary-subtle);
-    color: var(--color-primary);
+    color: var(--color-text-accent-strong);
   }
 }
 
@@ -30,7 +30,7 @@
 
 .active {
   background: var(--color-primary-subtle);
-  color: var(--color-primary);
+  color: var(--color-text-accent-strong);
 }
 
 .leading,

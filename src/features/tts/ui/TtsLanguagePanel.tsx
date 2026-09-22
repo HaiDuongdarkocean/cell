@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { t } from '@/shared/i18n';
 import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { TtsDownloadProgressPayloadSchema } from '@/entities/message/dictionarySchemas';
@@ -68,7 +69,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
           payload: { language },
         });
         if (!response.success) {
-          throw new Error(response.error ?? 'Tải voice pack thất bại');
+          throw new Error(response.error ?? t('tts.local.downloadFailed'));
         }
         onSave({
           ...settings,
@@ -125,11 +126,11 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
   return (
     <div className={styles.panel}>
       <SettingsRow>
-        <Label className={styles.rowLabel}>Local TTS (Supertonic v3)</Label>
+        <Label className={styles.rowLabel}>{t('tts.local.label')}</Label>
         <Toggle
           checked={settings.localTtsEnabled}
           onChange={setLocalTtsEnabled}
-          ariaLabel="Bật tắt local TTS"
+          ariaLabel={t('tts.local.aria')}
           dataTestId="local-tts-toggle"
         />
       </SettingsRow>
@@ -138,23 +139,23 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
         <>
           {settings.downloadedLanguages.length > 0 && (
             <SettingsRow className={styles.row}>
-              <Label className={styles.rowLabel}>Ngôn ngữ phát mặc định</Label>
+              <Label className={styles.rowLabel}>{t('tts.local.defaultLang')}</Label>
               <Select
                 value={settings.localTtsLanguage}
                 options={languageOptions}
                 onChange={setLocalTtsLanguage}
-                placeholder="Chọn ngôn ngữ"
+                placeholder={t('tts.local.pickLang')}
                 data-cell-id="local-tts-language-select"
               />
             </SettingsRow>
           )}
 
           <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>Voice pack đã tải</span>
+            <span className={styles.sectionTitle}>{t('tts.local.downloaded')}</span>
           </div>
 
           {settings.downloadedLanguages.length === 0 && (
-            <p className={styles.empty}>Chưa có voice pack nào.</p>
+            <p className={styles.empty}>{t('tts.local.empty')}</p>
           )}
 
           {settings.downloadedLanguages.map((language) => {
@@ -163,15 +164,15 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
               <SettingsRow key={language} className={styles.languageRow}>
                 <div className={styles.languageInfo}>
                   <span className={styles.languageName}>{language}</span>
-                  {hidden && <span className={styles.hiddenBadge}>Ẩn</span>}
+                  {hidden && <span className={styles.hiddenBadge}>{t('tts.local.hidden')}</span>}
                   {downloading === language && (
-                    <span className={styles.downloadingBadge}>Đang tải…</span>
+                    <span className={styles.downloadingBadge}>{t('tts.local.downloading')}</span>
                   )}
                 </div>
                 <div className={styles.actions}>
                   <Button shape="circle"
-                    aria-label={hidden ? `Hiện ${language}` : `Ẩn ${language}`}
-                    title={hidden ? 'Hiện' : 'Ẩn'}
+                    aria-label={hidden ? t('tts.local.show', [language]) : t('tts.local.hide', [language])}
+                    title={hidden ? t('tts.local.showTitle') : t('tts.local.hideTitle')}
                     variant="ghost"
                     size="sm"
                     onClick={() => toggleHidden(language)}
@@ -180,8 +181,8 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
                     <Icon name="eyeOff" />
                   </Button>
                   <Button shape="circle"
-                    aria-label={`Tải lại ${language}`}
-                    title="Tải lại"
+                    aria-label={t('tts.local.redownload', [language])}
+                    title={t('tts.local.redownloadTitle')}
                     variant="ghost"
                     size="sm"
                     disabled={downloading === language}
@@ -191,8 +192,8 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
                     <Icon name="rotateCcw" />
                   </Button>
                   <Button shape="circle"
-                    aria-label={`Xóa ${language}`}
-                    title="Xóa"
+                    aria-label={t('tts.local.delete', [language])}
+                    title={t('tts.local.deleteTitle')}
                     variant="ghost"
                     size="sm"
                     disabled={downloading === language}
@@ -222,7 +223,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
                 (o) => !settings.downloadedLanguages.includes(o.value),
               )}
               onChange={setSelectedAdd}
-              placeholder="Thêm ngôn ngữ"
+              placeholder={t('tts.local.addLang')}
               data-cell-id="local-tts-add-select"
               className={styles.addSelect}
             />
@@ -238,7 +239,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
               }}
               data-cell-id="local-tts-download-btn"
             >
-              Tải
+              {t('tts.local.download')}
             </Button>
           </div>
 

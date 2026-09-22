@@ -381,6 +381,18 @@ export const MESSAGE_REGISTRY = {
     direction: 'cs->bg',
     owner: 'background/handlers/localAudio',
   },
+  [MESSAGE_TYPES.LOCAL_AUDIO_STATE]: {
+    type: MESSAGE_TYPES.LOCAL_AUDIO_STATE,
+    schema: EmptyPayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/localAudio',
+  },
+  [MESSAGE_TYPES.LOCAL_AUDIO_OPEN_RECONNECT]: {
+    type: MESSAGE_TYPES.LOCAL_AUDIO_OPEN_RECONNECT,
+    schema: EmptyPayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/localAudio',
+  },
   [MESSAGE_TYPES.FETCH_IMAGES]: {
     type: MESSAGE_TYPES.FETCH_IMAGES,
     schema: FetchImagesPayloadSchema,

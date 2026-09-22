@@ -1,11 +1,11 @@
 // phraseIndexBuilder — ADR-037 §7.2: build phrase index blob during import.
 //
-// Collects multiword terms from stored Cambridge dictionary entries, parses
+// Collects multiword terms from stored entry-object dictionary entries, parses
 // each into an AST, filters to supported templates, compiles a compact anchor
 // index, and serializes the blob. Definitions/examples/media stay out of the
 // blob — only AST + anchor postings.
 //
-// Called by importOrchestrator after the Cambridge strategy succeeds and
+// Called by importOrchestrator after the json-entries strategy succeeds and
 // before the resource is marked installationFinished=true. A builder failure
 // rolls back the whole import (entries + blob + resource).
 
@@ -27,7 +27,7 @@ import { putPhraseIndex } from '../repositories/phraseIndexRepository';
  * inflectableLiterals (see buildPhraseIndexForResource). This set is kept
  * only for backward compatibility with tests that import it directly.
  *
- * Sourced from the most common Cambridge phrasal-verb heads. A literal not in
+ * Sourced from the most common phrasal-verb heads in entry-object dictionaries. A literal not in
  * this set is matched verbatim — safer to under-approximate than to mark a
  * non-verb as inflectable.
  */
@@ -58,7 +58,7 @@ export interface PhraseIndexBuildResult {
 }
 
 /**
- * Build and persist the phrase index blob for a Cambridge dictionary resource.
+ * Build and persist the phrase index blob for an entry-object dictionary resource.
  *
  * Reads stored dictionary entries, collects multiword terms, parses + compiles
  * the supported subset, and calls putPhraseIndex. Throws on any failure — the
@@ -83,7 +83,7 @@ export async function buildPhraseIndexForResource(
   // Pass 1: auto-collect first words from all multiword terms.
   // Data-driven inflectable set — any first word in a template is a potential
   // verb head (burn, steal, fly, …). This replaces the curated ~100-verb list
-  // which missed thousands of Cambridge verbs. The lemmatizer only strips
+  // which missed thousands of verbs in entry-object dictionaries. The lemmatizer only strips
   // -ed/-ing/-s, so non-verb first words (the, a, in) are harmless — they have
   // no suffix to strip and return [word] unchanged.
   // ponytail: marking non-verbs inflectable is safe because candidateLemmas
@@ -125,7 +125,7 @@ export async function buildPhraseIndexForResource(
   const unsupportedCount =
     breakdown.unsupportedOpen + breakdown.unsupportedMalformed + breakdown.unsupportedLimit;
 
-  // An empty supported set is not an error — a Cambridge resource with no
+  // An empty supported set is not an error — an entry-object resource with no
   // multiword terms simply produces no phrase index. We still persist a blob
   // so the worker knows this resource has been processed.
   const index = compilePhraseIndex(inputs);

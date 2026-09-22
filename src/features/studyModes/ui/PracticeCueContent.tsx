@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import { Text, VisuallyHidden } from '@/shared/ui';
+import { t } from '@/shared/i18n';
 import {
   buildClozeProgress,
   buildDictationProgress,
@@ -95,7 +96,7 @@ export function DictationActiveCue({
   const showCurrent = dataCellId === 'practice-active-cue';
   return (
     <div className={styles.activeCue} data-cell-id={dataCellId} data-allow-lookup>
-      <div className={styles.guides} aria-label="Type what you hear" data-cell-id="practice-active-cue-content">
+      <div className={styles.guides} aria-label={t('studyModes.practice.typeWhatYouHear')} data-cell-id="practice-active-cue-content">
         {progress.words.map((word, i) => (
           <PracticeWord
             key={i}
@@ -110,7 +111,7 @@ export function DictationActiveCue({
       {result ? (
         <div className={styles.feedback} data-cell-id="practice-feedback" role="status" aria-live="polite">
           <VisuallyHidden as="div">
-            {`${result.correctCount} of ${result.totalCount} correct, ${result.score} percent`}
+            {t('studyModes.practice.result', [result.correctCount, result.totalCount, result.score])}
           </VisuallyHidden>
         </div>
       ) : null}
@@ -137,7 +138,7 @@ export function ClozeActiveCue({
   if (exercise.blanks.length === 0) {
     return (
       <div className={styles.activeCue} data-cell-id={dataCellId}>
-        <Text variant="supporting" color="secondary">No fillable words in this cue</Text>
+        <Text variant="supporting" color="secondary">{t('studyModes.practice.noBlanks')}</Text>
       </div>
     );
   }
@@ -169,7 +170,8 @@ export function ClozeActiveCue({
       {clozeDraft.trim().length > 0 && (
         <div className={styles.feedback} data-cell-id="practice-feedback" role="status" aria-live="polite">
           <VisuallyHidden as="div">
-            {`${progress.correctCount} of ${exercise.blanks.length} correct${progress.extraCount > 0 ? `, ${progress.extraCount} extra` : ''}`}
+            {t('studyModes.practice.progress', [progress.correctCount, exercise.blanks.length]) +
+              (progress.extraCount > 0 ? t('studyModes.practice.progressExtra', [progress.extraCount]) : '')}
           </VisuallyHidden>
         </div>
       )}

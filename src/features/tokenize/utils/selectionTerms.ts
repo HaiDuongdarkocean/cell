@@ -79,7 +79,12 @@ export function extractTermsFromSelection(
   selection: Selection | null,
   shadowRoots: readonly ShadowRoot[] = [],
 ): string[] {
-  if (!selection || selection.isCollapsed || selection.rangeCount === 0) return [];
+  if (!selection || selection.rangeCount === 0) return [];
+  // Chromium reports document-level isCollapsed=true for a real drag selection
+  // fully inside a shadow root (anchor/focus retarget to the host) — only
+  // getComposedRanges exposes the real range. Probe it before trusting the
+  // collapsed flag; without shadow roots the flag is reliable.
+  if (selection.isCollapsed && shadowRoots.length === 0) return [];
 
   const ranges = getSelectionRanges(selection, shadowRoots);
   if (ranges.length === 0) return [];

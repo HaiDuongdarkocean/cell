@@ -9,6 +9,7 @@
 // Disabled resources are dimmed visually — controls stay usable.
 
 import { useRef, useState, type ReactElement } from 'react';
+import { t } from '@/shared/i18n';
 import { Button, Card } from '@/shared/ui';
 import { DragHandle } from '@/shared/ui/DragHandle';
 import { Toggle } from '@/shared/ui/Toggle';
@@ -89,7 +90,7 @@ export function ResourceCard({
         {canReorder && (
           <DragHandle
             size="sm"
-            aria-label={`Kéo để đổi thứ tự ${displayName}`}
+            aria-label={t('resources.card.drag', [displayName])}
             draggable={false}
             className={styles.grip}
             data-cell-id={`drag-${resource.id}`}
@@ -105,20 +106,20 @@ export function ResourceCard({
           aria-expanded={editing ? undefined : expanded}
           aria-pressed={editing ? selected : undefined}
           aria-label={editing
-            ? `Chọn ${displayName}`
-            : expanded ? `Thu gọn ${displayName}` : `Xem mục mẫu ${displayName}`}
+            ? t('resources.card.select', [displayName])
+            : expanded ? t('resources.card.collapse', [displayName]) : t('resources.card.expand', [displayName])}
           data-cell-id={editing ? `select-${resource.id}` : `expand-${resource.id}`}
         >
           <span className={styles.name}>{displayName}</span>
           <span className={styles.meta}>
-            {resource.wordCount} từ{!resource.installationFinished && ' · đang thêm…'}
+            {t('resources.card.words', [resource.wordCount])}{!resource.installationFinished && t('resources.card.importing')}
           </span>
         </button>
 
         <Toggle
           checked={enabled}
           onChange={handleToggle}
-          ariaLabel={enabled ? `Tắt ${displayName}` : `Bật ${displayName}`}
+          ariaLabel={t(enabled ? 'resources.card.disable' : 'resources.card.enable', [displayName])}
           dataTestId={`enable-toggle-${resource.id}`}
         />
 
@@ -127,7 +128,7 @@ export function ResourceCard({
             variant="ghost"
             size="sm"
             onClick={onDelete}
-            aria-label={`Xóa ${displayName}`}
+            aria-label={t('resources.card.delete', [displayName])}
             data-cell-id={`delete-button-${resource.id}`}
           >
             <Icon name="trash" size="xs" />

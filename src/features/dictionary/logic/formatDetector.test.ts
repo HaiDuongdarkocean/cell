@@ -18,12 +18,12 @@ describe('formatDetector', () => {
     await expect(detectFormat('freq.db', makeSqliteHead())).resolves.toBe('sqlite');
   });
 
-  it('detects yomitan from zip with index.json + term_meta_bank', async () => {
+  it('detects term-bank from zip with index.json + term_meta_bank', async () => {
     const zipped = zipSync({
       'index.json': strToU8('{"title":"test","format":3}'),
       'term_meta_bank_1.json': strToU8('[]'),
     });
-    await expect(detectFormat('dict.zip', zipped)).resolves.toBe('yomitan');
+    await expect(detectFormat('dict.zip', zipped)).resolves.toBe('term-bank');
   });
 
   it('detects txt from zip containing .txt', async () => {
@@ -31,16 +31,31 @@ describe('formatDetector', () => {
     await expect(detectFormat('words.zip', zipped)).resolves.toBe('txt');
   });
 
-  it('detects cambridge-json from zip with JSON array of {term, definition}', async () => {
-    const cambridge = JSON.stringify([{ term: 'hello', definition: 'greeting' }]);
-    const zipped = zipSync({ 'cambridge.json': strToU8(cambridge) });
-    await expect(detectFormat('cambridge.zip', zipped)).resolves.toBe('cambridge-json');
+  it('detects json-entries from zip with JSON array of {term, definition}', async () => {
+    const entries = JSON.stringify([{ term: 'hello', definition: 'greeting' }]);
+    const zipped = zipSync({ 'entries.json': strToU8(entries) });
+    await expect(detectFormat('entries.zip', zipped)).resolves.toBe('json-entries');
   });
 
   it('detects json-array from zip with JSON array of strings', async () => {
     const arr = JSON.stringify(['hello', 'world']);
     const zipped = zipSync({ 'freq.json': strToU8(arr) });
     await expect(detectFormat('freq.zip', zipped)).resolves.toBe('json-array');
+  });
+
+  it('detects txt from zip whose .json entry holds plain-text lines', async () => {
+    const zipped = zipSync({ 'wordlist.json': strToU8('apple\nbanana\n') });
+    await expect(detectFormat('wordlist.zip', zipped)).resolves.toBe('txt');
+  });
+
+  it('detects json-array from .json.gz', async () => {
+    const head = gzipSync(strToU8('["hello", "world"]'));
+    await expect(detectFormat('freq.json.gz', head)).resolves.toBe('json-array');
+  });
+
+  it('detects txt from .txt.gz', async () => {
+    const head = gzipSync(strToU8('hello\nworld\n'));
+    await expect(detectFormat('words.txt.gz', head)).resolves.toBe('txt');
   });
 
   it('detects txt from .txt extension', async () => {
@@ -53,9 +68,9 @@ describe('formatDetector', () => {
     await expect(detectFormat('freq.json', head)).resolves.toBe('json-array');
   });
 
-  it('detects cambridge-json from .json with array of {term, definition}', async () => {
+  it('detects json-entries from .json with array of {term, definition}', async () => {
     const head = strToU8(JSON.stringify([{ term: 'hello', definition: 'greeting' }]));
-    await expect(detectFormat('cambridge.json', head)).resolves.toBe('cambridge-json');
+    await expect(detectFormat('entries.json', head)).resolves.toBe('json-entries');
   });
 
   it('detects json-array for empty JSON array', async () => {
@@ -68,8 +83,8 @@ describe('formatDetector', () => {
     await expect(detectFormat('file.xyz', head)).rejects.toThrow(/Could not detect/);
   });
 
-  it('falls back to yomitan for zip with no recognizable content', async () => {
+  it('falls back to term-bank for zip with no recognizable content', async () => {
     const zipped = zipSync({ 'unknown.dat': strToU8('binary') });
-    await expect(detectFormat('unknown.zip', zipped)).resolves.toBe('yomitan');
+    await expect(detectFormat('unknown.zip', zipped)).resolves.toBe('term-bank');
   });
 });

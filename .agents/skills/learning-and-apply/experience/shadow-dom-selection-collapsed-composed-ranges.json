@@ -1,0 +1,20 @@
+{
+  "id": "shadow-dom-selection-collapsed-composed-ranges",
+  "title": "Real shadow-root drag selection reports Selection.isCollapsed=true — probe getComposedRanges before trusting the flag",
+  "category": ["detection", "testing"],
+  "tags": ["shadow-dom", "selection", "getComposedRanges", "isCollapsed", "retargeting", "tokenize", "status-keys", "playwright"],
+  "trigger": "Drag-selecting text inside a shadow root produces a working selection (Selection.toString() returns the text) but every document-level inspection says collapsed — so guards like `if (selection.isCollapsed) return` silently drop real selections.",
+  "principle": "When a selection lives entirely inside a shadow root, Chromium retargets the document-level Selection anchor/focus to the host boundary: `isCollapsed === true`, `rangeCount === 1`, and `getRangeAt(0)` is a collapsed range at the host — while `toString()` still returns the selected text. The real ranges only exist on `Selection.getComposedRanges({ shadowRoots })` (Chrome 137+, pass the roots you care about). Each returned StaticRange has no geometry APIs — rebuild a real `Range` via `document.createRange()` + `setStart/setEnd` before calling `getClientRects`/`intersectsNode`. Order matters: probe composed ranges FIRST, and only trust `isCollapsed` when no shadow roots were supplied. Test trap: `selection.addRange()` in tests creates a normal non-collapsed selection, so programmatic-selection tests pass while real mouse drag fails — reproduce with real mouse events or explicitly mock the collapsed-document + composed-range shape.",
+  "cases": [
+    {
+      "context": "extractTermsFromSelection() bails on `selection.isCollapsed` before checking composed ranges. Real drag-select inside the split-view subtitle panel's shadow root returns [] → bulk status keys 1-4 do nothing, while the e2e spec (which uses `selection.addRange()` programmatically) stays green.",
+      "bad": "export function extractTermsFromSelection(selection, shadowRoots = []) {\n  if (!selection || selection.isCollapsed || selection.rangeCount === 0) return [];\n  const ranges = getSelectionRanges(selection, shadowRoots); // composed-range probe never reached for real shadow selections\n  ...\n}",
+      "good": "export function extractTermsFromSelection(selection, shadowRoots = []) {\n  if (!selection || selection.rangeCount === 0) return [];\n  // document-level isCollapsed lies for real shadow selections — only trust it without shadow roots\n  if (selection.isCollapsed && shadowRoots.length === 0) return [];\n  const ranges = getSelectionRanges(selection, shadowRoots);\n  ...\n}\n// inside getSelectionRanges: const composed = selection.getComposedRanges?.({ shadowRoots }) ?? [];\n// for each StaticRange sr: skip collapsed, keep sr if shadowRoots includes sr.startContainer.getRootNode();\n// then const r = document.createRange(); r.setStart(sr.startContainer, sr.startOffset); r.setEnd(sr.endContainer, sr.endOffset);"
+    }
+  ],
+  "applyFor": [
+    "Any code that reads window.getSelection() where selectable text lives inside a shadow root (extension UIs, editor surfaces)",
+    "Early-exit guards on Selection.isCollapsed / rangeCount before composed-range extraction",
+    "Writing e2e/unit tests for shadow-DOM text selection — programmatic addRange() does NOT reproduce real drag selection shape"
+  ]
+}

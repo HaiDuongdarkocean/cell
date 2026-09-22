@@ -2,20 +2,23 @@
 // (spec fnc_audio-settings-pipeline, Concept H "Audio Pipeline").
 //
 // Merges the old Pronunciation / Local Pronunciation / TTS Voices cards into a
-// single pipeline-centric panel:
-//   1. Enable audio toggle (tts.enabled)
-//   2. Output mode segmented control — a UI-only preset that overwrites
-//      pronunciation.fallbackEngines with the mode's engine chain
-//   3. Compact audio tester (text input + Play + status)
-//   4. Voice settings row (voice character + autoplay count)
-//   5. AudioPipeline — horizontal engine chain with status dots
-//   6. SourceDetailPanel — per-engine config for the selected pipeline step
+// single pipeline-centric panel, grouped by proximity:
+//   Sources group:
+//   1. Output mode segmented control — a UI-only preset that overwrites
+//      pronunciation.fallbackEngines with the mode's engine chain (hint
+//      popover explains the replace behavior)
+//   2. AudioPipeline — horizontal engine chain with status dots
+//   3. SourceDetailPanel — per-engine config for the selected pipeline step
+//   Playback group:
+//   4. Compact audio tester (40px input + round play button inside)
+//   5. Autoplay count (stacked label + select)
 //
 // This component renders plain content — no nested Card — because it lives
 // inside the Audio card rendered by SettingsDialogContent.
 
 import { useMemo, useState, type ReactElement } from 'react';
-import { Button, Icon, Input, Select, SettingsRow, Text, Toggle } from '@/shared/ui';
+import { t } from '@/shared/i18n';
+import { Button, HintIcon, Icon, Input, Select, SettingsRow, Text } from '@/shared/ui';
 import type {
   AudioEngineKind,
   PronunciationSettings,
@@ -108,17 +111,17 @@ export function AudioPanel({
   const handlePlay = async (): Promise<void> => {
     const term = testText.trim();
     if (!term) {
-      setTestStatus('Enter a word or phrase to test.');
+      setTestStatus(t('audio.tester.empty'));
       return;
     }
     setTesting(true);
-    setTestStatus('Resolving audio…');
+    setTestStatus(t('audio.tester.resolving'));
     try {
       const orchestrator = new PronunciationAudioOrchestrator(pronunciation);
       const items = await orchestrator.resolve(term, TEST_LANG_CODE);
       const item = items.find((i) => i.url || i.audioBytes);
       if (!item) {
-        setTestStatus('No audio found in the current pipeline.');
+        setTestStatus(t('audio.tester.none'));
         return;
       }
       const url =
@@ -127,7 +130,7 @@ export function AudioPanel({
           ? URL.createObjectURL(new Blob([new Uint8Array(item.audioBytes)]))
           : undefined);
       if (!url) {
-        setTestStatus('No playable audio.');
+        setTestStatus(t('audio.tester.unplayable'));
         return;
       }
       const audio = new Audio(url);
@@ -135,9 +138,9 @@ export function AudioPanel({
         if (!item.url) URL.revokeObjectURL(url);
       });
       await audio.play();
-      setTestStatus(`Playing: ${item.label}`);
+      setTestStatus(t('audio.tester.playing', [item.label]));
     } catch (e) {
-      setTestStatus(`Audio test failed: ${String(e)}`);
+      setTestStatus(t('audio.tester.failed', [String(e)]));
     } finally {
       setTesting(false);
     }
@@ -145,102 +148,109 @@ export function AudioPanel({
 
   return (
     <div className={styles.panel} data-cell-id="audio-panel">
-      {/* 1. Master toggle */}
-      <SettingsRow dense>
-        <span className={styles.rowLabel}>Enable audio</span>
-        <Toggle
-          checked={tts.enabled}
-          onChange={(next) => onTtsChange({ ...tts, enabled: next })}
-          ariaLabel="Enable audio"
-          dataTestId="audio-enable-toggle"
-        />
-      </SettingsRow>
-
-      {/* 2. Output mode segmented control */}
-      <div className={styles.section}>
-        <span className={styles.rowLabel}>Output mode</span>
-        <div className={styles.segmented} role="group" aria-label="Output mode">
-          {OUTPUT_MODES.map((mode) => (
-            <Button
-              key={mode.value}
-              variant="transparent"
-              className={`${styles.mode} ${activeMode === mode.value ? styles.modeActive : ''}`}
-              onClick={() => handleModeChange(mode.value)}
-              aria-pressed={activeMode === mode.value}
-              title={mode.desc}
-              data-cell-id={`audio-mode-${mode.value}`}
-            >
-              {mode.label}
-            </Button>
-          ))}
+      {/* Sources group: output mode → pipeline → selected source detail. */}
+      <div className={styles.group}>
+        <div className={styles.section}>
+          <span className={styles.rowLabel}>
+            {t('audio.outputMode')}
+            <HintIcon
+              hint={t('audio.outputMode.hint')}
+              ariaLabel={t('audio.outputMode.aria')}
+              dataTestId="audio-mode-hint"
+            />
+          </span>
+          <div className={styles.segmented} role="group" aria-label={t('audio.outputMode.aria')}>
+            {OUTPUT_MODES.map((mode) => (
+              <Button
+                key={mode.value}
+                variant="transparent"
+                className={`${styles.mode} ${activeMode === mode.value ? styles.modeActive : ''}`}
+                onClick={() => handleModeChange(mode.value)}
+                aria-pressed={activeMode === mode.value}
+                title={t(mode.desc)}
+                data-cell-id={`audio-mode-${mode.value}`}
+              >
+                {t(mode.label)}
+              </Button>
+            ))}
+          </div>
         </div>
-        <Text as="p" color="secondary" className={styles.hint}>
-          Switching mode replaces the source priority order below.
-        </Text>
+
+        <div className={styles.section}>
+          <Text as="h5" className={styles.sectionTitle}>
+            {t('audio.pipeline.title')}
+          </Text>
+          <AudioPipeline
+            engines={[...engines]}
+            selected={selectedEngine}
+            statuses={statuses}
+            onSelect={setSelected}
+          />
+        </div>
+
+        {selectedEngine && (
+          <SourceDetailPanel
+            engine={selectedEngine}
+            pronunciation={pronunciation}
+            tts={tts}
+            onPronunciationChange={onPronunciationChange}
+            onTtsChange={onTtsChange}
+          />
+        )}
       </div>
 
-      {/* 3. Compact audio tester */}
-      <div className={styles.tester}>
-        <Input
-          value={testText}
-          onChange={(e) => setTestText(e.target.value)}
-          placeholder="Type a word to test"
-          aria-label="Test text"
-          data-cell-id="audio-tester-input"
-          size="sm"
-        />
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => void handlePlay()}
-          loading={testing}
-          leadingIcon={<Icon name="play" size="sm" />}
-          data-cell-id="audio-tester-play"
-        >
-          Play
-        </Button>
+      {/* Playback group: tester + autoplay. */}
+      <div className={styles.group}>
+        <div className={styles.section}>
+          <label className={styles.rowLabel} htmlFor="audio-tester-input">
+            {t('audio.tester.label')}
+          </label>
+          <Input
+            id="audio-tester-input"
+            value={testText}
+            onChange={(e) => setTestText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void handlePlay();
+            }}
+            placeholder={t('audio.tester.placeholder')}
+            aria-label={t('audio.tester.inputAria')}
+            data-cell-id="audio-tester-input"
+            size="lg"
+            suffix={
+              <Button
+                variant="primary"
+                shape="circle"
+                size="xs"
+                onClick={() => void handlePlay()}
+                loading={testing}
+                aria-label={t('audio.tester.playAria')}
+                data-cell-id="audio-tester-play"
+              >
+                <Icon name="play" size="sm" />
+              </Button>
+            }
+          />
+          {testStatus && (
+            <p className={styles.status} role="status" data-cell-id="audio-tester-status">
+              {testStatus}
+            </p>
+          )}
+        </div>
+
+        <SettingsRow dense stacked>
+          <label className={styles.rowLabel} htmlFor="audio-autoplay">
+            {t('audio.autoplay.label')}
+          </label>
+          <Select
+            id="audio-autoplay"
+            value={String(tts.autoplayCount)}
+            options={AUTOPLAY_OPTIONS}
+            onChange={(v) => onTtsChange({ ...tts, autoplayCount: Number(v) })}
+            data-cell-id="audio-autoplay"
+            aria-label={t('audio.autoplay.aria')}
+          />
+        </SettingsRow>
       </div>
-      {testStatus && (
-        <p className={styles.status} role="status" data-cell-id="audio-tester-status">
-          {testStatus}
-        </p>
-      )}
-
-      {/* 4. Autoplay */}
-      <SettingsRow dense>
-        <span className={styles.rowLabel}>Autoplay</span>
-        <Select
-          value={String(tts.autoplayCount)}
-          options={AUTOPLAY_OPTIONS}
-          onChange={(v) => onTtsChange({ ...tts, autoplayCount: Number(v) })}
-          data-cell-id="audio-autoplay"
-          aria-label="Autoplay count"
-        />
-      </SettingsRow>
-
-      {/* 5. Pipeline */}
-      <div className={styles.section}>
-        <Text as="h5" className={styles.sectionTitle}>
-          Audio pipeline
-        </Text>
-        <AudioPipeline
-          engines={[...engines]}
-          selected={selectedEngine}
-          statuses={statuses}
-          onSelect={setSelected}
-        />
-      </div>
-
-      {/* 6. Per-engine detail pane */}
-      {selectedEngine && (
-        <SourceDetailPanel
-          engine={selectedEngine}
-          pronunciation={pronunciation}
-          tts={tts}
-          onPronunciationChange={onPronunciationChange}
-          onTtsChange={onTtsChange}
-        />
-      )}
     </div>
   );
 }

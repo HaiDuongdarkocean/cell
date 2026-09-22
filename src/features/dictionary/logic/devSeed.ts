@@ -1,7 +1,7 @@
 // autoSeed — auto-import of default dictionary + frequency data.
 //
 // When DB is empty (fresh install, DB wiped, or never imported), fetches the
-// Cambridge dictionary + standard frequency list from the extension bundle
+// Bundled dictionary + standard frequency list from the extension bundle
 // (dist/seed/) and imports both in parallel via importFile(). Fire-and-forget
 // — never blocks UI or main thread. Files are copied into dist/seed/ by the
 // autoSeedAssets Vite plugin (every build, including production).

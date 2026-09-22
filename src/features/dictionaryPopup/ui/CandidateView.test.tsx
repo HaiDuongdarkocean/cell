@@ -206,7 +206,8 @@ describe('CandidateView', () => {
     expect(screen.queryByTestId('dictionary-badge-audio')).not.toBeInTheDocument();
 
     const label = within(audioPanel).getByText('Test');
-    fireEvent.click(label);
+    expect(label).toBeInTheDocument();
+    fireEvent.click(within(audioPanel).getByRole('checkbox'));
 
     await waitFor(() => expect(screen.getByTestId('dictionary-badge-audio')).toHaveTextContent('1'));
   });

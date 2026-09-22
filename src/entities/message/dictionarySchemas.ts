@@ -33,10 +33,24 @@ export const LookupRequestSchema = z.object({
 
 // === DefinitionEntry / AudioItem / ImageItem ===
 
+export const SenseLineSchema = z.object({
+  role: z.enum(['gloss', 'example', 'note']),
+  text: z.string(),
+  translation: z.string().optional(),
+  citation: z.string().optional(),
+  pattern: z.string().optional(),
+});
+
 export const DefinitionEntrySchema = z.object({
   id: z.string(),
   pos: z.string().optional(),
+  labels: z.array(z.string()).optional(),
+  level: z.string().optional(),
   text: z.string(),
+  lines: z.array(SenseLineSchema).optional(),
+  subsenses: z.array(z.object({ num: z.string(), text: z.string() })).optional(),
+  synonyms: z.array(z.string()).optional(),
+  antonyms: z.array(z.string()).optional(),
   examples: z.array(z.string()),
   source: z.string(),
   defaultSelected: z.boolean(),
@@ -76,6 +90,18 @@ export const PhraseMatchSchema = z.object({
 
 // === LookupResult (spec §9.2) ===
 
+export const RelatedEntrySchema = z.object({
+  term: z.string(),
+  kind: z.string(),
+  preview: z.string().optional(),
+});
+
+export const EtymologyBlockSchema = z.object({
+  chain: z.string(),
+  firstKnownUse: z.string().optional(),
+  variants: z.array(z.object({ text: z.string(), source: z.string().optional() })).optional(),
+});
+
 export const LookupResultSchema = z.object({
   term: z.string(),
   langCode: z.string().length(2),
@@ -89,6 +115,22 @@ export const LookupResultSchema = z.object({
   definitions: z.array(DefinitionEntrySchema),
   rawDefinitions: z.array(z.string()),
   detectedPhrase: PhraseMatchSchema.nullable(),
+  related: z.array(RelatedEntrySchema).optional(),
+  inflections: z.array(z.object({ type: z.string(), forms: z.array(z.string()) })).optional(),
+  level: z.string().optional(),
+  etymology: EtymologyBlockSchema.optional(),
+  wordFamily: z.object({
+    nouns: z.array(z.string()).optional(),
+    verbs: z.array(z.string()).optional(),
+    adjectives: z.array(z.string()).optional(),
+    adverbs: z.array(z.string()).optional(),
+  }).optional(),
+  wordNet: z.object({
+    synset: z.array(z.string()).optional(),
+    hypernyms: z.array(z.string()).optional(),
+  }).optional(),
+  derivedTerms: z.array(z.string()).optional(),
+  usageNote: z.object({ title: z.string(), text: z.string() }).optional(),
   matchSource: MatchSourceSchema,
 });
 

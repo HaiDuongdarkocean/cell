@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { Select } from '@/shared/ui/Select';
 import { Slider } from '@/shared/ui/Slider';
 import { Text } from '@/shared/ui/Text';
-import { t } from '@/shared/i18n';
+import { t, type MessageKey } from '@/shared/i18n';
 import type { BadgePointerTriggerSettings } from '@/entities/settings/types';
 import styles from './WordBadgeSettingsPanel.module.css';
 
@@ -12,12 +12,12 @@ interface WordBadgeSettingsPanelProps {
   readonly onChange: (next: BadgePointerTriggerSettings) => void;
 }
 
-const POSITION_OPTIONS = [
-  { value: 'top', label: t('settings.wordBadge.position.top') },
-  { value: 'bottom', label: t('settings.wordBadge.position.bottom') },
-  { value: 'left', label: t('settings.wordBadge.position.left') },
-  { value: 'right', label: t('settings.wordBadge.position.right') },
-  { value: 'center', label: t('settings.wordBadge.position.center') },
+const POSITION_OPTIONS: readonly { value: string; labelKey: MessageKey }[] = [
+  { value: 'top', labelKey: 'settings.wordBadge.position.top' },
+  { value: 'bottom', labelKey: 'settings.wordBadge.position.bottom' },
+  { value: 'left', labelKey: 'settings.wordBadge.position.left' },
+  { value: 'right', labelKey: 'settings.wordBadge.position.right' },
+  { value: 'center', labelKey: 'settings.wordBadge.position.center' },
 ];
 
 const SIZE_MIN = 24;
@@ -65,7 +65,7 @@ export function WordBadgeSettingsPanel({
         <Select
           id="word-badge-position"
           value={position}
-          options={POSITION_OPTIONS}
+          options={POSITION_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
           onChange={(value) => onChange({ ...badgePointerTrigger, position: value as BadgePointerTriggerSettings['position'] })}
         />
       </div>
@@ -81,7 +81,7 @@ export function WordBadgeSettingsPanel({
           min={SIZE_MIN}
           max={SIZE_MAX}
           step={1}
-          aria-label="Button size"
+          aria-label={t('settings.wordBadge.buttonSize.aria')}
           data-cell-id="word-badge-size"
           onChange={(value) => onChange({ ...badgePointerTrigger, size: value })}
         />

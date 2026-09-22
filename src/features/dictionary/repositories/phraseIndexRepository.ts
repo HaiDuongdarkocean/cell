@@ -13,12 +13,21 @@ export interface StoredPhraseIndex {
   readonly blob: ArrayBuffer;
 }
 
-/** Internal stored record — blob stored as Array<number> for structuredClone compat (fake-indexeddb/jsdom). */
+/** Internal stored record — blob may be a legacy Array<number> (older writes
+ *  expanded the bytes for structuredClone compat) or a raw ArrayBuffer. */
 interface InternalPhraseIndex {
   readonly resourceId: number;
   readonly compilerVersion: number;
   readonly termCount: number;
-  readonly blob: number[];
+  readonly blob: number[] | ArrayBuffer | Uint8Array;
+}
+
+function blobToArrayBuffer(blob: number[] | ArrayBuffer | Uint8Array): ArrayBuffer {
+  if (blob instanceof ArrayBuffer) return blob;
+  if (blob instanceof Uint8Array) {
+    return blob.buffer.slice(blob.byteOffset, blob.byteOffset + blob.byteLength) as ArrayBuffer;
+  }
+  return new Uint8Array(blob).buffer as ArrayBuffer;
 }
 
 /** Put a phrase index blob for a resource (insert or replace). */
@@ -36,7 +45,7 @@ export async function putPhraseIndex(
       resourceId,
       compilerVersion: meta.compilerVersion,
       termCount: meta.termCount,
-      blob: Array.from(new Uint8Array(blob)),
+      blob,
     };
     const request = store.put(record);
     request.onsuccess = () => resolve();
@@ -57,11 +66,13 @@ export async function getPhraseIndex(langCode: string, resourceId: number): Prom
       try {
         const raw = request.result as InternalPhraseIndex | undefined;
         if (!raw) { resolve(undefined); return; }
-        const blob = raw.blob;
-        // blob is number[] (stored as Array); reconstruct ArrayBuffer.
-        const ab = blob instanceof Uint8Array
-          ? blob.buffer.slice(blob.byteOffset, blob.byteOffset + blob.byteLength) as ArrayBuffer
-          : new Uint8Array(blob).buffer as ArrayBuffer;
+        const ab = blobToArrayBuffer(raw.blob);
+        if (Array.isArray(raw.blob)) {
+          void putPhraseIndex(langCode, raw.resourceId, ab, {
+            compilerVersion: raw.compilerVersion,
+            termCount: raw.termCount,
+          }).catch(() => undefined);
+        }
         resolve({
           resourceId: raw.resourceId,
           compilerVersion: raw.compilerVersion,
@@ -114,18 +125,12 @@ export async function getAllPhraseIndexes(langCode: string): Promise<StoredPhras
     request.onsuccess = () => {
       const raw = request.result as InternalPhraseIndex[] | undefined;
       if (!raw || raw.length === 0) { resolve([]); return; }
-      resolve(raw.map((r) => {
-        const blob = r.blob;
-        const ab = blob instanceof Uint8Array
-          ? blob.buffer.slice(blob.byteOffset, blob.byteOffset + blob.byteLength) as ArrayBuffer
-          : new Uint8Array(blob).buffer as ArrayBuffer;
-        return {
-          resourceId: r.resourceId,
-          compilerVersion: r.compilerVersion,
-          termCount: r.termCount,
-          blob: ab,
-        };
-      }));
+      resolve(raw.map((r) => ({
+        resourceId: r.resourceId,
+        compilerVersion: r.compilerVersion,
+        termCount: r.termCount,
+        blob: blobToArrayBuffer(r.blob),
+      })));
     };
     request.onerror = () => reject(request.error);
     tx.onerror = () => reject(tx.error);

@@ -253,6 +253,7 @@ export const DEFAULT_DICTIONARY_POPUP_SETTINGS: DictionaryPopupSettings = {
   ],
   tts: { enabled: true, savedVoices: [], voices: [], maxDisplay: 3, autoplayCount: 0, preferredAccent: 'US', localTtsEnabled: false, localTtsLanguage: 'en', downloadedLanguages: [], hiddenLanguages: [] },
   badgePointerTrigger: { position: 'center', size: 36, pointerScale: 0.25 },
+  translationVisibility: 'hidden',
 };
 
 export const DEFAULT_SETTINGS: Settings = {

@@ -144,6 +144,10 @@
   font-weight: var(--font-weight-medium, 500);
 }
 
+.row .term {
+  color: var(--color-text);
+}
+
 .time {
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);

@@ -12,7 +12,11 @@ import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import { t, type MessageKey } from '@/shared/i18n';
 import { TRASH_TTL_MS } from '@/features/dictionary';
 import { type WordStatus } from '@/entities/dictionary';
-import { createVocabularySource } from '../services/vocabularySource';
+import {
+  createVocabularySource,
+  type VocabularySource,
+  type VocabularySourceState,
+} from '../services/vocabularySource';
 import {
   VOCABULARY_SEGMENTS,
   countByStatus,
@@ -65,15 +69,24 @@ export interface VocabularyTabProps {
   readonly onLookup: (term: string) => void;
 }
 
+const EMPTY_SOURCE_STATE: VocabularySourceState = { entries: [], trash: [], loaded: false };
+
 export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React.JSX.Element {
-  const source = useMemo(() => createVocabularySource(langCode), [langCode]);
-  useEffect(() => () => source.destroy(), [source]);
+  const [source, setSource] = useState<VocabularySource | null>(null);
+  useEffect(() => {
+    const next = createVocabularySource(langCode);
+    setSource(next);
+    return () => {
+      setSource(null);
+      next.destroy();
+    };
+  }, [langCode]);
 
   const subscribe = useCallback(
-    (listener: () => void) => source.subscribe(listener),
+    (listener: () => void) => source?.subscribe(listener) ?? (() => {}),
     [source],
   );
-  const getSnapshot = useCallback(() => source.getState(), [source]);
+  const getSnapshot = useCallback(() => source?.getState() ?? EMPTY_SOURCE_STATE, [source]);
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   const [segment, setSegment] = useState<VocabularySegment>('all');
@@ -105,7 +118,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
   }, [langCode]);
 
   useEffect(() => {
-    if (inTrash) {
+    if (inTrash && source) {
       source.refreshTrash().catch((err: unknown) => {
         setError(err instanceof Error ? err.message : String(err));
       });
@@ -176,7 +189,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
   };
 
   const handleCycle = (term: string): void => {
-    source.cycle(term).catch((err: unknown) => {
+    source?.cycle(term).catch((err: unknown) => {
       setError(err instanceof Error ? err.message : String(err));
     });
   };
@@ -185,13 +198,13 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
     const term = pendingDelete;
     setPendingDelete(null);
     if (term === null) return;
-    source.trash(term).catch((err: unknown) => {
+    source?.trash(term).catch((err: unknown) => {
       setError(err instanceof Error ? err.message : String(err));
     });
   };
 
   const handleRestore = (term: string): void => {
-    source.restore(term).catch((err: unknown) => {
+    source?.restore(term).catch((err: unknown) => {
       setError(err instanceof Error ? err.message : String(err));
     });
   };
@@ -200,7 +213,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
     const term = pendingPurge;
     setPendingPurge(null);
     if (term === null) return;
-    source.deleteTrash(term).catch((err: unknown) => {
+    source?.deleteTrash(term).catch((err: unknown) => {
       setError(err instanceof Error ? err.message : String(err));
     });
   };
@@ -366,6 +379,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                       <Button
                         variant="ghost"
                         className={styles.term}
+                        title={entry.term}
                         onClick={() => onLookup(entry.term)}
                         data-cell-id={`vocabulary-term-${entry.term}`}
                       >
@@ -434,6 +448,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                     <Button
                       variant="ghost"
                       className={styles.term}
+                      title={entry.term}
                       onClick={() => onLookup(entry.term)}
                       data-cell-id={`vocabulary-term-${entry.term}`}
                     >

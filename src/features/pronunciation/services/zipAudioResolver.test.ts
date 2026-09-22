@@ -1,5 +1,13 @@
 import { zipSync, strToU8 } from 'fflate';
-import { SingleZipAudioResolver, SplitZipAudioResolver } from './zipAudioResolver';
+import {
+  SingleZipAudioResolver,
+  SplitZipAudioResolver,
+} from './zipAudioResolver';
+
+if (typeof globalThis.DecompressionStream === 'undefined') {
+  const { DecompressionStream } = require('stream/web');
+  (globalThis as Record<string, unknown>).DecompressionStream = DecompressionStream;
+}
 
 function makeZip(entries: Record<string, Uint8Array>): File {
   const zipped = zipSync(entries);
@@ -40,6 +48,35 @@ describe('SingleZipAudioResolver', () => {
     const resolver = new SingleZipAudioResolver(async () => file);
     const bytes = await resolver.resolveAudio('missing', 'missing.mp3');
     expect(bytes).toBeUndefined();
+  });
+});
+
+describe('resolveAudios batch', () => {
+  it('resolves multiple paths in one call', async () => {
+    const file = makeZip({
+      'a/one.mp3': strToU8('one-bytes'),
+      'b/two.mp3': strToU8('two-bytes-2'),
+    });
+    const resolver = new SingleZipAudioResolver(async () => file);
+    const results = await resolver.resolveAudios!('term', [
+      'a/one.mp3',
+      'b/two.mp3',
+      'missing.mp3',
+    ]);
+    expect(results[0]).toBeDefined();
+    expect(results[1]).toBeDefined();
+    expect(results[2]).toBeUndefined();
+    expect(Array.from(results[0]!)).toEqual(Array.from(strToU8('one-bytes')));
+    expect(Array.from(results[1]!)).toEqual(Array.from(strToU8('two-bytes-2')));
+  });
+
+  it('serves repeated lookups from the memoized match', async () => {
+    const file = makeZip({ 'audio/hello.mp3': strToU8('hello-bytes') });
+    const resolver = new SingleZipAudioResolver(async () => file);
+    const first = await resolver.resolveAudio('hello', 'audio/hello.mp3');
+    const second = await resolver.resolveAudio('hello', 'audio/hello.mp3');
+    expect(first).toBeDefined();
+    expect(Array.from(second!)).toEqual(Array.from(strToU8('hello-bytes')));
   });
 });
 

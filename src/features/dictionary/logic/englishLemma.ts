@@ -462,7 +462,7 @@ export function englishLemmaCandidates(word: string): string[] {
  * continues to use `englishLemmaCandidates`, which does NOT expand contractions).
  *
  * Sources:
- * - Cambridge Dictionary: contractions (n't, 'm, 're, 's, 've, 'll, 'd).
+ * - Contractions (n't, 'm, 're, 's, 've, 'll, 'd).
  * - Wikipedia: Contraction (grammar).
  */
 function normalizeApostrophe(word: string): string {

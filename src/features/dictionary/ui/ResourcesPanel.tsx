@@ -9,6 +9,7 @@
 // (no skeleton flash) runs per completion.
 
 import { useState, useCallback, useEffect, useRef, type ReactElement, type ReactNode } from 'react';
+import { t, type MessageKey } from '@/shared/i18n';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui';
 import { Heading } from '@/shared/ui/Heading';
@@ -55,34 +56,34 @@ interface ResourcesPanelProps {
 }
 
 interface SectionCopy {
-  readonly title: string;
-  readonly subtitle: string;
-  readonly dropLabel: string;
-  readonly dropHint: string;
+  readonly title: MessageKey;
+  readonly subtitle: MessageKey;
+  readonly dropLabel: MessageKey;
+  readonly dropHint: MessageKey;
   readonly accept: string;
-  readonly empty: string;
+  readonly empty: MessageKey;
   /** Noun used in delete-all copy ("Xóa tất cả N <noun>?"). */
-  readonly noun: string;
+  readonly noun: MessageKey;
 }
 
 const SECTION_COPY: Record<ResourceType, SectionCopy> = {
   DICTIONARY: {
-    title: 'Từ điển',
-    subtitle: 'Tra nghĩa, phiên âm, phát âm.',
-    dropLabel: 'Thêm từ điển',
-    dropHint: 'Kéo thả hoặc chọn file · .json, .zip, .db.gz',
+    title: 'resources.dictionary.title',
+    subtitle: 'resources.dictionary.subtitle',
+    dropLabel: 'resources.dictionary.dropLabel',
+    dropHint: 'resources.dictionary.dropHint',
     accept: '.json,.zip,.db,.gz',
-    empty: 'Chưa có từ điển nào.',
-    noun: 'từ điển',
+    empty: 'resources.dictionary.empty',
+    noun: 'resources.dictionary.noun',
   },
   FREQUENCY: {
-    title: 'Độ phổ biến',
-    subtitle: 'Đánh dấu từ hay gặp.',
-    dropLabel: 'Thêm danh sách',
-    dropHint: 'Kéo thả hoặc chọn file · .txt, .json, .zip, .db.gz',
+    title: 'resources.frequency.title',
+    subtitle: 'resources.frequency.subtitle',
+    dropLabel: 'resources.frequency.dropLabel',
+    dropHint: 'resources.frequency.dropHint',
     accept: '.txt,.json,.zip,.db,.gz',
-    empty: 'Chưa có danh sách nào.',
-    noun: 'danh sách',
+    empty: 'resources.frequency.empty',
+    noun: 'resources.frequency.noun',
   },
 };
 
@@ -175,8 +176,8 @@ function ResourceSection({
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
         <div className={styles.sectionHeaderText}>
-          <Heading level={2} size={3} className={styles.sectionTitle}>{copy.title}</Heading>
-          <p className={styles.sectionSubtitle}>{copy.subtitle}</p>
+          <Heading level={2} size={3} className={styles.sectionTitle}>{t(copy.title)}</Heading>
+          <p className={styles.sectionSubtitle}>{t(copy.subtitle)}</p>
         </div>
         {resources.length > 0 && (
           <Button
@@ -184,8 +185,8 @@ function ResourceSection({
             size="sm"
             active={isEditing}
             aria-pressed={isEditing}
-            aria-label={isEditing ? `Xong chỉnh sửa ${copy.title}` : `Chỉnh sửa ${copy.title}`}
-            title={isEditing ? 'Xong' : 'Chỉnh sửa'}
+            aria-label={t(isEditing ? 'resources.edit.done' : 'resources.edit.start', [t(copy.title)])}
+            title={t(isEditing ? 'resources.edit.titleDone' : 'resources.edit.titleStart')}
             onClick={toggleEditing}
             data-cell-id={`edit-${sectionId}`}
           >
@@ -195,8 +196,8 @@ function ResourceSection({
       </div>
 
       <Dropzone
-        label={copy.dropLabel}
-        hint={copy.dropHint}
+        label={t(copy.dropLabel)}
+        hint={t(copy.dropHint)}
         accept={copy.accept}
         disabled={false}
         onFiles={onFiles}
@@ -216,7 +217,7 @@ function ResourceSection({
             <ResourceCardSkeleton />
           </>
         ) : resources.length === 0 && jobs.length === 0 ? (
-          <p className={styles.empty}>{copy.empty}</p>
+          <p className={styles.empty}>{t(copy.empty)}</p>
         ) : (
           <>
             {resources.map((r, i) => {
@@ -274,7 +275,7 @@ function ResourceSection({
               onClick={handleContextualDelete}
               data-cell-id={`delete-selected-${sectionId}`}
             >
-              {selectedCount > 0 ? `Xóa ${selectedCount} đã chọn` : 'Xóa tất cả'}
+              {selectedCount > 0 ? t('resources.delete.selected', [selectedCount]) : t('resources.delete.all')}
             </Button>
           )}
           {footer}
@@ -329,7 +330,7 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
       const list = await listResources(langCode);
       setResources(list);
     } catch (e) {
-      showPanelAlert('error', `Không thể tải danh sách tài nguyên: ${String(e)}`);
+      showPanelAlert('error', t('resources.alert.loadFailed', [String(e)]));
     } finally {
       if (!soft) setLoading(false);
     }
@@ -394,10 +395,10 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
           status: 'skipped',
           duplicate: result.existingResource ? { existing: result.existingResource } : null,
         });
-        announce(`"${job.file.name}" đã bỏ qua — đã tồn tại.`);
+        announce(t('resources.announce.skipped', [job.file.name]));
       } else {
         patchJob(jobId, { status: 'success', wordCount: result.wordCount });
-        announce(`"${job.file.name}" đã thêm xong — ${result.wordCount} từ.`);
+        announce(t('resources.announce.added', [job.file.name, result.wordCount]));
         successTimers.current[jobId] = setTimeout(() => {
           setJobs((prev) => prev.filter((j) => j.jobId !== jobId));
           successTimers.current[jobId] = undefined;
@@ -407,9 +408,9 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     } catch (e) {
       const msg = isImportError(e)
         ? getUserMessage(e)
-        : `Lỗi import "${job.file.name}": ${String(e)}`;
+        : t('resources.error.import', [job.file.name, String(e)]);
       patchJob(jobId, { status: 'error', error: msg });
-      announce(`"${job.file.name}" lỗi: ${msg}`);
+      announce(t('resources.announce.failed', [job.file.name, msg]));
       void refresh(true);
     } finally {
       pump();
@@ -450,11 +451,11 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
       };
 
       if (!allowed.has(getExtension(file.name))) {
-        newJobs.push({ ...base, status: 'error', error: `Định dạng "${file.name}" không được hỗ trợ.` });
+        newJobs.push({ ...base, status: 'error', error: t('resources.error.format', [file.name]) });
         continue;
       }
       if (file.size > MAX_FILE_SIZE) {
-        newJobs.push({ ...base, status: 'error', error: `"${file.name}" ${formatBytes(file.size)} — vượt quá giới hạn 500MB.` });
+        newJobs.push({ ...base, status: 'error', error: t('resources.error.tooLarge', [file.name, formatBytes(file.size)]) });
         continue;
       }
 
@@ -534,10 +535,10 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
   const handleDelete = useCallback(async (resource: ResourceInfo) => {
     try {
       await deleteResourceCascade(langCode, resource.id!);
-      showPanelAlert('success', `Đã xóa "${resource.name}".`);
+      showPanelAlert('success', t('resources.delete.one', [resource.name]));
       void refresh(true);
     } catch (e) {
-      showPanelAlert('error', `Không thể xóa: ${String(e)}`);
+      showPanelAlert('error', t('resources.delete.failed', [String(e)]));
     }
     setDeleteTarget(null);
   }, [langCode, refresh, showPanelAlert]);
@@ -551,10 +552,10 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
       for (const r of doomed) {
         await deleteResourceCascade(langCode, r.id!);
       }
-      showPanelAlert('success', `Đã xóa ${doomed.length} ${SECTION_COPY[type].noun}.`);
+      showPanelAlert('success', t('resources.delete.many', [doomed.length, t(SECTION_COPY[type].noun)]));
       void refresh(true);
     } catch (e) {
-      showPanelAlert('error', `Không thể xóa: ${String(e)}`);
+      showPanelAlert('error', t('resources.delete.failed', [String(e)]));
       void refresh(true);
     }
   }, [resources, langCode, refresh, showPanelAlert]);
@@ -569,10 +570,10 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
       for (const r of doomed) {
         await deleteResourceCascade(langCode, r.id!);
       }
-      showPanelAlert('success', `Đã xóa ${doomed.length} ${SECTION_COPY[type].noun}.`);
+      showPanelAlert('success', t('resources.delete.many', [doomed.length, t(SECTION_COPY[type].noun)]));
       void refresh(true);
     } catch (e) {
-      showPanelAlert('error', `Không thể xóa tất cả: ${String(e)}`);
+      showPanelAlert('error', t('resources.delete.allFailed', [String(e)]));
       void refresh(true);
     }
   }, [resources, langCode, refresh, showPanelAlert]);
@@ -655,16 +656,16 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
       )}
       {deleteAllTarget && (
         <DeleteConfirmModal
-          title={`Xóa tất cả ${resources.filter((r) => r.type === deleteAllTarget).length} ${SECTION_COPY[deleteAllTarget].noun}?`}
-          description={`Xóa vĩnh viễn toàn bộ ${SECTION_COPY[deleteAllTarget].noun} trong mục này và dữ liệu của chúng.`}
+          title={t('resources.deleteAll.title', [resources.filter((r) => r.type === deleteAllTarget).length, t(SECTION_COPY[deleteAllTarget].noun)])}
+          description={t('resources.deleteAll.desc', [t(SECTION_COPY[deleteAllTarget].noun)])}
           onConfirm={() => void handleDeleteAll(deleteAllTarget)}
           onCancel={() => setDeleteAllTarget(null)}
         />
       )}
       {deleteManyTarget && (
         <DeleteConfirmModal
-          title={`Xóa ${deleteManyTarget.ids.length} ${SECTION_COPY[deleteManyTarget.type].noun} đã chọn?`}
-          description={`Xóa vĩnh viễn các ${SECTION_COPY[deleteManyTarget.type].noun} đã chọn và dữ liệu của chúng.`}
+          title={t('resources.deleteMany.title', [deleteManyTarget.ids.length, t(SECTION_COPY[deleteManyTarget.type].noun)])}
+          description={t('resources.deleteMany.desc', [t(SECTION_COPY[deleteManyTarget.type].noun)])}
           onConfirm={() => void handleDeleteMany(deleteManyTarget.type, deleteManyTarget.ids)}
           onCancel={() => setDeleteManyTarget(null)}
         />

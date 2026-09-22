@@ -5,6 +5,7 @@
 // self-loads via loadSettings and persists via saveSettings.
 
 import { useEffect, useState, type ReactElement } from 'react';
+import { t, type MessageKey } from '@/shared/i18n';
 import { Button, Input } from '@/shared/ui';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_FREQUENCY_BANDS } from '@/shared/config/config';
@@ -16,11 +17,11 @@ interface FrequencyBandsEditorProps {
   readonly onChange?: (bands: FrequencyBandThresholds) => void;
 }
 
-const FIELDS: readonly { key: keyof FrequencyBandThresholds; label: string; hint: string }[] = [
-  { key: 'core', label: 'Phổ biến', hint: 'từ dùng hằng ngày' },
-  { key: 'common', label: 'Thường gặp', hint: 'hay gặp trong sách và phim' },
-  { key: 'general', label: 'Chung', hint: 'vốn từ của người lớn' },
-  { key: 'advanced', label: 'Nâng cao', hint: 'từ học thuật, ít gặp' },
+const FIELDS: readonly { key: keyof FrequencyBandThresholds; label: MessageKey; hint: MessageKey }[] = [
+  { key: 'core', label: 'resources.bands.core', hint: 'resources.bands.core.hint' },
+  { key: 'common', label: 'resources.bands.common', hint: 'resources.bands.common.hint' },
+  { key: 'general', label: 'resources.bands.general', hint: 'resources.bands.general.hint' },
+  { key: 'advanced', label: 'resources.bands.advanced', hint: 'resources.bands.advanced.hint' },
 ];
 
 export function FrequencyBandsEditor({ value, onChange }: FrequencyBandsEditorProps): ReactElement {
@@ -64,17 +65,17 @@ export function FrequencyBandsEditor({ value, onChange }: FrequencyBandsEditorPr
   return (
     <div className={styles.bands} data-cell-id="frequency-bands-editor">
       <div className={styles.bandsHead}>
-        <span className={styles.bandsTitle}>Ngưỡng độ phổ biến</span>
+        <span className={styles.bandsTitle}>{t('resources.bands.title')}</span>
         <p className={styles.bandsHint}>
-          Mỗi từ có một hạng trong danh sách — hạng càng nhỏ từ càng phổ biến.
+          {t('resources.bands.hint')}
         </p>
       </div>
 
       <div className={styles.bandRows}>
         {FIELDS.map(({ key, label, hint }) => (
           <div key={key} className={styles.bandRow}>
-            <span className={styles.bandName}>{label}</span>
-            <span className={styles.bandDesc}>{hint}</span>
+            <span className={styles.bandName}>{t(label)}</span>
+            <span className={styles.bandDesc}>{t(hint)}</span>
             <span className={styles.bandInputWrap}>
               <span className={styles.bandPrefix}>top ≤</span>
               <Input
@@ -85,7 +86,7 @@ export function FrequencyBandsEditor({ value, onChange }: FrequencyBandsEditorPr
                 step={100}
                 value={bands[key]}
                 onChange={(e) => commit(key, e.target.value)}
-                aria-label={`Ngưỡng ${label}`}
+                aria-label={t('resources.bands.aria', [t(label)])}
                 data-cell-id={`band-input-${key}`}
               />
             </span>
@@ -100,7 +101,7 @@ export function FrequencyBandsEditor({ value, onChange }: FrequencyBandsEditorPr
           onClick={reset}
           data-cell-id="bands-reset"
         >
-          Đặt lại mặc định
+          {t('resources.bands.reset')}
         </Button>
       )}
     </div>

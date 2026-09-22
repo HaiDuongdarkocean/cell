@@ -6,7 +6,7 @@
 // Settings v14 types (DictionaryPopupSettings, CardCreatorSettingsV14) live in
 // `@/entities/settings/types.ts`.
 
-import type { LookupRequest, PhraseMatch } from './types';
+import type { LookupRequest, PhraseMatch, SenseLine, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo, UsageNote } from './types';
 import type { BilingualCue, MediaFile } from '@/entities/media';
 import type { CardCreatorQueueItem } from '@/entities/cardCreator';
 
@@ -30,9 +30,21 @@ export type MatchSource = 'dictionary' | 'plugin' | 'fallback';
 export interface DefinitionEntry {
   readonly id: string;
   readonly pos?: string;
+  /** Register/grammar/audience tags — rendered as selectable `[label]`
+   *  text before the gloss. */
+  readonly labels?: readonly string[];
+  /** Per-sense CEFR/provider level — rendered as plain `[B1]` text. */
+  readonly level?: string;
   readonly text: string;
+  /** Structured sense lines when available (new imports + legacy fallback
+   *  classifier) — enables per-line rendering + translation reveal. */
+  readonly lines?: readonly SenseLine[];
+  readonly subsenses?: readonly { readonly num: string; readonly text: string }[];
+  /** Per-sense relations — rendered as "Synonyms: a, b" / "Opposite: c". */
+  readonly synonyms?: readonly string[];
+  readonly antonyms?: readonly string[];
   readonly examples: readonly string[];
-  /** 'Cambridge', 'CC-CEDICT', ... */
+  /** Resource name the def came from (file name minus extension). */
   readonly source: string;
   /** Server hint; UI selection state ở Zustand, không persist LookupResult (O10). */
   readonly defaultSelected: boolean;
@@ -82,6 +94,18 @@ export interface LookupResult {
   readonly rawDefinitions: readonly string[];
   /** Structurally valid match only; null → normal dictionary fallback. */
   readonly detectedPhrase: PhraseMatch | null;
+  /** Kind-tagged links to other entries — phrasal verbs, idioms,
+   *  collocations, phrases. Merged across resources, deduped by term. */
+  readonly related?: readonly RelatedEntry[];
+  readonly inflections?: readonly InflectionGroup[];
+  /** Entry-level CEFR/provider level (header `[B1]`). */
+  readonly level?: string;
+  /** Word origin — primary chain + checkable per-source variants. */
+  readonly etymology?: EtymologyBlock;
+  readonly wordFamily?: WordFamily;
+  readonly wordNet?: WordNetInfo;
+  readonly derivedTerms?: readonly string[];
+  readonly usageNote?: UsageNote;
   readonly matchSource: MatchSource;
 }
 
@@ -231,6 +255,13 @@ export interface FetchLocalAudioPayload {
 
 export interface FetchLocalAudioResponse {
   readonly items: readonly AudioItem[];
+}
+
+export type LocalAudioPermission = 'granted' | 'prompt' | 'denied' | 'none';
+
+export interface LocalAudioStateResponse {
+  readonly configured: boolean;
+  readonly permission: LocalAudioPermission;
 }
 
 export interface FetchImagesPayload {

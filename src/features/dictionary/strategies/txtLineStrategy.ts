@@ -4,7 +4,7 @@
 
 import { BaseFrequencyStrategy } from './baseImportStrategy';
 import type { StrategyOptions, RawFrequencyEntry } from './baseImportStrategy';
-import { isZip, unzipAll, decodeText } from '../logic/fileDetector';
+import { isGzip, gunzipFile, isZip, unzipAll, decodeText, looksLikePlainText } from '../logic/fileDetector';
 import { CorruptedFileError } from '../logic/importErrors';
 import { bulkInsertFrequencyEntries } from '../repositories/frequencyRepository';
 import type { FrequencyEntry } from '@/entities/dictionary';
@@ -26,24 +26,25 @@ export class TxtLineStrategy extends BaseFrequencyStrategy {
     fileData: TxtStrategyOptions,
   ) {
     super(options);
-    // Auto-unzip if .zip — defer error to parse() so execute() rejects (not constructor)
-    if (isZip(fileData.data)) {
-      try {
-        const files = unzipAll(fileData.data);
-        const txtFile = Object.keys(files).find((p) => p.endsWith('.txt'));
+    // Auto-gunzip/-unzip — defer error to parse() so execute() rejects (not constructor)
+    try {
+      let data = fileData.data;
+      if (isGzip(data)) data = gunzipFile(data);
+      if (isZip(data)) {
+        const files = unzipAll(data);
+        const txtFile =
+          Object.keys(files).find((p) => p.endsWith('.txt')) ??
+          Object.keys(files).find((p) => p.endsWith('.json') && looksLikePlainText(files[p]!));
         if (!txtFile) {
-          this.unzipError = new CorruptedFileError(`No .txt file found in zip "${fileData.fileName}".`);
-          this.data = new Uint8Array(0);
-          return;
+          throw new CorruptedFileError(`No .txt file found in zip "${fileData.fileName}".`);
         }
-        this.data = files[txtFile]!;
-      } catch (e) {
-        this.unzipError = e instanceof CorruptedFileError ? e : new CorruptedFileError(`Failed to unzip "${fileData.fileName}".`, e);
-        this.data = new Uint8Array(0);
-        return;
+        data = files[txtFile]!;
       }
-    } else {
-      this.data = fileData.data;
+      this.data = data;
+    } catch (e) {
+      this.unzipError = e instanceof CorruptedFileError ? e : new CorruptedFileError(`Failed to unzip "${fileData.fileName}".`, e);
+      this.data = new Uint8Array(0);
+      return;
     }
   }
 

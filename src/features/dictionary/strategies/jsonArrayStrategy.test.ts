@@ -3,7 +3,7 @@ import { JsonArrayStrategy } from '@/features/dictionary/strategies/jsonArrayStr
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
 import { findFrequencyByResource } from '@/features/dictionary/repositories/frequencyRepository';
 import { addResource } from '@/features/dictionary/repositories/resourceRepository';
-import { strToU8 } from 'fflate';
+import { strToU8, zipSync, gzipSync } from 'fflate';
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
 
@@ -73,6 +73,36 @@ describe('jsonArrayStrategy', () => {
       { data, fileName: 'freq.json' },
     );
     await expect(strategy.execute()).rejects.toThrow(/Expected JSON array/);
+  });
+
+  it('auto-unzips .zip containing a .json array', async () => {
+    const resourceId = await addResource(LANG, {
+      name: 'freq.zip', langCode: LANG, type: 'FREQUENCY', format: 'json-array',
+      signature: 'sig4', wordCount: 0, installationFinished: false, importedAt: Date.now(),
+    });
+    const zipped = zipSync({ 'freq.json': strToU8(JSON.stringify(['alpha', 'beta'])) });
+    const strategy = new JsonArrayStrategy(
+      { resourceId, langCode: LANG },
+      { data: zipped, fileName: 'freq.zip' },
+    );
+    const result = await strategy.execute();
+    expect(result.wordCount).toBe(2);
+    const entries = await findFrequencyByResource(LANG, resourceId);
+    expect(entries.map((e) => e.term).sort()).toEqual(['alpha', 'beta']);
+  });
+
+  it('auto-gunzips .json.gz', async () => {
+    const resourceId = await addResource(LANG, {
+      name: 'freq.json.gz', langCode: LANG, type: 'FREQUENCY', format: 'json-array',
+      signature: 'sig5', wordCount: 0, installationFinished: false, importedAt: Date.now(),
+    });
+    const gzipped = gzipSync(strToU8(JSON.stringify(['alpha', 'beta'])));
+    const strategy = new JsonArrayStrategy(
+      { resourceId, langCode: LANG },
+      { data: gzipped, fileName: 'freq.json.gz' },
+    );
+    const result = await strategy.execute();
+    expect(result.wordCount).toBe(2);
   });
 
   it('handles empty array', async () => {

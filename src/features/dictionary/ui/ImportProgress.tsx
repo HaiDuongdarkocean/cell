@@ -6,6 +6,7 @@
 // Statuses: queued | uploading | importing | duplicate | success | error | skipped.
 
 import { type ReactElement } from 'react';
+import { t } from '@/shared/i18n';
 import { Button } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { Spinner } from '@/shared/ui/Spinner';
@@ -42,31 +43,32 @@ export function ImportProgress({ job, onResolveDuplicate, onRerunReplace }: Impo
 
   switch (job.status) {
     case 'queued':
-      meta = <span className={styles.metaMuted}>Chờ lượt</span>;
-      right = <Spinner size="sm" ariaLabel="Chờ lượt" />;
+      meta = <span className={styles.metaMuted}>{t('resources.job.waiting')}</span>;
+      right = <Spinner size="sm" ariaLabel={t('resources.job.waiting')} />;
       break;
     case 'uploading':
-      meta = <span className={styles.metaMuted}>Đang tải lên… {fillPct}%</span>;
+      meta = <span className={styles.metaMuted}>{t('resources.job.uploading', [fillPct])}</span>;
       right = <span className={styles.pct}>{fillPct}%</span>;
       break;
     case 'importing':
       meta = (
         <span className={styles.metaMuted}>
-          Đang thêm… {job.processed.toLocaleString('vi-VN')}
-          {job.total > 0 ? ` / ${job.total.toLocaleString('vi-VN')}` : ''} mục
+          {job.total > 0
+            ? t('resources.job.importingOf', [job.processed.toLocaleString(), job.total.toLocaleString()])
+            : t('resources.job.importing', [job.processed.toLocaleString()])}
         </span>
       );
       right = job.total > 0
         ? <span className={styles.pct}>{fillPct}%</span>
-        : <Spinner size="sm" ariaLabel="Đang đếm" />;
+        : <Spinner size="sm" ariaLabel={t('resources.job.counting')} />;
       break;
     case 'duplicate': {
       const existing = job.duplicate?.existing;
       const replaceBlocked = existing?.installationFinished === false;
       meta = (
         <span className={styles.metaDup}>
-          Đã có sẵn &quot;{existing?.name}&quot;
-          {replaceBlocked && ' — đang được thêm, chỉ có thể bỏ qua'}
+          {t('resources.job.exists', [existing?.name ?? ''])}
+          {replaceBlocked && t('resources.job.existsBlocked')}
           <span className={styles.dupActions}>
             <Button
               variant="outline"
@@ -75,7 +77,7 @@ export function ImportProgress({ job, onResolveDuplicate, onRerunReplace }: Impo
               onClick={() => onResolveDuplicate(job.jobId, 'replace')}
               data-cell-id={`dup-replace-${job.jobId}`}
             >
-              Thay thế
+              {t('resources.job.replace')}
             </Button>
             <Button
               variant="ghost"
@@ -83,7 +85,7 @@ export function ImportProgress({ job, onResolveDuplicate, onRerunReplace }: Impo
               onClick={() => onResolveDuplicate(job.jobId, 'skip')}
               data-cell-id={`dup-skip-${job.jobId}`}
             >
-              Bỏ qua
+              {t('resources.job.skip')}
             </Button>
           </span>
         </span>
@@ -92,7 +94,7 @@ export function ImportProgress({ job, onResolveDuplicate, onRerunReplace }: Impo
       break;
     }
     case 'success':
-      meta = <span className={styles.metaOk}>Đã thêm {job.wordCount?.toLocaleString('vi-VN')} từ</span>;
+      meta = <span className={styles.metaOk}>{t('resources.job.added', [job.wordCount?.toLocaleString() ?? ''])}</span>;
       right = <Icon name="circleCheck" size="sm" className={styles.iconOk} />;
       break;
     case 'error':
@@ -102,7 +104,7 @@ export function ImportProgress({ job, onResolveDuplicate, onRerunReplace }: Impo
     case 'skipped':
       meta = (
         <span className={styles.metaDup}>
-          Đã bỏ qua — file đã tồn tại
+          {t('resources.job.skipped')}
           <span className={styles.dupActions}>
             <Button
               variant="outline"
@@ -110,7 +112,7 @@ export function ImportProgress({ job, onResolveDuplicate, onRerunReplace }: Impo
               onClick={() => onRerunReplace(job.jobId)}
               data-cell-id={`skipped-replace-${job.jobId}`}
             >
-              Thay thế
+              {t('resources.job.replace')}
             </Button>
           </span>
         </span>

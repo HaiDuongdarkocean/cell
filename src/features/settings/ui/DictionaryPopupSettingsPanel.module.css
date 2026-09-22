@@ -71,7 +71,7 @@
   appearance: none;
   border: var(--border-width-hairline) solid transparent;
   background: var(--color-field);
-  color: var(--color-text-secondary);
+  color: var(--color-text);
   font: inherit;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);

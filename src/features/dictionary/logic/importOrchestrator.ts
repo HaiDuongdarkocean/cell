@@ -5,9 +5,9 @@
 // (wordCount, installationFinished=true) → return result.
 // Error → rollbackImport(resourceId) → rethrow. Rollback-during-rollback → RollbackError.
 
-import { validateFile, readFileHead, readFileBytes } from '../logic/fileDetector';
+import { validateFile, readFileHead, readFileBytes, isZip, unzipAll } from '../logic/fileDetector';
 import type { ReadableFile } from '../logic/fileDetector';
-import { detectFormat } from '../logic/formatDetector';
+import { detectFormat, sniffZipFormat } from '../logic/formatDetector';
 import { computeSignature } from '../logic/signatureGenerator';
 import { resolveFormat, createStrategy } from '../strategies/strategyFactory';
 import {
@@ -51,7 +51,7 @@ export async function importFile(
 
   // 3. Detect format
   const detectedFormat = await detectFormat(file.name, head);
-  const format = resolveFormat(detectedFormat, resourceType);
+  let format = resolveFormat(detectedFormat, resourceType);
 
   // 4. Compute signature (SHA-256(first1MB)_size_name)
   const signature = await computeSignature(file);
@@ -76,6 +76,13 @@ export async function importFile(
   // 6. Read full file bytes
   const data = await readFileBytes(file);
 
+  // 6b. Zip >1MB can't be sniffed from the head — 'term-bank' is only the
+  //     extension default there. Re-sniff authoritative content on full bytes.
+  if (format === 'term-bank' && isZip(data)) {
+    const refined = sniffZipFormat(unzipAll(data));
+    if (refined) format = refined;
+  }
+
   // 7. Create resource (installationFinished=false — UI sees progress)
   const resourceId = await addResource(langCode, {
     name: file.name,
@@ -94,11 +101,11 @@ export async function importFile(
     const strategy = createStrategy(format, resourceType, { resourceId, langCode, onProgress }, { data, fileName: file.name });
     const result = await strategy.execute();
 
-    // 9. Build phrase index for Cambridge dictionaries (ADR-037 §7.2).
+    // 9. Build phrase index for entry-object dictionaries (ADR-037 §7.2).
     //    Must succeed before installationFinished=true so a blob failure
-    //    rolls back the whole import. Non-Cambridge / non-dictionary resources
+    //    rolls back the whole import. Other formats / non-dictionary resources
     //    skip this step.
-    if (format === 'cambridge-json' && resourceType === 'DICTIONARY') {
+    if (format === 'json-entries' && resourceType === 'DICTIONARY') {
       await buildPhraseIndexForResource(langCode, resourceId);
     }
 

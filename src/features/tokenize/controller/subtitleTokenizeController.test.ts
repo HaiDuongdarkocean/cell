@@ -232,6 +232,94 @@ describe('createSubtitleTokenizeController', () => {
     controller.destroy();
   });
 
+  it('applies status when a real shadow selection reports document-level isCollapsed', async () => {
+    // Real Chromium drag inside a shadow root: window.getSelection() retargets
+    // anchor/focus to the host → isCollapsed=true + collapsed legacy range;
+    // only getComposedRanges exposes the real range. Programmatic addRange
+    // (previous test) reports isCollapsed=false and misses this regression.
+    const panelHost = document.createElement('div');
+    const shadow = panelHost.attachShadow({ mode: 'open' });
+    const cueText = document.createElement('span');
+    const alpha = document.createElement('span');
+    alpha.className = 'js-cell-token';
+    alpha.setAttribute('data-cell-term', 'alpha');
+    alpha.textContent = 'alpha';
+    const beta = document.createElement('span');
+    beta.className = 'js-cell-token';
+    beta.setAttribute('data-cell-term', 'beta');
+    beta.textContent = 'beta';
+    cueText.append(alpha, document.createTextNode(' '), beta);
+    shadow.appendChild(cueText);
+    document.body.appendChild(panelHost);
+
+    const target = document.createElement('div');
+    const native = document.createElement('div');
+    document.body.append(target, native);
+    const controller = createSubtitleTokenizeController({
+      langCode: 'en',
+      getLineElements: () => ({ target, native }),
+      getExtraShadowRoots: () => [shadow],
+      onOpenDictionary: jest.fn(),
+      windowSize: 1,
+    });
+    controller.enable();
+
+    const collapsedRange = document.createRange();
+    collapsedRange.setStart(document.body, 0);
+    collapsedRange.collapse(true);
+    const shadowSelection = {
+      isCollapsed: true,
+      rangeCount: 1,
+      getRangeAt: () => collapsedRange,
+      getComposedRanges: ({ shadowRoots }: { shadowRoots: ShadowRoot[] }) =>
+        shadowRoots.includes(shadow)
+          ? [{
+              collapsed: false,
+              startContainer: alpha.firstChild!,
+              startOffset: 0,
+              endContainer: beta.firstChild!,
+              endOffset: 4,
+            }]
+          : [],
+      removeAllRanges: jest.fn(),
+    } as unknown as Selection;
+    const getSelectionSpy = jest.spyOn(window, 'getSelection').mockReturnValue(shadowSelection);
+
+    setWordStatus.mockClear();
+    expect(controller.handleStatusKey('3')).toBe(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'alpha', 'known');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'beta', 'known');
+
+    getSelectionSpy.mockRestore();
+    controller.destroy();
+  });
+
+  it('applies status to the term set via setHoveredTerm (cue-list hover path)', async () => {
+    const { target, cues, controller } = setup();
+
+    target.textContent = cues[0]!.text;
+    controller.setCues(cues, []);
+    controller.enable();
+    controller.render(0, -1);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    controller.setHoveredTerm('hello');
+    setWordStatus.mockClear();
+    expect(controller.handleStatusKey('2')).toBe(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
+
+    controller.setHoveredTerm(null);
+    setWordStatus.mockClear();
+    expect(controller.handleStatusKey('2')).toBe(false);
+
+    controller.destroy();
+  });
+
   it('routes 1-4 keys to the popup target instead of the hovered token', async () => {
     const apply = jest.fn();
     const target = document.createElement('div');

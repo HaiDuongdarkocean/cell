@@ -1,8 +1,9 @@
 import type { StudyMode } from '@/entities/studyMode';
+import type { MessageKey } from '@/shared/i18n';
 
 export interface ModeNameValidation {
   valid: boolean;
-  error?: string;
+  errorKey?: MessageKey;
 }
 
 export function validateModeName(
@@ -12,16 +13,16 @@ export function validateModeName(
 ): ModeNameValidation {
   const trimmed = name.trim();
   if (trimmed.length === 0) {
-    return { valid: false, error: 'Name is required' };
+    return { valid: false, errorKey: 'studyModes.builder.errorNameRequired' };
   }
   if (trimmed.length > 50) {
-    return { valid: false, error: 'Name must be 50 characters or less' };
+    return { valid: false, errorKey: 'studyModes.builder.errorNameTooLong' };
   }
   const duplicate = existingModes.find(
     (m) => m.id !== excludeId && m.title.trim().toLowerCase() === trimmed.toLowerCase(),
   );
   if (duplicate) {
-    return { valid: false, error: 'Name already exists' };
+    return { valid: false, errorKey: 'studyModes.builder.errorNameExists' };
   }
   return { valid: true };
 }

@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, type ReactElement } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from './Button';
 import { Icon } from '@/shared/icons/Icon';
 import { pushEscapeLayer } from './escapeLayerStack';
+import { getPortalContainer } from './portalContainer';
 import styles from './HintIcon.module.css';
 
 /** Props for the HintIcon component. */
@@ -16,6 +18,13 @@ export interface HintIconProps {
   dataTestId?: string;
 }
 
+type PopoverPos = {
+  top: number;
+  left: number;
+  flip: boolean;
+  align: 'left' | 'right' | 'center';
+};
+
 /**
  * HintIcon — info-circle button + floating popover with boundary detection
  * (settings-controls-restyle spec F6).
@@ -25,8 +34,10 @@ export interface HintIconProps {
  * - align-right: if near left edge, popover right-aligned
  * - align-center: if both sides insufficient, popover centered
  *
- * Dismiss: click outside, Esc key, or click icon again.
- * Accessible: button + aria-expanded + aria-label, popover role="tooltip".
+ * The popover is portaled out of the trigger subtree: label rows clip
+ * children with overflow:hidden, which would hide the tooltip entirely.
+ * Fixed positioning from the trigger rect keeps it anchored; it dismisses
+ * on outside click, Esc, scroll, or clicking the icon again.
  */
 export function HintIcon({
   hint,
@@ -35,102 +46,98 @@ export function HintIcon({
   dataTestId,
 }: HintIconProps): ReactElement {
   const [isOpen, setIsOpen] = useState(false);
-  const [positionClass, setPositionClass] = useState('');
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState<PopoverPos | null>(null);
+  const wrapRef = useRef<HTMLSpanElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
-  const toggle = (): void => {
-    setIsOpen(!isOpen);
-  };
-
-  // Calculate position after popover is shown
-  useEffect(() => {
-    if (isOpen && buttonRef.current && popoverRef.current) {
-      // Defer to next frame to ensure popover is rendered
-      const rafId = requestAnimationFrame(() => {
-        const btnRect = buttonRef.current?.getBoundingClientRect();
-        const popoverRect = popoverRef.current?.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-
-        if (!btnRect || !popoverRect) return;
-
-        const padding = 8;
-        const popoverHeight = popoverRect.height;
-        const popoverWidth = popoverRect.width;
-
-        const nextClasses: string[] = [];
-
-        // Vertical: check if popover would overflow top edge
-        if (btnRect.top < popoverHeight + padding) {
-          nextClasses.push(styles['flip-top']);
-        }
-
-        // Horizontal: check alignment based on available space
-        const spaceLeft = btnRect.left;
-        const spaceRight = viewportWidth - btnRect.right;
-
-        if (spaceLeft < popoverWidth / 2 && spaceRight < popoverWidth / 2) {
-          nextClasses.push(styles['align-center']);
-        } else if (spaceLeft < popoverWidth) {
-          nextClasses.push(styles['align-right']);
-        }
-
-        setPositionClass(nextClasses.join(' '));
-      });
-
-      return () => cancelAnimationFrame(rafId);
-    } else {
-      setPositionClass('');
-    }
-  }, [isOpen]);
-
-  // Click outside dismiss
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleClickOutside = (e: MouseEvent): void => {
-      if (
-        buttonRef.current &&
-        popoverRef.current &&
-        !buttonRef.current.contains(e.target as Node) &&
-        !popoverRef.current.contains(e.target as Node)
-      ) {
+    const wrap = wrapRef.current;
+    const doc = wrap?.ownerDocument ?? document;
+    const win = doc.defaultView ?? window;
+    const rootNode = wrap?.getRootNode();
+    const scope: Document | ShadowRoot = rootNode instanceof ShadowRoot ? rootNode : doc;
+
+    const popover = popoverRef.current;
+    const trigger = wrap?.querySelector('button') ?? wrap;
+    if (popover && trigger) {
+      const btnRect = trigger.getBoundingClientRect();
+      const popRect = popover.getBoundingClientRect();
+      const pad = 8;
+      const gap = 6;
+      const flip = btnRect.top < popRect.height + gap + pad;
+      const viewportWidth = win.innerWidth;
+
+      let align: PopoverPos['align'] = 'left';
+      let left = btnRect.left;
+      if (left + popRect.width > viewportWidth - pad) {
+        align = 'right';
+        left = btnRect.right - popRect.width;
+      }
+      if (left < pad) {
+        align = 'center';
+        left = Math.max(
+          pad,
+          Math.min(btnRect.left + btnRect.width / 2 - popRect.width / 2, viewportWidth - popRect.width - pad),
+        );
+      }
+      setPos({
+        top: flip ? btnRect.bottom + gap : btnRect.top - popRect.height - gap,
+        left,
+        flip,
+        align,
+      });
+    }
+
+    const onClickOutside = (e: Event): void => {
+      const target = e.target as Node;
+      if (!wrap?.contains(target) && !popoverRef.current?.contains(target)) {
         setIsOpen(false);
       }
     };
+    const onScroll = (): void => setIsOpen(false);
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    scope.addEventListener('mousedown', onClickOutside);
+    const popEscapeLayer = pushEscapeLayer(() => setIsOpen(false), doc);
+    win.addEventListener('scroll', onScroll, true);
+    if (scope !== doc) scope.addEventListener('scroll', onScroll, true);
+    win.addEventListener('resize', onScroll);
+
+    return () => {
+      scope.removeEventListener('mousedown', onClickOutside);
+      popEscapeLayer();
+      win.removeEventListener('scroll', onScroll, true);
+      if (scope !== doc) scope.removeEventListener('scroll', onScroll, true);
+      win.removeEventListener('resize', onScroll);
+      setPos(null);
+    };
   }, [isOpen]);
 
-  // Esc key dismiss — via the shared Escape stack so the popover consumes the
-  // key before ancestor surfaces (e.g. UniversalPanel) can react to it.
-  useEffect(() => {
-    if (!isOpen) return;
-    return pushEscapeLayer(() => setIsOpen(false));
-  }, [isOpen]);
+  const popover = isOpen ? (
+    <div
+      ref={popoverRef}
+      className={`${styles.hintText} ${pos?.flip ? styles['flip-top'] : ''} ${pos ? styles[`align-${pos.align}`] : ''}`}
+      style={pos ? { top: pos.top, left: pos.left } : { visibility: 'hidden' }}
+      role="tooltip"
+    >
+      {hint}
+    </div>
+  ) : null;
 
   return (
-    <span className={styles.hintWrap} ref={buttonRef}>
+    <span className={styles.hintWrap} ref={wrapRef}>
       <Button shape="circle" variant="ghost" size="sm"
         id={id}
         data-cell-id={dataTestId}
         className={styles.hintBtn}
         aria-expanded={isOpen}
         aria-label={ariaLabel}
-        onClick={toggle}
+        onClick={() => setIsOpen((v) => !v)}
       >
         <Icon name="info" size="var(--iconbutton-icon-md)" />
       </Button>
-      {isOpen && (
-        <div
-          ref={popoverRef}
-          className={`${styles.hintText} ${positionClass}`}
-          role="tooltip"
-        >
-          {hint}
-        </div>
-      )}
+      {popover && createPortal(popover, getPortalContainer(wrapRef.current))}
     </span>
   );
 }

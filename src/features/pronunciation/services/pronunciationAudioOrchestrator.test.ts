@@ -1,4 +1,5 @@
 import {
+  LocalAudioProvider,
   PronunciationAudioOrchestrator,
   type PronunciationAudioProvider,
 } from './pronunciationAudioOrchestrator';
@@ -115,5 +116,38 @@ describe('PronunciationAudioOrchestrator', () => {
       downloadEspeakTtsData: true,
     });
     expect((orchestrator as unknown as { providers: PronunciationAudioProvider[] }).providers).toHaveLength(2);
+  });
+});
+
+describe('LocalAudioProvider', () => {
+  afterEach(() => {
+    delete (globalThis as { __cellSendMessage?: unknown }).__cellSendMessage;
+  });
+
+  it('rehydrates audioBytes serialized to an integer-keyed object across sendMessage', async () => {
+    const wireBytes = { 0: 73, 1: 68, 2: 51, 3: 4 };
+    (globalThis as { __cellSendMessage?: unknown }).__cellSendMessage = () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          items: [
+            {
+              id: 'local-1',
+              kind: 'word',
+              source: 'local',
+              label: 'Forvo · x.mp3',
+              state: 'idle',
+              audioBytes: wireBytes,
+              defaultSelected: false,
+            },
+          ],
+        },
+      });
+
+    const provider = new LocalAudioProvider();
+    const items = await provider.resolve('hello', 'en');
+    expect(items).toHaveLength(1);
+    expect(items[0].audioBytes).toBeInstanceOf(Uint8Array);
+    expect(Array.from(items[0].audioBytes ?? [])).toEqual([73, 68, 51, 4]);
   });
 });

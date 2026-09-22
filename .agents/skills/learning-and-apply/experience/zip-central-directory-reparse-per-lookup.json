@@ -1,0 +1,21 @@
+{
+  "id": "zip-central-directory-reparse-per-lookup",
+  "title": "unzip() parses the whole central directory per call — byte-scan only the CD range for requested paths, no persisted directory table",
+  "category": ["data", "state"],
+  "tags": ["zip", "unzipit", "indexeddb", "file-slice", "decompressionstream", "service-worker", "performance", "local-audio"],
+  "trigger": "Any per-request zip entry lookup that re-opens the archive (new resolver instance per message, SW idle-kill between calls)",
+  "principle": "unzipit's unzip(file) reads + parses the ENTIRE central directory into entry objects — for a 3.4GB archive with ~400k entries that's seconds of CPU per call when the resolver instance doesn't survive (service workers die on idle). Final design: keep ONLY the central-directory byte range in memory for the SW lifetime (read EOCD tail → slice the CD once), then byte-match requested paths against raw CD records (no per-entry object allocation) and `File.slice()` the local header + payload for just those paths; decompress method 8 via native `DecompressionStream('deflate-raw')` (fflate has NO public raw-deflate sync API). Batch variant scans once for N paths. Do NOT persist a path→meta directory table in IDB: a 400k-entry record costs ~600ms to structured-clone on read and multi-second main-thread stalls on write — the targeted scan is already ~1s uncached, so the IDB tier buys little and costs a stall that starves concurrent lookups. unzipit remains only as a fallback when CD parsing fails.",
+  "cases": [
+    {
+      "context": "FETCH_LOCAL_AUDIO created `new LingvoDslAudioProvider` per message → unzip() reparsed the 409k-entry central directory every lookup → 4-9s per word; later the IDB directory cache's giant put() blocked the SW event loop and made concurrent lookups 6-13s.",
+      "bad": "return unzip(file); // re-parses central directory every lookup\n// or: idb.put({entries: 400k-entry map}) — structured clone stalls the SW",
+      "good": "LazyZip: cdPromise = readEocd → file.slice(cdOffset, cdSize) once per SW lifetime; readMany(paths) byte-matches path names inside cd bytes, then slices each hit's local header + payload and inflates via DecompressionStream('deflate-raw'). Provider memoized in SW scope keyed by settings JSON."
+    }
+  ],
+  "applyFor": [
+    "Any zip/entry lookup pattern in a service worker (SW lifetime kills in-memory caches)",
+    "When profiling multi-second lookups: check whether an expensive parse is re-run per message instead of once per SW/instance",
+    "IDB as cache tier: never persist records with hundreds of thousands of structured-clone fields — read ~O(size), write blocks the event loop",
+    "fflate gap: no raw-deflate inflate export — use DecompressionStream('deflate-raw'); jsdom lacks it, polyfill from node:stream/web in tests"
+  ]
+}

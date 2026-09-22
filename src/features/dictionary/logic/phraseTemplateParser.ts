@@ -88,7 +88,7 @@ const DETERMINERS = new Set([
 ]);
 const PREPOSITIONS = new Set(['of', 'in', 'on', 'for', 'to', 'with', 'from', 'by', 'at']);
 
-/** Parse a Cambridge multiword term into bounded matching nodes. */
+/** Parse an entry-object multiword term into bounded matching nodes. */
 export function parsePhraseTemplate(
   sourceTerm: string,
   options: PhraseTemplateParseOptions = {},

@@ -96,6 +96,60 @@ describe('extractTermsFromSelection', () => {
     expect(extractTermsFromSelection(shadowSelection, [shadow]).sort()).toEqual(['alpha', 'beta']);
   });
 
+  it('extracts terms when the document selection reports collapsed but getComposedRanges returns a shadow range', () => {
+    // Real Chromium shape for a drag selection fully inside a shadow root:
+    // document.getSelection() retargets anchor/focus to the host → isCollapsed
+    // true, legacy range collapsed; only getComposedRanges exposes the real
+    // range. (Programmatic addRange reports isCollapsed=false — e2e-only.)
+    const host = document.createElement('div');
+    const shadow = host.attachShadow({ mode: 'open' });
+    const cue = document.createElement('span');
+    cue.appendChild(makeToken('alpha'));
+    cue.appendChild(document.createTextNode(' '));
+    cue.appendChild(makeToken('beta'));
+    shadow.appendChild(cue);
+    document.body.appendChild(host);
+
+    const collapsedRange = document.createRange();
+    collapsedRange.setStart(document.body, 1);
+    collapsedRange.collapse(true);
+    const shadowSelection = {
+      isCollapsed: true,
+      rangeCount: 1,
+      getRangeAt: () => collapsedRange,
+      getComposedRanges: ({ shadowRoots }: { shadowRoots: ShadowRoot[] }) =>
+        shadowRoots.includes(shadow)
+          ? [{
+              collapsed: false,
+              startContainer: cue.firstChild!.firstChild!,
+              startOffset: 0,
+              endContainer: cue.lastChild!.firstChild!,
+              endOffset: 4,
+            }]
+          : [],
+    } as unknown as Selection;
+
+    expect(extractTermsFromSelection(shadowSelection, [shadow]).sort()).toEqual(['alpha', 'beta']);
+  });
+
+  it('returns empty when the document selection is collapsed and no composed range exists', () => {
+    const host = document.createElement('div');
+    const shadow = host.attachShadow({ mode: 'open' });
+    document.body.appendChild(host);
+
+    const collapsedRange = document.createRange();
+    collapsedRange.setStart(document.body, 0);
+    collapsedRange.collapse(true);
+    const shadowSelection = {
+      isCollapsed: true,
+      rangeCount: 1,
+      getRangeAt: () => collapsedRange,
+      getComposedRanges: () => [{ collapsed: true }],
+    } as unknown as Selection;
+
+    expect(extractTermsFromSelection(shadowSelection, [shadow])).toEqual([]);
+  });
+
   it('ignores a range inside a shadow root that was not supplied', () => {
     const host = document.createElement('div');
     const shadow = host.attachShadow({ mode: 'open' });

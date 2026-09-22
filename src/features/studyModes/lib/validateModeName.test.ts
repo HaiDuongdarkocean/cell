@@ -15,19 +15,19 @@ describe('validateModeName', () => {
   it('rejects empty name', () => {
     const result = validateModeName('   ', existing);
     expect(result.valid).toBe(false);
-    expect(result.error).toBe('Name is required');
+    expect(result.errorKey).toBe('studyModes.builder.errorNameRequired');
   });
 
   it('rejects names over 50 chars', () => {
     const result = validateModeName('a'.repeat(51), existing);
     expect(result.valid).toBe(false);
-    expect(result.error).toBe('Name must be 50 characters or less');
+    expect(result.errorKey).toBe('studyModes.builder.errorNameTooLong');
   });
 
   it('rejects duplicate name case-insensitively', () => {
     const result = validateModeName('shadowing', existing);
     expect(result.valid).toBe(false);
-    expect(result.error).toBe('Name already exists');
+    expect(result.errorKey).toBe('studyModes.builder.errorNameExists');
   });
 
   it('allows editing the same mode to keep its name', () => {

@@ -61,7 +61,7 @@ export class DatabaseError extends ImportError {
   }
 }
 
-/** Parse error (malformed JSON, invalid encoding, bad Yomitan structure). */
+/** Parse error (malformed JSON, invalid encoding, bad banked-zip structure). */
 export class ParseError extends ImportError {
   readonly code = 'PARSE_ERROR' as const;
   constructor(message: string, cause?: unknown) {

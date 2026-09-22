@@ -747,7 +747,11 @@ export class ReactSubtitleController {
 
   enableTokenize(options: SubtitleCueEngineTokenizeOptions): void {
     this.engine.enableTokenize(options);
-    this.mount.setTokenize({ langCode: options.langCode, onTokenClick: options.onOpenDictionary });
+    this.mount.setTokenize({
+      langCode: options.langCode,
+      onTokenClick: options.onOpenDictionary,
+      onTokenHover: options.onTokenHover,
+    });
   }
 
   disableTokenize(): void {

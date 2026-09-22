@@ -1,3 +1,4 @@
+import { t, type MessageKey } from '@/shared/i18n';
 import { Select } from '@/shared/ui';
 import type { PresetName } from '@/entities/theme';
 
@@ -10,11 +11,11 @@ interface PresetSwitcherProps {
   'data-cell-id'?: string;
 }
 
-const OPTIONS = [
-  { value: 'dawn', label: 'Dawn' },
-  { value: 'forest', label: 'Forest' },
-  { value: 'ocean', label: 'Ocean' },
-  { value: 'warmth', label: 'Warmth' },
+const OPTIONS: ReadonlyArray<{ value: PresetName; label: MessageKey }> = [
+  { value: 'dawn', label: 'theme.preset.dawn' },
+  { value: 'forest', label: 'theme.preset.forest' },
+  { value: 'ocean', label: 'theme.preset.ocean' },
+  { value: 'warmth', label: 'theme.preset.warmth' },
 ];
 
 /** Preset switcher — choose a Liquid Glass palette. */
@@ -22,9 +23,9 @@ export function PresetSwitcher({ value, onChange, 'data-cell-id': dataCellId }: 
   return (
     <Select
       value={value}
-      options={OPTIONS}
+      options={OPTIONS.map((o) => ({ value: o.value, label: t(o.label) }))}
       onChange={(next) => onChange(next as PresetName)}
-      aria-label="Color preset"
+      aria-label={t('theme.preset.aria')}
       data-cell-id={dataCellId}
     />
   );

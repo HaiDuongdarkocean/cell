@@ -182,7 +182,6 @@
     ],
     "features/settings/ui/SettingsDialogContent.tsx": [
       "@/features/audio/ui/AudioPanel",
-      "@/features/cardCreator/ui/CardCreatorSettingsPanel",
       "@/features/dictionary/ui/ResourcesPanel",
       "@/features/theme/ui/ThemePanel",
       "@/features/tts/ui/TtsVoiceManagerPanel"

@@ -20,13 +20,13 @@ function makeResource(overrides: Partial<ResourceInfo> = {}): ResourceInfo {
 describe('DeleteConfirmModal', () => {
   it('derives frequency wording from resource.type', () => {
     render(<DeleteConfirmModal resource={makeResource()} onConfirm={jest.fn()} onCancel={jest.fn()} />);
-    expect(screen.getByText('Xóa danh sách?')).toBeInTheDocument();
-    expect(screen.getByText(/Xóa vĩnh viễn "words\.txt" và 100 từ của nó\./)).toBeInTheDocument();
+    expect(screen.getByText('Delete list?')).toBeInTheDocument();
+    expect(screen.getByText(/Permanently removes "words\.txt" and its 100 words\./)).toBeInTheDocument();
   });
 
   it('derives dictionary wording from resource.type', () => {
     render(<DeleteConfirmModal resource={makeResource({ type: 'DICTIONARY' })} onConfirm={jest.fn()} onCancel={jest.fn()} />);
-    expect(screen.getByText('Xóa từ điển?')).toBeInTheDocument();
+    expect(screen.getByText('Delete dictionary?')).toBeInTheDocument();
   });
 
   it('renders generic title/description for bulk confirm', () => {
@@ -49,10 +49,10 @@ describe('DeleteConfirmModal', () => {
     expect(onConfirm).toHaveBeenCalled();
   });
 
-  it('calls onCancel when "Giữ lại" clicked', () => {
+  it('calls onCancel when "Keep" clicked', () => {
     const onCancel = jest.fn();
     render(<DeleteConfirmModal resource={makeResource()} onConfirm={jest.fn()} onCancel={onCancel} />);
-    fireEvent.click(screen.getByText('Giữ lại'));
+    fireEvent.click(screen.getByText('Keep'));
     expect(onCancel).toHaveBeenCalled();
   });
 
@@ -66,7 +66,7 @@ describe('DeleteConfirmModal', () => {
   it('does not call onCancel when modal content clicked (stopPropagation)', () => {
     const onCancel = jest.fn();
     render(<DeleteConfirmModal resource={makeResource()} onConfirm={jest.fn()} onCancel={onCancel} />);
-    fireEvent.click(screen.getByText('Xóa danh sách?'));
+    fireEvent.click(screen.getByText('Delete list?'));
     expect(onCancel).not.toHaveBeenCalled();
   });
 });

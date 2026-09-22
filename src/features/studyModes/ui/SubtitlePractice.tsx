@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ComponentType, KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import { Button, Icon, Input, Kbd } from '@/shared/ui';
+import { t } from '@/shared/i18n';
 import { createClozeExercise, evaluateDictation, evaluateCloze, tokenizePracticeText, type SubtitlePracticeMode } from '../lib/subtitlePractice';
 import type { PracticeResult } from '../lib/subtitlePractice';
 import {
@@ -244,8 +245,10 @@ export function SubtitlePracticeSession({
   };
 
   const inputLabel = mode === 'dictation'
-    ? 'Type what you hear'
-    : `Type ${blankCount} missing word${blankCount === 1 ? '' : 's'}`;
+    ? t('studyModes.practice.typeWhatYouHear')
+    : blankCount === 1
+      ? t('studyModes.practice.typeMissingOne')
+      : t('studyModes.practice.typeMissingMany', [blankCount]);
 
   return (
     <div className={styles.session} data-cell-id="subtitle-practice" data-practice-mode={mode}>
@@ -259,10 +262,10 @@ export function SubtitlePracticeSession({
       />
       <div className={styles.footer} data-cell-id="practice-footer">
         <div className={styles.shortcuts} data-cell-id="practice-shortcuts">
-          <span><Kbd>Ctrl</Kbd> Phát lại</span>
-          <span><Kbd>Enter</Kbd> Câu tiếp</span>
-          <span><Kbd>Shift+Enter</Kbd> Câu trước</span>
-          <span><Kbd>Shift+Space</Kbd> Tạm dừng</span>
+          <span><Kbd>Ctrl</Kbd> {t('studyModes.practice.hintReplay')}</span>
+          <span><Kbd>Enter</Kbd> {t('studyModes.practice.hintNext')}</span>
+          <span><Kbd>Shift+Enter</Kbd> {t('studyModes.practice.hintPrev')}</span>
+          <span><Kbd>Shift+Space</Kbd> {t('studyModes.practice.hintPause')}</span>
         </div>
         <div className={styles.inputRow}>
           <Button
@@ -271,7 +274,7 @@ export function SubtitlePracticeSession({
             ripple={false}
             className={styles.navButton}
             data-cell-id="practice-previous"
-            aria-label="Previous cue"
+            aria-label={t('studyModes.practice.prevCue')}
             disabled={!activeCue}
             onClick={() => activeCue && onPrevious(activeCue)}
           >
@@ -283,7 +286,7 @@ export function SubtitlePracticeSession({
             ripple={false}
             className={styles.navButton}
             data-cell-id="practice-replay"
-            aria-label="Replay cue"
+            aria-label={t('studyModes.practice.replayCue')}
             disabled={!activeCue}
             onClick={() => activeCue && onReplay(activeCue)}
           >
@@ -296,7 +299,7 @@ export function SubtitlePracticeSession({
               className={styles.answerInput}
               data-cell-id="practice-input"
               aria-label={inputLabel}
-              placeholder={mode === 'dictation' ? 'Type what you hear…' : inputLabel}
+              placeholder={mode === 'dictation' ? t('studyModes.practice.typeWhatYouHear') : inputLabel}
               maxLength={mode === 'dictation' ? DICTATION_MAX_LENGTH : CLOZE_MAX_LENGTH}
               disabled={inputDisabled}
               value={inputValue}
@@ -312,7 +315,7 @@ export function SubtitlePracticeSession({
             ripple={false}
             className={styles.navButton}
             data-cell-id="practice-next"
-            aria-label="Next cue"
+            aria-label={t('studyModes.practice.nextCue')}
             disabled={!activeCue}
             onClick={() => activeCue && onContinue(activeCue)}
           >

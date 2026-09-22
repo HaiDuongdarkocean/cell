@@ -110,6 +110,13 @@ export function decodeText(data: Uint8Array): string {
   return strFromU8(data);
 }
 
+/** True when bytes decode to non-empty text that is NOT JSON — catches
+ *  mislabeled `.json` files that actually hold a line-based word list. */
+export function looksLikePlainText(data: Uint8Array): boolean {
+  const head = decodeText(data.slice(0, 4096)).trim();
+  return head.length > 0 && !head.startsWith('[') && !head.startsWith('{');
+}
+
 /** Get file extension (without dot, lowercase). */
 export function getExtension(name: string): string {
   const dot = name.lastIndexOf('.');
@@ -165,7 +172,7 @@ export function detectByExtension(name: string): ImportFormat | null {
   }
   if (ext === 'txt') return 'txt';
   if (ext === 'json') return 'json-array';
-  if (ext === 'zip') return 'yomitan'; // zip → yomitan or txt-zipped, decide by content
+  if (ext === 'zip') return 'term-bank'; // zip → term-bank or txt-zipped, decide by content
   if (ext === 'db') return 'sqlite';
   return null;
 }

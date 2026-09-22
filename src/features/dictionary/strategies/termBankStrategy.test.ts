@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { YomitanStrategy } from '@/features/dictionary/strategies/yomitanStrategy';
+import { TermBankStrategy } from '@/features/dictionary/strategies/termBankStrategy';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
 import { findFrequencyByResource } from '@/features/dictionary/repositories/frequencyRepository';
 import { findDictionaryByResource } from '@/features/dictionary/repositories/dictionaryRepository';
@@ -35,14 +35,14 @@ afterAll(() => {
 
 const LANG = 'en';
 
-function makeYomitanFreqZip(entries: unknown[]): Uint8Array {
+function makeTermBankFreqZip(entries: unknown[]): Uint8Array {
   return zipSync({
     'index.json': strToU8(JSON.stringify({ title: 'test', revision: '1', format: 3 })),
     'term_meta_bank_1.json': strToU8(JSON.stringify(entries)),
   });
 }
 
-function makeYomitanDictZip(termBanks: unknown[][]): Uint8Array {
+function makeTermBankDictZip(termBanks: unknown[][]): Uint8Array {
   const files: Record<string, Uint8Array> = {
     'index.json': strToU8(JSON.stringify({ title: 'test', revision: '1', format: 3 })),
   };
@@ -52,10 +52,10 @@ function makeYomitanDictZip(termBanks: unknown[][]): Uint8Array {
   return zipSync(files);
 }
 
-describe('yomitanStrategy — frequency (term_meta_bank)', () => {
-  it('parses Yomitan term_meta_bank with freq type', async () => {
+describe('termBankStrategy — frequency (term_meta_bank)', () => {
+  it('parses term-bank term_meta_bank with freq type', async () => {
     const resourceId = await addResource(LANG, {
-      name: 'dict.zip', langCode: LANG, type: 'FREQUENCY', format: 'yomitan',
+      name: 'dict.zip', langCode: LANG, type: 'FREQUENCY', format: 'term-bank',
       signature: 'sig1', wordCount: 0, installationFinished: false, importedAt: Date.now(),
     });
     const entries = [
@@ -63,8 +63,8 @@ describe('yomitanStrategy — frequency (term_meta_bank)', () => {
       ['world', 'freq', { reading: 'world', frequency: 50 }],
       ['foo', 'pitch', { reading: 'foo' }],
     ];
-    const data = makeYomitanFreqZip(entries);
-    const strategy = new YomitanStrategy(
+    const data = makeTermBankFreqZip(entries);
+    const strategy = new TermBankStrategy(
       { resourceId, langCode: LANG },
       { data, fileName: 'dict.zip', resourceType: 'FREQUENCY' },
     );
@@ -77,11 +77,11 @@ describe('yomitanStrategy — frequency (term_meta_bank)', () => {
 
   it('handles frequency as plain number (not object)', async () => {
     const resourceId = await addResource(LANG, {
-      name: 'dict.zip', langCode: LANG, type: 'FREQUENCY', format: 'yomitan',
+      name: 'dict.zip', langCode: LANG, type: 'FREQUENCY', format: 'term-bank',
       signature: 'sig2', wordCount: 0, installationFinished: false, importedAt: Date.now(),
     });
-    const data = makeYomitanFreqZip([['hello', 'freq', 42]]);
-    const strategy = new YomitanStrategy(
+    const data = makeTermBankFreqZip([['hello', 'freq', 42]]);
+    const strategy = new TermBankStrategy(
       { resourceId, langCode: LANG },
       { data, fileName: 'dict.zip', resourceType: 'FREQUENCY' },
     );
@@ -92,7 +92,7 @@ describe('yomitanStrategy — frequency (term_meta_bank)', () => {
 
   it('throws ParseError if no index.json', async () => {
     const data = zipSync({ 'term_meta_bank_1.json': strToU8('[]') });
-    const strategy = new YomitanStrategy(
+    const strategy = new TermBankStrategy(
       { resourceId: 1, langCode: LANG },
       { data, fileName: 'dict.zip', resourceType: 'FREQUENCY' },
     );
@@ -101,7 +101,7 @@ describe('yomitanStrategy — frequency (term_meta_bank)', () => {
 
   it('throws ParseError if no term_meta_bank files (frequency mode)', async () => {
     const data = zipSync({ 'index.json': strToU8('{}') });
-    const strategy = new YomitanStrategy(
+    const strategy = new TermBankStrategy(
       { resourceId: 1, langCode: LANG },
       { data, fileName: 'dict.zip', resourceType: 'FREQUENCY' },
     );
@@ -110,7 +110,7 @@ describe('yomitanStrategy — frequency (term_meta_bank)', () => {
 
   it('sorts multiple term_meta_bank files', async () => {
     const resourceId = await addResource(LANG, {
-      name: 'dict.zip', langCode: LANG, type: 'FREQUENCY', format: 'yomitan',
+      name: 'dict.zip', langCode: LANG, type: 'FREQUENCY', format: 'term-bank',
       signature: 'sig3', wordCount: 0, installationFinished: false, importedAt: Date.now(),
     });
     const data = zipSync({
@@ -118,7 +118,7 @@ describe('yomitanStrategy — frequency (term_meta_bank)', () => {
       'term_meta_bank_2.json': strToU8(JSON.stringify([['z', 'freq', { frequency: 1 }]])),
       'term_meta_bank_1.json': strToU8(JSON.stringify([['a', 'freq', { frequency: 2 }]])),
     });
-    const strategy = new YomitanStrategy(
+    const strategy = new TermBankStrategy(
       { resourceId, langCode: LANG },
       { data, fileName: 'dict.zip', resourceType: 'FREQUENCY' },
     );
@@ -127,19 +127,19 @@ describe('yomitanStrategy — frequency (term_meta_bank)', () => {
   });
 });
 
-describe('yomitanStrategy — dictionary (term_bank)', () => {
-  it('parses Yomitan term_bank into dictionary entries', async () => {
+describe('termBankStrategy — dictionary (term_bank)', () => {
+  it('parses term-bank term_bank into dictionary entries', async () => {
     const resourceId = await addResource(LANG, {
-      name: 'dict-oald.zip', langCode: LANG, type: 'DICTIONARY', format: 'yomitan',
+      name: 'dict-oald.zip', langCode: LANG, type: 'DICTIONARY', format: 'term-bank',
       signature: 'sig-d1', wordCount: 0, installationFinished: false, importedAt: Date.now(),
     });
-    // Yomitan term_bank format: [expression, reading, defTags, rules, score, definitions[]]
+    // term-bank term_bank format: [expression, reading, defTags, rules, score, definitions[]]
     const termBank = [
       ['hello', 'hello', 'noun', 'n', 0, ['a greeting']],
       ['world', 'world', 'noun', 'n', 0, ['the earth']],
     ];
-    const data = makeYomitanDictZip([termBank]);
-    const strategy = new YomitanStrategy(
+    const data = makeTermBankDictZip([termBank]);
+    const strategy = new TermBankStrategy(
       { resourceId, langCode: LANG },
       { data, fileName: 'dict-oald.zip', resourceType: 'DICTIONARY' },
     );
@@ -151,33 +151,34 @@ describe('yomitanStrategy — dictionary (term_bank)', () => {
     expect(hello?.definition).toBe('a greeting');
   });
 
-  it('joins multiple definitions with newline', async () => {
+  it('serializes multiple definitions to canonical senses', async () => {
     const resourceId = await addResource(LANG, {
-      name: 'dict.zip', langCode: LANG, type: 'DICTIONARY', format: 'yomitan',
+      name: 'dict.zip', langCode: LANG, type: 'DICTIONARY', format: 'term-bank',
       signature: 'sig-d2', wordCount: 0, installationFinished: false, importedAt: Date.now(),
     });
     const termBank = [
       ['hello', '', 'noun', 'n', 0, ['greeting', 'salutation']],
     ];
-    const data = makeYomitanDictZip([termBank]);
-    const strategy = new YomitanStrategy(
+    const data = makeTermBankDictZip([termBank]);
+    const strategy = new TermBankStrategy(
       { resourceId, langCode: LANG },
       { data, fileName: 'dict.zip', resourceType: 'DICTIONARY' },
     );
     await strategy.execute();
     const stored = await findDictionaryByResource(LANG, resourceId);
-    // Definitions are joined with \n in parse, then collapsed to space in transform
-    expect(stored[0]?.definition).toBe('greeting salutation');
+    // List-shaped defs normalize to canonical `<br><br>N.` sense boundaries.
+    expect(stored[0]?.definition).toBe('1.greeting<br><br>2.salutation');
+    expect(stored[0]?.pos).toBe('noun');
   });
 
   it('uses expression as reading when reading is empty', async () => {
     const resourceId = await addResource(LANG, {
-      name: 'dict.zip', langCode: LANG, type: 'DICTIONARY', format: 'yomitan',
+      name: 'dict.zip', langCode: LANG, type: 'DICTIONARY', format: 'term-bank',
       signature: 'sig-d3', wordCount: 0, installationFinished: false, importedAt: Date.now(),
     });
     const termBank = [['hello', '', 'noun', 'n', 0, ['greeting']]];
-    const data = makeYomitanDictZip([termBank]);
-    const strategy = new YomitanStrategy(
+    const data = makeTermBankDictZip([termBank]);
+    const strategy = new TermBankStrategy(
       { resourceId, langCode: LANG },
       { data, fileName: 'dict.zip', resourceType: 'DICTIONARY' },
     );
@@ -189,7 +190,7 @@ describe('yomitanStrategy — dictionary (term_bank)', () => {
 
   it('throws ParseError if no term_bank files (dictionary mode)', async () => {
     const data = zipSync({ 'index.json': strToU8('{}') });
-    const strategy = new YomitanStrategy(
+    const strategy = new TermBankStrategy(
       { resourceId: 1, langCode: LANG },
       { data, fileName: 'dict.zip', resourceType: 'DICTIONARY' },
     );
@@ -198,7 +199,7 @@ describe('yomitanStrategy — dictionary (term_bank)', () => {
 
   it('sorts multiple term_bank files', async () => {
     const resourceId = await addResource(LANG, {
-      name: 'dict.zip', langCode: LANG, type: 'DICTIONARY', format: 'yomitan',
+      name: 'dict.zip', langCode: LANG, type: 'DICTIONARY', format: 'term-bank',
       signature: 'sig-d4', wordCount: 0, installationFinished: false, importedAt: Date.now(),
     });
     const data = zipSync({
@@ -206,7 +207,7 @@ describe('yomitanStrategy — dictionary (term_bank)', () => {
       'term_bank_2.json': strToU8(JSON.stringify([['z', 'z', 'n', 'n', 0, ['z-def']]])),
       'term_bank_1.json': strToU8(JSON.stringify([['a', 'a', 'n', 'n', 0, ['a-def']]])),
     });
-    const strategy = new YomitanStrategy(
+    const strategy = new TermBankStrategy(
       { resourceId, langCode: LANG },
       { data, fileName: 'dict.zip', resourceType: 'DICTIONARY' },
     );

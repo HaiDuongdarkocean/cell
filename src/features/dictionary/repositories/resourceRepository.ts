@@ -4,7 +4,20 @@
 // findBySignature (dedupe), count, deleteAll.
 
 import { getDB, getStore, STORES, INDEXES } from './baseRepository';
-import type { ResourceInfo, ResourceType } from '@/entities/dictionary';
+import type { ImportFormat, ResourceInfo, ResourceType } from '@/entities/dictionary';
+
+/** Legacy format ids persisted before the structural rename → current id. */
+const LEGACY_FORMAT_MAP: Record<string, ImportFormat> = {
+  'yomitan': 'term-bank',
+  'cambridge-json': 'json-entries',
+  'migaku-wordlist': 'wordlist-json',
+};
+
+function migrateResource(resource: ResourceInfo | undefined): ResourceInfo | undefined {
+  if (!resource) return resource;
+  const format = LEGACY_FORMAT_MAP[resource.format as string];
+  return format ? { ...resource, format } : resource;
+}
 
 /** Add a resource. Returns the auto-generated id. */
 export async function addResource(langCode: string, resource: Omit<ResourceInfo, 'id'>): Promise<number> {
@@ -23,7 +36,7 @@ export async function getResource(langCode: string, id: number): Promise<Resourc
   return new Promise((resolve, reject) => {
     const store = getStore(db, STORES.RESOURCE, 'readonly');
     const request = store.get(id);
-    request.onsuccess = () => resolve(request.result as ResourceInfo | undefined);
+    request.onsuccess = () => resolve(migrateResource(request.result as ResourceInfo | undefined));
     request.onerror = () => reject(request.error);
   });
 }
@@ -36,7 +49,7 @@ export async function getAllResources(langCode: string): Promise<ResourceInfo[]>
     const index = store.index(INDEXES.by_order);
     const request = index.getAll();
     request.onsuccess = () => {
-      const results = request.result as ResourceInfo[];
+      const results = (request.result as ResourceInfo[]).map((r) => migrateResource(r)!);
       // priority lower wins; absent priority is treated as Infinity so it comes last
       results.sort((a, b) => {
         const aPriority = a.priority ?? Number.POSITIVE_INFINITY;
@@ -79,7 +92,7 @@ export async function findResourceBySignature(langCode: string, signature: strin
     const store = getStore(db, STORES.RESOURCE, 'readonly');
     const index = store.index(INDEXES.by_signature);
     const request = index.get(signature);
-    request.onsuccess = () => resolve(request.result as ResourceInfo | undefined);
+    request.onsuccess = () => resolve(migrateResource(request.result as ResourceInfo | undefined));
     request.onerror = () => reject(request.error);
   });
 }

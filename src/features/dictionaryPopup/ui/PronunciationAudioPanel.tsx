@@ -1,8 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 import { Icon } from '@/shared/ui/Icon';
-import { Button } from '@/shared/ui/Button';
 import { InkTabs } from '@/shared/ui/InkTabs';
 import { Skeleton } from '@/shared/ui/Skeleton';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { useAudioItemUrlMap } from '@/features/pronunciation/hooks/useAudioItemUrl';
 import checkStyles from './DictionaryCheckable.module.css';
 import styles from './PronunciationAudioPanel.module.css';
@@ -12,6 +13,7 @@ import { t } from '@/shared/i18n';
 export interface PronunciationAudioPanelProps {
   readonly items: readonly AudioItem[];
   readonly loading: boolean;
+  readonly localAudioNeedsRegrant?: boolean;
   readonly selection: Map<string, boolean>;
   readonly onToggle: (id: string, selected: boolean) => void;
   readonly onTtsWord: () => void;
@@ -26,6 +28,7 @@ const TTS_SENTENCE_ID = '__tts_sentence__';
 export function PronunciationAudioPanel({
   items,
   loading,
+  localAudioNeedsRegrant,
   selection,
   onToggle,
   onTtsWord,
@@ -71,61 +74,87 @@ export function PronunciationAudioPanel({
             onValueChange={(v): void => setActiveGroup(v as 'word' | 'sentence')}
           />
 
+          {localAudioNeedsRegrant && (
+            <button
+              type="button"
+              className={styles.cellAudioReconnect}
+              data-cell-id="local-audio-reconnect"
+              onClick={(): void => {
+                void sendMessage({
+                  type: MESSAGE_TYPES.LOCAL_AUDIO_OPEN_RECONNECT,
+                  payload: {},
+                }).catch(() => undefined);
+              }}
+            >
+              <Icon name="triangleAlert" size="sm" />
+              <span className={styles.cellAudioReconnectLabel}>{t('dict.audio.localReconnect')}</span>
+            </button>
+          )}
+
           <div className={styles.cellAudioItems}>
           {displayItems.map((item) => {
             const selected = selection.get(item.id) === true;
             const parts = item.label.split(' · ');
             const itemUrl = getUrl(item);
-            const isTts = !itemUrl;
+            const playItem = (): void => {
+              if (!itemUrl) {
+                if (activeGroup === 'word') onTtsWord();
+                else onTtsSentence();
+                return;
+              }
+              if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+              }
+              const audio = new Audio(itemUrl);
+              audioRef.current = audio;
+              audio.addEventListener('ended', () => { audioRef.current = null; }, { once: true });
+              audio.addEventListener('pause', () => { if (audioRef.current === audio) audioRef.current = null; }, { once: true });
+              void audio.play().catch(() => { /* best-effort */ });
+            };
             return (
               <div
                 key={item.id}
                 className={checkStyles.cellAudioItem}
-                role="checkbox"
-                aria-checked={selected}
+                role="button"
+                aria-label={t('dict.audio.play', [item.label])}
                 tabIndex={0}
-                onClick={(): void => onToggle(item.id, !selected)}
+                onClick={playItem}
                 onKeyDown={(e): void => {
                   if (e.target !== e.currentTarget) return;
                   if (e.key === ' ' || e.key === 'Enter') {
                     e.preventDefault();
-                    onToggle(item.id, !selected);
+                    playItem();
                   }
                 }}
               >
-                <Button
-                  shape="circle"
-                  size="sm"
-                  variant="primary"
-                  className={styles.cellAudioPlay}
-                  aria-label={t('dict.audio.play', [item.label])}
-                  onClick={(e): void => {
-                    e.stopPropagation();
-                    if (isTts || !itemUrl) {
-                      if (activeGroup === 'word') onTtsWord();
-                      else onTtsSentence();
-                      return;
-                    }
-                    if (audioRef.current) {
-                      audioRef.current.pause();
-                      audioRef.current = null;
-                    }
-                    const audio = new Audio(itemUrl);
-                    audioRef.current = audio;
-                    audio.addEventListener('ended', () => { audioRef.current = null; }, { once: true });
-                    audio.addEventListener('pause', () => { if (audioRef.current === audio) audioRef.current = null; }, { once: true });
-                    void audio.play().catch(() => { /* best-effort */ });
-                  }}
-                >
+                <span className={styles.cellAudioPlay} aria-hidden="true">
                   <Icon name="audioWave"  />
-                </Button>
+                </span>
                 <span className={styles.cellAudioLabel}>
                   <span className={styles.cellAudioLabelName}>{parts[0] ?? item.label}</span>
                   {parts.length > 1 && (
                     <span className={styles.cellAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
                   )}
                 </span>
-                <span className={`${checkStyles.cellDefCheckBox} ${selected ? checkStyles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
+                <span
+                  className={`${checkStyles.cellDefCheckBox} ${selected ? checkStyles['cellAudioCheck--checked'] : ''}`}
+                  role="checkbox"
+                  aria-checked={selected}
+                  aria-label={t('dict.audio.select', [item.label])}
+                  tabIndex={0}
+                  onClick={(e): void => {
+                    e.stopPropagation();
+                    onToggle(item.id, !selected);
+                  }}
+                  onKeyDown={(e): void => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onToggle(item.id, !selected);
+                    }
+                  }}
+                >
                   <Icon name="check" size="md" />
                 </span>
               </div>

@@ -9,7 +9,8 @@
 
 import { BatchProcessor } from '../logic/batchProcessor';
 import { normalizeWord } from '../logic/normalizationPipeline';
-import type { ImportFormat, FrequencyEntry, DictionaryEntry } from '@/entities/dictionary';
+import { toCanonicalDefinition } from '../logic/normalize/canonical';
+import type { ImportFormat, FrequencyEntry, DictionaryEntry, SenseBlock, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo, UsageNote } from '@/entities/dictionary';
 
 /** Raw entry from parser (before normalization). */
 export interface RawFrequencyEntry {
@@ -25,9 +26,27 @@ export interface RawDictionaryEntry {
   readonly altterm?: string;
   readonly pronunciation?: string;
   readonly definition?: string;
+  /** List-shaped sources: definitions as raw elements (strings, redirects,
+   *  structured objects). Fed to the listDefinitions normalize rule. */
+  readonly definitions?: readonly unknown[];
+  /** Pre-normalized sources: structured senses ready to store verbatim.
+   *  Fed to the preNormalized normalize rule (first in the chain). */
+  readonly senses?: readonly SenseBlock[];
   readonly pos?: string;
   readonly examples?: string;
   readonly audio?: string;
+  /** Canonical entry-level fields — pass through verbatim on import
+   *  (converter output already carries the normalized shape). */
+  readonly related?: readonly RelatedEntry[];
+  readonly inflections?: readonly InflectionGroup[];
+  readonly level?: string;
+  readonly frequencyStars?: number;
+  readonly etymology?: EtymologyBlock;
+  readonly wordFamily?: WordFamily;
+  readonly wordNet?: WordNetInfo;
+  readonly derivedTerms?: readonly string[];
+  readonly anagrams?: readonly string[];
+  readonly usageNote?: UsageNote;
 }
 
 /** Result of a strategy run. */
@@ -128,21 +147,33 @@ export abstract class BaseFrequencyStrategy extends BaseImportStrategy<RawFreque
 
 /** Base for dictionary strategies (writes to dictionaryRepository). */
 export abstract class BaseDictionaryStrategy extends BaseImportStrategy<RawDictionaryEntry, Omit<DictionaryEntry, 'id'>> {
-  readonly format: ImportFormat = 'cambridge-json';
+  readonly format: ImportFormat = 'json-entries';
 
   protected transformEntry(raw: RawDictionaryEntry, _index: number): Omit<DictionaryEntry, 'id'> | null {
     const term = normalizeWord(raw.term);
     if (term.length === 0) return null;
+    const canonical = toCanonicalDefinition(raw);
     return {
       resourceId: this.options.resourceId,
       term,
       reading: raw.reading ? normalizeWord(raw.reading) : term,
       altterm: raw.altterm ? normalizeWord(raw.altterm) : '',
       pronunciation: raw.pronunciation?.trim().normalize('NFC') ?? '',
-      definition: raw.definition?.trim().normalize('NFC').replace(/\s+/g, ' ') ?? '',
-      pos: raw.pos?.trim().normalize('NFC') ?? '',
-      examples: raw.examples?.trim().normalize('NFC') ?? '',
+      definition: canonical.definition,
+      senses: canonical.senses,
+      pos: canonical.pos,
+      examples: canonical.examples,
       audio: raw.audio?.trim() ?? '',
+      related: raw.related,
+      inflections: raw.inflections,
+      level: raw.level,
+      frequencyStars: raw.frequencyStars,
+      etymology: raw.etymology,
+      wordFamily: raw.wordFamily,
+      wordNet: raw.wordNet,
+      derivedTerms: raw.derivedTerms,
+      anagrams: raw.anagrams,
+      usageNote: raw.usageNote,
     };
   }
 }

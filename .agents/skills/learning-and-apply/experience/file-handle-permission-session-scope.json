@@ -1,0 +1,20 @@
+{
+  "id": "file-handle-permission-session-scope",
+  "title": "FileSystemHandle picker grants die on browser restart — service worker cannot re-request them; re-grant must happen in an extension page with user activation",
+  "category": ["data", "state"],
+  "tags": ["file-system-access", "file-handle", "permission", "service-worker", "indexeddb", "user-activation", "local-audio"],
+  "trigger": "A stored FileSystemHandle (IndexedDB) is read from the service worker or any context other than the page that picked it, especially after a browser restart",
+  "principle": "File handles obtained via showOpenFilePicker/drag-drop keep implicit 'granted' read permission only for the browser session — after restart queryPermission() returns 'prompt' and getFile() throws 'not allowed by the user agent'. A service worker can call requestPermission() but it silently returns 'prompt' (no UI possible); an offscreen document throws 'User activation is required'. Only a real extension page (popup/options) with transient activation can re-request — and on extension origins it auto-grants silently. Explicit requestPermission grants persist across restarts, so one re-grant fixes the handle permanently. Guard the request with navigator.userActivation.isActive — calling it without activation blocks on a native prompt. Verify via CDP Browser.resetPermissions + SW probe to reproduce the 'prompt' state deterministically.",
+  "cases": [
+    {
+      "context": "Local Forvo audio: handles picked in Settings panel were stored in IndexedDB and read by the service worker via FETCH_LOCAL_AUDIO. After Quetta restarted, SW-side verifyPermission returned 'prompt'→ requestPermission no-op → resolver null → provider silently returned [] → orchestrator fell back to Wiktionary while everything looked configured (green dot, 285k index).",
+      "bad": "// SW-side only\ntry { request = await h.requestPermission({mode:'read'}) } catch {}\n// returns 'prompt' — no dialog possible in SW → verifyPermission false → []",
+      "good": "// extension-page provider ensure before delegating to SW\nif ((await handle.queryPermission({mode:'read'})) === 'granted') return;\nif (navigator.userActivation && !navigator.userActivation.isActive) return;\nawait verifyPermission(handle, 'read');  // page has real activation → silent auto-grant"
+    }
+  ],
+  "applyFor": [
+    "Any feature that persists FileSystemHandle in IndexedDB and reads it from a service worker, offscreen document, or after a browser restart",
+    "Local-file-backed providers (audio, video, dictionaries) that silently fall back on permission failure",
+    "Designing 'remember this file' UX — plan a gesture-path re-grant, never rely on the SW to prompt"
+  ]
+}

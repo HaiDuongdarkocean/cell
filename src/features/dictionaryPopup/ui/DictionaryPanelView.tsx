@@ -414,6 +414,7 @@ export function DictionaryPanelView({
                   defaultActiveTab={defaultActiveTab}
                   selectionSnapshot={matchesSnapshot ? selectionSnapshot : undefined}
                   preloadMedia={variant === 'integrated'}
+                  onLookupTerm={panel.search}
                 />
               );
             })}

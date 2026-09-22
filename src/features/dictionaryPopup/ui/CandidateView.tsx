@@ -20,7 +20,7 @@ import { DictionaryToolbar } from './DictionaryToolbar';
 import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './CandidateView.module.css';
-import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot } from '@/entities/dictionary';
+import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot, SenseLine, RelatedEntry } from '@/entities/dictionary';
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -79,6 +79,8 @@ export interface CandidateViewProps {
   readonly selectionSnapshot?: PopupSelectionSnapshot;
   /** Preload media/translation in the integrated panel. */
   readonly preloadMedia?: boolean;
+  /** Re-run lookup for a related term (phrasal verb, idiom, collocation…). */
+  readonly onLookupTerm?: (term: string) => void;
 }
 
 export function CandidateView({
@@ -94,6 +96,7 @@ export function CandidateView({
   defaultActiveTab,
   selectionSnapshot,
   preloadMedia,
+  onLookupTerm,
 }: CandidateViewProps): React.JSX.Element {
   const panel = useCandidate({
     candidate,
@@ -118,6 +121,7 @@ export function CandidateView({
   const selectedWordAudioUrl = useAudioItemUrl(selectedWordAudio);
 
   const [frequencyThresholds, setFrequencyThresholds] = useState<FrequencyBandThresholds>(DEFAULT_BAND_THRESHOLDS);
+  const [translationRevealed, setTranslationRevealed] = useState(false);
   const isMountedRef = useRef(false);
   const didLoadRef = useRef(false);
   useEffect(() => {
@@ -128,6 +132,7 @@ export function CandidateView({
         const next = s.frequencyBands ?? DEFAULT_BAND_THRESHOLDS;
         didLoadRef.current = true;
         setFrequencyThresholds(next);
+        setTranslationRevealed(s.dictionaryPopup?.translationVisibility === 'shown');
       })
       .catch(() => { /* keep defaults */ });
     return () => { isMountedRef.current = false; };
@@ -148,18 +153,20 @@ export function CandidateView({
             </div>
           </div>
           <div className={styles.cellHeaderActions}>
-            <Button
-              shape="circle"
-              size="sm"
-              variant="outline"
-              className={styles.cellHeaderSend}
-              aria-label={t('dict.action.sendToCard')}
-              title={t('dict.action.sendToCard')}
-              onClick={() => { void panel.sendToCard(); }}
-              data-cell-id="dictionary-send-to-card"
-            >
-              <Icon name="pencil"  />
-            </Button>
+            {onSendToCard && (
+              <Button
+                shape="circle"
+                size="sm"
+                variant="outline"
+                className={styles.cellHeaderSend}
+                aria-label={t('dict.action.sendToCard')}
+                title={t('dict.action.sendToCard')}
+                onClick={() => { void panel.sendToCard(); }}
+                data-cell-id="dictionary-send-to-card"
+              >
+                <Icon name="pencil"  />
+              </Button>
+            )}
             {onQuickAdd && (
               <Button
                 shape="circle"
@@ -184,6 +191,9 @@ export function CandidateView({
             <span className={styles.cellHeaderIpa} data-cell-id="dictionary-reading">
               {formatReading(candidate.reading, candidate.readingKind)}
             </span>
+          )}
+          {candidate.level && (
+            <span className={styles.cellHeaderLevel} data-cell-id="dictionary-level">[{candidate.level}]</span>
           )}
           <span className={styles.cellHeaderAudioGroup}>
             <Button
@@ -249,6 +259,7 @@ export function CandidateView({
           <PronunciationAudioPanel
             items={panel.audioItems}
             loading={panel.audioLoading}
+            localAudioNeedsRegrant={panel.localAudioNeedsRegrant}
             selection={panel.audioSelection}
             onToggle={panel.toggleAudio}
             onTtsWord={panel.playTerm}
@@ -293,6 +304,13 @@ export function CandidateView({
         )}
         </div>
 
+        {candidate.inflections && candidate.inflections.length > 0 && (
+          <div className={styles.cellMetaLine} data-cell-id="dictionary-word-forms">
+            <span className={styles.cellMetaLabel}>word forms:</span>{' '}
+            {candidate.inflections.map((g) => `${g.type} ${g.forms.join(', ')}`).join(' · ')}
+          </div>
+        )}
+
         <section className={panelStyles.cellDef} aria-label={t('dict.definitions.aria')} data-cell-id="dictionary-definitions" data-allow-lookup>
         {candidate.definitions.length === 0 ? (
           <EmptyState
@@ -319,23 +337,175 @@ export function CandidateView({
               definition={def}
               selected={panel.definitionSelection.get(def.id) === true}
               onToggle={panel.toggleDefinition}
+              translationRevealed={translationRevealed}
             />
           ))
         )}
       </section>
+
+      <EntryMeta candidate={candidate} onLookupTerm={onLookupTerm} />
       </div>
     </article>
   );
+}
+
+const RELATED_KIND_LABELS: Record<string, string> = {
+  phrasal: 'phrasal verbs',
+  idiom: 'idioms',
+  collocation: 'collocations',
+  expression: 'phrases',
+  lemma: 'lemmas',
+  derivative: 'derivatives',
+};
+
+function relatedKindLabel(kind: string): string {
+  return RELATED_KIND_LABELS[kind] ?? `${kind}s`;
+}
+
+function groupRelated(related: readonly RelatedEntry[]): [string, RelatedEntry[]][] {
+  const groups = new Map<string, RelatedEntry[]>();
+  for (const r of related) {
+    const list = groups.get(r.kind) ?? [];
+    list.push(r);
+    groups.set(r.kind, list);
+  }
+  return [...groups.entries()];
+}
+
+function EntryMeta({
+  candidate,
+  onLookupTerm,
+}: {
+  readonly candidate: LookupResult;
+  readonly onLookupTerm?: (term: string) => void;
+}): React.JSX.Element | null {
+  const relatedGroups = candidate.related?.length ? groupRelated(candidate.related) : [];
+  const nonEmpty = (p: readonly [string, readonly string[] | undefined]): p is [string, readonly string[]] =>
+    Boolean(p[1] && p[1].length > 0);
+  const wordFamilyParts = candidate.wordFamily
+    ? ([
+        ['noun', candidate.wordFamily.nouns],
+        ['verb', candidate.wordFamily.verbs],
+        ['adjective', candidate.wordFamily.adjectives],
+        ['adverb', candidate.wordFamily.adverbs],
+      ] as [string, readonly string[] | undefined][]).filter(nonEmpty)
+    : [];
+  const wordNetParts = candidate.wordNet
+    ? ([
+        ['synset', candidate.wordNet.synset],
+        ['hypernyms', candidate.wordNet.hypernyms],
+      ] as [string, readonly string[] | undefined][]).filter(nonEmpty)
+    : [];
+  if (relatedGroups.length === 0 && wordFamilyParts.length === 0 && wordNetParts.length === 0
+    && !candidate.derivedTerms?.length) {
+    return null;
+  }
+  return (
+    <section className={styles.cellMeta} data-cell-id="dictionary-meta">
+      {wordFamilyParts.length > 0 && (
+        <div className={styles.cellMetaLine}>
+          <span className={styles.cellMetaLabel}>word family:</span>{' '}
+          {wordFamilyParts.map(([pos, forms]) => `${pos} ${forms.join(', ')}`).join(' · ')}
+        </div>
+      )}
+      {wordNetParts.map(([label, terms]) => (
+        <div key={label} className={styles.cellMetaLine}>
+          <span className={styles.cellMetaLabel}>{label}:</span> {terms.join(', ')}
+        </div>
+      ))}
+      {candidate.derivedTerms && candidate.derivedTerms.length > 0 && (
+        <div className={styles.cellMetaLine}>
+          <span className={styles.cellMetaLabel}>derived terms:</span> {candidate.derivedTerms.join(', ')}
+        </div>
+      )}
+      {relatedGroups.map(([kind, items]) => (
+        <div key={kind} className={styles.cellMetaLine}>
+          <span className={styles.cellMetaLabel}>{relatedKindLabel(kind)}:</span>{' '}
+          {items.map((r, i) => (
+            <span key={r.term}>
+              {i > 0 && ', '}
+              <button
+                type="button"
+                className={styles.cellRelatedLink}
+                title={r.preview}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onLookupTerm?.(r.term);
+                }}
+                data-cell-id={`dictionary-related-${r.term}`}
+              >
+                {r.term}
+              </button>
+            </span>
+          ))}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function SenseLineView({
+  line,
+  revealedByDefault,
+  head,
+}: {
+  readonly line: SenseLine;
+  readonly revealedByDefault: boolean;
+  readonly head?: string;
+}): React.JSX.Element {
+  const [override, setOverride] = useState<boolean | null>(null);
+  const revealed = override ?? revealedByDefault;
+  const showTranslation = Boolean(line.translation) && revealed;
+  return (
+    <span className={styles.defLine} data-role={line.role}>
+      <span className={styles.defLineMain}>
+        {head ? <span className={styles.defLineHead}>{head} </span> : null}
+        {line.role === 'example' ? '· ' : ''}
+        {line.text}
+        {line.pattern ? <span className={styles.defLineMeta}> {line.pattern}</span> : null}
+        {line.translation ? (
+          <button
+            type="button"
+            className={styles.defLineReveal}
+            aria-expanded={revealed}
+            aria-label={revealed ? t('dict.definitions.hideTranslation') : t('dict.definitions.showTranslation')}
+            title={revealed ? t('dict.definitions.hideTranslation') : t('dict.definitions.showTranslation')}
+            onClick={(e) => {
+              e.stopPropagation();
+              setOverride(!revealed);
+            }}
+          >
+            <Icon name="chevronDown" size="sm" className={revealed ? styles.defLineRevealOpen : undefined} />
+          </button>
+        ) : null}
+        {line.citation ? <span className={styles.defLineCitation}> — {line.citation}</span> : null}
+      </span>
+      {showTranslation ? (
+        <span className={styles.defLineTranslation}>{line.translation}</span>
+      ) : null}
+    </span>
+  );
+}
+
+function defHead(definition: DefinitionEntry): string | undefined {
+  const parts = [
+    definition.pos ? `[${definition.pos}]` : '',
+    ...(definition.labels ?? []).map((l) => `[${l}]`),
+    definition.level ? `[${definition.level}]` : '',
+  ].filter(Boolean);
+  return parts.length ? parts.join(' ') : undefined;
 }
 
 function DefinitionItem({
   definition,
   selected,
   onToggle,
+  translationRevealed,
 }: {
   readonly definition: DefinitionEntry;
   readonly selected: boolean;
   readonly onToggle: (id: string, selected: boolean) => void;
+  readonly translationRevealed: boolean;
 }): React.JSX.Element {
   const checked = selected;
   return (
@@ -349,6 +519,7 @@ function DefinitionItem({
         const el = e.target as HTMLElement;
         if (el.closest(`.${styles.cellDefText}`) !== null) return;
         if (el.closest(`.${styles.cellDefExamples}`) !== null) return;
+        if (window.getSelection()?.toString()) return;
         onToggle(definition.id, !checked);
       }}
       onKeyDown={(e) => {
@@ -376,7 +547,29 @@ function DefinitionItem({
           </span>
         </label>
         <span className={styles.cellDefText}>
-          {definition.pos ? `${definition.pos} ${definition.text}` : definition.text}
+          {definition.lines ? (
+            <>
+              {definition.lines.map((l, i) => (
+                <SenseLineView
+                  key={i}
+                  line={l}
+                  revealedByDefault={translationRevealed}
+                  head={i === 0 ? defHead(definition) : undefined}
+                />
+              ))}
+              {definition.subsenses?.map((s) => (
+                <span key={s.num} className={styles.defSubsense}>{s.num}. {s.text}</span>
+              ))}
+              {definition.synonyms && definition.synonyms.length > 0 && (
+                <span className={styles.defLine} data-role="note">Synonyms: {definition.synonyms.join(', ')}</span>
+              )}
+              {definition.antonyms && definition.antonyms.length > 0 && (
+                <span className={styles.defLine} data-role="note">Opposite: {definition.antonyms.join(', ')}</span>
+              )}
+            </>
+          ) : (
+            definition.pos ? `[${definition.pos}] ${definition.text}` : definition.text
+          )}
         </span>
       </div>
       {definition.examples.length > 0 && (

@@ -45,7 +45,7 @@ describe('AudioPipeline', () => {
     );
 
     const selectedButton = screen.getByRole('button', { pressed: true });
-    expect(selectedButton).toHaveTextContent('Community audio (Wikimedia)');
+    expect(selectedButton).toHaveTextContent('Community audio');
     expect(selectedButton).toHaveAttribute('aria-pressed', 'true');
     expect(selectedButton).toHaveClass('selected');
 
@@ -64,7 +64,7 @@ describe('AudioPipeline', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Browser speech (ready)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Browser voice (ready)' }));
     expect(onSelect).toHaveBeenCalledWith('browserTts');
   });
 });

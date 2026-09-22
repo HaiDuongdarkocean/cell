@@ -243,6 +243,10 @@ export interface DictionaryPopupSettings {
   readonly tts?: TtsSettings;
   /** Orbital badge pointer trigger (spec badge-pointer-dictionary-trigger). */
   readonly badgePointerTrigger: BadgePointerTriggerSettings;
+  /** Native-translation visibility on definition/example lines that carry a
+   *  `target — native` pair. 'hidden' = collapsed until per-line reveal;
+   *  'shown' = expanded by default. Default 'hidden'. */
+  readonly translationVisibility?: 'hidden' | 'shown';
 }
 
 /** Local Player settings slice (spec local-video-player.md — schema v22). */

@@ -27,7 +27,7 @@ beforeEach(() => {
   closeAllDBs();
   jest.clearAllMocks();
   countResourcesMock.mockResolvedValue(0);
-  importFileMock.mockResolvedValue({ resourceId: 1, wordCount: 100, format: 'cambridge-json' });
+  importFileMock.mockResolvedValue({ resourceId: 1, wordCount: 100, format: 'json-entries' });
   // Mock global fetch
   (globalThis.fetch as unknown) = jest.fn().mockResolvedValue({
     ok: true,

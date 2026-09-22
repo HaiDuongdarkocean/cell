@@ -69,21 +69,21 @@ beforeEach(() => {
 describe('ResourcesPanel', () => {
   it('renders dictionary + frequency sections with subtitles', async () => {
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Từ điển')).toBeInTheDocument());
-    expect(screen.getByText('Độ phổ biến')).toBeInTheDocument();
-    expect(screen.getByText('Tra nghĩa, phiên âm, phát âm.')).toBeInTheDocument();
-    expect(screen.getByText('Đánh dấu từ hay gặp.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Dictionaries')).toBeInTheDocument());
+    expect(screen.getByText('Frequency lists')).toBeInTheDocument();
+    expect(screen.getByText('Meanings, transcriptions, audio.')).toBeInTheDocument();
+    expect(screen.getByText('Highlights common words.')).toBeInTheDocument();
   });
 
   it('shows empty state when no resources', async () => {
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Chưa có từ điển nào.')).toBeInTheDocument());
-    expect(screen.getByText('Chưa có danh sách nào.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('No dictionaries yet.')).toBeInTheDocument());
+    expect(screen.getByText('No lists yet.')).toBeInTheDocument();
   });
 
   it('lists dictionary + frequency resources separately', async () => {
     listResources.mockResolvedValue([
-      makeResource({ id: 1, name: 'dict.json', type: 'DICTIONARY', format: 'cambridge-json' }),
+      makeResource({ id: 1, name: 'dict.json', type: 'DICTIONARY', format: 'json-entries' }),
       makeResource({ id: 2, name: 'freq.txt', type: 'FREQUENCY', format: 'txt' }),
     ]);
     render(<ResourcesPanel langCode="en" />);
@@ -93,7 +93,7 @@ describe('ResourcesPanel', () => {
 
   it('imports file via dropzone (frequency)', async () => {
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Độ phổ biến')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
     pickFile(1, new File(['hello\nworld\n'], 'test.txt', { type: 'text/plain' }));
     await waitFor(() =>
       expect(importFile).toHaveBeenCalledWith(
@@ -107,7 +107,7 @@ describe('ResourcesPanel', () => {
   it('dropping N files creates N independent job rows', async () => {
     importFile.mockImplementation(() => new Promise<ImportResult>(() => {}));
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Độ phổ biến')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
     pickFiles(1, [
       new File(['a\n'], 'one.txt', { type: 'text/plain' }),
       new File(['b\n'], 'two.txt', { type: 'text/plain' }),
@@ -127,21 +127,21 @@ describe('ResourcesPanel', () => {
       return new Promise<ImportResult>(() => {});
     });
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Độ phổ biến')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
     pickFiles(1, [
       new File(['a\n'], 'one.txt', { type: 'text/plain' }),
       new File(['b\n'], 'two.txt', { type: 'text/plain' }),
       new File(['c\n'], 'three.txt', { type: 'text/plain' }),
     ]);
     await waitFor(() => expect(started).toHaveLength(2));
-    expect(screen.getByText('Chờ lượt')).toBeInTheDocument();
+    expect(screen.getByText('Waiting')).toBeInTheDocument();
   });
 
   it('shows per-job success with the file word count', async () => {
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Độ phổ biến')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
     pickFile(1, new File(['hello\nworld\n'], 'test.txt', { type: 'text/plain' }));
-    await waitFor(() => expect(screen.getByText('Đã thêm 2 từ')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Added 2 words')).toBeInTheDocument());
   });
 
   it('shows the error on the failing job row only', async () => {
@@ -153,13 +153,13 @@ describe('ResourcesPanel', () => {
         : Promise.resolve({ resourceId: 2, wordCount: 5, format: 'txt' });
     });
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Độ phổ biến')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
     pickFiles(1, [
       new File(['bad'], 'bad.txt', { type: 'text/plain' }),
       new File(['ok'], 'good.txt', { type: 'text/plain' }),
     ]);
     await waitFor(() => expect(screen.getByText(/parse fail/)).toBeInTheDocument());
-    await waitFor(() => expect(screen.getByText('Đã thêm 5 từ')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Added 5 words')).toBeInTheDocument());
   });
 
   it('import progress shows exact entry totals via onProgress', async () => {
@@ -169,9 +169,9 @@ describe('ResourcesPanel', () => {
       return { resourceId: 1, wordCount: 73643, format: 'txt' };
     });
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Độ phổ biến')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
     pickFile(1, new File(['a\n'], 'big.txt', { type: 'text/plain' }));
-    await waitFor(() => expect(screen.getByText(/5\.000 \/ 73\.643 mục|Đã thêm/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/5,000 \/ 73,643 items|Added/)).toBeInTheDocument());
   });
 
   it('allows concurrent dictionary + frequency import (independent dropzones)', async () => {
@@ -185,17 +185,17 @@ describe('ResourcesPanel', () => {
     });
 
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Độ phổ biến')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
 
     pickFile(0, new File(['[]'], 'dict.json', { type: 'application/json' }));
     pickFile(1, new File(['a\nb\n'], 'freq.txt', { type: 'text/plain' }));
 
-    await waitFor(() => expect(screen.getByText('Đã thêm 5 từ')).toBeInTheDocument());
-    resolveDict({ resourceId: 1, wordCount: 3, format: 'cambridge-json' });
-    await waitFor(() => expect(screen.getByText('Đã thêm 3 từ')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Added 5 words')).toBeInTheDocument());
+    resolveDict({ resourceId: 1, wordCount: 3, format: 'json-entries' });
+    await waitFor(() => expect(screen.getByText('Added 3 words')).toBeInTheDocument());
   });
 
-  it('prompts on duplicate and resolves onDuplicate when "Bỏ qua" clicked', async () => {
+  it('prompts on duplicate and resolves onDuplicate when "Skip" clicked', async () => {
     const existing = makeResource({ id: 5, name: 'existing.txt' });
     importFile.mockImplementation(async (_file, _type, options) => {
       const choice = await (options as { onDuplicate?: (e: ResourceInfo) => Promise<'skip' | 'replace'> })
@@ -205,17 +205,17 @@ describe('ResourcesPanel', () => {
     });
 
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Độ phổ biến')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
     pickFile(1, new File(['a\nb\n'], 'test.txt', { type: 'text/plain' }));
 
-    await waitFor(() => expect(screen.getByText(/Đã có sẵn "existing\.txt"/)).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Bỏ qua' }));
+    await waitFor(() => expect(screen.getByText(/"existing\.txt" already exists/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
 
-    await waitFor(() => expect(screen.getByText(/Đã bỏ qua/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Skipped/)).toBeInTheDocument());
     expect(importFile).toHaveBeenCalledTimes(1);
   });
 
-  it('resolves "Thay thế" so the import proceeds', async () => {
+  it('resolves "Replace" so the import proceeds', async () => {
     const existing = makeResource({ id: 5, name: 'existing.txt' });
     importFile.mockImplementation(async (_file, _type, options) => {
       const choice = await (options as { onDuplicate?: (e: ResourceInfo) => Promise<'skip' | 'replace'> })
@@ -225,13 +225,13 @@ describe('ResourcesPanel', () => {
     });
 
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Độ phổ biến')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
     pickFile(1, new File(['a\nb\n'], 'test.txt', { type: 'text/plain' }));
 
-    await waitFor(() => expect(screen.getByText(/Đã có sẵn "existing\.txt"/)).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Thay thế' }));
+    await waitFor(() => expect(screen.getByText(/"existing\.txt" already exists/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Replace' }));
 
-    await waitFor(() => expect(screen.getByText('Đã thêm 5 từ')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Added 5 words')).toBeInTheDocument());
   });
 
   it('reorders via the drag handle keyboard fallback', async () => {
@@ -265,7 +265,7 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('edit-frequency'));
     fireEvent.click(screen.getByTestId('delete-button-1'));
     expect(screen.getByTestId('delete-confirm-modal')).toBeInTheDocument();
-    expect(screen.getByText('Xóa danh sách?')).toBeInTheDocument();
+    expect(screen.getByText('Delete list?')).toBeInTheDocument();
   });
 
   it('deletes resource on confirm', async () => {
@@ -293,9 +293,9 @@ describe('ResourcesPanel', () => {
   it('never scopes imports to a profile', async () => {
     const setProfiles = client.setResourceProfiles as jest.MockedFunction<typeof client.setResourceProfiles>;
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Độ phổ biến')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
     pickFile(1, new File(['hello\n'], 'test.txt', { type: 'text/plain' }));
-    await waitFor(() => expect(screen.getByText('Đã thêm 2 từ')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Added 2 words')).toBeInTheDocument());
     expect(setProfiles).not.toHaveBeenCalled();
   });
 
@@ -316,9 +316,9 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('select-3'));
 
     const deleteButton = screen.getByTestId('delete-selected-frequency');
-    expect(deleteButton).toHaveTextContent('Xóa 2 đã chọn');
+    expect(deleteButton).toHaveTextContent('Delete 2 selected');
     fireEvent.click(deleteButton);
-    expect(screen.getByText('Xóa 2 danh sách đã chọn?')).toBeInTheDocument();
+    expect(screen.getByText('Delete 2 selected lists?')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
@@ -337,9 +337,9 @@ describe('ResourcesPanel', () => {
 
     fireEvent.click(screen.getByTestId('edit-frequency'));
     const deleteButton = screen.getByTestId('delete-selected-frequency');
-    expect(deleteButton).toHaveTextContent('Xóa tất cả');
+    expect(deleteButton).toHaveTextContent('Delete all');
     fireEvent.click(deleteButton);
-    expect(screen.getByText('Xóa tất cả 2 danh sách?')).toBeInTheDocument();
+    expect(screen.getByText('Delete all 2 lists?')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
@@ -351,9 +351,9 @@ describe('ResourcesPanel', () => {
     await waitFor(() => expect(screen.getByText('a')).toBeInTheDocument());
 
     const editButton = screen.getByTestId('edit-frequency');
-    expect(editButton).toHaveAttribute('aria-label', 'Chỉnh sửa Độ phổ biến');
+    expect(editButton).toHaveAttribute('aria-label', 'Edit Frequency lists');
     fireEvent.click(editButton);
-    expect(editButton).toHaveAttribute('aria-label', 'Xong chỉnh sửa Độ phổ biến');
+    expect(editButton).toHaveAttribute('aria-label', 'Finish editing Frequency lists');
     fireEvent.click(editButton);
     expect(screen.queryByTestId('delete-button-1')).not.toBeInTheDocument();
     expect(screen.queryByTestId('delete-selected-frequency')).not.toBeInTheDocument();
@@ -363,14 +363,14 @@ describe('ResourcesPanel', () => {
     listResources.mockResolvedValue([
       makeResource({ id: 1, name: 'a.txt' }),
       makeResource({ id: 2, name: 'b.txt' }),
-      makeResource({ id: 3, name: 'dict.json', type: 'DICTIONARY', format: 'cambridge-json' }),
+      makeResource({ id: 3, name: 'dict.json', type: 'DICTIONARY', format: 'json-entries' }),
     ]);
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
 
     fireEvent.click(screen.getByTestId('edit-frequency'));
     fireEvent.click(screen.getByTestId('delete-selected-frequency'));
-    expect(screen.getByText('Xóa tất cả 2 danh sách?')).toBeInTheDocument();
+    expect(screen.getByText('Delete all 2 lists?')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));

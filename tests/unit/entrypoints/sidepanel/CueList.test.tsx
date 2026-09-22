@@ -275,6 +275,42 @@ describe('CueList', () => {
       expect(onTokenClick).toHaveBeenCalledWith('world', world, 'Hello world');
     });
 
+    it('calls onTokenHover with the term on enter and null on leave', () => {
+      const onTokenHover = jest.fn();
+      render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick: jest.fn(), onTokenHover }}
+        />,
+      );
+
+      const target = screen.getAllByTestId('cue-target-text')[0];
+      const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
+      fireEvent.mouseEnter(hello);
+      expect(onTokenHover).toHaveBeenLastCalledWith('hello');
+      fireEvent.mouseLeave(hello);
+      expect(onTokenHover).toHaveBeenLastCalledWith(null);
+    });
+
+    it('clears the hovered term when the list unmounts', () => {
+      const onTokenHover = jest.fn();
+      const { unmount } = render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick: jest.fn(), onTokenHover }}
+        />,
+      );
+
+      const target = screen.getAllByTestId('cue-target-text')[0];
+      fireEvent.mouseEnter(target.querySelector('[data-cell-term="hello"]') as HTMLElement);
+      unmount();
+      expect(onTokenHover).toHaveBeenLastCalledWith(null);
+    });
+
     it('updates an already-rendered token when its status changes', async () => {
       render(
         <CueList

@@ -1,4 +1,4 @@
-// yomitanStrategy — Yomitan ZIP format (ADR-023 D3, spec F9).
+// termBankStrategy — term-bank ZIP format (ADR-023 D3, spec F9).
 //
 // Handles BOTH:
 // - term_bank_*.json → DICTIONARY entries (term, reading, definition)
@@ -10,38 +10,39 @@
 
 import { BaseImportStrategy, type RawFrequencyEntry, type RawDictionaryEntry, type StrategyOptions } from './baseImportStrategy';
 import { unzipAll, decodeText } from '../logic/fileDetector';
+import { toCanonicalDefinition } from '../logic/normalize/canonical';
 import { ParseError, CorruptedFileError } from '../logic/importErrors';
 import { bulkInsertFrequencyEntries } from '../repositories/frequencyRepository';
 import { bulkInsertDictionaryEntries } from '../repositories/dictionaryRepository';
 import type { FrequencyEntry, DictionaryEntry, ResourceType } from '@/entities/dictionary';
 
-/** Options for yomitanStrategy. */
-export interface YomitanStrategyOptions {
+/** Options for termBankStrategy. */
+export interface TermBankStrategyOptions {
   readonly data: Uint8Array;
   readonly fileName: string;
   readonly resourceType: ResourceType;
 }
 
-/** Yomitan index.json structure. */
-interface YomitanIndex {
+/** Bank index.json structure. */
+interface BankIndex {
   readonly title: string;
   readonly revision: string;
   readonly format: number;
 }
 
-/** Yomitan term_bank entry: [expression, reading, definitionTags, rules, score, definitions[], ...]. */
-type YomitanTermBankEntry = [string, string, string, string, number, string[]];
+/** term_bank entry: [expression, reading, definitionTags, rules, score, definitions[], ...]. */
+type TermBankEntry = [string, string, string, string, number, unknown[]];
 
-/** Yomitan term_meta_bank entry: [term, type, {reading?, frequency?} | string | number]. */
-type YomitanTermMetaEntry = [string, string, { reading?: string; frequency?: number } | string | number];
+/** term_meta_bank entry: [term, type, {reading?, frequency?} | string | number]. */
+type TermMetaEntry = [string, string, { reading?: string; frequency?: number } | string | number];
 
-/** Yomitan ZIP strategy — handles both dictionary (term_bank) + frequency (term_meta_bank). */
-export class YomitanStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDictionaryEntry, Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'>> {
-  readonly format = 'yomitan' as const;
+/** term-bank ZIP strategy — handles both dictionary (term_bank) + frequency (term_meta_bank). */
+export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDictionaryEntry, Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'>> {
+  readonly format = 'term-bank' as const;
   private readonly data: Uint8Array;
   private readonly resourceType: ResourceType;
 
-  constructor(options: StrategyOptions, fileData: YomitanStrategyOptions) {
+  constructor(options: StrategyOptions, fileData: TermBankStrategyOptions) {
     super(options);
     this.data = fileData.data;
     this.resourceType = fileData.resourceType;
@@ -52,20 +53,22 @@ export class YomitanStrategy extends BaseImportStrategy<RawFrequencyEntry | RawD
     try {
       files = unzipAll(this.data);
     } catch (e) {
-      throw new CorruptedFileError('Failed to unzip Yomitan file.', e);
+      throw new CorruptedFileError('Failed to unzip term-bank file.', e);
     }
 
     // Parse index.json (validate structure)
     const indexPath = Object.keys(files).find((p) => p.endsWith('index.json'));
     if (!indexPath) {
-      throw new ParseError('Yomitan format: index.json not found in zip.');
+      throw new ParseError('term-bank format: index.json not found in zip.');
     }
     try {
-      const indexJson: YomitanIndex = JSON.parse(decodeText(files[indexPath]!));
+      const indexJson: BankIndex = JSON.parse(decodeText(files[indexPath]!));
       void indexJson;
     } catch (e) {
-      throw new ParseError('Yomitan format: invalid index.json.', e);
+      throw new ParseError('term-bank format: invalid index.json.', e);
     }
+
+    this.reportTotal(this.countBankEntries(files));
 
     if (this.resourceType === 'DICTIONARY') {
       yield* this.parseTermBanks(files);
@@ -74,32 +77,52 @@ export class YomitanStrategy extends BaseImportStrategy<RawFrequencyEntry | RawD
     }
   }
 
+  /** Exact attempted-entry count across the relevant bank files (mode-filtered). */
+  private countBankEntries(files: Record<string, Uint8Array>): number {
+    const pattern = this.resourceType === 'DICTIONARY' ? 'term_bank' : 'term_meta_bank';
+    let total = 0;
+    for (const path of Object.keys(files)) {
+      if (!path.includes(pattern)) continue;
+      const parsed = JSON.parse(decodeText(files[path]!));
+      if (!Array.isArray(parsed)) continue;
+      if (this.resourceType === 'DICTIONARY') {
+        total += parsed.length;
+      } else {
+        for (const entry of parsed) {
+          if (entry?.[1] === 'freq') total++;
+        }
+      }
+    }
+    return total;
+  }
+
   /** Parse term_bank_*.json → dictionary entries. */
   private async *parseTermBanks(files: Record<string, Uint8Array>): AsyncGenerator<RawDictionaryEntry> {
     const bankPaths = Object.keys(files)
       .filter((p) => p.includes('term_bank'))
       .sort();
     if (bankPaths.length === 0) {
-      throw new ParseError('Yomitan dictionary format: no term_bank_*.json files found.');
+      throw new ParseError('term-bank dictionary format: no term_bank_*.json files found.');
     }
 
     for (const bankPath of bankPaths) {
-      let entries: YomitanTermBankEntry[];
+      let entries: TermBankEntry[];
       try {
         entries = JSON.parse(decodeText(files[bankPath]!));
       } catch (e) {
-        throw new ParseError(`Yomitan format: invalid ${bankPath}.`, e);
+        throw new ParseError(`term-bank format: invalid ${bankPath}.`, e);
       }
       if (!Array.isArray(entries)) {
-        throw new ParseError(`Yomitan format: ${bankPath} is not an array.`);
+        throw new ParseError(`term-bank format: ${bankPath} is not an array.`);
       }
       for (const entry of entries) {
-        const [expression, reading, , , , definitions] = entry;
-        const definition = Array.isArray(definitions) ? definitions.join('\n') : String(definitions ?? '');
+        const [expression, reading, definitionTags, rules, , definitions] = entry;
         yield {
           term: expression,
           reading: reading || expression,
-          definition,
+          definition: typeof definitions === 'string' ? definitions : '',
+          definitions: Array.isArray(definitions) ? definitions : undefined,
+          pos: definitionTags || rules || '',
         };
       }
     }
@@ -111,18 +134,18 @@ export class YomitanStrategy extends BaseImportStrategy<RawFrequencyEntry | RawD
       .filter((p) => p.includes('term_meta_bank'))
       .sort();
     if (bankPaths.length === 0) {
-      throw new ParseError('Yomitan frequency format: no term_meta_bank_*.json files found.');
+      throw new ParseError('term-bank frequency format: no term_meta_bank_*.json files found.');
     }
 
     for (const bankPath of bankPaths) {
-      let entries: YomitanTermMetaEntry[];
+      let entries: TermMetaEntry[];
       try {
         entries = JSON.parse(decodeText(files[bankPath]!));
       } catch (e) {
-        throw new ParseError(`Yomitan format: invalid ${bankPath}.`, e);
+        throw new ParseError(`term-bank format: invalid ${bankPath}.`, e);
       }
       if (!Array.isArray(entries)) {
-        throw new ParseError(`Yomitan format: ${bankPath} is not an array.`);
+        throw new ParseError(`term-bank format: ${bankPath} is not an array.`);
       }
       for (const entry of entries) {
         const [term, type, meta] = entry;
@@ -150,15 +173,17 @@ export class YomitanStrategy extends BaseImportStrategy<RawFrequencyEntry | RawD
   private transformDictionaryEntry(raw: RawDictionaryEntry): Omit<DictionaryEntry, 'id'> | null {
     const term = raw.term.trim().normalize('NFC').toLowerCase();
     if (term.length === 0) return null;
+    const canonical = toCanonicalDefinition(raw);
     return {
       resourceId: this.options.resourceId,
       term,
       reading: raw.reading ? raw.reading.trim().normalize('NFC').toLowerCase() : term,
       altterm: raw.altterm?.trim().normalize('NFC') ?? '',
       pronunciation: '',
-      definition: (raw.definition ?? '').trim().normalize('NFC').replace(/\s+/g, ' '),
-      pos: '',
-      examples: '',
+      definition: canonical.definition,
+      senses: canonical.senses,
+      pos: canonical.pos,
+      examples: canonical.examples,
       audio: '',
     };
   }

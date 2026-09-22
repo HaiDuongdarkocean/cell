@@ -77,7 +77,7 @@ describe('importOrchestrator', () => {
       expect(onProgress).toHaveBeenCalled();
     });
 
-    it('imports Cambridge JSON dictionary end-to-end', async () => {
+    it('imports entry-object JSON dictionary end-to-end', async () => {
       const cambridge = JSON.stringify([
         { term: 'hello', definition: 'greeting', pos: 'noun' },
         { term: 'world', definition: 'the earth' },
@@ -85,13 +85,13 @@ describe('importOrchestrator', () => {
       const file = makeFile('cambridge.json', cambridge);
       const result = await importFile(file, 'DICTIONARY', { langCode: LANG });
       expect(result.wordCount).toBe(2);
-      expect(result.format).toBe('cambridge-json');
+      expect(result.format).toBe('json-entries');
       expect(await countDictionaryByResource(LANG, result.resourceId)).toBe(2);
     });
   });
 
-  describe('importFile — Cambridge phrase index build (ADR-037 §7.2)', () => {
-    it('builds a phrase index blob during Cambridge dictionary import', async () => {
+  describe('importFile — entry-object phrase index build (ADR-037 §7.2)', () => {
+    it('builds a phrase index blob during entry-object dictionary import', async () => {
       const cambridge = JSON.stringify([
         { term: 'take off', definition: 'to remove', pos: 'phrasal verb' },
         { term: 'kick the bucket', definition: 'to die', pos: 'idiom' },
@@ -127,27 +127,27 @@ describe('importOrchestrator', () => {
       expect(stored?.termCount).toBe(1);
     });
 
-    it('does not build a phrase blob for non-Cambridge resources', async () => {
+    it('does not build a phrase blob for non-entry-object resources', async () => {
       const file = makeFile('words.txt', 'hello\nworld\n');
       const result = await importFile(file, 'FREQUENCY', { langCode: LANG });
       expect(await hasPhraseIndex(LANG, result.resourceId)).toBe(false);
     });
 
-    it('does not build a phrase blob for Cambridge FREQUENCY resources', async () => {
-      // Cambridge format detected as cambridge-json, but resourceType=FREQUENCY
+    it('does not build a phrase blob for entry-object FREQUENCY resources', async () => {
+      // entry-object format detected as json-entries, but resourceType=FREQUENCY
       // should skip the phrase build (phrase index is dictionary-only).
       const cambridge = JSON.stringify([
         { term: 'take off', definition: 'to remove' },
       ]);
       const file = makeFile('cambridge.json', cambridge);
-      // detectFormat on a .json file with array content → cambridge-json format,
+      // detectFormat on a .json file with array content → json-entries format,
       // but resourceType=FREQUENCY resolves format via resolveFormat. The phrase
       // build gate checks resourceType === 'DICTIONARY', so no blob.
       try {
         const result = await importFile(file, 'FREQUENCY', { langCode: LANG });
         expect(await hasPhraseIndex(LANG, result.resourceId)).toBe(false);
       } catch {
-        // resolveFormat may reject cambridge-json for FREQUENCY — that's fine,
+        // resolveFormat may reject json-entries for FREQUENCY — that's fine,
         // the point is no phrase blob is created. Skip if import itself fails.
       }
     });

@@ -1,0 +1,21 @@
+{
+  "id": "i18n-entity-messagekey-fields",
+  "title": "Entity/preset strings bản địa hoá qua *Key: MessageKey fields trên record — validators trả LocalizedError, pure libs nhận resolver",
+  "category": ["rendering", "ux"],
+  "tags": ["i18n", "entity", "messagekey", "preset", "localized-error", "resolver", "t()"],
+  "trigger": "Entity records (presets, builtin rules) hoặc pure functions (validators, formatters) chứa/produce user-facing string literals",
+  "principle": "Entity data không được chứa chuỗi đã dịch (đóng băng locale khi persist) mà cũng không được hardcode EN (UI vi hiển thị EN). Pattern: record giữ literal làm fallback + `titleKey`/`nameKey`/`descriptionKey: MessageKey` resolve t() tại render. Validators/ops trong entity/lib không trả string EN — trả `LocalizedError { key: MessageKey, params? }`, UI gọi `t(e.key, e.params)`. Formatter pure giữ purity bằng resolver param `resolve: (key: MessageKey) => string` — caller truyền `t` trực tiếp (signature khớp vì params optional). Đừng tạo dict i18n song song (cleanupT) — merge keys vào en.json/vi.json SSOT.",
+  "cases": [
+    {
+      "context": "vocab-study-ux audit: PRESETS title/description EN literals, BUILTIN_CLEANUP_RULES names EN trong UI vi, cleanupT() là i18n dict riêng ngoài en/vi.json, formatStepSummary emit 'no sub, pause end' hardcode, validateModeName/validateCleanupPattern trả EN strings",
+      "bad": "builtin('html-tags', 'Markup tags', 'Residual markup…');\nvalidate() { return 'Name is required.'; }\nformatStepSummary(step) { return LABELS[step.subtitle]; }",
+      "good": "// types.ts\ninterface SubtitleCleanupRule { name: string; nameKey?: MessageKey; ... }\ninterface LocalizedError { key: MessageKey; params?: (string|number)[] }\n// entity: nameKey: `cleanupRules.${id}.name`\n// UI: rule.nameKey ? t(rule.nameKey) : rule.name\n// validator: return { key: 'cleanup.error.nameRequired' }\n// formatter: formatStepSummary(step, t)"
+    }
+  ],
+  "applyFor": [
+    "Preset/builtin entity records có title/description hiển thị UI",
+    "Validation error strings từ entity/feature libs",
+    "Summary/description formatters được persist (tránh freeze — derive lại tại render khi được)",
+    "Parallel i18n dicts (cleanupT-style) — migrate vào en.json/vi.json"
+  ]
+}

@@ -3,7 +3,7 @@ import { TxtLineStrategy } from '@/features/dictionary/strategies/txtLineStrateg
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
 import { findFrequencyByResource } from '@/features/dictionary/repositories/frequencyRepository';
 import { addResource } from '@/features/dictionary/repositories/resourceRepository';
-import { zipSync, strToU8 } from 'fflate';
+import { zipSync, strToU8, gzipSync } from 'fflate';
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
 
@@ -61,6 +61,38 @@ describe('txtLineStrategy', () => {
     const strategy = new TxtLineStrategy(
       { resourceId, langCode: LANG },
       { data: zipped, fileName: 'test.zip' },
+    );
+    const result = await strategy.execute();
+    expect(result.wordCount).toBe(2);
+    const entries = await findFrequencyByResource(LANG, resourceId);
+    expect(entries.map((e) => e.term).sort()).toEqual(['apple', 'banana']);
+  });
+
+  it('auto-gunzips .txt.gz', async () => {
+    const resourceId = await addResource(LANG, {
+      name: 'test.txt.gz', langCode: LANG, type: 'FREQUENCY', format: 'txt',
+      signature: 'sig5', wordCount: 0, installationFinished: false, importedAt: Date.now(),
+    });
+    const gzipped = gzipSync(strToU8('apple\nbanana\n'));
+    const strategy = new TxtLineStrategy(
+      { resourceId, langCode: LANG },
+      { data: gzipped, fileName: 'test.txt.gz' },
+    );
+    const result = await strategy.execute();
+    expect(result.wordCount).toBe(2);
+    const entries = await findFrequencyByResource(LANG, resourceId);
+    expect(entries.map((e) => e.term).sort()).toEqual(['apple', 'banana']);
+  });
+
+  it('accepts a zip whose .json entry actually holds plain-text lines', async () => {
+    const resourceId = await addResource(LANG, {
+      name: 'wordlist.zip', langCode: LANG, type: 'FREQUENCY', format: 'txt',
+      signature: 'sig6', wordCount: 0, installationFinished: false, importedAt: Date.now(),
+    });
+    const zipped = zipSync({ 'wordlist.json': strToU8('apple\nbanana\n') });
+    const strategy = new TxtLineStrategy(
+      { resourceId, langCode: LANG },
+      { data: zipped, fileName: 'wordlist.zip' },
     );
     const result = await strategy.execute();
     expect(result.wordCount).toBe(2);

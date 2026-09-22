@@ -16,7 +16,7 @@
 }
 
 .hintBtn:hover {
-  color: var(--color-primary);
+  color: var(--color-text-accent-strong);
   background: var(--color-primary-subtle);
 }
 
@@ -35,10 +35,10 @@
 }
 
 /* === Floating hint popover (nổi lên trên icon) === */
+/* Portaled + position:fixed — top/left come from inline style measured off
+   the trigger rect, so ancestor overflow:hidden can never clip it. */
 .hintText {
-  position: absolute;
-  bottom: calc(100% + var(--space-1-5));
-  left: 0;
+  position: fixed;
   width: max-content;
   max-width: calc(var(--space-1) * 70);
   margin: 0;
@@ -46,8 +46,8 @@
   color: var(--color-text);
   line-height: var(--leading-normal);
   padding: var(--space-2) var(--space-3);
-  background: var(--color-surface-hover);
-  border: none;
+  background: var(--color-surface-popover);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-dialog);
   box-shadow: var(--shadow-popover);
   z-index: var(--z-tooltip);
@@ -62,41 +62,26 @@
   top: 100%;
   left: var(--space-2);
   border: var(--space-1-5) solid transparent;
-  border-top-color: var(--color-surface-hover);
+  border-top-color: var(--color-surface-popover);
 }
 
-/* === Boundary detection variants === */
+/* === Boundary detection variants (position is inline; classes steer the arrow) === */
 
 /* Flip vertical: popover below icon (when near top viewport edge) */
-.hintText.flip-top {
-  bottom: auto;
-  top: calc(100% + var(--space-1-5));
-}
-
 .hintText.flip-top::after {
   top: auto;
   bottom: 100%;
   border-top-color: transparent;
-  border-bottom-color: var(--color-border);
+  border-bottom-color: var(--color-surface-popover);
 }
 
 /* Align right: when near left viewport edge */
-.hintText.align-right {
-  left: auto;
-  right: 0;
-}
-
 .hintText.align-right::after {
   left: auto;
   right: var(--space-2);
 }
 
 /* Center horizontal: when centered in viewport */
-.hintText.align-center {
-  left: 50%;
-  transform: translateX(-50%);
-}
-
 .hintText.align-center::after {
   left: 50%;
   transform: translateX(-50%);
@@ -107,7 +92,7 @@
   top: auto;
   bottom: 100%;
   border-top-color: transparent;
-  border-bottom-color: var(--color-border);
+  border-bottom-color: var(--color-surface-popover);
   left: auto;
   right: var(--space-2);
 }
@@ -116,7 +101,7 @@
   top: auto;
   bottom: 100%;
   border-top-color: transparent;
-  border-bottom-color: var(--color-border);
+  border-bottom-color: var(--color-surface-popover);
   left: 50%;
   transform: translateX(-50%);
 }

@@ -48,3 +48,9 @@
   padding: 0;
   min-height: var(--touch-target);
 }
+
+@media (max-width: 480px) {
+  .row {
+    flex-wrap: wrap;
+  }
+}

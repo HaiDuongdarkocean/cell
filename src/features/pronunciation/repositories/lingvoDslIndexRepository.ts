@@ -75,7 +75,7 @@ export async function getLingvoDslAudioPaths(
   try {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const store = tx.objectStore(STORE_NAME);
-    const id = `${packageId}:${term.toLowerCase()}`;
+    const id = `${packageId}:${term.normalize('NFC').trim().toLowerCase()}`;
     return new Promise((resolve, reject) => {
       const request = store.get(id);
       request.onsuccess = () => {

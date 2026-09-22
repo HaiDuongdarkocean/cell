@@ -46,7 +46,7 @@ async function seedResource(
     name: 'test.json',
     langCode: LANG,
     type: 'DICTIONARY',
-    format: 'cambridge-json',
+    format: 'json-entries',
     signature: `sig-${Date.now()}-${Math.random()}`,
     wordCount: terms.length,
     installationFinished: true,

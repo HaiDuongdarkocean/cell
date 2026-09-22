@@ -57,7 +57,7 @@ describe('ThemePanel', () => {
 
   it('switching preset via PresetSwitcher calls themeStore.switchPreset', () => {
     render(<ThemePanel />);
-    fireEvent.click(screen.getByRole('button', { name: 'Color preset' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Color palette' }));
     fireEvent.click(screen.getByRole('option', { name: 'Ocean' }));
     expect(useThemeStore.getState().config.preset).toBe('ocean');
   });

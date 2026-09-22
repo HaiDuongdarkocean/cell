@@ -2306,6 +2306,189 @@
         "race"
       ],
       "trigger": "Side-effect lifecycle (document listener, resource acquire) is gated on 'first React subscriber' by monkey-patching/overriding an exported store method"
+    },
+    {
+      "type": "experience",
+      "id": "shadow-dom-selection-collapsed-composed-ranges",
+      "title": "Real shadow-root drag selection reports Selection.isCollapsed=true — probe getComposedRanges before trusting the flag",
+      "category": [
+        "detection",
+        "testing"
+      ],
+      "tags": [
+        "shadow-dom",
+        "selection",
+        "getComposedRanges",
+        "isCollapsed",
+        "retargeting",
+        "tokenize",
+        "status-keys",
+        "playwright"
+      ],
+      "trigger": "Drag-selecting text inside a shadow root produces a working selection (Selection.toString() returns the text) but every document-level inspection says collapsed — so guards like if (selection.isCollapsed) return silently drop real selections"
+    },
+    {
+      "type": "experience",
+      "id": "parser-fixture-vs-real-format",
+      "title": "Parser fixtures invented from assumption pass unit tests but produce 0 entries on the real file — verify against the actual data file before shipping",
+      "category": [
+        "data",
+        "testing"
+      ],
+      "tags": [
+        "parser",
+        "dsl",
+        "fixture",
+        "real-world-data",
+        "unit-test",
+        "green-dot-false-positive"
+      ],
+      "trigger": "A text/binary parser is implemented against an assumed format and its unit tests use fixtures written from the same assumption"
+    },
+    {
+      "type": "experience",
+      "id": "i18n-t-call-module-scope-freezes-locale",
+      "title": "t() ở module scope đóng băng locale — option labels phải store MessageKey, resolve t() lúc render",
+      "category": [
+        "rendering",
+        "ux"
+      ],
+      "tags": [
+        "i18n",
+        "module-scope",
+        "locale",
+        "select-options",
+        "pills",
+        "frozen-translation"
+      ],
+      "trigger": "Options/labels/config records chứa chuỗi dịch khai báo const ở top-level module (ngoài component/hook)"
+    },
+    {
+      "type": "experience",
+      "id": "css-media-override-before-base-loses-cascade",
+      "title": "@media override đặt TRƯỚC base rule → thua cascade (same specificity, later wins)",
+      "category": [
+        "css"
+      ],
+      "tags": [
+        "media-query",
+        "cascade",
+        "specificity",
+        "responsive",
+        "css-order",
+        "mobile"
+      ],
+      "trigger": "Thêm @media block override thuộc tính của class đã có base rule ở dưới file"
+    },
+    {
+      "type": "experience",
+      "id": "file-handle-permission-session-scope",
+      "title": "FileSystemHandle picker grants die on restart — re-grant must happen in an extension page with user activation",
+      "category": [
+        "data",
+        "state"
+      ],
+      "tags": [
+        "file-system-access",
+        "permission",
+        "service-worker",
+        "indexeddb",
+        "user-activation"
+      ],
+      "trigger": "A stored FileSystemHandle is read from the service worker/offscreen or after a browser restart"
+    },
+    {
+      "type": "experience",
+      "id": "messaging-typed-array-becomes-plain-object",
+      "title": "Uint8Array over chrome.runtime.sendMessage arrives as plain {index:byte} object — rehydrate receive-side",
+      "category": [
+        "messaging",
+        "data"
+      ],
+      "tags": [
+        "chrome-messaging",
+        "serialization",
+        "uint8array",
+        "blob"
+      ],
+      "trigger": "Binary payloads returned through chrome.runtime.sendMessage"
+    },
+    {
+      "type": "experience",
+      "id": "content-script-cannot-open-extension-url",
+      "title": "window.open('chrome-extension://…') từ web page → chrome-error — phải route qua SW chrome.tabs.create",
+      "category": [
+        "messaging",
+        "ux"
+      ],
+      "tags": [
+        "chrome-extension",
+        "window-open",
+        "chrome-tabs-create",
+        "content-script",
+        "navigation-blocked",
+        "local-audio",
+        "reconnect"
+      ],
+      "trigger": "Click handler trong content script / shadow-DOM popup mở một extension page"
+    },
+    {
+      "type": "experience",
+      "id": "i18n-entity-messagekey-fields",
+      "title": "Entity/preset strings bản địa hoá qua *Key: MessageKey fields trên record — validators trả LocalizedError, pure libs nhận resolver",
+      "category": [
+        "rendering",
+        "ux"
+      ],
+      "tags": [
+        "i18n",
+        "entity",
+        "messagekey",
+        "preset",
+        "localized-error",
+        "resolver",
+        "t()"
+      ],
+      "trigger": "Entity records (presets, builtin rules) hoặc pure functions (validators, formatters) chứa/produce user-facing string literals"
+    },
+    {
+      "type": "experience",
+      "id": "zip-central-directory-reparse-per-lookup",
+      "title": "unzip() parses the whole central directory per call — byte-scan only the CD range for requested paths, no persisted directory table",
+      "category": [
+        "data",
+        "state"
+      ],
+      "tags": [
+        "zip",
+        "unzipit",
+        "indexeddb",
+        "file-slice",
+        "decompressionstream",
+        "service-worker",
+        "performance",
+        "local-audio"
+      ],
+      "trigger": "Any per-request zip entry lookup that re-opens the archive (new resolver instance per message, SW idle-kill between calls)"
+    },
+    {
+      "type": "experience",
+      "id": "unpacked-ext-sw-stale-bytecode",
+      "title": "Unpacked-extension SW keeps running stale code after rebuild — verify the running bundle before trusting measurements",
+      "category": [
+        "testing",
+        "process"
+      ],
+      "tags": [
+        "service-worker",
+        "mv3",
+        "quetta",
+        "load-extension",
+        "stale-code",
+        "measurement",
+        "version-bump"
+      ],
+      "trigger": "E2E/browser measurements don't change after rebuilding dist, or instrumentation markers never appear in the SW global scope"
     }
   ]
 }

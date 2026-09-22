@@ -1,4 +1,5 @@
 import type { Settings } from '@/entities/media';
+import { t } from '@/shared/i18n';
 import { Dialog } from '@/shared/ui/Dialog';
 import { SettingsDialogContent } from './SettingsDialogContent';
 
@@ -15,7 +16,7 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
     <Dialog
       open={isOpen}
       onOpenChange={(open) => { if (!open) onClose(); }}
-      title="Settings"
+      title={t('settings.dialog.title')}
       showCloseButton
     >
       <SettingsDialogContent

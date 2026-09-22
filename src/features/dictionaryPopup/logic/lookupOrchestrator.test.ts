@@ -15,6 +15,7 @@ import {
 } from '@/features/dictionary/logic/phraseIndexCompiler';
 import { parsePhraseTemplate } from '@/features/dictionary/logic/phraseTemplateParser';
 import type { Settings, LanguageProfile } from '@/entities/settings';
+import type { DictionaryEntry } from '@/entities/dictionary';
 import {
   DEFAULT_SETTINGS,
   DEFAULT_DICTIONARY_POPUP_SETTINGS,
@@ -58,31 +59,40 @@ afterAll(() => {
 
 const TEST_VERBS = new Set(['be', 'spill', 'break', 'kick', 'carry', 'take', 'give', 'run', 'pick', 'put', 'look']);
 
+type SeedEntry = {
+  term: string;
+  definition: string;
+  pos?: string;
+  reading?: string;
+} & Partial<Omit<DictionaryEntry, 'id' | 'resourceId' | 'term' | 'definition' | 'pos' | 'reading'>>;
+
 async function seedEnglishDictionary(
-  entries: { term: string; definition: string; pos?: string; reading?: string }[],
+  entries: SeedEntry[],
   phrases: string[] = [],
 ): Promise<number> {
   const resourceId = await addResource('en', {
     name: 'cambridge.json',
     langCode: 'en',
     type: 'DICTIONARY',
-    format: 'cambridge-json',
+    format: 'json-entries',
     signature: `en-sig-${Date.now()}-${Math.random()}`,
     wordCount: entries.length,
     installationFinished: true,
     importedAt: Date.now(),
   });
   for (const e of entries) {
+    const { term, definition, pos, reading, ...rest } = e;
     await addDictionaryEntry('en', {
       resourceId,
-      term: e.term,
-      reading: e.reading ?? '',
+      term,
+      reading: reading ?? '',
       altterm: '',
       pronunciation: '',
-      definition: e.definition,
-      pos: e.pos ?? '',
+      definition,
+      pos: pos ?? '',
       examples: '',
       audio: '',
+      ...rest,
     });
   }
   if (phrases.length > 0) {
@@ -138,7 +148,7 @@ async function seedChineseDictionary(entries: { term: string; definition: string
     name: 'cedict.json',
     langCode: 'zh',
     type: 'DICTIONARY',
-    format: 'cambridge-json',
+    format: 'json-entries',
     signature: `zh-sig-${Date.now()}-${Math.random()}`,
     wordCount: entries.length,
     installationFinished: true,
@@ -291,8 +301,8 @@ describe('lookupOrchestrator — English', () => {
     ).rejects.toThrow(/aborted/i);
   });
 
-  it('splits all Cambridge senses — only strips N. markers, keeps (POS) in text', async () => {
-    // Real Cambridge JSON shape for "question": 23 senses, some idioms have no
+  it('splits all entry-object senses — only strips N. markers, keeps (POS) in text', async () => {
+    // Real entry-object JSON shape for "question": 23 senses, some idioms have no
     // POS in parentheses right after the number (e.g. 17.bring/call...).
     const questionDefinition = `1.(noun) a sentence or phrase used to find out information<br><br>2.(noun) in an exam, a problem that tests a person's knowledge or ability<br><br>3.(noun) any matter that needs to be dealt with or considered<br><br>4.(noun) doubt or confusion<br><br>5.sb/sth in question<br>(noun) the person or thing that is being discussed<br><br>6.(verb [ T ]) to ask a person about something, especially officially<br><br>7.(verb [ T ]) to express doubts about the value or truth of something<br><br>8.(noun) a word or words used to find out information<br><br>9.(noun) a matter to be dealt with or discussed, or a problem to be solved<br><br>10.(noun) In an exam, a question is a problem that tests a person's knowledge<br><br>11.(noun) doubt or uncertainty<br><br>12.(verb [ T ]) to use a word or words to find out information<br><br>13.(verb [ T ]) If you question something, you express doubt or uncertainty about it<br><br>14.(noun) a sentence or phrase that asks for information<br><br>15.(noun) a subject or problem<br><br>16.(noun) a feeling of doubt about something<br><br>17.bring/call sth into question<br>(noun) to express doubt about something<br><br>18.(noun) to make people feel doubt about something<br><br>19.in question<br>(noun) that is being discussed<br><br>20.(noun) if something is in question, no-one knows what is going to happen to it<br><br>21.out of the question<br>(noun) if something is out of the question, it definitely will not or cannot happen<br><br>22.(verb [ T ]) to ask someone questions about something<br><br>23.(verb [ T ]) to express doubts about something<br><br>`;
     await seedEnglishDictionary([{ term: 'question', definition: questionDefinition, pos: '' }]);
@@ -471,6 +481,90 @@ describe('lookupOrchestrator — English', () => {
     expect(result.term).toBe("cat's");
     expect(result.definitions).toHaveLength(1);
     expect(result.definitions[0]!.text).toBe('a feline animal');
+  });
+});
+
+describe('lookupOrchestrator — rich canonical fields', () => {
+  it('passes sense labels/level/synonyms/antonyms through to DefinitionEntry', async () => {
+    await seedEnglishDictionary([{
+      term: 'take',
+      definition: 'verb [transitive] [B1]<br>to carry something',
+      senses: [{
+        pos: 'verb',
+        labels: ['transitive'],
+        level: 'B1',
+        lines: [
+          { role: 'gloss', text: 'to carry something', translation: 'mang theo' },
+          { role: 'example', text: 'Take an umbrella', pattern: '[VERB noun]', citation: 'src' },
+        ],
+        subsenses: [{ num: 'a', text: 'to bring along' }],
+        synonyms: ['bring', 'carry'],
+        antonyms: ['leave'],
+      }],
+    }]);
+
+    const result = await lookupOrchestrator({
+      term: 'take', langCode: 'en', contextSentence: 'take it', cursorOffset: 0,
+    });
+
+    const def = result.definitions[0]!;
+    expect(def.pos).toBe('verb');
+    expect(def.labels).toEqual(['transitive']);
+    expect(def.level).toBe('B1');
+    expect(def.lines?.[1]?.pattern).toBe('[VERB noun]');
+    expect(def.lines?.[1]?.citation).toBe('src');
+    expect(def.subsenses).toEqual([{ num: 'a', text: 'to bring along' }]);
+    expect(def.synonyms).toEqual(['bring', 'carry']);
+    expect(def.antonyms).toEqual(['leave']);
+    expect(def.text).toContain('[VERB noun]');
+  });
+
+  it('merges entry-level related/level/etymology across resources by priority', async () => {
+    // Explicit priority: A (0) wins over B (1) for scalars/first-wins merges.
+    const ridA = await addResource('en', {
+      name: 'main.json', langCode: 'en', type: 'DICTIONARY', format: 'json-entries',
+      signature: `en-sig-a-${Date.now()}`, wordCount: 1, installationFinished: true,
+      importedAt: Date.now(), priority: 0,
+    });
+    await addDictionaryEntry('en', {
+      resourceId: ridA, term: 'take', reading: '', altterm: '', pronunciation: '',
+      definition: 'to carry', pos: '', examples: '', audio: '',
+      level: 'B1',
+      related: [{ term: 'take after', kind: 'phrasal', preview: 'giống' }],
+      etymology: { chain: 'from Old English tacan', firstKnownUse: '12th century' },
+    });
+    const ridB = await addResource('en', {
+      name: 'other.json', langCode: 'en', type: 'DICTIONARY', format: 'json-entries',
+      signature: `en-sig-b-${Date.now()}`, wordCount: 1, installationFinished: true,
+      importedAt: Date.now(), priority: 1,
+    });
+    await addDictionaryEntry('en', {
+      resourceId: ridB, term: 'take', reading: '', altterm: '', pronunciation: '',
+      definition: 'to grab', pos: '', examples: '', audio: '',
+      related: [{ term: 'take a dose', kind: 'collocation' }, { term: 'to take after', kind: 'expression' }],
+      etymology: { chain: 'from Old Norse taka' },
+    });
+    expect(ridB).toBeGreaterThan(ridA);
+
+    const result = await lookupOrchestrator({
+      term: 'take', langCode: 'en', contextSentence: 'take it', cursorOffset: 0,
+    });
+
+    expect(result.level).toBe('B1');
+    // Union + dedupe by normalized term ('to take after' ≈ 'take after'), first wins.
+    expect(result.related).toEqual([
+      { term: 'take after', kind: 'phrasal', preview: 'giống' },
+      { term: 'take a dose', kind: 'collocation' },
+    ]);
+    // First etymology wins the chain; the second becomes a checkable variant.
+    expect(result.etymology?.chain).toBe('from Old English tacan');
+    expect(result.etymology?.variants).toEqual([{ text: 'from Old Norse taka', source: 'other' }]);
+    // Word origin rows are emitted as selectable definition entries.
+    const originRows = result.definitions.filter((d) => d.labels?.includes('word origin'));
+    expect(originRows).toHaveLength(2);
+    expect(originRows[0]!.text).toContain('from Old English tacan');
+    expect(originRows[0]!.text).toContain('first known use: 12th century');
+    expect(originRows[1]!.text).toBe('from Old Norse taka [other]');
   });
 });
 
@@ -717,7 +811,7 @@ describe('lookupOrchestrator — resource controls', () => {
       name: 'enabled.json',
       langCode: 'en',
       type: 'DICTIONARY',
-      format: 'cambridge-json',
+      format: 'json-entries',
       signature: 'enabled',
       wordCount: 1,
       installationFinished: true,
@@ -728,7 +822,7 @@ describe('lookupOrchestrator — resource controls', () => {
       name: 'disabled.json',
       langCode: 'en',
       type: 'DICTIONARY',
-      format: 'cambridge-json',
+      format: 'json-entries',
       signature: 'disabled',
       wordCount: 1,
       installationFinished: true,
@@ -775,7 +869,7 @@ describe('lookupOrchestrator — resource controls', () => {
       name: 'global.json',
       langCode: 'en',
       type: 'DICTIONARY',
-      format: 'cambridge-json',
+      format: 'json-entries',
       signature: 'global',
       wordCount: 1,
       installationFinished: true,
@@ -785,7 +879,7 @@ describe('lookupOrchestrator — resource controls', () => {
       name: 'profile.json',
       langCode: 'en',
       type: 'DICTIONARY',
-      format: 'cambridge-json',
+      format: 'json-entries',
       signature: 'profile',
       wordCount: 1,
       installationFinished: true,
@@ -837,7 +931,7 @@ describe('lookupOrchestrator — resource controls', () => {
       name: 'low-priority.json',
       langCode: 'en',
       type: 'DICTIONARY',
-      format: 'cambridge-json',
+      format: 'json-entries',
       signature: 'low-priority',
       wordCount: 1,
       installationFinished: true,
@@ -848,7 +942,7 @@ describe('lookupOrchestrator — resource controls', () => {
       name: 'high-priority.json',
       langCode: 'en',
       type: 'DICTIONARY',
-      format: 'cambridge-json',
+      format: 'json-entries',
       signature: 'high-priority',
       wordCount: 1,
       installationFinished: true,
@@ -920,7 +1014,7 @@ describe('lookupOrchestrator — resource controls', () => {
       name: 'global-freq.json',
       langCode: 'en',
       type: 'FREQUENCY',
-      format: 'cambridge-json',
+      format: 'json-entries',
       signature: 'global-freq',
       wordCount: 0,
       installationFinished: true,
@@ -930,7 +1024,7 @@ describe('lookupOrchestrator — resource controls', () => {
       name: 'priority-freq.json',
       langCode: 'en',
       type: 'FREQUENCY',
-      format: 'cambridge-json',
+      format: 'json-entries',
       signature: 'priority-freq',
       wordCount: 0,
       installationFinished: true,

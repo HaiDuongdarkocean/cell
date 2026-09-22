@@ -61,7 +61,8 @@ const KEY_LABELS: Record<string, MessageKey> = {
 
 /** Display label for a key (uppercase for single chars). */
 function keyDisplayLabel(key: string): string {
-  return KEY_LABELS[key] ? t(KEY_LABELS[key]) : key.toUpperCase();
+  const normalized = key === ' ' ? 'space' : key;
+  return KEY_LABELS[normalized] ? t(KEY_LABELS[normalized]) : normalized.toUpperCase();
 }
 
 /**

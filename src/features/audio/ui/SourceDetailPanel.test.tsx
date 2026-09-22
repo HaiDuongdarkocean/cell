@@ -80,21 +80,20 @@ describe('SourceDetailPanel', () => {
       'data-engine',
       'localFile',
     );
-    expect(screen.getByText('Local Forvo package')).toBeInTheDocument();
+    expect(screen.getByText('Local audio files')).toBeInTheDocument();
     expect(screen.getByText('Package type')).toBeInTheDocument();
   });
 
   it('renders a short info text for the native engine', async () => {
     renderPanel('native');
 
-    expect(screen.getByText('Community audio (Wikimedia)')).toBeInTheDocument();
-    expect(screen.getByText(/no configuration needed/i)).toBeInTheDocument();
+    expect(screen.getByText(/Community audio from Wikimedia/)).toBeInTheDocument();
   });
 
   it('renders TtsLanguagePanel for the supertonic engine', async () => {
     renderPanel('supertonic');
 
-    expect(screen.getByText('Local TTS (Supertonic v3)')).toBeInTheDocument();
+    expect(screen.getByText('Local voices (Supertonic)')).toBeInTheDocument();
     expect(screen.getByTestId('local-tts-toggle')).toBeInTheDocument();
   });
 
@@ -108,8 +107,8 @@ describe('SourceDetailPanel', () => {
   it('renders the eSpeak data toggle for the espeak engine', async () => {
     renderPanel('espeak');
 
-    expect(screen.getByText('eSpeak on-device TTS')).toBeInTheDocument();
-    expect(screen.getByText('Download eSpeak TTS data')).toBeInTheDocument();
+    expect(screen.getByText('Download device-voice data')).toBeInTheDocument();
+    expect(screen.getByText('Download device-voice data')).toBeInTheDocument();
     expect(screen.getByTestId('espeak-data-toggle')).toBeInTheDocument();
   });
 

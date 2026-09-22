@@ -5,3 +5,4 @@ export { getFrequencyEntries } from './services/frequencyClient';
 export { subscribeResourceChanges, setResourceEnabled } from './services/resourceClient';
 export { onWordStatusChanged, emitWordStatusChanged, onWordStatusRemoved, emitWordStatusRemoved } from './services/wordStatusEvents';
 export type { WordStatusChangedDetail } from './services/wordStatusEvents';
+export { classifyLine, lineToCanonicalText } from './logic/normalize/rules';

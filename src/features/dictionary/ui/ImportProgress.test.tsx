@@ -9,7 +9,7 @@ function existingResource(installationFinished = true): ResourceInfo {
     name: 'Old dict',
     langCode: 'en',
     type: 'DICTIONARY',
-    format: 'yomitan',
+    format: 'term-bank',
     signature: 'sig',
     wordCount: 10,
     installationFinished,
@@ -47,7 +47,7 @@ describe('ImportProgress', () => {
 
   it('queued row shows a waiting state', () => {
     render(<ImportProgress job={makeJob({ status: 'queued' })} onResolveDuplicate={noop} onRerunReplace={noop} />);
-    expect(screen.getByText('Chờ lượt')).toBeInTheDocument();
+    expect(screen.getByText('Waiting')).toBeInTheDocument();
   });
 
   it('uploading row shows upload percent', () => {
@@ -65,7 +65,7 @@ describe('ImportProgress', () => {
       onResolveDuplicate={noop}
       onRerunReplace={noop}
     />);
-    expect(screen.getByText(/5\.000 \/ 73\.643 mục/)).toBeInTheDocument();
+    expect(screen.getByText(/5,000 \/ 73,643 items/)).toBeInTheDocument();
   });
 
   it('importing row without a known total stays indeterminate', () => {
@@ -74,8 +74,8 @@ describe('ImportProgress', () => {
       onResolveDuplicate={noop}
       onRerunReplace={noop}
     />);
-    expect(screen.getByText(/42 mục/)).toBeInTheDocument();
-    expect(screen.queryByText(/\/.*mục/)).not.toBeInTheDocument();
+    expect(screen.getByText(/42 items/)).toBeInTheDocument();
+    expect(screen.queryByText(/\/.*items/)).not.toBeInTheDocument();
   });
 
   it('success row reports its own word count', () => {
@@ -84,7 +84,7 @@ describe('ImportProgress', () => {
       onResolveDuplicate={noop}
       onRerunReplace={noop}
     />);
-    expect(screen.getByText(/Đã thêm 73\.643 từ/)).toBeInTheDocument();
+    expect(screen.getByText(/Added 73,643 words/)).toBeInTheDocument();
   });
 
   it('error row shows its own message', () => {
@@ -103,9 +103,9 @@ describe('ImportProgress', () => {
       duplicate: { existing: existingResource() },
     });
     render(<ImportProgress job={job} onResolveDuplicate={onResolve} onRerunReplace={noop} />);
-    screen.getByText('Thay thế').click();
+    screen.getByText('Replace').click();
     expect(onResolve).toHaveBeenCalledWith('job-1', 'replace');
-    screen.getByText('Bỏ qua').click();
+    screen.getByText('Skip').click();
     expect(onResolve).toHaveBeenCalledWith('job-1', 'skip');
   });
 
@@ -115,13 +115,13 @@ describe('ImportProgress', () => {
       duplicate: { existing: existingResource(false) },
     });
     render(<ImportProgress job={job} onResolveDuplicate={noop} onRerunReplace={noop} />);
-    expect(screen.getByRole('button', { name: 'Thay thế' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Replace' })).toBeDisabled();
   });
 
-  it('skipped row offers a "Thay thế" rerun', () => {
+  it('skipped row offers a "Replace" rerun', () => {
     const onRerun = jest.fn();
     render(<ImportProgress job={makeJob({ status: 'skipped' })} onResolveDuplicate={noop} onRerunReplace={onRerun} />);
-    screen.getByText('Thay thế').click();
+    screen.getByText('Replace').click();
     expect(onRerun).toHaveBeenCalledWith('job-1');
   });
 });

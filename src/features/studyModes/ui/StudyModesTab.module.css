@@ -51,6 +51,7 @@
 }
 
 .modeCard {
+  --card-background: var(--color-field);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -99,6 +100,23 @@
   z-index: var(--z-base);
   flex-wrap: wrap;
   justify-content: flex-end;
+  transition: opacity var(--duration-fast) var(--ease-in-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .modeActions {
+    opacity: 0;
+  }
+  .modeCardWrapper:hover .modeActions,
+  .modeCardWrapper:focus-within .modeActions {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modeActions {
+    transition: none;
+  }
 }
 
 .advancedCard {

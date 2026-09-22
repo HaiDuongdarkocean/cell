@@ -40,6 +40,7 @@ import {
   findFrequencyEntry,
 } from '@/features/dictionary/repositories/frequencyRepository';
 import { importFile, deleteResourceCascade } from '@/features/dictionary/logic/importOrchestrator';
+import { clearDictionaryProbeCache } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
 import type { ImportResult } from '@/entities/dictionary';
 
 const CHUNK_JOB_TTL_MS = 10 * 60 * 1000;
@@ -98,6 +99,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     if (!parsed.success) return fail('RESOURCE_DELETE', parsed);
     try {
       await deleteResourceCascade(parsed.data.langCode, parsed.data.resourceId);
+      clearDictionaryProbeCache();
       return ok();
     } catch (err) {
       return toError(err);
@@ -109,6 +111,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     if (!parsed.success) return fail('RESOURCE_REORDER', parsed);
     try {
       await reorderResources(parsed.data.langCode, parsed.data.resourceType, parsed.data.orderedIds);
+      clearDictionaryProbeCache();
       return ok();
     } catch (err) {
       return toError(err);
@@ -120,6 +123,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     if (!parsed.success) return fail('RESOURCE_SET_ENABLED', parsed);
     try {
       await setResourceEnabled(parsed.data.langCode, parsed.data.resourceId, parsed.data.enabled);
+      clearDictionaryProbeCache();
       return ok();
     } catch (err) {
       return toError(err);
@@ -200,6 +204,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
         onResourceCreated: (resourceId) => notifyProgress(p.tabId, p.jobId, { phase: 'created', resourceId }),
         onDuplicate: async () => p.duplicateDecision ?? 'skip',
       });
+      clearDictionaryProbeCache();
       notifyProgress(p.tabId, p.jobId, { phase: 'done' });
       return ok(result);
     } catch (err) {

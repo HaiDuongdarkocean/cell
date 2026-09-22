@@ -7,7 +7,7 @@
 // - Lookup orchestrator end-to-end with real dict entries
 //
 // MoedictSimplified.json format: [{term, altterm, pronunciation, definition, pos, examples, audio}, ...]
-// Same shape as Cambridge JSON — the CambridgeJsonStrategy can import it.
+// Same shape as entry-object JSON — the JsonEntriesStrategy can import it.
 
 import fs, { existsSync } from 'node:fs';
 import path from 'node:path';
@@ -88,7 +88,7 @@ async function seedSubset(terms: string[]): Promise<number> {
     name: 'MoedictSimplified.json',
     langCode: 'zh',
     type: 'DICTIONARY',
-    format: 'cambridge-json',
+    format: 'json-entries',
     signature: `zh-fixture-${Date.now()}`,
     wordCount: terms.length,
     installationFinished: true,

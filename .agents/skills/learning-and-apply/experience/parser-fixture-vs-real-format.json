@@ -1,0 +1,20 @@
+{
+  "id": "parser-fixture-vs-real-format",
+  "title": "Parser fixtures invented from assumption pass unit tests but produce 0 entries on the real file — verify against the actual data file before shipping",
+  "category": ["data", "testing"],
+  "tags": ["parser", "dsl", "fixture", "real-world-data", "unit-test", "green-dot-false-positive"],
+  "trigger": "A text/binary parser is implemented against an assumed format and its unit tests use fixtures written from the same assumption",
+  "principle": "Unit tests written from the same wrong assumption as the parser prove nothing. Before shipping a parser, run it once on the real production file and check the output count/content. Structural anchors come from the real file's spec, not from what the fixture looks like. Also: a 'ready' status derived only from 'process ran' (timestamp set, file picked) is a false positive — surface the result count so an empty parse can't masquerade as success.",
+  "cases": [
+    {
+      "context": "Lingvo DSL audio index: parser assumed headwords wrapped in `[word]...[/word]` tags (invented format). Real ForvoEnglish.dsl uses standard Lingvo layout — bare headword lines at column 0 + tab-indented card body containing `[s]path[/s]` tags. Build index reported 'Indexed 0 entries' while the UI status dot still showed green 'ready' because readiness only checked file-picked + lastIndexedAt.",
+      "bad": "// parser anchored on fabricated entry shape\nconst openMatch = /^\\[([^\\]\\s]+)\\]\\s*$/.exec(line);\n// ...expects [hello] ... [/hello] blocks → real file yields 0 entries\n// test fixture mirrors the same invented shape → tests green, feature dead",
+      "good": "// anchor on real DSL structure: col-0 line = headword, indented line = body\nif (BODY_LINE_RE.test(line)) { buffer += line; continue; }\nif (buffer !== '') flush();        // new headword ends previous card\nheadwords.push(line);              // consecutive headwords share one card\n// + one-off run on the real 38MB file: 285,439 entries in ~800ms, spot-check 'hello' resolves to en/<speaker>/hello.mp3"
+    }
+  ],
+  "applyFor": [
+    "Any parser written for an external file format (DSL, SRT, VTT, dictionary, archive)",
+    "Index/extraction pipelines where 'process ran' is reported separately from 'results produced'",
+    "Status/readiness indicators that can go green on empty output"
+  ]
+}

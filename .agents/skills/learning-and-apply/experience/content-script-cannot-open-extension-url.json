@@ -1,0 +1,20 @@
+{
+  "id": "content-script-cannot-open-extension-url",
+  "title": "window.open('chrome-extension://…') từ web page → chrome-error://chromewebdata/ — phải route qua SW chrome.tabs.create",
+  "category": ["messaging", "ux"],
+  "tags": ["chrome-extension", "window-open", "chrome-tabs-create", "content-script", "navigation-blocked", "local-audio", "reconnect"],
+  "trigger": "Bất kỳ click handler nào trong content script / shadow-DOM popup mở một extension page (popup, options, reconnect flow)",
+  "principle": "Web pages are not allowed to navigate to chrome-extension:// URLs — window.open(getURL(...)) resolves to chrome-error://chromewebdata/ silently, no console error. Extension-initiated navigation works: content script sendMessage → service worker chrome.tabs.create({ url: chrome.runtime.getURL(path) }). Same rule applies to location.assign/href. When the opened page must heal state (file-handle re-grant), attach capture-phase pointerdown/keydown listeners that call the heal helper — the user's first click on the page supplies the transient activation requestPermission needs. Note: requestPermission on a handle whose grant never persisted (e.g. CDP drop-grant) shows the real native 'Allow this site to view…' prompt — approvable in E2E only via OS-level automation (UIAutomation Invoke on the Allow button), while picker-granted handles re-grant silently.",
+  "cases": [
+    {
+      "context": "Dictionary popup local-audio reconnect hint rendered a button doing window.open(chrome.runtime.getURL('popup/index.html')). Real-browser E2E: click opened chrome-error://chromewebdata/ and permission stayed 'prompt'.",
+      "bad": "const url = chrome.runtime.getURL('src/entrypoints/popup/index.html');\nwindow.open(url, '_blank', 'noopener');  // → chrome-error page",
+      "good": "void sendMessage({ type: 'LOCAL_AUDIO_OPEN_RECONNECT', payload: {} });\n// SW handler: await chrome.tabs.create({ url: chrome.runtime.getURL('src/entrypoints/popup/index.html') });"
+    }
+  ],
+  "applyFor": [
+    "Any UX that deep-links a web page into an extension surface (reconnect, settings, onboarding)",
+    "Reviewers: flag any window.open/location assignment to chrome.runtime.getURL() in content-script code",
+    "E2E on permission flows: expect a native file-access prompt for never-durably-granted handles; approve via UIAutomation or pre-grant via picker semantics"
+  ]
+}

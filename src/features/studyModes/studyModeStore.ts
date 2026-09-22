@@ -8,6 +8,7 @@ import { deriveRemoveBracketed } from '@/entities/studyMode';
 import { validateModeName } from './lib/validateModeName';
 import { generateModeId } from './lib/generateModeId';
 import { formatModeDescription } from './lib/formatStepSummary';
+import { t } from '@/shared/i18n';
 import { findActiveMode } from './lib/findActiveMode';
 
 export interface StudyModeStore extends StudyModeState {
@@ -84,14 +85,17 @@ export const useStudyModeStore = create<StudyModeStore>((set, get) => ({
       type: 'custom',
       icon: 'slidersHorizontal',
       title: title.trim(),
-      description: formatModeDescription({
-        id: '',
-        type: 'custom',
-        icon: 'slidersHorizontal',
-        title: '',
-        description: '',
-        steps,
-      }),
+      description: formatModeDescription(
+        {
+          id: '',
+          type: 'custom',
+          icon: 'slidersHorizontal',
+          title: '',
+          description: '',
+          steps,
+        },
+        t,
+      ),
       steps,
     };
     const next: StudyModeState = {
@@ -120,11 +124,14 @@ export const useStudyModeStore = create<StudyModeStore>((set, get) => ({
       ...current,
       title: title !== undefined ? title.trim() : current.title,
       steps: steps !== undefined ? steps : current.steps,
-      description: formatModeDescription({
-        ...current,
-        title: title !== undefined ? title.trim() : current.title,
-        steps: steps !== undefined ? steps : current.steps,
-      }),
+      description: formatModeDescription(
+        {
+          ...current,
+          title: title !== undefined ? title.trim() : current.title,
+          steps: steps !== undefined ? steps : current.steps,
+        },
+        t,
+      ),
     };
     const nextCustomModes = [...state.customModes];
     nextCustomModes[index] = updated;

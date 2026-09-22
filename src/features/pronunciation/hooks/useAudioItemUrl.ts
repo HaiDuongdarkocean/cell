@@ -16,7 +16,7 @@ export function useAudioItemUrl(item: AudioItem | null | undefined): string | un
       setUrl(item.url);
     } else if (item?.audioBytes) {
       createdUrl = typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function'
-        ? URL.createObjectURL(new Blob([item.audioBytes as unknown as BlobPart]))
+        ? URL.createObjectURL(new Blob([item.audioBytes as unknown as BlobPart], { type: 'audio/mpeg' }))
         : undefined;
       setUrl(createdUrl);
     } else {
@@ -67,7 +67,7 @@ export function useAudioItemUrlMap(items: readonly AudioItem[]): AudioItemUrlMap
       if (item.url) {
         map.set(item.id, item.url);
       } else if (item.audioBytes && canUseObjectUrl) {
-        map.set(item.id, URL.createObjectURL(new Blob([item.audioBytes as unknown as BlobPart])));
+        map.set(item.id, URL.createObjectURL(new Blob([item.audioBytes as unknown as BlobPart], { type: 'audio/mpeg' })));
       }
     }
   }

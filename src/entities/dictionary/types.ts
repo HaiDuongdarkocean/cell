@@ -3,13 +3,15 @@
 // 3 object stores: langResourceInfo, langFrequencyEntry, langDictionaryEntry.
 // Module boundary: entities/types only — no logic, no storage deps.
 
-/** Import format — 5 supported formats (spec F8). */
+/** Import format — 6 supported formats (spec F8).
+ *  Structural ids only — never named after a source product. */
 export type ImportFormat =
   | 'txt'
   | 'json-array'
-  | 'yomitan'
+  | 'term-bank'
   | 'sqlite'
-  | 'cambridge-json';
+  | 'json-entries'
+  | 'wordlist-json';
 
 /** Resource type — frequency list vs dictionary (spec F7). */
 export type ResourceType = 'FREQUENCY' | 'DICTIONARY';
@@ -41,6 +43,76 @@ export interface FrequencyEntry {
   readonly frequency: number;
 }
 
+/** One content line inside a sense. `text` is always rendered;
+ *  `translation` (native-side of a `target — native` pair) is the
+ *  revealable part — the popup hides it until the user expands the line. */
+export interface SenseLine {
+  readonly role: 'gloss' | 'example' | 'note';
+  readonly text: string;
+  readonly translation?: string;
+  /** Source attribution, e.g. "The Guardian, 2019". */
+  readonly citation?: string;
+  /** Grammar pattern attached to the line, e.g. "[VERB noun]". */
+  readonly pattern?: string;
+}
+
+/** One structured sense — optional pos label + ordered content lines.
+ *  `labels` carries register/grammar/audience tags rendered as `[label]`
+ *  (e.g. 'transitive', 'informal', 'move', 'kids', 'slang'). */
+export interface SenseBlock {
+  readonly pos?: string;
+  readonly labels?: readonly string[];
+  /** CEFR or provider level, e.g. 'B1' — rendered as plain `[B1]`. */
+  readonly level?: string;
+  readonly lines: readonly SenseLine[];
+  readonly subsenses?: readonly { readonly num: string; readonly text: string }[];
+  /** Per-sense relations — "Synonyms: a, b" / "Opposite: c". */
+  readonly synonyms?: readonly string[];
+  readonly antonyms?: readonly string[];
+  /** Crowdsourced votes — stored for ranking, never rendered. */
+  readonly votes?: { readonly up: number; readonly down: number; readonly date?: string };
+}
+
+/** A kind-tagged link to another entry — phrasal verbs, idioms, collocations,
+ *  phrases are all dictionary entries; `kind` is provider-declared, never
+ *  inferred. Unknown kinds render under a generic pluralized label. */
+export interface RelatedEntry {
+  readonly term: string;
+  readonly kind: string;
+  /** Inline gloss so the related list reads without fetching the entry. */
+  readonly preview?: string;
+}
+
+/** Word origin — `chain` is the primary lineage; `variants` holds the same
+ *  field contributed by other providers, each independently selectable. */
+export interface EtymologyBlock {
+  readonly chain: string;
+  readonly firstKnownUse?: string;
+  readonly variants?: readonly { readonly text: string; readonly source?: string }[];
+}
+
+export interface InflectionGroup {
+  readonly type: string;
+  readonly forms: readonly string[];
+}
+
+export interface WordFamily {
+  readonly nouns?: readonly string[];
+  readonly verbs?: readonly string[];
+  readonly adjectives?: readonly string[];
+  readonly adverbs?: readonly string[];
+}
+
+export interface WordNetInfo {
+  readonly synset?: readonly string[];
+  readonly hypernyms?: readonly string[];
+}
+
+export interface UsageNote {
+  readonly title: string;
+  readonly text: string;
+}
+
 /** Dictionary entry — 1 row per term with rich fields (langDictionaryEntry store). */
 export interface DictionaryEntry {
   readonly id?: number;
@@ -53,6 +125,23 @@ export interface DictionaryEntry {
   readonly pos: string;
   readonly examples: string;
   readonly audio: string;
+  /** Structured senses (SSOT for rendering). `definition` is the derived
+   *  canonical serialization of the same data; absent on rows imported
+   *  before this field existed — consumers fall back to `definition`. */
+  readonly senses?: readonly SenseBlock[];
+  /** Kind-tagged links to other entries (phrasal verbs, idioms,
+   *  collocations, phrases, derivatives). */
+  readonly related?: readonly RelatedEntry[];
+  readonly inflections?: readonly InflectionGroup[];
+  /** Entry-level CEFR/provider level. */
+  readonly level?: string;
+  readonly frequencyStars?: number;
+  readonly etymology?: EtymologyBlock;
+  readonly wordFamily?: WordFamily;
+  readonly wordNet?: WordNetInfo;
+  readonly derivedTerms?: readonly string[];
+  readonly anagrams?: readonly string[];
+  readonly usageNote?: UsageNote;
 }
 
 /** Result of an import operation. */

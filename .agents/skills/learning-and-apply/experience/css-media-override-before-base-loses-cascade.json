@@ -1,0 +1,20 @@
+{
+  "id": "css-media-override-before-base-loses-cascade",
+  "title": "@media override đặt TRƯỚC base rule → thua cascade (same specificity, later wins)",
+  "category": ["css"],
+  "tags": ["media-query", "cascade", "specificity", "responsive", "css-order", "mobile"],
+  "trigger": "Thêm @media block override thuộc tính của một class đã có base rule ở dưới file (hoặc viết media block ở đầu file cho tiện nhóm)",
+  "principle": "@media KHÔNG tăng specificity — rule bên trong @media có cùng specificity với selector của nó. Khi 2 rules cùng specificity cùng match, rule đứng SAU trong stylesheet thắng. Đặt @media override TRƯỚC base rule → base luôn thắng → responsive fix 'không có tác dụng' dù matchMedia() = true. Luôn đặt media-query overrides SAU base rules trong cùng file/module CSS, hoặc tăng specificity. Verify bằng getComputedStyle trên viewport nhỏ, không chỉ đọc file.",
+  "cases": [
+    {
+      "context": "LanguageProfilePanel banner fix (settings-ux F-03): @media (max-width:480px){.bannerLabel{white-space:normal}} đặt ở line 35, base .bannerLabel{white-space:nowrap} ở line 62 — probe 375px vẫn nowrap/hidden/ellipsis",
+      "bad": "@media (max-width: 480px) {\n  .bannerLabel { white-space: normal; }\n}\n.bannerLabel {\n  white-space: nowrap;  /* later → wins → media fix dead */\n}",
+      "good": ".bannerLabel {\n  white-space: nowrap;\n}\n@media (max-width: 480px) {\n  .bannerLabel { white-space: normal; }  /* later → wins when media matches */\n}"
+    }
+  ],
+  "applyFor": [
+    "Mọi responsive override (font-size, padding, display, white-space, flex-direction)",
+    "CSS Modules: media block trong cùng file vẫn cùng specificity — order vẫn quyết định",
+    "Dark-mode / reduced-motion / print overrides đặt trước base cũng thua tương tự"
+  ]
+}

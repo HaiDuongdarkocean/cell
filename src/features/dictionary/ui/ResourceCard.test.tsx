@@ -57,7 +57,7 @@ describe('ResourceCard', () => {
     renderCard(makeResource({ name: 'words.txt', wordCount: 42, format: 'txt' }));
     expect(screen.getByText('words')).toBeInTheDocument();
     expect(screen.queryByText('words.txt')).not.toBeInTheDocument();
-    expect(screen.getByText('42 từ')).toBeInTheDocument();
+    expect(screen.getByText('42 words')).toBeInTheDocument();
     expect(screen.queryByText(/txt ·|hôm nay/)).not.toBeInTheDocument();
   });
 
@@ -66,9 +66,9 @@ describe('ResourceCard', () => {
     expect(screen.getByText('JMdict')).toBeInTheDocument();
   });
 
-  it('shows "đang thêm" when installationFinished is false', () => {
+  it('shows "importing" when installationFinished is false', () => {
     renderCard(makeResource({ installationFinished: false }));
-    expect(screen.getByText(/đang thêm/)).toBeInTheDocument();
+    expect(screen.getByText(/importing/)).toBeInTheDocument();
   });
 
   it('hides the delete button outside edit mode', () => {
@@ -80,7 +80,7 @@ describe('ResourceCard', () => {
     const onDelete = jest.fn();
     renderCard(makeResource({ id: 1, name: 'words.txt' }), { editing: true, onDelete });
     const button = screen.getByTestId('delete-button-1');
-    expect(screen.getByLabelText('Xóa words')).toBe(button);
+    expect(screen.getByLabelText('Delete words')).toBe(button);
     fireEvent.click(button);
     expect(onDelete).toHaveBeenCalled();
   });

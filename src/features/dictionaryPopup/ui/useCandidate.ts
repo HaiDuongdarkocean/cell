@@ -52,6 +52,7 @@ export interface UseCandidateReturn {
   readonly audioItems: readonly AudioItem[];
   readonly audioLoading: boolean;
   readonly audioError: string | null;
+  readonly localAudioNeedsRegrant: boolean;
   readonly audioSelection: Map<string, boolean>;
   readonly toggleAudio: (id: string, selected: boolean) => void;
   readonly selectedAudioCount: number;
@@ -246,6 +247,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     audioItems: toolbar.audioItems,
     audioLoading: toolbar.audioLoading,
     audioError: toolbar.audioError,
+    localAudioNeedsRegrant: toolbar.localAudioNeedsRegrant,
     audioSelection: toolbar.audioSelection,
     toggleAudio: toolbar.toggleAudio,
     selectedAudioCount: toolbar.selectedAudioCount,

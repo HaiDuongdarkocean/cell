@@ -28,8 +28,17 @@ const modeParam = typeof window === 'undefined'
   ? null
   : new URLSearchParams(window.location.search).get('mode');
 
+// Seed uiLanguage from ?lang= so the i18n storage sync agrees with the URL
+// override; 'auto' would reset it to the browser locale after the first paint.
+const langParam = typeof window === 'undefined'
+  ? null
+  : new URLSearchParams(window.location.search).get('lang');
+
 const inMemoryStorage: Record<string, unknown> = {
-  [STORAGE_KEYS.SETTINGS]: getMockSettings(SHOWCASE_DATA),
+  [STORAGE_KEYS.SETTINGS]: {
+    ...getMockSettings(SHOWCASE_DATA),
+    ...(langParam === 'en' || langParam === 'vi' ? { uiLanguage: langParam } : {}),
+  },
   [STORAGE_KEYS.STUDY_MODES]: getMockStudyModeState(SHOWCASE_DATA),
   ...(modeParam === 'light' || modeParam === 'dark' || modeParam === 'system'
     ? { [STORAGE_KEYS.THEME_MODE]: modeParam }

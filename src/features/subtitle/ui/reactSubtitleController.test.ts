@@ -581,6 +581,7 @@ describe('ReactSubtitleController', () => {
     const tokenizeOptions: SubtitleCueEngineTokenizeOptions = {
       langCode: 'en',
       onOpenDictionary: jest.fn(),
+      onTokenHover: jest.fn(),
     };
 
     controller.enableTokenize(tokenizeOptions);
@@ -588,6 +589,7 @@ describe('ReactSubtitleController', () => {
     expect(fakeMount.setTokenize).toHaveBeenCalledWith({
       langCode: 'en',
       onTokenClick: tokenizeOptions.onOpenDictionary,
+      onTokenHover: tokenizeOptions.onTokenHover,
     });
 
     controller.disableTokenize();

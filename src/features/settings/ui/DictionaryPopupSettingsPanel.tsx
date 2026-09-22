@@ -12,7 +12,7 @@ import type React from 'react';
 import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import type { DictionaryPopupSettings } from '@/entities/settings/types';
 import { Text } from '@/shared/ui/Text';
-import { t } from '@/shared/i18n';
+import { t, type MessageKey } from '@/shared/i18n';
 import styles from './DictionaryPopupSettingsPanel.module.css';
 
 interface DictionaryPopupSettingsPanelProps {
@@ -21,22 +21,28 @@ interface DictionaryPopupSettingsPanelProps {
 }
 
 const TRIGGER_MODES = ['click', 'hover', 'hover-ctrl', 'hover-shift', 'hover-alt'] as const;
-const TRIGGER_LABELS: Record<string, string> = {
-  click: t('settings.dictionaryPopup.openWith.click'),
-  hover: t('settings.dictionaryPopup.openWith.hover'),
-  'hover-ctrl': t('settings.dictionaryPopup.openWith.hoverCtrl'),
-  'hover-shift': t('settings.dictionaryPopup.openWith.hoverShift'),
-  'hover-alt': t('settings.dictionaryPopup.openWith.hoverAlt'),
+const TRIGGER_LABEL_KEYS: Record<string, MessageKey> = {
+  click: 'settings.dictionaryPopup.openWith.click',
+  hover: 'settings.dictionaryPopup.openWith.hover',
+  'hover-ctrl': 'settings.dictionaryPopup.openWith.hoverCtrl',
+  'hover-shift': 'settings.dictionaryPopup.openWith.hoverShift',
+  'hover-alt': 'settings.dictionaryPopup.openWith.hoverAlt',
 };
 
 const TAB_OPTIONS = ['', 'audio', 'image', 'translate', 'links', 'pronunciation'] as const;
-const TAB_LABELS: Record<string, string> = {
-  '': t('settings.dictionaryPopup.showFirst.none'),
-  audio: t('settings.dictionaryPopup.showFirst.audio'),
-  image: t('settings.dictionaryPopup.showFirst.image'),
-  translate: t('settings.dictionaryPopup.showFirst.translate'),
-  links: t('settings.dictionaryPopup.showFirst.links'),
-  pronunciation: t('settings.dictionaryPopup.showFirst.pronunciation'),
+const TAB_LABEL_KEYS: Record<string, MessageKey> = {
+  '': 'settings.dictionaryPopup.showFirst.none',
+  audio: 'settings.dictionaryPopup.showFirst.audio',
+  image: 'settings.dictionaryPopup.showFirst.image',
+  translate: 'settings.dictionaryPopup.showFirst.translate',
+  links: 'settings.dictionaryPopup.showFirst.links',
+  pronunciation: 'settings.dictionaryPopup.showFirst.pronunciation',
+};
+
+const TRANSLATION_OPTIONS = ['hidden', 'shown'] as const;
+const TRANSLATION_LABEL_KEYS: Record<string, MessageKey> = {
+  hidden: 'settings.dictionaryPopup.translations.hidden',
+  shown: 'settings.dictionaryPopup.translations.shown',
 };
 
 interface PillGroupProps {
@@ -68,17 +74,21 @@ function PillGroup({ options, value, onChange, ariaLabel }: PillGroupProps): Rea
 const STEPS = [
   {
     num: 1,
-    label: t('settings.dictionaryPopup.openWith'),
-    ariaLabel: t('settings.dictionaryPopup.openWith'),
+    labelKey: 'settings.dictionaryPopup.openWith' as MessageKey,
     valueKey: 'triggerMode' as const,
-    options: TRIGGER_MODES.map((mode) => ({ value: mode, label: TRIGGER_LABELS[mode] })),
+    options: TRIGGER_MODES.map((mode) => ({ value: mode, labelKey: TRIGGER_LABEL_KEYS[mode] })),
   },
   {
     num: 2,
-    label: t('settings.dictionaryPopup.showFirst'),
-    ariaLabel: t('settings.dictionaryPopup.showFirst'),
+    labelKey: 'settings.dictionaryPopup.showFirst' as MessageKey,
     valueKey: 'defaultActiveTab' as const,
-    options: TAB_OPTIONS.map((tab) => ({ value: tab, label: TAB_LABELS[tab] })),
+    options: TAB_OPTIONS.map((tab) => ({ value: tab, labelKey: TAB_LABEL_KEYS[tab] })),
+  },
+  {
+    num: 3,
+    labelKey: 'settings.dictionaryPopup.translations' as MessageKey,
+    valueKey: 'translationVisibility' as const,
+    options: TRANSLATION_OPTIONS.map((o) => ({ value: o, labelKey: TRANSLATION_LABEL_KEYS[o] })),
   },
 ];
 
@@ -103,7 +113,9 @@ export function DictionaryPopupSettingsPanel({
           const isLast = index === STEPS.length - 1;
           const value = step.valueKey === 'defaultActiveTab'
             ? (settings.defaultActiveTab ?? '')
-            : settings[step.valueKey];
+            : step.valueKey === 'translationVisibility'
+              ? (settings.translationVisibility ?? 'hidden')
+              : settings[step.valueKey];
 
           return (
             <div key={step.valueKey} className={styles.timelineItem}>
@@ -113,10 +125,10 @@ export function DictionaryPopupSettingsPanel({
               </div>
               <div className={styles.timelineContent}>
                 <Text as="span" className={styles.timelineLabel}>
-                  {step.label}
+                  {t(step.labelKey)}
                 </Text>
                 <PillGroup
-                  options={step.options}
+                  options={step.options.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
                   value={value}
                   onChange={(nextValue) => {
                     if (step.valueKey === 'defaultActiveTab') {
@@ -125,7 +137,7 @@ export function DictionaryPopupSettingsPanel({
                       update({ [step.valueKey]: nextValue } as Partial<DictionaryPopupSettings>);
                     }
                   }}
-                  ariaLabel={step.ariaLabel}
+                  ariaLabel={t(step.labelKey)}
                 />
               </div>
             </div>

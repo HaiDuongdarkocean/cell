@@ -63,6 +63,11 @@
   min-width: 0;
 }
 
+.cellHeaderLevel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
 .cellHeaderReading {
   display: flex;
   align-items: center;
@@ -266,9 +271,98 @@
   padding-bottom: var(--space-1);
 }
 
-.cellDefPos {
-  font-style: italic;
+.defLineHead {
+  color: var(--color-text-tertiary);
+}
+
+.defLine {
+  display: block;
+}
+
+.defLineMain {
+  display: block;
+}
+
+.defLine[data-role='example'] {
   color: var(--color-text-secondary);
+}
+
+.defLineTranslation {
+  display: block;
+  padding-left: var(--space-3);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.defLineReveal {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0 var(--space-0-5);
+  margin-left: var(--space-0-5);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.defLineReveal > span {
+  display: inline-flex;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.defLineRevealOpen {
+  transform: rotate(180deg);
+}
+
+.defLineReveal:hover,
+.defLineReveal:focus-visible {
+  color: var(--color-text-primary);
+}
+
+.defLineMeta {
+  color: var(--color-text-tertiary);
+}
+
+.defLineCitation {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.defSubsense {
+  display: block;
+  padding-left: var(--space-3);
+  color: var(--color-text-secondary);
+}
+
+.cellMeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.cellMetaLine {
+  overflow-wrap: anywhere;
+}
+
+.cellMetaLabel {
+  color: var(--color-text-tertiary);
+}
+
+.cellRelatedLink {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-text-accent);
+  cursor: pointer;
+}
+
+.cellRelatedLink:hover {
+  text-decoration: underline;
 }
 
 .cellDefExamples {

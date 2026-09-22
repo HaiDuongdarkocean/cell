@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { t } from '@/shared/i18n';
 import { Button, Icon, ListItem, Popover } from '@/shared/ui';
 import { PLAYBACK_SPEEDS, type PlaybackSpeed } from '@/entities/studyMode/types';
 import styles from './SpeedPill.module.css';
@@ -77,7 +78,7 @@ export function SpeedPill({ speed, onChange }: SpeedPillProps): React.JSX.Elemen
       shape="pill"
       ripple={false}
       className={styles.value}
-      aria-label={`Current playback speed is ${formatSpeed(speed)}. Open speed list.`}
+      aria-label={t('studyModes.speed.current', [formatSpeed(speed)])}
       data-cell-id="speed-value"
       onClick={() => setIsOpen((v) => !v)}
     >
@@ -93,7 +94,7 @@ export function SpeedPill({ speed, onChange }: SpeedPillProps): React.JSX.Elemen
         shape="circle"
         ripple={false}
         className={styles.stepButton}
-        aria-label={`Decrease playback speed from ${formatSpeed(speed)}`}
+        aria-label={t('studyModes.speed.decrease', [formatSpeed(speed)])}
         data-cell-id="speed-decrease"
         onClick={decrease}
       >
@@ -106,7 +107,7 @@ export function SpeedPill({ speed, onChange }: SpeedPillProps): React.JSX.Elemen
         shape="circle"
         ripple={false}
         className={styles.stepButton}
-        aria-label={`Increase playback speed from ${formatSpeed(speed)}`}
+        aria-label={t('studyModes.speed.increase', [formatSpeed(speed)])}
         data-cell-id="speed-increase"
         onClick={increase}
       >
@@ -116,7 +117,7 @@ export function SpeedPill({ speed, onChange }: SpeedPillProps): React.JSX.Elemen
         open={isOpen}
         triggerRef={valueRef}
         role="listbox"
-        aria-label="Playback speed"
+        aria-label={t('studyModes.speed.aria')}
         aria-activedescendant={speedOptionId(speed)}
         className={styles.popover}
         menuMaxHeight={MENU_MAX_HEIGHT}

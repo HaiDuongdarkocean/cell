@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Heading, Text, Button, Card, Chip, Checkbox, HStack, VStack, Toggle, Dialog, Icon, SelectableCard, SliderRow } from '@/shared/ui';
+import { t, type MessageKey } from '@/shared/i18n';
 import { loadStudyModeState, useStudyModeStore } from '../studyModeStore';
 import { findActiveMode } from '../lib/findActiveMode';
 import { CustomModeBuilder } from './CustomModeBuilder';
 import { CleanupRulesSection } from './CleanupRulesSection';
-import { cleanupT } from '../lib/cleanupRuleMessages';
 import { DEFAULT_CLEANUP_RULES_SETTING } from '@/entities/studyMode';
 import { PRESETS } from '@/entities/studyMode';
 import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
@@ -12,18 +12,26 @@ import { formatModeDescription } from '../lib/formatStepSummary';
 import styles from './StudyModesTab.module.css';
 
 const SKIP_OPTIONS: StudyModeAdvancedSettings['skipNoDialogue'][] = ['OFF', '2X', '4X', '6X', '8X', 'JUMP'];
+const SKIP_LABELS: Record<StudyModeAdvancedSettings['skipNoDialogue'], MessageKey> = {
+  OFF: 'studyModes.advanced.skip.off',
+  '2X': 'studyModes.advanced.skip.2x',
+  '4X': 'studyModes.advanced.skip.4x',
+  '6X': 'studyModes.advanced.skip.6x',
+  '8X': 'studyModes.advanced.skip.8x',
+  JUMP: 'studyModes.advanced.skip.jump',
+};
 const PAUSE_UNKNOWN_OPTIONS: StudyModeAdvancedSettings['pauseOnUnknown'][] = ['OFF', 'START', 'END'];
-const PAUSE_UNKNOWN_LABELS: Record<StudyModeAdvancedSettings['pauseOnUnknown'], string> = {
-  OFF: 'Off',
-  START: 'Cue start',
-  END: 'Cue end',
+const PAUSE_UNKNOWN_LABELS: Record<StudyModeAdvancedSettings['pauseOnUnknown'], MessageKey> = {
+  OFF: 'studyModes.advanced.pauseUnknown.off',
+  START: 'studyModes.advanced.pauseUnknown.start',
+  END: 'studyModes.advanced.pauseUnknown.end',
 };
 const UNKNOWN_LEVEL_OPTIONS: StudyModeAdvancedSettings['unknownLevel'][] = ['core', 'common', 'general', 'advanced'];
-const UNKNOWN_LEVEL_LABELS: Record<StudyModeAdvancedSettings['unknownLevel'], string> = {
-  core: 'Core',
-  common: 'Common',
-  general: 'General',
-  advanced: 'Advanced',
+const UNKNOWN_LEVEL_LABELS: Record<StudyModeAdvancedSettings['unknownLevel'], MessageKey> = {
+  core: 'studyModes.advanced.unknownLevel.core',
+  common: 'studyModes.advanced.unknownLevel.common',
+  general: 'studyModes.advanced.unknownLevel.general',
+  advanced: 'studyModes.advanced.unknownLevel.advanced',
 };
 
 export function StudyModesTab(): ReactElement {
@@ -78,7 +86,7 @@ export function StudyModesTab(): ReactElement {
   if (!store.isLoaded) {
     return (
       <div className={styles.tab} data-cell-id="study-modes-tab">
-        <Text color="secondary">Loading study modes…</Text>
+        <Text color="secondary">{t('studyModes.loading')}</Text>
       </div>
     );
   }
@@ -89,16 +97,16 @@ export function StudyModesTab(): ReactElement {
         <header>
           <HStack justify="between" align="center" className={styles.tabHeaderInner}>
             <Heading level={2} size={2} className={styles.tabTitle}>
-              Study Modes
+              {t('studyModes.title')}
             </Heading>
             <HStack gap="2" align="center" className={styles.advancedToggle}>
               <Text variant="label" color="secondary" as="span">
-                Advanced
+                {t('studyModes.advancedToggle.label')}
               </Text>
               <Toggle
                 checked={advancedOpen}
                 onChange={setAdvancedOpen}
-                ariaLabel="Show advanced study settings"
+                ariaLabel={t('studyModes.advancedToggle.aria')}
                 dataTestId="advanced-toggle"
               />
             </HStack>
@@ -107,12 +115,12 @@ export function StudyModesTab(): ReactElement {
 
         <section>
           <Text variant="label" color="secondary" as="span" className={styles.eyebrow}>
-            Playback settings
+            {t('studyModes.presets.eyebrow')}
           </Text>
           <Heading level={3} size={3} className={styles.sectionHeading}>
-            Play mode
+            {t('studyModes.presets.heading')}
           </Heading>
-          <div className={styles.grid} role="radiogroup" aria-label="Preset study modes">
+          <div className={styles.grid} role="radiogroup" aria-label={t('studyModes.presets.groupAria')}>
             {PRESETS.map((mode) => (
               <ModeCard
                 key={mode.id}
@@ -128,18 +136,18 @@ export function StudyModesTab(): ReactElement {
           <HStack justify="between" align="center" className={styles.sectionHeader}>
             <div>
               <Text variant="label" color="secondary" as="span" className={styles.eyebrow}>
-                Your combinations
+                {t('studyModes.custom.eyebrow')}
               </Text>
               <Heading level={3} size={3} className={styles.sectionHeading}>
-                Custom
+                {t('studyModes.custom.heading')}
               </Heading>
             </div>
             <Button size="sm" onClick={handleNewMode} data-cell-id="new-mode-button" leadingIcon={<Icon name="plus" size="xs" />}>
-              New mode
+              {t('studyModes.custom.newMode')}
             </Button>
           </HStack>
           {store.customModes.length > 0 ? (
-            <div className={styles.grid} role="group" aria-label="Custom study modes">
+            <div className={styles.grid} role="group" aria-label={t('studyModes.custom.groupAria')}>
               {store.customModes.map((mode) => (
                 <ModeCard
                   key={mode.id}
@@ -153,7 +161,7 @@ export function StudyModesTab(): ReactElement {
             </div>
           ) : (
             <Text color="secondary" as="p" variant="supporting">
-              No custom modes yet — use New mode to combine steps.
+              {t('studyModes.custom.empty')}
             </Text>
           )}
         </section>
@@ -172,16 +180,16 @@ export function StudyModesTab(): ReactElement {
       <Dialog
         open={deleteConfirmId !== null}
         onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}
-        title="Delete custom mode?"
-        description="This action cannot be undone."
+        title={t('studyModes.deleteDialog.title')}
+        description={t('studyModes.deleteDialog.description')}
         data-cell-id="delete-confirm-dialog"
         footer={
           <HStack gap="3" justify="end">
             <Button variant="ghost" size="sm" onClick={handleCancelDelete} data-cell-id="delete-confirm-cancel">
-              Cancel
+              {t('studyModes.deleteDialog.cancel')}
             </Button>
             <Button variant="destructive" size="sm" onClick={handleConfirmDelete} data-cell-id="delete-confirm-ok">
-              Delete
+              {t('studyModes.deleteDialog.confirm')}
             </Button>
           </HStack>
         }
@@ -200,10 +208,10 @@ interface ModeCardProps {
 
 function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps): ReactElement {
   const isCustom = mode.type === 'custom';
-  const description = useMemo(
-    () => (mode.description ? mode.description : formatModeDescription(mode)),
-    [mode],
-  );
+  const title = mode.titleKey ? t(mode.titleKey) : mode.title;
+  const description = mode.descriptionKey
+    ? t(mode.descriptionKey)
+    : formatModeDescription(mode, t);
 
   return (
     <div className={styles.modeCardWrapper}>
@@ -216,7 +224,7 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
       >
         <Icon name={mode.icon} size="lg" className={styles.modeIcon} />
         <Text variant="heading-3" as="p" className={styles.modeTitle}>
-          {mode.title}
+          {title}
         </Text>
         <Text color="secondary" as="p" className={styles.modeDesc}>
           {description}
@@ -231,7 +239,7 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
             data-cell-id={`edit-mode-${mode.id}`}
             leadingIcon={<Icon name="pencil" size="xs" />}
           >
-            Edit
+            {t('studyModes.card.edit')}
           </Button>
           <Button
             size="xs"
@@ -240,7 +248,7 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
             data-cell-id={`delete-mode-${mode.id}`}
             leadingIcon={<Icon name="trash" size="xs" />}
           >
-            Delete
+            {t('studyModes.card.delete')}
           </Button>
         </HStack>
       )}
@@ -257,18 +265,18 @@ function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactEle
   return (
     <Card className={styles.advancedCard} data-cell-id="advanced-settings">
       <Heading level={3} size={3} className={styles.sectionHeading}>
-        Advanced
+        {t('studyModes.advancedToggle.label')}
       </Heading>
       <VStack gap="4">
         <div>
           <Text as="p" className={styles.advancedLabel}>
-            Skip when there is no dialogue
+            {t('studyModes.advanced.skip.label')}
           </Text>
           <HStack
             gap="2"
             className={styles.chipRow}
             role="group"
-            aria-label="Skip scenes with no dialogue"
+            aria-label={t('studyModes.advanced.skip.aria')}
           >
             {SKIP_OPTIONS.map((option) => (
               <Chip
@@ -278,7 +286,7 @@ function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactEle
                 onClick={() => onChange({ ...advanced, skipNoDialogue: option })}
                 data-cell-id={`skip-no-dialogue-${option}`}
               >
-                {option}
+                {t(SKIP_LABELS[option])}
               </Chip>
             ))}
           </HStack>
@@ -289,25 +297,25 @@ function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactEle
         />
         <SliderRow
           icon={<Icon name="clock" size="sm" />}
-          label={cleanupT('cleanup.leadIn.label')}
-          hint={cleanupT('cleanup.leadIn.hint')}
+          label={t('cleanup.leadIn.label')}
+          hint={t('cleanup.leadIn.hint')}
           value={advanced.cueLeadInMs ?? 0}
           min={0}
           max={2000}
           step={50}
           onChange={(cueLeadInMs) => onChange({ ...advanced, cueLeadInMs })}
-          aria-label={cleanupT('cleanup.leadIn.aria')}
-          formatValue={(v) => cleanupT('cleanup.leadIn.value', [v])}
+          aria-label={t('cleanup.leadIn.aria')}
+          formatValue={(v) => t('cleanup.leadIn.value', [v])}
         />
         <div>
           <Text as="p" className={styles.advancedLabel}>
-            Pause when a cue has an unknown word
+            {t('studyModes.advanced.pauseUnknown.label')}
           </Text>
           <HStack
             gap="2"
             className={styles.chipRow}
             role="group"
-            aria-label="Pause on unknown word"
+            aria-label={t('studyModes.advanced.pauseUnknown.aria')}
           >
             {PAUSE_UNKNOWN_OPTIONS.map((option) => (
               <Chip
@@ -317,7 +325,7 @@ function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactEle
                 onClick={() => onChange({ ...advanced, pauseOnUnknown: option })}
                 data-cell-id={`pause-on-unknown-${option}`}
               >
-                {PAUSE_UNKNOWN_LABELS[option]}
+                {t(PAUSE_UNKNOWN_LABELS[option])}
               </Chip>
             ))}
           </HStack>
@@ -326,13 +334,13 @@ function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactEle
           <>
             <div>
               <Text as="p" className={styles.advancedLabel}>
-                Pause on words up to frequency level
+                {t('studyModes.advanced.unknownLevel.label')}
               </Text>
               <HStack
                 gap="2"
                 className={styles.chipRow}
                 role="group"
-                aria-label="Unknown word frequency level"
+                aria-label={t('studyModes.advanced.unknownLevel.aria')}
               >
                 {UNKNOWN_LEVEL_OPTIONS.map((option) => (
                   <Chip
@@ -342,20 +350,20 @@ function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactEle
                     onClick={() => onChange({ ...advanced, unknownLevel: option })}
                     data-cell-id={`unknown-level-${option}`}
                   >
-                    {UNKNOWN_LEVEL_LABELS[option]}
+                    {t(UNKNOWN_LEVEL_LABELS[option])}
                   </Chip>
                 ))}
               </HStack>
             </div>
             <Checkbox
-              label="Open dictionary popup when auto-paused"
+              label={t('studyModes.advanced.popupOnAutoPause')}
               checked={advanced.popupOnAutoPause}
               onChange={(e) => onChange({ ...advanced, popupOnAutoPause: e.target.checked })}
               data-cell-id="popup-on-autopause-checkbox"
             />
             {advanced.popupOnAutoPause && (
               <Checkbox
-                label="Close popup when playback resumes"
+                label={t('studyModes.advanced.popupCloseOnResume')}
                 checked={advanced.popupCloseOnResume}
                 onChange={(e) => onChange({ ...advanced, popupCloseOnResume: e.target.checked })}
                 data-cell-id="popup-close-on-resume-checkbox"

@@ -8,6 +8,7 @@ import {
   DEFAULT_DICTIONARY_POPUP_SETTINGS,
 } from '@/shared/config/config';
 import { formatModeDescription } from '@/features/studyModes/lib/formatStepSummary';
+import { t } from '@/shared/i18n';
 import { SHOWCASE_DATA, type DataVariant } from './showcaseParams';
 
 const OVERFLOW_LONG_NAME = `${'A'.repeat(120)}🎌${'あ'.repeat(60)}${'中'.repeat(50)}`;
@@ -101,14 +102,17 @@ function makeCustomMode(id: string, title: string, steps: StudyMode['steps']): S
     type: 'custom',
     icon: 'slidersHorizontal',
     title,
-    description: formatModeDescription({
-      id,
-      type: 'custom',
-      icon: 'slidersHorizontal',
-      title,
-      description: '',
-      steps,
-    }),
+    description: formatModeDescription(
+      {
+        id,
+        type: 'custom',
+        icon: 'slidersHorizontal',
+        title,
+        description: '',
+        steps,
+      },
+      t,
+    ),
     steps,
   };
   return mode;

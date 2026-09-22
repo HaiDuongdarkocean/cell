@@ -1,4 +1,5 @@
 import type { IconCatalogKey } from '@/shared/icons';
+import type { MessageKey } from '@/shared/i18n';
 
 export type SubtitleVisibility = 'none' | 'native' | 'target' | 'both';
 /** Step-level sentinel: visibility resolved per cue from the band probe at
@@ -34,6 +35,8 @@ export interface StudyMode {
   icon: IconCatalogKey;
   title: string;
   description: string;
+  titleKey?: MessageKey;
+  descriptionKey?: MessageKey;
   steps: StudyStep[];
 }
 
@@ -53,6 +56,8 @@ export interface SubtitleCleanupRule {
   id: string;
   name: string;
   description: string;
+  nameKey?: MessageKey;
+  descriptionKey?: MessageKey;
   pattern: string;
   enabled: boolean;
   builtin: boolean;
@@ -62,6 +67,11 @@ export interface SubtitleCleanupRule {
 export interface CleanupRulesSetting {
   builtinEnabled: Record<string, boolean>;
   custom: SubtitleCleanupRule[];
+}
+
+export interface LocalizedError {
+  readonly key: MessageKey;
+  readonly params?: readonly (string | number)[];
 }
 
 export interface StudyModeAdvancedSettings {

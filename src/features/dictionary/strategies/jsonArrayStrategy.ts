@@ -5,7 +5,7 @@
 
 import { BaseFrequencyStrategy } from './baseImportStrategy';
 import type { StrategyOptions, RawFrequencyEntry } from './baseImportStrategy';
-import { decodeText } from '../logic/fileDetector';
+import { decodeText, isGzip, gunzipFile, isZip, unzipAll } from '../logic/fileDetector';
 import { ParseError } from '../logic/importErrors';
 import { bulkInsertFrequencyEntries } from '../repositories/frequencyRepository';
 import type { FrequencyEntry } from '@/entities/dictionary';
@@ -30,9 +30,18 @@ export class JsonArrayStrategy extends BaseFrequencyStrategy {
   }
 
   protected async *parse(): AsyncGenerator<RawFrequencyEntry> {
+    let data = this.data;
+    if (isGzip(data)) data = gunzipFile(data);
+    if (isZip(data)) {
+      const files = unzipAll(data);
+      const jsonPath = Object.keys(files).find((p) => p.endsWith('.json'));
+      if (!jsonPath) throw new ParseError('JSON array zip: no .json entry found.');
+      data = files[jsonPath]!;
+    }
+
     let text: string;
     try {
-      text = decodeText(this.data);
+      text = decodeText(data);
     } catch (e) {
       throw new ParseError(`Failed to decode JSON array file.`, e);
     }

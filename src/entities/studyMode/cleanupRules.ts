@@ -1,4 +1,5 @@
-import type { CleanupRulesSetting, SubtitleCleanupRule } from './types';
+import type { CleanupRulesSetting, LocalizedError, SubtitleCleanupRule } from './types';
+import type { MessageKey } from '@/shared/i18n';
 
 export const MAX_CUSTOM_RULES = 50;
 export const MAX_RULE_PATTERN_LENGTH = 500;
@@ -7,7 +8,17 @@ export const MAX_RULE_NAME_LENGTH = 80;
 const MUSIC_GLYPHS = '♪♫♩♬♭♮𝄞𝄢𝄡🎵🎶🎤🎧';
 
 function builtin(id: string, name: string, description: string, pattern: string, repeatUntilStable = false): SubtitleCleanupRule {
-  return { id, name, description, pattern, enabled: true, builtin: true, ...(repeatUntilStable ? { repeatUntilStable: true } : {}) };
+  return {
+    id,
+    name,
+    description,
+    nameKey: `cleanupRules.${id}.name` as MessageKey,
+    descriptionKey: `cleanupRules.${id}.desc` as MessageKey,
+    pattern,
+    enabled: true,
+    builtin: true,
+    ...(repeatUntilStable ? { repeatUntilStable: true } : {}),
+  };
 }
 
 export const BUILTIN_CLEANUP_RULES: readonly SubtitleCleanupRule[] = [
@@ -103,13 +114,15 @@ export function deriveRemoveBracketed(setting: CleanupRulesSetting | undefined):
   return setting?.builtinEnabled?.brackets ?? true;
 }
 
-export function validateCleanupPattern(pattern: string): string | null {
-  if (!pattern.trim()) return 'Pattern is required.';
-  if (pattern.length > MAX_RULE_PATTERN_LENGTH) return `Pattern must be ${MAX_RULE_PATTERN_LENGTH} characters or fewer.`;
+export function validateCleanupPattern(pattern: string): LocalizedError | null {
+  if (!pattern.trim()) return { key: 'cleanup.error.patternRequired' };
+  if (pattern.length > MAX_RULE_PATTERN_LENGTH) {
+    return { key: 'cleanup.error.patternTooLong', params: [MAX_RULE_PATTERN_LENGTH] };
+  }
   try {
     new RegExp(pattern, 'gmu');
   } catch {
-    return 'Pattern is not a valid regular expression.';
+    return { key: 'cleanup.error.patternInvalid' };
   }
   return null;
 }

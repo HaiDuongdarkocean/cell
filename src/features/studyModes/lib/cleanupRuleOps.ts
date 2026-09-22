@@ -1,4 +1,4 @@
-import type { CleanupRulesSetting, SubtitleCleanupRule } from '@/entities/studyMode';
+import type { CleanupRulesSetting, LocalizedError, SubtitleCleanupRule } from '@/entities/studyMode';
 import {
   BUILTIN_CLEANUP_RULES,
   MAX_CUSTOM_RULES,
@@ -14,8 +14,8 @@ export interface CleanupRuleDraft {
 }
 
 export interface CleanupRuleErrors {
-  name?: string;
-  pattern?: string;
+  name?: LocalizedError;
+  pattern?: LocalizedError;
 }
 
 function isNameTaken(setting: CleanupRulesSetting, name: string, excludeId?: string): boolean {
@@ -34,11 +34,11 @@ export function validateCleanupRuleDraft(
   const errors: CleanupRuleErrors = {};
   const name = draft.name.trim();
   if (!name) {
-    errors.name = 'Name is required.';
+    errors.name = { key: 'cleanup.error.nameRequired' };
   } else if (name.length > MAX_RULE_NAME_LENGTH) {
-    errors.name = `Name must be ${MAX_RULE_NAME_LENGTH} characters or fewer.`;
+    errors.name = { key: 'cleanup.error.nameTooLong', params: [MAX_RULE_NAME_LENGTH] };
   } else if (isNameTaken(setting, name, excludeId)) {
-    errors.name = 'A rule with this name already exists.';
+    errors.name = { key: 'cleanup.error.nameExists' };
   }
   const patternError = validateCleanupPattern(draft.pattern);
   if (patternError) errors.pattern = patternError;
@@ -59,9 +59,9 @@ export function toggleCleanupRule(setting: CleanupRulesSetting, rule: SubtitleCl
 export function addCleanupRule(
   setting: CleanupRulesSetting,
   draft: CleanupRuleDraft,
-): { setting: CleanupRulesSetting; errors?: never } | { setting?: never; errors: CleanupRuleErrors & { limit?: string } } {
+): { setting: CleanupRulesSetting; errors?: never } | { setting?: never; errors: CleanupRuleErrors & { limit?: LocalizedError } } {
   if (setting.custom.length >= MAX_CUSTOM_RULES) {
-    return { errors: { limit: `You can add at most ${MAX_CUSTOM_RULES} custom rules.` } };
+    return { errors: { limit: { key: 'cleanup.error.limit', params: [MAX_CUSTOM_RULES] } } };
   }
   const errors = validateCleanupRuleDraft(setting, draft);
   if (errors.name || errors.pattern) return { errors };

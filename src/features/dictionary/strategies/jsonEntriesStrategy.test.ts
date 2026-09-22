@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { CambridgeJsonStrategy } from '@/features/dictionary/strategies/cambridgeJsonStrategy';
+import { JsonEntriesStrategy } from '@/features/dictionary/strategies/jsonEntriesStrategy';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
 import { findDictionaryByResource } from '@/features/dictionary/repositories/dictionaryRepository';
 import { addResource } from '@/features/dictionary/repositories/resourceRepository';
@@ -34,17 +34,17 @@ afterAll(() => {
 
 const LANG = 'en';
 
-describe('cambridgeJsonStrategy', () => {
+describe('jsonEntriesStrategy', () => {
   it('parses Cambridge JSON array with rich fields', async () => {
     const resourceId = await addResource(LANG, {
-      name: 'cambridge.json', langCode: LANG, type: 'DICTIONARY', format: 'cambridge-json',
+      name: 'cambridge.json', langCode: LANG, type: 'DICTIONARY', format: 'json-entries',
       signature: 'sig1', wordCount: 0, installationFinished: false, importedAt: Date.now(),
     });
     const data = strToU8(JSON.stringify([
       { term: 'hello', altterm: 'hi', pronunciation: 'həˈloʊ', definition: 'greeting', pos: 'noun', examples: 'Hello world', audio: 'hello.mp3' },
       { term: 'world', definition: 'the earth' },
     ]));
-    const strategy = new CambridgeJsonStrategy(
+    const strategy = new JsonEntriesStrategy(
       { resourceId, langCode: LANG },
       { data, fileName: 'cambridge.json' },
     );
@@ -58,9 +58,42 @@ describe('cambridgeJsonStrategy', () => {
     expect(hello?.pronunciation).toBe('həˈloʊ');
   });
 
+  it('passes canonical rich fields through verbatim', async () => {
+    const resourceId = await addResource(LANG, {
+      name: 'rich.json', langCode: LANG, type: 'DICTIONARY', format: 'json-entries',
+      signature: 'sig-rich', wordCount: 0, installationFinished: false, importedAt: Date.now(),
+    });
+    const senses = [{
+      pos: 'verb', labels: ['transitive'], level: 'B1',
+      lines: [{ role: 'gloss', text: 'to carry', translation: 'mang' }],
+      synonyms: ['bring'], antonyms: ['leave'],
+    }];
+    const data = strToU8(JSON.stringify([{
+      term: 'take', definition: '', senses, level: 'B1',
+      related: [{ term: 'take off', kind: 'phrasal', preview: 'cất cánh' }],
+      etymology: { chain: 'from Old English tacan', firstKnownUse: '12th century' },
+      wordFamily: { nouns: ['taking'] },
+      derivedTerms: ['taker'],
+      usageNote: { title: 'take or bring', text: 'direction matters' },
+    }]));
+    const strategy = new JsonEntriesStrategy(
+      { resourceId, langCode: LANG },
+      { data, fileName: 'rich.json' },
+    );
+    await strategy.execute();
+    const [stored] = await findDictionaryByResource(LANG, resourceId);
+    expect(stored?.senses).toEqual(senses);
+    expect(stored?.related).toEqual([{ term: 'take off', kind: 'phrasal', preview: 'cất cánh' }]);
+    expect(stored?.level).toBe('B1');
+    expect(stored?.etymology?.chain).toBe('from Old English tacan');
+    expect(stored?.wordFamily?.nouns).toEqual(['taking']);
+    expect(stored?.derivedTerms).toEqual(['taker']);
+    expect(stored?.usageNote?.title).toBe('take or bring');
+  });
+
   it('skips entries without term', async () => {
     const resourceId = await addResource(LANG, {
-      name: 'cambridge.json', langCode: LANG, type: 'DICTIONARY', format: 'cambridge-json',
+      name: 'cambridge.json', langCode: LANG, type: 'DICTIONARY', format: 'json-entries',
       signature: 'sig2', wordCount: 0, installationFinished: false, importedAt: Date.now(),
     });
     const data = strToU8(JSON.stringify([
@@ -68,7 +101,7 @@ describe('cambridgeJsonStrategy', () => {
       { definition: 'no term' },
       { term: '', definition: 'empty term' },
     ]));
-    const strategy = new CambridgeJsonStrategy(
+    const strategy = new JsonEntriesStrategy(
       { resourceId, langCode: LANG },
       { data, fileName: 'cambridge.json' },
     );
@@ -78,7 +111,7 @@ describe('cambridgeJsonStrategy', () => {
 
   it('throws ParseError if not array', async () => {
     const data = strToU8('{"term": "hello"}');
-    const strategy = new CambridgeJsonStrategy(
+    const strategy = new JsonEntriesStrategy(
       { resourceId: 1, langCode: LANG },
       { data, fileName: 'cambridge.json' },
     );
@@ -87,7 +120,7 @@ describe('cambridgeJsonStrategy', () => {
 
   it('throws ParseError on invalid JSON', async () => {
     const data = strToU8('{invalid json}');
-    const strategy = new CambridgeJsonStrategy(
+    const strategy = new JsonEntriesStrategy(
       { resourceId: 1, langCode: LANG },
       { data, fileName: 'cambridge.json' },
     );

@@ -50,6 +50,9 @@ function cuesAreEqual(a: readonly BilingualCue[], b: readonly BilingualCue[]): b
 export interface CueListTokenize {
   langCode: string;
   onTokenClick: (term: string, element: HTMLElement, contextSentence: string) => void;
+  /** Hover enter/leave on a word token (null on leave) — feeds the owning
+   *  controller's hoveredTerm so status keys 1-4 apply to the hovered word. */
+  onTokenHover?: (term: string | null) => void;
 }
 
 interface CueListProps {
@@ -75,11 +78,13 @@ const CueTokenText = memo(function CueTokenText({
   text,
   tokens,
   onTokenClick,
+  onTokenHover,
   resolving = false,
 }: {
   text: string;
   tokens: readonly Token[];
   onTokenClick: (term: string, element: HTMLElement, contextSentence: string) => void;
+  onTokenHover?: (term: string | null) => void;
   resolving?: boolean;
 }) {
   const children: React.ReactNode[] = [];
@@ -111,6 +116,8 @@ const CueTokenText = memo(function CueTokenText({
         data-cell-start={token.start}
         data-cell-end={token.end}
         onClick={(event) => onTokenClick(token.term, event.currentTarget, text)}
+        onMouseEnter={onTokenHover ? () => onTokenHover(token.term) : undefined}
+        onMouseLeave={onTokenHover ? () => onTokenHover(null) : undefined}
       >
         <span className="js-cell-token-word">{token.text}</span>
         <span className="js-cell-token-status" aria-hidden="true" />
@@ -151,8 +158,13 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   );
 
   const tokenizeLangCode = tokenize?.langCode;
+  const onTokenHover = tokenize?.onTokenHover;
   const lastCuesRef = useRef<readonly BilingualCue[] | null>(null);
   const lastLangCodeRef = useRef<string | null>(null);
+
+  // A token unmount (panel close, cue reload, tokenize off) fires no
+  // mouseleave — clear the hover so a stale term can't absorb a status key.
+  useEffect(() => () => onTokenHover?.(null), [onTokenHover]);
 
   useEffect(() => {
     if (!tokenizeLangCode) return;
@@ -352,6 +364,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                       text={cue.targetText}
                       tokens={tokenMap.get(cue.index) ?? []}
                       onTokenClick={tokenize.onTokenClick}
+                      onTokenHover={onTokenHover}
                       resolving={resolving}
                     />
                   ) : (

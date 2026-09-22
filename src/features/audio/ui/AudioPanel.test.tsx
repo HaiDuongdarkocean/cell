@@ -75,17 +75,16 @@ function renderPanel(
 }
 
 describe('AudioPanel', () => {
-  it('renders all sections: enable toggle, modes, tester, autoplay, pipeline, detail', async () => {
+  it('renders all sections: modes, pipeline, detail, tester, autoplay', async () => {
     renderPanel();
 
     expect(screen.getByTestId('audio-panel')).toBeInTheDocument();
-    expect(screen.getByText('Enable audio')).toBeInTheDocument();
-    expect(screen.getByTestId('audio-enable-toggle')).toBeInTheDocument();
 
-    // Output mode segmented control — 5 modes.
+    // Output mode segmented control — 5 modes + hint popover trigger.
     for (const mode of ['auto', 'natural', 'fast', 'offline', 'minimal']) {
       expect(screen.getByTestId(`audio-mode-${mode}`)).toBeInTheDocument();
     }
+    expect(screen.getByTestId('audio-mode-hint')).toBeInTheDocument();
 
     // Compact tester.
     expect(screen.getByTestId('audio-tester-input')).toBeInTheDocument();
@@ -95,22 +94,25 @@ describe('AudioPanel', () => {
     expect(screen.getByText('Autoplay')).toBeInTheDocument();
 
     // Pipeline + detail pane for the first engine in the fallback chain.
-    expect(screen.getByRole('list', { name: 'Audio pipeline' })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Audio source order' })).toBeInTheDocument();
     expect(screen.getByTestId('source-detail-panel')).toHaveAttribute(
       'data-engine',
       'localFile',
     );
   });
 
-  it('toggles tts.enabled via the Enable audio toggle', async () => {
-    const onTtsChange = jest.fn();
-    renderPanel({ onTtsChange });
+  it('shows the output-mode hint only after the hint button is pressed', async () => {
+    renderPanel();
 
-    fireEvent.click(screen.getByTestId('audio-enable-toggle'));
+    expect(
+      screen.queryByText('Switching mode replaces the source order below.'),
+    ).not.toBeInTheDocument();
 
-    expect(onTtsChange).toHaveBeenCalledWith(
-      expect.objectContaining({ enabled: false }),
-    );
+    fireEvent.click(screen.getByTestId('audio-mode-hint'));
+
+    expect(
+      screen.getByText('Switching mode replaces the source order below.'),
+    ).toBeInTheDocument();
   });
 
   it('replaces fallbackEngines with the full mode chain on mode change', async () => {
@@ -146,7 +148,7 @@ describe('AudioPanel', () => {
   it('updates the detail pane when a pipeline step is selected', () => {
     renderPanel();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Browser speech (ready)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Browser voice (ready)' }));
 
     expect(screen.getByTestId('source-detail-panel')).toHaveAttribute(
       'data-engine',
@@ -173,7 +175,7 @@ describe('AudioPanel', () => {
     fireEvent.click(screen.getByTestId('audio-tester-play'));
 
     expect(await screen.findByRole('status')).toHaveTextContent(
-      'Enter a word or phrase to test.',
+      'Enter a word to test.',
     );
   });
 
@@ -188,7 +190,7 @@ describe('AudioPanel', () => {
     // jsdom has no chrome.runtime — every provider resolves to [].
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent(
-        'No audio found in the current pipeline.',
+        'No audio found in the current order.',
       ),
     );
   });

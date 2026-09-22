@@ -14,6 +14,7 @@
 // branch wraps it in `.flatten` which strips the nested card chrome via CSS.
 
 import type { ReactElement, ReactNode } from 'react';
+import { t, type MessageKey } from '@/shared/i18n';
 import { Icon, SettingsRow, Text, Toggle } from '@/shared/ui';
 import type { ICON_CATALOG } from '@/shared/icons';
 import type { AudioEngineKind, PronunciationSettings, TtsSettings } from '@/entities/settings/types';
@@ -30,12 +31,12 @@ export interface SourceDetailPanelProps {
   readonly onTtsChange: (next: TtsSettings) => void;
 }
 
-const ENGINE_LABELS: Record<AudioEngineKind, string> = {
-  localFile: 'Local Forvo package',
-  native: 'Community audio (Wikimedia)',
-  supertonic: 'Supertonic local TTS',
-  browserTts: 'Browser / Google TTS',
-  espeak: 'eSpeak on-device TTS',
+const ENGINE_LABEL_KEYS: Record<AudioEngineKind, MessageKey> = {
+  localFile: 'audio.engine.localFile',
+  native: 'audio.engine.native',
+  supertonic: 'audio.engine.supertonic',
+  browserTts: 'audio.engine.browserTts',
+  espeak: 'audio.engine.espeak',
 };
 
 const ENGINE_ICONS = {
@@ -66,8 +67,7 @@ export function SourceDetailPanel({
     case 'native':
       detail = (
         <Text as="p" color="secondary" className={styles.info}>
-          Community audio from Wikimedia. No configuration needed — it is used
-          automatically when present in the pipeline.
+          {t('audio.engine.native.info')}
         </Text>
       );
       break;
@@ -88,13 +88,13 @@ export function SourceDetailPanel({
     case 'espeak':
       detail = (
         <SettingsRow dense>
-          <span className={styles.rowLabel}>Download eSpeak TTS data</span>
+          <span className={styles.rowLabel}>{t('audio.engine.espeak.label')}</span>
           <Toggle
             checked={pronunciation.downloadEspeakTtsData}
             onChange={(next) =>
               onPronunciationChange({ ...pronunciation, downloadEspeakTtsData: next })
             }
-            ariaLabel="Download eSpeak TTS data on demand"
+            ariaLabel={t('audio.engine.espeak.aria')}
             dataTestId="espeak-data-toggle"
           />
         </SettingsRow>
@@ -109,7 +109,7 @@ export function SourceDetailPanel({
       <div className={styles.header}>
         <Icon name={ENGINE_ICONS[engine]} size="sm" color="secondary" />
         <Text as="h5" className={styles.title}>
-          {ENGINE_LABELS[engine]}
+          {t(ENGINE_LABEL_KEYS[engine])}
         </Text>
       </div>
       {detail}

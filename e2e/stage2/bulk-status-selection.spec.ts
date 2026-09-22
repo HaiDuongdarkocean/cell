@@ -92,6 +92,18 @@ async function selectPanelCueWithWords(page: Page): Promise<string[]> {
   });
 }
 
+async function panelWordPoint(page: Page, term: string): Promise<{ x: number; y: number } | null> {
+  return page.evaluate((t) => {
+    const el = document
+      .querySelector('[data-cell-split-view="panel"]')
+      ?.shadowRoot?.querySelector(`.js-cell-token--word[data-cell-term="${t}"]`);
+    if (!el) return null;
+    const rect = (el as HTMLElement).getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return null;
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  }, term);
+}
+
 async function panelTokenClasses(page: Page, term: string): Promise<string[]> {
   return page.evaluate(
     (t) =>
@@ -160,5 +172,31 @@ test.describe('bulk status via selection', () => {
     }
 
     expect(await streamFlixPage.evaluate(() => window.getSelection()?.isCollapsed ?? true)).toBe(true);
+  });
+
+  test('hovering a split-view panel token + status key updates that word', async ({ cellContext, streamFlixPage }) => {
+    await writeTokenizeSettings(cellContext);
+    await streamFlixPage.reload({ waitUntil: 'networkidle' });
+    await prepareVideo(streamFlixPage);
+
+    await streamFlixPage.keyboard.press('t');
+    await expect.poll(async () => (await panelWordTerms(streamFlixPage)).length, { timeout: 30_000 }).toBeGreaterThan(0);
+
+    const term = (await panelWordTerms(streamFlixPage)).find((t) => t.length > 0);
+    expect(term).toBeTruthy();
+
+    const point = await panelWordPoint(streamFlixPage, term!);
+    expect(point).not.toBeNull();
+    await streamFlixPage.mouse.move(point!.x, point!.y);
+
+    await streamFlixPage.keyboard.press('3');
+
+    await expect.poll(
+      async () => {
+        const classes = await panelTokenClasses(streamFlixPage, term!);
+        return classes.length > 0 && classes.every((c) => c.includes('js-cell-token--status-known'));
+      },
+      { timeout: 15_000 },
+    ).toBe(true);
   });
 });

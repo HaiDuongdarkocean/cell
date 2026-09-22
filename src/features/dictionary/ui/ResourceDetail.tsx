@@ -5,6 +5,7 @@
 // panel — not here.
 
 import { useEffect, useState, type ReactElement } from 'react';
+import { t } from '@/shared/i18n';
 import { Spinner } from '@/shared/ui/Spinner';
 import {
   sampleDictionaryEntries,
@@ -44,13 +45,13 @@ export function ResourceDetail({ resource }: ResourceDetailProps): ReactElement 
   return (
     <div className={styles.detail} data-cell-id={`resource-detail-${resourceId}`}>
       {sampleError ? (
-        <p className={styles.detailNote}>Không tải được mục mẫu.</p>
+        <p className={styles.detailNote}>{t('resources.detail.error')}</p>
       ) : samples == null ? (
         <p className={styles.detailNote}>
-          <Spinner size="sm" ariaLabel="Đang tải" /> Đang tải mục mẫu…
+          <Spinner size="sm" ariaLabel={t('resources.detail.loading')} /> {t('resources.detail.loadingSamples')}
         </p>
       ) : samples.length === 0 ? (
-        <p className={styles.detailNote}>Chưa có dữ liệu mẫu.</p>
+        <p className={styles.detailNote}>{t('resources.detail.empty')}</p>
       ) : (
         <ul className={styles.sampleList} data-cell-id={`sample-list-${resourceId}`}>
           {samples.map((entry, i) => (

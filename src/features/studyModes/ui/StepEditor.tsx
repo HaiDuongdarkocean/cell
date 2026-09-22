@@ -1,5 +1,6 @@
 import { type ReactElement } from 'react';
 import { Text, Button, Chip, HStack, VStack, Icon } from '@/shared/ui';
+import { t, type MessageKey } from '@/shared/i18n';
 import type { StudyStep } from '@/entities/studyMode';
 import styles from './StepEditor.module.css';
 
@@ -9,6 +10,28 @@ const REPEAT_OPTIONS: StudyStep['repeat'][] = [1, 2, 3];
 const SPEED_OPTIONS: StudyStep['speed'][] = [0.5, 0.75, 1, 1.25, 1.5];
 const AFTER_OPTIONS: StudyStep['after'][] = ['continue', 'wait', 'loop'];
 const SKIP_OPTIONS = ['never', 'non-i1'] as const;
+
+const SUBTITLE_OPTION_KEYS: Record<StudyStep['subtitle'], MessageKey> = {
+  none: 'studyModes.step.opt.subtitle.none',
+  native: 'studyModes.step.opt.subtitle.native',
+  target: 'studyModes.step.opt.subtitle.target',
+  both: 'studyModes.step.opt.subtitle.both',
+  adaptive: 'studyModes.step.opt.subtitle.adaptive',
+};
+const PAUSE_OPTION_KEYS: Record<StudyStep['pause'], MessageKey> = {
+  none: 'studyModes.step.opt.pause.none',
+  start: 'studyModes.step.opt.pause.start',
+  end: 'studyModes.step.opt.pause.end',
+};
+const AFTER_OPTION_KEYS: Record<StudyStep['after'], MessageKey> = {
+  continue: 'studyModes.step.opt.after.continue',
+  wait: 'studyModes.step.opt.after.wait',
+  loop: 'studyModes.step.opt.after.loop',
+};
+const SKIP_OPTION_KEYS: Record<(typeof SKIP_OPTIONS)[number], MessageKey> = {
+  never: 'studyModes.step.opt.skip.never',
+  'non-i1': 'studyModes.step.opt.skip.nonI1',
+};
 
 interface StepEditorProps {
   readonly index: number;
@@ -23,6 +46,7 @@ export function StepEditor({ index, step, onChange, onRemove }: StepEditorProps)
     options: readonly StudyStep[K][],
     current: StudyStep[K],
     field: K,
+    optionLabel: (option: StudyStep[K]) => string,
   ): ReactElement => (
     <div className={styles.stepOption} role="group" aria-label={label}>
       <Text as="span" variant="label" color="secondary" className={styles.stepOptionLabel}>
@@ -38,7 +62,7 @@ export function StepEditor({ index, step, onChange, onRemove }: StepEditorProps)
             onClick={() => onChange({ ...step, [field]: option })}
             data-cell-id={`step-${index}-${field}-${option}`}
           >
-            {String(option)}
+            {optionLabel(option)}
           </Chip>
         ))}
       </HStack>
@@ -51,15 +75,33 @@ export function StepEditor({ index, step, onChange, onRemove }: StepEditorProps)
         {index + 1}
       </Text>
       <VStack gap="2" className={styles.stepOptions}>
-        {OptionGroup('Subtitle', SUBTITLE_OPTIONS, step.subtitle, 'subtitle')}
-        {OptionGroup('Pause', PAUSE_OPTIONS, step.pause, 'pause')}
-        {OptionGroup('Repeat', REPEAT_OPTIONS, step.repeat, 'repeat')}
-        {OptionGroup('Speed', SPEED_OPTIONS, step.speed, 'speed')}
-        {OptionGroup('After', AFTER_OPTIONS, step.after, 'after')}
+        {OptionGroup(
+          t('studyModes.step.subtitle'),
+          SUBTITLE_OPTIONS,
+          step.subtitle,
+          'subtitle',
+          (option) => t(SUBTITLE_OPTION_KEYS[option]),
+        )}
+        {OptionGroup(
+          t('studyModes.step.pause'),
+          PAUSE_OPTIONS,
+          step.pause,
+          'pause',
+          (option) => t(PAUSE_OPTION_KEYS[option]),
+        )}
+        {OptionGroup(t('studyModes.step.repeat'), REPEAT_OPTIONS, step.repeat, 'repeat', String)}
+        {OptionGroup(t('studyModes.step.speed'), SPEED_OPTIONS, step.speed, 'speed', (option) => `${option}×`)}
+        {OptionGroup(
+          t('studyModes.step.after'),
+          AFTER_OPTIONS,
+          step.after,
+          'after',
+          (option) => t(AFTER_OPTION_KEYS[option]),
+        )}
         {index === 0 && (
-          <div className={styles.stepOption} role="group" aria-label="Skip">
+          <div className={styles.stepOption} role="group" aria-label={t('studyModes.step.skip')}>
             <Text as="span" variant="label" color="secondary" className={styles.stepOptionLabel}>
-              Skip
+              {t('studyModes.step.skip')}
             </Text>
             <HStack gap="1" className={styles.stepChipGroup}>
               {SKIP_OPTIONS.map((option) => (
@@ -71,7 +113,7 @@ export function StepEditor({ index, step, onChange, onRemove }: StepEditorProps)
                   onClick={() => onChange({ ...step, skip: option === 'never' ? undefined : option })}
                   data-cell-id={`step-${index}-skip-${option}`}
                 >
-                  {option}
+                  {t(SKIP_OPTION_KEYS[option])}
                 </Chip>
               ))}
             </HStack>
@@ -83,7 +125,7 @@ export function StepEditor({ index, step, onChange, onRemove }: StepEditorProps)
           size="xs"
           variant="ghost"
           onClick={onRemove}
-          aria-label={`Remove step ${index + 1}`}
+          aria-label={t('studyModes.builder.removeStepAria', [index + 1])}
           data-cell-id={`remove-step-${index}`}
           leadingIcon={<Icon name="trash" size="xs" />}
         />

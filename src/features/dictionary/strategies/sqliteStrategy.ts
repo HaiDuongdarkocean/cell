@@ -1,6 +1,6 @@
-// sqliteStrategy — Migaku SQLite .db / .db.gz (ADR-023 D5, spec F9).
+// sqliteStrategy — SQLite .db / .db.gz dictionary + frequency (ADR-023 D5, spec F9).
 //
-// Migaku schema:
+// Expected schema:
 // - Dictionary: langResourceEntry(term, backwardTerm, displayTerm, termAlt, reading, definition)
 // - Frequency: langFrequencyEntry(term, reading, frequency)
 //
@@ -10,6 +10,7 @@
 
 import { BaseImportStrategy, type RawFrequencyEntry, type RawDictionaryEntry, type StrategyOptions } from './baseImportStrategy';
 import { gunzipFile, isGzip, isSqlite } from '../logic/fileDetector';
+import { toCanonicalDefinition } from '../logic/normalize/canonical';
 import { DatabaseError, ParseError } from '../logic/importErrors';
 import { bulkInsertDictionaryEntries } from '../repositories/dictionaryRepository';
 import { bulkInsertFrequencyEntries } from '../repositories/frequencyRepository';
@@ -36,7 +37,7 @@ export interface SqliteStrategyOptions {
   readonly resourceType: ResourceType;
 }
 
-/** SQLite strategy — gunzip + sql.js lazy-load + Migaku schema. */
+/** SQLite strategy — gunzip + sql.js lazy-load + exec SQL. */
 export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDictionaryEntry, Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'>> {
   readonly format = 'sqlite' as const;
   private readonly data: Uint8Array;
@@ -113,7 +114,7 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
     }
   }
 
-  /** Parse Migaku langResourceEntry table → dictionary entries. */
+  /** Parse langResourceEntry table → dictionary entries. */
   private async *parseDictionaryTable(db: Database): AsyncGenerator<RawDictionaryEntry> {
     let result: QueryExecResult[];
     try {
@@ -136,7 +137,7 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
     }
   }
 
-  /** Parse Migaku langFrequencyEntry table → frequency entries. */
+  /** Parse langFrequencyEntry table → frequency entries. */
   private async *parseFrequencyTable(db: Database): AsyncGenerator<RawFrequencyEntry> {
     let result: QueryExecResult[];
     try {
@@ -149,7 +150,7 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
         throw new ParseError('SQLite: no langFrequencyEntry or entries table with term/reading/frequency.', e);
       }
     }
-    if (result.length === 0) return;
+    if (!result || result.length === 0) return;
 
     const { columns, values } = result[0]!;
     const termIdx = columns.indexOf('term');
@@ -174,15 +175,17 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
   private transformDictionaryEntry(raw: RawDictionaryEntry): Omit<DictionaryEntry, 'id'> | null {
     const term = raw.term.trim().normalize('NFC').toLowerCase();
     if (term.length === 0) return null;
+    const canonical = toCanonicalDefinition(raw);
     return {
       resourceId: this.options.resourceId,
       term,
       reading: raw.reading ? raw.reading.trim().normalize('NFC').toLowerCase() : term,
       altterm: '',
       pronunciation: '',
-      definition: (raw.definition ?? '').trim().normalize('NFC').replace(/\s+/g, ' '),
-      pos: '',
-      examples: '',
+      definition: canonical.definition,
+      senses: canonical.senses,
+      pos: canonical.pos,
+      examples: canonical.examples,
       audio: '',
     };
   }

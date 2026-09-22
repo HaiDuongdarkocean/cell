@@ -7,9 +7,6 @@ import { SettingsDialogContent } from './SettingsDialogContent';
 // The settings dialog composes many feature panels; stub the heavy ones so
 // this test stays focused on the Audio card merge (spec
 // fnc_audio-settings-pipeline — Task 5).
-jest.mock('@/features/cardCreator/ui/CardCreatorSettingsPanel', () => ({
-  CardCreatorSettingsPanel: () => <div data-cell-id="card-creator-panel" />,
-}));
 jest.mock('./DictionaryPopupSettingsPanel', () => ({
   DictionaryPopupSettingsPanel: () => <div data-cell-id="dictionary-popup-panel" />,
 }));
@@ -165,12 +162,13 @@ describe('SettingsDialogContent — merged Audio card', () => {
     const onChange = jest.fn();
     renderContent(DEFAULT_SETTINGS, onChange);
 
-    fireEvent.click(screen.getByTestId('audio-enable-toggle'));
+    fireEvent.click(screen.getByRole('button', { name: 'Autoplay count' }));
+    fireEvent.click(screen.getByRole('option', { name: '2' }));
 
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
         dictionaryPopup: expect.objectContaining({
-          tts: expect.objectContaining({ enabled: false }),
+          tts: expect.objectContaining({ autoplayCount: 2 }),
         }),
       }),
     );

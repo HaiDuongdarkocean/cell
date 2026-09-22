@@ -18,6 +18,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis';
 import type { VideoQuality, Settings, DownloadItem } from '@/entities/media';
 import type { MessageRequest, MessageResponse } from '@/entities/message';
 import { selectBestMedia } from '@/features/download';
+import { ensureLocalAudioAccess } from '@/features/pronunciation/services/pronunciationAudioOrchestrator';
 import { isWhitelisted, addToWhitelist, removeFromWhitelist } from '@/features/whitelist';
 import { getActiveContentTab } from '@/entrypoints/popup/utils/getActiveContentTab';
 import styles from './App.redesigned.module.css';
@@ -55,6 +56,20 @@ export function AppRedesigned(): React.JSX.Element {
     };
     void load();
   }, [loadPersistedSettings, loadExtensionStatus]);
+
+  useEffect(() => {
+    if (!isSettingsLoaded) return;
+    const localFile = settings.pronunciation?.localFile;
+    if (!localFile) return;
+    const heal = (): void => { void ensureLocalAudioAccess(localFile); };
+    heal();
+    document.addEventListener('pointerdown', heal, { capture: true });
+    document.addEventListener('keydown', heal, { capture: true });
+    return () => {
+      document.removeEventListener('pointerdown', heal, { capture: true });
+      document.removeEventListener('keydown', heal, { capture: true });
+    };
+  }, [isSettingsLoaded, settings.pronunciation?.localFile]);
 
   // ADR-022: theme áp dụng qua ThemeProvider (wraps popup in main.tsx).
   // Removed duplicate dataset.theme effect — ThemeProvider handles :root CSS vars.

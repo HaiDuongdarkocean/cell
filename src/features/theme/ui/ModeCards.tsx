@@ -3,6 +3,7 @@
 // a11y: role="radiogroup", mỗi card role="radio", keyboard arrow nav.
 
 import type { KeyboardEvent } from 'react';
+import { t, type MessageKey } from '@/shared/i18n';
 import { Card, Icon } from '@/shared/ui';
 import type { ICON_CATALOG } from '@/shared/icons';
 import type { ThemeMode } from '@/entities/theme';
@@ -15,10 +16,10 @@ interface ModeCardsProps {
   onChange: (mode: ThemeMode) => void;
 }
 
-const MODES: ReadonlyArray<{ mode: ThemeMode; icon: keyof typeof ICON_CATALOG; label: string }> = [
-  { mode: 'light', icon: 'sun', label: 'Light' },
-  { mode: 'dark', icon: 'moon', label: 'Dark' },
-  { mode: 'system', icon: 'settings', label: 'System' },
+const MODES: ReadonlyArray<{ mode: ThemeMode; icon: keyof typeof ICON_CATALOG; label: MessageKey }> = [
+  { mode: 'light', icon: 'sun', label: 'theme.mode.light' },
+  { mode: 'dark', icon: 'moon', label: 'theme.mode.dark' },
+  { mode: 'system', icon: 'settings', label: 'theme.mode.system' },
 ];
 
 export function ModeCards({ value, onChange }: ModeCardsProps): React.JSX.Element {
@@ -34,7 +35,7 @@ export function ModeCards({ value, onChange }: ModeCardsProps): React.JSX.Elemen
   };
 
   return (
-    <div className={styles.cards} role="radiogroup" aria-label="Theme mode" data-cell-id="mode-cards">
+    <div className={styles.cards} role="radiogroup" aria-label={t('theme.mode.aria')} data-cell-id="mode-cards">
       {MODES.map((m) => {
         const selected = m.mode === value;
         return (
@@ -50,7 +51,7 @@ export function ModeCards({ value, onChange }: ModeCardsProps): React.JSX.Elemen
             data-cell-id={`mode-card-${m.mode}`}
           >
             <span className={styles.icon} aria-hidden="true"><Icon name={m.icon} /></span>
-            <span className={styles.label}>{m.label}</span>
+            <span className={styles.label}>{t(m.label)}</span>
           </Card>
         );
       })}

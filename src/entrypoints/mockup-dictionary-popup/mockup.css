@@ -1,0 +1,332 @@
+/* Superset dictionary-popup prototype — design-time only. */
+
+body {
+  background: var(--color-bg-page, #14171a);
+  font-family: var(--font-family-base, system-ui, sans-serif);
+  color: var(--color-text-primary);
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.stageBar {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.stageChip {
+  appearance: none;
+  font-size: var(--font-size-sm);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full, 999px);
+  border: 1px solid var(--color-border, #2c3138);
+  background: var(--color-bg-elevated, #262b31);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.stageChip:hover { color: var(--color-text-primary); }
+.stageChip--on {
+  color: var(--color-text-primary);
+  border-color: var(--color-text-accent, #7c87e0);
+}
+
+/* ── Popup shell ── */
+.cell {
+  width: 400px;
+  max-height: 640px;
+  overflow-y: auto;
+  background: var(--color-bg-surface, #1d2126);
+  border: 1px solid var(--color-border, #2c3138);
+  border-radius: var(--radius-lg, 14px);
+  box-shadow: var(--shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.45));
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+  scrollbar-width: thin;
+}
+
+/* ── Multi-candidate stack ── */
+.mkFrame { padding: 0; overflow: hidden; }
+.mkStack {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.mkCandidate {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+}
+.mkCandidate + .mkCandidate { border-top: 1px solid var(--color-border, #2c3138); }
+.mkChips {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1-5) var(--space-2);
+  border-top: 1px solid var(--color-border, #2c3138);
+  background: var(--color-bg-surface, #1d2126);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.mkChipBtn { white-space: nowrap; font-size: var(--font-size-xs); padding: 2px var(--space-2); }
+
+/* ── Header ── */
+.mkHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.mkHeadSpacer { flex: 1; }
+.mkWord {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+.mkHomo {
+  font-size: var(--font-size-md);
+  color: var(--color-text-tertiary);
+  align-self: flex-start;
+}
+.mkHeadActions { display: flex; gap: var(--space-1); }
+.mkActionBtn {
+  appearance: none;
+  border: none;
+  border-radius: var(--radius-full, 999px);
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-elevated, #262b31);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.mkActionBtn:hover { color: var(--color-text-primary); }
+.mkActionBtn--accent { background: var(--color-primary, #5e6ad2); color: var(--color-primary-foreground, #fff); }
+
+.mkReadingRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+}
+.mkPronMeta { color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
+.mkIconBtn {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: var(--space-0-5);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+.mkIconBtn:hover { color: var(--color-text-primary); }
+.mkRevealBtn {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: var(--space-1);
+  padding: 0;
+  line-height: 1;
+}
+.mkRevealBtn svg { width: 14px; height: 14px; display: block; transition: transform 0.15s ease; }
+.mkRevealBtn--open svg { transform: rotate(180deg); }
+
+/* status + freq row */
+.mkStatusRow { display: flex; align-items: center; gap: var(--space-1-5); flex-wrap: wrap; }
+.mkStatus {
+  appearance: none;
+  border: none;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full, 999px);
+  cursor: pointer;
+  text-transform: lowercase;
+}
+.mkStatus--unknown { background: var(--color-primary-subtle, rgba(94,106,210,0.15)); color: var(--color-text-accent, #7c87e0); }
+.mkStatus--tracking { background: var(--color-warning-subtle, rgba(245,185,85,0.15)); color: var(--color-warning, #f5b955); }
+.mkStatus--known { background: var(--color-success-subtle, rgba(95,211,137,0.15)); color: var(--color-success, #5fd389); }
+.mkStatus--ignore { background: var(--color-bg-elevated, #262b31); color: var(--color-text-tertiary); }
+.mkFreq {
+  font-size: var(--font-size-xs);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full, 999px);
+  background: var(--color-bg-elevated, #262b31);
+  border: 1px solid var(--color-border, #2c3138);
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  gap: var(--space-0-5);
+  align-items: center;
+}
+.mkToolbar { display: flex; gap: var(--space-1-5); margin-top: var(--space-0-5); }
+.mkTool {
+  appearance: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full, 999px);
+  border: none;
+  background: var(--color-bg-elevated, #262b31);
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.mkTool:hover { color: var(--color-text-primary); background: var(--color-border, #2c3138); }
+
+/* meta chips */
+.mkMetaRow { display: flex; align-items: center; gap: var(--space-1-5); flex-wrap: wrap; }
+.mkStar { color: var(--color-warning, #e0a83c); }
+.mkStarOff { color: var(--color-text-tertiary); opacity: 0.35; }
+.mkChip {
+  font-size: var(--font-size-xs);
+  padding: 1px var(--space-1-5);
+  border-radius: var(--radius-full, 999px);
+  background: var(--color-bg-elevated, #262b31);
+  border: 1px solid var(--color-border, #2c3138);
+  color: var(--color-text-secondary);
+}
+.mkChip--accent { color: var(--color-text-accent, #7c87e0); }
+
+.mkInflections { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+.mkInflections b { color: var(--color-text-primary); font-weight: var(--font-weight-medium); }
+.mkInflections .mkInfType { color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
+
+/* ── Sense menu ── */
+.mkMenu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-0-5);
+  padding: var(--space-1-5) var(--space-2);
+  background: var(--color-bg-elevated, #262b31);
+  border-radius: var(--radius-md, 8px);
+}
+.mkMenuItem {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-accent, #7c87e0);
+  padding: 1px var(--space-1-5);
+  cursor: pointer;
+  border-radius: var(--radius-sm, 4px);
+}
+.mkMenuItem:hover { background: var(--color-border, #2c3138); }
+
+/* ── Definition rows (mimic real checkable rows) ── */
+.mkDef {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding: var(--space-1-5) var(--space-1);
+  border-radius: var(--radius-md, 8px);
+}
+.mkDef:hover { background: var(--color-bg-elevated, #262b31); }
+.mkDefCheck {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border-radius: var(--radius-full, 999px);
+  border: 1.5px solid var(--color-text-tertiary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: transparent;
+}
+.mkDef--on .mkDefCheck { background: var(--color-primary, #5e6ad2); border-color: var(--color-primary, #5e6ad2); color: var(--color-primary-foreground, #fff); }
+.mkDefBody { flex: 1; min-width: 0; }
+
+/* ── POS + senses ── */
+.mkLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  font-style: normal;
+  margin-right: var(--space-1);
+}
+.mkList { margin-top: var(--space-2); padding-left: 0; }
+
+.mkSense { display: block; }
+.mkSenseNum { color: var(--color-text-tertiary); margin-right: var(--space-0-5); }
+.mkSub { padding-left: var(--space-4); }
+.mkLine { display: block; }
+.mkExample {
+  display: block;
+  color: var(--color-text-secondary);
+  padding-left: var(--space-2);
+}
+.mkExample::before { content: "· "; }
+.mkTrans {
+  display: block;
+  padding-left: var(--space-4);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+.mkCite { color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
+.mkNote {
+  display: block;
+  padding-left: var(--space-2);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+.mkRel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  padding-left: var(--space-2);
+  display: block;
+}
+.mkRel b { font-weight: var(--font-weight-medium); color: var(--color-text-secondary); }
+.mkRelText { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+.mkRelText b { font-weight: var(--font-weight-medium); color: var(--color-text-tertiary); }
+.mkLink { color: var(--color-text-accent, #7c87e0); cursor: pointer; }
+.mkLink:hover { text-decoration: underline; }
+
+/* votes (crowdsourced) */
+.mkVotes {
+  display: inline-flex;
+  gap: var(--space-1-5);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-left: var(--space-1-5);
+}
+
+/* ── Collapsible groups ── */
+.mkGroup { border-top: 1px solid var(--color-border, #2c3138); padding-top: var(--space-1); margin-top: var(--space-1); }
+.mkGroupHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  appearance: none;
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  padding: var(--space-0-5) 0;
+  text-align: left;
+}
+.mkGroupHead:hover { color: var(--color-text-primary); }
+.mkGroupCount { color: var(--color-text-tertiary); font-weight: normal; }
+.mkGroupBody { padding-left: var(--space-2); display: flex; flex-direction: column; gap: 2px; }
+.mkGroupBody .mkLine { padding-left: var(--space-1); }
+.mkPhrase .mkLink { font-weight: var(--font-weight-medium); }
+
+.mkEtym { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+.mkStageLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}

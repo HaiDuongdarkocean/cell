@@ -1,7 +1,16 @@
 import { type ReactElement, useRef } from 'react';
 import { Text, HStack, Icon } from '@/shared/ui';
+import { t, type MessageKey } from '@/shared/i18n';
 import type { StudyStep } from '@/entities/studyMode';
 import styles from './CueStrip.module.css';
+
+const SUBTITLE_LABEL_KEYS: Record<StudyStep['subtitle'], MessageKey> = {
+  none: 'studyModes.step.opt.subtitle.none',
+  native: 'studyModes.step.opt.subtitle.native',
+  target: 'studyModes.step.opt.subtitle.target',
+  both: 'studyModes.step.opt.subtitle.both',
+  adaptive: 'studyModes.step.opt.subtitle.adaptive',
+};
 
 interface CueStripProps {
   readonly steps: readonly StudyStep[];
@@ -49,7 +58,7 @@ export function CueStrip({
       gap="2"
       className={styles.cueStrip}
       role="group"
-      aria-label="Steps"
+      aria-label={t('studyModes.builder.stepsAria')}
     >
       {steps.map((step, index) => (
         <button
@@ -67,7 +76,7 @@ export function CueStrip({
             {index + 1}
           </Text>
           <Text as="span" className={styles.cueSubtitle}>
-            {step.subtitle}
+            {t(SUBTITLE_LABEL_KEYS[step.subtitle])}
           </Text>
           <Text as="span" className={styles.cueSpeed}>
             {step.speed}x
@@ -86,7 +95,7 @@ export function CueStrip({
         data-cell-id="cue-add-step"
       >
         <Icon name="plus" size="xs" />
-        <Text as="span">Add</Text>
+        <Text as="span">{t('studyModes.builder.addStep')}</Text>
       </button>
     </HStack>
   );

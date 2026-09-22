@@ -30,7 +30,7 @@ import { findFrequencyByTerm } from '@/features/dictionary/repositories/frequenc
 import { getAllResources } from '@/features/dictionary/repositories/resourceRepository';
 import { getWordStatus } from '@/features/dictionary/services/wordStatusStore';
 import {
-  getAllPhraseIndexes,
+  getPhraseIndex,
 } from '@/features/dictionary/repositories/phraseIndexRepository';
 import {
   deserializePhraseIndex,
@@ -60,6 +60,8 @@ import type { Settings } from '@/entities/settings';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { ResourceInfo } from '@/entities/dictionary';
+import { classifyLine, lineToCanonicalText } from '@/features/dictionary';
+import type { SenseLine, RelatedEntry, EtymologyBlock, UsageNote } from '@/entities/dictionary';
 
 /** Check if an AbortSignal is aborted. */
 function checkAbort(signal?: AbortSignal): void {
@@ -69,7 +71,7 @@ function checkAbort(signal?: AbortSignal): void {
 /**
  * Split a multi-sense definition string into individual senses.
  *
- * Cambridge JSON dictionaries often store all senses in a single `definition`
+ * Entry-object dictionaries often store all senses in a single `definition`
  * field, separated by numbered markers like "1.(verb) ... 2.(verb) ...".
  * This function splits them so each sense becomes a separate DefinitionEntry
  * with its own checkbox in the popup.
@@ -126,9 +128,14 @@ function findTokenAtOffset(tokens: readonly Token[], cursorOffset: number): Toke
  */
 const probeCache = new Map<string, TermProbe>();
 
-/** T23: Clear the dictionary probe cache (call after dictionary import). */
+/** Deserialized phrase indexes keyed langCode → resourceId. null = the
+ *  resource has no (readable) index so we don't re-read it per lookup. */
+const phraseIndexCache = new Map<string, Map<number, PhraseIndex | null>>();
+
+/** Clear lookup caches (probe + phrase indexes) after resource mutations. */
 export function clearDictionaryProbeCache(): void {
   probeCache.clear();
+  phraseIndexCache.clear();
 }
 
 /** Runtime context for resource filtering + priority across a single lookup.
@@ -462,9 +469,14 @@ async function assembleLookupResult(
 
   const { allowedResourceIds, resourcePriority, priorityMap } = resourceContext;
 
+  const initialSurface = displayTerm ?? lookupTerm;
+  const [dictRaw, freqRaw, statusInit] = await Promise.all([
+    findDictionaryByTerm(langCode, lookupTerm),
+    findFrequencyByTerm(langCode, initialSurface),
+    getWordStatus(langCode, initialSurface),
+  ]);
   let dictEntries = sortByResourcePriority(
-    (await findDictionaryByTerm(langCode, lookupTerm))
-      .filter((e) => allowedResourceIds.has(e.resourceId)),
+    dictRaw.filter((e) => allowedResourceIds.has(e.resourceId)),
     priorityMap,
   );
   checkAbort(signal);
@@ -506,30 +518,159 @@ async function assembleLookupResult(
   }
 
   const surfaceTerm = displayTerm ?? effectiveTerm;
-  let freqEntries = (await findFrequencyByTerm(langCode, surfaceTerm))
-    .filter((e) => allowedResourceIds.has(e.resourceId));
+  let freqEntries = surfaceTerm === initialSurface
+    ? freqRaw.filter((e) => allowedResourceIds.has(e.resourceId))
+    : (await findFrequencyByTerm(langCode, surfaceTerm))
+      .filter((e) => allowedResourceIds.has(e.resourceId));
   if (freqEntries.length === 0 && surfaceTerm !== effectiveTerm) {
     freqEntries = (await findFrequencyByTerm(langCode, effectiveTerm))
       .filter((e) => allowedResourceIds.has(e.resourceId));
   }
   checkAbort(signal);
 
+  const resourceNameById = new Map<number, string>();
+  for (const r of resourceContext.resources) {
+    if (r.id !== undefined) {
+      resourceNameById.set(r.id, r.name.replace(/\.(json|zip|db|gz|txt)+$/i, ''));
+    }
+  }
+
   const definitions: DefinitionEntry[] = [];
+  const relatedMap = new Map<string, RelatedEntry>();
+  const inflectionMap = new Map<string, string[]>();
+  const derivedTermsSet = new Set<string>();
+  const wfSets = { nouns: new Set<string>(), verbs: new Set<string>(), adjectives: new Set<string>(), adverbs: new Set<string>() };
+  const wnSets = { synset: new Set<string>(), hypernyms: new Set<string>() };
+  let hasWordFamily = false;
+  let hasWordNet = false;
+  let level: string | undefined;
+  let etymology: EtymologyBlock | undefined;
+  let etymologySource: string | undefined;
+  const etyExtraVariants: { text: string; source?: string }[] = [];
+  let usageNote: UsageNote | undefined;
+  let usageNoteSource: string | undefined;
   let defIdx = 0;
   for (const e of dictEntries) {
-    const senses = splitSenses(e.definition);
     const examples = e.examples ? e.examples.split('\n').filter(Boolean) : [];
+    const source = resourceNameById.get(e.resourceId) ?? 'dictionary';
+    // Structured senses (new imports) — text keeps the line-joined body for
+    // Anki/legacy consumers; `lines` carries roles + translations for the UI.
+    // Legacy rows (no `senses`) fall back to splitSenses + line classifier.
+    const senses: { pos: string; text: string; lines: SenseLine[]; labels?: readonly string[]; level?: string; subsenses?: DefinitionEntry['subsenses']; synonyms?: readonly string[]; antonyms?: readonly string[] }[] =
+      e.senses && e.senses.length > 0
+        ? e.senses.map((s) => ({
+            pos: s.pos ?? '',
+            labels: s.labels,
+            level: s.level,
+            text: s.lines.map(lineToCanonicalText).join('\n'),
+            lines: [...s.lines],
+            subsenses: s.subsenses,
+            synonyms: s.synonyms,
+            antonyms: s.antonyms,
+          }))
+        : splitSenses(e.definition).map((s) => ({
+            pos: s.pos,
+            text: s.text,
+            lines: s.text
+              .split('\n')
+              .map(classifyLine)
+              .filter((l): l is SenseLine => l !== null),
+          }));
     for (const sense of senses) {
       definitions.push({
         id: `def-${defIdx}`,
         pos: sense.pos || e.pos || undefined,
+        labels: sense.labels,
+        level: sense.level,
         text: sense.text,
+        lines: sense.lines,
+        subsenses: sense.subsenses,
+        synonyms: sense.synonyms,
+        antonyms: sense.antonyms,
         examples,
-        source: 'Cambridge',
+        source,
         defaultSelected: false,
       });
       defIdx++;
     }
+
+    // Entry-level merge — dictEntries is already sorted by resource priority:
+    // lists union+dedupe (first-wins on term conflict), scalars first-wins,
+    // etymology chains after the first become checkable variants.
+    for (const r of e.related ?? []) {
+      const key = r.term.toLowerCase().replace(/^to\s+/, '');
+      if (!relatedMap.has(key)) relatedMap.set(key, r);
+    }
+    for (const g of e.inflections ?? []) {
+      const forms = inflectionMap.get(g.type) ?? [];
+      for (const f of g.forms) if (!forms.includes(f)) forms.push(f);
+      inflectionMap.set(g.type, forms);
+    }
+    for (const t of e.derivedTerms ?? []) derivedTermsSet.add(t);
+    if (e.wordFamily) {
+      for (const t of e.wordFamily.nouns ?? []) wfSets.nouns.add(t);
+      for (const t of e.wordFamily.verbs ?? []) wfSets.verbs.add(t);
+      for (const t of e.wordFamily.adjectives ?? []) wfSets.adjectives.add(t);
+      for (const t of e.wordFamily.adverbs ?? []) wfSets.adverbs.add(t);
+      hasWordFamily = true;
+    }
+    if (e.wordNet) {
+      for (const t of e.wordNet.synset ?? []) wnSets.synset.add(t);
+      for (const t of e.wordNet.hypernyms ?? []) wnSets.hypernyms.add(t);
+      hasWordNet = true;
+    }
+    level ??= e.level;
+    if (e.usageNote && !usageNote) {
+      usageNote = e.usageNote;
+      usageNoteSource = source;
+    }
+    if (e.etymology) {
+      if (!etymology) {
+        etymology = { chain: e.etymology.chain, firstKnownUse: e.etymology.firstKnownUse, variants: e.etymology.variants };
+        etymologySource = source;
+      } else {
+        etyExtraVariants.push({ text: e.etymology.chain, source }, ...(e.etymology.variants ?? []));
+      }
+    }
+  }
+
+  const mergedEtymology = etymology
+    ? { ...etymology, variants: [...(etymology.variants ?? []), ...etyExtraVariants] }
+    : undefined;
+
+  // Word origin + usage note are selectable content like senses — emit them
+  // as labeled definition rows so they flow through the same check/card path.
+  if (mergedEtymology) {
+    const rows = [
+      mergedEtymology.firstKnownUse
+        ? `${mergedEtymology.chain} · first known use: ${mergedEtymology.firstKnownUse}`
+        : mergedEtymology.chain,
+      ...(mergedEtymology.variants ?? []).map((v) => (v.source ? `${v.text} [${v.source}]` : v.text)),
+    ];
+    for (const text of rows) {
+      definitions.push({
+        id: `def-${defIdx}`,
+        labels: ['word origin'],
+        text,
+        lines: [{ role: 'gloss', text }],
+        examples: [],
+        source: etymologySource ?? 'dictionary',
+        defaultSelected: false,
+      });
+      defIdx++;
+    }
+  }
+  if (usageNote) {
+    const text = `${usageNote.title}: ${usageNote.text}`;
+    definitions.push({
+      id: `def-${defIdx}`,
+      labels: ['usage note'],
+      text,
+      lines: [{ role: 'note', text }],
+      examples: [],
+      source: usageNoteSource ?? 'dictionary',
+      defaultSelected: false,
+    });
   }
 
   const partsOfSpeech = [...new Set(definitions.map((d) => d.pos).filter(Boolean))] as string[];
@@ -546,7 +687,9 @@ async function assembleLookupResult(
   const frequency = bestFreq ? { rank: bestFreq.frequency, source: 'frequency' } : null;
 
   // Status is looked up for the displayed surface term (phrase or hover word).
-  const status = await getWordStatus(langCode, surfaceTerm);
+  const status = surfaceTerm === initialSurface
+    ? statusInit
+    : await getWordStatus(langCode, surfaceTerm);
 
   return {
     term: surfaceTerm,
@@ -559,6 +702,24 @@ async function assembleLookupResult(
     definitions,
     rawDefinitions: dictEntries.map((e) => e.definition),
     detectedPhrase,
+    related: relatedMap.size > 0 ? [...relatedMap.values()] : undefined,
+    inflections: inflectionMap.size > 0
+      ? [...inflectionMap.entries()].map(([type, forms]) => ({ type, forms }))
+      : undefined,
+    level,
+    etymology: mergedEtymology,
+    wordFamily: hasWordFamily ? {
+      nouns: [...wfSets.nouns],
+      verbs: [...wfSets.verbs],
+      adjectives: [...wfSets.adjectives],
+      adverbs: [...wfSets.adverbs],
+    } : undefined,
+    wordNet: hasWordNet ? {
+      synset: [...wnSets.synset],
+      hypernyms: [...wnSets.hypernyms],
+    } : undefined,
+    derivedTerms: derivedTermsSet.size > 0 ? [...derivedTermsSet] : undefined,
+    usageNote,
     matchSource,
   };
 }
@@ -591,18 +752,37 @@ async function tryEnglishPhraseMatchAll(
       .filter(([resourceId]) => dictionaryResourceIds.has(resourceId))
       .map(([resourceId, index]) => ({ resourceId, index }));
   } else {
-    const stored = await getAllPhraseIndexes(langCode).catch(() => []);
-    if (stored.length === 0) return [];
-    checkAbort(signal);
-    // Deserialize each blob — skip corrupted/version-mismatched blobs
-    // and fall back to word-level lookup for those resources.
+    let langCache = phraseIndexCache.get(langCode);
+    if (!langCache) {
+      langCache = new Map<number, PhraseIndex | null>();
+      phraseIndexCache.set(langCode, langCache);
+    }
     indexes = [];
-    for (const s of stored) {
-      if (!dictionaryResourceIds.has(s.resourceId)) continue;
-      try {
-        indexes.push({ resourceId: s.resourceId, index: deserializePhraseIndex(s.blob) });
-      } catch {
-        // Version mismatch or corrupt blob — skip, word fallback handles it.
+    const missing: number[] = [];
+    for (const resourceId of dictionaryResourceIds) {
+      const cached = langCache.get(resourceId);
+      if (cached) indexes.push({ resourceId, index: cached });
+      else if (cached === undefined) missing.push(resourceId);
+    }
+    if (missing.length > 0) {
+      checkAbort(signal);
+      const stored = await Promise.all(
+        missing.map((rid) => getPhraseIndex(langCode, rid).catch(() => undefined)),
+      );
+      for (let i = 0; i < missing.length; i++) {
+        const rid = missing[i]!;
+        const s = stored[i];
+        if (!s) {
+          langCache.set(rid, null);
+          continue;
+        }
+        try {
+          const index = deserializePhraseIndex(s.blob);
+          langCache.set(rid, index);
+          indexes.push({ resourceId: rid, index });
+        } catch {
+          langCache.set(rid, null);
+        }
       }
     }
     if (indexes.length === 0) return [];

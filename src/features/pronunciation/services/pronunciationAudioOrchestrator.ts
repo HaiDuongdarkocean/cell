@@ -18,22 +18,61 @@ import type {
 } from '@/entities/dictionary';
 import type { PronunciationEspeakTtsResult } from '@/entities/message/types';
 import type { AudioEngineKind } from '../types';
-import type { PronunciationSettings } from '@/entities/settings/types';
+import type { LocalFileAudioSettings, PronunciationSettings } from '@/entities/settings/types';
+import { getFileHandle, verifyPermission } from '@/shared/lib/storage/localFileHandleStorage';
 
 export interface PronunciationAudioProvider {
   readonly kind: AudioEngineKind;
   resolve(term: string, langCode: string): Promise<readonly AudioItem[]>;
 }
 
+function toUint8Array(value: unknown): Uint8Array | undefined {
+  if (value instanceof Uint8Array) return value;
+  if (Array.isArray(value)) return new Uint8Array(value);
+  if (value !== null && typeof value === 'object') {
+    return new Uint8Array(Object.values(value as Record<string, number>));
+  }
+  return undefined;
+}
+
+export async function ensureLocalAudioAccess(
+  localFile: LocalFileAudioSettings | undefined,
+): Promise<void> {
+  if (!localFile) return;
+  if (typeof window === 'undefined' || window.location.protocol !== 'chrome-extension:') return;
+  const handleId =
+    localFile.packageType === 'single'
+      ? localFile.audioArchiveHandleId
+      : localFile.splitArchiveDirectoryHandleId;
+  if (!handleId) return;
+  try {
+    const handle = await getFileHandle(handleId);
+    if (!handle) return;
+    if ((await handle.queryPermission({ mode: 'read' })) === 'granted') return;
+    if (navigator.userActivation && !navigator.userActivation.isActive) return;
+    await verifyPermission(handle, 'read');
+  } catch {
+    return;
+  }
+}
+
 /** Provider backed by the local Forvo/Lingvo DSL package. */
 export class LocalAudioProvider implements PronunciationAudioProvider {
   readonly kind: AudioEngineKind = 'localFile';
 
-  resolve(term: string, langCode: string): Promise<readonly AudioItem[]> {
-    return sendMessage<MessageResponse<FetchLocalAudioResponse>>({
+  constructor(private readonly localFile?: LocalFileAudioSettings) {}
+
+  async resolve(term: string, langCode: string): Promise<readonly AudioItem[]> {
+    await ensureLocalAudioAccess(this.localFile);
+    const res = await sendMessage<MessageResponse<FetchLocalAudioResponse>>({
       type: MESSAGE_TYPES.FETCH_LOCAL_AUDIO,
       payload: { tabId: 0, term, langCode, kind: 'word' },
-    }).then((res) => (res?.success && res.data?.items ? res.data.items : []));
+    });
+    if (!res?.success || !res.data?.items) return [];
+    return res.data.items.map((item) => ({
+      ...item,
+      audioBytes: toUint8Array(item.audioBytes),
+    }));
   }
 }
 
@@ -92,7 +131,8 @@ export class EspeakAudioProvider implements PronunciationAudioProvider {
       type: MESSAGE_TYPES.PRONUNCIATION_ESPEAK_TTS,
       payload: { text: term, langCode },
     }).then((res) => {
-      if (!res?.success || !res.data?.audioBytes) return [];
+      const audioBytes = toUint8Array(res?.success ? res.data?.audioBytes : undefined);
+      if (!audioBytes) return [];
       return [
         {
           id: `espeak-word-${term}-${langCode}`,
@@ -100,7 +140,7 @@ export class EspeakAudioProvider implements PronunciationAudioProvider {
           source: 'espeak' as const,
           label: `${term} · eSpeak`,
           state: 'idle' as const,
-          audioBytes: res.data.audioBytes,
+          audioBytes,
           defaultSelected: false,
         },
       ];
@@ -108,8 +148,11 @@ export class EspeakAudioProvider implements PronunciationAudioProvider {
   }
 }
 
-const providerFactories: Record<AudioEngineKind, () => PronunciationAudioProvider> = {
-  localFile: () => new LocalAudioProvider(),
+const providerFactories: Record<
+  AudioEngineKind,
+  (settings: PronunciationSettings) => PronunciationAudioProvider
+> = {
+  localFile: (s) => new LocalAudioProvider(s.localFile),
   native: () => new CommunityAudioProvider(),
   supertonic: () => new SupertonicAudioProvider(),
   browserTts: () => new TtsAudioProvider(),
@@ -134,7 +177,7 @@ export class PronunciationAudioOrchestrator {
   constructor(settings: PronunciationSettings) {
     this.providers = settings.fallbackEngines
       .filter((kind) => kind !== 'espeak' || settings.downloadEspeakTtsData)
-      .map((kind) => providerFactories[kind]?.())
+      .map((kind) => providerFactories[kind]?.(settings))
       .filter((p): p is PronunciationAudioProvider => p !== undefined);
   }
 

@@ -81,6 +81,9 @@ function setupMocks(): void {
     if (message.type === MESSAGE_TYPES.FETCH_IMAGES) {
       return { success: true, data: { items: [] } } as T;
     }
+    if (message.type === MESSAGE_TYPES.LOCAL_AUDIO_STATE) {
+      return { success: true, data: { configured: true, permission: 'granted' } } as T;
+    }
     return { success: true } as T;
   });
   mockTranslateSentence.mockReset();
@@ -146,6 +149,40 @@ describe('useDictionaryToolbar', () => {
     expect(result.current.audioItems[0].id).toBe('a1');
     // defaultSelected does not count as a user selection.
     expect(result.current.selectedAudioCount).toBe(0);
+  });
+
+  it('flags localAudioNeedsRegrant when the archive handle permission is prompt', async () => {
+    mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
+      const message = msg as { type: string };
+      if (message.type === MESSAGE_TYPES.LOCAL_AUDIO_STATE) {
+        return { success: true, data: { configured: true, permission: 'prompt' } } as T;
+      }
+      return { success: true, data: { items: [] } } as T;
+    });
+
+    const { result } = renderHook(() => useDictionaryToolbar({
+      result: makeResult('hello'),
+      contextSentence: '',
+      sourceLang: 'en',
+      targetLang: 'vi',
+    }));
+
+    expect(result.current.localAudioNeedsRegrant).toBe(false);
+    act(() => { result.current.setActiveTab('audio'); });
+    await waitFor(() => expect(result.current.localAudioNeedsRegrant).toBe(true));
+  });
+
+  it('does not flag localAudioNeedsRegrant when permission is granted or unconfigured', async () => {
+    const { result } = renderHook(() => useDictionaryToolbar({
+      result: makeResult('hello'),
+      contextSentence: '',
+      sourceLang: 'en',
+      targetLang: 'vi',
+    }));
+
+    act(() => { result.current.setActiveTab('audio'); });
+    await waitFor(() => expect(result.current.audioLoading).toBe(false));
+    expect(result.current.localAudioNeedsRegrant).toBe(false);
   });
 
   it('fetches TTS of the sentence (not the term) for the sentence audio item', async () => {

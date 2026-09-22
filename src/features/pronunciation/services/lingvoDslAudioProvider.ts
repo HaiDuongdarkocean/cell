@@ -32,9 +32,14 @@ export class LingvoDslAudioProvider implements PronunciationAudioProvider {
     const resolver = await this.getResolver();
     if (!resolver) return [];
 
+    const bytesList = resolver.resolveAudios
+      ? await resolver.resolveAudios(term, paths)
+      : await Promise.all(paths.map((path) => resolver.resolveAudio(term, path)));
+
     const items: AudioItem[] = [];
-    for (const path of paths) {
-      const audioBytes = await resolver.resolveAudio(term, path);
+    for (let i = 0; i < paths.length; i++) {
+      const path = paths[i];
+      const audioBytes = bytesList[i];
       if (!audioBytes) continue;
       items.push({
         id: `local-${packageId}-${term}-${path}`,
@@ -59,7 +64,9 @@ export class LingvoDslAudioProvider implements PronunciationAudioProvider {
       const handle = await getFileHandle(audioArchiveHandleId);
       if (!handle || handle.kind !== 'file') return null;
       if (!(await verifyPermission(handle, 'read'))) return null;
-      this.resolver = new SingleZipAudioResolver(() => (handle as FileSystemFileHandle).getFile());
+      this.resolver = new SingleZipAudioResolver(
+        () => (handle as FileSystemFileHandle).getFile(),
+      );
       return this.resolver;
     }
 
@@ -68,7 +75,10 @@ export class LingvoDslAudioProvider implements PronunciationAudioProvider {
     const handle = await getFileHandle(splitArchiveDirectoryHandleId);
     if (!handle || handle.kind !== 'directory') return null;
     if (!(await verifyPermission(handle, 'read'))) return null;
-    this.resolver = new SplitZipAudioResolver(handle as FileSystemDirectoryHandle, splitArchivePattern);
+    this.resolver = new SplitZipAudioResolver(
+      handle as FileSystemDirectoryHandle,
+      splitArchivePattern,
+    );
     return this.resolver;
   }
 }

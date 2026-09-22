@@ -23,6 +23,9 @@ export interface SubtitleTokenizeController extends TokenizeController {
   /** Force rebind with current state (used after showStatus/showFrequency changes). */
   rebind(): void;
   handleStatusKey(key: string): boolean;
+  /** Set/clear the hovered term — cue-list surfaces feed this via their
+   *  tokenize adapter so status keys 1-4 apply to the hovered panel word. */
+  setHoveredTerm(term: string | null): void;
   /** Current tokenize state. */
   getState(): TokenizeState;
 }
@@ -226,6 +229,8 @@ export function createSubtitleTokenizeController(
     },
 
     handleStatusKey: statusKeyControls.handleStatusKey,
+
+    setHoveredTerm: (term) => stateStore.setHoveredTerm(term),
 
     render(activeTargetIndex, _activeNativeIndex) {
       const { target } = getLineElements();

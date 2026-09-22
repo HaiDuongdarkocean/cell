@@ -3,8 +3,10 @@ import { Heading, Text, Button, HStack, VStack, FormGroup, Dialog } from '@/shar
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { Input } from '@/shared/ui/Input';
 import { useStudyModeStore } from '../studyModeStore';
+import { t } from '@/shared/i18n';
 import { validateModeName } from '../lib/validateModeName';
 import { formatModeDescription } from '../lib/formatStepSummary';
+import type { MessageKey } from '@/shared/i18n';
 import type { StudyStep, StudyMode } from '@/entities/studyMode';
 import { CueStrip } from './CueStrip';
 import { StepEditor } from './StepEditor';
@@ -38,7 +40,7 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
 
   const [title, setTitle] = useState(initial.title);
   const [steps, setSteps] = useState<StudyStep[]>(initial.steps);
-  const [error, setError] = useState<string | null>(null);
+  const [errorKey, setErrorKey] = useState<MessageKey | null>(null);
   const [discardOpen, setDiscardOpen] = useState(false);
   const [selectedStepIndex, setSelectedStepIndex] = useState(0);
 
@@ -49,11 +51,11 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
       id: editingId ?? 'preview',
       type: 'custom',
       icon: 'slidersHorizontal',
-      title: title.trim() || 'Preview',
+      title: title.trim() || t('studyModes.builder.previewFallback'),
       description: '',
       steps,
     };
-    return formatModeDescription(draft);
+    return formatModeDescription(draft, t);
   }, [editingId, steps, title]);
 
   const prevOpen = useRef(false);
@@ -63,7 +65,7 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
     if (justOpened) {
       setTitle(initial.title);
       setSteps(initial.steps);
-      setError(null);
+      setErrorKey(null);
       setDiscardOpen(false);
       setSelectedStepIndex(0);
     }
@@ -81,11 +83,11 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
     const trimmedTitle = title.trim();
     const validation = validateModeName(trimmedTitle, store.customModes, editingId ?? undefined);
     if (!validation.valid) {
-      setError(validation.error ?? 'Invalid name');
+      setErrorKey(validation.errorKey ?? 'studyModes.builder.errorNameRequired');
       return;
     }
     if (steps.length === 0) {
-      setError('At least one step is required');
+      setErrorKey('studyModes.builder.errorNoSteps');
       return;
     }
 
@@ -145,40 +147,40 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
       <BottomSheet
         open={open}
         onOpenChange={handleCloseAttempt}
-        title={isNew ? 'New custom mode' : 'Edit custom mode'}
+        title={isNew ? t('studyModes.builder.titleNew') : t('studyModes.builder.titleEdit')}
         data-cell-id="custom-mode-builder"
         footer={
           <HStack gap="3" justify="between" className={styles.builderFooter}>
             {!isNew && (
               <Button variant="destructive" size="sm" onClick={handleDeleteMode} data-cell-id="builder-delete">
-                Delete
+                {t('studyModes.builder.delete')}
               </Button>
             )}
             <HStack gap="3" className={styles.builderFooterRight}>
               <Button variant="ghost" size="sm" onClick={handleCloseAttempt} data-cell-id="builder-cancel">
-                Cancel
+                {t('studyModes.builder.cancel')}
               </Button>
               <Button size="sm" onClick={handleSave} data-cell-id="builder-save">
-                Save
+                {t('studyModes.builder.save')}
               </Button>
             </HStack>
           </HStack>
         }
       >
         <VStack gap="4">
-          <FormGroup label="Mode name" htmlFor={titleId}>
+          <FormGroup label={t('studyModes.builder.nameLabel')} htmlFor={titleId}>
             <Input
               id={titleId}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Shadowing"
+              placeholder={t('studyModes.builder.namePlaceholder')}
               maxLength={50}
               data-cell-id="builder-title-input"
             />
           </FormGroup>
-          {error && (
+          {errorKey && (
             <p className={styles.builderError} role="alert">
-              {error}
+              {t(errorKey)}
             </p>
           )}
 
@@ -187,7 +189,7 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
               {preview}
             </Text>
             <Heading level={3} size={4} className={styles.sectionHeading}>
-              Steps
+              {t('studyModes.builder.steps')}
             </Heading>
 
             <CueStrip
@@ -214,13 +216,13 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
         <Dialog
           open={discardOpen}
           onOpenChange={setDiscardOpen}
-          title="Discard changes?"
-          description="Any unsaved changes will be lost."
+          title={t('studyModes.builder.discardTitle')}
+          description={t('studyModes.builder.discardDesc')}
           data-cell-id="builder-discard-dialog"
           footer={
             <HStack gap="3" justify="end">
               <Button variant="ghost" size="sm" onClick={() => setDiscardOpen(false)} data-cell-id="builder-discard-cancel">
-                Cancel
+                {t('studyModes.builder.cancel')}
               </Button>
               <Button
                 variant="destructive"
@@ -228,7 +230,7 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
                 onClick={() => { setDiscardOpen(false); onOpenChange(false); }}
                 data-cell-id="builder-discard-ok"
               >
-                Discard
+                {t('studyModes.builder.discardConfirm')}
               </Button>
             </HStack>
           }

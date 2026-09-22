@@ -1,0 +1,20 @@
+{
+  "id": "messaging-typed-array-becomes-plain-object",
+  "title": "Uint8Array crossing chrome.runtime.sendMessage arrives as a plain {index: byte} object — rehydrate on the receive side",
+  "category": ["messaging", "data"],
+  "tags": ["chrome-messaging", "serialization", "uint8array", "typed-array", "audio-bytes", "blob"],
+  "trigger": "Binary payloads (Uint8Array, audio/image bytes) are returned through chrome.runtime.sendMessage from service worker to page/content script",
+  "principle": "Chrome runtime messaging JSON-serializes the response — a Uint8Array arrives as {0:73, 1:68, ...} (plain object, length preserved via numeric keys). new Blob([obj]) produces '[object Object]' text; new Uint8Array(obj) yields an empty array — the audio 'loads' but is unplayable, with no thrown error. Rehydrate at the receive boundary: instanceof check → Uint8Array.from(Object.values(v)) for numeric-keyed objects. Zod schemas validating instanceof Uint8Array pass on the sender side but the wire still degrades the type — schema validation cannot catch transport degradation.",
+  "cases": [
+    {
+      "context": "FETCH_LOCAL_AUDIO returned AudioItem[] with audioBytes: Uint8Array. The SW-side FetchLocalAudioResponseSchema.parse passed, but the popup received {0:73,1:68,...} → blob URL wrapped garbage bytes → tester fell back to Wiktionary despite bytes being fully present (2725/2725, ID3 magic intact).",
+      "bad": "const blob = new Blob([item.audioBytes], { type: 'audio/mpeg' });\n// item.audioBytes is {0:73,1:68,...} → blob contains literal '[object Object]'",
+      "good": "function toUint8Array(v: unknown): Uint8Array | undefined {\n  if (v instanceof Uint8Array) return v;\n  if (Array.isArray(v)) return new Uint8Array(v);\n  if (v !== null && typeof v === 'object') return new Uint8Array(Object.values(v));\n  return undefined;\n}\n// apply at receive boundary for every bytes-carrying provider"
+    }
+  ],
+  "applyFor": [
+    "Any chrome.runtime.sendMessage response carrying Uint8Array/ArrayBuffer/typed arrays",
+    "Media pipelines that turn received bytes into Blob/object URLs",
+    "New message types returning binary payloads — add a wire-shape regression test ({0:..,1:..} fixture)"
+  ]
+}

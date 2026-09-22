@@ -1,4 +1,5 @@
 import type { AudioEngineKind, PronunciationSettings, TtsSettings } from '@/entities/settings/types';
+import type { MessageKey } from '@/shared/i18n';
 
 /** User-facing audio output goal. Each mode maps to a hidden engine priority chain. */
 export type OutputMode = 'auto' | 'natural' | 'fast' | 'offline' | 'minimal';
@@ -6,17 +7,17 @@ export type OutputMode = 'auto' | 'natural' | 'fast' | 'offline' | 'minimal';
 /** UI metadata for every output mode. */
 export interface OutputModeOption {
   readonly value: OutputMode;
-  readonly label: string;
-  readonly desc: string;
+  readonly label: MessageKey;
+  readonly desc: MessageKey;
 }
 
 /** Ordered list of output modes with label and description. */
 export const OUTPUT_MODES: readonly OutputModeOption[] = [
-  { value: 'auto', label: 'Auto', desc: 'Best source for current context' },
-  { value: 'natural', label: 'Natural', desc: 'Human-like audio first' },
-  { value: 'fast', label: 'Fast', desc: 'Low latency, no download' },
-  { value: 'offline', label: 'Offline', desc: 'Local files and downloaded packs' },
-  { value: 'minimal', label: 'Min data', desc: 'No large downloads' },
+  { value: 'auto', label: 'audio.mode.auto', desc: 'audio.mode.auto.desc' },
+  { value: 'natural', label: 'audio.mode.natural', desc: 'audio.mode.natural.desc' },
+  { value: 'fast', label: 'audio.mode.fast', desc: 'audio.mode.fast.desc' },
+  { value: 'offline', label: 'audio.mode.offline', desc: 'audio.mode.offline.desc' },
+  { value: 'minimal', label: 'audio.mode.minimal', desc: 'audio.mode.minimal.desc' },
 ];
 
 const MODE_CHAINS: Record<OutputMode, readonly AudioEngineKind[]> = {

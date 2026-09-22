@@ -95,7 +95,7 @@ describe('SubtitlePracticeSession — layout', () => {
     expect(screen.getByTestId('practice-previous')).toBeTruthy();
     expect(screen.getByTestId('practice-replay')).toBeTruthy();
     expect(screen.getByTestId('practice-next')).toBeTruthy();
-    expect(screen.getByTestId('practice-shortcuts').textContent).toContain('Phát lại');
+    expect(screen.getByTestId('practice-shortcuts').textContent).toContain('Replay');
   });
 
   it('renders a preview for every inactive cue target in dictation mode', () => {

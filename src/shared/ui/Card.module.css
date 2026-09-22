@@ -25,7 +25,7 @@
 
 .selected {
   background: var(--color-primary-subtle);
-  color: var(--color-text-accent);
+  color: var(--color-text-accent-strong);
   box-shadow: var(--shadow-inset-selected);
 }
 

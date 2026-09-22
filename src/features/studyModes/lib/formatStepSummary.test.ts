@@ -1,5 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { formatStepSummary, formatModeDescription } from './formatStepSummary';
+import { t } from '@/shared/i18n';
 import type { StudyMode, StudyStep } from '@/entities/studyMode';
 
 const step: StudyStep = {
@@ -12,17 +13,17 @@ const step: StudyStep = {
 
 describe('formatStepSummary', () => {
   it('shows subtitle, pause, speed and repeat', () => {
-    expect(formatStepSummary(step)).toBe('target, no pause, 0.75x, 2x');
+    expect(formatStepSummary(step, t)).toBe('target, no pause, 0.75x, 2x');
   });
 
   it('omits repeat when 1x', () => {
     const s: StudyStep = { ...step, repeat: 1 };
-    expect(formatStepSummary(s)).toBe('target, no pause, 0.75x');
+    expect(formatStepSummary(s, t)).toBe('target, no pause, 0.75x');
   });
 
   it('appends the skip rule when set', () => {
     const s: StudyStep = { ...step, skip: 'non-i1' };
-    expect(formatStepSummary(s)).toBe('target, no pause, 0.75x, 2x, skip non-i1');
+    expect(formatStepSummary(s, t)).toBe('target, no pause, 0.75x, 2x, skip non-i1');
   });
 });
 
@@ -36,7 +37,7 @@ describe('formatModeDescription', () => {
       description: '',
       steps: [step, { ...step, repeat: 1, speed: 1 }],
     };
-    expect(formatModeDescription(mode)).toBe(
+    expect(formatModeDescription(mode, t)).toBe(
       'target, no pause, 0.75x, 2x → target, no pause, 1x',
     );
   });
