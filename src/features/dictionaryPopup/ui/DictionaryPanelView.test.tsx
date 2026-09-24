@@ -159,6 +159,43 @@ describe('DictionaryPanelView', () => {
     await waitFor(() => expect(screen.getByTestId('dictionary-empty')).toBeInTheDocument());
   });
 
+  it('keeps the search input enabled while a lookup is in flight', () => {
+    mockSendMessage.mockImplementation(async () => new Promise(() => {}));
+
+    render(
+      <DictionaryPanelView
+        langCode="en"
+        sourceLang="en"
+        targetLang="vi"
+        initialTerm="hello"
+        isOpen
+      />,
+    );
+
+    expect(screen.getByTestId('dictionary-search-input')).not.toBeDisabled();
+  });
+
+  it('selects the whole term when the search input gains focus', async () => {
+    render(
+      <DictionaryPanelView
+        langCode="en"
+        sourceLang="en"
+        targetLang="vi"
+        initialTerm="hello"
+        isOpen
+      />,
+    );
+
+    const input = screen.getByTestId('dictionary-search-input') as HTMLInputElement;
+    fireEvent.focus(input);
+
+    await waitFor(() => {
+      expect(input.selectionStart).toBe(0);
+      expect(input.selectionEnd).toBe(input.value.length);
+      expect(input.value).toBe('hello');
+    });
+  });
+
   it('submits a new search from the search field', async () => {
     render(
       <DictionaryPanelView

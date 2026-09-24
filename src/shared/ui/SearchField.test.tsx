@@ -23,6 +23,18 @@ describe('SearchField', () => {
     expect(onClear).toHaveBeenCalled();
   });
 
+  it('keeps focus on the input when clearing', () => {
+    render(<SearchField placeholder="Search" />);
+    const input = screen.getByRole('searchbox');
+    fireEvent.change(input, { target: { value: 'text' } });
+    input.focus();
+    const clear = screen.getByLabelText('Clear');
+    expect(fireEvent.pointerDown(clear)).toBe(false);
+    fireEvent.click(clear);
+    expect(input).toHaveValue('');
+    expect(input).toHaveFocus();
+  });
+
   it('supports uncontrolled mode', () => {
     render(<SearchField placeholder="Search" />);
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'text' } });

@@ -1,4 +1,4 @@
-import { useState, useEffect, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from 'react';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Icon } from '@/shared/icons/Icon';
@@ -30,6 +30,7 @@ export function SearchField({
   ...rest
 }: SearchFieldProps): React.JSX.Element {
   const [internalValue, setInternalValue] = useState(value ?? '');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (value !== undefined) {
@@ -53,12 +54,14 @@ export function SearchField({
     }
     onChange?.('');
     onClear?.();
+    inputRef.current?.focus();
   };
 
   const suffix = currentValue && !disabled ? (
     <Button shape="circle" variant="ghost"
       className={styles.clear}
       aria-label={t('ui.searchField.clear')}
+      onPointerDown={(e) => { e.preventDefault(); }}
       onClick={handleClear}
     >
       <Icon name="x" size={16} />
@@ -67,6 +70,7 @@ export function SearchField({
 
   return (
     <Input
+      ref={inputRef}
       type="search"
       value={currentValue}
       onChange={handleChange}

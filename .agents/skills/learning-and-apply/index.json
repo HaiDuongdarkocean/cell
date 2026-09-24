@@ -2489,6 +2489,27 @@
         "version-bump"
       ],
       "trigger": "E2E/browser measurements don't change after rebuilding dist, or instrumentation markers never appear in the SW global scope"
+    },
+    {
+      "type": "experience",
+      "id": "ux-input-disabled-loading-blur-shadow-dom",
+      "title": "disabled={isLoading} trên focused input blur nó vĩnh viễn — getElementById không xuyên shadow DOM nên refocus effect chết lặng",
+      "category": [
+        "ux",
+        "state"
+      ],
+      "tags": [
+        "focus",
+        "disabled",
+        "blur",
+        "shadow-dom",
+        "getelementbyid",
+        "input",
+        "mobile",
+        "search",
+        "keyboard"
+      ],
+      "trigger": "Input mất focus khi async op chạy, hoặc effect .focus() không bao giờ chạy trong UI mount vào shadow root"
     }
   ]
 }

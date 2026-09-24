@@ -181,6 +181,11 @@ export function DictionaryPanelView({
     }
   }, [search, searchTerm]);
 
+  const handleSearchFocus = useCallback((e: React.FocusEvent<HTMLInputElement>): void => {
+    const input = e.target;
+    requestAnimationFrame(() => { input.select(); });
+  }, []);
+
   useEffect(() => {
     if (!userTypedRef.current) return;
     const trimmed = searchTerm.trim();
@@ -203,25 +208,19 @@ export function DictionaryPanelView({
   useEffect(() => {
     if (panel.isLoading || !panel.currentResult || !pendingSearchFocusRef.current) return;
     pendingSearchFocusRef.current = false;
-    const input = document.getElementById(SEARCH_INPUT_ID) as HTMLInputElement | null;
-    if (!input) return;
-    input.focus();
-    const end = input.value.length;
-    input.setSelectionRange(end, end);
+    const input = containerRef.current?.querySelector<HTMLInputElement>(
+      '[data-cell-id="dictionary-search-input"]',
+    );
+    input?.focus();
   }, [panel.isLoading, panel.currentResult]);
 
   // Focus the search input after the panel enter animation completes.
-  // If the input already has a term, move the caret to the end.
   useEffect(() => {
     if (!isOpen) return;
     focusTimerRef.current = setTimeout(() => {
-      const input = document.getElementById(SEARCH_INPUT_ID) as HTMLInputElement | null;
-      if (!input) return;
-      input.focus();
-      if (input.value) {
-        const end = input.value.length;
-        input.setSelectionRange(end, end);
-      }
+      containerRef.current
+        ?.querySelector<HTMLInputElement>('[data-cell-id="dictionary-search-input"]')
+        ?.focus();
     }, 250);
     return () => {
       if (focusTimerRef.current) {
@@ -304,9 +303,9 @@ export function DictionaryPanelView({
             value={searchTerm}
             onChange={handleSearchChange}
             onKeyDown={handleSearchKeyDown}
+            onFocus={handleSearchFocus}
             placeholder={t('dict.search.placeholder')}
             aria-label={t('dict.search.aria')}
-            disabled={panel.isLoading}
             className={styles.searchField}
             prefix={null}
           />
