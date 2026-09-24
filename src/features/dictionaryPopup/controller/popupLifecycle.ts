@@ -48,8 +48,6 @@ import { createListenerRegistry } from './listenerRegistry';
  *  dismissLookup remains as a public API for explicit/programmatic dismiss. */
 const POPUP_DISMISS_DELAY_MS = 500;
 
-const MAX_POPUP_DEPTH = 6;
-
 export interface PopupLifecycleDeps {
   readonly getDpSettings: () => DictionaryPopupSettings;
   readonly setDpSettings: (settings: DictionaryPopupSettings) => void;
@@ -368,7 +366,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     // content inside popup level N → level N+1. Deeper levels are pruned; the
     // target level is reused when it exists.
     const sourceIdx = levelIndexForTarget(popupStack, highlightTarget);
-    const targetIdx = isSheetMode() ? 0 : Math.min(sourceIdx + 1, MAX_POPUP_DEPTH - 1);
+    const targetIdx = isSheetMode() ? 0 : sourceIdx + 1;
     const sourceAbovePanel = sourceIdx >= 0 ? popupStack[sourceIdx]?.abovePanel : undefined;
     if (popupStack.length > targetIdx + 1) closeFromLevel(targetIdx + 1);
 

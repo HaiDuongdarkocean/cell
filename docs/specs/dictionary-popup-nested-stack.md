@@ -38,8 +38,8 @@ is page/subtitle text. `mount.host` is exposed on the mount handle for this.
 Rules:
 
 - `targetLevel = source + 1`, where `source = -1` for page text → `targetLevel = 0`.
-- `MAX_DEPTH = 6` on desktop. Beyond the cap the deepest level reuses itself
-  (`targetLevel = min(source + 1, MAX_DEPTH - 1)`).
+- Desktop depth is unbounded — every nested lookup mounts a new level
+  (`targetLevel = source + 1`).
 - Sheet mode (`innerWidth < POPUP_SHEET_BREAKPOINT_PX`) keeps a single level —
   stack never exceeds 1, existing sheet-chaining behavior unchanged.
 - Closing level N prunes all levels > N — a popup never outlives its parent

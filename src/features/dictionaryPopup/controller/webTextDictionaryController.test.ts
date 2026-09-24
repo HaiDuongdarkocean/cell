@@ -1910,25 +1910,24 @@ describe('nested popup stack', () => {
     jest.useRealTimers();
   });
 
-  it('caps the stack at the max depth and reuses the deepest level', async () => {
+  it('stacks without a depth cap — a lookup in the deepest level mounts a new level', async () => {
     makeLookupForTerms();
     const ctrl = createWebTextDictionaryController(makeDeps());
 
     act(() => { ctrl.handleLookup(makeRequest({ term: 'l1' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('l1')) });
     await flushLookup();
-    for (let i = 2; i <= 6; i++) {
+    for (let i = 2; i <= 7; i++) {
       const parent = popupHosts()[i - 2]!;
       act(() => { ctrl.handleLookup(makeRequest({ term: `l${i}` }), `r${i}`, new DOMRect(10 + i, 10 + i, 40, 20), rangeInPopup(parent, `l${i}`)) });
       await flushLookup();
     }
-    expect(popupHosts()).toHaveLength(6);
+    expect(popupHosts()).toHaveLength(7);
 
-    // A 7th lookup inside the deepest level reuses it — no new mount.
-    const deepest = popupHosts()[5]!;
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'l7' }), 'r7', new DOMRect(90, 90, 40, 20), rangeInPopup(deepest, 'l7')) });
+    const deepest = popupHosts()[6]!;
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'l8' }), 'r8', new DOMRect(90, 90, 40, 20), rangeInPopup(deepest, 'l8')) });
     await flushLookup();
-    expect(popupHosts()).toHaveLength(6);
-    expect(popupHosts()[5]).toBe(deepest);
+    expect(popupHosts()).toHaveLength(8);
+    expect(popupHosts()[6]).toBe(deepest);
     act(() => { ctrl.destroy() });
   });
 
