@@ -2510,6 +2510,25 @@
         "keyboard"
       ],
       "trigger": "Input mất focus khi async op chạy, hoặc effect .focus() không bao giờ chạy trong UI mount vào shadow root"
+    },
+    {
+      "type": "experience",
+      "id": "settings-flat-field-per-profile-resolution",
+      "title": "loadSettings resolve flat fields từ active language profile — ghi top-level trong verify là đọc không thấy",
+      "category": [
+        "state",
+        "testing"
+      ],
+      "tags": [
+        "settings",
+        "language-profiles",
+        "flat-fields",
+        "dictionarypopup",
+        "storage",
+        "loadsettings",
+        "verification"
+      ],
+      "trigger": "Setting mới trong flat-field group (dictionaryPopup) ghi vào storage mà runtime/test vẫn thấy default"
     }
   ]
 }

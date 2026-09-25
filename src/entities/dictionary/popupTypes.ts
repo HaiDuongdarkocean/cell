@@ -328,6 +328,9 @@ export interface PopupSelectionSnapshot {
   readonly selectedAudioIds?: readonly string[];
   /** Ids of definitions the user explicitly ticked. */
   readonly selectedDefinitionIds?: readonly string[];
+  /** Composite `defId:index` ids of example lines the user ticked.
+   *  `[]` = explicit zero examples; absent = no snapshot. */
+  readonly selectedExampleIds?: readonly string[];
   /** Whether the translation checkbox was selected. */
   readonly translationSelected?: boolean;
 }
@@ -340,7 +343,13 @@ export interface PopupCardCreatorPrefill extends PopupSelectionSnapshot {
   readonly term: string;
   readonly langCode: string;
   readonly reading: string;
-  readonly definitions: readonly { readonly pos?: string; readonly text: string }[];
+  readonly definitions: readonly {
+    readonly pos?: string;
+    readonly text: string;
+    /** Example sentences the user ticked for this def (subset of
+     *  `DefinitionEntry.examples`). `[]` = explicitly none. */
+    readonly selectedExamples?: readonly string[];
+  }[];
   /** Raw definition strings from DB (with <br> + N. markers intact). */
   readonly rawDefinitions: readonly string[];
   readonly contextSentence: string;

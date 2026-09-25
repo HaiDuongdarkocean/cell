@@ -2,7 +2,7 @@
 // Verifies: • prefix, pos + text, \n\n between defs, no trailing \n.
 
 import { describe, it, expect } from '@jest/globals';
-import { formatDefinitions } from './formatDefinitions';
+import { formatDefinitions, parseDefinitionsText } from './formatDefinitions';
 
 describe('formatDefinitions', () => {
   it('formats multiple definitions with bullet + pos + \\n\\n', () => {
@@ -53,5 +53,69 @@ describe('formatDefinitions', () => {
       '• noun another sense\n\n' +
       '• noun (noun) a group of people',
     );
+  });
+
+  it('emits selected examples inline as `·` lines under their definition', () => {
+    const result = formatDefinitions([
+      { pos: 'noun', text: 'first sense', selectedExamples: ['ex one', 'ex two'] },
+      { pos: 'verb', text: 'second sense' },
+      { pos: 'adj', text: 'third sense', selectedExamples: ['ex three'] },
+    ]);
+    expect(result).toBe(
+      '• noun first sense\n' +
+      '· ex one\n' +
+      '· ex two\n\n' +
+      '• verb second sense\n\n' +
+      '• adj third sense\n' +
+      '· ex three',
+    );
+  });
+
+  it('explicit empty selectedExamples emits no example lines', () => {
+    const result = formatDefinitions([{ text: 'def', selectedExamples: [] }]);
+    expect(result).toBe('• def');
+  });
+
+  it('does not emit raw dictionary example lists implicitly', () => {
+    const defEntry = { pos: 'n', text: 'def', examples: ['leak a', 'leak b'] };
+    expect(formatDefinitions([defEntry])).toBe('• n def');
+  });
+
+  it('strips existing `·`/`•` markers from example text', () => {
+    const result = formatDefinitions([
+      { text: 'def', selectedExamples: ['· dotted', ' • bulleted', 'plain'] },
+    ]);
+    expect(result).toBe('• def\n· dotted\n· bulleted\n· plain');
+  });
+});
+
+describe('parseDefinitionsText', () => {
+  it('parses `•` lines into definition entries', () => {
+    const entries = parseDefinitionsText('• noun first\n\n• verb second');
+    expect(entries).toEqual([
+      { text: '• noun first', selectedExamples: [] },
+      { text: '• verb second', selectedExamples: [] },
+    ]);
+  });
+
+  it('attaches `·` lines to the preceding definition', () => {
+    const entries = parseDefinitionsText('• def one\n· ex a\n· ex b\n\n• def two\n· ex c');
+    expect(entries).toEqual([
+      { text: '• def one', selectedExamples: ['ex a', 'ex b'] },
+      { text: '• def two', selectedExamples: ['ex c'] },
+    ]);
+  });
+
+  it('orphan `·` line degrades to a clean definition entry', () => {
+    const entries = parseDefinitionsText('· stray example');
+    expect(entries).toEqual([{ text: 'stray example', selectedExamples: [] }]);
+  });
+
+  it('round-trips through formatDefinitions', () => {
+    const text = formatDefinitions([
+      { pos: 'n', text: 'def one', selectedExamples: ['ex a'] },
+      { text: 'def two' },
+    ]);
+    expect(formatDefinitions(parseDefinitionsText(text))).toBe(text);
   });
 });

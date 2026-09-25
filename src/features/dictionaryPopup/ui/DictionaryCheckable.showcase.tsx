@@ -43,44 +43,88 @@ function Demo({ label, children }: { label: string; children: ReactNode }): Reac
 
 const DEF_TEXT = 'the occurrence of events by chance in a happy or beneficial way';
 
-/** Definition row — markup mirrors CandidateView. */
+/** Example row — sibling checkable, markup mirrors CandidateView's example rows. */
+function ExampleRow({ text, onCheck }: { text: string; onCheck: (checked: boolean) => void }): ReactElement {
+  const [checked, setChecked] = useState(false);
+  const toggle = (next: boolean): void => { setChecked(next); onCheck(next); };
+  return (
+    <div
+      className={checkStyles.cellDefExampleItem}
+      role="checkbox"
+      aria-checked={checked}
+      tabIndex={0}
+      onClick={(e) => {
+        const el = e.target as HTMLElement;
+        if (el.closest(`.${candStyles.cellDefExampleText}`) !== null) return;
+        toggle(!checked);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          toggle(!checked);
+        }
+      }}
+    >
+      <label
+        className={`${checkStyles.cellDefCheck} ${checked ? checkStyles['cellDefCheck--checked'] : ''}`}
+        onClick={(e): void => e.stopPropagation()}
+      >
+        <input
+          type="checkbox"
+          className={checkStyles.cellDefCheckInput}
+          checked={checked}
+          onChange={(e): void => toggle(e.target.checked)}
+          aria-label={`Select example: ${text}`}
+        />
+        <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
+          <Icon name="check" size="md" />
+        </span>
+      </label>
+      <span className={candStyles.cellDefExampleText}>{text}</span>
+    </div>
+  );
+}
+
+/** Definition row — markup mirrors CandidateView; example rows are siblings. */
 function DefRow({ state, examples = [] }: { state: BoxState; examples?: string[] }): ReactElement {
   const [checked, setChecked] = useState(state === 'checked');
   const disabled = state === 'disabled';
   const indeterminate = state === 'indeterminate' && !checked;
   return (
-    <div
-      className={`${checkStyles.cellDefItem} ${disabled ? checkStyles['cellDefItem--disabled'] : ''}`}
-      onClick={disabled ? undefined : (): void => setChecked(!checked)}
-    >
-      <div className={candStyles.cellDefRow}>
-        <label
-          className={`${checkStyles.cellDefCheck} ${checked ? checkStyles['cellDefCheck--checked'] : ''}`}
-          onClick={(e): void => e.stopPropagation()}
-        >
-          <input
-            type="checkbox"
-            className={checkStyles.cellDefCheckInput}
-            checked={checked}
-            disabled={disabled}
-            ref={(el): void => { if (el) el.indeterminate = indeterminate; }}
-            onChange={(e): void => setChecked(e.target.checked)}
-            aria-label={`Select definition: ${DEF_TEXT}`}
-          />
-          <span className={boxClass(state)} aria-hidden="true">
-            {boxIcon(state, indeterminate)}
-          </span>
-        </label>
-        <span className={candStyles.cellDefText}>noun · {DEF_TEXT}</span>
+    <>
+      <div
+        className={`${checkStyles.cellDefItem} ${disabled ? checkStyles['cellDefItem--disabled'] : ''}`}
+        onClick={disabled ? undefined : (): void => setChecked(!checked)}
+      >
+        <div className={candStyles.cellDefRow}>
+          <label
+            className={`${checkStyles.cellDefCheck} ${checked ? checkStyles['cellDefCheck--checked'] : ''}`}
+            onClick={(e): void => e.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              className={checkStyles.cellDefCheckInput}
+              checked={checked}
+              disabled={disabled}
+              ref={(el): void => { if (el) el.indeterminate = indeterminate; }}
+              onChange={(e): void => setChecked(e.target.checked)}
+              aria-label={`Select definition: ${DEF_TEXT}`}
+            />
+            <span className={boxClass(state)} aria-hidden="true">
+              {boxIcon(state, indeterminate)}
+            </span>
+          </label>
+          <span className={candStyles.cellDefText}>noun · {DEF_TEXT}</span>
+        </div>
       </div>
       {examples.length > 0 && (
         <div className={candStyles.cellDefExamples}>
           {examples.map((ex, i) => (
-            <div key={i}>• {ex}</div>
+            <ExampleRow key={i} text={ex} onCheck={(v) => { if (v) setChecked(true); }} />
           ))}
         </div>
       )}
-    </div>
+    </>
   );
 }
 

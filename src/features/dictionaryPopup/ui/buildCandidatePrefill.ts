@@ -1,4 +1,6 @@
 import type { LookupResult, DefinitionEntry, AudioItem, ImageItem, PopupCardCreatorPrefill } from '@/entities/dictionary';
+import { getSelectedExamples, toSelectedExampleIds } from '../logic/definitionSelection';
+import type { ExampleSelection } from '../logic/definitionSelection';
 
 /**
  * Build a card-creator prefill from a candidate and the user's selections.
@@ -7,6 +9,7 @@ import type { LookupResult, DefinitionEntry, AudioItem, ImageItem, PopupCardCrea
 export function buildPrefill(
   result: LookupResult,
   selectedDefinitions: readonly DefinitionEntry[],
+  exampleSelection: ExampleSelection,
   contextSentence: string,
   translation: string,
   audioItems: readonly AudioItem[],
@@ -41,7 +44,11 @@ export function buildPrefill(
     term: result.term,
     langCode: result.langCode,
     reading: result.reading,
-    definitions: defs.map((d) => ({ pos: d.pos, text: d.text })),
+    definitions: defs.map((d) => ({
+      pos: d.pos,
+      text: d.text,
+      selectedExamples: getSelectedExamples(d, exampleSelection),
+    })),
     rawDefinitions: result.rawDefinitions,
     contextSentence,
     translation: translation || undefined,
@@ -54,6 +61,7 @@ export function buildPrefill(
     audioItems,
     imageItems,
     selectedDefinitionIds: defs.map((d) => d.id),
+    selectedExampleIds: toSelectedExampleIds(defs, exampleSelection),
     selectedAudioIds: effectiveAudios.map((item) => item.id),
     selectedImageIds: fallbackImages.map((item) => item.id),
     translationSelected,

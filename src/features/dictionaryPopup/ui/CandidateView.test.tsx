@@ -361,11 +361,122 @@ describe('CandidateView', () => {
     fireEvent.click(row.querySelector('.cellDefText')!);
     expect(row).toHaveAttribute('aria-checked', 'false');
 
-    fireEvent.click(row.querySelector('.cellDefExamples')!);
+    const exampleText = screen.getByTestId('dictionary-example').querySelector('.cellDefExampleText')!;
+    fireEvent.click(exampleText);
     expect(row).toHaveAttribute('aria-checked', 'false');
 
     fireEvent.click(row);
     expect(row).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('renders example rows as checkboxes that cascade-check the parent definition', () => {
+    const candidate = makeResult('hello', {
+      definitions: [
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['a warm greeting', 'said hello'], source: 'test', defaultSelected: true },
+      ],
+    });
+
+    render(
+      <CandidateView
+        candidate={candidate}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    const defRow = screen.getByTestId('dictionary-definition');
+    const examples = screen.getAllByTestId('dictionary-example');
+    expect(examples).toHaveLength(2);
+    examples.forEach((ex) => {
+      expect(ex).toHaveAttribute('role', 'checkbox');
+      expect(ex).toHaveAttribute('aria-checked', 'false');
+    });
+    expect(defRow).toHaveAttribute('aria-checked', 'false');
+
+    fireEvent.click(examples[0]);
+    expect(examples[0]).toHaveAttribute('aria-checked', 'true');
+    expect(examples[1]).toHaveAttribute('aria-checked', 'false');
+    expect(defRow).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('unchecking the last example leaves the definition checked', () => {
+    const candidate = makeResult('hello', {
+      definitions: [
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['a warm greeting'], source: 'test', defaultSelected: true },
+      ],
+    });
+
+    render(
+      <CandidateView
+        candidate={candidate}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    const defRow = screen.getByTestId('dictionary-definition');
+    const example = screen.getByTestId('dictionary-example');
+
+    fireEvent.click(example);
+    expect(defRow).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(example);
+    expect(example).toHaveAttribute('aria-checked', 'false');
+    expect(defRow).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('unchecking a definition resets its example selections', () => {
+    const candidate = makeResult('hello', {
+      definitions: [
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['a warm greeting'], source: 'test', defaultSelected: true },
+      ],
+    });
+
+    render(
+      <CandidateView
+        candidate={candidate}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    const defRow = screen.getByTestId('dictionary-definition');
+    const example = screen.getByTestId('dictionary-example');
+
+    fireEvent.click(example);
+    fireEvent.click(defRow);
+    expect(defRow).toHaveAttribute('aria-checked', 'false');
+    fireEvent.click(defRow);
+    expect(example).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('Space/Enter on an example toggles it without toggling the definition directly', () => {
+    const candidate = makeResult('hello', {
+      definitions: [
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['a warm greeting'], source: 'test', defaultSelected: true },
+      ],
+    });
+
+    render(
+      <CandidateView
+        candidate={candidate}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    const example = screen.getByTestId('dictionary-example');
+    fireEvent.keyDown(example, { key: ' ' });
+    expect(example).toHaveAttribute('aria-checked', 'true');
+    fireEvent.keyDown(example, { key: 'Enter' });
+    expect(example).toHaveAttribute('aria-checked', 'false');
   });
 
   it('sendToCard calls onSendToCard immediately without blocking on media fetches', async () => {
@@ -433,7 +544,7 @@ describe('CandidateView', () => {
 
     expect(onQuickAdd).toHaveBeenCalledWith(expect.objectContaining({
       term: 'hello',
-      definitions: [{ pos: 'n', text: 'greeting' }],
+      definitions: [{ pos: 'n', text: 'greeting', selectedExamples: [] }],
       contextSentence: 'hello world',
     }));
   });

@@ -56,6 +56,7 @@ describe('buildPrefill', () => {
     const prefill = buildPrefill(
       result,
       selectedDefinitions,
+      new Map(),
       contextSentence,
       translation,
       [makeAudio({ id: 'audio-word-1', kind: 'word', url: 'https://example.com/word.mp3' })],
@@ -67,7 +68,7 @@ describe('buildPrefill', () => {
     expect(prefill.term).toBe('hello');
     expect(prefill.langCode).toBe('en');
     expect(prefill.reading).toBe('/həˈloʊ/');
-    expect(prefill.definitions).toEqual([{ pos: 'noun', text: 'an expression of surprise' }]);
+    expect(prefill.definitions).toEqual([{ pos: 'noun', text: 'an expression of surprise', selectedExamples: [] }]);
     expect(prefill.rawDefinitions).toEqual(result.rawDefinitions);
     expect(prefill.contextSentence).toBe(contextSentence);
     expect(prefill.translation).toBe(translation);
@@ -83,6 +84,7 @@ describe('buildPrefill', () => {
     const prefill = buildPrefill(
       result,
       [],
+      new Map(),
       contextSentence,
       '',
       [],
@@ -91,7 +93,7 @@ describe('buildPrefill', () => {
       new Map(),
     );
 
-    expect(prefill.definitions).toEqual(result.definitions.map((d) => ({ pos: d.pos, text: d.text })));
+    expect(prefill.definitions).toEqual(result.definitions.map((d) => ({ pos: d.pos, text: d.text, selectedExamples: [] })));
     expect(prefill.translation).toBeUndefined();
   });
 
@@ -110,6 +112,7 @@ describe('buildPrefill', () => {
     const prefill = buildPrefill(
       result,
       [result.definitions[0]!],
+      new Map(),
       contextSentence,
       translation,
       audios,
@@ -138,6 +141,7 @@ describe('buildPrefill', () => {
     const prefill = buildPrefill(
       result,
       [],
+      new Map(),
       contextSentence,
       '',
       audios,
@@ -161,6 +165,7 @@ describe('buildPrefill', () => {
     const prefill = buildPrefill(
       result,
       [],
+      new Map(),
       contextSentence,
       '',
       audios,
@@ -190,6 +195,7 @@ describe('buildPrefill', () => {
     const prefill = buildPrefill(
       result,
       [result.definitions[1]!],
+      new Map(),
       contextSentence,
       translation,
       audios,
@@ -217,6 +223,7 @@ describe('buildPrefill', () => {
     const prefill = buildPrefill(
       result,
       [],
+      new Map(),
       contextSentence,
       '',
       audios,
@@ -231,6 +238,36 @@ describe('buildPrefill', () => {
     expect(prefill.translationSelected).toBe(false);
   });
 
+  it('projects ticked example indices into selectedExamples + selectedExampleIds', () => {
+    const result = makeResult({
+      definitions: [
+        { id: '1', pos: 'exclamation', text: 'used as a greeting', examples: ['ex a', 'ex b', 'ex c'], source: 'cambridge', defaultSelected: true },
+        { id: '2', pos: 'noun', text: 'an expression of surprise', examples: ['ex d'], source: 'cambridge', defaultSelected: true },
+      ],
+    });
+    const exampleSelection = new Map([
+      ['1', new Set([2, 0])],
+      ['9', new Set([0])],
+    ]);
+
+    const prefill = buildPrefill(
+      result,
+      [result.definitions[0]!],
+      exampleSelection,
+      contextSentence,
+      '',
+      [],
+      new Map(),
+      [],
+      new Map(),
+    );
+
+    expect(prefill.definitions).toEqual([
+      { pos: 'exclamation', text: 'used as a greeting', selectedExamples: ['ex a', 'ex c'] },
+    ]);
+    expect(prefill.selectedExampleIds).toEqual(['1:0', '1:2']);
+  });
+
   it('carries the original lookup result and loaded media arrays for the integrated Dictionary clone', () => {
     const result = makeResult();
     const audios = [makeAudio({ id: 'audio-word-1', kind: 'word', url: 'https://example.com/word.mp3' })];
@@ -239,6 +276,7 @@ describe('buildPrefill', () => {
     const prefill = buildPrefill(
       result,
       [],
+      new Map(),
       contextSentence,
       '',
       audios,

@@ -516,8 +516,15 @@ function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Eleme
                 <Skeleton width="90%" height={textH} shape="rounded" />
               </span>
             </div>
-            <div className={candidateStyles.cellDefExamples}>
-              <Skeleton width="65%" height={exH} shape="rounded" />
+          </div>
+          <div className={candidateStyles.cellDefExamples}>
+            <div className={checkStyles.cellDefExampleItem}>
+              <span className={checkStyles.cellDefCheck}>
+                <Skeleton width={checkbox} height={checkbox} shape="rounded" />
+              </span>
+              <span className={candidateStyles.cellDefExampleText}>
+                <Skeleton width="65%" height={exH} shape="rounded" />
+              </span>
             </div>
           </div>
           <div className={checkStyles.cellDefItem}>

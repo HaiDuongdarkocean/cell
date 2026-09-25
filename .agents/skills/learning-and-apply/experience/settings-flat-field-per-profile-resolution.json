@@ -1,0 +1,16 @@
+{
+  "id": "settings-flat-field-per-profile-resolution",
+  "title": "loadSettings resolve flat fields (dictionaryPopup) từ active language profile — ghi top-level settings.dictionaryPopup trong test/verify là đọc không bao giờ thấy",
+  "category": ["state", "testing"],
+  "tags": ["settings", "language-profiles", "flat-fields", "dictionarypopup", "storage", "loadsettings", "verification", "per-profile"],
+  "trigger": "Một setting mới trong nhóm dictionaryPopup (hoặc flat-field group khác) được ghi vào storage mà runtime/test đọc vẫn thấy giá trị default — dù chrome.storage.local.get trả flag đúng",
+  "principle": "Nhóm settings như `dictionaryPopup` là *flat field* per-language-profile: `loadSettings` chạy `resolveSettingsFlatFields` ở bước cuối, lấy giá trị từ `languageProfiles[active].dictionaryPopup` — ghi đè mọi key trùng tên ở top-level `settings.dictionaryPopup`. Khi verify/test bằng cách ghi thẳng vào storage (mock chrome.storage, Playwright evaluate), phải ghi vào `settings.languageProfiles[<activeId>].dictionaryPopup.<key>`, không phải `settings.dictionaryPopup.<key>`. Dấu hiệu nhận biết: storage đúng, remount đúng, effect chạy đúng — nhưng state cuối vẫn default. Debug nhanh: patch/log từng stage trong loadSettings (raw → merge → resolveSettingsFlatFields) để thấy stage nào stomp.",
+  "cases": [
+    {
+      "context": "Verify browser cho setting `dictionaryPopup.includeAllExamplesOnDefSelect`: seed `settings.dictionaryPopup.includeAllExamplesOnDefSelect=true` qua chrome.storage.local.set → storage đọc lại flag=true, DictionaryTab remount, loadSettings chạy — nhưng includeAllExamples vẫn false. Instrument từng stage trong loadSettings cho thấy raw=true → merge=true → resolveSettingsFlatFields → false.",
+      "bad": "chrome.storage.local.set({ settings: { ...s, dictionaryPopup: { ...s.dictionaryPopup, includeAllExamplesOnDefSelect: true } } })",
+      "good": "const profs = s.languageProfiles; const active = profs[s.activeProfileId]; active.dictionaryPopup = { ...active.dictionaryPopup, includeAllExamplesOnDefSelect: true }; chrome.storage.local.set({ settings: s })"
+    }
+  ],
+  "applyFor": ["Mọi setting mới thêm vào flat-field group (dictionaryPopup, pronunciation, ...) khi test/verify qua storage trực tiếp", "Debug 'setting không apply' dù storage đúng", "Showcase/mock verify scripts seed settings"]
+}

@@ -45,6 +45,12 @@ const TRANSLATION_LABEL_KEYS: Record<string, MessageKey> = {
   shown: 'settings.dictionaryPopup.translations.shown',
 };
 
+const EXAMPLE_OPTIONS = ['manual', 'all'] as const;
+const EXAMPLE_LABEL_KEYS: Record<string, MessageKey> = {
+  manual: 'settings.dictionaryPopup.examples.manual',
+  all: 'settings.dictionaryPopup.examples.all',
+};
+
 interface PillGroupProps {
   options: { value: string; label: string }[];
   value: string;
@@ -90,6 +96,12 @@ const STEPS = [
     valueKey: 'translationVisibility' as const,
     options: TRANSLATION_OPTIONS.map((o) => ({ value: o, labelKey: TRANSLATION_LABEL_KEYS[o] })),
   },
+  {
+    num: 4,
+    labelKey: 'settings.dictionaryPopup.examples' as MessageKey,
+    valueKey: 'includeAllExamplesOnDefSelect' as const,
+    options: EXAMPLE_OPTIONS.map((o) => ({ value: o, labelKey: EXAMPLE_LABEL_KEYS[o] })),
+  },
 ];
 
 export function DictionaryPopupSettingsPanel({
@@ -115,7 +127,9 @@ export function DictionaryPopupSettingsPanel({
             ? (settings.defaultActiveTab ?? '')
             : step.valueKey === 'translationVisibility'
               ? (settings.translationVisibility ?? 'hidden')
-              : settings[step.valueKey];
+              : step.valueKey === 'includeAllExamplesOnDefSelect'
+                ? (settings.includeAllExamplesOnDefSelect ? 'all' : 'manual')
+                : settings[step.valueKey];
 
           return (
             <div key={step.valueKey} className={styles.timelineItem}>
@@ -133,6 +147,8 @@ export function DictionaryPopupSettingsPanel({
                   onChange={(nextValue) => {
                     if (step.valueKey === 'defaultActiveTab') {
                       update({ defaultActiveTab: (nextValue || null) as DictionaryPopupSettings['defaultActiveTab'] });
+                    } else if (step.valueKey === 'includeAllExamplesOnDefSelect') {
+                      update({ includeAllExamplesOnDefSelect: nextValue === 'all' });
                     } else {
                       update({ [step.valueKey]: nextValue } as Partial<DictionaryPopupSettings>);
                     }

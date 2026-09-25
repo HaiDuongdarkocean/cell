@@ -24,7 +24,13 @@ export function buildSrsFieldsFromPrefill(prefill: PopupCardCreatorPrefill): Rec
   if (prefill.definitions.length) {
     const first = prefill.definitions[0];
     fields['def'] = { kind: 'text', value: first.text };
-    fields['examples'] = { kind: 'list', value: prefill.definitions.map((d) => d.text) };
+    fields['examples'] = {
+      kind: 'list',
+      value: [
+        ...prefill.definitions.map((d) => d.text),
+        ...prefill.definitions.flatMap((d) => d.selectedExamples ?? []),
+      ],
+    };
   }
   if (prefill.wordAudioUrls?.length) {
     fields['wordAudio'] = { kind: 'audio', value: prefill.wordAudioUrls[0]!, source: 'pronunciation' };

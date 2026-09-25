@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { nextStatus } from '@/features/dictionary/services/wordStatusStore';
 import { setWordStatus } from '@/features/dictionary/services/wordStatusClient';
-import { initDefinitionSelection, getSelectedDefinitions } from '../logic/definitionSelection';
+import {
+  initDefinitionSelection,
+  initExampleSelection,
+  getSelectedDefinitions,
+} from '../logic/definitionSelection';
 import { buildPrefill } from './buildCandidatePrefill';
 import { useDictionaryToolbar } from '../logic/useDictionaryToolbar';
 import type {
@@ -17,7 +22,7 @@ import type {
   PopupCardCreatorPrefill,
   PopupSelectionSnapshot,
 } from '@/entities/dictionary';
-import type { DefinitionSelection } from '../logic/definitionSelection';
+import type { DefinitionSelection, ExampleSelection } from '../logic/definitionSelection';
 
 export interface UseCandidateOptions {
   readonly candidate: LookupResult;
@@ -47,6 +52,8 @@ export interface UseCandidateReturn {
   readonly setActiveTab: (tab: PopupTab | null) => void;
   readonly definitionSelection: DefinitionSelection;
   readonly toggleDefinition: (id: string, selected: boolean) => void;
+  readonly exampleSelection: ExampleSelection;
+  readonly toggleExample: (defId: string, index: number, selected: boolean) => void;
   readonly selectedDefinitions: readonly DefinitionEntry[];
   readonly selectedDefinitionCount: number;
   readonly audioItems: readonly AudioItem[];
@@ -109,22 +116,27 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     setStatus(candidate.status);
   }
   const selectedDefinitionIds = fullSnapshot?.selectedDefinitionIds;
+  const selectedExampleIds = fullSnapshot?.selectedExampleIds;
   const [definitionSelection, setDefinitionSelection] = useState<DefinitionSelection>(
     () => initDefinitionSelection(candidate, selectedDefinitionIds),
+  );
+  const [exampleSelection, setExampleSelection] = useState<Map<string, Set<number>>>(
+    () => initExampleSelection(candidate, selectedExampleIds),
   );
 
   // Re-initialize definition selection when the candidate identity (term + lang)
   // or the incoming selection snapshot changes. This keeps the integrated
   // Dictionary in sync without wiping user toggles on a simple status cycle.
   const selectionKeyRef = useRef(
-    JSON.stringify([candidate.langCode, candidate.term, selectedDefinitionIds ?? null]),
+    JSON.stringify([candidate.langCode, candidate.term, selectedDefinitionIds ?? null, selectedExampleIds ?? null]),
   );
   useEffect(() => {
-    const key = JSON.stringify([candidate.langCode, candidate.term, selectedDefinitionIds ?? null]);
+    const key = JSON.stringify([candidate.langCode, candidate.term, selectedDefinitionIds ?? null, selectedExampleIds ?? null]);
     if (selectionKeyRef.current === key) return;
     selectionKeyRef.current = key;
     setDefinitionSelection(initDefinitionSelection(candidate, selectedDefinitionIds));
-  }, [candidate, selectedDefinitionIds]);
+    setExampleSelection(initExampleSelection(candidate, selectedExampleIds));
+  }, [candidate, selectedDefinitionIds, selectedExampleIds]);
 
   const effectiveAudioItems = initialAudioItems ?? fullSnapshot?.audioItems;
   const effectiveImageItems = initialImageItems ?? fullSnapshot?.imageItems;
@@ -185,8 +197,45 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     onStatusChange?.(candidate.term, candidate.langCode, newStatus);
   }, [candidate.langCode, candidate.term, status, onStatusChange]);
 
+  const [includeAllExamples, setIncludeAllExamples] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    loadSettings()
+      .then((s) => {
+        if (!alive) return;
+        setIncludeAllExamples(s.dictionaryPopup?.includeAllExamplesOnDefSelect ?? false);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
   const toggleDefinition = useCallback((id: string, selected: boolean): void => {
     setDefinitionSelection((prev) => new Map(prev).set(id, selected));
+    setExampleSelection((prev) => {
+      const next = new Map(prev);
+      if (selected && includeAllExamples) {
+        const def = candidate.definitions.find((d) => d.id === id);
+        next.set(id, new Set((def?.examples ?? []).map((_, i) => i)));
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  }, [candidate, includeAllExamples]);
+
+  const toggleExample = useCallback((defId: string, index: number, selected: boolean): void => {
+    setExampleSelection((prev) => {
+      const next = new Map(prev);
+      const indices = new Set(prev.get(defId) ?? []);
+      if (selected) indices.add(index); else indices.delete(index);
+      next.set(defId, indices);
+      return next;
+    });
+    if (selected) {
+      setDefinitionSelection((prev) => (
+        prev.get(defId) === true ? prev : new Map(prev).set(defId, true)
+      ));
+    }
   }, []);
 
   const playTerm = useCallback((): void => {
@@ -210,6 +259,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     onSendToCard(buildPrefill(
       candidate,
       selectedDefinitions,
+      exampleSelection,
       contextSentence,
       toolbar.translation,
       toolbar.audioItems,
@@ -218,13 +268,14 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
       toolbar.imageSelection,
       toolbar.translationSelected,
     ));
-  }, [onSendToCard, toolbar, candidate, selectedDefinitions, contextSentence]);
+  }, [onSendToCard, toolbar, candidate, selectedDefinitions, exampleSelection, contextSentence]);
 
   const quickAdd = useCallback(async (): Promise<void> => {
     if (!onQuickAdd) return;
     onQuickAdd(buildPrefill(
       candidate,
       selectedDefinitions,
+      exampleSelection,
       contextSentence,
       toolbar.translation,
       toolbar.audioItems,
@@ -233,7 +284,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
       toolbar.imageSelection,
       toolbar.translationSelected,
     ));
-  }, [onQuickAdd, toolbar, candidate, selectedDefinitions, contextSentence]);
+  }, [onQuickAdd, toolbar, candidate, selectedDefinitions, exampleSelection, contextSentence]);
 
   return {
     status,
@@ -242,6 +293,8 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     setActiveTab: toolbar.setActiveTab,
     definitionSelection,
     toggleDefinition,
+    exampleSelection,
+    toggleExample,
     selectedDefinitions,
     selectedDefinitionCount,
     audioItems: toolbar.audioItems,

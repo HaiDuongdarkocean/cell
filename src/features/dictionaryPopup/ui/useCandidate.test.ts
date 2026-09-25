@@ -350,8 +350,81 @@ describe('useCandidate', () => {
 
     expect(onQuickAdd).toHaveBeenCalledWith(expect.objectContaining({
       term: 'hello',
-      definitions: [{ pos: 'n', text: 'greeting' }],
+      definitions: [{ pos: 'n', text: 'greeting', selectedExamples: [] }],
       contextSentence: 'hello world',
     }));
+  });
+
+  it('quickAdd carries ticked examples in selectedExamples + selectedExampleIds', async () => {
+    const candidate = makeResult('hello', {
+      definitions: [
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['ex one', 'ex two'], source: 'test', defaultSelected: true },
+      ],
+    });
+    const onQuickAdd = jest.fn<(prefill: PopupCardCreatorPrefill) => void>();
+
+    const { result } = renderHook(() => useCandidate({
+      candidate,
+      contextSentence: 'hello world',
+      sourceLang: 'en',
+      targetLang: 'vi',
+      onQuickAdd,
+    }));
+
+    act(() => { result.current.toggleExample('d1', 1, true); });
+
+    await act(async () => { await result.current.quickAdd(); });
+
+    expect(onQuickAdd).toHaveBeenCalledWith(expect.objectContaining({
+      definitions: [{ pos: 'n', text: 'greeting', selectedExamples: ['ex two'] }],
+      selectedDefinitionIds: ['d1'],
+      selectedExampleIds: ['d1:1'],
+    }));
+  });
+
+  it('checking a definition with includeAllExamplesOnDefSelect selects all its examples', async () => {
+    mockLoadSettings.mockResolvedValue({
+      pronunciation: DEFAULT_PRONUNCIATION_SETTINGS,
+      dictionaryPopup: { includeAllExamplesOnDefSelect: true },
+    } as never);
+    const candidate = makeResult('hello', {
+      definitions: [
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['ex one', 'ex two'], source: 'test', defaultSelected: true },
+      ],
+    });
+
+    const { result } = renderHook(() => useCandidate({
+      candidate,
+      contextSentence: '',
+      sourceLang: 'en',
+      targetLang: 'vi',
+    }));
+
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+
+    act(() => { result.current.toggleDefinition('d1', true); });
+    expect(result.current.exampleSelection.get('d1')).toEqual(new Set([0, 1]));
+
+    act(() => { result.current.toggleDefinition('d1', false); });
+    expect(result.current.exampleSelection.get('d1')).toBeUndefined();
+  });
+
+  it('checking a definition with the setting off selects no examples', async () => {
+    const candidate = makeResult('hello', {
+      definitions: [
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['ex one'], source: 'test', defaultSelected: true },
+      ],
+    });
+
+    const { result } = renderHook(() => useCandidate({
+      candidate,
+      contextSentence: '',
+      sourceLang: 'en',
+      targetLang: 'vi',
+    }));
+    await act(async () => {});
+
+    act(() => { result.current.toggleDefinition('d1', true); });
+    expect(result.current.exampleSelection.get('d1')).toBeUndefined();
   });
 });

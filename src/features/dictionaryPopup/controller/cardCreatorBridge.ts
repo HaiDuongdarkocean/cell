@@ -19,7 +19,7 @@ import { captureSentenceAudio, seekAndWaitReady } from '@/features/cardCreator/m
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
 import { fetchMediaFile, type MediaFile } from '@/features/cardCreator/media/mediaFile';
 import { addToOceanSrs, openSrsStudyPage } from '@/features/dictionaryPopup/services/addToOceanSrs';
-import { formatDefinitions } from '@/features/dictionary/logic/formatDefinitions';
+import { formatDefinitions, parseDefinitionsText } from '@/features/dictionary/logic/formatDefinitions';
 import { loadSettingsOrToast } from '@/features/subtitle/ui/subtitleControllerHelpers';
 import { showToast, showProgressToast } from '@/features/subtitle/ui/subtitleUI';
 import { sendMessage } from '@/shared/lib/chrome-apis';
@@ -126,12 +126,12 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
     const term = prefillTerm;
     const definitionsText = prefillDefinitions ?? '';
 
-    const contextDefinitions: { readonly pos?: string; readonly text: string }[] = definitionsText
-      ? definitionsText.split('\n').filter((line) => line.trim()).map((text) => ({ text: text.trim() }))
+    const contextDefinitions = definitionsText
+      ? parseDefinitionsText(definitionsText)
       : [];
-    const definitions = contextDefinitions.length > 0
-      ? contextDefinitions
-      : (selection?.definitions ?? []);
+    const definitions = selection?.definitions?.length
+      ? selection.definitions
+      : contextDefinitions;
 
     const rawDefinitions: string[] =
       selection?.rawDefinitions && selection.rawDefinitions.length > 0
@@ -179,6 +179,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
       selectedImageIds: selection?.selectedImageIds,
       selectedAudioIds: selection?.selectedAudioIds,
       selectedDefinitionIds: selection?.selectedDefinitionIds,
+      selectedExampleIds: selection?.selectedExampleIds,
       translationSelected: selection?.translationSelected,
     };
 

@@ -22,6 +22,8 @@ import panelStyles from './DictionaryPanelView.module.css';
 import styles from './CandidateView.module.css';
 import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot, SenseLine, RelatedEntry } from '@/entities/dictionary';
 
+const EMPTY_EXAMPLE_SET: ReadonlySet<number> = new Set<number>();
+
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
     p,
@@ -336,7 +338,9 @@ export function CandidateView({
               key={def.id}
               definition={def}
               selected={panel.definitionSelection.get(def.id) === true}
+              checkedExamples={panel.exampleSelection.get(def.id) ?? EMPTY_EXAMPLE_SET}
               onToggle={panel.toggleDefinition}
+              onToggleExample={panel.toggleExample}
               translationRevealed={translationRevealed}
             />
           ))
@@ -499,36 +503,40 @@ function defHead(definition: DefinitionEntry): string | undefined {
 function DefinitionItem({
   definition,
   selected,
+  checkedExamples,
   onToggle,
+  onToggleExample,
   translationRevealed,
 }: {
   readonly definition: DefinitionEntry;
   readonly selected: boolean;
+  readonly checkedExamples: ReadonlySet<number>;
   readonly onToggle: (id: string, selected: boolean) => void;
+  readonly onToggleExample: (defId: string, index: number, selected: boolean) => void;
   readonly translationRevealed: boolean;
 }): React.JSX.Element {
   const checked = selected;
   return (
-    <div
-      className={checkStyles.cellDefItem}
-      data-cell-id="dictionary-definition"
-      role="checkbox"
-      aria-checked={checked}
-      tabIndex={0}
-      onClick={(e) => {
-        const el = e.target as HTMLElement;
-        if (el.closest(`.${styles.cellDefText}`) !== null) return;
-        if (el.closest(`.${styles.cellDefExamples}`) !== null) return;
-        if (window.getSelection()?.toString()) return;
-        onToggle(definition.id, !checked);
-      }}
-      onKeyDown={(e) => {
-        if (e.key === ' ' || e.key === 'Enter') {
-          e.preventDefault();
+    <>
+      <div
+        className={checkStyles.cellDefItem}
+        data-cell-id="dictionary-definition"
+        role="checkbox"
+        aria-checked={checked}
+        tabIndex={0}
+        onClick={(e) => {
+          const el = e.target as HTMLElement;
+          if (el.closest(`.${styles.cellDefText}`) !== null) return;
+          if (window.getSelection()?.toString()) return;
           onToggle(definition.id, !checked);
-        }
-      }}
-    >
+        }}
+        onKeyDown={(e) => {
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            onToggle(definition.id, !checked);
+          }
+        }}
+      >
       <div className={styles.cellDefRow}>
         <label
           className={`${checkStyles.cellDefCheck} ${checked ? checkStyles['cellDefCheck--checked'] : ''}`}
@@ -572,14 +580,56 @@ function DefinitionItem({
           )}
         </span>
       </div>
+      </div>
       {definition.examples.length > 0 && (
         <div className={styles.cellDefExamples}>
-          {definition.examples.map((ex, i) => (
-            <div key={i}>• {ex}</div>
-          ))}
+          {definition.examples.map((ex, i) => {
+            const exChecked = checkedExamples.has(i);
+            return (
+              <div
+                key={i}
+                className={checkStyles.cellDefExampleItem}
+                data-cell-id="dictionary-example"
+                role="checkbox"
+                aria-checked={exChecked}
+                tabIndex={0}
+                onClick={(e) => {
+                  const el = e.target as HTMLElement;
+                  if (el.closest(`.${styles.cellDefExampleText}`) !== null) return;
+                  if (window.getSelection()?.toString()) return;
+                  onToggleExample(definition.id, i, !exChecked);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onToggleExample(definition.id, i, !exChecked);
+                  }
+                }}
+              >
+                <label
+                  className={`${checkStyles.cellDefCheck} ${exChecked ? checkStyles['cellDefCheck--checked'] : ''}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    className={checkStyles.cellDefCheckInput}
+                    checked={exChecked}
+                    onChange={(e) => onToggleExample(definition.id, i, e.target.checked)}
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  />
+                  <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
+                    <Icon name="check" size="md" />
+                  </span>
+                </label>
+                <span className={styles.cellDefExampleText}>{ex}</span>
+              </div>
+            );
+          })}
         </div>
       )}
-    </div>
+    </>
   );
 }
 

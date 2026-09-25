@@ -247,6 +247,9 @@ export interface DictionaryPopupSettings {
    *  `target — native` pair. 'hidden' = collapsed until per-line reveal;
    *  'shown' = expanded by default. Default 'hidden'. */
   readonly translationVisibility?: 'hidden' | 'shown';
+  /** true = checking a definition selects all its example lines; false =
+   *  examples are picked manually per line. Default false. */
+  readonly includeAllExamplesOnDefSelect?: boolean;
 }
 
 /** Local Player settings slice (spec local-video-player.md — schema v22). */

@@ -368,10 +368,16 @@
 .cellDefExamples {
   margin-top: var(--space-0-5);
   overflow-wrap: anywhere;
-  /* Align with the text column: item padding (4) + check column (20) + gap (4). */
-  padding-left: var(--space-7);
+  /* Subordinate indent: example dot sits ~where the old `•` bullet painted. */
+  padding-left: var(--space-4);
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
+}
+
+.cellDefExampleText {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .candidate {
