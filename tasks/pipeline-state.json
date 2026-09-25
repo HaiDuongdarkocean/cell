@@ -360,6 +360,52 @@
       "owner": null,
       "worktree": null,
       "updated": "2026-09-21T08:53:46.171Z"
+    },
+    "dict-example-selection": {
+      "stage": "shipped",
+      "mode": "interactive",
+      "uiSurface": "yes",
+      "artifacts": {
+        "spec": "docs/specs/dict-example-selection.md",
+        "designBrief": "docs/intent/dict-example-selection-design-brief.md",
+        "componentMapping": "docs/intent/dict-example-selection-component-mapping.md",
+        "plan": "tasks/plan-dict-example-selection.md"
+      },
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-09-25T02:22:28.792Z"
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-09-25T02:20:39.429Z"
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-09-25T02:21:21.185Z"
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-09-25T02:19:55.178Z"
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-09-25T02:20:52.736Z"
+        }
+      },
+      "confidence": "high",
+      "awaiting": null,
+      "resolutions": [
+        {
+          "flag": "user-approval:intent",
+          "note": "user approved intent doc",
+          "at": "2026-09-24T04:42:12.367Z"
+        }
+      ],
+      "loops": 0,
+      "owner": null,
+      "worktree": null,
+      "updated": "2026-09-25T02:22:46.162Z"
     }
   }
 }
