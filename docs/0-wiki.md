@@ -62,6 +62,7 @@ docs/           # Tài liệu dự án
 │   ├── ROADMAP.md                     # Audit maturity 62/100 + operating model + UI test-tool target + cleanup/reorganization roadmap
 │   ├── COMPONENT_INVENTORY.json       # Auto-generated public component inventory (metadata, gaps, consumers)
 │   ├── COMPONENT_INVENTORY.md         # Human-readable inventory table and gap list
+│   ├── tihoka-logo.svg                # Brand mark source: geometric orca silhouette on teal #0E7C7B — rasterized to public/icons/icon-{16,48,128}.png
 │   └── guides/                          # Foundation interactive guides
 │       ├── foundations-tutorial.html    # Color/typography/spacing/layout/shape/motion/icon/a11y tutorial
 │       └── foundations-advanced.html    # Advanced foundation patterns and edge cases
