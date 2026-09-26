@@ -186,4 +186,9 @@ The last error-severity blocker is cleared. `web-ext lint --source-dir dist-fire
 
 New spec `e2e/firefox/specs/opencv.spec.mjs` (`ocr-opencv-wasm`): dynamic-imports `assets/opencv.js` in the bg event page on real Firefox → awaits Emscripten runtime init → instantiates `new cv.Mat(1,1,cv.CV_8UC1)` (catches UnboundTypeError) → asserts `cv.Mat`/`cv.CV_8UC1`/`cv.imread`. PASS — proves the externalized wasm loads and binds through the packaging path, not just that the file exists.
 
-**Gates (round 5):** `web-ext lint` **0 errors / 33 warnings** ✓ · typecheck ✓ · lint ✓ · unit **577/6888** ✓ · build ✓ · `build:firefox` ✓ · Firefox e2e **4 passed / 1 skipped (YouTube bot-wall soft-skip) / 0 failed** — local determinism, eSpeak, 2-concurrent-download, opencv-wasm all green.
+Same round cleared two more listing blockers:
+
+- **Real icons**: `public/icons/icon-*.png` were 1×1 67-byte placeholders → `ICON_SIZE_INVALID` ×3. A geometric orca mark (per `tasks/plans/tihoka-logo-brief.md`: orca mascot, teal `#0E7C7B`, bold at 16px) drawn as SVG (`docs/design-system/tihoka-logo.svg`) and rasterized via Playwright to 16/48/128 → `ICON_SIZE_INVALID` cleared, warnings 33→30.
+- **AnkiConnect live e2e** (`e2e/firefox/specs/anki.spec.mjs`, `cardcreator-ankiconnect`): real AnkiConnect at `127.0.0.1:8765` through the `CARD_CREATOR_REQUEST` bg proxy — `version`=6, `createDeck` + `addNote` (discovers the user's own note model via `modelNames`/`modelFieldNames` — no hardcoded `Basic`) + `storeMediaFile` all succeed; probe deck and media self-cleaned via `multi(deleteDecks cardsToo + deleteMediaFile)`. Soft-skips when the service is down.
+
+**Gates (round 5):** `web-ext lint` **0 errors / 30 warnings** ✓ · typecheck ✓ · lint ✓ · unit **577/6888** ✓ · build ✓ · `build:firefox` ✓ · Firefox e2e **5 passed / 1 skipped (YouTube bot-wall soft-skip) / 0 failed** — anki live, local determinism, eSpeak, 2-concurrent-download, opencv-wasm all green.

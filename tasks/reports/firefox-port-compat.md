@@ -99,12 +99,12 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 ### Parity backlog (if owner says go)
 
 1. ~~Vendor eSpeak assets~~ — **done**: `public/espeakng/` + worker-entry; pronunciation e2e `{"success":true,"bytes":64812}`; AMO remote-code flag removed.
-2. AnkiConnect e2e (card create/update + audio attach) with a live `127.0.0.1:8765`.
+2. ~~AnkiConnect e2e (card create/update + audio attach) with a live `127.0.0.1:8765`~~ — **done**: `cardcreator-ankiconnect` spec — live round-trip via `CARD_CREATOR_REQUEST` (CS→bg→HTTP): `version`=6, `createDeck`/`addNote`/`storeMediaFile` all succeed against real AnkiConnect; probe deck+media self-cleaned via `multi(deleteDecks cardsToo + deleteMediaFile)`. Soft-skips when the service is down.
 3. ~~One real ffmpeg merge → `downloads.download` e2e~~ — **done**: real HLS → OPFS → transmux → blob → `downloads.download` ×2 concurrent → valid MP4s on disk; `FILE_FAILED` flake → keep-alive now held through download terminal state.
 4. ~~Detection determinism follow-up~~ — **done**: two root causes fixed (cosmetic `&t=` rewrite wiping store → `isMediaRelevantUrlChange`; wake-race dropping first relay → `relayToBackground` retry + dedup reset). Firefox probe VERDICT: PASS; Chrome e2e stage2 63/63 PASS.
 5. ~~Chrome packed `.crx` smoke~~ — **done**: packed `.crx` + cloned profile, SW alive, content inject + panel + eSpeak e2e on real Chrome.
 6. Android: device test decision; document `downloads` unavailability as accepted degradation or design an alternative.
-7. Real icon assets (lint `ICON_SIZE` warning) before AMO submission.
+7. ~~Real icon assets (lint `ICON_SIZE` warning) before AMO submission~~ — **done**: real orca mark (geometric silhouette, teal `#0E7C7B` per `tasks/plans/tihoka-logo-brief.md`) rendered 16/48/128 → `public/icons/`; source SVG kept at `docs/design-system/tihoka-logo.svg`. `ICON_SIZE_INVALID` warnings cleared — lint now 30 warnings.
 8. ~~`FILE_TOO_LARGE` bundles (opencv.js, worker-entry ×2 >5MB) unparseable by the AMO scanner~~ — **done**: dead worker-entry artifacts stripped from `dist-firefox`; `opencv.js` wasm externalized to `assets/opencv.wasm` (binary exempt); `web-ext lint` now exits 0 with **0 errors**; runtime verified via `ocr-opencv-wasm` e2e spec.
 9. Confirm `gecko.data_collection_permissions: {required:["none"]}` declaration is accurate at listing time.
 
