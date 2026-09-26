@@ -20,7 +20,7 @@ import {
   ensureDownloadSubdir,
   readFile as opfsReadFile,
 } from '@/shared/lib/storage/opfsStorage';
-import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis';
+import { sendMessage, registerOffscreenListener, unregisterOffscreenListener } from '@/shared/lib/chrome-apis';
 import { ocrMessageListener } from './ocrRunner';
 import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
 import { encodeBase64 } from '@/shared/lib/base64';
@@ -469,7 +469,7 @@ export async function startMessageListener(): Promise<void> {
   };
 
   messageListener = listener;
-  onMessage(listener);
+  registerOffscreenListener(listener);
 }
 
 /**
@@ -477,7 +477,7 @@ export async function startMessageListener(): Promise<void> {
  */
 export function stopMessageListener(): void {
   if (messageListener) {
-    removeOnMessageListener(messageListener);
+    unregisterOffscreenListener(messageListener);
     messageListener = null;
   }
   // Revoke any Blob URLs that were never explicitly revoked.

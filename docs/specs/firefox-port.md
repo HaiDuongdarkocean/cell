@@ -4,7 +4,7 @@
 
 ## Objective
 
-Emit a Firefox-installable build of Tihoka from the same source and SSOT manifest — via a deterministic manifest transform for the manifest-level differences (`background.service_worker` → event page, `side_panel` → `sidebar_action`, `offscreen`/`sidePanel`/`tts` permissions) and runtime capability-guards for the Chrome-only APIs (`chrome.offscreen`, `chrome.sidePanel`, `chrome.tts`) — then load it on Firefox ≥128 as a temporary add-on, run a defined smoke matrix over core journeys, and produce a compat report (works/degraded/broken + AMO-readiness + Android desk-check) that lets the owner decide: parity port, WXT migration, or drop. Chrome lane output and behavior must not change.
+Emit a Firefox-installable build of Tihoka from the same source and SSOT manifest — via a deterministic manifest transform for the manifest-level differences (`background.service_worker` → event page, drop `side_panel`, remove `offscreen`/`sidePanel`/`tts` permissions) and runtime capability-guards for the Chrome-only APIs (`chrome.offscreen`, `chrome.sidePanel`, `chrome.tts`) — then load it on Firefox ≥128 as a temporary add-on, run a defined smoke matrix over core journeys, and produce a compat report (works/degraded/broken + AMO-readiness + Android desk-check) that lets the owner decide: parity port, WXT migration, or drop. Chrome lane output and behavior must not change. The `sidePanel` surface is dead code per owner (subtitle panel lives in-page) — the Firefox build drops it instead of porting to `sidebar_action`.
 
 ## Actor ↔ System Boundary
 
@@ -37,7 +37,7 @@ REQ-1: Firefox build lane
 - Rules:
   - Transform reads `dist/manifest.json` (post-crxjs, hashed filenames) — never `public/manifest.json` directly
   - `background.service_worker`+`type` removed → `background.page: "firefox-background.html"`; wrapper HTML loads the emitted `service_worker` file as `<script type="module">` (event page = document context, module OK; Firefox refuses `service_worker` — web-ext issue #2532 — and refuses `background.scripts`+`type:"module"`). Note: deviates from intent N3's literal `background.scripts` wording — `background.page` chosen because it is the only shape that supports ES-module entry on Firefox
-  - `side_panel` removed → `sidebar_action: { default_panel, default_title, default_icon, open_at_install: false }` mapped from `side_panel.default_path` + `action.default_*` (`open_at_install: false` — default `true` would auto-open the sidebar on install and pollute smoke evidence)
+  - `side_panel` key removed entirely — no `sidebar_action` replacement: the surface is dead code per owner (subtitle panel lives in-page); `OPEN_SIDE_PANEL`/`CLOSE_SIDE_PANEL` degrade to logged no-ops via REQ-3
   - Permissions: remove `offscreen`, `sidePanel`, `tts` (`chrome.tts` is a 4th Chrome-only API — absent in Firefox; keeping the permission produces lint warnings); everything else (`webRequest`, `declarativeNetRequest`, `downloads`, `storage`, `activeTab`, `tabs`, `webNavigation`, `cookies`, `unlimitedStorage`) kept
   - Add `browser_specific_settings.gecko = { id: "tihoka@the0cean.dev", strict_min_version: "128.0" }`
   - Strip Chrome-only keys Firefox warns on: `match_origin_as_fallback` (content_scripts entries), `use_dynamic_url` (web_accessible_resources)
@@ -67,23 +67,22 @@ REQ-2: Capability-guarded heavy-work host
 - Postcondition: feature completes identically on both browsers, or fails with a logged root cause
 - NFR refs: NFR-1, NFR-5, NFR-6
 
-REQ-3: Panel surface fallback
-- Actor: end user (hotkey/'p', toolbar action) + content script (`OPEN_SIDE_PANEL`/`CLOSE_SIDE_PANEL` messages)
-- Goal: panel UI reachable on Firefox without `chrome.sidePanel`
-- Preconditions: Firefox manifest has `sidebar_action`; adapter sees `chrome.sidePanel` absent
+REQ-3: Panel surface dropped on Firefox
+- Actor: content script (`OPEN_SIDE_PANEL`/`CLOSE_SIDE_PANEL` messages — dead surface kept wired for Chrome)
+- Goal: absence of `chrome.sidePanel` never crashes; no panel surface is exposed on Firefox
+- Preconditions: Firefox manifest has no `side_panel`/`sidePanel` (REQ-1 strips both)
 - Basic flow:
-  1. end user triggers open (hotkey/'p' on the video page, or toolbar action)
-  2. content script sends `OPEN_SIDE_PANEL` (existing message, unchanged)
-  3. background adapter detects no `chrome.sidePanel` → calls `browser.sidebarAction.open()` if present
-  4. sidebar renders the same `sidepanel/index.html` bundle — zero UI changes
-- Alt flow: `sidebarAction.open()` rejects → fallback `chrome.tabs.create({ url: sidepanel page })` opening the panel as a tab; log as degraded in report. (Gesture requirement: activation requirement was removed for extension-context callers in FF126, bug 1799347 — the message-relayed path may work; smoke measures real behavior, fallback stays regardless.)
-- Exception: both paths fail → `{ success: false, error }` through existing response contract; content script's `sidePanelOpen` flag stays consistent (see relay semantics in `sidePanelRelay.ts`)
+  1. content script sends `OPEN_SIDE_PANEL`/`CLOSE_SIDE_PANEL` (unchanged)
+  2. background adapter detects `chrome.sidePanel` absent → returns `{ success: false, error: 'sidePanel unsupported on this browser' }` through the existing response contract
+  3. content script's existing failure path runs — `sidePanelOpen` flag stays consistent (see relay semantics in `sidePanelRelay.ts`)
+- Alt flow: none — surface is intentionally absent (dead code per owner; subtitle panel is in-page)
+- Exception: any caller that bypassed the adapter and touched `chrome.sidePanel` directly → runtime throws are recorded in the smoke matrix (adapter audit row)
 - Rules:
-  - Same adapter file (`chrome-apis/sidePanel.ts`) — capability branch inside, call sites unchanged
-  - `CLOSE_SIDE_PANEL` → `sidebarAction.close()` best-effort; no-op failures tolerated
-  - `setPanelBehavior` has no call sites today (`sidePanel.ts:26-30` is dead code) — Firefox impl is a no-op stub; note as adapter-audit finding
-  - Known UX diffs to record in report: toolbar click on Firefox opens `action.default_popup` (not the panel); sidebar has no per-tab open semantics like Chrome's `openPanelOnActionClick`
-- Postcondition: user can reach panel UI on Firefox; degraded path recorded for report
+  - Capability branch lives inside `chrome-apis/sidePanel.ts` — call sites unchanged
+  - No `sidebar_action`, no tab fallback, no new UI — dropped, not ported
+  - `setPanelBehavior` has no call sites today (`sidePanel.ts:26-30` is dead code) — Firefox impl is a no-op; note as adapter-audit finding
+  - Report rows: toolbar click on Firefox opens `action.default_popup` (popup still works); in-page subtitle panel is the canonical panel
+- Postcondition: Firefox console shows no unhandled rejection from sidePanel paths; in-page subtitle panel verified working in smoke
 - NFR refs: NFR-5
 
 REQ-4: Firefox install + smoke run
@@ -93,8 +92,8 @@ REQ-4: Firefox install + smoke run
 - Basic flow:
   1. actor loads `dist-firefox/manifest.json` via `about:debugging` → system installs (no `service_worker disabled` error)
   2. actor opens youtube.com video → system injects content scripts + MAIN-world interceptors (`world:"MAIN"` honored on FF ≥128)
-  3. actor opens panel (sidebar or tab fallback) → panel renders
-  4. actor triggers subtitle capture → cues list populates in the panel
+  3. actor verifies the in-page subtitle panel renders on the video page
+  4. actor triggers subtitle capture → cues list populates in the in-page panel
   5. actor triggers a download → heavy-work host executes ffmpeg merge (REQ-2 path), `chrome.downloads.download` of the minted `blob:` URL completes (blob-URL lifetime verified across the job)
   6. actor creates an Anki card from a cue → card flow completes
   7. system logs each step's outcome (console evidence) for REQ-5
@@ -120,7 +119,7 @@ REQ-5: Compat report
 - Rules:
   - every row cites evidence (log/screenshot); unknowns marked `untested`, never guessed
   - TTS rows pre-marked `degraded` (`chrome.tts` absent on Firefox; `speechSynthesis` in a hidden event page has known broken-voice/audio behavior — actual outcome recorded by smoke)
-  - adapter-audit findings land here too: `setPanelBehavior` dead code, opaque-origin iframe injection loss, popup-vs-panel toolbar click
+  - adapter-audit findings land here too: `setPanelBehavior` dead code, `sidePanel` surface dropped per owner, opaque-origin iframe injection loss, toolbar popup behavior
 - Postcondition: report is complete enough that the owner decides without re-running the spike
 - NFR refs: NFR-2
 
@@ -144,7 +143,7 @@ npm run build:firefox
   → vite build → dist/ (Chrome artifact, unchanged)
   → transform → dist-firefox/
      ├─ copy dist/*
-     ├─ manifest: sw→page, side_panel→sidebar_action, +gecko, strip Chrome-only
+     ├─ manifest: sw→page, side_panel dropped, +gecko, strip Chrome-only
      └─ emit firefox-background.html (<script type="module"> wrapping emitted loader)
 ```
 
@@ -157,15 +156,15 @@ caller → chrome-apis adapter → capability check
    └─ unknown API absent        → guard → log + degrade
 ```
 
-Smoke sequence (fixed order, REQ-4): install → inject (youtube) → panel open → capture → download (incl. blob-URL lifetime) → card → report.
+Smoke sequence (fixed order, REQ-4): install → inject (youtube) → in-page panel renders → capture → download (incl. blob-URL lifetime) → card → report.
 
 ## Function ↔ Feature Map
 
 | Function (what the system does) | Features (tools supporting it) |
 |---|---|
-| Emit Firefox-installable artifact | manifest transform script `scripts/build-firefox.mjs`; `npm run build:firefox`; `firefox-background.html` emitter; gecko settings injection |
+| Emit Firefox-installable artifact | manifest transform script `scripts/build-firefox.mjs`; `npm run build:firefox`; `firefox-background.html` emitter; gecko settings injection; `side_panel`/`offscreen`/`tts` strip |
 | Execute heavy WASM work without offscreen API | shared offscreen-handler dispatch table (SSOT for Chrome listener + Firefox direct call); lazy runner import on Firefox path |
-| Reach panel UI without sidePanel | `sidebar_action` manifest mapping; `sidebarAction` adapter impl; tab-open fallback |
+| Degrade cleanly without sidePanel | capability guard inside `chrome-apis/sidePanel.ts` returning structured `{success:false}`; manifest strips `side_panel`+permission |
 | Produce decision-grade compat evidence | fixed smoke matrix; compat report template `tasks/reports/firefox-port-compat.md` |
 
 ## Data
@@ -204,12 +203,12 @@ Smoke sequence (fixed order, REQ-4): install → inject (youtube) → panel open
 
 ## Success Criteria
 
-- [ ] SC-1: `npm run build:firefox` completes and emits `dist-firefox/`; `dist-firefox/manifest.json` contains `background.page`, `sidebar_action`, `browser_specific_settings.gecko` with `strict_min_version: "128.0"`; no `service_worker`/`side_panel`/`offscreen`/`sidePanel`/`tts` keys remain.
+- [ ] SC-1: `npm run build:firefox` completes and emits `dist-firefox/`; `dist-firefox/manifest.json` contains `background.page`, `browser_specific_settings.gecko` with `strict_min_version: "128.0"`; no `service_worker`/`side_panel`/`sidebar_action`/`offscreen`/`sidePanel`/`tts` keys remain.
 - [ ] SC-2: `npx web-ext lint --source-dir dist-firefox` exits 0 with no `ERROR`-severity findings (warnings enumerated in the report).
 - [ ] SC-3: Temporary install on Firefox ≥128 succeeds; background event page initializes without console errors.
 - [ ] SC-4: On youtube.com, content script + MAIN-world interceptors run (marker/log evidence) and subtitle cues reach the panel.
 - [ ] SC-5: A video download is **attempted** via the Firefox heavy-work path and its outcome recorded with evidence (works = download completes end-to-end; broken = root cause logged in report).
-- [ ] SC-6: Panel opens via `sidebarAction` or documented tab fallback; open/close state stays consistent with content script.
+- [ ] SC-6: `OPEN_SIDE_PANEL`/`CLOSE_SIDE_PANEL` return `{success:false, error}` without throwing; no unhandled rejection from sidePanel paths; in-page subtitle panel renders on the video page.
 - [ ] SC-7: Chrome lane gates green: `npm run typecheck`, `npm run test:unit`, `npm run build`; `dist/manifest.json` semantically identical to pre-change build (same keys/values modulo hashed asset filenames).
 - [ ] SC-8: `tasks/reports/firefox-port-compat.md` exists with complete matrix (works/degraded/broken/untested + evidence per row), discovered API-gap list, AMO-readiness, and Android feasibility sections.
 - [ ] SC-9 (NFR-3): `package.json` `dependencies` unchanged; any `web-ext` usage is `npx` or devDep.
@@ -227,7 +226,6 @@ Smoke sequence (fixed order, REQ-4): install → inject (youtube) → panel open
 ## Open Questions / Accepted Risks
 
 - Keep-alive mechanism choice for the event page (poll `runtime.getPlatformInfo` vs pending-event pinning) — picked in DELIVER; failure mode (mid-job suspension killing `blob:` URLs) is a hard requirement (REQ-2/NFR-6), not a question.
-- `browser.sidebarAction.open()` from a message-relayed context — FF126 removed the activation requirement for extension-context callers (bug 1799347), so it may just work; report records real behavior either way.
 - WASM CSP `wasm-unsafe-eval` on Firefox extension pages — manifest CSP is copied verbatim by transform; smoke verifies.
 - DNR session-rules parity on Firefox — unverified until smoke.
 - Whether Firefox `runtime.sendMessage` self-delivers to the background page (Chrome does not) — spike-verified; the REQ-2 direct-call path is correct either way.

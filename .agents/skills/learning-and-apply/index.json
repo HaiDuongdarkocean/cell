@@ -2548,6 +2548,60 @@
         "verification"
       ],
       "trigger": "Setting mới trong flat-field group (dictionaryPopup) ghi vào storage mà runtime/test vẫn thấy default"
+    },
+    {
+      "type": "experience",
+      "id": "firefox-csp-atomic-rejection-default-fallback",
+      "title": "Firefox MV3 reject TOÀN BỘ CSP nếu một token invalid → fallback default policy",
+      "category": [
+        "build",
+        "messaging"
+      ],
+      "tags": [
+        "firefox",
+        "csp",
+        "manifest",
+        "mv3",
+        "blob",
+        "web-ext"
+      ],
+      "trigger": "Extension page trên Firefox throw CSP violation nhưng directive được quote trong violation KHÔNG phải CSP của manifest."
+    },
+    {
+      "type": "experience",
+      "id": "firefox-sendmessage-no-self-delivery",
+      "title": "Firefox runtime.sendMessage không tính listener của chính sender là receiving end",
+      "category": [
+        "messaging"
+      ],
+      "tags": [
+        "firefox",
+        "runtime",
+        "sendMessage",
+        "broadcast",
+        "no-receiving-end",
+        "mv3"
+      ],
+      "trigger": "Broadcast/fire-and-forget sendMessage trên Firefox reject 'Could not establish connection. Receiving end does not exist' dù sender context có listener cho message đó."
+    },
+    {
+      "type": "experience",
+      "id": "firefox-downloads-data-url-timeout",
+      "title": "Firefox downloads.download không bao giờ hoàn tất data: URL → dùng blob: capability-gated",
+      "category": [
+        "data",
+        "build"
+      ],
+      "tags": [
+        "firefox",
+        "downloads",
+        "blob",
+        "data-url",
+        "createObjectURL",
+        "mv3",
+        "capability-check"
+      ],
+      "trigger": "chrome.downloads.download({url: 'data:...'}) trên Firefox pending vĩnh viễn (không resolve, không reject, không lỗi console)."
     }
   ]
 }

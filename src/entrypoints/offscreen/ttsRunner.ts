@@ -4,7 +4,7 @@
 // engine runs here and is driven by messages from the background script.
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { onMessage, sendMessage } from '@/shared/lib/chrome-apis';
+import { registerOffscreenListener, sendMessage } from '@/shared/lib/chrome-apis';
 import { TtsSpeakLocalPayloadSchema, TtsDownloadVoicePayloadSchema } from '@/entities/message/dictionarySchemas';
 import { createSupertonicTtsEngine } from '@/features/tts/services/supertonicTtsEngine';
 import { downloadVoicePack, isVoicePackDownloaded } from '@/features/tts/services/ttsDownloadManager';
@@ -17,7 +17,7 @@ interface MessageLike {
   readonly payload?: unknown;
 }
 
-onMessage((message, sender, sendResponse) => {
+registerOffscreenListener((message, sender, sendResponse) => {
   const msg = message as MessageLike;
   // Offscreen is driven by the service worker only; ignore direct fan-out from
   // options/popup/sidepanel pages to avoid duplicate (interrupted) TTS runs.

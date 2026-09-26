@@ -266,7 +266,11 @@ export async function initHeavyFeatures(isTopFrame: boolean): Promise<void> {
     }
     initOcrContentScript(createOcrTriggerController);
   } catch (err) {
-    console.warn('[content-script] initHeavyFeatures failed', err);
+    console.warn(
+      '[content-script] initHeavyFeatures failed',
+      err,
+      err instanceof Error ? err.stack : '',
+    );
   }
   await studyModeInit.catch((err) => console.warn('[content-script] study mode init failed', err));
 }

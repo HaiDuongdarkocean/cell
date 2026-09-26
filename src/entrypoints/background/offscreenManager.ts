@@ -13,6 +13,9 @@ import {
   closeOffscreenDocument,
   getOffscreenReasons,
   sendMessage,
+  isOffscreenSupported,
+  enableInProcessOffscreenDispatch,
+  dispatchOffscreenMessage,
 } from '@/shared/lib/chrome-apis';
 import type { MessageRequest } from '@/entities/message';
 
@@ -31,6 +34,9 @@ const PING_RETRY_DELAY_MS = 100;
 
 /** Idle delay after the last offscreen send before the document is closed (ms). */
 const IDLE_CLOSE_DELAY_MS = 5 * 60 * 1000;
+
+/** Keep-alive ping interval for the Firefox event page while jobs run (ms). */
+const KEEP_ALIVE_INTERVAL_MS = 20 * 1000;
 
 /**
  * Wraps `chrome.offscreen` to create and close the offscreen document that
@@ -53,6 +59,7 @@ export class OffscreenManager {
   private isReady = false;
   private activeSends = 0;
   private idleCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private keepAliveTimer: ReturnType<typeof setInterval> | null = null;
 
   /**
    * Ensure the offscreen document exists, creating it if necessary.
@@ -77,6 +84,17 @@ export class OffscreenManager {
   }
 
   private async doEnsureOffscreenDocument(): Promise<void> {
+    if (!isOffscreenSupported()) {
+      enableInProcessOffscreenDispatch();
+      await Promise.all([
+        import('@/entrypoints/offscreen/ffmpegRunner'),
+        import('@/entrypoints/offscreen/ttsRunner'),
+        import('@/entrypoints/offscreen/pronunciationRunner'),
+      ]);
+      this.documentExists = true;
+      return;
+    }
+
     // `hasDocument` may not exist in older Chrome versions; guard accordingly.
     // Note: hasDocument() can return stale `true` after browser restart
     // (Chrome caches the flag in the profile but the document is gone).
@@ -147,7 +165,7 @@ export class OffscreenManager {
 
     for (let attempt = 0; attempt < PING_MAX_RETRIES; attempt++) {
       try {
-        const response = await sendMessage<{ success?: boolean }>({
+        const response = await this.sendToHeavyHost<{ success?: boolean }>({
           type: MESSAGE_TYPES.OFFSCREEN_PING,
         });
         if (response?.success) {
@@ -176,18 +194,53 @@ export class OffscreenManager {
   async sendToOffscreen<T>(request: MessageRequest): Promise<T> {
     this.cancelIdleClose();
     this.activeSends += 1;
+    this.startKeepAlive();
     try {
       await this.ensureOffscreenReady();
-      return await sendMessage<T>(request);
+      return await this.sendToHeavyHost<T>(request);
     } catch (err) {
-      this.isReady = false;
-      this.documentExists = false;
+      if (isOffscreenSupported()) {
+        this.isReady = false;
+        this.documentExists = false;
+      }
       throw err;
     } finally {
       this.activeSends -= 1;
       if (this.activeSends === 0) {
+        this.stopKeepAlive();
         this.scheduleIdleClose();
       }
+    }
+  }
+
+  /**
+   * Route a request to the heavy-work host: `chrome.runtime.sendMessage` to
+   * the offscreen document on Chrome, direct dispatch to in-process runner
+   * listeners on Firefox's event page (no chrome.offscreen there).
+   */
+  private async sendToHeavyHost<T>(request: MessageRequest): Promise<T> {
+    if (isOffscreenSupported()) {
+      return sendMessage<T>(request);
+    }
+    return dispatchOffscreenMessage(request) as Promise<T>;
+  }
+
+  /**
+   * Pin the Firefox event page while heavy work runs — event pages suspend
+   * after ~30s idle, which would kill in-flight jobs and revoke their blob:
+   * URLs. No-op on Chrome where the SW lifetime is governed by API events.
+   */
+  private startKeepAlive(): void {
+    if (this.keepAliveTimer !== null || isOffscreenSupported()) return;
+    this.keepAliveTimer = setInterval(() => {
+      void chrome.runtime.getPlatformInfo().catch(() => {});
+    }, KEEP_ALIVE_INTERVAL_MS);
+  }
+
+  private stopKeepAlive(): void {
+    if (this.keepAliveTimer !== null) {
+      clearInterval(this.keepAliveTimer);
+      this.keepAliveTimer = null;
     }
   }
 
@@ -202,7 +255,9 @@ export class OffscreenManager {
       return;
     }
 
-    await closeOffscreenDocument();
+    if (isOffscreenSupported()) {
+      await closeOffscreenDocument();
+    }
     this.documentExists = false;
     this.isReady = false;
   }

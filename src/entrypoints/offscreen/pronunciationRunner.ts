@@ -3,7 +3,7 @@
 // MV3 service workers cannot spawn AudioContexts or Web Workers easily, and
 // the eSpeak-ng Emscripten port needs a document context, so it runs here.
 
-import { onMessage } from '@/shared/lib/chrome-apis';
+import { registerOffscreenListener } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { PronunciationEspeakTtsPayloadSchema } from '@/entities/message/dictionarySchemas';
 import { synthesizeEspeakToWav } from '@/features/pronunciation/services/espeakOffscreenEngine';
@@ -14,7 +14,7 @@ interface MessageLike {
   readonly payload?: unknown;
 }
 
-onMessage((message, sender, sendResponse) => {
+registerOffscreenListener((message, sender, sendResponse) => {
   const msg = message as MessageLike;
   const isFromBackground = !sender?.tab;
 
