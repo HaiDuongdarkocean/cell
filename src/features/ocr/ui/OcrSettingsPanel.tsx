@@ -218,7 +218,6 @@ export function OcrSettingsPanel({
             onChange={(enabled) => { void handleToggle(enabled); }}
             ariaLabel="Toggle OCR for this site"
             dataTestId="ocr-toggle"
-            size="sm"
           />
         </SettingsRow>
         {/* Inline expandable hint — grid 0fr→1fr, attached to card */}
@@ -315,7 +314,6 @@ export function OcrSettingsPanel({
               onChange={(v) => void patchOcrState({ splitEnabled: v })}
               ariaLabel="Toggle split dual subtitles"
               dataTestId="ocr-split-toggle"
-              size="sm"
             />
           </SettingsRow>
           {splitEnabled && (
