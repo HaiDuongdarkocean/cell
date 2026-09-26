@@ -3,11 +3,11 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import type { PronunciationSettings, TtsSettings } from '@/entities/settings/types';
 import { SourceDetailPanel } from './SourceDetailPanel';
 
-// TtsVoiceManagerPanel's async voice loading triggers React act() warnings in
+// BrowserVoicePanel's async voice loading triggers React act() warnings in
 // jsdom. We mock it to a simple placeholder and test the routing only.
-jest.mock('@/features/tts/ui/TtsVoiceManagerPanel', () => ({
-  TtsVoiceManagerPanel() {
-    return <div data-cell-id="tts-voice-manager">TTS Voice Manager (mock)</div>;
+jest.mock('./BrowserVoicePanel', () => ({
+  BrowserVoicePanel() {
+    return <div data-cell-id="browser-voice-panel">Browser Voice Panel (mock)</div>;
   },
 }));
 jest.mock('@/features/tts/services/ttsEngineService', () => ({
@@ -66,6 +66,7 @@ function renderPanel(
       engine={engine}
       pronunciation={options.pronunciation ?? makePronunciation()}
       tts={options.tts ?? makeTts()}
+      targetLang="en"
       onPronunciationChange={options.onPronunciationChange ?? jest.fn()}
       onTtsChange={options.onTtsChange ?? jest.fn()}
     />,
@@ -81,7 +82,7 @@ describe('SourceDetailPanel', () => {
       'localFile',
     );
     expect(screen.getByText('Local audio files')).toBeInTheDocument();
-    expect(screen.getByText('Package type')).toBeInTheDocument();
+    expect(screen.getByText('Audio package')).toBeInTheDocument();
   });
 
   it('renders a short info text for the native engine', async () => {
@@ -97,10 +98,10 @@ describe('SourceDetailPanel', () => {
     expect(screen.getByTestId('local-tts-toggle')).toBeInTheDocument();
   });
 
-  it('renders TtsVoiceManagerPanel for the browserTts engine without the local TTS card', () => {
+  it('renders BrowserVoicePanel for the browserTts engine without the local TTS card', () => {
     renderPanel('browserTts');
 
-    expect(screen.getByTestId('tts-voice-manager')).toBeInTheDocument();
+    expect(screen.getByTestId('browser-voice-panel')).toBeInTheDocument();
     expect(screen.queryByTestId('local-tts-languages-card')).not.toBeInTheDocument();
   });
 

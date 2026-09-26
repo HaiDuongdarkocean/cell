@@ -10,10 +10,20 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
-import { FetchLocalAudioPayloadSchema, FetchLocalAudioResponseSchema } from '@/entities/message/dictionarySchemas';
-import type { FetchLocalAudioResponse, LocalAudioStateResponse } from '@/entities/dictionary';
+import {
+  FetchLocalAudioPayloadSchema,
+  FetchLocalAudioResponseSchema,
+  LocalAudioBuildIndexPayloadSchema,
+} from '@/entities/message/dictionarySchemas';
+import type {
+  FetchLocalAudioResponse,
+  LocalAudioBuildIndexResponse,
+  LocalAudioStateResponse,
+} from '@/entities/dictionary';
 import type { LocalFileAudioSettings } from '@/entities/settings';
 import { LingvoDslAudioProvider } from '@/features/pronunciation/services/lingvoDslAudioProvider';
+import { parseLingvoDsl } from '@/features/pronunciation/services/lingvoDslParser';
+import { saveLingvoDslIndex } from '@/features/pronunciation/repositories/lingvoDslIndexRepository';
 import { getFileHandle } from '@/shared/lib/storage/localFileHandleStorage';
 
 let cachedProvider: { key: string; provider: LingvoDslAudioProvider } | null = null;
@@ -74,6 +84,34 @@ export function registerLocalAudioHandlers(ctx: BackgroundContext): void {
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       return { success: false, error: `Local audio state failed: ${msg}` };
+    }
+  });
+
+  ctx.on(MESSAGE_TYPES.LOCAL_AUDIO_BUILD_INDEX, async (request): Promise<MessageResponse<LocalAudioBuildIndexResponse>> => {
+    const parsed = LocalAudioBuildIndexPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid LOCAL_AUDIO_BUILD_INDEX payload: ${parsed.error.message}`,
+      };
+    }
+    try {
+      const handle = await getFileHandle(parsed.data.dslFileHandleId);
+      if (!handle || handle.kind !== 'file') {
+        return { success: false, error: 'Stored DSL handle is missing or not a file' };
+      }
+      const permission = await handle.queryPermission({ mode: 'read' });
+      if (permission !== 'granted') {
+        return { success: false, error: `DSL read permission is ${permission}` };
+      }
+      const file = await (handle as FileSystemFileHandle).getFile();
+      const text = await file.text();
+      const entries = parseLingvoDsl(text, parsed.data.dslFileHandleId);
+      await saveLingvoDslIndex(parsed.data.dslFileHandleId, entries);
+      return { success: true, data: { count: entries.length } };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      return { success: false, error: `Local audio index build failed: ${msg}` };
     }
   });
 

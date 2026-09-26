@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { PronunciationSettings, TtsSettings } from '@/entities/settings/types';
 import { AudioPanel } from './AudioPanel';
 
-// SourceDetailPanel → TtsVoiceManagerPanel loads voices via createTtsEngine()
+// SourceDetailPanel → BrowserVoicePanel loads voices via createTtsEngine()
 // in an effect; jsdom has neither chrome.tts nor speechSynthesis, so stub it.
 jest.mock('@/features/tts/services/ttsEngineService', () => ({
   createTtsEngine: () => ({
@@ -13,12 +13,12 @@ jest.mock('@/features/tts/services/ttsEngineService', () => ({
   }),
 }));
 
-// TtsVoiceManagerPanel's async voice loading triggers React act() warnings in
-// jsdom. We test the panel itself in integration/other tests; here we only need
-// to verify the SourceDetailPanel route renders it for the browserTts engine.
-jest.mock('@/features/tts/ui/TtsVoiceManagerPanel', () => ({
-  TtsVoiceManagerPanel() {
-    return <div data-cell-id="tts-voice-manager">TTS Voice Manager (mock)</div>;
+// BrowserVoicePanel's async voice loading triggers React act() warnings in
+// jsdom. We test the panel itself in BrowserVoicePanel.test.tsx; here we only
+// need to verify the SourceDetailPanel route renders it for browserTts.
+jest.mock('./BrowserVoicePanel', () => ({
+  BrowserVoicePanel() {
+    return <div data-cell-id="browser-voice-panel">Browser Voice Panel (mock)</div>;
   },
 }));
 
@@ -68,6 +68,7 @@ function renderPanel(
     <AudioPanel
       pronunciation={options.pronunciation ?? makePronunciation()}
       tts={options.tts ?? makeTts()}
+      targetLang="en"
       onPronunciationChange={options.onPronunciationChange ?? jest.fn()}
       onTtsChange={options.onTtsChange ?? jest.fn()}
     />,
@@ -154,7 +155,7 @@ describe('AudioPanel', () => {
       'data-engine',
       'browserTts',
     );
-    expect(screen.getByTestId('tts-voice-manager')).toBeInTheDocument();
+    expect(screen.getByTestId('browser-voice-panel')).toBeInTheDocument();
   });
 
   it('changes tts.autoplayCount via the Autoplay select', async () => {

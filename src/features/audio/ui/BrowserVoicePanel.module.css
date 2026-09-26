@@ -1,0 +1,243 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding-bottom: var(--space-1);
+}
+
+.title { font-weight: var(--font-weight-medium); }
+
+.spacer { flex: 1; }
+
+.count {
+  display: inline-block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  animation: countUp var(--duration-normal) var(--ease-out) both;
+}
+
+.saved {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  animation: countUp var(--duration-normal) var(--ease-out) both;
+}
+
+.full {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  background: var(--color-background-muted);
+  border-radius: var(--radius-lg);
+  padding: var(--space-1-5) var(--space-3);
+  animation: rowIn var(--duration-normal) var(--ease-out) both;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.list li {
+  animation: rowIn var(--duration-normal) var(--ease-out) both;
+}
+
+.list li:nth-child(2) { animation-delay: 40ms; }
+.list li:nth-child(3) { animation-delay: 80ms; }
+.list li:nth-child(4) { animation-delay: 120ms; }
+.list li:nth-child(n + 5) { animation-delay: 160ms; }
+
+@keyframes rowIn {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-1));
+  }
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-1));
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--space-1);
+  border-radius: var(--radius-card);
+  border: var(--border-width-hairline) solid transparent;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-in-out), border-color var(--duration-fast) var(--ease-in-out);
+}
+
+@media (hover: hover) {
+  .row:hover { background: var(--color-surface-hover); }
+}
+
+.row:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
+.rowOn {
+  background: var(--color-primary-subtle);
+  border-color: var(--color-primary);
+}
+
+.play {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.playActive::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-primary);
+  animation: speakHalo 1.2s var(--ease-out) infinite;
+}
+
+@keyframes speakHalo {
+  from {
+    opacity: 0.7;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+}
+
+.rowLabel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.rowName,
+.rowMeta {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rowName {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+}
+
+.rowMeta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.check {
+  position: relative;
+  flex-shrink: 0;
+  width: var(--space-5);
+  height: var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-on-primary);
+  transform: scale(0.85);
+  transition:
+    transform var(--duration-slow) var(--ease-spring),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.check::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-text-secondary);
+  opacity: 0.5;
+  transition:
+    width var(--duration-fast) var(--ease-out),
+    height var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+.row:hover .check::before,
+.row:focus-visible .check::before {
+  width: var(--space-4);
+  height: var(--space-4);
+  background: transparent;
+  border: var(--border-width-thick) solid var(--color-text);
+  opacity: var(--checkbox-disabled-opacity, 0.5);
+}
+
+.checkOn {
+  background: var(--color-primary);
+  transform: scale(1);
+}
+
+.checkOn::before { content: none; }
+
+.checkNum {
+  animation: badgePop var(--duration-slow) var(--ease-spring) both;
+}
+
+@keyframes badgePop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .check,
+  .check::before,
+  .play {
+    transition: none;
+  }
+
+  .list li,
+  .checkNum,
+  .count,
+  .saved,
+  .full,
+  .playActive::after {
+    animation: none;
+  }
+}

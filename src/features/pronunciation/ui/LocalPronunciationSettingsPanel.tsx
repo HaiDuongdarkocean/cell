@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { t } from '@/shared/i18n';
-import { parseLingvoDsl } from '@/features/pronunciation/services/lingvoDslParser';
-import { clearLingvoDslIndex, saveLingvoDslIndex } from '@/features/pronunciation/repositories/lingvoDslIndexRepository';
+import { detectPackage } from '@/features/pronunciation/services/detectPackage';
+import { clearLingvoDslIndex } from '@/features/pronunciation/repositories/lingvoDslIndexRepository';
 import { getFileHandle, saveFileHandle, verifyPermission } from '@/shared/lib/storage/localFileHandleStorage';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
+import type { MessageResponse } from '@/entities/message';
+import type { LocalAudioBuildIndexResponse } from '@/entities/dictionary';
 import type { LocalFileAudioSettings, PronunciationSettings } from '@/entities/settings/types';
 import { Button } from '@/shared/ui/Button';
-import { Select } from '@/shared/ui/Select';
 import { Input } from '@/shared/ui/Input';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
 import { VStack } from '@/shared/ui/Stack';
@@ -27,6 +30,7 @@ export function LocalPronunciationSettingsPanel({
   const local = settings.localFile;
   const [status, setStatus] = useState<string | null>(null);
   const [needsReconnect, setNeedsReconnect] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const archiveHandleId = local.packageType === 'single'
     ? local.audioArchiveHandleId
@@ -58,129 +62,105 @@ export function LocalPronunciationSettingsPanel({
     onChange({ ...settings, localFile: { ...local, ...partial } });
   };
 
-  const pickDsl = async (): Promise<void> => {
+  const pickPackage = async (): Promise<void> => {
+    setBusy(true);
     try {
-      const [handle] = await window.showOpenFilePicker({
-        types: [{ description: 'Lingvo DSL', accept: { 'text/plain': ['.dsl'] } }],
-      });
-      const id = generateId();
-      await saveFileHandle(id, handle);
+      const dir = await window.showDirectoryPicker();
+      const files = new Map<string, FileSystemFileHandle>();
+      for await (const entry of dir.values()) {
+        if (entry.kind === 'file') files.set(entry.name, entry);
+      }
+      const detected = detectPackage([...files.keys()]);
+      if (!detected.ok) {
+        setStatus(t(`pronunciation.local.${detected.reason === 'no-dsl' ? 'noDsl' : 'noArchive'}`));
+        return;
+      }
+      const { dslName, kind, zipName, pattern } = detected.pkg;
+      const dslHandle = files.get(dslName);
+      if (!dslHandle) {
+        setStatus(t('pronunciation.local.noDsl'));
+        return;
+      }
+      let archivePatch: Partial<LocalFileAudioSettings>;
+      if (kind === 'single') {
+        const zipHandle = zipName ? files.get(zipName) : undefined;
+        if (!zipHandle) {
+          setStatus(t('pronunciation.local.noArchive'));
+          return;
+        }
+        const archiveId = generateId();
+        await saveFileHandle(archiveId, zipHandle);
+        archivePatch = { audioArchiveHandleId: archiveId };
+      } else {
+        const dirId = generateId();
+        await saveFileHandle(dirId, dir);
+        archivePatch = { splitArchiveDirectoryHandleId: dirId, splitArchivePattern: pattern ?? '' };
+      }
+      const dslId = generateId();
+      await saveFileHandle(dslId, dslHandle);
       if (local.dslFileHandleId) await clearLingvoDslIndex(local.dslFileHandleId);
-      updateLocal({ dslFileHandleId: id, lastIndexedAt: null });
-      setStatus(t('pronunciation.local.selectedDsl', [handle.name]));
+      const next: PronunciationSettings = {
+        ...settings,
+        localFile: {
+          ...local,
+          dslFileHandleId: dslId,
+          packageType: kind,
+          ...archivePatch,
+          lastIndexedAt: null,
+        },
+      };
+      onChange(next);
+      setStatus(t('pronunciation.local.indexing'));
+      const res = await sendMessage<MessageResponse<LocalAudioBuildIndexResponse>>({
+        type: MESSAGE_TYPES.LOCAL_AUDIO_BUILD_INDEX,
+        payload: { dslFileHandleId: dslId },
+      });
+      if (!res?.success || !res.data) {
+        throw new Error(res?.error ?? t('pronunciation.local.indexFailed'));
+      }
+      onChange({
+        ...next,
+        localFile: {
+          ...next.localFile,
+          lastIndexedAt: res.data.count > 0 ? Date.now() : null,
+        },
+      });
+      setStatus(t('pronunciation.local.indexed', [res.data.count]));
     } catch (err) {
       setStatus(err instanceof Error ? err.message : t('pronunciation.local.pickFailed'));
+    } finally {
+      setBusy(false);
     }
   };
 
-  const pickArchive = async (): Promise<void> => {
-    try {
-      const [handle] = await window.showOpenFilePicker({
-        types: [{ description: 'ZIP archive', accept: { 'application/zip': ['.zip'] } }],
-      });
-      const id = generateId();
-      await saveFileHandle(id, handle);
-      updateLocal({ audioArchiveHandleId: id, packageType: 'single' });
-      setStatus(t('pronunciation.local.selectedArchive', [handle.name]));
-    } catch (err) {
-      setStatus(err instanceof Error ? err.message : t('pronunciation.local.archiveFailed'));
-    }
-  };
-
-  const pickSplitDirectory = async (): Promise<void> => {
-    try {
-      const handle = await window.showDirectoryPicker();
-      const id = generateId();
-      await saveFileHandle(id, handle);
-      updateLocal({ splitArchiveDirectoryHandleId: id, packageType: 'split' });
-      setStatus(t('pronunciation.local.selectedDir', [handle.name]));
-    } catch (err) {
-      setStatus(err instanceof Error ? err.message : t('pronunciation.local.dirFailed'));
-    }
-  };
-
-  const buildIndex = async (): Promise<void> => {
-    if (!local.dslFileHandleId) {
-      setStatus(t('pronunciation.local.selectDslFirst'));
-      return;
-    }
-    setStatus(t('pronunciation.local.reading'));
-    try {
-      const handle = await getFileHandle(local.dslFileHandleId);
-      if (!handle || handle.kind !== 'file') {
-        setStatus(t('pronunciation.local.handleMissing'));
-        return;
-      }
-      if (!(await verifyPermission(handle, 'read'))) {
-        setStatus(t('pronunciation.local.permDenied'));
-        return;
-      }
-      const file = await (handle as FileSystemFileHandle).getFile();
-      const text = await file.text();
-      const entries = parseLingvoDsl(text, local.dslFileHandleId);
-      await saveLingvoDslIndex(local.dslFileHandleId, entries);
-      updateLocal({ lastIndexedAt: entries.length > 0 ? Date.now() : null });
-      setStatus(t('pronunciation.local.indexed', [entries.length]));
-    } catch (err) {
-      setStatus(err instanceof Error ? err.message : t('pronunciation.local.indexFailed'));
-    }
-  };
+  const configuredName = local.packageType === 'single'
+    ? local.audioArchiveHandleId
+    : local.splitArchiveDirectoryHandleId;
 
   return (
     <VStack gap="2">
-      <SettingsRow dense stacked>
-        <label className={styles.rowLabel} htmlFor="local-package-type">{t('pronunciation.local.packageType')}</label>
-        <Select
-          id="local-package-type"
-          value={local.packageType}
-          options={[
-            { value: 'single', label: t('pronunciation.local.single') },
-            { value: 'split', label: t('pronunciation.local.split') },
-          ]}
-          onChange={(value) => updateLocal({ packageType: value as 'single' | 'split' })}
-        />
-      </SettingsRow>
-
       <SettingsRow dense>
-        <span className={styles.rowLabel}>{t('pronunciation.local.dslIndex')}</span>
-        <Button onClick={() => { void pickDsl(); }}>
-          {local.dslFileHandleId ? t('pronunciation.local.changeDsl') : t('pronunciation.local.chooseDsl')}
+        <span className={styles.rowLabel}>{t('pronunciation.local.package')}</span>
+        <Button onClick={() => { void pickPackage(); }} disabled={busy}>
+          {busy
+            ? t('pronunciation.local.scanning')
+            : configuredName
+              ? t('pronunciation.local.changeFolder')
+              : t('pronunciation.local.chooseFolder')}
         </Button>
       </SettingsRow>
 
-      {local.packageType === 'single' ? (
-        <SettingsRow dense>
-          <span className={styles.rowLabel}>{t('pronunciation.local.audioArchive')}</span>
-          <Button onClick={() => { void pickArchive(); }}>
-            {local.audioArchiveHandleId ? t('pronunciation.local.changeZip') : t('pronunciation.local.chooseZip')}
-          </Button>
+      {local.packageType === 'split' && (
+        <SettingsRow dense stacked>
+          <label className={styles.rowLabel} htmlFor="split-pattern">{t('pronunciation.local.namePattern')}</label>
+          <Input
+            id="split-pattern"
+            value={local.splitArchivePattern}
+            onChange={(e) => updateLocal({ splitArchivePattern: e.target.value })}
+            placeholder="ForvoEnglish_{firstLetter}.zip"
+          />
         </SettingsRow>
-      ) : (
-        <>
-          <SettingsRow dense>
-            <span className={styles.rowLabel}>{t('pronunciation.local.splitDir')}</span>
-            <Button onClick={() => { void pickSplitDirectory(); }}>
-              {local.splitArchiveDirectoryHandleId ? t('pronunciation.local.changeDir') : t('pronunciation.local.chooseDir')}
-            </Button>
-          </SettingsRow>
-          <SettingsRow dense stacked>
-            <label className={styles.rowLabel} htmlFor="split-pattern">{t('pronunciation.local.namePattern')}</label>
-            <Input
-              id="split-pattern"
-              value={local.splitArchivePattern}
-              onChange={(e) => updateLocal({ splitArchivePattern: e.target.value })}
-              placeholder="ForvoEnglish_{firstLetter}.zip"
-            />
-          </SettingsRow>
-        </>
       )}
-
-      <SettingsRow dense>
-        <span className={styles.rowLabel}>{t('pronunciation.local.buildIndex')}</span>
-        <Button onClick={() => { void buildIndex(); }} disabled={!local.dslFileHandleId}>
-          {t('pronunciation.local.buildBtn')}
-        </Button>
-      </SettingsRow>
 
       {needsReconnect && (
         <SettingsRow dense>

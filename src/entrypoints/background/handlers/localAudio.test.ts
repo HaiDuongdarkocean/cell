@@ -1,14 +1,24 @@
 import { registerLocalAudioHandlers } from './localAudio';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { getFileHandle } from '@/shared/lib/storage/localFileHandleStorage';
+import { parseLingvoDsl } from '@/features/pronunciation/services/lingvoDslParser';
+import { saveLingvoDslIndex } from '@/features/pronunciation/repositories/lingvoDslIndexRepository';
 import type { MessageResponse } from '@/entities/message';
-import type { LocalAudioStateResponse } from '@/entities/dictionary';
+import type { LocalAudioBuildIndexResponse, LocalAudioStateResponse } from '@/entities/dictionary';
 
 jest.mock('@/shared/lib/storage/localFileHandleStorage', () => ({
   getFileHandle: jest.fn(),
 }));
+jest.mock('@/features/pronunciation/services/lingvoDslParser', () => ({
+  parseLingvoDsl: jest.fn(),
+}));
+jest.mock('@/features/pronunciation/repositories/lingvoDslIndexRepository', () => ({
+  saveLingvoDslIndex: jest.fn(),
+}));
 
 const mockGetFileHandle = jest.mocked(getFileHandle);
+const mockParse = jest.mocked(parseLingvoDsl);
+const mockSave = jest.mocked(saveLingvoDslIndex);
 
 function makeHandle(permission: PermissionState): FileSystemHandle {
   return {
@@ -83,6 +93,55 @@ describe('LOCAL_AUDIO_STATE', () => {
     const res = await register(ctx)({ payload: {} });
     expect(mockGetFileHandle).toHaveBeenCalledWith('dir1');
     expect(res).toEqual({ success: true, data: { configured: true, permission: 'prompt' } });
+  });
+});
+
+describe('LOCAL_AUDIO_BUILD_INDEX', () => {
+  function makeFileHandle(permission: PermissionState, text = 'x'): FileSystemHandle {
+    return {
+      kind: 'file',
+      name: 'idx.dsl',
+      queryPermission: jest.fn(async () => permission),
+      getFile: jest.fn(async () => ({ text: async () => text })),
+    } as unknown as FileSystemHandle;
+  }
+
+  function registerBuild(ctx: Ctx) {
+    registerLocalAudioHandlers(ctx as unknown as Parameters<typeof registerLocalAudioHandlers>[0]);
+    return ctx.handlers.get(MESSAGE_TYPES.LOCAL_AUDIO_BUILD_INDEX)! as
+      (request: { payload: unknown }) => Promise<MessageResponse<LocalAudioBuildIndexResponse>>;
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('parses the dsl file and persists the index', async () => {
+    mockGetFileHandle.mockResolvedValue(makeFileHandle('granted', 'dsl text'));
+    mockParse.mockReturnValue([
+      { id: 'h:hello', packageId: 'h', term: 'hello', audioPaths: ['a.mp3'] },
+    ]);
+    const handler = registerBuild(createMockCtx(null));
+    const res = await handler({ payload: { dslFileHandleId: 'h' } });
+    expect(res).toEqual({ success: true, data: { count: 1 } });
+    expect(mockParse).toHaveBeenCalledWith('dsl text', 'h');
+    expect(mockSave).toHaveBeenCalledWith('h', expect.any(Array));
+  });
+
+  it('rejects when the handle is missing', async () => {
+    mockGetFileHandle.mockResolvedValue(undefined);
+    const handler = registerBuild(createMockCtx(null));
+    const res = await handler({ payload: { dslFileHandleId: 'gone' } });
+    expect(res.success).toBe(false);
+    expect(mockParse).not.toHaveBeenCalled();
+  });
+
+  it('rejects without read permission', async () => {
+    mockGetFileHandle.mockResolvedValue(makeFileHandle('prompt'));
+    const handler = registerBuild(createMockCtx(null));
+    const res = await handler({ payload: { dslFileHandleId: 'h' } });
+    expect(res.success).toBe(false);
+    expect(res.error).toContain('permission');
   });
 });
 

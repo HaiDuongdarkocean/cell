@@ -39,6 +39,7 @@ import styles from './AudioPanel.module.css';
 export interface AudioPanelProps {
   readonly pronunciation: PronunciationSettings;
   readonly tts: TtsSettings;
+  readonly targetLang: string;
   readonly onPronunciationChange: (next: PronunciationSettings) => void;
   readonly onTtsChange: (next: TtsSettings) => void;
 }
@@ -78,6 +79,7 @@ function detectMode(engines: readonly AudioEngineKind[]): OutputMode | null {
 export function AudioPanel({
   pronunciation,
   tts,
+  targetLang,
   onPronunciationChange,
   onTtsChange,
 }: AudioPanelProps): ReactElement {
@@ -193,6 +195,7 @@ export function AudioPanel({
             engine={selectedEngine}
             pronunciation={pronunciation}
             tts={tts}
+            targetLang={targetLang}
             onPronunciationChange={onPronunciationChange}
             onTtsChange={onTtsChange}
           />

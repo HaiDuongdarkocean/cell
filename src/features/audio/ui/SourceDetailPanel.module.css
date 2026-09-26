@@ -41,20 +41,4 @@
   color: var(--color-text);
 }
 
-/* TtsVoiceManagerPanel renders its own Card sections. Inside this detail pane
-   those nested cards are flattened to plain sections so we never show a card
-   inside a card. The selector targets direct children of the panel root whose
-   generated class contains "card" (the shared Card root + localTtsCard);
-   Alerts and inner card__header/card__body keep their own styling. */
-.flatten [data-cell-id='tts-voice-manager'] {
-  max-width: none;
-  margin: 0;
-}
 
-.flatten [data-cell-id='tts-voice-manager'] > [class*='card' i] {
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  padding: 0;
-}

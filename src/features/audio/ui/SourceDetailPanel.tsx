@@ -6,12 +6,11 @@
 //   localFile   → LocalPronunciationSettingsPanel (Forvo/Lingvo package setup)
 //   native      → info text only (community audio needs no configuration)
 //   supertonic  → TtsLanguagePanel (local voice-pack downloads)
-//   browserTts  → TtsVoiceManagerPanel (voice selection + tester)
+//   browserTts  → BrowserVoicePanel (voice list picker for the 3 speak buttons)
 //   espeak      → downloadEspeakTtsData toggle
 //
 // This panel renders plain content (no Card) because it lives inside the
-// Audio card. TtsVoiceManagerPanel ships its own Cards, so the browserTts
-// branch wraps it in `.flatten` which strips the nested card chrome via CSS.
+// Audio card.
 
 import type { ReactElement, ReactNode } from 'react';
 import { t, type MessageKey } from '@/shared/i18n';
@@ -20,13 +19,14 @@ import type { ICON_CATALOG } from '@/shared/icons';
 import type { AudioEngineKind, PronunciationSettings, TtsSettings } from '@/entities/settings/types';
 import { LocalPronunciationSettingsPanel } from '@/features/pronunciation/ui/LocalPronunciationSettingsPanel';
 import { TtsLanguagePanel } from '@/features/tts/ui/TtsLanguagePanel';
-import { TtsVoiceManagerPanel } from '@/features/tts/ui/TtsVoiceManagerPanel';
+import { BrowserVoicePanel } from './BrowserVoicePanel';
 import styles from './SourceDetailPanel.module.css';
 
 export interface SourceDetailPanelProps {
   readonly engine: AudioEngineKind;
   readonly pronunciation: PronunciationSettings;
   readonly tts: TtsSettings;
+  readonly targetLang: string;
   readonly onPronunciationChange: (next: PronunciationSettings) => void;
   readonly onTtsChange: (next: TtsSettings) => void;
 }
@@ -51,6 +51,7 @@ export function SourceDetailPanel({
   engine,
   pronunciation,
   tts,
+  targetLang,
   onPronunciationChange,
   onTtsChange,
 }: SourceDetailPanelProps): ReactElement {
@@ -76,13 +77,11 @@ export function SourceDetailPanel({
       break;
     case 'browserTts':
       detail = (
-        <div className={styles.flatten}>
-          <TtsVoiceManagerPanel
-            settings={tts}
-            onSave={onTtsChange}
-            showLocalTtsCard={false}
-          />
-        </div>
+        <BrowserVoicePanel
+          settings={tts}
+          onChange={onTtsChange}
+          targetLang={targetLang}
+        />
       );
       break;
     case 'espeak':
