@@ -7,7 +7,13 @@ import {
 } from './definitionSelection';
 
 function makeDef(id: string, examples: readonly string[]): DefinitionEntry {
-  return { id, text: `def ${id}`, examples, source: 'test', defaultSelected: true };
+  return {
+    id,
+    text: `def ${id}`,
+    examples: examples.map((text) => ({ role: 'example' as const, text })),
+    source: 'test',
+    defaultSelected: true,
+  };
 }
 
 function makeResult(defs: DefinitionEntry[]): LookupResult {

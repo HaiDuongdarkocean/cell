@@ -511,12 +511,14 @@ describe('lookupOrchestrator — rich canonical fields', () => {
     expect(def.pos).toBe('verb');
     expect(def.labels).toEqual(['transitive']);
     expect(def.level).toBe('B1');
-    expect(def.lines?.[1]?.pattern).toBe('[VERB noun]');
-    expect(def.lines?.[1]?.citation).toBe('src');
+    expect(def.lines).toEqual([{ role: 'gloss', text: 'to carry something', translation: 'mang theo' }]);
+    expect(def.examples).toEqual([
+      { role: 'example', text: 'Take an umbrella', pattern: '[VERB noun]', citation: 'src' },
+    ]);
     expect(def.subsenses).toEqual([{ num: 'a', text: 'to bring along' }]);
     expect(def.synonyms).toEqual(['bring', 'carry']);
     expect(def.antonyms).toEqual(['leave']);
-    expect(def.text).toContain('[VERB noun]');
+    expect(def.text).toBe('to carry something — mang theo');
   });
 
   it('merges entry-level related/level/etymology across resources by priority', async () => {

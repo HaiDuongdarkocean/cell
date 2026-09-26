@@ -358,7 +358,7 @@ describe('useCandidate', () => {
   it('quickAdd carries ticked examples in selectedExamples + selectedExampleIds', async () => {
     const candidate = makeResult('hello', {
       definitions: [
-        { id: 'd1', pos: 'n', text: 'greeting', examples: ['ex one', 'ex two'], source: 'test', defaultSelected: true },
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['ex one', 'ex two'].map((text) => ({ role: 'example' as const, text })), source: 'test', defaultSelected: true },
       ],
     });
     const onQuickAdd = jest.fn<(prefill: PopupCardCreatorPrefill) => void>();
@@ -389,7 +389,7 @@ describe('useCandidate', () => {
     } as never);
     const candidate = makeResult('hello', {
       definitions: [
-        { id: 'd1', pos: 'n', text: 'greeting', examples: ['ex one', 'ex two'], source: 'test', defaultSelected: true },
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['ex one', 'ex two'].map((text) => ({ role: 'example' as const, text })), source: 'test', defaultSelected: true },
       ],
     });
 
@@ -412,7 +412,7 @@ describe('useCandidate', () => {
   it('checking a definition with the setting off selects no examples', async () => {
     const candidate = makeResult('hello', {
       definitions: [
-        { id: 'd1', pos: 'n', text: 'greeting', examples: ['ex one'], source: 'test', defaultSelected: true },
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['ex one'].map((text) => ({ role: 'example' as const, text })), source: 'test', defaultSelected: true },
       ],
     });
 

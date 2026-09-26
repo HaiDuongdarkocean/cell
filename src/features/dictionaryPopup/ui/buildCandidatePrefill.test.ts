@@ -241,8 +241,8 @@ describe('buildPrefill', () => {
   it('projects ticked example indices into selectedExamples + selectedExampleIds', () => {
     const result = makeResult({
       definitions: [
-        { id: '1', pos: 'exclamation', text: 'used as a greeting', examples: ['ex a', 'ex b', 'ex c'], source: 'cambridge', defaultSelected: true },
-        { id: '2', pos: 'noun', text: 'an expression of surprise', examples: ['ex d'], source: 'cambridge', defaultSelected: true },
+        { id: '1', pos: 'exclamation', text: 'used as a greeting', examples: ['ex a', 'ex b', 'ex c'].map((text) => ({ role: 'example' as const, text })), source: 'cambridge', defaultSelected: true },
+        { id: '2', pos: 'noun', text: 'an expression of surprise', examples: ['ex d'].map((text) => ({ role: 'example' as const, text })), source: 'cambridge', defaultSelected: true },
       ],
     });
     const exampleSelection = new Map([

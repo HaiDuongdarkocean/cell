@@ -551,18 +551,19 @@ async function assembleLookupResult(
   let usageNoteSource: string | undefined;
   let defIdx = 0;
   for (const e of dictEntries) {
-    const examples = e.examples ? e.examples.split('\n').filter(Boolean) : [];
+    const entryExamples: SenseLine[] = e.examples
+      ? e.examples.split('\n').filter(Boolean).map((t) => ({ role: 'example' as const, text: t }))
+      : [];
     const source = resourceNameById.get(e.resourceId) ?? 'dictionary';
     // Structured senses (new imports) — text keeps the line-joined body for
     // Anki/legacy consumers; `lines` carries roles + translations for the UI.
     // Legacy rows (no `senses`) fall back to splitSenses + line classifier.
-    const senses: { pos: string; text: string; lines: SenseLine[]; labels?: readonly string[]; level?: string; subsenses?: DefinitionEntry['subsenses']; synonyms?: readonly string[]; antonyms?: readonly string[] }[] =
+    const senses: { pos: string; lines: SenseLine[]; labels?: readonly string[]; level?: string; subsenses?: DefinitionEntry['subsenses']; synonyms?: readonly string[]; antonyms?: readonly string[] }[] =
       e.senses && e.senses.length > 0
         ? e.senses.map((s) => ({
             pos: s.pos ?? '',
             labels: s.labels,
             level: s.level,
-            text: s.lines.map(lineToCanonicalText).join('\n'),
             lines: [...s.lines],
             subsenses: s.subsenses,
             synonyms: s.synonyms,
@@ -570,24 +571,25 @@ async function assembleLookupResult(
           }))
         : splitSenses(e.definition).map((s) => ({
             pos: s.pos,
-            text: s.text,
             lines: s.text
               .split('\n')
               .map(classifyLine)
               .filter((l): l is SenseLine => l !== null),
           }));
     for (const sense of senses) {
+      const glossLines = sense.lines.filter((l) => l.role !== 'example');
+      const senseExamples = sense.lines.filter((l) => l.role === 'example');
       definitions.push({
         id: `def-${defIdx}`,
         pos: sense.pos || e.pos || undefined,
         labels: sense.labels,
         level: sense.level,
-        text: sense.text,
-        lines: sense.lines,
+        text: glossLines.map(lineToCanonicalText).join('\n'),
+        lines: glossLines,
         subsenses: sense.subsenses,
         synonyms: sense.synonyms,
         antonyms: sense.antonyms,
-        examples,
+        examples: [...senseExamples, ...entryExamples],
         source,
         defaultSelected: false,
       });

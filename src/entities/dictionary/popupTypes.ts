@@ -43,7 +43,11 @@ export interface DefinitionEntry {
   /** Per-sense relations — rendered as "Synonyms: a, b" / "Opposite: c". */
   readonly synonyms?: readonly string[];
   readonly antonyms?: readonly string[];
-  readonly examples: readonly string[];
+  /** Selectable example rows under this definition — sense-level
+   *  `role:'example'` lines hoisted at assembly + entry-level `examples`
+   *  strings wrapped as SenseLines. Text/pattern/citation/translation
+   *  preserved for display; only `text` ships to card fields. */
+  readonly examples: readonly SenseLine[];
   /** Resource name the def came from (file name minus extension). */
   readonly source: string;
   /** Server hint; UI selection state ở Zustand, không persist LookupResult (O10). */

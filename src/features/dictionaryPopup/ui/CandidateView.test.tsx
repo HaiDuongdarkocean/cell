@@ -341,7 +341,7 @@ describe('CandidateView', () => {
   it('clicking definition text does not toggle selection — text is for word lookup', () => {
     const candidate = makeResult('hello', {
       definitions: [
-        { id: 'd1', pos: 'n', text: 'greeting', examples: ['a warm greeting'], source: 'test', defaultSelected: true },
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['a warm greeting'].map((text) => ({ role: 'example' as const, text })), source: 'test', defaultSelected: true },
       ],
     });
 
@@ -372,7 +372,7 @@ describe('CandidateView', () => {
   it('renders example rows as checkboxes that cascade-check the parent definition', () => {
     const candidate = makeResult('hello', {
       definitions: [
-        { id: 'd1', pos: 'n', text: 'greeting', examples: ['a warm greeting', 'said hello'], source: 'test', defaultSelected: true },
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['a warm greeting', 'said hello'].map((text) => ({ role: 'example' as const, text })), source: 'test', defaultSelected: true },
       ],
     });
 
@@ -404,7 +404,7 @@ describe('CandidateView', () => {
   it('unchecking the last example leaves the definition checked', () => {
     const candidate = makeResult('hello', {
       definitions: [
-        { id: 'd1', pos: 'n', text: 'greeting', examples: ['a warm greeting'], source: 'test', defaultSelected: true },
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['a warm greeting'].map((text) => ({ role: 'example' as const, text })), source: 'test', defaultSelected: true },
       ],
     });
 
@@ -431,7 +431,7 @@ describe('CandidateView', () => {
   it('unchecking a definition resets its example selections', () => {
     const candidate = makeResult('hello', {
       definitions: [
-        { id: 'd1', pos: 'n', text: 'greeting', examples: ['a warm greeting'], source: 'test', defaultSelected: true },
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['a warm greeting'].map((text) => ({ role: 'example' as const, text })), source: 'test', defaultSelected: true },
       ],
     });
 
@@ -458,7 +458,7 @@ describe('CandidateView', () => {
   it('Space/Enter on an example toggles it without toggling the definition directly', () => {
     const candidate = makeResult('hello', {
       definitions: [
-        { id: 'd1', pos: 'n', text: 'greeting', examples: ['a warm greeting'], source: 'test', defaultSelected: true },
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['a warm greeting'].map((text) => ({ role: 'example' as const, text })), source: 'test', defaultSelected: true },
       ],
     });
 

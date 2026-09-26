@@ -623,7 +623,9 @@ function DefinitionItem({
                     <Icon name="check" size="md" />
                   </span>
                 </label>
-                <span className={styles.cellDefExampleText}>{ex}</span>
+                <span className={styles.cellDefExampleText}>
+                  <SenseLineView line={ex} revealedByDefault={translationRevealed} />
+                </span>
               </div>
             );
           })}

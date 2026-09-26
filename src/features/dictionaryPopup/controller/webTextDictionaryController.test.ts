@@ -122,7 +122,7 @@ function makeResult(overrides: Partial<LookupResult> = {}): LookupResult {
       id: 'd1',
       pos: 'verb',
       text: 'to remove something',
-      examples: ['Take off your shoes.'],
+      examples: [{ role: 'example', text: 'Take off your shoes.' }],
       source: 'Cambridge',
       defaultSelected: true,
     }],

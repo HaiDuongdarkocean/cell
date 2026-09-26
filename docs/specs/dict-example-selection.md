@@ -180,7 +180,7 @@ Alternatives considered: flat `Map<compositeId,bool>` (rejected — per-def grou
 
 - Always: `npm run typecheck && npm run lint && npm run test:unit && npm run build` before commit; UI strings via `t()`; tokens only for CSS; selection logic pure in `logic/` modules; compound-selector classes stay in `DictionaryCheckable.module.css`.
 - Ask first: changing `PopupSelectionSnapshot` consumers outside `dictionaryPopup`/`universalPanel`; new Anki field ids.
-- Never: examples from `SenseLine role:'example'` inside `definition.lines[]` (out of scope); mutating `useDictionaryLookup`'s unused def-selection mirror; editing `dist/`; renaming `DefinitionEntry.examples`.
+- Never: mutating `useDictionaryLookup`'s unused def-selection mirror; editing `dist/`; renaming `DefinitionEntry.examples`.
 
 ## Success Criteria
 
@@ -209,7 +209,7 @@ Alternatives considered: flat `Map<compositeId,bool>` (rejected — per-def grou
 
 ## Open Questions / Accepted Risks
 
-- `SenseLine role:'example'` lines inside `definition.lines[]` stay non-selectable this round (accepted scope cut — separate render path; follow-up item if Anh wants them too).
+- ~~`SenseLine role:'example'` lines inside `definition.lines[]` stay non-selectable~~ — **amended post-ship**: real dictionaries emit examples exclusively as sense-level example lines, so `lookupOrchestrator` now hoists `role:'example'` lines out of `lines`/`text` into `examples` (`readonly SenseLine[]`, translation/pattern/citation preserved). `text` no longer embeds example lines, so unselected examples never leak into card fields.
 - `useDictionaryLookup.definitionSelection`/`toggleDefinition`/`selectedDefinitions` are dead state (no consumer) — left untouched; cleanup is a separate hygiene item.
 - Indeterminate def state when only some examples checked: not shown (def stays plain checked) — matches requested semantics.
 - Settings-load race: a def check before `loadSettings()` resolves behaves as OFF (persisted default) — accepted; revisit if users report surprise.

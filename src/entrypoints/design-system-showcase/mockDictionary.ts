@@ -33,7 +33,7 @@ function buildFullLookupResult(term: string): LookupResult {
         id: '1',
         pos: 'noun',
         text: 'the occurrence of events by chance in a happy or beneficial way',
-        examples: ['We found the restaurant by pure serendipity.'],
+        examples: [{ role: 'example', text: 'We found the restaurant by pure serendipity.' }],
         source: 'cambridge',
         defaultSelected: true,
       },
@@ -83,7 +83,7 @@ function buildOverflowDefinitions(): DefinitionEntry[] {
       id: `overflow-def-${i + 1}`,
       pos: i % 2 === 0 ? 'noun' : 'verb',
       text,
-      examples,
+      examples: examples.map((t) => ({ role: 'example' as const, text: t })),
       source: i % 3 === 0 ? 'cambridge' : 'wiktionary',
       defaultSelected: i === 0,
     });

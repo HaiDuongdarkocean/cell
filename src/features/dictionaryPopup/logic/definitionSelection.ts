@@ -71,7 +71,7 @@ export function getSelectedExamples(
 ): string[] {
   const indices = selection.get(def.id);
   if (!indices || indices.size === 0) return [];
-  return def.examples.filter((_, i) => indices.has(i)) as string[];
+  return def.examples.filter((_, i) => indices.has(i)).map((l) => l.text);
 }
 
 /** Composite `defId:index` ids for the shipped defs, in def + index order. */
