@@ -94,7 +94,7 @@ export function Dialog({
       >
         {(title || showCloseButton) && (
           <HStack
-            align="start"
+            align="center"
             justify={centerTitle ? 'center' : 'between'}
             gap="3"
             className={centerTitle ? `${styles.header} ${styles.headerCenterTitle}` : styles.header}

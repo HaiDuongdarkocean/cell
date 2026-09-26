@@ -195,7 +195,7 @@ describe('SubtitleBlock', () => {
     expect(useCuesStore.getState().targetLoadStatus.state).toBe('idle');
   });
 
-  it('auto-clears "error" target status after 10 seconds', () => {
+  it('auto-clears "error" target status after 3 seconds', () => {
     jest.useFakeTimers();
     act(() => {
       useCuesStore.getState().setLoadStatus('target', { state: 'error', languageLabel: 'English', errorType: 'timeout' });
@@ -203,7 +203,7 @@ describe('SubtitleBlock', () => {
     render(<SubtitleBlock targetStyle={baseStyle} nativeStyle={baseStyle} />);
     expect(screen.getByText("Couldn't load English subtitle (timeout)")).toBeInTheDocument();
 
-    act(() => { jest.advanceTimersByTime(10000); });
+    act(() => { jest.advanceTimersByTime(3000); });
     expect(screen.queryByText("Couldn't load English subtitle (timeout)")).not.toBeInTheDocument();
     expect(useCuesStore.getState().targetLoadStatus.state).toBe('idle');
   });

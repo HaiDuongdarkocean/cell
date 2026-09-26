@@ -491,7 +491,7 @@ function DefinitionItem({
 }): React.JSX.Element {
   const checked = selected;
   return (
-    <>
+    <div className={styles.cellDefGroup}>
       <div
         className={checkStyles.cellDefItem}
         data-cell-id="dictionary-definition"
@@ -605,7 +605,7 @@ function DefinitionItem({
           })}
         </div>
       )}
-    </>
+    </div>
   );
 }
 

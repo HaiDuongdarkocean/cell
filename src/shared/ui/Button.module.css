@@ -36,15 +36,26 @@
   z-index: calc(var(--z-base) + 1);
 }
 
+/* Hover/press feedback is one translucent overlay on the surface — every
+   variant keeps its own fill instead of swapping to a different color. */
+.button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: transparent;
+  pointer-events: none;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
 @media (hover: hover) and (pointer: fine) {
-  .button:hover {
-    background: var(--button-solid-surface-hover);
+  .button:not(.transparent):hover::after {
+    background: var(--color-overlay-hover);
   }
 }
 
-.button:active {
-  background: var(--button-solid-surface-active);
-  transition: background-color var(--button-press-duration) var(--button-press-ease);
+.button:not(.transparent):active::after {
+  background: var(--color-overlay-pressed);
 }
 
 .button:focus-visible {
@@ -143,16 +154,6 @@
   border-color: transparent;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .primary:hover {
-    background: var(--color-primary-emphasis-hover, var(--color-primary-hover));
-  }
-}
-
-.primary:active {
-  background: var(--color-primary-emphasis-active, var(--color-primary-active));
-}
-
 .primary:disabled {
   opacity: 1;
   background: var(--color-field);
@@ -183,16 +184,6 @@
   font-weight: var(--button-primary-subtle-font-weight);
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .primarySubtle:hover {
-    background: color-mix(in srgb, var(--color-primary-subtle), var(--color-primary) 12%);
-  }
-}
-
-.primarySubtle:active {
-  background: color-mix(in srgb, var(--color-primary-subtle), var(--color-primary) 22%);
-}
-
 .success {
   background: var(--color-success);
   color: var(--color-text-inverse);
@@ -203,18 +194,6 @@
   background: var(--color-error);
   color: var(--color-text-inverse);
   border-color: transparent;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .success:hover,
-  .destructive:hover {
-    filter: brightness(1.05);
-  }
-}
-
-.success:active,
-.destructive:active {
-  filter: brightness(0.95);
 }
 
 .error {
@@ -237,32 +216,9 @@
   border-color: var(--color-border-emphasized);
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .outline:hover {
-    background: var(--button-solid-surface-hover);
-  }
-}
-
-.outline:active {
-  background: var(--button-solid-surface-active);
-}
-
 .ghost {
   border: none;
   color: var(--color-text-secondary);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .ghost:hover {
-    color: var(--color-primary);
-    background: transparent;
-    filter: brightness(0.92);
-  }
-}
-
-.ghost:active {
-  background: transparent;
-  filter: brightness(0.88);
 }
 
 /* Link — inline text. */
@@ -276,9 +232,7 @@
 
 @media (hover: hover) and (pointer: fine) {
   .link:hover {
-    color: var(--color-primary-hover);
     text-decoration: underline;
-    background: var(--color-primary-subtle);
   }
 }
 
@@ -296,16 +250,6 @@
   color: var(--button-overlay-fg);
   border: none;
   box-shadow: none;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .overlay:hover {
-    background: var(--button-overlay-bg-hover);
-  }
-}
-
-.overlay:active {
-  background: var(--button-overlay-bg-hover);
 }
 
 .overlay:focus-visible {

@@ -12,6 +12,7 @@
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
   overflow: hidden;
+  --manager-divider: color-mix(in srgb, var(--color-text) 12%, transparent);
 }
 
 /* Drag handle — visible on all viewports (YouTube settings style) */
@@ -105,7 +106,7 @@
   justify-content: space-between;
   min-height: var(--space-10);
   padding: var(--space-1) var(--space-2);
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-bottom: var(--border-width-hairline) solid var(--manager-divider);
 }
 
 /* Header buttons stay ghost/icon-only — no border chrome (shared Button
@@ -262,15 +263,10 @@
   align-items: center;
   gap: var(--space-1-5);
   padding: var(--space-1) var(--space-2);
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-bottom: var(--border-width-hairline) solid var(--manager-divider);
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
-  /* Sticky over scrolling content — translucent tint + blur keeps the
-     tab row readable while staying inside the translucent panel spec. */
-  background: color-mix(in srgb, var(--color-surface) 60%, transparent);
-  backdrop-filter: blur(var(--blur-md));
-  -webkit-backdrop-filter: blur(var(--blur-md));
 }
 
 @media (min-width: 600px) {
@@ -377,14 +373,16 @@
 .offLabel {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
 }
 
-/* Radio indicator */
+/* Radio indicator — margin centers the circle on the first text line
+   ((line-height − radio size) / 2), matching .trackName/.offLabel metrics. */
 .radio {
   flex: 0 0 var(--space-4);
   width: var(--space-4);
   height: var(--space-4);
-  margin-top: var(--space-0-5);
+  margin-top: calc((var(--font-size-sm) * var(--leading-tight) - var(--space-4)) / 2);
   border: var(--border-width-thick) solid var(--color-border-emphasized);
   border-radius: var(--radius-full);
   display: inline-flex;
@@ -496,8 +494,8 @@
   flex: 1 1 auto;
   display: flex;
   align-items: stretch;
-  border: var(--border-width-hairline) solid var(--input-border);
   background: var(--color-field);
+  border: var(--border-width-hairline) solid var(--input-border);
   border-radius: var(--radius-pill);
   overflow: hidden;
   transition: border-color var(--duration-fast) var(--ease-out);
@@ -526,8 +524,8 @@
   min-width: 0;
   display: inline-flex;
   align-items: stretch;
-  border-left: var(--border-width-hairline) solid var(--color-border-subtle);
-  border-right: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-left: var(--border-width-hairline) solid var(--manager-divider);
+  border-right: var(--border-width-hairline) solid var(--manager-divider);
   background: transparent;
 }
 
@@ -557,28 +555,10 @@
   margin: 0;
 }
 
-/* ─── Reset button — primary-outlined circle; hover lightens the ring and
-   tints the fill with primary-subtle. Doubled class beats `.outline`'s
-   border/background regardless of stylesheet injection order. ─── */
-.resetBtn.resetBtn {
+/* ─── Reset button — ghost icon button, layout only ─── */
+.resetBtn {
   flex: 0 0 auto;
   align-self: center;
-  background: transparent;
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  box-shadow: none;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .resetBtn.resetBtn:hover {
-    border-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
-    background: var(--color-primary-subtle);
-    color: var(--color-primary);
-  }
-}
-
-.resetBtn.resetBtn:active {
-  background: color-mix(in srgb, var(--color-primary-subtle), var(--color-primary) 12%);
 }
 
 /* ─── Appearance view ─── */
@@ -616,7 +596,7 @@
 /* Appearance view tabs — shared InkTabs row under the sticky preview. */
 .appearanceTabs {
   flex: 0 0 auto;
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-bottom: var(--border-width-hairline) solid var(--manager-divider);
   padding: var(--space-1) var(--space-2);
 }
 
@@ -693,15 +673,11 @@
     border: 0;
     border-color: transparent;
   }
-  .valueField {
-    border-left: 0;
-    border-right: 0;
-  }
   .tabContent {
     padding-top: var(--space-1);
   }
-  /* Translucent fills for track rows + latency pill — every surface inside
-     the translucent sidebar panel keeps the video showing through. */
+  /* Translucent fills for track rows — every surface inside the
+     translucent sidebar panel keeps the video showing through. */
   .track {
     background: color-mix(in srgb, var(--color-surface) 55%, transparent);
   }
@@ -710,8 +686,5 @@
   }
   .trackActive {
     background: var(--color-primary-subtle);
-  }
-  .pillGroup {
-    background: color-mix(in srgb, var(--color-surface) 55%, transparent);
   }
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface SectionDrag {
-  readonly draggedId: number;
+  readonly draggedId: number | string;
   readonly fromIndex: number;
   readonly toIndex: number;
   readonly fromTop: number;
@@ -15,7 +15,8 @@ export interface SectionDrag {
 interface DragSession {
   list: HTMLElement;
   draggedEl: HTMLElement;
-  draggedId: number;
+  draggedId: number | string;
+  slotPrefix: string;
   scrollParent: HTMLElement | null;
   grabOffsetY: number;
   fromTop: number;
@@ -33,10 +34,10 @@ const EDGE_ZONE = 56;
 const EDGE_STEP = 10;
 const SETTLE_MS = 200;
 
-const SLOT_SELECTOR = '[data-cell-id^="slot-"]';
+const DEFAULT_SLOT_PREFIX = 'slot-';
 
-function slotElements(list: HTMLElement): HTMLElement[] {
-  return Array.from(list.querySelectorAll<HTMLElement>(SLOT_SELECTOR));
+function slotElements(list: HTMLElement, slotPrefix: string): HTMLElement[] {
+  return Array.from(list.querySelectorAll<HTMLElement>(`[data-cell-id^="${slotPrefix}"]`));
 }
 
 function findScrollParent(el: HTMLElement): HTMLElement | null {
@@ -51,13 +52,20 @@ function findScrollParent(el: HTMLElement): HTMLElement | null {
   return null;
 }
 
+export interface UseSectionDragOptions {
+  /** `data-cell-id` prefix identifying draggable slot wrappers. Default 'slot-'. */
+  readonly slotPrefix?: string;
+}
+
 export function useSectionDrag(
-  onDrop: (draggedId: number, toIndex: number) => void,
+  onDrop: (draggedId: number | string, toIndex: number) => void,
+  options?: UseSectionDragOptions,
 ): {
   readonly listRef: React.RefObject<HTMLDivElement | null>;
   readonly drag: SectionDrag | null;
-  readonly beginDrag: (index: number, draggedId: number, e: React.PointerEvent<HTMLElement>) => void;
+  readonly beginDrag: (index: number, draggedId: number | string, e: React.PointerEvent<HTMLElement>) => void;
 } {
+  const slotPrefix = options?.slotPrefix ?? DEFAULT_SLOT_PREFIX;
   const listRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<SectionDrag | null>(null);
   const sessionRef = useRef<DragSession | null>(null);
@@ -79,7 +87,7 @@ export function useSectionDrag(
     const s = sessionRef.current;
     if (!s) return;
     const pointerListY = s.lastClientY - s.list.getBoundingClientRect().top;
-    const rest = slotElements(s.list).filter((el) => el !== s.draggedEl);
+    const rest = slotElements(s.list, s.slotPrefix).filter((el) => el !== s.draggedEl);
     let toIndex = 0;
     rest.forEach((el, i) => {
       if (pointerListY > el.offsetTop + el.offsetHeight / 2) toIndex = i + 1;
@@ -118,12 +126,12 @@ export function useSectionDrag(
     settleTimerRef.current = setTimeout(() => finish(commit), SETTLE_MS);
   }, [finish]);
 
-  const beginDrag = useCallback((index: number, draggedId: number, e: React.PointerEvent<HTMLElement>) => {
+  const beginDrag = useCallback((index: number, draggedId: number | string, e: React.PointerEvent<HTMLElement>) => {
     if (e.button !== 0 || e.isPrimary === false) return;
     if (sessionRef.current) return;
     const list = listRef.current;
     if (!list) return;
-    const el = slotElements(list)[index];
+    const el = slotElements(list, slotPrefix)[index];
     if (!el) return;
     e.preventDefault();
     e.currentTarget.setPointerCapture?.(e.pointerId);
@@ -133,6 +141,7 @@ export function useSectionDrag(
       list,
       draggedEl: el,
       draggedId,
+      slotPrefix,
       scrollParent: findScrollParent(list),
       grabOffsetY: e.clientY - rect.top,
       fromTop: el.offsetTop,
@@ -156,7 +165,7 @@ export function useSectionDrag(
       gap,
       settling: false,
     });
-  }, []);
+  }, [slotPrefix]);
 
   useEffect(() => {
     const s = sessionRef.current;

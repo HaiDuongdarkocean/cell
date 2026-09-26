@@ -38,6 +38,7 @@
   letter-spacing: var(--tracking-wide);
   color: var(--color-text-secondary);
   cursor: pointer;
+  --button-gap: var(--space-1);
   border-bottom: var(--space-0-5) solid transparent;
   border-radius: var(--radius-none);
   padding-bottom: var(--space-0-5);
@@ -61,8 +62,8 @@
   color: var(--color-text);
 }
 
-/* Count badge — dictionary-toolbar badge recipe (fg chip + primary number +
-   35% primary ring), rendered inline next to the tab label. The tab's
+/* Count badge — minimal outline pill: transparent fill, text + ring take the
+   tab label's own color (secondary → text when active). The tab's
    uppercase/tracking styles are reset inside the badge. */
 .badge {
   display: inline-flex;
@@ -70,12 +71,11 @@
   justify-content: center;
   min-width: var(--space-4);
   height: var(--space-4);
-  margin-left: var(--space-1);
   padding: 0 var(--space-0-5);
   border-radius: var(--radius-full);
-  background: var(--button-fg);
-  color: var(--color-primary);
-  border: var(--border-width-medium) solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+  background: transparent;
+  color: inherit;
+  border: var(--border-width-hairline) solid color-mix(in srgb, currentColor 45%, transparent);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;

@@ -42,3 +42,49 @@ describe('DictionaryPopupSettingsPanel — examples step', () => {
     }));
   });
 });
+
+describe('DictionaryPopupSettingsPanel — surface tabs', () => {
+  it('renders the popup-like tab strip with audio/image/translate/links', () => {
+    renderPanel();
+    const tablist = screen.getByRole('tablist');
+    expect(tablist).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /audio/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /image/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /translate/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /links/i })).toBeInTheDocument();
+  });
+
+  it('defaults to the links tab showing stored external links', () => {
+    renderPanel();
+    expect(screen.getByRole('tab', { name: /links/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Cambridge Dictionary')).toBeInTheDocument();
+  });
+
+  it('translate tab shows the translation visibility pills', () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole('tab', { name: /translate/i }));
+    expect(screen.getByRole('radiogroup', { name: 'Translations' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Always shown' })).toBeInTheDocument();
+  });
+
+  it('audio and image tabs show empty-state hints without the manager', () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole('tab', { name: /^audio/i }));
+    expect(screen.queryByText('Cambridge Dictionary')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /image/i }));
+    expect(screen.queryByText('Cambridge Dictionary')).not.toBeInTheDocument();
+  });
+
+  it('manager edits propagate through onChange with sibling fields preserved', () => {
+    const onChange = renderPanel();
+    fireEvent.click(screen.getByRole('button', { name: /edit cambridge/i }));
+    fireEvent.change(screen.getByTestId('dict-link-editor-name'), { target: { value: 'Cambridge EN' } });
+    fireEvent.click(screen.getByTestId('dict-link-editor-save'));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+      triggerMode: DEFAULT_DICTIONARY_POPUP_SETTINGS.triggerMode,
+      externalDictLinks: expect.arrayContaining([
+        expect.objectContaining({ name: 'Cambridge EN' }),
+      ]),
+    }));
+  });
+});

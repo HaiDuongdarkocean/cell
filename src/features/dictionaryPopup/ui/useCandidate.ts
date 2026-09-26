@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
+import type { ExternalDictLinkTemplate } from '@/entities/settings';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { nextStatus } from '@/features/dictionary/services/wordStatusStore';
 import { setWordStatus } from '@/features/dictionary/services/wordStatusClient';
@@ -169,12 +171,17 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
   const initialTranslation = fullSnapshot?.translation;
   const initialTranslationSelected = fullSnapshot?.translationSelected;
 
+  const [dictLinks, setDictLinks] = useState<readonly ExternalDictLinkTemplate[]>(
+    DEFAULT_DICTIONARY_POPUP_SETTINGS.externalDictLinks,
+  );
+
   const toolbar = useDictionaryToolbar({
     result: candidate,
     contextSentence,
     sourceLang,
     targetLang,
     defaultActiveTab,
+    externalDictLinks: dictLinks,
     initialAudioItems: effectiveAudioItems,
     initialImageItems: effectiveImageItems,
     initialAudioSelection,
@@ -208,6 +215,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
         if (!alive) return;
         setTtsVoices(s.dictionaryPopup?.tts?.voices ?? []);
         setIncludeAllExamples(s.dictionaryPopup?.includeAllExamplesOnDefSelect ?? false);
+        setDictLinks(s.dictionaryPopup?.externalDictLinks ?? DEFAULT_DICTIONARY_POPUP_SETTINGS.externalDictLinks);
       })
       .catch(() => {});
     return () => { alive = false; };

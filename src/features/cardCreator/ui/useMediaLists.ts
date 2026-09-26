@@ -7,17 +7,9 @@ import type { MediaFile } from '../media/mediaFile';
 import { captureScreenshot } from '../media/screenshot';
 import { captureSentenceAudio } from '../media/sentenceAudio';
 import type { CardCreatorOpenContext } from '../types';
+import { reorderItems } from '@/shared/lib/reorderItems';
 
-export function reorderItems<T>(
-  items: readonly T[],
-  fromIndex: number,
-  toIndex: number,
-): T[] {
-  const next = [...items];
-  const [moved] = next.splice(fromIndex, 1);
-  next.splice(toIndex, 0, moved);
-  return next;
-}
+export { reorderItems };
 
 export interface UseMediaListsArgs {
   readonly openContextRef: RefObject<CardCreatorOpenContext | null>;

@@ -1,5 +1,5 @@
 {
-  "active": "firefox-port",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -419,19 +419,23 @@
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-09-26T01:06:56.433Z"
+          "at": "2026-09-26T03:21:29.475Z"
         },
         "build": {
           "v": "pass",
-          "at": "2026-09-26T01:04:07.524Z"
+          "at": "2026-09-26T03:19:14.812Z"
         },
         "lint": {
           "v": "pass",
-          "at": "2026-09-26T01:06:56.545Z"
+          "at": "2026-09-26T03:21:47.831Z"
         },
         "testUnit": {
           "v": "pass",
-          "at": "2026-09-26T01:06:56.673Z"
+          "at": "2026-09-26T03:22:22.721Z"
+        },
+        "briefLint": {
+          "v": "pass",
+          "at": "2026-09-26T03:20:53.699Z"
         }
       },
       "confidence": "medium",
@@ -449,7 +453,45 @@
         "since": "2026-09-26T00:11:08.009Z"
       },
       "worktree": "../cell-worktrees/firefox-port",
-      "updated": "2026-09-26T01:06:56.674Z"
+      "updated": "2026-09-26T03:22:22.722Z"
+    },
+    "dict-links-manager": {
+      "stage": "shipped",
+      "mode": "interactive",
+      "uiSurface": "yes",
+      "artifacts": {},
+      "gates": {
+        "build": {
+          "v": "pass",
+          "at": "2026-09-26T03:47:28.445Z"
+        },
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-09-26T03:51:03.391Z"
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-09-26T03:48:08.234Z"
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-09-26T03:52:43.579Z"
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-09-26T03:55:36.269Z"
+        }
+      },
+      "confidence": "low",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "owner": {
+        "id": "devin-cli",
+        "since": "2026-09-26T03:55:36.267Z"
+      },
+      "worktree": null,
+      "updated": "2026-09-26T03:55:36.269Z"
     }
   }
 }

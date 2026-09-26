@@ -2548,6 +2548,24 @@
         "verification"
       ],
       "trigger": "Setting mới trong flat-field group (dictionaryPopup) ghi vào storage mà runtime/test vẫn thấy default"
+    },
+    {
+      "type": "experience",
+      "id": "ux-proximity-parent-child-grouping",
+      "title": "Rows con phải nằm trong wrapper của row cha — proximity (Gestalt) encode ownership, flat siblings + uniform gap đảo ngược nhận thức",
+      "category": [
+        "ux",
+        "css"
+      ],
+      "tags": [
+        "proximity",
+        "gestalt",
+        "grouping",
+        "flex-gap",
+        "nesting",
+        "definition-examples"
+      ],
+      "trigger": "Render list có quan hệ cha-con (definition + examples, item + sub-items) dưới dạng siblings phẳng với gap đều nhau"
     }
   ]
 }

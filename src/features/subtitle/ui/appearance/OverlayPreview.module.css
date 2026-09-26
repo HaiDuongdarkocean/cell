@@ -5,7 +5,6 @@
 .frame {
   position: relative;
   width: 100%;
-  height: 240px;
   overflow: hidden;
   border-radius: var(--radius-element);
   /* Solid container — opaque surface, auto dark/light via tokens.
@@ -19,17 +18,12 @@
 }
 
 /* 3-zone horizontal layout for the preview overlay.
-   --sb-y maps 0% = top edge, 100% = bottom edge of the frame.
-   translateY scales proportionally so the subtitle block stays fully
-   visible at both extremes instead of being half-clipped.
-   Width = 200cqw (2× frame), scale 1/2 back to frame width. */
+   zoom 0.5 halves rendered size while the layout box stays at container
+   width — the frame shrinks to fit the scaled content. */
 .overlayRoot {
-  position: absolute;
-  top: calc(var(--sb-y, 75) * 1%); /* runtime progress var, numeric fallback */
-  left: 0;
-  width: 200cqw;
-  transform: translateY(calc(var(--sb-y, 75) * -1%)) scale(0.5);
-  transform-origin: top left;
+  position: relative;
+  width: 100%;
+  zoom: 0.5;
   display: flex;
   flex-direction: row;
   align-items: center;

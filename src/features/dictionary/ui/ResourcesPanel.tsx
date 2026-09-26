@@ -30,7 +30,7 @@ import {
   setResourceEnabled,
 } from '@/features/dictionary/services/resourceClient';
 import { getUserMessage, isImportError } from '@/features/dictionary/logic/importErrors';
-import { useSectionDrag } from './useSectionDrag';
+import { useSectionDrag } from '@/shared/lib/useSectionDrag';
 import { computeSignature } from '@/features/dictionary/logic/signatureGenerator';
 import { getExtension, MAX_FILE_SIZE } from '@/features/dictionary/logic/fileDetector';
 import type { ReadableFile } from '@/features/dictionary/logic/fileDetector';

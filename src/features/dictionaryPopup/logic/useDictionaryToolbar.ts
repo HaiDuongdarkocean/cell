@@ -22,6 +22,7 @@ import type {
   LocalAudioStateResponse,
   TtsFetchAudioResponse,
 } from '@/entities/dictionary';
+import { isSafeDictUrl, type ExternalDictLinkTemplate } from '@/entities/settings';
 import { t } from '@/shared/i18n';
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
@@ -44,6 +45,8 @@ export interface UseDictionaryToolbarOptions {
   readonly targetLang: string;
   /** Default media tab to open when the result first appears. */
   readonly defaultActiveTab?: PopupTab | null;
+  /** Stored external dictionary link templates (defaults when unset). */
+  readonly externalDictLinks?: readonly ExternalDictLinkTemplate[];
   /** Pre-loaded audio items for this candidate (popup clone). */
   readonly initialAudioItems?: readonly AudioItem[];
   /** Pre-loaded image items for this candidate (popup clone). */
@@ -98,8 +101,8 @@ export interface UseDictionaryToolbarReturn {
   readonly fetchImages: () => Promise<readonly ImageItem[]>;
 }
 
-function fillExternalDictLinks(
-  templates: readonly { readonly id: string; readonly name: string; readonly urlTemplate: string; readonly langCodes: readonly string[] }[],
+export function fillExternalDictLinks(
+  templates: readonly ExternalDictLinkTemplate[],
   term: string,
   langCode: string,
 ): ExternalDictLink[] {
@@ -110,7 +113,8 @@ function fillExternalDictLinks(
       id: t.id,
       name: t.name,
       url: t.urlTemplate.replaceAll('{term}', encodedTerm).replaceAll('{lang}', langCode),
-    }));
+    }))
+    .filter((l) => isSafeDictUrl(l.url));
 }
 
 export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseDictionaryToolbarReturn {
@@ -120,6 +124,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     sourceLang,
     targetLang,
     defaultActiveTab,
+    externalDictLinks,
     initialAudioItems,
     initialImageItems,
     initialAudioSelection,
@@ -428,9 +433,9 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
 
   const links = useMemo(
     () => (result
-      ? fillExternalDictLinks(DEFAULT_DICTIONARY_POPUP_SETTINGS.externalDictLinks, result.term, result.langCode)
+      ? fillExternalDictLinks(externalDictLinks ?? DEFAULT_DICTIONARY_POPUP_SETTINGS.externalDictLinks, result.term, result.langCode)
       : []),
-    [result],
+    [result, externalDictLinks],
   );
 
   return {

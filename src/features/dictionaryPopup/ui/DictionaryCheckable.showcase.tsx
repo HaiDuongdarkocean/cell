@@ -85,13 +85,13 @@ function ExampleRow({ text, onCheck }: { text: string; onCheck: (checked: boolea
   );
 }
 
-/** Definition row — markup mirrors CandidateView; example rows are siblings. */
+/** Definition row — markup mirrors CandidateView; examples wrapped with their def. */
 function DefRow({ state, examples = [] }: { state: BoxState; examples?: string[] }): ReactElement {
   const [checked, setChecked] = useState(state === 'checked');
   const disabled = state === 'disabled';
   const indeterminate = state === 'indeterminate' && !checked;
   return (
-    <>
+    <div className={candStyles.cellDefGroup}>
       <div
         className={`${checkStyles.cellDefItem} ${disabled ? checkStyles['cellDefItem--disabled'] : ''}`}
         onClick={disabled ? undefined : (): void => setChecked(!checked)}
@@ -124,7 +124,7 @@ function DefRow({ state, examples = [] }: { state: BoxState; examples?: string[]
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }
 

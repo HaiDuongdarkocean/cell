@@ -1,0 +1,219 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.sectionHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+}
+
+.sectionTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-family);
+}
+
+.sectionSubtitle {
+  margin: 0;
+  font-size: var(--font-size-xs);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  position: relative;
+}
+
+.slot {
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.slotDragging {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  transition: none;
+  pointer-events: none;
+}
+
+.slotSettling {
+  transition: transform var(--duration-normal) var(--ease-standard);
+}
+
+.dropPlaceholder {
+  position: absolute;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  border: var(--border-width-hairline) dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+  transition: top var(--duration-fast) var(--ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot,
+  .slotSettling,
+  .dropPlaceholder {
+    transition: none;
+  }
+}
+
+.card {
+  --card-padding: var(--space-2) var(--space-3);
+  --card-radius: var(--radius-lg);
+}
+
+.cardDragging {
+  box-shadow: var(--shadow-lg);
+  transform: rotate(-0.6deg) scale(1.01);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--iconbutton-size-md);
+}
+
+.gripWrap {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.grip {
+  touch-action: none;
+  cursor: grab;
+  margin-left: calc(var(--space-1) * -1);
+  width: var(--iconbutton-size-md);
+  height: var(--iconbutton-size-md);
+  min-width: var(--iconbutton-size-md);
+  min-height: var(--iconbutton-size-md);
+}
+
+.grip:active {
+  cursor: grabbing;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+  flex: 1;
+}
+
+.nameLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.nameButton {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.nameButton:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.url {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iconBtn {
+  width: var(--iconbutton-size-md);
+  height: var(--iconbutton-size-md);
+  min-width: var(--iconbutton-size-md);
+  min-height: var(--iconbutton-size-md);
+  flex-shrink: 0;
+}
+
+.dangerBtn:hover {
+  color: var(--color-destructive);
+}
+
+.editorBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.fieldLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  font-family: var(--font-family);
+}
+
+.formHint {
+  font-size: var(--font-size-xs);
+  margin: 0;
+  line-height: var(--leading-relaxed);
+}
+
+.error {
+  font-size: var(--font-size-xs);
+  color: var(--color-destructive);
+  margin: 0;
+}
+
+.empty {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  padding: var(--space-4);
+  margin: 0;
+  text-align: center;
+  border: var(--border-width-hairline) dashed var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.dialogText {
+  margin: 0;
+}

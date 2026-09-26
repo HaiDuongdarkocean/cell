@@ -13,7 +13,7 @@
  */
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_LOCAL_PLAYER_SETTINGS, DEFAULT_FREQUENCY_BANDS } from '@/shared/config/config';
-import { buildProfileName, generateProfileId, resolveSettingsFlatFields } from '@/entities/settings';
+import { buildProfileName, generateProfileId, resolveSettingsFlatFields, syncFlatFieldsToActiveProfile } from '@/entities/settings';
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
@@ -666,12 +666,13 @@ export async function loadSettings(): Promise<Settings> {
  */
 export async function saveSettings(settings: Partial<Settings>): Promise<void> {
   const current = await loadSettings();
-  const toStore: StoredSettings = {
+  const merged = {
     ...current,
     ...settings,
     schemaVersion: CURRENT_SCHEMA_VERSION,
   } as StoredSettings;
-  resolveSettingsFlatFields(toStore as unknown as Record<string, unknown>);
-  await setStorage({ [STORAGE_KEYS.SETTINGS]: toStore });
+  const synced = syncFlatFieldsToActiveProfile(merged as Settings) as unknown as StoredSettings;
+  resolveSettingsFlatFields(synced as unknown as Record<string, unknown>);
+  await setStorage({ [STORAGE_KEYS.SETTINGS]: synced });
 }
 

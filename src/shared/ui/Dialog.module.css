@@ -36,7 +36,10 @@
   text-align: center;
 }
 
-.headerRightGroup {
+/* Default header keeps the close group in flow so the header row grows to
+   the button's height; only the centered-title variant lifts it out so the
+   title can center across the full width. */
+.headerCenterTitle .headerRightGroup {
   position: absolute;
   top: 0;
   right: 0;

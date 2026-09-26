@@ -1,0 +1,18 @@
+{
+  "id": "ux-proximity-parent-child-grouping",
+  "title": "Rows con phải nằm trong wrapper của row cha — proximity (Gestalt) encode ownership, flat siblings + uniform gap đảo ngược nhận thức",
+  "category": ["ux", "css"],
+  "tags": ["proximity", "gestalt", "grouping", "flex-gap", "nesting", "definition-examples"],
+  "trigger": "Render list có quan hệ cha-con (definition + examples, item + sub-items, setting + help text) dưới dạng siblings phẳng với gap đều nhau",
+  "principle": "Khoảng cách phải nói lên ownership: intra-group gap < inter-group gap, và con phải nằm STRUCTURALLY trong group của cha (wrapper div), không phải sibling. Flat siblings + gap đều → con trông gần item kế tiếp hơn cha nó; user không biết example thuộc def nào. Sửa markup (wrap group) trước, không vá CSS.",
+  "cases": [
+    {
+      "context": "Dictionary popup: DefinitionItem trả fragment — cellDefItem và cellDefExamples là siblings trong .cellDef (flex gap uniform) → example nằm gần def kế tiếp bằng với def của nó, user không nhận ra parent",
+      "bad": "<>\n  <div className={cellDefItem}>...</div>\n  <div className={cellDefExamples}>...</div>\n</>\n/* .cellDef { gap: var(--space-1) } — cùng gap cho def↔examples và def↔def */",
+      "good": "<div className={cellDefGroup}>\n  <div className={cellDefItem}>...</div>\n  <div className={cellDefExamples}>...</div>\n</div>\n/* .cellDefGroup { gap: var(--space-0-75) } intra=3px; .cellDef { gap: var(--space-2) } inter=8px */"
+    }
+  ],
+  "applyFor": ["parent row + child/sub rows trong bất kỳ list UI nào", "skeleton loading phải mirror đúng group structure của real UI", "settings card + nested controls", "comment thread + replies"],
+  "related": [],
+  "source": {"spec": "dictionary popup def/examples restructure", "date": "2026-09-26"}
+}

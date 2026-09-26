@@ -1,7 +1,10 @@
-import { loadSettings, CURRENT_SCHEMA_VERSION } from './settingsStore';
+import { loadSettings, saveSettings, CURRENT_SCHEMA_VERSION } from './settingsStore';
 import {
   DEFAULT_SETTINGS,
   DEFAULT_CARD_CREATOR_SETTINGS,
+  DEFAULT_DICTIONARY_POPUP_SETTINGS,
+  DEFAULT_OVERLAY_STYLE_NATIVE,
+  DEFAULT_OVERLAY_STYLE_TARGET,
   DEFAULT_PRONUNCIATION_SETTINGS,
   DEFAULT_SRS_SETTINGS,
   DEFAULT_FREQUENCY_BANDS,
@@ -221,5 +224,51 @@ describe('loadSettings migration', () => {
     expect(Array.isArray(settings.languageProfiles)).toBe(true);
     expect(settings.keyboardShortcuts).toEqual(DEFAULT_SETTINGS.keyboardShortcuts);
     expect(settings.languageProfiles).toEqual(DEFAULT_SETTINGS.languageProfiles);
+  });
+});
+
+describe('saveSettings — profile sync', () => {
+  function storedWithProfiles() {
+    const mkProfile = (id: string, links: { id: string; name: string; urlTemplate: string; langCodes: string[] }[]) => ({
+      id,
+      target: 'en',
+      native: 'vi',
+      name: `Profile ${id}`,
+      order: 1,
+      subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
+      subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
+      subtitleOverlayAutoLoad: true,
+      subtitleOverlayAutoLoadAsr: false,
+      subtitleOverlayAutoTranslate: false,
+      dictionaryPopup: { ...DEFAULT_DICTIONARY_POPUP_SETTINGS, externalDictLinks: links },
+    });
+    return {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      activeProfileId: 'p1',
+      languageProfiles: [
+        mkProfile('p1', []),
+        mkProfile('p2', [{ id: 'x', name: 'B', urlTemplate: 'https://b.example/{term}', langCodes: [] }]),
+      ],
+    };
+  }
+
+  it('writes a partial dictionaryPopup update into the active profile (REQ-7)', async () => {
+    storageLocalGetMock.mockResolvedValue({ [STORAGE_KEYS.SETTINGS]: storedWithProfiles() });
+
+    const newLinks = [{ id: 'n1', name: 'Cambridge', urlTemplate: 'https://cam.example/{term}', langCodes: [] }];
+    await saveSettings({
+      dictionaryPopup: { ...DEFAULT_DICTIONARY_POPUP_SETTINGS, externalDictLinks: newLinks },
+    });
+
+    const persisted = storageLocalSetMock.mock.calls.at(-1)![0][STORAGE_KEYS.SETTINGS] as {
+      dictionaryPopup: { externalDictLinks: unknown[] };
+      languageProfiles: { id: string; dictionaryPopup: { externalDictLinks: unknown[] } }[];
+    };
+    expect(persisted.dictionaryPopup.externalDictLinks).toEqual(newLinks);
+    expect(persisted.languageProfiles.find((p) => p.id === 'p1')!.dictionaryPopup.externalDictLinks).toEqual(newLinks);
+    expect(persisted.languageProfiles.find((p) => p.id === 'p2')!.dictionaryPopup.externalDictLinks).toEqual([
+      { id: 'x', name: 'B', urlTemplate: 'https://b.example/{term}', langCodes: [] },
+    ]);
   });
 });

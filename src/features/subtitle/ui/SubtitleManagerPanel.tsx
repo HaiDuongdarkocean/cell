@@ -4,7 +4,6 @@ import {
   Download,
   EyeOff,
   List,
-  Minus,
   Plus,
   RotateCcw,
   X,
@@ -253,9 +252,8 @@ function OffsetStepper({
       <div className={styles.latencyRow}>
         <div className={styles.pillGroup}>
           <Button
-            variant="secondary"
+            variant="ghost"
             size="md"
-            leadingIcon={<Minus aria-hidden="true" />}
             aria-label={`Decrease ${label} latency by ${OFFSET_STEP} seconds`}
             data-cell-id={`manager-offset-dec-${role}`}
             onClick={() => bump(-OFFSET_STEP)}
@@ -278,9 +276,8 @@ function OffsetStepper({
             />
           </Label>
           <Button
-            variant="secondary"
+            variant="ghost"
             size="md"
-            leadingIcon={<Plus aria-hidden="true" />}
             aria-label={`Increase ${label} latency by ${OFFSET_STEP} seconds`}
             data-cell-id={`manager-offset-inc-${role}`}
             onClick={() => bump(OFFSET_STEP)}
@@ -290,7 +287,7 @@ function OffsetStepper({
         </div>
         <Button shape="circle"
           size="md"
-          variant="outline"
+          variant="ghost"
           aria-label="Reset latency"
           data-cell-id={`manager-offset-reset-${role}`}
           onClick={handleReset}

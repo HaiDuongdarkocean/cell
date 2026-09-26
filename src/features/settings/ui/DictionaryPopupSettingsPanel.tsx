@@ -1,18 +1,19 @@
 // DictionaryPopupSettingsPanel — spec §M1 Settings → Dictionary Popup.
 //
-// Reduced to the two core behavioral decisions:
-// 1. How do I open a word?  (trigger mode)
-// 2. What do I see first?   (default active tab)
-//
-// SRS destination has moved to Card Creator settings.
+// Global behavior stays in the numbered timeline (trigger mode, default tab,
+// example selection). Per-surface settings sit under a tab strip mirroring the
+// popup toolbar (audio / image / translate / links) — the links tab hosts the
+// external dictionary links manager (spec dict-links-manager REQ-8).
 //
 // Visual model: connected timeline + pill groups (one-tap selection).
 
-import type React from 'react';
+import { useState, type ReactElement } from 'react';
 import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import type { DictionaryPopupSettings } from '@/entities/settings/types';
 import { Text } from '@/shared/ui/Text';
+import { Icon } from '@/shared/ui/Icon';
 import { t, type MessageKey } from '@/shared/i18n';
+import { DictLinksManager } from './DictLinksManager';
 import styles from './DictionaryPopupSettingsPanel.module.css';
 
 interface DictionaryPopupSettingsPanelProps {
@@ -51,6 +52,15 @@ const EXAMPLE_LABEL_KEYS: Record<string, MessageKey> = {
   all: 'settings.dictionaryPopup.examples.all',
 };
 
+type SurfaceTab = 'audio' | 'image' | 'translate' | 'links';
+
+const SURFACE_TABS: readonly { key: SurfaceTab; icon: 'audioWave' | 'image' | 'languages' | 'link'; labelKey: MessageKey }[] = [
+  { key: 'audio', icon: 'audioWave', labelKey: 'dict.tab.audio' },
+  { key: 'image', icon: 'image', labelKey: 'dict.tab.image' },
+  { key: 'translate', icon: 'languages', labelKey: 'dict.tab.translate' },
+  { key: 'links', icon: 'link', labelKey: 'dict.tab.links' },
+];
+
 interface PillGroupProps {
   options: { value: string; label: string }[];
   value: string;
@@ -58,7 +68,7 @@ interface PillGroupProps {
   ariaLabel: string;
 }
 
-function PillGroup({ options, value, onChange, ariaLabel }: PillGroupProps): React.JSX.Element {
+function PillGroup({ options, value, onChange, ariaLabel }: PillGroupProps): ReactElement {
   return (
     <div className={styles.pillGroup} role="radiogroup" aria-label={ariaLabel}>
       {options.map((option) => (
@@ -92,12 +102,6 @@ const STEPS = [
   },
   {
     num: 3,
-    labelKey: 'settings.dictionaryPopup.translations' as MessageKey,
-    valueKey: 'translationVisibility' as const,
-    options: TRANSLATION_OPTIONS.map((o) => ({ value: o, labelKey: TRANSLATION_LABEL_KEYS[o] })),
-  },
-  {
-    num: 4,
     labelKey: 'settings.dictionaryPopup.examples' as MessageKey,
     valueKey: 'includeAllExamplesOnDefSelect' as const,
     options: EXAMPLE_OPTIONS.map((o) => ({ value: o, labelKey: EXAMPLE_LABEL_KEYS[o] })),
@@ -107,7 +111,9 @@ const STEPS = [
 export function DictionaryPopupSettingsPanel({
   settings,
   onChange,
-}: DictionaryPopupSettingsPanelProps): React.JSX.Element {
+}: DictionaryPopupSettingsPanelProps): ReactElement {
+  const [surface, setSurface] = useState<SurfaceTab>('links');
+
   const update = (partial: Partial<DictionaryPopupSettings>): void => {
     const next: DictionaryPopupSettings = {
       ...DEFAULT_DICTIONARY_POPUP_SETTINGS,
@@ -125,11 +131,9 @@ export function DictionaryPopupSettingsPanel({
           const isLast = index === STEPS.length - 1;
           const value = step.valueKey === 'defaultActiveTab'
             ? (settings.defaultActiveTab ?? '')
-            : step.valueKey === 'translationVisibility'
-              ? (settings.translationVisibility ?? 'hidden')
-              : step.valueKey === 'includeAllExamplesOnDefSelect'
-                ? (settings.includeAllExamplesOnDefSelect ? 'all' : 'manual')
-                : settings[step.valueKey];
+            : step.valueKey === 'includeAllExamplesOnDefSelect'
+              ? (settings.includeAllExamplesOnDefSelect ? 'all' : 'manual')
+              : settings[step.valueKey];
 
           return (
             <div key={step.valueKey} className={styles.timelineItem}>
@@ -160,6 +164,56 @@ export function DictionaryPopupSettingsPanel({
           );
         })}
       </div>
+
+      <div className={styles.surfaceTabs} role="tablist" aria-label={t('settings.dictionaryPopup.links.tabsAria')}>
+        {SURFACE_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            aria-selected={surface === tab.key}
+            className={`${styles.surfaceTab} ${surface === tab.key ? styles.surfaceTabActive : ''}`}
+            onClick={() => setSurface(tab.key)}
+            data-cell-id={`dict-popup-tab-${tab.key}`}
+          >
+            <Icon name={tab.icon} size="xs" />
+            <span>{t(tab.labelKey)}</span>
+          </button>
+        ))}
+      </div>
+
+      {surface === 'links' && (
+        <DictLinksManager
+          links={settings.externalDictLinks ?? DEFAULT_DICTIONARY_POPUP_SETTINGS.externalDictLinks}
+          onChange={(externalDictLinks) => update({ externalDictLinks })}
+        />
+      )}
+
+      {surface === 'translate' && (
+        <div className={styles.tabBody}>
+          <Text as="span" className={styles.timelineLabel}>
+            {t('settings.dictionaryPopup.translations')}
+          </Text>
+          <PillGroup
+            options={TRANSLATION_OPTIONS.map((o) => ({ value: o, label: t(TRANSLATION_LABEL_KEYS[o]) }))}
+            value={settings.translationVisibility ?? 'hidden'}
+            onChange={(nextValue) => update({ translationVisibility: nextValue as 'hidden' | 'shown' })}
+            ariaLabel={t('settings.dictionaryPopup.translations')}
+          />
+        </div>
+      )}
+
+      {surface === 'audio' && (
+        <Text as="p" color="secondary" className={styles.tabEmpty}>
+          {t('settings.dictionaryPopup.links.tabEmpty.audio')}
+        </Text>
+      )}
+
+      {surface === 'image' && (
+        <Text as="p" color="secondary" className={styles.tabEmpty}>
+          {t('settings.dictionaryPopup.links.tabEmpty.image')}
+        </Text>
+      )}
 
       <Text as="p" color="secondary" className={styles.hint}>
         {t('settings.dictionaryPopup.saveHint')}

@@ -6,7 +6,7 @@
   display: flex;
   gap: var(--space-0);
   padding: var(--space-0);
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: var(--border-width-hairline) solid color-mix(in srgb, var(--color-text) 12%, transparent);
 }
 
 .footer > button {

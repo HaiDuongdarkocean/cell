@@ -132,12 +132,12 @@ function SubtitleBlockInner({
     ? nativeStatusText !== null
     : !nativeCue && nativeStatusText !== null;
 
-  // Auto-clear timed notices ("loaded", "none") after 3s — the notice is a
-  // confirmation, not a cue replacement, so cue text takes over once the
+  // Auto-clear timed notices ("loaded", "none", "error") after 3s — the notice
+  // is a confirmation, not a cue replacement, so cue text takes over once the
   // window expires.
   useEffect(() => {
     const state = storeTargetLoadStatus.state;
-    if (state !== 'loaded' && state !== 'none') return;
+    if (state !== 'loaded' && state !== 'none' && state !== 'error') return;
     const timer = setTimeout(() => {
       useCuesStore.getState().setLoadStatus('target', { state: 'idle' });
     }, 3000);
@@ -146,27 +146,10 @@ function SubtitleBlockInner({
 
   useEffect(() => {
     const state = storeNativeLoadStatus.state;
-    if (state !== 'loaded' && state !== 'none') return;
+    if (state !== 'loaded' && state !== 'none' && state !== 'error') return;
     const timer = setTimeout(() => {
       useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
     }, 3000);
-    return () => clearTimeout(timer);
-  }, [storeNativeLoadStatus.state]);
-
-  // Auto-clear "error" after 10s.
-  useEffect(() => {
-    if (storeTargetLoadStatus.state !== 'error') return;
-    const timer = setTimeout(() => {
-      useCuesStore.getState().setLoadStatus('target', { state: 'idle' });
-    }, 10000);
-    return () => clearTimeout(timer);
-  }, [storeTargetLoadStatus.state]);
-
-  useEffect(() => {
-    if (storeNativeLoadStatus.state !== 'error') return;
-    const timer = setTimeout(() => {
-      useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
-    }, 10000);
     return () => clearTimeout(timer);
   }, [storeNativeLoadStatus.state]);
 

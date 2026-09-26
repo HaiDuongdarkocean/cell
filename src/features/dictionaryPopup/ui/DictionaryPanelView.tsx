@@ -546,34 +546,38 @@ function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Eleme
         </div>
 
         <section className={styles.cellDef} aria-label={t('dict.definitions.aria')}>
-          <div className={checkStyles.cellDefItem}>
-            <div className={candidateStyles.cellDefRow}>
-              <span className={checkStyles.cellDefCheck}>
-                <Skeleton width={checkbox} height={checkbox} shape="rounded" />
-              </span>
-              <span className={candidateStyles.cellDefText}>
-                <Skeleton width="90%" height={textH} shape="rounded" />
-              </span>
+          <div className={candidateStyles.cellDefGroup}>
+            <div className={checkStyles.cellDefItem}>
+              <div className={candidateStyles.cellDefRow}>
+                <span className={checkStyles.cellDefCheck}>
+                  <Skeleton width={checkbox} height={checkbox} shape="rounded" />
+                </span>
+                <span className={candidateStyles.cellDefText}>
+                  <Skeleton width="90%" height={textH} shape="rounded" />
+                </span>
+              </div>
+            </div>
+            <div className={candidateStyles.cellDefExamples}>
+              <div className={checkStyles.cellDefExampleItem}>
+                <span className={checkStyles.cellDefCheck}>
+                  <Skeleton width={checkbox} height={checkbox} shape="rounded" />
+                </span>
+                <span className={candidateStyles.cellDefExampleText}>
+                  <Skeleton width="65%" height={exH} shape="rounded" />
+                </span>
+              </div>
             </div>
           </div>
-          <div className={candidateStyles.cellDefExamples}>
-            <div className={checkStyles.cellDefExampleItem}>
-              <span className={checkStyles.cellDefCheck}>
-                <Skeleton width={checkbox} height={checkbox} shape="rounded" />
-              </span>
-              <span className={candidateStyles.cellDefExampleText}>
-                <Skeleton width="65%" height={exH} shape="rounded" />
-              </span>
-            </div>
-          </div>
-          <div className={checkStyles.cellDefItem}>
-            <div className={candidateStyles.cellDefRow}>
-              <span className={checkStyles.cellDefCheck}>
-                <Skeleton width={checkbox} height={checkbox} shape="rounded" />
-              </span>
-              <span className={candidateStyles.cellDefText}>
-                <Skeleton width="75%" height={textH} shape="rounded" />
-              </span>
+          <div className={candidateStyles.cellDefGroup}>
+            <div className={checkStyles.cellDefItem}>
+              <div className={candidateStyles.cellDefRow}>
+                <span className={checkStyles.cellDefCheck}>
+                  <Skeleton width={checkbox} height={checkbox} shape="rounded" />
+                </span>
+                <span className={candidateStyles.cellDefText}>
+                  <Skeleton width="75%" height={textH} shape="rounded" />
+                </span>
+              </div>
             </div>
           </div>
         </section>
