@@ -3,8 +3,10 @@
 // structural (matches() inspects markup shape, never vendor names). Records
 // with no matching adapter or no parsed senses are skipped — aux index keys
 // and unrecognized markup must not be split or emitted as junk entries.
-// Adapter-declared `spawned` sub-entries (inline phrases/collocations whose
-// term is not itself a key) are emitted at the end so related links resolve.
+// Adapter-declared `spawned` sub-entries (inline phrases/collocations) are
+// merged across parents by term (gloss-deduped) and emitted last with
+// `spawned: true` — the writer merges them into a real record when one exists
+// for the term, otherwise they become their own entries.
 
 import { trTableRows } from './trTableRows.mjs';
 import { cobuild } from './cobuild.mjs';
@@ -48,10 +50,33 @@ export async function* iterMdx(mdxPath, only) {
     const adapter = MARKUP_ADAPTERS.find((a) => a.matches(html));
     if (!adapter) continue;
     const parsed = adapter.parse(html);
-    if (!parsed.senses?.length) continue;
+    if (!parsed || (!parsed.senses?.length && !parsed.etymology)) continue;
+    if (parsed.related?.length) {
+      const seen = new Set();
+      parsed.related = parsed.related.filter((r) => {
+        const key = r.term.toLowerCase();
+        if (!keySet.has(key)) {
+          const alt = key.includes('-') ? key.replace(/-/g, ' ') : key.replace(/ /g, '-');
+          if (alt !== key && keySet.has(alt)) r.term = alt;
+        }
+        const k = `${r.kind}:${r.term.toLowerCase()}`;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+    }
     for (const s of parsed.spawned ?? []) {
-      if (s.senses?.length && !spawnedMap.has(s.term.toLowerCase())) {
-        spawnedMap.set(s.term.toLowerCase(), s);
+      if (!s.senses?.length) continue;
+      const key = s.term.toLowerCase();
+      const ex = spawnedMap.get(key);
+      if (!ex) {
+        spawnedMap.set(key, { term: s.term, senses: [...s.senses] });
+        continue;
+      }
+      for (const sen of s.senses) {
+        const g = sen.lines?.find((l) => l.role === 'gloss')?.text?.toLowerCase();
+        if (g && ex.senses.some((x) => x.lines?.find((l) => l.role === 'gloss')?.text?.toLowerCase() === g)) continue;
+        ex.senses.push(sen);
       }
     }
     yield {
@@ -59,7 +84,7 @@ export async function* iterMdx(mdxPath, only) {
       reading: keyText,
       altterm: parsed.altterm ?? '',
       pronunciation: parsed.pronunciation ?? '',
-      senses: parsed.senses,
+      senses: parsed.senses ?? [],
       related: parsed.related?.length ? parsed.related : undefined,
       inflections: parsed.inflections,
       frequencyStars: parsed.frequencyStars,
@@ -69,12 +94,10 @@ export async function* iterMdx(mdxPath, only) {
       wordNet: parsed.wordNet,
       derivedTerms: parsed.derivedTerms,
       anagrams: parsed.anagrams,
-      usageNote: parsed.usageNote,
     };
   }
   for (const s of spawnedMap.values()) {
-    if (keySet.has(s.term.toLowerCase())) continue;
     if (only && !only.has(s.term.toLowerCase())) continue;
-    yield { term: s.term, reading: s.term, senses: s.senses };
+    yield { term: s.term, reading: s.term, senses: s.senses, spawned: true };
   }
 }

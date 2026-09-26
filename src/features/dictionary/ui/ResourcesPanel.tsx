@@ -11,7 +11,7 @@
 import { useState, useCallback, useEffect, useRef, type ReactElement, type ReactNode } from 'react';
 import { t, type MessageKey } from '@/shared/i18n';
 import { Alert } from '@/shared/ui/Alert';
-import { Button } from '@/shared/ui';
+import { Button, Checkbox } from '@/shared/ui';
 import { Heading } from '@/shared/ui/Heading';
 import { VisuallyHidden } from '@/shared/ui/VisuallyHidden';
 import { Dropzone } from './Dropzone';
@@ -27,6 +27,7 @@ import {
   importResourceFile as importFile,
   deleteResource as deleteResourceCascade,
   reorderResources,
+  setResourceEnabled,
 } from '@/features/dictionary/services/resourceClient';
 import { getUserMessage, isImportError } from '@/features/dictionary/logic/importErrors';
 import { useSectionDrag } from './useSectionDrag';
@@ -118,6 +119,7 @@ interface ResourceSectionProps {
   readonly onReorder: (fromIndex: number, toIndex: number) => void;
   readonly onChanged: () => void;
   readonly onDeleteAll: () => void;
+  readonly onSetEnabledMany: (ids: readonly number[], enabled: boolean) => void;
   readonly footer?: ReactNode;
 }
 
@@ -136,6 +138,7 @@ function ResourceSection({
   onReorder,
   onChanged,
   onDeleteAll,
+  onSetEnabledMany,
   footer,
 }: ResourceSectionProps): ReactElement {
   const [editing, setEditing] = useState(false);
@@ -164,6 +167,17 @@ function ResourceSection({
     });
   };
 
+  const selectAll = (): void => {
+    setSelectedIds(new Set(resources.map((r) => r.id).filter((id): id is number => id != null)));
+  };
+
+  const bulkSetEnabled = (enabled: boolean): void => {
+    const ids = resources
+      .filter((r) => r.id != null && selectedIds.has(r.id))
+      .map((r) => r.id as number);
+    if (ids.length > 0) onSetEnabledMany(ids, enabled);
+  };
+
   const handleContextualDelete = (): void => {
     const ids = resources
       .filter((r) => r.id != null && selectedIds.has(r.id))
@@ -190,10 +204,55 @@ function ResourceSection({
             onClick={toggleEditing}
             data-cell-id={`edit-${sectionId}`}
           >
-            <Icon name="pencil" size="xs" />
+            <Icon name={isEditing ? 'check' : 'pencil'} size="xs" />
           </Button>
         )}
       </div>
+
+      {isEditing && (
+        <div className={styles.editBar} data-cell-id={`edit-bar-${sectionId}`}>
+          <Checkbox
+            checked={selectedCount === resources.length}
+            indeterminate={selectedCount > 0 && selectedCount < resources.length}
+            onChange={selectedCount === resources.length ? () => setSelectedIds(new Set()) : selectAll}
+            label={t('resources.edit.selectAll')}
+            className={styles.selectAll}
+            data-cell-id={`select-all-${sectionId}`}
+          />
+          <span className={styles.selectionCount}>
+            {t('resources.edit.selectedCount', [selectedCount, resources.length])}
+          </span>
+          <div className={styles.editActions}>
+            <Button
+              variant="link"
+              size="sm"
+              disabled={selectedCount === 0}
+              onClick={() => bulkSetEnabled(true)}
+              data-cell-id={`enable-selected-${sectionId}`}
+            >
+              {t('resources.edit.enable')}
+            </Button>
+            <Button
+              variant="link"
+              size="sm"
+              disabled={selectedCount === 0}
+              onClick={() => bulkSetEnabled(false)}
+              data-cell-id={`disable-selected-${sectionId}`}
+            >
+              {t('resources.edit.disable')}
+            </Button>
+            <Button
+              variant="link"
+              size="sm"
+              className={styles.dangerAction}
+              onClick={handleContextualDelete}
+              data-cell-id={`delete-selected-${sectionId}`}
+            >
+              {selectedCount > 0 ? t('resources.delete.selected', [selectedCount]) : t('resources.delete.all')}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Dropzone
         label={t(copy.dropLabel)}
@@ -266,21 +325,7 @@ function ResourceSection({
         )}
       </div>
 
-      {resources.length > 0 && (
-        <div className={styles.sectionFooter}>
-          {isEditing && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleContextualDelete}
-              data-cell-id={`delete-selected-${sectionId}`}
-            >
-              {selectedCount > 0 ? t('resources.delete.selected', [selectedCount]) : t('resources.delete.all')}
-            </Button>
-          )}
-          {footer}
-        </div>
-      )}
+      {resources.length > 0 && footer && <div className={styles.sectionFooter}>{footer}</div>}
       {resources.length === 0 && footer}
     </section>
   );
@@ -560,6 +605,22 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     }
   }, [resources, langCode, refresh, showPanelAlert]);
 
+  const handleSetEnabledMany = useCallback(async (type: ResourceType, ids: readonly number[], enabled: boolean) => {
+    const wanted = new Set(ids);
+    const targets = resources.filter((r) => r.type === type && r.id != null && wanted.has(r.id));
+    if (targets.length === 0) return;
+    try {
+      for (const r of targets) {
+        await setResourceEnabled(langCode, r.id!, enabled);
+      }
+      showPanelAlert('success', t('resources.edit.toggledMany', [targets.length]));
+      void refresh(true);
+    } catch (e) {
+      showPanelAlert('error', t('resources.edit.toggleFailed', [String(e)]));
+      void refresh(true);
+    }
+  }, [resources, langCode, refresh, showPanelAlert]);
+
   const handleDeleteAll = useCallback(async (type: ResourceType) => {
     setDeleteAllTarget(null);
     const doomed = resources.filter((r) => r.type === type && r.id != null);
@@ -619,6 +680,7 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
             onReorder={(from, to) => applyReorder('DICTIONARY', from, to)}
             onChanged={() => void refresh(true)}
             onDeleteAll={() => setDeleteAllTarget('DICTIONARY')}
+            onSetEnabledMany={(ids, enabled) => void handleSetEnabledMany('DICTIONARY', ids, enabled)}
           />
 
           <ResourceSection
@@ -636,6 +698,7 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
             onReorder={(from, to) => applyReorder('FREQUENCY', from, to)}
             onChanged={() => void refresh(true)}
             onDeleteAll={() => setDeleteAllTarget('FREQUENCY')}
+            onSetEnabledMany={(ids, enabled) => void handleSetEnabledMany('FREQUENCY', ids, enabled)}
             footer={bandsFooter}
           />
         </div>

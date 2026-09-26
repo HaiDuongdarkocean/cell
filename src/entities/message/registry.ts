@@ -55,6 +55,7 @@ import {
   FetchLocalAudioPayloadSchema,
   FetchMediaUrlPayloadSchema,
   FrequencyGetPayloadSchema,
+  LocalAudioBuildIndexPayloadSchema,
   LookupCancelPayloadSchema,
   LookupRequestPayloadSchema,
   PronunciationEspeakTtsPayloadSchema,
@@ -85,7 +86,10 @@ import {
   ResourceReorderPayloadSchema,
   ResourceSamplePayloadSchema,
   ResourceSetEnabledPayloadSchema,
+  ResourceRenamePayloadSchema,
   ResourceSetProfilesPayloadSchema,
+  ResourceSetComponentsPayloadSchema,
+  ResourceComponentsPayloadSchema,
 } from '@/entities/dictionary/resourceSchemas';
 import { subtitleDiscoveryPayloadSchema } from '@/entities/subtitle/discoverySchemas';
 
@@ -385,6 +389,12 @@ export const MESSAGE_REGISTRY = {
     type: MESSAGE_TYPES.LOCAL_AUDIO_STATE,
     schema: EmptyPayloadSchema,
     direction: 'cs->bg',
+    owner: 'background/handlers/localAudio',
+  },
+  [MESSAGE_TYPES.LOCAL_AUDIO_BUILD_INDEX]: {
+    type: MESSAGE_TYPES.LOCAL_AUDIO_BUILD_INDEX,
+    schema: LocalAudioBuildIndexPayloadSchema,
+    direction: 'panel->bg',
     owner: 'background/handlers/localAudio',
   },
   [MESSAGE_TYPES.LOCAL_AUDIO_OPEN_RECONNECT]: {
@@ -687,9 +697,27 @@ export const MESSAGE_REGISTRY = {
     direction: 'cs->bg',
     owner: 'background/handlers/resources',
   },
+  [MESSAGE_TYPES.RESOURCE_RENAME]: {
+    type: MESSAGE_TYPES.RESOURCE_RENAME,
+    schema: ResourceRenamePayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/resources',
+  },
   [MESSAGE_TYPES.RESOURCE_SET_PROFILES]: {
     type: MESSAGE_TYPES.RESOURCE_SET_PROFILES,
     schema: ResourceSetProfilesPayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/resources',
+  },
+  [MESSAGE_TYPES.RESOURCE_SET_COMPONENTS]: {
+    type: MESSAGE_TYPES.RESOURCE_SET_COMPONENTS,
+    schema: ResourceSetComponentsPayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/resources',
+  },
+  [MESSAGE_TYPES.RESOURCE_COMPONENTS]: {
+    type: MESSAGE_TYPES.RESOURCE_COMPONENTS,
+    schema: ResourceComponentsPayloadSchema,
     direction: 'cs->bg',
     owner: 'background/handlers/resources',
   },

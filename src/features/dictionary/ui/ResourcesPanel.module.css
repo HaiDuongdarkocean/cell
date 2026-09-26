@@ -100,6 +100,56 @@
   gap: var(--space-3);
 }
 
+/* Edit-mode toolbar — select-all + bulk actions, profile-toolbar pattern
+   (text actions on a quiet strip pinned above the list). */
+.editBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-1-5) var(--space-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-field);
+  animation: edit-bar-in var(--duration-normal) var(--ease-out);
+}
+
+.selectAll {
+  min-width: 0;
+  min-height: 0;
+  gap: var(--space-1-5);
+  font-size: var(--font-size-sm);
+}
+
+.selectionCount {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.editActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+.dangerAction {
+  color: var(--color-error);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dangerAction:hover {
+    color: var(--color-error);
+    background: var(--color-error-subtle);
+    text-decoration: none;
+  }
+}
+
+@keyframes edit-bar-in {
+  from { opacity: 0; transform: translateY(calc(-1 * var(--space-1))); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .resourceList {
   display: flex;
   flex-direction: column;
@@ -145,6 +195,10 @@
   .slotSettling,
   .dropPlaceholder {
     transition: none;
+  }
+
+  .editBar {
+    animation: none;
   }
 }
 

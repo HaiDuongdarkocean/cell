@@ -15,7 +15,7 @@
 import type { PhraseNode } from './phraseTemplateParser';
 
 const MAGIC = 0x4c584950; // "PIXL" little-endian
-const COMPILER_VERSION = 2;
+const COMPILER_VERSION = 7;
 const MAX_ANCHORS = 3;
 
 const NODE_LITERAL = 0;
@@ -124,11 +124,38 @@ function expandInputs(inputs: readonly PhraseIndexInput[]): PhraseIndexInput[] {
   return expanded.map((input, i) => ({ ...input, templateId: i }));
 }
 
+function collectLiterals(nodes: readonly PhraseNode[], out: string[]): string[] {
+  for (const node of nodes) {
+    if (node.type === 'literal') out.push(node.value);
+    else if (node.type === 'optional') collectLiterals(node.children, out);
+    else if (node.type === 'alternative') for (const branch of node.branches) collectLiterals(branch, out);
+  }
+  return out;
+}
+
+/**
+ * A template whose only fixed words are stopwords has no discriminating anchor:
+ * "sth to" matches any sentence with a "to", "be sb" any sentence with an "is".
+ * Such fragment headwords are not phrases — skip them instead of letting them
+ * match arbitrary text. Templates with two or more fixed words are kept even if
+ * every one of them is a stopword ("be in for sth"), because the frame itself
+ * is the signal.
+ */
+function isIndexable(nodes: readonly PhraseNode[]): boolean {
+  const literals = collectLiterals(nodes, []);
+  if (literals.length >= 2) return true;
+  return literals.some((value) => !STOPWORDS.has(value));
+}
+
 /** Compile parsed templates into an in-memory phrase index. */
 export function compilePhraseIndex(inputs: readonly PhraseIndexInput[]): PhraseIndex {
-  const expanded = expandInputs(inputs);
+  // Filter BEFORE expandInputs renumbers templateIds — templateId must equal
+  // the template's index in the filtered array or anchor postings point at the
+  // wrong template. Separable variants keep ≥2 literals so they are always
+  // indexable; non-indexable inputs (≤1 stopword literal) never produce one.
+  const expanded = expandInputs(inputs.filter((input) => isIndexable(input.nodes)));
   const templates: CompiledTemplate[] = expanded.map((input, i) => ({
-    templateId: input.templateId === 0 && i > 0 ? i : input.templateId,
+    templateId: i,
     sourceTerm: input.sourceTerm,
     normalizedTerm: input.normalizedTerm,
     nodes: input.nodes,

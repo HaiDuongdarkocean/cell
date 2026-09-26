@@ -6,7 +6,7 @@ import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/
 import { addResource } from '@/features/dictionary/repositories/resourceRepository';
 import { addDictionaryEntry } from '@/features/dictionary/repositories/dictionaryRepository';
 import { addFrequencyEntry } from '@/features/dictionary/repositories/frequencyRepository';
-import { putPhraseIndex } from '@/features/dictionary/repositories/phraseIndexRepository';
+import { putPhraseIndex, getPhraseIndex } from '@/features/dictionary/repositories/phraseIndexRepository';
 import { setWordStatus } from '@/features/dictionary/services/wordStatusStore';
 import {
   compilePhraseIndex,
@@ -328,6 +328,27 @@ describe('lookupOrchestrator — English', () => {
     expect(result.definitions[22]!.text).toBe('(verb [ T ]) to express doubts about something');
   });
 
+  it('falls back to lowercase candidate when only lowercase entry exists (I take it → i take it)', async () => {
+    // The by_term index is case-sensitive; dictionaries store lowercase terms.
+    // A capitalized lookup must retry with the lowercase candidate — the
+    // lemmaCandidates dedupe must not skip it just because it case-insensitively
+    // equals the lookup term.
+    await seedEnglishDictionary([
+      { term: 'i take it', definition: 'You can say I take it to check with someone…', pos: 'phrase' },
+    ]);
+
+    const result = await lookupOrchestrator({
+      term: 'I take it',
+      langCode: 'en',
+      contextSentence: '',
+      cursorOffset: 0,
+      fallback: true,
+    });
+
+    expect(result.definitions).toHaveLength(1);
+    expect(result.definitions[0]!.text).toContain('I take it');
+  });
+
   it('falls back to lemma when raw inflected term not in dictionary (easiest → easy)', async () => {
     // Dictionary has "easy" but NOT "easiest".
     await seedEnglishDictionary([
@@ -482,6 +503,80 @@ describe('lookupOrchestrator — English', () => {
     expect(result.definitions).toHaveLength(1);
     expect(result.definitions[0]!.text).toBe('a feline animal');
   });
+
+  it('rebuilds a stale phrase index blob and never matches the buggy bare-slot branch', async () => {
+    const sentence = 'Part 1: Morning routine: Phrasal verbs with Georgie';
+    const resourceId = await seedEnglishDictionary(
+      [
+        { term: 'routine', definition: 'the usual order in which you do things', pos: 'noun' },
+        { term: "somebody/something can't compete with somebody/something", definition: 'to not be as interesting' },
+      ],
+      ["somebody/something can't compete with somebody/something"],
+    );
+
+    // Stamp the stored blob with the previous compiler version — the parser
+    // that produced it allowed a bare-slot branch to swallow any token.
+    const stored = await getPhraseIndex('en', resourceId);
+    const staleBytes = stored!.blob.slice(0);
+    new DataView(staleBytes).setUint32(4, stored!.compilerVersion - 1, true);
+    await putPhraseIndex('en', resourceId, staleBytes, {
+      compilerVersion: stored!.compilerVersion - 1,
+      termCount: stored!.termCount,
+    });
+
+    const request = {
+      term: 'routine',
+      langCode: 'en',
+      contextSentence: sentence,
+      cursorOffset: sentence.indexOf('routine'),
+    };
+    const result = await lookupOrchestrator(request);
+    expect(result.term).toBe('routine');
+    expect(result.detectedPhrase).toBeNull();
+    expect(result.phraseIndexPending).toBe(true);
+
+    // The rebuild is fire-and-forget — poll IDB until the blob is regenerated.
+    let rebuilt = await getPhraseIndex('en', resourceId);
+    for (let i = 0; i < 100 && rebuilt!.compilerVersion !== stored!.compilerVersion; i++) {
+      await new Promise((r) => setTimeout(r, 10));
+      rebuilt = await getPhraseIndex('en', resourceId);
+    }
+    expect(rebuilt!.compilerVersion).toBe(stored!.compilerVersion);
+
+    // The fixed parser's index still refuses to match the unrelated sentence.
+    const after = await lookupOrchestrator(request);
+    expect(after.term).toBe('routine');
+    expect(after.detectedPhrase).toBeNull();
+    expect(after.phraseIndexPending).toBeFalsy();
+  });
+
+  it('flags results while a phrase index blob is missing, then self-heals', async () => {
+    const resourceId = await seedEnglishDictionary([
+      { term: 'put', definition: 'to move something into a position', pos: 'verb' },
+      { term: "put all one's eggs in one basket", definition: 'to depend entirely on one thing', pos: 'idiom' },
+    ]);
+
+    const sentence = "Put all one's eggs in one basket";
+    const request = {
+      term: 'put',
+      langCode: 'en',
+      contextSentence: sentence,
+      cursorOffset: 0,
+    };
+    const result = await lookupOrchestrator(request);
+    expect(result.term).toBe('put');
+    expect(result.phraseIndexPending).toBe(true);
+
+    let stored = await getPhraseIndex('en', resourceId);
+    for (let i = 0; i < 100 && !stored; i++) {
+      await new Promise((r) => setTimeout(r, 10));
+      stored = await getPhraseIndex('en', resourceId);
+    }
+    expect(stored).toBeTruthy();
+
+    const after = await lookupOrchestrator(request);
+    expect(after.phraseIndexPending).toBeFalsy();
+  });
 });
 
 describe('lookupOrchestrator — rich canonical fields', () => {
@@ -567,6 +662,100 @@ describe('lookupOrchestrator — rich canonical fields', () => {
     expect(originRows[0]!.text).toContain('from Old English tacan');
     expect(originRows[0]!.text).toContain('first known use: 12th century');
     expect(originRows[1]!.text).toBe('from Old Norse taka [other]');
+  });
+
+  it('drops disabledComponents per-resource and lets singletons fall through', async () => {
+    // Priority 0 disables word forms + IPA → priority 1 supplies both.
+    const ridA = await addResource('en', {
+      name: 'main.json', langCode: 'en', type: 'DICTIONARY', format: 'json-entries',
+      signature: `en-sig-comp-a-${Date.now()}`, wordCount: 1, installationFinished: true,
+      importedAt: Date.now(), priority: 0,
+      disabledComponents: ['inflections', 'pronunciation', 'translations'],
+    });
+    await addDictionaryEntry('en', {
+      resourceId: ridA, term: 'take', reading: 'tāk', altterm: '', pronunciation: '/teɪk-A/',
+      definition: 'to carry', pos: '', examples: '', audio: '',
+      inflections: [{ type: 'past', forms: ['took-A'] }],
+      senses: [{
+        pos: 'verb',
+        lines: [
+          { role: 'gloss', text: 'to carry', translation: 'mang' },
+          { role: 'example', text: 'Take it', translation: 'Cầm lấy' },
+        ],
+      }],
+    });
+    const ridB = await addResource('en', {
+      name: 'other.json', langCode: 'en', type: 'DICTIONARY', format: 'json-entries',
+      signature: `en-sig-comp-b-${Date.now()}`, wordCount: 1, installationFinished: true,
+      importedAt: Date.now(), priority: 1,
+    });
+    await addDictionaryEntry('en', {
+      resourceId: ridB, term: 'take', reading: '', altterm: '', pronunciation: '/teɪk-B/',
+      definition: 'to grab', pos: '', examples: '', audio: '',
+      inflections: [{ type: 'past', forms: ['took-B'] }],
+    });
+
+    const result = await lookupOrchestrator({
+      term: 'take', langCode: 'en', contextSentence: 'take it', cursorOffset: 0,
+    });
+
+    // Singleton fall-through: dict B's word forms + IPA win since A disabled them.
+    expect(result.inflections).toEqual([{ type: 'past', forms: ['took-B'] }]);
+    expect(result.reading).toBe('/teɪk-B/');
+    // Translations stripped from A's sense lines.
+    expect(result.definitions[0]!.lines?.every((l) => l.translation === undefined)).toBe(true);
+  });
+
+  it('falls through IPA when the top dictionary only stores reading === term', async () => {
+    // Normalized EN entries default `reading` to the term — that must not
+    // count as a pronunciation and swallow lower-priority IPA.
+    const ridA = await addResource('en', {
+      name: 'origin.json', langCode: 'en', type: 'DICTIONARY', format: 'json-entries',
+      signature: `en-sig-ipa-a-${Date.now()}`, wordCount: 1, installationFinished: true,
+      importedAt: Date.now(), priority: 0,
+    });
+    await addDictionaryEntry('en', {
+      resourceId: ridA, term: 'take', reading: 'take', altterm: '', pronunciation: '',
+      definition: '', pos: '', examples: '', audio: '',
+      etymology: { chain: 'Old Norse taka' },
+    });
+    const ridB = await addResource('en', {
+      name: 'learner.json', langCode: 'en', type: 'DICTIONARY', format: 'json-entries',
+      signature: `en-sig-ipa-b-${Date.now()}`, wordCount: 1, installationFinished: true,
+      importedAt: Date.now(), priority: 1,
+    });
+    await addDictionaryEntry('en', {
+      resourceId: ridB, term: 'take', reading: 'take', altterm: '', pronunciation: '/teɪk/',
+      definition: 'to carry', pos: 'verb', examples: '', audio: '',
+    });
+
+    const result = await lookupOrchestrator({
+      term: 'take', langCode: 'en', contextSentence: 'take it', cursorOffset: 0,
+    });
+
+    expect(result.reading).toBe('/teɪk/');
+  });
+
+  it('skips senses entirely when a resource disables definitions', async () => {
+    const rid = await addResource('en', {
+      name: 'meta-only.json', langCode: 'en', type: 'DICTIONARY', format: 'json-entries',
+      signature: `en-sig-comp-c-${Date.now()}`, wordCount: 1, installationFinished: true,
+      importedAt: Date.now(),
+      disabledComponents: ['definitions'],
+    });
+    await addDictionaryEntry('en', {
+      resourceId: rid, term: 'etym', reading: '', altterm: '', pronunciation: '',
+      definition: 'a definition that must not render', pos: '', examples: '', audio: '',
+      etymology: { chain: 'from Latin' },
+    });
+
+    const result = await lookupOrchestrator({
+      term: 'etym', langCode: 'en', contextSentence: 'etym test', cursorOffset: 0,
+    });
+
+    expect(result.definitions.every((d) => d.labels?.includes('word origin'))).toBe(true);
+    expect(result.rawDefinitions).toEqual([]);
+    expect(result.etymology?.chain).toBe('from Latin');
   });
 });
 

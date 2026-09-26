@@ -110,6 +110,24 @@ describe('phraseIndexCompiler', () => {
       const index = compilePhraseIndex([tmpl('kick the bucket')]);
       expect(index.lookupByAnchor('nonexistent')).toEqual([]);
     });
+
+    it('keeps templateId aligned with the array index when a template is dropped', () => {
+      // "sth to" is dropped (only a stopword literal). Its removal must not
+      // shift ids — postings must still resolve to the correct template.
+      const index = compilePhraseIndex([
+        tmpl('catch sb'),
+        tmpl('sth to'),
+        tmpl('kick the bucket'),
+      ]);
+
+      for (const id of index.lookupByAnchor('kick')) {
+        expect(index.templates[id]!.sourceTerm).toBe('kick the bucket');
+      }
+      for (const id of index.lookupByAnchor('catch')) {
+        expect(index.templates[id]!.sourceTerm).toBe('catch sb');
+      }
+      index.templates.forEach((t, i) => expect(t.templateId).toBe(i));
+    });
   });
 
   describe('serialize / deserialize round-trip', () => {

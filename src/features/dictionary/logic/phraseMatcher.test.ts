@@ -476,6 +476,209 @@ describe('phraseMatcher', () => {
     });
   });
 
+  describe('matchPhrase — slot-led slash alternatives', () => {
+    it("does not match somebody/something can't compete with somebody/something on an unrelated word", () => {
+      const index = buildIndex(["somebody/something can't compete with somebody/something"]);
+      const m = matchPhrase(
+        req('Part 1: Morning routine: Phrasal verbs with Georgie', 'routine'),
+        index,
+      );
+      expect(m).toBeNull();
+    });
+
+    it("matches somebody/something can't compete with somebody/something in a real context", () => {
+      const index = buildIndex(["somebody/something can't compete with somebody/something"]);
+      const m = matchPhrase(
+        req("My cooking can't compete with Mary's.", 'compete'),
+        index,
+      );
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe("somebody/something can't compete with somebody/something");
+      expect(m!.surface).toBe("My cooking can't compete with Mary's");
+    });
+  });
+
+  describe('matchPhrase — trailing single-atom slash alternative', () => {
+    it("does not match go/come to sb's rescue/aid on a bare 'aid'", () => {
+      const index = buildIndex(["go/come to sb's rescue/aid"]);
+      const m = matchPhrase(
+        req('She works for a financial aid office.', 'aid'),
+        index,
+      );
+      expect(m).toBeNull();
+    });
+
+    it("matches go/come to sb's rescue/aid in a real context", () => {
+      const index = buildIndex(["go/come to sb's rescue/aid"]);
+      const m = matchPhrase(req('She came to my rescue.', 'came'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe("go/come to sb's rescue/aid");
+      expect(m!.surface).toBe('came to my rescue');
+    });
+  });
+
+  describe('matchPhrase — trailing single-slot slash alternative', () => {
+    it("does not match have/be nothing to do with somebody/something on an unrelated word", () => {
+      const index = buildIndex(['have/be nothing to do with somebody/something']);
+      const m = matchPhrase(
+        req('You have to work for what you want.', 'work'),
+        index,
+      );
+      expect(m).toBeNull();
+    });
+
+    it('matches have/be nothing to do with somebody/something in a real context', () => {
+      const index = buildIndex(['have/be nothing to do with somebody/something']);
+      const m = matchPhrase(req('This has nothing to do with you.', 'nothing'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('have/be nothing to do with somebody/something');
+      expect(m!.surface).toBe('has nothing to do with you');
+    });
+  });
+
+  describe('matchPhrase — generic fragment templates and paired groups', () => {
+    it('does not match get/put somebody/something out of your mind on a bare "get"', () => {
+      const index = buildIndex(['get/put somebody/something out of your mind']);
+      const m = matchPhrase(req('To get bent out of shape.', 'get'), index);
+      expect(m).toBeNull();
+    });
+
+    it('matches get/put somebody/something out of your mind in a real context', () => {
+      const index = buildIndex(['get/put somebody/something out of your mind']);
+      const m = matchPhrase(req('You should put it out of your mind.', 'put'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('get/put somebody/something out of your mind');
+      expect(m!.surface).toBe('put it out of your mind');
+    });
+
+    it('does not match the fragment template "sth to" on "when we come to"', () => {
+      const index = buildIndex(['sth to']);
+      const m = matchPhrase(
+        req("We'll cross that bridge when we come to it.", 'when'),
+        index,
+      );
+      expect(m).toBeNull();
+    });
+
+    it('does not match the fragment template "be sb" on "is a penny"', () => {
+      const index = buildIndex(['be sb']);
+      const m = matchPhrase(req('A penny saved is a penny earned.', 'is'), index);
+      expect(m).toBeNull();
+    });
+
+    it('keeps single-literal templates whose literal is a content word', () => {
+      const index = buildIndex(['something else']);
+      const m = matchPhrase(req('That party was something else.', 'something'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('something else');
+    });
+  });
+
+  describe('matchPhrase — person/possessive slot content', () => {
+    it('does not match catch sb on a non-person object', () => {
+      const index = buildIndex(['catch sb']);
+      const m = matchPhrase(
+        req('You can catch more flies with honey than you can with vinegar.', 'catch'),
+        index,
+      );
+      expect(m).toBeNull();
+    });
+
+    it('does not match make sb on "make an omelet"', () => {
+      const index = buildIndex(['make sb', 'make somebody']);
+      const m = matchPhrase(
+        req("You can't make an omelet without breaking some eggs.", 'make'),
+        index,
+      );
+      expect(m).toBeNull();
+    });
+
+    it('does not match make sb on "Haste makes waste"', () => {
+      const index = buildIndex(['make sb']);
+      const m = matchPhrase(req('Haste makes waste.', 'makes'), index);
+      expect(m).toBeNull();
+    });
+
+    it('still matches catch sb on a person pronoun', () => {
+      const index = buildIndex(['catch sb']);
+      const m = matchPhrase(req('I finally caught him after the meeting.', 'caught'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('catch sb');
+      expect(m!.surface).toBe('caught him');
+    });
+
+    it('still matches sb on a capitalized name', () => {
+      const index = buildIndex(['ask sb']);
+      const m = matchPhrase(req('She asked Mary about it.', 'asked'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('ask sb');
+      expect(m!.surface).toBe('asked Mary');
+    });
+
+    it('does not match a possessive slot on a non-possessive token', () => {
+      const index = buildIndex(['be under your nose']);
+      const m = matchPhrase(req('The answer was under the nose.', 'under'), index);
+      expect(m).toBeNull();
+    });
+  });
+
+  describe('matchPhrase — possessive-led alternatives', () => {
+    it('our/your/their differences only matches when the literal follows', () => {
+      const index = buildIndex(['our/your/their differences']);
+      expect(
+        matchPhrase(req("A snowball's chance in hell.", 'snowball'), index),
+      ).toBeNull();
+
+      const ours = matchPhrase(req('We settled our differences.', 'differences'), index);
+      expect(ours).not.toBeNull();
+      expect(ours!.dictionaryTerm).toBe('our/your/their differences');
+      expect(ours!.surface).toBe('our differences');
+
+      const theirs = matchPhrase(
+        req('They talked about their differences.', 'differences'),
+        index,
+      );
+      expect(theirs).not.toBeNull();
+      expect(theirs!.dictionaryTerm).toBe('our/your/their differences');
+    });
+
+    it('i / you / somebody for one only matches when "for one" follows', () => {
+      const index = buildIndex(['i / you / somebody for one']);
+      expect(
+        matchPhrase(
+          req('you should also limit the use of too many idioms in your speech', 'you'),
+          index,
+        ),
+      ).toBeNull();
+
+      const mine = matchPhrase(req('I, for one, disagree.', 'i'), index);
+      expect(mine).not.toBeNull();
+      expect(mine!.surface).toBe('I, for one');
+
+      const yours = matchPhrase(req('You, for one, knew that.', 'you'), index);
+      expect(yours).not.toBeNull();
+      expect(yours!.dictionaryTerm).toBe('i / you / somebody for one');
+    });
+
+    it('make/prove your/a point does not match a bare "make"', () => {
+      const index = buildIndex(['make/prove your/a point']);
+      expect(
+        matchPhrase(
+          req('make your speech more natural and score higher points', 'make'),
+          index,
+        ),
+      ).toBeNull();
+
+      const aPoint = matchPhrase(req('She made a point of arriving early.', 'made'), index);
+      expect(aPoint).not.toBeNull();
+      expect(aPoint!.dictionaryTerm).toBe('make/prove your/a point');
+
+      const hisPoint = matchPhrase(req('He made his point.', 'made'), index);
+      expect(hisPoint).not.toBeNull();
+      expect(hisPoint!.surface).toBe('made his point');
+    });
+  });
+
   describe('matchPhrase — edge cases', () => {
     it('returns null when cursor is outside any word token', () => {
       const index = buildIndex(['kick the bucket']);
@@ -544,12 +747,13 @@ describe('phraseMatcher', () => {
     });
 
     it('captures nodesStructure in perCandidate for parser bug analysis', () => {
-      // Reproduce the "make someone/yourself/something out" parser bug:
-      // "out" should be shared suffix but parser puts it in the last alt branch.
+      // "make someone/yourself/something out" parses as
+      // make + alt(someone/yourself/something) + out — a slot-led pairwise
+      // alternation followed by the shared "out" literal.
       const index = buildIndex(['make someone/yourself/something out']);
       const traces: MatchTraceData[] = [];
       matchPhraseAll(
-        req('make predictions without being explicitly programmed', 'make'),
+        req('make predictions out of thin air', 'make'),
         index, 1,
         (trace) => traces.push(trace),
       );

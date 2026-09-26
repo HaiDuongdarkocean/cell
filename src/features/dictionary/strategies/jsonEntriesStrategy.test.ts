@@ -74,7 +74,6 @@ describe('jsonEntriesStrategy', () => {
       etymology: { chain: 'from Old English tacan', firstKnownUse: '12th century' },
       wordFamily: { nouns: ['taking'] },
       derivedTerms: ['taker'],
-      usageNote: { title: 'take or bring', text: 'direction matters' },
     }]));
     const strategy = new JsonEntriesStrategy(
       { resourceId, langCode: LANG },
@@ -88,7 +87,6 @@ describe('jsonEntriesStrategy', () => {
     expect(stored?.etymology?.chain).toBe('from Old English tacan');
     expect(stored?.wordFamily?.nouns).toEqual(['taking']);
     expect(stored?.derivedTerms).toEqual(['taker']);
-    expect(stored?.usageNote?.title).toBe('take or bring');
   });
 
   it('skips entries without term', async () => {

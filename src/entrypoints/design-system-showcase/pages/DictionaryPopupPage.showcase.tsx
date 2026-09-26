@@ -10,6 +10,12 @@ import styles from './DictionaryPopupPage.module.css';
 installMockDictionarySendMessage();
 
 const MOCK_RESULT = getMockLookupResult(undefined, 'serendipity');
+const MOCK_CANDIDATES = [
+  'serendipitous',
+  'serendipitously',
+  'serendipity seeker extraordinaire',
+  'serene',
+].map((term) => getMockLookupResult(undefined, term));
 
 export function Showcase(): ReactElement {
   const [isOpen, setIsOpen] = useState(false);
@@ -57,6 +63,7 @@ export function Showcase(): ReactElement {
             initialTerm="serendipity"
             initialSize={{ width: 420, maxHeight: 360 }}
             initialResult={MOCK_RESULT}
+            initialCandidates={MOCK_CANDIDATES}
             onClose={() => setIsOpen(false)}
             onSendToCard={() => {}}
             onQuickAdd={() => {}}

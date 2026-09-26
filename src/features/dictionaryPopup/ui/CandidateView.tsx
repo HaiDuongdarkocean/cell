@@ -81,8 +81,6 @@ export interface CandidateViewProps {
   readonly selectionSnapshot?: PopupSelectionSnapshot;
   /** Preload media/translation in the integrated panel. */
   readonly preloadMedia?: boolean;
-  /** Re-run lookup for a related term (phrasal verb, idiom, collocation…). */
-  readonly onLookupTerm?: (term: string) => void;
 }
 
 export function CandidateView({
@@ -98,7 +96,6 @@ export function CandidateView({
   defaultActiveTab,
   selectionSnapshot,
   preloadMedia,
-  onLookupTerm,
 }: CandidateViewProps): React.JSX.Element {
   const panel = useCandidate({
     candidate,
@@ -188,42 +185,23 @@ export function CandidateView({
       </header>
 
       <div className={styles.cellContent} data-cell-id="dictionary-content">
-        <div className={styles.cellHeaderReading}>
-          {candidate.reading && (
-            <span className={styles.cellHeaderIpa} data-cell-id="dictionary-reading">
-              {formatReading(candidate.reading, candidate.readingKind)}
-            </span>
-          )}
-          {candidate.level && (
-            <span className={styles.cellHeaderLevel} data-cell-id="dictionary-level">[{candidate.level}]</span>
-          )}
-          <span className={styles.cellHeaderAudioGroup}>
-            <Button
-              shape="circle"
-              size="xs"
-              variant="ghost"
-              className={styles.cellHeaderAudio}
-              aria-label={t('dict.audio.playWord')}
-              title={t('dict.audio.playWord')}
-              onClick={panel.playTerm}
-              data-cell-id="dictionary-play-term"
-            >
-              <Icon name="audioWave"  />
-            </Button>
-            <Button
-              shape="circle"
-              size="xs"
-              variant="ghost"
-              className={styles.cellHeaderAudio}
-              aria-label={t('dict.audio.playSentence')}
-              title={t('dict.audio.playSentence')}
-              onClick={panel.playSentence}
-              data-cell-id="dictionary-play-sentence"
-            >
-              <Icon name="messageSquare"  />
-            </Button>
-          </span>
-        </div>
+        {(candidate.reading || candidate.level || candidate.frequencyStars) && (
+          <div className={styles.cellHeaderReading}>
+            {candidate.reading && (
+              <span className={styles.cellHeaderIpa} data-cell-id="dictionary-reading">
+                {formatReading(candidate.reading, candidate.readingKind)}
+              </span>
+            )}
+            {candidate.frequencyStars != null && candidate.frequencyStars > 0 && (
+              <span className={styles.cellHeaderLevel} data-cell-id="dictionary-stars">
+                {'●'.repeat(candidate.frequencyStars)}
+              </span>
+            )}
+            {candidate.level && (
+              <span className={styles.cellHeaderLevel} data-cell-id="dictionary-level">[{candidate.level}]</span>
+            )}
+          </div>
+        )}
         <div className={styles.cellHeaderSecond}>
           <Button
             variant="transparent"
@@ -309,7 +287,7 @@ export function CandidateView({
         {candidate.inflections && candidate.inflections.length > 0 && (
           <div className={styles.cellMetaLine} data-cell-id="dictionary-word-forms">
             <span className={styles.cellMetaLabel}>word forms:</span>{' '}
-            {candidate.inflections.map((g) => `${g.type} ${g.forms.join(', ')}`).join(' · ')}
+            {candidate.inflections.map((g) => (g.type ? `${g.type} ` : '') + g.forms.join(', ')).join(' · ')}
           </div>
         )}
 
@@ -347,7 +325,7 @@ export function CandidateView({
         )}
       </section>
 
-      <EntryMeta candidate={candidate} onLookupTerm={onLookupTerm} />
+      <EntryMeta candidate={candidate} />
       </div>
     </article>
   );
@@ -360,6 +338,7 @@ const RELATED_KIND_LABELS: Record<string, string> = {
   expression: 'phrases',
   lemma: 'lemmas',
   derivative: 'derivatives',
+  thesaurus: 'thesaurus',
 };
 
 function relatedKindLabel(kind: string): string {
@@ -378,10 +357,8 @@ function groupRelated(related: readonly RelatedEntry[]): [string, RelatedEntry[]
 
 function EntryMeta({
   candidate,
-  onLookupTerm,
 }: {
   readonly candidate: LookupResult;
-  readonly onLookupTerm?: (term: string) => void;
 }): React.JSX.Element | null {
   const relatedGroups = candidate.related?.length ? groupRelated(candidate.related) : [];
   const nonEmpty = (p: readonly [string, readonly string[] | undefined]): p is [string, readonly string[]] =>
@@ -428,18 +405,15 @@ function EntryMeta({
           {items.map((r, i) => (
             <span key={r.term}>
               {i > 0 && ', '}
-              <button
-                type="button"
+              <span
                 className={styles.cellRelatedLink}
                 title={r.preview}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onLookupTerm?.(r.term);
-                }}
+                data-allow-lookup
+                data-lookup-term={r.term}
                 data-cell-id={`dictionary-related-${r.term}`}
               >
                 {r.term}
-              </button>
+              </span>
             </span>
           ))}
         </div>

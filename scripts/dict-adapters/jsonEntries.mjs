@@ -23,7 +23,6 @@ export function* iterJsonEntries(text) {
       wordFamily: e.wordFamily,
       wordNet: e.wordNet,
       derivedTerms: Array.isArray(e.derivedTerms) ? e.derivedTerms : undefined,
-      usageNote: e.usageNote,
     };
   }
 }

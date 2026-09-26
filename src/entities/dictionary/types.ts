@@ -16,6 +16,26 @@ export type ImportFormat =
 /** Resource type — frequency list vs dictionary (spec F7). */
 export type ResourceType = 'FREQUENCY' | 'DICTIONARY';
 
+/** A toggleable content component of a dictionary resource. Detected per
+ *  resource at import (or by a lazy store scan) into `ResourceInfo.components`;
+ *  `disabledComponents` drops the part at lookup-merge time so lower-priority
+ *  dictionaries supply it instead (e.g. word forms/IPA from dictionary 2
+ *  when dictionary 1's toggle is off). */
+export type DictionaryComponent =
+  | 'definitions'
+  | 'examples'
+  | 'translations'
+  | 'synonyms'
+  | 'pronunciation'
+  | 'inflections'
+  | 'etymology'
+  | 'wordFamily'
+  | 'wordNet'
+  | 'derivedTerms'
+  | 'related'
+  | 'level'
+  | 'frequencyStars';
+
 /** Resource info — 1 row per imported file (langResourceInfo store). */
 export interface ResourceInfo {
   readonly id?: number;
@@ -31,6 +51,11 @@ export interface ResourceInfo {
   readonly enabled?: boolean; // absent means enabled
   readonly priority?: number; // lower wins; absent falls back to resourceId-descending default
   readonly profileIds?: readonly string[]; // absent means belongs to all language profiles
+  /** Canonical components this resource contains — drives the per-resource
+   *  component toggles in settings. */
+  readonly components?: readonly DictionaryComponent[];
+  /** Components the user turned off for this resource. */
+  readonly disabledComponents?: readonly DictionaryComponent[];
   readonly metadata?: Record<string, unknown>;
 }
 
@@ -69,8 +94,6 @@ export interface SenseBlock {
   /** Per-sense relations — "Synonyms: a, b" / "Opposite: c". */
   readonly synonyms?: readonly string[];
   readonly antonyms?: readonly string[];
-  /** Crowdsourced votes — stored for ranking, never rendered. */
-  readonly votes?: { readonly up: number; readonly down: number; readonly date?: string };
 }
 
 /** A kind-tagged link to another entry — phrasal verbs, idioms, collocations,
@@ -108,11 +131,6 @@ export interface WordNetInfo {
   readonly hypernyms?: readonly string[];
 }
 
-export interface UsageNote {
-  readonly title: string;
-  readonly text: string;
-}
-
 /** Dictionary entry — 1 row per term with rich fields (langDictionaryEntry store). */
 export interface DictionaryEntry {
   readonly id?: number;
@@ -141,7 +159,6 @@ export interface DictionaryEntry {
   readonly wordNet?: WordNetInfo;
   readonly derivedTerms?: readonly string[];
   readonly anagrams?: readonly string[];
-  readonly usageNote?: UsageNote;
 }
 
 /** Result of an import operation. */

@@ -14,9 +14,8 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { computeSignature } from '../logic/signatureGenerator';
 import type { ReadableFile } from '../logic/fileDetector';
 import type {
-  DictionaryEntry,
+  DictionaryComponent,
   DuplicateDecision,
-  FrequencyEntry,
   ImportProgressCallback,
   ImportResult,
   ResourceInfo,
@@ -91,6 +90,11 @@ export async function setResourceEnabled(langCode: string, resourceId: number, e
   notifyResourcesChanged(langCode);
 }
 
+export async function renameResource(langCode: string, resourceId: number, name: string): Promise<void> {
+  await request(MESSAGE_TYPES.RESOURCE_RENAME, { langCode, resourceId, name });
+  notifyResourcesChanged(langCode);
+}
+
 export async function setResourceProfiles(
   langCode: string,
   resourceId: number,
@@ -100,48 +104,27 @@ export async function setResourceProfiles(
   notifyResourcesChanged(langCode);
 }
 
-export async function sampleDictionaryEntries(
+export async function setResourceComponents(
   langCode: string,
   resourceId: number,
-  limit: number,
-): Promise<DictionaryEntry[]> {
-  const data = await request<{ entries: DictionaryEntry[] }>(MESSAGE_TYPES.RESOURCE_SAMPLE, {
-    langCode, resourceId, resourceType: 'DICTIONARY', limit,
+  disabledComponents: readonly DictionaryComponent[],
+): Promise<void> {
+  await request(MESSAGE_TYPES.RESOURCE_SET_COMPONENTS, {
+    langCode, resourceId, disabledComponents: [...disabledComponents],
   });
-  return data?.entries ?? [];
+  notifyResourcesChanged(langCode);
 }
 
-export async function findDictionaryEntry(
+/** Components this dictionary contains — persisted on the resource; the
+ *  background lazily scans + caches for pre-existing imports. */
+export async function getResourceComponents(
   langCode: string,
   resourceId: number,
-  term: string,
-): Promise<DictionaryEntry | undefined> {
-  const data = await request<{ entry: DictionaryEntry | null }>(MESSAGE_TYPES.RESOURCE_FIND, {
-    langCode, resourceId, resourceType: 'DICTIONARY', term,
-  });
-  return data?.entry ?? undefined;
-}
-
-export async function sampleFrequencyEntries(
-  langCode: string,
-  resourceId: number,
-  limit: number,
-): Promise<FrequencyEntry[]> {
-  const data = await request<{ entries: FrequencyEntry[] }>(MESSAGE_TYPES.RESOURCE_SAMPLE, {
-    langCode, resourceId, resourceType: 'FREQUENCY', limit,
-  });
-  return data?.entries ?? [];
-}
-
-export async function findFrequencyEntry(
-  langCode: string,
-  resourceId: number,
-  term: string,
-): Promise<FrequencyEntry | undefined> {
-  const data = await request<{ entry: FrequencyEntry | null }>(MESSAGE_TYPES.RESOURCE_FIND, {
-    langCode, resourceId, resourceType: 'FREQUENCY', term,
-  });
-  return data?.entry ?? undefined;
+): Promise<readonly DictionaryComponent[]> {
+  const data = await request<{ components: readonly DictionaryComponent[] }>(
+    MESSAGE_TYPES.RESOURCE_COMPONENTS, { langCode, resourceId },
+  );
+  return data?.components ?? [];
 }
 
 function readAsDataUrl(file: ReadableFile): Promise<string> {

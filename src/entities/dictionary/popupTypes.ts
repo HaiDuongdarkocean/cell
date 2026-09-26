@@ -6,7 +6,7 @@
 // Settings v14 types (DictionaryPopupSettings, CardCreatorSettingsV14) live in
 // `@/entities/settings/types.ts`.
 
-import type { LookupRequest, PhraseMatch, SenseLine, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo, UsageNote } from './types';
+import type { LookupRequest, PhraseMatch, SenseLine, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo } from './types';
 import type { BilingualCue, MediaFile } from '@/entities/media';
 import type { CardCreatorQueueItem } from '@/entities/cardCreator';
 
@@ -104,13 +104,15 @@ export interface LookupResult {
   readonly inflections?: readonly InflectionGroup[];
   /** Entry-level CEFR/provider level (header `[B1]`). */
   readonly level?: string;
+  /** 1–3 frequency stars from the highest-priority dictionary that has them. */
+  readonly frequencyStars?: number;
   /** Word origin — primary chain + checkable per-source variants. */
   readonly etymology?: EtymologyBlock;
   readonly wordFamily?: WordFamily;
   readonly wordNet?: WordNetInfo;
   readonly derivedTerms?: readonly string[];
-  readonly usageNote?: UsageNote;
   readonly matchSource: MatchSource;
+  readonly phraseIndexPending?: boolean;
 }
 
 // === Quick Add ===
@@ -266,6 +268,14 @@ export type LocalAudioPermission = 'granted' | 'prompt' | 'denied' | 'none';
 export interface LocalAudioStateResponse {
   readonly configured: boolean;
   readonly permission: LocalAudioPermission;
+}
+
+export interface LocalAudioBuildIndexPayload {
+  readonly dslFileHandleId: string;
+}
+
+export interface LocalAudioBuildIndexResponse {
+  readonly count: number;
 }
 
 export interface FetchImagesPayload {

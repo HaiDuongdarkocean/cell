@@ -99,12 +99,14 @@ export function DictionaryPanelView({
 
   const [searchHistory, setSearchHistory] = useState<readonly string[]>([]);
   const [activeChipIndex, setActiveChipIndex] = useState(0);
+  const [chipsHidden, setChipsHidden] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSearchFocusRef = useRef(false);
   const userTypedRef = useRef(false);
   const spySuppressRef = useRef(false);
+  const spyQuietTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { searchTerm, setSearchTerm, search } = panel;
 
@@ -262,6 +264,57 @@ export function DictionaryPanelView({
     return () => tracker.destroy();
   }, [allCandidates]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    const scroller = container?.querySelector<HTMLElement>('[data-cell-id="dictionary-candidates-scroll"]');
+    const chip = container?.querySelector<HTMLElement>(
+      `[data-cell-id="dictionary-candidate-chip-${activeChipIndex}"]`,
+    );
+    if (!scroller || !chip) return;
+    const sRect = scroller.getBoundingClientRect();
+    const cRect = chip.getBoundingClientRect();
+    const delta = cRect.left < sRect.left
+      ? cRect.left - sRect.left
+      : cRect.right > sRect.right
+        ? cRect.right - sRect.right
+        : 0;
+    if (delta === 0) return;
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    scroller.scrollTo({
+      left: scroller.scrollLeft + delta,
+      behavior: reduceMotion ? 'auto' : 'smooth',
+    });
+  }, [activeChipIndex]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const scrollers = [
+      container.closest<HTMLElement>('[data-cell-id="popup-dictionary-content"]'),
+      container.querySelector<HTMLElement>('[data-cell-id="dictionary-candidate-list"]'),
+    ].filter((el): el is HTMLElement => el !== null);
+    const lastTops = new WeakMap<HTMLElement, number>();
+    scrollers.forEach((el) => lastTops.set(el, el.scrollTop));
+    const onScroll = (e: Event): void => {
+      const el = e.currentTarget as HTMLElement;
+      const top = el.scrollTop;
+      const delta = top - (lastTops.get(el) ?? top);
+      lastTops.set(el, top);
+      if (spySuppressRef.current) {
+        if (spyQuietTimerRef.current) clearTimeout(spyQuietTimerRef.current);
+        spyQuietTimerRef.current = setTimeout(() => { spySuppressRef.current = false; }, 150);
+        return;
+      }
+      if (Math.abs(delta) < 8) return;
+      setChipsHidden(top > 0 && delta > 0);
+    };
+    scrollers.forEach((el) => el.addEventListener('scroll', onScroll, { passive: true }));
+    return () => {
+      scrollers.forEach((el) => el.removeEventListener('scroll', onScroll));
+      if (spyQuietTimerRef.current) clearTimeout(spyQuietTimerRef.current);
+    };
+  }, [allCandidates]);
+
   const handleChipClick = useCallback((index: number): void => {
     setActiveChipIndex(index);
     // Query inside the container's root node so this works in both Shadow DOM
@@ -272,17 +325,8 @@ export function DictionaryPanelView({
       `[data-cell-id="dictionary-candidate-${index}"]`,
     );
     if (el) {
-      // Suppress scroll-spy until the programmatic smooth scroll finishes.
-      // scrollend (capture — the event doesn't bubble) is the unlock signal;
-      // the timeout is a fallback for no-op scrolls where scrollend never
-      // fires (target already in view).
       spySuppressRef.current = true;
-      const unlock = (): void => {
-        spySuppressRef.current = false;
-        document.removeEventListener('scrollend', unlock, true);
-      };
-      document.addEventListener('scrollend', unlock, { capture: true, once: true });
-      setTimeout(unlock, 800);
+      setTimeout(() => { spySuppressRef.current = false; }, 1500);
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     const candidate = allCandidates[index];
@@ -413,21 +457,21 @@ export function DictionaryPanelView({
                   defaultActiveTab={defaultActiveTab}
                   selectionSnapshot={matchesSnapshot ? selectionSnapshot : undefined}
                   preloadMedia={variant === 'integrated'}
-                  onLookupTerm={panel.search}
                 />
               );
             })}
           </div>
 
           {allCandidates.length > 1 && (
-            <div className={styles.cellCandidatesChips}>
-              <div className={styles.cellCandidatesChipsScroll}>
+            <div className={`${styles.cellCandidatesChips}${chipsHidden ? ` ${styles.cellCandidatesChipsHidden}` : ''}`}>
+              <div className={styles.cellCandidatesChipsScroll} data-cell-id="dictionary-candidates-scroll">
                 {allCandidates.map((c, idx) => (
-                  <Button variant="ghost"
+                  <Button variant="ghost" size="sm"
                     key={`${c.term}-${idx}`}
                     className={styles.cellChip}
                     aria-current={idx === activeChipIndex ? 'true' : undefined}
                     onClick={() => handleChipClick(idx)}
+                    title={c.term}
                     data-cell-id={`dictionary-candidate-chip-${idx}`}
                   >
                     {c.term}
@@ -459,7 +503,6 @@ export function DictionaryPanelView({
 function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Element {
   // Token-derived sizes — SSOT, no magic numbers.
   const btnSm = 'var(--iconbutton-size-sm)';       // action buttons + toolbar tabs
-  const btnXs = 'var(--iconbutton-size-xs)';       // audio buttons
   const checkbox = 'var(--space-4)';               // definition checkbox (16px)
   const pillH = 'var(--space-5)';                  // status/frequency pill height
   const statusW = 'calc(6 * var(--font-size-sm))'; // matches .cellHeaderStatus min-width: 6em
@@ -488,10 +531,6 @@ function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Eleme
       <div className={candidateStyles.cellContent} data-cell-id="dictionary-content-skeleton">
         <div className={candidateStyles.cellHeaderReading}>
           <Skeleton width={ipaW} height={ipaH} shape="rect" />
-          <span className={candidateStyles.cellHeaderAudioGroup}>
-            <Skeleton width={btnXs} height={btnXs} shape="circle" />
-            <Skeleton width={btnXs} height={btnXs} shape="circle" />
-          </span>
         </div>
 
         <div className={candidateStyles.cellHeaderSecond}>

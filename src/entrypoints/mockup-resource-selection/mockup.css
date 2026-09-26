@@ -1,0 +1,281 @@
+/* Mockup shell — tokens only. Replicates ResourcesPanel edit mode so the
+   proposed selection contract can be compared against the shipped look. */
+
+html,
+body {
+  background: var(--color-background);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.mrs-page {
+  min-height: 100vh;
+  padding: var(--space-6) var(--space-4);
+  background: var(--color-background);
+}
+
+.mrs-header {
+  max-width: 720px;
+  margin: 0 auto var(--space-3);
+}
+
+.mrs-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-xl);
+}
+
+.mrs-controls {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.mrs-seg {
+  display: inline-flex;
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.mrs-seg button {
+  border: 0;
+  padding: var(--space-1-5) var(--space-3);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.mrs-seg button[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.mrs-note {
+  max-width: 720px;
+  margin: 0 auto var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
+}
+
+.mrs-stage {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* === Section replica (mirrors ResourcesPanel.module.css) === */
+
+.mrs-sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.mrs-sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.mrs-sectionSubtitle {
+  margin: var(--space-0-5) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.mrs-editBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-1-5) var(--space-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-field);
+  margin-bottom: var(--space-3);
+}
+
+.mrs-selectionCount {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.mrs-editActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+.mrs-danger {
+  color: var(--color-error);
+}
+
+.mrs-proposed .mrs-danger {
+  background: var(--color-error-subtle);
+  border-radius: var(--radius-md);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mrs-danger:hover {
+    color: var(--color-error);
+    background: var(--color-error-subtle);
+    text-decoration: none;
+  }
+
+  .mrs-proposed .mrs-danger:hover {
+    filter: brightness(0.96);
+  }
+}
+
+.mrs-actionGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  height: var(--touch-target);
+  box-sizing: border-box;
+  padding: var(--space-0-5);
+  border-radius: var(--radius-full);
+  border: var(--border-width-hairline) solid var(--color-border);
+  background: var(--color-surface-hover);
+}
+
+/* --- Current: what is shipped today --- */
+
+.mrs-current .mrs-selectAll {
+  min-width: 0;
+  min-height: 0;
+  gap: var(--space-1-5);
+  font-size: var(--font-size-sm);
+}
+
+.mrs-current .mrs-selectCheck {
+  min-width: 0;
+  min-height: 0;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.mrs-current .mrs-actionGroup {
+  display: contents;
+}
+
+/* --- Proposed: card = hit surface, pill action group, semantic colors --- */
+
+.mrs-proposed .mrs-selectAll {
+  font-size: var(--font-size-base);
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
+  margin: calc(-1 * var(--space-1)) 0;
+  border-radius: var(--radius-md);
+}
+
+.mrs-proposed .mrs-action {
+  min-width: calc(var(--touch-target) * 2);
+  justify-content: center;
+  text-align: center;
+}
+
+.mrs-proposed .mrs-card {
+  --card-background: var(--color-field);
+  cursor: pointer;
+  transition: none;
+  transform: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mrs-proposed .mrs-card:hover {
+    background: var(--color-field-hover);
+  }
+
+  .mrs-proposed .mrs-card[class*='selected'],
+  .mrs-proposed .mrs-card[data-variant='selected'],
+  .mrs-proposed .mrs-card[class*='selected']:hover,
+  .mrs-proposed .mrs-card[data-variant='selected']:hover {
+    background: var(--color-primary-subtle);
+    transform: none;
+    box-shadow: var(--shadow-inset-selected);
+  }
+
+  .mrs-proposed .mrs-trash:hover {
+    color: var(--color-error);
+    background: var(--color-error-subtle);
+  }
+}
+
+.mrs-proposed .mrs-selectCheck {
+  min-width: 0;
+  min-height: 0;
+  flex-shrink: 0;
+  align-self: stretch;
+  padding: 0 var(--space-2);
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-1));
+  border-radius: var(--radius-md);
+}
+
+/* === Card replica (mirrors ResourceCard.module.css) === */
+
+.mrs-card {
+  --card-padding: var(--space-2) var(--space-3);
+  --card-radius: var(--radius-lg);
+}
+
+.mrs-cardDisabled {
+  opacity: 0.5;
+}
+
+.mrs-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target-mobile);
+}
+
+.mrs-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+  flex: 1;
+}
+
+.mrs-name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mrs-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-0-5);
+}
+
+.mrs-chip {
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-full);
+  padding: var(--space-0-5) var(--space-2);
+  cursor: pointer;
+}
+
+.mrs-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+

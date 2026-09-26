@@ -2,7 +2,7 @@
 // Do not edit by hand; regenerate via: node tmp/audit-mtbab/extract-real.mjs
 import type { ProtoEntry } from './data';
 
-export const REAL_ENTRIES: Record<string, ProtoEntry> = {
+export const REAL_ENTRIES: Record<string, ProtoEntry> ={
   "take": {
     "term": "take",
     "sections": [
@@ -2323,11 +2323,6 @@ export const REAL_ENTRIES: Record<string, ProtoEntry> = {
         "senses": [
           {
             "num": "1",
-            "votes": {
-              "up": 221,
-              "down": 64,
-              "date": "2003-11-15"
-            },
             "lines": [
               {
                 "role": "gloss",
@@ -2341,11 +2336,6 @@ export const REAL_ENTRIES: Record<string, ProtoEntry> = {
           },
           {
             "num": "2",
-            "votes": {
-              "up": 163,
-              "down": 67,
-              "date": "2004-05-22"
-            },
             "lines": [
               {
                 "role": "gloss",
@@ -2359,11 +2349,6 @@ export const REAL_ENTRIES: Record<string, ProtoEntry> = {
           },
           {
             "num": "3",
-            "votes": {
-              "up": 118,
-              "down": 47,
-              "date": "2005-11-04"
-            },
             "lines": [
               {
                 "role": "gloss",
@@ -2564,10 +2549,6 @@ export const REAL_ENTRIES: Record<string, ProtoEntry> = {
           "source": "etymonline"
         }
       ]
-    },
-    "usageNote": {
-      "title": "Usage notes",
-      "text": "In a few informal sociolects , took is sometimes replaced by the proscribed form taked ."
     },
     "wordNet": {
       "synset": [
@@ -5573,11 +5554,6 @@ export const REAL_ENTRIES: Record<string, ProtoEntry> = {
         "senses": [
           {
             "num": "1",
-            "votes": {
-              "up": 13475,
-              "down": 1375,
-              "date": "2018-04-22"
-            },
             "lines": [
               {
                 "role": "gloss",
@@ -5591,11 +5567,6 @@ export const REAL_ENTRIES: Record<string, ProtoEntry> = {
           },
           {
             "num": "2",
-            "votes": {
-              "up": 11158,
-              "down": 1407,
-              "date": "2018-06-17"
-            },
             "lines": [
               {
                 "role": "gloss",
@@ -5609,11 +5580,6 @@ export const REAL_ENTRIES: Record<string, ProtoEntry> = {
           },
           {
             "num": "3",
-            "votes": {
-              "up": 4209,
-              "down": 579,
-              "date": "2017-07-23"
-            },
             "lines": [
               {
                 "role": "gloss",
@@ -5627,11 +5593,6 @@ export const REAL_ENTRIES: Record<string, ProtoEntry> = {
           },
           {
             "num": "4",
-            "votes": {
-              "up": 4594,
-              "down": 643,
-              "date": "2017-04-09"
-            },
             "lines": [
               {
                 "role": "gloss",
@@ -5645,11 +5606,6 @@ export const REAL_ENTRIES: Record<string, ProtoEntry> = {
           },
           {
             "num": "5",
-            "votes": {
-              "up": 2094,
-              "down": 298,
-              "date": "2017-10-23"
-            },
             "lines": [
               {
                 "role": "gloss",
@@ -5663,11 +5619,6 @@ export const REAL_ENTRIES: Record<string, ProtoEntry> = {
           },
           {
             "num": "6",
-            "votes": {
-              "up": 2846,
-              "down": 584,
-              "date": "2017-04-27"
-            },
             "lines": [
               {
                 "role": "gloss",
@@ -5681,11 +5632,6 @@ export const REAL_ENTRIES: Record<string, ProtoEntry> = {
           },
           {
             "num": "7",
-            "votes": {
-              "up": 296,
-              "down": 70,
-              "date": "2018-05-18"
-            },
             "lines": [
               {
                 "role": "gloss",
@@ -5699,11 +5645,6 @@ export const REAL_ENTRIES: Record<string, ProtoEntry> = {
           },
           {
             "num": "8",
-            "votes": {
-              "up": 4705,
-              "down": 1359,
-              "date": "2014-04-11"
-            },
             "lines": [
               {
                 "role": "gloss",
@@ -5717,11 +5658,6 @@ export const REAL_ENTRIES: Record<string, ProtoEntry> = {
           },
           {
             "num": "9",
-            "votes": {
-              "up": 211,
-              "down": 53,
-              "date": "2018-06-27"
-            },
             "lines": [
               {
                 "role": "gloss",
@@ -5735,11 +5671,6 @@ export const REAL_ENTRIES: Record<string, ProtoEntry> = {
           },
           {
             "num": "10",
-            "votes": {
-              "up": 815,
-              "down": 241,
-              "date": "2015-06-06"
-            },
             "lines": [
               {
                 "role": "gloss",

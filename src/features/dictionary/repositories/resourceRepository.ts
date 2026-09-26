@@ -4,7 +4,7 @@
 // findBySignature (dedupe), count, deleteAll.
 
 import { getDB, getStore, STORES, INDEXES } from './baseRepository';
-import type { ImportFormat, ResourceInfo, ResourceType } from '@/entities/dictionary';
+import type { DictionaryComponent, ImportFormat, ResourceInfo, ResourceType } from '@/entities/dictionary';
 
 /** Legacy format ids persisted before the structural rename → current id. */
 const LEGACY_FORMAT_MAP: Record<string, ImportFormat> = {
@@ -125,6 +125,15 @@ export async function setResourceEnabled(langCode: string, id: number, enabled: 
   await updateResource(langCode, { ...resource, enabled });
 }
 
+/** Rename a resource (user-facing display name). */
+export async function setResourceName(langCode: string, id: number, name: string): Promise<void> {
+  const resource = await getResource(langCode, id);
+  if (!resource) {
+    throw new Error(`Không tìm thấy resource id ${id}.`);
+  }
+  await updateResource(langCode, { ...resource, name });
+}
+
 /** Set the language profiles a resource belongs to. */
 export async function setResourceProfiles(langCode: string, id: number, profileIds: readonly string[]): Promise<void> {
   const resource = await getResource(langCode, id);
@@ -132,6 +141,32 @@ export async function setResourceProfiles(langCode: string, id: number, profileI
     throw new Error(`Không tìm thấy resource id ${id}.`);
   }
   await updateResource(langCode, { ...resource, profileIds });
+}
+
+/** Persist the user-disabled component list for a dictionary resource. */
+export async function setResourceDisabledComponents(
+  langCode: string,
+  id: number,
+  disabledComponents: readonly DictionaryComponent[],
+): Promise<void> {
+  const resource = await getResource(langCode, id);
+  if (!resource) {
+    throw new Error(`Không tìm thấy resource id ${id}.`);
+  }
+  await updateResource(langCode, { ...resource, disabledComponents });
+}
+
+/** Persist the detected component list (import-time or lazy scan). */
+export async function setResourceComponents(
+  langCode: string,
+  id: number,
+  components: readonly DictionaryComponent[],
+): Promise<void> {
+  const resource = await getResource(langCode, id);
+  if (!resource) {
+    throw new Error(`Không tìm thấy resource id ${id}.`);
+  }
+  await updateResource(langCode, { ...resource, components });
 }
 
 /** Count resources. */

@@ -292,20 +292,29 @@ li.searchHistoryItem .searchHistoryRemove.searchHistoryRemove svg {
 
 .cellCandidatesChips {
   position: sticky;
-  bottom: 0;
+  bottom: var(--space-1);
   flex-shrink: 0;
   z-index: var(--z-sticky);
   display: flex;
   align-items: center;
   gap: 0;
-  padding: var(--space-1-5) var(--space-1);
-  margin: 0;
-  background: var(--color-surface);
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
-  /* Upward elevation so the candidate list scrolling underneath reads as
-     passing below the bar. No negative spread — the previous negative spread
-     shrank the shadow to nothing. */
-  box-shadow: 0 calc(-1 * var(--space-1)) var(--space-2) var(--color-shadow);
+  padding: 0;
+  margin: 0 var(--space-2);
+  background: var(--color-surface-elevated);
+  border: var(--border-width-hairline) solid var(--color-border-emphasized);
+  border-radius: var(--radius-full);
+  box-shadow:
+    0 var(--space-1) var(--space-2) var(--color-shadow),
+    0 var(--space-3) var(--space-8) var(--color-shadow);
+  transition:
+    transform var(--duration-normal) var(--ease-out),
+    opacity var(--duration-normal) var(--ease-out);
+}
+
+.cellCandidatesChipsHidden {
+  transform: translateY(calc(100% + var(--space-2)));
+  opacity: 0;
+  pointer-events: none;
 }
 
 .cellCandidatesChipsScroll {
@@ -315,15 +324,16 @@ li.searchHistoryItem .searchHistoryRemove.searchHistoryRemove svg {
   gap: var(--space-0-5);
   overflow-x: auto;
   min-width: 0;
+  padding-inline: var(--space-1);
 }
 
 .cellChip {
   flex-shrink: 0;
+  max-width: 45%;
   overflow: hidden;
   text-overflow: ellipsis;
   border-radius: var(--radius-full);
   white-space: nowrap;
-  /* Keep chips transparent in every state; the active chip is identified by color + underline only. */
   background: transparent !important;
   border-color: transparent !important;
 }

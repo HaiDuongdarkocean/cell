@@ -9,13 +9,39 @@ import { stripHtml } from './markup.mjs';
 
 const TR_ROW = /<TR id=(\w+)[^>]*>([\s\S]*?)<\/TR>/g;
 const FORM_FONT = /<FONT color=#FF0000[^>]*>([\s\S]*?)<\/FONT>/gi;
+const MARK = '';
+const FORMS_ONLY_PAREN = /\((?:[\s;,]|[^\u0001]*)*\)/g;
 
 function parseTrHead(rowHtml) {
   const forms = [...rowHtml.matchAll(FORM_FONT)].map((m) => stripHtml(m[1])).filter(Boolean);
-  return {
-    pos: stripHtml(rowHtml).replace(/\s*&&\s*/g, ' & ').replace(/[\s;,]+$/, ''),
-    forms,
-  };
+  // Forms are already captured as inflections — the pos line must not repeat
+  // them. Parentheses carrying only forms+separators drop wholesale ("ngoại
+  // động từ (bore ; borne , born)"); forms inside descriptive parens or after
+  // "là"/"thành" stay inline — they are grammar text ("số ít was",
+  // "rút gọn thành shan't").
+  const marked = rowHtml.replace(FORM_FONT, (_m, inner) => `${MARK}${stripHtml(inner)}${MARK}`);
+  const plain = stripHtml(marked).replace(FORMS_ONLY_PAREN, '');
+  let pos = '';
+  let i = 0;
+  let depth = 0;
+  for (;;) {
+    const start = plain.indexOf(MARK, i);
+    const chunk = plain.slice(i, start === -1 ? undefined : start);
+    pos += chunk;
+    depth += (chunk.match(/\(/g)?.length ?? 0) - (chunk.match(/\)/g)?.length ?? 0);
+    if (start === -1) break;
+    const end = plain.indexOf(MARK, start + 1);
+    if (depth > 0 || /\b(?:là|thành)\s*$/.test(pos)) pos += plain.slice(start + 1, end);
+    i = end + 1;
+  }
+  pos = pos
+    .replace(/\s*&&\s*/g, ' & ')
+    .replace(/\s+[;,](?=\s*[;,()])/g, '')
+    .replace(/[;,](?=\s*\))/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/[\s;,]+$/, '')
+    .trim();
+  return { pos, forms };
 }
 
 export const trTableRows = {
@@ -38,7 +64,7 @@ export const trTableRows = {
           const head = parseTrHead(m[2]);
           pos = head.pos;
           if (head.forms.length) {
-            (out.inflections ??= []).push({ type: 'forms', forms: head.forms });
+            (out.inflections ??= []).push({ type: '', forms: head.forms });
           }
           sense = null;
           phrase = null;

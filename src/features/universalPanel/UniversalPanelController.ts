@@ -44,6 +44,10 @@ export function createUniversalPanelController(
   let unmounted = false;
   let persistedLoaded = false;
   let loadPromise: Promise<void> | null = null;
+  const openChangeListeners = new Set<(open: boolean) => void>();
+  const emitOpenChange = (open: boolean): void => {
+    for (const listener of openChangeListeners) listener(open);
+  };
 
   const loadPersistedTab = async (): Promise<void> => {
     if (persistedLoaded || !options.getPersistedTab) return;
@@ -83,12 +87,14 @@ export function createUniversalPanelController(
       }
       if (!isOpen) {
         isOpen = true;
+        emitOpenChange(true);
       }
       options.onOpen?.(activeTab);
     },
     close: () => {
       if (unmounted || !isOpen) return;
       isOpen = false;
+      emitOpenChange(false);
       options.onClose?.();
     },
     switchTab: async (tab) => {
@@ -110,13 +116,19 @@ export function createUniversalPanelController(
       return controller.open('dictionary');
     },
     isOpen: () => isOpen,
+    onOpenChange: (listener) => {
+      openChangeListeners.add(listener);
+      return () => { openChangeListeners.delete(listener); };
+    },
     unmount: () => {
       if (unmounted) return;
       unmounted = true;
       if (isOpen) {
         isOpen = false;
+        emitOpenChange(false);
         options.onClose?.();
       }
+      openChangeListeners.clear();
     },
     getHosts: () => [],
   };

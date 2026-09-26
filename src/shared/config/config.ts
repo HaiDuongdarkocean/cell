@@ -1,6 +1,6 @@
 import type { Settings, FilenameSource, KeyboardShortcut, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
-import type { CardCreatorSettings, DictionaryPopupSettings, LocalPlayerSettings, PronunciationSettings, SrsSettingsSlice } from '@/entities/settings';
+import type { CardCreatorSettings, DictionaryPopupSettings, LocalPlayerSettings, PronunciationSettings, SrsSettingsSlice, TtsSettings } from '@/entities/settings';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
 import tokensJson from '@/shared/styles/tokens.json';
 
@@ -237,6 +237,19 @@ export const DEFAULT_SRS_SETTINGS: SrsSettingsSlice = {
   },
 };
 
+export const DEFAULT_TTS_SETTINGS: TtsSettings = {
+  enabled: true,
+  savedVoices: [],
+  voices: [],
+  maxDisplay: 3,
+  autoplayCount: 0,
+  preferredAccent: 'US',
+  localTtsEnabled: false,
+  localTtsLanguage: 'en',
+  downloadedLanguages: [],
+  hiddenLanguages: [],
+};
+
 /** Default Dictionary Popup settings (spec §9.3 — schema v14). */
 export const DEFAULT_DICTIONARY_POPUP_SETTINGS: DictionaryPopupSettings = {
   enabled: true,
@@ -251,9 +264,10 @@ export const DEFAULT_DICTIONARY_POPUP_SETTINGS: DictionaryPopupSettings = {
     { id: 'wiktionary', name: 'Wiktionary', urlTemplate: 'https://en.wiktionary.org/wiki/{term}', langCodes: ['en'] },
     { id: 'gtranslate', name: 'Google Translate', urlTemplate: 'https://translate.google.com/?sl=auto&tl={lang}&text={term}', langCodes: [] },
   ],
-  tts: { enabled: true, savedVoices: [], voices: [], maxDisplay: 3, autoplayCount: 0, preferredAccent: 'US', localTtsEnabled: false, localTtsLanguage: 'en', downloadedLanguages: [], hiddenLanguages: [] },
+  tts: DEFAULT_TTS_SETTINGS,
   badgePointerTrigger: { position: 'center', size: 36, pointerScale: 0.25 },
   translationVisibility: 'hidden',
+  includeAllExamplesOnDefSelect: false,
 };
 
 export const DEFAULT_SETTINGS: Settings = {

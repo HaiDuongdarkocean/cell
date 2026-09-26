@@ -13,10 +13,9 @@ jest.mock('@/features/dictionary/services/resourceClient', () => ({
   reorderResources: jest.fn().mockResolvedValue(undefined),
   setResourceEnabled: jest.fn().mockResolvedValue(undefined),
   setResourceProfiles: jest.fn().mockResolvedValue(undefined),
-  sampleDictionaryEntries: jest.fn().mockResolvedValue([]),
-  findDictionaryEntry: jest.fn().mockResolvedValue(undefined),
-  sampleFrequencyEntries: jest.fn().mockResolvedValue([]),
-  findFrequencyEntry: jest.fn().mockResolvedValue(undefined),
+  setResourceComponents: jest.fn().mockResolvedValue(undefined),
+  getResourceComponents: jest.fn().mockResolvedValue([]),
+  renameResource: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('@/features/dictionary/logic/signatureGenerator', () => ({
@@ -265,7 +264,7 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('edit-frequency'));
     fireEvent.click(screen.getByTestId('delete-button-1'));
     expect(screen.getByTestId('delete-confirm-modal')).toBeInTheDocument();
-    expect(screen.getByText('Delete list?')).toBeInTheDocument();
+    expect(screen.getByText('Delete list')).toBeInTheDocument();
   });
 
   it('deletes resource on confirm', async () => {
@@ -318,7 +317,7 @@ describe('ResourcesPanel', () => {
     const deleteButton = screen.getByTestId('delete-selected-frequency');
     expect(deleteButton).toHaveTextContent('Delete 2 selected');
     fireEvent.click(deleteButton);
-    expect(screen.getByText('Delete 2 selected lists?')).toBeInTheDocument();
+    expect(screen.getByText('Delete 2 selected lists')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
@@ -339,7 +338,7 @@ describe('ResourcesPanel', () => {
     const deleteButton = screen.getByTestId('delete-selected-frequency');
     expect(deleteButton).toHaveTextContent('Delete all');
     fireEvent.click(deleteButton);
-    expect(screen.getByText('Delete all 2 lists?')).toBeInTheDocument();
+    expect(screen.getByText('Delete all 2 lists')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
@@ -370,13 +369,67 @@ describe('ResourcesPanel', () => {
 
     fireEvent.click(screen.getByTestId('edit-frequency'));
     fireEvent.click(screen.getByTestId('delete-selected-frequency'));
-    expect(screen.getByText('Delete all 2 lists?')).toBeInTheDocument();
+    expect(screen.getByText('Delete all 2 lists')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
     expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1);
     expect(deleteResourceCascade).toHaveBeenCalledWith('en', 2);
     expect(deleteResourceCascade).not.toHaveBeenCalledWith('en', 3);
+  });
+
+  it('select-all checkbox selects and deselects every row', async () => {
+    listResources.mockResolvedValue([
+      makeResource({ id: 1, name: 'a.txt' }),
+      makeResource({ id: 2, name: 'b.txt' }),
+    ]);
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('edit-frequency'));
+    const selectAllBox = screen.getByTestId('select-all-frequency');
+    expect(screen.getByText('0 of 2 selected')).toBeInTheDocument();
+
+    fireEvent.click(selectAllBox);
+    expect(screen.getByText('2 of 2 selected')).toBeInTheDocument();
+    expect(screen.getByTestId('check-1')).toBeChecked();
+    expect(screen.getByTestId('check-2')).toBeChecked();
+
+    fireEvent.click(selectAllBox);
+    expect(screen.getByText('0 of 2 selected')).toBeInTheDocument();
+    expect(screen.getByTestId('check-1')).not.toBeChecked();
+  });
+
+  it('per-row checkbox selects a single resource', async () => {
+    listResources.mockResolvedValue([
+      makeResource({ id: 1, name: 'a.txt' }),
+      makeResource({ id: 2, name: 'b.txt' }),
+    ]);
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('edit-frequency'));
+    fireEvent.click(screen.getByTestId('check-2'));
+    expect(screen.getByText('1 of 2 selected')).toBeInTheDocument();
+    expect(screen.getByTestId('delete-selected-frequency')).toHaveTextContent('Delete 1 selected');
+  });
+
+  it('bulk enable applies setResourceEnabled to selected rows', async () => {
+    const setEnabled = client.setResourceEnabled as jest.MockedFunction<typeof client.setResourceEnabled>;
+    listResources.mockResolvedValue([
+      makeResource({ id: 1, name: 'a.txt' }),
+      makeResource({ id: 2, name: 'b.txt' }),
+    ]);
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('edit-frequency'));
+    expect(screen.getByTestId('enable-selected-frequency')).toBeDisabled();
+
+    fireEvent.click(screen.getByTestId('check-1'));
+    fireEvent.click(screen.getByTestId('enable-selected-frequency'));
+    await waitFor(() => expect(setEnabled).toHaveBeenCalledWith('en', 1, true));
+    expect(setEnabled).toHaveBeenCalledTimes(1);
   });
 });
 

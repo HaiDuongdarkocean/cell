@@ -161,6 +161,43 @@ function tokenMatchesLiteral(node: { readonly value: string; readonly inflectabl
 
 const POSSESSIVE_PRONOUNS = new Set(['my', 'your', 'his', 'her', 'its', 'our', 'their', "one's"]);
 
+// Person-referring tokens a `sb` slot may consume: pronouns and indefinite
+// person words, plus capitalized tokens (proper names) checked via `raw` since
+// `text` is lowercased. Without this, "catch sb" swallows "catch more flies".
+// ponytail: no POS tagging — "tell the man" won't match "tell sb". The ceiling
+// is a person-noun lexicon; precision was chosen over recall deliberately.
+const PERSON_SLOT_WORDS = new Set([
+  'i', 'me', 'you', 'he', 'him', 'she', 'her', 'we', 'us', 'they', 'them',
+  'myself', 'yourself', 'himself', 'herself', 'ourselves', 'themselves', 'oneself',
+  'somebody', 'someone', 'anybody', 'anyone', 'everybody', 'everyone', 'nobody',
+]);
+const CAPITALIZED_WORD_RE = /^\p{Lu}/u;
+
+/** Check if a slot's content is plausible for its kind (ADR §8.4). */
+function slotContentFits(
+  kind: 'object' | 'person' | 'possessive',
+  tokens: readonly SentenceToken[],
+  start: number,
+  end: number,
+): boolean {
+  if (kind === 'object') return true;
+  if (kind === 'possessive') {
+    const first = tokens[start]!;
+    return (
+      POSSESSIVE_PRONOUNS.has(first.text) ||
+      first.raw.endsWith("'s") ||
+      first.raw.endsWith("'")
+    );
+  }
+  for (let i = start; i < end; i++) {
+    const token = tokens[i]!;
+    if (!PERSON_SLOT_WORDS.has(token.text) && !CAPITALIZED_WORD_RE.test(token.raw)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 // --- Slot validation ---
 
 const SLOT_STOP_PUNCT = new Set(['.', '!', '?', ';', ':', ',']);
@@ -306,6 +343,9 @@ function matchSequence(
       // ranking prefers shorter slots (fewer slotUsed tokens). The ceiling is
       // idioms with 2+ intensifiers ("your whole damn mind") which are rare.
       if (isPossessiveSlot && slotLen > 2) break;
+      // Rejected content can't be fixed by extending the slot — the failing
+      // token stays inside the range.
+      if (!slotContentFits(node.kind, tokens, tokenIndex, nextTokenIndex)) break;
       const continueResults = matchSequence(nodes, nodeIndex + 1, tokens, nextTokenIndex, memo);
       for (const cont of continueResults) {
         results.push({

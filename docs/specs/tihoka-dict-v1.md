@@ -72,7 +72,6 @@ interface Sense {           // entities/dictionary/types.ts — SenseBlock
   subsenses?: { num: string; text: string }[];
   synonyms?: string[];    // per-sense — "Synonyms: grip, grab, seize"
   antonyms?: string[];    // per-sense — "Opposite: let down"
-  votes?: { up: number; down: number; date?: string };  // stored, not rendered
 }
 
 // POS sections stay ordered by simply repeating pos on each sense of the
@@ -104,7 +103,6 @@ interface Entry {           // DictionaryEntry
   wordNet?: { synset?: string[]; hypernyms?: string[] };
   derivedTerms?: string[];
   anagrams?: string[];
-  usageNote?: { title: string; text: string };
 }
 ```
 
@@ -112,12 +110,14 @@ interface Entry {           // DictionaryEntry
 
 | kind | label | source example |
 |---|---|---|
-| `phrasal` | phrasal verbs | mtBab `tn_*`, Collins `phrv-ext`, LDOCE `phrvb` |
-| `idiom` | idioms | idiom blocks |
+| `phrasal` | phrasal verbs | mtBab `tn_*`, Collins `phrv-ext`, LDOCE `SpokenSect`/`PhrVbEntry` |
+| `idiom` | idioms | Collins `idm-ext`, OALD `idm-g`, idiom blocks |
 | `collocation` | collocations | Collins `collo`, LDOCE `collocate` |
-| `expression` | phrases | Collins `phr-ext` (pos=phrase), MW `dro` |
+| `expression` | phrases | Collins `phr-ext` (pos=phrase), MW `dro`, LDOCE `merge_sense` |
 | `lemma` | lemmas | surface→lemma redirect |
-| `derivative` | derived terms | Wiktionary derived terms |
+| `derivative` | derived terms | Wiktionary derived terms, LDOCE `RELATEDWD` |
+| `thesaurus` | thesaurus | Macmillan topic pages, OALD `mlt`, LDOCE `Thesref` |
+| `see also` | see alsos | LDOCE generic `Crossref` |
 | anything else | `${kind}s` | generic pluralized fallback |
 
 Dedupe key: `term.toLowerCase()` minus leading `to `. On kind conflict for the
@@ -156,12 +156,27 @@ dependency graph stays free of vendor parsers.
 | Field kind | Rule |
 |---|---|
 | `sections` / senses | **never merge** — concatenate blocks; each section carries its provider. Audience variants append as labeled senses (`[kids]`, `[finance]`). |
-| scalar (ipa, level, firstKnownUse, frequency) | first-wins by provider priority; losers land in `variants[]` |
-| list (related, derivedTerms, collocations) | union + dedupe by normalized term; provenance per item |
-| rich text (etymology, usageNote) | keep all → `variants[]` with `source` tag; each renders as its own checkable row |
+| singleton (ipa, word forms, level, frequencyStars) | **first-wins** by provider priority — only the highest-priority dictionary that has the component *and hasn't disabled it* supplies it; lower providers fall through |
+| scalar (firstKnownUse) | first-wins by provider priority |
+| list (related, derivedTerms, wordFamily, wordNet) | union + dedupe by normalized term; provenance per item |
+| rich text (etymology) | keep all → `variants[]` with `source` tag; each renders as its own checkable row |
 
 Priority = user's plugin order in settings (drag-to-reorder); merge code holds
 no baked-in preference.
+
+### Per-resource component toggles
+
+Each `ResourceInfo` carries `components` (canonical parts detected at import —
+or lazily scanned + persisted via `RESOURCE_COMPONENTS` for pre-existing
+imports) and `disabledComponents` (user toggles in the resource card detail).
+The lookup merge drops disabled parts per-resource: `definitions` skips the
+entry's senses, `examples`/`translations`/`synonyms` strip sense content,
+`related`/`wordFamily`/`wordNet`/`derivedTerms` skip their union merge, and
+the singletons (`pronunciation`, `inflections`, `level`, `frequencyStars`)
+fall through to the next dictionary in priority order — e.g. dictionary 2's
+word forms show when dictionary 1's word-forms toggle is off. Etymology-only
+resources (etymonline) expose just `etymology` + `related`-free content, so
+toggling `etymology` off silences them entirely.
 
 ## Lookup — multi-candidate
 
@@ -210,10 +225,10 @@ Rules:
   be copyable.
 - Related groups render flat inline; items link when the term resolves in the
   entry registry, plain text otherwise.
-- Slang = a normal `pos: 'slang'` section; votes stored but never rendered.
+- Slang = a normal `pos: 'slang'` section.
 - Removed-by-design: sense numbers, signpost menus, star ratings, audience
-  tabs, entry-level synonym groups, vote badges, "see also" / "recent web
-  examples" / "usage notes" blocks.
+  tabs, entry-level synonym groups, crowdsourced votes, "see also" / "recent
+  web examples" / "usage notes" blocks.
 
 ## Standalone converter
 
@@ -235,16 +250,16 @@ markup family:
 | `jsonEntries.mjs` | entry-object JSON arrays (canonical passthrough) |
 | `termBank.mjs` | term-bank zips (`index.json` + `term_bank_*`) |
 | `sqlite.mjs` | `langResourceEntry` sqlite |
-| `mdx.mjs` | `.mdx` via `js-mdict` (devDep — converter only); dispatches each record to the first matching markup adapter, collects `spawned` sub-entries, emits them as standalone entries when the term isn't itself a key. Regional-variant keys (`uk X`) are skipped when base `X` exists, else emitted under the stripped term |
-| `trTableRows.mjs` | `*_T_id` table-row markup: `pa`→pronunciation, `tl`→pos header + red-font forms→`inflections`, `mn`→gloss, `mh`/`mh_n`→example+translation, `tn_*`→`related {kind:'phrasal'}` + spawned phrase body, `pak`→note, `cvk_t`→`altterm` |
-| `cobuild.mjs` | `cb24`/`cobuild` markup: `.hom`→sense (`gramGrp` pos/`cefr`→level/`[labels]`, `.def`→gloss, `.cit .quote`→example, `.tips`→`pattern`, `.thes`→synonyms), `.hom.ext .phr-ext`→`related 'expression'`+spawned, `.phrv-ext`→`related 'phrasal'`+spawned, `.collocation .collo`→`related 'collocation'`+spawned corpus examples (`.credits`→citation), `.pron`→pronunciation, `xr` "explained at"→`related 'expression'` |
+| `mdx.mjs` | `.mdx` via `js-mdict` (devDep — converter only); dispatches each record to the first matching markup adapter, collects `spawned` sub-entries merged across parents by term (gloss-deduped) and emits them last flagged `spawned` — the writer appends their senses into the real entry when one exists for the term (bổ sung thông tin), else they become standalone entries. Related terms are rewritten to the hyphen↔space variant that exists as a key (`take-in`→`take in`) and deduped by `kind:term`. Regional-variant keys (`uk X`) are skipped when base `X` exists, else emitted under the stripped term |
+| `trTableRows.mjs` | `*_T_id` table-row markup: `pa`→pronunciation, `tl`→pos header (red-font forms →`inflections`, stripped from pos text; forms inside descriptive parens/`là …`/`thành …` stay inline, forms-only parens drop), `mn`→gloss, `mh`/`mh_n`→example+translation, `tn_*`→`related {kind:'phrasal'}` + spawned phrase body, `pak`→note, `cvk_t`→`altterm` |
+| `cobuild.mjs` | `cb24`/`cobuild` markup: `.hom`→sense (`gramGrp` pos/`cefr`→level/`[labels]`, `.def`→gloss, `.cit .quote`→example, `.tips`→`pattern`, `.thes`→synonyms), `.hom.ext .phr-ext`→`related 'expression'`+spawned, `.phrv-ext`→`related 'phrasal'`+spawned, `.idiom .idms .idm-ext` (`ihw`+`idm-sense`)→`related 'idiom'`+spawned, `.collocation .collo`→`related 'collocation'`+spawned corpus examples (`.credits`→citation), `.form.inflected_forms` `orth[title]`/`a.orth.add[title]`→`inflections` grouped per grammatical type (deduped across repeated `definitions` groups), `.pron`→pronunciation, `xr` "explained at"→`related 'expression'`. Parsing excises each `definitions` block first then sub-entry blocks (`hom ext`/`phrv-ext`/`idm-ext`/`collocation`) per source — Collins interleaves `hom`/`hom ext` inside `definitions` groups so position-based zoning mis-attributes senses (e.g. `bear` noun group after `phrvs`) |
 | `macmillan.mjs` | `dict-american`/`dict-british` markup: `.homograph` per-pos blocks → `.part-of-speech-ctx`→pos, `.stars-grp .icon-star` count→`frequencyStars`, `.pron`→pronunciation, `.wordforms` `tr` rows (`inflection-type`+`inflection-entry` pairs)→`inflections`, `.sense`→sense (`syntax-coding`→`[labels]`, `.definition`→gloss, `.examples` `strong` headers→`pattern` + `p.example`→examples, `.thes` links→`synonyms`), `ol.sub-senses`→`subsenses`, `li.pv-xref`→`related 'phrasal'`, `li.phr-xref`→`related 'expression'`, `.relatedentries`→`related 'derivative'`. `gref-group` records (inflected/British variants of a lemma) → 1 gloss sense + `related 'derivative'`. `dict-*-thesaurus` topic pages → `pos:'thesaurus'` senses + `related 'thesaurus'` links with gloss previews (e.g. *to need something* → need, require, cry out for…). Nested-span-safe via `markup.mjs` `blocks()` balanced extractor |
-| `oald.mjs` | `oald`/`webtop` markup: `.entry` per headword → `h1.headword`+`span.pos`→pos, `phons_br`/`phons_n_am .phon`→pronunciation, `li.sense` (`cefr` attr→`level`, `.grammar`→labels, `.use`→note line, `.cf`→`pattern`, `.def`→gloss, `ul.examples li` `.cf`+`.labels`+`.x`→examples, `xrefs xt=nsyn` `.xh`→synonyms / `xt=see`→`related 'expression'`), `idm-g`→`related 'idiom'`+spawned, `pvrefs`→`related 'phrasal'`. `.unbox` boxes: `verbforms` `td.verb_form`→`inflections`, `wordorigin`→`etymology`, `synonyms`/`mlt` `li`→`related 'thesaurus'`, `extra_examples`/`which_word`/`snippet`→`usageNote` |
-| `ldoce.mjs` | `ldoceEntry` markup: `.Head` `lm5pp_POS`→pos + `PRON`→pronunciation + `●` count→`frequencyStars`, `.Inflections` `infllab`+form→`inflections`, `span.Sense`→sense (`SIGNPOST`/`ACTIV`/`GRAM`/`GEO`/`FIELD`→labels, `DEF`→gloss, `EXAMPLE .english`→examples, `GramExa PROPFORM`→pattern examples, `OPP`/`SYN` synopp→antonyms/synonyms), nested `Sense cross_sense`→`subsenses` (+`LEXUNIT` prefix), `SpokenSect PhrasalVerb` `REFHWD` heads→`related 'phrasal'`+spawned grouped per head, `.etym` (Head span excised) →`etymology`, `.wordfams` grouped by POS→`wordFamily`, `Thesref`→`related 'thesaurus'`, `BoxPanel`→`usageNote`. `*-topic` records (`topicpagetitle`) → `pos:'thesaurus'` entries listing topic terms. `cn_txt` bilingual spans stripped from all text, never emitted |
-| `etymonline.mjs` | `div.word` etymology-prose markup: `h1.hw`+`<pos>`→pos (numeric `<pos>` = homograph index, skipped), each `section.defination` `<p>` paragraph→gloss line of one sense tagged `labels:['origin']` (full origin text stays checkable, recognizable as etymology), `a.crossreference`+`a.related_hw` `entry://` links→`related 'see also'`, trailing `div.related` backlink list excised before sense parsing |
+| `oald.mjs` | `oald`/`webtop` markup: `.entry` per headword → `h1.headword`+`span.pos`→pos, `phons_br`/`phons_n_am .phon`→pronunciation, `li.sense` (`cefr` attr→`level`, `.grammar`→labels, `.use`→note line, `.cf`→`pattern`, `.def`→gloss, `ul.examples li` `.cf`+`.labels`+`.x`→examples, `xrefs xt=nsyn` `.xh`→synonyms / `xt=see`→`related 'expression'`), `idm-g`→`related 'idiom'`+spawned, `pvrefs`→`related 'phrasal'`. `.unbox` boxes: `verbforms` `td.verb_form`→`inflections`, `wordorigin`→`etymology`, `synonyms`/`mlt` `li`→`related 'thesaurus'`, `extra_examples` `.x`→example lines on the last sense |
+| `ldoce.mjs` | `ldoceEntry` markup: `.Head` `lm5pp_POS`→pos + `PRON`→pronunciation + `●` count→`frequencyStars` + `ORTHVAR`→`altterm`, `.Inflections` `infllab`+form→`inflections`, `span.Sense`→sense (`SIGNPOST`/`ACTIV`/`GRAM`/`GEO`/`FIELD`/`FIELDXX`/`REGISTERLAB`→labels, `LEXUNIT`/`LEXVAR`→leading labels, `LANG`+`ORIGIN`→origin label, `DEF`→gloss, `EXAMPLE .english`→examples, `GramExa PROPFORM`/`PROPFORMPREP`→pattern examples, `OPP`/`SYN`/`BREQUIV`/`AMEQUIV` synopp→antonyms/synonyms (equiv links get `(geo)` qualifier), `EXPL`/`dont_say`→note, `ColloExa`→collo-pattern examples, in-sense `ThesBox`/`corpus`→lines), `REFHWD merge_sense` senses → spawned `pos:'phrase'` entries + `related 'expression'` (`↔` heads derive the phrasal term from the particle after `↔`/LEXUNIT → `pos:'phrasal verb'`), nested `Sense cross_sense`/`Subsense`→`subsenses` (+`LEXUNIT` prefix; container senses with no own lines still emit subsenses), `SpokenSect PhrasalVerb`→`related 'phrasal'`+spawned — `REFHWD` group heads at section level apply to following `Sense` children, `LDOCE5pp_sensefold` wrappers recursed, `↔` heads normalized to `verb particle` terms, `PhrVbEntry` crossrefs→`related 'phrasal'` (href key), `RELATEDWD`→`related 'derivative'`, generic `Crossref`→`related 'see also'`, `.etym` (Head span excised) →`etymology`, `.wordfams` grouped by POS→`wordFamily`, `Thesref`/`BoxPanel` entry links→`related 'thesaurus'`. Tail boxes outside `ldoceEntry` spans (`ThesBox`/`GramBox`/`corpus`/`bussdictEntry`/`PhrVbEntry`) are parsed from record leftover — box content becomes `thesaurus`/`grammar`/`corpus`-labeled pseudo-senses, bussdict senses join main senses. `*-topic` records (`topicpagetitle`) → `pos:'thesaurus'` entries listing topic terms. `cn_txt` bilingual spans stripped from all text, never emitted |
+| `etymonline.mjs` | `div.word` etymology-prose markup: `h1.hw`/`p.hw`+`<pos>`→pos label (numeric `<pos>` = homograph index, skipped), each `section.defination` `<p>` paragraph→prose folded into entry-level `etymology` (first `div.word`→`chain`, further homograph blocks→`variants` labeled by pos) — the whole record IS word origin so it merges into the canonical origin block; trailing `div.related` backlink list excised; no senses emitted |
 
-Records with no matching adapter or no parsed senses are skipped — unknown
-structure is never split.
+Records with no matching adapter or no parsed senses *and* no etymology are
+skipped — unknown structure is never split.
 
 ## Verification
 

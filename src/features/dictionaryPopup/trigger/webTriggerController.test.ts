@@ -296,7 +296,7 @@ describe('WebTriggerController', () => {
       mockRange.setEnd(textNode, 9);
       document.caretRangeFromPoint = jest.fn(() => mockRange) as typeof document.caretRangeFromPoint;
 
-      let capturedRange: Range | null = null;
+      let capturedRange: Range | HTMLElement | null = null;
       const ctrl = new WebTriggerController({
         triggerMode: 'hover',
         onLookup: (_req, _id, _rect, range) => { capturedRange = range; },

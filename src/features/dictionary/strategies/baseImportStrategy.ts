@@ -10,7 +10,8 @@
 import { BatchProcessor } from '../logic/batchProcessor';
 import { normalizeWord } from '../logic/normalizationPipeline';
 import { toCanonicalDefinition } from '../logic/normalize/canonical';
-import type { ImportFormat, FrequencyEntry, DictionaryEntry, SenseBlock, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo, UsageNote } from '@/entities/dictionary';
+import { collectEntryComponents, sortedComponents } from '../logic/dictionaryComponents';
+import type { ImportFormat, FrequencyEntry, DictionaryEntry, DictionaryComponent, SenseBlock, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo } from '@/entities/dictionary';
 
 /** Raw entry from parser (before normalization). */
 export interface RawFrequencyEntry {
@@ -46,13 +47,14 @@ export interface RawDictionaryEntry {
   readonly wordNet?: WordNetInfo;
   readonly derivedTerms?: readonly string[];
   readonly anagrams?: readonly string[];
-  readonly usageNote?: UsageNote;
 }
 
 /** Result of a strategy run. */
 export interface StrategyResult {
   readonly wordCount: number;
   readonly format: string;
+  /** Canonical components detected across stored entries (dictionaries only). */
+  readonly components?: readonly DictionaryComponent[];
 }
 
 /** Options passed to strategy. */
@@ -87,6 +89,7 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
         }
         const stored = this.transformEntry(raw, count);
         if (stored !== null) {
+          this.collectComponents(stored);
           await this.batchProcessor.add(stored);
           count++;
         }
@@ -101,7 +104,15 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
       }
       throw e;
     }
-    return { wordCount: count, format: this.format };
+    return { wordCount: count, format: this.format, components: this.components() };
+  }
+
+  /** Hook 4 (optional): fold a stored entry into component detection. */
+  protected collectComponents(_stored: TStored): void {}
+
+  /** Components detected during execute() — undefined for non-dictionary strategies. */
+  components(): readonly DictionaryComponent[] | undefined {
+    return undefined;
   }
 
   /** Hook 1: streaming parser — yield raw entries 1 at a time. */
@@ -149,6 +160,16 @@ export abstract class BaseFrequencyStrategy extends BaseImportStrategy<RawFreque
 export abstract class BaseDictionaryStrategy extends BaseImportStrategy<RawDictionaryEntry, Omit<DictionaryEntry, 'id'>> {
   readonly format: ImportFormat = 'json-entries';
 
+  private readonly componentSet = new Set<DictionaryComponent>();
+
+  protected collectComponents(stored: Omit<DictionaryEntry, 'id'>): void {
+    collectEntryComponents(this.componentSet, stored);
+  }
+
+  components(): readonly DictionaryComponent[] {
+    return sortedComponents(this.componentSet);
+  }
+
   protected transformEntry(raw: RawDictionaryEntry, _index: number): Omit<DictionaryEntry, 'id'> | null {
     const term = normalizeWord(raw.term);
     if (term.length === 0) return null;
@@ -173,7 +194,6 @@ export abstract class BaseDictionaryStrategy extends BaseImportStrategy<RawDicti
       wordNet: raw.wordNet,
       derivedTerms: raw.derivedTerms,
       anagrams: raw.anagrams,
-      usageNote: raw.usageNote,
     };
   }
 }

@@ -14,7 +14,7 @@ import {
 } from '@/features/dictionary/logic/phraseIndexCompiler';
 
 /** Expected compiler version (must match phraseIndexCompiler.COMPILER_VERSION). */
-export const EXPECTED_COMPILER_VERSION = 2;
+export const EXPECTED_COMPILER_VERSION = 7;
 
 /** Resident phrase index for one resource, held in worker memory. */
 export interface ResidentPhraseIndex {

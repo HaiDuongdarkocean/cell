@@ -118,6 +118,7 @@ export const LookupResultSchema = z.object({
   related: z.array(RelatedEntrySchema).optional(),
   inflections: z.array(z.object({ type: z.string(), forms: z.array(z.string()) })).optional(),
   level: z.string().optional(),
+  frequencyStars: z.number().int().min(1).max(3).optional(),
   etymology: EtymologyBlockSchema.optional(),
   wordFamily: z.object({
     nouns: z.array(z.string()).optional(),
@@ -130,8 +131,8 @@ export const LookupResultSchema = z.object({
     hypernyms: z.array(z.string()).optional(),
   }).optional(),
   derivedTerms: z.array(z.string()).optional(),
-  usageNote: z.object({ title: z.string(), text: z.string() }).optional(),
   matchSource: MatchSourceSchema,
+  phraseIndexPending: z.boolean().optional(),
 });
 
 // === QuickAddPayload (spec §9.2) ===
@@ -296,6 +297,10 @@ export const FetchLocalAudioPayloadSchema = z.object({
 
 export const FetchLocalAudioResponseSchema = z.object({
   items: z.array(AudioItemSchema),
+});
+
+export const LocalAudioBuildIndexPayloadSchema = z.object({
+  dslFileHandleId: z.string().min(1),
 });
 
 // === TTS audio fetch (TTS_FETCH_AUDIO) — returns a data URL for the spoken text ===

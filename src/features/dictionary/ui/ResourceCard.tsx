@@ -1,24 +1,48 @@
 // ResourceCard — resource list item (spec F11 + Resources management upgrade).
 //
-// Row: left-edge DragHandle (6-dot grip — pointer drag is orchestrated by the
-// section via useSectionDrag; ArrowUp/Down = keyboard fallback) · name/meta
-// button (idle: toggles the samples detail; section edit mode: toggles
-// selection) · enable Toggle · icon-only delete (edit mode only — the idle
-// list carries no delete affordances).
-// Expanded body (ResourceDetail): sample entries.
+// Row: left-edge DragHandle (vertical 2×3 grip — drag = pointer reorder via
+// the section's useSectionDrag, tap/Enter = opens the ⋮ menu; ArrowUp/Down =
+// keyboard reorder; grip hidden in edit mode) · name (click = inline rename;
+// section edit mode: toggles selection) · component chips · enable Toggle ·
+// icon-only delete (edit mode only — the idle list carries no delete
+// affordances). Menu → "Chi tiết" opens the detail dialog.
 // Disabled resources are dimmed visually — controls stay usable.
 
-import { useRef, useState, type ReactElement } from 'react';
-import { t } from '@/shared/i18n';
-import { Button, Card } from '@/shared/ui';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { getLocale, t, type MessageKey } from '@/shared/i18n';
+import { Card, Checkbox, Dialog, Input, Popover } from '@/shared/ui';
+import { Button } from '@/shared/ui/Button';
 import { DragHandle } from '@/shared/ui/DragHandle';
 import { Toggle } from '@/shared/ui/Toggle';
 import { Icon } from '@/shared/ui/Icon';
-import { setResourceEnabled } from '@/features/dictionary/services/resourceClient';
-import type { ResourceInfo } from '@/entities/dictionary';
+import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
+import {
+  getResourceComponents,
+  renameResource,
+  setResourceComponents,
+  setResourceEnabled,
+} from '@/features/dictionary/services/resourceClient';
+import type { DictionaryComponent, ResourceInfo } from '@/entities/dictionary';
 import { displayResourceName } from './displayResourceName';
-import { ResourceDetail } from './ResourceDetail';
 import styles from './ResourceCard.module.css';
+
+const COMPONENT_LABEL: Record<DictionaryComponent, MessageKey> = {
+  definitions: 'resources.component.definitions',
+  examples: 'resources.component.examples',
+  translations: 'resources.component.translations',
+  synonyms: 'resources.component.synonyms',
+  pronunciation: 'resources.component.pronunciation',
+  inflections: 'resources.component.inflections',
+  etymology: 'resources.component.etymology',
+  wordFamily: 'resources.component.wordFamily',
+  wordNet: 'resources.component.wordNet',
+  derivedTerms: 'resources.component.derivedTerms',
+  related: 'resources.component.related',
+  level: 'resources.component.level',
+  frequencyStars: 'resources.component.frequencyStars',
+};
+
+const GRIP_TAP_THRESHOLD = 4;
 
 interface ResourceCardProps {
   readonly resource: ResourceInfo;
@@ -31,9 +55,9 @@ interface ResourceCardProps {
   readonly onGripPointerDown?: (e: React.PointerEvent<HTMLElement>) => void;
   /** Section drag session is lifting this card (ghost styling). */
   readonly dragging?: boolean;
-  /** Called after card-side mutations (enable toggle) to refresh. */
+  /** Called after card-side mutations (enable toggle, rename) to refresh. */
   readonly onChanged?: () => void;
-  /** Section edit mode: name/meta toggles selection; delete + grip appear. */
+  /** Section edit mode: name toggles selection; delete appears. */
   readonly editing?: boolean;
   readonly selected?: boolean;
   readonly onSelect?: () => void;
@@ -52,23 +76,123 @@ export function ResourceCard({
   onSelect,
 }: ResourceCardProps): ReactElement {
   const enabled = resource.enabled !== false;
-  const [expanded, setExpanded] = useState(false);
+  const isDict = resource.type === 'DICTIONARY';
+  const resourceId = resource.id;
+  const langCode = resource.langCode;
   const [toggling, setToggling] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const committingRef = useRef(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const gripWrapRef = useRef<HTMLSpanElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const gripDownY = useRef<number | null>(null);
   const displayName = displayResourceName(resource.name);
 
+  const [components, setComponents] = useState<readonly DictionaryComponent[] | null>(
+    resource.components ?? null,
+  );
+  const [disabledComponents, setDisabledComponents] = useState<ReadonlySet<DictionaryComponent>>(
+    new Set(resource.disabledComponents ?? []),
+  );
+
+  useEffect(() => {
+    if (!isDict || resourceId == null || components != null) return;
+    let alive = true;
+    getResourceComponents(langCode, resourceId)
+      .then((list) => { if (alive) setComponents(list); })
+      .catch(() => { if (alive) setComponents([]); });
+    return () => { alive = false; };
+  }, [isDict, langCode, resourceId, components]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const anchor = gripWrapRef.current;
+    const doc = anchor?.ownerDocument ?? document;
+    const win = doc.defaultView ?? window;
+    const rootNode = anchor?.getRootNode();
+    const scope: Document | ShadowRoot = rootNode instanceof ShadowRoot ? rootNode : doc;
+    const onDocDown = (e: Event): void => {
+      const target = e.target as Node;
+      if (!gripWrapRef.current?.contains(target) && !menuRef.current?.contains(target)) {
+        setMenuOpen(false);
+      }
+    };
+    const onScroll = (): void => setMenuOpen(false);
+    scope.addEventListener('mousedown', onDocDown);
+    win.addEventListener('scroll', onScroll, true);
+    const popEscape = pushEscapeLayer(() => setMenuOpen(false), doc);
+    return () => {
+      scope.removeEventListener('mousedown', onDocDown);
+      win.removeEventListener('scroll', onScroll, true);
+      popEscape();
+    };
+  }, [menuOpen]);
+
   const handleToggle = (next: boolean): void => {
-    if (resource.id == null || toggling) return;
+    if (resourceId == null || toggling) return;
     setToggling(true);
-    void setResourceEnabled(resource.langCode, resource.id, next)
+    void setResourceEnabled(langCode, resourceId, next)
       .then(() => onChanged?.())
       .catch(() => { /* refresh restores the persisted state */ onChanged?.(); })
       .finally(() => setToggling(false));
   };
 
+  const startRename = (): void => {
+    if (editing) return;
+    committingRef.current = false;
+    setDraft(displayName);
+    setRenaming(true);
+  };
+
+  const commitRename = (): void => {
+    if (committingRef.current) return;
+    committingRef.current = true;
+    const next = draft.trim();
+    if (!next || next === displayName || resourceId == null) {
+      setRenaming(false);
+      return;
+    }
+    void renameResource(langCode, resourceId, next)
+      .then(() => onChanged?.())
+      .catch(() => onChanged?.())
+      .finally(() => setRenaming(false));
+  };
+
+  const toggleComponent = (component: DictionaryComponent): void => {
+    if (resourceId == null) return;
+    const next = new Set(disabledComponents);
+    if (next.has(component)) next.delete(component);
+    else next.add(component);
+    setDisabledComponents(next);
+    void setResourceComponents(langCode, resourceId, [...next])
+      .then(() => onChanged?.())
+      .catch(() => onChanged?.());
+  };
+
   const canReorder = sectionSize > 1 && !editing && onGripPointerDown != null;
 
+  const onGripPointerDownLocal = (e: React.PointerEvent<HTMLElement>): void => {
+    gripDownY.current = e.clientY;
+    onGripPointerDown?.(e);
+  };
+
+  const onGripPointerUp = (e: React.PointerEvent<HTMLElement>): void => {
+    const downY = gripDownY.current;
+    gripDownY.current = null;
+    if (downY != null && Math.abs(e.clientY - downY) <= GRIP_TAP_THRESHOLD) {
+      setMenuOpen((v) => !v);
+    }
+  };
+
   const onGripKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setMenuOpen((v) => !v);
+      return;
+    }
     if (!onMove) return;
     if (e.key === 'ArrowUp') {
       e.preventDefault();
@@ -84,59 +208,172 @@ export function ResourceCard({
       ref={cardRef}
       variant={editing && selected ? 'selected' : 'default'}
       className={`${styles.card} ${enabled ? '' : styles.cardDisabled} ${dragging ? styles.cardDragging : ''}`}
-      data-cell-id={`resource-card-${resource.id}`}
+      data-cell-id={`resource-card-${resourceId}`}
     >
       <div className={styles.row}>
-        {canReorder && (
-          <DragHandle
-            size="sm"
-            aria-label={t('resources.card.drag', [displayName])}
-            draggable={false}
-            className={styles.grip}
-            data-cell-id={`drag-${resource.id}`}
-            onPointerDown={onGripPointerDown}
-            onKeyDown={onGripKeyDown}
+        {editing ? (
+          <Checkbox
+            checked={selected}
+            onChange={() => onSelect?.()}
+            aria-label={t('resources.card.select', [displayName])}
+            className={styles.selectCheck}
+            data-cell-id={`check-${resourceId}`}
           />
+        ) : canReorder && (
+          <span ref={gripWrapRef} className={styles.gripWrap}>
+            <DragHandle
+              size="sm"
+              orientation="vertical"
+              aria-label={t('resources.card.drag', [displayName])}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              draggable={false}
+              className={styles.grip}
+              data-cell-id={`drag-${resourceId}`}
+              onPointerDown={onGripPointerDownLocal}
+              onPointerUp={onGripPointerUp}
+              onPointerCancel={() => { gripDownY.current = null; }}
+              onKeyDown={onGripKeyDown}
+            />
+          </span>
         )}
 
-        <button
-          type="button"
-          className={styles.info}
-          onClick={editing ? onSelect : () => setExpanded((v) => !v)}
-          aria-expanded={editing ? undefined : expanded}
-          aria-pressed={editing ? selected : undefined}
-          aria-label={editing
-            ? t('resources.card.select', [displayName])
-            : expanded ? t('resources.card.collapse', [displayName]) : t('resources.card.expand', [displayName])}
-          data-cell-id={editing ? `select-${resource.id}` : `expand-${resource.id}`}
-        >
-          <span className={styles.name}>{displayName}</span>
-          <span className={styles.meta}>
-            {t('resources.card.words', [resource.wordCount])}{!resource.installationFinished && t('resources.card.importing')}
-          </span>
-        </button>
+        <div className={styles.info}>
+          <div className={styles.nameLine}>
+            {renaming ? (
+              <Input
+                size="sm"
+                variant="ghost"
+                autoFocus
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); commitRename(); }
+                  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setRenaming(false); }
+                }}
+                onBlur={commitRename}
+                aria-label={t('resources.card.rename', [displayName])}
+                data-cell-id={`rename-input-${resourceId}`}
+              />
+            ) : (
+              <button
+                type="button"
+                className={styles.nameButton}
+                onClick={editing ? onSelect : startRename}
+                aria-pressed={editing ? selected : undefined}
+                aria-label={editing ? t('resources.card.select', [displayName]) : t('resources.card.rename', [displayName])}
+                data-cell-id={editing ? `select-${resourceId}` : `name-${resourceId}`}
+              >
+                <span className={styles.name}>{displayName}</span>
+              </button>
+            )}
+          </div>
+          {isDict && components != null && components.length > 0 && (
+            <div
+              className={styles.componentList}
+              role="group"
+              aria-label={t('resources.components.title')}
+              data-cell-id={`resource-components-${resourceId}`}
+            >
+              {components.map((component) => {
+                const off = disabledComponents.has(component);
+                return (
+                  <button
+                    key={component}
+                    type="button"
+                    className={`${styles.componentChip} ${off ? styles.componentChipOff : ''}`}
+                    aria-pressed={!off}
+                    title={t(off ? 'resources.component.enable' : 'resources.component.disable', [t(COMPONENT_LABEL[component])])}
+                    onClick={() => toggleComponent(component)}
+                    data-cell-id={`component-${component}-${resourceId}`}
+                  >
+                    {t(COMPONENT_LABEL[component])}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         <Toggle
           checked={enabled}
           onChange={handleToggle}
           ariaLabel={t(enabled ? 'resources.card.disable' : 'resources.card.enable', [displayName])}
-          dataTestId={`enable-toggle-${resource.id}`}
+          dataTestId={`enable-toggle-${resourceId}`}
         />
 
         {editing && (
           <Button
             variant="ghost"
             size="sm"
+            className={styles.editActionIn}
             onClick={onDelete}
             aria-label={t('resources.card.delete', [displayName])}
-            data-cell-id={`delete-button-${resource.id}`}
+            data-cell-id={`delete-button-${resourceId}`}
           >
             <Icon name="trash" size="xs" />
           </Button>
         )}
       </div>
 
-      {expanded && <ResourceDetail resource={resource} />}
+      <Popover
+        open={menuOpen}
+        triggerRef={gripWrapRef}
+        role="menu"
+        aria-label={t('resources.card.menu', [displayName])}
+        menuAlign="left"
+        className={styles.menuSurface}
+      >
+        <div ref={menuRef} className={styles.menu}>
+          <button
+            type="button"
+            role="menuitem"
+            className={styles.menuItem}
+            onClick={() => { setMenuOpen(false); setDetailOpen(true); }}
+            data-cell-id={`menu-detail-${resourceId}`}
+          >
+            <Icon name="info" size="xs" />
+            {t('resources.menu.detail')}
+          </button>
+        </div>
+      </Popover>
+
+      <Dialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        title={displayName}
+        showCloseButton
+        data-cell-id={`resource-detail-${resourceId}`}
+      >
+        <dl className={styles.detailList}>
+          <div className={styles.detailRow}>
+            <dt>{t('resources.detail.file')}</dt>
+            <dd>{resource.name}</dd>
+          </div>
+          <div className={styles.detailRow}>
+            <dt>{t('resources.detail.format')}</dt>
+            <dd>{resource.format}</dd>
+          </div>
+          <div className={styles.detailRow}>
+            <dt>{t('resources.detail.words')}</dt>
+            <dd>{resource.wordCount.toLocaleString()}</dd>
+          </div>
+          <div className={styles.detailRow}>
+            <dt>{t('resources.detail.imported')}</dt>
+            <dd>{new Date(resource.importedAt).toLocaleString(getLocale())}</dd>
+          </div>
+          <div className={styles.detailRow}>
+            <dt>{t('resources.detail.status')}</dt>
+            <dd>{t(enabled ? 'resources.detail.enabled' : 'resources.detail.disabled')}</dd>
+          </div>
+          {components != null && components.length > 0 && (
+            <div className={styles.detailRow}>
+              <dt>{t('resources.detail.components')}</dt>
+              <dd>{components.map((c) => t(COMPONENT_LABEL[c])).join(', ')}</dd>
+            </div>
+          )}
+        </dl>
+      </Dialog>
     </Card>
   );
 }

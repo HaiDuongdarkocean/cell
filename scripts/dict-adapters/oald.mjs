@@ -5,7 +5,7 @@
 // `ul.examples > li` (`.cf` + `.labels` + `.x`), `.xrefs xt=nsyn`→synonyms /
 // xt=see→related. `span.idm-g` idiom sub-entries → related 'idiom' + spawned.
 // `aside.phrasal_verb_links .pvrefs` → related 'phrasal'. `.unbox` boxes:
-// verbforms→inflections, wordorigin→etymology, others→usageNote.
+// verbforms→inflections, wordorigin→etymology, synonyms/mlt→thesaurus links.
 
 import { stripHtml, blocks, blockText, excise } from './markup.mjs';
 
@@ -86,6 +86,7 @@ export const oald = {
       const { rest: noIdm, removed: idms } = excise(entry, 'span', 'idm-g');
       const { rest: noAside } = excise(noIdm, 'aside', 'phrasal_verb_links');
       const { rest, removed: unboxes } = excise(noAside, 'span', 'unbox');
+      const extraExamples = [];
 
       for (const { inner: u, tag } of unboxes) {
         const kind = tag.match(/unbox="(\w+)"/)?.[1];
@@ -108,9 +109,11 @@ export const oald = {
           for (const m of u.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/g)) {
             rel(m[1], 'thesaurus');
           }
-        } else if (kind === 'extra_examples' || kind === 'which_word' || kind === 'snippet') {
-          const text = stripHtml(u.replace(/<span class="box_title"[\s\S]*?<\/span>/, ''));
-          if (text && !out.usageNote) out.usageNote = { title: kind === 'extra_examples' ? 'Extra examples' : kind === 'which_word' ? 'Which word' : 'Note', text };
+        } else if (kind === 'extra_examples') {
+          for (const m of u.matchAll(/<span class="x">([\s\S]*?)<\/span>/g)) {
+            const text = stripHtml(m[1]);
+            if (text) extraExamples.push(text);
+          }
         }
       }
 
@@ -133,6 +136,10 @@ export const oald = {
       for (const s of blocks(rest, 'li', 'sense')) {
         const sense = parseSenseLi(s.inner, s.tag, pos);
         if (sense) out.senses.push(sense);
+      }
+      const last = out.senses[out.senses.length - 1];
+      if (extraExamples.length && last) {
+        for (const text of extraExamples) last.lines.push({ role: 'example', text });
       }
     }
 

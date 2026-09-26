@@ -157,6 +157,10 @@ describe('phraseTemplateParser', () => {
     expect(parsePhraseTemplate('a quick) trot').status).toBe('unsupportedMalformed');
   });
 
+  it('marks a trailing slash with no alternative as unsupported malformed', () => {
+    expect(parsePhraseTemplate('the bosom of the family/').status).toBe('unsupportedMalformed');
+  });
+
   it('rejects templates over fixed-token and surface-span limits', () => {
     const tooLong = parsePhraseTemplate('one two three four five six seven', {
       maxFixedTokens: 3,
@@ -184,6 +188,92 @@ describe('phraseTemplateParser', () => {
     ]);
   });
 
+  it('splits slot-led slash groups into pairwise alternatives', () => {
+    const result = parsePhraseTemplate("somebody/something can't compete with somebody/something");
+
+    expect(result.nodes).toEqual([
+      alternative([slot('person')], [slot('object', 2)]),
+      literal("can't"),
+      literal('compete'),
+      literal('with'),
+      alternative([slot('person')], [slot('object', 2)]),
+    ]);
+  });
+
+  it('pairs a single-atom final segment with the previous segment\'s last atom', () => {
+    const result = parsePhraseTemplate("go/come to sb's rescue/aid");
+
+    expect(result.nodes).toEqual([
+      alternative([literal('go')], [literal('come'), literal('to'), slot('possessive', 2)]),
+      alternative([literal('rescue')], [literal('aid')]),
+    ]);
+  });
+
+  it('pairs a trailing single slot with the previous segment\'s last slot atom', () => {
+    const result = parsePhraseTemplate('have/be nothing to do with somebody/something');
+
+    expect(result.nodes).toEqual([
+      alternative([literal('have')], [literal('be')]),
+      literal('nothing'),
+      literal('to'),
+      literal('do'),
+      literal('with'),
+      alternative([slot('person')], [slot('object', 2)]),
+    ]);
+  });
+
+  it('pairs the leading slots of two slash groups as alternatives', () => {
+    const result = parsePhraseTemplate('get/put somebody/something out of your mind');
+
+    expect(result.nodes).toEqual([
+      alternative([literal('get')], [literal('put')]),
+      alternative([slot('person')], [slot('object', 2)]),
+      literal('out'),
+      literal('of'),
+      slot('possessive', 2),
+      literal('mind'),
+    ]);
+  });
+
+  it('treats a possessive-slot segment as an alternative sharing the suffix', () => {
+    const result = parsePhraseTemplate('our/your/their differences');
+
+    expect(result.status).toBe('supported');
+    expect(result.nodes).toEqual([
+      alternative([literal('our')], [slot('possessive', 2)], [literal('their')]),
+      literal('differences'),
+    ]);
+  });
+
+  it('marks a bare-slot branch among literal-bearing branches as malformed', () => {
+    expect(parsePhraseTemplate('go-to-somebody/something').status).toBe('unsupportedMalformed');
+    expect(parsePhraseTemplate('my/your/their').status).toBe('unsupportedMalformed');
+  });
+
+  it('keeps a literal/slot alternative when literals still guard it', () => {
+    const result = parsePhraseTemplate('be the pride of somewhere/sth');
+
+    expect(result.status).toBe('supported');
+    expect(result.nodes).toEqual([
+      literal('be'),
+      literal('the'),
+      literal('pride'),
+      literal('of'),
+      alternative([literal('somewhere')], [slot('object')]),
+    ]);
+  });
+
+  it('folds a trailing single-atom alternative into the suffix of a slot-led group', () => {
+    const result = parsePhraseTemplate('take sth up/on');
+
+    expect(result.status).toBe('supported');
+    expect(result.nodes).toEqual([
+      literal('take'),
+      slot('object'),
+      alternative([literal('up')], [literal('on')]),
+    ]);
+  });
+
   it('parses multi-slash alternatives where the final segment shares a suffix', () => {
     const result = parsePhraseTemplate('be/come/arrive late to the party', {
       inflectableLiterals: new Set(['be', 'come', 'arrive']),
@@ -200,6 +290,50 @@ describe('phraseTemplateParser', () => {
       literal('to'),
       literal('the'),
       literal('party'),
+    ]);
+  });
+
+  it('parses a slot-led final segment as an alternative sharing the suffix', () => {
+    const result = parsePhraseTemplate('i / you / somebody for one', {
+      inflectableLiterals: new Set(['i', 'you']),
+    });
+
+    expect(result.status).toBe('supported');
+    expect(result.nodes).toEqual([
+      alternative(
+        [literal('i', true)],
+        [literal('you', true)],
+        [slot('person')],
+      ),
+      literal('for'),
+      literal('one'),
+    ]);
+  });
+
+  it('pairs a slot with a determiner literal at the same position', () => {
+    const result = parsePhraseTemplate('make/prove your/a point', {
+      inflectableLiterals: new Set(['make', 'prove']),
+    });
+
+    expect(result.status).toBe('supported');
+    expect(result.nodes).toEqual([
+      alternative([literal('make', true)], [literal('prove', true)]),
+      alternative([slot('possessive', 2)], [literal('a')]),
+      literal('point'),
+    ]);
+  });
+
+  it('keeps a slot then preposition tail as shared suffix, not an alternation', () => {
+    const result = parsePhraseTemplate('put/set sth in motion', {
+      inflectableLiterals: new Set(['put', 'set']),
+    });
+
+    expect(result.status).toBe('supported');
+    expect(result.nodes).toEqual([
+      alternative([literal('put', true)], [literal('set', true)]),
+      slot('object'),
+      literal('in'),
+      literal('motion'),
     ]);
   });
 });

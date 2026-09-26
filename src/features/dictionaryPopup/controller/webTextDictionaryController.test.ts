@@ -163,6 +163,7 @@ function makePanelController(): jest.Mocked<NonNullable<WebTextDictionaryControl
     sendToCard: jest.fn(() => Promise.resolve()),
     unmount: jest.fn(),
     getHosts: jest.fn(() => []),
+    onOpenChange: jest.fn((_listener: (open: boolean) => void) => () => {}),
   } as unknown as jest.Mocked<NonNullable<WebTextDictionaryControllerDeps['panelController']>>;
 }
 
@@ -2002,6 +2003,53 @@ describe('nested popup stack', () => {
 
       expect(popupHosts()).toHaveLength(2);
       expect(popupHosts()[1]!.style.zIndex).toBe('var(--z-overlay-top)');
+      act(() => { ctrl.destroy() });
+    });
+
+    it('drops a page popup below the panel when the panel opens after the lookup', async () => {
+      makeLookupForTerms();
+      const panelController = makePanelController();
+      const ctrl = createWebTextDictionaryController(makeDeps({ panelController }));
+
+      act(() => { ctrl.handleLookup(makeRequest(), 'r1', new DOMRect(10, 10, 40, 20), pageRange('word')) });
+      await flushLookup();
+      const host = popupHosts()[0]!;
+      expect(host.style.zIndex).toBe('var(--z-overlay-top)');
+
+      const openChange = (panelController.onOpenChange as jest.Mock).mock.calls[0]?.[0] as ((open: boolean) => void) | undefined;
+      expect(openChange).toBeDefined();
+
+      panelController.isOpen.mockReturnValue(true);
+      act(() => { openChange?.(true); });
+      expect(host.style.zIndex).toBe('var(--z-overlay-settings)');
+
+      panelController.isOpen.mockReturnValue(false);
+      act(() => { openChange?.(false); });
+      expect(host.style.zIndex).toBe('var(--z-overlay-top)');
+      act(() => { ctrl.destroy() });
+    });
+
+    it('keeps a panel-rooted popup chain above when the panel re-opens', async () => {
+      makeLookupForTerms();
+      const panelController = makePanelController();
+      panelController.isOpen.mockReturnValue(true);
+      const ctrl = createWebTextDictionaryController(makeDeps({ panelController }));
+
+      act(() => { ctrl.handleLookup(makeRequest({ term: 'a' }), 'r1', new DOMRect(10, 10, 40, 20), panelRange('a')) });
+      await flushLookup();
+      const lv1 = popupHosts()[0]!;
+      act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
+      await flushLookup();
+      const lv2 = popupHosts()[1]!;
+
+      const openChange = (panelController.onOpenChange as jest.Mock).mock.calls[0]?.[0] as ((open: boolean) => void) | undefined;
+      panelController.isOpen.mockReturnValue(false);
+      act(() => { openChange?.(false); });
+      panelController.isOpen.mockReturnValue(true);
+      act(() => { openChange?.(true); });
+
+      expect(lv1.style.zIndex).toBe('var(--z-overlay-top)');
+      expect(lv2.style.zIndex).toBe('var(--z-overlay-top)');
       act(() => { ctrl.destroy() });
     });
 

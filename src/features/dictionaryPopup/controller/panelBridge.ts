@@ -8,6 +8,7 @@ export interface PanelMountController {
   isOpen(): boolean;
   getHosts(): readonly HTMLElement[];
   sendToCard(prefill: DictionaryPanelPrefill): Promise<void>;
+  onOpenChange?(listener: (open: boolean) => void): () => void;
 }
 
 /** How long to wait for the settings tab to finish its async settings load. */

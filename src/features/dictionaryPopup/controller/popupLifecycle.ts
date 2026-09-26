@@ -178,6 +178,23 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     }
   }
 
+  // Re-evaluate abovePanel for the whole stack when the panel opens/closes.
+  // A level-1 popup anchored to page text must drop below the panel; only a
+  // chain rooted inside the panel stays above it.
+  function syncPanelZIndex(): void {
+    const open = deps.panelController?.isOpen() ?? false;
+    let inherited = true;
+    popupStack.forEach((level, index) => {
+      inherited = index === 0
+        ? !open || (level.highlightTarget !== null && isLookupFromUniversalPanel(level.highlightTarget))
+        : inherited;
+      level.abovePanel = inherited;
+      applyLevelZIndex(level);
+    });
+  }
+
+  const unsubscribePanelOpenChange = deps.panelController?.onOpenChange?.(syncPanelZIndex);
+
   /** Mount a popup for `level`, wiring every popup callback back to that
    *  level so nested lookups / status changes / card actions stay scoped. */
   function mountPopupLevel(level: PopupLevel, options: MountPopupDictionaryOptions): void {
@@ -434,11 +451,11 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     // Fast path: if we already looked this term up, show the popup immediately
     // without paying for a background round-trip. Cache stores the full
     // LookupResult[] so candidates survive repeat lookups (ADR-xxx).
-    const cached = deps.lookupCache.get(request.term, request.langCode);
+    const cached = deps.lookupCache.get(request.term, request.langCode, request);
     if (cached) {
       const finalWinner = applyLocalStatusFallback(cached[0]!, request.term);
       const finalCached = finalWinner === cached[0] ? cached : [finalWinner, ...cached.slice(1)];
-      if (finalCached !== cached) deps.lookupCache.set(request.term, request.langCode, finalCached);
+      if (finalCached !== cached) deps.lookupCache.set(request.term, request.langCode, finalCached, request);
       renderLookupResult(level, finalCached[0]!, finalCached.slice(1), anchorRect, request, pointer);
       return;
     }
@@ -498,7 +515,9 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
           const [winner, ...rest] = data;
           const finalWinner = applyLocalStatusFallback(winner!, request.term);
           const finalData = finalWinner === winner ? data : [finalWinner, ...rest];
-          deps.lookupCache.set(request.term, request.langCode, finalData);
+          if (!finalWinner.phraseIndexPending) {
+            deps.lookupCache.set(request.term, request.langCode, finalData, request);
+          }
           renderLookupResult(owner, finalWinner, finalWinner === winner ? rest : finalData.slice(1), anchorRect, request, pointer, true);
         } else {
           console.warn('[web-text-dict] lookup failed', error);
@@ -562,6 +581,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
 
   function dispose(): void {
     cancelPendingDismiss();
+    unsubscribePanelOpenChange?.();
     listeners.removeAll();
     for (const level of popupStack) level.highlight.destroy();
     closePopup();

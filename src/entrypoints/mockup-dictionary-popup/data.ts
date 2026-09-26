@@ -18,7 +18,6 @@ export interface ProtoSense {
   readonly synonyms?: readonly string[];
   readonly antonyms?: readonly string[];
   readonly thesaurus?: readonly string[];
-  readonly votes?: { readonly up: number; readonly down: number; readonly date?: string };
 }
 
 export interface ProtoPosSection {
@@ -60,7 +59,6 @@ export interface ProtoEntry {
   readonly wordNet?: { readonly synset?: readonly string[]; readonly hypernyms?: readonly string[] };
   readonly derivedTerms?: readonly string[];
   readonly anagrams?: readonly string[];
-  readonly usageNote?: { readonly title: string; readonly text: string };
   readonly synonymDiscussion?: string;
   readonly etymology?: {
     readonly chain: string;

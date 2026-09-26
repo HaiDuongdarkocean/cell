@@ -6,3 +6,4 @@ export { subscribeResourceChanges, setResourceEnabled } from './services/resourc
 export { onWordStatusChanged, emitWordStatusChanged, onWordStatusRemoved, emitWordStatusRemoved } from './services/wordStatusEvents';
 export type { WordStatusChangedDetail } from './services/wordStatusEvents';
 export { classifyLine, lineToCanonicalText } from './logic/normalize/rules';
+export { buildPhraseIndexForResource } from './logic/phraseIndexBuilder';

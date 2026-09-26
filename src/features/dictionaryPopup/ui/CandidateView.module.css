@@ -79,27 +79,6 @@
   overflow: visible;
 }
 
-.cellHeaderAudioGroup {
-  display: flex;
-  align-items: center;
-  gap: var(--space-0-5);
-  flex-shrink: 0;
-}
-
-.cellHeaderAudio {
-  width: calc(var(--touch-target-mobile) * 0.4);
-  height: calc(var(--touch-target-mobile) * 0.4);
-  min-width: calc(var(--touch-target-mobile) * 0.4);
-  min-height: calc(var(--touch-target-mobile) * 0.4);
-  padding: 0;
-  gap: var(--space-0-5);
-}
-
-.cellHeaderAudio svg {
-  width: calc(var(--touch-target-mobile) * 0.25);
-  height: calc(var(--touch-target-mobile) * 0.25);
-}
-
 .cellHeaderSecond {
   display: flex;
   composes: hide from '@/shared/ui/Scrollable.module.css';
@@ -352,12 +331,7 @@
 }
 
 .cellRelatedLink {
-  appearance: none;
-  border: none;
-  background: none;
-  padding: 0;
-  font: inherit;
-  color: var(--color-text-accent);
+  color: inherit;
   cursor: pointer;
 }
 

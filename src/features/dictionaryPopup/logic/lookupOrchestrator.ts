@@ -60,8 +60,10 @@ import type { Settings } from '@/entities/settings';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { ResourceInfo } from '@/entities/dictionary';
-import { classifyLine, lineToCanonicalText } from '@/features/dictionary';
-import type { SenseLine, RelatedEntry, EtymologyBlock, UsageNote } from '@/entities/dictionary';
+import { classifyLine, lineToCanonicalText, buildPhraseIndexForResource } from '@/features/dictionary';
+import type { SenseLine, RelatedEntry, EtymologyBlock, InflectionGroup } from '@/entities/dictionary';
+
+const EMPTY_COMPONENT_SET: ReadonlySet<string> = new Set();
 
 /** Check if an AbortSignal is aborted. */
 function checkAbort(signal?: AbortSignal): void {
@@ -132,10 +134,20 @@ const probeCache = new Map<string, TermProbe>();
  *  resource has no (readable) index so we don't re-read it per lookup. */
 const phraseIndexCache = new Map<string, Map<number, PhraseIndex | null>>();
 
+const phraseIndexRebuilds = new Set<string>();
+
 /** Clear lookup caches (probe + phrase indexes) after resource mutations. */
 export function clearDictionaryProbeCache(): void {
   probeCache.clear();
   phraseIndexCache.clear();
+  phraseIndexRebuilds.clear();
+}
+
+function schedulePhraseIndexRebuild(langCode: string, resourceId: number): void {
+  const key = `${langCode}:${resourceId}`;
+  if (phraseIndexRebuilds.has(key)) return;
+  phraseIndexRebuilds.add(key);
+  void buildPhraseIndexForResource(langCode, resourceId).catch(() => undefined);
 }
 
 /** Runtime context for resource filtering + priority across a single lookup.
@@ -338,6 +350,7 @@ export async function lookupOrchestratorMulti(
   let matchSource: MatchSource = 'dictionary';
   let additionalPhraseMatches: PhraseMatch[] = [];
   let phraseTraces: MatchTraceData[] | null = null;
+  let phraseIndexPending = false;
 
   if (fallback) {
     // User selected text — use verbatim, no phrase match.
@@ -345,10 +358,12 @@ export async function lookupOrchestratorMulti(
   } else if (langCode === 'en') {
     // English: run phrase matcher with all phrase indexes (ADR-037).
     const collectTrace = isDevMode;
-    const allMatches = await tryEnglishPhraseMatchAll(
+    const outcome = await tryEnglishPhraseMatchAll(
       langCode, contextSentence, cursorOffset, deps, resourceContext, signal,
       collectTrace ? (traces) => { phraseTraces = traces; } : undefined,
     );
+    phraseIndexPending = outcome.pending;
+    const allMatches = outcome.matches;
     if (allMatches.length > 0) {
       detectedPhrase = allMatches[0]!;
       matchSource = 'plugin';
@@ -432,7 +447,10 @@ export async function lookupOrchestratorMulti(
     }
   }
 
-  const allResults = [winnerResult, ...additionalResults];
+  const allResults: LookupResult[] = [
+    phraseIndexPending ? { ...winnerResult, phraseIndexPending: true } : winnerResult,
+    ...additionalResults,
+  ];
 
   // Dev-only: build + persist lookup log entry for phrase-matching analysis.
   if (isDevMode) {
@@ -489,7 +507,10 @@ async function assembleLookupResult(
   if (dictEntries.length === 0 && plugin.lemmaCandidates) {
     const candidates = plugin.lemmaCandidates(lookupTerm);
     for (const candidate of candidates) {
-      if (candidate.toLowerCase() === lookupTerm.toLowerCase()) continue;
+      // Skip only the exact string already queried — the by_term index is
+      // case-sensitive, so a lowercase candidate differing only by case
+      // (e.g. "i take it" for "I take it") must still be tried.
+      if (candidate === lookupTerm) continue;
       checkAbort(signal);
       dictEntries = sortByResourcePriority(
         (await findDictionaryByTerm(langCode, candidate))
@@ -504,7 +525,7 @@ async function assembleLookupResult(
   } else if (dictEntries.length === 0 && plugin.lemma) {
     // Backward compat: single-lemma fallback for plugins without lemmaCandidates.
     const lemma = plugin.lemma(lookupTerm);
-    if (lemma && lemma.toLowerCase() !== lookupTerm.toLowerCase()) {
+    if (lemma && lemma !== lookupTerm) {
       dictEntries = sortByResourcePriority(
         (await findDictionaryByTerm(langCode, lemma))
           .filter((e) => allowedResourceIds.has(e.resourceId)),
@@ -529,29 +550,35 @@ async function assembleLookupResult(
   checkAbort(signal);
 
   const resourceNameById = new Map<number, string>();
+  const disabledByResource = new Map<number, ReadonlySet<string>>();
   for (const r of resourceContext.resources) {
     if (r.id !== undefined) {
       resourceNameById.set(r.id, r.name.replace(/\.(json|zip|db|gz|txt)+$/i, ''));
+      if (r.disabledComponents?.length) {
+        disabledByResource.set(r.id, new Set(r.disabledComponents));
+      }
     }
   }
+  const disabledOf = (resourceId: number): ReadonlySet<string> =>
+    disabledByResource.get(resourceId) ?? EMPTY_COMPONENT_SET;
 
   const definitions: DefinitionEntry[] = [];
   const relatedMap = new Map<string, RelatedEntry>();
-  const inflectionMap = new Map<string, string[]>();
+  let inflections: InflectionGroup[] | undefined;
   const derivedTermsSet = new Set<string>();
   const wfSets = { nouns: new Set<string>(), verbs: new Set<string>(), adjectives: new Set<string>(), adverbs: new Set<string>() };
   const wnSets = { synset: new Set<string>(), hypernyms: new Set<string>() };
   let hasWordFamily = false;
   let hasWordNet = false;
   let level: string | undefined;
+  let frequencyStars: number | undefined;
   let etymology: EtymologyBlock | undefined;
   let etymologySource: string | undefined;
   const etyExtraVariants: { text: string; source?: string }[] = [];
-  let usageNote: UsageNote | undefined;
-  let usageNoteSource: string | undefined;
   let defIdx = 0;
   for (const e of dictEntries) {
-    const entryExamples: SenseLine[] = e.examples
+    const disabled = disabledOf(e.resourceId);
+    const entryExamples: SenseLine[] = !disabled.has('examples') && e.examples
       ? e.examples.split('\n').filter(Boolean).map((t) => ({ role: 'example' as const, text: t }))
       : [];
     const source = resourceNameById.get(e.resourceId) ?? 'dictionary';
@@ -559,15 +586,17 @@ async function assembleLookupResult(
     // Anki/legacy consumers; `lines` carries roles + translations for the UI.
     // Legacy rows (no `senses`) fall back to splitSenses + line classifier.
     const senses: { pos: string; lines: SenseLine[]; labels?: readonly string[]; level?: string; subsenses?: DefinitionEntry['subsenses']; synonyms?: readonly string[]; antonyms?: readonly string[] }[] =
-      e.senses && e.senses.length > 0
+      disabled.has('definitions') ? []
+      : e.senses && e.senses.length > 0
         ? e.senses.map((s) => ({
             pos: s.pos ?? '',
             labels: s.labels,
             level: s.level,
-            lines: [...s.lines],
+            lines: s.lines
+              .map((l) => disabled.has('translations') ? { ...l, translation: undefined } : l),
             subsenses: s.subsenses,
-            synonyms: s.synonyms,
-            antonyms: s.antonyms,
+            synonyms: disabled.has('synonyms') ? undefined : s.synonyms,
+            antonyms: disabled.has('synonyms') ? undefined : s.antonyms,
           }))
         : splitSenses(e.definition).map((s) => ({
             pos: s.pos,
@@ -578,7 +607,7 @@ async function assembleLookupResult(
           }));
     for (const sense of senses) {
       const glossLines = sense.lines.filter((l) => l.role !== 'example');
-      const senseExamples = sense.lines.filter((l) => l.role === 'example');
+      const senseExamples = disabled.has('examples') ? [] : sense.lines.filter((l) => l.role === 'example');
       definitions.push({
         id: `def-${defIdx}`,
         pos: sense.pos || e.pos || undefined,
@@ -596,37 +625,37 @@ async function assembleLookupResult(
       defIdx++;
     }
 
-    // Entry-level merge — dictEntries is already sorted by resource priority:
-    // lists union+dedupe (first-wins on term conflict), scalars first-wins,
+    // Entry-level merge — dictEntries is already sorted by resource priority.
+    // Singletons (word forms, IPA, stars, level) are first-wins so a disabled
+    // component falls through to the next dictionary; lists union+dedupe;
     // etymology chains after the first become checkable variants.
-    for (const r of e.related ?? []) {
-      const key = r.term.toLowerCase().replace(/^to\s+/, '');
-      if (!relatedMap.has(key)) relatedMap.set(key, r);
+    if (!disabled.has('related')) {
+      for (const r of e.related ?? []) {
+        const key = r.term.toLowerCase().replace(/^to\s+/, '');
+        if (!relatedMap.has(key)) relatedMap.set(key, r);
+      }
     }
-    for (const g of e.inflections ?? []) {
-      const forms = inflectionMap.get(g.type) ?? [];
-      for (const f of g.forms) if (!forms.includes(f)) forms.push(f);
-      inflectionMap.set(g.type, forms);
+    if (!inflections?.length && !disabled.has('inflections') && e.inflections?.length) {
+      inflections = [...e.inflections];
     }
-    for (const t of e.derivedTerms ?? []) derivedTermsSet.add(t);
-    if (e.wordFamily) {
+    if (!disabled.has('derivedTerms')) {
+      for (const t of e.derivedTerms ?? []) derivedTermsSet.add(t);
+    }
+    if (e.wordFamily && !disabled.has('wordFamily')) {
       for (const t of e.wordFamily.nouns ?? []) wfSets.nouns.add(t);
       for (const t of e.wordFamily.verbs ?? []) wfSets.verbs.add(t);
       for (const t of e.wordFamily.adjectives ?? []) wfSets.adjectives.add(t);
       for (const t of e.wordFamily.adverbs ?? []) wfSets.adverbs.add(t);
       hasWordFamily = true;
     }
-    if (e.wordNet) {
+    if (e.wordNet && !disabled.has('wordNet')) {
       for (const t of e.wordNet.synset ?? []) wnSets.synset.add(t);
       for (const t of e.wordNet.hypernyms ?? []) wnSets.hypernyms.add(t);
       hasWordNet = true;
     }
-    level ??= e.level;
-    if (e.usageNote && !usageNote) {
-      usageNote = e.usageNote;
-      usageNoteSource = source;
-    }
-    if (e.etymology) {
+    if (!disabled.has('level')) level ??= e.level;
+    if (!disabled.has('frequencyStars')) frequencyStars ??= e.frequencyStars;
+    if (e.etymology && !disabled.has('etymology')) {
       if (!etymology) {
         etymology = { chain: e.etymology.chain, firstKnownUse: e.etymology.firstKnownUse, variants: e.etymology.variants };
         etymologySource = source;
@@ -640,8 +669,8 @@ async function assembleLookupResult(
     ? { ...etymology, variants: [...(etymology.variants ?? []), ...etyExtraVariants] }
     : undefined;
 
-  // Word origin + usage note are selectable content like senses — emit them
-  // as labeled definition rows so they flow through the same check/card path.
+  // Word origin is selectable content like senses — emit it as labeled
+  // definition rows so it flows through the same check/card path.
   if (mergedEtymology) {
     const rows = [
       mergedEtymology.firstKnownUse
@@ -662,22 +691,13 @@ async function assembleLookupResult(
       defIdx++;
     }
   }
-  if (usageNote) {
-    const text = `${usageNote.title}: ${usageNote.text}`;
-    definitions.push({
-      id: `def-${defIdx}`,
-      labels: ['usage note'],
-      text,
-      lines: [{ role: 'note', text }],
-      examples: [],
-      source: usageNoteSource ?? 'dictionary',
-      defaultSelected: false,
-    });
-  }
-
   const partsOfSpeech = [...new Set(definitions.map((d) => d.pos).filter(Boolean))] as string[];
 
-  const rawReading = dictEntries[0]?.pronunciation || dictEntries[0]?.reading || '';
+  const pronEntry = dictEntries.find(
+    (e) => !disabledOf(e.resourceId).has('pronunciation')
+      && (e.pronunciation || (e.reading && e.reading.toLowerCase() !== effectiveTerm.toLowerCase())),
+  );
+  const rawReading = pronEntry?.pronunciation || pronEntry?.reading || '';
   const reading = rawReading && rawReading.toLowerCase() === effectiveTerm.toLowerCase()
     ? ''
     : rawReading;
@@ -702,13 +722,14 @@ async function assembleLookupResult(
     status,
     partsOfSpeech,
     definitions,
-    rawDefinitions: dictEntries.map((e) => e.definition),
+    rawDefinitions: dictEntries
+      .filter((e) => !disabledOf(e.resourceId).has('definitions'))
+      .map((e) => e.definition),
     detectedPhrase,
     related: relatedMap.size > 0 ? [...relatedMap.values()] : undefined,
-    inflections: inflectionMap.size > 0
-      ? [...inflectionMap.entries()].map(([type, forms]) => ({ type, forms }))
-      : undefined,
+    inflections,
     level,
+    frequencyStars,
     etymology: mergedEtymology,
     wordFamily: hasWordFamily ? {
       nouns: [...wfSets.nouns],
@@ -721,7 +742,6 @@ async function assembleLookupResult(
       hypernyms: [...wnSets.hypernyms],
     } : undefined,
     derivedTerms: derivedTermsSet.size > 0 ? [...derivedTermsSet] : undefined,
-    usageNote,
     matchSource,
   };
 }
@@ -740,7 +760,7 @@ async function tryEnglishPhraseMatchAll(
   signal?: AbortSignal,
   /** Dev-only: nhận trace data từ mỗi matchPhraseAll call (per-resource). */
   traceCollector?: (traces: MatchTraceData[]) => void,
-): Promise<PhraseMatch[]> {
+): Promise<{ matches: PhraseMatch[]; pending: boolean }> {
   const dictionaryResourceIds = new Set(
     resourceContext.dictionaryResources
       .map((r) => r.id)
@@ -748,6 +768,7 @@ async function tryEnglishPhraseMatchAll(
   );
 
   let indexes: { resourceId: number; index: PhraseIndex }[];
+  let pending = false;
 
   if (deps.phraseIndexes && deps.phraseIndexes.size > 0) {
     indexes = [...deps.phraseIndexes.entries()]
@@ -775,7 +796,8 @@ async function tryEnglishPhraseMatchAll(
         const rid = missing[i]!;
         const s = stored[i];
         if (!s) {
-          langCache.set(rid, null);
+          schedulePhraseIndexRebuild(langCode, rid);
+          pending = true;
           continue;
         }
         try {
@@ -783,11 +805,12 @@ async function tryEnglishPhraseMatchAll(
           langCache.set(rid, index);
           indexes.push({ resourceId: rid, index });
         } catch {
-          langCache.set(rid, null);
+          schedulePhraseIndexRebuild(langCode, rid);
+          pending = true;
         }
       }
     }
-    if (indexes.length === 0) return [];
+    if (indexes.length === 0) return { matches: [], pending };
   }
 
   // Sort by priority, then resourceId descending (newest import wins).
@@ -817,7 +840,7 @@ async function tryEnglishPhraseMatchAll(
 
   if (traceCollector) traceCollector(traces);
 
-  if (candidates.length === 0) return [];
+  if (candidates.length === 0) return { matches: [], pending };
 
   // Sort: priority, then resourceId descending, then comparePhraseMatches.
   candidates.sort((a, b) => {
@@ -839,7 +862,7 @@ async function tryEnglishPhraseMatchAll(
     unique.push(match);
   }
 
-  return unique;
+  return { matches: unique, pending };
 }
 
 // --- Dev-only lookup logging (ADR-037 phrase matching analysis) ---

@@ -2,18 +2,21 @@
 // blocks: `.hom` sense groups (sensenum + gramGrp[pos|cefr|lbl] + .sense >
 // .def + .examples > .cit > .quote with .tips grammar patterns + .thes
 // synonyms), `.hom.ext` phrase entries (.phr-ext + .rhw), `.phrvs > .phrv-ext`
-// phrasal verbs with nested .hom senses, `.collocation .collos > a.collo`
-// with .collo-exa corpus examples (.blockquote + .credits), `.pron`
-// pronunciation, `a.xr` "explained at" cross-refs. Unknown structure keeps
-// the record unsplit — parse returns empty senses and the caller falls back.
+// phrasal verbs with nested .hom senses, `.idiom .idms > .idm-ext` inline
+// idioms (.ihw + .idm-sense), `.form.inflected_forms` word forms (orth[title]
+// grouped per inflection type), `.collocation .collos > a.collo` with
+// .collo-exa corpus examples (.blockquote + .credits), `.pron` pronunciation,
+// `a.xr` "explained at" cross-refs. Unknown structure keeps the record
+// unsplit — parse returns empty senses and the caller falls back.
 
-import { stripHtml } from './markup.mjs';
+import { stripHtml, blocks, excise } from './markup.mjs';
 
 const TIPS_RE = /<span class="tips">([\s\S]*?)<\/a><\/span>/g;
 const CIT_RE = /<div class="cit[^"]*">([\s\S]*?)<\/div>/g;
 const DEF_RE = /<div class="def[^"]*">([\s\S]*?)<\/div>/;
 const THES_RE = /<div class="thes[^"]*">([\s\S]*?)<\/div>/;
-const FORM_REF_RE = /<a class="form ref"[^>]*>([^<]+)<\/a>/g;
+const FORM_REF_RE = /<a class="form[^"]*"[^>]*>([^<]+)<\/a>/g;
+const ORTH_FORM_RE = /(?:span|a) class="orth[^"]*"[^>]*?title="([^"]+)"[^>]*>([^<]+)</g;
 
 function parseGramGrp(frag, gramPosVariant) {
   const pos = gramPosVariant
@@ -60,6 +63,8 @@ function parseSenseFrag(frag, gram) {
 }
 
 function parseHomFrag(frag) {
+  const drvIdx = frag.search(/<div class="re\s/);
+  if (drvIdx >= 0) frag = frag.slice(0, drvIdx);
   const gramM = frag.match(/<span class="gramGrp([^"]*)">([\s\S]*?)(?=<div class="sense"|<\/a>)/) ??
     frag.match(/<span class="gramGrp([^"]*)">([\s\S]*?)<\/span>/);
   const gram = parseGramGrp(gramM?.[2] ?? '', gramM?.[1]?.includes('pos') ?? false);
@@ -73,18 +78,76 @@ function parseHomFrag(frag) {
   return senses;
 }
 
-function sliceZones(html) {
-  const phrvs = html.indexOf('class="phrvs"');
-  const colloc = html.indexOf('class="collocation"');
-  const homExt = html.search(/<div class="hom ext/);
-  const end = html.length;
-  const mainEnd = [homExt, phrvs, colloc].filter((i) => i >= 0).reduce((a, b) => Math.min(a, b), end);
-  return {
-    main: html.slice(0, mainEnd),
-    phrases: homExt >= 0 ? html.slice(homExt, phrvs >= 0 ? phrvs : end) : '',
-    phrasal: phrvs >= 0 ? html.slice(phrvs, colloc >= 0 ? colloc : end) : '',
-    colloc: colloc >= 0 ? html.slice(colloc) : '',
-  };
+function parseSource(src, out, rel) {
+  const homExt = excise(src, 'div', 'hom ext');
+  const phrv = excise(homExt.rest, 'div', 'phrv-ext');
+  const idm = excise(phrv.rest, 'div', 'idm-ext');
+  const coll = excise(idm.rest, 'div', 'collocation');
+  for (const hom of splitOn(coll.rest, /<div class="hom"/g)) {
+    out.senses.push(...parseHomFrag(hom));
+  }
+  for (const b of homExt.removed) {
+    const term = stripHtml(b.inner.match(/<span class="rhw">([\s\S]*?)<\/span>/)?.[1] ?? '');
+    const senses = parseHomFrag(b.inner);
+    if (!term || !senses.length) continue;
+    rel(term, 'expression');
+    out.spawned.push({ term, senses });
+  }
+  for (const b of phrv.removed) {
+    const term = stripHtml(b.inner.match(/<span class="rhw">([\s\S]*?)<\/span>/)?.[1] ?? '');
+    const senses = parseHomFrag(b.inner);
+    if (!term) continue;
+    rel(term, 'phrasal');
+    if (senses.length) out.spawned.push({ term, senses });
+  }
+  for (const b of idm.removed) {
+    const term = stripHtml(b.inner.match(/<span class="ihw">([\s\S]*?)<\/span>/)?.[1] ?? '');
+    const senses = parseIdiomBlock(b.inner);
+    if (!term) continue;
+    rel(term, 'idiom');
+    if (senses.length) out.spawned.push({ term, senses });
+  }
+  for (const b of coll.removed) {
+    for (const m of b.inner.matchAll(
+      /<a class="collo"[^>]*>([\s\S]*?)<\/a><div class="collo-exa"[^>]*>([\s\S]*?)(?=<a class="collo|$)/g,
+    )) {
+      const term = stripHtml(m[1]);
+      if (!term) continue;
+      rel(term, 'collocation');
+      const lines = parseCorpusLines(m[2]);
+      if (lines.length) out.spawned.push({ term, senses: [{ pos: 'collocation', lines }] });
+    }
+  }
+}
+
+function parseInflections(html) {
+  const groups = new Map();
+  for (const b of blocks(html, 'span', 'inflected_forms')) {
+    for (const m of b.inner.matchAll(ORTH_FORM_RE)) {
+      const type = m[1].trim();
+      const form = stripHtml(m[2]);
+      if (!type || !form) continue;
+      if (!groups.has(type)) groups.set(type, []);
+      if (!groups.get(type).includes(form)) groups.get(type).push(form);
+    }
+  }
+  return [...groups.entries()].map(([type, forms]) => ({ type, forms }));
+}
+
+function parseIdiomBlock(block) {
+  const senses = [];
+  for (const s of splitOn(block, /<div class="idm-sense">/g)) {
+    if (!s.includes('idm-sense')) continue;
+    const lines = [];
+    const gloss = stripHtml(s.match(DEF_RE)?.[1] ?? '');
+    if (gloss) lines.push({ role: 'gloss', text: gloss });
+    for (const cm of s.matchAll(CIT_RE)) {
+      const ex = parseCit(cm[1]);
+      if (ex) lines.push(ex);
+    }
+    if (lines.length) senses.push({ pos: 'idiom', lines });
+  }
+  return senses;
 }
 
 function* splitOn(frag, re) {
@@ -143,7 +206,7 @@ export const cobuild = {
       }
     };
 
-    const zones = sliceZones(html);
+    const { rest, removed: defBlocks } = excise(html, 'div', 'definitions');
 
     const pronBlock = html.match(/<div class="pronunciation">([\s\S]*?)<\/div>/);
     if (pronBlock) {
@@ -157,35 +220,11 @@ export const cobuild = {
       if (p) out.pronunciation = p;
     }
 
-    for (const hom of splitOn(zones.main, /<div class="hom"/g)) {
-      out.senses.push(...parseHomFrag(hom));
-    }
+    const sources = defBlocks.length ? [...defBlocks.map((b) => b.inner), rest] : [html];
+    for (const src of sources) parseSource(src, out, rel);
 
-    for (const block of splitOn(zones.phrases, /<div class="hom ext[^"]*"/g)) {
-      const term = stripHtml(block.match(/<span class="rhw">([\s\S]*?)<\/span>/)?.[1] ?? '');
-      const senses = parseHomFrag(block);
-      if (!term || !senses.length) continue;
-      rel(term, 'expression');
-      out.spawned.push({ term, senses });
-    }
-
-    for (const block of splitOn(zones.phrasal, /<div class="phrv-ext[^"]*"/g)) {
-      const term = stripHtml(block.match(/<span class="rhw">([\s\S]*?)<\/span>/)?.[1] ?? '');
-      const senses = parseHomFrag(block);
-      if (!term) continue;
-      rel(term, 'phrasal');
-      if (senses.length) out.spawned.push({ term, senses });
-    }
-
-    for (const m of zones.colloc.matchAll(
-      /<a class="collo"[^>]*>([\s\S]*?)<\/a><div class="collo-exa"[^>]*>([\s\S]*?)(?=<a class="collo|$)/g,
-    )) {
-      const term = stripHtml(m[1]);
-      if (!term) continue;
-      rel(term, 'collocation');
-      const lines = parseCorpusLines(m[2]);
-      if (lines.length) out.spawned.push({ term, senses: [{ pos: 'collocation', lines }] });
-    }
+    const inflections = parseInflections(html);
+    if (inflections.length) out.inflections = inflections;
 
     for (const m of html.matchAll(
       /<span class="hi rend-b">([^<]+)<\/span>\s*is explained at\s*<a class="xr ref"/g,

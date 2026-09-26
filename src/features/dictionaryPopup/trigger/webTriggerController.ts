@@ -19,6 +19,7 @@ import {
   type SentenceContext,
 } from '../sentence/sentenceModule';
 import { CELL_UI_HOST_SELECTORS, CELL_UI_POINTER_EVENT_HOST_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
+import type { HighlightTarget } from '../ui/wordHighlight';
 
 /** Hover debounce for web text — only fire after the cursor has been still for this long. */
 const WEB_HOVER_DEBOUNCE_MS = 80;
@@ -195,8 +196,10 @@ export interface WebTriggerPointer {
 
 export interface WebTriggerDeps {
   triggerMode: TriggerMode;
-  /** onLookup receives the cloned Range so the consumer can highlight the target word. */
-  readonly onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect, range: Range, pointer?: WebTriggerPointer) => void;
+  /** onLookup receives the cloned Range (or the clicked element for explicit
+   *  data-lookup-term links) so the consumer can highlight the target word
+   *  and route nested lookups to a deeper popup level. */
+  readonly onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect, range: HighlightTarget, pointer?: WebTriggerPointer) => void;
   readonly onCancel: (requestId: string) => void;
   /** onClear is called when the cursor leaves a valid word/selection target so the consumer can hide the popup. */
   readonly onClear?: () => void;
@@ -293,6 +296,26 @@ export class WebTriggerController {
   }
 
   private onMouseUp(e: MouseEvent): void {
+    // Explicit lookup links (related terms inside the popup/panel carry
+    // data-lookup-term) dispatch a verbatim-term lookup regardless of trigger
+    // mode — an intentional click, and the full term (not word-at-point) is
+    // required because related terms are often multi-word phrases.
+    const lookupTermEl = e.composedPath().find(
+      (el): el is HTMLElement => el instanceof HTMLElement && Boolean(el.dataset.lookupTerm),
+    );
+    if (lookupTermEl?.dataset.lookupTerm) {
+      const term = lookupTermEl.dataset.lookupTerm;
+      // The clicked element is the lookup target so levelIndexForTarget
+      // resolves the popup level containing it — a click inside popup level N
+      // opens level N+1 instead of replacing the current result.
+      this.dispatchLookup(
+        { term, langCode: detectLangCode(term), contextSentence: term, cursorOffset: 0, fallback: true },
+        lookupTermEl.getBoundingClientRect(),
+        lookupTermEl,
+      );
+      return;
+    }
+
     // In hover modes (hover-ctrl/shift/alt), a click/fallback must hold the
     // matching modifier key. 'click' and plain 'hover' modes allow any click.
     if (!modifierMatches(this.deps.triggerMode, e)) {
@@ -542,12 +565,13 @@ export class WebTriggerController {
     this.dispatchLookup(request, rect, resolved.range, { x, y, badgeCenter, badgeRadius, pointerRadius });
   }
 
-  private dispatchLookup(request: LookupRequest, anchorRect: DOMRect, range?: Range, pointer?: WebTriggerPointer): void {
+  private dispatchLookup(request: LookupRequest, anchorRect: DOMRect, target?: Range | HTMLElement, pointer?: WebTriggerPointer): void {
     this.cancelInFlight();
     const requestId = nextRequestId();
     this.inFlightRequestId = requestId;
     // Clone range so the consumer gets a stable snapshot for highlight.
-    this.deps.onLookup(request, requestId, anchorRect, range ? range.cloneRange() : new Range(), pointer);
+    const resolved: HighlightTarget = target instanceof Range ? target.cloneRange() : target ?? new Range();
+    this.deps.onLookup(request, requestId, anchorRect, resolved, pointer);
   }
 }
 

@@ -4,38 +4,61 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { nextRequestId } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { extractWordAtOffset, WORD_CHAR_RE } from '@/features/dictionaryPopup/sentence/sentenceModule';
 
+/** Context the lookup result was produced from. Phrase candidates are matched
+ *  against the sentence + cursor, so a result is only valid for the same context. */
+export interface LookupContext {
+  readonly contextSentence?: string;
+  readonly cursorOffset?: number;
+}
+
 export interface LookupCache {
-  readonly get: (term: string, langCode: string) => LookupResult[] | undefined;
-  readonly has: (term: string, langCode: string) => boolean;
-  readonly set: (term: string, langCode: string, results: LookupResult[]) => void;
+  readonly get: (term: string, langCode: string, context?: LookupContext) => LookupResult[] | undefined;
+  readonly has: (term: string, langCode: string, context?: LookupContext) => boolean;
+  readonly set: (term: string, langCode: string, results: LookupResult[], context?: LookupContext) => void;
   readonly updateStatus: (term: string, langCode: string, status: WordStatus) => void;
   readonly clear: () => void;
 }
 
-/** Bounded in-memory lookup cache. Key = `${langCode}:${term.toLowerCase()}`.
+interface CachedLookup {
+  readonly results: LookupResult[];
+  readonly contextKey: string;
+}
+
+/** Bounded in-memory lookup cache. Key = `${langCode}:${term.toLowerCase()}`,
+ *  valid only for the context it was produced from — the same word in another
+ *  sentence (or at another cursor) yields different phrase candidates.
  *  Capacity scales with device memory (low-end: 50, high-end: 250) to avoid
  *  bloat on 1GB machines while still giving repeat-hover instant popups. */
 export function createLookupCache(): LookupCache {
   const deviceMemory = Number((navigator as { deviceMemory?: number }).deviceMemory ?? 4);
   const MAX_LOOKUP_CACHE_SIZE = Math.min(250, Math.max(50, Math.round(deviceMemory * 25)));
-  const lookupCache = new Map<string, LookupResult[]>();
+  const lookupCache = new Map<string, CachedLookup>();
 
   function keyFor(term: string, langCode: string): string {
     return `${langCode}:${term.toLowerCase()}`;
   }
 
+  function contextKeyFor(context?: LookupContext): string {
+    return `${context?.contextSentence ?? ''}\u0000${context?.cursorOffset ?? -1}`;
+  }
+
+  function getEntry(term: string, langCode: string, context?: LookupContext): CachedLookup | undefined {
+    const entry = lookupCache.get(keyFor(term, langCode));
+    return entry && entry.contextKey === contextKeyFor(context) ? entry : undefined;
+  }
+
   return {
-    get(term, langCode) {
-      return lookupCache.get(keyFor(term, langCode));
+    get(term, langCode, context) {
+      return getEntry(term, langCode, context)?.results;
     },
-    has(term, langCode) {
-      return lookupCache.has(keyFor(term, langCode));
+    has(term, langCode, context) {
+      return getEntry(term, langCode, context) !== undefined;
     },
-    set(term, langCode, results) {
+    set(term, langCode, results, context) {
       const key = keyFor(term, langCode);
       // Move to most-recent position on access.
       if (lookupCache.has(key)) lookupCache.delete(key);
-      lookupCache.set(key, results);
+      lookupCache.set(key, { results, contextKey: contextKeyFor(context) });
       // Evict oldest if over capacity.
       if (lookupCache.size > MAX_LOOKUP_CACHE_SIZE) {
         const first = lookupCache.keys().next().value;
@@ -43,9 +66,12 @@ export function createLookupCache(): LookupCache {
       }
     },
     updateStatus(term, langCode, status) {
-      const cached = lookupCache.get(keyFor(term, langCode));
-      if (cached && cached[0].status !== status) {
-        lookupCache.set(keyFor(term, langCode), [{ ...cached[0], status }, ...cached.slice(1)]);
+      const entry = lookupCache.get(keyFor(term, langCode));
+      if (entry && entry.results[0] && entry.results[0].status !== status) {
+        lookupCache.set(keyFor(term, langCode), {
+          results: [{ ...entry.results[0], status }, ...entry.results.slice(1)],
+          contextKey: entry.contextKey,
+        });
       }
     },
     clear() {
@@ -88,7 +114,7 @@ export function prefetchAdjacentTerms(cache: LookupCache, request: LookupRequest
   if (!request.contextSentence) return;
   const adjacent = getAdjacentTerms(request.contextSentence, request.cursorOffset, request.term);
   for (const { term, start } of adjacent) {
-    if (cache.has(term, request.langCode)) continue;
+    if (cache.has(term, request.langCode, { contextSentence: request.contextSentence, cursorOffset: start })) continue;
     const prefetchRequest: LookupRequest = {
       term,
       langCode: request.langCode,
@@ -101,8 +127,8 @@ export function prefetchAdjacentTerms(cache: LookupCache, request: LookupRequest
     }))
       .then((response: unknown) => {
         const { success, data } = response as { success: boolean; data?: LookupResult[] };
-        if (success && data && data.length > 0) {
-          cache.set(term, request.langCode, data);
+        if (success && data && data.length > 0 && !data[0]!.phraseIndexPending) {
+          cache.set(term, request.langCode, data, prefetchRequest);
         }
       })
       .catch(() => { /* prefetch failures are best-effort */ });

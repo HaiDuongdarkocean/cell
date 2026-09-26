@@ -20,25 +20,27 @@ function makeResource(overrides: Partial<ResourceInfo> = {}): ResourceInfo {
 describe('DeleteConfirmModal', () => {
   it('derives frequency wording from resource.type', () => {
     render(<DeleteConfirmModal resource={makeResource()} onConfirm={jest.fn()} onCancel={jest.fn()} />);
-    expect(screen.getByText('Delete list?')).toBeInTheDocument();
-    expect(screen.getByText(/Permanently removes "words\.txt" and its 100 words\./)).toBeInTheDocument();
+    expect(screen.getByText('Delete list')).toBeInTheDocument();
+    expect(screen.getByText("This can't be undone.")).toBeInTheDocument();
+    expect(screen.getByText('words.txt')).toBeInTheDocument();
+    expect(screen.getByText('100 words')).toBeInTheDocument();
   });
 
   it('derives dictionary wording from resource.type', () => {
     render(<DeleteConfirmModal resource={makeResource({ type: 'DICTIONARY' })} onConfirm={jest.fn()} onCancel={jest.fn()} />);
-    expect(screen.getByText('Delete dictionary?')).toBeInTheDocument();
+    expect(screen.getByText('Delete dictionary')).toBeInTheDocument();
   });
 
   it('renders generic title/description for bulk confirm', () => {
     render(
       <DeleteConfirmModal
-        title="Xóa tất cả 3 từ điển?"
+        title="Xóa tất cả 3 từ điển"
         description="Xóa vĩnh viễn toàn bộ từ điển trong mục này và dữ liệu của chúng."
         onConfirm={jest.fn()}
         onCancel={jest.fn()}
       />,
     );
-    expect(screen.getByText('Xóa tất cả 3 từ điển?')).toBeInTheDocument();
+    expect(screen.getByText('Xóa tất cả 3 từ điển')).toBeInTheDocument();
     expect(screen.getByText(/Xóa vĩnh viễn toàn bộ từ điển/)).toBeInTheDocument();
   });
 
@@ -66,7 +68,7 @@ describe('DeleteConfirmModal', () => {
   it('does not call onCancel when modal content clicked (stopPropagation)', () => {
     const onCancel = jest.fn();
     render(<DeleteConfirmModal resource={makeResource()} onConfirm={jest.fn()} onCancel={onCancel} />);
-    fireEvent.click(screen.getByText('Delete list?'));
+    fireEvent.click(screen.getByText('Delete list'));
     expect(onCancel).not.toHaveBeenCalled();
   });
 });

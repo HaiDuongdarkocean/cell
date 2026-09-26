@@ -11,5 +11,6 @@ export interface UniversalPanelController {
   readonly isOpen: () => boolean;
   readonly sendToCard: (prefill: DictionaryPanelPrefill) => Promise<void>;
   readonly openDictionaryLookup: (term: string) => Promise<void>;
+  readonly onOpenChange: (listener: (open: boolean) => void) => () => void;
   readonly unmount: () => void;
 }

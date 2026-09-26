@@ -75,6 +75,7 @@ export function SettingsTab(): React.JSX.Element | null {
         settings={settings}
         onChange={(next) => { void handleChange(next); }}
         showSidebarHeader={false}
+        navMode="horizontal"
       />
     </div>
   );

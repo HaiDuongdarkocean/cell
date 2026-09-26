@@ -159,13 +159,16 @@ export const numberedLineMarkup: DefinitionRule = (raw) => {
 };
 
 /**
- * Fallback — always matches. The definition stays ONE sense: lines are
- * classified (`·` examples, `—` pairs) for rendering, but no sense boundary
- * is ever invented. This is the fail-safe the whole pipeline relies on:
- * unrecognized input does not split in the popup.
+ * Fallback — matches any non-empty definition. The definition stays ONE
+ * sense: lines are classified (`·` examples, `—` pairs) for rendering, but
+ * no sense boundary is ever invented. This is the fail-safe the whole
+ * pipeline relies on: unrecognized input does not split in the popup.
+ * Empty definitions return null — metadata-only entries (etymology without
+ * senses) must not produce a phantom empty sense.
  */
 export const verbatim: DefinitionRule = (raw) => {
   const text = typeof raw.definition === 'string' ? raw.definition : '';
+  if (!text.trim()) return null;
   const lines = classifyLines(text.split(BREAK_SPLIT_RE));
   return { senses: [{ lines }] };
 };

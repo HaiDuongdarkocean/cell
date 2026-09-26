@@ -4,6 +4,7 @@ import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { nextStatus } from '@/features/dictionary/services/wordStatusStore';
 import { setWordStatus } from '@/features/dictionary/services/wordStatusClient';
+import { emitWordStatusChanged } from '@/features/dictionary';
 import {
   initDefinitionSelection,
   initExampleSelection,
@@ -194,15 +195,18 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     const newStatus = nextStatus(status);
     setStatus(newStatus);
     void setWordStatus(candidate.langCode, candidate.term, newStatus);
+    emitWordStatusChanged({ term: candidate.term, langCode: candidate.langCode, status: newStatus });
     onStatusChange?.(candidate.term, candidate.langCode, newStatus);
   }, [candidate.langCode, candidate.term, status, onStatusChange]);
 
   const [includeAllExamples, setIncludeAllExamples] = useState(false);
+  const [ttsVoices, setTtsVoices] = useState<readonly string[]>([]);
   useEffect(() => {
     let alive = true;
     loadSettings()
       .then((s) => {
         if (!alive) return;
+        setTtsVoices(s.dictionaryPopup?.tts?.voices ?? []);
         setIncludeAllExamples(s.dictionaryPopup?.includeAllExamplesOnDefSelect ?? false);
       })
       .catch(() => {});
@@ -241,18 +245,18 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
   const playTerm = useCallback((): void => {
     void sendMessage({
       type: MESSAGE_TYPES.TTS_SPEAK,
-      payload: { text: candidate.term, langCode: candidate.langCode },
+      payload: { text: candidate.term, langCode: candidate.langCode, voiceName: ttsVoices[0] },
     });
-  }, [candidate.langCode, candidate.term]);
+  }, [candidate.langCode, candidate.term, ttsVoices]);
 
   const playSentence = useCallback((): void => {
     const sentence = contextSentence.trim() || candidate.term;
     if (!sentence) return;
     void sendMessage({
       type: MESSAGE_TYPES.TTS_SPEAK,
-      payload: { text: sentence, langCode: candidate.langCode },
+      payload: { text: sentence, langCode: candidate.langCode, voiceName: ttsVoices[0] },
     });
-  }, [candidate.langCode, candidate.term, contextSentence]);
+  }, [candidate.langCode, candidate.term, contextSentence, ttsVoices]);
 
   const sendToCard = useCallback(async (): Promise<void> => {
     if (!onSendToCard) return;

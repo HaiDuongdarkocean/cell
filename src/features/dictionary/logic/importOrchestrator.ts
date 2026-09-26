@@ -109,12 +109,13 @@ export async function importFile(
       await buildPhraseIndexForResource(langCode, resourceId);
     }
 
-    // 10. Finalize resource (wordCount + installationFinished=true)
+    // 10. Finalize resource (wordCount + components + installationFinished=true)
     const resource = await getResource(langCode, resourceId);
     if (resource) {
       await updateResource(langCode, {
         ...resource,
         wordCount: result.wordCount,
+        ...(result.components ? { components: result.components } : {}),
         installationFinished: true,
       });
     }

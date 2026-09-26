@@ -114,12 +114,13 @@ async function main() {
 
   const stats = { entries: 0, skipped: 0, senses: 0, gloss: 0, example: 0, note: 0, translations: 0, redirects: 0 };
   const out = [];
+  const outByTerm = new Map();
+  const glossKey = (s) => s.lines?.find((l) => l.role === 'gloss')?.text?.toLowerCase() ?? '';
   for await (const raw of readRawEntries(resolve(input), only)) {
     if (stats.entries >= limit) break;
     const term = normWord(raw.term);
     if (!term) { stats.skipped++; continue; }
     const c = toCanonicalDefinition(raw);
-    stats.entries++;
     stats.senses += c.senses.length;
     for (const s of c.senses) {
       for (const l of s.lines) {
@@ -128,7 +129,17 @@ async function main() {
         if (l.text.startsWith('→ ')) stats.redirects++;
       }
     }
-    out.push({
+    const existing = raw.spawned ? outByTerm.get(term) : undefined;
+    if (existing) {
+      for (const s of c.senses) {
+        const g = glossKey(s);
+        if (g && existing.senses.some((x) => glossKey(x) === g)) continue;
+        existing.senses.push(s);
+      }
+      continue;
+    }
+    stats.entries++;
+    const entry = {
       term,
       reading: raw.reading ? normWord(raw.reading) : term,
       altterm: raw.altterm ? normWord(raw.altterm) : '',
@@ -147,8 +158,9 @@ async function main() {
       ...(raw.wordFamily ? { wordFamily: raw.wordFamily } : {}),
       ...(raw.wordNet ? { wordNet: raw.wordNet } : {}),
       ...(raw.derivedTerms?.length ? { derivedTerms: raw.derivedTerms } : {}),
-      ...(raw.usageNote ? { usageNote: raw.usageNote } : {}),
-    });
+    };
+    out.push(entry);
+    if (!outByTerm.has(term)) outByTerm.set(term, entry);
   }
 
   console.log(`entries: ${stats.entries} (skipped ${stats.skipped}) · senses: ${stats.senses} · ` +

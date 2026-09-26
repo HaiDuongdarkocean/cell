@@ -8,7 +8,7 @@ import type { StrategyOptions, RawDictionaryEntry } from './baseImportStrategy';
 import { decodeText, isGzip, gunzipFile, isZip, unzipAll } from '../logic/fileDetector';
 import { ParseError } from '../logic/importErrors';
 import { bulkInsertDictionaryEntries } from '../repositories/dictionaryRepository';
-import type { DictionaryEntry, SenseBlock, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo, UsageNote } from '@/entities/dictionary';
+import type { DictionaryEntry, SenseBlock, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo } from '@/entities/dictionary';
 
 /** Options for jsonEntriesStrategy. */
 export interface JsonEntriesStrategyOptions {
@@ -37,7 +37,6 @@ interface JsonEntry {
   readonly wordNet?: WordNetInfo;
   readonly derivedTerms?: string[];
   readonly anagrams?: string[];
-  readonly usageNote?: UsageNote;
 }
 
 /** entry-object JSON dictionary strategy. */
@@ -101,7 +100,6 @@ export class JsonEntriesStrategy extends BaseDictionaryStrategy {
         wordNet: entry.wordNet,
         derivedTerms: Array.isArray(entry.derivedTerms) ? entry.derivedTerms : undefined,
         anagrams: Array.isArray(entry.anagrams) ? entry.anagrams : undefined,
-        usageNote: entry.usageNote,
       };
     }
   }

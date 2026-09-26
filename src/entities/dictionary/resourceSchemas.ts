@@ -7,6 +7,11 @@ import { z } from 'zod';
 const LangCode = z.string().min(1);
 const ResourceId = z.number().int();
 const ResourceKind = z.enum(['DICTIONARY', 'FREQUENCY']);
+const ComponentName = z.enum([
+  'definitions', 'examples', 'translations', 'synonyms', 'pronunciation',
+  'inflections', 'etymology', 'wordFamily', 'wordNet', 'derivedTerms',
+  'related', 'level', 'frequencyStars',
+]);
 
 export const ResourceListPayloadSchema = z.object({
   langCode: LangCode,
@@ -29,10 +34,27 @@ export const ResourceSetEnabledPayloadSchema = z.object({
   enabled: z.boolean(),
 });
 
+export const ResourceRenamePayloadSchema = z.object({
+  langCode: LangCode,
+  resourceId: ResourceId,
+  name: z.string().trim().min(1).max(200),
+});
+
 export const ResourceSetProfilesPayloadSchema = z.object({
   langCode: LangCode,
   resourceId: ResourceId,
   profileIds: z.array(z.string()),
+});
+
+export const ResourceSetComponentsPayloadSchema = z.object({
+  langCode: LangCode,
+  resourceId: ResourceId,
+  disabledComponents: z.array(ComponentName),
+});
+
+export const ResourceComponentsPayloadSchema = z.object({
+  langCode: LangCode,
+  resourceId: ResourceId,
 });
 
 export const ResourceSamplePayloadSchema = z.object({

@@ -1,5 +1,6 @@
 import type { DictionaryPopupSettings } from '@/entities/settings/types';
 import type { LookupRequest } from '@/entities/dictionary';
+import type { HighlightTarget } from '../ui/wordHighlight';
 import { WebTriggerController, type WebTriggerPointer } from '@/features/dictionaryPopup/trigger/webTriggerController';
 import { type PointerPreset } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
 import { mountOrbitalBadge, type OrbitalBadgeMountController } from '@/features/dictionaryPopup/ui/mountOrbitalBadge';
@@ -17,7 +18,7 @@ export interface OrbitalBadgeSyncDeps {
     request: LookupRequest,
     requestId: string,
     anchorRect: DOMRect,
-    range: Range,
+    range: HighlightTarget,
     pointer?: WebTriggerPointer,
   ) => void;
   readonly onCancel: (requestId: string) => void;
