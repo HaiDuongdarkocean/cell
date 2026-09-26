@@ -1,0 +1,22 @@
+{
+  "id": "amo-file-too-large-extract-emscripten-wasm",
+  "title": "AMO FILE_TOO_LARGE: tách Emscripten base64-embedded wasm ra file .wasm sibling + repoint wasmBinaryFile",
+  "category": ["build"],
+  "tags": ["firefox", "amo", "web-ext", "file-too-large", "opencv", "emscripten", "wasm", "packaging", "worker-entry", "dead-code"],
+  "trigger": "web-ext lint / addons-linter báo FILE_TOO_LARGE cho bundle .js >~5MB — thường là Emscripten libs nhúng wasm dưới dạng `var X=\`data:application/octet-stream;base64,...\`` hoặc worker bundles mà bundler emit dù runtime không bao giờ spawn.",
+  "principle": "addons-linter chỉ PARSE file .js — binary assets (.wasm, .data) exempt khỏi size limit, nên 'split bundle' đúng nghĩa AMO = tách payload data ra file binary, không phải cắt JS. Với Emscripten output: tìm literal `data:application/octet-stream;base64,<payload>` (là wasmBinaryFile), decode → ghi `<name>.wasm` sibling, thay literal bằng `new URL('<name>.wasm',import.meta.url).href` — glue sẽ fail isDataURI check → đi qua locateFile (scriptDirectory='' trong dynamic-import ESM vì document.currentScript=null) → fetch(absolute moz-extension:) → 'self' trong connect-src. Streaming→ArrayBuffer fallback của Emscripten vẫn nguyên. Checklist an toàn: (1) xác nhận file là ESM (có export) trước khi dùng import.meta; (2) check không ai pass Module.locateFile override; (3) verify runtime bằng cách instantiate API binding thật (new cv.Mat bắt UnboundTypeError), không chỉ check file tồn tại; (4) với worker bundles: grep reference trong dist — nếu chỉ nằm trong branch createWorker mà engine không enable worker option → dead artifact, xóa khỏi package (giữ ở Chrome dist nếu store đó không giới hạn).",
+  "cases": [
+    {
+      "context": "firefox-port: web-ext lint 3× FILE_TOO_LARGE — opencv.js 10.3MB (97% là wasm base64), worker-entry-*.js + worker-entry.js 11.3MB mỗi file. PaddleOCR resolveWorkerOptions(undefined)→enabled:false → worker bundle dead; opencv.js ESM `export default n()` load qua dynamic import() từ offscreen.",
+      "bad": "Cố minify/compress giữ nguyên JS (scanner vẫn parse fail), hoặc xóa opencv.js (OCR chết — cv.Mat/cv.imread cần thiết), hoặc assume worker-entry cần thiết vì 'PaddleOCR dùng worker'",
+      "good": "scripts/build-firefox.mjs: indexOf('`data:application/octet-stream;base64,') tìm literal thứ 2 (đầu tiên là prefix const cho isDataURI check) → Buffer.from(payload,'base64') → assets/opencv.wasm; replace literal = `new URL(\\`opencv.wasm\\`,import.meta.url).href`; rmSync worker-entry*.js. Verify: e2e spec dynamic-import opencv.js trong bg page → await runtime init → new cv.Mat(1,1,cv.CV_8UC1) — lint 0 errors."
+    }
+  ],
+  "applyFor": [
+    "Mọi lib Emscripten single-file (opencv-js, sql.js, tesseract...) gây FILE_TOO_LARGE trên AMO — pattern extract-identical",
+    "Audit dead artifacts trước khi split: file lớn nhất thường là worker bundle mà engine không enable — check option call site trước khi giữ",
+    "Regex match trên payload MB-scale → RangeError stack overflow; dùng indexOf + slice thay /{1000,}/ patterns",
+    "Binary (.wasm/.data) exempt khỏi JS parse limit — precedents trong repo: ort-wasm-*.wasm 26MB, ffmpeg-core.wasm 32MB không bị flag"
+  ],
+  "source": { "spec": "docs/specs/firefox-port.md", "date": "2026-09-26" }
+}

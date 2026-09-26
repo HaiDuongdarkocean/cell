@@ -4,7 +4,7 @@
 // Reads the emitted (post-crxjs) dist/manifest.json so hashed asset names are
 // preserved. Fails loud with named errors on unexpected manifest shape.
 
-import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -83,6 +83,40 @@ if (typeof csp === 'string' && csp.includes('connect-src')) {
 
 rmSync(OUT, { recursive: true, force: true });
 cpSync(DIST, OUT, { recursive: true });
+
+// AMO refuses to parse JS files over ~5MB (FILE_TOO_LARGE).
+// worker-entry-*.js + worker-entry.js: PaddleOCR worker-mode bundle — dead
+// weight here because the engine never enables worker mode (no `worker`
+// option → PaddleOCR resolveWorkerOptions() returns enabled:false), and the
+// unhashed copy is not referenced at all. Chrome dist/ keeps them.
+const outAssets = join(OUT, 'assets');
+for (const entry of readdirSync(outAssets)) {
+  if (/^worker-entry(-.*)?\.js$/.test(entry)) rmSync(join(outAssets, entry));
+}
+
+// opencv.js: ~10MB because Emscripten embeds the wasm as a base64 data URI.
+// Extract it to assets/opencv.wasm (binary — exempt from the JS parse limit)
+// and repoint the minified wasmBinaryFile literal at a sibling URL.
+const opencvPath = join(outAssets, 'opencv.js');
+const opencvSrc = readFileSync(opencvPath, 'utf8');
+const dataUriPrefix = '`data:application/octet-stream;base64,';
+const wasmLiteralStart = opencvSrc.indexOf(dataUriPrefix, opencvSrc.indexOf(dataUriPrefix) + 1);
+if (wasmLiteralStart === -1) {
+  fail('dist/assets/opencv.js embedded wasm payload not found — opencv-js output changed');
+}
+const wasmLiteralEnd = opencvSrc.indexOf('`', wasmLiteralStart + dataUriPrefix.length);
+if (wasmLiteralEnd === -1 || wasmLiteralEnd - wasmLiteralStart < 100_000) {
+  fail('dist/assets/opencv.js wasm payload literal malformed');
+}
+writeFileSync(
+  join(outAssets, 'opencv.wasm'),
+  Buffer.from(opencvSrc.slice(wasmLiteralStart + dataUriPrefix.length, wasmLiteralEnd), 'base64'),
+);
+writeFileSync(
+  opencvPath,
+  `${opencvSrc.slice(0, wasmLiteralStart)}new URL(\`opencv.wasm\`,import.meta.url).href${opencvSrc.slice(wasmLiteralEnd + 1)}`,
+  'utf8',
+);
 
 const bootstrapScript = 'firefox-background-bootstrap.js';
 writeFileSync(

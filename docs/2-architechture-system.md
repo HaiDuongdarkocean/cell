@@ -1378,6 +1378,7 @@ Dictionary probe cache (T23):
 - Drop `side_panel` + permissions `offscreen`/`sidePanel`/`tts`; thêm `webRequestBlocking`; `browser_specific_settings.gecko={id, strict_min_version:"128.0"}`
 - CSP rewrite sang token hợp lệ Firefox MV3 (`script-src 'self' 'wasm-unsafe-eval'`; `connect-src` explicit: `'self' https: data: localhost/ws`) — Firefox reject toàn bộ CSP nếu có token invalid (`blob:`, `http:` scheme)
 - Strip `match_origin_as_fallback`, `use_dynamic_url`
+- AMO size remediation (scanner từ chối parse `.js` >~5MB → `FILE_TOO_LARGE`): xóa `assets/worker-entry-*.js` + `assets/opencv.js`'s dead worker copy `worker-entry.js` (PaddleOCR worker mode disabled — không ai fetch); `assets/opencv.js` Emscripten-embedded base64 wasm (~10MB) được tách ra `assets/opencv.wasm` (binary exempt), literal `wasmBinaryFile` repoint sang `new URL('opencv.wasm',import.meta.url).href` — `Qe()` data-URI check fail → `m()`/`locateFile` path → `fetch()` absolute `moz-extension:` URL, `connect-src 'self'` cover; streaming fallback chain của Emscripten giữ nguyên
 
 Runtime divergence sống trong adapter seams (`src/shared/lib/chrome-apis/`), call sites không đổi:
 

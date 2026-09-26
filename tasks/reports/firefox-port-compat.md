@@ -33,7 +33,7 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 |---|---|---|
 | `AudioContext` in event page | untested | constructor `function`; audio output/autoplay not exercised |
 | OPFS `navigator.storage.getDirectory()` | works | exercised e2e: bg wrote `downloads/{id}/input.ts` (8 MPEG-TS segments) and the in-process runner wrote `output.mp4` back to OPFS before blob-URL handoff |
-| `Worker` spawn | works-by-construction | transmux worker is bundled `worker-entry.js` → `moz-extension:` URL → allowed by `script-src 'self'`; actual spawn not exercised |
+| `Worker` spawn | works-by-construction | transmux worker is bundled `transmuxWorker-*.js` → `moz-extension:` URL → allowed by `script-src 'self'`; actual spawn not exercised |
 | `downloads.download` of `blob:` URL | works | `{"downloadId":1,"blobUrl":"blob:moz-extension://…"}` |
 | `options_page`/`options_ui` | works-by-construction | accepted by web-ext lint (no error-severity finding on the key); actual presence in `about:addons` not exercised |
 | Event-page keep-alive during heavy job | works | `OffscreenManager` pins with `setInterval → runtime.getPlatformInfo()` while in-process jobs run; keep-alive is refcounted and held from blob-URL creation until `downloads.download` reaches complete/interrupted (`acquireKeepAlive`) — the event page cannot suspend while Firefox streams the OPFS-backed blob |
@@ -74,7 +74,7 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 | Remote code | eSpeak runner fetched its main script from CDN at runtime → would fail AMO review regardless of CSP | **Resolved** — all eSpeak code is vendored in the package; zero runtime CDN fetch |
 | WASM | Bundled `.wasm` shipped in `dist-firefox/assets/`; `wasm-unsafe-eval` needs a justification note in listing | Low–medium |
 | Permissions | `webRequest`+`webRequestBlocking`, `<all_urls>` host perms, `downloads`, `cookies` — all need justifications in the listing form; typical for this product class | Medium — expect reviewer questions |
-| `web-ext lint` | **3 errors, 33 warnings** (re-run after eSpeak vendoring): `FILE_TOO_LARGE` ×3 — `assets/opencv*.js` + two `worker-entry-*.js` bundles exceed 5MB and are unparseable by the AMO scanner; warnings: `UNSUPPORTED_API` ×13 (guarded `chrome.*` names — cosmetic), `UNSAFE_VAR_ASSIGNMENT` ×8, `DANGEROUS_EVAL` ×7 (×3 vendored `espeakng.worker.js` — eval branches skipped/unreachable, still flagged by scanner), `ICON_SIZE_INVALID` ×3 (placeholder 67 B icons). `MISSING_DATA_COLLECTION_PERMISSIONS` resolved — transform now emits `gecko.data_collection_permissions:{required:["none"]}` (owner must confirm at listing) | **High** — unparseable >5MB bundles are a scanner blocker; options: split/lazy-load heavy libs, or document source maps; icons must be real assets |
+| `web-ext lint` | **0 errors, 33 warnings** (re-run after AMO size remediation): `FILE_TOO_LARGE` ×3 resolved — dead `worker-entry-*.js`/`worker-entry.js` stripped from `dist-firefox` (PaddleOCR worker mode disabled: no `worker` option → `resolveWorkerOptions()` returns `enabled:false`); `opencv.js` 10.3MB→142KB by extracting its embedded base64 wasm to `assets/opencv.wasm` (binary files are exempt from the JS parse limit) + repointing the wasmBinaryFile literal at `new URL('opencv.wasm',import.meta.url)`. Verified: e2e `ocr-opencv-wasm` spec — external wasm instantiates, `cv.Mat` bound, `cv.imread` present on real Firefox. Remaining warnings: `UNSUPPORTED_API` ×13 (guarded `chrome.*` names — cosmetic), `UNSAFE_VAR_ASSIGNMENT` ×8, `DANGEROUS_EVAL` ×7 (×3 vendored `espeakng.worker.js` — eval branches skipped/unreachable, still flagged by scanner), `ICON_SIZE_INVALID` ×3 (placeholder 67 B icons), min-version keys for `data_collection_permissions` (key requires FF140+/Android142+, ignored on older — harmless). `MISSING_DATA_COLLECTION_PERMISSIONS` resolved — transform emits `gecko.data_collection_permissions:{required:["none"]}` (owner must confirm at listing) | **Medium** — JS parse blocker cleared; icons must be real assets; `wasm-unsafe-eval` + permission justifications remain listing-time work |
 | Data practices | Extension fetches user-targeted media/subtitles to device; AnkiConnect localhost — document in privacy policy | Standard disclosure |
 | Event page | `persistent:false` accepted; long jobs rely on keep-alive pinning — document as Firefox-specific behavior if reviewers ask | Low |
 
@@ -105,7 +105,7 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 5. ~~Chrome packed `.crx` smoke~~ — **done**: packed `.crx` + cloned profile, SW alive, content inject + panel + eSpeak e2e on real Chrome.
 6. Android: device test decision; document `downloads` unavailability as accepted degradation or design an alternative.
 7. Real icon assets (lint `ICON_SIZE` warning) before AMO submission.
-8. `FILE_TOO_LARGE` bundles (opencv.js, worker-entry ×2 >5MB) unparseable by the AMO scanner → split/lazy-load or shrink before listing; this is a hard AMO blocker, independent of runtime.
+8. ~~`FILE_TOO_LARGE` bundles (opencv.js, worker-entry ×2 >5MB) unparseable by the AMO scanner~~ — **done**: dead worker-entry artifacts stripped from `dist-firefox`; `opencv.js` wasm externalized to `assets/opencv.wasm` (binary exempt); `web-ext lint` now exits 0 with **0 errors**; runtime verified via `ocr-opencv-wasm` e2e spec.
 9. Confirm `gecko.data_collection_permissions: {required:["none"]}` declaration is accurate at listing time.
 
 ## SC traceability (spec `docs/specs/firefox-port.md`)
@@ -113,7 +113,7 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 | SC | Result |
 |---|---|
 | SC-1 build+manifest | PASS |
-| SC-2 web-ext lint | **FAIL** — exit 1: 3 `FILE_TOO_LARGE` errors (>5MB bundles unparseable by AMO scanner) + 29 warnings (`MISSING_DATA_COLLECTION_PERMISSIONS` resolved via transform). Corrected after fresh-context verify (`docs/reviews/firefox-port-verify.md`) |
+| SC-2 web-ext lint | **PASS** — exit 0, 0 errors, 33 warnings (all warning classes understood/documented in AMO table). Was FAIL with 3 `FILE_TOO_LARGE` errors until the worker-entry strip + opencv wasm extraction in `build-firefox.mjs` |
 | SC-3 install + bg init | PASS |
 | SC-4 inject + cues to panel | PASS |
 | SC-5 download attempted | PASS — `blob:` download verified; real .ts→transmux→OPFS→`downloads.download` e2e ×2 concurrent → valid MP4 (ffprobe h264+aac) |
