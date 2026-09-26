@@ -9,7 +9,7 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 ## TL;DR — recommendation inputs
 
 - **Core loop works end-to-end on Firefox**: install → MAIN-world inject → caption detection → relay → background store → auto-load → body fetch → in-page panel renders real cue text. Downloads via `blob:` URL work; OCR WASM inits `ready/wasm` through the new in-process dispatch path.
-- **One real blocker**: eSpeak pronunciation. Emscripten loads its main script via a `blob:` `<script>` and Firefox MV3 CSP cannot allow `blob:` in `script-src` at all (CSP is rejected wholesale if you try). Fix = vendor eSpeak assets — bounded, parity-phase work, also required for AMO (remote-code fetch is a listing problem anyway).
+- **eSpeak pronunciation: FIXED and verified end-to-end.** The original CDN+blob loading was unfixable via CSP — assets are now vendored (`public/espeakng/`), the main script loads as `'self'`, and a tiny worker entry pre-sets `self.Module` so the Emscripten `Module=eval(...)` bootstrap is skipped under CSP. `PRONUNCIATION_ESPEAK_TTS` e2e (popup→bg→dispatch→runner→WAV): `{"success":true,"bytes":64812}`; `list_voices` returns 95 voices (data package loaded); no CSP violations. A pre-existing consumer bug was also fixed: the worker posts audio chunks as transferred `ArrayBuffer`s — `samples.length` is `undefined` there, which the code misread as the end-of-synthesis sentinel.
 - **Verdict input**: continue parity on the transform approach. Total delta so far ≈300 lines across adapters + one ~100-line deterministic transform, zero new runtime deps. Nothing observed justifies a WXT migration — WXT would re-solve problems already solved here and does not fix the eSpeak/blob issue (that is engine packaging, not build tooling). Android needs a separate device test; desk-check below flags `downloads` as the likely blocker.
 
 ## Smoke matrix (REQ-4 fixed order)
@@ -24,7 +24,8 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 | 6 | Subtitle capture → cues populate | works | `__YT_CS_READY`/`__YT_DETECTED_SUBTITLES` observed in isolated world; real ASR track (signed timedtext URL) stored for tab 1; `AUTO_LOAD_SUBTITLES` delivered to content script (no "no receiving end"); cues rendered (row 5). Note: store read `subtitles:0` on one later probe run — detection is timing-sensitive across bg reload; the genuine path populated it earlier. Record as `works` with a parity-phase follow-up to re-verify determinism |
 | 7 | Subtitle body fetch | works | direct cs fetch of timedtext URL: `status:200, len:861701`; `FETCH_SUBTITLE_CONTENT` via bg→`offscreenFetch`→in-process dispatch: `success:true, bodyLen:861701` |
 | 8 | Download via heavy-work path | degraded | `downloads.download` of `blob:moz-extension://…` → `{"downloadId":1}` works; `data:` URL downloads never complete on Firefox (probe timeout) → `saveBlobToDownloads` now picks `blob:` on Firefox UA. ffmpeg/transcode job end-to-end: `untested` (runner chunk imports OK) |
-| 9 | Anki card from a cue | untested | no AnkiConnect listening on `127.0.0.1:8765` in test env — bg fetch returned `NetworkError`, not a CSP block. CSP now permits `http://localhost:*`/`http://127.0.0.1:*`. Needs a live AnkiConnect to confirm |
+| 9 | Pronunciation / eSpeak TTS | works | `PRONUNCIATION_ESPEAK_TTS` popup→bg→in-process dispatch→runner→vendored eSpeak: `{"success":true,"bytes":64812}` WAV @22050Hz. Direct probe: `dataFetch:200`, `ready:true`, `voiceCount:95`, synth chunks `buf:17640`×8+`buf:6056`+`buf:0`+done. Zero CSP violations in console |
+| 10 | Anki card from a cue | untested | no AnkiConnect listening on `127.0.0.1:8765` in test env — bg fetch returned `NetworkError`, not a CSP block. CSP now permits `http://localhost:*`/`http://127.0.0.1:*`. Needs a live AnkiConnect to confirm |
 
 ## Environment rows (REQ-4 rule)
 
@@ -49,10 +50,12 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 | `runtime.sendMessage` self-delivery | Firefox does not count the sender's own listeners as a receiving end → `broadcast()` rejected storm | `messageBus.broadcast`/`sendNoWait` swallow "no receiving end" (empty fan-out is valid) |
 | DNR `initiatorDomains:[runtime.id]` | Firefox rejects gecko-id-as-domain | `webRequest.onBeforeSendHeaders` blocking fallback (Firefox-only) + `webRequestBlocking` permission added by transform |
 | Manifest CSP `connect-src … http:` | `http:` scheme source → Firefox rejects the **entire** CSP and falls back to default | Transform emits explicit sources: `'self' https: data: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*` |
-| `script-src blob:` | Invalid token in MV3 CSP → whole CSP rejected; blob scripts can never run in extension pages | Unfixable via manifest — see eSpeak blocker |
+| `script-src blob:` | Invalid token in MV3 CSP → whole CSP rejected; blob scripts can never run in extension pages | Unfixable via manifest — resolved by vendoring eSpeak (row below) |
+| `eval()` in extension-page workers | Workers inherit the page CSP; `espeakng.worker.js` bootstrap `Module=eval(...)` throws `EvalError` | Worker entry `public/espeakng/espeakng-worker-entry.js` pre-sets `self.Module` (standard Emscripten pre-configuration) → the `typeof Module==='undefined'` eval branch never runs; the remaining `ccall`/`cwrap` evals are unreachable via the postMessage API |
+| eSpeak `synthesize` chunk contract | Worker posts audio as transferred `ArrayBuffer`s — `samples.length` is `undefined`, misread as end-of-synthesis sentinel → `eSpeak returned empty audio` (pre-existing bug, browser-agnostic) | `synthesizeEspeakToWav` now unwraps `ArrayBuffer → Float32Array` per chunk; falsy samples = the worker's `done` message |
 | `downloads.download` of `data:` URL | Never completes (probe timeout) | `saveBlobToDownloads` uses `URL.createObjectURL` when the capability exists — Chrome SW lacks it so the `data:` path stays Chrome-only (`downloadSaver.ts`); blob URL revoked after the download call returns |
 | Manifest CSP `connect-src` narrowing | Bare `http:` scheme invalid → dropped | **Accepted limitation**: remote plaintext-HTTP fetches from extension contexts are CSP-blocked on Firefox (localhost hosts stay allowed). `data:` added for OpenCV WASM fetch |
-| eSpeak runner | `Failed to load eSpeak main script blob` — Emscripten CDN-fetches the main script and injects `<script src=blob:…>` | **Broken.** Requires vendored eSpeak assets (download at build time into `dist/assets`, load as `'self'`). Also removes the AMO remote-code flag |
+| eSpeak runner | Was `Failed to load eSpeak main script blob` — Emscripten CDN-fetched the main script and injected `<script src=blob:…>` | **Fixed.** `espeakng.js@1.49.0` vendored to `public/espeakng/` (min.js + worker.js + worker.data + worker-entry.js); loads via `chrome.runtime.getURL` as `'self'` on both browsers. Removes the AMO remote-code flag too |
 | `initHeavyFeatures` `.next().value is undefined` | Stale-build artifact | Resolved on rebuild — all 3 heavy dynamic imports + init verified OK in the isolated content-script context on the current build |
 
 ## Chrome-lane verification (NFR-1, NFR-5)
@@ -68,10 +71,10 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 | Area | Finding | Risk |
 |---|---|---|
 | CSP | Now valid and applied verbatim: `script-src 'self' 'wasm-unsafe-eval'`; explicit `connect-src` | Low — no remote code in policy |
-| Remote code | eSpeak runner fetches its main script from CDN at runtime → would fail AMO review regardless of CSP | **High** — same fix as the CSP blocker: vendor assets |
+| Remote code | eSpeak runner fetched its main script from CDN at runtime → would fail AMO review regardless of CSP | **Resolved** — all eSpeak code is vendored in the package; zero runtime CDN fetch |
 | WASM | Bundled `.wasm` shipped in `dist-firefox/assets/`; `wasm-unsafe-eval` needs a justification note in listing | Low–medium |
 | Permissions | `webRequest`+`webRequestBlocking`, `<all_urls>` host perms, `downloads`, `cookies` — all need justifications in the listing form; typical for this product class | Medium — expect reviewer questions |
-| `web-ext lint` | **3 errors, 29 warnings** (fresh-context verify re-run): `FILE_TOO_LARGE` ×3 — `assets/opencv*.js` + two `worker-entry-*.js` bundles exceed 5MB and are unparseable by the AMO scanner; warnings: `UNSUPPORTED_API` ×13 (guarded `chrome.*` names — cosmetic), `UNSAFE_VAR_ASSIGNMENT` ×8, `DANGEROUS_EVAL` ×3, `ICON_SIZE_INVALID` ×3 (placeholder 67 B icons). `MISSING_DATA_COLLECTION_PERMISSIONS` resolved — transform now emits `gecko.data_collection_permissions:{required:["none"]}` (owner must confirm at listing) | **High** — unparseable >5MB bundles are a scanner blocker; options: split/lazy-load heavy libs, or document source maps; icons must be real assets |
+| `web-ext lint` | **3 errors, 33 warnings** (re-run after eSpeak vendoring): `FILE_TOO_LARGE` ×3 — `assets/opencv*.js` + two `worker-entry-*.js` bundles exceed 5MB and are unparseable by the AMO scanner; warnings: `UNSUPPORTED_API` ×13 (guarded `chrome.*` names — cosmetic), `UNSAFE_VAR_ASSIGNMENT` ×8, `DANGEROUS_EVAL` ×7 (×3 vendored `espeakng.worker.js` — eval branches skipped/unreachable, still flagged by scanner), `ICON_SIZE_INVALID` ×3 (placeholder 67 B icons). `MISSING_DATA_COLLECTION_PERMISSIONS` resolved — transform now emits `gecko.data_collection_permissions:{required:["none"]}` (owner must confirm at listing) | **High** — unparseable >5MB bundles are a scanner blocker; options: split/lazy-load heavy libs, or document source maps; icons must be real assets |
 | Data practices | Extension fetches user-targeted media/subtitles to device; AnkiConnect localhost — document in privacy policy | Standard disclosure |
 | Event page | `persistent:false` accepted; long jobs rely on keep-alive pinning — document as Firefox-specific behavior if reviewers ask | Low |
 
@@ -89,13 +92,13 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 
 ## Decision inputs
 
-- **Port parity (recommended)**: the hard architectural questions are answered — event page hosts heavy WASM work via in-process dispatch, detection→render loop works, downloads work via `blob:`, CSP is valid. Remaining work is enumerable: vendor eSpeak, verify AnkiConnect e2e with a live service, run one real ffmpeg job, Chrome packed smoke.
+- **Port parity (recommended)**: the hard architectural questions are answered — event page hosts heavy WASM work via in-process dispatch, detection→render loop works, downloads work via `blob:`, CSP is valid, eSpeak is vendored and verified. Remaining work is enumerable: verify AnkiConnect e2e with a live service, run one real ffmpeg job, Chrome packed smoke.
 - **WXT migration**: not justified by evidence. The divergences are Firefox runtime semantics (CSP tokens, blob scripts, self-delivery) — WXT does not solve them; its value is manifest/polyfill plumbing we already have in ~100 lines of deterministic transform + a small adapter layer.
 - **Drop**: not supported by evidence — the product's core value path works today.
 
 ### Parity backlog (if owner says go)
 
-1. Vendor eSpeak assets → fixes pronunciation on Firefox AND removes the top AMO red flag.
+1. ~~Vendor eSpeak assets~~ — **done**: `public/espeakng/` + worker-entry; pronunciation e2e `{"success":true,"bytes":64812}`; AMO remote-code flag removed.
 2. AnkiConnect e2e (card create/update + audio attach) with a live `127.0.0.1:8765`.
 3. One real ffmpeg merge → `downloads.download` e2e (also validates NFR-6 keep-alive under load).
 4. Detection determinism follow-up: store occasionally read empty after bg reload; re-verify `__YT_CS_READY` repost timing in parity.

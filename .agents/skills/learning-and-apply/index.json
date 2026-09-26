@@ -2602,6 +2602,25 @@
         "capability-check"
       ],
       "trigger": "chrome.downloads.download({url: 'data:...'}) trên Firefox pending vĩnh viễn (không resolve, không reject, không lỗi console)."
+    },
+    {
+      "type": "experience",
+      "id": "vendored-emscripten-worker-csp-arraybuffer",
+      "title": "Vendor Emscripten vào MV3 extension page: self.Module pre-set skip eval bootstrap + chunks là ArrayBuffer",
+      "category": [
+        "build",
+        "messaging"
+      ],
+      "tags": [
+        "firefox",
+        "csp",
+        "emscripten",
+        "worker",
+        "mv3",
+        "vendored-assets",
+        "arraybuffer"
+      ],
+      "trigger": "Emscripten lib cần chạy trong extension page mà CSP chặn blob: script và eval() trong worker."
     }
   ]
 }

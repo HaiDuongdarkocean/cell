@@ -1,70 +1,45 @@
 /**
  * eSpeak TTS engine for the offscreen document.
  *
- * Fetches the eSpeakNG main script, worker and data package from the jsDelivr
- * CDN, then loads them as same-origin blob URLs so they comply with the
- * extension's strict `script-src 'self'` CSP.
- *
- * ponytail: This is the simplest way to run eSpeak in an MV3 offscreen doc
- * without bundling its multi-megabyte worker/data files into the extension.
- * The blob dance is necessary because MV3 CSP forbids remote scripts in
- * `script-src` but allows the same-origin blob URLs created by the offscreen
- * page. connect-src to the CDN is still required for the initial fetch.
+ * Loads the vendored eSpeakNG package (`public/espeakng/`, jsDelivr
+ * espeakng.js@1.49.0 mirrored into the extension) via extension-URL script
+ * and worker. Same-origin loading satisfies `script-src 'self'` on Chrome
+ * and is the only option on Firefox — Firefox MV3 CSP cannot allow `blob:`
+ * script sources at all, so the previous fetch+Blob approach is impossible
+ * there. Vendoring also removes the runtime CDN dependency.
  */
 
 import { encodeSamplesToWav } from './wavEncoder';
 
-const ESPEAK_BASE_URL = 'https://cdn.jsdelivr.net/espeakng.js/1.49.0';
+const ESPEAK_DIR = 'espeakng/';
 
 interface EspeakNgApi {
   set_voice(voice: string): void;
   set_rate(rate: number): void;
   set_pitch(pitch: number): void;
-  synthesize(text: string, callback: (samples: number[] | Float32Array, events: unknown[]) => void): void;
+  synthesize(text: string, callback: (samples: ArrayBuffer | number[] | Float32Array, events: unknown[]) => void): void;
 }
 
 interface EspeakNgGlobal {
   new (workerUrl: string, ready: () => void): EspeakNgApi;
 }
 
-async function fetchText(url: string): Promise<string> {
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}`);
-  }
-  return res.text();
+function extensionAssetUrl(name: string): string {
+  return chrome.runtime.getURL(`${ESPEAK_DIR}${name}`);
 }
 
-async function fetchArrayBuffer(url: string): Promise<ArrayBuffer> {
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}`);
-  }
-  return res.arrayBuffer();
-}
-
-function appendScriptBlob(jsText: string): Promise<void> {
+function appendScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (typeof document === 'undefined') {
       reject(new Error('Cannot load eSpeak script outside a document context'));
       return;
     }
-    const blob = new Blob([jsText], { type: 'application/javascript' });
-    const url = URL.createObjectURL(blob);
     const script = document.createElement('script');
-    script.src = url;
+    script.src = src;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load eSpeak main script blob'));
+    script.onerror = () => reject(new Error(`Failed to load eSpeak main script: ${src}`));
     document.head.appendChild(script);
   });
-}
-
-function createWorkerBlobUrl(workerText: string, dataBlobUrl: string): string {
-  const prefix = `var __ESPEAK_DATA_BLOB_URL = ${JSON.stringify(dataBlobUrl)};
-var Module = { locateFile: function() { return __ESPEAK_DATA_BLOB_URL; } };
-`;
-  const blob = new Blob([prefix, workerText], { type: 'application/javascript' });
-  return URL.createObjectURL(blob);
 }
 
 let initPromise: Promise<EspeakNgApi> | null = null;
@@ -73,24 +48,14 @@ async function initializeEspeak(): Promise<EspeakNgApi> {
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
-    const [mainJs, workerJs, dataBuffer] = await Promise.all([
-      fetchText(`${ESPEAK_BASE_URL}/espeakng.min.js`),
-      fetchText(`${ESPEAK_BASE_URL}/espeakng.worker.js`),
-      fetchArrayBuffer(`${ESPEAK_BASE_URL}/espeakng.worker.data`),
-    ]);
-
-    // Load the small main script as a blob so it runs under script-src 'self'.
-    await appendScriptBlob(mainJs);
+    await appendScript(extensionAssetUrl('espeakng.min.js'));
 
     const Ctor = (globalThis as unknown as { eSpeakNG?: EspeakNgGlobal }).eSpeakNG;
     if (typeof Ctor !== 'function') {
       throw new Error('eSpeakNG global not found after loading script');
     }
 
-    // Package the data file as a blob and tell the worker to load it directly.
-    const dataBlob = new Blob([dataBuffer], { type: 'application/octet-stream' });
-    const dataUrl = URL.createObjectURL(dataBlob);
-    const workerUrl = createWorkerBlobUrl(workerJs, dataUrl);
+    const workerUrl = extensionAssetUrl('espeakng-worker-entry.js');
 
     return new Promise<EspeakNgApi>((resolve, reject) => {
       let settled = false;
@@ -135,18 +100,15 @@ export async function synthesizeEspeakToWav(text: string, langCode: string): Pro
     espeak.synthesize(text, (samples) => {
       if (settled) return;
 
-      if (samples && samples.length > 0) {
-        if (Array.isArray(samples)) {
-          chunks.push(...samples);
-        } else {
-          for (let i = 0; i < samples.length; i++) {
-            chunks.push((samples as Float32Array)[i]!);
-          }
+      if (samples) {
+        const data = samples instanceof ArrayBuffer ? new Float32Array(samples) : samples;
+        for (let i = 0; i < data.length; i++) {
+          chunks.push(data[i]!);
         }
         return;
       }
 
-      // Empty samples indicate end of synthesis in the original eSpeak demo.
+      // Falsy samples = the worker's final done message; non-empty chunks arrive as ArrayBuffers.
       settled = true;
       clearTimeout(timeout);
 

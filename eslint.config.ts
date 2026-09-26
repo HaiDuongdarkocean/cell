@@ -19,6 +19,7 @@ export default tseslint.config(
       'tests/integration/.cache/',
       'project-reference/',
       'public/ffmpeg/',
+      'public/espeakng/',
       '.windsurf/',
       // Build artifacts leaked to repo root (gitignored, not source).
       'assets/',

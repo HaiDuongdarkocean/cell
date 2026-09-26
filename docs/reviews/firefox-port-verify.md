@@ -103,3 +103,19 @@ VERDICT: APPROVE_WITH_CHANGES — the engineering is sound and verified; the com
 - Firefox smoke evidence is report-based; I verified build/test artifacts and code paths but did not re-run `web-ext run` + RDP probes — SC-3/4/10 accepted on report + probe-script corroboration.
 - Keep-alive effectiveness for jobs >30s is implemented but unproven end-to-end (report honestly marks PARTIAL); parity backlog item #3 covers it.
 - Chrome packed-`.crx` real-browser smoke still pending (report flags it; parity backlog #5) — required by repo rules before merge.
+
+## Post-fix verification — eSpeak vendored (2026-09-26, round 2)
+
+Owner directed: fix the eSpeak blocker and take the item to merge.
+
+| Check | Evidence |
+|---|---|
+| Vendored assets | `public/espeakng/` = `espeakng.min.js` + `espeakng.worker.js` + `espeakng.worker.data` (jsDelivr espeakng.js@1.49.0) + `espeakng-worker-entry.js` (pre-sets `self.Module` → skips CSP-blocked `Module=eval` bootstrap; `locateFile` resolves `.data` as sibling URL). Copied verbatim to `dist-firefox/espeakng/` |
+| Runtime CDN fetch removed | `espeakOffscreenEngine.ts` now appends `<script src=chrome.runtime.getURL(...)>`; zero `cdn.jsdelivr` references remain in src |
+| Firefox e2e | `PRONUNCIATION_ESPEAK_TTS` popup→bg→in-process dispatch→runner: `{"success":true,"bytes":64812}` WAV. Direct probe: `ready:true`, `voiceCount:95`, synth chunks `buf:17640`×8 + `buf:6056` + `buf:0` + done sentinel |
+| CSP | No script-src/eval violations in post-fix smoke console (previously `EvalError: call to eval() blocked by CSP` at worker bootstrap, and `script-src-elem` blob block) |
+| Consumer bug fixed | Worker posts audio chunks as transferred `ArrayBuffer`s; old code read `samples.length` (undefined on ArrayBuffer) as end sentinel → `eSpeak returned empty audio`. Now unwraps `ArrayBuffer→Float32Array` per chunk; falsy `samples` = worker `done` message |
+| Gates re-run | typecheck ✓ lint ✓ (espeakng ignored as vendored, `eslint.config.ts`) test:unit ✓ (576/6877) build ✓; `web-ext lint` unchanged profile: 3 `FILE_TOO_LARGE` errors, 33 warnings (+4 `DANGEROUS_EVAL`/`UNSAFE_VAR` flagged inside vendored worker.js — eval branches unreachable via postMessage API) |
+| Chrome lane | `npx playwright test e2e/extension-subtitle-manager.spec.ts` — PASS post-change |
+
+Residual: pronunciation proven for `en`; per-language voice data ships in the single `.data` package (95 voices enumerated). AnkiConnect still `untested` (no live service).

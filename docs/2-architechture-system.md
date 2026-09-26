@@ -1387,7 +1387,7 @@ Runtime divergence sống trong adapter seams (`src/shared/lib/chrome-apis/`), c
 | `sendMessage` không self-deliver | `messageBus.broadcast`/`sendNoWait` | Nuốt "no receiving end" (fan-out rỗng hợp lệ) |
 | DNR `initiatorDomains` gecko-id reject | `declarativeNetRequest.ts` | Fallback `webRequest.onBeforeSendHeaders` blocking |
 
-Known gap: eSpeak pronunciation inject `blob:` script → Firefox CSP không thể allow → cần vendor assets (parity backlog, xem `tasks/reports/firefox-port-compat.md`).
+eSpeak pronunciation (`espeakOffscreenEngine.ts`): `espeakng.js@1.49.0` vendored trong `public/espeakng/` — `espeakng.min.js` load qua `<script src=chrome.runtime.getURL('espeakng/…')>` (`'self'`, không còn CDN/blob — Firefox MV3 CSP không cho `blob:` script ở bất kỳ policy nào). Worker boot qua `espeakng-worker-entry.js` — pre-set `self.Module{locateFile}` trước `importScripts('espeakng.worker.js')` → skip nhánh `Module=eval(...)` bị CSP chặn trong worker (workers inherit page CSP trên Firefox); `.data` resolve sibling URL qua `locateFile`. Consumer đọc audio chunks dạng transferred `ArrayBuffer` (falsy `samples` = done sentinel). Verified: `PRONUNCIATION_ESPEAK_TTS` e2e → `{"success":true,"bytes":64812}` (xem `tasks/reports/firefox-port-compat.md`).
 
 ## Update protocol
 
