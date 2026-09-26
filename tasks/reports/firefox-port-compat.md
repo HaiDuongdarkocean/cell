@@ -92,7 +92,7 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 
 ## Decision inputs
 
-- **Port parity (recommended)**: the hard architectural questions are answered — event page hosts heavy WASM work via in-process dispatch, detection→render loop works, downloads work via `blob:`, CSP is valid, eSpeak is vendored and verified. Remaining work is enumerable: verify AnkiConnect e2e with a live service, run one real ffmpeg job, Chrome packed smoke.
+- **Port parity (recommended)**: the hard architectural questions are answered — event page hosts heavy WASM work via in-process dispatch, detection→render loop works, downloads work via `blob:`, CSP is valid, eSpeak is vendored and verified, `web-ext lint` is 0 errors, AnkiConnect verified live. Remaining work is listing-form only: icons shipped, permission/data-collection justifications + `wasm-unsafe-eval` note are text fields, Android is a scope decision.
 - **WXT migration**: not justified by evidence. The divergences are Firefox runtime semantics (CSP tokens, blob scripts, self-delivery) — WXT does not solve them; its value is manifest/polyfill plumbing we already have in ~100 lines of deterministic transform + a small adapter layer.
 - **Drop**: not supported by evidence — the product's core value path works today.
 
