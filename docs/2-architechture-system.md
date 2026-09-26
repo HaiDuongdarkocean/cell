@@ -1388,6 +1388,7 @@ Runtime divergence sống trong adapter seams (`src/shared/lib/chrome-apis/`), c
 | `chrome.tts` absent | `ttsEngineService` | Fallback `speechSynthesis` (sẵn có) |
 | `onDeterminingFilename` absent | `downloads.ts` | Guarded — Firefox tôn trọng `filename` |
 | `downloads.download(data:)` timeout | `downloadSaver.ts` | Firefox UA → `URL.createObjectURL(blob)`; Chrome SW → `data:` |
+| `downloads.download` đọc blob: lazily | `wireEvents.ts` `setSaveOpfsFileCallback` | Callback contract = resolve khi download đạt terminal state (`downloads.onChanged` complete/interrupted + `search({id})` fallback) — caller chỉ được xóa OPFS backing sau đó, vì Firefox stream blob: lazy từ OPFS File. Same-basename jobs serialize qua `pendingDownloads` gate (mở khi bytes hiện diện trên disk hoặc terminal); filename chọn free từ `downloads.search` history + in-flight reservations (Firefox strip `(N)` suffix rồi tự re-uniquify); `FILE_FAILED` được retry bounded với tên mới, lỗi khác throw |
 | `sendMessage` không self-deliver | `messageBus.broadcast`/`sendNoWait` | Nuốt "no receiving end" (fan-out rỗng hợp lệ) |
 | DNR `initiatorDomains` gecko-id reject | `declarativeNetRequest.ts` | Fallback `webRequest.onBeforeSendHeaders` blocking |
 
