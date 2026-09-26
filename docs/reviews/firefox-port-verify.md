@@ -121,3 +121,19 @@ Owner directed: fix the eSpeak blocker and take the item to merge.
 | Chrome lane | `npx playwright test e2e/extension-subtitle-manager.spec.ts` — PASS post-change |
 
 Residual: pronunciation proven for `en`; per-language voice data ships in the single `.data` package (95 voices enumerated). AnkiConnect still `untested` (no live service).
+
+## Post-merge parity fixes — detection determinism + ffmpeg e2e (2026-09-26, round 3)
+
+Three bugs found and fixed via live Firefox 156 RDP probing; all verified e2e.
+
+| Fix | Root cause | Evidence |
+|---|---|---|
+| `isMediaRelevantUrlChange` in `helpers.ts` + `lastCommittedTopUrl` map in `wireEvents.ts` | `webNavigation.onHistoryStateUpdated` cleared tab media on **any** history event — YouTube's playback `replaceState(&t=Ns)` wiped detection with no re-detect trigger | Controlled probe: `subs:2 → replaceState(&t=99s) → subs:0` before fix; after fix `subs:1` preserved through `&t=`, cleared on `?v=` switch — VERDICT: PASS. Unit suite `isMediaRelevantUrlChange.test.ts` 7/7 |
+| `relayToBackground` retry in `subtitleBridges.ts` | First `sendMessage` from CS after Firefox event-page wake raced listener registration → `Receiving end does not exist`; dedup flag set before send permanently swallowed the later MAIN-world repost | Live probe: `subs:0` pre-repost → post `__YT_CS_READY` → `subs:1` land. Retry ≤2×800ms on failure + reset dedup marker on final drop, applied to YouTube/iQIYI/Netflix/discovery relays. 105 bg + 7 bridge tests PASS |
+| `OffscreenManager.acquireKeepAlive` + refcount + hold in `saveOpfsFile` callback | Keep-alive only covered `sendToOffscreen` round-trips; event page could suspend while `downloads.download` streamed an in-process blob: URL → `interrupted FILE_FAILED` (observed once under probe churn) | Re-run: 2× concurrent real downloads both `complete` (`hls-probe(4)/(5).mp4`, 337332 B) |
+
+**ffmpeg/transmux e2e (parity backlog #3) — PASS**: ffmpeg-generated HLS (`playlist.m3u8` + 8×~90KB `.ts`, h264+aac 30s source) served locally → webRequest detection on tab → `DOWNLOAD_VIDEO` ×2 concurrent → `runM3u8VideoDownload` → OPFS `input.ts` → `CONVERT_TS_TO_MP4_V2` → in-process mux.js → `output.mp4` → `CREATE_OPFS_BLOB_URL` → `chrome.downloads.download` → 2× `state:complete` files on disk; `ffprobe`: valid mp4, h264+aac, duration 18s. Probes: `tmp/firefox-port/hls-server.mjs`, `rdp-ffmpeg-e2e.mjs`, `rdp-dlconc.mjs`.
+
+**Probe-environment caveats discovered (harness, not product)**: RDP `navigateTo`/`reload` on `tabDescriptor` are no-ops — real navigation needs `chrome.tabs.update/reload` from bg or `tabs.create`; `chrome.downloads`/`chrome.tabs` APIs are unavailable to content scripts — query via bg page console; `messageBus` overrides `payload.tabId` with `sender.tab.id` for CS senders (by design) — cross-tab media queries need a sender without a tab; `GET_DOWNLOAD_PROGRESS` with no payload returns `getAll()`.
+
+**Gates (post-fix)**: typecheck ✓, unit **6887/6887** ✓, build ✓, `build-firefox` transform ✓, bg+offscreen suites 184/184 ✓, Chrome stage2 e2e **63/63** ✓ (~15.8 min), Firefox detection probe VERDICT: PASS, Firefox ffmpeg e2e VERDICT: PASS.

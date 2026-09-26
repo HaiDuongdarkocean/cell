@@ -21,9 +21,9 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 | 3 | Background event page init | works | API surface probe: `offscreen:undefined`, `sidePanel:undefined`, `tts:undefined`, `dnr:object`, `navigator.storage.getDirectory:function`, `AudioContext:function`; no init crash after adapter guards |
 | 4 | Content script + MAIN-world inject on youtube.com | works | page-context probe: `fetchPatched:true`, `ytMainWorldInjected:true`, `captionTracks:2`, `vidId:RoBabfioVF8` |
 | 5 | In-page subtitle panel renders | works | deep shadow-DOM traversal: panel host present, `subBlockDeep:38`, cue text `"Strider, too. I'll be able to go fast. Okay, I'm looking to hide in a tree..."`, `videoPaused:false` |
-| 6 | Subtitle capture → cues populate | works | `__YT_CS_READY`/`__YT_DETECTED_SUBTITLES` observed in isolated world; real ASR track (signed timedtext URL) stored for tab 1; `AUTO_LOAD_SUBTITLES` delivered to content script (no "no receiving end"); cues rendered (row 5). Note: store read `subtitles:0` on one later probe run — detection is timing-sensitive across bg reload; the genuine path populated it earlier. Record as `works` with a parity-phase follow-up to re-verify determinism |
+| 6 | Subtitle capture → cues populate | works | `__YT_CS_READY`/`__YT_DETECTED_SUBTITLES` observed in isolated world; real ASR track (signed timedtext URL) stored for tab 1; `AUTO_LOAD_SUBTITLES` delivered to content script (no "no receiving end"); cues rendered (row 5). Determinism re-verified in parity phase: two root causes found & fixed — (a) `webNavigation.onHistoryStateUpdated` wiped detection on YouTube's cosmetic `&t=` replaceState → `isMediaRelevantUrlChange` comparator added (`helpers.ts`); (b) first CS→bg relay after event-page wake raced listener registration → `relayToBackground` retry + dedup-flag reset in `subtitleBridges.ts`. Final probe: detect→`&t=` preserved→`?v=` cleared, VERDICT: PASS |
 | 7 | Subtitle body fetch | works | direct cs fetch of timedtext URL: `status:200, len:861701`; `FETCH_SUBTITLE_CONTENT` via bg→`offscreenFetch`→in-process dispatch: `success:true, bodyLen:861701` |
-| 8 | Download via heavy-work path | degraded | `downloads.download` of `blob:moz-extension://…` → `{"downloadId":1}` works; `data:` URL downloads never complete on Firefox (probe timeout) → `saveBlobToDownloads` now picks `blob:` on Firefox UA. ffmpeg/transcode job end-to-end: `untested` (runner chunk imports OK) |
+| 8 | Download via heavy-work path | works | `downloads.download` of `blob:moz-extension://…` → `{"downloadId":1}` works; `data:` URL downloads never complete on Firefox (probe timeout) → `saveBlobToDownloads` picks `blob:` on Firefox UA. **ffmpeg/transmux e2e verified**: real HLS playlist (8×~90KB MPEG-TS, ffmpeg-generated) → webRequest detection → `DOWNLOAD_VIDEO` ×2 concurrent → OPFS `input.ts` → `CONVERT_TS_TO_MP4_V2` in-process → `output.mp4` → blob URL → `downloads.download` → `hls-probe(N).mp4` complete ×2 (337332 B each, ffprobe: valid mp4 h264+aac, 18s). One `FILE_FAILED` flake observed under churn → keep-alive hold extended through download terminal state (`OffscreenManager.acquireKeepAlive` + refcount) |
 | 9 | Pronunciation / eSpeak TTS | works | `PRONUNCIATION_ESPEAK_TTS` popup→bg→in-process dispatch→runner→vendored eSpeak: `{"success":true,"bytes":64812}` WAV @22050Hz. Direct probe: `dataFetch:200`, `ready:true`, `voiceCount:95`, synth chunks `buf:17640`×8+`buf:6056`+`buf:0`+done. Zero CSP violations in console |
 | 10 | Anki card from a cue | untested | no AnkiConnect listening on `127.0.0.1:8765` in test env — bg fetch returned `NetworkError`, not a CSP block. CSP now permits `http://localhost:*`/`http://127.0.0.1:*`. Needs a live AnkiConnect to confirm |
 
@@ -32,11 +32,11 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 | Surface | Status | Evidence |
 |---|---|---|
 | `AudioContext` in event page | untested | constructor `function`; audio output/autoplay not exercised |
-| OPFS `navigator.storage.getDirectory()` | untested | present (`function`); read/write not exercised |
+| OPFS `navigator.storage.getDirectory()` | works | exercised e2e: bg wrote `downloads/{id}/input.ts` (8 MPEG-TS segments) and the in-process runner wrote `output.mp4` back to OPFS before blob-URL handoff |
 | `Worker` spawn | works-by-construction | transmux worker is bundled `worker-entry.js` → `moz-extension:` URL → allowed by `script-src 'self'`; actual spawn not exercised |
 | `downloads.download` of `blob:` URL | works | `{"downloadId":1,"blobUrl":"blob:moz-extension://…"}` |
 | `options_page`/`options_ui` | works-by-construction | accepted by web-ext lint (no error-severity finding on the key); actual presence in `about:addons` not exercised |
-| Event-page keep-alive during heavy job | works-by-construction | `OffscreenManager` pins with `setInterval → runtime.getPlatformInfo()` while an in-process job runs (`offscreenManager.ts:234-243`); RDP observed event page suspend when idle and resume on reload — pinning kicks in only during jobs |
+| Event-page keep-alive during heavy job | works | `OffscreenManager` pins with `setInterval → runtime.getPlatformInfo()` while in-process jobs run; keep-alive is now refcounted and additionally held from blob-URL creation until `downloads.download` reaches complete/interrupted (`acquireKeepAlive`) — closes the suspend-during-blob-read window that produced one `FILE_FAILED` under probe churn |
 | `wasm-unsafe-eval` CSP | works | manifest CSP applied verbatim; OpenCV WASM init → `{status:'ready', backend:'wasm'}` e2e |
 
 ## Discovered API gaps (all observed on real Firefox)
@@ -100,9 +100,9 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 
 1. ~~Vendor eSpeak assets~~ — **done**: `public/espeakng/` + worker-entry; pronunciation e2e `{"success":true,"bytes":64812}`; AMO remote-code flag removed.
 2. AnkiConnect e2e (card create/update + audio attach) with a live `127.0.0.1:8765`.
-3. One real ffmpeg merge → `downloads.download` e2e (also validates NFR-6 keep-alive under load).
-4. Detection determinism follow-up: store occasionally read empty after bg reload; re-verify `__YT_CS_READY` repost timing in parity.
-5. Chrome packed `.crx` smoke (pre-commit rule) before merging this lane.
+3. ~~One real ffmpeg merge → `downloads.download` e2e~~ — **done**: real HLS → OPFS → transmux → blob → `downloads.download` ×2 concurrent → valid MP4s on disk; `FILE_FAILED` flake → keep-alive now held through download terminal state.
+4. ~~Detection determinism follow-up~~ — **done**: two root causes fixed (cosmetic `&t=` rewrite wiping store → `isMediaRelevantUrlChange`; wake-race dropping first relay → `relayToBackground` retry + dedup reset). Firefox probe VERDICT: PASS; Chrome e2e stage2 63/63 PASS.
+5. ~~Chrome packed `.crx` smoke~~ — **done**: packed `.crx` + cloned profile, SW alive, content inject + panel + eSpeak e2e on real Chrome.
 6. Android: device test decision; document `downloads` unavailability as accepted degradation or design an alternative.
 7. Real icon assets (lint `ICON_SIZE` warning) before AMO submission.
 8. `FILE_TOO_LARGE` bundles (opencv.js, worker-entry ×2 >5MB) unparseable by the AMO scanner → split/lazy-load or shrink before listing; this is a hard AMO blocker, independent of runtime.
@@ -116,11 +116,11 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 | SC-2 web-ext lint | **FAIL** — exit 1: 3 `FILE_TOO_LARGE` errors (>5MB bundles unparseable by AMO scanner) + 29 warnings (`MISSING_DATA_COLLECTION_PERMISSIONS` resolved via transform). Corrected after fresh-context verify (`docs/reviews/firefox-port-verify.md`) |
 | SC-3 install + bg init | PASS |
 | SC-4 inject + cues to panel | PASS |
-| SC-5 download attempted | PARTIAL — `blob:` download verified; ffmpeg transcode e2e untested (matrix row: degraded) |
+| SC-5 download attempted | PASS — `blob:` download verified; real .ts→transmux→OPFS→`downloads.download` e2e ×2 concurrent → valid MP4 (ffprobe h264+aac) |
 | SC-6 sidePanel degrade + in-page panel | PASS |
-| SC-7 Chrome gates | PASS (real-Chrome smoke pending — noted) |
+| SC-7 Chrome gates | PASS (packed `.crx` smoke on real Chrome: SW + inject + panel + eSpeak e2e; stage2 63/63) |
 | SC-8 this report | PASS |
 | SC-9 deps unchanged | PASS |
 | SC-10 zero unhandled rejections | PASS (broadcast storm fixed; post-fix smoke console clean of new rejections) |
-| SC-11 keep-alive mid-job | PARTIAL — mechanism implemented; long-job e2e pending (parity backlog #3) |
+| SC-11 keep-alive mid-job | PASS — pinning active during in-process jobs; extended to cover blob-URL → `downloads.download` terminal window (`acquireKeepAlive` refcount); concurrent-job e2e PASS |
 | SC-12 Anki card | RECORDED `untested` — no live AnkiConnect in env; CSP/CORS path cleared for localhost |

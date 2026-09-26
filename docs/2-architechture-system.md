@@ -1383,7 +1383,7 @@ Runtime divergence sống trong adapter seams (`src/shared/lib/chrome-apis/`), c
 
 | Divergence | Seam | Firefox behavior |
 |---|---|---|
-| `chrome.offscreen` absent | `offscreen.ts` (`registerOffscreenListener`/`dispatchOffscreenMessage`) + `OffscreenManager` | Runners self-register vào shared registry; `OffscreenManager` lazy-import runner modules và dispatch in-process trong event page; keep-alive pin `runtime.getPlatformInfo()` khi job chạy (blob URL sống qua job) |
+| `chrome.offscreen` absent | `offscreen.ts` (`registerOffscreenListener`/`dispatchOffscreenMessage`) + `OffscreenManager` | Runners self-register vào shared registry; `OffscreenManager` lazy-import runner modules và dispatch in-process trong event page; keep-alive pin `runtime.getPlatformInfo()` refcounted — held qua job duration và riêng qua `acquireKeepAlive()` tới khi `downloads.download` của blob URL đạt terminal state (blob URL sống trong event page, chết khi page suspend) |
 | `chrome.sidePanel` absent | `sidePanel.ts` | `{success:false}` no-op — surface dropped per owner |
 | `chrome.tts` absent | `ttsEngineService` | Fallback `speechSynthesis` (sẵn có) |
 | `onDeterminingFilename` absent | `downloads.ts` | Guarded — Firefox tôn trọng `filename` |

@@ -44,9 +44,9 @@ VERDICT: SIGN_OFF
 
 - `FILE_TOO_LARGE` bundles → hard AMO scanner blocker; needs split/lazy-load before listing.
 - AnkiConnect `untested` (no live `127.0.0.1:8765` in env — fetch returned NetworkError, not CSP block).
-- ffmpeg merge + long-job keep-alive e2e untested (mechanism implemented, PARTIAL).
-- Detection determinism across bg reload (timing-sensitive repost — follow-up).
-- Chrome packed `.crx` smoke pending (pre-commit rule).
+- ~~ffmpeg merge + long-job keep-alive e2e~~ — resolved post-merge: real HLS→transmux→`downloads.download` ×2 concurrent PASS; keep-alive refcounted + held through download terminal state.
+- ~~Detection determinism across bg reload~~ — resolved post-merge: cosmetic `&t=` rewrite no longer wipes store (`isMediaRelevantUrlChange`); wake-race relay drop fixed (`relayToBackground` retry + dedup reset).
+- ~~Chrome packed `.crx` smoke~~ — done (pack + cloned profile, SW/inject/panel/eSpeak PASS).
 - `gecko.data_collection_permissions:{required:["none"]}` must be confirmed at listing.
 - Icons are placeholders (`ICON_SIZE_INVALID` warnings) — replace before AMO.
 - Android deferred: `browser.downloads` likely unavailable — separate parity decision.

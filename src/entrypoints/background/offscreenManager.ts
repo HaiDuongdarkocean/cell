@@ -58,6 +58,7 @@ export class OffscreenManager {
   // Cache the successful ping handshake result so repeated calls are no-ops.
   private isReady = false;
   private activeSends = 0;
+  private keepAliveHolds = 0;
   private idleCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private keepAliveTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -231,6 +232,7 @@ export class OffscreenManager {
    * URLs. No-op on Chrome where the SW lifetime is governed by API events.
    */
   private startKeepAlive(): void {
+    this.keepAliveHolds += 1;
     if (this.keepAliveTimer !== null || isOffscreenSupported()) return;
     this.keepAliveTimer = setInterval(() => {
       void chrome.runtime.getPlatformInfo().catch(() => {});
@@ -238,10 +240,32 @@ export class OffscreenManager {
   }
 
   private stopKeepAlive(): void {
-    if (this.keepAliveTimer !== null) {
+    this.keepAliveHolds = Math.max(0, this.keepAliveHolds - 1);
+    if (this.keepAliveHolds === 0 && this.keepAliveTimer !== null) {
       clearInterval(this.keepAliveTimer);
       this.keepAliveTimer = null;
     }
+  }
+
+  /**
+   * Pin the Firefox event page until the returned release function is called.
+   *
+   * `sendToOffscreen` only holds the keep-alive for the duration of the
+   * message round-trip. Callers that hand the offscreen/bg page's blob: URLs
+   * to `chrome.downloads.download` must hold the pin until the download
+   * reaches a terminal state — otherwise the event page can suspend while
+   * the browser is still streaming the blob, revoking the URL and failing
+   * the download with FILE_FAILED (observed on Firefox 156 under load).
+   */
+  acquireKeepAlive(): () => void {
+    if (isOffscreenSupported()) return () => {};
+    this.startKeepAlive();
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      this.stopKeepAlive();
+    };
   }
 
   /**
