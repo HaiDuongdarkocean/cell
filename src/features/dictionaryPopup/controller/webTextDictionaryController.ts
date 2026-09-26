@@ -20,8 +20,11 @@ import type { HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighligh
 import type { CardCreatorOpenContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import type { CardCreatorAction } from '@/features/cardCreator/types';
 
-import { sendMessage } from '@/shared/lib/chrome-apis';
+import { sendMessage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { getActiveProfileSettings } from '@/entities/settings';
 
 import type { PanelMountController } from './panelBridge';
 import type { PopupStatusTarget } from '@/features/tokenize';
@@ -189,10 +192,45 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     setDpSettings: (settings) => { dpSettings = settings; },
     panelController: deps.panelController,
     onLookup: (request, requestId, anchorRect, range, pointer) => {
-      lifecycle.handleLookup(request, requestId, anchorRect, range, pointer);
+      handleLookup(request, requestId, anchorRect, range, pointer);
     },
     onCancel: cancelLookup,
   });
+
+  let profileLangCode: string | undefined;
+
+  const refreshProfileLang = async (): Promise<void> => {
+    const settings = await loadSettings().catch(() => DEFAULT_SETTINGS);
+    const next = getActiveProfileSettings(settings)?.resourceLangCode;
+    const prev = profileLangCode;
+    profileLangCode = next;
+    if (prev !== undefined && next !== prev) lifecycle.closePopup();
+  };
+
+  const onSettingsStorageChange = (
+    changes: Record<string, chrome.storage.StorageChange>,
+    area: string,
+  ): void => {
+    if (area !== 'local' || !(STORAGE_KEYS.SETTINGS in changes)) return;
+    lookupCache.clear();
+    void refreshProfileLang();
+  };
+
+  onStorageChanged(onSettingsStorageChange);
+  void refreshProfileLang();
+
+  function handleLookup(
+    request: LookupRequest,
+    requestId: string,
+    anchorRect: DOMRect,
+    highlightTarget: HighlightTarget,
+    pointer?: WebTriggerPointer,
+  ): void {
+    const effectiveRequest = profileLangCode
+      ? { ...request, langCode: profileLangCode }
+      : request;
+    lifecycle.handleLookup(effectiveRequest, requestId, anchorRect, highlightTarget, pointer);
+  }
 
   function configureVideo(config: WebTextDictionaryVideoConfig): void {
     hasVideo = config.hasVideo;
@@ -208,7 +246,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     webTrigger = new WebTriggerController({
       triggerMode: mode,
       onLookup: (request, requestId, anchorRect, range, pointer) => {
-        lifecycle.handleLookup(request, requestId, anchorRect, range, pointer);
+        handleLookup(request, requestId, anchorRect, range, pointer);
       },
       onCancel: (requestId) => { cancelLookup(requestId); },
       // Auto-dismiss on hover-leave removed: popup only closes on explicit
@@ -230,6 +268,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   function destroy(): void {
+    removeOnStorageChangedListener(onSettingsStorageChange);
     detach();
     lifecycle.dispose();
     cardBridge.unmount();
@@ -260,7 +299,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     updateSettings,
     configureVideo,
     destroy,
-    handleLookup: lifecycle.handleLookup,
+    handleLookup,
     cancelLookup,
     dismissLookup: lifecycle.dismissLookup,
     closePopup: lifecycle.closePopup,

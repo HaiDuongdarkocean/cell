@@ -56,7 +56,7 @@ import type {
 } from '@/features/dictionary/logic/lookupLogTypes';
 import { tokenizeSentence } from '@/features/dictionary/logic/phraseMatcher';
 import { pickBestFrequencyEntry } from '@/shared/lib/frequencyBand';
-import type { Settings } from '@/entities/settings';
+import { getActiveProfileSettings, type Settings } from '@/entities/settings';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { ResourceInfo } from '@/entities/dictionary';
@@ -311,10 +311,11 @@ export async function lookupOrchestratorMulti(
   signal?: AbortSignal,
 ): Promise<LookupResult[]> {
   checkAbort(signal);
-  const { langCode, contextSentence, cursorOffset, term, fallback } = request;
+  const { contextSentence, cursorOffset, term, fallback } = request;
 
   // Resolve settings and build the resource context once per lookup.
   const settings = deps.settings ?? await loadSettings().catch(() => DEFAULT_SETTINGS);
+  const langCode = getActiveProfileSettings(settings)?.resourceLangCode ?? request.langCode;
   const resourceContext = await buildResourceContext(langCode, settings);
 
   // 1. Resolve the language plugin.

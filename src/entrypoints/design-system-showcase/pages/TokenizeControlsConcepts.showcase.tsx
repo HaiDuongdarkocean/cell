@@ -38,7 +38,6 @@ function TokenizeControl({
       ariaLabel="Enable tokenize"
       title={`Tokenize: ${enabled ? 'ON' : 'OFF'}`}
       disabled={disabled}
-      size="sm"
     />
   );
 
@@ -221,7 +220,6 @@ function ConceptPanel({ variant, label }: ConceptPanelProps): ReactElement {
                 onChange={setStatus}
                 ariaLabel="Toggle status badges"
                 title={`Status: ${status ? 'ON' : 'OFF'}`}
-                size="sm"
               />
             </label>
             <label className={styles.legacyToggle}>
@@ -231,7 +229,6 @@ function ConceptPanel({ variant, label }: ConceptPanelProps): ReactElement {
                 onChange={setFrequency}
                 ariaLabel="Toggle frequency bands"
                 title={`Frequency: ${frequency ? 'ON' : 'OFF'}`}
-                size="sm"
               />
             </label>
             <label className={styles.legacyToggle}>
@@ -241,7 +238,6 @@ function ConceptPanel({ variant, label }: ConceptPanelProps): ReactElement {
                 onChange={setSubtitle}
                 ariaLabel="Toggle subtitle tokenize"
                 title={`Subtitle: ${subtitle ? 'ON' : 'OFF'}`}
-                size="sm"
               />
             </label>
           </HStack>

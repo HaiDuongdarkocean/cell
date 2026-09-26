@@ -335,11 +335,11 @@ export function Showcase(): ReactElement {
             <div className={styles.settingsPanel}>
               <div className={styles.settingRow}>
                 <span className={styles.settingLabel}>Auto-update</span>
-                <Toggle checked={autoUpdate} onChange={setAutoUpdate} ariaLabel="Auto-update clipboard" size="sm" />
+                <Toggle checked={autoUpdate} onChange={setAutoUpdate} ariaLabel="Auto-update clipboard" />
               </div>
               <div className={styles.settingRow}>
                 <span className={styles.settingLabel}>Tách câu</span>
-                <Toggle checked={splitSentences} onChange={setSplitSentences} ariaLabel="Split sentences" size="sm" />
+                <Toggle checked={splitSentences} onChange={setSplitSentences} ariaLabel="Split sentences" />
               </div>
               <div className={styles.settingSliderRow}>
                 <SliderRow

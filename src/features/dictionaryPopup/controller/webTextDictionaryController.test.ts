@@ -36,9 +36,16 @@ import { sendMessage } from '@/shared/lib/chrome-apis';
 import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
 import { captureSentenceAudio, seekAndWaitReady } from '@/features/cardCreator/media/sentenceAudio';
 import { onWordStatusChanged, type WordStatusChangedDetail } from '@/features/dictionary/services/wordStatusEvents';
+import { CURRENT_SCHEMA_VERSION } from '@/shared/lib/storage/settingsStore';
 import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/cellUiHosts';
 import type { LookupResult, LookupRequest } from '@/entities/dictionary';
-import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
+import type { DictionaryPopupSettings, CardCreatorSettings, LanguageProfile, Settings } from '@/entities/settings/types';
+import {
+  DEFAULT_SETTINGS,
+  DEFAULT_DICTIONARY_POPUP_SETTINGS,
+  DEFAULT_OVERLAY_STYLE_TARGET,
+  DEFAULT_OVERLAY_STYLE_NATIVE,
+} from '@/shared/config/config';
 
 const mockSendMessage = jest.mocked(sendMessage);
 
@@ -168,6 +175,7 @@ function makePanelController(): jest.Mocked<NonNullable<WebTextDictionaryControl
 }
 
 beforeEach(() => {
+  (chrome.storage.local.get as jest.Mock).mockReset().mockResolvedValue({} as never);
   mockSendMessage.mockReset().mockImplementation((message) => {
     const msg = message as { type?: string };
     if (msg.type === 'WORD_STATUS_SET') {
@@ -546,6 +554,84 @@ describe('createWebTextDictionaryController', () => {
 
     const popupHost = document.querySelector('.js-cell-popup-host');
     expect(popupHost).not.toBeNull();
+    act(() => { ctrl.destroy() });
+  });
+
+  it('re-points lookups at the active profile language and clears the cache on profile switch', async () => {
+    const storageGet = chrome.storage.local.get as jest.Mock;
+    const onChangedAdd = chrome.storage.onChanged.addListener as jest.Mock;
+    const makeProfile = (id: string, target: string): LanguageProfile => ({
+      id,
+      target,
+      native: 'vi',
+      name: `Test ${id}`,
+      order: 1,
+      subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
+      subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
+      subtitleOverlayAutoLoad: true,
+      subtitleOverlayAutoLoadAsr: false,
+      subtitleOverlayAutoTranslate: false,
+      dictionaryPopup: DEFAULT_DICTIONARY_POPUP_SETTINGS,
+    });
+    const settingsFor = (profileId: string, target: string): { settings: Settings } => ({
+      settings: {
+        ...DEFAULT_SETTINGS,
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+        activeProfileId: profileId,
+        languageProfiles: [makeProfile(profileId, target)],
+      } as unknown as Settings,
+    });
+
+    storageGet.mockResolvedValue(settingsFor('p-en', 'en') as never);
+    mockSendMessage.mockResolvedValue({ success: true, data: [makeResult()] } as unknown as never);
+
+    const ctrl = createWebTextDictionaryController(makeDeps());
+    const listener = onChangedAdd.mock.calls.at(-1)![0] as (
+      changes: Record<string, unknown>,
+      area: string,
+    ) => void;
+    const p = document.createElement('p');
+    p.textContent = 'Take off your shoes.';
+    document.body.appendChild(p);
+    const range = document.createRange();
+    range.selectNodeContents(p.firstChild as Text);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const request = makeRequest();
+    act(() => { ctrl.handleLookup(request, 'req-en-1', new DOMRect(0, 0, 0, 0), range) });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    act(() => { ctrl.handleLookup(request, 'req-en-2', new DOMRect(0, 0, 0, 0), range) });
+    const enRequests = mockSendMessage.mock.calls.filter(([msg]) => {
+      const m = msg as { type?: string; payload?: { request?: { term?: string; langCode?: string } } };
+      return m.type === 'LOOKUP_REQUEST' && m.payload?.request?.term === 'take';
+    });
+    expect(enRequests).toHaveLength(1);
+
+    // Switch the active profile to Afar — the cached 'en' result must not be
+    // served and the request must carry 'aa'.
+    storageGet.mockResolvedValue(settingsFor('p-aa', 'aa') as never);
+    act(() => { listener({ settings: { newValue: {} } }, 'local') });
+    await waitFor(() => {
+      expect(ctrl.hasOpenPopup()).toBe(false);
+    });
+
+    mockSendMessage.mockClear();
+    act(() => { ctrl.handleLookup(request, 'req-aa', new DOMRect(0, 0, 0, 0), range) });
+    expect(mockSendMessage).toHaveBeenCalledWith({
+      type: 'LOOKUP_REQUEST',
+      payload: {
+        requestId: 'req-aa',
+        request: expect.objectContaining({ langCode: 'aa' }),
+      },
+    });
+
     act(() => { ctrl.destroy() });
   });
 

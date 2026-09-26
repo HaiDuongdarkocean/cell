@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { FlagIcon } from '@/shared/ui/FlagIcon';
@@ -50,33 +50,6 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
     [settings.languageProfiles],
   );
   const active = useMemo(() => getActiveProfileSettings(settings), [settings]);
-
-  /* --- FLIP: animate cards sliding when the list reorders or the form
-     opens/closes (siblings shift). Skipped under prefers-reduced-motion. --- */
-  const itemRefs = useRef(new Map<string, HTMLElement>());
-  const prevTops = useRef(new Map<string, number>());
-  useLayoutEffect(() => {
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    itemRefs.current.forEach((el, id) => {
-      const prev = prevTops.current.get(id);
-      const top = el.getBoundingClientRect().top;
-      if (prev !== undefined && prev !== top && !reduceMotion) {
-        el.style.transition = 'none';
-        el.style.transform = `translateY(${prev - top}px)`;
-        void el.offsetHeight; // force reflow so the jump registers before animating back
-        el.style.transition = 'transform var(--duration-normal) var(--ease-out)';
-        el.style.transform = '';
-      }
-    });
-    const next = new Map<string, number>();
-    itemRefs.current.forEach((el, id) => next.set(id, el.getBoundingClientRect().top));
-    prevTops.current = next;
-  }, [profiles, form]);
-
-  const setItemRef = (id: string) => (el: HTMLElement | null) => {
-    if (el) itemRefs.current.set(id, el);
-    else itemRefs.current.delete(id);
-  };
 
   /* --- Mutations --- */
 
@@ -306,7 +279,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
 
             if (form?.mode === 'edit' && form.id === profile.id) {
               return (
-                <div key={profile.id} ref={setItemRef(profile.id)} className={styles.item}>
+                <div key={profile.id} className={styles.item}>
                   <ProfileForm
                     mode="edit"
                     universalNative={settings.universalNativeLanguage}
@@ -321,7 +294,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
             }
 
             return (
-              <div key={profile.id} ref={setItemRef(profile.id)} className={styles.item}>
+              <div key={profile.id} className={styles.item}>
                 <SelectableCard
                   role="radio"
                   selected={isActive}

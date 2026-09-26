@@ -41,7 +41,7 @@ export function Showcase(): ReactElement {
       <Text as="h3" variant="heading-3" color="secondary">Compact row</Text>
       <SettingsRow compact>
         <LabelGroup icon={<Icon name="zap" size="sm" />} label="Tải nhanh" />
-        <Toggle checked={autoplay} onChange={setAutoplay} ariaLabel="Toggle quick download" size="sm" />
+        <Toggle checked={autoplay} onChange={setAutoplay} ariaLabel="Toggle quick download" />
       </SettingsRow>
     </VStack>
   );

@@ -19,10 +19,10 @@ import { VocabularyTab } from '@/features/vocabulary';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { openSettingsSection } from './deepLink';
 import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/cellUiHosts';
-import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
+import { getSessionStorage, setSessionStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
-import { resolveProfile, type Settings } from '@/entities/settings';
+import { getActiveProfileSettings, resolveProfile, type Settings } from '@/entities/settings';
 import { useCardCreatorStore } from '@/features/cardCreator/state/cardCreatorStore';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import type { UniversalPanelTab, DictionaryPanelPrefill } from './types';
@@ -144,6 +144,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     getHosts: () => [mount.host],
     unmount: () => {
       isUnmounted = true;
+      removeOnStorageChangedListener(onSettingsStorageChange);
       controllerUnmount();
       tokenizeUnsubscribe?.();
       mount.unmount();
@@ -158,16 +159,27 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
   let activeProfileId: string | null = null;
   let loadedSettings: Settings | null = null;
 
-  void loadSettings().then((settings) => {
+  const applySettings = (settings: Settings): void => {
     if (isUnmounted) return;
     loadedSettings = settings;
     dictionarySourceLang = settings.subtitleOverlayTargetLanguage || dictionarySourceLang;
     dictionaryTargetLang = settings.subtitleOverlayNativeLanguage || dictionaryTargetLang;
-    dictionaryLangCode = dictionarySourceLang;
+    dictionaryLangCode = getActiveProfileSettings(settings)?.resourceLangCode ?? dictionarySourceLang;
     languageProfiles = settings.languageProfiles.map((p) => ({ id: p.id, name: p.name, target: p.target }));
     activeProfileId = settings.activeProfileId;
-    if (!isUnmounted) render();
-  });
+    render();
+  };
+
+  void loadSettings().then(applySettings);
+
+  const onSettingsStorageChange = (
+    changes: Record<string, chrome.storage.StorageChange>,
+    area: string,
+  ): void => {
+    if (area !== 'local' || !(STORAGE_KEYS.SETTINGS in changes)) return;
+    void loadSettings().then(applySettings);
+  };
+  onStorageChanged(onSettingsStorageChange);
 
   const renderDictionaryPanel = (open: boolean): ReactElement =>
     createElement(DictionaryTab, {
