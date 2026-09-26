@@ -1370,6 +1370,29 @@ Dictionary probe cache (T23):
 | `LAUNCHER_TILES` | `entrypoints/launcher-dashboard/data/launcherTiles.ts` | `readonly LauncherTileItem[]` | `App.tsx` | Tile registry with icon keys, labels and search keywords |
 | `launcher E2E` | `e2e/launcher-dashboard.spec.ts` | `test.describe('Launcher Dashboard')` | `playwright.config.ts` (`launcher` project) | Three tests: loads + shows all tiles, search filters, preset button cycles data-preset |
 
+## Firefox lane (ADR-106, firefox-port)
+
+`npm run build:firefox` = `npm run build` + `node scripts/build-firefox.mjs` — transform đọc `dist/` (SSOT vẫn là `public/manifest.json`) và emit `dist-firefox/`:
+
+- `background.service_worker` → `background.page` (`firefox-background.html` wrapper, `persistent:false` — event page)
+- Drop `side_panel` + permissions `offscreen`/`sidePanel`/`tts`; thêm `webRequestBlocking`; `browser_specific_settings.gecko={id, strict_min_version:"128.0"}`
+- CSP rewrite sang token hợp lệ Firefox MV3 (`script-src 'self' 'wasm-unsafe-eval'`; `connect-src` explicit: `'self' https: data: localhost/ws`) — Firefox reject toàn bộ CSP nếu có token invalid (`blob:`, `http:` scheme)
+- Strip `match_origin_as_fallback`, `use_dynamic_url`
+
+Runtime divergence sống trong adapter seams (`src/shared/lib/chrome-apis/`), call sites không đổi:
+
+| Divergence | Seam | Firefox behavior |
+|---|---|---|
+| `chrome.offscreen` absent | `offscreen.ts` (`registerOffscreenListener`/`dispatchOffscreenMessage`) + `OffscreenManager` | Runners self-register vào shared registry; `OffscreenManager` lazy-import runner modules và dispatch in-process trong event page; keep-alive pin `runtime.getPlatformInfo()` khi job chạy (blob URL sống qua job) |
+| `chrome.sidePanel` absent | `sidePanel.ts` | `{success:false}` no-op — surface dropped per owner |
+| `chrome.tts` absent | `ttsEngineService` | Fallback `speechSynthesis` (sẵn có) |
+| `onDeterminingFilename` absent | `downloads.ts` | Guarded — Firefox tôn trọng `filename` |
+| `downloads.download(data:)` timeout | `downloadSaver.ts` | Firefox UA → `URL.createObjectURL(blob)`; Chrome SW → `data:` |
+| `sendMessage` không self-deliver | `messageBus.broadcast`/`sendNoWait` | Nuốt "no receiving end" (fan-out rỗng hợp lệ) |
+| DNR `initiatorDomains` gecko-id reject | `declarativeNetRequest.ts` | Fallback `webRequest.onBeforeSendHeaders` blocking |
+
+eSpeak pronunciation (`espeakOffscreenEngine.ts`): `espeakng.js@1.49.0` vendored trong `public/espeakng/` — `espeakng.min.js` load qua `<script src=chrome.runtime.getURL('espeakng/…')>` (`'self'`, không còn CDN/blob — Firefox MV3 CSP không cho `blob:` script ở bất kỳ policy nào). Worker boot qua `espeakng-worker-entry.js` — pre-set `self.Module{locateFile}` trước `importScripts('espeakng.worker.js')` → skip nhánh `Module=eval(...)` bị CSP chặn trong worker (workers inherit page CSP trên Firefox); `.data` resolve sibling URL qua `locateFile`. Consumer đọc audio chunks dạng transferred `ArrayBuffer` (falsy `samples` = done sentinel). Verified: `PRONUNCIATION_ESPEAK_TTS` e2e → `{"success":true,"bytes":64812}` (xem `tasks/reports/firefox-port-compat.md`).
+
 ## Update protocol
 
 **Khi nào update file này:**

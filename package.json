@@ -48,7 +48,8 @@
     "mock:youtube": "node scripts/serve-mock-pages.mjs --youtube",
     "mock:build": "node scripts/serve-mock-pages.mjs --build-only",
     "generate:component-inventory": "node scripts/generate-component-inventory.mjs",
-    "generate:design-system-health-report": "node scripts/generate-design-system-health-report.mjs"
+    "generate:design-system-health-report": "node scripts/generate-design-system-health-report.mjs",
+    "build:firefox": "npm run build && node scripts/build-firefox.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

@@ -43,7 +43,7 @@ async function initializeEspeak(): Promise<EspeakNgApi> {
   initPromise = (async () => {
     const baseUrl = getEspeakBaseUrl();
     const scriptUrl = `${baseUrl}espeakng.min.js`;
-    const workerUrl = `${baseUrl}espeakng.worker.js`;
+    const workerUrl = `${baseUrl}espeakng-worker-entry.js`;
 
     await loadScript(scriptUrl);
 

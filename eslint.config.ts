@@ -9,6 +9,7 @@ export default tseslint.config(
   {
     ignores: [
       'dist/',
+      'dist-firefox/',
       'build/',
       'node_modules/',
       'coverage/',
@@ -18,6 +19,7 @@ export default tseslint.config(
       'tests/integration/.cache/',
       'project-reference/',
       'public/ffmpeg/',
+      'public/espeakng/',
       '.windsurf/',
       // Build artifacts leaked to repo root (gitignored, not source).
       'assets/',

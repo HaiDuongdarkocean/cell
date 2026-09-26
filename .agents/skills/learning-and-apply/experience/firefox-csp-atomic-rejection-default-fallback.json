@@ -1,0 +1,22 @@
+{
+  "id": "firefox-csp-atomic-rejection-default-fallback",
+  "title": "Firefox MV3 reject TOÀN BỘ CSP nếu một token invalid → fallback default policy",
+  "category": ["build", "messaging"],
+  "tags": ["firefox", "csp", "manifest", "mv3", "blob", "web-ext"],
+  "trigger": "Extension page trên Firefox throw CSP violation nhưng directive được quote trong violation KHÔNG phải CSP của manifest.",
+  "principle": "Firefox MV3 validate extension_pages CSP theo whitelist ngặt: script-src chỉ cho 'self'/'none'/'wasm-unsafe-eval'/localhost hosts; blob: không bao giờ được phép trong script-src. Một token invalid (blob:, http: bare scheme trong connect-src) làm reject cả policy và áp default CSP. Dấu hiệu nhận biết: violation message quote directive của default policy (chứa http://localhost:* ở script-src), không phải CSP ta viết. web-ext lint KHÔNG báo lỗi này.",
+  "cases": [
+    {
+      "context": "firefox-port spike: manifest CSP `connect-src 'self' http: https:` + thử `script-src ... blob:` cho eSpeak. Cả hai đều bị Firefox drop nguyên CSP; violation quote default `script-src 'self' 'wasm-unsafe-eval' http://localhost:* http://127.0.0.1:*`.",
+      "bad": "content_security_policy.extension_pages: \"script-src 'self' 'wasm-unsafe-eval' blob:; connect-src 'self' http: https:\" — Firefox ignore hết, extension chạy default policy",
+      "good": "script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https: data: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* — explicit host-scoped sources; blob: scripts thay bằng vendored assets (Emscripten blob-script injection không bao giờ fix được bằng CSP)"
+    }
+  ],
+  "applyFor": [
+    "Debug CSP violation trên Firefox mà directive trong message không giống manifest",
+    "Port extension MV3 Chrome→Firefox có CSP tùy biến",
+    "Library inject <script src=blob:> trong extension page (Emscripten, FFmpeg wasm) — trên Firefox phải vendor assets",
+    "web-ext lint pass nhưng runtime CSP vẫn chặn — check policy nào thực sự apply"
+  ],
+  "source": { "spec": "docs/specs/firefox-port.md", "date": "2026-09-26" }
+}

@@ -18,10 +18,13 @@ export function searchDownloads(
   return chrome.downloads.search(query);
 }
 
-/** Add a listener for downloads.onDeterminingFilename. Returns an unsubscribe function. */
+/** Add a listener for downloads.onDeterminingFilename. Returns an unsubscribe function. Absent on Firefox — no-op there (Firefox honors the filename param directly). */
 export function addOnDeterminingFilenameListener(
   listener: Parameters<typeof chrome.downloads.onDeterminingFilename.addListener>[0],
 ): () => void {
+  if (typeof chrome === 'undefined' || !chrome.downloads?.onDeterminingFilename) {
+    return () => {};
+  }
   chrome.downloads.onDeterminingFilename.addListener(listener);
   return () => chrome.downloads.onDeterminingFilename.removeListener(listener);
 }

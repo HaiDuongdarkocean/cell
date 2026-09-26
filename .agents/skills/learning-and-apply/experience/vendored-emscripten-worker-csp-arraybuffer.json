@@ -1,0 +1,22 @@
+{
+  "id": "vendored-emscripten-worker-csp-arraybuffer",
+  "title": "Vendor Emscripten package vào extension MV3: worker entry pre-set self.Module (skip eval bootstrap) + chunks là ArrayBuffer không phải array",
+  "category": ["build", "messaging"],
+  "tags": ["firefox", "csp", "emscripten", "espeak", "worker", "mv3", "vendored-assets", "arraybuffer", "locateFile"],
+  "trigger": "Emscripten library (espeakng.js, opencv-js style) cần chạy trong extension page mà Firefox MV3 CSP chặn blob: script và eval() — kể cả trong dedicated worker (worker inherit page CSP).",
+  "principle": "Ba lớp vấn đề khi vendor Emscripten vào MV3 extension page: (1) `<script src>` và `new Worker()` phải dùng chrome.runtime.getURL('...') — 'self' — không CDN/blob; (2) bootstrap Emscripten `Module=eval(\"(function(){...})\")` bị CSP chặn trong worker — fix bằng worker-entry nhỏ gán `self.Module = {locateFile}` TRƯỚC `importScripts(worker.js)`: `var Module` giữ giá trị global có sẵn → nhánh `typeof Module==='undefined'` không chạy → eval bị skip (cơ chế pre-config chính thức của Emscripten); `locateFile` return `new URL(path, self.location.href)` để `.data` resolve sibling; eval còn lại trong ccall/cwrap là dead code nếu chỉ dùng postMessage API; (3) worker post audio/data chunks dạng TRANSFERRED ArrayBuffer — `buffer.length` là undefined, KHÔNG phải 'empty' — consumer phải `new Float32Array(samples)` và coi falsy samples = done sentinel.",
+  "cases": [
+    {
+      "context": "firefox-port: eSpeak CDN+blob fail trên Firefox (blob: invalid trong script-src; EvalError: call to eval() blocked by CSP khi worker init). Sau vendoring: 'eSpeak returned empty audio' vì consumer check samples.length trên ArrayBuffer.",
+      "bad": "new Worker(blobUrl); script.src=blobUrl; callback: if (samples && samples.length>0) chunks.push(...) else end — mọi chunk đều bị nuốt, first message đọc là done",
+      "good": "worker-entry.js: self.Module={locateFile:(p)=>new URL(p,self.location.href).href}; importScripts('espeakng.worker.js') — engine: const data = samples instanceof ArrayBuffer ? new Float32Array(samples) : samples; falsy samples = done. Kết quả e2e: PRONUNCIATION_ESPEAK_TTS → {success:true, bytes:64812}"
+    }
+  ],
+  "applyFor": [
+    "Vendor Emscripten/WASM package (espeakng.js, opencv-js, ffmpeg) vào MV3 extension page",
+    "EvalError: call to eval() blocked by CSP phát ra TỪ worker script trong extension context",
+    "Worker 'ready' nhưng callback trả empty/null — check arg có phải ArrayBuffer/transferable trước khi đọc .length",
+    "ESLint fail trên vendored third-party JS — thêm vào eslint ignores (convention: public/<pkg>/)"
+  ],
+  "source": { "spec": "docs/specs/firefox-port.md", "date": "2026-09-26" }
+}

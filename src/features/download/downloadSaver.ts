@@ -113,7 +113,12 @@ export async function saveBlobToDownloads(
   filename: string,
   registry: PendingFilenameRegistry,
 ): Promise<void> {
-  const url = await blobToDataUrl(blob);
+  // Chrome MV3 service workers lack `URL.createObjectURL`, so they take the
+  // `data:` path. Firefox runs the background as an event page (document
+  // context): `createObjectURL` exists and downloads.download accepts `blob:`
+  // URLs but never completes `data:` downloads.
+  const useBlobUrl = typeof URL.createObjectURL === 'function';
+  const url = useBlobUrl ? URL.createObjectURL(blob) : await blobToDataUrl(blob);
   // Register the filename under this exact URL BEFORE calling
   // chrome.downloads.download so the onDeterminingFilename listener
   // (registered in background init) can force Edge to use it — Edge ignores
@@ -125,6 +130,7 @@ export async function saveBlobToDownloads(
       filename,
       saveAs: false,
     });
+    if (useBlobUrl) URL.revokeObjectURL(url);
     // Verify what filename Edge actually used.
     searchDownloads({ id: downloadId }).catch((err) =>
       console.warn('[downloader] Failed to verify download filename:', err),

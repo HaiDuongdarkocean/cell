@@ -1,0 +1,22 @@
+{
+  "id": "firefox-sendmessage-no-self-delivery",
+  "title": "Firefox runtime.sendMessage không tính listener của chính sender là receiving end",
+  "category": ["messaging"],
+  "tags": ["firefox", "runtime", "sendMessage", "broadcast", "no-receiving-end", "mv3"],
+  "trigger": "Broadcast/fire-and-forget sendMessage trên Firefox reject 'Could not establish connection. Receiving end does not exist' dù sender context có listener cho message đó.",
+  "principle": "Firefox khác Chrome ở chỗ: listener đăng ký trong CÙNG context với sender không được tính là receiving end. Pattern broadcast() (background phát DETECTED_MEDIA_UPDATE đến chính nó + popup/panel) trên Chrome resolve êm khi chỉ có self-listener, trên Firefox thành unhandled-rejection storm. Fix: fire-and-forget phải nuốt lỗi 'no receiving end' — fan-out tới audience rỗng là trạng thái hợp lệ, không phải failure.",
+  "cases": [
+    {
+      "context": "firefox-port: messageBus.broadcast từ event page gây rejection storm mỗi lần detection update vì chỉ có bg nghe. Popup→bg messages vẫn hoạt động bình thường (context khác).",
+      "bad": "void chrome.runtime.sendMessage(msg); // Firefox: reject 'no receiving end' khi audience rỗng → unhandled rejection storm",
+      "good": "promise.catch((e) => { if (!/no receiving end|Receiving end/.test(msg(e))) throw e; }); // swallow chỉ trên fire-and-forget path (broadcast/sendNoWait), không nuốt lỗi request/response thật"
+    }
+  ],
+  "applyFor": [
+    "Test message flow trên Firefox bằng RDP/probe — nhớ sendMessage từ bg page không self-deliver, phải gửi từ context khác (popup/content script)",
+    "Broadcast state updates (media detected, settings changed) từ background",
+    "Bất kỳ fire-and-forget sendMessage nào mà audience có thể rỗng hợp lệ"
+  ],
+  "related": ["messaging-broadcast-scope-by-identifier", "messaging-receiver-announces-readiness-handshake"],
+  "source": { "spec": "docs/specs/firefox-port.md", "date": "2026-09-26" }
+}

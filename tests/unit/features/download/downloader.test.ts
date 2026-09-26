@@ -107,7 +107,14 @@ beforeEach(() => {
 
 afterEach(() => {
   jest.useRealTimers();
+  URL.createObjectURL = createObjectURLMock as unknown as typeof URL.createObjectURL;
 });
+
+// Chrome MV3 service workers lack URL.createObjectURL — tests that assert the
+// data: URL save path must remove it to simulate the SW context truthfully.
+function simulateServiceWorkerContext(): void {
+  (URL as unknown as Record<string, unknown>).createObjectURL = undefined;
+}
 
 // --- Helpers ---
 
@@ -236,6 +243,7 @@ describe('Downloader', () => {
 
   // 1. mp4 direct download
   test('downloadVideo with mp4 fetches URL and saves blob', async () => {
+    simulateServiceWorkerContext();
     const blob = makeTextBlob('mp4data');
     fetchMock.mockResolvedValue(makeResponse(blob));
 
@@ -581,6 +589,7 @@ describe('Downloader', () => {
 
   // 6. subtitle .srt (strips leftover VTT/HTML inline tags)
   test('downloadSubtitle with .srt fetches and strips VTT/HTML tags', async () => {
+    simulateServiceWorkerContext();
     const srtContent = [
       '1',
       '00:00:01,000 --> 00:00:02,000',
@@ -1897,6 +1906,7 @@ describe('Downloader', () => {
   // ============================================================
   describe('pending filename association', () => {
     it('associates each filename with its own download URL', async () => {
+      simulateServiceWorkerContext();
       await Promise.all([
         downloader.saveBlob(makeTextBlob('content-a'), 'first.mp4'),
         downloader.saveBlob(makeTextBlob('content-b'), 'second.mp4'),

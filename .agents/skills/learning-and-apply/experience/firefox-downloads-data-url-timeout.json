@@ -1,0 +1,21 @@
+{
+  "id": "firefox-downloads-data-url-timeout",
+  "title": "Firefox downloads.download không bao giờ hoàn tất data: URL → dùng blob: capability-gated",
+  "category": ["data", "build"],
+  "tags": ["firefox", "downloads", "blob", "data-url", "createObjectURL", "mv3", "capability-check"],
+  "trigger": "chrome.downloads.download({url: 'data:...'}) trên Firefox pending vĩnh viễn (không resolve, không reject, không lỗi console).",
+  "principle": "Firefox MV3 chạy background dưới dạng event page (document context) → URL.createObjectURL TỒN TẠI, và downloads.download nhận blob: URL thành công trong khi data: URL treo. Chrome MV3 SW ngược lại: không có createObjectURL, data: hoạt động. Chọn path bằng capability check `typeof URL.createObjectURL === 'function'` — KHÔNG UA-sniff, và nhớ jsdom mock createObjectURL nên test giả lập SW phải unset nó trước.",
+  "cases": [
+    {
+      "context": "firefox-port: downloadSaver dùng data: URL cho mọi nền tảng vì Chrome SW thiếu createObjectURL → trên Firefox download treo (probe timeout). blob:moz-extension:// URL download thành công (downloadId trả về).",
+      "bad": "const url = await blobToDataUrl(blob); await chrome.downloads.download({url, filename}); // Firefox: never completes",
+      "good": "const useBlobUrl = typeof URL.createObjectURL === 'function'; const url = useBlobUrl ? URL.createObjectURL(blob) : await blobToDataUrl(blob); await chrome.downloads.download({url, filename}); if (useBlobUrl) URL.revokeObjectURL(url);"
+    }
+  ],
+  "applyFor": [
+    "Bất kỳ save-file flow nào của extension trên Firefox",
+    "Unit test giả lập service worker trong jsdom — phải xóa mock URL.createObjectURL để data: path được test đúng",
+    "Audit URL.createObjectURL availability thay vì sniff browser"
+  ],
+  "source": { "spec": "docs/specs/firefox-port.md", "date": "2026-09-26" }
+}

@@ -50,6 +50,52 @@ function nextRuleId(): number {
 }
 
 /**
+ * Firefox rejects `initiatorDomains: [runtime.id]` — a gecko id like
+ * `tihoka@the0cean.dev` is not a valid domain, and an extension has no
+ * initiator domain anyway. On that failure we fall back to a blocking
+ * `webRequest.onBeforeSendHeaders` listener (Firefox keeps blocking
+ * webRequest in MV3 behind the `webRequestBlocking` permission), scoped to
+ * the exact URL and to requests whose `originUrl` is our own extension
+ * origin — the same isolation the DNR rule provided.
+ */
+const refererOverrides = new Map<number, { url: string; referer: string; origin: string }>();
+let dnrInitiatorSupported = true;
+let refererListenerRegistered = false;
+
+function extensionOrigin(): string {
+  return new URL(chrome.runtime.getURL('/')).origin;
+}
+
+function ensureRefererOverrideListener(): void {
+  if (refererListenerRegistered || typeof chrome === 'undefined' || !chrome.webRequest?.onBeforeSendHeaders) {
+    return;
+  }
+  chrome.webRequest.onBeforeSendHeaders.addListener(
+    (details) => {
+      const initiator =
+        details.initiator ?? (details as { originUrl?: string }).originUrl ?? '';
+      if (initiator !== extensionOrigin() && !initiator.startsWith(`${extensionOrigin()}/`)) {
+        return {};
+      }
+      for (const override of refererOverrides.values()) {
+        if (details.url === override.url) {
+          const headers = (details.requestHeaders ?? []).filter(
+            (h) => h.name.toLowerCase() !== 'referer' && h.name.toLowerCase() !== 'origin',
+          );
+          headers.push({ name: 'Referer', value: override.referer });
+          headers.push({ name: 'Origin', value: override.origin });
+          return { requestHeaders: headers };
+        }
+      }
+      return {};
+    },
+    { urls: ['<all_urls>'], types: ['xmlhttprequest'] },
+    ['blocking', 'requestHeaders'],
+  );
+  refererListenerRegistered = true;
+}
+
+/**
  * Register a dynamic DNR rule that sets `Referer` (and `Origin`) for a single
  * URL. Returns the rule id so the caller can remove it after the fetch.
  *
@@ -94,10 +140,25 @@ export async function setRefererRule(url: string, referer: string): Promise<numb
     },
   };
 
-  await chrome.declarativeNetRequest.updateDynamicRules({
-    addRules: [rule],
-    removeRuleIds: [],
-  });
+  if (dnrInitiatorSupported) {
+    try {
+      await chrome.declarativeNetRequest.updateDynamicRules({
+        addRules: [rule],
+        removeRuleIds: [],
+      });
+      return ruleId;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!/initiator/i.test(message)) {
+        throw error;
+      }
+      dnrInitiatorSupported = false;
+      console.warn('[dnr] initiatorDomains rejected, using webRequest fallback:', error);
+    }
+  }
+
+  refererOverrides.set(ruleId, { url, referer, origin });
+  ensureRefererOverrideListener();
   return ruleId;
 }
 
@@ -106,6 +167,9 @@ export async function setRefererRule(url: string, referer: string): Promise<numb
  * exists (already removed, or SW evicted and rules reset).
  */
 export async function removeRefererRule(ruleId: number): Promise<void> {
+  if (refererOverrides.delete(ruleId)) {
+    return;
+  }
   await chrome.declarativeNetRequest.updateDynamicRules({
     addRules: [],
     removeRuleIds: [ruleId],

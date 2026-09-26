@@ -15,6 +15,19 @@ import type {
 const DEFAULT_TIMEOUT_MS = 30_000;
 
 /**
+ * Fire-and-forget fan-out legitimately hits "no receiving end" when no page
+ * context is open — Firefox also excludes the sender's own listeners from the
+ * receiving-end check (Chrome counts them), so a broadcast with an empty
+ * audience rejects there. Swallow that case; surface anything else.
+ */
+function swallowNoReceivingEnd(error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes('no receiving end')) {
+    console.warn('[messageBus] fire-and-forget send failed:', message);
+  }
+}
+
+/**
  * Wraps `chrome.runtime.sendMessage` / `chrome.runtime.onMessage` for typed
  * message passing between popup, background, and content script.
  */
@@ -95,14 +108,14 @@ export class MessageBus {
    * Send a message without waiting for a response (fire-and-forget).
    */
   sendNoWait(request: MessageRequest): void {
-    void sendMessage(request);
+    void sendMessage(request).catch(swallowNoReceivingEnd);
   }
 
   /**
    * Broadcast a message to all listeners (background -> popup).
    */
   broadcast(payload: MessageRequest): void {
-    void sendMessage(payload);
+    void sendMessage(payload).catch(swallowNoReceivingEnd);
   }
 
   /**

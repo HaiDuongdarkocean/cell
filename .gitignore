@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 dist/
+dist-firefox/
 build/
 
 # Test coverage
@@ -84,9 +85,6 @@ daemons-ep1.vtt
 player_state.png
 # Root-level ad-hoc verification/audit screenshots — never source files
 /*.png
-
-# eSpeak TTS voice data is downloaded on demand, not committed.
-public/espeakng/
 
 # Build artifacts that leak to repo root (vite build output, not source).
 # Real source lives in src/ + public/; these are generated into dist/ on build.
