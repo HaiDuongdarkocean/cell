@@ -9,7 +9,7 @@ import { stripHtml } from './markup.mjs';
 
 const TR_ROW = /<TR id=(\w+)[^>]*>([\s\S]*?)<\/TR>/g;
 const FORM_FONT = /<FONT color=#FF0000[^>]*>([\s\S]*?)<\/FONT>/gi;
-const MARK = '';
+const MARK = '\u0001';
 const FORMS_ONLY_PAREN = /\((?:[\s;,]|[^\u0001]*)*\)/g;
 
 function parseTrHead(rowHtml) {

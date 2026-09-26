@@ -76,7 +76,7 @@ describe('parseLingvoDsl', () => {
   });
 
   it('flushes a dangling card at EOF and tolerates a BOM', () => {
-    const text = `﻿orphan\n\t[m1][s]orphan.mp3[/s][/m1]`;
+    const text = `\uFEFForphan\n\t[m1][s]orphan.mp3[/s][/m1]`;
     const entries = parseLingvoDsl(text, 'pkg-1');
     expect(entries).toHaveLength(1);
     expect(entries[0].term).toBe('orphan');

@@ -146,8 +146,8 @@ const NOTES: Record<Variant, React.ReactNode> = {
       <strong>Đề xuất:</strong> 1) <strong>cả card</strong> (kể cả padding) là vùng chọn — hover sáng toàn
       bộ card, <strong>không click animation</strong> (tắt ripple + lift) để tránh flick; 2) Bật/Tắt gom
       trong <strong>pill 40px</strong> (touch-target, box-sizing), cùng <code>min-width</code>; 3) delete
-      luôn đỏ: "Xóa…" <strong>nền error-subtle thường trực</strong>, trash hover đỏ; 4) card edit mode nền
-      <code>--color-field</code>; 5) "Chọn tất cả" font-size-base cân với box.
+      luôn đỏ: &quot;Xóa…&quot; <strong>nền error-subtle thường trực</strong>, trash hover đỏ; 4) card edit mode nền
+      <code>--color-field</code>; 5) &quot;Chọn tất cả&quot; font-size-base cân với box.
     </>
   ),
 };
