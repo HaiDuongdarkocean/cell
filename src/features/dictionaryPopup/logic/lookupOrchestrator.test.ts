@@ -1251,3 +1251,42 @@ describe('lookupOrchestrator — resource controls', () => {
     expect(result.frequency?.rank).toBe(15000);
   });
 });
+
+describe('lookupOrchestrator — active profile language', () => {
+  function settingsForProfile(profileId: string, target: string): Settings {
+    return {
+      ...DEFAULT_SETTINGS,
+      activeProfileId: profileId,
+      languageProfiles: [makeProfile(profileId, target)],
+    };
+  }
+
+  it('resolves langCode from the active profile, ignoring a stale request.langCode', async () => {
+    await seedEnglishDictionary([{ term: 'hello', definition: 'greeting' }]);
+    await setWordStatus('en', 'hello', 'known');
+
+    const result = await lookupOrchestrator(
+      { term: 'hello', langCode: 'en', contextSentence: 'Hello world.', cursorOffset: 0 },
+      { settings: settingsForProfile('p-aa', 'aa') },
+    );
+
+    expect(result.langCode).toBe('aa');
+    expect(result.definitions).toEqual([]);
+    expect(result.frequency).toBeNull();
+    expect(result.status).toBe('unknown');
+  });
+
+  it('still serves English data when the active profile targets en', async () => {
+    await seedEnglishDictionary([{ term: 'hello', definition: 'greeting' }]);
+    await setWordStatus('en', 'hello', 'known');
+
+    const result = await lookupOrchestrator(
+      { term: 'hello', langCode: 'aa', contextSentence: 'Hello world.', cursorOffset: 0 },
+      { settings: settingsForProfile('p-en', 'en') },
+    );
+
+    expect(result.langCode).toBe('en');
+    expect(result.definitions[0]!.text).toBe('greeting');
+    expect(result.status).toBe('known');
+  });
+});

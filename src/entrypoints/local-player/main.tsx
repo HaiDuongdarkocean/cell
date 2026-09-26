@@ -25,6 +25,9 @@ import { ThemeProvider } from '@/features/theme/ui/ThemeProvider';
 import { ErrorBoundary } from '@/shared/ui';
 import { installRippleDelegation } from '@/shared/lib/dom/ripple';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { onStorageChanged } from '@/shared/lib/chrome-apis';
+import { getActiveProfileSettings, type Settings } from '@/entities/settings';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import { mountComprehensionPill } from '@/features/tokenize/ui/mountComprehensionPill';
 import { comprehensionStore } from '@/features/tokenize/services/comprehensionStore';
 import { startMediaScoreSource } from '@/features/subtitle/logic/mediaScoreSource';
@@ -235,10 +238,25 @@ if (rootEl) {
   );
 }
 
-void loadSettings().then((settings) => {
-  mountComprehensionPill();
-  startMediaScoreSource({
-    langCode: settings.subtitleOverlayTargetLanguage || 'en',
+let mediaScoreStop: (() => void) | undefined;
+let mediaScoreLang: string | undefined;
+const applyMediaScoreSettings = (settings: Settings): void => {
+  const langCode = getActiveProfileSettings(settings)?.resourceLangCode
+    ?? (settings.subtitleOverlayTargetLanguage || 'en');
+  if (langCode === mediaScoreLang) return;
+  mediaScoreLang = langCode;
+  mediaScoreStop?.();
+  mediaScoreStop = startMediaScoreSource({
+    langCode,
     store: comprehensionStore,
   });
+};
+
+void loadSettings().then((settings) => {
+  mountComprehensionPill();
+  applyMediaScoreSettings(settings);
+});
+onStorageChanged((changes, area) => {
+  if (area !== 'local' || !(STORAGE_KEYS.SETTINGS in changes)) return;
+  void loadSettings().then(applyMediaScoreSettings);
 });

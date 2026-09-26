@@ -3,6 +3,8 @@ declare const __CELL_FAST_BUILD__: boolean;
 import { onStorageChanged } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { getActiveProfileSettings } from '@/entities/settings';
+import type { TokenizePanelState } from '@/features/tokenize/types';
 import { createWebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import { createWebTokenizeController } from '@/features/tokenize/controller/webTokenizeController';
@@ -21,27 +23,20 @@ import { comprehensionStore } from '@/features/tokenize/services/comprehensionSt
 // Shared with subtitle overlay controller for token lookup + highlight.
 let webTextCtrl: WebTextDictionaryController | null = null;
 let webTokenizeCtrl: WebTokenizeController | null = null;
-/** ADR-061: Pending tokenize subscribers — collected before
- *  webTokenizeCtrl is initialized (initTokenize is async and may complete
- *  after mountSettingsDialog subscribes). Flushed when webTokenizeCtrl is
- *  created. Without this, the orbital badge's SettingsDialog never receives
- *  tokenize state updates → toggles don't visually switch. */
-interface PendingTokenizeSub {
-  cb: (s: { enabled: boolean; showStatus: boolean; showFrequency: boolean; subtitleEnabled: boolean }) => void;
-  unsubscribe?: () => void;
-}
-let pendingTokenizeSubs: PendingTokenizeSub[] = [];
+let tokenizeLang: string | null = null;
+/** ADR-061: Persistent tokenize panel subscribers — survive webTokenizeCtrl
+ *  recreation (profile/language switch destroys + rebuilds it). Each new
+ *  controller instance re-subscribes a forwarder that broadcasts to this set. */
+const tokenizePanelSubs = new Set<(s: TokenizePanelState) => void>();
+let tokenizeCtrlUnsub: (() => void) | null = null;
 
 let universalPanelMount: UniversalPanelMountController | null = null;
 
 // Cached subtitle tokenize enabled state for this URL — read by universal panel.
 let cachedSubtitleEnabled = false;
 
-/** Active panel notify callback — push state updates outside webTokenizeCtrl. */
-let panelNotify: ((s: { enabled: boolean; showStatus: boolean; showFrequency: boolean; subtitleEnabled: boolean }) => void) | null = null;
-
 /** Build a TokenizePanelState snapshot from current webTokenizeCtrl + cachedSubtitleEnabled. */
-function buildPanelState(): { enabled: boolean; showStatus: boolean; showFrequency: boolean; subtitleEnabled: boolean } {
+function buildPanelState(): TokenizePanelState {
   const s = webTokenizeCtrl?.getState();
   return {
     enabled: s?.enabled ?? false,
@@ -51,12 +46,26 @@ function buildPanelState(): { enabled: boolean; showStatus: boolean; showFrequen
   };
 }
 
+function notifyPanelSubs(): void {
+  const snapshot = buildPanelState();
+  for (const cb of tokenizePanelSubs) cb(snapshot);
+}
+
+function bindTokenizeCtrlSubs(ctrl: WebTokenizeController): void {
+  tokenizeCtrlUnsub?.();
+  tokenizeCtrlUnsub = ctrl.subscribe((s) => {
+    for (const cb of tokenizePanelSubs) {
+      cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency, subtitleEnabled: cachedSubtitleEnabled });
+    }
+  });
+}
+
 function ensureUniversalPanelMount(): UniversalPanelMountController {
   if (!universalPanelMount) {
     // Initialize subtitle tokenize state from storage (async, fires once).
     void loadTokenizeSettings().then((ts) => {
       cachedSubtitleEnabled = isSubtitleTokenizeEnabledForUrl(ts, window.location.href);
-      panelNotify?.(buildPanelState());
+      notifyPanelSubs();
     });
 
     universalPanelMount = mountUniversalPanel({
@@ -72,25 +81,9 @@ function ensureUniversalPanelMount(): UniversalPanelMountController {
           void universalPanelMount?.open('dictionary');
         },
         subscribe: (cb) => {
-          panelNotify = cb;
-          if (!webTokenizeCtrl) {
-            const item: PendingTokenizeSub = { cb };
-            pendingTokenizeSubs.push(item);
-            cb(buildPanelState());
-            return () => {
-              item.unsubscribe?.();
-              pendingTokenizeSubs = pendingTokenizeSubs.filter((i) => i !== item);
-              if (panelNotify === cb) panelNotify = null;
-            };
-          }
-          const unsub = webTokenizeCtrl.subscribe((s) => {
-            cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency, subtitleEnabled: cachedSubtitleEnabled });
-          });
+          tokenizePanelSubs.add(cb);
           cb(buildPanelState());
-          return () => {
-            unsub();
-            if (panelNotify === cb) panelNotify = null;
-          };
+          return () => { tokenizePanelSubs.delete(cb); };
         },
       },
     });
@@ -106,14 +99,14 @@ async function toggleSubtitleTokenize(): Promise<void> {
   const updated = setSubtitleTokenizeEnabledForUrl(ts, url, next);
   await saveTokenizeSettings(updated);
   cachedSubtitleEnabled = next;
-  panelNotify?.(buildPanelState());
+  notifyPanelSubs();
 }
 
 export function installTokenizeNavListeners(): void {
   const onTokenizeNav = (): void => {
     void loadTokenizeSettings().then((ts) => {
       cachedSubtitleEnabled = isSubtitleTokenizeEnabledForUrl(ts, window.location.href);
-      panelNotify?.(buildPanelState());
+      notifyPanelSubs();
     });
   };
   window.addEventListener('yt-navigate-finish', onTokenizeNav);
@@ -168,9 +161,15 @@ export async function initWebTextDictionary(): Promise<void> {
 
 export async function initTokenize(): Promise<void> {
   try {
-    if (webTokenizeCtrl) return;
     const settings = await loadSettings();
-    const langCode = settings.subtitleOverlayTargetLanguage || 'en';
+    const langCode = getActiveProfileSettings(settings)?.resourceLangCode
+      ?? (settings.subtitleOverlayTargetLanguage || 'en');
+    if (webTokenizeCtrl && tokenizeLang === langCode) return;
+    webTokenizeCtrl?.destroy();
+    webTokenizeCtrl = null;
+    stopTextScoreSource?.();
+    stopTextScoreSource = null;
+    tokenizeLang = langCode;
     webTokenizeCtrl = await createWebTokenizeController({
       url: window.location.href,
       root: document.body,
@@ -209,17 +208,8 @@ export async function initTokenize(): Promise<void> {
         return () => blocksChangedListeners.delete(listener);
       },
     });
-    // ADR-061: Flush pending subscribers that were queued before
-    // webTokenizeCtrl was initialized (mountSettingsDialog subscribes at
-    // orbital badge creation time, which may race with initTokenize).
-    // Store the real unsubscribe on the pending item so the cleanup returned
-    // earlier can correctly tear down the subscription on unmount.
-    for (const item of pendingTokenizeSubs) {
-      item.unsubscribe = webTokenizeCtrl.subscribe((s) => {
-        item.cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency, subtitleEnabled: cachedSubtitleEnabled });
-      });
-    }
-    pendingTokenizeSubs = [];
+    bindTokenizeCtrlSubs(webTokenizeCtrl);
+    notifyPanelSubs();
   } catch (err) {
     // Storage may be unavailable in some test/sandbox contexts — safe fallback.
     console.warn('[content-script] initTokenize failed', err);
@@ -232,6 +222,7 @@ export function installSettingsReloader(): void {
     if (window.self !== window.top) return;
     if (area === 'local' && changes[STORAGE_KEYS.SETTINGS]) {
       void initWebTextDictionary();
+      void initTokenize();
       void initComprehension();
     }
   });
@@ -280,7 +271,8 @@ const blocksChangedListeners = new Set<() => void>();
 export async function initComprehension(): Promise<void> {
   try {
     const settings = await loadSettings();
-    const langCode = settings.subtitleOverlayTargetLanguage || 'en';
+    const langCode = getActiveProfileSettings(settings)?.resourceLangCode
+      ?? (settings.subtitleOverlayTargetLanguage || 'en');
     if (!comprehensionPill) {
       comprehensionPill = mountComprehensionPill({ store: comprehensionStore });
     }
@@ -299,9 +291,12 @@ export function cleanupFeatureInit(): void {
   webTextCtrl = null;
   webTokenizeCtrl?.destroy();
   webTokenizeCtrl = null;
+  tokenizeLang = null;
+  tokenizeCtrlUnsub?.();
+  tokenizeCtrlUnsub = null;
   universalPanelMount?.unmount?.();
   universalPanelMount = null;
-  pendingTokenizeSubs = [];
+  tokenizePanelSubs.clear();
   stopMediaScoreSource?.();
   stopMediaScoreSource = null;
   mediaScoreLang = null;

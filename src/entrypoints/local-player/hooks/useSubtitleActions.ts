@@ -8,10 +8,13 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
+import { getActiveProfileSettings, type Settings } from '@/entities/settings';
 import { logger } from '@/shared/lib/logger';
 import {
   DEFAULT_CARD_CREATOR_SETTINGS,
   DEFAULT_DICTIONARY_POPUP_SETTINGS,
+  STORAGE_KEYS,
 } from '@/shared/config/config';
 import { createWebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
@@ -66,35 +69,50 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
     });
     webTextCtrlRef.current = ctrl;
 
-    void loadSettings().then((settings) => {
+    const applySettings = (settings: Settings): void => {
       ctrl.updateSettings({
         dictionaryPopup: settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS,
         cardCreator: settings.cardCreator ?? DEFAULT_CARD_CREATOR_SETTINGS,
         subtitleOverlayNativeLanguage: settings.subtitleOverlayNativeLanguage,
       });
-      const langCode = settings.subtitleOverlayTargetLanguage ?? '';
+      const langCode = getActiveProfileSettings(settings)?.resourceLangCode
+        ?? (settings.subtitleOverlayTargetLanguage || '');
       if (langCode === '') return;
-      setCueListTokenize({
-        langCode,
-        onTokenClick: (term, element, contextSentence) => {
-          const request: LookupRequest = {
-            term,
-            langCode,
-            contextSentence,
-            cursorOffset: Number(element.getAttribute('data-cell-start') ?? 0),
-          };
-          const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-          webTextCtrlRef.current?.handleLookup(
-            request,
-            requestId,
-            element.getBoundingClientRect(),
-            element,
-          );
-        },
+      setCueListTokenize((prev) => {
+        if (prev?.langCode === langCode) return prev;
+        return {
+          langCode,
+          onTokenClick: (term, element, contextSentence) => {
+            const request: LookupRequest = {
+              term,
+              langCode,
+              contextSentence,
+              cursorOffset: Number(element.getAttribute('data-cell-start') ?? 0),
+            };
+            const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+            webTextCtrlRef.current?.handleLookup(
+              request,
+              requestId,
+              element.getBoundingClientRect(),
+              element,
+            );
+          },
+        };
       });
-    });
+    };
+
+    void loadSettings().then(applySettings);
+    const onSettingsChange = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      area: string,
+    ): void => {
+      if (area !== 'local' || !(STORAGE_KEYS.SETTINGS in changes)) return;
+      void loadSettings().then(applySettings);
+    };
+    onStorageChanged(onSettingsChange);
 
     return () => {
+      removeOnStorageChangedListener(onSettingsChange);
       ctrl.destroy();
       webTextCtrlRef.current = null;
       setCueListTokenize(null);
