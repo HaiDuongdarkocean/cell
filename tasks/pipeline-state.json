@@ -408,7 +408,7 @@
       "updated": "2026-09-25T02:22:46.162Z"
     },
     "firefox-port": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "interactive",
       "uiSurface": "no",
       "artifacts": {
@@ -419,19 +419,19 @@
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-09-26T03:21:29.475Z"
+          "at": "2026-09-26T05:50:41.603Z"
         },
         "build": {
           "v": "pass",
-          "at": "2026-09-26T03:19:14.812Z"
+          "at": "2026-09-26T05:51:03.971Z"
         },
         "lint": {
           "v": "pass",
-          "at": "2026-09-26T03:21:47.831Z"
+          "at": "2026-09-26T05:51:03.819Z"
         },
         "testUnit": {
           "v": "pass",
-          "at": "2026-09-26T03:22:22.721Z"
+          "at": "2026-09-26T05:51:03.892Z"
         },
         "briefLint": {
           "v": "pass",
@@ -448,12 +448,9 @@
         }
       ],
       "loops": 0,
-      "owner": {
-        "id": "devin-cli",
-        "since": "2026-09-26T00:11:08.009Z"
-      },
+      "owner": null,
       "worktree": "../cell-worktrees/firefox-port",
-      "updated": "2026-09-26T03:22:22.722Z"
+      "updated": "2026-09-26T05:51:10.631Z"
     },
     "dict-links-manager": {
       "stage": "shipped",

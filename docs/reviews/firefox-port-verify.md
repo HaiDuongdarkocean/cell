@@ -1,6 +1,8 @@
 # Verify Review — firefox-port (DELIVER)
 
-VERDICT: APPROVE_WITH_CHANGES — the engineering is sound and verified; the compat report contains one falsified claim (SC-2 lint evidence) that must be corrected before the owner consumes it as decision-grade evidence.
+VERDICT: PASS
+
+(Round 1 was APPROVE_WITH_CHANGES — all required + recommended fixes applied and re-verified; round 2 post-eSpeak verification below documents the final green state.)
 
 ## Scope reviewed
 
