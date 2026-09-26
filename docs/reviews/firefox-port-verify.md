@@ -172,3 +172,16 @@ Unit coverage: concurrent same-name saves pick distinct free names and both comp
 `npm run typecheck` ✓ · `npm run lint` ✓ (eslint now maps `e2e/**/*.mjs` to node globals; `e2e/firefox/fixtures/` ignored — binary `.ts` MPEG-TS segments collide with TypeScript globs) · `npm run test:unit` **577 suites / 6888 tests** ✓ · `npm run build` ✓ · `build:firefox` ✓ · Firefox e2e **4/4** ✓.
 
 **Chrome stage2 e2e (90 tests, honest reading):** 68 pass / 21 fail / 1 skip — the 21 failures are pre-existing on the merged baseline, **not** regressions from this round: an identical subset (all of `study-modes`, `status-underline`, `card-creator-anki-config` — 8/8 failed) was reproduced on the untouched `main` checkout at `f74069f8` with no diff from this worktree applied. The earlier "63/63" figure covered a smaller pre-merge suite. Two environment foot-guns confirmed: `PW_PORT_OFFSET` breaks specs that hardcode `http://127.0.0.1:4321` seeds (tokenize simply never matches → zero tokens); orphaned `serve-mock-pages` listeners block `webServer` startup between runs. Follow-up item: re-baseline stage2 on main in a quiet environment — 21 failures look env/flake-heavy (missed keystrokes, playbackRate timing, real-site `split-view-real`) rather than product bugs.
+
+## AMO `FILE_TOO_LARGE` remediation — 0 lint errors (2026-09-26, round 5)
+
+The last error-severity blocker is cleared. `web-ext lint --source-dir dist-firefox`: **exit 0, errors 0, warnings 33** (was: exit 1, 3 `FILE_TOO_LARGE` errors).
+
+| Asset | Was | Resolution |
+|---|---|---|
+| `assets/worker-entry-*.js` (11.3MB) + `assets/worker-entry.js` copy | FILE_TOO_LARGE ×2 | Deleted from `dist-firefox` in `build-firefox.mjs`. Dead artifacts: the only reference is `createWorker` inside PaddleOCR's worker-mode branch, unreachable because the engine never passes a `worker` option (`resolveWorkerOptions(undefined)` → `enabled:false`); the unhashed copy had zero references. Chrome `dist/` keeps them (no size limit there) |
+| `assets/opencv.js` (10.3MB) | FILE_TOO_LARGE | Its Emscripten-embedded wasm (~7.6MB, base64 data URI — 97% of the file) extracted to `assets/opencv.wasm` (binary — exempt from the JS parse limit); the minified `wasmBinaryFile` literal repointed to `new URL('opencv.wasm',import.meta.url).href` → `Qe()` data-URI check fails → `m()`/`locateFile` path returns the absolute `moz-extension:` URL → fetched under `connect-src 'self'`; Emscripten's streaming→ArrayBuffer fallback chain untouched. `opencv.js` now 142KB |
+
+New spec `e2e/firefox/specs/opencv.spec.mjs` (`ocr-opencv-wasm`): dynamic-imports `assets/opencv.js` in the bg event page on real Firefox → awaits Emscripten runtime init → instantiates `new cv.Mat(1,1,cv.CV_8UC1)` (catches UnboundTypeError) → asserts `cv.Mat`/`cv.CV_8UC1`/`cv.imread`. PASS — proves the externalized wasm loads and binds through the packaging path, not just that the file exists.
+
+**Gates (round 5):** `web-ext lint` **0 errors / 33 warnings** ✓ · typecheck ✓ · lint ✓ · unit **577/6888** ✓ · build ✓ · `build:firefox` ✓ · Firefox e2e **4 passed / 1 skipped (YouTube bot-wall soft-skip) / 0 failed** — local determinism, eSpeak, 2-concurrent-download, opencv-wasm all green.

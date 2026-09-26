@@ -2641,6 +2641,27 @@
         "arraybuffer"
       ],
       "trigger": "Emscripten lib cần chạy trong extension page mà CSP chặn blob: script và eval() trong worker."
+    },
+    {
+      "type": "experience",
+      "id": "amo-file-too-large-extract-emscripten-wasm",
+      "title": "AMO FILE_TOO_LARGE: tách Emscripten base64-embedded wasm ra .wasm sibling + repoint wasmBinaryFile",
+      "category": [
+        "build"
+      ],
+      "tags": [
+        "firefox",
+        "amo",
+        "web-ext",
+        "file-too-large",
+        "opencv",
+        "emscripten",
+        "wasm",
+        "packaging",
+        "worker-entry",
+        "dead-code"
+      ],
+      "trigger": "web-ext lint / addons-linter báo FILE_TOO_LARGE cho bundle .js >~5MB — Emscripten libs nhúng wasm base64 hoặc worker bundles bundler emit nhưng runtime không spawn."
     }
   ]
 }
