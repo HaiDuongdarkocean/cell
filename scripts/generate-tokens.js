@@ -241,6 +241,13 @@ function validateContrastPairs(mode, core, derived) {
     ['Frequency Advanced / Advanced BG', derived['color-token-freq-advanced-fg'], derived['color-token-freq-advanced-bg']],
     ['Frequency Rare / Rare BG', derived['color-token-freq-rare-fg'], derived['color-token-freq-rare-bg']],
   ];
+  if (derived['color-primary-emphasis']) {
+    pairs.push(
+      ['On Primary Emphasis / Primary Emphasis', derived['color-on-primary-emphasis'], derived['color-primary-emphasis']],
+      ['On Primary Emphasis / Primary Emphasis Hover', derived['color-on-primary-emphasis'], derived['color-primary-emphasis-hover']],
+      ['On Primary Emphasis / Primary Emphasis Active', derived['color-on-primary-emphasis'], derived['color-primary-emphasis-active']],
+    );
+  }
   const failures = [];
   for (const [label, rawFg, rawBg] of pairs) {
     try {

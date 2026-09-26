@@ -135,22 +135,22 @@
 
 /* Primary — action duy nhất của màn hình (L-SCARCITY). */
 .primary {
-  background: var(--color-primary);
+  background: var(--color-primary-emphasis, var(--color-primary));
   /* Soft white on primary fill in every theme — --button-fg is a fixed
      rgba(255,255,255,0.92), unlike text-inverse which flips dark in dark
      mode. */
-  color: var(--button-fg);
+  color: var(--color-on-primary-emphasis, var(--button-fg));
   border-color: transparent;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .primary:hover {
-    background: var(--color-primary-hover);
+    background: var(--color-primary-emphasis-hover, var(--color-primary-hover));
   }
 }
 
 .primary:active {
-  background: var(--color-primary-active);
+  background: var(--color-primary-emphasis-active, var(--color-primary-active));
 }
 
 .primary:disabled {
@@ -501,12 +501,12 @@
 }
 
 @container (max-width: 380px) {
-  .collapseLabel .label,
-  .collapseLabel .trailingIcon {
+  .collapseLabel .label {
     display: none;
   }
 
-  .collapseLabel .leadingIcon {
+  .collapseLabel .leadingIcon,
+  .collapseLabel .trailingIcon {
     margin: 0;
   }
 }

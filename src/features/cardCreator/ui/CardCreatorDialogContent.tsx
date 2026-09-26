@@ -132,8 +132,9 @@ export function CardCreatorDialogContent({
       disabled={capturingMedia || submitting}
       aria-label={t('cardCreator.action.generateFor', [label])}
       title={t('cardCreator.action.generateFor', [label])}
-      leadingIcon={<Icon name="zap" size="sm" />}
+      trailingIcon={<Icon name="zap" size="sm" />}
       collapseLabel
+      className={styles['cc-dialog__generate']}
       data-cell-id={`${dataId}-generate`}
     >
       {t('cardCreator.action.create')}
@@ -211,8 +212,9 @@ export function CardCreatorDialogContent({
             size="sm"
             onClick={() => void generateAll()}
             disabled={!draft.fields.targetWord.trim() || capturingMedia || submitting}
-            leadingIcon={<Icon name="zap" size="sm" />}
+            trailingIcon={<Icon name="zap" size="sm" />}
             collapseLabel
+            className={styles['cc-dialog__generate']}
             data-cell-id="cc-generate-all"
           >
             {t('cardCreator.action.generateAll')}
@@ -226,7 +228,7 @@ export function CardCreatorDialogContent({
               options={noteTypes.map((n) => ({ value: n, label: n }))}
               onChange={changeNoteType}
               aria-label={t('cardCreator.destination.noteType')}
-              className={styles['cc-dialog__select']}
+              className={`${styles['cc-dialog__select']} ${styles['cc-dialog__select--pill']}`}
               data-cell-id="cc-note-type"
             />
           </div>
@@ -410,7 +412,7 @@ export function CardCreatorDialogContent({
 
       {/* Footer */}
       <div className={styles['cc-dialog__footer']}>
-        <div className={styles['cc-dialog__footer-mode']}>
+        <div className={`${styles['cc-dialog__footer-mode']} ${styles['cc-dialog__select--pill']}`}>
           <Select
             value={draft.mediaUpdateMode}
             options={[

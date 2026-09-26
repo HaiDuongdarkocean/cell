@@ -1,0 +1,26 @@
+{
+  "id": "phrase-template-slash-greedy-bare-branch",
+  "title": "Greedy slash-group parse produces bare-atom branch that matches any token",
+  "category": ["data", "detection"],
+  "tags": ["phrase-matcher", "template-parser", "slash-alternative", "slot", "false-positive", "dictionary-lookup", "adr-037"],
+  "trigger": "Dictionary headword with 2+ slash groups in one term ('somebody/something can't compete with somebody/something', 'go/come to sb's rescue/aid') — a slash marks a LOCAL alternation, not a continuation of the same group",
+  "principle": "A '/' in a dictionary template binds to the immediately preceding atom, not to the whole rest of the term. When the parser greedily folds every consecutive slash into ONE alternative, the group can produce a branch that is a single bare slot or single literal — that branch then matches any 1-2 sentence tokens (slot) or any bare occurrence of the word (literal), and because the match only needs the hovered token inside the span, the wrong headword becomes the lookup winner. Two sibling defects of the same greedy grouping: (a) a trailing lone slot gets pushed onto EVERY branch, so 'have/be nothing to do with somebody/something' becomes 'have sth' + 'be nothing to do with sb sth' and 'have to work' matches as 'have sth'; (b) a single-atom final segment becomes a standalone branch. Correct parse: slot-led groups and a trailing lone slot are pairwise placeholder alternations (segment's first atom = branch alternative, words between it and the trailing slot = shared suffix, the two slots pair as a tail alternative); a single-atom final segment after a multi-atom segment is a trailing alternative for that segment's last atom. Parsed template ASTs are baked into serialized phrase-index blobs — a parser fix must bump COMPILER_VERSION AND rebuild stale blobs from stored entries (self-heal on version-mismatch), or existing installs keep the bug forever.",
+  "cases": [
+    {
+      "context": "Hover 'routine' in 'Part 1: Morning routine: Phrasal verbs with Georgie' — the only anchor hit is 'with' inside 'somebody/something can't compete with somebody/something'",
+      "bad": "parseSlashGroup collected all slashes into one group → segments [[sb],[sth can't compete with sb],[sth]] → alternative([[slot sb],[slot sth, can't, compete, with, slot sb],[slot sth]]). Branch [slot sb] matches 'routine' (slotLen 1-2, any token) → popup winner = 'somebody/something can't compete with somebody/something', 'routine' demoted to second candidate.",
+      "good": "alt(sb, sth) + literal can't + literal compete + literal with + alt(sb, sth). The sentence lacks can't/compete → no match → 'routine' wins as the hovered surface token. Same root-cause fix also folds 'go/come to sb's rescue/aid' → (go | come to sb's) (rescue | aid), removing the bare-'aid' literal branch."
+    },
+    {
+      "context": "Hover 'work' in 'You have to work for what you want.' — the only anchor hit is 'have' inside 'have/be nothing to do with somebody/something'",
+      "bad": "Trailing lone slot pushed onto every branch → alternative([[have, slot sth],[be, nothing, to, do, with, slot sb, slot sth]]). Branch [have, slot sth] matches 'has/have + 2 tokens' → 'have to work' wins; the object-slot fixed-literal guard never fires because the template's last node is an alternative, not a slot.",
+      "good": "alternative([have],[be]) + [nothing, to, do, with] + alternative([sb],[sth]). 'have' matches but 'nothing' can't match 'to' → no match → 'work' wins as the hovered surface token. Positive path still works: 'This has nothing to do with you.' matches 'has nothing to do with you'."
+    }
+  ],
+  "applyFor": [
+    "Any parser where a delimiter's scope is ambiguous — check what a bare single-atom alternative branch would match before treating all delimiters as one group",
+    "Multi-delimiter alternatives: verify the 'attach the last segment to every branch' shortcut against templates whose last segment is an independent second group",
+    "Phrase-index/compiler changes that alter emitted ASTs — bump COMPILER_VERSION and rebuild-or-reject stale blobs, never silently read old-parse output",
+    "Debugging wrong-lookup bugs: check detectedPhrase/matchSource in the LookupResult first — a 'plugin' winner over the hovered word means the phrase matcher fired, not the dictionary"
+  ]
+}

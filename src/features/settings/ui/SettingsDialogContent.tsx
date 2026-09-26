@@ -8,6 +8,7 @@ import {
   MAX_CONVERT_BYTES,
   DEFAULT_DICTIONARY_POPUP_SETTINGS,
   DEFAULT_PRONUNCIATION_SETTINGS,
+  DEFAULT_TTS_SETTINGS,
 } from '@/shared/config/config';
 import { SUBTITLE_LANGUAGES } from '@/shared/config/languageRegistry';
 import { MultiSelect } from '@/shared/ui/MultiSelect';
@@ -16,7 +17,6 @@ import { WordBadgeSettingsPanel } from './WordBadgeSettingsPanel';
 import { AudioPanel } from '@/features/audio/ui/AudioPanel';
 
 import { ThemePanel } from '@/features/theme/ui/ThemePanel';
-import { DEFAULT_TTS_SETTINGS } from '@/features/tts/ui/TtsVoiceManagerPanel';
 import { ResourcesPanel } from '@/features/dictionary/ui/ResourcesPanel';
 import { Dictionary } from '@/features/dictionaryPopup';
 import { Toggle } from '@/shared/ui/Toggle';
@@ -48,6 +48,7 @@ export interface SettingsDialogContentProps {
   onChange: (settings: Settings) => void;
   className?: string;
   showSidebarHeader?: boolean;
+  navMode?: 'auto' | 'horizontal';
 }
 
 const SIDEBAR_LABEL_MIN_WIDTH = 768;
@@ -110,7 +111,7 @@ const SHORTCUT_GROUPS: readonly { label: MessageKey; actions: readonly ShortcutA
   { label: 'settings.shortcuts.group.cardCreator', actions: ['quick-update', 'edit-card'] },
 ];
 
-export function SettingsDialogContent({ settings, onChange, className, showSidebarHeader = true }: SettingsDialogContentProps): React.JSX.Element {
+export function SettingsDialogContent({ settings, onChange, className, showSidebarHeader = true, navMode = 'auto' }: SettingsDialogContentProps): React.JSX.Element {
   const [activeSection, setActiveSection] = useState<string>('general');
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const mainColRef = useRef<HTMLDivElement>(null);
@@ -133,7 +134,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
     return () => ro.disconnect();
   }, []);
 
-  const navOrientation = containerWidth < BREAKPOINTS.medium ? 'horizontal' : 'vertical';
+  const navOrientation = navMode === 'horizontal' || containerWidth < BREAKPOINTS.medium ? 'horizontal' : 'vertical';
   const sidebarExpanded = containerWidth >= SIDEBAR_LABEL_MIN_WIDTH;
   const activeProfile = getActiveProfileSettings(settings);
 
@@ -473,6 +474,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                 <AudioPanel
                   pronunciation={settings.pronunciation ?? DEFAULT_PRONUNCIATION_SETTINGS}
                   tts={settings.dictionaryPopup?.tts ?? DEFAULT_TTS_SETTINGS}
+                  targetLang={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
                   onPronunciationChange={(p) => onChange({ ...settings, pronunciation: p })}
                   onTtsChange={(tts) => onChange({ ...settings, dictionaryPopup: { ...(settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS), tts } })}
                 />

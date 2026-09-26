@@ -152,8 +152,12 @@ function preparePage(page) {
 
 }
 
+const NO_OFFSET_IDS = new Set(['mock-streaming-iframe-page', 'mock-iframe-player']);
+
 function servePage(page) {
-  const port = page.port + portOffset;
+  // Cross-origin iframe pages keep their fixed ports — mock pages hardcode
+  // the child origin at 127.0.0.1:4324, so PW_PORT_OFFSET must not shift them.
+  const port = page.port + (NO_OFFSET_IDS.has(page.id) ? 0 : portOffset);
   console.log(`\n▶ Serving ${page.name} at http://127.0.0.1:${port}/index.html`);
   const server = createServer({
     root: page.outDir,
@@ -202,7 +206,7 @@ for (const page of selected) {
 
 console.log('\n=== Servers running ===');
 for (const page of selected) {
-  console.log(`  ${page.name}:  http://127.0.0.1:${page.port + portOffset}/index.html`);
+  console.log(`  ${page.name}:  http://127.0.0.1:${page.port + (NO_OFFSET_IDS.has(page.id) ? 0 : portOffset)}/index.html`);
 }
 console.log('\n  Press Ctrl+C to stop all servers.\n');
 

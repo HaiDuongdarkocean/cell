@@ -63,6 +63,8 @@ export interface TokenizeSettings {
   readonly origins: Readonly<Record<string, boolean>>;
   /** Map exact URL → enabled state (overrides origin). */
   readonly urls: Readonly<Record<string, boolean>>;
+  /** Map origin → subtitle tokenize enabled state (site-wide default). */
+  readonly subtitleOrigins: Readonly<Record<string, boolean>>;
   /** Map exact URL → subtitle tokenize enabled state (independent from web tokenize). */
   readonly subtitleUrls: Readonly<Record<string, boolean>>;
 }

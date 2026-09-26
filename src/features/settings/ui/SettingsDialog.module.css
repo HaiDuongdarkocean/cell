@@ -194,13 +194,13 @@
 }
 
 @container (min-width: 840px) {
-  .sidebarWidth:not([data-collapsed]) {
+  .popoverBody.vertical .sidebarWidth:not([data-collapsed]) {
     width: calc(var(--space-5) * 10);
   }
 }
 
 @container (min-width: 1600px) {
-  .sidebarWidth:not([data-collapsed]) {
+  .popoverBody.vertical .sidebarWidth:not([data-collapsed]) {
     width: calc(var(--space-5) * 11);
   }
 }

@@ -8,6 +8,7 @@ export const DEFAULT_TOKENIZE_SETTINGS: TokenizeSettings = {
   schemaVersion: TOKENIZE_SETTINGS_SCHEMA_VERSION,
   origins: {},
   urls: {},
+  subtitleOrigins: {},
   subtitleUrls: {},
 };
 
@@ -20,6 +21,7 @@ function mergeWithDefaults(stored: unknown): TokenizeSettings {
     schemaVersion: TOKENIZE_SETTINGS_SCHEMA_VERSION,
     origins: typeof s.origins === 'object' && s.origins !== null ? { ...s.origins } : {},
     urls: typeof s.urls === 'object' && s.urls !== null ? { ...s.urls } : {},
+    subtitleOrigins: typeof s.subtitleOrigins === 'object' && s.subtitleOrigins !== null ? { ...s.subtitleOrigins } : {},
     subtitleUrls: typeof s.subtitleUrls === 'object' && s.subtitleUrls !== null ? { ...s.subtitleUrls } : {},
   };
 }
@@ -56,14 +58,17 @@ export function isTokenizeEnabledForUrl(settings: TokenizeSettings, url: string)
   }
 }
 
-/** Return a new settings object with the URL enable state set. */
+/** Return a new settings object with the URL enable state set. Also records
+ *  the value at origin level so sibling pages on the same site inherit it. */
 export function setTokenizeEnabledForUrl(
   settings: TokenizeSettings,
   url: string,
   enabled: boolean,
 ): TokenizeSettings {
+  const { origin } = new URL(url);
   return {
     ...settings,
+    origins: { ...settings.origins, [origin]: enabled },
     urls: { ...settings.urls, [canonicalPageKey(url)]: enabled },
   };
 }
@@ -83,24 +88,28 @@ export function setTokenizeEnabledForOrigin(
 /** Check whether subtitle tokenize is enabled for a URL. */
 export function isSubtitleTokenizeEnabledForUrl(settings: TokenizeSettings, url: string): boolean {
   try {
-    const { href } = new URL(url);
+    const { origin, href } = new URL(url);
     const key = canonicalPageKey(url);
     if (settings.subtitleUrls[key] !== undefined) return settings.subtitleUrls[key];
     if (settings.subtitleUrls[href] !== undefined) return settings.subtitleUrls[href];
+    if (settings.subtitleOrigins[origin] !== undefined) return settings.subtitleOrigins[origin];
     return false;
   } catch {
     return false;
   }
 }
 
-/** Return a new settings object with the subtitle URL enable state set. */
+/** Return a new settings object with the subtitle URL enable state set. Also
+ *  records the value at origin level so sibling pages on the same site inherit it. */
 export function setSubtitleTokenizeEnabledForUrl(
   settings: TokenizeSettings,
   url: string,
   enabled: boolean,
 ): TokenizeSettings {
+  const { origin } = new URL(url);
   return {
     ...settings,
+    subtitleOrigins: { ...settings.subtitleOrigins, [origin]: enabled },
     subtitleUrls: { ...settings.subtitleUrls, [canonicalPageKey(url)]: enabled },
   };
 }

@@ -302,3 +302,63 @@ A list, panel, or result area has no content. The pattern must explain why and g
 - `src/features/dictionaryPopup/ui/DictionaryPanelView.tsx`
 - `src/features/dictionaryPopup/ui/TranslatePanel.tsx`
 - `src/features/settings/ui/ApiKeyManager.tsx`
+
+---
+
+## 8. Bulk selection (edit mode)
+
+### Problem
+A manageable list (resources, profiles, queue items) occasionally needs batch operations — enable/disable many, delete many. A selection mode must expose per-item and select-all affordances without crowding the idle list, and hit targets must be generous enough for touch and coarse pointers.
+
+### When to use
+- Lists where batch mutation is a real task (resource management, queue cleanup).
+- When the section already has an explicit "edit" toggle that switches the list into selection mode.
+
+### When not to use
+- Do not use for single-item actions only (use per-row menu/Button).
+- Do not enter selection mode implicitly — the user must opt in via an explicit control.
+
+### Anatomy
+```
+<Section>
+  <EditBar>                          // quiet strip pinned above the list
+    <Checkbox indeterminate label /> // tri-state select-all; label = font-size-base, centered with the 16px box
+    <span>{count}/{total}</span>     // selection counter
+    <Actions>                        // link-variant Buttons share ONE min-width (2× touch-target), centered text, ripple OFF
+      <Pill> enable | disable </Pill>  // same-semantic actions grouped in one pill container — height = --touch-target (40px), box-sizing: border-box so padding+border are inside the 40px
+      delete                           // destructive action stands alone at the far end, ALWAYS carries error text + error-subtle background (not hover-only)
+    </Actions>
+  </EditBar>
+  <Card role="button" aria-pressed>  // edit mode: the WHOLE card incl. padding is the hit surface
+    <Checkbox />                     // visible affordance; dedicated hit column ≥ touch-target
+    ...content...
+    <Toggle /> <Button delete />     // nested controls keep own behavior (stopPropagation)
+  </Card>
+</Section>
+```
+
+### States
+1. **Idle** — no checkboxes; row affordances are drag/rename only; default card surface.
+2. **Editing** — edit bar slides in; every card shows a checkbox AND switches to the edit-mode surface (`--color-field`) so the mode is visually distinct; selected cards use `Card variant="selected"`.
+3. **Card hover (editing)** — the entire card surface lights up (`--color-field-hover`), never an inner inset region; hover must cover the padding too, signaling the whole card is clickable.
+4. **Partial selection** — select-all renders `indeterminate`; bulk actions enable.
+5. **Full selection** — select-all checked; clicking it clears all.
+6. **Empty selection** — bulk enable/disable disabled; delete falls back to the section-level "delete all" label.
+
+### Color semantics
+- Destructive is ALWAYS `--color-error`: the per-row delete affordance tints icon + `error-subtle` background on hover; the bulk delete action carries `error` text + `error-subtle` background **permanently** (hover only deepens it slightly, e.g. `brightness(0.96)`).
+- Same-semantic bulk actions (enable/disable) group inside one pill container; the destructive action stays visually separate.
+
+### Motion
+- **No click animation on the selection surface**: edit-mode cards get `transition: none; transform: none` — no lift, no shadow sweep, no ripple on edit-bar buttons (`ripple={false}`) — so rapid multi-select clicks never flicker. The checkbox's own tick transition is allowed.
+
+### A11y
+- In edit mode the card exposes `role="button"` + `aria-pressed`; Enter/Space on the card toggles selection. Clicks on card padding count — the handler lives on the `Card` element, not on an inner row.
+- Nested controls (Toggle, delete, chips, rename input) must stop propagation so their clicks never toggle selection.
+- Every row checkbox and the select-all checkbox need accessible names (`select <name>`, `select all`).
+- Hit targets ≥ `--touch-target`; never shrink a checkbox below the shared `Checkbox` box size — enlarge the *hit area* with padding instead of shrinking the control.
+
+### Production consumers
+- `src/features/dictionary/ui/ResourcesPanel.tsx` (edit bar: select-all + bulk enable/disable/delete)
+- `src/features/dictionary/ui/ResourceCard.tsx` (edit-mode row selection)
+- Design mockup: `src/entrypoints/mockup-resource-selection/` (design-time, removed at ship)

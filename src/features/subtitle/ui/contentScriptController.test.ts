@@ -310,7 +310,7 @@ describe('contentScriptController', () => {
       schemaVersion: 1,
       origins: {},
       urls: {},
-      subtitleUrls: {},
+      subtitleOrigins: {}, subtitleUrls: {},
     });
     mockIsSubtitleTokenizeEnabledForUrl.mockReturnValue(false);
 

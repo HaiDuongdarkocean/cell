@@ -5,8 +5,7 @@
     ],
     "features/audio/ui/SourceDetailPanel.tsx": [
       "@/features/pronunciation/ui/LocalPronunciationSettingsPanel",
-      "@/features/tts/ui/TtsLanguagePanel",
-      "@/features/tts/ui/TtsVoiceManagerPanel"
+      "@/features/tts/ui/TtsLanguagePanel"
     ],
     "features/cardCreator/service/dictionaryGenerate.test.ts": [
       "@/features/pronunciation/services/pronunciationAudioOrchestrator"
@@ -183,8 +182,7 @@
     "features/settings/ui/SettingsDialogContent.tsx": [
       "@/features/audio/ui/AudioPanel",
       "@/features/dictionary/ui/ResourcesPanel",
-      "@/features/theme/ui/ThemePanel",
-      "@/features/tts/ui/TtsVoiceManagerPanel"
+      "@/features/theme/ui/ThemePanel"
     ],
     "features/settings/ui/mountSettingsDialog.ts": [
       "@/features/theme/ui/ShadowThemeProvider"

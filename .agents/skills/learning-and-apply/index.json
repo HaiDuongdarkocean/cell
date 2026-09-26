@@ -2492,6 +2492,25 @@
     },
     {
       "type": "experience",
+      "id": "phrase-template-slash-greedy-bare-branch",
+      "title": "Greedy slash-group parse produces bare-atom branch that matches any token",
+      "category": [
+        "data",
+        "detection"
+      ],
+      "tags": [
+        "phrase-matcher",
+        "template-parser",
+        "slash-alternative",
+        "slot",
+        "false-positive",
+        "dictionary-lookup",
+        "adr-037"
+      ],
+      "trigger": "Dictionary headword with 2+ slash groups in one term ('somebody/something can't compete with somebody/something', 'have/be nothing to do with somebody/something') — popup shows an unrelated phrase as winner over the hovered word"
+    },
+    {
+      "type": "experience",
       "id": "ux-input-disabled-loading-blur-shadow-dom",
       "title": "disabled={isLoading} trên focused input blur nó vĩnh viễn — getElementById không xuyên shadow DOM nên refocus effect chết lặng",
       "category": [

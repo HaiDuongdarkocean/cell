@@ -26,6 +26,9 @@ interface DialogProps {
   /** Center the title in the header (close button stays right via absolute
    *  positioning). Default: left-aligned with space-between. */
   centerTitle?: boolean;
+  /** Id of an element inside `children` describing the dialog. Overrides the
+   *  default `description`-based wiring. */
+  'aria-describedby'?: string;
   /** Test id for the overlay. */
   'data-cell-id'?: string;
 }
@@ -45,6 +48,7 @@ export function Dialog({
   showCloseButton,
   headerExtra,
   centerTitle,
+  'aria-describedby': ariaDescribedBy,
   'data-cell-id': dataTestId,
 }: DialogProps): React.JSX.Element | null {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -86,7 +90,7 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? 'dialog-title' : undefined}
-        aria-describedby={description ? 'dialog-description' : undefined}
+        aria-describedby={ariaDescribedBy ?? (description ? 'dialog-description' : undefined)}
       >
         {(title || showCloseButton) && (
           <HStack
@@ -98,7 +102,7 @@ export function Dialog({
             {showCloseButton && centerTitle && (
               <HStack align="center" gap="1" className={styles.headerRightGroup}>
                 {headerExtra}
-                <CloseButton size="sm" variant="ghost" onClick={() => onOpenChange?.(false)} />
+                <CloseButton variant="ghost" onClick={() => onOpenChange?.(false)} />
               </HStack>
             )}
             <div className={styles.headerText}>
@@ -108,7 +112,7 @@ export function Dialog({
             {showCloseButton && !centerTitle && (
               <HStack align="center" gap="1" className={styles.headerRightGroup}>
                 {headerExtra}
-                <CloseButton size="sm" variant="ghost" onClick={() => onOpenChange?.(false)} />
+                <CloseButton variant="ghost" onClick={() => onOpenChange?.(false)} />
               </HStack>
             )}
           </HStack>

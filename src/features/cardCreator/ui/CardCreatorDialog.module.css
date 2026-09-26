@@ -244,6 +244,21 @@
   border-radius: var(--radius-md);
 }
 
+.cc-dialog__select--pill button {
+  border-radius: var(--radius-full);
+}
+
+.cc-dialog__generate {
+  justify-content: flex-end;
+  min-inline-size: calc(11ch + var(--iconbutton-icon-sm) + var(--space-6));
+}
+
+@container (max-width: 380px) {
+  .cc-dialog__generate {
+    min-inline-size: 0;
+  }
+}
+
 .cc-dialog__field-label {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
@@ -254,8 +269,8 @@
 /* === Footer (design-system: border-top + space-between) === */
 .cc-dialog__footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--space-3);
   margin-top: var(--space-5);
   padding-top: var(--space-3);
@@ -274,29 +289,15 @@
   gap: var(--space-3);
 }
 
-.cc-dialog--mobile .cc-dialog__footer {
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--space-3);
-}
-
-.cc-dialog--mobile .cc-dialog__footer-mode {
-  justify-content: space-between;
-}
-
-.cc-dialog--mobile .cc-dialog__footer-actions {
-  display: flex;
-}
-
-.cc-dialog--mobile .cc-dialog__footer-actions > * {
+.cc-dialog__footer-actions > * {
   flex: 1;
+  min-width: 0;
 }
 
 /* === Container-query narrow layout (panel < 480px, mobile dialog) ===
    Keeps the right pane of the Dictionary tab from breaking at 320px:
    - pair row becomes a single column
-   - selects are allowed to truncate
-   - footer stacks vertically */
+   - selects are allowed to truncate */
 @container (max-width: 480px) {
   .cc-dialog__pair-row {
     grid-template-columns: minmax(0, 1fr);
@@ -304,24 +305,6 @@
 
   .cc-dialog__field [data-cell-id] button,
   .cc-dialog__footer-mode [data-cell-id] button {
-    min-width: 0;
-  }
-
-  .cc-dialog__footer {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .cc-dialog__footer-mode {
-    justify-content: space-between;
-  }
-
-  .cc-dialog__footer-actions {
-    min-width: 0;
-  }
-
-  .cc-dialog__footer-actions > button {
-    flex: 1;
     min-width: 0;
   }
 }

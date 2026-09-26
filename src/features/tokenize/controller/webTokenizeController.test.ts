@@ -106,7 +106,7 @@ beforeEach(() => {
     addListener: jest.fn(),
     removeListener: jest.fn(),
   };
-  loadTokenizeSettings.mockResolvedValue({ schemaVersion: 1, origins: {}, urls: {}, subtitleUrls: {} });
+  loadTokenizeSettings.mockResolvedValue({ schemaVersion: 1, origins: {}, urls: {}, subtitleOrigins: {}, subtitleUrls: {} });
   saveTokenizeSettings.mockResolvedValue(undefined);
   getWordStatuses.mockResolvedValue(new Map<string, string>());
   getFrequencyEntries.mockResolvedValue(new Map<string, FrequencyEntry[]>());
@@ -163,7 +163,7 @@ describe('createWebTokenizeController', () => {
       schemaVersion: 1,
       origins: {},
       urls: { 'https://example.com/': true },
-      subtitleUrls: {},
+      subtitleOrigins: {}, subtitleUrls: {},
     });
     const root = document.createElement('div');
     const paragraph = document.createElement('p');
@@ -201,7 +201,7 @@ describe('createWebTokenizeController', () => {
       schemaVersion: 1,
       origins: {},
       urls: { 'https://example.com/': true },
-      subtitleUrls: {},
+      subtitleOrigins: {}, subtitleUrls: {},
     });
     const root = document.createElement('div');
     const paragraph = document.createElement('p');
@@ -301,7 +301,7 @@ describe('createWebTokenizeController', () => {
       schemaVersion: 1,
       origins: {},
       urls: { 'https://example.com/': true },
-      subtitleUrls: {},
+      subtitleOrigins: {}, subtitleUrls: {},
     });
     const root = document.createElement('div');
     const paragraph = document.createElement('p');
@@ -797,7 +797,7 @@ describe('createWebTokenizeController', () => {
       schemaVersion: 1,
       origins: {},
       urls: { 'https://example.com/': true },
-      subtitleUrls: {},
+      subtitleOrigins: {}, subtitleUrls: {},
     });
     const root = document.createElement('div');
     const paragraph = document.createElement('p');

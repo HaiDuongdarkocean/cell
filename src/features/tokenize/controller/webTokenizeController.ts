@@ -653,6 +653,9 @@ export async function createWebTokenizeController(
     }
   }
 
+  window.addEventListener('yt-navigate-finish', reevaluateEnabledForCurrentUrl);
+  window.addEventListener('popstate', reevaluateEnabledForCurrentUrl);
+
   function pickDictionaryTerm(state: TokenizeState): string | null {
     if (state.selectedTerms.size > 0) return state.selectedTerms.values().next().value as string;
     if (state.hoveredTerm) return state.hoveredTerm;
@@ -664,9 +667,15 @@ export async function createWebTokenizeController(
     stateStore.setEnabled(nextEnabled);
     void (async () => {
       const current = await loadTokenizeSettings();
-      const next = setTokenizeEnabledForUrl(current, url, nextEnabled);
+      const next = setTokenizeEnabledForUrl(current, window.location.href, nextEnabled);
       await saveTokenizeSettings(next);
     })();
+  }
+
+  function reevaluateEnabledForCurrentUrl(): void {
+    void loadTokenizeSettings().then((s) => {
+      stateStore.setEnabled(isTokenizeEnabledForUrl(s, window.location.href));
+    });
   }
 
   function prepareBlock(block: TokenBlock): void {
@@ -890,6 +899,8 @@ export async function createWebTokenizeController(
       setActive(false);
       cancelPendingActivation?.();
       if (mutationTimer) clearTimeout(mutationTimer);
+      window.removeEventListener('yt-navigate-finish', reevaluateEnabledForCurrentUrl);
+      window.removeEventListener('popstate', reevaluateEnabledForCurrentUrl);
     },
   };
 }

@@ -20,21 +20,31 @@ import {
   ResourceDeletePayloadSchema,
   ResourceReorderPayloadSchema,
   ResourceSetEnabledPayloadSchema,
+  ResourceRenamePayloadSchema,
   ResourceSetProfilesPayloadSchema,
+  ResourceSetComponentsPayloadSchema,
+  ResourceComponentsPayloadSchema,
   ResourceSamplePayloadSchema,
   ResourceFindPayloadSchema,
   ResourceImportChunkPayloadSchema,
 } from '@/features/dictionary/schema';
 import {
   getAllResources,
+  getResource,
   reorderResources,
   setResourceEnabled,
+  setResourceName,
   setResourceProfiles,
+  setResourceDisabledComponents,
+  setResourceComponents,
 } from '@/features/dictionary/repositories/resourceRepository';
 import {
   sampleDictionaryEntries,
   findDictionaryEntry,
+  findDictionaryByResource,
 } from '@/features/dictionary/repositories/dictionaryRepository';
+import { collectEntryComponents, sortedComponents } from '@/features/dictionary/logic/dictionaryComponents';
+import type { DictionaryComponent } from '@/entities/dictionary';
 import {
   sampleFrequencyEntries,
   findFrequencyEntry,
@@ -130,12 +140,57 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     }
   });
 
+  ctx.on(MESSAGE_TYPES.RESOURCE_RENAME, async (request): Promise<MessageResponse> => {
+    const parsed = ResourceRenamePayloadSchema.safeParse(request.payload);
+    if (!parsed.success) return fail('RESOURCE_RENAME', parsed);
+    try {
+      await setResourceName(parsed.data.langCode, parsed.data.resourceId, parsed.data.name);
+      return ok();
+    } catch (err) {
+      return toError(err);
+    }
+  });
+
   ctx.on(MESSAGE_TYPES.RESOURCE_SET_PROFILES, async (request): Promise<MessageResponse> => {
     const parsed = ResourceSetProfilesPayloadSchema.safeParse(request.payload);
     if (!parsed.success) return fail('RESOURCE_SET_PROFILES', parsed);
     try {
       await setResourceProfiles(parsed.data.langCode, parsed.data.resourceId, parsed.data.profileIds);
       return ok();
+    } catch (err) {
+      return toError(err);
+    }
+  });
+
+  ctx.on(MESSAGE_TYPES.RESOURCE_SET_COMPONENTS, async (request): Promise<MessageResponse> => {
+    const parsed = ResourceSetComponentsPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) return fail('RESOURCE_SET_COMPONENTS', parsed);
+    try {
+      await setResourceDisabledComponents(parsed.data.langCode, parsed.data.resourceId, parsed.data.disabledComponents);
+      return ok();
+    } catch (err) {
+      return toError(err);
+    }
+  });
+
+  // Lazy component detection for resources imported before
+  // ResourceInfo.components existed — scans the entry store once, then
+  // persists the result so later reads are free.
+  ctx.on(MESSAGE_TYPES.RESOURCE_COMPONENTS, async (request): Promise<MessageResponse> => {
+    const parsed = ResourceComponentsPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) return fail('RESOURCE_COMPONENTS', parsed);
+    const { langCode, resourceId } = parsed.data;
+    try {
+      const resource = await getResource(langCode, resourceId);
+      if (!resource) return toError(new Error(`Không tìm thấy resource id ${resourceId}.`));
+      if (resource.components) return ok({ components: resource.components });
+      const set = new Set<DictionaryComponent>();
+      for (const entry of await findDictionaryByResource(langCode, resourceId)) {
+        collectEntryComponents(set, entry);
+      }
+      const components = sortedComponents(set);
+      await setResourceComponents(langCode, resourceId, components);
+      return ok({ components });
     } catch (err) {
       return toError(err);
     }

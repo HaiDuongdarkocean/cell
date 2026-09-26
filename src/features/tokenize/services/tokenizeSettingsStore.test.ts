@@ -69,14 +69,35 @@ describe('tokenizeSettingsStore', () => {
     expect(isSubtitleTokenizeEnabledForUrl(settings, 'http://localhost:4321/')).toBe(true);
   });
 
-  it('subtitle setting keeps video identity via v param', () => {
+  it('subtitle setting keeps video identity via v param and inherits across videos', () => {
     const settings = setSubtitleTokenizeEnabledForUrl(
       DEFAULT_TOKENIZE_SETTINGS,
       'https://www.youtube.com/watch?v=abc&t=42&themeRefresh=1',
       true,
     );
     expect(isSubtitleTokenizeEnabledForUrl(settings, 'https://www.youtube.com/watch?v=abc&list=xyz')).toBe(true);
-    expect(isSubtitleTokenizeEnabledForUrl(settings, 'https://www.youtube.com/watch?v=other')).toBe(false);
+    expect(isSubtitleTokenizeEnabledForUrl(settings, 'https://www.youtube.com/watch?v=other')).toBe(true);
+    expect(isSubtitleTokenizeEnabledForUrl(settings, 'https://vimeo.com/watch?v=abc')).toBe(false);
+  });
+
+  it('subtitle explicit URL entry overrides origin default', () => {
+    const settings = {
+      ...DEFAULT_TOKENIZE_SETTINGS,
+      subtitleOrigins: { 'https://www.youtube.com': true },
+      subtitleUrls: { 'https://www.youtube.com/watch?v=abc': false },
+    };
+    expect(isSubtitleTokenizeEnabledForUrl(settings, 'https://www.youtube.com/watch?v=abc')).toBe(false);
+    expect(isSubtitleTokenizeEnabledForUrl(settings, 'https://www.youtube.com/watch?v=other')).toBe(true);
+  });
+
+  it('text tokenize toggle on one page is inherited by same-origin pages', () => {
+    const settings = setTokenizeEnabledForUrl(
+      DEFAULT_TOKENIZE_SETTINGS,
+      'https://www.youtube.com/watch?v=abc',
+      true,
+    );
+    expect(isTokenizeEnabledForUrl(settings, 'https://www.youtube.com/watch?v=other')).toBe(true);
+    expect(isTokenizeEnabledForUrl(settings, 'https://example.com/')).toBe(false);
   });
 
   it('subtitle read falls back to legacy raw-href key', () => {

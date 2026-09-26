@@ -28,22 +28,6 @@ jest.mock('@/features/dictionary/ui/ResourcesPanel', () => ({
 jest.mock('@/features/tts/ui/TtsLanguagePanel', () => ({
   TtsLanguagePanel: () => <div data-cell-id="tts-language-panel" />,
 }));
-jest.mock('@/features/tts/ui/TtsVoiceManagerPanel', () => ({
-  DEFAULT_TTS_SETTINGS: {
-    enabled: true,
-    savedVoices: [],
-    voices: [],
-    maxDisplay: 3,
-    autoplayCount: 0,
-    preferredAccent: 'US',
-    localTtsEnabled: false,
-    localTtsLanguage: 'en',
-    downloadedLanguages: [],
-    hiddenLanguages: [],
-  },
-  TtsVoiceManagerPanel: () => <div data-cell-id="tts-voice-manager" />,
-}));
-
 function renderContent(
   settings: Settings = DEFAULT_SETTINGS,
   onChange: (settings: Settings) => void = jest.fn(),
