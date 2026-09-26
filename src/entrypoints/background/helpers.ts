@@ -63,6 +63,31 @@ export function extractBaseName(url: string): string {
 }
 
 /**
+ * Decide whether a same-document history-API URL change navigates to
+ * different media. Real episode/video switches change the path or rewrite an
+ * existing query param (`?ep=1` → `?ep=2`, `?v=A` → `?v=B`); cosmetic rewrites
+ * like YouTube's `&t=<seconds>` timestamp only append params and must not
+ * invalidate detected media.
+ */
+export function isMediaRelevantUrlChange(prevUrl: string | undefined, nextUrl: string): boolean {
+  if (!prevUrl) return true;
+  if (prevUrl === nextUrl) return false;
+  let prev: URL;
+  let next: URL;
+  try {
+    prev = new URL(prevUrl);
+    next = new URL(nextUrl);
+  } catch {
+    return true;
+  }
+  if (prev.origin !== next.origin || prev.pathname !== next.pathname) return true;
+  for (const [key, value] of prev.searchParams) {
+    if (next.searchParams.get(key) !== value) return true;
+  }
+  return false;
+}
+
+/**
  * Build a `chrome.webRequest.OnBeforeRequestDetails`-like object so a scanned
  * URL can be replayed through `NetworkInterceptor.handleRequest`.
  *

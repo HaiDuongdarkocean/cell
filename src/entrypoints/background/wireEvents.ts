@@ -13,6 +13,7 @@ import {
   addOnTabRemovedListener,
   addOnTabActivatedListener,
   getTab,
+  queryTabs,
   addOnWindowFocusChangedListener,
   getWindowIdNone,
 } from '@/shared/lib/chrome-apis';
@@ -33,6 +34,7 @@ import {
   pushAutoLoadSubtitles,
   resolveUnknownSubtitleLanguages,
   findMediaForDownloadItem,
+  isMediaRelevantUrlChange,
 } from './helpers';
 // SubtitleDiscoveryService is exposed on BackgroundContext; see subtitleDiscoveryService.ts.
 import type {
@@ -242,11 +244,20 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
       }
 
       const blobUrl = createResponse.data.url;
-      const chromeDownloadId = await download({
-        url: blobUrl,
-        filename: downloadFilename,
-        saveAs: false,
-      });
+      // Hold the event-page keep-alive until the download reaches a terminal
+      // state — on Firefox the blob: URL lives in this page and dies with it.
+      const releaseKeepAlive = ctx.offscreenManager.acquireKeepAlive();
+      let chromeDownloadId: number;
+      try {
+        chromeDownloadId = await download({
+          url: blobUrl,
+          filename: downloadFilename,
+          saveAs: false,
+        });
+      } catch (err) {
+        releaseKeepAlive();
+        throw err;
+      }
 
       const revokeListener = (
         delta: chrome.downloads.DownloadDelta,
@@ -257,6 +268,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
           delta.state?.current === 'interrupted'
         ) {
           removeOnDownloadsChangedListener(revokeListener);
+          releaseKeepAlive();
           if (ctx.offscreenManager.hasDocument()) {
             const revokeRequest: MessageRequest = {
               type: MESSAGE_TYPES.REVOKE_OPFS_BLOB_URL,
@@ -313,15 +325,26 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
   unsubscribers.push(unsubMedia, unsubListingMatcher, unsubListing, unsubTabCleared, unsubProgress);
 
   // 8. Tab navigation clear (loading)
+  // lastCommittedTopUrl tracks the top-frame URL so onHistoryStateUpdated can
+  // tell a real media switch apart from a cosmetic history rewrite — YouTube
+  // appends `&t=<seconds>` via replaceState during playback, and clearing on
+  // that wipes detection with no re-detect trigger (verified on Firefox).
+  const lastCommittedTopUrl = new Map<number, string>();
+  void queryTabs({}).then((tabs) => {
+    for (const tab of tabs) {
+      if (tab.id !== undefined && tab.url) lastCommittedTopUrl.set(tab.id, tab.url);
+    }
+  });
   const onTabUpdated = (
     tabId: number,
     changeInfo: chrome.tabs.OnUpdatedInfo,
-    _tab: chrome.tabs.Tab,
+    tab: chrome.tabs.Tab,
   ): void => {
     // Clear on full page load (status: 'loading'). SPA navigations
     // (history.pushState/replaceState) do NOT trigger status: 'loading' —
     // they are caught by webNavigation.onHistoryStateUpdated below.
     if (changeInfo.status === 'loading') {
+      if (tab?.url) lastCommittedTopUrl.set(tabId, tab.url);
       ctx.autoDownloadedTabs.delete(tabId);
       saveSessionAutoDownloadedTabs(ctx);
       ctx.networkInterceptor.clearTab(tabId);
@@ -342,6 +365,9 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
   ): void => {
     // Only handle top-frame navigations (frameId === 0).
     if (details.frameId !== 0) return;
+    const prevUrl = lastCommittedTopUrl.get(details.tabId);
+    lastCommittedTopUrl.set(details.tabId, details.url);
+    if (!isMediaRelevantUrlChange(prevUrl, details.url)) return;
     ctx.autoDownloadedTabs.delete(details.tabId);
     saveSessionAutoDownloadedTabs(ctx);
     ctx.networkInterceptor.clearTab(details.tabId);
@@ -355,6 +381,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
 
   // 9. Tab removal clear
   const onTabRemoved = (tabId: number): void => {
+    lastCommittedTopUrl.delete(tabId);
     ctx.networkInterceptor.clearTab(tabId);
     ctx.downloadQueue.removeByTab(tabId);
     clearSessionMedia(ctx, tabId);

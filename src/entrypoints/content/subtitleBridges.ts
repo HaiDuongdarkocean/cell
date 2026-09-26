@@ -16,6 +16,28 @@ export function getLastRelayedVideoId(): string | undefined {
   return lastRelayedVideoId;
 }
 
+// Firefox's non-persistent background page drops the first post-resume
+// message ("Could not establish connection") — the wake it triggers races
+// listener re-registration. These relays are one-shot with no outer retry,
+// so retry here; onDropped resets the dedup mark so the next MAIN-world
+// repost can try again instead of being swallowed for the page lifetime.
+function relayToBackground(
+  message: { type: string; payload: Record<string, unknown> },
+  onDropped: () => void,
+): void {
+  const attempt = (retriesLeft: number): void => {
+    void sendMessage(message).catch((e) => {
+      if (retriesLeft > 0) {
+        setTimeout(() => attempt(retriesLeft - 1), 800);
+        return;
+      }
+      onDropped();
+      console.error('[content-script] relay to background failed', e);
+    });
+  };
+  attempt(2);
+}
+
 // ADR-020 race fix: notify the MAIN-world YouTube script that our message
 // listener is registered. CRXJS async dynamic-import loader delays ISOLATED
 // content-script injection past the MAIN-world `__YT_DETECTED_SUBTITLES` post
@@ -65,10 +87,13 @@ export function installMainWorldBridge(): void {
         const nonce = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
           ? crypto.randomUUID()
           : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        void sendMessage({
-          type: MESSAGE_TYPES.SUBTITLE_DISCOVERY_SIGNAL,
-          payload: { nonce, origin: trustedOrigin, signal },
-        }).catch((e) => console.warn('[content-script] discovery relay error', e));
+        relayToBackground(
+          {
+            type: MESSAGE_TYPES.SUBTITLE_DISCOVERY_SIGNAL,
+            payload: { nonce, origin: trustedOrigin, signal },
+          },
+          () => undefined,
+        );
       } catch { /* best effort */ }
       return;
     }
@@ -79,10 +104,13 @@ export function installMainWorldBridge(): void {
     if (event.source !== window && event.origin !== location.origin) return;
     const data = event.data as { type?: string; url?: string; postTime?: number } | null;
     if (data?.type === '__DETECTED_SUBTITLE_FETCH' && data.url) {
-      void sendMessage({
-        type: MESSAGE_TYPES.DETECTED_SUBTITLE_URL,
-        payload: { tabId: undefined, url: data.url },
-      });
+      relayToBackground(
+        {
+          type: MESSAGE_TYPES.DETECTED_SUBTITLE_URL,
+          payload: { tabId: undefined, url: data.url },
+        },
+        () => undefined,
+      );
       return;
     }
     // Fetch-interceptor diagnostics reply (audit 12 residual). Only requested
@@ -120,26 +148,34 @@ export function installMainWorldBridge(): void {
       if (isCellDebug()) {
         (window as unknown as Record<string, unknown>).__YT_LAST_RELAYED_VIDEO_ID = videoId;
       }
-      void sendMessage({
-        type: MESSAGE_TYPES.DETECTED_SUBTITLES,
-        payload: {
-          tabId: undefined,
-          tracks: (data as { tracks?: unknown[] }).tracks ?? [],
-          videoId,
+      relayToBackground(
+        {
+          type: MESSAGE_TYPES.DETECTED_SUBTITLES,
+          payload: {
+            tabId: undefined,
+            tracks: (data as { tracks?: unknown[] }).tracks ?? [],
+            videoId,
+          },
         },
-      }).catch((e) => console.error('[content-script] DETECTED_SUBTITLES bg error', e));
+        () => {
+          if (lastRelayedVideoId === videoId) lastRelayedVideoId = undefined;
+        },
+      );
       return;
     }
     if (data?.type === '__YT_INNERTUBE_FALLBACK') {
-      void sendMessage({
-        type: MESSAGE_TYPES.INNERTUBE_FALLBACK_REQUEST,
-        payload: {
-          tabId: undefined,
-          videoId: (data as { videoId?: string }).videoId ?? '',
-          apiKey: (data as { apiKey?: string }).apiKey ?? '',
-          visitorData: (data as { visitorData?: string }).visitorData,
+      relayToBackground(
+        {
+          type: MESSAGE_TYPES.INNERTUBE_FALLBACK_REQUEST,
+          payload: {
+            tabId: undefined,
+            videoId: (data as { videoId?: string }).videoId ?? '',
+            apiKey: (data as { apiKey?: string }).apiKey ?? '',
+            visitorData: (data as { visitorData?: string }).visitorData,
+          },
         },
-      });
+        () => undefined,
+      );
     }
     // === iQIYI MAIN-world bridge (ADR-028) ===
     // iqiyi-main-world.iife.ts reads `window.playerObject.stl` (MAIN world only)
@@ -156,16 +192,21 @@ export function installMainWorldBridge(): void {
       if (isCellDebug()) {
         (window as unknown as Record<string, unknown>).__IQ_LAST_RELAYED_TVID = tvid;
       }
-      void sendMessage({
-        type: MESSAGE_TYPES.DETECTED_SUBTITLES,
-        payload: {
-          tabId: undefined,
-          tracks: (data as { tracks?: unknown[] }).tracks ?? [],
-          tvid,
-          source: 'iqiyi',
-          origin: (data as { origin?: string }).origin,
+      relayToBackground(
+        {
+          type: MESSAGE_TYPES.DETECTED_SUBTITLES,
+          payload: {
+            tabId: undefined,
+            tracks: (data as { tracks?: unknown[] }).tracks ?? [],
+            tvid,
+            source: 'iqiyi',
+            origin: (data as { origin?: string }).origin,
+          },
         },
-      }).catch((e) => console.error('[content-script] IQ DETECTED_SUBTITLES bg error', e));
+        () => {
+          if (lastRelayedTvid === tvid) lastRelayedTvid = undefined;
+        },
+      );
     }
     // === Netflix MAIN-world bridge (ADR-029) ===
     // netflix-main-world.iife.ts hooks JSON.parse and posts raw timedtexttracks.
@@ -181,15 +222,20 @@ export function installMainWorldBridge(): void {
       if (isCellDebug()) {
         (window as unknown as Record<string, unknown>).__NF_LAST_RELAYED_MOVIE_ID = movieId;
       }
-      void sendMessage({
-        type: MESSAGE_TYPES.DETECTED_SUBTITLES,
-        payload: {
-          tabId: undefined,
-          tracks: (data as { tracks?: unknown[] }).tracks ?? [],
-          movieId,
-          source: 'netflix',
+      relayToBackground(
+        {
+          type: MESSAGE_TYPES.DETECTED_SUBTITLES,
+          payload: {
+            tabId: undefined,
+            tracks: (data as { tracks?: unknown[] }).tracks ?? [],
+            movieId,
+            source: 'netflix',
+          },
         },
-      }).catch((e) => console.error('[content-script] NF DETECTED_SUBTITLES bg error', e));
+        () => {
+          if (lastRelayedMovieId === movieId) lastRelayedMovieId = undefined;
+        },
+      );
     }
   });
 
