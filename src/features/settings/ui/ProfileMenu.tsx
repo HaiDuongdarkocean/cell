@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
+import { useMenuPlacement } from '@/shared/ui/useMenuPlacement';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import type { IconCatalogKey } from '@/shared/icons';
 import styles from './LanguageProfilePanel.module.css';
@@ -30,10 +31,16 @@ export interface ProfileMenuItem {
  */
 export function ProfileMenu({ label, items }: { label: string; items: ProfileMenuItem[] }): React.JSX.Element {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number; flip: boolean } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { placement, style: placementStyle } = useMenuPlacement({
+    isOpen: open,
+    menuAlign: 'right',
+    triggerRef,
+    menuRef,
+  });
+  const { minWidth: _minWidth, ...menuStyle } = placementStyle;
 
   useEffect(() => {
     if (!open) return;
@@ -72,21 +79,6 @@ export function ProfileMenu({ label, items }: { label: string; items: ProfileMen
     // Scroll events don't cross the shadow boundary — listen on the scope too.
     if (scope !== doc) scope.addEventListener('scroll', onScroll, true);
     win.addEventListener('resize', onScroll);
-
-    // Measure once mounted: right-align to the trigger, flip up when the
-    // menu would overflow the viewport bottom.
-    const menu = menuRef.current;
-    if (menu && trigger) {
-      const tr = trigger.getBoundingClientRect();
-      const mr = menu.getBoundingClientRect();
-      const gap = 8;
-      const flipUp = tr.bottom + gap + mr.height > win.innerHeight - gap;
-      setPos({
-        top: flipUp ? tr.top - mr.height - gap : tr.bottom + gap,
-        left: Math.max(gap, tr.right - mr.width),
-        flip: flipUp,
-      });
-    }
 
     const first = menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not(:disabled)');
     first?.focus();
@@ -147,8 +139,8 @@ export function ProfileMenu({ label, items }: { label: string; items: ProfileMen
         createPortal(
           <div
             ref={menuRef}
-            className={`${styles.menu} ${pos?.flip ? styles.menuFlip : ''}`}
-            style={pos ? { top: pos.top, left: pos.left } : { visibility: 'hidden' }}
+            className={`${styles.menu} ${placement.vpos === 'top' ? styles.menuFlip : ''}`}
+            style={menuStyle}
             role="menu"
             onKeyDown={onMenuKeyDown}
           >

@@ -1,6 +1,7 @@
 /* LanguageProfilePanel — selectable-cards direction (approved mockup).
-   Tokens only. Animations: card state via Card transitions, form/menu
-   mount keyframes, radio dot scale; all gated by prefers-reduced-motion. */
+   Tokens only. Selection and list layout are instant — no FLIP, no mount
+   springs. Remaining motion: menu mount keyframes, gated by
+   prefers-reduced-motion. */
 
 /* Section body inset — mirrors .cardHeader (space-3 space-4, space-4 space-5
    at 600px+). .cardBody in SettingsDialog.module.css is a dead class (no
@@ -146,6 +147,12 @@
   align-items: center;
   gap: var(--space-1);
   min-width: 0;
+  border-radius: var(--card-radius);
+}
+
+.item:has(.card[aria-checked='true']) {
+  background: var(--color-primary-subtle);
+  box-shadow: var(--shadow-inset-selected);
 }
 
 .card {
@@ -159,6 +166,19 @@
   --card-padding: var(--space-1) var(--space-2);
 }
 
+/* Selection swaps instantly — the dot and row highlight must not fade in. */
+.list .card {
+  transition: none;
+}
+
+/* The row (.item) carries the selected surface so the highlight spans the
+   kebab trigger too; the card itself stays chromeless, resting or hovered. */
+.list .card[aria-checked='true'],
+.list .card[aria-checked='true']:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
 /* Custom radio dot — visual mirror of aria-checked on the card. */
 .radio {
   width: 16px;
@@ -167,7 +187,6 @@
   border: 2px solid var(--color-border-emphasized);
   flex-shrink: 0;
   position: relative;
-  transition: border-color var(--duration-fast) var(--ease-in-out);
 }
 
 .radio::after {
@@ -177,7 +196,6 @@
   border-radius: var(--radius-full);
   background: var(--color-primary);
   transform: scale(0);
-  transition: transform var(--duration-normal) var(--ease-out);
 }
 
 /* Profile list is a radio switcher, not a collection of actionable tiles —
@@ -190,12 +208,6 @@
     border: var(--card-border);
     transform: none;
     box-shadow: none;
-  }
-
-  .list .card[aria-checked='true']:hover {
-    background: var(--color-primary-subtle);
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 calc(var(--space-0-5) * 0.5) color-mix(in srgb, var(--color-primary) 20%, transparent);
   }
 }
 
@@ -280,6 +292,7 @@
 .menuItem {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border: 0;
@@ -316,7 +329,6 @@
   gap: var(--space-4);
   flex: 1 1 auto;
   min-width: 0;
-  animation: formIn var(--duration-normal) var(--ease-out);
 }
 
 .formField {
@@ -431,14 +443,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .menu,
-  .profileForm,
   .formError,
   .choiceGrid {
     animation: none;
   }
 
-  .radio,
-  .radio::after,
   .choice {
     transition: none;
   }
