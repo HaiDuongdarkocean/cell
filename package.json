@@ -36,6 +36,8 @@
     "test:e2e:build": "node scripts/build-e2e.mjs",
     "test:e2e:stage2": "npx playwright test --config=playwright.stream.config.ts e2e/stage2/ --project=stage2",
     "test:e2e:full": "npm run test:e2e:build && npm run test:e2e:stage2",
+    "test:e2e:firefox": "npm run build:firefox && node e2e/firefox/run.mjs",
+    "test:e2e:firefox:attach": "node e2e/firefox/run.mjs --rdp-port",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",

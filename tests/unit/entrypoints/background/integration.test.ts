@@ -303,6 +303,7 @@ describe('Background integration', () => {
       ensureOffscreenReady: jest.fn().mockResolvedValue(undefined),
       closeOffscreenDocument: jest.fn().mockResolvedValue(undefined),
       hasDocument: jest.fn().mockReturnValue(false),
+      acquireKeepAlive: jest.fn(() => () => {}),
       sendToOffscreen: jest.fn(async (request: unknown) => {
         await mockOffscreen.ensureOffscreenReady();
         return mockChrome.runtime.sendMessage(request);
@@ -2917,6 +2918,50 @@ https://cdn.example.com/low.m3u8`;
     await staleService.init();
 
     expect(startSpy).not.toHaveBeenCalled();
+  });
+
+  it('saveOpfsFile picks disk-free filenames for concurrent same-name saves (Firefox uniquify race)', async () => {
+    const saveCallback = mockDownloader.setSaveOpfsFileCallback.mock
+      .calls[0][0] as (
+      downloadId: string,
+      opfsFilename: string,
+      downloadFilename: string,
+      mimeType: string,
+    ) => Promise<void>;
+
+    mockChrome.runtime.sendMessage.mockResolvedValue({
+      success: true,
+      data: { url: 'blob:fake-url' },
+    });
+    const history = [
+      { filename: 'C:\\dl\\video.mp4' },
+      { filename: 'C:\\dl\\video(2).mp4' },
+    ];
+    mockChrome.downloads.search.mockImplementation((query: { id?: number }) =>
+      Promise.resolve(
+        query?.id !== undefined
+          ? [{ state: 'complete', bytesReceived: 1, filename: 'C:\\dl\\video.mp4' }]
+          : history,
+      ),
+    );
+    mockChrome.downloads.download.mockImplementation(
+      (opts: { filename: string }) => {
+        history.push({ filename: `C:\\dl\\${opts.filename}` });
+        return Promise.resolve(100 + history.length);
+      },
+    );
+
+    await Promise.all([
+      saveCallback('dl-1', 'output.mp4', 'video.mp4', 'video/mp4'),
+      saveCallback('dl-2', 'output.mp4', 'video.mp4', 'video/mp4'),
+    ]);
+
+    const names = mockChrome.downloads.download.mock.calls.map(
+      (c: [{ filename: string }]) => c[0].filename,
+    );
+    expect(new Set(names).size).toBe(2);
+    expect(names).toContain('video(3).mp4');
+    expect(names).toContain('video(4).mp4');
   });
 });
 

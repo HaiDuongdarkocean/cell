@@ -135,3 +135,40 @@ Three bugs found and fixed via live Firefox 156 RDP probing; all verified e2e.
 **Probe-environment caveats discovered (harness, not product)**: RDP `navigateTo`/`reload` on `tabDescriptor` are no-ops — real navigation needs `chrome.tabs.update/reload` from bg or `tabs.create`; `chrome.downloads`/`chrome.tabs` APIs are unavailable to content scripts — query via bg page console; `messageBus` overrides `payload.tabId` with `sender.tab.id` for CS senders (by design) — cross-tab media queries need a sender without a tab; `GET_DOWNLOAD_PROGRESS` with no payload returns `getAll()`.
 
 **Gates (post-fix)**: typecheck ✓, unit **6887/6887** ✓, build ✓, `build-firefox` transform ✓, bg+offscreen suites 184/184 ✓, Chrome stage2 e2e **63/63** ✓ (~15.8 min), Firefox detection probe VERDICT: PASS, Firefox ffmpeg e2e VERDICT: PASS.
+
+## Repeatable Firefox e2e harness + OPFS download-lifecycle fix (2026-09-26, round 4)
+
+Owner directive: `e2e` verification on Firefox must be repeatable, not one-off `tmp/` probes. The probe plumbing was promoted into a real suite.
+
+| Piece | What it does |
+|---|---|
+| `e2e/firefox/run.mjs` | Orchestrator: serves the local HLS fixture, launches Firefox via `web-ext` (argv-array spawn through `npx-cli.js` — Windows shell quoting and space-containing paths are safe), discovers the classic RDP port from verbose `web-ext` output (`--remote-debugging-port` opens the *BiDi* endpoint, not RDP — flag removed), suppresses the debugger-acceptance prompt via profile pref, attaches `RdpClient`, wakes the event page, runs selected specs. `--spec`, `--rdp-port` (attach mode), `--youtube-video`. `npm run test:e2e:firefox` = build:firefox + run |
+| `e2e/firefox/lib/rdp.mjs` | Classic-RDP client: `listAddons`/`waitForAddon`, background-event-page console attach (`getWatcher`→`watchTargets`→frame target — plain `attach` on tab descriptors is rejected), content-script console actors, `installSendBg` + `evalAsync`/`evalOn` helpers |
+| `e2e/firefox/specs/detection.spec.mjs` | YouTube determinism: detection lands, cosmetic `&t=` rewrite preserves, real `?v=` switch clears. Soft-skips (`{skipped:true}`) when a fresh profile hits YouTube's consent/bot wall — environment, not product |
+| `e2e/firefox/specs/determinism.spec.mjs` | Same contract fully offline against the local HLS fixture SPA (`replaceState` append preserved, `?v=` value change clears) — deterministic, no external network |
+| `e2e/firefox/specs/pronunciation.spec.mjs` | `PRONUNCIATION_ESPEAK_TTS` round-trip → 64,812-byte WAV |
+| `e2e/firefox/specs/ffmpeg-download.spec.mjs` | Two **concurrent** `DOWNLOAD_VIDEO` jobs on the local HLS fixture → transmux → `downloads.download` → asserts both reach `complete` with correct bytes and distinct on-disk names |
+| `e2e/firefox/fixtures/hls/` | ffmpeg-generated `playlist.m3u8` + 8 `.ts` segments (~90 KB each, h264+aac) |
+
+**Result: `4/4 passed, 0 skipped, 0 failed` on a fresh `web-ext` launch** — YouTube `&t=` preserved/`?v=` cleared, local fixture same contract, eSpeak WAV, 2 concurrent MP4s complete (337,332 B each, Firefox-assigned `(14)`/`(15)`).
+
+### The real concurrent-download bug (found by the harness)
+
+Instrumented `downloads.download` timestamps showed the previous "filename uniquify race" hypothesis was wrong: the gate correctly serialized the second job, and the first job's retries failed **deterministically even when solo** — always at the same free disk slot. Root cause: `downloadM3u8Video` called `deleteDownloadSubdir(downloadId)` immediately after `saveOpfsFile` resolved, but the callback resolved as soon as `downloads.download` returned an *id*. On Firefox the `blob:` URL is lazily read by the download manager — deleting the OPFS subdir while the blob is still being streamed → `FILE_FAILED` on every attempt against that OPFS entry. (The sibling job survived only because the gate held it past the point where its own cleanup could race.)
+
+Fix in `wireEvents.ts` `saveOpfsFile` callback — contract changed to **"resolves when the browser download reaches a terminal state"**, which makes the caller's OPFS cleanup safe on both engines:
+
+- refcounted `acquireKeepAlive` held for the whole download window (event page cannot suspend while Firefox streams the blob)
+- same-base serialization gate (`pendingDownloads` keyed by filename minus `(N)` suffix) opens only after bytes are visible via `downloads.search({id})` or terminal state
+- filename picked free from `downloads.search` history + in-flight reservations (Firefox strips `(N)` in requested names before re-uniquifying — pre-chosen names cannot close the race; the gate does)
+- bounded retry on `interrupted`+`FILE_FAILED` (verified via `downloads.search({id})`, not the delta) with a freshly picked name
+- blob URL revoked + keep-alive released in `finally` on every exit path
+- same semantics on Chrome (also fixes `reportProgress('done')` firing before the file committed)
+
+Unit coverage: concurrent same-name saves pick distinct free names and both complete (`integration.test.ts`; mock history grows as each `download()` lands, mirroring real disk state).
+
+### Gates (round 4)
+
+`npm run typecheck` ✓ · `npm run lint` ✓ (eslint now maps `e2e/**/*.mjs` to node globals; `e2e/firefox/fixtures/` ignored — binary `.ts` MPEG-TS segments collide with TypeScript globs) · `npm run test:unit` **577 suites / 6888 tests** ✓ · `npm run build` ✓ · `build:firefox` ✓ · Firefox e2e **4/4** ✓.
+
+**Chrome stage2 e2e (90 tests, honest reading):** 68 pass / 21 fail / 1 skip — the 21 failures are pre-existing on the merged baseline, **not** regressions from this round: an identical subset (all of `study-modes`, `status-underline`, `card-creator-anki-config` — 8/8 failed) was reproduced on the untouched `main` checkout at `f74069f8` with no diff from this worktree applied. The earlier "63/63" figure covered a smaller pre-merge suite. Two environment foot-guns confirmed: `PW_PORT_OFFSET` breaks specs that hardcode `http://127.0.0.1:4321` seeds (tokenize simply never matches → zero tokens); orphaned `serve-mock-pages` listeners block `webServer` startup between runs. Follow-up item: re-baseline stage2 on main in a quiet environment — 21 failures look env/flake-heavy (missed keystrokes, playbackRate timing, real-site `split-view-real`) rather than product bugs.

@@ -2605,6 +2605,26 @@
     },
     {
       "type": "experience",
+      "id": "firefox-opfs-blob-lazy-read-download-terminal",
+      "title": "Firefox downloads.download đọc blob: lazily → callback phải resolve ở terminal state, không phải issue time",
+      "category": [
+        "async",
+        "data"
+      ],
+      "tags": [
+        "firefox",
+        "downloads",
+        "blob",
+        "opfs",
+        "race",
+        "file-failed",
+        "event-page",
+        "mv3"
+      ],
+      "trigger": "downloads.download({url: blobUrl}) resolve xong nhưng file nguồn bị cleanup ngay sau đó → Firefox interrupted FILE_FAILED deterministic."
+    },
+    {
+      "type": "experience",
       "id": "vendored-emscripten-worker-csp-arraybuffer",
       "title": "Vendor Emscripten vào MV3 extension page: self.Module pre-set skip eval bootstrap + chunks là ArrayBuffer",
       "category": [

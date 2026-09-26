@@ -6,6 +6,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import {
   getExtensionId,
   download,
+  searchDownloads,
   addOnDeterminingFilenameListener,
   addOnDownloadsChangedListener,
   removeOnDownloadsChangedListener,
@@ -210,6 +211,9 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     },
   );
 
+  const inFlightDownloadFilenames = new Set<string>();
+  const pendingDownloads = new Map<string, Promise<void>>();
+
   // 6. Save-OPFS-file callback → offscreen-owned Blob URL
   ctx.downloader.setSaveOpfsFileCallback(
     async (
@@ -247,40 +251,154 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
       // Hold the event-page keep-alive until the download reaches a terminal
       // state — on Firefox the blob: URL lives in this page and dies with it.
       const releaseKeepAlive = ctx.offscreenManager.acquireKeepAlive();
-      let chromeDownloadId: number;
-      try {
-        chromeDownloadId = await download({
-          url: blobUrl,
-          filename: downloadFilename,
-          saveAs: false,
-        });
-      } catch (err) {
-        releaseKeepAlive();
-        throw err;
-      }
+      // Firefox resolves same-name conflicts inside downloads.download via an
+      // async disk uniquify pass — two concurrent calls both pick the same
+      // free slot and one lands FILE_FAILED. It also strips our (N) suffixes
+      // before re-uniquifying, so no requested-name strategy closes the race;
+      // serialize same-base calls until the first file is actually written,
+      // pick names free in history + in-flight reservations, and retry with a
+      // fresh name if the disk pass still fails.
+      const gateKey = downloadFilename
+        .toLowerCase()
+        .replace(/\(\d+\)(\.[^.]+)?$/, '$1');
+      const prior = pendingDownloads.get(gateKey) ?? Promise.resolve();
+      let releaseGate: () => void = () => {};
+      const mine = prior.then(
+        () =>
+          new Promise<void>((resolve) => {
+            releaseGate = resolve;
+          }),
+      );
+      pendingDownloads.set(gateKey, mine);
+      void mine.finally(() => {
+        if (pendingDownloads.get(gateKey) === mine) {
+          pendingDownloads.delete(gateKey);
+        }
+      });
+      let gateOpen = false;
+      const openGate = (): void => {
+        if (gateOpen) return;
+        gateOpen = true;
+        releaseGate();
+      };
+      await prior;
+      const gateTimer = setTimeout(openGate, 10000);
+      const openGateOnce = (): void => {
+        clearTimeout(gateTimer);
+        openGate();
+      };
 
-      const revokeListener = (
-        delta: chrome.downloads.DownloadDelta,
-      ): void => {
-        if (delta.id !== chromeDownloadId) return;
-        if (
-          delta.state?.current === 'complete' ||
-          delta.state?.current === 'interrupted'
-        ) {
-          removeOnDownloadsChangedListener(revokeListener);
-          releaseKeepAlive();
-          if (ctx.offscreenManager.hasDocument()) {
-            const revokeRequest: MessageRequest = {
-              type: MESSAGE_TYPES.REVOKE_OPFS_BLOB_URL,
-              payload: { url: blobUrl } satisfies RevokeOpfsBlobUrlPayload,
-            };
-            void ctx.offscreenManager.sendToOffscreen(revokeRequest).catch((err) => {
-              console.warn('[background] Failed to revoke Blob URL:', err);
-            });
-          }
+      const revokeBlobUrl = (): void => {
+        if (ctx.offscreenManager.hasDocument()) {
+          const revokeRequest: MessageRequest = {
+            type: MESSAGE_TYPES.REVOKE_OPFS_BLOB_URL,
+            payload: { url: blobUrl } satisfies RevokeOpfsBlobUrlPayload,
+          };
+          void ctx.offscreenManager.sendToOffscreen(revokeRequest).catch((err) => {
+            console.warn('[background] Failed to revoke Blob URL:', err);
+          });
         }
       };
-      addOnDownloadsChangedListener(revokeListener);
+
+      const pickFreeFilename = async (): Promise<string> => {
+        let takenNames: string[] = [];
+        try {
+          const items = await searchDownloads({ orderBy: ['-startTime'], limit: 200 });
+          takenNames = items
+            .map((item) => item.filename?.split(/[\\/]/).pop()?.toLowerCase())
+            .filter((name): name is string => !!name);
+        } catch {
+          // History lookup is best-effort; in-flight names still apply.
+        }
+        // Seed after the await so a concurrent save's reservation is visible —
+        // seed → pick → reserve must be one synchronous block.
+        const taken = new Set<string>([...inFlightDownloadFilenames, ...takenNames]);
+        let name = downloadFilename;
+        if (taken.has(name.toLowerCase())) {
+          const dot = downloadFilename.lastIndexOf('.');
+          const base = dot > 0 ? downloadFilename.slice(0, dot) : downloadFilename;
+          const ext = dot > 0 ? downloadFilename.slice(dot) : '';
+          for (let n = 2; taken.has(name.toLowerCase()); n++) {
+            name = `${base}(${n})${ext}`;
+          }
+        }
+        inFlightDownloadFilenames.add(name.toLowerCase());
+        return name;
+      };
+
+      // This callback must not resolve until the download is terminal: the
+      // caller deletes the OPFS backing right after, and Firefox lazily reads
+      // the OPFS-backed blob — resolving early lets cleanup win that race
+      // (interrupted FILE_FAILED). Same hazard exists on Chrome.
+      try {
+        for (let attempts = 0; ; attempts++) {
+          const resolvedFilename = await pickFreeFilename();
+          let chromeDownloadId: number;
+          try {
+            chromeDownloadId = await download({
+              url: blobUrl,
+              filename: resolvedFilename,
+              saveAs: false,
+            });
+          } catch (err) {
+            inFlightDownloadFilenames.delete(resolvedFilename.toLowerCase());
+            throw err;
+          }
+
+          void (async () => {
+            // The file is visible to later uniquify passes once bytes land —
+            // poll the item since onChanged deltas don't carry byte counts.
+            while (!gateOpen) {
+              const item = (
+                await searchDownloads({ id: chromeDownloadId }).catch(() => [])
+              )[0];
+              if (!item || item.bytesReceived > 0 || item.state === 'complete') {
+                openGateOnce();
+                return;
+              }
+              await new Promise((resolve) => setTimeout(resolve, 250));
+            }
+          })();
+
+          const terminalState = await new Promise<'complete' | 'interrupted'>(
+            (resolve) => {
+              const onDelta = (delta: chrome.downloads.DownloadDelta): void => {
+                if (delta.id !== chromeDownloadId) return;
+                const state = delta.state?.current;
+                if (state === 'complete' || state === 'interrupted') {
+                  removeOnDownloadsChangedListener(onDelta);
+                  resolve(state);
+                }
+              };
+              addOnDownloadsChangedListener(onDelta);
+              void searchDownloads({ id: chromeDownloadId })
+                .then((items) => {
+                  const state = items[0]?.state;
+                  if (state === 'complete' || state === 'interrupted') {
+                    removeOnDownloadsChangedListener(onDelta);
+                    resolve(state);
+                  }
+                })
+                .catch(() => {});
+            },
+          );
+          inFlightDownloadFilenames.delete(resolvedFilename.toLowerCase());
+          if (terminalState === 'complete') break;
+          const item = (
+            await searchDownloads({ id: chromeDownloadId }).catch(() => [])
+          )[0];
+          const interruptReason = item?.error ?? 'interrupted';
+          if (interruptReason !== 'FILE_FAILED' || attempts >= 2) {
+            throw new Error(`Download interrupted: ${interruptReason}`);
+          }
+          // FILE_FAILED on a same-name collision is recoverable — the sibling's
+          // slot is committed by now, so a fresh free name lands cleanly.
+        }
+      } finally {
+        openGateOnce();
+        releaseKeepAlive();
+        revokeBlobUrl();
+      }
     },
   );
 

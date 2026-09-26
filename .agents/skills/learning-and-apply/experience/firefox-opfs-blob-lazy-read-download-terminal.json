@@ -1,0 +1,22 @@
+{
+  "id": "firefox-opfs-blob-lazy-read-download-terminal",
+  "title": "Firefox downloads.download đọc blob: lazily → callback phải resolve ở terminal state, không phải issue time",
+  "category": ["async", "data"],
+  "tags": ["firefox", "downloads", "blob", "opfs", "race", "file-failed", "event-page", "mv3"],
+  "trigger": "downloads.download({url: blobUrl}) resolve xong nhưng file nguồn (OPFS/backend) bị cleanup ngay sau đó → trên Firefox interrupted FILE_FAILED deterministic, retry vô ích vì blob trỏ vào entry đã xóa.",
+  "principle": "chrome.downloads.download() promise resolve khi request được ISSUE, không phải khi bytes chuyển xong. Trên Firefox blob:moz-extension:// được download manager đọc lazy từ backing (OPFS File) — mọi cleanup của backing (deleteDownloadSubdir, revokeObjectURL, event-page suspend) sau issue-time đều giết download giữa chừng. Contract đúng của 'save file to downloads' = resolve khi downloads.onChanged báo complete/interrupted (hoặc search({id}) thấy terminal). Hai triệu chứng dễ chẩn đoán sai: (1) filename trùng nhau trên disk trông giống 'uniquify race' — thực ra FILE_FAILED cleanup partial file nên slot luôn trống và Firefox luôn chọn lại cùng tên; (2) sibling job survive nhờ gate serialization — không phải vì name khác mà vì gate trì hoãn chính cleanup của nó. Instrument download() call timestamps trước khi kết luận race.",
+  "cases": [
+    {
+      "context": "firefox-port: downloadM3u8Video gọi saveOpfsFile rồi deleteDownloadSubdir(downloadId). Callback resolve ngay khi downloads.download trả id → OPFS subdir bị xóa trong khi Firefox còn đang stream blob → FILE_FAILED. Hai fix 'filename uniquify' (pre-pick tên free, serialize calls) đều không cứu được vì root cause là lifetime, không phải name.",
+      "bad": "const id = await chrome.downloads.download({url: blobUrl, filename}); return; // caller deletes OPFS backing → blob dies mid-read",
+      "good": "await chrome.downloads.download({url, filename}); await waitTerminal(id); // onChanged state complete|interrupted (+ search({id}) fallback race) — chỉ khi terminal mới return để caller xóa OPFS; keep-alive hold qua toàn window; revoke blob trong finally"
+    }
+  ],
+  "applyFor": [
+    "Mọi flow downloads.download với URL nội bộ (blob/OPFS/data) trên Firefox — đợi terminal state trước cleanup",
+    "Concurrent downloads cùng tên: Firefox strip suffix (N) trong requested name rồi tự re-uniquify — không dùng requested-name làm coordination; serialize per basename + pick free name từ search() history + in-flight reservations",
+    "interrupted download: query downloads.search({id}) để đọc error thật (FILE_FAILED vs USER_CANCELED...) thay vì tin delta — retry chỉ cho FILE_FAILED, bounded",
+    "Diagnose race: log timestamp của từng call site trước — pattern 'fail deterministic dù solo' loại trừ concurrency ngay"
+  ],
+  "source": { "spec": "docs/specs/firefox-port.md", "date": "2026-09-26" }
+}

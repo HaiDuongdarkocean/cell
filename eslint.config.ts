@@ -40,6 +40,9 @@ export default tseslint.config(
       'prototype/',
       'seed/',
       'loop/',
+      // Binary MPEG-TS HLS fixture segments — the *.ts extension collides
+      // with the TypeScript globs and would be misparsed.
+      'e2e/firefox/fixtures/',
     ],
   },
 
@@ -294,7 +297,7 @@ export default tseslint.config(
 
   // Node.js scripts and E2E specs
   {
-    files: ['scripts/**/*.js', 'scripts/**/*.mjs', 'tasks/**/*.mjs', '.agents/**/*.mjs', 'tests/data-test/**/*.mjs', 'e2e/**/*.ts', '**/*.cjs', '_manual_test_multi.ts'],
+    files: ['scripts/**/*.js', 'scripts/**/*.mjs', 'tasks/**/*.mjs', '.agents/**/*.mjs', 'tests/data-test/**/*.mjs', 'e2e/**/*.ts', 'e2e/**/*.mjs', '**/*.cjs', '_manual_test_multi.ts'],
     // playwright-launch.mjs declares its globals via `/* global */` (it needs
     // document/location inside page.evaluate); node globals would collide.
     ignores: ['.agents/skills/continuous-ux-audit-cycle/scripts/playwright-launch.mjs'],
