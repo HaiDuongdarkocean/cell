@@ -413,24 +413,25 @@
       "uiSurface": "no",
       "artifacts": {
         "intent": "docs/intent/firefox-port.md",
-        "spec": "docs/specs/firefox-port.md"
+        "spec": "docs/specs/firefox-port.md",
+        "plan": "tasks/plan-firefox-port.md"
       },
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-09-26T00:57:13.322Z"
+          "at": "2026-09-26T01:06:56.433Z"
         },
         "build": {
           "v": "pass",
-          "at": "2026-09-26T00:57:13.322Z"
+          "at": "2026-09-26T01:04:07.524Z"
         },
         "lint": {
           "v": "pass",
-          "at": "2026-09-26T00:57:31.880Z"
+          "at": "2026-09-26T01:06:56.545Z"
         },
         "testUnit": {
           "v": "pass",
-          "at": "2026-09-26T00:57:32.049Z"
+          "at": "2026-09-26T01:06:56.673Z"
         }
       },
       "confidence": "medium",
@@ -447,8 +448,8 @@
         "id": "devin-cli",
         "since": "2026-09-26T00:11:08.009Z"
       },
-      "worktree": null,
-      "updated": "2026-09-26T00:57:32.050Z"
+      "worktree": "../cell-worktrees/firefox-port",
+      "updated": "2026-09-26T01:06:56.674Z"
     }
   }
 }
