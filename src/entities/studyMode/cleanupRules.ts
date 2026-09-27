@@ -30,7 +30,6 @@ export const BUILTIN_CLEANUP_RULES: readonly SubtitleCleanupRule[] = [
   builtin('speaker-chevrons', 'Chevron markers', '>> or >>> speaker-change markers at line start', '^\\s*>+\\s*'),
   builtin('dialogue-dash', 'Dialogue dashes', 'A leading dash marking a new speaker', '^\\s*[-–—―]+[ \\t]*'),
   builtin('trailing-dash', 'Orphan trailing dashes', 'A dash left dangling at line end', '[ \\t]*[-–—―]+[ \\t]*$'),
-  builtin('music-wrapped', 'Music-wrapped lines', 'Whole lines wrapped in note glyphs like ♪ theme ♪', `^[ \\t]*[${MUSIC_GLYPHS}]+[^${MUSIC_GLYPHS}\\n]*[${MUSIC_GLYPHS}]+[ \\t]*$`),
   builtin('music-glyphs', 'Music glyphs', 'Stray note and music symbols', `[${MUSIC_GLYPHS}]+`),
   builtin('control-glyphs', 'Invisible marks', 'Zero-width and bidi control characters', '[\\u200B-\\u200F\\u202A-\\u202E\\uFEFF]'),
 ];

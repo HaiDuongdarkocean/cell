@@ -56,15 +56,15 @@ describe('applyCleanupRules (built-in catalog)', () => {
     expect(clean('>>> Wait a minute')).toBe('Wait a minute');
   });
 
-  it('removes music glyphs and fully wrapped music lines', () => {
-    expect(clean('♪ Theme song ♪')).toBe('');
+  it('removes music glyphs but keeps the text they wrapped', () => {
+    expect(clean('♪ Theme song ♪')).toBe('Theme song');
     expect(clean('♪♪')).toBe('');
     expect(clean('hello ♪ world ♫')).toBe('hello world');
-    expect(clean('🎵 singing 🎶')).toBe('');
+    expect(clean('🎵 singing 🎶')).toBe('singing');
   });
 
-  it('drops emptied lines but keeps remaining spoken lines', () => {
-    expect(clean('♪ Theme ♪\nHello there')).toBe('Hello there');
+  it('keeps wrapped lines together with remaining spoken lines', () => {
+    expect(clean('♪ Theme ♪\nHello there')).toBe('Theme\nHello there');
   });
 
   it('strips orphan leading and trailing separators', () => {

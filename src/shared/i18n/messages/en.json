@@ -823,8 +823,6 @@
   "cleanupRules.dialogue-dash.desc": "A leading dash marking a new speaker",
   "cleanupRules.trailing-dash.name": "Orphan trailing dashes",
   "cleanupRules.trailing-dash.desc": "A dash left dangling at line end",
-  "cleanupRules.music-wrapped.name": "Music-wrapped lines",
-  "cleanupRules.music-wrapped.desc": "Whole lines wrapped in note glyphs like ♪ theme ♪",
   "cleanupRules.music-glyphs.name": "Music glyphs",
   "cleanupRules.music-glyphs.desc": "Stray note and music symbols",
   "cleanupRules.control-glyphs.name": "Invisible marks",

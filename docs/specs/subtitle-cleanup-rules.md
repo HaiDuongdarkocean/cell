@@ -10,7 +10,7 @@ Replace the single overlay-only "remove text in brackets" toggle with a persiste
 
 | Actor | Triggers | Inputs | Receives/Views |
 |---|---|---|---|
-| Learner | Opens Study Modes → Advanced; toggles/adds/edits/deletes rules; sets lead-in; taps Ctrl in practice | Rule name, description, regex pattern; lead-in ms; Ctrl keypress | Rule list state; validation errors; cleaned subtitles on all surfaces; replay with onset audio |
+| Learner | Opens Study Modes → Advanced; toggles/adds/edits/deletes rules; sets lead-in; taps Ctrl in practice | Rule name, description, regex pattern, replacement text; lead-in ms; Ctrl keypress | Rule list state; validation errors; cleaned subtitles on all surfaces; replay with onset audio |
 | Subtitle source | Supplies cues at load (auto-load, file import, search-select, OCR) | Raw cue text (may contain annotations) | — |
 | Chrome storage | Fires onChanged on settings write | STUDY_MODES value | — |
 
@@ -27,11 +27,11 @@ REQ-1: Manage cleanup rules
 - Basic flow:
   1. Actor opens Advanced → system renders a "Subtitle cleanup" group: ordered list of resolved rules (built-ins first, then customs), each with name, description, and an enable toggle.
   2. Actor toggles a rule → system persists the new enabled state and re-derives cleaned text on all surfaces.
-  3. Actor submits a new rule (name, description, regex pattern) → system validates the pattern compiles, appends it enabled after built-ins, persists, re-derives.
+  3. Actor submits a new rule (name, description, regex pattern, replacement) → system validates the pattern compiles, appends it enabled after built-ins, persists, re-derives. Empty replacement = delete match; non-empty feeds `String.replace` so `$1`, `$&`, … references work.
   4. Actor edits or deletes a custom rule → system persists the change, re-derives.
 - Alt flow: Edit opens the same form prefilled; delete asks confirmation (same pattern as custom-mode delete).
 - Exception: pattern fails `new RegExp(pattern, 'gmu')` → inline error, save refused. Empty name or a name colliding with an existing rule → refused. A malformed persisted `cleanupRules` blob (wrong shape, non-array `custom`, non-string fields) → `sanitizeAdvanced` drops it and re-seeds the default (same as any other malformed `advanced` field — never crashes, never trusts storage shape).
-- Rules: built-ins toggleable, never editable/deletable; customs fully editable; custom pattern compiled with fixed flags `gmu`; rule order = catalog order then creation order; caps: ≤50 custom rules, ≤500 chars/pattern, ≤80 chars/name.
+- Rules: built-ins toggleable, never editable/deletable; customs fully editable; custom pattern compiled with fixed flags `gmu`; rule order = catalog order then creation order; caps: ≤50 custom rules, ≤500 chars/pattern, ≤80 chars/name, ≤200 chars/replacement.
 - Postcondition: `advanced.cleanupRules` persisted; every surface re-derives within the next render/store tick.
 - NFR refs: NFR-1, NFR-2, NFR-4
 
@@ -93,12 +93,11 @@ REQ-5: Built-in rule catalog
   5. `speaker-chevrons` — `^\s*>+\s*` — `>>`/`>>> ` speaker-change markers.
   6. `dialogue-dash` — `^\s*[-–—―]+[ \t]*` — leading dialogue dash(es). Documented edge: eats `- 5 items`-style enumerations — accepted, toggleable.
   7. `trailing-dash` — `[ \t]*[-–—―]+[ \t]*$` — a dash orphaned at line end (e.g. the `-` left behind by a stripped `-(CHUCKLES)`).
-  8. `music-wrapped` — `^[ \t]*[G]+[^G\n]*[G]+[ \t]*$` — a whole line wrapped in note glyphs (`♪ Theme music ♪`, `♪ la la ♪`) collapses to nothing; `[^G\n]` keeps the match inside one line.
-  9. `music-glyphs` — `[G]+` — stray note glyphs anywhere.
-  10. `control-glyphs` — `[\u200B-\u200F\u202A-\u202E\uFEFF]` — invisible bidi/zero-width marks.
+  8. `music-glyphs` — `[G]+` — stray note glyphs anywhere; wrapped lyrics keep their inner text (`♪ theme ♪` → `theme`) because only the glyphs are stripped (the former `music-wrapped` whole-line rule was removed — it ate real song lyrics).
+  9. `control-glyphs` — `[\u200B-\u200F\u202A-\u202E\uFEFF]` — invisible bidi/zero-width marks.
 - Alt flow: user disables any built-in via its toggle (persisted in `builtinEnabled`).
-- Rules: catalog order = application order before customs (pairs before orphans, music-wrapped before music-glyphs, speaker-label before trailing-dash); stable ids (persisted keys); each entry carries name + one-line description + inspectable pattern. Documented residues: `<<x>>` → `>` (html-tags eats `<<x>`), mid-word `a(b)c` → `ac`, depth >3 nesting leaves `()`, cross-type nested spans like `(a [b)` can diverge from `removeBracketedText` — all bounded, toggleable, improvable via custom rules.
-- Postcondition: fresh install cleans SDH brackets, speaker labels, chevrons, dashes (leading + orphaned trailing), wrapped music lines, note glyphs, residual tags, control chars.
+- Rules: catalog order = application order before customs (pairs before orphans, speaker-label before trailing-dash); stable ids (persisted keys); each entry carries name + one-line description + inspectable pattern. Documented residues: `<<x>>` → `>` (html-tags eats `<<x>`), mid-word `a(b)c` → `ac`, depth >3 nesting leaves `()`, cross-type nested spans like `(a [b)` can diverge from `removeBracketedText` — all bounded, toggleable, improvable via custom rules.
+- Postcondition: fresh install cleans SDH brackets, speaker labels, chevrons, dashes (leading + orphaned trailing), note glyphs, residual tags, control chars — without dropping text wrapped in those glyphs.
 - NFR refs: NFR-2, NFR-3
 
 REQ-6: One-key replay in practice
@@ -170,7 +169,7 @@ REQ-9: Lead-in landing must not arm the wrong cue's study chain
 
 ```
 rawText ──▶ for each enabled rule in resolved order:
-              try { text = text.replace(regex, '') } catch → skip rule
+              try { text = text.replace(regex, rule.replacement ?? '') } catch → skip rule
               (repeatUntilStable: loop ≤3 until unchanged)
             ──▶ post-pass: per-line trim, collapse runs of spaces/tabs,
                 strip orphaned leading `^[,:;]+` / trailing `[:;]+$` separators,
@@ -234,7 +233,7 @@ study-mode chain/skip/JUMP            practice replay/prev/next (SubtitlePanel)
 
 | Entity | Key fields | Lives in | Retention |
 |---|---|---|---|
-| `SubtitleCleanupRule` | `id`, `name`, `description`, `pattern`, `enabled`, `builtin`, `repeatUntilStable?` | resolved in-memory from catalog + settings | session |
+| `SubtitleCleanupRule` | `id`, `name`, `description`, `pattern`, `replacement?`, `enabled`, `builtin`, `repeatUntilStable?` | resolved in-memory from catalog + settings | session |
 | `advanced.cleanupRules` | `{ builtinEnabled: Record<id, boolean>, custom: SubtitleCleanupRule[] }` | `chrome.storage.local[STUDY_MODES]` (via `StudyModeState`) | persistent |
 | `advanced.cueLeadInMs` | int 0–2000, default 0 | same | persistent |
 | `SrtCue.rawText?` | original pre-clean text | engine arrays, `latestTargetCues`, store (shared refs — caches stay raw) | per load |

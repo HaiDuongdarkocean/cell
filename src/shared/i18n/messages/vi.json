@@ -823,8 +823,6 @@
   "cleanupRules.dialogue-dash.desc": "Gạch đầu dòng đánh dấu người nói mới",
   "cleanupRules.trailing-dash.name": "Gạch thừa cuối dòng",
   "cleanupRules.trailing-dash.desc": "Gạch lơ lửng cuối dòng",
-  "cleanupRules.music-wrapped.name": "Dòng bọc nhạc",
-  "cleanupRules.music-wrapped.desc": "Cả dòng bọc trong ký tự nốt nhạc kiểu ♪ theme ♪",
   "cleanupRules.music-glyphs.name": "Ký tự nốt nhạc",
   "cleanupRules.music-glyphs.desc": "Ký tự nốt và nhạc lẻ",
   "cleanupRules.control-glyphs.name": "Ký tự vô hình",
