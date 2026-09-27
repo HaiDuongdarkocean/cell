@@ -58,6 +58,9 @@ export {
 } from './adapters/local/idb/outbox';
 export { metaPk } from './adapters/local/idb/capture';
 export { blobBytes } from './app/wireCodec';
+export { blobToBytes } from './adapters/contract/blobBytes';
+export type { BlobReader } from './app/blobRefs';
+export { referencedBlobHashes } from './app/blobRefs';
 export type { OutboxRow, PendingDrain } from './adapters/local/idb/outbox';
 export { IdbLocalSource } from './adapters/local/idb/idbLocalSource';
 export type {

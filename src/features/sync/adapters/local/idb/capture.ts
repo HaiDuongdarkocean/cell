@@ -90,13 +90,11 @@ async function loadRuntime(): Promise<SyncRuntime> {
   try {
     const data = await getStorage<Record<string, unknown>>(['syncState']);
     const session = await getSessionStorage<Record<string, unknown>>(['syncClockWall']);
-    const state = data['syncState'] as
-      | { deviceId?: string; connections?: unknown[] }
-      | undefined;
+    const state = data['syncState'] as { deviceId?: string } | undefined;
     const deviceId = typeof state?.deviceId === 'string' ? state.deviceId : 'uninitialized';
     const sessionWall = typeof session['syncClockWall'] === 'number' ? session['syncClockWall'] : 0;
     runtime = {
-      enabled: Array.isArray(state?.connections) && state.connections.length > 0,
+      enabled: hasConnectionEntry(state),
       deviceId,
       contextId,
       clock: new HybridClock(`${deviceId}:${contextId}`, Date.now, sessionWall),
@@ -123,10 +121,16 @@ function watchSyncKeys(): void {
       if (typeof wall === 'number') runtime.clock.seedWall(wall);
     }
     if (area === 'local' && changes['syncState']) {
-      const state = changes['syncState'].newValue as { connections?: unknown[] } | undefined;
-      runtime.enabled = Array.isArray(state?.connections) && state.connections.length > 0;
+      runtime.enabled = hasConnectionEntry(
+        changes['syncState'].newValue as Record<string, unknown> | undefined,
+      );
     }
   });
+}
+
+function hasConnectionEntry(state: unknown): boolean {
+  if (typeof state !== 'object' || state === null) return false;
+  return Object.keys(state).some((key) => key.startsWith('connection:'));
 }
 
 function idbReq<T>(request: IDBRequest<T>): Promise<T> {

@@ -337,3 +337,22 @@ export const OcrDisposePayloadSchema = z.object({
 export const OcrRegionCommandPayloadSchema = z.object({
   mode: z.enum(['view', 'select', 'edit', 'reset']),
 });
+
+// === User-data sync payloads (spec user-data-sync) ===
+
+export const SyncConnectPayloadSchema = z.object({
+  providerId: z.string().min(1),
+});
+
+export const SyncDisconnectPayloadSchema = z.object({
+  connectionId: z.string().min(1),
+});
+
+export const SyncSetSystemConnectionPayloadSchema = z.object({
+  connectionId: z.string().min(1),
+});
+
+export const SyncSetBindingPayloadSchema = z.object({
+  scope: z.string().min(1),
+  destination: z.string().min(1),
+});

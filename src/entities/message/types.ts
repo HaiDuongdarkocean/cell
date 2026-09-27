@@ -138,7 +138,16 @@ export type MessageType =
   | 'RESOURCE_SAMPLE'
   | 'RESOURCE_FIND'
   | 'RESOURCE_IMPORT_CHUNK'
-  | 'RESOURCE_IMPORT_PROGRESS';
+  | 'RESOURCE_IMPORT_PROGRESS'
+  // User-data sync (spec user-data-sync)
+  | 'SYNC_GET_STATUS'
+  | 'SYNC_NOW'
+  | 'SYNC_CONNECT'
+  | 'SYNC_DISCONNECT'
+  | 'SYNC_SET_SYSTEM_CONNECTION'
+  | 'SYNC_SET_BINDING'
+  | 'SYNC_DATA_APPLIED'
+  | 'SYNC_STATUS_CHANGED';
 
 // === Message Request ===
 

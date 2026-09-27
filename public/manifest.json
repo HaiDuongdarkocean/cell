@@ -16,7 +16,9 @@
     "webNavigation",
     "cookies",
     "tts",
-    "unlimitedStorage"
+    "unlimitedStorage",
+    "alarms",
+    "identity"
   ],
   "host_permissions": [
     "<all_urls>"
