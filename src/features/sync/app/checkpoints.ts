@@ -1,7 +1,9 @@
 import type { ConnectionId, Hlc, Scope } from '../domain/types';
 import { isPlainJsonObject } from '../domain/flatten';
+import { compareHlc } from '../domain/hlc';
 import type { KeyValueStore } from '../ports/keyValueStore';
 import { SYNC_CHECKPOINTS_STORAGE_KEY } from './routing';
+import type { RouteMarker } from './routeMarkers';
 
 export type CheckpointKind = 'rebind' | 'drain' | 'sweep';
 export type RebindPhase = 'freeze' | 'copied' | 'routed';
@@ -22,6 +24,36 @@ export interface SyncCheckpoint {
 
 export function isFrozenCheckpoint(cp: SyncCheckpoint): boolean {
   return cp.kind === 'rebind' && (cp.phase === 'freeze' || cp.phase === 'copied');
+}
+
+export async function persistDrainObligation(
+  kv: KeyValueStore,
+  scope: Scope,
+  marker: RouteMarker,
+  currentTarget: ConnectionId | 'local' | null,
+  now: number,
+): Promise<boolean> {
+  const existing = await getCheckpoint(kv, scope);
+  if (existing !== null && existing.kind !== 'drain') return false;
+  if (
+    existing !== null &&
+    existing.markerHlc !== null &&
+    compareHlc(marker.hlc, existing.markerHlc) <= 0
+  ) {
+    return false;
+  }
+  await writeCheckpoint(kv, {
+    scope,
+    kind: 'drain',
+    phase: 'open',
+    from: currentTarget === 'local' ? null : currentTarget,
+    to: marker.destination,
+    writtenPaths: [],
+    markerHlc: marker.hlc,
+    startedAt: now,
+    until: null,
+  });
+  return true;
 }
 
 export async function listCheckpoints(kv: KeyValueStore): Promise<SyncCheckpoint[]> {

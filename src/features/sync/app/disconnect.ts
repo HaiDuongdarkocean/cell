@@ -16,6 +16,7 @@ import {
   type ConnectionPushDeps,
 } from './pushCycle';
 import { readRouting, routeForScope, SYNC_DIRECTORY_STORAGE_KEY } from './routing';
+import { clearCheckpoint, listCheckpoints } from './checkpoints';
 import type { SyncStore } from './syncStore';
 
 export const DISCONNECT_PENDING_PREFIX = 'syncDisconnectPending:';
@@ -147,6 +148,7 @@ export async function completeDisconnectLocally(
 ): Promise<void> {
   const routing = await readRouting(deps.kv);
   await writeDirectoryDisconnect(deps, connId, routing);
+  await clearCheckpointsFor(deps, connId);
   await propagateGlobalScope(deps, connId);
   await deps.onDisconnect?.(connId);
   await clearDisconnectPending(deps.kv, connId);
@@ -213,6 +215,17 @@ async function writeDirectoryDisconnect(
   await deps.kv.set('local', SYNC_DIRECTORY_STORAGE_KEY, next);
 }
 
+async function clearCheckpointsFor(
+  deps: DisconnectDeps,
+  connId: ConnectionId,
+): Promise<void> {
+  for (const cp of await listCheckpoints(deps.kv)) {
+    if (cp.to === connId || cp.from === connId) {
+      await clearCheckpoint(deps.kv, cp.scope);
+    }
+  }
+}
+
 async function propagateGlobalScope(
   deps: DisconnectDeps,
   connId: ConnectionId,
@@ -256,7 +269,10 @@ export async function completePendingDisconnects(deps: DisconnectDeps): Promise<
   );
   for (const connId of await listPendingDisconnects(deps.kv)) {
     const connection = connected.get(connId);
-    if (connection === undefined) continue;
+    if (connection === undefined) {
+      await clearDisconnectPending(deps.kv, connId);
+      continue;
+    }
     try {
       const result = await runConnectionDisconnect(deps, connection);
       if (result.status === 'disconnected') done.push(connId);

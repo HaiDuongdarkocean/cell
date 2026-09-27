@@ -1,14 +1,17 @@
 import type { Connection, ConnectionId, Scope } from '../domain/types';
 import type { KeyValueStore } from '../ports/keyValueStore';
 import { ProviderError } from '../ports/storageProvider';
-import { compareHlc } from '../domain/hlc';
 import {
   clearCheckpoint,
   listCheckpoints,
-  writeCheckpoint,
+  persistDrainObligation,
   type SyncCheckpoint,
 } from './checkpoints';
-import { RebindBlockedError, resumeScopeRebind, type RebindDeps } from './rebind';
+import {
+  resumeScopeRebind,
+  writeRoutingValue,
+  type RebindDeps,
+} from './rebind';
 import { scopesPrefix } from './remotePaths';
 import { collectScopeSnapshot, publishScopeSnapshot } from './snapshotPublish';
 import { readRouting, routeForScope } from './routing';
@@ -21,45 +24,8 @@ export interface ObligationDeps extends RebindDeps {
 export interface ObligationResult {
   readonly completed: Scope[];
   readonly waiting: Scope[];
+  readonly waitingFor: Partial<Record<Scope, ConnectionId>>;
   readonly errors: string[];
-}
-
-export async function persistDrainObligation(
-  kv: KeyValueStore,
-  scope: Scope,
-  marker: RouteMarker,
-  currentTarget: ConnectionId | 'local' | null,
-  now: number,
-): Promise<boolean> {
-  const existing = await getCheckpointSafe(kv, scope);
-  if (existing !== null && existing.kind !== 'drain') return false;
-  if (
-    existing !== null &&
-    existing.markerHlc !== null &&
-    compareHlc(marker.hlc, existing.markerHlc) <= 0
-  ) {
-    return false;
-  }
-  await writeCheckpoint(kv, {
-    scope,
-    kind: 'drain',
-    phase: 'open',
-    from: currentTarget === 'local' ? null : currentTarget,
-    to: marker.destination,
-    writtenPaths: [],
-    markerHlc: marker.hlc,
-    startedAt: now,
-    until: null,
-  });
-  return true;
-}
-
-async function getCheckpointSafe(
-  kv: KeyValueStore,
-  scope: Scope,
-): Promise<SyncCheckpoint | null> {
-  const all = await listCheckpoints(kv);
-  return all.find((cp) => cp.scope === scope) ?? null;
 }
 
 export async function processCheckpoints(
@@ -67,6 +33,7 @@ export async function processCheckpoints(
 ): Promise<ObligationResult> {
   const completed: Scope[] = [];
   const waiting: Scope[] = [];
+  const waitingFor: Partial<Record<Scope, ConnectionId>> = {};
   const errors: string[] = [];
   const connected = new Map(
     (await deps.connections()).map((c) => [c.connectionId, c] as const),
@@ -74,28 +41,39 @@ export async function processCheckpoints(
   for (const cp of await listCheckpoints(deps.kv)) {
     try {
       const outcome = await processOne(deps, cp, connected);
-      if (outcome === 'done') completed.push(cp.scope);
-      else if (outcome === 'waiting') waiting.push(cp.scope);
+      if (outcome.state === 'done') completed.push(cp.scope);
+      else if (outcome.state === 'waiting') {
+        waiting.push(cp.scope);
+        if (outcome.waitingFor !== null) waitingFor[cp.scope] = outcome.waitingFor;
+      }
     } catch (e) {
       errors.push(`${cp.scope}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
-  return { completed, waiting, errors };
+  return { completed, waiting, waitingFor, errors };
+}
+
+interface CheckpointOutcome {
+  readonly state: 'done' | 'waiting' | 'kept';
+  readonly waitingFor: ConnectionId | null;
+}
+
+const OUTCOME_DONE: CheckpointOutcome = { state: 'done', waitingFor: null };
+const OUTCOME_KEPT: CheckpointOutcome = { state: 'kept', waitingFor: null };
+
+function waitingOn(connectionId: ConnectionId | null): CheckpointOutcome {
+  return { state: 'waiting', waitingFor: connectionId };
 }
 
 async function processOne(
   deps: ObligationDeps,
   cp: SyncCheckpoint,
   connected: ReadonlyMap<ConnectionId, Connection>,
-): Promise<'done' | 'waiting' | 'kept'> {
+): Promise<CheckpointOutcome> {
   if (cp.kind === 'rebind') {
-    try {
-      const result = await resumeScopeRebind(deps, cp);
-      return result.done ? 'done' : 'kept';
-    } catch (e) {
-      if (e instanceof RebindBlockedError) return 'waiting';
-      throw e;
-    }
+    const result = await resumeScopeRebind(deps, cp);
+    if (result.done) return OUTCOME_DONE;
+    return result.waitingFor === null ? OUTCOME_KEPT : waitingOn(result.waitingFor);
   }
   if (cp.kind === 'drain') {
     return drainObligation(deps, cp, connected);
@@ -107,13 +85,13 @@ async function drainObligation(
   deps: ObligationDeps,
   cp: SyncCheckpoint,
   connected: ReadonlyMap<ConnectionId, Connection>,
-): Promise<'done' | 'waiting'> {
+): Promise<CheckpointOutcome> {
   if (cp.to === 'local') {
     await clearCheckpoint(deps.kv, cp.scope);
-    return 'done';
+    return OUTCOME_DONE;
   }
   const connection = connected.get(cp.to);
-  if (connection === undefined) return 'waiting';
+  if (connection === undefined) return waitingOn(cp.to);
   const records = await collectScopeSnapshot(deps, cp.scope);
   await publishScopeSnapshot(
     {
@@ -132,25 +110,31 @@ async function drainObligation(
     const mine = records.filter((record) => record.dataClass === source.dataClass);
     await source.stampCommitted(mine);
   }
+  await writeRoutingValue(deps, cp.scope, cp.to);
   await clearCheckpoint(deps.kv, cp.scope);
-  return 'done';
+  return OUTCOME_DONE;
 }
 
 async function sweepObligation(
   deps: ObligationDeps,
   cp: SyncCheckpoint,
   connected: ReadonlyMap<ConnectionId, Connection>,
-): Promise<'done' | 'kept'> {
+): Promise<CheckpointOutcome> {
   if (cp.until !== null && deps.clock.now() > cp.until) {
     await clearCheckpoint(deps.kv, cp.scope);
-    return 'done';
+    return OUTCOME_DONE;
   }
   if (cp.from === null) {
     await clearCheckpoint(deps.kv, cp.scope);
-    return 'done';
+    return OUTCOME_DONE;
+  }
+  const routing = await readRouting(deps.kv);
+  const current = routeForScope(routing, cp.scope);
+  if (current !== null && current.kind === 'connection' && current.connectionId === cp.from) {
+    return OUTCOME_KEPT;
   }
   const connection = connected.get(cp.from);
-  if (connection === undefined) return 'kept';
+  if (connection === undefined) return OUTCOME_KEPT;
   const provider = deps.providerFor(connection.providerId);
   const entries = await provider.list(connection, `${scopesPrefix()}${cp.scope}/`);
   for (const entry of entries) {
@@ -165,9 +149,9 @@ async function sweepObligation(
   const remaining = await provider.list(connection, `${scopesPrefix()}${cp.scope}/`);
   if (remaining.length === 0) {
     await clearCheckpoint(deps.kv, cp.scope);
-    return 'done';
+    return OUTCOME_DONE;
   }
-  return 'kept';
+  return OUTCOME_KEPT;
 }
 
 export async function observeRouteMarker(

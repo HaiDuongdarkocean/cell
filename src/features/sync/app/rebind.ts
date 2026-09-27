@@ -100,11 +100,14 @@ function pushDepsFor(deps: RebindDeps, connection: Connection): ConnectionPushDe
   };
 }
 
-async function writeRoutingValue(
-  deps: RebindDeps,
+export async function writeRoutingValue(
+  deps: Pick<RebindDeps, 'kv'>,
   scope: Scope,
   destination: ConnectionId | 'local',
 ): Promise<void> {
+  if (scope === 'global' && destination === 'local') {
+    throw new Error('global scope cannot be routed to local');
+  }
   const state = await deps.kv.get<Record<string, unknown>>(
     'local',
     SYNC_DIRECTORY_STORAGE_KEY,
@@ -123,6 +126,9 @@ export async function runScopeRebind(
   scope: Scope,
   destination: ConnectionId | 'local',
 ): Promise<RebindResult> {
+  if (scope === 'global' && destination === 'local') {
+    throw new Error('global scope cannot be rebound to local');
+  }
   const existing = await getCheckpoint(deps.kv, scope);
   if (existing !== null && (existing.kind !== 'rebind' || existing.to !== destination)) {
     throw new Error(
@@ -170,21 +176,33 @@ async function advanceRebind(
 ): Promise<RebindResult> {
   let cp = initial;
   while (true) {
-    if (cp.phase === 'freeze') {
-      await pullFromSource(deps, cp);
-      cp = await copyToDestination(deps, cp);
-      continue;
+    try {
+      if (cp.phase === 'freeze') {
+        await pullFromSource(deps, cp);
+        cp = await copyToDestination(deps, cp);
+        continue;
+      }
+      if (cp.phase === 'copied') {
+        cp = await writeRoutingMarkers(deps, cp);
+        continue;
+      }
+      if (cp.phase === 'routed') {
+        await drainHeldKeys(deps, cp);
+        await clearCheckpoint(deps.kv, cp.scope);
+        return { scope: cp.scope, done: true, phase: 'done', waitingFor: null };
+      }
+      return { scope: cp.scope, done: false, phase: cp.phase, waitingFor: null };
+    } catch (e) {
+      if (e instanceof RebindBlockedError) {
+        return {
+          scope: cp.scope,
+          done: false,
+          phase: cp.phase,
+          waitingFor: e.waitingFor,
+        };
+      }
+      throw e;
     }
-    if (cp.phase === 'copied') {
-      cp = await writeRoutingMarkers(deps, cp);
-      continue;
-    }
-    if (cp.phase === 'routed') {
-      await drainHeldKeys(deps, cp);
-      await clearCheckpoint(deps.kv, cp.scope);
-      return { scope: cp.scope, done: true, phase: 'done', waitingFor: null };
-    }
-    return { scope: cp.scope, done: false, phase: cp.phase, waitingFor: null };
   }
 }
 
@@ -311,6 +329,15 @@ export async function deleteScopeCopyOnVacated(
 ): Promise<void> {
   const connection = deps.connectionFor(connectionId);
   if (connection === null) return;
+  const routing = await readRouting(deps.kv);
+  const current = routeForScope(routing, scope);
+  if (
+    current !== null &&
+    current.kind === 'connection' &&
+    current.connectionId === connectionId
+  ) {
+    return;
+  }
   const provider = deps.providerFor(connection.providerId);
   const entries = await provider.list(connection, `${scopesPrefix()}${scope}/`);
   for (const entry of entries) {

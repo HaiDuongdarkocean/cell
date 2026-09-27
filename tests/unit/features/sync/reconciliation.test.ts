@@ -32,6 +32,7 @@ import {
   type ReconcileDeps,
 } from '@/features/sync/app/reconciliation';
 import { createSyncDbStore } from '@/features/sync/app/syncDbStore';
+import { stampKvMeta } from '@/features/sync/adapters/local/kv/kvMeta';
 
 const DEVICE = 'dev-me';
 const REMOTE = 'dev-remote';
@@ -228,6 +229,16 @@ describe('runScopeReconciliation', () => {
   it('publishes nothing when the connection was disconnected remotely', async () => {
     const { deps, provider } = await harness();
     await seedLocalCollection('c-local', 1);
+    await stampKvMeta(deps.kv, [
+      {
+        scope: 'global',
+        dataClass: 'syncDirectory',
+        key: `connection:${deps.connection.connectionId}`,
+        op: 'put',
+        value: { connectionId: deps.connection.connectionId },
+        hlc: { wall: 1, counter: 0, node: `${DEVICE}:ctx` },
+      },
+    ]);
     await provider.write(
       deps.connection,
       'cell-sync/v1/meta/disconnect.json',

@@ -14,7 +14,6 @@ import type { ApplyResult, LocalSource } from '../ports/localSource';
 import {
   cancelScopeRebind,
   deleteScopeCopyOnVacated,
-  RebindBlockedError,
   resumeScopeRebind,
   runScopeRebind,
 } from './rebind';
@@ -60,7 +59,7 @@ const PROVIDER_ID = 'in-memory';
 const DEVICE = 'device-here';
 const REMOTE = 'device-other';
 const SCOPE: Scope = 'profile:lang:en';
-const DATA: DataClass = 'srs.card';
+const DATA: DataClass = 'srsCard';
 
 class FakeSource implements LocalSource {
   readonly dataClass: DataClass;
@@ -265,7 +264,7 @@ describe('runScopeRebind', () => {
 
   test('pending keys for the scope are pushed to B before final snapshot', async () => {
     const t = await harness();
-    t.source.pendingKeys = [{ scope: SCOPE, dataClass: DATA, key: 'card:c1' }];
+    t.source.pendingKeys = [{ scope: SCOPE, dataClass: DATA, key: 'card:c1', op: 'put' }];
     t.source.snapshotRecords.push(rec('card:c3', { front: 'late' }));
     const result = await runScopeRebind(t.rebindDeps(), SCOPE, t.connB.connectionId);
     expect(result.done).toBe(true);
@@ -305,14 +304,14 @@ describe('runScopeRebind', () => {
     expect(await readRouteMarker(t.provider, t.connB, SCOPE)).toBeNull();
   });
 
-  test('destination not connected → RebindBlockedError, checkpoint kept', async () => {
+  test('destination not connected → waits with waitingFor, checkpoint kept', async () => {
     const t = await harness();
     const deps = t.rebindDeps({
       connectionFor: (id) => (id === t.connA.connectionId ? t.connA : null),
     });
-    await expect(
-      runScopeRebind(deps, SCOPE, t.connB.connectionId),
-    ).rejects.toThrow(RebindBlockedError);
+    const result = await runScopeRebind(deps, SCOPE, t.connB.connectionId);
+    expect(result.done).toBe(false);
+    expect(result.waitingFor).toBe(t.connB.connectionId);
     expect(await getCheckpoint(t.kv, SCOPE)).not.toBeNull();
   });
 
@@ -330,7 +329,7 @@ describe('runScopeRebind', () => {
 
   test('rebind to local: binding becomes local, pending keys acked, no B writes', async () => {
     const t = await harness();
-    t.source.pendingKeys = [{ scope: SCOPE, dataClass: DATA, key: 'card:c1' }];
+    t.source.pendingKeys = [{ scope: SCOPE, dataClass: DATA, key: 'card:c1', op: 'put' }];
     const result = await runScopeRebind(t.rebindDeps(), SCOPE, 'local');
     expect(result.done).toBe(true);
     const routing = await readRouting(t.kv);
@@ -435,6 +434,13 @@ describe('old-source sweep', () => {
       snapshotPath(SCOPE, REMOTE, 1),
       encodeSnapshot({ scope: SCOPE, deviceId: REMOTE, n: 1, coversSeq: 1, records: [rec('card:c9')] }),
     );
+    await t.kv.set('local', SYNC_DIRECTORY_STORAGE_KEY, {
+      deviceId: DEVICE,
+      systemConnection: t.connA.connectionId,
+      [`connection:${t.connA.connectionId}`]: { providerId: PROVIDER_ID },
+      [`connection:${t.connB.connectionId}`]: { providerId: PROVIDER_ID },
+      [`binding:${SCOPE.slice('profile:'.length)}`]: 'local',
+    });
     await deleteScopeCopyOnVacated(
       t.rebindDeps(),
       SCOPE,
@@ -454,6 +460,13 @@ describe('old-source sweep', () => {
       journalPath(SCOPE, REMOTE, 7),
       encodeJournal({ scope: SCOPE, deviceId: REMOTE, seq: 7, records: [] }),
     );
+    await t.kv.set('local', SYNC_DIRECTORY_STORAGE_KEY, {
+      deviceId: DEVICE,
+      systemConnection: t.connA.connectionId,
+      [`connection:${t.connA.connectionId}`]: { providerId: PROVIDER_ID },
+      [`connection:${t.connB.connectionId}`]: { providerId: PROVIDER_ID },
+      [`binding:${SCOPE.slice('profile:'.length)}`]: 'local',
+    });
     await writeCheckpoint(
       t.kv,
       checkpoint({ kind: 'sweep', from: t.connA.connectionId, until: t.clock.now() + 60_000 }),
@@ -461,6 +474,23 @@ describe('old-source sweep', () => {
     const result = await processCheckpoints(t.rebindDeps());
     expect(result.completed).toEqual([SCOPE]);
     expect(await t.provider.list(t.connA, `${scopesPrefix()}${SCOPE}/`)).toHaveLength(0);
+  });
+
+  test('sweep keeps remote files while the scope is still routed there', async () => {
+    const t = await harness();
+    await t.provider.write(
+      t.connA,
+      journalPath(SCOPE, REMOTE, 7),
+      encodeJournal({ scope: SCOPE, deviceId: REMOTE, seq: 7, records: [] }),
+    );
+    await writeCheckpoint(
+      t.kv,
+      checkpoint({ kind: 'sweep', from: t.connA.connectionId, until: t.clock.now() + 60_000 }),
+    );
+    const result = await processCheckpoints(t.rebindDeps());
+    expect(result.completed).toEqual([]);
+    expect(await t.provider.list(t.connA, `${scopesPrefix()}${SCOPE}/`)).toHaveLength(1);
+    expect(await getCheckpoint(t.kv, SCOPE)).not.toBeNull();
   });
 
   test('sweep checkpoint past its until clears without touching remote', async () => {
@@ -483,7 +513,7 @@ describe('old-source sweep', () => {
 describe('runConnectionDisconnect', () => {
   test('writes fenced marker, removes local connection state, rebinds scopes to local, fires onDisconnect', async () => {
     const t = await harness();
-    t.source.pendingKeys = [{ scope: SCOPE, dataClass: DATA, key: 'card:c1' }];
+    t.source.pendingKeys = [{ scope: SCOPE, dataClass: DATA, key: 'card:c1', op: 'put' }];
     const state = await t.kv.get<Record<string, unknown>>('local', SYNC_DIRECTORY_STORAGE_KEY);
     await t.kv.set('local', SYNC_DIRECTORY_STORAGE_KEY, {
       ...state,

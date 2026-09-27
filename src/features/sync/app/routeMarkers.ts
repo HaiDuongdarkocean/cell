@@ -1,5 +1,6 @@
 import type { Connection, ConnectionId, Hlc, Scope } from '../domain/types';
 import { isPlainJsonObject } from '../domain/flatten';
+import { compareHlc } from '../domain/hlc';
 import type { StorageProvider } from '../ports/storageProvider';
 import { ProviderError } from '../ports/storageProvider';
 import { META_PREFIX, routeMarkerPath } from './remotePaths';
@@ -62,6 +63,8 @@ export async function writeRouteMarker(
   scope: Scope,
   marker: RouteMarker,
 ): Promise<void> {
+  const existing = await readRouteMarker(deps.provider, deps.connection, scope);
+  if (existing !== null && compareHlc(existing.hlc, marker.hlc) > 0) return;
   await deps.fence();
   await deps.provider.write(
     deps.connection,

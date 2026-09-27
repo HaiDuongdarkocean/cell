@@ -22,6 +22,7 @@ import {
   type ConnectionPullDeps,
 } from './pullCycle';
 import { cursorKey, readCursors, SYNC_CURSORS_STORAGE_KEY } from './cursors';
+import { getCheckpoint, type SyncCheckpoint } from './checkpoints';
 import { stampKvMeta } from '../adapters/local/kv/kvMeta';
 import { createSyncDbStore } from './syncDbStore';
 import { encodeJournal, encodeSnapshot } from './wireCodec';
@@ -462,10 +463,39 @@ describe('runConnectionPull', () => {
     expect(dir.applied).toHaveLength(1);
   });
 
+  it('persists a drain obligation before applying the routing record', async () => {
+    const t = await harness();
+    const dir = new PullSource('syncDirectory', GLOBAL);
+    let seenDuringApply: SyncCheckpoint | null | undefined;
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'syncDirectory', 'binding:fr', 'mem:other-acct', 10),
+    ]);
+
+    await t.pull([GLOBAL], {
+      sources: [dir],
+      onRoutingChange: async () => {
+        seenDuringApply = await getCheckpoint(t.kv, 'profile:fr' as Scope);
+      },
+    });
+
+    expect(seenDuringApply?.kind).toBe('drain');
+    expect(seenDuringApply?.to).toBe('mem:other-acct');
+  });
+
   it('handles disconnect markers: newer marker triggers onDisconnect and skips pull', async () => {
     const t = await harness();
     const dir = new PullSource('syncDirectory', GLOBAL);
     const settings = new PullSource('settings', GLOBAL);
+    await stampKvMeta(t.kv, [
+      {
+        scope: GLOBAL,
+        dataClass: 'syncDirectory' as DataClass,
+        key: `connection:${t.connection.connectionId}`,
+        op: 'put' as const,
+        value: { connectionId: t.connection.connectionId },
+        hlc: makeHlc(1),
+      },
+    ]);
     await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
       makeRecord(GLOBAL, 'settings', 'kv:settings/a', 1),
     ]);

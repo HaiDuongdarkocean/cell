@@ -74,6 +74,8 @@ export interface CycleResult {
   readonly appliedDataClasses: DataClass[];
   readonly appliedScopes: Scope[];
   readonly waitingScopes: Scope[];
+  readonly waitingFor: Partial<Record<Scope, ConnectionId>>;
+  readonly obligationErrors: string[];
   readonly failed: ConnectionFailure[];
   readonly retryAt?: number;
 }
@@ -195,6 +197,8 @@ export class SyncEngine {
     const appliedDataClasses = new Set<DataClass>();
     const appliedScopes = new Set<Scope>();
     const waitingScopes = new Set<Scope>();
+    const waitingFor: Partial<Record<Scope, ConnectionId>> = {};
+    const obligationErrors: string[] = [];
     let ackedKeys = 0;
     let lockLost = false;
     let cycleError: unknown;
@@ -241,21 +245,17 @@ export class SyncEngine {
           if (
             await isConnectionDisconnected({ provider, connection, kv: deps.kv })
           ) {
-            if (deps.tick !== undefined) {
-              try {
-                await completeDisconnectLocally(
-                  this.disconnectDeps(() => lock.verify(), deviceId, cycleId),
-                  connection.connectionId,
-                );
-              } catch {
-                await deps.kv.set(
-                  'local',
-                  `syncDisconnectPending:${connection.connectionId}`,
-                  { at: deps.clock.now() },
-                );
-              }
-            } else {
-              await deps.onDisconnect?.(connection.connectionId);
+            try {
+              await completeDisconnectLocally(
+                this.disconnectDeps(() => lock.verify(), deviceId, cycleId),
+                connection.connectionId,
+              );
+            } catch {
+              await deps.kv.set(
+                'local',
+                `syncDisconnectPending:${connection.connectionId}`,
+                { at: deps.clock.now() },
+              );
             }
             continue;
           }
@@ -319,15 +319,18 @@ export class SyncEngine {
               fence: () => lock.verify(),
               observeHlc: deps.observeHlc,
               onRoutingChange: deps.onRoutingChange,
-              onRouteMarker: async (scope, marker) => {
-                await observeRouteMarker(
-                  deps.kv,
-                  scope,
-                  marker,
-                  connection.connectionId,
-                  deps.clock.now(),
-                );
-              },
+              onRouteMarker:
+                deps.tick === undefined
+                  ? undefined
+                  : async (scope, marker) => {
+                      await observeRouteMarker(
+                        deps.kv,
+                        scope,
+                        marker,
+                        connection.connectionId,
+                        deps.clock.now(),
+                      );
+                    },
               onDisconnect: deps.onDisconnect,
               onAppliedBatch: (scope, dataClasses) => {
                 appliedScopes.add(scope);
@@ -375,9 +378,13 @@ export class SyncEngine {
             onRoutingChange: deps.onRoutingChange,
           });
           for (const scope of obligations.waiting) waitingScopes.add(scope);
+          Object.assign(waitingFor, obligations.waitingFor);
+          for (const message of obligations.errors) obligationErrors.push(message);
         } catch (error) {
           if (error instanceof CycleLockLostError) throw error;
-          cycleError = cycleError ?? error;
+          obligationErrors.push(
+            error instanceof Error ? error.message : String(error),
+          );
         }
         try {
           const completed = await completePendingDisconnects(
@@ -386,7 +393,9 @@ export class SyncEngine {
           for (const connId of completed) connected.delete(connId);
         } catch (error) {
           if (error instanceof CycleLockLostError) throw error;
-          cycleError = cycleError ?? error;
+          obligationErrors.push(
+            error instanceof Error ? error.message : String(error),
+          );
         }
       }
     } catch (error) {
@@ -417,6 +426,8 @@ export class SyncEngine {
       appliedDataClasses: dataClasses,
       appliedScopes: scopes,
       waitingScopes: [...waitingScopes],
+      waitingFor,
+      obligationErrors,
       failed,
     };
 
@@ -506,6 +517,8 @@ function emptyCycleResult(): CycleResult {
     appliedDataClasses: [],
     appliedScopes: [],
     waitingScopes: [],
+    waitingFor: {},
+    obligationErrors: [],
     failed: [],
   };
 }

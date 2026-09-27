@@ -5,6 +5,7 @@ import { InMemoryStorageProvider } from '../adapters/memory/InMemoryStorageProvi
 import { SeededClock } from '../adapters/memory/SeededClock';
 import { createKvLocalSource } from '../adapters/local/kv/kvLocalSource';
 import { SYNC_META_KV_STORAGE_KEY } from '../adapters/local/kv/keys';
+import { stampKvMeta } from '../adapters/local/kv/kvMeta';
 import { closeSyncDB, deleteSyncDB } from '../adapters/local/syncDb';
 import type {
   ChangeRecord,
@@ -520,6 +521,16 @@ describe('pull', () => {
     const t = await harness();
     const source = new FakeSource('settings', GLOBAL);
     source.pushKey('kv:settings/a', 'put', 1);
+    await stampKvMeta(t.kv, [
+      {
+        scope: GLOBAL,
+        dataClass: 'syncDirectory',
+        key: `connection:${t.connection.connectionId}`,
+        op: 'put',
+        value: { connectionId: t.connection.connectionId },
+        hlc: { wall: 1, counter: 0, node: `${DEVICE}:ctx` },
+      },
+    ]);
     await t.provider.write(
       t.connection,
       'cell-sync/v1/meta/disconnect.json',

@@ -37,6 +37,8 @@ import { blobToBytes } from '../adapters/contract/blobBytes';
 import { appendConflictLog } from '../adapters/local/kv/conflictLog';
 import { kvMetaKey, readSyncMetaKV } from '../adapters/local/kv/kvMeta';
 import { readRouteMarker, type RouteMarker } from './routeMarkers';
+import { persistDrainObligation } from './checkpoints';
+import { readRouting, routeForScope } from './routing';
 import type { ConflictLogEntry } from '../ports/localSource';
 import type { SyncStore } from './syncStore';
 import { decodeJournal, decodeSnapshot, WireFormatError } from './wireCodec';
@@ -393,6 +395,7 @@ async function applyRemoteRecords(
       continue;
     }
     if (isRoutingRecord(record)) {
+      await persistRoutingDrain(deps, record);
       await deps.onRoutingChange?.(record);
     }
     const needed = referencedBlobHashes(record);
@@ -487,6 +490,47 @@ function isRoutingRecord(record: ChangeRecord): boolean {
   if (record.scope !== 'global') return false;
   if (record.dataClass !== 'syncDirectory') return false;
   return ROUTING_RECORD_KEYS.has(record.key) || record.key.startsWith('binding:');
+}
+
+async function persistRoutingDrain(
+  deps: ConnectionPullDeps,
+  record: ChangeRecord,
+): Promise<void> {
+  const scope: Scope | null =
+    record.key === 'systemConnection'
+      ? 'global'
+      : record.key.startsWith('binding:')
+        ? (`profile:${record.key.slice('binding:'.length)}` as Scope)
+        : null;
+  if (scope === null) return;
+  const routing = await readRouting(deps.kv);
+  const target = routeForScope(routing, scope);
+  const current =
+    target === null
+      ? null
+      : target.kind === 'local'
+        ? ('local' as const)
+        : target.connectionId;
+  let next: ConnectionId | 'local' | null;
+  if (record.op === 'delete') {
+    next = scope === 'global' ? 'local' : (routing.systemConnection ?? 'local');
+  } else {
+    const value = record.value;
+    next =
+      value === 'local'
+        ? 'local'
+        : typeof value === 'string' && value !== ''
+          ? (value as ConnectionId)
+          : null;
+  }
+  if (next === null || next === current) return;
+  await persistDrainObligation(
+    deps.kv,
+    scope,
+    { hlc: record.hlc, destination: next },
+    current,
+    deps.clock.now(),
+  );
 }
 
 async function answerBlobsNeeded(
@@ -627,7 +671,8 @@ export async function isConnectionDisconnected(
   const markerHlc = await readDisconnectMarkerHlc(deps);
   if (markerHlc === null) return false;
   const directoryHlc = await connectionDirectoryHlc(deps, deps.connection.connectionId);
-  return directoryHlc === null || compareHlc(markerHlc, directoryHlc) > 0;
+  if (directoryHlc === null) return false;
+  return compareHlc(markerHlc, directoryHlc) > 0;
 }
 
 async function connectionDirectoryHlc(
