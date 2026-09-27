@@ -16,12 +16,16 @@ function resourceScope(langCode: string): Scope {
   return scopeForTarget(targetOf(langCode));
 }
 
-function fieldCapture(scope: Scope, signature: string, field: SyncedField, value: unknown) {
+function recordTokenOf(resource: Pick<ResourceInfo, 'contentHash' | 'signature'>): string {
+  return resource.contentHash ?? resource.signature;
+}
+
+function fieldCapture(scope: Scope, token: string, field: SyncedField, value: unknown) {
   const absent = value === undefined || value === null;
   return {
     scope,
     dataClass: 'dictResource' as const,
-    key: `resource:${signature}/${field}`,
+    key: `resource:${token}/${field}`,
     op: absent ? ('delete' as const) : ('put' as const),
   };
 }
@@ -29,24 +33,24 @@ function fieldCapture(scope: Scope, signature: string, field: SyncedField, value
 async function captureResourceFields(
   store: IDBObjectStore,
   scope: Scope,
-  signature: string,
+  token: string,
   prev: ResourceInfo | undefined,
   next: ResourceInfo,
 ): Promise<void> {
   for (const field of SYNCED_FIELDS) {
     const changed = !prev || stableJson(prev[field]) !== stableJson(next[field]);
-    if (changed) await captureChange(store, fieldCapture(scope, signature, field, next[field]));
+    if (changed) await captureChange(store, fieldCapture(scope, token, field, next[field]));
   }
 }
 
 async function captureResourceTombstones(
   store: IDBObjectStore,
   scope: Scope,
-  signature: string,
+  token: string,
 ): Promise<void> {
-  await captureChange(store, { scope, dataClass: 'dictResource', key: `resource:${signature}`, op: 'delete' });
+  await captureChange(store, { scope, dataClass: 'dictResource', key: `resource:${token}`, op: 'delete' });
   for (const field of SYNCED_FIELDS) {
-    await captureChange(store, fieldCapture(scope, signature, field, undefined));
+    await captureChange(store, fieldCapture(scope, token, field, undefined));
   }
 }
 
@@ -75,8 +79,9 @@ export async function addResource(langCode: string, resource: Omit<ResourceInfo,
   });
   if (isCaptureEnabled()) {
     const scope = resourceScope(langCode);
-    await captureChange(store, { scope, dataClass: 'dictResource', key: `resource:${resource.signature}`, op: 'put' });
-    await captureResourceFields(store, scope, resource.signature, undefined, resource as ResourceInfo);
+    const token = recordTokenOf(resource as ResourceInfo);
+    await captureChange(store, { scope, dataClass: 'dictResource', key: `resource:${token}`, op: 'put' });
+    await captureResourceFields(store, scope, token, undefined, resource as ResourceInfo);
   }
   await awaitTx(store.transaction);
   return id;
@@ -136,15 +141,17 @@ export async function updateResource(langCode: string, resource: ResourceInfo): 
   });
   if (isCaptureEnabled()) {
     const scope = resourceScope(langCode);
-    const signatureChanged = prev !== undefined && prev.signature !== resource.signature;
-    if (signatureChanged) {
-      await captureResourceTombstones(store, scope, prev!.signature);
+    const token = recordTokenOf(resource);
+    const prevToken = prev ? recordTokenOf(prev) : undefined;
+    const tokenChanged = prevToken !== undefined && prevToken !== token;
+    if (tokenChanged) {
+      await captureResourceTombstones(store, scope, prevToken!);
     }
-    await captureChange(store, { scope, dataClass: 'dictResource', key: `resource:${resource.signature}`, op: 'put' });
-    if (!prev || signatureChanged) {
-      await captureResourceFields(store, scope, resource.signature, undefined, resource);
+    await captureChange(store, { scope, dataClass: 'dictResource', key: `resource:${token}`, op: 'put' });
+    if (!prev || tokenChanged) {
+      await captureResourceFields(store, scope, token, undefined, resource);
     } else {
-      await captureResourceFields(store, scope, resource.signature, prev, resource);
+      await captureResourceFields(store, scope, token, prev, resource);
     }
   }
   await awaitTx(store.transaction);
@@ -168,7 +175,7 @@ export async function deleteResource(langCode: string, id: number): Promise<void
     delReq.onerror = () => reject(delReq.error);
   });
   if (isCaptureEnabled() && prev?.signature) {
-    await captureResourceTombstones(store, resourceScope(langCode), prev.signature);
+    await captureResourceTombstones(store, resourceScope(langCode), recordTokenOf(prev));
   }
   await awaitTx(store.transaction);
 }
@@ -273,13 +280,13 @@ export async function deleteAllResources(langCode: string): Promise<void> {
   const db = await getDB(langCode);
   await ensureSyncRuntime();
   const store = getStore(db, WRITE_STORES);
-  const sigs = isCaptureEnabled()
+  const tokens = isCaptureEnabled()
     ? await new Promise<string[]>((resolve, reject) => {
         const getReq = store.getAll();
         getReq.onsuccess = () =>
           resolve(
             (getReq.result as ResourceInfo[])
-              .map((r) => r.signature)
+              .map((r) => recordTokenOf(r))
               .filter((s): s is string => typeof s === 'string' && s.length > 0),
           );
         getReq.onerror = () => reject(getReq.error);
@@ -291,8 +298,8 @@ export async function deleteAllResources(langCode: string): Promise<void> {
     clearReq.onerror = () => reject(clearReq.error);
   });
   const scope = resourceScope(langCode);
-  for (const sig of sigs) {
-    await captureResourceTombstones(store, scope, sig);
+  for (const token of tokens) {
+    await captureResourceTombstones(store, scope, token);
   }
   await awaitTx(store.transaction);
 }

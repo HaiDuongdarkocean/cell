@@ -752,7 +752,7 @@ describe('current()', () => {
       languageProfiles: [{ id: 'p1', target: 'ja', native: 'en', order: 0 }],
     };
     const source = sourceOf('profileConfig', kv, clock);
-    const map = await source.current(['profile', 'profile/nonexistent']);
+    const map = await source.current('profile:ja', ['profile', 'profile/nonexistent']);
     expect(map.get('profile')?.scope).toBe('profile:ja');
     expect(map.get('profile/nonexistent')).toBeNull();
   });

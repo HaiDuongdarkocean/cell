@@ -299,7 +299,7 @@ class SrsLocalSource extends IdbLocalSource {
     hlc: ChangeRecord['hlc'],
     scope: Scope,
   ): Promise<void> {
-    const meta = await getMetaAt(tx, key);
+    const meta = await getMetaAt(tx, key, scope);
     if (meta) {
       const order = compareHlc(meta.hlc, hlc);
       if (order > 0 || (order === 0 && meta.op === 'put')) return;

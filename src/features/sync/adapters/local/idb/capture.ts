@@ -136,7 +136,7 @@ function idbReq<T>(request: IDBRequest<T>): Promise<T> {
   });
 }
 
-function metaPk(scope: Scope | null, key: RecordKey): string {
+export function metaPk(scope: Scope | null, key: RecordKey): string {
   return `${scope ?? ''}|${key}`;
 }
 
@@ -187,7 +187,7 @@ export async function stampRemoteMeta(
   store: IDBObjectStore,
   key: RecordKey,
   meta: { scope: Scope; hlc: Hlc; firstHlc?: Hlc; op: ChangeOp; valueHash?: string },
-): Promise<void> {
+): Promise<StoredRecordMeta> {
   const metaStore = store.transaction.objectStore(SYNC_META);
   const prev = await readRecordMeta(store, key, meta.scope);
   const next: StoredRecordMeta = {
@@ -201,6 +201,7 @@ export async function stampRemoteMeta(
   };
   metaStore.put(next);
   runtime?.clock.observe(meta.hlc);
+  return next;
 }
 
 export async function listMetaByKey(

@@ -182,8 +182,13 @@ export function directoryKvShape(storageKey: string): KvShape {
       if (record.op === 'put' && record.value === undefined) return false;
       return isDirectoryRecordKey(record.key);
     },
-    project(_current, live) {
+    project(current, live) {
       const out: Record<string, unknown> = {};
+      if (isPlainJsonObject(current)) {
+        for (const [key, entry] of Object.entries(current)) {
+          if (entry !== undefined && !isDirectoryRecordKey(key)) out[key] = entry;
+        }
+      }
       for (const record of live) {
         if (record.op !== 'delete' && record.value !== undefined) {
           out[record.path] = record.value;

@@ -54,17 +54,18 @@ async function allOutbox(): Promise<OutboxRow[]> {
   return rows;
 }
 
-async function metaOp(key: string): Promise<string | undefined> {
-  const meta = await getMeta(key);
+async function metaOp(key: string, scope = SCOPE): Promise<string | undefined> {
+  const meta = await getMeta(key, scope);
   return meta?.op;
 }
 
 async function getMeta(
   key: string,
+  scope = SCOPE,
 ): Promise<{ op: string; hlc: Hlc; firstHlc?: Hlc } | undefined> {
   const db = await openRaw();
   const tx = db.transaction(STORES.SYNC_META, 'readonly');
-  const meta = (await reqToPromise(tx.objectStore(STORES.SYNC_META).get(key))) as
+  const meta = (await reqToPromise(tx.objectStore(STORES.SYNC_META).get(`${scope}|${key}`))) as
     | { op: string; hlc: Hlc; firstHlc?: Hlc }
     | undefined;
   db.close();
@@ -128,6 +129,9 @@ describe('readerLocalSource — readerBook', () => {
     const pending = await source.pending(10);
     expect(pending).toEqual([
       { scope: SCOPE, dataClass: 'readerBook', key: 'book:b1', op: 'put' },
+      { scope: SCOPE, dataClass: 'readerBook', key: 'book:b1/filename', op: 'put' },
+      { scope: SCOPE, dataClass: 'readerBook', key: 'book:b1/languageCode', op: 'put' },
+      { scope: SCOPE, dataClass: 'readerBook', key: 'book:b1/title', op: 'put' },
     ]);
     const records = await source.resolve(pending);
     const keys = records.map((record) => record.key).sort();
@@ -158,9 +162,14 @@ describe('readerLocalSource — readerBook', () => {
 
     const globalScope: ChangeRecord[] = [];
     for await (const record of source.snapshot('global' as Scope)) globalScope.push(record);
-    expect(globalScope).toEqual([
-      expect.objectContaining({ key: 'book:b2', op: 'delete' }),
-    ]);
+    expect(globalScope).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: 'book:b2', op: 'delete' }),
+        expect.objectContaining({ key: 'book:b2/filename', op: 'delete' }),
+        expect.objectContaining({ key: 'book:b2/languageCode', op: 'delete' }),
+        expect.objectContaining({ key: 'book:b2/title', op: 'delete' }),
+      ]),
+    );
   });
 
   it('applies a newer remote book put and cascades its tombstone', async () => {

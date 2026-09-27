@@ -332,7 +332,6 @@ class KvLocalSourceImpl implements KvLocalSource {
       }
     }
     emit.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
-    await stampKvMeta(this.deps.kv, emit);
     for (const record of emit) yield record;
   }
 
@@ -359,7 +358,7 @@ class KvLocalSourceImpl implements KvLocalSource {
     return out;
   }
 
-  async current(keys: RecordKey[]): Promise<Map<RecordKey, ChangeRecord | null>> {
+  async current(scope: Scope, keys: RecordKey[]): Promise<Map<RecordKey, ChangeRecord | null>> {
     const meta = await readSyncMetaKV(this.deps.kv);
     const states = await this.sliceStates();
     const records = this.allEffectiveRecords(meta, states);
@@ -367,7 +366,7 @@ class KvLocalSourceImpl implements KvLocalSource {
     for (const key of keys) {
       let merged: ChangeRecord | null = null;
       for (const record of records) {
-        if (record.key !== key) continue;
+        if (record.key !== key || record.scope !== scope) continue;
         merged = merged === null ? record : mergeRecord(merged, record);
       }
       out.set(key, merged);
@@ -488,6 +487,7 @@ class KvLocalSourceImpl implements KvLocalSource {
       }
     }
 
+    const writtenSlices = new Set<KvSlice>();
     for (const [slice, winners] of winnersBySlice) {
       const state = states.find((entry) => entry.slice === slice);
       if (state === undefined) continue;
@@ -503,6 +503,7 @@ class KvLocalSourceImpl implements KvLocalSource {
       const result = slice.apply(state.value, materializable, metaRow);
       if (!jsonEquals(result.value, state.value)) {
         await this.writeSliceValue(slice, result.value);
+        writtenSlices.add(slice);
       }
       const materializedSet = new Set(result.materialized);
       for (const record of materializable) {
@@ -511,6 +512,25 @@ class KvLocalSourceImpl implements KvLocalSource {
           opaque.push(record);
           await stageApplied(record, true);
         }
+      }
+    }
+
+    if (writtenSlices.size > 0) {
+      const freshStates = await this.sliceStates();
+      for (const [metaKey, row] of staged) {
+        if (row.op !== 'put' || row.suppressed === true) continue;
+        const parsed = parseKvMetaKey(metaKey);
+        if (parsed === null) continue;
+        const state = freshStates.find(
+          (entry) =>
+            writtenSlices.has(entry.slice) && entry.slice.ownsRecord(parsed.scope, parsed.key),
+        );
+        if (state === undefined) continue;
+        const leaf = state.leafMap.get(metaKey);
+        staged.set(
+          metaKey,
+          leaf === undefined ? { ...row, suppressed: true } : { ...row, valueHash: leaf.hash },
+        );
       }
     }
 

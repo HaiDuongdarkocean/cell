@@ -113,20 +113,32 @@ describe('dictLocalSource — dictResource', () => {
     const pending = await source.pending(10);
     expect(pending).toEqual([
       { scope: SCOPE, dataClass: 'dictResource', key: 'resource:sig-1', op: 'put' },
+      {
+        scope: SCOPE,
+        dataClass: 'dictResource',
+        key: 'resource:sig-1/disabledComponents',
+        op: 'delete',
+      },
+      { scope: SCOPE, dataClass: 'dictResource', key: 'resource:sig-1/enabled', op: 'put' },
+      { scope: SCOPE, dataClass: 'dictResource', key: 'resource:sig-1/name', op: 'put' },
+      { scope: SCOPE, dataClass: 'dictResource', key: 'resource:sig-1/priority', op: 'put' },
     ]);
 
     const records = await source.resolve(pending);
+    const ch = (await findResourceBySignature(LANG, 'sig-1'))!.contentHash!;
+    expect(typeof ch).toBe('string');
     const keys = records.map((record) => record.key).sort();
     expect(keys).toEqual([
-      'resource:sig-1',
-      'resource:sig-1/enabled',
-      'resource:sig-1/name',
-      'resource:sig-1/priority',
+      `resource:${ch}`,
+      `resource:${ch}/disabledComponents`,
+      `resource:${ch}/enabled`,
+      `resource:${ch}/name`,
+      `resource:${ch}/priority`,
     ]);
-    const entity = records.find((record) => record.key === 'resource:sig-1');
+    const entity = records.find((record) => record.key === `resource:${ch}`);
     expect(entity?.op).toBe('put');
     expect((entity?.value as Record<string, unknown>).id).toBeUndefined();
-    expect(records.find((r) => r.key === 'resource:sig-1/name')?.value).toBe('Resource sig-1');
+    expect(records.find((r) => r.key === `resource:${ch}/name`)?.value).toBe('Resource sig-1');
 
     await source.ack(pending);
     expect((await allOutbox()).filter((row) => row.key.startsWith('resource:'))).toEqual([]);
@@ -143,9 +155,10 @@ describe('dictLocalSource — dictResource', () => {
     expect(fieldPending).toHaveLength(1);
 
     const records = await source.resolve(fieldPending);
+    const ch = (await findResourceBySignature(LANG, 'sig-2'))!.contentHash!;
     expect(records).toEqual([
       expect.objectContaining({
-        key: 'resource:sig-2/name',
+        key: `resource:${ch}/name`,
         op: 'put',
         value: 'Renamed',
       }),

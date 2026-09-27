@@ -14,7 +14,8 @@ export interface LocalSource {
   pending(limit: number): Promise<PendingKey[]>;
   resolve(keys: PendingKey[]): Promise<ChangeRecord[]>;
   ack(keys: PendingKey[]): Promise<void>;
+  stampCommitted(records: readonly ChangeRecord[]): Promise<void>;
   snapshot(scope: Scope): AsyncIterable<ChangeRecord>;
-  current(keys: RecordKey[]): Promise<Map<RecordKey, ChangeRecord | null>>;
+  current(scope: Scope, keys: RecordKey[]): Promise<Map<RecordKey, ChangeRecord | null>>;
   applyRemote(records: ChangeRecord[]): Promise<ApplyResult>;
 }

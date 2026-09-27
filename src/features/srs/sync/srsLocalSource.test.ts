@@ -51,12 +51,12 @@ async function allOutbox(): Promise<OutboxRow[]> {
   return (await reqToPromise(tx.objectStore(SRS_STORES.SYNC_OUTBOX).getAll())) as OutboxRow[];
 }
 
-async function metaOp(key: string): Promise<string | undefined> {
+async function metaOp(key: string, scope = 'profile:en'): Promise<string | undefined> {
   const db = await getSrsDB();
   const tx = db.transaction(SRS_STORES.SYNC_META, 'readonly');
-  const meta = (await reqToPromise(tx.objectStore(SRS_STORES.SYNC_META).get(key))) as
-    | { op: string }
-    | undefined;
+  const meta = (await reqToPromise(
+    tx.objectStore(SRS_STORES.SYNC_META).get(`${scope}|${key}`),
+  )) as { op: string } | undefined;
   return meta?.op;
 }
 
@@ -197,7 +197,7 @@ describe('srsLocalSource — pending/resolve/ack', () => {
       op: 'put',
     });
     expect(records[0].value).toMatchObject({ id: 'card1', noteId: 'n1', deckId: 'd1' });
-    expect(records[0].hlc.node).toBe('devA');
+    expect(records[0].hlc.node).toMatch(/^devA:/);
 
     await source.ack(pending);
     const rows = await allOutbox();
@@ -272,6 +272,10 @@ describe('srsLocalSource — snapshot', () => {
     expect(first).toHaveLength(1);
     expect(first[0]).toMatchObject({ key: 'collections:c9', op: 'put' });
     const minted = first[0].hlc;
+    expect(await metaOp('collections:c9')).toBeUndefined();
+
+    await createSrsLocalSource('srsCollection').stampCommitted(first);
+    expect(await metaOp('collections:c9')).toBe('put');
 
     const second = await snapshotKeys('profile:en', 'srsCollection');
     expect(second[0].hlc).toEqual(minted);
@@ -438,7 +442,7 @@ describe('srsLocalSource — applyRemote', () => {
     const source = createSrsLocalSource('srsCard');
     await seedGraph();
     await putCard(makeCard('card1'));
-    const map = await source.current(['cards:card1', 'cards:gone']);
+    const map = await source.current('profile:en', ['cards:card1', 'cards:gone']);
     expect(map.get('cards:card1')).toMatchObject({ op: 'put', key: 'cards:card1' });
     expect(map.get('cards:gone')).toBeNull();
   });

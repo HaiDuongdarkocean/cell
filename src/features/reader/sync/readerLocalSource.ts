@@ -16,6 +16,7 @@ import {
   getMetaAt,
   getRowAt,
   idbRequest,
+  latestMetaByRecKeyAt,
   listMetaEntriesIn,
   scopeForTarget,
   targetOf,
@@ -158,7 +159,7 @@ class ReaderBookSource extends IdbLocalSource {
       const value: unknown = row[field];
       if (value === undefined) continue;
       const fieldKey = `${pending.key}/${field}`;
-      const fieldMeta = await getMetaAt(tx, fieldKey);
+      const fieldMeta = await getMetaAt(tx, fieldKey, scope);
       if (fieldMeta?.op === 'delete') continue;
       records.push(this.putRecord(scope, fieldKey, fieldMeta ?? meta, value));
     }
@@ -253,7 +254,7 @@ class ReaderBookSource extends IdbLocalSource {
     remote: ChangeRecord,
   ): Promise<void> {
     for (const field of BOOK_SYNCED_FIELDS) {
-      const meta = await getMetaAt(tx, `${BOOK_PREFIX}${bookId}/${field}`);
+      const meta = await getMetaAt(tx, `${BOOK_PREFIX}${bookId}/${field}`, remote.scope);
       if (!meta) continue;
       if (compareHlc(meta.hlc, remote.hlc) <= 0) continue;
       const localValue: unknown = existing[field];
@@ -281,11 +282,11 @@ class ReaderBookSource extends IdbLocalSource {
     await idbRequest(tx.objectStore(STORES.PROGRESS).delete(bookId));
     const leafMetas = await listMetaEntriesIn(tx, `${BOOK_PREFIX}${bookId}/`);
     for (const meta of leafMetas) {
-      await tombstoneMetaAt(tx, meta.key, winner.scope, winner.hlc);
+      await tombstoneMetaAt(tx, meta.recKey, meta.scope ?? winner.scope, winner.hlc);
     }
     const progressMetas = await listMetaEntriesIn(tx, `${PROGRESS_PREFIX}${bookId}/`);
     const progressKeys = new Set<RecordKey>([`${PROGRESS_PREFIX}${bookId}/position`]);
-    for (const meta of progressMetas) progressKeys.add(meta.key);
+    for (const meta of progressMetas) progressKeys.add(meta.recKey);
     for (const deviceId of Object.keys(progress?.readTimeByDevice ?? {})) {
       progressKeys.add(`${PROGRESS_PREFIX}${bookId}/readTime/${deviceId}`);
     }
@@ -437,7 +438,11 @@ class ReaderProgressSource extends IdbLocalSource {
     }
     const hasBuckets = Object.keys(buckets).length > 0;
     if (!hasBuckets) {
-      const positionMeta = await getMetaAt(tx, `${PROGRESS_PREFIX}${parts.bookId}/position`);
+      const positionMeta = await getMetaAt(
+        tx,
+        `${PROGRESS_PREFIX}${parts.bookId}/position`,
+        winner.scope,
+      );
       if (!existing || positionMeta?.op !== 'put') {
         if (existing) await idbRequest(store.delete(parts.bookId));
         return;
@@ -489,10 +494,14 @@ class ReaderProgressSource extends IdbLocalSource {
   private async progressScope(tx: IDBTransaction, bookId: string): Promise<Scope | null> {
     const book = await getRowAt<BookRecord>(tx, STORES.BOOKS, bookId);
     if (book) return bookScopeOf(book);
-    const meta = await getMetaAt(tx, `${PROGRESS_PREFIX}${bookId}/position`);
+    const meta = await latestMetaByRecKeyAt(tx, `${PROGRESS_PREFIX}${bookId}/position`);
     if (meta) return meta.scope;
     const metas = await listMetaEntriesIn(tx, `${PROGRESS_PREFIX}${bookId}/`);
-    return metas[0]?.scope ?? null;
+    let latest: StoredRecordMeta | undefined;
+    for (const entry of metas) {
+      if (!latest || compareHlc(entry.hlc, latest.hlc) > 0) latest = entry;
+    }
+    return latest?.scope ?? null;
   }
 }
 

@@ -1,115 +1,144 @@
-import type {
-  ChangeRecord,
-  LocalSource,
-  LocalValue,
-  PendingKey,
-  RecordKey,
-  Scope,
-  SnapshotEntry,
-  StoredRecordMeta,
-} from '@/features/sync';
 import {
-  IdbLocalSource,
-  allRowsAt,
-  compareHlc,
   getMetaAt,
+  getRowAt,
   idbRequest,
+  IdbLocalSource,
   listMetaEntriesIn,
   scopeForTarget,
   targetOf,
   tombstoneMetaAt,
 } from '@/features/sync';
+import type { ChangeRecord, DataClass, PendingKey, RecordKey, Scope } from '@/features/sync';
+import type { LocalValue, SnapshotEntry, StoredRecordMeta } from '@/features/sync';
 import type { ResourceInfo, WordStatus } from '@/entities/dictionary';
-import type { WordStatusEntry } from '../services/wordStatusStore';
 import { getDB, INDEXES, STORES } from '../repositories/baseRepository';
-
-export type DictDataClass = 'dictResource' | 'wordStatus';
+import {
+  ensureResourceContentHash,
+  resourceRecordKey,
+  resourceRecordToken,
+} from './resourceIdentity';
 
 const RESOURCE_PREFIX = 'resource:';
 const WORD_PREFIX = 'word:';
 
-const RESOURCE_SYNCED_FIELDS = [
+const RESOURCE_FIELDS = [
   'name',
   'enabled',
   'priority',
-  'profileIds',
   'disabledComponents',
 ] as const;
 
-type ResourceField = (typeof RESOURCE_SYNCED_FIELDS)[number];
-
-const ALL_WORD_STATUSES: readonly WordStatus[] = ['tracking', 'known', 'ignore', 'unknown'];
+const WORD_STATUSES: ReadonlySet<WordStatus> = new Set([
+  'known',
+  'unknown',
+  'tracking',
+  'ignore',
+]);
 
 interface ResourceKeyParts {
-  readonly signature: string;
-  readonly field: ResourceField | null;
+  readonly token: string;
+  readonly field: string | null;
 }
 
 function parseResourceKey(key: RecordKey): ResourceKeyParts | null {
   if (!key.startsWith(RESOURCE_PREFIX)) return null;
   const rest = key.slice(RESOURCE_PREFIX.length);
   const slash = rest.indexOf('/');
-  if (slash < 0) return rest.length > 0 ? { signature: rest, field: null } : null;
-  const signature = rest.slice(0, slash);
+  if (slash === -1) return rest.length > 0 ? { token: rest, field: null } : null;
+  const token = rest.slice(0, slash);
   const field = rest.slice(slash + 1);
-  if (signature.length === 0 || field.includes('/')) return null;
-  if (!(RESOURCE_SYNCED_FIELDS as readonly string[]).includes(field)) return null;
-  return { signature, field: field as ResourceField };
+  if (token.length === 0 || field.length === 0 || field.includes('/')) return null;
+  return { token, field };
 }
 
-function stripLocalId(row: ResourceInfo): Record<string, unknown> {
-  const { id: _id, ...rest } = row;
-  return rest;
+function isResourceMeta(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-const RESOURCE_READ_STORES = [STORES.RESOURCE, STORES.SYNC_META] as const;
-const RESOURCE_APPLY_STORES = [
-  STORES.RESOURCE,
-  STORES.DICTIONARY,
-  STORES.FREQUENCY,
-  STORES.PHRASE_INDEX,
-  STORES.SYNC_META,
-] as const;
-const WORD_STATUS_READ_STORES = [STORES.WORD_STATUS, STORES.SYNC_META] as const;
-const WORD_STATUS_APPLY_STORES = [
-  STORES.WORD_STATUS,
-  STORES.WORD_TRASH,
-  STORES.SYNC_META,
-] as const;
+function toResourceMeta(row: ResourceInfo): Record<string, unknown> {
+  return {
+    name: row.name,
+    langCode: row.langCode,
+    type: row.type,
+    format: row.format,
+    enabled: row.enabled,
+    priority: row.priority,
+    disabledComponents: row.disabledComponents ? [...row.disabledComponents] : undefined,
+    contentHash: row.contentHash,
+  };
+}
 
-abstract class DictLocalSource extends IdbLocalSource {
-  protected readonly langScope: Scope;
+class DictResourceLocalSource extends IdbLocalSource {
+  readonly dataClass: DataClass = 'dictResource';
+  protected readonly keyPrefix = RESOURCE_PREFIX;
 
-  constructor(
-    readonly dataClass: DictDataClass,
-    protected readonly langCode: string,
-  ) {
+  constructor(private readonly langCode: string) {
     super();
-    this.langScope = scopeForTarget(targetOf(langCode));
   }
 
   protected openDb(): Promise<IDBDatabase> {
     return getDB(this.langCode);
   }
 
-  protected async scopeOfLocalValue(): Promise<Scope | null> {
-    return this.langScope;
-  }
-}
-
-class DictResourceSource extends DictLocalSource {
-  protected readonly keyPrefix = RESOURCE_PREFIX;
-
   protected readStores(): readonly string[] {
-    return RESOURCE_READ_STORES;
+    return [STORES.RESOURCE, STORES.SYNC_META];
   }
 
   protected applyStores(): readonly string[] {
-    return RESOURCE_APPLY_STORES;
+    return [
+      STORES.RESOURCE,
+      STORES.DICTIONARY,
+      STORES.FREQUENCY,
+      STORES.PHRASE_INDEX,
+      STORES.SYNC_META,
+    ];
   }
 
   protected snapshotStores(): readonly string[] {
-    return RESOURCE_READ_STORES;
+    return [STORES.RESOURCE, STORES.SYNC_META];
+  }
+
+  private resourceScope(): Scope {
+    return scopeForTarget(targetOf(this.langCode));
+  }
+
+  async resolve(keys: PendingKey[]): Promise<ChangeRecord[]> {
+    await this.backfillContentHashes(keys.map((pending) => pending.key));
+    return super.resolve(keys);
+  }
+
+  async *snapshot(scope: Scope): AsyncIterable<ChangeRecord> {
+    await this.backfillAllContentHashes();
+    yield* super.snapshot(scope);
+  }
+
+  private async backfillContentHashes(keys: readonly RecordKey[]): Promise<void> {
+    const db = await this.openDb();
+    const rtx = db.transaction([STORES.RESOURCE], 'readonly');
+    const store = rtx.objectStore(STORES.RESOURCE);
+    const touched = new Set<number>();
+    for (const key of keys) {
+      const parts = parseResourceKey(key);
+      if (!parts) continue;
+      const row = await this.resourceByToken(store, parts.token);
+      if (row && !row.contentHash && row.id !== undefined) touched.add(row.id);
+    }
+    for (const id of touched) {
+      const row = (await idbRequest(
+        db.transaction([STORES.RESOURCE], 'readonly').objectStore(STORES.RESOURCE).get(id),
+      )) as ResourceInfo | undefined;
+      if (row) await ensureResourceContentHash(db, row);
+    }
+  }
+
+  private async backfillAllContentHashes(): Promise<void> {
+    const db = await this.openDb();
+    const rows = (await idbRequest(
+      db.transaction([STORES.RESOURCE], 'readonly').objectStore(STORES.RESOURCE).getAll(),
+    )) as ResourceInfo[];
+    for (const row of rows) {
+      if (!row.contentHash && row.id !== undefined) await ensureResourceContentHash(db, row);
+    }
   }
 
   protected knownKey(key: RecordKey): boolean {
@@ -119,10 +148,11 @@ class DictResourceSource extends DictLocalSource {
   protected async readLocalValue(tx: IDBTransaction, key: RecordKey): Promise<LocalValue> {
     const parts = parseResourceKey(key);
     if (!parts) return { found: false };
-    const row = await this.resourceBySignature(tx, parts.signature);
+    const row = await this.resourceByToken(tx.objectStore(STORES.RESOURCE), parts.token);
     if (!row) return { found: false };
-    if (parts.field === null) return { found: true, value: stripLocalId(row) };
-    const value: unknown = row[parts.field];
+    if (parts.field === null) return { found: true, value: toResourceMeta(row) };
+    if (!(RESOURCE_FIELDS as readonly string[]).includes(parts.field)) return { found: false };
+    const value: unknown = (row as unknown as Record<string, unknown>)[parts.field];
     return value === undefined ? { found: false } : { found: true, value };
   }
 
@@ -134,23 +164,25 @@ class DictResourceSource extends DictLocalSource {
   ): Promise<ChangeRecord[]> {
     const scope = meta.scope ?? pending.scope;
     const parts = parseResourceKey(pending.key);
-    if (!parts || meta.op === 'delete' || !local.found) {
-      return [this.tombstoneRecord(scope, pending.key, meta)];
+    if (!parts) return [this.tombstoneRecord(scope, pending.key, meta)];
+    const row = await this.resourceByToken(tx.objectStore(STORES.RESOURCE), parts.token);
+    const token = row ? resourceRecordToken(row) : parts.token;
+    if (meta.op === 'delete' || !local.found) {
+      const key = parts.field ? `resource:${token}/${parts.field}` : `resource:${token}`;
+      return [this.tombstoneRecord(scope, key, meta)];
     }
     if (parts.field !== null) {
-      return [this.putRecord(scope, pending.key, meta, local.value)];
+      return [this.putRecord(scope, `resource:${token}/${parts.field}`, meta, local.value)];
     }
-    const records: ChangeRecord[] = [
-      this.putRecord(scope, pending.key, meta, local.value),
-    ];
-    const row = local.value as ResourceInfo;
-    for (const field of RESOURCE_SYNCED_FIELDS) {
-      const value: unknown = row[field];
+    const records: ChangeRecord[] = [this.putRecord(scope, `resource:${token}`, meta, local.value)];
+    for (const field of RESOURCE_FIELDS) {
+      const fieldMeta =
+        (await getMetaAt(tx, `resource:${token}/${field}`, scope)) ??
+        (await getMetaAt(tx, `resource:${parts.token}/${field}`, scope));
+      if (!fieldMeta || fieldMeta.op === 'delete') continue;
+      const value: unknown = row ? (row as unknown as Record<string, unknown>)[field] : undefined;
       if (value === undefined) continue;
-      const fieldKey = `${pending.key}/${field}`;
-      const fieldMeta = await getMetaAt(tx, fieldKey);
-      if (fieldMeta?.op === 'delete') continue;
-      records.push(this.putRecord(scope, fieldKey, fieldMeta ?? meta, value));
+      records.push(this.putRecord(scope, `resource:${token}/${field}`, fieldMeta, value));
     }
     return records;
   }
@@ -159,187 +191,205 @@ class DictResourceSource extends DictLocalSource {
     tx: IDBTransaction,
     scope: Scope,
   ): Promise<SnapshotEntry[]> {
-    if (scope !== this.langScope) return [];
-    const rows = await allRowsAt<ResourceInfo>(tx, STORES.RESOURCE);
+    if (scope !== this.resourceScope()) return [];
+    const rows = (await idbRequest(tx.objectStore(STORES.RESOURCE).getAll())) as ResourceInfo[];
     const entries: SnapshotEntry[] = [];
     for (const row of rows) {
-      const base = `${RESOURCE_PREFIX}${row.signature}`;
-      entries.push({ key: base, metaKey: base, value: stripLocalId(row) });
-      for (const field of RESOURCE_SYNCED_FIELDS) {
-        const value: unknown = row[field];
+      const base = resourceRecordKey(row);
+      entries.push({ key: base, metaKey: base, value: toResourceMeta(row) });
+      for (const field of RESOURCE_FIELDS) {
+        const value: unknown = (row as unknown as Record<string, unknown>)[field];
         if (value === undefined) continue;
-        entries.push({ key: `${base}/${field}`, metaKey: base, value });
+        entries.push({ key: `${base}/${field}`, metaKey: `${base}/${field}`, value });
       }
     }
     return entries;
   }
 
+  protected async scopeOfLocalValue(): Promise<Scope | null> {
+    return this.resourceScope();
+  }
+
   protected putMaterializable(record: ChangeRecord): boolean {
     const parts = parseResourceKey(record.key);
     if (!parts) return false;
-    if (parts.field !== null) return record.value !== undefined;
+    if (parts.field !== null) {
+      return (RESOURCE_FIELDS as readonly string[]).includes(parts.field);
+    }
     const value = record.value;
-    if (typeof value !== 'object' || value === null) return false;
-    const row = value as Record<string, unknown>;
-    return row.signature === parts.signature && typeof row.name === 'string';
+    if (!isResourceMeta(value)) return false;
+    return value.langCode === this.langCode && typeof value.name === 'string';
   }
 
   protected async applyCheck(tx: IDBTransaction, record: ChangeRecord): Promise<boolean> {
     const parts = parseResourceKey(record.key);
     if (!parts) return false;
-    if (parts.field === null) return true;
-    if (record.op === 'delete') return true;
-    return (await this.resourceBySignature(tx, parts.signature)) !== undefined;
+    if (record.op === 'put' && parts.field !== null) {
+      return !!(await this.resourceByToken(tx.objectStore(STORES.RESOURCE), parts.token));
+    }
+    return true;
   }
 
   protected async writeRemote(
     tx: IDBTransaction,
     winner: ChangeRecord,
-    remote: ChangeRecord,
+    _remote: ChangeRecord,
   ): Promise<void> {
     const parts = parseResourceKey(winner.key);
     if (!parts) return;
     const store = tx.objectStore(STORES.RESOURCE);
-    const existing = await this.resourceBySignature(tx, parts.signature);
-    if (parts.field === null) {
-      if (winner.op === 'delete') {
-        await this.deleteResourceCascade(tx, existing, winner);
+    if (winner.op === 'delete') {
+      if (parts.field === null) {
+        await this.deleteResourceCascade(tx, parts.token, winner);
         return;
       }
-      const incoming = winner.value as Record<string, unknown>;
-      const next: Record<string, unknown> = { ...(existing ?? {}), ...incoming };
-      delete next.id;
-      if (existing?.id !== undefined) next.id = existing.id;
-      if (existing) {
-        await this.overlayWinningFields(tx, next, existing, parts.signature, remote);
-      }
-      await idbRequest(store.put(next));
+      const row = await this.resourceByToken(store, parts.token);
+      if (row) await idbRequest(store.put({ ...row, [parts.field]: undefined }));
       return;
     }
-    if (!existing) return;
-    const next: Record<string, unknown> = { ...existing };
-    if (winner.op === 'delete') {
-      delete next[parts.field];
-    } else {
-      next[parts.field] = winner.value;
+    if (parts.field !== null) {
+      const row = await this.resourceByToken(store, parts.token);
+      if (row) await idbRequest(store.put({ ...row, [parts.field]: winner.value }));
+      return;
     }
+    if (!this.putMaterializable(winner)) return;
+    const existing = await this.resourceByToken(store, parts.token);
+    const value = winner.value as Record<string, unknown>;
+    const next: Record<string, unknown> = {
+      components: existing?.components ?? [],
+      installationFinished: existing?.installationFinished ?? true,
+      wordCount: existing?.wordCount ?? 0,
+      signature: existing?.signature ?? parts.token,
+      importedAt: existing?.importedAt ?? Date.now(),
+      metadata: existing?.metadata,
+      ...value,
+      contentHash: parts.token,
+      langCode: this.langCode,
+    };
+    if (existing?.id !== undefined) next.id = existing.id;
     await idbRequest(store.put(next));
-  }
-
-  private async overlayWinningFields(
-    tx: IDBTransaction,
-    next: Record<string, unknown>,
-    existing: ResourceInfo,
-    signature: string,
-    remote: ChangeRecord,
-  ): Promise<void> {
-    for (const field of RESOURCE_SYNCED_FIELDS) {
-      const meta = await getMetaAt(tx, `${RESOURCE_PREFIX}${signature}/${field}`);
-      if (!meta) continue;
-      if (compareHlc(meta.hlc, remote.hlc) <= 0) continue;
-      const localValue: unknown = existing[field];
-      if (meta.op === 'delete' || localValue === undefined) {
-        delete next[field];
-      } else {
-        next[field] = localValue;
-      }
-    }
   }
 
   private async deleteResourceCascade(
     tx: IDBTransaction,
-    existing: ResourceInfo | undefined,
+    token: string,
     winner: ChangeRecord,
   ): Promise<void> {
-    const signature = winner.key.slice(RESOURCE_PREFIX.length);
-    const leafMetas = await listMetaEntriesIn(tx, `${RESOURCE_PREFIX}${signature}/`);
-    for (const meta of leafMetas) {
-      await tombstoneMetaAt(tx, meta.key, winner.scope, winner.hlc);
+    const store = tx.objectStore(STORES.RESOURCE);
+    const row = await this.resourceByToken(store, token);
+    if (row?.id !== undefined) {
+      for (const contentStore of [STORES.DICTIONARY, STORES.FREQUENCY]) {
+        const objectStore = tx.objectStore(contentStore);
+        const keys = (await idbRequest(
+          objectStore.index(INDEXES.by_resource).getAllKeys(row.id),
+        )) as IDBValidKey[];
+        for (const contentKey of keys) await idbRequest(objectStore.delete(contentKey));
+      }
+      await idbRequest(tx.objectStore(STORES.PHRASE_INDEX).delete(row.id));
+      await idbRequest(store.delete(row.id));
     }
-    if (!existing) return;
-    if (existing.id !== undefined) {
-      await this.deleteByResourceId(tx, STORES.DICTIONARY, existing.id);
-      await this.deleteByResourceId(tx, STORES.FREQUENCY, existing.id);
-      await idbRequest(tx.objectStore(STORES.PHRASE_INDEX).delete(existing.id));
-      await idbRequest(tx.objectStore(STORES.RESOURCE).delete(existing.id));
-    }
-  }
-
-  private async deleteByResourceId(
-    tx: IDBTransaction,
-    storeName: string,
-    resourceId: number,
-  ): Promise<void> {
-    const store = tx.objectStore(storeName);
-    const keys = await idbRequest(
-      store.index(INDEXES.by_resource).getAllKeys(resourceId),
-    );
-    for (const key of keys) {
-      store.delete(key);
+    const metas = await listMetaEntriesIn(tx, `${RESOURCE_PREFIX}${token}/`);
+    for (const meta of metas) {
+      await tombstoneMetaAt(tx, meta.recKey, meta.scope ?? winner.scope, winner.hlc);
     }
   }
 
-  private async resourceBySignature(
-    tx: IDBTransaction,
-    signature: string,
+  private async resourceByToken(
+    store: IDBObjectStore,
+    token: string,
   ): Promise<ResourceInfo | undefined> {
-    return idbRequest(
-      tx
-        .objectStore(STORES.RESOURCE)
-        .index(INDEXES.by_signature)
-        .get(signature) as IDBRequest<ResourceInfo | undefined>,
-    );
+    const byHash = (await idbRequest(
+      store.index(INDEXES.by_contentHash).get(token),
+    )) as ResourceInfo | undefined;
+    if (byHash) return byHash;
+    return (await idbRequest(
+      store.index(INDEXES.by_signature).get(token),
+    )) as ResourceInfo | undefined;
   }
 }
 
-class WordStatusSource extends DictLocalSource {
+class DictWordStatusLocalSource extends IdbLocalSource {
+  readonly dataClass: DataClass = 'wordStatus';
   protected readonly keyPrefix = WORD_PREFIX;
 
+  constructor(private readonly langCode: string) {
+    super();
+  }
+
+  protected openDb(): Promise<IDBDatabase> {
+    return getDB(this.langCode);
+  }
+
   protected readStores(): readonly string[] {
-    return WORD_STATUS_READ_STORES;
+    return [STORES.WORD_STATUS, STORES.WORD_TRASH, STORES.SYNC_META];
   }
 
   protected applyStores(): readonly string[] {
-    return WORD_STATUS_APPLY_STORES;
+    return [STORES.WORD_STATUS, STORES.WORD_TRASH, STORES.SYNC_META];
   }
 
   protected snapshotStores(): readonly string[] {
-    return WORD_STATUS_READ_STORES;
+    return this.readStores();
   }
 
   protected knownKey(key: RecordKey): boolean {
-    return key.startsWith(WORD_PREFIX) && key.length > WORD_PREFIX.length;
+    return key.startsWith(WORD_PREFIX) && key.slice(WORD_PREFIX.length).length > 0;
   }
 
   protected async readLocalValue(tx: IDBTransaction, key: RecordKey): Promise<LocalValue> {
+    if (!this.knownKey(key)) return { found: false };
     const term = key.slice(WORD_PREFIX.length);
-    const row = await idbRequest(
-      tx.objectStore(STORES.WORD_STATUS).get(term) as IDBRequest<WordStatusEntry | undefined>,
+    const row = await getRowAt<{ term: string; status: string; updatedAt: number }>(
+      tx,
+      STORES.WORD_STATUS,
+      term,
     );
-    return row === undefined ? { found: false } : { found: true, value: row };
+    if (!row) return { found: false };
+    if (await getRowAt(tx, STORES.WORD_TRASH, term)) return { found: false };
+    return { found: true, value: { term: row.term, status: row.status, updatedAt: row.updatedAt } };
   }
 
   protected async collectSnapshotEntries(
     tx: IDBTransaction,
     scope: Scope,
   ): Promise<SnapshotEntry[]> {
-    if (scope !== this.langScope) return [];
-    const rows = await allRowsAt<WordStatusEntry>(tx, STORES.WORD_STATUS);
-    return rows
-      .filter((row) => row.status !== 'unknown')
-      .map((row) => ({
-        key: `${WORD_PREFIX}${row.term}`,
-        metaKey: `${WORD_PREFIX}${row.term}`,
-        value: row,
-      }));
+    if (scope !== this.wordScope()) return [];
+    const rows = (await idbRequest(tx.objectStore(STORES.WORD_STATUS).getAll())) as {
+      term: string;
+      status: string;
+      updatedAt: number;
+    }[];
+    const entries: SnapshotEntry[] = [];
+    for (const row of rows) {
+      if (await getRowAt(tx, STORES.WORD_TRASH, row.term)) continue;
+      const key = `${WORD_PREFIX}${row.term}`;
+      entries.push({
+        key,
+        metaKey: key,
+        value: { term: row.term, status: row.status, updatedAt: row.updatedAt },
+      });
+    }
+    return entries;
+  }
+
+  protected async scopeOfLocalValue(): Promise<Scope | null> {
+    return this.wordScope();
   }
 
   protected putMaterializable(record: ChangeRecord): boolean {
-    const term = record.key.slice(WORD_PREFIX.length);
+    if (!this.knownKey(record.key)) return false;
     const value = record.value;
     if (typeof value !== 'object' || value === null) return false;
-    const row = value as Record<string, unknown>;
-    return row.term === term && (ALL_WORD_STATUSES as readonly string[]).includes(row.status as string);
+    const entry = value as Record<string, unknown>;
+    return (
+      entry.term === record.key.slice(WORD_PREFIX.length) &&
+      typeof entry.status === 'string' &&
+      WORD_STATUSES.has(entry.status as WordStatus)
+    );
+  }
+
+  protected async applyCheck(_tx: IDBTransaction, record: ChangeRecord): Promise<boolean> {
+    return record.op === 'delete' ? true : this.putMaterializable(record);
   }
 
   protected async writeRemote(
@@ -350,32 +400,34 @@ class WordStatusSource extends DictLocalSource {
     const term = winner.key.slice(WORD_PREFIX.length);
     const statusStore = tx.objectStore(STORES.WORD_STATUS);
     const trashStore = tx.objectStore(STORES.WORD_TRASH);
-    if (winner.op === 'delete') {
+    const value = winner.value as { term: string; status: WordStatus; updatedAt?: number };
+    if (winner.op === 'delete' || value.status === 'unknown') {
       await idbRequest(statusStore.delete(term));
       await idbRequest(trashStore.delete(term));
       return;
     }
-    const value = winner.value as WordStatusEntry;
-    if (value.status === 'unknown') {
-      await idbRequest(statusStore.delete(term));
-      return;
-    }
     await idbRequest(trashStore.delete(term));
     await idbRequest(
-      statusStore.put({
-        term,
-        status: value.status,
-        updatedAt: Number.isFinite(value.updatedAt) ? value.updatedAt : Date.now(),
-      }),
+      statusStore.put({ term, status: value.status, updatedAt: value.updatedAt ?? Date.now() }),
     );
+  }
+
+  private wordScope(): Scope {
+    return scopeForTarget(targetOf(this.langCode));
   }
 }
 
-export function createDictLocalSource(
-  langCode: string,
-  dataClass: DictDataClass,
-): LocalSource {
-  if (dataClass === 'dictResource') return new DictResourceSource('dictResource', langCode);
-  if (dataClass === 'wordStatus') return new WordStatusSource('wordStatus', langCode);
+export type DictDataClass = 'dictResource' | 'wordStatus';
+
+export function createDictLocalSource(langCode: string, dataClass: DictDataClass): IdbLocalSource {
+  if (dataClass === 'dictResource') return new DictResourceLocalSource(langCode);
+  if (dataClass === 'wordStatus') return new DictWordStatusLocalSource(langCode);
   throw new Error(`Unknown dictionary data class: ${dataClass}`);
+}
+
+export function dictLocalSources(langCode: string): IdbLocalSource[] {
+  return [
+    new DictResourceLocalSource(langCode),
+    new DictWordStatusLocalSource(langCode),
+  ];
 }

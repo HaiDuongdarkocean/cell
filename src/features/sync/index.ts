@@ -41,7 +41,8 @@ export {
   deleteOutboxEntries,
   getMeta,
   getMetaAt,
-  getMetaEntries,
+  getMetaByRecKeyAt,
+  latestMetaByRecKeyAt,
   listMetaEntries,
   listMetaEntriesIn,
   putMetaAt,
@@ -54,6 +55,7 @@ export {
   allRowsAt,
   rowsByIndexAt,
 } from './adapters/local/idb/outbox';
+export { metaPk } from './adapters/local/idb/capture';
 export type { OutboxRow, PendingDrain } from './adapters/local/idb/outbox';
 export { IdbLocalSource } from './adapters/local/idb/idbLocalSource';
 export type {
