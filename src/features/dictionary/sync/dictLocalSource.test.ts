@@ -22,8 +22,10 @@ import {
   getDB,
   getDbName,
 } from '../repositories/baseRepository';
+import { findDictionaryByResource } from '../repositories/dictionaryRepository';
 import { getWordStatus, setWordStatus } from '../services/wordStatusStore';
 import { createDictLocalSource } from './dictLocalSource';
+import { serializeResourcePortable } from './resourceIdentity';
 
 const LANG = 'en';
 const SCOPE = 'profile:en' as const;
@@ -252,6 +254,110 @@ describe('dictLocalSource — dictResource', () => {
     expect(result.applied).toHaveLength(1);
     const stored = await findResourceBySignature(LANG, 'sig-7');
     expect(stored?.signature).toBe('sig-7');
+  });
+
+  it('imports blob content for a remote resource put when the blob is available', async () => {
+    const source = createDictLocalSource(LANG, 'dictResource');
+    const hash = 'ch-import-1';
+    const bytes = serializeResourcePortable(
+      [
+        { term: 'hola mundo', reading: 'hola mundo', defs: [{ text: 'hello world' }] },
+        { term: 'gato', reading: 'gato', defs: [{ text: 'cat' }] },
+      ],
+      [{ term: 'hola mundo', freq: 42 }],
+    );
+    const remote: ChangeRecord = {
+      scope: SCOPE,
+      dataClass: 'dictResource',
+      key: `resource:${hash}`,
+      op: 'put',
+      value: {
+        name: 'Remote Dict',
+        langCode: LANG,
+        type: 'DICTIONARY',
+        format: 'json-entries',
+        enabled: true,
+        priority: 1,
+        contentHash: hash,
+      },
+      hlc: farFuture(),
+    };
+    const fetchBlob = jest.fn(async () => new Blob([bytes]));
+    const result = await source.applyRemote([remote], { fetchBlob });
+    expect(result.applied).toHaveLength(1);
+    expect(fetchBlob).toHaveBeenCalledWith(hash);
+
+    const stored = await findResourceBySignature(LANG, hash);
+    expect(stored).toBeDefined();
+    expect(stored?.contentHash).toBe(hash);
+    expect(stored?.installationFinished).toBe(true);
+    expect(stored?.wordCount).toBe(2);
+    const entries = await findDictionaryByResource(LANG, stored!.id!);
+    expect(entries.map((entry) => entry.term).sort()).toEqual(['gato', 'hola mundo']);
+  });
+
+  it('keeps the resource incomplete when the blob is absent and retries on a later apply', async () => {
+    const source = createDictLocalSource(LANG, 'dictResource');
+    const hash = 'ch-import-2';
+    const remote: ChangeRecord = {
+      scope: SCOPE,
+      dataClass: 'dictResource',
+      key: `resource:${hash}`,
+      op: 'put',
+      value: {
+        name: 'Pending Dict',
+        langCode: LANG,
+        type: 'DICTIONARY',
+        format: 'json-entries',
+        contentHash: hash,
+      },
+      hlc: farFuture(),
+    };
+    const missing = jest.fn(async () => null);
+    const first = await source.applyRemote([remote], { fetchBlob: missing });
+    expect(first.applied).toHaveLength(1);
+    let stored = await findResourceBySignature(LANG, hash);
+    expect(stored?.installationFinished).toBe(false);
+
+    const bytes = serializeResourcePortable(
+      [{ term: 'perro', reading: 'perro', defs: [{ text: 'dog' }] }],
+      [],
+    );
+    const retry = await source.applyRemote([remote], {
+      fetchBlob: async () => new Blob([bytes]),
+    });
+    expect(retry.applied.length + retry.localWon.length).toBe(1);
+    stored = await findResourceBySignature(LANG, hash);
+    expect(stored?.installationFinished).toBe(true);
+    expect(await findDictionaryByResource(LANG, stored!.id!)).toHaveLength(1);
+  });
+
+  it('does not duplicate rows when the same resource applies twice', async () => {
+    const source = createDictLocalSource(LANG, 'dictResource');
+    const hash = 'ch-import-3';
+    const bytes = serializeResourcePortable(
+      [{ term: 'uno', reading: 'uno', defs: [{ text: 'one' }] }],
+      [],
+    );
+    const remote: ChangeRecord = {
+      scope: SCOPE,
+      dataClass: 'dictResource',
+      key: `resource:${hash}`,
+      op: 'put',
+      value: {
+        name: 'Dict',
+        langCode: LANG,
+        type: 'DICTIONARY',
+        format: 'json-entries',
+        contentHash: hash,
+      },
+      hlc: farFuture(),
+    };
+    const ctx = { fetchBlob: async () => new Blob([bytes]) };
+    await source.applyRemote([remote], ctx);
+    await source.applyRemote([remote], ctx);
+    const stored = await findResourceBySignature(LANG, hash);
+    expect(await findDictionaryByResource(LANG, stored!.id!)).toHaveLength(1);
   });
 
   it('deletes the resource row on a remote tombstone', async () => {

@@ -17,7 +17,7 @@ export type {
 export { targetOf, profileIdForTarget, scopeForTarget, connectionId } from './domain/scope';
 export { compareHlc, hlcEq, maxHlc, HybridClock } from './domain/hlc';
 export { stableJson, stableHash } from './domain/stableHash';
-export type { LocalSource, ApplyResult } from './ports/localSource';
+export type { LocalSource, ApplyResult, ApplyContext, ConflictLogEntry } from './ports/localSource';
 export {
   SYNC_OUTBOX,
   SYNC_META,
@@ -56,6 +56,7 @@ export {
   rowsByIndexAt,
 } from './adapters/local/idb/outbox';
 export { metaPk } from './adapters/local/idb/capture';
+export { blobBytes } from './app/wireCodec';
 export type { OutboxRow, PendingDrain } from './adapters/local/idb/outbox';
 export { IdbLocalSource } from './adapters/local/idb/idbLocalSource';
 export type {

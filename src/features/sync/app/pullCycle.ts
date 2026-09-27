@@ -13,7 +13,7 @@ import { isPlainJsonObject } from '../domain/flatten';
 import { sortRecordsForApply } from '../domain/merge/applyOrder';
 import type { Clock } from '../ports/clock';
 import type { KeyValueStore } from '../ports/keyValueStore';
-import type { LocalSource } from '../ports/localSource';
+import type { ApplyContext, LocalSource } from '../ports/localSource';
 import { ProviderError } from '../ports/storageProvider';
 import type { StorageProvider } from '../ports/storageProvider';
 import type { BlobReader } from './blobRefs';
@@ -323,11 +323,21 @@ async function applyRemoteRecords(
     ready.set(record.dataClass, batch);
   }
 
+  const ctx: ApplyContext = {
+    fetchBlob: async (contentHash) => {
+      try {
+        return await deps.provider.read(deps.connection, blobPath(contentHash));
+      } catch (e) {
+        if (e instanceof ProviderError && e.kind === 'not-found') return null;
+        throw e;
+      }
+    },
+  };
   const conflicts: ConflictLogEntry[] = [];
   for (const [dataClass, batch] of ready) {
     for (const source of deps.sources) {
       if (source.dataClass !== dataClass) continue;
-      const result = await source.applyRemote(batch);
+      const result = await source.applyRemote(batch, ctx);
       stats.applied += result.applied.length;
       if (result.applied.length > 0) stats.dataClasses.add(dataClass);
       for (const record of result.opaque) {

@@ -9,7 +9,12 @@ import type {
   RecordKey,
   Scope,
 } from '../../../domain/types';
-import type { ApplyResult, ConflictLogEntry, LocalSource } from '../../../ports/localSource';
+import type {
+  ApplyContext,
+  ApplyResult,
+  ConflictLogEntry,
+  LocalSource,
+} from '../../../ports/localSource';
 import {
   deleteOpaqueRecord,
   getOpaqueRecord,
@@ -207,7 +212,7 @@ export abstract class IdbLocalSource implements LocalSource {
     await awaitIdbTx(tx);
   }
 
-  async applyRemote(records: ChangeRecord[]): Promise<ApplyResult> {
+  async applyRemote(records: ChangeRecord[], ctx?: ApplyContext): Promise<ApplyResult> {
     const applied: ChangeRecord[] = [];
     const localWon: ChangeRecord[] = [];
     const opaque: ChangeRecord[] = [];
@@ -295,6 +300,7 @@ export abstract class IdbLocalSource implements LocalSource {
         await deleteOpaqueRecord(row.key);
       }
     }
+    await this.afterApplyCommit(applied, ctx);
     return { applied, localWon, opaque, conflicts };
   }
 
@@ -430,4 +436,9 @@ export abstract class IdbLocalSource implements LocalSource {
     winner: ChangeRecord,
     remote: ChangeRecord,
   ): Promise<void>;
+
+  protected async afterApplyCommit(
+    _applied: readonly ChangeRecord[],
+    _ctx?: ApplyContext,
+  ): Promise<void> {}
 }

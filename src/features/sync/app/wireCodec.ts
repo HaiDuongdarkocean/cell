@@ -108,7 +108,7 @@ function isWireFile(value: unknown, kind: 'journal' | 'snapshot'): value is Jour
   );
 }
 
-async function blobBytes(blob: Blob): Promise<Uint8Array> {
+export async function blobBytes(blob: Blob): Promise<Uint8Array> {
   if (typeof blob.arrayBuffer === 'function') {
     return new Uint8Array(await blob.arrayBuffer());
   }

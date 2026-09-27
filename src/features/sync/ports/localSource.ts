@@ -20,6 +20,10 @@ export interface ApplyResult {
   conflicts?: ConflictLogEntry[];
 }
 
+export interface ApplyContext {
+  readonly fetchBlob?: (contentHash: string) => Promise<Blob | null>;
+}
+
 export interface LocalSource {
   readonly dataClass: DataClass;
   pending(limit: number): Promise<PendingKey[]>;
@@ -28,5 +32,5 @@ export interface LocalSource {
   stampCommitted(records: readonly ChangeRecord[]): Promise<void>;
   snapshot(scope: Scope): AsyncIterable<ChangeRecord>;
   current(scope: Scope, keys: RecordKey[]): Promise<Map<RecordKey, ChangeRecord | null>>;
-  applyRemote(records: ChangeRecord[]): Promise<ApplyResult>;
+  applyRemote(records: ChangeRecord[], ctx?: ApplyContext): Promise<ApplyResult>;
 }

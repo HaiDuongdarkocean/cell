@@ -1,4 +1,5 @@
 import {
+  awaitIdbTx,
   getMetaAt,
   getRowAt,
   idbRequest,
@@ -10,9 +11,13 @@ import {
 } from '@/features/sync';
 import type { ChangeRecord, DataClass, PendingKey, RecordKey, Scope } from '@/features/sync';
 import type { LocalValue, SnapshotEntry, StoredRecordMeta } from '@/features/sync';
+import type { ApplyContext } from '@/features/sync';
 import type { ResourceInfo, WordStatus } from '@/entities/dictionary';
 import { getDB, INDEXES, STORES } from '../repositories/baseRepository';
+import { buildPhraseIndexForResource } from '../logic/phraseIndexBuilder';
+import { blobBytes } from '@/features/sync';
 import {
+  deserializeResourcePortable,
   ensureResourceContentHash,
   resourceRecordKey,
   resourceRecordToken,
@@ -257,7 +262,7 @@ class DictResourceLocalSource extends IdbLocalSource {
     const value = winner.value as Record<string, unknown>;
     const next: Record<string, unknown> = {
       components: existing?.components ?? [],
-      installationFinished: existing?.installationFinished ?? true,
+      installationFinished: existing?.installationFinished ?? false,
       wordCount: existing?.wordCount ?? 0,
       signature: existing?.signature ?? parts.token,
       importedAt: existing?.importedAt ?? Date.now(),
@@ -268,6 +273,65 @@ class DictResourceLocalSource extends IdbLocalSource {
     };
     if (existing?.id !== undefined) next.id = existing.id;
     await idbRequest(store.put(next));
+  }
+
+  protected async afterApplyCommit(
+    _applied: readonly ChangeRecord[],
+    ctx?: ApplyContext,
+  ): Promise<void> {
+    if (!ctx?.fetchBlob) return;
+    const db = await this.openDb();
+    const rows = (await idbRequest(
+      db.transaction([STORES.RESOURCE], 'readonly').objectStore(STORES.RESOURCE).getAll(),
+    )) as ResourceInfo[];
+    for (const row of rows) {
+      if (row.installationFinished || !row.contentHash || row.signature !== row.contentHash) {
+        continue;
+      }
+      const blob = await ctx.fetchBlob(row.contentHash);
+      if (!blob) continue;
+      await this.importResourceBlob(db, row, blob);
+    }
+  }
+
+  private async importResourceBlob(
+    db: IDBDatabase,
+    row: ResourceInfo,
+    blob: Blob,
+  ): Promise<void> {
+    if (row.id === undefined) return;
+    const { dictRows, freqRows } = deserializeResourcePortable(await blobBytes(blob));
+    const wtx = db.transaction([STORES.DICTIONARY, STORES.FREQUENCY], 'readwrite');
+    for (const contentStore of [STORES.DICTIONARY, STORES.FREQUENCY]) {
+      const objectStore = wtx.objectStore(contentStore);
+      const stale = (await idbRequest(
+        objectStore.index(INDEXES.by_resource).getAllKeys(row.id),
+      )) as IDBValidKey[];
+      for (const key of stale) await idbRequest(objectStore.delete(key));
+    }
+    for (const entry of dictRows) {
+      await idbRequest(
+        wtx.objectStore(STORES.DICTIONARY).add({ ...entry, resourceId: row.id }),
+      );
+    }
+    for (const entry of freqRows) {
+      await idbRequest(
+        wtx.objectStore(STORES.FREQUENCY).add({ ...entry, resourceId: row.id }),
+      );
+    }
+    await awaitIdbTx(wtx);
+    if (row.type === 'DICTIONARY' && row.format === 'json-entries') {
+      await buildPhraseIndexForResource(this.langCode, row.id);
+    }
+    const ftx = db.transaction([STORES.RESOURCE], 'readwrite');
+    const store = ftx.objectStore(STORES.RESOURCE);
+    const fresh = (await idbRequest(store.get(row.id))) as ResourceInfo | undefined;
+    if (fresh) {
+      await idbRequest(
+        store.put({ ...fresh, installationFinished: true, wordCount: dictRows.length }),
+      );
+    }
+    await awaitIdbTx(ftx);
   }
 
   private async deleteResourceCascade(

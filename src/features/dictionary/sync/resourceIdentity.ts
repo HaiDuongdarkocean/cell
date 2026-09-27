@@ -16,6 +16,22 @@ export function serializeResourcePortable(
   return new TextEncoder().encode(lines.join('\n'));
 }
 
+export function deserializeResourcePortable(bytes: Uint8Array): {
+  dictRows: Record<string, unknown>[];
+  freqRows: Record<string, unknown>[];
+} {
+  const dictRows: Record<string, unknown>[] = [];
+  const freqRows: Record<string, unknown>[] = [];
+  for (const line of new TextDecoder().decode(bytes).split('\n')) {
+    if (line.length === 0) continue;
+    const row = JSON.parse(line.slice(1)) as Record<string, unknown>;
+    if (line[0] === 'd') dictRows.push(row);
+    else if (line[0] === 'f') freqRows.push(row);
+    else throw new Error('corrupt portable resource blob');
+  }
+  return { dictRows, freqRows };
+}
+
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', bytes.buffer as ArrayBuffer);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
