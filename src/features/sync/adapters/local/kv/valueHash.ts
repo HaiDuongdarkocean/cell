@@ -1,0 +1,9 @@
+import { canonicalJson } from '@/features/sync/domain/merge';
+
+export async function kvValueHash(value: unknown): Promise<string> {
+  const bytes = new TextEncoder().encode(canonicalJson(value));
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)]
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
