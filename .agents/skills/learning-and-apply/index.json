@@ -2713,6 +2713,22 @@
         "ordering"
       ],
       "trigger": "Apply một remote change mà sau đó cần follow-up async (drain/migration) — nếu apply trước persist thì crash giữa hai bước làm mất obligation vĩnh viễn"
+    },
+    {
+      "type": "experience",
+      "id": "playwright-cell-extension-id-service-worker-loader",
+      "title": "Resolve Cell extension id bằng SW url service-worker-loader.js, không phải extension id đầu tiên",
+      "category": [
+        "testing"
+      ],
+      "tags": [
+        "playwright",
+        "chrome-extension",
+        "service-worker",
+        "uBOLite",
+        "extension-id"
+      ],
+      "trigger": "Playwright context có nhiều extension SW (Cell + uBOLite); lấy sai id → chrome-extension://<id>/... ERR_FILE_NOT_FOUND"
     }
   ]
 }
