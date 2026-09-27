@@ -8,6 +8,7 @@ import type {
   StorageProvider,
 } from '../../ports/storageProvider';
 import { blobToBytes } from '../contract/blobBytes';
+import { SeededClock } from './SeededClock';
 
 interface StoredBlob {
   bytes: Uint8Array;
@@ -47,8 +48,8 @@ export class InMemoryStorageProvider implements StorageProvider {
   constructor(options: InMemoryStorageProviderOptions = {}) {
     this.providerId = options.providerId ?? 'in-memory';
     this.displayName = options.displayName ?? 'In-memory storage';
-    const clock = options.clock;
-    this.clockNow = clock ? () => clock.now() : () => Date.now();
+    const clock = options.clock ?? new SeededClock(0);
+    this.clockNow = () => clock.now();
     this.quotaBytes = options.quotaBytes ?? null;
     this.tokenTtlMs = options.tokenTtlMs ?? 3_600_000;
   }
