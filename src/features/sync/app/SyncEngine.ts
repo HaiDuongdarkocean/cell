@@ -189,7 +189,7 @@ export class SyncEngine {
         a < b ? -1 : a > b ? 1 : 0,
       );
       for (const [scope, keys] of scoped) {
-        if (routing.frozenScopes.has(scope)) continue;
+        if (typeof scope !== 'string' || routing.frozenScopes.has(scope)) continue;
         const target = routeForScope(routing, scope);
         if (target === null) continue;
         if (target.kind === 'local') {
@@ -226,7 +226,9 @@ export class SyncEngine {
             },
             buckets.get(connection.connectionId) ?? new Map(),
           );
+          let scopeErrors = 0;
           for (const outcome of result.outcomes) {
+            if (outcome.error !== undefined) scopeErrors += 1;
             if (outcome.journalSeq !== undefined && !scopesPushed.includes(outcome.scope)) {
               scopesPushed.push(outcome.scope);
             }
@@ -238,7 +240,19 @@ export class SyncEngine {
             }
             ackedKeys += outcome.ackedKeys;
           }
-          this.backoff.recordSuccess(connection.connectionId);
+          if (scopeErrors > 0) {
+            const retryAt = this.backoff.recordFailure(
+              connection.connectionId,
+              deps.clock.now(),
+            );
+            failed.push({
+              connectionId: connection.connectionId,
+              state: 'backoff',
+              retryAt,
+            });
+          } else {
+            this.backoff.recordSuccess(connection.connectionId);
+          }
         } catch (error) {
           if (error instanceof CycleLockLostError) throw error;
           const retryAt = this.backoff.recordFailure(

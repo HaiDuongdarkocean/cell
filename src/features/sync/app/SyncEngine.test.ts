@@ -4,11 +4,9 @@ import { InMemoryKeyValueStore } from '../adapters/memory/InMemoryKeyValueStore'
 import { InMemoryStorageProvider } from '../adapters/memory/InMemoryStorageProvider';
 import { SeededClock } from '../adapters/memory/SeededClock';
 import { stampKvMeta } from '../adapters/local/kv/kvMeta';
-import { KvLocalSource } from '../adapters/local/kv/kvLocalSource';
-import { flattenedKvShape } from '../adapters/local/kv/kvShapes';
+import { createKvLocalSource } from '../adapters/local/kv/kvLocalSource';
 import { SYNC_META_KV_STORAGE_KEY } from '../adapters/local/kv/keys';
 import { closeSyncDB, deleteSyncDB } from '../adapters/local/syncDb';
-import type { FieldRegistry } from '../domain/flatten';
 import type {
   ChangeRecord,
   Connection,
@@ -52,28 +50,37 @@ class FakeSource implements LocalSource {
   }
 
   async resolve(keys: PendingKey[]): Promise<ChangeRecord[]> {
-    return keys.map((key) => {
-      this.wall += 10;
-      return {
-        scope: this.scope,
-        dataClass: this.dataClass,
-        key: key.key,
-        op: key.op,
-        value: key.op === 'put' ? this.values.get(key.key) ?? 1 : undefined,
-        hlc: { wall: this.wall, counter: 0, node: `${DEVICE}:ctx` },
-      };
-    });
+    const owned = new Set(this.keys.map((k) => `${k.scope}|${k.key}`));
+    return keys
+      .filter((key) => owned.has(`${key.scope}|${key.key}`))
+      .map((key) => {
+        this.wall += 10;
+        return {
+          scope: this.scope,
+          dataClass: this.dataClass,
+          key: key.key,
+          op: key.op,
+          value: key.op === 'put' ? this.values.get(key.key) ?? 1 : undefined,
+          hlc: { wall: this.wall, counter: 0, node: `${DEVICE}:ctx` },
+        };
+      });
   }
 
   async ack(keys: PendingKey[]): Promise<void> {
-    this.acked.push(...keys);
-    const done = new Set(keys.map((k) => `${k.dataClass}|${k.key}`));
-    this.keys = this.keys.filter((k) => !done.has(`${k.dataClass}|${k.key}`));
+    const mine = keys.filter((k) => k.scope === this.scope && k.dataClass === this.dataClass);
+    this.acked.push(...mine);
+    const done = new Set(mine.map((k) => `${k.scope}|${k.key}`));
+    this.keys = this.keys.filter((k) => !done.has(`${k.scope}|${k.key}`));
   }
+
+  async stampCommitted(): Promise<void> {}
 
   async *snapshot(): AsyncIterable<ChangeRecord> {}
 
-  async current(keys: RecordKey[]): Promise<Map<RecordKey, ChangeRecord | null>> {
+  async current(
+    _scope: Scope,
+    keys: RecordKey[],
+  ): Promise<Map<RecordKey, ChangeRecord | null>> {
     return new Map(keys.map((k) => [k, null]));
   }
 
@@ -428,31 +435,28 @@ describe('error mapping and backoff', () => {
 });
 
 describe('kv meta stamping', () => {
-  const SYNC_ALL: FieldRegistry = { syncedPaths: [[]] };
-
-  it('stamps syncMetaKV from the frozen batch so pending stays clean', async () => {
+  it('stamps syncMetaKV after the journal write so pending stays clean', async () => {
     const t = await harness();
-    await t.kv.set('local', 'k', { a: 1 });
+    await t.kv.set('local', 'themeMode', 'dark');
     let wall = 100;
-    const source = new KvLocalSource('secondaryKey', flattenedKvShape('k', SYNC_ALL), {
+    const source = createKvLocalSource('secondaryKey', {
       kv: t.kv,
       tick: () => ({ wall: (wall += 1), counter: 0, node: `${DEVICE}:ctx` }),
-      writeValue: async (v) => t.kv.set('local', 'k', v),
     });
     const engine = t.makeEngine({ sources: [source] });
     const result = await engine.runCycle();
     expect(result.ackedKeys).toBe(1);
     const meta =
       (await t.kv.get<Record<string, RecordMeta>>('local', SYNC_META_KV_STORAGE_KEY)) ?? {};
-    expect(meta['kv:k/a']).toBeDefined();
+    expect(meta['global|kv:themeMode']).toBeDefined();
     expect(await source.pending(10)).toEqual([]);
     const journal = await decodeJournal(
       await t.provider.read(t.connection, journalPath(GLOBAL, DEVICE, 1)),
     );
     expect(journal.records[0]).toMatchObject({
       dataClass: 'secondaryKey',
-      key: 'kv:k/a',
-      value: 1,
+      key: 'kv:themeMode',
+      value: 'dark',
     });
   });
 });

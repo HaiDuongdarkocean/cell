@@ -1,3 +1,4 @@
+import { logger } from '@/shared/lib/logger';
 import type {
   ChangeRecord,
   Connection,
@@ -14,6 +15,7 @@ import { ProviderError } from '../ports/storageProvider';
 import type { StorageProvider } from '../ports/storageProvider';
 import type { BlobReader } from './blobRefs';
 import { referencedBlobHashes } from './blobRefs';
+import { CycleLockLostError } from './cycleLock';
 import {
   BLOBS_PREFIX,
   blobPath,
@@ -68,6 +70,7 @@ export interface ScopePushOutcome {
   ackedKeys: number;
   snapshotN?: number;
   coversSeq?: number;
+  error?: string;
 }
 
 export interface ConnectionPushResult {
@@ -78,7 +81,16 @@ export async function collectPendingKeys(
   sources: readonly LocalSource[],
   limit: number,
 ): Promise<PendingKey[]> {
-  const groups = await Promise.all(sources.map((source) => source.pending(limit)));
+  const groups = await Promise.all(
+    sources.map(async (source) => {
+      try {
+        return await source.pending(limit);
+      } catch (error) {
+        logger.warn('[sync] pending() failed for', source.dataClass, error);
+        return [] as PendingKey[];
+      }
+    }),
+  );
   return groups.flat();
 }
 
@@ -107,9 +119,10 @@ export async function resolvePendingKeys(
 ): Promise<ChangeRecord[]> {
   const out: ChangeRecord[] = [];
   for (const [dataClass, group] of groupByDataClass(keys)) {
-    const source = sources.find((s) => s.dataClass === dataClass);
-    if (!source) continue;
-    out.push(...(await source.resolve(group)));
+    for (const source of sources) {
+      if (source.dataClass !== dataClass) continue;
+      out.push(...(await source.resolve(group)));
+    }
   }
   return out;
 }
@@ -119,8 +132,10 @@ export async function ackPendingKeys(
   keys: readonly PendingKey[],
 ): Promise<void> {
   for (const [dataClass, group] of groupByDataClass(keys)) {
-    const source = sources.find((s) => s.dataClass === dataClass);
-    if (source) await source.ack(group);
+    for (const source of sources) {
+      if (source.dataClass !== dataClass) continue;
+      await source.ack(group);
+    }
   }
 }
 
@@ -133,16 +148,21 @@ export async function runConnectionPush(
 
   const batches = await deps.store.pendingBatches(deps.connection.connectionId);
   for (const batch of batches) {
-    const acked = await commitBatch(
-      deps,
-      batch.scope,
-      batch.seq,
-      batch.records,
-      pendingKeysOfRecords(batch.records),
-      batch.key,
-    );
-    outcomes.push({ scope: batch.scope, journalSeq: batch.seq, ackedKeys: acked });
-    committedScopes.push(batch.scope);
+    try {
+      const acked = await commitBatch(
+        deps,
+        batch.scope,
+        batch.seq,
+        batch.records,
+        pendingKeysOfRecords(batch.records),
+        batch.key,
+      );
+      outcomes.push({ scope: batch.scope, journalSeq: batch.seq, ackedKeys: acked });
+      committedScopes.push(batch.scope);
+    } catch (error) {
+      if (error instanceof CycleLockLostError || error instanceof ProviderError) throw error;
+      outcomes.push({ scope: batch.scope, ackedKeys: 0, error: describePushError(error) });
+    }
   }
 
   let effective = pendingByScope;
@@ -161,27 +181,28 @@ export async function runConnectionPush(
   for (const scope of scopes) {
     const keys = effective.get(scope) ?? [];
     if (keys.length === 0) continue;
-    const records = await resolvePendingKeys(deps.sources, keys);
-    if (records.length === 0) {
-      await deps.fence();
-      await ackPendingKeys(deps.sources, keys);
-      outcomes.push({ scope, ackedKeys: keys.length });
-      continue;
+    try {
+      const records = await resolvePendingKeys(deps.sources, keys);
+      if (records.length === 0) {
+        await deps.fence();
+        await ackPendingKeys(deps.sources, keys);
+        outcomes.push({ scope, ackedKeys: keys.length });
+        continue;
+      }
+      const batch = await deps.store.freezeBatch({
+        connectionId: deps.connection.connectionId,
+        scope,
+        records,
+        cycleId: deps.cycleId,
+        createdAt: deps.clock.now(),
+      });
+      const acked = await commitBatch(deps, scope, batch.seq, batch.records, keys, batch.key);
+      outcomes.push({ scope, journalSeq: batch.seq, ackedKeys: acked });
+      committedScopes.push(scope);
+    } catch (error) {
+      if (error instanceof CycleLockLostError || error instanceof ProviderError) throw error;
+      outcomes.push({ scope, ackedKeys: 0, error: describePushError(error) });
     }
-    const batch = await deps.store.freezeBatch({
-      connectionId: deps.connection.connectionId,
-      scope,
-      records,
-      cycleId: deps.cycleId,
-      createdAt: deps.clock.now(),
-    });
-    const kvRecords = batch.records.filter((record) => KV_DATA_CLASSES.has(record.dataClass));
-    if (kvRecords.length > 0 && deps.stampKvMeta) {
-      await deps.stampKvMeta(kvRecords);
-    }
-    const acked = await commitBatch(deps, scope, batch.seq, batch.records, keys, batch.key);
-    outcomes.push({ scope, journalSeq: batch.seq, ackedKeys: acked });
-    committedScopes.push(scope);
   }
 
   for (const scope of committedScopes) {
@@ -213,6 +234,10 @@ async function commitBatch(
     encodeJournal({ scope, deviceId: deps.deviceId, seq, records }),
   );
   await deps.fence();
+  const kvRecords = records.filter((record) => KV_DATA_CLASSES.has(record.dataClass));
+  if (kvRecords.length > 0 && deps.stampKvMeta) {
+    await deps.stampKvMeta(kvRecords);
+  }
   await ackPendingKeys(deps.sources, ackKeys);
   await deps.store.deletePendingBatch(batchKey);
   return ackKeys.length;
@@ -368,6 +393,10 @@ async function removeRemote(deps: ConnectionPushDeps, path: string): Promise<voi
     if (e instanceof ProviderError && e.kind === 'not-found') return;
     throw e;
   }
+}
+
+function describePushError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function groupByDataClass(keys: readonly PendingKey[]): Map<DataClass, PendingKey[]> {

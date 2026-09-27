@@ -21,7 +21,7 @@ import type {
 import type { ApplyResult, LocalSource } from '../ports/localSource';
 import { ProviderError } from '../ports/storageProvider';
 import { CycleLockLostError } from './cycleLock';
-import { BlobUnavailableError, runConnectionPush } from './pushCycle';
+import { runConnectionPush } from './pushCycle';
 import type { ConnectionPushDeps } from './pushCycle';
 import { BLOBS_PREFIX, journalPath, scopeDevicePrefix, snapshotPath } from './remotePaths';
 import { createSyncDbStore } from './syncDbStore';
@@ -54,28 +54,37 @@ class FakeSource implements LocalSource {
   }
 
   async resolve(keys: PendingKey[]): Promise<ChangeRecord[]> {
-    return keys.map((key) => {
-      this.wall += 10;
-      return {
-        scope: this.scope,
-        dataClass: this.dataClass,
-        key: key.key,
-        op: key.op,
-        value: key.op === 'put' ? this.values.get(key.key) ?? { k: key.key } : undefined,
-        hlc: { wall: this.wall, counter: 0, node: `${DEVICE}:ctx` },
-      };
-    });
+    const owned = new Set(this.keys.map((k) => `${k.scope}|${k.key}`));
+    return keys
+      .filter((key) => owned.has(`${key.scope}|${key.key}`))
+      .map((key) => {
+        this.wall += 10;
+        return {
+          scope: this.scope,
+          dataClass: this.dataClass,
+          key: key.key,
+          op: key.op,
+          value: key.op === 'put' ? this.values.get(key.key) ?? { k: key.key } : undefined,
+          hlc: { wall: this.wall, counter: 0, node: `${DEVICE}:ctx` },
+        };
+      });
   }
 
   async ack(keys: PendingKey[]): Promise<void> {
-    this.acked.push(...keys);
-    const done = new Set(keys.map((k) => `${k.dataClass}|${k.key}`));
-    this.keys = this.keys.filter((k) => !done.has(`${k.dataClass}|${k.key}`));
+    const mine = keys.filter((k) => k.scope === this.scope && k.dataClass === this.dataClass);
+    this.acked.push(...mine);
+    const done = new Set(mine.map((k) => `${k.scope}|${k.key}`));
+    this.keys = this.keys.filter((k) => !done.has(`${k.scope}|${k.key}`));
   }
+
+  async stampCommitted(): Promise<void> {}
 
   async *snapshot(): AsyncIterable<ChangeRecord> {}
 
-  async current(keys: RecordKey[]): Promise<Map<RecordKey, ChangeRecord | null>> {
+  async current(
+    _scope: Scope,
+    keys: RecordKey[],
+  ): Promise<Map<RecordKey, ChangeRecord | null>> {
     return new Map(keys.map((k) => [k, null]));
   }
 
@@ -311,12 +320,13 @@ describe('blob upload and verify ordering', () => {
     const t = await harness();
     const source = new FakeSource('dictResource', PROFILE_EN);
     source.pushKey('resource:missing', 'put', { contentHash: 'missing' });
-    await expect(
-      runConnectionPush(
-        t.deps({ sources: [source] }),
-        pending([[PROFILE_EN, source.keys]]),
-      ),
-    ).rejects.toBeInstanceOf(BlobUnavailableError);
+    const result = await runConnectionPush(
+      t.deps({ sources: [source] }),
+      pending([[PROFILE_EN, source.keys]]),
+    );
+    expect(result.outcomes).toHaveLength(1);
+    expect(result.outcomes[0]?.error).toContain('missing');
+    expect(result.outcomes[0]?.journalSeq).toBeUndefined();
     expect(await t.remotePaths()).toEqual([]);
     const batches = await t.store.pendingBatches(t.connection.connectionId);
     expect(batches).toHaveLength(1);
