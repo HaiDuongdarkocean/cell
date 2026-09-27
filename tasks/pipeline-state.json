@@ -501,16 +501,17 @@
           "docs/reviews/user-data-sync-spec.md"
         ],
         "spec": "docs/specs/user-data-sync.md",
-        "designBrief": "docs/intent/user-data-sync-design-brief.md"
+        "designBrief": "docs/intent/user-data-sync-design-brief.md",
+        "plan": "tasks/plan-user-data-sync.md"
       },
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-09-27T12:41:16.394Z"
+          "at": "2026-09-27T12:58:43.217Z"
         },
         "lint": {
           "v": "pass",
-          "at": "2026-09-27T12:41:46.742Z"
+          "at": "2026-09-27T12:58:43.261Z"
         },
         "testUnit": {
           "v": "pass",
@@ -540,8 +541,8 @@
         "id": "devin-cli",
         "since": "2026-09-27T06:36:48.765Z"
       },
-      "worktree": null,
-      "updated": "2026-09-27T12:43:32.544Z"
+      "worktree": "../cell-worktrees/user-data-sync",
+      "updated": "2026-09-27T12:58:43.262Z"
     }
   }
 }
