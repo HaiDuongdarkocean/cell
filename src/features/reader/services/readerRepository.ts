@@ -87,6 +87,10 @@ async function getDB(): Promise<IDBDatabase> {
   return dbInstance;
 }
 
+export async function getReaderDB(): Promise<IDBDatabase> {
+  return getDB();
+}
+
 // ─── IDB request helpers ─────────────────────────────────────────────────────
 
 function reqToPromise<T>(request: IDBRequest<T>): Promise<T> {

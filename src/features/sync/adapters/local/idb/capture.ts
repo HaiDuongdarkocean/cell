@@ -64,6 +64,11 @@ export async function ensureSyncRuntime(): Promise<SyncRuntime> {
   return initPromise;
 }
 
+export async function mintRecordHlc(): Promise<Hlc> {
+  const rt = await ensureSyncRuntime();
+  return rt.clock.tick();
+}
+
 async function loadRuntime(): Promise<SyncRuntime> {
   try {
     const data = await getStorage<Record<string, unknown>>(['syncState']);
