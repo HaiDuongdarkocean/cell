@@ -1,587 +1,759 @@
-import { InMemoryKeyValueStore } from '../../memory/InMemoryKeyValueStore';
-import type { ChangeRecord, Hlc, RecordMeta } from '../../../domain/types';
-import type { FieldRegistry } from '../../../domain/flatten';
-import { SETTINGS_FIELD_REGISTRY } from '../../../domain/settingsRegistry';
-import { KvLocalSource } from './kvLocalSource';
-import { directoryKvShape, flattenedKvShape } from './kvShapes';
-import { stampKvMeta } from './kvMeta';
-import { SYNC_CONFLICT_LOG_STORAGE_KEY, SYNC_META_KV_STORAGE_KEY } from './keys';
-import type { ConflictLogEntry } from './conflictLog';
+import { STORAGE_KEYS } from '@/shared/config/config';
+import { diffFlattened } from '../../../domain/flatten';
+import type {
+  ChangeRecord,
+  DataClass,
+  Hlc,
+  PendingKey,
+  RecordKey,
+  Scope,
+} from '../../../domain/types';
+import type { KeyValueStore } from '../../../ports/keyValueStore';
+import {
+  SYNC_CONFLICT_LOG_STORAGE_KEY,
+  SYNC_DIRECTORY_STORAGE_KEY,
+} from './keys';
+import { kvMetaKey, readSyncMetaKV } from './kvMeta';
+import { createKvLocalSource } from './kvLocalSource';
+import type { KvLocalSourceDeps } from './kvLocalSource';
+import { kvValueHash } from './valueHash';
 
-const h = (wall: number, counter = 0, node = 'remote'): Hlc => ({ wall, counter, node });
-
-const SYNC_ALL: FieldRegistry = { syncedPaths: [[]] };
-
-const SMALL_REGISTRY: FieldRegistry = {
-  syncedPaths: [['a'], ['nested'], ['items']],
-  excludedPaths: [['nested', 'local']],
-  elementArrays: [
-    { path: ['items'], elementId: (el) => (el as { id?: string }).id ?? null },
-  ],
+const mockStorageState: {
+  local: Record<string, unknown>;
+  session: Record<string, unknown>;
+} = {
+  local: {},
+  session: {},
 };
 
-interface Harness {
-  kv: InMemoryKeyValueStore;
-  source: KvLocalSource;
-  conflicts(): Promise<ConflictLogEntry[]>;
-  stored(key: string): Promise<unknown>;
-  metas(): Promise<Record<string, RecordMeta>>;
-  wall: () => number;
-}
+jest.mock('@/shared/lib/storage/settingsStore', () => ({
+  persistSyncedSettings: jest.fn(async (value: Record<string, unknown>) => {
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = value;
+  }),
+}));
 
-function harness(
-  shape: ReturnType<typeof flattenedKvShape> | ReturnType<typeof directoryKvShape>,
-  dataClass: 'settings' | 'secondaryKey' | 'syncDirectory' = 'settings',
-  startWall = 1000,
-): Harness {
-  const kv = new InMemoryKeyValueStore();
-  let wall = startWall;
-  const writeValue = async (value: unknown) => {
-    if (value === undefined) {
-      await kv.del('local', shape.storageKey);
-    } else {
-      await kv.set('local', shape.storageKey, value);
-    }
-  };
-  const source = new KvLocalSource(dataClass, shape, {
-    kv,
-    tick: () => ({ wall: ++wall, counter: 0, node: 'local' }),
-    writeValue,
-    now: () => 4242,
-  });
+import { persistSyncedSettings } from '@/shared/lib/storage/settingsStore';
+
+function createMemoryKv(): KeyValueStore {
   return {
-    kv,
-    source,
-    wall: () => wall,
-    stored: (key: string) => kv.get('local', key),
-    metas: async () => (await kv.get<Record<string, RecordMeta>>('local', SYNC_META_KV_STORAGE_KEY)) ?? {},
-    conflicts: async () =>
-      (await kv.get<ConflictLogEntry[]>('local', SYNC_CONFLICT_LOG_STORAGE_KEY)) ?? [],
+    get: jest.fn(async (area: 'local' | 'session', key: string) => {
+      const store = area === 'local' ? mockStorageState.local : mockStorageState.session;
+      return store[key];
+    }) as KeyValueStore['get'],
+    set: jest.fn(async (area: 'local' | 'session', key: string, value: unknown) => {
+      const store = area === 'local' ? mockStorageState.local : mockStorageState.session;
+      store[key] = value;
+    }),
+    del: jest.fn(async (area: 'local' | 'session', key: string) => {
+      const store = area === 'local' ? mockStorageState.local : mockStorageState.session;
+      delete store[key];
+    }),
+    list: jest.fn(async (area: 'local' | 'session', prefix: string) => {
+      const store = area === 'local' ? mockStorageState.local : mockStorageState.session;
+      return Object.keys(store)
+        .filter((key) => key.startsWith(prefix))
+        .sort();
+    }),
   };
 }
 
-function put(
-  key: string,
+const CLOCK_BASE = 1_700_000_000_000;
+
+interface TestClock {
+  readonly counter: number;
+  tick(): Hlc;
+}
+
+function createClock(): TestClock {
+  const state = { counter: 0 };
+  return {
+    get counter() {
+      return state.counter;
+    },
+    tick(): Hlc {
+      state.counter += 1;
+      return { wall: CLOCK_BASE + state.counter, counter: state.counter, node: 'test-device' };
+    },
+  };
+}
+
+const REMOTE_T = 2_000_000_000_000;
+
+function remoteHlc(offset: number, node = 'remote-device'): Hlc {
+  return { wall: REMOTE_T + offset, counter: offset, node };
+}
+
+function remoteRecord(
+  scope: Scope,
+  dataClass: DataClass,
+  key: RecordKey,
+  op: 'put' | 'delete',
   value: unknown,
   hlc: Hlc,
-  dataClass: ChangeRecord['dataClass'] = 'settings',
 ): ChangeRecord {
-  return { scope: 'global', dataClass, key, op: 'put', value, hlc, firstHlc: hlc };
+  return { scope, dataClass, key, op, value, hlc, firstHlc: hlc };
 }
 
-function tombstone(
-  key: string,
-  hlc: Hlc,
-  dataClass: ChangeRecord['dataClass'] = 'settings',
-): ChangeRecord {
-  return { scope: 'global', dataClass, key, op: 'delete', hlc, firstHlc: hlc };
+function sourceOf(
+  dataClass: 'settings' | 'profileConfig' | 'secondaryKey' | 'syncDirectory',
+  kv: KeyValueStore,
+  clock: TestClock,
+) {
+  const deps: KvLocalSourceDeps = { kv, tick: () => clock.tick(), now: () => 111 };
+  return createKvLocalSource(dataClass, deps);
 }
 
-async function collect(source: KvLocalSource): Promise<ChangeRecord[]> {
-  const out: ChangeRecord[] = [];
-  for await (const record of source.snapshot('global')) out.push(record);
-  return out;
+async function drainPending(
+  source: ReturnType<typeof sourceOf>,
+  limit = 200,
+): Promise<PendingKey[]> {
+  const pending = await source.pending(limit);
+  await source.resolve(pending);
+  await source.ack(pending);
+  return pending;
 }
 
-describe('KvLocalSource.pending', () => {
-  it('emits every leaf when meta is empty', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1, b: { c: 'x' } });
-    const pending = await t.source.pending(100);
-    expect(pending.map((p) => p.key)).toEqual(['kv:k/a', 'kv:k/b/c']);
-    expect(pending.every((p) => p.op === 'put' && p.scope === 'global' && p.dataClass === 'secondaryKey')).toBe(true);
-  });
-
-  it('is clean after stampKvMeta of resolved records', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1, b: 2 });
-    const pending = await t.source.pending(100);
-    const records = await t.source.resolve(pending);
-    await stampKvMeta(t.kv, records);
-    expect(await t.source.pending(100)).toEqual([]);
-  });
-
-  it('emits a put only for changed leaves and a delete for locally removed leaves', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1, b: 2 });
-    const records = await t.source.resolve(await t.source.pending(100));
-    await stampKvMeta(t.kv, records);
-
-    await t.kv.set('local', 'k', { a: 9, c: 3 });
-    const pending = await t.source.pending(100);
-    expect(pending).toEqual([
-      { scope: 'global', dataClass: 'secondaryKey', key: 'kv:k/a', op: 'put' },
-      { scope: 'global', dataClass: 'secondaryKey', key: 'kv:k/b', op: 'delete' },
-      { scope: 'global', dataClass: 'secondaryKey', key: 'kv:k/c', op: 'put' },
-    ]);
-  });
-
-  it('respects the limit', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1, b: 2, c: 3 });
-    expect((await t.source.pending(2)).length).toBe(2);
-    expect(await t.source.pending(0)).toEqual([]);
-  });
+beforeEach(() => {
+  mockStorageState.local = {};
+  mockStorageState.session = {};
+  jest.clearAllMocks();
 });
 
-describe('KvLocalSource.resolve', () => {
-  it('mints hlcs without stamping meta', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1 });
-    const [record] = await t.source.resolve(await t.source.pending(100));
-    expect(record).toMatchObject({
-      scope: 'global',
-      dataClass: 'secondaryKey',
-      key: 'kv:k/a',
+describe('capture: flatten + diff → records', () => {
+  test('new settings values emit put records under global scope', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {
+      uiLanguage: 'en',
+      subtitleOffset: 120,
+    };
+    const source = sourceOf('settings', kv, clock);
+
+    const pending = await source.pending(100);
+    const keys = pending.map((p) => p.key).sort();
+    expect(keys).toEqual(['kv:settings/subtitleOffset', 'kv:settings/uiLanguage']);
+    expect(pending.every((p) => p.scope === 'global' && p.op === 'put')).toBe(true);
+
+    const records = await source.resolve(pending);
+    expect(records).toHaveLength(2);
+    const lang = records.find((r) => r.key === 'kv:settings/uiLanguage');
+    expect(lang?.op).toBe('put');
+    expect(lang?.value).toBe('en');
+    expect(lang?.dataClass).toBe('settings');
+    expect(lang?.hlc.node).toBe('test-device');
+    expect(lang?.firstHlc).toEqual(lang?.hlc);
+  });
+
+  test('unlisted fields never emit pending records', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {
+      uiLanguage: 'en',
+      schemaVersion: 4,
+      activeProfileId: 'p1',
+      languageProfiles: [{ id: 'p1', target: 'ja' }],
+      subtitleOverlayTargetLanguage: 'en',
+      subtitleOverlayNativeLanguage: 'en',
+      subtitleOverlayTargetStyle: { fontSize: 20 },
+      dictionaryPopup: { enabled: true },
+      srs: { activeDeckId: 'd1', activeCollectionId: 'c1', userNote: 'keep' },
+      localPlayerSettings: { lastDirectoryId: 'dir-9', volume: 5 },
+      pronunciation: { downloadEspeakTtsData: true, rate: 1 },
+      someDeviceOnlyFlag: true,
+    };
+    const source = sourceOf('settings', kv, clock);
+    const pending = await source.pending(200);
+    const keys = pending.map((p) => p.key);
+    expect(keys).toContain('kv:settings/uiLanguage');
+    expect(keys).toContain('kv:settings/srs/userNote');
+    expect(keys).toContain('kv:settings/localPlayerSettings/volume');
+    expect(keys).toContain('kv:settings/pronunciation/rate');
+    expect(keys.some((k) => k.includes('schemaVersion'))).toBe(false);
+    expect(keys.some((k) => k.includes('activeProfileId'))).toBe(false);
+    expect(keys.some((k) => k.includes('languageProfiles'))).toBe(false);
+    expect(keys.some((k) => k.includes('subtitleOverlayTargetLanguage'))).toBe(false);
+    expect(keys.some((k) => k.includes('dictionaryPopup'))).toBe(false);
+    expect(keys.some((k) => k.includes('srs/activeDeckId'))).toBe(false);
+    expect(keys.some((k) => k.includes('localPlayerSettings/lastDirectoryId'))).toBe(false);
+    expect(keys.some((k) => k.includes('downloadEspeakTtsData'))).toBe(false);
+    expect(keys.some((k) => k.includes('someDeviceOnlyFlag'))).toBe(false);
+  });
+
+  test('element-array leaves strip device-local fields', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {
+      subtitleApiKeys: [{ id: 'k1', key: 'secret', status: 'rate-limited', rateLimitedUntil: 5 }],
+    };
+    const source = sourceOf('settings', kv, clock);
+    const pending = await source.pending(50);
+    expect(pending.map((p) => p.key)).toEqual(['kv:settings/subtitleApiKeys/@k1']);
+    const records = await source.resolve(pending);
+    const leaf = records[0].value as Record<string, unknown>;
+    expect(leaf.id).toBe('k1');
+    expect(leaf.key).toBe('secret');
+    expect(leaf.status).toBeUndefined();
+    expect(leaf.rateLimitedUntil).toBeUndefined();
+  });
+
+  test('acks stamp syncMetaKV and clear pending', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = { uiLanguage: 'en' };
+    const source = sourceOf('settings', kv, clock);
+
+    const pending = await source.pending(10);
+    const records = await source.resolve(pending);
+    await source.ack(pending);
+
+    const meta = await readSyncMetaKV(kv);
+    expect(meta[kvMetaKey('global', 'kv:settings/uiLanguage')]).toMatchObject({
       op: 'put',
-      value: 1,
+      hlc: records[0].hlc,
+      valueHash: await kvValueHash('en'),
     });
-    expect(record.hlc.node).toBe('local');
-    expect(record.firstHlc).toEqual(record.hlc);
-    expect(await t.metas()).toEqual({});
+    expect(await source.pending(10)).toEqual([]);
   });
 
-  it('carries firstHlc across puts and resets it after a tombstone', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1 });
-    const [first] = await t.source.resolve(await t.source.pending(100));
-    await stampKvMeta(t.kv, [first]);
+  test('unchanged-value writes do not re-emit after ack', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = { uiLanguage: 'en' };
+    const source = sourceOf('settings', kv, clock);
+    await drainPending(source);
 
-    await t.kv.set('local', 'k', { a: 2 });
-    const [second] = await t.source.resolve(await t.source.pending(100));
-    expect(second.firstHlc).toEqual(first.hlc);
-    await stampKvMeta(t.kv, [second]);
-
-    await t.kv.set('local', 'k', {});
-    const [del] = await t.source.resolve(await t.source.pending(100));
-    expect(del.op).toBe('delete');
-    await stampKvMeta(t.kv, [del]);
-
-    await t.kv.set('local', 'k', { a: 3 });
-    const [recreated] = await t.source.resolve(await t.source.pending(100));
-    expect(recreated.op).toBe('put');
-    expect(recreated.firstHlc).toEqual(recreated.hlc);
-    expect(recreated.firstHlc).not.toEqual(first.hlc);
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {
+      ...(mockStorageState.local[STORAGE_KEYS.SETTINGS] as Record<string, unknown>),
+      uiLanguage: 'en',
+    };
+    expect(await source.pending(10)).toEqual([]);
   });
 
-  it('skips keys whose current hash already matches meta', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1 });
-    const records = await t.source.resolve(await t.source.pending(100));
-    await stampKvMeta(t.kv, records);
-    const again = await t.source.resolve([
-      { scope: 'global', dataClass: 'secondaryKey', key: 'kv:k/a', op: 'put' },
-    ]);
-    expect(again).toEqual([]);
+  test('diffFlattened detects puts and tombstones', () => {
+    const prev = [
+      { path: 'a', value: 1 },
+      { path: 'b', value: 2 },
+    ];
+    const next = [{ path: 'a', value: 3 }];
+    const diff = diffFlattened(prev, next);
+    expect(diff.puts).toEqual([{ path: 'a', value: 3 }]);
+    expect(diff.tombstones).toEqual(['b']);
   });
 });
 
-describe('KvLocalSource.snapshot', () => {
-  it('emits live leaves with stored meta hlcs and tombstone records for meta deletes', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1, gone: 'x' });
-    const records = await t.source.resolve(await t.source.pending(100));
-    await stampKvMeta(t.kv, records);
-    await t.kv.set('local', 'k', { a: 1 });
-    const [del] = await t.source.resolve(await t.source.pending(100));
-    await stampKvMeta(t.kv, [del]);
+describe('capture: tombstones', () => {
+  test('removing a leaf emits a delete record', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {
+      uiLanguage: 'en',
+      subtitleOffset: 120,
+    };
+    const source = sourceOf('settings', kv, clock);
+    await drainPending(source);
 
-    const snapshot = await collect(t.source);
-    const putA = snapshot.find((r) => r.key === 'kv:k/a');
-    const tomb = snapshot.find((r) => r.key === 'kv:k/gone');
-    expect(putA?.hlc).toEqual(records.find((r) => r.key === 'kv:k/a')?.hlc);
-    expect(putA?.op).toBe('put');
-    expect(tomb).toMatchObject({ op: 'delete', hlc: del.hlc });
-    expect(snapshot.length).toBe(2);
-  });
-
-  it('mints hlcs for leaves lacking meta and for meta-put rows whose leaf is absent', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { fresh: true });
-    const records = await collect(t.source);
-    expect(records).toHaveLength(1);
-    expect(records[0].hlc.node).toBe('local');
-
-    await stampKvMeta(t.kv, records);
-    await t.kv.set('local', 'k', {});
-    const next = await collect(t.source);
-    expect(next[0].op).toBe('delete');
-    expect(next[0].hlc.node).toBe('local');
-  });
-
-  it('is empty for non-global scopes', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1 });
-    const out: ChangeRecord[] = [];
-    for await (const record of t.source.snapshot('profile:en')) out.push(record);
-    expect(out).toEqual([]);
-  });
-});
-
-describe('KvLocalSource.current', () => {
-  it('returns meta-derived records including tombstones and null for unknown keys', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1, b: 2 });
-    const records = await t.source.resolve(await t.source.pending(100));
-    await stampKvMeta(t.kv, records);
-    await t.kv.set('local', 'k', { a: 1 });
-    const [del] = await t.source.resolve(await t.source.pending(100));
-    await stampKvMeta(t.kv, [del]);
-
-    const current = await t.source.current(['kv:k/a', 'kv:k/b', 'kv:k/missing', 'foreign:x']);
-    expect(current.get('kv:k/a')).toMatchObject({ op: 'put', value: 1 });
-    expect(current.get('kv:k/b')).toMatchObject({ op: 'delete', hlc: del.hlc });
-    expect(current.get('kv:k/missing')).toBeNull();
-    expect(current.get('foreign:x')).toBeNull();
-  });
-});
-
-describe('KvLocalSource.applyRemote', () => {
-  it('applies a remote put, writes the value and stamps meta so pending stays clean', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1 });
-    const result = await t.source.applyRemote([
-      put('kv:k/b', 2, h(10), 'secondaryKey'),
-    ]);
-    expect(result.applied.map((r) => r.key)).toEqual(['kv:k/b']);
-    expect(await t.stored('k')).toEqual({ a: 1, b: 2 });
-    const metas = await t.metas();
-    expect(metas['kv:k/b']).toMatchObject({ op: 'put', hlc: h(10) });
-    expect(await t.source.pending(100)).toEqual([
-      { scope: 'global', dataClass: 'secondaryKey', key: 'kv:k/a', op: 'put' },
-    ]);
-  });
-
-  it('skips a stale remote record silently when local is in sync', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1 });
-    await stampKvMeta(t.kv, await t.source.resolve(await t.source.pending(100)));
-
-    const result = await t.source.applyRemote([put('kv:k/a', 9, h(5), 'secondaryKey')]);
-    expect(result.applied).toEqual([]);
-    expect(result.localWon).toEqual([]);
-    expect(await t.stored('k')).toEqual({ a: 1 });
-    expect(await t.conflicts()).toEqual([]);
-  });
-
-  it('keeps a drifted local value when it wins the merge and logs the conflict', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1 });
-    await stampKvMeta(t.kv, await t.source.resolve(await t.source.pending(100)));
-
-    await t.kv.set('local', 'k', { a: 2 });
-    const remote = put('kv:k/a', 9, h(5), 'secondaryKey');
-    const result = await t.source.applyRemote([remote]);
-    expect(result.applied).toEqual([]);
-    expect(result.localWon.map((r) => r.key)).toEqual(['kv:k/a']);
-    expect(await t.stored('k')).toEqual({ a: 2 });
-    const conflicts = await t.conflicts();
-    expect(conflicts).toHaveLength(1);
-    expect(conflicts[0]).toMatchObject({
-      at: 4242,
-      scope: 'global',
-      dataClass: 'secondaryKey',
-      key: 'kv:k/a',
-      remoteHlc: h(5),
-      winner: 'local',
-    });
-    expect(conflicts[0].localHlc.node).toBe('local');
-    const pending = await t.source.pending(100);
-    expect(pending.map((p) => p.key)).toEqual(['kv:k/a']);
-  });
-
-  it('writes the remote value and logs the conflict when remote wins a drifted merge', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey', 10);
-    await t.kv.set('local', 'k', { a: 1 });
-    await stampKvMeta(t.kv, await t.source.resolve(await t.source.pending(100)));
-
-    await t.kv.set('local', 'k', { a: 2 });
-    const remote = put('kv:k/a', 9, h(99999), 'secondaryKey');
-    const result = await t.source.applyRemote([remote]);
-    expect(result.applied.map((r) => r.key)).toEqual(['kv:k/a']);
-    expect(await t.stored('k')).toEqual({ a: 9 });
-    expect((await t.conflicts())[0]).toMatchObject({ key: 'kv:k/a', winner: 'remote' });
-    const metas = await t.metas();
-    expect(metas['kv:k/a']).toMatchObject({ op: 'put', hlc: h(99999) });
-    expect(await t.source.pending(100)).toEqual([]);
-  });
-
-  it('applies a remote tombstone and keeps it out of pending', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1, b: 2 });
-    await stampKvMeta(t.kv, await t.source.resolve(await t.source.pending(100)));
-
-    const result = await t.source.applyRemote([tombstone('kv:k/b', h(5000), 'secondaryKey')]);
-    expect(result.applied.map((r) => r.key)).toEqual(['kv:k/b']);
-    expect(await t.stored('k')).toEqual({ a: 1 });
-    expect(await t.source.pending(100)).toEqual([]);
-    const current = await t.source.current(['kv:k/b']);
-    expect(current.get('kv:k/b')).toMatchObject({ op: 'delete' });
-  });
-
-  it('retains unmaterializable and parent-tombstoned records as opaque without writing', async () => {
-    const registry: FieldRegistry = { syncedPaths: [['a']] };
-    const t = harness(flattenedKvShape('k', registry), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1 });
-    await stampKvMeta(t.kv, await t.source.resolve(await t.source.pending(100)));
-
-    const unknown = put('kv:k/elsewhere/x', 1, h(9), 'secondaryKey');
-    const result = await t.source.applyRemote([unknown]);
-    expect(result.applied).toEqual([]);
-    expect(result.opaque.map((r) => r.key)).toEqual(['kv:k/elsewhere/x']);
-    expect(await t.stored('k')).toEqual({ a: 1 });
-
-    const parentTomb = tombstone('kv:k/a', h(5000), 'secondaryKey');
-    await t.source.applyRemote([parentTomb]);
-    const child = put('kv:k/a/b', 5, h(6000), 'secondaryKey');
-    const result2 = await t.source.applyRemote([child]);
-    expect(result2.opaque.map((r) => r.key)).toEqual(['kv:k/a/b']);
-    expect(result2.applied).toEqual([]);
-    expect(await t.stored('k')).toEqual({});
-    const metas = await t.metas();
-    expect(metas['kv:k/a/b']).toBeUndefined();
-  });
-
-  it('materializes the higher-hlc side of a leaf-vs-subtree shape conflict', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 5 });
-    await stampKvMeta(t.kv, await t.source.resolve(await t.source.pending(100)));
-
-    const child = put('kv:k/a/b', 7, h(5000), 'secondaryKey');
-    const result = await t.source.applyRemote([child]);
-    expect(result.applied.map((r) => r.key)).toEqual(['kv:k/a/b']);
-    expect(await t.stored('k')).toEqual({ a: { b: 7 } });
-    const pending = await t.source.pending(100);
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = { uiLanguage: 'en' };
+    const pending = await source.pending(10);
     expect(pending).toEqual([
-      { scope: 'global', dataClass: 'secondaryKey', key: 'kv:k/a', op: 'delete' },
-    ]);
-  });
-
-  it('suppresses a lower-hlc remote child put against a local leaf', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 5 });
-    await stampKvMeta(t.kv, await t.source.resolve(await t.source.pending(100)));
-
-    const child = put('kv:k/a/b', 7, h(1), 'secondaryKey');
-    const result = await t.source.applyRemote([child]);
-    expect(result.opaque.map((r) => r.key)).toEqual(['kv:k/a/b']);
-    expect(await t.stored('k')).toEqual({ a: 5 });
-  });
-
-  it('preserves device-local fields inside synced subtrees', async () => {
-    const t = harness(flattenedKvShape('k', SMALL_REGISTRY), 'secondaryKey');
-    await t.kv.set('local', 'k', {
-      a: 1,
-      nested: { ok: 'yes', local: 'device' },
-      unsynced: 'keep',
-    });
-    await stampKvMeta(t.kv, await t.source.resolve(await t.source.pending(100)));
-
-    await t.source.applyRemote([
-      put('kv:k/a', 2, h(5000), 'secondaryKey'),
-      tombstone('kv:k/nested/ok', h(5100), 'secondaryKey'),
-    ]);
-    expect(await t.stored('k')).toEqual({
-      a: 2,
-      nested: { local: 'device' },
-      unsynced: 'keep',
-    });
-  });
-
-  it('merges element arrays by id and restores stripped fields from the local element', async () => {
-    const t = harness(flattenedKvShape('settings', SETTINGS_FIELD_REGISTRY), 'settings');
-    await t.kv.set('local', 'settings', {
-      subtitleApiKeys: [
-        { id: 'k1', apiKey: 'a', status: 'ok' },
-        { id: 'k2', apiKey: 'b', rateLimitedUntil: 123 },
-      ],
-      activeProfileId: 'p-local',
-      srs: { activeDeckId: 'deck-device', dataLifecycle: { x: 1 } },
-    });
-    await stampKvMeta(t.kv, await t.source.resolve(await t.source.pending(100)));
-
-    const result = await t.source.applyRemote([
-      put('kv:settings/subtitleApiKeys/@k1', { id: 'k1', apiKey: 'a2' }, h(5000)),
-      put('kv:settings/subtitleApiKeys/@k3', { id: 'k3', apiKey: 'c' }, h(5100)),
-      tombstone('kv:settings/subtitleApiKeys/@k2', h(5200)),
-    ]);
-    expect(result.applied).toHaveLength(3);
-    const stored = (await t.stored('settings')) as {
-      subtitleApiKeys: Record<string, unknown>[];
-      activeProfileId: string;
-      srs: Record<string, unknown>;
-    };
-    expect(stored.subtitleApiKeys).toEqual([
-      { id: 'k1', apiKey: 'a2', status: 'ok' },
-      { id: 'k3', apiKey: 'c' },
-    ]);
-    expect(stored.activeProfileId).toBe('p-local');
-    expect(stored.srs).toEqual({ activeDeckId: 'deck-device', dataLifecycle: { x: 1 } });
-    expect(await t.source.pending(100)).toEqual([]);
-  });
-
-  it('orders applied elements by the order field / firstHlc', async () => {
-    const registry: FieldRegistry = {
-      syncedPaths: [[]],
-      elementArrays: [
-        { path: ['items'], elementId: (el) => (el as { id?: string }).id ?? null },
-      ],
-    };
-    const t = harness(flattenedKvShape('k', registry), 'secondaryKey');
-    await t.kv.set('local', 'k', { items: [] });
-    await t.source.applyRemote([
-      put('kv:k/items/@b', { id: 'b', order: 2 }, h(10), 'secondaryKey'),
-      put('kv:k/items/@a', { id: 'a', order: 1 }, h(11), 'secondaryKey'),
-    ]);
-    const stored = (await t.stored('k')) as { items: { id: string }[] };
-    expect(stored.items.map((i) => i.id)).toEqual(['a', 'b']);
-  });
-
-  it('does not write or log when every remote record is stale', async () => {
-    const t = harness(flattenedKvShape('k', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'k', { a: 1 });
-    await stampKvMeta(t.kv, await t.source.resolve(await t.source.pending(100)));
-    const writes: unknown[] = [];
-    const spy = new KvLocalSource('secondaryKey', flattenedKvShape('k', SYNC_ALL), {
-      kv: t.kv,
-      tick: () => h(0),
-      writeValue: async (v) => {
-        writes.push(v);
+      {
+        scope: 'global',
+        dataClass: 'settings',
+        key: 'kv:settings/subtitleOffset',
+        op: 'delete',
       },
-    });
-    const result = await spy.applyRemote([put('kv:k/a', 5, h(1), 'secondaryKey')]);
-    expect(writes).toEqual([]);
-    expect(result.applied).toEqual([]);
+    ]);
+    const records = await source.resolve(pending);
+    expect(records[0].op).toBe('delete');
+    expect(records[0].firstHlc).toBeDefined();
+    await source.ack(pending);
+    const meta = await readSyncMetaKV(kv);
+    expect(meta[kvMetaKey('global', 'kv:settings/subtitleOffset')]?.op).toBe('delete');
+    expect(
+      meta[kvMetaKey('global', 'kv:settings/subtitleOffset')]?.firstHlc,
+    ).toBeDefined();
+  });
+
+  test('tombstones persist in meta indefinitely and re-emit via snapshot', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {
+      uiLanguage: 'en',
+      subtitleOffset: 120,
+    };
+    const source = sourceOf('settings', kv, clock);
+    await drainPending(source);
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = { uiLanguage: 'en' };
+    await drainPending(source);
+
+    const snapshot: ChangeRecord[] = [];
+    for await (const record of source.snapshot('global')) snapshot.push(record);
+    const tombstone = snapshot.find((r) => r.key === 'kv:settings/subtitleOffset');
+    expect(tombstone?.op).toBe('delete');
+    const live = snapshot.find((r) => r.key === 'kv:settings/uiLanguage');
+    expect(live?.op).toBe('put');
+    expect(live?.hlc.wall).toBe(CLOCK_BASE + 2);
   });
 });
 
-describe('KvLocalSource for the sync directory', () => {
-  it('diffs top-level entries and resolves puts/deletes', async () => {
-    const t = harness(directoryKvShape('syncState'), 'syncDirectory');
-    await t.kv.set('local', 'syncState', {
-      'connection:google-drive:acc1': { providerId: 'google-drive', accountKey: 'acc1' },
-      'binding:en': 'google-drive:acc1',
-      systemConnection: 'google-drive:acc1',
-    });
-    const pending = await t.source.pending(100);
-    expect(pending.map((p) => p.key).sort()).toEqual([
-      'binding:en',
-      'connection:google-drive:acc1',
+describe('secondaryKey', () => {
+  test('emits records for whitelisted secondary keys with proper record keys', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local.themeMode = 'dark';
+    mockStorageState.local.tokenizeSettings = { whitespace: 'visible' };
+    const source = sourceOf('secondaryKey', kv, clock);
+    const pending = await source.pending(50);
+    const keys = pending.map((p) => p.key);
+    expect(keys).toContain('kv:themeMode');
+    expect(keys).toContain('kv:tokenizeSettings/whitespace');
+  });
+
+  test('element-array strip fields (tabId) leave scope but stay out of record value', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local.auto_download_whitelist = [
+      { url: 'https://a.example', enabled: true, tabId: 42 },
+    ];
+    const source = sourceOf('secondaryKey', kv, clock);
+    const pending = await source.pending(50);
+    expect(pending.map((p) => p.key)).toEqual([
+      'kv:auto_download_whitelist/@https:~1~1a.example',
+    ]);
+    const records = await source.resolve(pending);
+    const leaf = records[0].value as Record<string, unknown>;
+    expect(leaf.url).toBe('https://a.example');
+    expect(leaf.enabled).toBe(true);
+    expect(leaf.tabId).toBeUndefined();
+  });
+
+  test('non-whitelisted storage keys emit nothing', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local.mySecretDeviceFlag = true;
+    const source = sourceOf('secondaryKey', kv, clock);
+    expect(await source.pending(50)).toEqual([]);
+  });
+});
+
+describe('syncDirectory', () => {
+  test('emits only directory record keys and ignores non-directory entries', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[SYNC_DIRECTORY_STORAGE_KEY] = {
+      systemConnection: { providerId: 'gdrive', accountKey: 'me' },
+      'connection:gdrive:me': { cursor: 'abc' },
+      'binding:global/kv:settings/uiLanguage': 'file-id-1',
+      scratch: 'not-a-record-key',
+      'progress-bar-settings': { recentVideos: [] },
+    };
+    const source = sourceOf('syncDirectory', kv, clock);
+    const pending = await source.pending(50);
+    const keys = pending.map((p) => p.key).sort();
+    expect(keys).toEqual([
+      'binding:global/kv:settings/uiLanguage',
+      'connection:gdrive:me',
       'systemConnection',
     ]);
-    const records = await t.source.resolve(pending);
-    await stampKvMeta(t.kv, records);
-    expect(await t.source.pending(100)).toEqual([]);
-
-    const state = (await t.stored('syncState')) as Record<string, unknown>;
-    delete state['connection:google-drive:acc1'];
-    await t.kv.set('local', 'syncState', state);
-    const next = await t.source.pending(100);
-    expect(next).toEqual([
-      { scope: 'global', dataClass: 'syncDirectory', key: 'connection:google-drive:acc1', op: 'delete' },
-    ]);
-  });
-
-  it('applies remote directory records and tombstones', async () => {
-    const t = harness(directoryKvShape('syncState'), 'syncDirectory');
-    await t.kv.set('local', 'syncState', { 'binding:en': 'local' });
-    await stampKvMeta(t.kv, await t.source.resolve(await t.source.pending(100)));
-
-    const result = await t.source.applyRemote([
-      put('connection:google-drive:a', { providerId: 'google-drive' }, h(5000), 'syncDirectory'),
-      put('binding:en', 'google-drive:a', h(5100), 'syncDirectory'),
-      tombstone('binding:vi', h(5200), 'syncDirectory'),
-    ]);
-    expect(result.applied).toHaveLength(3);
-    const state = await t.stored('syncState');
-    expect(state).toEqual({
-      'connection:google-drive:a': { providerId: 'google-drive' },
-      'binding:en': 'google-drive:a',
-    });
-    expect(await t.source.pending(100)).toEqual([]);
-  });
-
-  it('treats foreign keys as non-materializable opaque records', async () => {
-    const t = harness(directoryKvShape('syncState'), 'syncDirectory');
-    const result = await t.source.applyRemote([
-      put('kv:settings/a', 1, h(5), 'syncDirectory'),
-      put('routeMeta:x', 1, h(6), 'syncDirectory'),
-    ]);
-    expect(result.applied).toEqual([]);
-    expect(result.opaque.map((r) => r.key)).toEqual(['routeMeta:x']);
+    const records = await source.resolve(pending);
+    expect(
+      records.find((r) => r.key === 'binding:global/kv:settings/uiLanguage')?.value,
+    ).toBe('file-id-1');
+    expect(records.every((r) => r.dataClass === 'syncDirectory')).toBe(true);
   });
 });
 
-describe('scalar secondary key', () => {
-  it('flattens a scalar root to the bare kv key and applies remote puts', async () => {
-    const t = harness(flattenedKvShape('themeMode', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'themeMode', 'dark');
-    const pending = await t.source.pending(100);
-    expect(pending.map((p) => p.key)).toEqual(['kv:themeMode']);
-    const [record] = await t.source.resolve(pending);
-    expect(record).toMatchObject({ key: 'kv:themeMode', value: 'dark', op: 'put' });
-    await stampKvMeta(t.kv, [record]);
+describe('profileConfig', () => {
+  test('emits profile existence + field records under profile scope', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {
+      languageProfiles: [
+        { id: 'p1', target: 'ja-JP', native: 'en', order: 0, ttsVoiceId: 'v1' },
+      ],
+    };
+    const source = sourceOf('profileConfig', kv, clock);
+    const pending = await source.pending(50);
+    const byKey = new Map(pending.map((p) => [p.key, p]));
+    expect(byKey.get('profile')?.scope).toBe('profile:ja');
+    expect(byKey.get('profile/native')?.scope).toBe('profile:ja');
+    expect(byKey.get('profile/order')?.scope).toBe('profile:ja');
+    expect(byKey.get('profile/ttsVoiceId')?.scope).toBe('profile:ja');
 
-    await t.source.applyRemote([put('kv:themeMode', 'light', h(5000), 'secondaryKey')]);
-    expect(await t.stored('themeMode')).toBe('light');
-    expect(await t.source.pending(100)).toEqual([]);
+    const records = await source.resolve(pending);
+    const existence = records.find((r) => r.key === 'profile');
+    expect(existence?.value).toBe('p1');
+    expect(existence?.scope).toBe('profile:ja');
+    const field = records.find((r) => r.key === 'profile/ttsVoiceId');
+    expect(field?.value).toBe('v1');
+    expect(field?.dataClass).toBe('profileConfig');
   });
 
-  it('removes the key when the root value is tombstoned remotely', async () => {
-    const t = harness(flattenedKvShape('themeMode', SYNC_ALL), 'secondaryKey');
-    await t.kv.set('local', 'themeMode', 'dark');
-    await stampKvMeta(t.kv, await t.source.resolve(await t.source.pending(100)));
-
-    await t.source.applyRemote([tombstone('kv:themeMode', h(5000), 'secondaryKey')]);
-    expect(await t.stored('themeMode')).toBeUndefined();
+  test('per-scope meta keys do not collide between profiles', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {
+      languageProfiles: [
+        { id: 'p1', target: 'ja', native: 'en', order: 0 },
+        { id: 'p2', target: 'ko', native: 'en', order: 1 },
+      ],
+    };
+    const source = sourceOf('profileConfig', kv, clock);
+    const pending = await source.pending(50);
+    const records = await source.resolve(pending);
+    await source.ack(pending);
+    const meta = await readSyncMetaKV(kv);
+    expect(meta[kvMetaKey('profile:ja', 'profile')]?.op).toBe('put');
+    expect(meta[kvMetaKey('profile:ko', 'profile')]?.op).toBe('put');
+    expect(meta[kvMetaKey('profile:ja', 'profile/native')]?.valueHash).toBeDefined();
+    expect(
+      records
+        .filter((r) => r.key === 'profile')
+        .map((r) => r.scope)
+        .sort(),
+    ).toEqual(['profile:ja', 'profile:ko']);
   });
-});
 
-describe('root element array (auto_download_whitelist)', () => {
-  it('emits per-element record keys and strips tabId', async () => {
-    const registry: FieldRegistry = {
-      syncedPaths: [[]],
-      elementArrays: [
+  test('deleting a profile emits existence tombstone plus field tombstones', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {
+      languageProfiles: [{ id: 'p1', target: 'ja', native: 'en', order: 0 }],
+    };
+    const source = sourceOf('profileConfig', kv, clock);
+    await drainPending(source);
+
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = { languageProfiles: [] };
+    const pending = await source.pending(50);
+    const ops = new Map(pending.map((p) => [p.key, p.op]));
+    expect(ops.get('profile')).toBe('delete');
+    expect(ops.get('profile/native')).toBe('delete');
+    expect(ops.get('profile/target')).toBe('delete');
+    expect(pending.every((p) => p.scope === 'profile:ja')).toBe(true);
+  });
+
+  test('device-local profile fields never emit', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {
+      languageProfiles: [
         {
-          path: [],
-          elementId: (el) => (el as { url?: string }).url ?? null,
-          stripFields: ['tabId'],
+          id: 'p1',
+          target: 'ja',
+          native: 'en',
+          order: 0,
+          tts: { voiceId: 'v', savedVoices: ['x'], downloadedLanguages: ['ja'] },
         },
       ],
     };
-    const t = harness(flattenedKvShape('w', registry), 'secondaryKey');
-    await t.kv.set('local', 'w', [
-      { url: 'https://a.com/show', tabId: 7 },
-      { url: 'https://b.com/x' },
-    ]);
-    const pending = await t.source.pending(100);
+    const source = sourceOf('profileConfig', kv, clock);
+    const pending = await source.pending(50);
     const keys = pending.map((p) => p.key);
-    expect(keys).toEqual(['kv:w/@https:~1~1a.com~1show', 'kv:w/@https:~1~1b.com~1x']);
-    const records = await t.source.resolve(pending);
-    expect(records[0].value).toEqual({ url: 'https://a.com/show' });
+    expect(keys).toContain('profile/tts/voiceId');
+    expect(keys).not.toContain('profile/tts/savedVoices');
+    expect(keys).not.toContain('profile/tts/downloadedLanguages');
+  });
+});
+
+describe('applyRemote', () => {
+  test('remote put writes via persistSyncedSettings and suppresses echo', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {
+      uiLanguage: 'vi',
+      subtitleOffset: 120,
+    };
+    const source = sourceOf('settings', kv, clock);
+    await drainPending(source);
+
+    const remote = remoteRecord(
+      'global',
+      'settings',
+      'kv:settings/uiLanguage',
+      'put',
+      'en',
+      remoteHlc(10),
+    );
+    const result = await source.applyRemote([remote]);
+    expect(result.applied.map((r) => r.key)).toEqual(['kv:settings/uiLanguage']);
+    expect(result.localWon).toEqual([]);
+    expect(persistSyncedSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ uiLanguage: 'en', subtitleOffset: 120 }),
+    );
+    expect(await source.pending(10)).toEqual([]);
+    const meta = await readSyncMetaKV(kv);
+    expect(meta[kvMetaKey('global', 'kv:settings/uiLanguage')]?.hlc).toEqual(remote.hlc);
   });
 
-  it('restores tabId from the matching local element on apply', async () => {
-    const registry: FieldRegistry = {
-      syncedPaths: [[]],
-      elementArrays: [
+  test('remote delete removes the leaf and writes tombstone meta', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {
+      uiLanguage: 'en',
+      subtitleOffset: 120,
+    };
+    const source = sourceOf('settings', kv, clock);
+    await drainPending(source);
+
+    const tomb = remoteRecord(
+      'global',
+      'settings',
+      'kv:settings/subtitleOffset',
+      'delete',
+      undefined,
+      remoteHlc(10),
+    );
+    const result = await source.applyRemote([tomb]);
+    expect(result.applied).toHaveLength(1);
+    const lastWrite = (persistSyncedSettings as jest.Mock).mock.calls.at(-1)?.[0] as
+      Record<string, unknown>;
+    expect(Object.prototype.hasOwnProperty.call(lastWrite, 'subtitleOffset')).toBe(false);
+    expect(lastWrite.uiLanguage).toBe('en');
+    const meta = await readSyncMetaKV(kv);
+    expect(meta[kvMetaKey('global', 'kv:settings/subtitleOffset')]?.op).toBe('delete');
+    expect(meta[kvMetaKey('global', 'kv:settings/subtitleOffset')]?.firstHlc).toBeDefined();
+    expect(await source.pending(10)).toEqual([]);
+  });
+
+  test('older remote put loses to newer local drift (localWon + conflict log)', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = { uiLanguage: 'en' };
+    const source = sourceOf('settings', kv, clock);
+    await source.resolve(await source.pending(10));
+
+    const older = remoteRecord(
+      'global',
+      'settings',
+      'kv:settings/uiLanguage',
+      'put',
+      'stale',
+      { wall: CLOCK_BASE - 1, counter: 0, node: 'remote' },
+    );
+    const result = await source.applyRemote([older]);
+    expect(result.localWon).toHaveLength(1);
+    expect(result.applied).toEqual([]);
+    const log = mockStorageState.local[SYNC_CONFLICT_LOG_STORAGE_KEY] as Array<{
+      winner: string;
+    }>;
+    expect(log[0]?.winner).toBe('local');
+    expect(await source.pending(10)).toHaveLength(1);
+  });
+
+  test('suppressed parent tombstone keeps child puts opaque', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {};
+    const source = sourceOf('settings', kv, clock);
+
+    const parentTomb = remoteRecord(
+      'global',
+      'settings',
+      'kv:settings/subtitleApiKeys',
+      'delete',
+      undefined,
+      remoteHlc(20),
+    );
+    const childPut = remoteRecord(
+      'global',
+      'settings',
+      'kv:settings/subtitleApiKeys/@k1',
+      'put',
+      { id: 'k1', key: 'x' },
+      remoteHlc(10),
+    );
+    const result = await source.applyRemote([parentTomb, childPut]);
+    expect(result.applied.map((r) => r.key)).toEqual(['kv:settings/subtitleApiKeys']);
+    expect(result.opaque.map((r) => r.key)).toEqual(['kv:settings/subtitleApiKeys/@k1']);
+    const meta = await readSyncMetaKV(kv);
+    expect(meta[kvMetaKey('global', 'kv:settings/subtitleApiKeys/@k1')]?.suppressed).toBe(
+      true,
+    );
+    expect(await source.pending(10)).toEqual([]);
+  });
+
+  test('profile field put materializes only when existence is live', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = { languageProfiles: [] };
+    const source = sourceOf('profileConfig', kv, clock);
+
+    const existence = remoteRecord(
+      'profile:ja',
+      'profileConfig',
+      'profile',
+      'put',
+      'p-remote',
+      remoteHlc(100),
+    );
+    const field = remoteRecord(
+      'profile:ja',
+      'profileConfig',
+      'profile/native',
+      'put',
+      'en',
+      remoteHlc(101),
+    );
+    const result = await source.applyRemote([existence, field]);
+    expect(result.opaque).toEqual([]);
+    const write = (persistSyncedSettings as jest.Mock).mock.calls.at(-1)?.[0] as {
+      languageProfiles: Array<Record<string, unknown>>;
+    };
+    expect(write.languageProfiles).toHaveLength(1);
+    expect(write.languageProfiles[0].id).toBe('p-remote');
+    expect(write.languageProfiles[0].native).toBe('en');
+    expect(write.languageProfiles[0].target).toBe('ja');
+  });
+
+  test('profile field put without existence stays opaque', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = { languageProfiles: [] };
+    const source = sourceOf('profileConfig', kv, clock);
+
+    const field = remoteRecord(
+      'profile:ja',
+      'profileConfig',
+      'profile/native',
+      'put',
+      'en',
+      remoteHlc(101),
+    );
+    const result = await source.applyRemote([field]);
+    expect(result.opaque.map((r) => r.key)).toEqual(['profile/native']);
+    const meta = await readSyncMetaKV(kv);
+    expect(meta[kvMetaKey('profile:ja', 'profile/native')]?.suppressed).toBe(true);
+    expect(await source.pending(50)).toEqual([]);
+  });
+
+  test('profile existence tombstone removes the element, preserving other profiles', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {
+      languageProfiles: [
+        { id: 'p1', target: 'ja', native: 'en', order: 0 },
+        { id: 'p2', target: 'ko', native: 'en', order: 1 },
+      ],
+    };
+    const source = sourceOf('profileConfig', kv, clock);
+    await drainPending(source);
+
+    const tomb = remoteRecord(
+      'profile:ja',
+      'profileConfig',
+      'profile',
+      'delete',
+      undefined,
+      remoteHlc(10),
+    );
+    const result = await source.applyRemote([tomb]);
+    expect(result.applied).toHaveLength(1);
+    const write = (persistSyncedSettings as jest.Mock).mock.calls.at(-1)?.[0] as {
+      languageProfiles: Array<Record<string, unknown>>;
+    };
+    expect(write.languageProfiles.map((p) => p.target)).toEqual(['ko']);
+    expect(await source.pending(50)).toEqual([]);
+  });
+
+  test('local-only profile fields are preserved across remote apply', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {
+      languageProfiles: [
         {
-          path: [],
-          elementId: (el) => (el as { url?: string }).url ?? null,
-          stripFields: ['tabId'],
+          id: 'p1',
+          target: 'ja',
+          native: 'en',
+          order: 0,
+          tts: { voiceId: 'v', savedVoices: ['x1'] },
         },
       ],
     };
-    const t = harness(flattenedKvShape('w', registry), 'secondaryKey');
-    await t.kv.set('local', 'w', [{ url: 'https://a.com/show', tabId: 7 }]);
-    await stampKvMeta(t.kv, await t.source.resolve(await t.source.pending(100)));
+    const source = sourceOf('profileConfig', kv, clock);
+    await drainPending(source);
 
-    await t.source.applyRemote([
-      put('kv:w/@https:~1~1a.com~1show', { url: 'https://a.com/show', added: true }, h(5000), 'secondaryKey'),
-      put('kv:w/@https:~1~1c.com~1y', { url: 'https://c.com/y' }, h(5100), 'secondaryKey'),
-    ]);
-    const stored = (await t.stored('w')) as Record<string, unknown>[];
-    expect(stored).toContainEqual({ url: 'https://a.com/show', added: true, tabId: 7 });
-    expect(stored).toContainEqual({ url: 'https://c.com/y' });
+    const remote = remoteRecord(
+      'profile:ja',
+      'profileConfig',
+      'profile/native',
+      'put',
+      'de',
+      remoteHlc(10),
+    );
+    await source.applyRemote([remote]);
+    const write = (persistSyncedSettings as jest.Mock).mock.calls.at(-1)?.[0] as {
+      languageProfiles: Array<Record<string, unknown>>;
+    };
+    expect(write.languageProfiles[0].tts).toMatchObject({
+      voiceId: 'v',
+      savedVoices: ['x1'],
+    });
+    expect(write.languageProfiles[0].native).toBe('de');
+  });
+
+  test('secondaryKey remote apply writes whole object preserving device-local fields', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local.auto_download_whitelist = [
+      { url: 'https://a.example', enabled: true, tabId: 42 },
+      { url: 'https://b.example', enabled: false, tabId: 7 },
+    ];
+    const source = sourceOf('secondaryKey', kv, clock);
+    await drainPending(source);
+
+    const remote = remoteRecord(
+      'global',
+      'secondaryKey',
+      'kv:auto_download_whitelist/@https:~1~1a.example',
+      'put',
+      { url: 'https://a.example', enabled: false },
+      remoteHlc(10),
+    );
+    const result = await source.applyRemote([remote]);
+    expect(result.applied).toHaveLength(1);
+    const list = mockStorageState.local.auto_download_whitelist as Array<
+      Record<string, unknown>
+    >;
+    const a = list.find((e) => e.url === 'https://a.example');
+    const b = list.find((e) => e.url === 'https://b.example');
+    expect(a?.enabled).toBe(false);
+    expect(a?.tabId).toBe(42);
+    expect(b?.tabId).toBe(7);
+    expect(await source.pending(50)).toEqual([]);
+  });
+
+  test('snapshot uses committed remote hlc for applied records', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {};
+    const source = sourceOf('settings', kv, clock);
+    const remote = remoteRecord(
+      'global',
+      'settings',
+      'kv:settings/uiLanguage',
+      'put',
+      'vi',
+      remoteHlc(42),
+    );
+    await source.applyRemote([remote]);
+    const snapshot: ChangeRecord[] = [];
+    for await (const record of source.snapshot('global')) snapshot.push(record);
+    const row = snapshot.find((r) => r.key === 'kv:settings/uiLanguage');
+    expect(row?.hlc).toEqual(remote.hlc);
+    expect(row?.firstHlc).toEqual(remote.hlc);
+  });
+});
+
+describe('current()', () => {
+  test('returns effective records per key across scopes', async () => {
+    const kv = createMemoryKv();
+    const clock = createClock();
+    mockStorageState.local[STORAGE_KEYS.SETTINGS] = {
+      uiLanguage: 'en',
+      languageProfiles: [{ id: 'p1', target: 'ja', native: 'en', order: 0 }],
+    };
+    const source = sourceOf('profileConfig', kv, clock);
+    const map = await source.current(['profile', 'profile/nonexistent']);
+    expect(map.get('profile')?.scope).toBe('profile:ja');
+    expect(map.get('profile/nonexistent')).toBeNull();
   });
 });

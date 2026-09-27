@@ -2,7 +2,7 @@ import { InMemoryKeyValueStore } from '../../memory/InMemoryKeyValueStore';
 import type { ChangeRecord, Hlc } from '../../../domain/types';
 import { appendConflictLog, SYNC_CONFLICT_LOG_LIMIT } from './conflictLog';
 import type { ConflictLogEntry } from './conflictLog';
-import { readSyncMetaKV, stampKvMeta } from './kvMeta';
+import { kvMetaKey, readSyncMetaKV, stampKvMeta } from './kvMeta';
 import { kvValueHash } from './valueHash';
 import {
   SYNC_CONFLICT_LOG_STORAGE_KEY,
@@ -28,10 +28,10 @@ describe('stampKvMeta', () => {
     const kv = new InMemoryKeyValueStore();
     await stampKvMeta(kv, [rec('kv:settings/a', 'put', 1, 5), rec('kv:settings/b', 'delete', undefined, 6)]);
     const meta = await readSyncMetaKV(kv);
-    expect(meta['kv:settings/a']).toMatchObject({ op: 'put', hlc: h(5), firstHlc: h(5) });
-    expect(meta['kv:settings/a'].valueHash).toBe(await kvValueHash(1));
-    expect(meta['kv:settings/b']).toMatchObject({ op: 'delete', hlc: h(6) });
-    expect(meta['kv:settings/b'].valueHash).toBeUndefined();
+    expect(meta[kvMetaKey('global', 'kv:settings/a')]).toMatchObject({ op: 'put', hlc: h(5), firstHlc: h(5) });
+    expect(meta[kvMetaKey('global', 'kv:settings/a')].valueHash).toBe(await kvValueHash(1));
+    expect(meta[kvMetaKey('global', 'kv:settings/b')]).toMatchObject({ op: 'delete', hlc: h(6) });
+    expect(meta[kvMetaKey('global', 'kv:settings/b')].valueHash).toBeUndefined();
   });
 
   it('merges into existing meta without touching other keys and no-ops on empty batches', async () => {
@@ -42,7 +42,7 @@ describe('stampKvMeta', () => {
     await stampKvMeta(kv, [rec('kv:settings/a', 'put', 2, 9)]);
     const meta = await readSyncMetaKV(kv);
     expect(meta['kv:other/x']).toBeDefined();
-    expect(meta['kv:settings/a'].hlc).toEqual(h(9));
+    expect(meta[kvMetaKey('global', 'kv:settings/a')].hlc).toEqual(h(9));
   });
 
   it('tolerates malformed meta rows on read', async () => {

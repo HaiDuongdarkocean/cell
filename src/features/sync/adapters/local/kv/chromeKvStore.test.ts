@@ -1,88 +1,83 @@
 import { ChromeKeyValueStore } from './chromeKvStore';
-import { createKvLocalSources } from './index';
 
-function fakeArea() {
-  const map = new Map<string, unknown>();
-  return {
-    get: jest.fn(async (keys?: string | string[] | null) => {
-      if (keys === null || keys === undefined) {
-        return Object.fromEntries(map);
-      }
-      const list = Array.isArray(keys) ? keys : [keys];
-      const out: Record<string, unknown> = {};
-      for (const key of list) {
-        if (map.has(key)) out[key] = map.get(key);
-      }
-      return out;
+const mockStorageState: {
+  local: Record<string, unknown>;
+  session: Record<string, unknown>;
+} = {
+  local: {},
+  session: {},
+};
+
+function installChromeStub(): void {
+  const makeArea = (store: Record<string, unknown>) => ({
+    get: jest.fn(async (key: string | string[] | null) => {
+      if (key === null) return { ...store };
+      if (typeof key === 'string')
+        return key in store ? { [key]: store[key] } : {};
+      return Object.fromEntries(
+        key.filter((k) => k in store).map((k) => [k, store[k]]),
+      );
     }),
     set: jest.fn(async (items: Record<string, unknown>) => {
-      for (const [key, value] of Object.entries(items)) map.set(key, value);
+      Object.assign(store, items);
     }),
     remove: jest.fn(async (keys: string | string[]) => {
-      for (const key of Array.isArray(keys) ? keys : [keys]) map.delete(key);
+      for (const key of Array.isArray(keys) ? keys : [keys]) delete store[key];
     }),
-    map,
+  });
+  (globalThis as { chrome?: unknown }).chrome = {
+    storage: {
+      local: makeArea(mockStorageState.local),
+      session: makeArea(mockStorageState.session),
+    },
   };
 }
 
-describe('ChromeKeyValueStore', () => {
-  const local = fakeArea();
-  const session = fakeArea();
-
-  beforeAll(() => {
-    global.chrome = {
-      storage: { local, session },
-    } as unknown as typeof chrome;
-  });
-
-  afterAll(() => {
-    delete (global as { chrome?: unknown }).chrome;
-  });
-
-  beforeEach(() => {
-    local.map.clear();
-    session.map.clear();
-    jest.clearAllMocks();
-  });
-
-  it('reads and writes per area', async () => {
-    const kv = new ChromeKeyValueStore();
-    await kv.set('local', 'a', 1);
-    await kv.set('session', 'a', 2);
-    expect(await kv.get<number>('local', 'a')).toBe(1);
-    expect(await kv.get<number>('session', 'a')).toBe(2);
-    expect(local.set).toHaveBeenCalledWith({ a: 1 });
-    expect(session.set).toHaveBeenCalledWith({ a: 2 });
-  });
-
-  it('deletes and lists keys by prefix', async () => {
-    const kv = new ChromeKeyValueStore();
-    await kv.set('local', 'syncCursors:x', 1);
-    await kv.set('local', 'syncCursors:y', 2);
-    await kv.set('local', 'other', 3);
-    expect(await kv.list('local', 'syncCursors:')).toEqual(['syncCursors:x', 'syncCursors:y']);
-    await kv.del('local', 'syncCursors:x');
-    expect(await kv.get('local', 'syncCursors:x')).toBeUndefined();
-    expect(local.remove).toHaveBeenCalledWith('syncCursors:x');
-  });
-
-  it('resolves undefined for missing keys', async () => {
-    const kv = new ChromeKeyValueStore();
-    expect(await kv.get('local', 'missing')).toBeUndefined();
-  });
+beforeEach(() => {
+  mockStorageState.local = {};
+  mockStorageState.session = {};
+  installChromeStub();
 });
 
-describe('createKvLocalSources', () => {
-  it('creates one source per synced registry key plus the directory source', () => {
-    const sources = createKvLocalSources({
-      kv: new ChromeKeyValueStore(),
-      tick: () => ({ wall: 0, counter: 0, node: 't' }),
-    });
-    expect(sources).toHaveLength(8);
-    const byClass = sources.reduce<Record<string, number>>((acc, s) => {
-      acc[s.dataClass] = (acc[s.dataClass] ?? 0) + 1;
-      return acc;
-    }, {});
-    expect(byClass).toEqual({ settings: 1, secondaryKey: 6, syncDirectory: 1 });
+afterAll(() => {
+  delete (globalThis as { chrome?: unknown }).chrome;
+});
+
+describe('createChromeKvStore', () => {
+  test('set/get round-trips values in the local area', async () => {
+    const store = new ChromeKeyValueStore();
+    await store.set('local', 'alpha', { nested: [1, 2] });
+    await store.set('local', 'beta', 'x');
+    expect(await store.get('local', 'alpha')).toEqual({ nested: [1, 2] });
+    expect(await store.get('local', 'missing')).toBeUndefined();
+    expect(mockStorageState.local.alpha).toEqual({ nested: [1, 2] });
+  });
+
+  test('del removes keys without touching siblings', async () => {
+    const store = new ChromeKeyValueStore();
+    await store.set('local', 'alpha', 1);
+    await store.set('local', 'beta', 2);
+    await store.del('local', 'alpha');
+    expect(await store.get('local', 'alpha')).toBeUndefined();
+    expect(await store.get('local', 'beta')).toBe(2);
+  });
+
+  test('list returns sorted keys under the prefix only', async () => {
+    const store = new ChromeKeyValueStore();
+    mockStorageState.local['syncMetaKV'] = { a: 1 };
+    mockStorageState.local['zz/other'] = 1;
+    mockStorageState.local['syncMeta/extra'] = 2;
+    expect(await store.list('local', 'syncMetaKV')).toEqual(['syncMetaKV']);
+    expect(await store.list('local', 'syncMeta')).toEqual(['syncMeta/extra', 'syncMetaKV']);
+    expect(await store.list('local', 'nope')).toEqual([]);
+  });
+
+  test('session area is isolated from local', async () => {
+    const store = new ChromeKeyValueStore();
+    await store.set('session', 'token', 'ephemeral');
+    expect(await store.get('session', 'token')).toBe('ephemeral');
+    expect(await store.get('local', 'token')).toBeUndefined();
+    await store.del('session', 'token');
+    expect(await store.get('session', 'token')).toBeUndefined();
   });
 });
