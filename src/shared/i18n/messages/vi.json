@@ -231,7 +231,7 @@
   "settings.profiles.form.copy": "Sao chép từ $1",
   "settings.profiles.form.copyDesc": "Dùng lại cài đặt của hồ sơ đang dùng",
   "settings.profiles.error.required": "Hãy chọn ngôn ngữ đích.",
-  "settings.profiles.error.duplicate": "Đã có hồ sơ cho cặp ngôn ngữ này.",
+  "settings.profiles.error.duplicate": "Đã có hồ sơ cho ngôn ngữ đích này.",
   "settings.profiles.empty.title": "Chưa có hồ sơ ngôn ngữ",
   "settings.profiles.empty.desc": "Mỗi hồ sơ lưu cài đặt phụ đề, từ điển và tài nguyên cho một ngôn ngữ.",
   "settings.profiles.empty.cta": "Tạo hồ sơ đầu tiên",

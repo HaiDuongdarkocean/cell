@@ -142,11 +142,17 @@ describe('validateLanguageProfile', () => {
     expect(result.emptyTarget).toBe(true);
   });
 
-  it('blocks duplicate (target, native) pair', () => {
-    const existing = [mockProfile({ id: 'p1', target: 'en', native: '' })];
-    const result = validateLanguageProfile({ target: 'en', native: '' }, 'vi', existing);
+  it('blocks duplicate target regardless of native', () => {
+    const existing = [mockProfile({ id: 'p1', target: 'en', native: 'vi' })];
+    const result = validateLanguageProfile({ target: 'en', native: 'ja' }, 'vi', existing);
     expect(result.valid).toBe(false);
     expect(result.duplicate).toBe(true);
+  });
+
+  it('allows a different target', () => {
+    const existing = [mockProfile({ id: 'p1', target: 'en', native: 'vi' })];
+    const result = validateLanguageProfile({ target: 'ja', native: '' }, 'vi', existing);
+    expect(result.valid).toBe(true);
   });
 
   it('allows editing existing profile', () => {

@@ -231,7 +231,7 @@
   "settings.profiles.form.copy": "Copy from $1",
   "settings.profiles.form.copyDesc": "Reuse the active profile's settings",
   "settings.profiles.error.required": "Please select a target language.",
-  "settings.profiles.error.duplicate": "A profile with this language pair already exists.",
+  "settings.profiles.error.duplicate": "A profile for this target language already exists.",
   "settings.profiles.empty.title": "No language profiles yet",
   "settings.profiles.empty.desc": "Each profile saves subtitle, dictionary, and resource settings for one language.",
   "settings.profiles.empty.cta": "Create your first profile",

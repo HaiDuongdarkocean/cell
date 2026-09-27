@@ -347,6 +347,12 @@
   color: var(--color-text-secondary);
 }
 
+.formStaticValue {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  padding: var(--space-1) 0;
+}
+
 .formError {
   background: var(--color-error-subtle);
   color: var(--color-error);

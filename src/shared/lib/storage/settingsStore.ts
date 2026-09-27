@@ -13,7 +13,7 @@
  */
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_LOCAL_PLAYER_SETTINGS, DEFAULT_FREQUENCY_BANDS } from '@/shared/config/config';
-import { buildProfileName, generateProfileId, resolveSettingsFlatFields, syncFlatFieldsToActiveProfile } from '@/entities/settings';
+import { buildProfileName, profileIdForTarget, resolveSettingsFlatFields, syncFlatFieldsToActiveProfile } from '@/entities/settings';
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
@@ -407,7 +407,7 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     const universalNative = oldNative;
 
     const defaultProfile: LanguageProfile = {
-      id: generateProfileId(),
+      id: profileIdForTarget(oldTarget),
       target: oldTarget,
       native: '',
       name: buildProfileName('', universalNative, oldTarget, []),

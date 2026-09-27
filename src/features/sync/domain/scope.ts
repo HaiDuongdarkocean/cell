@@ -1,4 +1,5 @@
 import { baseLangCode, toIso6391 } from '@/shared/config/languageRegistry';
+import { profileIdForTarget as deriveProfileId } from '@/entities/settings';
 import type { AccountKey, ConnectionId, ProfileId, ProviderId, Scope } from './types';
 
 export function targetOf(languageValue: string): string {
@@ -6,7 +7,7 @@ export function targetOf(languageValue: string): string {
 }
 
 export function profileIdForTarget(target: string): ProfileId {
-  return `profile-${target}`;
+  return deriveProfileId(target);
 }
 
 export function scopeForTarget(target: string): Scope {
