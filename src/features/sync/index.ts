@@ -81,3 +81,5 @@ export {
   clearOpaqueRecords,
 } from './adapters/local/syncDb';
 export type { OpaqueRecordRow } from './adapters/local/syncDb';
+export { SyncPanel } from './ui/SyncPanel';
+export type { SyncPanelProps } from './ui/SyncPanel';
