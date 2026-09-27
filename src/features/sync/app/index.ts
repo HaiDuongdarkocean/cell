@@ -66,6 +66,10 @@ export {
   snapshotPath,
   WIRE_FORMAT_VERSION,
 } from './remotePaths';
+export { migrateProfileIdentity } from './profileIdentityMigration';
+export type { ProfileIdentityMigrationDeps } from './profileIdentityMigration';
+export { runScopeReconciliation, setActiveProfileAfterRestore } from './reconciliation';
+export type { ReconcileDeps, ReconcileResult } from './reconciliation';
 export { readRouting, routeForScope, SYNC_CHECKPOINTS_STORAGE_KEY, SYNC_DIRECTORY_STORAGE_KEY } from './routing';
 export type { RouteTarget, RoutingSnapshot } from './routing';
 export { engineStateForError, SyncEngine } from './SyncEngine';

@@ -18,6 +18,7 @@ export { targetOf, profileIdForTarget, scopeForTarget, connectionId } from './do
 export { compareHlc, hlcEq, maxHlc, HybridClock } from './domain/hlc';
 export { stableJson, stableHash } from './domain/stableHash';
 export type { LocalSource, ApplyResult, ApplyContext, ConflictLogEntry } from './ports/localSource';
+export type { SrsCollectionSummary, SrsSyncAccess } from './ports/srsSyncAccess';
 export {
   SYNC_OUTBOX,
   SYNC_META,
