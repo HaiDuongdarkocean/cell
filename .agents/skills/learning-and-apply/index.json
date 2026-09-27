@@ -2680,6 +2680,39 @@
         "dead-code"
       ],
       "trigger": "web-ext lint / addons-linter báo FILE_TOO_LARGE cho bundle .js >~5MB — Emscripten libs nhúng wasm base64 hoặc worker bundles bundler emit nhưng runtime không spawn."
+    },
+    {
+      "type": "experience",
+      "id": "jest-clearallmocks-keeps-implementations",
+      "title": "jest.clearAllMocks xóa call history nhưng GIỮ nguyên mockResolvedValue/mockReturnValue impl",
+      "category": [
+        "testing"
+      ],
+      "tags": [
+        "jest",
+        "mock",
+        "clearAllMocks",
+        "mockResolvedValue",
+        "test-isolation"
+      ],
+      "trigger": "Test sau beforeEach(clearAllMocks) vẫn thấy impl của test trước — assertions đếm call sai ngẫu nhiên theo thứ tự test"
+    },
+    {
+      "type": "experience",
+      "id": "sync-persist-obligation-before-state-apply",
+      "title": "Recovery obligation phải persist TRƯỚC khi apply state change trigger nó",
+      "category": [
+        "data",
+        "state"
+      ],
+      "tags": [
+        "sync",
+        "checkpoint",
+        "obligation",
+        "crash-safety",
+        "ordering"
+      ],
+      "trigger": "Apply một remote change mà sau đó cần follow-up async (drain/migration) — nếu apply trước persist thì crash giữa hai bước làm mất obligation vĩnh viễn"
     }
   ]
 }
