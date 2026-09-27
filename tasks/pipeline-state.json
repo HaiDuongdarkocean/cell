@@ -1,5 +1,5 @@
 {
-  "active": null,
+  "active": "user-data-sync",
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -489,6 +489,59 @@
       },
       "worktree": null,
       "updated": "2026-09-26T03:55:36.269Z"
+    },
+    "user-data-sync": {
+      "stage": "deliver",
+      "mode": "interactive",
+      "uiSurface": "yes",
+      "artifacts": {
+        "intent": "docs/intent/user-data-sync.md",
+        "reviews": [
+          "docs/reviews/user-data-sync-analyze.md",
+          "docs/reviews/user-data-sync-spec.md"
+        ],
+        "spec": "docs/specs/user-data-sync.md",
+        "designBrief": "docs/intent/user-data-sync-design-brief.md"
+      },
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-09-27T12:41:16.394Z"
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-09-27T12:41:46.742Z"
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-09-27T12:42:17.038Z"
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-09-27T12:43:32.544Z"
+        }
+      },
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [
+        {
+          "flag": "user-approval:intent",
+          "note": "Owner approved intent (Testing mode first, In production deferred)",
+          "at": "2026-09-27T07:21:32.987Z"
+        },
+        {
+          "flag": "user-approval:design",
+          "note": "Owner rejected all 3 metaphor concepts (Beacon/Watershed/Passport) after real-Chrome MCP audit; approved direction: spec-derived Settings section mapped to src/shared/ui (component-mapping + design review VERDICT: APPROVE_WITH_CHANGES). Proceed to implementation in a dedicated worktree.",
+          "at": "2026-09-27T12:40:16.442Z"
+        }
+      ],
+      "loops": 2,
+      "owner": {
+        "id": "devin-cli",
+        "since": "2026-09-27T06:36:48.765Z"
+      },
+      "worktree": null,
+      "updated": "2026-09-27T12:43:32.544Z"
     }
   }
 }
