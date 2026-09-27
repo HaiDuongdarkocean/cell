@@ -59,6 +59,7 @@ export interface SyncStore {
   allocateSnapshotN(connectionId: ConnectionId, scope: Scope): Promise<number>;
   deferRecord(input: DeferRecordInput): Promise<DeferredRecord>;
   listDeferred(connectionId: ConnectionId): Promise<DeferredRecord[]>;
+  listAllDeferred(): Promise<DeferredRecord[]>;
   deferredByBlobHash(contentHash: string): Promise<DeferredRecord[]>;
   updateDeferred(row: DeferredRecord): Promise<DeferredRecord>;
   deleteDeferred(key: string): Promise<void>;

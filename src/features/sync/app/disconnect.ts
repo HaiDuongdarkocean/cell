@@ -7,6 +7,7 @@ import type { LocalSource } from '../ports/localSource';
 import type { ProviderId } from '../domain/types';
 import { ProviderError, type StorageProvider } from '../ports/storageProvider';
 import { blobToBytes } from '../adapters/contract/blobBytes';
+import { CycleLockLostError } from './cycleLock';
 import type { BlobReader } from './blobRefs';
 import { DISCONNECT_MARKER_PATH } from './remotePaths';
 import {
@@ -19,6 +20,7 @@ import {
 import { readRouting, routeForScope, SYNC_DIRECTORY_STORAGE_KEY } from './routing';
 import { collectScopeSnapshot, publishScopeSnapshot } from './snapshotPublish';
 import { clearCheckpoint, listCheckpoints } from './checkpoints';
+import { stampKvMetaHlc } from '../adapters/local/kv/kvMeta';
 import type { SyncStore } from './syncStore';
 
 export const DISCONNECT_PENDING_PREFIX = 'syncDisconnectPending:';
@@ -215,17 +217,30 @@ async function writeDirectoryDisconnect(
   const state =
     (await deps.kv.get<Record<string, unknown>>('local', SYNC_DIRECTORY_STORAGE_KEY)) ?? {};
   const next: Record<string, unknown> = { ...state };
-  delete next[`connection:${connId}`];
+  const changed: string[] = [];
+  if (`connection:${connId}` in next) {
+    delete next[`connection:${connId}`];
+    changed.push(`connection:${connId}`);
+  }
   for (const [target, bound] of routing.bindings) {
-    if (bound === connId) next[`binding:${target}`] = 'local';
+    if (bound === connId && next[`binding:${target}`] !== 'local') {
+      next[`binding:${target}`] = 'local';
+      changed.push(`binding:${target}`);
+    }
   }
   if (routing.systemConnection === connId) {
     const remaining = routing.connections.filter((c) => c.connectionId !== connId);
     const nextSystem = remaining[0]?.connectionId;
     if (nextSystem === undefined) delete next['systemConnection'];
     else next['systemConnection'] = nextSystem;
+    changed.push('systemConnection');
   }
+  if (changed.length === 0) return;
   await deps.kv.set('local', SYNC_DIRECTORY_STORAGE_KEY, next);
+  const hlc = deps.tick();
+  for (const key of changed) {
+    await stampKvMetaHlc(deps.kv, 'global', key, hlc);
+  }
 }
 
 async function clearCheckpointsFor(
@@ -295,7 +310,12 @@ export async function completePendingDisconnects(deps: DisconnectDeps): Promise<
   for (const connId of await listPendingDisconnects(deps.kv)) {
     const connection = connected.get(connId);
     if (connection === undefined) {
-      await clearDisconnectPending(deps.kv, connId);
+      try {
+        await completeDisconnectLocally(deps, connId);
+        done.push(connId);
+      } catch (e) {
+        if (e instanceof CycleLockLostError) throw e;
+      }
       continue;
     }
     try {

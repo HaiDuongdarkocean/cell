@@ -259,6 +259,38 @@ describe('runConnectionPull', () => {
     expect(source.applied).toHaveLength(1);
   });
 
+  it('waits at a journal gap instead of skipping past it', async () => {
+    const t = await harness();
+    const source = new PullSource('settings', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/a', 1),
+    ]);
+    await t.pull([GLOBAL], { sources: [source] });
+
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 3, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/b', 'late', 30),
+    ]);
+    const gapped = await t.pull([GLOBAL], { sources: [source] });
+    expect(source.applied.map((r) => r.key)).toEqual(['kv:settings/a']);
+    expect(await cursorOf(t, GLOBAL)).toEqual({ snapshotN: 0, seq: 1 });
+    expect(
+      gapped.outcomes[0]!.devices[0]!.warnings.some((w) =>
+        w.includes('journal gap'),
+      ),
+    ).toBe(true);
+
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 2, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/gap', 'filled', 20),
+    ]);
+    await t.pull([GLOBAL], { sources: [source] });
+    expect(source.applied.map((r) => r.key)).toEqual([
+      'kv:settings/a',
+      'kv:settings/gap',
+      'kv:settings/b',
+    ]);
+    expect(await cursorOf(t, GLOBAL)).toEqual({ snapshotN: 0, seq: 3 });
+  });
+
   it('jumps to the newest snapshot then consumes journals after coversSeq', async () => {
     const t = await harness();
     const source = new PullSource('settings', GLOBAL);
@@ -303,13 +335,17 @@ describe('runConnectionPull', () => {
     expect(
       gapped.outcomes[0]!.devices[0]!.warnings.some((w) => w.includes('journal gap')),
     ).toBe(true);
-    expect(source.applied.map((r) => r.key)).toEqual(['kv:settings/a', 'kv:settings/c']);
+    expect(source.applied.map((r) => r.key)).toEqual(['kv:settings/a']);
+    expect(await cursorOf(t, GLOBAL)).toEqual({ snapshotN: 0, seq: 1 });
 
     await writeSnapshot(t, GLOBAL, REMOTE_DEVICE, 2, 5, [
       makeRecord(GLOBAL, 'settings', 'kv:settings/full', 'snapshot', 60),
     ]);
     const recovered = await t.pull([GLOBAL], { sources: [source] });
-    expect(source.applied.map((r) => r.key)).toContain('kv:settings/full');
+    expect(source.applied.map((r) => r.key)).toEqual([
+      'kv:settings/a',
+      'kv:settings/full',
+    ]);
     expect(await cursorOf(t, GLOBAL)).toEqual({ snapshotN: 2, seq: 5 });
     expect(recovered.outcomes[0]!.devices[0]!.warnings).toEqual([]);
   });

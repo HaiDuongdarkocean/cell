@@ -25,10 +25,12 @@ import {
   ackPendingKeys,
   collectPendingKeys,
   DEFAULT_PENDING_LIMIT,
+  resolvePendingKeys,
   runConnectionPush,
   type ConnectionPushDeps,
 } from './pushCycle';
 import { writeRouteMarker } from './routeMarkers';
+import { stampKvMetaHlc } from '../adapters/local/kv/kvMeta';
 import { readRouting, routeForScope, SYNC_DIRECTORY_STORAGE_KEY } from './routing';
 import { collectScopeSnapshot, publishScopeSnapshot } from './snapshotPublish';
 import type { SyncStore } from './syncStore';
@@ -101,7 +103,7 @@ function pushDepsFor(deps: RebindDeps, connection: Connection): ConnectionPushDe
 }
 
 export async function writeRoutingValue(
-  deps: Pick<RebindDeps, 'kv'>,
+  deps: Pick<RebindDeps, 'kv' | 'tick'>,
   scope: Scope,
   destination: ConnectionId | 'local',
 ): Promise<void> {
@@ -117,8 +119,10 @@ export async function writeRoutingValue(
       ? 'systemConnection'
       : `binding:${scope.slice('profile:'.length)}`;
   const next = { ...(state ?? {}) };
+  if (next[key] === destination) return;
   next[key] = destination;
   await deps.kv.set('local', SYNC_DIRECTORY_STORAGE_KEY, next);
+  await stampKvMetaHlc(deps.kv, 'global', key, deps.tick());
 }
 
 export async function runScopeRebind(
@@ -133,13 +137,13 @@ export async function runScopeRebind(
     throw new Error(`cannot rebind ${scope}: unknown connection ${destination}`);
   }
   let existing = await getCheckpoint(deps.kv, scope);
-  if (existing !== null && existing.kind === 'sweep') {
+  if (existing !== null && existing.kind !== 'rebind') {
     await clearCheckpoint(deps.kv, scope);
     existing = null;
   }
-  if (existing !== null && (existing.kind !== 'rebind' || existing.to !== destination)) {
+  if (existing !== null && existing.to !== destination) {
     throw new Error(
-      `scope ${scope} has an incompatible ${existing.kind} obligation to ${existing.to}`,
+      `scope ${scope} has an incompatible rebind obligation to ${existing.to}`,
     );
   }
   const checkpoint =
@@ -177,7 +181,9 @@ export async function cancelScopeRebind(
   scope: Scope,
 ): Promise<void> {
   const cp = await getCheckpoint(deps.kv, scope);
-  if (cp !== null && cp.kind === 'rebind') await clearCheckpoint(deps.kv, scope);
+  if (cp !== null && (cp.kind === 'rebind' || cp.kind === 'drain')) {
+    await clearCheckpoint(deps.kv, cp.scope);
+  }
 }
 
 async function advanceRebind(
@@ -305,7 +311,10 @@ async function drainHeldKeys(deps: RebindDeps, cp: SyncCheckpoint): Promise<void
     (key) => key.scope === cp.scope,
   );
   if (cp.to === 'local') {
-    if (pending.length > 0) await ackPendingKeys(deps.sources, pending);
+    if (pending.length > 0) {
+      await resolvePendingKeys(deps.sources, pending);
+      await ackPendingKeys(deps.sources, pending);
+    }
     return;
   }
   const connection = deps.connectionFor(cp.to);

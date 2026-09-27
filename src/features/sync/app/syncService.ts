@@ -26,6 +26,7 @@ import {
   type RoutingSnapshot,
 } from './routing';
 import { scopesPrefix } from './remotePaths';
+import { getCheckpoint } from './checkpoints';
 import type { SyncStore } from './syncStore';
 import type { ConnectionPullDeps } from './pullCycle';
 import { SYNC_APPLIED_AT_KEY } from './pullCycle';
@@ -327,7 +328,8 @@ export async function setScopeBinding(
     throw new SyncServiceError('unknown-connection', `no such connection: ${destination}`);
   }
   const hasSyncedCopy = await scopeHasRemoteData(deps, routing, scope);
-  if (!hasSyncedCopy) {
+  const occupied = (await getCheckpoint(deps.kv, scope)) !== null;
+  if (!hasSyncedCopy && !occupied) {
     await writeRoutingValue(deps, scope, destination);
     if (destination === 'local') return null;
     const connection = routing.connections.find(
@@ -437,7 +439,7 @@ export async function syncStatusSnapshot(
     routing.connections.map(async (c) => {
       const entry = health.get(c.connectionId);
       const disconnectPending = pendingDisconnects.has(c.connectionId);
-      let hasToken = true;
+      let hasToken: boolean;
       try {
         hasToken = await deps.providerFor(c.providerId).hasToken(c);
       } catch {

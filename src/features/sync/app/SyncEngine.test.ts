@@ -867,4 +867,80 @@ describe('SyncEngine obligations', () => {
     expect(result.ackedKeys).toBe(0);
     expect(result.waitingScopes).toEqual([GLOBAL]);
   });
+
+  it('clears orphaned checkpoints when completing a pending disconnect for an absent connection', async () => {
+    const t = await harness();
+    const ghost = `${PROVIDER_ID}:ghost` as Connection['connectionId'];
+    await t.kv.set('local', `${DISCONNECT_PENDING_PREFIX}${ghost}`, {
+      at: t.clock.now(),
+    });
+    await writeCheckpoint(t.kv, {
+      scope: SCOPE,
+      kind: 'drain',
+      phase: 'open',
+      from: t.connection.connectionId,
+      to: ghost,
+      writtenPaths: [],
+      markerHlc: null,
+      startedAt: 0,
+      until: null,
+    });
+    const engine = t.makeEngine({ tick });
+
+    const result = await engine.runCycle();
+
+    expect(result.failed).toEqual([]);
+    const checkpoints = await t.kv.get<Record<string, unknown>>(
+      'local',
+      'syncCheckpoints',
+    );
+    expect(checkpoints?.[SCOPE]).toBeUndefined();
+    expect(
+      await t.kv.get('local', `${DISCONNECT_PENDING_PREFIX}${ghost}`),
+    ).toBeUndefined();
+  });
+
+  it('adopts deferred records left behind by a connection absent from the directory', async () => {
+    const t = await harness();
+    const ghost = `${PROVIDER_ID}:ghost` as Connection['connectionId'];
+    await t.setDirectory({ 'binding:lang:en': t.connection.connectionId });
+    const source = new FakeSource('settings', SCOPE);
+    await t.store.deferRecord({
+      connectionId: ghost,
+      record: {
+        scope: SCOPE,
+        dataClass: 'settings',
+        key: 'kv:z',
+        op: 'put',
+        value: 7,
+        hlc: { wall: 7, counter: 0, node: 'dev-2:ctx' },
+      },
+      requiredBlobHashes: [],
+      firstDeferredAt: 0,
+      attempts: 0,
+    });
+    const engine = t.makeEngine({ sources: [source], tick });
+
+    const result = await engine.runCycle();
+
+    expect(result.failed).toEqual([]);
+    expect(source.remoteApplied.map((r) => r.key)).toEqual(['kv:z']);
+    expect(await t.store.listAllDeferred()).toEqual([]);
+  });
+
+  it('reports waitingFor for pending keys whose target connection is in backoff', async () => {
+    const t = await harness();
+    await t.setDirectory({ 'binding:lang:en': t.connection.connectionId });
+    const source = new FakeSource('settings', SCOPE);
+    t.provider.failNext(1, 'network');
+    const engine = t.makeEngine({ sources: [source], tick });
+    await engine.runCycle();
+    source.pushKey('kv:x', 'put', 1);
+
+    const result = await engine.runCycle();
+
+    expect(result.failed).toHaveLength(1);
+    expect(result.waitingScopes).toEqual([SCOPE]);
+    expect(result.waitingFor[SCOPE]).toBe(t.connection.connectionId);
+  });
 });

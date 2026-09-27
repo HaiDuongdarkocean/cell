@@ -198,10 +198,14 @@ export function registerSyncHandlers(ctx: BackgroundContext): void {
   });
 }
 
-function debouncedFire(fn: () => void, waitMs: number, maxWaitMs: number): () => void {
+function debouncedFire(
+  fn: () => void,
+  waitMs: number,
+  maxWaitMs: number,
+): (() => void) & { cancel: () => void } {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let firstAt: number | undefined;
-  return () => {
+  const fire = () => {
     const now = Date.now();
     if (firstAt === undefined) firstAt = now;
     if (timer !== undefined) {
@@ -219,6 +223,14 @@ function debouncedFire(fn: () => void, waitMs: number, maxWaitMs: number): () =>
       fn();
     }, waitMs);
   };
+  fire.cancel = () => {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      timer = undefined;
+    }
+    firstAt = undefined;
+  };
+  return fire;
 }
 
 export function wireSyncScheduling(ctx: BackgroundContext): Array<() => void> {
@@ -237,7 +249,8 @@ export function wireSyncScheduling(ctx: BackgroundContext): Array<() => void> {
     unsubs.push(() => chrome.alarms.onAlarm.removeListener(onAlarm));
   }
 
-  unsubs.push(scheduleOnExternalChange(debouncedFire(fireIfConnected, CHANGE_DEBOUNCE_MS, CHANGE_MAX_WAIT_MS)));
+  const debounced = debouncedFire(fireIfConnected, CHANGE_DEBOUNCE_MS, CHANGE_MAX_WAIT_MS);
+  unsubs.push(scheduleOnExternalChange(debounced), debounced.cancel);
 
   const targetsOf = (value: unknown): string => {
     const profiles = (value as { languageProfiles?: { target: string }[] } | undefined)

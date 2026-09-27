@@ -1,5 +1,6 @@
 import type { KeyValueStore } from '../../../ports/keyValueStore';
-import type { ChangeRecord, RecordKey, RecordMeta, Scope } from '../../../domain/types';
+import { compareHlc } from '../../../domain/hlc';
+import type { ChangeRecord, Hlc, RecordKey, RecordMeta, Scope } from '../../../domain/types';
 import { SYNC_META_KV_STORAGE_KEY } from './keys';
 import { kvValueHash } from './valueHash';
 
@@ -60,5 +61,23 @@ export async function stampKvMeta(
       ...(opts?.suppressed === true ? { suppressed: true } : {}),
     };
   }
+  await kv.set('local', SYNC_META_KV_STORAGE_KEY, meta);
+}
+
+export async function stampKvMetaHlc(
+  kv: KeyValueStore,
+  scope: Scope,
+  key: RecordKey,
+  hlc: Hlc,
+): Promise<void> {
+  const meta = await readSyncMetaKV(kv);
+  const metaKey = kvMetaKey(scope, key);
+  const prev = meta[metaKey];
+  if (prev !== undefined && compareHlc(prev.hlc, hlc) >= 0) return;
+  meta[metaKey] = {
+    hlc,
+    firstHlc: prev?.firstHlc ?? prev?.hlc ?? hlc,
+    op: 'put',
+  };
   await kv.set('local', SYNC_META_KV_STORAGE_KEY, meta);
 }

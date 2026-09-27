@@ -25,6 +25,7 @@ export function createSyncDbStore(): SyncStore {
     allocateSnapshotN: (connectionId, scope) => allocateSnapshotNStandalone(connectionId, scope),
     deferRecord: (input) => putDeferredRecord(toRowInput(input)),
     listDeferred: (connectionId) => getAllDeferredRecords(connectionId),
+    listAllDeferred: () => getAllDeferredRecords(),
     deferredByBlobHash: (contentHash) => findDeferredRecordsByBlobHash(contentHash),
     updateDeferred: (row) => putDeferredRecord(toRowInput(row)),
     deleteDeferred: (key) => deleteDeferredRecord(key),

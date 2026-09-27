@@ -16,6 +16,7 @@ import {
   deleteScopeCopyOnVacated,
   resumeScopeRebind,
   runScopeRebind,
+  writeRoutingValue,
 } from './rebind';
 import {
   observeRouteMarker,
@@ -48,6 +49,7 @@ import {
 import { blobToBytes } from '../adapters/contract/blobBytes';
 import { decodeSnapshot, encodeJournal, encodeSnapshot } from './wireCodec';
 import { readRouting, SYNC_DIRECTORY_STORAGE_KEY } from './routing';
+import { kvMetaKey, readSyncMetaKV } from '../adapters/local/kv/kvMeta';
 import { createSyncDbStore } from './syncDbStore';
 import { closeSyncDB, deleteSyncDB } from '../adapters/local/syncDb';
 import { InMemoryStorageProvider } from '../adapters/memory/InMemoryStorageProvider';
@@ -607,6 +609,104 @@ describe('runConnectionDisconnect', () => {
     expect(
       await t.kv.get('local', `${DISCONNECT_PENDING_PREFIX}${t.connB.connectionId}`),
     ).toBeUndefined();
+  });
+
+  test('absent connection with pending flag still clears its checkpoints', async () => {
+    const t = await harness();
+    const ghost = `${PROVIDER_ID}:gone` as ConnectionId;
+    await t.kv.set('local', `${DISCONNECT_PENDING_PREFIX}${ghost}`, {
+      at: t.clock.now(),
+    });
+    await writeCheckpoint(t.kv, {
+      scope: SCOPE,
+      kind: 'drain',
+      phase: 'open',
+      from: t.connA.connectionId,
+      to: ghost,
+      writtenPaths: [],
+      markerHlc: null,
+      startedAt: 0,
+      until: null,
+    });
+
+    const done = await completePendingDisconnects(t.disconnectDeps());
+
+    expect(done).toEqual([ghost]);
+    expect(await getCheckpoint(t.kv, SCOPE)).toBeNull();
+    expect(
+      await t.kv.get('local', `${DISCONNECT_PENDING_PREFIX}${ghost}`),
+    ).toBeUndefined();
+  });
+});
+
+describe('routing value writes', () => {
+  test('writeRoutingValue stamps meta hlc so local decisions win freshness checks', async () => {
+    const t = await harness();
+
+    await writeRoutingValue(t.rebindDeps(), SCOPE, t.connB.connectionId);
+
+    const routing = await readRouting(t.kv);
+    expect(routing.bindings.get(SCOPE.slice('profile:'.length))).toBe(
+      t.connB.connectionId,
+    );
+    const meta = await readSyncMetaKV(t.kv);
+    const stamped = meta[kvMetaKey('global', 'binding:lang:en')];
+    expect(stamped).toBeDefined();
+    expect(stamped!.hlc.wall).toBe(t.clock.now());
+  });
+
+  test('writeRoutingValue is a no-op when the leaf already matches', async () => {
+    const t = await harness();
+
+    await writeRoutingValue(t.rebindDeps(), SCOPE, t.connA.connectionId);
+
+    const meta = await readSyncMetaKV(t.kv);
+    expect(meta[kvMetaKey('global', 'binding:lang:en')]).toBeUndefined();
+  });
+});
+
+describe('checkpoint supersede and cancel', () => {
+  test('cancelScopeRebind clears a drain checkpoint occupying the scope', async () => {
+    const t = await harness();
+    await writeCheckpoint(t.kv, {
+      scope: SCOPE,
+      kind: 'drain',
+      phase: 'open',
+      from: t.connA.connectionId,
+      to: t.connB.connectionId,
+      writtenPaths: [],
+      markerHlc: null,
+      startedAt: 0,
+      until: null,
+    });
+
+    await cancelScopeRebind(t.rebindDeps(), SCOPE);
+
+    expect(await getCheckpoint(t.kv, SCOPE)).toBeNull();
+  });
+
+  test('runScopeRebind supersedes a drain checkpoint instead of failing', async () => {
+    const t = await harness();
+    await writeCheckpoint(t.kv, {
+      scope: SCOPE,
+      kind: 'drain',
+      phase: 'open',
+      from: t.connA.connectionId,
+      to: t.connB.connectionId,
+      writtenPaths: [],
+      markerHlc: null,
+      startedAt: 0,
+      until: null,
+    });
+
+    const result = await runScopeRebind(
+      t.rebindDeps(),
+      SCOPE,
+      t.connB.connectionId,
+    );
+
+    expect(result.done).toBe(true);
+    expect(await getCheckpoint(t.kv, SCOPE)).toBeNull();
   });
 });
 

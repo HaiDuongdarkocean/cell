@@ -66,6 +66,7 @@ export interface ConnectionPullDeps {
     dataClasses: readonly DataClass[],
     applied: number,
   ) => void;
+  readonly allConnectionIds?: () => Promise<readonly ConnectionId[]>;
 }
 
 export interface DevicePullOutcome {
@@ -295,13 +296,17 @@ async function pullDevice(
 
   const pendingJournals = files.journals.filter((j) => j.seq > cursor.seq);
   const firstPending = pendingJournals[0];
-  if (firstPending && cursor.seq > 0 && firstPending.seq > cursor.seq + 1) {
+  const gap =
+    firstPending !== undefined &&
+    cursor.seq > 0 &&
+    firstPending.seq > cursor.seq + 1;
+  if (gap) {
     warnings.push(
       `journal gap for ${scope}/${files.deviceId}: cursor seq ${cursor.seq}, earliest journal ${firstPending.seq}; awaiting snapshot`,
     );
   }
 
-  for (const journal of pendingJournals) {
+  for (const journal of gap ? [] : pendingJournals) {
     try {
       const file = await deps.provider.read(deps.connection, journal.path);
       const decoded = await decodeJournal(file);
@@ -537,6 +542,7 @@ async function persistRoutingDrain(
           : null;
   }
   if (next === null || next === current) return true;
+  if (scope === 'global' && next === 'local') return true;
   return persistDrainObligation(
     deps.kv,
     scope,
@@ -580,6 +586,17 @@ async function drainDeferred(
 ): Promise<string[]> {
   const warnings: string[] = [];
   const rows = await deps.store.listDeferred(deps.connection.connectionId);
+  if (deps.allConnectionIds !== undefined) {
+    const active = new Set(await deps.allConnectionIds());
+    for (const row of await deps.store.listAllDeferred()) {
+      if (
+        row.connectionId !== deps.connection.connectionId &&
+        !active.has(row.connectionId)
+      ) {
+        rows.push(row);
+      }
+    }
+  }
   for (const row of rows) {
     const missing = row.requiredBlobHashes.filter((hash) => !remoteBlobs.has(blobPath(hash)));
     if (missing.length > 0) {

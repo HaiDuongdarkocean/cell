@@ -94,23 +94,20 @@ function parseConnection(id: string, value: unknown): Connection | null {
 
 function parseFrozenScopes(raw: unknown): Set<Scope> {
   const out = new Set<Scope>();
+  const freezes = (kind: unknown, phase: unknown): boolean =>
+    (kind === 'rebind' && (phase === 'freeze' || phase === 'copied')) ||
+    kind === 'drain';
   if (Array.isArray(raw)) {
     for (const entry of raw) {
-      if (isPlainJsonObject(entry) && isScope(entry['scope'])) out.add(entry['scope']);
+      if (!isPlainJsonObject(entry) || !isScope(entry['scope'])) continue;
+      if (freezes(entry['kind'], entry['phase'])) out.add(entry['scope']);
     }
     return out;
   }
   if (isPlainJsonObject(raw)) {
     for (const [key, value] of Object.entries(raw)) {
       if (!isScope(key) || !isPlainJsonObject(value)) continue;
-      const kind = value['kind'];
-      const phase = value['phase'];
-      if (kind === 'rebind' && (phase === 'freeze' || phase === 'copied')) {
-        out.add(key);
-      }
-      if (kind === 'drain') {
-        out.add(key);
-      }
+      if (freezes(value['kind'], value['phase'])) out.add(key);
     }
   }
   return out;

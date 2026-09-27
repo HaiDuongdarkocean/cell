@@ -96,17 +96,21 @@ async function drainObligation(
   cp: SyncCheckpoint,
   connected: ReadonlyMap<ConnectionId, Connection>,
 ): Promise<CheckpointOutcome> {
+  const meta = await readSyncMetaKV(deps.kv);
+  const applied = meta[kvMetaKey('global', routingLeafKey(cp.scope))];
+  const stale =
+    applied !== undefined &&
+    cp.markerHlc !== null &&
+    compareHlc(cp.markerHlc, applied.hlc) < 0;
+  if (stale) {
+    await deps.fence();
+    await clearCheckpoint(deps.kv, cp.scope);
+    return OUTCOME_DONE;
+  }
   if (cp.to === 'local') {
     if (cp.scope !== 'global') {
-      const meta = await readSyncMetaKV(deps.kv);
-      const applied = meta[kvMetaKey('global', routingLeafKey(cp.scope))];
-      const stale =
-        applied !== undefined &&
-        cp.markerHlc !== null &&
-        compareHlc(cp.markerHlc, applied.hlc) < 0;
-      if (!stale) {
-        await writeRoutingValue(deps, cp.scope, 'local');
-      }
+      await deps.fence();
+      await writeRoutingValue(deps, cp.scope, 'local');
       const held = (await collectPendingKeys(
         deps.sources,
         deps.pendingLimit ?? DEFAULT_PENDING_LIMIT,
@@ -116,6 +120,7 @@ async function drainObligation(
         await ackPendingKeys(deps.sources, held);
       }
     }
+    await deps.fence();
     await clearCheckpoint(deps.kv, cp.scope);
     return OUTCOME_DONE;
   }
@@ -139,15 +144,8 @@ async function drainObligation(
     const mine = records.filter((record) => record.dataClass === source.dataClass);
     await source.stampCommitted(mine);
   }
-  const meta = await readSyncMetaKV(deps.kv);
-  const applied = meta[kvMetaKey('global', routingLeafKey(cp.scope))];
-  const stale =
-    applied !== undefined &&
-    cp.markerHlc !== null &&
-    compareHlc(cp.markerHlc, applied.hlc) < 0;
-  if (!stale) {
-    await writeRoutingValue(deps, cp.scope, cp.to);
-  }
+  await deps.fence();
+  await writeRoutingValue(deps, cp.scope, cp.to);
   await clearCheckpoint(deps.kv, cp.scope);
   return OUTCOME_DONE;
 }

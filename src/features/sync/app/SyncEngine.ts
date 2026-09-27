@@ -235,7 +235,8 @@ export class SyncEngine {
                 this.disconnectDeps(() => lock.verify(), deviceId, cycleId),
                 connection.connectionId,
               );
-            } catch {
+            } catch (error) {
+              if (error instanceof CycleLockLostError) throw error;
               await deps.kv.set(
                 'local',
                 `syncDisconnectPending:${connection.connectionId}`,
@@ -293,7 +294,10 @@ export class SyncEngine {
           ackedKeys += keys.length;
           continue;
         }
-        if (!connected.has(target.connectionId)) {
+        if (
+          !connected.has(target.connectionId) ||
+          skipConnection.has(target.connectionId)
+        ) {
           waitingScopes.add(scope);
           waitingFor[scope] = target.connectionId;
           continue;
@@ -384,6 +388,8 @@ export class SyncEngine {
                 appliedScopes.add(scope);
                 for (const dc of dataClasses) appliedDataClasses.add(dc);
               },
+              allConnectionIds: async () =>
+                (await deps.connections()).map((c) => c.connectionId),
             },
             pullScopes,
           );
@@ -522,9 +528,11 @@ export class SyncEngine {
       clock: deps.clock,
       tick:
         tick ??
-        (() => {
-          throw new Error('SyncEngine.tick dep is required for disconnect');
-        }),
+        (() => ({
+          wall: deps.clock.now(),
+          counter: 0,
+          node: `${deviceId}:disconnect`,
+        })),
       fence,
       pendingLimit: deps.pendingLimit,
       onDisconnect: deps.onDisconnect,
