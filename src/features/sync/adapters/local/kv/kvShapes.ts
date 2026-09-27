@@ -166,7 +166,7 @@ export function directoryKvShape(storageKey: string): KvShape {
     flattenLeaves(value) {
       if (!isPlainJsonObject(value)) return [];
       return Object.entries(value)
-        .filter(([, entry]) => entry !== undefined)
+        .filter(([key, entry]) => entry !== undefined && isDirectoryRecordKey(key))
         .map(([key, entry]) => ({ path: key, value: entry }));
     },
     recordKeyOf(path) {

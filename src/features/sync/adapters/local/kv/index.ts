@@ -3,11 +3,13 @@ import { removeStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { persistSyncedSettings } from '@/shared/lib/storage/settingsStore';
 import { SYNCED_KV_REGISTRIES } from '../../../domain/settingsRegistry';
 import type { KeyValueStore } from '../../../ports/keyValueStore';
-import type { LocalSource } from '../../../ports/localSource';
-import type { DataClass, Hlc } from '../../../domain/types';
-import { KvLocalSource } from './kvLocalSource';
-import type { KvLocalSourceDeps } from './kvLocalSource';
-import { directoryKvShape, flattenedKvShape } from './kvShapes';
+import type { Hlc } from '../../../domain/types';
+import { createKvLocalSources as createSources } from './kvLocalSource';
+import type {
+  KvLocalSource,
+  KvLocalSourceDeps,
+  KvValueWriter,
+} from './kvLocalSource';
 import { SYNC_DIRECTORY_STORAGE_KEY } from './keys';
 
 export interface KvLocalSourcesDeps {
@@ -16,8 +18,6 @@ export interface KvLocalSourcesDeps {
   readonly now?: () => number;
   readonly writers?: Partial<Record<string, KvValueWriter>>;
 }
-
-export type KvValueWriter = (value: unknown) => Promise<void>;
 
 export function rawStorageWriter(storageKey: string): KvValueWriter {
   return async (value) => {
@@ -45,32 +45,15 @@ export function kvStorageWriters(): Record<string, KvValueWriter> {
   return writers;
 }
 
-export function createKvLocalSources(deps: KvLocalSourcesDeps): LocalSource[] {
+export function createKvLocalSources(deps: KvLocalSourcesDeps): KvLocalSource[] {
   const writers = { ...kvStorageWriters(), ...deps.writers };
-  const sources: LocalSource[] = [];
-  for (const [storageKey, registry] of Object.entries(SYNCED_KV_REGISTRIES)) {
-    const dataClass: DataClass =
-      storageKey === STORAGE_KEYS.SETTINGS ? 'settings' : 'secondaryKey';
-    const sourceDeps: KvLocalSourceDeps = {
-      kv: deps.kv,
-      tick: deps.tick,
-      now: deps.now,
-      writeValue: writers[storageKey] ?? rawStorageWriter(storageKey),
-    };
-    sources.push(
-      new KvLocalSource(dataClass, flattenedKvShape(storageKey, registry), sourceDeps),
-    );
-  }
-  sources.push(
-    new KvLocalSource('syncDirectory', directoryKvShape(SYNC_DIRECTORY_STORAGE_KEY), {
-      kv: deps.kv,
-      tick: deps.tick,
-      now: deps.now,
-      writeValue:
-        writers[SYNC_DIRECTORY_STORAGE_KEY] ?? rawStorageWriter(SYNC_DIRECTORY_STORAGE_KEY),
-    }),
-  );
-  return sources;
+  const sourceDeps: KvLocalSourceDeps = {
+    kv: deps.kv,
+    tick: deps.tick,
+    now: deps.now,
+    writers,
+  };
+  return createSources(sourceDeps);
 }
 
 export { ChromeKeyValueStore } from './chromeKvStore';
@@ -78,16 +61,14 @@ export { appendConflictLog, SYNC_CONFLICT_LOG_LIMIT } from './conflictLog';
 export type { ConflictLogEntry } from './conflictLog';
 export { scheduleOnExternalChange } from './externalChanges';
 export type { ExternalChangeDeps, StorageChangeListener } from './externalChanges';
-export { KvLocalSource } from './kvLocalSource';
-export type { KvLocalSourceDeps } from './kvLocalSource';
-export { readSyncMetaKV, stampKvMeta } from './kvMeta';
-export type { SyncMetaKV } from './kvMeta';
-export {
-  directoryKvShape,
-  flattenedKvShape,
-  isDirectoryRecordKey,
-} from './kvShapes';
+export { createKvLocalSource, KV_DATA_CLASSES } from './kvLocalSource';
+export type { KvDataClass, KvLocalSource, KvLocalSourceDeps, KvValueWriter } from './kvLocalSource';
+export { kvMetaKey, parseKvMetaKey, readSyncMetaKV, stampKvMeta } from './kvMeta';
+export type { KvRecordMeta, SyncMetaKV } from './kvMeta';
+export { directoryKvShape, flattenedKvShape, isDirectoryRecordKey } from './kvShapes';
 export type { KvProjection, KvShape } from './kvShapes';
+export { directoryKvSlice, flattenedKvSlice, profilesKvSlice } from './kvSlices';
+export type { KvSlice, ScopedLeaf } from './kvSlices';
 export {
   SYNC_CONFLICT_LOG_STORAGE_KEY,
   SYNC_DIRECTORY_STORAGE_KEY,
