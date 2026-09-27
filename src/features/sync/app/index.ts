@@ -10,6 +10,24 @@ export {
 } from './cycleLock';
 export type { CycleLock, CycleLockDeps, SyncLockEntry } from './cycleLock';
 export {
+  cursorKey,
+  readCursors,
+  SYNC_CURSORS_STORAGE_KEY,
+  writeCursor,
+} from './cursors';
+export type { CursorMap } from './cursors';
+export {
+  DEFERRED_WARNING_CYCLES,
+  runConnectionPull,
+  SYNC_APPLIED_AT_KEY,
+} from './pullCycle';
+export type {
+  ConnectionPullDeps,
+  ConnectionPullResult,
+  DevicePullOutcome,
+  ScopePullOutcome,
+} from './pullCycle';
+export {
   ackPendingKeys,
   BlobUnavailableError,
   collectPendingKeys,
@@ -26,8 +44,12 @@ export type {
   ScopePushOutcome,
 } from './pushCycle';
 export {
+  BLOBS_NEEDED_PREFIX,
   BLOBS_PREFIX,
   blobPath,
+  blobsNeededHash,
+  blobsNeededPath,
+  deviceIdOfRemotePath,
   DISCONNECT_MARKER_PATH,
   journalPath,
   META_FORMAT_PATH,
@@ -37,6 +59,9 @@ export {
   REMOTE_ROOT,
   routeMarkerPath,
   scopeDevicePrefix,
+  scopeDevicesPrefix,
+  scopeOfRemotePath,
+  scopesPrefix,
   snapshotPath,
   WIRE_FORMAT_VERSION,
 } from './remotePaths';
@@ -48,10 +73,17 @@ export type {
   CycleResult,
   EngineState,
   EngineStatus,
+  SyncAppliedPayload,
   SyncEngineDeps,
 } from './SyncEngine';
 export { createSyncDbStore } from './syncDbStore';
 export { KV_DATA_CLASSES } from './syncStore';
-export type { FreezeBatchInput, FrozenBatch, SyncStore } from './syncStore';
+export type {
+  DeferredRecord,
+  DeferRecordInput,
+  FreezeBatchInput,
+  FrozenBatch,
+  SyncStore,
+} from './syncStore';
 export { decodeJournal, decodeSnapshot, encodeJournal, encodeSnapshot, WireFormatError } from './wireCodec';
 export type { JournalFile, SnapshotFile } from './wireCodec';

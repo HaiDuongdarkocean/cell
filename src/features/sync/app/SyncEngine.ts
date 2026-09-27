@@ -2,6 +2,8 @@ import type {
   ChangeRecord,
   Connection,
   ConnectionId,
+  DataClass,
+  Hlc,
   PendingKey,
   ProviderId,
   Scope,
@@ -24,7 +26,10 @@ import {
   groupPendingByScope,
   runConnectionPush,
 } from './pushCycle';
+import { runConnectionPull, SYNC_APPLIED_AT_KEY } from './pullCycle';
+import { scopesPrefix, scopeOfRemotePath } from './remotePaths';
 import { readRouting, routeForScope } from './routing';
+import type { RoutingSnapshot } from './routing';
 import type { SyncStore } from './syncStore';
 
 export type EngineState =
@@ -54,8 +59,16 @@ export interface CycleResult {
   readonly scopesPushed: Scope[];
   readonly ackedKeys: number;
   readonly compactedScopes: Scope[];
+  readonly scopesPulled: Scope[];
+  readonly appliedDataClasses: DataClass[];
+  readonly appliedScopes: Scope[];
   readonly failed: ConnectionFailure[];
   readonly retryAt?: number;
+}
+
+export interface SyncAppliedPayload {
+  readonly dataClasses: DataClass[];
+  readonly scopes: Scope[];
 }
 
 export interface SyncEngineDeps {
@@ -69,6 +82,10 @@ export interface SyncEngineDeps {
   readonly clock: Clock;
   readonly ids: IdSource;
   readonly stampKvMeta?: (records: readonly ChangeRecord[]) => Promise<void>;
+  readonly observeHlc?: (hlc: Hlc) => void;
+  readonly onRoutingChange?: (record: ChangeRecord) => Promise<void>;
+  readonly onDisconnect?: (connectionId: ConnectionId) => Promise<void>;
+  readonly onApplied?: (payload: SyncAppliedPayload) => void | Promise<void>;
   readonly pendingLimit?: number;
   readonly journalCompactionThreshold?: number;
   readonly lock?: Partial<Pick<CycleLockDeps, 'ttlMs' | 'heartbeatMs' | 'schedule'>>;
@@ -147,28 +164,24 @@ export class SyncEngine {
       cycleId,
     );
     if (lock === null) {
-      return {
-        acquired: false,
-        lockLost: false,
-        scopesPushed: [],
-        ackedKeys: 0,
-        compactedScopes: [],
-        failed: [],
-      };
+      return emptyCycleResult();
     }
     this.setStatus('running');
     try {
-      return await this.pushAll(lock, cycleId);
+      return await this.runAll(lock, cycleId);
     } finally {
       await lock.release();
     }
   }
 
-  private async pushAll(lock: CycleLock, cycleId: string): Promise<CycleResult> {
+  private async runAll(lock: CycleLock, cycleId: string): Promise<CycleResult> {
     const deps = this.deps;
     const failed: ConnectionFailure[] = [];
     const scopesPushed: Scope[] = [];
     const compactedScopes: Scope[] = [];
+    const scopesPulled = new Set<Scope>();
+    const appliedDataClasses = new Set<DataClass>();
+    const appliedScopes = new Set<Scope>();
     let ackedKeys = 0;
     let lockLost = false;
     let cycleError: unknown;
@@ -207,9 +220,10 @@ export class SyncEngine {
       const deviceId = await deps.deviceId();
       for (const connection of connected.values()) {
         try {
+          const provider = deps.providerFor(connection.providerId);
           const result = await runConnectionPush(
             {
-              provider: deps.providerFor(connection.providerId),
+              provider,
               connection,
               kv: deps.kv,
               store: deps.store,
@@ -253,6 +267,30 @@ export class SyncEngine {
           } else {
             this.backoff.recordSuccess(connection.connectionId);
           }
+
+          const pullScopes = await listPullScopes(provider, connection, routing);
+          const pullResult = await runConnectionPull(
+            {
+              provider,
+              connection,
+              kv: deps.kv,
+              store: deps.store,
+              sources: deps.sources,
+              blobs: deps.blobs,
+              deviceId,
+              clock: deps.clock,
+              fence: () => lock.verify(),
+              observeHlc: deps.observeHlc,
+              onRoutingChange: deps.onRoutingChange,
+              onDisconnect: deps.onDisconnect,
+            },
+            pullScopes,
+          );
+          for (const outcome of pullResult.outcomes) {
+            if (outcome.devices.length > 0) scopesPulled.add(outcome.scope);
+          }
+          for (const dc of pullResult.appliedDataClasses) appliedDataClasses.add(dc);
+          for (const scope of pullResult.appliedScopes) appliedScopes.add(scope);
         } catch (error) {
           if (error instanceof CycleLockLostError) throw error;
           const retryAt = this.backoff.recordFailure(
@@ -274,30 +312,37 @@ export class SyncEngine {
       }
     }
 
+    const dataClasses = [...appliedDataClasses];
+    const scopes = [...appliedScopes];
+    if (dataClasses.length > 0 || scopes.length > 0) {
+      await deps.kv.set('session', SYNC_APPLIED_AT_KEY, deps.clock.now());
+      try {
+        await deps.onApplied?.({ dataClasses, scopes });
+      } catch (error) {
+        cycleError = cycleError ?? error;
+      }
+    }
+    const base = {
+      acquired: true,
+      lockLost,
+      scopesPushed,
+      ackedKeys,
+      compactedScopes,
+      scopesPulled: [...scopesPulled],
+      appliedDataClasses: dataClasses,
+      appliedScopes: scopes,
+      failed,
+    };
+
     if (cycleError !== undefined) {
       this.cycleFailures += 1;
       const retryAt = deps.clock.now() + backoffDelayMs(this.cycleFailures);
       this.setStatus('backoff', { retryAt, lastError: describeError(cycleError) });
-      return {
-        acquired: true,
-        lockLost,
-        scopesPushed,
-        ackedKeys,
-        compactedScopes,
-        failed,
-        retryAt,
-      };
+      return { ...base, retryAt };
     }
     if (lockLost) {
       this.setStatus('idle', { lastError: 'cycle lock lost' });
-      return {
-        acquired: true,
-        lockLost,
-        scopesPushed,
-        ackedKeys,
-        compactedScopes,
-        failed,
-      };
+      return base;
     }
     if (failed.length > 0) {
       const retryAt = Math.min(...failed.map((f) => f.retryAt));
@@ -305,27 +350,49 @@ export class SyncEngine {
         retryAt,
         lastError: `${failed.length} connection(s) failed`,
       });
-      return {
-        acquired: true,
-        lockLost,
-        scopesPushed,
-        ackedKeys,
-        compactedScopes,
-        failed,
-        retryAt,
-      };
+      return { ...base, retryAt };
     }
     this.cycleFailures = 0;
     this.setStatus('idle');
-    return {
-      acquired: true,
-      lockLost,
-      scopesPushed,
-      ackedKeys,
-      compactedScopes,
-      failed,
-    };
+    return base;
   }
+}
+
+async function listPullScopes(
+  provider: StorageProvider,
+  connection: Connection,
+  routing: RoutingSnapshot,
+): Promise<Scope[]> {
+  const entries = await provider.list(connection, scopesPrefix());
+  const scopes = new Set<Scope>();
+  for (const entry of entries) {
+    const scope = scopeOfRemotePath(entry.path);
+    if (scope !== null) scopes.add(scope);
+  }
+  const out: Scope[] = [];
+  for (const scope of scopes) {
+    if (routing.frozenScopes.has(scope)) continue;
+    const target = routeForScope(routing, scope);
+    if (target?.kind === 'connection' && target.connectionId === connection.connectionId) {
+      out.push(scope);
+    }
+  }
+  out.sort();
+  return out;
+}
+
+function emptyCycleResult(): CycleResult {
+  return {
+    acquired: false,
+    lockLost: false,
+    scopesPushed: [],
+    ackedKeys: 0,
+    compactedScopes: [],
+    scopesPulled: [],
+    appliedDataClasses: [],
+    appliedScopes: [],
+    failed: [],
+  };
 }
 
 function describeError(error: unknown): string {

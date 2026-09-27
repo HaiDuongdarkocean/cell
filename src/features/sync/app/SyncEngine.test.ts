@@ -19,11 +19,12 @@ import type {
 import type { ApplyResult, LocalSource } from '../ports/localSource';
 import { BACKOFF_BASE_MS } from './backoff';
 import { SYNC_LOCK_STORAGE_KEY } from './cycleLock';
+import { SYNC_APPLIED_AT_KEY } from './pullCycle';
 import { journalPath } from './remotePaths';
 import { SyncEngine } from './SyncEngine';
 import type { EngineStatus, SyncEngineDeps } from './SyncEngine';
 import { createSyncDbStore } from './syncDbStore';
-import { decodeJournal } from './wireCodec';
+import { decodeJournal, encodeJournal } from './wireCodec';
 
 const DEVICE = 'dev-1';
 const PROVIDER_ID = 'mem';
@@ -84,8 +85,14 @@ class FakeSource implements LocalSource {
     return new Map(keys.map((k) => [k, null]));
   }
 
-  async applyRemote(): Promise<ApplyResult> {
-    return { applied: [], localWon: [], opaque: [] };
+  remoteApplied: ChangeRecord[] = [];
+
+  async applyRemote(records: ChangeRecord[]): Promise<ApplyResult> {
+    const mine = records.filter(
+      (r) => r.scope === this.scope && r.dataClass === this.dataClass,
+    );
+    this.remoteApplied.push(...mine);
+    return { applied: mine, localWon: [], opaque: [] };
   }
 }
 
@@ -458,5 +465,103 @@ describe('kv meta stamping', () => {
       key: 'kv:themeMode',
       value: 'dark',
     });
+  });
+});
+
+describe('pull', () => {
+  const remoteRecord = (key: string, value: unknown, wall: number): ChangeRecord => ({
+    scope: GLOBAL,
+    dataClass: 'settings',
+    key,
+    op: 'put',
+    value,
+    hlc: { wall, counter: 0, node: 'dev-2:ctx' },
+  });
+
+  it('pulls remote journals, applies records and emits SYNC_DATA_APPLIED', async () => {
+    const t = await harness();
+    const source = new FakeSource('settings', GLOBAL);
+    await t.provider.write(
+      t.connection,
+      journalPath(GLOBAL, 'dev-2', 1),
+      encodeJournal({
+        scope: GLOBAL,
+        deviceId: 'dev-2',
+        seq: 1,
+        records: [remoteRecord('kv:settings/theme', 'dark', 10)],
+      }),
+    );
+    const applied: { dataClasses: DataClass[]; scopes: Scope[] }[] = [];
+    const engine = t.makeEngine({
+      sources: [source],
+      onApplied: (payload) => {
+        applied.push(payload);
+      },
+    });
+
+    const result = await engine.runCycle();
+
+    expect(result.scopesPulled).toEqual([GLOBAL]);
+    expect(result.appliedDataClasses).toEqual(['settings']);
+    expect(result.appliedScopes).toEqual([GLOBAL]);
+    expect(source.remoteApplied.map((r) => r.key)).toEqual(['kv:settings/theme']);
+    expect(await t.kv.get('session', SYNC_APPLIED_AT_KEY)).toBe(1000);
+    expect(applied).toEqual([{ dataClasses: ['settings'], scopes: [GLOBAL] }]);
+  });
+
+  it('does not emit applied hooks when nothing came in', async () => {
+    const t = await harness();
+    const engine = t.makeEngine();
+    const result = await engine.runCycle();
+    expect(result.appliedDataClasses).toEqual([]);
+    expect(await t.kv.get('session', SYNC_APPLIED_AT_KEY)).toBeUndefined();
+  });
+
+  it('invokes onDisconnect when the remote disconnect marker is newer', async () => {
+    const t = await harness();
+    await t.provider.write(
+      t.connection,
+      'cell-sync/v1/meta/disconnect.json',
+      new Blob([
+        JSON.stringify({
+          formatVersion: 1,
+          kind: 'disconnect',
+          hlc: { wall: 5000, counter: 0, node: 'dev-2:ctx' },
+        }),
+      ]),
+    );
+    const disconnected: string[] = [];
+    const engine = t.makeEngine({
+      onDisconnect: async (connectionId) => {
+        disconnected.push(connectionId);
+      },
+    });
+    const result = await engine.runCycle();
+    expect(disconnected).toEqual([t.connection.connectionId]);
+    expect(result.scopesPulled).toEqual([]);
+  });
+
+  it('observes remote HLCs through observeHlc', async () => {
+    const t = await harness();
+    const source = new FakeSource('settings', GLOBAL);
+    await t.provider.write(
+      t.connection,
+      journalPath(GLOBAL, 'dev-2', 1),
+      encodeJournal({
+        scope: GLOBAL,
+        deviceId: 'dev-2',
+        seq: 1,
+        records: [remoteRecord('kv:a', 1, 10), remoteRecord('kv:b', 2, 20)],
+      }),
+    );
+    const observed: number[] = [];
+    const engine = t.makeEngine({
+      sources: [source],
+      observeHlc: (hlc) => {
+        observed.push(hlc.wall);
+      },
+    });
+    await engine.runCycle();
+    expect(observed).toEqual([10, 20]);
   });
 });

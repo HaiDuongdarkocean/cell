@@ -9,7 +9,7 @@ import type {
   RecordKey,
   Scope,
 } from '../../../domain/types';
-import type { ApplyResult, LocalSource } from '../../../ports/localSource';
+import type { ApplyResult, ConflictLogEntry, LocalSource } from '../../../ports/localSource';
 import {
   deleteOpaqueRecord,
   getOpaqueRecord,
@@ -232,6 +232,7 @@ export abstract class IdbLocalSource implements LocalSource {
     }
 
     const lateOpaque: ChangeRecord[] = [];
+    const conflicts: ConflictLogEntry[] = [];
     const supersededOpaque: { scope: Scope; key: RecordKey; hlc: ChangeRecord['hlc'] }[] = [];
     const wtx = db.transaction([...this.applyStores()], 'readwrite');
     const stampStore = wtx.objectStore(SYNC_META);
@@ -241,8 +242,19 @@ export abstract class IdbLocalSource implements LocalSource {
         continue;
       }
       const local = await this.localRecordForMerge(wtx, record);
-      const winner = mergeRecord(local, record);
-      if (winner === null || winner === local) {
+      const winner = mergeRecord(local.record, record);
+      if (winner === null || winner === local.record) {
+        if (local.drifted && local.record !== null) {
+          conflicts.push({
+            at: this.conflictClock(),
+            scope: record.scope,
+            dataClass: record.dataClass,
+            key: record.key,
+            localHlc: local.record.hlc,
+            remoteHlc: record.hlc,
+            winner: 'local',
+          });
+        }
         localWon.push(record);
         continue;
       }
@@ -255,6 +267,17 @@ export abstract class IdbLocalSource implements LocalSource {
         valueHash: winner.op === 'put' ? stableHash(winner.value) : undefined,
       });
       supersededOpaque.push({ scope: record.scope, key: record.key, hlc: winner.hlc });
+      if (local.drifted && local.record !== null) {
+        conflicts.push({
+          at: this.conflictClock(),
+          scope: record.scope,
+          dataClass: record.dataClass,
+          key: record.key,
+          localHlc: local.record.hlc,
+          remoteHlc: record.hlc,
+          winner: 'remote',
+        });
+      }
       if (winner === record || hlcEq(winner.hlc, record.hlc)) {
         applied.push(record);
       } else {
@@ -272,7 +295,7 @@ export abstract class IdbLocalSource implements LocalSource {
         await deleteOpaqueRecord(row.key);
       }
     }
-    return { applied, localWon, opaque };
+    return { applied, localWon, opaque, conflicts };
   }
 
   private async retainOpaque(record: ChangeRecord): Promise<void> {
@@ -304,22 +327,27 @@ export abstract class IdbLocalSource implements LocalSource {
   private async localRecordForMerge(
     tx: IDBTransaction,
     record: ChangeRecord,
-  ): Promise<ChangeRecord | null> {
+  ): Promise<{ record: ChangeRecord | null; drifted: boolean }> {
     const meta =
       (await getMetaAt(tx, record.key, record.scope)) ??
       (await this.sameScopeOrOrphanMeta(tx, record));
     if (meta?.op === 'delete') {
-      return metaChangeRecord(record.scope, this.dataClass, record.key, meta);
+      return {
+        record: metaChangeRecord(record.scope, this.dataClass, record.key, meta),
+        drifted: false,
+      };
     }
     const local = await this.readLocalValue(tx, record.key);
     if (meta) {
-      return local.found
-        ? metaChangeRecord(record.scope, this.dataClass, record.key, meta, local.value)
-        : null;
+      if (!local.found) return { record: null, drifted: false };
+      return {
+        record: metaChangeRecord(record.scope, this.dataClass, record.key, meta, local.value),
+        drifted: meta.op === 'put' && meta.valueHash !== stableHash(local.value),
+      };
     }
-    if (!local.found) return null;
+    if (!local.found) return { record: null, drifted: false };
     const scope = await this.scopeOfLocalValue(tx, record.key, local.value);
-    if (scope !== null && scope !== record.scope) return null;
+    if (scope !== null && scope !== record.scope) return { record: null, drifted: false };
     const hlc = await mintRecordHlc();
     const stamped = await stampRemoteMeta(tx.objectStore(SYNC_META), record.key, {
       scope: record.scope,
@@ -328,7 +356,14 @@ export abstract class IdbLocalSource implements LocalSource {
       op: 'put',
       valueHash: stableHash(local.value),
     });
-    return metaChangeRecord(record.scope, this.dataClass, record.key, stamped, local.value);
+    return {
+      record: metaChangeRecord(record.scope, this.dataClass, record.key, stamped, local.value),
+      drifted: true,
+    };
+  }
+
+  protected conflictClock(): number {
+    return Date.now();
   }
 
   private async sameScopeOrOrphanMeta(

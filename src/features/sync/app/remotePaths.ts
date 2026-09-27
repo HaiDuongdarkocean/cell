@@ -11,12 +11,49 @@ export function routeMarkerPath(scope: Scope): string {
   return `${META_PREFIX}routes/${scope}.json`;
 }
 
+export const BLOBS_NEEDED_PREFIX = `${META_PREFIX}blobs-needed/`;
+
+export function blobsNeededPath(contentHash: string): string {
+  return `${BLOBS_NEEDED_PREFIX}${contentHash}.json`;
+}
+
+export function blobsNeededHash(path: string): string | null {
+  if (!path.startsWith(BLOBS_NEEDED_PREFIX) || !path.endsWith('.json')) return null;
+  return path.slice(BLOBS_NEEDED_PREFIX.length, path.length - '.json'.length);
+}
+
 export function blobPath(contentHash: string): string {
   return `${BLOBS_PREFIX}${contentHash}`;
 }
 
+export function scopesPrefix(): string {
+  return `${REMOTE_ROOT}/scopes/`;
+}
+
+export function scopeOfRemotePath(path: string): Scope | null {
+  const prefix = scopesPrefix();
+  if (!path.startsWith(prefix)) return null;
+  const rest = path.slice(prefix.length);
+  const cut = rest.indexOf('/');
+  if (cut <= 0) return null;
+  const scope = rest.slice(0, cut);
+  return scope === 'global' || scope.startsWith('profile:') ? (scope as Scope) : null;
+}
+
+export function scopeDevicesPrefix(scope: Scope): string {
+  return `${REMOTE_ROOT}/scopes/${scope}/devices/`;
+}
+
 export function scopeDevicePrefix(scope: Scope, deviceId: string): string {
-  return `${REMOTE_ROOT}/scopes/${scope}/devices/${deviceId}/`;
+  return `${scopeDevicesPrefix(scope)}${deviceId}/`;
+}
+
+export function deviceIdOfRemotePath(path: string, scope: Scope): string | null {
+  const prefix = scopeDevicesPrefix(scope);
+  if (!path.startsWith(prefix)) return null;
+  const rest = path.slice(prefix.length);
+  const cut = rest.indexOf('/');
+  return cut <= 0 ? null : rest.slice(0, cut);
 }
 
 export function journalPath(scope: Scope, deviceId: string, seq: number): string {

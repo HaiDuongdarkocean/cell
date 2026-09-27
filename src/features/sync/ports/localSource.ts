@@ -1,12 +1,23 @@
-import type { ChangeRecord, DataClass, RecordKey, Scope } from '../domain/types';
+import type { ChangeRecord, DataClass, Hlc, RecordKey, Scope } from '../domain/types';
 
 export type { PendingKey } from '../domain/types';
 import type { PendingKey } from '../domain/types';
+
+export interface ConflictLogEntry {
+  readonly at: number;
+  readonly scope: Scope;
+  readonly dataClass: DataClass;
+  readonly key: RecordKey;
+  readonly localHlc: Hlc;
+  readonly remoteHlc: Hlc;
+  readonly winner: 'local' | 'remote';
+}
 
 export interface ApplyResult {
   applied: ChangeRecord[];
   localWon: ChangeRecord[];
   opaque: ChangeRecord[];
+  conflicts?: ConflictLogEntry[];
 }
 
 export interface LocalSource {

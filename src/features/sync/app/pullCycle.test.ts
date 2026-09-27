@@ -1,0 +1,609 @@
+import 'fake-indexeddb/auto';
+import { InMemoryKeyValueStore } from '../adapters/memory/InMemoryKeyValueStore';
+import { InMemoryStorageProvider } from '../adapters/memory/InMemoryStorageProvider';
+import { SeededClock } from '../adapters/memory/SeededClock';
+import { closeSyncDB, deleteSyncDB } from '../adapters/local/syncDb';
+import type {
+  ChangeRecord,
+  Connection,
+  ConnectionId,
+  DataClass,
+  Hlc,
+  PendingKey,
+  RecordKey,
+  Scope,
+} from '../domain/types';
+import type { ApplyResult, LocalSource } from '../ports/localSource';
+import { blobsNeededPath, blobPath, journalPath, snapshotPath } from './remotePaths';
+import { DISCONNECT_MARKER_PATH } from './remotePaths';
+import {
+  DEFERRED_WARNING_CYCLES,
+  runConnectionPull,
+  type ConnectionPullDeps,
+} from './pullCycle';
+import { cursorKey, readCursors, SYNC_CURSORS_STORAGE_KEY } from './cursors';
+import { createSyncDbStore } from './syncDbStore';
+import { encodeJournal, encodeSnapshot } from './wireCodec';
+
+const DEVICE = 'dev-1';
+const REMOTE_DEVICE = 'dev-2';
+const OTHER_DEVICE = 'dev-3';
+const PROVIDER_ID = 'mem';
+const GLOBAL: Scope = 'global';
+
+class PullSource implements LocalSource {
+  applied: ChangeRecord[] = [];
+  opaquePolicy: 'none' | 'all' = 'none';
+  failNext = 0;
+
+  constructor(
+    readonly dataClass: DataClass,
+    readonly scope: Scope,
+  ) {}
+
+  async pending(): Promise<PendingKey[]> {
+    return [];
+  }
+
+  async resolve(): Promise<ChangeRecord[]> {
+    return [];
+  }
+
+  async ack(): Promise<void> {}
+
+  async stampCommitted(): Promise<void> {}
+
+  async *snapshot(): AsyncIterable<ChangeRecord> {}
+
+  async current(
+    _scope: Scope,
+    keys: RecordKey[],
+  ): Promise<Map<RecordKey, ChangeRecord | null>> {
+    return new Map(keys.map((k) => [k, null]));
+  }
+
+  async applyRemote(records: ChangeRecord[]): Promise<ApplyResult> {
+    if (this.failNext > 0) {
+      this.failNext -= 1;
+      throw new Error('applyRemote failed');
+    }
+    const mine = records.filter(
+      (r) => r.scope === this.scope && r.dataClass === this.dataClass,
+    );
+    this.applied.push(...mine);
+    return {
+      applied: mine,
+      localWon: [],
+      opaque: this.opaquePolicy === 'all' ? mine : [],
+    };
+  }
+}
+
+interface Harness {
+  provider: InMemoryStorageProvider;
+  connection: Connection;
+  kv: InMemoryKeyValueStore;
+  clock: SeededClock;
+  store: ReturnType<typeof createSyncDbStore>;
+  blobs: Map<string, Blob>;
+  appliedLog: { dataClass: DataClass; key: string }[];
+  routingRecords: ChangeRecord[];
+  disconnected: ConnectionId[];
+  makeDeps(overrides?: Partial<ConnectionPullDeps>): ConnectionPullDeps;
+  pull(scopes: Scope[], overrides?: Partial<ConnectionPullDeps>): Promise<ReturnType<typeof runConnectionPull> extends Promise<infer R> ? R : never>;
+}
+
+function makeHlc(wall: number, node = `${REMOTE_DEVICE}:ctx`): Hlc {
+  return { wall, counter: 0, node };
+}
+
+function makeRecord(
+  scope: Scope,
+  dataClass: DataClass,
+  key: string,
+  value: unknown,
+  wall = 100,
+): ChangeRecord {
+  return { scope, dataClass, key, op: 'put', value, hlc: makeHlc(wall) };
+}
+
+async function harness(): Promise<Harness> {
+  const provider = new InMemoryStorageProvider({ providerId: PROVIDER_ID });
+  const account = await provider.authorize({ interactive: true });
+  const connection: Connection = {
+    connectionId: `${PROVIDER_ID}:${account.accountKey}` as Connection['connectionId'],
+    providerId: PROVIDER_ID,
+    accountKey: account.accountKey,
+    displayName: account.displayName,
+  };
+  const kv = new InMemoryKeyValueStore();
+  const clock = new SeededClock(1000);
+  const store = createSyncDbStore();
+  const blobs = new Map<string, Blob>();
+  const routingRecords: ChangeRecord[] = [];
+  const disconnected: ConnectionId[] = [];
+  const appliedLog: { dataClass: DataClass; key: string }[] = [];
+
+  const makeDeps = (overrides: Partial<ConnectionPullDeps> = {}): ConnectionPullDeps => ({
+    provider,
+    connection,
+    kv,
+    store,
+    sources: [],
+    blobs: { read: async (hash: string) => blobs.get(hash) ?? null },
+    deviceId: DEVICE,
+    clock,
+    fence: async () => undefined,
+    onRoutingChange: async (record) => {
+      routingRecords.push(record);
+    },
+    onDisconnect: async (connectionId) => {
+      disconnected.push(connectionId);
+    },
+    ...overrides,
+  });
+
+  return {
+    provider,
+    connection,
+    kv,
+    clock,
+    store,
+    blobs,
+    appliedLog,
+    routingRecords,
+    disconnected,
+    makeDeps,
+    pull: (scopes, overrides) => runConnectionPull(makeDeps(overrides), scopes),
+  };
+}
+
+async function writeJournal(
+  t: Harness,
+  scope: Scope,
+  deviceId: string,
+  seq: number,
+  records: ChangeRecord[],
+): Promise<void> {
+  await t.provider.write(
+    t.connection,
+    journalPath(scope, deviceId, seq),
+    encodeJournal({ scope, deviceId, seq, records }),
+  );
+}
+
+async function writeSnapshot(
+  t: Harness,
+  scope: Scope,
+  deviceId: string,
+  n: number,
+  coversSeq: number,
+  records: ChangeRecord[],
+): Promise<void> {
+  await t.provider.write(
+    t.connection,
+    snapshotPath(scope, deviceId, n),
+    encodeSnapshot({ scope, deviceId, n, coversSeq, records }),
+  );
+}
+
+async function cursorOf(
+  t: Harness,
+  scope: Scope,
+  deviceId = REMOTE_DEVICE,
+): Promise<{ snapshotN: number; seq: number } | undefined> {
+  const cursors = await readCursors(t.kv);
+  return cursors[cursorKey(t.connection.connectionId, scope, deviceId)];
+}
+
+beforeEach(async () => {
+  await deleteSyncDB();
+});
+
+afterEach(() => {
+  closeSyncDB();
+});
+
+describe('runConnectionPull', () => {
+  it('consumes journals from other devices in seq order and advances the cursor', async () => {
+    const t = await harness();
+    const source = new PullSource('settings', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/theme', 'dark', 10),
+    ]);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 2, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/theme', 'light', 20),
+    ]);
+
+    const result = await t.pull([GLOBAL], { sources: [source] });
+
+    expect(result.disconnected).toBe(false);
+    expect(source.applied.map((r) => r.value)).toEqual(['dark', 'light']);
+    expect(await cursorOf(t, GLOBAL)).toEqual({ snapshotN: 0, seq: 2 });
+    expect(result.appliedScopes).toEqual([GLOBAL]);
+    expect(result.appliedDataClasses).toEqual(['settings']);
+    expect(result.outcomes[0]!.devices[0]!.filesRead).toBe(2);
+  });
+
+  it('skips files written by the local device', async () => {
+    const t = await harness();
+    const source = new PullSource('settings', GLOBAL);
+    await writeJournal(t, GLOBAL, DEVICE, 1, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/a', 1),
+    ]);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/b', 2),
+    ]);
+
+    await t.pull([GLOBAL], { sources: [source] });
+
+    expect(source.applied.map((r) => r.key)).toEqual(['kv:settings/b']);
+    expect(await cursorOf(t, GLOBAL, DEVICE)).toBeUndefined();
+  });
+
+  it('does not re-consume files already covered by the cursor', async () => {
+    const t = await harness();
+    const source = new PullSource('settings', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/a', 1),
+    ]);
+
+    await t.pull([GLOBAL], { sources: [source] });
+    await t.pull([GLOBAL], { sources: [source] });
+
+    expect(source.applied).toHaveLength(1);
+  });
+
+  it('jumps to the newest snapshot then consumes journals after coversSeq', async () => {
+    const t = await harness();
+    const source = new PullSource('settings', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/old', 'stale'),
+    ]);
+    await writeSnapshot(t, GLOBAL, REMOTE_DEVICE, 1, 3, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/a', 'snap', 30),
+    ]);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 4, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/b', 'after', 40),
+    ]);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 5, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/c', 'after2', 50),
+    ]);
+
+    const result = await t.pull([GLOBAL], { sources: [source] });
+
+    expect(source.applied.map((r) => r.key)).toEqual([
+      'kv:settings/a',
+      'kv:settings/b',
+      'kv:settings/c',
+    ]);
+    expect(await cursorOf(t, GLOBAL)).toEqual({ snapshotN: 1, seq: 5 });
+    expect(result.outcomes[0]!.devices[0]!.filesRead).toBe(3);
+  });
+
+  it('recovers when the cursor predates compaction: old journal gone, snapshot arrives', async () => {
+    const t = await harness();
+    const source = new PullSource('settings', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/a', 1),
+    ]);
+    await t.pull([GLOBAL], { sources: [source] });
+
+    await t.provider.remove(t.connection, journalPath(GLOBAL, REMOTE_DEVICE, 1));
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 3, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/c', 30),
+    ]);
+
+    const gapped = await t.pull([GLOBAL], { sources: [source] });
+    expect(
+      gapped.outcomes[0]!.devices[0]!.warnings.some((w) => w.includes('journal gap')),
+    ).toBe(true);
+    expect(source.applied.map((r) => r.key)).toEqual(['kv:settings/a', 'kv:settings/c']);
+
+    await writeSnapshot(t, GLOBAL, REMOTE_DEVICE, 2, 5, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/full', 'snapshot', 60),
+    ]);
+    const recovered = await t.pull([GLOBAL], { sources: [source] });
+    expect(source.applied.map((r) => r.key)).toContain('kv:settings/full');
+    expect(await cursorOf(t, GLOBAL)).toEqual({ snapshotN: 2, seq: 5 });
+    expect(recovered.outcomes[0]!.devices[0]!.warnings).toEqual([]);
+  });
+
+  it('skips corrupt files with a warning and keeps consuming later files', async () => {
+    const t = await harness();
+    const source = new PullSource('settings', GLOBAL);
+    await t.provider.write(
+      t.connection,
+      journalPath(GLOBAL, REMOTE_DEVICE, 1),
+      new Blob(['not gzip at all']),
+    );
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 2, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/b', 'ok', 20),
+    ]);
+
+    const result = await t.pull([GLOBAL], { sources: [source] });
+
+    expect(source.applied.map((r) => r.key)).toEqual(['kv:settings/b']);
+    expect(result.outcomes[0]!.devices[0]!.warnings[0]).toContain('corrupt journal');
+    expect(await cursorOf(t, GLOBAL)).toEqual({ snapshotN: 0, seq: 2 });
+  });
+
+  it('applies records in dependency order across data classes', async () => {
+    const t = await harness();
+    const order: string[] = [];
+    const tracking = (dataClass: DataClass): PullSource => {
+      const source = new PullSource(dataClass, 'profile:en');
+      const base = source.applyRemote.bind(source);
+      source.applyRemote = async (records) => {
+        for (const r of records) order.push(`${r.dataClass}:${r.key}`);
+        return base(records);
+      };
+      return source;
+    };
+    const sources = [tracking('readerBook'), tracking('srsDeck'), tracking('settings')];
+    await writeJournal(t, 'profile:en', REMOTE_DEVICE, 1, [
+      makeRecord('profile:en', 'readerBook', 'book:1', { title: 'B' }, 10),
+      makeRecord('profile:en', 'settings', 'kv:x', 1, 11),
+      makeRecord('profile:en', 'srsDeck', 'deck:d1', { name: 'D' }, 12),
+    ]);
+
+    await t.pull(['profile:en'], { sources });
+
+    expect(order).toEqual(['settings:kv:x', 'srsDeck:deck:d1', 'readerBook:book:1']);
+  });
+
+  it('defers records whose blobs are missing and writes blobs-needed markers', async () => {
+    const t = await harness();
+    const source = new PullSource('dictResource', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'dictResource', 'resource:abc123', { name: 'JMdict' }, 10),
+    ]);
+
+    const result = await t.pull([GLOBAL], { sources: [source] });
+
+    const deferred = await t.store.listDeferred(t.connection.connectionId);
+    expect(deferred).toHaveLength(1);
+    expect(deferred[0]!.requiredBlobHashes).toEqual(['abc123']);
+    expect(deferred[0]!.sourcePath).toContain('journal-1');
+    const paths = (await t.provider.list(t.connection, 'cell-sync/v1/meta/blobs-needed/')).map(
+      (e) => e.path,
+    );
+    expect(paths).toEqual([blobsNeededPath('abc123')]);
+    expect(source.applied).toHaveLength(0);
+    expect(result.outcomes[0]!.devices[0]!.recordsDeferred).toBe(1);
+    expect(await cursorOf(t, GLOBAL)).toEqual({ snapshotN: 0, seq: 1 });
+  });
+
+  it('keeps applying later records after a blocked one', async () => {
+    const t = await harness();
+    const dict = new PullSource('dictResource', GLOBAL);
+    const settings = new PullSource('settings', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'dictResource', 'resource:missing', { name: 'X' }, 10),
+      makeRecord(GLOBAL, 'settings', 'kv:settings/ok', 1, 11),
+    ]);
+
+    await t.pull([GLOBAL], { sources: [dict, settings] });
+
+    expect(settings.applied).toHaveLength(1);
+    expect(await t.store.listDeferred(t.connection.connectionId)).toHaveLength(1);
+  });
+
+  it('drains deferred records once the blob lands remotely and clears the marker', async () => {
+    const t = await harness();
+    const dict = new PullSource('dictResource', GLOBAL);
+    const record = makeRecord(GLOBAL, 'dictResource', 'resource:abc', { name: 'JM' }, 10);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [record]);
+
+    await t.pull([GLOBAL], { sources: [dict] });
+    expect(await t.store.listDeferred(t.connection.connectionId)).toHaveLength(1);
+
+    await t.provider.write(
+      t.connection,
+      blobPath('abc'),
+      new Blob(['dict-bytes']),
+    );
+    const second = await t.pull([GLOBAL], { sources: [dict] });
+
+    expect(dict.applied.map((r) => r.key)).toEqual(['resource:abc']);
+    expect(await t.store.listDeferred(t.connection.connectionId)).toEqual([]);
+    const markers = await t.provider.list(t.connection, 'cell-sync/v1/meta/blobs-needed/');
+    expect(markers).toEqual([]);
+    expect(second.appliedScopes).toContain(GLOBAL);
+  });
+
+  it('warns after a record stays blocked for the threshold number of cycles', async () => {
+    const t = await harness();
+    const dict = new PullSource('dictResource', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'dictResource', 'resource:gone', { name: 'X' }, 10),
+    ]);
+
+    await t.pull([GLOBAL], { sources: [dict] });
+    for (let i = 0; i < DEFERRED_WARNING_CYCLES; i++) {
+      const result = await t.pull([GLOBAL], { sources: [dict] });
+      if (i === DEFERRED_WARNING_CYCLES - 1) {
+        expect(result.warnings.some((w) => w.includes('resource:gone'))).toBe(true);
+      }
+    }
+  });
+
+  it('answers blobs-needed markers left by other devices and removes them', async () => {
+    const t = await harness();
+    t.blobs.set('feed0', new Blob(['local-dict']));
+    await t.provider.write(
+      t.connection,
+      blobsNeededPath('feed0'),
+      new Blob([JSON.stringify({ hash: 'feed0', deviceId: REMOTE_DEVICE, at: 1 })]),
+    );
+
+    await t.pull([], {});
+
+    expect((await t.provider.list(t.connection, 'cell-sync/v1/blobs/')).map((e) => e.path)).toEqual(
+      [blobPath('feed0')],
+    );
+    expect(await t.provider.list(t.connection, 'cell-sync/v1/meta/blobs-needed/')).toEqual([]);
+  });
+
+  it('invokes onRoutingChange for directory routing records before applying', async () => {
+    const t = await harness();
+    const dir = new PullSource('syncDirectory', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'syncDirectory', 'binding:fr', 'mem:acct', 10),
+    ]);
+
+    await t.pull([GLOBAL], { sources: [dir] });
+
+    expect(t.routingRecords.map((r) => r.key)).toEqual(['binding:fr']);
+    expect(dir.applied).toHaveLength(1);
+  });
+
+  it('handles disconnect markers: newer marker triggers onDisconnect and skips pull', async () => {
+    const t = await harness();
+    const dir = new PullSource('syncDirectory', GLOBAL);
+    const settings = new PullSource('settings', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/a', 1),
+    ]);
+    await t.provider.write(
+      t.connection,
+      DISCONNECT_MARKER_PATH,
+      new Blob([
+        JSON.stringify({ formatVersion: 1, kind: 'disconnect', hlc: makeHlc(500) }),
+      ]),
+    );
+
+    const result = await t.pull([GLOBAL], { sources: [dir, settings] });
+
+    expect(result.disconnected).toBe(true);
+    expect(t.disconnected).toEqual([t.connection.connectionId]);
+    expect(settings.applied).toHaveLength(0);
+    expect(await cursorOf(t, GLOBAL)).toBeUndefined();
+  });
+
+  it('ignores a disconnect marker older than the local directory record', async () => {
+    const t = await harness();
+    const dir = new PullSource('syncDirectory', GLOBAL);
+    dir.current = async (_scope, keys) =>
+      new Map(
+        keys.map((k) => [
+          k,
+          {
+            scope: GLOBAL,
+            dataClass: 'syncDirectory' as DataClass,
+            key: k,
+            op: 'put' as const,
+            hlc: makeHlc(900),
+          },
+        ]),
+      );
+    const settings = new PullSource('settings', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/a', 1),
+    ]);
+    await t.provider.write(
+      t.connection,
+      DISCONNECT_MARKER_PATH,
+      new Blob([
+        JSON.stringify({ formatVersion: 1, kind: 'disconnect', hlc: makeHlc(500) }),
+      ]),
+    );
+
+    const result = await t.pull([GLOBAL], { sources: [dir, settings] });
+
+    expect(result.disconnected).toBe(false);
+    expect(t.disconnected).toEqual([]);
+    expect(settings.applied).toHaveLength(1);
+  });
+
+  it('isolates failures per scope', async () => {
+    const t = await harness();
+    const bad = new PullSource('settings', GLOBAL);
+    bad.failNext = 1;
+    const good = new PullSource('settings', 'profile:en');
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/a', 1),
+    ]);
+    await writeJournal(t, 'profile:en', REMOTE_DEVICE, 1, [
+      makeRecord('profile:en', 'settings', 'kv:settings/b', 2),
+    ]);
+
+    const result = await t.pull([GLOBAL, 'profile:en'], { sources: [bad, good] });
+
+    const byScope = new Map(result.outcomes.map((o) => [o.scope, o]));
+    expect(
+      byScope.get(GLOBAL)!.devices[0]!.warnings.some((w) => w.includes('applyRemote failed')),
+    ).toBe(true);
+    expect(good.applied.map((r) => r.key)).toEqual(['kv:settings/b']);
+    expect(result.appliedScopes).toEqual(['profile:en']);
+  });
+
+  it('stops a device after a failed journal so it is retried next cycle', async () => {
+    const t = await harness();
+    const source = new PullSource('settings', GLOBAL);
+    source.failNext = 1;
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'settings', 'kv:a', 1, 10),
+      makeRecord(GLOBAL, 'settings', 'kv:a2', 2, 11),
+    ]);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 2, [
+      makeRecord(GLOBAL, 'settings', 'kv:b', 3, 20),
+    ]);
+
+    await t.pull([GLOBAL], { sources: [source] });
+    expect(await cursorOf(t, GLOBAL)).toBeUndefined();
+
+    await t.pull([GLOBAL], { sources: [source] });
+    expect(source.applied.map((r) => r.key)).toEqual(['kv:a', 'kv:a2', 'kv:b']);
+    expect(await cursorOf(t, GLOBAL)).toEqual({ snapshotN: 0, seq: 2 });
+  });
+
+  it('pulls from multiple remote devices independently', async () => {
+    const t = await harness();
+    const source = new PullSource('settings', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'settings', 'kv:a', 1),
+    ]);
+    await writeJournal(t, GLOBAL, OTHER_DEVICE, 7, [
+      makeRecord(GLOBAL, 'settings', 'kv:b', 2),
+    ]);
+
+    await t.pull([GLOBAL], { sources: [source] });
+
+    expect(source.applied.map((r) => r.key)).toEqual(['kv:a', 'kv:b']);
+    expect(await cursorOf(t, GLOBAL, REMOTE_DEVICE)).toEqual({ snapshotN: 0, seq: 1 });
+    expect(await cursorOf(t, GLOBAL, OTHER_DEVICE)).toEqual({ snapshotN: 0, seq: 7 });
+  });
+
+  it('stores opaque outcomes durably', async () => {
+    const t = await harness();
+    const source = new PullSource('srsCard', 'profile:en');
+    source.opaquePolicy = 'all';
+    await writeJournal(t, 'profile:en', REMOTE_DEVICE, 1, [
+      makeRecord('profile:en', 'srsCard', 'card:c1', { id: 'c1' }, 10),
+    ]);
+
+    await t.pull(['profile:en'], { sources: [source] });
+
+    const opaque = await t.store.putOpaque;
+    expect(typeof opaque).toBe('function');
+    const { getAllOpaqueRecords } = await import('../adapters/local/syncDb');
+    const rows = await getAllOpaqueRecords('profile:en');
+    expect(rows.map((r) => r.recordKey)).toEqual(['card:c1']);
+  });
+
+  it('persists cursors under storage.local.syncCursors', async () => {
+    const t = await harness();
+    const source = new PullSource('settings', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'settings', 'kv:a', 1),
+    ]);
+
+    await t.pull([GLOBAL], { sources: [source] });
+
+    const stored = await t.kv.get<Record<string, unknown>>('local', SYNC_CURSORS_STORAGE_KEY);
+    expect(stored).toBeDefined();
+    const key = cursorKey(t.connection.connectionId, GLOBAL, REMOTE_DEVICE);
+    expect(stored![key]).toEqual({ snapshotN: 0, seq: 1 });
+  });
+});
