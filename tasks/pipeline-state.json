@@ -1,5 +1,5 @@
 {
-  "active": "user-data-sync",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -491,7 +491,7 @@
       "updated": "2026-09-26T03:55:36.269Z"
     },
     "user-data-sync": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "interactive",
       "uiSurface": "yes",
       "artifacts": {
@@ -507,23 +507,23 @@
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-09-27T23:40:06.714Z"
+          "at": "2026-09-27T23:45:48.339Z"
         },
         "lint": {
           "v": "pass",
-          "at": "2026-09-27T23:17:55.197Z"
+          "at": "2026-09-27T23:45:48.399Z"
         },
         "testUnit": {
           "v": "pass",
-          "at": "2026-09-27T23:41:20.285Z"
+          "at": "2026-09-27T23:45:48.475Z"
         },
         "build": {
           "v": "pass",
-          "at": "2026-09-27T23:18:03.559Z"
+          "at": "2026-09-27T23:45:48.554Z"
         },
         "browser": {
           "v": "pass",
-          "at": "2026-09-27T15:01:53.728Z"
+          "at": "2026-09-27T23:45:48.633Z"
         }
       },
       "confidence": "medium",
@@ -541,12 +541,9 @@
         }
       ],
       "loops": 2,
-      "owner": {
-        "id": "devin-cli",
-        "since": "2026-09-27T06:36:48.765Z"
-      },
+      "owner": null,
       "worktree": "../cell-worktrees/user-data-sync",
-      "updated": "2026-09-27T23:41:20.285Z"
+      "updated": "2026-09-27T23:45:48.762Z"
     }
   }
 }
