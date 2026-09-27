@@ -5,6 +5,15 @@
 
 import { getDB, getStore, STORES, INDEXES } from './baseRepository';
 import type { DictionaryComponent, ImportFormat, ResourceInfo, ResourceType } from '@/entities/dictionary';
+import { captureChange, ensureSyncRuntime, isCaptureEnabled, scopeForTarget, stableJson, targetOf, type Scope } from '@/features/sync';
+
+const WRITE_STORES = [STORES.RESOURCE, STORES.SYNC_OUTBOX, STORES.SYNC_META];
+
+const SYNCED_FIELDS = ['name', 'enabled', 'priority', 'profileIds', 'disabledComponents'] as const;
+
+function resourceScope(langCode: string): Scope {
+  return scopeForTarget(targetOf(langCode));
+}
 
 /** Legacy format ids persisted before the structural rename → current id. */
 const LEGACY_FORMAT_MAP: Record<string, ImportFormat> = {
@@ -22,10 +31,17 @@ function migrateResource(resource: ResourceInfo | undefined): ResourceInfo | und
 /** Add a resource. Returns the auto-generated id. */
 export async function addResource(langCode: string, resource: Omit<ResourceInfo, 'id'>): Promise<number> {
   const db = await getDB(langCode);
+  await ensureSyncRuntime();
+  const capture = isCaptureEnabled();
   return new Promise((resolve, reject) => {
-    const store = getStore(db, STORES.RESOURCE);
+    const store = getStore(db, WRITE_STORES);
     const request = store.add(resource);
-    request.onsuccess = () => resolve(request.result as number);
+    request.onsuccess = async () => {
+      if (capture) {
+        await captureChange(store, { scope: resourceScope(langCode), dataClass: 'dictResource', key: `resource:${resource.signature}`, op: 'put' });
+      }
+      resolve(request.result as number);
+    };
     request.onerror = () => reject(request.error);
   });
 }
@@ -63,25 +79,78 @@ export async function getAllResources(langCode: string): Promise<ResourceInfo[]>
   });
 }
 
-/** Update a resource (full replace by id). */
+/** Update a resource (full replace by id); capture emits one record per changed synced field. */
 export async function updateResource(langCode: string, resource: ResourceInfo): Promise<void> {
   const db = await getDB(langCode);
+  await ensureSyncRuntime();
+  const capture = isCaptureEnabled();
   return new Promise((resolve, reject) => {
-    const store = getStore(db, STORES.RESOURCE);
-    const request = store.put(resource);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
+    const store = getStore(db, WRITE_STORES);
+    if (!capture) {
+      const request = store.put(resource);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+      return;
+    }
+    const getReq = resource.id === undefined ? null : store.get(resource.id);
+    if (!getReq) {
+      const putReq = store.put(resource);
+      putReq.onsuccess = async () => {
+        await captureChange(store, { scope: resourceScope(langCode), dataClass: 'dictResource', key: `resource:${resource.signature}`, op: 'put' });
+        resolve();
+      };
+      putReq.onerror = () => reject(putReq.error);
+      return;
+    }
+    getReq.onsuccess = () => {
+      const prev = migrateResource(getReq.result as ResourceInfo | undefined);
+      const putReq = store.put(resource);
+      putReq.onsuccess = async () => {
+        const scope = resourceScope(langCode);
+        const base = `resource:${resource.signature}`;
+        if (!prev || prev.signature !== resource.signature) {
+          await captureChange(store, { scope, dataClass: 'dictResource', key: base, op: 'put' });
+        } else {
+          for (const field of SYNCED_FIELDS) {
+            if (stableJson(prev[field]) !== stableJson(resource[field])) {
+              await captureChange(store, { scope, dataClass: 'dictResource', key: `${base}/${field}`, op: 'put' });
+            }
+          }
+        }
+        resolve();
+      };
+      putReq.onerror = () => reject(putReq.error);
+    };
+    getReq.onerror = () => reject(getReq.error);
   });
 }
 
 /** Delete a resource by id. */
 export async function deleteResource(langCode: string, id: number): Promise<void> {
   const db = await getDB(langCode);
+  await ensureSyncRuntime();
+  const capture = isCaptureEnabled();
   return new Promise((resolve, reject) => {
-    const store = getStore(db, STORES.RESOURCE);
-    const request = store.delete(id);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
+    const store = getStore(db, WRITE_STORES);
+    if (!capture) {
+      const request = store.delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+      return;
+    }
+    const getReq = store.get(id);
+    getReq.onsuccess = () => {
+      const prev = getReq.result as ResourceInfo | undefined;
+      const delReq = store.delete(id);
+      delReq.onsuccess = async () => {
+        if (prev) {
+          await captureChange(store, { scope: resourceScope(langCode), dataClass: 'dictResource', key: `resource:${prev.signature}`, op: 'delete' });
+        }
+        resolve();
+      };
+      delReq.onerror = () => reject(delReq.error);
+    };
+    getReq.onerror = () => reject(getReq.error);
   });
 }
 
@@ -183,10 +252,29 @@ export async function countResources(langCode: string): Promise<number> {
 /** Delete all resources (test cleanup). */
 export async function deleteAllResources(langCode: string): Promise<void> {
   const db = await getDB(langCode);
+  await ensureSyncRuntime();
+  const capture = isCaptureEnabled();
   return new Promise((resolve, reject) => {
-    const store = getStore(db, STORES.RESOURCE);
-    const request = store.clear();
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
+    const store = getStore(db, WRITE_STORES);
+    if (!capture) {
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+      return;
+    }
+    const getReq = store.getAll();
+    getReq.onsuccess = () => {
+      const sigs = (getReq.result as ResourceInfo[]).map((r) => r.signature);
+      const clearReq = store.clear();
+      clearReq.onsuccess = async () => {
+        const scope = resourceScope(langCode);
+        for (const sig of sigs) {
+          await captureChange(store, { scope, dataClass: 'dictResource', key: `resource:${sig}`, op: 'delete' });
+        }
+        resolve();
+      };
+      clearReq.onerror = () => reject(clearReq.error);
+    };
+    getReq.onerror = () => reject(getReq.error);
   });
 }

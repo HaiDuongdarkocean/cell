@@ -1,18 +1,31 @@
 /**
  * Reader repository — IndexedDB persistence for books + progress.
  *
- * DB name: cell-reader, version 1. Two object stores: books (keyPath id),
- * progress (keyPath bookId).
+ * DB name: cell-reader, version 2. Object stores: books (keyPath id),
+ * progress (keyPath bookId), syncOutbox, syncMeta.
  */
+
+import {
+  captureChange,
+  ensureSyncRuntime,
+  getDeviceId,
+  isCaptureEnabled,
+  readRecordMeta,
+  scopeForTarget,
+  targetOf,
+  type Scope,
+} from '@/features/sync';
 
 // ─── Schema constants ────────────────────────────────────────────────────────
 
 export const DB_NAME = 'cell-reader';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 export const STORES = {
   BOOKS: 'books',
   PROGRESS: 'progress',
+  SYNC_OUTBOX: 'syncOutbox',
+  SYNC_META: 'syncMeta',
 } as const;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -32,8 +45,10 @@ export interface ReaderProgressRecord {
   paragraphIndex: number;
   tokenIndex: number;
   updatedAt: string;
-  /** Total time spent reading this book, in milliseconds. */
+  /** Total time spent reading this book on this device, in milliseconds. */
   readTimeMs?: number;
+  /** Per-device read-time buckets (grow-only merge unit for sync). */
+  readTimeByDevice?: Record<string, number>;
 }
 
 // ─── DB connection (singleton) ───────────────────────────────────────────────
@@ -46,6 +61,13 @@ function createStores(db: IDBDatabase): void {
   }
   if (!db.objectStoreNames.contains(STORES.PROGRESS)) {
     db.createObjectStore(STORES.PROGRESS, { keyPath: 'bookId' });
+  }
+  if (!db.objectStoreNames.contains(STORES.SYNC_OUTBOX)) {
+    const outbox = db.createObjectStore(STORES.SYNC_OUTBOX, { autoIncrement: true });
+    outbox.createIndex('by_key', 'key', { unique: false });
+  }
+  if (!db.objectStoreNames.contains(STORES.SYNC_META)) {
+    db.createObjectStore(STORES.SYNC_META, { keyPath: 'key' });
   }
 }
 
@@ -84,10 +106,19 @@ function txDone(tx: IDBTransaction): Promise<void> {
 
 // ─── Book CRUD ───────────────────────────────────────────────────────────────
 
+function bookScope(record: BookRecord): Scope {
+  return record.languageCode ? scopeForTarget(targetOf(record.languageCode)) : 'global';
+}
+
 export async function saveBook(record: BookRecord): Promise<void> {
   const db = await getDB();
-  const tx = db.transaction(STORES.BOOKS, 'readwrite');
-  tx.objectStore(STORES.BOOKS).put(record);
+  await ensureSyncRuntime();
+  const tx = db.transaction([STORES.BOOKS, STORES.SYNC_OUTBOX, STORES.SYNC_META], 'readwrite');
+  const store = tx.objectStore(STORES.BOOKS);
+  store.put(record);
+  if (isCaptureEnabled()) {
+    await captureChange(store, { scope: bookScope(record), dataClass: 'readerBook', key: `book:${record.id}`, op: 'put' });
+  }
   await txDone(tx);
 }
 
@@ -105,9 +136,27 @@ export async function getAllBooks(): Promise<BookRecord[]> {
 
 export async function deleteBook(id: string): Promise<void> {
   const db = await getDB();
-  const tx = db.transaction([STORES.BOOKS, STORES.PROGRESS], 'readwrite');
-  tx.objectStore(STORES.BOOKS).delete(id);
+  await ensureSyncRuntime();
+  const tx = db.transaction([STORES.BOOKS, STORES.PROGRESS, STORES.SYNC_OUTBOX, STORES.SYNC_META], 'readwrite');
+  const store = tx.objectStore(STORES.BOOKS);
+  let scope: Scope | null = null;
+  if (isCaptureEnabled()) {
+    const book = (await reqToPromise(store.get(id))) as BookRecord | undefined;
+    if (book) scope = bookScope(book);
+    if (!scope) {
+      scope = (await readRecordMeta(store, `book:${id}`))?.scope ?? null;
+    }
+  }
+  store.delete(id);
   tx.objectStore(STORES.PROGRESS).delete(id);
+  if (scope) {
+    await captureChange(store, { scope, dataClass: 'readerBook', key: `book:${id}`, op: 'delete' });
+    await captureChange(store, { scope, dataClass: 'readerProgress', key: `progress:${id}/position`, op: 'delete' });
+    const deviceId = getDeviceId();
+    if (deviceId) {
+      await captureChange(store, { scope, dataClass: 'readerProgress', key: `progress:${id}/readTime/${deviceId}`, op: 'delete' });
+    }
+  }
   await txDone(tx);
 }
 
@@ -115,8 +164,26 @@ export async function deleteBook(id: string): Promise<void> {
 
 export async function saveProgress(record: ReaderProgressRecord): Promise<void> {
   const db = await getDB();
-  const tx = db.transaction(STORES.PROGRESS, 'readwrite');
-  tx.objectStore(STORES.PROGRESS).put(record);
+  await ensureSyncRuntime();
+  const tx = db.transaction([STORES.PROGRESS, STORES.BOOKS, STORES.SYNC_OUTBOX, STORES.SYNC_META], 'readwrite');
+  const store = tx.objectStore(STORES.PROGRESS);
+  let next = record;
+  const deviceId = getDeviceId();
+  if (isCaptureEnabled() && deviceId && record.readTimeMs !== undefined) {
+    const prev = (await reqToPromise(store.get(record.bookId))) as ReaderProgressRecord | undefined;
+    next = { ...record, readTimeByDevice: { ...prev?.readTimeByDevice, [deviceId]: record.readTimeMs } };
+  }
+  store.put(next);
+  if (isCaptureEnabled()) {
+    const book = (await reqToPromise(tx.objectStore(STORES.BOOKS).get(record.bookId))) as BookRecord | undefined;
+    const scope = book ? bookScope(book) : (await readRecordMeta(store, `progress:${record.bookId}/position`))?.scope ?? null;
+    if (scope) {
+      await captureChange(store, { scope, dataClass: 'readerProgress', key: `progress:${record.bookId}/position`, op: 'put' });
+      if (deviceId && next.readTimeByDevice?.[deviceId] !== undefined) {
+        await captureChange(store, { scope, dataClass: 'readerProgress', key: `progress:${record.bookId}/readTime/${deviceId}`, op: 'put' });
+      }
+    }
+  }
   await txDone(tx);
 }
 

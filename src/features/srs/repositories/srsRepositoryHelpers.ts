@@ -72,15 +72,16 @@ export function getAllByIndex<T>(
   });
 }
 
-/** Open a readwrite transaction for the given store. */
+/** Open a readwrite transaction over the given stores; fn receives the first store plus the tx. */
 export async function withStore<T>(
-  storeName: string,
-  fn: (store: IDBObjectStore) => Promise<T>,
+  storeNames: string | readonly string[],
+  fn: (store: IDBObjectStore, tx: IDBTransaction) => Promise<T>,
 ): Promise<T> {
   const db = await getSrsDB();
-  const tx = db.transaction(storeName, 'readwrite');
-  const store = tx.objectStore(storeName);
-  const result = await fn(store);
+  const names = Array.isArray(storeNames) ? [...storeNames] : [storeNames];
+  const tx = db.transaction(names, 'readwrite');
+  const store = tx.objectStore(names[0]!);
+  const result = await fn(store, tx);
   await new Promise<void>((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);

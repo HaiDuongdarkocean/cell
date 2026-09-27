@@ -1,7 +1,11 @@
 import type { SrsDeck } from '@/entities/srs/types';
 import { SrsError } from '@/features/srs/lib/srsError';
+import { captureChange, ensureSyncRuntime, isCaptureEnabled, readRecordMeta } from '@/features/sync';
 import { SRS_STORES, SRS_INDEXES } from './srsDatabase';
 import { withReadonlyStore, withStore, getById, putRecord, deleteRecord, getAllByIndex } from './srsRepositoryHelpers';
+import { scopeOfCollection } from './srsSyncScope';
+
+const WRITE_STORES = [SRS_STORES.DECKS, SRS_STORES.COLLECTIONS, SRS_STORES.SYNC_OUTBOX, SRS_STORES.SYNC_META];
 
 export async function getDeck(id: string): Promise<SrsDeck> {
   return withReadonlyStore(SRS_STORES.DECKS, async (store) => {
@@ -15,15 +19,32 @@ export async function putDeck(deck: SrsDeck): Promise<SrsDeck> {
   if (!deck.id || !deck.collectionId || !deck.name) {
     throw new SrsError('INVALID_INPUT', 'Deck id, collectionId and name are required');
   }
-  return withStore(SRS_STORES.DECKS, async (store) => {
+  await ensureSyncRuntime();
+  return withStore(WRITE_STORES, async (store, tx) => {
+    const scope = isCaptureEnabled() ? await scopeOfCollection(tx, deck.collectionId) : null;
     await putRecord(store, deck);
+    if (scope) {
+      await captureChange(store, { scope, dataClass: 'srsDeck', key: `decks:${deck.id}`, op: 'put' });
+      if (deck.studyConfigId) {
+        await captureChange(store, { scope, dataClass: 'studyConfig', key: `studyConfigs:${deck.studyConfigId}`, op: 'put' });
+      }
+    }
     return Object.freeze(deck);
   });
 }
 
 export async function deleteDeck(id: string): Promise<void> {
-  return withStore(SRS_STORES.DECKS, async (store) => {
+  await ensureSyncRuntime();
+  return withStore(WRITE_STORES, async (store, tx) => {
+    const row = await getById<SrsDeck>(store, id);
+    let scope = isCaptureEnabled() && row ? await scopeOfCollection(tx, row.collectionId) : null;
+    if (!scope && isCaptureEnabled()) {
+      scope = (await readRecordMeta(store, `decks:${id}`))?.scope ?? null;
+    }
     await deleteRecord(store, id);
+    if (scope) {
+      await captureChange(store, { scope, dataClass: 'srsDeck', key: `decks:${id}`, op: 'delete' });
+    }
   });
 }
 

@@ -6,8 +6,8 @@
 
 import { getDbHash } from '@/shared/lib/storage/dbHash';
 
-/** IndexedDB schema version (ADR-023 D2 + ADR-037 §7.1 — v10 adds langPhraseIndex, v12 adds langWordTrash). */
-export const DB_SCHEMA_VERSION = 12;
+/** IndexedDB schema version (ADR-023 D2 + ADR-037 §7.1 — v10 adds langPhraseIndex, v12 adds langWordTrash, v13 adds sync capture stores). */
+export const DB_SCHEMA_VERSION = 13;
 
 /** Object store names. */
 export const STORES = {
@@ -17,6 +17,8 @@ export const STORES = {
   PHRASE_INDEX: 'langPhraseIndex',
   WORD_STATUS: 'langWordStatus',
   WORD_TRASH: 'langWordTrash',
+  SYNC_OUTBOX: 'syncOutbox',
+  SYNC_META: 'syncMeta',
 } as const;
 
 /** Index names. */
@@ -119,16 +121,26 @@ function createAllStores(db: IDBDatabase): void {
   if (!db.objectStoreNames.contains(STORES.WORD_TRASH)) {
     db.createObjectStore(STORES.WORD_TRASH, { keyPath: 'term' });
   }
+  // syncOutbox — autoIncrement; pending change-record keys drained by the sync engine
+  if (!db.objectStoreNames.contains(STORES.SYNC_OUTBOX)) {
+    const outbox = db.createObjectStore(STORES.SYNC_OUTBOX, { autoIncrement: true });
+    outbox.createIndex('by_key', 'key', { unique: false });
+  }
+  // syncMeta — keyPath 'key'; per-record HLC/scope metadata
+  if (!db.objectStoreNames.contains(STORES.SYNC_META)) {
+    db.createObjectStore(STORES.SYNC_META, { keyPath: 'key' });
+  }
 }
 
-/** Open a transaction for 1 store (readwrite default). */
+/** Open a transaction for 1+ stores (readwrite default); returns the first store. */
 export function getStore(
   db: IDBDatabase,
-  storeName: string,
+  storeName: string | readonly string[],
   mode: IDBTransactionMode = 'readwrite',
 ): IDBObjectStore {
-  const tx = db.transaction(storeName, mode);
-  return tx.objectStore(storeName);
+  const names = Array.isArray(storeName) ? [...storeName] : [storeName];
+  const tx = db.transaction(names, mode);
+  return tx.objectStore(names[0]!);
 }
 
 /** Wait for a transaction to complete (raw IDBTransaction has no .done promise). */
@@ -160,13 +172,15 @@ export async function deleteDB(dbName: string): Promise<void> {
 export async function clearAllStores(langCode: string): Promise<void> {
   const db = await getDB(langCode);
   return new Promise((resolve, reject) => {
-    const tx = db.transaction([STORES.RESOURCE, STORES.FREQUENCY, STORES.DICTIONARY, STORES.PHRASE_INDEX, STORES.WORD_STATUS, STORES.WORD_TRASH], 'readwrite');
+    const tx = db.transaction([STORES.RESOURCE, STORES.FREQUENCY, STORES.DICTIONARY, STORES.PHRASE_INDEX, STORES.WORD_STATUS, STORES.WORD_TRASH, STORES.SYNC_OUTBOX, STORES.SYNC_META], 'readwrite');
     tx.objectStore(STORES.RESOURCE).clear();
     tx.objectStore(STORES.FREQUENCY).clear();
     tx.objectStore(STORES.DICTIONARY).clear();
     tx.objectStore(STORES.PHRASE_INDEX).clear();
     tx.objectStore(STORES.WORD_STATUS).clear();
     tx.objectStore(STORES.WORD_TRASH).clear();
+    tx.objectStore(STORES.SYNC_OUTBOX).clear();
+    tx.objectStore(STORES.SYNC_META).clear();
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
