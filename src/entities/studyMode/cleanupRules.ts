@@ -4,6 +4,7 @@ import type { MessageKey } from '@/shared/i18n';
 export const MAX_CUSTOM_RULES = 50;
 export const MAX_RULE_PATTERN_LENGTH = 500;
 export const MAX_RULE_NAME_LENGTH = 80;
+export const MAX_RULE_REPLACEMENT_LENGTH = 200;
 
 const MUSIC_GLYPHS = '♪♫♩♬♭♮𝄞𝄢𝄡🎵🎶🎤🎧';
 
@@ -65,7 +66,9 @@ export function resolveCleanupRules(setting: CleanupRulesSetting | undefined): R
 }
 
 export function cleanupRulesFingerprint(setting: CleanupRulesSetting | undefined): string {
-  return JSON.stringify(resolveCleanupRules(setting).map((r) => [r.id, r.enabled, r.pattern, r.repeatUntilStable === true]));
+  return JSON.stringify(
+    resolveCleanupRules(setting).map((r) => [r.id, r.enabled, r.pattern, r.replacement ?? '', r.repeatUntilStable === true]),
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -98,11 +101,16 @@ export function sanitizeCleanupRulesSetting(raw: unknown, legacyBracketsEnabled:
     if (typeof item.name !== 'string' || item.name.trim().length === 0 || item.name.length > MAX_RULE_NAME_LENGTH) continue;
     if (typeof item.pattern !== 'string' || item.pattern.length === 0 || item.pattern.length > MAX_RULE_PATTERN_LENGTH) continue;
     seenIds.add(item.id);
+    const replacement =
+      typeof item.replacement === 'string' && item.replacement.length > 0 && item.replacement.length <= MAX_RULE_REPLACEMENT_LENGTH
+        ? item.replacement
+        : undefined;
     custom.push({
       id: item.id,
       name: item.name,
       description: typeof item.description === 'string' ? item.description : '',
       pattern: item.pattern,
+      ...(replacement !== undefined ? { replacement } : {}),
       enabled: typeof item.enabled === 'boolean' ? item.enabled : true,
       builtin: false,
     });
@@ -127,20 +135,28 @@ export function validateCleanupPattern(pattern: string): LocalizedError | null {
   return null;
 }
 
+export function validateCleanupReplacement(replacement: string): LocalizedError | null {
+  if (replacement.length > MAX_RULE_REPLACEMENT_LENGTH) {
+    return { key: 'cleanup.error.replacementTooLong', params: [MAX_RULE_REPLACEMENT_LENGTH] };
+  }
+  return null;
+}
+
 const REPEAT_PASSES = 3;
 
 export function applyCleanupRules(text: string, rules: readonly ResolvedCleanupRule[]): string {
   let out = text;
   for (const rule of rules) {
     if (!rule.enabled || rule.regex === null) continue;
+    const replacement = rule.replacement ?? '';
     if (rule.repeatUntilStable) {
       for (let pass = 0; pass < REPEAT_PASSES; pass += 1) {
-        const next = out.replace(rule.regex, '');
+        const next = out.replace(rule.regex, replacement);
         if (next === out) break;
         out = next;
       }
     } else {
-      out = out.replace(rule.regex, '');
+      out = out.replace(rule.regex, replacement);
     }
   }
   return normalizeCleanedText(out);

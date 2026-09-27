@@ -126,6 +126,30 @@ describe('applyCleanupRules with custom rules', () => {
     expect(applyCleanupRules('John said hi', rules)).toBe('John said hi');
   });
 
+  it('replaces matches with the rule replacement instead of deleting', () => {
+    const rules = resolveCleanupRules({
+      builtinEnabled: {},
+      custom: [{ id: 'c1', name: 'fix', description: '', pattern: 'teh', replacement: 'the', enabled: true, builtin: false }],
+    });
+    expect(applyCleanupRules('teh cat and teh dog', rules)).toBe('the cat and the dog');
+  });
+
+  it('supports capture-group references in replacement', () => {
+    const rules = resolveCleanupRules({
+      builtinEnabled: {},
+      custom: [{ id: 'c1', name: 'swap', description: '', pattern: '(\\w+) (\\w+)$', replacement: '$2 $1', enabled: true, builtin: false }],
+    });
+    expect(applyCleanupRules('hello world', rules)).toBe('world hello');
+  });
+
+  it('treats an empty replacement as delete', () => {
+    const rules = resolveCleanupRules({
+      builtinEnabled: {},
+      custom: [{ id: 'c1', name: 'del', description: '', pattern: 'x', replacement: '', enabled: true, builtin: false }],
+    });
+    expect(applyCleanupRules('axb', rules)).toBe('ab');
+  });
+
   it('skips a stored invalid pattern without breaking other rules', () => {
     const rules = resolveCleanupRules({
       builtinEnabled: {},
@@ -139,6 +163,13 @@ describe('applyCleanupRules with custom rules', () => {
 });
 
 describe('cleanupRulesFingerprint', () => {
+  it('changes when a custom rule replacement changes', () => {
+    const base = { id: 'c1', name: 'r', description: '', pattern: 'a', enabled: true, builtin: false };
+    const a = cleanupRulesFingerprint({ builtinEnabled: {}, custom: [{ ...base, replacement: 'x' }] });
+    const b = cleanupRulesFingerprint({ builtinEnabled: {}, custom: [{ ...base, replacement: 'y' }] });
+    expect(a).not.toBe(b);
+  });
+
   it('changes when a built-in is toggled or a custom rule mutates', () => {
     const base = cleanupRulesFingerprint({ builtinEnabled: {}, custom: [] });
     expect(cleanupRulesFingerprint({ builtinEnabled: { brackets: false }, custom: [] })).not.toBe(base);

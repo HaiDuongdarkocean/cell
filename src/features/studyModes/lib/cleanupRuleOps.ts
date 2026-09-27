@@ -4,6 +4,7 @@ import {
   MAX_CUSTOM_RULES,
   MAX_RULE_NAME_LENGTH,
   validateCleanupPattern,
+  validateCleanupReplacement,
 } from '@/entities/studyMode';
 import { generateModeId } from './generateModeId';
 
@@ -11,11 +12,13 @@ export interface CleanupRuleDraft {
   name: string;
   description: string;
   pattern: string;
+  replacement: string;
 }
 
 export interface CleanupRuleErrors {
   name?: LocalizedError;
   pattern?: LocalizedError;
+  replacement?: LocalizedError;
 }
 
 function isNameTaken(setting: CleanupRulesSetting, name: string, excludeId?: string): boolean {
@@ -42,6 +45,8 @@ export function validateCleanupRuleDraft(
   }
   const patternError = validateCleanupPattern(draft.pattern);
   if (patternError) errors.pattern = patternError;
+  const replacementError = validateCleanupReplacement(draft.replacement);
+  if (replacementError) errors.replacement = replacementError;
   return errors;
 }
 
@@ -64,7 +69,7 @@ export function addCleanupRule(
     return { errors: { limit: { key: 'cleanup.error.limit', params: [MAX_CUSTOM_RULES] } } };
   }
   const errors = validateCleanupRuleDraft(setting, draft);
-  if (errors.name || errors.pattern) return { errors };
+  if (errors.name || errors.pattern || errors.replacement) return { errors };
   const rule: SubtitleCleanupRule = {
     id: generateModeId(),
     name: draft.name.trim(),
@@ -73,6 +78,8 @@ export function addCleanupRule(
     enabled: true,
     builtin: false,
   };
+  const replacement = draft.replacement;
+  if (replacement) rule.replacement = replacement;
   return { setting: { ...setting, custom: [...setting.custom, rule] } };
 }
 
@@ -84,7 +91,7 @@ export function updateCleanupRule(
   const index = setting.custom.findIndex((r) => r.id === id && !r.builtin);
   if (index === -1) return { errors: {} };
   const errors = validateCleanupRuleDraft(setting, draft, id);
-  if (errors.name || errors.pattern) return { errors };
+  if (errors.name || errors.pattern || errors.replacement) return { errors };
   const next = [...setting.custom];
   next[index] = {
     ...next[index],
@@ -92,6 +99,11 @@ export function updateCleanupRule(
     description: draft.description.trim(),
     pattern: draft.pattern,
   };
+  if (draft.replacement) {
+    next[index].replacement = draft.replacement;
+  } else {
+    delete next[index].replacement;
+  }
   return { setting: { ...setting, custom: next } };
 }
 

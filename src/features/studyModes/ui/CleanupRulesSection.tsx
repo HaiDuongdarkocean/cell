@@ -14,7 +14,7 @@ import {
 } from '../lib/cleanupRuleOps';
 import styles from './StudyModesTab.module.css';
 
-const EMPTY_DRAFT: CleanupRuleDraft = { name: '', description: '', pattern: '' };
+const EMPTY_DRAFT: CleanupRuleDraft = { name: '', description: '', pattern: '', replacement: '' };
 
 const ruleName = (rule: SubtitleCleanupRule): string => (rule.nameKey ? t(rule.nameKey) : rule.name);
 const ruleDescription = (rule: SubtitleCleanupRule): string =>
@@ -47,7 +47,7 @@ export function CleanupRulesSection({ setting, onChange }: CleanupRulesSectionPr
 
   const openEdit = (rule: SubtitleCleanupRule): void => {
     setEditingId(rule.id);
-    setDraft({ name: rule.name, description: rule.description, pattern: rule.pattern });
+    setDraft({ name: rule.name, description: rule.description, pattern: rule.pattern, replacement: rule.replacement ?? '' });
     setTouched(false);
     setEditorOpen(true);
   };
@@ -89,8 +89,9 @@ export function CleanupRulesSection({ setting, onChange }: CleanupRulesSectionPr
           {rule.builtin && <span className={styles.builtinTag}>{t('cleanup.builtinTag')}</span>}
         </div>
         {ruleDescription(rule) && <span className={styles.ruleDesc}>{ruleDescription(rule)}</span>}
-        <Code className={styles.rulePattern} title={rule.pattern}>
+        <Code className={styles.rulePattern} title={rule.replacement ? `${rule.pattern} → ${rule.replacement}` : rule.pattern}>
           {rule.pattern}
+          {rule.replacement ? ` → ${rule.replacement}` : ''}
         </Code>
       </div>
       {!rule.builtin && (
@@ -156,7 +157,7 @@ export function CleanupRulesSection({ setting, onChange }: CleanupRulesSectionPr
             <Button variant="ghost" size="sm" onClick={() => setEditorOpen(false)} data-cell-id="cleanup-rule-cancel">
               {t('settings.profiles.form.cancel')}
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={Boolean(errors.name || errors.pattern)} data-cell-id="cleanup-rule-save">
+            <Button size="sm" onClick={handleSave} disabled={Boolean(errors.name || errors.pattern || errors.replacement)} data-cell-id="cleanup-rule-save">
               {t('settings.profiles.form.save')}
             </Button>
           </>
@@ -198,6 +199,20 @@ export function CleanupRulesSection({ setting, onChange }: CleanupRulesSectionPr
               error={Boolean(shownErrors.pattern)}
               errorMessage={shownErrors.pattern ? t(shownErrors.pattern.key, shownErrors.pattern.params) : undefined}
               data-cell-id="cleanup-rule-pattern"
+            />
+          </FormGroup>
+          <FormGroup label={t('cleanup.field.replacement')} htmlFor="cleanup-rule-replacement">
+            <Input
+              id="cleanup-rule-replacement"
+              value={draft.replacement}
+              onChange={(e) => {
+                setDraft({ ...draft, replacement: e.target.value });
+                setTouched(true);
+              }}
+              placeholder={t('cleanup.field.replacementPlaceholder')}
+              error={Boolean(shownErrors.replacement)}
+              errorMessage={shownErrors.replacement ? t(shownErrors.replacement.key, shownErrors.replacement.params) : undefined}
+              data-cell-id="cleanup-rule-replacement"
             />
           </FormGroup>
         </VStack>

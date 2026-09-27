@@ -59,6 +59,7 @@ export interface SubtitleCleanupRule {
   nameKey?: MessageKey;
   descriptionKey?: MessageKey;
   pattern: string;
+  replacement?: string;
   enabled: boolean;
   builtin: boolean;
   repeatUntilStable?: boolean;

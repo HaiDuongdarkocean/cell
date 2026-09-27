@@ -27,31 +27,39 @@ const withCustom = (rules: SubtitleCleanupRule[]): CleanupRulesSetting => ({
 describe('validateCleanupRuleDraft', () => {
   it('rejects empty names, oversized names, and name collisions with builtins or customs', () => {
     const setting = withCustom([customRule()]);
-    expect(validateCleanupRuleDraft(setting, { name: '  ', description: '', pattern: 'x' }).name).toBeTruthy();
+    expect(validateCleanupRuleDraft(setting, { name: '  ', description: '', pattern: 'x', replacement: '' }).name).toBeTruthy();
     expect(
-      validateCleanupRuleDraft(setting, { name: 'a'.repeat(81), description: '', pattern: 'x' }).name,
+      validateCleanupRuleDraft(setting, { name: 'a'.repeat(81), description: '', pattern: 'x', replacement: '' }).name,
     ).toBeTruthy();
     expect(
-      validateCleanupRuleDraft(setting, { name: 'Bracketed annotations', description: '', pattern: 'x' }).name,
+      validateCleanupRuleDraft(setting, { name: 'Bracketed annotations', description: '', pattern: 'x', replacement: '' }).name,
     ).toBeTruthy();
     expect(
-      validateCleanupRuleDraft(setting, { name: 'fansub CREDITS', description: '', pattern: 'x' }).name,
+      validateCleanupRuleDraft(setting, { name: 'fansub CREDITS', description: '', pattern: 'x', replacement: '' }).name,
     ).toBeTruthy();
     expect(
-      validateCleanupRuleDraft(setting, { name: 'fansub credits', description: '', pattern: 'x' }, 'custom-1').name,
+      validateCleanupRuleDraft(setting, { name: 'fansub credits', description: '', pattern: 'x', replacement: '' }, 'custom-1').name,
     ).toBeUndefined();
   });
 
   it('rejects empty, oversized, and invalid regex patterns', () => {
     const setting = DEFAULT_CLEANUP_RULES_SETTING;
-    expect(validateCleanupRuleDraft(setting, { name: 'n', description: '', pattern: '' }).pattern).toBeTruthy();
+    expect(validateCleanupRuleDraft(setting, { name: 'n', description: '', pattern: '', replacement: '' }).pattern).toBeTruthy();
     expect(
-      validateCleanupRuleDraft(setting, { name: 'n', description: '', pattern: 'x'.repeat(501) }).pattern,
+      validateCleanupRuleDraft(setting, { name: 'n', description: '', pattern: 'x'.repeat(501), replacement: '' }).pattern,
     ).toBeTruthy();
-    expect(validateCleanupRuleDraft(setting, { name: 'n', description: '', pattern: '([' }).pattern).toBeTruthy();
+    expect(validateCleanupRuleDraft(setting, { name: 'n', description: '', pattern: '([', replacement: '' }).pattern).toBeTruthy();
     expect(
-      validateCleanupRuleDraft(setting, { name: 'n', description: '', pattern: '\\[.*\\]' }).pattern,
+      validateCleanupRuleDraft(setting, { name: 'n', description: '', pattern: '\\[.*\\]', replacement: '' }).pattern,
     ).toBeUndefined();
+  });
+
+  it('rejects oversized replacements and accepts empty or short ones', () => {
+    const setting = DEFAULT_CLEANUP_RULES_SETTING;
+    const draft = { name: 'n', description: '', pattern: 'x' };
+    expect(validateCleanupRuleDraft(setting, { ...draft, replacement: 'y'.repeat(201) }).replacement).toBeTruthy();
+    expect(validateCleanupRuleDraft(setting, { ...draft, replacement: 'y'.repeat(200) }).replacement).toBeUndefined();
+    expect(validateCleanupRuleDraft(setting, { ...draft, replacement: '' }).replacement).toBeUndefined();
   });
 });
 
@@ -61,23 +69,53 @@ describe('addCleanupRule', () => {
       name: 'mine',
       description: 'd',
       pattern: 'x+',
+      replacement: '',
     });
     expect(setting?.custom).toHaveLength(1);
     expect(setting?.custom[0]?.enabled).toBe(true);
     expect(setting?.custom[0]?.builtin).toBe(false);
 
     const full = withCustom(Array.from({ length: 50 }, (_, i) => customRule({ id: `c${i}`, name: `r${i}` })));
-    expect(addCleanupRule(full, { name: 'one-more', description: '', pattern: 'x' }).errors?.limit).toBeTruthy();
+    expect(addCleanupRule(full, { name: 'one-more', description: '', pattern: 'x', replacement: '' }).errors?.limit).toBeTruthy();
+  });
+
+  it('stores a non-empty replacement and omits it when empty', () => {
+    const withRepl = addCleanupRule(DEFAULT_CLEANUP_RULES_SETTING, {
+      name: 'fix typo',
+      description: '',
+      pattern: 'teh',
+      replacement: 'the',
+    });
+    expect(withRepl.setting?.custom[0]?.replacement).toBe('the');
+
+    const noRepl = addCleanupRule(DEFAULT_CLEANUP_RULES_SETTING, {
+      name: 'del',
+      description: '',
+      pattern: 'x',
+      replacement: '',
+    });
+    expect(noRepl.setting?.custom[0]?.replacement).toBeUndefined();
   });
 });
 
 describe('updateCleanupRule', () => {
   it('edits custom rules in place, keeps enabled state, and refuses missing ids', () => {
     const setting = withCustom([customRule({ enabled: false })]);
-    const result = updateCleanupRule(setting, 'custom-1', { name: 'renamed', description: 'd2', pattern: 'y+' });
+    const result = updateCleanupRule(setting, 'custom-1', { name: 'renamed', description: 'd2', pattern: 'y+', replacement: '' });
     expect(result.setting?.custom[0]?.name).toBe('renamed');
     expect(result.setting?.custom[0]?.enabled).toBe(false);
-    expect(updateCleanupRule(setting, 'nope', { name: 'x', description: '', pattern: 'x' }).errors).toBeTruthy();
+    expect(updateCleanupRule(setting, 'nope', { name: 'x', description: '', pattern: 'x', replacement: '' }).errors).toBeTruthy();
+  });
+
+  it('sets, changes, and clears the replacement', () => {
+    const setting = withCustom([customRule()]);
+    const set = updateCleanupRule(setting, 'custom-1', { name: 'Fansub credits', description: '', pattern: 'x', replacement: '$1' });
+    expect(set.setting?.custom[0]?.replacement).toBe('$1');
+    const changed = updateCleanupRule(set.setting!, 'custom-1', { name: 'Fansub credits', description: '', pattern: 'x', replacement: 'z' });
+    expect(changed.setting?.custom[0]?.replacement).toBe('z');
+    const cleared = updateCleanupRule(changed.setting!, 'custom-1', { name: 'Fansub credits', description: '', pattern: 'x', replacement: '' });
+    expect(cleared.setting?.custom[0]?.replacement).toBeUndefined();
+    expect(cleared.setting?.custom[0]?.id).toBe('custom-1');
   });
 });
 
