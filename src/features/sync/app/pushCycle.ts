@@ -241,10 +241,10 @@ async function commitBatch(
 }
 
 export async function uploadAndVerifyBlobs(
-  deps: ConnectionPushDeps,
+  deps: Pick<ConnectionPushDeps, 'provider' | 'connection' | 'blobs' | 'fence'>,
   hashes: readonly string[],
-): Promise<void> {
-  if (hashes.length === 0) return;
+): Promise<readonly string[]> {
+  if (hashes.length === 0) return [];
   const connection = deps.connection;
   const present = new Map(
     (await deps.provider.list(connection, BLOBS_PREFIX)).map((entry) => [entry.path, entry]),
@@ -272,6 +272,7 @@ export async function uploadAndVerifyBlobs(
     }
   }
   if (missing.length > 0) throw new BlobUnavailableError(missing);
+  return [...uploadedSizes.keys()];
 }
 
 export function collectBlobHashes(records: readonly ChangeRecord[]): string[] {

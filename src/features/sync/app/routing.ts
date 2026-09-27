@@ -94,8 +94,21 @@ function parseFrozenScopes(raw: unknown): Set<Scope> {
     return out;
   }
   if (isPlainJsonObject(raw)) {
-    for (const key of Object.keys(raw)) {
-      if (isScope(key)) out.add(key);
+    for (const [key, value] of Object.entries(raw)) {
+      if (!isScope(key)) continue;
+      if (!isPlainJsonObject(value)) {
+        out.add(key);
+        continue;
+      }
+      const kind = value['kind'];
+      const phase = value['phase'];
+      if (kind === undefined || phase === undefined) {
+        out.add(key);
+        continue;
+      }
+      if (kind === 'rebind' && (phase === 'freeze' || phase === 'copied')) {
+        out.add(key);
+      }
     }
   }
   return out;

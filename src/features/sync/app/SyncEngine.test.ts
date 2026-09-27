@@ -19,7 +19,9 @@ import type { ApplyResult, LocalSource } from '../ports/localSource';
 import { BACKOFF_BASE_MS } from './backoff';
 import { SYNC_LOCK_STORAGE_KEY } from './cycleLock';
 import { SYNC_APPLIED_AT_KEY } from './pullCycle';
-import { journalPath } from './remotePaths';
+import { journalPath, parseSnapshotN, scopeDevicePrefix, DISCONNECT_MARKER_PATH } from './remotePaths';
+import { writeCheckpoint } from './checkpoints';
+import { DISCONNECT_PENDING_PREFIX } from './disconnect';
 import { SyncEngine } from './SyncEngine';
 import type { EngineStatus, SyncEngineDeps } from './SyncEngine';
 import { createSyncDbStore } from './syncDbStore';
@@ -566,5 +568,105 @@ describe('pull', () => {
     });
     await engine.runCycle();
     expect(observed).toEqual([10, 20]);
+  });
+});
+
+describe('SyncEngine obligations', () => {
+  const SCOPE: Scope = 'profile:lang:en';
+  const tickWall = { wall: 5_000 };
+
+  const tick = () => {
+    tickWall.wall += 1;
+    return { wall: tickWall.wall, counter: 0, node: `${DEVICE}:cycle` };
+  };
+
+  async function secondConnection(t: Harness): Promise<Connection> {
+    const account = await t.provider.authorize({ interactive: true });
+    const conn: Connection = {
+      connectionId: `${PROVIDER_ID}:${account.accountKey}` as Connection['connectionId'],
+      providerId: PROVIDER_ID,
+      accountKey: account.accountKey,
+      displayName: account.displayName,
+    };
+    await t.setDirectory({
+      [`connection:${conn.connectionId}`]: {
+        providerId: PROVIDER_ID,
+        accountKey: account.accountKey,
+        displayName: account.displayName,
+      },
+      [`binding:${SCOPE.slice('profile:'.length)}`]: t.connection.connectionId,
+    });
+    return conn;
+  }
+
+  it('processes a drain checkpoint: publishes scope snapshot to the new destination', async () => {
+    const t = await harness();
+    const connB = await secondConnection(t);
+    await writeCheckpoint(t.kv, {
+      scope: SCOPE,
+      kind: 'drain',
+      phase: 'open',
+      from: t.connection.connectionId,
+      to: connB.connectionId,
+      writtenPaths: [],
+      markerHlc: null,
+      startedAt: 0,
+      until: null,
+    });
+    const engine = t.makeEngine({
+      connections: async () => [t.connection, connB],
+      tick,
+    });
+    const result = await engine.runCycle();
+    expect(result.failed).toEqual([]);
+    const onB = (await t.provider.list(connB, scopeDevicePrefix(SCOPE, DEVICE))).filter(
+      (e) => parseSnapshotN(e.path) !== null,
+    );
+    expect(onB).toHaveLength(1);
+    const checkpoints = await t.kv.get('local', 'syncCheckpoints');
+    expect(checkpoints ?? {}).toEqual({});
+  });
+
+  it('reports waitingScopes for a drain whose destination is not connected', async () => {
+    const t = await harness();
+    await writeCheckpoint(t.kv, {
+      scope: SCOPE,
+      kind: 'drain',
+      phase: 'open',
+      from: t.connection.connectionId,
+      to: `${PROVIDER_ID}:ghost` as Connection['connectionId'],
+      writtenPaths: [],
+      markerHlc: null,
+      startedAt: 0,
+      until: null,
+    });
+    const engine = t.makeEngine({ tick });
+    const result = await engine.runCycle();
+    expect(result.waitingScopes).toEqual([SCOPE]);
+  });
+
+  it('completes a pending disconnect: writes marker and removes the connection locally', async () => {
+    const t = await harness();
+    const connB = await secondConnection(t);
+    await t.kv.set('local', `${DISCONNECT_PENDING_PREFIX}${connB.connectionId}`, {
+      at: t.clock.now(),
+    });
+    const disconnected: string[] = [];
+    const engine = t.makeEngine({
+      connections: async () => [t.connection, connB],
+      tick,
+      onDisconnect: async (id) => {
+        disconnected.push(id);
+      },
+    });
+    const result = await engine.runCycle();
+    expect(result.failed).toEqual([]);
+    expect(await t.provider.list(connB, DISCONNECT_MARKER_PATH)).toHaveLength(1);
+    expect(disconnected).toEqual([connB.connectionId]);
+    expect(
+      await t.kv.get('local', `${DISCONNECT_PENDING_PREFIX}${connB.connectionId}`),
+    ).toBeUndefined();
+    const state = await t.kv.get<Record<string, unknown>>('local', 'syncState');
+    expect(state?.[`connection:${connB.connectionId}`]).toBeUndefined();
   });
 });

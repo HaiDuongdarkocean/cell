@@ -36,6 +36,7 @@ import {
 import { blobToBytes } from '../adapters/contract/blobBytes';
 import { appendConflictLog } from '../adapters/local/kv/conflictLog';
 import { kvMetaKey, readSyncMetaKV } from '../adapters/local/kv/kvMeta';
+import { readRouteMarker, type RouteMarker } from './routeMarkers';
 import type { ConflictLogEntry } from '../ports/localSource';
 import type { SyncStore } from './syncStore';
 import { decodeJournal, decodeSnapshot, WireFormatError } from './wireCodec';
@@ -56,6 +57,7 @@ export interface ConnectionPullDeps {
   readonly observeHlc?: (hlc: Hlc) => void;
   readonly onRemoteRecord?: (record: ChangeRecord) => void;
   readonly onRoutingChange?: (record: ChangeRecord) => Promise<void>;
+  readonly onRouteMarker?: (scope: Scope, marker: RouteMarker) => Promise<void>;
   readonly onDisconnect?: (connectionId: ConnectionId) => Promise<void>;
   readonly onAppliedBatch?: (
     scope: Scope,
@@ -210,6 +212,17 @@ async function pullScope(
   }
 
   const warnings: string[] = [];
+  if (deps.onRouteMarker !== undefined) {
+    const marker = await readRouteMarker(deps.provider, deps.connection, scope);
+    if (marker !== null) {
+      try {
+        await deps.onRouteMarker(scope, marker);
+      } catch (e) {
+        if (e instanceof CycleLockLostError || e instanceof ProviderError) throw e;
+        warnings.push(`route marker handling failed for ${scope}: ${describePullError(e)}`);
+      }
+    }
+  }
   const deviceOutcomes: DevicePullOutcome[] = [];
   for (const files of devices.values()) {
     files.snapshots.sort((a, b) => a.n - b.n);

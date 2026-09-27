@@ -20,6 +20,7 @@ import { acquireCycleLock, CycleLockLostError } from './cycleLock';
 import type { CycleLock, CycleLockDeps } from './cycleLock';
 import {
   ackPendingKeys,
+  resolvePendingKeys,
   collectPendingKeys,
   DEFAULT_JOURNAL_COMPACTION_THRESHOLD,
   DEFAULT_PENDING_LIMIT,
@@ -31,6 +32,12 @@ import {
   runConnectionPull,
   SYNC_APPLIED_AT_KEY,
 } from './pullCycle';
+import {
+  completeDisconnectLocally,
+  completePendingDisconnects,
+  type DisconnectDeps,
+} from './disconnect';
+import { observeRouteMarker, processCheckpoints } from './obligations';
 import { scopesPrefix, scopeOfRemotePath } from './remotePaths';
 import { readRouting, routeForScope } from './routing';
 import type { RoutingSnapshot } from './routing';
@@ -66,6 +73,7 @@ export interface CycleResult {
   readonly scopesPulled: Scope[];
   readonly appliedDataClasses: DataClass[];
   readonly appliedScopes: Scope[];
+  readonly waitingScopes: Scope[];
   readonly failed: ConnectionFailure[];
   readonly retryAt?: number;
 }
@@ -85,6 +93,7 @@ export interface SyncEngineDeps {
   readonly deviceId: () => Promise<string>;
   readonly clock: Clock;
   readonly ids: IdSource;
+  readonly tick?: () => Hlc;
   readonly observeHlc?: (hlc: Hlc) => void;
   readonly onRoutingChange?: (record: ChangeRecord) => Promise<void>;
   readonly onDisconnect?: (connectionId: ConnectionId) => Promise<void>;
@@ -185,6 +194,7 @@ export class SyncEngine {
     const scopesPulled = new Set<Scope>();
     const appliedDataClasses = new Set<DataClass>();
     const appliedScopes = new Set<Scope>();
+    const waitingScopes = new Set<Scope>();
     let ackedKeys = 0;
     let lockLost = false;
     let cycleError: unknown;
@@ -210,11 +220,15 @@ export class SyncEngine {
         if (target === null) continue;
         if (target.kind === 'local') {
           await lock.verify();
+          await resolvePendingKeys(deps.sources, keys);
           await ackPendingKeys(deps.sources, keys);
           ackedKeys += keys.length;
           continue;
         }
-        if (!connected.has(target.connectionId)) continue;
+        if (!connected.has(target.connectionId)) {
+          waitingScopes.add(scope);
+          continue;
+        }
         const bucket = buckets.get(target.connectionId) ?? new Map<Scope, PendingKey[]>();
         bucket.set(scope, keys);
         buckets.set(target.connectionId, bucket);
@@ -227,7 +241,22 @@ export class SyncEngine {
           if (
             await isConnectionDisconnected({ provider, connection, kv: deps.kv })
           ) {
-            await deps.onDisconnect?.(connection.connectionId);
+            if (deps.tick !== undefined) {
+              try {
+                await completeDisconnectLocally(
+                  this.disconnectDeps(() => lock.verify(), deviceId, cycleId),
+                  connection.connectionId,
+                );
+              } catch {
+                await deps.kv.set(
+                  'local',
+                  `syncDisconnectPending:${connection.connectionId}`,
+                  { at: deps.clock.now() },
+                );
+              }
+            } else {
+              await deps.onDisconnect?.(connection.connectionId);
+            }
             continue;
           }
           const result = await runConnectionPush(
@@ -290,6 +319,15 @@ export class SyncEngine {
               fence: () => lock.verify(),
               observeHlc: deps.observeHlc,
               onRoutingChange: deps.onRoutingChange,
+              onRouteMarker: async (scope, marker) => {
+                await observeRouteMarker(
+                  deps.kv,
+                  scope,
+                  marker,
+                  connection.connectionId,
+                  deps.clock.now(),
+                );
+              },
               onDisconnect: deps.onDisconnect,
               onAppliedBatch: (scope, dataClasses) => {
                 appliedScopes.add(scope);
@@ -314,6 +352,41 @@ export class SyncEngine {
             state: engineStateForError(error),
             retryAt,
           });
+        }
+      }
+
+      if (deps.tick !== undefined) {
+        try {
+          const obligations = await processCheckpoints({
+            providerFor: deps.providerFor,
+            connectionFor: (id) => connected.get(id) ?? null,
+            connections: deps.connections,
+            kv: deps.kv,
+            store: deps.store,
+            sources: deps.sources,
+            blobs: deps.blobs,
+            deviceId,
+            cycleId,
+            clock: deps.clock,
+            tick: deps.tick,
+            fence: () => lock.verify(),
+            pendingLimit: deps.pendingLimit,
+            observeHlc: deps.observeHlc,
+            onRoutingChange: deps.onRoutingChange,
+          });
+          for (const scope of obligations.waiting) waitingScopes.add(scope);
+        } catch (error) {
+          if (error instanceof CycleLockLostError) throw error;
+          cycleError = cycleError ?? error;
+        }
+        try {
+          const completed = await completePendingDisconnects(
+            this.disconnectDeps(() => lock.verify(), deviceId, cycleId),
+          );
+          for (const connId of completed) connected.delete(connId);
+        } catch (error) {
+          if (error instanceof CycleLockLostError) throw error;
+          cycleError = cycleError ?? error;
         }
       }
     } catch (error) {
@@ -343,6 +416,7 @@ export class SyncEngine {
       scopesPulled: [...scopesPulled],
       appliedDataClasses: dataClasses,
       appliedScopes: scopes,
+      waitingScopes: [...waitingScopes],
       failed,
     };
 
@@ -367,6 +441,34 @@ export class SyncEngine {
     this.cycleFailures = 0;
     this.setStatus('idle');
     return base;
+  }
+
+  private disconnectDeps(
+    fence: () => Promise<void>,
+    deviceId: string,
+    cycleId: string,
+  ): DisconnectDeps {
+    const deps = this.deps;
+    const tick = deps.tick;
+    return {
+      providerFor: deps.providerFor,
+      connections: deps.connections,
+      kv: deps.kv,
+      store: deps.store,
+      sources: deps.sources,
+      blobs: deps.blobs,
+      deviceId,
+      cycleId,
+      clock: deps.clock,
+      tick:
+        tick ??
+        (() => {
+          throw new Error('SyncEngine.tick dep is required for disconnect');
+        }),
+      fence,
+      pendingLimit: deps.pendingLimit,
+      onDisconnect: deps.onDisconnect,
+    };
   }
 }
 
@@ -403,6 +505,7 @@ function emptyCycleResult(): CycleResult {
     scopesPulled: [],
     appliedDataClasses: [],
     appliedScopes: [],
+    waitingScopes: [],
     failed: [],
   };
 }

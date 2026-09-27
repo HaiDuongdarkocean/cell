@@ -1,7 +1,7 @@
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { logger } from '@/shared/lib/logger';
 import { scopeForTarget, targetOf } from '../domain/scope';
-import type { ChangeRecord, RecordKey, Scope } from '../domain/types';
+import type { RecordKey, Scope } from '../domain/types';
 import type { Clock } from '../ports/clock';
 import type { KeyValueStore } from '../ports/keyValueStore';
 import type { LocalSource } from '../ports/localSource';
@@ -12,15 +12,11 @@ import type { ConnectionPullDeps, ScopePullOutcome } from './pullCycle';
 import { runConnectionPull } from './pullCycle';
 import {
   ackPendingKeys,
-  collectBlobHashes,
   collectPendingKeys,
   DEFAULT_PENDING_LIMIT,
-  uploadAndVerifyBlobs,
-  type ConnectionPushDeps,
 } from './pushCycle';
-import { parseJournalSeq, scopeDevicePrefix, snapshotPath } from './remotePaths';
+import { collectScopeSnapshot, publishScopeSnapshot } from './snapshotPublish';
 import type { SyncStore } from './syncStore';
-import { encodeSnapshot } from './wireCodec';
 
 export interface ReconcileDeps {
   readonly provider: StorageProvider;
@@ -75,39 +71,13 @@ export async function runScopeReconciliation(
 
   const excluded = await emptyLocalCollectionKeys(deps.srs, scope, remoteCollections);
 
-  const records: ChangeRecord[] = [];
-  for (const source of deps.sources) {
-    for await (const record of source.snapshot(scope)) {
-      if (!excluded.has(record.key)) records.push(record);
-    }
-  }
+  const records = await collectScopeSnapshot(deps, scope, excluded);
 
   const pending = (await collectPendingKeys(deps.sources, DEFAULT_PENDING_LIMIT)).filter(
     (key) => key.scope === scope,
   );
 
-  const pushDeps: ConnectionPushDeps = {
-    provider: deps.provider,
-    connection: deps.connection,
-    kv: deps.kv,
-    store: deps.store,
-    sources: deps.sources,
-    blobs: deps.blobs,
-    deviceId: deps.deviceId,
-    cycleId: 'reconcile',
-    clock: deps.clock,
-    fence: deps.fence,
-  };
-  await uploadAndVerifyBlobs(pushDeps, collectBlobHashes(records));
-
-  const coversSeq = await highestCommittedSeq(deps, scope);
-  const n = await deps.store.allocateSnapshotN(deps.connection.connectionId, scope);
-  await deps.fence();
-  await deps.provider.write(
-    deps.connection,
-    snapshotPath(scope, deps.deviceId, n),
-    encodeSnapshot({ scope, deviceId: deps.deviceId, n, coversSeq, records }),
-  );
+  const published = await publishScopeSnapshot(deps, scope, records);
   for (const source of deps.sources) {
     const mine = records.filter((record) => record.dataClass === source.dataClass);
     await source.stampCommitted(mine);
@@ -119,8 +89,8 @@ export async function runScopeReconciliation(
     scope,
     pulled,
     skippedCollections: [...excluded],
-    snapshotN: n,
-    coversSeq,
+    snapshotN: published.n,
+    coversSeq: published.coversSeq,
     recordsPublished: records.length,
     ackedKeys: pending.length,
   };
@@ -149,19 +119,6 @@ async function emptyLocalCollectionKeys(
     }
   }
   return excluded;
-}
-
-async function highestCommittedSeq(deps: ReconcileDeps, scope: Scope): Promise<number> {
-  const entries = await deps.provider.list(
-    deps.connection,
-    scopeDevicePrefix(scope, deps.deviceId),
-  );
-  let max = 0;
-  for (const entry of entries) {
-    const seq = parseJournalSeq(entry.path);
-    if (seq !== null && seq > max) max = seq;
-  }
-  return max;
 }
 
 export function logReconcile(result: ReconcileResult): void {
