@@ -291,6 +291,43 @@ describe('runConnectionPull', () => {
     expect(await cursorOf(t, GLOBAL)).toEqual({ snapshotN: 0, seq: 3 });
   });
 
+  it('stops consuming at an interior gap within a single pull', async () => {
+    const t = await harness();
+    const source = new PullSource('settings', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/a', 1),
+    ]);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 3, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/b', 'b', 30),
+    ]);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 5, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/c', 'c', 50),
+    ]);
+
+    const first = await t.pull([GLOBAL], { sources: [source] });
+    expect(source.applied.map((r) => r.key)).toEqual(['kv:settings/a']);
+    expect(await cursorOf(t, GLOBAL)).toEqual({ snapshotN: 0, seq: 1 });
+    expect(
+      first.outcomes[0]!.devices[0]!.warnings.some((w) => w.includes('journal gap')),
+    ).toBe(true);
+
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 2, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/two', 2),
+    ]);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 4, [
+      makeRecord(GLOBAL, 'settings', 'kv:settings/four', 4),
+    ]);
+    await t.pull([GLOBAL], { sources: [source] });
+    expect(source.applied.map((r) => r.key)).toEqual([
+      'kv:settings/a',
+      'kv:settings/two',
+      'kv:settings/b',
+      'kv:settings/four',
+      'kv:settings/c',
+    ]);
+    expect(await cursorOf(t, GLOBAL)).toEqual({ snapshotN: 0, seq: 5 });
+  });
+
   it('jumps to the newest snapshot then consumes journals after coversSeq', async () => {
     const t = await harness();
     const source = new PullSource('settings', GLOBAL);

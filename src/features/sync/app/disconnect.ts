@@ -217,28 +217,26 @@ async function writeDirectoryDisconnect(
   const state =
     (await deps.kv.get<Record<string, unknown>>('local', SYNC_DIRECTORY_STORAGE_KEY)) ?? {};
   const next: Record<string, unknown> = { ...state };
-  const changed: string[] = [];
-  if (`connection:${connId}` in next) {
-    delete next[`connection:${connId}`];
-    changed.push(`connection:${connId}`);
-  }
+  delete next[`connection:${connId}`];
   for (const [target, bound] of routing.bindings) {
-    if (bound === connId && next[`binding:${target}`] !== 'local') {
-      next[`binding:${target}`] = 'local';
-      changed.push(`binding:${target}`);
-    }
+    if (bound === connId) next[`binding:${target}`] = 'local';
   }
   if (routing.systemConnection === connId) {
     const remaining = routing.connections.filter((c) => c.connectionId !== connId);
     const nextSystem = remaining[0]?.connectionId;
     if (nextSystem === undefined) delete next['systemConnection'];
     else next['systemConnection'] = nextSystem;
-    changed.push('systemConnection');
   }
-  if (changed.length === 0) return;
+  const stampKeys = [
+    `connection:${connId}`,
+    ...[...routing.bindings.entries()]
+      .filter(([, bound]) => bound === connId)
+      .map(([target]) => `binding:${target}`),
+    ...(routing.systemConnection === connId ? ['systemConnection'] : []),
+  ];
   await deps.kv.set('local', SYNC_DIRECTORY_STORAGE_KEY, next);
   const hlc = deps.tick();
-  for (const key of changed) {
+  for (const key of stampKeys) {
     await stampKvMetaHlc(deps.kv, 'global', key, hlc);
   }
 }
@@ -321,8 +319,8 @@ export async function completePendingDisconnects(deps: DisconnectDeps): Promise<
     try {
       const result = await runConnectionDisconnect(deps, connection);
       if (result.status === 'disconnected') done.push(connId);
-    } catch {
-      // stays pending; retried on the next cycle
+    } catch (e) {
+      if (e instanceof CycleLockLostError) throw e;
     }
   }
   return done;

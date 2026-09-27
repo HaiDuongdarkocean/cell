@@ -417,8 +417,12 @@ export class SyncEngine {
         try {
           const obligations = await processCheckpoints({
             providerFor: deps.providerFor,
-            connectionFor: (id) => connected.get(id) ?? null,
-            connections: deps.connections,
+            connectionFor: (id) =>
+              skipConnection.has(id) ? null : (connected.get(id) ?? null),
+            connections: async () =>
+              (await deps.connections()).filter(
+                (c) => !skipConnection.has(c.connectionId),
+              ),
             kv: deps.kv,
             store: deps.store,
             sources: deps.sources,

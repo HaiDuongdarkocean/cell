@@ -307,6 +307,12 @@ async function pullDevice(
   }
 
   for (const journal of gap ? [] : pendingJournals) {
+    if (cursor.seq > 0 && journal.seq > cursor.seq + 1) {
+      warnings.push(
+        `journal gap for ${scope}/${files.deviceId}: cursor seq ${cursor.seq}, next journal ${journal.seq}; awaiting snapshot`,
+      );
+      break;
+    }
     try {
       const file = await deps.provider.read(deps.connection, journal.path);
       const decoded = await decodeJournal(file);
