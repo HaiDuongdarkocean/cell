@@ -50,7 +50,6 @@ type ProfileShape = { target: string; native: string };
 
 export function validateLanguageProfile(
   draft: ProfileShape,
-  universalNativeLanguage: string,
   existing: readonly LanguageProfile[],
   editingId?: string | null,
 ): { valid: boolean; emptyTarget: boolean; duplicate: boolean; messages: string[] } {

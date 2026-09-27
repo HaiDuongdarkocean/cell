@@ -137,27 +137,27 @@ describe('syncFlatFieldsToActiveProfile', () => {
 
 describe('validateLanguageProfile', () => {
   it('blocks empty target', () => {
-    const result = validateLanguageProfile({ target: '', native: '' }, 'vi', []);
+    const result = validateLanguageProfile({ target: '', native: '' }, []);
     expect(result.valid).toBe(false);
     expect(result.emptyTarget).toBe(true);
   });
 
   it('blocks duplicate target regardless of native', () => {
     const existing = [mockProfile({ id: 'p1', target: 'en', native: 'vi' })];
-    const result = validateLanguageProfile({ target: 'en', native: 'ja' }, 'vi', existing);
+    const result = validateLanguageProfile({ target: 'en', native: 'ja' }, existing);
     expect(result.valid).toBe(false);
     expect(result.duplicate).toBe(true);
   });
 
   it('allows a different target', () => {
     const existing = [mockProfile({ id: 'p1', target: 'en', native: 'vi' })];
-    const result = validateLanguageProfile({ target: 'ja', native: '' }, 'vi', existing);
+    const result = validateLanguageProfile({ target: 'ja', native: '' }, existing);
     expect(result.valid).toBe(true);
   });
 
   it('allows editing existing profile', () => {
     const existing = [mockProfile({ id: 'p1', target: 'en', native: '' })];
-    const result = validateLanguageProfile({ target: 'en', native: 'ja' }, 'vi', existing, 'p1');
+    const result = validateLanguageProfile({ target: 'en', native: 'ja' }, existing, 'p1');
     expect(result.valid).toBe(true);
   });
 });

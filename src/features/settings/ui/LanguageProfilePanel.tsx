@@ -96,7 +96,6 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
   const validate = (target: string, nativeOverride: string, excludeId?: string): string[] | null => {
     const result = validateLanguageProfile(
       { target, native: nativeOverride },
-      settings.universalNativeLanguage,
       settings.languageProfiles,
       excludeId ?? null,
     );
