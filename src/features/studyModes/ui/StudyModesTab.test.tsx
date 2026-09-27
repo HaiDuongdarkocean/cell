@@ -59,14 +59,14 @@ describe('StudyModesTab', () => {
     expect(getActiveStudyMode()?.activeMode.id).toBe('listen');
   });
 
-  it('keeps the Advanced section expanded across unmount and remount', async () => {
+  it('resets the Advanced section to collapsed across unmount and remount', async () => {
     const first = render(<StudyModesTab />);
     const toggle = await screen.findByTestId('advanced-toggle');
     fireEvent.click(toggle);
     expect(await screen.findByText('Skip when there is no dialogue')).toBeInTheDocument();
     first.unmount();
     render(<StudyModesTab />);
-    expect(await screen.findByText('Skip when there is no dialogue')).toBeInTheDocument();
+    expect(screen.queryByText('Skip when there is no dialogue')).not.toBeInTheDocument();
   });
 });
 
@@ -89,8 +89,10 @@ describe('level chips', () => {
   });
 
   it('keeps level chips hidden with pauseOnUnknown OFF', async () => {
-    useStudyModeStore.setState({ ...INITIAL_STUDY_MODE_STATE, isLoaded: true, advancedOpen: true });
+    useStudyModeStore.setState({ ...INITIAL_STUDY_MODE_STATE, isLoaded: true });
     render(<StudyModesTab />);
+    const toggle = await screen.findByTestId('advanced-toggle');
+    fireEvent.click(toggle);
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Advanced' })).toBeInTheDocument();

@@ -44,8 +44,7 @@ export function StudyModesTab(): ReactElement {
 
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const advancedOpen = store.advancedOpen;
-  const setAdvancedOpen = store.setAdvancedOpen;
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Derived active mode and custom list are enough; selections map directly.
