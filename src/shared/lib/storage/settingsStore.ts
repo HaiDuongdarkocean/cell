@@ -560,6 +560,29 @@ function mergeNestedObjectDefaults(
   return merged;
 }
 
+/**
+ * Normalize a current-schema settings object: merge defaults, coerce corrupted
+ * field types, validate constrained fields and re-derive the active-profile
+ * mirror fields. Shared by `loadSettings` (already-current branch) and the sync
+ * apply seam `persistSyncedSettings`.
+ */
+function normalizeCurrentSettings(raw: Record<string, unknown>): Record<string, unknown> {
+  let merged = { ...DEFAULT_SETTINGS, ...raw } as Record<string, unknown>;
+  // Deep-merge dictionaryPopup so new nested fields (e.g. popupSheetHeightVh)
+  // get their defaults even when stored settings replace the top-level object.
+  const dp = merged.dictionaryPopup as Record<string, unknown> | undefined;
+  const dpDefaults = DEFAULT_DICTIONARY_POPUP_SETTINGS as unknown as Record<string, unknown>;
+  merged.dictionaryPopup = { ...dpDefaults, ...(dp ?? {}) };
+  merged = mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
+  merged = coerceDefaultTypes(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
+  validateNavClusterFields(merged);
+  validateLocalPlayerSettings(merged);
+  merged.subtitleOverlayTargetStyle = normalizeOverlayStyle(merged.subtitleOverlayTargetStyle, DEFAULT_OVERLAY_STYLE_TARGET);
+  merged.subtitleOverlayNativeStyle = normalizeOverlayStyle(merged.subtitleOverlayNativeStyle, DEFAULT_OVERLAY_STYLE_NATIVE);
+  resolveSettingsFlatFields(merged);
+  return merged;
+}
+
 /** Coerce corrupted top-level fields back to their default types.
  *
  * Adds a second line of defense for arrays and missing primitives that
@@ -607,20 +630,7 @@ export async function loadSettings(): Promise<Settings> {
     // Already current — merge with defaults for forward-compat (new fields added
     // in future versions that the user hasn't saved yet). Validate nav cluster
     // fields in case storage was edited externally with invalid values.
-    let merged = { ...DEFAULT_SETTINGS, ...raw } as Record<string, unknown>;
-    // Deep-merge dictionaryPopup so new nested fields (e.g. popupSheetHeightVh)
-    // get their defaults even when stored settings replace the top-level object.
-    const dp = merged.dictionaryPopup as Record<string, unknown> | undefined;
-    const dpDefaults = DEFAULT_DICTIONARY_POPUP_SETTINGS as unknown as Record<string, unknown>;
-    merged.dictionaryPopup = { ...dpDefaults, ...(dp ?? {}) };
-    merged = mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
-    merged = coerceDefaultTypes(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
-    validateNavClusterFields(merged);
-    validateLocalPlayerSettings(merged);
-    merged.subtitleOverlayTargetStyle = normalizeOverlayStyle(merged.subtitleOverlayTargetStyle, DEFAULT_OVERLAY_STYLE_TARGET);
-    merged.subtitleOverlayNativeStyle = normalizeOverlayStyle(merged.subtitleOverlayNativeStyle, DEFAULT_OVERLAY_STYLE_NATIVE);
-    resolveSettingsFlatFields(merged);
-    return merged as unknown as Settings;
+    return normalizeCurrentSettings(raw) as unknown as Settings;
   }
 
   // Run migrations sequentially from stored version up to current.
@@ -651,6 +661,18 @@ export async function loadSettings(): Promise<Settings> {
   const result = migrated as unknown as StoredSettings;
   void setStorage({ [STORAGE_KEYS.SETTINGS]: result });
   return result;
+}
+
+/**
+ * Persist a settings object produced outside the normal save path (sync apply)
+ * through the same normalization pipeline as a current-schema load, stamped with
+ * the current schema version. Callers pass a complete stored-shaped object.
+ */
+export async function persistSyncedSettings(settings: Record<string, unknown>): Promise<void> {
+  const merged = normalizeCurrentSettings(settings);
+  await setStorage({
+    [STORAGE_KEYS.SETTINGS]: { ...merged, schemaVersion: CURRENT_SCHEMA_VERSION },
+  });
 }
 
 /**
