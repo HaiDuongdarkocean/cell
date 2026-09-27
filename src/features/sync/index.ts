@@ -31,7 +31,46 @@ export {
   configureSyncRuntime,
   resetSyncRuntime,
   ensureSyncRuntime,
+  mintRecordHlc,
   getDeviceId,
   isCaptureEnabled,
 } from './adapters/local/idb/capture';
 export type { CaptureInput, StoredRecordMeta } from './adapters/local/idb/capture';
+export {
+  listPending,
+  deleteOutboxEntries,
+  getMeta,
+  getMetaAt,
+  getMetaEntries,
+  listMetaEntries,
+  listMetaEntriesIn,
+  putMetaAt,
+  tombstoneMetaAt,
+  metaChangeRecord,
+  idbRequest,
+  awaitIdbTx,
+  keyPrefixRange,
+  getRowAt,
+  allRowsAt,
+  rowsByIndexAt,
+} from './adapters/local/idb/outbox';
+export type { OutboxRow, PendingDrain } from './adapters/local/idb/outbox';
+export { IdbLocalSource } from './adapters/local/idb/idbLocalSource';
+export type {
+  LocalValue,
+  SnapshotEntry,
+  ApplyDisposition,
+} from './adapters/local/idb/idbLocalSource';
+export {
+  getSyncDB,
+  closeSyncDB,
+  deleteSyncDB,
+  awaitSyncTx,
+  opaqueRecordKey,
+  putOpaqueRecord,
+  getOpaqueRecord,
+  getAllOpaqueRecords,
+  deleteOpaqueRecord,
+  clearOpaqueRecords,
+} from './adapters/local/syncDb';
+export type { OpaqueRecordRow } from './adapters/local/syncDb';
