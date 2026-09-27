@@ -100,12 +100,23 @@ async function decodeGzip(
 
 function isWireFile(value: unknown, kind: 'journal' | 'snapshot'): value is JournalFile | SnapshotFile {
   if (typeof value !== 'object' || value === null) return false;
-  const file = value as { formatVersion?: unknown; kind?: unknown; records?: unknown };
-  return (
-    file.formatVersion === WIRE_FORMAT_VERSION &&
-    file.kind === kind &&
-    Array.isArray(file.records)
-  );
+  const file = value as {
+    formatVersion?: unknown;
+    kind?: unknown;
+    records?: unknown;
+    seq?: unknown;
+    n?: unknown;
+    coversSeq?: unknown;
+  };
+  if (
+    file.formatVersion !== WIRE_FORMAT_VERSION ||
+    file.kind !== kind ||
+    !Array.isArray(file.records)
+  ) {
+    return false;
+  }
+  if (kind === 'journal') return typeof file.seq === 'number';
+  return typeof file.n === 'number' && typeof file.coversSeq === 'number';
 }
 
 export async function blobBytes(blob: Blob): Promise<Uint8Array> {

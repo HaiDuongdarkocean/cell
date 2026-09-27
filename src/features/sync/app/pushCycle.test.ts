@@ -36,6 +36,7 @@ const PROFILE_EN: Scope = 'profile:en';
 class FakeSource implements LocalSource {
   keys: PendingKey[] = [];
   acked: PendingKey[] = [];
+  stamped: ChangeRecord[] = [];
   private readonly values = new Map<string, unknown>();
   private wall = 0;
 
@@ -77,7 +78,9 @@ class FakeSource implements LocalSource {
     this.keys = this.keys.filter((k) => !done.has(`${k.scope}|${k.key}`));
   }
 
-  async stampCommitted(): Promise<void> {}
+  async stampCommitted(records: readonly ChangeRecord[]): Promise<void> {
+    this.stamped.push(...records);
+  }
 
   async *snapshot(): AsyncIterable<ChangeRecord> {}
 
@@ -266,18 +269,18 @@ describe('runConnectionPush commit protocol', () => {
     kvSource.pushKey('kv:settings/theme', 'put', 'dark');
     const idbSource = new FakeSource('srsCard', GLOBAL);
     idbSource.pushKey('cards:c1', 'put', { id: 'c1' });
-    const stamped: ChangeRecord[][] = [];
     await runConnectionPush(
-      t.deps({
-        sources: [kvSource, idbSource],
-        stampKvMeta: async (records) => {
-          stamped.push([...records]);
-        },
-      }),
+      t.deps({ sources: [kvSource, idbSource] }),
       pending([[GLOBAL, [...kvSource.keys, ...idbSource.keys]]]),
     );
-    expect(stamped).toHaveLength(1);
-    expect(stamped[0]!.map((r) => r.key)).toEqual(['kv:settings/theme']);
+    expect(kvSource.stamped.map((r) => r.key)).toEqual([
+      'kv:settings/theme',
+      'cards:c1',
+    ]);
+    expect(idbSource.stamped.map((r) => r.key)).toEqual([
+      'kv:settings/theme',
+      'cards:c1',
+    ]);
     expect(await t.remotePaths()).toEqual([journalPath(GLOBAL, DEVICE, 1)]);
   });
 });

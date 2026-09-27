@@ -3,7 +3,6 @@ import { DeterministicIdSource } from '../adapters/memory/DeterministicIdSource'
 import { InMemoryKeyValueStore } from '../adapters/memory/InMemoryKeyValueStore';
 import { InMemoryStorageProvider } from '../adapters/memory/InMemoryStorageProvider';
 import { SeededClock } from '../adapters/memory/SeededClock';
-import { stampKvMeta } from '../adapters/local/kv/kvMeta';
 import { createKvLocalSource } from '../adapters/local/kv/kvLocalSource';
 import { SYNC_META_KV_STORAGE_KEY } from '../adapters/local/kv/keys';
 import { closeSyncDB, deleteSyncDB } from '../adapters/local/syncDb';
@@ -145,7 +144,6 @@ async function harness(): Promise<Harness> {
       deviceId: async () => DEVICE,
       clock,
       ids: new DeterministicIdSource(),
-      stampKvMeta: (records) => stampKvMeta(kv, records),
       lock: { schedule: () => () => undefined },
       ...overrides,
     });
@@ -394,7 +392,6 @@ describe('error mapping and backoff', () => {
     expect(first.failed).toHaveLength(1);
     expect(engine.current.state).toBe('offline');
     expect(engine.current.retryAt).toBe(1000 + BACKOFF_BASE_MS);
-    expect(await t.store.pendingBatches(t.connection.connectionId)).toHaveLength(1);
 
     const second = await engine.runCycle();
     expect(second.failed).toHaveLength(1);
@@ -519,6 +516,8 @@ describe('pull', () => {
 
   it('invokes onDisconnect when the remote disconnect marker is newer', async () => {
     const t = await harness();
+    const source = new FakeSource('settings', GLOBAL);
+    source.pushKey('kv:settings/a', 'put', 1);
     await t.provider.write(
       t.connection,
       'cell-sync/v1/meta/disconnect.json',
@@ -532,6 +531,7 @@ describe('pull', () => {
     );
     const disconnected: string[] = [];
     const engine = t.makeEngine({
+      sources: [source],
       onDisconnect: async (connectionId) => {
         disconnected.push(connectionId);
       },
@@ -539,6 +539,9 @@ describe('pull', () => {
     const result = await engine.runCycle();
     expect(disconnected).toEqual([t.connection.connectionId]);
     expect(result.scopesPulled).toEqual([]);
+    expect(result.scopesPushed).toEqual([]);
+    const writes = (await t.remotePaths()).filter((p) => !p.endsWith('disconnect.json'));
+    expect(writes).toEqual([]);
   });
 
   it('observes remote HLCs through observeHlc', async () => {

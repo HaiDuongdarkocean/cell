@@ -110,6 +110,19 @@ export async function listPending(
   return drains;
 }
 
+export async function hasPendingRowAt(
+  tx: IDBTransaction,
+  scope: Scope,
+  key: RecordKey,
+): Promise<boolean> {
+  const rows = await idbRequest(
+    tx.objectStore(SYNC_OUTBOX).index(OUTBOX_KEY_INDEX).getAll(key) as IDBRequest<
+      OutboxRow[] | undefined
+    >,
+  );
+  return (rows ?? []).some((row) => row.scope === scope || row.scope === null);
+}
+
 export async function deleteOutboxEntries(
   db: IDBDatabase,
   rowIds: readonly number[],

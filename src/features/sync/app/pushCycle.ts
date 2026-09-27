@@ -25,7 +25,6 @@ import {
   scopeDevicePrefix,
   snapshotPath,
 } from './remotePaths';
-import { KV_DATA_CLASSES } from './syncStore';
 import type { SyncStore } from './syncStore';
 import {
   decodeJournal,
@@ -59,7 +58,6 @@ export interface ConnectionPushDeps {
   readonly cycleId: string;
   readonly clock: Clock;
   readonly fence: () => Promise<void>;
-  readonly stampKvMeta?: (records: readonly ChangeRecord[]) => Promise<void>;
   readonly pendingLimit?: number;
   readonly journalCompactionThreshold?: number;
 }
@@ -234,16 +232,15 @@ async function commitBatch(
     encodeJournal({ scope, deviceId: deps.deviceId, seq, records }),
   );
   await deps.fence();
-  const kvRecords = records.filter((record) => KV_DATA_CLASSES.has(record.dataClass));
-  if (kvRecords.length > 0 && deps.stampKvMeta) {
-    await deps.stampKvMeta(kvRecords);
+  for (const source of deps.sources) {
+    await source.stampCommitted(records);
   }
   await ackPendingKeys(deps.sources, ackKeys);
   await deps.store.deletePendingBatch(batchKey);
   return ackKeys.length;
 }
 
-async function uploadAndVerifyBlobs(
+export async function uploadAndVerifyBlobs(
   deps: ConnectionPushDeps,
   hashes: readonly string[],
 ): Promise<void> {
@@ -277,7 +274,7 @@ async function uploadAndVerifyBlobs(
   if (missing.length > 0) throw new BlobUnavailableError(missing);
 }
 
-function collectBlobHashes(records: readonly ChangeRecord[]): string[] {
+export function collectBlobHashes(records: readonly ChangeRecord[]): string[] {
   const out = new Set<string>();
   for (const record of records) {
     for (const hash of referencedBlobHashes(record)) out.add(hash);

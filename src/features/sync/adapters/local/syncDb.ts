@@ -1,3 +1,4 @@
+import { compareHlc } from '../../domain/hlc';
 import type { ChangeRecord, ConnectionId, RecordKey, Scope } from '../../domain/types';
 
 export const SYNC_DB_NAME = 'cell-sync';
@@ -119,9 +120,10 @@ export function pendingBatchKey(connectionId: ConnectionId, scope: Scope, seq: n
 export function deferredRecordKey(
   connectionId: ConnectionId,
   scope: Scope,
+  node: string,
   recordKey: RecordKey,
 ): string {
-  return `${connectionId}|${scope}|${recordKey}`;
+  return `${connectionId}|${scope}|${node}|${recordKey}`;
 }
 
 export function opaqueRecordKey(scope: Scope, recordKey: RecordKey): string {
@@ -258,19 +260,38 @@ export async function removePendingBatch(key: string): Promise<void> {
 }
 
 export async function putDeferredRecord(input: DeferredRecordInput): Promise<DeferredRecordRow> {
+  const key = deferredRecordKey(
+    input.connectionId,
+    input.record.scope,
+    input.record.hlc.node,
+    input.record.key,
+  );
+  const db = await getSyncDB();
+  const tx = db.transaction(SYNC_STORES.DEFERRED_RECORDS, 'readwrite');
+  const existing = (await requestToPromise(
+    tx.objectStore(SYNC_STORES.DEFERRED_RECORDS).get(key),
+  )) as DeferredRecordRow | undefined;
+  if (existing && compareHlc(existing.record.hlc, input.record.hlc) > 0) {
+    const merged: DeferredRecordRow = {
+      ...existing,
+      attempts: Math.max(existing.attempts, input.attempts),
+      firstDeferredAt: Math.min(existing.firstDeferredAt, input.firstDeferredAt),
+    };
+    await requestToPromise(tx.objectStore(SYNC_STORES.DEFERRED_RECORDS).put(merged));
+    await awaitSyncTx(tx);
+    return merged;
+  }
   const row: DeferredRecordRow = {
-    key: deferredRecordKey(input.connectionId, input.record.scope, input.record.key),
+    key,
     connectionId: input.connectionId,
     scope: input.record.scope,
     recordKey: input.record.key,
     sourcePath: input.sourcePath,
     record: input.record,
     requiredBlobHashes: input.requiredBlobHashes,
-    firstDeferredAt: input.firstDeferredAt,
-    attempts: input.attempts,
+    firstDeferredAt: Math.min(input.firstDeferredAt, existing?.firstDeferredAt ?? Infinity),
+    attempts: Math.max(input.attempts, existing?.attempts ?? 0),
   };
-  const db = await getSyncDB();
-  const tx = db.transaction(SYNC_STORES.DEFERRED_RECORDS, 'readwrite');
   await requestToPromise(tx.objectStore(SYNC_STORES.DEFERRED_RECORDS).put(row));
   await awaitSyncTx(tx);
   return row;
@@ -326,14 +347,22 @@ export async function clearDeferredRecords(): Promise<void> {
 }
 
 export async function putOpaqueRecord(record: ChangeRecord): Promise<OpaqueRecordRow> {
+  const db = await getSyncDB();
+  const tx = db.transaction(SYNC_STORES.OPAQUE_RECORDS, 'readwrite');
+  const key = opaqueRecordKey(record.scope, record.key);
+  const existing = (await requestToPromise(
+    tx.objectStore(SYNC_STORES.OPAQUE_RECORDS).get(key),
+  )) as OpaqueRecordRow | undefined;
+  if (existing && compareHlc(existing.record.hlc, record.hlc) >= 0) {
+    await awaitSyncTx(tx);
+    return existing;
+  }
   const row: OpaqueRecordRow = {
-    key: opaqueRecordKey(record.scope, record.key),
+    key,
     scope: record.scope,
     recordKey: record.key,
     record,
   };
-  const db = await getSyncDB();
-  const tx = db.transaction(SYNC_STORES.OPAQUE_RECORDS, 'readwrite');
   await requestToPromise(tx.objectStore(SYNC_STORES.OPAQUE_RECORDS).put(row));
   await awaitSyncTx(tx);
   return row;

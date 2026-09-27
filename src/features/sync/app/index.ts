@@ -18,6 +18,7 @@ export {
 export type { CursorMap } from './cursors';
 export {
   DEFERRED_WARNING_CYCLES,
+  isConnectionDisconnected,
   runConnectionPull,
   SYNC_APPLIED_AT_KEY,
 } from './pullCycle';

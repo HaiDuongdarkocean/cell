@@ -23,6 +23,7 @@ import {
 } from '../syncDb';
 import {
   SYNC_META,
+  SYNC_OUTBOX,
   ensureSyncRuntime,
   mintRecordHlc,
   stampRemoteMeta,
@@ -32,6 +33,7 @@ import {
   awaitIdbTx,
   getMetaAt,
   getMetaByRecKeyAt,
+  hasPendingRowAt,
   listMetaEntriesIn,
   listPending,
   deleteOutboxEntries,
@@ -223,9 +225,10 @@ export abstract class IdbLocalSource implements LocalSource {
     await ensureSyncRuntime();
     const db = await this.openDb();
 
+    const applyStores = [...new Set([...this.applyStores(), SYNC_OUTBOX])];
     const candidates: ChangeRecord[] = [];
     const preOpaque: ChangeRecord[] = [];
-    const rtx = db.transaction([...this.applyStores()], 'readonly');
+    const rtx = db.transaction(applyStores, 'readonly');
     for (const record of mine) {
       const verdict = await this.applyDisposition(rtx, record);
       (verdict === 'apply' ? candidates : preOpaque).push(record);
@@ -239,7 +242,7 @@ export abstract class IdbLocalSource implements LocalSource {
     const lateOpaque: ChangeRecord[] = [];
     const conflicts: ConflictLogEntry[] = [];
     const supersededOpaque: { scope: Scope; key: RecordKey; hlc: ChangeRecord['hlc'] }[] = [];
-    const wtx = db.transaction([...this.applyStores()], 'readwrite');
+    const wtx = db.transaction(applyStores, 'readwrite');
     const stampStore = wtx.objectStore(SYNC_META);
     for (const record of candidates) {
       if ((await this.applyDisposition(wtx, record)) !== 'apply') {
@@ -348,7 +351,8 @@ export abstract class IdbLocalSource implements LocalSource {
       if (!local.found) return { record: null, drifted: false };
       return {
         record: metaChangeRecord(record.scope, this.dataClass, record.key, meta, local.value),
-        drifted: meta.op === 'put' && meta.valueHash !== stableHash(local.value),
+        drifted:
+          meta.op === 'put' && (await hasPendingRowAt(tx, record.scope, record.key)),
       };
     }
     if (!local.found) return { record: null, drifted: false };

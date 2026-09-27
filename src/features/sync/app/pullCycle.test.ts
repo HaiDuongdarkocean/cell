@@ -22,6 +22,7 @@ import {
   type ConnectionPullDeps,
 } from './pullCycle';
 import { cursorKey, readCursors, SYNC_CURSORS_STORAGE_KEY } from './cursors';
+import { stampKvMeta } from '../adapters/local/kv/kvMeta';
 import { createSyncDbStore } from './syncDbStore';
 import { encodeJournal, encodeSnapshot } from './wireCodec';
 
@@ -34,6 +35,7 @@ const GLOBAL: Scope = 'global';
 class PullSource implements LocalSource {
   applied: ChangeRecord[] = [];
   opaquePolicy: 'none' | 'all' = 'none';
+  opaqueKeys = new Set<RecordKey>();
   failNext = 0;
 
   constructor(
@@ -70,11 +72,13 @@ class PullSource implements LocalSource {
     const mine = records.filter(
       (r) => r.scope === this.scope && r.dataClass === this.dataClass,
     );
-    this.applied.push(...mine);
+    const ready = mine.filter((r) => !this.opaqueKeys.has(r.key));
+    const held = mine.filter((r) => this.opaqueKeys.has(r.key));
+    this.applied.push(...ready);
     return {
-      applied: mine,
+      applied: ready,
       localWon: [],
-      opaque: this.opaquePolicy === 'all' ? mine : [],
+      opaque: this.opaquePolicy === 'all' ? mine : held,
     };
   }
 }
@@ -483,20 +487,16 @@ describe('runConnectionPull', () => {
 
   it('ignores a disconnect marker older than the local directory record', async () => {
     const t = await harness();
-    const dir = new PullSource('syncDirectory', GLOBAL);
-    dir.current = async (_scope, keys) =>
-      new Map(
-        keys.map((k) => [
-          k,
-          {
-            scope: GLOBAL,
-            dataClass: 'syncDirectory' as DataClass,
-            key: k,
-            op: 'put' as const,
-            hlc: makeHlc(900),
-          },
-        ]),
-      );
+    await stampKvMeta(t.kv, [
+      {
+        scope: GLOBAL,
+        dataClass: 'syncDirectory' as DataClass,
+        key: `connection:${t.connection.connectionId}`,
+        op: 'put' as const,
+        value: { connectionId: t.connection.connectionId },
+        hlc: makeHlc(900),
+      },
+    ]);
     const settings = new PullSource('settings', GLOBAL);
     await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
       makeRecord(GLOBAL, 'settings', 'kv:settings/a', 1),
@@ -509,7 +509,7 @@ describe('runConnectionPull', () => {
       ]),
     );
 
-    const result = await t.pull([GLOBAL], { sources: [dir, settings] });
+    const result = await t.pull([GLOBAL], { sources: [settings] });
 
     expect(result.disconnected).toBe(false);
     expect(t.disconnected).toEqual([]);
@@ -578,7 +578,7 @@ describe('runConnectionPull', () => {
   it('stores opaque outcomes durably', async () => {
     const t = await harness();
     const source = new PullSource('srsCard', 'profile:en');
-    source.opaquePolicy = 'all';
+    source.opaqueKeys.add('card:c1');
     await writeJournal(t, 'profile:en', REMOTE_DEVICE, 1, [
       makeRecord('profile:en', 'srsCard', 'card:c1', { id: 'c1' }, 10),
     ]);
@@ -605,5 +605,96 @@ describe('runConnectionPull', () => {
     expect(stored).toBeDefined();
     const key = cursorKey(t.connection.connectionId, GLOBAL, REMOTE_DEVICE);
     expect(stored![key]).toEqual({ snapshotN: 0, seq: 1 });
+  });
+});
+
+describe('opaque release', () => {
+  it('retains opaque records and applies them once the source accepts them', async () => {
+    const t = await harness();
+    const source = new PullSource('dictResource', GLOBAL);
+    source.opaqueKeys.add('resource:h1/name');
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'dictResource', 'resource:h1/name', 'name-value', 5),
+    ]);
+
+    const first = await t.pull([GLOBAL], { sources: [source] });
+    expect(source.applied).toHaveLength(0);
+    expect((await t.store.listOpaque(GLOBAL)).map((r) => r.recordKey)).toEqual([
+      'resource:h1/name',
+    ]);
+    expect(first.outcomes[0]?.releasedApplied).toBe(0);
+
+    source.opaqueKeys.clear();
+    const second = await t.pull([GLOBAL], { sources: [source] });
+    expect(second.outcomes[0]?.releasedApplied).toBe(1);
+    expect(source.applied.map((r) => r.key)).toEqual(['resource:h1/name']);
+    expect(await t.store.listOpaque(GLOBAL)).toEqual([]);
+    expect(second.appliedScopes).toEqual([GLOBAL]);
+  });
+
+  it('retains records whose dataClass has no registered source as opaque', async () => {
+    const t = await harness();
+    const settings = new PullSource('settings', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'readerBook', 'book:b1', { title: 'B' }, 3),
+      makeRecord(GLOBAL, 'settings', 'kv:x', 1, 4),
+    ]);
+
+    const result = await t.pull([GLOBAL], { sources: [settings] });
+
+    expect(settings.applied.map((r) => r.key)).toEqual(['kv:x']);
+    expect((await t.store.listOpaque(GLOBAL)).map((r) => r.recordKey)).toEqual([
+      'book:b1',
+    ]);
+    const key = cursorKey(t.connection.connectionId, GLOBAL, REMOTE_DEVICE);
+    expect((await readCursors(t.kv))[key]).toEqual({ snapshotN: 0, seq: 1 });
+    expect(result.appliedScopes).toEqual([GLOBAL]);
+  });
+});
+
+describe('deferred records across devices', () => {
+  it('keeps one deferred row per source device and rewrites blobs-needed markers', async () => {
+    const t = await harness();
+    const source = new PullSource('dictResource', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'dictResource', 'resource:blob-1', { name: 'old' }, 5),
+    ]);
+    await writeJournal(t, GLOBAL, OTHER_DEVICE, 1, [
+      {
+        ...makeRecord(GLOBAL, 'dictResource', 'resource:blob-1', { name: 'newer' }, 9),
+        hlc: makeHlc(9, `${OTHER_DEVICE}:ctx`),
+      },
+    ]);
+
+    const result = await t.pull([GLOBAL], { sources: [source] });
+
+    const rows = await t.store.listDeferred(t.connection.connectionId);
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.record.hlc.node).sort()).toEqual([
+      `${REMOTE_DEVICE}:ctx`,
+      `${OTHER_DEVICE}:ctx`,
+    ]);
+    const markers = (
+      await t.provider.list(t.connection, 'cell-sync/v1/meta/blobs-needed/')
+    ).map((e) => e.path);
+    expect(markers).toEqual([blobsNeededPath('blob-1')]);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('re-deferring a newer record for the same key keeps the newer value', async () => {
+    const t = await harness();
+    const source = new PullSource('dictResource', GLOBAL);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'dictResource', 'resource:blob-1', { name: 'old' }, 5),
+    ]);
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 2, [
+      makeRecord(GLOBAL, 'dictResource', 'resource:blob-1', { name: 'new' }, 20),
+    ]);
+
+    await t.pull([GLOBAL], { sources: [source] });
+
+    const rows = await t.store.listDeferred(t.connection.connectionId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.record.value).toEqual({ name: 'new' });
   });
 });

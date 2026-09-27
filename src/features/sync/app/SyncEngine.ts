@@ -26,7 +26,11 @@ import {
   groupPendingByScope,
   runConnectionPush,
 } from './pushCycle';
-import { runConnectionPull, SYNC_APPLIED_AT_KEY } from './pullCycle';
+import {
+  isConnectionDisconnected,
+  runConnectionPull,
+  SYNC_APPLIED_AT_KEY,
+} from './pullCycle';
 import { scopesPrefix, scopeOfRemotePath } from './remotePaths';
 import { readRouting, routeForScope } from './routing';
 import type { RoutingSnapshot } from './routing';
@@ -81,7 +85,6 @@ export interface SyncEngineDeps {
   readonly deviceId: () => Promise<string>;
   readonly clock: Clock;
   readonly ids: IdSource;
-  readonly stampKvMeta?: (records: readonly ChangeRecord[]) => Promise<void>;
   readonly observeHlc?: (hlc: Hlc) => void;
   readonly onRoutingChange?: (record: ChangeRecord) => Promise<void>;
   readonly onDisconnect?: (connectionId: ConnectionId) => Promise<void>;
@@ -221,6 +224,12 @@ export class SyncEngine {
       for (const connection of connected.values()) {
         try {
           const provider = deps.providerFor(connection.providerId);
+          if (
+            await isConnectionDisconnected({ provider, connection, kv: deps.kv })
+          ) {
+            await deps.onDisconnect?.(connection.connectionId);
+            continue;
+          }
           const result = await runConnectionPush(
             {
               provider,
@@ -233,7 +242,6 @@ export class SyncEngine {
               cycleId,
               clock: deps.clock,
               fence: () => lock.verify(),
-              stampKvMeta: deps.stampKvMeta,
               pendingLimit: deps.pendingLimit,
               journalCompactionThreshold:
                 deps.journalCompactionThreshold ?? DEFAULT_JOURNAL_COMPACTION_THRESHOLD,
@@ -283,6 +291,10 @@ export class SyncEngine {
               observeHlc: deps.observeHlc,
               onRoutingChange: deps.onRoutingChange,
               onDisconnect: deps.onDisconnect,
+              onAppliedBatch: (scope, dataClasses) => {
+                appliedScopes.add(scope);
+                for (const dc of dataClasses) appliedDataClasses.add(dc);
+              },
             },
             pullScopes,
           );

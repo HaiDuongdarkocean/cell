@@ -5,6 +5,7 @@ import type {
   ConnectionId,
   DataClass,
   Hlc,
+  RecordKey,
   Scope,
 } from '../domain/types';
 import type { Cursor } from '../domain/types';
@@ -34,6 +35,7 @@ import {
 } from './remotePaths';
 import { blobToBytes } from '../adapters/contract/blobBytes';
 import { appendConflictLog } from '../adapters/local/kv/conflictLog';
+import { kvMetaKey, readSyncMetaKV } from '../adapters/local/kv/kvMeta';
 import type { ConflictLogEntry } from '../ports/localSource';
 import type { SyncStore } from './syncStore';
 import { decodeJournal, decodeSnapshot, WireFormatError } from './wireCodec';
@@ -52,8 +54,14 @@ export interface ConnectionPullDeps {
   readonly clock: Clock;
   readonly fence: () => Promise<void>;
   readonly observeHlc?: (hlc: Hlc) => void;
+  readonly onRemoteRecord?: (record: ChangeRecord) => void;
   readonly onRoutingChange?: (record: ChangeRecord) => Promise<void>;
   readonly onDisconnect?: (connectionId: ConnectionId) => Promise<void>;
+  readonly onAppliedBatch?: (
+    scope: Scope,
+    dataClasses: readonly DataClass[],
+    applied: number,
+  ) => void;
 }
 
 export interface DevicePullOutcome {
@@ -70,6 +78,8 @@ export interface ScopePullOutcome {
   readonly scope: Scope;
   readonly devices: DevicePullOutcome[];
   readonly warnings: string[];
+  readonly releasedApplied: number;
+  readonly releasedDataClasses: DataClass[];
   readonly error?: string;
 }
 
@@ -96,19 +106,15 @@ export async function runConnectionPull(
   const connId = deps.connection.connectionId;
   const warnings: string[] = [];
 
-  const markerHlc = await readDisconnectMarkerHlc(deps);
-  if (markerHlc !== null) {
-    const directoryHlc = await connectionDirectoryHlc(deps, connId);
-    if (directoryHlc === null || compareHlc(markerHlc, directoryHlc) > 0) {
-      await deps.onDisconnect?.(connId);
-      return {
-        outcomes: [],
-        appliedDataClasses: [],
-        appliedScopes: [],
-        warnings,
-        disconnected: true,
-      };
-    }
+  if (await isConnectionDisconnected(deps)) {
+    await deps.onDisconnect?.(connId);
+    return {
+      outcomes: [],
+      appliedDataClasses: [],
+      appliedScopes: [],
+      warnings,
+      disconnected: true,
+    };
   }
 
   const remoteBlobs = await listRemoteBlobPaths(deps);
@@ -121,6 +127,8 @@ export async function runConnectionPull(
     try {
       const outcome = await pullScope(deps, scope, cursors, remoteBlobs);
       outcomes.push(outcome);
+      if (outcome.releasedApplied > 0) appliedScopes.add(scope);
+      for (const dc of outcome.releasedDataClasses) appliedDataClasses.add(dc);
       for (const device of outcome.devices) {
         if (device.recordsApplied > 0) appliedScopes.add(scope);
         for (const dc of device.appliedDataClasses) appliedDataClasses.add(dc);
@@ -131,13 +139,38 @@ export async function runConnectionPull(
         scope,
         devices: [],
         warnings: [],
+        releasedApplied: 0,
+        releasedDataClasses: [],
         error: describePullError(e),
       });
     }
   }
 
-  await answerBlobsNeeded(deps, remoteBlobs);
-  warnings.push(...(await drainDeferred(deps, remoteBlobs, appliedScopes, appliedDataClasses)));
+  try {
+    await answerBlobsNeeded(deps, remoteBlobs);
+  } catch (e) {
+    if (e instanceof CycleLockLostError || e instanceof ProviderError) throw e;
+    warnings.push(`blobs-needed answers failed: ${describePullError(e)}`);
+  }
+  try {
+    warnings.push(
+      ...(await drainDeferred(deps, remoteBlobs, appliedScopes, appliedDataClasses)),
+    );
+  } catch (e) {
+    if (e instanceof CycleLockLostError || e instanceof ProviderError) throw e;
+    warnings.push(`deferred drain failed: ${describePullError(e)}`);
+  }
+  for (const scope of scopes) {
+    try {
+      const released = await releaseOpaque(deps, scope, remoteBlobs);
+      if (released.applied > 0) appliedScopes.add(scope);
+      for (const dc of released.dataClasses) appliedDataClasses.add(dc);
+      warnings.push(...released.warnings);
+    } catch (e) {
+      if (e instanceof CycleLockLostError || e instanceof ProviderError) throw e;
+      warnings.push(`opaque release failed for ${scope}: ${describePullError(e)}`);
+    }
+  }
 
   return {
     outcomes,
@@ -184,7 +217,15 @@ async function pullScope(
     deviceOutcomes.push(await pullDevice(deps, scope, files, cursors, remoteBlobs));
   }
   for (const outcome of deviceOutcomes) warnings.push(...outcome.warnings);
-  return { scope, devices: deviceOutcomes, warnings };
+  const released = await releaseOpaque(deps, scope, remoteBlobs);
+  warnings.push(...released.warnings);
+  return {
+    scope,
+    devices: deviceOutcomes,
+    warnings,
+    releasedApplied: released.applied,
+    releasedDataClasses: [...released.dataClasses],
+  };
 }
 
 async function pullDevice(
@@ -212,7 +253,13 @@ async function pullDevice(
         throw new WireFormatError('snapshot scope/device mismatch');
       }
       filesRead++;
-      const stats = await applyRemoteRecords(deps, newest.path, snapshot.records, remoteBlobs);
+      const stats = await applyRemoteRecords(
+        deps,
+        scope,
+        newest.path,
+        snapshot.records,
+        remoteBlobs,
+      );
       applied += stats.applied;
       deferred += stats.deferred;
       for (const dc of stats.dataClasses) appliedDataClasses.add(dc);
@@ -247,7 +294,13 @@ async function pullDevice(
         throw new WireFormatError('journal scope/device mismatch');
       }
       filesRead++;
-      const stats = await applyRemoteRecords(deps, journal.path, decoded.records, remoteBlobs);
+      const stats = await applyRemoteRecords(
+        deps,
+        scope,
+        journal.path,
+        decoded.records,
+        remoteBlobs,
+      );
       applied += stats.applied;
       deferred += stats.deferred;
       for (const dc of stats.dataClasses) appliedDataClasses.add(dc);
@@ -282,22 +335,50 @@ interface ApplyStats {
   applied: number;
   deferred: number;
   dataClasses: Set<DataClass>;
+  warnings: string[];
+}
+
+function applyContextFor(deps: ConnectionPullDeps): ApplyContext {
+  return {
+    fetchBlob: async (contentHash) => {
+      try {
+        return await deps.provider.read(deps.connection, blobPath(contentHash));
+      } catch (e) {
+        if (e instanceof ProviderError && e.kind === 'not-found') return null;
+        throw e;
+      }
+    },
+  };
 }
 
 async function applyRemoteRecords(
   deps: ConnectionPullDeps,
+  scope: Scope,
   sourcePath: string,
   records: readonly ChangeRecord[],
   remoteBlobs: Set<string>,
+  resolvedSink?: Set<RecordKey>,
 ): Promise<ApplyStats> {
   const connId = deps.connection.connectionId;
-  const stats: ApplyStats = { applied: 0, deferred: 0, dataClasses: new Set() };
+  const stats: ApplyStats = {
+    applied: 0,
+    deferred: 0,
+    dataClasses: new Set(),
+    warnings: [],
+  };
   const sorted = sortRecordsForApply(records);
   const now = deps.clock.now();
 
   const ready = new Map<DataClass, ChangeRecord[]>();
   for (const record of sorted) {
     deps.observeHlc?.(record.hlc);
+    deps.onRemoteRecord?.(record);
+    if (record.scope !== scope) {
+      stats.warnings.push(
+        `skipped foreign-scope record ${record.key} (${record.scope} in ${scope} file)`,
+      );
+      continue;
+    }
     if (isRoutingRecord(record)) {
       await deps.onRoutingChange?.(record);
     }
@@ -316,6 +397,11 @@ async function applyRemoteRecords(
         await writeBlobsNeededMarker(deps, hash);
       }
       stats.deferred++;
+      resolvedSink?.add(record.key);
+      continue;
+    }
+    if (!deps.sources.some((source) => source.dataClass === record.dataClass)) {
+      await deps.store.putOpaque(record);
       continue;
     }
     const batch = ready.get(record.dataClass) ?? [];
@@ -323,23 +409,19 @@ async function applyRemoteRecords(
     ready.set(record.dataClass, batch);
   }
 
-  const ctx: ApplyContext = {
-    fetchBlob: async (contentHash) => {
-      try {
-        return await deps.provider.read(deps.connection, blobPath(contentHash));
-      } catch (e) {
-        if (e instanceof ProviderError && e.kind === 'not-found') return null;
-        throw e;
-      }
-    },
-  };
+  const ctx = applyContextFor(deps);
   const conflicts: ConflictLogEntry[] = [];
   for (const [dataClass, batch] of ready) {
     for (const source of deps.sources) {
       if (source.dataClass !== dataClass) continue;
       const result = await source.applyRemote(batch, ctx);
       stats.applied += result.applied.length;
-      if (result.applied.length > 0) stats.dataClasses.add(dataClass);
+      if (result.applied.length > 0) {
+        stats.dataClasses.add(dataClass);
+        deps.onAppliedBatch?.(scope, [dataClass], result.applied.length);
+      }
+      for (const record of result.applied) resolvedSink?.add(record.key);
+      for (const record of result.localWon) resolvedSink?.add(record.key);
       for (const record of result.opaque) {
         await deps.store.putOpaque(record);
       }
@@ -348,6 +430,44 @@ async function applyRemoteRecords(
   }
   await appendConflictLog(deps.kv, conflicts);
   return stats;
+}
+
+const OPAQUE_RELEASE_MAX_PASSES = 4;
+
+async function releaseOpaque(
+  deps: ConnectionPullDeps,
+  scope: Scope,
+  remoteBlobs: Set<string>,
+): Promise<ApplyStats> {
+  const total: ApplyStats = {
+    applied: 0,
+    deferred: 0,
+    dataClasses: new Set(),
+    warnings: [],
+  };
+  for (let pass = 0; pass < OPAQUE_RELEASE_MAX_PASSES; pass++) {
+    const rows = await deps.store.listOpaque(scope);
+    if (rows.length === 0) break;
+    const resolved = new Set<RecordKey>();
+    const stats = await applyRemoteRecords(
+      deps,
+      scope,
+      `opaque:${scope}`,
+      rows.map((row) => row.record),
+      remoteBlobs,
+      resolved,
+    );
+    total.applied += stats.applied;
+    total.deferred += stats.deferred;
+    total.warnings.push(...stats.warnings);
+    for (const dc of stats.dataClasses) total.dataClasses.add(dc);
+    for (const row of rows) {
+      if (resolved.has(row.recordKey)) await deps.store.deleteOpaque(row.key);
+    }
+    const remaining = await deps.store.listOpaque(scope);
+    if (remaining.length >= rows.length) break;
+  }
+  return total;
 }
 
 function isRoutingRecord(record: ChangeRecord): boolean {
@@ -395,6 +515,9 @@ async function drainDeferred(
     if (missing.length > 0) {
       const attempts = row.attempts + 1;
       await deps.store.updateDeferred({ ...row, attempts });
+      for (const hash of missing) {
+        await writeBlobsNeededMarker(deps, hash);
+      }
       if (attempts >= DEFERRED_WARNING_CYCLES) {
         warnings.push(
           `record ${row.scope}/${row.recordKey} blocked ${attempts} cycles on ${missing.join(', ')}`,
@@ -404,6 +527,7 @@ async function drainDeferred(
     }
     const stats = await applyRemoteRecords(
       deps,
+      row.scope,
       row.sourcePath ?? 'deferred',
       [row.record],
       remoteBlobs,
@@ -444,6 +568,7 @@ async function writeBlobsNeededMarker(deps: ConnectionPullDeps, hash: string): P
 
 async function removeRemoteQuiet(deps: ConnectionPullDeps, path: string): Promise<void> {
   try {
+    await deps.fence();
     await deps.provider.remove(deps.connection, path);
   } catch (e) {
     if (e instanceof ProviderError && e.kind === 'not-found') return;
@@ -456,12 +581,15 @@ async function listRemoteBlobPaths(deps: ConnectionPullDeps): Promise<Set<string
   return new Set(entries.map((entry) => entry.path));
 }
 
-async function readDisconnectMarkerHlc(deps: ConnectionPullDeps): Promise<Hlc | null> {
+async function readDisconnectMarkerHlc(
+  deps: Pick<ConnectionPullDeps, 'provider' | 'connection'>,
+): Promise<Hlc | null> {
   let file: Blob;
   try {
     file = await deps.provider.read(deps.connection, DISCONNECT_MARKER_PATH);
   } catch (e) {
     if (e instanceof CycleLockLostError) throw e;
+    if (e instanceof ProviderError && e.kind !== 'not-found') throw e;
     return null;
   }
   try {
@@ -480,18 +608,22 @@ async function readDisconnectMarkerHlc(deps: ConnectionPullDeps): Promise<Hlc | 
   }
 }
 
+export async function isConnectionDisconnected(
+  deps: Pick<ConnectionPullDeps, 'provider' | 'connection' | 'kv'>,
+): Promise<boolean> {
+  const markerHlc = await readDisconnectMarkerHlc(deps);
+  if (markerHlc === null) return false;
+  const directoryHlc = await connectionDirectoryHlc(deps, deps.connection.connectionId);
+  return directoryHlc === null || compareHlc(markerHlc, directoryHlc) > 0;
+}
+
 async function connectionDirectoryHlc(
-  deps: ConnectionPullDeps,
+  deps: Pick<ConnectionPullDeps, 'kv'>,
   connectionId: ConnectionId,
 ): Promise<Hlc | null> {
-  for (const source of deps.sources) {
-    if (source.dataClass !== 'syncDirectory') continue;
-    const recordKey = `connection:${connectionId}`;
-    const current = await source.current('global', [recordKey]);
-    const record = current.get(recordKey);
-    if (record) return record.hlc;
-  }
-  return null;
+  const meta = await readSyncMetaKV(deps.kv);
+  const row = meta[kvMetaKey('global', `connection:${connectionId}`)];
+  return row !== undefined && row.op === 'put' ? row.hlc : null;
 }
 
 function describePullError(e: unknown): string {

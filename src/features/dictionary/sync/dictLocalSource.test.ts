@@ -282,7 +282,7 @@ describe('dictLocalSource — dictResource', () => {
       },
       hlc: farFuture(),
     };
-    const fetchBlob = jest.fn(async () => new Blob([bytes]));
+    const fetchBlob = jest.fn(async () => new Blob([bytes.buffer as ArrayBuffer]));
     const result = await source.applyRemote([remote], { fetchBlob });
     expect(result.applied).toHaveLength(1);
     expect(fetchBlob).toHaveBeenCalledWith(hash);
@@ -324,7 +324,7 @@ describe('dictLocalSource — dictResource', () => {
       [],
     );
     const retry = await source.applyRemote([remote], {
-      fetchBlob: async () => new Blob([bytes]),
+      fetchBlob: async () => new Blob([bytes.buffer as ArrayBuffer]),
     });
     expect(retry.applied.length + retry.localWon.length).toBe(1);
     stored = await findResourceBySignature(LANG, hash);
@@ -353,7 +353,7 @@ describe('dictLocalSource — dictResource', () => {
       },
       hlc: farFuture(),
     };
-    const ctx = { fetchBlob: async () => new Blob([bytes]) };
+    const ctx = { fetchBlob: async () => new Blob([bytes.buffer as ArrayBuffer]) };
     await source.applyRemote([remote], ctx);
     await source.applyRemote([remote], ctx);
     const stored = await findResourceBySignature(LANG, hash);

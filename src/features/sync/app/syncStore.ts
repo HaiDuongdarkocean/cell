@@ -45,6 +45,13 @@ export interface DeferRecordInput {
   readonly attempts: number;
 }
 
+export interface OpaqueRecord {
+  readonly key: string;
+  readonly scope: Scope;
+  readonly recordKey: RecordKey;
+  readonly record: ChangeRecord;
+}
+
 export interface SyncStore {
   freezeBatch(input: FreezeBatchInput): Promise<FrozenBatch>;
   pendingBatches(connectionId: ConnectionId): Promise<FrozenBatch[]>;
@@ -56,6 +63,8 @@ export interface SyncStore {
   updateDeferred(row: DeferredRecord): Promise<DeferredRecord>;
   deleteDeferred(key: string): Promise<void>;
   putOpaque(record: ChangeRecord): Promise<void>;
+  listOpaque(scope: Scope): Promise<OpaqueRecord[]>;
+  deleteOpaque(key: string): Promise<void>;
 }
 
 export const KV_DATA_CLASSES: ReadonlySet<DataClass> = new Set<DataClass>([

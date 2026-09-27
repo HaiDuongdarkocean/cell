@@ -6,9 +6,11 @@ import {
   findDeferredRecordsByBlobHash,
   freezeBatch,
   getAllDeferredRecords,
+  getAllOpaqueRecords,
   getSyncDB,
   putDeferredRecord,
   putOpaqueRecord,
+  deleteOpaqueRecord,
   removePendingBatch,
   SYNC_STORES,
   takePendingBatches,
@@ -29,6 +31,8 @@ export function createSyncDbStore(): SyncStore {
     putOpaque: async (record) => {
       await putOpaqueRecord(record);
     },
+    listOpaque: (scope) => getAllOpaqueRecords(scope),
+    deleteOpaque: (key) => deleteOpaqueRecord(key),
   };
 }
 

@@ -233,7 +233,9 @@ describe('syncDb', () => {
 
     it('round-trips the full record with required blob hashes', async () => {
       const row = await putDeferredRecord(deferredInput('book:b1', ['hash-1', 'hash-2']));
-      expect(row.key).toBe(deferredRecordKey(connA, 'profile:en', 'book:b1'));
+      expect(row.key).toBe(
+        deferredRecordKey(connA, 'profile:en', 'dev-1:ctx-1', 'book:b1'),
+      );
       const stored = await getDeferredRecord(row.key);
       expect(stored?.record).toEqual(record('book:b1', 'profile:en'));
       expect(stored?.requiredBlobHashes).toEqual(['hash-1', 'hash-2']);
