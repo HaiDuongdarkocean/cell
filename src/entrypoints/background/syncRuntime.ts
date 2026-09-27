@@ -17,7 +17,7 @@ import {
   syncStatusSnapshot,
   SyncServiceError,
 } from '@/features/sync/app/syncService';
-import type { ConnectResult, SyncServiceDeps, SyncStatusSnapshot } from '@/features/sync/app/syncService';
+import type { ConnectResult, SyncServiceDeps, SyncStatusView as ServiceSyncStatusView } from '@/features/sync/app/syncService';
 import type { DisconnectResult } from '@/features/sync/app/disconnect';
 import type { RebindResult } from '@/features/sync/app/rebind';
 import type { ReconcileResult } from '@/features/sync/app/reconciliation';
@@ -54,17 +54,14 @@ export interface SyncRuntimeDeps {
   readonly onStatusChanged?: (status: EngineStatus) => void;
 }
 
-export interface SyncStatusView {
-  readonly engine: EngineStatus;
-  readonly directory: SyncStatusSnapshot;
-}
+export type SyncStatusView = ServiceSyncStatusView;
 
 export interface SyncRuntime {
   runCycle(): Promise<CycleResult>;
   status(): Promise<SyncStatusView>;
   connect(providerId: ProviderId): Promise<ConnectResult>;
   disconnect(connectionId: ConnectionId): Promise<DisconnectResult>;
-  setSystemConnection(connectionId: ConnectionId): Promise<void>;
+  setSystemConnection(connectionId: ConnectionId): Promise<RebindResult | ReconcileResult | null>;
   setBinding(scope: Scope, destination: ConnectionId | 'local'): Promise<RebindResult | ReconcileResult | null>;
   refreshSources(): Promise<void>;
   engineStatus(): Promise<EngineStatus>;
@@ -230,7 +227,9 @@ export function createSyncRuntime(deps: SyncRuntimeDeps): SyncRuntime {
     },
     async setSystemConnection(connectionId) {
       const built = await ensureBuilt();
-      await setSystemConnection({ ...built.serviceDepsBase, fence: async () => undefined }, connectionId);
+      return withServiceLock(built, (fence) =>
+        setSystemConnection({ ...built.serviceDepsBase, fence }, connectionId),
+      );
     },
     async setBinding(scope, destination) {
       const built = await ensureBuilt();

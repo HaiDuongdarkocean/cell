@@ -13,7 +13,7 @@ import type { ProviderId } from '../domain/types';
 import { ProviderError, type StorageProvider } from '../ports/storageProvider';
 import type { BlobReader } from './blobRefs';
 import { clearDisconnectMarker, runConnectionDisconnect, type DisconnectDeps, type DisconnectResult } from './disconnect';
-import { runScopeRebind, type RebindDeps, type RebindResult } from './rebind';
+import { runScopeRebind, writeRoutingValue, type RebindDeps, type RebindResult } from './rebind';
 import {
   runScopeReconciliation,
   type ReconcileDeps,
@@ -93,6 +93,22 @@ export interface SyncStatusSnapshot {
   readonly bindings: BindingStatusEntry[];
   readonly systemConnection: ConnectionId | null;
   readonly lastAppliedAt: number | null;
+}
+
+export interface SyncStatusView {
+  readonly engine: {
+    readonly state:
+      | 'idle'
+      | 'running'
+      | 'backoff'
+      | 'needs-reauth'
+      | 'offline'
+      | 'storage-full';
+    readonly retryAt?: number;
+    readonly lastError?: string;
+    readonly updatedAt: number;
+  };
+  readonly directory: SyncStatusSnapshot;
 }
 
 function rebindDeps(
@@ -261,12 +277,12 @@ export async function rebindScope(
 export async function setSystemConnection(
   deps: SyncServiceDeps,
   connectionId: ConnectionId,
-): Promise<void> {
+): Promise<RebindResult | ReconcileResult | null> {
   const routing = await readRouting(deps.kv);
   if (!routing.connections.some((c) => c.connectionId === connectionId)) {
     throw new SyncServiceError('unknown-connection', `no such connection: ${connectionId}`);
   }
-  await writeDirectoryEntry(deps, { systemConnection: connectionId });
+  return setScopeBinding(deps, 'global', connectionId);
 }
 
 export async function setScopeBinding(
@@ -287,10 +303,7 @@ export async function setScopeBinding(
   if (current === destination) return null;
   const hasSyncedCopy = await scopeHasRemoteData(deps, routing, scope);
   if (!hasSyncedCopy) {
-    const targetName = scope === 'global' ? null : scope.slice('profile:'.length);
-    if (targetName !== null) {
-      await writeDirectoryEntry(deps, { [`binding:${targetName}`]: destination });
-    }
+    await writeRoutingValue(deps, scope, destination);
     if (destination === 'local') return null;
     const routingFresh = await readRouting(deps.kv);
     const connection = routingFresh.connections.find(
