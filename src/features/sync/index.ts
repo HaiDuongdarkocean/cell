@@ -26,6 +26,7 @@ export {
   captureAll,
   readRecordMeta,
   stampRemoteMeta,
+  listMetaByKey,
   listMetaKeysByPrefix,
   configureSyncRuntime,
   resetSyncRuntime,

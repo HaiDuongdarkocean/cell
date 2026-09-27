@@ -30,7 +30,9 @@ async function allOutbox(): Promise<OutboxRow[]> {
 async function metaFor(key: string): Promise<StoredRecordMeta | undefined> {
   const db = await getSrsDB();
   const tx = db.transaction(SRS_STORES.SYNC_META, 'readonly');
-  return (await reqToPromise(tx.objectStore(SRS_STORES.SYNC_META).get(key))) as StoredRecordMeta | undefined;
+  return (await reqToPromise(
+    tx.objectStore(SRS_STORES.SYNC_META).index('by_recKey').get(key),
+  )) as StoredRecordMeta | undefined;
 }
 
 const makeCollection = (id: string): SrsCollection => ({
@@ -108,7 +110,7 @@ describe('sync capture — enabled runtime', () => {
     );
     const meta = await metaFor('collections:c1');
     expect(meta?.scope).toBe('profile:en');
-    expect(meta?.hlc.node).toBe('devA');
+    expect(meta?.hlc.node).toMatch(/^devA:.+/);
   });
 
   it('putDeck resolves scope through the parent collection chain', async () => {

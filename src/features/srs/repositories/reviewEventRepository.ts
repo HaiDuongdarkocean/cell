@@ -6,7 +6,7 @@ import { SRS_STORES, SRS_INDEXES } from './srsDatabase';
 import { withReadonlyStore, withStore, getById, putRecord, deleteRecord, getAllByIndex } from './srsRepositoryHelpers';
 import { scopeOfReviewEvent } from './srsSyncScope';
 
-const WRITE_STORES = [SRS_STORES.REVIEW_EVENTS, SRS_STORES.CARDS, SRS_STORES.DECKS, SRS_STORES.COLLECTIONS, SRS_STORES.SYNC_OUTBOX, SRS_STORES.SYNC_META];
+const WRITE_STORES = [SRS_STORES.REVIEW_EVENTS, SRS_STORES.CARDS, SRS_STORES.NOTES, SRS_STORES.DECKS, SRS_STORES.COLLECTIONS, SRS_STORES.SYNC_OUTBOX, SRS_STORES.SYNC_META];
 
 export async function getReviewEvent(id: string): Promise<SrsReviewRecord> {
   return withReadonlyStore(SRS_STORES.REVIEW_EVENTS, async (store) => {
@@ -28,9 +28,14 @@ export async function putReviewEvent(event: SrsReviewRecord): Promise<SrsReviewR
 
   await ensureSyncRuntime();
   return withStore(WRITE_STORES, async (store, tx) => {
-    const scope = isCaptureEnabled() ? await scopeOfReviewEvent(tx, event) : null;
+    const captured = isCaptureEnabled();
+    const scope = captured
+      ? ((await scopeOfReviewEvent(tx, event)) ??
+        (await readRecordMeta(store, `reviewEvents:${event.id}`))?.scope ??
+        null)
+      : null;
     await putRecord(store, event);
-    if (scope) {
+    if (captured) {
       await captureChange(store, { scope, dataClass: 'srsReviewEvent', key: `reviewEvents:${event.id}`, op: 'put' });
     }
     return Object.freeze(event);
@@ -40,13 +45,14 @@ export async function putReviewEvent(event: SrsReviewRecord): Promise<SrsReviewR
 export async function deleteReviewEvent(id: string): Promise<void> {
   await ensureSyncRuntime();
   return withStore(WRITE_STORES, async (store, tx) => {
+    const captured = isCaptureEnabled();
     const row = await getById<SrsReviewRecord>(store, id);
-    let scope = isCaptureEnabled() && row ? await scopeOfReviewEvent(tx, row) : null;
-    if (!scope && isCaptureEnabled()) {
+    let scope = captured && row ? await scopeOfReviewEvent(tx, row) : null;
+    if (!scope && captured) {
       scope = (await readRecordMeta(store, `reviewEvents:${id}`))?.scope ?? null;
     }
     await deleteRecord(store, id);
-    if (scope) {
+    if (captured) {
       await captureChange(store, { scope, dataClass: 'srsReviewEvent', key: `reviewEvents:${id}`, op: 'delete' });
     }
   });

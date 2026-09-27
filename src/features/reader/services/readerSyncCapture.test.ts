@@ -95,20 +95,38 @@ describe('reader sync capture', () => {
     expect(await allOutbox()).toEqual([]);
   });
 
-  it('captures book put in the profile scope', async () => {
+  it('captures book put + its field keys in the profile scope', async () => {
     configureSyncRuntime({ enabled: true, deviceId: 'devA', lastWall: 1 });
     await saveBook(makeBook('b1', 'en'));
-    expect(await allOutbox()).toEqual([
-      expect.objectContaining({ scope: 'profile:en', dataClass: 'readerBook', key: 'book:b1', op: 'put' }),
-    ]);
+    expect(await allOutbox()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ scope: 'profile:en', dataClass: 'readerBook', key: 'book:b1', op: 'put' }),
+        expect.objectContaining({ key: 'book:b1/title', op: 'put' }),
+        expect.objectContaining({ key: 'book:b1/filename', op: 'put' }),
+        expect.objectContaining({ key: 'book:b1/languageCode', op: 'put' }),
+      ]),
+    );
+  });
+
+  it('captures book field changes — a field becoming absent tombstones its key', async () => {
+    configureSyncRuntime({ enabled: true, deviceId: 'devA', lastWall: 1 });
+    await saveBook(makeBook('b1', 'en'));
+    await saveBook({ ...makeBook('b1', null), title: 'Renamed' });
+    const rows = await allOutbox();
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: 'book:b1/title', op: 'put' }),
+        expect.objectContaining({ key: 'book:b1/languageCode', op: 'delete' }),
+      ]),
+    );
   });
 
   it('captures book with no language into the global scope', async () => {
     configureSyncRuntime({ enabled: true, deviceId: 'devA', lastWall: 1 });
     await saveBook(makeBook('b1', null));
-    expect(await allOutbox()).toEqual([
-      expect.objectContaining({ scope: 'global', key: 'book:b1' }),
-    ]);
+    expect(await allOutbox()).toEqual(
+      expect.arrayContaining([expect.objectContaining({ scope: 'global', key: 'book:b1' })]),
+    );
   });
 
   it('captures position + per-device readTime records', async () => {

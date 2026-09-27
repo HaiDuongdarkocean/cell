@@ -36,9 +36,14 @@ export async function putImageAsset(asset: SrsImageAsset): Promise<SrsImageAsset
 
   await ensureSyncRuntime();
   return withStore(WRITE_STORES, async (store, tx) => {
-    const scope = isCaptureEnabled() ? await scopeOfAsset(tx, normalized) : null;
+    const captured = isCaptureEnabled();
+    const scope = captured
+      ? ((await scopeOfAsset(tx, normalized)) ??
+        (await readRecordMeta(store, `imageAssets:${normalized.id}`))?.scope ??
+        null)
+      : null;
     await putRecord(store, normalized);
-    if (scope) {
+    if (captured) {
       await captureChange(store, { scope, dataClass: 'srsImageAsset', key: `imageAssets:${normalized.id}`, op: 'put' });
     }
     return Object.freeze(normalized);
@@ -48,13 +53,14 @@ export async function putImageAsset(asset: SrsImageAsset): Promise<SrsImageAsset
 export async function deleteImageAsset(id: string): Promise<void> {
   await ensureSyncRuntime();
   return withStore(WRITE_STORES, async (store, tx) => {
+    const captured = isCaptureEnabled();
     const row = await getById<SrsImageAsset>(store, id);
-    let scope = isCaptureEnabled() && row ? await scopeOfAsset(tx, row) : null;
-    if (!scope && isCaptureEnabled()) {
+    let scope = captured && row ? await scopeOfAsset(tx, row) : null;
+    if (!scope && captured) {
       scope = (await readRecordMeta(store, `imageAssets:${id}`))?.scope ?? null;
     }
     await deleteRecord(store, id);
-    if (scope) {
+    if (captured) {
       await captureChange(store, { scope, dataClass: 'srsImageAsset', key: `imageAssets:${id}`, op: 'delete' });
     }
   });

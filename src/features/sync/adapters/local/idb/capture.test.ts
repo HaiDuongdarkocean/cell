@@ -30,7 +30,8 @@ function openDb(): Promise<IDBDatabase> {
       const db = request.result;
       const outbox = db.createObjectStore(SYNC_OUTBOX, { autoIncrement: true });
       outbox.createIndex('by_key', 'key', { unique: false });
-      db.createObjectStore(SYNC_META, { keyPath: 'key' });
+      const meta = db.createObjectStore(SYNC_META, { keyPath: 'key' });
+      meta.createIndex('by_recKey', 'recKey', { unique: false });
       db.createObjectStore('entity', { keyPath: 'id' });
     };
     request.onsuccess = () => resolve(request.result);
@@ -104,10 +105,11 @@ describe('captureChange', () => {
     expect(outbox[0]).toMatchObject({ scope: 'profile:en', dataClass: 'srsCard', key: 'cards:c1', op: 'put' });
     const meta = await allMeta(db);
     expect(meta).toHaveLength(1);
-    expect(meta[0]!.key).toBe('cards:c1');
+    expect(meta[0]!.key).toBe('profile:en|cards:c1');
+    expect(meta[0]!.recKey).toBe('cards:c1');
     expect(meta[0]!.scope).toBe('profile:en');
     expect(meta[0]!.op).toBe('put');
-    expect(meta[0]!.hlc.node).toBe('d1');
+    expect(meta[0]!.hlc.node).toMatch(/^d1:.+/);
     expect(meta[0]!.firstHlc).toEqual(meta[0]!.hlc);
   });
 
@@ -143,6 +145,59 @@ describe('captureChange', () => {
     expect(afterReput.firstHlc).toEqual(afterReput.hlc);
     expect(afterReput.firstHlc!.wall).toBeGreaterThanOrEqual(afterDelete.firstHlc!.wall);
   });
+
+  it('keeps separate meta rows per (scope, key) — multi-scope records do not thrash', async () => {
+    configureSyncRuntime({ enabled: true, deviceId: 'd1' });
+    await inWriteTx(db, (store) =>
+      captureChange(store, { scope: 'profile:en', dataClass: 'studyConfig', key: 'studyConfigs:s1', op: 'put' }),
+    );
+    await inWriteTx(db, (store) =>
+      captureChange(store, { scope: 'profile:ja', dataClass: 'studyConfig', key: 'studyConfigs:s1', op: 'put' }),
+    );
+    const metas = await allMeta(db);
+    expect(metas.map((m) => m.key).sort()).toEqual(['profile:en|studyConfigs:s1', 'profile:ja|studyConfigs:s1']);
+    const enMeta = await readRecordMeta(
+      db.transaction(SYNC_META, 'readonly').objectStore(SYNC_META),
+      'studyConfigs:s1',
+      'profile:en',
+    );
+    expect(enMeta?.scope).toBe('profile:en');
+  });
+
+  it('captures writes whose scope is unresolved as scope:null orphans', async () => {
+    configureSyncRuntime({ enabled: true, deviceId: 'd1' });
+    await inWriteTx(db, (store) =>
+      captureChange(store, { scope: null, dataClass: 'srsCard', key: 'cards:orphan', op: 'put' }),
+    );
+    const outbox = await allOutbox(db);
+    expect(outbox).toHaveLength(1);
+    expect(outbox[0]!.scope).toBeNull();
+    const meta = await readRecordMeta(
+      db.transaction(SYNC_META, 'readonly').objectStore(SYNC_META),
+      'cards:orphan',
+      null,
+    );
+    expect(meta?.op).toBe('put');
+    expect(meta?.scope).toBeNull();
+  });
+
+  it('mints unique node ids per runtime (deviceId:contextId)', async () => {
+    configureSyncRuntime({ enabled: true, deviceId: 'd1' });
+    await inWriteTx(db, (store) =>
+      captureChange(store, { scope: 'profile:en', dataClass: 'srsCard', key: 'cards:a', op: 'put' }),
+    );
+    const firstNode = (await allMeta(db))[0]!.hlc.node;
+    resetSyncRuntime();
+    configureSyncRuntime({ enabled: true, deviceId: 'd1' });
+    await inWriteTx(db, (store) =>
+      captureChange(store, { scope: 'profile:en', dataClass: 'srsCard', key: 'cards:b', op: 'put' }),
+    );
+    const metas = await allMeta(db);
+    const secondNode = metas.find((m) => m.recKey === 'cards:b')!.hlc.node;
+    expect(firstNode).not.toBe(secondNode);
+    expect(firstNode.startsWith('d1:')).toBe(true);
+    expect(secondNode.startsWith('d1:')).toBe(true);
+  });
 });
 
 describe('stampRemoteMeta', () => {
@@ -168,9 +223,27 @@ describe('stampRemoteMeta', () => {
     const meta = await readRecordMeta(
       db.transaction(SYNC_META, 'readonly').objectStore(SYNC_META),
       'cards:c1',
+      'profile:en',
     );
     expect(meta?.hlc).toEqual(hlc(10));
     expect(meta?.firstHlc).toEqual(hlc(10));
+  });
+
+  it('keeps the local firstHlc when the remote record omits one', async () => {
+    configureSyncRuntime({ enabled: true, deviceId: 'd1', lastWall: 1 });
+    await inWriteTx(db, (store) =>
+      captureChange(store, { scope: 'profile:en', dataClass: 'srsCard', key: 'cards:c1', op: 'put' }),
+    );
+    const localFirst = (await allMeta(db))[0]!.firstHlc!;
+    await inWriteTx(db, (store) =>
+      stampRemoteMeta(store, 'cards:c1', { scope: 'profile:en', hlc: hlc(50), op: 'put' }),
+    );
+    const meta = await readRecordMeta(
+      db.transaction(SYNC_META, 'readonly').objectStore(SYNC_META),
+      'cards:c1',
+      'profile:en',
+    );
+    expect(meta?.firstHlc).toEqual(localFirst);
   });
 
   it('observes the remote hlc so the next local tick exceeds it', async () => {
@@ -181,7 +254,7 @@ describe('stampRemoteMeta', () => {
     await inWriteTx(db, (store) =>
       captureChange(store, { scope: 'profile:en', dataClass: 'srsCard', key: 'cards:c2', op: 'put' }),
     );
-    const meta = (await allMeta(db)).find((m) => m.key === 'cards:c2')!;
+    const meta = (await allMeta(db)).find((m) => m.recKey === 'cards:c2')!;
     expect(meta.hlc.wall).toBeGreaterThanOrEqual(10);
     if (meta.hlc.wall === 10) expect(meta.hlc.counter).toBeGreaterThan(3);
   });

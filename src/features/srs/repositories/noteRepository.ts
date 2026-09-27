@@ -32,10 +32,20 @@ export async function putNote(note: SrsNote): Promise<SrsNote> {
     if (existing && existing.id !== note.id) {
       throw new SrsError('DUPLICATE', `Note with targetWord ${note.targetWord} and notetypeId ${note.notetypeId} already exists`);
     }
-    const scope = isCaptureEnabled() ? await scopeOfDeck(tx, note.deckId) : null;
+    const captured = isCaptureEnabled();
+    const prev = captured ? await getById<SrsNote>(store, note.id) : undefined;
+    const scope = captured
+      ? ((await scopeOfDeck(tx, note.deckId)) ??
+        (await readRecordMeta(store, `notes:${note.id}`))?.scope ??
+        null)
+      : null;
     await putRecord(store, note);
-    if (scope) {
+    if (captured) {
       await captureChange(store, { scope, dataClass: 'srsNote', key: `notes:${note.id}`, op: 'put' });
+      const prevScope = prev && prev.deckId !== note.deckId ? await scopeOfDeck(tx, prev.deckId) : null;
+      if (prevScope && prevScope !== scope) {
+        await captureChange(store, { scope: prevScope, dataClass: 'srsNote', key: `notes:${note.id}`, op: 'delete' });
+      }
     }
     return Object.freeze(note);
   });
@@ -44,13 +54,14 @@ export async function putNote(note: SrsNote): Promise<SrsNote> {
 export async function deleteNote(id: string): Promise<void> {
   await ensureSyncRuntime();
   return withStore(WRITE_STORES, async (store, tx) => {
+    const captured = isCaptureEnabled();
     const row = await getById<SrsNote>(store, id);
-    let scope = isCaptureEnabled() && row ? await scopeOfDeck(tx, row.deckId) : null;
-    if (!scope && isCaptureEnabled()) {
+    let scope = captured && row ? await scopeOfDeck(tx, row.deckId) : null;
+    if (!scope && captured) {
       scope = (await readRecordMeta(store, `notes:${id}`))?.scope ?? null;
     }
     await deleteRecord(store, id);
-    if (scope) {
+    if (captured) {
       await captureChange(store, { scope, dataClass: 'srsNote', key: `notes:${id}`, op: 'delete' });
     }
   });

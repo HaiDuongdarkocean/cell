@@ -44,6 +44,17 @@ export class HybridClock {
     }
   }
 
+  seedWall(wall: number): void {
+    if (wall > this.lastWall) {
+      this.lastWall = wall;
+      this.counter = 0;
+    }
+  }
+
+  get nodeId(): string {
+    return this.node;
+  }
+
   get wallFloor(): number {
     return this.lastWall;
   }

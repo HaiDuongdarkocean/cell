@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it, beforeEach, beforeAll, afterAll } from '@jest/globals';
 import { setWordStatus, deleteWordStatus, getAllWordStatuses } from './wordStatusStore';
+import { trashWordStatus, restoreWordStatus } from './wordTrashStore';
 import { getDB, closeAllDBs, clearAllStores, STORES } from '@/features/dictionary/repositories/baseRepository';
 import { configureSyncRuntime, resetSyncRuntime } from '@/features/sync';
 
@@ -78,6 +79,24 @@ describe('word status sync capture', () => {
     await deleteWordStatus('en', 'hello');
     const rows = await allOutbox('en');
     expect(rows.filter((r) => r.op === 'delete')).toHaveLength(1);
+  });
+
+  it('captures a tombstone when a status row is trashed', async () => {
+    configureSyncRuntime({ enabled: true, deviceId: 'devA', lastWall: 1 });
+    await setWordStatus('en', 'hello', 'known');
+    await trashWordStatus('en', 'hello');
+    const rows = await allOutbox('en');
+    expect(rows.filter((r) => r.key === 'word:hello' && r.op === 'delete')).toHaveLength(1);
+  });
+
+  it('captures a put when a trashed word is restored', async () => {
+    configureSyncRuntime({ enabled: true, deviceId: 'devA', lastWall: 1 });
+    await setWordStatus('en', 'hello', 'known');
+    await trashWordStatus('en', 'hello');
+    await restoreWordStatus('en', 'hello');
+    const rows = await allOutbox('en');
+    const puts = rows.filter((r) => r.key === 'word:hello' && r.op === 'put');
+    expect(puts.length).toBeGreaterThanOrEqual(2);
   });
 
   it('does not capture the legacy unknown-row sweep', async () => {

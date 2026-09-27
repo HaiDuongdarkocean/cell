@@ -32,10 +32,20 @@ export async function putCard(card: SrsCard): Promise<SrsCard> {
     if (existing && existing.id !== card.id) {
       throw new SrsError('DUPLICATE', `Card for noteId ${card.noteId} and deckId ${card.deckId} already exists`);
     }
-    const scope = isCaptureEnabled() ? await scopeOfDeck(tx, card.deckId) : null;
+    const captured = isCaptureEnabled();
+    const prev = captured ? await getById<SrsCard>(store, card.id) : undefined;
+    const scope = captured
+      ? ((await scopeOfDeck(tx, card.deckId)) ??
+        (await readRecordMeta(store, `cards:${card.id}`))?.scope ??
+        null)
+      : null;
     await putRecord(store, card);
-    if (scope) {
+    if (captured) {
       await captureChange(store, { scope, dataClass: 'srsCard', key: `cards:${card.id}`, op: 'put' });
+      const prevScope = prev && prev.deckId !== card.deckId ? await scopeOfDeck(tx, prev.deckId) : null;
+      if (prevScope && prevScope !== scope) {
+        await captureChange(store, { scope: prevScope, dataClass: 'srsCard', key: `cards:${card.id}`, op: 'delete' });
+      }
     }
     return Object.freeze(card);
   });
@@ -44,13 +54,14 @@ export async function putCard(card: SrsCard): Promise<SrsCard> {
 export async function deleteCard(id: string): Promise<void> {
   await ensureSyncRuntime();
   return withStore(WRITE_STORES, async (store, tx) => {
+    const captured = isCaptureEnabled();
     const row = await getById<SrsCard>(store, id);
-    let scope = isCaptureEnabled() && row ? await scopeOfDeck(tx, row.deckId) : null;
-    if (!scope && isCaptureEnabled()) {
+    let scope = captured && row ? await scopeOfDeck(tx, row.deckId) : null;
+    if (!scope && captured) {
       scope = (await readRecordMeta(store, `cards:${id}`))?.scope ?? null;
     }
     await deleteRecord(store, id);
-    if (scope) {
+    if (captured) {
       await captureChange(store, { scope, dataClass: 'srsCard', key: `cards:${id}`, op: 'delete' });
     }
   });

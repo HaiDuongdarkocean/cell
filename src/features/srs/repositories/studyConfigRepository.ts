@@ -1,6 +1,6 @@
 import type { SrsStudyConfig } from '@/entities/srs/types';
 import { SrsError } from '@/features/srs/lib/srsError';
-import { captureChange, ensureSyncRuntime, isCaptureEnabled, readRecordMeta } from '@/features/sync';
+import { captureChange, ensureSyncRuntime, isCaptureEnabled, listMetaByKey } from '@/features/sync';
 import { SRS_STORES } from './srsDatabase';
 import { withReadonlyStore, withStore, getById, putRecord, deleteRecord } from './srsRepositoryHelpers';
 import { studyConfigScopes } from './srsSyncScope';
@@ -33,14 +33,21 @@ export async function putStudyConfig(studyConfig: SrsStudyConfig): Promise<SrsSt
 export async function deleteStudyConfig(id: string): Promise<void> {
   await ensureSyncRuntime();
   return withStore(WRITE_STORES, async (store, tx) => {
-    let scopes = isCaptureEnabled() ? await studyConfigScopes(tx, id) : [];
-    if (scopes.length === 0 && isCaptureEnabled()) {
-      const scope = (await readRecordMeta(store, `studyConfigs:${id}`))?.scope;
-      if (scope) scopes = [scope];
+    const captured = isCaptureEnabled();
+    const scopes = captured ? await studyConfigScopes(tx, id) : [];
+    if (captured) {
+      for (const meta of await listMetaByKey(store, `studyConfigs:${id}`)) {
+        if (meta.scope && !scopes.includes(meta.scope)) scopes.push(meta.scope);
+      }
     }
     await deleteRecord(store, id);
-    for (const scope of scopes) {
-      await captureChange(store, { scope, dataClass: 'studyConfig', key: `studyConfigs:${id}`, op: 'delete' });
+    if (captured) {
+      if (scopes.length === 0) {
+        await captureChange(store, { scope: null, dataClass: 'studyConfig', key: `studyConfigs:${id}`, op: 'delete' });
+      }
+      for (const scope of scopes) {
+        await captureChange(store, { scope, dataClass: 'studyConfig', key: `studyConfigs:${id}`, op: 'delete' });
+      }
     }
   });
 }

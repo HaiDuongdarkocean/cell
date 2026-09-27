@@ -82,7 +82,7 @@ function openSrsDB(dbName: string): Promise<IDBDatabase> {
     const request = indexedDB.open(dbName, SRS_DB_SCHEMA_VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
-      createAllSrsStores(db);
+      createAllSrsStores(db, request.transaction ?? undefined);
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -91,7 +91,7 @@ function openSrsDB(dbName: string): Promise<IDBDatabase> {
 }
 
 /** Create all SRS object stores and indexes. */
-function createAllSrsStores(db: IDBDatabase): void {
+function createAllSrsStores(db: IDBDatabase, tx?: IDBTransaction): void {
   if (!db.objectStoreNames.contains(SRS_STORES.COLLECTIONS)) {
     const store = db.createObjectStore(SRS_STORES.COLLECTIONS, { keyPath: 'id' });
     store.createIndex(SRS_INDEXES.by_languageProfileId, 'languageProfileId', { unique: false });
@@ -148,7 +148,13 @@ function createAllSrsStores(db: IDBDatabase): void {
   }
 
   if (!db.objectStoreNames.contains(SRS_STORES.SYNC_META)) {
-    db.createObjectStore(SRS_STORES.SYNC_META, { keyPath: 'key' });
+    const store = db.createObjectStore(SRS_STORES.SYNC_META, { keyPath: 'key' });
+    store.createIndex('by_recKey', 'recKey', { unique: false });
+  } else if (tx) {
+    const store = tx.objectStore(SRS_STORES.SYNC_META);
+    if (!store.indexNames.contains('by_recKey')) {
+      store.createIndex('by_recKey', 'recKey', { unique: false });
+    }
   }
 }
 

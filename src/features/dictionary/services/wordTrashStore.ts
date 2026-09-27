@@ -8,6 +8,7 @@
 import { getDB, awaitTx, STORES } from '@/features/dictionary/repositories/baseRepository';
 import type { WordStatus } from '@/entities/dictionary';
 import type { WordStatusEntry } from './wordStatusStore';
+import { captureChange, ensureSyncRuntime, isCaptureEnabled, scopeForTarget, targetOf } from '@/features/sync';
 
 export interface TrashedWordEntry {
   readonly term: string;
@@ -33,13 +34,22 @@ function request<T>(req: IDBRequest<T>): Promise<T> {
  */
 export async function trashWordStatus(langCode: string, term: string): Promise<void> {
   const db = await getDB(langCode);
-  const tx = db.transaction([STORES.WORD_STATUS, STORES.WORD_TRASH], 'readwrite');
+  await ensureSyncRuntime();
+  const tx = db.transaction([STORES.WORD_STATUS, STORES.WORD_TRASH, STORES.SYNC_OUTBOX, STORES.SYNC_META], 'readwrite');
   const statusStore = tx.objectStore(STORES.WORD_STATUS);
   const trashStore = tx.objectStore(STORES.WORD_TRASH);
   const row = (await request(statusStore.get(term))) as WordStatusEntry | undefined;
   if (row !== undefined) {
     trashStore.put({ term, previousStatus: row.status, trashedAt: Date.now() });
     statusStore.delete(term);
+    if (isCaptureEnabled()) {
+      await captureChange(statusStore, {
+        scope: scopeForTarget(targetOf(langCode)),
+        dataClass: 'wordStatus',
+        key: `word:${term}`,
+        op: 'delete',
+      });
+    }
   }
   await awaitTx(tx);
 }
@@ -89,7 +99,8 @@ export async function purgeExpiredTrash(langCode: string): Promise<void> {
  */
 export async function restoreWordStatus(langCode: string, term: string): Promise<WordStatus> {
   const db = await getDB(langCode);
-  const tx = db.transaction([STORES.WORD_TRASH, STORES.WORD_STATUS], 'readwrite');
+  await ensureSyncRuntime();
+  const tx = db.transaction([STORES.WORD_TRASH, STORES.WORD_STATUS, STORES.SYNC_OUTBOX, STORES.SYNC_META], 'readwrite');
   const trashStore = tx.objectStore(STORES.WORD_TRASH);
   const statusStore = tx.objectStore(STORES.WORD_STATUS);
   const record = (await request(trashStore.get(term))) as TrashedWordEntry | undefined;
@@ -100,6 +111,14 @@ export async function restoreWordStatus(langCode: string, term: string): Promise
   const status = record.previousStatus ?? RESTORE_FALLBACK_STATUS;
   statusStore.put({ term, status, updatedAt: Date.now() });
   trashStore.delete(term);
+  if (isCaptureEnabled()) {
+    await captureChange(statusStore, {
+      scope: scopeForTarget(targetOf(langCode)),
+      dataClass: 'wordStatus',
+      key: `word:${term}`,
+      op: 'put',
+    });
+  }
   await awaitTx(tx);
   return status;
 }

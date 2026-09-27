@@ -1,4 +1,4 @@
-import { scopeForTarget, targetOf, type Scope } from '@/features/sync';
+import { captureChange, readRecordMeta, scopeForTarget, targetOf, type Scope } from '@/features/sync';
 import type { SrsCard, SrsCollection, SrsDeck, SrsNote, SrsReviewRecord } from '@/entities/srs/types';
 import { SRS_STORES } from './srsDatabase';
 import { getById } from './srsRepositoryHelpers';
@@ -53,6 +53,18 @@ export async function studyConfigScopes(tx: IDBTransaction, configId: string): P
     }
   }
   return [...scopes];
+}
+
+export async function announceStudyConfig(
+  store: IDBObjectStore,
+  scope: Scope | null,
+  configId: string,
+): Promise<void> {
+  const key = `studyConfigs:${configId}`;
+  const meta = await readRecordMeta(store, key, scope);
+  if (meta?.op !== 'put') {
+    await captureChange(store, { scope, dataClass: 'studyConfig', key, op: 'put' });
+  }
 }
 
 function getAll<T>(store: IDBObjectStore): Promise<T[]> {

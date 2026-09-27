@@ -24,6 +24,7 @@ export const STORES = {
 /** Index names. */
 export const INDEXES = {
   by_signature: 'by_signature',
+  by_contentHash: 'by_contentHash',
   by_type: 'by_type',
   by_order: 'by_order',
   by_resource: 'by_resource',
@@ -76,7 +77,7 @@ function openDB(dbName: string): Promise<IDBDatabase> {
     const request = indexedDB.open(dbName, DB_SCHEMA_VERSION);
     request.onupgradeneeded = (_event: IDBVersionChangeEvent) => {
       const db = request.result;
-      createAllStores(db);
+      createAllStores(db, request.transaction ?? undefined);
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -85,13 +86,19 @@ function openDB(dbName: string): Promise<IDBDatabase> {
 }
 
 /** Create all 4 stores + 7 indexes (ADR-023 D2 + ADR-037 §7.1 — create-all only). */
-function createAllStores(db: IDBDatabase): void {
-  // langResourceInfo — keyPath 'id' auto, indexes: by_signature, by_type, by_order
+function createAllStores(db: IDBDatabase, tx?: IDBTransaction): void {
+  // langResourceInfo — keyPath 'id' auto, indexes: by_signature, by_type, by_order, by_contentHash
   if (!db.objectStoreNames.contains(STORES.RESOURCE)) {
     const resource = db.createObjectStore(STORES.RESOURCE, { keyPath: 'id', autoIncrement: true });
     resource.createIndex(INDEXES.by_signature, 'signature', { unique: false });
+    resource.createIndex(INDEXES.by_contentHash, 'contentHash', { unique: false });
     resource.createIndex(INDEXES.by_type, 'type', { unique: false });
     resource.createIndex(INDEXES.by_order, 'importedAt', { unique: false });
+  } else if (tx) {
+    const resource = tx.objectStore(STORES.RESOURCE);
+    if (!resource.indexNames.contains(INDEXES.by_contentHash)) {
+      resource.createIndex(INDEXES.by_contentHash, 'contentHash', { unique: false });
+    }
   }
   // langFrequencyEntry — keyPath 'id' auto, indexes: by_resource, by_term, by_backwardTerm
   if (!db.objectStoreNames.contains(STORES.FREQUENCY)) {
@@ -126,9 +133,15 @@ function createAllStores(db: IDBDatabase): void {
     const outbox = db.createObjectStore(STORES.SYNC_OUTBOX, { autoIncrement: true });
     outbox.createIndex('by_key', 'key', { unique: false });
   }
-  // syncMeta — keyPath 'key'; per-record HLC/scope metadata
+  // syncMeta — keyPath 'key' (`<scope>|<recordKey>`); index by_recKey for prefix scans
   if (!db.objectStoreNames.contains(STORES.SYNC_META)) {
-    db.createObjectStore(STORES.SYNC_META, { keyPath: 'key' });
+    const store = db.createObjectStore(STORES.SYNC_META, { keyPath: 'key' });
+    store.createIndex('by_recKey', 'recKey', { unique: false });
+  } else if (tx) {
+    const store = tx.objectStore(STORES.SYNC_META);
+    if (!store.indexNames.contains('by_recKey')) {
+      store.createIndex('by_recKey', 'recKey', { unique: false });
+    }
   }
 }
 

@@ -33,9 +33,14 @@ export async function putNotetype(notetype: SrsNotetype): Promise<SrsNotetype> {
 
   await ensureSyncRuntime();
   return withStore(WRITE_STORES, async (store, tx) => {
-    const scope = isCaptureEnabled() ? await scopeOfCollection(tx, notetype.collectionId) : null;
+    const captured = isCaptureEnabled();
+    const scope = captured
+      ? ((await scopeOfCollection(tx, notetype.collectionId)) ??
+        (await readRecordMeta(store, `notetypes:${notetype.id}`))?.scope ??
+        null)
+      : null;
     await putRecord(store, notetype);
-    if (scope) {
+    if (captured) {
       await captureChange(store, { scope, dataClass: 'srsNotetype', key: `notetypes:${notetype.id}`, op: 'put' });
     }
     return Object.freeze(notetype);
@@ -45,13 +50,14 @@ export async function putNotetype(notetype: SrsNotetype): Promise<SrsNotetype> {
 export async function deleteNotetype(id: string): Promise<void> {
   await ensureSyncRuntime();
   return withStore(WRITE_STORES, async (store, tx) => {
+    const captured = isCaptureEnabled();
     const row = await getById<SrsNotetype>(store, id);
-    let scope = isCaptureEnabled() && row ? await scopeOfCollection(tx, row.collectionId) : null;
-    if (!scope && isCaptureEnabled()) {
+    let scope = captured && row ? await scopeOfCollection(tx, row.collectionId) : null;
+    if (!scope && captured) {
       scope = (await readRecordMeta(store, `notetypes:${id}`))?.scope ?? null;
     }
     await deleteRecord(store, id);
-    if (scope) {
+    if (captured) {
       await captureChange(store, { scope, dataClass: 'srsNotetype', key: `notetypes:${id}`, op: 'delete' });
     }
   });
