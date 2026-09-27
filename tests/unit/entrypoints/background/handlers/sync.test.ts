@@ -1,4 +1,9 @@
-import { registerSyncHandlers, wireSyncScheduling, SYNC_TICK_ALARM } from '@/entrypoints/background/handlers/sync';
+import {
+  registerSyncHandlers,
+  resetSyncRuntimeForTests,
+  wireSyncScheduling,
+  SYNC_TICK_ALARM,
+} from '@/entrypoints/background/handlers/sync';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { BackgroundContext } from '@/entrypoints/background/context';
@@ -27,12 +32,13 @@ const mockedCreate = createSyncRuntime as jest.MockedFunction<typeof createSyncR
 const mockedMigrate = migrateProfileIdentity as jest.MockedFunction<typeof migrateProfileIdentity>;
 
 const rt = {
-  status: jest.fn(async () => ({ enabled: true })),
+  status: jest.fn(async (): Promise<unknown> => ({ enabled: true })),
   runCycle: jest.fn(async () => ({ acquired: true })),
   connect: jest.fn(async () => ({ ok: true })),
   disconnect: jest.fn(async () => ({ ok: true })),
   setSystemConnection: jest.fn(async () => ({ ok: true })),
   setBinding: jest.fn(async () => ({ ok: true })),
+  cancelRebind: jest.fn(async () => undefined),
   refreshSources: jest.fn(async () => undefined),
   engineStatus: jest.fn(() => ({ state: 'idle' })),
   hasConnections: jest.fn(async () => true),
@@ -95,6 +101,7 @@ async function flush(): Promise<void> {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  resetSyncRuntimeForTests();
   rt.hasConnections.mockResolvedValue(true);
   mockedCreate.mockReturnValue(rt as unknown as SyncRuntime);
 });
@@ -158,6 +165,32 @@ describe('sync handlers', () => {
     expect(rt.disconnect).toHaveBeenCalledWith('gd:acct');
     expect(rt.setSystemConnection).toHaveBeenCalledWith('gd:acct');
     expect(rt.setBinding).toHaveBeenCalledWith('profile:en', 'local');
+  });
+
+  it('broadcasts the canonical SyncStatusView on engine status changes', async () => {
+    const view = {
+      engine: { state: 'idle', updatedAt: 7 },
+      directory: {
+        connections: [],
+        bindings: [],
+        systemConnection: null,
+        lastAppliedAt: null,
+      },
+    };
+    rt.status.mockResolvedValue(view);
+    const { ctx, handlers, broadcast } = makeContext();
+    registerSyncHandlers(ctx);
+    await handlers.get(MESSAGE_TYPES.SYNC_GET_STATUS)!(
+      request(MESSAGE_TYPES.SYNC_GET_STATUS, {}),
+    );
+    const deps = mockedCreate.mock.calls.at(-1)![0];
+    deps.onStatusChanged?.({ state: 'running', updatedAt: 9 } as never);
+    await flush();
+    expect(rt.status).toHaveBeenCalled();
+    expect(broadcast).toHaveBeenCalledWith({
+      type: MESSAGE_TYPES.SYNC_STATUS_CHANGED,
+      payload: view,
+    });
   });
 
   it('returns a failure envelope when the service throws', async () => {
@@ -245,7 +278,7 @@ describe('sync scheduling', () => {
     await flush();
     rt.runCycle.mockClear();
     const change = { oldValue: 1, newValue: 2 };
-    chrome.storageOnChanged.fire({ syncState: change }, 'local');
+    chrome.storageOnChanged.fire({ themeMode: change }, 'local');
     chrome.storageOnChanged.fire({ syncMetaKV: change }, 'local');
     jest.advanceTimersByTime(2_000);
     await flush();

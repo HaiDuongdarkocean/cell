@@ -213,6 +213,14 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     };
   }
 
+  async hasToken(connection: Connection): Promise<boolean> {
+    const stored = await this.kv.get<StoredToken>(
+      'session',
+      tokenStoreKey(connection.accountKey),
+    );
+    return typeof stored?.accessToken === 'string' && stored.accessToken !== '';
+  }
+
   async revoke(connection: Connection): Promise<void> {
     this.requireConnection(connection);
     const stored = await this.kv.get<StoredToken>('session', tokenStoreKey(connection.accountKey));

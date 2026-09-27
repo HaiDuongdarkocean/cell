@@ -9,8 +9,10 @@ import { SyncEngine } from '@/features/sync/app/SyncEngine';
 import type { CycleResult, EngineStatus, SyncAppliedPayload } from '@/features/sync/app/SyncEngine';
 import { createSyncDbStore } from '@/features/sync/app/syncDbStore';
 import { migrateProfileIdentity } from '@/features/sync/app/profileIdentityMigration';
+import { setActiveProfileAfterRestore } from '@/features/sync/app/reconciliation';
 import {
   connectProvider,
+  deleteVacatedScopeCopy,
   disconnectAccount,
   setScopeBinding,
   setSystemConnection,
@@ -19,6 +21,7 @@ import {
 } from '@/features/sync/app/syncService';
 import type { ConnectResult, SyncServiceDeps, SyncStatusView as ServiceSyncStatusView } from '@/features/sync/app/syncService';
 import type { DisconnectResult } from '@/features/sync/app/disconnect';
+import { cancelScopeRebind } from '@/features/sync/app/rebind';
 import type { RebindResult } from '@/features/sync/app/rebind';
 import type { ReconcileResult } from '@/features/sync/app/reconciliation';
 import { ChromeKeyValueStore } from '@/features/sync/adapters/local/kv/chromeKvStore';
@@ -34,6 +37,8 @@ import { createDictBlobReader } from '@/features/dictionary/sync/dictBlobReader'
 import { createSrsSyncAccess } from '@/features/srs/sync/srsSyncAccess';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { logger } from '@/shared/lib/logger';
+
+const SYNC_CLOCK_WALL_KEY = 'syncClockWall';
 
 const SRS_DATA_CLASSES: readonly SrsDataClass[] = [
   'studyConfig',
@@ -63,6 +68,8 @@ export interface SyncRuntime {
   disconnect(connectionId: ConnectionId): Promise<DisconnectResult>;
   setSystemConnection(connectionId: ConnectionId): Promise<RebindResult | ReconcileResult | null>;
   setBinding(scope: Scope, destination: ConnectionId | 'local'): Promise<RebindResult | ReconcileResult | null>;
+  cancelRebind(scope: Scope): Promise<void>;
+  deleteOldCopy(scope: Scope, connectionId: ConnectionId): Promise<void>;
   refreshSources(): Promise<void>;
   engineStatus(): Promise<EngineStatus>;
   hasConnections(): Promise<boolean>;
@@ -120,6 +127,8 @@ async function buildRuntime(): Promise<BuiltRuntime> {
 
   const deviceId = await ensureDeviceId(kv);
   const hlc = new HybridClock(`${deviceId}:runtime`, Date.now);
+  const savedWall = await kv.get<number>('local', SYNC_CLOCK_WALL_KEY);
+  if (savedWall !== undefined) hlc.seedWall(savedWall);
   const store = createSyncDbStore();
   const dictBlobReader = createDictBlobReader(profileTargets);
   const blobs: BlobReader = dictBlobReader;
@@ -181,6 +190,14 @@ async function ensureBuilt(): Promise<BuiltRuntime> {
   return builtPromise;
 }
 
+async function persistClockWall(built: BuiltRuntime): Promise<void> {
+  const stored = await built.kv.get<number>('local', SYNC_CLOCK_WALL_KEY);
+  const floor = built.hlc.wallFloor;
+  if (stored === undefined || floor > stored) {
+    await built.kv.set('local', SYNC_CLOCK_WALL_KEY, floor);
+  }
+}
+
 async function withServiceLock<T>(
   built: BuiltRuntime,
   fn: (fence: () => Promise<void>) => Promise<T>,
@@ -196,6 +213,7 @@ async function withServiceLock<T>(
   try {
     return await fn(() => lock.verify());
   } finally {
+    await persistClockWall(built).catch(() => undefined);
     await lock.release();
   }
 }
@@ -206,6 +224,14 @@ export function createSyncRuntime(deps: SyncRuntimeDeps): SyncRuntime {
     async runCycle() {
       const built = await ensureBuilt();
       const result = await built.engine.runCycle();
+      await persistClockWall(built).catch(() => undefined);
+      if (result.appliedDataClasses.length > 0) {
+        await setActiveProfileAfterRestore().catch((error) =>
+          logger.warn('sync: post-restore profile activation failed', {
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        );
+      }
       runtimeDeps.broadcast('SYNC_STATUS_CHANGED', await statusOf(built));
       return result;
     },
@@ -235,6 +261,18 @@ export function createSyncRuntime(deps: SyncRuntimeDeps): SyncRuntime {
       const built = await ensureBuilt();
       return withServiceLock(built, (fence) =>
         setScopeBinding({ ...built.serviceDepsBase, fence }, scope, destination),
+      );
+    },
+    async cancelRebind(scope) {
+      const built = await ensureBuilt();
+      return withServiceLock(built, () =>
+        cancelScopeRebind({ kv: built.kv }, scope),
+      );
+    },
+    async deleteOldCopy(scope, connectionId) {
+      const built = await ensureBuilt();
+      return withServiceLock(built, (fence) =>
+        deleteVacatedScopeCopy({ ...built.serviceDepsBase, fence }, scope, connectionId),
       );
     },
     async refreshSources() {
@@ -271,6 +309,7 @@ async function statusOf(built: BuiltRuntime): Promise<SyncStatusView> {
   const directory = await syncStatusSnapshot({
     ...built.serviceDepsBase,
     fence: async () => undefined,
+    connectionHealth: () => built.engine.connectionHealth(),
   });
   return { engine: built.engine.current, directory };
 }

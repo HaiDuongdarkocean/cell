@@ -22,7 +22,7 @@ import {
   type ConnectionPullDeps,
 } from './pullCycle';
 import { cursorKey, readCursors, SYNC_CURSORS_STORAGE_KEY } from './cursors';
-import { getCheckpoint, type SyncCheckpoint } from './checkpoints';
+import { getCheckpoint, writeCheckpoint, type SyncCheckpoint } from './checkpoints';
 import { stampKvMeta } from '../adapters/local/kv/kvMeta';
 import { createSyncDbStore } from './syncDbStore';
 import { encodeJournal, encodeSnapshot } from './wireCodec';
@@ -480,6 +480,41 @@ describe('runConnectionPull', () => {
 
     expect(seenDuringApply?.kind).toBe('drain');
     expect(seenDuringApply?.to).toBe('mem:other-acct');
+  });
+
+  it('defers a routing record when its scope is occupied by a non-drain checkpoint', async () => {
+    const t = await harness();
+    const dir = new PullSource('syncDirectory', GLOBAL);
+    await writeCheckpoint(t.kv, {
+      scope: 'profile:fr' as Scope,
+      kind: 'rebind',
+      phase: 'freeze',
+      from: 'mem:a' as ConnectionId,
+      to: 'mem:b' as ConnectionId,
+      writtenPaths: [],
+      markerHlc: null,
+      startedAt: 0,
+      until: null,
+    });
+    await writeJournal(t, GLOBAL, REMOTE_DEVICE, 1, [
+      makeRecord(GLOBAL, 'syncDirectory', 'binding:fr', 'mem:other-acct', 10),
+    ]);
+
+    const result = await t.pull([GLOBAL], { sources: [dir] });
+
+    expect(t.routingRecords).toEqual([]);
+    expect(dir.applied).toHaveLength(0);
+    expect(result.outcomes[0]!.devices[0]!.recordsDeferred).toBe(1);
+    const deferred = await t.store.listDeferred(t.connection.connectionId);
+    expect(deferred.map((d) => d.recordKey)).toEqual(['binding:fr']);
+    expect((await getCheckpoint(t.kv, 'profile:fr' as Scope))?.kind).toBe('rebind');
+    const routing = await t.kv.get<Record<string, unknown>>('local', 'syncState');
+    expect(routing?.['binding:fr']).toBeUndefined();
+
+    await t.kv.del('local', 'syncCheckpoints');
+    const second = await t.pull([GLOBAL], { sources: [dir] });
+    expect((await getCheckpoint(t.kv, 'profile:fr' as Scope))?.kind).toBe('drain');
+    expect(second.outcomes[0]!.devices[0]!.recordsDeferred).toBe(0);
   });
 
   it('handles disconnect markers: newer marker triggers onDisconnect and skips pull', async () => {

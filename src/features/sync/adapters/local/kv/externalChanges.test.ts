@@ -28,11 +28,11 @@ describe('scheduleOnExternalChange', () => {
     fire({ settings: { newValue: {} } });
     fire({ themeMode: { newValue: 'light' } });
     fire({ syncState: { newValue: {} } });
-    expect(cb).toHaveBeenCalledTimes(3);
+    expect(cb).toHaveBeenCalledTimes(2);
 
     off();
     expect(removed).toEqual(attached);
     fire({ settings: { newValue: {} } });
-    expect(cb).toHaveBeenCalledTimes(3);
+    expect(cb).toHaveBeenCalledTimes(2);
   });
 });

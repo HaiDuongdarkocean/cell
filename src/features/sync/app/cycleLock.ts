@@ -32,7 +32,26 @@ export interface CycleLockDeps {
   readonly schedule?: (intervalMs: number, fn: () => void) => () => void;
 }
 
+let acquireQueue: Promise<void> = Promise.resolve();
+
 export async function acquireCycleLock(
+  deps: CycleLockDeps,
+  cycleId: string,
+): Promise<CycleLock | null> {
+  const previous = acquireQueue;
+  let releaseQueue: () => void = () => undefined;
+  acquireQueue = new Promise<void>((resolve) => {
+    releaseQueue = resolve;
+  });
+  try {
+    await previous;
+    return await acquireStorageLock(deps, cycleId);
+  } finally {
+    releaseQueue();
+  }
+}
+
+async function acquireStorageLock(
   deps: CycleLockDeps,
   cycleId: string,
 ): Promise<CycleLock | null> {

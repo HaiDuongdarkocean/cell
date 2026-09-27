@@ -1,3 +1,4 @@
+import { logger } from '@/shared/lib/logger';
 import type { Connection, ConnectionId, Hlc, Scope } from '../domain/types';
 import { isPlainJsonObject } from '../domain/flatten';
 import type { Clock } from '../ports/clock';
@@ -16,6 +17,7 @@ import {
   type ConnectionPushDeps,
 } from './pushCycle';
 import { readRouting, routeForScope, SYNC_DIRECTORY_STORAGE_KEY } from './routing';
+import { collectScopeSnapshot, publishScopeSnapshot } from './snapshotPublish';
 import { clearCheckpoint, listCheckpoints } from './checkpoints';
 import type { SyncStore } from './syncStore';
 
@@ -147,6 +149,17 @@ export async function completeDisconnectLocally(
   connId: ConnectionId,
 ): Promise<void> {
   const routing = await readRouting(deps.kv);
+  const connection = routing.connections.find((c) => c.connectionId === connId);
+  if (connection !== undefined) {
+    try {
+      await deps.providerFor(connection.providerId).revoke(connection);
+    } catch (e) {
+      logger.warn('sync: provider revoke failed during disconnect', {
+        connectionId: connId,
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
   await writeDirectoryDisconnect(deps, connId, routing);
   await clearCheckpointsFor(deps, connId);
   await propagateGlobalScope(deps, connId);
@@ -237,16 +250,28 @@ async function propagateGlobalScope(
     (c) => c.connectionId === target.connectionId,
   );
   if (connection === undefined) return;
-  const pending = await collectPendingKeys(
-    deps.sources,
-    deps.pendingLimit ?? DEFAULT_PENDING_LIMIT,
-  );
-  const globalKeys = pending.filter((key) => key.scope === 'global');
-  if (globalKeys.length === 0) return;
+  const records = await collectScopeSnapshot(deps, 'global');
+  if (records.length === 0) return;
   try {
-    await runConnectionPush(pushDepsFor(deps, connection), new Map([['global', globalKeys]]));
+    await publishScopeSnapshot(
+      {
+        provider: deps.providerFor(connection.providerId),
+        connection,
+        store: deps.store,
+        sources: deps.sources,
+        blobs: deps.blobs,
+        deviceId: deps.deviceId,
+        fence: deps.fence,
+      },
+      'global',
+      records,
+    );
+    for (const source of deps.sources) {
+      const mine = records.filter((record) => record.dataClass === source.dataClass);
+      await source.stampCommitted(mine);
+    }
   } catch {
-    // the next cycle re-pushes global scope; the marker remains authoritative
+    // the next cycle re-publishes the global scope; the directory remains authoritative
   }
 }
 

@@ -14,8 +14,11 @@ export interface WordStatusRemovedDetail {
 export type WordStatusChangedListener = (detail: WordStatusChangedDetail) => void;
 export type WordStatusRemovedListener = (detail: WordStatusRemovedDetail) => void;
 
+export type WordStatusReloadListener = (langCode: string) => void;
+
 const changedListeners = new Set<WordStatusChangedListener>();
 const removedListeners = new Set<WordStatusRemovedListener>();
+const reloadListeners = new Set<WordStatusReloadListener>();
 
 export function emitWordStatusChanged(detail: WordStatusChangedDetail): void {
   for (const listener of [...changedListeners]) {
@@ -40,5 +43,18 @@ export function onWordStatusRemoved(listener: WordStatusRemovedListener): () => 
   removedListeners.add(listener);
   return () => {
     removedListeners.delete(listener);
+  };
+}
+
+export function emitWordStatusesReload(langCode: string): void {
+  for (const listener of [...reloadListeners]) {
+    listener(langCode);
+  }
+}
+
+export function onWordStatusesReload(listener: WordStatusReloadListener): () => void {
+  reloadListeners.add(listener);
+  return () => {
+    reloadListeners.delete(listener);
   };
 }

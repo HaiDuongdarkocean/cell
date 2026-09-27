@@ -155,6 +155,13 @@ export function runStorageProviderContract(makeEnv: MakeStorageProviderContractE
       expect(err).toBeInstanceOf(ProviderError);
       expect((err as ProviderError).kind).toBe('auth');
     });
+
+    it('reports token presence and drops it on revoke', async () => {
+      const c = await env.connect();
+      expect(await env.provider.hasToken(c)).toBe(true);
+      await env.provider.revoke(c);
+      expect(await env.provider.hasToken(c)).toBe(false);
+    });
   });
 }
 

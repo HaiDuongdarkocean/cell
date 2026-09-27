@@ -304,15 +304,29 @@ describe('runScopeRebind', () => {
     expect(await readRouteMarker(t.provider, t.connB, SCOPE)).toBeNull();
   });
 
-  test('destination not connected → waits with waitingFor, checkpoint kept', async () => {
+  test('destination absent from the directory → rejected, no checkpoint', async () => {
     const t = await harness();
     const deps = t.rebindDeps({
       connectionFor: (id) => (id === t.connA.connectionId ? t.connA : null),
     });
-    const result = await runScopeRebind(deps, SCOPE, t.connB.connectionId);
-    expect(result.done).toBe(false);
-    expect(result.waitingFor).toBe(t.connB.connectionId);
-    expect(await getCheckpoint(t.kv, SCOPE)).not.toBeNull();
+    await expect(
+      runScopeRebind(deps, SCOPE, t.connB.connectionId),
+    ).rejects.toThrow('unknown connection');
+    expect(await getCheckpoint(t.kv, SCOPE)).toBeNull();
+  });
+
+  test('resumed rebind whose destination left the directory → aborts cleanly', async () => {
+    const t = await harness();
+    await writeCheckpoint(
+      t.kv,
+      checkpoint({ kind: 'rebind', phase: 'freeze', from: t.connA.connectionId, to: t.connB.connectionId }),
+    );
+    const deps = t.rebindDeps({
+      connectionFor: (id) => (id === t.connA.connectionId ? t.connA : null),
+    });
+    const result = await resumeScopeRebind(deps, await getCheckpoint(t.kv, SCOPE) as never);
+    expect(result.done).toBe(true);
+    expect(await getCheckpoint(t.kv, SCOPE)).toBeNull();
   });
 
   test('incompatible existing checkpoint → throws, checkpoint untouched', async () => {
@@ -522,6 +536,13 @@ describe('runConnectionDisconnect', () => {
 
     const result = await runConnectionDisconnect(t.disconnectDeps(), t.connB);
     expect(result.status).toBe('disconnected');
+    await expect(
+      t.provider.list(t.connB, DISCONNECT_MARKER_PATH),
+    ).rejects.toThrow('revoked');
+    await t.provider.authorize({
+      interactive: false,
+      accountHint: t.connB.accountKey,
+    });
 
     const markerBlob = await t.provider.read(t.connB, DISCONNECT_MARKER_PATH);
     const parsed = JSON.parse(new TextDecoder().decode(await blobToBytes(markerBlob))) as {
@@ -569,6 +590,10 @@ describe('runConnectionDisconnect', () => {
 
     const done = await completePendingDisconnects(t.disconnectDeps());
     expect(done).toEqual([t.connB.connectionId]);
+    await t.provider.authorize({
+      interactive: false,
+      accountHint: t.connB.accountKey,
+    });
     expect(await t.provider.list(t.connB, DISCONNECT_MARKER_PATH)).toHaveLength(1);
     expect(t.disconnected).toEqual([t.connB.connectionId]);
   });

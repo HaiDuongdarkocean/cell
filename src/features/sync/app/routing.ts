@@ -62,6 +62,7 @@ export async function readRouting(kv: KeyValueStore): Promise<RoutingSnapshot> {
       }
     }
   }
+
   connections.sort((a, b) =>
     a.connectionId < b.connectionId ? -1 : a.connectionId > b.connectionId ? 1 : 0,
   );
@@ -71,6 +72,12 @@ export async function readRouting(kv: KeyValueStore): Promise<RoutingSnapshot> {
     bindings,
     frozenScopes: parseFrozenScopes(checkpoints),
   };
+}
+
+export function routingLeafKey(scope: Scope): string {
+  return scope === 'global'
+    ? 'systemConnection'
+    : `binding:${scope.slice('profile:'.length)}`;
 }
 
 function parseConnection(id: string, value: unknown): Connection | null {
@@ -95,18 +102,13 @@ function parseFrozenScopes(raw: unknown): Set<Scope> {
   }
   if (isPlainJsonObject(raw)) {
     for (const [key, value] of Object.entries(raw)) {
-      if (!isScope(key)) continue;
-      if (!isPlainJsonObject(value)) {
-        out.add(key);
-        continue;
-      }
+      if (!isScope(key) || !isPlainJsonObject(value)) continue;
       const kind = value['kind'];
       const phase = value['phase'];
-      if (kind === undefined || phase === undefined) {
-        out.add(key);
-        continue;
-      }
       if (kind === 'rebind' && (phase === 'freeze' || phase === 'copied')) {
+        out.add(key);
+      }
+      if (kind === 'drain') {
         out.add(key);
       }
     }

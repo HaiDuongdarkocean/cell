@@ -14,7 +14,7 @@ import type { KeyValueStore } from '../ports/keyValueStore';
 import type { LocalSource } from '../ports/localSource';
 import { ProviderError } from '../ports/storageProvider';
 import type { StorageProvider } from '../ports/storageProvider';
-import { backoffDelayMs, BackoffTracker } from './backoff';
+import { backoffDelayMs, BackoffTracker, type EngineState } from './backoff';
 import type { BlobReader } from './blobRefs';
 import { acquireCycleLock, CycleLockLostError } from './cycleLock';
 import type { CycleLock, CycleLockDeps } from './cycleLock';
@@ -39,17 +39,12 @@ import {
 } from './disconnect';
 import { observeRouteMarker, processCheckpoints } from './obligations';
 import { scopesPrefix, scopeOfRemotePath } from './remotePaths';
+import { readRouteMarkers } from './routeMarkers';
 import { readRouting, routeForScope } from './routing';
 import type { RoutingSnapshot } from './routing';
 import type { SyncStore } from './syncStore';
 
-export type EngineState =
-  | 'idle'
-  | 'running'
-  | 'backoff'
-  | 'needs-reauth'
-  | 'offline'
-  | 'storage-full';
+export type { EngineState } from './backoff';
 
 export interface EngineStatus {
   readonly state: EngineState;
@@ -132,6 +127,10 @@ export class SyncEngine {
     this.status = { state: 'idle', updatedAt: deps.clock.now() };
   }
 
+  connectionHealth(): ReadonlyMap<ConnectionId, { state: EngineState; retryAt: number }> {
+    return this.backoff.snapshot();
+  }
+
   get current(): EngineStatus {
     return this.status;
   }
@@ -204,7 +203,6 @@ export class SyncEngine {
     let cycleError: unknown;
 
     try {
-      const routing = await readRouting(deps.kv);
       const pending = await collectPendingKeys(
         deps.sources,
         deps.pendingLimit ?? DEFAULT_PENDING_LIMIT,
@@ -213,35 +211,22 @@ export class SyncEngine {
       for (const connection of await deps.connections()) {
         connected.set(connection.connectionId, connection);
       }
-
-      const buckets = new Map<ConnectionId, Map<Scope, PendingKey[]>>();
-      const scoped = [...groupPendingByScope(pending).entries()].sort(([a], [b]) =>
-        a < b ? -1 : a > b ? 1 : 0,
-      );
-      for (const [scope, keys] of scoped) {
-        if (typeof scope !== 'string' || routing.frozenScopes.has(scope)) continue;
-        const target = routeForScope(routing, scope);
-        if (target === null) continue;
-        if (target.kind === 'local') {
-          await lock.verify();
-          await resolvePendingKeys(deps.sources, keys);
-          await ackPendingKeys(deps.sources, keys);
-          ackedKeys += keys.length;
-          continue;
-        }
-        if (!connected.has(target.connectionId)) {
-          waitingScopes.add(scope);
-          continue;
-        }
-        const bucket = buckets.get(target.connectionId) ?? new Map<Scope, PendingKey[]>();
-        bucket.set(scope, keys);
-        buckets.set(target.connectionId, bucket);
-      }
-
       const deviceId = await deps.deviceId();
+
+      const skipConnection = new Set<ConnectionId>();
       for (const connection of connected.values()) {
+        const retryAt = this.backoff.retryAt(connection.connectionId);
+        if (retryAt !== undefined && deps.clock.now() < retryAt) {
+          failed.push({
+            connectionId: connection.connectionId,
+            state: this.backoff.stateOf(connection.connectionId) ?? 'backoff',
+            retryAt,
+          });
+          skipConnection.add(connection.connectionId);
+          continue;
+        }
+        const provider = deps.providerFor(connection.providerId);
         try {
-          const provider = deps.providerFor(connection.providerId);
           if (
             await isConnectionDisconnected({ provider, connection, kv: deps.kv })
           ) {
@@ -257,8 +242,71 @@ export class SyncEngine {
                 { at: deps.clock.now() },
               );
             }
+            connected.delete(connection.connectionId);
             continue;
           }
+          if (deps.tick !== undefined) {
+            const markers = await readRouteMarkers(provider, connection);
+            for (const [scope, marker] of markers) {
+              await lock.verify();
+              await observeRouteMarker(
+                deps.kv,
+                scope,
+                marker,
+                connection.connectionId,
+                deps.clock.now(),
+              );
+            }
+          }
+        } catch (error) {
+          if (error instanceof CycleLockLostError) throw error;
+          const markerRetryAt = this.backoff.recordFailure(
+            connection.connectionId,
+            deps.clock.now(),
+            engineStateForError(error),
+          );
+          failed.push({
+            connectionId: connection.connectionId,
+            state: engineStateForError(error),
+            retryAt: markerRetryAt,
+          });
+          skipConnection.add(connection.connectionId);
+        }
+      }
+
+      const routing = await readRouting(deps.kv);
+      const buckets = new Map<ConnectionId, Map<Scope, PendingKey[]>>();
+      const scoped = [...groupPendingByScope(pending).entries()].sort(([a], [b]) =>
+        a < b ? -1 : a > b ? 1 : 0,
+      );
+      for (const [scope, keys] of scoped) {
+        if (typeof scope !== 'string' || routing.frozenScopes.has(scope)) continue;
+        const target = routeForScope(routing, scope);
+        if (target === null) {
+          waitingScopes.add(scope);
+          continue;
+        }
+        if (target.kind === 'local') {
+          await lock.verify();
+          await resolvePendingKeys(deps.sources, keys);
+          await ackPendingKeys(deps.sources, keys);
+          ackedKeys += keys.length;
+          continue;
+        }
+        if (!connected.has(target.connectionId)) {
+          waitingScopes.add(scope);
+          waitingFor[scope] = target.connectionId;
+          continue;
+        }
+        const bucket = buckets.get(target.connectionId) ?? new Map<Scope, PendingKey[]>();
+        bucket.set(scope, keys);
+        buckets.set(target.connectionId, bucket);
+      }
+
+      for (const connection of connected.values()) {
+        if (skipConnection.has(connection.connectionId)) continue;
+        try {
+          const provider = deps.providerFor(connection.providerId);
           const result = await runConnectionPush(
             {
               provider,
@@ -349,6 +397,7 @@ export class SyncEngine {
           const retryAt = this.backoff.recordFailure(
             connection.connectionId,
             deps.clock.now(),
+            engineStateForError(error),
           );
           failed.push({
             connectionId: connection.connectionId,

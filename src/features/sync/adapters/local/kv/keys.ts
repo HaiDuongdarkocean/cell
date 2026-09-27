@@ -6,5 +6,4 @@ export const SYNC_CONFLICT_LOG_STORAGE_KEY = 'syncConflictLog';
 
 export const SYNCED_STORAGE_KEYS: readonly string[] = [
   ...Object.keys(SYNCED_KV_REGISTRIES),
-  SYNC_DIRECTORY_STORAGE_KEY,
 ];

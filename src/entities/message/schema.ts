@@ -356,3 +356,71 @@ export const SyncSetBindingPayloadSchema = z.object({
   scope: z.string().min(1),
   destination: z.string().min(1),
 });
+
+export const SyncCancelRebindPayloadSchema = z.object({
+  scope: z.string().min(1),
+});
+
+export const SyncDeleteOldCopyPayloadSchema = z.object({
+  scope: z.string().min(1),
+  connectionId: z.string().min(1),
+});
+
+export const SyncEngineStatusSchema = z.object({
+  state: z.enum([
+    'idle',
+    'running',
+    'backoff',
+    'needs-reauth',
+    'offline',
+    'storage-full',
+  ]),
+  retryAt: z.number().optional(),
+  lastError: z.string().optional(),
+  updatedAt: z.number(),
+});
+
+export const SyncConnectionStatusSchema = z.object({
+  connectionId: z.string().min(1),
+  providerId: z.string().min(1),
+  displayName: z.string(),
+  isSystem: z.boolean(),
+  disconnectPending: z.boolean(),
+  state: z.enum([
+    'connected',
+    'backoff',
+    'needs-reauth',
+    'offline',
+    'storage-full',
+    'disconnect-pending',
+  ]),
+  retryAt: z.number().optional(),
+  hasToken: z.boolean(),
+});
+
+export const SyncBindingStatusSchema = z.object({
+  target: z.string(),
+  scope: z.string().min(1),
+  destination: z.string().min(1),
+  frozen: z.boolean(),
+  waiting: z.boolean(),
+  waitingFor: z.string().nullable(),
+  vacatedFrom: z.string().nullable(),
+});
+
+export const SyncDataAppliedPayloadSchema = z.object({
+  dataClasses: z.array(z.string().min(1)),
+  scopes: z.array(z.string().min(1)),
+});
+
+export type SyncDataAppliedPayload = z.infer<typeof SyncDataAppliedPayloadSchema>;
+
+export const SyncStatusViewSchema = z.object({
+  engine: SyncEngineStatusSchema,
+  directory: z.object({
+    connections: z.array(SyncConnectionStatusSchema),
+    bindings: z.array(SyncBindingStatusSchema),
+    systemConnection: z.string().nullable(),
+    lastAppliedAt: z.number().nullable(),
+  }),
+});

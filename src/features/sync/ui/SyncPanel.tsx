@@ -19,7 +19,9 @@ import type { ConnectionId } from '../domain/types';
 import { scopeForTarget, targetOf } from '../domain/scope';
 import type { BindingStatusEntry, ConnectionStatusEntry } from '../app/syncService';
 import {
+  cancelScopeRebind,
   connectProviderAccount,
+  deleteOldCopy,
   disconnectConnection,
   getSyncStatus,
   onSyncStatusChanged,
@@ -345,6 +347,7 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
                     binding?.destination ?? view.directory.systemConnection ?? 'local';
                   const waitingConn =
                     binding !== undefined && binding.waiting ? binding.destination : null;
+                  const scope = scopeForTarget(target);
                   return (
                     <li key={profile.id} className={styles.row}>
                       <div className={styles.rowText}>
@@ -370,6 +373,35 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
                           </span>
                         )}
                       </div>
+                      {(binding?.frozen === true || waitingConn !== null) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={busy === `cancel:${target}`}
+                          onClick={() =>
+                            void run(`cancel:${target}`, () => cancelScopeRebind(scope))
+                          }
+                        >
+                          {t('settings.sync.cancelRebind')}
+                        </Button>
+                      )}
+                      {binding?.vacatedFrom != null && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={busy === `delete:${target}`}
+                          title={t('settings.sync.deleteOldCopy', [
+                            connectionLabel(binding.vacatedFrom),
+                          ])}
+                          onClick={() =>
+                            void run(`delete:${target}`, () =>
+                              deleteOldCopy(scope, binding.vacatedFrom as ConnectionId),
+                            )
+                          }
+                        >
+                          {t('settings.sync.deleteOldCopyShort')}
+                        </Button>
+                      )}
                       <Select
                         size="sm"
                         variant="outline"
@@ -386,7 +418,7 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
                         onChange={(value) =>
                           void run(`bind:${target}`, () =>
                             setScopeBinding(
-                              scopeForTarget(target),
+                              scope,
                               value === 'local' ? 'local' : (value as ConnectionId),
                             ),
                           )

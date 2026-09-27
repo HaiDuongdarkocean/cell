@@ -73,6 +73,13 @@ export class InMemoryStorageProvider implements StorageProvider {
     return this.issueToken(account);
   }
 
+  async hasToken(connection: Connection): Promise<boolean> {
+    return (
+      this.accounts.has(connection.accountKey) &&
+      !this.revoked.has(connection.connectionId)
+    );
+  }
+
   async revoke(connection: Connection): Promise<void> {
     this.gate();
     this.revoked.add(connection.connectionId);

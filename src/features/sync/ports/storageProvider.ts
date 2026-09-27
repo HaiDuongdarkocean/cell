@@ -30,6 +30,7 @@ export interface StorageProvider {
   readonly providerId: ProviderId;
   readonly displayName: string;
   authorize(opts: { interactive: boolean; accountHint?: string }): Promise<AuthorizedAccount>;
+  hasToken(connection: Connection): Promise<boolean>;
   revoke(connection: Connection): Promise<void>;
   list(connection: Connection, prefix: string): Promise<RemoteEntry[]>;
   read(connection: Connection, path: string): Promise<Blob>;

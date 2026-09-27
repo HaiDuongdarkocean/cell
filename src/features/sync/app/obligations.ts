@@ -1,6 +1,8 @@
 import type { Connection, ConnectionId, Scope } from '../domain/types';
+import { compareHlc } from '../domain/hlc';
 import type { KeyValueStore } from '../ports/keyValueStore';
 import { ProviderError } from '../ports/storageProvider';
+import { kvMetaKey, readSyncMetaKV } from '../adapters/local/kv/kvMeta';
 import {
   clearCheckpoint,
   listCheckpoints,
@@ -8,13 +10,20 @@ import {
   type SyncCheckpoint,
 } from './checkpoints';
 import {
+  ackPendingKeys,
+  collectPendingKeys,
+  DEFAULT_PENDING_LIMIT,
+  resolvePendingKeys,
+} from './pushCycle';
+import {
   resumeScopeRebind,
   writeRoutingValue,
   type RebindDeps,
 } from './rebind';
 import { scopesPrefix } from './remotePaths';
 import { collectScopeSnapshot, publishScopeSnapshot } from './snapshotPublish';
-import { readRouting, routeForScope } from './routing';
+import { CycleLockLostError } from './cycleLock';
+import { readRouting, routeForScope, routingLeafKey } from './routing';
 import type { RouteMarker } from './routeMarkers';
 
 export interface ObligationDeps extends RebindDeps {
@@ -47,6 +56,7 @@ export async function processCheckpoints(
         if (outcome.waitingFor !== null) waitingFor[cp.scope] = outcome.waitingFor;
       }
     } catch (e) {
+      if (e instanceof CycleLockLostError) throw e;
       errors.push(`${cp.scope}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
@@ -87,6 +97,25 @@ async function drainObligation(
   connected: ReadonlyMap<ConnectionId, Connection>,
 ): Promise<CheckpointOutcome> {
   if (cp.to === 'local') {
+    if (cp.scope !== 'global') {
+      const meta = await readSyncMetaKV(deps.kv);
+      const applied = meta[kvMetaKey('global', routingLeafKey(cp.scope))];
+      const stale =
+        applied !== undefined &&
+        cp.markerHlc !== null &&
+        compareHlc(cp.markerHlc, applied.hlc) < 0;
+      if (!stale) {
+        await writeRoutingValue(deps, cp.scope, 'local');
+      }
+      const held = (await collectPendingKeys(
+        deps.sources,
+        deps.pendingLimit ?? DEFAULT_PENDING_LIMIT,
+      )).filter((key) => key.scope === cp.scope);
+      if (held.length > 0) {
+        await resolvePendingKeys(deps.sources, held);
+        await ackPendingKeys(deps.sources, held);
+      }
+    }
     await clearCheckpoint(deps.kv, cp.scope);
     return OUTCOME_DONE;
   }
@@ -110,7 +139,15 @@ async function drainObligation(
     const mine = records.filter((record) => record.dataClass === source.dataClass);
     await source.stampCommitted(mine);
   }
-  await writeRoutingValue(deps, cp.scope, cp.to);
+  const meta = await readSyncMetaKV(deps.kv);
+  const applied = meta[kvMetaKey('global', routingLeafKey(cp.scope))];
+  const stale =
+    applied !== undefined &&
+    cp.markerHlc !== null &&
+    compareHlc(cp.markerHlc, applied.hlc) < 0;
+  if (!stale) {
+    await writeRoutingValue(deps, cp.scope, cp.to);
+  }
   await clearCheckpoint(deps.kv, cp.scope);
   return OUTCOME_DONE;
 }
@@ -166,5 +203,10 @@ export async function observeRouteMarker(
   const current =
     target === null ? null : target.kind === 'local' ? ('local' as const) : target.connectionId;
   if (current === marker.destination) return false;
+  const meta = await readSyncMetaKV(kv);
+  const applied = meta[kvMetaKey('global', routingLeafKey(scope))];
+  if (applied !== undefined && compareHlc(marker.hlc, applied.hlc) <= 0) {
+    return false;
+  }
   return persistDrainObligation(kv, scope, marker, current ?? observedOn, now);
 }

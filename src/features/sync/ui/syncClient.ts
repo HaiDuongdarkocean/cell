@@ -61,11 +61,34 @@ export function setScopeBinding(
   });
 }
 
+export function cancelScopeRebind(scope: Scope): Promise<void> {
+  return request<void>(MESSAGE_TYPES.SYNC_CANCEL_REBIND, { tabId: -1, scope });
+}
+
+export function deleteOldCopy(scope: Scope, connectionId: ConnectionId): Promise<void> {
+  return request<void>(MESSAGE_TYPES.SYNC_DELETE_OLD_COPY, {
+    tabId: -1,
+    scope,
+    connectionId,
+  });
+}
+
+function isSyncStatusView(payload: unknown): payload is SyncStatusView {
+  if (typeof payload !== 'object' || payload === null) return false;
+  const view = payload as { engine?: unknown; directory?: unknown };
+  return (
+    typeof view.engine === 'object' &&
+    view.engine !== null &&
+    typeof view.directory === 'object' &&
+    view.directory !== null
+  );
+}
+
 export function onSyncStatusChanged(callback: (status: SyncStatusView) => void): () => void {
   const listener = (message: unknown): boolean => {
     const msg = message as { type?: string; payload?: unknown };
-    if (msg.type === MESSAGE_TYPES.SYNC_STATUS_CHANGED) {
-      callback(msg.payload as SyncStatusView);
+    if (msg.type === MESSAGE_TYPES.SYNC_STATUS_CHANGED && isSyncStatusView(msg.payload)) {
+      callback(msg.payload);
     }
     return false;
   };

@@ -70,6 +70,18 @@ describe('acquireCycleLock', () => {
     expect(lock).not.toBeNull();
     expect((await readLock(t.kv))?.expiresAt).toBe(1000 + LOCK_TTL_MS);
   });
+
+  it('serializes concurrent same-process acquisitions to a single winner', async () => {
+    const t = harness();
+    const [a, b] = await Promise.all([
+      acquireCycleLock(t.deps(), 'cycle-1'),
+      acquireCycleLock(t.deps(), 'cycle-2'),
+    ]);
+    const winners = [a, b].filter((l) => l !== null);
+    expect(winners).toHaveLength(1);
+    expect((await readLock(t.kv))?.cycleId).toBe(winners[0]!.cycleId);
+    await winners[0]!.release();
+  });
 });
 
 describe('CycleLock fencing', () => {

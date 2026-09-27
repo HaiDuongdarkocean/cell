@@ -129,7 +129,14 @@ export async function runScopeRebind(
   if (scope === 'global' && destination === 'local') {
     throw new Error('global scope cannot be rebound to local');
   }
-  const existing = await getCheckpoint(deps.kv, scope);
+  if (destination !== 'local' && deps.connectionFor(destination) === null) {
+    throw new Error(`cannot rebind ${scope}: unknown connection ${destination}`);
+  }
+  let existing = await getCheckpoint(deps.kv, scope);
+  if (existing !== null && existing.kind === 'sweep') {
+    await clearCheckpoint(deps.kv, scope);
+    existing = null;
+  }
   if (existing !== null && (existing.kind !== 'rebind' || existing.to !== destination)) {
     throw new Error(
       `scope ${scope} has an incompatible ${existing.kind} obligation to ${existing.to}`,
@@ -165,7 +172,10 @@ export async function resumeScopeRebind(
   return advanceRebind(deps, checkpoint);
 }
 
-export async function cancelScopeRebind(deps: RebindDeps, scope: Scope): Promise<void> {
+export async function cancelScopeRebind(
+  deps: Pick<RebindDeps, 'kv'>,
+  scope: Scope,
+): Promise<void> {
   const cp = await getCheckpoint(deps.kv, scope);
   if (cp !== null && cp.kind === 'rebind') await clearCheckpoint(deps.kv, scope);
 }
@@ -194,6 +204,10 @@ async function advanceRebind(
       return { scope: cp.scope, done: false, phase: cp.phase, waitingFor: null };
     } catch (e) {
       if (e instanceof RebindBlockedError) {
+        if (deps.connectionFor(e.waitingFor) === null) {
+          await clearCheckpoint(deps.kv, cp.scope);
+          return { scope: cp.scope, done: true, phase: 'done', waitingFor: null };
+        }
         return {
           scope: cp.scope,
           done: false,
@@ -262,11 +276,12 @@ async function writeRoutingMarkers(
   if (cp.to !== 'local') {
     const connection = deps.connectionFor(cp.to);
     if (connection === null) throw new RebindBlockedError(cp.to, cp.scope);
-    await writeRouteMarker(
+    const landed = await writeRouteMarker(
       { provider: deps.providerFor(connection.providerId), connection, fence: deps.fence },
       cp.scope,
       marker,
     );
+    if (!landed) throw new Error(`route marker for ${cp.scope} superseded on remote`);
   }
   if (cp.from !== null) {
     const connection = deps.connectionFor(cp.from);

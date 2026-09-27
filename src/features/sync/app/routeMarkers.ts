@@ -62,15 +62,17 @@ export async function writeRouteMarker(
   },
   scope: Scope,
   marker: RouteMarker,
-): Promise<void> {
+): Promise<boolean> {
   const existing = await readRouteMarker(deps.provider, deps.connection, scope);
-  if (existing !== null && compareHlc(existing.hlc, marker.hlc) > 0) return;
+  if (existing !== null && compareHlc(existing.hlc, marker.hlc) > 0) return false;
   await deps.fence();
   await deps.provider.write(
     deps.connection,
     routeMarkerPath(scope),
     encodeRouteMarker(marker),
   );
+  const landed = await readRouteMarker(deps.provider, deps.connection, scope);
+  return landed !== null && compareHlc(landed.hlc, marker.hlc) === 0;
 }
 
 export async function readRouteMarker(

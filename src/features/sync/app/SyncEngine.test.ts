@@ -21,8 +21,11 @@ import { BACKOFF_BASE_MS } from './backoff';
 import { SYNC_LOCK_STORAGE_KEY } from './cycleLock';
 import { SYNC_APPLIED_AT_KEY } from './pullCycle';
 import { journalPath, parseSnapshotN, scopeDevicePrefix, DISCONNECT_MARKER_PATH } from './remotePaths';
+import { routeMarkerPath } from './remotePaths';
+import { encodeRouteMarker } from './routeMarkers';
 import { writeCheckpoint } from './checkpoints';
 import { DISCONNECT_PENDING_PREFIX } from './disconnect';
+import { readRouting } from './routing';
 import { SyncEngine } from './SyncEngine';
 import type { EngineStatus, SyncEngineDeps } from './SyncEngine';
 import { createSyncDbStore } from './syncDbStore';
@@ -257,7 +260,7 @@ describe('routing', () => {
   it('holds keys of scopes frozen by a routing checkpoint', async () => {
     const t = await harness();
     await t.kv.set('local', 'syncCheckpoints', {
-      'profile:en': { from: 'a', to: 'b' },
+      'profile:en': { kind: 'rebind', phase: 'freeze', from: 'a', to: 'b' },
     });
     const source = new FakeSource('srsCard', 'profile:en');
     source.pushKey('cards:c1', 'put', { id: 'c1' });
@@ -385,21 +388,30 @@ describe('crash resume and fencing', () => {
 });
 
 describe('error mapping and backoff', () => {
-  it('maps network errors to offline with escalating backoff', async () => {
+  it('maps network errors to offline, gates retries on retryAt and escalates backoff', async () => {
     const t = await harness();
     const source = new FakeSource('settings', GLOBAL);
     source.pushKey('kv:settings/a', 'put', 1);
-    t.provider.failNext(2, 'network');
+    t.provider.failNext(1, 'network');
     const engine = t.makeEngine({ sources: [source] });
     const first = await engine.runCycle();
     expect(first.failed).toHaveLength(1);
     expect(engine.current.state).toBe('offline');
     expect(engine.current.retryAt).toBe(1000 + BACKOFF_BASE_MS);
 
+    const gated = await engine.runCycle();
+    expect(gated.failed).toHaveLength(1);
+    expect(gated.failed[0]!.state).toBe('offline');
+    expect(engine.current.retryAt).toBe(1000 + BACKOFF_BASE_MS);
+    expect(await t.remotePaths()).toEqual([]);
+
+    t.clock.set(1000 + BACKOFF_BASE_MS);
+    t.provider.failNext(1, 'network');
     const second = await engine.runCycle();
     expect(second.failed).toHaveLength(1);
-    expect(engine.current.retryAt).toBe(1000 + BACKOFF_BASE_MS * 2);
+    expect(engine.current.retryAt).toBe(1000 + BACKOFF_BASE_MS * 3);
 
+    t.clock.set(1000 + BACKOFF_BASE_MS * 3);
     const third = await engine.runCycle();
     expect(third.failed).toEqual([]);
     expect(engine.current.state).toBe('idle');
@@ -553,6 +565,13 @@ describe('pull', () => {
     expect(disconnected).toEqual([t.connection.connectionId]);
     expect(result.scopesPulled).toEqual([]);
     expect(result.scopesPushed).toEqual([]);
+    await expect(t.provider.list(t.connection, 'cell-sync/v1/')).rejects.toThrow(
+      'revoked',
+    );
+    await t.provider.authorize({
+      interactive: false,
+      accountHint: t.connection.accountKey,
+    });
     const writes = (await t.remotePaths()).filter((p) => !p.endsWith('disconnect.json'));
     expect(writes).toEqual([]);
   });
@@ -672,6 +691,7 @@ describe('SyncEngine obligations', () => {
     });
     const result = await engine.runCycle();
     expect(result.failed).toEqual([]);
+    await t.provider.authorize({ interactive: false, accountHint: connB.accountKey });
     expect(await t.provider.list(connB, DISCONNECT_MARKER_PATH)).toHaveLength(1);
     expect(disconnected).toEqual([connB.connectionId]);
     expect(
@@ -679,5 +699,172 @@ describe('SyncEngine obligations', () => {
     ).toBeUndefined();
     const state = await t.kv.get<Record<string, unknown>>('local', 'syncState');
     expect(state?.[`connection:${connB.connectionId}`]).toBeUndefined();
+  });
+
+  it('reads route markers before push: a newer marker freezes the scope in the same cycle', async () => {
+    const t = await harness();
+    const ghost = `${PROVIDER_ID}:ghost` as Connection['connectionId'];
+    await t.setDirectory({ 'binding:lang:en': t.connection.connectionId });
+    await t.provider.write(
+      t.connection,
+      routeMarkerPath(SCOPE),
+      encodeRouteMarker({
+        hlc: { wall: 4000, counter: 0, node: 'dev-2:ctx' },
+        destination: ghost,
+      }),
+    );
+    const source = new FakeSource('settings', SCOPE);
+    source.pushKey('kv:x', 'put', 1);
+    const engine = t.makeEngine({ sources: [source], tick });
+
+    const result = await engine.runCycle();
+
+    expect(result.failed).toEqual([]);
+    expect(result.scopesPushed).toEqual([]);
+    expect(result.waitingScopes).toEqual([SCOPE]);
+    expect(result.waitingFor[SCOPE]).toBe(ghost);
+    const scopeWrites = (await t.remotePaths()).filter((p) =>
+      p.includes('/scopes/'),
+    );
+    expect(scopeWrites).toEqual([]);
+    const checkpoints = await t.kv.get<Record<string, unknown>>(
+      'local',
+      'syncCheckpoints',
+    );
+    expect(checkpoints?.[SCOPE]).toMatchObject({ kind: 'drain', to: ghost });
+  });
+
+  it('ignores a route marker older than the applied routing record', async () => {
+    const t = await harness();
+    const ghost = `${PROVIDER_ID}:ghost` as Connection['connectionId'];
+    await t.setDirectory({ 'binding:lang:en': t.connection.connectionId });
+    await stampKvMeta(t.kv, [
+      {
+        scope: GLOBAL,
+        dataClass: 'syncDirectory',
+        key: 'binding:lang:en',
+        op: 'put',
+        value: t.connection.connectionId,
+        hlc: { wall: 6000, counter: 0, node: `${DEVICE}:ctx` },
+      },
+    ]);
+    await t.provider.write(
+      t.connection,
+      routeMarkerPath(SCOPE),
+      encodeRouteMarker({
+        hlc: { wall: 4000, counter: 0, node: 'dev-2:ctx' },
+        destination: ghost,
+      }),
+    );
+    const source = new FakeSource('settings', SCOPE);
+    source.pushKey('kv:x', 'put', 1);
+    const engine = t.makeEngine({ sources: [source], tick });
+
+    const result = await engine.runCycle();
+
+    expect(result.failed).toEqual([]);
+    expect(result.scopesPushed).toEqual([SCOPE]);
+    expect(result.waitingScopes).toEqual([]);
+    const checkpoints = await t.kv.get<Record<string, unknown>>(
+      'local',
+      'syncCheckpoints',
+    );
+    expect(checkpoints ?? {}).toEqual({});
+  });
+
+  it('completes a drain-to-local checkpoint by routing the scope to local', async () => {
+    const t = await harness();
+    await t.setDirectory({ 'binding:lang:en': t.connection.connectionId });
+    await writeCheckpoint(t.kv, {
+      scope: SCOPE,
+      kind: 'drain',
+      phase: 'open',
+      from: t.connection.connectionId,
+      to: 'local',
+      writtenPaths: [],
+      markerHlc: null,
+      startedAt: 0,
+      until: null,
+    });
+    const source = new FakeSource('settings', SCOPE);
+    source.pushKey('kv:x', 'put', 1);
+    const engine = t.makeEngine({ sources: [source], tick });
+
+    const result = await engine.runCycle();
+
+    expect(result.failed).toEqual([]);
+    const routing = await readRouting(t.kv);
+    expect(routing.bindings.get('lang:en')).toBe('local');
+    expect(source.acked.map((k) => k.key)).toEqual(['kv:x']);
+    const checkpoints = await t.kv.get<Record<string, unknown>>(
+      'local',
+      'syncCheckpoints',
+    );
+    expect(checkpoints ?? {}).toEqual({});
+    expect((await t.remotePaths()).filter((p) => p.includes('/scopes/'))).toEqual(
+      [],
+    );
+  });
+
+  it('defers a routing record when the scope is occupied by another checkpoint', async () => {
+    const t = await harness();
+    const ghost = `${PROVIDER_ID}:ghost` as Connection['connectionId'];
+    await t.setDirectory({ 'binding:lang:en': t.connection.connectionId });
+    await writeCheckpoint(t.kv, {
+      scope: SCOPE,
+      kind: 'rebind',
+      phase: 'freeze',
+      from: t.connection.connectionId,
+      to: ghost,
+      writtenPaths: [],
+      markerHlc: null,
+      startedAt: 0,
+      until: null,
+    });
+    const record: ChangeRecord = {
+      scope: GLOBAL,
+      dataClass: 'syncDirectory',
+      key: 'binding:lang:en',
+      op: 'put',
+      value: `${PROVIDER_ID}:other`,
+      hlc: { wall: 5, counter: 0, node: 'dev-2:ctx' },
+    };
+    await t.provider.write(
+      t.connection,
+      journalPath(GLOBAL, 'dev-2', 1),
+      encodeJournal({
+        scope: GLOBAL,
+        deviceId: 'dev-2',
+        seq: 1,
+        records: [record],
+      }),
+    );
+    const engine = t.makeEngine({ tick });
+
+    const result = await engine.runCycle();
+
+    expect(result.failed).toEqual([]);
+    const deferred = await t.store.listDeferred(t.connection.connectionId);
+    expect(deferred.map((d) => d.recordKey)).toEqual(['binding:lang:en']);
+    const routing = await readRouting(t.kv);
+    expect(routing.bindings.get('lang:en')).toBe(t.connection.connectionId);
+    const checkpoints = await t.kv.get<Record<string, unknown>>(
+      'local',
+      'syncCheckpoints',
+    );
+    expect(checkpoints?.[SCOPE]).toBeUndefined();
+  });
+
+  it('reports waitingScopes for pending keys with no destination', async () => {
+    const t = await harness();
+    await t.setDirectory({ systemConnection: undefined });
+    const source = new FakeSource('settings', GLOBAL);
+    source.pushKey('kv:x', 'put', 1);
+    const engine = t.makeEngine({ sources: [source] });
+
+    const result = await engine.runCycle();
+
+    expect(result.ackedKeys).toBe(0);
+    expect(result.waitingScopes).toEqual([GLOBAL]);
   });
 });

@@ -15,7 +15,9 @@ import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/c
 import { STORAGE_KEYS } from '@/shared/config/config';
 import {
   EmptyPayloadSchema,
+  SyncCancelRebindPayloadSchema,
   SyncConnectPayloadSchema,
+  SyncDeleteOldCopyPayloadSchema,
   SyncDisconnectPayloadSchema,
   SyncSetBindingPayloadSchema,
   SyncSetSystemConnectionPayloadSchema,
@@ -33,12 +35,25 @@ const CHANGE_MAX_WAIT_MS = 30_000;
 
 let runtime: SyncRuntime | undefined;
 
+export function resetSyncRuntimeForTests(): void {
+  runtime = undefined;
+}
+
 function getRuntime(ctx: BackgroundContext): SyncRuntime {
   runtime ??= createSyncRuntime({
     broadcast: (type, payload) =>
       ctx.messageBus.broadcast({ type: MESSAGE_TYPES[type], payload }),
-    onStatusChanged: (status) =>
-      ctx.messageBus.broadcast({ type: MESSAGE_TYPES.SYNC_STATUS_CHANGED, payload: status }),
+    onStatusChanged: () => {
+      void runtime
+        ?.status()
+        .then((view) =>
+          ctx.messageBus.broadcast({
+            type: MESSAGE_TYPES.SYNC_STATUS_CHANGED,
+            payload: view,
+          }),
+        )
+        .catch(() => undefined);
+    },
   });
   return runtime;
 }
@@ -47,6 +62,20 @@ function errorMessage(error: unknown): string {
   if (error instanceof SyncServiceError) return `${error.code}: ${error.message}`;
   if (error instanceof Error) return error.message;
   return String(error);
+}
+
+function fireIfConnected(): void {
+  const rt = runtime;
+  if (rt === undefined) return;
+  void rt
+    .hasConnections()
+    .then((connected) => {
+      if (!connected) return;
+      return rt.runCycle();
+    })
+    .catch((error) =>
+      logger.warn('sync: scheduled cycle failed', { error: errorMessage(error) }),
+    );
 }
 
 async function guarded<T>(fn: () => Promise<T>): Promise<MessageResponse<T>> {
@@ -88,7 +117,11 @@ export function registerSyncHandlers(ctx: BackgroundContext): void {
     if (!parsed.success) {
       return { success: false, error: `Invalid SYNC_CONNECT payload: ${parsed.error.message}` };
     }
-    return guarded(() => rt().connect(parsed.data.providerId as ProviderId));
+    const response = await guarded(() =>
+      rt().connect(parsed.data.providerId as ProviderId),
+    );
+    if (response.success) fireIfConnected();
+    return response;
   });
 
   ctx.on(MESSAGE_TYPES.SYNC_DISCONNECT, async (request) => {
@@ -96,7 +129,11 @@ export function registerSyncHandlers(ctx: BackgroundContext): void {
     if (!parsed.success) {
       return { success: false, error: `Invalid SYNC_DISCONNECT payload: ${parsed.error.message}` };
     }
-    return guarded(() => rt().disconnect(parsed.data.connectionId as ConnectionId));
+    const response = await guarded(() =>
+      rt().disconnect(parsed.data.connectionId as ConnectionId),
+    );
+    if (response.success) fireIfConnected();
+    return response;
   });
 
   ctx.on(MESSAGE_TYPES.SYNC_SET_SYSTEM_CONNECTION, async (request) => {
@@ -107,7 +144,11 @@ export function registerSyncHandlers(ctx: BackgroundContext): void {
         error: `Invalid SYNC_SET_SYSTEM_CONNECTION payload: ${parsed.error.message}`,
       };
     }
-    return guarded(() => rt().setSystemConnection(parsed.data.connectionId as ConnectionId));
+    const response = await guarded(() =>
+      rt().setSystemConnection(parsed.data.connectionId as ConnectionId),
+    );
+    if (response.success) fireIfConnected();
+    return response;
   });
 
   ctx.on(MESSAGE_TYPES.SYNC_SET_BINDING, async (request) => {
@@ -115,12 +156,45 @@ export function registerSyncHandlers(ctx: BackgroundContext): void {
     if (!parsed.success) {
       return { success: false, error: `Invalid SYNC_SET_BINDING payload: ${parsed.error.message}` };
     }
-    return guarded(() =>
+    const response = await guarded(() =>
       rt().setBinding(
         parsed.data.scope as Scope,
         parsed.data.destination as ConnectionId | 'local',
       ),
     );
+    if (response.success) fireIfConnected();
+    return response;
+  });
+
+  ctx.on(MESSAGE_TYPES.SYNC_CANCEL_REBIND, async (request) => {
+    const parsed = SyncCancelRebindPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid SYNC_CANCEL_REBIND payload: ${parsed.error.message}`,
+      };
+    }
+    const response = await guarded(() => rt().cancelRebind(parsed.data.scope as Scope));
+    if (response.success) fireIfConnected();
+    return response;
+  });
+
+  ctx.on(MESSAGE_TYPES.SYNC_DELETE_OLD_COPY, async (request) => {
+    const parsed = SyncDeleteOldCopyPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid SYNC_DELETE_OLD_COPY payload: ${parsed.error.message}`,
+      };
+    }
+    const response = await guarded(() =>
+      rt().deleteOldCopy(
+        parsed.data.scope as Scope,
+        parsed.data.connectionId as ConnectionId,
+      ),
+    );
+    if (response.success) fireIfConnected();
+    return response;
   });
 }
 
@@ -130,13 +204,17 @@ function debouncedFire(fn: () => void, waitMs: number, maxWaitMs: number): () =>
   return () => {
     const now = Date.now();
     if (firstAt === undefined) firstAt = now;
-    if (timer !== undefined) clearTimeout(timer);
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      timer = undefined;
+    }
     if (now - firstAt >= maxWaitMs) {
       firstAt = undefined;
       fn();
       return;
     }
     timer = setTimeout(() => {
+      timer = undefined;
       firstAt = undefined;
       fn();
     }, waitMs);
@@ -149,19 +227,6 @@ export function wireSyncScheduling(ctx: BackgroundContext): Array<() => void> {
   void migrateProfileIdentity({ srs: createSrsSyncAccess() }).catch((error) =>
     logger.warn('sync: profile identity migration failed', { error: errorMessage(error) }),
   );
-  const fire = () => {
-    void rt
-      .runCycle()
-      .catch((error) => logger.warn('sync: scheduled cycle failed', { error: errorMessage(error) }));
-  };
-  const fireIfConnected = () => {
-    void rt
-      .hasConnections()
-      .then((connected) => {
-        if (connected) fire();
-      })
-      .catch(() => undefined);
-  };
 
   if (typeof chrome !== 'undefined' && chrome.alarms !== undefined) {
     const onAlarm = (alarm: chrome.alarms.Alarm) => {

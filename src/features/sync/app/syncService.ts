@@ -13,7 +13,7 @@ import type { ProviderId } from '../domain/types';
 import { ProviderError, type StorageProvider } from '../ports/storageProvider';
 import type { BlobReader } from './blobRefs';
 import { clearDisconnectMarker, runConnectionDisconnect, type DisconnectDeps, type DisconnectResult } from './disconnect';
-import { runScopeRebind, writeRoutingValue, type RebindDeps, type RebindResult } from './rebind';
+import { deleteScopeCopyOnVacated, runScopeRebind, writeRoutingValue, type RebindDeps, type RebindResult } from './rebind';
 import {
   runScopeReconciliation,
   type ReconcileDeps,
@@ -30,6 +30,8 @@ import type { SyncStore } from './syncStore';
 import type { ConnectionPullDeps } from './pullCycle';
 import { SYNC_APPLIED_AT_KEY } from './pullCycle';
 import { listPendingDisconnects } from './disconnect';
+import { listCheckpoints } from './checkpoints';
+import type { EngineState } from './backoff';
 
 export interface SyncServiceDeps {
   readonly providerFor: (providerId: ProviderId) => StorageProvider;
@@ -48,6 +50,10 @@ export interface SyncServiceDeps {
   readonly observeHlc?: ConnectionPullDeps['observeHlc'];
   readonly onRoutingChange?: ConnectionPullDeps['onRoutingChange'];
   readonly onDisconnect?: (connectionId: ConnectionId) => Promise<void>;
+  readonly connectionHealth?: () => ReadonlyMap<
+    ConnectionId,
+    { state: EngineState; retryAt: number }
+  >;
 }
 
 export class SyncServiceError extends Error {
@@ -72,12 +78,23 @@ export interface ConnectResult {
   readonly isFirstConnection: boolean;
 }
 
+export type ConnectionHealthState =
+  | 'connected'
+  | 'backoff'
+  | 'needs-reauth'
+  | 'offline'
+  | 'storage-full'
+  | 'disconnect-pending';
+
 export interface ConnectionStatusEntry {
   readonly connectionId: ConnectionId;
   readonly providerId: ProviderId;
   readonly displayName: string;
   readonly isSystem: boolean;
   readonly disconnectPending: boolean;
+  readonly state: ConnectionHealthState;
+  readonly retryAt?: number;
+  readonly hasToken: boolean;
 }
 
 export interface BindingStatusEntry {
@@ -86,6 +103,8 @@ export interface BindingStatusEntry {
   readonly destination: ConnectionId | 'local';
   readonly frozen: boolean;
   readonly waiting: boolean;
+  readonly waitingFor: ConnectionId | null;
+  readonly vacatedFrom: ConnectionId | null;
 }
 
 export interface SyncStatusSnapshot {
@@ -301,12 +320,17 @@ export async function setScopeBinding(
   const current =
     target === null ? null : target.kind === 'local' ? 'local' : target.connectionId;
   if (current === destination) return null;
+  if (
+    destination !== 'local' &&
+    !routing.connections.some((c) => c.connectionId === destination)
+  ) {
+    throw new SyncServiceError('unknown-connection', `no such connection: ${destination}`);
+  }
   const hasSyncedCopy = await scopeHasRemoteData(deps, routing, scope);
   if (!hasSyncedCopy) {
     await writeRoutingValue(deps, scope, destination);
     if (destination === 'local') return null;
-    const routingFresh = await readRouting(deps.kv);
-    const connection = routingFresh.connections.find(
+    const connection = routing.connections.find(
       (c) => c.connectionId === destination,
     );
     if (connection === undefined) {
@@ -345,6 +369,33 @@ async function scopeHasRemoteData(
   }
 }
 
+const VACATED_SWEEP_MS = 24 * 60 * 60_000;
+
+export async function deleteVacatedScopeCopy(
+  deps: SyncServiceDeps,
+  scope: Scope,
+  connectionId: ConnectionId,
+): Promise<void> {
+  const routing = await readRouting(deps.kv);
+  const current = routeForScope(routing, scope);
+  if (
+    current !== null &&
+    current.kind === 'connection' &&
+    current.connectionId === connectionId
+  ) {
+    throw new SyncServiceError(
+      'invalid-destination',
+      `${scope} still routes to ${connectionId}`,
+    );
+  }
+  await deleteScopeCopyOnVacated(
+    rebindDeps(deps, await deps.deviceId(), deps.cycleId(), routing),
+    scope,
+    connectionId,
+    VACATED_SWEEP_MS,
+  );
+}
+
 export async function syncStatusSnapshot(
   deps: SyncServiceDeps,
 ): Promise<SyncStatusSnapshot> {
@@ -352,25 +403,71 @@ export async function syncStatusSnapshot(
   const pendingDisconnects = new Set(await listPendingDisconnects(deps.kv));
   const lastAppliedAt =
     (await deps.kv.get<number>('session', SYNC_APPLIED_AT_KEY)) ?? null;
+  const health = deps.connectionHealth?.() ?? new Map();
+  const obligationTargets = new Map<Scope, ConnectionId>();
+  const vacatedSources = new Map<Scope, ConnectionId>();
+  for (const cp of await listCheckpoints(deps.kv)) {
+    if (cp.kind === 'sweep' && cp.from !== null) vacatedSources.set(cp.scope, cp.from);
+    if (cp.to !== 'local' && cp.kind !== 'sweep') obligationTargets.set(cp.scope, cp.to);
+  }
+  const connectedIds = new Set(routing.connections.map((c) => c.connectionId));
   const bindings: BindingStatusEntry[] = [...routing.bindings.entries()].map(
-    ([target, destination]) => ({
-      target,
-      scope: `profile:${target}` as Scope,
-      destination,
-      frozen: routing.frozenScopes.has(`profile:${target}` as Scope),
-      waiting:
-        destination !== 'local' &&
-        !routing.connections.some((c) => c.connectionId === destination),
+    ([target, destination]) => {
+      const scope = `profile:${target}` as Scope;
+      const obligationTarget = obligationTargets.get(scope);
+      const vacatedFrom = vacatedSources.get(scope) ?? null;
+      const waitingFor =
+        obligationTarget !== undefined
+          ? obligationTarget
+          : destination !== 'local' && !connectedIds.has(destination)
+            ? destination
+            : null;
+      return {
+        target,
+        scope,
+        destination,
+        frozen: routing.frozenScopes.has(scope),
+        waiting: waitingFor !== null,
+        waitingFor,
+        vacatedFrom,
+      };
+    },
+  );
+  const connections = await Promise.all(
+    routing.connections.map(async (c) => {
+      const entry = health.get(c.connectionId);
+      const disconnectPending = pendingDisconnects.has(c.connectionId);
+      let hasToken = true;
+      try {
+        hasToken = await deps.providerFor(c.providerId).hasToken(c);
+      } catch {
+        hasToken = false;
+      }
+      const state: ConnectionHealthState = disconnectPending
+        ? 'disconnect-pending'
+        : !hasToken
+          ? 'needs-reauth'
+          : entry !== undefined &&
+              (entry.state === 'backoff' ||
+                entry.state === 'needs-reauth' ||
+                entry.state === 'offline' ||
+                entry.state === 'storage-full')
+            ? entry.state
+            : 'connected';
+      return {
+        connectionId: c.connectionId,
+        providerId: c.providerId,
+        displayName: c.displayName,
+        isSystem: routing.systemConnection === c.connectionId,
+        disconnectPending,
+        state,
+        retryAt: entry?.retryAt,
+        hasToken,
+      };
     }),
   );
   return {
-    connections: routing.connections.map((c) => ({
-      connectionId: c.connectionId,
-      providerId: c.providerId,
-      displayName: c.displayName,
-      isSystem: routing.systemConnection === c.connectionId,
-      disconnectPending: pendingDisconnects.has(c.connectionId),
-    })),
+    connections,
     bindings,
     systemConnection: routing.systemConnection,
     lastAppliedAt,

@@ -80,7 +80,7 @@ describe('appendConflictLog', () => {
 });
 
 describe('synced key constants', () => {
-  it('covers all registry keys plus the directory key', () => {
+  it('covers all registry keys and excludes engine-internal directory writes', () => {
     expect(SYNCED_STORAGE_KEYS).toEqual(
       expect.arrayContaining([
         'settings',
@@ -90,8 +90,8 @@ describe('synced key constants', () => {
         'ocrSettings',
         'studyModes',
         'auto_download_whitelist',
-        SYNC_DIRECTORY_STORAGE_KEY,
       ]),
     );
+    expect(SYNCED_STORAGE_KEYS).not.toContain(SYNC_DIRECTORY_STORAGE_KEY);
   });
 });

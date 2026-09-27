@@ -395,7 +395,20 @@ async function applyRemoteRecords(
       continue;
     }
     if (isRoutingRecord(record)) {
-      await persistRoutingDrain(deps, record);
+      const persisted = await persistRoutingDrain(deps, record);
+      if (!persisted) {
+        await deps.store.deferRecord({
+          connectionId: connId,
+          sourcePath,
+          record,
+          requiredBlobHashes: [],
+          firstDeferredAt: now,
+          attempts: 0,
+        });
+        stats.deferred++;
+        resolvedSink?.add(record.key);
+        continue;
+      }
       await deps.onRoutingChange?.(record);
     }
     const needed = referencedBlobHashes(record);
@@ -495,14 +508,14 @@ function isRoutingRecord(record: ChangeRecord): boolean {
 async function persistRoutingDrain(
   deps: ConnectionPullDeps,
   record: ChangeRecord,
-): Promise<void> {
+): Promise<boolean> {
   const scope: Scope | null =
     record.key === 'systemConnection'
       ? 'global'
       : record.key.startsWith('binding:')
         ? (`profile:${record.key.slice('binding:'.length)}` as Scope)
         : null;
-  if (scope === null) return;
+  if (scope === null) return true;
   const routing = await readRouting(deps.kv);
   const target = routeForScope(routing, scope);
   const current =
@@ -523,8 +536,8 @@ async function persistRoutingDrain(
           ? (value as ConnectionId)
           : null;
   }
-  if (next === null || next === current) return;
-  await persistDrainObligation(
+  if (next === null || next === current) return true;
+  return persistDrainObligation(
     deps.kv,
     scope,
     { hlc: record.hlc, destination: next },

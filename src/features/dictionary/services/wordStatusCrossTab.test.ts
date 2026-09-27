@@ -9,10 +9,15 @@ jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
 jest.mock('./wordStatusEvents', () => ({
   emitWordStatusChanged: jest.fn(),
   emitWordStatusRemoved: jest.fn(),
+  emitWordStatusesReload: jest.fn(),
 }));
 
 import { onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis/runtime';
-import { emitWordStatusChanged, emitWordStatusRemoved } from './wordStatusEvents';
+import {
+  emitWordStatusChanged,
+  emitWordStatusRemoved,
+  emitWordStatusesReload,
+} from './wordStatusEvents';
 
 describe('startWordStatusCrossTabRelay', () => {
   let registeredListener: (message: unknown) => boolean;
@@ -70,6 +75,30 @@ describe('startWordStatusCrossTabRelay', () => {
       term: 'call',
     });
     expect(emitWordStatusChanged).not.toHaveBeenCalled();
+  });
+
+  it('emits per-language reloads when SYNC_DATA_APPLIED carries wordStatus', () => {
+    startWordStatusCrossTabRelay();
+    registeredListener({
+      type: MESSAGE_TYPES.SYNC_DATA_APPLIED,
+      payload: {
+        dataClasses: ['wordStatus', 'settings'],
+        scopes: ['profile:en', 'global'],
+      },
+    });
+
+    expect(emitWordStatusesReload).toHaveBeenCalledTimes(1);
+    expect(emitWordStatusesReload).toHaveBeenCalledWith('en');
+  });
+
+  it('ignores SYNC_DATA_APPLIED without wordStatus data', () => {
+    startWordStatusCrossTabRelay();
+    registeredListener({
+      type: MESSAGE_TYPES.SYNC_DATA_APPLIED,
+      payload: { dataClasses: ['settings'], scopes: ['profile:en'] },
+    });
+
+    expect(emitWordStatusesReload).not.toHaveBeenCalled();
   });
 
   it('returns a cleanup function', () => {
