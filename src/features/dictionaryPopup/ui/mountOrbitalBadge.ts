@@ -38,7 +38,7 @@ export interface OrbitalBadgeMountController {
   destroy: () => void;
 }
 
-const BADGE_Z_INDEX = 'var(--z-overlay-top)';
+const BADGE_Z_INDEX = 'var(--z-overlay-orbital)';
 
 export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): OrbitalBadgeMountController {
   const {

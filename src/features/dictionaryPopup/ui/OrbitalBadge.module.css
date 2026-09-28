@@ -1,6 +1,6 @@
 .host {
   position: fixed;
-  z-index: var(--z-overlay-top);
+  z-index: var(--z-overlay-orbital);
   border-radius: var(--radius-full);
   pointer-events: auto;
   touch-action: none;

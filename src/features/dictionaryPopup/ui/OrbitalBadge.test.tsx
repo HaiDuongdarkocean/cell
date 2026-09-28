@@ -335,6 +335,30 @@ describe('OrbitalBadge', () => {
     expect(badge.style.transform).toContain('translate3d(987px, 362px, 0)');
   });
 
+  it('keeps a floating badge floating when the viewport resizes', () => {
+    render(<OrbitalBadge persistPosition={false} />);
+    const badge = screen.getByTestId('orbital-badge');
+
+    // Drag to floating position (512, 384) → expanded, away from edges.
+    act(() => {
+      fireEvent.pointerDown(badge, { clientX: 1024, clientY: 384 });
+      fireEvent.pointerMove(badge, { clientX: 512, clientY: 384 });
+      fireEvent.pointerUp(badge, { clientX: 512, clientY: 384 });
+    });
+    expect(badge.style.transform).toContain('translate3d(490px, 362px, 0)');
+    expect(badge.getAttribute('data-edge')).toBeNull();
+
+    // Viewport shrinks 1024 → 800. Floating badge must scale + clamp inside —
+    // NOT snap to an edge. scaled x = 512 * 800/1024 = 400 → top-left 378.
+    act(() => {
+      Object.defineProperty(document.documentElement, 'clientWidth', { value: 800, configurable: true });
+      fireEvent.resize(window);
+    });
+
+    expect(badge.style.transform).toContain('translate3d(378px, 362px, 0)');
+    expect(badge.getAttribute('data-edge')).toBeNull();
+  });
+
   it('insets past the overlay scrollbar lane on Firefox', () => {
     const ua = navigator.userAgent;
     Object.defineProperty(window.navigator, 'userAgent', {

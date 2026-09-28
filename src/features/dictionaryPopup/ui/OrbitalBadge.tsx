@@ -234,13 +234,22 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
         };
         const scaledCenter = scalePoint(currentCenter);
         const scaledDrag = scalePoint(currentDrag);
+        const half = badgeSize / 2;
+        const clampInside = (p: Point): Point => ({
+          x: Math.max(half, Math.min(vp.width - half, p.x)),
+          y: Math.max(half, Math.min(vp.height - half, p.y)),
+        });
         // Keep the same edge when viewport changes — don't jump to a different
-        // edge just because the viewport expanded. Falls back to nearest edge
-        // when floating (edgeRef null).
+        // edge just because the viewport expanded. Floating badges (edgeRef
+        // null) scale + clamp inside instead of snapping to an edge.
         const nearestEdge = edgeRef.current ?? getNearestEdge(scaledCenter, vp).edge;
-        const snapped = getEdgeCenter(nearestEdge, scaledCenter, badgeSize, vp);
+        const snapped = edgeRef.current
+          ? getEdgeCenter(nearestEdge, scaledCenter, badgeSize, vp)
+          : clampInside(scaledCenter);
         const dragNearestEdge = dragEdgeRef.current ?? getNearestEdge(scaledDrag, vp).edge;
-        const dragSnapped = getEdgeCenter(dragNearestEdge, scaledDrag, badgeSize, vp);
+        const dragSnapped = dragEdgeRef.current
+          ? getEdgeCenter(dragNearestEdge, scaledDrag, badgeSize, vp)
+          : clampInside(scaledDrag);
         setCenter(snapped);
         setDragCenter(dragSnapped);
         // Keep userPreset on resize — don't override user's pointer position.
