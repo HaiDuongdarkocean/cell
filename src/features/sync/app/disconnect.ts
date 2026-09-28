@@ -19,6 +19,7 @@ import {
   type ConnectionPushDeps,
 } from './pushCycle';
 import { readRouting, routeForScope, SYNC_DIRECTORY_STORAGE_KEY } from './routing';
+import { sweepDisconnectedFootprint } from './remoteSweep';
 import { collectScopeSnapshot, publishScopeSnapshot } from './snapshotPublish';
 import { clearCheckpoint, listCheckpoints } from './checkpoints';
 import { stampKvMetaHlc } from '../adapters/local/kv/kvMeta';
@@ -165,7 +166,17 @@ export async function runConnectionDisconnect(
       DISCONNECT_MARKER_PATH,
       encodeDisconnectMarker(deps.tick(), deps.deviceId),
     );
+    try {
+      await sweepDisconnectedFootprint({ provider, connection, fence: deps.fence });
+    } catch (e) {
+      if (e instanceof CycleLockLostError) throw e;
+      logger.warn('sync: disconnect footprint sweep failed; teardown continues', {
+        connectionId: connId,
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
   } catch (e) {
+    if (e instanceof CycleLockLostError) throw e;
     if (isUnreachable(e)) {
       await markPending(deps, connId);
       return { connectionId: connId, status: 'pending' };
@@ -237,6 +248,7 @@ function pushDepsFor(deps: DisconnectDeps, connection: Connection): ConnectionPu
     clock: deps.clock,
     fence: deps.fence,
     pendingLimit: deps.pendingLimit,
+    healCheck: false,
   };
 }
 
@@ -400,15 +412,31 @@ export async function completePendingDisconnects(deps: DisconnectDeps): Promise<
     ) {
       continue;
     }
+    if (connected.has(connId)) {
+      await deps.kv.del('local', key);
+      continue;
+    }
     try {
       await deps.fence();
-      await deps
-        .providerFor(obligation.connection.providerId)
-        .write(
-          obligation.connection,
-          DISCONNECT_MARKER_PATH,
-          encodeDisconnectMarker(deps.tick(), deps.deviceId),
-        );
+      const provider = deps.providerFor(obligation.connection.providerId);
+      await provider.write(
+        obligation.connection,
+        DISCONNECT_MARKER_PATH,
+        encodeDisconnectMarker(deps.tick(), deps.deviceId),
+      );
+      try {
+        await sweepDisconnectedFootprint({
+          provider,
+          connection: obligation.connection,
+          fence: deps.fence,
+        });
+      } catch (e) {
+        if (e instanceof CycleLockLostError) throw e;
+        logger.warn('sync: disconnect marker drain sweep failed', {
+          connectionId: connId,
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
       await deps.kv.del('local', key);
       done.push(connId);
     } catch (e) {

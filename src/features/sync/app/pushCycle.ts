@@ -16,6 +16,7 @@ import type { StorageProvider } from '../ports/storageProvider';
 import type { BlobReader } from './blobRefs';
 import { referencedBlobHashes } from './blobRefs';
 import { CycleLockLostError } from './cycleLock';
+import { ensureChainHealthy } from './chainHealth';
 import {
   BLOBS_PREFIX,
   blobPath,
@@ -60,6 +61,11 @@ export interface ConnectionPushDeps {
   readonly fence: () => Promise<void>;
   readonly pendingLimit?: number;
   readonly journalCompactionThreshold?: number;
+  readonly healCheck?: boolean;
+}
+
+interface PushState {
+  readonly healed: Set<Scope>;
 }
 
 export interface ScopePushOutcome {
@@ -143,12 +149,14 @@ export async function runConnectionPush(
 ): Promise<ConnectionPushResult> {
   const outcomes: ScopePushOutcome[] = [];
   const committedScopes: Scope[] = [];
+  const state: PushState = { healed: new Set() };
 
   const batches = await deps.store.pendingBatches(deps.connection.connectionId);
   for (const batch of batches) {
     try {
       const acked = await commitBatch(
         deps,
+        state,
         batch.scope,
         batch.seq,
         batch.records,
@@ -194,7 +202,15 @@ export async function runConnectionPush(
         cycleId: deps.cycleId,
         createdAt: deps.clock.now(),
       });
-      const acked = await commitBatch(deps, scope, batch.seq, batch.records, keys, batch.key);
+      const acked = await commitBatch(
+        deps,
+        state,
+        scope,
+        batch.seq,
+        batch.records,
+        keys,
+        batch.key,
+      );
       outcomes.push({ scope, journalSeq: batch.seq, ackedKeys: acked });
       committedScopes.push(scope);
     } catch (error) {
@@ -218,12 +234,17 @@ export async function runConnectionPush(
 
 async function commitBatch(
   deps: ConnectionPushDeps,
+  state: PushState,
   scope: Scope,
   seq: number,
   records: readonly ChangeRecord[],
   ackKeys: readonly PendingKey[],
   batchKey: string,
 ): Promise<number> {
+  if (deps.healCheck !== false && !state.healed.has(scope)) {
+    state.healed.add(scope);
+    await ensureChainHealthy(deps, scope, seq);
+  }
   await uploadAndVerifyBlobs(deps, collectBlobHashes(records));
   await deps.fence();
   await deps.provider.write(

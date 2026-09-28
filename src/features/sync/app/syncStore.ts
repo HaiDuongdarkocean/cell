@@ -54,6 +54,7 @@ export interface OpaqueRecord {
 
 export interface SyncStore {
   freezeBatch(input: FreezeBatchInput): Promise<FrozenBatch>;
+  nextSeqFor(connectionId: ConnectionId, scope: Scope): Promise<number>;
   pendingBatches(connectionId: ConnectionId): Promise<FrozenBatch[]>;
   deletePendingBatch(key: string): Promise<void>;
   allocateSnapshotN(connectionId: ConnectionId, scope: Scope): Promise<number>;

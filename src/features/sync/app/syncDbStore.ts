@@ -5,6 +5,7 @@ import {
   deleteDeferredRecord,
   findDeferredRecordsByBlobHash,
   freezeBatch,
+  nextSeqFor,
   getAllDeferredRecords,
   getAllOpaqueRecords,
   getSyncDB,
@@ -20,6 +21,7 @@ import type { DeferRecordInput, DeferredRecord, SyncStore } from './syncStore';
 export function createSyncDbStore(): SyncStore {
   return {
     freezeBatch: (input) => freezeBatch(input),
+    nextSeqFor: (connectionId, scope) => nextSeqFor(connectionId, scope),
     pendingBatches: (connectionId) => takePendingBatches(connectionId),
     deletePendingBatch: (key) => removePendingBatch(key),
     allocateSnapshotN: (connectionId, scope) => allocateSnapshotNStandalone(connectionId, scope),

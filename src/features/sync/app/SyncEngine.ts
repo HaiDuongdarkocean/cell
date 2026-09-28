@@ -39,6 +39,10 @@ import {
 } from './disconnect';
 import { observeRouteMarker, processCheckpoints } from './obligations';
 import { scopesPrefix, scopeOfRemotePath } from './remotePaths';
+import {
+  runRemoteSweepIfDue,
+  sweepDisconnectedFootprint,
+} from './remoteSweep';
 import { readRouteMarkers } from './routeMarkers';
 import { readRouting, routeForScope } from './routing';
 import type { RoutingSnapshot } from './routing';
@@ -256,6 +260,18 @@ export class SyncEngine {
             await isConnectionDisconnected({ provider, connection, kv: deps.kv })
           ) {
             try {
+              await sweepDisconnectedFootprint({
+                provider,
+                connection,
+                fence: () => lock.verify(),
+              });
+            } catch (sweepError) {
+              if (sweepError instanceof CycleLockLostError) throw sweepError;
+              obligationErrors.push(
+                `disconnect sweep failed: ${describeError(sweepError)}`,
+              );
+            }
+            try {
               await completeDisconnectLocally(
                 this.disconnectDeps(() => lock.verify(), deviceId, cycleId),
                 connection.connectionId,
@@ -423,6 +439,21 @@ export class SyncEngine {
           }
           for (const dc of pullResult.appliedDataClasses) appliedDataClasses.add(dc);
           for (const scope of pullResult.appliedScopes) appliedScopes.add(scope);
+
+          try {
+            await runRemoteSweepIfDue({
+              provider,
+              connection,
+              kv: deps.kv,
+              store: deps.store,
+              deviceId,
+              clock: deps.clock,
+              fence: () => lock.verify(),
+            });
+          } catch (error) {
+            if (error instanceof CycleLockLostError) throw error;
+            obligationErrors.push(`remote sweep failed: ${describeError(error)}`);
+          }
         } catch (error) {
           if (error instanceof CycleLockLostError) throw error;
           const retryAt = this.backoff.recordFailure(

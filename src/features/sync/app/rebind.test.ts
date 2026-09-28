@@ -167,7 +167,12 @@ async function harness(): Promise<Harness> {
   const base = {
     providerFor: () => provider,
     connectionFor: (id: ConnectionId) => connByIds.get(id) ?? null,
-    connections: async () => connections,
+    connections: async () => [
+      ...connections.filter((c) => c.connectionId === connA.connectionId),
+      ...(await readRouting(kv)).connections.filter(
+        (c) => c.connectionId !== connA.connectionId,
+      ),
+    ],
     kv,
     store,
     sources: [source] as LocalSource[],
@@ -559,7 +564,7 @@ describe('runConnectionDisconnect', () => {
     const journals = (await t.provider.list(t.connB, scopeDevicePrefix(SCOPE, DEVICE))).filter(
       (e) => parseJournalSeq(e.path) !== null,
     );
-    expect(journals).toHaveLength(1);
+    expect(journals).toHaveLength(0);
 
     const routing = await readRouting(t.kv);
     expect(routing.connections.map((c) => c.connectionId)).toEqual([t.connA.connectionId]);
