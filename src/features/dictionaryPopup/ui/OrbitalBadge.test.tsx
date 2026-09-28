@@ -234,6 +234,13 @@ describe('OrbitalBadge', () => {
     expect(svg).toHaveAttribute('width', '32');
   });
 
+  it('sizes the badge button disc to badgeSize, not the shared Button md cap', () => {
+    render(<OrbitalBadge persistPosition={false} badgeSize={96} />);
+    const button = screen.getByTestId('orbital-badge-button');
+    expect(button.style.width).toBe('96px');
+    expect(button.style.height).toBe('96px');
+  });
+
   it('does not move when hovering (no drag)', () => {
     render(<OrbitalBadge persistPosition={false} />);
     const badge = screen.getByTestId('orbital-badge');
