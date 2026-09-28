@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/shared/ui/Button';
+import { HintIcon } from '@/shared/ui/HintIcon';
 import { Icon } from '@/shared/ui/Icon';
 import { SearchableSelect } from '@/shared/ui/SearchableSelect';
 import { OVERLAY_LANGUAGE_OPTIONS } from '@/shared/config/languageRegistry';
@@ -76,7 +77,13 @@ export function ProfileForm({
       )}
 
       <div className={styles.formField}>
-        <div className={styles.formLabel}>{t('settings.profiles.form.target')} *</div>
+        <div className={styles.formLabel}>
+          {t('settings.profiles.form.target')} *
+          <HintIcon
+            hint={t('settings.profiles.form.targetHint')}
+            ariaLabel={t('settings.hint.aria', [t('settings.profiles.form.target')])}
+          />
+        </div>
         <SearchableSelect
           testId="profile-target-language"
           dataTestId="profile-target-language"
@@ -86,11 +93,16 @@ export function ProfileForm({
           ariaLabel={t('settings.profiles.form.targetAria')}
           placeholder={t('settings.profiles.form.search')}
         />
-        <div className={styles.formHint}>{t('settings.profiles.form.targetHint')}</div>
       </div>
 
       <div className={styles.formField}>
-        <div className={styles.formLabel}>{t('settings.profiles.form.native')}</div>
+        <div className={styles.formLabel}>
+          {t('settings.profiles.form.native')}
+          <HintIcon
+            hint={t('settings.profiles.form.nativeHint')}
+            ariaLabel={t('settings.hint.aria', [t('settings.profiles.form.native')])}
+          />
+        </div>
         <SearchableSelect
           testId="profile-native-language"
           dataTestId="profile-native-language"
@@ -99,21 +111,25 @@ export function ProfileForm({
           onChange={setNativeChoice}
           ariaLabel={t('settings.profiles.form.nativeAria')}
         />
-        <div className={styles.formHint}>{t('settings.profiles.form.nativeHint')}</div>
       </div>
 
       {!isEdit && activeName && (
         <div className={styles.formField}>
-          <button
-            type="button"
-            className={styles.disclosure}
-            aria-expanded={advOpen}
-            onClick={() => setAdvOpen((v) => !v)}
-          >
-            <Icon name={advOpen ? 'chevronDown' : 'chevronRight'} size="xs" />
-            {t('settings.profiles.form.advanced')}
-            <span className={styles.formHint}>{t('settings.profiles.form.advancedHint')}</span>
-          </button>
+          <div className={styles.disclosureRow}>
+            <button
+              type="button"
+              className={styles.disclosure}
+              aria-expanded={advOpen}
+              onClick={() => setAdvOpen((v) => !v)}
+            >
+              <Icon name={advOpen ? 'chevronDown' : 'chevronRight'} size="xs" />
+              {t('settings.profiles.form.advanced')}
+            </button>
+            <HintIcon
+              hint={t('settings.profiles.form.advancedHint')}
+              ariaLabel={t('settings.hint.aria', [t('settings.profiles.form.advanced')])}
+            />
+          </div>
           {advOpen && (
             <div className={styles.choiceGrid} role="radiogroup" aria-label={t('settings.profiles.form.advanced')}>
               <button

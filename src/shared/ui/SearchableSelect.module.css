@@ -161,6 +161,7 @@
 }
 
 .option {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -168,13 +169,33 @@
   min-height: var(--touch-target);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-lg);
+  background: var(--input-bg);
   cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-in-out), color var(--duration-fast) var(--ease-in-out);
+  transition: color var(--duration-fast) var(--ease-in-out);
 }
 
-.option:hover,
-.optionHighlighted {
-  background: var(--color-surface-hover);
+.option::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: transparent;
+  pointer-events: none;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .option:hover::after {
+    background: var(--color-overlay-hover);
+  }
+}
+
+.optionHighlighted::after {
+  background: var(--color-overlay-hover);
+}
+
+.option:active::after {
+  background: var(--color-overlay-pressed);
 }
 
 .optionSelected {

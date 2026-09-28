@@ -10,7 +10,7 @@
 
 import { useRef, useState, type ReactElement } from 'react';
 import { t } from '@/shared/i18n';
-import { Button, Card, Dialog, Icon, Input, Text } from '@/shared/ui';
+import { Button, Card, Dialog, HintIcon, Icon, Input, Text } from '@/shared/ui';
 import { Heading } from '@/shared/ui/Heading';
 import { DragHandle } from '@/shared/ui/DragHandle';
 import { useSectionDrag } from '@/shared/lib/useSectionDrag';
@@ -263,7 +263,13 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>{t('settings.dictionaryPopup.links.urlLabel')}</span>
+            <span className={styles.fieldLabel}>
+              {t('settings.dictionaryPopup.links.urlLabel')}
+              <HintIcon
+                hint={t('settings.dictionaryPopup.links.hint')}
+                ariaLabel={t('settings.hint.aria', [t('settings.dictionaryPopup.links.urlLabel')])}
+              />
+            </span>
             <Input
               size="sm"
               dir="ltr"
@@ -274,9 +280,6 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
               data-cell-id="dict-link-editor-url"
             />
           </label>
-          <Text as="p" color="secondary" className={styles.formHint}>
-            {t('settings.dictionaryPopup.links.hint')}
-          </Text>
           {error === 'name' && (
             <p className={styles.error} role="alert">{t('settings.dictionaryPopup.links.errorName')}</p>
           )}

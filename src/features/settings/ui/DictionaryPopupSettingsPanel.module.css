@@ -97,11 +97,6 @@
   color: var(--color-text-on-primary);
 }
 
-.hint {
-  font-size: var(--font-size-xs);
-  line-height: var(--leading-relaxed);
-}
-
 /* Surface tabs — mirror the popup's DictionaryToolbar (32px icon+label pills). */
 .surfaceTabs {
   display: flex;

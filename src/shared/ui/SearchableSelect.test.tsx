@@ -104,6 +104,50 @@ describe('SearchableSelect', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 
+  it('selects an option when the component lives inside a shadow root', () => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const shadow = host.attachShadow({ mode: 'open' });
+    const container = document.createElement('div');
+    shadow.appendChild(container);
+    const onChange = jest.fn();
+    try {
+      const { getByRole, getByTestId } = render(
+        <SearchableSelect
+          options={options}
+          value="en"
+          onChange={onChange}
+          ariaLabel="Language"
+          dataTestId="language-select"
+        />,
+        { container, baseElement: shadow },
+      );
+      fireEvent.click(getByTestId('language-select'));
+      const option = getByRole('option', { name: 'Vietnamese' });
+      fireEvent.mouseDown(option);
+      fireEvent.click(option);
+      expect(onChange).toHaveBeenCalledWith('vi');
+    } finally {
+      host.remove();
+    }
+  });
+
+  it('spawns a ripple on pointerdown of an option', () => {
+    render(
+      <SearchableSelect
+        options={options}
+        value="en"
+        onChange={jest.fn()}
+        ariaLabel="Language"
+        dataTestId="language-select"
+      />,
+    );
+    fireEvent.click(screen.getByTestId('language-select'));
+    const option = screen.getByRole('option', { name: 'Vietnamese' });
+    fireEvent.pointerDown(option);
+    expect(option.querySelector('[data-cell-ripple]')).not.toBeNull();
+  });
+
   it('does not open menu when disabled', () => {
     render(
       <SearchableSelect

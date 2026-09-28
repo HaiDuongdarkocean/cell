@@ -338,13 +338,11 @@
 }
 
 .formLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-}
-
-.formHint {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
 }
 
 .formError {
@@ -354,6 +352,12 @@
   padding: var(--space-2-5) var(--space-3);
   font-size: var(--font-size-sm);
   animation: formIn var(--duration-fast) var(--ease-out);
+}
+
+.disclosureRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .disclosure {
@@ -369,11 +373,6 @@
   cursor: pointer;
   padding: var(--space-1) 0;
   border-radius: var(--radius-md);
-}
-
-.disclosure .formHint {
-  margin-left: auto;
-  font-weight: var(--font-weight-normal);
 }
 
 .disclosure:focus-visible { box-shadow: var(--shadow-focus); outline: none; }

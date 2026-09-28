@@ -428,7 +428,13 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               data-section="dictionaryPopup"
             >
               <div className={styles.cardHeader}>
-                <Heading level={4} size={3} className={styles.cardTitle}>{t('settings.dictionaryPopup.title')}</Heading>
+                <Heading level={4} size={3} className={styles.cardTitle}>
+                  {t('settings.dictionaryPopup.title')}
+                  <HintIcon
+                    hint={t('settings.dictionaryPopup.saveHint')}
+                    ariaLabel={t('settings.hint.aria', [t('settings.dictionaryPopup.title')])}
+                  />
+                </Heading>
                 <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.dictionaryPopup.desc')}</Text>
               </div>
               <VStack gap="0" className={styles.cardBody}>
@@ -446,7 +452,13 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               data-section="wordBadge"
             >
               <div className={styles.cardHeader}>
-                <Heading level={4} size={3} className={styles.cardTitle}>{t('settings.wordBadge.title')}</Heading>
+                <Heading level={4} size={3} className={styles.cardTitle}>
+                  {t('settings.wordBadge.title')}
+                  <HintIcon
+                    hint={t('settings.wordBadge.hint')}
+                    ariaLabel={t('settings.hint.aria', [t('settings.wordBadge.title')])}
+                  />
+                </Heading>
                 <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.wordBadge.desc')}</Text>
               </div>
               <VStack gap="0" className={styles.cardBody}>

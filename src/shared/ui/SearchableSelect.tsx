@@ -3,6 +3,7 @@ import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/icons/Icon';
 import { t } from '@/shared/i18n';
 import { pushEscapeLayer } from './escapeLayerStack';
+import { spawnRipple } from '@/shared/lib/dom/ripple';
 import styles from './SearchableSelect.module.css';
 
 /** A single selectable option. */
@@ -121,14 +122,15 @@ export function SearchableSelect({
   useEffect(() => {
     if (!isOpen) return;
 
+    const doc = menuRef.current?.ownerDocument ?? document;
     const handleClickOutside = (e: Event): void => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (menuRef.current && !e.composedPath().includes(menuRef.current)) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    doc.addEventListener('mousedown', handleClickOutside);
+    return () => doc.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
   // Close menu on Escape regardless of focus — via the shared Escape stack so
@@ -213,6 +215,7 @@ export function SearchableSelect({
                   role="option"
                   aria-selected={opt.value === value}
                   data-cell-id={`${testId}-option-${opt.value}`}
+                  onPointerDown={(e) => spawnRipple(e.currentTarget, e.clientX, e.clientY)}
                   onClick={() => handleSelect(opt.value)}
                   onKeyDown={(e) => handleOptionKeyDown(e, opt.value)}
                 >

@@ -539,7 +539,7 @@ e2e/                                  # Playwright E2E specs (browser, layout, i
 | `shared/ui/Toggle.tsx` | — | SettingsDialogContent, NavClusterSettingsPanel, OcrSettingsPanel | Switch pill; sm=28px (matches button-height-sm), md=touch-target 40/44px, lg=48px |
 | `shared/ui/Slider.tsx` | — | NavClusterSettingsPanel | Styled range; touch-target aware 40/44px (settings-controls-restyle F2) |
 | `shared/ui/ShortcutInput.tsx` | — | SettingsDialogContent | **ADR-021 D7**: Pill-style input (radius-full, min-width 140px) — single-char pill (uppercase center) + combo pill (Ctrl+Shift+T kbd chips, modifier subtle bg, key solid primary). Captures keydown, supports combo modifiers. Backward compat 5 old shortcuts. |
-| `shared/ui/SearchableSelect.tsx` | — | SettingsDialogContent | Single-select dropdown with embedded search (settings-controls-restyle F5) |
+| `shared/ui/SearchableSelect.tsx` | ripple | SettingsDialogContent | Single-select dropdown with embedded search (settings-controls-restyle F5); click-outside uses `composedPath()` so option clicks work inside shadow roots; options style like buttons (`--input-bg` fill + overlay hover/press + ripple) |
 | `shared/ui/HintIcon.tsx` | — | SettingsDialogContent, SubtitleStylePanel, AudioPanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
 
 ### Universal Panel layer (ADR-065)
@@ -643,7 +643,7 @@ e2e/                                  # Playwright E2E specs (browser, layout, i
 | `shared/ui/Toggle.tsx` | — | SettingsDialogContent, NavClusterSettingsPanel, OcrSettingsPanel | Switch pill; sm=28px (matches button-height-sm), md=touch-target 40/44px, lg=48px |
 | `shared/ui/Slider.tsx` | — | NavClusterSettingsPanel | Styled range; touch-target aware 40/44px (settings-controls-restyle F2) |
 | `shared/ui/ShortcutInput.tsx` | — | SettingsDialogContent | **ADR-021 D7**: Pill-style input (radius-full, min-width 140px) — single-char pill (uppercase center) + combo pill (Ctrl+Shift+T kbd chips, modifier subtle bg, key solid primary). Captures keydown, supports combo modifiers. Backward compat 5 old shortcuts. |
-| `shared/ui/SearchableSelect.tsx` | — | SettingsDialogContent | Single-select dropdown with embedded search (settings-controls-restyle F5) |
+| `shared/ui/SearchableSelect.tsx` | ripple | SettingsDialogContent | Single-select dropdown with embedded search (settings-controls-restyle F5); click-outside uses `composedPath()` so option clicks work inside shadow roots; options style like buttons (`--input-bg` fill + overlay hover/press + ripple) |
 | `shared/ui/HintIcon.tsx` | — | SettingsDialogContent, SubtitleStylePanel, AudioPanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
 
 || `shared/ui/Popover.tsx` + `.module.css` | `useMenuPlacement` | `SpeedPill` | Portal-based anchored popover using `useMenuPlacement` for left-aligned trigger positioning; supports `role`, `aria-label`, `aria-activedescendant`; avoids clipping inside scrollable containers |
@@ -1126,7 +1126,7 @@ Dictionary probe cache (T23):
 | `Dropzone` | `features/dictionary/ui/Dropzone.tsx` | { label, accept, disabled, onFiles } → JSX | ResourcesPanel | **ADR-023 F11**: Drag-drop + click file picker |
 | `Slider` | `shared/ui/Slider.tsx` | value, min, max, step, onChange, ariaLabel → ReactElement | NavClusterSettingsPanel | Styled range; touch-target aware 40/44px (settings-controls-restyle F2) |
 | `ShortcutInput` | `shared/ui/ShortcutInput.tsx` | value: ShortcutValue, onChange: (ShortcutValue) => void, ariaLabel → ReactElement | SettingsDialogContent | **ADR-021 D7**: Pill-style input — single-char + combo (Ctrl+Shift+T). Captures keydown, supports modifiers. |
-| `SearchableSelect` | `shared/ui/SearchableSelect.tsx` | options, value, onChange, ariaLabel → ReactElement | SettingsDialogContent | Single-select dropdown with embedded search (settings-controls-restyle F5) |
+| `SearchableSelect` | `shared/ui/SearchableSelect.tsx` | options, value, onChange, ariaLabel → ReactElement | SettingsDialogContent | Single-select dropdown with embedded search (settings-controls-restyle F5); click-outside uses `composedPath()` so option clicks work inside shadow roots; options style like buttons (`--input-bg` fill + overlay hover/press + ripple) |
 | `HintIcon` | `shared/ui/HintIcon.tsx` | hint, ariaLabel → ReactElement | SettingsDialogContent, SubtitleStylePanel, AudioPanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
 | `SettingsDialog` | `features/settings/ui/SettingsDialog.tsx` | { isOpen, settings, onChange, onClose, tokenizeState?, onToggleTokenize?, onOpenDictionary? } → JSX | mountSettingsDialog, popup App, OptionsApp | Dialog wrapper: overlay + popover shell + close button + Escape handling; renders `SettingsDialogContent` |
 | `SettingsDialogContent` | `features/settings/ui/SettingsDialogContent.tsx` | { settings, onChange, tokenizeState?, onToggleTokenize?, onOpenDictionary?, className? } → JSX | SettingsDialog, SettingsTab (planned), UniversalPanel (planned) | Reusable settings body: sidebar + all settings sections; accepts `className` for embedding in the universal panel |

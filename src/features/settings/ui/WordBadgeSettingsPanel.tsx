@@ -2,7 +2,6 @@ import type React from 'react';
 import { useMemo } from 'react';
 import { Select } from '@/shared/ui/Select';
 import { Slider } from '@/shared/ui/Slider';
-import { Text } from '@/shared/ui/Text';
 import { t, type MessageKey } from '@/shared/i18n';
 import type { BadgePointerTriggerSettings } from '@/entities/settings/types';
 import styles from './WordBadgeSettingsPanel.module.css';
@@ -103,10 +102,6 @@ export function WordBadgeSettingsPanel({
           onChange={(value) => onChange({ ...badgePointerTrigger, pointerScale: value })}
         />
       </div>
-
-      <Text as="p" color="secondary" className={styles.hint}>
-        {t('settings.wordBadge.hint')}
-      </Text>
     </div>
   );
 }

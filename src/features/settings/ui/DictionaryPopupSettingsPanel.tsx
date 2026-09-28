@@ -215,9 +215,6 @@ export function DictionaryPopupSettingsPanel({
         </Text>
       )}
 
-      <Text as="p" color="secondary" className={styles.hint}>
-        {t('settings.dictionaryPopup.saveHint')}
-      </Text>
     </div>
   );
 }

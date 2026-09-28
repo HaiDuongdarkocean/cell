@@ -64,7 +64,4 @@
   font-variant-numeric: tabular-nums;
 }
 
-.hint {
-  font-size: var(--font-size-xs);
-  line-height: var(--leading-relaxed);
-}
+
