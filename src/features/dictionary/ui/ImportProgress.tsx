@@ -17,6 +17,8 @@ interface ImportProgressProps {
   readonly job: ImportJob;
   readonly onResolveDuplicate: (jobId: string, choice: 'replace' | 'skip') => void;
   readonly onRerunReplace: (jobId: string) => void;
+  readonly onRetry?: (jobId: string) => void;
+  readonly onDismiss?: (jobId: string) => void;
 }
 
 function percent(part: number, whole: number): number {
@@ -24,7 +26,7 @@ function percent(part: number, whole: number): number {
   return Math.min(100, Math.round((part / whole) * 100));
 }
 
-export function ImportProgress({ job, onResolveDuplicate, onRerunReplace }: ImportProgressProps): ReactElement {
+export function ImportProgress({ job, onResolveDuplicate, onRerunReplace, onRetry, onDismiss }: ImportProgressProps): ReactElement {
   const isUpload = job.status === 'uploading';
   const isImport = job.status === 'importing';
   const fillPct = isUpload
@@ -98,7 +100,33 @@ export function ImportProgress({ job, onResolveDuplicate, onRerunReplace }: Impo
       right = <Icon name="circleCheck" size="sm" className={styles.iconOk} />;
       break;
     case 'error':
-      meta = <span className={styles.metaErr}>{job.error}</span>;
+      meta = (
+        <span className={styles.metaErr}>
+          {job.error}
+          <span className={styles.dupActions}>
+            {onRetry !== undefined && (
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={() => onRetry(job.jobId)}
+                data-cell-id={`job-retry-${job.jobId}`}
+              >
+                {t('jobs.action.retry')}
+              </Button>
+            )}
+            {onDismiss !== undefined && (
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => onDismiss(job.jobId)}
+                data-cell-id={`job-dismiss-${job.jobId}`}
+              >
+                {t('jobs.action.dismiss')}
+              </Button>
+            )}
+          </span>
+        </span>
+      );
       right = <Icon name="alertCircle" size="sm" className={styles.iconErr} />;
       break;
     case 'skipped':
@@ -122,7 +150,7 @@ export function ImportProgress({ job, onResolveDuplicate, onRerunReplace }: Impo
   }
 
   return (
-    <div className={cls} data-cell-id={`import-job-${job.jobId}`} role="listitem">
+    <div className={cls} data-cell-id={`import-job-${job.jobId}`} role="listitem" aria-live="polite">
       {(isUpload || (isImport && job.total > 0)) && (
         <span
           className={styles.fill}
@@ -132,7 +160,7 @@ export function ImportProgress({ job, onResolveDuplicate, onRerunReplace }: Impo
       )}
       <div className={styles.row}>
         <div className={styles.info}>
-          <span className={styles.name}>{job.file.name}</span>
+          <span className={styles.name}>{job.fileName}</span>
           {meta}
         </div>
         <span className={styles.right}>{right}</span>

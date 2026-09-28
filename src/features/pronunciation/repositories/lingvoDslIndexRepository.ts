@@ -89,6 +89,23 @@ export async function getLingvoDslAudioPaths(
   }
 }
 
+/** Count stored entries for a package (job reconcile + tests). */
+export async function countLingvoDslIndex(packageId: string): Promise<number> {
+  const db = await openDb();
+  try {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const index = tx.objectStore(STORE_NAME).index('packageId_term');
+    const range = IDBKeyRange.bound([packageId, ''], [packageId, '￿']);
+    return new Promise((resolve, reject) => {
+      const request = index.count(range);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error ?? new Error('Failed to count DSL index'));
+    });
+  } finally {
+    db.close();
+  }
+}
+
 /** Delete all stored entries for a package. */
 export async function clearLingvoDslIndex(packageId: string): Promise<void> {
   const db = await openDb();

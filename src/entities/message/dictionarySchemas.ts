@@ -372,12 +372,14 @@ export const TtsSpeakLocalPayloadSchema = z.object({
 
 export const TtsDownloadVoicePayloadSchema = z.object({
   language: z.string().length(2),
+  jobId: z.string().optional(),
 });
 
 export const TtsDownloadProgressPayloadSchema = z.object({
   language: z.string().length(2),
   loaded: z.number().int().min(0),
   total: z.number().int().min(0),
+  jobId: z.string().optional(),
 });
 
 // === TTS settings (spec popup-dictionary-4tab-logic) ===

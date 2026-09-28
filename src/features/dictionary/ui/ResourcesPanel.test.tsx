@@ -1,7 +1,8 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ResourcesPanel } from '@/features/dictionary/ui/ResourcesPanel';
 import * as client from '@/features/dictionary/services/resourceClient';
-import type { ResourceInfo, ImportResult } from '@/entities/dictionary';
+import type { ResourceInfo } from '@/entities/dictionary';
+import type { Job } from '@/entities/job/types';
 
 // Mock the resource client — all data ops are proxied to the background
 // because IndexedDB is origin-isolated (in-page panel can't reach the
@@ -22,12 +23,53 @@ jest.mock('@/features/dictionary/logic/signatureGenerator', () => ({
   computeSignature: jest.fn().mockImplementation(async (file: File) => `sig-${file.name}`),
 }));
 
+jest.mock('@/features/jobs/jobClient', () => ({
+  listJobs: jest.fn().mockResolvedValue([]),
+  subscribeJobEvents: jest.fn(() => () => {}),
+  dismissJob: jest.fn().mockResolvedValue(true),
+  retryJob: jest.fn().mockResolvedValue(null),
+}));
+
+jest.mock('@/features/jobs', () => {
+  const actual = jest.requireActual<typeof import('@/features/jobs')>('@/features/jobs');
+  let jobs: Job[] = [];
+  return {
+    __setJobs: (next: Job[]): void => { jobs = next; },
+    useJobs: () => jobs,
+    useJobTerminalWatcher: actual.useJobTerminalWatcher,
+    JobRow: actual.JobRow,
+    dismissJob: actual.dismissJob,
+    retryJob: actual.retryJob,
+    subscribeJobEvents: actual.subscribeJobEvents,
+    listJobs: actual.listJobs,
+    waitForJobTerminal: actual.waitForJobTerminal,
+  };
+});
+
 jest.mock('@/shared/lib/storage/settingsStore', () => ({
   loadSettings: jest.fn().mockResolvedValue({ languageProfiles: [] }),
   saveSettings: jest.fn().mockResolvedValue(undefined),
 }));
 
 import { reorderResources } from '@/features/dictionary/services/resourceClient';
+
+const jobsMock = jest.requireMock<{ __setJobs: (next: Job[]) => void }>('@/features/jobs');
+const setRegistryJobs = (next: Job[]): void => jobsMock.__setJobs(next);
+
+function makeJob(overrides: Partial<Job> = {}): Job {
+  return {
+    id: 'job-1',
+    kind: 'resource-delete',
+    label: 'a.txt',
+    status: 'running',
+    progress: { done: 0, total: 0 },
+    params: { langCode: 'en', resourceType: 'FREQUENCY' },
+    retryable: true,
+    createdAt: 0,
+    updatedAt: 0,
+    ...overrides,
+  };
+}
 
 const listResources = client.listResources as jest.MockedFunction<typeof client.listResources>;
 const importFile = client.importResourceFile as jest.MockedFunction<typeof client.importResourceFile>;
@@ -60,9 +102,10 @@ function pickFile(inputIndex: number, file: File): void {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  setRegistryJobs([]);
   listResources.mockResolvedValue([]);
-  importFile.mockResolvedValue({ resourceId: 1, wordCount: 2, format: 'txt' });
-  deleteResourceCascade.mockResolvedValue(undefined);
+  importFile.mockResolvedValue({ jobId: 'job-1' });
+  deleteResourceCascade.mockResolvedValue({ jobId: 'del-1' });
 });
 
 describe('ResourcesPanel', () => {
@@ -104,7 +147,7 @@ describe('ResourcesPanel', () => {
   });
 
   it('dropping N files creates N independent job rows', async () => {
-    importFile.mockImplementation(() => new Promise<ImportResult>(() => {}));
+    importFile.mockImplementation(() => new Promise<{ jobId: string }>(() => {}));
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
     pickFiles(1, [
@@ -123,7 +166,7 @@ describe('ResourcesPanel', () => {
     const started: string[] = [];
     importFile.mockImplementation((file) => {
       started.push((file as File).name);
-      return new Promise<ImportResult>(() => {});
+      return new Promise<{ jobId: string }>(() => {});
     });
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
@@ -136,11 +179,22 @@ describe('ResourcesPanel', () => {
     expect(screen.getByText('Waiting')).toBeInTheDocument();
   });
 
-  it('shows per-job success with the file word count', async () => {
-    render(<ResourcesPanel langCode="en" />);
+  it('hands the row to the registry job after upload, then shows its done state', async () => {
+    importFile.mockResolvedValue({ jobId: 'j-freq' });
+    const view = render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
     pickFile(1, new File(['hello\nworld\n'], 'test.txt', { type: 'text/plain' }));
-    await waitFor(() => expect(screen.getByText('Added 2 words')).toBeInTheDocument());
+    await waitFor(() => expect(importFile).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByText('test.txt')).not.toBeInTheDocument());
+    setRegistryJobs([makeJob({
+      id: 'j-freq',
+      kind: 'resource-import',
+      label: 'test.txt',
+      status: 'done',
+      result: { wordCount: 2 },
+    })]);
+    view.rerender(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('Done · 2')).toBeInTheDocument());
   });
 
   it('shows the error on the failing job row only', async () => {
@@ -149,7 +203,7 @@ describe('ResourcesPanel', () => {
       call += 1;
       return call === 1
         ? Promise.reject(new Error('parse fail'))
-        : Promise.resolve({ resourceId: 2, wordCount: 5, format: 'txt' });
+        : Promise.resolve({ jobId: 'j-ok' });
     });
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
@@ -158,29 +212,30 @@ describe('ResourcesPanel', () => {
       new File(['ok'], 'good.txt', { type: 'text/plain' }),
     ]);
     await waitFor(() => expect(screen.getByText(/parse fail/)).toBeInTheDocument());
-    await waitFor(() => expect(screen.getByText('Added 5 words')).toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('good.txt')).not.toBeInTheDocument());
+    expect(screen.getByText('bad.txt')).toBeInTheDocument();
   });
 
-  it('import progress shows exact entry totals via onProgress', async () => {
-    importFile.mockImplementation(async (_f, _t, options) => {
-      const opts = options as { onProgress?: (p: number, t: number) => void };
-      opts.onProgress?.(5000, 73643);
-      return { resourceId: 1, wordCount: 73643, format: 'txt' };
+  it('upload progress shows the chunk percent while uploading', async () => {
+    importFile.mockImplementation((_f, _t, options) => {
+      const opts = options as { onUploadProgress?: (sent: number, total: number) => void };
+      opts.onUploadProgress?.(5, 10);
+      return new Promise<{ jobId: string }>(() => {});
     });
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
     pickFile(1, new File(['a\n'], 'big.txt', { type: 'text/plain' }));
-    await waitFor(() => expect(screen.getByText(/5,000 \/ 73,643 items|Added/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText(/50%/).length).toBeGreaterThan(0));
   });
 
   it('allows concurrent dictionary + frequency import (independent dropzones)', async () => {
-    let resolveDict: (v: ImportResult) => void = () => {};
-    const dictPromise = new Promise<ImportResult>((r) => {
+    let resolveDict: (v: { jobId: string }) => void = () => {};
+    const dictPromise = new Promise<{ jobId: string }>((r) => {
       resolveDict = r;
     });
     importFile.mockImplementation((_file, type) => {
       if (type === 'DICTIONARY') return dictPromise;
-      return Promise.resolve({ resourceId: 2, wordCount: 5, format: 'txt' });
+      return Promise.resolve({ jobId: 'j-freq' });
     });
 
     render(<ResourcesPanel langCode="en" />);
@@ -189,9 +244,11 @@ describe('ResourcesPanel', () => {
     pickFile(0, new File(['[]'], 'dict.json', { type: 'application/json' }));
     pickFile(1, new File(['a\nb\n'], 'freq.txt', { type: 'text/plain' }));
 
-    await waitFor(() => expect(screen.getByText('Added 5 words')).toBeInTheDocument());
-    resolveDict({ resourceId: 1, wordCount: 3, format: 'json-entries' });
-    await waitFor(() => expect(screen.getByText('Added 3 words')).toBeInTheDocument());
+    await waitFor(() => expect(importFile).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByText('freq.txt')).not.toBeInTheDocument());
+    expect(screen.getByText('dict.json')).toBeInTheDocument();
+    resolveDict({ jobId: 'j-dict' });
+    await waitFor(() => expect(screen.queryByText('dict.json')).not.toBeInTheDocument());
   });
 
   it('prompts on duplicate and resolves onDuplicate when "Skip" clicked', async () => {
@@ -199,8 +256,8 @@ describe('ResourcesPanel', () => {
     importFile.mockImplementation(async (_file, _type, options) => {
       const choice = await (options as { onDuplicate?: (e: ResourceInfo) => Promise<'skip' | 'replace'> })
         .onDuplicate?.(existing);
-      if (choice === 'replace') return { resourceId: 9, wordCount: 5, format: 'txt' };
-      return { resourceId: 0, wordCount: 0, format: 'txt', skippedAsDuplicate: true, existingResource: existing } as ImportResult;
+      if (choice === 'replace') return { jobId: 'j-replace' };
+      return { skipped: true as const, existingResource: existing };
     });
 
     render(<ResourcesPanel langCode="en" />);
@@ -219,8 +276,8 @@ describe('ResourcesPanel', () => {
     importFile.mockImplementation(async (_file, _type, options) => {
       const choice = await (options as { onDuplicate?: (e: ResourceInfo) => Promise<'skip' | 'replace'> })
         .onDuplicate?.(existing);
-      if (choice === 'replace') return { resourceId: 9, wordCount: 5, format: 'txt' };
-      return { resourceId: 0, wordCount: 0, format: 'txt', skippedAsDuplicate: true, existingResource: existing } as ImportResult;
+      if (choice === 'replace') return { jobId: 'j-replace' };
+      return { skipped: true as const, existingResource: existing };
     });
 
     render(<ResourcesPanel langCode="en" />);
@@ -230,7 +287,7 @@ describe('ResourcesPanel', () => {
     await waitFor(() => expect(screen.getByText(/"existing\.txt" already exists/)).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: 'Replace' }));
 
-    await waitFor(() => expect(screen.getByText('Added 5 words')).toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('test.txt')).not.toBeInTheDocument());
   });
 
   it('reorders via the drag handle keyboard fallback', async () => {
@@ -274,7 +331,7 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('edit-frequency'));
     fireEvent.click(screen.getByTestId('delete-button-1'));
     fireEvent.click(screen.getByTestId('confirm-delete'));
-    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, expect.objectContaining({ onProgress: expect.any(Function) })));
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
   });
 
   it('shows every resource regardless of profileIds (profile scoping removed)', async () => {
@@ -294,7 +351,7 @@ describe('ResourcesPanel', () => {
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
     pickFile(1, new File(['hello\n'], 'test.txt', { type: 'text/plain' }));
-    await waitFor(() => expect(screen.getByText('Added 2 words')).toBeInTheDocument());
+    await waitFor(() => expect(importFile).toHaveBeenCalled());
     expect(setProfiles).not.toHaveBeenCalled();
   });
 
@@ -321,8 +378,8 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, expect.objectContaining({ onProgress: expect.any(Function) }));
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 3, expect.objectContaining({ onProgress: expect.any(Function) }));
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1);
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 3);
     expect(deleteResourceCascade).not.toHaveBeenCalledWith('en', 2);
   });
 
@@ -373,8 +430,8 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, expect.objectContaining({ onProgress: expect.any(Function) }));
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 2, expect.objectContaining({ onProgress: expect.any(Function) }));
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1);
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 2);
     expect(deleteResourceCascade).not.toHaveBeenCalledWith('en', 3);
   });
 
@@ -432,38 +489,38 @@ describe('ResourcesPanel', () => {
     expect(setEnabled).toHaveBeenCalledTimes(1);
   });
 
-  it('shows a live fill + percent on the card while a single delete runs, then clears on success', async () => {
+  it('queues the delete, hides the card, and announces when the job goes done', async () => {
     let release: () => void = () => {};
-    deleteResourceCascade.mockImplementationOnce(async (_l, _id, opts) => {
-      opts?.onProgress?.(500, 1000);
-      await new Promise<void>((r) => { release = r; });
-    });
+    deleteResourceCascade.mockImplementationOnce(
+      () => new Promise<{ jobId: string }>((r) => { release = () => r({ jobId: 'del-1' }); }),
+    );
     listResources.mockResolvedValue([makeResource({ id: 1, name: 'words.txt' })]);
-    render(<ResourcesPanel langCode="en" />);
+    const view = render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('words')).toBeInTheDocument());
 
     fireEvent.click(screen.getByTestId('edit-frequency'));
     fireEvent.click(screen.getByTestId('delete-button-1'));
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
-    const card = screen.getByTestId('resource-card-1');
-    await waitFor(() => expect(card).toHaveTextContent('50%'));
-    expect(card).toHaveTextContent('Deleting…');
-    expect(card).toHaveAttribute('aria-busy', 'true');
-    expect(screen.getByTestId('deleting-1')).toBeInTheDocument();
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
+    await act(async () => { release(); });
+    await waitFor(() => expect(screen.queryByTestId('resource-card-1')).not.toBeInTheDocument());
     expect(screen.queryByTestId('delete-confirm-modal')).not.toBeInTheDocument();
 
-    await act(async () => { release(); });
-    await waitFor(() => expect(screen.queryByTestId('deleting-1')).not.toBeInTheDocument());
+    setRegistryJobs([makeJob({ id: 'del-1', status: 'running', label: 'words.txt', params: { langCode: 'en', resourceId: 1, resourceType: 'FREQUENCY' } })]);
+    view.rerender(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByTestId('job-row-del-1')).toBeInTheDocument());
+
+    setRegistryJobs([makeJob({ id: 'del-1', status: 'done', label: 'words.txt', params: { langCode: 'en', resourceId: 1, resourceType: 'FREQUENCY' } })]);
+    view.rerender(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByTestId('panel-alert')).toHaveTextContent('Deleted "words.txt"'));
   });
 
-  it('moves the deleting state card-by-card during delete-all', async () => {
+  it('queues delete jobs card-by-card during delete-all', async () => {
     const releases: Array<() => void> = [];
-    deleteResourceCascade.mockImplementation((_l, _id, opts) => {
-      opts?.onProgress?.(1, 2);
-      return new Promise<void>((r) => { releases.push(r); });
-    });
+    deleteResourceCascade.mockImplementation(
+      () => new Promise<{ jobId: string }>((r) => { releases.push(() => r({ jobId: 'd' })); }),
+    );
     listResources.mockResolvedValue([
       makeResource({ id: 2, name: 'b.txt' }),
       makeResource({ id: 1, name: 'a.txt' }),
@@ -475,48 +532,46 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('delete-selected-frequency'));
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
-    await waitFor(() => expect(screen.getByTestId('deleting-2')).toBeInTheDocument());
-    expect(screen.getByTestId('resource-card-2')).toHaveTextContent('Deleting… 1/2');
-    expect(screen.getByTestId('resource-card-2')).toHaveTextContent('50%');
-    expect(screen.getByText('b')).toBeInTheDocument();
-
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 2));
     await act(async () => { releases[0]?.(); });
-    await waitFor(() => expect(screen.getByTestId('deleting-1')).toBeInTheDocument());
-    expect(screen.getByTestId('resource-card-1')).toHaveTextContent('Deleting… 2/2');
-    expect(screen.queryByTestId('resource-card-2')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByTestId('resource-card-2')).not.toBeInTheDocument());
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
 
     await act(async () => { releases[1]?.(); });
-    await waitFor(() => expect(screen.queryByTestId('deleting-1')).not.toBeInTheDocument());
-    expect(deleteResourceCascade).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
   });
 
   it('ignores further delete triggers while a delete run is in progress', async () => {
     let release: () => void = () => {};
-    deleteResourceCascade.mockImplementationOnce(() => new Promise<void>((r) => { release = r; }));
+    deleteResourceCascade.mockImplementationOnce(
+      () => new Promise<{ jobId: string }>((r) => { release = () => r({ jobId: 'del-1' }); }),
+    );
     listResources.mockResolvedValue([
       makeResource({ id: 1, name: 'a.txt' }),
       makeResource({ id: 2, name: 'b.txt' }),
     ]);
-    render(<ResourcesPanel langCode="en" />);
+    const view = render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
 
     fireEvent.click(screen.getByTestId('edit-frequency'));
     fireEvent.click(screen.getByTestId('delete-button-1'));
     fireEvent.click(screen.getByTestId('confirm-delete'));
-    await screen.findByTestId('deleting-1');
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
 
+    setRegistryJobs([makeJob({ id: 'del-1', status: 'running', params: { langCode: 'en', resourceId: 1, resourceType: 'FREQUENCY' } })]);
+    view.rerender(<ResourcesPanel langCode="en" />);
     fireEvent.click(screen.getByTestId('delete-button-2'));
     expect(screen.queryByTestId('delete-confirm-modal')).toBeNull();
     expect(screen.getByTestId('delete-selected-frequency')).toBeDisabled();
 
     await act(async () => { release(); });
-    await waitFor(() => expect(screen.queryByTestId('deleting-1')).not.toBeInTheDocument());
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(1));
   });
 
   it('continues the run after a per-item failure and reports the first error', async () => {
     deleteResourceCascade
       .mockImplementationOnce(() => Promise.reject(new Error('boom')))
-      .mockResolvedValueOnce(undefined);
+      .mockResolvedValueOnce({ jobId: 'del-2' });
     listResources.mockResolvedValue([
       makeResource({ id: 1, name: 'a.txt' }),
       makeResource({ id: 2, name: 'b.txt' }),
@@ -530,10 +585,6 @@ describe('ResourcesPanel', () => {
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.getByTestId('panel-alert')).toHaveTextContent("Couldn't delete: Error: boom"));
-    await waitFor(() => {
-      expect(screen.queryByTestId('deleting-1')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('deleting-2')).not.toBeInTheDocument();
-    });
     expect(listResources.mock.calls.length).toBeGreaterThan(1);
   });
 });

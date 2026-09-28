@@ -33,7 +33,7 @@ export function sendMessage<T = unknown>(
 type MessageListener = Parameters<typeof chrome.runtime.onMessage.addListener>[0];
 
 /** Non-extension contexts (design showcase, jsdom) keep listeners here so a
- *  mock backend can push messages (e.g. RESOURCE_IMPORT_PROGRESS). */
+ *  mock backend can push messages (e.g. JOB_EVENT). */
 function listenerRegistry(): Set<MessageListener> {
   const g = globalThis as { __cellOnMessageListeners?: Set<MessageListener> };
   if (!g.__cellOnMessageListeners) g.__cellOnMessageListeners = new Set();

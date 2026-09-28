@@ -1,5 +1,5 @@
 {
-  "active": null,
+  "active": "durable-job-registry",
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -544,6 +544,45 @@
       "owner": null,
       "worktree": "../cell-worktrees/user-data-sync",
       "updated": "2026-09-27T23:45:48.762Z"
+    },
+    "durable-job-registry": {
+      "stage": "deliver",
+      "mode": "interactive",
+      "uiSurface": "yes",
+      "artifacts": {
+        "intent": "docs/intent/durable-job-registry.md",
+        "spec": "docs/specs/durable-job-registry.md",
+        "designBrief": "docs/intent/durable-job-registry-design-brief.md",
+        "componentMapping": "docs/intent/durable-job-registry-component-mapping.md"
+      },
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-09-28T12:17:22.080Z"
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-09-28T11:58:09.477Z"
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-09-28T12:08:35.947Z"
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-09-28T12:17:35.295Z"
+        }
+      },
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "owner": {
+        "id": "devin-main",
+        "since": "2026-09-28T10:57:03.917Z"
+      },
+      "worktree": null,
+      "updated": "2026-09-28T12:17:35.295Z"
     }
   }
 }

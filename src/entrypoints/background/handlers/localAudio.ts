@@ -23,8 +23,13 @@ import type {
 import type { LocalFileAudioSettings } from '@/entities/settings';
 import { LingvoDslAudioProvider } from '@/features/pronunciation/services/lingvoDslAudioProvider';
 import { parseLingvoDsl } from '@/features/pronunciation/services/lingvoDslParser';
-import { saveLingvoDslIndex } from '@/features/pronunciation/repositories/lingvoDslIndexRepository';
+import {
+  countLingvoDslIndex,
+  saveLingvoDslIndex,
+} from '@/features/pronunciation/repositories/lingvoDslIndexRepository';
 import { getFileHandle } from '@/shared/lib/storage/localFileHandleStorage';
+import { getJobRegistry } from './jobs';
+import { DEFAULT_PRONUNCIATION_SETTINGS } from '@/shared/config/config';
 
 let cachedProvider: { key: string; provider: LingvoDslAudioProvider } | null = null;
 
@@ -87,6 +92,58 @@ export function registerLocalAudioHandlers(ctx: BackgroundContext): void {
     }
   });
 
+  const registry = getJobRegistry();
+
+  async function buildDslIndex(dslFileHandleId: string): Promise<number> {
+    const handle = await getFileHandle(dslFileHandleId);
+    if (!handle || handle.kind !== 'file') {
+      throw new Error('Stored DSL handle is missing or not a file');
+    }
+    const permission = await handle.queryPermission({ mode: 'read' });
+    if (permission !== 'granted') {
+      throw new Error(`DSL read permission is ${permission}`);
+    }
+    const file = await (handle as FileSystemFileHandle).getFile();
+    const text = await file.text();
+    const entries = parseLingvoDsl(text, dslFileHandleId);
+    await saveLingvoDslIndex(dslFileHandleId, entries);
+    return entries.length;
+  }
+
+  async function applyIndexEffect(dslFileHandleId: string): Promise<void> {
+    const settings = await ctx.loadSettings();
+    const pronunciation = settings.pronunciation ?? DEFAULT_PRONUNCIATION_SETTINGS;
+    if (pronunciation.localFile.dslFileHandleId !== dslFileHandleId) return;
+    if (pronunciation.localFile.lastIndexedAt !== null) return;
+    await ctx.saveSettings({
+      ...settings,
+      pronunciation: {
+        ...pronunciation,
+        localFile: { ...pronunciation.localFile, lastIndexedAt: Date.now() },
+      },
+    });
+  }
+
+  registry.registerExecutor('local-audio-index', {
+    start: async (job) => {
+      const dslFileHandleId = job.params.dslFileHandleId as string;
+      const count = await buildDslIndex(dslFileHandleId);
+      try {
+        await applyIndexEffect(dslFileHandleId);
+        registry.markDone(job.id, { count });
+      } catch (err) {
+        registry.markFailed(job.id, err instanceof Error ? err.message : String(err), true);
+      }
+    },
+    reconcile: async (job) => {
+      const dslFileHandleId = job.params.dslFileHandleId as string;
+      const count = await countLingvoDslIndex(dslFileHandleId);
+      if (count === 0) return 'interrupted';
+      await applyIndexEffect(dslFileHandleId);
+      return 'done';
+    },
+  });
+
   ctx.on(MESSAGE_TYPES.LOCAL_AUDIO_BUILD_INDEX, async (request): Promise<MessageResponse<LocalAudioBuildIndexResponse>> => {
     const parsed = LocalAudioBuildIndexPayloadSchema.safeParse(request.payload);
     if (!parsed.success) {
@@ -96,19 +153,20 @@ export function registerLocalAudioHandlers(ctx: BackgroundContext): void {
       };
     }
     try {
-      const handle = await getFileHandle(parsed.data.dslFileHandleId);
-      if (!handle || handle.kind !== 'file') {
-        return { success: false, error: 'Stored DSL handle is missing or not a file' };
-      }
-      const permission = await handle.queryPermission({ mode: 'read' });
-      if (permission !== 'granted') {
-        return { success: false, error: `DSL read permission is ${permission}` };
-      }
-      const file = await (handle as FileSystemFileHandle).getFile();
-      const text = await file.text();
-      const entries = parseLingvoDsl(text, parsed.data.dslFileHandleId);
-      await saveLingvoDslIndex(parsed.data.dslFileHandleId, entries);
-      return { success: true, data: { count: entries.length } };
+      const { dslFileHandleId } = parsed.data;
+      const existing = registry.findActive('local-audio-index', { dslFileHandleId });
+      if (existing) return { success: true, data: { jobId: existing.id } };
+
+      const job = registry.register({
+        id: `dsl-${dslFileHandleId}-${Date.now().toString(36)}`,
+        kind: 'local-audio-index',
+        label: dslFileHandleId,
+        status: 'queued',
+        params: { dslFileHandleId },
+        retryable: true,
+      });
+      registry.startIfSlotFree(job);
+      return { success: true, data: { jobId: job.id } };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       return { success: false, error: `Local audio index build failed: ${msg}` };

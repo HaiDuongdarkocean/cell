@@ -1,6 +1,7 @@
 import type { AudioItem, ImageItem, LookupResult, DefinitionEntry } from '@/entities/dictionary';
 import type { MessageResponse } from '@/entities/message';
-import type { ResourceInfo, ImportResult } from '@/entities/dictionary';
+import type { ResourceInfo } from '@/entities/dictionary';
+import type { Job } from '@/entities/job/types';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { SHOWCASE_DATA, type DataVariant } from './showcaseParams';
 import { getMockResourcesForLang } from './mockResources';
@@ -255,6 +256,7 @@ function mockResourceList(langCode: string): ResourceInfo[] {
 
 const MOCK_IMPORT_TOTAL = 12000;
 const MOCK_IMPORT_STEPS = [2000, 6000, 10000];
+const mockJobs = new Map<string, Job>();
 
 function pushMessage(message: unknown): void {
   const listeners = (globalThis as { __cellOnMessageListeners?: Set<(m: unknown) => void> }).__cellOnMessageListeners;
@@ -265,30 +267,45 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Simulate a real import: RESOURCE_CREATED + RESOURCE_IMPORT_PROGRESS pushes
- *  with the production message shape, then the final ImportResult. Filenames
- *  containing "fail" exercise the per-job error path. */
-async function handleResourceImport(payload: Record<string, unknown>): Promise<ImportResult> {
+function pushJob(partial: Partial<Job> & { id: string; status: Job['status'] }): void {
+  const job: Job = {
+    kind: 'resource-import',
+    label: partial.id,
+    progress: { done: 0, total: 0 },
+    params: {},
+    retryable: false,
+    createdAt: 0,
+    ...mockJobs.get(partial.id),
+    ...partial,
+    updatedAt: Date.now(),
+  };
+  mockJobs.set(job.id, job);
+  pushMessage({ type: MESSAGE_TYPES.JOB_EVENT, payload: { job } });
+}
+
+/** Simulate the registry-driven import: JOB_EVENT running ticks then a done
+ *  job — the showcase panel renders them through JobRow like production. */
+async function handleResourceImport(payload: Record<string, unknown>): Promise<void> {
   const resourceType = payload.resourceType as 'DICTIONARY' | 'FREQUENCY';
   const jobId = String(payload.jobId ?? '');
-  pushMessage({
-    type: MESSAGE_TYPES.RESOURCE_IMPORT_PROGRESS,
-    payload: { jobId, phase: 'created', resourceId: 999 },
-  });
+  const label = String(payload.fileName ?? jobId);
+  const params = { langCode: payload.langCode, resourceType, signature: payload.signature };
+  pushJob({ id: jobId, status: 'running', label, params });
   for (const processed of MOCK_IMPORT_STEPS) {
     await delay(350);
-    pushMessage({
-      type: MESSAGE_TYPES.RESOURCE_IMPORT_PROGRESS,
-      payload: { jobId, phase: 'progress', processed, total: MOCK_IMPORT_TOTAL },
-    });
+    pushJob({ id: jobId, status: 'running', progress: { done: processed, total: MOCK_IMPORT_TOTAL } });
   }
   await delay(150);
-  return {
+  pushJob({
+    id: jobId,
+    status: 'done',
     resourceId: 999,
-    wordCount: MOCK_IMPORT_TOTAL,
-    format: resourceType === 'DICTIONARY' ? 'json-array' : 'txt',
-    skippedAsDuplicate: false,
-  };
+    result: {
+      resourceId: 999,
+      wordCount: MOCK_IMPORT_TOTAL,
+      format: resourceType === 'DICTIONARY' ? 'json-array' : 'txt',
+    },
+  });
 }
 
 async function mockSendMessage(message: unknown): Promise<unknown> {
@@ -360,7 +377,45 @@ async function mockSendMessage(message: unknown): Promise<unknown> {
       return result;
     }
 
-    case MESSAGE_TYPES.RESOURCE_DELETE:
+    case MESSAGE_TYPES.RESOURCE_DELETE: {
+      const jobId = `del-${Date.now().toString(36)}`;
+      void (async (): Promise<void> => {
+        pushJob({
+          id: jobId,
+          kind: 'resource-delete',
+          status: 'running',
+          label: 'resource',
+          params: { langCode: m.payload?.langCode, resourceId: m.payload?.resourceId },
+        });
+        await delay(400);
+        pushJob({ id: jobId, status: 'done' });
+      })();
+      const result: MessageResponse<{ jobId: string }> = { success: true, data: { jobId } };
+      return result;
+    }
+
+    case MESSAGE_TYPES.JOB_LIST: {
+      const result: MessageResponse<{ jobs: Job[] }> = { success: true, data: { jobs: [...mockJobs.values()] } };
+      return result;
+    }
+
+    case MESSAGE_TYPES.JOB_DISMISS: {
+      const id = String(m.payload?.jobId ?? '');
+      mockJobs.delete(id);
+      pushMessage({ type: MESSAGE_TYPES.JOB_EVENT, payload: { removedId: id } });
+      const result: MessageResponse<boolean> = { success: true, data: true };
+      return result;
+    }
+
+    case MESSAGE_TYPES.JOB_ACTION: {
+      const id = String(m.payload?.jobId ?? '');
+      const job = mockJobs.get(id);
+      const result: MessageResponse<{ job: Job }> = job
+        ? { success: true, data: { job } }
+        : { success: false, error: `Unknown job ${id}` };
+      return result;
+    }
+
     case MESSAGE_TYPES.RESOURCE_REORDER:
     case MESSAGE_TYPES.RESOURCE_SET_ENABLED:
     case MESSAGE_TYPES.RESOURCE_SET_PROFILES:
@@ -387,9 +442,10 @@ async function mockSendMessage(message: unknown): Promise<unknown> {
       if (/fail/i.test(String(p.fileName ?? ''))) {
         return { success: false, error: `Mock import failed for ${String(p.fileName)}` };
       }
-      const result: MessageResponse<ImportResult> = {
+      void handleResourceImport(p);
+      const result: MessageResponse<{ jobId: string }> = {
         success: true,
-        data: await handleResourceImport(p),
+        data: { jobId: String(p.jobId ?? '') },
       };
       return result;
     }

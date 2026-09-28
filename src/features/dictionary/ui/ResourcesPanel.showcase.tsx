@@ -11,6 +11,7 @@ function job(fileName: string, overrides: Partial<ImportJob>): ImportJob {
   return {
     jobId: `demo-${fileName}`,
     file: new File(['x'], fileName),
+    fileName,
     resourceType: 'DICTIONARY',
     signature: `sig-${fileName}`,
     forceReplace: false,
@@ -67,7 +68,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Dictionary Resources Panel',
-  description: 'Dictionary + frequency resource management: per-file job rows (queued/uploading/importing/duplicate/success/error/skipped), dropzones, drag-reorder cards, delete confirm. Drop real files — the mock backend streams progress via RESOURCE_IMPORT_PROGRESS.',
+  description: 'Dictionary + frequency resource management: per-file job rows (queued/uploading/importing/duplicate/success/error/skipped), dropzones, drag-reorder cards, delete confirm. Drop real files — the mock backend streams progress via JOB_EVENT.',
   level: 'organisms' as const,
   category: 'Dictionary',
   order: 30,

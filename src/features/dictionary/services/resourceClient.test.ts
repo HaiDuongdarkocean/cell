@@ -48,18 +48,16 @@ test('import skips duplicates without uploading chunks', async () => {
     langCode: 'en',
     onDuplicate: () => 'skip',
   });
-  expect(result.skippedAsDuplicate).toBe(true);
-  expect(result.existingResource).toEqual(existing);
+  expect(result).toEqual({ skipped: true, existingResource: existing });
   expect(sent).not.toContain(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK);
 });
 
-test('import sends the file as chunk(s) and returns the ImportResult', async () => {
-  const payload = { resourceId: 9, wordCount: 3, format: 'json' };
+test('import sends the file as chunk(s) and returns the registry jobId', async () => {
   g.__cellSendMessage = async (m) => {
     if (m.type === MESSAGE_TYPES.RESOURCE_LIST) return { success: true, data: { resources: [] } };
-    if (m.type === MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK) return { success: true, data: payload };
+    if (m.type === MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK) return { success: true, data: { jobId: 'bg-job-1' } };
     return { success: true, data: {} };
   };
   const file = new File(['{"a":1}'], 'dict.json', { type: 'application/json' });
-  await expect(importResourceFile(file, 'DICTIONARY', { langCode: 'en' })).resolves.toEqual(payload);
+  await expect(importResourceFile(file, 'DICTIONARY', { langCode: 'en' })).resolves.toEqual({ jobId: 'bg-job-1' });
 });

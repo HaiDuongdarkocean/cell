@@ -275,7 +275,7 @@ export interface LocalAudioBuildIndexPayload {
 }
 
 export interface LocalAudioBuildIndexResponse {
-  readonly count: number;
+  readonly jobId: string;
 }
 
 export interface FetchImagesPayload {

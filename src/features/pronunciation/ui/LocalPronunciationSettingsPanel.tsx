@@ -8,6 +8,9 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { MessageResponse } from '@/entities/message';
 import type { LocalAudioBuildIndexResponse } from '@/entities/dictionary';
 import type { LocalFileAudioSettings, PronunciationSettings } from '@/entities/settings/types';
+
+
+import { JobRow, useJobs, useJobTerminalWatcher, dismissJob, retryJob } from '@/features/jobs';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
@@ -31,6 +34,19 @@ export function LocalPronunciationSettingsPanel({
   const [status, setStatus] = useState<string | null>(null);
   const [needsReconnect, setNeedsReconnect] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // The background owns indexing — rows live in the registry, and it stamps
+  // lastIndexedAt itself. The panel only observes jobs for this DSL file.
+  const indexJobs = useJobs('local-audio-index').filter(
+    (j) => j.params.dslFileHandleId === local.dslFileHandleId,
+  );
+  useJobTerminalWatcher(indexJobs, (job) => {
+    if (job.status === 'done') {
+      setStatus(t('pronunciation.local.indexed', [job.result?.count ?? 0]));
+    } else {
+      setStatus(job.error ?? t('pronunciation.local.indexFailed'));
+    }
+  });
 
   const archiveHandleId = local.packageType === 'single'
     ? local.audioArchiveHandleId
@@ -118,14 +134,6 @@ export function LocalPronunciationSettingsPanel({
       if (!res?.success || !res.data) {
         throw new Error(res?.error ?? t('pronunciation.local.indexFailed'));
       }
-      onChange({
-        ...next,
-        localFile: {
-          ...next.localFile,
-          lastIndexedAt: res.data.count > 0 ? Date.now() : null,
-        },
-      });
-      setStatus(t('pronunciation.local.indexed', [res.data.count]));
     } catch (err) {
       setStatus(err instanceof Error ? err.message : t('pronunciation.local.pickFailed'));
     } finally {
@@ -177,6 +185,15 @@ export function LocalPronunciationSettingsPanel({
           <span>{status}</span>
         </SettingsRow>
       )}
+
+      {indexJobs.map((job) => (
+        <JobRow
+          key={job.id}
+          job={job}
+          onDismiss={(jobId) => { void dismissJob(jobId).catch(() => undefined); }}
+          onRetry={(jobId) => { void retryJob(jobId).catch(() => undefined); }}
+        />
+      ))}
 
       {local.lastIndexedAt && (
         <SettingsRow dense>

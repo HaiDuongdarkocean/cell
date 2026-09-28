@@ -1,14 +1,18 @@
-// ResourcesPanel — 2 sections (dictionary + frequency) + per-file job rows + import (ADR-023, spec F11).
+// ResourcesPanel — 2 sections (dictionary + frequency) + job rows + import (ADR-023, spec F11).
 //
 // Every dropped/picked file becomes one ImportJob row inside its section's
-// list area. A single global FIFO queue runs jobs under dual bounds
+// list area. A single global FIFO queue runs uploads under dual bounds
 // (≤MAX_CONCURRENT_IMPORTS running AND <MAX_INFLIGHT_BYTES in-flight bytes —
 // the byte bound protects SW memory on low-RAM devices). The panel never
 // blocks: dropzones stay enabled, and each job resolves to its own outcome.
 // Duplicate prompts park their job until the user answers; a soft refresh
 // (no skeleton flash) runs per completion.
+//
+// Once a file's bytes are handed off, the background JobRegistry owns the
+// job — its rows render from JOB_LIST/JOB_EVENT, survive panel close, and
+// terminal rows persist until dismissed.
 
-import { useState, useCallback, useEffect, useRef, type ReactElement, type ReactNode } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef, type ReactElement, type ReactNode } from 'react';
 import { t, type MessageKey } from '@/shared/i18n';
 import { Alert } from '@/shared/ui/Alert';
 import { Button, Checkbox } from '@/shared/ui';
@@ -25,10 +29,11 @@ import { Icon } from '@/shared/ui/Icon';
 import {
   listResources,
   importResourceFile as importFile,
-  deleteResource as deleteResourceCascade,
+  deleteResource,
   reorderResources,
   setResourceEnabled,
 } from '@/features/dictionary/services/resourceClient';
+import { isActiveJob, type Job } from '@/entities/job/types';
 import { getUserMessage, isImportError } from '@/features/dictionary/logic/importErrors';
 import { useSectionDrag } from '@/shared/lib/useSectionDrag';
 import { computeSignature } from '@/features/dictionary/logic/signatureGenerator';
@@ -37,6 +42,8 @@ import type { ReadableFile } from '@/features/dictionary/logic/fileDetector';
 import { formatBytes } from '@/shared/lib/formatBytes';
 import type { DuplicateDecision, ResourceInfo, ResourceType } from '@/entities/dictionary';
 import type { FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
+
+import { JobRow, useJobs, useJobTerminalWatcher, dismissJob, retryJob } from '@/features/jobs';
 import { isRunningJob, makeJobId, type ImportJob } from './importJobTypes';
 import styles from './ResourcesPanel.module.css';
 
@@ -109,12 +116,16 @@ interface ResourceSectionProps {
   readonly sectionId: 'dictionary' | 'frequency';
   readonly resources: readonly ResourceInfo[];
   readonly jobs: readonly ImportJob[];
+  readonly registryJobs: readonly Job[];
   readonly loading: boolean;
   readonly busy: boolean;
-  readonly deleting: { readonly id: number; readonly done: number; readonly items: number; readonly index: number; readonly total: number } | null;
   readonly onFiles: (files: File[]) => void;
   readonly onResolveDuplicate: (jobId: string, choice: DuplicateDecision) => void;
   readonly onRerunReplace: (jobId: string) => void;
+  readonly onRetryLocal: (jobId: string) => void;
+  readonly onDismissLocal: (jobId: string) => void;
+  readonly onRetryJob: (jobId: string) => void;
+  readonly onDismissJob: (jobId: string) => void;
   readonly onDelete: (resource: ResourceInfo) => void;
   readonly onDeleteMany: (ids: readonly number[]) => void;
   readonly onMove: (index: number, direction: -1 | 1) => void;
@@ -130,12 +141,16 @@ function ResourceSection({
   sectionId,
   resources,
   jobs,
+  registryJobs,
   loading,
   busy,
-  deleting,
   onFiles,
   onResolveDuplicate,
   onRerunReplace,
+  onRetryLocal,
+  onDismissLocal,
+  onRetryJob,
+  onDismissJob,
   onDelete,
   onDeleteMany,
   onMove,
@@ -269,12 +284,22 @@ function ResourceSection({
         onFiles={(files) => { if (!busy) onFiles(files); }}
       />
       <div className={styles.resourceList} role="list" ref={listRef}>
+        {registryJobs.map((job) => (
+          <JobRow
+            key={job.id}
+            job={job}
+            onDismiss={onDismissJob}
+            onRetry={onRetryJob}
+          />
+        ))}
         {jobs.map((job) => (
           <ImportProgress
             key={job.jobId}
             job={job}
             onResolveDuplicate={onResolveDuplicate}
             onRerunReplace={onRerunReplace}
+            onRetry={onRetryLocal}
+            onDismiss={onDismissLocal}
           />
         ))}
         {loading ? (
@@ -282,7 +307,7 @@ function ResourceSection({
             <ResourceCardSkeleton />
             <ResourceCardSkeleton />
           </>
-        ) : resources.length === 0 && jobs.length === 0 && !deleting ? (
+        ) : resources.length === 0 && jobs.length === 0 && registryJobs.length === 0 ? (
           <p className={styles.empty}>{t(copy.empty)}</p>
         ) : (
           <>
@@ -307,9 +332,6 @@ function ResourceSection({
                 >
                   <ResourceCard
                     resource={r}
-                    deleteProgress={deleting && r.id === deleting.id
-                      ? { done: deleting.done, items: deleting.items, index: deleting.index, total: deleting.total }
-                      : undefined}
                     sectionSize={resources.length}
                     editing={isEditing}
                     selected={r.id != null && selectedIds.has(r.id)}
@@ -350,8 +372,6 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
   const [deleteTarget, setDeleteTarget] = useState<ResourceInfo | null>(null);
   const [deleteAllTarget, setDeleteAllTarget] = useState<ResourceType | null>(null);
   const [deleteManyTarget, setDeleteManyTarget] = useState<{ type: ResourceType; ids: readonly number[] } | null>(null);
-  const [deleting, setDeleting] = useState<{ type: ResourceType; id: number; name: string; index: number; total: number; done: number; items: number } | null>(null);
-  const deletingRef = useRef(deleting);
   const jobsRef = useRef<ImportJob[]>([]);
   const successTimers = useRef<Partial<Record<string, ReturnType<typeof setTimeout>>>>({});
   const alertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -397,9 +417,46 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     void refresh();
   }, [refresh]);
 
-  useEffect(() => {
-    deletingRef.current = deleting;
-  }, [deleting]);
+  // Registry-owned jobs for this language — imports the panel handed off and
+  // deletes it queued, plus anything started by another surface.
+  const allJobs = useJobs();
+  const registryJobs = useMemo(
+    () => allJobs.filter(
+      (j) => (j.kind === 'resource-import' || j.kind === 'resource-delete') && j.params.langCode === langCode,
+    ),
+    [allJobs, langCode],
+  );
+  const deleteBusy = useMemo(
+    () => registryJobs.some((j) => j.kind === 'resource-delete' && isActiveJob(j)),
+    [registryJobs],
+  );
+
+  useJobTerminalWatcher(registryJobs, useCallback((job: Job) => {
+    void refresh(true);
+    if (job.kind === 'resource-import') {
+      if (job.status === 'done') {
+        announce(t('resources.announce.added', [job.label, job.result?.wordCount ?? 0]));
+      } else {
+        announce(t('resources.announce.failed', [job.label, job.error ?? job.status]));
+      }
+    } else if (job.kind === 'resource-delete') {
+      if (job.status === 'done') {
+        announce(t('resources.delete.one', [job.label]));
+        showPanelAlert('success', t('resources.delete.one', [job.label]));
+      } else {
+        announce(t('resources.delete.failed', [job.error ?? job.status]));
+        showPanelAlert('error', t('resources.delete.failed', [job.error ?? job.status]));
+      }
+    }
+  }, [refresh, announce, showPanelAlert]));
+
+  const handleDismissJob = useCallback((jobId: string) => {
+    void dismissJob(jobId).catch(() => undefined);
+  }, []);
+
+  const handleRetryJob = useCallback((jobId: string) => {
+    void retryJob(jobId).catch(() => undefined);
+  }, []);
 
   // Clear pending auto-dismiss timers on unmount.
   useEffect(() => {
@@ -431,19 +488,29 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     }
   }, []);
 
-  /** Import one job end-to-end; every callback patches only its own row. */
+  const handleRetryLocal = useCallback((jobId: string) => {
+    setJobs((prev) => prev.map((j) => j.jobId === jobId
+      ? { ...j, jobId: makeJobId(), status: 'queued', error: null, uploadSent: 0, processed: 0, total: 0 }
+      : j));
+    pump();
+  }, [setJobs, pump]);
+
+  const handleDismissLocal = useCallback((jobId: string) => {
+    setJobs((prev) => prev.filter((j) => j.jobId !== jobId));
+  }, [setJobs]);
+
+  /** Upload one job's bytes; the background owns everything after handoff —
+   *  the registry row (same jobId) takes over rendering. */
   const runJob = useCallback(async (jobId: string): Promise<void> => {
     const job = jobsRef.current.find((j) => j.jobId === jobId);
     if (!job) return;
 
     patchJob(jobId, { status: 'uploading', error: null });
     try {
-      const result = await importFile(job.file as ReadableFile, job.resourceType, {
+      const outcome = await importFile(job.file as ReadableFile, job.resourceType, {
         langCode,
         jobId,
         onUploadProgress: (sent, total) => patchJob(jobId, { uploadSent: sent, uploadTotal: total }),
-        onResourceCreated: (resourceId) => patchJob(jobId, { status: 'importing', resourceId }),
-        onProgress: (processed, total) => patchJob(jobId, { status: 'importing', processed, total }),
         onDuplicate: job.forceReplace
           ? () => 'replace'
           : (existing) => new Promise<DuplicateDecision>((resolve) => {
@@ -451,27 +518,22 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
             }),
       });
 
-      if (result.skippedAsDuplicate) {
+      if ('skipped' in outcome) {
         patchJob(jobId, {
           status: 'skipped',
-          duplicate: result.existingResource ? { existing: result.existingResource } : null,
+          duplicate: { existing: outcome.existingResource },
         });
-        announce(t('resources.announce.skipped', [job.file.name]));
+        announce(t('resources.announce.skipped', [job.fileName]));
+        void refresh(true);
       } else {
-        patchJob(jobId, { status: 'success', wordCount: result.wordCount });
-        announce(t('resources.announce.added', [job.file.name, result.wordCount]));
-        successTimers.current[jobId] = setTimeout(() => {
-          setJobs((prev) => prev.filter((j) => j.jobId !== jobId));
-          successTimers.current[jobId] = undefined;
-        }, SUCCESS_DISMISS_MS);
+        setJobs((prev) => prev.filter((j) => j.jobId !== jobId));
       }
-      void refresh(true);
     } catch (e) {
       const msg = isImportError(e)
         ? getUserMessage(e)
-        : t('resources.error.import', [job.file.name, String(e)]);
+        : t('resources.error.import', [job.fileName, String(e)]);
       patchJob(jobId, { status: 'error', error: msg });
-      announce(t('resources.announce.failed', [job.file.name, msg]));
+      announce(t('resources.announce.failed', [job.fileName, msg]));
       void refresh(true);
     } finally {
       pump();
@@ -497,6 +559,7 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
       const base: ImportJob = {
         jobId,
         file,
+        fileName: file.name,
         resourceType,
         signature: '',
         forceReplace: false,
@@ -593,54 +656,38 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     applyReorder(type, index, index + direction);
   }, [applyReorder]);
 
-  const runDelete = useCallback(async (type: ResourceType, doomed: readonly ResourceInfo[]) => {
-    if (deletingRef.current || doomed.length === 0) return;
+  const runDelete = useCallback(async (_type: ResourceType, doomed: readonly ResourceInfo[]) => {
+    if (deleteBusy || doomed.length === 0) return;
     let firstError: string | null = null;
-    let deleted = 0;
-    try {
-      for (const [i, r] of doomed.entries()) {
-        const next = { type, id: r.id!, name: r.name, index: i + 1, total: doomed.length, done: 0, items: 0 };
-        deletingRef.current = next;
-        setDeleting(next);
-        announce(t('resources.announce.deleting', [r.name]));
-        try {
-          await deleteResourceCascade(langCode, r.id!, {
-            onProgress: (done, total) => setDeleting((prev) =>
-              prev && prev.id === r.id ? { ...prev, done, items: total } : prev),
-          });
-          deleted += 1;
-          setResources((prev) => prev.filter((x) => x.id !== r.id));
-        } catch (e) {
-          firstError = firstError ?? String(e);
-        }
+    for (const r of doomed) {
+      try {
+        await deleteResource(langCode, r.id!);
+        setResources((prev) => prev.filter((x) => x.id !== r.id));
+      } catch (e) {
+        firstError = firstError ?? String(e);
       }
-      const text = firstError != null
-        ? t('resources.delete.failed', [firstError])
-        : doomed.length === 1
-          ? t('resources.delete.one', [doomed[0]!.name])
-          : t('resources.delete.many', [deleted, t(SECTION_COPY[type].noun)]);
-      showPanelAlert(firstError != null ? 'error' : 'success', text);
-      announce(text);
-      void refresh(true);
-    } finally {
-      deletingRef.current = null;
-      setDeleting(null);
     }
-  }, [langCode, announce, refresh, showPanelAlert]);
+    if (firstError != null) {
+      showPanelAlert('error', t('resources.delete.failed', [firstError]));
+      announce(t('resources.delete.failed', [firstError]));
+      void refresh(true);
+    }
+    // Success announcements + refresh come from the job terminal watcher.
+  }, [langCode, deleteBusy, announce, refresh, showPanelAlert]);
 
   const handleDelete = useCallback(async (resource: ResourceInfo) => {
     setDeleteTarget(null);
-    if (deletingRef.current) return;
+    if (deleteBusy) return;
     await runDelete(resource.type, [resource]);
-  }, [runDelete]);
+  }, [runDelete, deleteBusy]);
 
   const handleDeleteMany = useCallback(async (type: ResourceType, ids: readonly number[]) => {
     setDeleteManyTarget(null);
-    if (deletingRef.current) return;
+    if (deleteBusy) return;
     const wanted = new Set(ids);
     const doomed = resources.filter((r) => r.type === type && r.id != null && wanted.has(r.id));
     await runDelete(type, doomed);
-  }, [resources, runDelete]);
+  }, [resources, runDelete, deleteBusy]);
 
   const handleSetEnabledMany = useCallback(async (type: ResourceType, ids: readonly number[], enabled: boolean) => {
     const wanted = new Set(ids);
@@ -660,17 +707,27 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
 
   const handleDeleteAll = useCallback(async (type: ResourceType) => {
     setDeleteAllTarget(null);
-    if (deletingRef.current) return;
+    if (deleteBusy) return;
     // Per-section cascade — deleteAllResources(langCode) clears BOTH types
     // and leaves orphaned entries, so delete each resource through the
     // cascading orchestrator path instead.
     await runDelete(type, resources.filter((r) => r.type === type && r.id != null));
-  }, [resources, runDelete]);
+  }, [resources, runDelete, deleteBusy]);
 
   const dictionaryResources = sortByPriority(resources.filter((r) => r.type === 'DICTIONARY'));
   const frequencyResources = sortByPriority(resources.filter((r) => r.type === 'FREQUENCY'));
   const dictionaryJobs = jobs.filter((j) => j.resourceType === 'DICTIONARY');
   const frequencyJobs = jobs.filter((j) => j.resourceType === 'FREQUENCY');
+  // Registry rows: hide any job the local row still drives (queued/uploading/
+  // parked duplicate) — the local twin suppresses its registry counterpart
+  // until handoff, so the two never render twice.
+  const localJobIds = new Set(jobs.map((j) => j.jobId));
+  const dictionaryRegistryJobs = registryJobs.filter(
+    (j) => j.params.resourceType !== 'FREQUENCY' && !localJobIds.has(j.id),
+  );
+  const frequencyRegistryJobs = registryJobs.filter(
+    (j) => j.params.resourceType === 'FREQUENCY' && !localJobIds.has(j.id),
+  );
 
   const bandsFooter = (
     <FrequencyBandsEditor value={frequencyBands} onChange={onFrequencyBandsChange} />
@@ -698,18 +755,22 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
             sectionId="dictionary"
             resources={dictionaryResources}
             jobs={dictionaryJobs}
+            registryJobs={dictionaryRegistryJobs}
             loading={loading}
-            busy={deleting != null}
-            deleting={deleting?.type === 'DICTIONARY' ? deleting : null}
+            busy={deleteBusy}
             onFiles={(files) => void handleFiles(files, 'DICTIONARY')}
             onResolveDuplicate={resolveDuplicate}
             onRerunReplace={rerunReplace}
-            onDelete={(r) => { if (!deletingRef.current) setDeleteTarget(r); }}
-            onDeleteMany={(ids) => { if (!deletingRef.current) setDeleteManyTarget({ type: 'DICTIONARY', ids }); }}
+            onDismissJob={handleDismissJob}
+            onRetryJob={handleRetryJob}
+            onRetryLocal={handleRetryLocal}
+            onDismissLocal={handleDismissLocal}
+            onDelete={(r) => { if (!deleteBusy) setDeleteTarget(r); }}
+            onDeleteMany={(ids) => { if (!deleteBusy) setDeleteManyTarget({ type: 'DICTIONARY', ids }); }}
             onMove={(i, dir) => handleMove('DICTIONARY', i, dir)}
             onReorder={(from, to) => applyReorder('DICTIONARY', from, to)}
             onChanged={() => void refresh(true)}
-            onDeleteAll={() => { if (!deletingRef.current) setDeleteAllTarget('DICTIONARY'); }}
+            onDeleteAll={() => { if (!deleteBusy) setDeleteAllTarget('DICTIONARY'); }}
             onSetEnabledMany={(ids, enabled) => void handleSetEnabledMany('DICTIONARY', ids, enabled)}
           />
 
@@ -718,18 +779,22 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
             sectionId="frequency"
             resources={frequencyResources}
             jobs={frequencyJobs}
+            registryJobs={frequencyRegistryJobs}
             loading={loading}
-            busy={deleting != null}
-            deleting={deleting?.type === 'FREQUENCY' ? deleting : null}
+            busy={deleteBusy}
             onFiles={(files) => void handleFiles(files, 'FREQUENCY')}
             onResolveDuplicate={resolveDuplicate}
             onRerunReplace={rerunReplace}
-            onDelete={(r) => { if (!deletingRef.current) setDeleteTarget(r); }}
-            onDeleteMany={(ids) => { if (!deletingRef.current) setDeleteManyTarget({ type: 'FREQUENCY', ids }); }}
+            onDismissJob={handleDismissJob}
+            onRetryJob={handleRetryJob}
+            onRetryLocal={handleRetryLocal}
+            onDismissLocal={handleDismissLocal}
+            onDelete={(r) => { if (!deleteBusy) setDeleteTarget(r); }}
+            onDeleteMany={(ids) => { if (!deleteBusy) setDeleteManyTarget({ type: 'FREQUENCY', ids }); }}
             onMove={(i, dir) => handleMove('FREQUENCY', i, dir)}
             onReorder={(from, to) => applyReorder('FREQUENCY', from, to)}
             onChanged={() => void refresh(true)}
-            onDeleteAll={() => { if (!deletingRef.current) setDeleteAllTarget('FREQUENCY'); }}
+            onDeleteAll={() => { if (!deleteBusy) setDeleteAllTarget('FREQUENCY'); }}
             onSetEnabledMany={(ids, enabled) => void handleSetEnabledMany('FREQUENCY', ids, enabled)}
             footer={bandsFooter}
           />

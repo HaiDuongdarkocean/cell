@@ -14,11 +14,43 @@ jest.mock('@/features/pronunciation/services/lingvoDslParser', () => ({
 }));
 jest.mock('@/features/pronunciation/repositories/lingvoDslIndexRepository', () => ({
   saveLingvoDslIndex: jest.fn(),
+  countLingvoDslIndex: jest.fn(),
 }));
+
+jest.mock('./jobs', () => {
+  const { JobRegistry } = jest.requireActual<
+    typeof import('@/features/jobs/logic/jobRegistry')
+  >('@/features/jobs/logic/jobRegistry');
+  const registry = new JobRegistry({
+    persist: jest.fn(async () => {}),
+    unpersist: jest.fn(async () => {}),
+    loadPersisted: jest.fn(async () => []),
+    broadcast: jest.fn(),
+    broadcastRemoved: jest.fn(),
+    onActiveCountChange: jest.fn(),
+    now: () => Date.now(),
+  });
+  return { getJobRegistry: () => registry };
+});
 
 const mockGetFileHandle = jest.mocked(getFileHandle);
 const mockParse = jest.mocked(parseLingvoDsl);
 const mockSave = jest.mocked(saveLingvoDslIndex);
+
+const testRegistry = jest.requireMock<{
+  getJobRegistry: () => import('@/features/jobs/logic/jobRegistry').JobRegistry;
+}>('./jobs').getJobRegistry();
+
+async function waitJobTerminal(id: string): Promise<string> {
+  for (let i = 0; i < 50; i++) {
+    const job = testRegistry.get(id);
+    if (job && (job.status === 'done' || job.status === 'failed' || job.status === 'interrupted')) {
+      return job.status;
+    }
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  return 'timeout';
+}
 
 function makeHandle(permission: PermissionState): FileSystemHandle {
   return {
@@ -39,6 +71,7 @@ function createMockCtx(localFile: unknown) {
     loadSettings: jest.fn(async () => ({
       pronunciation: localFile ? { localFile } : {},
     })),
+    saveSettings: jest.fn(async () => {}),
   };
 }
 
@@ -121,27 +154,42 @@ describe('LOCAL_AUDIO_BUILD_INDEX', () => {
     mockParse.mockReturnValue([
       { id: 'h:hello', packageId: 'h', term: 'hello', audioPaths: ['a.mp3'] },
     ]);
-    const handler = registerBuild(createMockCtx(null));
+    const ctx = createMockCtx({ dslFileHandleId: 'h', lastIndexedAt: null });
+    const handler = registerBuild(ctx);
     const res = await handler({ payload: { dslFileHandleId: 'h' } });
-    expect(res).toEqual({ success: true, data: { count: 1 } });
+    expect(res.success).toBe(true);
+    const jobId = (res.data as { jobId: string }).jobId;
+    expect(typeof jobId).toBe('string');
+    expect(await waitJobTerminal(jobId)).toBe('done');
     expect(mockParse).toHaveBeenCalledWith('dsl text', 'h');
     expect(mockSave).toHaveBeenCalledWith('h', expect.any(Array));
+    expect(ctx.saveSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pronunciation: expect.objectContaining({
+          localFile: expect.objectContaining({ lastIndexedAt: expect.any(Number) }),
+        }),
+      }),
+    );
   });
 
-  it('rejects when the handle is missing', async () => {
+  it('fails the job when the handle is missing', async () => {
     mockGetFileHandle.mockResolvedValue(undefined);
     const handler = registerBuild(createMockCtx(null));
     const res = await handler({ payload: { dslFileHandleId: 'gone' } });
-    expect(res.success).toBe(false);
+    expect(res.success).toBe(true);
+    const jobId = (res.data as { jobId: string }).jobId;
+    expect(await waitJobTerminal(jobId)).toBe('failed');
     expect(mockParse).not.toHaveBeenCalled();
   });
 
-  it('rejects without read permission', async () => {
+  it('fails the job without read permission', async () => {
     mockGetFileHandle.mockResolvedValue(makeFileHandle('prompt'));
     const handler = registerBuild(createMockCtx(null));
     const res = await handler({ payload: { dslFileHandleId: 'h' } });
-    expect(res.success).toBe(false);
-    expect(res.error).toContain('permission');
+    expect(res.success).toBe(true);
+    const jobId = (res.data as { jobId: string }).jobId;
+    expect(await waitJobTerminal(jobId)).toBe('failed');
+    expect(testRegistry.get(jobId)?.error).toContain('permission');
   });
 });
 

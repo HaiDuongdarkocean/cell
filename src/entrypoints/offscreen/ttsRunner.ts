@@ -60,11 +60,11 @@ registerOffscreenListener((message, sender, sendResponse) => {
 
     void (async () => {
       try {
-        const { language } = parsed.data;
+        const { language, jobId } = parsed.data;
         await downloadVoicePack(language, ({ loaded, total }) => {
           void sendMessage({
             type: MESSAGE_TYPES.TTS_DOWNLOAD_PROGRESS,
-            payload: { language, loaded, total },
+            payload: { language, loaded, total, jobId },
           });
         });
         const installed = await isVoicePackDownloaded();

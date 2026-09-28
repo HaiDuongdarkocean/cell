@@ -138,7 +138,12 @@ export type MessageType =
   | 'RESOURCE_SAMPLE'
   | 'RESOURCE_FIND'
   | 'RESOURCE_IMPORT_CHUNK'
-  | 'RESOURCE_IMPORT_PROGRESS'
+
+  // Durable job registry (spec durable-job-registry)
+  | 'JOB_LIST'
+  | 'JOB_EVENT'
+  | 'JOB_DISMISS'
+  | 'JOB_ACTION'
   // User-data sync (spec user-data-sync)
   | 'SYNC_GET_STATUS'
   | 'SYNC_NOW'

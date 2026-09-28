@@ -86,6 +86,8 @@ export const ResourceImportChunkPayloadSchema = z.object({
   langCode: LangCode,
   /** Pre-resolved by the caller after its own signature check. */
   duplicateDecision: z.enum(['skip', 'replace']).optional(),
+  /** Content signature computed by the caller — drives job dedup. */
+  signature: z.string().optional(),
   /** Injected by the message bus for content-script senders. */
   tabId: z.number().int().optional(),
 });

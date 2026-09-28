@@ -6,18 +6,20 @@
 // resource operations therefore go through background messages so the
 // extension origin stays the single source of truth.
 //
-// Import ships file bytes as base64 chunks (chrome messages are JSON-only);
-// progress arrives via RESOURCE_IMPORT_PROGRESS push messages.
+// Long-running work (import, delete) is owned by the background JobRegistry:
+// these calls return a jobId as soon as the background owns the job; progress
+// and terminal state are observed via JOB_LIST/JOB_EVENT (see jobClient).
+// Import ships file bytes as base64 chunks (chrome messages are JSON-only).
 
-import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis/runtime';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { subscribeJobEvents } from '@/features/jobs';
+import { isTerminalJob } from '@/entities/job/types';
 import { computeSignature } from '../logic/signatureGenerator';
 import type { ReadableFile } from '../logic/fileDetector';
 import type {
   DictionaryComponent,
   DuplicateDecision,
-  ImportProgressCallback,
-  ImportResult,
   ResourceInfo,
   ResourceType,
 } from '@/entities/dictionary';
@@ -30,8 +32,6 @@ interface ImportCallbacks {
   readonly langCode: string;
   /** Panel-minted job id — the row tracking this import. Falls back to an internal id. */
   readonly jobId?: string;
-  readonly onProgress?: ImportProgressCallback;
-  readonly onResourceCreated?: (resourceId: number) => void;
   readonly onDuplicate?: (existing: ResourceInfo) => DuplicateDecision | Promise<DuplicateDecision>;
   /** Called after each base64 chunk is acknowledged by the background. */
   readonly onUploadProgress?: (sent: number, total: number) => void;
@@ -59,7 +59,23 @@ function notifyResourcesChanged(langCode: string): void {
   for (const listener of changeListeners) listener(langCode);
 }
 
+// Resource mutations now complete inside background-owned jobs — re-notify
+// subscribers when a resource job reaches a terminal state so live lookups
+// refresh even when no surface in this context triggered the work.
+let jobEventsHooked = false;
+function hookJobCompletionEvents(): void {
+  if (jobEventsHooked) return;
+  jobEventsHooked = true;
+  subscribeJobEvents(({ job }) => {
+    if (!job || !isTerminalJob(job)) return;
+    if (job.kind !== 'resource-delete' && job.kind !== 'resource-import') return;
+    const langCode = job.params.langCode;
+    if (typeof langCode === 'string') notifyResourcesChanged(langCode);
+  });
+}
+
 export async function listResources(langCode: string): Promise<ResourceInfo[]> {
+  hookJobCompletionEvents();
   // No background listener (showcase / unit-test env) → empty list rather
   // than an error state; a real failure still throws.
   const res = await sendMessage<MessageResponse<{ resources: ResourceInfo[] }>>({
@@ -71,32 +87,15 @@ export async function listResources(langCode: string): Promise<ResourceInfo[]> {
   return res.data?.resources ?? [];
 }
 
+/** Queue a background-owned cascade delete. The jobId identifies the
+ *  registry row; progress/terminal state arrive via JOB_EVENT. */
 export async function deleteResource(
   langCode: string,
   resourceId: number,
-  options?: { onProgress?: (done: number, total: number) => void },
-): Promise<void> {
-  const onProgress = options?.onProgress;
-  if (!onProgress) {
-    await request(MESSAGE_TYPES.RESOURCE_DELETE, { langCode, resourceId });
-    notifyResourcesChanged(langCode);
-    return;
-  }
-  const jobId = `del-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-  const onProgressMessage = (message: unknown): void => {
-    const msg = message as { type?: string; payload?: { jobId?: string; phase?: string; processed?: number; total?: number } };
-    if (msg?.type !== MESSAGE_TYPES.RESOURCE_IMPORT_PROGRESS || msg.payload?.jobId !== jobId) return;
-    if (msg.payload.phase === 'progress' && msg.payload.processed !== undefined) {
-      onProgress(msg.payload.processed, msg.payload.total ?? 0);
-    }
-  };
-  onMessage(onProgressMessage);
-  try {
-    await request(MESSAGE_TYPES.RESOURCE_DELETE, { langCode, resourceId, jobId });
-  } finally {
-    removeOnMessageListener(onProgressMessage);
-  }
+): Promise<{ jobId: string }> {
+  const data = await request<{ jobId: string }>(MESSAGE_TYPES.RESOURCE_DELETE, { langCode, resourceId });
   notifyResourcesChanged(langCode);
+  return data;
 }
 
 export async function reorderResources(
@@ -160,20 +159,24 @@ function readAsDataUrl(file: ReadableFile): Promise<string> {
 }
 
 /**
- * Import a resource file via the background (extension-origin IDB).
+ * Upload a resource file into a background-owned import job.
  *
  * Duplicate detection runs client-side first (signature → RESOURCE_LIST) so
  * the UI's onDuplicate prompt resolves before any bytes are uploaded.
  * 'skip' returns early without transferring; 'replace' rides along as
  * duplicateDecision and the background's importFile cascade-deletes the old
  * resource before importing.
+ *
+ * Resolves with the registry jobId once all bytes are handed off — parsing
+ * continues detached in the background; watch JOB_EVENT for the outcome.
+ * Returns {skipped:true} when a duplicate was declined before upload.
  */
 export async function importResourceFile(
   file: ReadableFile,
   resourceType: ResourceType,
   options: ImportCallbacks,
-): Promise<ImportResult> {
-  const { langCode, jobId: providedJobId, onProgress, onResourceCreated, onDuplicate, onUploadProgress } = options;
+): Promise<{ jobId: string } | { skipped: true; existingResource: ResourceInfo }> {
+  const { langCode, jobId: providedJobId, onDuplicate, onUploadProgress } = options;
 
   const signature = await computeSignature(file);
   const existing = (await listResources(langCode)).find((r) => r.signature === signature);
@@ -181,13 +184,7 @@ export async function importResourceFile(
   if (existing) {
     decision = await (onDuplicate?.(existing) ?? 'skip');
     if (decision === 'skip') {
-      return {
-        resourceId: existing.id ?? 0,
-        wordCount: existing.wordCount,
-        format: existing.format,
-        skippedAsDuplicate: true,
-        existingResource: existing,
-      };
+      return { skipped: true, existingResource: existing };
     }
   }
 
@@ -195,43 +192,32 @@ export async function importResourceFile(
   // imports on this page — time + random is enough (crypto.randomUUID is
   // unavailable in the jsdom test env).
   const jobId = providedJobId ?? `imp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-  const onProgressMessage = (message: unknown): void => {
-    const msg = message as { type?: string; payload?: { jobId?: string; phase?: string; processed?: number; total?: number; resourceId?: number } };
-    if (msg?.type !== MESSAGE_TYPES.RESOURCE_IMPORT_PROGRESS || msg.payload?.jobId !== jobId) return;
-    if (msg.payload.phase === 'created') onResourceCreated?.(msg.payload.resourceId ?? 0);
-    else if (msg.payload.phase === 'progress' && msg.payload.processed !== undefined) {
-      onProgress?.(msg.payload.processed, msg.payload.total ?? 0);
-    }
-  };
-  onMessage(onProgressMessage);
 
-  try {
-    const dataUrl = await readAsDataUrl(file);
-    const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
-    const total = Math.max(1, Math.ceil(base64.length / IMPORT_CHUNK_SIZE));
-    let result: ImportResult | undefined;
-    for (let seq = 0; seq < total; seq++) {
-      const last = seq === total - 1;
-      const res = await request<ImportResult | { received: number }>(
-        MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
-        {
-          jobId,
-          seq,
-          total,
-          data: base64.slice(seq * IMPORT_CHUNK_SIZE, (seq + 1) * IMPORT_CHUNK_SIZE),
-          fileName: file.name,
-          fileMime: (file as File).type ?? '',
-          resourceType,
-          langCode,
-          duplicateDecision: decision === 'replace' ? 'replace' : undefined,
-        },
-      );
-      onUploadProgress?.(seq + 1, total);
-      if (last) result = res as ImportResult;
+  const dataUrl = await readAsDataUrl(file);
+  const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+  const total = Math.max(1, Math.ceil(base64.length / IMPORT_CHUNK_SIZE));
+  for (let seq = 0; seq < total; seq++) {
+    const last = seq === total - 1;
+    const res = await request<{ received?: number; jobId?: string }>(
+      MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
+      {
+        jobId,
+        seq,
+        total,
+        data: base64.slice(seq * IMPORT_CHUNK_SIZE, (seq + 1) * IMPORT_CHUNK_SIZE),
+        fileName: file.name,
+        fileMime: (file as File).type ?? '',
+        resourceType,
+        langCode,
+        signature,
+        duplicateDecision: decision === 'replace' ? 'replace' : undefined,
+      },
+    );
+    onUploadProgress?.(seq + 1, total);
+    if (last) {
+      notifyResourcesChanged(langCode);
+      return { jobId: res.jobId ?? jobId };
     }
-    if (!result!.skippedAsDuplicate) notifyResourcesChanged(langCode);
-    return result!;
-  } finally {
-    removeOnMessageListener(onProgressMessage);
   }
+  throw new Error('Upload ended unexpectedly');
 }

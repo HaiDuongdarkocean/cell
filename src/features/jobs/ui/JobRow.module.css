@@ -1,0 +1,66 @@
+.job {
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--color-border);
+  min-height: 44px;
+}
+
+.jobError {
+  border-left-color: var(--color-destructive);
+}
+
+.jobInterrupted {
+  border-left-color: var(--color-warning);
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.lead {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  flex-shrink: 0;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  font-weight: var(--font-weight-medium);
+}
+
+.meta {
+  margin: 0;
+}
+
+.errorText {
+  margin: 0;
+  color: var(--color-destructive);
+}
+
+.progress {
+  margin-top: var(--space-1);
+}
+
+.actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.iconOk {
+  color: var(--color-success);
+}
+
+.iconWarn {
+  color: var(--color-warning);
+}

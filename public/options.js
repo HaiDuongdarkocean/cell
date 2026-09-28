@@ -1,6 +1,6 @@
 const TTS_DOWNLOAD_VOICE = 'TTS_DOWNLOAD_VOICE';
-const TTS_DOWNLOAD_PROGRESS = 'TTS_DOWNLOAD_PROGRESS';
 const TTS_SPEAK_LOCAL = 'TTS_SPEAK_LOCAL';
+const JOB_EVENT = 'JOB_EVENT';
 
 const appState = {
   downloadStatus: 'pending',
@@ -20,12 +20,20 @@ function setStatus(text) {
 }
 
 chrome.runtime.onMessage.addListener(function (message) {
-  if (message && typeof message === 'object' && message.type === TTS_DOWNLOAD_PROGRESS) {
-    const { loaded, total } = message.payload;
-    const loadedMb = (loaded / 1024 / 1024).toFixed(1);
-    const totalMb = (total / 1024 / 1024).toFixed(1);
-    appState.progress = `${loadedMb}/${totalMb} MB`;
-    setStatus(`Download: ${loadedMb} / ${totalMb} MB`);
+  if (message && typeof message === 'object' && message.type === JOB_EVENT) {
+    const job = message.payload && message.payload.job;
+    if (!job || job.kind !== 'voice-download') return false;
+    const { done, total } = job.progress;
+    if (job.status === 'queued' || job.status === 'running' || job.status === 'uploading') {
+      const loadedMb = (done / 1024 / 1024).toFixed(1);
+      const totalMb = total ? (total / 1024 / 1024).toFixed(1) : '?';
+      appState.progress = `${loadedMb}/${totalMb} MB`;
+      setStatus(`Download: ${loadedMb} / ${totalMb} MB`);
+    } else {
+      appState.downloadStatus = job.status;
+      setStatus(`Download ${job.status}${job.error ? `: ${job.error}` : ''}`);
+      downloadBtn.disabled = false;
+    }
   }
   return false;
 });
@@ -46,18 +54,23 @@ downloadBtn.addEventListener('click', function () {
   chrome.runtime
     .sendMessage({ type: TTS_DOWNLOAD_VOICE, payload: { language: 'en' } })
     .then(function (response) {
-      if (isResponse(response)) {
-        appState.downloadStatus = response.success ? 'success' : `error: ${response.error || ''}`;
-        setStatus(`Download done: ${JSON.stringify(response)}`);
-        speakBtn.disabled = !response.success;
+      if (isResponse(response) && response.success) {
+        setStatus(`Download queued: ${JSON.stringify(response)}`);
+        speakBtn.disabled = false;
+      } else if (isResponse(response)) {
+        appState.downloadStatus = `error: ${response.error || ''}`;
+        setStatus(`Download error: ${response.error || ''}`);
+        downloadBtn.disabled = false;
       } else {
         appState.downloadStatus = 'error: invalid response';
         setStatus('Download error: invalid response');
+        downloadBtn.disabled = false;
       }
     })
     .catch(function (err) {
       appState.downloadStatus = `error: ${err && err.message ? err.message : String(err)}`;
       setStatus(`Download error: ${appState.downloadStatus}`);
+      downloadBtn.disabled = false;
     });
 });
 
@@ -78,9 +91,11 @@ speakBtn.addEventListener('click', function () {
         appState.speakStatus = 'error: invalid response';
         setStatus('Speak error: invalid response');
       }
+      speakBtn.disabled = false;
     })
     .catch(function (err) {
       appState.speakStatus = `error: ${err && err.message ? err.message : String(err)}`;
       setStatus(`Speak error: ${appState.speakStatus}`);
+      speakBtn.disabled = false;
     });
 });

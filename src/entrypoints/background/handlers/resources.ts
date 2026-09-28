@@ -6,15 +6,18 @@
  * invisible to background lookups. All resource reads/writes are therefore
  * proxied here so the extension origin remains the single source of truth.
  *
- * Files arrive as base64 chunks (chrome messages are JSON-only — File /
- * ArrayBuffer do not survive). The last chunk of a job triggers importFile;
- * progress is pushed back via RESOURCE_IMPORT_PROGRESS.
+ * Long-running work (import, cascade delete) is owned by the JobRegistry:
+ * the panel uploads base64 chunks into a background-owned job, the registry
+ * detaches execution from the sender, and progress/state are observable via
+ * JOB_LIST + JOB_EVENT from any surface.
  */
 import type { z } from 'zod';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { sendMessage, sendTabMessage } from '@/shared/lib/chrome-apis';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
+import { JobDuplicateError, type JobRegistry } from '@/features/jobs/logic/jobRegistry';
+import { getJobRegistry } from './jobs';
+import type { Job } from '@/entities/job/types';
 import {
   ResourceListPayloadSchema,
   ResourceDeletePayloadSchema,
@@ -44,24 +47,39 @@ import {
   findDictionaryByResource,
 } from '@/features/dictionary/repositories/dictionaryRepository';
 import { collectEntryComponents, sortedComponents } from '@/features/dictionary/logic/dictionaryComponents';
-import type { DictionaryComponent } from '@/entities/dictionary';
+import type { DictionaryComponent, DuplicateDecision, ResourceType } from '@/entities/dictionary';
 import {
   sampleFrequencyEntries,
   findFrequencyEntry,
 } from '@/features/dictionary/repositories/frequencyRepository';
-import { importFile, deleteResourceCascade } from '@/features/dictionary/logic/importOrchestrator';
+import { importFile, deleteResourceCascade, rollbackImport } from '@/features/dictionary/logic/importOrchestrator';
 import { clearDictionaryProbeCache } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
-import type { ImportResult } from '@/entities/dictionary';
 
 const CHUNK_JOB_TTL_MS = 10 * 60 * 1000;
+const UPLOAD_STALL_MS = 30 * 1000;
+
+interface ImportChunkMeta {
+  readonly fileName: string;
+  readonly fileMime: string;
+  readonly resourceType: ResourceType;
+  readonly langCode: string;
+  readonly duplicateDecision?: DuplicateDecision;
+}
 
 interface PendingImport {
   readonly chunks: string[];
   received: number;
   createdAt: number;
+  stallTimer: ReturnType<typeof setTimeout> | null;
+  readonly meta: ImportChunkMeta;
+}
+
+interface QueuedImportPayload extends ImportChunkMeta {
+  readonly file: File;
 }
 
 const pendingImports = new Map<string, PendingImport>();
+const importPayloads = new Map<string, QueuedImportPayload>();
 
 function fail<T>(label: string, parsed: { success: false; error: z.ZodError }): MessageResponse<T> {
   return { success: false, error: `Invalid ${label} payload: ${parsed.error.message}` };
@@ -75,16 +93,6 @@ function toError(err: unknown): MessageResponse<never> {
   return { success: false, error: err instanceof Error ? err.message : String(err) };
 }
 
-/** Push import progress back to the sender (content-script tab or extension page). */
-function notifyProgress(tabId: number | undefined, jobId: string, payload: Record<string, unknown>): void {
-  const message = { type: MESSAGE_TYPES.RESOURCE_IMPORT_PROGRESS, payload: { jobId, ...payload } };
-  if (tabId !== undefined) {
-    sendTabMessage(tabId, message).catch(() => { /* sender tab may be gone */ });
-  } else {
-    sendMessage(message).catch(() => { /* no listeners */ });
-  }
-}
-
 function base64ToBytes(base64: string): Uint8Array {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
@@ -92,8 +100,79 @@ function base64ToBytes(base64: string): Uint8Array {
   return bytes;
 }
 
+function clearPending(jobId: string): void {
+  const pending = pendingImports.get(jobId);
+  if (pending?.stallTimer !== null && pending?.stallTimer !== undefined) {
+    clearTimeout(pending.stallTimer);
+  }
+  pendingImports.delete(jobId);
+}
+
+async function runImport(registry: JobRegistry, job: Job): Promise<void> {
+  const payload = importPayloads.get(job.id);
+  importPayloads.delete(job.id);
+  if (!payload) {
+    throw new Error('Upload data is no longer available — select the file again');
+  }
+  const result = await importFile(payload.file, payload.resourceType, {
+    langCode: payload.langCode,
+    onProgress: (processed, estimatedTotal) => {
+      registry.setProgress(job.id, { done: processed, total: estimatedTotal });
+    },
+    onResourceCreated: (resourceId) => {
+      registry.setResourceId(job.id, resourceId);
+    },
+    onDuplicate: async () => payload.duplicateDecision ?? 'skip',
+  });
+  clearDictionaryProbeCache();
+  registry.markDone(job.id, {
+    resourceId: result.resourceId,
+    wordCount: result.wordCount,
+    format: result.format,
+    skippedAsDuplicate: result.skippedAsDuplicate === true,
+  });
+}
+
+async function runDelete(registry: JobRegistry, job: Job): Promise<void> {
+  const langCode = job.params.langCode as string;
+  const resourceId = job.params.resourceId as number;
+  await deleteResourceCascade(langCode, resourceId, (done, total) => {
+    registry.setProgress(job.id, { done, total });
+  });
+  clearDictionaryProbeCache();
+  registry.markDone(job.id, { resourceId });
+}
+
+async function reconcileImport(job: Job): Promise<'done' | 'interrupted'> {
+  if (job.status !== 'running' || job.resourceId === undefined) return 'interrupted';
+  const langCode = job.params.langCode as string;
+  const resource = await getResource(langCode, job.resourceId);
+  if (!resource) return 'interrupted';
+  if (resource.installationFinished) return 'done';
+  await rollbackImport(langCode, job.resourceId).catch(() => undefined);
+  return 'interrupted';
+}
+
+async function reconcileDelete(job: Job): Promise<'done' | 'interrupted'> {
+  const langCode = job.params.langCode as string;
+  const resourceId = job.params.resourceId as number;
+  const resource = await getResource(langCode, resourceId);
+  return resource ? 'interrupted' : 'done';
+}
+
 /** Register dictionary-resource handlers. */
 export function registerResourceHandlers(ctx: BackgroundContext): void {
+  const registry = getJobRegistry();
+
+  registry.registerExecutor('resource-import', {
+    start: (job) => runImport(registry, job),
+    reconcile: reconcileImport,
+  });
+  registry.registerExecutor('resource-delete', {
+    start: (job) => runDelete(registry, job),
+    reconcile: reconcileDelete,
+  });
+
   ctx.on(MESSAGE_TYPES.RESOURCE_LIST, async (request): Promise<MessageResponse> => {
     const parsed = ResourceListPayloadSchema.safeParse(request.payload);
     if (!parsed.success) return fail('RESOURCE_LIST', parsed);
@@ -104,19 +183,26 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     }
   });
 
-  ctx.on(MESSAGE_TYPES.RESOURCE_DELETE, async (request): Promise<MessageResponse> => {
+  ctx.on(MESSAGE_TYPES.RESOURCE_DELETE, async (request): Promise<MessageResponse<{ jobId: string }>> => {
     const parsed = ResourceDeletePayloadSchema.safeParse(request.payload);
     if (!parsed.success) return fail('RESOURCE_DELETE', parsed);
+    const { langCode, resourceId } = parsed.data;
     try {
-      await deleteResourceCascade(
-        parsed.data.langCode,
-        parsed.data.resourceId,
-        parsed.data.jobId
-          ? (processed, total) => notifyProgress(parsed.data.tabId, parsed.data.jobId!, { phase: 'progress', processed, total })
-          : undefined,
-      );
-      clearDictionaryProbeCache();
-      return ok();
+      const existing = registry.findActive('resource-delete', { resourceId, langCode });
+      if (existing) return ok({ jobId: existing.id });
+
+      const resource = await getResource(langCode, resourceId);
+      const jobId = `del-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+      const job = registry.register({
+        id: jobId,
+        kind: 'resource-delete',
+        label: resource?.name ?? `#${resourceId}`,
+        status: 'queued',
+        params: { resourceId, langCode, resourceType: resource?.type ?? null },
+        retryable: true,
+      });
+      registry.startIfSlotFree(job);
+      return ok({ jobId });
     } catch (err) {
       return toError(err);
     }
@@ -230,44 +316,91 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     }
   });
 
-  // Import: accumulate base64 chunks per jobId; the final chunk runs
-  // importFile and its response carries the ImportResult.
-  ctx.on(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK, async (request): Promise<MessageResponse<ImportResult | { received: number }>> => {
+  // Import: chunks accumulate into a registry-owned job (status 'uploading').
+  // The final chunk hands the assembled file to the executor and returns
+  // {jobId} immediately — parsing runs detached from the sender, observable
+  // via JOB_LIST/JOB_EVENT. Chunks for unknown or terminal jobs are rejected
+  // so a restarted sender cannot resurrect an interrupted job.
+  ctx.on(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK, async (request): Promise<MessageResponse<{ received?: number; jobId?: string }>> => {
     const parsed = ResourceImportChunkPayloadSchema.safeParse(request.payload);
     if (!parsed.success) return fail('RESOURCE_IMPORT_CHUNK', parsed);
     const p = parsed.data;
 
-    // Reap stale jobs so an abandoned upload can't leak memory.
-    for (const [jobId, job] of pendingImports) {
-      if (Date.now() - job.createdAt > CHUNK_JOB_TTL_MS) pendingImports.delete(jobId);
+    for (const [jobId, pending] of pendingImports) {
+      if (Date.now() - pending.createdAt > CHUNK_JOB_TTL_MS) {
+        clearPending(jobId);
+        registry.markInterrupted(jobId, 'interrupted-upload-ttl');
+      }
     }
 
-    let job = pendingImports.get(p.jobId);
-    if (!job) {
-      job = { chunks: new Array<string>(p.total), received: 0, createdAt: Date.now() };
-      pendingImports.set(p.jobId, job);
+    let pending = pendingImports.get(p.jobId);
+    if (!pending) {
+      const existing = registry.get(p.jobId);
+      if (existing) {
+        return toError(new Error(`Import job ${p.jobId} is ${existing.status} — chunk rejected`));
+      }
+      try {
+        registry.register({
+          id: p.jobId,
+          kind: 'resource-import',
+          label: p.fileName,
+          status: 'uploading',
+          params: {
+            jobId: p.jobId,
+            signature: p.signature ?? p.jobId,
+            langCode: p.langCode,
+            resourceType: p.resourceType,
+          },
+          retryable: false,
+        });
+      } catch (err) {
+        if (err instanceof JobDuplicateError) {
+          return toError(new Error('An import for this file is already in progress'));
+        }
+        return toError(err);
+      }
+      pending = {
+        chunks: new Array<string>(p.total),
+        received: 0,
+        createdAt: Date.now(),
+        stallTimer: null,
+        meta: {
+          fileName: p.fileName,
+          fileMime: p.fileMime,
+          resourceType: p.resourceType,
+          langCode: p.langCode,
+          duplicateDecision: p.duplicateDecision,
+        },
+      };
+      pendingImports.set(p.jobId, pending);
     }
-    if (job.chunks[p.seq] === undefined) {
-      job.chunks[p.seq] = p.data;
-      job.received++;
-    }
-    if (job.received < job.chunks.length) {
-      return ok({ received: job.received });
-    }
-    pendingImports.delete(p.jobId);
 
+    if (pending.chunks[p.seq] === undefined) {
+      pending.chunks[p.seq] = p.data;
+      pending.received++;
+      registry.setProgress(p.jobId, { done: pending.received, total: pending.chunks.length, unit: 'items' });
+    }
+    if (pending.stallTimer !== null) clearTimeout(pending.stallTimer);
+    pending.stallTimer = setTimeout(() => {
+      clearPending(p.jobId);
+      registry.markInterrupted(p.jobId, 'interrupted-upload-stall');
+    }, UPLOAD_STALL_MS);
+
+    if (pending.received < pending.chunks.length) {
+      return ok({ received: pending.received });
+    }
+
+    const meta = pending.meta;
+    clearPending(p.jobId);
     try {
-      const bytes = base64ToBytes(job.chunks.join(''));
-      const file = new File([bytes as BlobPart], p.fileName, { type: p.fileMime });
-      const result = await importFile(file, p.resourceType, {
-        langCode: p.langCode,
-        onProgress: (processed, estimatedTotal) => notifyProgress(p.tabId, p.jobId, { phase: 'progress', processed, total: estimatedTotal }),
-        onResourceCreated: (resourceId) => notifyProgress(p.tabId, p.jobId, { phase: 'created', resourceId }),
-        onDuplicate: async () => p.duplicateDecision ?? 'skip',
+      const bytes = base64ToBytes(pending.chunks.join(''));
+      importPayloads.set(p.jobId, {
+        file: new File([bytes as BlobPart], meta.fileName, { type: meta.fileMime }),
+        ...meta,
       });
-      clearDictionaryProbeCache();
-      notifyProgress(p.tabId, p.jobId, { phase: 'done' });
-      return ok(result);
+      const job = registry.update(p.jobId, { status: 'queued' }, { persistNow: true });
+      if (job) registry.startIfSlotFree(job);
+      return ok({ jobId: p.jobId });
     } catch (err) {
       return toError(err);
     }

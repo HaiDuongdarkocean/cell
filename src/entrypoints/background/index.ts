@@ -91,6 +91,8 @@ import { registerSrsHandlers } from './handlers/srs';
 import { registerOcrHandlers } from './handlers/ocr';
 import { registerReaderHandlers } from './handlers/reader';
 import { registerSyncHandlers, wireSyncScheduling } from './handlers/sync';
+import { initJobRegistry, registerJobHandlers } from './handlers/jobs';
+import { sweepOrphanedWork } from './handlers/orphanSweep';
 import { seedDevDataIfEmpty } from '@/features/dictionary/logic/devSeed';
 import { isDevMode } from '@/shared/lib/env/devMode';
 import type { MessageHandler } from '@/entities/message';
@@ -210,7 +212,20 @@ export class BackgroundService implements BackgroundContext {
       this.networkInterceptor.start();
     }
 
-    // 6. Clean up orphaned OPFS temp files from crashed sessions.
+    // 6. Restore persisted jobs and reconcile against durable output, then
+    // roll back orphaned imports / re-stamp built indexes left behind by a
+    // killed worker — the sweep must see restored jobs so active imports are
+    // not mistaken for orphans. Session job records may already be gone.
+    void (async () => {
+      await initJobRegistry().catch((err: unknown) => {
+        console.warn('[background] Job registry restore/sweep failed:', err);
+      });
+      await sweepOrphanedWork(this).catch((err: unknown) => {
+        console.warn('[background] Orphan sweep failed:', err);
+      });
+    })();
+
+    // 7. Clean up orphaned OPFS temp files from crashed sessions.
     void cleanupOrphanedDownloads().catch((err: unknown) => {
       console.warn('[background] OPFS orphan cleanup failed:', err);
     });
@@ -252,6 +267,7 @@ export class BackgroundService implements BackgroundContext {
   // --- handler registration ---
 
   private registerHandlers(): void {
+    registerJobHandlers(this);
     registerDownloadHandlers(this);
     registerMediaDetectionHandlers(this);
     registerSubtitleHandlers(this);

@@ -100,6 +100,12 @@ import {
   ResourceComponentsPayloadSchema,
 } from '@/entities/dictionary/resourceSchemas';
 import { subtitleDiscoveryPayloadSchema } from '@/entities/subtitle/discoverySchemas';
+import {
+  JobActionPayloadSchema,
+  JobDismissPayloadSchema,
+  JobEventPayloadSchema,
+  JobListPayloadSchema,
+} from '@/entities/message/jobSchemas';
 
 export type MessageDirection =
   | 'cs->bg'
@@ -747,11 +753,29 @@ export const MESSAGE_REGISTRY = {
     direction: 'cs->bg',
     owner: 'background/handlers/resources',
   },
-  [MESSAGE_TYPES.RESOURCE_IMPORT_PROGRESS]: {
-    type: MESSAGE_TYPES.RESOURCE_IMPORT_PROGRESS,
-    schema: undefined,
-    direction: 'bg->cs',
-    owner: 'background/handlers/resources',
+  [MESSAGE_TYPES.JOB_LIST]: {
+    type: MESSAGE_TYPES.JOB_LIST,
+    schema: JobListPayloadSchema,
+    direction: 'panel->bg',
+    owner: 'background/handlers/jobs',
+  },
+  [MESSAGE_TYPES.JOB_EVENT]: {
+    type: MESSAGE_TYPES.JOB_EVENT,
+    schema: JobEventPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/jobs',
+  },
+  [MESSAGE_TYPES.JOB_DISMISS]: {
+    type: MESSAGE_TYPES.JOB_DISMISS,
+    schema: JobDismissPayloadSchema,
+    direction: 'panel->bg',
+    owner: 'background/handlers/jobs',
+  },
+  [MESSAGE_TYPES.JOB_ACTION]: {
+    type: MESSAGE_TYPES.JOB_ACTION,
+    schema: JobActionPayloadSchema,
+    direction: 'panel->bg',
+    owner: 'background/handlers/jobs',
   },
   [MESSAGE_TYPES.SYNC_GET_STATUS]: {
     type: MESSAGE_TYPES.SYNC_GET_STATUS,

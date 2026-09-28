@@ -28,6 +28,7 @@ export interface JobDuplicate {
 export interface ImportJob {
   readonly jobId: string;
   readonly file: File;
+  readonly fileName: string;
   readonly resourceType: ResourceType;
   readonly signature: string;
   readonly forceReplace: boolean;
