@@ -97,10 +97,14 @@ export function createOrbitalBadgeSync(deps: OrbitalBadgeSyncDeps): OrbitalBadge
       });
     }
     const sameDimensions = orbitalBadgeSize === trigger.size && orbitalBadgeScale === trigger.pointerScale;
-    if (orbitalBadge && sameDimensions) {
+    if (orbitalBadge) {
+      if (!sameDimensions) {
+        orbitalBadge.update({ badgeSize: trigger.size, pointerScale: trigger.pointerScale });
+        orbitalBadgeSize = trigger.size;
+        orbitalBadgeScale = trigger.pointerScale;
+      }
       orbitalBadge.setPreset(trigger.position);
     } else {
-      orbitalBadge?.destroy();
       orbitalBadge = mountOrbitalBadge({
         badgeSize: trigger.size,
         pointerScale: trigger.pointerScale,

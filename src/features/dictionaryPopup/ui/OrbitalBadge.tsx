@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Button } from '@/shared/ui/Button';
-import { Icon } from '@/shared/ui/Icon';
+import { Icon } from '@/shared/icons/Icon';
 import { useOrbitalPointer } from '@/features/dictionaryPopup/badgePointer/useOrbitalPointer';
 import { useOrbitalSnap } from '@/features/dictionaryPopup/badgePointer/useOrbitalSnap';
 import { getNearestEdge, getEdgeCenter, type ViewportRect, type CollapsedEdge } from '@/features/dictionaryPopup/badgePointer/badgeCollapse';
@@ -167,6 +167,9 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
   // Floating or expanded → pointer outside the badge at user's preset.
   const collapsedAtEdge = isAtEdge && !expanded;
   const activePreset: PointerPreset = collapsedAtEdge ? inwardPreset(edge) : userPreset;
+
+  const iconShift = badgeSize / 4;
+  const collapsedIconSize = Math.max(16, Math.round(badgeSize * 0.4));
 
   // Compute pointer from displayedCenter (not activeCenter) so the pointer
   // position matches the actual rendered badge position. When collapsed at
@@ -397,17 +400,14 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
             marginLeft: collapsedAtEdge ? -badgeSize / 2 : -pointerSize / 2,
             marginTop: collapsedAtEdge ? -badgeSize / 2 : -pointerSize / 2,
             transform: collapsedAtEdge
-              ? 'translate3d(0, 0, 0)'
+              ? `translate3d(${edge === 'left' ? iconShift : edge === 'right' ? -iconShift : 0}px, ${edge === 'top' ? iconShift : edge === 'bottom' ? -iconShift : 0}px, 0)`
               : `translate3d(${pointerCenter.x - displayedCenter.x}px, ${pointerCenter.y - displayedCenter.y}px, 0)`,
           }}
           data-cell-id="orbital-pointer"
           aria-hidden="true"
         >
           {collapsedAtEdge && (
-            <Icon
-              name="settings"
-              style={{ width: `calc(${badgeSize}px - 2 * var(--space-1))`, height: `calc(${badgeSize}px - 2 * var(--space-1))` }}
-            />
+            <Icon name="settings" size={collapsedIconSize} />
           )}
         </div>
       )}

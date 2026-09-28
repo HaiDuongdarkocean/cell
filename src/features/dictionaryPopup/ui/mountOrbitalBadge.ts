@@ -28,6 +28,8 @@ export interface OrbitalBadgeMountOptions {
 export interface OrbitalBadgeMountController {
   /** Update the pointer preset. */
   setPreset: (preset: PointerPreset) => void;
+  /** Update badge dimensions without remounting (preserves position state). */
+  update: (dims: { badgeSize?: number; pointerScale?: number }) => void;
   /** Show the badge. */
   show: () => void;
   /** Hide the badge. */
@@ -40,8 +42,6 @@ const BADGE_Z_INDEX = 'var(--z-overlay-top)';
 
 export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): OrbitalBadgeMountController {
   const {
-    badgeSize = 44,
-    pointerScale = 0.25,
     initialPreset = 'center',
     onPresetChange,
     onTipReady,
@@ -50,12 +50,15 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
     panelController,
   } = options;
 
-  const pointerSize = badgeSize * pointerScale;
+  const dims = {
+    badgeSize: options.badgeSize ?? 44,
+    pointerScale: options.pointerScale ?? 0.25,
+  };
   const badgeRef: RefObject<OrbitalBadgeHandle | null> = { current: null };
 
   const buildBadge = (preset: PointerPreset): OrbitalBadgeProps => ({
-    badgeSize,
-    pointerSize,
+    badgeSize: dims.badgeSize,
+    pointerSize: dims.badgeSize * dims.pointerScale,
     initialPreset: preset,
     persistPosition: false,
     onPresetChange,
@@ -72,6 +75,16 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
   const badgeElement = (preset: PointerPreset) =>
     createElement(OrbitalBadge, { ...buildBadge(preset), ref: badgeRef });
 
+  const renderBadge = (preset: PointerPreset): void => {
+    mount.root.render(
+      createElement(
+        ShadowThemeProvider,
+        { container: mount.rootEl },
+        badgeElement(preset),
+      ),
+    );
+  };
+
   // First mount without ShadowThemeProvider so we can pass the inner container
   // after mountReactShadow returns it. We re-render with the provider immediately.
   const mount = mountReactShadow(badgeElement(initialPreset), {
@@ -83,13 +96,7 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
   mount.host.classList.add('js-cell-orbital-badge-host');
   mount.host.style.zIndex = BADGE_Z_INDEX;
 
-  mount.root.render(
-    createElement(
-      ShadowThemeProvider,
-      { container: mount.rootEl },
-      badgeElement(initialPreset),
-    ),
-  );
+  renderBadge(initialPreset);
 
   const isInsidePanel = (e: PointerEvent): boolean => {
     const hosts = panelController?.getHosts();
@@ -157,6 +164,11 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
   return {
     setPreset: (preset) => {
       badgeRef.current?.setPreset(preset);
+    },
+    update: (next) => {
+      if (next.badgeSize !== undefined) dims.badgeSize = next.badgeSize;
+      if (next.pointerScale !== undefined) dims.pointerScale = next.pointerScale;
+      renderBadge(badgeRef.current?.getState().preset ?? initialPreset);
     },
     show: () => {
       mount.host.style.display = '';

@@ -221,6 +221,19 @@ describe('OrbitalBadge', () => {
     expect(screen.queryByTestId('orbital-pointer')).toBeInTheDocument();
   });
 
+  it('centers the collapsed gear icon inside the visible half-moon', () => {
+    render(<OrbitalBadge persistPosition={false} badgeSize={80} />);
+    // Right-edge collapse keeps the left half → gear shifts left by badgeSize/4.
+    const pointer = screen.getByTestId('orbital-pointer');
+    expect(pointer.style.transform).toBe('translate3d(-20px, 0px, 0)');
+  });
+
+  it('scales the collapsed gear icon with badge size', () => {
+    render(<OrbitalBadge persistPosition={false} badgeSize={80} />);
+    const svg = screen.getByTestId('orbital-pointer').querySelector('svg');
+    expect(svg).toHaveAttribute('width', '32');
+  });
+
   it('does not move when hovering (no drag)', () => {
     render(<OrbitalBadge persistPosition={false} />);
     const badge = screen.getByTestId('orbital-badge');
