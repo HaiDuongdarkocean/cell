@@ -61,13 +61,13 @@ function resolveViewport(viewport?: ViewportRect): ViewportRect {
   if (document.fullscreenElement) {
     return { width: window.innerWidth, height: window.innerHeight };
   }
-  // The docked badge insets from the content edge (left edge of the
-  // scrollbar) so the whole disc stays inside the viewport — "cạnh mép
-  // scrollbar" — not on top of it. The native scrollbar renders on top of
-  // everything, so positioning at innerWidth would hide the badge behind it.
-  // getViewportContent* subtracts the scrollbar lane on every engine —
-  // including Firefox, where neither clientWidth nor the fixed-position
-  // viewport excludes the overlay bar.
+  // The badge center sits at the content edge (left edge of the scrollbar).
+  // With clip-path: inset(0 50% 0 0), the visible half-moon is flush with the
+  // scrollbar's left edge — "cạnh mép scrollbar" — not on top of it. The
+  // native scrollbar renders on top of everything, so positioning at
+  // innerWidth would hide the badge behind it. getViewportContent* subtracts
+  // the scrollbar lane on every engine — including Firefox, where neither
+  // clientWidth nor the fixed-position viewport excludes the overlay bar.
   return { width: getViewportContentWidth(), height: getViewportContentHeight() };
 }
 
@@ -148,7 +148,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
 
   // Check if badge is actually near an edge (not just which edge is nearest).
   // getNearestEdge always returns an edge — we need the distance to decide
-  // whether to dock at the edge or float when collapsed.
+  // whether to snap (half-moon) or float (full circle) when collapsed.
   const { distance: edgeDistance } = getNearestEdge(activeCenter, activeViewport);
   const isAtEdge = edgeDistance <= badgeSize / 2;
 
@@ -160,21 +160,21 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
   edgeRef.current = isAtEdge ? edge : null;
   dragEdgeRef.current = isAtEdge ? edge : null;
 
-  // Collapsed at edge → full circle docked inside (collapsedCenter). Floating → stay at center.
+  // Collapsed at edge → half-moon (collapsedCenter). Floating → stay at center.
   const displayedCenter = expanded ? dragCenter : (isAtEdge ? collapsedCenter : center);
 
-  // Collapsed at edge → gear icon centered inside the docked circle.
+  // Collapsed at edge → pointer inside the visible half-moon, pointing inward.
   // Floating or expanded → pointer outside the badge at user's preset.
   const collapsedAtEdge = isAtEdge && !expanded;
   const activePreset: PointerPreset = collapsedAtEdge ? inwardPreset(edge) : userPreset;
 
+  const iconShift = badgeSize / 4;
   const collapsedIconSize = Math.max(16, Math.round(badgeSize * 0.4));
 
   // Compute pointer from displayedCenter (not activeCenter) so the pointer
   // position matches the actual rendered badge position. When collapsed at
-  // edge, activeCenter (unsnapped, on the edge) and displayedCenter (docked
-  // inside) differ by badgeSize/2 — using activeCenter would push the gear
-  // halfway out of the docked circle.
+  // edge, activeCenter (unsapped) and displayedCenter (edge-snapped) differ by
+  // badgeSize/2 — using activeCenter would push the pointer outside the badge.
   const { pointerCenter, pointerTip } = useOrbitalPointer({
     badgeCenter: displayedCenter,
     badgeSize,
@@ -208,7 +208,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
   persistRef.current = persist;
 
   // Snap the badge to the nearest viewport edge when the browser resizes or
-  // the device orientation changes. This keeps the docked badge visible
+  // the device orientation changes. This keeps the half-moon badge visible
   // instead of getting stuck outside the new viewport.
   useEffect(() => {
     if (viewport != null) return;
@@ -290,7 +290,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
     // Start drag from the currently displayed position so the badge doesn't
     // jump to the nearest edge when grabbed while floating away from an edge.
     // - Already expanded: continue from dragCenter (no state change, no jump).
-    // - Collapsed at edge: start from collapsedCenter (docked position).
+    // - Collapsed at edge: start from collapsedCenter (half-moon position).
     // - Collapsed floating: start from center (the visible floating position).
     const vp = resolveViewport(viewport);
     const { distance } = getNearestEdge(centerRef.current, vp);
@@ -311,8 +311,8 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
     // from handleDrag may not have been applied yet in the same event loop).
     const current = dragCenterRef.current;
     const { edge: nearestEdge, distance } = getNearestEdge(current, vp);
-    // If dropped near an edge → snap + dock against the edge.
-    // If dropped away from edge → stay floating at drop position.
+    // If dropped near an edge → snap + collapse (half-moon).
+    // If dropped away from edge → stay expanded at drop position (full circle).
     const snapThreshold = badgeSize * 1.5;
     setDragging(false);
     if (distance <= snapThreshold) {
@@ -400,7 +400,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
             marginLeft: collapsedAtEdge ? -badgeSize / 2 : -pointerSize / 2,
             marginTop: collapsedAtEdge ? -badgeSize / 2 : -pointerSize / 2,
             transform: collapsedAtEdge
-              ? 'translate3d(0, 0, 0)'
+              ? `translate3d(${edge === 'left' ? iconShift : edge === 'right' ? -iconShift : 0}px, ${edge === 'top' ? iconShift : edge === 'bottom' ? -iconShift : 0}px, 0)`
               : `translate3d(${pointerCenter.x - displayedCenter.x}px, ${pointerCenter.y - displayedCenter.y}px, 0)`,
           }}
           data-cell-id="orbital-pointer"

@@ -27,14 +27,14 @@ export function computePointerOffset(
 }
 
 /** Compute pointer center offset so the pointer sits INSIDE the badge, flush
- *  against the rim. Used when collapsed at edge. */
+ *  against the inward edge of the visible half-moon. Used when collapsed at edge. */
 export function computePointerOffsetInside(
   badgeSize: number,
   pointerSize: number,
   gap: number = POINTER_EDGE_GAP_PX,
 ): number {
-  // Place pointer center so its outer edge is `gap` px from the badge rim →
-  // pointer fully inside the docked circle.
+  // Half-moon visible radius = badgeSize/2. Place pointer center so its outer
+  // edge is `gap` px from the badge rim → pointer fully inside the half-moon.
   return badgeSize / 2 - pointerSize / 2 - gap;
 }
 

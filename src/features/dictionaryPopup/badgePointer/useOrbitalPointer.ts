@@ -15,7 +15,7 @@ export interface UseOrbitalPointerOptions {
   /** Explicit preset — pointer stays at this fixed position (no auto-angle). */
   preset: PointerPreset;
   gap?: number;
-  /** Place pointer INSIDE the badge (for the collapsed docked circle) instead of outside. */
+  /** Place pointer INSIDE the badge (for collapsed half-moon) instead of outside. */
   inside?: boolean;
 }
 
