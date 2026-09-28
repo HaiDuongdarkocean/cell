@@ -1,0 +1,19 @@
+{
+  "id": "jest-clearallmocks-keeps-implementations",
+  "title": "jest.clearAllMocks xóa call history nhưng GIỮ nguyên mockResolvedValue/mockReturnValue impl",
+  "category": ["testing"],
+  "tags": ["jest", "mock", "clearAllMocks", "mockResolvedValue", "test-isolation"],
+  "trigger": "Test sau beforeEach(clearAllMocks) vẫn thấy impl của test trước — assertions đếm call sai ngẫu nhiên theo thứ tự test",
+  "principle": "clearAllMocks chỉ là mockClear (xóa calls/instances), KHÔNG reset implementation. mockResolvedValue/mockReturnValue đặt trong một test leak sang mọi test sau cùng module registry. Re-assert impl mặc định trong beforeEach, hoặc dùng mockResolvedValueOnce, hoặc resetAllMocks.",
+  "cases": [
+    {
+      "context": "Test 'skips when disconnected' gọi rt.hasConnections.mockResolvedValue(false); các test sau expect runCycle được gọi nhưng nhận 0 vì hasConnections mãi trả false",
+      "bad": "beforeEach(() => { jest.clearAllMocks(); });  // impl cũ còn sống",
+      "good": "beforeEach(() => { jest.clearAllMocks(); rt.hasConnections.mockResolvedValue(true); });  // re-pin default impl"
+    }
+  ],
+  "applyFor": ["jest.fn implementation overrides", "module-level mock singletons", "test suites dùng shared fake objects"],
+  "related": ["jest-modnamemapper-ordering"],
+  "supersedes": [],
+  "source": {"commit": "dbe7d7be", "date": "2026-09-27"}
+}

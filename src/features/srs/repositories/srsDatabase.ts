@@ -5,8 +5,8 @@
 
 import { getDbHash } from '@/shared/lib/storage/dbHash';
 
-/** IndexedDB schema version cho SRS V1. */
-export const SRS_DB_SCHEMA_VERSION = 1;
+/** IndexedDB schema version cho SRS (v2 adds sync capture stores). */
+export const SRS_DB_SCHEMA_VERSION = 2;
 
 /** Object store names. */
 export const SRS_STORES = {
@@ -19,6 +19,8 @@ export const SRS_STORES = {
   AUDIO_ASSETS: 'audioAssets',
   IMAGE_ASSETS: 'imageAssets',
   REVIEW_EVENTS: 'reviewEvents',
+  SYNC_OUTBOX: 'syncOutbox',
+  SYNC_META: 'syncMeta',
 } as const;
 
 /** Index names. */
@@ -51,6 +53,10 @@ export async function getSrsDB(): Promise<IDBDatabase> {
 
   const dbName = await getSrsDbName();
   const db = await openSrsDB(dbName);
+  db.onversionchange = () => {
+    db.close();
+    if (dbCache.get('srs') === db) dbCache.delete('srs');
+  };
   dbCache.set('srs', db);
   return db;
 }
@@ -76,7 +82,7 @@ function openSrsDB(dbName: string): Promise<IDBDatabase> {
     const request = indexedDB.open(dbName, SRS_DB_SCHEMA_VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
-      createAllSrsStores(db);
+      createAllSrsStores(db, request.transaction ?? undefined);
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -85,7 +91,7 @@ function openSrsDB(dbName: string): Promise<IDBDatabase> {
 }
 
 /** Create all SRS object stores and indexes. */
-function createAllSrsStores(db: IDBDatabase): void {
+function createAllSrsStores(db: IDBDatabase, tx?: IDBTransaction): void {
   if (!db.objectStoreNames.contains(SRS_STORES.COLLECTIONS)) {
     const store = db.createObjectStore(SRS_STORES.COLLECTIONS, { keyPath: 'id' });
     store.createIndex(SRS_INDEXES.by_languageProfileId, 'languageProfileId', { unique: false });
@@ -134,6 +140,21 @@ function createAllSrsStores(db: IDBDatabase): void {
     store.createIndex(SRS_INDEXES.by_card, 'cardId', { unique: false });
     store.createIndex(SRS_INDEXES.by_component, 'componentType', { unique: false });
     store.createIndex(SRS_INDEXES.by_timestamp, 'answeredAt', { unique: false });
+  }
+
+  if (!db.objectStoreNames.contains(SRS_STORES.SYNC_OUTBOX)) {
+    const store = db.createObjectStore(SRS_STORES.SYNC_OUTBOX, { autoIncrement: true });
+    store.createIndex('by_key', 'key', { unique: false });
+  }
+
+  if (!db.objectStoreNames.contains(SRS_STORES.SYNC_META)) {
+    const store = db.createObjectStore(SRS_STORES.SYNC_META, { keyPath: 'key' });
+    store.createIndex('by_recKey', 'recKey', { unique: false });
+  } else if (tx) {
+    const store = tx.objectStore(SRS_STORES.SYNC_META);
+    if (!store.indexNames.contains('by_recKey')) {
+      store.createIndex('by_recKey', 'recKey', { unique: false });
+    }
   }
 }
 

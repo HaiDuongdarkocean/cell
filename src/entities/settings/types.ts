@@ -463,6 +463,8 @@ export interface Settings {
   // === Ocean Language Acquisition SRS (schema v27) ===
   /** SRS active collection/deck/study config and data lifecycle quota. */
   readonly srs: SrsSettingsSlice;
+  /** One-time sync migration flags (REQ-2). Absent = not run. */
+  readonly syncMigrations?: { readonly profileIdentity?: 'done' };
 }
 
 // === Subtitle Search API Key (schema v21) ===

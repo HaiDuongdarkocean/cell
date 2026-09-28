@@ -4,11 +4,26 @@ import {
   WordStatusChangedPayloadSchema,
   WordStatusDeletedPayloadSchema,
 } from '@/entities/message/dictionarySchemas';
-import { emitWordStatusChanged, emitWordStatusRemoved } from './wordStatusEvents';
+import { SyncDataAppliedPayloadSchema } from '@/entities/message/schema';
+import {
+  emitWordStatusChanged,
+  emitWordStatusRemoved,
+  emitWordStatusesReload,
+} from './wordStatusEvents';
 
 export function startWordStatusCrossTabRelay(): () => void {
   const listener = (message: unknown): boolean => {
     const msg = message as { type?: string; payload?: unknown };
+    if (msg.type === MESSAGE_TYPES.SYNC_DATA_APPLIED) {
+      const parsed = SyncDataAppliedPayloadSchema.safeParse(msg.payload);
+      if (!parsed.success || !parsed.data.dataClasses.includes('wordStatus')) {
+        return false;
+      }
+      for (const scope of parsed.data.scopes) {
+        if (scope.startsWith('profile:')) emitWordStatusesReload(scope.slice(8));
+      }
+      return false;
+    }
     if (msg.type === MESSAGE_TYPES.WORD_STATUS_CHANGED) {
       const parsed = WordStatusChangedPayloadSchema.safeParse(msg.payload);
       if (!parsed.success) {

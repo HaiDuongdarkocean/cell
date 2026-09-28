@@ -1,8 +1,12 @@
 import { SrsNotetypeSchema } from '@/entities/srs/schemas';
 import type { SrsNotetype } from '@/entities/srs/types';
 import { SrsError } from '@/features/srs/lib/srsError';
+import { captureChange, ensureSyncRuntime, isCaptureEnabled, readRecordMeta } from '@/features/sync';
 import { SRS_STORES, SRS_INDEXES } from './srsDatabase';
 import { withReadonlyStore, withStore, getById, putRecord, deleteRecord, getAllByIndex } from './srsRepositoryHelpers';
+import { scopeOfCollection } from './srsSyncScope';
+
+const WRITE_STORES = [SRS_STORES.NOTETYPES, SRS_STORES.COLLECTIONS, SRS_STORES.SYNC_OUTBOX, SRS_STORES.SYNC_META];
 
 export async function getNotetype(id: string): Promise<SrsNotetype> {
   return withReadonlyStore(SRS_STORES.NOTETYPES, async (store) => {
@@ -27,15 +31,35 @@ export async function putNotetype(notetype: SrsNotetype): Promise<SrsNotetype> {
     throw new SrsError('INVALID_INPUT', parsed.error.issues.map((e) => e.message).join('; '));
   }
 
-  return withStore(SRS_STORES.NOTETYPES, async (store) => {
+  await ensureSyncRuntime();
+  return withStore(WRITE_STORES, async (store, tx) => {
+    const captured = isCaptureEnabled();
+    const scope = captured
+      ? ((await scopeOfCollection(tx, notetype.collectionId)) ??
+        (await readRecordMeta(store, `notetypes:${notetype.id}`))?.scope ??
+        null)
+      : null;
     await putRecord(store, notetype);
+    if (captured) {
+      await captureChange(store, { scope, dataClass: 'srsNotetype', key: `notetypes:${notetype.id}`, op: 'put' });
+    }
     return Object.freeze(notetype);
   });
 }
 
 export async function deleteNotetype(id: string): Promise<void> {
-  return withStore(SRS_STORES.NOTETYPES, async (store) => {
+  await ensureSyncRuntime();
+  return withStore(WRITE_STORES, async (store, tx) => {
+    const captured = isCaptureEnabled();
+    const row = await getById<SrsNotetype>(store, id);
+    let scope = captured && row ? await scopeOfCollection(tx, row.collectionId) : null;
+    if (!scope && captured) {
+      scope = (await readRecordMeta(store, `notetypes:${id}`))?.scope ?? null;
+    }
     await deleteRecord(store, id);
+    if (captured) {
+      await captureChange(store, { scope, dataClass: 'srsNotetype', key: `notetypes:${id}`, op: 'delete' });
+    }
   });
 }
 

@@ -1,14 +1,11 @@
-import { toIso6391, isoCodeToLabel } from '@/shared/config/languageRegistry';
+import { toIso6391, baseLangCode, isoCodeToLabel } from '@/shared/config/languageRegistry';
 import { DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import type { LanguageProfile, ResolvedProfile, Settings, DictionaryPopupSettings, TtsSettings } from '../types';
 
 export { ResolvedProfile };
 
-export function generateProfileId(): string {
-  const random = typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-  return `${Date.now()}-${random}`;
+export function profileIdForTarget(languageValue: string): `profile-${string}` {
+  return `profile-${toIso6391(baseLangCode(languageValue))}`;
 }
 
 export function buildProfileName(
@@ -53,7 +50,6 @@ type ProfileShape = { target: string; native: string };
 
 export function validateLanguageProfile(
   draft: ProfileShape,
-  universalNativeLanguage: string,
   existing: readonly LanguageProfile[],
   editingId?: string | null,
 ): { valid: boolean; emptyTarget: boolean; duplicate: boolean; messages: string[] } {
@@ -62,17 +58,12 @@ export function validateLanguageProfile(
     messages.push('Please select a target language.');
     return { valid: false, emptyTarget: true, duplicate: false, messages };
   }
-  const resolvedNative = draft.native || universalNativeLanguage;
-  const targetBase = toIso6391(draft.target.split('-')[0] ?? draft.target);
-  const nativeBase = toIso6391(resolvedNative.split('-')[0] ?? resolvedNative);
+  const targetBase = toIso6391(baseLangCode(draft.target));
   const isDuplicate = existing.some(
-    (p) =>
-      p.id !== (editingId ?? undefined) &&
-      toIso6391(p.target.split('-')[0] ?? p.target) === targetBase &&
-      toIso6391((p.native || universalNativeLanguage).split('-')[0] ?? (p.native || universalNativeLanguage)) === nativeBase,
+    (p) => p.id !== (editingId ?? undefined) && toIso6391(baseLangCode(p.target)) === targetBase,
   );
   if (isDuplicate) {
-    messages.push('A profile with the same target and native language already exists.');
+    messages.push('A profile for this target language already exists.');
     return { valid: false, emptyTarget: false, duplicate: true, messages };
   }
   return { valid: true, emptyTarget: false, duplicate: false, messages };

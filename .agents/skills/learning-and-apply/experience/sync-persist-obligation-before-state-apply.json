@@ -1,0 +1,19 @@
+{
+  "id": "sync-persist-obligation-before-state-apply",
+  "title": "Recovery obligation phải persist TRƯỚC khi apply state change trigger nó",
+  "category": ["data", "state"],
+  "tags": ["sync", "checkpoint", "obligation", "crash-safety", "ordering"],
+  "trigger": "Apply một remote change mà sau đó cần follow-up async (drain/migration) — nếu apply trước persist thì crash giữa hai bước làm mất obligation vĩnh viễn",
+  "principle": "Khi một incoming change kích hoạt nghĩa vụ follow-up, ghi obligation/checkpoint trước, rồi mới apply change. Đọc 'current state' cũng phải trước apply — apply trước làm post-state trông giống no-op và obligation không bao giờ được tạo.",
+  "cases": [
+    {
+      "context": "Pull routing record `binding:fr → connB`: persistRoutingDrain đọc routing hiện tại để tính `from`. Chạy sau onRoutingChange → current đã là connB → next===current → drain obligation không được ghi; crash sau apply = scope migration mất dấu",
+      "bad": "await deps.onRoutingChange?.(record); await persistRoutingDrain(deps, record);",
+      "good": "await persistRoutingDrain(deps, record); await deps.onRoutingChange?.(record);"
+    }
+  ],
+  "applyFor": ["checkpointed multi-step flows", "write-ahead logging", "sync rebind/drain/sweep", "saga patterns"],
+  "related": ["async-deferred-cleanup-stale-timer-race"],
+  "supersedes": [],
+  "source": {"commit": "b0e7c038", "date": "2026-09-27"}
+}

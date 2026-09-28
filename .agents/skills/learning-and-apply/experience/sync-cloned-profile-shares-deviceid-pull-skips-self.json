@@ -1,0 +1,37 @@
+{
+  "id": "sync-cloned-profile-shares-deviceid-pull-skips-self",
+  "title": "Clone browser profile copy cả sync deviceId → pull engine skip record 'self-authored' → multi-device test phải wipe extension storage của clone",
+  "category": [
+    "testing",
+    "sync"
+  ],
+  "tags": [
+    "sync",
+    "playwright",
+    "device-id",
+    "profile-clone",
+    "pull-cycle",
+    "hlc"
+  ],
+  "trigger": "Test cross-device sync bằng cách clone profile: device-2 pull chạy, appliedScopes có global nhưng appliedDataClasses rỗng, giá trị seeded trên device-1 không bao giờ apply; cả 2 device có cùng HLC node <deviceId>:runtime",
+  "principle": "pullCycle.ts bỏ qua record khi deviceIdOfRemotePath === deps.deviceId (self-skip đúng spec — device không re-apply write của chính mình). Clone profile copy 'Local Extension Settings' chứa syncDirectory.deviceId → clone hưởng cùng identity → mọi record của device-1 bị classify là self. Mô phỏng 'máy mới' đúng cách: wipe trong clone các mục 'Local Extension Settings/<id>', 'IndexedDB/chrome-extension_<id>_0.indexeddb.leveldb', 'Service Worker', 'Session Storage', 'Extension State/Scripts/Rules' — GIỮ Cookies/Network để OAuth nhanh. Cũng là hiểu biết sản phẩm: clone profile OS-level (copy toàn bộ Firefox/Chrome profile sang máy khác) vi phạm cùng invariant này.",
+  "cases": [
+    {
+      "context": "debug-push verify: d2 SYNC_NOW trả pulled:['global'] nhưng themeMode không đổi; meta node cả 2 device đều 67faf4fc-…",
+      "bad": "copy profile cell-e42d… → clone-device2 nguyên trạng rồi verify pull",
+      "good": "wipe extension storage của clone → deviceId mới cấp lúc runtime init → pull apply recordsApplied>0, themeMode='light' (VERIFY-PASS)"
+    }
+  ],
+  "applyFor": [
+    "mọi test multi-device dùng cloned browser profile",
+    "chẩn đoán pull rỗng/không apply dù remote có data"
+  ],
+  "related": [
+    "chrome-profile-scriptcache-stale-sw-after-rebuild"
+  ],
+  "supersedes": [],
+  "source": {
+    "commit": "0d2a405a",
+    "date": "2026-09-28"
+  }
+}

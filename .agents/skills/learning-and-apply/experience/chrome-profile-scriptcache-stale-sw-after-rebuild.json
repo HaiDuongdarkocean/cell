@@ -1,0 +1,36 @@
+{
+  "id": "chrome-profile-scriptcache-stale-sw-after-rebuild",
+  "title": "Chrome profile ScriptCache phục vụ service-worker bundle CŨ sau khi rebuild dist — phải xóa Default/Service Worker trước khi verify",
+  "category": [
+    "testing"
+  ],
+  "tags": [
+    "playwright",
+    "chrome-extension",
+    "service-worker",
+    "scriptcache",
+    "rebuild",
+    "stale-code"
+  ],
+  "trigger": "Rebuild dist xong rồi launch lại persistent profile nhưng behavior vẫn của code cũ (error text cũ, fix không chạy); debug breadcrumb mới không xuất hiện dù dist đã chứa code mới",
+  "principle": "Chrome cache toàn bộ module graph của extension SW trong <profile>/Default/Service Worker/ScriptCache, keyed theo script URL — relaunch không invalidate. Sau mỗi lần rebuild dist phải xóa 'Default/Service Worker' (hoặc dùng profile mới) trước khi launch, nếu không SW chạy snapshot build đầu tiên đã register. Triệu chứng nhận diện: error trả text không tồn tại trong dist hiện tại, hoặc instrumentation vừa thêm không bao giờ xuất hiện. Symptom phụ đi kèm trong session này: UI click 'không dispatch' (thực ra SW cũ nuốt), sync-busy instant dù code mới có retry.",
+  "cases": [
+    {
+      "context": "user-data-sync real-Chrome verify: thêm bounded-retry vào withServiceLock + breadcrumb syncDebug:lastServiceLock, rebuild, relaunch — error vẫn text cũ không suffix, breadcrumb undefined",
+      "bad": "npm run build && relaunch context — giả định SW nhận code mới",
+      "good": "npm run build && rm -rf '<clone>/Default/Service Worker' && relaunch — breadcrumb hiện ngay {attempts:21,waitedMs:6180}"
+    }
+  ],
+  "applyFor": [
+    "mọi lần rebuild dist rồi verify trên browser profile tái sử dụng",
+    "chẩn đoán 'code mới không chạy' trong service worker"
+  ],
+  "related": [
+    "playwright-cell-extension-id-service-worker-loader"
+  ],
+  "supersedes": [],
+  "source": {
+    "commit": "0d2a405a",
+    "date": "2026-09-28"
+  }
+}

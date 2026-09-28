@@ -147,6 +147,36 @@ export default tseslint.config(
     },
   },
 
+  // Sync domain purity (NFR-11): the domain layer must stay free of browser,
+  // network and storage side effects so it is unit-testable and provider-
+  // agnostic. Ports/adapters wire these in; domain code never sees them.
+  {
+    files: ['src/features/sync/domain/**/*.ts', 'src/features/sync/domain/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          {
+            group: ['@/entrypoints', '@/entrypoints/*', '@/entrypoints/**', '**/entrypoints/**'],
+            message: 'FSD boundary: features/ must not import from entrypoints/.',
+          },
+          {
+            group: ['@/features/sync/adapters', '@/features/sync/adapters/*', '@/features/sync/adapters/**', '**/features/sync/adapters/**'],
+            message: 'Sync domain must not depend on adapters — depend on ports only.',
+          },
+          {
+            group: ['idb', 'idb/*', 'idb/**'],
+            message: 'Sync domain must not touch IndexedDB — inject the LocalSource port.',
+          },
+        ],
+      }],
+      'no-restricted-globals': ['error',
+        { name: 'chrome', message: 'Sync domain must not call chrome.* — inject a port.' },
+        { name: 'fetch', message: 'Sync domain must not call fetch — inject the StorageProvider port.' },
+        { name: 'indexedDB', message: 'Sync domain must not touch IndexedDB — inject the LocalSource port.' },
+      ],
+    },
+  },
+
   // Feature DAG: dictionaryPopup is the lookup orchestration hub — lower
   // features must not import it back (contracts live in entities/dictionary,
   // logic in features/dictionary, utilities in shared/). universalPanel is the

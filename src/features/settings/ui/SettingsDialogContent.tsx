@@ -18,6 +18,7 @@ import { AudioPanel } from '@/features/audio/ui/AudioPanel';
 
 import { ThemePanel } from '@/features/theme/ui/ThemePanel';
 import { ResourcesPanel } from '@/features/dictionary/ui/ResourcesPanel';
+import { SyncPanel } from '@/features/sync';
 import { Dictionary } from '@/features/dictionaryPopup';
 import { Toggle } from '@/shared/ui/Toggle';
 import { Label } from '@/shared/ui/Label';
@@ -161,6 +162,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
     { id: 'download', label: t('settings.nav.download'), icon: 'download' },
     { id: 'shortcuts', label: t('settings.nav.shortcuts'), icon: 'slidersHorizontal' },
     { id: 'theme', label: t('settings.nav.theme'), icon: 'sun' },
+    { id: 'sync', label: t('settings.nav.sync'), icon: 'navRepeat' },
   ];
 
   return (
@@ -727,6 +729,19 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               <VStack gap="0" className={styles.cardBody}>
                 <ThemePanel />
               </VStack>
+            </Card>
+
+            {/* === Card 13: Sync === */}
+            <Card
+              ref={(el: HTMLDivElement) => { sectionRefs.current.sync = el; }}
+              className={styles.sectionCard}
+              data-section="sync"
+            >
+              <div className={styles.cardHeader}>
+                <Heading level={4} size={3} className={styles.cardTitle}>{t('settings.sync.title')}</Heading>
+                <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.sync.desc')}</Text>
+              </div>
+              <SyncPanel settings={settings} />
             </Card>
 
           </div>

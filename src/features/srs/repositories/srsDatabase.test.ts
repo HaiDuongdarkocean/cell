@@ -64,11 +64,11 @@ describe('srsDatabase', () => {
     });
   });
 
-  describe('schema v1 create-all', () => {
-    it('creates 9 object stores', async () => {
+  describe('schema v2 create-all', () => {
+    it('creates 11 object stores', async () => {
       const db = await getSrsDB();
       const stores = Array.from(db.objectStoreNames);
-      expect(stores).toHaveLength(9);
+      expect(stores).toHaveLength(11);
       expect(stores).toEqual(
         expect.arrayContaining([
           SRS_STORES.COLLECTIONS,
@@ -80,6 +80,8 @@ describe('srsDatabase', () => {
           SRS_STORES.AUDIO_ASSETS,
           SRS_STORES.IMAGE_ASSETS,
           SRS_STORES.REVIEW_EVENTS,
+          SRS_STORES.SYNC_OUTBOX,
+          SRS_STORES.SYNC_META,
         ]),
       );
     });

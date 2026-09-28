@@ -1,7 +1,11 @@
 import type { SrsDeck } from '@/entities/srs/types';
 import { SrsError } from '@/features/srs/lib/srsError';
+import { captureChange, ensureSyncRuntime, isCaptureEnabled, readRecordMeta } from '@/features/sync';
 import { SRS_STORES, SRS_INDEXES } from './srsDatabase';
 import { withReadonlyStore, withStore, getById, putRecord, deleteRecord, getAllByIndex } from './srsRepositoryHelpers';
+import { scopeOfCollection, announceStudyConfig } from './srsSyncScope';
+
+const WRITE_STORES = [SRS_STORES.DECKS, SRS_STORES.COLLECTIONS, SRS_STORES.SYNC_OUTBOX, SRS_STORES.SYNC_META];
 
 export async function getDeck(id: string): Promise<SrsDeck> {
   return withReadonlyStore(SRS_STORES.DECKS, async (store) => {
@@ -15,15 +19,45 @@ export async function putDeck(deck: SrsDeck): Promise<SrsDeck> {
   if (!deck.id || !deck.collectionId || !deck.name) {
     throw new SrsError('INVALID_INPUT', 'Deck id, collectionId and name are required');
   }
-  return withStore(SRS_STORES.DECKS, async (store) => {
+  await ensureSyncRuntime();
+  return withStore(WRITE_STORES, async (store, tx) => {
+    const captured = isCaptureEnabled();
+    const prev = captured ? await getById<SrsDeck>(store, deck.id) : undefined;
+    const scope = captured
+      ? ((await scopeOfCollection(tx, deck.collectionId)) ??
+        (await readRecordMeta(store, `decks:${deck.id}`))?.scope ??
+        null)
+      : null;
     await putRecord(store, deck);
+    if (captured) {
+      await captureChange(store, { scope, dataClass: 'srsDeck', key: `decks:${deck.id}`, op: 'put' });
+      const prevScope = prev && prev.collectionId !== deck.collectionId
+        ? await scopeOfCollection(tx, prev.collectionId)
+        : null;
+      if (prevScope && prevScope !== scope) {
+        await captureChange(store, { scope: prevScope, dataClass: 'srsDeck', key: `decks:${deck.id}`, op: 'delete' });
+      }
+      if (deck.studyConfigId) {
+        await announceStudyConfig(store, scope, deck.studyConfigId);
+      }
+    }
     return Object.freeze(deck);
   });
 }
 
 export async function deleteDeck(id: string): Promise<void> {
-  return withStore(SRS_STORES.DECKS, async (store) => {
+  await ensureSyncRuntime();
+  return withStore(WRITE_STORES, async (store, tx) => {
+    const captured = isCaptureEnabled();
+    const row = await getById<SrsDeck>(store, id);
+    let scope = captured && row ? await scopeOfCollection(tx, row.collectionId) : null;
+    if (!scope && captured) {
+      scope = (await readRecordMeta(store, `decks:${id}`))?.scope ?? null;
+    }
     await deleteRecord(store, id);
+    if (captured) {
+      await captureChange(store, { scope, dataClass: 'srsDeck', key: `decks:${id}`, op: 'delete' });
+    }
   });
 }
 

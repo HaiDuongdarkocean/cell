@@ -9,6 +9,9 @@
 
 import { getDB, awaitTx, STORES } from '@/features/dictionary/repositories/baseRepository';
 import { STATUS_CYCLE, type WordStatus } from '@/entities/dictionary';
+import { captureChange, ensureSyncRuntime, isCaptureEnabled, scopeForTarget, targetOf } from '@/features/sync';
+
+const WORD_WRITE_STORES = [STORES.WORD_STATUS, STORES.WORD_TRASH, STORES.SYNC_OUTBOX, STORES.SYNC_META];
 
 export { STATUS_CYCLE };
 
@@ -106,15 +109,26 @@ export async function getWordStatuses(
 export async function setWordStatus(langCode: string, term: string, status: WordStatus): Promise<void> {
   try {
     const db = await getDB(langCode);
+    await ensureSyncRuntime();
+    const capture = isCaptureEnabled();
+    const scope = scopeForTarget(targetOf(langCode));
     if (status === 'unknown') {
-      const tx = db.transaction(STORES.WORD_STATUS, 'readwrite');
-      tx.objectStore(STORES.WORD_STATUS).delete(term);
+      const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
+      const store = tx.objectStore(STORES.WORD_STATUS);
+      store.delete(term);
+      if (capture) {
+        await captureChange(store, { scope, dataClass: 'wordStatus', key: `word:${term}`, op: 'delete' });
+      }
       await awaitTx(tx);
       return;
     }
-    const tx = db.transaction([STORES.WORD_STATUS, STORES.WORD_TRASH], 'readwrite');
-    tx.objectStore(STORES.WORD_STATUS).put({ term, status, updatedAt: Date.now() });
+    const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
+    const store = tx.objectStore(STORES.WORD_STATUS);
+    store.put({ term, status, updatedAt: Date.now() });
     tx.objectStore(STORES.WORD_TRASH).delete(term);
+    if (capture) {
+      await captureChange(store, { scope, dataClass: 'wordStatus', key: `word:${term}`, op: 'put' });
+    }
     await awaitTx(tx);
   } catch (err) {
     if (isQuotaError(err)) {
@@ -141,9 +155,14 @@ export async function cycleWordStatus(langCode: string, term: string): Promise<W
  *  so an intentionally deleted word keeps no restorable record (spec REQ-12). */
 export async function deleteWordStatus(langCode: string, term: string): Promise<void> {
   const db = await getDB(langCode);
-  const tx = db.transaction([STORES.WORD_STATUS, STORES.WORD_TRASH], 'readwrite');
-  tx.objectStore(STORES.WORD_STATUS).delete(term);
+  await ensureSyncRuntime();
+  const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
+  const store = tx.objectStore(STORES.WORD_STATUS);
+  store.delete(term);
   tx.objectStore(STORES.WORD_TRASH).delete(term);
+  if (isCaptureEnabled()) {
+    await captureChange(store, { scope: scopeForTarget(targetOf(langCode)), dataClass: 'wordStatus', key: `word:${term}`, op: 'delete' });
+  }
   await awaitTx(tx);
 }
 

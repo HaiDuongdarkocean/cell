@@ -90,6 +90,7 @@ import { registerLocalPlayerHandlers } from './handlers/localPlayer';
 import { registerSrsHandlers } from './handlers/srs';
 import { registerOcrHandlers } from './handlers/ocr';
 import { registerReaderHandlers } from './handlers/reader';
+import { registerSyncHandlers, wireSyncScheduling } from './handlers/sync';
 import { seedDevDataIfEmpty } from '@/features/dictionary/logic/devSeed';
 import { isDevMode } from '@/shared/lib/env/devMode';
 import type { MessageHandler } from '@/entities/message';
@@ -198,6 +199,7 @@ export class BackgroundService implements BackgroundContext {
 
     // 4. Wire event streams (network → broadcast, queue → broadcast, etc.)
     this.unsubscribers = wireEvents(this);
+    this.unsubscribers.push(...wireSyncScheduling(this));
 
     // 4b. Wait for session restore to complete.
     await this.sessionReady;
@@ -279,6 +281,7 @@ export class BackgroundService implements BackgroundContext {
     registerSrsHandlers(this);
     registerReaderHandlers(this);
     registerOcrHandlers(this);
+    registerSyncHandlers(this);
   }
 
   /** Type-safe wrapper around messageBus.on. */

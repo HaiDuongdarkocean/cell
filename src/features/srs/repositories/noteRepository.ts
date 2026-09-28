@@ -1,8 +1,12 @@
 import { SrsNoteSchema } from '@/entities/srs/schemas';
 import type { SrsNote } from '@/entities/srs/types';
 import { SrsError } from '@/features/srs/lib/srsError';
+import { captureChange, ensureSyncRuntime, isCaptureEnabled, readRecordMeta } from '@/features/sync';
 import { SRS_STORES, SRS_INDEXES } from './srsDatabase';
 import { withReadonlyStore, withStore, getById, putRecord, deleteRecord, getAllByIndex } from './srsRepositoryHelpers';
+import { scopeOfDeck } from './srsSyncScope';
+
+const WRITE_STORES = [SRS_STORES.NOTES, SRS_STORES.DECKS, SRS_STORES.COLLECTIONS, SRS_STORES.SYNC_OUTBOX, SRS_STORES.SYNC_META];
 
 export async function getNote(id: string): Promise<SrsNote> {
   return withReadonlyStore(SRS_STORES.NOTES, async (store) => {
@@ -22,19 +26,44 @@ export async function putNote(note: SrsNote): Promise<SrsNote> {
     throw new SrsError('INVALID_INPUT', parsed.error.issues.map((e) => e.message).join('; '));
   }
 
-  return withStore(SRS_STORES.NOTES, async (store) => {
+  await ensureSyncRuntime();
+  return withStore(WRITE_STORES, async (store, tx) => {
     const existing = await getNoteByTargetAndNotetypeInStore(store, note.targetWord, note.notetypeId);
     if (existing && existing.id !== note.id) {
       throw new SrsError('DUPLICATE', `Note with targetWord ${note.targetWord} and notetypeId ${note.notetypeId} already exists`);
     }
+    const captured = isCaptureEnabled();
+    const prev = captured ? await getById<SrsNote>(store, note.id) : undefined;
+    const scope = captured
+      ? ((await scopeOfDeck(tx, note.deckId)) ??
+        (await readRecordMeta(store, `notes:${note.id}`))?.scope ??
+        null)
+      : null;
     await putRecord(store, note);
+    if (captured) {
+      await captureChange(store, { scope, dataClass: 'srsNote', key: `notes:${note.id}`, op: 'put' });
+      const prevScope = prev && prev.deckId !== note.deckId ? await scopeOfDeck(tx, prev.deckId) : null;
+      if (prevScope && prevScope !== scope) {
+        await captureChange(store, { scope: prevScope, dataClass: 'srsNote', key: `notes:${note.id}`, op: 'delete' });
+      }
+    }
     return Object.freeze(note);
   });
 }
 
 export async function deleteNote(id: string): Promise<void> {
-  return withStore(SRS_STORES.NOTES, async (store) => {
+  await ensureSyncRuntime();
+  return withStore(WRITE_STORES, async (store, tx) => {
+    const captured = isCaptureEnabled();
+    const row = await getById<SrsNote>(store, id);
+    let scope = captured && row ? await scopeOfDeck(tx, row.deckId) : null;
+    if (!scope && captured) {
+      scope = (await readRecordMeta(store, `notes:${id}`))?.scope ?? null;
+    }
     await deleteRecord(store, id);
+    if (captured) {
+      await captureChange(store, { scope, dataClass: 'srsNote', key: `notes:${id}`, op: 'delete' });
+    }
   });
 }
 

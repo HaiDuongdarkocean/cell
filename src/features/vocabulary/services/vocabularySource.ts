@@ -10,6 +10,7 @@ import {
   emitWordStatusRemoved,
   onWordStatusChanged,
   onWordStatusRemoved,
+  onWordStatusesReload,
   type TrashedWordEntry,
 } from '@/features/dictionary';
 import {
@@ -76,6 +77,9 @@ export function createVocabularySource(langCode: string): VocabularySource {
     onEvent({ kind: 'changed', term: d.term, status: d.status }, d.langCode));
   const unsubRemoved = onWordStatusRemoved((d) =>
     onEvent({ kind: 'removed', term: d.term }, d.langCode));
+  const unsubReload = onWordStatusesReload((eventLang) => {
+    if (!destroyed && normalizeLangCode(eventLang) === lang) void load();
+  });
 
   async function load(): Promise<void> {
     const [entries, trash] = await Promise.all([listWordStatuses(lang), listWordTrash(lang)]);
@@ -139,6 +143,7 @@ export function createVocabularySource(langCode: string): VocabularySource {
       destroyed = true;
       unsubChanged();
       unsubRemoved();
+      unsubReload();
       listeners.clear();
     },
   };

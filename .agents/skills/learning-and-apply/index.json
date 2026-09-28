@@ -2699,6 +2699,90 @@
         "stuck-open"
       ],
       "trigger": "Component giữ mounted qua exit animation rồi unmount trong handler onAnimationEnd; bug = panel/modal vẫn hiển thị sau khi đóng nhưng click xuyên qua (host pointer-events:none)"
+    },
+    {
+      "type": "experience",
+      "id": "jest-clearallmocks-keeps-implementations",
+      "title": "jest.clearAllMocks xóa call history nhưng GIỮ nguyên mockResolvedValue/mockReturnValue impl",
+      "category": [
+        "testing"
+      ],
+      "tags": [
+        "jest",
+        "mock",
+        "clearAllMocks",
+        "mockResolvedValue",
+        "test-isolation"
+      ],
+      "trigger": "Test sau beforeEach(clearAllMocks) vẫn thấy impl của test trước — assertions đếm call sai ngẫu nhiên theo thứ tự test"
+    },
+    {
+      "type": "experience",
+      "id": "sync-persist-obligation-before-state-apply",
+      "title": "Recovery obligation phải persist TRƯỚC khi apply state change trigger nó",
+      "category": [
+        "data",
+        "state"
+      ],
+      "tags": [
+        "sync",
+        "checkpoint",
+        "obligation",
+        "crash-safety",
+        "ordering"
+      ],
+      "trigger": "Apply một remote change mà sau đó cần follow-up async (drain/migration) — nếu apply trước persist thì crash giữa hai bước làm mất obligation vĩnh viễn"
+    },
+    {
+      "type": "experience",
+      "id": "playwright-cell-extension-id-service-worker-loader",
+      "title": "Resolve Cell extension id bằng SW url service-worker-loader.js, không phải extension id đầu tiên",
+      "category": [
+        "testing"
+      ],
+      "tags": [
+        "playwright",
+        "chrome-extension",
+        "service-worker",
+        "uBOLite",
+        "extension-id"
+      ],
+      "trigger": "Playwright context có nhiều extension SW (Cell + uBOLite); lấy sai id → chrome-extension://<id>/... ERR_FILE_NOT_FOUND"
+    },
+    {
+      "type": "experience",
+      "id": "chrome-profile-scriptcache-stale-sw-after-rebuild",
+      "title": "Chrome profile ScriptCache phục vụ service-worker bundle CŨ sau rebuild — phải xóa Default/Service Worker trước verify",
+      "category": [
+        "testing"
+      ],
+      "tags": [
+        "playwright",
+        "chrome-extension",
+        "service-worker",
+        "scriptcache",
+        "rebuild",
+        "stale-code"
+      ],
+      "trigger": "Rebuild dist xong relaunch persistent profile nhưng behavior vẫn code cũ; instrumentation mới không xuất hiện"
+    },
+    {
+      "type": "experience",
+      "id": "sync-cloned-profile-shares-deviceid-pull-skips-self",
+      "title": "Clone browser profile copy cả deviceId → pull skip self-authored → wipe extension storage của clone cho multi-device test",
+      "category": [
+        "testing",
+        "sync"
+      ],
+      "tags": [
+        "sync",
+        "playwright",
+        "device-id",
+        "profile-clone",
+        "pull-cycle",
+        "hlc"
+      ],
+      "trigger": "Multi-device test bằng cloned profile: pull có scopes nhưng appliedDataClasses rỗng, seed từ device-1 không apply"
     }
   ]
 }

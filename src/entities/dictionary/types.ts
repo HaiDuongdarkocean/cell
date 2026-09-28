@@ -45,6 +45,11 @@ export interface ResourceInfo {
   readonly format: ImportFormat;
   /** SHA-256(first1MB)_size_name — dedupe key (ADR-023 D7). */
   readonly signature: string;
+  /** sha256 of the portable serialized content — cross-device identity and
+   *  remote blob name (sync spec: `resource:<contentHash>`, `blobs/<hash>`).
+   *  Populated lazily at first sync materialization; never falls back to
+   *  `signature` (signature embeds the filename and stays local-only). */
+  readonly contentHash?: string;
   readonly wordCount: number;
   readonly installationFinished: boolean;
   readonly importedAt: number;

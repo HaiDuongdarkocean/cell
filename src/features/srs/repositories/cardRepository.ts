@@ -1,8 +1,12 @@
 import { SrsCardSchema } from '@/entities/srs/schemas';
 import type { SrsCard } from '@/entities/srs/types';
 import { SrsError } from '@/features/srs/lib/srsError';
+import { captureChange, ensureSyncRuntime, isCaptureEnabled, readRecordMeta } from '@/features/sync';
 import { SRS_STORES, SRS_INDEXES } from './srsDatabase';
 import { withReadonlyStore, withStore, getById, putRecord, deleteRecord, getAllByIndex } from './srsRepositoryHelpers';
+import { scopeOfDeck } from './srsSyncScope';
+
+const WRITE_STORES = [SRS_STORES.CARDS, SRS_STORES.DECKS, SRS_STORES.COLLECTIONS, SRS_STORES.SYNC_OUTBOX, SRS_STORES.SYNC_META];
 
 export async function getCard(id: string): Promise<SrsCard> {
   return withReadonlyStore(SRS_STORES.CARDS, async (store) => {
@@ -22,19 +26,44 @@ export async function putCard(card: SrsCard): Promise<SrsCard> {
     throw new SrsError('INVALID_INPUT', parsed.error.issues.map((e) => e.message).join('; '));
   }
 
-  return withStore(SRS_STORES.CARDS, async (store) => {
+  await ensureSyncRuntime();
+  return withStore(WRITE_STORES, async (store, tx) => {
     const existing = await getCardByNoteAndDeckInStore(store, card.noteId, card.deckId);
     if (existing && existing.id !== card.id) {
       throw new SrsError('DUPLICATE', `Card for noteId ${card.noteId} and deckId ${card.deckId} already exists`);
     }
+    const captured = isCaptureEnabled();
+    const prev = captured ? await getById<SrsCard>(store, card.id) : undefined;
+    const scope = captured
+      ? ((await scopeOfDeck(tx, card.deckId)) ??
+        (await readRecordMeta(store, `cards:${card.id}`))?.scope ??
+        null)
+      : null;
     await putRecord(store, card);
+    if (captured) {
+      await captureChange(store, { scope, dataClass: 'srsCard', key: `cards:${card.id}`, op: 'put' });
+      const prevScope = prev && prev.deckId !== card.deckId ? await scopeOfDeck(tx, prev.deckId) : null;
+      if (prevScope && prevScope !== scope) {
+        await captureChange(store, { scope: prevScope, dataClass: 'srsCard', key: `cards:${card.id}`, op: 'delete' });
+      }
+    }
     return Object.freeze(card);
   });
 }
 
 export async function deleteCard(id: string): Promise<void> {
-  return withStore(SRS_STORES.CARDS, async (store) => {
+  await ensureSyncRuntime();
+  return withStore(WRITE_STORES, async (store, tx) => {
+    const captured = isCaptureEnabled();
+    const row = await getById<SrsCard>(store, id);
+    let scope = captured && row ? await scopeOfDeck(tx, row.deckId) : null;
+    if (!scope && captured) {
+      scope = (await readRecordMeta(store, `cards:${id}`))?.scope ?? null;
+    }
     await deleteRecord(store, id);
+    if (captured) {
+      await captureChange(store, { scope, dataClass: 'srsCard', key: `cards:${id}`, op: 'delete' });
+    }
   });
 }
 

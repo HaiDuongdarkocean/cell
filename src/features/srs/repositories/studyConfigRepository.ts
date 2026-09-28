@@ -1,7 +1,11 @@
 import type { SrsStudyConfig } from '@/entities/srs/types';
 import { SrsError } from '@/features/srs/lib/srsError';
+import { captureChange, ensureSyncRuntime, isCaptureEnabled, listMetaByKey } from '@/features/sync';
 import { SRS_STORES } from './srsDatabase';
 import { withReadonlyStore, withStore, getById, putRecord, deleteRecord } from './srsRepositoryHelpers';
+import { studyConfigScopes } from './srsSyncScope';
+
+const WRITE_STORES = [SRS_STORES.STUDY_CONFIGS, SRS_STORES.COLLECTIONS, SRS_STORES.DECKS, SRS_STORES.SYNC_OUTBOX, SRS_STORES.SYNC_META];
 
 export async function getStudyConfig(id: string): Promise<SrsStudyConfig> {
   return withReadonlyStore(SRS_STORES.STUDY_CONFIGS, async (store) => {
@@ -15,14 +19,35 @@ export async function putStudyConfig(studyConfig: SrsStudyConfig): Promise<SrsSt
   if (!studyConfig.id) {
     throw new SrsError('INVALID_INPUT', 'StudyConfig id is required');
   }
-  return withStore(SRS_STORES.STUDY_CONFIGS, async (store) => {
+  await ensureSyncRuntime();
+  return withStore(WRITE_STORES, async (store, tx) => {
+    const scopes = isCaptureEnabled() ? await studyConfigScopes(tx, studyConfig.id) : [];
     await putRecord(store, studyConfig);
+    for (const scope of scopes) {
+      await captureChange(store, { scope, dataClass: 'studyConfig', key: `studyConfigs:${studyConfig.id}`, op: 'put' });
+    }
     return Object.freeze(studyConfig);
   });
 }
 
 export async function deleteStudyConfig(id: string): Promise<void> {
-  return withStore(SRS_STORES.STUDY_CONFIGS, async (store) => {
+  await ensureSyncRuntime();
+  return withStore(WRITE_STORES, async (store, tx) => {
+    const captured = isCaptureEnabled();
+    const scopes = captured ? await studyConfigScopes(tx, id) : [];
+    if (captured) {
+      for (const meta of await listMetaByKey(store, `studyConfigs:${id}`)) {
+        if (meta.scope && !scopes.includes(meta.scope)) scopes.push(meta.scope);
+      }
+    }
     await deleteRecord(store, id);
+    if (captured) {
+      if (scopes.length === 0) {
+        await captureChange(store, { scope: null, dataClass: 'studyConfig', key: `studyConfigs:${id}`, op: 'delete' });
+      }
+      for (const scope of scopes) {
+        await captureChange(store, { scope, dataClass: 'studyConfig', key: `studyConfigs:${id}`, op: 'delete' });
+      }
+    }
   });
 }

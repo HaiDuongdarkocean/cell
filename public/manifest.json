@@ -4,6 +4,7 @@
   "name": "__MSG_extName__",
   "version": "0.1.3",
   "description": "__MSG_extDescription__",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlxCnLWJPTiNnqUk5P9tKuy9VOM+ImmqMIzdONYgWDMrWTt8Ni0MwJGqbXLEobdDHXHKySkq0en2SsTKV+GDlm2nNG2BHMcN0SssDlSlt00b1zQ13PzrHY2UITKPFNFMto0DtltUX2WNRqxX/83FjWtKMbo1gCF1Pwf1sSJb4QJI80uhlrm35+flXCXrWL/tjZHhwMHfgrcuKOBqIt+o/mIcJsK7HWhuIijShRsP8vKUewwS6YSp3oPmp7vR2UxQyg6QUTTPeerOfmwO4r3SBeriQ/jO5hZtNHt/CMlzWGL766XquHwI1Vb6h+lI3tbr6M+9PKd2CLc0XGm1XLKnhvQIDAQAB",
   "permissions": [
     "webRequest",
     "declarativeNetRequest",
@@ -16,7 +17,9 @@
     "webNavigation",
     "cookies",
     "tts",
-    "unlimitedStorage"
+    "unlimitedStorage",
+    "alarms",
+    "identity"
   ],
   "host_permissions": [
     "<all_urls>"

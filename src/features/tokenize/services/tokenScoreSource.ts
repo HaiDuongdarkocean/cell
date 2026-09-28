@@ -1,4 +1,8 @@
-import { onWordStatusChanged, type WordStatusChangedDetail } from '@/features/dictionary';
+import {
+  onWordStatusChanged,
+  onWordStatusesReload,
+  type WordStatusChangedDetail,
+} from '@/features/dictionary';
 import { createScoreTracker, isScorableToken, type ScoreTracker } from '@/features/tokenize/logic/comprehensionScore';
 import { fetchTermStatuses } from './scoreStatusFetch';
 import type { ComprehensionStore } from './comprehensionStore';
@@ -110,6 +114,10 @@ export function startTokenScoreSource<S>(deps: TokenScoreSourceDeps<S>): () => v
     }
   });
 
+  const offReload = onWordStatusesReload((eventLang) => {
+    if (languageMatches(lang, eventLang)) schedule();
+  });
+
   const offChanges = deps.subscribeChanges(schedule);
   schedule();
 
@@ -119,6 +127,7 @@ export function startTokenScoreSource<S>(deps: TokenScoreSourceDeps<S>): () => v
     if (timer) clearTimeout(timer);
     offChanges();
     offStatus();
+    offReload();
     store.setStats(kind, null);
   };
 }

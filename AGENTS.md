@@ -38,6 +38,7 @@
 - `npm run mock` serve tất cả mock sites (KHÔNG `--youtube` — kill các site khác); `mock:stream` deprecated → `npm run dev` + entry URL trực tiếp.
 - `import.meta.env.DEV` luôn false trong build — dev-seed check `MODE === 'development'` (`src/shared/lib/env/devMode.ts`).
 - Google OAuth (user-data-sync): client ID ở `.env.local` (gitignored) → `VITE_GOOGLE_OAUTH_CLIENT_ID`, code chỉ đọc qua `import.meta.env`; KHÔNG đọc/in giá trị, KHÔNG commit, KHÔNG lưu client secret vào repo (flow `launchWebAuthFlow` không cần secret).
+- `public/manifest.json` pin `"key"` (public key của `cell-key.pem`, gitignored) → extension id ổn định `acaplpheplggagjpekjlmcjhgghimcfm` mọi máy/load — bắt buộc cho `launchWebAuthFlow` redirect. KHÔNG regenerate pem, KHÔNG bỏ key (đổi id = đứt OAuth + orphan storage). `build-firefox.mjs` strip `key` cho Firefox.
 - Tin được `src/`, `docs/`; phải kiểm `manifest.json`, `package.json`, `dist/`, `project-reference/`.
 - CẤM `robocopy /MIR` để xóa worktree/dir chứa `node_modules` — nó đi xuyên junction và xóa luôn content ở junction target (đã từng wipe `node_modules` repo chính). Xóa worktree: `git worktree remove`; nếu path-too-long thì xóa `node_modules` trong worktree trước bằng `rm -rf` rồi mới `git worktree remove --force`.
 

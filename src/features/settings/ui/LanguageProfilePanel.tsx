@@ -16,7 +16,7 @@ import {
 import type { LanguageProfile, Settings } from '@/entities/settings';
 import {
   buildProfileName,
-  generateProfileId,
+  profileIdForTarget,
   getActiveProfileSettings,
   resolveProfile,
   validateLanguageProfile,
@@ -96,7 +96,6 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
   const validate = (target: string, nativeOverride: string, excludeId?: string): string[] | null => {
     const result = validateLanguageProfile(
       { target, native: nativeOverride },
-      settings.universalNativeLanguage,
       settings.languageProfiles,
       excludeId ?? null,
     );
@@ -116,7 +115,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
     const names = settings.languageProfiles.map((p) => p.name);
     const base = copyFromActive && active ? active : undefined;
     const newProfile: LanguageProfile = {
-      id: generateProfileId(),
+      id: profileIdForTarget(target),
       target,
       native: nativeOverride,
       name: buildProfileName(nativeOverride, settings.universalNativeLanguage, target, names),
@@ -150,9 +149,8 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
           p.id === id
             ? {
                 ...p,
-                target,
                 native: nativeOverride,
-                name: buildProfileName(nativeOverride, settings.universalNativeLanguage, target, names),
+                name: buildProfileName(nativeOverride, settings.universalNativeLanguage, p.target, names),
               }
             : p,
         ),

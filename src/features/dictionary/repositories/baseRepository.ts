@@ -6,8 +6,8 @@
 
 import { getDbHash } from '@/shared/lib/storage/dbHash';
 
-/** IndexedDB schema version (ADR-023 D2 + ADR-037 §7.1 — v10 adds langPhraseIndex, v12 adds langWordTrash). */
-export const DB_SCHEMA_VERSION = 12;
+/** IndexedDB schema version (ADR-023 D2 + ADR-037 §7.1 — v10 adds langPhraseIndex, v12 adds langWordTrash, v13 adds sync capture stores). */
+export const DB_SCHEMA_VERSION = 13;
 
 /** Object store names. */
 export const STORES = {
@@ -17,11 +17,14 @@ export const STORES = {
   PHRASE_INDEX: 'langPhraseIndex',
   WORD_STATUS: 'langWordStatus',
   WORD_TRASH: 'langWordTrash',
+  SYNC_OUTBOX: 'syncOutbox',
+  SYNC_META: 'syncMeta',
 } as const;
 
 /** Index names. */
 export const INDEXES = {
   by_signature: 'by_signature',
+  by_contentHash: 'by_contentHash',
   by_type: 'by_type',
   by_order: 'by_order',
   by_resource: 'by_resource',
@@ -74,7 +77,7 @@ function openDB(dbName: string): Promise<IDBDatabase> {
     const request = indexedDB.open(dbName, DB_SCHEMA_VERSION);
     request.onupgradeneeded = (_event: IDBVersionChangeEvent) => {
       const db = request.result;
-      createAllStores(db);
+      createAllStores(db, request.transaction ?? undefined);
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -83,13 +86,19 @@ function openDB(dbName: string): Promise<IDBDatabase> {
 }
 
 /** Create all 4 stores + 7 indexes (ADR-023 D2 + ADR-037 §7.1 — create-all only). */
-function createAllStores(db: IDBDatabase): void {
-  // langResourceInfo — keyPath 'id' auto, indexes: by_signature, by_type, by_order
+function createAllStores(db: IDBDatabase, tx?: IDBTransaction): void {
+  // langResourceInfo — keyPath 'id' auto, indexes: by_signature, by_type, by_order, by_contentHash
   if (!db.objectStoreNames.contains(STORES.RESOURCE)) {
     const resource = db.createObjectStore(STORES.RESOURCE, { keyPath: 'id', autoIncrement: true });
     resource.createIndex(INDEXES.by_signature, 'signature', { unique: false });
+    resource.createIndex(INDEXES.by_contentHash, 'contentHash', { unique: false });
     resource.createIndex(INDEXES.by_type, 'type', { unique: false });
     resource.createIndex(INDEXES.by_order, 'importedAt', { unique: false });
+  } else if (tx) {
+    const resource = tx.objectStore(STORES.RESOURCE);
+    if (!resource.indexNames.contains(INDEXES.by_contentHash)) {
+      resource.createIndex(INDEXES.by_contentHash, 'contentHash', { unique: false });
+    }
   }
   // langFrequencyEntry — keyPath 'id' auto, indexes: by_resource, by_term, by_backwardTerm
   if (!db.objectStoreNames.contains(STORES.FREQUENCY)) {
@@ -119,16 +128,32 @@ function createAllStores(db: IDBDatabase): void {
   if (!db.objectStoreNames.contains(STORES.WORD_TRASH)) {
     db.createObjectStore(STORES.WORD_TRASH, { keyPath: 'term' });
   }
+  // syncOutbox — autoIncrement; pending change-record keys drained by the sync engine
+  if (!db.objectStoreNames.contains(STORES.SYNC_OUTBOX)) {
+    const outbox = db.createObjectStore(STORES.SYNC_OUTBOX, { autoIncrement: true });
+    outbox.createIndex('by_key', 'key', { unique: false });
+  }
+  // syncMeta — keyPath 'key' (`<scope>|<recordKey>`); index by_recKey for prefix scans
+  if (!db.objectStoreNames.contains(STORES.SYNC_META)) {
+    const store = db.createObjectStore(STORES.SYNC_META, { keyPath: 'key' });
+    store.createIndex('by_recKey', 'recKey', { unique: false });
+  } else if (tx) {
+    const store = tx.objectStore(STORES.SYNC_META);
+    if (!store.indexNames.contains('by_recKey')) {
+      store.createIndex('by_recKey', 'recKey', { unique: false });
+    }
+  }
 }
 
-/** Open a transaction for 1 store (readwrite default). */
+/** Open a transaction for 1+ stores (readwrite default); returns the first store. */
 export function getStore(
   db: IDBDatabase,
-  storeName: string,
+  storeName: string | readonly string[],
   mode: IDBTransactionMode = 'readwrite',
 ): IDBObjectStore {
-  const tx = db.transaction(storeName, mode);
-  return tx.objectStore(storeName);
+  const names = Array.isArray(storeName) ? [...storeName] : [storeName];
+  const tx = db.transaction(names, mode);
+  return tx.objectStore(names[0]!);
 }
 
 /** Wait for a transaction to complete (raw IDBTransaction has no .done promise). */
@@ -160,13 +185,15 @@ export async function deleteDB(dbName: string): Promise<void> {
 export async function clearAllStores(langCode: string): Promise<void> {
   const db = await getDB(langCode);
   return new Promise((resolve, reject) => {
-    const tx = db.transaction([STORES.RESOURCE, STORES.FREQUENCY, STORES.DICTIONARY, STORES.PHRASE_INDEX, STORES.WORD_STATUS, STORES.WORD_TRASH], 'readwrite');
+    const tx = db.transaction([STORES.RESOURCE, STORES.FREQUENCY, STORES.DICTIONARY, STORES.PHRASE_INDEX, STORES.WORD_STATUS, STORES.WORD_TRASH, STORES.SYNC_OUTBOX, STORES.SYNC_META], 'readwrite');
     tx.objectStore(STORES.RESOURCE).clear();
     tx.objectStore(STORES.FREQUENCY).clear();
     tx.objectStore(STORES.DICTIONARY).clear();
     tx.objectStore(STORES.PHRASE_INDEX).clear();
     tx.objectStore(STORES.WORD_STATUS).clear();
     tx.objectStore(STORES.WORD_TRASH).clear();
+    tx.objectStore(STORES.SYNC_OUTBOX).clear();
+    tx.objectStore(STORES.SYNC_META).clear();
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);

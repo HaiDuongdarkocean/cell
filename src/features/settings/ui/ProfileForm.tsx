@@ -78,21 +78,25 @@ export function ProfileForm({
 
       <div className={styles.formField}>
         <div className={styles.formLabel}>
-          {t('settings.profiles.form.target')} *
+          {t('settings.profiles.form.target')} {isEdit ? '' : '*'}
           <HintIcon
             hint={t('settings.profiles.form.targetHint')}
             ariaLabel={t('settings.hint.aria', [t('settings.profiles.form.target')])}
           />
         </div>
-        <SearchableSelect
-          testId="profile-target-language"
-          dataTestId="profile-target-language"
-          options={OVERLAY_LANGUAGE_OPTIONS.filter((o) => o.value !== '')}
-          value={target}
-          onChange={setTarget}
-          ariaLabel={t('settings.profiles.form.targetAria')}
-          placeholder={t('settings.profiles.form.search')}
-        />
+        {isEdit ? (
+          <div className={styles.formStaticValue}>{langLabel(target)}</div>
+        ) : (
+          <SearchableSelect
+            testId="profile-target-language"
+            dataTestId="profile-target-language"
+            options={OVERLAY_LANGUAGE_OPTIONS.filter((o) => o.value !== '')}
+            value={target}
+            onChange={setTarget}
+            ariaLabel={t('settings.profiles.form.targetAria')}
+            placeholder={t('settings.profiles.form.search')}
+          />
+        )}
       </div>
 
       <div className={styles.formField}>

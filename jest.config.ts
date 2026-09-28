@@ -23,6 +23,9 @@ const moduleNameMapper = {
   // Mock devMode in tests — source uses import.meta.env which is invalid in Jest's CJS
   // Must be BEFORE the generic '^@/(.*)$' mapper so it takes precedence.
   '^@/shared/lib/env/devMode$': '<rootDir>/tests/__mocks__/devMode.ts',
+  // Same for the Google OAuth client id — source reads import.meta.env.
+  // Matches both relative ('./googleOAuthClientId') and alias specifiers.
+  'googleOAuthClientId$': '<rootDir>/tests/__mocks__/googleOAuthClientId.ts',
   // Shadow DOM CSS bundle uses Vite import.meta.glob; not available in Jest.
   '^@/shared/lib/shadowRoot/allModuleCss$': '<rootDir>/tests/__mocks__/allModuleCss.ts',
   '^@/(.*)$': '<rootDir>/src/$1',
