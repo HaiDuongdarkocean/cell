@@ -44,7 +44,7 @@ Run every aspect through the L1→L3 ladder; classify non-applicable ones in one
 
 Strategy & Purpose · Information Architecture · Visual System · Layout & Responsive · Components & States · Motion & Feedback · Accessibility · Craft & Polish · SSOT & Maintainability
 
-→ Full per-aspect questions, common failures, and question bank: `references/audit-details.md`
+→ Per-aspect question ladders and common failures: `references/audit-details.md`
 
 ## Decision pipeline
 
@@ -53,7 +53,7 @@ Strategy & Purpose · Information Architecture · Visual System · Layout & Resp
 ```
 
 - **Scope:** mobile-first by default (persona: 5–80 on any device). Produce a one-sentence Design Read.
-- **Classify:** every element → reuse `src/shared/ui/*` / extend / create / remove.
+- **Classify:** every element → reuse `src/shared/ui/*` / extend / create / remove (layer rules + decision tree: `TAXONOMY.md`).
 - **Stop rule:** one P0 or two P1 findings that explain the user's feedback. Don't chase P2/P3 unless asked.
 - **Verify:** design-system audit commands from `DESIGN.md` §8; `npm run typecheck && npm run build` if code changed; append `## Hand-off to pipeline-design` when the audit feeds a redesign.
 

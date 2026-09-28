@@ -10,23 +10,15 @@ When: <exact user or system action — click, seek, dispatch event>
 Then: <exact measurable DOM outcome — element count, text, class>
 ```
 
-Example:
+Example: `Given: video playing at t=190s, subtitle overlay visible / When: click word on target line / Then: #cell-universal-panel-host shadow children > 2`.
 
-```text
-Given: themoviebox.org video playing at t=190s, subtitle overlay visible, tokenize OFF
-When: click word on subtitle target line
-Then: #cell-universal-panel-host shadow children > 2 (popup opened)
-```
-
-Loop back: request is vague → invoke `/pipeline-analyze` (interactive) on yourself; only ask the user if that fails.
+Loop back: request vague → invoke `/pipeline-analyze` (interactive) on yourself; only ask the user if that fails.
 
 ## Step 1: Build
 
-- Most tests: `npx vite build` (or `npm run build`).
-- Tests needing the bundled dictionary/frequency seed (dictionary popup, word status): `npx vite build --mode development` — copies `data/resource/` into `dist/seed/` for auto-seed.
-- Confirm the build-completed line appears.
+- Most tests: `npx vite build`. Dictionary-seed tests (popup, word status): `npx vite build --mode development` (copies `data/resource/` → `dist/seed/`).
 
-Guard: exit 0 + `dist/manifest.json` exists (+ `dist/seed/` when dev build needed). Build fails → fix first; never launch with a stale build.
+**Guard:** exit 0 + `dist/manifest.json` exists (+`dist/seed/` when needed). Never launch with a stale build.
 
 ## Step 2: Pack .crx + clone profile
 
@@ -34,59 +26,37 @@ Guard: exit 0 + `dist/manifest.json` exists (+ `dist/seed/` when dev build neede
 python .agents\skills\testing-extension-browser\script\setup-cell-profile.py
 ```
 
-Flags: `--rebuild` (re-pack .crx after `npm run build`) · `--no-ublock` (skip — almost never wanted) · `--keep-profile`
+Flags: `--rebuild` (re-pack after build) · `--no-ublock` (almost never wanted) · `--keep-profile`.
 
-From a test script, use the shared helper instead of spawning python by hand:
+From a test script, use the helper — do not spawn python by hand:
 
 ```js
 import { prepareCellEnvironment } from '../.agents/skills/testing-extension-browser/script/launch-cell-context.mjs';
 const CLONE_PATH = await prepareCellEnvironment({ rebuild: true });
 ```
 
-Guard: script prints `[OK] Packed cell.crx` → `[OK] Packed ublock.crx` → `[OK] Cloned master → <clone>` → `CLONE_PATH=...`.
+**Guard:** output shows `[OK] Packed cell.crx` → `[OK] Packed ublock.crx` → `[OK] Cloned master → <clone>` → `CLONE_PATH=...`.
 
-Loop back: `Pack failed` → `dist/` missing or `openssl` not in PATH → back to Step 1. `cell-key.pem`/`ublock-key.pem` missing → auto-generated once; copy them from the main repo to keep stable extension IDs across worktrees. `data/extension/uBOLite` is gitignored — copy it into fresh worktrees or uBlock will not pack.
+**Loop back:** `Pack failed` → missing `dist/` or `openssl` → Step 1. Missing `*-key.pem` → auto-generated once; copy from the main repo for stable extension IDs across worktrees. `data/extension/uBOLite` is gitignored — copy into fresh worktrees or uBlock won't pack.
 
-## Step 3: Connect (Playwright)
-
-Always go through the shared launcher — it loads Cell AND uBlock together and primes the clone:
+## Step 3: Connect (Playwright persistent)
 
 ```ts
 import { warmUpCellContext, launchCellContext } from '../.agents/skills/testing-extension-browser/script/launch-cell-context.mjs';
 
 await warmUpCellContext(CLONE_PATH);              // primes the clone
-const context = await launchCellContext(CLONE_PATH);
+const context = await launchCellContext(CLONE_PATH); // headless by default
 const page = await context.newPage();
 ```
 
-What it does under the hood (do not re-implement per script):
+The launcher loads Cell AND uBlock via `--load-extension=${DIST},${UBOLITE}` (comma-separated, same `--disable-extensions-except` list) with `channel: 'chromium'` (new headless supports extensions). Pass `{ headless: false }` only when a visible window is needed. On Windows the External Extensions JSON installs nothing — uBlock exists ONLY because of this flag.
 
-```ts
-chromium.launchPersistentContext(CLONE_PATH, {
-  headless: true,
-  channel: 'chromium',                           // new headless — required for --load-extension
-  ignoreDefaultArgs: ['--disable-extensions'],
-  args: [
-    '--disable-blink-features=AutomationControlled',
-    `--disable-extensions-except=${DIST},${UBOLITE}`,
-    `--load-extension=${DIST},${UBOLITE}`,        // comma-separated — uBlock only loads this way
-  ],
-});
-```
+**Guard:** context resolves; confirm via `chrome://extensions` or `fetchPatched: true` in `page.evaluate`. **Loop back:** profile locked → `context.close()` old, wait 3s, retry; Cell not listed → Step 2.
 
-Default is headless — no window pops during load/test. Pass `{ headless: false }` to `launchCellContext` only when a visible window is genuinely needed (it then uses `executablePath: CHROME_EXE`).
-
-On Windows the External Extensions JSON from Step 2 installs nothing (`external_crx` blocked) — uBlock exists ONLY because it is passed to `--load-extension`.
-
-Guard: `launchPersistentContext` resolves; then navigate `chrome://extensions/` and confirm Cell is listed, or check `fetchPatched: true` via `page.evaluate`.
-
-Loop back: profile locked → `context.close()` on the old context, wait 3s, retry. Cell not listed → re-run Step 2.
-
-## Step 4: Navigate (Playwright)
+## Step 4: Navigate
 
 ```ts
 await page.goto('https://...');
-await page.locator('[data-cell-id="orbital-badge"]').click();
 const result = await page.evaluate(() => ({
   fetchPatched: !!document.documentElement.getAttribute('data-cell-fetch-patched'),
   subtitleRoot: !!document.getElementById('cell-subtitle-root'),
@@ -94,25 +64,14 @@ const result = await page.evaluate(() => ({
 await page.screenshot({ path: 'tmp/real-chrome/screenshot.png' });
 ```
 
-### Video playback
-
-Autoplay policy blocks `video.play()` from script — click play first:
+Video: autoplay blocks `video.play()` from script — click play first, then seek:
 
 ```ts
 await page.locator('.art-control-playAndPause').click();
+await page.evaluate(() => { const v = document.querySelector('video'); if (v) v.currentTime = 190; });
 ```
 
-Then seek:
-
-```ts
-await page.evaluate(() => {
-  const v = document.querySelector('video');
-  if (v) v.currentTime = 190;
-  return { time: v?.currentTime };
-});
-```
-
-### Shadow DOM inspection
+Shadow DOM inspection — guard `hasShadow: true` before reading children:
 
 ```js
 (() => {
@@ -123,74 +82,58 @@ await page.evaluate(() => {
 })()
 ```
 
-Guard: `hasShadow: true` before inspecting shadow children.
+## Step 5: Trigger — dispatch click on a shadow element
 
-## Step 5: Trigger — dispatch click on a shadow DOM element
-
-`webTriggerController` listens to `mouseup` on `document`. Shadow events need `composed: true` to bubble out:
+`webTriggerController` listens to `mouseup` on `document`; shadow events need `composed: true` to escape:
 
 ```js
 (() => {
-  const root = document.querySelector('#cell-subtitle-root');
-  const target = root?.shadowRoot?.querySelector('[data-role="target"] span');
+  const target = document.querySelector('#cell-subtitle-root')?.shadowRoot
+    ?.querySelector('[data-role="target"] span');
   const rect = target.getBoundingClientRect();
-  const cx = rect.left + rect.width / 3;
-  const cy = rect.top + rect.height / 2;
-  document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, composed: true, clientX: cx, clientY: cy }));
-  return { dispatched: true, cx: Math.round(cx), cy: Math.round(cy) };
+  document.dispatchEvent(new MouseEvent('mouseup', {
+    bubbles: true, composed: true,
+    clientX: rect.left + rect.width / 3, clientY: rect.top + rect.height / 2,
+  }));
+  return { dispatched: true };
 })()
 ```
 
-Loop back: target text empty → cue not active → seek to a different timestamp.
+**Loop back:** target text empty → cue not active → seek elsewhere.
 
-## Step 6: Verify — popup opened
+## Step 6: Verify
 
 ```js
 (() => {
   const panel = document.querySelector('#cell-universal-panel-host');
-  const allEls = panel?.shadowRoot?.querySelectorAll('*');
-  return { totalEls: allEls?.length };
+  return { totalEls: panel?.shadowRoot?.querySelectorAll('*').length };
 })()
 ```
 
-Pass: `totalEls > 2`. Fail: `totalEls === 2` (only style + empty div). Repeat trigger + verify 2–3×.
+`totalEls > 2` = pass (`=== 2` = only style + empty div). Repeat trigger+verify 2–3×.
 
-Loop back: verify fails → capture evidence (DOM snapshot, element count) → invoke `/debugging-and-error-recovery`.
+**Loop back:** fails → capture evidence → invoke `/debugging-and-error-recovery`.
 
 ## Step 7: Cleanup
 
 ```ts
 await context.close();
-// Remove the clone unless you need to inspect it
-fs.rmSync(CLONE_PATH, { recursive: true, force: true });
+fs.rmSync(CLONE_PATH, { recursive: true, force: true }); // unless inspecting
 ```
 
-## Evidence capture template
-
-When a test fails, capture before changing anything:
+## Evidence capture (on failure — before changing anything)
 
 ```text
 Known facts:
-- Build: <timestamp of dist/manifest.json>
+- Build: <dist/manifest.json timestamp>
 - Clone: <cell-<uuid> path>
 - Page: <URL + title>
-- Target element: <selector + text + bounding rect>
+- Target: <selector + text + bounding rect>
 - Trigger: <what was dispatched/clicked>
-- Result: <totalEls count, error, null, etc.>
+- Result: <counts, errors, nulls>
 
-Guesses / theories:
--  ← test this
+Guesses:
 -  ← test this
 ```
 
 Do not re-launch until the board has more facts than guesses.
-
-## Example — dictionary popup on subtitle target
-
-1. `npx vite build`
-2. `const CLONE_PATH = await prepareCellEnvironment({ rebuild: true })` (packs Cell + uBlock, clones master)
-3. `await warmUpCellContext(CLONE_PATH)` → `const context = await launchCellContext(CLONE_PATH)` (loads Cell + uBlock via `--load-extension`)
-4. `await page.goto(url)` → `await page.locator('.art-control-playAndPause').click()` → `await page.evaluate(() => { const v = document.querySelector('video'); if (v) v.currentTime = 190; })`
-5. `await page.evaluate(() => { /* dispatch mouseup composed:true at target span coords */ })`
-6. `await page.evaluate(() => { const panel = document.querySelector('#cell-universal-panel-host'); const allEls = panel?.shadowRoot?.querySelectorAll('*'); return { totalEls: allEls?.length }; })` → `totalEls > 2 = PASS`
-7. `await context.close();` → `fs.rmSync(CLONE_PATH, { recursive: true, force: true })`

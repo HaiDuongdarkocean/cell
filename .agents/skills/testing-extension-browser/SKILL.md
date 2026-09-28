@@ -54,8 +54,8 @@ Each arrow has a guard — do not advance until it passes.
 - **One Chrome per clone** — launch fails with profile lock → `context.close()` the old one, wait 3s, retry.
 - **Verify probe:** `fetchPatched: true` is the strongest liveness signal (runs `document_start`, MAIN world, `<all_urls>`). `subtitleRoot` false on a video-less page is not a failure.
 
-→ Full step-by-step actions, MCP tool table, code snippets (video seek, shadow DOM inspection, shadow click dispatch, popup check), evidence-capture template, example walkthrough: `references/workflow-detail.md`
-→ Failure patterns, extension test traps, anti-patterns, SSOT paths, test sites, timeboxing: `references/troubleshooting.md`
+→ Step-by-step actions and code snippets (video seek, shadow DOM inspection, composed event dispatch, popup check), evidence-capture template: `references/workflow-detail.md`
+→ Symptom→cause→falsify table, SSOT paths, setup check, test sites, timeboxing: `references/troubleshooting.md`
 
 ## Anti-Patterns (top offenders)
 
