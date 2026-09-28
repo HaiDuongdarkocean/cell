@@ -2729,6 +2729,41 @@
         "extension-id"
       ],
       "trigger": "Playwright context có nhiều extension SW (Cell + uBOLite); lấy sai id → chrome-extension://<id>/... ERR_FILE_NOT_FOUND"
+    },
+    {
+      "type": "experience",
+      "id": "chrome-profile-scriptcache-stale-sw-after-rebuild",
+      "title": "Chrome profile ScriptCache phục vụ service-worker bundle CŨ sau rebuild — phải xóa Default/Service Worker trước verify",
+      "category": [
+        "testing"
+      ],
+      "tags": [
+        "playwright",
+        "chrome-extension",
+        "service-worker",
+        "scriptcache",
+        "rebuild",
+        "stale-code"
+      ],
+      "trigger": "Rebuild dist xong relaunch persistent profile nhưng behavior vẫn code cũ; instrumentation mới không xuất hiện"
+    },
+    {
+      "type": "experience",
+      "id": "sync-cloned-profile-shares-deviceid-pull-skips-self",
+      "title": "Clone browser profile copy cả deviceId → pull skip self-authored → wipe extension storage của clone cho multi-device test",
+      "category": [
+        "testing",
+        "sync"
+      ],
+      "tags": [
+        "sync",
+        "playwright",
+        "device-id",
+        "profile-clone",
+        "pull-cycle",
+        "hlc"
+      ],
+      "trigger": "Multi-device test bằng cloned profile: pull có scopes nhưng appliedDataClasses rỗng, seed từ device-1 không apply"
     }
   ]
 }
