@@ -20,6 +20,7 @@ import {
   type PopupPosition,
   type PopupSize,
 } from './popupGeometry';
+import { getViewportContentWidth as getClientWidth, getViewportContentHeight as getClientHeight } from './viewportContentSize';
 
 export type { PopupAnchor, PopupLineRect, PopupPointerHint, PopupPosition, PopupSize };
 
@@ -33,14 +34,6 @@ export interface UsePopupPositionOptions {
   readonly initialSheetHeight?: number;
   readonly onSizeChange?: (size: PopupSize, sheetHeight: number) => void;
   readonly onClose?: () => void;
-}
-
-function getClientWidth(): number {
-  return document.documentElement?.clientWidth ?? window.innerWidth;
-}
-
-function getClientHeight(): number {
-  return document.documentElement?.clientHeight ?? window.innerHeight;
 }
 
 interface PlayerModeBounds {

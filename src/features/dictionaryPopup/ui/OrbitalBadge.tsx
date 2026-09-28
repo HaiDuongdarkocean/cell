@@ -7,6 +7,7 @@ import { getNearestEdge, getEdgeCenter, type ViewportRect, type CollapsedEdge } 
 import { useOrbitalGesture } from '@/features/dictionaryPopup/badgePointer/useOrbitalGesture';
 import { loadOrbitalBadgePosition, saveOrbitalBadgePosition, type OrbitalBadgePosition } from '@/features/dictionaryPopup/badgePointer/orbitalBadgeStore';
 import type { PointerPreset, Point } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
+import { getViewportContentWidth, getViewportContentHeight } from './viewportContentSize';
 import styles from './OrbitalBadge.module.css';
 import { t } from '@/shared/i18n';
 
@@ -50,14 +51,6 @@ export interface OrbitalBadgeProps {
   onClick?: () => void;
 }
 
-function getClientWidth(): number {
-  return document.documentElement?.clientWidth || window.innerWidth;
-}
-
-function getClientHeight(): number {
-  return document.documentElement?.clientHeight || window.innerHeight;
-}
-
 function resolveViewport(viewport?: ViewportRect): ViewportRect {
   if (viewport) return viewport;
   // In fullscreen mode, the fullscreen element covers the entire screen with
@@ -68,13 +61,14 @@ function resolveViewport(viewport?: ViewportRect): ViewportRect {
   if (document.fullscreenElement) {
     return { width: window.innerWidth, height: window.innerHeight };
   }
-  // clientWidth excludes classic scrollbars. The badge center sits at the
-  // content edge (left edge of the scrollbar). With clip-path: inset(0 50% 0 0),
-  // the visible half-moon is flush with the scrollbar's left edge — "cạnh mép
-  // scrollbar" — not on top of it. The native scrollbar renders on top of
-  // everything, so positioning at innerWidth would hide the badge behind it.
-  // For overlay scrollbars (Mac, clientWidth === innerWidth), no difference.
-  return { width: getClientWidth(), height: getClientHeight() };
+  // The badge center sits at the content edge (left edge of the scrollbar).
+  // With clip-path: inset(0 50% 0 0), the visible half-moon is flush with the
+  // scrollbar's left edge — "cạnh mép scrollbar" — not on top of it. The
+  // native scrollbar renders on top of everything, so positioning at
+  // innerWidth would hide the badge behind it. getViewportContent* subtracts
+  // the scrollbar lane on every engine — including Firefox, where neither
+  // clientWidth nor the fixed-position viewport excludes the overlay bar.
+  return { width: getViewportContentWidth(), height: getViewportContentHeight() };
 }
 
 function inwardPreset(edge: CollapsedEdge): PointerPreset {
@@ -261,6 +255,10 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
     if (typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(() => reposition());
       resizeObserver.observe(document.documentElement);
+      // Firefox overlay scrollbars never change documentElement's size — the
+      // gutter engages when the page becomes scrollable, which shows up as a
+      // body resize instead.
+      if (document.body) resizeObserver.observe(document.body);
     }
     return () => {
       window.removeEventListener('resize', reposition);

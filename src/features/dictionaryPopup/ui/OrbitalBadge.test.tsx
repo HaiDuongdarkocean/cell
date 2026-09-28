@@ -315,6 +315,26 @@ describe('OrbitalBadge', () => {
     expect(badge.style.transform).toContain('translate3d(987px, 362px, 0)');
   });
 
+  it('insets past the overlay scrollbar lane on Firefox', () => {
+    const ua = navigator.userAgent;
+    Object.defineProperty(window.navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0',
+      configurable: true,
+    });
+    // Firefox overlay scrollbars never subtract from clientWidth — the page is
+    // scrollable yet clientWidth === innerWidth, so the helper reserves the
+    // fixed 12px overlay lane.
+    Object.defineProperty(document.documentElement, 'scrollHeight', { value: 2000, configurable: true });
+    try {
+      render(<OrbitalBadge persistPosition={false} />);
+      const badge = screen.getByTestId('orbital-badge');
+      // Content edge = 1024 - 12 = 1012 → center 1012, top-left = 1012 - 22 = 990.
+      expect(badge.style.transform).toContain('translate3d(990px, 362px, 0)');
+    } finally {
+      Object.defineProperty(window.navigator, 'userAgent', { value: ua, configurable: true });
+    }
+  });
+
   it('repositions to fullscreen viewport when fullscreenchange fires', () => {
     // Normal mode: clientWidth=1024 (with scrollbar), innerWidth=1280 (fullscreen width).
     // Badge at content edge: center 1024, top-left = 1024 - 22 = 1002.
