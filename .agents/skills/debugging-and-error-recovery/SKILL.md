@@ -18,42 +18,79 @@ Contract → Triage → conf ≥80% → Fix → Verify → Guard
 
 ## Contract
 
-Given (every precondition the user named — timing, layout, mode) / When (the real flow, not an isolated call) / Then (measurable outcome). Dropping a precondition = reproducing a different bug.
+```text
+BAD:  "badge should stay floating"                          → no measurable outcome
+GOOD: Given: badge floating at (609,400), data-edge=null
+      When:  scrollbar toggles
+      Then:  badge center stays ≈(609,400), data-edge stays null
+```
+
+Every precondition the user named — timing, layout, mode — goes in Given. Dropping one = reproducing a different bug.
 
 ## Triage — diagnose before reproducing
 
-If it worked before: `git log -p` / `git blame` the failing region first — most regressions name their culprit in the diff. Then read the code path the symptom names, grep callers, probe the live page. A 3-line `evaluate` settles most UI/runtime bugs:
+Worked-before? `git log -p` / `git blame` the failing region first — most regressions name their culprit in the diff. Then read the code path, grep callers, probe the live page:
 
-- `el.getAttribute('style')` — inline mutations stylesheets never show
-- `getComputedStyle` + ancestor walk for `overflow`/`clip-path`/`contain`/`opacity`
-- `document.elementFromPoint(x, y)` — what's on top / hit-testable
-- screenshot + pixel-scan — DOM rect ≠ painted output
-- console / storage / network
+```text
+BAD:  el.getBoundingClientRect() → rect correct → "element is fine" → write spec
+GOOD: el.getAttribute('style')        → 'overflow: hidden' — inline mutation, no stylesheet shows this
+      getComputedStyle + ancestor walk for overflow/clip-path/contain/opacity
+      document.elementFromPoint(x,y)  → js-cell-popup-host — something is on top
+      screenshot + pixel scan         → 67 blue pixels / 0 — DOM rect ≠ painted output
+      console / storage / network
+```
 
-≥80% = the evidence names the culprit line AND explains the full symptom → Fix directly. Below → full loop. An unverified guess is always <80%.
+≥80% = evidence names the culprit line AND explains the full symptom → fix directly. An unverified guess is always <80%.
 
 ## Full loop (only when triage fails)
 
-1. **Preserve + Reproduce** — capture DOM/console/network/state before your next action destroys it; then trigger the real flow ≥2× with every contract condition set. A continuous process must run over time (interval log); a spec harness only when the trigger needs a user-flow sequence.
+1. **Preserve + Reproduce** — capture DOM/console/network before reload destroys it; trigger the real flow ≥2× with every contract condition set.
+
+```text
+BAD:  call processPoint() once, measure output            → transition missed
+GOOD: setInterval log of badge state while the real
+      drag → hover → popup-open flow runs                  → catch the snap mid-flow
+```
+
 2. **Localize** — name one code path producing the bad output.
-3. **Falsify** — hypothesis in one sentence + one experiment designed to disprove it (change a variable, different data, different context).
-4. **Snippet verify** — inject a runtime patch (style `!important`, function override, state mutation, fetch mock) → symptom gone with, present without. Skip for directly observed facts — verify hypotheses, not observations.
+3. **Falsify** — one experiment designed to DISPROVE the hypothesis: change a variable, different data, different context. Hypothesis survives → fix. Dies → re-localize.
+4. **Snippet verify** — inject a runtime patch → symptom gone with it, present without it. Skip for directly observed facts — verify hypotheses, not observations.
+
+```text
+BAD:  edit source → rebuild 4 min → still broken → wrong path → repeat
+GOOD: page.evaluate: host.style.overflow='visible' → dot paints → culprit confirmed → now edit source
+```
 
 ## Fix
 
-Smallest change at the shared function, not per-caller. No `setTimeout` without a lifecycle signal. `.tsx`/`.css` → check `src/shared/ui/`, `ICON_CATALOG`, `tokens.json` first; fix markup before patching CSS.
+```text
+BAD:  if (caller === 'orbital-badge') skipRipple()          → per-caller patch, sibling still broken
+GOOD: data-cell-no-ripple on the host                        → one guard at the shared mechanism
+
+BAD:  setTimeout(() => close(), 400)                         → races slower devices
+GOOD: listen for the real signal (animationend / state event)
+```
+
+`.tsx`/`.css` fix → check `src/shared/ui/`, `ICON_CATALOG`, `tokens.json` first; fix markup before patching CSS.
 
 ## Verify
 
-Re-run the original flow + the variants that matter (first/middle/last, empty/cached, mode A/B); tests + build green; fix present in the bundle when runtime ≠ source. UI bugs: confirm **pixels painted**, not just DOM state.
+```text
+BAD:  rect.y === expected && getComputedStyle(el).opacity === '0.7' → declare pass
+GOOD: screenshot → pixel scan finds the painted pixels; elementFromPoint hits the target
+
+BAD:  run happy path once
+GOOD: original flow + variants that matter (first/middle/last, empty/cached, mode A/B) + tests + build
+      green; fix present in the bundle when runtime ≠ source
+```
 
 ## Guard
 
-Regression test that fails without the fix. Remove temporary instrumentation.
+Regression test that **fails without the fix, passes with it** — prove it by reverting the fix once. Remove temporary instrumentation.
 
 ## Recurring failure modes
 
-- Skipped contract precondition; wrong mode/context; isolated API call posing as reproduction
+- Skipped contract precondition; isolated API call posing as reproduction
 - DOM correct ≠ painted: right rect, zero pixels (ancestor `overflow:hidden`, `clip-path`, higher-z cover, contrast blend)
 - Symptom fixed but a second hidden root cause remains — re-probe after each fix
 - Snippet works, source fix doesn't → it patched a different path, re-localize
