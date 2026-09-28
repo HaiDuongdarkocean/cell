@@ -423,4 +423,65 @@ test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
       .toBe(false);
     await expect(popupHosts(streamFlixPage)).toHaveCount(0, { timeout: 5_000 });
   });
+
+  test('x/z skip known tokens; Shift+x/z force-lookups them', async ({
+    cellContext,
+    streamFlixPage,
+  }) => {
+    // Plain x/z never opens a lookup on a token already marked known/ignore —
+    // Shift+x/z forces the lookup regardless of word status.
+    await seedSettings(cellContext);
+    await seedDictionaryAndFrequency(cellContext, [{ term: 'silence', rank: 100 }]);
+    await writeTokenize(cellContext, true);
+    await writeStudyModes(cellContext, 'normal', {
+      ...IMMERSION_ADVANCED,
+      pauseOnUnknown: 'OFF',
+      popupOnAutoPause: false,
+    });
+
+    await seekPaused(streamFlixPage, CUE2_START_S + 0.4);
+    await expect(targetLine(streamFlixPage)).toContainText(/silence/i, { timeout: 30_000 });
+
+    const tokens = streamFlixPage.locator(
+      '[data-role="target"] [data-cell-term]:not([data-cell-term=""])',
+    );
+    const terms = await tokens.evaluateAll((els) =>
+      els.map((el) => el.getAttribute('data-cell-term')),
+    );
+    expect(terms.length).toBeGreaterThanOrEqual(3);
+
+    // Hover the SECOND token (synthetic mouseenter — the paused player's
+    // center Play button sits on top of the overlay and swallows real pointer
+    // moves) and mark it known via the '3' status key.
+    await tokens.nth(1).dispatchEvent('mouseenter');
+    await streamFlixPage.keyboard.press('3');
+    await expect(tokens.nth(1)).toHaveClass(/js-cell-token--status-known/, { timeout: 15_000 });
+
+    const openToken = streamFlixPage.locator('.js-cell-token--popup-open');
+
+    // 'x' lands on the first token…
+    await streamFlixPage.keyboard.press('x');
+    await expect(openToken).toHaveCount(1, { timeout: 15_000 });
+    await expect
+      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .toBe(terms[0]);
+
+    // …then 'x' again SKIPS the known second token and lands on the third.
+    await streamFlixPage.keyboard.press('x');
+    await expect
+      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .toBe(terms[2]);
+
+    // Shift+z steps back onto the known token — status is ignored.
+    await streamFlixPage.keyboard.press('Shift+z');
+    await expect
+      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .toBe(terms[1]);
+
+    // Plain 'z' from a known token still skips it going backward.
+    await streamFlixPage.keyboard.press('z');
+    await expect
+      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .toBe(terms[0]);
+  });
 });

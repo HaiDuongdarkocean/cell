@@ -111,6 +111,23 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
           alt: e.altKey,
         });
     if (!action) {
+      const vocabNavShift =
+        e.shiftKey && !isEditableEvent(e)
+          ? shortcuts.find(
+              (s) =>
+                (s.action === 'next-vocab-token' || s.action === 'prev-vocab-token') &&
+                s.key === key &&
+                (s.ctrl ?? false) === e.ctrlKey &&
+                (s.alt ?? false) === e.altKey,
+            )
+          : undefined;
+      if (vocabNavShift) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (vocabNavShift.action === 'next-vocab-token') ctx.nextVocabToken(true);
+        else ctx.prevVocabToken(true);
+        return;
+      }
       // Status shortcuts 1-4: route through the tokenize controllers. They are
       // handled here on window capture so the host page (e.g. YouTube seeking
       // on digit keys) cannot override them.
@@ -240,11 +257,11 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
         break;
       }
       case 'next-vocab-token': {
-        ctx.nextVocabToken();
+        ctx.nextVocabToken(e.shiftKey);
         break;
       }
       case 'prev-vocab-token': {
-        ctx.prevVocabToken();
+        ctx.prevVocabToken(e.shiftKey);
         break;
       }
       // Generate native subtitle manually (button or shortcut).

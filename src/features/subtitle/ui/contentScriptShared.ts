@@ -85,6 +85,20 @@ export const shouldDedupeCueSeek = (action: string): boolean => {
   return false;
 };
 
+export function stepVocabTokenIndex(
+  count: number,
+  current: number,
+  dir: 1 | -1,
+  isMastered: (idx: number) => boolean,
+): number {
+  let idx = current >= 0 ? current : dir === 1 ? -1 : 0;
+  for (let i = 0; i < count; i++) {
+    idx = (idx + dir + count) % count;
+    if (!isMastered(idx)) return idx;
+  }
+  return -1;
+}
+
 /** Load target/native language codes from settings.
  *  Used by import file role assignment + panel selection. */
 export async function loadTargetNativeLangs(): Promise<{ targetLang: string; nativeLang: string }> {

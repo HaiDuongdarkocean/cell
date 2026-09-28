@@ -40,6 +40,6 @@ export interface ContentScriptContext {
   handleSubtitleStatusKey(key: string): boolean;
   handleWebStatusKey?(key: string): boolean;
   syncSubtitleTokenize(): Promise<void>;
-  nextVocabToken(): void;
-  prevVocabToken(): void;
+  nextVocabToken(forceLookup?: boolean): void;
+  prevVocabToken(forceLookup?: boolean): void;
 }

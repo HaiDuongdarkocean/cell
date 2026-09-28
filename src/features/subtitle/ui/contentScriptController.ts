@@ -33,7 +33,7 @@ import type { BackgroundPrefillController } from '@/features/translate/logic/tra
 import { handleCardCreatorAction as sharedHandleCardCreatorAction } from '@/features/subtitle/actions/cardActions';
 import { startGenerateNative } from '@/features/subtitle/actions/generateNativeAction';
 import type { CardCreatorPorts, SubtitleActionContext } from '@/features/subtitle/actions/subtitleActionContext';
-import { loadOverlaySettings, loadShortcuts } from './contentScriptShared';
+import { loadOverlaySettings, loadShortcuts, stepVocabTokenIndex } from './contentScriptShared';
 import type { ContentScriptContext } from './contentScriptContext';
 import { createContentScriptKeyboardHandlers } from './contentScriptKeyboard';
 import { createContentScriptMessageHandlers } from './contentScriptMessages';
@@ -797,11 +797,13 @@ export function init(
     // click. The current position is derived from the popup-open highlight
     // class, so nav continues correctly even after a manual click mid-cue.
     // No token spans (tokenize + dictionary trigger both off) → no-op.
-    nextVocabToken: () => navVocabToken(1),
-    prevVocabToken: () => navVocabToken(-1),
+    // Plain press skips known/ignore tokens; shift+key forces the lookup on
+    // every token regardless of word status.
+    nextVocabToken: (forceLookup?: boolean) => navVocabToken(1, forceLookup === true),
+    prevVocabToken: (forceLookup?: boolean) => navVocabToken(-1, forceLookup === true),
   };
 
-  function navVocabToken(dir: 1 | -1): void {
+  function navVocabToken(dir: 1 | -1, forceLookup: boolean): void {
     const langCode = currentSettings?.subtitleOverlayTargetLanguage;
     const { target } = blockController.getLineElements();
     if (!sharedWebTextCtrl || !langCode || !target) return;
@@ -810,8 +812,18 @@ export function init(
     );
     if (spans.length === 0) return;
     const openIdx = spans.findIndex((el) => el.classList.contains('js-cell-token--popup-open'));
-    const idx = openIdx >= 0 ? (openIdx + dir + spans.length) % spans.length : dir === 1 ? 0 : spans.length - 1;
-    const span = spans[idx];
+    const mastered = (el: HTMLElement) =>
+      el.classList.contains('js-cell-token--status-known') ||
+      el.classList.contains('js-cell-token--status-ignore');
+    const idx = forceLookup
+      ? openIdx >= 0
+        ? (openIdx + dir + spans.length) % spans.length
+        : dir === 1
+          ? 0
+          : spans.length - 1
+      : stepVocabTokenIndex(spans.length, openIdx, dir, (i) => mastered(spans[i]!));
+    if (idx < 0) return;
+    const span = spans[idx]!;
     const cueIndex = blockController.getActiveIndices().target;
     const cue = blockController.getTargetCues()[cueIndex];
     const request: LookupRequest = {
