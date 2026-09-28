@@ -1,0 +1,18 @@
+{
+  "id": "rendering-element-in-dom-not-painted-overflow-clip",
+  "title": "Element trong DOM đúng rect nhưng không paint → ancestor overflow/clip-path do runtime mutation",
+  "category": ["rendering", "css"],
+  "tags": ["overflow-hidden", "clip-path", "ripple", "shadow-dom", "elementfrompoint", "pixel-scan", "paint-vs-dom", "inline-style", "orbital-badge"],
+  "trigger": "Element tồn tại, getBoundingClientRect đúng, computed style đúng — nhưng user không thấy trên màn hình; hit-test tại vị trí đó rơi xuống element bên dưới",
+  "principle": "DOM state đúng ≠ paint đúng. Element nằm ngoài bounds của ancestor có overflow:hidden/clip-path bị cắt khỏi cả paint lẫn hit-test. Trước khi viết spec reproduce, probe live: getAttribute('style') lộ inline mutation mà stylesheet scan không thấy; pixel-scan screenshot xác nhận paint thật. Delegated effect systems (ripple, tooltip, drag) có thể mutate style của ancestor ngoài ý muốn — check composedPath target vs element bị mutate.",
+  "cases": [
+    {
+      "context": "OrbitalBadge floating: chấm pointer preset 'top' nằm ngoài bounds host 36px. DOM rect y=329 đúng, background rgb(106,178,245) đúng — nhưng pixel-scan ảnh chụp = 0 pixel xanh. Chain computed: host div có inline overflow:hidden do installRippleDelegation → spawnRipple set lên role=button host khi user nhấn vào chấm pointer (không phải button). Ripple mutation vĩnh viễn → dot clip khỏi màn hình.",
+      "bad": "// badge host div role=\"button\" không opt-out ripple\n// pointerdown vào .pointer div → delegation walk composedPath → host là candidate → spawnRipple(host) → host.style.overflow='hidden' mãi mãi",
+      "good": "// host opt-out delegation; Button bên trong vẫn tự ripple qua data-cell-ripple-self\n<div data-cell-no-ripple role=\"button\" ...>"
+    }
+  ],
+  "applyFor": ["Element render trong shadow DOM nhưng user báo không thấy", "UI floating/overflowing ra ngoài container (tooltip dot, badge, indicator)", "Bất kỳ element nào có phần hiển thị vượt bounds của ancestor", "Ripple/delegated effect trên container có role=button"],
+  "related": ["rendering-exit-unmount-animationend-fallback"],
+  "source": {"date": "2026-09-28"}
+}

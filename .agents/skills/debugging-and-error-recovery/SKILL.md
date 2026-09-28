@@ -24,7 +24,8 @@ The goal is understanding the failure well enough that the fix is obvious and st
 ## The Debug Loop
 
 ```
-0. Contract → 1. Preserve → 2. Reproduce → 3. Localize → 4. Falsify → 5. Snippet Verify → 6. Fix → 7. Verify → 8. Guard
+0. Contract → Triage → conf ≥80% → 3. Localize → 6. Fix → 7. Verify → 8. Guard
+                    → conf <80% → 1. Preserve → 2. Reproduce → 3. Localize → 4. Falsify → 5. Snippet Verify → 6. Fix → 7. Verify → 8. Guard
 ```
 
 Each arrow has a guard — do not advance until it passes.
@@ -32,13 +33,14 @@ Each arrow has a guard — do not advance until it passes.
 | Step | Done when |
 |---|---|
 | 0. Contract | Given/When/Then names concrete DOM/text/call + **every** precondition the user mentioned |
+| Triage | Static code read + live probe names the culprit line at **≥80%** → skip to Localize/Fix. Below 80% → full loop. A 3-line `evaluate` (computed style, `getAttribute('style')`, `elementFromPoint`, pixel-scan a screenshot) is diagnosis evidence — don't build a reproduction harness for what a probe already proves |
 | 1. Preserve | ≥3 known facts, more facts than guesses (capture DOM/console/network BEFORE reload) |
-| 2. Reproduce | Bug triggers ≥2× under the **exact** contract conditions |
+| 2. Reproduce | Bug triggers ≥2× under the **exact** contract conditions — probe the live failing state first; a repeatable spec only when the trigger needs a user-flow sequence |
 | 3. Localize | One code path named that produces the bad output |
 | 4. Falsify | Hypothesis survived ≥1 experiment designed to disprove it |
-| 5. Snippet Verify | Injected patch removes the symptom ≥2× under the **real** flow, state logged over time |
+| 5. Snippet Verify | Injected patch removes the symptom ≥2× under the **real** flow, state logged over time. Skip when the culprit is a directly observed fact (inline style, wrong attribute, dead branch) — snippet-verify hypotheses, not observations |
 | 6. Fix | Smallest change matching what the snippet proved; explainable in plain language. Fix touching `.tsx`/`.css` → UI component-check first |
-| 7. Verify | Original + variant matrix + existing tests + build green; fix visible in build output |
+| 7. Verify | Original + variant matrix + existing tests + build green; fix visible in build output. UI bugs: verify **pixels painted**, not just DOM state |
 | 8. Guard | Regression test fails without the fix, passes with it |
 
 ## The three failure modes that waste the most time
@@ -47,6 +49,7 @@ Each arrow has a guard — do not advance until it passes.
 2. **Skipped precondition.** If the contract names a layout, timing, or mode condition, set it up before triggering. A bug that only appears under that condition won't reproduce without it — and you'll "fix" a different bug.
 3. **Editing source before the snippet proves it.** A rebuild costs minutes; a snippet costs seconds. If the hypothesis is wrong you've wasted the rebuild. If the snippet fixes the symptom but the source fix doesn't, the snippet patched a different code path — re-localize.
 4. **UI fix that invents instead of reusing.** When the fix touches `.tsx`/`.css`, run the component check before writing markup: does the element exist in `src/shared/ui/`? Is the icon in `ICON_CATALOG`? Is the value a token in `tokens.json`? Fix markup before patching CSS; never hardcode what the design system already names. `design-system-guardian` audits the result.
+5. **Harness before probe.** Before writing a reproduction spec, probe the failing page live (`evaluate`: `getAttribute('style')`, computed chain, `elementFromPoint`, pixel-scan a screenshot). DOM state correct ≠ rendered correct — an element can hold the right rect and paint nothing (ancestor `overflow:hidden`, `clip-path`, higher-z cover, contrast blend). Verify pixels, not just DOM.
 
 → Full step detail (preserve checklist, reproduce rules, falsify experiments, snippet patch methods by bug type, verify variant matrix): `references/debug-detail.md`
 → Root-cause patterns table, extension traps, evidence-by-category, Socratic questions, evidence board, full anti-patterns: `references/patterns.md`

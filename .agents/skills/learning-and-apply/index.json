@@ -2783,6 +2783,27 @@
         "hlc"
       ],
       "trigger": "Multi-device test bằng cloned profile: pull có scopes nhưng appliedDataClasses rỗng, seed từ device-1 không apply"
+    },
+    {
+      "type": "experience",
+      "id": "rendering-element-in-dom-not-painted-overflow-clip",
+      "title": "Element trong DOM đúng rect nhưng không paint → ancestor overflow/clip-path do runtime mutation",
+      "category": [
+        "rendering",
+        "css"
+      ],
+      "tags": [
+        "overflow-hidden",
+        "clip-path",
+        "ripple",
+        "shadow-dom",
+        "elementfrompoint",
+        "pixel-scan",
+        "paint-vs-dom",
+        "inline-style",
+        "orbital-badge"
+      ],
+      "trigger": "Element tồn tại, rect/computed đúng nhưng không hiển thị; hit-test rơi xuống element bên dưới"
     }
   ]
 }

@@ -14,6 +14,20 @@ Critical: the Given must capture EVERY condition the user described — timing (
 
 Loop back: request vague → `/pipeline-analyze` (interactive) on yourself; only ask the user if that fails.
 
+## Triage (confidence gate)
+
+Before entering the loop, spend minutes — not a harness — on static diagnosis: read the code path the symptom names, grep callers, and probe the live page. Probes that settle most UI/runtime bugs in seconds:
+
+```text
+el.getAttribute('style')          // inline mutations stylesheets never show
+getComputedStyle(el) + walk ancestors for overflow/clip-path/contain/opacity
+document.elementFromPoint(x, y)   // what's actually on top / hit-testable
+screenshot + pixel scan           // painted truth — DOM rect ≠ rendered output
+chrome.storage / console / network
+```
+
+Confidence **≥80%** (the evidence names the culprit line and explains the full symptom) → jump to Step 3, then Fix. Below 80% → full loop from Step 1. Skipping reproduction is only legitimate when the probe already observed the broken state directly — an unverified guess is still <80%.
+
 ## Step 1: Preserve
 
 Collect before your next action changes the system: error output/stack trace/console logs; runtime state (DOM snapshot, variables, storage, network); code paths (callers, imports, lifecycle); project conventions (docs, ADRs, skills); environment (browser, OS, extension state, cache); reliable reproduction steps; last successful state + what changed since.
@@ -61,6 +75,8 @@ Prove the hypothesis on the live system before touching source. Inject a minimal
 | Network / API | Mock the response via `fetch` override | Re-trigger the request, inspect handling |
 
 Guard: symptom disappears under the real flow with the patch, reproduces without it, repeated 2–3×.
+
+Skip this step when the culprit is a directly observed fact — an inline style, a wrong attribute, a branch the code provably never takes. Snippet-verify hypotheses that need behavioral proof, not observations that already are the proof.
 
 Loop back: snippet doesn't fix → hypothesis incomplete or wrong → Step 4. The snippet must target the root cause, not paper over it with a broader override.
 

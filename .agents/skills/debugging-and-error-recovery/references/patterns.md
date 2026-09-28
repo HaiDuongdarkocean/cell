@@ -12,6 +12,8 @@
 | UI updated but reverts | Cache not invalidated or stale source | Rebind, check source of truth |
 | Popup wrong but token right | Different term keys between set and get | Log both keys |
 | Data exists but user can't see it | DOM queried but not rendered/visible | `getComputedStyle` + `getBoundingClientRect` vs `innerText` |
+| Element in DOM, correct rect, invisible | Ancestor `overflow:hidden`/`clip-path` clips it, or a sibling with equal/higher z-index covers it | Screenshot + pixel-scan the element's rect (paint truth); inspect `style` attr + computed chain up to root |
+| Element paints in one state, vanishes in another | Runtime mutation changed a property — inline `style`, class swap — that stylesheets don't explain | `getAttribute('style')` on the live element; grep for `style.*=` writes |
 | Works first time, fails second | State leak or cache reuse | Repeat without reloading |
 | Source correct, runtime wrong | Builder/minifier strips code | Grep build output for the fix |
 | Snippet fixes it, source fix doesn't | Snippet patched a different path | Trace which path the snippet touched |
@@ -36,7 +38,7 @@
 | Test failure | Full output, order dependence, isolation, recent changes |
 | Build error | Exact error line, config diff, lockfile, Node version |
 | Runtime crash | Stack trace, input data, state at crash, last action |
-| UI/SPA bug | DOM snapshot, `innerText`, computed style, bounding rect, visibility, `readyState`, network, console, iframes; add a Playwright E2E for regression |
+| UI/SPA bug | DOM snapshot, `innerText`, computed style, bounding rect, `style` attr, visibility, `readyState`, network, console, iframes; **pixel-scan a screenshot — paint ≠ DOM**; add a Playwright E2E for regression |
 | Extension bug | `manifest.json`, injection logs, top/subframe state, storage |
 | Performance | Flame graph, memory snapshot, network waterfall, metrics |
 
@@ -65,7 +67,7 @@ Do not start Snippet Verify until the board has more facts than guesses AND ever
 
 ## Pause at Certainty
 
-At 90% confidence: What evidence haven't I gathered? What's the weakest link? If wrong, what will I have wasted? Can I explain the bug without jargon? Did I repeat the action ≥2× under the real flow? Did I log state over time or take one snapshot? Does my snippet re-trigger the contract's When or an isolated API?
+At 90% confidence: What evidence haven't I gathered? What's the weakest link? If wrong, what will I have wasted? Can I explain the bug without jargon? Did I repeat the action ≥2× under the real flow? Did I log state over time or take one snapshot? Does my snippet re-trigger the contract's When or an isolated API? For UI bugs: did I verify it **paints** (pixel-scan), not just that it exists in the DOM?
 
 ## Full anti-patterns list
 
@@ -81,3 +83,5 @@ At 90% confidence: What evidence haven't I gathered? What's the weakest link? If
 - Trusting source over build output when runtime behaves differently
 - Isolated API call replacing the contract's real flow; wrong mode/context vs the contract
 - Single before/after snapshot for continuous-state bugs; skipped contract preconditions
+- Building a reproduction harness when a live probe already names the culprit — probe first, harness only for sequence-dependent triggers
+- Asserting DOM state (rect, computed style, attribute exists) instead of rendered pixels — an element can be correct in DOM and paint nothing
