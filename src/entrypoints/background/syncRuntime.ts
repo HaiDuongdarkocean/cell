@@ -198,15 +198,25 @@ async function persistClockWall(built: BuiltRuntime): Promise<void> {
   }
 }
 
+const SERVICE_LOCK_WAIT_MS = 30_000;
+const SERVICE_LOCK_RETRY_MS = 300;
+
 async function withServiceLock<T>(
   built: BuiltRuntime,
   fn: (fence: () => Promise<void>) => Promise<T>,
 ): Promise<T> {
   const cycleId = `service-${crypto.randomUUID()}`;
-  const lock: CycleLock | null = await acquireCycleLock(
-    { kv: built.kv, clock: { now: () => Date.now() } },
-    cycleId,
-  );
+  const deadline = Date.now() + SERVICE_LOCK_WAIT_MS;
+  let lock: CycleLock | null = null;
+  while (lock === null && Date.now() < deadline) {
+    lock = await acquireCycleLock(
+      { kv: built.kv, clock: { now: () => Date.now() } },
+      cycleId,
+    );
+    if (lock === null) {
+      await new Promise((resolve) => setTimeout(resolve, SERVICE_LOCK_RETRY_MS));
+    }
+  }
   if (lock === null) {
     throw new SyncServiceError('sync-busy', 'a sync cycle is in progress — retry shortly');
   }

@@ -219,15 +219,45 @@ describe('SyncEngine.runCycle', () => {
     expect(source.keys).toHaveLength(1);
   });
 
-  it('joins an in-flight cycle', async () => {
+  it('queues a follow-up cycle for callers joining mid-flight', async () => {
     const t = await harness();
     const engine = t.makeEngine();
     const first = engine.runCycle();
     const second = engine.runCycle();
-    expect(second).toBe(first);
-    await first;
+    const r1 = await first;
+    const r2 = await second;
+    expect(r1.acquired).toBe(true);
+    expect(r2.acquired).toBe(true);
+    expect(r2).not.toBe(r1);
     const next = await engine.runCycle();
     expect(next.acquired).toBe(true);
+  });
+
+  it('captures keys pushed while a cycle is in flight', async () => {
+    const t = await harness();
+    const source = new FakeSource('settings', 'global');
+    let releaseFirst!: () => void;
+    const latch = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    let firstPending = true;
+    source.pending = async (limit: number) => {
+      const snapshot = source.keys.slice(0, limit);
+      if (firstPending) {
+        firstPending = false;
+        await latch;
+      }
+      return snapshot;
+    };
+    const engine = t.makeEngine({ sources: [source] });
+    const first = engine.runCycle();
+    await new Promise((r) => setTimeout(r, 0));
+    source.pushKey('kv:themeMode', 'put', 'light');
+    const second = engine.runCycle();
+    releaseFirst();
+    await first;
+    await second;
+    expect(source.acked.map((k) => k.key)).toContain('kv:themeMode');
   });
 
   it('steals an expired lock', async () => {

@@ -122,6 +122,11 @@ export class SyncEngine {
   private readonly backoff = new BackoffTracker();
   private cycleFailures = 0;
   private inflight: Promise<CycleResult> | null = null;
+  private rerunRequested = false;
+  private rerunWaiters: Array<{
+    resolve: (result: CycleResult) => void;
+    reject: (error: unknown) => void;
+  }> = [];
 
   constructor(private readonly deps: SyncEngineDeps) {
     this.status = { state: 'idle', updatedAt: deps.clock.now() };
@@ -143,9 +148,29 @@ export class SyncEngine {
   }
 
   runCycle(): Promise<CycleResult> {
-    if (this.inflight) return this.inflight;
+    if (this.inflight) {
+      this.rerunRequested = true;
+      return new Promise<CycleResult>((resolve, reject) => {
+        this.rerunWaiters.push({ resolve, reject });
+      });
+    }
+    return this.startCycle();
+  }
+
+  private startCycle(): Promise<CycleResult> {
     const run = this.executeCycle().finally(() => {
       this.inflight = null;
+      if (!this.rerunRequested) return;
+      this.rerunRequested = false;
+      const waiters = this.rerunWaiters.splice(0);
+      this.startCycle().then(
+        (result) => {
+          for (const w of waiters) w.resolve(result);
+        },
+        (error) => {
+          for (const w of waiters) w.reject(error);
+        },
+      );
     });
     this.inflight = run;
     return run;
