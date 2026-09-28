@@ -549,7 +549,7 @@ function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Eleme
           <div className={candidateStyles.cellDefGroup}>
             <div className={checkStyles.cellDefItem}>
               <div className={candidateStyles.cellDefRow}>
-                <span className={checkStyles.cellDefCheck}>
+                <span className={`${checkStyles.cellDefCheck} ${styles.skeletonCheck}`}>
                   <Skeleton width={checkbox} height={checkbox} shape="rounded" />
                 </span>
                 <span className={candidateStyles.cellDefText}>
@@ -559,7 +559,7 @@ function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Eleme
             </div>
             <div className={candidateStyles.cellDefExamples}>
               <div className={checkStyles.cellDefExampleItem}>
-                <span className={checkStyles.cellDefCheck}>
+                <span className={`${checkStyles.cellDefCheck} ${styles.skeletonCheck}`}>
                   <Skeleton width={checkbox} height={checkbox} shape="rounded" />
                 </span>
                 <span className={candidateStyles.cellDefExampleText}>
@@ -571,7 +571,7 @@ function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Eleme
           <div className={candidateStyles.cellDefGroup}>
             <div className={checkStyles.cellDefItem}>
               <div className={candidateStyles.cellDefRow}>
-                <span className={checkStyles.cellDefCheck}>
+                <span className={`${checkStyles.cellDefCheck} ${styles.skeletonCheck}`}>
                   <Skeleton width={checkbox} height={checkbox} shape="rounded" />
                 </span>
                 <span className={candidateStyles.cellDefText}>

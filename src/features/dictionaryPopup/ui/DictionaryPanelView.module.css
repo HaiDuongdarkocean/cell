@@ -374,6 +374,10 @@ li.searchHistoryItem .searchHistoryRemove.searchHistoryRemove svg {
   flex-shrink: 0;
 }
 
+.skeletonCheck.skeletonCheck::before {
+  content: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dictionaryPanel, .dictionaryPanel *, .dictionaryPanel *::before, .dictionaryPanel *::after {
     transition: none !important;
