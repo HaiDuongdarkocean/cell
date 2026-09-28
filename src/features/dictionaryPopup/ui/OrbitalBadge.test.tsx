@@ -135,8 +135,8 @@ describe('OrbitalBadge', () => {
       fireEvent.pointerUp(badge, { clientX: 400, clientY: 384 });
     });
 
-    // Badge floating at x=400 (top-left = 400 - 22 = 378).
-    expect(badge.style.transform).toContain('translate3d(378px, 362px, 0)');
+    // Badge floating at x=378 (dock center 1002 + dx -624; top-left = 356).
+    expect(badge.style.transform).toContain('translate3d(356px, 362px, 0)');
 
     // Double-tap to cycle preset — badge must NOT move to edge.
     act(() => {
@@ -151,8 +151,8 @@ describe('OrbitalBadge', () => {
     act(() => { jest.advanceTimersByTime(300); });
 
     expect(onPresetChange).toHaveBeenLastCalledWith('center');
-    // Badge stays at x=400 — NOT snapped to edge (1024).
-    expect(badge.style.transform).toContain('translate3d(378px, 362px, 0)');
+    // Badge stays at x=378 — NOT snapped to edge.
+    expect(badge.style.transform).toContain('translate3d(356px, 362px, 0)');
     jest.useRealTimers();
   });
 
@@ -165,9 +165,9 @@ describe('OrbitalBadge', () => {
       fireEvent.pointerMove(badge, { clientX: 980, clientY: 384 });
     });
 
-    // The visible badge center starts at x = 1024 (right edge, flush).
-    // dx = -44 -> dragCenter = 980, top-left = 980 - 22 = 958.
-    expect(badge.style.transform).toContain('translate3d(958px, 362px, 0)');
+    // The docked badge center starts at x = 1002 (inset 22 from the edge).
+    // dx = -44 -> dragCenter = 958, top-left = 958 - 22 = 936.
+    expect(badge.style.transform).toContain('translate3d(936px, 362px, 0)');
   });
 
   it('snaps to edge when dropped near edge', () => {
@@ -181,8 +181,8 @@ describe('OrbitalBadge', () => {
     });
 
     // 980 is within 1.5×badgeSize(66px) of right edge (1024-980=44 ≤ 66) → snaps.
-    // Collapsed right edge: center 1024 (flush), top-left = 1024 - 22 = 1002.
-    expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
+    // Docked at right edge: center 1002, top-left = 1002 - 22 = 980.
+    expect(badge.style.transform).toContain('translate3d(980px, 362px, 0)');
   });
 
   it('stays floating when dropped away from edge', () => {
@@ -195,9 +195,9 @@ describe('OrbitalBadge', () => {
       fireEvent.pointerUp(badge, { clientX: 500, clientY: 384 });
     });
 
-    // 500 is far from any edge → stays at drop position (clamped).
-    // dragCenter = 500, top-left = 500 - 22 = 478.
-    expect(badge.style.transform).toContain('translate3d(478px, 362px, 0)');
+    // Drop far from any edge → stays at drop position (clamped).
+    // dragStart = docked center 1002, dx = -524 → dragCenter = 478, top-left = 456.
+    expect(badge.style.transform).toContain('translate3d(456px, 362px, 0)');
   });
 
   it('pointer is visible when floating (not at edge)', () => {
@@ -215,17 +215,25 @@ describe('OrbitalBadge', () => {
     expect(screen.queryByTestId('orbital-pointer')).toBeInTheDocument();
   });
 
-  it('pointer is visible inside half-moon when collapsed at edge', () => {
+  it('pointer is visible inside the docked circle when collapsed at edge', () => {
     render(<OrbitalBadge persistPosition={false} />);
-    // Badge starts collapsed at right edge → pointer visible inside half-moon.
+    // Badge starts collapsed at right edge → pointer visible inside the circle.
     expect(screen.queryByTestId('orbital-pointer')).toBeInTheDocument();
   });
 
-  it('centers the collapsed gear icon inside the visible half-moon', () => {
+  it('docks as a full circle inside the viewport at large badge sizes', () => {
     render(<OrbitalBadge persistPosition={false} badgeSize={80} />);
-    // Right-edge collapse keeps the left half → gear shifts left by badgeSize/4.
+    const badge = screen.getByTestId('orbital-badge');
+    // Docked center = 1024 - 40 = 984 → left edge 944, right edge 944 + 80 = 1024
+    // flush inside the content edge (previously the center sat ON the edge and
+    // clip-path cut the disc into a half-moon).
+    expect(badge.style.transform).toContain('translate3d(944px, 344px, 0)');
+  });
+
+  it('centers the collapsed gear icon inside the docked circle', () => {
+    render(<OrbitalBadge persistPosition={false} badgeSize={80} />);
     const pointer = screen.getByTestId('orbital-pointer');
-    expect(pointer.style.transform).toBe('translate3d(-20px, 0px, 0)');
+    expect(pointer.style.transform).toBe('translate3d(0, 0, 0)');
   });
 
   it('scales the collapsed gear icon with badge size', () => {
@@ -258,8 +266,8 @@ describe('OrbitalBadge', () => {
       fireEvent.pointerMove(badge, { clientX: 500, clientY: 384 });
       fireEvent.pointerUp(badge, { clientX: 500, clientY: 384 });
     });
-    // Floating at x=500, expanded=true, top-left = 500 - 22 = 478.
-    expect(badge.style.transform).toContain('translate3d(478px, 362px, 0)');
+    // Floating at center x=478 (dragStart 1002 + dx -524), top-left = 456.
+    expect(badge.style.transform).toContain('translate3d(456px, 362px, 0)');
 
     // 2. Grab the badge again from its floating position (x=500).
     // The badge should NOT jump to the nearest edge.
@@ -268,10 +276,9 @@ describe('OrbitalBadge', () => {
       fireEvent.pointerMove(badge, { clientX: 510, clientY: 384 });
     });
 
-    // dragStart = 500 (floating center), dx = 10 → dragCenter = 510, top-left = 488.
-    // Without the fix, dragStart would be 1013 (collapsedCenter at right edge)
-    // → dragCenter = 1023 → top-left = 1001 (jumped to edge!).
-    expect(badge.style.transform).toContain('translate3d(488px, 362px, 0)');
+    // dragStart = 478 (floating center), dx = 10 → dragCenter = 488, top-left = 466.
+    // Without the fix, dragStart would be the snapped edge center (jumped to edge!).
+    expect(badge.style.transform).toContain('translate3d(466px, 362px, 0)');
   });
 
   it('stays expanded at floating position after external setExpanded(false) is NOT called', () => {
@@ -290,31 +297,31 @@ describe('OrbitalBadge', () => {
     // Badge should still be expanded (X icon) at floating position.
     const btn = screen.getByTestId('orbital-badge-button');
     expect(btn.getAttribute('aria-label')).toBe('Drag to move');
-    expect(badge.style.transform).toContain('translate3d(478px, 362px, 0)');
+    expect(badge.style.transform).toContain('translate3d(456px, 362px, 0)');
   });
 
   it('repositions when the viewport resizes', () => {
     render(<OrbitalBadge persistPosition={false} />);
     const badge = screen.getByTestId('orbital-badge');
 
-    // Collapsed flush at content edge: center 1024, top-left = 1024 - 22 = 1002.
-    expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
+    // Docked at content edge: center 1002, top-left = 1002 - 22 = 980.
+    expect(badge.style.transform).toContain('translate3d(980px, 362px, 0)');
 
     act(() => {
       Object.defineProperty(document.documentElement, 'clientWidth', { value: 400, configurable: true });
       fireEvent.resize(window);
     });
 
-    // Resized to 400 width: center 400 (content edge), top-left = 400 - 22 = 378.
-    expect(badge.style.transform).toContain('translate3d(378px, 362px, 0)');
+    // Resized to 400 width: docked center 378, top-left = 378 - 22 = 356.
+    expect(badge.style.transform).toContain('translate3d(356px, 362px, 0)');
   });
 
   it('repositions when scrollbar appears (clientWidth shrinks without resize event)', () => {
     render(<OrbitalBadge persistPosition={false} />);
     const badge = screen.getByTestId('orbital-badge');
 
-    // Colllapsed flush at content edge: center 1024, top-left = 1024 - 22 = 1002.
-    expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
+    // Docked at content edge: center 1002, top-left = 1002 - 22 = 980.
+    expect(badge.style.transform).toContain('translate3d(980px, 362px, 0)');
 
     // Scrollbar appears: clientWidth shrinks from 1024 to 1009 (15px scrollbar).
     // No 'resize' event fires — only ResizeObserver detects the content-box change.
@@ -324,8 +331,8 @@ describe('OrbitalBadge', () => {
     });
 
     // Badge repositioned to new content edge (left edge of scrollbar):
-    // center 1009, top-left = 1009 - 22 = 987.
-    expect(badge.style.transform).toContain('translate3d(987px, 362px, 0)');
+    // docked center 987, top-left = 987 - 22 = 965.
+    expect(badge.style.transform).toContain('translate3d(965px, 362px, 0)');
   });
 
   it('insets past the overlay scrollbar lane on Firefox', () => {
@@ -341,8 +348,8 @@ describe('OrbitalBadge', () => {
     try {
       render(<OrbitalBadge persistPosition={false} />);
       const badge = screen.getByTestId('orbital-badge');
-      // Content edge = 1024 - 12 = 1012 → center 1012, top-left = 1012 - 22 = 990.
-      expect(badge.style.transform).toContain('translate3d(990px, 362px, 0)');
+      // Content edge = 1024 - 12 = 1012 → docked center 990, top-left = 990 - 22 = 968.
+      expect(badge.style.transform).toContain('translate3d(968px, 362px, 0)');
     } finally {
       Object.defineProperty(window.navigator, 'userAgent', { value: ua, configurable: true });
     }
@@ -350,10 +357,10 @@ describe('OrbitalBadge', () => {
 
   it('repositions to fullscreen viewport when fullscreenchange fires', () => {
     // Normal mode: clientWidth=1024 (with scrollbar), innerWidth=1280 (fullscreen width).
-    // Badge at content edge: center 1024, top-left = 1024 - 22 = 1002.
+    // Badge docked at content edge: center 1002, top-left = 1002 - 22 = 980.
     render(<OrbitalBadge persistPosition={false} />);
     const badge = screen.getByTestId('orbital-badge');
-    expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
+    expect(badge.style.transform).toContain('translate3d(980px, 362px, 0)');
 
     // Enter fullscreen: fullscreenElement set, innerWidth=1280 (no scrollbar in fullscreen).
     // resolveViewport uses innerWidth/innerHeight in fullscreen mode.
@@ -367,9 +374,10 @@ describe('OrbitalBadge', () => {
       fireEvent(document, new Event('fullscreenchange'));
     });
 
-    // Badge repositioned to fullscreen right edge: center 1280, top-left = 1280 - 22 = 1258.
+    // Badge repositioned to fullscreen right edge: docked center 1258,
+    // top-left = 1258 - 22 = 1236.
     // y scales proportionally: 384/768 * 720 = 360, top-left = 360 - 22 = 338.
-    expect(badge.style.transform).toContain('translate3d(1258px, 338px, 0)');
+    expect(badge.style.transform).toContain('translate3d(1236px, 338px, 0)');
 
     // Exit fullscreen: fullscreenElement cleared, back to clientWidth=1024.
     act(() => {
@@ -379,17 +387,17 @@ describe('OrbitalBadge', () => {
       fireEvent(document, new Event('fullscreenchange'));
     });
 
-    // Badge back to normal content edge: center 1024. y scales back: 360/720 * 768 = 384.
-    // top-left = 1024-22=1002, 384-22=362.
-    expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
+    // Badge back to normal content edge: docked center 1002. y scales back:
+    // 360/720 * 768 = 384. top-left = 1002-22=980, 384-22=362.
+    expect(badge.style.transform).toContain('translate3d(980px, 362px, 0)');
   });
 
   it('keeps the same edge when fullscreen expands the viewport (not nearest edge)', () => {
-    // Normal mode: clientWidth=1024, clientHeight=768. Badge at right edge:
-    // center 1024, y=384 (middle). Top-left = 1024-22=1002, 384-22=362.
+    // Normal mode: clientWidth=1024, clientHeight=768. Badge docked at right
+    // edge: center 1002, y=384 (middle). Top-left = 1002-22=980, 384-22=362.
     render(<OrbitalBadge persistPosition={false} />);
     const badge = screen.getByTestId('orbital-badge');
-    expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
+    expect(badge.style.transform).toContain('translate3d(980px, 362px, 0)');
 
     // Enter fullscreen with a MUCH larger viewport: 2560x1440.
     // Old position (1024, 384) in the new viewport: nearest edge is TOP
@@ -409,8 +417,8 @@ describe('OrbitalBadge', () => {
       fireEvent(document, new Event('fullscreenchange'));
     });
 
-    // Badge stays on right edge at same relative y (50%): center 2560, y 720.
-    // Top-left = 2560-22=2538, 720-22=698.
-    expect(badge.style.transform).toContain('translate3d(2538px, 698px, 0)');
+    // Badge stays on right edge at same relative y (50%): docked center 2538,
+    // y 720. Top-left = 2538-22=2516, 720-22=698.
+    expect(badge.style.transform).toContain('translate3d(2516px, 698px, 0)');
   });
 });

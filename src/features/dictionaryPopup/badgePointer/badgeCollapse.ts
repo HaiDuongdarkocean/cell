@@ -1,9 +1,10 @@
 /**
  * Shared edge-collapse helpers for floating badges (token FAB + orbital badge).
  *
- * A collapsed badge sits on a viewport edge with its center exactly on the edge,
- * so the viewport clips half of it → visible half-moon. Dragging inward expands
- * it back to a full circle. Releasing near an edge snaps + collapses it there.
+ * A collapsed badge docks on a viewport edge with the whole disc kept inside —
+ * its center insets by half the badge size so the full circle stays visible,
+ * flush against the edge. Dragging inward expands it back to floating.
+ * Releasing near an edge snaps + collapses it there.
  *
  * Shared by the token FAB and the React OrbitalBadge component.
  * (SSOT). The helpers are pure functions over a viewport rect — no DOM reads.
@@ -53,9 +54,15 @@ export function getEdgeCenter(edge: CollapsedEdge, point: Point, badgeSize: numb
   }
 }
 
-/** Center of the visible half-moon when the badge is collapsed on an edge.
- *  The badge center sits exactly on the edge so the viewport clips the outer
- *  half → true half-moon flush against the edge. */
-export function getCollapsedCenter(badgeCenter: Point, _edge: CollapsedEdge, _badgeSize: number): Point {
-  return badgeCenter;
+/** Center of the docked full circle when the badge is collapsed on an edge.
+ *  The badge insets by half its size so the whole disc stays inside the
+ *  viewport, flush against the edge. */
+export function getCollapsedCenter(badgeCenter: Point, edge: CollapsedEdge, badgeSize: number): Point {
+  const half = badgeSize / 2;
+  switch (edge) {
+    case 'left': return { x: badgeCenter.x + half, y: badgeCenter.y };
+    case 'right': return { x: badgeCenter.x - half, y: badgeCenter.y };
+    case 'top': return { x: badgeCenter.x, y: badgeCenter.y + half };
+    case 'bottom': return { x: badgeCenter.x, y: badgeCenter.y - half };
+  }
 }

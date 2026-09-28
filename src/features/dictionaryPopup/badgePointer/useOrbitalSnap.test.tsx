@@ -20,7 +20,18 @@ describe('useOrbitalSnap', () => {
     }));
     expect(result.current.edge).toBe('right');
     expect(result.current.expandedCenter.x).toBe(400);
-    // collapsedCenter === expandedCenter (flush at edge, true half-moon).
-    expect(result.current.collapsedCenter).toEqual(result.current.expandedCenter);
+    // collapsedCenter insets by half the badge → full circle docked inside.
+    expect(result.current.collapsedCenter).toEqual({ x: 380, y: 200 });
+  });
+
+  it.each([
+    [{ x: 20, y: 200 }, 'left', { x: 20, y: 200 }],
+    [{ x: 380, y: 200 }, 'right', { x: 380, y: 200 }],
+    [{ x: 200, y: 20 }, 'top', { x: 200, y: 20 }],
+    [{ x: 200, y: 280 }, 'bottom', { x: 200, y: 280 }],
+  ] as const)('docks %s fully inside the %s edge', (badgeCenter, edge, expected) => {
+    const { result } = renderHook(() => useOrbitalSnap({ ...base, badgeCenter }));
+    expect(result.current.edge).toBe(edge);
+    expect(result.current.collapsedCenter).toEqual(expected);
   });
 });
