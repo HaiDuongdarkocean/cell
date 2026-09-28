@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { InkTabs } from '@/shared/ui/InkTabs';
 import { Skeleton } from '@/shared/ui/Skeleton';
@@ -20,6 +20,7 @@ export interface PronunciationAudioPanelProps {
   readonly onTtsSentence: () => void;
   readonly term: string;
   readonly sentence: string;
+  readonly autoplayCount?: number;
 }
 
 const TTS_WORD_ID = '__tts_word__';
@@ -35,6 +36,7 @@ export function PronunciationAudioPanel({
   onTtsSentence,
   term,
   sentence,
+  autoplayCount = 0,
 }: PronunciationAudioPanelProps): React.JSX.Element {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [activeGroup, setActiveGroup] = useState<'word' | 'sentence'>('word');
@@ -57,6 +59,42 @@ export function PronunciationAudioPanel({
       defaultSelected: false,
     }];
   }, [items, activeGroup, term, sentence]);
+
+  const playUrl = useCallback((url: string, times: number): void => {
+    if (times <= 0) return;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    audio.addEventListener('ended', () => {
+      if (audioRef.current === audio) audioRef.current = null;
+      playUrl(url, times - 1);
+    });
+    audio.addEventListener('pause', () => { if (audioRef.current === audio) audioRef.current = null; }, { once: true });
+    void audio.play().catch(() => { /* best-effort */ });
+  }, []);
+
+  const playItem = useCallback((item: AudioItem): void => {
+    const itemUrl = getUrl(item);
+    if (!itemUrl) {
+      if (item.kind === 'word') onTtsWord(); else onTtsSentence();
+      return;
+    }
+    playUrl(itemUrl, 1);
+  }, [getUrl, onTtsWord, onTtsSentence, playUrl]);
+
+  const autoplayedTermRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (loading || autoplayCount <= 0 || autoplayedTermRef.current === term) return;
+    autoplayedTermRef.current = term;
+    if (audioRef.current) return;
+    const wordItem = items.find((i) => i.kind === 'word');
+    const url = wordItem ? getUrl(wordItem) : undefined;
+    if (url) playUrl(url, autoplayCount);
+    else onTtsWord();
+  }, [loading, items, term, autoplayCount, getUrl, playUrl, onTtsWord]);
 
   return (
     <div className={styles.cellAudio} data-cell-id="dictionary-audio-panel">
@@ -95,23 +133,6 @@ export function PronunciationAudioPanel({
           {displayItems.map((item) => {
             const selected = selection.get(item.id) === true;
             const parts = item.label.split(' · ');
-            const itemUrl = getUrl(item);
-            const playItem = (): void => {
-              if (!itemUrl) {
-                if (activeGroup === 'word') onTtsWord();
-                else onTtsSentence();
-                return;
-              }
-              if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current = null;
-              }
-              const audio = new Audio(itemUrl);
-              audioRef.current = audio;
-              audio.addEventListener('ended', () => { audioRef.current = null; }, { once: true });
-              audio.addEventListener('pause', () => { if (audioRef.current === audio) audioRef.current = null; }, { once: true });
-              void audio.play().catch(() => { /* best-effort */ });
-            };
             return (
               <div
                 key={item.id}
@@ -119,12 +140,12 @@ export function PronunciationAudioPanel({
                 role="button"
                 aria-label={t('dict.audio.play', [item.label])}
                 tabIndex={0}
-                onClick={playItem}
+                onClick={() => playItem(item)}
                 onKeyDown={(e): void => {
                   if (e.target !== e.currentTarget) return;
                   if (e.key === ' ' || e.key === 'Enter') {
                     e.preventDefault();
-                    playItem();
+                    playItem(item);
                   }
                 }}
               >

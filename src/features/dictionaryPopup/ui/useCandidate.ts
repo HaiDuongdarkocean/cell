@@ -84,6 +84,7 @@ export interface UseCandidateReturn {
   readonly selectedTranslationCount: number;
   readonly playTerm: () => void;
   readonly playSentence: () => void;
+  readonly autoplayCount: number;
   readonly sendToCard: () => Promise<void>;
   readonly quickAdd: () => Promise<void>;
 }
@@ -208,12 +209,14 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
 
   const [includeAllExamples, setIncludeAllExamples] = useState(false);
   const [ttsVoices, setTtsVoices] = useState<readonly string[]>([]);
+  const [autoplayCount, setAutoplayCount] = useState(0);
   useEffect(() => {
     let alive = true;
     loadSettings()
       .then((s) => {
         if (!alive) return;
         setTtsVoices(s.dictionaryPopup?.tts?.voices ?? []);
+        setAutoplayCount(s.dictionaryPopup?.tts?.autoplayCount ?? 0);
         setIncludeAllExamples(s.dictionaryPopup?.includeAllExamplesOnDefSelect ?? false);
         setDictLinks(s.dictionaryPopup?.externalDictLinks ?? DEFAULT_DICTIONARY_POPUP_SETTINGS.externalDictLinks);
       })
@@ -334,6 +337,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     selectedTranslationCount: toolbar.selectedTranslationCount,
     playTerm,
     playSentence,
+    autoplayCount,
     sendToCard,
     quickAdd,
   };
