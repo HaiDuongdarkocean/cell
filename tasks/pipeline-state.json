@@ -1,5 +1,5 @@
 {
-  "active": "durable-job-registry",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -546,7 +546,7 @@
       "updated": "2026-09-27T23:45:48.762Z"
     },
     "durable-job-registry": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "interactive",
       "uiSurface": "yes",
       "artifacts": {
@@ -558,31 +558,32 @@
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-09-28T12:17:22.080Z"
+          "at": "2026-09-28T12:18:54.029Z"
         },
         "testUnit": {
           "v": "pass",
-          "at": "2026-09-28T11:58:09.477Z"
+          "at": "2026-09-28T12:18:54.184Z"
         },
         "build": {
           "v": "pass",
-          "at": "2026-09-28T12:08:35.947Z"
+          "at": "2026-09-28T12:18:54.259Z"
         },
         "lint": {
           "v": "pass",
-          "at": "2026-09-28T12:17:35.295Z"
+          "at": "2026-09-28T12:18:54.103Z"
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-09-28T12:18:54.333Z"
         }
       },
       "confidence": "medium",
       "awaiting": null,
       "resolutions": [],
       "loops": 0,
-      "owner": {
-        "id": "devin-main",
-        "since": "2026-09-28T10:57:03.917Z"
-      },
+      "owner": null,
       "worktree": null,
-      "updated": "2026-09-28T12:17:35.295Z"
+      "updated": "2026-09-28T12:19:21.730Z"
     }
   }
 }
