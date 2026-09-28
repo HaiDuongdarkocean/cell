@@ -14,6 +14,7 @@ import {
   broadcastCues,
 } from '@/features/subtitle';
 import { shouldDedupeCueSeek } from './contentScriptShared';
+import { t } from '@/shared/i18n';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
 
@@ -218,7 +219,7 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
           ctx.setBilingualCues(mergeCuesForPanel(syncController.latestTargetCues, []));
           // latestNativeCues tracked by blockController — no longer needed here
           // updateCues(syncController.latestTargetCues, []);
-          showToast('Auto-translate off', container, { variant: 'info' });
+          showToast(t('subtitle.autoTranslate.off'), container, { variant: 'info' });
         } else if (syncController.latestTargetCues.length > 0) {
           void (async () => {
             const s = await loadSettings();
@@ -241,7 +242,7 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
             });
             ctx.setTranslatePrefill(translatePrefill);
             translatePrefill.start(syncController.latestTargetCues, sl, tl);
-            showToast('Auto-translate on', container, { variant: 'success' });
+            showToast(t('subtitle.autoTranslate.on'), container, { variant: 'success' });
           })();
         }
         break;

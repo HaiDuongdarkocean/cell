@@ -12,6 +12,7 @@
  * (parseContainer + readSpeakerMeta) and background.js fetchForvo handler.
  */
 import type { AudioItem } from '@/entities/dictionary';
+import { t } from '@/shared/i18n';
 
 /** Base URL for Forvo audio CDN (decoded base64 path appended). */
 export const FORVO_AUDIO_CDN = 'https://audio00.forvo.com/mp3/';
@@ -67,12 +68,12 @@ function readSpeakerMetaRegex(
     liHtml.match(/<a[^>]*class="[^"]*ofLink[^"]*"[^>]*>([^<]+)<\/a>/i) ??
     liHtml.match(/class="[^"]*ofLink[^"]*"[^>]*>[\s\S]*?<a[^>]*>([^<]+)<\/a>/i) ??
     liHtml.match(/<a[^>]*href="[^"]*\/profiles\/[^"]*"[^>]*>([^<]+)<\/a>/i);
-  const speaker = normalize(anchorMatch?.[1]) || 'Unknown speaker';
+  const speaker = normalize(anchorMatch?.[1]) || t('dict.audio.unknownSpeaker');
 
   const fromMatch = liHtml.match(/<[^>]*class="[^"]*from[^"]*"[^>]*>([^<]+)<\/[^>]+>/i);
   const fromText = normalize(fromMatch?.[1]);
   const regionText = fromText.replace(/^from\s+/i, '');
-  const region = regionText || fallbackRegion || 'Unknown region';
+  const region = regionText || fallbackRegion || t('dict.audio.unknownRegion');
 
   return { speaker, region };
 }

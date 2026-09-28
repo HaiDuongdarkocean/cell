@@ -7,6 +7,7 @@
  */
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import {
   createOffscreenDocument,
   hasOffscreenDocument,
@@ -179,10 +180,8 @@ export class OffscreenManager {
       await sleep(PING_RETRY_DELAY_MS);
     }
 
-    throw new Error(
-      `Offscreen document did not respond to ping after ${PING_MAX_RETRIES} attempts. ` +
-        'The listener may have failed to register.',
-    );
+    console.error('[offscreen] No response for', MESSAGE_TYPES.OFFSCREEN_PING);
+    throw new Error(t('ui.error.offscreenNoResponse'));
   }
 
   /**

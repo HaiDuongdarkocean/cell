@@ -38,7 +38,7 @@ describe('ImmersionStats', () => {
   it('renders zeroed stats for an empty history', async () => {
     mockGetHistory.mockResolvedValue([]);
     render(<ImmersionStats />);
-    expect(await screen.findByText('0 h input')).toBeInTheDocument();
+    expect(await screen.findByText('0 h watched')).toBeInTheDocument();
     expect(screen.getByText(/0 h last 7 days/)).toBeInTheDocument();
     expect(screen.getByText('Level 1')).toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
@@ -51,7 +51,7 @@ describe('ImmersionStats', () => {
       rec('watch-v1-2', 'v1', now - HOUR_MS, 20 * HOUR_MS),
     ]);
     render(<ImmersionStats />);
-    expect(await screen.findByText('120 h input')).toBeInTheDocument();
+    expect(await screen.findByText('120 h watched')).toBeInTheDocument();
     expect(screen.getByText('Level 2')).toBeInTheDocument();
     const bar = screen.getByRole('progressbar');
     expect(bar).toHaveAttribute('aria-valuemin', '50');
@@ -80,7 +80,7 @@ describe('ImmersionStats', () => {
       rec('stream-1-1', 'stream:youtube.com', now - HOUR_MS, 5 * HOUR_MS),
     ]);
     render(<ImmersionStats />);
-    const total = await screen.findByText('15 h input');
+    const total = await screen.findByText('15 h watched');
     expect(total).toHaveAttribute('title', 'local 10 h · streaming 5 h');
   });
 
@@ -89,12 +89,12 @@ describe('ImmersionStats', () => {
     mockGetHistory.mockResolvedValue([rec('watch-v-1', 'v', now - HOUR_MS, 1600 * HOUR_MS)]);
     render(<ImmersionStats />);
     expect(await screen.findByText('Level 7')).toBeInTheDocument();
-    expect(screen.getByText('max level')).toBeInTheDocument();
+    expect(screen.getByText('Max level')).toBeInTheDocument();
   });
 
   it('waits silently when history read fails', async () => {
     mockGetHistory.mockRejectedValue(new Error('idb down'));
     render(<ImmersionStats />);
-    await waitFor(() => expect(screen.getByText('0 h input')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('0 h watched')).toBeInTheDocument());
   });
 });

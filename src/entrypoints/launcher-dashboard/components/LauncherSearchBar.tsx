@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 
 import { Button, Icon, Input } from '@/shared/ui';
+import { t } from '@/shared/i18n';
 import styles from './LauncherSearchBar.module.css';
 
 export interface LauncherSearchBarProps {
@@ -12,7 +13,7 @@ export interface LauncherSearchBarProps {
 
 export function LauncherSearchBar({
   value = '',
-  placeholder = 'Search Cell…',
+  placeholder = t('launcher.search.placeholder'),
   onChange,
   onFocus,
 }: LauncherSearchBarProps) {
@@ -50,7 +51,7 @@ export function LauncherSearchBar({
                 onChange?.('');
                 setInternal('');
               }}
-              aria-label="Clear search"
+              aria-label={t('ui.searchField.clear')}
             >
               <Icon name="x" size="sm" />
             </Button>

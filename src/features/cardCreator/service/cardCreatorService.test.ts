@@ -285,10 +285,16 @@ describe('cardCreatorService', () => {
     });
 
     it('Android default handler → result "AnkiConnect v.6" → error', async () => {
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
       queueResponses([{ result: 'AnkiConnect v.6' }]);
       const r = await addNoteTags(URL, 123, ['cell']);
       expect(r.ok).toBe(false);
-      expect(!r.ok && r.error).toContain('not supported on AnkiconnectAndroid');
+      expect(!r.ok && r.error).toContain("can't tag existing notes");
+      expect(warn).toHaveBeenCalledWith(
+        '[cardCreator] addTags silent no-op (AnkiconnectAndroid?):',
+        'AnkiConnect v.6',
+      );
+      warn.mockRestore();
     });
 
     it('empty tags → no-op ok without calling', async () => {

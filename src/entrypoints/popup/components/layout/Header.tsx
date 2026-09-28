@@ -1,6 +1,7 @@
 import styles from './Header.module.css';
 import { Button, HStack, Heading } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
+import { t } from '@/shared/i18n';
 
 interface HeaderProps {
   isActive: boolean;
@@ -34,8 +35,8 @@ export function Header({
           variant={isActive ? 'ghost' : 'destructive'}
           active={!isActive}
           onClick={onToggleExtension}
-          aria-label="Toggle extension"
-          title="Enable/Disable extension"
+          aria-label={t('popup.header.toggleExtension')}
+          title={t('popup.header.toggleExtension')}
           aria-pressed={isActive}
         >
           {isActive ? (
@@ -50,9 +51,9 @@ export function Header({
           size="sm"
           active={isAutoDownloadActive}
           onClick={onToggleAutoDownload}
-          aria-label="Toggle auto download for this site"
+          aria-label={t('popup.header.autoDownload')}
           aria-pressed={isAutoDownloadActive}
-          title={isAutoDownloadActive ? 'Auto download: ON — URL sẽ tự tải khi ghé lại' : 'Auto download: OFF — click để whitelist trang này'}
+          title={isAutoDownloadActive ? t('popup.header.autoDownloadOn') : t('popup.header.autoDownloadOff')}
         >
           <Icon name="download" className={styles.icon} />
         </Button>
@@ -61,8 +62,8 @@ export function Header({
         <Button shape="circle"
           size="sm"
           onClick={onToggleTheme}
-          aria-label="Toggle theme"
-          title="Toggle theme"
+          aria-label={t('popup.header.toggleTheme')}
+          title={t('popup.header.toggleTheme')}
         >
           {currentTheme === 'light' ? (
             <Icon name="moon" className={styles.iconMoon} />
@@ -75,8 +76,8 @@ export function Header({
         <Button shape="circle"
           size="sm"
           onClick={onOpenSettings}
-          aria-label="Settings"
-          title="Settings"
+          aria-label={t('settings.title')}
+          title={t('settings.title')}
         >
           <Icon name="settings" className={styles.icon} />
         </Button>

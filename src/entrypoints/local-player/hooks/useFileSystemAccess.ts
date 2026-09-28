@@ -26,6 +26,7 @@
  *   Source: Chrome — Persistent permissions for the File System Access API
  *   https://developer.chrome.com/blog/persistent-permissions-for-the-file-system-access-api
  */
+import { t } from '@/shared/i18n';
 
 /** Result of a successful file picker call. */
 export interface PickedFile {
@@ -75,7 +76,7 @@ export async function openVideoFile(): Promise<PickedFile | null> {
     multiple: false,
     types: [
       {
-        description: 'Video',
+        description: t('player.picker.video'),
         accept: {
           'video/*': ['.mp4', '.webm', '.ogg', '.ogv', '.mov'],
         },
@@ -99,7 +100,7 @@ export async function openMediaFiles(): Promise<PickedFile[] | null> {
       multiple: true,
       types: [
         {
-          description: 'Video & Subtitle',
+          description: t('player.picker.media'),
           accept: {
             'video/*': ['.mp4', '.webm', '.ogg', '.ogv', '.mov'],
             'text/*': ['.srt', '.vtt', '.ass', '.ssa', '.ttml', '.dfxp', '.sbv', '.smi', '.sami'],
@@ -138,7 +139,7 @@ export async function openSubtitleFile(): Promise<PickedFile | null> {
     multiple: false,
     types: [
       {
-        description: 'Subtitle',
+        description: t('player.picker.subtitle'),
         accept: {
           'text/*': ['.srt', '.vtt', '.ass', '.ssa', '.ttml', '.dfxp', '.sbv', '.smi'],
         },

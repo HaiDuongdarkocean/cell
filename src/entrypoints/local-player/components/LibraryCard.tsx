@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { t } from '@/shared/i18n';
 import type { VideoRecord } from '@/features/local-player/services/mediaLibraryRepository';
 import type { SubtitleMatch } from '@/features/local-player/logic/subtitleMatch';
 import type { ComprehensionStats } from '@/entities/comprehension';
@@ -20,7 +21,7 @@ export function formatLastWatched(
   lastWatchedAt: string | null,
   now: Date,
 ): string {
-  if (lastWatchedAt === null) return 'Not watched';
+  if (lastWatchedAt === null) return t('library.card.notWatched');
   const watched = new Date(lastWatchedAt);
   const dayMs = 86_400_000;
   const watchedDay = Date.UTC(
@@ -34,9 +35,9 @@ export function formatLastWatched(
     now.getUTCDate(),
   );
   const diffDays = Math.round((nowDay - watchedDay) / dayMs);
-  if (diffDays <= 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  return `${diffDays} days ago`;
+  if (diffDays <= 0) return t('library.card.today');
+  if (diffDays === 1) return t('library.card.yesterday');
+  return t('library.card.daysAgo', [diffDays]);
 }
 
 /**
@@ -187,7 +188,7 @@ export function LibraryCard({
         <Button shape="circle"
           variant="destructive"
           size="sm"
-          aria-label="Delete video"
+          aria-label={t('library.card.delete')}
           onClick={handleDeleteClick}
           data-cell-id="library-card-delete"
           className={styles.deleteBtn}
@@ -198,7 +199,7 @@ export function LibraryCard({
           variant="ghost"
           size="sm"
           aria-expanded={expanded}
-          aria-label="Show subtitles"
+          aria-label={t('library.card.expand')}
           onClick={handleExpandClick}
           data-cell-id="library-card-expand"
           className={styles.expandBtn}
@@ -212,15 +213,15 @@ export function LibraryCard({
           <div className={styles.subField}>
             <span className={styles.subLabel}>
               <Icon name="captions" size="xs" />
-              Target
+              {t('library.card.target')}
             </span>
             <Select
               size="sm"
               options={subtitleOptions}
               value={selectedTarget ?? undefined}
-              placeholder="No matching subtitle"
+              placeholder={t('player.subtitle.noMatch')}
               onChange={handleSelectTrack}
-              aria-label="Target subtitle"
+              aria-label={t('library.card.targetAria')}
               data-cell-id="library-card-subtitle-target"
             />
           </div>
@@ -228,15 +229,15 @@ export function LibraryCard({
           <div className={styles.subField}>
             <span className={styles.subLabel}>
               <Icon name="captions" size="xs" />
-              Native
+              {t('library.card.native')}
             </span>
             <Select
               size="sm"
               options={subtitleOptions}
               value={selectedNative ?? undefined}
-              placeholder="No matching subtitle"
+              placeholder={t('player.subtitle.noMatch')}
               onChange={handleSelectTrack}
-              aria-label="Native subtitle"
+              aria-label={t('library.card.nativeAria')}
               data-cell-id="library-card-subtitle-native"
             />
           </div>

@@ -4,6 +4,7 @@
  * SUBTITLE_CUES_LOADED, REQUEST_SUBTITLE_CUES.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import {
   getSessionStorage,
@@ -139,14 +140,14 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
       // decompressed in the background before returning text.
       const result = await offscreenFetch(ctx.offscreenManager, finalUrl, { responseType: 'arraybuffer' });
       if (!result.ok) {
-        return { success: false, error: `HTTP ${result.status}` };
+        return { success: false, error: t('subtitle.error.http', [result.status]) };
       }
       const bytes = new Uint8Array(decodeBase64ToArrayBuffer(result.content));
       const content = decompressSubtitleBytes(bytes, finalUrl);
       return { success: true, data: { content, finalUrl: result.finalUrl } };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      return { success: false, error: `Background fetch failed: ${msg}` };
+      return { success: false, error: t('subtitle.error.fetch', [msg]) };
     } finally {
       if (ruleId !== undefined) {
         void removeRefererRule(ruleId).catch(() => {});

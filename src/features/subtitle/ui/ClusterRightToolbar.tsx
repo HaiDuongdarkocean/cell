@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { t } from '@/shared/i18n';
 import { Icon } from '@/shared/icons/Icon';
 import { Button } from '@/shared/ui/Button';
 import sharedStyles from './subtitlePanelsShared.module.css';
@@ -62,8 +63,8 @@ export function ClusterRightToolbar({
         {onQuickAdd && (
           <Button shape="circle"
             variant="overlay"
-            aria-label="Quick add card"
-            title="Quick add (Q)"
+            aria-label={t('subtitle.toolbar.quickAdd')}
+            title={t('subtitle.toolbar.quickAddTitle')}
             data-cell-id="quick-add-btn"
             size="sm"
             onClick={onQuickAdd}
@@ -74,8 +75,8 @@ export function ClusterRightToolbar({
         {onEditCard && (
           <Button shape="circle"
             variant="overlay"
-            aria-label="Edit card"
-            title="Edit card (E)"
+            aria-label={t('subtitle.toolbar.editCard')}
+            title={t('subtitle.toolbar.editCardTitle')}
             data-cell-id="edit-card-btn"
             size="sm"
             onClick={onEditCard}
@@ -92,7 +93,7 @@ export function ClusterRightToolbar({
               <Button shape="circle"
                 variant="overlay"
                 aria-label={sidePanelLabel}
-                title="Toggle subtitle list (T)"
+                title={t('subtitle.toolbar.toggleListTitle')}
                 data-cell-id="panel-toggle-btn"
                 size="sm"
                 onClick={onToggleSidePanel}
@@ -103,8 +104,8 @@ export function ClusterRightToolbar({
             {onGenerateNative && (
               <Button shape="circle"
                 variant="overlay"
-                aria-label="Generate native subtitle"
-                title="Generate native (H)"
+                aria-label={t('subtitle.toolbar.generateNative')}
+                title={t('subtitle.toolbar.generateNativeTitle')}
                 data-cell-id="generate-native-btn"
                 size="sm"
                 onClick={onGenerateNative}
@@ -116,8 +117,8 @@ export function ClusterRightToolbar({
           </div>
           <Button shape="circle"
             variant="overlay"
-            aria-label={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
-            title={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
+            aria-label={toolsExpanded ? t('subtitle.toolbar.collapseTools') : t('subtitle.toolbar.expandTools')}
+            title={toolsExpanded ? t('subtitle.toolbar.collapseTools') : t('subtitle.toolbar.expandTools')}
             data-cell-id="tools-toggle-btn"
             size="sm"
             onClick={onToggleTools}
@@ -130,8 +131,8 @@ export function ClusterRightToolbar({
         {onToggleOcr && (
           <Button shape="circle"
             variant="overlay"
-            aria-label={ocrEnabled ? 'Disable OCR' : 'Enable OCR'}
-            title={ocrEnabled ? 'Disable OCR' : 'Enable OCR'}
+            aria-label={ocrEnabled ? t('subtitle.toolbar.disableOcr') : t('subtitle.toolbar.enableOcr')}
+            title={ocrEnabled ? t('subtitle.toolbar.disableOcr') : t('subtitle.toolbar.enableOcr')}
             data-cell-id="ocr-toggle-btn"
             size="sm"
             onClick={onToggleOcr}
@@ -143,8 +144,8 @@ export function ClusterRightToolbar({
         {onToggleManager && (
           <Button shape="circle"
             variant="overlay"
-            aria-label="Open subtitle manager"
-            title="Open subtitle manager"
+            aria-label={t('subtitle.toolbar.openManager')}
+            title={t('subtitle.toolbar.openManager')}
             data-cell-id="manager-toggle-btn"
             size="sm"
             onClick={onToggleManager}
@@ -155,8 +156,8 @@ export function ClusterRightToolbar({
         {mode === 'overlay' ? (
           <Button shape="circle"
             variant="overlay"
-            aria-label={playerMode ? 'Exit player mode' : 'Enter player mode'}
-            title={playerMode ? 'Exit player mode (Esc)' : 'Enter player mode (G)'}
+            aria-label={playerMode ? t('subtitle.toolbar.exitPlayerMode') : t('subtitle.toolbar.enterPlayerMode')}
+            title={playerMode ? t('subtitle.toolbar.exitPlayerModeTitle') : t('subtitle.toolbar.enterPlayerModeTitle')}
             data-cell-id="player-mode-btn"
             size="sm"
             onClick={onTogglePlayerMode}
@@ -167,8 +168,8 @@ export function ClusterRightToolbar({
         ) : (
           <Button shape="circle"
             variant="overlay"
-            aria-label="Exit player mode"
-            title="Exit player mode (Esc)"
+            aria-label={t('subtitle.toolbar.exitPlayerMode')}
+            title={t('subtitle.toolbar.exitPlayerModeTitle')}
             data-cell-id="player-mode-exit-btn"
             size="sm"
             onClick={onExit}

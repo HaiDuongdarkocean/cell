@@ -1,4 +1,5 @@
 import { handleFileDrop } from './subtitleDragDrop';
+import { t } from '@/shared/i18n';
 import { detectLanguageFromText, labelToIsoCode } from '@/features/detection/logic/languageDetector';
 import { languageMatches } from '@/shared/config/languageRegistry';
 import type { OverlayConfig, ParseResult, SubtitleFormat } from '@/entities/subtitle';
@@ -95,8 +96,8 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
   const label = document.createElement('label');
   label.setAttribute('role', 'button');
   label.setAttribute('tabindex', '0');
-  label.setAttribute('aria-label', 'Import subtitle file');
-  label.setAttribute('title', 'Import subtitle file');
+  label.setAttribute('aria-label', t('player.action.openSubtitle'));
+  label.setAttribute('title', t('player.action.openSubtitle'));
   label.setAttribute('data-cell-id', 'subtitle-import-button');
   label.style.cssText = `
     position: relative;

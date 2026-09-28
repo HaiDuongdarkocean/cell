@@ -10,7 +10,7 @@ import { useAudioItemUrl } from '@/features/pronunciation/hooks/useAudioItemUrl'
 import { PronunciationPanel } from '@/features/pronunciation/ui/PronunciationPanel';
 import type { AudioEngineKind } from '@/features/pronunciation/types';
 import { nextStatus } from '@/features/dictionary/services/wordStatusStore';
-import { t } from '@/shared/i18n';
+import { t, type MessageKey } from '@/shared/i18n';
 import { useCandidate } from './useCandidate';
 import { PronunciationAudioPanel } from './PronunciationAudioPanel';
 import { ImagePanel } from './ImagePanel';
@@ -23,6 +23,13 @@ import styles from './CandidateView.module.css';
 import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot, SenseLine, RelatedEntry } from '@/entities/dictionary';
 
 const EMPTY_EXAMPLE_SET: ReadonlySet<number> = new Set<number>();
+
+const STATUS_KEYS: Record<WordStatus, MessageKey> = {
+  unknown: 'vocabulary.status.unknown',
+  tracking: 'vocabulary.status.tracking',
+  known: 'vocabulary.status.known',
+  ignore: 'vocabulary.status.ignore',
+};
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -207,10 +214,10 @@ export function CandidateView({
             variant="transparent"
             className={`${styles.cellHeaderStatus} ${styles[`cellHeaderStatus--${panel.status}`]}`}
             onClick={panel.cycleStatus}
-            title={t('dict.status.cycle', [panel.status, nextStatus(panel.status)])}
+            title={t('dict.status.cycle', [t(STATUS_KEYS[panel.status]), t(STATUS_KEYS[nextStatus(panel.status)])])}
             data-cell-id="dictionary-status-cycle"
           >
-            {panel.status}
+            {t(STATUS_KEYS[panel.status])}
           </Button>
           {candidate.frequency && (
             <span className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${frequencyBand}`]}`} data-cell-id="dictionary-frequency">
@@ -287,7 +294,7 @@ export function CandidateView({
 
         {candidate.inflections && candidate.inflections.length > 0 && (
           <div className={styles.cellMetaLine} data-cell-id="dictionary-word-forms">
-            <span className={styles.cellMetaLabel}>word forms:</span>{' '}
+            <span className={styles.cellMetaLabel}>{t('dict.meta.wordForms')}:</span>{' '}
             {candidate.inflections.map((g) => (g.type ? `${g.type} ` : '') + g.forms.join(', ')).join(' · ')}
           </div>
         )}
@@ -332,18 +339,19 @@ export function CandidateView({
   );
 }
 
-const RELATED_KIND_LABELS: Record<string, string> = {
-  phrasal: 'phrasal verbs',
-  idiom: 'idioms',
-  collocation: 'collocations',
-  expression: 'phrases',
-  lemma: 'lemmas',
-  derivative: 'derivatives',
-  thesaurus: 'thesaurus',
+const RELATED_KIND_LABELS: Record<string, MessageKey> = {
+  phrasal: 'dict.meta.related.phrasal',
+  idiom: 'dict.meta.related.idiom',
+  collocation: 'dict.meta.related.collocation',
+  expression: 'dict.meta.related.expression',
+  lemma: 'dict.meta.related.lemma',
+  derivative: 'dict.meta.related.derivative',
+  thesaurus: 'dict.meta.related.thesaurus',
 };
 
 function relatedKindLabel(kind: string): string {
-  return RELATED_KIND_LABELS[kind] ?? `${kind}s`;
+  const key = RELATED_KIND_LABELS[kind];
+  return key !== undefined ? t(key) : `${kind}s`;
 }
 
 function groupRelated(related: readonly RelatedEntry[]): [string, RelatedEntry[]][] {
@@ -366,16 +374,16 @@ function EntryMeta({
     Boolean(p[1] && p[1].length > 0);
   const wordFamilyParts = candidate.wordFamily
     ? ([
-        ['noun', candidate.wordFamily.nouns],
-        ['verb', candidate.wordFamily.verbs],
-        ['adjective', candidate.wordFamily.adjectives],
-        ['adverb', candidate.wordFamily.adverbs],
+        [t('dict.meta.pos.noun'), candidate.wordFamily.nouns],
+        [t('dict.meta.pos.verb'), candidate.wordFamily.verbs],
+        [t('dict.meta.pos.adjective'), candidate.wordFamily.adjectives],
+        [t('dict.meta.pos.adverb'), candidate.wordFamily.adverbs],
       ] as [string, readonly string[] | undefined][]).filter(nonEmpty)
     : [];
   const wordNetParts = candidate.wordNet
     ? ([
-        ['synset', candidate.wordNet.synset],
-        ['hypernyms', candidate.wordNet.hypernyms],
+        [t('dict.meta.synset'), candidate.wordNet.synset],
+        [t('dict.meta.hypernyms'), candidate.wordNet.hypernyms],
       ] as [string, readonly string[] | undefined][]).filter(nonEmpty)
     : [];
   if (relatedGroups.length === 0 && wordFamilyParts.length === 0 && wordNetParts.length === 0
@@ -386,7 +394,7 @@ function EntryMeta({
     <section className={styles.cellMeta} data-cell-id="dictionary-meta">
       {wordFamilyParts.length > 0 && (
         <div className={styles.cellMetaLine}>
-          <span className={styles.cellMetaLabel}>word family:</span>{' '}
+          <span className={styles.cellMetaLabel}>{t('dict.meta.wordFamily')}:</span>{' '}
           {wordFamilyParts.map(([pos, forms]) => `${pos} ${forms.join(', ')}`).join(' · ')}
         </div>
       )}
@@ -397,7 +405,7 @@ function EntryMeta({
       ))}
       {candidate.derivedTerms && candidate.derivedTerms.length > 0 && (
         <div className={styles.cellMetaLine}>
-          <span className={styles.cellMetaLabel}>derived terms:</span> {candidate.derivedTerms.join(', ')}
+          <span className={styles.cellMetaLabel}>{t('dict.meta.derivedTerms')}:</span> {candidate.derivedTerms.join(', ')}
         </div>
       )}
       {relatedGroups.map(([kind, items]) => (
@@ -557,10 +565,10 @@ function DefinitionItem({
                 <span key={s.num} className={styles.defSubsense}>{s.num}. {s.text}</span>
               ))}
               {definition.synonyms && definition.synonyms.length > 0 && (
-                <span className={styles.defLine} data-role="note">Synonyms: {definition.synonyms.join(', ')}</span>
+                <span className={styles.defLine} data-role="note">{t('dict.definitions.synonyms', [definition.synonyms.join(', ')])}</span>
               )}
               {definition.antonyms && definition.antonyms.length > 0 && (
-                <span className={styles.defLine} data-role="note">Opposite: {definition.antonyms.join(', ')}</span>
+                <span className={styles.defLine} data-role="note">{t('dict.definitions.antonyms', [definition.antonyms.join(', ')])}</span>
               )}
             </>
           ) : (

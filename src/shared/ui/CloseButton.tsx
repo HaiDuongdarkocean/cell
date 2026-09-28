@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Button } from './Button';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './CloseButton.module.css';
 
 interface CloseButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -20,7 +21,7 @@ export function CloseButton({
   size = 'md',
   variant = 'ghost',
   className,
-  'aria-label': ariaLabel = 'Close',
+  'aria-label': ariaLabel = t('ui.close'),
   ...rest
 }: CloseButtonProps): React.JSX.Element {
   const cls = [styles.closeBtn, styles[variant], className ?? ''].filter(Boolean).join(' ');

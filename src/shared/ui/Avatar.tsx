@@ -1,10 +1,17 @@
 import { useState } from 'react';
 import type { ImgHTMLAttributes } from 'react';
+import { t, type MessageKey } from '@/shared/i18n';
 import styles from './Avatar.module.css';
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg';
 type AvatarShape = 'circle' | 'square';
 type AvatarStatus = 'online' | 'offline' | 'busy' | 'none';
+
+const STATUS_LABELS: Record<Exclude<AvatarStatus, 'none'>, MessageKey> = {
+  online: 'ui.avatar.status.online',
+  offline: 'ui.avatar.status.offline',
+  busy: 'ui.avatar.status.busy',
+};
 
 interface AvatarProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> {
   /** Image URL. */
@@ -68,7 +75,7 @@ export function Avatar({
       {status !== 'none' && (
         <span
           className={`${styles.statusDot} ${styles[status] ?? ''}`.trim()}
-          aria-label={`status: ${status}`}
+          aria-label={t('ui.avatar.statusAria', [t(STATUS_LABELS[status])])}
         />
       )}
     </span>

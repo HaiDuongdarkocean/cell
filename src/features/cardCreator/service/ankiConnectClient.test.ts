@@ -61,7 +61,7 @@ describe('ankiConnectClient', () => {
       };
       await expect(
         invokeAnkiConnect(fetchFn, 'http://localhost:8765', 'version'),
-      ).rejects.toThrow('Network error: connection refused');
+      ).rejects.toThrow('Couldn\'t reach AnkiConnect: connection refused');
     });
 
     it('throws AnkiConnectError when baseUrl is empty', async () => {

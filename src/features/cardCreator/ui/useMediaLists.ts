@@ -68,7 +68,7 @@ export function useMediaLists({ openContextRef }: UseMediaListsArgs): MediaListA
       } else if (result.reason === 'hidden') {
         store.pushToast('warning', t('cardCreator.toast.audioCapture.hidden'));
       } else {
-        store.pushToast('error', t('cardCreator.toast.audioCapture.failed', [result.error ?? 'unknown']));
+        store.pushToast('error', t('cardCreator.toast.audioCapture.failed', [result.error ?? t('common.unknownError')]));
       }
     } finally {
       store.setCapturingMedia(false);

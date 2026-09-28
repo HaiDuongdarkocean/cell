@@ -2,6 +2,7 @@ import { useState, type HTMLAttributes, type ReactNode } from 'react';
 import { HStack } from './Stack';
 import { Button } from './Button';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './Alert.module.css';
 
 type AlertVariant = 'default' | 'success' | 'warning' | 'error';
@@ -57,7 +58,7 @@ export function Alert({
         <Button shape="circle"
           type="button"
           className={styles.dismiss}
-          aria-label="Dismiss"
+          aria-label={t('ui.close')}
           variant="ghost"
           size="xs"
           onClick={handleDismiss}

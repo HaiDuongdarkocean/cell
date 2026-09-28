@@ -2,6 +2,7 @@ import { memo, useEffect } from 'react';
 import type { SrtCue } from '@/entities/media/types';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { SubtitleBlockSettings } from '@/entities/media';
+import { t, type MessageKey } from '@/shared/i18n';
 import { useCuesStore, type LoadErrorType, type LoadStatus, type SubtitleSource } from '../cuesStore';
 import { buildTextShadow, hexToRgba, sanitizeFontFamily } from './subtitleUI';
 import { removeBracketedText } from '../logic/removeBracketed';
@@ -33,22 +34,20 @@ const selectNativeActiveIndex = (state: { nativeActiveIndex: number }): number =
 const selectTargetLoadStatus = (state: { targetLoadStatus: LoadStatus }): LoadStatus => state.targetLoadStatus;
 const selectNativeLoadStatus = (state: { nativeLoadStatus: LoadStatus }): LoadStatus => state.nativeLoadStatus;
 
-/** Suffix appended to "Loaded <lang>" based on the subtitle source. */
-const SOURCE_SUFFIX: Record<SubtitleSource, string> = {
-  imported: ' (imported)',
-  search: ' (from search)',
-  translated: ' (translated)',
-  auto: '',
+const SOURCE_KEY: Record<SubtitleSource, MessageKey | null> = {
+  imported: 'subtitle.source.imported',
+  search: 'subtitle.source.search',
+  translated: 'subtitle.source.translated',
+  auto: null,
 };
 
-/** Suffix appended to error messages based on the error type. */
-const ERROR_SUFFIX: Record<LoadErrorType, string> = {
-  timeout: ' (timeout)',
-  offline: ' (offline)',
-  'not-found': ' (not found)',
-  invalid: ' (invalid file)',
-  empty: ' (empty file)',
-  unknown: '',
+const ERROR_KEY: Record<LoadErrorType, MessageKey | null> = {
+  timeout: 'subtitle.error.timeout',
+  offline: 'subtitle.error.offline',
+  'not-found': 'subtitle.error.notFound',
+  invalid: 'subtitle.error.invalid',
+  empty: 'subtitle.error.empty',
+  unknown: null,
 };
 
 /** Build a human-readable inline status message from a LoadStatus.
@@ -58,19 +57,26 @@ const ERROR_SUFFIX: Record<LoadErrorType, string> = {
 function buildStatusText(status: LoadStatus): string | null {
   const lang = status.languageLabel ?? '';
   switch (status.state) {
-    case 'loading': return lang ? `Loading ${lang}…` : 'Loading subtitle…';
+    case 'loading':
+      return lang ? t('subtitle.status.loading', [lang]) : t('subtitle.status.loadingGeneric');
     case 'loaded': {
-      if (!lang) return 'Subtitle loaded';
-      const sourceSuffix = status.source ? SOURCE_SUFFIX[status.source] : '';
-      const trackSuffix = status.trackIndex && status.trackIndex > 0 ? ` (track ${status.trackIndex})` : '';
-      return `Loaded ${lang}${sourceSuffix}${trackSuffix}`;
+      if (!lang) return t('subtitle.status.loadedGeneric');
+      const sourceKey = status.source ? SOURCE_KEY[status.source] : null;
+      const sourceSuffix = sourceKey ? t(sourceKey) : '';
+      const trackSuffix = status.trackIndex && status.trackIndex > 0 ? t('subtitle.status.trackN', [status.trackIndex]) : '';
+      return sourceSuffix || trackSuffix
+        ? t('subtitle.status.loadedDetail', [lang, sourceSuffix + trackSuffix])
+        : t('subtitle.status.loaded', [lang]);
     }
     case 'translating': return null;
     case 'error': {
-      const errorSuffix = status.errorType ? ERROR_SUFFIX[status.errorType] : '';
-      return lang ? `Couldn't load ${lang} subtitle${errorSuffix}` : `Couldn't load subtitle${errorSuffix}`;
+      const errorKey = status.errorType ? ERROR_KEY[status.errorType] : null;
+      const detail = errorKey ? t(errorKey) : '';
+      return lang
+        ? t('subtitle.status.errorLangDetail', [lang, detail])
+        : t('subtitle.status.errorDetail', [detail]);
     }
-    case 'none': return 'No subtitles found on this page';
+    case 'none': return t('subtitle.status.none');
     case 'idle': return null;
   }
 }

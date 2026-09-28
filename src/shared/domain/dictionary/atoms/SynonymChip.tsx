@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Chip } from '@/shared/ui/Chip';
+import { t } from '@/shared/i18n';
 
 export interface SynonymChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** The synonym word to display and look up. */
@@ -30,7 +31,7 @@ export function SynonymChip({
       as="button"
       color="success"
       size={size}
-      aria-label={`Look up synonym: ${word}`}
+      aria-label={t('dict.atom.lookupSynonym', [word])}
       onClick={(e) => {
         onClick?.(e);
         if (!e.defaultPrevented) onLookup?.(word);

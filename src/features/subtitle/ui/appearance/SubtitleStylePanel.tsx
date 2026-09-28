@@ -6,6 +6,7 @@ import { Select } from '@/shared/ui/Select';
 import { Input } from '@/shared/ui/Input';
 import { ColorInput } from '@/shared/ui/ColorInput';
 import { Label } from '@/shared/ui/Label';
+import { t, type MessageKey } from '@/shared/i18n';
 import styles from './SubtitleStylePanel.module.css';
 
 interface SubtitleStylePanelProps {
@@ -23,25 +24,25 @@ interface SubtitleStylePanelProps {
 
 const TEXT_SHADOW_PRESETS: readonly TextShadowConfig['preset'][] = ['none', 'soft', 'cinema', 'custom'];
 
-const TEXT_SHADOW_LABELS: Record<TextShadowConfig['preset'], string> = {
-  none: 'None',
-  soft: 'Soft',
-  cinema: 'Cinema',
-  custom: 'Custom',
+const TEXT_SHADOW_KEY: Record<TextShadowConfig['preset'], MessageKey> = {
+  none: 'subtitle.style.shadowPreset.none',
+  soft: 'subtitle.style.shadowPreset.soft',
+  cinema: 'subtitle.style.shadowPreset.cinema',
+  custom: 'subtitle.style.shadowPreset.custom',
 };
 
 const HORIZONTAL_ALIGN_OPTIONS: readonly OverlayStyleConfig['horizontalAlign'][] = ['left', 'center', 'right'];
 
-const ALIGN_LABELS: Record<OverlayStyleConfig['horizontalAlign'], string> = {
-  left: 'Left',
-  center: 'Center',
-  right: 'Right',
+const ALIGN_KEY: Record<OverlayStyleConfig['horizontalAlign'], MessageKey> = {
+  left: 'subtitle.style.align.left',
+  center: 'subtitle.style.align.center',
+  right: 'subtitle.style.align.right',
 };
 
-const FONT_FAMILY_OPTIONS = [
-  { value: 'sans-serif', label: 'Sans-serif (system)' },
-  { value: 'serif', label: 'Serif (system)' },
-  { value: 'monospace', label: 'Monospace (system)' },
+const FONT_FAMILY_OPTIONS: readonly { value: string; key: MessageKey }[] = [
+  { value: 'sans-serif', key: 'subtitle.style.font.sansSerif' },
+  { value: 'serif', key: 'subtitle.style.font.serif' },
+  { value: 'monospace', key: 'subtitle.style.font.monospace' },
 ];
 
 /**
@@ -71,12 +72,12 @@ export function SubtitleStylePanel({
   return (
     <div className={styles.container} data-cell-id={`subtitle-style-panel-${role}`}>
       {/* ─── Text section ─── */}
-      <span className={styles.sectionHeader}>Text</span>
+      <span className={styles.sectionHeader}>{t('subtitle.style.sectionText')}</span>
       <div className={styles.card}>
         {/* Font size */}
         <div className={styles.row}>
           <Label className={styles.label} htmlFor={`style-${role}-font-size`}>
-            Size
+            {t('subtitle.style.size')}
             <span className={styles.valueBadge}>{style.fontSize}px</span>
           </Label>
           <Slider
@@ -87,14 +88,14 @@ export function SubtitleStylePanel({
             value={style.fontSize}
             onChange={(value) => onChange({ fontSize: value })}
             className={styles.slider}
-            aria-label={`Font size ${style.fontSize} pixels`}
+            aria-label={t('subtitle.style.fontSizeAria', [style.fontSize])}
           />
         </div>
 
         {/* Font weight */}
         <div className={styles.row}>
           <Label className={styles.label} htmlFor={`style-${role}-font-weight`}>
-            Weight
+            {t('subtitle.style.weight')}
             <span className={styles.valueBadge}>{style.fontWeight ?? defaultStyle.fontWeight}</span>
           </Label>
           <Slider
@@ -105,19 +106,19 @@ export function SubtitleStylePanel({
             value={style.fontWeight ?? defaultStyle.fontWeight}
             onChange={(value) => onChange({ fontWeight: value })}
             className={styles.slider}
-            aria-label={`Font weight ${style.fontWeight ?? defaultStyle.fontWeight}`}
+            aria-label={t('subtitle.style.fontWeightAria', [style.fontWeight ?? defaultStyle.fontWeight])}
           />
         </div>
 
         {/* Font family */}
         <div className={styles.row}>
-          <Label className={styles.label} htmlFor={`style-${role}-font-family`}>Font</Label>
+          <Label className={styles.label} htmlFor={`style-${role}-font-family`}>{t('subtitle.style.font')}</Label>
           <Select
             id={`style-${role}-font-family`}
             value={isCustomFont ? '__custom__' : style.fontFamily}
             options={[
-              ...FONT_FAMILY_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label })),
-              { value: '__custom__', label: 'Custom…' },
+              ...FONT_FAMILY_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.key) })),
+              { value: '__custom__', label: t('subtitle.style.fontCustom') },
             ]}
             onChange={(value) => {
               if (value === '__custom__') {
@@ -127,15 +128,15 @@ export function SubtitleStylePanel({
                 setCustomFontOpen(false);
               }
             }}
-            aria-label="Font family"
+            aria-label={t('subtitle.style.fontFamilyAria')}
           />
           {(customFontOpen || isCustomFont) && (
             <Input
               type="text"
               value={isCustomFont ? style.fontFamily : ''}
-              placeholder="e.g. 'Noto Sans JP', sans-serif"
+              placeholder={t('subtitle.style.fontCustomPlaceholder')}
               onChange={(e) => onChange({ fontFamily: e.target.value })}
-              aria-label="Custom font family CSS string"
+              aria-label={t('subtitle.style.fontCustomAria')}
               data-cell-id={`style-${role}-font-family-custom`}
             />
           )}
@@ -145,36 +146,36 @@ export function SubtitleStylePanel({
         <div className={styles.pairRow}>
           <div className={styles.row}>
             <Label className={styles.label} htmlFor={`style-${role}-text-color`}>
-              Text Color
+              {t('subtitle.style.textColor')}
             </Label>
             <ColorInput
               id={`style-${role}-text-color`}
               value={style.textColor}
               onChange={(e) => onChange({ textColor: e.target.value })}
-              aria-label="Text color"
+              aria-label={t('subtitle.style.textColorAria')}
             />
           </div>
           <div className={styles.row}>
             <Label className={styles.label} htmlFor={`style-${role}-bg-color`}>
-              Background
+              {t('subtitle.style.background')}
             </Label>
             <ColorInput
               id={`style-${role}-bg-color`}
               value={style.backgroundColor}
               onChange={(e) => onChange({ backgroundColor: e.target.value })}
-              aria-label="Background color"
+              aria-label={t('subtitle.style.backgroundColorAria')}
             />
           </div>
         </div>
       </div>
 
       {/* ─── Opacity section ─── */}
-      <span className={styles.sectionHeader}>Opacity</span>
+      <span className={styles.sectionHeader}>{t('subtitle.style.sectionOpacity')}</span>
       <div className={styles.card}>
         <div className={styles.pairRow}>
           <div className={styles.row}>
             <Label className={styles.label} htmlFor={`style-${role}-text-opacity`}>
-              Text
+              {t('subtitle.style.sectionText')}
               <span className={styles.valueBadge}>{style.textOpacity.toFixed(2)}</span>
             </Label>
             <Slider
@@ -185,12 +186,12 @@ export function SubtitleStylePanel({
               value={style.textOpacity}
               onChange={(value) => onChange({ textOpacity: value })}
               className={styles.slider}
-              aria-label={`Text opacity ${style.textOpacity}`}
+              aria-label={t('subtitle.style.textOpacityAria', [style.textOpacity])}
             />
           </div>
           <div className={styles.row}>
             <Label className={styles.label} htmlFor={`style-${role}-bg-opacity`}>
-              Background
+              {t('subtitle.style.background')}
               <span className={styles.valueBadge}>{style.backgroundOpacity.toFixed(2)}</span>
             </Label>
             <Slider
@@ -201,29 +202,29 @@ export function SubtitleStylePanel({
               value={style.backgroundOpacity}
               onChange={(value) => onChange({ backgroundOpacity: value })}
               className={styles.slider}
-              aria-label={`Background opacity ${style.backgroundOpacity}`}
+              aria-label={t('subtitle.style.bgOpacityAria', [style.backgroundOpacity])}
             />
           </div>
         </div>
       </div>
 
       {/* ─── Layout section ─── */}
-      <span className={styles.sectionHeader}>Layout</span>
+      <span className={styles.sectionHeader}>{t('subtitle.style.sectionLayout')}</span>
       <div className={styles.card}>
         {/* Alignment — segmented control */}
         <div className={styles.row}>
-          <Label className={styles.label}>Alignment</Label>
-          <div className={styles.segmented} role="radiogroup" aria-label="Alignment">
+          <Label className={styles.label}>{t('subtitle.style.alignment')}</Label>
+          <div className={styles.segmented} role="radiogroup" aria-label={t('subtitle.style.alignment')}>
             {HORIZONTAL_ALIGN_OPTIONS.map((align) => (
               <Button variant="secondary"
                 key={align}
                 role="radio"
                 aria-checked={style.horizontalAlign === align}
-                aria-label={`Align ${align}`}
+                aria-label={t('subtitle.style.alignAria', [t(ALIGN_KEY[align])])}
                 className={`${styles.segment} ${style.horizontalAlign === align ? styles.segmentActive : ''}`}
                 onClick={() => onChange({ horizontalAlign: align })}
               >
-                {ALIGN_LABELS[align]}
+                {t(ALIGN_KEY[align])}
               </Button>
             ))}
           </div>
@@ -231,18 +232,18 @@ export function SubtitleStylePanel({
 
         {/* Shadow — segmented control */}
         <div className={styles.row}>
-          <Label className={styles.label}>Shadow</Label>
-          <div className={styles.segmented} role="radiogroup" aria-label="Shadow style">
+          <Label className={styles.label}>{t('subtitle.style.shadow')}</Label>
+          <div className={styles.segmented} role="radiogroup" aria-label={t('subtitle.style.shadowAria')}>
             {TEXT_SHADOW_PRESETS.map((preset) => (
               <Button variant="secondary"
                 key={preset}
                 role="radio"
                 aria-checked={style.textShadow.preset === preset}
-                aria-label={`${TEXT_SHADOW_LABELS[preset]} shadow`}
+                aria-label={t('subtitle.style.shadowOptionAria', [t(TEXT_SHADOW_KEY[preset])])}
                 className={`${styles.segment} ${style.textShadow.preset === preset ? styles.segmentActive : ''}`}
                 onClick={() => handleShadowPresetChange(preset)}
               >
-                {TEXT_SHADOW_LABELS[preset]}
+                {t(TEXT_SHADOW_KEY[preset])}
               </Button>
             ))}
           </div>
@@ -252,17 +253,17 @@ export function SubtitleStylePanel({
         {style.textShadow.preset === 'custom' && (
           <div className={styles.customShadowRow}>
             <div className={styles.row}>
-              <Label className={styles.label} htmlFor={`style-${role}-shadow-color`}>Shadow Color</Label>
+              <Label className={styles.label} htmlFor={`style-${role}-shadow-color`}>{t('subtitle.style.shadowColor')}</Label>
               <ColorInput
                 id={`style-${role}-shadow-color`}
                 value={style.textShadow.color}
                 onChange={(e) => handleShadowFieldChange('color', e.target.value)}
-                aria-label="Shadow color"
+                aria-label={t('subtitle.style.shadowColorAria')}
               />
             </div>
             <div className={styles.row}>
               <Label className={styles.label} htmlFor={`style-${role}-shadow-blur`}>
-                Blur
+                {t('subtitle.style.blur')}
                 <span className={styles.valueBadge}>{style.textShadow.blur}px</span>
               </Label>
               <Input
@@ -273,12 +274,12 @@ export function SubtitleStylePanel({
                 step={1}
                 value={style.textShadow.blur}
                 onChange={(e) => handleShadowFieldChange('blur', Number(e.target.value))}
-                  aria-label="Shadow blur pixels"
+                  aria-label={t('subtitle.style.shadowBlurAria')}
               />
             </div>
             <div className={styles.row}>
               <Label className={styles.label} htmlFor={`style-${role}-shadow-offset-x`}>
-                Offset X
+                {t('subtitle.style.offsetX')}
                 <span className={styles.valueBadge}>{style.textShadow.offsetX}px</span>
               </Label>
               <Input
@@ -289,12 +290,12 @@ export function SubtitleStylePanel({
                 step={1}
                 value={style.textShadow.offsetX}
                 onChange={(e) => handleShadowFieldChange('offsetX', Number(e.target.value))}
-                  aria-label="Shadow offset X pixels"
+                  aria-label={t('subtitle.style.shadowOffsetXAria')}
               />
             </div>
             <div className={styles.row}>
               <Label className={styles.label} htmlFor={`style-${role}-shadow-offset-y`}>
-                Offset Y
+                {t('subtitle.style.offsetY')}
                 <span className={styles.valueBadge}>{style.textShadow.offsetY}px</span>
               </Label>
               <Input
@@ -305,7 +306,7 @@ export function SubtitleStylePanel({
                 step={1}
                 value={style.textShadow.offsetY}
                 onChange={(e) => handleShadowFieldChange('offsetY', Number(e.target.value))}
-                  aria-label="Shadow offset Y pixels"
+                  aria-label={t('subtitle.style.shadowOffsetYAria')}
               />
             </div>
           </div>
@@ -319,19 +320,19 @@ export function SubtitleStylePanel({
             variant="ghost"
             size="sm"
             onClick={() => setShowResetConfirm(true)}
-            aria-label={`Reset ${role} style to defaults`}
+            aria-label={t('subtitle.style.resetAria', [role === 'target' ? t('library.card.target') : t('library.card.native')])}
             data-cell-id={`style-${role}-reset`}
           >
-            Reset
+            {t('subtitle.action.reset')}
           </Button>
         ) : (
           <div className={styles.confirmRow} data-cell-id={`style-${role}-reset-confirm`}>
-            <span>Reset to defaults?</span>
+            <span>{t('subtitle.style.resetConfirm')}</span>
             <Button variant="destructive" size="sm" onClick={() => { onReset(); setShowResetConfirm(false); }}>
-              Reset
+              {t('subtitle.action.reset')}
             </Button>
             <Button variant="outline" size="sm" onClick={() => setShowResetConfirm(false)}>
-              Cancel
+              {t('subtitle.action.cancel')}
             </Button>
           </div>
         )}

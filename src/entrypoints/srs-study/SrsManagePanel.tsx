@@ -12,6 +12,8 @@ import { Text } from '@/shared/ui/Text';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import type { SrsDeck, SrsNote, SrsCard } from '@/entities/srs/types';
+import { t } from '@/shared/i18n';
+import { componentLabel } from './srsLabels';
 import styles from './SrsManagePanel.module.css';
 
 type DeckTree = {
@@ -39,9 +41,11 @@ function buildDeckTree(decks: readonly SrsDeck[]): DeckTree[] {
 }
 
 function formatProgress(card: SrsCard | undefined): string {
-  if (!card) return 'no card';
+  if (!card) return t('srs.manage.noCard');
   const parts = ['sound', 'meaning', 'spelling'] as const;
-  return parts.map((t) => `${t[0].toUpperCase()}:${card.components[t].progress}`).join(' ');
+  return parts
+    .map((c) => t('srs.manage.progressPart', [componentLabel(c), card.components[c].progress]))
+    .join(' ');
 }
 
 export interface SrsManagePanelProps {
@@ -119,14 +123,14 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
   }
 
   async function handleDeleteDeck(deckId: string): Promise<void> {
-    if (!window.confirm('Delete this deck and all its cards?')) return;
+    if (!window.confirm(t('srs.manage.confirmDeleteDeck'))) return;
     await deleteDeckCascade(deckId);
     if (firstRun) await loadDecks(firstRun.collectionId);
     if (selectedDeckId === deckId) setSelectedDeckId(firstRun?.deckId ?? null);
   }
 
   async function handleDeleteNote(noteId: string): Promise<void> {
-    if (!window.confirm('Delete this note and its card?')) return;
+    if (!window.confirm(t('srs.manage.confirmDeleteNote'))) return;
     await deleteNoteCascade(noteId);
     if (selectedDeckId) {
       const [n, c] = await Promise.all([getNotesByDeck(selectedDeckId), getCardsByDeck(selectedDeckId)]);
@@ -136,7 +140,7 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
   }
 
   async function handleDeleteCard(cardId: string): Promise<void> {
-    if (!window.confirm('Delete this card?')) return;
+    if (!window.confirm(t('srs.manage.confirmDeleteCard'))) return;
     await deleteCardCascade(cardId);
     if (selectedDeckId) {
       const c = await getCardsByDeck(selectedDeckId);
@@ -163,7 +167,7 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
           onClick={() => { void handleDeleteDeck(deck.id); }}
           className={styles.deckDelete}
         >
-          Delete
+          {t('srs.manage.delete')}
         </Button>
         {children.length > 0 && <Box className={styles.deckChildren}>{renderDeckTree(children, depth + 1)}</Box>}
       </Box>
@@ -175,24 +179,24 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
   return (
     <Box className={styles.panel}>
       <Box className={styles.header}>
-        <Heading level={2} className={styles.title}>Manage</Heading>
+        <Heading level={2} className={styles.title}>{t('srs.manage.title')}</Heading>
         {onBack && (
           <Button variant="ghost" size="sm" onClick={onBack}>
-            Back to Study
+            {t('srs.manage.backToStudy')}
           </Button>
         )}
       </Box>
       {error && <Text className={styles.error}>{error}</Text>}
-      {loading && <Text className={styles.loading}>Loading…</Text>}
+      {loading && <Text className={styles.loading}>{t('srs.action.loading')}</Text>}
 
       <Box className={styles.section}>
-        <Heading level={3} className={styles.sectionTitle}>Decks</Heading>
+        <Heading level={3} className={styles.sectionTitle}>{t('srs.manage.decks')}</Heading>
         <Box className={styles.createRow}>
           <Input
             value={newDeckName}
             onChange={(e) => { setNewDeckName(e.target.value); }}
-            placeholder="New deck name"
-            aria-label="New deck name"
+            placeholder={t('srs.manage.newDeckName')}
+            aria-label={t('srs.manage.newDeckName')}
           />
           <Button
             variant="secondary"
@@ -200,7 +204,7 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
             onClick={() => { void handleCreateDeck(null); }}
             disabled={!newDeckName.trim()}
           >
-            Create deck
+            {t('srs.manage.createDeck')}
           </Button>
           <Button
             variant="secondary"
@@ -208,12 +212,12 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
             onClick={() => { void handleCreateDeck(selectedDeckId ?? null); }}
             disabled={!newDeckName.trim()}
           >
-            Create subdeck
+            {t('srs.manage.createSubdeck')}
           </Button>
         </Box>
         <Box className={styles.deckList}>
           {deckTree.length === 0 ? (
-            <Text className={styles.empty}>No decks found.</Text>
+            <Text className={styles.empty}>{t('srs.manage.noDecks')}</Text>
           ) : (
             renderDeckTree(deckTree)
           )}
@@ -222,10 +226,10 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
 
       {selectedDeck && (
         <Box className={styles.section}>
-          <Heading level={3} className={styles.sectionTitle}>{selectedDeck.name} — Notes</Heading>
+          <Heading level={3} className={styles.sectionTitle}>{t('srs.manage.notesHeading', [selectedDeck.name])}</Heading>
           <Box className={styles.noteList}>
             {notes.length === 0 ? (
-              <Text className={styles.empty}>No notes in this deck.</Text>
+              <Text className={styles.empty}>{t('srs.manage.noNotes')}</Text>
             ) : (
               notes.map((note) => {
                 const card = cards.find((c) => c.noteId === note.id);
@@ -242,7 +246,7 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
                           size="sm"
                           onClick={() => { void handleDeleteCard(card.id); }}
                         >
-                          Delete card
+                          {t('srs.manage.deleteCard')}
                         </Button>
                       )}
                       <Button
@@ -250,7 +254,7 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
                         size="sm"
                         onClick={() => { void handleDeleteNote(note.id); }}
                       >
-                        Delete note
+                        {t('srs.manage.deleteNote')}
                       </Button>
                     </Box>
                   </Box>

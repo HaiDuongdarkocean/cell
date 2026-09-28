@@ -1,5 +1,6 @@
 import type { KeyboardEvent } from 'react';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './VolumeControl.module.css';
 
 interface VolumeControlProps {
@@ -48,7 +49,7 @@ export function VolumeControl({
   const effective = muted ? 0 : volume;
   const pct = clamp01(effective) * 100;
   const iconName = volumeIconName(effective);
-  const muteLabel = muted ? 'Unmute' : 'Mute';
+  const muteLabel = muted ? t('video.mute.unmute') : t('video.mute.mute');
 
   const setVolume = (v: number): void => {
     onVolumeChange(clamp01(v));
@@ -111,7 +112,7 @@ export function VolumeControl({
       <div
         className={styles.slider}
         role="slider"
-        aria-label="Volume"
+        aria-label={t('video.volume.aria')}
         aria-valuenow={Math.round(effective * 100)}
         aria-valuemin={0}
         aria-valuemax={100}

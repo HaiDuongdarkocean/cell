@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Button } from './Button';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './MinimizeButton.module.css';
 
 type MinimizeButtonSize = 'sm' | 'md' | 'lg';
@@ -24,7 +25,7 @@ interface MinimizeButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * Use this for window/panel minimize actions.
  */
 export function MinimizeButton({
-  ariaLabel = 'Minimize',
+  ariaLabel = t('ui.minimizeButton.aria'),
   variant = 'ghost',
   size = 'md',
   className,

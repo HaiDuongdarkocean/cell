@@ -19,6 +19,7 @@ import { ClusterRightToolbar } from './ClusterRightToolbar';
 import { resolvePlayerModeLayout, DOCK_MIN_HEIGHT_PX } from '../logic/playerModeGeometry';
 import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
+import { t } from '@/shared/i18n';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { buildClusterCssVars } from './subtitleUI';
 import styles from './PlayerModeOverlay.module.css';
@@ -462,7 +463,7 @@ function PlayerModeOverlayInner({
       data-cell-id="player-mode-overlay"
       data-practice-active={practiceMode && practiceMode !== 'off' ? 'true' : 'false'}
       role="application"
-      aria-label="Player mode"
+      aria-label={t('subtitle.playerMode.aria')}
     >
       {/* Player Mode split — video-stage + content.
           >480px: row (video left, content right, resizable).
@@ -488,7 +489,7 @@ function PlayerModeOverlayInner({
           onKeyDown={onResizeKeyDown}
           role="separator"
           aria-orientation="vertical"
-          aria-label="Resize subtitle list"
+          aria-label={t('subtitle.playerMode.resizeList')}
           aria-valuenow={Math.round(contentPct)}
           aria-valuemin={CONTENT_PCT_MIN}
           aria-valuemax={CONTENT_PCT_MAX}
@@ -567,7 +568,7 @@ function PlayerModeOverlayInner({
           onGenerateNative={onGenerateNative}
           generateNativeEnabled={generateNativeEnabled}
           onToggleSidePanel={onToggleSidePanel ? () => setCueListOpen((v) => !v) : undefined}
-          sidePanelLabel="Toggle subtitle list"
+          sidePanelLabel={t('subtitle.toolbar.toggleList')}
           toolsExpanded={toolsExpanded}
           onToggleTools={onToggleTools ?? (() => undefined)}
           onExit={onExit}

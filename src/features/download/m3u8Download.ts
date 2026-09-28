@@ -15,6 +15,7 @@ import {
 import { buildFetchHeaders, fetchSegmentWithRange } from './segmentFetch';
 import { decryptSegment, fetchAes128Key, type Aes128KeyCache } from './hlsCrypto';
 import type { ConvertCallback } from './downloadTypes';
+import { t } from '@/shared/i18n';
 
 const MAX_MASTER_DEPTH = 3;
 
@@ -78,7 +79,7 @@ async function resolveMediaPlaylist(
     signal,
   });
   if (!response.ok) {
-    throw new Error(`Failed to fetch playlist: ${response.status}`);
+    throw new Error(t('downloads.error.fetchPlaylist', [response.status]));
   }
   let content = await response.text();
   let playlist = parseM3u8(content, video.url);
@@ -86,7 +87,7 @@ async function resolveMediaPlaylist(
   let masterDepth = 0;
   while (playlist.isMasterPlaylist && masterDepth < MAX_MASTER_DEPTH) {
     if (playlist.variants.length === 0) {
-      throw new Error('Master playlist has no variants');
+      throw new Error(t('downloads.error.noVariants'));
     }
     const variantUrl = playlist.variants[0].url;
     deps.throwIfCancelled(signal);
@@ -96,14 +97,14 @@ async function resolveMediaPlaylist(
       signal,
     });
     if (!variantResponse.ok) {
-      throw new Error(`Failed to fetch variant playlist: ${variantResponse.status}`);
+      throw new Error(t('downloads.error.fetchVariant', [variantResponse.status]));
     }
     content = await variantResponse.text();
     playlist = parseM3u8(content, variantUrl);
     masterDepth++;
   }
   if (playlist.isMasterPlaylist) {
-    throw new Error(`Nested playlist depth exceeded (${MAX_MASTER_DEPTH}) — unable to find media playlist`);
+    throw new Error(t('downloads.error.nestedDepth', [MAX_MASTER_DEPTH]));
   }
 
   // Guard: if no segments were found, the playlist may be invalid or the
@@ -111,7 +112,7 @@ async function resolveMediaPlaylist(
   // instead of saving a 0-byte file.
   if (playlist.segments.length === 0) {
     throw new Error(
-      'No segments found in playlist — the URL may be expired or invalid',
+      t('downloads.error.noSegments'),
     );
   }
 
@@ -203,7 +204,7 @@ async function streamSegmentsToOpfs(
     return sectionIndex % 2 === 0;
   });
   if (contentSegments.length === 0) {
-    throw new Error('All segments are in ad breaks — no content to download');
+    throw new Error(t('downloads.error.adSegments'));
   }
   const effectiveTotal = contentSegments.length;
 
@@ -233,7 +234,7 @@ async function streamSegmentsToOpfs(
             segmentIndex,
           );
           if (blob.size === 0) {
-            throw new Error('Decrypted segment was empty');
+            throw new Error(t('downloads.error.decryptedEmpty'));
           }
         }
 
@@ -250,7 +251,7 @@ async function streamSegmentsToOpfs(
               );
             });
             throw new Error(
-              'Không đủ dung lượng lưu tạm thời. Hãy giải phóng ổ đĩa và thử lại.',
+              t('downloads.error.quota'),
               { cause: writeErr },
             );
           }

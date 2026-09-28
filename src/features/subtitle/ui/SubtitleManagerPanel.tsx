@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Button, InkTabs, Input, Label } from '@/shared/ui';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
+import { t } from '@/shared/i18n';
 import type { SubtitlePanelItem} from './subtitlePanelModel';
 import { formatBytes } from '@/shared/lib/formatBytes';
 import { SubtitleSearchPanel } from './SubtitleSearchPanel';
@@ -83,11 +84,11 @@ const OFFSET_STEP = 0.5;
 function getSourceLabel(source: SubtitlePanelItem['source']): string {
   switch (source) {
     case 'imported':
-      return 'Imported';
+      return t('subtitle.manager.sourceImported');
     case 'searched':
-      return 'Searched';
+      return t('subtitle.manager.sourceSearched');
     case 'translated':
-      return 'Translated';
+      return t('subtitle.manager.sourceTranslated');
     default:
       return '';
   }
@@ -155,7 +156,7 @@ function ItemRow({
           <Button shape="circle"
             size="md"
             variant="ghost"
-            aria-label={`Download ${item.name}`}
+            aria-label={t('subtitle.manager.downloadItem', [item.name])}
             data-cell-id={`manager-download-${role}-${index}`}
             onClick={(e) => {
               e.stopPropagation();
@@ -239,12 +240,12 @@ function OffsetStepper({
     commitOffset('0');
   };
 
-  const saveLabel = state.saveState === 'saving' ? 'Saving…' : 'Saved';
+  const saveLabel = state.saveState === 'saving' ? t('subtitle.offset.saving') : t('subtitle.offset.saved');
 
   return (
     <div className={styles.latency}>
       <div className={styles.latencyHead}>
-        <span className={styles.latencyLabel}>Latency</span>
+        <span className={styles.latencyLabel}>{t('subtitle.offset.latency')}</span>
         <span className={styles.latencySave} role="status" data-cell-id={`manager-offset-save-${role}`}>
           {saveLabel}
         </span>
@@ -254,7 +255,7 @@ function OffsetStepper({
           <Button
             variant="ghost"
             size="md"
-            aria-label={`Decrease ${label} latency by ${OFFSET_STEP} seconds`}
+            aria-label={t('subtitle.offset.decrease', [label, OFFSET_STEP])}
             data-cell-id={`manager-offset-dec-${role}`}
             onClick={() => bump(-OFFSET_STEP)}
           >
@@ -270,7 +271,7 @@ function OffsetStepper({
               onFocus={handleFocus}
               onBlur={handleBlur}
               onKeyDown={handleKeyDown}
-              aria-label={`${label} latency in seconds`}
+              aria-label={t('subtitle.offset.inputAria', [label])}
               variant="ghost"
               data-cell-id={`manager-offset-input-${role}`}
             />
@@ -278,7 +279,7 @@ function OffsetStepper({
           <Button
             variant="ghost"
             size="md"
-            aria-label={`Increase ${label} latency by ${OFFSET_STEP} seconds`}
+            aria-label={t('subtitle.offset.increase', [label, OFFSET_STEP])}
             data-cell-id={`manager-offset-inc-${role}`}
             onClick={() => bump(OFFSET_STEP)}
           >
@@ -288,7 +289,7 @@ function OffsetStepper({
         <Button shape="circle"
           size="md"
           variant="ghost"
-          aria-label="Reset latency"
+          aria-label={t('subtitle.offset.resetAria')}
           data-cell-id={`manager-offset-reset-${role}`}
           onClick={handleReset}
           className={styles.resetBtn}
@@ -330,7 +331,7 @@ function TrackList({
           {activeIndex === -1 && <span className={styles.radioDot} />}
         </span>
         <span className={styles.trackCopy}>
-          <span className={styles.offLabel}>Off</span>
+          <span className={styles.offLabel}>{t('subtitle.manager.off')}</span>
         </span>
       </Button>
       {items.map((item, index) => (
@@ -353,8 +354,8 @@ export function SubtitleManagerPanel({
   nativeItems,
   targetActiveIndex,
   nativeActiveIndex,
-  targetLabel = 'Target',
-  nativeLabel = 'Native',
+  targetLabel = t('library.card.target'),
+  nativeLabel = t('library.card.native'),
   onSelect,
   onClose,
   onImport,
@@ -526,7 +527,7 @@ export function SubtitleManagerPanel({
   const activeHidden = activeTab === 'target' ? targetHidden : nativeHidden;
 
   const renderHeaderContent = (v: 'tracks' | 'appearance' | 'search' | 'ocr'): React.JSX.Element => {
-    const title = v === 'search' ? 'Search' : v === 'appearance' ? 'Customize' : v === 'ocr' ? 'OCR Settings' : 'Subtitle Manager';
+    const title = v === 'search' ? t('subtitle.search.title') : v === 'appearance' ? t('subtitle.customize.title') : v === 'ocr' ? t('subtitle.ocr.title') : t('subtitle.manager.title');
     const handleBack = v === 'search' ? handleSearchBack : v === 'ocr' ? handleOcrBack : handleBackClick;
     return (
       <>
@@ -534,7 +535,7 @@ export function SubtitleManagerPanel({
           <Button shape="circle"
             ref={backBtnRef}
             variant="ghost"
-            aria-label="Back to subtitles"
+            aria-label={t('subtitle.manager.back')}
             data-cell-id="manager-back-to-subtitles"
             onClick={handleBack}
           >
@@ -555,7 +556,7 @@ export function SubtitleManagerPanel({
     <div
       className={inSheet ? `${styles.panel} ${styles.inSheet}` : styles.panel}
       role="dialog"
-      aria-label="Subtitle manager"
+      aria-label={t('subtitle.manager.aria')}
       data-cell-id="subtitle-manager-panel"
       data-view={view}
       data-direction={viewDirection}
@@ -588,7 +589,7 @@ export function SubtitleManagerPanel({
         </div>
         <Button shape="circle"
           variant="ghost"
-          aria-label="Close subtitle manager"
+          aria-label={t('subtitle.manager.close')}
           onClick={onClose}
           data-cell-id="subtitle-manager-close"
         >
@@ -603,7 +604,7 @@ export function SubtitleManagerPanel({
             <div className={styles.sectionBar} data-cell-id="manager-section-header">
               <InkTabs
                 className={styles.inkTabs}
-                aria-label="Subtitle sections"
+                aria-label={t('subtitle.manager.sectionsAria')}
                 items={[
                   { value: 'target', label: targetLabel, badge: targetItems.length },
                   { value: 'native', label: nativeLabel, badge: nativeItems.length },
@@ -616,7 +617,7 @@ export function SubtitleManagerPanel({
                   <Button shape="circle"
                     size="md"
                     variant="ghost"
-                    aria-label={`Import ${activeLabel} subtitle`}
+                    aria-label={t('subtitle.manager.importAria', [activeLabel])}
                     data-cell-id={`manager-import-${activeTab}`}
                     onClick={() => onImport(activeTab)}
                   >
@@ -628,7 +629,7 @@ export function SubtitleManagerPanel({
                     size="md"
                     variant="ghost"
                     active={activeHidden}
-                    aria-label={activeHidden ? `Show ${activeLabel} subtitle in overlay` : `Hide ${activeLabel} subtitle from overlay`}
+                    aria-label={activeHidden ? t('subtitle.manager.showSection', [activeLabel]) : t('subtitle.manager.hideSection', [activeLabel])}
                     data-cell-id={`manager-hide-section-${activeTab}`}
                     onClick={() => onHideSection(activeTab)}
                   >
@@ -731,12 +732,12 @@ export function SubtitleManagerPanel({
             <div className={styles.tabsRoot}>
               <InkTabs
                 className={styles.appearanceTabs}
-                aria-label="Appearance sections"
+                aria-label={t('subtitle.manager.appearanceAria')}
                 items={[
-                  { value: 'block', label: 'Block' },
-                  { value: 'target', label: 'Target' },
-                  { value: 'native', label: 'Native' },
-                  { value: 'buttons', label: 'Buttons' },
+                  { value: 'block', label: t('subtitle.appearance.tabBlock') },
+                  { value: 'target', label: t('library.card.target') },
+                  { value: 'native', label: t('library.card.native') },
+                  { value: 'buttons', label: t('subtitle.appearance.tabButtons') },
                 ]}
                 value={appearanceTab}
                 onValueChange={(v) => setAppearanceTab(v as 'block' | 'target' | 'native' | 'buttons')}

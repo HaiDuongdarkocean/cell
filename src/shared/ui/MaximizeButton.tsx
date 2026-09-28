@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Button } from './Button';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './MaximizeButton.module.css';
 
 type MaximizeButtonSize = 'sm' | 'md' | 'lg';
@@ -34,7 +35,7 @@ export function MaximizeButton({
     <Button shape="circle" variant="ghost"
       className={cls}
       aria-pressed={maximized}
-      aria-label={maximized ? 'Restore' : 'Maximize'}
+      aria-label={maximized ? t('ui.maximizeButton.restore') : t('ui.maximizeButton.maximize')}
       {...rest}
     >
       <Icon name={maximized ? 'minimize' : 'maximize'} size={ICON_SIZE[size]} />

@@ -7,6 +7,7 @@
  */
 import type { AudioItem } from '@/entities/dictionary';
 import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
+import { t } from '@/shared/i18n';
 import { scoreAudioByAccent } from './forvoAudioService';
 
 interface CommonsSearchResult {
@@ -166,7 +167,7 @@ export async function fetchWiktionaryAudioItems(term: string, langCode: string):
     (filename) => isWiktionaryAudioFilename(filename, term, langCode),
     (filename, user) => {
       const accentId = detectAccentFromFilename(filename);
-      return accentId ? `${accentId} pronunciation · Wiktionary` : `Wiktionary · ${user}`;
+      return accentId ? t('dict.audio.accentPronunciation', [accentId]) : t('dict.audio.wiktionaryUser', [user]);
     },
     'wiktionary',
   );
@@ -178,7 +179,7 @@ export async function fetchLinguaLibreAudioItems(term: string, iso639_3: string)
   return searchCommonsAudio(
     searchUrl,
     (filename) => isLinguaLibreAudioFilename(filename, term, iso639_3),
-    (_filename, user) => `Community · ${user}`,
+    (_filename, user) => t('dict.audio.communityUser', [user]),
     'lingualibre',
   );
 }

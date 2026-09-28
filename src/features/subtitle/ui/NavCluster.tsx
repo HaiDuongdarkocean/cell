@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import type { NavClusterSettings } from '@/entities/media';
+import { t } from '@/shared/i18n';
 import { Icon } from '@/shared/icons/Icon';
 import type { ICON_CATALOG } from '@/shared/icons';
 import { Button } from '@/shared/ui';
@@ -40,7 +41,7 @@ function NavClusterInner({
   isPlaying = false,
   repeatActive = false,
   repeatIcon = 'navRepeat',
-  repeatLabel = 'Repeat current sentence',
+  repeatLabel = t('player.nav.repeat'),
   clusterSettings,
   onToggleCollapsed,
   onPrev,
@@ -62,10 +63,10 @@ function NavClusterInner({
 
   if (collapsed) {
     return (
-      <div className={rootClass} style={clusterStyle} data-cell-id="nav-cluster" aria-label="Subtitle navigation">
+      <div className={rootClass} style={clusterStyle} data-cell-id="nav-cluster" aria-label={t('subtitle.nav.aria')}>
         <Button shape="circle" variant="overlay"
           className={styles.collapsedBtn}
-          aria-label="Expand subtitle navigation"
+          aria-label={t('subtitle.nav.expand')}
           data-cell-id="nav-expand"
           onClick={onToggleCollapsed}
         >
@@ -76,31 +77,31 @@ function NavClusterInner({
   }
 
   return (
-    <div className={rootClass} style={clusterStyle} data-cell-id="nav-cluster" aria-label="Subtitle navigation">
+    <div className={rootClass} style={clusterStyle} data-cell-id="nav-cluster" aria-label={t('subtitle.nav.aria')}>
       <div className={styles.main} data-cell-id="nav-main">
-        <Button shape="circle" variant="overlay" aria-label="Previous sentence" data-cell-id="nav-prev" onClick={onPrev}>
+        <Button shape="circle" variant="overlay" aria-label={t('settings.shortcuts.action.prevCue')} data-cell-id="nav-prev" onClick={onPrev}>
           <Icon name="navPrev"  />
         </Button>
         <Button shape="circle" variant="overlay"
-          aria-label={repeatActive ? 'Cancel repeat' : repeatLabel}
+          aria-label={repeatActive ? t('subtitle.nav.repeatCancel') : repeatLabel}
           data-cell-id="nav-repeat"
           onClick={onRepeat}
           active={repeatActive}
         >
           <Icon name={repeatIcon}  />
         </Button>
-        <Button shape="circle" variant="overlay" aria-label="Next sentence" data-cell-id="nav-next" onClick={onNext}>
+        <Button shape="circle" variant="overlay" aria-label={t('settings.shortcuts.action.nextCue')} data-cell-id="nav-next" onClick={onNext}>
           <Icon name="navNext"  />
         </Button>
       </div>
       <div className={styles.secondary} data-cell-id="nav-secondary">
-        <Button shape="circle" variant="overlay" aria-label="Rewind 5 seconds" data-cell-id="nav-rewind" onClick={onRewind}>
+        <Button shape="circle" variant="overlay" aria-label={t('subtitle.nav.rewind')} data-cell-id="nav-rewind" onClick={onRewind}>
           <Icon name="navRewind"  />
         </Button>
-        <Button shape="circle" variant="overlay" aria-label={isPlaying ? 'Pause video' : 'Play video'} data-cell-id="nav-play" onClick={onPlayPause}>
+        <Button shape="circle" variant="overlay" aria-label={isPlaying ? t('subtitle.nav.pause') : t('subtitle.nav.play')} data-cell-id="nav-play" onClick={onPlayPause}>
           <Icon name={isPlaying ? 'navPause' : 'navPlay'}  />
         </Button>
-        <Button shape="circle" variant="overlay" aria-label="Forward 10 seconds" data-cell-id="nav-forward" onClick={onForward}>
+        <Button shape="circle" variant="overlay" aria-label={t('subtitle.nav.forward')} data-cell-id="nav-forward" onClick={onForward}>
           <Icon name="navForward"  />
         </Button>
       </div>

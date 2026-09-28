@@ -1,5 +1,6 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { getSrsUserCss, setSrsUserCss } from '@/features/srs/services/userCssStore';
+import { t } from '@/shared/i18n';
 import { Box } from '@/shared/ui/Box';
 import { Text } from '@/shared/ui/Text';
 import { Button } from '@/shared/ui/Button';
@@ -44,17 +45,17 @@ export function UserCssPanel(): React.JSX.Element {
 
   return (
     <Box className={styles.panel}>
-      <Text className={styles.title}>Custom CSS</Text>
+      <Text className={styles.title}>{t('srs.css.title')}</Text>
       <Textarea
         className={styles.textarea}
         value={css}
         onChange={handleChange}
         rows={6}
-        placeholder="/* Add your custom CSS here */"
-        aria-label="Custom CSS for study page"
+        placeholder={t('srs.css.placeholder')}
+        aria-label={t('srs.css.aria')}
       />
       <Button className={styles.save} onClick={() => { void handleSave(); }}>
-        {saved ? 'Saved' : 'Save CSS'}
+        {saved ? t('srs.css.saved') : t('srs.css.save')}
       </Button>
     </Box>
   );

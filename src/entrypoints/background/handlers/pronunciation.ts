@@ -5,6 +5,7 @@
  * can load its Emscripten worker and synthesize audio.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import { PronunciationEspeakTtsPayloadSchema } from '@/entities/message/dictionarySchemas';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
@@ -25,7 +26,7 @@ export function registerPronunciationHandlers(ctx: BackgroundContext): void {
       return response;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: `eSpeak offscreen failed: ${msg}` };
+      return { success: false, error: t('audio.error.espeakFailed', [msg]) };
     }
   });
 }

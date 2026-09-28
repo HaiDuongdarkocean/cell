@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import * as Flags from 'country-flag-icons/react/3x2';
 import { Icon } from '@/shared/icons/Icon';
 import { langToCountry } from '@/shared/config/langToCountry';
+import { t } from '@/shared/i18n';
 import styles from './FlagIcon.module.css';
 
 export interface FlagIconProps {
@@ -42,7 +43,7 @@ export function FlagIcon({
       className={`${styles.wrapper} ${className ?? ''}`.trim()}
       style={size ? { width: size, height: size } : undefined}
       role="img"
-      aria-label={title ?? `Flag for ${lang}`}
+      aria-label={title ?? t('ui.flagIcon.aria', [lang])}
     >
       <FlagComponent
         className={styles.flag}

@@ -7,6 +7,7 @@
  * that content-script also uses — SSOT for card/dictionary/generate-native logic.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { t } from '@/shared/i18n';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { getActiveProfileSettings, type Settings } from '@/entities/settings';
@@ -189,15 +190,15 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
         setGenerateNativeEnabled(true);
       },
       onComplete: () => {
-        ctx.showToast('Native subtitle generated', { variant: 'success' });
+        ctx.showToast(t('player.toast.nativeGenerated'), { variant: 'success' });
         setGenerateNativeEnabled(true);
       },
     }).then((result) => {
       if (!result) {
-        ctx.showToast('Cannot generate native — check language settings.', { variant: 'info' });
+        ctx.showToast(t('player.toast.nativeUnavailable'), { variant: 'info' });
         return;
       }
-      ctx.showToast('Generating native subtitle…', { variant: 'info' });
+      ctx.showToast(t('player.toast.nativeGenerating'), { variant: 'info' });
       setGenerateNativeEnabled(false);
     });
   }, [videoRef, buildContext]);

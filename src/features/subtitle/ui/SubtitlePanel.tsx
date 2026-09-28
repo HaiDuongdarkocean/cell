@@ -321,7 +321,7 @@ function SubtitlePanelImpl({
       />
     )
   ) : (
-    <EmptyState title="No subtitles loaded" size="compact" style={{ flex: 1 }} />
+    <EmptyState title={t('panel.empty.title')} size="compact" style={{ flex: 1 }} />
   );
 
   const showCueFilterStrip =
@@ -391,8 +391,8 @@ function SubtitlePanelImpl({
       <div className={styles.header} data-cell-id="subtitle-panel-header">
         {onClose && (
           <Button shape="circle" variant="transparent"
-            aria-label="Collapse subtitle list"
-            title="Collapse (T)"
+            aria-label={t('subtitle.panel.collapse')}
+            title={t('subtitle.panel.collapseTitle')}
             data-cell-id="subtitle-panel-close"
             size="sm"
             onClick={onClose}
@@ -400,7 +400,7 @@ function SubtitlePanelImpl({
             <ChevronRight aria-hidden="true" />
           </Button>
         )}
-        <span className={styles.title}>{filename ?? 'Subtitles'}</span>
+        <span className={styles.title}>{filename ?? t('subtitle.panel.title')}</span>
         {mediaStats && <ComprehensionBadge stats={mediaStats} />}
       </div>
       {onStudyModeChange ? (
@@ -424,11 +424,11 @@ function SubtitlePanelImpl({
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as PanelTab)}>
           <Tabs.List className={styles.tabList}>
             <Tabs.Trigger value="subtitles" data-cell-id="subtitle-panel-tab-subtitles">
-              Subtitles
+              {t('subtitle.panel.title')}
             </Tabs.Trigger>
             {hasPlaylist && (
               <Tabs.Trigger value="playlist" data-cell-id="subtitle-panel-tab-playlist">
-                Playlist
+                {t('subtitle.panel.playlist')}
               </Tabs.Trigger>
             )}
           </Tabs.List>

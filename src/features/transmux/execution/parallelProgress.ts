@@ -14,6 +14,9 @@
  * smoothly even though the actual work distribution is uneven.
  */
 
+import { t } from '@/shared/i18n';
+import type { MessageKey } from '@/shared/i18n';
+
 export type ParallelConversionPhase =
   | 'planning'
   | 'transmuxing'
@@ -45,15 +48,16 @@ export function phaseToPercent(
 /**
  * Get the phase label for UI display.
  */
+const PHASE_LABEL_KEYS: Record<ParallelConversionPhase, MessageKey> = {
+  planning: 'downloads.phase.planning',
+  transmuxing: 'downloads.phase.transmuxing',
+  merging: 'downloads.phase.merging',
+  validating: 'downloads.phase.validating',
+  done: 'jobs.status.done',
+};
+
 export function phaseLabel(phase: ParallelConversionPhase): string {
-  const labels: Record<ParallelConversionPhase, string> = {
-    planning: 'Planning parallel conversion',
-    transmuxing: 'Converting segments in parallel',
-    merging: 'Merging converted parts',
-    validating: 'Validating output',
-    done: 'Done',
-  };
-  return labels[phase];
+  return t(PHASE_LABEL_KEYS[phase]);
 }
 
 /**

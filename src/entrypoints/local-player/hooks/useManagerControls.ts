@@ -13,6 +13,7 @@ import {
   DEFAULT_OVERLAY_STYLE_NATIVE,
 } from '@/shared/config/config';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
+import { t } from '@/shared/i18n';
 
 const PERSIST_DEBOUNCE_MS = 400;
 
@@ -60,10 +61,10 @@ export function useManagerControls(engine: ManagerEngine): ManagerControls {
   const [nativeHidden, setNativeHidden] = useState(false);
 
   const [previewTargetText, setPreviewTargetText] = useState(
-    'This is how the target subtitle will look.',
+    t('player.manager.previewTarget'),
   );
   const [previewNativeText, setPreviewNativeText] = useState(
-    'This is how the native subtitle will look.',
+    t('player.manager.previewNative'),
   );
 
   const stylePersistRef = useRef<ReturnType<typeof setTimeout> | null>(null);

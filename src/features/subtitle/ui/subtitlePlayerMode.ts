@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { togglePlayerMode } from '@/features/subtitle/logic/playerModeGeometry';
 import { isChildFrame, requestIframePlayerModeEnter, requestIframePlayerModeExit } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import { resolveParentFrameOrigin } from '@/shared/lib/dom/frameOrigin';
+import { t } from '@/shared/i18n';
 import type { ToastVariant } from './SubtitleToast';
 
 export interface PlayerModeParams {
@@ -58,7 +59,7 @@ export function usePlayerMode({
       if (await requestIframePlayerModeEnter()) {
         setPlayerMode(true);
       } else {
-        addToast('Player mode could not reach the host player', 'error');
+        addToast(t('subtitle.playerMode.unreachable'), 'error');
       }
       return;
     }

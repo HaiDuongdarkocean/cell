@@ -4,6 +4,7 @@
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { STORAGE_KEYS } from '@/shared/config/config';
+import { t } from '@/shared/i18n';
 import tokensJson from '@/shared/styles/tokens.json';
 import {
   getStorage,
@@ -485,7 +486,7 @@ export async function loadSessionDownloads(ctx: BackgroundContext): Promise<void
           ctx.downloadQueue.restore({
             ...item,
             status: 'error',
-            error: 'Interrupted (service worker restarted)',
+            error: t('jobs.error.interrupted-restart'),
           });
         } else {
           ctx.downloadQueue.restore(item);

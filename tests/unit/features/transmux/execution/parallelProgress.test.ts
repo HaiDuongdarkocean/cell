@@ -42,10 +42,10 @@ describe('parallelProgress', () => {
 
   describe('phaseLabel', () => {
     it('returns human-readable label for each phase', () => {
-      expect(phaseLabel('planning')).toContain('Planning');
-      expect(phaseLabel('transmuxing')).toContain('parallel');
+      expect(phaseLabel('planning')).toContain('Preparing');
+      expect(phaseLabel('transmuxing')).toContain('Converting');
       expect(phaseLabel('merging')).toContain('Merging');
-      expect(phaseLabel('validating')).toContain('Validating');
+      expect(phaseLabel('validating')).toContain('Checking');
       expect(phaseLabel('done')).toBe('Done');
     });
   });

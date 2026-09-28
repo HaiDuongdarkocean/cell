@@ -1,4 +1,5 @@
 import type { Ref } from 'react';
+import { t } from '@/shared/i18n';
 import { FooterBar } from '@/shared/ui/FooterBar';
 import type { FooterBarSlot } from '@/shared/ui/FooterBar';
 import { Icon } from '@/shared/icons/Icon';
@@ -30,49 +31,49 @@ export function SubtitleManagerFooter({
     {
       key: 'search',
       icon: <Icon name="search"  />,
-      label: 'Search',
+      label: t('subtitle.search.title'),
       onClick: onSearch,
       ref: searchBtnRef,
-      buttonProps: { title: 'Search subtitles', 'data-cell-id': 'manager-search-subtitles' },
+      buttonProps: { title: t('subtitle.search.submit'), 'data-cell-id': 'manager-search-subtitles' },
     },
     ...(onOcr
       ? [{
           key: 'ocr',
           icon: <Icon name="captions"  />,
-          label: 'OCR',
+          label: t('subtitle.ocr.label'),
           onClick: onOcr,
-          buttonProps: { title: 'OCR settings', 'data-cell-id': 'manager-ocr-settings' },
+          buttonProps: { title: t('subtitle.ocr.settingsTitle'), 'data-cell-id': 'manager-ocr-settings' },
         }]
       : []),
     ...(onCustomize
       ? [{
           key: 'customize',
           icon: <Icon name="slidersHorizontal"  />,
-          label: 'Customize',
+          label: t('subtitle.customize.title'),
           onClick: onCustomize,
           ref: customizeBtnRef,
-          buttonProps: { title: 'Customize appearance', 'data-cell-id': 'manager-customize-appearance' },
+          buttonProps: { title: t('subtitle.customize.buttonTitle'), 'data-cell-id': 'manager-customize-appearance' },
         }]
       : []),
     ...(onHideBoth
       ? [{
           key: 'hide',
           icon: <Icon name="eyeOff"  />,
-          label: bothHidden ? 'Show' : 'Hide',
+          label: bothHidden ? t('subtitle.action.show') : t('subtitle.action.hide'),
           active: bothHidden,
           onClick: onHideBoth,
-          buttonProps: { title: bothHidden ? 'Show both' : 'Hide both', 'data-cell-id': 'manager-hide-both' },
+          buttonProps: { title: bothHidden ? t('subtitle.manager.showBoth') : t('subtitle.manager.hideBoth'), 'data-cell-id': 'manager-hide-both' },
         }]
       : []),
     ...(onGenerateNative
       ? [{
           key: 'generate',
           icon: <Icon name="languages"  />,
-          label: 'Generate',
+          label: t('subtitle.generate.label'),
           ripplePulse: true,
           disabled: generateNativeDisabled,
           onClick: onGenerateNative,
-          buttonProps: { title: 'Generate native', 'data-cell-id': 'manager-generate-native' },
+          buttonProps: { title: t('subtitle.generate.buttonTitle'), 'data-cell-id': 'manager-generate-native' },
         }]
       : []),
   ];

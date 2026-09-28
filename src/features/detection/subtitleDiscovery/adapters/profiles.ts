@@ -3,6 +3,7 @@
 // These profiles are pure data + small mapping functions. The adapter itself has
 // no site-specific branches — it reads the profile to match, extract, and map.
 
+import { t } from '@/shared/i18n';
 import { resolveLanguage, languageFromLabel, languageFromPath } from '../candidate';
 import type { CandidateInit } from '../candidate';
 import type { JsonListingProfile } from './jsonListing';
@@ -26,7 +27,7 @@ export const cinesrcProfile: JsonListingProfile = {
     if (!isRecord(entry)) return null;
     const url = (entry.url as string) || (entry.r2Url as string);
     if (!isString(url)) return null;
-    const display = isString(entry.display) ? entry.display : (isString(entry.language) ? entry.language : 'Unknown');
+    const display = isString(entry.display) ? entry.display : (isString(entry.language) ? entry.language : t('subtitle.detected.unknown'));
     let language = isString(entry.language) ? resolveLanguage(entry.language) : 'unknown';
     if (language === 'unknown' && display) {
       language = languageFromLabel(display);
@@ -81,7 +82,7 @@ export const lookmovieProfile: JsonListingProfile = {
   },
   mapEntry: (entry, ctx, index) => {
     if (!isRecord(entry)) return null;
-    const label = isString(entry.language) ? entry.language : `Subtitle ${index + 1}`;
+    const label = isString(entry.language) ? entry.language : t('subtitle.detected.numbered', [index + 1]);
     const file = entry.file;
 
     if (isString(file)) {
@@ -166,7 +167,7 @@ export const peachifyProfile: JsonListingProfile = {
     if (!isRecord(entry)) return null;
     const url = (entry.url as string) || (entry.file as string) || (entry.src as string);
     if (!isString(url)) return null;
-    const label = (entry.label as string) || (entry.name as string) || (entry.language as string) || 'Auto';
+    const label = (entry.label as string) || (entry.name as string) || (entry.language as string) || t('subtitle.detected.auto');
     const code = (entry.langCode as string) || (entry.lang as string) || (entry.language as string);
     return {
       label,
@@ -201,7 +202,7 @@ export const opensubtitlesProfile: JsonListingProfile = {
     if (!isString(url)) return null;
 
     const rawLang = (entry.ISO639 as string) || (entry.SubLanguageID as string) || '';
-    const label = (entry.LanguageName as string) || (entry.SubFileName as string) || `Subtitle ${index + 1}`;
+    const label = (entry.LanguageName as string) || (entry.SubFileName as string) || t('subtitle.detected.numbered', [index + 1]);
     const displayName = (entry.SubFileName as string) || label;
     const fileNameLang = (entry.SubFileName as string)?.match(/\.([a-zA-Z]{2,3})\.[^.]+$/);
     let language = rawLang.length === 2 ? resolveLanguage(rawLang) : 'unknown';
@@ -252,7 +253,7 @@ export const onzloadProfile: JsonListingProfile = {
     if (!isRecord(entry)) return null;
     const src = entry.src as string;
     if (!isString(src)) return null;
-    const label = isString(entry.label) ? entry.label : `Subtitle ${index + 1}`;
+    const label = isString(entry.label) ? entry.label : t('subtitle.detected.numbered', [index + 1]);
     const lang = isString(entry.language) ? entry.language : '';
     const resolved = lang ? resolveLanguage(lang) : 'unknown';
     // OnzLoad uses 'cn' for Chinese in the JSON field; map it to standard 'zh'.

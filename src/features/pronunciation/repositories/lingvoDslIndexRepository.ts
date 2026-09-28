@@ -9,6 +9,7 @@
  */
 
 import type { LingvoDslIndexEntry } from '../services/lingvoDslParser';
+import { t } from '@/shared/i18n';
 
 const DB_NAME = 'cell-local-audio-index';
 const STORE_NAME = 'lingvoDslIndex';
@@ -24,7 +25,7 @@ interface StoredEntry {
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onerror = () => reject(request.error ?? new Error('Failed to open IndexedDB'));
+    request.onerror = () => reject(request.error ?? new Error(t('pronunciation.error.dbOpen')));
     request.onsuccess = () => resolve(request.result);
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
@@ -59,7 +60,7 @@ export async function saveLingvoDslIndex(
     }
     return new Promise((resolve, reject) => {
       tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error ?? new Error('Failed to save DSL index'));
+      tx.onerror = () => reject(tx.error ?? new Error(t('pronunciation.error.dbSave')));
     });
   } finally {
     db.close();
@@ -82,7 +83,7 @@ export async function getLingvoDslAudioPaths(
         const record = request.result as StoredEntry | undefined;
         resolve(record?.audioPaths);
       };
-      request.onerror = () => reject(request.error ?? new Error('Failed to load DSL index entry'));
+      request.onerror = () => reject(request.error ?? new Error(t('pronunciation.error.dbLoad')));
     });
   } finally {
     db.close();
@@ -99,7 +100,7 @@ export async function countLingvoDslIndex(packageId: string): Promise<number> {
     return new Promise((resolve, reject) => {
       const request = index.count(range);
       request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error ?? new Error('Failed to count DSL index'));
+      request.onerror = () => reject(request.error ?? new Error(t('pronunciation.error.dbCount')));
     });
   } finally {
     db.close();
@@ -124,9 +125,9 @@ export async function clearLingvoDslIndex(packageId: string): Promise<void> {
           cursor.continue();
         }
       };
-      cursorReq.onerror = () => reject(cursorReq.error ?? new Error('Failed to clear DSL index'));
+      cursorReq.onerror = () => reject(cursorReq.error ?? new Error(t('pronunciation.error.dbClear')));
       tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error ?? new Error('Transaction error during clear'));
+      tx.onerror = () => reject(tx.error ?? new Error(t('pronunciation.error.dbTx')));
     });
   } finally {
     db.close();

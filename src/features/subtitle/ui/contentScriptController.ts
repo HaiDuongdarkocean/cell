@@ -40,6 +40,7 @@ import { createContentScriptMessageHandlers } from './contentScriptMessages';
 import { createProcessImportedFiles, wireContainerDragImport } from './contentScriptFileImport';
 import { createSubtitleSelectionHandlers } from './contentScriptSelection';
 import { createContentScriptLifecycleHandlers } from './contentScriptLifecycle';
+import { t } from '@/shared/i18n';
 
 import type { DictionaryBridge } from '../logic/dictionaryBridge';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
@@ -428,7 +429,7 @@ export function init(
       },
       onComplete: () => {
         if (activeGenerateRunId !== runId || !syncController.translatedNativeSlot || syncController.translatedNativeSlot.runId !== runId) return;
-        showToast('Native subtitle generated', container, { variant: 'success' });
+        showToast(t('player.toast.nativeGenerated'), container, { variant: 'success' });
         updateGenerateNativeEnabled();
       },
     });
@@ -443,8 +444,8 @@ export function init(
       const sl = settings.subtitleOverlayTargetLanguage ?? '';
       const tl = settings.subtitleOverlayNativeLanguage ?? '';
       const error = !sl || !tl || sl === tl
-        ? 'Target and native languages must differ'
-        : 'No target subtitle to translate';
+        ? t('subtitle.generate.langSame')
+        : t('subtitle.generate.noTarget');
       showToast(error, container, { variant: 'info' });
       updateGenerateNativeEnabled();
       return;
@@ -453,7 +454,7 @@ export function init(
     // Create the translated manager entry now that validation passed.
     const translatedItem: SubtitlePanelItem = {
       id: 'translated-native',
-      name: `${result.nativeLabel} (translated)`,
+      name: t('subtitle.name.translated', [result.nativeLabel]),
       format: snapshot.targetFormat,
       size: snapshot.targetSize,
       source: 'translated',
@@ -469,7 +470,7 @@ export function init(
     };
     syncController.activeNativeSource = 'translated';
     refreshPanel('native');
-    showToast('Generating native subtitle…', container, { variant: 'info' });
+    showToast(t('player.toast.nativeGenerating'), container, { variant: 'info' });
     blockController.setGenerateNativeEnabled(false);
 
     // Store the prefill controller (already started by startGenerateNative).

@@ -209,7 +209,7 @@ describe('transmuxTsToFmp4ParallelExperimental', () => {
       segmentRanges: [],
     });
     expect(result.success).toBe(false);
-    expect(result.error).toContain('No segment groups');
+    expect(result.error).toContain('convert the video');
   });
 
   it('calls transmuxTsToFmp4 once per group', async () => {
@@ -244,7 +244,7 @@ describe('transmuxTsToFmp4ParallelExperimental', () => {
     });
 
     expect(result.success).toBe(false);
-    expect(result.error).toContain('Group transmux failed');
+    expect(result.error).toContain('convert the video');
   });
 
   it('reports progress across all groups', async () => {

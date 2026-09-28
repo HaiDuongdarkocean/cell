@@ -24,6 +24,7 @@ import type {
   ResourceType,
 } from '@/entities/dictionary';
 import type { MessageResponse } from '@/entities/message';
+import { t } from '@/shared/i18n';
 
 /** Base64 chars per import chunk message. */
 const IMPORT_CHUNK_SIZE = 4 * 1024 * 1024;
@@ -40,7 +41,7 @@ interface ImportCallbacks {
 async function request<T>(type: string, payload: unknown): Promise<T> {
   const res = await sendMessage<MessageResponse<T>>({ type, payload });
   if (!res?.success) {
-    throw new Error(res?.error ?? `${type} failed`);
+    throw new Error(res?.error ?? t('resources.error.request', [type]));
   }
   return res.data as T;
 }
@@ -83,7 +84,7 @@ export async function listResources(langCode: string): Promise<ResourceInfo[]> {
     payload: { langCode },
   });
   if (res === undefined) return [];
-  if (!res.success) throw new Error(res.error ?? 'RESOURCE_LIST failed');
+  if (!res.success) throw new Error(res.error ?? t('resources.error.list'));
   return res.data?.resources ?? [];
 }
 
@@ -220,5 +221,5 @@ export async function importResourceFile(
       return { jobId: res.jobId ?? jobId };
     }
   }
-  throw new Error('Upload ended unexpectedly');
+  throw new Error(t('resources.error.uploadEnded'));
 }

@@ -11,6 +11,7 @@ import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
 import { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
 import { createTranslateFunction } from '@/features/subtitle';
+import { t } from '@/shared/i18n';
 import type { SrtCue } from '@/entities/media';
 
 export interface GenerateNativeCallbacks {
@@ -41,10 +42,10 @@ export function validateGenerateNative(
   targetCueCount: number,
 ): string | null {
   if (!sourceLang || !targetLang || sourceLang === targetLang) {
-    return 'Target and native languages must differ';
+    return t('subtitle.generate.langSame');
   }
   if (targetCueCount === 0) {
-    return 'No target subtitle to translate';
+    return t('subtitle.generate.noTarget');
   }
   return null;
 }

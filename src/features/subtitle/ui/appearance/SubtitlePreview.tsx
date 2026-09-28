@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import { buildTextShadow, hexToRgba } from '../subtitleUI';
+import { t } from '@/shared/i18n';
 import styles from './SubtitlePreview.module.css';
 
 interface SubtitlePreviewProps {
@@ -23,7 +24,7 @@ interface SubtitlePreviewProps {
  * position only makes sense on a real video. This box previews text style only.
  */
 export function SubtitlePreview({ style, role }: SubtitlePreviewProps): React.JSX.Element {
-  const sampleText = `This is how the ${role} subtitle will look.`;
+  const sampleText = role === 'target' ? t('player.manager.previewTarget') : t('player.manager.previewNative');
 
   // Convert hex bg + 0-1 opacity → rgba string for the preview background
   const bgRgba = hexToRgba(style.backgroundColor, style.backgroundOpacity);
@@ -40,7 +41,7 @@ export function SubtitlePreview({ style, role }: SubtitlePreviewProps): React.JS
 
   return (
     <div className={styles.previewWrapper}>
-      <span className={styles.previewLabel}>Live Preview</span>
+      <span className={styles.previewLabel}>{t('subtitle.preview.live')}</span>
       <div className={styles.previewBox} style={previewStyle} data-cell-id={`subtitle-preview-${role}`}>
         {sampleText}
       </div>

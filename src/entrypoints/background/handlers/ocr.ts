@@ -3,6 +3,7 @@
 // OCR_DISPOSE frees engine, does NOT close offscreen document.
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import {
@@ -61,10 +62,10 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
       if (response?.status === 'ready') {
         return { success: true, data: { status: 'ready', backend: response.backend } };
       }
-      return { success: false, error: response?.error ?? 'OCR init failed' };
+      return { success: false, error: response?.error ?? t('ocr.error.init') };
     } catch (e) {
       console.error('[OCR_BG] OCR_INIT error:', e);
-      return { success: false, error: `OCR_INIT failed: ${String(e)}` };
+      return { success: false, error: t('ocr.error.initDetail', [String(e)]) };
     }
   });
 
@@ -82,7 +83,7 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
       });
       return { success: true, data: { ok: true } };
     } catch (e) {
-      return { success: false, error: `OCR_DISPOSE failed: ${String(e)}` };
+      return { success: false, error: t('ocr.error.dispose', [String(e)]) };
     }
   });
 
@@ -105,7 +106,7 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
         }
         return { success: true, data: { results: response?.results ?? [] } };
       } catch (e) {
-        return { success: false, error: `OCR_RECOGNIZE failed: ${String(e)}` };
+        return { success: false, error: t('ocr.error.recognize', [String(e)]) };
       }
     },
   );
@@ -121,11 +122,11 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
     }
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab?.id) return { success: false, error: 'No active tab' };
+      if (!tab?.id) return { success: false, error: t('ui.error.noActiveTab') };
       await chrome.tabs.sendMessage(tab.id, { type: MESSAGE_TYPES.OCR_REGION_COMMAND, payload: parsed.data });
       return { success: true, data: { ok: true } };
     } catch (e) {
-      return { success: false, error: `OCR_REGION_COMMAND failed: ${String(e)}` };
+      return { success: false, error: t('ocr.error.region', [String(e)]) };
     }
   });
 }

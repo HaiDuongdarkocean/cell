@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './MuteButton.module.css';
 
 interface MuteButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
@@ -34,7 +35,7 @@ export function MuteButton({
 }: MuteButtonProps): React.JSX.Element {
   const effective = muted ? 0 : volume;
   const iconName = volumeIconName(effective);
-  const label = muted ? 'Unmute' : 'Mute';
+  const label = muted ? t('video.mute.unmute') : t('video.mute.mute');
 
   const cls = [styles.button, className ?? ''].filter(Boolean).join(' ');
 

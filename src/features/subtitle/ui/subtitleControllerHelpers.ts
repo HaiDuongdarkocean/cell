@@ -2,6 +2,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { showToast } from './subtitleUI';
+import { t } from '@/shared/i18n';
 import type { TranslateResult } from '@/entities/message';
 import type { BilingualCue } from '@/entities/media';
 import type { Settings } from '@/entities/settings';
@@ -58,7 +59,7 @@ export async function loadSettingsOrToast(
   try {
     return await loadSettings();
   } catch {
-    showToast('Cannot load settings — storage unavailable.', container, { variant: 'error' });
+    showToast(t('subtitle.error.storageUnavailable'), container, { variant: 'error' });
     return undefined;
   }
 }

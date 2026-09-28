@@ -4,6 +4,7 @@ import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { FlagIcon } from '@/shared/ui/FlagIcon';
 import { TokenizeControls } from './TokenizeControls';
+import { t } from '@/shared/i18n';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import styles from './UniversalPanelHeader.module.css';
 
@@ -39,7 +40,7 @@ export function UniversalPanelHeader({
     onToggleTokenize(mode === 'text' ? 'enabled' : 'subtitleEnabled');
   }, [onToggleTokenize]);
 
-  const profileName = activeProfile?.name ?? 'Select profile';
+  const profileName = activeProfile?.name ?? t('panel.profile.select');
 
   return (
     <header className={styles.header} data-cell-id="universal-panel-header">
@@ -50,7 +51,7 @@ export function UniversalPanelHeader({
           shape="circle"
           className={styles.profileButton}
           onClick={onProfileClick}
-          aria-label={`Switch language profile: ${profileName}`}
+          aria-label={t('panel.profile.switch', [profileName])}
           title={profileName}
           data-cell-id="universal-panel-profile-button"
         >
@@ -68,7 +69,7 @@ export function UniversalPanelHeader({
       <Button shape="circle"
         size="md"
         variant="ghost"
-        aria-label="Close panel"
+        aria-label={t('panel.close')}
         className={styles.closeButton}
         onClick={onClose}
         data-cell-id="universal-panel-close"

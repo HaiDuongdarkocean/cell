@@ -388,7 +388,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                   resumeFollow(false);
                   onSeek(cue.start);
                 }}
-                aria-label={`Seek to ${formatTimestamp(cue.start - offsetMs, hasHours)}`}
+                aria-label={t('cueList.seekTo', [formatTimestamp(cue.start - offsetMs, hasHours)])}
                 aria-describedby={band !== undefined ? `cue-heat-sr-${cue.index}` : undefined}
                 className={styles.timestamp}
               >

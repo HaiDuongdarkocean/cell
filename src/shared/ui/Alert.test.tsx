@@ -21,7 +21,7 @@ describe('Alert', () => {
   it('calls onDismiss when dismissed', () => {
     const onDismiss = jest.fn();
     render(<Alert title="Title" description="Desc" onDismiss={onDismiss} />);
-    fireEvent.click(screen.getByLabelText('Dismiss'));
+    fireEvent.click(screen.getByLabelText('Close'));
     expect(onDismiss).toHaveBeenCalled();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });

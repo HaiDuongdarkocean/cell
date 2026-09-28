@@ -6,6 +6,7 @@ import type { Settings } from '@/entities/media';
 import type { SubtitleForOverlayResult } from '@/entities/message';
 import type { SubtitlePanelItem } from './subtitlePanelModel';
 import type { ReactSubtitleController } from './reactSubtitleController';
+import { t } from '@/shared/i18n';
 
 /**
  * Dependencies injected by contentScriptController. Most are placeholders
@@ -441,8 +442,8 @@ export class SubtitleSyncController {
   startOcr(targetCues: SrtCue[], nativeCues: SrtCue[]): void {
     if (!this.ocrTargetSlot || !this.ocrNativeSlot) {
       this.preOcrSources = { target: this.activeTargetSource, native: this.activeNativeSource };
-      this.ocrTargetSlot = { item: this.makeOcrPanelItem('ocr-target', 'OCR Target (live)', 'target'), cues: [] };
-      this.ocrNativeSlot = { item: this.makeOcrPanelItem('ocr-native', 'OCR Native (live)', 'native'), cues: [] };
+      this.ocrTargetSlot = { item: this.makeOcrPanelItem('ocr-target', t('subtitle.ocr.targetLive'), 'target'), cues: [] };
+      this.ocrNativeSlot = { item: this.makeOcrPanelItem('ocr-native', t('subtitle.ocr.nativeLive'), 'native'), cues: [] };
     }
     this.ocrTargetSlot.cues = targetCues;
     this.ocrNativeSlot.cues = nativeCues;

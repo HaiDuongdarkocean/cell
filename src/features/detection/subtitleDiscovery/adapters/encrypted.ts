@@ -9,6 +9,7 @@
 // `{ isEncrypted: true, data: "iv.ciphertext.authTag" }`. A separate decoder
 // handles that format.
 
+import { t } from '@/shared/i18n';
 import { createCandidate } from '../candidate';
 import { formatFromUrl, resolveLanguage } from '../candidate';
 import { decryptAndDetectFormat } from '@/shared/lib/parsers/encryptedFile';
@@ -148,7 +149,7 @@ async function decryptPeachify(
     return [
       createCandidate(
         {
-          label: 'Encrypted peachify listing',
+          label: t('subtitle.detected.encrypted'),
           language: 'unknown',
           source: 'metadata',
           provider: profile.provider,
@@ -157,7 +158,7 @@ async function decryptPeachify(
             provider: profile.provider,
             providerId: `enc:${signalUrl}`,
             language: 'unknown',
-            label: 'Encrypted listing',
+            label: t('subtitle.detected.encrypted'),
             extra: { url: signalUrl },
           },
         },
@@ -182,7 +183,7 @@ function mapPeachifySubtitles(
     const e = entry as Record<string, unknown>;
     const url = (e.url as string) || (e.file as string) || (e.src as string);
     if (!url || typeof url !== 'string') continue;
-    const label = (e.label as string) || (e.name as string) || (e.language as string) || 'Auto';
+    const label = (e.label as string) || (e.name as string) || (e.language as string) || t('subtitle.detected.auto');
     const code = (e.langCode as string) || (e.lang as string) || (e.language as string);
     const lang = resolveLanguage(code ?? label);
     const format = formatFromUrl(url) ?? 'vtt';
@@ -227,7 +228,7 @@ async function decryptVideasy(
     return [
       createCandidate(
         {
-          label: 'Encrypted videasy listing',
+          label: t('subtitle.detected.encrypted'),
           language: 'unknown',
           source: 'metadata',
           provider,
@@ -236,7 +237,7 @@ async function decryptVideasy(
             provider,
             providerId: `enc:${signalUrl}`,
             language: 'unknown',
-            label: 'Encrypted listing',
+            label: t('subtitle.detected.encrypted'),
             extra: { url: signalUrl },
           },
         },
@@ -259,7 +260,7 @@ async function decryptVideasy(
     candidates.push(
       createCandidate(
         {
-          label: lang === 'unknown' ? 'Subtitle' : sub.lang ?? sub.language ?? 'Subtitle',
+          label: lang === 'unknown' ? t('subtitle.detected.generic') : sub.lang ?? sub.language ?? t('subtitle.detected.generic'),
           language: lang,
           url,
           source: 'direct',
@@ -280,9 +281,9 @@ async function decryptVideasy(
 function getHubphimFallbackLabel(url: string): string {
   try {
     const id = new URLSearchParams(url.split('?')[1] ?? '').get('id');
-    return id ? `Subtitle #${id}` : 'Subtitle';
+    return id ? t('subtitle.detected.withId', [id]) : t('subtitle.detected.generic');
   } catch {
-    return 'Subtitle';
+    return t('subtitle.detected.generic');
   }
 }
 
@@ -302,7 +303,7 @@ function createUnresolvedHubphimCandidate(
         provider: profile.provider,
         providerId: `enc:${url}`,
         language: 'unknown',
-        label: 'Encrypted subtitle',
+        label: t('subtitle.detected.encrypted'),
         extra: { url },
       },
     },

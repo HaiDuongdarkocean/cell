@@ -10,6 +10,7 @@ import {
   Timeline,
   VolumeControl,
 } from '@/shared/domain/video/atoms';
+import { t } from '@/shared/i18n';
 import { Button } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import styles from './PlayerControls.module.css';
@@ -152,8 +153,8 @@ export function PlayerControls({
         <div className={styles.pillLeft}>
           {onPrevVideo && (
             <Button shape="circle"
-              aria-label="Previous video"
-              title="Previous video"
+              aria-label={t('player.controls.prevVideo')}
+              title={t('player.controls.prevVideo')}
               disabled={!hasPrevVideo}
               onClick={onPrevVideo}
             >
@@ -163,8 +164,8 @@ export function PlayerControls({
           <PlayPauseButton playing={isPlaying} onClick={onPlayPause} />
           {onNextVideo && (
             <Button shape="circle"
-              aria-label="Next video"
-              title="Next video"
+              aria-label={t('player.controls.nextVideo')}
+              title={t('player.controls.nextVideo')}
               disabled={!hasNextVideo}
               onClick={onNextVideo}
             >
@@ -202,11 +203,11 @@ export function PlayerControls({
           {hasSettingsItems && (
             <div className={styles.settingsWrap} ref={settingsRef}>
               <Button shape="circle"
-                aria-label="Settings"
+                aria-label={t('settings.title')}
                 aria-haspopup="menu"
                 aria-expanded={settingsOpen}
                 onClick={() => setSettingsOpen((p) => !p)}
-                title="Settings"
+                title={t('settings.title')}
               >
                 <Icon name="settings" />
               </Button>
@@ -228,7 +229,7 @@ export function PlayerControls({
                       }}
                     >
                       <Icon name="languages" className={styles.settingsMenuIcon} />
-                      <span>Tracks</span>
+                      <span>{t('player.tracks.title')}</span>
                     </Button>
                   )}
                 </div>

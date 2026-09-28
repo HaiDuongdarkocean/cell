@@ -1,5 +1,6 @@
 import type { ByteRange } from '@/entities/media';
 import { MAX_RETRY, SEGMENT_TIMEOUT_MS } from '@/shared/config/config';
+import { t } from '@/shared/i18n';
 
 /**
  * Build request headers that match the browser's page context.
@@ -61,11 +62,11 @@ export async function fetchSegment(
         headers: buildFetchHeaders(tabUrl),
       });
       if (!response.ok) {
-        throw new Error(`Segment fetch failed: ${response.status}`);
+        throw new Error(t('downloads.error.segmentFetch', [response.status]));
       }
       const blob = await response.blob();
       if (blob.size === 0) {
-        throw new Error('Segment response was empty');
+        throw new Error(t('downloads.error.segmentEmpty'));
       }
       return blob;
     } catch (err: unknown) {
@@ -81,7 +82,7 @@ export async function fetchSegment(
 
   throw lastError instanceof Error
     ? lastError
-    : new Error('Failed to fetch segment');
+    : new Error(t('downloads.error.segmentFailed'));
 }
 
 /**
@@ -120,11 +121,11 @@ export async function fetchSegmentWithRange(
       },
     });
     if (!response.ok && response.status !== 206) {
-      throw new Error(`Byte-range fetch failed: ${response.status}`);
+      throw new Error(t('downloads.error.rangeFetch', [response.status]));
     }
     const blob = await response.blob();
     if (blob.size === 0) {
-      throw new Error('Byte-range response was empty');
+      throw new Error(t('downloads.error.rangeEmpty'));
     }
     return blob;
   } finally {

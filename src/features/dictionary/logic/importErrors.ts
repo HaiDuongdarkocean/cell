@@ -2,6 +2,7 @@
 //
 // ImportError abstract base + 7 subclasses. getUserMessage maps to user-facing
 // Vietnamese messages. Rollback triggers: any ImportError → orchestrator catch.
+import { t } from '@/shared/i18n';
 
 /** Abstract base for all import errors. */
 export abstract class ImportError extends Error {
@@ -99,25 +100,25 @@ export class QuotaExceededError extends ImportError {
   }
 }
 
-/** Map ImportError code → user-facing Vietnamese message. */
+/** Map ImportError code → user-facing message. */
 export function getUserMessage(error: ImportError): string {
   switch (error.code) {
     case 'DUPLICATE_FILE':
-      return 'File này đã được import rồi. Không cần import lại.';
+      return t('resources.error.duplicate');
     case 'CORRUPTED_FILE':
-      return `File bị hỏng hoặc không hợp lệ. ${error.message}`;
+      return t('resources.error.corrupted', [error.message]);
     case 'UNSUPPORTED_FORMAT':
-      return `Định dạng không được hỗ trợ. ${error.message}`;
+      return t('resources.error.unsupported', [error.message]);
     case 'DATABASE_ERROR':
-      return `Lỗi cơ sở dữ liệu. ${error.message}`;
+      return t('resources.error.database', [error.message]);
     case 'PARSE_ERROR':
-      return `Lỗi đọc file. ${error.message}`;
+      return t('resources.error.parse', [error.message]);
     case 'ROLLBACK':
-      return `Import thất bại và không thể rollback. Cần dọn dẹp thủ công (resource ${error instanceof RollbackError ? error.resourceId : '?'}).`;
+      return t('resources.error.rollback', [error instanceof RollbackError ? error.resourceId : '?']);
     case 'CANCELLED':
-      return 'Import đã bị hủy.';
+      return t('resources.error.cancelled');
     case 'QUOTA_EXCEEDED':
-      return 'Đã hết dung lượng lưu trữ. Hãy xóa bớt tài nguyên hoặc import file nhỏ hơn.';
+      return t('resources.error.quota');
     default:
       return error.message;
   }

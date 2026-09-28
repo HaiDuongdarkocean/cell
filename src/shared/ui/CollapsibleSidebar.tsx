@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import type { ICON_CATALOG } from '@/shared/icons';
+import { t } from '@/shared/i18n';
 import { NavItem } from './NavItem';
 import styles from './CollapsibleSidebar.module.css';
 
@@ -14,6 +15,8 @@ export interface CollapsibleSidebarItem {
 
 export interface CollapsibleSidebarSection {
   id?: string;
+  /** Accessible label for the section group. */
+  label?: string;
   items: CollapsibleSidebarItem[];
 }
 
@@ -49,7 +52,7 @@ export function CollapsibleSidebar({
   header,
   sections,
   footer,
-  'aria-label': ariaLabel = 'Sidebar navigation',
+  'aria-label': ariaLabel = t('ui.sidebar.aria'),
   'data-cell-id': dataCellId,
   className,
 }: CollapsibleSidebarProps): React.JSX.Element {
@@ -68,7 +71,7 @@ export function CollapsibleSidebar({
             <ul
               key={sectionKey}
               className={styles.section}
-              aria-label={section.id ? `Sidebar ${section.id}` : undefined}
+              aria-label={section.label}
             >
               {section.items.map((item) => (
                 <li key={item.id}>
@@ -89,12 +92,12 @@ export function CollapsibleSidebar({
       </div>
 
       {onCollapsedChange && (
-        <div className={styles.collapseSection} role="group" aria-label="Sidebar controls">
+        <div className={styles.collapseSection} role="group" aria-label={t('ui.sidebar.controlsAria')}>
           <NavItem
             icon={collapsed ? 'chevronRight' : 'chevronLeft'}
-            label={collapsed ? undefined : 'Collapse'}
+            label={collapsed ? undefined : t('ui.collapse.collapse')}
             orientation="vertical"
-            aria-label={collapsed ? 'Expand sidebar' : undefined}
+            aria-label={collapsed ? t('ui.sidebar.expandAria') : undefined}
             onClick={() => onCollapsedChange(!collapsed)}
             data-cell-id="collapsible-sidebar-toggle"
           />

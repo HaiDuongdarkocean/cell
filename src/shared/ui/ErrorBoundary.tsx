@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import { Button } from './Button';
 import styles from './ErrorBoundary.module.css';
 
@@ -39,14 +40,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <div className={styles.icon}>
             <Icon name="triangleAlert" size={40} />
           </div>
-          <div className={styles.title}>Something went wrong</div>
+          <div className={styles.title}>{t('ui.errorBoundary.title')}</div>
           <div className={styles.description}>
-            An unexpected error occurred. Reload to try again.
+            {t('ui.errorBoundary.desc')}
           </div>
           <div className={styles.action}>
             <Button type="button" variant="primary" size="sm" onClick={this.handleReload}>
               <Icon name="rotateCcw"  />
-              Reload
+              {t('ui.errorBoundary.retry')}
             </Button>
           </div>
         </div>

@@ -50,7 +50,7 @@ function metaText(job: Job): string {
   if (job.status === 'done') {
     const count = job.result?.wordCount ?? job.result?.count;
     if (typeof count === 'number') {
-      return `${statusText} · ${count.toLocaleString()}`;
+      return t('jobs.meta.detail', [statusText, count.toLocaleString()]);
     }
     return statusText;
   }
@@ -58,10 +58,10 @@ function metaText(job: Job): string {
     const amount = unit === 'bytes'
       ? `${formatBytes(done)} / ${formatBytes(total)}`
       : `${done.toLocaleString()} / ${total.toLocaleString()}`;
-    return `${statusText} · ${amount}`;
+    return t('jobs.meta.detail', [statusText, amount]);
   }
   if (isActiveJob(job) && done > 0) {
-    return `${statusText} · ${done.toLocaleString()}`;
+    return t('jobs.meta.detail', [statusText, done.toLocaleString()]);
   }
   return statusText;
 }

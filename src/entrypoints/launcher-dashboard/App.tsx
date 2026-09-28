@@ -4,6 +4,7 @@ import { LauncherSearchBar } from './components/LauncherSearchBar';
 import { LauncherTile } from './components/LauncherTile';
 import { LauncherUserBar } from './components/LauncherUserBar';
 import { LAUNCHER_TILES } from './data/launcherTiles';
+import { t } from '@/shared/i18n';
 import styles from './App.module.css';
 
 export function App() {
@@ -14,7 +15,7 @@ export function App() {
     if (normalized.length === 0) return LAUNCHER_TILES;
     return LAUNCHER_TILES.filter(
       (tile) =>
-        tile.label.toLowerCase().includes(normalized) ||
+        t(tile.label).toLowerCase().includes(normalized) ||
         tile.keywords.some((keyword) => keyword.includes(normalized)),
     );
   }, [query]);
@@ -24,16 +25,16 @@ export function App() {
       <LauncherBackground />
       <div className={styles.container}>
         <header className={styles.header}>
-          <LauncherSearchBar value={query} onChange={setQuery} placeholder="Search Cell…" />
+          <LauncherSearchBar value={query} onChange={setQuery} placeholder={t('launcher.search.placeholder')} />
         </header>
         <main className={styles.main}>
           {filteredTiles.length === 0 ? (
-            <p className={styles.emptyText}>No matches for “{query}”.</p>
+            <p className={styles.emptyText}>{t('launcher.search.empty', [query])}</p>
           ) : (
             <ul className={styles.grid}>
               {filteredTiles.map((tile) => (
                 <li key={tile.id} className={styles.tileWrapper}>
-                  <LauncherTile icon={tile.icon} label={tile.label} />
+                  <LauncherTile icon={tile.icon} label={t(tile.label)} />
                 </li>
               ))}
             </ul>

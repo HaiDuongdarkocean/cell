@@ -10,6 +10,7 @@
  */
 
 import muxjs from 'mux.js';
+import { t } from '@/shared/i18n';
 
 const { Transmuxer } = muxjs.mp4;
 
@@ -65,7 +66,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
         const response: WorkerResponse = {
           groupIndex,
           success: false,
-          error: 'Transmuxer produced no output (unsupported codec or corrupt input)',
+          error: t('downloads.error.conversionNoOutput'),
           durationMs,
           outputSize: 0,
         };
@@ -112,7 +113,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
       const response: WorkerResponse = {
         groupIndex,
         success: false,
-        error: `Transmux timed out after ${timeoutMs}ms`,
+        error: t('downloads.error.conversionTimeout'),
         durationMs: Math.round(performance.now() - start),
         outputSize: 0,
       };

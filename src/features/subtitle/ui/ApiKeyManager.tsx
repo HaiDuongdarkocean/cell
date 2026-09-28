@@ -26,6 +26,7 @@ import type {
 } from '@/entities/settings';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { t, type MessageKey } from '@/shared/i18n';
 import styles from './ApiKeyManager.module.css';
 
 export interface ApiKeyManagerProps {
@@ -60,11 +61,11 @@ const PROVIDER_URLS: Record<SubtitleApiKeyProvider, string> = {
 
 const PROVIDER_OPTIONS = PROVIDERS.map((p) => ({ value: p, label: PROVIDER_LABELS[p] }));
 
-const STATUS_LABELS: Record<SubtitleApiKeyStatus, string> = {
-  active: 'Active',
-  'rate-limited': 'Rate-limited',
-  invalid: 'Invalid',
-  unverified: 'Unverified',
+const STATUS_KEY: Record<SubtitleApiKeyStatus, MessageKey> = {
+  active: 'subtitle.keys.status.active',
+  'rate-limited': 'subtitle.keys.status.rateLimited',
+  invalid: 'subtitle.keys.status.invalid',
+  unverified: 'subtitle.keys.status.unverified',
 };
 
 // === Pure helpers (exported for testing) ===
@@ -211,17 +212,17 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
       {/* Header row — count + add toggle */}
       <div className={styles.headerRow}>
         <span className={styles.headerCount}>
-          {totalKeys === 0 ? 'No API keys' : `${totalKeys} key${totalKeys > 1 ? 's' : ''}`}
+          {totalKeys === 0 ? t('subtitle.keys.countNone') : t('subtitle.keys.count', [totalKeys])}
         </span>
         <Button variant="secondary"
           className={styles.addToggle}
           onClick={() => setAddOpen((v) => !v)}
           aria-expanded={addOpen}
-          aria-label={addOpen ? 'Close add key form' : 'Add new API key'}
+          aria-label={addOpen ? t('subtitle.keys.closeForm') : t('subtitle.keys.addAria')}
           data-cell-id="akm-add-toggle"
         >
           <Icon name={addOpen ? 'x' : 'plus'}  />
-          <span>{addOpen ? 'Cancel' : 'Add key'}</span>
+          <span>{addOpen ? t('subtitle.action.cancel') : t('subtitle.keys.add')}</span>
         </Button>
       </div>
 
@@ -231,7 +232,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
           <div className={styles.addFormRow}>
             <Select
               data-cell-id="akm-provider-select"
-              aria-label="Select key provider"
+              aria-label={t('subtitle.keys.providerAria')}
               value={addProvider}
               options={PROVIDER_OPTIONS}
               onChange={(v) => setAddProvider(v as SubtitleApiKeyProvider)}
@@ -243,8 +244,8 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
             spellCheck={false}
             value={addKey}
             onChange={(e) => setAddKey(e.target.value)}
-            placeholder="Paste your API key"
-            aria-label="API key"
+            placeholder={t('subtitle.keys.keyPlaceholder')}
+            aria-label={t('subtitle.keys.keyAria')}
             data-cell-id="akm-key-input"
           />
           <Input
@@ -252,8 +253,8 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
             autoComplete="off"
             value={addLabel}
             onChange={(e) => setAddLabel(e.target.value)}
-            placeholder="Label (e.g. Free account)"
-            aria-label="Optional label for this key"
+            placeholder={t('subtitle.keys.labelPlaceholder')}
+            aria-label={t('subtitle.keys.labelAria')}
             data-cell-id="akm-label-input"
           />
           <a
@@ -264,7 +265,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
             data-cell-id="akm-get-key-link"
           >
             <Icon name="externalLink"  />
-            <span>Get {PROVIDER_LABELS[addProvider]} API key</span>
+            <span>{t('subtitle.keys.getKey', [PROVIDER_LABELS[addProvider]])}</span>
           </a>
           <Button
             variant="primary"
@@ -274,7 +275,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
             className={styles.addBtn}
             data-cell-id="akm-add-btn"
           >
-            Add key
+            {t('subtitle.keys.add')}
           </Button>
         </div>
       )}
@@ -295,7 +296,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
             {groupKeys.length === 0 && (
               <div className={styles.emptyState}>
                 <Icon name="wrench" className={styles.emptyIcon} />
-                <span className={styles.emptyText}>No {PROVIDER_LABELS[provider]} keys yet</span>
+                <span className={styles.emptyText}>{t('subtitle.keys.noneForProvider', [PROVIDER_LABELS[provider]])}</span>
               </div>
             )}
 
@@ -322,18 +323,18 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
                           <span
                             className={`${styles.statusDot} ${statusDotClass(k.status)}`}
                             data-cell-id={`key-status-${k.id}`}
-                            aria-label={STATUS_LABELS[k.status]}
+                            aria-label={t(STATUS_KEY[k.status])}
                           />
-                          <span className={styles.statusText}>{STATUS_LABELS[k.status]}</span>
+                          <span className={styles.statusText}>{t(STATUS_KEY[k.status])}</span>
                         </div>
                         {q && (
                           <span className={styles.keyQuota} data-cell-id={`key-quota-${k.id}`}>
-                            {q.remainingDownloads} downloads left
+                            {t('subtitle.keys.downloadsLeft', [q.remainingDownloads])}
                           </span>
                         )}
                         {k.status === 'rate-limited' && k.rateLimitedUntil && (
                           <span className={styles.keyQuota}>
-                            Resets at {new Date(k.rateLimitedUntil).toLocaleTimeString()}
+                            {t('subtitle.keys.resetsAt', [new Date(k.rateLimitedUntil).toLocaleTimeString()])}
                           </span>
                         )}
                       </div>
@@ -341,7 +342,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
                         <Button shape="circle" variant="ghost"
                           className={styles.iconAction}
                           onClick={() => startEdit(k)}
-                          aria-label={`Edit key ${k.label ?? k.id}`}
+                          aria-label={t('subtitle.keys.editAria', [k.label ?? k.id])}
                           data-cell-id={`key-edit-${k.id}`}
                         >
                           <Icon name="pencil"  />
@@ -349,7 +350,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
                         <Button shape="circle" variant="ghost"
                           className={`${styles.iconAction} ${styles.iconActionDanger}`}
                           onClick={() => setDeleteTarget(k)}
-                          aria-label={`Delete key ${k.label ?? k.id}`}
+                          aria-label={t('subtitle.keys.deleteAria', [k.label ?? k.id])}
                           data-cell-id={`key-delete-${k.id}`}
                         >
                           <Icon name="trash"  />
@@ -368,15 +369,15 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
       {totalKeys === 0 && !addOpen && (
         <div className={styles.fullEmpty} data-cell-id="akm-empty">
           <Icon name="wrench" className={styles.fullEmptyIcon} />
-          <span className={styles.fullEmptyTitle}>No API keys yet</span>
-          <span className={styles.fullEmptyHint}>Add a key to start searching for subtitles</span>
+          <span className={styles.fullEmptyTitle}>{t('subtitle.keys.emptyTitle')}</span>
+          <span className={styles.fullEmptyHint}>{t('subtitle.keys.emptyHint')}</span>
           <Button
             variant="primary"
             size="md"
             onClick={() => setAddOpen(true)}
             data-cell-id="akm-empty-add"
           >
-            Add your first key
+            {t('subtitle.keys.addFirst')}
           </Button>
         </div>
       )}
@@ -387,22 +388,21 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
-        title="Delete API key?"
+        title={t('subtitle.keys.deleteTitle')}
         data-cell-id="delete-key-confirm"
         footer={
           <div className={styles.confirmFooter}>
             <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(null)}>
-              Cancel
+              {t('subtitle.action.cancel')}
             </Button>
             <Button variant="destructive" size="sm" onClick={confirmDelete} data-cell-id="confirm-delete">
-              Delete
+              {t('subtitle.action.delete')}
             </Button>
           </div>
         }
       >
         <p className={styles.confirmBody}>
-          Delete key {deleteTarget?.label ? `"${deleteTarget.label}"` : maskKey(deleteTarget?.key ?? '')}?
-          This cannot be undone.
+          {t('subtitle.keys.deleteConfirm', [deleteTarget?.label ? `"${deleteTarget.label}"` : maskKey(deleteTarget?.key ?? '')])}
         </p>
       </Dialog>
     </div>
@@ -434,8 +434,8 @@ function InlineEdit({
         type="text"
         value={label}
         onChange={(e) => onLabelChange(e.target.value)}
-        placeholder="Label (e.g. Free account)"
-        aria-label="Key label"
+        placeholder={t('subtitle.keys.labelPlaceholder')}
+        aria-label={t('subtitle.keys.editLabelAria')}
         data-cell-id="akm-edit-label-input"
       />
       <Input
@@ -444,16 +444,16 @@ function InlineEdit({
         spellCheck={false}
         value={keyInput}
         onChange={(e) => onKeyChange(e.target.value)}
-        placeholder="New key (leave blank to keep)"
-        aria-label="New API key value"
+        placeholder={t('subtitle.keys.newKeyPlaceholder')}
+        aria-label={t('subtitle.keys.newKeyAria')}
         data-cell-id="akm-edit-key-input"
       />
       <div className={styles.editActions}>
         <Button variant="ghost" size="sm" onClick={onCancel} data-cell-id="akm-edit-cancel">
-          Cancel
+          {t('subtitle.action.cancel')}
         </Button>
         <Button variant="primary" size="sm" onClick={onSave} data-cell-id="akm-edit-save">
-          Save
+          {t('subtitle.action.save')}
         </Button>
       </div>
     </div>

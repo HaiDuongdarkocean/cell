@@ -1,6 +1,8 @@
 import { useEffect, useId, useState } from 'react';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
 import { Box } from '@/shared/ui';
+import { t } from '@/shared/i18n';
+import { componentLabel } from './srsLabels';
 import { SrsReviewCardFront } from './SrsReviewCardFront';
 import { SrsReviewCardBack } from './SrsReviewCardBack';
 import styles from './SrsReviewCard.module.css';
@@ -39,14 +41,14 @@ export function SrsReviewCard(): React.JSX.Element | null {
 
   return (
     <Box className={styles.card}>
-      <div className={styles.progress} role="list" aria-label="Review progress">
-        {(['sound', 'meaning', 'spelling'] as const).map((t) => (
+      <div className={styles.progress} role="list" aria-label={t('srs.review.progressAria')}>
+        {(['sound', 'meaning', 'spelling'] as const).map((ct) => (
           <div
-            key={t}
+            key={ct}
             role="listitem"
-            className={[styles.progressDot, t === componentType ? styles.progressDotActive : ''].join(' ')}
-            aria-label={t}
-            aria-current={t === componentType ? 'step' : undefined}
+            className={[styles.progressDot, ct === componentType ? styles.progressDotActive : ''].join(' ')}
+            aria-label={componentLabel(ct)}
+            aria-current={ct === componentType ? 'step' : undefined}
           />
         ))}
       </div>

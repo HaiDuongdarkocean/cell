@@ -5,6 +5,7 @@
  * is injected via `ResumePositionRepository`. The pure functions
  * (`shouldPromptResume`, `formatPosition`) are exported directly for unit testing.
  */
+import { t } from '@/shared/i18n';
 
 /* ── Types ──────────────────────────────────────────────────────── */
 
@@ -99,7 +100,7 @@ export function createResumePositionService(
       if (position === null || !shouldPromptResume(position, durationMs)) {
         return false;
       }
-      return showDialog(`Continue from ${formatPosition(position)}?`);
+      return showDialog(t('player.resume.prompt', [formatPosition(position)]));
     },
   };
 }

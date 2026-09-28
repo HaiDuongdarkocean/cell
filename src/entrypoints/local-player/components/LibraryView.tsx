@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { t, type MessageKey } from '@/shared/i18n';
 import type { VideoRecord, SubtitleRecord } from '@/features/local-player/services/mediaLibraryRepository';
 import type { SortBy } from '@/features/local-player/logic/librarySort';
 import type { SubtitleMatch, MatchResult } from '@/features/local-player/logic/subtitleMatch';
@@ -10,11 +11,11 @@ import { LibraryCard } from './LibraryCard';
 import { ImmersionStats } from './ImmersionStats';
 import styles from './LibraryView.module.css';
 
-const SORT_OPTIONS: { value: SortBy; label: string }[] = [
-  { value: 'recent', label: 'Recently watched' },
-  { value: 'title', label: 'Title' },
-  { value: 'added', label: 'Date added' },
-  { value: 'fit', label: 'Best fit (i+1)' },
+const SORT_OPTIONS: { value: SortBy; labelKey: MessageKey }[] = [
+  { value: 'recent', labelKey: 'library.sort.recent' },
+  { value: 'title', labelKey: 'library.sort.title' },
+  { value: 'added', labelKey: 'library.sort.added' },
+  { value: 'fit', labelKey: 'library.sort.fit' },
 ];
 
 const TARGET_LANG = 'en';
@@ -107,8 +108,8 @@ export function LibraryView({
       {videos.length === 0 ? (
         <EmptyState
           icon={<Icon name="video" size="lg" />}
-          title="No videos yet"
-          description="Open a video file to add it to your library."
+          title={t('library.empty.title')}
+          description={t('library.empty.desc')}
           data-cell-id="library-empty"
         />
       ) : (
@@ -135,10 +136,10 @@ export function LibraryView({
 
       <footer className={styles.footer}>
         <Select
-          options={SORT_OPTIONS}
+          options={SORT_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
           value={sortBy}
           onChange={(value) => onSortChange(value as SortBy)}
-          aria-label="Sort library"
+          aria-label={t('library.sort.aria')}
           data-cell-id="library-sort-select"
           className={styles.sortSelect}
         />
@@ -150,7 +151,7 @@ export function LibraryView({
             leadingIcon={<Icon name="plus" size="xs" />}
             data-cell-id="playlist-add-files"
           >
-            <span className={styles.btnLabel}>Add files</span>
+            <span className={styles.btnLabel}>{t('library.action.addFiles')}</span>
           </Button>
           <Button
             variant="secondary"
@@ -159,7 +160,7 @@ export function LibraryView({
             leadingIcon={<Icon name="folderOpen" size="xs" />}
             data-cell-id="playlist-add-folder"
           >
-            <span className={styles.btnLabel}>Add folder</span>
+            <span className={styles.btnLabel}>{t('library.action.addFolder')}</span>
           </Button>
           {videos.length > 0 && (
             <Button
@@ -169,7 +170,7 @@ export function LibraryView({
               leadingIcon={<Icon name="trash" size="xs" />}
               data-cell-id="playlist-clear-all"
             >
-              <span className={styles.btnLabel}>Clear all</span>
+              <span className={styles.btnLabel}>{t('library.action.clearAll')}</span>
             </Button>
           )}
         </div>

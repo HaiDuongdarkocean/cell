@@ -6,6 +6,7 @@
  * service-worker lifetime.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import { TtsSpeakPayloadSchema } from '@/entities/message/dictionarySchemas';
@@ -36,7 +37,7 @@ export function registerTtsHandlers(ctx: BackgroundContext): void {
       engine = getEngine();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: `TTS engine unavailable: ${msg}` };
+      return { success: false, error: t('tts.error.engineUnavailable', [msg]) };
     }
 
     try {
@@ -44,7 +45,7 @@ export function registerTtsHandlers(ctx: BackgroundContext): void {
       return { success: true, data: null };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: `TTS speak failed: ${msg}` };
+      return { success: false, error: t('tts.error.speakFailed', [msg]) };
     }
   });
 }

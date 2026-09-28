@@ -3,6 +3,7 @@ import type { NavClusterSettings } from '@/entities/media';
 import type { CSSProperties } from 'react';
 import { ICON_CATALOG } from '@/shared/icons';
 import { mountToWatchVideo } from '@/shared/lib/dom/netflixPlayback';
+import { t } from '@/shared/i18n';
 
 // === Pure style helpers (ADR-013 D6) ===
 // Logic ở pure function — testable 100%, no DOM side effect.
@@ -109,7 +110,7 @@ export function createOverlayLayer(
 
   // ARIA slider on overlay div (ADR-015 D2 — moved from handle button)
   overlay.setAttribute('role', 'slider');
-  overlay.setAttribute('aria-label', `Subtitle ${role}`);
+  overlay.setAttribute('aria-label', t('subtitle.overlay.aria', [role === 'target' ? t('library.card.target') : t('library.card.native')]));
   overlay.setAttribute('aria-orientation', 'vertical');
   overlay.setAttribute('aria-valuemin', '0');
   overlay.setAttribute('aria-valuemax', '95');
@@ -196,7 +197,7 @@ export function createDragHint(container: HTMLElement): HTMLDivElement {
   const hint = document.createElement('div');
   hint.setAttribute('data-cell-id', 'subtitle-drag-hint');
   hint.className = 'subtitle-drag-hint';
-  hint.textContent = 'Drop subtitle file here';
+  hint.textContent = t('subtitle.dropHint');
 
   container.appendChild(hint);
   // ADR-031: Netflix z-index fix — drag hint must sit above Netflix overlays.

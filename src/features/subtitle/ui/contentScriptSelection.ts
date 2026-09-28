@@ -12,6 +12,7 @@ import {
 } from '@/features/subtitle';
 import type { SubtitlePanelItem } from '@/features/subtitle';
 import { cleanTargetCues } from '../logic/subtitleCleanupRuntime';
+import { t } from '@/shared/i18n';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
 import type { ResolveSubtitleDownloadResult } from '@/entities/message';
@@ -57,7 +58,7 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
     ctx.showOverlay();
     ctx.syncSidePanelFromBlock();
     useCuesStore.getState().setLoadStatus(role, { state: 'loaded', source: 'imported' });
-    ctx.debouncedToast(`Switched to ${parsed.file.name}`, container, { variant: 'success' });
+    ctx.debouncedToast(t('subtitle.select.switched', [parsed.file.name]), container, { variant: 'success' });
   }
 
   /**
@@ -81,7 +82,7 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
       const result = await fetchAndParseSubtitle(sub.url, resolveFormat(sub.format, sub.url), window.location.href, sub.initiator);
       if (!result.success || result.cues.length === 0) {
         console.error('[onSubtitleSelect] failed', result.error);
-        showToast(`Could not load subtitle track ${index + 1}`, container, { variant: 'error' });
+        showToast(t('subtitle.select.loadTrackFailed', [index + 1]), container, { variant: 'error' });
         return;
       }
       // D1 merge: loadBilingualCues keeps other side when this side is empty.
@@ -105,11 +106,11 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
       ctx.showOverlay();
       ctx.syncSidePanelFromBlock();
       useCuesStore.getState().setLoadStatus(role, { state: 'loaded', languageLabel: formatSubtitleName('auto', sub.language, index, undefined, sub.displayName), source: 'auto' });
-      showToast(`Switched to subtitle track ${index + 1}`, container, { variant: 'success' });
+      showToast(t('subtitle.select.switchedTrack', [index + 1]), container, { variant: 'success' });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('[onSubtitleSelect] error', msg);
-      showToast('Could not switch subtitle', container, { variant: 'error' });
+      showToast(t('subtitle.select.switchFailed'), container, { variant: 'error' });
     }
 
     // Save preference: origin → lang → index
@@ -159,7 +160,7 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
     ctx.showOverlay();
     ctx.syncSidePanelFromBlock();
     useCuesStore.getState().setLoadStatus(role, { state: 'loaded', source: 'search' });
-    ctx.debouncedToast(`Switched to ${item.name}`, container, { variant: 'success' });
+    ctx.debouncedToast(t('subtitle.select.switched', [item.name]), container, { variant: 'success' });
   }
 
   /**
@@ -246,13 +247,13 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
         payload: { result, role },
       });
       if (!response?.success || !response.data?.content) {
-        const msg = response?.error ?? response?.data?.error?.type ?? 'download failed';
-        showToast(`Could not load subtitle: ${msg}`, container, { variant: 'error' });
+        const msg = response?.error ?? response?.data?.error?.type ?? t('subtitle.select.downloadFailed');
+        showToast(t('subtitle.select.loadFailed', [msg]), container, { variant: 'error' });
         return;
       }
       const parsed = parseSubtitle(response.data.content, response.data.format ?? result.format);
       if (!parsed.success || parsed.cues.length === 0) {
-        showToast(`Could not parse subtitle: ${parsed.error ?? 'no cues'}`, container, { variant: 'error' });
+        showToast(t('subtitle.select.parseFailed', [parsed.error ?? t('subtitle.select.noCues')]), container, { variant: 'error' });
         return;
       }
       cues = parsed.cues;
@@ -301,7 +302,7 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
     ctx.syncSidePanelFromBlock();
     const searchLabel = (() => { const l = isoCodeToLabel(result.isoLanguage); return l ? l.charAt(0).toUpperCase() + l.slice(1) : result.isoLanguage; })();
     useCuesStore.getState().setLoadStatus(role, { state: 'loaded', languageLabel: searchLabel, source: 'search' });
-    ctx.debouncedToast(`Loaded ${result.name}`, container, { variant: 'success' });
+    ctx.debouncedToast(t('subtitle.select.loaded', [result.name]), container, { variant: 'success' });
   }
 
   return { onManagerSelect, handleSearchResultSelect };

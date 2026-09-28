@@ -1,4 +1,5 @@
 import type { KeyboardEvent } from 'react';
+import { t } from '@/shared/i18n';
 import styles from './Timeline.module.css';
 
 interface TimelineProps {
@@ -97,7 +98,7 @@ export function Timeline({
     <div
       className={cls}
       role="slider"
-      aria-label="Seek"
+      aria-label={t('video.timeline.seek')}
       aria-valuenow={Math.round(currentTime)}
       aria-valuemin={0}
       aria-valuemax={Math.round(safeDuration)}

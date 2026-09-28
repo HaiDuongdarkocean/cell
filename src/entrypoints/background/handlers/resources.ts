@@ -13,6 +13,7 @@
  */
 import type { z } from 'zod';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import { JobDuplicateError, type JobRegistry } from '@/features/jobs/logic/jobRegistry';
@@ -111,7 +112,7 @@ async function runImport(registry: JobRegistry, job: Job): Promise<void> {
   const payload = importPayloads.get(job.id);
   importPayloads.delete(job.id);
   if (!payload) {
-    throw new Error('Upload data is no longer available — select the file again');
+    throw new Error(t('jobs.interrupted.reimport'));
   }
   const result = await importFile(payload.file, payload.resourceType, {
     langCode: payload.langCode,
@@ -274,7 +275,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     const { langCode, resourceId } = parsed.data;
     try {
       const resource = await getResource(langCode, resourceId);
-      if (!resource) return toError(new Error(`Không tìm thấy resource id ${resourceId}.`));
+      if (!resource) return toError(new Error(t('resources.error.notFound')));
       if (resource.components) return ok({ components: resource.components });
       const set = new Set<DictionaryComponent>();
       for (const entry of await findDictionaryByResource(langCode, resourceId)) {
@@ -331,7 +332,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     if (!pending) {
       const existing = registry.get(p.jobId);
       if (existing) {
-        return toError(new Error(`Import job ${p.jobId} is ${existing.status} — chunk rejected`));
+        return toError(new Error(t('resources.error.uploadRejected')));
       }
       try {
         registry.register({
@@ -351,7 +352,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
         });
       } catch (err) {
         if (err instanceof JobDuplicateError) {
-          return toError(new Error('An import for this file is already in progress'));
+          return toError(new Error(t('resources.error.importInProgress')));
         }
         return toError(err);
       }
@@ -372,7 +373,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     }
 
     if (p.seq < 0 || p.seq >= pending.chunks.length) {
-      return toError(new Error(`Import chunk seq ${p.seq} out of range (total ${pending.chunks.length})`));
+      return toError(new Error(t('resources.error.uploadRejected')));
     }
     if (pending.chunks[p.seq] === undefined) {
       pending.chunks[p.seq] = p.data;

@@ -3,6 +3,7 @@ import { Button } from '@/shared/ui/Button';
 import type { ButtonHTMLAttributes } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { Spinner } from '@/shared/ui';
+import { t } from '@/shared/i18n';
 import styles from './PronunciationButton.module.css';
 
 export interface PronunciationButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label'> {
@@ -56,7 +57,7 @@ export function PronunciationButton({
       className={cls}
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}
-      aria-label={`Pronounce ${word}`}
+      aria-label={t('dict.atom.pronounce', [word])}
       onClick={handleClick}
       {...rest}
     >

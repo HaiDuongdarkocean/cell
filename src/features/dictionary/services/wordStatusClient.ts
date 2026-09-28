@@ -7,6 +7,7 @@
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { t } from '@/shared/i18n';
 import type { MessageResponse } from '@/entities/message';
 import type { WordStatus } from '@/entities/dictionary';
 import type { WordStatusEntry } from './wordStatusStore';
@@ -54,7 +55,7 @@ export async function setWordStatus(
   });
 
   if (!response?.success) {
-    throw new Error(response?.error ?? 'Failed to set word status');
+    throw new Error(response?.error ?? t('dict.error.statusSet'));
   }
 }
 
@@ -80,7 +81,7 @@ export async function cycleWordStatus(langCode: string, term: string): Promise<W
   });
 
   if (!response?.success || !response.data) {
-    throw new Error(response?.error ?? 'Failed to cycle word status');
+    throw new Error(response?.error ?? t('dict.error.statusCycle'));
   }
 
   return response.data.status;
@@ -94,7 +95,7 @@ export async function deleteWordStatus(langCode: string, term: string): Promise<
   });
 
   if (!response?.success) {
-    throw new Error(response?.error ?? 'Failed to delete word status');
+    throw new Error(response?.error ?? t('dict.error.statusDelete'));
   }
 }
 
@@ -106,7 +107,7 @@ export async function trashWordStatus(langCode: string, term: string): Promise<v
   });
 
   if (!response?.success) {
-    throw new Error(response?.error ?? 'Failed to trash word status');
+    throw new Error(response?.error ?? t('dict.error.statusTrash'));
   }
 }
 
@@ -132,7 +133,7 @@ export async function restoreWordStatus(langCode: string, term: string): Promise
   });
 
   if (!response?.success || !response.data) {
-    throw new Error(response?.error ?? 'Failed to restore word status');
+    throw new Error(response?.error ?? t('dict.error.statusRestore'));
   }
 
   return response.data.status;
@@ -146,6 +147,6 @@ export async function deleteWordTrash(langCode: string, term: string): Promise<v
   });
 
   if (!response?.success) {
-    throw new Error(response?.error ?? 'Failed to delete trashed word');
+    throw new Error(response?.error ?? t('dict.error.trashDelete'));
   }
 }

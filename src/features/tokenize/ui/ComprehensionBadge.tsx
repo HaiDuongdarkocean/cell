@@ -20,7 +20,7 @@ export interface ComprehensionBadgeProps {
 }
 
 export function ComprehensionBadge({ stats, size = 'sm' }: ComprehensionBadgeProps): React.JSX.Element {
-  const title = `${stats.coverage}% · ${t(BAND_MESSAGE[stats.band])} · ${t('comprehension.newTerms', [stats.newTerms])}`;
+  const title = t('comprehension.badge.title', [stats.coverage, t(BAND_MESSAGE[stats.band]), t('comprehension.newTerms', [stats.newTerms])]);
   return (
     <Badge
       variant={BAND_VARIANT[stats.band]}

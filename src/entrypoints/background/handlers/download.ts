@@ -3,6 +3,7 @@
  * CANCEL, PAUSE, RESUME, RETRY, REMOVE, GET_DOWNLOAD_PROGRESS, CONVERSION_PROGRESS_UPDATE.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
 import {
   findVideoById,
@@ -39,7 +40,7 @@ export function registerDownloadHandlers(ctx: BackgroundContext): void {
     const video = await findVideoById(ctx, payload.videoId);
 
     if (!video) {
-      return { success: false, error: `Video not found: ${payload.videoId}` };
+      return { success: false, error: t('downloads.error.videoNotFound') };
     }
 
     const item = createDownloadItem(ctx, video, 'video');
@@ -62,7 +63,7 @@ export function registerDownloadHandlers(ctx: BackgroundContext): void {
       );
       return {
         success: false,
-        error: `Subtitle not found: ${payload.subtitleId}`,
+        error: t('downloads.error.subtitleNotFound'),
       };
     }
 
@@ -81,13 +82,13 @@ export function registerDownloadHandlers(ctx: BackgroundContext): void {
     const tabId = payload.tabId ?? (await getActiveTabId(ctx));
 
     if (tabId === undefined) {
-      return { success: false, error: 'No active tab found' };
+      return { success: false, error: t('downloads.error.noActiveTab') };
     }
 
     const { videos, subtitles } = ctx.networkInterceptor.getMedia(tabId);
 
     if (videos.length === 0 && subtitles.length === 0) {
-      return { success: false, error: 'No media found for this tab' };
+      return { success: false, error: t('downloads.error.noMediaForTab') };
     }
 
     const items: DownloadItem[] = [];

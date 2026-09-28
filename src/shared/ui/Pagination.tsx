@@ -3,6 +3,7 @@ import { Button } from './Button';
 
 import { Input } from './Input';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './Pagination.module.css';
 
 /** ponytail: using unicode text labels for first/last/ellipsis because dedicated
@@ -71,7 +72,7 @@ export function Pagination({
   return (
     <div className={`${styles.pagination} ${className ?? ''}`.trim()}>
       <Button
-        aria-label="First page"
+        aria-label={t('ui.pagination.first')}
         size="sm"
         variant="ghost"
         disabled={current === 0}
@@ -81,7 +82,7 @@ export function Pagination({
         ‹‹
       </Button>
       <Button
-        aria-label="Previous page"
+        aria-label={t('ui.pagination.previous')}
         size="sm"
         variant="ghost"
         disabled={current === 0}
@@ -98,7 +99,7 @@ export function Pagination({
             return (
               <span key={`ellipsis-${i}`} className={styles.ellipsisWrap}>
                 <Button
-                  aria-label={`More pages ${side}`}
+                  aria-label={t('ui.pagination.allPages')}
                   size="sm"
                   variant="ghost"
                   className={styles.ellipsisBtn}
@@ -108,7 +109,7 @@ export function Pagination({
                 </Button>
                 {ellipsisPopup === side && (
                   <div className={styles.ellipsisPopup} onClick={(e) => e.stopPropagation()}>
-                    <div className={styles.popupHeader}>Jump to page</div>
+                    <div className={styles.popupHeader}>{t('ui.pagination.jump')}</div>
                     <div className={styles.popupList}>
                       {Array.from({ length: total }, (_, idx) => idx + 1).map((n) => (
                         <Button
@@ -143,7 +144,7 @@ export function Pagination({
       </div>
 
       <Button
-        aria-label="Next page"
+        aria-label={t('ui.pagination.next')}
         size="sm"
         variant="ghost"
         disabled={current >= total - 1}
@@ -153,7 +154,7 @@ export function Pagination({
         ›
       </Button>
       <Button
-        aria-label="Last page"
+        aria-label={t('ui.pagination.last')}
         size="sm"
         variant="ghost"
         disabled={current >= total - 1}
@@ -172,11 +173,11 @@ export function Pagination({
             value={jumpValue}
             onChange={(e) => setJumpValue(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleJump(); }}
-            placeholder="Go"
-            aria-label="Jump to page"
+            placeholder={t('ui.pagination.jumpPlaceholder')}
+            aria-label={t('ui.pagination.jump')}
             className={styles.jumpField}
           />
-          <Button shape="circle" aria-label="Jump to page" size="sm" variant="ghost" onClick={handleJump}>
+          <Button shape="circle" aria-label={t('ui.pagination.jump')} size="sm" variant="ghost" onClick={handleJump}>
             <Icon name="search" />
           </Button>
         </div>

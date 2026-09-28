@@ -12,6 +12,7 @@
  */
 
 import type { SrtCue } from '@/entities/media';
+import { t } from '@/shared/i18n';
 import { chunkCuesByCharBudget, buildSequentialIndices } from './translateChunker';
 import { joinCueTexts, alignTranslatedSegments } from '../service/translateService';
 
@@ -199,7 +200,7 @@ export class BackgroundPrefillController {
       }
 
       if (!success) {
-        this.opts.onError('Translation temporarily unavailable (Google rate-limit).');
+        this.opts.onError(t('translate.error.unavailable'));
         this.running = false;
         return;
       }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react';
+import { t } from '@/shared/i18n';
 import styles from './MobileSheet.module.css';
 
 /**
@@ -121,7 +122,7 @@ export function MobileSheet({
   header,
   children,
   'aria-label': ariaLabel,
-  handleAriaLabel = 'Resize sheet. Press Enter to expand or collapse.',
+  handleAriaLabel = t('ui.mobileSheet.handleAria'),
   className,
   contentClassName,
   'data-cell-id': dataTestId,

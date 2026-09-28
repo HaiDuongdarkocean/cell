@@ -78,9 +78,9 @@ describe('PronunciationAudioPanel', () => {
     );
 
     const panel = screen.getByTestId('dictionary-audio-panel');
-    // TTS item label: "hello · TTS"
+    // TTS item label: "hello · Browser voice"
     expect(within(panel).getByText('hello')).toBeInTheDocument();
-    expect(within(panel).getByText('TTS')).toBeInTheDocument();
+    expect(within(panel).getByText('Browser voice')).toBeInTheDocument();
   });
 
   it('triggers onTtsWord when clicking play on TTS word fallback item', () => {
@@ -94,7 +94,7 @@ describe('PronunciationAudioPanel', () => {
     );
 
     const panel = screen.getByTestId('dictionary-audio-panel');
-    const playBtn = within(panel).getByRole('button', { name: /Play .+ TTS/i });
+    const playBtn = within(panel).getByRole('button', { name: /Play .+ Browser voice/i });
     fireEvent.click(playBtn);
     expect(onTtsWord).toHaveBeenCalled();
   });
@@ -111,7 +111,7 @@ describe('PronunciationAudioPanel', () => {
 
     const panel = screen.getByTestId('dictionary-audio-panel');
     fireEvent.click(within(panel).getByRole('tab', { name: /Play sentence/i }));
-    const playBtn = within(panel).getByRole('button', { name: /Play .+ TTS/i });
+    const playBtn = within(panel).getByRole('button', { name: /Play .+ Browser voice/i });
     fireEvent.click(playBtn);
     expect(onTtsSentence).toHaveBeenCalled();
   });
@@ -258,9 +258,9 @@ describe('PronunciationAudioPanel', () => {
     const panel = screen.getByTestId('dictionary-audio-panel');
     fireEvent.click(within(panel).getByRole('tab', { name: /Play sentence/i }));
 
-    // TTS fallback for sentence: "hello world · TTS"
+    // TTS fallback for sentence: "hello world · Browser voice"
     expect(within(panel).getByText('hello world')).toBeInTheDocument();
-    expect(within(panel).getByText('TTS')).toBeInTheDocument();
+    expect(within(panel).getByText('Browser voice')).toBeInTheDocument();
   });
 
   it('shows a reconnect hint and asks background to open the Cell page', () => {

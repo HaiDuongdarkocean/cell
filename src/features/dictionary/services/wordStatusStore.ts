@@ -9,6 +9,7 @@
 
 import { getDB, awaitTx, STORES } from '@/features/dictionary/repositories/baseRepository';
 import { STATUS_CYCLE, type WordStatus } from '@/entities/dictionary';
+import { t } from '@/shared/i18n';
 import { captureChange, ensureSyncRuntime, isCaptureEnabled, scopeForTarget, targetOf } from '@/features/sync';
 
 const WORD_WRITE_STORES = [STORES.WORD_STATUS, STORES.WORD_TRASH, STORES.SYNC_OUTBOX, STORES.SYNC_META];
@@ -132,7 +133,7 @@ export async function setWordStatus(langCode: string, term: string, status: Word
     await awaitTx(tx);
   } catch (err) {
     if (isQuotaError(err)) {
-      throw new WordStatusQuotaError('Bộ nhớ đầy — xóa resource cũ trong Settings → Resources');
+      throw new WordStatusQuotaError(t('dict.error.statusQuota'));
     }
     throw err;
   }

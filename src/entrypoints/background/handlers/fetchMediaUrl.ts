@@ -6,6 +6,7 @@
  * script can consume it directly without a cross-context fetch.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse, FetchMediaUrlResponse } from '@/entities/message/types';
 import { FetchMediaUrlPayloadSchema } from '@/entities/message/dictionarySchemas';
@@ -35,11 +36,11 @@ export function registerFetchMediaUrlHandlers(ctx: BackgroundContext): void {
         headers: { 'Accept': kind === 'image' ? 'image/*, */*' : 'audio/*, */*' },
       });
       if (!response.ok) {
-        return { success: false, error: `Media fetch HTTP ${response.status}` };
+        return { success: false, error: t('media.error.http', [response.status]) };
       }
       const arrayBuffer = await response.arrayBuffer();
       if (arrayBuffer.byteLength === 0) {
-        return { success: false, error: 'Media fetch returned empty data' };
+        return { success: false, error: t('media.error.empty') };
       }
       const mimeType = response.headers.get('content-type') ?? (kind === 'image' ? 'image/png' : 'audio/mpeg');
       const base64 = arrayBufferToBase64(arrayBuffer);
@@ -47,7 +48,7 @@ export function registerFetchMediaUrlHandlers(ctx: BackgroundContext): void {
       return { success: true, data: { url: dataUrl } };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      return { success: false, error: `Media fetch failed: ${msg}` };
+      return { success: false, error: t('media.error.fetch', [msg]) };
     }
   });
 }

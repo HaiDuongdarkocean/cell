@@ -70,7 +70,7 @@ describe('SubtitleStylePanel', () => {
 
   it('calls onChange with horizontalAlign when radio changes', () => {
     render(<SubtitleStylePanel {...defaultProps} />);
-    const leftRadio = screen.getByLabelText('Align left') as HTMLInputElement;
+    const leftRadio = screen.getByLabelText('Align Left') as HTMLInputElement;
     fireEvent.click(leftRadio);
     expect(defaultProps.onChange).toHaveBeenCalledWith({ horizontalAlign: 'left' });
   });

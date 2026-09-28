@@ -12,6 +12,7 @@
  */
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import { logger } from '@/shared/lib/logger';
 import { transmuxTsToFmp4 } from '@/features/transmux';
 import { executeParallelConversion } from '@/features/transmux';
@@ -377,7 +378,7 @@ export async function startMessageListener(): Promise<void> {
           const messageText = error instanceof Error ? error.message : String(error);
           const response: MessageResponse<ConvertTsToMp4V2ResultPayload> = {
             success: false,
-            error: messageText || 'Unknown conversion error',
+            error: messageText || t('downloads.error.conversionFailed'),
           };
           sendResponse(response);
         });
@@ -402,7 +403,7 @@ export async function startMessageListener(): Promise<void> {
           const messageText = error instanceof Error ? error.message : String(error);
           const response: MessageResponse<CreateOpfsBlobUrlResultPayload> = {
             success: false,
-            error: messageText || 'Failed to create Blob URL',
+            error: messageText || t('downloads.error.blobUrlFailed'),
           };
           sendResponse(response);
         });

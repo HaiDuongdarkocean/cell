@@ -6,6 +6,7 @@ import { NavCluster } from '../NavCluster';
 import { Icon } from '@/shared/icons/Icon';
 import { Button } from '@/shared/ui/Button';
 import { buildClusterCssVars } from '../subtitleUI';
+import { t } from '@/shared/i18n';
 import styles from './OverlayPreview.module.css';
 
 interface OverlayPreviewProps {
@@ -79,40 +80,40 @@ export function OverlayPreview({
 
         <div className={styles.clusterRight} style={toolbarStyle} data-cell-id="overlay-preview-toolbar">
           <div className={styles.primaryCol}>
-            <Button shape="circle" variant="overlay" aria-label="Quick add card" size="sm" onClick={noop}>
+            <Button shape="circle" variant="overlay" aria-label={t('subtitle.toolbar.quickAdd')} size="sm" onClick={noop}>
               <Icon name="zap"  />
             </Button>
-            <Button shape="circle" variant="overlay" aria-label="Edit card" size="sm" onClick={noop}>
+            <Button shape="circle" variant="overlay" aria-label={t('subtitle.toolbar.editCard')} size="sm" onClick={noop}>
               <Icon name="pencil"  />
             </Button>
             <div className={styles.toggleWrap}>
               <div className={styles.extraCol}>
-                <Button shape="circle" variant="overlay" aria-label="Open subtitle list" size="sm" onClick={noop}>
+                <Button shape="circle" variant="overlay" aria-label={t('subtitle.toolbar.openList')} size="sm" onClick={noop}>
                   <Icon name="sidePanel"  />
                 </Button>
-                <Button shape="circle" variant="overlay" aria-label="Generate native subtitle" size="sm" onClick={noop}>
+                <Button shape="circle" variant="overlay" aria-label={t('subtitle.toolbar.generateNative')} size="sm" onClick={noop}>
                   <Icon name="languages"  />
                 </Button>
               </div>
-              <Button shape="circle" variant="overlay" aria-label="Expand tools" size="sm" onClick={noop}>
+              <Button shape="circle" variant="overlay" aria-label={t('subtitle.toolbar.expandTools')} size="sm" onClick={noop}>
                 <Icon name="chevronLeft"  />
               </Button>
             </div>
           </div>
           <div className={styles.secondaryCol}>
-            <Button shape="circle" variant="overlay" aria-label="Update current card" size="sm" onClick={noop}>
+            <Button shape="circle" variant="overlay" aria-label={t('subtitle.toolbar.updateCard')} size="sm" onClick={noop}>
               <Icon name="rotateCcw"  />
             </Button>
-            <Button shape="circle" variant="overlay" aria-label="Open subtitle manager" size="sm" onClick={noop}>
+            <Button shape="circle" variant="overlay" aria-label={t('subtitle.toolbar.openManager')} size="sm" onClick={noop}>
               <Icon name="subtitleManager"  />
             </Button>
-            <Button shape="circle" variant="overlay" aria-label="Enter player mode" size="sm" onClick={noop}>
+            <Button shape="circle" variant="overlay" aria-label={t('subtitle.toolbar.enterPlayerMode')} size="sm" onClick={noop}>
               <Icon name="maximize"  />
             </Button>
           </div>
         </div>
       </div>
-      <span className={styles.hint}>Click text to edit</span>
+      <span className={styles.hint}>{t('subtitle.preview.clickToEdit')}</span>
     </div>
   );
 }

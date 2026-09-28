@@ -1,6 +1,7 @@
 import { useEffect, type ReactElement } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
+import { t } from '@/shared/i18n';
 import styles from './TokenizeControls.module.css';
 
 export interface TokenizeControlsProps {
@@ -37,7 +38,7 @@ function TokenizeHalf({ active, disabled = false, icon, label, onClick, testId }
       fullWidth
       aria-pressed={active}
       aria-label={label}
-      title={disabled ? 'No video on this page' : `${label}: ${active ? 'ON' : 'OFF'}`}
+      title={disabled ? t('panel.tokenize.noMedia') : t('panel.tokenize.state', [label, active ? t('common.state.on') : t('common.state.off')])}
       disabled={disabled}
       onClick={onClick}
       onPointerDown={(e): void => { e.currentTarget.blur(); }}
@@ -68,13 +69,13 @@ export function TokenizeControls({
     <div
       className={styles.capsule}
       role="group"
-      aria-label="Tokenize sources"
+      aria-label={t('panel.tokenize.group')}
       data-cell-id="universal-panel-tokenize-controls"
     >
       <TokenizeHalf
         active={text}
         icon="scanText"
-        label="Tokenize text"
+        label={t('panel.tokenize.text')}
         onClick={() => onToggle('text')}
         testId="universal-panel-header-tokenize-text"
       />
@@ -82,7 +83,7 @@ export function TokenizeControls({
         active={media}
         disabled={mediaDisabled}
         icon="video"
-        label="Tokenize media"
+        label={t('panel.tokenize.media')}
         onClick={() => onToggle('media')}
         testId="universal-panel-header-tokenize-media"
       />

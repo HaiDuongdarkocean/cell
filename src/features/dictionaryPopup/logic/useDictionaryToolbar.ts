@@ -261,7 +261,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
             id: `tts-sentence-${result.term}`,
             kind: 'sentence',
             source: 'system-tts',
-            label: 'System TTS · Sentence',
+            label: t('dict.audio.ttsSentence'),
             state: 'idle',
             url: sentenceTtsRes.data.url,
             defaultSelected: false,

@@ -6,6 +6,7 @@
  * The pure `imageSearchService` helpers build the URL + parse JSON.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import type { FetchImagesResponse } from '@/entities/dictionary';
@@ -36,17 +37,17 @@ export function registerImageSearchHandlers(ctx: BackgroundContext): void {
       try {
         const response = await fetchWithTimeout(url, { method: 'GET' }, FETCH_IMAGES_TIMEOUT_MS);
         if (!response.ok) {
-          return { success: false, error: `Wikimedia Images HTTP ${response.status}` };
+          return { success: false, error: t('images.error.http', [response.status]) };
         }
         const json = (await response.json()) as unknown;
         const items = parseWikimediaImagesResponse(json, term, maxResults);
         if (items.length === 0) {
-          return { success: false, error: 'No images found for this term' };
+          return { success: false, error: t('images.error.empty') };
         }
         return { success: true, data: { items } };
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        return { success: false, error: `Image fetch failed: ${msg}` };
+        return { success: false, error: t('images.error.fetch', [msg]) };
       }
     },
   );

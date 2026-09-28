@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Button } from './Button';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './InfoButton.module.css';
 
 type InfoButtonSize = 'sm' | 'md' | 'lg';
@@ -24,7 +25,7 @@ interface InfoButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * Use this for triggering help/info popovers or navigation to details.
  */
 export function InfoButton({
-  ariaLabel = 'More information',
+  ariaLabel = t('ui.infoButton.aria'),
   variant = 'ghost',
   size = 'md',
   className,

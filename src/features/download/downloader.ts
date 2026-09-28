@@ -13,6 +13,7 @@ import {
   MIN_SEGMENT_CONCURRENCY,
   MAX_SEGMENT_CONCURRENCY,
 } from '@/shared/config/config';
+import { t } from '@/shared/i18n';
 import { deleteDownloadSubdir } from '@/shared/lib/storage/opfsStorage';
 import { generateFileName, resolveFilenameBase } from '@/shared/utils/fileUtils';
 import {
@@ -171,7 +172,7 @@ export class Downloader {
     } else if (video.format === 'mp4') {
       await this.downloadMp4Video(video, downloadId, signal);
     } else {
-      throw new Error(`Unsupported video format: ${video.format}`);
+      throw new Error(t('downloads.error.unsupportedFormat', [video.format]));
     }
   }
 
@@ -334,7 +335,7 @@ export class Downloader {
       signal,
     });
     if (!response.ok) {
-      throw new Error(`Failed to fetch video: ${response.status}`);
+      throw new Error(t('downloads.error.fetchVideo', [response.status]));
     }
     const blob = await response.blob();
 

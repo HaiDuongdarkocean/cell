@@ -1,4 +1,5 @@
 import { Icon } from '@/shared/ui/Icon';
+import { t } from '@/shared/i18n';
 import styles from './DropOverlay.module.css';
 
 /**
@@ -17,12 +18,12 @@ export function DropOverlay(): React.JSX.Element {
       className={styles.overlay}
       data-cell-id="drop-overlay"
       role="region"
-      aria-label="Drop zone"
+      aria-label={t('player.drop.aria')}
     >
       <div className={styles.badge}>
         <Icon name="fileVideo" size="lg" />
       </div>
-      <p className={styles.hint} role="status">Drop to add video &amp; subtitles</p>
+      <p className={styles.hint} role="status">{t('player.drop.hint')}</p>
     </div>
   );
 }

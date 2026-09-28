@@ -1,5 +1,6 @@
 import { Button, HStack } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
+import { t } from '@/shared/i18n';
 import styles from './SelectionBar.module.css';
 
 interface SelectionBarProps {
@@ -22,13 +23,13 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
       <Button shape="circle"
         size="sm"
         onClick={onClear}
-        aria-label="Clear selection"
+        aria-label={t('downloads.action.deselectAll')}
         data-cell-id="selection-clear-btn"
       >
         <Icon name="x"  />
       </Button>
       <span className={styles.count} data-cell-id="selection-count">
-        {selectionCount} selected
+        {t('downloads.selection.count', [selectionCount])}
       </span>
       <Button
         variant="primary"
@@ -37,7 +38,7 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
         data-cell-id="selection-download-btn"
         leadingIcon={<Icon name="download" className={styles.downloadIcon} />}
       >
-        Download
+        {t('downloads.action.download')}
       </Button>
     </HStack>
   );

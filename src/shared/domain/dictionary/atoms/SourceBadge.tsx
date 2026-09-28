@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { Badge } from '@/shared/ui/Badge';
+import { t } from '@/shared/i18n';
 
 export type DictionarySource =
   | 'cambridge'
@@ -24,7 +25,7 @@ export function SourceBadge({ source, children, size = 'md', ...rest }: SourceBa
   const badgeSize = size === 'sm' ? 'xs' : 'sm';
 
   return (
-    <Badge variant="muted" size={badgeSize} aria-label={`Source: ${source}`} {...rest}>
+    <Badge variant="muted" size={badgeSize} aria-label={t('dict.atom.source', [source])} {...rest}>
       {children}
     </Badge>
   );

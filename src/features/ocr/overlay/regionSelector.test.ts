@@ -145,7 +145,7 @@ describe('RegionSelector', () => {
     expect(applied).toBe(1);
     expect(changes.at(-1)).toEqual({ xPct: 30, yPct: 40, widthPct: 50, heightPct: 30 });
     // RegionSelector stays in edit mode — OcrSession switches to view on Apply.
-    expect(rect.querySelector('.cell-ocr-region-label')?.textContent).toBe('edit: 50%×30%');
+    expect(rect.querySelector('.cell-ocr-region-label')?.textContent).toBe('Edit: 50%×30%');
   });
 
   it('Esc fires cancel and view mode clears toolbar + handles', () => {

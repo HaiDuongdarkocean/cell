@@ -149,7 +149,7 @@ describe('DownloadCard', () => {
 
   it('renders queued indicator without progress bar', () => {
     render(<DownloadCard download={makeDownload({ status: 'queued', progress: 0 })} {...noopHandlers} />);
-    expect(screen.getByText('Waiting…')).toBeInTheDocument();
+    expect(screen.getByText('Queued')).toBeInTheDocument();
   });
 
   // === Error display ===

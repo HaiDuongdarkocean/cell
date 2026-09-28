@@ -1,6 +1,7 @@
 import { useRef, type ReactNode, type KeyboardEvent } from 'react';
 import { Button } from './Button';
 import { useFocusTrap } from './useFocusTrap';
+import { t } from '@/shared/i18n';
 import styles from './Drawer.module.css';
 
 export interface DrawerProps {
@@ -68,7 +69,7 @@ export function Drawer({
         {title && (
           <div className={styles.header}>
             <h2 id="drawer-title" className={styles.title}>{title}</h2>
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange?.(false)} aria-label="Close">
+            <Button variant="ghost" size="sm" onClick={() => onOpenChange?.(false)} aria-label={t('ui.close')}>
               ×
             </Button>
           </div>

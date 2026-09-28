@@ -12,6 +12,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SubtitleCueEngine, type NavClusterIconName } from '@/features/subtitle/ui/subtitleCueEngine';
+import { t } from '@/shared/i18n';
 import { useCuesStore } from '@/features/subtitle/cuesStore';
 import { cleanTargetCues } from '@/features/subtitle/logic/subtitleCleanupRuntime';
 import type { SrtCue } from '@/entities/media';
@@ -97,7 +98,7 @@ export function useSubtitleEngine(
   const engineRef = useRef<SubtitleCueEngine | null>(null);
   const [hasSubtitles, setHasSubtitles] = useState(false);
   const [repeatIcon, setRepeatIcon] = useState<string>(REPEAT_ICON_MAP.repeat);
-  const [repeatLabel, setRepeatLabel] = useState('Repeat current sentence');
+  const [repeatLabel, setRepeatLabel] = useState(t('player.nav.repeat'));
   const [repeatActive, setRepeatActive] = useState(false);
   const [offsetMs, setOffsetMs] = useState(0);
   const offsetRef = useRef(0);

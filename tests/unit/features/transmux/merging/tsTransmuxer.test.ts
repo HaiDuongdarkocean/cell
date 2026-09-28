@@ -179,7 +179,7 @@ describe('tsTransmuxer', () => {
       dirHandle as unknown as FileSystemDirectoryHandle,
     );
     expect(result.success).toBe(false);
-    expect(result.error).toContain('empty');
+    expect(result.error).toContain('no output');
   });
 
   it('reads input in chunks, pushes to transmuxer, flushes, and writes output', async () => {
@@ -279,7 +279,7 @@ describe('tsTransmuxer', () => {
     );
 
     expect(result.success).toBe(false);
-    expect(result.error).toContain('init segment');
+    expect(result.error).toContain('no output');
 
     if (originalImpl) MockTransmuxerCtor.mockImplementation(originalImpl);
   });

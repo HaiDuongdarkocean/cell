@@ -129,7 +129,7 @@ describe('CandidateView', () => {
 
     expect(screen.getByTestId('dictionary-term')).toHaveTextContent('hello');
     expect(screen.getByTestId('dictionary-reading')).toHaveTextContent('/həˈloʊ/');
-    expect(screen.getByTestId('dictionary-status-cycle')).toHaveTextContent('known');
+    expect(screen.getByTestId('dictionary-status-cycle')).toHaveTextContent('Known');
     expect(screen.getByTestId('dictionary-definitions')).toBeInTheDocument();
     expect(screen.getAllByTestId('dictionary-definition')).toHaveLength(1);
   });
@@ -149,7 +149,7 @@ describe('CandidateView', () => {
 
     fireEvent.click(screen.getByTestId('dictionary-status-cycle'));
 
-    await waitFor(() => expect(screen.getByTestId('dictionary-status-cycle')).toHaveTextContent('tracking'));
+    await waitFor(() => expect(screen.getByTestId('dictionary-status-cycle')).toHaveTextContent('Tracking'));
 
     expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({
       type: MESSAGE_TYPES.WORD_STATUS_SET,

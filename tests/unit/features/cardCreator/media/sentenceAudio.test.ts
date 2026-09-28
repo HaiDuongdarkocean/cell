@@ -174,7 +174,7 @@ describe('captureSentenceAudio', () => {
     const pending = captureSentenceAudio(video as unknown as HTMLVideoElement, { start: 60000, end: 62000 });
     await jest.advanceTimersByTimeAsync(4500);
     const result = await pending;
-    expect(result).toMatchObject({ ok: false, reason: 'failed', error: 'Seek did not reach cue start' });
+    expect(result).toMatchObject({ ok: false, reason: 'failed', error: "The video couldn't seek to the cue start." });
   });
 
   it('stops early when the video ends before the cue duration elapses', async () => {

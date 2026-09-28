@@ -7,6 +7,7 @@ import type { OcrResultItem } from '@/features/ocr/engine/types';
 import type { ScriptRun } from '../language/scriptRunSegmenter';
 import { routeScript } from '../language/languageRouter';
 import { findFarthestSameSizeContainer } from '@/shared/lib/dom/findPlayerContainer';
+import { t } from '@/shared/i18n';
 
 /** Base styling shared by every OCR hitbox — injected inline to avoid a stylesheet
  *  in foreign documents (content-script injected CSS must use literal values, not var()). */
@@ -102,7 +103,7 @@ export function createHitboxElement(
   el.dataset.cellLang = hitbox.langCode;
   el.setAttribute('role', 'button');
   el.setAttribute('tabindex', '0');
-  el.setAttribute('aria-label', `Look up ${hitbox.text.trim()}`);
+  el.setAttribute('aria-label', t('ocr.hitbox.aria', [hitbox.text.trim()]));
   el.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;${HITBOX_BASE_CSS}`;
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {

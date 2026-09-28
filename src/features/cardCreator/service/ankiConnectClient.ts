@@ -9,6 +9,7 @@
  * function. In production the background service worker passes `globalThis.fetch`;
  * in tests a mock fetch is injected. This keeps the client pure + testable.
  */
+import { t } from '@/shared/i18n';
 
 /** AnkiConnect JSON request body (version 6). */
 export interface AnkiConnectRequest {
@@ -61,7 +62,7 @@ export async function invokeAnkiConnect(
   timeoutMs: number = DEFAULT_ANKI_TIMEOUT_MS,
 ): Promise<unknown> {
   if (!baseUrl) {
-    throw new AnkiConnectError('AnkiConnect URL is empty', action);
+    throw new AnkiConnectError(t('cardCreator.error.ankiUrlEmpty'), action);
   }
 
   const body: AnkiConnectRequest = { version: 6, action, params: params ?? {} };
@@ -80,7 +81,7 @@ export async function invokeAnkiConnect(
 
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(
-      () => reject(new AnkiConnectError(`Request timed out after ${timeoutMs}ms`, action)),
+      () => reject(new AnkiConnectError(t('cardCreator.error.ankiTimeout', [timeoutMs]), action)),
       timeoutMs,
     );
   });
@@ -90,11 +91,11 @@ export async function invokeAnkiConnect(
   } catch (err) {
     if (err instanceof AnkiConnectError) throw err;
     const msg = err instanceof Error ? err.message : String(err);
-    throw new AnkiConnectError(`Network error: ${msg}`, action);
+    throw new AnkiConnectError(t('cardCreator.error.ankiNetwork', [msg]), action);
   }
 
   if (!response.ok) {
-    throw new AnkiConnectError(`HTTP ${response.status}`, action, response.status);
+    throw new AnkiConnectError(t('cardCreator.error.ankiHttp', [response.status]), action, response.status);
   }
 
   let json: AnkiConnectResponse;
@@ -102,7 +103,7 @@ export async function invokeAnkiConnect(
     json = (await response.json()) as AnkiConnectResponse;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    throw new AnkiConnectError(`Invalid JSON response: ${msg}`, action, response.status);
+    throw new AnkiConnectError(t('cardCreator.error.ankiBadJson', [msg]), action, response.status);
   }
 
   if (json.error) {

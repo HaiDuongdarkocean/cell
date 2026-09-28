@@ -1,5 +1,7 @@
-import type { DownloadItem } from '@/entities/media';
+import type { DownloadItem, DownloadStatus } from '@/entities/media';
 import { formatFileSize, formatDuration, phaseToLabel } from '@/entrypoints/popup/utils/format';
+import { t } from '@/shared/i18n';
+import type { MessageKey } from '@/shared/i18n';
 import { Card } from '@/shared/ui/Card';
 import { Flex } from '@/shared/ui/Flex';
 import { HStack, VStack } from '@/shared/ui/Stack';
@@ -8,6 +10,16 @@ import { Badge } from '@/shared/ui/Badge';
 import { Progress } from '@/shared/ui/Progress';
 import { Icon } from '@/shared/ui/Icon';
 import styles from './DownloadCard.module.css';
+
+const STATUS_LABEL_KEYS: Record<DownloadStatus, MessageKey> = {
+  queued: 'jobs.status.queued',
+  downloading: 'downloads.status.downloading',
+  converting: 'downloads.status.converting',
+  done: 'jobs.status.done',
+  error: 'jobs.status.failed',
+  cancelled: 'downloads.status.cancelled',
+  paused: 'downloads.status.paused',
+};
 
 interface DownloadCardProps {
   download: DownloadItem;
@@ -45,17 +57,11 @@ export function DownloadCard({
     download.downloadProgress !== undefined &&
     download.downloadProgress >= 100;
 
-  const phaseText = isConverting && download.conversionPhase
-    ? ` · ${phaseToLabel(download.conversionPhase)}`
-    : '';
+  const convertLabel = isConverting && download.conversionPhase
+    ? t('downloads.phase.convertWith', [phaseToLabel(download.conversionPhase)])
+    : t('downloads.phase.convert');
 
-  const statusText = isDone
-    ? 'Done'
-    : isError
-      ? 'Error'
-      : isPaused
-        ? 'Paused'
-        : download.status;
+  const statusText = t(STATUS_LABEL_KEYS[download.status]);
 
   // Action buttons based on status
   const actions: React.JSX.Element[] = [];
@@ -66,7 +72,7 @@ export function DownloadCard({
           key="resume"
           size="xs"
           onClick={() => onResume(download.id)}
-          aria-label="Resume"
+          aria-label={t('downloads.action.resume')}
           data-cell-id="resume-btn"
         >
           <Icon name="play"  />
@@ -78,7 +84,7 @@ export function DownloadCard({
           key="pause"
           size="xs"
           onClick={() => onPause(download.id)}
-          aria-label="Pause"
+          aria-label={t('downloads.action.pause')}
           data-cell-id="pause-btn"
         >
           <Icon name="pause"  />
@@ -92,7 +98,7 @@ export function DownloadCard({
         key="retry"
         size="xs"
         onClick={() => onRetry(download.id)}
-        aria-label="Retry"
+        aria-label={t('jobs.action.retry')}
         data-cell-id="retry-btn"
       >
         <Icon name="rotateCcw"  />
@@ -106,7 +112,7 @@ export function DownloadCard({
         size="xs"
         variant="destructive"
         onClick={() => onCancel(download.id)}
-        aria-label="Cancel"
+        aria-label={t('downloads.action.cancel')}
         data-cell-id="cancel-btn"
       >
         <Icon name="x"  />
@@ -119,7 +125,7 @@ export function DownloadCard({
         size="xs"
         variant="destructive"
         onClick={() => onRemove(download.id)}
-        aria-label="Remove"
+        aria-label={t('downloads.action.remove')}
         data-cell-id="remove-btn"
       >
         <Icon name="trash"  />
@@ -151,7 +157,7 @@ export function DownloadCard({
     detailItems.push(
       <span key="workers" className={styles.detailItem}>
         <Icon name="zap"  />
-        {download.workerCount} workers
+        {t('downloads.detail.workers', [download.workerCount])}
       </span>,
     );
   }
@@ -171,7 +177,7 @@ export function DownloadCard({
     progressHtml = (
       <HStack align="center" gap="1-5" className={styles.queuedIndicator}>
         <Icon name="clock"  />
-        <span>Waiting…</span>
+        <span>{t('jobs.status.queued')}</span>
       </HStack>
     );
   } else if (showTwoPhase) {
@@ -179,13 +185,13 @@ export function DownloadCard({
     progressHtml = (
       <>
         <HStack align="center" justify="between" gap="0" className={styles.phaseRow}>
-          <span className={`${styles.phaseLabel} ${styles.done}`}>Download</span>
+          <span className={`${styles.phaseLabel} ${styles.done}`}>{t('downloads.phase.download')}</span>
           <span className={`${styles.phasePercent} ${styles.done}`}>100%</span>
         </HStack>
         <Progress size="sm" color="success" value={100} />
         <HStack align="center" justify="between" gap="0" className={styles.phaseRow}>
           <span className={`${styles.phaseLabel} ${styles.active}`}>
-            Converting{phaseText}
+            {convertLabel}
           </span>
           <span className={`${styles.phasePercent} ${styles.active}`}>{download.convertProgress ?? 0}%</span>
         </HStack>
@@ -197,7 +203,7 @@ export function DownloadCard({
       <>
         <Progress size="sm" color="success" value={100} />
         <HStack align="center" justify="between" gap="0" className={styles.progressLabel}>
-          <span>Done</span>
+          <span>{t('jobs.status.done')}</span>
           <span className={styles.progressPercent}>100%</span>
         </HStack>
       </>
@@ -207,7 +213,7 @@ export function DownloadCard({
       <>
         <Progress size="sm" color="error" value={download.progress} />
         <HStack align="center" justify="between" gap="0" className={styles.progressLabel}>
-          <span className={styles.errorText}>Failed at {download.progress}%</span>
+          <span className={styles.errorText}>{t('downloads.progress.failedAt', [download.progress])}</span>
           <span className={styles.progressPercent}>{download.progress}%</span>
         </HStack>
       </>
@@ -240,7 +246,7 @@ export function DownloadCard({
               <Badge size="sm" variant="secondary">{download.quality}</Badge>
             )}
             {download.usedWorkers && (
-              <Badge size="sm" variant="secondary" title="Parallel conversion">
+              <Badge size="sm" variant="secondary" title={t('downloads.badge.parallel')}>
                 <Icon name="zap"  />
               </Badge>
             )}

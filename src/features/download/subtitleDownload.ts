@@ -12,6 +12,7 @@ import { convertVttToSrt } from '@/shared/lib/parsers/vttToSrt';
 import { convertTtmlToSrt } from '@/shared/lib/parsers/ttmlToSrt';
 import { normalizeSrt } from '@/shared/lib/parsers/srtNormalizer';
 import { resolveFilenameBase, buildSubtitleFileName } from '@/shared/utils/fileUtils';
+import { t } from '@/shared/i18n';
 
 /**
  * Context of the video a subtitle is linked to (via `subtitle.videoId`).
@@ -103,7 +104,7 @@ export async function fetchSubtitleContent(
       }
     }
     if (!response.ok) {
-      throw new Error(`Failed to fetch subtitle: ${response.status}`);
+      throw new Error(t('downloads.error.subtitleFetch', [response.status]));
     }
     content = await response.text();
   }
@@ -113,16 +114,14 @@ export async function fetchSubtitleContent(
       content = await decryptPhimwarSrtFromUrl(subtitle.url, content);
     } catch (err) {
       throw new Error(
-        `Encrypted subtitle decryption failed: ${
-          err instanceof Error ? err.message : String(err)
-        }`,
+        t('downloads.error.subtitleDecrypt', [err instanceof Error ? err.message : String(err)]),
         { cause: err },
       );
     }
   }
 
   if (content === undefined) {
-    throw new Error('Subtitle content unavailable');
+    throw new Error(t('downloads.error.subtitleEmpty'));
   }
   return content;
 }
@@ -145,7 +144,7 @@ export function convertSubtitleToSrt(
   const { content: decryptedContent, format: sniffedFormat } = decryptAndDetectFormat(content);
   const format = sniffedFormat ?? detectedFormat;
   if (!format || format === 'unknown') {
-    throw new Error('Cannot determine subtitle format');
+    throw new Error(t('downloads.error.subtitleFormat'));
   }
 
   let srtContent: string;
@@ -160,7 +159,7 @@ export function convertSubtitleToSrt(
   } else if (format === 'srt') {
     srtContent = decryptedContent;
   } else {
-    throw new Error(`Unsupported subtitle format: ${format}`);
+    throw new Error(t('downloads.error.subtitleUnsupported', [format]));
   }
 
   return normalizeSrt(srtContent);

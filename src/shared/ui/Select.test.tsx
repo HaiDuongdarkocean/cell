@@ -168,7 +168,7 @@ describe('Select', () => {
       const input = screen.getByPlaceholderText('Search...');
       fireEvent.change(input, { target: { value: 'xyz' } });
       expect(screen.queryByRole('option')).not.toBeInTheDocument();
-      expect(screen.getByText('No matching options')).toBeInTheDocument();
+      expect(screen.getByText('No results found.')).toBeInTheDocument();
     });
 
     it('uses custom searchLabel when filtering', () => {

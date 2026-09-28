@@ -10,6 +10,7 @@ import {
 import { dispatchCuesUpdated, type CuesUpdatedDetail } from '@/features/subtitle/events';
 import { prevSentence, nextSentence, seekBy, findActiveCueIndex } from './navClusterActions';
 import { seekVideo, resumeIfPaused, SEEK_LANDING_EPS_MS } from '@/shared/lib/dom/netflixPlayback';
+import { t } from '@/shared/i18n';
 import type { TriggerMode } from '@/entities/dictionary';
 
 export interface SubtitleCueEngineUpdate {
@@ -309,16 +310,16 @@ export class SubtitleCueEngine {
       this.loopStart = currentTime;
       this.loopEnd = currentTime;
       this.loopState = 'a';
-      return { icon: 'repeatA', label: 'Repeat A', active: true };
+      return { icon: 'repeatA', label: t('subtitle.repeat.a'), active: true };
     }
     if (this.loopState === 'a') {
       this.loopEnd = Math.max(this.loopStart + 0.1, currentTime);
       this.loopState = 'looping';
-      return { icon: 'repeatCancel', label: 'Repeat cancel', active: true };
+      return { icon: 'repeatCancel', label: t('subtitle.nav.repeatCancel'), active: true };
     }
     this.loopState = 'idle';
     this.loopEnd = this.loopStart;
-    return { icon: 'repeat', label: 'Repeat current sentence', active: false };
+    return { icon: 'repeat', label: t('player.nav.repeat'), active: false };
   }
 
   getLoopState(): 'idle' | 'a' | 'looping' {

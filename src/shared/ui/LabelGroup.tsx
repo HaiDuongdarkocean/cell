@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Icon } from './Icon';
 import { Tooltip } from './Tooltip';
+import { t } from '@/shared/i18n';
 import styles from './LabelGroup.module.css';
 
 export interface LabelGroupProps {
@@ -43,7 +44,7 @@ export function LabelGroup({
           <span className={styles.label}>{label}</span>
           {hint && (
             <Tooltip content={hint} placement="top">
-              <span className={styles.hintIcon} role="img" aria-label="More info">
+              <span className={styles.hintIcon} role="img" aria-label={t('ui.infoButton.aria')}>
                 <Icon name="info" size="sm" />
               </span>
             </Tooltip>

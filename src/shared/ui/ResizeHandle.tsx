@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import type { HTMLAttributes, KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
+import { t } from '@/shared/i18n';
 import styles from './ResizeHandle.module.css';
 
 type ResizeDirection = 'horizontal' | 'vertical';
@@ -30,7 +31,7 @@ export function ResizeHandle({
   direction = 'horizontal',
   size = 'md',
   className,
-  'aria-label': ariaLabel = 'Resize',
+  'aria-label': ariaLabel = t('ui.resizeHandle.aria'),
   onKeyDown,
   ...rest
 }: ResizeHandleProps): React.JSX.Element {

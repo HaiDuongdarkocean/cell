@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
+import { t } from '@/shared/i18n';
 import styles from './PlaybackSpeedControl.module.css';
 
 interface PlaybackSpeedControlProps {
@@ -88,7 +89,7 @@ export function PlaybackSpeedControl({
         className={styles.button}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`Playback speed ${label}`}
+        aria-label={t('video.speed.aria', [label])}
         disabled={disabled}
         onClick={toggle}
       >

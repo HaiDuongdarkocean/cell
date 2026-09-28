@@ -1,5 +1,7 @@
 import { Box, Button, InputField, Text } from '@/shared/ui';
-import type { SrsFieldValue, SrsStimulus } from '@/entities/srs/types';
+import { t } from '@/shared/i18n';
+import type { ComponentType, SrsFieldValue, SrsStimulus } from '@/entities/srs/types';
+import { componentLabel, stimulusLabel } from './srsLabels';
 import styles from './SrsReviewCard.module.css';
 
 function formatFieldValue(value: SrsFieldValue): string {
@@ -12,7 +14,7 @@ function StimulusView({ stimulus }: { stimulus: SrsStimulus }): React.JSX.Elemen
 
   return (
     <Box className={styles.stimulus}>
-      <Text className={styles.stimulusType}>{stimulus.type}</Text>
+      <Text className={styles.stimulusType}>{stimulusLabel(stimulus.type)}</Text>
       {entries.map(([fieldId, value]) => (
         <Box key={fieldId} className={styles.stimulusField}>
           {value.kind === 'image' ? (
@@ -29,7 +31,7 @@ function StimulusView({ stimulus }: { stimulus: SrsStimulus }): React.JSX.Elemen
 }
 
 interface SrsReviewCardFrontProps {
-  readonly componentType: string;
+  readonly componentType: ComponentType;
   readonly stimulus: SrsStimulus;
   readonly isSpelling: boolean;
   readonly typedInput: string;
@@ -49,13 +51,13 @@ export function SrsReviewCardFront({
 }: SrsReviewCardFrontProps): React.JSX.Element {
   return (
     <Box className={styles.front}>
-      <Text className={styles.componentType}>{componentType}</Text>
+      <Text className={styles.componentType}>{componentLabel(componentType)}</Text>
       <StimulusView stimulus={stimulus} />
 
       {isSpelling && (
         <InputField
           id={inputId}
-          label="Type the word"
+          label={t('srs.review.typeWord')}
           value={typedInput}
           onChange={(e) => onTypedInputChange(e.target.value)}
           onKeyDown={(e) => {
@@ -74,7 +76,7 @@ export function SrsReviewCardFront({
         onClick={onShowAnswer}
         className={styles.showAnswerButton}
       >
-        {isSpelling ? 'Check answer' : 'Show answer'}
+        {isSpelling ? t('srs.review.checkAnswer') : t('srs.review.showAnswer')}
       </Button>
     </Box>
   );

@@ -15,27 +15,27 @@ describe('MasteryBadge', () => {
 
   it('has correct aria-label with derived level', () => {
     render(<MasteryBadge progress={80} />);
-    expect(screen.getByLabelText('Mastery: 80%, level: master')).toBeInTheDocument();
+    expect(screen.getByLabelText('Mastery: 80%, level: Master')).toBeInTheDocument();
   });
 
   it('derives beginner level for 0–25', () => {
     render(<MasteryBadge progress={10} />);
-    expect(screen.getByLabelText('Mastery: 10%, level: beginner')).toBeInTheDocument();
+    expect(screen.getByLabelText('Mastery: 10%, level: Beginner')).toBeInTheDocument();
   });
 
   it('derives intermediate level for 26–50', () => {
     render(<MasteryBadge progress={35} />);
-    expect(screen.getByLabelText('Mastery: 35%, level: intermediate')).toBeInTheDocument();
+    expect(screen.getByLabelText('Mastery: 35%, level: Intermediate')).toBeInTheDocument();
   });
 
   it('derives advanced level for 51–75', () => {
     render(<MasteryBadge progress={60} />);
-    expect(screen.getByLabelText('Mastery: 60%, level: advanced')).toBeInTheDocument();
+    expect(screen.getByLabelText('Mastery: 60%, level: Advanced')).toBeInTheDocument();
   });
 
   it('derives master level for 76–100', () => {
     render(<MasteryBadge progress={100} />);
-    expect(screen.getByLabelText('Mastery: 100%, level: master')).toBeInTheDocument();
+    expect(screen.getByLabelText('Mastery: 100%, level: Master')).toBeInTheDocument();
   });
 
   it('clamps progress below 0 to 0', () => {

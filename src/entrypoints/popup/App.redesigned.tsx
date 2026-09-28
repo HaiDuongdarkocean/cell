@@ -15,6 +15,7 @@ import { MediaEmpty } from './components/media/MediaEmpty';
 import { DownloadCard } from './components/media/DownloadCard';
 import { SettingsDialog } from '@/features/settings';
 import { sendMessage } from '@/shared/lib/chrome-apis';
+import { t } from '@/shared/i18n';
 import type { VideoQuality, Settings, DownloadItem } from '@/entities/media';
 import type { MessageRequest, MessageResponse } from '@/entities/message';
 import { selectBestMedia } from '@/features/download';
@@ -233,8 +234,8 @@ export function AppRedesigned(): React.JSX.Element {
     void sendMessage(request).then((response) => {
       const res = response as MessageResponse<DownloadItem> | undefined;
       if (res?.success && res.data) addDownload(res.data);
-      else if (res && !res.success) setError(res.error ?? 'Failed to start video download');
-    }).catch((err) => setError(String(err ?? 'Failed to start video download')));
+      else if (res && !res.success) setError(res.error ?? t('downloads.error.startVideo'));
+    }).catch((err) => setError(String(err ?? t('downloads.error.startVideo'))));
   };
 
   const handleQualitySelect = (videoId: string, quality: VideoQuality): void => {
@@ -242,8 +243,8 @@ export function AppRedesigned(): React.JSX.Element {
     void sendMessage(request).then((response) => {
       const res = response as MessageResponse<DownloadItem> | undefined;
       if (res?.success && res.data) addDownload(res.data);
-      else if (res && !res.success) setError(res.error ?? 'Failed to start video download');
-    }).catch((err) => setError(String(err ?? 'Failed to start video download')));
+      else if (res && !res.success) setError(res.error ?? t('downloads.error.startVideo'));
+    }).catch((err) => setError(String(err ?? t('downloads.error.startVideo'))));
   };
 
   const handleSubtitleDownload = (subtitleId: string): void => {
@@ -251,8 +252,8 @@ export function AppRedesigned(): React.JSX.Element {
     void sendMessage(request).then((response) => {
       const res = response as MessageResponse<DownloadItem> | undefined;
       if (res?.success && res.data) addDownload(res.data);
-      else if (res && !res.success) setError(res.error ?? 'Failed to start subtitle download');
-    }).catch((err) => setError(String(err ?? 'Failed to start subtitle download')));
+      else if (res && !res.success) setError(res.error ?? t('downloads.error.startSubtitle'));
+    }).catch((err) => setError(String(err ?? t('downloads.error.startSubtitle'))));
   };
 
   const handleThemeToggle = (): void => {
@@ -320,9 +321,9 @@ export function AppRedesigned(): React.JSX.Element {
       <main className={styles.content}>
         <Tabs defaultValue="media">
           <Tabs.List className={styles.tabList}>
-            <Tabs.Trigger value="media" data-cell-id="tab-media" className={styles.tabTrigger}>Media</Tabs.Trigger>
+            <Tabs.Trigger value="media" data-cell-id="tab-media" className={styles.tabTrigger}>{t('settings.media.title')}</Tabs.Trigger>
             <Tabs.Trigger value="downloads" data-cell-id="tab-downloads" className={styles.tabTrigger}>
-              Downloads
+              {t('settings.download.title')}
               {downloads.length > 0 && <Badge size="sm" variant="default">{downloads.length}</Badge>}
             </Tabs.Trigger>
           </Tabs.List>
@@ -331,10 +332,10 @@ export function AppRedesigned(): React.JSX.Element {
             {hasMedia && (
               <div className={styles.actionsRow}>
                 <Button variant="link" size="sm" onClick={handleSelectAll} data-cell-id="select-all-btn">
-                  {allSelected ? 'Deselect All' : 'Select All'}
+                  {allSelected ? t('downloads.action.deselectAll') : t('downloads.action.selectAll')}
                 </Button>
                 <Button variant="link" size="sm" onClick={handleDownload} data-cell-id="download-button">
-                  {selectionCount > 0 ? `Download (${selectionCount})` : 'Download All'}
+                  {selectionCount > 0 ? t('downloads.action.downloadSelected', [selectionCount]) : t('downloads.action.downloadAll')}
                 </Button>
               </div>
             )}

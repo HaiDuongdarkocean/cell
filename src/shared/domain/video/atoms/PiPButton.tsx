@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Button } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './PiPButton.module.css';
 
 interface PiPButtonProps
@@ -34,7 +35,7 @@ export function PiPButton({
       active={pip}
       disabled={disabled || !supported}
       aria-pressed={pip}
-      aria-label={pip ? 'Exit picture-in-picture' : 'Enter picture-in-picture'}
+      aria-label={pip ? t('video.pip.exit') : t('video.pip.enter')}
       className={[styles.pipBtn, className].filter(Boolean).join(' ')}
       {...rest}
     >

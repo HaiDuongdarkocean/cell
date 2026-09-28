@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'r
 import { SubtitleManagerPanel } from './SubtitleManagerPanel';
 import { Sheet } from '@/shared/ui/Sheet';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
+import { t } from '@/shared/i18n';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { ManagerState } from './subtitlePanelsTypes';
 import sharedStyles from './subtitlePanelsShared.module.css';
@@ -105,7 +106,7 @@ export function ManagerLayer({
       <Sheet
         open
         onClose={onClose}
-        aria-label="Subtitle manager"
+        aria-label={t('subtitle.manager.aria')}
         initialHeight={
           sheetHeightVh != null
             ? Math.round(window.innerHeight * (sheetHeightVh / 100))

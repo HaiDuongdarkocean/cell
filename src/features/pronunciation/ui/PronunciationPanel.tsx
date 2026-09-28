@@ -53,9 +53,9 @@ export function PronunciationPanel({
         setAudio(decoded);
         setLoading(false);
       })
-      .catch((err) => {
+      .catch(() => {
         if (abortRef.current) return;
-        setError(err instanceof Error ? err.message : 'Audio decode failed');
+        setError(t('pronunciation.audio.decodeFailed'));
         setLoading(false);
       });
 
@@ -78,8 +78,8 @@ export function PronunciationPanel({
       if (onPlayPhoneme) {
         try {
           await onPlayPhoneme(phoneme);
-        } catch (err: unknown) {
-          setError(err instanceof Error ? err.message : 'Phoneme playback failed');
+        } catch {
+          setError(t('pronunciation.audio.playFailed'));
         } finally {
           setActiveIndex((current) => (current === index ? null : current));
         }
@@ -92,8 +92,8 @@ export function PronunciationPanel({
         return;
       }
       void playPhoneme(audio, phoneme)
-        .catch((err: unknown) => {
-          setError(err instanceof Error ? err.message : 'Phoneme playback failed');
+        .catch(() => {
+          setError(t('pronunciation.audio.playFailed'));
         })
         .finally(() => {
           setActiveIndex((current) => (current === index ? null : current));
@@ -127,7 +127,7 @@ export function PronunciationPanel({
               active={activeIndex === idx}
               className={`${styles.phoneme} ${isStress ? styles.phonemeStress : ''}`}
               onClick={() => { void handleClick(phoneme, idx); }}
-              aria-label={`Phoneme ${phoneme.ipa}`}
+              aria-label={t('pronunciation.phoneme.aria', [phoneme.ipa])}
               data-cell-id="pronunciation-phoneme"
             >
               {phoneme.ipa}
@@ -138,7 +138,7 @@ export function PronunciationPanel({
 
       {loading && (
         <div className={styles.meta} data-cell-id="pronunciation-audio-loading">
-          Loading audio…
+          {t('pronunciation.audio.loading')}
         </div>
       )}
       {error && (
@@ -148,7 +148,7 @@ export function PronunciationPanel({
       )}
       {!audioUrl && (
         <div className={styles.meta} data-cell-id="pronunciation-no-audio">
-          Select a word audio above to hear individual sounds.
+          {t('pronunciation.audio.selectHint')}
         </div>
       )}
     </section>

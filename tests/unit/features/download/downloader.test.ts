@@ -516,7 +516,7 @@ describe('Downloader', () => {
     });
 
     await expect(downloader.downloadVideo(makeM3u8Video(), 'dl-empty')).rejects.toThrow(
-      'No segments found in playlist',
+      'No segments found',
     );
     expect(chromeDownloadsDownloadMock).not.toHaveBeenCalled();
   });
@@ -1321,7 +1321,7 @@ describe('Downloader', () => {
 
     await expect(
       downloader.downloadVideo(makeM3u8Video(), 'dl-quota'),
-    ).rejects.toThrow(/đủ dung lượng/i);
+    ).rejects.toThrow(/temporary storage/i);
 
     // OPFS cleanup should have been called.
     expect(deleteDownloadSubdir).toHaveBeenCalledWith('dl-quota');
@@ -1366,7 +1366,7 @@ describe('Downloader', () => {
       );
       await expect(
         downloader.fetchKey('https://cdn.example.com/badkey.bin', 'https://example.com'),
-      ).rejects.toThrow(/16 bytes/);
+      ).rejects.toThrow(/wrong length \(10 bytes\)/);
     });
 
     it('fetchKey throws on HTTP error', async () => {
@@ -1770,7 +1770,7 @@ describe('Downloader', () => {
       createOpfsWriter.mockResolvedValue(mockWriter);
       deleteDownloadSubdir.mockResolvedValue(undefined);
 
-      await expect(downloader.downloadVideo(makeM3u8Video(), 'dl-all-ads')).rejects.toThrow(/discontinuity|content/i);
+      await expect(downloader.downloadVideo(makeM3u8Video(), 'dl-all-ads')).rejects.toThrow(/ad break/i);
     });
   });
 

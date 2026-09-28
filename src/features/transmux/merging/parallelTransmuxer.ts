@@ -12,6 +12,7 @@
  * not available (e.g., in test environments).
  */
 
+import { t } from '@/shared/i18n';
 import type { SegmentRange } from '@/entities/media';
 import type { SegmentGroup } from '@/features/transmux/planning/segmentGrouping';
 import { transmuxTsToFmp4 } from './tsTransmuxer';
@@ -153,7 +154,7 @@ function wireWorkerHandlers(
 ): void {
   const timeout = setTimeout(() => {
     worker.terminate();
-    reject(new Error(`Worker ${groupIndex} timed out after 120s`));
+    reject(new Error(t('downloads.error.conversionTimeout')));
   }, 120000);
 
   worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
@@ -226,7 +227,8 @@ export async function transmuxTsToFmp4ParallelExperimental(
   } = options;
 
   if (groups.length === 0) {
-    return { success: false, outputName, error: 'No segment groups provided' };
+    console.warn('[parallel-transmuxer] No segment groups provided for', downloadId);
+    return { success: false, outputName, error: t('downloads.error.conversionFailed') };
   }
 
   const dirHandle = await ensureDownloadSubdir(downloadId);
@@ -277,11 +279,12 @@ export async function transmuxTsToFmp4ParallelExperimental(
 
     const failedGroup = results.find((r) => !r.success);
     if (failedGroup) {
+      console.warn('[parallel-transmuxer] Group transmux failed:', failedGroup.partName, failedGroup.error);
       await cleanupPartFiles(dirHandle, partNames);
       return {
         success: false,
         outputName,
-        error: `Group transmux failed: ${failedGroup.error}`,
+        error: t('downloads.error.conversionFailedDetail', [failedGroup.error ?? '']),
         usedWorkers: true,
         groupTimings,
       };
@@ -315,11 +318,12 @@ export async function transmuxTsToFmp4ParallelExperimental(
 
     const failedGroup = results.find((r) => !r.success);
     if (failedGroup) {
+      console.warn('[parallel-transmuxer] Group transmux failed:', failedGroup.partName, failedGroup.error);
       await cleanupPartFiles(dirHandle, partNames);
       return {
         success: false,
         outputName,
-        error: `Group transmux failed: ${failedGroup.error}`,
+        error: t('downloads.error.conversionFailedDetail', [failedGroup.error ?? '']),
         usedWorkers: false,
         groupTimings,
       };
@@ -335,7 +339,7 @@ export async function transmuxTsToFmp4ParallelExperimental(
     return {
       success: false,
       outputName,
-      error: `Merge failed: ${mergeResult.error}`,
+      error: t('downloads.error.conversionFailedDetail', [mergeResult.error ?? '']),
       usedWorkers: useWorkers,
       groupTimings,
     };
@@ -369,7 +373,7 @@ async function mergePartFiles(
   outputName: string,
 ): Promise<{ success: boolean; error?: string }> {
   if (partNames.length === 0) {
-    return { success: false, error: 'No parts to merge' };
+    return { success: false, error: t('downloads.error.conversionNoOutput') };
   }
 
   // --- Phase 1: Read all parts into memory and extract per-track info ---
@@ -377,7 +381,8 @@ async function mergePartFiles(
   for (let i = 0; i < partNames.length; i++) {
     const partFile = await opfsReadFile(dirHandle, partNames[i]);
     if (partFile.size === 0) {
-      return { success: false, error: `Part ${partNames[i]} is empty` };
+      console.warn('[parallel-transmuxer] Part file is empty:', partNames[i]);
+      return { success: false, error: t('downloads.error.conversionNoOutput') };
     }
     partBuffers.push(new Uint8Array(await partFile.arrayBuffer()));
   }
@@ -433,9 +438,10 @@ async function mergePartFiles(
       if (i > 0) {
         const moofOffset = findFirstMoofOffset(buffer);
         if (moofOffset === -1) {
+          console.warn('[parallel-transmuxer] Part has no moof box:', partNames[i]);
           return {
             success: false,
-            error: `Part ${partNames[i]} has no moof box — cannot strip ftyp/moov`,
+            error: t('downloads.error.conversionNoOutput'),
           };
         }
         writeOffset = moofOffset;
@@ -447,7 +453,7 @@ async function mergePartFiles(
     }
 
     if (totalWritten === 0) {
-      return { success: false, error: 'Merged output is empty' };
+      return { success: false, error: t('downloads.error.conversionNoOutput') };
     }
 
     return { success: true };

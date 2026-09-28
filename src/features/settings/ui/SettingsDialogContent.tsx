@@ -172,14 +172,14 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
         >
           {/* === Sidebar — SSOT Sidebar container + Navigation organism === */}
           <Sidebar
-            ariaLabel="Settings sidebar"
+            ariaLabel={t('settings.sidebar.aria')}
             collapsed={navOrientation === 'vertical' && !sidebarExpanded}
             orientation={navOrientation}
-            header={showSidebarHeader ? 'Settings' : undefined}
+            header={showSidebarHeader ? t('settings.title') : undefined}
             className={styles.sidebarWidth}
           >
             <Navigation
-              ariaLabel="Settings sections"
+              ariaLabel={t('settings.sidebar.navAria')}
               orientation={navOrientation}
               activeId={activeSection}
               onActiveChange={setActiveSection}

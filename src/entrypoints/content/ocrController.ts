@@ -5,6 +5,7 @@
 // No OCR logic here — engine lives in offscreen document.
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { isCellDebug } from '@/shared/lib/cellDebug';
 import type { MessageResponse } from '@/entities/message';
@@ -56,7 +57,7 @@ export class OcrController {
         return { status: 'ready', backend: this.backend };
       }
       this.initializedKeys.delete(key);
-      const error = isWrapper ? (response.error ?? data?.error ?? 'Init failed') : (data?.error ?? 'Init failed');
+      const error = isWrapper ? (response.error ?? data?.error ?? t('ocr.error.init')) : (data?.error ?? t('ocr.error.init'));
       return { status: 'error', backend: 'wasm', error };
     } catch (e) {
       if (isCellDebug()) document.body.dataset.ocrBgException = String(e);

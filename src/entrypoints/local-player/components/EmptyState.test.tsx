@@ -15,7 +15,7 @@ describe('EmptyState', () => {
   it('renders dropzone hint text', () => {
     render(<EmptyState onOpenFile={jest.fn()} onOpenFolder={jest.fn()} />);
     expect(
-      screen.getByText(/drop your video and subtitles here/i),
+      screen.getByText(/drop video and subtitles here/i),
     ).toBeInTheDocument();
   });
 

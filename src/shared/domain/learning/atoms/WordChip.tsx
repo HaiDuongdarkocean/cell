@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Chip } from '@/shared/ui/Chip';
 import type { ChipColor } from '@/shared/ui/Chip';
+import { t, type MessageKey } from '@/shared/i18n';
 
 export type WordStatus = 'new' | 'learning' | 'mastered' | 'unknown';
 
@@ -9,6 +10,13 @@ const statusToColor: Record<WordStatus, ChipColor> = {
   learning: 'warning',
   mastered: 'success',
   unknown: 'muted',
+};
+
+const statusToLabel: Record<WordStatus, MessageKey> = {
+  new: 'learning.status.new',
+  learning: 'learning.status.learning',
+  mastered: 'learning.status.mastered',
+  unknown: 'vocabulary.status.unknown',
 };
 
 export interface WordChipProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'size' | 'color'> {
@@ -45,7 +53,7 @@ export function WordChip({
       size={size}
       color={statusToColor[status]}
       className={className}
-      aria-label={`Look up ${word}, status: ${status}`}
+      aria-label={t('learning.wordChip.aria', [word, t(statusToLabel[status])])}
       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
         onClick?.(e);
         if (!e.defaultPrevented) onLookup?.(word);

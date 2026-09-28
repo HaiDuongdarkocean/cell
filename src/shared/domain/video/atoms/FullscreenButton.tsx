@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Button } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './FullscreenButton.module.css';
 
 interface FullscreenButtonProps
@@ -32,7 +33,7 @@ export function FullscreenButton({
       active={fullscreen}
       disabled={disabled || !supported}
       aria-pressed={fullscreen}
-      aria-label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+      aria-label={fullscreen ? t('video.fullscreen.exit') : t('video.fullscreen.enter')}
       className={[styles.fullscreenBtn, className].filter(Boolean).join(' ')}
       {...rest}
     >

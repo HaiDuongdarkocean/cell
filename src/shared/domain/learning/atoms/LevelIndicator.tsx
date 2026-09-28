@@ -1,4 +1,5 @@
 import type { HTMLAttributes } from 'react';
+import { t } from '@/shared/i18n';
 import styles from './LevelIndicator.module.css';
 
 export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
@@ -25,7 +26,7 @@ export function LevelIndicator({
   const cls = [styles.indicator, styles[level], className ?? ''].filter(Boolean).join(' ');
 
   return (
-    <span className={cls} aria-label={`CEFR level: ${level}`} {...rest}>
+    <span className={cls} aria-label={t('learning.level.aria', [level])} {...rest}>
       <span className={styles.dot} aria-hidden="true" />
       {showLabel && <span className={styles.label}>{children ?? level}</span>}
     </span>

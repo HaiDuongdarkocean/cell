@@ -4,6 +4,7 @@ import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/icons/Icon';
 import { useMenuPlacement } from './useMenuPlacement';
 import { pushEscapeLayer } from './escapeLayerStack';
+import { t } from '@/shared/i18n';
 import styles from './Select.module.css';
 
 export interface SelectOption {
@@ -85,7 +86,7 @@ export function Select({
   menuMaxHeight,
   menuAlign = 'left',
   searchable = false,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder = t('ui.select.searchPlaceholder'),
   'data-cell-id': dataTestId,
   'aria-label': ariaLabel,
 }: SelectProps): React.JSX.Element {
@@ -364,7 +365,7 @@ export function Select({
             type="search"
             className={styles.searchInput}
             placeholder={searchPlaceholder}
-            aria-label="Search options"
+            aria-label={t('common.searchOptions.aria')}
             value={query}
             onChange={handleSearchChange}
             onKeyDown={handleSearchKeyDown}
@@ -405,7 +406,7 @@ export function Select({
           ))
         ) : (
           <div className={styles.emptyState} role="presentation">
-            No matching options
+            {t('common.noResults')}
           </div>
         )}
       </div>

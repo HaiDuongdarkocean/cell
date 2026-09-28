@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import type { HTMLAttributes, KeyboardEvent } from 'react';
+import { t } from '@/shared/i18n';
 import styles from './DragHandle.module.css';
 
 interface DragHandleProps extends Omit<HTMLAttributes<HTMLDivElement>, 'role' | 'tabIndex' | 'onKeyDown'> {
@@ -23,7 +24,7 @@ export function DragHandle({
   orientation = 'horizontal',
   size = 'md',
   className,
-  'aria-label': ariaLabel = 'Drag',
+  'aria-label': ariaLabel = t('ui.dragHandle.aria'),
   onKeyDown,
   ...rest
 }: DragHandleProps): React.JSX.Element {

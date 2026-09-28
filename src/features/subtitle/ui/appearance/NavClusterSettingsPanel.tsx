@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import type { NavClusterSettings } from '@/entities/settings';
 import { Button } from '@/shared/ui';
 import { Slider } from '@/shared/ui/Slider';
+import { t, type MessageKey } from '@/shared/i18n';
 import styles from './NavClusterSettingsPanel.module.css';
 
 interface NavClusterSettingsPanelProps {
@@ -16,11 +17,11 @@ const BUTTON_SIZE_MIN = 10;
 const BUTTON_SIZE_MAX = 100;
 
 /** Overlay appearance presets (feather blur 1px hardcoded). */
-const PRESETS: ReadonlyArray<{ label: string; textOpacity: number; bgOpacity: number }> = [
-  { label: 'Frosted', textOpacity: 1, bgOpacity: 0.2 },
-  { label: 'Glass', textOpacity: 1, bgOpacity: 0 },
-  { label: 'Muted', textOpacity: 0.8, bgOpacity: 0.4 },
-  { label: 'Solid', textOpacity: 0.6, bgOpacity: 0.8 },
+const PRESETS: ReadonlyArray<{ id: string; key: MessageKey; textOpacity: number; bgOpacity: number }> = [
+  { id: 'frosted', key: 'subtitle.navSettings.preset.frosted', textOpacity: 1, bgOpacity: 0.2 },
+  { id: 'glass', key: 'subtitle.navSettings.preset.glass', textOpacity: 1, bgOpacity: 0 },
+  { id: 'muted', key: 'subtitle.navSettings.preset.muted', textOpacity: 0.8, bgOpacity: 0.4 },
+  { id: 'solid', key: 'subtitle.navSettings.preset.solid', textOpacity: 0.6, bgOpacity: 0.8 },
 ];
 
 /**
@@ -42,7 +43,7 @@ export function NavClusterSettingsPanel({
         {/* Button size */}
         <div className={styles.row}>
           <div className={styles.sliderHeader}>
-            <label className={styles.label} htmlFor="nav-cluster-button-size">Button Size</label>
+            <label className={styles.label} htmlFor="nav-cluster-button-size">{t('subtitle.navSettings.buttonSize')}</label>
             <span className={styles.value}>{settings.buttonSize}px</span>
           </div>
           <Slider
@@ -52,7 +53,7 @@ export function NavClusterSettingsPanel({
             max={BUTTON_SIZE_MAX}
             step={1}
             onChange={(v) => onChange({ buttonSize: v })}
-            aria-label="Button size"
+            aria-label={t('subtitle.navSettings.buttonSize')}
             data-cell-id="nav-cluster-button-size"
           />
         </div>
@@ -60,7 +61,7 @@ export function NavClusterSettingsPanel({
         {/* Icon opacity */}
         <div className={styles.row}>
           <div className={styles.sliderHeader}>
-            <label className={styles.label} htmlFor="nav-cluster-text-opacity">Icon</label>
+            <label className={styles.label} htmlFor="nav-cluster-text-opacity">{t('subtitle.navSettings.icon')}</label>
             <span className={styles.value}>{Math.round(settings.textOpacity * 100)}%</span>
           </div>
           <Slider
@@ -70,7 +71,7 @@ export function NavClusterSettingsPanel({
             max={1}
             step={0.05}
             onChange={(v) => onChange({ textOpacity: v })}
-            aria-label="Icon opacity"
+            aria-label={t('subtitle.navSettings.iconOpacityAria')}
             data-cell-id="nav-cluster-text-opacity"
           />
         </div>
@@ -78,7 +79,7 @@ export function NavClusterSettingsPanel({
         {/* Button opacity */}
         <div className={styles.row}>
           <div className={styles.sliderHeader}>
-            <label className={styles.label} htmlFor="nav-cluster-bg-opacity">Background</label>
+            <label className={styles.label} htmlFor="nav-cluster-bg-opacity">{t('subtitle.style.background')}</label>
             <span className={styles.value}>{Math.round(settings.bgOpacity * 100)}%</span>
           </div>
           <Slider
@@ -88,30 +89,30 @@ export function NavClusterSettingsPanel({
             max={1}
             step={0.05}
             onChange={(v) => onChange({ bgOpacity: v })}
-            aria-label="Button opacity"
+            aria-label={t('subtitle.navSettings.buttonOpacityAria')}
             data-cell-id="nav-cluster-bg-opacity"
           />
         </div>
       </div>
 
       {/* ─── Style presets ─── */}
-      <span className={styles.sectionHeader}>Style</span>
-      <div className={styles.presetRow} role="group" aria-label="Overlay appearance presets">
+      <span className={styles.sectionHeader}>{t('subtitle.navSettings.style')}</span>
+      <div className={styles.presetRow} role="group" aria-label={t('subtitle.navSettings.presetsAria')}>
         {PRESETS.map((preset) => {
           const isActive =
             settings.textOpacity === preset.textOpacity &&
             settings.bgOpacity === preset.bgOpacity;
           return (
             <Button
-              key={preset.label}
+              key={preset.id}
               variant="primary"
               size="sm"
               active={isActive}
               aria-pressed={isActive}
               onClick={() => handlePreset(preset)}
-              data-cell-id={`nav-cluster-preset-${preset.label.toLowerCase()}`}
+              data-cell-id={`nav-cluster-preset-${preset.id}`}
             >
-              {preset.label}
+              {t(preset.key)}
             </Button>
           );
         })}

@@ -7,6 +7,7 @@ import { Spinner } from '@/shared/ui/Spinner';
 import cardAnimations from '@/shared/ui/CardAnimations.module.css';
 import { Icon } from '@/shared/ui/Icon';
 import { COPY_FEEDBACK_DURATION_MS } from '@/shared/config/config';
+import { t } from '@/shared/i18n';
 import { formatFileSize } from '@/entrypoints/popup/utils/format';
 import styles from './SubtitleCard.module.css';
 
@@ -90,7 +91,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
           onKeyDown={handleCardKeyDown}
           role="button"
           tabIndex={0}
-          aria-label={`Select ${displayTitle ?? displayLanguage}`}
+          aria-label={t('downloads.media.select', [displayTitle ?? displayLanguage])}
         >
           {/* Icon — subtitle (amber) */}
           <Center className={`${styles.icon} ${styles.subtitleIcon}`} aria-hidden="true">
@@ -103,7 +104,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
             <HStack align="center" gap="1" className={styles.tagRow}>
               <span className={styles.languageTag} data-cell-id="subtitle-language">{displayLanguage}</span>
               <span className={styles.meta}>
-                {downloading ? 'Downloading…' : `${subtitle.format}${subtitle.size ? ` · ${formatFileSize(subtitle.size)}` : ''}`}
+                {downloading ? t('downloads.media.downloading') : `${subtitle.format}${subtitle.size ? ` · ${formatFileSize(subtitle.size)}` : ''}`}
               </span>
             </HStack>
           </div>
@@ -113,7 +114,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
             <Button shape="circle"
               size="sm"
               onClick={handleExpandClick}
-              aria-label={urlExpanded ? 'Collapse URL' : 'Expand URL'}
+              aria-label={urlExpanded ? t('downloads.media.hideUrl') : t('downloads.media.showUrl')}
               aria-expanded={urlExpanded}
               data-cell-id="subtitle-expand-url-btn"
             >
@@ -124,7 +125,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
             </Button>
             <div className={styles.action}>
               {downloading ? (
-                <Center as="span" className={styles.downloadingIndicator} aria-label="Downloading">
+                <Center as="span" className={styles.downloadingIndicator} aria-label={t('downloads.media.downloading')}>
                   <Spinner size="md" color="secondary" aria-hidden="true" />
                 </Center>
               ) : (
@@ -132,7 +133,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
                   size="sm"
                   variant="ghost"
                   onClick={handleActionClick}
-                  aria-label="Download"
+                  aria-label={t('downloads.action.download')}
                   data-cell-id="subtitle-download"
                 >
                   <Icon name="download"  />
@@ -152,12 +153,12 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
               leadingIcon={<Icon name="copy"  />}
               onClick={(e) => { void handleUrlClick(e); }}
               data-cell-id="subtitle-url"
-              title="Click to copy URL"
-              aria-label="Copy URL"
+              title={t('downloads.media.copyUrl')}
+              aria-label={t('downloads.media.copyUrl')}
             >
               <span className={styles.urlText}>{subtitle.url}</span>
             </Button>
-            {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-cell-id="subtitle-copied-toast">Copied</span>}
+            {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-cell-id="subtitle-copied-toast">{t('downloads.media.copied')}</span>}
           </HStack>
         )}
       </VStack>

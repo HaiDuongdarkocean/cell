@@ -1,4 +1,5 @@
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { t } from '@/shared/i18n';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { PopupCardCreatorPrefill } from '@/entities/dictionary';
 import type { SrsFieldValue } from '@/entities/srs/types';
@@ -59,7 +60,7 @@ export async function addToOceanSrs(prefill: PopupCardCreatorPrefill): Promise<S
     payload,
   });
   if (!response?.success || !response.data) {
-    throw new Error(response?.error ?? 'SRS add note failed');
+    throw new Error(response?.error ?? t('dict.error.srs'));
   }
   return response.data;
 }

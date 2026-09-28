@@ -3,6 +3,7 @@
  * Extracted from BackgroundService.wireEvents().
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import {
   getExtensionId,
   download,
@@ -195,13 +196,11 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
       >(request);
 
       if (!response) {
-        throw new Error(
-          'Offscreen document did not respond to CONVERT_TS_TO_MP4_V2. ' +
-            'The offscreen listener may not have registered.',
-        );
+        console.error('[offscreen] No response for', request.type);
+        throw new Error(t('ui.error.offscreenNoResponse'));
       }
       if (!response.success || !response.data) {
-        throw new Error(response.error ?? 'transmux conversion failed');
+        throw new Error(response.error ?? t('downloads.error.conversionFailed'));
       }
 
       return {
@@ -236,15 +235,11 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
       >(createRequest);
 
       if (!createResponse) {
-        throw new Error(
-          'Offscreen document did not respond to CREATE_OPFS_BLOB_URL. ' +
-            'The offscreen listener may not have registered.',
-        );
+        console.error('[offscreen] No response for', createRequest.type);
+        throw new Error(t('ui.error.offscreenNoResponse'));
       }
       if (!createResponse.success || !createResponse.data) {
-        throw new Error(
-          createResponse.error ?? 'Failed to create Blob URL for save',
-        );
+        throw new Error(createResponse.error ?? t('downloads.error.blobUrlFailed'));
       }
 
       const blobUrl = createResponse.data.url;
@@ -389,7 +384,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
           )[0];
           const interruptReason = item?.error ?? 'interrupted';
           if (interruptReason !== 'FILE_FAILED' || attempts >= 2) {
-            throw new Error(`Download interrupted: ${interruptReason}`);
+            throw new Error(t('downloads.error.downloadInterrupted'));
           }
           // FILE_FAILED on a same-name collision is recoverable — the sibling's
           // slot is committed by now, so a fresh free name lands cleanly.
@@ -407,7 +402,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     const media =
       ctx.mediaMap.get(item.id) ?? findMediaForDownloadItem(ctx, item);
     if (!media) {
-      throw new Error(`No media found for download ${item.id}`);
+      throw new Error(t('downloads.error.mediaUnavailable'));
     }
 
     try {

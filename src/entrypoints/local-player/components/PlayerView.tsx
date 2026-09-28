@@ -22,6 +22,7 @@ import {
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
+import { t } from '@/shared/i18n';
 import { Button } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import { PlayerControls } from './PlayerControls';
@@ -415,9 +416,9 @@ export function PlayerView({
             {showNoSubtitle && (
               <div className={styles.noSubtitleBanner} data-cell-id="no-subtitle-banner">
                 <Icon name="captions" size={20} />
-                <span>No subtitle found</span>
+                <span>{t('player.subtitle.noMatch')}</span>
                 <Button variant="secondary" size="sm" onClick={onOpenSubtitle} leadingIcon={<Icon name="fileVideo" size={16} />}>
-                  Open subtitle file
+                  {t('player.action.openSubtitle')}
                 </Button>
               </div>
             )}
@@ -425,9 +426,9 @@ export function PlayerView({
             {showSubtitleError && (
               <div className={styles.noSubtitleBanner} data-cell-id="subtitle-error-banner">
                 <Icon name="triangleAlert" size={16} />
-                <span>Subtitle access unavailable on this browser</span>
+                <span>{t('player.subtitle.error')}</span>
                 <Button variant="secondary" size="sm" onClick={onOpenSubtitle} leadingIcon={<Icon name="fileVideo" size={16} />}>
-                  Open subtitle file
+                  {t('player.action.openSubtitle')}
                 </Button>
               </div>
             )}

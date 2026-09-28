@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import styles from './SubtitleHint.module.css';
 
 export interface SubtitleHintProps {
@@ -7,7 +8,7 @@ export interface SubtitleHintProps {
 }
 
 export function SubtitleHint({
-  title = 'Drop subtitle file here',
+  title = t('subtitle.dropHint'),
   message,
   onClick,
 }: SubtitleHintProps): React.JSX.Element {

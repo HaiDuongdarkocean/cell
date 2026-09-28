@@ -4,7 +4,7 @@ import { StatusBadge } from './StatusBadge';
 describe('StatusBadge', () => {
   it('renders the status as children by default', () => {
     render(<StatusBadge status="unknown" />);
-    expect(screen.getByText('unknown')).toBeInTheDocument();
+    expect(screen.getByText('Unknown')).toBeInTheDocument();
   });
 
   it('renders custom children when provided', () => {
@@ -18,10 +18,15 @@ describe('StatusBadge', () => {
   });
 
   it('renders all statuses', () => {
-    const statuses = ['unknown', 'tracking', 'known', 'ignore'] as const;
-    for (const status of statuses) {
+    const cases = [
+      ['unknown', 'Unknown'],
+      ['tracking', 'Tracking'],
+      ['known', 'Known'],
+      ['ignore', 'Ignored'],
+    ] as const;
+    for (const [status, label] of cases) {
       const { unmount } = render(<StatusBadge status={status} />);
-      expect(screen.getByText(status)).toBeInTheDocument();
+      expect(screen.getByText(label)).toBeInTheDocument();
       unmount();
     }
   });
@@ -34,7 +39,7 @@ describe('StatusBadge', () => {
   it('fires onClick', () => {
     const onClick = jest.fn();
     render(<StatusBadge status="unknown" onClick={onClick} />);
-    screen.getByText('unknown').click();
+    screen.getByText('Unknown').click();
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 });

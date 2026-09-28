@@ -9,6 +9,7 @@
  * Spec: docs/specs/subtitle-search.md
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import { offscreenFetch } from '../offscreenFetch';
 import { loadSettings } from '../helpers';
 import type { BackgroundContext } from '../context';
@@ -93,7 +94,7 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
               continue;
             }
             if (!res.ok) {
-              errors.push({ type: 'network', message: `HTTP ${res.status}` });
+              errors.push({ type: 'network', message: t('subtitle.error.http', [res.status]) });
               break;
             }
             const raw = JSON.parse(res.content);
@@ -115,7 +116,7 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
                 headers: step2Plan.headers,
               });
               if (!step2Res.ok) {
-                errors.push({ type: 'network', message: `HTTP ${step2Res.status}` });
+                errors.push({ type: 'network', message: t('subtitle.error.http', [step2Res.status]) });
                 break;
               }
               const step2Results = normalizeSearch(providerId, JSON.parse(step2Res.content), searchQuery);
@@ -154,7 +155,7 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
       }
       return {
         success: true,
-        data: { results: [], error: errors[0] ?? { type: 'network', message: 'No providers available' } },
+        data: { results: [], error: errors[0] ?? { type: 'network', message: t('subtitle.error.noProviders') } },
       };
     },
   );
@@ -195,7 +196,7 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
           if (!handshakeRes.ok) {
             return {
               success: true,
-              data: { error: { type: 'network', message: `Handshake HTTP ${handshakeRes.status}` } },
+              data: { error: { type: 'network', message: t('subtitle.error.http', [handshakeRes.status]) } },
             };
           }
           const handshake = JSON.parse(handshakeRes.content) as {
@@ -215,7 +216,7 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
           if (!fileRes.ok) {
             return {
               success: true,
-              data: { error: { type: 'network', message: `Download HTTP ${fileRes.status}` } },
+              data: { error: { type: 'network', message: t('subtitle.error.http', [fileRes.status]) } },
             };
           }
           const osBytes = decodeBase64ToArrayBuffer(fileRes.content);
@@ -236,7 +237,7 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
         if (!res.ok) {
           return {
             success: true,
-            data: { error: { type: 'network', message: `HTTP ${res.status}` } },
+            data: { error: { type: 'network', message: t('subtitle.error.http', [res.status]) } },
           };
         }
         await decrementDownload(key.id);

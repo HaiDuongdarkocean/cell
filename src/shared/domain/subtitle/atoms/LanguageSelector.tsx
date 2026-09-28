@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { Select } from '@/shared/ui';
 import type { SelectOption } from '@/shared/ui/Select';
+import { t } from '@/shared/i18n';
 import styles from './LanguageSelector.module.css';
 
 export interface LanguageOption {
@@ -51,7 +52,7 @@ export function LanguageSelector({
       id={id}
       data-cell-id={dataTestId}
       className={styles.languageSelector}
-      aria-label="Subtitle language"
+      aria-label={t('subtitle.languageSelect.aria')}
       options={options}
       value={value}
       onChange={onChange}

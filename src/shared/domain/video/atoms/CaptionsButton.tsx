@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Button } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './CaptionsButton.module.css';
 
 interface CaptionsButtonProps
@@ -30,7 +31,7 @@ export function CaptionsButton({
       active={captionsOn}
       disabled={disabled || !available}
       aria-pressed={captionsOn}
-      aria-label={captionsOn ? 'Captions on' : 'Captions off'}
+      aria-label={captionsOn ? t('video.captions.on') : t('video.captions.off')}
       className={[styles.captionsBtn, className].filter(Boolean).join(' ')}
       {...rest}
     >

@@ -10,6 +10,7 @@ import {
 } from '@/features/subtitle';
 import { loadTargetNativeLangs } from './contentScriptShared';
 import { cleanTargetCues } from '../logic/subtitleCleanupRuntime';
+import { t } from '@/shared/i18n';
 import type { ContentScriptContext } from './contentScriptContext';
 
 export function createProcessImportedFiles(ctx: ContentScriptContext): (files: File[], _container: HTMLElement) => Promise<void> {
@@ -25,7 +26,7 @@ export function createProcessImportedFiles(ctx: ContentScriptContext): (files: F
     const { targetLang, nativeLang } = await loadTargetNativeLangs();
     const parsed = await parseAndDetectFiles(files);
     if (parsed.length === 0) {
-      ctx.debouncedToast('No valid subtitle files', _container, { variant: 'error' });
+      ctx.debouncedToast(t('subtitle.import.noValid'), _container, { variant: 'error' });
       return;
     }
     const assignment = assignImportRole(parsed, targetLang, nativeLang);
@@ -44,8 +45,8 @@ export function createProcessImportedFiles(ctx: ContentScriptContext): (files: F
 
     if (newTarget.length === 0 && newNative.length === 0) {
       const names = [...dupTarget, ...dupNative].map(f => f.file.name);
-      const label = names.length === 1 ? names[0] : `${names.length} files`;
-      ctx.debouncedToast(`Already imported: ${label}`, _container, { variant: 'warning' });
+      const label = names.length === 1 ? names[0] : t('subtitle.import.fileCount', [names.length]);
+      ctx.debouncedToast(t('subtitle.import.duplicate', [label]), _container, { variant: 'warning' });
       return;
     }
 
@@ -107,16 +108,16 @@ export function createProcessImportedFiles(ctx: ContentScriptContext): (files: F
     // Toast — include duplicate count if any were skipped
     const total = newTarget.length + newNative.length;
     const ignoredCount = assignment.ignored.length;
-    const dupTxt = totalDups > 0 ? `, ${totalDups} duplicate${totalDups > 1 ? 's' : ''} skipped` : '';
+    const dupTxt = totalDups > 0 ? t('subtitle.import.dupSkipped', [totalDups]) : '';
     if (total === 1) {
       const importedName = newTarget[0]?.file.name ?? newNative[0]?.file.name ?? '';
-      ctx.debouncedToast(`Imported ${importedName}${dupTxt}`, _container, { variant: 'success' });
+      ctx.debouncedToast(t('subtitle.import.importedOne', [importedName, dupTxt]), _container, { variant: 'success' });
     } else {
       const parts: string[] = [];
-      if (newTarget.length > 0) parts.push(`target:${newTarget.length}`);
-      if (newNative.length > 0) parts.push(`native:${newNative.length}`);
-      const ignoredTxt = ignoredCount > 0 ? ` (${ignoredCount} ignored)` : '';
-      ctx.debouncedToast(`Imported ${total} subtitle files (${parts.join(', ')})${ignoredTxt}${dupTxt}`, _container, { variant: 'success' });
+      if (newTarget.length > 0) parts.push(t('subtitle.import.partTarget', [newTarget.length]));
+      if (newNative.length > 0) parts.push(t('subtitle.import.partNative', [newNative.length]));
+      const ignoredTxt = ignoredCount > 0 ? t('subtitle.import.ignoredSuffix', [ignoredCount]) : '';
+      ctx.debouncedToast(t('subtitle.import.importedMany', [total, parts.join(', '), ignoredTxt + dupTxt]), _container, { variant: 'success' });
     }
   };
 }

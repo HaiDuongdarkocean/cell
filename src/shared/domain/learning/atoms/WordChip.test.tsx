@@ -14,19 +14,24 @@ describe('WordChip', () => {
 
   it('has correct aria-label with default status', () => {
     render(<WordChip word="ubiquitous" />);
-    expect(screen.getByRole('button', { name: 'Look up ubiquitous, status: unknown' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Look up ubiquitous, status: Unknown' })).toBeInTheDocument();
   });
 
   it('has correct aria-label with explicit status', () => {
     render(<WordChip word="resilient" status="learning" />);
-    expect(screen.getByRole('button', { name: 'Look up resilient, status: learning' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Look up resilient, status: Learning' })).toBeInTheDocument();
   });
 
   it('renders all statuses', () => {
-    const statuses = ['new', 'learning', 'mastered', 'unknown'] as const;
-    for (const status of statuses) {
+    const cases = [
+      ['new', 'New'],
+      ['learning', 'Learning'],
+      ['mastered', 'Mastered'],
+      ['unknown', 'Unknown'],
+    ] as const;
+    for (const [status, label] of cases) {
       const { unmount } = render(<WordChip word={status} status={status} />);
-      expect(screen.getByRole('button', { name: `Look up ${status}, status: ${status}` })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: `Look up ${status}, status: ${label}` })).toBeInTheDocument();
       unmount();
     }
   });

@@ -7,6 +7,7 @@ import {
 } from '@/features/local-player/logic/immersionClock';
 import { Card, VisuallyHidden } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
+import { t } from '@/shared/i18n';
 import styles from './ImmersionStats.module.css';
 
 const HOUR_MS = 3_600_000;
@@ -40,9 +41,12 @@ export function ImmersionStats(): React.JSX.Element {
 
   const totalMs = summary?.totalMs ?? 0;
   const level = levelForHours(totalMs / HOUR_MS);
-  const totalLabel = `${formatHours(totalMs)} h input`;
+  const totalLabel = t('library.stats.hours', [formatHours(totalMs)]);
   const sourceTitle = summary
-    ? `local ${formatHours(summary.bySource.localMs)} h · streaming ${formatHours(summary.bySource.streamMs)} h`
+    ? t('library.stats.breakdown', [
+        formatHours(summary.bySource.localMs),
+        formatHours(summary.bySource.streamMs),
+      ])
     : undefined;
 
   return (
@@ -52,13 +56,13 @@ export function ImmersionStats(): React.JSX.Element {
         <span className={styles.total} title={sourceTitle}>
           {totalLabel}
         </span>
-        <span className={styles.dim}>· {formatHours(summary?.last7dMs ?? 0)} h last 7 days</span>
+        <span className={styles.dim}>· {t('library.stats.last7d', [formatHours(summary?.last7dMs ?? 0)])}</span>
         {(summary?.streakDays ?? 0) > 0 && (
-          <span className={styles.dim}>· {summary!.streakDays}-day streak</span>
+          <span className={styles.dim}>· {t('library.stats.streak', [summary!.streakDays])}</span>
         )}
       </div>
       <div className={styles.row}>
-        <span className={styles.level}>Level {level.level}</span>
+        <span className={styles.level}>{t('library.stats.level', [level.level])}</span>
         <div
           className={styles.track}
           role="progressbar"
@@ -69,14 +73,17 @@ export function ImmersionStats(): React.JSX.Element {
           <div className={styles.fill} style={{ width: `${level.progress * 100}%` }} />
           <VisuallyHidden>
             {level.nextH === null
-              ? `Level ${level.level}, maximum level reached`
-              : `Level ${level.level}, ${formatHours(totalMs)} of ${level.nextH} hours`}
+              ? t('library.stats.levelMaxSr', [level.level])
+              : t('library.stats.levelSr', [level.level, formatHours(totalMs), level.nextH])}
           </VisuallyHidden>
         </div>
         <span className={styles.dim}>
           {level.nextH === null
-            ? 'max level'
-            : `${formatHours(Math.max(0, level.nextH * HOUR_MS - totalMs))} h to Level ${level.level + 1}`}
+            ? t('library.stats.maxLevel')
+            : t('library.stats.toNextLevel', [
+                formatHours(Math.max(0, level.nextH * HOUR_MS - totalMs)),
+                level.level + 1,
+              ])}
         </span>
       </div>
     </Card>

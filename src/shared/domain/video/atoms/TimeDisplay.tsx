@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import styles from './TimeDisplay.module.css';
 
 type TimeDisplayFormat = 'current' | 'remaining' | 'both';
@@ -59,7 +60,7 @@ export function TimeDisplay({
   const cls = [styles.display, className ?? ''].filter(Boolean).join(' ');
 
   return (
-    <time className={cls} dateTime={datetime} role="timer" aria-label={`Current time ${label}`}>
+    <time className={cls} dateTime={datetime} role="timer" aria-label={t('video.time.currentAria', [label])}>
       {label}
     </time>
   );

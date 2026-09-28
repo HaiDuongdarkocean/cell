@@ -1,4 +1,5 @@
 import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
+import { t } from '@/shared/i18n';
 
 /**
  * Format a subtitle display name (ADR-015 — friendly naming convention).
@@ -39,6 +40,6 @@ export function formatSubtitleName(
     return `${displayName.trim()} #${index + 1}`;
   }
   const label = language ? isoCodeToLabel(language) : null;
-  if (!label) return `Sub #${index + 1}`;
+  if (!label) return t('subtitle.naming.fallback', [index + 1]);
   return `${label.charAt(0).toUpperCase()}${label.slice(1)} #${index + 1}`;
 }

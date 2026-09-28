@@ -8,6 +8,7 @@
  */
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import {
@@ -66,7 +67,7 @@ export function registerLocalAudioHandlers(ctx: BackgroundContext): void {
       return { success: true, data };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      return { success: false, error: `Local audio fetch failed: ${msg}` };
+      return { success: false, error: t('audio.error.localFetch', [msg]) };
     }
   });
 
@@ -88,7 +89,7 @@ export function registerLocalAudioHandlers(ctx: BackgroundContext): void {
       return { success: true, data: { configured: true, permission } };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      return { success: false, error: `Local audio state failed: ${msg}` };
+      return { success: false, error: t('audio.error.localState', [msg]) };
     }
   });
 
@@ -97,11 +98,11 @@ export function registerLocalAudioHandlers(ctx: BackgroundContext): void {
   async function buildDslIndex(dslFileHandleId: string): Promise<number> {
     const handle = await getFileHandle(dslFileHandleId);
     if (!handle || handle.kind !== 'file') {
-      throw new Error('Stored DSL handle is missing or not a file');
+      throw new Error(t('audio.error.handleMissing'));
     }
     const permission = await handle.queryPermission({ mode: 'read' });
     if (permission !== 'granted') {
-      throw new Error(`DSL read permission is ${permission}`);
+      throw new Error(t('audio.error.filePermission'));
     }
     const file = await (handle as FileSystemFileHandle).getFile();
     const text = await file.text();
@@ -169,7 +170,7 @@ export function registerLocalAudioHandlers(ctx: BackgroundContext): void {
       return { success: true, data: { jobId: job.id } };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      return { success: false, error: `Local audio index build failed: ${msg}` };
+      return { success: false, error: t('audio.error.localIndex', [msg]) };
     }
   });
 

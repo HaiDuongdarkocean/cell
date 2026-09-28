@@ -355,7 +355,7 @@ describe('executeParallelConversion', () => {
     );
 
     expect(result.success).toBe(false);
-    expect(result.error).toBe('Conversion cancelled');
+    expect(result.error).toBe('The conversion was cancelled');
     expect(result.usedParallel).toBe(false);
   });
 });

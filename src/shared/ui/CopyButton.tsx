@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import type { ButtonHTMLAttributes } from 'react';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './CopyButton.module.css';
 
 interface CopyButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -25,7 +26,7 @@ export function CopyButton({
   label,
   copiedDuration = 2000,
   className,
-  'aria-label': ariaLabel = 'Copy to clipboard',
+  'aria-label': ariaLabel = t('ui.copyButton.aria'),
   onClick,
   ...rest
 }: CopyButtonProps): React.JSX.Element {
@@ -63,7 +64,7 @@ export function CopyButton({
       </span>
       {label && <span className={styles.label}>{label}</span>}
       <span className={styles.srOnly} aria-live="polite">
-        {copied ? 'Copied' : ''}
+        {copied ? t('ui.copyButton.copied') : ''}
       </span>
     </Button>
   );

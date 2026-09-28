@@ -16,6 +16,8 @@
  * Source: ISO 639-1 codes (Wikipedia) + native names from UI.
  */
 
+import { t } from '@/shared/i18n';
+
 /** One language entry in the registry. */
 export interface LanguageEntry {
   /** ISO 639-1 (2-letter) code, e.g. 'en', 'vi', 'zh'. */
@@ -282,7 +284,7 @@ export interface LanguageOption {
  * Replaces the old `SUBTITLE_LANGUAGES` in SettingsDialog.tsx.
  */
 export const SUBTITLE_LANGUAGES: LanguageOption[] = [
-  { value: 'all', label: 'All languages' },
+  { value: 'all', get label() { return t('ui.language.all'); } },
   ...LANGUAGES.map((l) => ({
     value: l.iso1,
     label: l.native === l.english ? l.english : `${l.native} (${l.english})`,
@@ -297,7 +299,7 @@ export const SUBTITLE_LANGUAGES: LanguageOption[] = [
  * Replaces the old `OVERLAY_LANGUAGE_OPTIONS` in SettingsDialog.tsx.
  */
 export const OVERLAY_LANGUAGE_OPTIONS: LanguageOption[] = [
-  { value: '', label: 'None' },
+  { value: '', get label() { return t('ui.language.none'); } },
   ...LANGUAGES.map((l) => ({
     value: l.iso1,
     label: l.native === l.english ? l.english : `${l.native} (${l.english})`,

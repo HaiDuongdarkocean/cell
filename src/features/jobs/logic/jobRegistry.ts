@@ -225,7 +225,7 @@ export class JobRegistry {
     if (!tracked || tracked.job.status !== 'queued') return;
     const executor = this.executors.get(tracked.job.kind);
     if (!executor) {
-      this.markFailed(id, 'No executor registered for this job kind');
+      this.markFailed(id, 'no-executor');
       return;
     }
     this.markRunning(id);

@@ -24,7 +24,7 @@ describe('LauncherSearchBar', () => {
     const handleChange = jest.fn();
     render(<LauncherSearchBar value="test" onChange={handleChange} />);
 
-    const clear = screen.getByRole('button', { name: /clear search/i });
+    const clear = screen.getByRole('button', { name: /^clear$/i });
     expect(clear).toBeInTheDocument();
 
     fireEvent.click(clear);
@@ -33,6 +33,6 @@ describe('LauncherSearchBar', () => {
 
   it('does not show a clear button when the input is empty', () => {
     render(<LauncherSearchBar value="" />);
-    expect(screen.queryByRole('button', { name: /clear search/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^clear$/i })).not.toBeInTheDocument();
   });
 });

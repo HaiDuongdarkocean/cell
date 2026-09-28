@@ -52,7 +52,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const hasPrefix = Boolean(prefix);
   const hasSuffix = Boolean(suffix) || loading;
   const suffixContent = loading ? (
-    <Spinner size="md" color="current" ariaLabel="Loading" />
+    <Spinner size="md" color="current" />
   ) : (
     suffix
   );

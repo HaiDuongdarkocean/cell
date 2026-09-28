@@ -1,4 +1,5 @@
 import type { HTMLAttributes } from 'react';
+import { getLocale } from '@/shared/i18n';
 import styles from './Timestamp.module.css';
 
 type TimestampFormat = 'relative' | 'absolute' | 'time' | 'datetime';
@@ -38,7 +39,7 @@ const RELATIVE_UNITS: ReadonlyArray<{ limit: number; unit: Intl.RelativeTimeForm
 export function formatTimestamp(
   value: Date | number | string,
   format: TimestampFormat = 'relative',
-  locale: string = 'en',
+  locale: string = getLocale(),
 ): string {
   const date = toDate(value);
 

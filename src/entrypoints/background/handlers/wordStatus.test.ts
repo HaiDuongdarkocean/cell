@@ -102,7 +102,7 @@ describe('WORD_STATUS_SET', () => {
     const handler = ctx.handlers.get(MESSAGE_TYPES.WORD_STATUS_SET);
     const response = await handler?.({ payload: { tabId: 1, langCode: 'en', term: 'call', status: 'known' } });
 
-    expect(response).toEqual({ success: false, error: 'idb failed' });
+    expect(response).toEqual({ success: false, error: 'The vocabulary action failed: idb failed' });
     await flushPromises();
 
     expect(mockTabsQuery).not.toHaveBeenCalled();

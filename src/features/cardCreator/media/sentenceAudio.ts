@@ -19,6 +19,7 @@
 import type { MediaFile } from './mediaFile';
 import { generateMediaFilename } from './mediaFile';
 import { seekVideo, playVideo, pauseVideo } from '@/shared/lib/dom/netflixPlayback';
+import { t } from '@/shared/i18n';
 
 /** Max audio capture duration (4GB mobile constraint). */
 const MAX_AUDIO_DURATION_MS = 15_000;
@@ -78,7 +79,7 @@ async function captureSentenceAudioOnce(
 
   const durationMs = Math.min(cue.end - cue.start, MAX_AUDIO_DURATION_MS);
   if (durationMs <= 0) {
-    return { ok: false, reason: 'failed', error: 'Cue duration ≤ 0' };
+    return { ok: false, reason: 'failed', error: t('cardCreator.error.audioCueEmpty') };
   }
 
   try {
@@ -86,7 +87,13 @@ async function captureSentenceAudioOnce(
     // decodable data — otherwise we'd silently record a different sentence.
     const landed = await seekAndWaitReady(video, cue.start / 1000);
     if (!landed) {
-      return { ok: false, reason: 'failed', error: 'Seek did not reach cue start' };
+      console.warn(
+        '[sentenceAudio] seek did not reach cue start:',
+        cue.start / 1000,
+        'currentTime:',
+        video.currentTime,
+      );
+      return { ok: false, reason: 'failed', error: t('cardCreator.error.audioSeek') };
     }
 
     // Capture audio-only stream.
@@ -120,7 +127,7 @@ async function captureSentenceAudioOnce(
     await stopped;
 
     if (chunks.length === 0) {
-      return { ok: false, reason: 'failed', error: 'No audio data captured' };
+      return { ok: false, reason: 'failed', error: t('cardCreator.error.audioNoData') };
     }
 
     const blob = new Blob(chunks, { type: mimeType ?? 'audio/webm' });

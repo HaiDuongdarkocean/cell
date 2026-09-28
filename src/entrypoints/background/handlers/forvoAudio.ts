@@ -5,6 +5,7 @@
  * instead of Forvo because Forvo is behind Cloudflare bot protection.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
 import type {
   MessageResponse,
@@ -33,7 +34,7 @@ export function registerForvoAudioHandlers(ctx: BackgroundContext): void {
         return { success: true, data: { items } };
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        return { success: false, error: `Community audio fetch failed: ${msg}` };
+        return { success: false, error: t('audio.error.communityFetch', [msg]) };
       }
     },
   );

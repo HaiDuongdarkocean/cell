@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import type { DetectedSubtitle } from '@/entities/media';
 
 /**
@@ -73,7 +74,7 @@ export function mapNetflixSubtitleTracks(
     const displayLower = track.displayName.toLowerCase();
     const forcedSuffix =
       track.isForcedNarrative && !displayLower.includes('forced')
-        ? ' [forced]'
+        ? t('subtitle.detected.forcedSuffix')
         : '';
 
     out.push({

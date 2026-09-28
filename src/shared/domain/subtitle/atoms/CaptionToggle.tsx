@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { t } from '@/shared/i18n';
 import styles from './CaptionToggle.module.css';
 
 export interface CaptionToggleProps {
@@ -29,8 +30,8 @@ export function CaptionToggle({
   dataTestId,
   disabled,
 }: CaptionToggleProps): ReactElement {
-  const stateText = enabled ? 'On' : 'Off';
-  const ariaLabel = `Captions: ${trackLabel} — ${stateText}`;
+  const stateText = enabled ? t('common.state.on') : t('common.state.off');
+  const ariaLabel = t('subtitle.captions.stateAria', [trackLabel, stateText]);
 
   return (
     <button

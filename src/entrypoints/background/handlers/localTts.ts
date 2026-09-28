@@ -6,6 +6,7 @@
  * offscreen failure if the caller supports it.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import { TtsSpeakLocalPayloadSchema } from '@/entities/message/dictionarySchemas';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
@@ -25,7 +26,7 @@ export function registerLocalTtsHandlers(ctx: BackgroundContext): void {
       return response;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: `Local TTS offscreen failed: ${msg}` };
+      return { success: false, error: t('tts.error.localFailed', [msg]) };
     }
   });
 }

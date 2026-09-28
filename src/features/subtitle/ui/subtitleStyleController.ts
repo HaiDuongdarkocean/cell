@@ -5,6 +5,7 @@ import {
   DEFAULT_OVERLAY_STYLE_NATIVE,
 } from '@/shared/config/config';
 import { saveSettings } from '@/shared/lib/storage/settingsStore';
+import { t } from '@/shared/i18n';
 import type { MountSubtitleResult } from './mountSubtitle';
 import type { AppearanceState, OffsetState } from './subtitlePanelsTypes';
 import type { SubtitleCueEngine } from './subtitleCueEngine';
@@ -31,8 +32,8 @@ export class SubtitleStyleController {
 
   private targetHidden = false;
   private nativeHidden = false;
-  private previewTargetText = 'This is how the target subtitle will look.';
-  private previewNativeText = 'This is how the native subtitle will look.';
+  private previewTargetText = t('player.manager.previewTarget');
+  private previewNativeText = t('player.manager.previewNative');
 
   private stylePersistTimer: ReturnType<typeof setTimeout> | null = null;
   private blockPersistTimer: ReturnType<typeof setTimeout> | null = null;

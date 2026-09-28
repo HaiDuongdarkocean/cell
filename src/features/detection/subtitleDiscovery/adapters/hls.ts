@@ -4,6 +4,7 @@
 // resolves relative subtitle segment/media URLs. Also acts as a fallback for
 // direct VTT requests seen inside a playlist body.
 
+import { t } from '@/shared/i18n';
 import { createCandidate, formatFromUrl, languageFromPath } from '../candidate';
 import type {
   SubtitleCandidate,
@@ -88,7 +89,7 @@ export function createHlsAdapter(profile: HlsProfile): SubtitleDiscoveryAdapter 
           continue;
         }
 
-        const label = attrs.get('NAME') || attrs.get('LANGUAGE') || 'Subtitle';
+        const label = attrs.get('NAME') || attrs.get('LANGUAGE') || t('subtitle.detected.generic');
         const language = attrs.get('LANGUAGE')
           ? languageFromPath(attrs.get('LANGUAGE')!)
           : languageFromPath(uri);
@@ -119,7 +120,7 @@ export function createHlsAdapter(profile: HlsProfile): SubtitleDiscoveryAdapter 
         } catch {
           continue;
         }
-        const label = `Subtitle ${candidates.length + 1}`;
+        const label = t('subtitle.detected.numbered', [candidates.length + 1]);
         candidates.push(
           createCandidate(
             {

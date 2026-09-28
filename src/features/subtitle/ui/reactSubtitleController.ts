@@ -28,6 +28,7 @@ import { pauseVideo, playVideo, seekToCue } from '@/shared/lib/dom/netflixPlayba
 import { createPlayerModeHostController, type PlayerModeHostController } from './playerModeHost';
 import { practiceModeFromStudyModeId, setSubtitlePracticeMode } from '@/features/studyModes/lib/practiceModeState';
 import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
+import { t } from '@/shared/i18n';
 
 import type { ICON_CATALOG } from '@/shared/icons';
 
@@ -63,7 +64,7 @@ export class ReactSubtitleController {
   private isPlaying = false;
   private repeatActive = false;
   private repeatIcon: IconCatalogKey = 'navRepeat';
-  private repeatLabel = 'Repeat current sentence';
+  private repeatLabel = t('player.nav.repeat');
   private managerTargetItems: SubtitlePanelItem[] = [];
   private managerNativeItems: SubtitlePanelItem[] = [];
   private managerTargetActiveIndex = 0;

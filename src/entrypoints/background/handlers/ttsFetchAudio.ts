@@ -12,6 +12,7 @@
  * Longer text is truncated to avoid HTTP 400.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import type { TtsFetchAudioResponse } from '@/entities/dictionary';
@@ -114,7 +115,7 @@ export function registerTtsFetchAudioHandlers(ctx: BackgroundContext): void {
     const { text, langCode } = parsed.data;
     const speakable = sanitizeTtsText(text);
     if (!speakable) {
-      return { success: false, error: 'TTS text has no speakable content' };
+      return { success: false, error: t('tts.error.noSpeakableText') };
     }
 
     const url = buildTtsUrl(speakable, langCode);
@@ -124,18 +125,18 @@ export function registerTtsFetchAudioHandlers(ctx: BackgroundContext): void {
         headers: { 'Accept': 'audio/mpeg, audio/*, */*' },
       });
       if (!response.ok) {
-        return { success: false, error: `Google TTS HTTP ${response.status}` };
+        return { success: false, error: t('tts.error.http', [response.status]) };
       }
       const arrayBuffer = await response.arrayBuffer();
       if (arrayBuffer.byteLength === 0) {
-        return { success: false, error: 'Google TTS returned empty audio' };
+        return { success: false, error: t('tts.error.emptyAudio') };
       }
       const base64 = arrayBufferToBase64(arrayBuffer);
       const dataUrl = `data:audio/mpeg;base64,${base64}`;
       return { success: true, data: { url: dataUrl } };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      return { success: false, error: `TTS audio fetch failed: ${msg}` };
+      return { success: false, error: t('tts.error.fetchFailed', [msg]) };
     }
   });
 }

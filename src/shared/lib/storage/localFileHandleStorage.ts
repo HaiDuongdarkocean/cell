@@ -10,6 +10,8 @@
  * be re-verified before every read, so this module exposes a helper for that.
  */
 
+import { t } from '@/shared/i18n';
+
 const DB_NAME = 'cell-local-file-handles';
 const STORE_NAME = 'handles';
 const DB_VERSION = 1;
@@ -23,7 +25,7 @@ interface StoredHandle {
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onerror = () => reject(request.error ?? new Error('Failed to open IndexedDB'));
+    request.onerror = () => reject(request.error ?? new Error(t('storage.error.openDb')));
     request.onsuccess = () => resolve(request.result);
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
@@ -44,9 +46,9 @@ export async function saveFileHandle(id: string, handle: FileSystemHandle): Prom
     return new Promise((resolve, reject) => {
       const request = store.put(record);
       request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error ?? new Error('Failed to save file handle'));
+      request.onerror = () => reject(request.error ?? new Error(t('storage.error.saveHandle')));
       tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error ?? request.error ?? new Error('Transaction error'));
+      tx.onerror = () => reject(tx.error ?? request.error ?? new Error(t('storage.error.saveHandle')));
     });
   } finally {
     db.close();
@@ -65,7 +67,7 @@ export async function getFileHandle(id: string): Promise<FileSystemHandle | unde
         const record = request.result as StoredHandle | undefined;
         resolve(record?.handle);
       };
-      request.onerror = () => reject(request.error ?? new Error('Failed to load file handle'));
+      request.onerror = () => reject(request.error ?? new Error(t('storage.error.loadHandle')));
     });
   } finally {
     db.close();
@@ -81,7 +83,7 @@ export async function deleteFileHandle(id: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const request = store.delete(id);
       request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error ?? new Error('Failed to delete file handle'));
+      request.onerror = () => reject(request.error ?? new Error(t('storage.error.deleteHandle')));
     });
   } finally {
     db.close();
@@ -97,7 +99,7 @@ export async function listFileHandleIds(): Promise<readonly string[]> {
     return new Promise((resolve, reject) => {
       const request = store.getAllKeys();
       request.onsuccess = () => resolve(request.result as string[]);
-      request.onerror = () => reject(request.error ?? new Error('Failed to list file handles'));
+      request.onerror = () => reject(request.error ?? new Error(t('storage.error.listHandles')));
     });
   } finally {
     db.close();

@@ -11,6 +11,7 @@ import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import { sendMessage, onMessage, removeOnMessageListener, addOnTabActivatedListener, addOnTabUpdatedListener } from '@/shared/lib/chrome-apis';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import type { BilingualCue, KeyboardShortcut } from '@/entities/media';
+import { t } from '@/shared/i18n';
 import styles from './App.module.css';
 
 export function App() {
@@ -298,7 +299,7 @@ export function App() {
   return (
     <div className={styles.app}>
       {cues.length === 0 ? (
-        <EmptyState title="No subtitles loaded" size="compact" />
+        <EmptyState title={t('panel.empty.title')} description={t('panel.empty.hint')} size="compact" />
       ) : (
         <SubtitlePanel
           cues={cues}

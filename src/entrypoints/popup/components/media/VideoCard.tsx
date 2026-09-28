@@ -7,6 +7,7 @@ import { Spinner } from '@/shared/ui/Spinner';
 import cardAnimations from '@/shared/ui/CardAnimations.module.css';
 import { Icon } from '@/shared/ui/Icon';
 import { COPY_FEEDBACK_DURATION_MS } from '@/shared/config/config';
+import { t } from '@/shared/i18n';
 import { formatFileSizeOrUnknown } from '@/entrypoints/popup/utils/format';
 import styles from './VideoCard.module.css';
 
@@ -98,7 +99,7 @@ export function VideoCard({
           onKeyDown={handleCardKeyDown}
           role="button"
           tabIndex={0}
-          aria-label={`Select ${displayTitle ?? video.title}`}
+          aria-label={t('downloads.media.select', [displayTitle ?? video.title])}
         >
           {/* Icon */}
           <Center className={`${styles.icon} ${styles.videoIcon}`} aria-hidden="true">
@@ -114,7 +115,7 @@ export function VideoCard({
               <span className={styles.qualityTag} data-cell-id="video-quality">{selectedVariant.quality}</span>
             )}
             {downloading ? (
-              <span className={styles.meta}>Downloading…</span>
+              <span className={styles.meta}>{t('downloads.media.downloading')}</span>
             ) : (
               <>
                 {selectedVariant?.size && (
@@ -141,7 +142,7 @@ export function VideoCard({
                         ),
                       }))}
                       onChange={(quality) => onSelectQuality(video.id, quality as VideoQuality)}
-                      aria-label="Select quality"
+                      aria-label={t('downloads.media.selectQuality')}
                     />
                   </span>
                 )}
@@ -155,7 +156,7 @@ export function VideoCard({
           <Button shape="circle"
             size="sm"
             onClick={handleExpandClick}
-            aria-label={urlExpanded ? 'Collapse URL' : 'Expand URL'}
+            aria-label={urlExpanded ? t('downloads.media.hideUrl') : t('downloads.media.showUrl')}
             aria-expanded={urlExpanded}
             data-cell-id="expand-url-btn"
           >
@@ -166,7 +167,7 @@ export function VideoCard({
           </Button>
           <div className={styles.action}>
             {downloading ? (
-              <Center as="span" className={styles.downloadingIndicator} aria-label="Downloading">
+              <Center as="span" className={styles.downloadingIndicator} aria-label={t('downloads.media.downloading')}>
                 <Spinner size="md" color="secondary" aria-hidden="true" />
               </Center>
             ) : (
@@ -174,7 +175,7 @@ export function VideoCard({
                 size="sm"
                 variant="ghost"
                 onClick={handleActionClick}
-                aria-label="Download"
+                aria-label={t('downloads.action.download')}
                 data-cell-id="download-button"
               >
                 <Icon name="download"  />
@@ -194,12 +195,12 @@ export function VideoCard({
             leadingIcon={<Icon name="copy"  />}
             onClick={(e) => { void handleUrlClick(e); }}
             data-cell-id="video-url"
-            title="Click to copy URL"
-            aria-label="Copy URL"
+            title={t('downloads.media.copyUrl')}
+            aria-label={t('downloads.media.copyUrl')}
           >
             <span className={styles.urlText}>{video.url}</span>
           </Button>
-          {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-cell-id="copied-toast">Copied</span>}
+          {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-cell-id="copied-toast">{t('downloads.media.copied')}</span>}
         </HStack>
       )}
       </VStack>

@@ -34,9 +34,11 @@ import { startMediaScoreSource } from '@/features/subtitle/logic/mediaScoreSourc
 import { startWordStatusCrossTabRelay } from '@/features/dictionary/services/wordStatusCrossTab';
 import { useLibraryScores } from './hooks/useLibraryScores';
 import { useImmersionSession } from './hooks/useImmersionSession';
+import { t } from '@/shared/i18n';
 import './styles/global.css';
 
 installRippleDelegation(document);
+document.title = t('settings.localPlayer.title');
 startWordStatusCrossTabRelay();
 
 export function LocalPlayerApp(): React.JSX.Element {

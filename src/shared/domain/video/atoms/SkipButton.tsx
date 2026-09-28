@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Button } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './SkipButton.module.css';
 
 type SkipDirection = 'forward' | 'backward';
@@ -27,7 +28,9 @@ export function SkipButton({
   ...rest
 }: SkipButtonProps): React.JSX.Element {
   const iconName = direction === 'forward' ? 'navForward' : 'navRewind';
-  const label = `Skip ${direction} ${seconds} seconds`;
+  const label = direction === 'forward'
+    ? t('video.skip.forward', [seconds])
+    : t('video.skip.backward', [seconds]);
 
   return (
     <Button shape="circle"

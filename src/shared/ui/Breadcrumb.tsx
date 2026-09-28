@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { t } from '@/shared/i18n';
 import styles from './Breadcrumb.module.css';
 
 export interface BreadcrumbItem {
@@ -24,7 +25,7 @@ export interface BreadcrumbProps {
  *
  * Last item is automatically marked as current if no item has `current=true`.
  */
-export function Breadcrumb({ items, ariaLabel = 'Breadcrumb', className }: BreadcrumbProps): React.JSX.Element | null {
+export function Breadcrumb({ items, ariaLabel = t('ui.breadcrumb.aria'), className }: BreadcrumbProps): React.JSX.Element | null {
   if (items.length === 0) return null;
 
   const lastIndex = items.findIndex((i) => i.current) !== -1

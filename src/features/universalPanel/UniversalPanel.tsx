@@ -9,6 +9,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { UniversalPanelHeader } from './UniversalPanelHeader';
 import { UniversalPanelBottomNav } from './UniversalPanelBottomNav';
 import { getLocalPlayerUrl } from './localPlayerLink';
+import { t, type MessageKey } from '@/shared/i18n';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import type { UniversalPanelTab } from './types';
 import styles from './UniversalPanel.module.css';
@@ -44,35 +45,35 @@ export interface UniversalPanelProps {
   readonly settingsPanel: ReactNode;
 }
 
-const TABS: { key: UniversalPanelTab; icon: 'bookOpen' | 'settings' | 'slidersHorizontal' | 'scanText'; label: string }[] = [
-  { key: 'dictionary', icon: 'bookOpen', label: 'Dictionary' },
-  { key: 'vocabulary', icon: 'scanText', label: 'Vocabulary' },
-  { key: 'studyModes', icon: 'slidersHorizontal', label: 'Study Modes' },
-  { key: 'settings', icon: 'settings', label: 'Settings' },
+const TABS: { key: UniversalPanelTab; icon: 'bookOpen' | 'settings' | 'slidersHorizontal' | 'scanText'; label: MessageKey }[] = [
+  { key: 'dictionary', icon: 'bookOpen', label: 'panel.tab.dictionary' },
+  { key: 'vocabulary', icon: 'scanText', label: 'panel.tab.vocabulary' },
+  { key: 'studyModes', icon: 'slidersHorizontal', label: 'panel.tab.studyModes' },
+  { key: 'settings', icon: 'settings', label: 'panel.tab.settings' },
 ];
 
-const TOOLS: { id: string; icon: 'library' | 'layers' | 'playRoundedRect'; title: string; description: string; onClick: () => void; 'data-cell-id'?: string }[] = [
+const TOOLS: { id: string; icon: 'library' | 'layers' | 'playRoundedRect'; title: MessageKey; description: MessageKey; onClick: () => void; 'data-cell-id'?: string }[] = [
   {
     id: 'reader',
     icon: 'library',
-    title: 'Open Reader',
-    description: 'Read saved articles and subtitles',
+    title: 'panel.tools.reader.title',
+    description: 'panel.tools.reader.desc',
     onClick: () => { void sendMessage({ type: MESSAGE_TYPES.OPEN_READER, payload: {} }); },
     'data-cell-id': 'universal-panel-reader',
   },
   {
     id: 'srs',
     icon: 'layers',
-    title: 'Open SRS',
-    description: 'Review your queued cards',
+    title: 'panel.tools.srs.title',
+    description: 'panel.tools.srs.desc',
     onClick: () => { void sendMessage({ type: MESSAGE_TYPES.SRS_OPEN_STUDY_PAGE, payload: {} }); },
     'data-cell-id': 'universal-panel-srs-study',
   },
   {
     id: 'player',
     icon: 'playRoundedRect',
-    title: 'Open local player',
-    description: 'Watch local video with subtitles',
+    title: 'panel.tools.player.title',
+    description: 'panel.tools.player.desc',
     onClick: () => { window.open(getLocalPlayerUrl(), '_blank'); },
     'data-cell-id': 'universal-panel-tab-local-player',
   },
@@ -179,7 +180,7 @@ export function UniversalPanel({
         variant="panel"
         role="dialog"
         aria-modal="true"
-        aria-label="Universal panel"
+        aria-label={t('panel.aria')}
         onClick={handlePanelClick}
         onKeyDown={handleKeyDown}
         onAnimationEnd={() => {
@@ -193,22 +194,23 @@ export function UniversalPanel({
         <UniversalPanelBottomNav
           activeTab={activeTab}
           onTabChange={onTabChange}
-          tools={TOOLS}
+          tools={TOOLS.map((tool) => ({ ...tool, title: t(tool.title), description: t(tool.description) }))}
         />
         <CollapsibleSidebar
           as="aside"
           collapsed={isCollapsed}
           onCollapsedChange={setIsCollapsed}
-          aria-label="Panel tabs"
+          aria-label={t('panel.tabs.aria')}
           data-cell-id="universal-panel-tab-bar"
           className={styles.desktopSidebar}
           sections={[
             {
               id: 'tabs',
+              label: t('panel.tabs.aria'),
               items: TABS.map((tab) => ({
                 id: tab.key,
                 icon: tab.icon,
-                label: tab.label,
+                label: t(tab.label),
                 active: activeTab === tab.key,
                 onClick: () => onTabChange(tab.key),
                 'data-cell-id': `universal-panel-tab-${tab.key}`,
@@ -216,10 +218,11 @@ export function UniversalPanel({
             },
             {
               id: 'tools',
+              label: t('panel.tools.title'),
               items: TOOLS.map((tool) => ({
                 id: tool.id,
                 icon: tool.icon,
-                label: tool.title,
+                label: t(tool.title),
                 onClick: tool.onClick,
                 'data-cell-id': tool['data-cell-id'],
               })),
@@ -231,8 +234,8 @@ export function UniversalPanel({
           <Dialog
             open={isProfileDialogOpen}
             onOpenChange={setIsProfileDialogOpen}
-            title="Select language profile"
-            description="Choose the profile for translation and dictionary."
+            title={t('panel.profileDialog.title')}
+            description={t('panel.profileDialog.desc')}
             showCloseButton
             data-cell-id="universal-panel-profile-dialog"
           >

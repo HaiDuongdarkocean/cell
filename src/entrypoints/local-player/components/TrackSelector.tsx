@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { t } from '@/shared/i18n';
 import { Button } from '@/shared/ui/Button';
 import type { SubtitleMatch } from '@/features/local-player/logic/subtitleMatch';
 import { Icon } from '@/shared/ui/Icon';
@@ -27,13 +28,13 @@ function TrackSelectorInner({
       data-cell-id="track-selector"
       role="dialog"
       aria-modal="true"
-      aria-label="Subtitle tracks"
+      aria-label={t('player.tracks.title')}
     >
       <div className={styles.header}>
         <Icon name="captions" size="sm" />
-        <span className={styles.title}>Subtitle tracks</span>
+        <span className={styles.title}>{t('player.tracks.title')}</span>
       </div>
-      <div className={styles.list} role="radiogroup" aria-label="Subtitle tracks">
+      <div className={styles.list} role="radiogroup" aria-label={t('player.tracks.title')}>
         {options.map((opt) => {
           const isActive = opt.filename === currentTarget || opt.filename === currentNative;
           return (

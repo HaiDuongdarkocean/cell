@@ -1,6 +1,8 @@
 import { useEffect, useMemo } from 'react';
 import { Box, Button, Heading, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
+import { t } from '@/shared/i18n';
+import { componentLabel } from './srsLabels';
 import { audioAssetId, imageAssetId, normalizeSpelling } from '@/features/srs/lib/helpers';
 import type { ComponentType, SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote } from '@/entities/srs/types';
 import styles from './SrsReviewCard.module.css';
@@ -99,7 +101,7 @@ export function SrsReviewCardBack({
   return (
     <Box className={styles.back}>
       <Box className={styles.backHeader}>
-        <Text className={styles.badgeNew}>New</Text>
+        <Text className={styles.badgeNew}>{t('srs.review.badgeNew')}</Text>
         <Heading level={1} className={styles.targetWord}>{note.targetWord}</Heading>
       </Box>
 
@@ -114,7 +116,7 @@ export function SrsReviewCardBack({
                 size="sm"
                 variant="ghost"
                 onClick={() => playAudio(sentAudioAsset)}
-                aria-label="Play sentence audio"
+                aria-label={t('srs.review.playSentence')}
                 className={styles.audioButton}
               >
                 <Icon name="audioWave" />
@@ -126,7 +128,7 @@ export function SrsReviewCardBack({
                 size="sm"
                 variant="ghost"
                 onClick={() => playAudio(wordAudioAsset)}
-                aria-label="Play word audio"
+                aria-label={t('srs.review.playWord')}
                 className={styles.audioButton}
               >
                 <Icon name="volumeHigh" />
@@ -161,7 +163,7 @@ export function SrsReviewCardBack({
 
       {note.fields.notes?.kind === 'text' && note.fields.notes.value && (
         <Box className={styles.notesBlock}>
-          <Heading level={3} className={styles.notesTitle}>NOTES</Heading>
+          <Heading level={3} className={styles.notesTitle}>{t('srs.review.notes')}</Heading>
           <BackFieldValue value={note.fields.notes} />
         </Box>
       )}
@@ -172,7 +174,7 @@ export function SrsReviewCardBack({
           size="lg"
           variant="ghost"
           onClick={() => onSubmit('forget')}
-          aria-label="Forget"
+          aria-label={t('srs.review.forget')}
           className={[styles.ratingButton, styles.forgetButton].join(' ')}
         >
           <Icon name="x" />
@@ -182,7 +184,7 @@ export function SrsReviewCardBack({
           size="lg"
           variant="primary"
           onClick={() => onSubmit('remember')}
-          aria-label="Remember"
+          aria-label={t('srs.review.remember')}
           className={[styles.ratingButton, styles.rememberButton].join(' ')}
         >
           <Icon name="check" />
@@ -190,26 +192,26 @@ export function SrsReviewCardBack({
       </Box>
 
       <Box className={styles.actions}>
-        <Button variant="ghost" onClick={() => markStudyAgain(componentType)}>Study again</Button>
+        <Button variant="ghost" onClick={() => markStudyAgain(componentType)}>{t('srs.review.studyAgain')}</Button>
         <Button
           variant="destructive"
           onClick={() => {
-            if (window.confirm(`Reset progress for ${componentType}?`)) {
+            if (window.confirm(t('srs.review.confirmResetComponent', [componentLabel(componentType)]))) {
               void resetCurrentComponent();
             }
           }}
         >
-          Reset component
+          {t('srs.review.resetComponent')}
         </Button>
         <Button
           variant="destructive"
           onClick={() => {
-            if (window.confirm('Reset all components for this card?')) {
+            if (window.confirm(t('srs.review.confirmResetCard'))) {
               void resetCurrentCard();
             }
           }}
         >
-          Reset card
+          {t('srs.review.resetCard')}
         </Button>
       </Box>
     </Box>

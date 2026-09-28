@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import { toIso6391, baseLangCode, isoCodeToLabel } from '@/shared/config/languageRegistry';
 import { DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import type { LanguageProfile, ResolvedProfile, Settings, DictionaryPopupSettings, TtsSettings } from '../types';
@@ -15,7 +16,7 @@ export function buildProfileName(
   existingNames: string[],
 ): string {
   const native = profileNative || universalNative;
-  const nativeLabel = (isoCodeToLabel(native) ?? native) || 'None';
+  const nativeLabel = (isoCodeToLabel(native) ?? native) || t('ui.language.none');
   const targetLabel = isoCodeToLabel(target) ?? target;
   const normalize = (s: string) => s.trim().toLowerCase();
   const existing = new Set(existingNames.map(normalize));
@@ -55,7 +56,7 @@ export function validateLanguageProfile(
 ): { valid: boolean; emptyTarget: boolean; duplicate: boolean; messages: string[] } {
   const messages: string[] = [];
   if (!draft.target) {
-    messages.push('Please select a target language.');
+    messages.push(t('settings.profiles.error.required'));
     return { valid: false, emptyTarget: true, duplicate: false, messages };
   }
   const targetBase = toIso6391(baseLangCode(draft.target));
@@ -63,7 +64,7 @@ export function validateLanguageProfile(
     (p) => p.id !== (editingId ?? undefined) && toIso6391(baseLangCode(p.target)) === targetBase,
   );
   if (isDuplicate) {
-    messages.push('A profile for this target language already exists.');
+    messages.push(t('settings.profiles.error.duplicate'));
     return { valid: false, emptyTarget: false, duplicate: true, messages };
   }
   return { valid: true, emptyTarget: false, duplicate: false, messages };

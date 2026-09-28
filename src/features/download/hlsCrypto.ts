@@ -1,4 +1,5 @@
 import type { HlsEncryption } from '@/entities/media';
+import { t } from '@/shared/i18n';
 import { buildFetchHeaders } from './segmentFetch';
 
 export type Aes128KeyCache = Map<string, CryptoKey>;
@@ -14,7 +15,7 @@ export function parseIvFromHex(ivHex: string): Uint8Array {
     : ivHex;
   if (hex.length !== 32) {
     throw new Error(
-      `AES-128 IV must be 16 bytes (32 hex chars), got ${hex.length} chars`,
+      t('downloads.error.ivInvalid', [hex.length]),
     );
   }
   const bytes = new Uint8Array(16);
@@ -63,12 +64,12 @@ export async function fetchAes128Key(
     signal,
   });
   if (!response.ok) {
-    throw new Error(`Failed to fetch AES-128 key: ${response.status}`);
+    throw new Error(t('downloads.error.keyFetch', [response.status]));
   }
   const keyBuffer = await response.arrayBuffer();
   if (keyBuffer.byteLength !== 16) {
     throw new Error(
-      `AES-128 key must be 16 bytes, got ${keyBuffer.byteLength}`,
+      t('downloads.error.keyInvalid', [keyBuffer.byteLength]),
     );
   }
   const cryptoKey = await crypto.subtle.importKey(

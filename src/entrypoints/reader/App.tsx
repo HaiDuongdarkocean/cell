@@ -24,6 +24,7 @@ import { languageMatches } from '@/shared/config/languageRegistry';
 import type { ScoreTracker } from '@/features/tokenize/logic/comprehensionScore';
 import type { ComprehensionStats } from '@/entities/comprehension';
 import type { Token } from '@/features/tokenize/types';
+import { t } from '@/shared/i18n';
 import styles from './App.module.css';
 
 type View = 'library' | 'reader';
@@ -50,7 +51,7 @@ export function ReaderApp(): React.JSX.Element {
       setBooks(await getAllBooks());
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load library');
+      setError(err instanceof Error ? err.message : t('reader.error.loadLibrary'));
     }
   }, []);
 
@@ -117,7 +118,7 @@ export function ReaderApp(): React.JSX.Element {
         await saveBook(book);
         await loadBooks();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to import file');
+        setError(err instanceof Error ? err.message : t('reader.error.import'));
       } finally {
         input.value = '';
       }
@@ -138,7 +139,7 @@ export function ReaderApp(): React.JSX.Element {
         }
         await loadBooks();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to delete book');
+        setError(err instanceof Error ? err.message : t('reader.error.delete'));
       }
     },
     [loadBooks, selectedBook],
@@ -168,7 +169,7 @@ export function ReaderApp(): React.JSX.Element {
       readStartAtRef.current = Date.now();
       isReadPausedRef.current = false;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to open book');
+      setError(err instanceof Error ? err.message : t('reader.error.open'));
     }
   }, []);
 
@@ -215,7 +216,7 @@ export function ReaderApp(): React.JSX.Element {
           }
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to open book');
+        setError(err instanceof Error ? err.message : t('reader.error.open'));
       }
     };
     void init();
@@ -324,7 +325,7 @@ export function ReaderApp(): React.JSX.Element {
     <div className={styles.app}>
       <header className={styles.header}>
         <h1 className={styles.title}>
-          {view === 'reader' && selectedBook ? selectedBook.title : 'Cell Reader'}
+          {view === 'reader' && selectedBook ? selectedBook.title : t('reader.title')}
         </h1>
         {view === 'reader' && selectedBook && (
           <span className={styles.readerStats}>
@@ -334,7 +335,7 @@ export function ReaderApp(): React.JSX.Element {
         )}
         {view === 'reader' && (
           <Button variant="outline" size="sm" onClick={handleBack}>
-            Back
+            {t('ui.back')}
           </Button>
         )}
         {view === 'library' && (
@@ -346,7 +347,7 @@ export function ReaderApp(): React.JSX.Element {
               hidden
               onChange={(e) => { void handleFileChange(e); }}
             />
-            <Button onClick={() => fileInputRef.current?.click()}>Import TXT</Button>
+            <Button onClick={() => fileInputRef.current?.click()}>{t('reader.action.import')}</Button>
           </>
         )}
       </header>
@@ -356,7 +357,7 @@ export function ReaderApp(): React.JSX.Element {
       {view === 'library' && (
         <section className={styles.library}>
           {books.length === 0 ? (
-            <p className={styles.empty}>No books yet. Import a TXT file to start reading.</p>
+            <p className={styles.empty}>{t('reader.library.empty')}</p>
           ) : (
             <ul className={styles.bookList}>
               {books.map((book) => (
@@ -367,7 +368,7 @@ export function ReaderApp(): React.JSX.Element {
                 >
                   <span className={styles.bookTitle}>{book.title}</span>
                   <span className={styles.bookMeta}>
-                    {book.paragraphs.length} paragraphs
+                    {t('reader.library.paragraphs', [book.paragraphs.length])}
                   </span>
                   <Button
                     variant="ghost"
@@ -377,7 +378,7 @@ export function ReaderApp(): React.JSX.Element {
                       void handleDelete(book.id);
                     }}
                   >
-                    Delete
+                    {t('reader.action.delete')}
                   </Button>
                 </li>
               ))}

@@ -1,4 +1,6 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
+import type { MessageKey } from '@/shared/i18n';
 import {
   onMessage,
   removeOnMessageListener,
@@ -14,10 +16,34 @@ import type { ReconcileResult } from '../app/reconciliation';
 
 export type { SyncStatusView };
 
+const SYNC_ERROR_KEYS: Record<string, MessageKey> = {
+  'unknown-provider': 'settings.sync.error.unknownProvider',
+  'unknown-connection': 'settings.sync.error.unknownConnection',
+  'auth-cancelled': 'settings.sync.error.authCancelled',
+  'system-connection-required': 'settings.sync.error.systemConnectionRequired',
+  'invalid-destination': 'settings.sync.error.invalidDestination',
+  'sync-busy': 'settings.sync.error.syncBusy',
+  'rebind-blocked': 'settings.sync.error.rebindBlocked',
+  'sync-data-missing': 'settings.sync.error.dataMissing',
+  'sync-data-invalid': 'settings.sync.error.dataInvalid',
+  'provider-auth': 'settings.sync.error.providerAuth',
+  'provider-quota': 'settings.sync.error.providerQuota',
+  'provider-network': 'settings.sync.error.providerNetwork',
+  'provider-rate-limit': 'settings.sync.error.providerRateLimit',
+  'provider-not-found': 'settings.sync.error.providerNotFound',
+  'provider-unknown': 'settings.sync.error.providerUnknown',
+};
+
+function syncErrorText(error: string): string {
+  const code = error.split(':', 1)[0].trim();
+  const key = SYNC_ERROR_KEYS[code];
+  return key === undefined ? error : t(key);
+}
+
 async function request<T>(type: string, payload: Record<string, unknown>): Promise<T> {
   const response = await sendMessage<MessageResponse<T>>({ type, payload });
   if (!response?.success) {
-    throw new Error(response?.error ?? 'sync request failed');
+    throw new Error(response?.error ? syncErrorText(response.error) : t('settings.sync.error.requestFailed'));
   }
   return response.data as T;
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { t } from '@/shared/i18n';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './SubtitleToast.module.css';
 
@@ -54,7 +55,7 @@ function Toast({ item, onRemove }: { item: ToastItem; onRemove?: (id: string) =>
 
 export function SubtitleToast({ toasts, onRemove }: SubtitleToastProps): React.JSX.Element {
   return (
-    <div className={styles.container} data-cell-id="subtitle-toast-container" aria-label="Subtitle notifications">
+    <div className={styles.container} data-cell-id="subtitle-toast-container" aria-label={t('subtitle.toast.aria')}>
       {toasts.map((item) => (
         <Toast key={item.id} item={item} onRemove={onRemove} />
       ))}

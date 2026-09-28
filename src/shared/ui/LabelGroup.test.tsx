@@ -21,7 +21,7 @@ describe('LabelGroup', () => {
   it('renders hint icon with accessible label', () => {
     render(<LabelGroup label="Primary" hint="Tooltip content" />);
     expect(screen.getByText('Primary')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'More info' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'More information' })).toBeInTheDocument();
   });
 
   it('renders trailing element', () => {

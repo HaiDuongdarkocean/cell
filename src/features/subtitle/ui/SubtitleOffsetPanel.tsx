@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { t } from '@/shared/i18n';
 import { Button, Input, Slider } from '@/shared/ui';
 import { clampOffsetMs, formatOffsetDisplay, parseOffsetInput } from '@/features/subtitle/logic/subtitleOffset';
 import styles from './SubtitleOffsetPanel.module.css';
@@ -76,7 +77,7 @@ export function SubtitleOffsetPanel({
   return (
     <div className={styles.panel} data-cell-id="subtitle-offset-panel">
       <div className={styles.header}>
-        <span className={styles.title}>Time offset</span>
+        <span className={styles.title}>{t('subtitle.offsetPanel.title')}</span>
         <span className={styles.value} data-cell-id="offset-value">
           {String(formatOffsetDisplay(clamped))}
         </span>
@@ -84,7 +85,7 @@ export function SubtitleOffsetPanel({
 
       <div className={styles.sliderRow}>
         <Slider
-          aria-label="Time offset slider"
+          aria-label={t('subtitle.offsetPanel.sliderAria')}
           min={-60}
           max={60}
           step={0.5}
@@ -110,15 +111,15 @@ export function SubtitleOffsetPanel({
           onChange={handleInputChange}
           onBlur={handleInputCommit}
           onKeyDown={handleKeyDown}
-          aria-label="Time offset in seconds"
+          aria-label={t('subtitle.offsetPanel.inputAria')}
           data-cell-id="offset-input"
           className={styles.offsetInput}
         />
         <Button size="sm" variant="primary" onClick={handleInputCommit} data-cell-id="offset-apply">
-          Apply
+          {t('subtitle.action.apply')}
         </Button>
         <Button size="sm" variant="ghost" onClick={handleReset} data-cell-id="offset-reset">
-          Reset
+          {t('subtitle.action.reset')}
         </Button>
       </div>
     </div>

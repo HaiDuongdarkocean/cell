@@ -5,6 +5,7 @@
 
 import { registerOffscreenListener } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import { PronunciationEspeakTtsPayloadSchema } from '@/entities/message/dictionarySchemas';
 import { synthesizeEspeakToWav } from '@/features/pronunciation/services/espeakOffscreenEngine';
 import type { MessageResponse } from '@/entities/message';
@@ -40,7 +41,7 @@ registerOffscreenListener((message, sender, sendResponse) => {
         sendResponse({ success: true, data: { audioBytes } } as MessageResponse<{ audioBytes: Uint8Array }>);
       } catch (err) {
         const msgText = err instanceof Error ? err.message : String(err);
-        sendResponse({ success: false, error: `eSpeak TTS failed: ${msgText}` } as MessageResponse<null>);
+        sendResponse({ success: false, error: t('audio.error.espeakFailed', [msgText]) } as MessageResponse<null>);
       }
     })();
 

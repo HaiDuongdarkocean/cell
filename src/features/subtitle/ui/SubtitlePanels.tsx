@@ -22,6 +22,7 @@ import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { buildClusterCssVars } from './subtitleUI';
 import styles from './SubtitlePanels.module.css';
 import { useManagerHostDelegation } from './subtitleManagerHost';
+import { t } from '@/shared/i18n';
 import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import type {
@@ -50,7 +51,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       isPlaying: initialIsPlaying,
       repeatActive: initialRepeatActive,
       repeatIcon: initialRepeatIcon = 'repeat',
-      repeatLabel: initialRepeatLabel = 'Repeat current sentence',
+      repeatLabel: initialRepeatLabel = t('player.nav.repeat'),
       clusterSettings: initialClusterSettings,
       blockSettings: initialBlockSettings,
       yOffsetPercent: initialYOffsetPercent = 75,
@@ -363,7 +364,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             onGenerateNative={onGenerateNative}
             generateNativeEnabled={generateNativeEnabled}
             onToggleSidePanel={onToggleSidePanel ? handleToggleSplitView : undefined}
-            sidePanelLabel={splitViewOpen ? 'Close subtitle list' : 'Open subtitle list'}
+            sidePanelLabel={splitViewOpen ? t('subtitle.toolbar.closeList') : t('subtitle.toolbar.openList')}
             toolsExpanded={toolsExpanded}
             onToggleTools={() => setToolsExpanded((v) => !v)}
             onTogglePlayerMode={() => { void handleTogglePlayerMode(); }}

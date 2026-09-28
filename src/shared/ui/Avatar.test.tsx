@@ -34,13 +34,13 @@ describe('Avatar', () => {
 
   it('renders status dot with aria-label', () => {
     const { container } = render(<Avatar alt="Test" status="online" />);
-    const dot = container.querySelector('[aria-label="status: online"]');
+    const dot = container.querySelector('[aria-label="Status: Online"]');
     expect(dot).toBeInTheDocument();
   });
 
   it('does not render status dot when status is none', () => {
     const { container } = render(<Avatar alt="Test" status="none" />);
-    expect(container.querySelector('[aria-label^="status:"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[aria-label^="Status:"]')).not.toBeInTheDocument();
   });
 
   it('merges custom className', () => {

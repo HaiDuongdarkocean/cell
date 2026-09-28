@@ -2,6 +2,7 @@ import { useCuesStore } from '../cuesStore';
 import { mergeCuesForPanel, broadcastCues } from '@/features/subtitle';
 import { cleanTargetCues } from '../logic/subtitleCleanupRuntime';
 import { canonicalNavUrl } from './contentScriptShared';
+import { t } from '@/shared/i18n';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
 
@@ -89,8 +90,8 @@ export function createContentScriptLifecycleHandlers(ctx: ContentScriptContext):
     if (d?.type === '__CELL_OCR_TRACKS' && d.targetCues && d.nativeCues) {
       if (!syncController.ocrTargetSlot || !syncController.ocrNativeSlot) {
         syncController.preOcrSources = { target: syncController.activeTargetSource, native: syncController.activeNativeSource };
-        syncController.ocrTargetSlot = { item: syncController.makeOcrPanelItem('ocr-target', 'OCR Target (live)', 'target'), cues: [] };
-        syncController.ocrNativeSlot = { item: syncController.makeOcrPanelItem('ocr-native', 'OCR Native (live)', 'native'), cues: [] };
+        syncController.ocrTargetSlot = { item: syncController.makeOcrPanelItem('ocr-target', t('subtitle.ocr.targetLive'), 'target'), cues: [] };
+        syncController.ocrNativeSlot = { item: syncController.makeOcrPanelItem('ocr-native', t('subtitle.ocr.nativeLive'), 'native'), cues: [] };
       }
       const targetCues = cleanTargetCues(d.targetCues);
       syncController.ocrTargetSlot.cues = targetCues;

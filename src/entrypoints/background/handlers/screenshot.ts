@@ -9,6 +9,7 @@
  * Returns a PNG data URL (base64). The caller converts it to an ArrayBuffer.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import { EmptyPayloadSchema } from '@/entities/message/schema';
@@ -32,7 +33,7 @@ export function registerScreenshotHandlers(ctx: BackgroundContext): void {
         return { success: true, data: { dataUrl } };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        return { success: false, error: `captureVisibleTab failed: ${msg}` };
+        return { success: false, error: t('media.error.capture', [msg]) };
       }
     },
   );

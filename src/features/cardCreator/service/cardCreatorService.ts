@@ -83,10 +83,10 @@ async function sendAction(
       payload,
     })) as MessageResponse<CardCreatorResponseData> | undefined;
     if (!response) {
-      return { ok: false, error: 'No response from background' };
+      return { ok: false, error: t('cardCreator.error.noResponse') };
     }
     if (!response.success) {
-      return { ok: false, error: response.error ?? 'Unknown AnkiConnect error' };
+      return { ok: false, error: response.error ?? t('cardCreator.error.unknownAnkiConnect') };
     }
     return { ok: true, value: response.data?.result };
   } catch (err) {
@@ -290,9 +290,10 @@ export async function addNoteTags(
   // Desktop addTags success → result is null. Android default handler →
   // result is "AnkiConnect v.6" (silent no-op). Detect + report.
   if (r.value !== null && r.value !== undefined) {
+    console.warn('[cardCreator] addTags silent no-op (AnkiconnectAndroid?):', r.value);
     return {
       ok: false,
-      error: 'addTags is not supported on AnkiconnectAndroid. Tags were set via addNote on create; for existing notes, please add tags manually in AnkiDroid.',
+      error: t('cardCreator.error.addTagsNotSupported'),
     };
   }
   return { ok: true, value: undefined };

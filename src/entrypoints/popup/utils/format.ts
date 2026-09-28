@@ -1,5 +1,7 @@
 import type { ConversionPhase } from '@/entities/media';
 import { formatBytes } from '@/shared/lib/formatBytes';
+import { t } from '@/shared/i18n';
+import type { MessageKey } from '@/shared/i18n';
 
 /**
  * Format an optional byte count for display. Returns empty string for
@@ -14,11 +16,12 @@ export function formatFileSize(bytes?: number): string {
 }
 
 /**
- * Like {@link formatFileSize} but returns 'Unknown' for undefined/zero,
- * for UI contexts where an explicit label is preferable to empty string.
+ * Like {@link formatFileSize} but returns a localized fallback for
+ * undefined/zero, for UI contexts where an explicit label is preferable
+ * to empty string.
  */
 export function formatFileSizeOrUnknown(bytes?: number): string {
-  return bytes ? formatFileSize(bytes) : 'Unknown';
+  return bytes ? formatFileSize(bytes) : t('downloads.media.sizeUnknown');
 }
 
 /**
@@ -37,12 +40,12 @@ export function formatDuration(ms?: number): string {
 /**
  * Human-readable label for each conversion phase.
  */
-const PHASE_LABELS: Record<ConversionPhase, string> = {
-  planning: 'Planning',
-  transmuxing: 'Converting',
-  merging: 'Merging',
-  validating: 'Validating',
-  done: 'Done',
+const PHASE_LABEL_KEYS: Record<ConversionPhase, MessageKey> = {
+  planning: 'downloads.phase.planning',
+  transmuxing: 'downloads.phase.transmuxing',
+  merging: 'downloads.phase.merging',
+  validating: 'downloads.phase.validating',
+  done: 'jobs.status.done',
 };
 
 /**
@@ -50,5 +53,6 @@ const PHASE_LABELS: Record<ConversionPhase, string> = {
  * Falls back to the raw phase string if unknown.
  */
 export function phaseToLabel(phase: string): string {
-  return PHASE_LABELS[phase as ConversionPhase] ?? phase;
+  const key = PHASE_LABEL_KEYS[phase as ConversionPhase];
+  return key ? t(key) : phase;
 }

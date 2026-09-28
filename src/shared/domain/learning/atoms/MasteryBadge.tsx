@@ -3,6 +3,7 @@ import { Icon } from '@/shared/icons/Icon';
 import { Spinner } from '@/shared/ui/Spinner';
 import { Chip } from '@/shared/ui/Chip';
 import type { ChipColor } from '@/shared/ui/Chip';
+import { t, type MessageKey } from '@/shared/i18n';
 
 export type MasteryLevel = 'beginner' | 'intermediate' | 'advanced' | 'master';
 export type MasteryIcon = 'check' | 'checkDouble' | 'spinner';
@@ -42,6 +43,13 @@ const levelToColor = {
   master: 'success',
 } as const satisfies Record<MasteryLevel, ChipColor>;
 
+const levelToLabel: Record<MasteryLevel, MessageKey> = {
+  beginner: 'learning.mastery.level.beginner',
+  intermediate: 'learning.mastery.level.intermediate',
+  advanced: 'learning.mastery.level.advanced',
+  master: 'learning.mastery.level.master',
+};
+
 /**
  * MasteryBadge — display-only badge showing a learner's mastery progress.
  * Level is derived from progress: beginner (0–25), intermediate (26–50),
@@ -73,7 +81,7 @@ export function MasteryBadge({
       size="sm"
       color={color}
       leadingIcon={leadingIcon}
-      aria-label={`Mastery: ${clamped}%, level: ${level}`}
+      aria-label={t('learning.mastery.aria', [clamped, t(levelToLabel[level])])}
       className={className}
       {...rest}
     >

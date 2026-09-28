@@ -11,6 +11,7 @@
 
 // mux.js ships as CommonJS; import the default export and destructure.
 import muxjs from 'mux.js';
+import { t } from '@/shared/i18n';
 import { createOpfsWriter } from '@/shared/lib/storage/opfsStorage';
 
 const { Transmuxer } = muxjs.mp4;
@@ -43,7 +44,7 @@ export async function transmuxTsToFmp4(
 ): Promise<TransmuxResult> {
   const totalBytes = inputFile.size;
   if (totalBytes === 0) {
-    return { success: false, outputName, error: 'Input file is empty' };
+    return { success: false, outputName, error: t('downloads.error.conversionNoOutput') };
   }
 
   const transmuxer = new Transmuxer();
@@ -138,13 +139,16 @@ export async function transmuxTsToFmp4(
     await writeChain;
 
     if (bytesWritten === 0 || !initSegmentWritten) {
+      console.warn(
+        '[tsTransmuxer] No output produced — bytesWritten:',
+        bytesWritten,
+        'initSegmentWritten:',
+        initSegmentWritten,
+      );
       return {
         success: false,
         outputName,
-        error:
-          'Transmuxer produced no output (unsupported codec or corrupt input). ' +
-          'No init segment was emitted — the input may not be valid MPEG-TS ' +
-          'or the codec is not supported by mux.js.',
+        error: t('downloads.error.conversionNoOutput'),
       };
     }
 
@@ -175,7 +179,7 @@ function waitForDone(
   const timeoutMs = Math.max(30_000, Math.floor(totalBytes / (1024 * 1024) * 1000));
   return new Promise<void>((resolve, reject) => {
     const timer = setTimeout(
-      () => reject(new Error(`Transmux timed out after ${timeoutMs}ms`)),
+      () => reject(new Error(t('downloads.error.conversionTimeout'))),
       timeoutMs,
     );
     transmuxer.on('done', () => {

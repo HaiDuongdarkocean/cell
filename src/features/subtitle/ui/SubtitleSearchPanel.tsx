@@ -28,6 +28,7 @@ import {
   X,
 } from 'lucide-react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { t } from '@/shared/i18n';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { LANGUAGES } from '@/shared/config/languageRegistry';
@@ -68,17 +69,17 @@ function languageShortLabel(iso: string): string {
 function describeError(err: SearchError): string {
   switch (err.type) {
     case 'no-key':
-      return `No API key for ${err.provider}. Add one in API keys.`;
+      return t('subtitle.search.errorNoKey', [err.provider]);
     case 'quota-exhausted':
-      return `All ${err.provider} keys exhausted. Add more in API keys.`;
+      return t('subtitle.search.errorQuota', [err.provider]);
     case 'rate-limited':
-      return `${err.provider} rate-limited. Try again in ${Math.ceil(err.retryAfterMs / 1000)}s.`;
+      return t('subtitle.search.errorRateLimited', [err.provider, Math.ceil(err.retryAfterMs / 1000)]);
     case 'auth-invalid':
-      return `${err.provider} key invalid. Check API keys.`;
+      return t('subtitle.search.errorAuth', [err.provider]);
     case 'network':
-      return `Network error: ${err.message}`;
+      return t('subtitle.search.errorNetwork', [err.message]);
     case 'parse':
-      return `Parse error: ${err.message}`;
+      return t('subtitle.search.errorParse', [err.message]);
   }
 }
 
@@ -100,7 +101,7 @@ function SearchResultRow({ result, index, onClick }: {
           <span className={styles.resultSource}>{result.source}</span>
           {result.format && <span className={styles.resultFormat}>{result.format.toUpperCase()}</span>}
           {result.sdh && <span className={styles.resultBadge}>SDH</span>}
-          {result.forced && <span className={styles.resultBadge}>Forced</span>}
+          {result.forced && <span className={styles.resultBadge}>{t('subtitle.search.forced')}</span>}
         </span>
       </Button>
     </li>
@@ -180,7 +181,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       if (controller.signal.aborted) return;
 
       if (!response || !response.success) {
-        setError(response?.error ?? 'Search failed');
+        setError(response?.error ?? t('subtitle.search.errorGeneric'));
         setResults([]);
       } else if (response.data?.error) {
         setError(describeError(response.data.error));
@@ -191,7 +192,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       }
     } catch (err) {
       if (controller.signal.aborted) return;
-      setError(err instanceof Error ? err.message : 'Search failed');
+      setError(err instanceof Error ? err.message : t('subtitle.search.errorGeneric'));
       setResults([]);
     } finally {
       if (!controller.signal.aborted) {
@@ -246,8 +247,8 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
   }, [results, tabLang]);
 
   // Tab labels with language names.
-  const targetLabel = targetLang ? languageShortLabel(targetLang) : 'Target';
-  const nativeLabel = nativeLang ? languageShortLabel(nativeLang) : 'Native';
+  const targetLabel = targetLang ? languageShortLabel(targetLang) : t('library.card.target');
+  const nativeLabel = nativeLang ? languageShortLabel(nativeLang) : t('library.card.native');
 
   return (
     <section className={styles.section} data-cell-id="search-section">
@@ -260,7 +261,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             active={manageKeysOpen}
             onClick={() => setManageKeysOpen((v) => !v)}
             aria-expanded={manageKeysOpen}
-            aria-label="Manage API keys"
+            aria-label={t('subtitle.search.manageKeys')}
             data-cell-id="search-manage-keys-toggle"
           >
             <Wrench aria-hidden="true" />
@@ -272,8 +273,8 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Movie or series title…"
-            aria-label="Search subtitles by title"
+            placeholder={t('subtitle.search.placeholder')}
+            aria-label={t('subtitle.search.inputAria')}
             className={styles.searchInput}
             disabled={formDisabled}
             variant="ghost"
@@ -285,7 +286,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
                 variant="ghost"
                 size="md"
                 onClick={handleClearQuery}
-                aria-label="Clear search"
+                aria-label={t('subtitle.search.clear')}
                 data-cell-id="search-clear"
               >
                 <X aria-hidden="true" />
@@ -296,7 +297,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
               size="md"
               onClick={handleSearchClick}
               disabled={formDisabled || !query.trim() || loading}
-              aria-label="Search subtitles"
+              aria-label={t('subtitle.search.submit')}
               data-cell-id="search-button"
             >
               <Search aria-hidden="true" />
@@ -309,7 +310,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
           active={advancedOpen}
           onClick={() => setAdvancedOpen((v) => !v)}
           aria-expanded={advancedOpen}
-          aria-label="Advanced search options (season, episode)"
+          aria-label={t('subtitle.search.advancedAria')}
           data-cell-id="search-advanced-toggle"
         >
           <SlidersHorizontal aria-hidden="true" />
@@ -319,26 +320,26 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       {advancedOpen && (
         <div className={styles.advancedBody} data-cell-id="search-advanced-body">
           <label className={styles.numberField}>
-            <span className={styles.numberLabel}>Season</span>
+            <span className={styles.numberLabel}>{t('subtitle.search.season')}</span>
             <Input
               type="number"
               min={1}
               value={season}
               onChange={(e) => setSeason(e.target.value)}
-              aria-label="Season number"
+              aria-label={t('subtitle.search.seasonAria')}
               className={styles.numberInput}
               disabled={formDisabled}
               data-cell-id="search-season-input"
             />
           </label>
           <label className={styles.numberField}>
-            <span className={styles.numberLabel}>Episode</span>
+            <span className={styles.numberLabel}>{t('subtitle.search.episode')}</span>
             <Input
               type="number"
               min={1}
               value={episode}
               onChange={(e) => setEpisode(e.target.value)}
-              aria-label="Episode number"
+              aria-label={t('subtitle.search.episodeAria')}
               className={styles.numberInput}
               disabled={formDisabled}
               data-cell-id="search-episode-input"
@@ -351,7 +352,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       {!hasSearchKeys && (
         <div className={styles.apiHint} data-cell-id="search-api-hint">
           <Wrench className={styles.apiHintIcon} aria-hidden="true" />
-          <span className={styles.apiHintText}>Add an API key to start searching</span>
+          <span className={styles.apiHintText}>{t('subtitle.search.addKeyHint')}</span>
           <Button
             variant="primary"
             size="sm"
@@ -359,7 +360,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             aria-expanded={manageKeysOpen}
             data-cell-id="search-manage-keys-toggle"
           >
-            {manageKeysOpen ? 'Hide' : 'Add key'}
+            {manageKeysOpen ? t('subtitle.action.hide') : t('subtitle.keys.add')}
           </Button>
         </div>
       )}
@@ -395,7 +396,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         {!loading && !error && !hasSearched && hasSearchKeys && !manageKeysOpen && (
           <div className={styles.hintState} data-cell-id="search-hint">
             <Captions className={styles.hintIcon} aria-hidden="true" />
-            <span className={styles.hintText}>Search for subtitles by movie or series title</span>
+            <span className={styles.hintText}>{t('subtitle.search.hint')}</span>
           </div>
         )}
 
@@ -414,7 +415,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
           <div className={styles.errorState} role="alert" data-cell-id="search-error">
             <span className={styles.errorText}>{error}</span>
             <Button variant="outline" size="sm" onClick={handleRetry} data-cell-id="search-retry">
-              Retry
+              {t('subtitle.action.retry')}
             </Button>
           </div>
         )}
@@ -422,8 +423,8 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         {!loading && !error && hasSearched && filteredResults.length === 0 && (
           <div className={styles.emptyState} data-cell-id="search-empty">
             {results.length > 0
-              ? `No ${languageLabel(tabLang)} subtitles found. Try the other tab.`
-              : 'No results found'}
+              ? t('subtitle.search.emptyLang', [languageLabel(tabLang)])
+              : t('common.noResults')}
           </div>
         )}
 

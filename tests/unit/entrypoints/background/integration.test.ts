@@ -1247,7 +1247,7 @@ https://cdn.example.com/low.m3u8`;
 
     const mockDirHandle = {} as FileSystemDirectoryHandle;
     await expect(convertCallback(mockDirHandle, 'dl-1')).rejects.toThrow(
-      /did not respond to CONVERT_TS_TO_MP4_V2/i,
+      /didn't respond/i,
     );
   });
 
@@ -1264,7 +1264,7 @@ https://cdn.example.com/low.m3u8`;
 
     await expect(
       saveCallback('dl-1', 'input.ts', 'video.ts', 'video/mp2t'),
-    ).rejects.toThrow(/did not respond to CREATE_OPFS_BLOB_URL/i);
+    ).rejects.toThrow(/didn't respond/i);
   });
 
   // --- CONVERSION_PROGRESS_UPDATE handler ---
@@ -1400,7 +1400,7 @@ https://cdn.example.com/low.m3u8`;
     );
 
     await expect(manager.ensureOffscreenReady()).rejects.toThrow(
-      /did not respond to ping/i,
+      /didn't respond/i,
     );
   });
 
@@ -1664,7 +1664,7 @@ https://cdn.example.com/low.m3u8`;
 
     const mockDirHandle = {} as FileSystemDirectoryHandle;
     await expect(convertCallback(mockDirHandle, 'dl-1')).rejects.toThrow(
-      /did not respond to CONVERT_TS_TO_MP4_V2/i,
+      /didn't respond/i,
     );
   });
 
@@ -1681,7 +1681,7 @@ https://cdn.example.com/low.m3u8`;
 
     await expect(
       saveCallback('dl-1', 'input.ts', 'video.ts', 'video/mp2t'),
-    ).rejects.toThrow(/did not respond to CREATE_OPFS_BLOB_URL/i);
+    ).rejects.toThrow(/didn't respond/i);
   });
 
   // --- CONVERSION_PROGRESS_UPDATE handler ---
@@ -2570,7 +2570,7 @@ https://cdn.example.com/low.m3u8`;
       expect.objectContaining({
         id: 'dl-inflight',
         status: 'error',
-        error: 'Interrupted (service worker restarted)',
+        error: 'Stopped when the extension worker restarted.',
       }),
     );
 
@@ -2889,7 +2889,7 @@ https://cdn.example.com/low.m3u8`;
         },
         new AbortController().signal,
       ),
-    ).rejects.toThrow('No media found for download dl-missing');
+    ).rejects.toThrow('This media is no longer available — refresh the page and try again');
   });
 
   it('init() aborts when stop() is called during async init (onInstalled update race)', async () => {

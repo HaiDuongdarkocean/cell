@@ -1,5 +1,7 @@
 import { EmptyState } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
+import { t } from '@/shared/i18n';
+import type { MessageKey } from '@/shared/i18n';
 import styles from './MediaEmpty.module.css';
 
 interface MediaEmptyProps {
@@ -7,36 +9,47 @@ interface MediaEmptyProps {
   scanning?: boolean;
 }
 
-const EMPTY_CONFIG = {
+interface EmptyConfig {
+  scanningIcon: React.JSX.Element | null;
+  icon: React.JSX.Element;
+  scanningTitle: MessageKey | null;
+  scanningHint: MessageKey | null;
+  title: MessageKey;
+  hint: MessageKey;
+}
+
+const EMPTY_CONFIG: Record<MediaEmptyProps['type'], EmptyConfig> = {
   videos: {
     scanningIcon: <Icon name="search" size="lg" className={styles.emptyIcon} />,
     icon: <Icon name="video" size="lg" className={styles.emptyIcon} />,
-    scanningTitle: 'Looking for media…',
-    scanningHint: 'Open a page with a video player and\ndownloadable media will appear here.',
-    title: 'No media found',
-    hint: 'Try playing a video on this page,\nthen check back here.',
+    scanningTitle: 'downloads.empty.scanningTitle',
+    scanningHint: 'downloads.empty.scanningHint',
+    title: 'downloads.empty.mediaTitle',
+    hint: 'downloads.empty.mediaHint',
   },
   subtitles: {
     scanningIcon: null,
     icon: <Icon name="flag" size="lg" className={styles.emptyIcon} />,
-    scanningTitle: '',
-    scanningHint: '',
-    title: 'No subtitles found',
-    hint: 'Subtitles will appear here when available.',
+    scanningTitle: null,
+    scanningHint: null,
+    title: 'downloads.empty.subtitlesTitle',
+    hint: 'downloads.empty.subtitlesHint',
   },
   downloads: {
     scanningIcon: null,
     icon: <Icon name="download" size="lg" className={styles.emptyIcon} />,
-    scanningTitle: '',
-    scanningHint: '',
-    title: 'No downloads yet',
-    hint: 'Your download queue is empty.',
+    scanningTitle: null,
+    scanningHint: null,
+    title: 'downloads.empty.downloadsTitle',
+    hint: 'downloads.empty.downloadsHint',
   },
-} as const;
+};
 
 export function MediaEmpty({ type, scanning = false }: MediaEmptyProps): React.JSX.Element {
   const config = EMPTY_CONFIG[type];
   const isScanning = scanning && config.scanningIcon !== null;
+  const titleKey = isScanning && config.scanningTitle ? config.scanningTitle : config.title;
+  const hintKey = isScanning && config.scanningHint ? config.scanningHint : config.hint;
 
   return (
     <div
@@ -47,8 +60,8 @@ export function MediaEmpty({ type, scanning = false }: MediaEmptyProps): React.J
     >
       <EmptyState
         icon={isScanning ? config.scanningIcon : config.icon}
-        title={isScanning ? config.scanningTitle : config.title}
-        description={isScanning ? config.scanningHint : config.hint}
+        title={t(titleKey)}
+        description={t(hintKey)}
       />
     </div>
   );

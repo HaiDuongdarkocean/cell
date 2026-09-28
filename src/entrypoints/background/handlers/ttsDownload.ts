@@ -8,6 +8,7 @@
  * mortal Settings panel that started the download.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import { TtsDownloadProgressPayloadSchema, TtsDownloadVoicePayloadSchema } from '@/entities/message/dictionarySchemas';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
@@ -47,7 +48,7 @@ export function registerTtsDownloadHandlers(ctx: BackgroundContext): void {
         payload: { language, jobId: job.id },
       });
       if (!response?.success) {
-        throw new Error(response?.error ?? 'Voice pack download failed');
+        throw new Error(response?.error ?? t('tts.local.downloadFailed'));
       }
       try {
         await applyVoiceDownloadEffect(ctx, language);
@@ -92,7 +93,7 @@ export function registerTtsDownloadHandlers(ctx: BackgroundContext): void {
         if (existing) return { success: true, data: { jobId: existing.id } };
       }
       const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: `TTS voice download failed: ${msg}` } as MessageResponse<{ jobId: string }>;
+      return { success: false, error: t('tts.local.downloadError', [msg]) } as MessageResponse<{ jobId: string }>;
     }
   });
 

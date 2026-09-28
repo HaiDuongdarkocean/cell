@@ -4,6 +4,7 @@
 // engine runs here and is driven by messages from the background script.
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import { registerOffscreenListener, sendMessage } from '@/shared/lib/chrome-apis';
 import { TtsSpeakLocalPayloadSchema, TtsDownloadVoicePayloadSchema } from '@/entities/message/dictionarySchemas';
 import { createSupertonicTtsEngine } from '@/features/tts/services/supertonicTtsEngine';
@@ -41,7 +42,7 @@ registerOffscreenListener((message, sender, sendResponse) => {
         sendResponse({ success: true, data: null } as MessageResponse<null>);
       } catch (err) {
         const msgText = err instanceof Error ? err.message : String(err);
-        sendResponse({ success: false, error: `Local TTS speak failed: ${msgText}` } as MessageResponse<null>);
+        sendResponse({ success: false, error: t('tts.local.speakFailed', [msgText]) } as MessageResponse<null>);
       }
     })();
 
@@ -71,7 +72,7 @@ registerOffscreenListener((message, sender, sendResponse) => {
         sendResponse({ success: true, data: installed } as MessageResponse<boolean>);
       } catch (err) {
         const msgText = err instanceof Error ? err.message : String(err);
-        sendResponse({ success: false, error: `TTS voice download failed: ${msgText}` } as MessageResponse<null>);
+        sendResponse({ success: false, error: t('tts.local.downloadError', [msgText]) } as MessageResponse<null>);
       }
     })();
 

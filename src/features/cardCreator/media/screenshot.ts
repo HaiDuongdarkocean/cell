@@ -13,6 +13,7 @@
 import type { MediaFile } from './mediaFile';
 import { generateMediaFilename } from './mediaFile';
 import { sendMessage } from '@/shared/lib/chrome-apis';
+import { t } from '@/shared/i18n';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 
 /** Error thrown when screenshot capture fails. */
@@ -38,7 +39,7 @@ export async function captureScreenshot(video: HTMLVideoElement): Promise<MediaF
   if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
     const apiResult = await captureScreenshotViaApi();
     if (apiResult) return apiResult;
-    throw new ScreenshotError('Video not ready and captureVisibleTab failed');
+    throw new ScreenshotError(t('cardCreator.error.screenshotNotReady'));
   }
 
   // --- Primary: canvas drawImage + toBlob ---
@@ -48,7 +49,7 @@ export async function captureScreenshot(video: HTMLVideoElement): Promise<MediaF
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      throw new ScreenshotError('Canvas 2D context unavailable');
+      throw new ScreenshotError(t('cardCreator.error.screenshotCanvas'));
     }
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -57,7 +58,7 @@ export async function captureScreenshot(video: HTMLVideoElement): Promise<MediaF
       canvas.toBlob(resolve, 'image/png'),
     );
     if (!blob) {
-      throw new ScreenshotError('toBlob returned null (canvas may be tainted)');
+      throw new ScreenshotError(t('cardCreator.error.screenshotBlob'));
     }
 
     const data = await blob.arrayBuffer();

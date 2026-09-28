@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Button } from './Button';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './PinButton.module.css';
 
 type PinButtonSize = 'sm' | 'md' | 'lg';
@@ -34,7 +35,7 @@ export function PinButton({
     <Button shape="circle" variant="ghost"
       className={cls}
       aria-pressed={pinned}
-      aria-label={pinned ? 'Unpin' : 'Pin'}
+      aria-label={pinned ? t('ui.pinButton.unpin') : t('ui.pinButton.pin')}
       {...rest}
     >
       <Icon name={pinned ? 'pinOff' : 'pin'} size={ICON_SIZE[size]} />

@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n';
 import type {
   ByteRange,
   HlsEncryption,
@@ -20,7 +21,7 @@ import type {
  */
 export function parseM3u8(content: string, baseUrl?: string): M3u8Playlist {
   if (content.trim().length === 0) {
-    throw new Error('m3u8 content is empty');
+    throw new Error(t('media.error.playlistEmpty'));
   }
 
   const lines = content.split(/\r?\n/);

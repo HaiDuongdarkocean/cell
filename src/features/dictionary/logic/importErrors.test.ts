@@ -11,6 +11,7 @@ import {
   getUserMessage,
   isImportError,
 } from '@/features/dictionary/logic/importErrors';
+import { setUiLanguageOverride } from '@/shared/i18n';
 
 describe('importErrors', () => {
   describe('error classes', () => {
@@ -69,6 +70,8 @@ describe('importErrors', () => {
   });
 
   describe('getUserMessage', () => {
+    beforeAll(() => setUiLanguageOverride('vi'));
+    afterAll(() => setUiLanguageOverride('auto'));
     it('returns Vietnamese for DUPLICATE_FILE', () => {
       const msg = getUserMessage(new DuplicateFileError('sig', 'old.txt'));
       expect(msg).toContain('đã được import');
@@ -87,7 +90,7 @@ describe('importErrors', () => {
     });
     it('returns Vietnamese for PARSE_ERROR', () => {
       const msg = getUserMessage(new ParseError('bad'));
-      expect(msg).toContain('đọc file');
+      expect(msg).toContain('đọc được file');
     });
     it('returns Vietnamese for ROLLBACK with resourceId', () => {
       const msg = getUserMessage(new RollbackError(42));

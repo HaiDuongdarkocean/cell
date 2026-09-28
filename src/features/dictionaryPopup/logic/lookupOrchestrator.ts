@@ -20,6 +20,7 @@
 // handles dictionary DB queries + result assembly.
 
 import type { LookupRequest, LookupResult, DefinitionEntry, MatchSource } from '@/entities/dictionary';
+import { t } from '@/shared/i18n';
 import type { Token, TermProbe, LanguagePlugin } from '../plugins/languagePlugin';
 import { pluginRegistry } from '../plugins/pluginRegistry';
 import {
@@ -630,14 +631,14 @@ async function assembleLookupResult(
   if (mergedEtymology) {
     const rows = [
       mergedEtymology.firstKnownUse
-        ? `${mergedEtymology.chain} · first known use: ${mergedEtymology.firstKnownUse}`
+        ? t('dict.meta.etymologyFirstUse', [mergedEtymology.chain, mergedEtymology.firstKnownUse])
         : mergedEtymology.chain,
       ...(mergedEtymology.variants ?? []).map((v) => (v.source ? `${v.text} [${v.source}]` : v.text)),
     ];
     for (const text of rows) {
       definitions.push({
         id: `def-${defIdx}`,
-        labels: ['word origin'],
+        labels: [t('dict.meta.wordOrigin')],
         text,
         lines: [{ role: 'gloss', text }],
         examples: [],

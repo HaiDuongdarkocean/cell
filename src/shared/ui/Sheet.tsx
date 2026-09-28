@@ -2,6 +2,7 @@ import { useCallback, useEffect, type ReactNode, type KeyboardEvent } from 'reac
 import { useSheet } from './useSheet';
 import { useFocusTrap } from './useFocusTrap';
 import { pushEscapeLayer } from './escapeLayerStack';
+import { t } from '@/shared/i18n';
 import styles from './Sheet.module.css';
 
 export interface SheetProps {
@@ -100,7 +101,7 @@ export function Sheet({
         role="separator"
         aria-orientation="horizontal"
         tabIndex={0}
-        aria-label="Resize sheet. Enter or Space to close."
+        aria-label={t('ui.sheet.resizeAria')}
         onPointerDown={onPointerDownHandle}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {

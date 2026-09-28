@@ -12,6 +12,7 @@
 // - .cell-ocr-split-divider    draggable split divider (view mode only, listener bound at creation)
 
 import { STATIC_TOKENS } from '@/shared/lib/tokens';
+import { t, type MessageKey } from '@/shared/i18n';
 import { checkIcon, xIcon, cropIcon, moveVerticalIcon, rotateCcwIcon, chevronLeftIcon, pencilIcon } from '@/shared/icons';
 import type { CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import type { SplitHalf } from '@/features/ocr/pipeline/splitRegion';
@@ -52,15 +53,21 @@ export function formatPct(pct: number): number {
   return Math.round(pct);
 }
 
-const HANDLE_LABELS: Record<string, string> = {
-  nw: 'north-west corner resize handle',
-  n: 'top edge resize handle',
-  ne: 'north-east corner resize handle',
-  e: 'right edge resize handle',
-  se: 'south-east corner resize handle',
-  s: 'bottom edge resize handle',
-  sw: 'south-west corner resize handle',
-  w: 'left edge resize handle',
+const HANDLE_LABELS: Record<string, MessageKey> = {
+  nw: 'ocr.region.handle.nw',
+  n: 'ocr.region.handle.n',
+  ne: 'ocr.region.handle.ne',
+  e: 'ocr.region.handle.e',
+  se: 'ocr.region.handle.se',
+  s: 'ocr.region.handle.s',
+  sw: 'ocr.region.handle.sw',
+  w: 'ocr.region.handle.w',
+};
+
+const MODE_LABELS: Record<RegionSelectorMode, MessageKey> = {
+  view: 'ocr.region.mode.view',
+  select: 'ocr.region.mode.select',
+  edit: 'ocr.region.mode.edit',
 };
 
 const FONT = STATIC_TOKENS['--font-family'] ?? 'sans-serif';
@@ -242,7 +249,7 @@ export class RegionSelector {
     this.rect.appendChild(this.actionBar);
 
     // Collapse/expand toggle button (always visible when action bar is shown).
-    const toggleBtn = this.makeActionButton(chevronLeftIcon, 'Toggle action bar', () => {
+    const toggleBtn = this.makeActionButton(chevronLeftIcon, t('ocr.actionbar.toggle'), () => {
       this.actionBarCollapsed = !this.actionBarCollapsed;
       this.renderActionBar();
     });
@@ -257,28 +264,28 @@ export class RegionSelector {
     this.actionBar.appendChild(this.actionBarInner);
 
     // Edit Region button (drag handles to resize current region).
-    const editBtn = this.makeActionButton(pencilIcon, 'Edit OCR region', () => {
+    const editBtn = this.makeActionButton(pencilIcon, t('ocr.actionbar.edit'), () => {
       this.callbacks.onEditRegion?.();
     });
     editBtn.dataset.cellId = 'ocr-action-edit';
     this.actionBarInner.appendChild(editBtn);
 
     // Split toggle button.
-    const splitBtn = this.makeActionButton(moveVerticalIcon, 'Toggle split dual subtitles', () => {
+    const splitBtn = this.makeActionButton(moveVerticalIcon, t('ocr.actionbar.split'), () => {
       this.callbacks.onToggleSplit?.();
     });
     splitBtn.dataset.cellId = 'ocr-action-split';
     this.actionBarInner.appendChild(splitBtn);
 
     // Select Region button.
-    const selectBtn = this.makeActionButton(cropIcon, 'Select OCR region', () => {
+    const selectBtn = this.makeActionButton(cropIcon, t('ocr.actionbar.select'), () => {
       this.callbacks.onSelectRegion?.();
     });
     selectBtn.dataset.cellId = 'ocr-action-select';
     this.actionBarInner.appendChild(selectBtn);
 
     // Reset Region button.
-    const resetBtn = this.makeActionButton(rotateCcwIcon, 'Reset OCR region', () => {
+    const resetBtn = this.makeActionButton(rotateCcwIcon, t('ocr.actionbar.reset'), () => {
       this.callbacks.onResetRegion?.();
     });
     resetBtn.dataset.cellId = 'ocr-action-reset';
@@ -526,7 +533,9 @@ export class RegionSelector {
     // the shell-space dims (which differ under letterbox and would confuse).
     const intrinsic = this.toIntrinsicRegion(r);
     const dims = `${formatPct(intrinsic.widthPct)}%×${formatPct(intrinsic.heightPct)}%`;
-    label.textContent = this.mode === 'view' ? `OCR region (${dims})` : `${this.mode}: ${dims}`;
+    label.textContent = this.mode === 'view'
+      ? t('ocr.region.dimsView', [dims])
+      : t('ocr.region.dimsMode', [t(MODE_LABELS[this.mode]), dims]);
 
     // Handles: create once on entering interactive mode; positions are % anchored to
     // the rect so they track every resize without recreation.
@@ -540,7 +549,7 @@ export class RegionSelector {
         h.dataset.handle = pos;
         h.setAttribute('role', 'separator');
         h.setAttribute('tabindex', '0');
-        h.setAttribute('aria-label', HANDLE_LABELS[pos] ?? `${pos} resize handle`);
+        h.setAttribute('aria-label', t(HANDLE_LABELS[pos] ?? 'ocr.region.handle.generic', [pos]));
         h.addEventListener('mousedown', this.onEditResizeStart);
         h.addEventListener('keydown', this.onHandleKeyDown);
         this.rect.appendChild(h);
@@ -551,8 +560,8 @@ export class RegionSelector {
     // Toolbar: rebuild only when crossing the view↔interactive boundary.
     const needToolbar = this.mode !== 'view';
     if (needToolbar && this.toolbar.childElementCount === 0) {
-      this.toolbar.appendChild(this.makeButton('Apply', 'apply', checkIcon, () => this.handleApply()));
-      this.toolbar.appendChild(this.makeButton('Cancel', 'cancel', xIcon, () => this.handleCancel()));
+      this.toolbar.appendChild(this.makeButton(t('ocr.region.apply'), 'apply', checkIcon, () => this.handleApply()));
+      this.toolbar.appendChild(this.makeButton(t('ocr.region.cancel'), 'cancel', xIcon, () => this.handleCancel()));
     } else if (!needToolbar && this.toolbar.childElementCount > 0) {
       this.toolbar.innerHTML = '';
     }

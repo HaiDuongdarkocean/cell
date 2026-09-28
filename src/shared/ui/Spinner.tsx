@@ -1,4 +1,5 @@
 import type { SVGAttributes } from 'react';
+import { t } from '@/shared/i18n';
 import styles from './Spinner.module.css';
 
 type SpinnerSize = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -16,7 +17,7 @@ export interface SpinnerProps extends Omit<SVGAttributes<SVGSVGElement>, 'size' 
 /**
  * Spinner — animated loading indicator.
  */
-export function Spinner({ size = 'md', color = 'primary', ariaLabel = 'Loading', className, ...rest }: SpinnerProps): React.JSX.Element {
+export function Spinner({ size = 'md', color = 'primary', ariaLabel = t('ui.spinner.aria'), className, ...rest }: SpinnerProps): React.JSX.Element {
   const cls = [styles.spinner, styles[size], styles[color], className ?? ''].filter(Boolean).join(' ');
 
   return (

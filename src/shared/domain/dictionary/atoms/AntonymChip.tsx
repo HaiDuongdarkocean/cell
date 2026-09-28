@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Chip } from '@/shared/ui/Chip';
+import { t } from '@/shared/i18n';
 
 export interface AntonymChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** The antonym word to display and look up. */
@@ -30,7 +31,7 @@ export function AntonymChip({
       as="button"
       color="error"
       size={size}
-      aria-label={`Look up antonym: ${word}`}
+      aria-label={t('dict.atom.lookupAntonym', [word])}
       onClick={(e) => {
         onClick?.(e);
         if (!e.defaultPrevented) onLookup?.(word);

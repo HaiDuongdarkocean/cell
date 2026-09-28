@@ -19,6 +19,7 @@
  * auto mode after benchmark gates pass.
  */
 
+import { t } from '@/shared/i18n';
 import type { Settings, SegmentRange } from '@/entities/media';
 import { planParallelConversion, type ParallelPlan } from '../planning/parallelPlanner';
 import { transmuxTsToFmp4ParallelExperimental } from '../merging/parallelTransmuxer';
@@ -139,7 +140,7 @@ export async function executeParallelConversion(
         // would never be triggered. Convert failed results to thrown errors
         // so that executeWithFallback can decide what to do.
         if (!parallelResult.success) {
-          throw new Error(parallelResult.error ?? 'Parallel transmux failed');
+          throw new Error(parallelResult.error ?? t('downloads.error.conversionFailed'));
         }
         return parallelResult;
       },
@@ -182,7 +183,7 @@ export async function executeParallelConversion(
       return {
         success: false,
         outputName: 'output.mp4',
-        error: 'Conversion cancelled',
+        error: t('downloads.error.conversionCancelled'),
         usedParallel: false,
         durationMs: Math.round(performance.now() - startedAt),
       };

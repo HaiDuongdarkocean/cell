@@ -9,6 +9,7 @@ import type {
   DownloadProgressUpdatePayload,
   DownloadListResponse,
 } from '@/entities/message';
+import { t } from '@/shared/i18n';
 
 /**
  * Subscribes to download progress updates from the background script, scoped
@@ -94,7 +95,7 @@ export function useDownloadProgress(): {
               id: itemId,
               mediaType: 'subtitle',
               url: '',
-              title: 'Download',
+              title: t('downloads.item.fallbackTitle'),
               tabId: tabIdRef.current ?? 0,
               startedAt: Date.now(),
               ...patch,

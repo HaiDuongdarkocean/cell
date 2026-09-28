@@ -12,6 +12,7 @@ import type {
 } from '@/entities/message';
 import { TranslatePayloadSchema } from '@/entities/message/dictionarySchemas';
 import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
+import { t } from '@/shared/i18n';
 import {
   buildTranslateUrl,
   buildMyMemoryUrl,
@@ -63,17 +64,17 @@ export function registerTranslateHandlers(ctx: BackgroundContext): void {
       const url = buildMyMemoryUrl(text, sl, tl);
       const response = await fetchWithTimeout(url, { method: 'GET' }, MYMEMORY_TRANSLATE_TIMEOUT_MS);
       if (!response.ok) {
-        return { success: false, error: `MyMemory Translate HTTP ${response.status}` };
+        return { success: false, error: t('translate.error.http', [response.status]) };
       }
       const data = (await response.json()) as unknown;
       const translated = parseMyMemoryResponse(data);
       if (translated.length === 0) {
-        return { success: false, error: 'MyMemory returned empty translation or quota finished' };
+        return { success: false, error: t('translate.error.empty') };
       }
       return { success: true, data: { translated } };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      return { success: false, error: `Translate fetch failed: ${msg} (${lastError})` };
+      return { success: false, error: t('translate.error.fetch', [`${msg} (${lastError})`]) };
     }
   });
 }

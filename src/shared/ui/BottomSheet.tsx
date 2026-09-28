@@ -4,6 +4,7 @@ import { Flex, HStack, VStack } from '.';
 import { Button } from './Button';
 import { Heading } from './Heading';
 import { useFocusTrap } from './useFocusTrap';
+import { t } from '@/shared/i18n';
 import styles from './BottomSheet.module.css';
 
 export interface BottomSheetProps {
@@ -107,7 +108,7 @@ export function BottomSheet({
             <Button shape="circle"
               size="sm"
               variant="ghost"
-              aria-label="Close"
+              aria-label={t('ui.close')}
               onClick={() => onOpenChange?.(false)}
               className={centerTitle ? styles.closeButtonAbsolute : styles.closeIcon}
             >

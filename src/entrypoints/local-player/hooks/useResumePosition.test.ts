@@ -99,14 +99,14 @@ describe('getResumePosition', () => {
 /* ── promptResume → dialog with formatted text when shouldPrompt ─── */
 
 describe('promptResume', () => {
-  it('shows dialog "Continue from 2:00?" and returns true when user accepts', async () => {
+  it('shows dialog "Resume from 2:00?" and returns true when user accepts', async () => {
     const repo = createMockRepo();
     await repo.updateResumePosition('video-1', 120000);
     const showDialog = jest.fn(async (_text: string) => true);
     const { promptResume } = createResumePositionService(repo);
     const result = await promptResume('video-1', 3600000, showDialog);
     expect(result).toBe(true);
-    expect(showDialog).toHaveBeenCalledWith('Continue from 2:00?');
+    expect(showDialog).toHaveBeenCalledWith('Resume from 2:00?');
   });
 
   it('returns false without dialog when position < 10s', async () => {

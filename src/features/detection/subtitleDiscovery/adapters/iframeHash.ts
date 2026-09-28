@@ -4,6 +4,7 @@
 // child iframe's `src` hash. The parent (or the content script running in the
 // parent) observes the `iframe.src` attribute without reading cross-origin DOM.
 
+import { t } from '@/shared/i18n';
 import { createCandidate, languageFromLabel, formatFromUrl } from '../candidate';
 import type {
   SubtitleCandidate,
@@ -85,7 +86,7 @@ export function createIframeHashAdapter(profile: IframeHashProfile): SubtitleDis
       for (let i = 0; i < list.length; i++) {
         const entry = list[i];
         if (!isRecord(entry)) continue;
-        const label = typeof entry.label === 'string' ? entry.label : `Track ${i + 1}`;
+        const label = typeof entry.label === 'string' ? entry.label : t('subtitle.detected.track', [i + 1]);
         const url = typeof entry.url === 'string' ? entry.url : undefined;
         if (!url) continue;
         const language = typeof entry.language === 'string' && entry.language !== 'unknown'

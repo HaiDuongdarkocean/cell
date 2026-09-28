@@ -1,8 +1,16 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Chip } from '@/shared/ui/Chip';
 import type { ChipColor } from '@/shared/ui/Chip';
+import { t, type MessageKey } from '@/shared/i18n';
 
 export type WordStatus = 'unknown' | 'tracking' | 'known' | 'ignore';
+
+const statusToLabel: Record<WordStatus, MessageKey> = {
+  unknown: 'vocabulary.status.unknown',
+  tracking: 'vocabulary.status.tracking',
+  known: 'vocabulary.status.known',
+  ignore: 'vocabulary.status.ignore',
+};
 
 export interface StatusBadgeProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'color'> {
   /** Word knowledge status. Default: unknown. */
@@ -37,7 +45,7 @@ export function StatusBadge({
       className={className}
       {...rest}
     >
-      {children ?? status}
+      {children ?? t(statusToLabel[status])}
     </Chip>
   );
 }

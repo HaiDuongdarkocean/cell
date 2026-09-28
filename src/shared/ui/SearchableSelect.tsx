@@ -60,7 +60,7 @@ export function SearchableSelect({
   ariaLabel,
   id,
   dataTestId,
-  placeholder = 'Search...',
+  placeholder = t('ui.select.searchPlaceholder'),
   maxHeight,
   disabled = false,
   menuAlign = 'left',

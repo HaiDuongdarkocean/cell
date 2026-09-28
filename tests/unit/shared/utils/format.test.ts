@@ -76,10 +76,10 @@ describe('formatDuration', () => {
 
 describe('phaseToLabel', () => {
   it('returns human-readable labels for known phases', () => {
-    expect(phaseToLabel('planning')).toBe('Planning');
+    expect(phaseToLabel('planning')).toBe('Preparing');
     expect(phaseToLabel('transmuxing')).toBe('Converting');
     expect(phaseToLabel('merging')).toBe('Merging');
-    expect(phaseToLabel('validating')).toBe('Validating');
+    expect(phaseToLabel('validating')).toBe('Checking');
     expect(phaseToLabel('done')).toBe('Done');
   });
 

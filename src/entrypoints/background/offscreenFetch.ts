@@ -11,6 +11,7 @@
  * fetch pipeline (which has its own resume logic).
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import type { OffscreenManager } from './offscreenManager';
 import type {
   FetchRequestPayload,
@@ -58,13 +59,11 @@ export async function offscreenFetch(
   >(request);
 
   if (!response) {
-    throw new Error(
-      'Offscreen document did not respond to FETCH_REQUEST. ' +
-        'The offscreen listener may not have registered.',
-    );
+    console.error('[offscreen] No response for', request.type);
+    throw new Error(t('ui.error.offscreenNoResponse'));
   }
   if (!response.success || !response.data) {
-    throw new Error(response.error ?? 'Offscreen fetch failed');
+    throw new Error(response.error ?? t('ui.error.fetchFailed'));
   }
 
   return {

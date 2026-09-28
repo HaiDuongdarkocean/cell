@@ -14,6 +14,7 @@ import {
   broadcastCues,
 } from '@/features/subtitle';
 import { shouldDedupeCueSeek, canonicalNavUrl } from './contentScriptShared';
+import { t } from '@/shared/i18n';
 import { markCueSeekIntent } from '@/shared/lib/cueSeekIntent';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
@@ -122,7 +123,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
             ctx.setBilingualCues(mergeCuesForPanel(syncController.latestTargetCues, []));
             // latestNativeCues tracked by blockController — no longer needed here
             // updateCues(syncController.latestTargetCues, []);
-            showToast('Auto-translate off', container, { variant: 'info' });
+            showToast(t('subtitle.autoTranslate.off'), container, { variant: 'info' });
           } else if (syncController.latestTargetCues.length > 0) {
             // Restart prefill — load settings for sl/tl
             void (async () => {
@@ -145,7 +146,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
               });
               ctx.setTranslatePrefill(translatePrefill);
               translatePrefill.start(syncController.latestTargetCues, sl, tl);
-              showToast('Auto-translate on', container, { variant: 'success' });
+              showToast(t('subtitle.autoTranslate.on'), container, { variant: 'success' });
             })();
           }
           break;
@@ -299,7 +300,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
           const snapshot = syncController.getGenerateNativeSnapshot();
           const translatedItem: import('./subtitlePanelModel').SubtitlePanelItem = {
             id: 'translated-native',
-            name: `${label} (translated)`,
+            name: t('subtitle.name.translated', [label]),
             format: snapshot.targetFormat,
             size: snapshot.targetSize,
             source: 'translated',

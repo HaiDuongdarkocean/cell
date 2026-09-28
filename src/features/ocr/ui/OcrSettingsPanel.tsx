@@ -26,18 +26,21 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { t } from '@/shared/i18n';
 import { ENGINE_KEY_FOR_LANG } from '@/features/ocr/engine/paddleOcrLanguages';
 import { formatPct, defaultBottomRegion } from '@/features/ocr/overlay/regionSelector';
 import styles from './OcrSettingsPanel.module.css';
 
 /** Auto-detect first, then the 108-language PaddleOCR catalog (alphabetical). */
-const LANGUAGE_OPTIONS = [
-  { value: 'auto', label: 'Auto-detect (system default)' },
-  ...PADDLE_OCR_LANGUAGE_GROUPS
-    .flatMap((g): PaddleOcrLangEntry[] => [...g.languages])
-    .sort((a, b) => a.label.localeCompare(b.label))
-    .map((l) => ({ value: l.abbr, label: l.label })),
-];
+function languageOptions(): { value: string; label: string }[] {
+  return [
+    { value: 'auto', label: t('ocr.lang.auto') },
+    ...PADDLE_OCR_LANGUAGE_GROUPS
+      .flatMap((g): PaddleOcrLangEntry[] => [...g.languages])
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .map((l) => ({ value: l.abbr, label: l.label })),
+  ];
+}
 
 export interface OcrSettingsPanelProps {
   /** Current page URL — used to determine origin. */
@@ -200,11 +203,11 @@ export function OcrSettingsPanel({
         <SettingsRow>
           <LabelGroup
             icon={<Icon name="scanText" size="sm" />}
-            label="Detect burned-in subtitles"
+            label={t('ocr.toggle.label')}
             trailing={
               <Button shape="circle" variant="ghost"
                 className={styles.infoBtn}
-                aria-label="What is OCR?"
+                aria-label={t('ocr.toggle.infoAria')}
                 aria-expanded={hintOpen}
                 data-cell-id="ocr-info-btn"
                 onClick={() => setHintOpen((v) => !v)}
@@ -216,7 +219,7 @@ export function OcrSettingsPanel({
           <Toggle
             checked={enabled}
             onChange={(enabled) => { void handleToggle(enabled); }}
-            ariaLabel="Toggle OCR for this site"
+            ariaLabel={t('ocr.toggle.aria')}
             dataTestId="ocr-toggle"
           />
         </SettingsRow>
@@ -224,8 +227,8 @@ export function OcrSettingsPanel({
         <div className={styles.hintRow} data-open={hintOpen}>
           <div className={styles.hintInner}>
             <p className={styles.hintContent}>
-              Detects text burned into the video frame and makes it clickable for dictionary lookup.{' '}
-              <strong className={styles.hintStrong}>For this site only.</strong>
+              {t('ocr.toggle.hint')}{' '}
+              <strong className={styles.hintStrong}>{t('ocr.toggle.hintStrong')}</strong>
             </p>
           </div>
         </div>
@@ -234,17 +237,17 @@ export function OcrSettingsPanel({
       {/* ─── Card 2: Languages — revealed when OCR enabled ─── */}
       {enabled && (
         <div className={styles.configCard}>
-          <div className={styles.sectionHeader}>Languages</div>
+          <div className={styles.sectionHeader}>{t('ocr.section.languages')}</div>
           {/* Target language — stacked: label row on top, select full-width below */}
           <div className={styles.langField}>
             <div className={styles.langLabelRow}>
               <LabelGroup
                 icon={<Icon name="languages" size="sm" />}
-                label="Target language"
+                label={t('ocr.lang.target')}
               />
               <Button shape="circle" variant="ghost"
                 className={styles.resetBtn}
-                aria-label="Reset target language to system default"
+                aria-label={t('ocr.lang.resetTargetAria')}
                 data-cell-id="ocr-target-lang-reset"
                 disabled={targetLangOverride == null}
                 onClick={() => handleLangReset('targetLangOverride')}
@@ -254,9 +257,9 @@ export function OcrSettingsPanel({
             </div>
             <Select
               value={resolveOcrLang(targetLangOverride, effectiveTargetLang)}
-              options={LANGUAGE_OPTIONS}
+              options={languageOptions()}
               onChange={(v) => handleLangOverrideChange('targetLangOverride', v)}
-              aria-label="OCR target language"
+              aria-label={t('ocr.lang.targetAria')}
               data-cell-id="ocr-target-language"
               menuAlign="right"
               className={styles.langSelect}
@@ -267,11 +270,11 @@ export function OcrSettingsPanel({
             <div className={styles.langLabelRow}>
               <LabelGroup
                 icon={<Icon name="languages" size="sm" />}
-                label="Native language"
+                label={t('ocr.lang.native')}
               />
               <Button shape="circle" variant="ghost"
                 className={styles.resetBtn}
-                aria-label="Reset native language to system default"
+                aria-label={t('ocr.lang.resetNativeAria')}
                 data-cell-id="ocr-native-lang-reset"
                 disabled={nativeLangOverride == null}
                 onClick={() => handleLangReset('nativeLangOverride')}
@@ -281,19 +284,19 @@ export function OcrSettingsPanel({
             </div>
             <Select
               value={resolveOcrLang(nativeLangOverride, effectiveNativeLang)}
-              options={LANGUAGE_OPTIONS}
+              options={languageOptions()}
               onChange={(v) => handleLangOverrideChange('nativeLangOverride', v)}
-              aria-label="OCR native language"
+              aria-label={t('ocr.lang.nativeAria')}
               data-cell-id="ocr-native-language"
               menuAlign="right"
               className={styles.langSelect}
             />
           </div>
           {/* Language hints — defaults source + first-use model download (SC#12/SC#16). */}
-          <p className={styles.hintText}>Defaults come from your subtitle settings. Override per-site.</p>
+          <p className={styles.hintText}>{t('ocr.lang.hint')}</p>
           {(targetResolvesNonDefaultModel || nativeResolvesNonDefaultModel) && (
             <p className={styles.hintText}>
-              Non-default languages download their recognition model on first use (a few MB, cached for next time).
+              {t('ocr.lang.modelHint')}
             </p>
           )}
         </div>
@@ -302,24 +305,24 @@ export function OcrSettingsPanel({
       {/* ─── Card 3: Split — revealed when OCR enabled ─── */}
       {enabled && (
         <div className={styles.configCard}>
-          <div className={styles.sectionHeader}>Split</div>
+          <div className={styles.sectionHeader}>{t('ocr.split.title')}</div>
           <SettingsRow>
             <LabelGroup
               icon={<Icon name="crop" size="sm" />}
-              label="Split"
-              sublabel="Split capture region into two halves — one per language stream"
+              label={t('ocr.split.label')}
+              sublabel={t('ocr.split.sublabel')}
             />
             <Toggle
               checked={splitEnabled}
               onChange={(v) => void patchOcrState({ splitEnabled: v })}
-              ariaLabel="Toggle split dual subtitles"
+              ariaLabel={t('ocr.split.aria')}
               dataTestId="ocr-split-toggle"
             />
           </SettingsRow>
           {splitEnabled && (
             <>
               <SettingsRow stacked divider>
-                <LabelGroup label="Top half" sublabel="Which language stream runs in the top half" />
+                <LabelGroup label={t('ocr.split.topLabel')} sublabel={t('ocr.split.topSublabel')} />
                 <div className={styles.segmentButtons}>
                   <Button
                     variant="outline"
@@ -329,7 +332,7 @@ export function OcrSettingsPanel({
                     onClick={() => void patchOcrState({ splitTopIsTarget: true })}
                     data-cell-id="ocr-split-top-target"
                   >
-                    Top = Target
+                    {t('ocr.split.topTarget')}
                   </Button>
                   <Button
                     variant="outline"
@@ -339,20 +342,20 @@ export function OcrSettingsPanel({
                     onClick={() => void patchOcrState({ splitTopIsTarget: false })}
                     data-cell-id="ocr-split-top-native"
                   >
-                    Top = Native
+                    {t('ocr.split.topNative')}
                   </Button>
                 </div>
               </SettingsRow>
               <SliderRow
                 icon={<Icon name="moveVertical" size="sm" />}
-                label="Split ratio"
-                hint="Height of the top half as % of the capture region"
+                label={t('ocr.split.ratio')}
+                hint={t('ocr.split.ratioHint')}
                 value={Math.round(splitRatio * 100)}
                 min={10}
                 max={90}
                 step={1}
                 onChange={(v) => void patchOcrState({ splitRatio: v / 100 })}
-                aria-label="OCR split ratio"
+                aria-label={t('ocr.split.ratioAria')}
                 variant="end"
                 divider
                 formatValue={(v) => `${v}%`}
@@ -360,7 +363,7 @@ export function OcrSettingsPanel({
               {deviceMemory < 4 && (
                 <SettingsRow stacked divider>
                   <p className={styles.hintText}>
-                    Low memory mode: both halves use the target model
+                    {t('ocr.split.lowMemory')}
                   </p>
                 </SettingsRow>
               )}
@@ -372,69 +375,69 @@ export function OcrSettingsPanel({
       {/* ─── Card 4: Capture region — revealed when OCR enabled ─── */}
       {enabled && (
         <div className={styles.configCard}>
-          <div className={styles.sectionHeader}>Capture region</div>
+          <div className={styles.sectionHeader}>{t('ocr.region.title')}</div>
           <SliderRow
             icon={<Icon name="moveHorizontal" size="sm" />}
-            label="Position X"
-            hint="Horizontal offset from left edge"
+            label={t('ocr.region.posX')}
+            hint={t('ocr.region.posXHint')}
             value={effRegion.xPct}
             min={0}
             max={Math.max(0, 100 - effRegion.widthPct)}
             step={1}
             onChange={(v) => void handleRegionSliderChange({ xPct: v })}
-            aria-label="Region X position"
+            aria-label={t('ocr.region.posXAria')}
             variant="end"
             divider
             disabled={100 - effRegion.widthPct <= 0}
-            disabledNote="Reduce Width to move horizontally"
+            disabledNote={t('ocr.region.posXDisabled')}
             formatValue={(v) => `${formatPct(v)}%`}
           />
           <SliderRow
             icon={<Icon name="moveVertical" size="sm" />}
-            label="Position Y"
-            hint="Vertical offset from top edge"
+            label={t('ocr.region.posY')}
+            hint={t('ocr.region.posYHint')}
             value={effRegion.yPct}
             min={0}
             max={Math.max(0, 100 - effRegion.heightPct)}
             step={1}
             onChange={(v) => void handleRegionSliderChange({ yPct: v })}
-            aria-label="Region Y position"
+            aria-label={t('ocr.region.posYAria')}
             variant="end"
             divider
             disabled={100 - effRegion.heightPct <= 0}
-            disabledNote="Reduce Height to move vertically"
+            disabledNote={t('ocr.region.posYDisabled')}
             formatValue={(v) => `${formatPct(v)}%`}
           />
           <SliderRow
             icon={<Icon name="moveHorizontal" size="sm" />}
-            label="Width"
-            hint="Horizontal capture range"
+            label={t('ocr.region.width')}
+            hint={t('ocr.region.widthHint')}
             value={effRegion.widthPct}
             min={1}
             max={Math.max(1, 100 - effRegion.xPct)}
             step={1}
             onChange={(v) => void handleRegionSliderChange({ widthPct: v })}
-            aria-label="Region width"
+            aria-label={t('ocr.region.widthAria')}
             variant="end"
             divider
             disabled={100 - effRegion.xPct <= 1}
-            disabledNote="Reduce Position X to widen"
+            disabledNote={t('ocr.region.widthDisabled')}
             formatValue={(v) => `${formatPct(v)}%`}
           />
           <SliderRow
             icon={<Icon name="moveVertical" size="sm" />}
-            label="Height"
-            hint="Vertical capture range"
+            label={t('ocr.region.height')}
+            hint={t('ocr.region.heightHint')}
             value={effRegion.heightPct}
             min={1}
             max={Math.max(1, 100 - effRegion.yPct)}
             step={1}
             onChange={(v) => void handleRegionSliderChange({ heightPct: v })}
-            aria-label="Region height"
+            aria-label={t('ocr.region.heightAria')}
             variant="end"
             divider
             disabled={100 - effRegion.yPct <= 1}
-            disabledNote="Reduce Position Y to heighten"
+            disabledNote={t('ocr.region.heightDisabled')}
             formatValue={(v) => `${formatPct(v)}%`}
           />
           {/* Region action buttons — horizontal (icon + label inline) */}
@@ -448,7 +451,7 @@ export function OcrSettingsPanel({
                 onClick={() => sendRegionCommand('select')}
                 data-cell-id="ocr-region-select"
               >
-                Select
+                {t('ocr.region.select')}
               </Button>
               {hasCustomRegion && (
                 <Button
@@ -459,7 +462,7 @@ export function OcrSettingsPanel({
                   onClick={() => sendRegionCommand('edit')}
                   data-cell-id="ocr-region-edit"
                 >
-                  Edit
+                  {t('ocr.region.edit')}
                 </Button>
               )}
               <Button
@@ -470,7 +473,7 @@ export function OcrSettingsPanel({
                 onClick={() => void handleResetRegion()}
                 data-cell-id="ocr-region-reset"
               >
-                Reset
+                {t('ocr.region.reset')}
               </Button>
             </div>
           </SettingsRow>

@@ -23,6 +23,12 @@ import {
   SyncSetSystemConnectionPayloadSchema,
 } from '@/entities/message/schema';
 import { SyncServiceError } from '@/features/sync/app/syncService';
+import { ProviderError } from '@/features/sync/ports/storageProvider';
+import { SystemConnectionRequiredError } from '@/features/sync/app/disconnect';
+import { CycleLockLostError } from '@/features/sync/app/cycleLock';
+import { RebindBlockedError } from '@/features/sync/app/rebind';
+import { BlobUnavailableError } from '@/features/sync/app/pushCycle';
+import { WireFormatError } from '@/features/sync/app/wireCodec';
 import { migrateProfileIdentity } from '@/features/sync/app/profileIdentityMigration';
 import { createSrsSyncAccess } from '@/features/srs/sync/srsSyncAccess';
 import { logger } from '@/shared/lib/logger';
@@ -60,6 +66,12 @@ function getRuntime(ctx: BackgroundContext): SyncRuntime {
 
 function errorMessage(error: unknown): string {
   if (error instanceof SyncServiceError) return `${error.code}: ${error.message}`;
+  if (error instanceof SystemConnectionRequiredError) return `system-connection-required: ${error.message}`;
+  if (error instanceof CycleLockLostError) return `sync-busy: ${error.message}`;
+  if (error instanceof RebindBlockedError) return `rebind-blocked: ${error.message}`;
+  if (error instanceof BlobUnavailableError) return `sync-data-missing: ${error.message}`;
+  if (error instanceof WireFormatError) return `sync-data-invalid: ${error.message}`;
+  if (error instanceof ProviderError) return `provider-${error.kind}: ${error.message}`;
   if (error instanceof Error) return error.message;
   return String(error);
 }

@@ -4,6 +4,7 @@ import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { syncFlatFieldsToActiveProfile } from '@/entities/settings/lib/profileResolution';
 import { STORAGE_KEYS } from '@/shared/config/config';
+import { t } from '@/shared/i18n';
 import type { Settings } from '@/entities/settings';
 import styles from './SettingsTab.module.css';
 
@@ -66,7 +67,7 @@ export function SettingsTab(): React.JSX.Element | null {
   }, []);
 
   if (!settings) {
-    return <div className={styles.settingsTab} data-cell-id="settings-tab-loading">Loading settings…</div>;
+    return <div className={styles.settingsTab} data-cell-id="settings-tab-loading">{t('panel.settings.loading')}</div>;
   }
 
   return (

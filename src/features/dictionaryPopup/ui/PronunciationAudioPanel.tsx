@@ -47,7 +47,7 @@ export function PronunciationAudioPanel({
     const real = items.filter((item) => item.kind === activeGroup).slice(0, 3);
     if (real.length > 0) return real;
     // Synthetic TTS item
-    const ttsLabel = activeGroup === 'word' ? `${term} · TTS` : `${sentence || term} · TTS`;
+    const ttsLabel = t('dict.audio.itemLabel', [activeGroup === 'word' ? term : (sentence || term), t('audio.engine.browserTts')]);
     const ttsId = activeGroup === 'word' ? TTS_WORD_ID : TTS_SENTENCE_ID;
     return [{
       id: ttsId,

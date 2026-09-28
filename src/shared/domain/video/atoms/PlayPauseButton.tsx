@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { Spinner } from '@/shared/ui/Spinner';
+import { t } from '@/shared/i18n';
 import styles from './PlayPauseButton.module.css';
 
 interface PlayPauseButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
@@ -28,7 +29,7 @@ export function PlayPauseButton({
   onClick,
   ...rest
 }: PlayPauseButtonProps): React.JSX.Element {
-  const label = playing ? 'Pause' : 'Play';
+  const label = playing ? t('video.player.pause') : t('video.player.play');
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>): void => {
     if (loading) return;

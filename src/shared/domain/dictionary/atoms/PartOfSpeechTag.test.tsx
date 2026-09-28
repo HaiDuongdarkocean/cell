@@ -13,10 +13,19 @@ describe('PartOfSpeechTag', () => {
   });
 
   it('renders correct aria-label for each type', () => {
-    const types = ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'conjunction', 'pronoun', 'interjection'] as const;
-    for (const type of types) {
+    const cases = [
+      ['noun', 'Noun'],
+      ['verb', 'Verb'],
+      ['adjective', 'Adjective'],
+      ['adverb', 'Adverb'],
+      ['preposition', 'Preposition'],
+      ['conjunction', 'Conjunction'],
+      ['pronoun', 'Pronoun'],
+      ['interjection', 'Interjection'],
+    ] as const;
+    for (const [type, label] of cases) {
       const { unmount } = render(<PartOfSpeechTag type={type}>{type}</PartOfSpeechTag>);
-      expect(screen.getByLabelText(`Part of speech: ${type}`)).toBeInTheDocument();
+      expect(screen.getByLabelText(`Part of speech: ${label}`)).toBeInTheDocument();
       unmount();
     }
   });

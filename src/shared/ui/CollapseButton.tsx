@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './CollapseButton.module.css';
 
 type CollapseButtonSize = 'sm' | 'md' | 'lg';
@@ -60,7 +61,7 @@ export function CollapseButton({
     >
       <Icon name="chevronDown" size={ICON_SIZE[size]} />
       {showLabel && (
-        <span className={styles.label}>{collapsed ? 'Expand' : 'Collapse'}</span>
+        <span className={styles.label}>{collapsed ? t('ui.collapse.expand') : t('ui.collapse.collapse')}</span>
       )}
     </Button>
   );

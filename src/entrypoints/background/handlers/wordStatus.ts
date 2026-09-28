@@ -7,6 +7,7 @@
  * origin, not the web page. Background keeps the single source of truth.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import {
@@ -77,7 +78,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
       return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      return { success: false, error: message };
+      return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
     }
   });
 
@@ -96,7 +97,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
       return { success: true, data: { status } };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      return { success: false, error: message };
+      return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
     }
   });
 
@@ -119,7 +120,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
       return { success: true, data: { statuses } };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      return { success: false, error: message };
+      return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
     }
   });
 
@@ -138,7 +139,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
       return { success: true, data: { entries: [...entries] } };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      return { success: false, error: message };
+      return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
     }
   });
 
@@ -158,7 +159,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
       return { success: true, data: { status } };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      return { success: false, error: message };
+      return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
     }
   });
 
@@ -178,7 +179,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
       return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      return { success: false, error: message };
+      return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
     }
   });
 
@@ -198,7 +199,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
       return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      return { success: false, error: message };
+      return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
     }
   });
 
@@ -216,7 +217,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
       return { success: true, data: { entries } };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      return { success: false, error: message };
+      return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
     }
   });
 
@@ -236,7 +237,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
       return { success: true, data: { status } };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      return { success: false, error: message };
+      return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
     }
   });
 
@@ -255,7 +256,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
       return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      return { success: false, error: message };
+      return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
     }
   });
 }

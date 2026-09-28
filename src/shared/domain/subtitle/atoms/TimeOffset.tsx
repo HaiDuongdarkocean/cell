@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { t } from '@/shared/i18n';
 import styles from './TimeOffset.module.css';
 
 export interface TimeOffsetProps {
@@ -62,7 +63,7 @@ export function TimeOffset({
       data-cell-id={dataTestId}
       className={cls}
       role="text"
-      aria-label={`Time offset: ${offset} seconds`}
+      aria-label={t('subtitle.offset.aria', [offset])}
     >
       {showSign && <span className={signClass} aria-hidden="true">{signSymbol}</span>}
       <span className={styles.value}>{magnitudeText}</span>

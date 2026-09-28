@@ -25,6 +25,7 @@ import type { ImageSource } from '@/features/ocr/engine/types';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { STORAGE_KEYS } from '@/shared/config/config';
+import { t } from '@/shared/i18n';
 import { logger } from '@/shared/lib/logger';
 
 import { isCellDebug as cellDebug } from '@/shared/lib/cellDebug';
@@ -74,8 +75,8 @@ export function effectiveSplitRegionPct(originState: OcrOriginState): number {
 /** Divider labels for the two halves (top may be target or native). */
 function splitLabels(topIsTarget: boolean): { topLabel: string; bottomLabel: string } {
   return topIsTarget
-    ? { topLabel: 'Target', bottomLabel: 'Native' }
-    : { topLabel: 'Native', bottomLabel: 'Target' };
+    ? { topLabel: t('ocr.splitLabel.target'), bottomLabel: t('ocr.splitLabel.native') }
+    : { topLabel: t('ocr.splitLabel.native'), bottomLabel: t('ocr.splitLabel.target') };
 }
 
 /** Persist a divider-drag ratio for an origin, keeping every other field (incl. customRegion) unchanged. */
@@ -840,7 +841,7 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
       if (msg?.type !== MESSAGE_TYPES.OCR_REGION_COMMAND) return;
       const mode = msg.payload?.mode as RegionSelectorMode | 'reset';
       if (!activeSession?.isRunning()) {
-        sendResponse({ success: false, error: 'OCR session not running' });
+        sendResponse({ success: false, error: t('ocr.error.sessionNotRunning') });
         return;
       }
       if (mode === 'reset') {
