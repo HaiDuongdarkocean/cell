@@ -14,7 +14,16 @@ export function useJobs(kind?: JobKind | readonly JobKind[]): Job[] {
     let alive = true;
     void listJobs().then((list) => {
       if (!alive) return;
-      setJobs(kindSet === null ? list : list.filter((j) => kindSet.has(j.kind)));
+      setJobs((prev) => {
+        const byId = new Map(list.map((j) => [j.id, j] as const));
+        const merged = [...list];
+        for (const p of prev) {
+          const l = byId.get(p.id);
+          if (l === undefined) merged.unshift(p);
+          else if (p.updatedAt >= l.updatedAt) merged[merged.indexOf(l)] = p;
+        }
+        return kindSet === null ? merged : merged.filter((j) => kindSet.has(j.kind));
+      });
     });
     const unsub = subscribeJobEvents(({ job, removedId }) => {
       setJobs((prev) => {

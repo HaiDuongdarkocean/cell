@@ -43,7 +43,7 @@ import { formatBytes } from '@/shared/lib/formatBytes';
 import type { DuplicateDecision, ResourceInfo, ResourceType } from '@/entities/dictionary';
 import type { FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 
-import { JobRow, useJobs, useJobTerminalWatcher, dismissJob, retryJob } from '@/features/jobs';
+import { JobRow, useJobs, useJobTerminalWatcher, dismissJob, retryJob, jobErrorText } from '@/features/jobs';
 import { isRunningJob, makeJobId, type ImportJob } from './importJobTypes';
 import styles from './ResourcesPanel.module.css';
 
@@ -437,15 +437,15 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
       if (job.status === 'done') {
         announce(t('resources.announce.added', [job.label, job.result?.wordCount ?? 0]));
       } else {
-        announce(t('resources.announce.failed', [job.label, job.error ?? job.status]));
+        announce(t('resources.announce.failed', [job.label, jobErrorText(job.error ?? job.status)]));
       }
     } else if (job.kind === 'resource-delete') {
       if (job.status === 'done') {
         announce(t('resources.delete.one', [job.label]));
         showPanelAlert('success', t('resources.delete.one', [job.label]));
       } else {
-        announce(t('resources.delete.failed', [job.error ?? job.status]));
-        showPanelAlert('error', t('resources.delete.failed', [job.error ?? job.status]));
+        announce(t('resources.delete.failed', [jobErrorText(job.error ?? job.status)]));
+        showPanelAlert('error', t('resources.delete.failed', [jobErrorText(job.error ?? job.status)]));
       }
     }
   }, [refresh, announce, showPanelAlert]));
@@ -661,7 +661,7 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     let firstError: string | null = null;
     for (const r of doomed) {
       try {
-        await deleteResource(langCode, r.id!);
+        await deleteResource(langCode, r.id!, r.type);
         setResources((prev) => prev.filter((x) => x.id !== r.id));
       } catch (e) {
         firstError = firstError ?? String(e);
@@ -721,7 +721,7 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
   // Registry rows: hide any job the local row still drives (queued/uploading/
   // parked duplicate) — the local twin suppresses its registry counterpart
   // until handoff, so the two never render twice.
-  const localJobIds = new Set(jobs.map((j) => j.jobId));
+  const localJobIds = new Set(jobs.filter(isRunningJob).map((j) => j.jobId));
   const dictionaryRegistryJobs = registryJobs.filter(
     (j) => j.params.resourceType !== 'FREQUENCY' && !localJobIds.has(j.id),
   );

@@ -2,7 +2,6 @@ import {
   isActiveJob,
   JOB_ERROR_DUPLICATE,
   JOB_ERROR_INTERRUPTED_RESTART,
-  JOB_ERROR_INTERRUPTED_UPLOAD_STALL,
   type Job,
   type JobKind,
   type JobProgress,
@@ -110,6 +109,8 @@ export class JobRegistry {
     if (existing && existing.id !== input.id) {
       throw new JobDuplicateError(key);
     }
+    const tracked = this.jobs.get(input.id);
+    if (tracked) return tracked.job;
     const now = this.deps.now();
     const job: Job = {
       id: input.id,
@@ -188,7 +189,11 @@ export class JobRegistry {
     }
     this.jobs.delete(id);
     this.deps.broadcastRemoved(id);
-    tracked.writeChain = tracked.writeChain.then(() => this.deps.unpersist(id).catch(() => undefined));
+    tracked.writeChain = tracked.writeChain.then(() =>
+      this.deps.unpersist(id).catch((err) => {
+        console.warn(`[jobRegistry] unpersist failed for ${id}:`, err);
+      }),
+    );
     await tracked.writeChain;
     this.notifyActiveCount();
     return true;
@@ -274,10 +279,7 @@ export class JobRegistry {
       if (verdict === 'done') {
         this.markDone(job.id, job.result);
       } else {
-        this.markInterrupted(
-          job.id,
-          job.status === 'uploading' ? JOB_ERROR_INTERRUPTED_UPLOAD_STALL : JOB_ERROR_INTERRUPTED_RESTART,
-        );
+        this.markInterrupted(job.id, JOB_ERROR_INTERRUPTED_RESTART);
       }
     } catch (err) {
       this.markInterrupted(job.id, err instanceof Error ? err.message : JOB_ERROR_INTERRUPTED_RESTART);
@@ -317,7 +319,11 @@ export class JobRegistry {
     }
     tracked.lastPersistedAt = this.deps.now();
     const snapshot = tracked.job;
-    tracked.writeChain = tracked.writeChain.then(() => this.deps.persist(snapshot).catch(() => undefined));
+    tracked.writeChain = tracked.writeChain.then(() =>
+      this.deps.persist(snapshot).catch((err) => {
+        console.warn(`[jobRegistry] persist failed for ${snapshot.id}:`, err);
+      }),
+    );
   }
 
   private notifyActiveCount(): void {

@@ -16,7 +16,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import { JobDuplicateError, type JobRegistry } from '@/features/jobs/logic/jobRegistry';
-import { getJobRegistry } from './jobs';
+import { getJobRegistry, whenJobsReady } from './jobs';
 import type { Job } from '@/entities/job/types';
 import {
   ResourceListPayloadSchema,
@@ -55,7 +55,6 @@ import {
 import { importFile, deleteResourceCascade, rollbackImport } from '@/features/dictionary/logic/importOrchestrator';
 import { clearDictionaryProbeCache } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
 
-const CHUNK_JOB_TTL_MS = 10 * 60 * 1000;
 const UPLOAD_STALL_MS = 30 * 1000;
 
 interface ImportChunkMeta {
@@ -184,6 +183,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
   });
 
   ctx.on(MESSAGE_TYPES.RESOURCE_DELETE, async (request): Promise<MessageResponse<{ jobId: string }>> => {
+    await whenJobsReady();
     const parsed = ResourceDeletePayloadSchema.safeParse(request.payload);
     if (!parsed.success) return fail('RESOURCE_DELETE', parsed);
     const { langCode, resourceId } = parsed.data;
@@ -198,7 +198,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
         kind: 'resource-delete',
         label: resource?.name ?? `#${resourceId}`,
         status: 'queued',
-        params: { resourceId, langCode, resourceType: resource?.type ?? null },
+        params: { resourceId, langCode, resourceType: resource?.type ?? parsed.data.resourceType ?? null },
         retryable: true,
       });
       registry.startIfSlotFree(job);
@@ -322,16 +322,10 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
   // via JOB_LIST/JOB_EVENT. Chunks for unknown or terminal jobs are rejected
   // so a restarted sender cannot resurrect an interrupted job.
   ctx.on(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK, async (request): Promise<MessageResponse<{ received?: number; jobId?: string }>> => {
+    await whenJobsReady();
     const parsed = ResourceImportChunkPayloadSchema.safeParse(request.payload);
     if (!parsed.success) return fail('RESOURCE_IMPORT_CHUNK', parsed);
     const p = parsed.data;
-
-    for (const [jobId, pending] of pendingImports) {
-      if (Date.now() - pending.createdAt > CHUNK_JOB_TTL_MS) {
-        clearPending(jobId);
-        registry.markInterrupted(jobId, 'interrupted-upload-ttl');
-      }
-    }
 
     let pending = pendingImports.get(p.jobId);
     if (!pending) {
@@ -350,6 +344,8 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
             signature: p.signature ?? p.jobId,
             langCode: p.langCode,
             resourceType: p.resourceType,
+            fileName: p.fileName,
+            duplicateDecision: p.duplicateDecision ?? null,
           },
           retryable: false,
         });
@@ -375,6 +371,9 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
       pendingImports.set(p.jobId, pending);
     }
 
+    if (p.seq < 0 || p.seq >= pending.chunks.length) {
+      return toError(new Error(`Import chunk seq ${p.seq} out of range (total ${pending.chunks.length})`));
+    }
     if (pending.chunks[p.seq] === undefined) {
       pending.chunks[p.seq] = p.data;
       pending.received++;

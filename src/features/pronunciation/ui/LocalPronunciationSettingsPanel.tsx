@@ -10,7 +10,7 @@ import type { LocalAudioBuildIndexResponse } from '@/entities/dictionary';
 import type { LocalFileAudioSettings, PronunciationSettings } from '@/entities/settings/types';
 
 
-import { JobRow, useJobs, useJobTerminalWatcher, dismissJob, retryJob } from '@/features/jobs';
+import { JobRow, useJobs, useJobTerminalWatcher, dismissJob, retryJob, jobErrorText } from '@/features/jobs';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
@@ -44,7 +44,7 @@ export function LocalPronunciationSettingsPanel({
     if (job.status === 'done') {
       setStatus(t('pronunciation.local.indexed', [job.result?.count ?? 0]));
     } else {
-      setStatus(job.error ?? t('pronunciation.local.indexFailed'));
+      setStatus(job.error !== undefined ? jobErrorText(job.error) : t('pronunciation.local.indexFailed'));
     }
   });
 

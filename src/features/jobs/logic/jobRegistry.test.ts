@@ -152,6 +152,30 @@ describe('JobRegistry', () => {
     expect(r2.get('j1')?.error).toBe('interrupted-restart');
   });
 
+  it('boot sweep marks a mid-upload job interrupted-restart — upload data died with the worker', async () => {
+    const deps = makeDeps();
+    const r = reg(deps);
+    r.register({ id: 'j1', kind: 'resource-import', label: 'f', status: 'uploading', ...base });
+    await r.drainWrites();
+    const r2 = reg(deps);
+    await r2.restore();
+    await r2.sweep();
+    expect(r2.get('j1')?.status).toBe('interrupted');
+    expect(r2.get('j1')?.error).toBe('interrupted-restart');
+  });
+
+  it('register with an already-tracked id returns the existing job instead of resetting it', async () => {
+    const deps = makeDeps();
+    const r = reg(deps);
+    r.register({ id: 'j1', kind: 'resource-import', label: 'f', status: 'queued', ...base, params: { jobId: 'j1' } });
+    r.markRunning('j1');
+    const again = r.register({ id: 'j1', kind: 'resource-import', label: 'other', status: 'uploading', ...base, params: { jobId: 'j1' } });
+    expect(again.status).toBe('running');
+    expect(again.label).toBe('f');
+    await r.drainWrites();
+    expect(deps.persisted.get('j1')?.status).toBe('running');
+  });
+
   it('boot sweep reconcile can mark a job done when completion is durable', async () => {
     const deps = makeDeps();
     const r = reg(deps);

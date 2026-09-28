@@ -13,10 +13,11 @@ VERDICT: SIGN_OFF
 
 - `npm run typecheck` — pass
 - `npm run lint` — pass
-- `npm run test:unit` — 621/621 suites, 7465/7465 tests
+- `npm run test:unit` — 622/622 suites, 7470/7470 tests
 - `npm run build` — pass
 - Feature-cycle / deep-import checkers — clean (jobs barrel added)
-- Browser (real Chrome clone, `tmp/durable-jobs/verify.mjs`) — 11/11: `JOB_LIST`, import→done + persisted `cellJob:*` + card + inline row, row survives reopen, dismiss, delete cascade job, signature dedupe
+- Browser (real Chrome clone, `tmp/durable-jobs/verify.mjs`) — 11/11 × 2 on the final build: `JOB_LIST`, import→done + persisted `cellJob:*` + card + inline row, row survives reopen, dismiss, delete cascade job, signature dedupe
+- Post-ship adversarial re-review — second fresh-context pass returned FAIL; all majors fixed (boot readiness gate `whenJobsReady`, localized error announcements, `useJobs` stale-snapshot merge, per-resource orphan matching, `indexedDB.databases()` language coverage) and re-verified — see `durable-job-registry-verify.md` §Round 2
 
 ## Business acceptance
 

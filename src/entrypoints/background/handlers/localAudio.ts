@@ -28,7 +28,7 @@ import {
   saveLingvoDslIndex,
 } from '@/features/pronunciation/repositories/lingvoDslIndexRepository';
 import { getFileHandle } from '@/shared/lib/storage/localFileHandleStorage';
-import { getJobRegistry } from './jobs';
+import { getJobRegistry, whenJobsReady } from './jobs';
 import { DEFAULT_PRONUNCIATION_SETTINGS } from '@/shared/config/config';
 
 let cachedProvider: { key: string; provider: LingvoDslAudioProvider } | null = null;
@@ -114,7 +114,6 @@ export function registerLocalAudioHandlers(ctx: BackgroundContext): void {
     const settings = await ctx.loadSettings();
     const pronunciation = settings.pronunciation ?? DEFAULT_PRONUNCIATION_SETTINGS;
     if (pronunciation.localFile.dslFileHandleId !== dslFileHandleId) return;
-    if (pronunciation.localFile.lastIndexedAt !== null) return;
     await ctx.saveSettings({
       ...settings,
       pronunciation: {
@@ -145,6 +144,7 @@ export function registerLocalAudioHandlers(ctx: BackgroundContext): void {
   });
 
   ctx.on(MESSAGE_TYPES.LOCAL_AUDIO_BUILD_INDEX, async (request): Promise<MessageResponse<LocalAudioBuildIndexResponse>> => {
+    await whenJobsReady();
     const parsed = LocalAudioBuildIndexPayloadSchema.safeParse(request.payload);
     if (!parsed.success) {
       return {

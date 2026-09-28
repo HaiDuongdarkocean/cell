@@ -23,12 +23,33 @@ const KEEP_ALIVE_INTERVAL_MS = 20_000;
 
 let registry: JobRegistry | null = null;
 let keepAliveTimer: ReturnType<typeof setInterval> | null = null;
+let readyPromise: Promise<void> | null = null;
 
 export function getJobRegistry(): JobRegistry {
   if (!registry) {
     throw new Error('Job registry not initialised — registerJobHandlers must run first');
   }
   return registry;
+}
+
+/** Resolves once persisted jobs are restored and reconciled. Job-related
+ *  message handlers must await this — Chrome dispatches to listeners the
+ *  moment they attach, before boot init finishes. */
+export function whenJobsReady(): Promise<void> {
+  if (readyPromise !== null) return readyPromise;
+  readyPromise = (async () => {
+    if (!registry) return;
+    await registry.restore();
+    await registry.sweep();
+  })();
+  return readyPromise;
+}
+
+export function stopJobKeepAlive(): void {
+  if (keepAliveTimer !== null) {
+    clearInterval(keepAliveTimer);
+    keepAliveTimer = null;
+  }
 }
 
 function jobStorageKey(id: string): string {
@@ -110,16 +131,15 @@ function ensureRegistry(ctx: BackgroundContext): JobRegistry {
   return registry;
 }
 
-export async function initJobRegistry(): Promise<void> {
-  if (!registry) return;
-  await registry.restore();
-  await registry.sweep();
+export function initJobRegistry(): Promise<void> {
+  return whenJobsReady();
 }
 
 export function registerJobHandlers(ctx: BackgroundContext): void {
   const r = ensureRegistry(ctx);
 
   ctx.on(MESSAGE_TYPES.JOB_LIST, async (request): Promise<MessageResponse<{ jobs: Job[] }>> => {
+    await whenJobsReady();
     const parsed = JobListPayloadSchema.safeParse(request.payload ?? {});
     if (!parsed.success) {
       return { success: false, error: `Invalid JOB_LIST payload: ${parsed.error.message}` };
@@ -128,6 +148,7 @@ export function registerJobHandlers(ctx: BackgroundContext): void {
   });
 
   ctx.on(MESSAGE_TYPES.JOB_DISMISS, async (request): Promise<MessageResponse<boolean>> => {
+    await whenJobsReady();
     const parsed = JobDismissPayloadSchema.safeParse(request.payload);
     if (!parsed.success) {
       return { success: false, error: `Invalid JOB_DISMISS payload: ${parsed.error.message}` };
@@ -141,6 +162,7 @@ export function registerJobHandlers(ctx: BackgroundContext): void {
   });
 
   ctx.on(MESSAGE_TYPES.JOB_ACTION, async (request): Promise<MessageResponse<{ job: Job }>> => {
+    await whenJobsReady();
     const parsed = JobActionPayloadSchema.safeParse(request.payload);
     if (!parsed.success) {
       return { success: false, error: `Invalid JOB_ACTION payload: ${parsed.error.message}` };

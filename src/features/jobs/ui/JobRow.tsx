@@ -15,6 +15,7 @@ import { Progress } from '@/shared/ui/Progress';
 import { Spinner } from '@/shared/ui/Spinner';
 import { formatBytes } from '@/shared/lib/formatBytes';
 import { isActiveJob, type Job, type JobStatus } from '@/entities/job/types';
+import { jobErrorText } from '../jobErrorText';
 import type { MessageKey } from '@/shared/i18n';
 import styles from './JobRow.module.css';
 
@@ -26,17 +27,6 @@ const STATUS_KEYS: Record<JobStatus, MessageKey> = {
   failed: 'jobs.status.failed',
   interrupted: 'jobs.status.interrupted',
 };
-
-const ERROR_KEYS: Record<string, MessageKey> = {
-  'interrupted-restart': 'jobs.error.interrupted-restart',
-  'interrupted-upload-stall': 'jobs.error.interrupted-upload-stall',
-  'interrupted-upload-ttl': 'jobs.error.interrupted-upload-ttl',
-};
-
-function errorText(error: string): string {
-  const key = ERROR_KEYS[error];
-  return key === undefined ? error : t(key);
-}
 
 interface JobRowProps {
   readonly job: Job;
@@ -99,7 +89,7 @@ export function JobRow({ job, onDismiss, onRetry }: JobRowProps): ReactElement {
             {metaText(job)}
           </Text>
           {(failed || interrupted) && job.error !== undefined && (
-            <Text as="p" variant="supporting" className={styles.errorText}>{errorText(job.error)}</Text>
+            <Text as="p" variant="supporting" className={styles.errorText}>{jobErrorText(job.error)}</Text>
           )}
           {reimportHint && (
             <Text as="p" variant="supporting" color="secondary">{t('jobs.interrupted.reimport')}</Text>

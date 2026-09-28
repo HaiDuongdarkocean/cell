@@ -12,7 +12,7 @@ import { TtsDownloadProgressPayloadSchema, TtsDownloadVoicePayloadSchema } from 
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import { JobDuplicateError } from '@/features/jobs/logic/jobRegistry';
-import { getJobRegistry } from './jobs';
+import { getJobRegistry, whenJobsReady } from './jobs';
 import { isVoicePackDownloaded } from '@/features/tts/services/ttsDownloadManager';
 import {
   DEFAULT_DICTIONARY_POPUP_SETTINGS,
@@ -66,6 +66,7 @@ export function registerTtsDownloadHandlers(ctx: BackgroundContext): void {
   });
 
   ctx.on(MESSAGE_TYPES.TTS_DOWNLOAD_VOICE, async (request): Promise<MessageResponse<{ jobId: string }>> => {
+    await whenJobsReady();
     const parsed = TtsDownloadVoicePayloadSchema.safeParse(request.payload);
     if (!parsed.success) {
       return { success: false, error: `Invalid TTS_DOWNLOAD_VOICE payload: ${parsed.error.message}` } as MessageResponse<{ jobId: string }>;
@@ -97,6 +98,7 @@ export function registerTtsDownloadHandlers(ctx: BackgroundContext): void {
 
   // Progress fan-out from offscreen → registry job.
   ctx.on(MESSAGE_TYPES.TTS_DOWNLOAD_PROGRESS, async (request): Promise<MessageResponse<null>> => {
+    await whenJobsReady();
     const parsed = TtsDownloadProgressPayloadSchema.safeParse(request.payload);
     if (!parsed.success) {
       return { success: false, error: `Invalid TTS_DOWNLOAD_PROGRESS payload: ${parsed.error.message}` };

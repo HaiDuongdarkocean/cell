@@ -39,22 +39,30 @@ ResourcesPanel or a Settings card. Three failure modes resulted:
    `localFile.lastIndexedAt`); the caller only receives `{jobId}` and
    observes via `JOB_LIST`/`JOB_EVENT` broadcast to every context.
 
-3. **Boot-time reconciliation.** On `initJobRegistry`: persisted active jobs
-   run each executor's `reconcile` which inspects durable output — resource
-   exists + `installationFinished` → done (else rollback → interrupted);
-   deleted resource absent → done (else interrupted); voice pack present →
-   apply effect + done; DSL index non-empty → re-stamp + done. Anything that
-   cannot be proven complete is marked `interrupted` rather than left
-   hanging. `sweepOrphanedWork` additionally rolls back
+3. **Boot-time reconciliation + readiness gate.** `whenJobsReady()` is a
+   shared promise every job-touching handler awaits — `initJobRegistry()`
+   at boot *and* any early message both funnel through it, so
+   restore+reconcile always complete before `JOB_LIST`, chunk uploads,
+   deletes, or offscreen progress are processed. Without it a
+   `RESOURCE_IMPORT_CHUNK` landing during boot could resurrect a persisted
+   interrupted job. On restore, persisted active jobs run each executor's
+   `reconcile` which inspects durable output — resource exists +
+   `installationFinished` → done (else rollback → interrupted); deleted
+   resource absent → done (else interrupted); voice pack present → apply
+   effect + done; DSL index non-empty → re-stamp + done. Anything that
+   cannot be proven complete is marked `interrupted-restart` rather than
+   left hanging. `sweepOrphanedWork` additionally rolls back
    `installationFinished=false` resources and re-stamps built-but-unstamped
    DSL indexes without relying on session records (session storage can be
-   wiped by browser close).
+   wiped by browser close); it scans every `orca-dict-*` DB via
+   `indexedDB.databases()` and skips only rows owned by an active import
+   (matched by `resourceId` or file `signature`).
 
 4. **Upload is a job phase, not a separate channel.** Import chunks register
    an `uploading` job on first chunk; the final chunk assembles the `File`,
    stashes it in `importPayloads`, transitions to `queued`, and the executor
    picks it up. Chunks for unknown or terminal jobs are rejected; a 30s
-   stall timer and 10min TTL mark stalled uploads `interrupted` — file bytes
+   per-upload stall timer marks stalled uploads `interrupted` — file bytes
    cannot be recovered, so the UI tells the user to re-select the file
    rather than offering a meaningless retry.
 

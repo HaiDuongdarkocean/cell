@@ -30,7 +30,7 @@ jest.mock('./jobs', () => {
     onActiveCountChange: jest.fn(),
     now: () => Date.now(),
   });
-  return { getJobRegistry: () => registry };
+  return { getJobRegistry: () => registry, whenJobsReady: async () => {} };
 });
 
 const mockGetFileHandle = jest.mocked(getFileHandle);

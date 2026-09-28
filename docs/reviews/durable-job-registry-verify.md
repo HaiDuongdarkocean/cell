@@ -2,13 +2,39 @@
 
 > Fresh-context review (subagent_explore) against `docs/specs/durable-job-registry.md` + fix pass on findings. Reviewer verdict: **VERDICT: PASS** — no spec-blocking defects.
 
+## Round 2 — post-ship adversarial re-review
+
+A second fresh-context pass returned **FAIL** with actionable findings. All
+majors fixed and re-verified; residuals documented below.
+
+| Finding | Disposition |
+|---|---|
+| Boot-order race: handlers live before restore — early `JOB_LIST` empty, early chunk could resurrect an interrupted job | **Fixed** — `whenJobsReady()` shared readiness promise; every job-touching handler (`JOB_*`, `RESOURCE_IMPORT_CHUNK`, `RESOURCE_DELETE`, `TTS_DOWNLOAD_*`, `LOCAL_AUDIO_BUILD_INDEX`) awaits it; `initJobRegistry()` funnels through the same promise (`handlers/jobs.ts`, `index.ts`) |
+| Raw `interrupted-*` codes in panel announcements | **Fixed** — shared `jobErrorText()` maps codes → `jobs.error.*` i18n keys; used by `JobRow`, `ResourcesPanel` announce/alerts, `LocalPronunciationSettingsPanel` status |
+| `useJobs` stale snapshot: `JOB_LIST` response could overwrite a newer `JOB_EVENT` | **Fixed** — list response merges by `updatedAt` instead of replacing; covered by `useJobs.test.tsx` (event-during-fetch keeps newer state) |
+| Local import rows suppressed registry twin indefinitely | **Fixed** — suppression now keyed to running local rows only (`isRunningJob`), so terminal/handoff states release the registry row |
+| Orphan sweep skipped whole languages with active imports | **Fixed** — per-resource matching via `resourceId` or file `signature`; busy languages no longer shield stale rows |
+| Orphan sweep only scanned languages in active profiles | **Fixed** — enumerates all `orca-dict-<hash>-*` DBs via `indexedDB.databases()` |
+| `localAudio` did not re-stamp `lastIndexedAt` on rebuild | **Fixed** — `applyIndexEffect` no longer early-returns on existing stamp |
+| Delete job params missing `resourceType` → wrong section | **Fixed** — `RESOURCE_DELETE` payload carries `resourceType`; handler prefers repo record, falls back to payload |
+| `register` with same id could reset a tracked job | **Fixed** — same-id register returns the existing job |
+| Restored `uploading` marked `interrupted-upload-stall` | **Fixed** — restored actives always `interrupted-restart`; `upload-stall` is reserved for the live 30s stall timer |
+| Persist/unpersist failures swallowed | **Fixed** — `console.warn` inside `writeChain` (chain stays intact) |
+| Lazy per-chunk TTL scan raced legitimate uploads | **Fixed** — removed; the per-pending 30s stall timer is the stall mechanism |
+| Executor hang keeps job + keep-alive pin forever | **Accepted** — kinds have legitimately unbounded durations (multi-hundred-MB imports); a fixed timeout would kill real work. Mitigation: per-upload stall timer + keep-alive is opt-in while actives exist |
+| `JobSchema.progress.total` optional vs entity required | **Accepted** — persisted-record compat; `persistedToJob` maps `total ?? 0` |
+| `waitForJobTerminal` unused in production | **Accepted** — part of the `features/jobs` client API surface |
+| Rollback failure only logged | **Accepted** — job lands `interrupted`; the `installationFinished=false` row is re-swept at next boot (`sweepOrphanedWork`) |
+
+Round-2 gates: `typecheck` PASS · `lint` PASS · `test:unit` PASS — 622 suites / 7470 tests · `build` PASS (14.6s) · real-Chrome verify PASS — `tmp/durable-jobs/verify.mjs` **11/11 × 2** on the fixed build.
+
 ## Deterministic gates
 
 | Gate | Result |
 |---|---|
 | `npm run typecheck` | PASS |
 | `npm run lint` | PASS |
-| `npm run test:unit` | PASS — 7465/7465 tests, 621 suites |
+| `npm run test:unit` | PASS — 7470/7470 tests, 622 suites |
 | `npm run build` | PASS |
 | Real-Chrome verify | PASS — `tmp/durable-jobs/verify.mjs` 11/11 |
 
@@ -27,7 +53,7 @@ Browser evidence (clone profile, `--load-extension`): `JOB_LIST` answers; dropzo
 | REQ-7 dismiss | met (after fix) | terminal-only, `removedId` broadcast, unknown id → no-op success |
 | REQ-8 retry | met | fresh job id minted from stored params; `resource-import` non-retryable → re-import hint |
 | REQ-9 keep-alive | met | ref-counted `getPlatformInfo` pin while actives exist (aligned to 20s precedent) |
-| REQ-10 upload-stall | met | 30s stall → `interrupted-upload-stall`; 10min TTL → `interrupted-upload-ttl`; terminal/unknown jobId chunks rejected |
+| REQ-10 upload-stall | met | per-upload 30s stall timer → `interrupted-upload-stall`; terminal/unknown jobId chunks rejected (the racy lazy TTL scan was removed in round 2) |
 | REQ-11 four-kind migration | met | all four executors registered; `RESOURCE_IMPORT_PROGRESS` retired for migrated flows; `TTS_DOWNLOAD_PROGRESS` remains only as offscreen→bg feed |
 | REQ-12 untouched durable pipelines | met | `downloadQueue`/sync handlers unchanged |
 

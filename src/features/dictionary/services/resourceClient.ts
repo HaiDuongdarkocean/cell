@@ -92,8 +92,9 @@ export async function listResources(langCode: string): Promise<ResourceInfo[]> {
 export async function deleteResource(
   langCode: string,
   resourceId: number,
+  resourceType?: ResourceType,
 ): Promise<{ jobId: string }> {
-  const data = await request<{ jobId: string }>(MESSAGE_TYPES.RESOURCE_DELETE, { langCode, resourceId });
+  const data = await request<{ jobId: string }>(MESSAGE_TYPES.RESOURCE_DELETE, { langCode, resourceId, resourceType });
   notifyResourcesChanged(langCode);
   return data;
 }

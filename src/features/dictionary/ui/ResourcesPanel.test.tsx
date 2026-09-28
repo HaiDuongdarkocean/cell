@@ -331,7 +331,7 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('edit-frequency'));
     fireEvent.click(screen.getByTestId('delete-button-1'));
     fireEvent.click(screen.getByTestId('confirm-delete'));
-    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, 'FREQUENCY'));
   });
 
   it('shows every resource regardless of profileIds (profile scoping removed)', async () => {
@@ -378,9 +378,9 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1);
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 3);
-    expect(deleteResourceCascade).not.toHaveBeenCalledWith('en', 2);
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, 'FREQUENCY');
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 3, 'FREQUENCY');
+    expect(deleteResourceCascade).not.toHaveBeenCalledWith('en', 2, 'FREQUENCY');
   });
 
   it('edit mode with no selection deletes everything in the section', async () => {
@@ -430,9 +430,9 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1);
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 2);
-    expect(deleteResourceCascade).not.toHaveBeenCalledWith('en', 3);
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, 'FREQUENCY');
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 2, 'FREQUENCY');
+    expect(deleteResourceCascade).not.toHaveBeenCalledWith('en', 3, 'DICTIONARY');
   });
 
   it('select-all checkbox selects and deselects every row', async () => {
@@ -502,7 +502,7 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('delete-button-1'));
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
-    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, 'FREQUENCY'));
     await act(async () => { release(); });
     await waitFor(() => expect(screen.queryByTestId('resource-card-1')).not.toBeInTheDocument());
     expect(screen.queryByTestId('delete-confirm-modal')).not.toBeInTheDocument();
@@ -532,10 +532,10 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('delete-selected-frequency'));
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
-    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 2));
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 2, 'FREQUENCY'));
     await act(async () => { releases[0]?.(); });
     await waitFor(() => expect(screen.queryByTestId('resource-card-2')).not.toBeInTheDocument());
-    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, 'FREQUENCY'));
 
     await act(async () => { releases[1]?.(); });
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
@@ -556,7 +556,7 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('edit-frequency'));
     fireEvent.click(screen.getByTestId('delete-button-1'));
     fireEvent.click(screen.getByTestId('confirm-delete'));
-    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, 'FREQUENCY'));
 
     setRegistryJobs([makeJob({ id: 'del-1', status: 'running', params: { langCode: 'en', resourceId: 1, resourceType: 'FREQUENCY' } })]);
     view.rerender(<ResourcesPanel langCode="en" />);

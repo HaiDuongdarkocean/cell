@@ -91,7 +91,7 @@ import { registerSrsHandlers } from './handlers/srs';
 import { registerOcrHandlers } from './handlers/ocr';
 import { registerReaderHandlers } from './handlers/reader';
 import { registerSyncHandlers, wireSyncScheduling } from './handlers/sync';
-import { initJobRegistry, registerJobHandlers } from './handlers/jobs';
+import { initJobRegistry, registerJobHandlers, stopJobKeepAlive } from './handlers/jobs';
 import { sweepOrphanedWork } from './handlers/orphanSweep';
 import { seedDevDataIfEmpty } from '@/features/dictionary/logic/devSeed';
 import { isDevMode } from '@/shared/lib/env/devMode';
@@ -262,6 +262,7 @@ export class BackgroundService implements BackgroundContext {
     this.unsubscribers = [];
     this.networkInterceptor.stop();
     this.messageBus.stop();
+    stopJobKeepAlive();
   }
 
   // --- handler registration ---
