@@ -388,6 +388,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
       }}
       data-edge={isAtEdge ? edge : undefined}
       data-cell-id="orbital-badge"
+      data-cell-no-ripple
       aria-label={t('dict.badge.aria')}
       role="button"
       onPointerDown={gesture.onPointerDown}

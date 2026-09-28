@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
+import { installRippleDelegation } from '@/shared/lib/dom/ripple';
 import { OrbitalBadge } from './OrbitalBadge';
 
 // Controllable ResizeObserver mock — stores the callback so tests can trigger
@@ -213,6 +214,24 @@ describe('OrbitalBadge', () => {
 
     // Pointer should be rendered (visible) when floating.
     expect(screen.queryByTestId('orbital-pointer')).toBeInTheDocument();
+  });
+
+  it('does not let ripple delegation clip the out-of-bounds pointer dot', () => {
+    render(<OrbitalBadge persistPosition={false} />);
+    const badge = screen.getByTestId('orbital-badge');
+    act(() => {
+      fireEvent.pointerDown(badge, { clientX: 1024, clientY: 384 });
+      fireEvent.pointerMove(badge, { clientX: 500, clientY: 384 });
+      fireEvent.pointerUp(badge, { clientX: 500, clientY: 384 });
+    });
+    const pointer = screen.getByTestId('orbital-pointer');
+    const remove = installRippleDelegation(document);
+    act(() => {
+      fireEvent(pointer, new MouseEvent('pointerdown', { bubbles: true, composed: true, button: 0 }));
+    });
+    remove();
+    expect(badge.style.overflow).toBe('');
+    expect(badge.querySelector('[data-cell-ripple]')).toBeNull();
   });
 
   it('pointer is visible inside half-moon when collapsed at edge', () => {
