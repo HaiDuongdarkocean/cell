@@ -81,9 +81,10 @@ export function ShortcutInput({
   'aria-label': ariaLabel,
   'data-cell-id': testId,
 }: ShortcutInputProps): React.JSX.Element {
-  const pillRef = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLButtonElement>(null);
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>): void => {
+    if (e.key === 'Escape') return;
     e.preventDefault();
     e.stopPropagation();
     // Ignore pure modifier presses (user holding Ctrl/Shift/Alt)
@@ -105,15 +106,16 @@ export function ShortcutInput({
   if (value.alt) modifiers.push('alt');
 
   return (
-    <div
+    <button
       ref={pillRef}
       id={id}
+      type="button"
       role="button"
-      tabIndex={0}
       className={styles.shortcutPill}
       onKeyDown={handleKeyDown}
       aria-label={ariaLabel}
       data-cell-id={testId}
+      data-cell-keycapture
     >
       {hasCombo ? (
         <>
@@ -125,6 +127,6 @@ export function ShortcutInput({
       ) : (
         <span className={styles.kbdSingle}>{keyDisplayLabel(value.key)}</span>
       )}
-    </div>
+    </button>
   );
 }

@@ -724,6 +724,51 @@ describe('contentScriptController', () => {
       cleanupCalled = true;
     });
 
+    it('key-capture controls inside Cell UI receive every key untouched', async () => {
+      cleanup = init(video);
+      await flushPromises();
+
+      mockHandleShortcutKey.mockReturnValue('toggle-overlay' as ReturnType<typeof handleShortcutKey>);
+
+      const captureEl = document.createElement('button');
+      captureEl.setAttribute('data-cell-keycapture', '');
+      document.body.appendChild(captureEl);
+
+      const event = new KeyboardEvent('keydown', { key: 'w', bubbles: true, cancelable: true });
+      const stopSpy = jest.spyOn(event, 'stopImmediatePropagation');
+      const preventSpy = jest.spyOn(event, 'preventDefault');
+      captureEl.dispatchEvent(event);
+
+      expect(mockHandleShortcutKey).not.toHaveBeenCalled();
+      expect(stopSpy).not.toHaveBeenCalled();
+      expect(preventSpy).not.toHaveBeenCalled();
+
+      captureEl.remove();
+      cleanup!();
+      cleanupCalled = true;
+    });
+
+    it('key-capture controls receive untouched keyup too', async () => {
+      cleanup = init(video);
+      await flushPromises();
+
+      const captureEl = document.createElement('button');
+      captureEl.setAttribute('data-cell-keycapture', '');
+      document.body.appendChild(captureEl);
+
+      const event = new KeyboardEvent('keyup', { key: 'w', bubbles: true, cancelable: true });
+      const stopSpy = jest.spyOn(event, 'stopImmediatePropagation');
+      const preventSpy = jest.spyOn(event, 'preventDefault');
+      captureEl.dispatchEvent(event);
+
+      expect(stopSpy).not.toHaveBeenCalled();
+      expect(preventSpy).not.toHaveBeenCalled();
+
+      captureEl.remove();
+      cleanup!();
+      cleanupCalled = true;
+    });
+
     it('Enter on a focused activatable control remains available', async () => {
       cleanup = init(video);
       await flushPromises();

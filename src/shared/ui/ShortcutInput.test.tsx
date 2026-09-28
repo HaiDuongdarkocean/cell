@@ -99,6 +99,22 @@ describe('ShortcutInput atom — ADR-021 D7 combo support', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
+    it('lets Escape pass through without capturing or calling onChange', () => {
+      const onChange = jest.fn();
+      render(<ShortcutInput value={{ key: 'a' }} onChange={onChange} aria-label="Test" />);
+      const pill = screen.getByRole('button', { name: 'Test' });
+      pill.focus();
+      const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+      fireEvent(pill, event);
+      expect(onChange).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('marks the pill as a key-capture surface for the content-script guard', () => {
+      render(<ShortcutInput value={{ key: 'a' }} onChange={() => {}} aria-label="Test" />);
+      expect(screen.getByRole('button', { name: 'Test' })).toHaveAttribute('data-cell-keycapture');
+    });
+
     it('normalizes arrow key press', () => {
       const onChange = jest.fn();
       render(<ShortcutInput value={{ key: 'a' }} onChange={onChange} aria-label="Test" />);

@@ -38,6 +38,10 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
     const realTarget = e.composedPath()[0] ?? e.target;
     const key = e.key.toLowerCase();
 
+    if (insideCellUi && realTarget instanceof HTMLElement && realTarget.closest('[data-cell-keycapture]')) {
+      return;
+    }
+
     // Chrome hides the side panel when a tab enters fullscreen (Chromium
     // commit 6c6eb90, bug 1249462). sidePanel.open() in fullscreenchange
     // fails (no user gesture). But the 'f' keydown that triggers fullscreen
@@ -289,6 +293,11 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
 
     const realTarget = e.composedPath()[0] ?? e.target;
     const key = e.key.toLowerCase();
+
+    if (realTarget instanceof HTMLElement && realTarget.closest('[data-cell-keycapture]')) {
+      return;
+    }
+
     const isActivationKey = key === ' ' || key === 'enter';
 
     // In Player Mode the overlay owns the keyboard; otherwise, let buttons and
