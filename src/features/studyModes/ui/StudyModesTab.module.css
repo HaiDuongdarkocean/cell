@@ -8,19 +8,6 @@
   --card-background: var(--color-surface-elevated);
 }
 
-.tabHeaderInner {
-  gap: var(--space-4);
-  flex-wrap: wrap;
-}
-
-.tabTitle {
-  margin: 0;
-}
-
-.advancedToggle {
-  align-items: center;
-}
-
 .sectionHeader {
   margin-bottom: var(--space-3);
 }
@@ -245,4 +232,3 @@
     justify-content: flex-end;
   }
 }
-

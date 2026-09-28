@@ -1,5 +1,18 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
-import { Heading, Text, Button, Chip, Checkbox, HStack, VStack, Toggle, Dialog, Icon, SelectableCard, SliderRow } from '@/shared/ui';
+import {
+  Heading,
+  Text,
+  Button,
+  Chip,
+  Checkbox,
+  HStack,
+  VStack,
+  Toggle,
+  Dialog,
+  Icon,
+  SelectableCard,
+  SliderRow,
+} from '@/shared/ui';
 import { t, type MessageKey } from '@/shared/i18n';
 import { loadStudyModeState, useStudyModeStore } from '../studyModeStore';
 import { findActiveMode } from '../lib/findActiveMode';
@@ -11,7 +24,14 @@ import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode'
 import { formatModeDescription } from '../lib/formatStepSummary';
 import styles from './StudyModesTab.module.css';
 
-const SKIP_OPTIONS: StudyModeAdvancedSettings['skipNoDialogue'][] = ['OFF', '2X', '4X', '6X', '8X', 'JUMP'];
+const SKIP_OPTIONS: StudyModeAdvancedSettings['skipNoDialogue'][] = [
+  'OFF',
+  '2X',
+  '4X',
+  '6X',
+  '8X',
+  'JUMP',
+];
 const SKIP_LABELS: Record<StudyModeAdvancedSettings['skipNoDialogue'], MessageKey> = {
   OFF: 'studyModes.advanced.skip.off',
   '2X': 'studyModes.advanced.skip.2x',
@@ -20,13 +40,22 @@ const SKIP_LABELS: Record<StudyModeAdvancedSettings['skipNoDialogue'], MessageKe
   '8X': 'studyModes.advanced.skip.8x',
   JUMP: 'studyModes.advanced.skip.jump',
 };
-const PAUSE_UNKNOWN_OPTIONS: StudyModeAdvancedSettings['pauseOnUnknown'][] = ['OFF', 'START', 'END'];
+const PAUSE_UNKNOWN_OPTIONS: StudyModeAdvancedSettings['pauseOnUnknown'][] = [
+  'OFF',
+  'START',
+  'END',
+];
 const PAUSE_UNKNOWN_LABELS: Record<StudyModeAdvancedSettings['pauseOnUnknown'], MessageKey> = {
   OFF: 'studyModes.advanced.pauseUnknown.off',
   START: 'studyModes.advanced.pauseUnknown.start',
   END: 'studyModes.advanced.pauseUnknown.end',
 };
-const UNKNOWN_LEVEL_OPTIONS: StudyModeAdvancedSettings['unknownLevel'][] = ['core', 'common', 'general', 'advanced'];
+const UNKNOWN_LEVEL_OPTIONS: StudyModeAdvancedSettings['unknownLevel'][] = [
+  'core',
+  'common',
+  'general',
+  'advanced',
+];
 const UNKNOWN_LEVEL_LABELS: Record<StudyModeAdvancedSettings['unknownLevel'], MessageKey> = {
   core: 'studyModes.advanced.unknownLevel.core',
   common: 'studyModes.advanced.unknownLevel.common',
@@ -94,30 +123,15 @@ export function StudyModesTab(): ReactElement {
   return (
     <div className={styles.tab} data-cell-id="study-modes-tab">
       <VStack gap="3">
-        <header>
-          <HStack justify="between" align="center" className={styles.tabHeaderInner}>
-            <Heading level={2} size={2} className={styles.tabTitle}>
-              {t('studyModes.title')}
-            </Heading>
-            <HStack gap="2" align="center" className={styles.advancedToggle}>
-              <Text variant="label" color="secondary" as="span">
-                {t('studyModes.advancedToggle.label')}
-              </Text>
-              <Toggle
-                checked={advancedOpen}
-                onChange={setAdvancedOpen}
-                ariaLabel={t('studyModes.advancedToggle.aria')}
-                dataTestId="advanced-toggle"
-              />
-            </HStack>
-          </HStack>
-        </header>
-
         <section>
           <Heading level={3} size={3} className={styles.blockHeading}>
             {t('studyModes.presets.heading')}
           </Heading>
-          <div className={styles.grid} role="radiogroup" aria-label={t('studyModes.presets.groupAria')}>
+          <div
+            className={styles.grid}
+            role="radiogroup"
+            aria-label={t('studyModes.presets.groupAria')}
+          >
             {PRESETS.map((mode) => (
               <ModeCard
                 key={mode.id}
@@ -134,7 +148,12 @@ export function StudyModesTab(): ReactElement {
             <Heading level={3} size={3} className={styles.sectionHeading}>
               {t('studyModes.custom.heading')}
             </Heading>
-            <Button size="sm" onClick={handleNewMode} data-cell-id="new-mode-button" leadingIcon={<Icon name="plus" size="xs" />}>
+            <Button
+              size="sm"
+              onClick={handleNewMode}
+              data-cell-id="new-mode-button"
+              leadingIcon={<Icon name="plus" size="xs" />}
+            >
               {t('studyModes.custom.newMode')}
             </Button>
           </HStack>
@@ -158,29 +177,40 @@ export function StudyModesTab(): ReactElement {
           )}
         </section>
 
-        {advancedOpen && (
-          <AdvancedSection advanced={store.advanced} onChange={handleAdvancedChange} />
-        )}
+        <AdvancedSection
+          advanced={store.advanced}
+          open={advancedOpen}
+          onOpenChange={setAdvancedOpen}
+          onChange={handleAdvancedChange}
+        />
       </VStack>
 
-      <CustomModeBuilder
-        open={builderOpen}
-        onOpenChange={setBuilderOpen}
-        editingId={editingId}
-      />
+      <CustomModeBuilder open={builderOpen} onOpenChange={setBuilderOpen} editingId={editingId} />
 
       <Dialog
         open={deleteConfirmId !== null}
-        onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteConfirmId(null);
+        }}
         title={t('studyModes.deleteDialog.title')}
         description={t('studyModes.deleteDialog.description')}
         data-cell-id="delete-confirm-dialog"
         footer={
           <HStack gap="3" justify="end">
-            <Button variant="ghost" size="sm" onClick={handleCancelDelete} data-cell-id="delete-confirm-cancel">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCancelDelete}
+              data-cell-id="delete-confirm-cancel"
+            >
               {t('studyModes.deleteDialog.cancel')}
             </Button>
-            <Button variant="destructive" size="sm" onClick={handleConfirmDelete} data-cell-id="delete-confirm-ok">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleConfirmDelete}
+              data-cell-id="delete-confirm-ok"
+            >
               {t('studyModes.deleteDialog.confirm')}
             </Button>
           </HStack>
@@ -201,9 +231,7 @@ interface ModeCardProps {
 function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps): ReactElement {
   const isCustom = mode.type === 'custom';
   const title = mode.titleKey ? t(mode.titleKey) : mode.title;
-  const description = mode.descriptionKey
-    ? t(mode.descriptionKey)
-    : formatModeDescription(mode, t);
+  const description = mode.descriptionKey ? t(mode.descriptionKey) : formatModeDescription(mode, t);
 
   return (
     <div className={styles.modeCardWrapper}>
@@ -250,122 +278,139 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
 
 interface AdvancedSectionProps {
   readonly advanced: StudyModeAdvancedSettings;
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
   readonly onChange: (advanced: StudyModeAdvancedSettings) => void;
 }
 
-function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactElement {
+function AdvancedSection({
+  advanced,
+  open,
+  onOpenChange,
+  onChange,
+}: AdvancedSectionProps): ReactElement {
   return (
-    <div className={styles.advancedSection} data-cell-id="advanced-settings">
-      <Heading level={3} size={3} className={styles.blockHeading}>
-        {t('studyModes.advancedToggle.label')}
-      </Heading>
-      <VStack gap="4">
-        <div>
-          <Text as="p" className={styles.advancedLabel}>
-            {t('studyModes.advanced.skip.label')}
-          </Text>
-          <HStack
-            gap="2"
-            className={styles.chipRow}
-            role="group"
-            aria-label={t('studyModes.advanced.skip.aria')}
-          >
-            {SKIP_OPTIONS.map((option) => (
-              <Chip
-                key={option}
-                as="button"
-                selected={advanced.skipNoDialogue === option}
-                onClick={() => onChange({ ...advanced, skipNoDialogue: option })}
-                data-cell-id={`skip-no-dialogue-${option}`}
-              >
-                {t(SKIP_LABELS[option])}
-              </Chip>
-            ))}
-          </HStack>
-        </div>
-        <SliderRow
-          icon={<Icon name="clock" size="sm" />}
-          label={t('cleanup.leadIn.label')}
-          hint={t('cleanup.leadIn.hint')}
-          value={advanced.cueLeadInMs ?? 0}
-          min={0}
-          max={2000}
-          step={50}
-          onChange={(cueLeadInMs) => onChange({ ...advanced, cueLeadInMs })}
-          aria-label={t('cleanup.leadIn.aria')}
-          formatValue={(v) => t('cleanup.leadIn.value', [v])}
+    <section className={styles.advancedSection}>
+      <HStack justify="between" align="center">
+        <Heading level={3} size={3} className={styles.sectionHeading}>
+          {t('studyModes.advancedToggle.label')}
+        </Heading>
+        <Toggle
+          checked={open}
+          onChange={onOpenChange}
+          ariaLabel={t('studyModes.advancedToggle.aria')}
+          dataTestId="advanced-toggle"
         />
-        <div>
-          <Text as="p" className={styles.advancedLabel}>
-            {t('studyModes.advanced.pauseUnknown.label')}
-          </Text>
-          <HStack
-            gap="2"
-            className={styles.chipRow}
-            role="group"
-            aria-label={t('studyModes.advanced.pauseUnknown.aria')}
-          >
-            {PAUSE_UNKNOWN_OPTIONS.map((option) => (
-              <Chip
-                key={option}
-                as="button"
-                selected={advanced.pauseOnUnknown === option}
-                onClick={() => onChange({ ...advanced, pauseOnUnknown: option })}
-                data-cell-id={`pause-on-unknown-${option}`}
-              >
-                {t(PAUSE_UNKNOWN_LABELS[option])}
-              </Chip>
-            ))}
-          </HStack>
-        </div>
-        {advanced.pauseOnUnknown !== 'OFF' && (
-          <>
-            <div>
-              <Text as="p" className={styles.advancedLabel}>
-                {t('studyModes.advanced.unknownLevel.label')}
-              </Text>
-              <HStack
-                gap="2"
-                className={styles.chipRow}
-                role="group"
-                aria-label={t('studyModes.advanced.unknownLevel.aria')}
-              >
-                {UNKNOWN_LEVEL_OPTIONS.map((option) => (
-                  <Chip
-                    key={option}
-                    as="button"
-                    selected={advanced.unknownLevel === option}
-                    onClick={() => onChange({ ...advanced, unknownLevel: option })}
-                    data-cell-id={`unknown-level-${option}`}
-                  >
-                    {t(UNKNOWN_LEVEL_LABELS[option])}
-                  </Chip>
-                ))}
-              </HStack>
-            </div>
-            <Checkbox
-              label={t('studyModes.advanced.popupOnAutoPause')}
-              checked={advanced.popupOnAutoPause}
-              onChange={(e) => onChange({ ...advanced, popupOnAutoPause: e.target.checked })}
-              data-cell-id="popup-on-autopause-checkbox"
-            />
-            {advanced.popupOnAutoPause && (
-              <Checkbox
-                label={t('studyModes.advanced.popupCloseOnResume')}
-                checked={advanced.popupCloseOnResume}
-                onChange={(e) => onChange({ ...advanced, popupCloseOnResume: e.target.checked })}
-                data-cell-id="popup-close-on-resume-checkbox"
-              />
-            )}
-          </>
-        )}
-        <div className={styles.cleanupBlock}>
-          <CleanupRulesSection
-            setting={advanced.cleanupRules ?? DEFAULT_CLEANUP_RULES_SETTING}
-            onChange={(cleanupRules) => onChange({ ...advanced, cleanupRules })}
+      </HStack>
+      {open && (
+        <VStack gap="4" data-cell-id="advanced-settings">
+          <div>
+            <Text as="p" className={styles.advancedLabel}>
+              {t('studyModes.advanced.skip.label')}
+            </Text>
+            <HStack
+              gap="2"
+              className={styles.chipRow}
+              role="group"
+              aria-label={t('studyModes.advanced.skip.aria')}
+            >
+              {SKIP_OPTIONS.map((option) => (
+                <Chip
+                  key={option}
+                  as="button"
+                  selected={advanced.skipNoDialogue === option}
+                  onClick={() => onChange({ ...advanced, skipNoDialogue: option })}
+                  data-cell-id={`skip-no-dialogue-${option}`}
+                >
+                  {t(SKIP_LABELS[option])}
+                </Chip>
+              ))}
+            </HStack>
+          </div>
+          <SliderRow
+            icon={<Icon name="clock" size="sm" />}
+            label={t('cleanup.leadIn.label')}
+            hint={t('cleanup.leadIn.hint')}
+            value={advanced.cueLeadInMs ?? 0}
+            min={0}
+            max={2000}
+            step={50}
+            onChange={(cueLeadInMs) => onChange({ ...advanced, cueLeadInMs })}
+            aria-label={t('cleanup.leadIn.aria')}
+            formatValue={(v) => t('cleanup.leadIn.value', [v])}
           />
-        </div>
-      </VStack>
-    </div>
+          <div>
+            <Text as="p" className={styles.advancedLabel}>
+              {t('studyModes.advanced.pauseUnknown.label')}
+            </Text>
+            <HStack
+              gap="2"
+              className={styles.chipRow}
+              role="group"
+              aria-label={t('studyModes.advanced.pauseUnknown.aria')}
+            >
+              {PAUSE_UNKNOWN_OPTIONS.map((option) => (
+                <Chip
+                  key={option}
+                  as="button"
+                  selected={advanced.pauseOnUnknown === option}
+                  onClick={() => onChange({ ...advanced, pauseOnUnknown: option })}
+                  data-cell-id={`pause-on-unknown-${option}`}
+                >
+                  {t(PAUSE_UNKNOWN_LABELS[option])}
+                </Chip>
+              ))}
+            </HStack>
+          </div>
+          {advanced.pauseOnUnknown !== 'OFF' && (
+            <>
+              <div>
+                <Text as="p" className={styles.advancedLabel}>
+                  {t('studyModes.advanced.unknownLevel.label')}
+                </Text>
+                <HStack
+                  gap="2"
+                  className={styles.chipRow}
+                  role="group"
+                  aria-label={t('studyModes.advanced.unknownLevel.aria')}
+                >
+                  {UNKNOWN_LEVEL_OPTIONS.map((option) => (
+                    <Chip
+                      key={option}
+                      as="button"
+                      selected={advanced.unknownLevel === option}
+                      onClick={() => onChange({ ...advanced, unknownLevel: option })}
+                      data-cell-id={`unknown-level-${option}`}
+                    >
+                      {t(UNKNOWN_LEVEL_LABELS[option])}
+                    </Chip>
+                  ))}
+                </HStack>
+              </div>
+              <Checkbox
+                label={t('studyModes.advanced.popupOnAutoPause')}
+                checked={advanced.popupOnAutoPause}
+                onChange={(e) => onChange({ ...advanced, popupOnAutoPause: e.target.checked })}
+                data-cell-id="popup-on-autopause-checkbox"
+              />
+              {advanced.popupOnAutoPause && (
+                <Checkbox
+                  label={t('studyModes.advanced.popupCloseOnResume')}
+                  checked={advanced.popupCloseOnResume}
+                  onChange={(e) => onChange({ ...advanced, popupCloseOnResume: e.target.checked })}
+                  data-cell-id="popup-close-on-resume-checkbox"
+                />
+              )}
+            </>
+          )}
+          <div className={styles.cleanupBlock}>
+            <CleanupRulesSection
+              setting={advanced.cleanupRules ?? DEFAULT_CLEANUP_RULES_SETTING}
+              onChange={(cleanupRules) => onChange({ ...advanced, cleanupRules })}
+            />
+          </div>
+        </VStack>
+      )}
+    </section>
   );
 }
