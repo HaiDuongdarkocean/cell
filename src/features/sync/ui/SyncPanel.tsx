@@ -23,6 +23,7 @@ import {
   connectProviderAccount,
   deleteOldCopy,
   disconnectConnection,
+  disconnectConnectionLocally,
   getSyncStatus,
   onSyncStatusChanged,
   setScopeBinding,
@@ -89,6 +90,7 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
   const [busy, setBusy] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [disconnectTarget, setDisconnectTarget] = useState<ConnectionStatusEntry | null>(null);
+  const [disconnectLocalMode, setDisconnectLocalMode] = useState(false);
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
@@ -311,10 +313,25 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setDisconnectTarget(conn)}
+                      onClick={() => {
+                        setDisconnectLocalMode(false);
+                        setDisconnectTarget(conn);
+                      }}
                     >
                       {t('settings.sync.disconnect')}
                     </Button>
+                    {(conn.disconnectPending || conn.state === 'needs-reauth') && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setDisconnectLocalMode(true);
+                          setDisconnectTarget(conn);
+                        }}
+                      >
+                        {t('settings.sync.disconnectLocal')}
+                      </Button>
+                    )}
                   </div>
                 </li>
               ))}
@@ -443,10 +460,16 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
         onOpenChange={(open) => {
           if (!open) setDisconnectTarget(null);
         }}
-        title={t('settings.sync.disconnect.title')}
+        title={
+          disconnectLocalMode
+            ? t('settings.sync.disconnectLocal.title')
+            : t('settings.sync.disconnect.title')
+        }
         description={
           disconnectTarget !== null
-            ? t('settings.sync.disconnect.desc', [disconnectTarget.displayName])
+            ? disconnectLocalMode
+              ? t('settings.sync.disconnectLocal.desc', [disconnectTarget.displayName])
+              : t('settings.sync.disconnect.desc', [disconnectTarget.displayName])
             : undefined
         }
         footer={
@@ -460,12 +483,17 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
               onClick={() => {
                 if (disconnectTarget === null) return;
                 const id = disconnectTarget.connectionId;
-                void run('disconnect', () => disconnectConnection(id)).then(() =>
+                const request = disconnectLocalMode
+                  ? () => disconnectConnectionLocally(id)
+                  : () => disconnectConnection(id);
+                void run('disconnect', request).then(() =>
                   setDisconnectTarget(null),
                 );
               }}
             >
-              {t('settings.sync.disconnect.confirm')}
+              {disconnectLocalMode
+                ? t('settings.sync.disconnectLocal.confirm')
+                : t('settings.sync.disconnect.confirm')}
             </Button>
           </>
         }

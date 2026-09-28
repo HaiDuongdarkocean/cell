@@ -78,6 +78,9 @@ interface SessionProbe {
 
 const PROVIDER_ID = 'google-drive';
 const APP_FOLDER = 'appDataFolder';
+const DRIVE_SPACE = 'drive';
+const SYNC_ROOT_FOLDER_NAME = 'Tihoka Sync';
+const DRIVE_FOLDER_MIME = 'application/vnd.google-apps.folder';
 const LIST_FIELDS = 'nextPageToken,files(id,name,size,modifiedTime,md5Checksum)';
 const FILE_FIELDS = 'id,name,size,modifiedTime,md5Checksum';
 const TOKEN_EXPIRY_MARGIN_MS = 5 * 60 * 1000;
@@ -96,6 +99,14 @@ function tokenStoreKey(accountKey: string): string {
 
 function resumeKeyPrefix(path: string): string {
   return `syncAdapter:${PROVIDER_ID}:${path}:`;
+}
+
+function rootFolderKey(accountKey: string): string {
+  return `syncAdapter:${PROVIDER_ID}:root:${accountKey}`;
+}
+
+function legacyCleanedKey(accountKey: string): string {
+  return `syncAdapter:${PROVIDER_ID}:legacyCleaned:${accountKey}`;
 }
 
 function toBlob(bytes: Uint8Array): Blob {
@@ -166,6 +177,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
   private readonly retryAttempts: number;
   private readonly resumableThreshold: number;
   private readonly silentFlowTimeoutMs: number;
+  private readonly verifiedRoots = new Set<string>();
   private boundarySeq = 0;
 
   constructor(deps: GoogleDriveStorageProviderDeps) {
@@ -252,11 +264,13 @@ export class GoogleDriveStorageProvider implements StorageProvider {
 
   async list(connection: Connection, prefix: string): Promise<RemoteEntry[]> {
     return this.authed(connection, async (token) => {
+      const rootId = await this.rootFolderId(token, connection);
       const clause = prefix ? `name contains '${escapeQueryLiteral(prefix)}' and ` : '';
       const files = await this.queryFiles(
         token,
-        `${clause}trashed = false and '${APP_FOLDER}' in parents`,
+        `${clause}trashed = false and '${rootId}' in parents`,
         (file) => file.name !== undefined && file.name.startsWith(prefix),
+        DRIVE_SPACE,
       );
       const newest = new Map<string, DriveFile>();
       for (const file of files) {
@@ -272,7 +286,8 @@ export class GoogleDriveStorageProvider implements StorageProvider {
 
   async read(connection: Connection, path: string): Promise<Blob> {
     return this.authed(connection, async (token) => {
-      const target = await this.newestCopy(token, path);
+      const rootId = await this.rootFolderId(token, connection);
+      const target = await this.newestCopy(token, rootId, path);
       const response = await this.send(
         `${DRIVE_API_BASE}/files/${encodeURIComponent(target.id ?? '')}?alt=media`,
         { headers: this.authHeaders(token) },
@@ -283,27 +298,40 @@ export class GoogleDriveStorageProvider implements StorageProvider {
 
   async write(connection: Connection, path: string, body: Blob): Promise<RemoteEntry> {
     return this.authed(connection, async (token) => {
-      const copies = await this.findCopies(token, path);
-      const target = copies.length ? copies.reduce(newerFile) : undefined;
       const bytes = await blobToBytes(body);
-      const committed =
-        bytes.byteLength > this.resumableThreshold
-          ? await this.resumableWrite(token, path, bytes, body.type, target)
-          : target
-            ? await this.mediaUpdate(token, target, bytes, body.type)
-            : await this.multipartCreate(token, path, bytes, body.type);
-      for (const copy of copies) {
-        if (copy.id && copy.id !== committed.id) {
-          await this.deleteFile(token, copy.id);
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const rootId = await this.rootFolderId(token, connection);
+        try {
+          const copies = await this.findCopies(token, rootId, path);
+          const target = copies.length ? copies.reduce(newerFile) : undefined;
+          const committed =
+            bytes.byteLength > this.resumableThreshold
+              ? await this.resumableWrite(token, rootId, path, bytes, body.type, target)
+              : target
+                ? await this.mediaUpdate(token, target, bytes, body.type)
+                : await this.multipartCreate(token, rootId, path, bytes, body.type);
+          for (const copy of copies) {
+            if (copy.id && copy.id !== committed.id) {
+              await this.deleteFile(token, copy.id);
+            }
+          }
+          return toRemoteEntry(committed);
+        } catch (e) {
+          if (e instanceof ProviderError && e.kind === 'not-found' && attempt === 0) {
+            await this.invalidateRoot(connection.accountKey);
+            continue;
+          }
+          throw e;
         }
       }
-      return toRemoteEntry(committed);
+      throw new ProviderError('unknown', 'write retry loop exhausted');
     });
   }
 
   async remove(connection: Connection, path: string): Promise<void> {
     await this.authed(connection, async (token) => {
-      const copies = await this.findCopies(token, path);
+      const rootId = await this.rootFolderId(token, connection);
+      const copies = await this.findCopies(token, rootId, path);
       if (copies.length === 0) {
         throw new ProviderError('not-found', `no such path: ${path}`);
       }
@@ -408,16 +436,94 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     return (await response.json()) as UserInfoResponse;
   }
 
+  private async invalidateRoot(accountKey: string): Promise<void> {
+    this.verifiedRoots.delete(accountKey);
+    await this.kv.del('local', rootFolderKey(accountKey));
+  }
+
+  private async rootFolderId(token: string, connection: Connection): Promise<string> {
+    const accountKey = connection.accountKey;
+    const key = rootFolderKey(accountKey);
+    let rootId = await this.kv.get<string>('local', key);
+    if (rootId !== undefined && !this.verifiedRoots.has(accountKey)) {
+      try {
+        await this.send(`${DRIVE_API_BASE}/files/${encodeURIComponent(rootId)}?fields=id`, {
+          headers: this.authHeaders(token),
+        });
+        this.verifiedRoots.add(accountKey);
+      } catch (e) {
+        if (e instanceof ProviderError && e.kind === 'not-found') {
+          await this.kv.del('local', key);
+          rootId = undefined;
+        } else {
+          throw e;
+        }
+      }
+    }
+    if (rootId === undefined) {
+      const existing = await this.queryFiles(
+        token,
+        `name = '${escapeQueryLiteral(SYNC_ROOT_FOLDER_NAME)}' and ` +
+          `mimeType = '${DRIVE_FOLDER_MIME}' and 'root' in parents and trashed = false`,
+        (file) => file.id !== undefined,
+        DRIVE_SPACE,
+      );
+      const found = existing[0]?.id;
+      if (found !== undefined) {
+        rootId = found;
+      } else {
+        const response = await this.send(`${DRIVE_API_BASE}/files?fields=id`, {
+          method: 'POST',
+          headers: {
+            ...this.authHeaders(token),
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+          body: JSON.stringify({
+            name: SYNC_ROOT_FOLDER_NAME,
+            mimeType: DRIVE_FOLDER_MIME,
+            parents: ['root'],
+          }),
+        });
+        rootId = ((await response.json()) as DriveFile).id;
+        if (rootId === undefined) {
+          throw new ProviderError('unknown', 'sync root folder creation returned no id');
+        }
+      }
+      await this.kv.set('local', key, rootId);
+      this.verifiedRoots.add(accountKey);
+    }
+    await this.cleanupLegacySpace(token, accountKey);
+    return rootId;
+  }
+
+  private async cleanupLegacySpace(token: string, accountKey: string): Promise<void> {
+    const flag = legacyCleanedKey(accountKey);
+    if (await this.kv.get<boolean>('local', flag)) return;
+    try {
+      const files = await this.queryFiles(
+        token,
+        'trashed = false',
+        (file) => file.id !== undefined,
+        APP_FOLDER,
+      );
+      for (const file of files) {
+        if (file.id) await this.deleteFile(token, file.id);
+      }
+      await this.kv.set('local', flag, true);
+    } catch {}
+  }
+
   private async queryFiles(
     token: string,
     q: string,
     keep: (file: DriveFile) => boolean,
+    spaces: string,
   ): Promise<DriveFile[]> {
     const out: DriveFile[] = [];
     let pageToken: string | undefined;
     do {
       const params = new URLSearchParams({
-        spaces: APP_FOLDER,
+        spaces,
         q,
         fields: LIST_FIELDS,
         pageSize: '1000',
@@ -435,16 +541,17 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     return out;
   }
 
-  private async findCopies(token: string, path: string): Promise<DriveFile[]> {
+  private async findCopies(token: string, rootId: string, path: string): Promise<DriveFile[]> {
     return this.queryFiles(
       token,
-      `name = '${escapeQueryLiteral(path)}' and trashed = false and '${APP_FOLDER}' in parents`,
+      `name = '${escapeQueryLiteral(path)}' and trashed = false and '${rootId}' in parents`,
       (file) => file.name === path,
+      DRIVE_SPACE,
     );
   }
 
-  private async newestCopy(token: string, path: string): Promise<DriveFile> {
-    const copies = await this.findCopies(token, path);
+  private async newestCopy(token: string, rootId: string, path: string): Promise<DriveFile> {
+    const copies = await this.findCopies(token, rootId, path);
     if (copies.length === 0) {
       throw new ProviderError('not-found', `no such path: ${path}`);
     }
@@ -453,6 +560,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
 
   private async multipartCreate(
     token: string,
+    rootId: string,
     path: string,
     bytes: Uint8Array,
     mimeType: string,
@@ -462,7 +570,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     const encoder = new TextEncoder();
     const meta = encoder.encode(
       `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
-        `${JSON.stringify({ name: path, parents: [APP_FOLDER] })}\r\n` +
+        `${JSON.stringify({ name: path, parents: [rootId] })}\r\n` +
         `--${boundary}\r\nContent-Type: ${mimeType || 'application/octet-stream'}\r\n\r\n`,
     );
     const trailer = encoder.encode(`\r\n--${boundary}--\r\n`);
@@ -507,6 +615,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
 
   private async resumableWrite(
     token: string,
+    rootId: string,
     path: string,
     bytes: Uint8Array,
     mimeType: string,
@@ -535,7 +644,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
       }
       await this.kv.del('local', key);
     }
-    const initiated = await this.initiateSession(token, path, bytes, mimeType, fileId);
+    const initiated = await this.initiateSession(token, rootId, path, bytes, mimeType, fileId);
     sessionUri = initiated.uri;
     fileId = initiated.fileId ?? fileId;
     await this.kv.set('local', key, { uri: sessionUri, fileId, size: bytes.byteLength });
@@ -546,6 +655,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
 
   private async initiateSession(
     token: string,
+    rootId: string,
     path: string,
     bytes: Uint8Array,
     mimeType: string,
@@ -564,7 +674,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
       : await this.send(`${DRIVE_UPLOAD_BASE}/files?uploadType=resumable`, {
           method: 'POST',
           headers: { ...headers, 'Content-Type': 'application/json; charset=UTF-8' },
-          body: JSON.stringify({ name: path, parents: [APP_FOLDER] }),
+          body: JSON.stringify({ name: path, parents: [rootId] }),
         });
     const uri = response.headers.get('Location');
     if (!uri) {
@@ -584,6 +694,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
         ...this.authHeaders(token),
         'Content-Range': `bytes */${size}`,
       },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     if (response.status === 308) {
       const range = response.headers.get('Range');
@@ -606,6 +717,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     offset: number,
   ): Promise<DriveFile> {
     const end = bytes.byteLength - 1;
+    const remaining = bytes.byteLength - offset;
     const response = await this.fetchFn(sessionUri, {
       method: 'PUT',
       headers: {
@@ -614,6 +726,9 @@ export class GoogleDriveStorageProvider implements StorageProvider {
         'Content-Type': 'application/octet-stream',
       },
       body: toBlob(bytes.subarray(offset)),
+      signal: AbortSignal.timeout(
+        REQUEST_TIMEOUT_MS + Math.floor(remaining / MIN_UPLOAD_BPS) * 1000,
+      ),
     });
     if (response.status === 308) {
       throw new ProviderError('network', 'resumable upload interrupted before commit');

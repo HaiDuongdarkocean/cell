@@ -25,6 +25,8 @@ import {
 } from './obligations';
 import {
   completePendingDisconnects,
+  disconnectLocallyNow,
+  DISCONNECT_MARKER_PREFIX,
   DISCONNECT_PENDING_PREFIX,
   runConnectionDisconnect,
   SystemConnectionRequiredError,
@@ -601,6 +603,44 @@ describe('runConnectionDisconnect', () => {
     });
     expect(await t.provider.list(t.connB, DISCONNECT_MARKER_PATH)).toHaveLength(1);
     expect(t.disconnected).toEqual([t.connB.connectionId]);
+  });
+
+  test('local disconnect removes the account now; marker obligation completes on a later cycle', async () => {
+    const t = await harness();
+    const result = await disconnectLocallyNow(t.disconnectDeps(), t.connB.connectionId);
+    expect(result.status).toBe('disconnected');
+    const routing = await readRouting(t.kv);
+    expect(routing.connections.map((c) => c.connectionId)).toEqual([t.connA.connectionId]);
+    expect(t.disconnected).toEqual([t.connB.connectionId]);
+    expect(
+      await t.kv.get('local', `${DISCONNECT_MARKER_PREFIX}${t.connB.connectionId}`),
+    ).toBeDefined();
+
+    await t.provider.authorize({ interactive: false, accountHint: t.connB.accountKey });
+    expect(await t.provider.list(t.connB, DISCONNECT_MARKER_PATH)).toHaveLength(0);
+
+    const done = await completePendingDisconnects(t.disconnectDeps());
+    expect(done).toEqual([t.connB.connectionId]);
+    expect(await t.provider.list(t.connB, DISCONNECT_MARKER_PATH)).toHaveLength(1);
+    expect(
+      await t.kv.get('local', `${DISCONNECT_MARKER_PREFIX}${t.connB.connectionId}`),
+    ).toBeUndefined();
+  });
+
+  test('marker obligation backs off while the provider stays unreachable', async () => {
+    const t = await harness();
+    await disconnectLocallyNow(t.disconnectDeps(), t.connB.connectionId);
+    const failing = t.disconnectDeps({
+      providerFor: () => {
+        throw new ProviderError('network', 'offline');
+      },
+    });
+    expect(await completePendingDisconnects(failing)).toEqual([]);
+    const obligation = await t.kv.get<{ nextRetryAt?: number }>(
+      'local',
+      `${DISCONNECT_MARKER_PREFIX}${t.connB.connectionId}`,
+    );
+    expect(obligation?.nextRetryAt).toBeGreaterThan(t.clock.now());
   });
 
   test('quota error on marker write is fatal, not pending', async () => {

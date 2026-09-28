@@ -11,6 +11,7 @@ jest.mock('./syncClient', () => ({
   syncNow: jest.fn(),
   connectProviderAccount: jest.fn(),
   disconnectConnection: jest.fn(),
+  disconnectConnectionLocally: jest.fn(),
   setSystemConnection: jest.fn(),
   setScopeBinding: jest.fn(),
   onSyncStatusChanged: jest.fn(() => () => undefined),
@@ -191,6 +192,54 @@ describe('SyncPanel', () => {
     await waitFor(() =>
       expect(mocked.disconnectConnection).toHaveBeenCalledWith(CONN_A),
     );
+  });
+
+  it('offers local removal on unreachable accounts and confirms before removing', async () => {
+    mocked.getSyncStatus.mockResolvedValue(
+      makeView({
+        directory: {
+          connections: [
+            {
+              connectionId: CONN_A,
+              providerId: 'google-drive',
+              displayName: 'a@example.com',
+              isSystem: true,
+              disconnectPending: false,
+              state: 'connected',
+              hasToken: true,
+            },
+            {
+              connectionId: CONN_B,
+              providerId: 'google-drive',
+              displayName: 'b@example.com',
+              isSystem: false,
+              disconnectPending: true,
+              state: 'disconnect-pending',
+              hasToken: false,
+            },
+          ],
+          bindings: [],
+          systemConnection: CONN_A,
+          lastAppliedAt: null,
+        },
+      }),
+    );
+    render(<SyncPanel settings={makeSettings()} />);
+    fireEvent.click(
+      await screen.findByRole('button', { name: /remove locally/i }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      screen.getByText(/remove account on this device/i),
+    ).toBeInTheDocument();
+    mocked.disconnectConnectionLocally.mockResolvedValue({} as never);
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: /remove locally/i }),
+    );
+    await waitFor(() =>
+      expect(mocked.disconnectConnectionLocally).toHaveBeenCalledWith(CONN_B),
+    );
+    expect(mocked.disconnectConnection).not.toHaveBeenCalled();
   });
 
   it('labels bindings waiting on a missing connection', async () => {

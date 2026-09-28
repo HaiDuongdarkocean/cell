@@ -6,6 +6,7 @@ import { SeededClock } from '../memory/SeededClock';
 import { blobToBytes } from '../contract/blobBytes';
 import {
   buildAuthorizationUrl,
+  DRIVE_API_BASE,
   DRIVE_SCOPES,
   GOOGLE_AUTH_ENDPOINT,
   parseAuthRedirect,
@@ -211,7 +212,7 @@ describe('GoogleDriveStorageProvider oauth', () => {
 });
 
 describe('GoogleDriveStorageProvider REST', () => {
-  it('creates small blobs via multipart upload into appDataFolder', async () => {
+  it('creates small blobs via multipart upload into the sync root folder', async () => {
     const h = makeHarness();
     const conn = await h.connect();
     const entry = await h.provider.write(conn, 'a/b.bin', blobOf(1, 2, 3));
@@ -275,6 +276,45 @@ describe('GoogleDriveStorageProvider REST', () => {
     h.drive.setQuotaLimit(null);
     const unlimited = await h.provider.quota(conn);
     expect(unlimited.totalBytes).toBeNull();
+  });
+});
+
+describe('GoogleDriveStorageProvider sync root folder', () => {
+  const folderCreateCount = (h: Harness): number =>
+    h.drive.requests.filter(
+      (r) => r.method === 'POST' && r.url.startsWith(`${DRIVE_API_BASE}/files`),
+    ).length;
+
+  it('creates the Tihoka Sync folder once and cleans up legacy appDataFolder files', async () => {
+    const h = makeHarness();
+    const conn = await h.connect();
+    h.drive.seedFile(
+      conn.accountKey,
+      'cell-sync/v1/legacy.bin',
+      new Uint8Array([7]),
+      'appdata',
+    );
+    await h.provider.write(conn, 'a/b.bin', blobOf(1));
+    expect(folderCreateCount(h)).toBe(1);
+    expect(
+      h.drive.filesFor(conn.accountKey).some((f) => f.name === 'cell-sync/v1/legacy.bin'),
+    ).toBe(false);
+
+    await h.provider.write(conn, 'a/c.bin', blobOf(2));
+    expect(folderCreateCount(h)).toBe(1);
+  });
+
+  it('recreates the sync root folder when it disappears mid-session', async () => {
+    const h = makeHarness();
+    const conn = await h.connect();
+    await h.provider.write(conn, 'a/b.bin', blobOf(1));
+    const seeded = h.drive.filesFor(conn.accountKey)[0]!;
+    h.drive.deleteFileRaw(conn.accountKey, seeded.parent!);
+
+    const entry = await h.provider.write(conn, 'a/c.bin', blobOf(2));
+    expect(entry.path).toBe('a/c.bin');
+    expect(await bytesOf(await h.provider.read(conn, 'a/c.bin'))).toEqual([2]);
+    expect(folderCreateCount(h)).toBe(2);
   });
 });
 

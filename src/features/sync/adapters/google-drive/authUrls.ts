@@ -5,7 +5,8 @@ export const GOOGLE_REVOKE_ENDPOINT = 'https://oauth2.googleapis.com/revoke';
 export const GOOGLE_USERINFO_ENDPOINT = 'https://www.googleapis.com/oauth2/v3/userinfo';
 export const DRIVE_API_BASE = 'https://www.googleapis.com/drive/v3';
 export const DRIVE_UPLOAD_BASE = 'https://www.googleapis.com/upload/drive/v3';
-export const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.appdata openid email';
+export const DRIVE_SCOPES =
+  'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file openid email';
 
 export interface AuthorizationUrlOptions {
   clientId: string;

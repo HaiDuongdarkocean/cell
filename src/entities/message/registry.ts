@@ -777,6 +777,12 @@ export const MESSAGE_REGISTRY = {
     direction: 'panel->bg',
     owner: 'background/handlers/sync',
   },
+  [MESSAGE_TYPES.SYNC_DISCONNECT_LOCAL]: {
+    type: MESSAGE_TYPES.SYNC_DISCONNECT_LOCAL,
+    schema: SyncDisconnectPayloadSchema,
+    direction: 'panel->bg',
+    owner: 'background/handlers/sync',
+  },
   [MESSAGE_TYPES.SYNC_SET_SYSTEM_CONNECTION]: {
     type: MESSAGE_TYPES.SYNC_SET_SYSTEM_CONNECTION,
     schema: SyncSetSystemConnectionPayloadSchema,

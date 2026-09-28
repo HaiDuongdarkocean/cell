@@ -25,6 +25,7 @@ import { stampKvMetaHlc } from '../adapters/local/kv/kvMeta';
 import type { SyncStore } from './syncStore';
 
 export const DISCONNECT_PENDING_PREFIX = 'syncDisconnectPending:';
+export const DISCONNECT_MARKER_PREFIX = 'syncDisconnectMarkerPending:';
 
 export interface DisconnectDeps {
   readonly providerFor: (providerId: ProviderId) => StorageProvider;
@@ -101,8 +102,19 @@ interface PendingDisconnectRecord {
   nextRetryAt: number;
 }
 
+interface MarkerObligation {
+  connection: Connection;
+  at: number;
+  attempts: number;
+  nextRetryAt: number;
+}
+
 function pendingKey(connectionId: ConnectionId): string {
   return `${DISCONNECT_PENDING_PREFIX}${connectionId}`;
+}
+
+function markerKey(connectionId: ConnectionId): string {
+  return `${DISCONNECT_MARKER_PREFIX}${connectionId}`;
 }
 
 async function markPending(deps: DisconnectDeps, connectionId: ConnectionId): Promise<void> {
@@ -319,6 +331,31 @@ export async function clearDisconnectMarker(
   }
 }
 
+export async function disconnectLocallyNow(
+  deps: DisconnectDeps,
+  connId: ConnectionId,
+): Promise<DisconnectResult> {
+  const routing = await readRouting(deps.kv);
+  if (
+    routing.systemConnection === connId &&
+    routing.connections.length > 1
+  ) {
+    throw new SystemConnectionRequiredError(connId);
+  }
+  const connection = routing.connections.find((c) => c.connectionId === connId);
+  if (connection !== undefined) {
+    const now = deps.clock.now();
+    await deps.kv.set('local', markerKey(connId), {
+      connection,
+      at: now,
+      attempts: 0,
+      nextRetryAt: now,
+    } satisfies MarkerObligation);
+  }
+  await completeDisconnectLocally(deps, connId);
+  return { connectionId: connId, status: 'disconnected' };
+}
+
 export async function completePendingDisconnects(deps: DisconnectDeps): Promise<ConnectionId[]> {
   const done: ConnectionId[] = [];
   const connected = new Map(
@@ -348,6 +385,40 @@ export async function completePendingDisconnects(deps: DisconnectDeps): Promise<
       if (result.status === 'disconnected') done.push(connId);
     } catch (e) {
       if (e instanceof CycleLockLostError) throw e;
+    }
+  }
+  for (const key of await deps.kv.list('local', DISCONNECT_MARKER_PREFIX)) {
+    const connId = key.slice(DISCONNECT_MARKER_PREFIX.length) as ConnectionId;
+    const obligation = await deps.kv.get<MarkerObligation>('local', key);
+    if (obligation === undefined || obligation.connection === undefined) {
+      await deps.kv.del('local', key);
+      continue;
+    }
+    if (
+      typeof obligation.nextRetryAt === 'number' &&
+      obligation.nextRetryAt > deps.clock.now()
+    ) {
+      continue;
+    }
+    try {
+      await deps.fence();
+      await deps
+        .providerFor(obligation.connection.providerId)
+        .write(
+          obligation.connection,
+          DISCONNECT_MARKER_PATH,
+          encodeDisconnectMarker(deps.tick(), deps.deviceId),
+        );
+      await deps.kv.del('local', key);
+      done.push(connId);
+    } catch (e) {
+      if (e instanceof CycleLockLostError) throw e;
+      const attempts = (obligation.attempts ?? 0) + 1;
+      await deps.kv.set('local', key, {
+        ...obligation,
+        attempts,
+        nextRetryAt: deps.clock.now() + backoffDelayMs(attempts),
+      });
     }
   }
   return done;

@@ -41,6 +41,15 @@ export function disconnectConnection(connectionId: ConnectionId): Promise<Discon
   });
 }
 
+export function disconnectConnectionLocally(
+  connectionId: ConnectionId,
+): Promise<DisconnectResult> {
+  return request<DisconnectResult>(MESSAGE_TYPES.SYNC_DISCONNECT_LOCAL, {
+    tabId: -1,
+    connectionId,
+  });
+}
+
 export function setSystemConnection(
   connectionId: ConnectionId,
 ): Promise<RebindResult | ReconcileResult | null> {

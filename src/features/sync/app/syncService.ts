@@ -12,7 +12,7 @@ import type { SrsSyncAccess } from '../ports/srsSyncAccess';
 import type { ProviderId } from '../domain/types';
 import { ProviderError, type StorageProvider } from '../ports/storageProvider';
 import type { BlobReader } from './blobRefs';
-import { clearDisconnectMarker, runConnectionDisconnect, type DisconnectDeps, type DisconnectResult } from './disconnect';
+import { clearDisconnectMarker, disconnectLocallyNow, runConnectionDisconnect, type DisconnectDeps, type DisconnectResult } from './disconnect';
 import { deleteScopeCopyOnVacated, runScopeRebind, writeRoutingValue, type RebindDeps, type RebindResult } from './rebind';
 import {
   runScopeReconciliation,
@@ -278,6 +278,20 @@ export async function disconnectAccount(
   return runConnectionDisconnect(
     disconnectDeps(deps, await deps.deviceId(), deps.cycleId()),
     connection,
+  );
+}
+
+export async function disconnectAccountLocally(
+  deps: SyncServiceDeps,
+  connectionId: ConnectionId,
+): Promise<DisconnectResult> {
+  const routing = await readRouting(deps.kv);
+  if (!routing.connections.some((c) => c.connectionId === connectionId)) {
+    throw new SyncServiceError('unknown-connection', `no such connection: ${connectionId}`);
+  }
+  return disconnectLocallyNow(
+    disconnectDeps(deps, await deps.deviceId(), deps.cycleId()),
+    connectionId,
   );
 }
 

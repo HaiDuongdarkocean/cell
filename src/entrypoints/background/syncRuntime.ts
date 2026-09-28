@@ -14,6 +14,7 @@ import {
   connectProvider,
   deleteVacatedScopeCopy,
   disconnectAccount,
+  disconnectAccountLocally,
   setScopeBinding,
   setSystemConnection,
   syncStatusSnapshot,
@@ -66,6 +67,7 @@ export interface SyncRuntime {
   status(): Promise<SyncStatusView>;
   connect(providerId: ProviderId): Promise<ConnectResult>;
   disconnect(connectionId: ConnectionId): Promise<DisconnectResult>;
+  disconnectLocal(connectionId: ConnectionId): Promise<DisconnectResult>;
   setSystemConnection(connectionId: ConnectionId): Promise<RebindResult | ReconcileResult | null>;
   setBinding(scope: Scope, destination: ConnectionId | 'local'): Promise<RebindResult | ReconcileResult | null>;
   cancelRebind(scope: Scope): Promise<void>;
@@ -259,6 +261,12 @@ export function createSyncRuntime(deps: SyncRuntimeDeps): SyncRuntime {
       const built = await ensureBuilt();
       return withServiceLock(built, (fence) =>
         disconnectAccount({ ...built.serviceDepsBase, fence }, connectionId),
+      );
+    },
+    async disconnectLocal(connectionId) {
+      const built = await ensureBuilt();
+      return withServiceLock(built, (fence) =>
+        disconnectAccountLocally({ ...built.serviceDepsBase, fence }, connectionId),
       );
     },
     async setSystemConnection(connectionId) {

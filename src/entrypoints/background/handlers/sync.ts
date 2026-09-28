@@ -136,6 +136,21 @@ export function registerSyncHandlers(ctx: BackgroundContext): void {
     return response;
   });
 
+  ctx.on(MESSAGE_TYPES.SYNC_DISCONNECT_LOCAL, async (request) => {
+    const parsed = SyncDisconnectPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid SYNC_DISCONNECT_LOCAL payload: ${parsed.error.message}`,
+      };
+    }
+    const response = await guarded(() =>
+      rt().disconnectLocal(parsed.data.connectionId as ConnectionId),
+    );
+    if (response.success) fireIfConnected();
+    return response;
+  });
+
   ctx.on(MESSAGE_TYPES.SYNC_SET_SYSTEM_CONNECTION, async (request) => {
     const parsed = SyncSetSystemConnectionPayloadSchema.safeParse(request.payload);
     if (!parsed.success) {
