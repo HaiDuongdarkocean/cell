@@ -1,5 +1,5 @@
 {
-  "active": null,
+  "active": "sync-blob-compression",
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -584,6 +584,43 @@
       "owner": null,
       "worktree": null,
       "updated": "2026-09-28T12:19:21.730Z"
+    },
+    "sync-blob-compression": {
+      "stage": "deliver",
+      "mode": "all",
+      "uiSurface": "no",
+      "artifacts": {
+        "spec": "docs/specs/sync-blob-compression.md",
+        "plan": "tasks/plan-sync-blob-compression.md"
+      },
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-09-28T13:20:43.744Z"
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-09-28T13:12:36.483Z"
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-09-28T13:13:12.278Z"
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-09-28T13:14:27.778Z"
+        }
+      },
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "owner": {
+        "id": "devin-main",
+        "since": "2026-09-28T12:47:51.456Z"
+      },
+      "worktree": null,
+      "updated": "2026-09-28T13:20:43.744Z"
     }
   }
 }

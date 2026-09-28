@@ -2,6 +2,7 @@ import type { BlobReader } from '@/features/sync';
 import { idbRequest } from '@/features/sync';
 import { getDB, INDEXES, STORES } from '../repositories/baseRepository';
 import { serializeResourcePortable } from './resourceIdentity';
+import { gzipSync } from 'fflate';
 import type { ResourceInfo } from '@/entities/dictionary';
 
 export function createDictBlobReader(
@@ -33,10 +34,10 @@ async function readResourceBlob(langCode: string, contentHash: string): Promise<
   const freqRows = (await idbRequest(
     wtx.objectStore(STORES.FREQUENCY).index(INDEXES.by_resource).getAll(resource.id),
   )) as Record<string, unknown>[];
-  const bytes = serializeResourcePortable(dictRows, freqRows);
+  const bytes = gzipSync(serializeResourcePortable(dictRows, freqRows), { mtime: 0 });
   const buffer = bytes.buffer.slice(
     bytes.byteOffset,
     bytes.byteOffset + bytes.byteLength,
   ) as ArrayBuffer;
-  return new Blob([buffer], { type: 'application/octet-stream' });
+  return new Blob([buffer], { type: 'application/gzip' });
 }

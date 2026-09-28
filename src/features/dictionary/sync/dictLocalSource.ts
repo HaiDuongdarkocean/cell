@@ -15,6 +15,7 @@ import type { ApplyContext } from '@/features/sync';
 import type { ResourceInfo, WordStatus } from '@/entities/dictionary';
 import { getDB, INDEXES, STORES } from '../repositories/baseRepository';
 import { buildPhraseIndexForResource } from '../logic/phraseIndexBuilder';
+import { gunzipFile, isGzip } from '../logic/fileDetector';
 import { blobBytes } from '@/features/sync';
 import {
   deserializeResourcePortable,
@@ -300,7 +301,8 @@ class DictResourceLocalSource extends IdbLocalSource {
     blob: Blob,
   ): Promise<void> {
     if (row.id === undefined) return;
-    const { dictRows, freqRows } = deserializeResourcePortable(await blobBytes(blob));
+    const bytes = await blobBytes(blob);
+    const { dictRows, freqRows } = deserializeResourcePortable(isGzip(bytes) ? gunzipFile(bytes) : bytes);
     const wtx = db.transaction([STORES.DICTIONARY, STORES.FREQUENCY], 'readwrite');
     for (const contentStore of [STORES.DICTIONARY, STORES.FREQUENCY]) {
       const objectStore = wtx.objectStore(contentStore);

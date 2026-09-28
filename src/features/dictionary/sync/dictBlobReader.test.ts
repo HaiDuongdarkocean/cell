@@ -11,9 +11,12 @@ import { addResource } from '../repositories/resourceRepository';
 import { bulkInsertDictionaryEntries } from '../repositories/dictionaryRepository';
 import { createDictBlobReader } from './dictBlobReader';
 import { blobToBytes } from '@/features/sync';
+import { gunzipFile, isGzip } from '../logic/fileDetector';
 import {
   deserializeResourcePortable,
+  ensureResourceContentHash,
   serializeResourcePortable,
+  sha256Hex,
 } from './resourceIdentity';
 
 const LANG = 'en';
@@ -75,7 +78,7 @@ describe('dictBlobReader', () => {
     expect(await reader.read('h1')).toBeNull();
   });
 
-  it('serializes the resource content as a portable blob', async () => {
+  it('serializes the resource content as a gzipped portable blob', async () => {
     const resourceId = await addResource(LANG, makeResource('sig-a', 'hash-a'));
     await bulkInsertDictionaryEntries(LANG, [
       makeEntry(resourceId, 'apple'),
@@ -85,7 +88,9 @@ describe('dictBlobReader', () => {
     const blob = await reader.read('hash-a');
     expect(blob).not.toBeNull();
     const bytes = await blobToBytes(blob!);
-    const { dictRows, freqRows } = deserializeResourcePortable(bytes);
+    expect(isGzip(bytes)).toBe(true);
+    const raw = gunzipFile(bytes);
+    const { dictRows, freqRows } = deserializeResourcePortable(raw);
     expect(freqRows).toEqual([]);
     expect(dictRows.map((r) => r['term']).sort()).toEqual(['apple', 'berry']);
     const db = await getDB(LANG);
@@ -96,7 +101,50 @@ describe('dictBlobReader', () => {
       req.onerror = () => reject(req.error);
     }));
     const expected = serializeResourcePortable(stored, []);
-    expect([...bytes]).toEqual([...expected]);
+    expect([...raw]).toEqual([...expected]);
+  });
+
+  it('is byte-deterministic across reads of the same resource', async () => {
+    const resourceId = await addResource(LANG, makeResource('sig-det', 'hash-det'));
+    await bulkInsertDictionaryEntries(LANG, [
+      makeEntry(resourceId, 'one'),
+      makeEntry(resourceId, 'two'),
+    ]);
+    const reader = createDictBlobReader(async () => [LANG]);
+    const first = await blobToBytes((await reader.read('hash-det'))!);
+    const second = await blobToBytes((await reader.read('hash-det'))!);
+    expect([...first]).toEqual([...second]);
+  });
+
+  it('compresses repeated-key content well below raw size', async () => {
+    const resourceId = await addResource(LANG, makeResource('sig-c', 'hash-c'));
+    const entries = Array.from({ length: 200 }, (_, i) => ({
+      ...makeEntry(resourceId, `term-${i}`),
+      definition: `definition text for term ${i} with common shared vocabulary words`,
+    }));
+    await bulkInsertDictionaryEntries(LANG, entries);
+    const reader = createDictBlobReader(async () => [LANG]);
+    const bytes = await blobToBytes((await reader.read('hash-c'))!);
+    const raw = gunzipFile(bytes);
+    expect(bytes.byteLength).toBeLessThan(raw.byteLength * 0.5);
+  });
+
+  it('keeps contentHash as sha256 of the raw portable bytes', async () => {
+    const resourceId = await addResource(LANG, {
+      ...makeResource('sig-pin', 'sig-pin'),
+      contentHash: undefined,
+    });
+    await bulkInsertDictionaryEntries(LANG, [makeEntry(resourceId, 'pinned')]);
+    const db = await getDB(LANG);
+    const resource = (await ensureResourceContentHash(db, {
+      ...(makeResource('sig-pin', 'sig-pin') as ResourceInfo),
+      id: resourceId,
+      contentHash: undefined,
+    })) as ResourceInfo;
+    expect(resource.contentHash).toBeDefined();
+    const reader = createDictBlobReader(async () => [LANG]);
+    const bytes = await blobToBytes((await reader.read(resource.contentHash!))!);
+    expect(await sha256Hex(gunzipFile(bytes))).toBe(resource.contentHash);
   });
 
   it('skips languages without a match and reads later ones', async () => {

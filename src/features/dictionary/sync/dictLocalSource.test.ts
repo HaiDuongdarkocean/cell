@@ -26,6 +26,8 @@ import { findDictionaryByResource } from '../repositories/dictionaryRepository';
 import { getWordStatus, setWordStatus } from '../services/wordStatusStore';
 import { createDictLocalSource } from './dictLocalSource';
 import { serializeResourcePortable } from './resourceIdentity';
+import { gzipSync } from 'fflate';
+import { CorruptedFileError } from '../logic/fileDetector';
 
 const LANG = 'en';
 const SCOPE = 'profile:en' as const;
@@ -294,6 +296,92 @@ describe('dictLocalSource — dictResource', () => {
     expect(stored?.wordCount).toBe(2);
     const entries = await findDictionaryByResource(LANG, stored!.id!);
     expect(entries.map((entry) => entry.term).sort()).toEqual(['gato', 'hola mundo']);
+  });
+
+  it('imports identical rows from a gzip-compressed blob', async () => {
+    const source = createDictLocalSource(LANG, 'dictResource');
+    const hash = 'ch-import-gz';
+    const raw = serializeResourcePortable(
+      [
+        { term: 'hola mundo', reading: 'hola mundo', defs: [{ text: 'hello world' }] },
+        { term: 'gato', reading: 'gato', defs: [{ text: 'cat' }] },
+      ],
+      [{ term: 'hola mundo', freq: 42 }],
+    );
+    const bytes = gzipSync(raw, { mtime: 0 });
+    const remote: ChangeRecord = {
+      scope: SCOPE,
+      dataClass: 'dictResource',
+      key: `resource:${hash}`,
+      op: 'put',
+      value: {
+        name: 'Remote Dict',
+        langCode: LANG,
+        type: 'DICTIONARY',
+        format: 'json-entries',
+        enabled: true,
+        priority: 1,
+        contentHash: hash,
+      },
+      hlc: farFuture(),
+    };
+    const fetchBlob = jest.fn(async () => new Blob([bytes]));
+    const result = await source.applyRemote([remote], { fetchBlob });
+    expect(result.applied).toHaveLength(1);
+
+    const stored = await findResourceBySignature(LANG, hash);
+    expect(stored?.installationFinished).toBe(true);
+    expect(stored?.wordCount).toBe(2);
+    const entries = await findDictionaryByResource(LANG, stored!.id!);
+    expect(entries.map((entry) => entry.term).sort()).toEqual(['gato', 'hola mundo']);
+  });
+
+  it('surfaces CorruptedFileError for a corrupt gzip blob', async () => {
+    const source = createDictLocalSource(LANG, 'dictResource');
+    const hash = 'ch-import-bad';
+    const corrupt = new Uint8Array([0x1f, 0x8b, 0x08, 0x00, 0xde, 0xad, 0xbe, 0xef]);
+    const remote: ChangeRecord = {
+      scope: SCOPE,
+      dataClass: 'dictResource',
+      key: `resource:${hash}`,
+      op: 'put',
+      value: {
+        name: 'Bad Dict',
+        langCode: LANG,
+        type: 'DICTIONARY',
+        format: 'json-entries',
+        contentHash: hash,
+      },
+      hlc: farFuture(),
+    };
+    const fetchBlob = jest.fn(async () => new Blob([corrupt]));
+    await expect(source.applyRemote([remote], { fetchBlob })).rejects.toThrow(CorruptedFileError);
+    const stored = await findResourceBySignature(LANG, hash);
+    expect(stored?.installationFinished).toBe(false);
+  });
+
+  it('throws on malformed portable lines in a raw blob', async () => {
+    const source = createDictLocalSource(LANG, 'dictResource');
+    const hash = 'ch-import-badndjson';
+    const garbage = new TextEncoder().encode('x{"term":"wrong prefix"}\n');
+    const remote: ChangeRecord = {
+      scope: SCOPE,
+      dataClass: 'dictResource',
+      key: `resource:${hash}`,
+      op: 'put',
+      value: {
+        name: 'Bad NDJSON Dict',
+        langCode: LANG,
+        type: 'DICTIONARY',
+        format: 'json-entries',
+        contentHash: hash,
+      },
+      hlc: farFuture(),
+    };
+    const fetchBlob = jest.fn(async () => new Blob([garbage]));
+    await expect(source.applyRemote([remote], { fetchBlob })).rejects.toThrow();
+    const stored = await findResourceBySignature(LANG, hash);
+    expect(stored?.installationFinished).toBe(false);
   });
 
   it('keeps the resource incomplete when the blob is absent and retries on a later apply', async () => {
