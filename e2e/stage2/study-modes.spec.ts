@@ -328,6 +328,58 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
     await expect(targetLine(streamFlixPage)).toContainText(/silence/i, { timeout: 10_000 });
   });
 
+  test('advanced toggle stays on across panel close and reopen', async ({
+    streamFlixPage,
+    universalPanel,
+  }) => {
+    const shadowQuery = (sel: string) =>
+      streamFlixPage.evaluate(
+        (s) =>
+          document.getElementById('cell-universal-panel-host')?.shadowRoot?.querySelector(s) != null,
+        sel,
+      );
+    const toggleChecked = () =>
+      streamFlixPage.evaluate(
+        () =>
+          document
+            .getElementById('cell-universal-panel-host')
+            ?.shadowRoot?.querySelector('[data-cell-id="advanced-toggle"]')
+            ?.getAttribute('aria-checked') === 'true',
+      );
+
+    await universalPanel.open();
+    await universalPanel.openTab('studyModes');
+    await expect.poll(() => shadowQuery('[data-cell-id="advanced-toggle"]')).toBe(true);
+
+    await streamFlixPage.evaluate(() => {
+      const el = document
+        .getElementById('cell-universal-panel-host')
+        ?.shadowRoot?.querySelector('[data-cell-id="advanced-toggle"]') as HTMLElement | null;
+      el?.click();
+    });
+    await expect.poll(toggleChecked).toBe(true);
+    await expect.poll(() => shadowQuery('[data-cell-id="advanced-settings"]')).toBe(true);
+
+    const closeRect = await streamFlixPage.evaluate(() => {
+      const btn = document
+        .getElementById('cell-universal-panel-host')
+        ?.shadowRoot?.querySelector('[data-cell-id="universal-panel-close"]');
+      const r = btn?.getBoundingClientRect();
+      return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null;
+    });
+    if (!closeRect) throw new Error('close button not found');
+    await streamFlixPage.mouse.click(closeRect.x, closeRect.y);
+    await expect
+      .poll(() => shadowQuery('[data-cell-id="universal-panel"]'))
+      .toBe(false);
+
+    await universalPanel.open();
+    await universalPanel.openTab('studyModes');
+    await expect.poll(() => shadowQuery('[data-cell-id="advanced-toggle"]')).toBe(true);
+    await expect.poll(toggleChecked).toBe(true);
+    await expect.poll(() => shadowQuery('[data-cell-id="advanced-settings"]')).toBe(true);
+  });
+
   test('JUMP silence skip seeks to the next cue instead of replaying the gap', async ({
     cellContext,
     streamFlixPage,
