@@ -120,12 +120,20 @@ export function UniversalPanel({
   useFocusTrap(panelRef, isOpen);
 
   useEffect(() => {
+    const wasOpen = wasOpenRef.current;
+    wasOpenRef.current = isOpen;
     if (isOpen) {
       setIsClosing(false);
-    } else if (wasOpenRef.current) {
-      setIsClosing(true);
+      return;
     }
-    wasOpenRef.current = isOpen;
+    if (!wasOpen) return;
+    setIsClosing(true);
+    const panel = panelRef.current;
+    const durationMs = panel
+      ? (parseFloat(getComputedStyle(panel).animationDuration) || 0) * 1000
+      : 0;
+    const fallback = window.setTimeout(() => setIsClosing(false), durationMs + 50);
+    return () => window.clearTimeout(fallback);
   }, [isOpen]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {

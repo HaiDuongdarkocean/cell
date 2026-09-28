@@ -1,0 +1,18 @@
+{
+  "id": "rendering-exit-unmount-animationend-fallback",
+  "title": "Unmount sau exit animation không được phụ thuộc chỉ vào animationend",
+  "category": ["rendering", "ux"],
+  "tags": ["animationend", "prefers-reduced-motion", "animationcancel", "unmount", "exit-animation", "modal-close", "stuck-open"],
+  "trigger": "Component giữ mounted qua exit animation rồi unmount trong handler onAnimationEnd; bug = panel/modal vẫn hiển thị sau khi đóng nhưng click xuyên qua (host pointer-events:none)",
+  "principle": "animationend chỉ fire khi animation thực sự chạy tới hết. prefers-reduced-motion (animation:none) không sinh event nào; reparent/fullscreen/display:none hủy animation → chỉ fire animationcancel. State cleanup sau exit animation phải có fallback timer đo từ getComputedStyle(el).animationDuration — event là fast path, timer là guarantee.",
+  "cases": [
+    {
+      "context": "UniversalPanel đóng bằng class .close → scale-out 200ms → onAnimationEnd → setIsClosing(false) → unmount. Dưới prefers-reduced-motion media query set animation:none → không animationend → isClosing kẹt true mãi → panel hiển thị như open, X vô dụng vì host đã pointer-events:none.",
+      "bad": "onAnimationEnd={() => { if (isClosing) setIsClosing(false); }}\n// chỉ event-driven: không animation chạy = không bao giờ unmount",
+      "good": "useEffect(() => {\n  const wasOpen = wasOpenRef.current;\n  wasOpenRef.current = isOpen;\n  if (isOpen) { setIsClosing(false); return; }\n  if (!wasOpen) return;\n  setIsClosing(true);\n  const durationMs = (parseFloat(getComputedStyle(panelRef.current).animationDuration) || 0) * 1000;\n  const t = setTimeout(() => setIsClosing(false), durationMs + 50);\n  return () => clearTimeout(t);\n}, [isOpen]);\n// reduced-motion → duration ~0 → unmount ~50ms; normal → animationend wins"
+    }
+  ],
+  "applyFor": ["Modal/drawer/panel đóng bằng CSS exit animation", "Mọi state transition chờ animationend/transitionend", "UI trong shadow DOM có reparent (fullscreen)", "Reduced-motion accessibility paths"],
+  "related": ["async-observer-unlock-on-scrollend-not-animation-end", "react-timeout-cleanup"],
+  "source": {"date": "2026-09-28"}
+}

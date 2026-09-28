@@ -2680,6 +2680,25 @@
         "dead-code"
       ],
       "trigger": "web-ext lint / addons-linter báo FILE_TOO_LARGE cho bundle .js >~5MB — Emscripten libs nhúng wasm base64 hoặc worker bundles bundler emit nhưng runtime không spawn."
+    },
+    {
+      "type": "experience",
+      "id": "rendering-exit-unmount-animationend-fallback",
+      "title": "Unmount sau exit animation không được phụ thuộc chỉ vào animationend",
+      "category": [
+        "rendering",
+        "ux"
+      ],
+      "tags": [
+        "animationend",
+        "prefers-reduced-motion",
+        "animationcancel",
+        "unmount",
+        "exit-animation",
+        "modal-close",
+        "stuck-open"
+      ],
+      "trigger": "Component giữ mounted qua exit animation rồi unmount trong handler onAnimationEnd; bug = panel/modal vẫn hiển thị sau khi đóng nhưng click xuyên qua (host pointer-events:none)"
     }
   ]
 }

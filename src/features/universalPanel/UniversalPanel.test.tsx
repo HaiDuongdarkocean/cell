@@ -1,5 +1,5 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { UniversalPanel } from './UniversalPanel';
 import { createUniversalPanelController } from './UniversalPanelController';
 import { Dialog } from '@/shared/ui/Dialog';
@@ -91,6 +91,46 @@ describe('UniversalPanel component', () => {
     );
     fireEvent.click(screen.getByTestId('universal-panel-close'));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('unmounts after close even when the exit animation never ends (reduced motion / cancelled animation)', async () => {
+    const props = {
+      activeTab: 'dictionary' as const,
+      onTabChange: jest.fn(),
+      onClose: jest.fn(),
+      tokenizeState: TOKENIZE_OFF,
+      onToggleTokenize: jest.fn(),
+      dictionaryPanel,
+      settingsPanel,
+      studyModesPanel,
+    };
+    const { rerender } = render(<UniversalPanel isOpen {...props} />);
+    expect(screen.getByTestId('universal-panel')).toBeInTheDocument();
+
+    rerender(<UniversalPanel isOpen={false} {...props} />);
+    // No animationend is dispatched — the fallback must still unmount the panel.
+    await waitFor(() =>
+      expect(screen.queryByTestId('universal-panel')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('unmounts promptly on animationend during close', async () => {
+    const props = {
+      activeTab: 'dictionary' as const,
+      onTabChange: jest.fn(),
+      onClose: jest.fn(),
+      tokenizeState: TOKENIZE_OFF,
+      onToggleTokenize: jest.fn(),
+      dictionaryPanel,
+      settingsPanel,
+      studyModesPanel,
+    };
+    const { rerender } = render(<UniversalPanel isOpen {...props} />);
+    rerender(<UniversalPanel isOpen={false} {...props} />);
+    fireEvent.animationEnd(screen.getByTestId('universal-panel'));
+    await waitFor(() =>
+      expect(screen.queryByTestId('universal-panel')).not.toBeInTheDocument(),
+    );
   });
 
   it('calls onClose when the backdrop is clicked', () => {
