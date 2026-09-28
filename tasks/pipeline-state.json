@@ -1,5 +1,5 @@
 {
-  "active": null,
+  "active": "sync-drive-folders",
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -618,6 +618,43 @@
       "owner": null,
       "worktree": null,
       "updated": "2026-09-28T13:24:49.286Z"
+    },
+    "sync-drive-folders": {
+      "stage": "deliver",
+      "mode": "all",
+      "uiSurface": "no",
+      "artifacts": {
+        "spec": "docs/specs/sync-drive-folders.md",
+        "plan": "tasks/plan-sync-drive-folders.md"
+      },
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-09-28T17:06:52.267Z"
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-09-28T17:03:25.323Z"
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-09-28T17:03:25.171Z"
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-09-28T17:03:25.242Z"
+        }
+      },
+      "confidence": "medium",
+      "awaiting": "flagged:external-wip — typecheck fails on src/features/subtitle/ui/subtitleSplitView.ts:703 (another agent's in-flight file); all own gates green, verify PASS, commits 7990ded4/4ff4f5d3/23cee730 landed; transition to shipped pending clean tree",
+      "resolutions": [],
+      "loops": 2,
+      "owner": {
+        "id": "devin-main",
+        "since": "2026-09-28T14:00:55.548Z"
+      },
+      "worktree": null,
+      "updated": "2026-09-28T17:07:01.041Z"
     }
   }
 }
