@@ -283,10 +283,6 @@ function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactEle
             ))}
           </HStack>
         </div>
-        <CleanupRulesSection
-          setting={advanced.cleanupRules ?? DEFAULT_CLEANUP_RULES_SETTING}
-          onChange={(cleanupRules) => onChange({ ...advanced, cleanupRules })}
-        />
         <SliderRow
           icon={<Icon name="clock" size="sm" />}
           label={t('cleanup.leadIn.label')}
@@ -363,6 +359,12 @@ function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactEle
             )}
           </>
         )}
+        <div className={styles.cleanupBlock}>
+          <CleanupRulesSection
+            setting={advanced.cleanupRules ?? DEFAULT_CLEANUP_RULES_SETTING}
+            onChange={(cleanupRules) => onChange({ ...advanced, cleanupRules })}
+          />
+        </div>
       </VStack>
     </div>
   );
