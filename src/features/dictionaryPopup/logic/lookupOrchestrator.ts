@@ -60,56 +60,14 @@ import { getActiveProfileSettings, type Settings } from '@/entities/settings';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { ResourceInfo } from '@/entities/dictionary';
-import { classifyLine, lineToCanonicalText, buildPhraseIndexForResource } from '@/features/dictionary';
-import type { SenseLine, RelatedEntry, EtymologyBlock, InflectionGroup } from '@/entities/dictionary';
+import { lineToCanonicalText, buildPhraseIndexForResource, toCanonicalDefinition } from '@/features/dictionary';
+import type { SenseLine, SenseBlock, RelatedEntry, EtymologyBlock, InflectionGroup } from '@/entities/dictionary';
 
 const EMPTY_COMPONENT_SET: ReadonlySet<string> = new Set();
 
 /** Check if an AbortSignal is aborted. */
 function checkAbort(signal?: AbortSignal): void {
   if (signal?.aborted) throw new Error('Lookup aborted');
-}
-
-/**
- * Split a multi-sense definition string into individual senses.
- *
- * Entry-object dictionaries often store all senses in a single `definition`
- * field, separated by numbered markers like "1.(verb) ... 2.(verb) ...".
- * This function splits them so each sense becomes a separate DefinitionEntry
- * with its own checkbox in the popup.
- *
- * Only splits on numbered markers (N.) — does NOT extract POS from
- * parentheses. The text after each marker stays intact, including "(noun)",
- * "(verb [ T ])", idiom markers, etc. POS extraction was overengineering
- * that stripped formatting the user expects to see.
- *
- * Returns the original text as a single entry if no numbered senses are found.
- */
-function splitSenses(definition: string): { pos: string; text: string }[] {
-  if (!definition) return [];
-  // Strip <br> tags, normalize whitespace.
-  const clean = definition.replace(/<br\s*\/?>/gi, '\n').replace(/\r\n/g, '\n').trim();
-  if (!clean) return [];
-
-  // Match each sense boundary: start of string or after a blank line (\n{2,}),
-  // followed by N. and then any non-digit, non-whitespace char (to avoid
-  // false positives like "1.5 kg"). The text after N. stays intact.
-  const senseRegex = /(?:^|\n{2,})\s*(\d+)\.\s*([\s\S]*?)(?=(?:\n{2,}\s*\d+\.|$))/g;
-
-  const senses: { pos: string; text: string }[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = senseRegex.exec(clean)) !== null) {
-    const text = match[2]?.trim() ?? '';
-    if (!text) continue;
-    // Collapse runs of newlines and trim — no POS extraction, text stays intact.
-    senses.push({ pos: '', text: text.replace(/\n{3,}/g, '\n\n').trim() });
-  }
-
-  // If the text contained no numeric markers, return the whole thing as one sense.
-  if (senses.length === 0) {
-    return [{ pos: '', text: clean }];
-  }
-  return senses;
 }
 
 /** Find the token at the cursor offset. */
@@ -583,29 +541,26 @@ async function assembleLookupResult(
       ? e.examples.split('\n').filter(Boolean).map((t) => ({ role: 'example' as const, text: t }))
       : [];
     const source = resourceNameById.get(e.resourceId) ?? 'dictionary';
-    // Structured senses (new imports) — text keeps the line-joined body for
-    // Anki/legacy consumers; `lines` carries roles + translations for the UI.
-    // Legacy rows (no `senses`) fall back to splitSenses + line classifier.
-    const senses: { pos: string; lines: SenseLine[]; labels?: readonly string[]; level?: string; subsenses?: DefinitionEntry['subsenses']; synonyms?: readonly string[]; antonyms?: readonly string[] }[] =
-      disabled.has('definitions') ? []
-      : e.senses && e.senses.length > 0
-        ? e.senses.map((s) => ({
-            pos: s.pos ?? '',
-            labels: s.labels,
-            level: s.level,
-            lines: s.lines
-              .map((l) => disabled.has('translations') ? { ...l, translation: undefined } : l),
-            subsenses: s.subsenses,
-            synonyms: disabled.has('synonyms') ? undefined : s.synonyms,
-            antonyms: disabled.has('synonyms') ? undefined : s.antonyms,
-          }))
-        : splitSenses(e.definition).map((s) => ({
-            pos: s.pos,
-            lines: s.text
-              .split('\n')
-              .map(classifyLine)
-              .filter((l): l is SenseLine => l !== null),
-          }));
+    // Structured senses (new imports) are used verbatim; legacy rows (no
+    // `senses`) go through the same import-time canonical normalizer so both
+    // paths produce identical SenseBlock IR. `lines` carries roles +
+    // translations for the UI; `text` stays the line-joined body for
+    // Anki/legacy consumers.
+    const senseBlocks: readonly SenseBlock[] = disabled.has('definitions')
+      ? []
+      : e.senses?.length
+        ? e.senses
+        : toCanonicalDefinition({ term: e.term, definition: e.definition }).senses;
+    const senses = senseBlocks.map((s) => ({
+      pos: s.pos ?? '',
+      labels: s.labels,
+      level: s.level,
+      lines: s.lines
+        .map((l) => disabled.has('translations') ? { ...l, translation: undefined } : l),
+      subsenses: s.subsenses,
+      synonyms: disabled.has('synonyms') ? undefined : s.synonyms,
+      antonyms: disabled.has('synonyms') ? undefined : s.antonyms,
+    }));
     for (const sense of senses) {
       const glossLines = sense.lines.filter((l) => l.role !== 'example');
       const senseExamples = disabled.has('examples') ? [] : sense.lines.filter((l) => l.role === 'example');

@@ -438,7 +438,6 @@ function SenseLineView({
     <span className={styles.defLine} data-role={line.role}>
       <span className={styles.defLineMain}>
         {head ? <span className={styles.defLineHead}>{head} </span> : null}
-        {line.role === 'example' ? '· ' : ''}
         {line.text}
         {line.pattern ? <span className={styles.defLineMeta}> {line.pattern}</span> : null}
         {line.translation ? (
@@ -490,8 +489,14 @@ function DefinitionItem({
   readonly translationRevealed: boolean;
 }): React.JSX.Element {
   const checked = selected;
+  const head = defHead(definition);
+  const hasLines = Boolean(definition.lines?.length);
+  const hasSubsenses = Boolean(definition.subsenses?.length);
+  const headOnlyLine = !hasLines && Boolean(head) && (hasSubsenses || definition.examples.length > 0);
+  const showRow = hasLines || hasSubsenses || headOnlyLine || Boolean(!definition.lines && definition.text.trim());
   return (
-    <div className={styles.cellDefGroup}>
+    <div className={styles.cellDefGroup} title={definition.source || undefined}>
+      {showRow && (
       <div
         className={checkStyles.cellDefItem}
         data-cell-id="dictionary-definition"
@@ -531,14 +536,22 @@ function DefinitionItem({
         <span className={styles.cellDefText}>
           {definition.lines ? (
             <>
-              {definition.lines.map((l, i) => (
+              {hasLines ? (
+                definition.lines.map((l, i) => (
+                  <SenseLineView
+                    key={i}
+                    line={l}
+                    revealedByDefault={translationRevealed}
+                    head={i === 0 ? head : undefined}
+                  />
+                ))
+              ) : headOnlyLine ? (
                 <SenseLineView
-                  key={i}
-                  line={l}
+                  line={{ role: 'note', text: '' }}
                   revealedByDefault={translationRevealed}
-                  head={i === 0 ? defHead(definition) : undefined}
+                  head={head}
                 />
-              ))}
+              ) : null}
               {definition.subsenses?.map((s) => (
                 <span key={s.num} className={styles.defSubsense}>{s.num}. {s.text}</span>
               ))}
@@ -555,6 +568,7 @@ function DefinitionItem({
         </span>
       </div>
       </div>
+      )}
       {definition.examples.length > 0 && (
         <div className={styles.cellDefExamples}>
           {definition.examples.map((ex, i) => {

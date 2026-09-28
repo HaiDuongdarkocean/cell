@@ -301,7 +301,7 @@ describe('lookupOrchestrator — English', () => {
     ).rejects.toThrow(/aborted/i);
   });
 
-  it('splits all entry-object senses — only strips N. markers, keeps (POS) in text', async () => {
+  it('splits all entry-object senses via canonical rules — strips N. markers, lifts headword lines to pos', async () => {
     // Real entry-object JSON shape for "question": 23 senses, some idioms have no
     // POS in parentheses right after the number (e.g. 17.bring/call...).
     const questionDefinition = `1.(noun) a sentence or phrase used to find out information<br><br>2.(noun) in an exam, a problem that tests a person's knowledge or ability<br><br>3.(noun) any matter that needs to be dealt with or considered<br><br>4.(noun) doubt or confusion<br><br>5.sb/sth in question<br>(noun) the person or thing that is being discussed<br><br>6.(verb [ T ]) to ask a person about something, especially officially<br><br>7.(verb [ T ]) to express doubts about the value or truth of something<br><br>8.(noun) a word or words used to find out information<br><br>9.(noun) a matter to be dealt with or discussed, or a problem to be solved<br><br>10.(noun) In an exam, a question is a problem that tests a person's knowledge<br><br>11.(noun) doubt or uncertainty<br><br>12.(verb [ T ]) to use a word or words to find out information<br><br>13.(verb [ T ]) If you question something, you express doubt or uncertainty about it<br><br>14.(noun) a sentence or phrase that asks for information<br><br>15.(noun) a subject or problem<br><br>16.(noun) a feeling of doubt about something<br><br>17.bring/call sth into question<br>(noun) to express doubt about something<br><br>18.(noun) to make people feel doubt about something<br><br>19.in question<br>(noun) that is being discussed<br><br>20.(noun) if something is in question, no-one knows what is going to happen to it<br><br>21.out of the question<br>(noun) if something is out of the question, it definitely will not or cannot happen<br><br>22.(verb [ T ]) to ask someone questions about something<br><br>23.(verb [ T ]) to express doubts about something<br><br>`;
@@ -315,17 +315,65 @@ describe('lookupOrchestrator — English', () => {
     });
 
     expect(result.definitions).toHaveLength(23);
-    // Only N. markers are stripped; (POS) stays in text, pos field is empty.
+    // Single-line senses keep the whole line as gloss — no pos lift.
     expect(result.definitions[15]!.text).toBe('(noun) a feeling of doubt about something');
     expect(result.definitions[15]!.pos).toBeUndefined();
-    expect(result.definitions[16]!.text).toContain('bring/call sth into question');
-    expect(result.definitions[16]!.pos).toBeUndefined();
+    // Multi-line senses lift the first line to pos (canonical splitMarkerSense):
+    // the idiom headword becomes the pos label and the (POS) line a note.
+    expect(result.definitions[16]!.pos).toBe('bring/call sth into question');
+    expect(result.definitions[16]!.text).toBe('(noun) to express doubt about something');
     expect(result.definitions[16]!.text).not.toMatch(/^\d+\./);
-    expect(result.definitions[18]!.text).toContain('in question');
-    expect(result.definitions[18]!.pos).toBeUndefined();
-    expect(result.definitions[20]!.text).toContain('out of the question');
-    expect(result.definitions[20]!.pos).toBeUndefined();
+    expect(result.definitions[18]!.pos).toBe('in question');
+    expect(result.definitions[18]!.text).toBe('(noun) that is being discussed');
+    expect(result.definitions[20]!.pos).toBe('out of the question');
+    expect(result.definitions[20]!.text).toBe('(noun) if something is out of the question, it definitely will not or cannot happen');
     expect(result.definitions[22]!.text).toBe('(verb [ T ]) to express doubts about something');
+  });
+
+  it('splits legacy single-<br> numbered senses via the canonical normalizer (Migaku Eng-Vie)', async () => {
+    // Legacy row (no `senses`) whose senses are separated by single <br> —
+    // the old splitSenses required a blank line and collapsed 1-13 into one
+    // def; the canonical numberedLineMarkup rule splits on line-start N.
+    const lightDefinition = `1.danh từ<br>ánh sáng, ánh sáng mặt trời, ánh sáng ban ngày<br>· to stand in somebody's light — đứng lấp bóng ai<br>2.danh từ<br>nguồn ánh sáng, đèn đuốc<br>· traffic lights — đèn tín hiệu giao thông<br>3.danh từ<br>lửa, tia lửa; diêm, đóm<br><br>13.danh từ<br>(nghệ thuật) chỗ sáng trong bức tranh<br><br>14.at first light<br>lúc bình minh, lúc rạng đông<br><br>15.to give sb the green light<br>cho phép ai hành động, bật đèn xanh cho ai`;
+    await seedEnglishDictionary([{ term: 'light', definition: lightDefinition, pos: '' }]);
+
+    const result = await lookupOrchestrator({
+      term: 'light',
+      langCode: 'en',
+      contextSentence: 'Turn on the light.',
+      cursorOffset: 11,
+    });
+
+    expect(result.definitions).toHaveLength(6);
+
+    const sense1 = result.definitions[0]!;
+    expect(sense1.pos).toBe('danh từ');
+    expect(sense1.lines).toEqual([
+      { role: 'gloss', text: 'ánh sáng, ánh sáng mặt trời, ánh sáng ban ngày' },
+    ]);
+    expect(sense1.examples).toContainEqual({
+      role: 'example',
+      text: "to stand in somebody's light",
+      translation: 'đứng lấp bóng ai',
+    });
+
+    const sense2 = result.definitions[1]!;
+    expect(sense2.pos).toBe('danh từ');
+    expect(sense2.text).toBe('nguồn ánh sáng, đèn đuốc');
+    expect(sense2.examples).toContainEqual({
+      role: 'example',
+      text: 'traffic lights',
+      translation: 'đèn tín hiệu giao thông',
+    });
+
+    const phrase = result.definitions[4]!;
+    expect(phrase.pos).toBe('at first light');
+    expect(phrase.text).toBe('lúc bình minh, lúc rạng đông');
+
+    // The 'danh từ' marker tail is lifted to pos — never rendered as a gloss.
+    for (const def of result.definitions) {
+      expect(def.lines?.some((l) => l.text === 'danh từ')).toBeFalsy();
+    }
   });
 
   it('falls back to lowercase candidate when only lowercase entry exists (I take it → i take it)', async () => {

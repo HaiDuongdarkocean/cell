@@ -88,8 +88,8 @@
   position: absolute;
   inset: 0;
   margin: auto;
-  width: var(--space-2);
-  height: var(--space-2);
+  width: var(--space-1);
+  height: var(--space-1);
   border-radius: var(--radius-full);
   background: var(--color-text-secondary);
 }

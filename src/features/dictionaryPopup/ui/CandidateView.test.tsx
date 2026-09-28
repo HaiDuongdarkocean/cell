@@ -567,4 +567,52 @@ describe('CandidateView', () => {
     await waitFor(() => expect(screen.getByText('/həˈloʊ/')).toBeInTheDocument());
     expect(screen.getAllByTestId('pronunciation-phoneme')).toHaveLength(5);
   });
+
+  it('renders the label head for a gloss-less sense and hides fully empty defs', () => {
+    const candidate = makeResult('vocalize', {
+      definitions: [
+        {
+          id: 'd1',
+          pos: 'verb',
+          text: 'to make a sound',
+          lines: [{ role: 'gloss', text: 'to make a sound' }],
+          examples: [],
+          source: 'EVDict',
+          defaultSelected: false,
+        },
+        {
+          id: 'd2',
+          text: '',
+          lines: [],
+          labels: ['corpus'],
+          examples: [{ role: 'example', text: 'Getz vocalized it', citation: 'corpus' }],
+          source: 'LDOCE5++ V 1-35',
+          defaultSelected: false,
+        },
+        {
+          id: 'd3',
+          text: '',
+          lines: [],
+          examples: [],
+          source: 'LDOCE5++ V 1-35',
+          defaultSelected: false,
+        },
+      ],
+    });
+
+    render(
+      <CandidateView
+        candidate={candidate}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    expect(screen.getAllByTestId('dictionary-definition')).toHaveLength(2);
+    expect(screen.getByText('[corpus]')).toBeInTheDocument();
+    const group = screen.getByText('Getz vocalized it').closest('[title]');
+    expect(group?.getAttribute('title')).toBe('LDOCE5++ V 1-35');
+  });
 });
