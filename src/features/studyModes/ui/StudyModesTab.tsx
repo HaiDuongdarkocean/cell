@@ -3,7 +3,6 @@ import {
   Heading,
   Text,
   Button,
-  Chip,
   Checkbox,
   HStack,
   VStack,
@@ -304,31 +303,17 @@ function AdvancedSection({
       </HStack>
       {open && (
         <VStack gap="4" data-cell-id="advanced-settings">
-          <div>
-            <Text as="p" className={styles.advancedLabel}>
-              {t('studyModes.advanced.skip.label')}
-            </Text>
-            <HStack
-              gap="2"
-              className={styles.chipRow}
-              role="group"
-              aria-label={t('studyModes.advanced.skip.aria')}
-            >
-              {SKIP_OPTIONS.map((option) => (
-                <Chip
-                  key={option}
-                  as="button"
-                  selected={advanced.skipNoDialogue === option}
-                  onClick={() => onChange({ ...advanced, skipNoDialogue: option })}
-                  data-cell-id={`skip-no-dialogue-${option}`}
-                >
-                  {t(SKIP_LABELS[option])}
-                </Chip>
-              ))}
-            </HStack>
-          </div>
+          <SegmentedControl
+            label={t('studyModes.advanced.skip.label')}
+            groupAria={t('studyModes.advanced.skip.aria')}
+            options={SKIP_OPTIONS}
+            optionLabels={SKIP_LABELS}
+            value={advanced.skipNoDialogue}
+            onSelect={(skipNoDialogue) => onChange({ ...advanced, skipNoDialogue })}
+            testIdPrefix="skip-no-dialogue"
+          />
           <SliderRow
-            icon={<Icon name="clock" size="sm" />}
+            className={styles.sliderFlush}
             label={t('cleanup.leadIn.label')}
             hint={t('cleanup.leadIn.hint')}
             value={advanced.cueLeadInMs ?? 0}
@@ -339,54 +324,26 @@ function AdvancedSection({
             aria-label={t('cleanup.leadIn.aria')}
             formatValue={(v) => t('cleanup.leadIn.value', [v])}
           />
-          <div>
-            <Text as="p" className={styles.advancedLabel}>
-              {t('studyModes.advanced.pauseUnknown.label')}
-            </Text>
-            <HStack
-              gap="2"
-              className={styles.chipRow}
-              role="group"
-              aria-label={t('studyModes.advanced.pauseUnknown.aria')}
-            >
-              {PAUSE_UNKNOWN_OPTIONS.map((option) => (
-                <Chip
-                  key={option}
-                  as="button"
-                  selected={advanced.pauseOnUnknown === option}
-                  onClick={() => onChange({ ...advanced, pauseOnUnknown: option })}
-                  data-cell-id={`pause-on-unknown-${option}`}
-                >
-                  {t(PAUSE_UNKNOWN_LABELS[option])}
-                </Chip>
-              ))}
-            </HStack>
-          </div>
+          <SegmentedControl
+            label={t('studyModes.advanced.pauseUnknown.label')}
+            groupAria={t('studyModes.advanced.pauseUnknown.aria')}
+            options={PAUSE_UNKNOWN_OPTIONS}
+            optionLabels={PAUSE_UNKNOWN_LABELS}
+            value={advanced.pauseOnUnknown}
+            onSelect={(pauseOnUnknown) => onChange({ ...advanced, pauseOnUnknown })}
+            testIdPrefix="pause-on-unknown"
+          />
           {advanced.pauseOnUnknown !== 'OFF' && (
             <>
-              <div>
-                <Text as="p" className={styles.advancedLabel}>
-                  {t('studyModes.advanced.unknownLevel.label')}
-                </Text>
-                <HStack
-                  gap="2"
-                  className={styles.chipRow}
-                  role="group"
-                  aria-label={t('studyModes.advanced.unknownLevel.aria')}
-                >
-                  {UNKNOWN_LEVEL_OPTIONS.map((option) => (
-                    <Chip
-                      key={option}
-                      as="button"
-                      selected={advanced.unknownLevel === option}
-                      onClick={() => onChange({ ...advanced, unknownLevel: option })}
-                      data-cell-id={`unknown-level-${option}`}
-                    >
-                      {t(UNKNOWN_LEVEL_LABELS[option])}
-                    </Chip>
-                  ))}
-                </HStack>
-              </div>
+              <SegmentedControl
+                label={t('studyModes.advanced.unknownLevel.label')}
+                groupAria={t('studyModes.advanced.unknownLevel.aria')}
+                options={UNKNOWN_LEVEL_OPTIONS}
+                optionLabels={UNKNOWN_LEVEL_LABELS}
+                value={advanced.unknownLevel}
+                onSelect={(unknownLevel) => onChange({ ...advanced, unknownLevel })}
+                testIdPrefix="unknown-level"
+              />
               <Checkbox
                 label={t('studyModes.advanced.popupOnAutoPause')}
                 checked={advanced.popupOnAutoPause}
@@ -412,5 +369,49 @@ function AdvancedSection({
         </VStack>
       )}
     </section>
+  );
+}
+
+interface SegmentedControlProps<T extends string> {
+  readonly label: string;
+  readonly groupAria: string;
+  readonly options: readonly T[];
+  readonly optionLabels: Record<T, MessageKey>;
+  readonly value: T;
+  readonly onSelect: (value: T) => void;
+  readonly testIdPrefix: string;
+}
+
+function SegmentedControl<T extends string>({
+  label,
+  groupAria,
+  options,
+  optionLabels,
+  value,
+  onSelect,
+  testIdPrefix,
+}: SegmentedControlProps<T>): ReactElement {
+  return (
+    <div>
+      <Text as="p" className={styles.advancedLabel}>
+        {label}
+      </Text>
+      <div className={styles.segmented} role="group" aria-label={groupAria}>
+        {options.map((option) => (
+          <button
+            key={option}
+            type="button"
+            className={
+              value === option ? `${styles.segment} ${styles.segmentSelected}` : styles.segment
+            }
+            aria-pressed={value === option}
+            onClick={() => onSelect(option)}
+            data-cell-id={`${testIdPrefix}-${option}`}
+          >
+            {t(optionLabels[option])}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
