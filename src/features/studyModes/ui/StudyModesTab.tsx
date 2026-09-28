@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
-import { Heading, Text, Button, Card, Chip, Checkbox, HStack, VStack, Toggle, Dialog, Icon, SelectableCard, SliderRow } from '@/shared/ui';
+import { Heading, Text, Button, Chip, Checkbox, HStack, VStack, Toggle, Dialog, Icon, SelectableCard, SliderRow } from '@/shared/ui';
 import { t, type MessageKey } from '@/shared/i18n';
 import { loadStudyModeState, useStudyModeStore } from '../studyModeStore';
 import { findActiveMode } from '../lib/findActiveMode';
@@ -93,7 +93,7 @@ export function StudyModesTab(): ReactElement {
 
   return (
     <div className={styles.tab} data-cell-id="study-modes-tab">
-      <VStack gap="5">
+      <VStack gap="3">
         <header>
           <HStack justify="between" align="center" className={styles.tabHeaderInner}>
             <Heading level={2} size={2} className={styles.tabTitle}>
@@ -114,10 +114,7 @@ export function StudyModesTab(): ReactElement {
         </header>
 
         <section>
-          <Text variant="label" color="secondary" as="span" className={styles.eyebrow}>
-            {t('studyModes.presets.eyebrow')}
-          </Text>
-          <Heading level={3} size={3} className={styles.sectionHeading}>
+          <Heading level={3} size={3} className={styles.blockHeading}>
             {t('studyModes.presets.heading')}
           </Heading>
           <div className={styles.grid} role="radiogroup" aria-label={t('studyModes.presets.groupAria')}>
@@ -134,14 +131,9 @@ export function StudyModesTab(): ReactElement {
 
         <section>
           <HStack justify="between" align="center" className={styles.sectionHeader}>
-            <div>
-              <Text variant="label" color="secondary" as="span" className={styles.eyebrow}>
-                {t('studyModes.custom.eyebrow')}
-              </Text>
-              <Heading level={3} size={3} className={styles.sectionHeading}>
-                {t('studyModes.custom.heading')}
-              </Heading>
-            </div>
+            <Heading level={3} size={3} className={styles.sectionHeading}>
+              {t('studyModes.custom.heading')}
+            </Heading>
             <Button size="sm" onClick={handleNewMode} data-cell-id="new-mode-button" leadingIcon={<Icon name="plus" size="xs" />}>
               {t('studyModes.custom.newMode')}
             </Button>
@@ -263,8 +255,8 @@ interface AdvancedSectionProps {
 
 function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactElement {
   return (
-    <Card className={styles.advancedCard} data-cell-id="advanced-settings">
-      <Heading level={3} size={3} className={styles.sectionHeading}>
+    <div className={styles.advancedSection} data-cell-id="advanced-settings">
+      <Heading level={3} size={3} className={styles.blockHeading}>
         {t('studyModes.advancedToggle.label')}
       </Heading>
       <VStack gap="4">
@@ -372,6 +364,6 @@ function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactEle
           </>
         )}
       </VStack>
-    </Card>
+    </div>
   );
 }
