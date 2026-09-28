@@ -46,4 +46,14 @@ Three fresh-context adversarial reviews by `subagent_explore` agents against `do
 
 Regression coverage is direct, not incidental: route-marker prepass, stale-marker freshness rejection, drain-to-local completion, occupied-scope deferral, orphan-checkpoint cleanup, orphan-deferred adoption, backoff-gated waiting, journal leading/interior gap hold + gap-fill recovery, lock mutex serialization, marker verify-after-write, pending-disconnect resume, cancel/supersede of drain occupants, meta stamping on local routing writes. Tests would fail if the hardened paths regressed.
 
+## Post-ship real-Chrome E2E (2026-09-28)
+
+Two Google test accounts against real Drive `appDataFolder`, two browser profiles as separate devices (device-2 extension storage wiped → fresh `deviceId`):
+
+- **Multi-account routing (device 1) — PASS.** `nguyenhaiduong2300@gmail.com` connected as system connection, `nguyenhaiduongchina@gmail.com` as second connection; both `hasToken:true`, routed by accountKey.
+- **Push (device 1) — PASS.** `themeMode='light'` seeded → `SYNC_NOW` returned `scopesPushed:['global']`, `ackedKeys:1`; remote journal authored under device-1 `deviceId`.
+- **Pull + apply (device 2) — PASS.** Fresh profile → OAuth account A → first-connection reconcile read 7 remote device streams (`recordsApplied` >0 for syncDirectory/secondaryKey); subsequent `SYNC_NOW` pulled `['global','profile:en']`; local `chrome.storage.local.themeMode === 'light'` with `syncMetaKV` row stamped under the authoring device's HLC node. Replicated `…china` connection surfaced as `needs-reauth` — correct spec behavior for an unauthorized account.
+- **Regression fixes verified live:** mid-cycle `runCycle()` now queues a follow-up cycle (`0d2a405a`); `withServiceLock` bounded retry confirmed by real timings (~6s wait while startup cycle held the lock) instead of instant `sync-busy`.
+- **Test-infra findings (not product bugs):** Chrome `Service Worker/ScriptCache` serves the first-registered SW bundle across rebuilds — must be cleared between rebuild-and-verify iterations; cloned profiles inherit `deviceId` and are skipped as self-authored — device-2 simulation requires wiping extension storage (documented in learning-and-apply).
+
 VERDICT: PASS
