@@ -39,6 +39,7 @@ if (!existsSync(join(DIST, serviceWorker))) {
 manifest.background = { page: FIREFOX_BACKGROUND_PAGE, persistent: false };
 
 delete manifest.side_panel;
+delete manifest.key;
 
 if (!Array.isArray(manifest.permissions)) {
   fail('dist/manifest.json missing permissions array');
