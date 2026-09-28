@@ -1,5 +1,5 @@
 {
-  "active": "sync-blob-compression",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -586,7 +586,7 @@
       "updated": "2026-09-28T12:19:21.730Z"
     },
     "sync-blob-compression": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "all",
       "uiSurface": "no",
       "artifacts": {
@@ -615,12 +615,9 @@
       "awaiting": null,
       "resolutions": [],
       "loops": 0,
-      "owner": {
-        "id": "devin-main",
-        "since": "2026-09-28T12:47:51.456Z"
-      },
+      "owner": null,
       "worktree": null,
-      "updated": "2026-09-28T13:21:32.169Z"
+      "updated": "2026-09-28T13:24:49.286Z"
     }
   }
 }
