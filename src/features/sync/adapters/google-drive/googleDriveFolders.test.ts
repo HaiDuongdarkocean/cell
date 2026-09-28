@@ -6,7 +6,6 @@ import { SeededClock } from '../memory/SeededClock';
 import { blobToBytes } from '../contract/blobBytes';
 import { createFakeDrive } from './fakeDrive';
 import type { FakeDrive } from './fakeDrive';
-import { FOLDER_MIME } from './driveLayout';
 import { GoogleDriveStorageProvider } from './googleDriveStorageProvider';
 
 const REDIRECT_URL = 'https://fakeext.chromiumapp.org/';

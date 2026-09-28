@@ -14,6 +14,7 @@ import {
   deviceIdOfRemotePath,
   parseJournalSeq,
   parseSnapshotN,
+  REMOTE_ROOT,
   scopeOfRemotePath,
   scopesPrefix,
 } from './remotePaths';
@@ -223,7 +224,7 @@ async function sweepOrphanBlobs(
 export async function sweepDisconnectedFootprint(
   deps: Pick<RemoteSweepDeps, 'provider' | 'connection' | 'fence'>,
 ): Promise<void> {
-  const entries = await deps.provider.list(deps.connection, '');
+  const entries = await deps.provider.list(deps.connection, `${REMOTE_ROOT}/`);
   for (const entry of entries) {
     if (entry.path === DISCONNECT_MARKER_PATH) continue;
     await deps.fence();

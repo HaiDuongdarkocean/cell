@@ -385,7 +385,9 @@ export class GoogleDriveStorageProvider implements StorageProvider {
       }
       if (mapped) {
         const folderId = this.cachedChainId(connection.accountKey, mapped.chain);
-        if (folderId !== undefined) await this.reapIfEmpty(token, folderId);
+        if (folderId !== undefined) {
+          await this.reapIfEmpty(token, connection.accountKey, folderId);
+        }
       }
     });
   }
@@ -728,7 +730,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
       prefix.push(segment);
       cache.set(chainCacheKey(prefix), folder.id);
       for (const dup of siblings.slice(1)) {
-        if (dup.id) void this.reapIfEmpty(token, dup.id);
+        if (dup.id) void this.reapIfEmpty(token, accountKey, dup.id);
       }
     }
     return folder;
@@ -756,7 +758,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
       parentId = existing ?? (await this.createFolder(token, parentId, segment));
       cache.set(key, parentId);
       for (const dup of siblings.slice(1)) {
-        if (dup.id) void this.reapIfEmpty(token, dup.id);
+        if (dup.id) void this.reapIfEmpty(token, accountKey, dup.id);
       }
     }
     return parentId;
@@ -857,7 +859,11 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     }
   }
 
-  private async reapIfEmpty(token: string, folderId: string): Promise<void> {
+  private async reapIfEmpty(
+    token: string,
+    accountKey: string,
+    folderId: string,
+  ): Promise<void> {
     try {
       const children = await this.queryFiles(
         token,
@@ -865,7 +871,14 @@ export class GoogleDriveStorageProvider implements StorageProvider {
         (file) => file.id !== undefined,
         DRIVE_SPACE,
       );
-      if (children.length === 0) await this.deleteFile(token, folderId);
+      if (children.length > 0) return;
+      await this.deleteFile(token, folderId);
+      const cache = this.folderIds.get(accountKey);
+      if (cache !== undefined) {
+        for (const [key, id] of cache) {
+          if (id === folderId) cache.delete(key);
+        }
+      }
     } catch {}
   }
 
