@@ -71,8 +71,31 @@ export async function listResources(langCode: string): Promise<ResourceInfo[]> {
   return res.data?.resources ?? [];
 }
 
-export async function deleteResource(langCode: string, resourceId: number): Promise<void> {
-  await request(MESSAGE_TYPES.RESOURCE_DELETE, { langCode, resourceId });
+export async function deleteResource(
+  langCode: string,
+  resourceId: number,
+  options?: { onProgress?: (done: number, total: number) => void },
+): Promise<void> {
+  const onProgress = options?.onProgress;
+  if (!onProgress) {
+    await request(MESSAGE_TYPES.RESOURCE_DELETE, { langCode, resourceId });
+    notifyResourcesChanged(langCode);
+    return;
+  }
+  const jobId = `del-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  const onProgressMessage = (message: unknown): void => {
+    const msg = message as { type?: string; payload?: { jobId?: string; phase?: string; processed?: number; total?: number } };
+    if (msg?.type !== MESSAGE_TYPES.RESOURCE_IMPORT_PROGRESS || msg.payload?.jobId !== jobId) return;
+    if (msg.payload.phase === 'progress' && msg.payload.processed !== undefined) {
+      onProgress(msg.payload.processed, msg.payload.total ?? 0);
+    }
+  };
+  onMessage(onProgressMessage);
+  try {
+    await request(MESSAGE_TYPES.RESOURCE_DELETE, { langCode, resourceId, jobId });
+  } finally {
+    removeOnMessageListener(onProgressMessage);
+  }
   notifyResourcesChanged(langCode);
 }
 

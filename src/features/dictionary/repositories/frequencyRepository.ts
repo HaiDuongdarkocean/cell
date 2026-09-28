@@ -208,16 +208,24 @@ export async function countFrequencyByResource(langCode: string, resourceId: num
 }
 
 /** Delete all frequency entries for a resource (rollback cascade). */
-export async function deleteFrequencyByResource(langCode: string, resourceId: number): Promise<void> {
+export async function deleteFrequencyByResource(
+  langCode: string,
+  resourceId: number,
+  onProgress?: (done: number, total: number) => void,
+): Promise<void> {
+  const total = onProgress ? await countFrequencyByResource(langCode, resourceId) : 0;
   const db = await getDB(langCode);
   return new Promise((resolve, reject) => {
     const store = getStore(db, STORES.FREQUENCY);
     const index = store.index(INDEXES.by_resource);
+    let deleted = 0;
     const cursorRequest = index.openCursor(resourceId);
     cursorRequest.onsuccess = () => {
       const cursor = cursorRequest.result;
       if (cursor) {
         cursor.delete();
+        deleted += 1;
+        if (deleted === total || deleted % 512 === 0) onProgress?.(deleted, total);
         cursor.continue();
       }
     };

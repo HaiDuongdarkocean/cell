@@ -14,6 +14,7 @@ import { Card, Checkbox, Dialog, Input, Popover } from '@/shared/ui';
 import { Button } from '@/shared/ui/Button';
 import { DragHandle } from '@/shared/ui/DragHandle';
 import { Toggle } from '@/shared/ui/Toggle';
+import { Spinner } from '@/shared/ui/Spinner';
 import { Icon } from '@/shared/ui/Icon';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import {
@@ -61,6 +62,7 @@ interface ResourceCardProps {
   readonly editing?: boolean;
   readonly selected?: boolean;
   readonly onSelect?: () => void;
+  readonly deleteProgress?: { readonly done: number; readonly items: number; readonly index: number; readonly total: number } | null;
 }
 
 export function ResourceCard({
@@ -74,7 +76,12 @@ export function ResourceCard({
   editing = false,
   selected = false,
   onSelect,
+  deleteProgress,
 }: ResourceCardProps): ReactElement {
+  const deletingNow = deleteProgress != null;
+  const pct = deleteProgress != null && deleteProgress.items > 0
+    ? Math.min(100, Math.round((deleteProgress.done / deleteProgress.items) * 100))
+    : null;
   const enabled = resource.enabled !== false;
   const isDict = resource.type === 'DICTIONARY';
   const resourceId = resource.id;
@@ -132,7 +139,7 @@ export function ResourceCard({
   }, [menuOpen]);
 
   const handleToggle = (next: boolean): void => {
-    if (resourceId == null || toggling) return;
+    if (deletingNow || resourceId == null || toggling) return;
     setToggling(true);
     void setResourceEnabled(langCode, resourceId, next)
       .then(() => onChanged?.())
@@ -141,14 +148,14 @@ export function ResourceCard({
   };
 
   const startRename = (): void => {
-    if (editing) return;
+    if (editing || deletingNow) return;
     committingRef.current = false;
     setDraft(displayName);
     setRenaming(true);
   };
 
   const commitRename = (): void => {
-    if (committingRef.current) return;
+    if (deletingNow || committingRef.current) return;
     committingRef.current = true;
     const next = draft.trim();
     if (!next || next === displayName || resourceId == null) {
@@ -162,7 +169,7 @@ export function ResourceCard({
   };
 
   const toggleComponent = (component: DictionaryComponent): void => {
-    if (resourceId == null) return;
+    if (deletingNow || resourceId == null) return;
     const next = new Set(disabledComponents);
     if (next.has(component)) next.delete(component);
     else next.add(component);
@@ -175,11 +182,13 @@ export function ResourceCard({
   const canReorder = sectionSize > 1 && !editing && onGripPointerDown != null;
 
   const onGripPointerDownLocal = (e: React.PointerEvent<HTMLElement>): void => {
+    if (deletingNow) return;
     gripDownY.current = e.clientY;
     onGripPointerDown?.(e);
   };
 
   const onGripPointerUp = (e: React.PointerEvent<HTMLElement>): void => {
+    if (deletingNow) { gripDownY.current = null; return; }
     const downY = gripDownY.current;
     gripDownY.current = null;
     if (downY != null && Math.abs(e.clientY - downY) <= GRIP_TAP_THRESHOLD) {
@@ -188,6 +197,7 @@ export function ResourceCard({
   };
 
   const onGripKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (deletingNow) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       setMenuOpen((v) => !v);
@@ -207,14 +217,23 @@ export function ResourceCard({
     <Card
       ref={cardRef}
       variant={editing && selected ? 'selected' : 'default'}
-      className={`${styles.card} ${enabled ? '' : styles.cardDisabled} ${dragging ? styles.cardDragging : ''}`}
+      className={`${styles.card} ${enabled ? '' : styles.cardDisabled} ${dragging ? styles.cardDragging : ''} ${deletingNow ? styles.cardDeleting : ''}`}
       data-cell-id={`resource-card-${resourceId}`}
+      aria-busy={deletingNow || undefined}
     >
+      {deletingNow && (
+        <span
+          className={styles.deleteFill}
+          style={{ height: pct == null ? '8%' : `${pct}%` }}
+          aria-hidden="true"
+          data-cell-id={`deleting-${resourceId}`}
+        />
+      )}
       <div className={styles.row}>
         {editing ? (
           <Checkbox
             checked={selected}
-            onChange={() => onSelect?.()}
+            onChange={() => { if (!deletingNow) onSelect?.(); }}
             aria-label={t('resources.card.select', [displayName])}
             className={styles.selectCheck}
             data-cell-id={`check-${resourceId}`}
@@ -259,7 +278,7 @@ export function ResourceCard({
               <button
                 type="button"
                 className={styles.nameButton}
-                onClick={editing ? onSelect : startRename}
+                onClick={deletingNow ? undefined : editing ? onSelect : startRename}
                 aria-pressed={editing ? selected : undefined}
                 aria-label={editing ? t('resources.card.select', [displayName]) : t('resources.card.rename', [displayName])}
                 data-cell-id={editing ? `select-${resourceId}` : `name-${resourceId}`}
@@ -268,7 +287,14 @@ export function ResourceCard({
               </button>
             )}
           </div>
-          {isDict && components != null && components.length > 0 && (
+          {deletingNow && (
+            <span className={styles.deleteMeta}>
+              {deleteProgress.total > 1
+                ? t('resources.delete.progress', [deleteProgress.index, deleteProgress.total])
+                : t('resources.delete.progressOne')}
+            </span>
+          )}
+          {!deletingNow && isDict && components != null && components.length > 0 && (
             <div
               className={styles.componentList}
               role="group"
@@ -295,24 +321,33 @@ export function ResourceCard({
           )}
         </div>
 
-        <Toggle
-          checked={enabled}
-          onChange={handleToggle}
-          ariaLabel={t(enabled ? 'resources.card.disable' : 'resources.card.enable', [displayName])}
-          dataTestId={`enable-toggle-${resourceId}`}
-        />
+        {deletingNow ? (
+          <>
+            {pct != null && <span className={styles.deletePct}>{pct}%</span>}
+            <Spinner size="sm" ariaLabel={t('resources.delete.progressOne')} />
+          </>
+        ) : (
+          <>
+            <Toggle
+              checked={enabled}
+              onChange={handleToggle}
+              ariaLabel={t(enabled ? 'resources.card.disable' : 'resources.card.enable', [displayName])}
+              dataTestId={`enable-toggle-${resourceId}`}
+            />
 
-        {editing && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className={styles.editActionIn}
-            onClick={onDelete}
-            aria-label={t('resources.card.delete', [displayName])}
-            data-cell-id={`delete-button-${resourceId}`}
-          >
-            <Icon name="trash" size="xs" />
-          </Button>
+            {editing && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className={styles.editActionIn}
+                onClick={onDelete}
+                aria-label={t('resources.card.delete', [displayName])}
+                data-cell-id={`delete-button-${resourceId}`}
+              >
+                <Icon name="trash" size="xs" />
+              </Button>
+            )}
+          </>
         )}
       </div>
 

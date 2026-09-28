@@ -108,7 +108,13 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     const parsed = ResourceDeletePayloadSchema.safeParse(request.payload);
     if (!parsed.success) return fail('RESOURCE_DELETE', parsed);
     try {
-      await deleteResourceCascade(parsed.data.langCode, parsed.data.resourceId);
+      await deleteResourceCascade(
+        parsed.data.langCode,
+        parsed.data.resourceId,
+        parsed.data.jobId
+          ? (processed, total) => notifyProgress(parsed.data.tabId, parsed.data.jobId!, { phase: 'progress', processed, total })
+          : undefined,
+      );
       clearDictionaryProbeCache();
       return ok();
     } catch (err) {

@@ -20,6 +20,9 @@ export const ResourceListPayloadSchema = z.object({
 export const ResourceDeletePayloadSchema = z.object({
   langCode: LangCode,
   resourceId: ResourceId,
+  jobId: z.string().min(1).optional(),
+  /** Injected by the message bus for content-script senders. */
+  tabId: z.number().int().optional(),
 });
 
 export const ResourceReorderPayloadSchema = z.object({

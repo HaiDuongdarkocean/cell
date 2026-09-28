@@ -110,6 +110,8 @@ interface ResourceSectionProps {
   readonly resources: readonly ResourceInfo[];
   readonly jobs: readonly ImportJob[];
   readonly loading: boolean;
+  readonly busy: boolean;
+  readonly deleting: { readonly id: number; readonly done: number; readonly items: number; readonly index: number; readonly total: number } | null;
   readonly onFiles: (files: File[]) => void;
   readonly onResolveDuplicate: (jobId: string, choice: DuplicateDecision) => void;
   readonly onRerunReplace: (jobId: string) => void;
@@ -129,6 +131,8 @@ function ResourceSection({
   resources,
   jobs,
   loading,
+  busy,
+  deleting,
   onFiles,
   onResolveDuplicate,
   onRerunReplace,
@@ -172,6 +176,7 @@ function ResourceSection({
   };
 
   const bulkSetEnabled = (enabled: boolean): void => {
+    if (busy) return;
     const ids = resources
       .filter((r) => r.id != null && selectedIds.has(r.id))
       .map((r) => r.id as number);
@@ -179,6 +184,7 @@ function ResourceSection({
   };
 
   const handleContextualDelete = (): void => {
+    if (busy) return;
     const ids = resources
       .filter((r) => r.id != null && selectedIds.has(r.id))
       .map((r) => r.id as number);
@@ -226,7 +232,7 @@ function ResourceSection({
             <Button
               variant="link"
               size="sm"
-              disabled={selectedCount === 0}
+              disabled={busy || selectedCount === 0}
               onClick={() => bulkSetEnabled(true)}
               data-cell-id={`enable-selected-${sectionId}`}
             >
@@ -235,7 +241,7 @@ function ResourceSection({
             <Button
               variant="link"
               size="sm"
-              disabled={selectedCount === 0}
+              disabled={busy || selectedCount === 0}
               onClick={() => bulkSetEnabled(false)}
               data-cell-id={`disable-selected-${sectionId}`}
             >
@@ -245,6 +251,7 @@ function ResourceSection({
               variant="link"
               size="sm"
               className={styles.dangerAction}
+              disabled={busy}
               onClick={handleContextualDelete}
               data-cell-id={`delete-selected-${sectionId}`}
             >
@@ -258,8 +265,8 @@ function ResourceSection({
         label={t(copy.dropLabel)}
         hint={t(copy.dropHint)}
         accept={copy.accept}
-        disabled={false}
-        onFiles={onFiles}
+        disabled={busy}
+        onFiles={(files) => { if (!busy) onFiles(files); }}
       />
       <div className={styles.resourceList} role="list" ref={listRef}>
         {jobs.map((job) => (
@@ -275,7 +282,7 @@ function ResourceSection({
             <ResourceCardSkeleton />
             <ResourceCardSkeleton />
           </>
-        ) : resources.length === 0 && jobs.length === 0 ? (
+        ) : resources.length === 0 && jobs.length === 0 && !deleting ? (
           <p className={styles.empty}>{t(copy.empty)}</p>
         ) : (
           <>
@@ -300,13 +307,16 @@ function ResourceSection({
                 >
                   <ResourceCard
                     resource={r}
+                    deleteProgress={deleting && r.id === deleting.id
+                      ? { done: deleting.done, items: deleting.items, index: deleting.index, total: deleting.total }
+                      : undefined}
                     sectionSize={resources.length}
                     editing={isEditing}
                     selected={r.id != null && selectedIds.has(r.id)}
                     onSelect={() => { if (r.id != null) toggleSelect(r.id); }}
-                    onDelete={() => onDelete(r)}
-                    onMove={(dir) => onMove(i, dir)}
-                    onGripPointerDown={(e) => { if (r.id != null) beginDrag(i, r.id, e); }}
+                    onDelete={() => { if (!busy) onDelete(r); }}
+                    onMove={(dir) => { if (!busy) onMove(i, dir); }}
+                    onGripPointerDown={(e) => { if (!busy && r.id != null) beginDrag(i, r.id, e); }}
                     dragging={dragged}
                     onChanged={onChanged}
                   />
@@ -340,6 +350,8 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
   const [deleteTarget, setDeleteTarget] = useState<ResourceInfo | null>(null);
   const [deleteAllTarget, setDeleteAllTarget] = useState<ResourceType | null>(null);
   const [deleteManyTarget, setDeleteManyTarget] = useState<{ type: ResourceType; ids: readonly number[] } | null>(null);
+  const [deleting, setDeleting] = useState<{ type: ResourceType; id: number; name: string; index: number; total: number; done: number; items: number } | null>(null);
+  const deletingRef = useRef(deleting);
   const jobsRef = useRef<ImportJob[]>([]);
   const successTimers = useRef<Partial<Record<string, ReturnType<typeof setTimeout>>>>({});
   const alertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -384,6 +396,10 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    deletingRef.current = deleting;
+  }, [deleting]);
 
   // Clear pending auto-dismiss timers on unmount.
   useEffect(() => {
@@ -577,33 +593,54 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     applyReorder(type, index, index + direction);
   }, [applyReorder]);
 
-  const handleDelete = useCallback(async (resource: ResourceInfo) => {
+  const runDelete = useCallback(async (type: ResourceType, doomed: readonly ResourceInfo[]) => {
+    if (deletingRef.current || doomed.length === 0) return;
+    let firstError: string | null = null;
+    let deleted = 0;
     try {
-      await deleteResourceCascade(langCode, resource.id!);
-      showPanelAlert('success', t('resources.delete.one', [resource.name]));
+      for (const [i, r] of doomed.entries()) {
+        const next = { type, id: r.id!, name: r.name, index: i + 1, total: doomed.length, done: 0, items: 0 };
+        deletingRef.current = next;
+        setDeleting(next);
+        announce(t('resources.announce.deleting', [r.name]));
+        try {
+          await deleteResourceCascade(langCode, r.id!, {
+            onProgress: (done, total) => setDeleting((prev) =>
+              prev && prev.id === r.id ? { ...prev, done, items: total } : prev),
+          });
+          deleted += 1;
+          setResources((prev) => prev.filter((x) => x.id !== r.id));
+        } catch (e) {
+          firstError = firstError ?? String(e);
+        }
+      }
+      const text = firstError != null
+        ? t('resources.delete.failed', [firstError])
+        : doomed.length === 1
+          ? t('resources.delete.one', [doomed[0]!.name])
+          : t('resources.delete.many', [deleted, t(SECTION_COPY[type].noun)]);
+      showPanelAlert(firstError != null ? 'error' : 'success', text);
+      announce(text);
       void refresh(true);
-    } catch (e) {
-      showPanelAlert('error', t('resources.delete.failed', [String(e)]));
+    } finally {
+      deletingRef.current = null;
+      setDeleting(null);
     }
+  }, [langCode, announce, refresh, showPanelAlert]);
+
+  const handleDelete = useCallback(async (resource: ResourceInfo) => {
     setDeleteTarget(null);
-  }, [langCode, refresh, showPanelAlert]);
+    if (deletingRef.current) return;
+    await runDelete(resource.type, [resource]);
+  }, [runDelete]);
 
   const handleDeleteMany = useCallback(async (type: ResourceType, ids: readonly number[]) => {
     setDeleteManyTarget(null);
+    if (deletingRef.current) return;
     const wanted = new Set(ids);
     const doomed = resources.filter((r) => r.type === type && r.id != null && wanted.has(r.id));
-    if (doomed.length === 0) return;
-    try {
-      for (const r of doomed) {
-        await deleteResourceCascade(langCode, r.id!);
-      }
-      showPanelAlert('success', t('resources.delete.many', [doomed.length, t(SECTION_COPY[type].noun)]));
-      void refresh(true);
-    } catch (e) {
-      showPanelAlert('error', t('resources.delete.failed', [String(e)]));
-      void refresh(true);
-    }
-  }, [resources, langCode, refresh, showPanelAlert]);
+    await runDelete(type, doomed);
+  }, [resources, runDelete]);
 
   const handleSetEnabledMany = useCallback(async (type: ResourceType, ids: readonly number[], enabled: boolean) => {
     const wanted = new Set(ids);
@@ -623,21 +660,12 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
 
   const handleDeleteAll = useCallback(async (type: ResourceType) => {
     setDeleteAllTarget(null);
-    const doomed = resources.filter((r) => r.type === type && r.id != null);
-    try {
-      // Per-section cascade — deleteAllResources(langCode) clears BOTH types
-      // and leaves orphaned entries, so delete each resource through the
-      // cascading orchestrator path instead.
-      for (const r of doomed) {
-        await deleteResourceCascade(langCode, r.id!);
-      }
-      showPanelAlert('success', t('resources.delete.many', [doomed.length, t(SECTION_COPY[type].noun)]));
-      void refresh(true);
-    } catch (e) {
-      showPanelAlert('error', t('resources.delete.allFailed', [String(e)]));
-      void refresh(true);
-    }
-  }, [resources, langCode, refresh, showPanelAlert]);
+    if (deletingRef.current) return;
+    // Per-section cascade — deleteAllResources(langCode) clears BOTH types
+    // and leaves orphaned entries, so delete each resource through the
+    // cascading orchestrator path instead.
+    await runDelete(type, resources.filter((r) => r.type === type && r.id != null));
+  }, [resources, runDelete]);
 
   const dictionaryResources = sortByPriority(resources.filter((r) => r.type === 'DICTIONARY'));
   const frequencyResources = sortByPriority(resources.filter((r) => r.type === 'FREQUENCY'));
@@ -671,15 +699,17 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
             resources={dictionaryResources}
             jobs={dictionaryJobs}
             loading={loading}
+            busy={deleting != null}
+            deleting={deleting?.type === 'DICTIONARY' ? deleting : null}
             onFiles={(files) => void handleFiles(files, 'DICTIONARY')}
             onResolveDuplicate={resolveDuplicate}
             onRerunReplace={rerunReplace}
-            onDelete={setDeleteTarget}
-            onDeleteMany={(ids) => setDeleteManyTarget({ type: 'DICTIONARY', ids })}
+            onDelete={(r) => { if (!deletingRef.current) setDeleteTarget(r); }}
+            onDeleteMany={(ids) => { if (!deletingRef.current) setDeleteManyTarget({ type: 'DICTIONARY', ids }); }}
             onMove={(i, dir) => handleMove('DICTIONARY', i, dir)}
             onReorder={(from, to) => applyReorder('DICTIONARY', from, to)}
             onChanged={() => void refresh(true)}
-            onDeleteAll={() => setDeleteAllTarget('DICTIONARY')}
+            onDeleteAll={() => { if (!deletingRef.current) setDeleteAllTarget('DICTIONARY'); }}
             onSetEnabledMany={(ids, enabled) => void handleSetEnabledMany('DICTIONARY', ids, enabled)}
           />
 
@@ -689,15 +719,17 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
             resources={frequencyResources}
             jobs={frequencyJobs}
             loading={loading}
+            busy={deleting != null}
+            deleting={deleting?.type === 'FREQUENCY' ? deleting : null}
             onFiles={(files) => void handleFiles(files, 'FREQUENCY')}
             onResolveDuplicate={resolveDuplicate}
             onRerunReplace={rerunReplace}
-            onDelete={setDeleteTarget}
-            onDeleteMany={(ids) => setDeleteManyTarget({ type: 'FREQUENCY', ids })}
+            onDelete={(r) => { if (!deletingRef.current) setDeleteTarget(r); }}
+            onDeleteMany={(ids) => { if (!deletingRef.current) setDeleteManyTarget({ type: 'FREQUENCY', ids }); }}
             onMove={(i, dir) => handleMove('FREQUENCY', i, dir)}
             onReorder={(from, to) => applyReorder('FREQUENCY', from, to)}
             onChanged={() => void refresh(true)}
-            onDeleteAll={() => setDeleteAllTarget('FREQUENCY')}
+            onDeleteAll={() => { if (!deletingRef.current) setDeleteAllTarget('FREQUENCY'); }}
             onSetEnabledMany={(ids, enabled) => void handleSetEnabledMany('FREQUENCY', ids, enabled)}
             footer={bandsFooter}
           />

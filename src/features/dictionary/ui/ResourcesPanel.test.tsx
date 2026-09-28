@@ -274,7 +274,7 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('edit-frequency'));
     fireEvent.click(screen.getByTestId('delete-button-1'));
     fireEvent.click(screen.getByTestId('confirm-delete'));
-    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, expect.objectContaining({ onProgress: expect.any(Function) })));
   });
 
   it('shows every resource regardless of profileIds (profile scoping removed)', async () => {
@@ -321,8 +321,8 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1);
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 3);
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, expect.objectContaining({ onProgress: expect.any(Function) }));
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 3, expect.objectContaining({ onProgress: expect.any(Function) }));
     expect(deleteResourceCascade).not.toHaveBeenCalledWith('en', 2);
   });
 
@@ -373,8 +373,8 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1);
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 2);
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, expect.objectContaining({ onProgress: expect.any(Function) }));
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 2, expect.objectContaining({ onProgress: expect.any(Function) }));
     expect(deleteResourceCascade).not.toHaveBeenCalledWith('en', 3);
   });
 
@@ -430,6 +430,111 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('enable-selected-frequency'));
     await waitFor(() => expect(setEnabled).toHaveBeenCalledWith('en', 1, true));
     expect(setEnabled).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a live fill + percent on the card while a single delete runs, then clears on success', async () => {
+    let release: () => void = () => {};
+    deleteResourceCascade.mockImplementationOnce(async (_l, _id, opts) => {
+      opts?.onProgress?.(500, 1000);
+      await new Promise<void>((r) => { release = r; });
+    });
+    listResources.mockResolvedValue([makeResource({ id: 1, name: 'words.txt' })]);
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('words')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('edit-frequency'));
+    fireEvent.click(screen.getByTestId('delete-button-1'));
+    fireEvent.click(screen.getByTestId('confirm-delete'));
+
+    const card = screen.getByTestId('resource-card-1');
+    await waitFor(() => expect(card).toHaveTextContent('50%'));
+    expect(card).toHaveTextContent('Deleting…');
+    expect(card).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByTestId('deleting-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('delete-confirm-modal')).not.toBeInTheDocument();
+
+    await act(async () => { release(); });
+    await waitFor(() => expect(screen.queryByTestId('deleting-1')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('panel-alert')).toHaveTextContent('Deleted "words.txt"'));
+  });
+
+  it('moves the deleting state card-by-card during delete-all', async () => {
+    const releases: Array<() => void> = [];
+    deleteResourceCascade.mockImplementation((_l, _id, opts) => {
+      opts?.onProgress?.(1, 2);
+      return new Promise<void>((r) => { releases.push(r); });
+    });
+    listResources.mockResolvedValue([
+      makeResource({ id: 2, name: 'b.txt' }),
+      makeResource({ id: 1, name: 'a.txt' }),
+    ]);
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('edit-frequency'));
+    fireEvent.click(screen.getByTestId('delete-selected-frequency'));
+    fireEvent.click(screen.getByTestId('confirm-delete'));
+
+    await waitFor(() => expect(screen.getByTestId('deleting-2')).toBeInTheDocument());
+    expect(screen.getByTestId('resource-card-2')).toHaveTextContent('Deleting… 1/2');
+    expect(screen.getByTestId('resource-card-2')).toHaveTextContent('50%');
+    expect(screen.getByText('b')).toBeInTheDocument();
+
+    await act(async () => { releases[0]?.(); });
+    await waitFor(() => expect(screen.getByTestId('deleting-1')).toBeInTheDocument());
+    expect(screen.getByTestId('resource-card-1')).toHaveTextContent('Deleting… 2/2');
+    expect(screen.queryByTestId('resource-card-2')).not.toBeInTheDocument();
+
+    await act(async () => { releases[1]?.(); });
+    await waitFor(() => expect(screen.queryByTestId('deleting-1')).not.toBeInTheDocument());
+    expect(deleteResourceCascade).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignores further delete triggers while a delete run is in progress', async () => {
+    let release: () => void = () => {};
+    deleteResourceCascade.mockImplementationOnce(() => new Promise<void>((r) => { release = r; }));
+    listResources.mockResolvedValue([
+      makeResource({ id: 1, name: 'a.txt' }),
+      makeResource({ id: 2, name: 'b.txt' }),
+    ]);
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('edit-frequency'));
+    fireEvent.click(screen.getByTestId('delete-button-1'));
+    fireEvent.click(screen.getByTestId('confirm-delete'));
+    await screen.findByTestId('deleting-1');
+
+    fireEvent.click(screen.getByTestId('delete-button-2'));
+    expect(screen.queryByTestId('delete-confirm-modal')).toBeNull();
+    expect(screen.getByTestId('delete-selected-frequency')).toBeDisabled();
+
+    await act(async () => { release(); });
+    await waitFor(() => expect(screen.queryByTestId('deleting-1')).not.toBeInTheDocument());
+  });
+
+  it('continues the run after a per-item failure and reports the first error', async () => {
+    deleteResourceCascade
+      .mockImplementationOnce(() => Promise.reject(new Error('boom')))
+      .mockResolvedValueOnce(undefined);
+    listResources.mockResolvedValue([
+      makeResource({ id: 1, name: 'a.txt' }),
+      makeResource({ id: 2, name: 'b.txt' }),
+    ]);
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('edit-frequency'));
+    fireEvent.click(screen.getByTestId('delete-selected-frequency'));
+    fireEvent.click(screen.getByTestId('confirm-delete'));
+
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByTestId('panel-alert')).toHaveTextContent("Couldn't delete: Error: boom"));
+    await waitFor(() => {
+      expect(screen.queryByTestId('deleting-1')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('deleting-2')).not.toBeInTheDocument();
+    });
+    expect(listResources.mock.calls.length).toBeGreaterThan(1);
   });
 });
 

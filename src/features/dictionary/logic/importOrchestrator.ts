@@ -23,8 +23,8 @@ import {
   deleteResource,
   getAllResources,
 } from '../repositories/resourceRepository';
-import { deleteFrequencyByResource } from '../repositories/frequencyRepository';
-import { deleteDictionaryByResource } from '../repositories/dictionaryRepository';
+import { deleteFrequencyByResource, countFrequencyByResource } from '../repositories/frequencyRepository';
+import { deleteDictionaryByResource, countDictionaryByResource } from '../repositories/dictionaryRepository';
 import { deletePhraseIndex } from '../repositories/phraseIndexRepository';
 import { buildPhraseIndexForResource } from '../logic/phraseIndexBuilder';
 import type {
@@ -155,9 +155,19 @@ function isQuotaExceeded(err: unknown): boolean {
 }
 
 /** Delete a resource + cascade entries (user-initiated delete, not rollback). */
-export async function deleteResourceCascade(langCode: string, resourceId: number): Promise<void> {
-  await deleteDictionaryByResource(langCode, resourceId);
-  await deleteFrequencyByResource(langCode, resourceId);
+export async function deleteResourceCascade(
+  langCode: string,
+  resourceId: number,
+  onProgress?: (done: number, total: number) => void,
+): Promise<void> {
+  let dictCount = 0;
+  let total = 0;
+  if (onProgress) {
+    dictCount = await countDictionaryByResource(langCode, resourceId);
+    total = dictCount + (await countFrequencyByResource(langCode, resourceId));
+  }
+  await deleteDictionaryByResource(langCode, resourceId, onProgress ? (d) => onProgress(d, total) : undefined);
+  await deleteFrequencyByResource(langCode, resourceId, onProgress ? (d) => onProgress(dictCount + d, total) : undefined);
   await deletePhraseIndex(langCode, resourceId);
   await deleteResource(langCode, resourceId);
 }
