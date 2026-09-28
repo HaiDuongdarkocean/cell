@@ -150,6 +150,19 @@ function makeRequest(overrides: Partial<LookupRequest> = {}): LookupRequest {
   };
 }
 
+function tokenizedRange(text: string): Range {
+  const token = document.createElement('span');
+  token.className = 'js-cell-token';
+  const word = document.createElement('span');
+  word.className = 'js-cell-token-word';
+  word.textContent = text;
+  token.appendChild(word);
+  document.body.appendChild(token);
+  const range = document.createRange();
+  range.selectNodeContents(word.firstChild as Text);
+  return range;
+}
+
 function makeDeps(overrides: Partial<WebTextDictionaryControllerDeps> = {}): WebTextDictionaryControllerDeps {
   return {
     container: document.body,
@@ -1434,7 +1447,71 @@ describe('createWebTextDictionaryController', () => {
     act(() => { ctrl.destroy() });
   });
 
-  it('pauses video on lookup and resumes on dismiss', async () => {
+  it('pauses video on a tokenized lookup and resumes on dismiss', async () => {
+    jest.useFakeTimers();
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult()] } as unknown as never);
+
+    let paused = false;
+    const mockVideo = {
+      get paused() { return paused; },
+      pause: jest.fn(() => { paused = true; }),
+      play: jest.fn(() => { paused = false; }),
+    } as unknown as HTMLVideoElement;
+
+    const ctrl = createWebTextDictionaryController(makeDeps());
+    ctrl.configureVideo({ hasVideo: true, video: mockVideo, getTargetCues: () => [] });
+
+    const range = tokenizedRange('take');
+
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-video', new DOMRect(0, 0, 0, 0), range) });
+    await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+    });
+
+    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
+
+    act(() => { ctrl.dismissLookup() });
+    act(() => { jest.advanceTimersByTime(500) });
+
+    expect(mockVideo.play).toHaveBeenCalledTimes(1);
+
+    act(() => { ctrl.destroy() });
+    jest.useRealTimers();
+  });
+
+  it('pauses video as soon as the tokenized lookup popup shell mounts, before lookup data arrives', async () => {
+    let resolveLookup: ((value: unknown) => void) | undefined;
+    mockSendMessage.mockReturnValueOnce(new Promise((resolve) => { resolveLookup = resolve; }) as never);
+
+    let paused = false;
+    const mockVideo = {
+      get paused() { return paused; },
+      pause: jest.fn(() => { paused = true; }),
+      play: jest.fn(() => { paused = false; }),
+    } as unknown as HTMLVideoElement;
+
+    const ctrl = createWebTextDictionaryController(makeDeps());
+    ctrl.configureVideo({ hasVideo: true, video: mockVideo, getTargetCues: () => [] });
+
+    const range = tokenizedRange('take');
+
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-video-early', new DOMRect(0, 0, 0, 0), range) });
+
+    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveLookup!({ success: true, data: [makeResult()] });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
+
+    act(() => { ctrl.destroy() });
+  });
+
+  it('does not pause video on plain web-text lookup', async () => {
     jest.useFakeTimers();
     mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult()] } as unknown as never);
 
@@ -1454,56 +1531,21 @@ describe('createWebTextDictionaryController', () => {
     const range = document.createRange();
     range.selectNodeContents(p.firstChild as Text);
 
-    act(() => { ctrl.handleLookup(makeRequest(), 'req-video', new DOMRect(0, 0, 0, 0), range) });
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-plain', new DOMRect(0, 0, 0, 0), range) });
     await act(async () => {
-    await Promise.resolve();
-    await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
     });
 
-    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
+    expect(mockVideo.pause).not.toHaveBeenCalled();
 
     act(() => { ctrl.dismissLookup() });
     act(() => { jest.advanceTimersByTime(500) });
 
-    expect(mockVideo.play).toHaveBeenCalledTimes(1);
+    expect(mockVideo.play).not.toHaveBeenCalled();
 
     act(() => { ctrl.destroy() });
     jest.useRealTimers();
-  });
-
-  it('pauses video as soon as the popup shell mounts, before lookup data arrives', async () => {
-    let resolveLookup: ((value: unknown) => void) | undefined;
-    mockSendMessage.mockReturnValueOnce(new Promise((resolve) => { resolveLookup = resolve; }) as never);
-
-    let paused = false;
-    const mockVideo = {
-      get paused() { return paused; },
-      pause: jest.fn(() => { paused = true; }),
-      play: jest.fn(() => { paused = false; }),
-    } as unknown as HTMLVideoElement;
-
-    const ctrl = createWebTextDictionaryController(makeDeps());
-    ctrl.configureVideo({ hasVideo: true, video: mockVideo, getTargetCues: () => [] });
-
-    const p = document.createElement('p');
-    p.textContent = 'Take off your shoes.';
-    document.body.appendChild(p);
-    const range = document.createRange();
-    range.selectNodeContents(p.firstChild as Text);
-
-    act(() => { ctrl.handleLookup(makeRequest(), 'req-video-early', new DOMRect(0, 0, 0, 0), range) });
-
-    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
-
-    await act(async () => {
-      resolveLookup!({ success: true, data: [makeResult()] });
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
-
-    act(() => { ctrl.destroy() });
   });
 
   it('keeps the popup open and reuses it when the user clicks another subtitle token', async () => {
@@ -1970,7 +2012,7 @@ describe('nested popup stack', () => {
     const ctrl = createWebTextDictionaryController(makeDeps());
     ctrl.configureVideo({ hasVideo: true, video: mockVideo, getTargetCues: () => [] });
 
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'a' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('a')) });
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'a' }), 'r1', new DOMRect(10, 10, 40, 20), tokenizedRange('a')) });
     await flushLookup();
     const lv1 = popupHosts()[0]!;
     act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
