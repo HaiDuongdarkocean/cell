@@ -86,6 +86,8 @@ const DEFAULT_RETRY_ATTEMPTS = 3;
 const RETRY_BASE_MS = 250;
 const RETRY_CAP_MS = 8000;
 const DEFAULT_SILENT_TIMEOUT_MS = 30_000;
+const REQUEST_TIMEOUT_MS = 60_000;
+const MIN_UPLOAD_BPS = 100 * 1024;
 const RETRYABLE_KINDS: ReadonlySet<ProviderErrorKind> = new Set(['rate-limit', 'network']);
 
 function tokenStoreKey(accountKey: string): string {
@@ -102,6 +104,16 @@ function toBlob(bytes: Uint8Array): Blob {
     bytes.byteOffset + bytes.byteLength,
   ) as ArrayBuffer;
   return new Blob([buf]);
+}
+
+function bodySizeBytes(body: BodyInit | null | undefined): number {
+  if (body == null) return 0;
+  if (body instanceof Blob) return body.size;
+  if (typeof body === 'string') return body.length;
+  if (body instanceof ArrayBuffer) return body.byteLength;
+  if (ArrayBuffer.isView(body)) return body.byteLength;
+  if (body instanceof URLSearchParams) return body.toString().length;
+  return 0;
 }
 
 function escapeQueryLiteral(value: string): string {
@@ -381,7 +393,10 @@ export class GoogleDriveStorageProvider implements StorageProvider {
   }
 
   private async send(url: string, init: RequestInit): Promise<Response> {
-    const response = await this.fetchFn(url, init);
+    const timeoutMs = REQUEST_TIMEOUT_MS + Math.floor(bodySizeBytes(init.body) / MIN_UPLOAD_BPS) * 1000;
+    const timeout = AbortSignal.timeout(timeoutMs);
+    const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
+    const response = await this.fetchFn(url, { ...init, signal });
     if (!response.ok) throw await providerErrorFromResponse(response);
     return response;
   }

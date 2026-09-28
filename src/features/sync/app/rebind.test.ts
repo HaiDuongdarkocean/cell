@@ -590,6 +590,9 @@ describe('runConnectionDisconnect', () => {
     ).toBeDefined();
     expect(t.disconnected).toHaveLength(0);
 
+    expect(await completePendingDisconnects(t.disconnectDeps())).toEqual([]);
+
+    t.clock.advance(60_000);
     const done = await completePendingDisconnects(t.disconnectDeps());
     expect(done).toEqual([t.connB.connectionId]);
     await t.provider.authorize({

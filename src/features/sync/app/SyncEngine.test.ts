@@ -731,6 +731,27 @@ describe('SyncEngine obligations', () => {
     expect(state?.[`connection:${connB.connectionId}`]).toBeUndefined();
   });
 
+  it('defers a pending disconnect retry until its backoff elapses', async () => {
+    const t = await harness();
+    const connB = await secondConnection(t);
+    await t.kv.set('local', `${DISCONNECT_PENDING_PREFIX}${connB.connectionId}`, {
+      at: t.clock.now(),
+      attempts: 1,
+      nextRetryAt: t.clock.now() + 60_000,
+    });
+    const engine = t.makeEngine({
+      connections: async () => [t.connection, connB],
+      tick,
+    });
+    const result = await engine.runCycle();
+    expect(result.failed).toEqual([]);
+    await t.provider.authorize({ interactive: false, accountHint: connB.accountKey });
+    expect(await t.provider.list(connB, DISCONNECT_MARKER_PATH)).toHaveLength(0);
+    expect(
+      await t.kv.get('local', `${DISCONNECT_PENDING_PREFIX}${connB.connectionId}`),
+    ).toMatchObject({ attempts: 1 });
+  });
+
   it('reads route markers before push: a newer marker freezes the scope in the same cycle', async () => {
     const t = await harness();
     const ghost = `${PROVIDER_ID}:ghost` as Connection['connectionId'];

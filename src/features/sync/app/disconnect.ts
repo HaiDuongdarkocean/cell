@@ -8,6 +8,7 @@ import type { ProviderId } from '../domain/types';
 import { ProviderError, type StorageProvider } from '../ports/storageProvider';
 import { blobToBytes } from '../adapters/contract/blobBytes';
 import { CycleLockLostError } from './cycleLock';
+import { backoffDelayMs } from './backoff';
 import type { BlobReader } from './blobRefs';
 import { DISCONNECT_MARKER_PATH } from './remotePaths';
 import {
@@ -94,9 +95,27 @@ function isUnreachable(e: unknown): boolean {
   );
 }
 
+interface PendingDisconnectRecord {
+  at: number;
+  attempts: number;
+  nextRetryAt: number;
+}
+
+function pendingKey(connectionId: ConnectionId): string {
+  return `${DISCONNECT_PENDING_PREFIX}${connectionId}`;
+}
+
 async function markPending(deps: DisconnectDeps, connectionId: ConnectionId): Promise<void> {
-  await deps.kv.set('local', `${DISCONNECT_PENDING_PREFIX}${connectionId}`, {
-    at: deps.clock.now(),
+  const previous = await deps.kv.get<PendingDisconnectRecord>(
+    'local',
+    pendingKey(connectionId),
+  );
+  const attempts = (previous?.attempts ?? 0) + 1;
+  const now = deps.clock.now();
+  await deps.kv.set('local', pendingKey(connectionId), {
+    at: previous?.at ?? now,
+    attempts,
+    nextRetryAt: now + backoffDelayMs(attempts),
   });
 }
 
@@ -306,6 +325,14 @@ export async function completePendingDisconnects(deps: DisconnectDeps): Promise<
     (await deps.connections()).map((c) => [c.connectionId, c] as const),
   );
   for (const connId of await listPendingDisconnects(deps.kv)) {
+    const pending = await deps.kv.get<PendingDisconnectRecord>('local', pendingKey(connId));
+    if (
+      pending !== undefined &&
+      typeof pending.nextRetryAt === 'number' &&
+      pending.nextRetryAt > deps.clock.now()
+    ) {
+      continue;
+    }
     const connection = connected.get(connId);
     if (connection === undefined) {
       try {
