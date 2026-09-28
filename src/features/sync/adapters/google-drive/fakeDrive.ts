@@ -13,14 +13,24 @@ export interface FakeDriveFile {
   name: string;
   bytes: Uint8Array;
   modifiedSeq: number;
+  createdSeq: number;
   space: 'drive' | 'appdata';
   parent?: string;
   mimeType?: string;
+  trashed?: boolean;
 }
 
 export interface FakeDriveRequest {
   method: string;
   url: string;
+  body?: string;
+}
+
+export interface SeedFileOptions {
+  parent?: string;
+  mimeType?: string;
+  modifiedSeq?: number;
+  trashed?: boolean;
 }
 
 export interface FakeFailure {
@@ -54,12 +64,18 @@ export interface FakeDrive {
   launchRequests: WebAuthFlowRequest[];
   requests: FakeDriveRequest[];
   filesFor(accountKey: string): FakeDriveFile[];
+  foldersFor(accountKey: string): FakeDriveFile[];
+  entriesFor(accountKey: string): FakeDriveFile[];
   seedFile(
     accountKey: string,
     path: string,
     bytes: Uint8Array,
     space?: 'drive' | 'appdata',
+    opts?: SeedFileOptions,
   ): FakeDriveFile;
+  seedFolder(accountKey: string, name: string, parentId?: string): FakeDriveFile;
+  setModifiedTime(accountKey: string, fileId: string, modifiedSeq: number): void;
+  setTrashed(accountKey: string, fileId: string, trashed: boolean): void;
   deleteFileRaw(accountKey: string, fileId: string): void;
   revokeAccount(accountKey: string): void;
   invalidateTokens(accountKey: string): void;
@@ -148,12 +164,18 @@ function queryNameFilter(q: string): { exact?: string; contains?: string } {
   return {};
 }
 
-function queryParentsFilter(q: string): string | undefined {
-  return /'([^']+)' in parents/.exec(q)?.[1];
+function queryParentsFilter(q: string): string[] | undefined {
+  const ids = [...q.matchAll(/'([^']+)' in parents/g)].map((m) => m[1]!);
+  return ids.length > 0 ? ids : undefined;
 }
 
 function queryMimeFilter(q: string): string | undefined {
   return /mimeType = '([^']+)'/.exec(q)?.[1];
+}
+
+function queryTrashedFilter(q: string): boolean | undefined {
+  const m = /trashed = (true|false)/.exec(q);
+  return m ? m[1] === 'true' : undefined;
 }
 
 export function createFakeDrive(): FakeDrive {
@@ -183,6 +205,10 @@ export function createFakeDrive(): FakeDrive {
     name: file.name,
     size: String(file.bytes.byteLength),
     modifiedTime: isoOf(file.modifiedSeq),
+    createdTime: isoOf(file.createdSeq),
+    mimeType: file.mimeType ?? 'application/octet-stream',
+    trashed: file.trashed === true,
+    parents: file.parent !== undefined ? [file.parent] : undefined,
   });
 
   const issueToken = (account: FakeAccount): string => {
@@ -228,6 +254,7 @@ export function createFakeDrive(): FakeDrive {
       name: SYNC_ROOT_NAME,
       bytes: new Uint8Array(0),
       modifiedSeq: nextSeq(),
+      createdSeq: clockSeq,
       space: 'drive',
       parent: 'root',
       mimeType: FOLDER_MIME,
@@ -239,8 +266,9 @@ export function createFakeDrive(): FakeDrive {
   const handleList = (account: FakeAccount, url: URL): Response => {
     const q = url.searchParams.get('q') ?? '';
     const filter = queryNameFilter(q);
-    const parent = queryParentsFilter(q);
+    const parents = queryParentsFilter(q);
     const mime = queryMimeFilter(q);
+    const trashed = queryTrashedFilter(q);
     const space = url.searchParams.get('spaces') === 'appDataFolder' ? 'appdata' : 'drive';
     const pageSize = Number(url.searchParams.get('pageSize') ?? '100');
     const start = Number(url.searchParams.get('pageToken') ?? '0');
@@ -248,8 +276,11 @@ export function createFakeDrive(): FakeDrive {
       (f) =>
         f.accountKey === account.sub &&
         f.space === space &&
-        (parent !== undefined ? f.parent === parent : true) &&
+        (parents !== undefined
+          ? f.parent !== undefined && parents.includes(f.parent)
+          : true) &&
         (mime !== undefined ? f.mimeType === mime : true) &&
+        (trashed !== undefined ? (f.trashed === true) === trashed : true) &&
         (filter.exact !== undefined ? f.name === filter.exact : true) &&
         (filter.contains !== undefined ? f.name.includes(filter.contains) : true),
     );
@@ -265,9 +296,15 @@ export function createFakeDrive(): FakeDrive {
     name: string,
     bytes: Uint8Array,
     fileId?: string,
-    opts?: { parent?: string; space?: 'drive' | 'appdata'; mimeType?: string },
+    opts?: {
+      parent?: string;
+      space?: 'drive' | 'appdata';
+      mimeType?: string;
+      modifiedSeq?: number;
+      trashed?: boolean;
+    },
   ): FakeDriveFile => {
-    const seq = nextSeq();
+    const seq = opts?.modifiedSeq ?? nextSeq();
     if (fileId) {
       const existing = files.find((f) => f.id === fileId && f.accountKey === account.sub);
       if (existing) {
@@ -283,9 +320,11 @@ export function createFakeDrive(): FakeDrive {
       name,
       bytes: bytes.slice(),
       modifiedSeq: seq,
+      createdSeq: clockSeq,
       space: opts?.space ?? 'drive',
       parent: opts?.parent,
       mimeType: opts?.mimeType,
+      trashed: opts?.trashed,
     };
     files.push(file);
     return file;
@@ -496,6 +535,22 @@ export function createFakeDrive(): FakeDrive {
         files.splice(files.indexOf(target), 1);
         return jsonResponse(204, undefined);
       }
+      if (method === 'PATCH') {
+        if (!target) return errorJson(404, 'notFound');
+        const parsed = new URL(url);
+        const meta = JSON.parse(typeof init?.body === 'string' ? init.body : '{}') as {
+          name?: string;
+        };
+        if (meta.name !== undefined) target.name = meta.name;
+        const removeParent = parsed.searchParams.get('removeParents');
+        const addParent = parsed.searchParams.get('addParents');
+        if (addParent !== null) target.parent = addParent;
+        else if (removeParent !== null && target.parent === removeParent) {
+          target.parent = undefined;
+        }
+        target.modifiedSeq = nextSeq();
+        return jsonResponse(200, fileJson(target));
+      }
       if (method === 'GET' && new URL(url).searchParams.get('alt') === 'media') {
         if (!target) return errorJson(404, 'notFound');
         return bytesResponse(200, target.bytes);
@@ -530,7 +585,11 @@ export function createFakeDrive(): FakeDrive {
 
   const fetchFn = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === 'string' ? input : input.toString();
-    requests.push({ method: init?.method ?? 'GET', url });
+    requests.push({
+      method: init?.method ?? 'GET',
+      url,
+      body: typeof init?.body === 'string' ? init.body : undefined,
+    });
     return dispatch(url, init);
   }) as typeof fetch;
 
@@ -561,12 +620,36 @@ export function createFakeDrive(): FakeDrive {
     requests,
     filesFor: (accountKey) =>
       files.filter((f) => f.accountKey === accountKey && f.mimeType !== FOLDER_MIME),
-    seedFile: (accountKey, path, bytes, space = 'drive') => {
+    foldersFor: (accountKey) =>
+      files.filter((f) => f.accountKey === accountKey && f.mimeType === FOLDER_MIME),
+    entriesFor: (accountKey) => files.filter((f) => f.accountKey === accountKey),
+    seedFile: (accountKey, path, bytes, space = 'drive', opts) => {
       const holder = { sub: accountKey, email: '', revoked: false };
       return putFile(holder, path, bytes, undefined, {
         space,
-        parent: space === 'appdata' ? 'appDataFolder' : ensureRootFolder(holder),
+        parent:
+          opts?.parent ??
+          (space === 'appdata' ? 'appDataFolder' : ensureRootFolder(holder)),
+        mimeType: opts?.mimeType,
+        modifiedSeq: opts?.modifiedSeq,
+        trashed: opts?.trashed,
       });
+    },
+    seedFolder: (accountKey, name, parentId) => {
+      const holder = { sub: accountKey, email: '', revoked: false };
+      return putFile(holder, name, new Uint8Array(0), undefined, {
+        space: 'drive',
+        parent: parentId ?? ensureRootFolder(holder),
+        mimeType: FOLDER_MIME,
+      });
+    },
+    setModifiedTime: (accountKey, fileId, modifiedSeq) => {
+      const file = files.find((f) => f.id === fileId && f.accountKey === accountKey);
+      if (file) file.modifiedSeq = modifiedSeq;
+    },
+    setTrashed: (accountKey, fileId, trashed) => {
+      const file = files.find((f) => f.id === fileId && f.accountKey === accountKey);
+      if (file) file.trashed = trashed;
     },
     deleteFileRaw: (accountKey, fileId) => {
       const index = files.findIndex((f) => f.id === fileId && f.accountKey === accountKey);

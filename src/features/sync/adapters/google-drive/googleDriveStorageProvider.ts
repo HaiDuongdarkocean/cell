@@ -17,6 +17,14 @@ import {
   GOOGLE_USERINFO_ENDPOINT,
   parseAuthRedirect,
 } from './authUrls';
+import {
+  FOLDER_MIME as DRIVE_FOLDER_MIME,
+  folderedTarget,
+  logicalPathOf,
+  mapLogicalPath,
+  REMOTE_ROOT,
+  scopeOfFolderName,
+} from './driveLayout';
 import { providerErrorFromResponse, toProviderError } from './errors';
 
 export interface WebAuthFlowRequest {
@@ -46,7 +54,11 @@ interface DriveFile {
   name?: string;
   size?: string;
   modifiedTime?: string;
+  createdTime?: string;
   md5Checksum?: string;
+  mimeType?: string;
+  trashed?: boolean;
+  parents?: string[];
 }
 
 interface DriveFileList {
@@ -80,9 +92,11 @@ const PROVIDER_ID = 'google-drive';
 const APP_FOLDER = 'appDataFolder';
 const DRIVE_SPACE = 'drive';
 const SYNC_ROOT_FOLDER_NAME = 'Tihoka Sync';
-const DRIVE_FOLDER_MIME = 'application/vnd.google-apps.folder';
-const LIST_FIELDS = 'nextPageToken,files(id,name,size,modifiedTime,md5Checksum)';
-const FILE_FIELDS = 'id,name,size,modifiedTime,md5Checksum';
+const LIST_FIELDS =
+  'nextPageToken,files(id,name,size,modifiedTime,createdTime,md5Checksum,mimeType,trashed,parents)';
+const FILE_FIELDS = 'id,name,size,modifiedTime,mimeType,trashed';
+const FLAT_MIGRATE_INTERVAL_MS = 60 * 60 * 1000;
+const PARENT_OR_CHUNK = 100;
 const TOKEN_EXPIRY_MARGIN_MS = 5 * 60 * 1000;
 const DEFAULT_RESUMABLE_THRESHOLD = 5 * 1024 * 1024;
 const DEFAULT_RETRY_ATTEMPTS = 3;
@@ -107,6 +121,14 @@ function rootFolderKey(accountKey: string): string {
 
 function legacyCleanedKey(accountKey: string): string {
   return `syncAdapter:${PROVIDER_ID}:legacyCleaned:${accountKey}`;
+}
+
+function flatMigratedKey(accountKey: string): string {
+  return `syncAdapter:${PROVIDER_ID}:flatMigrated:${accountKey}`;
+}
+
+function chainCacheKey(chain: readonly string[]): string {
+  return chain.join('');
 }
 
 function toBlob(bytes: Uint8Array): Blob {
@@ -178,6 +200,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
   private readonly resumableThreshold: number;
   private readonly silentFlowTimeoutMs: number;
   private readonly verifiedRoots = new Set<string>();
+  private readonly folderIds = new Map<string, Map<string, string>>();
   private boundarySeq = 0;
 
   constructor(deps: GoogleDriveStorageProviderDeps) {
@@ -265,29 +288,35 @@ export class GoogleDriveStorageProvider implements StorageProvider {
   async list(connection: Connection, prefix: string): Promise<RemoteEntry[]> {
     return this.authed(connection, async (token) => {
       const rootId = await this.rootFolderId(token, connection);
-      const clause = prefix ? `name contains '${escapeQueryLiteral(prefix)}' and ` : '';
-      const files = await this.queryFiles(
-        token,
-        `${clause}trashed = false and '${rootId}' in parents`,
-        (file) => file.name !== undefined && file.name.startsWith(prefix),
-        DRIVE_SPACE,
-      );
-      const newest = new Map<string, DriveFile>();
-      for (const file of files) {
-        const name = file.name ?? '';
-        const prev = newest.get(name);
-        if (!prev || fileModifiedAt(file) >= fileModifiedAt(prev)) newest.set(name, file);
+      const flat = await this.flatListing(token, rootId, prefix);
+      const foldered = await this.listFoldered(token, rootId, prefix);
+      const byPath = new Map<string, RemoteEntry>();
+      for (const file of flat) {
+        const entry = toRemoteEntry(file);
+        const prev = byPath.get(entry.path);
+        if (!prev || entry.modifiedAt >= prev.modifiedAt) byPath.set(entry.path, entry);
       }
-      return [...newest.values()]
-        .map(toRemoteEntry)
-        .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+      for (const entry of foldered) {
+        const prev = byPath.get(entry.path);
+        if (!prev || entry.modifiedAt >= prev.modifiedAt) byPath.set(entry.path, entry);
+      }
+      try {
+        await this.migrateFlatFiles(token, connection.accountKey, rootId, flat);
+      } catch {}
+      return [...byPath.values()].sort((a, b) =>
+        a.path < b.path ? -1 : a.path > b.path ? 1 : 0,
+      );
     });
   }
 
   async read(connection: Connection, path: string): Promise<Blob> {
     return this.authed(connection, async (token) => {
       const rootId = await this.rootFolderId(token, connection);
-      const target = await this.newestCopy(token, rootId, path);
+      const copies = await this.allCopiesOf(token, connection.accountKey, rootId, path);
+      if (copies.flat.length + copies.foldered.length === 0) {
+        throw new ProviderError('not-found', `no such path: ${path}`);
+      }
+      const target = [...copies.flat, ...copies.foldered].reduce(newerFile);
       const response = await this.send(
         `${DRIVE_API_BASE}/files/${encodeURIComponent(target.id ?? '')}?alt=media`,
         { headers: this.authHeaders(token) },
@@ -301,16 +330,29 @@ export class GoogleDriveStorageProvider implements StorageProvider {
       const bytes = await blobToBytes(body);
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const rootId = await this.rootFolderId(token, connection);
+        const mapped = mapLogicalPath(path);
         try {
-          const copies = await this.findCopies(token, rootId, path);
-          const target = copies.length ? copies.reduce(newerFile) : undefined;
+          const parentId = mapped
+            ? await this.resolveOrCreateChain(token, connection.accountKey, rootId, mapped.chain)
+            : rootId;
+          const leaf = mapped ? mapped.leaf : path;
+          const copies = mapped
+            ? await this.allCopiesOf(token, connection.accountKey, rootId, path)
+            : { flat: await this.findCopies(token, rootId, path), foldered: [] };
+          const target = copies.foldered.length
+            ? copies.foldered.reduce(newerFile)
+            : mapped
+              ? undefined
+              : copies.flat.length
+                ? copies.flat.reduce(newerFile)
+                : undefined;
           const committed =
             bytes.byteLength > this.resumableThreshold
-              ? await this.resumableWrite(token, rootId, path, bytes, body.type, target)
+              ? await this.resumableWrite(token, parentId, leaf, path, bytes, body.type, target)
               : target
                 ? await this.mediaUpdate(token, target, bytes, body.type)
-                : await this.multipartCreate(token, rootId, path, bytes, body.type);
-          for (const copy of copies) {
+                : await this.multipartCreate(token, parentId, leaf, bytes, body.type);
+          for (const copy of [...copies.flat, ...copies.foldered]) {
             if (copy.id && copy.id !== committed.id) {
               await this.deleteFile(token, copy.id);
             }
@@ -331,12 +373,19 @@ export class GoogleDriveStorageProvider implements StorageProvider {
   async remove(connection: Connection, path: string): Promise<void> {
     await this.authed(connection, async (token) => {
       const rootId = await this.rootFolderId(token, connection);
-      const copies = await this.findCopies(token, rootId, path);
-      if (copies.length === 0) {
+      const mapped = mapLogicalPath(path);
+      const copies = mapped
+        ? await this.allCopiesOf(token, connection.accountKey, rootId, path)
+        : { flat: await this.findCopies(token, rootId, path), foldered: [] };
+      if (copies.flat.length + copies.foldered.length === 0) {
         throw new ProviderError('not-found', `no such path: ${path}`);
       }
-      for (const copy of copies) {
+      for (const copy of [...copies.flat, ...copies.foldered]) {
         if (copy.id) await this.deleteFile(token, copy.id);
+      }
+      if (mapped) {
+        const folderId = this.cachedChainId(connection.accountKey, mapped.chain);
+        if (folderId !== undefined) await this.reapIfEmpty(token, folderId);
       }
     });
   }
@@ -438,6 +487,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
 
   private async invalidateRoot(accountKey: string): Promise<void> {
     this.verifiedRoots.delete(accountKey);
+    this.folderIds.delete(accountKey);
     await this.kv.del('local', rootFolderKey(accountKey));
   }
 
@@ -447,10 +497,19 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     let rootId = await this.kv.get<string>('local', key);
     if (rootId !== undefined && !this.verifiedRoots.has(accountKey)) {
       try {
-        await this.send(`${DRIVE_API_BASE}/files/${encodeURIComponent(rootId)}?fields=id`, {
-          headers: this.authHeaders(token),
-        });
-        this.verifiedRoots.add(accountKey);
+        const response = await this.send(
+          `${DRIVE_API_BASE}/files/${encodeURIComponent(rootId)}?fields=id,trashed`,
+          {
+            headers: this.authHeaders(token),
+          },
+        );
+        const file = (await response.json()) as DriveFile;
+        if (file.trashed === true) {
+          await this.kv.del('local', key);
+          rootId = undefined;
+        } else {
+          this.verifiedRoots.add(accountKey);
+        }
       } catch (e) {
         if (e instanceof ProviderError && e.kind === 'not-found') {
           await this.kv.del('local', key);
@@ -541,27 +600,362 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     return out;
   }
 
-  private async findCopies(token: string, rootId: string, path: string): Promise<DriveFile[]> {
+  private async flatListing(
+    token: string,
+    rootId: string,
+    prefix: string,
+  ): Promise<DriveFile[]> {
+    const clause = prefix ? `name contains '${escapeQueryLiteral(prefix)}' and ` : '';
     return this.queryFiles(
       token,
-      `name = '${escapeQueryLiteral(path)}' and trashed = false and '${rootId}' in parents`,
-      (file) => file.name === path,
+      `${clause}trashed = false and '${rootId}' in parents`,
+      (file) =>
+        file.name !== undefined &&
+        file.name.startsWith(prefix) &&
+        file.mimeType !== DRIVE_FOLDER_MIME,
       DRIVE_SPACE,
     );
   }
 
-  private async newestCopy(token: string, rootId: string, path: string): Promise<DriveFile> {
-    const copies = await this.findCopies(token, rootId, path);
-    if (copies.length === 0) {
-      throw new ProviderError('not-found', `no such path: ${path}`);
+  private async findCopies(token: string, rootId: string, path: string): Promise<DriveFile[]> {
+    return this.queryFiles(
+      token,
+      `name = '${escapeQueryLiteral(path)}' and trashed = false and '${rootId}' in parents`,
+      (file) => file.name === path && file.mimeType !== DRIVE_FOLDER_MIME,
+      DRIVE_SPACE,
+    );
+  }
+
+  private async findInFolder(
+    token: string,
+    folderId: string,
+    name: string,
+  ): Promise<DriveFile[]> {
+    return this.queryFiles(
+      token,
+      `name = '${escapeQueryLiteral(name)}' and trashed = false and '${folderId}' in parents`,
+      (file) => file.name === name && file.mimeType !== DRIVE_FOLDER_MIME,
+      DRIVE_SPACE,
+    );
+  }
+
+  private async allCopiesOf(
+    token: string,
+    accountKey: string,
+    rootId: string,
+    path: string,
+  ): Promise<{ flat: DriveFile[]; foldered: DriveFile[] }> {
+    const flat = await this.findCopies(token, rootId, path);
+    const mapped = mapLogicalPath(path);
+    if (!mapped) return { flat, foldered: [] };
+    const folder = await this.resolveChain(token, accountKey, rootId, mapped.chain);
+    if (!folder?.id) return { flat, foldered: [] };
+    const foldered = await this.findInFolder(token, folder.id, mapped.leaf);
+    return { flat, foldered };
+  }
+
+  private cachedChainId(accountKey: string, chain: readonly string[]): string | undefined {
+    return this.folderIds.get(accountKey)?.get(chainCacheKey(chain));
+  }
+
+  private folderCacheFor(accountKey: string): Map<string, string> {
+    let cache = this.folderIds.get(accountKey);
+    if (!cache) {
+      cache = new Map<string, string>();
+      this.folderIds.set(accountKey, cache);
     }
-    return copies.reduce(newerFile);
+    return cache;
+  }
+
+  private async childFoldersOf(
+    token: string,
+    parentId: string,
+    name?: string,
+  ): Promise<DriveFile[]> {
+    const nameClause = name === undefined ? '' : `name = '${escapeQueryLiteral(name)}' and `;
+    return this.queryFiles(
+      token,
+      `${nameClause}mimeType = '${DRIVE_FOLDER_MIME}' and trashed = false and '${parentId}' in parents`,
+      (file) =>
+        file.mimeType === DRIVE_FOLDER_MIME && (name === undefined || file.name === name),
+      DRIVE_SPACE,
+    );
+  }
+
+  private async createFolder(
+    token: string,
+    parentId: string,
+    name: string,
+  ): Promise<string> {
+    const response = await this.send(`${DRIVE_API_BASE}/files?fields=id`, {
+      method: 'POST',
+      headers: {
+        ...this.authHeaders(token),
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify({
+        name,
+        mimeType: DRIVE_FOLDER_MIME,
+        parents: [parentId],
+      }),
+    });
+    const id = ((await response.json()) as DriveFile).id;
+    if (id === undefined) {
+      throw new ProviderError('unknown', `folder creation returned no id: ${name}`);
+    }
+    return id;
+  }
+
+  private async resolveChain(
+    token: string,
+    accountKey: string,
+    rootId: string,
+    chain: readonly string[],
+  ): Promise<DriveFile | undefined> {
+    const cache = this.folderCacheFor(accountKey);
+    const cached = cache.get(chainCacheKey(chain));
+    if (cached !== undefined) {
+      return { id: cached };
+    }
+    let parentId = rootId;
+    let folder: DriveFile | undefined;
+    const prefix: string[] = [];
+    for (const segment of chain) {
+      const siblings = await this.childFoldersOf(token, parentId, segment);
+      folder = siblings.sort(olderFolder)[0];
+      if (folder?.id === undefined) return undefined;
+      parentId = folder.id;
+      prefix.push(segment);
+      cache.set(chainCacheKey(prefix), folder.id);
+      for (const dup of siblings.slice(1)) {
+        if (dup.id) void this.reapIfEmpty(token, dup.id);
+      }
+    }
+    return folder;
+  }
+
+  private async resolveOrCreateChain(
+    token: string,
+    accountKey: string,
+    rootId: string,
+    chain: readonly string[],
+  ): Promise<string> {
+    const cache = this.folderCacheFor(accountKey);
+    let parentId = rootId;
+    const prefix: string[] = [];
+    for (const segment of chain) {
+      prefix.push(segment);
+      const key = chainCacheKey(prefix);
+      const cached = cache.get(key);
+      if (cached !== undefined) {
+        parentId = cached;
+        continue;
+      }
+      const siblings = await this.childFoldersOf(token, parentId, segment);
+      const existing = siblings.sort(olderFolder)[0]?.id;
+      parentId = existing ?? (await this.createFolder(token, parentId, segment));
+      cache.set(key, parentId);
+      for (const dup of siblings.slice(1)) {
+        if (dup.id) void this.reapIfEmpty(token, dup.id);
+      }
+    }
+    return parentId;
+  }
+
+  private async listFoldered(
+    token: string,
+    rootId: string,
+    prefix: string,
+  ): Promise<RemoteEntry[]> {
+    const target = folderedTarget(prefix);
+    if (target === null) return [];
+    const entries: RemoteEntry[] = [];
+    if (target.kind === 'chain') {
+      const folderIds = await this.resolveChainAll(token, rootId, target.chain);
+      await this.descendLevel(
+        token,
+        folderIds.map((id) => ({ id, chain: [...target.chain] })),
+        target.leafPrefix,
+        entries,
+        prefix,
+      );
+      return entries;
+    }
+    const roots = await this.childFoldersOf(token, rootId);
+    const nodes: { id: string; chain: string[] }[] = [];
+    for (const folder of roots) {
+      const name = folder.name ?? '';
+      const scope = scopeOfFolderName(name);
+      const isMisc = name === 'blobs' || name === 'meta';
+      if (scope === null && !isMisc) continue;
+      if (
+        target.kind === 'scopes' &&
+        (scope === null ||
+          (target.scopePrefix !== '' && !scope.startsWith(target.scopePrefix)))
+      ) {
+        continue;
+      }
+      if (folder.id !== undefined) nodes.push({ id: folder.id, chain: [name] });
+    }
+    await this.descendLevel(token, nodes, '', entries, prefix);
+    return entries;
+  }
+
+  private async resolveChainAll(
+    token: string,
+    rootId: string,
+    chain: readonly string[],
+  ): Promise<string[]> {
+    let parentIds = [rootId];
+    for (const segment of chain) {
+      const next: string[] = [];
+      for (const parentId of parentIds) {
+        for (const folder of await this.childFoldersOf(token, parentId, segment)) {
+          if (folder.id !== undefined) next.push(folder.id);
+        }
+      }
+      if (next.length === 0) return [];
+      parentIds = next;
+    }
+    return parentIds;
+  }
+
+  private async descendLevel(
+    token: string,
+    nodes: { id: string; chain: string[] }[],
+    leafPrefix: string,
+    out: RemoteEntry[],
+    prefix: string,
+  ): Promise<void> {
+    for (let i = 0; i < nodes.length; i += PARENT_OR_CHUNK) {
+      const chunk = nodes.slice(i, i + PARENT_OR_CHUNK);
+      const byParent = new Map(chunk.map((n) => [n.id, n] as const));
+      const orClause = chunk.map((n) => `'${n.id}' in parents`).join(' or ');
+      const children = await this.queryFiles(
+        token,
+        `trashed = false and (${orClause})`,
+        (file) => file.id !== undefined && file.name !== undefined,
+        DRIVE_SPACE,
+      );
+      const deeper: { id: string; chain: string[] }[] = [];
+      for (const child of children) {
+        const parent = child.parents?.find((p) => byParent.has(p));
+        const node = parent !== undefined ? byParent.get(parent) : undefined;
+        if (node === undefined) continue;
+        const name = child.name ?? '';
+        if (!name.startsWith(leafPrefix)) continue;
+        if (child.mimeType === DRIVE_FOLDER_MIME) {
+          deeper.push({ id: child.id!, chain: [...node.chain, name] });
+          continue;
+        }
+        const logical = logicalPathOf(node.chain, name);
+        if (logical !== null && logical.startsWith(prefix)) {
+          out.push(toRemoteEntry({ ...child, name: logical }));
+        }
+      }
+      if (deeper.length > 0) await this.descendLevel(token, deeper, '', out, prefix);
+    }
+  }
+
+  private async reapIfEmpty(token: string, folderId: string): Promise<void> {
+    try {
+      const children = await this.queryFiles(
+        token,
+        `trashed = false and '${folderId}' in parents`,
+        (file) => file.id !== undefined,
+        DRIVE_SPACE,
+      );
+      if (children.length === 0) await this.deleteFile(token, folderId);
+    } catch {}
+  }
+
+  private async migrateFlatFiles(
+    token: string,
+    accountKey: string,
+    rootId: string,
+    flat: DriveFile[],
+  ): Promise<void> {
+    const flag = flatMigratedKey(accountKey);
+    const last = await this.kv.get<number>('local', flag);
+    if (last !== undefined && this.now() - last < FLAT_MIGRATE_INTERVAL_MS) return;
+    const legacy = flat.filter(
+      (file) =>
+        file.name !== undefined &&
+        file.name.startsWith(`${REMOTE_ROOT}/`) &&
+        mapLogicalPath(file.name) !== null,
+    );
+    if (legacy.length === 0) return;
+    await this.kv.set('local', flag, this.now());
+    try {
+      for (const file of legacy) {
+        const mapped = mapLogicalPath(file.name!)!;
+        const leafFolderId = await this.resolveOrCreateChain(
+          token,
+          accountKey,
+          rootId,
+          mapped.chain,
+        );
+        const twins = await this.findInFolder(token, leafFolderId, mapped.leaf);
+        const twin = twins.length ? twins.reduce(newerFile) : undefined;
+        if (twin === undefined) {
+          await this.moveFile(token, file, leafFolderId, mapped.leaf, rootId);
+        } else if (fileModifiedAt(file) > fileModifiedAt(twin)) {
+          await this.moveFile(token, file, leafFolderId, mapped.leaf, rootId);
+          await this.compareAndDelete(token, twin);
+        } else {
+          await this.compareAndDelete(token, file);
+        }
+      }
+    } catch {}
+  }
+
+  private async moveFile(
+    token: string,
+    file: DriveFile,
+    folderId: string,
+    leaf: string,
+    fromParentId: string,
+  ): Promise<void> {
+    try {
+      await this.send(
+        `${DRIVE_API_BASE}/files/${encodeURIComponent(file.id ?? '')}` +
+          `?addParents=${encodeURIComponent(folderId)}` +
+          `&removeParents=${encodeURIComponent(fromParentId)}` +
+          `&fields=${encodeURIComponent(FILE_FIELDS)}`,
+        {
+          method: 'PATCH',
+          headers: {
+            ...this.authHeaders(token),
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+          body: JSON.stringify({ name: leaf }),
+        },
+      );
+    } catch (e) {
+      if (e instanceof ProviderError && e.kind === 'not-found') return;
+      throw e;
+    }
+  }
+
+  private async compareAndDelete(token: string, file: DriveFile): Promise<void> {
+    try {
+      const response = await this.send(
+        `${DRIVE_API_BASE}/files/${encodeURIComponent(file.id ?? '')}?fields=id,modifiedTime`,
+        { headers: this.authHeaders(token) },
+      );
+      const fresh = (await response.json()) as DriveFile;
+      if (fresh.modifiedTime !== file.modifiedTime) return;
+      await this.deleteFile(token, file.id!);
+    } catch (e) {
+      if (e instanceof ProviderError && e.kind === 'not-found') return;
+      throw e;
+    }
   }
 
   private async multipartCreate(
     token: string,
-    rootId: string,
-    path: string,
+    parentId: string,
+    name: string,
     bytes: Uint8Array,
     mimeType: string,
   ): Promise<DriveFile> {
@@ -570,7 +964,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     const encoder = new TextEncoder();
     const meta = encoder.encode(
       `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
-        `${JSON.stringify({ name: path, parents: [rootId] })}\r\n` +
+        `${JSON.stringify({ name, parents: [parentId] })}\r\n` +
         `--${boundary}\r\nContent-Type: ${mimeType || 'application/octet-stream'}\r\n\r\n`,
     );
     const trailer = encoder.encode(`\r\n--${boundary}--\r\n`);
@@ -615,7 +1009,8 @@ export class GoogleDriveStorageProvider implements StorageProvider {
 
   private async resumableWrite(
     token: string,
-    rootId: string,
+    parentId: string,
+    name: string,
     path: string,
     bytes: Uint8Array,
     mimeType: string,
@@ -644,7 +1039,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
       }
       await this.kv.del('local', key);
     }
-    const initiated = await this.initiateSession(token, rootId, path, bytes, mimeType, fileId);
+    const initiated = await this.initiateSession(token, parentId, name, bytes, mimeType, fileId);
     sessionUri = initiated.uri;
     fileId = initiated.fileId ?? fileId;
     await this.kv.set('local', key, { uri: sessionUri, fileId, size: bytes.byteLength });
@@ -655,8 +1050,8 @@ export class GoogleDriveStorageProvider implements StorageProvider {
 
   private async initiateSession(
     token: string,
-    rootId: string,
-    path: string,
+    parentId: string,
+    name: string,
     bytes: Uint8Array,
     mimeType: string,
     fileId: string | undefined,
@@ -674,7 +1069,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
       : await this.send(`${DRIVE_UPLOAD_BASE}/files?uploadType=resumable`, {
           method: 'POST',
           headers: { ...headers, 'Content-Type': 'application/json; charset=UTF-8' },
-          body: JSON.stringify({ name: path, parents: [rootId] }),
+          body: JSON.stringify({ name, parents: [parentId] }),
         });
     const uri = response.headers.get('Location');
     if (!uri) {
@@ -760,6 +1155,17 @@ export class GoogleDriveStorageProvider implements StorageProvider {
 
 function newerFile(a: DriveFile, b: DriveFile): DriveFile {
   return fileModifiedAt(b) >= fileModifiedAt(a) ? b : a;
+}
+
+function fileCreatedAt(file: DriveFile): number {
+  const parsed = Date.parse(file.createdTime ?? '');
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function olderFolder(a: DriveFile, b: DriveFile): number {
+  const diff = fileCreatedAt(a) - fileCreatedAt(b);
+  if (diff !== 0) return diff;
+  return (a.id ?? '') < (b.id ?? '') ? -1 : 1;
 }
 
 function parseRangeEnd(range: string): number {
