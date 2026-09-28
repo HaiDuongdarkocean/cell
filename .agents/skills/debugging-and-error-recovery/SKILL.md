@@ -22,7 +22,7 @@ Given (every precondition the user named — timing, layout, mode) / When (the r
 
 ## Triage — diagnose before reproducing
 
-Read the code path the symptom names, grep callers, probe the live page. A 3-line `evaluate` settles most UI/runtime bugs:
+If it worked before: `git log -p` / `git blame` the failing region first — most regressions name their culprit in the diff. Then read the code path the symptom names, grep callers, probe the live page. A 3-line `evaluate` settles most UI/runtime bugs:
 
 - `el.getAttribute('style')` — inline mutations stylesheets never show
 - `getComputedStyle` + ancestor walk for `overflow`/`clip-path`/`contain`/`opacity`
@@ -34,11 +34,10 @@ Read the code path the symptom names, grep callers, probe the live page. A 3-lin
 
 ## Full loop (only when triage fails)
 
-1. **Preserve** — capture DOM/console/network/state before your next action or reload destroys it.
-2. **Reproduce** — the real flow ≥2×, every contract condition set. A continuous process must run over time (interval log); a spec harness only when the trigger needs a user-flow sequence.
-3. **Localize** — name one code path producing the bad output.
-4. **Falsify** — hypothesis in one sentence + one experiment designed to disprove it (change a variable, different data, different context).
-5. **Snippet verify** — inject a runtime patch (style `!important`, function override, state mutation, fetch mock) → symptom gone with, present without. Skip for directly observed facts — verify hypotheses, not observations.
+1. **Preserve + Reproduce** — capture DOM/console/network/state before your next action destroys it; then trigger the real flow ≥2× with every contract condition set. A continuous process must run over time (interval log); a spec harness only when the trigger needs a user-flow sequence.
+2. **Localize** — name one code path producing the bad output.
+3. **Falsify** — hypothesis in one sentence + one experiment designed to disprove it (change a variable, different data, different context).
+4. **Snippet verify** — inject a runtime patch (style `!important`, function override, state mutation, fetch mock) → symptom gone with, present without. Skip for directly observed facts — verify hypotheses, not observations.
 
 ## Fix
 
