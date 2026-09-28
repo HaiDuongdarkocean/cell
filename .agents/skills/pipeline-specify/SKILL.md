@@ -118,7 +118,7 @@ What the system stores, moves, transforms: entities, key fields, where they live
 
 Reviewer rubric: `references/review-lenses.md` (BA/PO/TL lenses + merge + report format).
 
-1. Spawn `spec-reviewer` (fresh context — never self-review) against `docs/specs/<slug>.md`.
+1. Spawn `spec-reviewer` (fresh context — never self-review; one agent, one pass applying all three lenses) against `docs/specs/<slug>.md`.
 2. Write its report to `docs/reviews/<slug>-spec.md`, ending `VERDICT: APPROVE|APPROVE_WITH_CHANGES|REJECT`.
 3. **Exactly one review pass** — no fix→re-review loop:
    - APPROVE → transition.

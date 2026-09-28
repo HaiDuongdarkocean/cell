@@ -100,9 +100,9 @@ Never open with a question template. Sequence:
 ## Review gate
 
 - **interactive**: user approval of the intent doc → write `docs/reviews/<slug>-analyze.md` (approval record, ends `VERDICT: APPROVE`).
-- **`all`**: `subagent_explore` fresh-context audit — every need cites real evidence, scope bounded, journey complete — write the report to the same artifact, ending `VERDICT: APPROVE|APPROVE_WITH_CHANGES|REJECT`.
+- **`all`**: `subagent_explore` fresh-context audit — every need cites real evidence, scope bounded, journey complete — write the report to the same artifact, ending `VERDICT: APPROVE|APPROVE_WITH_CHANGES|REJECT`. **One subagent, one pass per doc version** — no fix→re-review on the same version: `APPROVE_WITH_CHANGES` → apply fixes to the intent doc, append `## Applied fixes` to the artifact (refreshes mtime) → transition.
 - Review artifact must be **newer than the intent doc** (stale review = refused by transition).
-- Rejected → fix → re-review (bounded by loops=3 via backward transitions).
+- Rejected → fix → re-review (a rewritten doc is a new version; bounded by loops=3 via backward transitions).
 
 ## Output
 

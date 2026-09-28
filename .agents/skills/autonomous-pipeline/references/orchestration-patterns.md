@@ -40,5 +40,5 @@ Domain rules live in their owning skills, not here: the edge test (dependency = 
 |---|---|
 | Implement code, run commands | `subagent_general` |
 | Read-only audit / verify / explore | `subagent_explore` |
-| Spec review | `spec-reviewer` / `spec-reviewer-glm` |
+| Spec review | `spec-reviewer` |
 | Read a screenshot/image | `vision-reader` |

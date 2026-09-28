@@ -105,7 +105,7 @@ CONTRACT: <paste contract>
 
 **Pass ARTIFACT + CONTRACT only. Do NOT pass the CLAIM.** Handing the reviewer your conclusion biases it toward agreement. The reviewer must independently determine whether the artifact satisfies the contract.
 
-In Devin CLI, `run_subagent` profiles start with isolated context by design and are usable here — `subagent_explore` for read-only code review, `spec-reviewer`/`spec-reviewer-glm` for spec-shaped artifacts. See `.agents/skills/autonomous-pipeline/references/orchestration-patterns.md` for the profile table.
+In Devin CLI, `run_subagent` profiles start with isolated context by design and are usable here — `subagent_explore` for read-only code review, `spec-reviewer` for spec-shaped artifacts. See `.agents/skills/autonomous-pipeline/references/orchestration-patterns.md` for the profile table.
 
 **The adversarial prompt above takes precedence over the persona's default response shape.** Personas like `spec-reviewer` are written to produce balanced verdicts with both strengths and weaknesses; doubt-driven needs issues-only output. Paste the adversarial prompt verbatim into the invocation so it overrides the persona's default. If a persona's response shape can't be overridden cleanly, fall back to a generic subagent with the adversarial prompt.
 

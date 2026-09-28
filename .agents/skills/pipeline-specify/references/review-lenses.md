@@ -1,6 +1,6 @@
 # Spec review lenses — BA / PO / TL
 
-> Load when running the SPECIFY gate (the `spec-reviewer` agent reads this). Three adversarial lenses review `docs/specs/<slug>.md` independently, then merge into one report ending `VERDICT:`.
+> Load when running the SPECIFY gate (the `spec-reviewer` agent reads this). One reviewer applies all three adversarial lenses to `docs/specs/<slug>.md` in a single pass, then merges into one report ending `VERDICT:`.
 
 ## Lens 1 — BA (Business Analyst)
 

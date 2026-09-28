@@ -8,6 +8,6 @@ description: Adversarial BA/PO/TL review of a spec before implementation. Use to
 **Absorbed.** Adversarial spec review is now the SPECIFY stage gate inside
 `pipeline-specify` — the `spec-reviewer` agent emits `docs/reviews/<slug>-spec.md`
 with `VERDICT:`; `pipeline-state.mjs transition` validates it (fresh + APPROVE/
-APPROVE_WITH_CHANGES). Reviewer prompts live under `.agents/agents/spec-reviewer*`.
+APPROVE_WITH_CHANGES). Reviewer prompt lives at `.agents/agents/spec-reviewer/AGENT.md` (single agent, single pass).
 
 Kept as a stub so `/spec-review-stakeholder` and old references still resolve.
