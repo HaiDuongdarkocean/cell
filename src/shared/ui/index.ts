@@ -16,6 +16,7 @@ export { ListItem } from './ListItem';
 export { NavItem } from './NavItem';
 export { Drawer } from './Drawer';
 export { Popover } from './Popover';
+export { Menu, MenuItem, MenuSeparator } from './Menu';
 export { FormGroup } from './FormGroup';
 export { Header } from './Header';
 export { Input } from './Input';

@@ -1,14 +1,21 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { Dialog } from '@/shared/ui/Dialog';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Icon } from '@/shared/icons/Icon';
 import { Pagination } from '@/shared/ui/Pagination';
-import { Popover } from '@/shared/ui/Popover';
+import { Menu, MenuItem, MenuSeparator } from '@/shared/ui/Menu';
 import { SearchField } from '@/shared/ui/SearchField';
 import { Text } from '@/shared/ui/Text';
-import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import { t, type MessageKey } from '@/shared/i18n';
 import { TRASH_TTL_MS } from '@/features/dictionary';
 import { type WordStatus } from '@/entities/dictionary';
@@ -100,10 +107,8 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
   const [error, setError] = useState<string | null>(null);
 
   const rootRef = useRef<HTMLDivElement>(null);
-  const toolbarRef = useRef<HTMLDivElement>(null);
   const filterTriggerRef = useRef<HTMLButtonElement>(null);
   const sortTriggerRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   const inTrash = segment === 'trash';
 
@@ -125,33 +130,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
     }
   }, [inTrash, source]);
 
-  useEffect(() => {
-    if (menu === null) return;
-    const doc = rootRef.current?.ownerDocument ?? document;
-    const win = doc.defaultView ?? window;
-    const handleClickOutside = (e: Event): void => {
-      const path = e.composedPath();
-      if (
-        !path.includes(toolbarRef.current as Node) &&
-        !path.includes(menuRef.current as Node)
-      ) {
-        setMenu(null);
-      }
-    };
-    const handleScroll = (): void => setMenu(null);
-    doc.addEventListener('mousedown', handleClickOutside);
-    win.addEventListener('scroll', handleScroll, true);
-    return () => {
-      doc.removeEventListener('mousedown', handleClickOutside);
-      win.removeEventListener('scroll', handleScroll, true);
-    };
-  }, [menu]);
-
-  useEffect(() => {
-    if (menu === null) return;
-    const doc = rootRef.current?.ownerDocument ?? document;
-    return pushEscapeLayer(() => setMenu(null), doc);
-  }, [menu]);
+  const closeMenu = useCallback(() => setMenu(null), []);
 
   const statusCounts = useMemo(() => countByStatus(state.entries), [state.entries]);
   const segmentCounts = useMemo<Record<VocabularySegment, number>>(
@@ -225,7 +204,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
 
   return (
     <div ref={rootRef} className={styles.tab} data-cell-id="vocabulary-tab">
-      <div ref={toolbarRef} className={styles.toolbar}>
+      <div className={styles.toolbar}>
         <Button
           ref={filterTriggerRef}
           variant="ghost"
@@ -273,74 +252,71 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
         )}
       </div>
 
-      <Popover
+      <Menu
         open={menu === 'filter'}
+        onClose={closeMenu}
         triggerRef={filterTriggerRef}
-        role="menu"
-        aria-label={t('vocabulary.segment.label')}
-        className={styles.menuSurface}
+        ariaLabel={t('vocabulary.segment.label')}
       >
-        <div ref={menuRef} className={styles.menu}>
-          {filterSegments.map((s) => (
-            <button
-              key={s}
-              type="button"
-              role="menuitemradio"
-              aria-checked={segment === s}
-              className={styles.menuItem}
-              onClick={() => handleSegmentChange(s)}
-              data-cell-id={`vocabulary-segment-${s}`}
-            >
-              <span className={styles.menuItemLabel}>{t(SEGMENT_LABEL[s])}</span>
-              <span className={styles.menuItemCount} data-cell-id={`vocabulary-segment-count-${s}`}>{segmentCounts[s]}</span>
-            </button>
-          ))}
-          <div className={styles.menuSep} />
-          <button
-            type="button"
-            role="menuitemradio"
-            aria-checked={inTrash}
-            className={styles.menuItem}
-            onClick={() => handleSegmentChange('trash')}
-            data-cell-id="vocabulary-segment-trash"
+        {filterSegments.map((s) => (
+          <MenuItem
+            key={s}
+            radio
+            selected={segment === s}
+            onSelect={() => handleSegmentChange(s)}
+            data-cell-id={`vocabulary-segment-${s}`}
+            trailing={
+              <span data-cell-id={`vocabulary-segment-count-${s}`}>{segmentCounts[s]}</span>
+            }
           >
-            <span className={styles.menuItemLabel}>
-              <Icon name="trash2" size={16} />
-              {t('vocabulary.segment.trash')}
-            </span>
-            <span className={styles.menuItemCount} data-cell-id="vocabulary-segment-count-trash">{segmentCounts.trash}</span>
-          </button>
-        </div>
-      </Popover>
+            {t(SEGMENT_LABEL[s])}
+          </MenuItem>
+        ))}
+        <MenuSeparator />
+        <MenuItem
+          radio
+          selected={inTrash}
+          icon={<Icon name="trash2" size={16} />}
+          onSelect={() => handleSegmentChange('trash')}
+          data-cell-id="vocabulary-segment-trash"
+          trailing={
+            <span data-cell-id="vocabulary-segment-count-trash">{segmentCounts.trash}</span>
+          }
+        >
+          {t('vocabulary.segment.trash')}
+        </MenuItem>
+      </Menu>
 
-      <Popover
+      <Menu
         open={menu === 'sort'}
+        onClose={closeMenu}
         triggerRef={sortTriggerRef}
-        role="menu"
-        aria-label={t('vocabulary.sort.label')}
-        className={styles.menuSurface}
+        ariaLabel={t('vocabulary.sort.label')}
       >
-        <div ref={menu === 'sort' ? menuRef : undefined} className={styles.menu}>
-          {SORT_OPTIONS.map((o) => (
-            <button
-              key={o.value}
-              type="button"
-              role="menuitemradio"
-              aria-checked={sort === o.value}
-              className={styles.menuItem}
-              onClick={() => { setSort(o.value); setPageIndex(0); setMenu(null); }}
-              data-cell-id={`vocabulary-sort-${o.value}`}
-            >
-              <span className={styles.menuItemLabel}>{t(o.label)}</span>
-              {sort === o.value && <Icon name="check" size={16} />}
-            </button>
-          ))}
-        </div>
-      </Popover>
+        {SORT_OPTIONS.map((o) => (
+          <MenuItem
+            key={o.value}
+            radio
+            selected={sort === o.value}
+            onSelect={() => {
+              setSort(o.value);
+              setPageIndex(0);
+              setMenu(null);
+            }}
+            data-cell-id={`vocabulary-sort-${o.value}`}
+            trailing={sort === o.value ? <Icon name="check" size={16} /> : undefined}
+          >
+            {t(o.label)}
+          </MenuItem>
+        ))}
+      </Menu>
 
       <SearchField
         value={query}
-        onChange={(value) => { setQuery(value); setPageIndex(0); }}
+        onChange={(value) => {
+          setQuery(value);
+          setPageIndex(0);
+        }}
         placeholder={t('vocabulary.search.placeholder')}
         className={styles.search}
         data-cell-id="vocabulary-search"
@@ -374,7 +350,11 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
             <>
               <ul className={styles.list}>
                 {trashPage.entries.map((entry) => (
-                  <li key={entry.term} className={styles.row} data-cell-id={`vocabulary-trash-row-${entry.term}`}>
+                  <li
+                    key={entry.term}
+                    className={styles.row}
+                    data-cell-id={`vocabulary-trash-row-${entry.term}`}
+                  >
                     <div className={styles.rowBody}>
                       <Button
                         variant="ghost"
@@ -385,11 +365,15 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                       >
                         {entry.term}
                       </Button>
-                      <span className={`${styles.statusBadge} ${styles.statusBadgeStatic} ${STATUS_CLASS[entry.previousStatus]}`}>
+                      <span
+                        className={`${styles.statusBadge} ${styles.statusBadgeStatic} ${STATUS_CLASS[entry.previousStatus]}`}
+                      >
                         {t(STATUS_LABEL[entry.previousStatus])}
                       </span>
                       <Text variant="supporting" color="secondary" className={styles.time}>
-                        {t('vocabulary.trash.expiresIn', [String(trashHoursLeft(entry.trashedAt, Date.now(), TRASH_TTL_MS))])}
+                        {t('vocabulary.trash.expiresIn', [
+                          String(trashHoursLeft(entry.trashedAt, Date.now(), TRASH_TTL_MS)),
+                        ])}
                       </Text>
                       <Button
                         variant="ghost"
@@ -433,50 +417,52 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
         <>
           <ul className={styles.list}>
             {page.entries.map((entry) => {
-              const groupHeader = sort === 'grouped' && entry.status !== lastGroup
-                ? (lastGroup = entry.status, (
-                    <li key={`group-${entry.status}`} className={styles.groupHeader}>
-                      {t(STATUS_LABEL[entry.status])}
-                    </li>
-                  ))
-                : null;
+              const groupHeader =
+                sort === 'grouped' && entry.status !== lastGroup
+                  ? ((lastGroup = entry.status),
+                    (
+                      <li key={`group-${entry.status}`} className={styles.groupHeader}>
+                        {t(STATUS_LABEL[entry.status])}
+                      </li>
+                    ))
+                  : null;
               return (
                 <Fragment key={entry.term}>
                   {groupHeader}
                   <li className={styles.row} data-cell-id={`vocabulary-row-${entry.term}`}>
                     <div className={styles.rowBody}>
-                    <Button
-                      variant="ghost"
-                      className={styles.term}
-                      title={entry.term}
-                      onClick={() => onLookup(entry.term)}
-                      data-cell-id={`vocabulary-term-${entry.term}`}
-                    >
-                      {entry.term}
-                    </Button>
-                    <Button
-                      variant="transparent"
-                      className={`${styles.statusBadge} ${STATUS_CLASS[entry.status]}`}
-                      aria-label={t('vocabulary.row.cycle', [entry.term])}
-                      onClick={() => handleCycle(entry.term)}
-                      data-cell-id={`vocabulary-cycle-${entry.term}`}
-                    >
-                      {t(STATUS_LABEL[entry.status])}
-                    </Button>
-                    <span className={styles.actionSlot}>
-                      {editMode && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          shape="circle"
-                          aria-label={t('vocabulary.row.remove', [entry.term])}
-                          onClick={() => setPendingDelete(entry.term)}
-                          data-cell-id={`vocabulary-delete-${entry.term}`}
-                        >
-                          <Icon name="trash" />
-                        </Button>
-                      )}
-                    </span>
+                      <Button
+                        variant="ghost"
+                        className={styles.term}
+                        title={entry.term}
+                        onClick={() => onLookup(entry.term)}
+                        data-cell-id={`vocabulary-term-${entry.term}`}
+                      >
+                        {entry.term}
+                      </Button>
+                      <Button
+                        variant="transparent"
+                        className={`${styles.statusBadge} ${STATUS_CLASS[entry.status]}`}
+                        aria-label={t('vocabulary.row.cycle', [entry.term])}
+                        onClick={() => handleCycle(entry.term)}
+                        data-cell-id={`vocabulary-cycle-${entry.term}`}
+                      >
+                        {t(STATUS_LABEL[entry.status])}
+                      </Button>
+                      <span className={styles.actionSlot}>
+                        {editMode && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            shape="circle"
+                            aria-label={t('vocabulary.row.remove', [entry.term])}
+                            onClick={() => setPendingDelete(entry.term)}
+                            data-cell-id={`vocabulary-delete-${entry.term}`}
+                          >
+                            <Icon name="trash" />
+                          </Button>
+                        )}
+                      </span>
                     </div>
                   </li>
                 </Fragment>
@@ -495,40 +481,52 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
 
       <Dialog
         open={pendingDelete !== null}
-        onOpenChange={(open) => { if (!open) setPendingDelete(null); }}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
         title={t('vocabulary.delete.title')}
         description={t('vocabulary.delete.description', [pendingDelete ?? ''])}
         showCloseButton
         data-cell-id="vocabulary-delete-dialog"
-        footer={(
+        footer={
           <>
             <Button variant="ghost" onClick={() => setPendingDelete(null)}>
               {t('vocabulary.delete.cancel')}
             </Button>
-            <Button variant="destructive" onClick={confirmDelete} data-cell-id="vocabulary-delete-confirm">
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              data-cell-id="vocabulary-delete-confirm"
+            >
               {t('vocabulary.delete.confirm')}
             </Button>
           </>
-        )}
+        }
       />
 
       <Dialog
         open={pendingPurge !== null}
-        onOpenChange={(open) => { if (!open) setPendingPurge(null); }}
+        onOpenChange={(open) => {
+          if (!open) setPendingPurge(null);
+        }}
         title={t('vocabulary.trashDelete.title')}
         description={t('vocabulary.trashDelete.description', [pendingPurge ?? ''])}
         showCloseButton
         data-cell-id="vocabulary-trash-delete-dialog"
-        footer={(
+        footer={
           <>
             <Button variant="ghost" onClick={() => setPendingPurge(null)}>
               {t('vocabulary.delete.cancel')}
             </Button>
-            <Button variant="destructive" onClick={confirmPurge} data-cell-id="vocabulary-trash-delete-confirm">
+            <Button
+              variant="destructive"
+              onClick={confirmPurge}
+              data-cell-id="vocabulary-trash-delete-confirm"
+            >
               {t('vocabulary.trashDelete.confirm')}
             </Button>
           </>
-        )}
+        }
       />
     </div>
   );

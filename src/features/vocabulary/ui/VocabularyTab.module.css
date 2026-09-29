@@ -33,65 +33,6 @@
   color: var(--color-primary);
 }
 
-.menuSurface.menuSurface {
-  border-radius: var(--radius-md);
-}
-
-.menu {
-  display: flex;
-  flex-direction: column;
-  min-width: var(--space-24);
-}
-
-.menuItem {
-  appearance: none;
-  border: none;
-  background: transparent;
-  font: inherit;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-2-5);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  min-height: var(--touch-target);
-  text-align: left;
-  transition: background var(--duration-fast) var(--ease-in-out), color var(--duration-fast) var(--ease-in-out);
-}
-
-.menuItem:hover {
-  background: var(--color-surface-hover);
-}
-
-.menuItem[aria-checked="true"] {
-  color: var(--color-primary);
-}
-
-.menuItemLabel {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1-5);
-}
-
-.menuItemCount {
-  color: var(--color-muted-foreground);
-  font-size: var(--font-size-xs);
-  font-variant-numeric: tabular-nums;
-}
-
-.menuSep {
-  height: var(--border-width-hairline);
-  background: var(--color-border-subtle);
-  margin: var(--space-1) var(--space-2);
-}
-
 .search {
   flex-shrink: 0;
   width: 100%;

@@ -85,37 +85,10 @@
   z-index: var(--z-base);
 }
 
-.cardMenu {
-  display: flex;
-  flex-direction: column;
-  min-width: var(--space-24);
-}
-
-.cardMenuItem {
-  appearance: none;
-  border: none;
-  background: transparent;
-  font: inherit;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-2-5);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  min-height: var(--touch-target);
-  text-align: left;
-  transition: opacity var(--duration-fast) var(--ease-in-out);
-}
-
 @media (hover: hover) and (pointer: fine) {
   .modeCard.modeCard:hover {
     background: var(--color-field);
     opacity: 0.85;
-  }
-  .cardMenuItem:hover {
-    opacity: 0.75;
   }
 }
 

@@ -10,3 +10,12 @@
   box-shadow: var(--shadow-popover);
   z-index: var(--z-popover);
 }
+
+/* Menu variant — vertical list of choices: rounded rect, not a pill.
+   Declared after .popover so it wins without a specificity hack. */
+.menu {
+  flex-direction: column;
+  align-items: stretch;
+  border-radius: var(--radius-md);
+  min-width: var(--space-24);
+}

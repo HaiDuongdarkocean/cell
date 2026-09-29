@@ -10,6 +10,7 @@
     "messaging",
     "rendering",
     "state",
+    "sync",
     "testing",
     "ux",
     "process"
@@ -2804,6 +2805,51 @@
         "orbital-badge"
       ],
       "trigger": "Element tồn tại, rect/computed đúng nhưng không hiển thị; hit-test rơi xuống element bên dưới"
+    },
+    {
+      "type": "experience",
+      "id": "ui-menu-single-shared-pattern",
+      "title": "Danh sách lựa chọn (menu/dropdown) phải dùng <Menu> shared — không tự style surface hay item",
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "menu",
+        "dropdown",
+        "popover",
+        "list-of-choices",
+        "shared-component",
+        "design-system",
+        "ssot",
+        "hover",
+        "focus-visible",
+        "anchor",
+        "shadow-dom"
+      ],
+      "trigger": "Cần dropdown/menu/list lựa chọn (actions, filter, sort, select) — hoặc thấy mình sắp viết .menuSurface/.menu/.menuItem hoặc một <Popover> chứa danh sách button trong CSS module của feature"
+    },
+    {
+      "type": "process",
+      "id": "process-verify-ui-overlay-against-canonical-instance",
+      "title": "Verify UI overlay = so cạnh canonical instance, không chỉ 'nó đã render'",
+      "category": [
+        "process",
+        "ux"
+      ],
+      "tags": [
+        "verification",
+        "screenshot",
+        "ui",
+        "overlay",
+        "menu",
+        "popover",
+        "regression",
+        "design-system",
+        "anchor",
+        "evidence"
+      ],
+      "trigger": "Thêm/sửa overlay (menu, popover, sheet, tooltip, dropdown) và verify bằng screenshot — thấy element render + có background là chưa đủ để kết luận pass"
     }
   ]
 }

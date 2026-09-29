@@ -9,7 +9,8 @@ import {
   Toggle,
   Dialog,
   Icon,
-  Popover,
+  Menu,
+  MenuItem,
   SelectableCard,
   SliderRow,
 } from '@/shared/ui';
@@ -234,34 +235,6 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
   const description = mode.descriptionKey ? t(mode.descriptionKey) : formatModeDescription(mode, t);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const doc = menuTriggerRef.current?.ownerDocument ?? document;
-    const win = doc.defaultView ?? window;
-    const handleClickOutside = (e: Event): void => {
-      const path = e.composedPath();
-      if (
-        !path.includes(menuTriggerRef.current as Node) &&
-        !path.includes(menuRef.current as Node)
-      ) {
-        setMenuOpen(false);
-      }
-    };
-    const handleScroll = (): void => setMenuOpen(false);
-    const handleKey = (e: Event): void => {
-      if ((e as KeyboardEvent).key === 'Escape') setMenuOpen(false);
-    };
-    doc.addEventListener('mousedown', handleClickOutside);
-    doc.addEventListener('keydown', handleKey);
-    win.addEventListener('scroll', handleScroll, true);
-    return () => {
-      doc.removeEventListener('mousedown', handleClickOutside);
-      doc.removeEventListener('keydown', handleKey);
-      win.removeEventListener('scroll', handleScroll, true);
-    };
-  }, [menuOpen]);
 
   return (
     <div className={styles.modeCardWrapper}>
@@ -299,40 +272,34 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
           >
             <Icon name="ellipsisVertical" size="sm" />
           </Button>
-          <Popover
+          <Menu
             open={menuOpen}
+            onClose={() => setMenuOpen(false)}
             triggerRef={menuTriggerRef}
-            role="menu"
-            menuAlign="right"
-            aria-label={t('studyModes.card.actions')}
+            align="right"
+            ariaLabel={t('studyModes.card.actions')}
           >
-            <div ref={menuRef} className={styles.cardMenu}>
-              <button
-                type="button"
-                role="menuitem"
-                className={styles.cardMenuItem}
-                data-cell-id={`edit-mode-${mode.id}`}
-                onClick={() => {
-                  setMenuOpen(false);
-                  onEdit?.(mode);
-                }}
-              >
-                {t('studyModes.card.edit')}
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                className={styles.cardMenuItem}
-                data-cell-id={`delete-mode-${mode.id}`}
-                onClick={() => {
-                  setMenuOpen(false);
-                  onDelete?.(mode);
-                }}
-              >
-                {t('studyModes.card.delete')}
-              </button>
-            </div>
-          </Popover>
+            <MenuItem
+              data-cell-id={`edit-mode-${mode.id}`}
+              icon={<Icon name="pencil" size="sm" />}
+              onSelect={() => {
+                setMenuOpen(false);
+                onEdit?.(mode);
+              }}
+            >
+              {t('studyModes.card.edit')}
+            </MenuItem>
+            <MenuItem
+              data-cell-id={`delete-mode-${mode.id}`}
+              icon={<Icon name="trash" size="sm" />}
+              onSelect={() => {
+                setMenuOpen(false);
+                onDelete?.(mode);
+              }}
+            >
+              {t('studyModes.card.delete')}
+            </MenuItem>
+          </Menu>
         </>
       )}
     </div>

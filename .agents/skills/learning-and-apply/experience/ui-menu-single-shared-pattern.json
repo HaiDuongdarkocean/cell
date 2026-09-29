@@ -1,0 +1,44 @@
+{
+  "id": "ui-menu-single-shared-pattern",
+  "title": "Danh sách lựa chọn (menu/dropdown) phải dùng <Menu> shared — không tự style surface hay item",
+  "category": ["css", "ux"],
+  "tags": [
+    "menu",
+    "dropdown",
+    "popover",
+    "list-of-choices",
+    "shared-component",
+    "design-system",
+    "ssot",
+    "hover",
+    "focus-visible",
+    "anchor",
+    "shadow-dom"
+  ],
+  "trigger": "Cần dropdown/menu/list lựa chọn (actions, filter, sort, select) — hoặc thấy mình sắp viết .menuSurface/.menu/.menuItem hoặc một <Popover> chứa danh sách button trong CSS module của feature",
+  "principle": "Mọi 'danh sách lựa chọn' đi qua `src/shared/ui/Menu.tsx` (`Menu` + `MenuItem` + `MenuSeparator`): surface = rounded-rect elevated (`radius-md`, KHÔNG phải pill), item = row bo `radius-sm` với hover/focus bằng `background: surface-hover` (không dùng opacity cho list item), arrow-key roving focus, dismissal (outside-click/Escape/scroll) do Menu tự lo. Call site chỉ khai báo item — KHÔNG tự style surface/item, KHÔNG tự viết lại logic đóng menu. Popover là shell positioning (`variant=\"menu\"`), không phải nơi nhét list thủ công. Nếu codebase chỉ có 1 exemplar của pattern: đưa nó lên shared rồi reuse, không viết bản thứ hai theo trí nhớ.",
+  "cases": [
+    {
+      "context": "Kebab menu Edit/Delete trên custom mode card (StudyModes) — đã tồn tại 1 menu chuẩn ở VocabularyTab nhưng bị bỏ qua",
+      "bad": "// StudyModesTab.tsx — tự viết surface + item\n<Popover open={open} triggerRef={ref} role=\"menu\" menuAlign=\"right\" aria-label={...}>\n  <div ref={menuRef} className={styles.cardMenu}>\n    <button role=\"menuitem\" className={styles.cardMenuItem} onClick={edit}>Edit</button>\n    <button role=\"menuitem\" className={styles.cardMenuItem} onClick={remove}>Delete</button>\n  </div>\n</Popover>\n\n// StudyModesTab.module.css — item hover bằng opacity, không có focus state\n.cardMenuItem { padding: var(--space-2) var(--space-2-5); transition: opacity ...; }\n@media (hover: hover) { .cardMenuItem:hover { opacity: 0.75; } }\n\n// + useEffect riêng cho outside-click/scroll/Escape\n// → Popover mặc định radius: var(--radius-pill) nên list dọc thành khối tròn, item không có hover bg,\n//   và menu không bám trigger (toạ độ đo 1 lần lúc mở).",
+      "good": "// shared/ui/Menu.tsx — một chỗ duy nhất\n<Popover variant=\"menu\" role=\"menu\" contentRef={menuRef} onKeyDown={handleKeyDown} ...>\n  {children}\n</Popover>\n// MenuItem: role=menuitem(radio), hover/focus-visible = background: var(--color-surface-hover), :disabled opacity\n// Menu: outside-click (composedPath vs trigger + menu), Escape, scroll, ArrowUp/Down/Home/End\n\n// Call site\n<Menu open={menuOpen} onClose={() => setMenuOpen(false)} triggerRef={menuTriggerRef} align=\"right\" ariaLabel={t('studyModes.card.actions')}>\n  <MenuItem icon={<Icon name=\"pencil\" size=\"sm\" />} onSelect={edit} data-cell-id={`edit-mode-${mode.id}`}>{t('studyModes.card.edit')}</MenuItem>\n  <MenuItem icon={<Icon name=\"trash\" size=\"sm\" />} onSelect={remove} data-cell-id={`delete-mode-${mode.id}`}>{t('studyModes.card.delete')}</MenuItem>\n</Menu>"
+    },
+    {
+      "context": "Popover dùng làm toolbar ngang (pill) — không được nhét list dọc vào mà không đổi surface",
+      "bad": "<Popover open={open} triggerRef={ref} role=\"menu\">\n  <div className={styles.myOwnMenuList}>...</div>\n</Popover>\n// .popover { border-radius: var(--radius-pill); display:flex; align-items:center; } → list dọc thành blob tròn",
+      "good": "<Menu open={open} onClose={close} triggerRef={ref} ariaLabel={...}>...</Menu>\n// Popover variant=\"menu\": flex-direction column, align-items stretch, border-radius: var(--radius-md)"
+    }
+  ],
+  "applyFor": [
+    "Dropdown / context menu / select / filter / sort UI",
+    "Shadow DOM overlays (Universal Panel, subtitle panel)",
+    "CSS Modules trong feature",
+    "Design-system compliance review"
+  ],
+  "related": ["button-states-ssot-use-ds-modifiers", "process-verify-ui-overlay-against-canonical-instance"],
+  "supersedes": [],
+  "source": {
+    "commit": "05f04cd0",
+    "date": "2026-09-29"
+  }
+}

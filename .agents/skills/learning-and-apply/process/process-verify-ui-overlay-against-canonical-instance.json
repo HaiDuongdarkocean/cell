@@ -1,0 +1,37 @@
+{
+  "id": "process-verify-ui-overlay-against-canonical-instance",
+  "title": "Verify UI overlay = so cạnh canonical instance, không chỉ 'nó đã render'",
+  "category": ["process", "ux"],
+  "tags": [
+    "verification",
+    "screenshot",
+    "ui",
+    "overlay",
+    "menu",
+    "popover",
+    "regression",
+    "design-system",
+    "anchor",
+    "evidence"
+  ],
+  "trigger": "Thêm/sửa overlay (menu, popover, sheet, tooltip, dropdown) và verify bằng screenshot — thấy element render + có background là chưa đủ để kết luận pass",
+  "principle": "Screenshot chỉ chứng minh 'element tồn tại', không chứng minh 'đúng pattern'. Với mỗi overlay mới: (1) mở instance canonical đã có trong hệ thống và chụp CẠNH NÓ, so shape/radius/hover/focus/anchor; (2) kiểm anchor ở trạng thái khó — sau scroll container, sau resize, khi mở gần mép màn hình; (3) ghi lại nhận xét nào là defect (không hợp thức hoá kiểu 'hơi lệch nhưng chấp nhận được' — đó là bug chưa fix). Nếu thấy mình đang giải thích một sai lệch thay vì sửa nó, dừng lại: đó là dấu hiệu verification đang tự lừa.",
+  "cases": [
+    {
+      "context": "Kebab menu trong StudyModes — verify bằng screenshot showcase, thấy menu có background nên kết luận pass",
+      "bad": "Chụp 1 ảnh showcase: menu render, có nền tối, đọc được 'Edit/Delete' → kết luận 'verified'.\nThực tế trong extension thật: surface là blob tròn (pill radius trên list dọc), item không có hover bg, menu trôi khỏi trigger khi tab đang scroll.\nKèm theo: đã tự viết 'menu mở hơi lệch lên trên nhưng chấp nhận được' trong report thay vì coi là defect.",
+      "good": "1. Mở song song menu canonical (VocabularyTab filter/sort) và menu mới → so shape, radius, item hover, spacing.\n2. Chụp anchor ở 3 trạng thái: tab ở đầu, tab đã scroll, trigger gần mép phải.\n3. Assert computed style nơi có thể (radius, background của item khi hover, toạ độ menu so với trigger).\n4. Mọi sai lệch quan sát được → fix hoặc ghi thành known-issue có owner, KHÔNG diễn giải thành 'acceptable'."
+    }
+  ],
+  "applyFor": [
+    "UI verification cho overlay/menu/dropdown/sheet",
+    "Review report có screenshot evidence",
+    "Trước khi báo 'verified' cho bất kỳ thay đổi UI có hình thái/tương tác mới"
+  ],
+  "related": ["ui-menu-single-shared-pattern"],
+  "supersedes": [],
+  "source": {
+    "commit": "05f04cd0",
+    "date": "2026-09-29"
+  }
+}
