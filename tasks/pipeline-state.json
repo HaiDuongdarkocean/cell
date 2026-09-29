@@ -1,5 +1,5 @@
 {
-  "active": null,
+  "active": "sync-on-use",
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -662,6 +662,46 @@
       "owner": null,
       "worktree": null,
       "updated": "2026-09-29T11:24:41.909Z"
+    },
+    "sync-on-use": {
+      "stage": "deliver",
+      "mode": "interactive",
+      "uiSurface": "no",
+      "artifacts": {
+        "spec": "docs/specs/sync-on-use.md",
+        "plan": "tasks/plan-sync-on-use.md",
+        "reviews": [
+          "docs/reviews/sync-on-use-verify.md"
+        ]
+      },
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-09-29T17:48:27.252Z"
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-09-29T17:48:27.331Z"
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-09-29T17:48:27.403Z"
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-09-29T17:48:27.481Z"
+        }
+      },
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 1,
+      "owner": {
+        "id": "devin-sync-on-use",
+        "since": "2026-09-29T15:09:33.671Z"
+      },
+      "worktree": null,
+      "updated": "2026-09-29T17:48:27.563Z"
     }
   }
 }
