@@ -14,6 +14,8 @@ export interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, 't
   action?: ReactNode;
   /** Size variant. `md` = default 48px icon; `compact` = 36px icon for panels; `sm` = 24px icon for compact panels. */
   size?: EmptyStateSize;
+  /** Dashed-border card look (inline list placeholders). Default: false. */
+  bordered?: boolean;
 }
 
 /**
@@ -28,10 +30,11 @@ export function EmptyState({
   description,
   action,
   size = 'md',
+  bordered = false,
   className,
   ...rest
 }: EmptyStateProps): React.JSX.Element {
-  const cls = [styles.root, styles[size], className ?? ''].filter(Boolean).join(' ');
+  const cls = [styles.root, styles[size], bordered ? styles.bordered : '', className ?? ''].filter(Boolean).join(' ');
   return (
     <div className={cls} role="status" {...rest}>
       {icon && <div className={`${styles.icon} ${styles[`icon${capitalize(size)}`]}`}>{icon}</div>}

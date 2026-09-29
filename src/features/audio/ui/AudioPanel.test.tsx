@@ -162,7 +162,9 @@ describe('AudioPanel', () => {
     const onTtsChange = jest.fn();
     renderPanel({ onTtsChange });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Autoplay count' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Number of audios to autoplay' }),
+    );
     fireEvent.click(screen.getByRole('option', { name: '2' }));
 
     expect(onTtsChange).toHaveBeenCalledWith(

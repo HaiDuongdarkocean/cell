@@ -12,6 +12,7 @@ import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import type { DictionaryPopupSettings } from '@/entities/settings/types';
 import { Text } from '@/shared/ui/Text';
 import { Icon } from '@/shared/ui/Icon';
+import { SegmentedControl } from '@/shared/ui/SegmentedControl';
 import { t, type MessageKey } from '@/shared/i18n';
 import { DictLinksManager } from './DictLinksManager';
 import styles from './DictionaryPopupSettingsPanel.module.css';
@@ -60,32 +61,6 @@ const SURFACE_TABS: readonly { key: SurfaceTab; icon: 'audioWave' | 'image' | 'l
   { key: 'translate', icon: 'languages', labelKey: 'dict.tab.translate' },
   { key: 'links', icon: 'link', labelKey: 'dict.tab.links' },
 ];
-
-interface PillGroupProps {
-  options: { value: string; label: string }[];
-  value: string;
-  onChange: (value: string) => void;
-  ariaLabel: string;
-}
-
-function PillGroup({ options, value, onChange, ariaLabel }: PillGroupProps): ReactElement {
-  return (
-    <div className={styles.pillGroup} role="radiogroup" aria-label={ariaLabel}>
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          role="radio"
-          aria-checked={value === option.value}
-          className={`${styles.pill} ${value === option.value ? styles.pillActive : ''}`}
-          onClick={() => onChange(option.value)}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 const STEPS = [
   {
@@ -145,7 +120,8 @@ export function DictionaryPopupSettingsPanel({
                 <Text as="span" className={styles.timelineLabel}>
                   {t(step.labelKey)}
                 </Text>
-                <PillGroup
+                <SegmentedControl
+                  variant="chips"
                   options={step.options.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
                   value={value}
                   onChange={(nextValue) => {
@@ -194,7 +170,8 @@ export function DictionaryPopupSettingsPanel({
           <Text as="span" className={styles.timelineLabel}>
             {t('settings.dictionaryPopup.translations')}
           </Text>
-          <PillGroup
+          <SegmentedControl
+            variant="chips"
             options={TRANSLATION_OPTIONS.map((o) => ({ value: o, label: t(TRANSLATION_LABEL_KEYS[o]) }))}
             value={settings.translationVisibility ?? 'hidden'}
             onChange={(nextValue) => update({ translationVisibility: nextValue as 'hidden' | 'shown' })}

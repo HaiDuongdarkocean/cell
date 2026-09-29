@@ -146,7 +146,9 @@ describe('SettingsDialogContent — merged Audio card', () => {
     const onChange = jest.fn();
     renderContent(DEFAULT_SETTINGS, onChange);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Autoplay count' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Number of audios to autoplay' }),
+    );
     fireEvent.click(screen.getByRole('option', { name: '2' }));
 
     expect(onChange).toHaveBeenCalledWith(

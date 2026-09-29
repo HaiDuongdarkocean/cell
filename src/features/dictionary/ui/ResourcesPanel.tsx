@@ -15,8 +15,8 @@
 import { useState, useCallback, useEffect, useMemo, useRef, type ReactElement, type ReactNode } from 'react';
 import { t, type MessageKey } from '@/shared/i18n';
 import { Alert } from '@/shared/ui/Alert';
-import { Button, Checkbox } from '@/shared/ui';
-import { Heading } from '@/shared/ui/Heading';
+import { Button, Checkbox, EmptyState } from '@/shared/ui';
+import { SectionHeader } from '@/shared/ui/SectionHeader';
 import { VisuallyHidden } from '@/shared/ui/VisuallyHidden';
 import { Dropzone } from './Dropzone';
 import { ResourceCard, ResourceCardSkeleton } from './ResourceCard';
@@ -209,26 +209,27 @@ function ResourceSection({
 
   return (
     <section className={styles.section}>
-      <div className={styles.sectionHeader}>
-        <div className={styles.sectionHeaderText}>
-          <Heading level={2} size={3} className={styles.sectionTitle}>{t(copy.title)}</Heading>
-          <p className={styles.sectionSubtitle}>{t(copy.subtitle)}</p>
-        </div>
-        {resources.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            active={isEditing}
-            aria-pressed={isEditing}
-            aria-label={t(isEditing ? 'resources.edit.done' : 'resources.edit.start', [t(copy.title)])}
-            title={t(isEditing ? 'resources.edit.titleDone' : 'resources.edit.titleStart')}
-            onClick={toggleEditing}
-            data-cell-id={`edit-${sectionId}`}
-          >
-            <Icon name={isEditing ? 'check' : 'pencil'} size="xs" />
-          </Button>
-        )}
-      </div>
+      <SectionHeader
+        level={2}
+        title={t(copy.title)}
+        subtitle={t(copy.subtitle)}
+        action={
+          resources.length > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              active={isEditing}
+              aria-pressed={isEditing}
+              aria-label={t(isEditing ? 'resources.edit.done' : 'resources.edit.start', [t(copy.title)])}
+              title={t(isEditing ? 'resources.edit.titleDone' : 'resources.edit.titleStart')}
+              onClick={toggleEditing}
+              data-cell-id={`edit-${sectionId}`}
+            >
+              <Icon name={isEditing ? 'check' : 'pencil'} size="xs" />
+            </Button>
+          ) : undefined
+        }
+      />
 
       {isEditing && (
         <div className={styles.editBar} data-cell-id={`edit-bar-${sectionId}`}>
@@ -308,7 +309,7 @@ function ResourceSection({
             <ResourceCardSkeleton />
           </>
         ) : resources.length === 0 && jobs.length === 0 && registryJobs.length === 0 ? (
-          <p className={styles.empty}>{t(copy.empty)}</p>
+          <EmptyState bordered size="sm" description={t(copy.empty)} />
         ) : (
           <>
             {resources.map((r, i) => {

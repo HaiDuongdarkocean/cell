@@ -10,8 +10,7 @@
 
 import { useRef, useState, type ReactElement } from 'react';
 import { t } from '@/shared/i18n';
-import { Button, Card, Dialog, HintIcon, Icon, Input, Text } from '@/shared/ui';
-import { Heading } from '@/shared/ui/Heading';
+import { Button, Card, Dialog, EmptyState, HintIcon, Icon, Input, SectionHeader, Text } from '@/shared/ui';
 import { DragHandle } from '@/shared/ui/DragHandle';
 import { useSectionDrag } from '@/shared/lib/useSectionDrag';
 import { reorderItems } from '@/shared/lib/reorderItems';
@@ -100,24 +99,21 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
 
   return (
     <section className={styles.section} data-cell-id="dict-links-manager">
-      <div className={styles.sectionHeader}>
-        <div className={styles.sectionHeaderText}>
-          <Heading level={5} size={3} className={styles.sectionTitle}>
-            {t('settings.dictionaryPopup.links.title')}
-          </Heading>
-          <Text as="p" color="secondary" className={styles.sectionSubtitle}>
-            {t('settings.dictionaryPopup.links.desc')}
-          </Text>
-        </div>
-        <Button variant="outline" size="sm" onClick={openAdd} data-cell-id="dict-link-add">
-          <Icon name="plus" size="xs" />
-          {t('settings.dictionaryPopup.links.add')}
-        </Button>
-      </div>
+      <SectionHeader
+        level={5}
+        title={t('settings.dictionaryPopup.links.title')}
+        subtitle={t('settings.dictionaryPopup.links.desc')}
+        action={
+          <Button variant="outline" size="sm" onClick={openAdd} data-cell-id="dict-link-add">
+            <Icon name="plus" size="xs" />
+            {t('settings.dictionaryPopup.links.add')}
+          </Button>
+        }
+      />
 
       <div className={styles.list} role="list" ref={listRef}>
         {links.length === 0 && (
-          <p className={styles.empty}>{t('settings.dictionaryPopup.links.empty')}</p>
+          <EmptyState bordered size="sm" description={t('settings.dictionaryPopup.links.empty')} />
         )}
         {links.map((link, i) => {
           const dragged = drag != null && link.id === drag.draggedId;

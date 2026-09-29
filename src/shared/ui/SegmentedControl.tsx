@@ -1,7 +1,7 @@
 import type { ReactElement, ReactNode } from 'react';
 import styles from './SegmentedControl.module.css';
 
-export type SegmentedControlVariant = 'raised' | 'accent' | 'filled';
+export type SegmentedControlVariant = 'raised' | 'accent' | 'filled' | 'chips';
 
 export interface SegmentedOption<T extends string> {
   /** Option value. */
@@ -40,6 +40,7 @@ export interface SegmentedControlProps<T extends string> {
  * - `raised`  — active segment floats (surface + shadow) on a tinted track.
  * - `accent`  — active segment tinted `primary-subtle` on an elevated track.
  * - `filled`  — active segment solid `primary` on a tinted track; wraps.
+ * - `chips`   — no track; separate field-bg pills, active = solid primary.
  *
  * Semantics: `radiogroup` + `radio`, roving tabindex, Arrow/Home/End keys
  * move AND select (shadow-DOM safe — navigation uses DOM siblings).

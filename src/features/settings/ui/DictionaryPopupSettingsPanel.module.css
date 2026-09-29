@@ -61,42 +61,6 @@
   color: var(--color-text-primary);
 }
 
-.pillGroup {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-}
-
-.pill {
-  appearance: none;
-  border: var(--border-width-hairline) solid transparent;
-  background: var(--color-field);
-  color: var(--color-text);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  min-height: var(--touch-target-desktop);
-}
-
-.pill:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text-primary);
-}
-
-.pillActive {
-  background: var(--color-primary);
-  color: var(--color-text-on-primary);
-  border-color: var(--color-primary);
-}
-
-.pillActive:hover {
-  background: var(--color-primary);
-  color: var(--color-text-on-primary);
-}
-
 /* Surface tabs — mirror the popup's DictionaryToolbar (32px icon+label pills). */
 .surfaceTabs {
   display: flex;

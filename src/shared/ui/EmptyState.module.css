@@ -102,6 +102,15 @@
   font-size: var(--font-size-sm);
 }
 
+/* === bordered — dashed placeholder card (inline list empty states) === */
+.root.bordered {
+  padding: var(--space-4);
+  gap: var(--space-1);
+  border: var(--border-width-hairline) dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
 .action {
   margin-top: var(--space-2);
 }
