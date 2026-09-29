@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 
+const DRAG_THRESHOLD = 4;
+
 export function useDragScroll<T extends HTMLElement = HTMLElement>() {
   const ref = useRef<T | null>(null);
 
@@ -9,24 +11,31 @@ export function useDragScroll<T extends HTMLElement = HTMLElement>() {
 
     let startX = 0;
     let startLeft = 0;
+    let pointerId = -1;
     let dragging = false;
 
     const onPointerDown = (e: PointerEvent): void => {
       if (e.pointerType !== 'mouse' || e.button !== 0) return;
-      if (el.scrollWidth <= el.clientWidth) return;
-      dragging = true;
+      pointerId = e.pointerId;
       startX = e.clientX;
       startLeft = el.scrollLeft;
-      el.setPointerCapture(e.pointerId);
-      el.style.userSelect = 'none';
     };
 
     const onPointerMove = (e: PointerEvent): void => {
-      if (!dragging) return;
+      if (e.pointerId !== pointerId) return;
+      if (!dragging) {
+        if (Math.abs(e.clientX - startX) < DRAG_THRESHOLD) return;
+        if (el.scrollWidth <= el.clientWidth) return;
+        dragging = true;
+        el.setPointerCapture(e.pointerId);
+        el.style.userSelect = 'none';
+      }
       el.scrollLeft = startLeft - (e.clientX - startX);
     };
 
     const endDrag = (e: PointerEvent): void => {
+      if (e.pointerId !== pointerId) return;
+      pointerId = -1;
       if (!dragging) return;
       dragging = false;
       if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);

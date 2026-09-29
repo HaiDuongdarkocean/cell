@@ -37,6 +37,14 @@ describe('useDragScroll', () => {
     expect(el.scrollLeft).toBe(40);
   });
 
+  it('does not capture the pointer below the drag threshold so taps still click', () => {
+    firePointer(el, 'pointerdown', { clientX: 0 });
+    firePointer(el, 'pointermove', { clientX: 2 });
+    expect(el.scrollLeft).toBe(0);
+    expect(el.setPointerCapture).not.toHaveBeenCalled();
+    firePointer(el, 'pointerup', {});
+  });
+
   it('ignores non-primary buttons and non-mouse pointers', () => {
     firePointer(el, 'pointerdown', { clientX: 0, button: 2 });
     firePointer(el, 'pointermove', { clientX: -40 });

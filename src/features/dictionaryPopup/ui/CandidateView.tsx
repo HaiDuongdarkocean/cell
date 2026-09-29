@@ -220,7 +220,7 @@ export function CandidateView({
             )}
           </div>
         )}
-        <div className={styles.cellHeaderSecond}>
+        <div className={styles.cellHeaderSecond} ref={freqScrollRef} data-cell-id="dictionary-freq-row">
           <Button
             variant="transparent"
             className={`${styles.cellHeaderStatus} ${styles[`cellHeaderStatus--${panel.status}`]}`}
@@ -230,16 +230,12 @@ export function CandidateView({
           >
             {t(STATUS_KEYS[panel.status])}
           </Button>
-          {candidate.frequencies.length > 0 && (
-            <div className={styles.cellHeaderFrequencies} ref={freqScrollRef} data-cell-id="dictionary-frequencies">
-              {candidate.frequencies.map((freq, i) => (
-                <span key={`${freq.source}-${i}`} className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${rankToBand(freq.rank, frequencyThresholds)}`]}`} data-cell-id="dictionary-frequency">
-                  <span className={styles.cellHeaderFrequencySource}>{freq.source}</span>
-                  <span className={styles.cellHeaderFrequencyRank}>{freq.rank.toLocaleString()}</span>
-                </span>
-              ))}
-            </div>
-          )}
+          {candidate.frequencies.map((freq, i) => (
+            <span key={`${freq.source}-${i}`} className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${rankToBand(freq.rank, frequencyThresholds)}`]}`} data-cell-id="dictionary-frequency">
+              <span className={styles.cellHeaderFrequencySource}>{freq.source}</span>
+              <span className={styles.cellHeaderFrequencyRank}>{freq.rank.toLocaleString()}</span>
+            </span>
+          ))}
         </div>
 
         <DictionaryToolbar
