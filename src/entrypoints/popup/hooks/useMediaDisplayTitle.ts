@@ -30,7 +30,8 @@ export interface VideoContext {
  * - Subtitle: when `videoContext` is provided, uses the video's title/URL as
  *   the base name + language suffix + subtitle format extension (e.g.
  *   "Movie Title.en.srt"), matching the download filename. When no video
- *   context, falls back to the subtitle's own URL base name.
+ *   context, uses the active tab title (then the subtitle URL as fallback) —
+ *   subtitle request URLs like `api/timedtext` carry no meaningful name.
  */
 export function resolveMediaDisplayTitle(
   media: DetectedVideo | DetectedSubtitle,
@@ -64,9 +65,11 @@ export function resolveMediaDisplayTitle(
     return buildSubtitleFileName(base, sub.language, sub.format);
   }
 
-  // No video context: fall back to the subtitle's own URL base name
-  // (legacy behavior, used when no video is detected on the same tab).
-  return resolveFilenameBase('url-only', undefined, (media as DetectedSubtitle).url);
+  // No video context: base on the page title (timedtext/API URLs produce
+  // meaningless names like "api - timedtext"), then URL, then lang suffix.
+  const sub = media as DetectedSubtitle;
+  const base = resolveFilenameBase(filenameSource, tabTitle, sub.url);
+  return buildSubtitleFileName(base, sub.language, sub.format);
 }
 
 /**

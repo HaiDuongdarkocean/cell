@@ -7,7 +7,8 @@ import { useDownloadProgress } from '@/entrypoints/popup/hooks/useDownloadProgre
 import { useExtensionStatus } from '@/entrypoints/popup/hooks/useExtensionStatus';
 import { useMediaDisplayTitle } from '@/entrypoints/popup/hooks/useMediaDisplayTitle';
 import { useSubtitleLanguage } from '@/entrypoints/popup/hooks/useSubtitleLanguage';
-import { Button, Tabs, Badge } from '@/shared/ui';
+import { Button } from '@/shared/ui';
+import { InkTabs } from '@/shared/ui/InkTabs';
 import { Header } from './components/layout/Header';
 import { VideoCard } from './components/media/VideoCard';
 import { SubtitleCard } from './components/media/SubtitleCard';
@@ -43,6 +44,7 @@ export function AppRedesigned(): React.JSX.Element {
   const switchThemeMode = useThemeStore((state) => state.switchMode);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'media' | 'downloads'>('media');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isAutoDownloadActive, setIsAutoDownloadActive] = useState(false);
 
@@ -319,16 +321,25 @@ export function AppRedesigned(): React.JSX.Element {
       />
 
       <main className={styles.content}>
-        <Tabs defaultValue="media">
-          <Tabs.List className={styles.tabList}>
-            <Tabs.Trigger value="media" data-cell-id="tab-media" className={styles.tabTrigger}>{t('settings.media.title')}</Tabs.Trigger>
-            <Tabs.Trigger value="downloads" data-cell-id="tab-downloads" className={styles.tabTrigger}>
-              {t('settings.download.title')}
-              {downloads.length > 0 && <Badge size="sm" variant="default">{downloads.length}</Badge>}
-            </Tabs.Trigger>
-          </Tabs.List>
+        <InkTabs
+          stretch
+          className={styles.tabList}
+          aria-label={t('settings.media.title')}
+          items={[
+            { value: 'media', label: t('settings.media.title'), testId: 'tab-media' },
+            {
+              value: 'downloads',
+              label: t('settings.download.title'),
+              badge: downloads.length > 0 ? downloads.length : undefined,
+              testId: 'tab-downloads',
+            },
+          ]}
+          value={activeTab}
+          onValueChange={(v): void => setActiveTab(v as 'media' | 'downloads')}
+        />
 
-          <Tabs.Content value="media" className={styles.tabContent}>
+        {activeTab === 'media' && (
+          <div className={styles.tabContent} role="tabpanel">
             {hasMedia && (
               <div className={styles.actionsRow}>
                 <Button variant="link" size="sm" onClick={handleSelectAll} data-cell-id="select-all-btn">
@@ -371,9 +382,11 @@ export function AppRedesigned(): React.JSX.Element {
                 <MediaEmpty type="videos" />
               )}
             </div>
-          </Tabs.Content>
+          </div>
+        )}
 
-          <Tabs.Content value="downloads" className={styles.tabContent}>
+        {activeTab === 'downloads' && (
+          <div className={styles.tabContent} role="tabpanel">
             <div className={styles.downloadsList} role="list" data-cell-id="downloads-section">
               {downloads.length > 0 ? (
                 downloads.map((download) => (
@@ -391,8 +404,8 @@ export function AppRedesigned(): React.JSX.Element {
                 <MediaEmpty type="downloads" />
               )}
             </div>
-          </Tabs.Content>
-        </Tabs>
+          </div>
+        )}
       </main>
 
       <SettingsDialog

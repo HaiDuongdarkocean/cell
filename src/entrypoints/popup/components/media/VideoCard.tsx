@@ -155,6 +155,7 @@ export function VideoCard({
         <HStack align="center" gap="1" className={styles.actions}>
           <Button shape="circle"
             size="sm"
+            variant="ghost"
             onClick={handleExpandClick}
             aria-label={urlExpanded ? t('downloads.media.hideUrl') : t('downloads.media.showUrl')}
             aria-expanded={urlExpanded}
@@ -192,7 +193,7 @@ export function VideoCard({
             variant="ghost"
             size="xs"
             className={styles.copyBtn}
-            leadingIcon={<Icon name="copy"  />}
+            trailingIcon={<Icon name="copy"  />}
             onClick={(e) => { void handleUrlClick(e); }}
             data-cell-id="video-url"
             title={t('downloads.media.copyUrl')}

@@ -13,6 +13,8 @@ export interface InkTabItem {
   disabled?: boolean;
   /** Accessible name override — defaults to the label text. */
   ariaLabel?: string;
+  /** data-cell-id passthrough for tests/e2e. */
+  testId?: string;
 }
 
 export interface InkTabsProps {
@@ -22,6 +24,8 @@ export interface InkTabsProps {
   onValueChange: (value: string) => void;
   /** Tablist accessible name. */
   'aria-label': string;
+  /** Equal-width tabs spanning the row (popup tab bars). */
+  stretch?: boolean;
   className?: string;
 }
 
@@ -31,7 +35,7 @@ export interface InkTabsProps {
  * width, expand to the destination width). Extracted from the dictionary
  * PronunciationAudioPanel subtabs; supports N tabs and optional count badges.
  */
-export function InkTabs({ items, value, onValueChange, className, ...rest }: InkTabsProps): React.JSX.Element {
+export function InkTabs({ items, value, onValueChange, stretch, className, ...rest }: InkTabsProps): React.JSX.Element {
   const listRef = useRef<HTMLDivElement>(null);
   const inkAnimRef = useRef<Animation | null>(null);
 
@@ -120,7 +124,7 @@ export function InkTabs({ items, value, onValueChange, className, ...rest }: Ink
   return (
     <div
       ref={listRef}
-      className={[styles.list, className ?? ''].filter(Boolean).join(' ')}
+      className={[styles.list, stretch ? styles.stretch : '', className ?? ''].filter(Boolean).join(' ')}
       role="tablist"
       onKeyDown={onKeyDown}
       {...rest}
@@ -137,6 +141,7 @@ export function InkTabs({ items, value, onValueChange, className, ...rest }: Ink
             aria-label={item.ariaLabel}
             tabIndex={active ? 0 : -1}
             data-value={item.value}
+            data-cell-id={item.testId}
             disabled={item.disabled}
             className={[styles.tab, active ? styles.tabActive : ''].filter(Boolean).join(' ')}
             onClick={(): void => onValueChange(item.value)}

@@ -151,30 +151,38 @@ describe('resolveMediaDisplayTitle', () => {
 
     it('falls back to subtitle URL when no video context', () => {
       const sub = makeSubtitle({ language: 'en' });
-      // No videoContext → uses subtitle URL base
-      expect(resolveMediaDisplayTitle(sub, 'title-fallback')).toBe('subs - en');
+      // No videoContext → subtitle URL base + lang suffix (sanitized filename)
+      expect(resolveMediaDisplayTitle(sub, 'title-fallback')).toBe('subs_-_en.en.vtt');
     });
 
     it('falls back to subtitle URL when video context is undefined', () => {
       const sub = makeSubtitle({ language: 'en', format: 'srt' });
       expect(resolveMediaDisplayTitle(sub, 'title-fallback', undefined, undefined)).toBe(
-        'subs - en',
+        'subs_-_en.en.srt',
       );
     });
   });
 
-  describe('subtitle — without video context (legacy fallback)', () => {
-    it('title-fallback: uses beautified subtitle URL', () => {
+  describe('subtitle — without video context', () => {
+    it('uses the page title when a tab title is available', () => {
       const sub = makeSubtitle({ language: 'en' });
-      expect(resolveMediaDisplayTitle(sub, 'title-fallback')).toBe('subs - en');
+      expect(resolveMediaDisplayTitle(sub, 'title-fallback', 'My Movie - YouTube')).toBe(
+        'My_Movie_-_YouTube.en.vtt',
+      );
+    });
+
+    it('title-fallback: uses beautified subtitle URL when no tab title', () => {
+      const sub = makeSubtitle({ language: 'en' });
+      expect(resolveMediaDisplayTitle(sub, 'title-fallback')).toBe('subs_-_en.en.vtt');
     });
 
     it('handles complex subtitle URL path', () => {
       const sub = makeSubtitle({
         url: 'https://kisskh.co/Drama/A-Good-Girl-s-Guide-to-Murder---Season-2/subtitles/en.vtt',
+        language: 'en',
       });
       expect(resolveMediaDisplayTitle(sub, 'title-fallback')).toBe(
-        "Drama - A Good Girl's Guide to Murder - Season 2 - subtitles - en",
+        "Drama_-_A_Good_Girl's_Guide_to_Murder_-_Season_2_-_subtitles_-_en.en.vtt",
       );
     });
   });

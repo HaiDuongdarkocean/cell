@@ -62,6 +62,28 @@
   color: var(--color-text);
 }
 
+/* === stretch — equal-width tabs spanning the full row (popup tab bars) === */
+
+.list.stretch {
+  gap: 0;
+  padding: 0;
+}
+
+.list.stretch::after {
+  bottom: 0;
+}
+
+.list.stretch .tab {
+  flex: 1;
+  justify-content: center;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  text-transform: none;
+  letter-spacing: normal;
+  padding: var(--space-2-5) var(--space-3);
+  border-bottom: none;
+}
+
 /* Count badge — minimal outline pill: transparent fill, text + ring take the
    tab label's own color (secondary → text when active). The tab's
    uppercase/tracking styles are reset inside the badge. */

@@ -156,6 +156,7 @@
 }
 
 .urlText {
+  flex: 1;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-normal);
   color: var(--color-text-secondary);

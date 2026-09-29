@@ -26,7 +26,7 @@ export function Header({
     <header className={styles.header}>
       <HStack align="center" gap="2" className={styles.headerLeft}>
         <Icon name="play" className={styles.headerIcon} />
-        <Heading level={1} className={styles.headerTitle}>Cell</Heading>
+        <Heading level={1} className={styles.headerTitle}>tihoka</Heading>
       </HStack>
       <HStack align="center" gap="0-5" className={styles.headerRight}>
         {/* Extension on/off toggle — ghost when ON, danger-active when OFF */}
@@ -46,9 +46,10 @@ export function Header({
           )}
         </Button>
 
-        {/* Auto Download toggle — primary active when ON */}
+        {/* Auto Download toggle — ghost, accent when ON */}
         <Button shape="circle"
           size="sm"
+          variant="ghost"
           active={isAutoDownloadActive}
           onClick={onToggleAutoDownload}
           aria-label={t('popup.header.autoDownload')}
@@ -61,6 +62,7 @@ export function Header({
         {/* Theme toggle */}
         <Button shape="circle"
           size="sm"
+          variant="ghost"
           onClick={onToggleTheme}
           aria-label={t('popup.header.toggleTheme')}
           title={t('popup.header.toggleTheme')}
@@ -75,6 +77,7 @@ export function Header({
         {/* Settings */}
         <Button shape="circle"
           size="sm"
+          variant="ghost"
           onClick={onOpenSettings}
           aria-label={t('settings.title')}
           title={t('settings.title')}

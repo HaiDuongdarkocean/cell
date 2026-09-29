@@ -95,7 +95,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
         >
           {/* Icon — subtitle (amber) */}
           <Center className={`${styles.icon} ${styles.subtitleIcon}`} aria-hidden="true">
-            <Icon name="flag"  />
+            <Icon name="captions"  />
           </Center>
 
           {/* Body */}
@@ -113,6 +113,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
           <HStack align="center" gap="1" className={styles.actions}>
             <Button shape="circle"
               size="sm"
+              variant="ghost"
               onClick={handleExpandClick}
               aria-label={urlExpanded ? t('downloads.media.hideUrl') : t('downloads.media.showUrl')}
               aria-expanded={urlExpanded}
@@ -150,7 +151,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
               variant="ghost"
               size="xs"
               className={styles.copyBtn}
-              leadingIcon={<Icon name="copy"  />}
+              trailingIcon={<Icon name="copy"  />}
               onClick={(e) => { void handleUrlClick(e); }}
               data-cell-id="subtitle-url"
               title={t('downloads.media.copyUrl')}
