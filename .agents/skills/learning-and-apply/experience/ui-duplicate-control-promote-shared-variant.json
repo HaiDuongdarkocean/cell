@@ -1,0 +1,54 @@
+{
+  "id": "ui-duplicate-control-promote-shared-variant",
+  "title": "≥2 feature tự-roll cùng một UI control → đưa lên shared/ui dạng variant, không để skin lệch nhau tồn tại",
+  "category": ["css", "ux"],
+  "tags": [
+    "segmented-control",
+    "slider",
+    "empty-state",
+    "scrollbar",
+    "icon-button",
+    "shared-component",
+    "design-system",
+    "ssot",
+    "composes",
+    "radiogroup",
+    "duplicate-pattern",
+    "audit"
+  ],
+  "trigger": "Trước khi viết/cho phép một UI control (segmented, slider, empty state, scrollbar hide, icon button, chip, tooltip...) trong feature module — hoặc audit thấy ≥2 module.css có cùng class-name intent (.segmented, .empty, .slider, .iconBtn, scrollbar-width:none)",
+  "principle": "Audit theo intent chứ không theo tên component: grep class/property signature trong module.css (`^\\.(segmented|empty|slider|toggle|tooltip|iconBtn)`, `scrollbar-width: none`, `-webkit-slider-thumb`, `role=\"radiogroup\"`). ≥2 bản = một pattern bị copy — đưa lên `shared/ui` với API options + prop `variant`/`size` cho từng skin thật sự tồn tại (không ép 1 skin), rồi migrate hết + XÓA css local trong cùng commit. Đồng thời unify semantics: 3 segmented cũ dùng 2 cách a11y khác nhau (aria-pressed group vs radiogroup) — shared component phải chọn semantics đúng một lần (radiogroup + aria-checked + roving tabindex + arrow keys). Với CSS-only utilities (scrollbar hide/themed) dùng `composes: hide from '@/shared/ui/Scrollable.module.css'` thay vì viết lại `scrollbar-width` + `::-webkit-scrollbar`. Với re-skin của component shared (vd local `.slider` override `<Slider>`): đưa skin đó thành prop chính thức (`size=\"compact\"`) — không để module.css override stealth.",
+  "cases": [
+    {
+      "context": "Segmented control tự-roll 3 nơi, 3 skin khác nhau + 2 loại a11y khác nhau",
+      "bad": "// AudioPanel: role=\"group\" + aria-pressed, active = solid primary\n<div className={styles.segmented} role=\"group\">{modes.map(m => <Button aria-pressed={...} ...>)}</div>\n// StudyModesTab: role=\"group\" + aria-pressed, active = primary-subtle\n// SubtitleStylePanel: role=\"radiogroup\" + aria-checked, active = surface + shadow\n// → 3 CSS block ~50 dòng mỗi nơi, semantics loạn, không arrow-key nav",
+      "good": "<SegmentedControl variant=\"filled|accent|raised\" options={options.map(o => ({value:o.value, label:t(o.label), testId:`x-${o.value}`}))} value={v} onChange={setV} ariaLabel={...} />\n// 1 component: radiogroup + roving tabindex + Arrow/Home/End (shadow-safe qua DOM siblings)"
+    },
+    {
+      "context": "SubtitleStylePanel re-skin <Slider> bằng 70 dòng local ::-webkit-slider-thumb",
+      "bad": "<Slider className={styles.slider} /> // + module css override track/thumb/height → stealth divergence, mất disabled/primary-hover/shadow-floating của shared",
+      "good": "<Slider size=\"compact\" /> // compact = height/padding override trong Slider.module.css, kế thừa mọi interaction state"
+    },
+    {
+      "context": "Scrollbar-hide tự-roll 3 chỗ trong khi Scrollable.module.css đã có .hide/.themed",
+      "bad": ".scrollTrack { scrollbar-width: none; } .scrollTrack::-webkit-scrollbar { display: none; }",
+      "good": ".scrollTrack { composes: hide from '@/shared/ui/Scrollable.module.css'; ... }"
+    },
+    {
+      "context": "Icon-only ghost button tự size bằng .iconBtn override",
+      "bad": "<Button variant=\"ghost\" size=\"sm\" className={styles.iconBtn}> // iconBtn ép iconbutton-size-md",
+      "good": "<Button variant=\"ghost\" size=\"md\" shape=\"circle\" /> // IconButton wrapper deprecated — canonical là Button shape=circle"
+    }
+  ],
+  "applyFor": [
+    "Mọi UI control/visual pattern mới trong feature module",
+    "Audit design-system compliance trước merge",
+    "CSS module diff review (pseudo-element, scrollbar, radius pattern)"
+  ],
+  "related": ["ui-menu-single-shared-pattern", "shadow-dom-boundary-apis", "process-verify-ui-overlay-against-canonical-instance"],
+  "supersedes": [],
+  "source": {
+    "commit": "dc446fc0",
+    "date": "2026-09-29"
+  }
+}

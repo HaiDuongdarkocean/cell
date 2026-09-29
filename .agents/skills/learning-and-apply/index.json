@@ -2872,6 +2872,30 @@
         "event-listener"
       ],
       "trigger": "Viết/review code chạy được trong shadow root mà đụng document.activeElement, window.getSelection(), document/window listener cho event non-composed (scroll/focus/blur/mouseenter/leave), hoặc e.target + contains() trong document-level listener"
+    },
+    {
+      "type": "experience",
+      "id": "ui-duplicate-control-promote-shared-variant",
+      "title": "≥2 feature tự-roll cùng UI control → đưa lên shared/ui dạng variant",
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "segmented-control",
+        "slider",
+        "empty-state",
+        "scrollbar",
+        "icon-button",
+        "shared-component",
+        "design-system",
+        "ssot",
+        "composes",
+        "radiogroup",
+        "duplicate-pattern",
+        "audit"
+      ],
+      "trigger": "Viết/audit UI control trong feature module — hoặc thấy ≥2 module.css có cùng class-name intent (.segmented, .empty, .slider, .iconBtn, scrollbar-width:none)"
     }
   ]
 }
