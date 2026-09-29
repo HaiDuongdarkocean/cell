@@ -1,0 +1,45 @@
+{
+  "id": "modifier-gated-gesture-needs-keydown-source",
+  "title": "Gesture gate bằng modifier phải nghe keydown, không chỉ pointer event",
+  "category": [
+    "ux",
+    "state"
+  ],
+  "tags": [
+    "keydown",
+    "modifier",
+    "hover-mode",
+    "mousemove",
+    "event-coverage",
+    "stationary-pointer"
+  ],
+  "trigger": "Gesture được gate bởi phím modifier (ctrl/shift/alt + hover/click) nhưng handler chỉ observe pointer events",
+  "principle": "Nếu gate của gesture có thể đổi mà không cần pointer di chuyển (nhấn modifier), tập handler phải gồm event mang thay đổi đó — keydown — cộng với toạ độ/eligibility chụp từ pointer event cuối (composedPath rỗng sau khi dispatch nên không thể tính lại lúc keydown). Thiếu keydown thì gesture chỉ hoạt động khi user còn di chuột sau khi nhấn phím; user đứng yên trên từ rồi nhấn phím sẽ không thấy gì.",
+  "cases": [
+    {
+      "context": "Dictionary popup mode hover-shift/hover-ctrl/hover-alt: user đặt cursor lên từ rồi nhấn Shift — không có mousemove nào nên trigger không bao giờ chạy.",
+      "bad": "attach(): void {\n  document.addEventListener('mousemove', this.boundMouseMove);\n  document.addEventListener('mouseup', this.boundMouseUp);\n}\nonMouseMove(e) {\n  if (!modifierMatches(this.deps.triggerMode, e)) { this.resetHover(); return; }\n  // chỉ chạy khi có mousemove → nhấn modifier đứng yên = không lookup\n}",
+      "good": "attach(): void {\n  document.addEventListener('mousemove', this.boundMouseMove);\n  document.addEventListener('mouseup', this.boundMouseUp);\n  if (TRIGGER_MODIFIER_KEY[this.deps.triggerMode]) {\n    document.addEventListener('keydown', this.boundKeyDown);\n    document.addEventListener('mouseout', this.boundMouseOut);\n  }\n}\nonMouseMove(e) {\n  if (TRIGGER_MODIFIER_KEY[this.deps.triggerMode]) {\n    this.lastPointer = {\n      x: e.clientX, y: e.clientY,\n      eligible: !eventBlockedForLookup(e) && !pathMatchesSelector(e, '[data-no-lookup]'),\n    };\n  }\n  if (!modifierMatches(this.deps.triggerMode, e)) { this.resetHover(); return; }\n  ...\n}\nonKeyDown(e: KeyboardEvent) {\n  if (e.repeat) return;\n  if (e.key !== TRIGGER_MODIFIER_KEY[this.deps.triggerMode]) return;\n  if (isEditableEvent(e)) return;\n  if (!this.lastPointer?.eligible) return;\n  if (window.getSelection()?.isCollapsed === false) return;\n  this.cancelPendingHover();\n  this.processHoverMove(this.lastPointer.x, this.lastPointer.y);\n}"
+    },
+    {
+      "context": "Eligibility (đang nằm trên UI host của extension / vùng data-no-lookup) chỉ tính được bên trong event dispatch — composedPath() rỗng sau đó, nên phải cache lại lúc mousemove chứ không tính lại lúc keydown.",
+      "bad": "onKeyDown(e) {\n  if (e.key !== 'Shift') return;\n  // computed path đã rỗng → không biết có đang nằm trên popup hay không\n  this.processHoverMove(this.lastX, this.lastY);\n}",
+      "good": "// lúc mousemove: lastPointer = { x, y, eligible: !eventBlockedForLookup(e) && !pathMatchesSelector(e, '[data-no-lookup]') }\n// lúc keydown: dùng lại lastPointer.eligible, và xoá lastPointer khi mouseout.relatedTarget === null (cursor rời page)"
+    }
+  ],
+  "applyFor": [
+    "Modifier + hover lookup/hotkey trên element",
+    "Drag/resize cần modifier",
+    "Canvas/editor tool gate bằng modifier",
+    "Bất kỳ trigger mà gate có thể đổi ngoài pointer event"
+  ],
+  "related": [
+    "debounce-timer-cancel-on-exit-zone",
+    "refactor-orphaned-delegation-guard"
+  ],
+  "supersedes": [],
+  "source": {
+    "commit": "ae2e7825",
+    "date": "2026-09-29"
+  }
+}

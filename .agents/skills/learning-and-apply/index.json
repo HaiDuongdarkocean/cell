@@ -2896,6 +2896,65 @@
         "audit"
       ],
       "trigger": "Viết/audit UI control trong feature module — hoặc thấy ≥2 module.css có cùng class-name intent (.segmented, .empty, .slider, .iconBtn, scrollbar-width:none)"
+    },
+    {
+      "type": "experience",
+      "id": "hover-dedup-guard-scoped-to-live-surface",
+      "title": "Dedup guard phải scope theo lifetime của surface, không chỉ theo target",
+      "category": [
+        "ux",
+        "state"
+      ],
+      "tags": [
+        "dedup",
+        "hover",
+        "popup-lifecycle",
+        "guard-scope",
+        "re-open",
+        "isPopupOpen"
+      ],
+      "trigger": "Trigger dedup target lặp lại để khỏi lookup lại, nhưng dedup sống lâu hơn surface mà nó bảo vệ"
+    },
+    {
+      "type": "experience",
+      "id": "modifier-gated-gesture-needs-keydown-source",
+      "title": "Gesture gate bằng modifier phải nghe keydown, không chỉ pointer event",
+      "category": [
+        "ux",
+        "state"
+      ],
+      "tags": [
+        "keydown",
+        "modifier",
+        "hover-mode",
+        "mousemove",
+        "event-coverage",
+        "stationary-pointer"
+      ],
+      "trigger": "Gesture được gate bởi modifier (ctrl/shift/alt + hover/click) nhưng handler chỉ observe pointer events"
+    },
+    {
+      "type": "experience",
+      "id": "refactor-orphaned-delegation-guard",
+      "title": "Refactor xóa consumer → guard 'delegate sang X' ở producer thành dead end, feature chết im lặng trên path đó",
+      "category": [
+        "state",
+        "detection",
+        "testing"
+      ],
+      "tags": [
+        "refactor",
+        "delegation",
+        "dead-code",
+        "orphan-consumer",
+        "trigger-mode",
+        "hover",
+        "event-listener",
+        "regression",
+        "silent-failure",
+        "popup-dictionary"
+      ],
+      "trigger": "Sau một migration/refactor (vd overlay vanilla → React), một tính năng chỉ hoạt động ở MỘT mode/đường (click) còn các mode khác (hover, hover+modifier) im lặng không làm gì — dù settings đúng, listener attach đúng, unit test của module logic vẫn xanh"
     }
   ]
 }

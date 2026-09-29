@@ -1,0 +1,24 @@
+{
+  "id": "hover-dedup-guard-scoped-to-live-surface",
+  "title": "Dedup guard phải scope theo lifetime của surface, không chỉ theo target",
+  "category": ["ux", "state"],
+  "tags": ["dedup", "hover", "popup-lifecycle", "guard-scope", "re-open", "isPopupOpen"],
+  "trigger": "Trigger dedup target lặp lại (cùng word/element) để khỏi lookup lại khi cursor di chuyển, nhưng dedup sống lâu hơn surface mà nó bảo vệ",
+  "principle": "Guard kiểu 'đang hiển thị cái này rồi thì thôi' phải được scope theo vòng đời của surface nó bảo vệ. Kiểm tra cả target identity VÀ surface còn mở (inject isPopupOpen từ consumer), để khi surface bị dismiss thì cùng target có thể trigger lại. Chỉ reset state khi pointer rời hẳn sẽ phá hành vi đúng đắn (băng qua khoảng trắng không được lookup lại), nên đừng sửa bằng cách xoá state.",
+  "cases": [
+    {
+      "context": "Hover dictionary popup trên page text: hover từ W → popup mở → Esc đóng popup → hover lại đúng W → popup KHÔNG mở lại (plain hover mode). Modifier modes không dính vì mousemove không modifier gọi resetHover, xoá dedup.",
+      "bad": "if (\n  request.term === this.lastHoveredTerm &&\n  resolved.range.startContainer === this.lastHoveredStartContainer &&\n  resolved.range.startOffset === this.lastHoveredStartOffset\n) return;",
+      "good": "if (\n  request.term === this.lastHoveredTerm &&\n  resolved.range.startContainer === this.lastHoveredStartContainer &&\n  resolved.range.startOffset === this.lastHoveredStartOffset &&\n  (this.deps.isPopupOpen?.() ?? true)\n) return;"
+    },
+    {
+      "context": "Vì sao không sửa bằng cách reset state khi cursor rời target: state đó đang được giữ có chủ đích để cursor băng qua khoảng trắng giữa các từ không lookup lại; reset ở đó sẽ làm popup flicker/re-lookup liên tục.",
+      "bad": "// onMouseMove: không có text dưới cursor → resetHover() (xoá lastHoveredTerm)\nif (!defaultGetCaretRange(x, y)) { this.resetHover(); return; }\n// Hệ quả: cursor đi qua khe giữa 2 từ → lookup lại từ cũ",
+      "good": "// Giữ nguyên nhánh preserve state, chỉ thêm điều kiện surface vào guard:\nif (!defaultGetCaretRange(x, y)) {\n  if (this.lastHoveredTerm !== null) { this.cancelPendingHover(); return; }\n  this.resetHover(); return;\n}\n// và guard same-occurrence chỉ chặn khi popup còn mở"
+    }
+  ],
+  "applyFor": ["Hover popup/tooltip với debounce", "Autocomplete/typeahead dedup theo item", "Bất kỳ guard 'item này đang active rồi' gắn với UI có thể bị dismiss", "Gesture detector có cửa sổ stability"],
+  "related": ["detection-false-negative-state-preservation", "dedup-separate-from-catchup"],
+  "supersedes": [],
+  "source": {"commit": "ae2e7825", "date": "2026-09-29"}
+}
