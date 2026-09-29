@@ -915,6 +915,221 @@ describe('WebTriggerController', () => {
       Range.prototype.getClientRects = originalGetClientRects;
       jest.useRealTimers();
     });
+
+    function setupWordCaret(p: HTMLParagraphElement): Range {
+      const textNode = p.firstChild as Text;
+      const mockRange = document.createRange();
+      mockRange.setStart(textNode, 4);
+      mockRange.setEnd(textNode, 9);
+      document.caretRangeFromPoint = jest.fn(() => mockRange) as typeof document.caretRangeFromPoint;
+      return mockRange;
+    }
+
+    function dispatchMove(target: Element, init: MouseEventInit = {}): void {
+      const event = new MouseEvent('mousemove', { bubbles: true, clientX: 50, clientY: 10, ...init });
+      Object.defineProperty(event, 'target', { value: target });
+      document.dispatchEvent(event);
+    }
+
+    it('hover re-lookup on the same word is gated by isPopupOpen', () => {
+      const p = document.createElement('p');
+      p.textContent = 'The quick brown fox';
+      document.body.appendChild(p);
+      setupWordCaret(p);
+      window.getSelection()?.removeAllRanges();
+
+      let popupOpen = true;
+      let lookupCount = 0;
+      const ctrl = new WebTriggerController({
+        triggerMode: 'hover',
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+        isPopupOpen: () => popupOpen,
+      });
+      ctrl.attach();
+
+      dispatchMove(p);
+      jest.advanceTimersByTime(150);
+      expect(lookupCount).toBe(1);
+
+      dispatchMove(p);
+      jest.advanceTimersByTime(150);
+      expect(lookupCount).toBe(1);
+
+      popupOpen = false;
+      dispatchMove(p);
+      jest.advanceTimersByTime(150);
+      expect(lookupCount).toBe(2);
+
+      ctrl.detach();
+      document.body.removeChild(p);
+    });
+
+    it('same-occurrence dedup keeps legacy behavior without isPopupOpen', () => {
+      const p = document.createElement('p');
+      p.textContent = 'The quick brown fox';
+      document.body.appendChild(p);
+      setupWordCaret(p);
+
+      let lookupCount = 0;
+      const ctrl = new WebTriggerController({
+        triggerMode: 'hover',
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      dispatchMove(p);
+      jest.advanceTimersByTime(150);
+      expect(lookupCount).toBe(1);
+
+      dispatchMove(p);
+      jest.advanceTimersByTime(150);
+      expect(lookupCount).toBe(1);
+
+      ctrl.detach();
+      document.body.removeChild(p);
+    });
+
+    it('hover-shift: pressing Shift while resting on a word dispatches lookup', () => {
+      const p = document.createElement('p');
+      p.textContent = 'The quick brown fox';
+      document.body.appendChild(p);
+      setupWordCaret(p);
+      window.getSelection()?.removeAllRanges();
+
+      let lookupCount = 0;
+      let term = '';
+      const ctrl = new WebTriggerController({
+        triggerMode: 'hover-shift',
+        onLookup: (req) => { lookupCount++; term = req.term; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      dispatchMove(p);
+      jest.advanceTimersByTime(150);
+      expect(lookupCount).toBe(0);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift', shiftKey: true, bubbles: true }));
+      expect(lookupCount).toBe(1);
+      expect(term).toBe('quick');
+
+      ctrl.detach();
+      document.body.removeChild(p);
+    });
+
+    it.each([
+      ['hover-ctrl', 'Control'],
+      ['hover-alt', 'Alt'],
+    ] as const)('%s: pressing %s while resting on a word dispatches lookup', (mode, key) => {
+      const p = document.createElement('p');
+      p.textContent = 'The quick brown fox';
+      document.body.appendChild(p);
+      setupWordCaret(p);
+      window.getSelection()?.removeAllRanges();
+
+      let lookupCount = 0;
+      const ctrl = new WebTriggerController({
+        triggerMode: mode,
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      dispatchMove(p);
+      jest.advanceTimersByTime(150);
+      expect(lookupCount).toBe(0);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+      expect(lookupCount).toBe(1);
+
+      ctrl.detach();
+      document.body.removeChild(p);
+    });
+
+    it.each([
+      ['hover-ctrl', 'Control'],
+      ['hover-shift', 'Shift'],
+      ['hover-alt', 'Alt'],
+    ] as const)('%s: keydown ignored when repeat, wrong key, editable target, or pointer left page', (mode, key) => {
+      const p = document.createElement('p');
+      p.textContent = 'The quick brown fox';
+      document.body.appendChild(p);
+      setupWordCaret(p);
+      window.getSelection()?.removeAllRanges();
+
+      let lookupCount = 0;
+      const ctrl = new WebTriggerController({
+        triggerMode: mode,
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      dispatchMove(p);
+      jest.advanceTimersByTime(150);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key, repeat: true, bubbles: true }));
+      expect(lookupCount).toBe(0);
+
+      const wrongKey = key === 'Control' ? 'Shift' : 'Control';
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: wrongKey, bubbles: true }));
+      expect(lookupCount).toBe(0);
+
+      const input = document.createElement('input');
+      document.body.appendChild(input);
+      input.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+      expect(lookupCount).toBe(0);
+      document.body.removeChild(input);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+      expect(lookupCount).toBe(1);
+
+      ctrl.detach();
+
+      const ctrl2 = new WebTriggerController({
+        triggerMode: mode,
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+      });
+      ctrl2.attach();
+      dispatchMove(p);
+      jest.advanceTimersByTime(150);
+      const before = lookupCount;
+      document.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: null }));
+      document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+      expect(lookupCount).toBe(before);
+
+      ctrl2.detach();
+      document.body.removeChild(p);
+    });
+
+    it('plain hover mode does not listen to modifier keydown', () => {
+      const p = document.createElement('p');
+      p.textContent = 'The quick brown fox';
+      document.body.appendChild(p);
+      setupWordCaret(p);
+
+      let lookupCount = 0;
+      const ctrl = new WebTriggerController({
+        triggerMode: 'hover',
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      dispatchMove(p);
+      jest.advanceTimersByTime(150);
+      expect(lookupCount).toBe(1);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift', shiftKey: true, bubbles: true }));
+      jest.advanceTimersByTime(150);
+      expect(lookupCount).toBe(1);
+
+      ctrl.detach();
+      document.body.removeChild(p);
+    });
   });
 
   describe('click / modifier fallback', () => {

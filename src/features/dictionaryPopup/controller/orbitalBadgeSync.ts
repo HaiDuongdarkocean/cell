@@ -22,6 +22,7 @@ export interface OrbitalBadgeSyncDeps {
     pointer?: WebTriggerPointer,
   ) => void;
   readonly onCancel: (requestId: string) => void;
+  readonly isPopupOpen: () => boolean;
 }
 
 export interface OrbitalBadgeSync {
@@ -94,6 +95,7 @@ export function createOrbitalBadgeSync(deps: OrbitalBadgeSyncDeps): OrbitalBadge
         triggerMode: 'hover',
         onLookup: deps.onLookup,
         onCancel: deps.onCancel,
+        isPopupOpen: deps.isPopupOpen,
       });
     }
     const sameDimensions = orbitalBadgeSize === trigger.size && orbitalBadgeScale === trigger.pointerScale;

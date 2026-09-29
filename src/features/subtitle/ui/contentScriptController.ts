@@ -27,7 +27,7 @@ import { type SubtitleCueEngineUpdate, type CardCreatorAction } from '@/features
 import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl } from '@/features/tokenize/services/tokenizeSettingsStore';
 import { SPLIT_VIEW_PANEL_SELECTOR } from '@/features/subtitle/logic/scrollPositionPreserve';
 import type { SubtitleTokenizeController } from '@/features/tokenize/controller/subtitleTokenizeController';
-import type { LookupRequest } from '@/entities/dictionary';
+import { modifierMatches, type ClickModifierState, type LookupRequest } from '@/entities/dictionary';
 import type { TokenizeSettings } from '@/features/tokenize/types';
 import type { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
 import { handleCardCreatorAction as sharedHandleCardCreatorAction } from '@/features/subtitle/actions/cardActions';
@@ -316,6 +316,21 @@ export function init(
     setTimeout(fire, 100);
   };
 
+  function openDictionaryFromToken(langCode: string, term: string, element: HTMLElement, contextSentence: string, event?: ClickModifierState): void {
+    if (!sharedWebTextCtrl) return;
+    const dp = currentSettings?.dictionaryPopup;
+    if (dp && dp.enabled === false) return;
+    if (event && !modifierMatches(dp?.triggerMode ?? 'click', event)) return;
+    const request: LookupRequest = {
+      term,
+      langCode,
+      contextSentence,
+      cursorOffset: Number(element.getAttribute('data-cell-start') ?? 0),
+    };
+    const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    sharedWebTextCtrl.handleLookup(request, requestId, element.getBoundingClientRect(), element);
+  }
+
   /** Enable/disable subtitle tokenize based on current settings and tokenize settings. */
   async function syncSubtitleTokenize(tokenizeSettings?: TokenizeSettings): Promise<void> {
     const settings = currentSettings;
@@ -344,17 +359,8 @@ export function init(
               const panel = document.querySelector<HTMLElement>(SPLIT_VIEW_PANEL_SELECTOR);
               return panel?.shadowRoot ? [panel.shadowRoot] : [];
             },
-            onOpenDictionary: (term, element, contextSentence) => {
-              if (!sharedWebTextCtrl) return;
-              const request: LookupRequest = {
-                term,
-                langCode: settings.subtitleOverlayTargetLanguage,
-                contextSentence,
-                cursorOffset: Number(element.getAttribute('data-cell-start') ?? 0),
-              };
-              const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-              sharedWebTextCtrl.handleLookup(request, requestId, element.getBoundingClientRect(), element);
-            },
+            onOpenDictionary: (term, element, contextSentence, event) =>
+              openDictionaryFromToken(settings.subtitleOverlayTargetLanguage, term, element, contextSentence, event),
             getPopupStatusTarget: () => sharedWebTextCtrl?.getPopupStatusTarget?.() ?? null,
           });
         }
@@ -368,17 +374,8 @@ export function init(
         subtitleTokenizeCtrl.render(activeTarget, activeNative);
         blockController.enableTokenize({
           langCode: settings.subtitleOverlayTargetLanguage,
-          onOpenDictionary: (term, element, contextSentence) => {
-            if (!sharedWebTextCtrl) return;
-            const request: LookupRequest = {
-              term,
-              langCode: settings.subtitleOverlayTargetLanguage,
-              contextSentence,
-              cursorOffset: Number(element.getAttribute('data-cell-start') ?? 0),
-            };
-            const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-            sharedWebTextCtrl.handleLookup(request, requestId, element.getBoundingClientRect(), element);
-          },
+          onOpenDictionary: (term, element, contextSentence, event) =>
+            openDictionaryFromToken(settings.subtitleOverlayTargetLanguage, term, element, contextSentence, event),
           onTokenHover: (term) => subtitleTokenizeCtrl?.setHoveredTerm(term),
         });
       } else {

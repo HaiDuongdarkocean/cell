@@ -1,6 +1,6 @@
 import type { SrtCue } from '@/entities/media';
 import type { Token, TokenBlock, TokenizeController, TokenizeState } from '@/features/tokenize/types';
-import type { WordStatus } from '@/entities/dictionary';
+import type { ClickModifierState, WordStatus } from '@/entities/dictionary';
 import { createTokenizeStateStore, type TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import { TokenizeScheduler } from '@/features/tokenize/logic/tokenizeScheduler';
 import { bindTokenBlock, restyleTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
@@ -41,7 +41,7 @@ export interface SubtitleTokenizeControllerOptions {
    *  1-4 status keys work on selections inside those surfaces. */
   readonly getExtraShadowRoots?: () => readonly ShadowRoot[];
   /** Called when the user clicks a token to open the Popup Dictionary. */
-  readonly onOpenDictionary: (term: string, element: HTMLElement, contextSentence: string) => void;
+  readonly onOpenDictionary: (term: string, element: HTMLElement, contextSentence: string, event: ClickModifierState) => void;
   /** Open popup's looked-up term — 1-4 status keys target it before selection/hover. */
   readonly getPopupStatusTarget?: () => PopupStatusTarget | null;
   /** Number of cues before/after the active cue to keep prepared. */
@@ -94,7 +94,7 @@ export function createSubtitleTokenizeController(
           stateStore.setHoveredTerm(null);
         }
       },
-      onTokenClick: (term, block, element) => onOpenDictionary(term, element, block.originalText),
+      onTokenClick: (term, block, element, _token, event) => onOpenDictionary(term, element, block.originalText, event),
       onTokenCtrlClick: (term) => stateStore.toggleSelectedTerm(term),
     };
   }

@@ -18,6 +18,7 @@ export type ReadingKind = 'ipa' | 'pinyin' | 'none';
 export type WordStatus = 'unknown' | 'known' | 'tracking' | 'ignore';
 export const STATUS_CYCLE: readonly WordStatus[] = ['unknown', 'tracking', 'known', 'ignore'];
 export type TriggerMode = 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt';
+export type ClickModifierState = Pick<MouseEvent, 'ctrlKey' | 'shiftKey' | 'altKey'>;
 export type PopupTab = 'audio' | 'image' | 'translate' | 'links' | 'pronunciation';
 export type SrsDestination = 'anki';
 export type AudioSourceKind = 'community' | 'system-tts' | 'cloud-tts' | 'local' | 'espeak';

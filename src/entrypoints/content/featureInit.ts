@@ -12,7 +12,7 @@ import type { WebTokenizeController } from '@/features/tokenize/controller/webTo
 import { mountUniversalPanel, type UniversalPanelMountController } from '@/features/universalPanel';
 import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, setSubtitleTokenizeEnabledForUrl, saveTokenizeSettings } from '@/features/tokenize/services/tokenizeSettingsStore';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
-import type { LookupRequest } from '@/entities/dictionary';
+import { modifierMatches, type LookupRequest, type TriggerMode } from '@/entities/dictionary';
 import { findAndInitOverlay } from './videoOverlay';
 import { startMediaScoreSource } from '@/features/subtitle/logic/mediaScoreSource';
 import { startTextScoreSource } from '@/features/tokenize/services/textScoreSource';
@@ -24,6 +24,8 @@ import { comprehensionStore } from '@/features/tokenize/services/comprehensionSt
 let webTextCtrl: WebTextDictionaryController | null = null;
 let webTokenizeCtrl: WebTokenizeController | null = null;
 let tokenizeLang: string | null = null;
+let tokenLookupEnabled = true;
+let tokenLookupMode: TriggerMode = 'click';
 /** ADR-061: Persistent tokenize panel subscribers — survive webTokenizeCtrl
  *  recreation (profile/language switch destroys + rebuilds it). Each new
  *  controller instance re-subscribes a forwarder that broadcasts to this set. */
@@ -144,6 +146,8 @@ export async function initWebTextDictionary(): Promise<void> {
   try {
     const settings = await loadSettings();
     const dp = settings.dictionaryPopup;
+    tokenLookupEnabled = dp?.enabled !== false;
+    tokenLookupMode = dp?.triggerMode ?? 'click';
     const ctrl = ensureWebTextCtrl();
     ctrl.updateSettings({
       dictionaryPopup: dp ?? DEFAULT_DICTIONARY_POPUP_SETTINGS,
@@ -174,8 +178,9 @@ export async function initTokenize(): Promise<void> {
       url: window.location.href,
       root: document.body,
       langCode,
-      onOpenDictionary: (term, element, contextSentence) => {
+      onOpenDictionary: (term, element, contextSentence, event) => {
         const ctrl = ensureWebTextCtrl();
+        if (!tokenLookupEnabled || !modifierMatches(tokenLookupMode, event)) return;
         const start = parseInt(element.getAttribute('data-cell-start') ?? '0', 10);
         const wordEl = element.querySelector('.js-cell-token-word');
         const range = document.createRange();

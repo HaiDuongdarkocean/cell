@@ -10,7 +10,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { t } from '@/shared/i18n';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
-import { getActiveProfileSettings, type Settings } from '@/entities/settings';
+import { getActiveProfileSettings, type DictionaryPopupSettings, type Settings } from '@/entities/settings';
+import { modifierMatches } from '@/entities/dictionary';
 import { logger } from '@/shared/lib/logger';
 import {
   DEFAULT_CARD_CREATOR_SETTINGS,
@@ -54,6 +55,7 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
   const [generateNativeEnabled, setGenerateNativeEnabled] = useState(false);
   const [cueListTokenize, setCueListTokenize] = useState<CueListTokenize | null>(null);
   const webTextCtrlRef = useRef<WebTextDictionaryController | null>(null);
+  const dictionaryPopupRef = useRef<DictionaryPopupSettings>(DEFAULT_DICTIONARY_POPUP_SETTINGS);
 
   // Cues from global store (driven by SubtitleCueEngine).
   const targetCues = useCuesStore((s) => s.targetCues);
@@ -71,6 +73,7 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
     webTextCtrlRef.current = ctrl;
 
     const applySettings = (settings: Settings): void => {
+      dictionaryPopupRef.current = settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS;
       ctrl.updateSettings({
         dictionaryPopup: settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS,
         cardCreator: settings.cardCreator ?? DEFAULT_CARD_CREATOR_SETTINGS,
@@ -83,7 +86,9 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
         if (prev?.langCode === langCode) return prev;
         return {
           langCode,
-          onTokenClick: (term, element, contextSentence) => {
+          onTokenClick: (term, element, contextSentence, event) => {
+            const dp = dictionaryPopupRef.current;
+            if (!dp.enabled || (event && !modifierMatches(dp.triggerMode, event))) return;
             const request: LookupRequest = {
               term,
               langCode,

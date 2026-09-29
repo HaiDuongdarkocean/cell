@@ -11,7 +11,7 @@ export interface TokenSpanBindOptions {
   /** Leave a word token (desktop). */
   readonly onTokenLeave?: (term: string, block: TokenBlock, element: HTMLElement) => void;
   /** Click a word token to open the popup dictionary. */
-  readonly onTokenClick?: (term: string, block: TokenBlock, element: HTMLElement, token: Token) => void;
+  readonly onTokenClick?: (term: string, block: TokenBlock, element: HTMLElement, token: Token, event: MouseEvent) => void;
   /** Ctrl/Cmd+click a word token to multi-select. */
   readonly onTokenCtrlClick?: (term: string, block: TokenBlock, element: HTMLElement) => void;
 }
@@ -86,7 +86,7 @@ function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBind
           return;
         }
       }
-      options.onTokenClick?.(token.term, block, span, token);
+      options.onTokenClick?.(token.term, block, span, token, e);
     });
   }
 

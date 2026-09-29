@@ -272,7 +272,7 @@ describe('CueList', () => {
       const world = target.querySelector('[data-cell-term="world"]') as HTMLElement;
       fireEvent.click(world);
 
-      expect(onTokenClick).toHaveBeenCalledWith('world', world, 'Hello world');
+      expect(onTokenClick).toHaveBeenCalledWith('world', world, 'Hello world', expect.objectContaining({ type: 'click' }));
     });
 
     it('calls onTokenHover with the term on enter and null on leave', () => {

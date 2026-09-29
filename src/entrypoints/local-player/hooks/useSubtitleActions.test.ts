@@ -65,7 +65,7 @@ describe('useSubtitleActions cueListTokenize', () => {
     const rect = { x: 1, y: 2, width: 3, height: 4, top: 2, left: 1, right: 4, bottom: 6, toJSON: () => ({}) } as DOMRect;
     element.getBoundingClientRect = jest.fn(() => rect);
 
-    result.current.cueListTokenize?.onTokenClick('rare', element, 'a rare word');
+    result.current.cueListTokenize?.onTokenClick('rare', element, 'a rare word', { ctrlKey: false, shiftKey: false, altKey: false });
 
     expect(handleLookupMock).toHaveBeenCalledTimes(1);
     const [request, requestId, anchorRect, highlightTarget] = handleLookupMock.mock.calls[0];
@@ -85,8 +85,39 @@ describe('useSubtitleActions cueListTokenize', () => {
     await waitFor(() => expect(result.current.cueListTokenize).not.toBeNull());
 
     const element = document.createElement('span');
-    result.current.cueListTokenize?.onTokenClick('w', element, 'w here');
+    result.current.cueListTokenize?.onTokenClick('w', element, 'w here', { ctrlKey: false, shiftKey: false, altKey: false });
     expect(handleLookupMock.mock.calls[0][0].cursorOffset).toBe(0);
+  });
+
+  it('suppresses token clicks in modifier modes unless the modifier is held', async () => {
+    loadSettingsMock.mockReset().mockResolvedValue({
+      subtitleOverlayTargetLanguage: 'en',
+      subtitleOverlayNativeLanguage: 'vi',
+      dictionaryPopup: { enabled: true, triggerMode: 'hover-shift' },
+    } as never);
+    const { result } = renderActions();
+    await waitFor(() => expect(result.current.cueListTokenize).not.toBeNull());
+
+    const element = document.createElement('span');
+    result.current.cueListTokenize?.onTokenClick('w', element, 'w here', { ctrlKey: false, shiftKey: false, altKey: false });
+    expect(handleLookupMock).not.toHaveBeenCalled();
+
+    result.current.cueListTokenize?.onTokenClick('w', element, 'w here', { ctrlKey: false, shiftKey: true, altKey: false });
+    expect(handleLookupMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('suppresses token clicks when the dictionary popup is disabled', async () => {
+    loadSettingsMock.mockReset().mockResolvedValue({
+      subtitleOverlayTargetLanguage: 'en',
+      subtitleOverlayNativeLanguage: 'vi',
+      dictionaryPopup: { enabled: false, triggerMode: 'click' },
+    } as never);
+    const { result } = renderActions();
+    await waitFor(() => expect(result.current.cueListTokenize).not.toBeNull());
+
+    const element = document.createElement('span');
+    result.current.cueListTokenize?.onTokenClick('w', element, 'w here', { ctrlKey: false, shiftKey: false, altKey: false });
+    expect(handleLookupMock).not.toHaveBeenCalled();
   });
 
   it('stays null when no target language is configured', async () => {

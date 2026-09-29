@@ -11,7 +11,7 @@ import { dispatchCuesUpdated, type CuesUpdatedDetail } from '@/features/subtitle
 import { prevSentence, nextSentence, seekBy, findActiveCueIndex } from './navClusterActions';
 import { seekVideo, resumeIfPaused, SEEK_LANDING_EPS_MS } from '@/shared/lib/dom/netflixPlayback';
 import { t } from '@/shared/i18n';
-import type { TriggerMode } from '@/entities/dictionary';
+import type { ClickModifierState, TriggerMode } from '@/entities/dictionary';
 
 export interface SubtitleCueEngineUpdate {
   readonly blockSettings?: Partial<SubtitleBlockSettings>;
@@ -47,7 +47,7 @@ export interface SubtitleCueEngineDictionaryOptions {
 
 export interface SubtitleCueEngineTokenizeOptions {
   langCode: string;
-  onOpenDictionary: (term: string, element: HTMLElement, contextSentence: string) => void;
+  onOpenDictionary: (term: string, element: HTMLElement, contextSentence: string, event?: ClickModifierState) => void;
   /** Cue-list token hover → feeds the tokenize controller's hoveredTerm so
    *  status keys 1-4 apply to the hovered word. */
   onTokenHover?: (term: string | null) => void;

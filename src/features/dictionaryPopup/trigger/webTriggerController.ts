@@ -8,6 +8,7 @@
 // Same debounce + cancellation as subtitleTriggerController.
 // Same LookupRequest contract — just different source (page DOM vs subtitle span).
 
+import { modifierMatches, TRIGGER_MODIFIER_KEY } from '@/entities/dictionary';
 import type { LookupRequest, TriggerMode } from '@/entities/dictionary';
 import { detectLangCode, nextRequestId, isPointOverRange } from './subtitleTriggerController';
 import {
@@ -19,6 +20,7 @@ import {
   type SentenceContext,
 } from '../sentence/sentenceModule';
 import { CELL_UI_HOST_SELECTORS, CELL_UI_POINTER_EVENT_HOST_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
+import { isEditableEvent } from '@/shared/lib/dom/isEditable';
 import type { HighlightTarget } from '../ui/wordHighlight';
 
 /** Hover debounce for web text — only fire after the cursor has been still for this long. */
@@ -176,16 +178,6 @@ function buildHoverLookupRequestFromContext(
   };
 }
 
-/** Check if a modifier key matches the trigger mode. */
-function modifierMatches(mode: TriggerMode, e: MouseEvent): boolean {
-  switch (mode) {
-    case 'hover-ctrl': return e.ctrlKey;
-    case 'hover-shift': return e.shiftKey;
-    case 'hover-alt': return e.altKey;
-    default: return true;
-  }
-}
-
 export interface WebTriggerPointer {
   readonly x: number;
   readonly y: number;
@@ -203,6 +195,7 @@ export interface WebTriggerDeps {
   readonly onCancel: (requestId: string) => void;
   /** onClear is called when the cursor leaves a valid word/selection target so the consumer can hide the popup. */
   readonly onClear?: () => void;
+  readonly isPopupOpen?: () => boolean;
 }
 
 /**
@@ -222,6 +215,9 @@ export class WebTriggerController {
   private readonly boundMouseUp: (e: MouseEvent) => void;
   private readonly boundMouseMove: (e: MouseEvent) => void;
   private readonly boundSelectionChange: () => void;
+  private readonly boundKeyDown: (e: KeyboardEvent) => void;
+  private readonly boundMouseOut: (e: MouseEvent) => void;
+  private lastPointer: { x: number; y: number; eligible: boolean } | null = null;
   private lastHoveredTerm: string | null = null;
   private lastHoveredStartContainer: Node | null = null;
   private lastHoveredStartOffset = -1;
@@ -231,6 +227,8 @@ export class WebTriggerController {
     this.boundMouseUp = this.onMouseUp.bind(this);
     this.boundMouseMove = this.onMouseMove.bind(this);
     this.boundSelectionChange = this.onSelectionChange.bind(this);
+    this.boundKeyDown = this.onKeyDown.bind(this);
+    this.boundMouseOut = this.onMouseOut.bind(this);
   }
 
   /** Attach listeners to document. */
@@ -242,6 +240,10 @@ export class WebTriggerController {
       document.addEventListener('mousemove', this.boundMouseMove);
       // Also allow selection in hover modes.
       document.addEventListener('mouseup', this.boundMouseUp);
+      if (TRIGGER_MODIFIER_KEY[this.deps.triggerMode]) {
+        document.addEventListener('keydown', this.boundKeyDown);
+        document.addEventListener('mouseout', this.boundMouseOut);
+      }
     }
   }
 
@@ -251,6 +253,9 @@ export class WebTriggerController {
     document.removeEventListener('mouseup', this.boundMouseUp);
     document.removeEventListener('mousemove', this.boundMouseMove);
     document.removeEventListener('selectionchange', this.boundSelectionChange);
+    document.removeEventListener('keydown', this.boundKeyDown);
+    document.removeEventListener('mouseout', this.boundMouseOut);
+    this.lastPointer = null;
     this.lastHoveredTerm = null;
     this.lastHoveredStartContainer = null;
     this.lastHoveredStartOffset = -1;
@@ -406,7 +411,28 @@ export class WebTriggerController {
     this.lastHoveredStartOffset = -1;
   }
 
+  private onKeyDown(e: KeyboardEvent): void {
+    if (e.repeat) return;
+    if (e.key !== TRIGGER_MODIFIER_KEY[this.deps.triggerMode]) return;
+    if (isEditableEvent(e)) return;
+    if (!this.lastPointer?.eligible) return;
+    if (window.getSelection()?.isCollapsed === false) return;
+    this.cancelPendingHover();
+    this.processHoverMove(this.lastPointer.x, this.lastPointer.y);
+  }
+
+  private onMouseOut(e: MouseEvent): void {
+    if (!e.relatedTarget) this.lastPointer = null;
+  }
+
   private onMouseMove(e: MouseEvent): void {
+    if (TRIGGER_MODIFIER_KEY[this.deps.triggerMode]) {
+      this.lastPointer = {
+        x: e.clientX,
+        y: e.clientY,
+        eligible: !eventBlockedForLookup(e) && !pathMatchesSelector(e, '[data-no-lookup]'),
+      };
+    }
     if (!modifierMatches(this.deps.triggerMode, e)) {
       this.resetHover();
       return;
@@ -548,7 +574,8 @@ export class WebTriggerController {
     if (
       request.term === this.lastHoveredTerm &&
       resolved.range.startContainer === this.lastHoveredStartContainer &&
-      resolved.range.startOffset === this.lastHoveredStartOffset
+      resolved.range.startOffset === this.lastHoveredStartOffset &&
+      (this.deps.isPopupOpen?.() ?? true)
     ) {
       return;
     }

@@ -195,6 +195,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       handleLookup(request, requestId, anchorRect, range, pointer);
     },
     onCancel: cancelLookup,
+    isPopupOpen: () => lifecycle.hasOpenPopup(),
   });
 
   let profileLangCode: string | undefined;
@@ -249,6 +250,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         handleLookup(request, requestId, anchorRect, range, pointer);
       },
       onCancel: (requestId) => { cancelLookup(requestId); },
+      isPopupOpen: () => lifecycle.hasOpenPopup(),
       // Auto-dismiss on hover-leave removed: popup only closes on explicit
       // user action (click outside / Esc / close button).
     });

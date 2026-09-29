@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
-import type { WordStatus } from '@/entities/dictionary';
+import type { ClickModifierState, WordStatus } from '@/entities/dictionary';
 import type { Token } from '@/features/tokenize/types';
 import { onWordStatusChanged } from '@/features/dictionary/services/wordStatusEvents';
 import {
@@ -49,7 +49,7 @@ function cuesAreEqual(a: readonly BilingualCue[], b: readonly BilingualCue[]): b
 
 export interface CueListTokenize {
   langCode: string;
-  onTokenClick: (term: string, element: HTMLElement, contextSentence: string) => void;
+  onTokenClick: (term: string, element: HTMLElement, contextSentence: string, event: ClickModifierState) => void;
   /** Hover enter/leave on a word token (null on leave) — feeds the owning
    *  controller's hoveredTerm so status keys 1-4 apply to the hovered word. */
   onTokenHover?: (term: string | null) => void;
@@ -83,7 +83,7 @@ const CueTokenText = memo(function CueTokenText({
 }: {
   text: string;
   tokens: readonly Token[];
-  onTokenClick: (term: string, element: HTMLElement, contextSentence: string) => void;
+  onTokenClick: (term: string, element: HTMLElement, contextSentence: string, event: ClickModifierState) => void;
   onTokenHover?: (term: string | null) => void;
   resolving?: boolean;
 }) {
@@ -115,7 +115,7 @@ const CueTokenText = memo(function CueTokenText({
         data-cell-term={token.term}
         data-cell-start={token.start}
         data-cell-end={token.end}
-        onClick={(event) => onTokenClick(token.term, event.currentTarget, text)}
+        onClick={(event) => onTokenClick(token.term, event.currentTarget, text, event)}
         onMouseEnter={onTokenHover ? () => onTokenHover(token.term) : undefined}
         onMouseLeave={onTokenHover ? () => onTokenHover(null) : undefined}
       >
