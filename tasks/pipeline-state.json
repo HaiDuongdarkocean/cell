@@ -1,5 +1,5 @@
 {
-  "active": "sync-drive-folders",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -620,7 +620,7 @@
       "updated": "2026-09-28T13:24:49.286Z"
     },
     "sync-drive-folders": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "all",
       "uiSurface": "no",
       "artifacts": {
@@ -650,15 +650,18 @@
         }
       },
       "confidence": "medium",
-      "awaiting": "flagged:external-wip — typecheck fails on src/features/subtitle/ui/subtitleSplitView.ts:703 (another agent's in-flight file); all own gates green, verify PASS, commits 7990ded4/4ff4f5d3/23cee730 landed; transition to shipped pending clean tree",
-      "resolutions": [],
+      "awaiting": null,
+      "resolutions": [
+        {
+          "flag": "flagged:external-wip — typecheck fails on src/features/subtitle/ui/subtitleSplitView.ts:703 (another agent's in-flight file); all own gates green, verify PASS, commits 7990ded4/4ff4f5d3/23cee730 landed; transition to shipped pending clean tree",
+          "note": "external-wip cleared: subtitleSplitView.ts now typechecks clean; tree clean; gates green",
+          "at": "2026-09-29T11:22:05.493Z"
+        }
+      ],
       "loops": 2,
-      "owner": {
-        "id": "devin-main",
-        "since": "2026-09-28T14:00:55.548Z"
-      },
+      "owner": null,
       "worktree": null,
-      "updated": "2026-09-29T11:20:04.658Z"
+      "updated": "2026-09-29T11:24:41.909Z"
     }
   }
 }
