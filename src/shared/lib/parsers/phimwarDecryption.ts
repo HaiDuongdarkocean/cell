@@ -25,7 +25,12 @@ export function getPhimwarFileName(url: string): string | null {
   try {
     const pathname = new URL(url).pathname;
     const fileName = pathname.split('/').pop();
-    return fileName ?? null;
+    if (!fileName) return null;
+    try {
+      return decodeURIComponent(fileName);
+    } catch {
+      return fileName;
+    }
   } catch {
     return null;
   }

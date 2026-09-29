@@ -52,6 +52,14 @@ describe('phimwarDecryption', () => {
       ).toBe('v07.srt');
     });
 
+    it('decodes percent-encoded filenames — the AES key derives from the raw name', () => {
+      expect(
+        getPhimwarFileName(
+          'https://phimwar.com/api/subtitle/1561222/Captain%20America%20The%20First%20Avenger%20(2011).srt',
+        ),
+      ).toBe('Captain America The First Avenger (2011).srt');
+    });
+
     it('returns null for invalid URLs', () => {
       expect(getPhimwarFileName('not a url')).toBeNull();
     });
