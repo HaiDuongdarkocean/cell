@@ -301,39 +301,6 @@
   color: var(--color-text-secondary);
 }
 
-/* === Full empty state — no keys at all === */
-.fullEmpty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-6) var(--space-3);
-  text-align: center;
-  animation: fadeIn var(--duration-300) var(--ease-standard);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(var(--space-1)); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.fullEmptyIcon {
-  color: var(--color-text-tertiary, var(--color-text-secondary));
-  opacity: 0.4;
-}
-
-.fullEmptyTitle {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-}
-
-.fullEmptyHint {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-1);
-}
-
 /* === Confirm dialog === */
 .confirmBody {
   font-size: var(--font-size-sm);
@@ -348,8 +315,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .addForm,
-  .fullEmpty {
+  .addForm {
     animation: none;
   }
 }

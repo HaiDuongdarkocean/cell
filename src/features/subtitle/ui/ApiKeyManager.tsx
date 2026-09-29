@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/shared/ui/Button';
 import { Dialog } from '@/shared/ui/Dialog';
+import { EmptyState } from '@/shared/ui/EmptyState';
 import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
 import { Icon } from '@/shared/ui/Icon';
@@ -367,19 +368,23 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
 
       {/* Empty state — no keys at all */}
       {totalKeys === 0 && !addOpen && (
-        <div className={styles.fullEmpty} data-cell-id="akm-empty">
-          <Icon name="wrench" className={styles.fullEmptyIcon} />
-          <span className={styles.fullEmptyTitle}>{t('subtitle.keys.emptyTitle')}</span>
-          <span className={styles.fullEmptyHint}>{t('subtitle.keys.emptyHint')}</span>
-          <Button
-            variant="primary"
-            size="md"
-            onClick={() => setAddOpen(true)}
-            data-cell-id="akm-empty-add"
-          >
-            {t('subtitle.keys.addFirst')}
-          </Button>
-        </div>
+        <EmptyState
+          size="sm"
+          icon={<Icon name="wrench" />}
+          title={t('subtitle.keys.emptyTitle')}
+          description={t('subtitle.keys.emptyHint')}
+          action={
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => setAddOpen(true)}
+              data-cell-id="akm-empty-add"
+            >
+              {t('subtitle.keys.addFirst')}
+            </Button>
+          }
+          data-cell-id="akm-empty"
+        />
       )}
 
       {/* Delete confirm dialog (focus trap via Dialog) */}

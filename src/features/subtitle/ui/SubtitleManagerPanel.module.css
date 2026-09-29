@@ -247,14 +247,10 @@
 
 /* ─── Tracks body — scrollable, no visible scrollbar ─── */
 .tracksBody {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   flex: 1 1 auto;
   overflow-y: auto;
   min-height: 0;
-  scrollbar-width: none;
-}
-
-.tracksBody::-webkit-scrollbar {
-  display: none;
 }
 
 /* ─── Section bar — sticky tab list + action buttons ─── */
@@ -563,15 +559,11 @@
 
 /* ─── Appearance view ─── */
 .appearanceBody {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   flex: 1 1 auto;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  scrollbar-width: none;
-}
-
-.appearanceBody::-webkit-scrollbar {
-  display: none;
 }
 
 .previewWrap {

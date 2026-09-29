@@ -32,6 +32,7 @@ export { SearchField } from './SearchField';
 export { Navigation, type NavigationProps, type NavigationOrientation } from './Navigation';
 export { Sidebar, type SidebarProps } from './Sidebar';
 export { Select } from './Select';
+export { SegmentedControl, type SegmentedOption } from './SegmentedControl';
 export { SettingsRow } from './SettingsRow';
 export { Skeleton } from './Skeleton';
 export { SliderRow } from './SliderRow';

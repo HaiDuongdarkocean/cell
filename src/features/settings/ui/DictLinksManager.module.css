@@ -161,14 +161,6 @@
   white-space: nowrap;
 }
 
-.iconBtn {
-  width: var(--iconbutton-size-md);
-  height: var(--iconbutton-size-md);
-  min-width: var(--iconbutton-size-md);
-  min-height: var(--iconbutton-size-md);
-  flex-shrink: 0;
-}
-
 .dangerBtn:hover {
   color: var(--color-destructive);
 }

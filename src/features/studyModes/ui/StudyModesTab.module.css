@@ -110,53 +110,6 @@
   font-weight: var(--font-weight-medium);
 }
 
-.segmented {
-  display: flex;
-  gap: var(--space-0-5);
-  padding: var(--space-0-5);
-  background: var(--color-surface-elevated);
-  border: var(--borderWidth-hairline, 1px) solid var(--color-border-subtle);
-  border-radius: var(--radius-pill);
-}
-
-.segment {
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: calc(var(--touch-target) - var(--space-2));
-  padding: var(--space-1) var(--space-2);
-  border: 0;
-  background: transparent;
-  border-radius: var(--radius-pill);
-  font-family: var(--font-family);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    opacity var(--duration-fast) var(--ease-in-out),
-    background-color var(--duration-fast) var(--ease-in-out),
-    color var(--duration-fast) var(--ease-in-out);
-}
-
-.segment:hover {
-  opacity: 0.75;
-}
-
-.segment:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus-primary);
-}
-
-.segmentSelected {
-  background: var(--color-primary-subtle);
-  color: var(--color-text-accent-strong);
-}
-
-.segmentSelected:hover {
-  opacity: 1;
-}
-
 .sliderFlush.sliderFlush {
   padding: 0;
   gap: 0;

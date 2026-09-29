@@ -1,7 +1,7 @@
 import type { InputHTMLAttributes } from 'react';
 import styles from './Slider.module.css';
 
-interface SliderProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'type' | 'value'> {
+interface SliderProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'type' | 'value' | 'size'> {
   /** Current numeric value. */
   value: number;
   /** Minimum value. */
@@ -12,6 +12,8 @@ interface SliderProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onCha
   step: number;
   /** Called with the new numeric value when user drags/changes. */
   onChange: (value: number) => void;
+  /** Track height. `md` = touch-target; `compact` = thin (dense panels). Default: md. */
+  size?: 'md' | 'compact';
   /** Accessible label (required — slider has no visible label). */
   'aria-label': string;
 }
@@ -39,6 +41,7 @@ export function Slider({
   max,
   step,
   onChange,
+  size = 'md',
   className,
   ...rest
 }: SliderProps): React.JSX.Element {
@@ -48,7 +51,9 @@ export function Slider({
     onChange(Number(e.currentTarget.value));
   };
 
-  const cls = `${styles.slider} ${className ?? ''}`.trim();
+  const cls = [styles.slider, size === 'compact' ? styles.compact : '', className ?? '']
+    .filter(Boolean)
+    .join(' ');
 
   const sliderStyle = {
     ...(rest.style ?? {}),

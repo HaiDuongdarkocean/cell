@@ -11,6 +11,7 @@ import {
   Icon,
   Menu,
   MenuItem,
+  SegmentedControl,
   SelectableCard,
   SliderRow,
 } from '@/shared/ui';
@@ -334,7 +335,7 @@ function AdvancedSection({
       </HStack>
       {open && (
         <VStack gap="4" data-cell-id="advanced-settings">
-          <SegmentedControl
+          <SegmentedField
             label={t('studyModes.advanced.skip.label')}
             groupAria={t('studyModes.advanced.skip.aria')}
             options={SKIP_OPTIONS}
@@ -355,7 +356,7 @@ function AdvancedSection({
             aria-label={t('cleanup.leadIn.aria')}
             formatValue={(v) => t('cleanup.leadIn.value', [v])}
           />
-          <SegmentedControl
+          <SegmentedField
             label={t('studyModes.advanced.pauseUnknown.label')}
             groupAria={t('studyModes.advanced.pauseUnknown.aria')}
             options={PAUSE_UNKNOWN_OPTIONS}
@@ -366,7 +367,7 @@ function AdvancedSection({
           />
           {advanced.pauseOnUnknown !== 'OFF' && (
             <>
-              <SegmentedControl
+              <SegmentedField
                 label={t('studyModes.advanced.unknownLevel.label')}
                 groupAria={t('studyModes.advanced.unknownLevel.aria')}
                 options={UNKNOWN_LEVEL_OPTIONS}
@@ -413,7 +414,7 @@ interface SegmentedControlProps<T extends string> {
   readonly testIdPrefix: string;
 }
 
-function SegmentedControl<T extends string>({
+function SegmentedField<T extends string>({
   label,
   groupAria,
   options,
@@ -427,22 +428,17 @@ function SegmentedControl<T extends string>({
       <Text as="p" className={styles.advancedLabel}>
         {label}
       </Text>
-      <div className={styles.segmented} role="group" aria-label={groupAria}>
-        {options.map((option) => (
-          <button
-            key={option}
-            type="button"
-            className={
-              value === option ? `${styles.segment} ${styles.segmentSelected}` : styles.segment
-            }
-            aria-pressed={value === option}
-            onClick={() => onSelect(option)}
-            data-cell-id={`${testIdPrefix}-${option}`}
-          >
-            {t(optionLabels[option])}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        variant="accent"
+        ariaLabel={groupAria}
+        options={options.map((option) => ({
+          value: option,
+          label: t(optionLabels[option]),
+          testId: `${testIdPrefix}-${option}`,
+        }))}
+        value={value}
+        onChange={onSelect}
+      />
     </div>
   );
 }

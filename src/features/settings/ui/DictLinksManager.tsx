@@ -200,8 +200,8 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
 
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className={styles.iconBtn}
+                    size="md"
+                    shape="circle"
                     aria-label={t('settings.dictionaryPopup.links.edit', [link.name])}
                     onClick={() => openEdit(link)}
                     data-cell-id={`dict-link-edit-${link.id}`}
@@ -210,8 +210,9 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
                   </Button>
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className={`${styles.iconBtn} ${styles.dangerBtn}`}
+                    size="md"
+                    shape="circle"
+                    className={styles.dangerBtn}
                     aria-label={t('settings.dictionaryPopup.links.delete', [link.name])}
                     onClick={() => setDeletingId(link.id)}
                     data-cell-id={`dict-link-delete-${link.id}`}

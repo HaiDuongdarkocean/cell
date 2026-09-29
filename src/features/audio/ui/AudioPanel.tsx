@@ -18,7 +18,7 @@
 
 import { useMemo, useState, type ReactElement } from 'react';
 import { t } from '@/shared/i18n';
-import { Button, HintIcon, Icon, Input, Select, SettingsRow, Text } from '@/shared/ui';
+import { Button, HintIcon, Icon, Input, SegmentedControl, Select, SettingsRow, Text } from '@/shared/ui';
 import type {
   AudioEngineKind,
   PronunciationSettings,
@@ -161,21 +161,18 @@ export function AudioPanel({
               dataTestId="audio-mode-hint"
             />
           </span>
-          <div className={styles.segmented} role="group" aria-label={t('audio.outputMode.aria')}>
-            {OUTPUT_MODES.map((mode) => (
-              <Button
-                key={mode.value}
-                variant="transparent"
-                className={`${styles.mode} ${activeMode === mode.value ? styles.modeActive : ''}`}
-                onClick={() => handleModeChange(mode.value)}
-                aria-pressed={activeMode === mode.value}
-                title={t(mode.desc)}
-                data-cell-id={`audio-mode-${mode.value}`}
-              >
-                {t(mode.label)}
-              </Button>
-            ))}
-          </div>
+          <SegmentedControl
+            variant="filled"
+            ariaLabel={t('audio.outputMode.aria')}
+            options={OUTPUT_MODES.map((mode) => ({
+              value: mode.value,
+              label: t(mode.label),
+              title: t(mode.desc),
+              testId: `audio-mode-${mode.value}`,
+            }))}
+            value={activeMode}
+            onChange={handleModeChange}
+          />
         </div>
 
         <div className={styles.section}>

@@ -129,7 +129,7 @@ describe('AudioPanel', () => {
     );
   });
 
-  it('marks the detected mode as pressed', async () => {
+  it('marks the detected mode as checked', async () => {
     renderPanel({
       pronunciation: makePronunciation({
         fallbackEngines: ['localFile', 'espeak', 'supertonic'],
@@ -137,11 +137,11 @@ describe('AudioPanel', () => {
     });
 
     expect(screen.getByTestId('audio-mode-offline')).toHaveAttribute(
-      'aria-pressed',
+      'aria-checked',
       'true',
     );
     expect(screen.getByTestId('audio-mode-auto')).toHaveAttribute(
-      'aria-pressed',
+      'aria-checked',
       'false',
     );
   });

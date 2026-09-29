@@ -9,6 +9,7 @@
 }
 
 .scrollTrack {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -16,11 +17,6 @@
   min-width: 0;
   overflow-x: auto;
   overscroll-behavior-x: contain;
-  scrollbar-width: none;
-}
-
-.scrollTrack::-webkit-scrollbar {
-  display: none;
 }
 
 .arrow {

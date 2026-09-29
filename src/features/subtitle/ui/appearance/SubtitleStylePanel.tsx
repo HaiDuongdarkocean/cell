@@ -2,6 +2,7 @@ import { useState, type ReactElement } from 'react';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
 import { Button } from '@/shared/ui/Button';
 import { Slider } from '@/shared/ui/Slider';
+import { SegmentedControl } from '@/shared/ui/SegmentedControl';
 import { Select } from '@/shared/ui/Select';
 import { Input } from '@/shared/ui/Input';
 import { ColorInput } from '@/shared/ui/ColorInput';
@@ -87,7 +88,7 @@ export function SubtitleStylePanel({
             step={1}
             value={style.fontSize}
             onChange={(value) => onChange({ fontSize: value })}
-            className={styles.slider}
+            size="compact"
             aria-label={t('subtitle.style.fontSizeAria', [style.fontSize])}
           />
         </div>
@@ -105,7 +106,7 @@ export function SubtitleStylePanel({
             step={100}
             value={style.fontWeight ?? defaultStyle.fontWeight}
             onChange={(value) => onChange({ fontWeight: value })}
-            className={styles.slider}
+            size="compact"
             aria-label={t('subtitle.style.fontWeightAria', [style.fontWeight ?? defaultStyle.fontWeight])}
           />
         </div>
@@ -185,7 +186,7 @@ export function SubtitleStylePanel({
               step={0.05}
               value={style.textOpacity}
               onChange={(value) => onChange({ textOpacity: value })}
-              className={styles.slider}
+              size="compact"
               aria-label={t('subtitle.style.textOpacityAria', [style.textOpacity])}
             />
           </div>
@@ -201,7 +202,7 @@ export function SubtitleStylePanel({
               step={0.05}
               value={style.backgroundOpacity}
               onChange={(value) => onChange({ backgroundOpacity: value })}
-              className={styles.slider}
+              size="compact"
               aria-label={t('subtitle.style.bgOpacityAria', [style.backgroundOpacity])}
             />
           </div>
@@ -214,39 +215,33 @@ export function SubtitleStylePanel({
         {/* Alignment — segmented control */}
         <div className={styles.row}>
           <Label className={styles.label}>{t('subtitle.style.alignment')}</Label>
-          <div className={styles.segmented} role="radiogroup" aria-label={t('subtitle.style.alignment')}>
-            {HORIZONTAL_ALIGN_OPTIONS.map((align) => (
-              <Button variant="secondary"
-                key={align}
-                role="radio"
-                aria-checked={style.horizontalAlign === align}
-                aria-label={t('subtitle.style.alignAria', [t(ALIGN_KEY[align])])}
-                className={`${styles.segment} ${style.horizontalAlign === align ? styles.segmentActive : ''}`}
-                onClick={() => onChange({ horizontalAlign: align })}
-              >
-                {t(ALIGN_KEY[align])}
-              </Button>
-            ))}
-          </div>
+          <SegmentedControl
+            variant="raised"
+            ariaLabel={t('subtitle.style.alignment')}
+            options={HORIZONTAL_ALIGN_OPTIONS.map((align) => ({
+              value: align,
+              label: t(ALIGN_KEY[align]),
+              ariaLabel: t('subtitle.style.alignAria', [t(ALIGN_KEY[align])]),
+            }))}
+            value={style.horizontalAlign}
+            onChange={(horizontalAlign) => onChange({ horizontalAlign })}
+          />
         </div>
 
         {/* Shadow — segmented control */}
         <div className={styles.row}>
           <Label className={styles.label}>{t('subtitle.style.shadow')}</Label>
-          <div className={styles.segmented} role="radiogroup" aria-label={t('subtitle.style.shadowAria')}>
-            {TEXT_SHADOW_PRESETS.map((preset) => (
-              <Button variant="secondary"
-                key={preset}
-                role="radio"
-                aria-checked={style.textShadow.preset === preset}
-                aria-label={t('subtitle.style.shadowOptionAria', [t(TEXT_SHADOW_KEY[preset])])}
-                className={`${styles.segment} ${style.textShadow.preset === preset ? styles.segmentActive : ''}`}
-                onClick={() => handleShadowPresetChange(preset)}
-              >
-                {t(TEXT_SHADOW_KEY[preset])}
-              </Button>
-            ))}
-          </div>
+          <SegmentedControl
+            variant="raised"
+            ariaLabel={t('subtitle.style.shadowAria')}
+            options={TEXT_SHADOW_PRESETS.map((preset) => ({
+              value: preset,
+              label: t(TEXT_SHADOW_KEY[preset]),
+              ariaLabel: t('subtitle.style.shadowOptionAria', [t(TEXT_SHADOW_KEY[preset])]),
+            }))}
+            value={style.textShadow.preset}
+            onChange={handleShadowPresetChange}
+          />
         </div>
 
         {/* Custom shadow fields */}

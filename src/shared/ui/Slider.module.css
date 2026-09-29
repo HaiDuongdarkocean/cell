@@ -121,6 +121,13 @@
   transform: none;
 }
 
+/* === compact — thin track for dense settings panels; interactions unchanged === */
+
+.slider.compact {
+  height: var(--space-3-5);
+  padding: calc((var(--space-3-5) - var(--space-1)) / 2) 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .slider::-webkit-slider-thumb,
   .slider::-moz-range-thumb {

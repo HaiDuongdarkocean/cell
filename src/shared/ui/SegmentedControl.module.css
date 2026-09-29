@@ -1,0 +1,143 @@
+/* === SegmentedControl — single canonical segmented strip ===
+   Three skins matching the surfaces that existed in features:
+   raised (HIG floating segment), accent (primary-subtle), filled (solid primary).
+   Semantics live in the component: radiogroup + radio + roving tabindex. */
+
+.root {
+  display: flex;
+  gap: var(--space-0-5);
+  padding: var(--space-0-5);
+}
+
+.segment {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* === raised — canonical Apple HIG: tinted track, active floats === */
+
+.raised {
+  width: 100%;
+  gap: 0;
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-md);
+}
+
+.raised .segment {
+  padding: var(--space-1-5) var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  transition:
+    background var(--duration-150) var(--ease-out),
+    color var(--duration-150) var(--ease-out),
+    transform var(--duration-150) var(--ease-out);
+}
+
+.raised .segment:hover {
+  color: var(--color-text-primary);
+}
+
+.raised .segment:active {
+  transform: scale(0.97);
+}
+
+.raised .segment:focus-visible {
+  outline: var(--border-width-thick) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.raised .segmentActive {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* === accent — elevated bordered track, active = primary-subtle === */
+
+.accent {
+  background: var(--color-surface-elevated);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+}
+
+.accent .segment {
+  min-height: calc(var(--touch-target) - var(--space-2));
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  transition:
+    opacity var(--duration-fast) var(--ease-in-out),
+    background-color var(--duration-fast) var(--ease-in-out),
+    color var(--duration-fast) var(--ease-in-out);
+}
+
+.accent .segment:hover {
+  opacity: 0.75;
+}
+
+.accent .segment:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus-primary);
+}
+
+.accent .segmentActive {
+  background: var(--color-primary-subtle);
+  color: var(--color-text-accent-strong);
+}
+
+.accent .segmentActive:hover {
+  opacity: 1;
+}
+
+/* === filled — tinted pill track, active = solid primary; wraps === */
+
+.filled {
+  flex-wrap: wrap;
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-pill);
+}
+
+.filled .segment {
+  flex: 1 1 auto;
+  min-height: var(--touch-target);
+  padding: var(--space-1) var(--space-2-5);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.filled .segment:hover {
+  background: var(--color-surface-elevated);
+}
+
+.filled .segment:focus-visible {
+  outline: var(--border-width-thick) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.filled .segmentActive,
+.filled .segmentActive:hover,
+.filled .segmentActive:active {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segment {
+    transition: none;
+  }
+}
