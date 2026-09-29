@@ -5,7 +5,9 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { t } from '@/shared/i18n';
-import tokensJson from '@/shared/styles/tokens.json';
+import { loadThemeMode, loadThemeConfig, DEFAULT_THEME_MODE } from '@/features/theme/logic/themeStorage';
+import { getColorTokens } from '@/shared/lib/tokens';
+import type { ResolvedMode, ThemeMode } from '@/entities/theme';
 import {
   getStorage,
   setStorage,
@@ -148,6 +150,28 @@ export async function reloadActiveTab(_ctx: BackgroundContext): Promise<void> {
 
 // --- badge helpers ---
 
+// ponytail: matchMedia không có trên ServiceWorkerGlobalScope ở mọi browser —
+// mode 'system' trong SW fallback về DEFAULT_THEME_MODE; UI threads vẫn
+// resolve đúng qua prefers-color-scheme.
+function resolveBadgeMode(mode: ThemeMode): ResolvedMode {
+  if (mode !== 'system') return mode;
+  return typeof matchMedia === 'function' &&
+    matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : DEFAULT_THEME_MODE === 'system' ? 'dark' : DEFAULT_THEME_MODE;
+}
+
+/** Badge colors follow the active theme's primary palette (preset + custom colors). */
+async function badgeThemeColors(): Promise<{ bg: string; fg: string }> {
+  const [mode, config] = await Promise.all([loadThemeMode(), loadThemeConfig()]);
+  const resolved = resolveBadgeMode(mode);
+  const tokens = getColorTokens(config.customColors[resolved], resolved, config.preset);
+  return {
+    bg: tokens['--color-primary'],
+    fg: tokens['--color-text-on-primary'],
+  };
+}
+
 /** Update the extension toolbar badge to show the number of detected media items. */
 export function updateBadgeForTab(ctx: BackgroundContext, tabId: number): void {
   if (!ctx.extensionActive) {
@@ -159,8 +183,14 @@ export function updateBadgeForTab(ctx: BackgroundContext, tabId: number): void {
   const text = count > 0 ? String(count) : '';
   try {
     void setBadgeText({ text, tabId });
-    void setBadgeBackgroundColor({ color: tokensJson.core.light.primary, tabId });
-    void setBadgeTextColor({ color: tokensJson.derived.light['color-text-inverse'], tabId });
+    void badgeThemeColors()
+      .then(({ bg, fg }) =>
+        Promise.all([
+          setBadgeBackgroundColor({ color: bg, tabId }),
+          setBadgeTextColor({ color: fg, tabId }),
+        ]),
+      )
+      .catch((err: unknown) => console.warn('[background] Failed to update badge:', err));
   } catch (err: unknown) {
     console.warn('[background] Failed to update badge:', err);
   }

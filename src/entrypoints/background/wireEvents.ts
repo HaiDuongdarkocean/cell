@@ -3,6 +3,7 @@
  * Extracted from BackgroundService.wireEvents().
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import { t } from '@/shared/i18n';
 import {
   getExtensionId,
@@ -18,6 +19,8 @@ import {
   queryTabs,
   addOnWindowFocusChangedListener,
   getWindowIdNone,
+  onStorageChanged,
+  removeOnStorageChangedListener,
 } from '@/shared/lib/chrome-apis';
 import type { BackgroundContext } from './context';
 import {
@@ -537,9 +540,21 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     void updateBadgeForActiveTab(ctx);
   };
 
+  // 12. Theme change → re-tint badge to the new primary
+  const onThemeStorageChanged = (
+    changes: Record<string, chrome.storage.StorageChange>,
+    area: string,
+  ): void => {
+    if (area !== 'local') return;
+    if (!changes[STORAGE_KEYS.THEME_MODE] && !changes[STORAGE_KEYS.THEME_CONFIG]) return;
+    void updateBadgeForActiveTab(ctx);
+  };
+  onStorageChanged(onThemeStorageChanged);
+
   unsubscribers.push(
     addOnTabActivatedListener(onTabActivated),
     addOnWindowFocusChangedListener(onWindowFocusChanged),
+    () => removeOnStorageChangedListener(onThemeStorageChanged),
   );
 
   return unsubscribers;
