@@ -23,6 +23,7 @@
 - UI: sửa token ở `tokens.json` (`tokens.css`/`tokens.ts` là generated); component từ `src/shared/ui/`; icon từ `ICON_CATALOG` (`src/shared/icons/index.ts`); sửa markup trước khi vá CSS.
 - Danh sách lựa chọn (dropdown/menu/actions/filter/sort/select) → `<Menu>` + `<MenuItem>` + `<MenuSeparator>` (`src/shared/ui/Menu.tsx`): surface `radius-md`, item hover/focus bằng `surface-hover` background, dismissal + arrow-key do Menu lo. KHÔNG tự viết `.menuSurface`/`.menuItem` trong feature, KHÔNG nhét list dọc vào `<Popover variant="toolbar">`. Thấy pattern đã có 1 exemplar trong repo → đưa lên `shared/ui` rồi reuse, không viết bản thứ hai.
 - Verify overlay/menu mới: chụp cạnh instance canonical (vd menu Vocabulary) + kiểm anchor sau scroll/gần mép; sai lệch quan sát được = defect phải fix, không ghi "chấp nhận được".
+- Shadow-DOM boundary: code chạy trong surface mount qua `mountReactShadow` (universal/subtitle panel, dictionary popup, card creator) — đọc focus/selection qua `el.getRootNode()` (`root.activeElement`, `ShadowRoot.getSelection()`), nghe event non-composed (`scroll`/`focus`/`blur`/`mouseenter`/`pointerenter`) trên scope đó chứ không `window`/`document`, outside-click dùng `composedPath()`, Escape qua `pushEscapeLayer`.
 - Persona: 5–80 tuổi, mọi thiết bị, RAM ≥1GB — UI responsive, cross-browser desktop/tablet/android, phản hồi <3s.
 
 ## Output hygiene

@@ -38,6 +38,16 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   ]);
 }
 
+// ponytail: Firefox lacks ShadowRoot.getSelection — falls back to window.getSelection(), at worst vacuous (selection-guard off)
+function selectionText(el: HTMLElement): string {
+  const root = el.getRootNode();
+  const sel =
+    root instanceof ShadowRoot
+      ? (root as ShadowRoot & { getSelection?: () => Selection | null }).getSelection?.()
+      : window.getSelection();
+  return sel?.toString() ?? '';
+}
+
 function formatReading(reading: string, readingKind: LookupResult['readingKind']): string {
   if (!reading) return '';
   if (readingKind === 'ipa' && !(reading.startsWith('/') && reading.endsWith('/'))) {
@@ -515,7 +525,7 @@ function DefinitionItem({
         onClick={(e) => {
           const el = e.target as HTMLElement;
           if (el.closest(`.${styles.cellDefText}`) !== null) return;
-          if (window.getSelection()?.toString()) return;
+          if (selectionText(el)) return;
           onToggle(definition.id, !checked);
         }}
         onKeyDown={(e) => {
@@ -593,7 +603,7 @@ function DefinitionItem({
                 onClick={(e) => {
                   const el = e.target as HTMLElement;
                   if (el.closest(`.${styles.cellDefExampleText}`) !== null) return;
-                  if (window.getSelection()?.toString()) return;
+                  if (selectionText(el)) return;
                   onToggleExample(definition.id, i, !exChecked);
                 }}
                 onKeyDown={(e) => {

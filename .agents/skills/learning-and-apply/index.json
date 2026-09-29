@@ -2850,6 +2850,28 @@
         "evidence"
       ],
       "trigger": "Thêm/sửa overlay (menu, popover, sheet, tooltip, dropdown) và verify bằng screenshot — thấy element render + có background là chưa đủ để kết luận pass"
+    },
+    {
+      "type": "experience",
+      "id": "shadow-dom-boundary-apis",
+      "title": "Code chạy trong shadow root: đọc state/events qua el.getRootNode(), không qua document/window",
+      "category": [
+        "rendering",
+        "ux"
+      ],
+      "tags": [
+        "shadow-dom",
+        "composed-events",
+        "scroll",
+        "activeElement",
+        "getSelection",
+        "retargeting",
+        "composedPath",
+        "focus-trap",
+        "universal-panel",
+        "event-listener"
+      ],
+      "trigger": "Viết/review code chạy được trong shadow root mà đụng document.activeElement, window.getSelection(), document/window listener cho event non-composed (scroll/focus/blur/mouseenter/leave), hoặc e.target + contains() trong document-level listener"
     }
   ]
 }

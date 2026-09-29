@@ -1,0 +1,52 @@
+{
+  "id": "shadow-dom-boundary-apis",
+  "title": "Code chạy trong shadow root: đọc state/events qua el.getRootNode(), không qua document/window",
+  "category": ["rendering", "ux"],
+  "tags": [
+    "shadow-dom",
+    "composed-events",
+    "scroll",
+    "activeElement",
+    "getSelection",
+    "retargeting",
+    "composedPath",
+    "focus-trap",
+    "universal-panel",
+    "event-listener"
+  ],
+  "trigger": "Viết/review code chạy được trong shadow root (UniversalPanel, SubtitlePanel, dictionary popup, card creator — mọi surface mount qua mountReactShadow) mà đụng: document.activeElement, window.getSelection(), document/window listener cho scroll/focus/blur/mouseenter/mouseleave/pointerenter/pointerleave, hoặc e.target + contains() trong document-level listener",
+  "principle": "Shadow boundary chặn một lớp API: (1) event non-composed (scroll, focus, blur, mouseenter/leave, pointerenter/leave) KHÔNG vượt boundary — listener trên document/window cả capture cũng không thấy, phải gắn trên `el.getRootNode()` (ShadowRoot hoặc Document). (2) document.activeElement trả về host — đọc `root.activeElement` của scope (ShadowRoot.activeElement trả element thật bên trong). (3) window.getSelection() không thấy selection trong shadow — Chrome có ShadowRoot.getSelection() (Firefox thiếu → fallback vacuous). (4) e.target trong document listener bị retarget về host — dùng composedPath() hoặc nghe trên scope. (5) Escape/key events LÀ composed → chạy được qua document, nhưng overlay phải dùng pushEscapeLayer (capture) chứ không raw keydown bubble — nếu không ancestor surface (UniversalPanel) ăn Escape cùng lúc.",
+  "cases": [
+    {
+      "context": "Menu trong universal panel (shadow): win.addEventListener('scroll', fn, true) không bắt được scroll của .tab → menu trôi khỏi trigger khi scroll",
+      "bad": "const win = doc.defaultView ?? window;\nwin.addEventListener('scroll', onScroll, true); // misses shadow-internal scrolls",
+      "good": "const root = trigger.getRootNode();\nconst scope = root instanceof ShadowRoot ? root : doc;\nwin.addEventListener('scroll', onScroll, true);\nif (scope !== doc) scope.addEventListener('scroll', onScroll, true); // ProfileMenu/HintIcon pattern"
+    },
+    {
+      "context": "useFocusTrap trong Dialog/UniversalPanel (shadow): document.activeElement === lastEl không bao giờ true → Tab không wrap, focus tràn ra trang nền dù aria-modal",
+      "bad": "if (document.activeElement === lastEl) { e.preventDefault(); firstEl.focus(); }",
+      "good": "const root = panel.getRootNode() as Document | ShadowRoot;\nif (root.activeElement === lastEl) { e.preventDefault(); firstEl.focus(); }"
+    },
+    {
+      "context": "Roving tabindex (StudyModeActionBar, QueueSidebar, MediaList trong shadow): focusable.indexOf(document.activeElement) = -1 → arrow keys kẹt hoặc chết",
+      "bad": "const active = document.activeElement; // = host element trong shadow",
+      "good": "const root = el.getRootNode() as Document | ShadowRoot;\nconst active = root.activeElement ?? document.activeElement;"
+    },
+    {
+      "context": "CandidateView (dictionary popup shadow): guard 'đang select text thì không toggle' dùng window.getSelection() → luôn rỗng → kéo chọn definition bị toggle checkbox",
+      "bad": "if (window.getSelection()?.toString()) return;",
+      "good": "const root = el.getRootNode();\nconst sel = root instanceof ShadowRoot\n  ? (root as ShadowRoot & { getSelection?: () => Selection | null }).getSelection?.()\n  : window.getSelection();\nif (sel?.toString()) return;"
+    }
+  ],
+  "applyFor": [
+    "Mọi component/hook render được trong shadow root",
+    "Overlay: focus trap, dismissal listeners, roving tabindex, selection guards",
+    "Audit: grep 'document.activeElement', 'getSelection', \"addEventListener('scroll'/'focus'/'blur'\" trên doc/window trước khi merge"
+  ],
+  "related": ["ui-menu-single-shared-pattern", "process-verify-ui-overlay-against-canonical-instance"],
+  "supersedes": [],
+  "source": {
+    "commit": "7331fc69",
+    "date": "2026-09-29"
+  }
+}
