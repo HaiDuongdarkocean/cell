@@ -98,6 +98,12 @@
   height: var(--iconbutton-icon-sm);
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .cellAudioPlay:hover {
+    opacity: 1;
+  }
+}
+
 /* Plain text label — the row (.cellAudioItem) is the checkable host, so
    this is a non-interactive span. flex:1 keeps the name/meta stack filling
    the space right of the play button; text stays left-aligned. */

@@ -137,22 +137,40 @@ export function PronunciationAudioPanel({
               <div
                 key={item.id}
                 className={checkStyles.cellAudioItem}
-                role="button"
-                aria-label={t('dict.audio.play', [item.label])}
+                role="checkbox"
+                aria-checked={selected}
+                aria-label={t('dict.audio.select', [item.label])}
                 tabIndex={0}
-                onClick={() => playItem(item)}
+                onClick={() => onToggle(item.id, !selected)}
                 onKeyDown={(e): void => {
                   if (e.target !== e.currentTarget) return;
                   if (e.key === ' ' || e.key === 'Enter') {
                     e.preventDefault();
-                    playItem(item);
+                    onToggle(item.id, !selected);
                   }
                 }}
               >
-                <span className={styles.cellAudioPlay} aria-hidden="true">
+                <span
+                  className={styles.cellAudioPlay}
+                  role="button"
+                  aria-label={t('dict.audio.play', [item.label])}
+                  tabIndex={0}
+                  onClick={(e): void => {
+                    e.stopPropagation();
+                    playItem(item);
+                  }}
+                  onKeyDown={(e): void => {
+                    if (e.target !== e.currentTarget) return;
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      playItem(item);
+                    }
+                  }}
+                >
                   <Icon name="audioWave"  />
                 </span>
-                <span className={styles.cellAudioLabel}>
+                <span className={styles.cellAudioLabel} aria-hidden="true">
                   <span className={styles.cellAudioLabelName}>{parts[0] ?? item.label}</span>
                   {parts.length > 1 && (
                     <span className={styles.cellAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
@@ -160,21 +178,7 @@ export function PronunciationAudioPanel({
                 </span>
                 <span
                   className={`${checkStyles.cellDefCheckBox} ${selected ? checkStyles['cellAudioCheck--checked'] : ''}`}
-                  role="checkbox"
-                  aria-checked={selected}
-                  aria-label={t('dict.audio.select', [item.label])}
-                  tabIndex={0}
-                  onClick={(e): void => {
-                    e.stopPropagation();
-                    onToggle(item.id, !selected);
-                  }}
-                  onKeyDown={(e): void => {
-                    if (e.key === ' ' || e.key === 'Enter') {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onToggle(item.id, !selected);
-                    }
-                  }}
+                  aria-hidden="true"
                 >
                   <Icon name="check" size="md" />
                 </span>

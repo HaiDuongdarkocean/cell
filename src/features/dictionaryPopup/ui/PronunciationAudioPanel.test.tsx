@@ -135,7 +135,7 @@ describe('PronunciationAudioPanel', () => {
     expect(onToggle).toHaveBeenCalledWith('a1', true);
   });
 
-  it('renders the label as plain text — the row plays, the check box selects', () => {
+  it('renders the label as plain text — the row selects, the play button plays', () => {
     const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
     render(
       <PronunciationAudioPanel
@@ -148,11 +148,11 @@ describe('PronunciationAudioPanel', () => {
     const panel = screen.getByTestId('dictionary-audio-panel');
     expect(within(panel).getByText('Test').closest('button')).toBeNull();
 
-    const box = within(panel).getByRole('checkbox');
-    expect(box).toHaveAttribute('aria-checked', 'true');
+    const row = within(panel).getByRole('checkbox');
+    expect(row).toHaveAttribute('aria-checked', 'true');
   });
 
-  it('plays the item when clicking the row or the label', () => {
+  it('toggles the item when clicking the row or the label', () => {
     const spy = audioPlaySpy();
     try {
       const onToggle = jest.fn();
@@ -168,11 +168,12 @@ describe('PronunciationAudioPanel', () => {
 
       const panel = screen.getByTestId('dictionary-audio-panel');
       fireEvent.click(within(panel).getByText('Test'));
-      expect(spy.constructed).toEqual(['https://audio/1']);
-      expect(onToggle).not.toHaveBeenCalled();
+      expect(onToggle).toHaveBeenCalledWith('a1', true);
+      expect(spy.constructed).toEqual([]);
 
       fireEvent.click(within(panel).getByRole('button', { name: /Play Test · forvo/i }));
-      expect(spy.constructed.length).toBe(2);
+      expect(spy.constructed).toEqual(['https://audio/1']);
+      expect(onToggle).toHaveBeenCalledTimes(1);
     } finally {
       spy.restore();
     }
@@ -201,7 +202,7 @@ describe('PronunciationAudioPanel', () => {
     }
   });
 
-  it('plays on Space/Enter from the row and toggles from the checkbox', () => {
+  it('toggles on Space/Enter from the row and plays from the play button', () => {
     const spy = audioPlaySpy();
     try {
       const onToggle = jest.fn();
@@ -216,13 +217,15 @@ describe('PronunciationAudioPanel', () => {
       );
 
       const panel = screen.getByTestId('dictionary-audio-panel');
-      const box = within(panel).getByRole('checkbox');
-      fireEvent.keyDown(box, { key: ' ' });
+      const row = within(panel).getByRole('checkbox');
+      fireEvent.keyDown(row, { key: ' ' });
       expect(onToggle).toHaveBeenCalledWith('a1', true);
+      expect(spy.constructed).toEqual([]);
 
-      const row = within(panel).getByRole('button', { name: /Play Test · forvo/i });
-      fireEvent.keyDown(row, { key: 'Enter' });
+      const play = within(panel).getByRole('button', { name: /Play Test · forvo/i });
+      fireEvent.keyDown(play, { key: 'Enter' });
       expect(spy.constructed.length).toBeGreaterThanOrEqual(1);
+      expect(onToggle).toHaveBeenCalledTimes(1);
     } finally {
       spy.restore();
     }
