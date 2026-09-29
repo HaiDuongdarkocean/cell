@@ -30,6 +30,22 @@ function rectLog(el: Element | null | undefined): Record<string, number> | null 
   return { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y) };
 }
 
+function measureShellContentHeight(shell: HTMLElement): number {
+  shell.style.setProperty('height', 'auto', 'important');
+  const height = shell.scrollHeight;
+  shell.style.setProperty('height', '100%', 'important');
+  return height;
+}
+
+const SPLIT_VIEW_MIN_STAGE_WIDTH = 200;
+const SPLIT_VIEW_MIN_HEIGHT = 160;
+const SPLIT_VIEW_VIEWPORT_MARGIN = 8;
+
+function clampToVisibleViewport(contentHeight: number, topEdge: number): number {
+  const available = window.innerHeight - topEdge - SPLIT_VIEW_VIEWPORT_MARGIN;
+  return Math.min(contentHeight, Math.max(SPLIT_VIEW_MIN_HEIGHT, Math.round(available)));
+}
+
 export interface SplitViewParams {
   playerMode: boolean;
   onSplitViewChange?: (open: boolean) => void;
@@ -256,6 +272,7 @@ export function useSplitView({
       'position', 'inset', 'top', 'right', 'bottom', 'left', 'width', 'height',
       'max-width', 'max-height', 'min-width', 'min-height', 'aspect-ratio',
       'flex', 'margin', 'box-sizing', 'display', 'flex-direction', 'overflow',
+      'padding', 'justify-content',
     ];
     const savedPlayerShellStyles: Record<string, string> = {};
     for (const property of playerShellStyleProperties) {
@@ -263,14 +280,14 @@ export function useSplitView({
     }
     const stageCell = document.createElement('div');
     stageCell.setAttribute('data-cell-split-view', 'stage');
-    stageCell.style.cssText = 'flex:1 1 0;min-width:0;min-height:0;height:100%;position:relative;overflow:hidden;';
+    stageCell.style.cssText = `flex:1 1 0;min-width:min(${SPLIT_VIEW_MIN_STAGE_WIDTH}px,55%);min-height:0;height:100%;position:relative;overflow:hidden;`;
 
     const panel = document.createElement('div');
     panel.setAttribute('data-cell-split-view', 'panel');
     // Apple §7: enter from right, exit to right — symmetric path.
     // §4: critically damped spring feel (no overshoot).
     // flex-basis animates so the video expands smoothly as the panel slides out.
-    panel.style.cssText = `flex:0 0 ${splitViewPctRef.current}%;min-width:200px;max-width:60%;height:100%;overflow:hidden;position:relative;transition:transform var(--duration-normal) var(--ease-standard),opacity var(--duration-normal) var(--ease-standard),flex-basis var(--duration-normal) var(--ease-standard);transform:translateX(100%);opacity:var(--opacity-30);`;
+    panel.style.cssText = `flex:0 0 ${splitViewPctRef.current}%;min-width:min(200px,45%);max-width:min(60%,calc(100% - ${SPLIT_VIEW_MIN_STAGE_WIDTH}px));height:100%;overflow:hidden;position:relative;transition:transform var(--duration-normal) var(--ease-standard),opacity var(--duration-normal) var(--ease-standard),flex-basis var(--duration-normal) var(--ease-standard);transform:translateX(100%);opacity:var(--opacity-30);`;
 
     // Attach a shadow root to the panel so the design-system tokens
     // (--color-surface, --color-border-subtle, etc.) + CueList/SubtitlePanel
@@ -295,6 +312,12 @@ export function useSplitView({
 
     // Wrapper only needed in the normal (non-fullscreen) branch.
     let wrapper: HTMLDivElement | null = null;
+    let layoutObserver: ResizeObserver | null = null;
+    let layoutRaf = 0;
+    let scheduleLayoutRecalc: () => void = () => {};
+    let onPageScrollRef: ((() => void) | null) = null;
+    let lastLayoutKey: { w: number; vh: number } | null = null;
+    let cachedContentH = 0;
 
     if (isPlayerFullscreen) {
       // FULLSCREEN: playerShell is the top-layer fullscreen element. Moving
@@ -333,6 +356,7 @@ export function useSplitView({
       }
       playerShell.style.setProperty('display', 'flex', 'important');
       playerShell.style.setProperty('flex-direction', 'row', 'important');
+      playerShell.style.setProperty('padding', '0', 'important');
       playerShell.appendChild(stageCell);
       playerShell.appendChild(handle);
       playerShell.appendChild(panel);
@@ -435,15 +459,19 @@ export function useSplitView({
       // CSS based on video aspect ratio + available width, and updates on
       // resize. The old approach (parentPixelHeight px) froze the wrapper
       // at the initial size → empty space below after browser resize.
+      const viewportCapH = Math.max(
+        SPLIT_VIEW_MIN_HEIGHT,
+        window.innerHeight - playerRect.top - SPLIT_VIEW_VIEWPORT_MARGIN,
+      );
       const wrapperHeightStyle = viewportBound
         ? wrapperHeight
         : isYoutubePage()
           ? '100%'
         : isBroadShell
-          ? `${Math.round(videoRect!.height)}px`
+          ? `${Math.min(Math.round(videoRect!.height), viewportCapH)}px`
           : insertParentIsFlexRow
-            ? `${Math.round(parentPixelHeight)}px`
-            : `${Math.round(playerRect.height)}px`;
+            ? `${Math.min(Math.round(parentPixelHeight), viewportCapH)}px`
+            : `${Math.min(Math.round(playerRect.height), viewportCapH)}px`;
       svLog('NORMAL wrapper height', {
         viewportBound,
         isYoutube: isYoutubePage(),
@@ -479,6 +507,9 @@ export function useSplitView({
       playerShell.style.setProperty('aspect-ratio', 'auto', 'important');
       playerShell.style.setProperty('margin', '0', 'important');
       playerShell.style.setProperty('box-sizing', 'border-box', 'important');
+      playerShell.style.setProperty('display', 'flex', 'important');
+      playerShell.style.setProperty('flex-direction', 'column', 'important');
+      playerShell.style.setProperty('justify-content', 'center', 'important');
       // jwplayer/megaplay sets overflow:hidden on #megaplay-player, which
       // clips the control bar (especially right-side controls like the
       // fullscreen button) at the player bounds. Override to visible so
@@ -512,6 +543,93 @@ export function useSplitView({
         oldWrapper.remove();
       }
       splitViewWrapperRef.current = wrapper;
+      const recalcWrapperLayout = (): void => {
+        if (!wrapper?.isConnected) return;
+        let liveHeight: string;
+        if (viewportBound) {
+          liveHeight = resolveSplitViewWrapperHeight(
+            playerShell.getBoundingClientRect().height,
+            window.innerHeight,
+            true,
+          );
+        } else if (isYoutube) {
+          liveHeight = '100%';
+        } else {
+          const rect = wrapper.getBoundingClientRect();
+          const keyChanged = !lastLayoutKey
+            || Math.abs(rect.width - lastLayoutKey.w) > 1
+            || Math.abs(window.innerHeight - lastLayoutKey.vh) > 1;
+          if (keyChanged) {
+            lastLayoutKey = { w: rect.width, vh: window.innerHeight };
+            playerShell.style.setProperty('width', '100%', 'important');
+            playerShell.style.setProperty('margin', '0', 'important');
+            playerShell.style.setProperty('justify-content', 'center', 'important');
+            panel.style.visibility = 'hidden';
+            panel.style.position = 'absolute';
+            let measuredH: number;
+            if (isBroadShell) {
+              measuredH = playerShell.querySelector('video')?.getBoundingClientRect().height ?? 0;
+            } else if (insertParentIsFlexRow) {
+              const siblingH = Math.max(0, ...Array.from(insertParent.children)
+                .filter((c) => c !== wrapper
+                  && !(c as HTMLElement).hasAttribute?.('data-cell-split-view'))
+                .map((c) => c.getBoundingClientRect().height));
+              measuredH = siblingH || measureShellContentHeight(playerShell);
+            } else {
+              measuredH = measureShellContentHeight(playerShell);
+            }
+            panel.style.visibility = '';
+            panel.style.position = '';
+            cachedContentH = measuredH;
+          }
+          const cappedH = clampToVisibleViewport(cachedContentH, rect.top);
+          const videoForRatio = playerShell.querySelector('video')?.getBoundingClientRect();
+          const stageW = stageCell.getBoundingClientRect().width;
+          const targetW = cappedH < cachedContentH && videoForRatio && videoForRatio.height > 0
+            ? Math.floor(cappedH * (videoForRatio.width / videoForRatio.height))
+            : 0;
+          if (targetW > SPLIT_VIEW_MIN_STAGE_WIDTH && targetW < stageW) {
+            playerShell.style.setProperty('width', `${targetW}px`, 'important');
+            playerShell.style.setProperty('margin', '0 auto', 'important');
+            playerShell.style.setProperty('justify-content', 'flex-start', 'important');
+          } else {
+            playerShell.style.setProperty('width', '100%', 'important');
+            playerShell.style.setProperty('margin', '0', 'important');
+            playerShell.style.setProperty('justify-content', 'center', 'important');
+          }
+          liveHeight = `${cappedH}px`;
+        }
+        wrapper.style.height = liveHeight;
+        if (hasFlexSiblings) {
+          const cs = getComputedStyle(insertParent);
+          const parentContentW = insertParent.clientWidth
+            - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+          const siblingW = Array.from(insertParent.children)
+            .filter((c) => c !== wrapper
+              && !(c as HTMLElement).hasAttribute?.('data-cell-split-view'))
+            .reduce((sum, c) => sum + c.getBoundingClientRect().width, 0);
+          const basis = Math.round(parentContentW - siblingW);
+          if (basis > 0) wrapper.style.flex = `0 0 ${basis}px`;
+        }
+      };
+      scheduleLayoutRecalc = (): void => {
+        cancelAnimationFrame(layoutRaf);
+        layoutRaf = requestAnimationFrame(recalcWrapperLayout);
+      };
+      layoutObserver = new ResizeObserver(scheduleLayoutRecalc);
+      layoutObserver.observe(insertParent);
+      const observedVideo = playerShell.querySelector('video');
+      if (observedVideo) layoutObserver.observe(observedVideo);
+      let lastScrollX = window.scrollX;
+      let lastScrollY = window.scrollY;
+      onPageScrollRef = (): void => {
+        if (window.scrollX === lastScrollX && window.scrollY === lastScrollY) return;
+        lastScrollX = window.scrollX;
+        lastScrollY = window.scrollY;
+        scheduleLayoutRecalc();
+      };
+      window.addEventListener('scroll', onPageScrollRef, { passive: true, capture: true });
+      window.addEventListener('resize', scheduleLayoutRecalc);
       svLog('NORMAL wrapper inserted', {
         wrapperRect: rectLog(wrapper),
         stageCellRect: rectLog(stageCell),
@@ -582,6 +700,10 @@ export function useSplitView({
 
     return () => {
       detachObserver.disconnect();
+      layoutObserver?.disconnect();
+      if (onPageScrollRef) window.removeEventListener('scroll', onPageScrollRef, true);
+      window.removeEventListener('resize', scheduleLayoutRecalc);
+      cancelAnimationFrame(layoutRaf);
       themeSyncCleanup();
       svLog('cleanup START', { splitViewOpen, isPlayerFullscreen, playerShellTag: playerShell.tagName, playerShellInDom: document.body.contains(playerShell) });
       handle.removeEventListener('pointerdown', onPointerDown);
