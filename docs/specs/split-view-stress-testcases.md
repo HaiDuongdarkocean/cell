@@ -38,7 +38,7 @@ Test surface: StreamFlix mock (`http://127.0.0.1:4321`) qua Playwright (`e2e/sta
 | SV-11 | P0 | Open | Drag 1 nét liên tục 300px | `pointermove` events liên tục tới `pointerup`; drag không bị hủy giữa chừng (`pointercancel` không fire). **PASS sau fix** (trước: panel dừng sau ~19px do mất pointer capture). | e2e ✅ implemented |
 | SV-12 | P1 | Open | Drag ra ngoài bound (kéo hết trái/phải) | Panel width clamp trong [20%, 60%] wrapper; stage không < 0 | e2e |
 | SV-13 | P1 | Sau SV-10 | `pointerup` → reload page → `t` mở lại | Panel mở ở width đã persist (`SPLIT_VIEW_PCT` storage); clamp [20,60] nếu stored ngoài range | e2e |
-| SV-14 | P1 | Open | Resize browser window (nhỏ lại 50%) | Wrapper + panel không vỡ (video vẫn render, panel không overflow viewport). Known ceiling: px height frozen đến lần mở sau — AC chỉ yêu cầu không crash/ghost | e2e |
+| SV-14 | P0 | Open | Resize browser window (nhỏ/lớn), toggle browser sidebar | Wrapper height + flex basis recompute live qua ResizeObserver — video fill stage, không crop, không dead space (AC canonical: `subtitle-split-view-ac.md` AC-4.x). **Fixed**: trước đây px frozen đến lần mở sau | e2e |
 | SV-15 | P2 | Open + drag đang diễn ra | Nhấn `t` giữa drag | Toggle xử lý sạch: wrapper removed, không exception, không ghost handle | manual |
 | SV-16 | P2 | Open | Double-click handle | Không reset về default (hiện chưa có feature) — AC: không exception, không rebuild | manual |
 
