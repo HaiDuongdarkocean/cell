@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Status bar colors — mockup</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0; padding: 0;
+        font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+        background: #F3F4F2; color: #18191A;
+      }
+      .page { max-width: 1160px; margin: 0 auto; padding: 32px 20px 64px; }
+      h1 { font-size: 22px; margin: 0 0 6px; }
+      .note { font-size: 13px; color: #5A5C60; margin: 0 0 24px; max-width: 72ch; }
+      .palettes { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      @media (max-width: 900px) { .palettes { grid-template-columns: 1fr; } }
+      .palette h2 { font-size: 15px; margin: 0 0 12px; }
+      .card { border-radius: 14px; padding: 22px 22px 18px; margin-bottom: 14px; }
+      .card--light { background: #FFFFFF; border: 1px solid #E4E5E2; color: #18191A; }
+      .card--dark { background: #18191A; color: #F5F5F7; }
+      .card-label {
+        font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+        opacity: 0.55; margin-bottom: 14px;
+      }
+      .sentence { font-size: 22px; line-height: 2.1; }
+      .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 18px; }
+      .swatch { display: inline-flex; align-items: center; gap: 8px; font: 12px/1 ui-monospace, Consolas, monospace; }
+      .swatch i { width: 30px; height: 8px; border-radius: 3px; display: inline-block; }
+      .swatch b { font-weight: 600; }
+      .chips { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+      .chip { padding: 3px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+      .divider { height: 1px; background: currentColor; opacity: 0.12; margin: 16px 0 0; }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1>Status bar colors</h1>
+      <p class="note">
+        Thanh status = underline 3px dưới token (inset box-shadow). Trên production,
+        known/ignore chỉ hiện thanh khi hover hoặc popup mở — mockup này force hiện
+        (class popup-open) để so màu. Chips bên dưới là status badge trong
+        Vocabulary/dictionary popup (cần đổi cùng family).
+      </p>
+      <div class="palettes" id="palettes"></div>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
