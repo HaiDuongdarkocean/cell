@@ -18,6 +18,7 @@ import { TranslatePanel } from './TranslatePanel';
 import { LinksPanel } from './LinksPanel';
 import { DictionaryToolbar } from './DictionaryToolbar';
 import { useDragScroll } from '@/shared/ui/useDragScroll';
+import { Tooltip } from '@/shared/ui/Tooltip';
 import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './CandidateView.module.css';
@@ -138,6 +139,21 @@ export function CandidateView({
   const selectedWordAudioUrl = useAudioItemUrl(selectedWordAudio);
 
   const freqScrollRef = useDragScroll<HTMLDivElement>();
+  const wordRowRef = useRef<HTMLDivElement | null>(null);
+  const [termTruncated, setTermTruncated] = useState(false);
+
+  useEffect(() => {
+    const row = wordRowRef.current;
+    if (!row) return;
+    const check = (): void => {
+      const el = row.querySelector<HTMLElement>('[data-cell-id="dictionary-term"]');
+      if (el) setTermTruncated(el.scrollWidth > el.clientWidth + 1);
+    };
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(row);
+    return () => ro.disconnect();
+  }, [candidate.term]);
 
   const [frequencyThresholds, setFrequencyThresholds] = useState<FrequencyBandThresholds>(DEFAULT_BAND_THRESHOLDS);
   const [translationRevealed, setTranslationRevealed] = useState(false);
@@ -165,8 +181,14 @@ export function CandidateView({
       <header className={styles.cellHeader} data-cell-id="dictionary-header">
         <div className={styles.cellHeaderRow}>
           <div className={styles.cellHeaderMain}>
-            <div className={styles.cellHeaderWordRow}>
-              <Heading level={2} size={2} className={styles.cellHeaderWord} data-cell-id="dictionary-term">{candidate.term}</Heading>
+            <div className={styles.cellHeaderWordRow} ref={wordRowRef}>
+              {termTruncated ? (
+                <Tooltip content={candidate.term} placement="bottom" activateOnClick className={styles.cellHeaderWordTooltip}>
+                  <Heading level={2} size={2} className={styles.cellHeaderWord} data-cell-id="dictionary-term">{candidate.term}</Heading>
+                </Tooltip>
+              ) : (
+                <Heading level={2} size={2} className={styles.cellHeaderWord} data-cell-id="dictionary-term">{candidate.term}</Heading>
+              )}
             </div>
           </div>
           <div className={styles.cellHeaderActions}>

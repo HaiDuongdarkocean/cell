@@ -174,6 +174,62 @@ describe('CandidateView', () => {
     expect(screen.queryAllByTestId('dictionary-frequency')).toHaveLength(0);
   });
 
+  it('shows a tooltip with the full term when it is truncated, and click does not re-trigger', () => {
+    let roCb: ResizeObserverCallback | undefined;
+    const NativeRO = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = jest.fn((cb: ResizeObserverCallback) => {
+      roCb = cb;
+      return { observe: jest.fn(), unobserve: jest.fn(), disconnect: jest.fn() } as unknown as ResizeObserver;
+    }) as unknown as typeof ResizeObserver;
+
+    try {
+      render(
+        <CandidateView
+          candidate={makeResult('averylongtermthatwillbetruncated')}
+          index={0}
+          contextSentence=""
+          sourceLang="en"
+          targetLang="vi"
+        />,
+      );
+
+      const first = screen.getByTestId('dictionary-term');
+      Object.defineProperty(first, 'scrollWidth', { value: 400, configurable: true });
+      Object.defineProperty(first, 'clientWidth', { value: 100, configurable: true });
+      act(() => roCb?.([], {} as ResizeObserver));
+
+      const term = screen.getByTestId('dictionary-term');
+      fireEvent.mouseEnter(term);
+      expect(screen.getByRole('tooltip')).toHaveTextContent('averylongtermthatwillbetruncated');
+      fireEvent.mouseLeave(term);
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+
+      fireEvent.click(term);
+      expect(screen.getByRole('tooltip')).toBeInTheDocument();
+      fireEvent.click(term);
+      expect(screen.getAllByRole('tooltip')).toHaveLength(1);
+    } finally {
+      globalThis.ResizeObserver = NativeRO;
+    }
+  });
+
+  it('renders no term tooltip when the term fits', () => {
+    render(
+      <CandidateView
+        candidate={makeResult('short')}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    const term = screen.getByTestId('dictionary-term');
+    fireEvent.mouseEnter(term);
+    fireEvent.click(term);
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+  });
+
   it('cycles status and sends WORD_STATUS_SET', async () => {
     const candidate = makeResult('hello');
 

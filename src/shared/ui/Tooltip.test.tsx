@@ -23,4 +23,27 @@ describe('Tooltip', () => {
     fireEvent.mouseLeave(button);
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
+
+  it('does not reveal on click by default', () => {
+    render(
+      <Tooltip content="Help">
+        <button>Hover me</button>
+      </Tooltip>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Hover me' }));
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+  });
+
+  it('reveals on click when activateOnClick is set; a second click is a no-op', () => {
+    render(
+      <Tooltip content="Help" activateOnClick>
+        <button>Hover me</button>
+      </Tooltip>,
+    );
+    const button = screen.getByRole('button', { name: 'Hover me' });
+    fireEvent.click(button);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Help');
+    fireEvent.click(button);
+    expect(screen.getAllByRole('tooltip')).toHaveLength(1);
+  });
 });

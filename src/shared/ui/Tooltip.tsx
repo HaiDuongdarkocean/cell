@@ -8,12 +8,16 @@ export interface TooltipProps {
   children: ReactElement<HTMLAttributes<HTMLElement>>;
   /** Optional placement. Default: top. */
   placement?: 'top' | 'bottom' | 'left' | 'right';
+  /** Also reveal on click. A click while the tooltip is visible is a no-op. */
+  activateOnClick?: boolean;
+  /** Extra class for the wrapper span (e.g. min-width: 0 inside flex rows). */
+  className?: string;
 }
 
 /**
  * Tooltip — accessible hover/focus tooltip with `aria-describedby`.
  */
-export function Tooltip({ content, children, placement = 'top' }: TooltipProps): React.JSX.Element {
+export function Tooltip({ content, children, placement = 'top', activateOnClick = false, className }: TooltipProps): React.JSX.Element {
   const [visible, setVisible] = useState(false);
   const tooltipId = useId();
 
@@ -23,10 +27,11 @@ export function Tooltip({ content, children, placement = 'top' }: TooltipProps):
     onMouseLeave: () => setVisible(false),
     onFocus: () => setVisible(true),
     onBlur: () => setVisible(false),
+    ...(activateOnClick ? { onClick: () => { if (!visible) setVisible(true); } } : {}),
   });
 
   return (
-    <span className={styles.wrapper}>
+    <span className={[styles.wrapper, className ?? ''].join(' ').trim()}>
       {trigger}
       {visible && (
         <span id={tooltipId} className={[styles.tooltip, styles[placement]].join(' ')} role="tooltip">

@@ -56,6 +56,11 @@
   text-overflow: ellipsis;
 }
 
+.cellHeaderWordTooltip {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .cellHeaderIpa {
   font-size: var(--font-size-md);
   color: var(--color-text-secondary);
