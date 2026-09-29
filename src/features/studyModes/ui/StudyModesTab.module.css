@@ -126,7 +126,8 @@
   display: flex;
   gap: var(--space-0-5);
   padding: var(--space-0-5);
-  background: var(--color-field);
+  background: var(--color-surface-elevated);
+  border: var(--borderWidth-hairline, 1px) solid var(--color-border-subtle);
   border-radius: var(--radius-pill);
 }
 
