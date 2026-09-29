@@ -14,7 +14,7 @@
  * - 3 taps: onTripleTap (cycle horizontal presets)
  */
 
-const TAP_WINDOW_MS = 300;
+export const TAP_WINDOW_MS = 300;
 
 export interface GestureDetector {
   /** Call on pointerdown. */

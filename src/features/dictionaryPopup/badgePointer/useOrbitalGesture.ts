@@ -1,5 +1,5 @@
 import { useRef, useCallback } from 'react';
-import { createGestureDetector } from './gestureDetector';
+import { createGestureDetector, TAP_WINDOW_MS } from './gestureDetector';
 
 export interface UseOrbitalGestureOptions {
   onSingleTap?: () => void;
@@ -76,6 +76,7 @@ export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbital
   });
 
   const captureRef = useRef<CaptureRef | null>(null);
+  const lastInstantTapRef = useRef(Number.NEGATIVE_INFINITY);
 
   const releaseCapture = useCallback((): void => {
     tryReleasePointerCapture(captureRef.current);
@@ -107,6 +108,7 @@ export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbital
           dragRef.current.dragging = true;
           dragRef.current.hasDragged = true;
           detectorRef.current.reset();
+          lastInstantTapRef.current = Number.NEGATIVE_INFINITY;
           optionsRef.current.onDragStart?.();
         } else {
           return;
@@ -133,8 +135,16 @@ export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbital
       // When no multi-tap handlers (collapsed at edge), fire single-tap
       // immediately — no 300ms detector delay. This makes the badge feel
       // instant: tap → panel opens, no waiting for a double-tap that can't come.
+      // A repeat tap inside the tap window is the same burst (mouse
+      // double-click, second click while the panel is still sliding in) — it is
+      // swallowed, because a second single-tap would toggle the panel closed
+      // right after it opened (visible flash).
       const opts = optionsRef.current;
       if (opts.onDoubleTap === undefined && opts.onTripleTap === undefined) {
+        const now = e.timeStamp;
+        const repeat = now - lastInstantTapRef.current <= TAP_WINDOW_MS;
+        lastInstantTapRef.current = now;
+        if (repeat) return;
         opts.onSingleTap?.();
         return;
       }
@@ -156,6 +166,7 @@ export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbital
       }
       dragRef.current.pointerDown = false;
       detectorRef.current.reset();
+      lastInstantTapRef.current = Number.NEGATIVE_INFINITY;
     },
     [releaseCapture],
   );
@@ -163,6 +174,7 @@ export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbital
   const reset = useCallback((): void => {
     dragRef.current = { dragging: false, pointerDown: false, startX: 0, startY: 0, hasDragged: false };
     detectorRef.current.reset();
+    lastInstantTapRef.current = Number.NEGATIVE_INFINITY;
     releaseCapture();
   }, [releaseCapture]);
 

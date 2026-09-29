@@ -138,6 +138,25 @@ describe('useOrbitalGesture', () => {
     jest.useRealTimers();
   });
 
+  it('swallows a repeat tap inside the tap window when collapsed (no multi-tap handlers)', () => {
+    const onSingleTap = jest.fn();
+    const { result } = renderHook(() => useOrbitalGesture({ onSingleTap }));
+
+    act(() => {
+      result.current.onPointerDown(makePointerEvent(0, 0, 1000));
+      result.current.onPointerUp(makePointerEvent(0, 0, 1000));
+      result.current.onPointerDown(makePointerEvent(0, 0, 1150));
+      result.current.onPointerUp(makePointerEvent(0, 0, 1150));
+    });
+    expect(onSingleTap).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      result.current.onPointerDown(makePointerEvent(0, 0, 2000));
+      result.current.onPointerUp(makePointerEvent(0, 0, 2000));
+    });
+    expect(onSingleTap).toHaveBeenCalledTimes(2);
+  });
+
   it('still uses 300ms detector when onDoubleTap is present (expanded mode)', () => {
     jest.useFakeTimers();
     const onSingleTap = jest.fn();
