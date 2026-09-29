@@ -24,6 +24,35 @@ afterEach(() => {
   Range.prototype.getClientRects = originalGetClientRects;
 });
 
+/** Build a paragraph whose text is rendered as tokenize-style spans
+ *  (`.js-cell-token` + separator spans) — the DOM shape `bindTokenBlock`
+ *  produces. Returns the span whose word matches `word`, plus its text node. */
+function buildTokenizedParagraph(
+  text: string,
+  word: string,
+): { p: HTMLParagraphElement; token: HTMLSpanElement; tokenText: Text } {
+  const p = document.createElement('p');
+  let last = 0;
+  let token: HTMLSpanElement | null = null;
+  for (const match of text.matchAll(/\w+/g)) {
+    const start = match.index ?? 0;
+    if (start > last) {
+      const separator = document.createElement('span');
+      separator.className = 'js-cell-token js-cell-token--separator';
+      separator.textContent = text.slice(last, start);
+      p.appendChild(separator);
+    }
+    const span = document.createElement('span');
+    span.className = 'js-cell-token js-cell-token--word';
+    span.textContent = match[0];
+    p.appendChild(span);
+    if (match[0] === word) token = span;
+    last = start + match[0].length;
+  }
+  if (!token) throw new Error(`word "${word}" not found in "${text}"`);
+  return { p, token, tokenText: token.firstChild as Text };
+}
+
 describe('extractWordAtOffset', () => {
   it('extracts a Latin word at offset', () => {
     const text = 'The quick brown fox';
@@ -414,25 +443,20 @@ describe('WebTriggerController', () => {
       document.body.removeChild(p);
     });
 
-    it('hover over subtitle token does not dispatch lookup', () => {
-      const p = document.createElement('p');
-      p.textContent = 'The quick brown fox';
-      const token = document.createElement('span');
-      token.className = 'js-cell-token';
-      token.textContent = 'quick';
-      p.appendChild(token);
+    it('hover over a token span dispatches lookup for the word under the cursor', () => {
+      const { p, token, tokenText } = buildTokenizedParagraph('The quick brown fox', 'quick');
       document.body.appendChild(p);
 
       const mockRange = document.createRange();
-      const tokenText = token.firstChild as Text;
       mockRange.setStart(tokenText, 0);
       mockRange.setEnd(tokenText, 5);
       document.caretRangeFromPoint = jest.fn(() => mockRange) as typeof document.caretRangeFromPoint;
 
       let lookupCount = 0;
+      let term = '';
       const ctrl = new WebTriggerController({
         triggerMode: 'hover',
-        onLookup: () => { lookupCount++; },
+        onLookup: (req) => { lookupCount++; term = req.term; },
         onCancel: () => {},
       });
       ctrl.attach();
@@ -442,7 +466,41 @@ describe('WebTriggerController', () => {
       document.dispatchEvent(event);
 
       jest.advanceTimersByTime(200);
+      expect(lookupCount).toBe(1);
+      expect(term).toBe('quick');
+
+      ctrl.detach();
+      document.body.removeChild(p);
+    });
+
+    it('hover over a token span honors a hover+modifier mode', () => {
+      const { p, token, tokenText } = buildTokenizedParagraph('The quick brown fox', 'quick');
+      document.body.appendChild(p);
+
+      const mockRange = document.createRange();
+      mockRange.setStart(tokenText, 0);
+      mockRange.setEnd(tokenText, 5);
+      document.caretRangeFromPoint = jest.fn(() => mockRange) as typeof document.caretRangeFromPoint;
+
+      let lookupCount = 0;
+      const ctrl = new WebTriggerController({
+        triggerMode: 'hover-shift',
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      const withoutModifier = new MouseEvent('mousemove', { bubbles: true, clientX: 50, clientY: 10 });
+      Object.defineProperty(withoutModifier, 'target', { value: token });
+      document.dispatchEvent(withoutModifier);
+      jest.advanceTimersByTime(200);
       expect(lookupCount).toBe(0);
+
+      const withModifier = new MouseEvent('mousemove', { bubbles: true, clientX: 50, clientY: 10, shiftKey: true });
+      Object.defineProperty(withModifier, 'target', { value: token });
+      document.dispatchEvent(withModifier);
+      jest.advanceTimersByTime(200);
+      expect(lookupCount).toBe(1);
 
       ctrl.detach();
       document.body.removeChild(p);
