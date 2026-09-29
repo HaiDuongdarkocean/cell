@@ -88,8 +88,14 @@
   width: var(--iconbutton-size-sm);
   height: var(--iconbutton-size-sm);
   border-radius: var(--radius-full);
-  background: var(--color-primary);
-  color: var(--button-fg);
+  background: var(--color-primary-emphasis, var(--color-primary));
+  color: var(--color-on-primary-emphasis, var(--button-fg));
+  opacity: var(--button-primary-dimmed-opacity);
+}
+
+.cellAudioPlay svg {
+  width: var(--iconbutton-icon-sm);
+  height: var(--iconbutton-icon-sm);
 }
 
 /* Plain text label — the row (.cellAudioItem) is the checkable host, so
