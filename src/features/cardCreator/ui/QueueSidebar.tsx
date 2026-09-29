@@ -62,7 +62,8 @@ export function QueueSidebar({
     (e: React.KeyboardEvent<HTMLElement>): void => {
       if (!asideRef.current) return;
       const focusable = Array.from(asideRef.current.querySelectorAll('button, [tabindex="0"]'));
-      const active = document.activeElement;
+      const root = asideRef.current.getRootNode() as Document | ShadowRoot;
+      const active = root.activeElement ?? document.activeElement;
       const currentIndex = active ? focusable.indexOf(active) : -1;
 
       if (e.key === 'ArrowDown') {

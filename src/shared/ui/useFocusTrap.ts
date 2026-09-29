@@ -23,7 +23,12 @@ export function useFocusTrap(panelRef: RefObject<HTMLElement | null>, open: bool
     if (!open || !panelRef.current) return;
 
     const panel = panelRef.current;
-    const previouslyFocused = document.activeElement as HTMLElement | null;
+    // document.activeElement does not pierce the shadow boundary — inside a
+    // shadow-root panel it returns the host, so the wrap check would never
+    // match and focus would escape the modal. Read the panel's own root.
+    const root = panel.getRootNode() as Document | ShadowRoot;
+    const previouslyFocused = (root.activeElement ??
+      document.activeElement) as HTMLElement | null;
 
     // Move focus into the panel (first focusable element).
     const first = panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
@@ -33,17 +38,17 @@ export function useFocusTrap(panelRef: RefObject<HTMLElement | null>, open: bool
       if (e.key !== 'Tab') return;
       const focusables = Array.from(
         panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+      ).filter((el) => el.offsetParent !== null || el === root.activeElement);
       if (focusables.length === 0) return;
       const firstEl = focusables[0];
       const lastEl = focusables[focusables.length - 1];
       if (e.shiftKey) {
-        if (document.activeElement === firstEl) {
+        if (root.activeElement === firstEl) {
           e.preventDefault();
           lastEl.focus();
         }
       } else {
-        if (document.activeElement === lastEl) {
+        if (root.activeElement === lastEl) {
           e.preventDefault();
           firstEl.focus();
         }

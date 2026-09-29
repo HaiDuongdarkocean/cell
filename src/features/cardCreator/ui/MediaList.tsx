@@ -280,7 +280,8 @@ function ImageGallery({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
     const focusable = Array.from(e.currentTarget.querySelectorAll('button, [tabindex="0"]'));
-    const active = document.activeElement;
+    const root = e.currentTarget.getRootNode() as Document | ShadowRoot;
+    const active = root.activeElement ?? document.activeElement;
     const currentIndex = active ? focusable.indexOf(active) : -1;
 
     if (e.key === 'ArrowRight') {
@@ -395,7 +396,8 @@ function AudioList({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
     const focusable = Array.from(e.currentTarget.querySelectorAll('button, [tabindex="0"]'));
-    const active = document.activeElement;
+    const root = e.currentTarget.getRootNode() as Document | ShadowRoot;
+    const active = root.activeElement ?? document.activeElement;
     const currentIndex = active ? focusable.indexOf(active) : -1;
 
     if (e.key === 'ArrowDown') {

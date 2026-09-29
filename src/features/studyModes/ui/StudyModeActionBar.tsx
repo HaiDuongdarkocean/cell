@@ -65,7 +65,8 @@ export function StudyModeActionBar({
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
     const tabs = scrollRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
     if (!tabs || tabs.length === 0) return;
-    const focused = document.activeElement;
+    const root = scrollRef.current?.getRootNode() as Document | ShadowRoot | undefined;
+    const focused = root?.activeElement ?? document.activeElement;
     const idx = Array.from(tabs).findIndex((tab) => tab === focused);
     if (idx < 0) return;
     const next = e.key === 'ArrowRight'
@@ -81,7 +82,9 @@ export function StudyModeActionBar({
 
   const handleBlur = (): void => {
     window.setTimeout(() => {
-      if (!scrollRef.current?.contains(document.activeElement)) {
+      const root = scrollRef.current?.getRootNode() as Document | ShadowRoot | undefined;
+      const active = root?.activeElement ?? document.activeElement;
+      if (!scrollRef.current?.contains(active)) {
         setFocusId(activeModeId);
       }
     }, 0);
