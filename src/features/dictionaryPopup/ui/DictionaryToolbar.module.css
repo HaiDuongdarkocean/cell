@@ -48,13 +48,10 @@
   flex-shrink: 0;
 }
 
-/* J-white badge — inverse of the dimmed primary tab (button-fg chip +
-   primary number). Equal negative offsets put its center on the 45°
-   diagonal, fully outside the circle. */
 .cellToolbarBadge {
   position: absolute;
-  top: calc(-1 * var(--space-1-5));
-  right: calc(-1 * var(--space-1-5));
+  top: calc(-1 * var(--space-2));
+  right: calc(-1 * var(--space-2));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -62,9 +59,8 @@
   height: var(--space-4);
   padding: 0 var(--space-0-5);
   border-radius: var(--radius-full);
-  background: var(--button-fg);
-  color: var(--color-primary);
-  border: var(--border-width-medium) solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+  background: var(--color-primary-emphasis, var(--color-primary));
+  color: var(--color-on-primary-emphasis, var(--button-fg));
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   box-sizing: border-box;
