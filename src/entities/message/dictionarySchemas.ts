@@ -107,9 +107,7 @@ export const LookupResultSchema = z.object({
   langCode: z.string().length(2),
   reading: z.string(),
   readingKind: ReadingKindSchema,
-  frequency: z
-    .object({ rank: z.number().int(), source: z.string() })
-    .nullable(),
+  frequencies: z.array(z.object({ rank: z.number().int(), source: z.string() })),
   status: WordStatusSchema,
   partsOfSpeech: z.array(z.string()),
   definitions: z.array(DefinitionEntrySchema),

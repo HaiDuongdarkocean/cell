@@ -8,7 +8,7 @@ function makeResult(overrides?: Partial<LookupResult>): LookupResult {
     langCode: 'en',
     reading: '/həˈloʊ/',
     readingKind: 'ipa',
-    frequency: null,
+    frequencies: [],
     status: 'unknown',
     partsOfSpeech: ['exclamation', 'noun'],
     definitions: [

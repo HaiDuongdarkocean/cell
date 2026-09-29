@@ -49,7 +49,7 @@ function makeResult(term: string, overrides?: Partial<LookupResult>): LookupResu
     langCode: 'en',
     reading: '/həˈloʊ/',
     readingKind: 'ipa',
-    frequency: null,
+    frequencies: [],
     status: 'unknown',
     partsOfSpeech: [],
     definitions: [],
@@ -132,6 +132,46 @@ describe('CandidateView', () => {
     expect(screen.getByTestId('dictionary-status-cycle')).toHaveTextContent('Known');
     expect(screen.getByTestId('dictionary-definitions')).toBeInTheDocument();
     expect(screen.getAllByTestId('dictionary-definition')).toHaveLength(1);
+  });
+
+  it('renders one frequency chip per list with its own name and rank', () => {
+    const candidate = makeResult('hello', {
+      frequencies: [
+        { rank: 500, source: 'wordfreq' },
+        { rank: 40567, source: 'subtlex-uk' },
+      ],
+    });
+
+    render(
+      <CandidateView
+        candidate={candidate}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    const chips = screen.getAllByTestId('dictionary-frequency');
+    expect(chips).toHaveLength(2);
+    expect(chips[0]).toHaveTextContent('wordfreq');
+    expect(chips[0]).toHaveTextContent('500');
+    expect(chips[1]).toHaveTextContent('subtlex-uk');
+    expect(chips[1]).toHaveTextContent('40,567');
+  });
+
+  it('renders no frequency chip when no list contains the term', () => {
+    render(
+      <CandidateView
+        candidate={makeResult('hello')}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    expect(screen.queryAllByTestId('dictionary-frequency')).toHaveLength(0);
   });
 
   it('cycles status and sends WORD_STATUS_SET', async () => {

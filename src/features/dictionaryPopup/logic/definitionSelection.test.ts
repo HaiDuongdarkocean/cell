@@ -22,7 +22,7 @@ function makeResult(defs: DefinitionEntry[]): LookupResult {
     langCode: 'en',
     reading: '',
     readingKind: 'ipa',
-    frequency: null,
+    frequencies: [],
     status: 'unknown',
     partsOfSpeech: [],
     definitions: defs,

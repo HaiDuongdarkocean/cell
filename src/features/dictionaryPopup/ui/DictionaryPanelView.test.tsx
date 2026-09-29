@@ -36,7 +36,7 @@ function makeResult(term: string, overrides?: Partial<LookupResult>): LookupResu
     langCode: 'en',
     reading: '',
     readingKind: 'none',
-    frequency: null,
+    frequencies: [],
     status: 'unknown',
     partsOfSpeech: [],
     definitions: [],

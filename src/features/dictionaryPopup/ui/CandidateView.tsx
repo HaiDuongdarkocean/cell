@@ -17,6 +17,7 @@ import { ImagePanel } from './ImagePanel';
 import { TranslatePanel } from './TranslatePanel';
 import { LinksPanel } from './LinksPanel';
 import { DictionaryToolbar } from './DictionaryToolbar';
+import { useDragScroll } from '@/shared/ui/useDragScroll';
 import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './CandidateView.module.css';
@@ -136,6 +137,8 @@ export function CandidateView({
   const selectedWordAudio = findSelectedWordAudio(panel.audioItems, panel.audioSelection);
   const selectedWordAudioUrl = useAudioItemUrl(selectedWordAudio);
 
+  const freqScrollRef = useDragScroll<HTMLDivElement>();
+
   const [frequencyThresholds, setFrequencyThresholds] = useState<FrequencyBandThresholds>(DEFAULT_BAND_THRESHOLDS);
   const [translationRevealed, setTranslationRevealed] = useState(false);
   const isMountedRef = useRef(false);
@@ -153,8 +156,6 @@ export function CandidateView({
       .catch(() => { /* keep defaults */ });
     return () => { isMountedRef.current = false; };
   }, []);
-
-  const frequencyBand = candidate.frequency ? rankToBand(candidate.frequency.rank, frequencyThresholds) : 'none';
 
   return (
     <article
@@ -229,11 +230,15 @@ export function CandidateView({
           >
             {t(STATUS_KEYS[panel.status])}
           </Button>
-          {candidate.frequency && (
-            <span className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${frequencyBand}`]}`} data-cell-id="dictionary-frequency">
-              <span className={styles.cellHeaderFrequencySource}>{candidate.frequency.source}</span>
-              <span className={styles.cellHeaderFrequencyRank}>{candidate.frequency.rank.toLocaleString()}</span>
-            </span>
+          {candidate.frequencies.length > 0 && (
+            <div className={styles.cellHeaderFrequencies} ref={freqScrollRef} data-cell-id="dictionary-frequencies">
+              {candidate.frequencies.map((freq, i) => (
+                <span key={`${freq.source}-${i}`} className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${rankToBand(freq.rank, frequencyThresholds)}`]}`} data-cell-id="dictionary-frequency">
+                  <span className={styles.cellHeaderFrequencySource}>{freq.source}</span>
+                  <span className={styles.cellHeaderFrequencyRank}>{freq.rank.toLocaleString()}</span>
+                </span>
+              ))}
+            </div>
           )}
         </div>
 

@@ -90,7 +90,9 @@ export interface LookupResult {
   /** Primary reading (Chinese multi-pronunciation: chọn primary theo dict entry order, secondary trong definitions). */
   readonly reading: string;
   readonly readingKind: ReadingKind;
-  readonly frequency: { readonly rank: number; readonly source: string } | null;
+  /** Frequency rank per imported list that contains the term — one chip per
+   *  list in the header, ordered best-first (resource priority, then rank). */
+  readonly frequencies: readonly { readonly rank: number; readonly source: string }[];
   readonly status: WordStatus;
   readonly partsOfSpeech: readonly string[];
   readonly definitions: readonly DefinitionEntry[];

@@ -34,7 +34,7 @@ const winner: LookupResult = {
   langCode: 'en',
   reading: 'həˈləʊ',
   readingKind: 'ipa',
-  frequency: null,
+  frequencies: [],
   status: 'unknown',
   partsOfSpeech: ['int.'],
   definitions: [

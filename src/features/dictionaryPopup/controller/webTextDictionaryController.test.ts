@@ -122,7 +122,7 @@ function makeResult(overrides: Partial<LookupResult> = {}): LookupResult {
     langCode: 'en',
     reading: '/teɪk ɒf/',
     readingKind: 'ipa',
-    frequency: null,
+    frequencies: [],
     status: 'unknown',
     partsOfSpeech: ['verb'],
     definitions: [{

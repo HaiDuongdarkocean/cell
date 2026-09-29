@@ -56,7 +56,6 @@ import type {
   RankedCandidateTrace,
 } from '@/features/dictionary/logic/lookupLogTypes';
 import { tokenizeSentence } from '@/features/dictionary/logic/phraseMatcher';
-import { pickBestFrequencyEntry } from '@/shared/lib/frequencyBand';
 import { getActiveProfileSettings, type Settings } from '@/entities/settings';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
@@ -362,7 +361,7 @@ export async function lookupOrchestratorMulti(
     const surfaceResult = await assembleLookupResult(
       langCode, surfaceTerm, null, 'dictionary', plugin, resourceContext, signal, surfaceTerm,
     );
-    if ((surfaceResult.definitions.length > 0 || surfaceResult.frequency || surfaceResult.reading) && !seen.has(surfaceResult.term.toLowerCase())) {
+    if ((surfaceResult.definitions.length > 0 || surfaceResult.frequencies.length > 0 || surfaceResult.reading) && !seen.has(surfaceResult.term.toLowerCase())) {
       seen.add(surfaceResult.term.toLowerCase());
       additionalResults.push(surfaceResult);
     }
@@ -376,7 +375,7 @@ export async function lookupOrchestratorMulti(
       const lemmaResult = await assembleLookupResult(
         langCode, candidate, null, 'dictionary', plugin, resourceContext, signal,
       );
-      if ((lemmaResult.definitions.length > 0 || lemmaResult.frequency || lemmaResult.reading) && !seen.has(lemmaResult.term.toLowerCase())) {
+      if ((lemmaResult.definitions.length > 0 || lemmaResult.frequencies.length > 0 || lemmaResult.reading) && !seen.has(lemmaResult.term.toLowerCase())) {
         seen.add(lemmaResult.term.toLowerCase());
         additionalResults.push(lemmaResult);
       }
@@ -388,7 +387,7 @@ export async function lookupOrchestratorMulti(
       const lemmaResult = await assembleLookupResult(
         langCode, lemma, null, 'dictionary', plugin, resourceContext, signal,
       );
-      if ((lemmaResult.definitions.length > 0 || lemmaResult.frequency || lemmaResult.reading) && !seen.has(lemmaResult.term.toLowerCase())) {
+      if ((lemmaResult.definitions.length > 0 || lemmaResult.frequencies.length > 0 || lemmaResult.reading) && !seen.has(lemmaResult.term.toLowerCase())) {
         additionalResults.push(lemmaResult);
       }
     }
@@ -659,11 +658,18 @@ async function assembleLookupResult(
     ? ''
     : rawReading;
 
-  // Pick the rank from the highest-priority allowed frequency list that
-  // contains the term; fall back to the best (lowest) rank when no priority
-  // order is configured.
-  const bestFreq = pickBestFrequencyEntry(freqEntries, resourcePriority);
-  const frequency = bestFreq ? { rank: bestFreq.frequency, source: 'frequency' } : null;
+  const freqByResource = new Map<number, (typeof freqEntries)[number]>();
+  for (const e of freqEntries) {
+    if (!freqByResource.has(e.resourceId)) freqByResource.set(e.resourceId, e);
+  }
+  const frequencies = [...freqByResource.values()]
+    .sort((a, b) => {
+      const pa = resourcePriority.indexOf(a.resourceId);
+      const pb = resourcePriority.indexOf(b.resourceId);
+      if (pa !== -1 || pb !== -1) return pa === -1 ? 1 : pb === -1 ? -1 : pa - pb;
+      return a.frequency - b.frequency;
+    })
+    .map((e) => ({ rank: e.frequency, source: resourceNameById.get(e.resourceId) ?? 'frequency' }));
 
   // Status is looked up for the displayed surface term (phrase or hover word).
   const status = surfaceTerm === initialSurface
@@ -675,7 +681,7 @@ async function assembleLookupResult(
     langCode,
     reading,
     readingKind: plugin.readingKind,
-    frequency,
+    frequencies,
     status,
     partsOfSpeech,
     definitions,

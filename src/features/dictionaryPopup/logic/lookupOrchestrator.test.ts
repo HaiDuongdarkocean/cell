@@ -283,8 +283,8 @@ describe('lookupOrchestrator — English', () => {
       cursorOffset: 0,
     });
 
-    expect(result.frequency).not.toBeNull();
-    expect(result.frequency?.rank).toBe(500);
+    expect(result.frequencies.length).toBeGreaterThan(0);
+    expect(result.frequencies[0]?.rank).toBe(500);
   });
 
   it('aborts when signal is already aborted', async () => {
@@ -946,7 +946,7 @@ describe('lookupOrchestratorMulti — multi-candidate', () => {
 
     expect(results[0]!.term).toBe('is');
     expect(results[0]!.definitions[0]!.text).toBe('to exist');
-    expect(results[0]!.frequency?.rank).toBe(13);
+    expect(results[0]!.frequencies[0]?.rank).toBe(13);
     expect(results[1]!.term).toBe('be');
   });
 
@@ -1294,9 +1294,11 @@ describe('lookupOrchestrator — resource controls', () => {
     });
 
     // Highest-priority resource has rank 15000 (worse absolute rank), but
-    // its rank wins because it is the highest-priority frequency list.
-    expect(result.frequency).not.toBeNull();
-    expect(result.frequency?.rank).toBe(15000);
+    // it leads the frequencies list because it is the highest-priority list.
+    expect(result.frequencies).toEqual([
+      { rank: 15000, source: 'priority-freq' },
+      { rank: 500, source: 'global-freq' },
+    ]);
   });
 });
 
@@ -1320,7 +1322,7 @@ describe('lookupOrchestrator — active profile language', () => {
 
     expect(result.langCode).toBe('aa');
     expect(result.definitions).toEqual([]);
-    expect(result.frequency).toBeNull();
+    expect(result.frequencies).toEqual([]);
     expect(result.status).toBe('unknown');
   });
 

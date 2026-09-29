@@ -155,7 +155,7 @@ describe('LookupResultSchema', () => {
     langCode: 'en',
     reading: 'teɪk ɒf',
     readingKind: 'ipa',
-    frequency: { rank: 1200, source: 'Cambridge' },
+    frequencies: [{ rank: 1200, source: 'Cambridge' }],
     status: 'unknown',
     partsOfSpeech: ['phrasal verb'],
     definitions: [
@@ -190,8 +190,8 @@ describe('LookupResultSchema', () => {
     ).toBe(true);
   });
 
-  it('accepts null frequency', () => {
-    expect(LookupResultSchema.safeParse({ ...valid, frequency: null }).success).toBe(true);
+  it('accepts an empty frequencies list', () => {
+    expect(LookupResultSchema.safeParse({ ...valid, frequencies: [] }).success).toBe(true);
   });
 
   it('rejects unknown matchSource', () => {
