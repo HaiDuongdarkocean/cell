@@ -1703,5 +1703,6 @@
   "ui.language.none": "None",
   "vocabulary.error.actionFailed": "The vocabulary action failed: $1",
   "launcher.title": "Tihoka Launcher",
-  "panel.title": "Subtitles"
+  "panel.title": "Subtitles",
+  "studyModes.card.actions": "Mode actions"
 }

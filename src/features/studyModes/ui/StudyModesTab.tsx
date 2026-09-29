@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
   Heading,
   Text,
@@ -9,6 +9,7 @@ import {
   Toggle,
   Dialog,
   Icon,
+  Popover,
   SelectableCard,
   SliderRow,
 } from '@/shared/ui';
@@ -231,6 +232,36 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
   const isCustom = mode.type === 'custom';
   const title = mode.titleKey ? t(mode.titleKey) : mode.title;
   const description = mode.descriptionKey ? t(mode.descriptionKey) : formatModeDescription(mode, t);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const doc = menuTriggerRef.current?.ownerDocument ?? document;
+    const win = doc.defaultView ?? window;
+    const handleClickOutside = (e: Event): void => {
+      const path = e.composedPath();
+      if (
+        !path.includes(menuTriggerRef.current as Node) &&
+        !path.includes(menuRef.current as Node)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+    const handleScroll = (): void => setMenuOpen(false);
+    const handleKey = (e: Event): void => {
+      if ((e as KeyboardEvent).key === 'Escape') setMenuOpen(false);
+    };
+    doc.addEventListener('mousedown', handleClickOutside);
+    doc.addEventListener('keydown', handleKey);
+    win.addEventListener('scroll', handleScroll, true);
+    return () => {
+      doc.removeEventListener('mousedown', handleClickOutside);
+      doc.removeEventListener('keydown', handleKey);
+      win.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [menuOpen]);
 
   return (
     <div className={styles.modeCardWrapper}>
@@ -250,26 +281,59 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
         </Text>
       </SelectableCard>
       {isCustom && (
-        <HStack gap="2" className={styles.modeActions}>
+        <>
           <Button
-            size="xs"
+            ref={menuTriggerRef}
             variant="ghost"
-            onClick={() => onEdit?.(mode)}
-            data-cell-id={`edit-mode-${mode.id}`}
-            leadingIcon={<Icon name="pencil" size="xs" />}
-          >
-            {t('studyModes.card.edit')}
-          </Button>
-          <Button
             size="xs"
-            variant="ghost"
-            onClick={() => onDelete?.(mode)}
-            data-cell-id={`delete-mode-${mode.id}`}
-            leadingIcon={<Icon name="trash" size="xs" />}
+            shape="circle"
+            className={styles.modeMenuTrigger}
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen((v) => !v);
+            }}
+            aria-label={t('studyModes.card.actions')}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            data-cell-id={`mode-actions-${mode.id}`}
           >
-            {t('studyModes.card.delete')}
+            <Icon name="ellipsisVertical" size="sm" />
           </Button>
-        </HStack>
+          <Popover
+            open={menuOpen}
+            triggerRef={menuTriggerRef}
+            role="menu"
+            menuAlign="right"
+            aria-label={t('studyModes.card.actions')}
+          >
+            <div ref={menuRef} className={styles.cardMenu}>
+              <button
+                type="button"
+                role="menuitem"
+                className={styles.cardMenuItem}
+                data-cell-id={`edit-mode-${mode.id}`}
+                onClick={() => {
+                  setMenuOpen(false);
+                  onEdit?.(mode);
+                }}
+              >
+                {t('studyModes.card.edit')}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className={styles.cardMenuItem}
+                data-cell-id={`delete-mode-${mode.id}`}
+                onClick={() => {
+                  setMenuOpen(false);
+                  onDelete?.(mode);
+                }}
+              >
+                {t('studyModes.card.delete')}
+              </button>
+            </div>
+          </Popover>
+        </>
       )}
     </div>
   );

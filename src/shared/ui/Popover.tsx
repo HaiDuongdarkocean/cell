@@ -22,14 +22,9 @@ function getPortalContainer(trigger: HTMLElement | null): Element | DocumentFrag
   if (!trigger) return document.body;
   const root = trigger.getRootNode();
   if (root instanceof ShadowRoot) {
-    let el: Node | null = trigger;
-    while (el && el !== root) {
-      if (el instanceof Element && el.getAttribute('data-cell-id') === 'subtitle-panel') {
-        return el;
-      }
-      el = el.parentNode;
-    }
-    return root;
+    const subtitlePanel = trigger.closest('[data-cell-id="subtitle-panel"]');
+    if (subtitlePanel) return subtitlePanel;
+    return trigger.closest('[data-theme]') ?? root;
   }
   return (root as Document).body ?? document.body;
 }

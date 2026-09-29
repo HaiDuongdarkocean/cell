@@ -1703,5 +1703,6 @@
   "ui.language.none": "Không có",
   "vocabulary.error.actionFailed": "Thao tác từ vựng thất bại: $1",
   "launcher.title": "Trung tâm Tihoka",
-  "panel.title": "Phụ đề"
+  "panel.title": "Phụ đề",
+  "studyModes.card.actions": "Tùy chọn chế độ"
 }
