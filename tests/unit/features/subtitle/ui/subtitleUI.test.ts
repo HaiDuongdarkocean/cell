@@ -7,7 +7,7 @@ describe('buildClusterCssVars — SSOT for cluster CSS custom properties', () =>
   it('returns defaults when settings is undefined', () => {
     const vars = buildClusterCssVars() as ClusterVars;
     expect(vars['--cluster-btn-size']).toBe('clamp(22px, 5cqw, 34px)');
-    expect(vars['--cluster-icon-size']).toBe('clamp(12px, 3cqw, 20px)');
+    expect(vars['--cluster-icon-size']).toBe('clamp(12px, 3cqw, var(--nav-cluster-button-icon))');
     expect(vars['--cluster-text-opacity']).toBe('1');
     expect(vars['--cluster-bg-opacity']).toBe('0.2');
   });
@@ -26,7 +26,7 @@ describe('buildClusterCssVars — SSOT for cluster CSS custom properties', () =>
     expect(vars['--cluster-btn-size']).toBe('clamp(31px, 7cqw, 48px)');
     // 48 * 0.35 = 16.8 → round = 17
     // 48 * 0.082 = 3.936 → round = 4
-    expect(vars['--cluster-icon-size']).toBe('clamp(17px, 4cqw, 20px)');
+    expect(vars['--cluster-icon-size']).toBe('clamp(17px, 4cqw, var(--nav-cluster-button-icon))');
   });
 
   it('applies custom textOpacity and bgOpacity', () => {
@@ -45,7 +45,7 @@ describe('buildClusterCssVars — SSOT for cluster CSS custom properties', () =>
     const size = 34;
     const expected = {
       '--cluster-btn-size': `clamp(${Math.round(size * 0.65)}px, ${Math.round(size * 0.15)}cqw, ${size}px)`,
-      '--cluster-icon-size': `clamp(${Math.round(size * 0.35)}px, ${Math.round(size * 0.082)}cqw, 20px)`,
+      '--cluster-icon-size': `clamp(${Math.round(size * 0.35)}px, ${Math.round(size * 0.082)}cqw, var(--nav-cluster-button-icon))`,
       '--cluster-text-opacity': '1',
       '--cluster-bg-opacity': '0.2',
     };

@@ -125,7 +125,7 @@ body[data-ocr-region-selecting="true"] #cell-universal-panel-host { display: non
   font-family: ${FONT}; font-size: 12px; font-weight: 600; line-height: 1; letter-spacing: 0.2px;
   cursor: pointer; pointer-events: auto; transition: filter 120ms ease, background 120ms ease;
 }
-.cell-ocr-region-btn svg { width: 13px; height: 13px; display: block; }
+.cell-ocr-region-btn svg { width: 18px; height: 18px; display: block; }
 .cell-ocr-region-btn--apply { background: ${ACCENT}; color: ${OVL_TEXT}; }
 .cell-ocr-region-btn--apply:hover { filter: brightness(1.15); }
 .cell-ocr-region-btn--cancel { background: rgba(${OVL_BG_RGB}, 0.6); color: ${OVL_TEXT}; box-shadow: inset 0 0 0 1px rgba(${OVL_TEXT_RGB}, 0.35); }
@@ -144,7 +144,7 @@ body[data-ocr-region-selecting="true"] #cell-universal-panel-host { display: non
   background: rgba(${OVL_BG_RGB}, 0.6); color: ${OVL_TEXT}; cursor: pointer; pointer-events: auto;
   transition: filter 120ms ease, background 120ms ease; flex-shrink: 0;
 }
-.cell-ocr-action-btn svg { width: 14px; height: 14px; display: block; }
+.cell-ocr-action-btn svg { width: 18px; height: 18px; display: block; }
 .cell-ocr-action-btn:hover { filter: brightness(1.3); }
 .cell-ocr-action-btn[data-active="true"] { background: ${ACCENT}; }
 .cell-ocr-action-toggle { width: 26px; height: 26px; flex-shrink: 0; }

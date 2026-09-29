@@ -39,6 +39,7 @@ import { STORAGE_KEYS } from '@/shared/config/config';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { t } from '@/shared/i18n';
 import { ChevronRight } from 'lucide-react';
+import { ICON_SIZE_PX } from '@/shared/icons';
 
 import { Button, EmptyState, Tabs } from '@/shared/ui';
 import styles from './SubtitlePanel.module.css';
@@ -397,7 +398,7 @@ function SubtitlePanelImpl({
             size="sm"
             onClick={onClose}
           >
-            <ChevronRight aria-hidden="true" />
+            <ChevronRight size={ICON_SIZE_PX} aria-hidden="true" />
           </Button>
         )}
         <span className={styles.title}>{filename ?? t('subtitle.panel.title')}</span>

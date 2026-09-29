@@ -247,11 +247,8 @@
 /* (0,3,2) beats Button's `.md.iconOnly .label > * svg` icon-size rule
    (0,3,1) — icon-only buttons always get circle/iconOnly classes. */
 li.searchHistoryItem .searchHistoryRemove.searchHistoryRemove svg {
-  width: var(--space-3);
-  height: var(--space-3);
-  /* 12px render shrinks the lucide 2px stroke to ~1px — bump to 3 so the
-     × keeps the same visual weight as the row's other icons. */
-  stroke-width: 3;
+  width: var(--space-4-5);
+  height: var(--space-4-5);
 }
 
 .searchHistoryItem:hover .searchHistoryRemove,

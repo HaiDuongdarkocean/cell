@@ -77,7 +77,7 @@ export function assignImportRole(
   return { target, native, ignored };
 }
 
-const UPLOAD_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="var(--stroke-width-md)" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:65% !important;height:65% !important;display:block;fill:none !important;opacity:1 !important;filter:none !important"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="17" x2="12" y2="11"/><polyline points="9 14 12 11 15 14"/></svg>`;
+const UPLOAD_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="var(--stroke-width-md)" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:18px !important;height:18px !important;display:block;fill:none !important;opacity:1 !important;filter:none !important"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="17" x2="12" y2="11"/><polyline points="9 14 12 11 15 14"/></svg>`;
 
 /**
  * Create icon-only import button for the top-left toolbar (ADR-015 UI v4).

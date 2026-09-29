@@ -49,8 +49,8 @@
 }
 
 .icon svg {
-  width: var(--space-4);
-  height: var(--space-4);
+  width: var(--space-4-5);
+  height: var(--space-4-5);
 }
 
 .videoIcon {

@@ -1140,11 +1140,11 @@ https://cdn.example.com/low.m3u8`;
       tabId: 123,
     });
     expect(mockChrome.action.setBadgeBackgroundColor).toHaveBeenCalledWith({
-      color: '#5E6AD2',
+      color: '#6AB2F5',
       tabId: 123,
     });
     expect(mockChrome.action.setBadgeTextColor).toHaveBeenCalledWith({
-      color: '#FFFFFF',
+      color: '#0f0f0f',
       tabId: 123,
     });
   });

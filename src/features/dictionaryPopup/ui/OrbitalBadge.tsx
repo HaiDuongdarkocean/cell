@@ -169,7 +169,6 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
   const activePreset: PointerPreset = collapsedAtEdge ? inwardPreset(edge) : userPreset;
 
   const iconShift = badgeSize / 4;
-  const collapsedIconSize = Math.max(16, Math.round(badgeSize * 0.4));
 
   // Compute pointer from displayedCenter (not activeCenter) so the pointer
   // position matches the actual rendered badge position. When collapsed at
@@ -418,7 +417,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
           aria-hidden="true"
         >
           {collapsedAtEdge && (
-            <Icon name="settings" size={collapsedIconSize} />
+            <Icon name="settings" />
           )}
         </div>
       )}

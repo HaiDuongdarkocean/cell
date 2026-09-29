@@ -8,6 +8,7 @@ import {
   RotateCcw,
   X,
 } from 'lucide-react';
+import { ICON_SIZE_PX } from '@/shared/icons';
 import { Button, InkTabs, Input, Label } from '@/shared/ui';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import { t } from '@/shared/i18n';
@@ -163,7 +164,7 @@ function ItemRow({
               onDownload(role, index);
             }}
           >
-            <Download aria-hidden="true" />
+            <Download size={ICON_SIZE_PX} aria-hidden="true" />
           </Button>
         </span>
       )}
@@ -294,7 +295,7 @@ function OffsetStepper({
           onClick={handleReset}
           className={styles.resetBtn}
         >
-          <RotateCcw aria-hidden="true" />
+          <RotateCcw size={ICON_SIZE_PX} aria-hidden="true" />
         </Button>
       </div>
     </div>
@@ -539,12 +540,12 @@ export function SubtitleManagerPanel({
             data-cell-id="manager-back-to-subtitles"
             onClick={handleBack}
           >
-            <ChevronLeft aria-hidden="true" />
+            <ChevronLeft size={ICON_SIZE_PX} aria-hidden="true" />
           </Button>
         )}
         {v === 'tracks' && (
           <span className={styles.headerIcon}>
-            <List aria-hidden="true" />
+            <List size={ICON_SIZE_PX} aria-hidden="true" />
           </span>
         )}
         <span className={styles.title}>{title}</span>
@@ -593,7 +594,7 @@ export function SubtitleManagerPanel({
           onClick={onClose}
           data-cell-id="subtitle-manager-close"
         >
-          <X aria-hidden="true" />
+          <X size={ICON_SIZE_PX} aria-hidden="true" />
         </Button>
       </div>
 
@@ -621,7 +622,7 @@ export function SubtitleManagerPanel({
                     data-cell-id={`manager-import-${activeTab}`}
                     onClick={() => onImport(activeTab)}
                   >
-                    <Plus aria-hidden="true" />
+                    <Plus size={ICON_SIZE_PX} aria-hidden="true" />
                   </Button>
                 )}
                 {onHideSection && (
@@ -633,7 +634,7 @@ export function SubtitleManagerPanel({
                     data-cell-id={`manager-hide-section-${activeTab}`}
                     onClick={() => onHideSection(activeTab)}
                   >
-                    <EyeOff aria-hidden="true" />
+                    <EyeOff size={ICON_SIZE_PX} aria-hidden="true" />
                   </Button>
                 )}
               </div>

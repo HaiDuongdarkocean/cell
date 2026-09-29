@@ -9,7 +9,7 @@
   justify-content: center;
   gap: var(--space-1);
   --cluster-btn-size: clamp(22px, 5cqw, var(--universal-panel-profile-flag-size));
-  --cluster-icon-size: clamp(var(--space-3), 2.8cqw, var(--space-5));
+  --cluster-icon-size: clamp(var(--space-3), 2.8cqw, var(--space-4-5));
   --cluster-text-opacity: 1;
   --cluster-bg-opacity: var(--opacity-20);
   --button-overlay-bg: color-mix(in srgb, var(--color-overlay-background) calc(var(--cluster-bg-opacity) * 100%), transparent);

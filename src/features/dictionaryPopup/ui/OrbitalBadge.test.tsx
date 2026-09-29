@@ -247,10 +247,10 @@ describe('OrbitalBadge', () => {
     expect(pointer.style.transform).toBe('translate3d(-20px, 0px, 0)');
   });
 
-  it('scales the collapsed gear icon with badge size', () => {
+  it('pins the collapsed gear icon to the 18px system icon size', () => {
     render(<OrbitalBadge persistPosition={false} badgeSize={80} />);
     const svg = screen.getByTestId('orbital-pointer').querySelector('svg');
-    expect(svg).toHaveAttribute('width', '32');
+    expect(svg).toHaveAttribute('width', '18');
   });
 
   it('sizes the badge button disc to badgeSize, not the shared Button md cap', () => {

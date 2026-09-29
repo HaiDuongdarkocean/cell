@@ -27,6 +27,7 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
+import { ICON_SIZE_PX } from '@/shared/icons';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { t } from '@/shared/i18n';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
@@ -264,7 +265,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             aria-label={t('subtitle.search.manageKeys')}
             data-cell-id="search-manage-keys-toggle"
           >
-            <Wrench aria-hidden="true" />
+            <Wrench size={ICON_SIZE_PX} aria-hidden="true" />
           </Button>
         )}
         <div className={styles.searchBar} data-cell-id="search-bar">
@@ -289,7 +290,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
                 aria-label={t('subtitle.search.clear')}
                 data-cell-id="search-clear"
               >
-                <X aria-hidden="true" />
+                <X size={ICON_SIZE_PX} aria-hidden="true" />
               </Button>
             )}
             <Button shape="circle"
@@ -300,7 +301,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
               aria-label={t('subtitle.search.submit')}
               data-cell-id="search-button"
             >
-              <Search aria-hidden="true" />
+              <Search size={ICON_SIZE_PX} aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -313,7 +314,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
           aria-label={t('subtitle.search.advancedAria')}
           data-cell-id="search-advanced-toggle"
         >
-          <SlidersHorizontal aria-hidden="true" />
+          <SlidersHorizontal size={ICON_SIZE_PX} aria-hidden="true" />
         </Button>
       </div>
 
@@ -351,7 +352,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       {/* API key hint — replaces status chip, actionable when no keys */}
       {!hasSearchKeys && (
         <div className={styles.apiHint} data-cell-id="search-api-hint">
-          <Wrench className={styles.apiHintIcon} aria-hidden="true" />
+          <Wrench size={ICON_SIZE_PX} className={styles.apiHintIcon} aria-hidden="true" />
           <span className={styles.apiHintText}>{t('subtitle.search.addKeyHint')}</span>
           <Button
             variant="primary"
@@ -395,7 +396,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         {/* Hint + icon — fills empty space before search, hidden when manage keys open */}
         {!loading && !error && !hasSearched && hasSearchKeys && !manageKeysOpen && (
           <div className={styles.hintState} data-cell-id="search-hint">
-            <Captions className={styles.hintIcon} aria-hidden="true" />
+            <Captions size={ICON_SIZE_PX} className={styles.hintIcon} aria-hidden="true" />
             <span className={styles.hintText}>{t('subtitle.search.hint')}</span>
           </div>
         )}

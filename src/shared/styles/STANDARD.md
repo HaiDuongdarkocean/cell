@@ -267,7 +267,7 @@ Tôn trọng `prefers-reduced-motion: reduce`. CSS global reset đã trong `toke
 
 - Canvas 24×24, stroke 1.5px, round caps/joins.
 - Dùng `currentColor` và `fill: none`.
-- Kích thước icon dùng `--space-*` hoặc `--icon-size-*` (nếu có).
+- Kích thước icon chuẩn toàn hệ thống: 18px (`ICON_SIZE_PX` trong `shared/icons`, `--space-4-5`). Catalog force `size=18` cho cả React component lẫn raw SVG string; size prop tại call-site chỉ còn tương thích, không đổi render.
 - Không inline SVG trong component; import từ `ICON_CATALOG`.
 
 ---

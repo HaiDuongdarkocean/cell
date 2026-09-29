@@ -69,8 +69,8 @@
   outline-offset: var(--space-0-5);
 }
 .infoBtn svg {
-  width: 16px;
-  height: 16px;
+  width: var(--space-4-5);
+  height: var(--space-4-5);
 }
 
 /* ─── Inline expandable hint — grid 0fr→1fr, attached to card ─── */
@@ -152,8 +152,8 @@
   outline-offset: var(--space-0-5);
 }
 .resetBtn svg {
-  width: 16px;
-  height: 16px;
+  width: var(--space-4-5);
+  height: var(--space-4-5);
 }
 
 /* ─── Split section — Top/Bottom assignment segment buttons ───

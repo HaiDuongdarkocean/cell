@@ -30,8 +30,8 @@
 }
 
 .hintBtn svg {
-  width: var(--space-4);
-  height: var(--space-4);
+  width: var(--space-4-5);
+  height: var(--space-4-5);
 }
 
 /* === Floating hint popover (nổi lên trên icon) === */

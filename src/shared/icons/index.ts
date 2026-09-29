@@ -8,7 +8,7 @@
 // Nav cluster media controls use Phosphor `fill` weight components for visibility on
 // translucent liquid-glass buttons, while their raw SVGs remain lucide for non-React DOM.
 
-import type { ComponentType, CSSProperties } from 'react';
+import { createElement, type ComponentType, type CSSProperties } from 'react';
 import {
   AlertCircle,
   AlertTriangle,
@@ -327,19 +327,29 @@ export const ICON_CATALOG = {
   windowPage: { component: AppWindow, svg: windowPageSvg, source: 'lucide/app-window', tags: ['page', 'window', 'browser', 'document', 'final', 'complete'] } as IconEntry,
 } as const;
 
+export const ICON_SIZE_PX = 18;
+
+type MutableIconEntry = { -readonly [K in keyof IconEntry]: IconEntry[K] };
+
+for (const entry of Object.values(ICON_CATALOG) as MutableIconEntry[]) {
+  const Base = entry.component;
+  entry.component = (props: IconRenderProps) => createElement(Base, { ...props, size: ICON_SIZE_PX });
+  entry.svg = entry.svg
+    .replace(/ width="\d+"/, ` width="${ICON_SIZE_PX}"`)
+    .replace(/ height="\d+"/, ` height="${ICON_SIZE_PX}"`);
+}
+
 /** Type-safe catalog key. */
 export type IconCatalogKey = keyof typeof ICON_CATALOG;
 
 /** Raw SVG strings for non-React DOM (e.g. OCR region selector toolbar). */
-export {
-  checkSvg as checkIcon,
-  chevronLeftSvg as chevronLeftIcon,
-  cropSvg as cropIcon,
-  moveVerticalSvg as moveVerticalIcon,
-  pencilSvg as pencilIcon,
-  rotateCcwSvg as rotateCcwIcon,
-  xSvg as xIcon,
-};
+export const checkIcon = ICON_CATALOG.check.svg;
+export const chevronLeftIcon = ICON_CATALOG.chevronLeft.svg;
+export const cropIcon = ICON_CATALOG.crop.svg;
+export const moveVerticalIcon = ICON_CATALOG.moveVertical.svg;
+export const pencilIcon = ICON_CATALOG.pencil.svg;
+export const rotateCcwIcon = ICON_CATALOG.rotateCcw.svg;
+export const xIcon = ICON_CATALOG.x.svg;
 
 /** Find an icon by a tag keyword. */
 export function findIconByTag(tag: string): IconEntry | undefined {

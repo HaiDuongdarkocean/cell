@@ -60,8 +60,8 @@ describe('Nav cluster tokens — tokens.css + tokens.json mirror sync (ADR-018, 
     expect(expectedNavClusterValues['--nav-cluster-button-size']).toBe('36px');
   });
 
-  it('nav-cluster-button-icon is 20px', () => {
-    expect(expectedNavClusterValues['--nav-cluster-button-icon']).toBe('20px');
+  it('nav-cluster-button-icon is 18px', () => {
+    expect(expectedNavClusterValues['--nav-cluster-button-icon']).toBe('18px');
   });
 
   it('nav-cluster-gap is 4px', () => {

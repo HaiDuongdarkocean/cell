@@ -36,7 +36,7 @@ export function buildClusterCssVars(settings?: NavClusterSettings): CSSPropertie
   const activeAlpha = Math.min(bgOpacity + 0.12, 1);
   return {
     '--cluster-btn-size': `clamp(${Math.round(buttonSize * 0.65)}px, ${Math.round(buttonSize * 0.15)}cqw, ${buttonSize}px)`,
-    '--cluster-icon-size': `clamp(${Math.round(buttonSize * 0.35)}px, ${Math.round(buttonSize * 0.082)}cqw, 20px)`,
+    '--cluster-icon-size': `clamp(${Math.round(buttonSize * 0.35)}px, ${Math.round(buttonSize * 0.082)}cqw, var(--nav-cluster-button-icon))`,
     '--cluster-text-opacity': String(textOpacity),
     '--cluster-bg-opacity': String(bgOpacity),
     '--cluster-bg-opacity-hover': String(hoverAlpha),
