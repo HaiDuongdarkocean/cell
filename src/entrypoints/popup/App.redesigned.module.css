@@ -22,9 +22,11 @@
   -ms-overflow-style: none;
 }
 
-/* === Tabs — InkTabs stretch: full-width row, hairline under, liquid ink bar === */
+/* === Tabs — InkTabs stretch: full-width row on the surface chrome band,
+   hairline under, liquid ink bar (mirrors universal-panel header/nav) === */
 .tabList {
   width: 100%;
+  background: var(--color-surface);
   border-bottom: var(--border-width-hairline) solid var(--color-border);
   flex-shrink: 0;
 }
