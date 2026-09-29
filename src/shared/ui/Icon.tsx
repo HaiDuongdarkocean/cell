@@ -9,8 +9,8 @@ type IconColor = 'primary' | 'secondary' | 'disabled' | 'inverse' | 'current';
 interface IconProps {
   /** Icon name from ICON_CATALOG. */
   name: keyof typeof ICON_CATALOG;
-  /** Semantic size. Default: md. */
-  size?: IconSize;
+  /** Semantic size (xs 16 / sm 20 / md 24 / lg 32) or an explicit px number. Default: md. */
+  size?: IconSize | number;
   /** Icon color. Default: current (inherits parent text color). */
   color?: IconColor;
   /** Accessible label — when provided, sets role="img" + aria-label. */
@@ -55,7 +55,7 @@ export function Icon({
       aria-hidden={label ? undefined : 'true'}
       style={style}
     >
-      <IconBase name={name} size={SIZE_MAP[size]} />
+      <IconBase name={name} size={typeof size === 'number' ? size : SIZE_MAP[size]} />
     </span>
   );
 }

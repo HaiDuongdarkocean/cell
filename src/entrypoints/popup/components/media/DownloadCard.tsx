@@ -75,7 +75,7 @@ export function DownloadCard({
           aria-label={t('downloads.action.resume')}
           data-cell-id="resume-btn"
         >
-          <Icon name="play"  />
+          <Icon name="play" size={18}  />
         </Button>,
       );
     } else {
@@ -87,7 +87,7 @@ export function DownloadCard({
           aria-label={t('downloads.action.pause')}
           data-cell-id="pause-btn"
         >
-          <Icon name="pause"  />
+          <Icon name="pause" size={18}  />
         </Button>,
       );
     }
@@ -101,7 +101,7 @@ export function DownloadCard({
         aria-label={t('jobs.action.retry')}
         data-cell-id="retry-btn"
       >
-        <Icon name="rotateCcw"  />
+        <Icon name="rotateCcw" size={18}  />
       </Button>,
     );
   }
@@ -115,7 +115,7 @@ export function DownloadCard({
         aria-label={t('downloads.action.cancel')}
         data-cell-id="cancel-btn"
       >
-        <Icon name="x"  />
+        <Icon name="x" size={18}  />
       </Button>,
     );
   } else {
@@ -128,7 +128,7 @@ export function DownloadCard({
         aria-label={t('downloads.action.remove')}
         data-cell-id="remove-btn"
       >
-        <Icon name="trash"  />
+        <Icon name="trash" size={18}  />
       </Button>,
     );
   }
@@ -140,14 +140,14 @@ export function DownloadCard({
       const processed = download.downloadedBytes ?? 0;
       detailItems.push(
         <span key="bytes" className={styles.detailItem}>
-          <Icon name="download"  />
+          <Icon name="download" size={18}  />
           {formatFileSize(processed)}/{formatFileSize(download.fileSize)}
         </span>,
       );
     } else if (isConverting || isDone) {
       detailItems.push(
         <span key="size" className={styles.detailItem}>
-          <Icon name="download"  />
+          <Icon name="download" size={18}  />
           {formatFileSize(download.fileSize)}
         </span>,
       );
@@ -156,7 +156,7 @@ export function DownloadCard({
   if (download.workerCount && download.workerCount > 0 && download.usedWorkers) {
     detailItems.push(
       <span key="workers" className={styles.detailItem}>
-        <Icon name="zap"  />
+        <Icon name="zap" size={18}  />
         {t('downloads.detail.workers', [download.workerCount])}
       </span>,
     );
@@ -164,7 +164,7 @@ export function DownloadCard({
   if (isDone && durationMs) {
     detailItems.push(
       <span key="duration" className={styles.detailItem}>
-        <Icon name="clock"  />
+        <Icon name="clock" size={18}  />
         {formatDuration(durationMs)}
       </span>,
     );
@@ -176,7 +176,7 @@ export function DownloadCard({
   if (isQueued) {
     progressHtml = (
       <HStack align="center" gap="1-5" className={styles.queuedIndicator}>
-        <Icon name="clock"  />
+        <Icon name="clock" size={18}  />
         <span>{t('jobs.status.queued')}</span>
       </HStack>
     );
@@ -247,7 +247,7 @@ export function DownloadCard({
             )}
             {download.usedWorkers && (
               <Badge size="sm" variant="secondary" title={t('downloads.badge.parallel')}>
-                <Icon name="zap"  />
+                <Icon name="zap" size={18}  />
               </Badge>
             )}
           </HStack>

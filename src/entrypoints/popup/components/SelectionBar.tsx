@@ -26,7 +26,7 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
         aria-label={t('downloads.action.deselectAll')}
         data-cell-id="selection-clear-btn"
       >
-        <Icon name="x"  />
+        <Icon name="x" size={18}  />
       </Button>
       <span className={styles.count} data-cell-id="selection-count">
         {t('downloads.selection.count', [selectionCount])}
@@ -36,7 +36,7 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
         size="sm"
         onClick={onDownload}
         data-cell-id="selection-download-btn"
-        leadingIcon={<Icon name="download" className={styles.downloadIcon} />}
+        leadingIcon={<Icon name="download" size={18} className={styles.downloadIcon} />}
       >
         {t('downloads.action.download')}
       </Button>

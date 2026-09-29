@@ -103,7 +103,7 @@ export function VideoCard({
         >
           {/* Icon */}
           <Center className={`${styles.icon} ${styles.videoIcon}`} aria-hidden="true">
-            <Icon name="play"  />
+            <Icon name="play" size={18}  />
           </Center>
 
         {/* Body */}
@@ -163,6 +163,7 @@ export function VideoCard({
           >
             <Icon
               name="chevronDown"
+              size={18}
               className={`${styles.expandChevron} ${urlExpanded ? styles.expandChevronOpen : ''}`}
             />
           </Button>
@@ -179,7 +180,7 @@ export function VideoCard({
                 aria-label={t('downloads.action.download')}
                 data-cell-id="download-button"
               >
-                <Icon name="download"  />
+                <Icon name="download" size={18}  />
               </Button>
             )}
           </div>
@@ -193,7 +194,7 @@ export function VideoCard({
             variant="ghost"
             size="xs"
             className={styles.copyBtn}
-            trailingIcon={<Icon name="copy"  />}
+            trailingIcon={<Icon name="copy" size={18}  />}
             onClick={(e) => { void handleUrlClick(e); }}
             data-cell-id="video-url"
             title={t('downloads.media.copyUrl')}

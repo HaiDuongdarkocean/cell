@@ -25,7 +25,7 @@ export function Header({
   return (
     <header className={styles.header}>
       <HStack align="center" gap="2" className={styles.headerLeft}>
-        <Icon name="play" className={styles.headerIcon} />
+        <Icon name="play" size={18} className={styles.headerIcon} />
         <Heading level={1} className={styles.headerTitle}>tihoka</Heading>
       </HStack>
       <HStack align="center" gap="0-5" className={styles.headerRight}>
@@ -40,9 +40,9 @@ export function Header({
           aria-pressed={isActive}
         >
           {isActive ? (
-            <Icon name="power" className={styles.icon} />
+            <Icon name="power" size={18} className={styles.icon} />
           ) : (
-            <Icon name="power" className={styles.icon} />
+            <Icon name="power" size={18} className={styles.icon} />
           )}
         </Button>
 
@@ -56,7 +56,7 @@ export function Header({
           aria-pressed={isAutoDownloadActive}
           title={isAutoDownloadActive ? t('popup.header.autoDownloadOn') : t('popup.header.autoDownloadOff')}
         >
-          <Icon name="download" className={styles.icon} />
+          <Icon name="download" size={18} className={styles.icon} />
         </Button>
 
         {/* Theme toggle */}
@@ -68,9 +68,9 @@ export function Header({
           title={t('popup.header.toggleTheme')}
         >
           {currentTheme === 'light' ? (
-            <Icon name="moon" className={styles.iconMoon} />
+            <Icon name="moon" size={18} className={styles.iconMoon} />
           ) : (
-            <Icon name="sun" className={styles.iconSun} />
+            <Icon name="sun" size={18} className={styles.iconSun} />
           )}
         </Button>
 
@@ -82,7 +82,7 @@ export function Header({
           aria-label={t('settings.title')}
           title={t('settings.title')}
         >
-          <Icon name="settings" className={styles.icon} />
+          <Icon name="settings" size={18} className={styles.icon} />
         </Button>
       </HStack>
     </header>

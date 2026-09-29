@@ -95,7 +95,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
         >
           {/* Icon — subtitle (amber) */}
           <Center className={`${styles.icon} ${styles.subtitleIcon}`} aria-hidden="true">
-            <Icon name="captions"  />
+            <Icon name="captions" size={18}  />
           </Center>
 
           {/* Body */}
@@ -121,6 +121,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
             >
               <Icon
                 name="chevronDown"
+                size={18}
                 className={`${styles.expandChevron} ${urlExpanded ? styles.expandChevronOpen : ''}`}
               />
             </Button>
@@ -137,7 +138,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
                   aria-label={t('downloads.action.download')}
                   data-cell-id="subtitle-download"
                 >
-                  <Icon name="download"  />
+                  <Icon name="download" size={18}  />
                 </Button>
               )}
             </div>
@@ -151,7 +152,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
               variant="ghost"
               size="xs"
               className={styles.copyBtn}
-              trailingIcon={<Icon name="copy"  />}
+              trailingIcon={<Icon name="copy" size={18}  />}
               onClick={(e) => { void handleUrlClick(e); }}
               data-cell-id="subtitle-url"
               title={t('downloads.media.copyUrl')}
