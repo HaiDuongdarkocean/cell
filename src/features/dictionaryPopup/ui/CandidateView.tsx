@@ -261,7 +261,7 @@ export function CandidateView({
             onToggle={panel.toggleAudio}
             onTtsWord={panel.playTerm}
             onTtsSentence={panel.playSentence}
-            autoplayCount={panel.autoplayCount}
+            autoplayCount={index === 0 ? panel.autoplayCount : 0}
             term={candidate.term}
             sentence={contextSentence}
           />
