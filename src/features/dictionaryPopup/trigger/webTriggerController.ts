@@ -421,11 +421,6 @@ export class WebTriggerController {
       this.cancelPendingHover();
       return;
     }
-    // Token spans (.js-cell-token: web tokenize, subtitle overlay, cue list) are
-    // resolved by the caret path below like any other text — extractSentenceContext
-    // skips the token wrappers and maps the word back to the block's sentence, so
-    // hover honors the configured trigger mode on tokenized text too. Only the
-    // mouseup path skips tokens (their own click handler owns the click).
     // Skip non-lookup elements (e.g. CueList timestamps — seek-only controls).
     // Uses composedPath to cross shadow DOM boundaries.
     if (pathMatchesSelector(e, '[data-no-lookup]')) {

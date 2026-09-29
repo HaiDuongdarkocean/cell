@@ -24,9 +24,6 @@ afterEach(() => {
   Range.prototype.getClientRects = originalGetClientRects;
 });
 
-/** Build a paragraph whose text is rendered as tokenize-style spans
- *  (`.js-cell-token` + separator spans) — the DOM shape `bindTokenBlock`
- *  produces. Returns the span whose word matches `word`, plus its text node. */
 function buildTokenizedParagraph(
   text: string,
   word: string,
