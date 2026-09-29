@@ -48,13 +48,19 @@ export function Menu({
     const handleKeyDown = (e: Event): void => {
       if ((e as globalThis.KeyboardEvent).key === 'Escape') onClose();
     };
+    const rootNode = triggerRef.current?.getRootNode();
+    const scope: Document | ShadowRoot = rootNode instanceof ShadowRoot ? rootNode : doc;
     doc.addEventListener('mousedown', handlePointerDown);
     doc.addEventListener('keydown', handleKeyDown);
     win.addEventListener('scroll', handleScroll, true);
+    // scroll is non-composed: it never crosses the shadow boundary, so the
+    // window listener misses .tab scrolling inside the panel's shadow root.
+    if (scope !== doc) scope.addEventListener('scroll', handleScroll, true);
     return () => {
       doc.removeEventListener('mousedown', handlePointerDown);
       doc.removeEventListener('keydown', handleKeyDown);
       win.removeEventListener('scroll', handleScroll, true);
+      if (scope !== doc) scope.removeEventListener('scroll', handleScroll, true);
     };
   }, [open, onClose, triggerRef]);
 
