@@ -26,15 +26,30 @@ export interface RemoteEntry {
   providerChecksum?: string;
 }
 
+export interface WriteOptions {
+  readonly fresh?: boolean;
+}
+
+export interface ChangeSignal {
+  peek(connection: Connection): Promise<string | null>;
+  ring(connection: Connection): Promise<string>;
+}
+
 export interface StorageProvider {
   readonly providerId: ProviderId;
   readonly displayName: string;
+  readonly signal?: ChangeSignal;
   authorize(opts: { interactive: boolean; accountHint?: string }): Promise<AuthorizedAccount>;
   hasToken(connection: Connection): Promise<boolean>;
   revoke(connection: Connection): Promise<void>;
   list(connection: Connection, prefix: string): Promise<RemoteEntry[]>;
   read(connection: Connection, path: string): Promise<Blob>;
-  write(connection: Connection, path: string, body: Blob): Promise<RemoteEntry>;
+  write(
+    connection: Connection,
+    path: string,
+    body: Blob,
+    opts?: WriteOptions,
+  ): Promise<RemoteEntry>;
   remove(connection: Connection, path: string): Promise<void>;
   quota(connection: Connection): Promise<{ usedBytes: number; totalBytes: number | null }>;
 }

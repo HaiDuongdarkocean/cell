@@ -3,6 +3,7 @@ import type { Clock } from '../../ports/clock';
 import { ProviderError } from '../../ports/storageProvider';
 import type {
   AuthorizedAccount,
+  ChangeSignal,
   ProviderErrorKind,
   RemoteEntry,
   StorageProvider,
@@ -40,6 +41,7 @@ export class InMemoryStorageProvider implements StorageProvider {
   private readonly accounts = new Map<AccountKey, StoredAccount>();
   private readonly revoked = new Set<ConnectionId>();
   private readonly files = new Map<ConnectionId, Map<string, StoredBlob[]>>();
+  private readonly bellVersions = new Map<AccountKey, number>();
   private readonly pendingFailures: { kind: ProviderErrorKind; message: string }[] = [];
   private nextAccountSeq = 1;
   private nextTokenSeq = 1;
@@ -136,6 +138,22 @@ export class InMemoryStorageProvider implements StorageProvider {
     this.gate();
     return { usedBytes: usedBytes(this.storeFor(connection)), totalBytes: this.quotaBytes };
   }
+
+  readonly signal: ChangeSignal = {
+    peek: async (connection: Connection): Promise<string | null> => {
+      this.gate();
+      this.requireConnection(connection);
+      const version = this.bellVersions.get(connection.accountKey);
+      return version === undefined ? null : String(version);
+    },
+    ring: async (connection: Connection): Promise<string> => {
+      this.gate();
+      this.requireConnection(connection);
+      const version = (this.bellVersions.get(connection.accountKey) ?? 0) + 1;
+      this.bellVersions.set(connection.accountKey, version);
+      return String(version);
+    },
+  };
 
   failNext(count: number, kind: ProviderErrorKind, message = 'injected provider failure'): void {
     for (let i = 0; i < count; i += 1) {

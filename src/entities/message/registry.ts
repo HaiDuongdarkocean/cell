@@ -843,4 +843,10 @@ export const MESSAGE_REGISTRY = {
     direction: 'any',
     owner: 'background',
   },
+  [MESSAGE_TYPES.SYNC_OUTBOX_DIRTY]: {
+    type: MESSAGE_TYPES.SYNC_OUTBOX_DIRTY,
+    schema: EmptyPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/sync',
+  },
 } as const satisfies Record<MessageType, MessageContract>;

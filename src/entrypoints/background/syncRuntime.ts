@@ -28,7 +28,13 @@ import type { ReconcileResult } from '@/features/sync/app/reconciliation';
 import { ChromeKeyValueStore } from '@/features/sync/adapters/local/kv/chromeKvStore';
 import { createKvLocalSources } from '@/features/sync/adapters/local/kv';
 import { createGoogleDriveStorageProvider } from '@/features/sync/adapters/google-drive/googleDriveDefaults';
-import { targetOf } from '@/features/sync/domain/scope';
+import type { StorageProvider } from '@/features/sync/ports/storageProvider';
+import { scopeForTarget, targetOf } from '@/features/sync/domain/scope';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
+import {
+  queryTabs,
+  sendMessageToAllFramesInTab,
+} from '@/shared/lib/chrome-apis/tabs';
 import { createSrsLocalSource } from '@/features/srs/sync/srsLocalSource';
 import type { SrsDataClass } from '@/features/srs/sync/srsLocalSource';
 import { createReaderLocalSource } from '@/features/reader/sync/readerLocalSource';
@@ -64,6 +70,8 @@ export type SyncStatusView = ServiceSyncStatusView;
 
 export interface SyncRuntime {
   runCycle(): Promise<CycleResult>;
+  runPush(): Promise<CycleResult>;
+  checkRemote(): Promise<CycleResult>;
   status(): Promise<SyncStatusView>;
   connect(providerId: ProviderId): Promise<ConnectResult>;
   disconnect(connectionId: ConnectionId): Promise<DisconnectResult>;
@@ -111,10 +119,23 @@ async function ensureDeviceId(kv: ChromeKeyValueStore): Promise<string> {
   return deviceId;
 }
 
-function providerFor(providerId: ProviderId) {
-  if (providerId === 'google-drive') return createGoogleDriveStorageProvider();
+const providerCache = new Map<ProviderId, StorageProvider>();
+
+export function providerFor(providerId: ProviderId): StorageProvider {
+  const cached = providerCache.get(providerId);
+  if (cached !== undefined) return cached;
+  if (providerId === 'google-drive') {
+    const created = createGoogleDriveStorageProvider();
+    providerCache.set(providerId, created);
+    return created;
+  }
   throw new SyncServiceError('unknown-provider', `unknown sync provider: ${providerId}`);
 }
+
+const localScopes = async (): Promise<Scope[]> => [
+  'global',
+  ...(await profileTargets()).map(scopeForTarget),
+];
 
 async function dictSources(): Promise<LocalSource[]> {
   const targets = await profileTargets();
@@ -176,9 +197,8 @@ async function buildRuntime(): Promise<BuiltRuntime> {
     ids: { uuid: () => crypto.randomUUID() },
     tick: () => hlc.tick(),
     observeHlc: (remote: Hlc) => hlc.observe(remote),
-    onApplied: async (payload: SyncAppliedPayload) => {
-      runtimeDeps.broadcast('SYNC_DATA_APPLIED', payload);
-    },
+    localScopes,
+    onApplied: broadcastApplied,
     onRoutingChange: async (record: ChangeRecord) => {
       logger.info('sync: routing change applied', { scope: record.scope, key: record.key });
     },
@@ -192,11 +212,53 @@ async function ensureBuilt(): Promise<BuiltRuntime> {
   return builtPromise;
 }
 
+export async function broadcastApplied(payload: SyncAppliedPayload): Promise<void> {
+  runtimeDeps.broadcast('SYNC_DATA_APPLIED', payload);
+  try {
+    const tabs = await queryTabs({});
+    await Promise.allSettled(
+      tabs
+        .filter((tab) => tab.id !== undefined)
+        .map((tab) =>
+          sendMessageToAllFramesInTab(tab.id!, {
+            type: MESSAGE_TYPES.SYNC_DATA_APPLIED,
+            payload,
+          }),
+        ),
+    );
+  } catch (error) {
+    logger.warn('sync: applied-data tab fan-out failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
 async function persistClockWall(built: BuiltRuntime): Promise<void> {
   const stored = await built.kv.get<number>('local', SYNC_CLOCK_WALL_KEY);
   const floor = built.hlc.wallFloor;
   if (stored === undefined || floor > stored) {
     await built.kv.set('local', SYNC_CLOCK_WALL_KEY, floor);
+  }
+}
+
+async function afterPass(
+  built: BuiltRuntime,
+  result: CycleResult,
+  updatedAtBefore?: number,
+): Promise<void> {
+  await persistClockWall(built).catch(() => undefined);
+  if (result.appliedDataClasses.length > 0) {
+    await setActiveProfileAfterRestore().catch((error) =>
+      logger.warn('sync: post-restore profile activation failed', {
+        error: error instanceof Error ? error.message : String(error),
+      }),
+    );
+  }
+  if (
+    updatedAtBefore === undefined ||
+    built.engine.current.updatedAt !== updatedAtBefore
+  ) {
+    runtimeDeps.broadcast('SYNC_STATUS_CHANGED', await statusOf(built));
   }
 }
 
@@ -236,15 +298,21 @@ export function createSyncRuntime(deps: SyncRuntimeDeps): SyncRuntime {
     async runCycle() {
       const built = await ensureBuilt();
       const result = await built.engine.runCycle();
-      await persistClockWall(built).catch(() => undefined);
-      if (result.appliedDataClasses.length > 0) {
-        await setActiveProfileAfterRestore().catch((error) =>
-          logger.warn('sync: post-restore profile activation failed', {
-            error: error instanceof Error ? error.message : String(error),
-          }),
-        );
-      }
-      runtimeDeps.broadcast('SYNC_STATUS_CHANGED', await statusOf(built));
+      await afterPass(built, result);
+      return result;
+    },
+    async runPush() {
+      const built = await ensureBuilt();
+      const updatedAt = built.engine.current.updatedAt;
+      const result = await built.engine.runPush();
+      await afterPass(built, result, updatedAt);
+      return result;
+    },
+    async checkRemote() {
+      const built = await ensureBuilt();
+      const updatedAt = built.engine.current.updatedAt;
+      const result = await built.engine.checkRemote();
+      await afterPass(built, result, updatedAt);
       return result;
     },
     async status() {

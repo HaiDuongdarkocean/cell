@@ -1,10 +1,27 @@
 import { getSessionStorage, getStorage, onStorageChanged } from '@/shared/lib/chrome-apis';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { HybridClock } from '../../../domain/hlc';
 import type { ChangeOp, DataClass, Hlc, RecordKey, Scope } from '../../../domain/types';
 
 export const SYNC_OUTBOX = 'syncOutbox';
 export const SYNC_META = 'syncMeta';
 export const SYNC_CAPTURE_STORES: readonly string[] = [SYNC_OUTBOX, SYNC_META];
+
+const defaultOutboxDirtyNotifier = (): void => {
+  void sendMessage({ type: MESSAGE_TYPES.SYNC_OUTBOX_DIRTY, payload: {} }).catch(
+    () => undefined,
+  );
+};
+
+let outboxDirtyNotifier = defaultOutboxDirtyNotifier;
+const notifiedTransactions = new WeakSet<IDBTransaction>();
+
+export function setOutboxDirtyNotifier(
+  fn: () => void = defaultOutboxDirtyNotifier,
+): void {
+  outboxDirtyNotifier = fn;
+}
 
 export interface CaptureInput {
   readonly scope: Scope | null;
@@ -181,6 +198,10 @@ export async function captureChange(store: IDBObjectStore, rec: CaptureInput): P
     key: rec.key,
     op: rec.op,
   });
+  if (!notifiedTransactions.has(tx)) {
+    notifiedTransactions.add(tx);
+    tx.addEventListener('complete', () => outboxDirtyNotifier());
+  }
 }
 
 export async function captureAll(store: IDBObjectStore, recs: readonly CaptureInput[]): Promise<void> {

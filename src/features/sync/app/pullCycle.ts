@@ -122,7 +122,8 @@ export async function runConnectionPull(
     };
   }
 
-  const remoteBlobs = await listRemoteBlobPaths(deps);
+  const remoteBlobsSet = await listRemoteBlobPaths(deps);
+  const remoteBlobs = async (): Promise<Set<string>> => remoteBlobsSet;
   const cursors = await readCursors(deps.kv);
   const outcomes: ScopePullOutcome[] = [];
   const appliedDataClasses = new Set<DataClass>();
@@ -186,11 +187,58 @@ export async function runConnectionPull(
   };
 }
 
+export async function runScopesPull(
+  deps: ConnectionPullDeps,
+  scopes: readonly Scope[],
+): Promise<ConnectionPullResult> {
+  const remoteBlobs = lazyRemoteBlobs(deps);
+  const cursors = await readCursors(deps.kv);
+  const outcomes: ScopePullOutcome[] = [];
+  const appliedDataClasses = new Set<DataClass>();
+  const appliedScopes = new Set<Scope>();
+  for (const scope of scopes) {
+    try {
+      const outcome = await pullScope(deps, scope, cursors, remoteBlobs);
+      outcomes.push(outcome);
+      if (outcome.releasedApplied > 0) appliedScopes.add(scope);
+      for (const dc of outcome.releasedDataClasses) appliedDataClasses.add(dc);
+      for (const device of outcome.devices) {
+        if (device.recordsApplied > 0) appliedScopes.add(scope);
+        for (const dc of device.appliedDataClasses) appliedDataClasses.add(dc);
+      }
+    } catch (e) {
+      if (e instanceof CycleLockLostError || e instanceof ProviderError) throw e;
+      outcomes.push({
+        scope,
+        devices: [],
+        warnings: [],
+        releasedApplied: 0,
+        releasedDataClasses: [],
+        error: describePullError(e),
+      });
+    }
+  }
+  return {
+    outcomes,
+    appliedDataClasses: [...appliedDataClasses],
+    appliedScopes: [...appliedScopes],
+    warnings: [],
+    disconnected: false,
+  };
+}
+
+function lazyRemoteBlobs(
+  deps: Pick<ConnectionPullDeps, 'provider' | 'connection'>,
+): () => Promise<Set<string>> {
+  let loaded: Promise<Set<string>> | null = null;
+  return () => (loaded ??= listRemoteBlobPaths(deps));
+}
+
 async function pullScope(
   deps: ConnectionPullDeps,
   scope: Scope,
   cursors: CursorMap,
-  remoteBlobs: Set<string>,
+  remoteBlobs: () => Promise<Set<string>>,
 ): Promise<ScopePullOutcome> {
   const entries = await deps.provider.list(
     deps.connection,
@@ -249,7 +297,7 @@ async function pullDevice(
   scope: Scope,
   files: DeviceFiles,
   cursors: CursorMap,
-  remoteBlobs: Set<string>,
+  remoteBlobs: () => Promise<Set<string>>,
 ): Promise<DevicePullOutcome> {
   const connId = deps.connection.connectionId;
   const key = cursorKey(connId, scope, files.deviceId);
@@ -382,7 +430,7 @@ async function applyRemoteRecords(
   scope: Scope,
   sourcePath: string,
   records: readonly ChangeRecord[],
-  remoteBlobs: Set<string>,
+  remoteBlobs: () => Promise<Set<string>>,
   resolvedSink?: Set<RecordKey>,
 ): Promise<ApplyStats> {
   const connId = deps.connection.connectionId;
@@ -423,7 +471,8 @@ async function applyRemoteRecords(
       await deps.onRoutingChange?.(record);
     }
     const needed = referencedBlobHashes(record);
-    const missing = needed.filter((hash) => !remoteBlobs.has(blobPath(hash)));
+    const remote = needed.length === 0 ? null : await remoteBlobs();
+    const missing = needed.filter((hash) => !remote?.has(blobPath(hash)));
     if (missing.length > 0) {
       await deps.store.deferRecord({
         connectionId: connId,
@@ -477,7 +526,7 @@ const OPAQUE_RELEASE_MAX_PASSES = 4;
 async function releaseOpaque(
   deps: ConnectionPullDeps,
   scope: Scope,
-  remoteBlobs: Set<string>,
+  remoteBlobs: () => Promise<Set<string>>,
 ): Promise<ApplyStats> {
   const total: ApplyStats = {
     applied: 0,
@@ -560,13 +609,14 @@ async function persistRoutingDrain(
 
 async function answerBlobsNeeded(
   deps: ConnectionPullDeps,
-  remoteBlobs: Set<string>,
+  remoteBlobs: () => Promise<Set<string>>,
 ): Promise<void> {
+  const remote = await remoteBlobs();
   const entries = await deps.provider.list(deps.connection, BLOBS_NEEDED_PREFIX);
   for (const entry of entries) {
     const hash = blobsNeededHash(entry.path);
     if (hash === null) continue;
-    if (remoteBlobs.has(blobPath(hash))) {
+    if (remote.has(blobPath(hash))) {
       await removeRemoteQuiet(deps, entry.path);
       continue;
     }
@@ -575,7 +625,7 @@ async function answerBlobsNeeded(
     try {
       await deps.fence();
       await deps.provider.write(deps.connection, blobPath(hash), blob);
-      remoteBlobs.add(blobPath(hash));
+      remote.add(blobPath(hash));
       await removeRemoteQuiet(deps, entry.path);
     } catch (e) {
       if (e instanceof CycleLockLostError || e instanceof ProviderError) throw e;
@@ -586,7 +636,7 @@ async function answerBlobsNeeded(
 
 async function drainDeferred(
   deps: ConnectionPullDeps,
-  remoteBlobs: Set<string>,
+  remoteBlobs: () => Promise<Set<string>>,
   appliedScopes: Set<Scope>,
   appliedDataClasses: Set<DataClass>,
 ): Promise<string[]> {
@@ -604,7 +654,11 @@ async function drainDeferred(
     }
   }
   for (const row of rows) {
-    const missing = row.requiredBlobHashes.filter((hash) => !remoteBlobs.has(blobPath(hash)));
+    const remote =
+      row.requiredBlobHashes.length === 0 ? null : await remoteBlobs();
+    const missing = row.requiredBlobHashes.filter(
+      (hash) => !remote?.has(blobPath(hash)),
+    );
     if (missing.length > 0) {
       const attempts = row.attempts + 1;
       await deps.store.updateDeferred({ ...row, attempts });
@@ -669,7 +723,9 @@ async function removeRemoteQuiet(deps: ConnectionPullDeps, path: string): Promis
   }
 }
 
-async function listRemoteBlobPaths(deps: ConnectionPullDeps): Promise<Set<string>> {
+async function listRemoteBlobPaths(
+  deps: Pick<ConnectionPullDeps, 'provider' | 'connection'>,
+): Promise<Set<string>> {
   const entries = await deps.provider.list(deps.connection, BLOBS_PREFIX);
   return new Set(entries.map((entry) => entry.path));
 }

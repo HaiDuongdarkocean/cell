@@ -5,6 +5,7 @@ export const WIRE_FORMAT_VERSION = 1;
 export const META_PREFIX = `${REMOTE_ROOT}/meta/`;
 export const META_FORMAT_PATH = `${REMOTE_ROOT}/meta/format.json`;
 export const DISCONNECT_MARKER_PATH = `${REMOTE_ROOT}/meta/disconnect.json`;
+export const BELL_PATH = `${META_PREFIX}bell.json`;
 export const BLOBS_PREFIX = `${REMOTE_ROOT}/blobs/`;
 
 export function routeMarkerPath(scope: Scope): string {

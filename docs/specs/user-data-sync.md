@@ -299,7 +299,7 @@ REQ-7: Capture local changes
 - NFR refs: NFR-1, NFR-2, NFR-6
 
 REQ-8: Push
-- Actor: Browser runtime (debounce 30 s after a capture or synced-key change, alarm every 5 min, startup, `online`, "Sync now"; alarm delays below Chrome's 30 s floor are clamped — accepted)
+- Actor: Browser runtime (debounce 300 ms trailing / 1500 ms hard deadline after a committed outbox capture or synced-key change — push-only fast pass; alarm every 15 min, startup, `online`, "Sync now" run the full cycle; extended by spec `sync-on-use` / ADR-111)
 - Goal: Upload own changes per scope
 - Preconditions: sync lock acquired (REQ-17)
 - Basic flow:
@@ -327,7 +327,7 @@ REQ-9: Reconciliation (first connect, new binding, restore)
 - NFR refs: NFR-2, NFR-4
 
 REQ-10: Pull and merge
-- Actor: Browser runtime (startup, alarm every 5 min, "Sync now", after connect)
+- Actor: Browser runtime (startup, alarm every 15 min, "Sync now", after connect, and qualifying user actions via the `sync-on-use` bell probe — ADR-111)
 - Goal: Apply other devices' changes
 - Basic flow:
   1. per scope routed to a connected connection, system lists `devices/*/` excluding its own deviceId

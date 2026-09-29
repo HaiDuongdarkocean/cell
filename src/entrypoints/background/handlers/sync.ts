@@ -31,13 +31,15 @@ import { BlobUnavailableError } from '@/features/sync/app/pushCycle';
 import { WireFormatError } from '@/features/sync/app/wireCodec';
 import { migrateProfileIdentity } from '@/features/sync/app/profileIdentityMigration';
 import { createSrsSyncAccess } from '@/features/srs/sync/srsSyncAccess';
+import { setOutboxDirtyNotifier } from '@/features/sync/adapters/local/idb/capture';
+import { configureSyncTriggers } from '../syncTriggers';
 import { logger } from '@/shared/lib/logger';
 import type { BackgroundContext } from '../context';
 
 export const SYNC_TICK_ALARM = 'cell.sync.tick';
-const SYNC_TICK_PERIOD_MINUTES = 5;
-const CHANGE_DEBOUNCE_MS = 2_000;
-const CHANGE_MAX_WAIT_MS = 30_000;
+const SYNC_TICK_PERIOD_MINUTES = 15;
+const CHANGE_DEBOUNCE_MS = 300;
+const CHANGE_MAX_WAIT_MS = 1_500;
 
 let runtime: SyncRuntime | undefined;
 
@@ -87,6 +89,20 @@ function fireIfConnected(): void {
     })
     .catch((error) =>
       logger.warn('sync: scheduled cycle failed', { error: errorMessage(error) }),
+    );
+}
+
+function pushIfConnected(): void {
+  const rt = runtime;
+  if (rt === undefined) return;
+  void rt
+    .hasConnections()
+    .then((connected) => {
+      if (!connected) return;
+      return rt.runPush();
+    })
+    .catch((error) =>
+      logger.warn('sync: scheduled push failed', { error: errorMessage(error) }),
     );
 }
 
@@ -223,7 +239,21 @@ export function registerSyncHandlers(ctx: BackgroundContext): void {
     if (response.success) fireIfConnected();
     return response;
   });
+
+  ctx.on(MESSAGE_TYPES.SYNC_OUTBOX_DIRTY, async (request) => {
+    const parsed = EmptyPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid SYNC_OUTBOX_DIRTY payload: ${parsed.error.message}`,
+      };
+    }
+    pushScheduler?.();
+    return { success: true };
+  });
 }
+
+let pushScheduler: (() => void) | undefined;
 
 function debouncedFire(
   fn: () => void,
@@ -231,29 +261,36 @@ function debouncedFire(
   maxWaitMs: number,
 ): (() => void) & { cancel: () => void } {
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let deadline: ReturnType<typeof setTimeout> | undefined;
   let firstAt: number | undefined;
+  const run = () => {
+    if (timer !== undefined) clearTimeout(timer);
+    if (deadline !== undefined) clearTimeout(deadline);
+    timer = undefined;
+    deadline = undefined;
+    firstAt = undefined;
+    fn();
+  };
   const fire = () => {
     const now = Date.now();
-    if (firstAt === undefined) firstAt = now;
-    if (timer !== undefined) {
-      clearTimeout(timer);
-      timer = undefined;
+    if (firstAt === undefined) {
+      firstAt = now;
+      deadline = setTimeout(() => {
+        if (timer !== undefined) clearTimeout(timer);
+        run();
+      }, maxWaitMs);
     }
-    if (now - firstAt >= maxWaitMs) {
-      firstAt = undefined;
-      fn();
-      return;
-    }
-    timer = setTimeout(() => {
-      timer = undefined;
-      firstAt = undefined;
-      fn();
-    }, waitMs);
+    if (timer !== undefined) clearTimeout(timer);
+    timer = setTimeout(run, waitMs);
   };
   fire.cancel = () => {
     if (timer !== undefined) {
       clearTimeout(timer);
       timer = undefined;
+    }
+    if (deadline !== undefined) {
+      clearTimeout(deadline);
+      deadline = undefined;
     }
     firstAt = undefined;
   };
@@ -276,8 +313,24 @@ export function wireSyncScheduling(ctx: BackgroundContext): Array<() => void> {
     unsubs.push(() => chrome.alarms.onAlarm.removeListener(onAlarm));
   }
 
-  const debounced = debouncedFire(fireIfConnected, CHANGE_DEBOUNCE_MS, CHANGE_MAX_WAIT_MS);
-  unsubs.push(scheduleOnExternalChange(debounced), debounced.cancel);
+  const debounced = debouncedFire(pushIfConnected, CHANGE_DEBOUNCE_MS, CHANGE_MAX_WAIT_MS);
+  pushScheduler = debounced;
+  setOutboxDirtyNotifier(debounced);
+  unsubs.push(
+    scheduleOnExternalChange(debounced),
+    debounced.cancel,
+    () => {
+      if (pushScheduler === debounced) pushScheduler = undefined;
+      setOutboxDirtyNotifier();
+    },
+  );
+
+  unsubs.push(
+    ...configureSyncTriggers({
+      hasConnections: () => rt.hasConnections(),
+      checkRemote: () => rt.checkRemote(),
+    }),
+  );
 
   const targetsOf = (value: unknown): string => {
     const profiles = (value as { languageProfiles?: { target: string }[] } | undefined)

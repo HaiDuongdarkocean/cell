@@ -62,6 +62,7 @@ export interface ConnectionPushDeps {
   readonly pendingLimit?: number;
   readonly journalCompactionThreshold?: number;
   readonly healCheck?: boolean;
+  readonly chainCache?: Map<string, { journalCount: number }>;
 }
 
 interface PushState {
@@ -232,6 +233,10 @@ export async function runConnectionPush(
   return { outcomes };
 }
 
+function chainCacheKey(deps: ConnectionPushDeps, scope: Scope): string {
+  return `${deps.connection.connectionId}|${scope}`;
+}
+
 async function commitBatch(
   deps: ConnectionPushDeps,
   state: PushState,
@@ -241,24 +246,43 @@ async function commitBatch(
   ackKeys: readonly PendingKey[],
   batchKey: string,
 ): Promise<number> {
-  if (deps.healCheck !== false && !state.healed.has(scope)) {
+  const cacheKey = chainCacheKey(deps, scope);
+  if (
+    deps.healCheck !== false &&
+    !state.healed.has(scope) &&
+    deps.chainCache?.get(cacheKey) === undefined
+  ) {
     state.healed.add(scope);
-    await ensureChainHealthy(deps, scope, seq);
+    try {
+      const health = await ensureChainHealthy(deps, scope, seq);
+      deps.chainCache?.set(cacheKey, { journalCount: health.journalCount });
+    } catch (e) {
+      deps.chainCache?.delete(cacheKey);
+      throw e;
+    }
   }
-  await uploadAndVerifyBlobs(deps, collectBlobHashes(records));
-  await deps.fence();
-  await deps.provider.write(
-    deps.connection,
-    journalPath(scope, deps.deviceId, seq),
-    encodeJournal({ scope, deviceId: deps.deviceId, seq, records }),
-  );
-  await deps.fence();
-  for (const source of deps.sources) {
-    await source.stampCommitted(records);
+  try {
+    await uploadAndVerifyBlobs(deps, collectBlobHashes(records));
+    await deps.fence();
+    await deps.provider.write(
+      deps.connection,
+      journalPath(scope, deps.deviceId, seq),
+      encodeJournal({ scope, deviceId: deps.deviceId, seq, records }),
+      { fresh: true },
+    );
+    await deps.fence();
+    for (const source of deps.sources) {
+      await source.stampCommitted(records);
+    }
+    await ackPendingKeys(deps.sources, ackKeys);
+    await deps.store.deletePendingBatch(batchKey);
+    const cached = deps.chainCache?.get(cacheKey);
+    if (cached !== undefined) cached.journalCount += 1;
+    return ackKeys.length;
+  } catch (e) {
+    deps.chainCache?.delete(cacheKey);
+    throw e;
   }
-  await ackPendingKeys(deps.sources, ackKeys);
-  await deps.store.deletePendingBatch(batchKey);
-  return ackKeys.length;
 }
 
 export async function uploadAndVerifyBlobs(
@@ -319,6 +343,11 @@ async function compactScopeIfNeeded(
   scope: Scope,
 ): Promise<{ n: number; coversSeq: number } | undefined> {
   const connection = deps.connection;
+  const cacheKey = chainCacheKey(deps, scope);
+  const threshold = deps.journalCompactionThreshold ?? DEFAULT_JOURNAL_COMPACTION_THRESHOLD;
+  const cached = deps.chainCache?.get(cacheKey);
+  if (cached !== undefined && cached.journalCount <= threshold) return undefined;
+
   const pending = await deps.store.pendingBatches(connection.connectionId);
   if (pending.some((batch) => batch.scope === scope)) return undefined;
 
@@ -337,7 +366,7 @@ async function compactScopeIfNeeded(
     const n = parseSnapshotN(entry.path);
     if (n !== null) snapshots.push({ n, path: entry.path });
   }
-  const threshold = deps.journalCompactionThreshold ?? DEFAULT_JOURNAL_COMPACTION_THRESHOLD;
+  if (cached !== undefined) cached.journalCount = journals.length;
   if (journals.length <= threshold) return undefined;
   journals.sort((a, b) => a.seq - b.seq);
   snapshots.sort((a, b) => a.n - b.n);
@@ -374,6 +403,9 @@ async function compactScopeIfNeeded(
     if (snapshot.n >= n) continue;
     await deps.fence();
     await removeRemote(deps, snapshot.path);
+  }
+  if (deps.chainCache !== undefined) {
+    deps.chainCache.set(cacheKey, { journalCount: 0 });
   }
   return { n, coversSeq };
 }

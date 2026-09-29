@@ -12,6 +12,7 @@ export interface FakeDriveFile {
   accountKey: string;
   name: string;
   bytes: Uint8Array;
+  version: number;
   modifiedSeq: number;
   createdSeq: number;
   space: 'drive' | 'appdata';
@@ -204,6 +205,7 @@ export function createFakeDrive(): FakeDrive {
     id: file.id,
     name: file.name,
     size: String(file.bytes.byteLength),
+    version: String(file.version),
     modifiedTime: isoOf(file.modifiedSeq),
     createdTime: isoOf(file.createdSeq),
     mimeType: file.mimeType ?? 'application/octet-stream',
@@ -253,6 +255,7 @@ export function createFakeDrive(): FakeDrive {
       accountKey: account.sub,
       name: SYNC_ROOT_NAME,
       bytes: new Uint8Array(0),
+      version: 1,
       modifiedSeq: nextSeq(),
       createdSeq: clockSeq,
       space: 'drive',
@@ -310,6 +313,7 @@ export function createFakeDrive(): FakeDrive {
       if (existing) {
         existing.bytes = bytes.slice();
         existing.modifiedSeq = seq;
+        existing.version += 1;
         return existing;
       }
     }
@@ -319,6 +323,7 @@ export function createFakeDrive(): FakeDrive {
       accountKey: account.sub,
       name,
       bytes: bytes.slice(),
+      version: 1,
       modifiedSeq: seq,
       createdSeq: clockSeq,
       space: opts?.space ?? 'drive',
@@ -549,6 +554,7 @@ export function createFakeDrive(): FakeDrive {
           target.parent = undefined;
         }
         target.modifiedSeq = nextSeq();
+        target.version += 1;
         return jsonResponse(200, fileJson(target));
       }
       if (method === 'GET' && new URL(url).searchParams.get('alt') === 'media') {

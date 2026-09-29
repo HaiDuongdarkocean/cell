@@ -4,9 +4,11 @@ import type { KeyValueStore } from '../../ports/keyValueStore';
 import { ProviderError } from '../../ports/storageProvider';
 import type {
   AuthorizedAccount,
+  ChangeSignal,
   ProviderErrorKind,
   RemoteEntry,
   StorageProvider,
+  WriteOptions,
 } from '../../ports/storageProvider';
 import { blobToBytes } from '../contract/blobBytes';
 import {
@@ -53,6 +55,7 @@ interface DriveFile {
   id?: string;
   name?: string;
   size?: string;
+  version?: string;
   modifiedTime?: string;
   createdTime?: string;
   md5Checksum?: string;
@@ -118,6 +121,13 @@ function resumeKeyPrefix(path: string): string {
 function rootFolderKey(accountKey: string): string {
   return `syncAdapter:${PROVIDER_ID}:root:${accountKey}`;
 }
+
+function bellFileKey(accountKey: string): string {
+  return `bellFileId:${accountKey}`;
+}
+
+const BELL_FOLDER_CHAIN: readonly string[] = ['meta'];
+const BELL_FILE_NAME = 'bell.json';
 
 function legacyCleanedKey(accountKey: string): string {
   return `syncAdapter:${PROVIDER_ID}:legacyCleaned:${accountKey}`;
@@ -325,7 +335,12 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     });
   }
 
-  async write(connection: Connection, path: string, body: Blob): Promise<RemoteEntry> {
+  async write(
+    connection: Connection,
+    path: string,
+    body: Blob,
+    opts?: WriteOptions,
+  ): Promise<RemoteEntry> {
     return this.authed(connection, async (token) => {
       const bytes = await blobToBytes(body);
       for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -336,9 +351,12 @@ export class GoogleDriveStorageProvider implements StorageProvider {
             ? await this.resolveOrCreateChain(token, connection.accountKey, rootId, mapped.chain)
             : rootId;
           const leaf = mapped ? mapped.leaf : path;
-          const copies = mapped
-            ? await this.allCopiesOf(token, connection.accountKey, rootId, path)
-            : { flat: await this.findCopies(token, rootId, path), foldered: [] };
+          const copies =
+            opts?.fresh === true
+              ? { flat: [] as DriveFile[], foldered: [] as DriveFile[] }
+              : mapped
+                ? await this.allCopiesOf(token, connection.accountKey, rootId, path)
+                : { flat: await this.findCopies(token, rootId, path), foldered: [] as DriveFile[] };
           const target = copies.foldered.length
             ? copies.foldered.reduce(newerFile)
             : mapped
@@ -390,6 +408,113 @@ export class GoogleDriveStorageProvider implements StorageProvider {
         }
       }
     });
+  }
+
+  readonly signal: ChangeSignal = {
+    peek: (connection) => this.peekBell(connection),
+    ring: (connection) => this.ringBell(connection),
+  };
+
+  private async bellFileId(token: string, connection: Connection): Promise<string | undefined> {
+    const key = bellFileKey(connection.accountKey);
+    const cached = await this.kv.get<string>('local', key);
+    if (cached !== undefined) return cached;
+    const rootId = await this.rootFolderId(token, connection);
+    const meta = await this.resolveChain(
+      token,
+      connection.accountKey,
+      rootId,
+      BELL_FOLDER_CHAIN,
+    );
+    if (meta?.id === undefined) return undefined;
+    const found = (await this.findInFolder(token, meta.id, BELL_FILE_NAME))[0]?.id;
+    if (found !== undefined) {
+      await this.kv.set('local', key, found);
+    }
+    return found;
+  }
+
+  private async peekBell(connection: Connection): Promise<string | null> {
+    return this.authed(connection, async (token) => {
+      const fileId = await this.bellFileId(token, connection);
+      if (fileId === undefined) return null;
+      try {
+        const response = await this.send(
+          `${DRIVE_API_BASE}/files/${encodeURIComponent(fileId)}?fields=version,trashed`,
+          { headers: this.authHeaders(token) },
+        );
+        const file = (await response.json()) as DriveFile;
+        if (file.trashed === true) {
+          await this.kv.del('local', bellFileKey(connection.accountKey));
+          return null;
+        }
+        return file.version !== undefined ? String(file.version) : null;
+      } catch (e) {
+        if (e instanceof ProviderError && e.kind === 'not-found') {
+          await this.kv.del('local', bellFileKey(connection.accountKey));
+          return null;
+        }
+        throw e;
+      }
+    });
+  }
+
+  private async ringBell(connection: Connection): Promise<string> {
+    return this.authed(connection, async (token) => {
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        let fileId = await this.bellFileId(token, connection);
+        if (fileId === undefined) {
+          fileId = await this.createBellFile(token, connection);
+          await this.kv.set('local', bellFileKey(connection.accountKey), fileId);
+        }
+        try {
+          const response = await this.send(
+            `${DRIVE_UPLOAD_BASE}/files/${encodeURIComponent(fileId)}?uploadType=media&fields=version`,
+            {
+              method: 'PATCH',
+              headers: {
+                ...this.authHeaders(token),
+                'Content-Type': 'application/json; charset=UTF-8',
+              },
+              body: JSON.stringify({ at: this.now() }),
+            },
+          );
+          const file = (await response.json()) as DriveFile;
+          if (file.version === undefined) {
+            throw new ProviderError('unknown', 'bell update returned no version');
+          }
+          return String(file.version);
+        } catch (e) {
+          if (e instanceof ProviderError && e.kind === 'not-found' && attempt === 0) {
+            await this.kv.del('local', bellFileKey(connection.accountKey));
+            continue;
+          }
+          throw e;
+        }
+      }
+      throw new ProviderError('unknown', 'bell ring retry loop exhausted');
+    });
+  }
+
+  private async createBellFile(token: string, connection: Connection): Promise<string> {
+    const rootId = await this.rootFolderId(token, connection);
+    const parentId = await this.resolveOrCreateChain(
+      token,
+      connection.accountKey,
+      rootId,
+      BELL_FOLDER_CHAIN,
+    );
+    const file = await this.multipartCreate(
+      token,
+      parentId,
+      BELL_FILE_NAME,
+      new TextEncoder().encode(JSON.stringify({ at: this.now() })),
+      'application/json',
+    );
+    if (file.id === undefined) {
+      throw new ProviderError('unknown', 'bell file creation returned no id');
+    }
+    return file.id;
   }
 
   async quota(connection: Connection): Promise<{ usedBytes: number; totalBytes: number | null }> {

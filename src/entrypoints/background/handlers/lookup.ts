@@ -15,6 +15,7 @@ import {
   LookupRequestPayloadSchema,
   LookupCancelPayloadSchema,
 } from '@/entities/message/dictionarySchemas';
+import { requestRemoteCheck } from '../syncTriggers';
 
 /** In-flight lookup abort controllers (for cancellation). */
 const abortControllers = new Map<string, AbortController>();
@@ -34,6 +35,7 @@ export function registerLookupHandlers(ctx: BackgroundContext): void {
 
       try {
         const results = await lookupOrchestratorMulti(lookupRequest, {}, ac.signal);
+        requestRemoteCheck();
         return { success: true, data: results };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);

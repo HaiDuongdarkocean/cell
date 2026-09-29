@@ -43,6 +43,10 @@ import {
   queryTabs,
   sendMessageToAllFramesInTab,
 } from '@/shared/lib/chrome-apis/tabs';
+import {
+  isFirstStatusesGetForTab,
+  requestRemoteCheck,
+} from '../syncTriggers';
 
 /** Broadcast a status change/delete to content scripts in all other tabs. */
 async function broadcastToOtherTabs(
@@ -75,6 +79,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
       if (tabId !== undefined) {
         void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_CHANGED, { langCode, term, status });
       }
+      requestRemoteCheck();
       return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -94,6 +99,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
     const { term, langCode } = parsed.data;
     try {
       const status = await getWordStatus(langCode, term);
+      requestRemoteCheck();
       return { success: true, data: { status } };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -110,13 +116,14 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
       };
     }
 
-    const { langCode, terms } = parsed.data;
+    const { langCode, terms, tabId } = parsed.data;
     try {
       const map = await getWordStatuses(langCode, terms);
       const statuses: Record<string, WordStatus> = {};
       for (const [term, status] of map.entries()) {
         statuses[term] = status;
       }
+      if (isFirstStatusesGetForTab(tabId)) requestRemoteCheck();
       return { success: true, data: { statuses } };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -136,6 +143,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
     try {
       await purgeExpiredTrash(parsed.data.langCode).catch(() => undefined);
       const entries = await getAllWordStatuses(parsed.data.langCode);
+      requestRemoteCheck();
       return { success: true, data: { entries: [...entries] } };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -156,6 +164,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
     try {
       const status = await cycleWordStatus(langCode, term);
       void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_CHANGED, { langCode, term, status });
+      requestRemoteCheck();
       return { success: true, data: { status } };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -176,6 +185,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
     try {
       await deleteWordStatus(langCode, term);
       void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_DELETED, { langCode, term });
+      requestRemoteCheck();
       return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -196,6 +206,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
     try {
       await trashWordStatus(langCode, term);
       void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_DELETED, { langCode, term });
+      requestRemoteCheck();
       return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -214,6 +225,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
 
     try {
       const entries = await listWordTrash(parsed.data.langCode);
+      requestRemoteCheck();
       return { success: true, data: { entries } };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -234,6 +246,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
     try {
       const status = await restoreWordStatus(langCode, term);
       void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_CHANGED, { langCode, term, status });
+      requestRemoteCheck();
       return { success: true, data: { status } };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -253,6 +266,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
     const { term, langCode } = parsed.data;
     try {
       await deleteWordTrash(langCode, term);
+      requestRemoteCheck();
       return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

@@ -155,7 +155,8 @@ export type MessageType =
   | 'SYNC_CANCEL_REBIND'
   | 'SYNC_DELETE_OLD_COPY'
   | 'SYNC_DATA_APPLIED'
-  | 'SYNC_STATUS_CHANGED';
+  | 'SYNC_STATUS_CHANGED'
+  | 'SYNC_OUTBOX_DIRTY';
 
 // === Message Request ===
 

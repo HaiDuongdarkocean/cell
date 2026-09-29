@@ -1,6 +1,7 @@
 import { registerWordStatusHandlers } from './wordStatus';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import * as wordStatusStore from '@/features/dictionary/services/wordStatusStore';
+import { isFirstStatusesGetForTab, requestRemoteCheck } from '../syncTriggers';
 
 jest.mock('@/features/dictionary/services/wordStatusStore', () => ({
   setWordStatus: jest.fn(),
@@ -9,6 +10,11 @@ jest.mock('@/features/dictionary/services/wordStatusStore', () => ({
   getAllWordStatuses: jest.fn(),
   cycleWordStatus: jest.fn(),
   deleteWordStatus: jest.fn(),
+}));
+
+jest.mock('../syncTriggers', () => ({
+  requestRemoteCheck: jest.fn(),
+  isFirstStatusesGetForTab: jest.fn(() => true),
 }));
 
 const mockTabsQuery = jest.fn();
@@ -208,5 +214,74 @@ describe('WORD_STATUS_DELETE', () => {
       }),
       { frameId: 0 },
     );
+  });
+});
+
+describe('remote check triggers (SC-12)', () => {
+  const mockedCheck = requestRemoteCheck as jest.Mock;
+  const mockedFirst = isFirstStatusesGetForTab as jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockTabsQuery.mockResolvedValue([]);
+    mockGetAllFrames.mockResolvedValue([{ frameId: 0 }]);
+    (wordStatusStore.setWordStatus as jest.Mock).mockResolvedValue(undefined);
+    (wordStatusStore.getWordStatus as jest.Mock).mockResolvedValue('known');
+    (wordStatusStore.getWordStatuses as jest.Mock).mockResolvedValue(new Map());
+    (wordStatusStore.getAllWordStatuses as jest.Mock).mockResolvedValue([]);
+    (wordStatusStore.cycleWordStatus as jest.Mock).mockResolvedValue('known');
+    (wordStatusStore.deleteWordStatus as jest.Mock).mockResolvedValue(undefined);
+    mockedFirst.mockReturnValue(true);
+  });
+
+  const ctx = () => {
+    const c = createMockCtx();
+    registerWordStatusHandlers(c as unknown as Parameters<typeof registerWordStatusHandlers>[0]);
+    return c.handlers;
+  };
+
+  it('fires requestRemoteCheck after successful qualifying handlers', async () => {
+    const handlers = ctx();
+    await handlers.get(MESSAGE_TYPES.WORD_STATUS_SET)!({
+      payload: { tabId: 1, langCode: 'en', term: 'call', status: 'known' },
+    });
+    await handlers.get(MESSAGE_TYPES.WORD_STATUS_GET)!({
+      payload: { tabId: 1, langCode: 'en', term: 'call' },
+    });
+    await handlers.get(MESSAGE_TYPES.WORD_STATUS_LIST)!({
+      payload: { tabId: 1, langCode: 'en' },
+    });
+    await handlers.get(MESSAGE_TYPES.WORD_STATUS_CYCLE)!({
+      payload: { tabId: 1, langCode: 'en', term: 'call' },
+    });
+    await handlers.get(MESSAGE_TYPES.WORD_STATUS_DELETE)!({
+      payload: { tabId: 1, langCode: 'en', term: 'call' },
+    });
+    expect(mockedCheck).toHaveBeenCalledTimes(5);
+  });
+
+  it('WORD_STATUSES_GET triggers only when isFirstStatusesGetForTab qualifies', async () => {
+    const handlers = ctx();
+    await handlers.get(MESSAGE_TYPES.WORD_STATUSES_GET)!({
+      payload: { tabId: 9, langCode: 'en', terms: ['call'] },
+    });
+    expect(mockedCheck).toHaveBeenCalledTimes(1);
+    mockedFirst.mockReturnValue(false);
+    await handlers.get(MESSAGE_TYPES.WORD_STATUSES_GET)!({
+      payload: { tabId: 9, langCode: 'en', terms: ['call'] },
+    });
+    expect(mockedCheck).toHaveBeenCalledTimes(1);
+  });
+
+  it('failed responses never trigger a remote check', async () => {
+    (wordStatusStore.setWordStatus as jest.Mock).mockRejectedValue(new Error('idb down'));
+    const handlers = ctx();
+    const res = await handlers.get(MESSAGE_TYPES.WORD_STATUS_SET)!({
+      payload: { tabId: 1, langCode: 'en', term: 'call', status: 'known' },
+    });
+    expect(res).toEqual(
+      expect.objectContaining({ success: false }),
+    );
+    expect(mockedCheck).not.toHaveBeenCalled();
   });
 });

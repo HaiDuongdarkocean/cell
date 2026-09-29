@@ -7,11 +7,14 @@ import {
   isCaptureEnabled,
   readRecordMeta,
   resetSyncRuntime,
+  setOutboxDirtyNotifier,
   stampRemoteMeta,
   SYNC_META,
   SYNC_OUTBOX,
   type StoredRecordMeta,
 } from './capture';
+import * as runtimeApis from '@/shared/lib/chrome-apis/runtime';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { Hlc } from '../../../domain/types';
 
 const DB_NAME = 'capture-test';
@@ -257,6 +260,97 @@ describe('stampRemoteMeta', () => {
     const meta = (await allMeta(db)).find((m) => m.recKey === 'cards:c2')!;
     expect(meta.hlc.wall).toBeGreaterThanOrEqual(10);
     if (meta.hlc.wall === 10) expect(meta.hlc.counter).toBeGreaterThan(3);
+  });
+});
+
+describe('outbox dirty notifier (SC-1)', () => {
+  let db: IDBDatabase;
+  const sendSpy = jest.spyOn(runtimeApis, 'sendMessage');
+
+  beforeEach(async () => {
+    resetSyncRuntime();
+    sendSpy.mockClear().mockResolvedValue(undefined);
+    setOutboxDirtyNotifier();
+    db = await openDb();
+  });
+
+  afterEach(() => {
+    db.close();
+    resetSyncRuntime();
+    setOutboxDirtyNotifier();
+    indexedDB.deleteDatabase(DB_NAME);
+  });
+
+  it('fires the registered notifier once per committing transaction', async () => {
+    configureSyncRuntime({ enabled: true, deviceId: 'd1' });
+    const notify = jest.fn();
+    setOutboxDirtyNotifier(notify);
+    await inWriteTx(db, async (store) => {
+      await captureChange(store, {
+        scope: 'profile:en',
+        dataClass: 'srsCard',
+        key: 'cards:a',
+        op: 'put',
+      });
+      await captureChange(store, {
+        scope: 'profile:en',
+        dataClass: 'srsCard',
+        key: 'cards:b',
+        op: 'put',
+      });
+    });
+    expect(notify).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not fire when the transaction aborts', async () => {
+    configureSyncRuntime({ enabled: true, deviceId: 'd1' });
+    const notify = jest.fn();
+    setOutboxDirtyNotifier(notify);
+    const tx = db.transaction([SYNC_OUTBOX, SYNC_META], 'readwrite');
+    const pending = captureChange(tx.objectStore(SYNC_META), {
+      scope: 'profile:en',
+      dataClass: 'srsCard',
+      key: 'cards:x',
+      op: 'put',
+    }).catch(() => undefined);
+    const aborted = new Promise<void>((resolve) => {
+      tx.onabort = () => resolve();
+    });
+    tx.abort();
+    await Promise.all([pending, aborted]);
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it('does nothing when capture is disabled', async () => {
+    configureSyncRuntime({ enabled: false, deviceId: 'd1' });
+    const notify = jest.fn();
+    setOutboxDirtyNotifier(notify);
+    await inWriteTx(db, (store) =>
+      captureChange(store, {
+        scope: 'profile:en',
+        dataClass: 'srsCard',
+        key: 'cards:a',
+        op: 'put',
+      }),
+    );
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it('the default notifier sends SYNC_OUTBOX_DIRTY and swallows rejection', async () => {
+    configureSyncRuntime({ enabled: true, deviceId: 'd1' });
+    sendSpy.mockRejectedValue(new Error('no receiver'));
+    await inWriteTx(db, (store) =>
+      captureChange(store, {
+        scope: 'profile:en',
+        dataClass: 'srsCard',
+        key: 'cards:a',
+        op: 'put',
+      }),
+    );
+    expect(sendSpy).toHaveBeenCalledWith({
+      type: MESSAGE_TYPES.SYNC_OUTBOX_DIRTY,
+      payload: {},
+    });
   });
 });
 

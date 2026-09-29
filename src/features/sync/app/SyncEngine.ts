@@ -30,6 +30,7 @@ import {
 import {
   isConnectionDisconnected,
   runConnectionPull,
+  runScopesPull,
   SYNC_APPLIED_AT_KEY,
 } from './pullCycle';
 import {
@@ -102,6 +103,9 @@ export interface SyncEngineDeps {
   readonly pendingLimit?: number;
   readonly journalCompactionThreshold?: number;
   readonly lock?: Partial<Pick<CycleLockDeps, 'ttlMs' | 'heartbeatMs' | 'schedule'>>;
+  readonly localScopes?: () => Promise<Scope[]>;
+  readonly sleep?: (ms: number) => Promise<void>;
+  readonly checkRetryDelayMs?: number;
 }
 
 export function engineStateForError(error: unknown): EngineState {
@@ -120,17 +124,30 @@ export function engineStateForError(error: unknown): EngineState {
   return 'backoff';
 }
 
+type PassKind = 'full' | 'push' | 'check';
+
+interface PassWaiter {
+  resolve: (result: CycleResult) => void;
+  reject: (error: unknown) => void;
+}
+
+const DEFAULT_CHECK_RETRY_DELAY_MS = 2000;
+
+const defaultSleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+function bellSeenKey(connectionId: ConnectionId): string {
+  return `syncBellSeen:${connectionId}`;
+}
+
 export class SyncEngine {
   private status: EngineStatus;
   private readonly listeners = new Set<(status: EngineStatus) => void>();
   private readonly backoff = new BackoffTracker();
   private cycleFailures = 0;
-  private inflight: Promise<CycleResult> | null = null;
-  private rerunRequested = false;
-  private rerunWaiters: Array<{
-    resolve: (result: CycleResult) => void;
-    reject: (error: unknown) => void;
-  }> = [];
+  private passRunning = false;
+  private readonly passWaiters = new Map<PassKind, PassWaiter[]>();
+  private readonly chainCache = new Map<string, { journalCount: number }>();
 
   constructor(private readonly deps: SyncEngineDeps) {
     this.status = { state: 'idle', updatedAt: deps.clock.now() };
@@ -152,32 +169,64 @@ export class SyncEngine {
   }
 
   runCycle(): Promise<CycleResult> {
-    if (this.inflight) {
-      this.rerunRequested = true;
-      return new Promise<CycleResult>((resolve, reject) => {
-        this.rerunWaiters.push({ resolve, reject });
-      });
-    }
-    return this.startCycle();
+    return this.enqueue('full');
   }
 
-  private startCycle(): Promise<CycleResult> {
-    const run = this.executeCycle().finally(() => {
-      this.inflight = null;
-      if (!this.rerunRequested) return;
-      this.rerunRequested = false;
-      const waiters = this.rerunWaiters.splice(0);
-      this.startCycle().then(
-        (result) => {
-          for (const w of waiters) w.resolve(result);
-        },
-        (error) => {
-          for (const w of waiters) w.reject(error);
-        },
-      );
+  runPush(): Promise<CycleResult> {
+    return this.enqueue('push');
+  }
+
+  checkRemote(): Promise<CycleResult> {
+    return this.enqueue('check');
+  }
+
+  private enqueue(kind: PassKind): Promise<CycleResult> {
+    const waiters = this.passWaiters.get(kind) ?? [];
+    const promise = new Promise<CycleResult>((resolve, reject) => {
+      waiters.push({ resolve, reject });
     });
-    this.inflight = run;
-    return run;
+    this.passWaiters.set(kind, waiters);
+    if (!this.passRunning) this.startNextPass();
+    return promise;
+  }
+
+  private startNextPass(): void {
+    const full = this.passWaiters.get('full');
+    if (full !== undefined && full.length > 0) {
+      const push = this.passWaiters.get('push') ?? [];
+      const check = this.passWaiters.get('check') ?? [];
+      this.passWaiters.clear();
+      this.drivePass('full', [...full, ...push, ...check]);
+      return;
+    }
+    const push = this.passWaiters.get('push');
+    if (push !== undefined && push.length > 0) {
+      this.passWaiters.delete('push');
+      this.drivePass('push', push);
+      return;
+    }
+    const check = this.passWaiters.get('check');
+    if (check !== undefined && check.length > 0) {
+      this.passWaiters.delete('check');
+      this.drivePass('check', check);
+    }
+  }
+
+  private drivePass(kind: PassKind, waiters: PassWaiter[]): void {
+    this.passRunning = true;
+    const run =
+      kind === 'full' ? this.executeCycle() : this.executeFastPass(kind);
+    run.then(
+      (result) => {
+        for (const waiter of waiters) waiter.resolve(result);
+      },
+      (error) => {
+        for (const waiter of waiters) waiter.reject(error);
+      },
+    ).finally(() => {
+      this.passRunning = false;
+      this.startNextPass();
+    });
   }
 
   private setStatus(state: EngineState, extra?: { retryAt?: number; lastError?: string }): void {
@@ -214,6 +263,412 @@ export class SyncEngine {
     } finally {
       await lock.release();
     }
+  }
+
+  private async executeFastPass(kind: 'push' | 'check'): Promise<CycleResult> {
+    const deps = this.deps;
+    const cycleId = deps.ids.uuid();
+    const lock = await acquireCycleLock(
+      {
+        kv: deps.kv,
+        clock: deps.clock,
+        ttlMs: deps.lock?.ttlMs,
+        heartbeatMs: deps.lock?.heartbeatMs,
+        schedule: deps.lock?.schedule,
+      },
+      cycleId,
+    );
+    if (lock === null) {
+      return emptyCycleResult();
+    }
+    try {
+      return kind === 'push'
+        ? await this.runPushPass(lock, cycleId)
+        : await this.runCheckPass(lock);
+    } finally {
+      await lock.release();
+    }
+  }
+
+  private async bellBump(provider: StorageProvider, connection: Connection): Promise<void> {
+    const signal = provider.signal;
+    if (signal === undefined) return;
+    const key = bellSeenKey(connection.connectionId);
+    const before = await signal.peek(connection);
+    const after = await signal.ring(connection);
+    const seen = await this.deps.kv.get('session', key);
+    if (before === seen) await this.deps.kv.set('session', key, after);
+  }
+
+  private async routePending(
+    lock: CycleLock,
+    pending: PendingKey[],
+    routing: RoutingSnapshot,
+    connected: ReadonlyMap<ConnectionId, Connection>,
+    skipConnection: ReadonlySet<ConnectionId>,
+    waitingScopes: Set<Scope>,
+    waitingFor: Partial<Record<Scope, ConnectionId>>,
+  ): Promise<{ buckets: Map<ConnectionId, Map<Scope, PendingKey[]>>; ackedKeys: number }> {
+    const deps = this.deps;
+    const buckets = new Map<ConnectionId, Map<Scope, PendingKey[]>>();
+    const scoped = [...groupPendingByScope(pending).entries()].sort(([a], [b]) =>
+      a < b ? -1 : a > b ? 1 : 0,
+    );
+    let ackedKeys = 0;
+    for (const [scope, keys] of scoped) {
+      if (typeof scope !== 'string' || routing.frozenScopes.has(scope)) continue;
+      const target = routeForScope(routing, scope);
+      if (target === null) {
+        waitingScopes.add(scope);
+        continue;
+      }
+      if (target.kind === 'local') {
+        await lock.verify();
+        await resolvePendingKeys(deps.sources, keys);
+        await ackPendingKeys(deps.sources, keys);
+        ackedKeys += keys.length;
+        continue;
+      }
+      if (
+        !connected.has(target.connectionId) ||
+        skipConnection.has(target.connectionId)
+      ) {
+        waitingScopes.add(scope);
+        waitingFor[scope] = target.connectionId;
+        continue;
+      }
+      const bucket = buckets.get(target.connectionId) ?? new Map<Scope, PendingKey[]>();
+      bucket.set(scope, keys);
+      buckets.set(target.connectionId, bucket);
+    }
+    return { buckets, ackedKeys };
+  }
+
+  private settleResult(
+    base: Omit<CycleResult, 'retryAt'>,
+    cycleError: unknown,
+    lockLost: boolean,
+    failed: ConnectionFailure[],
+  ): CycleResult {
+    const deps = this.deps;
+    if (cycleError !== undefined) {
+      this.cycleFailures += 1;
+      const retryAt = deps.clock.now() + backoffDelayMs(this.cycleFailures);
+      this.setStatus('backoff', { retryAt, lastError: describeError(cycleError) });
+      return { ...base, retryAt };
+    }
+    if (lockLost) {
+      this.setStatus('idle', { lastError: 'cycle lock lost' });
+      return base;
+    }
+    if (failed.length > 0) {
+      const retryAt = Math.min(...failed.map((f) => f.retryAt));
+      this.setStatus(failed[0]!.state, {
+        retryAt,
+        lastError: `${failed.length} connection(s) failed`,
+      });
+      return { ...base, retryAt };
+    }
+    this.cycleFailures = 0;
+    this.setStatus('idle');
+    return base;
+  }
+
+  private async runPushPass(lock: CycleLock, cycleId: string): Promise<CycleResult> {
+    const deps = this.deps;
+    const failed: ConnectionFailure[] = [];
+    const scopesPushed: Scope[] = [];
+    const compactedScopes: Scope[] = [];
+    const waitingScopes = new Set<Scope>();
+    const waitingFor: Partial<Record<Scope, ConnectionId>> = {};
+    let ackedKeys = 0;
+    let lockLost = false;
+    let cycleError: unknown;
+
+    try {
+      const pending = await collectPendingKeys(
+        deps.sources,
+        deps.pendingLimit ?? DEFAULT_PENDING_LIMIT,
+      );
+      const connected = new Map<ConnectionId, Connection>();
+      for (const connection of await deps.connections()) {
+        connected.set(connection.connectionId, connection);
+      }
+      const deviceId = await deps.deviceId();
+
+      let hasWork = pending.length > 0;
+      if (!hasWork) {
+        for (const connection of connected.values()) {
+          if ((await deps.store.pendingBatches(connection.connectionId)).length > 0) {
+            hasWork = true;
+            break;
+          }
+        }
+      }
+      if (!hasWork) {
+        return { ...emptyCycleResult(), acquired: true };
+      }
+      this.setStatus('running');
+
+      const skipConnection = new Set<ConnectionId>();
+      for (const connection of connected.values()) {
+        const retryAt = this.backoff.retryAt(connection.connectionId);
+        if (retryAt !== undefined && deps.clock.now() < retryAt) {
+          failed.push({
+            connectionId: connection.connectionId,
+            state: this.backoff.stateOf(connection.connectionId) ?? 'backoff',
+            retryAt,
+          });
+          skipConnection.add(connection.connectionId);
+        }
+      }
+
+      const routing = await readRouting(deps.kv);
+      const routed = await this.routePending(
+        lock,
+        pending,
+        routing,
+        connected,
+        skipConnection,
+        waitingScopes,
+        waitingFor,
+      );
+      ackedKeys += routed.ackedKeys;
+
+      for (const connection of connected.values()) {
+        if (skipConnection.has(connection.connectionId)) continue;
+        try {
+          const provider = deps.providerFor(connection.providerId);
+          const result = await runConnectionPush(
+            {
+              provider,
+              connection,
+              kv: deps.kv,
+              store: deps.store,
+              sources: deps.sources,
+              blobs: deps.blobs,
+              deviceId,
+              cycleId,
+              clock: deps.clock,
+              fence: () => lock.verify(),
+              pendingLimit: deps.pendingLimit,
+              journalCompactionThreshold:
+                deps.journalCompactionThreshold ?? DEFAULT_JOURNAL_COMPACTION_THRESHOLD,
+              chainCache: this.chainCache,
+            },
+            routed.buckets.get(connection.connectionId) ?? new Map(),
+          );
+          let scopeErrors = 0;
+          let wrote = false;
+          for (const outcome of result.outcomes) {
+            if (outcome.error !== undefined) scopeErrors += 1;
+            if (outcome.journalSeq !== undefined) {
+              wrote = true;
+              if (!scopesPushed.includes(outcome.scope)) {
+                scopesPushed.push(outcome.scope);
+              }
+            }
+            if (outcome.snapshotN !== undefined) {
+              wrote = true;
+              if (!compactedScopes.includes(outcome.scope)) {
+                compactedScopes.push(outcome.scope);
+              }
+            }
+            ackedKeys += outcome.ackedKeys;
+          }
+          if (scopeErrors > 0) {
+            const retryAt = this.backoff.recordFailure(
+              connection.connectionId,
+              deps.clock.now(),
+            );
+            failed.push({
+              connectionId: connection.connectionId,
+              state: 'backoff',
+              retryAt,
+            });
+          } else {
+            this.backoff.recordSuccess(connection.connectionId);
+          }
+          if (wrote) {
+            try {
+              await this.bellBump(provider, connection);
+            } catch (error) {
+              if (scopeErrors === 0) throw error;
+            }
+          }
+        } catch (error) {
+          if (error instanceof CycleLockLostError) throw error;
+          const retryAt = this.backoff.recordFailure(
+            connection.connectionId,
+            deps.clock.now(),
+            engineStateForError(error),
+          );
+          failed.push({
+            connectionId: connection.connectionId,
+            state: engineStateForError(error),
+            retryAt,
+          });
+        }
+      }
+    } catch (error) {
+      if (error instanceof CycleLockLostError) {
+        lockLost = true;
+      } else {
+        cycleError = error;
+      }
+    }
+
+    return this.settleResult(
+      {
+        acquired: true,
+        lockLost,
+        scopesPushed,
+        ackedKeys,
+        compactedScopes,
+        scopesPulled: [],
+        appliedDataClasses: [],
+        appliedScopes: [],
+        waitingScopes: [...waitingScopes],
+        waitingFor,
+        obligationErrors: [],
+        failed,
+      },
+      cycleError,
+      lockLost,
+      failed,
+    );
+  }
+
+  private async runCheckPass(lock: CycleLock): Promise<CycleResult> {
+    const deps = this.deps;
+    const failed: ConnectionFailure[] = [];
+    const scopesPulled = new Set<Scope>();
+    const appliedDataClasses = new Set<DataClass>();
+    const appliedScopes = new Set<Scope>();
+    let lockLost = false;
+    let cycleError: unknown;
+    let didWork = false;
+    const sleep = deps.sleep ?? defaultSleep;
+
+    try {
+      const routing = await readRouting(deps.kv);
+      const localScopes =
+        deps.localScopes !== undefined ? await deps.localScopes() : [];
+      const deviceId = await deps.deviceId();
+      for (const connection of await deps.connections()) {
+        const provider = deps.providerFor(connection.providerId);
+        const signal = provider.signal;
+        if (signal === undefined || deps.localScopes === undefined) continue;
+        const retryAt = this.backoff.retryAt(connection.connectionId);
+        if (retryAt !== undefined && deps.clock.now() < retryAt) {
+          failed.push({
+            connectionId: connection.connectionId,
+            state: this.backoff.stateOf(connection.connectionId) ?? 'backoff',
+            retryAt,
+          });
+          continue;
+        }
+        try {
+          const seenKey = bellSeenKey(connection.connectionId);
+          const v = await signal.peek(connection);
+          const seen = await deps.kv.get<string | null>('session', seenKey);
+          if (v === null && seen === undefined) continue;
+          if (v === seen) continue;
+          if (!didWork) {
+            this.setStatus('running');
+            didWork = true;
+          }
+          const scopes = localScopes.filter((scope) => {
+            if (routing.frozenScopes.has(scope)) return false;
+            const target = routeForScope(routing, scope);
+            return (
+              target !== null &&
+              target.kind === 'connection' &&
+              target.connectionId === connection.connectionId
+            );
+          });
+          const pullDeps = {
+            provider,
+            connection,
+            kv: deps.kv,
+            store: deps.store,
+            sources: deps.sources,
+            blobs: deps.blobs,
+            deviceId,
+            clock: deps.clock,
+            fence: () => lock.verify(),
+            observeHlc: deps.observeHlc,
+            onRoutingChange: deps.onRoutingChange,
+            onAppliedBatch: (scope: Scope, dataClasses: readonly DataClass[]) => {
+              appliedScopes.add(scope);
+              for (const dc of dataClasses) appliedDataClasses.add(dc);
+            },
+          };
+          let pullResult = await runScopesPull(pullDeps, scopes);
+          if (
+            scopes.length > 0 &&
+            pullResult.outcomes.every((o) => o.devices.every((d) => d.filesRead === 0))
+          ) {
+            await sleep(deps.checkRetryDelayMs ?? DEFAULT_CHECK_RETRY_DELAY_MS);
+            pullResult = await runScopesPull(pullDeps, scopes);
+          }
+          await deps.kv.set('session', seenKey, v);
+          for (const outcome of pullResult.outcomes) {
+            if (outcome.devices.length > 0) scopesPulled.add(outcome.scope);
+          }
+          for (const dc of pullResult.appliedDataClasses) appliedDataClasses.add(dc);
+          for (const scope of pullResult.appliedScopes) appliedScopes.add(scope);
+          this.backoff.recordSuccess(connection.connectionId);
+        } catch (error) {
+          if (error instanceof CycleLockLostError) throw error;
+          const retryAt = this.backoff.recordFailure(
+            connection.connectionId,
+            deps.clock.now(),
+            engineStateForError(error),
+          );
+          failed.push({
+            connectionId: connection.connectionId,
+            state: engineStateForError(error),
+            retryAt,
+          });
+        }
+      }
+    } catch (error) {
+      if (error instanceof CycleLockLostError) {
+        lockLost = true;
+      } else {
+        cycleError = error;
+      }
+    }
+
+    const dataClasses = [...appliedDataClasses];
+    const scopes = [...appliedScopes];
+    if (dataClasses.length > 0 || scopes.length > 0) {
+      await deps.kv.set('session', SYNC_APPLIED_AT_KEY, deps.clock.now());
+      try {
+        await deps.onApplied?.({ dataClasses, scopes });
+      } catch (error) {
+        cycleError = cycleError ?? error;
+      }
+    }
+    const base = {
+      acquired: true,
+      lockLost,
+      scopesPushed: [],
+      ackedKeys: 0,
+      compactedScopes: [],
+      scopesPulled: [...scopesPulled],
+      appliedDataClasses: dataClasses,
+      appliedScopes: scopes,
+      waitingScopes: [],
+      waitingFor: {},
+      obligationErrors: [],
+      failed,
+    };
+    if (!didWork && failed.length === 0 && !lockLost && cycleError === undefined) {
+      return base;
+    }
+    return this.settleResult(base, cycleError, lockLost, failed);
   }
 
   private async runAll(lock: CycleLock, cycleId: string): Promise<CycleResult> {
@@ -317,36 +772,17 @@ export class SyncEngine {
       }
 
       const routing = await readRouting(deps.kv);
-      const buckets = new Map<ConnectionId, Map<Scope, PendingKey[]>>();
-      const scoped = [...groupPendingByScope(pending).entries()].sort(([a], [b]) =>
-        a < b ? -1 : a > b ? 1 : 0,
+      const routed = await this.routePending(
+        lock,
+        pending,
+        routing,
+        connected,
+        skipConnection,
+        waitingScopes,
+        waitingFor,
       );
-      for (const [scope, keys] of scoped) {
-        if (typeof scope !== 'string' || routing.frozenScopes.has(scope)) continue;
-        const target = routeForScope(routing, scope);
-        if (target === null) {
-          waitingScopes.add(scope);
-          continue;
-        }
-        if (target.kind === 'local') {
-          await lock.verify();
-          await resolvePendingKeys(deps.sources, keys);
-          await ackPendingKeys(deps.sources, keys);
-          ackedKeys += keys.length;
-          continue;
-        }
-        if (
-          !connected.has(target.connectionId) ||
-          skipConnection.has(target.connectionId)
-        ) {
-          waitingScopes.add(scope);
-          waitingFor[scope] = target.connectionId;
-          continue;
-        }
-        const bucket = buckets.get(target.connectionId) ?? new Map<Scope, PendingKey[]>();
-        bucket.set(scope, keys);
-        buckets.set(target.connectionId, bucket);
-      }
+      const buckets = routed.buckets;
+      ackedKeys += routed.ackedKeys;
 
       for (const connection of connected.values()) {
         if (skipConnection.has(connection.connectionId)) continue;
@@ -371,16 +807,20 @@ export class SyncEngine {
             buckets.get(connection.connectionId) ?? new Map(),
           );
           let scopeErrors = 0;
+          let wrote = false;
           for (const outcome of result.outcomes) {
             if (outcome.error !== undefined) scopeErrors += 1;
-            if (outcome.journalSeq !== undefined && !scopesPushed.includes(outcome.scope)) {
-              scopesPushed.push(outcome.scope);
+            if (outcome.journalSeq !== undefined) {
+              wrote = true;
+              if (!scopesPushed.includes(outcome.scope)) {
+                scopesPushed.push(outcome.scope);
+              }
             }
-            if (
-              outcome.snapshotN !== undefined &&
-              !compactedScopes.includes(outcome.scope)
-            ) {
-              compactedScopes.push(outcome.scope);
+            if (outcome.snapshotN !== undefined) {
+              wrote = true;
+              if (!compactedScopes.includes(outcome.scope)) {
+                compactedScopes.push(outcome.scope);
+              }
             }
             ackedKeys += outcome.ackedKeys;
           }
@@ -396,6 +836,13 @@ export class SyncEngine {
             });
           } else {
             this.backoff.recordSuccess(connection.connectionId);
+          }
+          if (wrote) {
+            try {
+              await this.bellBump(provider, connection);
+            } catch (error) {
+              if (scopeErrors === 0) throw error;
+            }
           }
 
           const pullScopes = await listPullScopes(provider, connection, routing);
@@ -546,27 +993,7 @@ export class SyncEngine {
       failed,
     };
 
-    if (cycleError !== undefined) {
-      this.cycleFailures += 1;
-      const retryAt = deps.clock.now() + backoffDelayMs(this.cycleFailures);
-      this.setStatus('backoff', { retryAt, lastError: describeError(cycleError) });
-      return { ...base, retryAt };
-    }
-    if (lockLost) {
-      this.setStatus('idle', { lastError: 'cycle lock lost' });
-      return base;
-    }
-    if (failed.length > 0) {
-      const retryAt = Math.min(...failed.map((f) => f.retryAt));
-      this.setStatus(failed[0]!.state, {
-        retryAt,
-        lastError: `${failed.length} connection(s) failed`,
-      });
-      return { ...base, retryAt };
-    }
-    this.cycleFailures = 0;
-    this.setStatus('idle');
-    return base;
+    return this.settleResult(base, cycleError, lockLost, failed);
   }
 
   private disconnectDeps(

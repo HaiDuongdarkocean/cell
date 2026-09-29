@@ -11,6 +11,7 @@ import type { MessageRequest, MessageResponse } from '@/entities/message';
 import type { SyncRuntime } from '@/entrypoints/background/syncRuntime';
 import { createSyncRuntime } from '@/entrypoints/background/syncRuntime';
 import { migrateProfileIdentity } from '@/features/sync/app/profileIdentityMigration';
+import { setOutboxDirtyNotifier } from '@/features/sync/adapters/local/idb/capture';
 
 jest.mock('@/entrypoints/background/syncRuntime', () => ({
   createSyncRuntime: jest.fn(),
@@ -24,16 +25,25 @@ jest.mock('@/features/srs/sync/srsSyncAccess', () => ({
   createSrsSyncAccess: jest.fn(() => ({})),
 }));
 
+jest.mock('@/features/sync/adapters/local/idb/capture', () => ({
+  setOutboxDirtyNotifier: jest.fn(),
+}));
+
 jest.mock('@/shared/lib/logger', () => ({
   logger: { warn: jest.fn(), info: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
 
 const mockedCreate = createSyncRuntime as jest.MockedFunction<typeof createSyncRuntime>;
 const mockedMigrate = migrateProfileIdentity as jest.MockedFunction<typeof migrateProfileIdentity>;
+const mockedSetOutboxDirtyNotifier = setOutboxDirtyNotifier as jest.MockedFunction<
+  typeof setOutboxDirtyNotifier
+>;
 
 const rt = {
   status: jest.fn(async (): Promise<unknown> => ({ enabled: true })),
   runCycle: jest.fn(async () => ({ acquired: true })),
+  runPush: jest.fn(async () => ({ acquired: true })),
+  checkRemote: jest.fn(async () => ({ acquired: true })),
   connect: jest.fn(async () => ({ ok: true })),
   disconnect: jest.fn(async () => ({ ok: true })),
   setSystemConnection: jest.fn(async () => ({ ok: true })),
@@ -230,14 +240,14 @@ describe('sync scheduling', () => {
     expect(mockedMigrate).toHaveBeenCalled();
   });
 
-  it('creates the tick alarm and fires a cycle when connected', async () => {
+  it('SC-14: creates the tick alarm with a 15-minute period and fires a cycle when connected', async () => {
     const { ctx } = makeContext();
     const chrome = installChrome();
     wire(ctx);
     await flush();
     expect(chrome.alarms.create).toHaveBeenCalledWith(
       SYNC_TICK_ALARM,
-      expect.objectContaining({ periodInMinutes: 5 }),
+      expect.objectContaining({ periodInMinutes: 15 }),
     );
     rt.runCycle.mockClear();
     rt.hasConnections.mockClear();
@@ -271,18 +281,100 @@ describe('sync scheduling', () => {
     expect(rt.hasConnections).not.toHaveBeenCalled();
   });
 
-  it('debounces synced storage-key changes into one cycle', async () => {
+  it('SC-14: debounces synced storage-key changes into one push, not a cycle', async () => {
     const { ctx } = makeContext();
     const chrome = installChrome();
     wire(ctx);
     await flush();
+    rt.runPush.mockClear();
     rt.runCycle.mockClear();
     const change = { oldValue: 1, newValue: 2 };
     chrome.storageOnChanged.fire({ themeMode: change }, 'local');
     chrome.storageOnChanged.fire({ syncMetaKV: change }, 'local');
-    jest.advanceTimersByTime(2_000);
+    jest.advanceTimersByTime(300);
     await flush();
-    expect(rt.runCycle).toHaveBeenCalledTimes(1);
+    expect(rt.runPush).toHaveBeenCalledTimes(1);
+    expect(rt.runCycle).not.toHaveBeenCalled();
+  });
+
+  it('SC-2: five signals inside 200ms fire one push ≥300ms after the last signal', async () => {
+    const { ctx } = makeContext();
+    const chrome = installChrome();
+    wire(ctx);
+    await flush();
+    rt.runPush.mockClear();
+    const change = { oldValue: 1, newValue: 2 };
+    for (let i = 0; i < 5; i += 1) {
+      chrome.storageOnChanged.fire({ settings: change }, 'local');
+      jest.advanceTimersByTime(40);
+    }
+    jest.advanceTimersByTime(259);
+    await flush();
+    expect(rt.runPush).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(1);
+    await flush();
+    expect(rt.runPush).toHaveBeenCalledTimes(1);
+  });
+
+  it('SC-2: a steady signal stream fires the push at least every 1500ms', async () => {
+    const { ctx } = makeContext();
+    const chrome = installChrome();
+    wire(ctx);
+    await flush();
+    rt.runPush.mockClear();
+    const change = { oldValue: 1, newValue: 2 };
+    for (let t = 0; t < 4_500; t += 100) {
+      chrome.storageOnChanged.fire({ settings: change }, 'local');
+      jest.advanceTimersByTime(100);
+    }
+    await flush();
+    expect(rt.runPush.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('SC-2: a burst ending 1400ms after the first signal fires at exactly 1500ms', async () => {
+    const { ctx } = makeContext();
+    const chrome = installChrome();
+    wire(ctx);
+    await flush();
+    rt.runPush.mockClear();
+    const change = { oldValue: 1, newValue: 2 };
+    for (let t = 0; t <= 1_400; t += 100) {
+      chrome.storageOnChanged.fire({ settings: change }, 'local');
+      jest.advanceTimersByTime(100);
+    }
+    await flush();
+    expect(rt.runPush).toHaveBeenCalledTimes(1);
+  });
+
+  it('SC-1: the outbox-dirty notifier wired by wireSyncScheduling reaches the debounced push directly', async () => {
+    const { ctx } = makeContext();
+    installChrome();
+    wire(ctx);
+    await flush();
+    rt.runPush.mockClear();
+    const notifier = mockedSetOutboxDirtyNotifier.mock.calls.at(-1)![0] as () => void;
+    expect(typeof notifier).toBe('function');
+    notifier();
+    jest.advanceTimersByTime(300);
+    await flush();
+    expect(rt.runPush).toHaveBeenCalledTimes(1);
+  });
+
+  it('SYNC_OUTBOX_DIRTY routes into the same debounced push', async () => {
+    const { ctx, handlers } = makeContext();
+    installChrome();
+    registerSyncHandlers(ctx);
+    wire(ctx);
+    await flush();
+    rt.runPush.mockClear();
+    const res = await handlers.get(MESSAGE_TYPES.SYNC_OUTBOX_DIRTY)!(
+      request(MESSAGE_TYPES.SYNC_OUTBOX_DIRTY, {}),
+    );
+    expect(res.success).toBe(true);
+    expect(rt.runPush).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(300);
+    await flush();
+    expect(rt.runPush).toHaveBeenCalledTimes(1);
   });
 
   it('refreshes sources when profile targets change, not for other settings writes', async () => {

@@ -26,7 +26,7 @@ export async function ensureChainHealthy(
   deps: ChainHealthDeps,
   scope: Scope,
   beforeSeq: number,
-): Promise<void> {
+): Promise<{ journalCount: number }> {
   const lastCommitted = beforeSeq - 1;
   const entries = await deps.provider.list(
     deps.connection,
@@ -41,10 +41,20 @@ export async function ensureChainHealthy(
     if (n !== null) snapshotNs.push({ n, path: entry.path });
   }
 
+  const uncoveredCount = (coveredBase: number): number => {
+    let count = 0;
+    for (const seq of journalSeqs) {
+      if (seq > coveredBase) count += 1;
+    }
+    return count;
+  };
+
   let coveredBase = 0;
   let remoteTip = journalSeqs.size > 0 ? Math.max(...journalSeqs) : 0;
   const newest = snapshotNs.sort((a, b) => a.n - b.n)[snapshotNs.length - 1];
-  if (lastCommitted <= 0 && newest === undefined && remoteTip === 0) return;
+  if (lastCommitted <= 0 && newest === undefined && remoteTip === 0) {
+    return { journalCount: 0 };
+  }
   if (newest !== undefined) {
     let coversSeq: number | undefined;
     try {
@@ -55,7 +65,7 @@ export async function ensureChainHealthy(
     }
     if (coversSeq === undefined) {
       await heal(deps, scope, remoteTip, lastCommitted);
-      return;
+      return { journalCount: 0 };
     }
     coveredBase = coversSeq;
     remoteTip = Math.max(remoteTip, coversSeq);
@@ -70,8 +80,9 @@ export async function ensureChainHealthy(
     }
   }
 
-  if (!counterReset && contiguous) return;
+  if (!counterReset && contiguous) return { journalCount: uncoveredCount(coveredBase) };
   await heal(deps, scope, remoteTip, lastCommitted);
+  return { journalCount: 0 };
 }
 
 async function heal(
