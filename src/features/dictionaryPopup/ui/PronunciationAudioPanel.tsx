@@ -60,8 +60,9 @@ export function PronunciationAudioPanel({
     }];
   }, [items, activeGroup, term, sentence]);
 
-  const playUrl = useCallback((url: string, times: number): void => {
-    if (times <= 0) return;
+  const playQueue = useCallback((urls: readonly string[]): void => {
+    const url = urls[0];
+    if (!url) return;
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -70,7 +71,7 @@ export function PronunciationAudioPanel({
     audioRef.current = audio;
     audio.addEventListener('ended', () => {
       if (audioRef.current === audio) audioRef.current = null;
-      playUrl(url, times - 1);
+      playQueue(urls.slice(1));
     });
     audio.addEventListener('pause', () => { if (audioRef.current === audio) audioRef.current = null; }, { once: true });
     void audio.play().catch(() => { /* best-effort */ });
@@ -82,19 +83,23 @@ export function PronunciationAudioPanel({
       if (item.kind === 'word') onTtsWord(); else onTtsSentence();
       return;
     }
-    playUrl(itemUrl, 1);
-  }, [getUrl, onTtsWord, onTtsSentence, playUrl]);
+    playQueue([itemUrl]);
+  }, [getUrl, onTtsWord, onTtsSentence, playQueue]);
 
   const autoplayedTermRef = useRef<string | null>(null);
   useEffect(() => {
     if (loading || autoplayCount <= 0 || autoplayedTermRef.current === term) return;
     autoplayedTermRef.current = term;
     if (audioRef.current) return;
-    const wordItem = items.find((i) => i.kind === 'word');
-    const url = wordItem ? getUrl(wordItem) : undefined;
-    if (url) playUrl(url, autoplayCount);
+    const wordUrls = items
+      .filter((i) => i.kind === 'word')
+      .slice(0, 3)
+      .slice(0, autoplayCount)
+      .map(getUrl)
+      .filter((u): u is string => Boolean(u));
+    if (wordUrls.length > 0) playQueue(wordUrls);
     else onTtsWord();
-  }, [loading, items, term, autoplayCount, getUrl, playUrl, onTtsWord]);
+  }, [loading, items, term, autoplayCount, getUrl, playQueue, onTtsWord]);
 
   return (
     <div className={styles.cellAudio} data-cell-id="dictionary-audio-panel">

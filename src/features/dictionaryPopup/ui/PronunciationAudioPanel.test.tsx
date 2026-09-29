@@ -313,24 +313,53 @@ describe('PronunciationAudioPanel', () => {
     }
   });
 
-  it('repeats the word item autoplayCount times via the ended chain', () => {
+  it('plays the displayed word items in sequence via the ended chain', () => {
     const spy = audioPlaySpy();
     try {
-      const item = makeAudio('w1', 'word', 'Word · forvo', 'https://audio/w1');
+      const items = [
+        makeAudio('w1', 'word', 'US', 'https://audio/w1'),
+        makeAudio('w2', 'word', 'UK', 'https://audio/w2'),
+        makeAudio('w3', 'word', 'AU', 'https://audio/w3'),
+      ];
       render(
         <PronunciationAudioPanel
           {...baseProps}
-          items={[item]}
+          items={items}
           autoplayCount={3}
         />,
       );
-      expect(spy.plays).toBe(1);
+      expect(spy.constructed).toEqual(['https://audio/w1']);
       act(() => { spy.els[0]!.dispatchEvent(new Event('ended')); });
-      expect(spy.plays).toBe(2);
+      expect(spy.constructed).toEqual(['https://audio/w1', 'https://audio/w2']);
       act(() => { spy.els[1]!.dispatchEvent(new Event('ended')); });
-      expect(spy.plays).toBe(3);
+      expect(spy.constructed).toEqual(['https://audio/w1', 'https://audio/w2', 'https://audio/w3']);
       act(() => { spy.els[2]!.dispatchEvent(new Event('ended')); });
       expect(spy.plays).toBe(3);
+    } finally {
+      spy.restore();
+    }
+  });
+
+  it('plays only the first autoplayCount items', () => {
+    const spy = audioPlaySpy();
+    try {
+      const items = [
+        makeAudio('w1', 'word', 'US', 'https://audio/w1'),
+        makeAudio('w2', 'word', 'UK', 'https://audio/w2'),
+        makeAudio('w3', 'word', 'AU', 'https://audio/w3'),
+      ];
+      render(
+        <PronunciationAudioPanel
+          {...baseProps}
+          items={items}
+          autoplayCount={2}
+        />,
+      );
+      expect(spy.constructed).toEqual(['https://audio/w1']);
+      act(() => { spy.els[0]!.dispatchEvent(new Event('ended')); });
+      expect(spy.constructed).toEqual(['https://audio/w1', 'https://audio/w2']);
+      act(() => { spy.els[1]!.dispatchEvent(new Event('ended')); });
+      expect(spy.plays).toBe(2);
     } finally {
       spy.restore();
     }

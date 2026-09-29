@@ -535,7 +535,7 @@
   "audio.tester.playing": "Đang phát: $1",
   "audio.tester.failed": "Không phát được: $1",
   "audio.autoplay.label": "Tự phát",
-  "audio.autoplay.aria": "Số lần tự phát",
+  "audio.autoplay.aria": "Số audio tự phát",
   "audio.engine.localFile": "Gói âm thanh trên máy",
   "audio.engine.native": "Âm thanh cộng đồng",
   "audio.engine.supertonic": "Giọng đọc đám mây",

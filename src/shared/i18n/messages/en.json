@@ -535,7 +535,7 @@
   "audio.tester.playing": "Playing: $1",
   "audio.tester.failed": "Couldn't play audio: $1",
   "audio.autoplay.label": "Autoplay",
-  "audio.autoplay.aria": "Autoplay count",
+  "audio.autoplay.aria": "Number of audios to autoplay",
   "audio.engine.localFile": "Local audio files",
   "audio.engine.native": "Community audio",
   "audio.engine.supertonic": "Cloud voices",
