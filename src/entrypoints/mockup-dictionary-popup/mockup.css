@@ -155,10 +155,10 @@ body {
   cursor: pointer;
   text-transform: lowercase;
 }
-.mkStatus--unknown { background: var(--color-primary-subtle, rgba(94,106,210,0.15)); color: var(--color-text-accent, #7c87e0); }
-.mkStatus--tracking { background: var(--color-warning-subtle, rgba(245,185,85,0.15)); color: var(--color-warning, #f5b955); }
-.mkStatus--known { background: var(--color-success-subtle, rgba(95,211,137,0.15)); color: var(--color-success, #5fd389); }
-.mkStatus--ignore { background: var(--color-bg-elevated, #262b31); color: var(--color-text-tertiary); }
+.mkStatus--unknown { background: var(--chip-status-unknown-bg); color: var(--chip-status-unknown-fg); }
+.mkStatus--tracking { background: var(--chip-status-tracking-bg); color: var(--chip-status-tracking-fg); }
+.mkStatus--known { background: var(--chip-status-known-bg); color: var(--chip-status-known-fg); }
+.mkStatus--ignore { background: var(--chip-status-ignore-bg); color: var(--chip-status-ignore-fg); }
 .mkFreq {
   font-size: var(--font-size-xs);
   padding: 2px var(--space-2);

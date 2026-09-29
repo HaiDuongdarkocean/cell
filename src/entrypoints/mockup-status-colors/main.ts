@@ -31,34 +31,13 @@ interface Palette {
   id: string;
   title: string;
   bar: Record<Status, string>;
-  chip: Record<Status, { bg: string; fg: string }>;
-  overrides: boolean;
 }
 
 const PALETTES: Palette[] = [
   {
-    id: 'current',
-    title: 'Current (muted)',
-    bar: { unknown: '#A63C3C', tracking: '#9E6A1E', known: '#1F5C32', ignore: '#4A4A4F' },
-    chip: {
-      unknown: { bg: '#F6C6C0', fg: '#452229' },
-      tracking: { bg: '#F3D9A6', fg: '#3E3116' },
-      known: { bg: '#A9E4C0', fg: '#1E3A29' },
-      ignore: { bg: '#DCDFE4', fg: '#2B303B' },
-    },
-    overrides: false,
-  },
-  {
-    id: 'proposed',
-    title: 'Proposed — vivid, anchor unknown #FF0033',
+    id: 'live',
+    title: 'Live — production tokens (synced: bar + chip derive from one base hue)',
     bar: { unknown: '#FF0033', tracking: '#FF9500', known: '#00C853', ignore: '#8E8E93' },
-    chip: {
-      unknown: { bg: '#FFD9DF', fg: '#8A001C' },
-      tracking: { bg: '#FFE8CC', fg: '#7A4300' },
-      known: { bg: '#C8F5D9', fg: '#005C26' },
-      ignore: { bg: '#E9E9EC', fg: '#44464A' },
-    },
-    overrides: true,
   },
 ];
 
@@ -138,23 +117,6 @@ function buildPaletteSection(palette: Palette): HTMLElement {
 
   section.appendChild(buildCard(palette, 'light'));
   section.appendChild(buildCard(palette, 'dark'));
-
-  if (palette.overrides) {
-    const vars = STATUSES.map(
-      (s) => `  --cell-token-status-${s}: ${palette.bar[s]};`,
-    ).join('\n');
-    const chipVars = STATUSES.map(
-      (s) =>
-        `  --chip-status-${s}-bg: ${palette.chip[s].bg};\n  --chip-status-${s}-fg: ${palette.chip[s].fg};`,
-    ).join('\n');
-    const override = document.createElement('style');
-    override.textContent = `
-.palette[data-palette="${palette.id}"] [data-theme] {
-${vars}
-${chipVars}
-}`;
-    section.appendChild(override);
-  }
 
   return section;
 }

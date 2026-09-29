@@ -207,7 +207,7 @@ function validateContrastPair(label, rawFg, rawBg, mode, tokenMap, backdrop, isL
   }
 }
 
-function validateContrastPairs(mode, core, derived) {
+function validateContrastPairs(mode, core, derived, component = {}) {
   const largeTextPairs = new Set([
     'Text Secondary / Background',
     'Text Muted / Background',
@@ -241,6 +241,12 @@ function validateContrastPairs(mode, core, derived) {
     ['Frequency Advanced / Advanced BG', derived['color-token-freq-advanced-fg'], derived['color-token-freq-advanced-bg']],
     ['Frequency Rare / Rare BG', derived['color-token-freq-rare-fg'], derived['color-token-freq-rare-bg']],
   ];
+  const chipStatus = component['chip-status'];
+  if (chipStatus) {
+    for (const status of ['unknown', 'tracking', 'known', 'ignore']) {
+      pairs.push([`Chip Status ${status}`, chipStatus[`${status}-fg`], chipStatus[`${status}-bg`]]);
+    }
+  }
   if (derived['color-primary-emphasis']) {
     pairs.push(
       ['On Primary Emphasis / Primary Emphasis', derived['color-on-primary-emphasis'], derived['color-primary-emphasis']],
@@ -305,8 +311,8 @@ async function main() {
   const darkColorBlock = buildColorBlock(tokens.core.dark, tokens.derived.dark, 'dark');
 
   const contrastFailures = [
-    ...validateContrastPairs('light', tokens.core.light, tokens.derived.light),
-    ...validateContrastPairs('dark', tokens.core.dark, tokens.derived.dark),
+    ...validateContrastPairs('light', tokens.core.light, tokens.derived.light, tokens.component),
+    ...validateContrastPairs('dark', tokens.core.dark, tokens.derived.dark, tokens.component),
   ];
 
   // Per-preset blocks: merge default core/derived with the preset override.
@@ -319,7 +325,7 @@ async function main() {
       // Ensure the computed --color-text-on-primary matches the merged palette.
       mergedDerived['color-text-on-primary'] = pickPrimaryForeground(mergedCore);
       const colorBlock = buildColorBlock(mergedCore, mergedDerived, mode);
-      contrastFailures.push(...validateContrastPairs(mode, mergedCore, mergedDerived));
+      contrastFailures.push(...validateContrastPairs(mode, mergedCore, mergedDerived, tokens.component));
       presetBlocks.push(`[data-preset="${name}"][data-theme="${mode}"] {\n${colorBlock}\n${componentBlock}\n}`);
     }
   }

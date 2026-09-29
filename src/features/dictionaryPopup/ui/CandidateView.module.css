@@ -121,9 +121,10 @@
   filter: brightness(0.95);
 }
 
-/* Theme-invariant pastel chips (--chip-status-* literals, same in every
-   theme): soft pastel fill + deep-shade text, and stays independent of
-   --color-token-status-* which also colors tokenized words. */
+/* Status chips derive from --color-token-status-*: bg is the status tint,
+   fg is the status color mixed toward --color-text (55%) — one base hue per
+   status keeps every surface in sync, and the mix is WCAG-validated in
+   generate-tokens (Chip Status pairs). */
 .cellHeaderSecond .cellHeaderStatus--unknown {
   background: var(--chip-status-unknown-bg);
   color: var(--chip-status-unknown-fg);
