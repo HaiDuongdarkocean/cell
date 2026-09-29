@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { t } from '@/shared/i18n';
-import { Button, Icon, ListItem, Popover } from '@/shared/ui';
+import { Button, Icon, ListItem, Popover, pushEscapeLayer } from '@/shared/ui';
 import { PLAYBACK_SPEEDS, type PlaybackSpeed } from '@/entities/studyMode/types';
 import styles from './SpeedPill.module.css';
 
@@ -23,6 +23,7 @@ function speedOptionId(speed: PlaybackSpeed): string {
 export function SpeedPill({ speed, onChange }: SpeedPillProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const valueRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const decrease = (): void => {
     const index = SPEEDS.indexOf(speed);
@@ -43,11 +44,32 @@ export function SpeedPill({ speed, onChange }: SpeedPillProps): React.JSX.Elemen
 
   useEffect(() => {
     if (!isOpen) return;
-    const onKeyDown = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') setIsOpen(false);
+    const doc = valueRef.current?.ownerDocument ?? document;
+    const win = doc.defaultView ?? window;
+    const rootNode = valueRef.current?.getRootNode();
+    const scope: Document | ShadowRoot = rootNode instanceof ShadowRoot ? rootNode : doc;
+    const onPointerDown = (e: Event): void => {
+      const path = e.composedPath();
+      if (!path.includes(valueRef.current as Node) && !path.includes(menuRef.current as Node)) {
+        setIsOpen(false);
+      }
     };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
+    const onScroll = (): void => setIsOpen(false);
+    const popEscape = pushEscapeLayer((e) => {
+      e.preventDefault();
+      setIsOpen(false);
+      valueRef.current?.focus();
+    }, doc);
+    doc.addEventListener('mousedown', onPointerDown);
+    win.addEventListener('scroll', onScroll, true);
+    // scroll is non-composed — it never crosses the shadow boundary.
+    if (scope !== doc) scope.addEventListener('scroll', onScroll, true);
+    return () => {
+      popEscape();
+      doc.removeEventListener('mousedown', onPointerDown);
+      win.removeEventListener('scroll', onScroll, true);
+      if (scope !== doc) scope.removeEventListener('scroll', onScroll, true);
+    };
   }, [isOpen]);
 
   const SpeedList = (): React.JSX.Element => (
@@ -116,6 +138,7 @@ export function SpeedPill({ speed, onChange }: SpeedPillProps): React.JSX.Elemen
       <Popover
         open={isOpen}
         triggerRef={valueRef}
+        contentRef={menuRef}
         role="listbox"
         aria-label={t('studyModes.speed.aria')}
         aria-activedescendant={speedOptionId(speed)}

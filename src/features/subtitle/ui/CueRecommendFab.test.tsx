@@ -102,22 +102,24 @@ describe('CueRecommendFab', () => {
 
     fireEvent.keyDown(menu, { key: 'ArrowDown' });
     fireEvent.keyDown(menu, { key: 'ArrowDown' });
-    fireEvent.keyDown(menu, { key: 'Enter' });
+
+    const focused = document.activeElement as HTMLElement;
+    expect(focused).toHaveAttribute('role', 'menuitemradio');
+    fireEvent.click(focused);
 
     expect(onModeChange).toHaveBeenCalledWith('tracking');
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
-  it('opens on Enter from the trigger and navigates with arrow keys', () => {
+  it('opens on Enter from the trigger and focuses the checked item', () => {
     renderFab({ mode: 'allKnown' });
 
     const fab = screen.getByTestId('cue-filter-fab');
     fireEvent.keyDown(fab, { key: 'Enter' });
 
-    const menu = screen.getByRole('menu');
     const items = screen.getAllByRole('menuitemradio');
     const active = items.findIndex((el) => el.getAttribute('aria-checked') === 'true');
     expect(active).toBe(3);
-    expect(menu.getAttribute('aria-activedescendant')).toContain('allKnown');
+    expect(document.activeElement).toBe(items[3]);
   });
 });

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { Popover } from './Popover';
+import { pushEscapeLayer } from './escapeLayerStack';
 import type { MenuAlign } from './useMenuPlacement';
 import styles from './Menu.module.css';
 
@@ -45,48 +46,61 @@ export function Menu({
       }
     };
     const handleScroll = (): void => onClose();
-    const handleKeyDown = (e: Event): void => {
-      if ((e as globalThis.KeyboardEvent).key === 'Escape') onClose();
-    };
     const rootNode = triggerRef.current?.getRootNode();
     const scope: Document | ShadowRoot = rootNode instanceof ShadowRoot ? rootNode : doc;
+    // Shared Escape stack (capture phase): the menu consumes the key before
+    // ancestor surfaces (e.g. UniversalPanel) — one Escape, one layer.
+    const popEscapeLayer = pushEscapeLayer((e) => {
+      e.preventDefault();
+      onClose();
+      triggerRef.current?.focus();
+    }, doc);
+    const selected = menuRef.current?.querySelector<HTMLElement>('[aria-checked="true"]');
+    (selected ?? menuRef.current?.querySelector<HTMLElement>('[role^="menuitem"]'))?.focus();
     doc.addEventListener('mousedown', handlePointerDown);
-    doc.addEventListener('keydown', handleKeyDown);
     win.addEventListener('scroll', handleScroll, true);
     // scroll is non-composed: it never crosses the shadow boundary, so the
     // window listener misses .tab scrolling inside the panel's shadow root.
     if (scope !== doc) scope.addEventListener('scroll', handleScroll, true);
     return () => {
+      popEscapeLayer();
       doc.removeEventListener('mousedown', handlePointerDown);
-      doc.removeEventListener('keydown', handleKeyDown);
       win.removeEventListener('scroll', handleScroll, true);
       if (scope !== doc) scope.removeEventListener('scroll', handleScroll, true);
     };
   }, [open, onClose, triggerRef]);
 
-  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>): void => {
-    const keys = ['ArrowDown', 'ArrowUp', 'Home', 'End'];
-    if (!keys.includes(e.key)) return;
-    const items = Array.from(
-      menuRef.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]:not(:disabled)') ?? [],
-    );
-    if (items.length === 0) return;
-    e.preventDefault();
-    const active = menuRef.current?.ownerDocument.activeElement as HTMLElement | null;
-    const index = active ? items.indexOf(active) : -1;
-    const last = items.length - 1;
-    const next =
-      e.key === 'ArrowDown'
-        ? (index + 1) % items.length
-        : e.key === 'ArrowUp'
-          ? index <= 0
-            ? last
-            : index - 1
-          : e.key === 'Home'
-            ? 0
-            : last;
-    items[next]?.focus();
-  }, []);
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLDivElement>): void => {
+      const keys = ['ArrowDown', 'ArrowUp', 'Home', 'End'];
+      if (!keys.includes(e.key)) return;
+      const items = Array.from(
+        menuRef.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]:not(:disabled)') ?? [],
+      );
+      if (items.length === 0) return;
+      e.preventDefault();
+      // Inside a shadow root, document.activeElement is the host — the real
+      // focused item lives on the root node's activeElement.
+      const root = triggerRef.current?.getRootNode();
+      const doc = triggerRef.current?.ownerDocument ?? document;
+      const scope: Document | ShadowRoot = root instanceof ShadowRoot ? root : doc;
+      const active = scope.activeElement as HTMLElement | null;
+      const index = active ? items.indexOf(active) : -1;
+      const last = items.length - 1;
+      const next =
+        e.key === 'ArrowDown'
+          ? (index + 1) % items.length
+          : e.key === 'ArrowUp'
+            ? index <= 0
+              ? last
+              : index - 1
+            : e.key === 'Home'
+              ? 0
+              : last;
+      items[next]?.focus();
+    },
+    [triggerRef],
+  );
 
   return (
     <Popover

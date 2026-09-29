@@ -171,11 +171,17 @@ export function Select({
       }
     };
     const handleScroll = (): void => closeMenu();
+    const rootNode = rootRef.current?.getRootNode();
+    const scope: Document | ShadowRoot = rootNode instanceof ShadowRoot ? rootNode : doc;
     doc.addEventListener('mousedown', handleClickOutside);
     win.addEventListener('scroll', handleScroll, true);
+    // scroll is non-composed — it never crosses the shadow boundary, so the
+    // window listener misses scrolls inside the panel's shadow root.
+    if (scope !== doc) scope.addEventListener('scroll', handleScroll, true);
     return () => {
       doc.removeEventListener('mousedown', handleClickOutside);
       win.removeEventListener('scroll', handleScroll, true);
+      if (scope !== doc) scope.removeEventListener('scroll', handleScroll, true);
     };
   }, [isOpen, closeMenu]);
 

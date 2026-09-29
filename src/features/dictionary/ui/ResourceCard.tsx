@@ -10,13 +10,13 @@
 
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { getLocale, t, type MessageKey } from '@/shared/i18n';
-import { Card, Checkbox, Dialog, Input, Popover } from '@/shared/ui';
+import { Card, Checkbox, Dialog, Input } from '@/shared/ui';
 import { Button } from '@/shared/ui/Button';
 import { DragHandle } from '@/shared/ui/DragHandle';
+import { Menu, MenuItem } from '@/shared/ui/Menu';
 import { Toggle } from '@/shared/ui/Toggle';
 import { Spinner } from '@/shared/ui/Spinner';
 import { Icon } from '@/shared/ui/Icon';
-import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import {
   getResourceComponents,
   renameResource,
@@ -94,7 +94,7 @@ export function ResourceCard({
   const committingRef = useRef(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const gripWrapRef = useRef<HTMLSpanElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+
   const gripDownY = useRef<number | null>(null);
   const displayName = displayResourceName(resource.name);
 
@@ -113,30 +113,6 @@ export function ResourceCard({
       .catch(() => { if (alive) setComponents([]); });
     return () => { alive = false; };
   }, [isDict, langCode, resourceId, components]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const anchor = gripWrapRef.current;
-    const doc = anchor?.ownerDocument ?? document;
-    const win = doc.defaultView ?? window;
-    const rootNode = anchor?.getRootNode();
-    const scope: Document | ShadowRoot = rootNode instanceof ShadowRoot ? rootNode : doc;
-    const onDocDown = (e: Event): void => {
-      const target = e.target as Node;
-      if (!gripWrapRef.current?.contains(target) && !menuRef.current?.contains(target)) {
-        setMenuOpen(false);
-      }
-    };
-    const onScroll = (): void => setMenuOpen(false);
-    scope.addEventListener('mousedown', onDocDown);
-    win.addEventListener('scroll', onScroll, true);
-    const popEscape = pushEscapeLayer(() => setMenuOpen(false), doc);
-    return () => {
-      scope.removeEventListener('mousedown', onDocDown);
-      win.removeEventListener('scroll', onScroll, true);
-      popEscape();
-    };
-  }, [menuOpen]);
 
   const handleToggle = (next: boolean): void => {
     if (deletingNow || resourceId == null || toggling) return;
@@ -351,27 +327,20 @@ export function ResourceCard({
         )}
       </div>
 
-      <Popover
+      <Menu
         open={menuOpen}
+        onClose={() => setMenuOpen(false)}
         triggerRef={gripWrapRef}
-        role="menu"
-        aria-label={t('resources.card.menu', [displayName])}
-        menuAlign="left"
-        className={styles.menuSurface}
+        ariaLabel={t('resources.card.menu', [displayName])}
       >
-        <div ref={menuRef} className={styles.menu}>
-          <button
-            type="button"
-            role="menuitem"
-            className={styles.menuItem}
-            onClick={() => { setMenuOpen(false); setDetailOpen(true); }}
-            data-cell-id={`menu-detail-${resourceId}`}
-          >
-            <Icon name="info" size="xs" />
-            {t('resources.menu.detail')}
-          </button>
-        </div>
-      </Popover>
+        <MenuItem
+          icon={<Icon name="info" size="xs" />}
+          onSelect={() => { setMenuOpen(false); setDetailOpen(true); }}
+          data-cell-id={`menu-detail-${resourceId}`}
+        >
+          {t('resources.menu.detail')}
+        </MenuItem>
+      </Menu>
 
       <Dialog
         open={detailOpen}
