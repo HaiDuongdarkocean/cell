@@ -1,5 +1,5 @@
 {
-  "active": "srs-flashcard-redesign",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -704,7 +704,7 @@
       "updated": "2026-09-30T05:56:54.284Z"
     },
     "srs-flashcard-redesign": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "interactive",
       "uiSurface": "yes",
       "artifacts": {
@@ -739,12 +739,9 @@
       "awaiting": null,
       "resolutions": [],
       "loops": 0,
-      "owner": {
-        "id": "devin-srs-redesign-33755",
-        "since": "2026-09-30T06:13:02.677Z"
-      },
+      "owner": null,
       "worktree": null,
-      "updated": "2026-09-30T06:37:52.264Z"
+      "updated": "2026-09-30T06:39:43.515Z"
     }
   }
 }

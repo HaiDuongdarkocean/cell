@@ -23,4 +23,6 @@ Item `srs-flashcard-redesign`, stage `deliver` → ship signoff.
 - M3 spelling mismatch diff — batch sau.
 - `border.default` primitive chưa có — dùng `derived.*.border`.
 
-**Signoff: APPROVED — ready to ship.**
+VERDICT: SIGN_OFF
+
+Ready to ship.

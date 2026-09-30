@@ -46,4 +46,6 @@ E2E flow cập nhật theo chrome mới: `page.getByRole('button', {name:'Show a
 - `border` token primitive `border.default` chưa có trong tokens.json — các `1px solid var(--color-border)` hiện dùng `derived.*.border`; nếu sau này thêm `border.default` không cần sửa file này.
 - `data-component`/`data-card` test hooks giữ trên DOM production — chấp nhận (không ảnh hưởng UX, e2e cần).
 
-**VERDICT: PASS** — spec FR-1..5 + AC-1..10 + design AC đủ bằng chứng, gates xanh, real-Chrome verified, không regression.
+VERDICT: PASS
+
+Spec FR-1..5 + AC-1..10 + design AC đủ bằng chứng, gates xanh, real-Chrome verified, không regression.
