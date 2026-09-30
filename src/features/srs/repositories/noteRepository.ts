@@ -51,6 +51,33 @@ export async function putNote(note: SrsNote): Promise<SrsNote> {
   });
 }
 
+/** Import path: Zod-validated + sync-captured, but skips the targetWord+notetype uniqueness guard (imported sibling clones share both). */
+export async function putNoteForImport(note: SrsNote): Promise<SrsNote> {
+  const parsed = SrsNoteSchema.safeParse(note);
+  if (!parsed.success) {
+    throw new SrsError('INVALID_INPUT', parsed.error.issues.map((e) => e.message).join('; '));
+  }
+  await ensureSyncRuntime();
+  return withStore(WRITE_STORES, async (store, tx) => {
+    const captured = isCaptureEnabled();
+    const prev = captured ? await getById<SrsNote>(store, note.id) : undefined;
+    const scope = captured
+      ? ((await scopeOfDeck(tx, note.deckId)) ??
+        (await readRecordMeta(store, `notes:${note.id}`))?.scope ??
+        null)
+      : null;
+    await putRecord(store, note);
+    if (captured) {
+      await captureChange(store, { scope, dataClass: 'srsNote', key: `notes:${note.id}`, op: 'put' });
+      const prevScope = prev && prev.deckId !== note.deckId ? await scopeOfDeck(tx, prev.deckId) : null;
+      if (prevScope && prevScope !== scope) {
+        await captureChange(store, { scope: prevScope, dataClass: 'srsNote', key: `notes:${note.id}`, op: 'delete' });
+      }
+    }
+    return Object.freeze(note);
+  });
+}
+
 export async function deleteNote(id: string): Promise<void> {
   await ensureSyncRuntime();
   return withStore(WRITE_STORES, async (store, tx) => {

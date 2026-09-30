@@ -266,7 +266,14 @@ export async function parseApkg(zipBytes: Uint8Array): Promise<NormalizedAnkiDat
       notes,
       cards,
       revlog,
-      media: { names: [...mediaMap.keys()], resolve },
+      media: {
+        names: [...mediaMap.keys()],
+        resolve,
+        size: (filename) => {
+          const idx = mediaMap.get(filename) ?? (entries[filename] ? filename : null);
+          return idx !== null ? entries[idx]?.byteLength ?? null : null;
+        },
+      },
     };
   } finally {
     db.close();

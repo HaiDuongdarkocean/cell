@@ -51,6 +51,33 @@ export async function putCard(card: SrsCard): Promise<SrsCard> {
   });
 }
 
+/** Import path: Zod-validated + sync-captured, but skips the noteId+deckId uniqueness guard (imported sibling cards intentionally share a note's deck). */
+export async function putCardForImport(card: SrsCard): Promise<SrsCard> {
+  const parsed = SrsCardSchema.safeParse(card);
+  if (!parsed.success) {
+    throw new SrsError('INVALID_INPUT', parsed.error.issues.map((e) => e.message).join('; '));
+  }
+  await ensureSyncRuntime();
+  return withStore(WRITE_STORES, async (store, tx) => {
+    const captured = isCaptureEnabled();
+    const prev = captured ? await getById<SrsCard>(store, card.id) : undefined;
+    const scope = captured
+      ? ((await scopeOfDeck(tx, card.deckId)) ??
+        (await readRecordMeta(store, `cards:${card.id}`))?.scope ??
+        null)
+      : null;
+    await putRecord(store, card);
+    if (captured) {
+      await captureChange(store, { scope, dataClass: 'srsCard', key: `cards:${card.id}`, op: 'put' });
+      const prevScope = prev && prev.deckId !== card.deckId ? await scopeOfDeck(tx, prev.deckId) : null;
+      if (prevScope && prevScope !== scope) {
+        await captureChange(store, { scope: prevScope, dataClass: 'srsCard', key: `cards:${card.id}`, op: 'delete' });
+      }
+    }
+    return Object.freeze(card);
+  });
+}
+
 export async function deleteCard(id: string): Promise<void> {
   await ensureSyncRuntime();
   return withStore(WRITE_STORES, async (store, tx) => {

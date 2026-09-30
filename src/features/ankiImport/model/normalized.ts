@@ -77,6 +77,8 @@ export interface NormalizedAnkiData {
   readonly media: {
     readonly names: readonly string[];
     readonly resolve: MediaResolver;
+    /** Uncompressed byte size when the source knows it (apkg zip entry); null otherwise. */
+    readonly size?: (filename: string) => number | null;
   };
 }
 

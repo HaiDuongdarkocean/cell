@@ -150,6 +150,12 @@ export const SrsStudyConfigSchema = z.object({
 
 // === Note / Card / Component schemas ===
 
+export const SrsImportSourceSchema = z.object({
+  provider: z.literal('anki'),
+  cardId: z.number(),
+  noteId: z.number(),
+});
+
 export const SrsNoteSchema = z.object({
   id: z.string(),
   notetypeId: z.string(),
@@ -158,6 +164,7 @@ export const SrsNoteSchema = z.object({
   fields: z.record(z.string(), SrsFieldValueSchema),
   tags: z.array(z.string()).optional(),
   createdAt: z.number().int(),
+  importSource: SrsImportSourceSchema.optional(),
 });
 
 export const SrsFsrsSerializedStateSchema = z.object({
@@ -199,6 +206,7 @@ export const SrsCardSchema = z.object({
   createdAt: z.number().int(),
   nextDue: z.string(),
   maintenanceMode: z.boolean(),
+  importSource: SrsImportSourceSchema.optional(),
 });
 
 // === Review / Session / Stimulus schemas ===

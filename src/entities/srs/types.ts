@@ -106,6 +106,13 @@ export interface SrsBackTemplate {
 
 // === Note / Field Values ===
 
+/** Provenance marker for entities created by an external import (dedup + audit). */
+export interface SrsImportSource {
+  readonly provider: 'anki';
+  readonly cardId: number;
+  readonly noteId: number;
+}
+
 export interface SrsNote {
   readonly id: string;
   readonly notetypeId: string;
@@ -114,6 +121,7 @@ export interface SrsNote {
   readonly fields: Record<string, SrsFieldValue>; // key = field id
   readonly tags?: readonly string[];
   readonly createdAt: number;
+  readonly importSource?: SrsImportSource;
 }
 
 export type SrsFieldValue =
@@ -139,6 +147,7 @@ export interface SrsCard {
   readonly createdAt: number; // epoch ms
   readonly nextDue: string; // ISO, = min(effectiveDue across components)
   readonly maintenanceMode: boolean; // persisted, derived on write
+  readonly importSource?: SrsImportSource;
 }
 
 export interface SrsMemoryComponent {
