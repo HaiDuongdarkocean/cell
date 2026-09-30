@@ -132,12 +132,17 @@ interface PassWaiter {
 }
 
 const DEFAULT_CHECK_RETRY_DELAY_MS = 2000;
+const MAX_BELL_EMPTY_PULLS = 16;
 
 const defaultSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 function bellSeenKey(connectionId: ConnectionId): string {
   return `syncBellSeen:${connectionId}`;
+}
+
+function bellPendingKey(connectionId: ConnectionId): string {
+  return `syncBellPending:${connectionId}`;
 }
 
 export class SyncEngine {
@@ -297,7 +302,10 @@ export class SyncEngine {
     const before = await signal.peek(connection);
     const after = await signal.ring(connection);
     const seen = await this.deps.kv.get('session', key);
-    if (before === seen) await this.deps.kv.set('session', key, after);
+    if (before === (seen ?? null)) {
+      await this.deps.kv.set('session', key, after);
+      await this.deps.kv.del('session', bellPendingKey(connection.connectionId));
+    }
   }
 
   private async routePending(
@@ -612,7 +620,25 @@ export class SyncEngine {
             await sleep(deps.checkRetryDelayMs ?? DEFAULT_CHECK_RETRY_DELAY_MS);
             pullResult = await runScopesPull(pullDeps, scopes);
           }
+          const filesRead = pullResult.outcomes.reduce(
+            (n, o) => n + o.devices.reduce((m, d) => m + d.filesRead, 0),
+            0,
+          );
+          const pendingKey = bellPendingKey(connection.connectionId);
+          if (scopes.length > 0 && filesRead === 0) {
+            const pending = await deps.kv.get<{ v: string | null; n: number }>(
+              'session',
+              pendingKey,
+            );
+            const attempts =
+              pending !== undefined && pending.v === v ? pending.n + 1 : 1;
+            if (attempts < MAX_BELL_EMPTY_PULLS) {
+              await deps.kv.set('session', pendingKey, { v, n: attempts });
+              continue;
+            }
+          }
           await deps.kv.set('session', seenKey, v);
+          await deps.kv.del('session', pendingKey);
           for (const outcome of pullResult.outcomes) {
             if (outcome.devices.length > 0) scopesPulled.add(outcome.scope);
           }

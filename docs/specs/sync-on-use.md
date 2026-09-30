@@ -146,11 +146,11 @@ REQ-9: Google Drive bell
 REQ-10: Bell bookkeeping in the engine
 - Basic flow:
   1. seen token per connection in kv `session` key `syncBellSeen:<connectionId>`
-  2. push side (fast and full passes): before ringing, `before = peek`; `after = ring`; if `before === seen` → `seen = after`
-  3. check side: `v = peek`; `v === seen` → skip connection; else fast pull (REQ-11); on success `seen = v`
+  2. push side (fast and full passes): before ringing, `before = peek`; `after = ring`; if `before === (seen ?? null)` → `seen = after` and `syncBellPending:<connectionId>` cleared
+  3. check side: `v = peek`; `v === seen` → skip connection; else fast pull (REQ-11); `seen = v` only after the pull actually consumed files or the pending cap is reached (REQ-11 alt flow)
 - Alt flow: `seen` absent (new session) → any non-null `v` pulls
 - Exception: peek/ring errors → backoff + `failed[]`; `seen` unchanged
-- Rules: accepted race — a peer bump landing between our `before` probe and our `ring` is absorbed; bounded by the next bump or the 15-min full cycle
+- Rules: accepted race — a peer bump landing between our `before` probe and our `ring` is absorbed; bounded by the next bump or the 15-min full cycle. Pending counter per connection lives in kv `session` key `syncBellPending:<connectionId>` = `{v, n}`
 - NFR refs: NFR-2
 
 REQ-11: Pull fast path
@@ -161,9 +161,9 @@ REQ-11: Pull fast path
   2. system calls new `runScopesPull(deps, scopes)` in `pullCycle.ts`: `readCursors` → `pullScope` per scope with `onRouteMarker` undefined
   3. remote blob index is lazy: `listRemoteBlobPaths` runs at most once per pass, only when a record or opaque row needs a blob check (internal `remoteBlobs` becomes `() => Promise<Set<string>>` memoized; `runConnectionPull` wraps its eager set)
   4. applied data flows to `onApplied` exactly like the full cycle
-- Alt flow: listing yields no new file for any peer (`filesRead === 0` everywhere) → inside the same pass and still holding the cycle lock (heartbeat keeps it; TTL 120s ≫ 2s), `await sleep(2000)` (injectable) then run `runScopesPull` once more; no second retry, no bell probe; `seen = v` after the retry completes without `ProviderError`
+- Alt flow: listing yields no new file for any peer (`filesRead === 0` everywhere) while `scopes.length > 0` → inside the same pass and still holding the cycle lock (heartbeat keeps it; TTL 120s ≫ 2s), `await sleep(2000)` (injectable) then run `runScopesPull` once more; no second retry, no bell probe. If the retry still reads 0 files, `seen` is **not** stamped: the bell stays pending (`syncBellPending` `{v, n}` incremented) and every subsequent `checkRemote` re-pulls until files appear. Once `n` reaches `MAX_BELL_EMPTY_PULLS` (16) the engine stamps `seen = v` anyway — convergence guard for bumps that can never yield files locally (journal GC'd, bump for a scope this device doesn't route); the 15-min full cycle remains the ultimate floor
 - Exception: `ProviderError` (first pull or retry) → backoff; `seen` unchanged; process terminated mid-sleep → pass lost, `seen` unchanged, next check re-pulls
-- Rules: passes queued behind the retry wait ≤2s (accepted)
+- Rules: passes queued behind the retry wait ≤2s (accepted); a pending bell does not mark the connection failed and emits no status change
 - Rules: no `isConnectionDisconnected`, no `answerBlobsNeeded`, no `drainDeferred`, no route-marker reads in this path
 - NFR refs: NFR-2, NFR-3
 
@@ -201,9 +201,9 @@ write ─commit─▶ notifier ─debounce 300/1500─▶ runPush
 
 action ─▶ handler replies from IDB ─▶ requestRemoteCheck ─throttle 3s─▶ checkRemote
   checkRemote: per conn: peek → ==seen? done(0 status change)
-                              → else runScopesPull(local scopes) → applied? → onApplied → runtime+tabs fan-out
-                                                                  → nothing new? retry once @2s
-                                                                  → seen=v
+                              → else runScopesPull(local scopes) → applied? → onApplied → runtime+tabs fan-out → seen=v
+                                                                  → nothing new? retry once @2s → still empty? pending++ (<16)
+                                                                  → pending exhausted? seen=v (converge)
 
 alarm 15m / startup / online / connect ─▶ runCycle (full, unchanged)
 queue: inflight X; queued {full|push|check}; full absorbs the rest
@@ -228,6 +228,7 @@ queue: inflight X; queued {full|push|check}; full absorbs the rest
 | Bell file | content `{"at":ms}`, Drive `version` | Drive `Tihoka Sync/meta/bell.json` | until disconnect sweep |
 | Bell file id | `bellFileId:<accountKey>` → id | kv `local` | cleared on 404/trashed |
 | Seen bell token | `syncBellSeen:<connectionId>` → version | kv `session` | browser session |
+| Pending bell | `syncBellPending:<connectionId>` → `{v, n}` | kv `session` | until files consumed or cap 16 |
 | Last check time | `syncLastCheckAt` → ms | `chrome.storage.session` | browser session |
 | Chain cache | `${connId}|${scope}` → `{journalCount}` | engine memory | process lifetime |
 | Probed tabs | `Set<tabId>` | background memory | cleared on navigation/removal |
@@ -271,7 +272,7 @@ queue: inflight X; queued {full|push|check}; full absorbs the rest
 - [ ] SC-6: Two consecutive full cycles each list the own chain for the heal check (cache not used by full)
 - [ ] SC-7: `checkRemote()` with an unchanged bell issues exactly 1 Drive request and emits no status change
 - [ ] SC-8: `checkRemote()` after a peer push applies the peer's records; its request log contains no request under `blobs/`, `meta/routes`, `meta/blobs-needed` and no disconnect-marker read (records without blob refs); `seen` updated
-- [ ] SC-9: When the changed-bell listing yields no new file, exactly one retry pull runs after the injected 2000ms sleep inside the same pass (lock held), no second retry follows, and `seen` is set afterwards
+- [ ] SC-9: When the changed-bell listing yields no new file, exactly one retry pull runs after the injected 2000ms sleep inside the same pass (lock held), no second retry follows, and `seen` stays unset while `syncBellPending` increments — the next `checkRemote` re-pulls; `seen` is stamped once files arrive or after 16 empty pulls
 - [ ] SC-10: After this device's own push, its next `checkRemote()` (no peer activity) issues exactly 1 request and pulls nothing
 - [ ] SC-11: 10 concurrent `requestRemoteCheck()` calls (same tick, cold seed) → 1 `checkRemote`; another call after 3s → a second; throttle honored across a simulated restart via `chrome.storage.session`; a call while not connected does not stamp, so the first call after connecting runs; with a warm seed, 3 concurrent calls whose `hasConnections()` resolve in the same tick → 1 `checkRemote`
 - [ ] SC-12: Each qualifying message in REQ-3 (incl. `LOOKUP_REQUEST`) triggers `requestRemoteCheck` and its response resolves without awaiting it; `WORD_STATUSES_GET` triggers only on the first call per tab until `tabs.onUpdated` (url/loading) or `tabs.onRemoved` for that tab
@@ -292,7 +293,7 @@ queue: inflight X; queued {full|push|check}; full absorbs the rest
 
 ## Open Questions / Accepted Risks
 
-- Drive propagation latency (bell `files.get` vs `files.list` index lag) unmeasured — mitigated by the single 2s retry; measured at SC-19.
+- Drive propagation latency (bell `files.get` vs `files.list` index lag) unmeasured — mitigated by the in-pass 2s retry plus pending re-pulls on every later qualifying action; the 15-min full cycle is the floor. First-ever check on a device additionally pays index lag to discover `meta/bell.json` itself (no cached `bellFileId` yet); measured at SC-19.
 - Bell race (REQ-10 rules) accepted; bound = next bump or 15-min full cycle.
 - Push fast path skips marker observation; bounded by the 15-min full cycle.
 - SRS/Reader have no dedicated probe trigger (intent scope).

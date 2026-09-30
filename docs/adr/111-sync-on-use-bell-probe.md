@@ -45,7 +45,13 @@ pull in opposite directions:
 5. **Fast pulls pull only local scopes** (`runScopesPull`): `localScopes()` =
    `global` + scopes for the device's current profile targets, filtered by the
    route table. If every peer chain reads zero files the pass waits 2s and
-   retries exactly once inside the same lock, absorbing Drive listing lag.
+   retries exactly once inside the same lock. When the retry still reads
+   nothing — Drive's `files.list` index can lag fresh journals by minutes —
+   the seen token is deliberately not advanced and a per-connection pending
+   counter (`syncBellPending:<connectionId>`, session kv) makes every later
+   qualifying action re-pull until files arrive; after 16 empty pulls the
+   token is stamped anyway so a bump that can never yield local files
+   (GC'd journal, unrouted scope) converges instead of re-pulling forever.
 6. **Warm-path request budget**: journal writes use `write({fresh:true})`
    (resolve-or-create + direct multipart create, no copy lookup), and a
    per-engine `chainCache` memoizes `ensureChainHealthy` journal counts so warm
@@ -80,7 +86,8 @@ pull in opposite directions:
   one bell PATCH per pushed batch.
 - Residual risks (accepted in spec Open Questions): a peer that never triggers
   a qualifying action only syncs on the 15-min backstop; the bell is best-effort
-  (a missed ring or stale seen token converges at the next full cycle); the
-  2s lag retry bounds, but does not eliminate, Drive listing latency; and on
+  (a missed ring or stale seen token converges at the next full cycle); pending
+  re-pulls keep retrying while the bell stays unconsumed but a bump that never
+  yields files still converges at the 16-pull cap, and on
   Firefox `chrome.storage.session` survives event-page restarts in memory but
   is cleared on browser restart — the in-memory guard still prevents bursts.

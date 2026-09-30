@@ -352,7 +352,7 @@ describe('checkRemote', () => {
     expect(await t.kv.get('session', seenKey(t.connection.connectionId))).toBe(token);
   });
 
-  it('SC-9: changed bell with no peer files retries once after the injected sleep, then stamps seen', async () => {
+  it('SC-9: changed bell with no peer files retries once and keeps the bell pending instead of stamping seen', async () => {
     const t = await memHarness();
     await t.provider.signal!.ring(t.connection);
     const sleeps: number[] = [];
@@ -368,8 +368,65 @@ describe('checkRemote', () => {
     expect(listSpy).toHaveBeenCalledTimes(2);
     expect(
       await t.kv.get('session', seenKey(t.connection.connectionId)),
-    ).toBe(await t.provider.signal!.peek(t.connection));
+    ).toBeUndefined();
     expect(result.failed).toEqual([]);
+
+    const second = await engine.checkRemote();
+    expect(listSpy).toHaveBeenCalledTimes(4);
+    expect(second.failed).toEqual([]);
+  });
+
+  it('a pending bell is consumed once the peer journal becomes visible, then seen is stamped', async () => {
+    const t = await memHarness();
+    const source = new FakeSource('settings', GLOBAL);
+    await t.provider.signal!.ring(t.connection);
+    const engine = t.makeEngine({
+      sources: [source],
+      sleep: async () => {},
+    });
+
+    await engine.checkRemote();
+    expect(
+      await t.kv.get('session', seenKey(t.connection.connectionId)),
+    ).toBeUndefined();
+    expect(source.remoteApplied).toEqual([]);
+
+    await t.provider.write(
+      t.connection,
+      journalPath(GLOBAL, 'peer-1', 1),
+      encodeJournal({
+        scope: GLOBAL,
+        deviceId: 'peer-1',
+        seq: 1,
+        records: [peerRecord('kv:settings/late')],
+      }),
+    );
+
+    const result = await engine.checkRemote();
+    expect(result.scopesPulled).toEqual([GLOBAL]);
+    expect(source.remoteApplied.map((r) => r.key)).toEqual(['kv:settings/late']);
+    expect(
+      await t.kv.get('session', seenKey(t.connection.connectionId)),
+    ).toBe(await t.provider.signal!.peek(t.connection));
+
+    const listSpy = jest.spyOn(t.provider, 'list');
+    const third = await engine.checkRemote();
+    expect(third.scopesPulled).toEqual([]);
+    expect(listSpy).not.toHaveBeenCalled();
+  });
+
+  it('a bell whose pull never yields files converges after the pending cap', async () => {
+    const t = await memHarness();
+    await t.provider.signal!.ring(t.connection);
+    const v = await t.provider.signal!.peek(t.connection);
+    await t.kv.set('session', `syncBellPending:${t.connection.connectionId}`, {
+      v,
+      n: 15,
+    });
+    const engine = t.makeEngine({ sleep: async () => {} });
+    const result = await engine.checkRemote();
+    expect(result.failed).toEqual([]);
+    expect(await t.kv.get('session', seenKey(t.connection.connectionId))).toBe(v);
   });
 
   it('SC-10: after own push with established seen, checkRemote on google-drive issues exactly 1 request', async () => {
