@@ -216,6 +216,14 @@
   justify-content: center;
 }
 
+.audioRow button {
+  background: var(--color-primary);
+}
+
+.audioRow button:hover {
+  background: var(--color-primary-hover);
+}
+
 .audioRow .audioPill {
   border-radius: var(--radius-full);
   min-width: var(--space-14);
