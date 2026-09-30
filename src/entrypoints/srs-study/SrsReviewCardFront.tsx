@@ -1,14 +1,61 @@
+import { useEffect, useState } from 'react';
 import { Box, Heading, InputField } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
-import type { SrsNote, SrsStimulus } from '@/entities/srs/types';
+import { audioAssetId, imageAssetId } from '@/features/srs/lib/helpers';
+import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepository';
+import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
+import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote, SrsStimulus } from '@/entities/srs/types';
 import { stimulusLabel } from './srsLabels';
-import { formatFieldValue, HighlightedSentence, playAudioUrl } from './srsCardShared';
+import {
+  formatFieldValue,
+  HighlightedSentence,
+  playAudio,
+  playAudioUrl,
+  playableUrl,
+  useImageBlobUrl,
+} from './srsCardShared';
 import styles from './SrsReviewCard.module.css';
 
 const FRONT_SKIP_FIELDS: ReadonlySet<string> = new Set(['sentence', 'ipa']);
 
-function StimulusView({ stimulus, targetWord, skipFieldIds }: { stimulus: SrsStimulus; targetWord: string; skipFieldIds?: ReadonlySet<string> }): React.JSX.Element {
+function StimulusImage({
+  value,
+  asset,
+  alt,
+}: { value: SrsFieldValue; asset: SrsImageAsset | undefined; alt: string }): React.JSX.Element | null {
+  const blobUrl = useImageBlobUrl(asset);
+  useEffect(() => {
+    return () => {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
+  }, [blobUrl]);
+  const src = (value.kind === 'image' ? playableUrl(value.value) : undefined) ?? blobUrl;
+  if (!src) return null;
+  return <img src={src} alt={alt} className={styles.stimulusImage} />;
+}
+
+interface StimulusViewProps {
+  readonly noteId: string;
+  readonly stimulus: SrsStimulus;
+  readonly targetWord: string;
+  readonly audioCache: ReadonlyMap<string, SrsAudioAsset>;
+  readonly imageCache: ReadonlyMap<string, SrsImageAsset>;
+  readonly repoAudio: ReadonlyMap<string, SrsAudioAsset>;
+  readonly repoImages: ReadonlyMap<string, SrsImageAsset>;
+  readonly skipFieldIds?: ReadonlySet<string>;
+}
+
+function StimulusView({
+  noteId,
+  stimulus,
+  targetWord,
+  audioCache,
+  imageCache,
+  repoAudio,
+  repoImages,
+  skipFieldIds,
+}: StimulusViewProps): React.JSX.Element {
   const entries = Object.entries(stimulus.payload).filter(([fieldId]) => !skipFieldIds?.has(fieldId));
 
   return (
@@ -16,22 +63,46 @@ function StimulusView({ stimulus, targetWord, skipFieldIds }: { stimulus: SrsSti
       {entries.map(([fieldId, value]) => (
         <Box key={fieldId} className={styles.stimulusField}>
           {value.kind === 'image' ? (
-            <img src={value.value} alt={stimulusLabel(stimulus.type)} className={styles.stimulusImage} />
+            <StimulusImage
+              value={value}
+              asset={imageCache.get(imageAssetId(noteId, fieldId)) ?? repoImages.get(fieldId)}
+              alt={stimulusLabel(stimulus.type)}
+            />
           ) : value.kind === 'audio' ? (
-            <button
-              type="button"
-              className={fieldId === 'sentAudio' ? styles.stimulusAudioPill : styles.stimulusAudioButton}
-              onClick={(e) => { e.stopPropagation(); playAudioUrl(value.value); }}
-              aria-label={fieldId === 'sentAudio' ? t('srs.review.playSentence') : t('srs.review.playWord')}
-            >
-              <Icon name={fieldId === 'sentAudio' ? 'audioWave' : 'volumeHigh'} />
-            </button>
+            <StimulusAudioButton
+              fieldId={fieldId}
+              value={value}
+              asset={audioCache.get(audioAssetId(noteId, fieldId, value.source)) ?? repoAudio.get(fieldId)}
+            />
           ) : (
             <HighlightedSentence sentence={formatFieldValue(value)} target={targetWord} />
           )}
         </Box>
       ))}
     </Box>
+  );
+}
+
+function StimulusAudioButton({
+  fieldId,
+  value,
+  asset,
+}: { fieldId: string; value: Extract<SrsFieldValue, { kind: 'audio' }>; asset: SrsAudioAsset | undefined }): React.JSX.Element | null {
+  const url = playableUrl(value.value);
+  if (!asset && !url) return null;
+  return (
+    <button
+      type="button"
+      className={fieldId === 'sentAudio' ? styles.stimulusAudioPill : styles.stimulusAudioButton}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (asset) playAudio(asset);
+        else playAudioUrl(url!);
+      }}
+      aria-label={fieldId === 'sentAudio' ? t('srs.review.playSentence') : t('srs.review.playWord')}
+    >
+      <Icon name={fieldId === 'sentAudio' ? 'audioWave' : 'volumeHigh'} />
+    </button>
   );
 }
 
@@ -43,6 +114,8 @@ interface SrsReviewCardFrontProps {
   readonly onTypedInputChange: (value: string) => void;
   readonly inputId: string;
   readonly onFlip: () => void;
+  readonly audioCache: ReadonlyMap<string, SrsAudioAsset>;
+  readonly imageCache: ReadonlyMap<string, SrsImageAsset>;
 }
 
 export function SrsReviewCardFront({
@@ -53,7 +126,29 @@ export function SrsReviewCardFront({
   onTypedInputChange,
   inputId,
   onFlip,
+  audioCache,
+  imageCache,
 }: SrsReviewCardFrontProps): React.JSX.Element {
+  const [repoImages, setRepoImages] = useState<ReadonlyMap<string, SrsImageAsset>>(new Map());
+  const [repoAudio, setRepoAudio] = useState<ReadonlyMap<string, SrsAudioAsset>>(new Map());
+
+  const hasImageField = Object.values(stimulus.payload).some((v) => v.kind === 'image');
+  const hasAudioField = Object.values(stimulus.payload).some((v) => v.kind === 'audio');
+
+  useEffect(() => {
+    if (!hasImageField) return;
+    void getImageAssetsByNote(note.id)
+      .then((assets) => { setRepoImages(new Map(assets.map((a) => [a.fieldId, a]))); })
+      .catch(() => {});
+  }, [note.id, hasImageField]);
+
+  useEffect(() => {
+    if (!hasAudioField) return;
+    void getAudioAssetsByNote(note.id)
+      .then((assets) => { setRepoAudio(new Map(assets.map((a) => [a.fieldId, a]))); })
+      .catch(() => {});
+  }, [note.id, hasAudioField]);
+
   return (
     <div
       className={styles.front}
@@ -80,7 +175,16 @@ export function SrsReviewCardFront({
       {note.fields.sentence?.kind === 'text' && note.fields.sentence.value && (
         <HighlightedSentence sentence={note.fields.sentence.value} target={note.targetWord} />
       )}
-      <StimulusView stimulus={stimulus} targetWord={note.targetWord} skipFieldIds={FRONT_SKIP_FIELDS} />
+      <StimulusView
+        noteId={note.id}
+        stimulus={stimulus}
+        targetWord={note.targetWord}
+        audioCache={audioCache}
+        imageCache={imageCache}
+        repoAudio={repoAudio}
+        repoImages={repoImages}
+        skipFieldIds={FRONT_SKIP_FIELDS}
+      />
 
       {isSpelling && (
         <InputField

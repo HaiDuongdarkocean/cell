@@ -18,6 +18,10 @@ export function playAudioUrl(url: string): void {
   void new Audio(url).play().catch(() => {});
 }
 
+export function playableUrl(value: string): string | undefined {
+  return /^(data:|https?:|blob:)/.test(value) ? value : undefined;
+}
+
 export function useImageBlobUrl(asset: SrsImageAsset | undefined): string | undefined {
   return useMemo(() => {
     if (!asset) return undefined;

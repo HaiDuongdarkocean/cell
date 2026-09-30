@@ -84,8 +84,9 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
   const [audioCache] = useState(() => new Map<string, SrsAudioAsset>());
   const [imageCache] = useState(() => new Map<string, SrsImageAsset>());
 
+  const stimulus = session?.stimulus ?? null;
   useEffect(() => {
-    const toRevoke = blobUrlsToRevoke(session?.stimulus ?? null);
+    const toRevoke = blobUrlsToRevoke(stimulus);
     return () => {
       for (const url of toRevoke) {
         try {
@@ -95,7 +96,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
         }
       }
     };
-  }, [session]);
+  }, [stimulus]);
 
   const ensureDeck = useCallback(async () => {
     if (deckId && config && stats) return { deckId, config, stats };

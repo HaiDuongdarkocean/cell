@@ -7,7 +7,7 @@ import { parseDefEntries } from '@/features/srs';
 import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepository';
 import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote } from '@/entities/srs/types';
-import { HighlightedSentence, playAudio, playAudioUrl, useImageBlobUrl } from './srsCardShared';
+import { HighlightedSentence, playAudio, playAudioUrl, playableUrl, useImageBlobUrl } from './srsCardShared';
 import styles from './SrsReviewCard.module.css';
 
 const BUILTIN_FIELDS = new Set(['target', 'ipa', 'sentence', 'def', 'wordAudio', 'sentAudio', 'image', 'translation', 'notes', 'examples']);
@@ -16,10 +16,6 @@ const FIELD_LABEL_KEYS: Record<string, Parameters<typeof t>[0]> = {
   examples: 'srs.review.examples',
   notes: 'srs.review.notes',
 };
-
-function playableUrl(value: string): string | undefined {
-  return /^(data:|https?:|blob:)/.test(value) ? value : undefined;
-}
 
 function fieldText(value: SrsFieldValue | undefined): string {
   if (!value) return '';

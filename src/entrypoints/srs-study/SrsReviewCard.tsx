@@ -162,6 +162,8 @@ export function SrsReviewCard(): React.JSX.Element | null {
             onTypedInputChange={setTypedInput}
             inputId={inputId}
             onFlip={handleFlip}
+            audioCache={audioCache}
+            imageCache={imageCache}
           />
         )}
       </Box>
