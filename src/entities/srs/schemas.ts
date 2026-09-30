@@ -290,15 +290,25 @@ export const SrsAddNotePayloadSchema = z.object({
 export const SrsGetDecksNotetypesPayloadSchema = z.object({
   type: z.literal('SRS_GET_DECKS_NOTETYPES'),
   payload: z.object({
-    targetLanguage: z.string(),
+    collectionId: z.string().optional(),
   }),
 });
 
 export const SrsGetDecksNotetypesResponseSchema = z.object({
-  collections: z.array(SrsCollectionSchema),
-  defaultCollectionId: z.string().optional(),
-  defaultDeckId: z.string().optional(),
-  defaultNotetypeId: z.string().optional(),
+  collectionId: z.string(),
+  defaultDeckId: z.string(),
+  defaultNotetypeId: z.string(),
+  decks: z.array(z.object({ id: z.string(), name: z.string() })),
+  notetypes: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      targetFieldId: z.string(),
+      fields: z.array(
+        z.object({ id: z.string(), name: z.string(), type: SrsFieldSchema.shape.type }),
+      ),
+    }),
+  ),
 });
 
 export const SrsCreateNoteRequestSchema = z.object({

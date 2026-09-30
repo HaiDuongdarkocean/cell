@@ -183,7 +183,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     getVideo: () => video,
     getTargetCues: () => getTargetCues?.() ?? [],
     getNativeCues: () => getNativeCues?.() ?? [],
-    getSrsDestination: () => deps.dictionaryPopupSettings.srsDestination ?? 'anki',
+    getSrsDestination: () => dpSettings.srsDestination ?? 'anki',
     closePopup: () => lifecycle.closePopup(),
   });
 

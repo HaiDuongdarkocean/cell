@@ -93,7 +93,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
     action?: CardCreatorAction,
   ): void {
     if (!cardCreatorMount) {
-      cardCreatorMount = mountCardCreatorDialog(ccSettings);
+      cardCreatorMount = mountCardCreatorDialog(ccSettings, deps.getSrsDestination);
     } else {
       cardCreatorMount.updateSettings(ccSettings);
     }
@@ -254,9 +254,11 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
     if (!settings) return;
     updateSettings(settings.cardCreator);
 
-    void prefetchAnkiConnectData(ccSettings.ankiConnectUrl).catch(() => {
-      // Prefetch failure is non-fatal — loadData will retry.
-    });
+    if (deps.getSrsDestination() !== 'ocean-srs') {
+      void prefetchAnkiConnectData(ccSettings.ankiConnectUrl).catch(() => {
+        // Prefetch failure is non-fatal — loadData will retry.
+      });
+    }
 
     const definitionsText = formatDefinitions(prefill.definitions);
 

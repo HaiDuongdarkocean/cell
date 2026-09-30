@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import type { CardCreatorSettings } from '@/entities/settings';
+import type { CardCreatorSettings, SrsDestination } from '@/entities/settings';
 import { useCardCreatorStore, type LoadStatus } from '../state/cardCreatorStore';
 import type { CardDraft } from '../state/cardDraft';
 import type { MediaListKind, TextFieldKey } from '../state/mediaListKinds';
@@ -22,6 +22,8 @@ export type { LoadStatus } from '../state/cardCreatorStore';
 
 export interface CardCreatorState {
   draft: CardDraft;
+  /** True when the card destination is Ocean SRS (not AnkiConnect). */
+  isSrs: boolean;
   decks: readonly string[];
   noteTypes: readonly string[];
   availableFields: readonly string[];
@@ -65,6 +67,11 @@ export interface CardCreatorState {
 export interface UseCardCreatorStateOptions {
   onSubmitSuccess?: () => void;
   onQueueTermSelect?: (term: string) => void;
+  /** Card destination — 'anki' (AnkiConnect) or 'ocean-srs'. Default 'anki'. */
+  srsDestination?: SrsDestination;
+  /** Persisted SRS deck/notetype defaults (settings.srs.activeDeckId / activeNotetypeId). */
+  srsDeckId?: string | null;
+  srsNotetypeId?: string | null;
 }
 
 export function useCardCreatorState(
@@ -100,6 +107,8 @@ export function useCardCreatorState(
   const openContextRef = useRef<OpenContext | null>(openContext);
   openContextRef.current = openContext;
 
+  const srsDestination = options?.srsDestination ?? 'anki';
+
   const {
     refreshRecentNote,
     persistFieldMapping,
@@ -109,6 +118,9 @@ export function useCardCreatorState(
     reload,
   } = useAnkiSchema({
     settings,
+    srsDestination,
+    srsDeckId: options?.srsDeckId,
+    srsNotetypeId: options?.srsNotetypeId,
     openContext,
     initialAction,
     openContextRef,
@@ -135,6 +147,8 @@ export function useCardCreatorState(
 
   const { submit } = useSubmitNote({
     ankiConnectUrl: settings.ankiConnectUrl,
+    srsDestination,
+    openContextRef,
     onSubmitSuccess: options?.onSubmitSuccess,
     refreshRecentNote,
     clearSavedDraft,
@@ -153,6 +167,7 @@ export function useCardCreatorState(
 
   return {
     draft,
+    isSrs: srsDestination === 'ocean-srs',
     decks,
     noteTypes,
     availableFields,

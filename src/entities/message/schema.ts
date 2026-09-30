@@ -272,7 +272,7 @@ export const SrsOpenStudyPagePayloadSchema = z.object({
 });
 
 export const SrsGetDecksNotetypesPayloadSchema = z.object({
-  collectionId: z.string().min(1),
+  collectionId: z.string().min(1).optional(),
 });
 
 // === Local Player payloads (spec: local-video-player.md) ===

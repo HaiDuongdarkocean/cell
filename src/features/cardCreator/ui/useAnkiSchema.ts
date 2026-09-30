@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, type RefObject } from 'react';
-import type { CardCreatorSettings } from '@/entities/settings';
+import type { CardCreatorSettings, SrsDestination } from '@/entities/settings';
 import { useCardCreatorStore } from '../state/cardCreatorStore';
 import { prefetchAnkiConnectData, onAnkiSchemaRefreshed } from '../service/cardCreatorPrefetch';
 import { getModelFields } from '../service/ankiSchemaCache';
+import { fetchSrsSchema } from '../service/srsCardService';
 import {
   fetchRecentNote,
   resolveSchemaChoice,
@@ -48,6 +49,10 @@ export function isSameOpenContextSession(
 
 export interface UseAnkiSchemaArgs {
   readonly settings: CardCreatorSettings;
+  readonly srsDestination: SrsDestination;
+  /** Persisted SRS defaults (settings.srs.activeDeckId / activeNotetypeId). */
+  readonly srsDeckId?: string | null;
+  readonly srsNotetypeId?: string | null;
   readonly openContext: CardCreatorOpenContext | null;
   readonly initialAction?: CardCreatorAction;
   readonly openContextRef: RefObject<CardCreatorOpenContext | null>;
@@ -65,6 +70,9 @@ export interface AnkiSchemaActions {
 
 export function useAnkiSchema({
   settings,
+  srsDestination,
+  srsDeckId,
+  srsNotetypeId,
   openContext,
   initialAction,
   openContextRef,
@@ -111,12 +119,72 @@ export function useAnkiSchema({
     [ankiConnectUrl],
   );
 
+  const loadSrsData = useCallback(
+    async (
+      restored: Pick<CardDraft, 'noteType' | 'deck' | 'fieldMapping'> | null,
+    ): Promise<void> => {
+      const store = useCardCreatorStore.getState();
+      loadedSettingsKeyRef.current = JSON.stringify({ settings, srsDestination, srsDeckId, srsNotetypeId });
+      const generation = ++loadGenerationRef.current;
+      store.setLoadStatus('loading');
+      store.setLoadError('');
+
+      try {
+        const r = await fetchSrsSchema();
+        if (!r.ok) throw new Error(r.error);
+        const schema = r.value;
+        if (generation !== loadGenerationRef.current) return;
+
+        store.setSrsSchema(schema);
+        store.setDecks(schema.decks.map((d) => d.name));
+        store.setNoteTypes(schema.notetypes.map((n) => n.name));
+
+        const nameOfNotetype = (id: string): string =>
+          schema.notetypes.find((n) => n.id === id)?.name ?? '';
+        const nameOfDeck = (id: string): string =>
+          schema.decks.find((d) => d.id === id)?.name ?? '';
+
+        const chosenNoteType = resolveSchemaChoice(
+          schema.notetypes.map((n) => n.name),
+          restored?.noteType ?? '',
+          nameOfNotetype(srsNotetypeId ?? schema.defaultNotetypeId),
+        );
+        const chosenDeck = resolveSchemaChoice(
+          schema.decks.map((d) => d.name),
+          restored?.deck ?? '',
+          nameOfDeck(srsDeckId ?? schema.defaultDeckId),
+        );
+
+        store.setDraft((prev) => ({
+          ...prev,
+          noteType: chosenNoteType,
+          deck: chosenDeck,
+        }));
+        const fields = schema.notetypes.find((n) => n.name === chosenNoteType)?.fields ?? [];
+        store.setAvailableFields(fields.map((f) => f.name));
+        store.setRecentNoteId(null);
+        store.setRecentNoteInfo(null);
+        store.setLoadStatus('ready');
+      } catch (err) {
+        if (generation !== loadGenerationRef.current) return;
+        const msg = err instanceof Error ? err.message : String(err);
+        store.setLoadError(msg);
+        store.setLoadStatus('error');
+        useCardCreatorStore.getState().pushToast('error', t('cardCreator.toast.srsLoadError', [msg]));
+      }
+    },
+    [settings, srsDestination, srsDeckId, srsNotetypeId],
+  );
+  const loadSrsDataRef = useRef(loadSrsData);
+  loadSrsDataRef.current = loadSrsData;
+
   const loadAnkiData = useCallback(
     async (
       restored: Pick<CardDraft, 'noteType' | 'deck' | 'fieldMapping'> | null,
     ): Promise<void> => {
       const store = useCardCreatorStore.getState();
-      loadedSettingsKeyRef.current = JSON.stringify(settings);
+      loadedSettingsKeyRef.current = JSON.stringify({ settings, srsDestination });
+      store.setSrsSchema(null);
       const generation = ++loadGenerationRef.current;
       store.setLoadStatus('loading');
       store.setLoadError('');
@@ -181,7 +249,7 @@ export function useAnkiSchema({
         useCardCreatorStore.getState().pushToast('error', t('cardCreator.toast.ankiLoadError', [msg]));
       }
     },
-    [ankiConnectUrl, defaultNoteType, defaultDeck, settings, refreshRecentNote, persistFieldMapping],
+    [ankiConnectUrl, defaultNoteType, defaultDeck, settings, srsDestination, refreshRecentNote, persistFieldMapping],
   );
   const loadAnkiDataRef = useRef(loadAnkiData);
   loadAnkiDataRef.current = loadAnkiData;
@@ -209,8 +277,12 @@ export function useAnkiSchema({
       void mergePrefillMedia(prefillDraftAccess, prefill ?? {});
     }
 
-    await loadAnkiData(restoredDraft);
-  }, [defaultNoteType, defaultDeck, defaultTags, defaultMediaUpdateMode, loadAnkiData, openContextRef, onQueueTermSelectRef]);
+    if (srsDestination === 'ocean-srs') {
+      await loadSrsData(restoredDraft);
+    } else {
+      await loadAnkiData(restoredDraft);
+    }
+  }, [defaultNoteType, defaultDeck, defaultTags, defaultMediaUpdateMode, srsDestination, loadAnkiData, loadSrsData, openContextRef, onQueueTermSelectRef]);
 
   const mergePrefill = useCallback(async (ctx: CardCreatorOpenContext) => {
     const prefill = ctx.prefill;
@@ -260,13 +332,14 @@ export function useAnkiSchema({
   useEffect(() => {
     if (!openContext || loadedForRef.current !== openContext) return;
     if (loadedSettingsKeyRef.current === null) return;
-    if (loadedSettingsKeyRef.current === JSON.stringify(settings)) return;
+    if (loadedSettingsKeyRef.current === JSON.stringify({ settings, srsDestination, srsDeckId, srsNotetypeId })) return;
     const timer = setTimeout(() => {
       const { noteType, deck, fieldMapping } = useCardCreatorStore.getState().draft;
-      void loadAnkiDataRef.current({ noteType, deck, fieldMapping });
+      const loader = srsDestination === 'ocean-srs' ? loadSrsDataRef.current : loadAnkiDataRef.current;
+      void loader({ noteType, deck, fieldMapping });
     }, SETTINGS_RELOAD_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [settings, openContext]);
+  }, [settings, srsDestination, srsDeckId, srsNotetypeId, openContext]);
 
   const reload = useCallback(() => {
     const ctx = openContextRef.current;
@@ -274,13 +347,14 @@ export function useAnkiSchema({
     const store = useCardCreatorStore.getState();
     if (
       store.loadStatus !== 'error' &&
-      JSON.stringify(settingsRef.current) === loadedSettingsKeyRef.current
+      JSON.stringify({ settings: settingsRef.current, srsDestination, srsDeckId, srsNotetypeId }) === loadedSettingsKeyRef.current
     ) {
       return;
     }
     const { noteType, deck, fieldMapping } = store.draft;
-    void loadAnkiDataRef.current({ noteType, deck, fieldMapping });
-  }, [openContextRef]);
+    const loader = srsDestination === 'ocean-srs' ? loadSrsDataRef.current : loadAnkiDataRef.current;
+    void loader({ noteType, deck, fieldMapping });
+  }, [openContextRef, srsDestination, srsDeckId, srsNotetypeId]);
 
   useEffect(() => {
     if (loadStatus === 'idle') return;
@@ -296,18 +370,26 @@ export function useAnkiSchema({
   }, []);
 
   useEffect(() => {
-    if (!openContext) return;
+    if (!openContext || srsDestination === 'ocean-srs') return;
     return onAnkiSchemaRefreshed(({ decks, models }) => {
       const store = useCardCreatorStore.getState();
       store.setDecks(decks);
       store.setNoteTypes(models);
     });
-  }, [openContext]);
+  }, [openContext, srsDestination]);
 
   const changeNoteType = useCallback(
     async (noteType: string) => {
       const store = useCardCreatorStore.getState();
       store.setDraft((prev) => ({ ...prev, noteType }));
+
+      if (srsDestination === 'ocean-srs') {
+        const fields =
+          store.srsSchema?.notetypes.find((n) => n.name === noteType)?.fields ?? [];
+        store.setAvailableFields(fields.map((f) => f.name));
+        store.setLoadStatus('ready');
+        return;
+      }
 
       const fields = await getModelFields(ankiConnectUrl, noteType);
       if (fields) {
@@ -324,18 +406,22 @@ export function useAnkiSchema({
       await refreshRecentNote(deck, noteType);
       store.setLoadStatus('ready');
     },
-    [ankiConnectUrl, refreshRecentNote, persistFieldMapping],
+    [ankiConnectUrl, srsDestination, refreshRecentNote, persistFieldMapping],
   );
 
   const changeDeck = useCallback(
     async (deck: string) => {
       const store = useCardCreatorStore.getState();
       store.setDraft((prev) => ({ ...prev, deck }));
+      if (srsDestination === 'ocean-srs') {
+        store.setLoadStatus('ready');
+        return;
+      }
       const noteType = useCardCreatorStore.getState().draft.noteType;
       await refreshRecentNote(deck, noteType);
       store.setLoadStatus('ready');
     },
-    [refreshRecentNote],
+    [srsDestination, refreshRecentNote],
   );
 
   return {

@@ -9,7 +9,7 @@ import { useEffect } from 'react';
 import { Dialog } from '@/shared/ui/Dialog';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
-import type { CardCreatorSettings } from '@/entities/settings';
+import type { CardCreatorSettings, SrsDestination } from '@/entities/settings';
 import type { CardCreatorOpenContext } from '../types';
 import type { MediaFile } from '../media/mediaFile';
 import { CardCreatorDialogContent } from './CardCreatorDialogContent';
@@ -24,6 +24,8 @@ interface CardCreatorDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Card Creator settings (URL, defaults). */
   settings: CardCreatorSettings;
+  /** Card destination — 'anki' or 'ocean-srs'. Default 'anki'. */
+  srsDestination?: SrsDestination;
   /** Context for media extraction (video + cue + languages + pre-captured media + popup prefill). */
   openContext: CardCreatorOpenContext | null;
   /** Initial action hint ('quick-add' = popup Quick Add, 'quick-update' pre-selects Update, 'edit-card' is neutral). */
@@ -38,6 +40,7 @@ export function CardCreatorDialog({
   open,
   onOpenChange,
   settings,
+  srsDestination,
   openContext,
   initialAction,
   registerAddMedia,
@@ -46,7 +49,7 @@ export function CardCreatorDialog({
   // Always call the hook (rules of hooks). When closed, openContext is null
   // and the hook no-ops its data loading.
   const ctx: CardCreatorOpenContext | null = open ? openContext : null;
-  const state = useCardCreatorState(settings, ctx, initialAction);
+  const state = useCardCreatorState(settings, ctx, initialAction, { srsDestination });
 
   // Register callbacks so the mount controller can push background-fetched
   // media + text into the open dialog without re-rendering from scratch.

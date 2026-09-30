@@ -894,13 +894,29 @@ export interface SrsOpenStudyPagePayload {
   readonly deckId?: string;
 }
 
-/** Background → srs-study: list decks and notetypes for a collection. */
+/** Content → background: list decks and notetypes for a collection.
+ *  When `collectionId` is omitted the active profile's collection is used
+ *  (created on first run). */
 export interface SrsGetDecksNotetypesPayload {
-  readonly collectionId: string;
+  readonly collectionId?: string;
 }
 
-/** Background → caller: decks and notetypes. */
+export interface SrsFieldDescriptor {
+  readonly id: string;
+  readonly name: string;
+  readonly type: 'text' | 'audio' | 'image' | 'list' | 'translation' | 'context';
+}
+
+/** Background → caller: resolved collection + its decks and notetypes. */
 export interface SrsGetDecksNotetypesResult {
+  readonly collectionId: string;
+  readonly defaultDeckId: string;
+  readonly defaultNotetypeId: string;
   readonly decks: readonly { id: string; name: string }[];
-  readonly notetypes: readonly { id: string; name: string }[];
+  readonly notetypes: readonly {
+    id: string;
+    name: string;
+    targetFieldId: string;
+    fields: readonly SrsFieldDescriptor[];
+  }[];
 }

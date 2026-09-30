@@ -45,6 +45,17 @@ export function CardCreatorSettingsSidePanel({
     });
   };
 
+  const handleSrsSelectionChange = (selection: { deckId?: string; notetypeId?: string }): void => {
+    onChange({
+      ...settings,
+      srs: {
+        ...settings.srs,
+        ...(selection.deckId !== undefined ? { activeDeckId: selection.deckId } : {}),
+        ...(selection.notetypeId !== undefined ? { activeNotetypeId: selection.notetypeId } : {}),
+      },
+    });
+  };
+
   return (
     <CardCreatorSidePanel
       open={open}
@@ -61,6 +72,9 @@ export function CardCreatorSettingsSidePanel({
         srsDestination={settings.dictionaryPopup?.srsDestination ?? 'anki'}
         onChange={handleUpdateCardCreator}
         onDestinationChange={handleUpdateSrsDestination}
+        srsDeckId={settings.srs?.activeDeckId}
+        srsNotetypeId={settings.srs?.activeNotetypeId}
+        onSrsSelectionChange={handleSrsSelectionChange}
       />
     </CardCreatorSidePanel>
   );

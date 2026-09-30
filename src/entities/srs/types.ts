@@ -277,15 +277,21 @@ export interface SrsAddNotePayload {
 export interface SrsGetDecksNotetypesPayload {
   readonly type: 'SRS_GET_DECKS_NOTETYPES';
   readonly payload: {
-    readonly targetLanguage: string;
+    readonly collectionId?: string;
   };
 }
 
 export interface SrsGetDecksNotetypesResponse {
-  readonly collections: readonly SrsCollection[];
-  readonly defaultCollectionId?: string;
-  readonly defaultDeckId?: string;
-  readonly defaultNotetypeId?: string;
+  readonly collectionId: string;
+  readonly defaultDeckId: string;
+  readonly defaultNotetypeId: string;
+  readonly decks: readonly { id: string; name: string }[];
+  readonly notetypes: readonly {
+    id: string;
+    name: string;
+    targetFieldId: string;
+    fields: readonly { id: string; name: string; type: SrsField['type'] }[];
+  }[];
 }
 
 export interface SrsCreateNoteRequest {

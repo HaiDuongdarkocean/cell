@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import { useCardCreatorStore } from '../state/cardCreatorStore';
 import {
   addNote,
   updateNote,
   addNoteTags,
 } from '../service/cardCreatorService';
+import { addSrsNote, buildSrsFields } from '../service/srsCardService';
 import { buildAnkiFields } from '../service/buildAnkiFields';
 import {
   runWithSchemaRetry,
@@ -12,9 +13,13 @@ import {
 } from '../service/ankiSchemaService';
 import { computeFieldUpdates, splitTags } from '../service/noteUpdate';
 import { t } from '@/shared/i18n';
+import type { SrsDestination } from '@/entities/settings';
+import type { CardCreatorOpenContext } from '../types';
 
 export interface UseSubmitNoteArgs {
   readonly ankiConnectUrl: string;
+  readonly srsDestination: SrsDestination;
+  readonly openContextRef: RefObject<CardCreatorOpenContext | null>;
   readonly onSubmitSuccess?: () => void;
   readonly refreshRecentNote: (deck: string, noteType: string) => Promise<RecentNoteLookup>;
   readonly clearSavedDraft: () => Promise<void>;
@@ -26,6 +31,8 @@ export interface SubmitNoteActions {
 
 export function useSubmitNote({
   ankiConnectUrl,
+  srsDestination,
+  openContextRef,
   onSubmitSuccess,
   refreshRecentNote,
   clearSavedDraft,
@@ -68,12 +75,66 @@ export function useSubmitNote({
     [ankiConnectUrl],
   );
 
+  const submitSrs = useCallback(
+    async (): Promise<void> => {
+      const store = useCardCreatorStore.getState();
+      const draft = store.draft;
+      const schema = store.srsSchema;
+      const targetWord = draft.fields.targetWord.trim();
+      if (!targetWord) {
+        store.pushToast('error', t('cardCreator.toast.srs.add.error', [t('cardCreator.field.targetWord')]));
+        return;
+      }
+      if (!schema) {
+        store.pushToast('error', t('cardCreator.toast.srs.add.error', [t('cardCreator.error.noResponse')]));
+        return;
+      }
+      const notetype =
+        schema.notetypes.find((n) => n.name === draft.noteType) ??
+        schema.notetypes.find((n) => n.id === schema.defaultNotetypeId) ??
+        schema.notetypes[0];
+      const deck =
+        schema.decks.find((d) => d.name === draft.deck) ??
+        schema.decks.find((d) => d.id === schema.defaultDeckId) ??
+        schema.decks[0];
+      if (!notetype || !deck) {
+        store.pushToast('error', t('cardCreator.toast.srs.add.error', [t('cardCreator.error.noResponse')]));
+        return;
+      }
+
+      const r = await addSrsNote({
+        targetLanguage: openContextRef.current?.sourceLang ?? 'en',
+        collectionId: schema.collectionId,
+        deckId: deck.id,
+        notetypeId: notetype.id,
+        targetWord,
+        fields: buildSrsFields(notetype, draft.fields),
+      });
+      if (!r.ok) {
+        if (/duplicate|already exists/i.test(r.error)) {
+          store.pushToast('warning', t('cardCreator.toast.add.duplicate'));
+          return;
+        }
+        store.pushToast('error', t('cardCreator.toast.srs.add.error', [r.error]));
+        return;
+      }
+      store.pushToast('success', t('cardCreator.toast.add.success', [deck.name, r.value.noteId]));
+      await clearSavedDraft();
+      onSubmitSuccessRef.current?.();
+    },
+    [openContextRef, clearSavedDraft],
+  );
+
   const submit = useCallback(
     async (mode: 'add' | 'update') => {
       const store = useCardCreatorStore.getState();
       if (store.submitting) return;
       store.setSubmitting(true);
       try {
+        if (srsDestination === 'ocean-srs') {
+          if (mode === 'add') await submitSrs();
+          return;
+        }
         const fields = await buildAnkiFieldsCb();
         const draft = store.draft;
         const tags = splitTags(draft.tags);
@@ -139,7 +200,7 @@ export function useSubmitNote({
         useCardCreatorStore.getState().setSubmitting(false);
       }
     },
-    [ankiConnectUrl, buildAnkiFieldsCb, refreshRecentNote, withSchemaRetry, clearSavedDraft],
+    [ankiConnectUrl, srsDestination, submitSrs, buildAnkiFieldsCb, refreshRecentNote, withSchemaRetry, clearSavedDraft],
   );
 
   return { submit };

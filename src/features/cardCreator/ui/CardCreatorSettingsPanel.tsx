@@ -13,6 +13,7 @@ import {
   refreshAnkiSchemaCache,
   getModelFields,
 } from '@/features/cardCreator/service/ankiSchemaCache';
+import { fetchSrsSchema, type SrsSchema } from '@/features/cardCreator/service/srsCardService';
 import { SOURCE_FIELD_ORDER, autoMapFields } from '@/features/cardCreator/service/fieldMapping';
 import { t, type MessageKey } from '@/shared/i18n';
 import { Button } from '@/shared/ui/Button';
@@ -31,6 +32,12 @@ interface CardCreatorSettingsPanelProps {
   onChange: (partial: Partial<CardCreatorSettings>) => void;
   /** Called when the SRS destination changes. */
   onDestinationChange: (srsDestination: SrsDestination) => void;
+  /** Persisted SRS deck id (settings.srs.activeDeckId). */
+  srsDeckId?: string | null;
+  /** Persisted SRS notetype id (settings.srs.activeNotetypeId). */
+  srsNotetypeId?: string | null;
+  /** Called when the SRS deck/notetype selection changes. */
+  onSrsSelectionChange?: (selection: { deckId?: string; notetypeId?: string }) => void;
 }
 
 type ConnectionStatus = 'idle' | 'testing' | 'online' | 'offline';
@@ -78,6 +85,9 @@ export function CardCreatorSettingsPanel({
   srsDestination,
   onChange,
   onDestinationChange,
+  srsDeckId,
+  srsNotetypeId,
+  onSrsSelectionChange,
 }: CardCreatorSettingsPanelProps): ReactElement {
   const [status, setStatus] = useState<ConnectionStatus>('idle');
   const [version, setVersion] = useState<number | null>(null);
@@ -86,14 +96,26 @@ export function CardCreatorSettingsPanel({
   const [fields, setFields] = useState<readonly string[]>([]);
   const [loadingFields, setLoadingFields] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [srsSchema, setSrsSchema] = useState<SrsSchema | null>(null);
 
   const isAnki = srsDestination === 'anki';
   const noteType = settings.defaultNoteType;
 
   const firstLoadRef = useRef(false);
 
+  // Load the SRS collection schema when the destination is Ocean SRS.
+  useEffect(() => {
+    if (isAnki) return;
+    let cancelled = false;
+    void fetchSrsSchema().then((r) => {
+      if (!cancelled && r.ok) setSrsSchema(r.value);
+    });
+    return () => { cancelled = true; };
+  }, [isAnki]);
+
   // Load persisted cache whenever the panel mounts / URL changes.
   useEffect(() => {
+    if (!isAnki) return;
     let cancelled = false;
     firstLoadRef.current = true;
 
@@ -122,7 +144,7 @@ export function CardCreatorSettingsPanel({
 
     void loadCache();
     return () => { cancelled = true; };
-  }, [settings.ankiConnectUrl, noteType, onChange, settings.fieldMappings]);
+  }, [isAnki, settings.ankiConnectUrl, noteType, onChange, settings.fieldMappings]);
 
   const handleUrlChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,9 +248,45 @@ export function CardCreatorSettingsPanel({
       </div>
 
       {!isAnki && (
-        <Text as="p" color="secondary" className={styles.hint} data-cell-id="cc-ocean-srs-hint">
-          {t('cardCreator.settings.destination.oceanHint')}
-        </Text>
+        <>
+          <div className={styles.pairGroup} data-cell-id="cc-srs-destination-pair">
+            <div className={styles.field}>
+              <label className={styles.fieldLabel} htmlFor="cc-srs-note-type">
+                {t('cardCreator.destination.noteType')}
+              </label>
+              <Select
+                id="cc-srs-note-type"
+                value={srsNotetypeId ?? srsSchema?.defaultNotetypeId ?? ''}
+                onChange={(v) => onSrsSelectionChange?.({ notetypeId: v })}
+                options={(srsSchema?.notetypes ?? []).map((n) => ({ value: n.id, label: n.name }))}
+                placeholder={t('cardCreator.settings.noteTypePlaceholder')}
+                disabled={!srsSchema || srsSchema.notetypes.length === 0}
+                aria-label={t('cardCreator.destination.noteType')}
+                data-cell-id="cc-srs-note-type-select"
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.fieldLabel} htmlFor="cc-srs-deck">
+                {t('cardCreator.destination.deck')}
+              </label>
+              <Select
+                id="cc-srs-deck"
+                value={srsDeckId ?? srsSchema?.defaultDeckId ?? ''}
+                onChange={(v) => onSrsSelectionChange?.({ deckId: v })}
+                options={(srsSchema?.decks ?? []).map((d) => ({ value: d.id, label: d.name }))}
+                placeholder={t('cardCreator.settings.deckPlaceholder')}
+                disabled={!srsSchema || srsSchema.decks.length === 0}
+                aria-label={t('cardCreator.destination.deck')}
+                data-cell-id="cc-srs-deck-select"
+              />
+            </div>
+          </div>
+
+          <Text as="p" color="secondary" className={styles.hint} data-cell-id="cc-ocean-srs-hint">
+            {t('cardCreator.settings.destination.oceanHint')}
+          </Text>
+        </>
       )}
 
       {isAnki && (

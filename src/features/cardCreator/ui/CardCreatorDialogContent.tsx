@@ -54,6 +54,7 @@ export function CardCreatorDialogContent({
 }: CardCreatorDialogContentProps): ReactElement {
   const {
     draft,
+    isSrs,
     decks,
     noteTypes,
     recentNoteId,
@@ -153,7 +154,7 @@ export function CardCreatorDialogContent({
   // takes longer than the prefetch). If the user opens a dropdown before
   // options arrive, the menu is empty until they arrive — no visual
   // "loading" state on the trigger.
-  const showNoRecentAlert = loadStatus === 'ready' && recentNoteId === null;
+  const showNoRecentAlert = !isSrs && loadStatus === 'ready' && recentNoteId === null;
 
   const headerSettings = isPanel ? (
     <Button
@@ -412,21 +413,23 @@ export function CardCreatorDialogContent({
 
       {/* Footer */}
       <div className={styles['cc-dialog__footer']}>
-        <div className={`${styles['cc-dialog__footer-mode']} ${styles['cc-dialog__select--pill']}`}>
-          <Select
-            value={draft.mediaUpdateMode}
-            options={[
-              { value: 'overwrite', label: t('cardCreator.updateMode.overwrite') },
-              { value: 'append', label: t('cardCreator.updateMode.append') },
-              { value: 'skip', label: t('cardCreator.updateMode.skip') },
-            ]}
-            onChange={(m) => updateDraft({ mediaUpdateMode: m as 'overwrite' | 'append' | 'skip' })}
-            aria-label={t('cardCreator.updateMode.label')}
-            menuAlign="auto"
-            className={styles['cc-dialog__select']}
-            data-cell-id="cc-update-mode"
-          />
-        </div>
+        {!isSrs && (
+          <div className={`${styles['cc-dialog__footer-mode']} ${styles['cc-dialog__select--pill']}`}>
+            <Select
+              value={draft.mediaUpdateMode}
+              options={[
+                { value: 'overwrite', label: t('cardCreator.updateMode.overwrite') },
+                { value: 'append', label: t('cardCreator.updateMode.append') },
+                { value: 'skip', label: t('cardCreator.updateMode.skip') },
+              ]}
+              onChange={(m) => updateDraft({ mediaUpdateMode: m as 'overwrite' | 'append' | 'skip' })}
+              aria-label={t('cardCreator.updateMode.label')}
+              menuAlign="auto"
+              className={styles['cc-dialog__select']}
+              data-cell-id="cc-update-mode"
+            />
+          </div>
+        )}
         <div className={styles['cc-dialog__footer-actions']}>
           <Button
             variant="outline"
@@ -446,15 +449,17 @@ export function CardCreatorDialogContent({
           >
             {t('cardCreator.action.add')}
           </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => { void submit('update'); }}
-            disabled={submitting || recentNoteId === null}
-            data-cell-id="cc-update"
-          >
-            {t('cardCreator.action.update')}
-          </Button>
+          {!isSrs && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => { void submit('update'); }}
+              disabled={submitting || recentNoteId === null}
+              data-cell-id="cc-update"
+            >
+              {t('cardCreator.action.update')}
+            </Button>
+          )}
         </div>
       </div>
 

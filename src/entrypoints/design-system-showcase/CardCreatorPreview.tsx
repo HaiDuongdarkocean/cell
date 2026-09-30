@@ -40,11 +40,18 @@ function makePlaceholderAudioFile(filename: string): MediaFile {
 
 const INITIAL_QUEUE = getMockCardCreatorQueue(SHOWCASE_DATA);
 
-function initialState(): CardCreatorState {
+function isSrsMode(): boolean {
+  return new URLSearchParams(window.location.search).get('srs') === '1';
+}
+
+function initialState(srsMode: boolean): CardCreatorState {
   const queue = INITIAL_QUEUE;
   const firstItem = queue[0];
   const variant = SHOWCASE_DATA;
-  const draft = createEmptyDraft('Basic', 'Default');
+  const draft = createEmptyDraft(
+    srsMode ? 'Ocean Basic' : 'Basic',
+    srsMode ? 'Ocean Default' : 'Default',
+  );
   return {
     draft: {
       ...draft,
@@ -68,9 +75,16 @@ function initialState(): CardCreatorState {
       tags: variant === 'overflow' ? Array.from({ length: 40 }, (_, i) => `tag${i + 1}`).join(', ') : 'demo, showcase',
       mediaUpdateMode: 'overwrite',
     },
-    decks: ['Default', 'Learning', 'French'],
-    noteTypes: ['Basic', 'Cloze', 'Audio card'],
-    availableFields: ['Front', 'Back', 'Definitions', 'Tags', 'Note', 'MoreExample'],
+    isSrs: srsMode,
+    decks: srsMode
+      ? ['Ocean Default', 'JLPT N3']
+      : ['Default', 'Learning', 'French'],
+    noteTypes: srsMode
+      ? ['Ocean Basic', 'Ocean Cloze']
+      : ['Basic', 'Cloze', 'Audio card'],
+    availableFields: srsMode
+      ? ['Target', 'Sentence', 'Definition', 'Notes']
+      : ['Front', 'Back', 'Definitions', 'Tags', 'Note', 'MoreExample'],
     recentNoteId: null,
     recentNoteInfo: null,
     loadStatus: 'ready' as LoadStatus,
@@ -110,7 +124,7 @@ function initialState(): CardCreatorState {
 }
 
 function useMockCardCreatorState(): CardCreatorState {
-  const [state, setState] = useState<CardCreatorState>(initialState);
+  const [state, setState] = useState<CardCreatorState>(() => initialState(isSrsMode()));
   const deletedRef = useRef<{ item: CardCreatorQueueItem; index: number } | null>(null);
 
   const pushToast = useCallback((kind: Toast['kind'], message: string, undoable = false): void => {

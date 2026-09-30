@@ -85,6 +85,18 @@ function hasCardCreatorSettingsChanged(change: chrome.storage.StorageChange): bo
   const oldSlice = oldSettings?.cardCreator;
   const newSlice = newSettings?.cardCreator;
   if (!oldSlice || !newSlice) return true;
+  if (
+    (oldSettings?.dictionaryPopup?.srsDestination ?? 'anki') !==
+    (newSettings?.dictionaryPopup?.srsDestination ?? 'anki')
+  ) {
+    return true;
+  }
+  if (
+    oldSettings?.srs?.activeDeckId !== newSettings?.srs?.activeDeckId ||
+    oldSettings?.srs?.activeNotetypeId !== newSettings?.srs?.activeNotetypeId
+  ) {
+    return true;
+  }
   return (
     oldSlice.ankiConnectUrl !== newSlice.ankiConnectUrl ||
     oldSlice.defaultDeck !== newSlice.defaultDeck ||
@@ -135,6 +147,9 @@ function CardCreatorPanelCore({
   const state = useCardCreatorState(cardCreatorSettings, openContext, initialAction, {
     onSubmitSuccess: onAfterSubmit,
     onQueueTermSelect,
+    srsDestination: settings.dictionaryPopup?.srsDestination ?? 'anki',
+    srsDeckId: settings.srs?.activeDeckId,
+    srsNotetypeId: settings.srs?.activeNotetypeId,
   });
   const { loadStatus, submitting, submit } = state;
 

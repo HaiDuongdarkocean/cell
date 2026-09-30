@@ -125,12 +125,20 @@ function getMockImages(variant: DataVariant): MediaFile[] {
   return [makePlaceholderImageFile('card-preview-1.svg')];
 }
 
+function isSrsShowcaseMode(): boolean {
+  return new URLSearchParams(window.location.search).get('srs') === '1';
+}
+
 function useMockCardCreatorState(): CardCreatorState {
   const deletedRef = useRef<{ item: CardCreatorQueueItem; index: number } | null>(null);
   const [state, setState] = useState<CardCreatorState>(() => {
+    const srsMode = isSrsShowcaseMode();
     const queue = getMockCardCreatorQueue(SHOWCASE_DATA);
     const firstItem = queue[0];
-    const draft = createEmptyDraft('Basic', 'Default');
+    const draft = createEmptyDraft(
+      srsMode ? 'Ocean Basic' : 'Basic',
+      srsMode ? 'Ocean Default' : 'Default',
+    );
     const variant = SHOWCASE_DATA;
     return {
       draft: {
@@ -158,9 +166,12 @@ function useMockCardCreatorState(): CardCreatorState {
         tags: getMockTags(variant),
         mediaUpdateMode: 'overwrite',
       },
-      decks: ['Default', 'Learning'],
-      noteTypes: ['Basic', 'Cloze'],
-      availableFields: ['Front', 'Back', 'Definitions', 'Image', 'Audio', 'Note', 'Tags'],
+      isSrs: srsMode,
+      decks: srsMode ? ['Ocean Default', 'JLPT N3'] : ['Default', 'Learning'],
+      noteTypes: srsMode ? ['Ocean Basic', 'Ocean Cloze'] : ['Basic', 'Cloze'],
+      availableFields: srsMode
+        ? ['Target', 'Sentence', 'Definition', 'Notes']
+        : ['Front', 'Back', 'Definitions', 'Image', 'Audio', 'Note', 'Tags'],
       recentNoteId: null,
       recentNoteInfo: null,
       loadStatus: 'ready' as LoadStatus,

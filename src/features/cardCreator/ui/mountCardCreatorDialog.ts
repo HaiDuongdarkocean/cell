@@ -13,7 +13,7 @@ import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
 import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { CardCreatorDialog } from './CardCreatorDialog';
 import { CardCreatorBottomSheet } from './CardCreatorBottomSheet';
-import type { CardCreatorSettings } from '@/entities/settings';
+import type { CardCreatorSettings, SrsDestination } from '@/entities/settings';
 import type { MediaFile } from '../media/mediaFile';
 import type {
   CardCreatorAction,
@@ -55,6 +55,7 @@ const SHADOW_CSS = [...allModuleCss, buildTokenSpanCssForShadow()];
  */
 export function mountCardCreatorDialog(
   initialSettings: CardCreatorSettings,
+  getSrsDestination?: () => SrsDestination,
 ): CardCreatorMountController {
   const mount = mountReactShadow(createElement('div'), {
     parent: document.body,
@@ -103,6 +104,7 @@ export function mountCardCreatorDialog(
       open,
       onOpenChange: handleOpenChange,
       settings,
+      srsDestination: getSrsDestination?.() ?? 'anki',
       openContext: context,
       initialAction,
       registerAddMedia,

@@ -9,6 +9,7 @@ import type {
   CardCreatorQueueItem,
   Toast,
 } from '../types';
+import type { SrsSchema } from '../service/srsCardService';
 
 export type LoadStatus =
   | 'idle'
@@ -29,10 +30,13 @@ type QueueActiveIndexUpdater = number | ((prev: number) => number);
 interface CardCreatorStore {
   /** Card draft (note type, deck, fields, mapping, tags, mode). */
   draft: CardDraft;
-  /** Available decks from AnkiConnect. */
+  /** Available decks from AnkiConnect (names; SRS mode → deck names). */
   decks: readonly string[];
-  /** Available note types from AnkiConnect. */
+  /** Available note types from AnkiConnect (names; SRS mode → notetype names). */
   noteTypes: readonly string[];
+  /** Resolved SRS schema (collection + decks + notetypes with field ids) —
+   *  null in Anki mode. Names in `decks`/`noteTypes` resolve to ids here. */
+  srsSchema: SrsSchema | null;
   /** Available Anki field names for the current note type. */
   availableFields: readonly string[];
   /** Newest note id in the selected deck + note type, or null if none. */
@@ -64,6 +68,8 @@ interface CardCreatorStore {
   setDecks: (decks: readonly string[]) => void;
   /** Replace the available note types. */
   setNoteTypes: (noteTypes: readonly string[]) => void;
+  /** Replace the resolved SRS schema (null when destination is Anki). */
+  setSrsSchema: (srsSchema: SrsSchema | null) => void;
   /** Replace the available fields for the current note type. */
   setAvailableFields: (availableFields: readonly string[]) => void;
   /** Set the most recent note id. */
@@ -124,6 +130,7 @@ const createInitialData = () => ({
   draft: createEmptyDraft('', ''),
   decks: [] as readonly string[],
   noteTypes: [] as readonly string[],
+  srsSchema: null as SrsSchema | null,
   availableFields: [] as readonly string[],
   recentNoteId: null as number | null,
   recentNoteInfo: null as { fields: Record<string, string>; tags: string[] } | null,
@@ -148,6 +155,7 @@ export const useCardCreatorStore = create<CardCreatorStore>((set, get) => ({
 
   setDecks: (decks) => set({ decks }),
   setNoteTypes: (noteTypes) => set({ noteTypes }),
+  setSrsSchema: (srsSchema) => set({ srsSchema }),
   setAvailableFields: (availableFields) => set({ availableFields }),
   setRecentNoteId: (recentNoteId) => set({ recentNoteId }),
   setRecentNoteInfo: (recentNoteInfo) => set({ recentNoteInfo }),

@@ -9,7 +9,7 @@
 import type { ReactElement } from 'react';
 import { useEffect } from 'react';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
-import type { CardCreatorSettings } from '@/entities/settings';
+import type { CardCreatorSettings, SrsDestination } from '@/entities/settings';
 import type { CardCreatorOpenContext } from '../types';
 import type { MediaFile } from '../media/mediaFile';
 import { CardCreatorDialogContent } from './CardCreatorDialogContent';
@@ -24,6 +24,8 @@ interface CardCreatorBottomSheetProps {
   onOpenChange: (open: boolean) => void;
   /** Card Creator settings (URL, defaults). */
   settings: CardCreatorSettings;
+  /** Card destination — 'anki' or 'ocean-srs'. Default 'anki'. */
+  srsDestination?: SrsDestination;
   /** Context for media extraction (video + cue + languages + pre-captured media). */
   openContext: CardCreatorOpenContext | null;
   /** Initial action hint ('quick-add' = popup Quick Add, 'quick-update' pre-selects Update, 'edit-card' is neutral). */
@@ -38,13 +40,14 @@ export function CardCreatorBottomSheet({
   open,
   onOpenChange,
   settings,
+  srsDestination,
   openContext,
   initialAction,
   registerAddMedia,
   registerUpdateText,
 }: CardCreatorBottomSheetProps): ReactElement | null {
   const ctx: CardCreatorOpenContext | null = open ? openContext : null;
-  const state = useCardCreatorState(settings, ctx, initialAction);
+  const state = useCardCreatorState(settings, ctx, initialAction, { srsDestination });
 
   useEffect(() => {
     if (!open || !registerAddMedia) return;

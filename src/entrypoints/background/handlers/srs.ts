@@ -12,6 +12,7 @@ import {
   SrsOpenStudyPagePayloadSchema,
 } from '@/entities/message/schema';
 import { addNoteFromMessage } from '@/features/srs/services/addNoteFromMessage';
+import { ensureFirstRun } from '@/features/srs/services/firstRunService';
 import { getCollection } from '@/features/srs/repositories/collectionRepository';
 import { getDecksByCollection } from '@/features/srs/repositories/deckRepository';
 import { getNotetypesByCollection } from '@/features/srs/repositories/notetypeRepository';
@@ -45,7 +46,9 @@ export function registerSrsHandlers(ctx: BackgroundContext): void {
         return { success: false, error: `Invalid payload: ${parsed.error.message}` };
       }
       try {
-        const collection = await getCollection(parsed.data.collectionId);
+        const collectionId =
+          parsed.data.collectionId ?? (await ensureFirstRun()).collectionId;
+        const collection = await getCollection(collectionId);
         const [decks, notetypes] = await Promise.all([
           getDecksByCollection(collection.id),
           getNotetypesByCollection(collection.id),
@@ -53,8 +56,16 @@ export function registerSrsHandlers(ctx: BackgroundContext): void {
         return {
           success: true,
           data: {
+            collectionId: collection.id,
+            defaultDeckId: collection.defaultDeckId,
+            defaultNotetypeId: collection.defaultNotetypeId,
             decks: decks.map((d) => ({ id: d.id, name: d.name })),
-            notetypes: notetypes.map((n) => ({ id: n.id, name: n.name })),
+            notetypes: notetypes.map((n) => ({
+              id: n.id,
+              name: n.name,
+              targetFieldId: n.targetFieldId,
+              fields: n.fields.map((f) => ({ id: f.id, name: f.name, type: f.type })),
+            })),
           },
         };
       } catch (err) {
