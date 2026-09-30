@@ -1,0 +1,32 @@
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: min(40rem, 96vw);
+  margin: 0 auto;
+  padding: var(--space-5) 0 var(--space-10);
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.chromeButton {
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+}
+
+.heroChip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2-5);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-full);
+}

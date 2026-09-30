@@ -73,9 +73,11 @@ function DeckRow({
 export interface SrsHomeProps {
   readonly onManage: () => void;
   readonly onOpenSettings: () => void;
+  readonly onOpenStreaks: () => void;
+  readonly onOpenVocabulary: () => void;
 }
 
-export function SrsHome({ onManage, onOpenSettings }: SrsHomeProps): React.JSX.Element {
+export function SrsHome({ onManage, onOpenSettings, onOpenStreaks, onOpenVocabulary }: SrsHomeProps): React.JSX.Element {
   const { start, loading, finished, stats } = useSrsStudy();
   const prefs = useSrsUiPrefs();
   const [home, setHome] = useState<SrsHomeStats | null>(null);
@@ -184,32 +186,32 @@ export function SrsHome({ onManage, onOpenSettings }: SrsHomeProps): React.JSX.E
         <Text className={styles.minLeft}>{t('srs.home.minLeft', [home?.minutesLeft ?? 0])}</Text>
 
         <Box className={styles.heroStats}>
-          <Box className={styles.statCard}>
-            <Box className={styles.statCardHeader}>
+          <button type="button" className={styles.statCard} onClick={onOpenStreaks}>
+            <span className={styles.statCardHeader}>
               <Text className={styles.statCardTitle}>{t('srs.home.streak')}</Text>
               <Icon name="chevronRight" />
-            </Box>
-            <Box className={styles.streakRow}>
+            </span>
+            <span className={styles.streakRow}>
               <Icon name="zap" className={styles.streakFlame} />
               <Text className={styles.streakDays}>{t('srs.home.streakDays', [home?.streakDays ?? 0])}</Text>
-            </Box>
-            <Box className={styles.streakGrid}>
+            </span>
+            <span className={styles.streakGrid}>
               {streakDots.map((active, i) => (
                 <span key={i} className={[styles.streakDot, active ? styles.streakDotActive : '', i === 13 ? styles.streakDotToday : ''].filter(Boolean).join(' ')} />
               ))}
-            </Box>
-          </Box>
+            </span>
+          </button>
 
-          <Box className={styles.statCard}>
-            <Box className={styles.statCardHeader}>
+          <button type="button" className={styles.statCard} onClick={onOpenVocabulary}>
+            <span className={styles.statCardHeader}>
               <Text className={styles.statCardTitle}>{t('srs.home.knownWords')}</Text>
               <Icon name="chevronRight" />
-            </Box>
-            <Box className={styles.knownRow}>
+            </span>
+            <span className={styles.knownRow}>
               <FlagIcon lang={targetLanguage} size={18} />
               <Text className={styles.knownCount}>{(home?.learnedWords ?? 0).toLocaleString()}</Text>
-            </Box>
-            <div className={styles.wordsBars} role="img" aria-label={t('srs.home.knownWords')}>
+            </span>
+            <span className={styles.wordsBars} role="img" aria-label={t('srs.home.knownWords')}>
               {wordsPerDay.map((count, i) => (
                 <span
                   key={i}
@@ -217,9 +219,9 @@ export function SrsHome({ onManage, onOpenSettings }: SrsHomeProps): React.JSX.E
                   style={{ height: `${Math.max(12, (count / wordsMax) * 100)}%` }}
                 />
               ))}
-            </div>
+            </span>
             <Text className={styles.knownDelta}>{t('srs.home.wordsAdded', [home?.wordsAddedToday ?? 0])}</Text>
-          </Box>
+          </button>
         </Box>
 
         <Button variant="primary" className={styles.continueButton} fullWidth onClick={() => { void start(); }} disabled={loading}>

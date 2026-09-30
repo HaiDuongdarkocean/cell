@@ -6,11 +6,13 @@ import { SrsManagePanel } from './SrsManagePanel';
 import { SrsReviewCard } from './SrsReviewCard';
 import { SrsHome } from './SrsHome';
 import { SrsStudySettings } from './SrsStudySettings';
+import { SrsStreaksView } from './SrsStreaksView';
+import { SrsVocabularyView } from './SrsVocabularyView';
 import styles from './App.module.css';
 
 export function App() {
   const { loading, error, session, dismissError } = useSrsStudy();
-  const [view, setView] = useState<'home' | 'manage'>('home');
+  const [view, setView] = useState<'home' | 'manage' | 'streaks' | 'vocabulary'>('home');
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
@@ -29,10 +31,16 @@ export function App() {
         <SrsReviewCard onManage={() => { setView('manage'); }} />
       ) : view === 'manage' ? (
         <SrsManagePanel onBack={() => { setView('home'); }} />
+      ) : view === 'streaks' ? (
+        <SrsStreaksView onBack={() => { setView('home'); }} />
+      ) : view === 'vocabulary' ? (
+        <SrsVocabularyView onBack={() => { setView('home'); }} />
       ) : (
         <SrsHome
           onManage={() => { setView('manage'); }}
           onOpenSettings={() => { setSettingsOpen(true); }}
+          onOpenStreaks={() => { setView('streaks'); }}
+          onOpenVocabulary={() => { setView('vocabulary'); }}
         />
       )}
       {settingsOpen && !loading && (

@@ -31,6 +31,15 @@ export interface SrsHomeStats {
   readonly decks: readonly SrsHomeDeckStat[];
 }
 
+export type StreakDayLevel = 'none' | 'partial' | 'full';
+
+export interface SrsStreakStats {
+  readonly currentStreak: number;
+  readonly bestStreak: number;
+  readonly avgReviews14: number;
+  readonly dayLevels: readonly StreakDayLevel[];
+}
+
 function isNew(card: SrsCard): boolean {
   return COMPONENT_TYPES.every((type) => card.components[type].exploreCount === 0);
 }
@@ -127,5 +136,49 @@ export async function getSrsHomeStats(
     activeDayKeys,
     minutesLeft: Math.max(1, Math.ceil((dueNow * SECONDS_PER_CARD) / 60)),
     decks: deckStats,
+  };
+}
+
+const STREAK_LOOKBACK_DAYS = 364;
+const COMPLETED_REVIEWS_PER_DAY = 10;
+
+/** Streaks detail stats: current/best streak, 14-day daily average, per-day level for the last 52 weeks. */
+export async function getStreakStats(
+  dayStartHour = 0,
+  now = new Date(),
+): Promise<SrsStreakStats> {
+  const todayStart = dayStartMs(now, dayStartHour);
+  const events = await getReviewEventsByTimestampRange(todayStart - STREAK_LOOKBACK_DAYS * DAY_MS, now.getTime());
+
+  const counts = new Map<string, number>();
+  for (const event of events) {
+    const key = dayKeyFor(event.answeredAt, dayStartHour);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  const countsPerDay: number[] = [];
+  for (let i = STREAK_LOOKBACK_DAYS; i >= 0; i -= 1) {
+    countsPerDay.push(counts.get(dayKeyFor(todayStart - i * DAY_MS, dayStartHour)) ?? 0);
+  }
+
+  const activeDays = countsPerDay.map((c) => c > 0);
+  let bestStreak = 0;
+  let run = 0;
+  for (const active of activeDays) {
+    run = active ? run + 1 : 0;
+    if (run > bestStreak) bestStreak = run;
+  }
+  const currentStreak = computeStreak(new Set(counts.keys()), dayStartHour, now);
+  const last14 = countsPerDay.slice(-14);
+  const avgReviews14 = Math.round(last14.reduce((a, b) => a + b, 0) / last14.length);
+
+  return {
+    currentStreak,
+    bestStreak,
+    avgReviews14,
+    // ponytail: we don't store per-day due counts, so "completed all reviews" is
+    // approximated by >= COMPLETED_REVIEWS_PER_DAY events that day. Upgrade path:
+    // persist a daily-goal snapshot, then mark full = reviewed >= goal.
+    dayLevels: countsPerDay.map((c): StreakDayLevel => (c === 0 ? 'none' : c >= COMPLETED_REVIEWS_PER_DAY ? 'full' : 'partial')),
   };
 }
