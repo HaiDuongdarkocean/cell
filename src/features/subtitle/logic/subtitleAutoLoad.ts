@@ -30,6 +30,10 @@ import { gunzipSync, unzipSync, strFromU8 } from 'fflate';
 import { getCachedSubtitleBody, waitForCachedSubtitleBody } from './subtitleResponseCache';
 import { decryptAndDetectFormat } from '@/shared/lib/parsers/encryptedFile';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import {
+  isYouTubeTimedtextUrl,
+  fetchYouTubeCaptionViaPlayer,
+} from './youtubePlayerCaptionFetch';
 import type { SrtCue } from '@/entities/media';
 import type { SubtitleFormat, ParseResult } from '@/entities/subtitle';
 import type {
@@ -237,7 +241,10 @@ export async function fetchAndParseSubtitle(
         content = await fetchViaBackground(url, tabUrl, initiator);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        return { success: false, cues: [], format, error: `Fetch failed: ${msg}` };
+        if (!isYouTubeTimedtextUrl(url)) {
+          return { success: false, cues: [], format, error: `Fetch failed: ${msg}` };
+        }
+        // YouTube timedtext → fall through to the player fallback below.
       }
     }
   }
@@ -247,9 +254,22 @@ export async function fetchAndParseSubtitle(
     // wait timeout or after a failed replay. Check the cache one final time
     // before giving up on token-signed URLs.
     content = getCachedSubtitleBody(url);
-    if (!content) {
-      return { success: false, cues: [], format, error: 'Subtitle content unavailable' };
+  }
+
+  // YouTube timedtext URLs reject replayed requests without a runtime `pot`
+  // param (HTTP 429 or empty 200). When every fetch path failed, ask the
+  // page's own player to load the track and hand us the captured body.
+  let playerFormat: SubtitleFormat | undefined;
+  if (!content && isYouTubeTimedtextUrl(url)) {
+    const viaPlayer = await fetchYouTubeCaptionViaPlayer(url);
+    if (viaPlayer) {
+      content = viaPlayer.content;
+      playerFormat = viaPlayer.format;
     }
+  }
+
+  if (!content) {
+    return { success: false, cues: [], format, error: 'Subtitle content unavailable' };
   }
 
   // PhimWar-style encrypted payloads must be decrypted before
@@ -278,7 +298,9 @@ export async function fetchAndParseSubtitle(
   try {
     const { content: decryptedContent, format: contentFormat } = decryptAndDetectFormat(content);
     content = decryptedContent;
-    if (contentFormat) {
+    if (playerFormat) {
+      detectedFormat = playerFormat;
+    } else if (contentFormat) {
       detectedFormat = contentFormat;
     }
   } catch (err) {

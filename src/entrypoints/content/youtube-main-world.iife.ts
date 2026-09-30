@@ -34,7 +34,13 @@ declare const __CELL_DEBUG__: string | undefined;
   // Marker for injection verification (visible from DevTools evaluate_script).
   (window as unknown as Record<string, unknown>).__YT_MAIN_WORLD_INJECTED = true;
 
-  const ANDROID_CLIENT_VERSION = '20.10.38';
+  // InnerTube clients that return caption tracks WITHOUT PO Token (exp=null).
+  // ANDROID works most often; IOS is the fallback when ANDROID is flagged
+  // (LOGIN_REQUIRED). Both work with the browser's default User-Agent.
+  const INNERTUBE_CLIENTS = [
+    { clientName: 'ANDROID', clientVersion: '20.10.38' },
+    { clientName: 'IOS', clientVersion: '20.10.4' },
+  ] as const;
   const INNERTUBE_ENDPOINT = 'https://www.youtube.com/youtubei/v1/player';
 
   function extractInnertubeApiKey(html: string): string | null {
@@ -74,46 +80,251 @@ declare const __CELL_DEBUG__: string | undefined;
   }
 
   /**
-   * Fetch caption tracks via InnerTube ANDROID client (NO PO Token).
-   * MUST run in MAIN world — needs YouTube cookies + origin (SW fetch 403s).
+   * Fetch caption tracks via InnerTube (ANDROID → IOS fallback — both return
+   * tracks WITHOUT PO Token). MUST run in MAIN world — needs YouTube cookies
+   * + origin (SW fetch 403s).
    */
   async function fetchCaptionTracksViaInnerTube(
     videoId: string,
     apiKey: string,
     visitorData?: string,
   ): Promise<unknown[]> {
-    const client: Record<string, unknown> = {
-      clientName: 'ANDROID',
-      clientVersion: ANDROID_CLIENT_VERSION,
-    };
-    if (visitorData) client.visitorData = visitorData;
-    const body = { context: { client }, videoId };
     const url = `${INNERTUBE_ENDPOINT}?key=${encodeURIComponent(apiKey)}`;
-
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!response.ok) {
-        console.warn(`[youtube-main-world] InnerTube HTTP ${response.status}`);
-        return [];
+    for (const clientDef of INNERTUBE_CLIENTS) {
+      const client: Record<string, unknown> = { ...clientDef };
+      if (visitorData) client.visitorData = visitorData;
+      const body = { context: { client }, videoId };
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!response.ok) {
+          console.warn(
+            `[youtube-main-world] InnerTube ${clientDef.clientName} HTTP ${response.status}`,
+          );
+          continue;
+        }
+        const json: unknown = await response.json();
+        const status = (json as Record<string, unknown>)?.playabilityStatus as
+          | { status?: string }
+          | undefined;
+        if (status?.status !== 'OK') {
+          console.warn(
+            `[youtube-main-world] InnerTube ${clientDef.clientName} playability=${status?.status}`,
+          );
+          continue;
+        }
+        const captions = (json as Record<string, unknown>).captions;
+        if (typeof captions !== 'object' || captions === null) continue;
+        const renderer = (captions as Record<string, unknown>)
+          .playerCaptionsTracklistRenderer;
+        if (typeof renderer !== 'object' || renderer === null) continue;
+        const tracks = (renderer as Record<string, unknown>).captionTracks;
+        if (Array.isArray(tracks) && tracks.length > 0) return tracks;
+        return Array.isArray(tracks) ? tracks : [];
+      } catch (err) {
+        console.warn(
+          `[youtube-main-world] InnerTube ${clientDef.clientName} fetch failed:`,
+          err,
+        );
       }
-      const json: unknown = await response.json();
-      if (typeof json !== 'object' || json === null) return [];
-      const captions = (json as Record<string, unknown>).captions;
-      if (typeof captions !== 'object' || captions === null) return [];
-      const renderer = (captions as Record<string, unknown>)
-        .playerCaptionsTracklistRenderer;
-      if (typeof renderer !== 'object' || renderer === null) return [];
-      const tracks = (renderer as Record<string, unknown>).captionTracks;
-      return Array.isArray(tracks) ? tracks : [];
-    } catch (err) {
-      console.warn('[youtube-main-world] InnerTube fetch failed:', err);
-      return [];
+    }
+    return [];
+  }
+
+  // === Player-mediated timedtext capture (PO Token workaround) ===
+  // YouTube now rejects plain timedtext replays without a runtime `pot`
+  // param (HTTP 429 "Sorry" or empty 200). The page's own player generates
+  // the token when it loads a caption track, so on request from the isolated
+  // content script we briefly enable the matching track on #movie_player and
+  // capture the response body the player receives (XHR or fetch).
+  const timedtextBodies = new Map<string, string>();
+
+  function timedtextKey(url: string): string | null {
+    try {
+      const u = new URL(url, location.href);
+      const lang = u.searchParams.get('lang');
+      if (!lang) return null;
+      return `${lang}|${u.searchParams.get('kind') ?? ''}`;
+    } catch {
+      return null;
     }
   }
+
+  function captureTimedtextBody(url: string, body: string): void {
+    if (!body) return;
+    const key = timedtextKey(url);
+    if (key) timedtextBodies.set(key, body);
+  }
+
+  const origXhrOpen = XMLHttpRequest.prototype.open;
+  const origXhrSend = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.open = function (
+    this: XMLHttpRequest & { __cellTtUrl?: string },
+    method: string,
+    url: string | URL,
+    ...rest: unknown[]
+  ): void {
+    this.__cellTtUrl = String(url);
+    return (origXhrOpen as unknown as (...a: unknown[]) => void).call(
+      this,
+      method,
+      url,
+      ...rest,
+    );
+  } as typeof XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.send = function (
+    this: XMLHttpRequest & { __cellTtUrl?: string },
+    ...args: unknown[]
+  ): void {
+    const url = this.__cellTtUrl;
+    if (url && /\/api\/timedtext/.test(url)) {
+      this.addEventListener('load', () => {
+        try {
+          if (this.status === 200 && typeof this.responseText === 'string') {
+            captureTimedtextBody(url, this.responseText);
+          }
+        } catch {
+          /* best effort */
+        }
+      });
+    }
+    return (origXhrSend as unknown as (...a: unknown[]) => void).apply(this, args);
+  } as typeof XMLHttpRequest.prototype.send;
+
+  const prevFetch = window.fetch;
+  window.fetch = function (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<Response> {
+    return prevFetch.call(this, input, init).then((response) => {
+      try {
+        const url =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.href
+              : (input as Request).url;
+        if (/\/api\/timedtext/.test(url) && response.ok) {
+          void response
+            .clone()
+            .text()
+            .then((body) => captureTimedtextBody(url, body))
+            .catch(() => undefined);
+        }
+      } catch {
+        /* best effort */
+      }
+      return response;
+    });
+  };
+
+  interface CaptionsPlayerApi extends YoutubePlayerApi {
+    getOption?: (module: string, option: string) => unknown;
+    setOption?: (module: string, option: string, value: unknown) => void;
+    loadModule?: (name: string) => void;
+    unloadModule?: (name: string) => void;
+  }
+
+  interface PlayerCaptionTrack {
+    languageCode?: string;
+    kind?: string;
+    [key: string]: unknown;
+  }
+
+  function waitForTimedtextBody(key: string, timeoutMs: number): Promise<string | undefined> {
+    const start = Date.now();
+    return new Promise((resolve) => {
+      const existing = timedtextBodies.get(key);
+      if (existing) {
+        resolve(existing);
+        return;
+      }
+      const id = setInterval(() => {
+        const body = timedtextBodies.get(key);
+        if (body || Date.now() - start >= timeoutMs) {
+          clearInterval(id);
+          resolve(body);
+        }
+      }, 100);
+    });
+  }
+
+  // Drives the player to fetch one caption track, captures the timedtext
+  // body, then restores the user's previous caption state so native captions
+  // do not stay enabled.
+  async function fetchTrackViaPlayer(
+    lang: string,
+    kind: string | null,
+  ): Promise<string | undefined> {
+    const key = `${lang}|${kind ?? ''}`;
+    const cached = timedtextBodies.get(key);
+    if (cached) return cached;
+    const player = getYoutubePlayer() as CaptionsPlayerApi | null;
+    if (!player?.getOption || !player.setOption) return undefined;
+    const tracklist = player.getOption('captions', 'tracklist');
+    if (!Array.isArray(tracklist)) return undefined;
+    const tracks = tracklist as PlayerCaptionTrack[];
+    const track =
+      tracks.find(
+        (t) =>
+          t.languageCode === lang && (kind ? t.kind === kind : !t.kind),
+      ) ?? tracks.find((t) => t.languageCode === lang);
+    if (!track) return undefined;
+    let prev: PlayerCaptionTrack | undefined;
+    try {
+      prev = player.getOption('captions', 'track') as PlayerCaptionTrack | undefined;
+    } catch {
+      prev = undefined;
+    }
+    try {
+      player.loadModule?.('captions');
+      player.setOption('captions', 'track', track);
+    } catch {
+      return undefined;
+    }
+    let body = await waitForTimedtextBody(key, 10_000);
+    if (!body) {
+      for (const [k, v] of timedtextBodies) {
+        if (k.startsWith(`${lang}|`)) {
+          body = v;
+          break;
+        }
+      }
+    }
+    try {
+      if (prev?.languageCode) {
+        player.setOption('captions', 'track', prev);
+      } else {
+        player.setOption('captions', 'track', {});
+        player.unloadModule?.('captions');
+      }
+    } catch {
+      /* best effort */
+    }
+    return body;
+  }
+
+  window.addEventListener('message', (event) => {
+    const data = event.data as
+      | { type?: string; requestId?: string; lang?: string; kind?: string | null }
+      | null;
+    if (data?.type !== '__YT_TIMEDTEXT_REQUEST' || !data.requestId || !data.lang) {
+      return;
+    }
+    void fetchTrackViaPlayer(data.lang, data.kind ?? null).then((body) => {
+      window.postMessage(
+        {
+          type: '__YT_TIMEDTEXT_RESPONSE',
+          requestId: data.requestId,
+          body: body ?? null,
+        },
+        '*',
+      );
+    });
+  });
 
   let lastVideoId: string | null = null;
   // Cache last detected tracks so a late-injecting content-script can request
