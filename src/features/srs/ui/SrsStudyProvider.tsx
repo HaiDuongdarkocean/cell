@@ -81,6 +81,8 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<SrsReviewSession | null>(null);
   const [finished, setFinished] = useState(false);
   const [deckId, setDeckId] = useState<string | null>(null);
+  const [collectionId, setCollectionId] = useState<string | null>(null);
+  const [sessionCollectionId, setSessionCollectionId] = useState<string | null>(null);
   const [config, setConfig] = useState<SrsStudyConfig | null>(null);
   const [stats, setStats] = useState<SrsDeckStats | null>(null);
   const [audioCache] = useState(() => new Map<string, SrsAudioAsset>());
@@ -118,16 +120,17 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
   }, [history]);
 
   const ensureDeck = useCallback(async () => {
-    if (deckId && config && stats) return { deckId, config, stats };
+    if (deckId && config && stats && collectionId) return { collectionId, deckId, config, stats };
     const result = await ensureFirstRun();
     const studyConfig = await getStudyConfig(result.studyConfigId);
     const deckStats = await getSrsStats(result.deckId);
+    setCollectionId(result.collectionId);
     setDeckId(result.deckId);
     setConfig(studyConfig);
     setStats(deckStats);
     setReady(true);
-    return { deckId: result.deckId, config: studyConfig, stats: deckStats };
-  }, [deckId, config, stats]);
+    return { collectionId: result.collectionId, deckId: result.deckId, config: studyConfig, stats: deckStats };
+  }, [deckId, collectionId, config, stats]);
 
   const refreshStats = useCallback(async () => {
     if (!deckId) return;
@@ -146,15 +149,17 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
     setHistory([]);
     revokeAllBlobUrls();
     try {
-      const { deckId: defaultDeckId, config: cfg } = await ensureDeck();
+      const { collectionId: colId, deckId: defaultDeckId, config: cfg } = await ensureDeck();
       if (!cfg || !defaultDeckId) return;
-      const did = deckIdOverride ?? defaultDeckId;
-      if (did !== deckId) setDeckId(did);
       const { config: effConfig, options, includeSubdecks } = applyUiPrefs(cfg);
-      const next = await selectNextReview(did, includeSubdecks, effConfig, nowISO(), adapter, audioCache, imageCache, 1000, options);
+      const scopeId = deckIdOverride ?? null;
+      const next = await selectNextReview(scopeId, includeSubdecks, effConfig, nowISO(), adapter, audioCache, imageCache, 1000, options, scopeId ? undefined : colId);
+      setSessionCollectionId(scopeId ? null : colId);
       if (next) {
+        if (next.card.deckId !== deckId) setDeckId(next.card.deckId);
         setSession(next);
       } else {
+        if (scopeId && scopeId !== deckId) setDeckId(scopeId);
         setSession(null);
         setFinished(true);
       }
@@ -177,7 +182,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
         void refreshStats();
         const { options, includeSubdecks } = applyUiPrefs(config);
         const next = await selectNextReview(
-          session.card.deckId,
+          sessionCollectionId ? null : session.card.deckId,
           includeSubdecks,
           config,
           nowISO(),
@@ -186,9 +191,11 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
           imageCache,
           1000,
           options,
+          sessionCollectionId ?? undefined,
         );
         if (next) {
           setHistory((h) => [...h, session]);
+          if (next.card.deckId !== session.card.deckId) setDeckId(next.card.deckId);
           setSession(next);
         } else {
           setSession(null);
@@ -202,7 +209,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     },
-    [session, config, audioCache, imageCache, refreshStats, revokeAllBlobUrls],
+    [session, sessionCollectionId, config, audioCache, imageCache, refreshStats, revokeAllBlobUrls],
   );
 
   const markStudyAgain = useCallback(
@@ -236,6 +243,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setFinished(false);
     setHistory([]);
+    setSessionCollectionId(null);
     revokeAllBlobUrls();
     void refreshStats();
   }, [refreshStats, revokeAllBlobUrls]);
@@ -263,8 +271,9 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
     await deleteCardCascade(session.card.id);
     void refreshStats();
     const { options, includeSubdecks } = applyUiPrefs(config);
-    const next = await selectNextReview(deckIdOfCard, includeSubdecks, config, nowISO(), adapter, audioCache, imageCache, 1000, options);
+    const next = await selectNextReview(sessionCollectionId ? null : deckIdOfCard, includeSubdecks, config, nowISO(), adapter, audioCache, imageCache, 1000, options, sessionCollectionId ?? undefined);
     if (next) {
+      if (next.card.deckId !== deckIdOfCard) setDeckId(next.card.deckId);
       setSession(next);
     } else {
       setSession(null);
@@ -272,7 +281,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       setHistory([]);
       revokeAllBlobUrls();
     }
-  }, [session, config, refreshStats, audioCache, imageCache, revokeAllBlobUrls]);
+  }, [session, sessionCollectionId, config, refreshStats, audioCache, imageCache, revokeAllBlobUrls]);
 
   const dismissError = useCallback(() => {
     setError(null);

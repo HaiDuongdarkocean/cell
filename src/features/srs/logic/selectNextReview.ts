@@ -3,7 +3,7 @@ import type { SrsCard } from '@/entities/srs/types';
 import { SrsError } from '@/features/srs/lib/srsError';
 import { FUTURE_ISO, minISO } from '@/features/srs/lib/helpers';
 import { getCardIdsByDeckDueBefore, getCardsByIds } from '@/features/srs/repositories/cardRepository';
-import { getDeck, getSubDecks } from '@/features/srs/repositories/deckRepository';
+import { getDeck, getDecksByCollection, getSubDecks } from '@/features/srs/repositories/deckRepository';
 import { getNotesByIds } from '@/features/srs/repositories/noteRepository';
 import { getNotetypesByIds } from '@/features/srs/repositories/notetypeRepository';
 import { resolvePool } from './resolvePool';
@@ -14,8 +14,12 @@ import { loadNoteAssets } from '@/features/srs/services/noteAssetLoader';
 const COMPONENT_TYPES: readonly ComponentType[] = ['sound', 'meaning', 'spelling'];
 
 /** Resolve the set of deck IDs to study, optionally including all descendants. */
-async function resolveDeckIds(rootDeckId: string | null, includeSubdecks: boolean): Promise<string[]> {
-  if (!rootDeckId) return [];
+async function resolveDeckIds(rootDeckId: string | null, includeSubdecks: boolean, collectionId?: string): Promise<string[]> {
+  if (!rootDeckId) {
+    if (!collectionId) return [];
+    const decks = await getDecksByCollection(collectionId);
+    return decks.map((d) => d.id);
+  }
 
   const root = await getDeck(rootDeckId);
   const result = [root.id];
@@ -42,7 +46,7 @@ function effectiveDueFor(card: SrsCard, type: ComponentType, adapter: SrsFsrsAda
   return minISO(fsrsDue, studyAgain ?? FUTURE_ISO);
 }
 
-/** Pick the next review session from a deck (and optionally its subdecks). */
+/** Pick the next review session from a deck (and optionally its subdecks), or across a whole collection when `rootDeckId` is null and `collectionId` is given. */
 export async function selectNextReview(
   rootDeckId: string | null,
   includeSubdecks: boolean,
@@ -53,8 +57,9 @@ export async function selectNextReview(
   imageCache: ReadonlyMap<string, SrsImageAsset>,
   maxScan = 1000,
   options: { readonly shuffle?: boolean; readonly startWith?: 'reviews' | 'new' } = {},
+  collectionId?: string,
 ): Promise<SrsReviewSession | null> {
-  const deckIds = await resolveDeckIds(rootDeckId, includeSubdecks);
+  const deckIds = await resolveDeckIds(rootDeckId, includeSubdecks, collectionId);
   if (deckIds.length === 0) return null;
 
   const cardIds: string[] = [];
