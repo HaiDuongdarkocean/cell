@@ -201,7 +201,7 @@
 .streakDot {
   aspect-ratio: 1;
   border-radius: var(--radius-full);
-  background: var(--color-surface);
+  background: var(--color-field);
 }
 
 .streakDotActive {
@@ -231,7 +231,7 @@
   flex: 1;
   min-width: 2px;
   border-radius: var(--radius-full);
-  background: var(--color-surface);
+  background: var(--color-field);
 }
 
 .wordsBarActive {
