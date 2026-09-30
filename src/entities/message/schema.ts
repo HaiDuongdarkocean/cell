@@ -425,3 +425,205 @@ export const SyncStatusViewSchema = z.object({
     lastAppliedAt: z.number().nullable(),
   }),
 });
+
+// === Detection / media-update broadcasts ===
+
+export const VideoVariantSchema = z.object({
+  url: z.string().min(1),
+  quality: VideoQualitySchema,
+  resolution: z.string().optional(),
+  bandwidth: z.number().optional(),
+  playlistUrl: z.string().optional(),
+  size: z.number().optional(),
+});
+
+export const VideoFormatSchema = z.enum(['m3u8', 'mp4', 'ts', 'webm', 'unknown']);
+
+export const DetectedVideoSchema = z.object({
+  id: z.string().min(1),
+  url: z.string().min(1),
+  format: VideoFormatSchema,
+  title: z.string(),
+  tabId: z.number().int(),
+  tabUrl: z.string(),
+  detectedAt: z.number(),
+  variants: z.array(VideoVariantSchema),
+  selectedVariantId: z.string().optional(),
+});
+
+export const SubtitleFormatSchema = z.enum(['srt', 'vtt', 'ass', 'ssa', 'ttml', 'unknown']);
+
+export const DetectedSubtitleSchema = z.object({
+  id: z.string().min(1),
+  url: z.string().min(1),
+  format: SubtitleFormatSchema,
+  language: z.string(),
+  tabId: z.number().int(),
+  detectedAt: z.number(),
+  videoId: z.string().optional(),
+  size: z.number().optional(),
+  isAsr: z.boolean().optional(),
+  displayName: z.string().optional(),
+  initiator: z.string().optional(),
+  frameId: z.number().int().optional(),
+});
+
+export const DetectedMediaUpdatePayloadSchema = z.object({
+  videos: z.array(DetectedVideoSchema),
+  subtitles: z.array(DetectedSubtitleSchema),
+  tabId: z.number().int(),
+});
+
+// === Download progress broadcast ===
+
+export const DownloadStatusSchema = z.enum([
+  'queued',
+  'downloading',
+  'converting',
+  'done',
+  'error',
+  'cancelled',
+  'paused',
+]);
+
+export const DownloadProgressSchema = z.object({
+  itemId: z.string(),
+  status: DownloadStatusSchema,
+  progress: z.number(),
+  currentSegment: z.number().optional(),
+  totalSegments: z.number().optional(),
+  error: z.string().optional(),
+  fileSize: z.number().optional(),
+  downloadedBytes: z.number().optional(),
+  processedBytes: z.number().optional(),
+  conversionPhase: ConversionPhaseSchema.optional(),
+  workerCount: z.number().optional(),
+  usedWorkers: z.boolean().optional(),
+  downloadProgress: z.number().optional(),
+  convertProgress: z.number().optional(),
+});
+
+export const DownloadProgressUpdatePayloadSchema = z.object({
+  progress: DownloadProgressSchema,
+  tabId: z.number().int(),
+});
+
+// === Offscreen document messages ===
+
+export const ParallelConversionModeSchema = z.enum(['auto', 'manual', 'off']);
+
+export const ParallelFallbackModeSchema = z.enum([
+  'sequential',
+  'retry-reduced',
+  'save-ts',
+  'fail',
+]);
+
+export const ConvertTsToMp4V2PayloadSchema = z.object({
+  downloadId: z.string().min(1),
+  parallelConversion: ParallelConversionModeSchema.optional(),
+  manualWorkerCount: z.number().int().min(1).optional(),
+  parallelFallback: ParallelFallbackModeSchema.optional(),
+});
+
+export const CreateOpfsBlobUrlPayloadSchema = z.object({
+  downloadId: z.string().min(1),
+  opfsFilename: z.string().min(1),
+  mimeType: z.string().min(1),
+});
+
+export const RevokeOpfsBlobUrlPayloadSchema = z.object({
+  url: z.string().min(1),
+});
+
+export const FetchRequestPayloadSchema = z.object({
+  url: z.string().min(1),
+  options: z
+    .object({
+      method: z.string().optional(),
+      headers: z.record(z.string(), z.string()).optional(),
+      credentials: z.enum(['omit', 'same-origin', 'include']).optional(),
+      responseType: z.enum(['text', 'arraybuffer']).optional(),
+    })
+    .optional(),
+});
+
+// === Auto-load / page-context subtitle pushes ===
+
+export const SubtitleForOverlayResultSchema = z.object({
+  url: z.string().min(1),
+  language: z.string(),
+  format: z.string(),
+  isAsr: z.boolean().optional(),
+  displayName: z.string().optional(),
+  initiator: z.string().optional(),
+});
+
+export const AutoLoadSubtitlesPayloadSchema = z.object({
+  tabId: z.number().int(),
+  target: SubtitleForOverlayResultSchema.nullable(),
+  native: SubtitleForOverlayResultSchema.nullable(),
+  targetMatches: z.array(SubtitleForOverlayResultSchema).optional(),
+  nativeMatches: z.array(SubtitleForOverlayResultSchema).optional(),
+});
+
+export const FetchSubtitlePageContextPayloadSchema = z.object({
+  url: z.string().min(1),
+});
+
+// === Study mode payloads ===
+
+export const StudyStepSchema = z.object({
+  subtitle: z.enum(['none', 'native', 'target', 'both', 'adaptive']),
+  pause: z.enum(['none', 'start', 'end']),
+  repeat: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  speed: z.number(),
+  after: z.enum(['continue', 'wait', 'loop']),
+  seek: z.boolean().optional(),
+  skip: z.enum(['non-i1']).optional(),
+});
+
+export const StudyModeSchema = z.object({
+  id: z.string(),
+  type: z.enum(['preset', 'custom']),
+  icon: z.string(),
+  title: z.string(),
+  description: z.string(),
+  titleKey: z.string().optional(),
+  descriptionKey: z.string().optional(),
+  steps: z.array(StudyStepSchema),
+});
+
+export const SubtitleCleanupRuleSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  nameKey: z.string().optional(),
+  descriptionKey: z.string().optional(),
+  pattern: z.string(),
+  replacement: z.string().optional(),
+  enabled: z.boolean(),
+  builtin: z.boolean(),
+  repeatUntilStable: z.boolean().optional(),
+});
+
+export const CleanupRulesSettingSchema = z.object({
+  builtinEnabled: z.record(z.string(), z.boolean()),
+  custom: z.array(SubtitleCleanupRuleSchema),
+});
+
+export const StudyModeAdvancedSettingsSchema = z.object({
+  skipNoDialogue: z.enum(['OFF', '2X', '4X', '6X', '8X', 'JUMP']),
+  removeBracketed: z.boolean(),
+  pauseOnUnknown: z.enum(['OFF', 'START', 'END']),
+  unknownLevel: z.enum(['core', 'common', 'general', 'advanced']),
+  popupOnAutoPause: z.boolean(),
+  popupCloseOnResume: z.boolean(),
+  cleanupRules: CleanupRulesSettingSchema.optional(),
+  cueLeadInMs: z.number().optional(),
+});
+
+export const ApplyStudyModePayloadSchema = z.object({
+  activeMode: StudyModeSchema,
+  advanced: StudyModeAdvancedSettingsSchema,
+});

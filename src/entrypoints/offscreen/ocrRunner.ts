@@ -6,6 +6,7 @@
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { getURL } from '@/shared/lib/chrome-apis';
+import { messagePayload } from '@/entities/message/payload';
 import { PaddleOcrEngine } from '@/features/ocr/engine/paddleOcrEngine';
 import { PADDLE_OCR_LANGUAGE_GROUPS } from '@/features/ocr/engine/paddleOcrLanguages';
 import type { PaddleLangAbbr } from '@/features/ocr/engine/paddleOcrLanguages';
@@ -86,7 +87,15 @@ export function ocrMessageListener(
 
   switch (msg.type) {
     case MESSAGE_TYPES.OCR_INIT: {
-      const payload = (msg as unknown as { payload?: OcrInitPayload }).payload ?? (msg as unknown as OcrInitPayload);
+      const raw = (msg as unknown as { payload?: unknown }).payload ?? msg;
+      const payload = messagePayload<OcrInitPayload>(
+        { type: msg.type, payload: raw },
+        MESSAGE_TYPES.OCR_INIT,
+      );
+      if (!payload) {
+        sendResponse({ status: 'error', backend: 'wasm', error: 'invalid payload' });
+        return true;
+      }
       void handleOcrInit(payload)
         .then(sendResponse)
         .catch((e: unknown) => sendResponse({ status: 'error', backend: 'wasm', error: String(e) }));
@@ -94,7 +103,15 @@ export function ocrMessageListener(
     }
 
     case MESSAGE_TYPES.OCR_RECOGNIZE: {
-      const payload = (msg as unknown as { payload?: OcrRecognizePayload }).payload ?? (msg as unknown as OcrRecognizePayload);
+      const raw = (msg as unknown as { payload?: unknown }).payload ?? msg;
+      const payload = messagePayload<OcrRecognizePayload>(
+        { type: msg.type, payload: raw },
+        MESSAGE_TYPES.OCR_RECOGNIZE,
+      );
+      if (!payload) {
+        sendResponse({ error: 'invalid payload' });
+        return true;
+      }
       void handleOcrRecognize(payload)
         .then(sendResponse)
         .catch((e: unknown) => sendResponse({ error: String(e) }));
@@ -102,7 +119,15 @@ export function ocrMessageListener(
     }
 
     case MESSAGE_TYPES.OCR_DISPOSE: {
-      const payload = (msg as unknown as { payload?: OcrDisposePayload }).payload ?? {};
+      const raw = (msg as unknown as { payload?: unknown }).payload ?? {};
+      const payload = messagePayload<OcrDisposePayload>(
+        { type: msg.type, payload: raw },
+        MESSAGE_TYPES.OCR_DISPOSE,
+      );
+      if (!payload) {
+        sendResponse({ error: 'invalid payload' });
+        return true;
+      }
       void handleOcrDispose(payload).then(sendResponse).catch((e: unknown) => sendResponse({ error: String(e) }));
       return true;
     }

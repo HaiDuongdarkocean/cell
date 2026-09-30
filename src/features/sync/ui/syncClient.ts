@@ -7,6 +7,7 @@ import {
   sendMessage,
 } from '@/shared/lib/chrome-apis/runtime';
 import type { MessageResponse } from '@/entities/message';
+import { messagePayload } from '@/entities/message/payload';
 import type { ConnectionId, ProviderId, Scope } from '../domain/types';
 import type { CycleResult } from '../app/SyncEngine';
 import type { ConnectResult, SyncStatusView } from '../app/syncService';
@@ -108,23 +109,10 @@ export function deleteOldCopy(scope: Scope, connectionId: ConnectionId): Promise
   });
 }
 
-function isSyncStatusView(payload: unknown): payload is SyncStatusView {
-  if (typeof payload !== 'object' || payload === null) return false;
-  const view = payload as { engine?: unknown; directory?: unknown };
-  return (
-    typeof view.engine === 'object' &&
-    view.engine !== null &&
-    typeof view.directory === 'object' &&
-    view.directory !== null
-  );
-}
-
 export function onSyncStatusChanged(callback: (status: SyncStatusView) => void): () => void {
   const listener = (message: unknown): boolean => {
-    const msg = message as { type?: string; payload?: unknown };
-    if (msg.type === MESSAGE_TYPES.SYNC_STATUS_CHANGED && isSyncStatusView(msg.payload)) {
-      callback(msg.payload);
-    }
+    const payload = messagePayload<SyncStatusView>(message, MESSAGE_TYPES.SYNC_STATUS_CHANGED);
+    if (payload) callback(payload);
     return false;
   };
   onMessage(listener);

@@ -1,6 +1,6 @@
 import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { JobEventPayloadSchema } from '@/entities/message/jobSchemas';
+import { messagePayload } from '@/entities/message/payload';
 import { isTerminalJob, type Job, type JobKind } from '@/entities/job/types';
 import type { MessageResponse } from '@/entities/message';
 
@@ -39,11 +39,9 @@ export type JobEventListener = (event: JobEvent) => void;
 
 export function subscribeJobEvents(listener: JobEventListener): () => void {
   const handler = (message: unknown): boolean => {
-    const msg = message as { type?: string; payload?: unknown };
-    if (msg.type !== MESSAGE_TYPES.JOB_EVENT) return false;
-    const parsed = JobEventPayloadSchema.safeParse(msg.payload);
-    if (!parsed.success) return false;
-    listener({ job: parsed.data.job as Job | undefined, removedId: parsed.data.removedId });
+    const payload = messagePayload<{ job?: Job; removedId?: string }>(message, MESSAGE_TYPES.JOB_EVENT);
+    if (!payload) return false;
+    listener({ job: payload.job, removedId: payload.removedId });
     return false;
   };
   onMessage(handler);
