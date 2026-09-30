@@ -31,6 +31,7 @@ src/
 │   ├── mock-hardsub-page/      #   Hard-sub video page mock
 │   ├── mock-youtube-hardsub/   #   YouTube hard-sub video page mock
 │   ├── reader/                 #   Reader page (React) — TXT import/read/tokenize/TTS (Day-1 MVP)
+│   ├── srs-study/              #   Ocean SRS review page (React) — Migaku-style review stage (spec srs-flashcard-redesign): SrsReviewCard owns full-viewport chrome (corner icon buttons: close/step-dots/due-count, study-again/manage, delete/edit, centered ✗/✓ grade pair), overlapping "New" pill, card-click flip; SrsReviewCardFront (word + stimulus + spelling input), SrsReviewCardBack (audio row → see-translation toggle → divider → definition line → image → tinted notes block); SrsEditCardPanel (deck select, per-notetype-field editors, audio/image file add/remove, delete card, review-event meta); SrsManagePanel (decks/notes); UserCssPanel
 │   └── launcher-dashboard/     #   Liquid Glass prototype launcher (new entrypoint) — App.tsx + LauncherBackground + LauncherSearchBar + LauncherTile + LauncherUserBar + data/launcherTiles.ts; responsive tile grid, theme/preset toggle, search filter
 ├── features/           # Feature domains (screaming — domain name first)
 │   ├── detection/      #   Media/subtitle/script/language detection

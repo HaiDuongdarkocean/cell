@@ -1,28 +1,23 @@
-import { Box, Button, InputField, Text } from '@/shared/ui';
+import { Box, Heading, InputField } from '@/shared/ui';
 import { t } from '@/shared/i18n';
-import type { ComponentType, SrsFieldValue, SrsStimulus } from '@/entities/srs/types';
-import { componentLabel, stimulusLabel } from './srsLabels';
+import type { SrsNote, SrsStimulus } from '@/entities/srs/types';
+import { stimulusLabel } from './srsLabels';
+import { formatFieldValue, HighlightedSentence } from './srsCardShared';
 import styles from './SrsReviewCard.module.css';
 
-function formatFieldValue(value: SrsFieldValue): string {
-  if (value.kind === 'list') return value.value.join(', ');
-  return value.value;
-}
-
-function StimulusView({ stimulus }: { stimulus: SrsStimulus }): React.JSX.Element {
+function StimulusView({ stimulus, targetWord }: { stimulus: SrsStimulus; targetWord: string }): React.JSX.Element {
   const entries = Object.entries(stimulus.payload);
 
   return (
     <Box className={styles.stimulus}>
-      <Text className={styles.stimulusType}>{stimulusLabel(stimulus.type)}</Text>
       {entries.map(([fieldId, value]) => (
         <Box key={fieldId} className={styles.stimulusField}>
           {value.kind === 'image' ? (
-            <img src={value.value} alt={fieldId} className={styles.stimulusImage} />
+            <img src={value.value} alt={stimulusLabel(stimulus.type)} className={styles.stimulusImage} />
           ) : value.kind === 'audio' ? (
             <audio controls src={value.value} className={styles.stimulusAudio} />
           ) : (
-            <Text className={styles.stimulusText}>{formatFieldValue(value)}</Text>
+            <HighlightedSentence sentence={formatFieldValue(value)} target={targetWord} />
           )}
         </Box>
       ))}
@@ -31,7 +26,7 @@ function StimulusView({ stimulus }: { stimulus: SrsStimulus }): React.JSX.Elemen
 }
 
 interface SrsReviewCardFrontProps {
-  readonly componentType: ComponentType;
+  readonly note: SrsNote;
   readonly stimulus: SrsStimulus;
   readonly isSpelling: boolean;
   readonly typedInput: string;
@@ -41,7 +36,7 @@ interface SrsReviewCardFrontProps {
 }
 
 export function SrsReviewCardFront({
-  componentType,
+  note,
   stimulus,
   isSpelling,
   typedInput,
@@ -50,9 +45,24 @@ export function SrsReviewCardFront({
   onShowAnswer,
 }: SrsReviewCardFrontProps): React.JSX.Element {
   return (
-    <Box className={styles.front}>
-      <Text className={styles.componentType}>{componentLabel(componentType)}</Text>
-      <StimulusView stimulus={stimulus} />
+    <div
+      className={styles.front}
+      role="button"
+      tabIndex={0}
+      onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+        if ((e.target as HTMLElement).closest('input,button,audio')) return;
+        if (!isSpelling) onShowAnswer();
+      }}
+      onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (isSpelling) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onShowAnswer();
+        }
+      }}
+    >
+      <Heading level={1} className={styles.targetWord}>{note.targetWord}</Heading>
+      <StimulusView stimulus={stimulus} targetWord={note.targetWord} />
 
       {isSpelling && (
         <InputField
@@ -62,6 +72,7 @@ export function SrsReviewCardFront({
           onChange={(e) => onTypedInputChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
+              e.stopPropagation();
               onShowAnswer();
             }
           }}
@@ -69,15 +80,6 @@ export function SrsReviewCardFront({
           autoFocus
         />
       )}
-
-      <Button
-        variant="secondary"
-        fullWidth
-        onClick={onShowAnswer}
-        className={styles.showAnswerButton}
-      >
-        {isSpelling ? t('srs.review.checkAnswer') : t('srs.review.showAnswer')}
-      </Button>
-    </Box>
+    </div>
   );
 }

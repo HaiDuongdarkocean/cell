@@ -1,5 +1,5 @@
 {
-  "active": "sync-on-use",
+  "active": "srs-flashcard-redesign",
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -677,19 +677,19 @@
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-09-30T03:16:31.360Z"
+          "at": "2026-09-30T05:52:18.957Z"
         },
         "lint": {
           "v": "pass",
-          "at": "2026-09-30T03:16:31.418Z"
+          "at": "2026-09-30T05:56:54.283Z"
         },
         "testUnit": {
           "v": "pass",
-          "at": "2026-09-30T03:19:41.386Z"
+          "at": "2026-09-30T03:34:35.156Z"
         },
         "build": {
           "v": "pass",
-          "at": "2026-09-30T03:20:46.739Z"
+          "at": "2026-09-30T05:54:04.098Z"
         }
       },
       "confidence": "medium",
@@ -701,7 +701,50 @@
         "since": "2026-09-29T15:09:33.671Z"
       },
       "worktree": null,
-      "updated": "2026-09-30T03:20:46.740Z"
+      "updated": "2026-09-30T05:56:54.284Z"
+    },
+    "srs-flashcard-redesign": {
+      "stage": "deliver",
+      "mode": "interactive",
+      "uiSurface": "yes",
+      "artifacts": {
+        "intent": "docs/intent/srs-flashcard-redesign.md",
+        "spec": "docs/specs/srs-flashcard-redesign.md",
+        "designBrief": "docs/intent/srs-flashcard-redesign-design-brief.md",
+        "componentMapping": "docs/intent/srs-flashcard-redesign-component-mapping.md"
+      },
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-09-30T06:37:51.967Z"
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-09-30T06:37:52.045Z"
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-09-30T06:37:52.119Z"
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-09-30T06:37:52.198Z"
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-09-30T06:37:52.264Z"
+        }
+      },
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "owner": {
+        "id": "devin-srs-redesign-33755",
+        "since": "2026-09-30T06:13:02.677Z"
+      },
+      "worktree": null,
+      "updated": "2026-09-30T06:37:52.264Z"
     }
   }
 }

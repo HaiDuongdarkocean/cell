@@ -24,7 +24,7 @@ export function App() {
           </Button>
         </Box>
       ) : session ? (
-        <SrsReviewCard />
+        <SrsReviewCard onManage={() => { setView('manage'); }} />
       ) : view === 'manage' ? (
         <SrsManagePanel onBack={() => { setView('study'); }} />
       ) : (

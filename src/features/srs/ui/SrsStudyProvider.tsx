@@ -4,6 +4,7 @@ import type {
   ReviewJudgment,
   SrsAudioAsset,
   SrsImageAsset,
+  SrsNote,
   SrsReviewSession,
   SrsStimulus,
   SrsStudyConfig,
@@ -11,6 +12,8 @@ import type {
 import { createSrsFsrsAdapter } from '@/features/srs/services/srsFsrsAdapter';
 import { ensureFirstRun } from '@/features/srs/services/firstRunService';
 import { putCard } from '@/features/srs/repositories/cardRepository';
+import { putNote } from '@/features/srs/repositories/noteRepository';
+import { deleteCardCascade } from '@/features/srs/repositories/deleteCascade';
 import { putReviewEvent } from '@/features/srs/repositories/reviewEventRepository';
 import { getStudyConfig } from '@/features/srs/repositories/studyConfigRepository';
 import { selectNextReview } from '@/features/srs/logic/selectNextReview';
@@ -32,6 +35,9 @@ interface SrsStudyContextValue {
   readonly markStudyAgain: (componentType: ComponentType) => Promise<void>;
   readonly resetCurrentComponent: () => Promise<void>;
   readonly resetCurrentCard: () => Promise<void>;
+  readonly endSession: () => void;
+  readonly updateCurrentNote: (note: SrsNote, deckId?: string) => Promise<void>;
+  readonly deleteCurrentCard: () => Promise<void>;
   readonly dismissError: () => void;
 }
 
@@ -183,6 +189,43 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
     setSession({ ...session, card: updated });
   }, [session, config, refreshStats]);
 
+  const endSession = useCallback(() => {
+    setSession(null);
+    setFinished(false);
+    void refreshStats();
+  }, [refreshStats]);
+
+  const updateCurrentNote = useCallback(
+    async (note: SrsNote, nextDeckId?: string) => {
+      if (!session) return;
+      const deckChanged = nextDeckId !== undefined && nextDeckId !== note.deckId;
+      const nextNote = deckChanged ? { ...note, deckId: nextDeckId } : note;
+      await putNote(nextNote);
+      let nextCard = session.card;
+      if (deckChanged) {
+        nextCard = { ...session.card, deckId: nextDeckId };
+        await putCard(nextCard);
+      }
+      void refreshStats();
+      setSession({ ...session, note: nextNote, card: nextCard });
+    },
+    [session, refreshStats],
+  );
+
+  const deleteCurrentCard = useCallback(async () => {
+    if (!session || !config) return;
+    const deckIdOfCard = session.card.deckId;
+    await deleteCardCascade(session.card.id);
+    void refreshStats();
+    const next = await selectNextReview(deckIdOfCard, false, config, nowISO(), adapter, audioCache, imageCache);
+    if (next) {
+      setSession(next);
+    } else {
+      setSession(null);
+      setFinished(true);
+    }
+  }, [session, config, refreshStats, audioCache, imageCache]);
+
   const dismissError = useCallback(() => {
     setError(null);
   }, []);
@@ -203,6 +246,9 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       markStudyAgain,
       resetCurrentComponent,
       resetCurrentCard,
+      endSession,
+      updateCurrentNote,
+      deleteCurrentCard,
       dismissError,
     }),
     [
@@ -220,6 +266,9 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       markStudyAgain,
       resetCurrentComponent,
       resetCurrentCard,
+      endSession,
+      updateCurrentNote,
+      deleteCurrentCard,
       dismissError,
     ],
   );

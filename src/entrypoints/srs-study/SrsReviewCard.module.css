@@ -1,42 +1,122 @@
-.card {
-  width: 100%;
-  max-width: 42.5rem;
-  margin-inline: auto;
-  padding: var(--space-4);
-  background: var(--color-surface);
-  border-radius: var(--radius-card);
-  color: var(--color-text-primary);
+.stage {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100vh;
+  padding: var(--space-16) var(--space-4) var(--space-20);
 }
 
-.progress {
+.cornerTopLeft {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
   display: flex;
-  justify-content: center;
   gap: var(--space-2);
 }
 
-.progressDot {
-  /* --space-2-5 (10px) is the exact token for 0.625rem. */
-  width: var(--space-2-5);
-  height: var(--space-2-5);
-  border-radius: var(--radius-full);
-  background: var(--color-text-secondary);
-  opacity: var(--opacity-40);
+.cornerTopCenter {
+  position: absolute;
+  top: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--space-2);
 }
 
-.progressDotActive {
-  background: var(--color-primary);
-  opacity: 1;
+.cornerTopRight {
+  position: absolute;
+  top: var(--space-5);
+  right: var(--space-5);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.cornerBottomLeft {
+  position: absolute;
+  bottom: var(--space-5);
+  left: var(--space-5);
+  display: flex;
+  gap: var(--space-2);
+}
+
+.cornerBottomRight {
+  position: absolute;
+  bottom: var(--space-5);
+  right: var(--space-5);
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* design-system: intentional override — corner chrome buttons need the surface-elevated fill of the reference chrome; no standard ghost variant maps to a filled circular chip. */
+.chromeButton {
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+}
+
+.stepDot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-secondary);
+}
+
+.stepDot svg {
+  width: var(--space-3-5);
+  height: var(--space-3-5);
+}
+
+.stepDotActive {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.card {
+  position: relative;
+  width: min(30rem, 92vw);
+  min-height: 55vh;
+  padding: var(--space-8) var(--space-6);
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-md);
+  color: var(--color-text-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.badgeNew {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  padding: var(--space-1) var(--space-2-5);
+  background: var(--color-success);
+  color: var(--color-on-success);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
 }
 
 .front {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-4);
+  justify-content: flex-start;
+  gap: var(--space-3);
   text-align: center;
+  cursor: pointer;
+}
+
+.front:focus-visible {
+  outline: var(--border-width-hairline) solid var(--color-border-focus);
+  outline-offset: var(--space-1);
 }
 
 .componentType {
@@ -48,31 +128,14 @@
 
 .stimulus {
   width: 100%;
-  padding: var(--space-4);
-  background: var(--color-surface-elevated);
-  border-radius: var(--radius-md);
-  text-align: left;
-}
-
-.stimulusType {
-  font-size: var(--font-size-xs);
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .stimulusField {
-  margin-bottom: var(--space-3);
-}
-
-.stimulusField:last-child {
-  margin-bottom: 0;
-}
-
-.stimulusText {
-  color: var(--color-text);
-  font-size: var(--font-size-lg);
-  text-align: center;
+  display: flex;
+  justify-content: center;
 }
 
 .stimulusImage {
@@ -91,31 +154,11 @@
   max-width: 20rem;
 }
 
-.showAnswerButton {
-  max-width: 15rem;
-}
-
 .back {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-}
-
-.backHeader {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
-}
-
-.badgeNew {
-  display: inline-flex;
-  padding: var(--space-1) var(--space-2);
-  background: var(--color-success);
-  color: var(--color-on-success);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
+  gap: var(--space-4);
 }
 
 .targetWord {
@@ -124,17 +167,11 @@
   text-align: center;
 }
 
-.sentenceBlock {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  align-items: center;
-  text-align: center;
-}
-
 .sentence {
   font-size: var(--font-size-xl);
   line-height: 1.5;
+  text-align: center;
+  white-space: pre-line;
 }
 
 .sentenceTarget {
@@ -147,42 +184,61 @@
   justify-content: center;
 }
 
-/* design-system: intentional override — ghost Button needs a visible surface-elevated fill for the audio controls; no standard variant maps to this fill. */
+/* design-system: intentional override — audio controls use the primary-subtle tint of the reference audio row; no standard Button variant maps to it. */
 .audioButton {
-  background: var(--color-surface-elevated);
-  color: var(--color-text);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.seeTranslation {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-widest);
+  font-size: var(--font-size-xs);
 }
 
 .translation {
   color: var(--color-text-secondary);
   font-size: var(--font-size-md);
+  text-align: center;
+}
+
+.divider {
+  width: 100%;
 }
 
 .defBlock {
-  padding: var(--space-3) var(--space-4);
-  border-top: var(--border-width-hairline) solid var(--color-border);
-  border-bottom: var(--border-width-hairline) solid var(--color-border);
+  width: 100%;
+  text-align: left;
 }
 
 .defHeader {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
   flex-wrap: wrap;
+  font-size: var(--font-size-sm);
 }
 
 .defTarget {
   font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
 }
 
 .defIpa {
   color: var(--color-text-secondary);
   font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
 }
 
 .defStar {
   color: var(--color-warning);
+  font-size: var(--font-size-sm);
+}
+
+.defBlock p,
+.defBlock li {
+  font-size: var(--font-size-sm);
 }
 
 .imageBlock {
@@ -199,6 +255,7 @@
 }
 
 .notesBlock {
+  width: 100%;
   padding: var(--space-4);
   background: var(--color-primary-subtle);
   border-radius: var(--radius-lg);
@@ -223,14 +280,16 @@
   margin-bottom: var(--space-1);
 }
 
-.rating {
+.gradeRow {
+  position: absolute;
+  bottom: var(--space-5);
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  justify-content: center;
   gap: var(--space-4);
-  margin-top: var(--space-2);
 }
 
-.rating .ratingButton {
+.gradeRow .gradeButton {
   width: var(--space-14);
   height: var(--space-14);
   display: inline-flex;
@@ -240,21 +299,14 @@
   border: none;
 }
 
-/* design-system: intentional override — provide a neutral surface for the forget rating button; destructive would change the visual intent. */
-.rating .forgetButton {
+/* design-system: intentional override — neutral surface for the forget grade button; destructive would change the visual intent. */
+.gradeRow .forgetButton {
   background: var(--color-surface-elevated);
   color: var(--color-text);
 }
 
 /* design-system: intentional override — warm gradient is the visual identity for "remember"; no standard Button variant maps to a warning→error gradient. */
-.rating .rememberButton {
+.gradeRow .rememberButton {
   background: linear-gradient(135deg, var(--color-warning), var(--color-error));
   color: var(--color-text-on-primary);
-}
-
-.actions {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
 }

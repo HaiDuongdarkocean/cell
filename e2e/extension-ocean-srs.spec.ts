@@ -49,7 +49,7 @@ test.describe('Ocean SRS smoke', () => {
 
     await expect(page.getByRole('heading', { name: 'Ocean SRS' })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: 'Study' })).toBeVisible();
-    await expect(page.getByText('Data is stored locally in this browser')).toBeVisible();
+    await expect(page.getByText('uninstalling the extension deletes them')).toBeVisible();
 
     await page.close();
   });
@@ -107,7 +107,7 @@ test.describe('Ocean SRS smoke', () => {
 
     // Start studying; the new card should be due now.
     await page.getByRole('button', { name: 'Study' }).click();
-    await expect(page.getByText('SOUND')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[aria-label="Sound"]')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: 'Show answer' })).toBeVisible();
 
     // Flip to the back to verify the answer card renders.
@@ -157,25 +157,26 @@ test.describe('Ocean SRS smoke', () => {
 
     // Start studying; the new card should be due now.
     await page.getByRole('button', { name: 'Study' }).click();
-    await expect(page.getByText('SOUND')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[aria-label="Sound"][aria-current="step"]')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: 'Show answer' })).toBeVisible();
 
     // Explore SOUND: reveal the answer, then rate Remember.
     await page.getByRole('button', { name: 'Show answer' }).click();
     await expect(page.getByRole('heading', { name: 'ignite' })).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: 'Remember' }).click();
-    await expect(page.getByText('MEANING')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[aria-label="Meaning"][aria-current="step"]')).toBeVisible({ timeout: 10_000 });
 
     // Explore MEANING: reveal, rate Remember, then SPELLING appears.
     await page.getByRole('button', { name: 'Show answer' }).click();
     await expect(page.getByRole('heading', { name: 'ignite' })).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: 'Remember' }).click();
-    await expect(page.getByText('SPELLING')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[aria-label="Spelling"][aria-current="step"]')).toBeVisible({ timeout: 10_000 });
 
     // Explore SPELLING: reveal, rate Remember.
     await page.getByLabel('Type the word').fill('ignite');
-    await page.getByRole('button', { name: 'Check answer' }).click();
+    await page.getByLabel('Type the word').press('Enter');
     await expect(page.getByRole('heading', { name: 'ignite' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: 'Remember' })).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: 'Remember' }).click();
 
     // We have now proven the SRS review flow: a card advances through the
