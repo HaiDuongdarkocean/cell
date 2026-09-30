@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type {
   ComponentType,
   ReviewJudgment,
@@ -42,6 +42,8 @@ interface SrsStudyContextValue {
   readonly stats: SrsDeckStats | null;
   readonly audioCache: ReadonlyMap<string, SrsAudioAsset>;
   readonly imageCache: ReadonlyMap<string, SrsImageAsset>;
+  readonly canGoBack: boolean;
+  readonly goBack: () => void;
   readonly start: (deckId?: string) => Promise<void>;
   readonly submit: (judgment: ReviewJudgment, typedInput?: string) => Promise<void>;
   readonly markStudyAgain: (componentType: ComponentType) => Promise<void>;
@@ -84,19 +86,36 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
   const [audioCache] = useState(() => new Map<string, SrsAudioAsset>());
   const [imageCache] = useState(() => new Map<string, SrsImageAsset>());
 
+  const [history, setHistory] = useState<readonly SrsReviewSession[]>([]);
+  const liveBlobUrls = useRef(new Set<string>());
+
   const stimulus = session?.stimulus ?? null;
   useEffect(() => {
-    const toRevoke = blobUrlsToRevoke(stimulus);
-    return () => {
-      for (const url of toRevoke) {
-        try {
-          URL.revokeObjectURL(url);
-        } catch {
-          // ignore invalid or already revoked URLs
-        }
-      }
-    };
+    for (const url of blobUrlsToRevoke(stimulus)) {
+      liveBlobUrls.current.add(url);
+    }
   }, [stimulus]);
+
+  const revokeAllBlobUrls = useCallback(() => {
+    for (const url of liveBlobUrls.current) {
+      try {
+        URL.revokeObjectURL(url);
+      } catch {
+        // ignore invalid or already revoked URLs
+      }
+    }
+    liveBlobUrls.current.clear();
+  }, []);
+
+  useEffect(() => revokeAllBlobUrls, [revokeAllBlobUrls]);
+
+  const goBack = useCallback(() => {
+    const prev = history[history.length - 1];
+    if (!prev) return;
+    setHistory(history.slice(0, -1));
+    setSession(prev);
+    setFinished(false);
+  }, [history]);
 
   const ensureDeck = useCallback(async () => {
     if (deckId && config && stats) return { deckId, config, stats };
@@ -124,6 +143,8 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     setFinished(false);
+    setHistory([]);
+    revokeAllBlobUrls();
     try {
       const { deckId: defaultDeckId, config: cfg } = await ensureDeck();
       if (!cfg || !defaultDeckId) return;
@@ -142,7 +163,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [ensureDeck, deckId, audioCache, imageCache]);
+  }, [ensureDeck, deckId, audioCache, imageCache, revokeAllBlobUrls]);
 
   const submit = useCallback(
     async (judgment: ReviewJudgment, typedInput?: string) => {
@@ -167,10 +188,13 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
           options,
         );
         if (next) {
+          setHistory((h) => [...h, session]);
           setSession(next);
         } else {
           setSession(null);
           setFinished(true);
+          setHistory([]);
+          revokeAllBlobUrls();
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
@@ -178,7 +202,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     },
-    [session, config, audioCache, imageCache, refreshStats],
+    [session, config, audioCache, imageCache, refreshStats, revokeAllBlobUrls],
   );
 
   const markStudyAgain = useCallback(
@@ -211,8 +235,10 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
   const endSession = useCallback(() => {
     setSession(null);
     setFinished(false);
+    setHistory([]);
+    revokeAllBlobUrls();
     void refreshStats();
-  }, [refreshStats]);
+  }, [refreshStats, revokeAllBlobUrls]);
 
   const updateCurrentNote = useCallback(
     async (note: SrsNote, nextDeckId?: string) => {
@@ -243,8 +269,10 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
     } else {
       setSession(null);
       setFinished(true);
+      setHistory([]);
+      revokeAllBlobUrls();
     }
-  }, [session, config, refreshStats, audioCache, imageCache]);
+  }, [session, config, refreshStats, audioCache, imageCache, revokeAllBlobUrls]);
 
   const dismissError = useCallback(() => {
     setError(null);
@@ -261,6 +289,8 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       stats,
       audioCache,
       imageCache,
+      canGoBack: history.length > 0,
+      goBack,
       start,
       submit,
       markStudyAgain,
@@ -281,6 +311,8 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       stats,
       audioCache,
       imageCache,
+      history,
+      goBack,
       start,
       submit,
       markStudyAgain,

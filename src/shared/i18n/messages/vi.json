@@ -1191,6 +1191,7 @@
   "srs.review.forget": "Quên",
   "srs.review.remember": "Nhớ",
   "srs.review.studyAgain": "Ôn lại",
+  "srs.review.goBack": "Quay lại",
   "srs.review.resetComponent": "Đặt lại phần này",
   "srs.review.resetCard": "Đặt lại thẻ",
   "srs.review.confirmResetComponent": "Đặt lại tiến độ phần $1?",

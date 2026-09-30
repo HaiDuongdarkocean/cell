@@ -1191,6 +1191,7 @@
   "srs.review.forget": "Forgot",
   "srs.review.remember": "Remembered",
   "srs.review.studyAgain": "Study again",
+  "srs.review.goBack": "Go back",
   "srs.review.resetComponent": "Reset this part",
   "srs.review.resetCard": "Reset card",
   "srs.review.confirmResetComponent": "Reset progress for $1?",

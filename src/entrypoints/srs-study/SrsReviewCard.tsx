@@ -26,7 +26,8 @@ export function SrsReviewCard(): React.JSX.Element | null {
     audioCache,
     imageCache,
     submit,
-    markStudyAgain,
+    canGoBack,
+    goBack,
     endSession,
     deleteCurrentCard,
   } = useSrsStudy();
@@ -113,8 +114,9 @@ export function SrsReviewCard(): React.JSX.Element | null {
           shape="circle"
           size="sm"
           variant="ghost"
-          onClick={() => { void markStudyAgain(componentType); }}
-          aria-label={t('srs.review.studyAgain')}
+          onClick={goBack}
+          disabled={!canGoBack}
+          aria-label={t('srs.review.goBack')}
           className={styles.chromeButton}
         >
           <Icon name="rotateCcw" />
