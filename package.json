@@ -96,6 +96,7 @@
     "@paddleocr/paddleocr-js": "^0.4.2",
     "country-flag-icons": "^1.6.20",
     "fflate": "^0.8.3",
+    "fzstd": "^0.1.1",
     "lucide-react": "^1.46.0",
     "mux.js": "^6.3.0",
     "onnxruntime-web": "1.26.0",
