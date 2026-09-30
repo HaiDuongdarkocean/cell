@@ -10,6 +10,7 @@ import { getDecksByCollection, putDeck } from '@/features/srs/repositories/deckR
 import { deleteDeckCascade } from '@/features/srs/repositories/deleteCascade';
 import { generateId } from '@/features/srs/lib/helpers';
 import { getSrsHomeStats, dayKeyFor, type SrsHomeStats, type SrsHomeDeckStat } from '@/features/srs/services/getSrsHomeStats';
+import { ImportWizard } from '@/features/ankiImport';
 import { useSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
 import { deckIconName } from './SrsDeckDetail';
 import type { SrsDeck } from '@/entities/srs/types';
@@ -124,6 +125,7 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
   const [newDeckName, setNewDeckName] = useState('');
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const [importOpen, setImportOpen] = useState(false);
 
   const refreshHome = useCallback(async () => {
     const result = await ensureFirstRun();
@@ -208,6 +210,9 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
       <Box className={styles.topBar}>
         <Heading level={1} className={styles.appTitle}>{t('srs.title')}</Heading>
         <Box className={styles.topBarActions}>
+          <Button variant="ghost" size="sm" shape="circle" onClick={() => { setImportOpen(true); }} aria-label={t('srs.home.importAnki')} className={styles.chromeButton}>
+            <Icon name="import" />
+          </Button>
           <Button variant="ghost" size="sm" shape="circle" onClick={onOpenSettings} aria-label={t('srs.settings.title')} className={styles.chromeButton}>
             <Icon name="settings" />
           </Button>
@@ -401,6 +406,13 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
       </Box>
 
       <Text className={styles.footerNote}>{t('srs.app.desc')}</Text>
+
+      <ImportWizard
+        open={importOpen}
+        onClose={() => { setImportOpen(false); }}
+        onStudyNow={() => { void start(); }}
+        onImported={() => { void refreshHome(); }}
+      />
     </Box>
   );
 }

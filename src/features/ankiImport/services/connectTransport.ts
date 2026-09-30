@@ -1,4 +1,4 @@
-import { sendAction } from '@/features/cardCreator/service/cardCreatorService';
+import { sendAction } from '@/features/cardCreator';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { DEFAULT_CARD_CREATOR_SETTINGS } from '@/shared/config/config';
 import type { Settings } from '@/entities/settings';

@@ -1,12 +1,17 @@
 import 'fake-indexeddb/auto';
 import { importNormalized, estimateMediaBytes } from './importWriter';
-import { getCardsByDeck } from '@/features/srs/repositories/cardRepository';
-import { getDecksByCollection } from '@/features/srs/repositories/deckRepository';
-import { getNote } from '@/features/srs/repositories/noteRepository';
-import { getReviewEventsByCard } from '@/features/srs/repositories/reviewEventRepository';
-import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
-import { getCollectionByLanguageProfileId } from '@/features/srs/repositories/collectionRepository';
-import { closeAllSrsDBs, clearAllSrsStores, getSrsDbName, deleteSrsDB } from '@/features/srs/repositories/srsDatabase';
+import {
+  clearAllSrsStores,
+  closeAllSrsDBs,
+  deleteSrsDB,
+  getAudioAssetsByNote,
+  getCardsByDeck,
+  getCollectionByLanguageProfileId,
+  getDecksByCollection,
+  getNote,
+  getReviewEventsByCard,
+  getSrsDbName,
+} from '@/features/srs';
 import type { NormalizedAnkiData } from '../model/normalized';
 
 const loadSettingsMock = jest.fn();

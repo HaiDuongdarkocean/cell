@@ -8,20 +8,28 @@ import type {
   SrsStudyConfig,
 } from '@/entities/srs/types';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
-import { generateId } from '@/features/srs/lib/helpers';
-import { createDefaultStudyConfig } from '@/features/srs/lib/defaultStudyConfig';
-import { createDefaultNotetype } from '@/features/srs/lib/defaultNotetype';
-import { recalcCard } from '@/features/srs/logic/reviewEngine';
-import { createSrsFsrsAdapter } from '@/features/srs/services/srsFsrsAdapter';
-import { getCollectionByLanguageProfileId, putCollection } from '@/features/srs/repositories/collectionRepository';
-import { getDeckByCollectionAndName, getDecksByCollection, putDeck } from '@/features/srs/repositories/deckRepository';
-import { getNotetype, putNotetype } from '@/features/srs/repositories/notetypeRepository';
-import { getStudyConfig, putStudyConfig } from '@/features/srs/repositories/studyConfigRepository';
-import { getCardsByDeck, putCardForImport } from '@/features/srs/repositories/cardRepository';
-import { putNoteForImport } from '@/features/srs/repositories/noteRepository';
-import { putReviewEvent } from '@/features/srs/repositories/reviewEventRepository';
-import { putAudioAsset } from '@/features/srs/repositories/audioAssetRepository';
-import { putImageAsset } from '@/features/srs/repositories/imageAssetRepository';
+import {
+  createDefaultNotetype,
+  createDefaultStudyConfig,
+  createSrsFsrsAdapter,
+  generateId,
+  getCardsByDeck,
+  getCollectionByLanguageProfileId,
+  getDeckByCollectionAndName,
+  getDecksByCollection,
+  getNotetype,
+  getStudyConfig,
+  putAudioAsset,
+  putCardForImport,
+  putCollection,
+  putDeck,
+  putImageAsset,
+  putNotetype,
+  putNoteForImport,
+  putReviewEvent,
+  putStudyConfig,
+  recalcCard,
+} from '@/features/srs';
 import { flattenDeckName, resolveHomeDeckId, uniqueDeckNames } from './deckFlatten';
 import { buildNoteFields, htmlToText, synthesizeNotetype } from './fieldMapping';
 import { convertCardState } from './stateConvert';

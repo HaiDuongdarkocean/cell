@@ -1,4 +1,4 @@
-import { isSqlite, isZip, unzipAll, decodeText } from '@/features/dictionary/logic/fileDetector';
+import { isSqlite, isZip, unzipAll, decodeText } from '@/features/dictionary';
 import { decodeMemoryState } from '../logic/stateConvert';
 import type {
   MediaResolver,
