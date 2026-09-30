@@ -7,7 +7,7 @@ import {
 import { t } from '@/shared/i18n';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import type { LanguageProfile } from '@/entities/settings';
-import { buildDeckPickerRows } from '../logic/deckFlatten';
+import { buildDeckPickerRows, resolveHomeDeckId } from '../logic/deckFlatten';
 import { guessFieldMapping, htmlToText, mediaRefsIn } from '../logic/fieldMapping';
 import { importNormalized, ImportError, type ImportReport } from '../logic/importWriter';
 import type {
@@ -132,10 +132,8 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
 
   const selectedNt = useMemo(() => {
     const withNotes = new Set((data?.notes ?? []).map((n) => n.modelId));
-    return (data?.notetypes ?? []).filter(
-      (n) => ntIds.has(n.id) && !n.isCloze && withNotes.has(n.id),
-    );
-  }, [data, ntIds]);
+    return (data?.notetypes ?? []).filter((n) => !n.isCloze && withNotes.has(n.id));
+  }, [data]);
 
   // Seed mappings when entering the mapping step (preset → heuristic).
   useEffect(() => {
@@ -194,12 +192,12 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
 
   const canContinue = useMemo(() => {
     switch (step) {
-      case 'scope': return deckIds.size > 0 && ntIds.size > 0;
+      case 'scope': return deckIds.size > 0;
       case 'language': return targetLanguage !== '';
       case 'mapping': return selectedNt.length === 0 || selectedNt.every((n) => mappings[n.id]);
       default: return false;
     }
-  }, [step, deckIds, ntIds, targetLanguage, selectedNt, mappings]);
+  }, [step, deckIds, targetLanguage, selectedNt, mappings]);
 
   const goNext = useCallback(() => {
     if (step === 'scope') setStep('language');
@@ -234,7 +232,6 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
           ntIds={ntIds}
           noScheduling={noScheduling}
           onDeckIds={setDeckIds}
-          onNtIds={setNtIds}
         />
       )}
       {step === 'language' && (
@@ -250,6 +247,8 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
           onNtIdx={(i) => { setActiveNtIdx(i); setSampleIdx(0); }}
           onSampleIdx={setSampleIdx}
           onMapping={(id, m) => setMappings((prev) => ({ ...prev, [id]: m }))}
+          ntIds={ntIds}
+          onNtIds={setNtIds}
         />
       )}
       {step === 'running' && <RunningStep progress={progress} onCancel={cancelRun} />}
@@ -373,27 +372,32 @@ function SourceStep({
 }
 
 function ScopeStep({
-  data, deckIds, ntIds, noScheduling, onDeckIds, onNtIds,
+  data, deckIds, ntIds, noScheduling, onDeckIds,
 }: {
   readonly data: NormalizedAnkiData;
   readonly deckIds: ReadonlySet<string>;
   readonly ntIds: ReadonlySet<string>;
   readonly noScheduling: boolean;
   readonly onDeckIds: (s: ReadonlySet<string>) => void;
-  readonly onNtIds: (s: ReadonlySet<string>) => void;
 }): React.JSX.Element {
   const rows = useMemo(() => buildDeckPickerRows(data), [data]);
-  const noteCountByModel = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const n of data.notes) m.set(n.modelId, (m.get(n.modelId) ?? 0) + 1);
-    return m;
-  }, [data]);
-
-  const toggle = (set: ReadonlySet<string>, id: string, apply: (s: ReadonlySet<string>) => void): void => {
-    const next = new Set(set);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    apply(next);
-  };
+  const summary = useMemo(() => {
+    const clozeModels = new Set(data.notetypes.filter((n) => n.isCloze).map((n) => n.id));
+    const notesById = new Map(data.notes.map((n) => [n.id, n]));
+    const decksById = new Map(data.decks.map((d) => [d.id, d]));
+    let importable = 0;
+    let cloze = 0;
+    for (const c of data.cards) {
+      if (c.queue === -1) continue;
+      const home = resolveHomeDeckId(c, decksById);
+      if (home === null || !deckIds.has(home)) continue;
+      const note = notesById.get(c.noteId);
+      if (!note) continue;
+      if (clozeModels.has(note.modelId)) cloze += 1;
+      else if (ntIds.has(note.modelId)) importable += 1;
+    }
+    return { importable, cloze };
+  }, [data, deckIds, ntIds]);
 
   return (
     <VStack gap="3">
@@ -414,7 +418,11 @@ function ScopeStep({
         )}
         {rows.map((r) => (
           <label key={r.deck.id} className={styles.pickRow}>
-            <Checkbox checked={deckIds.has(r.deck.id)} onChange={() => toggle(deckIds, r.deck.id, onDeckIds)} />
+            <Checkbox checked={deckIds.has(r.deck.id)} onChange={() => {
+              const next = new Set(deckIds);
+              if (next.has(r.deck.id)) next.delete(r.deck.id); else next.add(r.deck.id);
+              onDeckIds(next);
+            }} />
             <span className={styles.pickName}>{r.flatName}</span>
             <span className={styles.pickCounts}>
               {r.counts.new > 0 && <Badge size="sm">{t('ankiImport.scope.countNew', [r.counts.new])}</Badge>}
@@ -425,23 +433,10 @@ function ScopeStep({
           </label>
         ))}
       </div>
-      <SectionHeader title={t('ankiImport.scope.notetypes')} />
-      <div className={styles.pickList}>
-        {data.notetypes.map((nt) => (
-          <label key={nt.id} className={`${styles.pickRow}${nt.isCloze ? ` ${styles.disabled}` : ''}`}>
-            <Checkbox
-              checked={!nt.isCloze && ntIds.has(nt.id)}
-              disabled={nt.isCloze}
-              onChange={() => toggle(ntIds, nt.id, onNtIds)}
-            />
-            <span className={styles.pickName}>{nt.name}</span>
-            <span className={styles.pickCounts}>
-              <Badge size="sm">{t('ankiImport.scope.notes', [noteCountByModel.get(nt.id) ?? 0])}</Badge>
-              {nt.isCloze && <Badge variant="warning" size="sm">{t('ankiImport.scope.clozeUnsupported')}</Badge>}
-            </span>
-          </label>
-        ))}
-      </div>
+      <Text variant="supporting" color="secondary">
+        {t('ankiImport.scope.summary', [summary.importable])}
+        {summary.cloze > 0 ? ` · ${t('ankiImport.scope.clozeSkipped', [summary.cloze])}` : ''}
+      </Text>
     </VStack>
   );
 }
@@ -469,7 +464,7 @@ function LanguageStep({
 }
 
 function MappingStep({
-  data, notetypes, mappings, activeIdx, sampleIdx, onNtIdx, onSampleIdx, onMapping,
+  data, notetypes, mappings, activeIdx, sampleIdx, onNtIdx, onSampleIdx, onMapping, ntIds, onNtIds,
 }: {
   readonly data: NormalizedAnkiData;
   readonly notetypes: readonly NormalizedAnkiNotetype[];
@@ -479,6 +474,8 @@ function MappingStep({
   readonly onNtIdx: (i: number) => void;
   readonly onSampleIdx: (i: number) => void;
   readonly onMapping: (ntId: string, m: FieldMapping) => void;
+  readonly ntIds: ReadonlySet<string>;
+  readonly onNtIds: (s: ReadonlySet<string>) => void;
 }): React.JSX.Element {
   const nt = notetypes[Math.min(activeIdx, notetypes.length - 1)];
   const noteModel = useMemo(() => new Map(data.notes.map((n) => [n.id, n.modelId])), [data.notes]);
@@ -486,6 +483,12 @@ function MappingStep({
     return <Text variant="supporting">{t('ankiImport.mapping.noneSelected')}</Text>;
   }
   const mapping = mappings[nt.id] ?? {};
+  const excluded = !ntIds.has(nt.id);
+  const toggleNt = (): void => {
+    const next = new Set(ntIds);
+    if (next.has(nt.id)) next.delete(nt.id); else next.add(nt.id);
+    onNtIds(next);
+  };
   const samples = data.notes.filter((n) => n.modelId === nt.id).slice(0, 5);
   const sample: NormalizedAnkiNote | undefined = samples[sampleIdx % Math.max(1, samples.length)];
 
@@ -511,12 +514,15 @@ function MappingStep({
     <VStack gap="3">
       <HStack gap="2" className={styles.ntTabs}>
         {notetypes.map((n, i) => (
-          <Button key={n.id} variant={i === activeIdx ? 'secondary' : 'ghost'} size="sm" onClick={() => onNtIdx(i)}>
+          <Button key={n.id} variant={i === activeIdx ? 'secondary' : 'ghost'} size="sm" className={ntIds.has(n.id) ? undefined : styles.ntTabExcluded} onClick={() => onNtIdx(i)}>
             {n.name}
           </Button>
         ))}
       </HStack>
-      <div className={styles.mapLayout}>
+      {excluded && (
+        <Alert variant="default" icon={<Icon name="info" />} description={t('ankiImport.mapping.excludedNt')} />
+      )}
+      {!excluded && <div className={styles.mapLayout}>
         <div>
           {nt.fields.map((f) => (
             <div key={f.name} className={styles.fieldRow}>
@@ -545,8 +551,8 @@ function MappingStep({
             {sentenceText && <span className={styles.previewLabel}>{sentenceText}</span>}
           </div>
         </Card>
-      </div>
-      <div className={styles.sampleNav}>
+      </div>}
+      <div className={styles.sampleNav} style={excluded ? { display: 'none' } : undefined}>
         <IconButton size="sm" variant="ghost" disabled={sampleIdx === 0} aria-label={t('ankiImport.mapping.prev')} onClick={() => onSampleIdx(Math.max(0, sampleIdx - 1))}>
           <Icon name="chevronLeft" />
         </IconButton>
@@ -556,9 +562,14 @@ function MappingStep({
         </IconButton>
       </div>
       <Separator />
-      <Text variant="supporting" color="secondary">
-        {t('ankiImport.mapping.summary', [nt.name, cardCount, nt.fields.find((f) => mapping[f.name] === 'target')?.name ?? '—'])}
-      </Text>
+      <HStack justify="between">
+        <Text variant="supporting" color="secondary">
+          {t('ankiImport.mapping.summary', [nt.name, cardCount, nt.fields.find((f) => mapping[f.name] === 'target')?.name ?? '—'])}
+        </Text>
+        <Button variant="ghost" size="sm" onClick={toggleNt}>
+          {excluded ? t('ankiImport.mapping.includeNt') : t('ankiImport.mapping.excludeNt')}
+        </Button>
+      </HStack>
     </VStack>
   );
 }
