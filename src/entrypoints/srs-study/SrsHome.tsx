@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Badge, Box, Button, FlagIcon, Heading, Input, Menu, MenuItem, Text } from '@/shared/ui';
+import { Badge, Box, Button, Checkbox, FlagIcon, Heading, Input, Menu, MenuItem, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
@@ -10,6 +10,7 @@ import { deleteDeckCascade } from '@/features/srs/repositories/deleteCascade';
 import { generateId } from '@/features/srs/lib/helpers';
 import { getSrsHomeStats, dayKeyFor, type SrsHomeStats, type SrsHomeDeckStat } from '@/features/srs/services/getSrsHomeStats';
 import { useSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
+import { deckIconName } from './SrsDeckDetail';
 import type { SrsDeck } from '@/entities/srs/types';
 import styles from './SrsHome.module.css';
 
@@ -22,21 +23,43 @@ function lastTwoWeeks(dayKeys: ReadonlySet<string>, dayStartHour: number): reado
 
 function DeckRow({
   stat,
+  selectMode,
+  selected,
+  onToggleSelect,
   onStudy,
-  onManage,
+  onOpen,
+  onChange,
+  onAddSubdeck,
   onDelete,
 }: {
   readonly stat: SrsHomeDeckStat;
+  readonly selectMode: boolean;
+  readonly selected: boolean;
+  readonly onToggleSelect: () => void;
   readonly onStudy: () => void;
-  readonly onManage: () => void;
+  readonly onOpen: () => void;
+  readonly onChange: () => void;
+  readonly onAddSubdeck: () => void;
   readonly onDelete: () => void;
 }): React.JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false);
   const kebabRef = useRef<HTMLButtonElement | null>(null);
   return (
     <Box className={styles.deckRow}>
-      <button type="button" className={styles.deckMain} onClick={onStudy}>
-        <span className={styles.deckIcon}><Icon name="library" /></span>
+      {selectMode && (
+        <Checkbox
+          checked={selected}
+          onChange={onToggleSelect}
+          aria-label={t('srs.deck.selectDeck', [stat.deck.name])}
+        />
+      )}
+      <button
+        type="button"
+        className={styles.deckMain}
+        onClick={selectMode ? onToggleSelect : onStudy}
+        aria-pressed={selectMode ? selected : undefined}
+      >
+        <span className={styles.deckIcon}><Icon name={deckIconName(stat.deck)} /></span>
         <span className={styles.deckInfo}>
           <span className={styles.deckName}>{stat.deck.name}</span>
           <span className={styles.deckPills}>
@@ -45,39 +68,49 @@ function DeckRow({
           </span>
         </span>
       </button>
-      <Button
-        ref={kebabRef}
-        variant="ghost"
-        size="sm"
-        shape="circle"
-        onClick={() => { setMenuOpen(true); }}
-        aria-label={t('srs.home.deckActions')}
-      >
-        <Icon name="ellipsisVertical" />
-      </Button>
-      <Menu open={menuOpen} onClose={() => { setMenuOpen(false); }} triggerRef={kebabRef} ariaLabel={t('srs.home.deckActions')} align="right">
-        <MenuItem icon={<Icon name="layers" />} onSelect={() => { setMenuOpen(false); onManage(); }}>
-          {t('srs.review.manage')}
-        </MenuItem>
-        <MenuItem icon={<Icon name="trash" />} onSelect={() => { setMenuOpen(false); onDelete(); }}>
-          {t('srs.manage.delete')}
-        </MenuItem>
-      </Menu>
-      <span className={styles.deckProgressTrack} aria-hidden="true">
-        <span className={styles.deckProgressFill} style={{ width: `${stat.learnedPct}%` }} />
-      </span>
+      {!selectMode && (
+        <>
+          <Button
+            ref={kebabRef}
+            variant="ghost"
+            size="sm"
+            shape="circle"
+            onClick={() => { setMenuOpen(true); }}
+            aria-label={t('srs.home.deckActions')}
+          >
+            <Icon name="ellipsisVertical" />
+          </Button>
+          <Menu open={menuOpen} onClose={() => { setMenuOpen(false); }} triggerRef={kebabRef} ariaLabel={t('srs.home.deckActions')} align="right">
+            <MenuItem icon={<Icon name="eye" />} onSelect={() => { setMenuOpen(false); onOpen(); }}>
+              {t('srs.deck.viewContent')}
+            </MenuItem>
+            <MenuItem icon={<Icon name="pencil" />} onSelect={() => { setMenuOpen(false); onChange(); }}>
+              {t('srs.deck.change')}
+            </MenuItem>
+            <MenuItem icon={<Icon name="plus" />} onSelect={() => { setMenuOpen(false); onAddSubdeck(); }}>
+              {t('srs.manage.createSubdeck')}
+            </MenuItem>
+            <MenuItem icon={<Icon name="check" />} onSelect={() => { setMenuOpen(false); onToggleSelect(); }}>
+              {t('srs.deck.select')}
+            </MenuItem>
+            <MenuItem icon={<Icon name="trash" />} onSelect={() => { setMenuOpen(false); onDelete(); }}>
+              {t('srs.manage.delete')}
+            </MenuItem>
+          </Menu>
+        </>
+      )}
     </Box>
   );
 }
 
 export interface SrsHomeProps {
-  readonly onManage: () => void;
   readonly onOpenSettings: () => void;
   readonly onOpenStreaks: () => void;
   readonly onOpenVocabulary: () => void;
+  readonly onOpenDeck: (deck: SrsDeck, mode: 'view' | 'change', decks: readonly SrsDeck[]) => void;
 }
 
-export function SrsHome({ onManage, onOpenSettings, onOpenStreaks, onOpenVocabulary }: SrsHomeProps): React.JSX.Element {
+export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpenDeck }: SrsHomeProps): React.JSX.Element {
   const { start, loading, finished, stats } = useSrsStudy();
   const prefs = useSrsUiPrefs();
   const [home, setHome] = useState<SrsHomeStats | null>(null);
@@ -86,7 +119,10 @@ export function SrsHome({ onManage, onOpenSettings, onOpenStreaks, onOpenVocabul
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');
   const [adding, setAdding] = useState(false);
+  const [addParentId, setAddParentId] = useState<string | null>(null);
   const [newDeckName, setNewDeckName] = useState('');
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
 
   const refreshHome = useCallback(async () => {
     const result = await ensureFirstRun();
@@ -115,17 +151,19 @@ export function SrsHome({ onManage, onOpenSettings, onOpenStreaks, onOpenVocabul
     if (!collectionId || !newDeckName.trim()) return;
     const collection = await getCollection(collectionId);
     const existing = await getDecksByCollection(collectionId);
+    const siblings = existing.filter((d) => d.parentId === addParentId);
     const deck: SrsDeck = {
       id: generateId(),
       collectionId,
-      parentId: null,
+      parentId: addParentId,
       name: newDeckName.trim(),
-      order: existing.length,
+      order: siblings.length,
       studyConfigId: collection.defaultStudyConfigId,
     };
     await putDeck(deck);
     setNewDeckName('');
     setAdding(false);
+    setAddParentId(null);
     await refreshHome();
   }
 
@@ -135,14 +173,37 @@ export function SrsHome({ onManage, onOpenSettings, onOpenStreaks, onOpenVocabul
     await refreshHome();
   }
 
+  function toggleSelect(deckId: string): void {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(deckId)) next.delete(deckId);
+      else next.add(deckId);
+      return next;
+    });
+    setSelectMode(true);
+  }
+
+  async function handleDeleteSelected(): Promise<void> {
+    if (selected.size === 0) return;
+    if (!window.confirm(t('srs.deck.confirmDeleteSelected', [selected.size]))) return;
+    for (const id of selected) {
+      await deleteDeckCascade(id);
+    }
+    setSelected(new Set());
+    setSelectMode(false);
+    await refreshHome();
+  }
+
+  function exitSelectMode(): void {
+    setSelectMode(false);
+    setSelected(new Set());
+  }
+
   return (
     <Box className={styles.home}>
       <Box className={styles.topBar}>
         <Heading level={1} className={styles.appTitle}>{t('srs.title')}</Heading>
         <Box className={styles.topBarActions}>
-          <Button variant="ghost" size="sm" shape="circle" onClick={onManage} aria-label={t('srs.review.manage')} className={styles.chromeButton}>
-            <Icon name="layers" />
-          </Button>
           <Button variant="ghost" size="sm" shape="circle" onClick={onOpenSettings} aria-label={t('srs.settings.title')} className={styles.chromeButton}>
             <Icon name="settings" />
           </Button>
@@ -273,11 +334,11 @@ export function SrsHome({ onManage, onOpenSettings, onOpenStreaks, onOpenVocabul
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') void handleAddDeck();
-                if (e.key === 'Escape') { setAdding(false); setNewDeckName(''); }
+                if (e.key === 'Escape') { setAdding(false); setNewDeckName(''); setAddParentId(null); }
               }}
             />
             <Button variant="secondary" size="sm" onClick={() => { void handleAddDeck(); }} disabled={!newDeckName.trim()}>
-              {t('srs.manage.createDeck')}
+              {addParentId ? t('srs.manage.createSubdeck') : t('srs.manage.createDeck')}
             </Button>
           </Box>
         )}
@@ -289,16 +350,33 @@ export function SrsHome({ onManage, onOpenSettings, onOpenStreaks, onOpenVocabul
             <DeckRow
               key={stat.deck.id}
               stat={stat}
+              selectMode={selectMode}
+              selected={selected.has(stat.deck.id)}
+              onToggleSelect={() => { toggleSelect(stat.deck.id); }}
               onStudy={() => { void start(stat.deck.id); }}
-              onManage={onManage}
+              onOpen={() => { onOpenDeck(stat.deck, 'view', visibleDecks.map((s) => s.deck)); }}
+              onChange={() => { onOpenDeck(stat.deck, 'change', visibleDecks.map((s) => s.deck)); }}
+              onAddSubdeck={() => { setAddParentId(stat.deck.id); setAdding(true); }}
               onDelete={() => { void handleDeleteDeck(stat.deck); }}
             />
           ))
         )}
 
-        <Button variant="ghost" fullWidth className={styles.addDeckButton} onClick={() => { setAdding(true); }}>
-          <Icon name="plus" /> {t('srs.home.addDeck')}
-        </Button>
+        {selectMode ? (
+          <Box className={styles.selectBar}>
+            <Text className={styles.selectCount}>{t('srs.deck.selectedCount', [selected.size])}</Text>
+            <Button variant="destructive" size="sm" onClick={() => { void handleDeleteSelected(); }} disabled={selected.size === 0}>
+              {t('srs.manage.delete')}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={exitSelectMode}>
+              {t('srs.edit.cancel')}
+            </Button>
+          </Box>
+        ) : (
+          <Button variant="ghost" fullWidth className={styles.addDeckButton} onClick={() => { setAddParentId(null); setAdding(true); }}>
+            <Icon name="plus" /> {t('srs.home.addDeck')}
+          </Button>
+        )}
       </Box>
 
       <Text className={styles.footerNote}>{t('srs.app.desc')}</Text>

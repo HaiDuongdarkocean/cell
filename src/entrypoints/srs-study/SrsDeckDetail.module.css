@@ -1,0 +1,122 @@
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: min(30rem, 92vw);
+  margin: 0 auto;
+  padding: var(--space-5) 0 var(--space-10);
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.deckTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.deckIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-10);
+  height: var(--space-10);
+  border-radius: var(--radius-full);
+  background: var(--color-primary-subtle);
+  color: var(--color-text-accent);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chromeButton {
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  flex-shrink: 0;
+}
+
+.actionRow {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.changeCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-lg);
+}
+
+.iconPickerRow {
+  display: flex;
+}
+
+.changeActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.subdeckLine {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.noteList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.noteRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-lg);
+}
+
+.noteInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+}
+
+.noteWord {
+  font-weight: var(--font-weight-semibold);
+}
+
+.noteProgress {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.noteActions {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.empty {
+  color: var(--color-text-secondary);
+}
+
+.error {
+  color: var(--color-error);
+}

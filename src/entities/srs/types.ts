@@ -44,6 +44,7 @@ export interface SrsDeck {
   readonly collectionId: string;
   readonly parentId: string | null;
   readonly name: string;
+  readonly icon?: string;
   readonly order: number;
   readonly studyConfigId: string;
 }

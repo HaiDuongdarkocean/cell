@@ -19,11 +19,7 @@ const COMPONENT_ICONS: Record<ComponentType, 'volumeHigh' | 'bookOpen' | 'pencil
 
 const COMPONENT_ORDER: readonly ComponentType[] = ['sound', 'meaning', 'spelling'];
 
-export interface SrsReviewCardProps {
-  readonly onManage?: () => void;
-}
-
-export function SrsReviewCard({ onManage }: SrsReviewCardProps): React.JSX.Element | null {
+export function SrsReviewCard(): React.JSX.Element | null {
   const {
     session,
     stats,
@@ -64,11 +60,6 @@ export function SrsReviewCard({ onManage }: SrsReviewCardProps): React.JSX.Eleme
     if (window.confirm(t('srs.manage.confirmDeleteCard'))) {
       void deleteCurrentCard();
     }
-  }
-
-  function handleManage(): void {
-    endSession();
-    onManage?.();
   }
 
   if (editing) {
@@ -127,16 +118,6 @@ export function SrsReviewCard({ onManage }: SrsReviewCardProps): React.JSX.Eleme
           className={styles.chromeButton}
         >
           <Icon name="repeat" />
-        </Button>
-        <Button
-          shape="circle"
-          size="sm"
-          variant="ghost"
-          onClick={handleManage}
-          aria-label={t('srs.review.manage')}
-          className={styles.chromeButton}
-        >
-          <Icon name="layers" />
         </Button>
       </Box>
 
