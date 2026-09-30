@@ -41,6 +41,7 @@ import { createReaderLocalSource } from '@/features/reader/sync/readerLocalSourc
 import type { ReaderDataClass } from '@/features/reader/sync/readerLocalSource';
 import { dictLocalSources } from '@/features/dictionary/sync/dictLocalSource';
 import { createDictBlobReader } from '@/features/dictionary/sync/dictBlobReader';
+import { clearDictionaryProbeCache } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
 import { createSrsSyncAccess } from '@/features/srs/sync/srsSyncAccess';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { logger } from '@/shared/lib/logger';
@@ -219,6 +220,9 @@ async function ensureBuilt(): Promise<BuiltRuntime> {
 }
 
 export async function broadcastApplied(payload: SyncAppliedPayload): Promise<void> {
+  if (payload.dataClasses.includes('dictResource')) {
+    clearDictionaryProbeCache();
+  }
   runtimeDeps.broadcast('SYNC_DATA_APPLIED', payload);
   try {
     const tabs = await queryTabs({});

@@ -801,6 +801,7 @@
   "studyModes.builder.errorNameTooLong": "Tên tối đa 50 ký tự",
   "studyModes.builder.errorNameExists": "Tên đã tồn tại",
   "studyModes.builder.errorNoSteps": "Cần ít nhất một bước",
+  "studyModes.builder.previewFallback": "Chế độ chưa đặt tên",
   "studyModes.builder.discardTitle": "Bỏ thay đổi?",
   "studyModes.builder.discardDesc": "Thay đổi chưa lưu sẽ mất.",
   "studyModes.builder.discardConfirm": "Bỏ thay đổi",

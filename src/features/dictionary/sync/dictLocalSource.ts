@@ -23,6 +23,7 @@ import {
   resourceRecordKey,
   resourceRecordToken,
 } from './resourceIdentity';
+import { logger } from '@/shared/lib/logger';
 
 const RESOURCE_PREFIX = 'resource:';
 const WORD_PREFIX = 'word:';
@@ -290,7 +291,13 @@ class DictResourceLocalSource extends IdbLocalSource {
         continue;
       }
       const blob = await ctx.fetchBlob(row.contentHash);
-      if (!blob) continue;
+      if (!blob) {
+        logger.warn('dict sync: resource blob unavailable, deferring import', {
+          resourceId: row.id,
+          contentHash: row.contentHash,
+        });
+        continue;
+      }
       await this.importResourceBlob(db, row, blob);
     }
   }

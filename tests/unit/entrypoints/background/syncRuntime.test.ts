@@ -5,6 +5,7 @@ import {
   providerFor,
 } from '@/entrypoints/background/syncRuntime';
 import { createGoogleDriveStorageProvider } from '@/features/sync/adapters/google-drive/googleDriveDefaults';
+import { clearDictionaryProbeCache } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { SyncAppliedPayload } from '@/features/sync/app/SyncEngine';
 
@@ -14,6 +15,10 @@ jest.mock('@/features/sync/adapters/google-drive/googleDriveDefaults', () => ({
 
 jest.mock('@/shared/lib/logger', () => ({
   logger: { warn: jest.fn(), info: jest.fn(), error: jest.fn(), debug: jest.fn() },
+}));
+
+jest.mock('@/features/dictionaryPopup/logic/lookupOrchestrator', () => ({
+  clearDictionaryProbeCache: jest.fn(),
 }));
 
 const mockedCreateProvider = createGoogleDriveStorageProvider as jest.MockedFunction<
@@ -74,6 +79,18 @@ describe('broadcastApplied tab fan-out (SC-13)', () => {
     createSyncRuntime({ broadcast });
     await expect(broadcastApplied(payload)).resolves.toBeUndefined();
     expect(broadcast).toHaveBeenCalledWith('SYNC_DATA_APPLIED', payload);
+  });
+
+  it('clears dictionary lookup caches when dictResource was applied', async () => {
+    createSyncRuntime({ broadcast: jest.fn() });
+    await broadcastApplied({ scopes: ['global'], dataClasses: ['dictResource'] });
+    expect(clearDictionaryProbeCache).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps dictionary lookup caches for other data classes', async () => {
+    createSyncRuntime({ broadcast: jest.fn() });
+    await broadcastApplied(payload);
+    expect(clearDictionaryProbeCache).not.toHaveBeenCalled();
   });
 
   it('swallows a query failure', async () => {

@@ -801,6 +801,7 @@
   "studyModes.builder.errorNameTooLong": "Name must be 50 characters or less",
   "studyModes.builder.errorNameExists": "Name already exists",
   "studyModes.builder.errorNoSteps": "At least one step is required",
+  "studyModes.builder.previewFallback": "Untitled mode",
   "studyModes.builder.discardTitle": "Discard changes?",
   "studyModes.builder.discardDesc": "Any unsaved changes will be lost.",
   "studyModes.builder.discardConfirm": "Discard",
