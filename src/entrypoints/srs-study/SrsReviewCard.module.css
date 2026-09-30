@@ -378,6 +378,12 @@
   background: var(--button-destructive-hover-bg);
 }
 
+/* design-system: intentional override — the delete chrome button previews the same destructive tint as the forget grade action on hover. */
+.chromeButton.deleteButton:hover {
+  background: var(--button-destructive-bg);
+  color: var(--button-destructive-fg);
+}
+
 .gradeRow .gradeButton svg {
   stroke-width: 2.5;
 }

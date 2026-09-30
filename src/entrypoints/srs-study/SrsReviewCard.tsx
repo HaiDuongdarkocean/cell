@@ -130,7 +130,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
           variant="ghost"
           onClick={() => { setConfirmDelete(true); }}
           aria-label={t('srs.review.deleteCard')}
-          className={styles.chromeButton}
+          className={[styles.chromeButton, styles.deleteButton].join(' ')}
         >
           <Icon name="trash" />
         </Button>
