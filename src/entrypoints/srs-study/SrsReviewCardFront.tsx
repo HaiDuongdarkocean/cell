@@ -59,6 +59,7 @@ export function SrsReviewCardFront({
       className={styles.front}
       role="button"
       tabIndex={0}
+      data-cell-no-ripple
       onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => {
         if ((e.target as HTMLElement).closest('input,button,audio')) return;
         e.preventDefault();
