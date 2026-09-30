@@ -40,9 +40,15 @@
 }
 
 .bigFlame {
-  color: var(--color-text-accent);
+  color: color-mix(in srgb, var(--color-warning), var(--color-error) 35%);
   width: var(--space-16);
   height: var(--space-16);
+}
+
+.bigFlame svg {
+  width: var(--space-16);
+  height: var(--space-16);
+  fill: currentColor;
 }
 
 .bigDays {

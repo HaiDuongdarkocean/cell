@@ -45,7 +45,7 @@ export function SrsStreaksView({ onBack }: SrsStreaksViewProps): React.JSX.Eleme
       </Box>
 
       <Box className={styles.streakHero}>
-        <Icon name="zap" className={styles.bigFlame} />
+        <Icon name="flame" className={styles.bigFlame} />
         <Heading level={2} className={styles.bigDays}>
           {t('srs.home.streakDays', [stats?.currentStreak ?? 0])}
         </Heading>

@@ -179,7 +179,11 @@
 }
 
 .streakFlame {
-  color: var(--color-text-accent);
+  color: color-mix(in srgb, var(--color-warning), var(--color-error) 35%);
+}
+
+.streakFlame svg {
+  fill: currentColor;
 }
 
 .streakDays,

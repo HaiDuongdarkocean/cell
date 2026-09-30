@@ -39,6 +39,7 @@ import {
   EyeOff,
   FileVideo,
   Flag,
+  Flame,
   FolderOpen,
   Gauge,
   Image,
@@ -108,6 +109,7 @@ import {
 import settingsSvg from './svg/settings.svg?raw';
 import pencilSvg from './svg/pencil.svg?raw';
 import zapSvg from './svg/zap.svg?raw';
+import flameSvg from './svg/flame.svg?raw';
 import resizeSvg from './svg/resize.svg?raw';
 import { ResizeIcon } from './ResizeIcon';
 import audioWaveSvg from './svg/audio-lines.svg?raw';
@@ -233,6 +235,7 @@ export interface IconEntry {
 export const ICON_CATALOG = {
   settings: { component: Settings, svg: settingsSvg, source: 'lucide/settings', tags: ['settings', 'gear', 'config', 'preferences'] } as IconEntry,
   pencil: { component: Pencil, svg: pencilSvg, source: 'lucide/pencil', tags: ['edit', 'write', 'pencil', 'modify'] } as IconEntry,
+  flame: { component: Flame, svg: flameSvg, source: 'lucide/flame', tags: ['fire', 'streak', 'hot', 'burn'] } as IconEntry,
   zap: { component: Zap, svg: zapSvg, source: 'lucide/zap', tags: ['quick', 'fast', 'lightning', 'bolt', 'instant'] } as IconEntry,
   resize: { component: ResizeIcon, svg: resizeSvg, source: 'custom/resize', tags: ['resize', 'handle', 'diagonal', 'notches'] } as IconEntry,
   audioWave: { component: AudioLines, svg: audioWaveSvg, source: 'lucide/audio-lines', tags: ['audio', 'waveform', 'sound', 'voice', 'tts', 'play-audio'] } as IconEntry,

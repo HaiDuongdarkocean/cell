@@ -253,7 +253,7 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
               <Icon name="chevronRight" />
             </span>
             <span className={styles.streakRow}>
-              <Icon name="zap" className={styles.streakFlame} />
+              <Icon name="flame" className={styles.streakFlame} />
               <Text className={styles.streakDays}>{t('srs.home.streakDays', [home?.streakDays ?? 0])}</Text>
             </span>
             <span className={styles.streakGrid}>
