@@ -277,12 +277,6 @@
   gap: var(--space-2);
 }
 
-.addRow {
-  display: flex;
-  gap: var(--space-2);
-  align-items: center;
-}
-
 .deckRow {
   position: relative;
   display: flex;
@@ -359,6 +353,12 @@
 .emptyText {
   color: var(--color-text-secondary);
   text-align: center;
+}
+
+.addDialogBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 .footerNote {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Badge, Box, Button, Checkbox, FlagIcon, Heading, Input, Menu, MenuItem, Text } from '@/shared/ui';
+import { Badge, Box, Button, Checkbox, Dialog, FlagIcon, Heading, Input, Menu, MenuItem, Select, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
@@ -324,24 +324,41 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
           />
         )}
 
-        {adding && (
-          <Box className={styles.addRow}>
-            <Input
-              value={newDeckName}
-              onChange={(e) => { setNewDeckName(e.target.value); }}
-              placeholder={t('srs.manage.newDeckName')}
-              aria-label={t('srs.manage.newDeckName')}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void handleAddDeck();
-                if (e.key === 'Escape') { setAdding(false); setNewDeckName(''); setAddParentId(null); }
-              }}
-            />
-            <Button variant="secondary" size="sm" onClick={() => { void handleAddDeck(); }} disabled={!newDeckName.trim()}>
-              {addParentId ? t('srs.manage.createSubdeck') : t('srs.manage.createDeck')}
+      <Dialog
+        open={adding}
+        onOpenChange={(o) => { if (!o) { setAdding(false); setNewDeckName(''); setAddParentId(null); } }}
+        title={addParentId ? t('srs.manage.createSubdeck') : t('srs.manage.createDeck')}
+        footer={(
+          <>
+            <Button variant="ghost" onClick={() => { setAdding(false); setNewDeckName(''); setAddParentId(null); }}>
+              {t('srs.edit.cancel')}
             </Button>
-          </Box>
+            <Button variant="primary" onClick={() => { void handleAddDeck(); }} disabled={!newDeckName.trim()}>
+              {t('srs.edit.save')}
+            </Button>
+          </>
         )}
+      >
+        <Box className={styles.addDialogBody}>
+          <Input
+            value={newDeckName}
+            onChange={(e) => { setNewDeckName(e.target.value); }}
+            placeholder={t('srs.manage.newDeckName')}
+            aria-label={t('srs.manage.newDeckName')}
+            autoFocus
+            onKeyDown={(e) => { if (e.key === 'Enter') void handleAddDeck(); }}
+          />
+          <Select
+            value={addParentId ?? ''}
+            options={[
+              { value: '', label: t('srs.deck.noParent') },
+              ...(home?.decks ?? []).map((s) => ({ value: s.deck.id, label: s.deck.name })),
+            ]}
+            onChange={(v) => { setAddParentId(v || null); }}
+            aria-label={t('srs.deck.parentDeck')}
+          />
+        </Box>
+      </Dialog>
 
         {visibleDecks.length === 0 ? (
           <Text className={styles.emptyText}>{t('srs.manage.noDecks')}</Text>
