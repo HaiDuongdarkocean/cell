@@ -22,6 +22,7 @@ import {
   readFile as opfsReadFile,
 } from '@/shared/lib/storage/opfsStorage';
 import { sendMessage, registerOffscreenListener, unregisterOffscreenListener } from '@/shared/lib/chrome-apis';
+import { messagePayload } from '@/entities/message/payload';
 import { ocrMessageListener } from './ocrRunner';
 import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
 import { encodeBase64 } from '@/shared/lib/base64';
@@ -353,7 +354,11 @@ export async function startMessageListener(): Promise<void> {
     }
 
     if (type === MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2) {
-      const payload = request.payload as ConvertTsToMp4V2Payload;
+      const payload = messagePayload<ConvertTsToMp4V2Payload>(request, MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2);
+      if (!payload) {
+        sendResponse({ success: false, error: 'invalid payload' });
+        return true;
+      }
       // Update parallel settings from the payload before conversion
       if (payload.parallelConversion !== undefined) {
         setParallelSettings({
@@ -386,7 +391,11 @@ export async function startMessageListener(): Promise<void> {
     }
 
     if (type === MESSAGE_TYPES.CREATE_OPFS_BLOB_URL) {
-      const payload = request.payload as CreateOpfsBlobUrlPayload;
+      const payload = messagePayload<CreateOpfsBlobUrlPayload>(request, MESSAGE_TYPES.CREATE_OPFS_BLOB_URL);
+      if (!payload) {
+        sendResponse({ success: false, error: 'invalid payload' });
+        return true;
+      }
       createOpfsBlobUrl(payload.downloadId, payload.opfsFilename, payload.mimeType)
         .then((result: CreateOpfsBlobUrlResultPayload): void => {
           const response: MessageResponse<CreateOpfsBlobUrlResultPayload> = {
@@ -411,7 +420,11 @@ export async function startMessageListener(): Promise<void> {
     }
 
     if (type === MESSAGE_TYPES.REVOKE_OPFS_BLOB_URL) {
-      const payload = request.payload as RevokeOpfsBlobUrlPayload;
+      const payload = messagePayload<RevokeOpfsBlobUrlPayload>(request, MESSAGE_TYPES.REVOKE_OPFS_BLOB_URL);
+      if (!payload) {
+        sendResponse({ success: false, error: 'invalid payload' });
+        return true;
+      }
       revokeOpfsBlobUrl(payload.url);
       const response: MessageResponse = { success: true };
       sendResponse(response);
@@ -429,7 +442,11 @@ export async function startMessageListener(): Promise<void> {
     if (type === MESSAGE_TYPES.FETCH_REQUEST) {
       // M15: delegate fetch() from SW to offscreen (SW idle eviction safety).
       // Offscreen persists for the fetch duration — no silent abort.
-      const payload = request.payload as FetchRequestPayload;
+      const payload = messagePayload<FetchRequestPayload>(request, MESSAGE_TYPES.FETCH_REQUEST);
+      if (!payload) {
+        sendResponse({ success: false, error: 'invalid payload' });
+        return true;
+      }
       void (async () => {
         try {
           const response = await fetchWithTimeout(payload.url, {

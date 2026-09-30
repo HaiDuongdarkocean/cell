@@ -65,7 +65,7 @@ describe('MessageBus', () => {
       expect(typeof off).toBe('function');
 
       // Handler should be invoked via handleMessage
-      const request: MessageRequest = { type: 'DETECTED_MEDIA_UPDATE', payload: 1 };
+      const request: MessageRequest = { type: 'DETECTED_MEDIA_UPDATE', payload: { videos: [], subtitles: [], tabId: 1 } };
       void bus.handleMessage(request, { id: '1' });
       expect(handler).toHaveBeenCalledWith(request);
     });
@@ -181,7 +181,7 @@ describe('MessageBus', () => {
 
       bus.on('DETECTED_MEDIA_UPDATE', handler);
 
-      const request: MessageRequest = { type: 'DETECTED_MEDIA_UPDATE', payload: 42 };
+      const request: MessageRequest = { type: 'DETECTED_MEDIA_UPDATE', payload: { videos: [], subtitles: [], tabId: 1 } };
       return bus.handleMessage(request, { id: '1' }).then((response) => {
         expect(handler).toHaveBeenCalledWith(request);
         expect(response).toEqual({ success: true, data: 'ok' });
@@ -291,7 +291,7 @@ describe('MessageBus', () => {
       const listener = mockChrome.onMessage.addListener.mock
         .calls[0][0] as Listener;
       const sendResponse = jest.fn();
-      const request: MessageRequest = { type: 'DETECTED_MEDIA_UPDATE', payload: 7 };
+      const request: MessageRequest = { type: 'DETECTED_MEDIA_UPDATE', payload: { videos: [], subtitles: [], tabId: 1 } };
 
       // Returning true means sendResponse will be called asynchronously
       const result = listener(request, { id: '1' }, sendResponse);

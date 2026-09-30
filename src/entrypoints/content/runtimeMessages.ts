@@ -1,5 +1,6 @@
 import { waitForCachedSubtitleBody } from '@/features/subtitle';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { messagePayload } from '@/entities/message/payload';
 import { isCellDebug } from './debugLog';
 import { getLastRelayedVideoId } from './subtitleBridges';
 
@@ -38,7 +39,7 @@ export function installRuntimeMessageListener(): void {
     // player consumes the token, so the response is cached at interception time.
     // Wait briefly for the cache before trying a replay.
     if (msg?.type === MESSAGE_TYPES.FETCH_SUBTITLE_PAGE_CONTEXT) {
-      const payload = (msg as { payload?: { url?: string } }).payload;
+      const payload = messagePayload<{ url: string }>(msg, MESSAGE_TYPES.FETCH_SUBTITLE_PAGE_CONTEXT);
       const url = payload?.url;
       if (!url) {
         sendResponse({ success: false, error: 'missing url' });

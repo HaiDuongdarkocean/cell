@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
 import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
 import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis';
+import { messagePayload } from '@/entities/message/payload';
 import type {
   DetectedVideo,
   DetectedSubtitle,
@@ -47,7 +48,7 @@ export function useDetectedMedia(): {
       _sendResponse: (response: MessageResponse) => void,
     ): boolean => {
       if (request.type === 'DETECTED_MEDIA_UPDATE') {
-        const payload = request.payload as DetectedMediaUpdatePayload;
+        const payload = messagePayload<DetectedMediaUpdatePayload>(request, 'DETECTED_MEDIA_UPDATE');
         // Only apply updates for the active tab; ignore background tabs.
         if (payload && payload.tabId === tabIdRef.current) {
           setVideos(payload.videos);

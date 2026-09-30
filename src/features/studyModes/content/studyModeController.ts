@@ -1,6 +1,7 @@
 import { getStorage, onStorageChanged } from '@/shared/lib/chrome-apis';
 import { onMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { messagePayload } from '@/entities/message/payload';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { INITIAL_STUDY_MODE_STATE, migrateStudyModeState } from '../lib/migrateStudyModeState';
 import { findActiveMode } from '../lib/findActiveMode';
@@ -63,11 +64,9 @@ export function initializeStudyModeController(): void {
   });
 
   const remove = onMessage((msg) => {
-    if ((msg as { type?: string }).type === MESSAGE_TYPES.APPLY_STUDY_MODE) {
-      const payload = (msg as { payload?: unknown }).payload as ActiveStudyMode | undefined;
-      if (payload && payload.activeMode && payload.advanced) {
-        setActiveStudyMode(payload);
-      }
+    const payload = messagePayload<ActiveStudyMode>(msg, MESSAGE_TYPES.APPLY_STUDY_MODE);
+    if (payload && payload.activeMode && payload.advanced) {
+      setActiveStudyMode(payload);
     }
   });
 

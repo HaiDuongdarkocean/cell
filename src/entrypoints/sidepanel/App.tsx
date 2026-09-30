@@ -10,6 +10,7 @@ import { handleShortcutKey } from '@/features/subtitle';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import { sendMessage, onMessage, removeOnMessageListener, addOnTabActivatedListener, addOnTabUpdatedListener } from '@/shared/lib/chrome-apis';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { messagePayload } from '@/entities/message/payload';
 import type { BilingualCue, KeyboardShortcut } from '@/entities/media';
 import { t } from '@/shared/i18n';
 import styles from './App.module.css';
@@ -85,14 +86,14 @@ export function App() {
       if (payload.tabId !== activeTabIdRef.current) return;
       switch (msg.type) {
         case 'SUBTITLE_CUES_LOADED': {
-          const cuesPayload = payload as { cues: BilingualCue[] } | undefined;
+          const cuesPayload = messagePayload<{ cues: BilingualCue[] }>(msg, 'SUBTITLE_CUES_LOADED');
           if (cuesPayload?.cues) {
             useSidePanelStore.getState().setCues(cuesPayload.cues);
           }
           break;
         }
         case 'VIDEO_TIME_UPDATE': {
-          const timePayload = payload as { currentTimeMs: number; durationMs: number; offsetMs?: number } | undefined;
+          const timePayload = messagePayload<{ currentTimeMs: number; durationMs: number; offsetMs?: number }>(msg, 'VIDEO_TIME_UPDATE');
           if (timePayload) {
             useSidePanelStore.getState().setCurrentTime(
               timePayload.currentTimeMs,
@@ -103,7 +104,7 @@ export function App() {
           break;
         }
         case 'VIDEO_PLAY_STATE': {
-          const playPayload = payload as { isPlaying: boolean } | undefined;
+          const playPayload = messagePayload<{ isPlaying: boolean }>(msg, 'VIDEO_PLAY_STATE');
           if (playPayload) {
             useSidePanelStore.getState().setPlaying(playPayload.isPlaying);
           }

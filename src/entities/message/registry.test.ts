@@ -37,4 +37,11 @@ describe('MESSAGE_REGISTRY', () => {
       }
     }
   });
+
+  it('every contract carries a payload schema (receive-side validation ratchet)', () => {
+    const schemaLess = Object.values(MESSAGE_REGISTRY)
+      .filter((c) => c.schema === undefined)
+      .map((c) => c.type);
+    expect(schemaLess).toEqual([]);
+  });
 });

@@ -9,16 +9,21 @@ import {
   navigateCue,
   handleAutoLoadSubtitles,
   mergeCuesForPanel,
-  showToast,
   createTranslateFunction,
   broadcastCues,
 } from '@/features/subtitle';
 import { shouldDedupeCueSeek, canonicalNavUrl } from './contentScriptShared';
 import { t } from '@/shared/i18n';
 import { markCueSeekIntent } from '@/shared/lib/cueSeekIntent';
+import { messagePayload } from '@/entities/message/payload';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
-import type { AutoLoadSubtitlesPayload } from '@/entities/message';
+import type {
+  AutoLoadSubtitlesPayload,
+  SeekToPayload,
+  SetPlaybackRatePayload,
+  ShortcutActionPayload,
+} from '@/entities/message';
 
 import { isCellDebug as cellDebug } from '@/shared/lib/cellDebug';
 import { resolveParentFrameOrigin } from '@/shared/lib/dom/frameOrigin';
@@ -27,7 +32,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
   onRuntimeMessage: (msg: unknown, sender: chrome.runtime.MessageSender, sendResponse: (response?: unknown) => void) => boolean | void;
   onRuntimeMessage2: (msg: unknown, sender: chrome.runtime.MessageSender, sendResponse: (response?: unknown) => void) => boolean | void;
 } {
-  const { video, container, blockController, syncController } = ctx;
+  const { video, blockController, syncController } = ctx;
 
   // Receive SEEK_TO from Side Panel (via background relay) → seek video
   // msg is `unknown` per onMessage signature; narrow to { type?, payload? }
@@ -41,40 +46,35 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
     if (m?.type === MESSAGE_TYPES.CLOSE_SIDE_PANEL) {
       ctx.setSidePanelOpen(false);
     }
-    if (m?.type === MESSAGE_TYPES.SEEK_TO) {
-      const payload = m.payload as { timeMs?: number; cueSeq?: number };
-      const timeMs = payload?.timeMs;
-      if (timeMs !== undefined) {
-        if (typeof payload?.cueSeq === 'number') markCueSeekIntent(payload.cueSeq);
-        // ADR-019 sync: side panel clicks cue.start (raw) → seek so overlay
-        // DISPLAYS that cue → shift by -offsetMs (mirror seekToCue logic).
-        // ADR-030: route through seekVideo to avoid Netflix M7375.
-        const offsetMs = ctx.getOffsetController()?.getOffsetMs() ?? 0;
-        seekVideo(video, (timeMs - offsetMs) / 1000);
-      }
+    const seekTo = messagePayload<SeekToPayload>(msg, MESSAGE_TYPES.SEEK_TO);
+    if (seekTo) {
+      if (typeof seekTo.cueSeq === 'number') markCueSeekIntent(seekTo.cueSeq);
+      // ADR-019 sync: side panel clicks cue.start (raw) → seek so overlay
+      // DISPLAYS that cue → shift by -offsetMs (mirror seekToCue logic).
+      // ADR-030: route through seekVideo to avoid Netflix M7375.
+      const offsetMs = ctx.getOffsetController()?.getOffsetMs() ?? 0;
+      seekVideo(video, (seekTo.timeMs - offsetMs) / 1000);
     }
     // Receive TOGGLE_PLAY from Side Panel (via background relay) → toggle play/pause
     if (m?.type === MESSAGE_TYPES.TOGGLE_PLAY) {
       // ADR-030: route through playVideo/pauseVideo to avoid Netflix M7375.
       ctx.togglePlay();
     }
-    if (m?.type === MESSAGE_TYPES.SET_PLAYBACK_RATE) {
-      const rate = (m.payload as { rate?: number })?.rate;
-      if (rate === 0.5 || rate === 0.75 || rate === 1 || rate === 1.25 || rate === 1.5) {
-        if (blockController) {
-          blockController.setUserPlaybackSpeed(rate);
-        } else {
-          video.playbackRate = rate;
-        }
+    const rateMsg = messagePayload<SetPlaybackRatePayload>(msg, MESSAGE_TYPES.SET_PLAYBACK_RATE);
+    if (rateMsg) {
+      if (blockController) {
+        blockController.setUserPlaybackSpeed(rateMsg.rate);
+      } else {
+        video.playbackRate = rateMsg.rate;
       }
     }
     // Receive SHORTCUT_ACTION from Side Panel (via background relay) →
     // cue navigation. ADR-021 D8: if seekTime provided (from sidepanel's local
     // calculation), seek directly — avoids stale video.currentTime at arrival.
     // Fallback: calculate from video.currentTime (for in-page keydown handler).
-    if (m?.type === MESSAGE_TYPES.SHORTCUT_ACTION) {
-      const payload = m.payload as { action: string; seekTime?: number };
-      const action = payload?.action;
+    const shortcut = messagePayload<ShortcutActionPayload>(msg, MESSAGE_TYPES.SHORTCUT_ACTION);
+    if (shortcut) {
+      const action = shortcut.action;
       // ADR-032: dedupe cue-nav — in-page keydown handler already seeked.
       if ((action === 'prev-cue' || action === 'next-cue' || action === 'replay-cue') && shouldDedupeCueSeek(action)) {
         return;
@@ -85,12 +85,12 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
       // While paused on a held/active cue, anchor navigation at that cue instead —
       // the panel's seekTime is computed from un-anchored currentTimeMs.
       if (
-        payload?.seekTime !== undefined &&
+        shortcut.seekTime !== undefined &&
         (action === 'prev-cue' || action === 'next-cue' || action === 'replay-cue') &&
         !(video.paused && blockController.getActiveIndices().target >= 0)
       ) {
         // ADR-030: route through seekVideo to avoid Netflix M7375.
-        seekVideo(video, (payload.seekTime - offsetMs) / 1000);
+        seekVideo(video, (shortcut.seekTime - offsetMs) / 1000);
         if (action === 'replay-cue') resumeIfPaused(video);
       } else {
         // Fallback: calculate from video.currentTime (in-page keydown path)
@@ -100,7 +100,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
           case 'prev-cue':
           case 'next-cue':
           case 'replay-cue': {
-            navigateCue(action as 'prev-cue' | 'next-cue' | 'replay-cue', video, ctx.getBilingualCues(), effectiveMs, offsetMs, blockController.getActiveIndices().target);
+            navigateCue(action, video, ctx.getBilingualCues(), effectiveMs, offsetMs, blockController.getActiveIndices().target);
             break;
           }
           case 'toggle-overlay': {
@@ -112,45 +112,6 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
             ctx.togglePlay();
             break;
           }
-        case 'toggle-translate': {
-          // ADR-021 D7: temporary toggle (no setting change).
-          // If prefill running → clear + hide native overlay. If not → restart from syncController.latestTargetCues.
-          if (ctx.getTranslatePrefill()?.isRunning) {
-            ctx.getTranslatePrefill()?.clear();
-            ctx.setTranslatePrefill(null);
-            // Reload target-only (no native) to hide translated overlay
-            blockController?.loadBilingualCues(syncController.latestTargetCues, []);
-            ctx.setBilingualCues(mergeCuesForPanel(syncController.latestTargetCues, []));
-            // latestNativeCues tracked by blockController — no longer needed here
-            // updateCues(syncController.latestTargetCues, []);
-            showToast(t('subtitle.autoTranslate.off'), container, { variant: 'info' });
-          } else if (syncController.latestTargetCues.length > 0) {
-            // Restart prefill — load settings for sl/tl
-            void (async () => {
-              const s = await loadSettings();
-              const sl = s.subtitleOverlayTargetLanguage;
-              const tl = s.subtitleOverlayNativeLanguage;
-              if (!sl || !tl || sl === tl) return;
-              ctx.getTranslatePrefill()?.clear();
-              const translatePrefill = new BackgroundPrefillController({
-                translate: createTranslateFunction(sl, tl),
-                onChunkTranslated: (translatedCues: SrtCue[]) => {
-                  blockController?.loadBilingualCues(syncController.latestTargetCues, translatedCues);
-                  ctx.setBilingualCues(mergeCuesForPanel(syncController.latestTargetCues, translatedCues));
-                  // updateCues(syncController.latestTargetCues, translatedCues);
-                  broadcastCues(ctx.getBilingualCues());
-                },
-                onError: (msg: string) => {
-                  showToast(msg, container, { variant: 'error' });
-                },
-              });
-              ctx.setTranslatePrefill(translatePrefill);
-              translatePrefill.start(syncController.latestTargetCues, sl, tl);
-              showToast(t('subtitle.autoTranslate.on'), container, { variant: 'success' });
-            })();
-          }
-          break;
-        }
         }
       }
     }
@@ -163,7 +124,8 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
   const onRuntimeMessage2 = (msg: unknown, _sender: chrome.runtime.MessageSender, _sendResponse: (response?: unknown) => void) => {
     const m = msg as { type?: string; payload?: unknown };
     if (m?.type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES) {
-      const payload = m.payload as AutoLoadSubtitlesPayload;
+      const payload = messagePayload<AutoLoadSubtitlesPayload>(msg, MESSAGE_TYPES.AUTO_LOAD_SUBTITLES);
+      if (!payload) return false;
       if (cellDebug()) {
         try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'msg-received', hasTarget: !!payload?.target, hasNative: !!payload?.native, targetUrl: payload?.target?.url?.slice(0, 60), nativeUrl: payload?.native?.url?.slice(0, 60), t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
       }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
 import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
 import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis';
+import { messagePayload } from '@/entities/message/payload';
 import type { DownloadItem } from '@/entities/media';
 import type {
   MessageRequest,
@@ -47,9 +48,9 @@ export function useDownloadProgress(): {
       _sendResponse: (response: MessageResponse) => void,
     ): boolean => {
       if (request.type === 'DOWNLOAD_PROGRESS_UPDATE') {
-        const payload = request.payload as DownloadProgressUpdatePayload;
+        const payload = messagePayload<DownloadProgressUpdatePayload>(request, 'DOWNLOAD_PROGRESS_UPDATE');
         // Only apply updates for the active tab; ignore other tabs.
-        if (payload?.progress && payload.tabId === tabIdRef.current) {
+        if (payload && payload.tabId === tabIdRef.current) {
           const {
             itemId,
             status,

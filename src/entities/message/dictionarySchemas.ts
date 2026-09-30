@@ -199,6 +199,8 @@ export const WorkerLookupResultMessageSchema = z.object({
   error: z.string().optional(),
 });
 
+export const LookupResultPayloadSchema = WorkerLookupResultMessageSchema.omit({ type: true });
+
 // === Word status (spec §9.4 B — WORD_STATUS_GET / WORD_STATUSES_GET / WORD_STATUS_SET payloads) ===
 
 export const WordStatusGetPayloadSchema = z.object({
