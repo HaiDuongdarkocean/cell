@@ -9,6 +9,15 @@ import { fetchMediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { SrsAudioAsset, SrsField, SrsFieldValue, SrsImageAsset, SrsNote, SrsNotetype } from '@/entities/srs/types';
 import styles from './SrsEditCardPanel.module.css';
 
+export function orderedEditFields(fields: readonly SrsField[]): readonly SrsField[] {
+  const translationIndex = fields.findIndex((f) => f.id === 'translation');
+  const sentenceIndex = fields.findIndex((f) => f.id === 'sentence');
+  if (translationIndex === -1 || sentenceIndex === -1 || translationIndex === sentenceIndex + 1) return fields;
+  const rest = fields.filter((_, i) => i !== translationIndex);
+  const insertAt = rest.findIndex((f) => f.id === 'sentence') + 1;
+  return [...rest.slice(0, insertAt), fields[translationIndex], ...rest.slice(insertAt)];
+}
+
 export function toEditText(value: SrsFieldValue | undefined): string {
   if (!value) return '';
   if (value.kind === 'list') return value.value.join('\n');

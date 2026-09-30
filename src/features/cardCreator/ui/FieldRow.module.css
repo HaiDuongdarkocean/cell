@@ -131,11 +131,12 @@
    effect on hover via scale transform. Hidden when empty (component). */
 .fieldInput__clear {
   display: inline-flex;
-  align-self: center;
+  align-self: flex-start;
   align-items: center;
   justify-content: center;
   width: var(--iconbutton-size-sm);
   height: var(--iconbutton-size-sm);
+  margin-top: var(--space-2);
   margin-right: var(--space-1);
   padding: var(--space-0);
   border: none;

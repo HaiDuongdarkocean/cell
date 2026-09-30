@@ -9,7 +9,7 @@ import { splitTags } from '@/features/cardCreator/service/noteUpdate';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { SrsAudioAsset, SrsDeck, SrsImageAsset, SrsNote, SrsNotetype } from '@/entities/srs/types';
 import { HighlightedSentence } from './srsCardShared';
-import { persistNoteFields, storedMedia, toEditText, NoteMediaField } from './srsNoteEditorShared';
+import { persistNoteFields, storedMedia, toEditText, NoteMediaField, orderedEditFields } from './srsNoteEditorShared';
 import styles from './SrsEditCardPanel.module.css';
 
 export interface SrsNoteEditorPanelProps {
@@ -92,7 +92,6 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
   return (
     <Box className={styles.panel}>
       <Box className={styles.header}>
-        <Heading level={2} className={styles.title}>{t('srs.edit.title')}</Heading>
         <Button
           variant="ghost"
           size="sm"
@@ -103,6 +102,7 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
         >
           <Icon name="x" size="sm" />
         </Button>
+        <Heading level={2} className={styles.title}>{t('srs.edit.title')}</Heading>
       </Box>
 
       <Box className={styles.selectRow}>
@@ -125,7 +125,7 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
 
       <Heading level={3} size={4} className={styles.sectionTitle}>{t('cardCreator.section.fields')}</Heading>
 
-      {notetype.fields.map((field) => (
+      {orderedEditFields(notetype.fields).map((field) => (
         <FieldRow key={field.id} label={field.name} dataId={`srs-edit-${field.id}`}>
           {field.type === 'audio' || field.type === 'image' ? (
             <NoteMediaField
