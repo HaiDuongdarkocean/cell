@@ -244,10 +244,6 @@
   border-radius: var(--radius-md);
 }
 
-.cc-dialog__select--pill button {
-  border-radius: var(--radius-full);
-}
-
 .cc-dialog__generate {
   justify-content: flex-end;
   min-inline-size: calc(11ch + var(--iconbutton-icon-sm) + var(--space-6));

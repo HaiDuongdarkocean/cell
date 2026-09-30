@@ -229,7 +229,7 @@ export function CardCreatorDialogContent({
               options={noteTypes.map((n) => ({ value: n, label: n }))}
               onChange={changeNoteType}
               aria-label={t('cardCreator.destination.noteType')}
-              className={`${styles['cc-dialog__select']} ${styles['cc-dialog__select--pill']}`}
+              className={styles['cc-dialog__select']}
               data-cell-id="cc-note-type"
             />
           </div>
