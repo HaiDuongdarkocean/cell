@@ -384,6 +384,8 @@ export const STORAGE_KEYS = {
   OCR_SETTINGS: 'ocrSettings',
   /** Study Modes state (spec media-study-modes.md). */
   STUDY_MODES: 'studyModes',
+  /** Study Modes "Advanced" section toggle state — survives reload. UI-only, not synced. */
+  STUDY_MODES_ADVANCED_OPEN: 'studyModesAdvancedOpen',
   /** Cached Anki schema (decks/models/fields-by-model) — spec anki-config-in-settings. */
   ANKI_SCHEMA_CACHE: 'ankiSchemaCache',
   OCR_REGION_RESULT: '__ocrRegionResult',

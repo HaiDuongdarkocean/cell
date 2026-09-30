@@ -33,6 +33,7 @@ describe('studyModeStore', () => {
       customModes: [],
       advanced: { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true },
       isLoaded: true,
+      advancedOpen: false,
     });
     setActiveStudyMode(null);
   });
@@ -108,6 +109,16 @@ describe('studyModeStore', () => {
     });
     await loadStudyModeState();
     expect(useStudyModeStore.getState().activeModeId).toBe('normal');
+  });
+
+  it('persists advancedOpen toggle and restores it on reload', async () => {
+    useStudyModeStore.getState().setAdvancedOpen(true);
+    expect(storageSet).toHaveBeenCalledWith({ [STORAGE_KEYS.STUDY_MODES_ADVANCED_OPEN]: true });
+
+    useStudyModeStore.setState({ advancedOpen: false });
+    storageGet.mockResolvedValue({ [STORAGE_KEYS.STUDY_MODES_ADVANCED_OPEN]: true });
+    await loadStudyModeState();
+    expect(useStudyModeStore.getState().advancedOpen).toBe(true);
   });
 
   it('registers the storage sync listener at most once across reloads', async () => {

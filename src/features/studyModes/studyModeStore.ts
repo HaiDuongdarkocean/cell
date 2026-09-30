@@ -48,6 +48,7 @@ export const useStudyModeStore = create<StudyModeStore>((set, get) => ({
 
   setAdvancedOpen: (open) => {
     set({ advancedOpen: open });
+    void setStorage({ [STORAGE_KEYS.STUDY_MODES_ADVANCED_OPEN]: open }).catch(() => undefined);
   },
 
   setActiveModeId: (id) => {
@@ -173,7 +174,10 @@ let storageSyncBound = false;
 
 export async function loadStudyModeState(): Promise<void> {
   try {
-    const data = await getStorage<Record<string, unknown>>(STORAGE_KEYS.STUDY_MODES);
+    const data = await getStorage<Record<string, unknown>>([
+      STORAGE_KEYS.STUDY_MODES,
+      STORAGE_KEYS.STUDY_MODES_ADVANCED_OPEN,
+    ]);
     const raw = data[STORAGE_KEYS.STUDY_MODES];
     const migrated = migrateStudyModeState(raw);
 
@@ -183,13 +187,21 @@ export async function loadStudyModeState(): Promise<void> {
       migrated.activeModeId = 'normal';
     }
 
-    useStudyModeStore.setState({ ...migrated, isLoaded: true });
+    useStudyModeStore.setState({
+      ...migrated,
+      isLoaded: true,
+      advancedOpen: data[STORAGE_KEYS.STUDY_MODES_ADVANCED_OPEN] === true,
+    });
     // ponytail: storage sync across tabs/pages. Registered once per context —
     // the tab re-mounts on every panel open and addListener would leak.
     if (storageSyncBound) return;
     storageSyncBound = true;
     onStorageChanged((changes, area) => {
       if (area !== 'local') return;
+      const openChange = changes[STORAGE_KEYS.STUDY_MODES_ADVANCED_OPEN];
+      if (openChange) {
+        useStudyModeStore.setState({ advancedOpen: openChange.newValue === true });
+      }
       const change = changes[STORAGE_KEYS.STUDY_MODES];
       if (!change) return;
       const next = migrateStudyModeState(change.newValue);

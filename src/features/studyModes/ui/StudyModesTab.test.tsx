@@ -6,6 +6,7 @@ import { getActiveStudyMode, setActiveStudyMode } from '../content/studyModeCont
 import { INITIAL_STUDY_MODE_STATE } from '../lib/migrateStudyModeState';
 
 describe('StudyModesTab', () => {
+  const persisted: Record<string, unknown> = {};
   const storageGet = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
   const storageSet = jest.fn<Promise<void>, [Record<string, unknown>]>();
   const sendMessage = jest.fn<Promise<unknown>, [unknown]>();
@@ -25,8 +26,12 @@ describe('StudyModesTab', () => {
   });
 
   beforeEach(() => {
-    storageGet.mockReset().mockResolvedValue({});
-    storageSet.mockReset().mockResolvedValue(undefined);
+    for (const key of Object.keys(persisted)) delete persisted[key];
+    storageGet.mockReset().mockImplementation(() => Promise.resolve({ ...persisted }));
+    storageSet.mockReset().mockImplementation((items) => {
+      Object.assign(persisted, items);
+      return Promise.resolve();
+    });
     sendMessage.mockReset().mockResolvedValue(undefined);
     useStudyModeStore.setState({ ...INITIAL_STUDY_MODE_STATE, isLoaded: true, advancedOpen: false });
     setActiveStudyMode(null);
