@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { t } from '@/shared/i18n';
-import { onWordStatusChanged } from '@/features/dictionary/services/wordStatusEvents';
+import { onWordStatusChanged } from '@/features/dictionary';
 import {
   applyTokenListStatus,
   createTokenList,
   resolveTokenListMetadata,
-} from '@/features/tokenize/logic/tokenListMetadata';
-import type { Token } from '@/features/tokenize/types';
+} from '@/features/tokenize';
+import type { Token } from '@/features/tokenize';
 import styles from './PreviewBlock.module.css';
 
 export interface PreviewBlockProps {

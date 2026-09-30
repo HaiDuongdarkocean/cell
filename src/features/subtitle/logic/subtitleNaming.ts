@@ -1,4 +1,4 @@
-import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
+import { isoCodeToLabel } from '@/features/detection';
 import { t } from '@/shared/i18n';
 
 /**

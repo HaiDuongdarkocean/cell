@@ -37,3 +37,10 @@ export {
   type ComprehensionState,
 } from './services/comprehensionStore';
 export { ComprehensionBadge } from './ui/ComprehensionBadge';
+export { resolveTokenListMetadata } from './logic/tokenListMetadata';
+export type { TokenizeSettings, TokenizePanelState } from './types';
+export { buildTokenSpanCssForShadow } from './ui/tokenSpanCss';
+export { ViewportTracker } from './logic/viewportTracker';
+export { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl } from './services/tokenizeSettingsStore';
+export type { SubtitleTokenizeController } from './controller/subtitleTokenizeController';
+export { createSubtitleTokenizeController, type SubtitleTokenizeControllerOptions } from './controller/subtitleTokenizeController';

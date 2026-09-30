@@ -1,7 +1,7 @@
 // NOTE: tokenize controllers run in content scripts — repositories must be
 // reached through resourceClient (background proxy), never directly, or the
 // reads would hit the PAGE's IndexedDB and always come back empty.
-import { listResources } from '@/features/dictionary/services/resourceClient';
+import { listResources } from '@/features/dictionary';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_BAND_THRESHOLDS, type FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 

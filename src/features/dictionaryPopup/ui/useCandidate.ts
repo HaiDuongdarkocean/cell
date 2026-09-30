@@ -4,8 +4,8 @@ import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import type { ExternalDictLinkTemplate } from '@/entities/settings';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { nextStatus } from '@/features/dictionary/services/wordStatusStore';
-import { setWordStatus } from '@/features/dictionary/services/wordStatusClient';
+import { nextStatus } from '@/features/dictionary';
+import { setWordStatus } from '@/features/dictionary';
 import { emitWordStatusChanged } from '@/features/dictionary';
 import {
   initDefinitionSelection,

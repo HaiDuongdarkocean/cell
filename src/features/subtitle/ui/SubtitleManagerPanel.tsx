@@ -20,7 +20,7 @@ import { SubtitleStylePanel } from './appearance/SubtitleStylePanel';
 import { SubtitleBlockSettingsPanel } from './appearance/SubtitleBlockSettingsPanel';
 import { NavClusterSettingsPanel } from './appearance/NavClusterSettingsPanel';
 import { OverlayPreview } from './appearance/OverlayPreview';
-import { OcrSettingsPanel } from '@/features/ocr/ui/OcrSettingsPanel';
+import { OcrSettingsPanel } from '@/features/ocr';
 import type { SubtitleApiKey } from '@/entities/settings';
 import type { SubtitleSearchResult } from '@/entities/subtitle/searchTypes';
 import styles from './SubtitleManagerPanel.module.css';

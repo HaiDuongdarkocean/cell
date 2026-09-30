@@ -16,9 +16,9 @@
 
 import type { LookupRequest, TriggerMode } from '@/entities/dictionary';
 import type { Token } from '../plugins/languagePlugin';
-import { tokenizeSentence } from '@/features/dictionary/logic/phraseMatcher';
-import { segmentFMM } from '@/features/dictionary/logic/chineseSegmenter';
-import { scriptRunSegmenter } from '@/features/ocr/language/scriptRunSegmenter';
+import { tokenizeSentence } from '@/features/dictionary';
+import { segmentFMM } from '@/features/dictionary';
+import { scriptRunSegmenter } from '@/features/ocr';
 
 /** Hover debounce: only lookup after the cursor has stayed on the token for this long. */
 export const HOVER_DEBOUNCE_MS = 80;

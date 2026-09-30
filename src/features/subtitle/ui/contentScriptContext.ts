@@ -1,6 +1,6 @@
 import type { ReactSubtitleController } from './reactSubtitleController';
 import type { SubtitleSyncController } from './subtitleSyncController';
-import type { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
+import type { BackgroundPrefillController } from '@/features/translate';
 import type { DictionaryBridge } from '../logic/dictionaryBridge';
 import type { ToastOptions } from './subtitleUI';
 import type { CardCreatorAction } from './subtitleCueEngine';

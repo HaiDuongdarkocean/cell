@@ -4,8 +4,8 @@ import type { TokenFrequencyBand } from '@/features/tokenize/types';
 import type { VideoTokenMap } from './videoTokenMap';
 import type { TokenizeScheduler } from './tokenizeScheduler';
 import { PRIORITY_VIEWPORT, PRIORITY_PREPARE, PRIORITY_IDLE } from './tokenizeScheduler';
-import { getWordStatuses } from '@/features/dictionary/services/wordStatusClient';
-import { getFrequencyEntries } from '@/features/dictionary/services/frequencyClient';
+import { getWordStatuses } from '@/features/dictionary';
+import { getFrequencyEntries } from '@/features/dictionary';
 import {
   entriesToBand,
   loadFrequencyBandOptions,

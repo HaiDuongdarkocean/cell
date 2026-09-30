@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
-import { syncElementTheme, findThemeCarrier } from '@/features/theme/logic/themeTokens';
+import { syncElementTheme, findThemeCarrier } from '@/features/theme';
 import { attachFullscreenReparenting } from '@/shared/lib/shadowRoot/mountReactShadow';
 
 export interface OverlayPortalsParams {

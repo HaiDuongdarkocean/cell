@@ -8,7 +8,7 @@
 
 import { isDevMode } from '@/shared/lib/env/devMode';
 import { STORAGE_KEYS } from '@/shared/config/config';
-import type { LookupLogEntry } from '@/features/dictionary/logic/lookupLogTypes';
+import type { LookupLogEntry } from '@/features/dictionary';
 
 const STORAGE_KEY = STORAGE_KEYS.LOOKUP_LOG;
 const MAX_ENTRIES = 500;

@@ -3,13 +3,13 @@ import { createVideoTokenMap } from './videoTokenMap';
 import { TokenizeScheduler } from './tokenizeScheduler';
 import type { SrtCue } from '@/entities/media';
 
-jest.mock('@/features/dictionary/services/wordStatusClient', () => ({
+jest.mock('@/features/dictionary', () => ({
+  ...(jest.requireActual('@/features/dictionary/logic/phraseMatcher') as Record<string, unknown>),
+  ...(jest.requireActual('@/features/dictionary/logic/chineseSegmenter') as Record<string, unknown>),
   getWordStatuses: jest.fn(),
   setWordStatus: jest.fn(),
-}));
-
-jest.mock('@/features/dictionary/services/frequencyClient', () => ({
   getFrequencyEntries: jest.fn(),
+  listResources: jest.fn(async () => []),
 }));
 
 jest.mock('@/features/tokenize/utils/frequencyBand', () => ({
@@ -25,8 +25,8 @@ jest.mock('@/features/tokenize/utils/frequencyBand', () => ({
   }),
 }));
 
-import { getWordStatuses } from '@/features/dictionary/services/wordStatusClient';
-import { getFrequencyEntries } from '@/features/dictionary/services/frequencyClient';
+import { getWordStatuses } from '@/features/dictionary';
+import { getFrequencyEntries } from '@/features/dictionary';
 import { loadFrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
 
 function makeCues(count: number): SrtCue[] {

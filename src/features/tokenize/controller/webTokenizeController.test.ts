@@ -32,7 +32,7 @@ jest.mock('@/features/dictionary/services/frequencyClient', () => ({
 }));
 
 import { createWebTokenizeController } from './webTokenizeController';
-import { emitWordStatusChanged, emitWordStatusesReload } from '@/features/dictionary/services/wordStatusEvents';
+import { emitWordStatusChanged, emitWordStatusesReload } from '@/features/dictionary';
 
 class MockIntersectionObserver {
   static callbacks = new Map<Element, () => void>();

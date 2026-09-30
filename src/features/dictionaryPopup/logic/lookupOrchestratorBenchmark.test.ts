@@ -13,15 +13,15 @@
 // - transient matcher state ≤512KB
 
 import { describe, expect, it, beforeAll } from '@jest/globals';
-import { matchPhrase, tokenizeSentence, type PhraseMatchRequest } from '@/features/dictionary/logic/phraseMatcher';
+import { matchPhrase, tokenizeSentence, type PhraseMatchRequest } from '@/features/dictionary';
 import {
   compilePhraseIndex,
   serializePhraseIndex,
   deserializePhraseIndex,
   type PhraseIndexInput,
-} from '@/features/dictionary/logic/phraseIndexCompiler';
-import { parsePhraseTemplate } from '@/features/dictionary/logic/phraseTemplateParser';
-import type { PhraseIndex } from '@/features/dictionary/logic/phraseIndexCompiler';
+} from '@/features/dictionary';
+import { parsePhraseTemplate } from '@/features/dictionary';
+import type { PhraseIndex } from '@/features/dictionary';
 
 // Simulate a 120k-entry CEDICT-like dictionary for FMM benchmark.
 function makeCedictFixture(count: number): Set<string> {

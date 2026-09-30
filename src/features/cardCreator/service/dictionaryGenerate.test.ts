@@ -6,7 +6,7 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { PronunciationAudioOrchestrator } from '@/features/pronunciation/services/pronunciationAudioOrchestrator';
+import { PronunciationAudioOrchestrator } from '@/features/pronunciation';
 import type { AudioItem, ImageItem, LookupResult } from '@/entities/dictionary';
 import { lookupDictionaryResources } from './dictionaryGenerate';
 
@@ -21,7 +21,7 @@ jest.mock('@/shared/lib/storage/settingsStore', () => ({
 
 const resolveMock = jest.fn<(term: string, langCode: string) => Promise<readonly AudioItem[]>>();
 
-jest.mock('@/features/pronunciation/services/pronunciationAudioOrchestrator', () => ({
+jest.mock('@/features/pronunciation', () => ({
   PronunciationAudioOrchestrator: jest.fn().mockImplementation(() => ({
     resolve: resolveMock,
   })),

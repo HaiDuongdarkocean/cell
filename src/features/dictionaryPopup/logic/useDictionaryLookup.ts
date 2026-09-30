@@ -11,7 +11,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { LookupResult, LookupRequest, WordStatus, DefinitionEntry } from '@/entities/dictionary';
 import type { MessageResponse } from '@/entities/message';
 import { subscribeResourceChanges } from '@/features/dictionary';
-import { nextStatus } from '@/features/dictionary/services/wordStatusStore';
+import { nextStatus } from '@/features/dictionary';
 import { initDefinitionSelection, getSelectedDefinitions } from './definitionSelection';
 import { t } from '@/shared/i18n';
 

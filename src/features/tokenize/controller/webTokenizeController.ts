@@ -15,13 +15,13 @@ import {
   setTokenizeEnabledForUrl,
 } from '@/features/tokenize/services/tokenizeSettingsStore';
 import { isCellDebug } from '@/shared/lib/cellDebug';
-import { getFrequencyEntries } from '@/features/dictionary/services/frequencyClient';
-import { getWordStatuses, setWordStatus } from '@/features/dictionary/services/wordStatusClient';
+import { getFrequencyEntries } from '@/features/dictionary';
+import { getWordStatuses, setWordStatus } from '@/features/dictionary';
 import {
   emitWordStatusChanged,
   onWordStatusChanged,
   onWordStatusesReload,
-} from '@/features/dictionary/services/wordStatusEvents';
+} from '@/features/dictionary';
 import type { WordStatus } from '@/entities/dictionary';
 import { entriesToBand, loadFrequencyBandOptions, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
 import { createStatusKeyControls, type PopupStatusTarget } from '@/features/tokenize/logic/statusKeyControls';

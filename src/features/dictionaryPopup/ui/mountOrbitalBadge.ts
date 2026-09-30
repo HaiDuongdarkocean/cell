@@ -1,7 +1,7 @@
 import { createElement, type RefObject } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
-import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
+import { ShadowThemeProvider } from '@/features/theme';
 import { OrbitalBadge, type OrbitalBadgeProps, type OrbitalBadgeHandle } from './OrbitalBadge';
 import type { PanelMountController } from '../controller/panelBridge';
 import type { PointerPreset, Point } from '@/features/dictionaryPopup/badgePointer/pointerPosition';

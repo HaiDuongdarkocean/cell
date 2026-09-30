@@ -24,9 +24,9 @@ import type {
   TermProbe,
   Accent,
 } from './languagePlugin';
-import { segmentFMM } from '@/features/dictionary/logic/chineseSegmenter';
+import { segmentFMM } from '@/features/dictionary';
 
-export { isCJK, isCJKString, isChengyu, segmentFMM } from '@/features/dictionary/logic/chineseSegmenter';
+export { isCJK, isCJKString, isChengyu, segmentFMM } from '@/features/dictionary';
 
 /** Chinese accents for audio priority (spec §4.6.4). */
 export const CHINESE_ACCENTS: readonly Accent[] = [

@@ -13,13 +13,13 @@ const loadFrequencyBandOptions = jest.fn() as jest.MockedFunction<
   (langCode: string) => Promise<FrequencyBandOptions>
 >;
 
-jest.mock('@/features/dictionary/services/wordStatusClient', () => ({
-  getWordStatuses,
+jest.mock('@/features/dictionary', () => ({
+  ...(jest.requireActual('@/features/dictionary/logic/phraseMatcher') as Record<string, unknown>),
+  ...(jest.requireActual('@/features/dictionary/logic/chineseSegmenter') as Record<string, unknown>),
+  getWordStatuses: (langCode: string, terms: readonly string[]) => getWordStatuses(langCode, terms),
   setWordStatus: jest.fn(),
-}));
-
-jest.mock('@/features/dictionary/services/frequencyClient', () => ({
-  getFrequencyEntries,
+  getFrequencyEntries: (langCode: string, terms: readonly string[]) => getFrequencyEntries(langCode, terms),
+  listResources: jest.fn(async () => []),
 }));
 
 jest.mock('@/features/tokenize/utils/frequencyBand', () => ({

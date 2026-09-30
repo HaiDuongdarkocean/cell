@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
-import type { Token } from '@/features/tokenize/types';
+import { tokenizeTextBlock } from '@/features/tokenize';
+import type { Token } from '@/features/tokenize';
 import styles from './TokenizedParagraph.module.css';
 
 export interface TokenizedParagraphProps {

@@ -20,7 +20,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_PRONUNCIATION_SETTINGS, DEFAULT_SETTINGS } from '@/shared/config/config';
-import { PronunciationAudioOrchestrator } from '@/features/pronunciation/services/pronunciationAudioOrchestrator';
+import { PronunciationAudioOrchestrator } from '@/features/pronunciation';
 import { formatDefinitions } from '@/features/dictionary'
 import { formatDefEntry, joinDefEntries } from '@/features/srs';
 import type { MessageResponse } from '@/entities/message/types';

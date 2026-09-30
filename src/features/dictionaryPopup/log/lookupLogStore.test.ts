@@ -1,6 +1,6 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { saveLookupLog, readLookupLog, clearLookupLog } from './lookupLogStore';
-import type { LookupLogEntry } from '@/features/dictionary/logic/lookupLogTypes';
+import type { LookupLogEntry } from '@/features/dictionary';
 
 declare global {
   var __lookupLogDevMode: boolean | undefined;

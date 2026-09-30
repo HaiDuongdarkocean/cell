@@ -5,7 +5,7 @@ import type { TtsFetchAudioResponse } from '@/entities/dictionary';
 import type { PronunciationSettings } from '@/entities/settings/types';
 import type { SrsAudioAsset } from '@/entities/srs/types';
 import { generateId } from '@/features/srs/lib/helpers';
-import { PronunciationAudioOrchestrator } from '@/features/pronunciation/services/pronunciationAudioOrchestrator';
+import { PronunciationAudioOrchestrator } from '@/features/pronunciation';
 import { getAudioAssetsByNote, putAudioAsset } from '@/features/srs/repositories/audioAssetRepository';
 import { evictAudioIfNeeded, touchAudioAsset } from './quotaManager';
 import { fetchMediaAsArrayBuffer } from './fetchMedia';

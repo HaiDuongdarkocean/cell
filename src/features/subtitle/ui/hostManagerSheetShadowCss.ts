@@ -7,7 +7,7 @@
  * only the dynamic token-span CSS is appended manually.
  */
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
-import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
+import { buildTokenSpanCssForShadow } from '@/features/tokenize';
 
 export const hostManagerSheetShadowCss: string[] = [
   ...allModuleCss,

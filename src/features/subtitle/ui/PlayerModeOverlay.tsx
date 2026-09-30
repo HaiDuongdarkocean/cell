@@ -8,7 +8,7 @@ import { memo, useEffect, useRef, useState, useCallback } from 'react';
 import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import { SubtitlePanel } from './SubtitlePanel';
-import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
+import type { SubtitlePracticeMode } from '@/features/studyModes';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import type { CueListTokenize } from './CueList';
 import type { StudyMode } from '@/entities/studyMode';

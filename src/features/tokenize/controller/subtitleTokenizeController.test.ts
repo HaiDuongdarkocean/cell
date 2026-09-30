@@ -15,7 +15,7 @@ jest.mock('@/features/dictionary/services/frequencyClient', () => ({
 }));
 
 import { createSubtitleTokenizeController } from './subtitleTokenizeController';
-import { emitWordStatusChanged, emitWordStatusesReload } from '@/features/dictionary/services/wordStatusEvents';
+import { emitWordStatusChanged, emitWordStatusesReload } from '@/features/dictionary';
 import type { SrtCue } from '@/entities/media';
 
 beforeEach(() => {

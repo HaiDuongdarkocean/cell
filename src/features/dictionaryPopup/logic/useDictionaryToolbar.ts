@@ -9,8 +9,8 @@ import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_PRONUNCIATION_SETTINGS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
-import { translateSentence } from '@/features/cardCreator/media/translation';
-import { PronunciationAudioOrchestrator } from '@/features/pronunciation/services/pronunciationAudioOrchestrator';
+import { translateSentence } from '@/features/cardCreator';
+import { PronunciationAudioOrchestrator } from '@/features/pronunciation';
 import type { MessageResponse } from '@/entities/message/types';
 import type {
   LookupResult,

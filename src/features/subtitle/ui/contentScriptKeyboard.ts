@@ -1,7 +1,7 @@
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
+import { BackgroundPrefillController } from '@/features/translate';
 import {
   isEditableEvent,
   isInsideCellUi,

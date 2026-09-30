@@ -1,5 +1,5 @@
-import { tokenizeSentence, type SentenceToken } from '@/features/dictionary/logic/phraseMatcher';
-import { segmentFMM } from '@/features/dictionary/logic/chineseSegmenter';
+import { tokenizeSentence, type SentenceToken } from '@/features/dictionary';
+import { segmentFMM } from '@/features/dictionary';
 import { languageMatches } from '@/shared/config/languageRegistry';
 import type { Token, TokenStatus, TokenFrequencyBand, TokenBlock } from '@/features/tokenize/types';
 

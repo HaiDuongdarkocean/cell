@@ -11,8 +11,8 @@ import {
 } from '@/features/subtitle/logic/youtubeSplitView';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
-import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
-import { syncElementTheme, findThemeCarrier } from '@/features/theme/logic/themeTokens';
+import { buildTokenSpanCssForShadow } from '@/features/tokenize';
+import { syncElementTheme, findThemeCarrier } from '@/features/theme';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { logger } from '@/shared/lib/logger';

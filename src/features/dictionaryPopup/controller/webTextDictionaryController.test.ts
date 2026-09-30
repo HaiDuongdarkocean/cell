@@ -4,15 +4,14 @@ import { describe, expect, it, beforeAll, beforeEach, jest } from '@jest/globals
 import { waitFor, act } from '@testing-library/react';
 
 jest.mock('@/shared/lib/chrome-apis/runtime');
-jest.mock('@/features/cardCreator/media/screenshot', () => ({
+jest.mock('@/features/cardCreator', () => ({
+  ...(jest.requireActual('@/features/cardCreator') as Record<string, unknown>),
   captureScreenshot: jest.fn(() => Promise.resolve({
     kind: 'image',
     filename: 'screenshot.png',
     mimeType: 'image/png',
     data: new ArrayBuffer(0),
   })),
-}));
-jest.mock('@/features/cardCreator/media/sentenceAudio', () => ({
   captureSentenceAudio: jest.fn(() => Promise.resolve({
     ok: true,
     file: {
@@ -34,8 +33,8 @@ import { createWebTextDictionaryController } from './webTextDictionaryController
 import type { WebTextDictionaryControllerDeps } from './webTextDictionaryController';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
-import { captureSentenceAudio, seekAndWaitReady } from '@/features/cardCreator/media/sentenceAudio';
-import { onWordStatusChanged, type WordStatusChangedDetail } from '@/features/dictionary/services/wordStatusEvents';
+import { captureSentenceAudio, seekAndWaitReady } from '@/features/cardCreator';
+import { onWordStatusChanged, type WordStatusChangedDetail } from '@/features/dictionary';
 import { CURRENT_SCHEMA_VERSION } from '@/shared/lib/storage/settingsStore';
 import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/cellUiHosts';
 import type { LookupResult, LookupRequest } from '@/entities/dictionary';

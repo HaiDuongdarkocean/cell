@@ -1,8 +1,8 @@
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { useCuesStore } from '../cuesStore';
-import { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
-import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
+import { BackgroundPrefillController } from '@/features/translate';
+import { isoCodeToLabel } from '@/features/detection';
 import {
   seekVideo,
   resumeIfPaused,

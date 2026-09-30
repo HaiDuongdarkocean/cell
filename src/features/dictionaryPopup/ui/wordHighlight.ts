@@ -22,7 +22,7 @@
 // - css-js-hook-separate-from-data-attribute: `.js-cell-*` class for JS hooks.
 
 import tokensJson from '@/shared/styles/tokens.json';
-import { findThemeCarrier } from '@/features/theme/logic/themeTokens';
+import { findThemeCarrier } from '@/features/theme';
 
 type HighlightConfig = {
   readonly styleId: string;

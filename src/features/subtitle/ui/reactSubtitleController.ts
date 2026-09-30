@@ -12,8 +12,8 @@ import { SubtitleStyleController } from './subtitleStyleController';
 import {
   SubtitleStudyModeController,
   type SubtitleStudyModeTimeState,
-} from '@/features/studyModes/lib/subtitleStudyModeController';
-import type { PlaybackAction, UnknownCueProbe } from '@/features/studyModes/lib/studyModePlaybackController';
+} from '@/features/studyModes';
+import type { PlaybackAction, UnknownCueProbe } from '@/features/studyModes';
 import type { SubtitlePanelItem } from './subtitlePanelModel';
 import { SubtitleCueEngine, type SubtitleCueEngineUpdate, type CardCreatorAction, type SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
 import type { TriggerMode, LookupRequest } from '@/entities/dictionary';
@@ -26,8 +26,8 @@ import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import type { SubtitleApiKey } from '@/entities/settings';
 import { pauseVideo, playVideo, seekToCue } from '@/shared/lib/dom/netflixPlayback';
 import { createPlayerModeHostController, type PlayerModeHostController } from './playerModeHost';
-import { practiceModeFromStudyModeId, setSubtitlePracticeMode } from '@/features/studyModes/lib/practiceModeState';
-import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
+import { practiceModeFromStudyModeId, setSubtitlePracticeMode } from '@/features/studyModes';
+import type { SubtitlePracticeMode } from '@/features/studyModes';
 import { t } from '@/shared/i18n';
 
 import type { ICON_CATALOG } from '@/shared/icons';

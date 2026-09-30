@@ -4,7 +4,7 @@ import { describe, expect, it } from '@jest/globals';
 import { createFallbackPlugin, fallbackTokenize } from './fallbackPlugin';
 import { PluginRegistry, pluginRegistry } from './pluginRegistry';
 import { createEnglishPlugin } from './englishPlugin';
-import { compilePhraseIndex } from '@/features/dictionary/logic/phraseIndexCompiler';
+import { compilePhraseIndex } from '@/features/dictionary';
 
 describe('fallbackPlugin', () => {
   it('has the given langCode and readingKind none', () => {

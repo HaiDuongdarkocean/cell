@@ -2,8 +2,8 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import type { ClickModifierState, WordStatus } from '@/entities/dictionary';
-import type { Token } from '@/features/tokenize/types';
-import { onWordStatusChanged } from '@/features/dictionary/services/wordStatusEvents';
+import type { Token } from '@/features/tokenize';
+import { onWordStatusChanged } from '@/features/dictionary';
 import {
   applyCueListTokenStatus,
   applyCueListTokenStatuses,
@@ -11,7 +11,7 @@ import {
   resolveCueListTokenMetadata,
   type CueListTokenMap,
   type ResolveMeta,
-} from '@/features/tokenize/logic/cueListTokens';
+} from '@/features/tokenize';
 import { cueHeatBand, type CueDifficulty } from '@/features/subtitle/logic/cueDifficulty';
 import { formatCueTimestamp } from '@/features/subtitle/logic/cueTime';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';

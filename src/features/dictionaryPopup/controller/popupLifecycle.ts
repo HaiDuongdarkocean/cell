@@ -16,7 +16,7 @@ import {
 } from '../ui/mountPopupDictionary';
 import type { WebTriggerPointer } from '@/features/dictionaryPopup/trigger/webTriggerController';
 import { createWordHighlight, type HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
-import { emitWordStatusChanged } from '@/features/dictionary/services/wordStatusEvents';
+import { emitWordStatusChanged } from '@/features/dictionary';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { openSettingsSection, type PanelMountController } from './panelBridge';

@@ -8,13 +8,13 @@
 import { createElement, type ReactElement } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
-import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
-import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
+import { buildTokenSpanCssForShadow } from '@/features/tokenize';
+import { ShadowThemeProvider } from '@/features/theme';
 import { ErrorBoundary } from '@/shared/ui';
 import { UniversalPanel } from './UniversalPanel';
 import { SettingsTab } from './tabs/SettingsTab';
 import { DictionaryTab } from './tabs/DictionaryTab';
-import { StudyModesTab } from '@/features/studyModes/ui/StudyModesTab';
+import { StudyModesTab } from '@/features/studyModes';
 import { VocabularyTab } from '@/features/vocabulary';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { openSettingsSection } from './deepLink';
@@ -23,8 +23,8 @@ import { getSessionStorage, setSessionStorage, onStorageChanged, removeOnStorage
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { getActiveProfileSettings, resolveProfile, type Settings } from '@/entities/settings';
-import { useCardCreatorStore } from '@/features/cardCreator/state/cardCreatorStore';
-import type { TokenizePanelState } from '@/features/tokenize/types';
+import { useCardCreatorStore } from '@/features/cardCreator';
+import type { TokenizePanelState } from '@/features/tokenize';
 import type { UniversalPanelTab, DictionaryPanelPrefill } from './types';
 
 

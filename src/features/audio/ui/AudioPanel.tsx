@@ -24,7 +24,7 @@ import type {
   PronunciationSettings,
   TtsSettings,
 } from '@/entities/settings/types';
-import { PronunciationAudioOrchestrator } from '@/features/pronunciation/services/pronunciationAudioOrchestrator';
+import { PronunciationAudioOrchestrator } from '@/features/pronunciation';
 import {
   OUTPUT_MODES,
   getEngineStatus,

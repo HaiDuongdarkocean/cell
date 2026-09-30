@@ -5,7 +5,7 @@ import { Icon } from '@/shared/ui/Icon';
 import { FlagIcon } from '@/shared/ui/FlagIcon';
 import { TokenizeControls } from './TokenizeControls';
 import { t } from '@/shared/i18n';
-import type { TokenizePanelState } from '@/features/tokenize/types';
+import type { TokenizePanelState } from '@/features/tokenize';
 import styles from './UniversalPanelHeader.module.css';
 
 export interface UniversalPanelHeaderProps {

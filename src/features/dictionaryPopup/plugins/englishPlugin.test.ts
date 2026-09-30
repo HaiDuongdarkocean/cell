@@ -10,8 +10,8 @@ import {
 import {
   compilePhraseIndex,
   type PhraseIndexInput,
-} from '@/features/dictionary/logic/phraseIndexCompiler';
-import { parsePhraseTemplate } from '@/features/dictionary/logic/phraseTemplateParser';
+} from '@/features/dictionary';
+import { parsePhraseTemplate } from '@/features/dictionary';
 
 const TEST_VERBS = new Set(['be', 'spill', 'break', 'kick', 'carry', 'take', 'give', 'run', 'pick', 'put', 'look']);
 

@@ -4,12 +4,12 @@ import type { ClickModifierState, WordStatus } from '@/entities/dictionary';
 import { createTokenizeStateStore, type TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import { TokenizeScheduler } from '@/features/tokenize/logic/tokenizeScheduler';
 import { bindTokenBlock, restyleTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
-import { getWordStatuses, setWordStatus } from '@/features/dictionary/services/wordStatusClient';
+import { getWordStatuses, setWordStatus } from '@/features/dictionary';
 import {
   emitWordStatusChanged,
   onWordStatusChanged,
   onWordStatusesReload,
-} from '@/features/dictionary/services/wordStatusEvents';
+} from '@/features/dictionary';
 import { createVideoTokenMap, type VideoTokenMap } from '@/features/tokenize/logic/videoTokenMap';
 import { createVideoTokenPreloader, type VideoTokenPreloader } from '@/features/tokenize/logic/videoTokenPreloader';
 import { createStatusKeyControls, type PopupStatusTarget } from '@/features/tokenize/logic/statusKeyControls';

@@ -14,10 +14,10 @@ import { SUBTITLE_LANGUAGES } from '@/shared/config/languageRegistry';
 import { MultiSelect } from '@/shared/ui/MultiSelect';
 import { DictionaryPopupSettingsPanel } from './DictionaryPopupSettingsPanel';
 import { WordBadgeSettingsPanel } from './WordBadgeSettingsPanel';
-import { AudioPanel } from '@/features/audio/ui/AudioPanel';
+import { AudioPanel } from '@/features/audio';
 
-import { ThemePanel } from '@/features/theme/ui/ThemePanel';
-import { ResourcesPanel } from '@/features/dictionary/ui/ResourcesPanel';
+import { ThemePanel } from '@/features/theme';
+import { ResourcesPanel } from '@/features/dictionary';
 import { SyncPanel } from '@/features/sync';
 import { Dictionary } from '@/features/dictionaryPopup';
 import { Toggle } from '@/shared/ui/Toggle';

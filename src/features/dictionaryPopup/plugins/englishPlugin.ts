@@ -19,12 +19,12 @@ import {
   tokenizeSentence,
   matchPhrase as matcherMatchPhrase,
   type SentenceToken,
-} from '@/features/dictionary/logic/phraseMatcher';
-import type { PhraseIndex } from '@/features/dictionary/logic/phraseIndexCompiler';
+} from '@/features/dictionary';
+import type { PhraseIndex } from '@/features/dictionary';
 import {
   englishLookupCandidates,
   englishLemma as sharedEnglishLemma,
-} from '@/features/dictionary/logic/englishLemma';
+} from '@/features/dictionary';
 
 /** English accents for audio priority (spec §4.6.3). */
 export const ENGLISH_ACCENTS: readonly Accent[] = [

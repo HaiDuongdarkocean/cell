@@ -21,9 +21,9 @@ import { computeStats, ComprehensionBadge, applyCueListTokenStatus, type Token, 
 import { onWordStatusChanged, onWordStatusRemoved } from '@/features/dictionary';
 import { languageMatches } from '@/shared/config/languageRegistry';
 import { CueList, type CueListTokenize } from './CueList';
-import { PracticeOptions, SubtitlePracticeSession } from '@/features/studyModes/ui/SubtitlePractice';
-import { StudyModeActionBar } from '@/features/studyModes/ui/StudyModeActionBar';
-import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
+import { PracticeOptions, SubtitlePracticeSession } from '@/features/studyModes';
+import { StudyModeActionBar } from '@/features/studyModes';
+import type { SubtitlePracticeMode } from '@/features/studyModes';
 import {
   countByMode,
   cueDifficultyMap,

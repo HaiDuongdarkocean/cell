@@ -1,6 +1,6 @@
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
-import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
+import { ShadowThemeProvider } from '@/features/theme';
 import { createElement } from 'react';
 import { flushSync } from 'react-dom';
 import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
@@ -8,9 +8,9 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 
 import { SubtitlePanels, type SubtitlePanelsRef, type ManagerState, type OffsetState } from './SubtitlePanels';
 import type { ToastVariant } from './SubtitleToast';
-import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
+import type { SubtitlePracticeMode } from '@/features/studyModes';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
-import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
+import { buildTokenSpanCssForShadow } from '@/features/tokenize';
 import type { CueListTokenize } from './CueList';
 import type { ICON_CATALOG } from '@/shared/icons';
 

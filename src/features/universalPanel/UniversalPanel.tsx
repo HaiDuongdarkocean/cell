@@ -10,7 +10,7 @@ import { UniversalPanelHeader } from './UniversalPanelHeader';
 import { UniversalPanelBottomNav } from './UniversalPanelBottomNav';
 import { getLocalPlayerUrl } from './localPlayerLink';
 import { t, type MessageKey } from '@/shared/i18n';
-import type { TokenizePanelState } from '@/features/tokenize/types';
+import type { TokenizePanelState } from '@/features/tokenize';
 import type { UniversalPanelTab } from './types';
 import styles from './UniversalPanel.module.css';
 

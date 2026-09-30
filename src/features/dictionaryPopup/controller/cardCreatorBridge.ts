@@ -12,17 +12,24 @@ import type {
 import type { CardCreatorSettings, SrsDestination } from '@/entities/settings/types';
 import type { BilingualCue } from '@/entities/media';
 import type { MessageResponse } from '@/entities/message/types';
-import { mountCardCreatorDialog, type CardCreatorMountController, type CardCreatorOpenContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
-import type { CardCreatorAction } from '@/features/cardCreator/types';
-import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
-import { captureSentenceAudio, seekAndWaitReady } from '@/features/cardCreator/media/sentenceAudio';
-import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
-import { fetchMediaFile, type MediaFile } from '@/features/cardCreator/media/mediaFile';
+import {
+  captureScreenshot,
+  captureSentenceAudio,
+  fetchMediaFile,
+  mountCardCreatorDialog,
+  prefetchAnkiConnectData,
+  seekAndWaitReady,
+} from '@/features/cardCreator';
+import type {
+  CardCreatorAction,
+  CardCreatorMountController,
+  CardCreatorOpenContext,
+  MediaFile,
+} from '@/features/cardCreator';
 import { addToOceanSrs, openSrsStudyPage } from '@/features/dictionaryPopup/services/addToOceanSrs';
-import { formatDefinitions, parseDefinitionsText } from '@/features/dictionary/logic/formatDefinitions';
+import { formatDefinitions, parseDefinitionsText } from '@/features/dictionary';
 import { formatDefEntry, formatDefFromLookup } from '@/features/srs';
-import { loadSettingsOrToast } from '@/features/subtitle/ui/subtitleControllerHelpers';
-import { showToast, showProgressToast } from '@/features/subtitle/ui/subtitleUI';
+import { loadSettingsOrToast, showProgressToast, showToast } from '@/features/subtitle';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { t } from '@/shared/i18n';

@@ -5,7 +5,7 @@ import { createUniversalPanelController } from './UniversalPanelController';
 import { Dialog } from '@/shared/ui/Dialog';
 import { Select } from '@/shared/ui/Select';
 import type { UniversalPanelTab } from './types';
-import type { TokenizePanelState } from '@/features/tokenize/types';
+import type { TokenizePanelState } from '@/features/tokenize';
 
 const TOKENIZE_OFF: TokenizePanelState = { enabled: false, showStatus: false, showFrequency: false, subtitleEnabled: false };
 const TOKENIZE_ON: TokenizePanelState = { enabled: true, showStatus: true, showFrequency: true, subtitleEnabled: false };

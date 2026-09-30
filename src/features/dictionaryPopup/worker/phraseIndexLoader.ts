@@ -11,7 +11,7 @@
 import {
   deserializePhraseIndex,
   type PhraseIndex,
-} from '@/features/dictionary/logic/phraseIndexCompiler';
+} from '@/features/dictionary';
 
 /** Expected compiler version (must match phraseIndexCompiler.COMPILER_VERSION). */
 export const EXPECTED_COMPILER_VERSION = 7;

@@ -17,9 +17,9 @@ import type {
   WorkerRequestMessage,
 } from '@/entities/dictionary';
 import type { LookupResult, DefinitionEntry } from '@/entities/dictionary';
-import { matchPhrase, tokenizeSentence, comparePhraseMatches } from '@/features/dictionary/logic/phraseMatcher';
-import type { PhraseMatch } from '@/features/dictionary/logic/phraseMatcher';
-import type { PhraseIndex } from '@/features/dictionary/logic/phraseIndexCompiler';
+import { matchPhrase, tokenizeSentence, comparePhraseMatches } from '@/features/dictionary';
+import type { PhraseMatch } from '@/features/dictionary';
+import type { PhraseIndex } from '@/features/dictionary';
 import {
   loadPhraseIndexBlob,
   type ResidentPhraseIndex,

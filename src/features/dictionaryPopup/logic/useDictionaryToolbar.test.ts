@@ -4,7 +4,7 @@ import type { LookupResult, AudioItem, ImageItem } from '@/entities/dictionary';
 import { useDictionaryToolbar } from './useDictionaryToolbar';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
-import { translateSentence } from '@/features/cardCreator/media/translation';
+import { translateSentence } from '@/features/cardCreator';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_PRONUNCIATION_SETTINGS } from '@/shared/config/config';
 
@@ -16,7 +16,7 @@ jest.mock('@/shared/lib/storage/settingsStore', () => ({
   loadSettings: jest.fn(),
 }));
 
-jest.mock('@/features/cardCreator/media/translation', () => ({
+jest.mock('@/features/cardCreator', () => ({
   translateSentence: jest.fn(),
 }));
 

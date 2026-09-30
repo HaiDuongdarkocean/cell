@@ -3,8 +3,8 @@ import { Button } from '@/shared/ui';
 import {
   createTtsEngine,
   type TtsEngine,
-} from '@/features/tts/services/ttsEngineService';
-import { tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
+} from '@/features/tts';
+import { tokenizeTextBlock } from '@/features/tokenize';
 import { getSentenceText } from '@/features/reader/logic/sentenceText';
 import styles from './TtsControlBar.module.css';
 

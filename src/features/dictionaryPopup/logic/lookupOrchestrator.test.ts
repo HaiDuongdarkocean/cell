@@ -2,18 +2,18 @@
 
 import 'fake-indexeddb/auto';
 import { lookupOrchestrator, lookupOrchestratorMulti, createDictionaryProbeAsync, clearDictionaryProbeCache } from './lookupOrchestrator';
-import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
-import { addResource } from '@/features/dictionary/repositories/resourceRepository';
-import { addDictionaryEntry } from '@/features/dictionary/repositories/dictionaryRepository';
-import { addFrequencyEntry } from '@/features/dictionary/repositories/frequencyRepository';
-import { putPhraseIndex, getPhraseIndex } from '@/features/dictionary/repositories/phraseIndexRepository';
+import { closeAllDBs, clearAllStores } from '@/features/dictionary';
+import { addResource } from '@/features/dictionary';
+import { addDictionaryEntry } from '@/features/dictionary';
+import { addFrequencyEntry } from '@/features/dictionary';
+import { putPhraseIndex, getPhraseIndex } from '@/features/dictionary';
 import { setWordStatus } from '@/features/dictionary/services/wordStatusStore';
 import {
   compilePhraseIndex,
   serializePhraseIndex,
   type PhraseIndexInput,
-} from '@/features/dictionary/logic/phraseIndexCompiler';
-import { parsePhraseTemplate } from '@/features/dictionary/logic/phraseTemplateParser';
+} from '@/features/dictionary';
+import { parsePhraseTemplate } from '@/features/dictionary';
 import type { Settings, LanguageProfile } from '@/entities/settings';
 import type { DictionaryEntry } from '@/entities/dictionary';
 import {

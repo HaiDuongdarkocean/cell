@@ -17,7 +17,7 @@ import {
   persistSearchHistory,
   removeSearchHistoryTerm,
 } from '@/features/dictionaryPopup/logic/searchHistory';
-import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
+import { ViewportTracker } from '@/features/tokenize';
 import { CandidateView } from './CandidateView';
 import type { LookupResult, WordStatus, PopupCardCreatorPrefill, PopupTab, PopupSelectionSnapshot } from '@/entities/dictionary';
 import candidateStyles from './CandidateView.module.css';

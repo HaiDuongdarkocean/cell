@@ -17,8 +17,8 @@ import type {
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 import { WebTriggerController, type WebTriggerPointer } from '@/features/dictionaryPopup/trigger/webTriggerController';
 import type { HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
-import type { CardCreatorOpenContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
-import type { CardCreatorAction } from '@/features/cardCreator/types';
+import type { CardCreatorOpenContext } from '@/features/cardCreator';
+import type { CardCreatorAction } from '@/features/cardCreator';
 
 import { sendMessage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';

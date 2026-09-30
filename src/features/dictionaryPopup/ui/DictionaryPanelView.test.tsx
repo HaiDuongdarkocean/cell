@@ -2,7 +2,7 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { DictionaryPanelView } from './DictionaryPanelView';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
-import { translateSentence } from '@/features/cardCreator/media/translation';
+import { translateSentence } from '@/features/cardCreator';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { LookupResult } from '@/entities/dictionary';
 
@@ -10,7 +10,7 @@ jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
   sendMessage: jest.fn(),
 }));
 
-jest.mock('@/features/cardCreator/media/translation', () => ({
+jest.mock('@/features/cardCreator', () => ({
   translateSentence: jest.fn(),
 }));
 

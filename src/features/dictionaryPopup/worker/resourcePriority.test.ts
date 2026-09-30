@@ -6,7 +6,7 @@ import {
   pickWinnerByPriority,
 } from './resourcePriority';
 import type { ResidentPhraseIndex } from './phraseIndexLoader';
-import type { PhraseIndex } from '@/features/dictionary/logic/phraseIndexCompiler';
+import type { PhraseIndex } from '@/features/dictionary';
 
 function fakeResident(resourceId: number): ResidentPhraseIndex {
   const index = {

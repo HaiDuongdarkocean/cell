@@ -13,12 +13,12 @@ import fs, { existsSync } from 'node:fs';
 import path from 'node:path';
 import 'fake-indexeddb/auto';
 import { describe, expect, it, beforeAll, beforeEach, afterAll } from '@jest/globals';
-import { segmentFMM, isChengyu } from '@/features/dictionary/logic/chineseSegmenter';
+import { segmentFMM, isChengyu } from '@/features/dictionary';
 import type { TermProbe } from '../plugins/languagePlugin';
 import { lookupOrchestrator, createDictionaryProbeAsync, clearDictionaryProbeCache } from './lookupOrchestrator';
-import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
-import { addResource } from '@/features/dictionary/repositories/resourceRepository';
-import { addDictionaryEntry } from '@/features/dictionary/repositories/dictionaryRepository';
+import { closeAllDBs, clearAllStores } from '@/features/dictionary';
+import { addResource } from '@/features/dictionary';
+import { addDictionaryEntry } from '@/features/dictionary';
 
 interface MoedictEntry {
   readonly term: string;

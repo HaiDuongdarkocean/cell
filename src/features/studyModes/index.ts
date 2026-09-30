@@ -1,3 +1,13 @@
 export { useStudyModeStore, loadStudyModeState } from './studyModeStore';
 export type { StudyModeStore } from './studyModeStore';
 export { modeUsesBandProbe } from './lib/modeUsesBandProbe';
+export type { SubtitlePracticeMode } from './lib/subtitlePractice';
+export { StudyModeActionBar } from './ui/StudyModeActionBar';
+export { PracticeOptions, SubtitlePracticeSession } from './ui/SubtitlePractice';
+export { getActiveStudyMode, subscribeToStudyMode } from './content/studyModeController';
+export type { ActiveStudyMode } from './content/studyModeController';
+export { practiceModeFromStudyModeId, setSubtitlePracticeMode } from './lib/practiceModeState';
+export type { PlaybackAction, UnknownCueProbe } from './lib/studyModePlaybackController';
+export { SubtitleStudyModeController } from './lib/subtitleStudyModeController';
+export type { SubtitleStudyModeTimeState } from './lib/subtitleStudyModeController';
+export { StudyModesTab } from './ui/StudyModesTab';

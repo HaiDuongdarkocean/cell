@@ -15,7 +15,7 @@ import type { ReactNode, RefObject } from 'react';
 import type { SubtitleSearchResult } from '@/entities/subtitle/searchTypes';
 import type { SubtitlePanelItem } from './subtitlePanelModel';
 import type { ToastVariant } from './SubtitleToast';
-import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
+import type { SubtitlePracticeMode } from '@/features/studyModes';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import type { CueListTokenize } from './CueList';
 import type { ICON_CATALOG } from '@/shared/icons';

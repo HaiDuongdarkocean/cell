@@ -26,25 +26,25 @@ import { pluginRegistry } from '../plugins/pluginRegistry';
 import {
   findDictionaryByTerm,
   findDictionaryByResource,
-} from '@/features/dictionary/repositories/dictionaryRepository';
-import { findFrequencyByTerm } from '@/features/dictionary/repositories/frequencyRepository';
-import { getAllResources } from '@/features/dictionary/repositories/resourceRepository';
-import { getWordStatus } from '@/features/dictionary/services/wordStatusStore';
+} from '@/features/dictionary';
+import { findFrequencyByTerm } from '@/features/dictionary';
+import { getAllResources } from '@/features/dictionary';
+import { getWordStatus } from '@/features/dictionary';
 import {
   getPhraseIndex,
-} from '@/features/dictionary/repositories/phraseIndexRepository';
+} from '@/features/dictionary';
 import {
   deserializePhraseIndex,
   type PhraseIndex,
-} from '@/features/dictionary/logic/phraseIndexCompiler';
+} from '@/features/dictionary';
 import {
   matchPhraseAll,
   comparePhraseMatches,
   type PhraseMatch,
-} from '@/features/dictionary/logic/phraseMatcher';
+} from '@/features/dictionary';
 import { createChinesePlugin } from '../plugins/chinesePlugin';
 import { createEnglishPlugin } from '../plugins/englishPlugin';
-import { compilePhraseIndex } from '@/features/dictionary/logic/phraseIndexCompiler';
+import { compilePhraseIndex } from '@/features/dictionary';
 import { isDevMode } from '@/shared/lib/env/devMode';
 import { saveLookupLog } from '../log/lookupLogStore';
 import type {
@@ -54,8 +54,8 @@ import type {
   MatchTraceData,
   CandidateMatchTrace,
   RankedCandidateTrace,
-} from '@/features/dictionary/logic/lookupLogTypes';
-import { tokenizeSentence } from '@/features/dictionary/logic/phraseMatcher';
+} from '@/features/dictionary';
+import { tokenizeSentence } from '@/features/dictionary';
 import { getActiveProfileSettings, type Settings } from '@/entities/settings';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';

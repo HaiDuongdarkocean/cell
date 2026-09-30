@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from '@jest/globals';
-import type { ActiveStudyMode } from '@/features/studyModes/content/studyModeController';
+import type { ActiveStudyMode } from '@/features/studyModes';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import {
   DEFAULT_SETTINGS,
@@ -11,7 +11,7 @@ import {
 import { init } from './contentScriptController';
 import { ReactSubtitleController } from './reactSubtitleController';
 import { findVideoContainer } from '@/shared/lib/dom/findPlayerContainer';
-import { getActiveStudyMode, subscribeToStudyMode } from '@/features/studyModes/content/studyModeController';
+import { getActiveStudyMode, subscribeToStudyMode } from '@/features/studyModes';
 import {
   sendMessage,
   onMessage,
@@ -20,7 +20,7 @@ import {
   removeOnStorageChangedListener,
 } from '@/shared/lib/chrome-apis';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
-import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl } from '@/features/tokenize/services/tokenizeSettingsStore';
+import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl } from '@/features/tokenize';
 import {
   handleShortcutKey,
   toggleOverlayState,
@@ -41,9 +41,14 @@ jest.mock('@/shared/lib/dom/findPlayerContainer', () => ({
   findVideoContainer: jest.fn(),
 }));
 
-jest.mock('@/features/studyModes/content/studyModeController', () => ({
+jest.mock('@/features/studyModes', () => ({
   getActiveStudyMode: jest.fn(),
   subscribeToStudyMode: jest.fn(),
+  modeUsesBandProbe: (jest.requireActual('@/features/studyModes/lib/modeUsesBandProbe') as { modeUsesBandProbe: unknown }).modeUsesBandProbe,
+  useStudyModeStore: {
+    getState: jest.fn().mockReturnValue({ advanced: { cleanupRules: undefined } }),
+    subscribe: jest.fn(),
+  },
 }));
 
 jest.mock('@/shared/lib/chrome-apis', () => ({
@@ -63,10 +68,16 @@ jest.mock('@/features/theme/logic/themeTokens', () => ({
   injectThemeTokens: jest.fn(),
 }));
 
-jest.mock('@/features/tokenize/services/tokenizeSettingsStore', () => ({
-  loadTokenizeSettings: jest.fn(),
-  isSubtitleTokenizeEnabledForUrl: jest.fn().mockReturnValue(false),
-}));
+jest.mock('@/features/tokenize', () => {
+  const frequencyBand = jest.requireActual('@/features/tokenize/utils/frequencyBand') as Record<string, unknown>;
+  return {
+    ...(jest.requireActual('@/features/tokenize/logic/tokenListMetadata') as Record<string, unknown>),
+    ...frequencyBand,
+    loadFrequencyBandOptions: jest.fn(async () => ({ thresholds: frequencyBand.DEFAULT_BAND_THRESHOLDS })),
+    loadTokenizeSettings: jest.fn(),
+    isSubtitleTokenizeEnabledForUrl: jest.fn().mockReturnValue(false),
+  };
+});
 
 jest.mock('@/features/translate/logic/translatePrefill', () => ({
   BackgroundPrefillController: jest.fn().mockImplementation(() => ({

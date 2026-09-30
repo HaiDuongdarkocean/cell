@@ -1,4 +1,4 @@
-import type { Token } from '@/features/tokenize/types';
+import type { Token } from '@/features/tokenize';
 
 export function getSentenceText(
   tokens: readonly Token[],

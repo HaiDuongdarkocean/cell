@@ -1,8 +1,8 @@
 import type { BilingualCue } from '@/entities/media';
 import type { FrequencyEntry, WordStatus } from '@/entities/dictionary';
 import type { Token } from '@/features/tokenize/types';
-import { getWordStatuses } from '@/features/dictionary/services/wordStatusClient';
-import { getFrequencyEntries } from '@/features/dictionary/services/frequencyClient';
+import { getWordStatuses } from '@/features/dictionary';
+import { getFrequencyEntries } from '@/features/dictionary';
 import {
   DEFAULT_BAND_THRESHOLDS,
   entriesToBand,

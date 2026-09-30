@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { SettingsDialogContent } from '@/features/settings/ui/SettingsDialogContent';
+import { SettingsDialogContent } from '@/features/settings';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { syncFlatFieldsToActiveProfile } from '@/entities/settings/lib/profileResolution';

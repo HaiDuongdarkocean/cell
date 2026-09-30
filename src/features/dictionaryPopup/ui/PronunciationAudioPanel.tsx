@@ -4,7 +4,7 @@ import { InkTabs } from '@/shared/ui/InkTabs';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { useAudioItemUrlMap } from '@/features/pronunciation/hooks/useAudioItemUrl';
+import { useAudioItemUrlMap } from '@/features/pronunciation';
 import checkStyles from './DictionaryCheckable.module.css';
 import styles from './PronunciationAudioPanel.module.css';
 import type { AudioItem } from '@/entities/dictionary';

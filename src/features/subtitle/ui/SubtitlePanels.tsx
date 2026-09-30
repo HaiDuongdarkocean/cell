@@ -15,7 +15,7 @@ import { PlayerModeLayer } from './PlayerModeLayer';
 import { SubtitlePanel } from './SubtitlePanel';
 import { useOverlayPortals } from './subtitlePortals';
 import { useSplitView } from './subtitleSplitView';
-import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
+import { ShadowThemeProvider } from '@/features/theme';
 import { useIsMobile } from '@/shared/ui/useIsMobile';
 import { loadStudyModeState, useStudyModeStore } from '@/features/studyModes';
 import { BREAKPOINTS } from '@/shared/lib/tokens';
@@ -23,7 +23,7 @@ import { buildClusterCssVars } from './subtitleUI';
 import styles from './SubtitlePanels.module.css';
 import { useManagerHostDelegation } from './subtitleManagerHost';
 import { t } from '@/shared/i18n';
-import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
+import type { SubtitlePracticeMode } from '@/features/studyModes';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import type {
   ManagerState,

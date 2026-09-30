@@ -3,14 +3,14 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { LookupResult, PopupCardCreatorPrefill } from '@/entities/dictionary';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
-import { translateSentence } from '@/features/cardCreator/media/translation';
+import { translateSentence } from '@/features/cardCreator';
 import { DictionaryTab } from './DictionaryTab';
 
 jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
   sendMessage: jest.fn(),
 }));
 
-jest.mock('@/features/cardCreator/media/translation', () => ({
+jest.mock('@/features/cardCreator', () => ({
   translateSentence: jest.fn(),
 }));
 

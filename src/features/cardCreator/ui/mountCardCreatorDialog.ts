@@ -8,8 +8,8 @@
 import { createElement, type ReactElement } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
-import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
-import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
+import { buildTokenSpanCssForShadow } from '@/features/tokenize';
+import { ShadowThemeProvider } from '@/features/theme';
 import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { CardCreatorDialog } from './CardCreatorDialog';
 import { CardCreatorBottomSheet } from './CardCreatorBottomSheet';

@@ -24,8 +24,8 @@ import {
   compilePhraseIndex,
   serializePhraseIndex,
   type PhraseIndexInput,
-} from '@/features/dictionary/logic/phraseIndexCompiler';
-import { parsePhraseTemplate } from '@/features/dictionary/logic/phraseTemplateParser';
+} from '@/features/dictionary';
+import { parsePhraseTemplate } from '@/features/dictionary';
 import type {
   WorkerCancelMessage,
   WorkerHydrateChunkMessage,

@@ -1,8 +1,8 @@
 import type { WordStatus } from '@/entities/dictionary';
 import type { Token } from '@/features/tokenize/types';
 import { tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
-import { getWordStatuses } from '@/features/dictionary/services/wordStatusClient';
-import { getFrequencyEntries } from '@/features/dictionary/services/frequencyClient';
+import { getWordStatuses } from '@/features/dictionary';
+import { getFrequencyEntries } from '@/features/dictionary';
 import {
   entriesToBand,
   loadFrequencyBandOptions,

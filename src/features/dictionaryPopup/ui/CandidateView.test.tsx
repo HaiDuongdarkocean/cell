@@ -2,7 +2,7 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { render, screen, waitFor, fireEvent, within, act } from '@testing-library/react';
 import { CandidateView } from './CandidateView';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
-import { translateSentence } from '@/features/cardCreator/media/translation';
+import { translateSentence } from '@/features/cardCreator';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
@@ -31,7 +31,7 @@ jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
   sendMessage: jest.fn(),
 }));
 
-jest.mock('@/features/cardCreator/media/translation', () => ({
+jest.mock('@/features/cardCreator', () => ({
   translateSentence: jest.fn(),
 }));
 

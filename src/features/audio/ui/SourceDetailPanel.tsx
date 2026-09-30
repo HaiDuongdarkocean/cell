@@ -17,8 +17,8 @@ import { t, type MessageKey } from '@/shared/i18n';
 import { Icon, SettingsRow, Text, Toggle } from '@/shared/ui';
 import type { ICON_CATALOG } from '@/shared/icons';
 import type { AudioEngineKind, PronunciationSettings, TtsSettings } from '@/entities/settings/types';
-import { LocalPronunciationSettingsPanel } from '@/features/pronunciation/ui/LocalPronunciationSettingsPanel';
-import { TtsLanguagePanel } from '@/features/tts/ui/TtsLanguagePanel';
+import { LocalPronunciationSettingsPanel } from '@/features/pronunciation';
+import { TtsLanguagePanel } from '@/features/tts';
 import { BrowserVoicePanel } from './BrowserVoicePanel';
 import styles from './SourceDetailPanel.module.css';
 
