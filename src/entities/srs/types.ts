@@ -112,6 +112,7 @@ export interface SrsNote {
   readonly deckId: string;
   readonly targetWord: string; // canonical, copy từ targetField
   readonly fields: Record<string, SrsFieldValue>; // key = field id
+  readonly tags?: readonly string[];
   readonly createdAt: number;
 }
 

@@ -880,6 +880,8 @@ export interface SrsAddNotePayload {
   readonly notetypeId?: string;
   /** Field values keyed by field id. */
   readonly fields: Record<string, import('@/entities/srs/types').SrsFieldValue>;
+  /** Optional note-level tags (not tied to any notetype field). */
+  readonly tags?: readonly string[];
 }
 
 /** Background → caller: result of SRS_ADD_NOTE. */

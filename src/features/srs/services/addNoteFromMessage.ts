@@ -15,6 +15,7 @@ export interface SrsAddNoteMessageInput {
   readonly notetypeId?: string;
   readonly targetWord: string;
   readonly fields: Record<string, SrsFieldValue>;
+  readonly tags?: readonly string[];
 }
 
 export interface SrsAddNoteMessageResult {
@@ -51,6 +52,7 @@ export async function addNoteFromMessage(input: SrsAddNoteMessageInput): Promise
     studyConfig,
     now,
     adapter,
+    input.tags,
   );
 
   return { noteId: note.id, cardId: card.id };

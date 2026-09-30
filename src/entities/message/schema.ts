@@ -265,6 +265,7 @@ export const SrsAddNotePayloadSchema = z.object({
   targetWord: z.string().min(1),
   notetypeId: z.string().optional(),
   fields: z.record(z.string(), SrsFieldValueSchema),
+  tags: z.array(z.string()).optional(),
 });
 
 export const SrsOpenStudyPagePayloadSchema = z.object({

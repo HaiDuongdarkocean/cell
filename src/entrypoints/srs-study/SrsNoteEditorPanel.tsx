@@ -4,7 +4,8 @@ import { t } from '@/shared/i18n';
 import { putNote } from '@/features/srs/repositories/noteRepository';
 import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
 import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepository';
-import { FieldRow, FieldAutoGrowInput } from '@/features/cardCreator/ui/FieldRow';
+import { FieldRow, FieldAutoGrowInput, TagInput } from '@/features/cardCreator/ui/FieldRow';
+import { splitTags } from '@/features/cardCreator/service/noteUpdate';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { SrsAudioAsset, SrsDeck, SrsImageAsset, SrsNote, SrsNotetype } from '@/entities/srs/types';
 import { HighlightedSentence } from './srsCardShared';
@@ -23,6 +24,8 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
   const [deckId, setDeckId] = useState(note.deckId);
   const [texts, setTexts] = useState<Record<string, string>>({});
   const [media, setMedia] = useState<Record<string, MediaFile[]>>({});
+  const [removedMedia, setRemovedMedia] = useState<ReadonlySet<string>>(new Set());
+  const [tags, setTags] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,13 +41,16 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
       const initialMedia: Record<string, MediaFile[]> = {};
       for (const field of notetype.fields) {
         if (field.type === 'audio' || field.type === 'image') {
-          initialMedia[field.id] = storedMedia(field, note, audioMap, imageMap);
+          initialMedia[field.id] = await storedMedia(field, note, audioMap, imageMap);
         } else {
           initialTexts[field.id] = toEditText(note.fields[field.id]);
         }
       }
+      if (!mounted) return;
       setTexts(initialTexts);
       setMedia(initialMedia);
+      setRemovedMedia(new Set());
+      setTags((note.tags ?? []).join(' '));
     })();
     return () => { mounted = false; };
   }, [note, notetype]);
@@ -56,8 +62,8 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
     setSaving(true);
     setError(null);
     try {
-      const { targetWord, fields } = await persistNoteFields(notetype, note, texts, media);
-      await putNote({ ...note, targetWord, fields, deckId });
+      const { targetWord, fields } = await persistNoteFields(notetype, note, texts, media, removedMedia);
+      await putNote({ ...note, targetWord, fields, deckId, tags: splitTags(tags) });
       onSaved();
       onClose();
     } catch (err) {
@@ -99,7 +105,14 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
             <NoteMediaField
               field={field}
               files={media[field.id] ?? []}
-              onChange={(files) => { setMedia((prev) => ({ ...prev, [field.id]: files })); }}
+              onChange={(files) => {
+                setMedia((prev) => ({ ...prev, [field.id]: files }));
+                setRemovedMedia((prev) => {
+                  const next = new Set(prev);
+                  if (files.length === 0) next.add(field.id); else next.delete(field.id);
+                  return next;
+                });
+              }}
             />
           ) : (
             <FieldAutoGrowInput
@@ -111,6 +124,16 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
           )}
         </FieldRow>
       ))}
+
+      <FieldRow label={t('cardCreator.field.tags')} dataId="srs-edit-tags">
+        <TagInput
+          value={tags}
+          onChange={setTags}
+          placeholder={t('cardCreator.placeholder.tags')}
+          ariaLabel={t('cardCreator.field.tags')}
+          dataId="srs-edit-tags"
+        />
+      </FieldRow>
 
       {error && <Text className={styles.error}>{error}</Text>}
 

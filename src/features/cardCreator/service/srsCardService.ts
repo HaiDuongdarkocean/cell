@@ -40,6 +40,7 @@ export async function addSrsNote(input: {
   readonly notetypeId: string;
   readonly targetWord: string;
   readonly fields: Record<string, SrsFieldValue>;
+  readonly tags?: readonly string[];
 }): Promise<Result<SrsAddNoteResult>> {
   try {
     const response = (await sendMessage({

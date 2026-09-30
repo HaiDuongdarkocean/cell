@@ -22,6 +22,7 @@ export async function addNoteAndCard(
   config: SrsStudyConfig,
   now: Date,
   adapter: SrsFsrsAdapter,
+  tags?: readonly string[],
 ): Promise<AddNoteAndCardResult> {
   if (notetype.collectionId !== collection.id) {
     throw new SrsError('INVALID_INPUT', 'Notetype does not belong to the collection');
@@ -42,6 +43,7 @@ export async function addNoteAndCard(
     deckId,
     targetWord,
     fields,
+    tags,
     createdAt: now.getTime(),
   };
   await putNote(note);

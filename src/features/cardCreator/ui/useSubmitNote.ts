@@ -109,6 +109,7 @@ export function useSubmitNote({
         notetypeId: notetype.id,
         targetWord,
         fields: buildSrsFields(notetype, draft.fields),
+        tags: splitTags(draft.tags),
       });
       if (!r.ok) {
         if (/duplicate|already exists/i.test(r.error)) {

@@ -5,6 +5,7 @@ import { putAudioAsset } from '@/features/srs/repositories/audioAssetRepository'
 import { putImageAsset } from '@/features/srs/repositories/imageAssetRepository';
 import { audioAssetId, imageAssetId } from '@/features/srs/lib/helpers';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
+import { fetchMediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { SrsAudioAsset, SrsField, SrsFieldValue, SrsImageAsset, SrsNote, SrsNotetype } from '@/entities/srs/types';
 import styles from './SrsEditCardPanel.module.css';
 
@@ -26,16 +27,18 @@ export function toFieldValue(field: SrsField, text: string): SrsFieldValue | und
   return { kind: 'text', value: trimmed };
 }
 
-export function storedMedia(
+export async function storedMedia(
   field: SrsField,
   note: SrsNote,
   audioCache: ReadonlyMap<string, SrsAudioAsset>,
   imageCache: ReadonlyMap<string, SrsImageAsset>,
-): MediaFile[] {
+): Promise<MediaFile[]> {
   const value = note.fields[field.id];
   if (!value) return [];
   if (field.type === 'audio' && value.kind === 'audio') {
-    const asset = audioCache.get(audioAssetId(note.id, field.id, value.source));
+    const asset =
+      audioCache.get(audioAssetId(note.id, field.id, value.source)) ??
+      [...audioCache.values()].find((a) => a.noteId === note.id && a.fieldId === field.id);
     if (asset) {
       return [{ kind: 'audio', filename: value.value, mimeType: asset.mimeType, data: asset.bytes }];
     }
@@ -46,6 +49,10 @@ export function storedMedia(
       return [{ kind: 'image', filename: value.value, mimeType: asset.mimeType, data: asset.bytes }];
     }
   }
+  if ((value.kind === 'audio' || value.kind === 'image') && /^(https?|data):/.test(value.value)) {
+    const fetched = await fetchMediaFile(value.value, field.type === 'image' ? 'image' : 'audio').catch(() => null);
+    if (fetched) return [fetched];
+  }
   return [];
 }
 
@@ -54,12 +61,17 @@ export async function persistNoteFields(
   note: SrsNote,
   texts: Record<string, string>,
   media: Record<string, MediaFile[]>,
+  removedMedia?: ReadonlySet<string>,
 ): Promise<{ targetWord: string; fields: Record<string, SrsFieldValue> }> {
   const fields: Record<string, SrsFieldValue> = {};
   for (const field of notetype.fields) {
     if (field.type === 'audio' || field.type === 'image') {
       const file = media[field.id]?.[0];
-      if (!file) continue;
+      if (!file) {
+        const existing = note.fields[field.id];
+        if (existing && !removedMedia?.has(field.id)) fields[field.id] = existing;
+        continue;
+      }
       if (field.type === 'audio') {
         await putAudioAsset({
           id: audioAssetId(note.id, field.id, 'local'),

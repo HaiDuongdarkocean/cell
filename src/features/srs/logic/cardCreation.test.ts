@@ -102,6 +102,26 @@ describe('cardCreation', () => {
     expect((await getCard(card.id)).noteId).toBe(note.id);
   });
 
+  it('stores tags on the created note', async () => {
+    await putCollection(makeCollection());
+    await putDeck(makeDeck());
+
+    const { note } = await addNoteAndCard(
+      makeCollection(),
+      'd1',
+      makeNotetype(),
+      'abandon',
+      { target: { kind: 'text' as const, value: 'abandon' } },
+      makeConfig(),
+      now,
+      adapter,
+      ['verb', 'cet4'],
+    );
+
+    expect(note.tags).toEqual(['verb', 'cet4']);
+    expect((await getNote(note.id)).tags).toEqual(['verb', 'cet4']);
+  });
+
   it('reuses an existing note in a different deck but rejects duplicate in same deck', async () => {
     await putCollection(makeCollection());
     await putDeck(makeDeck());

@@ -156,6 +156,7 @@ export const SrsNoteSchema = z.object({
   deckId: z.string(),
   targetWord: z.string(),
   fields: z.record(z.string(), SrsFieldValueSchema),
+  tags: z.array(z.string()).optional(),
   createdAt: z.number().int(),
 });
 
