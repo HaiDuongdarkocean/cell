@@ -118,24 +118,27 @@
 
 .ringWrap {
   position: relative;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
+  align-self: stretch;
 }
 
 .ring {
-  width: 176px;
-  height: 176px;
+  width: 100%;
+  max-width: 288px;
+  aspect-ratio: 1;
+  height: auto;
 }
 
 .ringTrack {
   stroke: var(--color-primary-subtle);
-  stroke-width: 9;
+  stroke-width: 5;
 }
 
 .ringBar {
   stroke: var(--color-primary);
-  stroke-width: 9;
+  stroke-width: 5;
   transition: stroke-dashoffset var(--duration-slow) var(--ease-out);
 }
 
@@ -146,17 +149,17 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1-5);
+  gap: var(--space-2);
 }
 
 .ringValue {
-  font-size: var(--font-size-3xl);
+  font-size: var(--font-size-5xl);
   font-weight: var(--font-weight-bold);
   pointer-events: none;
 }
 
 .heroLabel {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
   color: var(--color-text-secondary);
 }
 
