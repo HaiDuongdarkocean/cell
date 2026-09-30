@@ -52,6 +52,7 @@ export async function selectNextReview(
   audioCache: ReadonlyMap<string, SrsAudioAsset>,
   imageCache: ReadonlyMap<string, SrsImageAsset>,
   maxScan = 1000,
+  options: { readonly shuffle?: boolean; readonly startWith?: 'reviews' | 'new' } = {},
 ): Promise<SrsReviewSession | null> {
   const deckIds = await resolveDeckIds(rootDeckId, includeSubdecks);
   if (deckIds.length === 0) return null;
@@ -93,7 +94,7 @@ export async function selectNextReview(
     }
   }
 
-  const winner = pickHighestPriority(candidates);
+  const winner = pickHighestPriority(candidates, options);
   if (!winner) return null;
 
   const audioMap = new Map<string, SrsAudioAsset>(audioCache);

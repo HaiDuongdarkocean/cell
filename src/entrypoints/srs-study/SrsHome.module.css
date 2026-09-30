@@ -1,0 +1,372 @@
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: min(30rem, 92vw);
+  margin: 0 auto;
+  padding: var(--space-5) 0 var(--space-10);
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.appTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.topBarActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* design-system: intentional override — chip-style chrome buttons match the review stage corners; no standard ghost variant maps to a filled circular chip. */
+.chromeButton {
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+}
+
+.weekCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+}
+
+.weekTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.weekRow {
+  display: flex;
+  gap: var(--space-3);
+  width: 100%;
+  justify-content: space-between;
+}
+
+.weekDay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1-5);
+}
+
+.weekDayLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.weekDot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-9);
+  height: var(--space-9);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-elevated);
+  color: var(--color-on-success);
+}
+
+/* design-system: intentional override — active/today ring is the Migaku-style "studied today" marker; no standard component maps to it. */
+.weekDotActive {
+  background: var(--color-surface-hover);
+}
+
+.weekDotToday {
+  background: var(--color-success);
+  box-shadow: 0 0 0 var(--border-width-medium) var(--color-warning);
+}
+
+.weekDotFuture {
+  opacity: 0.5;
+}
+
+.hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-md);
+}
+
+.heroChip {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-1) var(--space-2-5);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-full);
+}
+
+.heroChipText {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.ringWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ring {
+  width: var(--space-24);
+  height: var(--space-24);
+}
+
+.ringValue {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  pointer-events: none;
+}
+
+.heroLabel {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+}
+
+.heroPills {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* design-system: intentional override — purple/blue review pills are the reference identity; Badge has no matching variant pair. */
+.pillReviews {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.pillNew {
+  background: var(--color-info-subtle);
+  color: var(--color-info);
+}
+
+.minLeft {
+  align-self: flex-end;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.heroStats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-lg);
+  min-width: 0;
+}
+
+.statCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-text-secondary);
+}
+
+.statCardTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.streakRow,
+.knownRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.streakFlame {
+  color: var(--color-warning);
+}
+
+.streakDays,
+.knownCount {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.streakGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-1);
+}
+
+.streakDot {
+  aspect-ratio: 1;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+}
+
+.streakDotActive {
+  background: var(--color-primary);
+}
+
+.streakDotToday {
+  background: var(--color-warning);
+}
+
+.knownDelta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-align: right;
+}
+
+/* design-system: intentional override — warm gradient CTA matches the remember-button identity used across the review stage. */
+.continueButton {
+  background: linear-gradient(135deg, var(--color-warning), var(--color-error));
+  color: var(--color-text-on-primary);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  margin-top: var(--space-2);
+}
+
+.finishedText {
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.decksSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.decksHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.decksTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.decksActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.addRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.deckRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-4);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-lg);
+}
+
+.deckMain {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.deckIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-12);
+  height: var(--space-12);
+  border-radius: var(--radius-full);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.deckInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.deckName {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deckPills {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.deckProgressTrack {
+  position: absolute;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: var(--space-2);
+  height: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.deckProgressFill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--color-warning), var(--color-error));
+}
+
+.emptyText {
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.addDeckButton {
+  color: var(--color-primary);
+}
+
+.footerNote {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-align: center;
+}

@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
+import { useSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
 import { Box, Button, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
@@ -36,6 +37,7 @@ export function SrsReviewCard({ onManage }: SrsReviewCardProps): React.JSX.Eleme
   const [showAnswer, setShowAnswer] = useState(false);
   const [editing, setEditing] = useState(false);
   const [typedInput, setTypedInput] = useState('');
+  const prefs = useSrsUiPrefs();
   const inputId = useId();
 
   useEffect(() => {
@@ -92,7 +94,9 @@ export function SrsReviewCard({ onManage }: SrsReviewCardProps): React.JSX.Eleme
         </Button>
       </Box>
 
-      <div className={styles.cornerTopCenter} role="list" aria-label={t('srs.review.progressAria')}>
+      {!prefs.hideProgress && (
+        <>
+          <div className={styles.cornerTopCenter} role="list" aria-label={t('srs.review.progressAria')}>
         {COMPONENT_ORDER.map((ct) => (
           <span
             key={ct}
@@ -105,10 +109,12 @@ export function SrsReviewCard({ onManage }: SrsReviewCardProps): React.JSX.Eleme
             <Icon name={COMPONENT_ICONS[ct]} />
           </span>
         ))}
-      </div>
+          </div>
 
-      {stats && (
-        <Text className={styles.cornerTopRight}>{t('srs.review.dueCount', [stats.dueNow])}</Text>
+          {stats && (
+            <Text className={styles.cornerTopRight}>{t('srs.review.dueCount', [stats.dueNow])}</Text>
+          )}
+        </>
       )}
 
       <Box className={styles.cornerBottomLeft}>

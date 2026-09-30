@@ -48,7 +48,9 @@ test.describe('Ocean SRS smoke', () => {
     await page.goto(`chrome-extension://${extensionId}/${SRS_STUDY_PATH}`);
 
     await expect(page.getByRole('heading', { name: 'Ocean SRS' })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('button', { name: 'Study' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Continue studying' })).toBeVisible();
+    await expect(page.getByText('Weekly Activity')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'All Decks' })).toBeVisible();
     await expect(page.getByText('uninstalling the extension deletes them')).toBeVisible();
 
     await page.close();
@@ -59,7 +61,7 @@ test.describe('Ocean SRS smoke', () => {
     await seedSrsProfile(page, extensionId);
     await page.goto(`chrome-extension://${extensionId}/${SRS_STUDY_PATH}`);
 
-    const studyButton = page.getByRole('button', { name: 'Study' });
+    const studyButton = page.getByRole('button', { name: 'Continue studying' });
     await expect(studyButton).toBeVisible({ timeout: 10_000 });
     await studyButton.click();
 
@@ -106,7 +108,7 @@ test.describe('Ocean SRS smoke', () => {
     expect(result.data?.cardId).toBeTruthy();
 
     // Start studying; the new card should be due now.
-    await page.getByRole('button', { name: 'Study' }).click();
+    await page.getByRole('button', { name: 'Continue studying' }).click();
     await expect(page.locator('[aria-label="Sound"]')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: 'Show answer' })).toBeVisible();
 
@@ -156,7 +158,7 @@ test.describe('Ocean SRS smoke', () => {
     expect(result.success, `SRS_ADD_NOTE failed: ${result.error}`).toBe(true);
 
     // Start studying; the new card should be due now.
-    await page.getByRole('button', { name: 'Study' }).click();
+    await page.getByRole('button', { name: 'Continue studying' }).click();
     await expect(page.locator('[aria-label="Sound"][aria-current="step"]')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: 'Show answer' })).toBeVisible();
 

@@ -19,6 +19,18 @@ import { getStudyConfig } from '@/features/srs/repositories/studyConfigRepositor
 import { selectNextReview } from '@/features/srs/logic/selectNextReview';
 import { applyReview, resetCard, resetComponent, studyAgain } from '@/features/srs/logic/reviewEngine';
 import { getSrsStats, type SrsDeckStats } from '@/features/srs/services/getSrsStats';
+import { getSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
+
+function applyUiPrefs(cfg: SrsStudyConfig): { config: SrsStudyConfig; options: { shuffle: boolean; startWith: 'reviews' | 'new' }; includeSubdecks: boolean } {
+  const prefs = getSrsUiPrefs();
+  return {
+    config: prefs.graduatePasses === null
+      ? cfg
+      : { ...cfg, learningPath: { ...cfg.learningPath, minExplores: prefs.graduatePasses } },
+    options: { shuffle: prefs.shuffleReviews, startWith: prefs.startWith },
+    includeSubdecks: true,
+  };
+}
 
 interface SrsStudyContextValue {
   readonly ready: boolean;
@@ -30,7 +42,7 @@ interface SrsStudyContextValue {
   readonly stats: SrsDeckStats | null;
   readonly audioCache: ReadonlyMap<string, SrsAudioAsset>;
   readonly imageCache: ReadonlyMap<string, SrsImageAsset>;
-  readonly start: () => Promise<void>;
+  readonly start: (deckId?: string) => Promise<void>;
   readonly submit: (judgment: ReviewJudgment, typedInput?: string) => Promise<void>;
   readonly markStudyAgain: (componentType: ComponentType) => Promise<void>;
   readonly resetCurrentComponent: () => Promise<void>;
@@ -107,14 +119,17 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
     }
   }, [deckId]);
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (deckIdOverride?: string) => {
     setLoading(true);
     setError(null);
     setFinished(false);
     try {
-      const { deckId: did, config: cfg } = await ensureDeck();
-      if (!cfg || !did) return;
-      const next = await selectNextReview(did, false, cfg, nowISO(), adapter, audioCache, imageCache);
+      const { deckId: defaultDeckId, config: cfg } = await ensureDeck();
+      if (!cfg || !defaultDeckId) return;
+      const did = deckIdOverride ?? defaultDeckId;
+      if (did !== deckId) setDeckId(did);
+      const { config: effConfig, options, includeSubdecks } = applyUiPrefs(cfg);
+      const next = await selectNextReview(did, includeSubdecks, effConfig, nowISO(), adapter, audioCache, imageCache, 1000, options);
       if (next) {
         setSession(next);
       } else {
@@ -126,7 +141,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [ensureDeck, audioCache, imageCache]);
+  }, [ensureDeck, deckId, audioCache, imageCache]);
 
   const submit = useCallback(
     async (judgment: ReviewJudgment, typedInput?: string) => {
@@ -138,14 +153,17 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
         await putCard(result.card);
         await putReviewEvent(result.record);
         void refreshStats();
+        const { options, includeSubdecks } = applyUiPrefs(config);
         const next = await selectNextReview(
           session.card.deckId,
-          false,
+          includeSubdecks,
           config,
           nowISO(),
           adapter,
           audioCache,
           imageCache,
+          1000,
+          options,
         );
         if (next) {
           setSession(next);
@@ -217,7 +235,8 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
     const deckIdOfCard = session.card.deckId;
     await deleteCardCascade(session.card.id);
     void refreshStats();
-    const next = await selectNextReview(deckIdOfCard, false, config, nowISO(), adapter, audioCache, imageCache);
+    const { options, includeSubdecks } = applyUiPrefs(config);
+    const next = await selectNextReview(deckIdOfCard, includeSubdecks, config, nowISO(), adapter, audioCache, imageCache, 1000, options);
     if (next) {
       setSession(next);
     } else {
