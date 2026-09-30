@@ -8,10 +8,12 @@ import type {
 } from '@/entities/srs/types';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import {
+  audioAssetId,
   createDefaultNotetype,
   createDefaultStudyConfig,
   createSrsFsrsAdapter,
   generateId,
+  imageAssetId,
   getCardsByDeck,
   getCollectionByLanguageProfileId,
   getDeckByCollectionAndName,
@@ -338,14 +340,14 @@ export async function importNormalized(input: ImportRunInput): Promise<ImportRep
         report.mediaHits += 1;
         if (req.kind === 'audio') {
           await putAudioAsset({
-            id: `anki-media-${noteId}-${req.fieldId}`,
+            id: audioAssetId(noteId, req.fieldId, 'local'),
             noteId, fieldId: req.fieldId, source: 'local',
             mimeType: media.mimeType, bytes: media.bytes,
             size: media.bytes.byteLength, lastAccessed: now.getTime(), createdAt: now.getTime(),
           });
         } else {
           await putImageAsset({
-            id: `anki-media-${noteId}-${req.fieldId}`,
+            id: imageAssetId(noteId, req.fieldId),
             noteId, fieldId: req.fieldId,
             mimeType: media.mimeType, bytes: media.bytes,
             size: media.bytes.byteLength, lastAccessed: now.getTime(), createdAt: now.getTime(),

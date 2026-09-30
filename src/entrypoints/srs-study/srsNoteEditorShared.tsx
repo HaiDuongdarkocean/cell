@@ -54,7 +54,9 @@ export async function storedMedia(
     }
   }
   if (field.type === 'image' && value.kind === 'image') {
-    const asset = imageCache.get(imageAssetId(note.id, field.id));
+    const asset =
+      imageCache.get(imageAssetId(note.id, field.id)) ??
+      [...imageCache.values()].find((a) => a.noteId === note.id && a.fieldId === field.id);
     if (asset) {
       return [{ kind: 'image', filename: value.value, mimeType: asset.mimeType, data: asset.bytes }];
     }

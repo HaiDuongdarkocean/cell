@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
-import { persistNoteFields } from './srsNoteEditorShared';
-import type { SrsNote, SrsNotetype } from '@/entities/srs/types';
+import { persistNoteFields, storedMedia } from './srsNoteEditorShared';
+import { audioAssetId, imageAssetId } from '@/features/srs/lib/helpers';
+import type { SrsAudioAsset, SrsImageAsset, SrsNote, SrsNotetype } from '@/entities/srs/types';
 
 const notetype: SrsNotetype = {
   id: 'nt1',
@@ -57,5 +58,37 @@ describe('persistNoteFields', () => {
     );
     expect(targetWord).toBe('forsake');
     expect(fields.target).toEqual({ kind: 'text', value: 'forsake' });
+  });
+});
+
+describe('storedMedia', () => {
+  const audioField = notetype.fields[1]!;
+  const imageField = notetype.fields[2]!;
+  const asset = (id: string): SrsAudioAsset & SrsImageAsset => ({
+    id, noteId: 'n1', fieldId: 'x', source: 'local', mimeType: 'image/png',
+    bytes: new ArrayBuffer(1), size: 1, lastAccessed: 0, createdAt: 0,
+  });
+
+  it('resolves image by noteId+fieldId when the asset id is not canonical', async () => {
+    const note2 = { ...note, fields: { image: { kind: 'image', value: 'i.png' } } } as SrsNote;
+    const map = new Map([['anki-media-n1-image', { ...asset('anki-media-n1-image'), fieldId: 'image' }]]);
+    const files = await storedMedia(imageField, note2, new Map(), map);
+    expect(files).toHaveLength(1);
+    expect(files[0]!.filename).toBe('i.png');
+  });
+
+  it('resolves image by canonical asset id', async () => {
+    const note2 = { ...note, fields: { image: { kind: 'image', value: 'i.png' } } } as SrsNote;
+    const id = imageAssetId('n1', 'image');
+    const map = new Map([[id, { ...asset(id), fieldId: 'image' }]]);
+    const files = await storedMedia(imageField, note2, new Map(), map);
+    expect(files).toHaveLength(1);
+  });
+
+  it('audio keeps the same fallback path', async () => {
+    const note2 = { ...note, fields: { wordAudio: { kind: 'audio', value: 'w.mp3', source: 'local' } } } as SrsNote;
+    const map = new Map([[audioAssetId('n1', 'wordAudio', 'local'), { ...asset('x'), fieldId: 'wordAudio' }]]);
+    const files = await storedMedia(audioField, note2, map, new Map());
+    expect(files).toHaveLength(1);
   });
 });

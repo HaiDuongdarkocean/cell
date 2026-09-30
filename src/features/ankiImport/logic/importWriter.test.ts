@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
 import { importNormalized, estimateMediaBytes } from './importWriter';
 import {
+  audioAssetId,
   clearAllSrsStores,
   closeAllSrsDBs,
   deleteSrsDB,
@@ -145,10 +146,11 @@ describe('importNormalized', () => {
     expect(revs.find((r) => r.judgment === 'forget')).toBeTruthy();
     expect(revs[0]!.id.startsWith('import-anki-')).toBe(true);
 
-    // media asset stored
+    // media asset stored under the canonical asset id the editor resolves
     const assets = await getAudioAssetsByNote(c1001.noteId);
     expect(assets).toHaveLength(1);
     expect(assets[0]!.mimeType).toBe('audio/mpeg');
+    expect(assets[0]!.id).toBe(audioAssetId(c1001.noteId, 'wordAudio', 'local'));
   });
 
   it('is idempotent: re-import reports duplicates and writes nothing twice', async () => {

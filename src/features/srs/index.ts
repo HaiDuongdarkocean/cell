@@ -1,7 +1,7 @@
 export { formatDefEntry, formatDefFromLookup, joinDefEntries, parseDefEntries } from './lib/defEntry';
 export type { DefEntryInput, ParsedDefEntry } from './lib/defEntry';
 
-export { generateId } from './lib/helpers';
+export { generateId, audioAssetId, imageAssetId } from './lib/helpers';
 export { createDefaultStudyConfig } from './lib/defaultStudyConfig';
 export { createDefaultNotetype } from './lib/defaultNotetype';
 export { recalcCard } from './logic/reviewEngine';
