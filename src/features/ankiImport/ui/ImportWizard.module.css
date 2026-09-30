@@ -9,12 +9,12 @@
 
 .pickList { display: grid; gap: 6px; max-height: 220px; overflow-y: auto; }
 .pickRow {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   padding: 8px 10px; border-radius: 8px;
   background: var(--color-surface-card, #fff);
 }
 .pickRow.disabled { opacity: .55; }
-.pickName { flex: 1; font-size: 13.5px; color: var(--color-text-primary, #1a1a1a); overflow-wrap: anywhere; }
+.pickName { flex: 1; min-width: 120px; font-size: 13.5px; color: var(--color-text-primary, #1a1a1a); overflow-wrap: break-word; }
 .pickCounts { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 
 .ntTabs { flex-wrap: wrap; }

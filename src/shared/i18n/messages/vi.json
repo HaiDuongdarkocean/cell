@@ -1838,6 +1838,7 @@
   "ankiImport.scope.decks": "Bộ thẻ",
   "ankiImport.scope.notetypes": "Loại thẻ",
   "ankiImport.scope.selectAll": "Chọn tất cả",
+  "ankiImport.scope.noDecks": "Không có bộ thẻ nào import được trong nguồn này.",
   "ankiImport.scope.deselectAll": "Bỏ chọn tất cả",
   "ankiImport.scope.noScheduling": "File này không có lịch học — thẻ sẽ vào như thẻ mới.",
   "ankiImport.scope.countNew": "$1 mới",

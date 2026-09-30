@@ -260,7 +260,9 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
       </>
     ) : (
       <>
-        <Button variant="ghost" disabled={step === 'source'} onClick={goBack}>{t('ankiImport.action.back')}</Button>
+        {step !== 'source' && (
+          <Button variant="ghost" onClick={goBack}>{t('ankiImport.action.back')}</Button>
+        )}
         {step !== 'source' && (
           <Button variant="primary" onClick={goNext} disabled={!canContinue}>
             {step === 'mapping' ? t('ankiImport.action.start') : t('ankiImport.action.continue')}
@@ -322,13 +324,13 @@ function SourceStep({
   return (
     <VStack gap="3">
       <div className={styles.sourceGrid}>
-        <SelectableCard selected={connecting} onSelect={() => { if (!connecting && !parsing) onConnect(); }}>
+        <SelectableCard role="button" aria-label={t('ankiImport.source.liveTitle')} onSelect={() => { if (!connecting && !parsing) onConnect(); }}>
           <div className={styles.sourceCard}>
             <HStack gap="2"><Icon name="import" /><Text variant="label">{t('ankiImport.source.liveTitle')}</Text></HStack>
             <span className={styles.hint}>{t('ankiImport.source.liveHint')}</span>
           </div>
         </SelectableCard>
-        <SelectableCard onSelect={() => { if (!connecting && !parsing) onPickFile(); }}>
+        <SelectableCard role="button" aria-label={t('ankiImport.source.fileTitle')} onSelect={() => { if (!connecting && !parsing) onPickFile(); }}>
           <div className={styles.sourceCard}>
             <HStack gap="2"><Icon name="folderOpen" /><Text variant="label">{t('ankiImport.source.fileTitle')}</Text></HStack>
             <span className={styles.hint}>{t('ankiImport.source.fileHint')}</span>
@@ -399,6 +401,9 @@ function ScopeStep({
         </Button>
       </HStack>
       <div className={styles.pickList}>
+        {rows.length === 0 && (
+          <Text variant="supporting" color="secondary">{t('ankiImport.scope.noDecks')}</Text>
+        )}
         {rows.map((r) => (
           <label key={r.deck.id} className={styles.pickRow}>
             <Checkbox checked={deckIds.has(r.deck.id)} onChange={() => toggle(deckIds, r.deck.id, onDeckIds)} />
@@ -468,6 +473,7 @@ function MappingStep({
   readonly onMapping: (ntId: string, m: FieldMapping) => void;
 }): React.JSX.Element {
   const nt = notetypes[Math.min(activeIdx, notetypes.length - 1)];
+  const noteModel = useMemo(() => new Map(data.notes.map((n) => [n.id, n.modelId])), [data.notes]);
   if (!nt) {
     return <Text variant="supporting">{t('ankiImport.mapping.noneSelected')}</Text>;
   }
@@ -491,10 +497,7 @@ function MappingStep({
   const hasAudio = sample ? nt.fields.some((f) => roleOf(f.ord) === 'audio' || mediaRefsIn(sample.fields[f.ord] ?? '').sounds.length > 0) : false;
   const hasImage = sample ? nt.fields.some((f) => roleOf(f.ord) === 'image' || mediaRefsIn(sample.fields[f.ord] ?? '').images.length > 0) : false;
 
-  const cardCount = data.cards.filter((c) => {
-    const note = data.notes.find((n) => n.id === c.noteId);
-    return note?.modelId === nt.id && c.queue !== -1;
-  }).length;
+  const cardCount = data.cards.filter((c) => noteModel.get(c.noteId) === nt.id && c.queue !== -1).length;
 
   return (
     <VStack gap="3">
@@ -536,11 +539,11 @@ function MappingStep({
         </Card>
       </div>
       <div className={styles.sampleNav}>
-        <IconButton size="sm" variant="ghost" aria-label={t('ankiImport.mapping.prev')} onClick={() => onSampleIdx(Math.max(0, sampleIdx - 1))}>
+        <IconButton size="sm" variant="ghost" disabled={sampleIdx === 0} aria-label={t('ankiImport.mapping.prev')} onClick={() => onSampleIdx(Math.max(0, sampleIdx - 1))}>
           <Icon name="chevronLeft" />
         </IconButton>
-        <Text variant="supporting">{t('ankiImport.mapping.sample', [Math.min(sampleIdx + 1, Math.max(1, samples.length)), Math.max(1, samples.length)])}</Text>
-        <IconButton size="sm" variant="ghost" aria-label={t('ankiImport.mapping.next')} onClick={() => onSampleIdx(sampleIdx + 1)}>
+        <Text variant="supporting">{t('ankiImport.mapping.sample', [samples.length ? (sampleIdx % samples.length) + 1 : 0, samples.length])}</Text>
+        <IconButton size="sm" variant="ghost" disabled={samples.length <= 1} aria-label={t('ankiImport.mapping.next')} onClick={() => onSampleIdx(sampleIdx + 1)}>
           <Icon name="chevronRight" />
         </IconButton>
       </div>

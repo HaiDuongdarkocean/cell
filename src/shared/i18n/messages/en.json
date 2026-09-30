@@ -1838,6 +1838,7 @@
   "ankiImport.scope.decks": "Decks",
   "ankiImport.scope.notetypes": "Note types",
   "ankiImport.scope.selectAll": "Select all",
+  "ankiImport.scope.noDecks": "No importable decks in this source.",
   "ankiImport.scope.deselectAll": "Deselect all",
   "ankiImport.scope.noScheduling": "This file has no study history — cards will be imported as new.",
   "ankiImport.scope.countNew": "$1 new",
