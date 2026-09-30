@@ -209,7 +209,7 @@
 }
 
 .streakDotToday {
-  background: var(--color-text-accent-strong);
+  background: var(--color-primary-active);
 }
 
 .knownDelta {
@@ -239,7 +239,7 @@
 }
 
 .wordsBarToday {
-  background: var(--color-text-accent-strong);
+  background: var(--color-primary-active);
 }
 
 /* design-system: intentional override — CTA typography only; colors come from Button variant="primary". */
