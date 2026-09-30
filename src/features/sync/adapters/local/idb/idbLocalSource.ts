@@ -409,6 +409,10 @@ export abstract class IdbLocalSource implements LocalSource {
     return metaChangeRecord(scope, this.dataClass, key, { ...meta, op: 'put' }, value);
   }
 
+  // ponytail: tx-bound hooks below run inside pipelined per-key chains on a
+  // live transaction — they must only await IDB requests on that tx; a
+  // macrotask await while no request is pending commits the tx early and
+  // hangs awaitIdbTx.
   protected abstract readLocalValue(tx: IDBTransaction, key: RecordKey): Promise<LocalValue>;
 
   protected async resolveRecords(
