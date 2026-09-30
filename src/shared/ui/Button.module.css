@@ -49,12 +49,8 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .button:not(.transparent):not(.ghost):hover::after {
+  .button:not(.transparent):hover::after {
     background: var(--color-overlay-hover);
-  }
-
-  .ghost:hover {
-    color: var(--color-text-primary);
   }
 }
 

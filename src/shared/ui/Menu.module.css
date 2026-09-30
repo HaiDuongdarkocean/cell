@@ -23,12 +23,12 @@
 }
 
 .item:hover {
-  background: var(--color-surface-hover);
+  background: var(--color-overlay-hover);
 }
 
 .item:focus-visible {
   outline: none;
-  background: var(--color-surface-hover);
+  background: var(--color-overlay-hover);
   box-shadow: var(--shadow-focus-primary);
 }
 
