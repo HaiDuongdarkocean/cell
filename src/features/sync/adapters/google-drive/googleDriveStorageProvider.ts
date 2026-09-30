@@ -141,6 +141,10 @@ function chainCacheKey(chain: readonly string[]): string {
   return chain.join('');
 }
 
+function folderIdKey(accountKey: string, chain: readonly string[]): string {
+  return `syncFolderId:${accountKey}:${chain.join('/')}`;
+}
+
 function toBlob(bytes: Uint8Array): Blob {
   const buf = bytes.buffer.slice(
     bytes.byteOffset,
@@ -299,7 +303,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     return this.authed(connection, async (token) => {
       const rootId = await this.rootFolderId(token, connection);
       const flat = await this.flatListing(token, rootId, prefix);
-      const foldered = await this.listFoldered(token, rootId, prefix);
+      const foldered = await this.listFoldered(token, connection.accountKey, rootId, prefix);
       const byPath = new Map<string, RemoteEntry>();
       for (const file of flat) {
         const entry = toRemoteEntry(file);
@@ -785,6 +789,48 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     return this.folderIds.get(accountKey)?.get(chainCacheKey(chain));
   }
 
+  private async persistFolderId(
+    accountKey: string,
+    chain: readonly string[],
+    id: string,
+  ): Promise<void> {
+    this.folderCacheFor(accountKey).set(chainCacheKey(chain), id);
+    await this.kv
+      .set('local', folderIdKey(accountKey, chain), id)
+      .catch(() => undefined);
+  }
+
+  private async verifiedFolderId(
+    token: string,
+    accountKey: string,
+    chain: readonly string[],
+  ): Promise<string | undefined> {
+    const cacheKey = chainCacheKey(chain);
+    const memoryHit = this.folderIds.get(accountKey)?.get(cacheKey);
+    if (memoryHit !== undefined) return memoryHit;
+    const cached = await this.kv
+      .get<string>('local', folderIdKey(accountKey, chain))
+      .catch(() => undefined);
+    if (cached === undefined) return undefined;
+    try {
+      const response = await this.send(
+        `${DRIVE_API_BASE}/files/${encodeURIComponent(cached)}?fields=id,trashed`,
+        { headers: this.authHeaders(token) },
+      );
+      const file = (await response.json()) as DriveFile;
+      if (file.trashed === true) throw new ProviderError('not-found', 'folder trashed');
+      this.folderCacheFor(accountKey).set(cacheKey, cached);
+      return cached;
+    } catch (e) {
+      if (e instanceof ProviderError && e.kind === 'not-found') {
+        this.folderIds.get(accountKey)?.delete(cacheKey);
+        await this.kv.del('local', folderIdKey(accountKey, chain)).catch(() => undefined);
+        return undefined;
+      }
+      throw e;
+    }
+  }
+
   private folderCacheFor(accountKey: string): Map<string, string> {
     let cache = this.folderIds.get(accountKey);
     if (!cache) {
@@ -840,9 +886,9 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     chain: readonly string[],
   ): Promise<DriveFile | undefined> {
     const cache = this.folderCacheFor(accountKey);
-    const cached = cache.get(chainCacheKey(chain));
-    if (cached !== undefined) {
-      return { id: cached };
+    const verified = await this.verifiedFolderId(token, accountKey, chain);
+    if (verified !== undefined) {
+      return { id: verified };
     }
     let parentId = rootId;
     let folder: DriveFile | undefined;
@@ -858,6 +904,9 @@ export class GoogleDriveStorageProvider implements StorageProvider {
         if (dup.id) void this.reapIfEmpty(token, accountKey, dup.id);
       }
     }
+    if (folder?.id !== undefined) {
+      await this.persistFolderId(accountKey, chain, folder.id);
+    }
     return folder;
   }
 
@@ -867,6 +916,11 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     rootId: string,
     chain: readonly string[],
   ): Promise<string> {
+    const verified = await this.verifiedFolderId(token, accountKey, chain);
+    if (verified !== undefined) {
+      this.folderCacheFor(accountKey).set(chainCacheKey(chain), verified);
+      return verified;
+    }
     const cache = this.folderCacheFor(accountKey);
     let parentId = rootId;
     const prefix: string[] = [];
@@ -882,6 +936,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
       const existing = siblings.sort(olderFolder)[0]?.id;
       parentId = existing ?? (await this.createFolder(token, parentId, segment));
       cache.set(key, parentId);
+      void this.kv.set('local', folderIdKey(accountKey, [...prefix]), parentId).catch(() => undefined);
       for (const dup of siblings.slice(1)) {
         if (dup.id) void this.reapIfEmpty(token, accountKey, dup.id);
       }
@@ -891,6 +946,7 @@ export class GoogleDriveStorageProvider implements StorageProvider {
 
   private async listFoldered(
     token: string,
+    accountKey: string,
     rootId: string,
     prefix: string,
   ): Promise<RemoteEntry[]> {
@@ -898,7 +954,10 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     if (target === null) return [];
     const entries: RemoteEntry[] = [];
     if (target.kind === 'chain') {
-      const folderIds = await this.resolveChainAll(token, rootId, target.chain);
+      const folderIds = await this.resolveChainAll(token, rootId, target.chain, accountKey);
+      if (folderIds.length === 1) {
+        void this.persistFolderId(accountKey, target.chain, folderIds[0]);
+      }
       await this.descendLevel(
         token,
         folderIds.map((id) => ({ id, chain: [...target.chain] })),
@@ -932,7 +991,12 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     token: string,
     rootId: string,
     chain: readonly string[],
+    accountKey?: string,
   ): Promise<string[]> {
+    if (accountKey !== undefined) {
+      const verified = await this.verifiedFolderId(token, accountKey, chain);
+      if (verified !== undefined) return [verified];
+    }
     let parentIds = [rootId];
     for (const segment of chain) {
       const next: string[] = [];
