@@ -6,6 +6,7 @@ import { t } from '@/shared/i18n';
 import { audioAssetId, imageAssetId } from '@/features/srs/lib/helpers';
 import { ensureFirstRun } from '@/features/srs/services/firstRunService';
 import { getCollection } from '@/features/srs/repositories/collectionRepository';
+import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepository';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DictionaryPanelView } from '@/features/dictionaryPopup/ui/DictionaryPanelView';
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote } from '@/entities/srs/types';
@@ -67,6 +68,22 @@ function BackFieldValue({ value }: { value: SrsFieldValue }): React.JSX.Element 
   return <Text className={styles.fieldText}>{text}</Text>;
 }
 
+function BackImage({ note, value, asset }: { note: SrsNote; value: SrsFieldValue; asset: SrsImageAsset | undefined }): React.JSX.Element | null {
+  const blobUrl = useImageBlobUrl(asset);
+  useEffect(() => {
+    return () => {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
+  }, [blobUrl]);
+  const src = blobUrl ?? (value.kind === 'image' && /^(https?|data|blob):/.test(value.value) ? value.value : undefined);
+  if (!src) return null;
+  return (
+    <Box className={styles.imageBlock}>
+      <img src={src} alt={note.targetWord} className={styles.image} />
+    </Box>
+  );
+}
+
 interface SrsReviewCardBackProps {
   readonly note: SrsNote;
   readonly audioCache: ReadonlyMap<string, SrsAudioAsset>;
@@ -84,19 +101,19 @@ export function SrsReviewCardBack({
 
   const wordAudio = note.fields.wordAudio?.kind === 'audio' ? note.fields.wordAudio : undefined;
   const sentAudio = note.fields.sentAudio?.kind === 'audio' ? note.fields.sentAudio : undefined;
-  const image = note.fields.image?.kind === 'image' ? note.fields.image : undefined;
+  const imageFields = Object.entries(note.fields).filter(([, v]) => v.kind === 'image');
 
   const wordAudioAsset = wordAudio ? audioCache.get(audioAssetId(note.id, 'wordAudio', wordAudio.source)) : undefined;
   const sentAudioAsset = sentAudio ? audioCache.get(audioAssetId(note.id, 'sentAudio', sentAudio.source)) : undefined;
-  const imageAsset = image ? imageCache.get(imageAssetId(note.id, 'image')) : undefined;
 
-  const imageUrl = useImageBlobUrl(imageAsset);
+  const [repoImages, setRepoImages] = useState<ReadonlyMap<string, SrsImageAsset>>(new Map());
 
   useEffect(() => {
-    return () => {
-      if (imageUrl) URL.revokeObjectURL(imageUrl);
-    };
-  }, [imageUrl]);
+    if (imageFields.length === 0) return;
+    void getImageAssetsByNote(note.id)
+      .then((assets) => { setRepoImages(new Map(assets.map((a) => [a.fieldId, a]))); })
+      .catch(() => {});
+  }, [note.id, imageFields.length]);
 
   useEffect(() => {
     void (async () => {
@@ -111,7 +128,7 @@ export function SrsReviewCardBack({
 
   const hasTranslation = note.fields.translation?.kind === 'translation' && Boolean(note.fields.translation.value);
   const ipa = fieldText(note.fields.ipa);
-  const extraFields = Object.entries(note.fields).filter(([id, v]) => !BUILTIN_FIELDS.has(id) && fieldText(v).trim());
+  const extraFields = Object.entries(note.fields).filter(([id, v]) => !BUILTIN_FIELDS.has(id) && v.kind !== 'image' && v.kind !== 'audio' && fieldText(v).trim());
 
   return (
     <Box className={styles.back}>
@@ -185,11 +202,14 @@ export function SrsReviewCardBack({
         </Box>
       )}
 
-      {imageUrl && (
-        <Box className={styles.imageBlock}>
-          <img src={imageUrl} alt={note.targetWord} className={styles.image} />
-        </Box>
-      )}
+      {imageFields.map(([id, value]) => (
+        <BackImage
+          key={id}
+          note={note}
+          value={value}
+          asset={imageCache.get(imageAssetId(note.id, id)) ?? repoImages.get(id)}
+        />
+      ))}
 
       {note.fields.examples && fieldText(note.fields.examples).trim() && (
         <FieldBox label={fieldLabel('examples')}>
