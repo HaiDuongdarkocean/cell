@@ -157,7 +157,7 @@ REQ-11: Pull fast path
 - Actor: `checkRemote()` on a changed bell
 - Goal: apply peer journals for local scopes only
 - Basic flow:
-  1. scopes = `['global', ...profileTargets().map(scopeForTarget)]` (new engine dep `localScopes: () => Promise<Scope[]>`), filtered to those whose `routeForScope` targets this connection and not frozen
+  1. scopes = `['global', scopeForTarget(activeTarget)]` — the language profile the user is actually using (`settings.activeProfileId ?? settings.srs.activeLanguageProfileId`; falls back to every profile target when none is active). Scopes of inactive profiles keep their cursors untouched and are refreshed by the 15-min full cycle or the next check after a profile switch — pay-as-you-go means only data in active use pays Drive requests
   2. system calls new `runScopesPull(deps, scopes)` in `pullCycle.ts`: `readCursors` → `pullScope` per scope with `onRouteMarker` undefined
   3. remote blob index is lazy: `listRemoteBlobPaths` runs at most once per pass, only when a record or opaque row needs a blob check (internal `remoteBlobs` becomes `() => Promise<Set<string>>` memoized; `runConnectionPull` wraps its eager set)
   4. applied data flows to `onApplied` exactly like the full cycle

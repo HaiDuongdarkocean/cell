@@ -132,10 +132,16 @@ export function providerFor(providerId: ProviderId): StorageProvider {
   throw new SyncServiceError('unknown-provider', `unknown sync provider: ${providerId}`);
 }
 
-const localScopes = async (): Promise<Scope[]> => [
-  'global',
-  ...(await profileTargets()).map(scopeForTarget),
-];
+const localScopes = async (): Promise<Scope[]> => {
+  const settings = await loadSettings();
+  const activeId = settings.activeProfileId ?? settings.srs?.activeLanguageProfileId ?? null;
+  const active = settings.languageProfiles.find((p) => p.id === activeId);
+  if (active === undefined) {
+    return ['global', ...(await profileTargets()).map(scopeForTarget)];
+  }
+  const target = targetOf(active.target);
+  return target === '' ? ['global'] : ['global', scopeForTarget(target)];
+};
 
 async function dictSources(): Promise<LocalSource[]> {
   const targets = await profileTargets();
