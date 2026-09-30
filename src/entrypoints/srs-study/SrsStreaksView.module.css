@@ -101,7 +101,7 @@
 .dayDot {
   aspect-ratio: 1;
   border-radius: var(--radius-full);
-  background: var(--color-surface-elevated);
+  background: var(--color-field);
 }
 
 .dayPartial {
