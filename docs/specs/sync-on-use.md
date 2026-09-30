@@ -173,6 +173,7 @@ REQ-12: Applied-data fan-out to tabs
   1. system keeps `runtime.sendMessage` broadcast (extension pages)
   2. system also sends `{ type: SYNC_DATA_APPLIED, payload }` to every tab via `queryTabs({})` + `sendMessageToAllFramesInTab`, `Promise.allSettled`, errors swallowed
 - Rules: content relay (`wordStatusCrossTab.ts`) unchanged — it already emits per-language reloads
+- Rules: token surfaces repaint on `onWordStatusesReload`: `webTokenizeController` re-fetches statuses for all cached terms and rebinds only blocks whose tokens changed (guarding local in-flight overrides by status version); `subtitleTokenizeController` re-fetches statuses for `videoTokenMap.terms()` and applies them via `applyStatus` so cue lines and cue-list surfaces repaint; absent terms resolve to `unknown` so remote deletes propagate
 - NFR refs: NFR-5
 
 REQ-13: Safety-net scheduling
@@ -276,7 +277,7 @@ queue: inflight X; queued {full|push|check}; full absorbs the rest
 - [ ] SC-10: After this device's own push, its next `checkRemote()` (no peer activity) issues exactly 1 request and pulls nothing
 - [ ] SC-11: 10 concurrent `requestRemoteCheck()` calls (same tick, cold seed) → 1 `checkRemote`; another call after 3s → a second; throttle honored across a simulated restart via `chrome.storage.session`; a call while not connected does not stamp, so the first call after connecting runs; with a warm seed, 3 concurrent calls whose `hasConnections()` resolve in the same tick → 1 `checkRemote`
 - [ ] SC-12: Each qualifying message in REQ-3 (incl. `LOOKUP_REQUEST`) triggers `requestRemoteCheck` and its response resolves without awaiting it; `WORD_STATUSES_GET` triggers only on the first call per tab until `tabs.onUpdated` (url/loading) or `tabs.onRemoved` for that tab
-- [ ] SC-13: `onApplied` sends `SYNC_DATA_APPLIED` via runtime broadcast and to every tab/all frames; the content relay emits `emitWordStatusesReload(lang)` for applied `profile:<lang>` wordStatus scopes
+- [ ] SC-13: `onApplied` sends `SYNC_DATA_APPLIED` via runtime broadcast and to every tab/all frames; the content relay emits `emitWordStatusesReload(lang)` for applied `profile:<lang>` wordStatus scopes; web/subtitle token surfaces re-fetch statuses and repaint on that event (no reload/navigation needed)
 - [ ] SC-14: Alarm created with `periodInMinutes: 15`; a synced-KV storage change triggers `runPush` (not `runCycle`); a language-target change still triggers `refreshSources` + full cycle
 - [ ] SC-15: A `runCycle()` requested while `runPush()` is in flight runs after it and resolves; queued `runPush`/`checkRemote` waiters behind a queued full resolve with the full result
 - [ ] SC-16: `write(path, body, { fresh: true })` issues no name-lookup queries; `write` without opts is byte-for-byte the old request sequence (existing provider tests green)

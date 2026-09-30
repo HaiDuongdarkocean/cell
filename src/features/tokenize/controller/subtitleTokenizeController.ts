@@ -4,10 +4,11 @@ import type { ClickModifierState, WordStatus } from '@/entities/dictionary';
 import { createTokenizeStateStore, type TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import { TokenizeScheduler } from '@/features/tokenize/logic/tokenizeScheduler';
 import { bindTokenBlock, restyleTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
-import { setWordStatus } from '@/features/dictionary/services/wordStatusClient';
+import { getWordStatuses, setWordStatus } from '@/features/dictionary/services/wordStatusClient';
 import {
   emitWordStatusChanged,
   onWordStatusChanged,
+  onWordStatusesReload,
 } from '@/features/dictionary/services/wordStatusEvents';
 import { createVideoTokenMap, type VideoTokenMap } from '@/features/tokenize/logic/videoTokenMap';
 import { createVideoTokenPreloader, type VideoTokenPreloader } from '@/features/tokenize/logic/videoTokenPreloader';
@@ -102,6 +103,19 @@ export function createSubtitleTokenizeController(
   const unsubscribeWordStatus = onWordStatusChanged(({ langCode: eventLangCode, term, status }) => {
     if (eventLangCode !== langCode) return;
     videoTokenMap.applyStatus(term, status);
+  });
+
+  const unsubscribeStatusesReload = onWordStatusesReload((eventLangCode) => {
+    if (eventLangCode !== langCode) return;
+    const terms = [...videoTokenMap.terms()];
+    if (terms.length === 0) return;
+    void getWordStatuses(langCode, terms)
+      .then((statusMap) => {
+        for (const term of terms) {
+          videoTokenMap.applyStatus(term, statusMap.get(term) ?? 'unknown');
+        }
+      })
+      .catch(() => {});
   });
 
   const unsubscribeMapUpdate = videoTokenMap.onUpdate((cueIndex: number) => {
@@ -268,6 +282,7 @@ export function createSubtitleTokenizeController(
     destroy() {
       statusKeyControls.destroy();
       unsubscribeWordStatus();
+      unsubscribeStatusesReload();
       unsubscribeMapUpdate();
       preloader.destroy();
       scheduler.stop();

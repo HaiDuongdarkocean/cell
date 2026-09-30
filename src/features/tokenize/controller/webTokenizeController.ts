@@ -20,6 +20,7 @@ import { getWordStatuses, setWordStatus } from '@/features/dictionary/services/w
 import {
   emitWordStatusChanged,
   onWordStatusChanged,
+  onWordStatusesReload,
 } from '@/features/dictionary/services/wordStatusEvents';
 import type { WordStatus } from '@/entities/dictionary';
 import { entriesToBand, loadFrequencyBandOptions, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
@@ -827,6 +828,48 @@ export async function createWebTokenizeController(
     if (eventLangCode === langCode) applyStatusForTerm(term, status);
   });
 
+  async function refreshStatusesFromRemote(): Promise<void> {
+    const baseline = statusVersionCounter;
+    const terms = new Set<string>();
+    for (const block of blocks) {
+      if (!block.tokens) continue;
+      for (const token of block.tokens) {
+        if (!token.isSeparator) terms.add(token.term);
+      }
+    }
+    if (terms.size === 0) return;
+    let statusMap: Map<string, WordStatus>;
+    try {
+      statusMap = await getWordStatuses(langCode, [...terms]);
+    } catch {
+      return;
+    }
+    statusVersionCounter++;
+    const version = statusVersionCounter;
+    for (const block of blocks) {
+      if (!block.tokens) continue;
+      let changed = false;
+      for (const token of block.tokens) {
+        if (token.isSeparator) continue;
+        const override = localStatusOverrides.get(token.term);
+        if (override !== undefined && override.version > baseline) continue;
+        const next = statusMap.get(token.term) ?? 'unknown';
+        if (token.status === next) continue;
+        token.status = next;
+        termStatusVersion.set(token.term, version);
+        localStatusOverrides.set(token.term, { status: next, version });
+        changed = true;
+      }
+      if (changed && visibleElements.has(block.element)) {
+        rebindBlock(block);
+      }
+    }
+  }
+
+  const unsubscribeStatusesReload = onWordStatusesReload((eventLangCode) => {
+    if (eventLangCode === langCode) void refreshStatusesFromRemote();
+  });
+
   function getShadowRoots(): ShadowRoot[] {
     const root = options.root?.getRootNode();
     return root instanceof ShadowRoot ? [root] : [];
@@ -896,6 +939,7 @@ export async function createWebTokenizeController(
       statusKeyControls.destroy();
       unsubscribe();
       unsubscribeWordStatus();
+      unsubscribeStatusesReload();
       scheduler.stop();
       setActive(false);
       cancelPendingActivation?.();

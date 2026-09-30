@@ -15,7 +15,7 @@ jest.mock('@/features/dictionary/services/frequencyClient', () => ({
 }));
 
 import { createSubtitleTokenizeController } from './subtitleTokenizeController';
-import { emitWordStatusChanged } from '@/features/dictionary/services/wordStatusEvents';
+import { emitWordStatusChanged, emitWordStatusesReload } from '@/features/dictionary/services/wordStatusEvents';
 import type { SrtCue } from '@/entities/media';
 
 beforeEach(() => {
@@ -420,6 +420,29 @@ describe('createSubtitleTokenizeController', () => {
     expect(before?.className).toContain('js-cell-token--status-unknown');
 
     emitWordStatusChanged({ langCode: 'en', term: 'hello', status: 'ignore' });
+
+    const after = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    expect(after?.className).toContain('js-cell-token--status-ignore');
+    expect(after?.className).not.toContain('js-cell-token--status-unknown');
+
+    controller.destroy();
+  });
+
+  it('re-fetches statuses and repaints tokens on a word-statuses reload event', async () => {
+    const { target, cues, controller } = setup();
+
+    target.textContent = cues[0]!.text;
+    controller.setCues(cues, []);
+    controller.enable();
+    controller.render(0, -1);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const before = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    expect(before?.className).toContain('js-cell-token--status-unknown');
+
+    getWordStatuses.mockResolvedValue(new Map([['hello', 'ignore']]));
+    emitWordStatusesReload('en');
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     const after = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
     expect(after?.className).toContain('js-cell-token--status-ignore');

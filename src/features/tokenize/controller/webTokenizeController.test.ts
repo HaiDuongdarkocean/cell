@@ -32,7 +32,7 @@ jest.mock('@/features/dictionary/services/frequencyClient', () => ({
 }));
 
 import { createWebTokenizeController } from './webTokenizeController';
-import { emitWordStatusChanged } from '@/features/dictionary/services/wordStatusEvents';
+import { emitWordStatusChanged, emitWordStatusesReload } from '@/features/dictionary/services/wordStatusEvents';
 
 class MockIntersectionObserver {
   static callbacks = new Map<Element, () => void>();
@@ -756,6 +756,37 @@ describe('createWebTokenizeController', () => {
     expect(before?.className).toContain('js-cell-token--status-unknown');
 
     emitWordStatusChanged({ langCode: 'en', term: 'hello', status: 'known' });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    const after = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    expect(after?.className).toContain('js-cell-token--status-known');
+    expect(after?.className).not.toContain('js-cell-token--status-unknown');
+
+    controller.destroy();
+  });
+
+  it('re-fetches statuses and repaints bound tokens on a word-statuses reload event', async () => {
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Hello world.';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root,
+      langCode: 'en',
+    });
+
+    controller.enable();
+    MockIntersectionObserver.trigger(paragraph);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const before = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    expect(before?.className).toContain('js-cell-token--status-unknown');
+
+    getWordStatuses.mockResolvedValue(new Map([['hello', 'known']]));
+    emitWordStatusesReload('en');
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     const after = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement | null;

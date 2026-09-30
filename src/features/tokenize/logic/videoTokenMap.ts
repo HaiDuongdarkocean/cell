@@ -19,6 +19,7 @@ export interface VideoTokenMap {
     frequencies: ReadonlyMap<string, TokenFrequencyBand>,
   ) => void;
   readonly applyStatus: (term: string, status: WordStatus) => boolean;
+  readonly terms: () => ReadonlySet<string>;
   readonly onUpdate: (listener: (cueIndex: number) => void) => () => void;
   readonly clear: () => void;
 }
@@ -147,6 +148,10 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
         }
       }
       return changed;
+    },
+
+    terms(): ReadonlySet<string> {
+      return new Set(termToCues.keys());
     },
 
     onUpdate(listener: (cueIndex: number) => void): () => void {
