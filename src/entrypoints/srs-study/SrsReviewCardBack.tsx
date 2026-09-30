@@ -138,6 +138,10 @@ export function SrsReviewCardBack({
   const sentAudioAsset = sentAudio
     ? (audioCache.get(audioAssetId(note.id, 'sentAudio', sentAudio.source)) ?? repoAudio.get('sentAudio'))
     : undefined;
+  const wordAudioUrl = wordAudio ? playableUrl(wordAudio.value) : undefined;
+  const sentAudioUrl = sentAudio ? playableUrl(sentAudio.value) : undefined;
+  const hasWordAudio = Boolean(wordAudioAsset || wordAudioUrl);
+  const hasSentAudio = Boolean(sentAudioAsset || sentAudioUrl);
 
   useEffect(() => {
     if (imageFields.length === 0) return;
@@ -202,25 +206,25 @@ export function SrsReviewCardBack({
         </Button>
       </Box>
 
-      {(sentAudioAsset || playableUrl(sentAudio?.value ?? '') || wordAudioAsset || playableUrl(wordAudio?.value ?? '')) && (
+      {(hasSentAudio || hasWordAudio) && (
         <Box className={styles.audioRow}>
-          {(sentAudioAsset || playableUrl(sentAudio?.value ?? '')) && (
+          {hasSentAudio && (
             <Button
               size="md"
               variant="primary"
               className={styles.audioPill}
-              onClick={() => { sentAudioAsset ? playAudio(sentAudioAsset) : playAudioUrl(playableUrl(sentAudio?.value ?? '')!); }}
+              onClick={() => { sentAudioAsset ? playAudio(sentAudioAsset) : playAudioUrl(sentAudioUrl!); }}
               aria-label={t('srs.review.playSentence')}
             >
               <Icon name="audioWave" />
             </Button>
           )}
-          {(wordAudioAsset || playableUrl(wordAudio?.value ?? '')) && (
+          {hasWordAudio && (
             <Button
               shape="circle"
               size="md"
               variant="primary"
-              onClick={() => { wordAudioAsset ? playAudio(wordAudioAsset) : playAudioUrl(playableUrl(wordAudio?.value ?? '')!); }}
+              onClick={() => { wordAudioAsset ? playAudio(wordAudioAsset) : playAudioUrl(wordAudioUrl!); }}
               aria-label={t('srs.review.playWord')}
             >
               <Icon name="volumeHigh" />
