@@ -15,33 +15,6 @@ import styles from './SrsHome.module.css';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-interface WeekDay {
-  readonly date: Date;
-  readonly label: string;
-  readonly active: boolean;
-  readonly isToday: boolean;
-  readonly isFuture: boolean;
-}
-
-function currentWeek(dayKeys: ReadonlySet<string>, dayStartHour: number): readonly WeekDay[] {
-  const now = new Date();
-  const sunday = new Date(now);
-  sunday.setHours(0, 0, 0, 0);
-  sunday.setDate(sunday.getDate() - sunday.getDay());
-  const todayKey = dayKeyFor(now.getTime(), dayStartHour);
-  return Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(sunday.getTime() + i * DAY_MS);
-    const key = dayKeyFor(date.getTime(), dayStartHour);
-    return {
-      date,
-      label: date.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase(),
-      active: dayKeys.has(key),
-      isToday: key === todayKey,
-      isFuture: date.getTime() > now.getTime(),
-    };
-  });
-}
-
 function lastTwoWeeks(dayKeys: ReadonlySet<string>, dayStartHour: number): readonly boolean[] {
   const now = Date.now();
   return Array.from({ length: 14 }, (_, i) => dayKeys.has(dayKeyFor(now - (13 - i) * DAY_MS, dayStartHour)));
@@ -125,7 +98,6 @@ export function SrsHome({ onManage, onOpenSettings }: SrsHomeProps): React.JSX.E
     void refreshHome().catch(() => {});
   }, [refreshHome, stats]);
 
-  const week = currentWeek(home?.activeDayKeys ?? new Set(), prefs.dayStartHour);
   const streakDots = lastTwoWeeks(home?.activeDayKeys ?? new Set(), prefs.dayStartHour);
   const todayPct = home && home.dueNow + home.studiedToday > 0
     ? Math.round((home.studiedToday / (home.dueNow + home.studiedToday)) * 100)
@@ -173,29 +145,6 @@ export function SrsHome({ onManage, onOpenSettings }: SrsHomeProps): React.JSX.E
         </Box>
       </Box>
 
-      {prefs.showWeeklyActivity && (
-        <Box className={styles.weekCard}>
-          <Text className={styles.weekTitle}>{t('srs.home.weeklyActivity')}</Text>
-          <Box className={styles.weekRow}>
-            {week.map((day) => (
-              <Box key={day.label} className={styles.weekDay}>
-                <Text className={styles.weekDayLabel}>{day.label}</Text>
-                <span
-                  className={[
-                    styles.weekDot,
-                    day.active ? styles.weekDotActive : '',
-                    day.isToday ? styles.weekDotToday : '',
-                    day.isFuture ? styles.weekDotFuture : '',
-                  ].filter(Boolean).join(' ')}
-                >
-                  {day.isToday && <Icon name="check" />}
-                </span>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-      )}
-
       <Box className={styles.hero}>
         <Box className={styles.heroChip}>
           <FlagIcon lang={targetLanguage} size={16} />
@@ -210,17 +159,14 @@ export function SrsHome({ onManage, onOpenSettings }: SrsHomeProps): React.JSX.E
           aria-valuemax={100}
           aria-label={t('srs.home.todayProgress')}
         >
-          <svg className={styles.ring} viewBox="0 0 120 120" fill="none" aria-hidden="true">
-            <circle className={styles.ringTrack} cx="60" cy="60" r="52" />
-            <circle
+          <svg className={styles.ring} viewBox="0 0 120 64" fill="none" aria-hidden="true">
+            <path className={styles.ringTrack} d="M 8 60 A 52 52 0 0 1 112 60" />
+            <path
               className={styles.ringBar}
-              cx="60"
-              cy="60"
-              r="52"
-              strokeDasharray={2 * Math.PI * 52}
-              strokeDashoffset={2 * Math.PI * 52 * (1 - todayPct / 100)}
+              d="M 8 60 A 52 52 0 0 1 112 60"
+              strokeDasharray={Math.PI * 52}
+              strokeDashoffset={Math.PI * 52 * (1 - todayPct / 100)}
               strokeLinecap="round"
-              transform="rotate(-90 60 60)"
             />
           </svg>
           <Box className={styles.ringContent}>

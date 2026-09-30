@@ -2,7 +2,6 @@ import { useSyncExternalStore } from 'react';
 
 export interface SrsUiPrefs {
   readonly dayStartHour: number;
-  readonly showWeeklyActivity: boolean;
   readonly showStudySummary: 'finished' | 'always' | 'never';
   readonly shuffleReviews: boolean;
   readonly swipeToAnswer: boolean;
@@ -19,7 +18,6 @@ const STORAGE_KEY = 'cell.srs.uiPrefs';
 
 export const SRS_UI_PREF_DEFAULTS: SrsUiPrefs = {
   dayStartHour: 4,
-  showWeeklyActivity: true,
   showStudySummary: 'finished',
   shuffleReviews: false,
   swipeToAnswer: false,

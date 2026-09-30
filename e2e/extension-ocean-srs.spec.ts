@@ -49,7 +49,7 @@ test.describe('Ocean SRS smoke', () => {
 
     await expect(page.getByRole('heading', { name: 'Ocean SRS' })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: 'Continue studying' })).toBeVisible();
-    await expect(page.getByText('Weekly Activity')).toBeVisible();
+    await expect(page.getByText('Study Streak')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'All Decks' })).toBeVisible();
     await expect(page.getByText('uninstalling the extension deletes them')).toBeVisible();
 

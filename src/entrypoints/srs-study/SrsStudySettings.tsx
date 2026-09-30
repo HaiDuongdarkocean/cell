@@ -80,14 +80,6 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
                   aria-label={t('srs.settings.dayBegins')}
                 />
               </SettingRow>
-              <SettingRow label={t('srs.settings.showWeekly')}>
-                <Toggle
-                  checked={prefs.showWeeklyActivity}
-                  onChange={(v) => { setSrsUiPrefs({ showWeeklyActivity: v }); }}
-                  ariaLabel={t('srs.settings.showWeekly')}
-                  size="xs"
-                />
-              </SettingRow>
               <SettingRow label={t('srs.settings.showSummary')}>
                 <Select
                   value={prefs.showStudySummary}
