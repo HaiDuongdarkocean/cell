@@ -151,7 +151,7 @@
   align-items: center;
   justify-content: center;
   background: var(--color-primary);
-  color: var(--button-fg);
+  color: var(--color-on-primary-emphasis);
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-in-out);
