@@ -222,7 +222,7 @@ export function SrsHome({ onManage, onOpenSettings }: SrsHomeProps): React.JSX.E
           </Box>
         </Box>
 
-        <Button className={styles.continueButton} fullWidth onClick={() => { void start(); }} disabled={loading}>
+        <Button variant="primary" className={styles.continueButton} fullWidth onClick={() => { void start(); }} disabled={loading}>
           {loading ? t('srs.action.loading') : t('srs.home.continue')}
         </Button>
       </Box>

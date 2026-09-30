@@ -85,13 +85,14 @@
 
 .ringContent {
   position: absolute;
-  inset: 0;
+  top: 28%;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
   gap: var(--space-1-5);
-  padding-bottom: var(--space-2);
 }
 
 .ringValue {
@@ -164,7 +165,7 @@
 }
 
 .streakFlame {
-  color: var(--color-warning);
+  color: var(--color-text-accent);
 }
 
 .streakDays,
@@ -190,7 +191,7 @@
 }
 
 .streakDotToday {
-  background: var(--color-warning);
+  background: var(--color-text-accent-strong);
 }
 
 .knownDelta {
@@ -216,17 +217,15 @@
 }
 
 .wordsBarActive {
-  background: var(--color-success);
+  background: var(--color-primary);
 }
 
 .wordsBarToday {
-  background: var(--color-warning);
+  background: var(--color-text-accent-strong);
 }
 
-/* design-system: intentional override — primary CTA matches the theme accent, not a Button variant. */
+/* design-system: intentional override — CTA typography only; colors come from Button variant="primary". */
 .continueButton {
-  background: var(--color-primary);
-  color: var(--color-text-on-primary);
   font-weight: var(--font-weight-bold);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
@@ -338,7 +337,7 @@
   display: block;
   height: 100%;
   border-radius: var(--radius-full);
-  background: linear-gradient(90deg, var(--color-warning), var(--color-error));
+  background: var(--color-primary);
 }
 
 .emptyText {
