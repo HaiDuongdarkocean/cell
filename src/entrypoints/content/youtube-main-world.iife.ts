@@ -141,6 +141,7 @@ declare const __CELL_DEBUG__: string | undefined;
   // content script we briefly enable the matching track on #movie_player and
   // capture the response body the player receives (XHR or fetch).
   const timedtextBodies = new Map<string, string>();
+  const timedtextUrls = new Map<string, string>();
 
   function timedtextKey(url: string): string | null {
     try {
@@ -153,73 +154,108 @@ declare const __CELL_DEBUG__: string | undefined;
     }
   }
 
+  function captureTimedtextUrl(url: string): void {
+    const key = timedtextKey(url);
+    if (key) timedtextUrls.set(key, url);
+  }
+
   function captureTimedtextBody(url: string, body: string): void {
     if (!body) return;
+    captureTimedtextUrl(url);
     const key = timedtextKey(url);
     if (key) timedtextBodies.set(key, body);
   }
 
-  const origXhrOpen = XMLHttpRequest.prototype.open;
-  const origXhrSend = XMLHttpRequest.prototype.send;
-  XMLHttpRequest.prototype.open = function (
-    this: XMLHttpRequest & { __cellTtUrl?: string },
-    method: string,
-    url: string | URL,
-    ...rest: unknown[]
-  ): void {
-    this.__cellTtUrl = String(url);
-    return (origXhrOpen as unknown as (...a: unknown[]) => void).call(
-      this,
-      method,
-      url,
-      ...rest,
-    );
-  } as typeof XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.send = function (
-    this: XMLHttpRequest & { __cellTtUrl?: string },
-    ...args: unknown[]
-  ): void {
-    const url = this.__cellTtUrl;
-    if (url && /\/api\/timedtext/.test(url)) {
-      this.addEventListener('load', () => {
-        try {
-          if (this.status === 200 && typeof this.responseText === 'string') {
-            captureTimedtextBody(url, this.responseText);
-          }
-        } catch {
-          /* best effort */
-        }
-      });
+  // Other MAIN-world scripts (uBlock scriptlets, YouTube itself) re-wrap
+  // XHR/fetch after document_start, silently dropping ours from the chain.
+  // Re-install just-in-time: wrap whatever impl is current, marked via
+  // __cellTt so repeated calls stay idempotent.
+  type Marked<T> = T & { __cellTt?: true };
+  function installTimedtextHooks(): void {
+    const proto = XMLHttpRequest.prototype as {
+      open: Marked<typeof XMLHttpRequest.prototype.open>;
+      send: Marked<typeof XMLHttpRequest.prototype.send>;
+    };
+    if (!proto.open.__cellTt) {
+      const prevOpen = proto.open;
+      const open = function (
+        this: XMLHttpRequest & { __cellTtUrl?: string },
+        method: string,
+        url: string | URL,
+        ...rest: unknown[]
+      ): void {
+        this.__cellTtUrl = String(url);
+        return (prevOpen as unknown as (...a: unknown[]) => void).call(
+          this,
+          method,
+          url,
+          ...rest,
+        );
+      } as Marked<typeof XMLHttpRequest.prototype.open>;
+      open.__cellTt = true;
+      proto.open = open;
     }
-    return (origXhrSend as unknown as (...a: unknown[]) => void).apply(this, args);
-  } as typeof XMLHttpRequest.prototype.send;
-
-  const prevFetch = window.fetch;
-  window.fetch = function (
-    input: RequestInfo | URL,
-    init?: RequestInit,
-  ): Promise<Response> {
-    return prevFetch.call(this, input, init).then((response) => {
-      try {
-        const url =
-          typeof input === 'string'
-            ? input
-            : input instanceof URL
-              ? input.href
-              : (input as Request).url;
-        if (/\/api\/timedtext/.test(url) && response.ok) {
-          void response
-            .clone()
-            .text()
-            .then((body) => captureTimedtextBody(url, body))
-            .catch(() => undefined);
+    if (!proto.send.__cellTt) {
+      const prevSend = proto.send;
+      const send = function (
+        this: XMLHttpRequest & { __cellTtUrl?: string },
+        ...args: unknown[]
+      ): void {
+        const url = this.__cellTtUrl;
+        if (url && /\/api\/timedtext/.test(url)) {
+          captureTimedtextUrl(url);
+          this.addEventListener('load', () => {
+            try {
+              if (this.status === 200 && typeof this.responseText === 'string') {
+                captureTimedtextBody(url, this.responseText);
+              }
+            } catch {
+              /* best effort */
+            }
+          });
         }
-      } catch {
-        /* best effort */
-      }
-      return response;
-    });
-  };
+        return (prevSend as unknown as (...a: unknown[]) => void).apply(this, args);
+      } as Marked<typeof XMLHttpRequest.prototype.send>;
+      send.__cellTt = true;
+      proto.send = send;
+    }
+    const w = window as { fetch: Marked<typeof window.fetch> };
+    if (!w.fetch.__cellTt) {
+      const prevFetch = w.fetch;
+      const fetchWrap = function (
+        this: unknown,
+        input: RequestInfo | URL,
+        init?: RequestInit,
+      ): Promise<Response> {
+        return prevFetch.call(this, input, init).then((response) => {
+          try {
+            const url =
+              typeof input === 'string'
+                ? input
+                : input instanceof URL
+                  ? input.href
+                  : (input as Request).url;
+            if (/\/api\/timedtext/.test(url)) {
+              captureTimedtextUrl(url);
+              if (response.ok) {
+                void response
+                  .clone()
+                  .text()
+                  .then((body) => captureTimedtextBody(url, body))
+                  .catch(() => undefined);
+              }
+            }
+          } catch {
+            /* best effort */
+          }
+          return response;
+        });
+      } as Marked<typeof window.fetch>;
+      fetchWrap.__cellTt = true;
+      w.fetch = fetchWrap;
+    }
+  }
+  installTimedtextHooks();
 
   interface CaptionsPlayerApi extends YoutubePlayerApi {
     getOption?: (module: string, option: string) => unknown;
@@ -264,23 +300,51 @@ declare const __CELL_DEBUG__: string | undefined;
     if (cached) return cached;
     const player = getYoutubePlayer() as CaptionsPlayerApi | null;
     if (!player?.getOption || !player.setOption) return undefined;
-    const tracklist = player.getOption('captions', 'tracklist');
-    if (!Array.isArray(tracklist)) return undefined;
-    const tracks = tracklist as PlayerCaptionTrack[];
-    const track =
-      tracks.find(
-        (t) =>
-          t.languageCode === lang && (kind ? t.kind === kind : !t.kind),
-      ) ?? tracks.find((t) => t.languageCode === lang);
-    if (!track) return undefined;
+    try {
+      player.loadModule?.('captions');
+    } catch {
+      /* best effort */
+    }
+    // The captions module populates `tracklist` asynchronously; on some
+    // videos it stays empty while `track` still reports the active track.
+    // Poll briefly, then fall back to a synthesized track object.
+    let track: PlayerCaptionTrack | undefined;
+    for (let i = 0; i < 10 && !track; i++) {
+      const tracklist = player.getOption('captions', 'tracklist');
+      if (Array.isArray(tracklist)) {
+        const tracks = tracklist as PlayerCaptionTrack[];
+        track =
+          tracks.find(
+            (t) =>
+              t.languageCode === lang && (kind ? t.kind === kind : !t.kind),
+          ) ?? tracks.find((t) => t.languageCode === lang);
+      }
+      if (!track) {
+        const cur = player.getOption('captions', 'track') as
+          | PlayerCaptionTrack
+          | undefined;
+        if (cur?.languageCode === lang && (!kind || cur.kind === kind)) {
+          track = cur;
+        }
+      }
+      if (!track) await new Promise((s) => setTimeout(s, 200));
+    }
+    if (!track) {
+      track = { languageCode: lang, kind: kind ?? undefined };
+    }
     let prev: PlayerCaptionTrack | undefined;
     try {
       prev = player.getOption('captions', 'track') as PlayerCaptionTrack | undefined;
     } catch {
       prev = undefined;
     }
+    installTimedtextHooks();
     try {
       player.loadModule?.('captions');
+      if (prev?.languageCode === track.languageCode && (prev.kind ?? '') === (track.kind ?? '')) {
+        player.setOption('captions', 'track', {});
+        await new Promise((s) => setTimeout(s, 300));
+      }
       player.setOption('captions', 'track', track);
     } catch {
       return undefined;
@@ -291,6 +355,31 @@ declare const __CELL_DEBUG__: string | undefined;
         if (k.startsWith(`${lang}|`)) {
           body = v;
           break;
+        }
+      }
+    }
+    if (!body) {
+      let url = timedtextUrls.get(key);
+      if (!url) {
+        for (const [k, v] of timedtextUrls) {
+          if (k.startsWith(`${lang}|`)) {
+            url = v;
+            break;
+          }
+        }
+      }
+      if (url) {
+        try {
+          const res = await fetch(url, { credentials: 'include' });
+          if (res.ok) {
+            const text = await res.text();
+            if (text) {
+              captureTimedtextBody(url, text);
+              body = text;
+            }
+          }
+        } catch {
+          /* best effort */
         }
       }
     }
