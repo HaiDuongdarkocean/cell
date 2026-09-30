@@ -109,12 +109,14 @@ interface SrsReviewCardBackProps {
   readonly note: SrsNote;
   readonly audioCache: ReadonlyMap<string, SrsAudioAsset>;
   readonly imageCache: ReadonlyMap<string, SrsImageAsset>;
+  readonly onFlipBack: () => void;
 }
 
 export function SrsReviewCardBack({
   note,
   audioCache,
   imageCache,
+  onFlipBack,
 }: SrsReviewCardBackProps): React.JSX.Element {
   const [translationRevealed, setTranslationRevealed] = useState(false);
 
@@ -155,7 +157,13 @@ export function SrsReviewCardBack({
   const extraFields = Object.entries(note.fields).filter(([id, v]) => !BUILTIN_FIELDS.has(id) && v.kind !== 'image' && v.kind !== 'audio' && fieldText(v).trim());
 
   return (
-    <Box className={styles.back}>
+    <div
+      className={styles.back}
+      onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+        if ((e.target as HTMLElement).closest('button,input,audio,a,textarea,select')) return;
+        onFlipBack();
+      }}
+    >
       <Heading level={1} className={styles.targetWord}>{note.targetWord}</Heading>
 
       {note.fields.sentence?.kind === 'text' && (
@@ -242,6 +250,6 @@ export function SrsReviewCardBack({
           <BackFieldValue value={value} />
         </FieldBox>
       ))}
-    </Box>
+    </div>
   );
 }

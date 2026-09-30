@@ -151,7 +151,7 @@
   align-items: center;
   justify-content: center;
   background: var(--color-primary);
-  color: var(--color-primary-foreground);
+  color: var(--button-fg);
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-in-out);
@@ -184,6 +184,7 @@
   align-items: center;
   gap: var(--space-4);
   width: 100%;
+  cursor: pointer;
 }
 
 .targetWord {
@@ -211,7 +212,7 @@
   justify-content: center;
 }
 
-.audioPill {
+.audioRow .audioPill {
   border-radius: var(--radius-full);
   min-width: var(--space-14);
   padding-inline: var(--space-4);
@@ -363,10 +364,18 @@
   border: none;
 }
 
-/* design-system: intentional override — neutral surface for the forget grade button; destructive would change the visual intent. */
+/* design-system: intentional override — destructive-tinted surface for the forget grade button so it reads as a filled action like the remember button. */
 .gradeRow .forgetButton {
-  background: var(--color-surface-elevated);
-  color: var(--color-text);
+  background: var(--button-destructive-bg);
+  color: var(--button-destructive-fg);
+}
+
+.gradeRow .forgetButton:hover {
+  background: var(--button-destructive-hover-bg);
+}
+
+.gradeRow .gradeButton svg {
+  stroke-width: 2.5;
 }
 
 /* design-system: intentional override — warm gradient is the visual identity for "remember"; no standard Button variant maps to a warning→error gradient. */

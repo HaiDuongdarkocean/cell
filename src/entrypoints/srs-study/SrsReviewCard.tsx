@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
 import { useSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
-import { Box, Button, Text } from '@/shared/ui';
+import { Box, Button, ConfirmDialog, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import type { ComponentType } from '@/entities/srs/types';
@@ -32,6 +32,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
   } = useSrsStudy();
   const [showAnswer, setShowAnswer] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [typedInput, setTypedInput] = useState('');
   const prefs = useSrsUiPrefs();
   const inputId = useId();
@@ -48,8 +49,8 @@ export function SrsReviewCard(): React.JSX.Element | null {
   const isSpelling = componentType === 'spelling';
   const isNew = card.components[componentType].exploreCount === 0;
 
-  function handleShowAnswer(): void {
-    setShowAnswer(true);
+  function handleFlip(): void {
+    setShowAnswer((v) => !v);
   }
 
   function handleSubmit(judgment: 'forget' | 'remember'): void {
@@ -57,9 +58,8 @@ export function SrsReviewCard(): React.JSX.Element | null {
   }
 
   function handleDelete(): void {
-    if (window.confirm(t('srs.manage.confirmDeleteCard'))) {
-      void deleteCurrentCard();
-    }
+    setConfirmDelete(false);
+    void deleteCurrentCard();
   }
 
   if (editing) {
@@ -117,7 +117,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
           aria-label={t('srs.review.studyAgain')}
           className={styles.chromeButton}
         >
-          <Icon name="repeat" />
+          <Icon name="rotateCcw" />
         </Button>
       </Box>
 
@@ -126,7 +126,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
           shape="circle"
           size="sm"
           variant="ghost"
-          onClick={handleDelete}
+          onClick={() => { setConfirmDelete(true); }}
           aria-label={t('srs.review.deleteCard')}
           className={styles.chromeButton}
         >
@@ -151,6 +151,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
             note={note}
             audioCache={audioCache}
             imageCache={imageCache}
+            onFlipBack={handleFlip}
           />
         ) : (
           <SrsReviewCardFront
@@ -160,7 +161,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
             typedInput={typedInput}
             onTypedInputChange={setTypedInput}
             inputId={inputId}
-            onShowAnswer={handleShowAnswer}
+            onFlip={handleFlip}
           />
         )}
       </Box>
@@ -180,13 +181,23 @@ export function SrsReviewCard(): React.JSX.Element | null {
           shape="circle"
           size="lg"
           variant="primary"
-          onClick={() => (showAnswer ? handleSubmit('remember') : handleShowAnswer())}
+          onClick={() => (showAnswer ? handleSubmit('remember') : handleFlip())}
           aria-label={showAnswer ? t('srs.review.remember') : t('srs.review.showAnswer')}
           className={[styles.gradeButton, styles.rememberButton].join(' ')}
         >
           <Icon name="check" />
         </Button>
       </Box>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title={t('srs.review.deleteCard')}
+        description={t('srs.manage.confirmDeleteCard')}
+        cancelLabel={t('srs.edit.cancel')}
+        confirmLabel={t('srs.manage.delete')}
+        onConfirm={handleDelete}
+      />
     </Box>
   );
 }

@@ -42,7 +42,7 @@ interface SrsReviewCardFrontProps {
   readonly typedInput: string;
   readonly onTypedInputChange: (value: string) => void;
   readonly inputId: string;
-  readonly onShowAnswer: () => void;
+  readonly onFlip: () => void;
 }
 
 export function SrsReviewCardFront({
@@ -52,22 +52,26 @@ export function SrsReviewCardFront({
   typedInput,
   onTypedInputChange,
   inputId,
-  onShowAnswer,
+  onFlip,
 }: SrsReviewCardFrontProps): React.JSX.Element {
   return (
     <div
       className={styles.front}
       role="button"
       tabIndex={0}
+      onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => {
+        if ((e.target as HTMLElement).closest('input,button,audio')) return;
+        e.preventDefault();
+      }}
       onClick={(e: React.MouseEvent<HTMLDivElement>) => {
         if ((e.target as HTMLElement).closest('input,button,audio')) return;
-        if (!isSpelling) onShowAnswer();
+        if (!isSpelling) onFlip();
       }}
       onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
         if (isSpelling) return;
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          onShowAnswer();
+          onFlip();
         }
       }}
     >
@@ -86,7 +90,7 @@ export function SrsReviewCardFront({
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.stopPropagation();
-              onShowAnswer();
+              onFlip();
             }
           }}
           className={styles.spellingInput}

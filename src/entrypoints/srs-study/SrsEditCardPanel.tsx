@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Box, Button, Heading, Icon, Label, Select, Text } from '@/shared/ui';
+import { Box, Button, ConfirmDialog, Heading, Icon, Label, Select, Text } from '@/shared/ui';
 import { t } from '@/shared/i18n';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
 import { ensureFirstRun } from '@/features/srs/services/firstRunService';
@@ -41,6 +41,7 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
   const [tags, setTags] = useState('');
   const [events, setEvents] = useState<readonly SrsReviewRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const note = session?.note;
   const notetype = session?.notetype;
@@ -135,9 +136,8 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
   if (!session || !note || !notetype || !card) return null;
 
   function handleDeleteCard(): void {
-    if (window.confirm(t('srs.manage.confirmDeleteCard'))) {
-      void deleteCurrentCard().then(onClose);
-    }
+    setConfirmDelete(false);
+    void deleteCurrentCard().then(onClose);
   }
 
   return (
@@ -213,7 +213,7 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
         />
       </FieldRow>
 
-      <Button variant="destructive" fullWidth onClick={handleDeleteCard} className={styles.deleteButton}>
+      <Button variant="destructive" fullWidth onClick={() => { setConfirmDelete(true); }} className={styles.deleteButton}>
         {t('srs.edit.deleteCard')}
       </Button>
 
@@ -249,6 +249,16 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
       </Box>
 
       {error && <Text className={styles.error}>{error}</Text>}
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title={t('srs.review.deleteCard')}
+        description={t('srs.manage.confirmDeleteCard')}
+        cancelLabel={t('srs.edit.cancel')}
+        confirmLabel={t('srs.manage.delete')}
+        onConfirm={handleDeleteCard}
+      />
     </Box>
   );
 }
