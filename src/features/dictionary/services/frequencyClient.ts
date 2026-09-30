@@ -14,20 +14,25 @@ import type { FrequencyEntry } from '@/entities/dictionary';
  * Get frequency entries for many terms from the background frequency store.
  * Returns a map of term -> FrequencyEntry[] (missing terms default to []).
  */
+const FREQ_TERMS_CHUNK = 500;
+
 export async function getFrequencyEntries(
   langCode: string,
   terms: readonly string[],
 ): Promise<Map<string, FrequencyEntry[]>> {
   if (terms.length === 0) return new Map();
 
-  const response = await sendMessage<MessageResponse<{ entries: Record<string, FrequencyEntry[]> }>>({
-    type: MESSAGE_TYPES.FREQUENCY_GET,
-    payload: { tabId: -1, langCode, terms },
-  });
-
-  if (!response?.success || !response.data) {
-    return new Map();
+  const out = new Map<string, FrequencyEntry[]>();
+  for (let i = 0; i < terms.length; i += FREQ_TERMS_CHUNK) {
+    const response = await sendMessage<MessageResponse<{ entries: Record<string, FrequencyEntry[]> }>>({
+      type: MESSAGE_TYPES.FREQUENCY_GET,
+      payload: { tabId: -1, langCode, terms: terms.slice(i, i + FREQ_TERMS_CHUNK) },
+    });
+    if (response?.success && response.data) {
+      for (const [term, entries] of Object.entries(response.data.entries ?? {})) {
+        out.set(term, entries);
+      }
+    }
   }
-
-  return new Map(Object.entries(response.data.entries ?? {}));
+  return out;
 }

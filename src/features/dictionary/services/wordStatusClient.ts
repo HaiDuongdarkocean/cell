@@ -23,22 +23,27 @@ export function normalizeLangCode(langCode: string): string {
  * Get statuses for many terms from the background word-status store.
  * Returns a map of term -> status (missing terms default to 'unknown').
  */
+const STATUS_TERMS_CHUNK = 500;
+
 export async function getWordStatuses(
   langCode: string,
   terms: readonly string[],
 ): Promise<Map<string, WordStatus>> {
   if (terms.length === 0) return new Map();
 
-  const response = await sendMessage<MessageResponse<{ statuses: Record<string, WordStatus> }>>({
-    type: MESSAGE_TYPES.WORD_STATUSES_GET,
-    payload: { tabId: -1, langCode: normalizeLangCode(langCode), terms },
-  });
-
-  if (!response?.success || !response.data) {
-    return new Map();
+  const out = new Map<string, WordStatus>();
+  for (let i = 0; i < terms.length; i += STATUS_TERMS_CHUNK) {
+    const response = await sendMessage<MessageResponse<{ statuses: Record<string, WordStatus> }>>({
+      type: MESSAGE_TYPES.WORD_STATUSES_GET,
+      payload: { tabId: -1, langCode: normalizeLangCode(langCode), terms: terms.slice(i, i + STATUS_TERMS_CHUNK) },
+    });
+    if (response?.success && response.data) {
+      for (const [term, status] of Object.entries(response.data.statuses ?? {})) {
+        out.set(term, status);
+      }
+    }
   }
-
-  return new Map(Object.entries(response.data.statuses ?? {}));
+  return out;
 }
 
 /**

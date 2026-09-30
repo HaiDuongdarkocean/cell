@@ -57,6 +57,22 @@ describe('wordStatusClient', () => {
       expect(result.get('world')).toBe('tracking');
     });
 
+    it('chunks large term lists to stay under the 1000-term schema cap', async () => {
+      sendMessage.mockImplementation((message) => {
+        const terms = (message as { payload: { terms: string[] } }).payload.terms;
+        expect(terms.length).toBeLessThanOrEqual(1000);
+        const statuses = Object.fromEntries(terms.map((t) => [t, 'known' as const]));
+        return Promise.resolve({ success: true, data: { statuses } });
+      });
+
+      const terms = Array.from({ length: 1100 }, (_, i) => `term${i}`);
+      const result = await getWordStatuses('en', terms);
+
+      expect(sendMessage).toHaveBeenCalledTimes(3);
+      expect(result.size).toBe(1100);
+      expect(result.get('term1099')).toBe('known');
+    });
+
     it('returns an empty map when the background reports an error', async () => {
       sendMessage.mockResolvedValue({ success: false, error: 'idb failed' });
 
