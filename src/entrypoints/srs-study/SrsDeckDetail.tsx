@@ -264,7 +264,7 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', onBack, onCha
               <Icon name="ellipsisVertical" />
             </Button>
           </Box>
-          <Menu open={menuOpen} onClose={() => { setMenuOpen(false); }} triggerRef={kebabRef} ariaLabel={t('srs.home.deckActions')} align="right">
+          <Menu open={menuOpen} onClose={() => { setMenuOpen(false); }} triggerRef={kebabRef} ariaLabel={t('srs.home.deckActions')} align="right" emphasis>
             <MenuItem icon={<Icon name="pencil" />} onSelect={() => { setMenuOpen(false); setEditName(deck.name); setRenaming(true); }}>
               {t('srs.deck.rename')}
             </MenuItem>

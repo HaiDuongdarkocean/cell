@@ -44,7 +44,7 @@ function DeckRow({
   const [menuOpen, setMenuOpen] = useState(false);
   const kebabRef = useRef<HTMLButtonElement | null>(null);
   return (
-    <Box className={styles.deckRow}>
+    <Box bg="card" className={styles.deckRow}>
       {selectMode && (
         <Checkbox
           checked={selected}
@@ -85,7 +85,7 @@ function DeckRow({
           >
             <Icon name="ellipsisVertical" />
           </Button>
-          <Menu open={menuOpen} onClose={() => { setMenuOpen(false); }} triggerRef={kebabRef} ariaLabel={t('srs.home.deckActions')} align="right">
+          <Menu open={menuOpen} onClose={() => { setMenuOpen(false); }} triggerRef={kebabRef} ariaLabel={t('srs.home.deckActions')} align="right" emphasis>
             <MenuItem icon={<Icon name="eye" />} onSelect={() => { setMenuOpen(false); onOpen(); }}>
               {t('srs.deck.viewContent')}
             </MenuItem>
@@ -214,8 +214,8 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
         </Box>
       </Box>
 
-      <Box className={styles.hero}>
-        <Box className={styles.heroChip}>
+      <Box bg="surface" className={styles.hero}>
+        <Box bg="popover" className={styles.heroChip}>
           <FlagIcon lang={targetLanguage} size={16} />
           <Text className={styles.heroChipText}>{home?.learnedWords.toLocaleString() ?? '0'}</Text>
         </Box>
@@ -388,7 +388,7 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
         )}
 
         {selectMode ? (
-          <Box className={styles.selectBar}>
+          <Box bg="popover" className={styles.selectBar}>
             <Text className={styles.selectCount}>{t('srs.deck.selectedCount', [selected.size])}</Text>
             <Button variant="destructive" size="sm" onClick={() => { void handleDeleteSelected(); }} disabled={selected.size === 0}>
               {t('srs.manage.delete')}

@@ -64,6 +64,10 @@
   color: var(--color-muted-foreground);
 }
 
+.emphasis .label {
+  font-weight: var(--font-weight-semibold);
+}
+
 .label {
   flex: 1 1 auto;
   min-width: 0;

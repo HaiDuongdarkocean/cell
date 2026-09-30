@@ -14,6 +14,8 @@ export interface MenuProps {
   readonly align?: MenuAlign;
   /** Pixel cap for the list height — long lists scroll instead of overflowing. */
   readonly maxHeight?: number;
+  /** Render item labels in semibold (bottom-sheet action style). */
+  readonly emphasis?: boolean;
 }
 
 /**
@@ -32,6 +34,7 @@ export function Menu({
   children,
   align = 'left',
   maxHeight,
+  emphasis = false,
 }: MenuProps): React.JSX.Element | null {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -109,6 +112,7 @@ export function Menu({
       contentRef={menuRef}
       variant="menu"
       role="menu"
+      className={emphasis ? styles.emphasis : ''}
       aria-label={ariaLabel}
       menuAlign={align}
       menuMaxHeight={maxHeight}
