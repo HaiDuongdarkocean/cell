@@ -198,7 +198,7 @@ export function SrsReviewCardBack({
               size="md"
               variant="primary"
               className={styles.audioPill}
-              onClick={() => { sentAudioAsset ? playAudio(sentAudioAsset) : playAudioUrl(sentAudioUrl!); }}
+              onClick={() => { if (sentAudioAsset) playAudio(sentAudioAsset); else playAudioUrl(sentAudioUrl!); }}
               aria-label={t('srs.review.playSentence')}
             >
               <Icon name="audioWave" />
@@ -209,7 +209,7 @@ export function SrsReviewCardBack({
               shape="circle"
               size="md"
               variant="primary"
-              onClick={() => { wordAudioAsset ? playAudio(wordAudioAsset) : playAudioUrl(wordAudioUrl!); }}
+              onClick={() => { if (wordAudioAsset) playAudio(wordAudioAsset); else playAudioUrl(wordAudioUrl!); }}
               aria-label={t('srs.review.playWord')}
             >
               <Icon name="volumeHigh" />

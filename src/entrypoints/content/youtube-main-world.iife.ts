@@ -341,7 +341,7 @@ declare const __CELL_DEBUG__: string | undefined;
     installTimedtextHooks();
     try {
       player.loadModule?.('captions');
-      if (prev?.languageCode === track.languageCode && (prev.kind ?? '') === (track.kind ?? '')) {
+      if (prev?.languageCode === track.languageCode && (prev?.kind ?? '') === (track.kind ?? '')) {
         player.setOption('captions', 'track', {});
         await new Promise((s) => setTimeout(s, 300));
       }
