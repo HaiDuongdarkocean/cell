@@ -26,6 +26,8 @@ interface DialogProps {
   /** Center the title in the header (close button stays right via absolute
    *  positioning). Default: left-aligned with space-between. */
   centerTitle?: boolean;
+  /** Panel width variant — maps to --dialog-max-width{-sm,,-lg}. */
+  size?: 'sm' | 'md' | 'lg';
   /** Id of an element inside `children` describing the dialog. Overrides the
    *  default `description`-based wiring. */
   'aria-describedby'?: string;
@@ -48,6 +50,7 @@ export function Dialog({
   showCloseButton,
   headerExtra,
   centerTitle,
+  size = 'md',
   'aria-describedby': ariaDescribedBy,
   'data-cell-id': dataTestId,
 }: DialogProps): React.JSX.Element | null {
@@ -85,7 +88,7 @@ export function Dialog({
         ref={panelRef}
         as="div"
         variant="dialog"
-        className={styles.panel}
+        className={[styles.panel, size === 'sm' ? styles.panelSm : size === 'lg' ? styles.panelLg : ''].filter(Boolean).join(' ')}
         onClick={handlePanelClick}
         role="dialog"
         aria-modal="true"

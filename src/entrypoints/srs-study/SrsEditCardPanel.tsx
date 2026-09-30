@@ -11,8 +11,8 @@ import { FieldRow, FieldAutoGrowInput, TagInput } from '@/features/cardCreator/u
 import { splitTags } from '@/features/cardCreator/service/noteUpdate';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { SrsDeck, SrsReviewRecord } from '@/entities/srs/types';
-import { componentLabel } from './srsLabels';
-import { HighlightedSentence } from './srsCardShared';
+import { componentLabel } from '@/features/srs/ui/srsLabels';
+import { HighlightedSentence } from '@/features/srs/ui/srsCardShared';
 import { persistNoteFields, storedMedia, toEditText, NoteMediaField, orderedEditFields } from './srsNoteEditorShared';
 import styles from './SrsEditCardPanel.module.css';
 

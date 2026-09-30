@@ -1850,14 +1850,12 @@
   "ankiImport.language.prompt": "Choose the target language for the imported collection:",
   "ankiImport.language.label": "Target language",
   "ankiImport.language.mergeHint": "Decks merge into this language's existing collection (or a new one).",
-  "ankiImport.mapping.roleOf": "Role of $1",
   "ankiImport.mapping.sample": "sample $1/$2",
   "ankiImport.mapping.excludeNt": "Don't import this note type",
   "ankiImport.mapping.includeNt": "Import this note type",
   "ankiImport.mapping.excludedNt": "This note type will not be imported.",
   "ankiImport.mapping.prev": "Previous card",
   "ankiImport.mapping.next": "Next card",
-  "ankiImport.mapping.frontPreview": "Preview — front",
   "ankiImport.mapping.backPreview": "Back",
   "ankiImport.mapping.summary": "$1: $2 cards · target=$3",
   "ankiImport.mapping.noneSelected": "No note types selected.",
@@ -1889,5 +1887,7 @@
   "ankiImport.action.start": "Start import",
   "ankiImport.action.close": "Close",
   "ankiImport.action.studyNow": "Study now",
-  "ankiImport.source.readError": "Could not read data from Anki"
+  "ankiImport.source.readError": "Could not read data from Anki",
+  "ankiImport.mapping.sourceFor": "Anki field for $1",
+  "ankiImport.mapping.previewHint": "Click the card to see the back"
 }

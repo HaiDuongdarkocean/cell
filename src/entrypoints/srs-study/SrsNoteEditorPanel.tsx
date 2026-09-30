@@ -8,7 +8,7 @@ import { FieldRow, FieldAutoGrowInput, TagInput } from '@/features/cardCreator/u
 import { splitTags } from '@/features/cardCreator/service/noteUpdate';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { SrsAudioAsset, SrsDeck, SrsImageAsset, SrsNote, SrsNotetype } from '@/entities/srs/types';
-import { HighlightedSentence } from './srsCardShared';
+import { HighlightedSentence } from '@/features/srs/ui/srsCardShared';
 import { persistNoteFields, storedMedia, toEditText, NoteMediaField, orderedEditFields } from './srsNoteEditorShared';
 import styles from './SrsEditCardPanel.module.css';
 

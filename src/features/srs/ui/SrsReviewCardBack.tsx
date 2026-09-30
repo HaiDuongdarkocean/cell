@@ -3,7 +3,7 @@ import { Box, Button, Heading, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { audioAssetId, imageAssetId } from '@/features/srs/lib/helpers';
-import { parseDefEntries } from '@/features/srs';
+import { parseDefEntries } from '@/features/srs/lib/defEntry';
 import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepository';
 import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote } from '@/entities/srs/types';

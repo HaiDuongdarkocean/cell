@@ -16,3 +16,7 @@ export { getReviewEventsByCard, putReviewEvent } from './repositories/reviewEven
 export { getAudioAssetsByNote, putAudioAsset } from './repositories/audioAssetRepository';
 export { putImageAsset } from './repositories/imageAssetRepository';
 export { closeAllSrsDBs, clearAllSrsStores, getSrsDbName, deleteSrsDB } from './repositories/srsDatabase';
+
+export { SrsReviewCardFront } from './ui/SrsReviewCardFront';
+export { SrsReviewCardBack } from './ui/SrsReviewCardBack';
+export { resolveReviewSurface } from './logic/resolveReviewSurface';

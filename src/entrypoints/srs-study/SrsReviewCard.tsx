@@ -5,11 +5,11 @@ import { Box, Button, ConfirmDialog, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import type { ComponentType } from '@/entities/srs/types';
-import { componentLabel } from './srsLabels';
-import { SrsReviewCardFront } from './SrsReviewCardFront';
-import { SrsReviewCardBack } from './SrsReviewCardBack';
+import { componentLabel } from '@/features/srs/ui/srsLabels';
+import { SrsReviewCardFront } from '@/features/srs/ui/SrsReviewCardFront';
+import { SrsReviewCardBack } from '@/features/srs/ui/SrsReviewCardBack';
 import { SrsEditCardPanel } from './SrsEditCardPanel';
-import styles from './SrsReviewCard.module.css';
+import styles from '@/features/srs/ui/SrsReviewCard.module.css';
 
 const COMPONENT_ICONS: Record<ComponentType, 'volumeHigh' | 'bookOpen' | 'pencil'> = {
   sound: 'volumeHigh',

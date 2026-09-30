@@ -1850,14 +1850,12 @@
   "ankiImport.language.prompt": "Chọn ngôn ngữ mục tiêu cho bộ sưu tập import vào:",
   "ankiImport.language.label": "Ngôn ngữ mục tiêu",
   "ankiImport.language.mergeHint": "Deck sẽ merge vào bộ sưu tập hiện có của ngôn ngữ này (hoặc tạo mới).",
-  "ankiImport.mapping.roleOf": "Vai trò của $1",
   "ankiImport.mapping.sample": "mẫu $1/$2",
   "ankiImport.mapping.excludeNt": "Không import loại thẻ này",
   "ankiImport.mapping.includeNt": "Import loại thẻ này",
   "ankiImport.mapping.excludedNt": "Loại thẻ này sẽ không được import.",
   "ankiImport.mapping.prev": "Thẻ trước",
   "ankiImport.mapping.next": "Thẻ sau",
-  "ankiImport.mapping.frontPreview": "Xem trước — mặt trước",
   "ankiImport.mapping.backPreview": "Mặt sau",
   "ankiImport.mapping.summary": "$1: $2 thẻ · target=$3",
   "ankiImport.mapping.noneSelected": "Không có loại thẻ nào được chọn.",
@@ -1889,5 +1887,7 @@
   "ankiImport.action.start": "Bắt đầu import",
   "ankiImport.action.close": "Đóng",
   "ankiImport.action.studyNow": "Học ngay",
-  "ankiImport.source.readError": "Không đọc được dữ liệu từ Anki"
+  "ankiImport.source.readError": "Không đọc được dữ liệu từ Anki",
+  "ankiImport.mapping.sourceFor": "Trường Anki cho $1",
+  "ankiImport.mapping.previewHint": "Nhấn vào thẻ để xem mặt sau"
 }

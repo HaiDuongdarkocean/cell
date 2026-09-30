@@ -21,6 +21,9 @@
   box-sizing: border-box;
 }
 
+.panelSm { max-width: var(--dialog-max-width-sm); }
+.panelLg { max-width: var(--dialog-max-width-lg); }
+
 .header {
   position: relative;
   margin-bottom: var(--space-3);
