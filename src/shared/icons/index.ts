@@ -85,6 +85,7 @@ import {
   Trash2,
   Users,
   Video,
+  Import,
   Volume1,
   Volume2,
   VolumeX,
@@ -202,6 +203,7 @@ import organismSvg from './svg/users.svg?raw';
 import layoutGridSvg from './svg/layout-grid.svg?raw';
 import wireframeSvg from './svg/layout-template.svg?raw';
 import windowPageSvg from './svg/app-window.svg?raw';
+import importSvg from './svg/import.svg?raw';
 
 /** Semantic icon entry — query by tags to find reuse candidates. */
 export interface IconRenderProps {
@@ -328,6 +330,7 @@ export const ICON_CATALOG = {
   organism: { component: Users, svg: organismSvg, source: 'lucide/users', tags: ['organism', 'cell', 'organelles', 'complex-unit', 'biological'] } as IconEntry,
   wireframe: { component: LayoutTemplate, svg: wireframeSvg, source: 'lucide/layout-template', tags: ['wireframe', 'template', 'layout', 'scaffold', 'blueprint', 'sections'] } as IconEntry,
   windowPage: { component: AppWindow, svg: windowPageSvg, source: 'lucide/app-window', tags: ['page', 'window', 'browser', 'document', 'final', 'complete'] } as IconEntry,
+  import: { component: Import, svg: importSvg, source: 'lucide/import', tags: ['import', 'anki', 'migrate', 'inbound', 'load', 'bring-in'] } as IconEntry,
 } as const;
 
 export const ICON_SIZE_PX = 18;

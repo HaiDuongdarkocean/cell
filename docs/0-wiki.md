@@ -105,7 +105,8 @@ docs/           # Tài liệu dự án
 ├── memory/                            # Agent memory — long-term context
 │   └── algorithm-tokenize.md          # Tokenize algorithm notes
 ├── research/                          # Subagent research reports
-│   └── reader-technical.md            # Reader technical research
+│   ├── reader-technical.md            # Reader technical research
+│   └── anki-to-tihoka-import-audit.md # Anki→Tihoka SRS import audit — apkg container/schema, model diff, per-entity mapping, open decisions
 ├── reviews/                           # Adversarial review outputs
 │   ├── reader-adversarial-1.md        # Architecture/MV3/performance review
 │   └── reader-adversarial-2.md        # UX/security/accessibility/scope review
