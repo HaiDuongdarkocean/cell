@@ -13,9 +13,16 @@
 }
 
 .header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.closeButton {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 .title {
@@ -63,6 +70,7 @@
 
 .deleteButton {
   margin-top: var(--space-2);
+  color: var(--color-on-error, #ffffff);
 }
 
 .resetRow {
@@ -87,10 +95,4 @@
 .error {
   text-align: center;
   color: var(--color-error);
-}
-
-.saveBar {
-  display: flex;
-  gap: var(--space-3);
-  align-items: center;
 }

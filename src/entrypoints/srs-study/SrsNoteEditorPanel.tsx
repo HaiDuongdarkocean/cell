@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Box, Button, Heading, Label, Select, Separator, Text } from '@/shared/ui';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Box, Button, Heading, Icon, Label, Select, Text } from '@/shared/ui';
 import { t } from '@/shared/i18n';
 import { putNote } from '@/features/srs/repositories/noteRepository';
 import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
@@ -26,8 +26,10 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
   const [media, setMedia] = useState<Record<string, MediaFile[]>>({});
   const [removedMedia, setRemovedMedia] = useState<ReadonlySet<string>>(new Set());
   const [tags, setTags] = useState('');
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dirtyRef = useRef(false);
+  const stateRef = useRef({ texts, media, tags, deckId, removedMedia });
+  stateRef.current = { texts, media, tags, deckId, removedMedia };
 
   useEffect(() => {
     let mounted = true;
@@ -51,6 +53,7 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
       setMedia(initialMedia);
       setRemovedMedia(new Set());
       setTags((note.tags ?? []).join(' '));
+      dirtyRef.current = false;
     })();
     return () => { mounted = false; };
   }, [note, notetype]);
@@ -58,25 +61,48 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
   const sentenceText = texts.sentence ?? toEditText(note.fields.sentence);
   const deckOptions = useMemo(() => decks.map((d) => ({ value: d.id, label: d.name })), [decks]);
 
-  async function handleSave(): Promise<void> {
-    setSaving(true);
-    setError(null);
+  const persist = useCallback(async () => {
+    const s = stateRef.current;
     try {
-      const { targetWord, fields } = await persistNoteFields(notetype, note, texts, media, removedMedia);
-      await putNote({ ...note, targetWord, fields, deckId, tags: splitTags(tags) });
+      const { targetWord, fields } = await persistNoteFields(notetype, note, s.texts, s.media, s.removedMedia);
+      await putNote({ ...note, targetWord, fields, deckId: s.deckId, tags: splitTags(s.tags) });
+      dirtyRef.current = false;
+      setError(null);
       onSaved();
-      onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setSaving(false);
     }
+  }, [note, notetype, onSaved]);
+
+  useEffect(() => {
+    if (!dirtyRef.current) return;
+    const timer = setTimeout(() => { void persist(); }, 600);
+    return () => clearTimeout(timer);
+  }, [texts, media, tags, deckId, removedMedia, persist]);
+
+  function markDirty(): void {
+    dirtyRef.current = true;
+  }
+
+  function handleClose(): void {
+    if (dirtyRef.current) void persist().finally(onClose);
+    else onClose();
   }
 
   return (
     <Box className={styles.panel}>
       <Box className={styles.header}>
         <Heading level={2} className={styles.title}>{t('srs.edit.title')}</Heading>
+        <Button
+          variant="ghost"
+          size="sm"
+          shape="circle"
+          onClick={handleClose}
+          aria-label={t('ui.close')}
+          className={styles.closeButton}
+        >
+          <Icon name="x" size="sm" />
+        </Button>
       </Box>
 
       <Box className={styles.selectRow}>
@@ -86,7 +112,7 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
         </Box>
         <Box className={styles.selectCol}>
           <Label>{t('srs.edit.deck')}</Label>
-          <Select value={deckId} options={deckOptions} onChange={setDeckId} />
+          <Select value={deckId} options={deckOptions} onChange={(v) => { markDirty(); setDeckId(v); }} />
         </Box>
       </Box>
 
@@ -106,6 +132,7 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
               field={field}
               files={media[field.id] ?? []}
               onChange={(files) => {
+                markDirty();
                 setMedia((prev) => ({ ...prev, [field.id]: files }));
                 setRemovedMedia((prev) => {
                   const next = new Set(prev);
@@ -117,7 +144,7 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
           ) : (
             <FieldAutoGrowInput
               value={texts[field.id] ?? ''}
-              onChange={(v) => { setTexts((prev) => ({ ...prev, [field.id]: v })); }}
+              onChange={(v) => { markDirty(); setTexts((prev) => ({ ...prev, [field.id]: v })); }}
               aria-label={field.name}
               dataId={`srs-edit-${field.id}`}
             />
@@ -128,7 +155,7 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
       <FieldRow label={t('cardCreator.field.tags')} dataId="srs-edit-tags">
         <TagInput
           value={tags}
-          onChange={setTags}
+          onChange={(v) => { markDirty(); setTags(v); }}
           placeholder={t('cardCreator.placeholder.tags')}
           ariaLabel={t('cardCreator.field.tags')}
           dataId="srs-edit-tags"
@@ -136,16 +163,6 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
       </FieldRow>
 
       {error && <Text className={styles.error}>{error}</Text>}
-
-      <Separator />
-      <Box className={styles.saveBar}>
-        <Button variant="primary" fullWidth onClick={() => { void handleSave(); }} disabled={saving}>
-          {saving ? t('srs.action.loading') : t('srs.edit.save')}
-        </Button>
-        <Button variant="ghost" onClick={onClose}>
-          {t('srs.edit.cancel')}
-        </Button>
-      </Box>
     </Box>
   );
 }

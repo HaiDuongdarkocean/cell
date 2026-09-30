@@ -129,7 +129,7 @@ export function NoteMediaField({ field, files, onChange }: MediaFieldProps): Rea
       <MediaList
         files={files}
         kind={field.type === 'image' ? 'image' : 'audio'}
-        addLabel={`${t('srs.edit.add')} ${field.name}`}
+        addLabel={t('srs.edit.add')}
         onAdd={() => inputRef.current?.click()}
         onRemove={() => { onChange([]); }}
         onFilesDrop={(dropped) => {
