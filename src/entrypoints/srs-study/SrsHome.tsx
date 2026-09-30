@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Badge, Box, Button, Checkbox, Dialog, FlagIcon, Heading, Input, Menu, MenuItem, Text } from '@/shared/ui';
+import { Badge, Box, Button, Checkbox, ConfirmDialog, Dialog, FlagIcon, Heading, Input, Menu, MenuItem, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { spawnRipple } from '@/shared/lib/dom/ripple';
@@ -167,9 +167,19 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
     await refreshHome();
   }
 
-  async function handleDeleteDeck(deck: SrsDeck): Promise<void> {
-    if (!window.confirm(t('srs.manage.confirmDeleteDeck'))) return;
-    await deleteDeckCascade(deck.id);
+  const [pendingDelete, setPendingDelete] = useState<SrsDeck | 'selected' | null>(null);
+
+  async function handleConfirmDelete(): Promise<void> {
+    if (pendingDelete === 'selected') {
+      for (const id of selected) {
+        await deleteDeckCascade(id);
+      }
+      setSelected(new Set());
+      setSelectMode(false);
+    } else if (pendingDelete) {
+      await deleteDeckCascade(pendingDelete.id);
+    }
+    setPendingDelete(null);
     await refreshHome();
   }
 
@@ -185,13 +195,7 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
 
   async function handleDeleteSelected(): Promise<void> {
     if (selected.size === 0) return;
-    if (!window.confirm(t('srs.deck.confirmDeleteSelected', [selected.size]))) return;
-    for (const id of selected) {
-      await deleteDeckCascade(id);
-    }
-    setSelected(new Set());
-    setSelectMode(false);
-    await refreshHome();
+    setPendingDelete('selected');
   }
 
   function exitSelectMode(): void {
@@ -351,6 +355,20 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
         </Box>
       </Dialog>
 
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(o) => { if (!o) setPendingDelete(null); }}
+        title={pendingDelete === 'selected'
+          ? t('srs.deck.deleteSelectedTitle', [selected.size])
+          : t('srs.deck.deleteTitle', [pendingDelete?.name ?? ''])}
+        description={pendingDelete === 'selected'
+          ? t('srs.deck.deleteSelectedDesc')
+          : t('srs.deck.deleteDesc')}
+        cancelLabel={t('srs.edit.cancel')}
+        confirmLabel={t('srs.manage.delete')}
+        onConfirm={() => { void handleConfirmDelete(); }}
+      />
+
         {visibleDecks.length === 0 ? (
           <Text className={styles.emptyText}>{t('srs.manage.noDecks')}</Text>
         ) : (
@@ -364,7 +382,7 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
               onStudy={() => { void start(stat.deck.id); }}
               onOpen={() => { onOpenDeck(stat.deck, 'view', visibleDecks.map((s) => s.deck)); }}
               onChange={() => { onOpenDeck(stat.deck, 'change', visibleDecks.map((s) => s.deck)); }}
-              onDelete={() => { void handleDeleteDeck(stat.deck); }}
+              onDelete={() => { setPendingDelete(stat.deck); }}
             />
           ))
         )}

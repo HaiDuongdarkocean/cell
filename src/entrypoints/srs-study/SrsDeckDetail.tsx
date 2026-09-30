@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Badge, Box, Button, Checkbox, Dialog, Heading, Input, Menu, MenuItem, Text } from '@/shared/ui';
+import { Badge, Box, Button, Checkbox, ConfirmDialog, Dialog, Heading, Input, Menu, MenuItem, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import type { ICON_CATALOG } from '@/shared/icons';
 import { t } from '@/shared/i18n';
@@ -68,7 +68,7 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', onBack, onCha
   const [editName, setEditName] = useState(deck.name);
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
-  const [dialog, setDialog] = useState<'delete' | 'reset' | 'type' | 'move' | null>(null);
+  const [dialog, setDialog] = useState<'delete' | 'reset' | 'type' | 'move' | 'deleteDeck' | null>(null);
   const [editing, setEditing] = useState<{ note: SrsNote; notetype: SrsNotetype } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -274,7 +274,7 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', onBack, onCha
             <MenuItem icon={<Icon name="check" />} onSelect={() => { setMenuOpen(false); setSelectMode(true); }}>
               {t('srs.deck.select')}
             </MenuItem>
-            <MenuItem icon={<Icon name="trash" />} onSelect={() => { setMenuOpen(false); void handleDeleteDeck(); }}>
+            <MenuItem icon={<Icon name="trash" />} onSelect={() => { setMenuOpen(false); setDialog('deleteDeck'); }}>
               {t('srs.manage.delete')}
             </MenuItem>
           </Menu>
@@ -474,6 +474,16 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', onBack, onCha
           )}
         </Box>
       </Dialog>
+
+      <ConfirmDialog
+        open={dialog === 'deleteDeck'}
+        onOpenChange={(o) => { if (!o) setDialog(null); }}
+        title={t('srs.deck.deleteTitle', [deck.name])}
+        description={t('srs.deck.deleteDesc')}
+        cancelLabel={t('srs.edit.cancel')}
+        confirmLabel={t('srs.manage.delete')}
+        onConfirm={() => { void handleDeleteDeck(); }}
+      />
     </Box>
   );
 }
