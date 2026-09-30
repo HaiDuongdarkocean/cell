@@ -95,7 +95,7 @@ function DeckRow({
             <MenuItem icon={<Icon name="check" />} onSelect={() => { setMenuOpen(false); onToggleSelect(); }}>
               {t('srs.deck.select')}
             </MenuItem>
-            <MenuItem icon={<Icon name="trash" />} onSelect={() => { setMenuOpen(false); onDelete(); }}>
+            <MenuItem icon={<Icon name="trash" />} destructive onSelect={() => { setMenuOpen(false); onDelete(); }}>
               {t('srs.manage.delete')}
             </MenuItem>
           </Menu>

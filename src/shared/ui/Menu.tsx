@@ -130,6 +130,8 @@ export interface MenuItemProps {
   readonly selected?: boolean;
   /** Use `menuitemradio` semantics (single choice inside the menu). */
   readonly radio?: boolean;
+  /** Destructive action — label and icon render in error colour. */
+  readonly destructive?: boolean;
   readonly disabled?: boolean;
   readonly 'data-cell-id'?: string;
 }
@@ -141,6 +143,7 @@ export function MenuItem({
   trailing,
   selected = false,
   radio = false,
+  destructive = false,
   disabled = false,
   'data-cell-id': dataCellId,
 }: MenuItemProps): React.JSX.Element {
@@ -149,7 +152,7 @@ export function MenuItem({
       type="button"
       role={radio ? 'menuitemradio' : 'menuitem'}
       aria-checked={radio ? selected : undefined}
-      className={styles.item}
+      className={`${styles.item}${destructive ? ` ${styles.itemDanger}` : ''}`}
       disabled={disabled}
       onClick={onSelect}
       data-cell-id={dataCellId}

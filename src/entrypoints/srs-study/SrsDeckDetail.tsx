@@ -274,7 +274,7 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', onBack, onCha
             <MenuItem icon={<Icon name="check" />} onSelect={() => { setMenuOpen(false); setSelectMode(true); }}>
               {t('srs.deck.select')}
             </MenuItem>
-            <MenuItem icon={<Icon name="trash" />} onSelect={() => { setMenuOpen(false); setDialog('deleteDeck'); }}>
+            <MenuItem icon={<Icon name="trash" />} destructive onSelect={() => { setMenuOpen(false); setDialog('deleteDeck'); }}>
               {t('srs.manage.delete')}
             </MenuItem>
           </Menu>

@@ -36,6 +36,18 @@
   color: var(--color-primary);
 }
 
+.itemDanger {
+  color: var(--color-error);
+}
+
+.itemDanger .icon {
+  color: var(--color-error);
+}
+
+.itemDanger:hover {
+  background: var(--color-error-subtle);
+}
+
 .item:disabled {
   opacity: var(--button-disabled-opacity);
   cursor: default;
