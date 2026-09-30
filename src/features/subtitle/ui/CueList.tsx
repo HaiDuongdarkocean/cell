@@ -15,6 +15,7 @@ import {
 import { cueHeatBand, type CueDifficulty } from '@/features/subtitle/logic/cueDifficulty';
 import { formatCueTimestamp } from '@/features/subtitle/logic/cueTime';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
+import { spawnRipple } from '@/shared/lib/dom/ripple';
 import { Button, Icon, VisuallyHidden } from '@/shared/ui';
 import { t } from '@/shared/i18n';
 import styles from './CueList.module.css';
@@ -339,6 +340,10 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
             data-cue-end={cue.end}
             data-current={isCurrent ? 'true' : 'false'}
             data-heat={band}
+            data-cell-ripple-self
+            onPointerDown={(event) => {
+              if (event.button === 0) spawnRipple(event.currentTarget, event.clientX, event.clientY);
+            }}
             className={`${styles.cue} ${isCurrent ? styles.cueCurrent : ''}`}
           >
             {heat !== undefined && band !== undefined && (

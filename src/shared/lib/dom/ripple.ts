@@ -6,7 +6,7 @@ const delegatedRoots = new WeakSet<ShadowRoot | Document>();
 
 export function spawnRipple(host: HTMLElement, clientX: number, clientY: number): void {
   const rect = host.getBoundingClientRect();
-  const diameter = Math.max(rect.width, rect.height) * 1.6;
+  const diameter = Math.max(rect.width, rect.height) * 2.0;
   const radius = diameter / 2;
   const computed = getComputedStyle(host);
   if (computed.position === 'static') host.style.position = 'relative';

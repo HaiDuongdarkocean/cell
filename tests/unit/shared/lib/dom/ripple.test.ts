@@ -14,7 +14,7 @@ describe('spawnRipple', () => {
     document.body.innerHTML = '';
   });
 
-  it('appends a marked span sized 1.6x the host at the press point', () => {
+  it('appends a marked span sized 2x the host at the press point', () => {
     const host = document.createElement('button');
     document.body.appendChild(host);
     jest.spyOn(host, 'getBoundingClientRect').mockReturnValue({
@@ -23,10 +23,10 @@ describe('spawnRipple', () => {
     spawnRipple(host, 30, 60);
     const span = host.querySelector('[data-cell-ripple]') as HTMLElement;
     expect(span).not.toBeNull();
-    expect(span.style.width).toBe('64px');
-    expect(span.style.height).toBe('64px');
-    expect(span.style.left).toBe('-12px');
-    expect(span.style.top).toBe('-22px');
+    expect(span.style.width).toBe('80px');
+    expect(span.style.height).toBe('80px');
+    expect(span.style.left).toBe('-20px');
+    expect(span.style.top).toBe('-30px');
   });
 
   it('removes the span on animationend and via fallback timeout', () => {

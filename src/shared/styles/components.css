@@ -259,9 +259,9 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    color-mix(in srgb, currentColor 30%, transparent) 0%,
-    color-mix(in srgb, currentColor 12%, transparent) 40%,
-    transparent 70%
+    color-mix(in srgb, currentColor 16%, transparent) 0%,
+    color-mix(in srgb, currentColor 14%, transparent) 55%,
+    transparent 72%
   );
   transform: scale(0);
   opacity: var(--button-ripple-start-opacity);

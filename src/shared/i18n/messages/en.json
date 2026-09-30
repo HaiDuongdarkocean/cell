@@ -1148,7 +1148,7 @@
   "player.nav.repeat": "Repeat current sentence",
   "player.manager.previewTarget": "This is how the target subtitle will look.",
   "player.manager.previewNative": "This is how the native subtitle will look.",
-  "srs.title": "Ocean SRS",
+  "srs.title": "Memory",
   "srs.app.desc": "Spaced repetition for language learning. Cards live in this browser — uninstalling the extension deletes them.",
   "srs.stats.dueNow": "Due now:",
   "srs.stats.due24h": "Due in 24h:",

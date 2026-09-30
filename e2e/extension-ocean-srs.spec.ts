@@ -47,7 +47,7 @@ test.describe('Ocean SRS smoke', () => {
     await seedSrsProfile(page, extensionId);
     await page.goto(`chrome-extension://${extensionId}/${SRS_STUDY_PATH}`);
 
-    await expect(page.getByRole('heading', { name: 'Ocean SRS' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Memory' })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: 'Continue studying' })).toBeVisible();
     await expect(page.getByText('Study Streak')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'All Decks' })).toBeVisible();
@@ -74,7 +74,7 @@ test.describe('Ocean SRS smoke', () => {
     const page = await context.newPage();
     await seedSrsProfile(page, extensionId);
     await page.goto(`chrome-extension://${extensionId}/${SRS_STUDY_PATH}`);
-    await page.getByRole('heading', { name: 'Ocean SRS' }).waitFor({ state: 'visible', timeout: 10_000 });
+    await page.getByRole('heading', { name: 'Memory' }).waitFor({ state: 'visible', timeout: 10_000 });
 
     // Seed a note through the background message bus.
     const result = await page.evaluate(async () => {
@@ -126,7 +126,7 @@ test.describe('Ocean SRS smoke', () => {
     const profileId = 'lp-review';
     await seedSrsProfile(page, extensionId, profileId);
     await page.goto(`chrome-extension://${extensionId}/${SRS_STUDY_PATH}`);
-    await page.getByRole('heading', { name: 'Ocean SRS' }).waitFor({ state: 'visible', timeout: 10_000 });
+    await page.getByRole('heading', { name: 'Memory' }).waitFor({ state: 'visible', timeout: 10_000 });
 
     // Seed a note through the background message bus.
     const result = await page.evaluate(async () => {

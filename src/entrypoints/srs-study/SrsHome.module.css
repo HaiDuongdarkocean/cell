@@ -151,7 +151,7 @@
 }
 
 .statCard:hover {
-  background: var(--color-surface-hover);
+  background: var(--color-overlay-hover);
 }
 
 .statCard:focus-visible {
