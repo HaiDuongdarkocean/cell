@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Badge, Box, Button, Checkbox, Dialog, FlagIcon, Heading, Input, Menu, MenuItem, Select, Text } from '@/shared/ui';
+import { Badge, Box, Button, Checkbox, Dialog, FlagIcon, Heading, Input, Menu, MenuItem, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
+import { spawnRipple } from '@/shared/lib/dom/ripple';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
 import { ensureFirstRun } from '@/features/srs/services/firstRunService';
 import { getCollection } from '@/features/srs/repositories/collectionRepository';
@@ -29,7 +30,6 @@ function DeckRow({
   onStudy,
   onOpen,
   onChange,
-  onAddSubdeck,
   onDelete,
 }: {
   readonly stat: SrsHomeDeckStat;
@@ -39,7 +39,6 @@ function DeckRow({
   readonly onStudy: () => void;
   readonly onOpen: () => void;
   readonly onChange: () => void;
-  readonly onAddSubdeck: () => void;
   readonly onDelete: () => void;
 }): React.JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -56,6 +55,12 @@ function DeckRow({
       <button
         type="button"
         className={styles.deckMain}
+        data-cell-no-ripple
+        onPointerDown={(e) => {
+          if (e.button === 0 && e.currentTarget.parentElement) {
+            spawnRipple(e.currentTarget.parentElement as HTMLElement, e.clientX, e.clientY);
+          }
+        }}
         onClick={selectMode ? onToggleSelect : onStudy}
         aria-pressed={selectMode ? selected : undefined}
       >
@@ -87,9 +92,6 @@ function DeckRow({
             <MenuItem icon={<Icon name="pencil" />} onSelect={() => { setMenuOpen(false); onChange(); }}>
               {t('srs.deck.change')}
             </MenuItem>
-            <MenuItem icon={<Icon name="plus" />} onSelect={() => { setMenuOpen(false); onAddSubdeck(); }}>
-              {t('srs.manage.createSubdeck')}
-            </MenuItem>
             <MenuItem icon={<Icon name="check" />} onSelect={() => { setMenuOpen(false); onToggleSelect(); }}>
               {t('srs.deck.select')}
             </MenuItem>
@@ -119,7 +121,6 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');
   const [adding, setAdding] = useState(false);
-  const [addParentId, setAddParentId] = useState<string | null>(null);
   const [newDeckName, setNewDeckName] = useState('');
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -151,11 +152,11 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
     if (!collectionId || !newDeckName.trim()) return;
     const collection = await getCollection(collectionId);
     const existing = await getDecksByCollection(collectionId);
-    const siblings = existing.filter((d) => d.parentId === addParentId);
+    const siblings = existing.filter((d) => d.parentId === null);
     const deck: SrsDeck = {
       id: generateId(),
       collectionId,
-      parentId: addParentId,
+      parentId: null,
       name: newDeckName.trim(),
       order: siblings.length,
       studyConfigId: collection.defaultStudyConfigId,
@@ -163,7 +164,6 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
     await putDeck(deck);
     setNewDeckName('');
     setAdding(false);
-    setAddParentId(null);
     await refreshHome();
   }
 
@@ -326,11 +326,11 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
 
       <Dialog
         open={adding}
-        onOpenChange={(o) => { if (!o) { setAdding(false); setNewDeckName(''); setAddParentId(null); } }}
-        title={addParentId ? t('srs.manage.createSubdeck') : t('srs.manage.createDeck')}
+        onOpenChange={(o) => { if (!o) { setAdding(false); setNewDeckName(''); } }}
+        title={t('srs.manage.createDeck')}
         footer={(
           <>
-            <Button variant="ghost" onClick={() => { setAdding(false); setNewDeckName(''); setAddParentId(null); }}>
+            <Button variant="ghost" onClick={() => { setAdding(false); setNewDeckName(''); }}>
               {t('srs.edit.cancel')}
             </Button>
             <Button variant="primary" onClick={() => { void handleAddDeck(); }} disabled={!newDeckName.trim()}>
@@ -348,15 +348,6 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
             autoFocus
             onKeyDown={(e) => { if (e.key === 'Enter') void handleAddDeck(); }}
           />
-          <Select
-            value={addParentId ?? ''}
-            options={[
-              { value: '', label: t('srs.deck.noParent') },
-              ...(home?.decks ?? []).map((s) => ({ value: s.deck.id, label: s.deck.name })),
-            ]}
-            onChange={(v) => { setAddParentId(v || null); }}
-            aria-label={t('srs.deck.parentDeck')}
-          />
         </Box>
       </Dialog>
 
@@ -373,7 +364,6 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
               onStudy={() => { void start(stat.deck.id); }}
               onOpen={() => { onOpenDeck(stat.deck, 'view', visibleDecks.map((s) => s.deck)); }}
               onChange={() => { onOpenDeck(stat.deck, 'change', visibleDecks.map((s) => s.deck)); }}
-              onAddSubdeck={() => { setAddParentId(stat.deck.id); setAdding(true); }}
               onDelete={() => { void handleDeleteDeck(stat.deck); }}
             />
           ))
