@@ -1,5 +1,5 @@
 {
-  "active": "anki-import",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -744,7 +744,7 @@
       "updated": "2026-09-30T06:39:43.515Z"
     },
     "anki-import": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "all",
       "uiSurface": "yes",
       "artifacts": {
@@ -754,17 +754,31 @@
         "mockup": "src/entrypoints/mockup-anki-import",
         "plan": "tasks/plan-anki-import.md"
       },
-      "gates": {},
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-09-30T17:03:43.228Z"
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-09-30T17:04:02.921Z"
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-09-30T17:07:34.370Z"
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-09-30T17:05:08.553Z"
+        }
+      },
       "confidence": "medium",
       "awaiting": null,
       "resolutions": [],
       "loops": 0,
-      "owner": {
-        "id": "devin-main-1790783573",
-        "since": "2026-09-30T15:52:53.552Z"
-      },
+      "owner": null,
       "worktree": null,
-      "updated": "2026-09-30T16:26:45.560Z"
+      "updated": "2026-09-30T17:13:24.916Z"
     }
   }
 }
