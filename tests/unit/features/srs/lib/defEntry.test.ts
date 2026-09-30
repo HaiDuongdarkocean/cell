@@ -22,13 +22,13 @@ describe('defEntry', () => {
       senses: '• to move to a new place to live\n· They resettled in Canada.',
     });
     expect(text).toBe(
-      'Resettle (/ˌriːˈsetl/) ★★★\nOther forms: resettled, resettling\n• to move to a new place to live\nThey resettled in Canada.',
+      'Resettle /ˌriːˈsetl/ ★★★\nOther forms: resettled, resettling\n• to move to a new place to live\nThey resettled in Canada.',
     );
   });
 
   it('formats from a lookup result with selected senses', () => {
     const text = formatDefFromLookup(lookup, '• to move to a new place to live');
-    expect(text).toBe('Resettle (/ˌriːˈsetl/) ★★★\nOther forms: resettled, resettling\n• to move to a new place to live');
+    expect(text).toBe('Resettle /ˌriːˈsetl/ ★★★\nOther forms: resettled, resettling\n• to move to a new place to live');
   });
 
   it('joins multiple entries with --- and parses them back', () => {
@@ -44,9 +44,9 @@ describe('defEntry', () => {
 
   it('parses header, other forms and senses separately', () => {
     const [entry] = parseDefEntries(
-      'Resettle (/ˌriːˈsetl/) ★★★\nOther forms: resettled, resettling\n• sense\nexample',
+      'Resettle /ˌriːˈsetl/ ★★★\nOther forms: resettled, resettling\n• sense\nexample',
     );
-    expect(entry.header).toBe('Resettle (/ˌriːˈsetl/) ★★★');
+    expect(entry.header).toBe('Resettle /ˌriːˈsetl/ ★★★');
     expect(entry.otherForms).toBe('Other forms: resettled, resettling');
     expect(entry.senses).toBe('• sense\nexample');
   });

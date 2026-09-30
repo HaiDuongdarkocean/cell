@@ -24,7 +24,7 @@ function capitalize(s: string): string {
 
 /**
  * One dictionary entry inside the `def` field:
- *   Term (reading) ★★★
+ *   Term reading ★★★
  *   Other forms: form1, form2
  *   • (pos) sense
  * Multiple entries are joined by `\n---\n`.
@@ -32,7 +32,7 @@ function capitalize(s: string): string {
 export function formatDefEntry(entry: DefEntryInput): string {
   const head = [
     capitalize(entry.term.trim()),
-    entry.reading ? `(${entry.reading})` : '',
+    entry.reading ? entry.reading : '',
     entry.frequencyStars ? '★'.repeat(Math.min(3, Math.max(1, entry.frequencyStars))) : '',
   ].filter(Boolean).join(' ');
   const senses = entry.senses

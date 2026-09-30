@@ -1,16 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Box, Button, Heading, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
-import { Sheet } from '@/shared/ui/Sheet';
 import { t } from '@/shared/i18n';
 import { audioAssetId, imageAssetId } from '@/features/srs/lib/helpers';
 import { parseDefEntries } from '@/features/srs';
-import { ensureFirstRun } from '@/features/srs/services/firstRunService';
-import { getCollection } from '@/features/srs/repositories/collectionRepository';
 import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepository';
 import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
-import { loadSettings } from '@/shared/lib/storage/settingsStore';
-import { DictionaryPanelView } from '@/features/dictionaryPopup/ui/DictionaryPanelView';
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote } from '@/entities/srs/types';
 import { HighlightedSentence, playAudio, playAudioUrl, useImageBlobUrl } from './srsCardShared';
 import styles from './SrsReviewCard.module.css';
@@ -122,8 +117,6 @@ export function SrsReviewCardBack({
   imageCache,
 }: SrsReviewCardBackProps): React.JSX.Element {
   const [translationRevealed, setTranslationRevealed] = useState(false);
-  const [lookup, setLookup] = useState<{ term: string } | null>(null);
-  const [langs, setLangs] = useState<{ source: string; target: string }>({ source: 'en', target: 'vi' });
 
   const wordAudio = note.fields.wordAudio?.kind === 'audio' ? note.fields.wordAudio : undefined;
   const sentAudio = note.fields.sentAudio?.kind === 'audio' ? note.fields.sentAudio : undefined;
@@ -157,17 +150,6 @@ export function SrsReviewCardBack({
       .catch(() => {});
   }, [note.id, wordAudio, sentAudio]);
 
-  useEffect(() => {
-    void (async () => {
-      const { collectionId } = await ensureFirstRun();
-      const collection = await getCollection(collectionId);
-      const settings = await loadSettings();
-      const profile = settings.languageProfiles.find((p) => p.id === collection.languageProfileId)
-        ?? settings.languageProfiles.find((p) => p.id === settings.activeProfileId);
-      setLangs({ source: collection.targetLanguage || 'en', target: profile?.native || 'vi' });
-    })().catch(() => {});
-  }, []);
-
   const hasTranslation = note.fields.translation?.kind === 'translation' && Boolean(note.fields.translation.value);
   const ipa = fieldText(note.fields.ipa);
   const extraFields = Object.entries(note.fields).filter(([id, v]) => !BUILTIN_FIELDS.has(id) && v.kind !== 'image' && v.kind !== 'audio' && fieldText(v).trim());
@@ -193,18 +175,6 @@ export function SrsReviewCardBack({
           </button>
         )
       )}
-
-      <Box bg="muted" className={styles.lookupBar}>
-        <Text className={styles.lookupTerm}>{note.targetWord}</Text>
-        <Button
-          variant="primary"
-          size="sm"
-          className={styles.lookupGo}
-          onClick={() => { setLookup({ term: note.targetWord }); }}
-        >
-          {t('srs.review.lookupGo')}
-        </Button>
-      </Box>
 
       {(hasSentAudio || hasWordAudio) && (
         <Box className={styles.audioRow}>
@@ -241,7 +211,7 @@ export function SrsReviewCardBack({
         <Box className={styles.defBlock}>
           <Box className={styles.defHeader}>
             <Text className={styles.defTarget}>{note.targetWord}</Text>
-            <Text className={styles.defIpa}>({ipa})</Text>
+            <Text className={styles.defIpa}>{ipa}</Text>
           </Box>
         </Box>
       ) : null}
@@ -272,19 +242,6 @@ export function SrsReviewCardBack({
           <BackFieldValue value={value} />
         </FieldBox>
       ))}
-
-      <Sheet open={lookup !== null} onClose={() => { setLookup(null); }} aria-label={t('srs.review.lookupTitle')}>
-        {lookup && (
-          <DictionaryPanelView
-            variant="integrated"
-            langCode={langs.source}
-            sourceLang={langs.source}
-            targetLang={langs.target}
-            initialTerm={lookup.term}
-            contextSentence={note.fields.sentence?.kind === 'text' ? note.fields.sentence.value : undefined}
-          />
-        )}
-      </Sheet>
     </Box>
   );
 }
