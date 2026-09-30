@@ -112,6 +112,8 @@
   gap: var(--space-3);
   text-align: center;
   cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .front:focus-visible {
@@ -185,6 +187,7 @@
   gap: var(--space-4);
   width: 100%;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .targetWord {
