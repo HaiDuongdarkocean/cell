@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Box, Button, Heading, Label, Select, Separator, Text, Textarea } from '@/shared/ui';
-import { Icon } from '@/shared/ui/Icon';
+import { Box, Button, Heading, Label, Select, Separator, Text } from '@/shared/ui';
 import { t } from '@/shared/i18n';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
 import { ensureFirstRun } from '@/features/srs/services/firstRunService';
@@ -9,11 +8,13 @@ import { getReviewEventsByCard } from '@/features/srs/repositories/reviewEventRe
 import { putAudioAsset } from '@/features/srs/repositories/audioAssetRepository';
 import { putImageAsset } from '@/features/srs/repositories/imageAssetRepository';
 import { audioAssetId, imageAssetId } from '@/features/srs/lib/helpers';
-import type { SrsDeck, SrsField, SrsFieldValue, SrsReviewRecord } from '@/entities/srs/types';
+import { FieldRow, FieldAutoGrowInput } from '@/features/cardCreator/ui/FieldRow';
+import { MediaList } from '@/features/cardCreator/ui/MediaList';
+import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
+import type { SrsAudioAsset, SrsDeck, SrsField, SrsFieldValue, SrsImageAsset, SrsNote, SrsReviewRecord } from '@/entities/srs/types';
 import { componentLabel } from './srsLabels';
-import { HighlightedSentence, playAudio, useImageBlobUrl } from './srsCardShared';
+import { HighlightedSentence } from './srsCardShared';
 import styles from './SrsEditCardPanel.module.css';
-import cardStyles from './SrsReviewCard.module.css';
 
 function toEditText(value: SrsFieldValue | undefined): string {
   if (!value) return '';
@@ -39,51 +40,72 @@ function formatEventMeta(events: readonly SrsReviewRecord[], judgment: 'forget' 
   return `${componentLabel(last.componentType)} ${new Date(last.answeredAt).toLocaleDateString()}`;
 }
 
-interface AssetRowProps {
-  readonly field: SrsField;
-  readonly value: SrsFieldValue | undefined;
-  readonly previewUrl?: string;
-  readonly onPlay?: () => void;
-  readonly onPick: (file: File) => void;
-  readonly onRemove: () => void;
+function storedMedia(
+  field: SrsField,
+  note: SrsNote,
+  audioCache: ReadonlyMap<string, SrsAudioAsset>,
+  imageCache: ReadonlyMap<string, SrsImageAsset>,
+): MediaFile[] {
+  const value = note.fields[field.id];
+  if (!value) return [];
+  if (field.type === 'audio' && value.kind === 'audio') {
+    const asset = audioCache.get(audioAssetId(note.id, field.id, value.source));
+    if (asset) {
+      return [{ kind: 'audio', filename: value.value, mimeType: asset.mimeType, data: asset.bytes }];
+    }
+  }
+  if (field.type === 'image' && value.kind === 'image') {
+    const asset = imageCache.get(imageAssetId(note.id, field.id));
+    if (asset) {
+      return [{ kind: 'image', filename: value.value, mimeType: asset.mimeType, data: asset.bytes }];
+    }
+  }
+  return [];
 }
 
-function AssetRow({ field, value, previewUrl, onPlay, onPick, onRemove }: AssetRowProps): React.JSX.Element {
+async function fileToMedia(file: File, field: SrsField): Promise<MediaFile> {
+  return {
+    kind: field.type === 'image' ? 'image' : 'audio',
+    filename: file.name,
+    mimeType: file.type || (field.type === 'image' ? 'image/png' : 'audio/mpeg'),
+    data: await file.arrayBuffer(),
+  };
+}
+
+interface MediaFieldProps {
+  readonly field: SrsField;
+  readonly files: readonly MediaFile[];
+  readonly onChange: (files: MediaFile[]) => void;
+}
+
+function MediaField({ field, files, onChange }: MediaFieldProps): React.JSX.Element {
   const inputRef = useRef<HTMLInputElement>(null);
-  const accept = field.type === 'image' ? 'image/*' : 'audio/*';
   return (
-    <Box className={styles.assetRow}>
-      {field.type === 'image' && previewUrl && (
-        <img src={previewUrl} alt={field.name} className={styles.assetImage} />
-      )}
-      {field.type === 'audio' && value && (
-        <Button shape="circle" size="sm" variant="ghost" onClick={onPlay} aria-label={t('srs.edit.playAudio')} className={cardStyles.audioButton}>
-          <Icon name="play" />
-        </Button>
-      )}
-      {value && <Text className={styles.assetName}>{value.value}</Text>}
-      <Box className={styles.assetActions}>
-        <Button variant="secondary" size="sm" onClick={() => inputRef.current?.click()}>
-          <Icon name="plus" /> {t('srs.edit.add')}
-        </Button>
-        {value && (
-          <Button variant="ghost" size="sm" onClick={onRemove}>
-            {t('srs.edit.remove')}
-          </Button>
-        )}
-      </Box>
+    <>
+      <MediaList
+        files={files}
+        kind={field.type === 'image' ? 'image' : 'audio'}
+        addLabel={`${t('srs.edit.add')} ${field.name}`}
+        onAdd={() => inputRef.current?.click()}
+        onRemove={() => { onChange([]); }}
+        onFilesDrop={(dropped) => {
+          const first = dropped[0];
+          if (first) onChange([first]);
+        }}
+        dataId={`srs-edit-${field.id}`}
+      />
       <input
         ref={inputRef}
         type="file"
-        accept={accept}
+        accept={field.type === 'image' ? 'image/*' : 'audio/*'}
         className={styles.fileInput}
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) onPick(file);
+          if (file) void fileToMedia(file, field).then((mf) => { onChange([mf]); });
           e.target.value = '';
         }}
       />
-    </Box>
+    </>
   );
 }
 
@@ -101,12 +123,10 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
   const [decks, setDecks] = useState<readonly SrsDeck[]>([]);
   const [deckId, setDeckId] = useState(session?.note.deckId ?? '');
   const [texts, setTexts] = useState<Record<string, string>>({});
-  const [fieldDrafts, setFieldDrafts] = useState<Record<string, SrsFieldValue | undefined>>({});
-  const [pendingFiles, setPendingFiles] = useState<Record<string, File>>({});
+  const [media, setMedia] = useState<Record<string, MediaFile[]>>({});
   const [events, setEvents] = useState<readonly SrsReviewRecord[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
 
   const note = session?.note;
   const notetype = session?.notetype;
@@ -115,13 +135,18 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
   useEffect(() => {
     if (!note) return;
     const initialTexts: Record<string, string> = {};
+    const initialMedia: Record<string, MediaFile[]> = {};
     for (const field of notetype?.fields ?? []) {
-      initialTexts[field.id] = toEditText(note.fields[field.id]);
+      if (field.type === 'audio' || field.type === 'image') {
+        initialMedia[field.id] = storedMedia(field, note, audioCache, imageCache);
+      } else {
+        initialTexts[field.id] = toEditText(note.fields[field.id]);
+      }
     }
     setTexts(initialTexts);
-    setFieldDrafts({ ...note.fields });
+    setMedia(initialMedia);
     setDeckId(note.deckId);
-  }, [note, notetype]);
+  }, [note, notetype, audioCache, imageCache]);
 
   useEffect(() => {
     let mounted = true;
@@ -141,16 +166,7 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
     return () => { mounted = false; };
   }, [card]);
 
-  useEffect(() => {
-    return () => {
-      for (const url of Object.values(previewUrls)) URL.revokeObjectURL(url);
-    };
-  }, [previewUrls]);
-
-  const sentenceValue = fieldDrafts.sentence;
-  const imageField = notetype?.fields.find((f) => f.type === 'image');
-  const storedImage = imageField ? imageCache.get(imageAssetId(note?.id ?? '', imageField.id)) : undefined;
-  const storedImageUrl = useImageBlobUrl(storedImage);
+  const sentenceText = texts.sentence ?? toEditText(note?.fields.sentence);
 
   const deckOptions = useMemo(
     () => decks.map((d) => ({ value: d.id, label: d.name })),
@@ -158,54 +174,6 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
   );
 
   if (!session || !note || !notetype || !card) return null;
-
-  function previewFor(field: SrsField): string | undefined {
-    const pending = pendingFiles[field.id];
-    if (pending) {
-      if (!previewUrls[field.id]) {
-        const url = URL.createObjectURL(pending);
-        setPreviewUrls((prev) => ({ ...prev, [field.id]: url }));
-        return url;
-      }
-      return previewUrls[field.id];
-    }
-    if (field.type === 'image') return storedImageUrl;
-    return undefined;
-  }
-
-  function playField(field: SrsField): void {
-    const pending = pendingFiles[field.id];
-    if (pending) {
-      const url = previewFor(field);
-      if (url) void new Audio(url).play().catch(() => {});
-      return;
-    }
-    const value = fieldDrafts[field.id];
-    if (value?.kind !== 'audio' || !note) return;
-    const asset = audioCache.get(audioAssetId(note.id, field.id, value.source));
-    if (asset) playAudio(asset);
-  }
-
-  function pickFile(field: SrsField, file: File): void {
-    setPendingFiles((prev) => ({ ...prev, [field.id]: file }));
-    const draft: SrsFieldValue = field.type === 'image'
-      ? { kind: 'image', value: file.name }
-      : { kind: 'audio', value: file.name, source: 'local' };
-    setFieldDrafts((prev) => ({ ...prev, [field.id]: draft }));
-  }
-
-  function removeAsset(field: SrsField): void {
-    setPendingFiles((prev) => {
-      const next = { ...prev };
-      delete next[field.id];
-      return next;
-    });
-    setFieldDrafts((prev) => {
-      const next = { ...prev };
-      delete next[field.id];
-      return next;
-    });
-  }
 
   async function handleSave(): Promise<void> {
     if (!note || !notetype) return;
@@ -215,35 +183,33 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
       const fields: Record<string, SrsFieldValue> = {};
       for (const field of notetype.fields) {
         if (field.type === 'audio' || field.type === 'image') {
-          const draft = fieldDrafts[field.id];
-          if (draft) fields[field.id] = draft;
-          const file = pendingFiles[field.id];
-          if (file && note) {
-            const bytes = await file.arrayBuffer();
-            if (field.type === 'audio') {
-              await putAudioAsset({
-                id: audioAssetId(note.id, field.id, 'local'),
-                noteId: note.id,
-                fieldId: field.id,
-                source: 'local',
-                mimeType: file.type || 'audio/mpeg',
-                bytes,
-                size: bytes.byteLength,
-                lastAccessed: Date.now(),
-                createdAt: Date.now(),
-              });
-            } else {
-              await putImageAsset({
-                id: imageAssetId(note.id, field.id),
-                noteId: note.id,
-                fieldId: field.id,
-                mimeType: file.type || 'image/png',
-                bytes,
-                size: bytes.byteLength,
-                lastAccessed: Date.now(),
-                createdAt: Date.now(),
-              });
-            }
+          const file = media[field.id]?.[0];
+          if (!file) continue;
+          if (field.type === 'audio') {
+            await putAudioAsset({
+              id: audioAssetId(note.id, field.id, 'local'),
+              noteId: note.id,
+              fieldId: field.id,
+              source: 'local',
+              mimeType: file.mimeType,
+              bytes: file.data,
+              size: file.data.byteLength,
+              lastAccessed: Date.now(),
+              createdAt: Date.now(),
+            });
+            fields[field.id] = { kind: 'audio', value: file.filename, source: 'local' };
+          } else {
+            await putImageAsset({
+              id: imageAssetId(note.id, field.id),
+              noteId: note.id,
+              fieldId: field.id,
+              mimeType: file.mimeType,
+              bytes: file.data,
+              size: file.data.byteLength,
+              lastAccessed: Date.now(),
+              createdAt: Date.now(),
+            });
+            fields[field.id] = { kind: 'image', value: file.filename };
           }
           continue;
         }
@@ -269,9 +235,7 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
   return (
     <Box className={styles.panel}>
       <Box className={styles.header}>
-        <Icon name="settings" className={styles.headerIcon} />
         <Heading level={2} className={styles.title}>{t('srs.edit.title')}</Heading>
-        <Icon name="wrench" className={styles.headerIcon} />
       </Box>
 
       <Box className={styles.selectRow}>
@@ -287,31 +251,30 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
 
       <Box className={styles.preview}>
         <Text className={styles.previewWord}>{note.targetWord}</Text>
-        {sentenceValue?.kind === 'text' && (
-          <HighlightedSentence sentence={sentenceValue.value} target={note.targetWord} />
+        {sentenceText && (
+          <HighlightedSentence sentence={sentenceText} target={note.targetWord} />
         )}
       </Box>
 
+      <Heading level={3} size={4} className={styles.sectionTitle}>{t('cardCreator.section.fields')}</Heading>
+
       {notetype.fields.map((field) => (
-        <Box key={field.id} className={styles.fieldRow}>
-          <Label className={styles.fieldLabel}>{field.name}</Label>
+        <FieldRow key={field.id} label={field.name} dataId={`srs-edit-${field.id}`}>
           {field.type === 'audio' || field.type === 'image' ? (
-            <AssetRow
+            <MediaField
               field={field}
-              value={fieldDrafts[field.id]}
-              previewUrl={previewFor(field)}
-              onPlay={() => { playField(field); }}
-              onPick={(file) => { pickFile(field, file); }}
-              onRemove={() => { removeAsset(field); }}
+              files={media[field.id] ?? []}
+              onChange={(files) => { setMedia((prev) => ({ ...prev, [field.id]: files })); }}
             />
           ) : (
-            <Textarea
+            <FieldAutoGrowInput
               value={texts[field.id] ?? ''}
-              onChange={(e) => { setTexts((prev) => ({ ...prev, [field.id]: e.target.value })); }}
-              rows={field.type === 'list' ? 3 : 2}
+              onChange={(v) => { setTexts((prev) => ({ ...prev, [field.id]: v })); }}
+              aria-label={field.name}
+              dataId={`srs-edit-${field.id}`}
             />
           )}
-        </Box>
+        </FieldRow>
       ))}
 
       <Button variant="destructive" fullWidth onClick={handleDeleteCard} className={styles.deleteButton}>

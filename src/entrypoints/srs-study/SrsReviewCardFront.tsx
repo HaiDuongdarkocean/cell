@@ -5,8 +5,8 @@ import { stimulusLabel } from './srsLabels';
 import { formatFieldValue, HighlightedSentence } from './srsCardShared';
 import styles from './SrsReviewCard.module.css';
 
-function StimulusView({ stimulus, targetWord }: { stimulus: SrsStimulus; targetWord: string }): React.JSX.Element {
-  const entries = Object.entries(stimulus.payload);
+function StimulusView({ stimulus, targetWord, skipFieldId }: { stimulus: SrsStimulus; targetWord: string; skipFieldId?: string }): React.JSX.Element {
+  const entries = Object.entries(stimulus.payload).filter(([fieldId]) => fieldId !== skipFieldId);
 
   return (
     <Box className={styles.stimulus}>
@@ -62,7 +62,10 @@ export function SrsReviewCardFront({
       }}
     >
       <Heading level={1} className={styles.targetWord}>{note.targetWord}</Heading>
-      <StimulusView stimulus={stimulus} targetWord={note.targetWord} />
+      {note.fields.sentence?.kind === 'text' && note.fields.sentence.value && (
+        <HighlightedSentence sentence={note.fields.sentence.value} target={note.targetWord} />
+      )}
+      <StimulusView stimulus={stimulus} targetWord={note.targetWord} skipFieldId="sentence" />
 
       {isSpelling && (
         <InputField

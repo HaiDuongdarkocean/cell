@@ -15,11 +15,7 @@
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.headerIcon {
-  color: var(--color-text-secondary);
+  justify-content: center;
 }
 
 .title {
@@ -53,46 +49,12 @@
   font-weight: var(--font-weight-semibold);
 }
 
-.fieldRow {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.fieldLabel {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-}
-
-.assetRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2);
-  background: var(--color-surface-elevated);
-  border-radius: var(--radius-md);
-}
-
-.assetImage {
-  width: var(--space-12);
-  height: var(--space-12);
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-}
-
-.assetName {
-  flex: 1;
+.sectionTitle {
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.assetActions {
-  display: flex;
-  gap: var(--space-2);
-  margin-left: auto;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
 }
 
 .fileInput {

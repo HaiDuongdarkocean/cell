@@ -259,7 +259,7 @@
   padding: var(--space-4);
   background: var(--color-primary-subtle);
   border-radius: var(--radius-lg);
-  text-align: center;
+  text-align: left;
 }
 
 .notesTitle {
