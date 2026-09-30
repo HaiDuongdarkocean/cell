@@ -569,9 +569,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
     deps.closePopup();
 
     if (deps.panelController) {
-      // ADR-065: route to the integrated universal panel. Media is collected
-      // asynchronously so the panel opens with screenshot/audio/image while
-      // the progress chip reports the recording state over the video.
+      // ADR-065: route to the integrated universal panel.
       const chip = showProgressToast(t('dict.toast.preparingCard'), deps.container);
       void (async (): Promise<void> => {
         try {
@@ -583,6 +581,33 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
 
           const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
           const targetLang = settings.subtitleOverlayNativeLanguage || deps.getNativeLang() || 'vi';
+          const selectedWordAudios = (prefill.audioItems ?? []).filter(
+            (item) => item.kind === 'word' && (prefill.selectedAudioIds ?? []).includes(item.id),
+          );
+          const selectedImages = (prefill.imageItems ?? []).filter(
+            (item) => (prefill.selectedImageIds ?? []).includes(item.id),
+          );
+          const video = deps.getVideo();
+          const captureVideo = video && video.videoWidth > 0 && fromSubtitle ? video : undefined;
+
+          sendToCard({
+            video: captureVideo,
+            sourceLang,
+            targetLang,
+            mediaPending: true,
+            prefill: {
+              targetWord: prefill.term,
+              definitions: definitionsFieldText(prefill),
+              sentence: prefill.contextSentence,
+              sentenceTranslation: prefill.translation,
+              wordAudioUrls: prefill.wordAudioUrls,
+              sentenceAudioUrls: captureVideo ? [] : prefill.sentenceAudioUrls,
+              imageUrls: prefill.imageUrls,
+              wordAudioItems: selectedWordAudios,
+              imageItems: selectedImages,
+            },
+          }, action, prefill);
+
           const translationTask = (async (): Promise<string | undefined> => {
             if (prefill.translation || !prefill.contextSentence) return prefill.translation;
             try {
@@ -604,23 +629,22 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
             prefill.translation ||
             (await translationTask);
 
-          const selectedWordAudios = (prefill.audioItems ?? []).filter(
-            (item) => item.kind === 'word' && (prefill.selectedAudioIds ?? []).includes(item.id),
-          );
-          const selectedImages = (prefill.imageItems ?? []).filter(
-            (item) => (prefill.selectedImageIds ?? []).includes(item.id),
-          );
-          const video = deps.getVideo();
-          const context: CardCreatorOpenContext = {
-            video: video && video.videoWidth > 0 && fromSubtitle ? video : undefined,
+          if (!deps.panelController?.isOpen()) {
+            chip.dismiss();
+            return;
+          }
+
+          sendToCard({
+            video: captureVideo,
             sourceLang,
             targetLang,
             cue: media.cue,
             initialMedia: media.initialMedia,
+            mediaPending: false,
             prefill: {
               targetWord: prefill.term,
               definitions: definitionsFieldText(prefill),
-              sentence: prefill.contextSentence,
+              sentence: media.cue?.targetText || prefill.contextSentence,
               sentenceTranslation,
               wordAudioUrls: media.wordAudioUrls,
               sentenceAudioUrls: media.sentenceAudioUrls,
@@ -628,9 +652,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
               wordAudioItems: selectedWordAudios,
               imageItems: selectedImages,
             },
-          };
-
-          sendToCard(context, action, prefill);
+          }, action, prefill);
           chip.dismiss();
         } catch (err: unknown) {
           console.warn('[web-text-dict] sendToCard failed:', err);

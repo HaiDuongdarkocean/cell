@@ -1073,6 +1073,7 @@ describe('createWebTextDictionaryController', () => {
 
   it('Send to Card routes to the integrated panel when panelController is present', async () => {
     const panelController = makePanelController();
+    panelController.isOpen.mockReturnValue(true);
     const ctrl = createWebTextDictionaryController(makeDeps({ panelController }));
     const result = makeResult();
     mockSendMessage.mockResolvedValueOnce({ success: true, data: [result] } as unknown as never);
@@ -1094,8 +1095,7 @@ describe('createWebTextDictionaryController', () => {
     });
     await act(async () => { sendBtn.click(); });
 
-    // Media is fetched asynchronously before routing to the integrated panel.
-    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(2));
     const prefill = panelController.sendToCard.mock.calls[0]![0];
     expect(prefill.term).toBe('take off');
     expect(prefill.contextSentence).toBe('Take off your shoes.');
@@ -1108,6 +1108,7 @@ describe('createWebTextDictionaryController', () => {
 
   it('Send to Card forwards the popup selection snapshot to the integrated panel', async () => {
     const panelController = makePanelController();
+    panelController.isOpen.mockReturnValue(true);
     const ctrl = createWebTextDictionaryController(makeDeps({ panelController }));
     const result = makeResult();
     mockSendMessage.mockResolvedValueOnce({ success: true, data: [result] } as unknown as never);
@@ -1138,7 +1139,7 @@ describe('createWebTextDictionaryController', () => {
     });
     await act(async () => { sendBtn.click(); });
 
-    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(2));
     const prefill = panelController.sendToCard.mock.calls[0]![0];
     expect(prefill.selectedDefinitionIds).toEqual(['d1']);
     expect(prefill.selectedAudioIds).toEqual([]);
@@ -1155,6 +1156,7 @@ describe('createWebTextDictionaryController', () => {
 
   it('Send to Card from subtitle video includes captured screenshot and sentence audio', async () => {
     const panelController = makePanelController();
+    panelController.isOpen.mockReturnValue(true);
     const mockVideo = {
       videoWidth: 1920,
       readyState: 2,
@@ -1198,8 +1200,8 @@ describe('createWebTextDictionaryController', () => {
     });
     await act(async () => { sendBtn.click(); });
 
-    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
-    const prefill = panelController.sendToCard.mock.calls[0]![0];
+    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(2));
+    const prefill = panelController.sendToCard.mock.calls[1]![0];
     expect(prefill.term).toBe('take off');
     expect(prefill.contextSentence).toBe('Take off your shoes.');
     expect(prefill.video).toBe(mockVideo);
@@ -1215,6 +1217,7 @@ describe('createWebTextDictionaryController', () => {
 
   it('Send to Card from web text does not capture video media even when a video is configured', async () => {
     const panelController = makePanelController();
+    panelController.isOpen.mockReturnValue(true);
     const mockVideo = {
       videoWidth: 1920,
       readyState: 2,
@@ -1248,8 +1251,8 @@ describe('createWebTextDictionaryController', () => {
     });
     await act(async () => { sendBtn.click(); });
 
-    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
-    const prefill = panelController.sendToCard.mock.calls[0]![0];
+    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(2));
+    const prefill = panelController.sendToCard.mock.calls[1]![0];
     expect(prefill.video).toBeUndefined();
     expect(prefill.initialMedia ?? []).toHaveLength(0);
     expect(prefill.cue).toBeUndefined();
@@ -1259,6 +1262,7 @@ describe('createWebTextDictionaryController', () => {
 
   it('Send to Card from a subtitle panel cue seeks to and records that cue', async () => {
     const panelController = makePanelController();
+    panelController.isOpen.mockReturnValue(true);
     const mockVideo = {
       videoWidth: 1920,
       readyState: 2,
@@ -1301,8 +1305,8 @@ describe('createWebTextDictionaryController', () => {
     });
     await act(async () => { sendBtn.click(); });
 
-    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
-    const prefill = panelController.sendToCard.mock.calls[0]![0];
+    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(2));
+    const prefill = panelController.sendToCard.mock.calls[1]![0];
     const seekCalls = jest.mocked(seekAndWaitReady).mock.calls;
     expect(seekCalls.length).toBe(1);
     expect(seekCalls[0]![0]).toBe(mockVideo);
@@ -1320,6 +1324,7 @@ describe('createWebTextDictionaryController', () => {
 
   it('Send to Card from a panel cue already playing skips the extra seek', async () => {
     const panelController = makePanelController();
+    panelController.isOpen.mockReturnValue(true);
     const mockVideo = {
       videoWidth: 1920,
       readyState: 2,
@@ -1359,7 +1364,7 @@ describe('createWebTextDictionaryController', () => {
     });
     await act(async () => { sendBtn.click(); });
 
-    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(2));
     expect(jest.mocked(seekAndWaitReady).mock.calls.length).toBe(0);
     const captureCalls = jest.mocked(captureSentenceAudio).mock.calls;
     expect(captureCalls[0]![0]).toBe(mockVideo);
@@ -1370,6 +1375,7 @@ describe('createWebTextDictionaryController', () => {
 
   it('Send to Card falls back to TTS when the panel cue seek cannot land', async () => {
     const panelController = makePanelController();
+    panelController.isOpen.mockReturnValue(true);
     const mockVideo = {
       videoWidth: 1920,
       readyState: 2,
@@ -1410,8 +1416,8 @@ describe('createWebTextDictionaryController', () => {
     });
     await act(async () => { sendBtn.click(); });
 
-    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
-    const prefill = panelController.sendToCard.mock.calls[0]![0];
+    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(2));
+    const prefill = panelController.sendToCard.mock.calls[1]![0];
     expect(jest.mocked(captureSentenceAudio).mock.calls.length).toBe(0);
     expect(prefill.initialMedia ?? []).toHaveLength(0);
     expect(prefill.cue).toBeUndefined();
