@@ -309,15 +309,24 @@ function StepRail({ step }: { step: Step }): React.JSX.Element {
     t('ankiImport.rail.source'), t('ankiImport.rail.scope'), t('ankiImport.rail.language'),
     t('ankiImport.rail.fields'), t('ankiImport.rail.run'), t('ankiImport.rail.result'),
   ];
+  const idx = STEP_INDEX[step];
   return (
-    <HStack gap="2" className={styles.stepRail}>
-      <Badge>{`${STEP_INDEX[step]}/${STEPS.length}`}</Badge>
-      {labels.map((l, i) => (
-        <Text key={l} variant="label" color={i + 1 <= STEP_INDEX[step] ? 'primary' : 'disabled'}>
-          {l}
-        </Text>
-      ))}
-    </HStack>
+    <div className={styles.stepRail}>
+      <Text variant="label">{labels[idx - 1]}</Text>
+      <div
+        className={styles.stepSegments}
+        role="progressbar"
+        aria-valuemin={1}
+        aria-valuemax={STEPS.length}
+        aria-valuenow={idx}
+        aria-label={`${idx}/${STEPS.length}`}
+      >
+        {STEPS.map((s, i) => (
+          <span key={s} className={i < idx ? styles.segDone : styles.seg} />
+        ))}
+      </div>
+      <Text variant="supporting" color="secondary">{`${idx}/${STEPS.length}`}</Text>
+    </div>
   );
 }
 
@@ -337,14 +346,20 @@ function SourceStep({
       <div className={styles.sourceGrid}>
         <SelectableCard role="button" aria-label={t('ankiImport.source.liveTitle')} onSelect={() => { if (!connecting && !parsing) onConnect(); }}>
           <div className={styles.sourceCard}>
-            <HStack gap="2"><Icon name="import" /><Text variant="label">{t('ankiImport.source.liveTitle')}</Text></HStack>
-            <span className={styles.hint}>{t('ankiImport.source.liveHint')}</span>
+            <span className={styles.sourceIcon}><Icon name="import" /></span>
+            <VStack gap="1">
+              <Text variant="label">{t('ankiImport.source.liveTitle')}</Text>
+              <Text variant="supporting" color="secondary">{t('ankiImport.source.liveHint')}</Text>
+            </VStack>
           </div>
         </SelectableCard>
         <SelectableCard role="button" aria-label={t('ankiImport.source.fileTitle')} onSelect={() => { if (!connecting && !parsing) onPickFile(); }}>
           <div className={styles.sourceCard}>
-            <HStack gap="2"><Icon name="folderOpen" /><Text variant="label">{t('ankiImport.source.fileTitle')}</Text></HStack>
-            <span className={styles.hint}>{t('ankiImport.source.fileHint')}</span>
+            <span className={styles.sourceIcon}><Icon name="folderOpen" /></span>
+            <VStack gap="1">
+              <Text variant="label">{t('ankiImport.source.fileTitle')}</Text>
+              <Text variant="supporting" color="secondary">{t('ankiImport.source.fileHint')}</Text>
+            </VStack>
           </div>
         </SelectableCard>
       </div>
@@ -429,8 +444,8 @@ function ScopeStep({
             }} />
             <span className={styles.pickName}>{r.flatName}</span>
             <span className={styles.pickCounts}>
-              {r.counts.new > 0 && <Badge size="sm">{t('ankiImport.scope.countNew', [r.counts.new])}</Badge>}
-              {r.counts.learning > 0 && <Badge size="sm">{t('ankiImport.scope.countLearning', [r.counts.learning])}</Badge>}
+              {r.counts.new > 0 && <Badge variant="success" size="sm">{t('ankiImport.scope.countNew', [r.counts.new])}</Badge>}
+              {r.counts.learning > 0 && <Badge variant="muted" size="sm">{t('ankiImport.scope.countLearning', [r.counts.learning])}</Badge>}
               {r.counts.review > 0 && <Badge size="sm">{t('ankiImport.scope.countReview', [r.counts.review])}</Badge>}
               {r.counts.suspended > 0 && <Badge variant="warning" size="sm">{t('ankiImport.scope.countSuspended', [r.counts.suspended])}</Badge>}
             </span>

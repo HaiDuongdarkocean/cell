@@ -1,36 +1,219 @@
-.stepRail { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; align-items: center; }
-.stepRail > * { flex-shrink: 0; }
-
-.sourceGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.sourceCard { display: flex; flex-direction: column; gap: 6px; padding: 4px; }
-.sourceCard .hint, .hint { font-size: 12px; color: var(--color-text-muted, #666); }
-.checklistBox { margin-top: 10px; display: grid; gap: 8px; }
-.checklistRow { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-
-.pickList { display: grid; gap: 6px; max-height: 220px; overflow-y: auto; }
-.pickRow {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  padding: 8px 10px; border-radius: 8px;
-  background: var(--color-surface-card, #fff);
+.stepRail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
 }
-.pickRow.disabled { opacity: .55; }
-.pickName { flex: 1; min-width: 120px; font-size: 13.5px; color: var(--color-text-primary, #1a1a1a); overflow-wrap: break-word; }
-.pickCounts { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 
-.ntTabs { flex-wrap: wrap; }
-.ntTabExcluded { opacity: 0.45; text-decoration: line-through; }
-.mapLayout { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.fieldRow { display: grid; grid-template-columns: 110px 1fr auto; gap: 8px; align-items: center; margin-bottom: 6px; }
-.fieldName { font-size: 13px; color: var(--color-text-primary, #1a1a1a); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fieldMore { font-size: 11px; color: var(--color-text-secondary); }
-.previewCardWrap { width: 100%; min-height: 0; max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; padding: var(--space-6); }
-.previewHint { text-align: center; margin-top: 6px; }
-.sampleNav { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.stepSegments {
+  flex: 1;
+  display: flex;
+  gap: var(--space-1);
+}
 
-.reportList { display: grid; gap: 8px; }
-.reportRow { display: flex; align-items: center; justify-content: space-between; font-size: 13.5px; }
-.centerCol { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px 0; }
+.seg,
+.segDone {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--radius-full);
+}
+
+.seg {
+  background: var(--color-surface-hover);
+}
+
+.segDone {
+  background: var(--color-primary);
+  transition: background var(--duration-normal) var(--ease-out);
+}
+
+.sourceGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.sourceCard {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.sourceIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.pickList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.pickRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2-5);
+  border-radius: var(--radius-element);
+  background: var(--color-surface-elevated);
+  cursor: pointer;
+}
+
+.pickRow:hover {
+  background: var(--color-surface-hover);
+}
+
+.pickName {
+  flex: 1;
+  min-width: 120px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+  overflow-wrap: break-word;
+}
+
+.pickCounts {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.ntTabs {
+  display: flex;
+  gap: var(--space-1);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.ntTabs > * {
+  flex-shrink: 0;
+}
+
+.ntTabExcluded {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.mapLayout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.fieldRows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.fieldName {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.fieldMore {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.checklistBox {
+  border-radius: var(--radius-element);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: var(--color-surface-elevated);
+}
+
+.checklistRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.centerCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) 0;
+  width: 100%;
+}
+
+.reportList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+}
+
+.reportRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-2-5);
+  border-radius: var(--radius-element);
+  background: var(--color-surface-elevated);
+}
+
+.previewHint {
+  margin-top: var(--space-2);
+}
+
+.sampleNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.previewCardWrap {
+  width: 100%;
+  min-height: 0;
+  max-height: 46vh;
+  overflow-y: auto;
+  border-radius: var(--radius-card);
+}
 
 @media (max-width: 560px) {
-  .sourceGrid, .mapLayout { grid-template-columns: 1fr; }
+  .sourceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .mapLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .fieldRow {
+    grid-template-columns: 96px 1fr;
+  }
+
+  .pickCounts {
+    width: 100%;
+    margin-left: calc(var(--space-2) + 16px);
+  }
+
+  .previewCardWrap {
+    max-height: 56vh;
+  }
 }
