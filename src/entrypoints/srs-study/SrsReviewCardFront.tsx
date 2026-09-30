@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Box, Heading, InputField } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
@@ -13,6 +13,7 @@ import {
   playAudio,
   playAudioUrl,
   playableUrl,
+  sequentialAudio,
   useImageBlobUrl,
 } from './srsCardShared';
 import styles from './SrsReviewCard.module.css';
@@ -133,7 +134,7 @@ export function SrsReviewCardFront({
   const [repoAudio, setRepoAudio] = useState<ReadonlyMap<string, SrsAudioAsset>>(new Map());
 
   const hasImageField = Object.values(stimulus.payload).some((v) => v.kind === 'image');
-  const hasAudioField = Object.values(stimulus.payload).some((v) => v.kind === 'audio');
+  const hasUnplayableAudio = Object.values(stimulus.payload).some((v) => v.kind === 'audio' && !playableUrl(v.value));
 
   useEffect(() => {
     if (!hasImageField) return;
@@ -143,11 +144,26 @@ export function SrsReviewCardFront({
   }, [note.id, hasImageField]);
 
   useEffect(() => {
-    if (!hasAudioField) return;
+    if (!hasUnplayableAudio) return;
     void getAudioAssetsByNote(note.id)
       .then((assets) => { setRepoAudio(new Map(assets.map((a) => [a.fieldId, a]))); })
       .catch(() => {});
-  }, [note.id, hasAudioField]);
+  }, [note.id, hasUnplayableAudio]);
+
+  const frontAudio = useMemo(() => {
+    const sources: (SrsAudioAsset | string)[] = [];
+    for (const fieldId of ['sentAudio', 'wordAudio'] as const) {
+      const value = stimulus.payload[fieldId];
+      if (value?.kind !== 'audio') continue;
+      const url = playableUrl(value.value);
+      const asset = audioCache.get(audioAssetId(note.id, fieldId, value.source)) ?? repoAudio.get(fieldId);
+      const src = url ?? asset;
+      if (src) sources.push(src);
+    }
+    return sources;
+  }, [note.id, stimulus, audioCache, repoAudio]);
+
+  useEffect(() => sequentialAudio(frontAudio), [frontAudio]);
 
   return (
     <div

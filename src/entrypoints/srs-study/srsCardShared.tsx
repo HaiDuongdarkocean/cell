@@ -22,6 +22,33 @@ export function playableUrl(value: string): string | undefined {
   return /^(data:|https?:|blob:)/.test(value) ? value : undefined;
 }
 
+export function sequentialAudio(sources: readonly (SrsAudioAsset | string)[]): () => void {
+  let cancelled = false;
+  let current: HTMLAudioElement | null = null;
+  const run = async (): Promise<void> => {
+    for (const src of sources) {
+      if (cancelled) return;
+      const url = typeof src === 'string'
+        ? src
+        : URL.createObjectURL(new Blob([src.bytes], { type: src.mimeType }));
+      const audio = new Audio(url);
+      current = audio;
+      await new Promise<void>((resolve) => {
+        audio.onended = () => resolve();
+        audio.onerror = () => resolve();
+        void audio.play().then(() => undefined, () => resolve());
+      });
+      current = null;
+      if (typeof src !== 'string') URL.revokeObjectURL(url);
+    }
+  };
+  void run();
+  return () => {
+    cancelled = true;
+    current?.pause();
+  };
+}
+
 export function useImageBlobUrl(asset: SrsImageAsset | undefined): string | undefined {
   return useMemo(() => {
     if (!asset) return undefined;

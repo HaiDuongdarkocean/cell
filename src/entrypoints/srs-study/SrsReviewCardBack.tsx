@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Box, Button, Heading, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
@@ -7,7 +7,7 @@ import { parseDefEntries } from '@/features/srs';
 import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepository';
 import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote } from '@/entities/srs/types';
-import { HighlightedSentence, playAudio, playAudioUrl, playableUrl, useImageBlobUrl } from './srsCardShared';
+import { HighlightedSentence, playAudio, playAudioUrl, playableUrl, sequentialAudio, useImageBlobUrl } from './srsCardShared';
 import styles from './SrsReviewCard.module.css';
 
 const BUILTIN_FIELDS = new Set(['target', 'ipa', 'sentence', 'def', 'wordAudio', 'sentAudio', 'image', 'translation', 'notes', 'examples']);
@@ -142,11 +142,22 @@ export function SrsReviewCardBack({
   }, [note.id, imageFields.length]);
 
   useEffect(() => {
-    if (!wordAudio && !sentAudio) return;
+    if (!(wordAudio && !wordAudioUrl) && !(sentAudio && !sentAudioUrl)) return;
     void getAudioAssetsByNote(note.id)
       .then((assets) => { setRepoAudio(new Map(assets.map((a) => [a.fieldId, a]))); })
       .catch(() => {});
-  }, [note.id, wordAudio, sentAudio]);
+  }, [note.id, wordAudio, sentAudio, wordAudioUrl, sentAudioUrl]);
+
+  const backAudio = useMemo(() => {
+    const sources: (SrsAudioAsset | string)[] = [];
+    const sent = sentAudioUrl ?? sentAudioAsset;
+    const word = wordAudioUrl ?? wordAudioAsset;
+    if (sent) sources.push(sent);
+    if (word) sources.push(word);
+    return sources;
+  }, [sentAudioUrl, sentAudioAsset, wordAudioUrl, wordAudioAsset]);
+
+  useEffect(() => sequentialAudio(backAudio), [backAudio]);
 
   const hasTranslation = note.fields.translation?.kind === 'translation' && Boolean(note.fields.translation.value);
   const ipa = fieldText(note.fields.ipa);
