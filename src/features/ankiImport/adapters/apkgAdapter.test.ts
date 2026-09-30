@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { zipSync, strToU8 } from 'fflate';
-import { parseApkg, ApkgError, extractMemoryStateFromCardData } from './apkgAdapter';
+import { parseApkg, extractMemoryStateFromCardData } from './apkgAdapter';
 
 jest.mock('sql.js', () => {
   const real = jest.requireActual('sql.js/dist/sql-wasm.js');

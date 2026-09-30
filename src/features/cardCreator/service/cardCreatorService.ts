@@ -70,7 +70,7 @@ import tokensJson from '@/shared/styles/tokens.json';
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
 /** Send a raw AnkiConnect action through the background. */
-async function sendAction(
+export async function sendAction(
   url: string,
   action: string,
   params?: Record<string, unknown>,
