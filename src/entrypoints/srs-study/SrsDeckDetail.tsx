@@ -257,7 +257,7 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', onBack, onCha
             <Button
               ref={kebabRef}
               variant="ghost" size="sm" shape="circle"
-              onClick={() => { setMenuOpen(true); }}
+              onClick={() => { setMenuOpen((v) => !v); }}
               aria-label={t('srs.home.deckActions')}
               className={styles.chromeButton}
             >

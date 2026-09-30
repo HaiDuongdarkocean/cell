@@ -80,7 +80,7 @@ function DeckRow({
             variant="ghost"
             size="sm"
             shape="circle"
-            onClick={() => { setMenuOpen(true); }}
+            onClick={() => { setMenuOpen((v) => !v); }}
             aria-label={t('srs.home.deckActions')}
           >
             <Icon name="ellipsisVertical" />
