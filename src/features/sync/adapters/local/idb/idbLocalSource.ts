@@ -25,8 +25,10 @@ import {
   SYNC_META,
   SYNC_OUTBOX,
   ensureSyncRuntime,
+  metaPk,
   mintRecordHlc,
   stampRemoteMeta,
+  stampRemoteMetaWith,
 } from './capture';
 import type { StoredRecordMeta } from './capture';
 import {
@@ -94,15 +96,18 @@ export abstract class IdbLocalSource implements LocalSource {
   async resolve(keys: PendingKey[]): Promise<ChangeRecord[]> {
     const db = await this.openDb();
     const tx = db.transaction([...this.readStores()], 'readonly');
+    const resolved = await Promise.all(
+      keys.map(async (pending) => {
+        if (pending.dataClass !== this.dataClass) return [];
+        const meta = await getMetaAt(tx, pending.key, pending.scope);
+        if (!meta) return [];
+        const local = await this.readLocalValue(tx, pending.key);
+        return this.resolveRecords(tx, pending, meta, local);
+      }),
+    );
     const byKey = new Map<RecordKey, ChangeRecord>();
-    for (const pending of keys) {
-      if (pending.dataClass !== this.dataClass) continue;
-      const meta = await getMetaAt(tx, pending.key, pending.scope);
-      if (!meta) continue;
-      const local = await this.readLocalValue(tx, pending.key);
-      for (const record of await this.resolveRecords(tx, pending, meta, local)) {
-        byKey.set(record.key, record);
-      }
+    for (const records of resolved) {
+      for (const record of records) byKey.set(record.key, record);
     }
     await awaitIdbTx(tx);
     return [...byKey.values()];
@@ -113,39 +118,33 @@ export abstract class IdbLocalSource implements LocalSource {
     await ensureSyncRuntime();
     const db = await this.openDb();
     const tx = db.transaction([...this.readStores()], 'readonly');
-    for (const key of keys) {
-      if (!this.knownKey(key)) {
-        out.set(key, null);
-        continue;
-      }
-      const meta = await getMetaAt(tx, key, scope);
-      if (meta?.op === 'delete') {
-        out.set(key, metaChangeRecord(scope, this.dataClass, key, meta));
-        continue;
-      }
-      const local = await this.readLocalValue(tx, key);
-      if (meta) {
-        out.set(
+    const entries = await Promise.all(
+      keys.map(async (key): Promise<ChangeRecord | null> => {
+        if (!this.knownKey(key)) return null;
+        const meta = await getMetaAt(tx, key, scope);
+        if (meta?.op === 'delete') {
+          return metaChangeRecord(scope, this.dataClass, key, meta);
+        }
+        const local = await this.readLocalValue(tx, key);
+        if (meta) {
+          return local.found
+            ? metaChangeRecord(scope, this.dataClass, key, meta, local.value)
+            : null;
+        }
+        if (!local.found) return null;
+        const localScope = await this.scopeOfLocalValue(tx, key, local.value);
+        if (localScope !== scope) return null;
+        const hlc = await mintRecordHlc();
+        return metaChangeRecord(
+          scope,
+          this.dataClass,
           key,
-          local.found ? metaChangeRecord(scope, this.dataClass, key, meta, local.value) : null,
+          { hlc, firstHlc: hlc, op: 'put' },
+          local.value,
         );
-        continue;
-      }
-      if (!local.found) {
-        out.set(key, null);
-        continue;
-      }
-      const localScope = await this.scopeOfLocalValue(tx, key, local.value);
-      if (localScope !== scope) {
-        out.set(key, null);
-        continue;
-      }
-      const hlc = await mintRecordHlc();
-      out.set(
-        key,
-        metaChangeRecord(scope, this.dataClass, key, { hlc, firstHlc: hlc, op: 'put' }, local.value),
-      );
-    }
+      }),
+    );
+    for (const [i, key] of keys.entries()) out.set(key, entries[i]);
     await awaitIdbTx(tx);
     return out;
   }
@@ -197,19 +196,32 @@ export abstract class IdbLocalSource implements LocalSource {
   }
 
   async stampCommitted(records: readonly ChangeRecord[]): Promise<void> {
-    if (records.length === 0) return;
+    const mine = records.filter((record) => record.dataClass === this.dataClass);
+    if (mine.length === 0) return;
     const db = await this.openDb();
     const tx = db.transaction([SYNC_META], 'readwrite');
     const store = tx.objectStore(SYNC_META);
-    for (const record of records) {
-      if (record.dataClass !== this.dataClass) continue;
-      await stampRemoteMeta(store, record.key, {
-        scope: record.scope,
-        hlc: record.hlc,
-        firstHlc: record.firstHlc ?? record.hlc,
-        op: record.op,
-        valueHash: record.op === 'put' ? stableHash(record.value) : undefined,
-      });
+    const prevs = await Promise.all(
+      mine.map((record) => getMetaAt(tx, record.key, record.scope)),
+    );
+    const stamped = new Map<string, StoredRecordMeta>();
+    for (const [i, record] of mine.entries()) {
+      const pk = metaPk(record.scope, record.key);
+      stamped.set(
+        pk,
+        stampRemoteMetaWith(
+          store,
+          record.key,
+          {
+            scope: record.scope,
+            hlc: record.hlc,
+            firstHlc: record.firstHlc ?? record.hlc,
+            op: record.op,
+            valueHash: record.op === 'put' ? stableHash(record.value) : undefined,
+          },
+          stamped.get(pk) ?? prevs[i],
+        ),
+      );
     }
     await awaitIdbTx(tx);
   }

@@ -311,23 +311,22 @@ class DictResourceLocalSource extends IdbLocalSource {
     const bytes = await blobBytes(blob);
     const { dictRows, freqRows } = deserializeResourcePortable(isGzip(bytes) ? gunzipFile(bytes) : bytes);
     const wtx = db.transaction([STORES.DICTIONARY, STORES.FREQUENCY], 'readwrite');
-    for (const contentStore of [STORES.DICTIONARY, STORES.FREQUENCY]) {
-      const objectStore = wtx.objectStore(contentStore);
-      const stale = (await idbRequest(
-        objectStore.index(INDEXES.by_resource).getAllKeys(row.id),
-      )) as IDBValidKey[];
-      for (const key of stale) await idbRequest(objectStore.delete(key));
+    const dictStore = wtx.objectStore(STORES.DICTIONARY);
+    const freqStore = wtx.objectStore(STORES.FREQUENCY);
+    const staleKeys = await Promise.all(
+      [dictStore, freqStore].map(
+        (store) =>
+          idbRequest(store.index(INDEXES.by_resource).getAllKeys(row.id)) as Promise<
+            IDBValidKey[]
+          >,
+      ),
+    );
+    for (const [i, keys] of staleKeys.entries()) {
+      const store = i === 0 ? dictStore : freqStore;
+      for (const key of keys) store.delete(key);
     }
-    for (const entry of dictRows) {
-      await idbRequest(
-        wtx.objectStore(STORES.DICTIONARY).add({ ...entry, resourceId: row.id }),
-      );
-    }
-    for (const entry of freqRows) {
-      await idbRequest(
-        wtx.objectStore(STORES.FREQUENCY).add({ ...entry, resourceId: row.id }),
-      );
-    }
+    for (const entry of dictRows) dictStore.add({ ...entry, resourceId: row.id });
+    for (const entry of freqRows) freqStore.add({ ...entry, resourceId: row.id });
     await awaitIdbTx(wtx);
     if (row.type === 'DICTIONARY' && row.format === 'json-entries') {
       await buildPhraseIndexForResource(this.langCode, row.id);
@@ -351,15 +350,22 @@ class DictResourceLocalSource extends IdbLocalSource {
     const store = tx.objectStore(STORES.RESOURCE);
     const row = await this.resourceByToken(store, token);
     if (row?.id !== undefined) {
-      for (const contentStore of [STORES.DICTIONARY, STORES.FREQUENCY]) {
-        const objectStore = tx.objectStore(contentStore);
-        const keys = (await idbRequest(
-          objectStore.index(INDEXES.by_resource).getAllKeys(row.id),
-        )) as IDBValidKey[];
-        for (const contentKey of keys) await idbRequest(objectStore.delete(contentKey));
+      const contentKeys = await Promise.all(
+        [STORES.DICTIONARY, STORES.FREQUENCY].map(
+          (contentStore) =>
+            idbRequest(
+              tx.objectStore(contentStore).index(INDEXES.by_resource).getAllKeys(row.id!),
+            ) as Promise<IDBValidKey[]>,
+        ),
+      );
+      for (const [i, keys] of contentKeys.entries()) {
+        const objectStore = tx.objectStore(
+          i === 0 ? STORES.DICTIONARY : STORES.FREQUENCY,
+        );
+        for (const contentKey of keys) objectStore.delete(contentKey);
       }
-      await idbRequest(tx.objectStore(STORES.PHRASE_INDEX).delete(row.id));
-      await idbRequest(store.delete(row.id));
+      tx.objectStore(STORES.PHRASE_INDEX).delete(row.id);
+      store.delete(row.id);
     }
     const metas = await listMetaEntriesIn(tx, `${RESOURCE_PREFIX}${token}/`);
     for (const meta of metas) {

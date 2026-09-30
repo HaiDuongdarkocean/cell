@@ -28,12 +28,14 @@ async function readResourceBlob(langCode: string, contentHash: string): Promise<
   const resource = resources.find((r) => r.id !== undefined);
   if (resource === undefined) return null;
   const wtx = db.transaction([STORES.DICTIONARY, STORES.FREQUENCY], 'readonly');
-  const dictRows = (await idbRequest(
-    wtx.objectStore(STORES.DICTIONARY).index(INDEXES.by_resource).getAll(resource.id),
-  )) as Record<string, unknown>[];
-  const freqRows = (await idbRequest(
-    wtx.objectStore(STORES.FREQUENCY).index(INDEXES.by_resource).getAll(resource.id),
-  )) as Record<string, unknown>[];
+  const [dictRows, freqRows] = (await Promise.all([
+    idbRequest(
+      wtx.objectStore(STORES.DICTIONARY).index(INDEXES.by_resource).getAll(resource.id),
+    ),
+    idbRequest(
+      wtx.objectStore(STORES.FREQUENCY).index(INDEXES.by_resource).getAll(resource.id),
+    ),
+  ])) as [Record<string, unknown>[], Record<string, unknown>[]];
   const bytes = gzipSync(serializeResourcePortable(dictRows, freqRows), { mtime: 0 });
   const buffer = bytes.buffer.slice(
     bytes.byteOffset,

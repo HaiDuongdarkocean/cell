@@ -208,13 +208,12 @@ export async function captureAll(store: IDBObjectStore, recs: readonly CaptureIn
   for (const rec of recs) await captureChange(store, rec);
 }
 
-export async function stampRemoteMeta(
+export function stampRemoteMetaWith(
   store: IDBObjectStore,
   key: RecordKey,
   meta: { scope: Scope; hlc: Hlc; firstHlc?: Hlc; op: ChangeOp; valueHash?: string },
-): Promise<StoredRecordMeta> {
-  const metaStore = store.transaction.objectStore(SYNC_META);
-  const prev = await readRecordMeta(store, key, meta.scope);
+  prev?: StoredRecordMeta,
+): StoredRecordMeta {
   const next: StoredRecordMeta = {
     key: metaPk(meta.scope, key),
     recKey: key,
@@ -224,9 +223,18 @@ export async function stampRemoteMeta(
     op: meta.op,
     valueHash: meta.valueHash ?? prev?.valueHash,
   };
-  metaStore.put(next);
+  store.transaction.objectStore(SYNC_META).put(next);
   runtime?.clock.observe(meta.hlc);
   return next;
+}
+
+export async function stampRemoteMeta(
+  store: IDBObjectStore,
+  key: RecordKey,
+  meta: { scope: Scope; hlc: Hlc; firstHlc?: Hlc; op: ChangeOp; valueHash?: string },
+): Promise<StoredRecordMeta> {
+  const prev = await readRecordMeta(store, key, meta.scope);
+  return stampRemoteMetaWith(store, key, meta, prev);
 }
 
 export async function listMetaByKey(
