@@ -9,6 +9,7 @@ import {
   getCollectionByLanguageProfileId,
   getDecksByCollection,
   getNote,
+  getNotetype,
   getReviewEventsByCard,
   getSrsDbName,
 } from '@/features/srs';
@@ -108,7 +109,6 @@ describe('importNormalized', () => {
     expect(report.skippedSuspended).toBe(1); // 1003
     expect(report.skippedCloze).toBe(1); // 1004
     expect(report.decksCreated).toBe(1);
-    expect(report.notetypesCreated).toBe(1);
     expect(report.reviewRecords).toBe(2);
     expect(report.mediaHits).toBe(3); // each imported note references cat.mp3
 
@@ -127,11 +127,17 @@ describe('importNormalized', () => {
     const c1002 = cards.find((c) => c.importSource?.cardId === 1002)!;
     expect(c1002.components.meaning.fsrsState.state).toBe(0);
 
-    // sibling card got its own note clone
+    // sibling card got its own note clone, normalized onto the system notetype
     const n1002 = await getNote(c1002.noteId);
     expect(n1002.id).not.toBe(c1001.noteId);
     expect(n1002.targetWord).toBe('猫');
     expect(n1002.tags).toEqual(['jlpt']);
+    const sysNt = await getNotetype(`default-word-${collection!.id}`);
+    expect(sysNt).toBeTruthy();
+    expect(n1002.notetypeId).toBe(sysNt!.id);
+    expect(n1002.fields['target']).toEqual({ kind: 'text', value: '猫' });
+    expect(n1002.fields['wordAudio']?.kind).toBe('audio');
+    expect(collection!.defaultNotetypeId).toBe(sysNt!.id);
 
     // revlog written for 1001
     const revs = await getReviewEventsByCard(c1001.id);
@@ -151,7 +157,6 @@ describe('importNormalized', () => {
     expect(second.importedCards).toBe(0);
     expect(second.duplicates).toBe(3);
     expect(second.decksCreated).toBe(0);
-    expect(second.notetypesCreated).toBe(0);
 
     const collection = await getCollectionByLanguageProfileId('lp1');
     const decks = await getDecksByCollection(collection!.id);
@@ -162,7 +167,7 @@ describe('importNormalized', () => {
     expect(revs.length).toBeLessThanOrEqual(2);
   });
 
-  it('counts media misses and keeps markup text', async () => {
+  it('counts media misses and leaves the field unset', async () => {
     const data = makeData({
       media: { names: [], resolve: async () => null },
     });
@@ -172,6 +177,12 @@ describe('importNormalized', () => {
     expect(report.importedCards).toBe(3);
     expect(report.mediaMisses).toBe(3);
     expect(report.mediaHits).toBe(0);
+
+    const collection = await getCollectionByLanguageProfileId('lp1');
+    const decks = await getDecksByCollection(collection!.id);
+    const cards = await getCardsByDeck(decks[0]!.id);
+    const note = await getNote(cards[0]!.noteId);
+    expect(note.fields['wordAudio']).toBeUndefined();
   });
 
   it('aborts mid-run leaving only committed bundles', async () => {

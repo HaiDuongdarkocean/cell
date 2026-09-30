@@ -1,4 +1,4 @@
-import { guessFieldMapping, synthesizeNotetype, buildNoteFields, htmlToText, mediaRefsIn } from './fieldMapping';
+import { guessFieldMapping, buildNoteFields, htmlToText, mediaRefsIn } from './fieldMapping';
 import type { NormalizedAnkiNote, NormalizedAnkiNotetype } from '../model/normalized';
 
 const NT: NormalizedAnkiNotetype = {
@@ -42,6 +42,23 @@ describe('guessFieldMapping', () => {
     expect(m['Extra']).toBe('notes');
   });
 
+  it('sentence-named audio field maps to sentenceAudio', () => {
+    const nt: NormalizedAnkiNotetype = {
+      id: 'm2', name: 'Mining', isCloze: false,
+      fields: [
+        { name: 'Word', ord: 0 },
+        { name: 'Sentence Audio', ord: 1 },
+        { name: 'Word Audio', ord: 2 },
+      ],
+    };
+    const notes: NormalizedAnkiNote[] = [
+      { id: 1, modelId: 'm2', tags: [], fields: ['猫', '[sound:s.mp3]', '[sound:w.mp3]'] },
+    ];
+    const m = guessFieldMapping(nt, notes);
+    expect(m['Sentence Audio']).toBe('sentenceAudio');
+    expect(m['Word Audio']).toBe('audio');
+  });
+
   it('mixed text+media field keeps text role', () => {
     const notes = [{ ...NOTES[0]!, fields: ['捨てる', 'to throw away [sound:s.mp3]', '文。', '', '', ''] }];
     const m = guessFieldMapping(NT, notes);
@@ -49,52 +66,49 @@ describe('guessFieldMapping', () => {
   });
 });
 
-describe('synthesizeNotetype', () => {
+describe('buildNoteFields (system notetype)', () => {
   const mapping = guessFieldMapping(NT, NOTES);
-  const nt = synthesizeNotetype('col1', NT, mapping, NOTES);
 
-  it('creates fields with role-derived types and a text target', () => {
-    expect(nt.targetFieldId).toBe('f0');
-    expect(nt.fields.find((f) => f.id === 'f3')?.type).toBe('audio');
-    expect(nt.fields.find((f) => f.id === 'f4')?.type).toBe('image');
-    expect(nt.fields.find((f) => f.id === 'f5')?.type).toBe('text'); // notes
-  });
-
-  it('every component type has ≥1 template and a target-only fallback', () => {
-    for (const c of ['meaning', 'sound', 'spelling'] as const) {
-      const list = nt.frontTemplates.filter((t) => t.componentType === c);
-      expect(list.length).toBeGreaterThanOrEqual(1);
-      expect(list.at(-1)!.fieldIds).toEqual(['f0']); // guaranteed-renderable fallback
-    }
-  });
-
-  it('emits __media field for mixed text+media', () => {
-    const notes = [{ ...NOTES[0]!, fields: ['w', 'def [sound:x.mp3]', 's', '', '', ''] }];
-    const m = guessFieldMapping(NT, notes);
-    const mixed = synthesizeNotetype('col1', NT, m, notes);
-    const media = mixed.fields.find((f) => f.id === 'f1__media');
-    expect(media?.type).toBe('audio');
-  });
-});
-
-describe('buildNoteFields', () => {
-  const mapping = guessFieldMapping(NT, NOTES);
-  const nt = synthesizeNotetype('col1', NT, mapping, NOTES);
-
-  it('builds typed values + media requests', () => {
-    const { fields, mediaRequests } = buildNoteFields(NOTES[0]!, NT, nt, mapping);
-    expect(fields['f0']).toEqual({ kind: 'text', value: '捨てる' });
-    expect(fields['f3']).toEqual({ kind: 'audio', value: 'w.mp3', source: 'local' });
-    expect(fields['f4']).toEqual({ kind: 'image', value: 'p.png' });
+  it('normalizes fields onto system field ids + media requests', () => {
+    const { fields, mediaRequests } = buildNoteFields(NOTES[0]!, NT, mapping);
+    expect(fields['target']).toEqual({ kind: 'text', value: '捨てる' });
+    expect(fields['def']).toEqual({ kind: 'text', value: 'to throw away' });
+    expect(fields['sentence']).toEqual({ kind: 'text', value: '要らないものは捨てる。' });
+    expect(fields['wordAudio']).toEqual({ kind: 'audio', value: 'w.mp3', source: 'local' });
+    expect(fields['image']).toEqual({ kind: 'image', value: 'p.png' });
     expect(mediaRequests).toEqual([
-      { fieldId: 'f3', filename: 'w.mp3', kind: 'audio' },
-      { fieldId: 'f4', filename: 'p.png', kind: 'image' },
+      { fieldId: 'wordAudio', filename: 'w.mp3', kind: 'audio' },
+      { fieldId: 'image', filename: 'p.png', kind: 'image' },
     ]);
   });
 
   it('missing media value → no request, no field', () => {
-    const { fields, mediaRequests } = buildNoteFields(NOTES[1]!, NT, nt, mapping);
-    expect(fields['f4']).toBeUndefined();
-    expect(mediaRequests.find((r) => r.fieldId === 'f4')).toBeUndefined();
+    const { fields, mediaRequests } = buildNoteFields(NOTES[1]!, NT, mapping);
+    expect(fields['image']).toBeUndefined();
+    expect(mediaRequests.find((r) => r.fieldId === 'image')).toBeUndefined();
+  });
+
+  it('media embedded in a text field routes to the free media field', () => {
+    const note: NormalizedAnkiNote = { ...NOTES[0]!, fields: ['猫', 'def <img src="x.png">', 'câu [sound:s.mp3]', '', '', ''] };
+    const { fields, mediaRequests } = buildNoteFields(note, NT, mapping);
+    expect(fields['def']).toEqual({ kind: 'text', value: 'def' });
+    expect(fields['image']).toEqual({ kind: 'image', value: 'x.png' });
+    expect(fields['sentAudio']).toEqual({ kind: 'audio', value: 's.mp3', source: 'local' });
+    expect(mediaRequests.map((r) => r.fieldId)).toEqual(['image', 'sentAudio']);
+  });
+
+  it('two text fields sharing a role merge with a blank line', () => {
+    const m = { Expression: 'target', Meaning: 'definition', Extra: 'definition' } as const;
+    const note: NormalizedAnkiNote = { ...NOTES[0]!, fields: ['猫', 'a', 's', '', '', 'b'] };
+    const { fields } = buildNoteFields(note, NT, m);
+    expect(fields['def']).toEqual({ kind: 'text', value: 'a\n\nb' });
+  });
+
+  it('second target-mapped field overflows to notes', () => {
+    const m = { Expression: 'target', Extra: 'target' } as const;
+    const note: NormalizedAnkiNote = { ...NOTES[0]!, fields: ['猫', '', '', '', '', 'alias'] };
+    const { fields } = buildNoteFields(note, NT, m);
+    expect(fields['target']).toEqual({ kind: 'text', value: '猫' });
+    expect(fields['notes']).toEqual({ kind: 'text', value: 'alias' });
   });
 });

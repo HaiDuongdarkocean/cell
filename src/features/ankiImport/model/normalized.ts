@@ -1,5 +1,3 @@
-import type { SrsField } from '@/entities/srs/types';
-
 export type FieldRole =
   | 'target'
   | 'definition'
@@ -7,6 +5,7 @@ export type FieldRole =
   | 'translation'
   | 'context'
   | 'audio'
+  | 'sentenceAudio'
   | 'image'
   | 'notes'
   | 'skip';
@@ -90,15 +89,3 @@ export interface ImportSelection {
   readonly notetypeIds: ReadonlySet<string>;
 }
 
-/** Maps FieldRole → SrsField['type'] for synthesized notetypes. */
-export const ROLE_TO_FIELD_TYPE: Record<FieldRole, SrsField['type']> = {
-  target: 'text',
-  definition: 'text',
-  sentence: 'text',
-  translation: 'translation',
-  context: 'context',
-  audio: 'audio',
-  image: 'image',
-  notes: 'text',
-  skip: 'text',
-};

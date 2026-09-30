@@ -23,7 +23,7 @@ const STEPS: readonly Step[] = ['source', 'scope', 'language', 'mapping', 'runni
 const STEP_INDEX: Record<Step, number> = { source: 1, scope: 2, language: 3, mapping: 4, running: 5, report: 6 };
 
 const ROLE_KEYS: readonly FieldRole[] = [
-  'target', 'definition', 'sentence', 'translation', 'context', 'audio', 'image', 'notes', 'skip',
+  'target', 'definition', 'sentence', 'translation', 'context', 'audio', 'sentenceAudio', 'image', 'notes', 'skip',
 ];
 
 export interface ImportWizardProps {
@@ -130,10 +130,12 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
     }
   }, [acceptData]);
 
-  const selectedNt = useMemo(
-    () => (data?.notetypes ?? []).filter((n) => ntIds.has(n.id) && !n.isCloze),
-    [data, ntIds],
-  );
+  const selectedNt = useMemo(() => {
+    const withNotes = new Set((data?.notes ?? []).map((n) => n.modelId));
+    return (data?.notetypes ?? []).filter(
+      (n) => ntIds.has(n.id) && !n.isCloze && withNotes.has(n.id),
+    );
+  }, [data, ntIds]);
 
   // Seed mappings when entering the mapping step (preset → heuristic).
   useEffect(() => {
@@ -500,7 +502,7 @@ function MappingStep({
     : sentenceText;
   const definitionText = [textAt('definition'), textAt('translation'), textAt('context'), textAt('notes')]
     .filter(Boolean).join('\n');
-  const hasAudio = sample ? nt.fields.some((f) => roleOf(f.ord) === 'audio' || mediaRefsIn(sample.fields[f.ord] ?? '').sounds.length > 0) : false;
+  const hasAudio = sample ? nt.fields.some((f) => roleOf(f.ord) === 'audio' || roleOf(f.ord) === 'sentenceAudio' || mediaRefsIn(sample.fields[f.ord] ?? '').sounds.length > 0) : false;
   const hasImage = sample ? nt.fields.some((f) => roleOf(f.ord) === 'image' || mediaRefsIn(sample.fields[f.ord] ?? '').images.length > 0) : false;
 
   const cardCount = data.cards.filter((c) => noteModel.get(c.noteId) === nt.id && c.queue !== -1).length;

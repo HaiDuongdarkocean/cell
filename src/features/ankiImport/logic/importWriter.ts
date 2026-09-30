@@ -4,7 +4,6 @@ import type {
   SrsDeck,
   SrsFieldValue,
   SrsNote,
-  SrsNotetype,
   SrsStudyConfig,
 } from '@/entities/srs/types';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
@@ -31,7 +30,7 @@ import {
   recalcCard,
 } from '@/features/srs';
 import { flattenDeckName, resolveHomeDeckId, uniqueDeckNames } from './deckFlatten';
-import { buildNoteFields, htmlToText, synthesizeNotetype } from './fieldMapping';
+import { buildNoteFields, htmlToText } from './fieldMapping';
 import { convertCardState } from './stateConvert';
 import { mapRevlog } from './revlogMap';
 import type {
@@ -71,7 +70,6 @@ export interface ImportReport {
   readonly mediaHits: number;
   readonly mediaMisses: number;
   readonly decksCreated: number;
-  readonly notetypesCreated: number;
 }
 
 export class ImportError extends Error {
@@ -217,49 +215,33 @@ export async function importNormalized(input: ImportRunInput): Promise<ImportRep
     return configCache.get(id)!;
   };
 
-  // --- notetypes: synthesize selected, reuse existing synthesized id ---
+  // --- notetypes: never imported — all notes normalize onto the system notetype ---
   const ntById = new Map(data.notetypes.map((n) => [n.id, n]));
   const notesById = new Map(data.notes.map((n) => [n.id, n]));
-  const selectedNt = data.notetypes.filter(
-    (n) => selection.notetypeIds.has(n.id) && !n.isCloze,
-  );
-  const srsNtById = new Map<string, SrsNotetype>();
-  let notetypesCreated = 0;
-  for (const nt of selectedNt) {
-    abort();
-    const ntId = `anki-${collectionId}-${nt.id}`;
-    const existing = await getNotetype(ntId).catch(() => null);
-    if (existing) {
-      srsNtById.set(nt.id, existing);
-      continue;
-    }
-    const samples = data.notes.filter((n) => n.modelId === nt.id).slice(0, 5);
-    const srsNt = synthesizeNotetype(collectionId, nt, mappings[nt.id] ?? {}, samples);
-    await putNotetype(srsNt);
-    srsNtById.set(nt.id, srsNt);
-    notetypesCreated += 1;
+  const existingNt = await getNotetype(`default-word-${collectionId}`).catch(() => null);
+  const srsNt = existingNt ?? createDefaultNotetype(collectionId);
+  if (!existingNt) await putNotetype(srsNt);
+  if (collection.defaultNotetypeId !== srsNt.id) {
+    collection = { ...collection, defaultNotetypeId: srsNt.id };
+    if (!isNew) await putCollection(collection);
   }
 
   // New collection needs defaults pointing at real rows (spec REQ-7.1).
   if (isNew) {
     const firstDeck = tDeckByAnkiId.values().next().value;
-    const firstNt = srsNtById.values().next().value;
-    if (!firstDeck || !firstNt) {
+    if (!firstDeck) {
       // Selection produced nothing — seed a usable default stack instead.
       await putStudyConfig(createDefaultStudyConfig(collection.defaultStudyConfigId));
       await putDeck({
         id: collection.defaultDeckId, collectionId, parentId: null,
         name: 'Default', order: 0, studyConfigId: collection.defaultStudyConfigId,
       });
-      const fallbackNt = createDefaultNotetype(collectionId);
-      await putNotetype(fallbackNt);
-      collection = { ...collection, defaultNotetypeId: fallbackNt.id };
     } else {
       collection = {
         ...collection,
         defaultStudyConfigId: firstDeck.studyConfigId,
         defaultDeckId: firstDeck.id,
-        defaultNotetypeId: firstNt.id,
+        defaultNotetypeId: srsNt.id,
       };
     }
     await putCollection(collection);
@@ -288,7 +270,6 @@ export async function importNormalized(input: ImportRunInput): Promise<ImportRep
     mediaHits: 0,
     mediaMisses: 0,
     decksCreated,
-    notetypesCreated,
   };
 
   let done = 0;
@@ -325,7 +306,6 @@ export async function importNormalized(input: ImportRunInput): Promise<ImportRep
     ntId: string,
     homeDeckId: string,
   ): Promise<void> {
-    const srsNt = srsNtById.get(ntId)!;
     const tDeck = tDeckByAnkiId.get(homeDeckId)!;
     const config = await configOf(tDeck.id);
     const mapping = mappings[ntId] ?? {};
@@ -343,16 +323,16 @@ export async function importNormalized(input: ImportRunInput): Promise<ImportRep
 
     const noteId = `anki-${collectionId}-n${card.id}`;
     const cardId = `anki-${collectionId}-c${card.id}`;
-    const built = buildNoteFields(note, ntById.get(ntId)!, srsNt, mapping);
+    const built = buildNoteFields(note, ntById.get(ntId)!, mapping);
 
-    // media: resolve each request → store asset; miss keeps raw markup as text
+    // media: resolve each request → store asset; miss unsets the field
     const fields: Record<string, SrsFieldValue> = { ...built.fields };
     if (!input.skipMedia) {
       for (const req of built.mediaRequests) {
         const media = await data.media.resolve(req.filename);
         if (!media) {
           report.mediaMisses += 1;
-          fields[req.fieldId] = { kind: 'text', value: note.fields[fieldOrdOf(req.fieldId)] ?? '' };
+          delete fields[req.fieldId];
           continue;
         }
         report.mediaHits += 1;
@@ -404,10 +384,6 @@ export async function importNormalized(input: ImportRunInput): Promise<ImportRep
       report.reviewRecords += 1;
     }
   }
-}
-
-function fieldOrdOf(fieldId: string): number {
-  return Number(fieldId.replace(/^f/, '').replace(/__media$/, '')) || 0;
 }
 
 function targetWordOf(note: NormalizedAnkiNote, nt: { fields: readonly { name: string; ord: number }[] }, mapping: FieldMapping): string {
