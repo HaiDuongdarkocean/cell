@@ -58,7 +58,7 @@ describe('DictionaryPopupSettingsPanel', () => {
   it('does not render the SRS destination picker (moved to Card Creator settings)', () => {
     const props = makeProps({ srsDestination: 'anki' });
     render(<DictionaryPopupSettingsPanel {...props} />);
-    expect(screen.queryByRole('radio', { name: 'Ocean SRS' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'Memory' })).not.toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: 'Anki' })).not.toBeInTheDocument();
   });
 });

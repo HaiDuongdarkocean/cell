@@ -71,7 +71,7 @@ describe('CardCreatorSettingsPanel', () => {
     });
   });
 
-  it('switches destination and hides the Anki section when Ocean SRS is selected', async () => {
+  it('switches destination and hides the Anki section when Memory is selected', async () => {
     const props = makeProps();
     const { rerender } = render(<CardCreatorSettingsPanel {...props} />);
     await waitFor(() => expect(mockLoadCache).toHaveBeenCalled());
@@ -81,7 +81,7 @@ describe('CardCreatorSettingsPanel', () => {
 
     rerender(<CardCreatorSettingsPanel {...props} srsDestination="ocean-srs" />);
     expect(screen.queryByLabelText('AnkiConnect URL')).not.toBeInTheDocument();
-    expect(screen.getByText(/Ocean SRS stores cards in/i)).toBeInTheDocument();
+    expect(screen.getByText(/Memory stores cards in/i)).toBeInTheDocument();
   });
 
   it('calls onDestinationChange when the destination select changes', async () => {
@@ -90,7 +90,7 @@ describe('CardCreatorSettingsPanel', () => {
     await waitFor(() => expect(mockLoadCache).toHaveBeenCalled());
 
     fireEvent.click(screen.getByRole('button', { name: 'Card destination' }));
-    const option = await screen.findByRole('option', { name: 'Ocean SRS' });
+    const option = await screen.findByRole('option', { name: 'Memory' });
     fireEvent.click(option);
     expect(props.onDestinationChange).toHaveBeenCalledWith('ocean-srs');
   });

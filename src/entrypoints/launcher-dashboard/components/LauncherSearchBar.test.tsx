@@ -6,7 +6,7 @@ describe('LauncherSearchBar', () => {
     render(<LauncherSearchBar />);
     const input = screen.getByRole('searchbox');
     expect(input).toBeInTheDocument();
-    expect(input).toHaveAttribute('placeholder', 'Search Cell…');
+    expect(input).toHaveAttribute('placeholder', 'Search Tihoka…');
   });
 
   it('reflects controlled value and calls onChange', () => {
