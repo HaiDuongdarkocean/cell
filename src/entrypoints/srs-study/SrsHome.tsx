@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Badge, Box, Button, FlagIcon, Heading, Input, Menu, MenuItem, Progress, Text } from '@/shared/ui';
+import { Badge, Box, Button, FlagIcon, Heading, Input, Menu, MenuItem, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
@@ -202,16 +202,37 @@ export function SrsHome({ onManage, onOpenSettings }: SrsHomeProps): React.JSX.E
           <Text className={styles.heroChipText}>{home?.learnedWords.toLocaleString() ?? '0'}</Text>
         </Box>
 
-        <Box className={styles.ringWrap}>
-          <Progress variant="circular" size="lg" value={todayPct} className={styles.ring} aria-label={t('srs.home.todayProgress')} />
-          <Text className={styles.ringValue}>{todayPct}%</Text>
-        </Box>
+        <div
+          className={styles.ringWrap}
+          role="progressbar"
+          aria-valuenow={todayPct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={t('srs.home.todayProgress')}
+        >
+          <svg className={styles.ring} viewBox="0 0 120 120" fill="none" aria-hidden="true">
+            <circle className={styles.ringTrack} cx="60" cy="60" r="52" />
+            <circle
+              className={styles.ringBar}
+              cx="60"
+              cy="60"
+              r="52"
+              strokeDasharray={2 * Math.PI * 52}
+              strokeDashoffset={2 * Math.PI * 52 * (1 - todayPct / 100)}
+              strokeLinecap="round"
+              transform="rotate(-90 60 60)"
+            />
+          </svg>
+          <Box className={styles.ringContent}>
+            <Text className={styles.ringValue}>{todayPct}%</Text>
+            <Text className={styles.heroLabel}>{t('srs.home.todayReviews')}</Text>
+            <Box className={styles.heroPills}>
+              <Badge className={styles.pillReviews}>{t('srs.home.reviewsCount', [home?.studiedToday ?? 0])}</Badge>
+              <Badge className={styles.pillNew}>{t('srs.home.newCount', [home?.newCount ?? 0])}</Badge>
+            </Box>
+          </Box>
+        </div>
 
-        <Text className={styles.heroLabel}>{t('srs.home.todayReviews')}</Text>
-        <Box className={styles.heroPills}>
-          <Badge className={styles.pillReviews}>{t('srs.home.reviewsCount', [home?.studiedToday ?? 0])}</Badge>
-          <Badge className={styles.pillNew}>{t('srs.home.newCount', [home?.newCount ?? 0])}</Badge>
-        </Box>
         <Text className={styles.minLeft}>{t('srs.home.minLeft', [home?.minutesLeft ?? 0])}</Text>
 
         <Box className={styles.heroStats}>

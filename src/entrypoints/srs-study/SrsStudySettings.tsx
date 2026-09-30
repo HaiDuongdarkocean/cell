@@ -85,7 +85,7 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
                   checked={prefs.showWeeklyActivity}
                   onChange={(v) => { setSrsUiPrefs({ showWeeklyActivity: v }); }}
                   ariaLabel={t('srs.settings.showWeekly')}
-                  size="md"
+                  size="sm"
                 />
               </SettingRow>
               <SettingRow label={t('srs.settings.showSummary')}>
@@ -104,16 +104,16 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
 
             <Section title={t('srs.settings.answering')}>
               <SettingRow label={t('srs.settings.shuffle')}>
-                <Toggle checked={prefs.shuffleReviews} onChange={(v) => { setSrsUiPrefs({ shuffleReviews: v }); }} ariaLabel={t('srs.settings.shuffle')} size="md" />
+                <Toggle checked={prefs.shuffleReviews} onChange={(v) => { setSrsUiPrefs({ shuffleReviews: v }); }} ariaLabel={t('srs.settings.shuffle')} size="sm" />
               </SettingRow>
               <SettingRow label={t('srs.settings.swipe')} description={t('srs.settings.swipeDesc')}>
-                <Toggle checked={prefs.swipeToAnswer} onChange={(v) => { setSrsUiPrefs({ swipeToAnswer: v }); }} ariaLabel={t('srs.settings.swipe')} size="md" />
+                <Toggle checked={prefs.swipeToAnswer} onChange={(v) => { setSrsUiPrefs({ swipeToAnswer: v }); }} ariaLabel={t('srs.settings.swipe')} size="sm" />
               </SettingRow>
               <SettingRow label={t('srs.settings.answerFront')}>
-                <Toggle checked={prefs.answerFromFront} onChange={(v) => { setSrsUiPrefs({ answerFromFront: v }); }} ariaLabel={t('srs.settings.answerFront')} size="md" />
+                <Toggle checked={prefs.answerFromFront} onChange={(v) => { setSrsUiPrefs({ answerFromFront: v }); }} ariaLabel={t('srs.settings.answerFront')} size="sm" />
               </SettingRow>
               <SettingRow label={t('srs.settings.hideProgress')}>
-                <Toggle checked={prefs.hideProgress} onChange={(v) => { setSrsUiPrefs({ hideProgress: v }); }} ariaLabel={t('srs.settings.hideProgress')} size="md" />
+                <Toggle checked={prefs.hideProgress} onChange={(v) => { setSrsUiPrefs({ hideProgress: v }); }} ariaLabel={t('srs.settings.hideProgress')} size="sm" />
               </SettingRow>
             </Section>
 
@@ -135,7 +135,7 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
             <Section title={t('srs.settings.newCards')}>
               <Text className={styles.sectionDesc}>{t('srs.settings.newCardsDesc')}</Text>
               <SettingRow label={t('srs.settings.perDeck')}>
-                <Toggle checked={prefs.customizePerDeck} onChange={(v) => { setSrsUiPrefs({ customizePerDeck: v }); }} ariaLabel={t('srs.settings.perDeck')} size="md" />
+                <Toggle checked={prefs.customizePerDeck} onChange={(v) => { setSrsUiPrefs({ customizePerDeck: v }); }} ariaLabel={t('srs.settings.perDeck')} size="sm" />
               </SettingRow>
             </Section>
 

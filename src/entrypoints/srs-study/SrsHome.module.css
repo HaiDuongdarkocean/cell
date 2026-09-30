@@ -124,23 +124,39 @@
 }
 
 .ring {
-  width: var(--space-24);
-  height: var(--space-24);
+  width: 176px;
+  height: 176px;
 }
 
-.ringValue {
+.ringTrack {
+  stroke: var(--color-primary-subtle);
+  stroke-width: 9;
+}
+
+.ringBar {
+  stroke: var(--color-primary);
+  stroke-width: 9;
+  transition: stroke-dashoffset var(--duration-slow) var(--ease-out);
+}
+
+.ringContent {
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: var(--space-1-5);
+}
+
+.ringValue {
   font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-bold);
   pointer-events: none;
 }
 
 .heroLabel {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
 
@@ -149,15 +165,15 @@
   gap: var(--space-2);
 }
 
-/* design-system: intentional override — purple/blue review pills are the reference identity; Badge has no matching variant pair. */
+/* design-system: intentional override — purple reviews / green new pills match the reference identity; info is an alias of primary so it cannot separate the two. */
 .pillReviews {
   background: var(--color-primary-subtle);
   color: var(--color-primary);
 }
 
 .pillNew {
-  background: var(--color-info-subtle);
-  color: var(--color-info);
+  background: var(--color-success-subtle);
+  color: var(--color-success);
 }
 
 .minLeft {
