@@ -102,6 +102,8 @@ export function SrsHome({ onManage, onOpenSettings }: SrsHomeProps): React.JSX.E
   const todayPct = home && home.dueNow + home.studiedToday > 0
     ? Math.round((home.studiedToday / (home.dueNow + home.studiedToday)) * 100)
     : 0;
+  const wordsPerDay = home?.wordsPerDay ?? new Array<number>(14).fill(0);
+  const wordsMax = Math.max(1, ...wordsPerDay);
 
   const visibleDecks = (home?.decks ?? []).filter((s) =>
     !query.trim() || s.deck.name.toLowerCase().includes(query.trim().toLowerCase()),
@@ -207,11 +209,15 @@ export function SrsHome({ onManage, onOpenSettings }: SrsHomeProps): React.JSX.E
               <FlagIcon lang={targetLanguage} size={18} />
               <Text className={styles.knownCount}>{(home?.learnedWords ?? 0).toLocaleString()}</Text>
             </Box>
-            <Box className={styles.streakGrid}>
-              {streakDots.map((active, i) => (
-                <span key={i} className={[styles.streakDot, active ? styles.streakDotActive : ''].filter(Boolean).join(' ')} />
+            <div className={styles.wordsBars} role="img" aria-label={t('srs.home.knownWords')}>
+              {wordsPerDay.map((count, i) => (
+                <span
+                  key={i}
+                  className={[styles.wordsBar, count > 0 ? styles.wordsBarActive : '', i === 13 ? styles.wordsBarToday : ''].filter(Boolean).join(' ')}
+                  style={{ height: `${Math.max(12, (count / wordsMax) * 100)}%` }}
+                />
               ))}
-            </Box>
+            </div>
             <Text className={styles.knownDelta}>{t('srs.home.wordsAdded', [home?.wordsAddedToday ?? 0])}</Text>
           </Box>
         </Box>

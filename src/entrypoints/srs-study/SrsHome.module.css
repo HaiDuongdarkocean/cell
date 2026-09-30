@@ -199,6 +199,30 @@
   text-align: right;
 }
 
+.wordsBars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-1);
+  height: var(--space-10);
+  flex: 1;
+}
+
+/* design-system: intentional override — per-day learned-words bars like the reference mini bar chart; no shared chart primitive exists. */
+.wordsBar {
+  flex: 1;
+  min-width: 2px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+}
+
+.wordsBarActive {
+  background: var(--color-success);
+}
+
+.wordsBarToday {
+  background: var(--color-warning);
+}
+
 /* design-system: intentional override — primary CTA matches the theme accent, not a Button variant. */
 .continueButton {
   background: var(--color-primary);

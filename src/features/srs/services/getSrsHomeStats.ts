@@ -24,6 +24,7 @@ export interface SrsHomeStats {
   readonly studiedToday: number;
   readonly learnedWords: number;
   readonly wordsAddedToday: number;
+  readonly wordsPerDay: readonly number[];
   readonly streakDays: number;
   readonly activeDayKeys: ReadonlySet<string>;
   readonly minutesLeft: number;
@@ -77,6 +78,11 @@ export async function getSrsHomeStats(
   let newCount = 0;
   let learnedWords = 0;
   let wordsAddedToday = 0;
+  const wordsPerDay = new Array<number>(14).fill(0);
+  const wordsDayIndex = (ts: number): number => {
+    const noteStart = dayStartMs(new Date(ts), dayStartHour);
+    return 13 - Math.round((todayStart - noteStart) / DAY_MS);
+  };
   const deckStats: SrsHomeDeckStat[] = [];
 
   for (const deck of decks) {
@@ -92,6 +98,8 @@ export async function getSrsHomeStats(
     }
     for (const note of notes) {
       if (note.createdAt >= todayStart) wordsAddedToday += 1;
+      const dayIndex = wordsDayIndex(note.createdAt);
+      if (dayIndex >= 0 && dayIndex < 14) wordsPerDay[dayIndex] += 1;
     }
     dueNow += deckDue;
     newCount += deckNew;
@@ -114,6 +122,7 @@ export async function getSrsHomeStats(
     studiedToday,
     learnedWords,
     wordsAddedToday,
+    wordsPerDay,
     streakDays: computeStreak(activeDayKeys, dayStartHour, now),
     activeDayKeys,
     minutesLeft: Math.max(1, Math.ceil((dueNow * SECONDS_PER_CARD) / 60)),
