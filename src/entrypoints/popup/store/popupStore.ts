@@ -137,7 +137,13 @@ export const usePopupStore = create<PopupState>((set) => ({
   updateSettings: (partial) =>
     set((state) => {
       const settings: Settings = { ...state.settings, ...partial };
-      void saveSettings(settings);
+      // Partial write: saveSettings read-modify-writes onto the persisted
+      // object, so storage stays authoritative. Passing the full in-memory
+      // settings would clobber persisted fields with DEFAULT_SETTINGS if
+      // loadPersistedSettings() had failed and left defaults in state.
+      void saveSettings(partial).catch((error) =>
+        console.error('Failed to persist settings:', error),
+      );
       return { settings };
     }),
 

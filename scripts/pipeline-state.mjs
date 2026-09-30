@@ -196,6 +196,20 @@ function mtimeOf(abs) {
   }
 }
 
+function gitHead() {
+  const r = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' });
+  return r.status === 0 ? r.stdout.trim() : null;
+}
+
+function dirtyTreePaths() {
+  const st = spawnSync('git', ['status', '--porcelain'], { cwd: ROOT, encoding: 'utf8' });
+  if (st.status !== 0) return [];
+  return st.stdout
+    .split('\n')
+    .map((l) => l.slice(3).split(' -> ').pop().trim())
+    .filter((f) => f && f !== 'tasks/pipeline-state.json');
+}
+
 function newestSrcMtime() {
   const st = spawnSync('git', ['status', '--porcelain', 'src/'], { cwd: ROOT, encoding: 'utf8' });
   if (st.status !== 0) return 0;
@@ -335,7 +349,12 @@ function doGates(slug, args) {
   if (!GATES.has(gate)) fail(`pipeline-state: unknown gate '${gate}'`);
   if (!GATE_VERDICTS.has(v)) fail(`pipeline-state: gate verdict must be pass|fail`);
   item.gates = item.gates || {};
-  item.gates[gate] = { v, at: new Date().toISOString() };
+  item.gates[gate] = { v, at: new Date().toISOString(), head: gitHead(), dirty: dirtyTreePaths() };
+  if (v === 'pass' && item.gates[gate].dirty.length) {
+    process.stderr.write(
+      `pipeline-state: note — '${gate}' recorded on dirty tree (${item.gates[gate].dirty.length} uncommitted path(s)); verdict covers uncommitted state\n`,
+    );
+  }
   touch(item);
   writeState(state);
   process.stdout.write(`${JSON.stringify(item.gates, null, 2)}\n`);
@@ -440,12 +459,16 @@ function doTransition(slug, args) {
     } else {
       checkReview(slug, 'signoff', null);
       const newest = newestSrcMtime();
+      const headNow = gitHead();
       const required = ['typecheck', 'lint', 'testUnit', 'build'];
       if (item.uiSurface === 'yes') required.push('browser');
       for (const g of required) {
         const rec = item.gates?.[g];
         if (!rec || rec.v !== 'pass') fail(`pipeline-state: gate '${g}' missing or not pass — run it`);
         if (newest && Date.parse(rec.at) < newest) fail(`pipeline-state: gate '${g}' stale (older than newest src change)`);
+        if (rec.head && headNow && rec.head !== headNow) {
+          fail(`pipeline-state: gate '${g}' recorded at ${rec.head.slice(0, 8)} but HEAD is ${headNow.slice(0, 8)} — re-run gates on committed state`);
+        }
       }
     }
     item.stage = 'shipped';

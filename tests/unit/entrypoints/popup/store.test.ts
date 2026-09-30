@@ -348,6 +348,30 @@ describe('usePopupStore', () => {
     expect(state.isSettingsLoaded).toBe(true);
   });
 
+  it('updateSettings after a failed load merges onto persisted settings, not in-memory defaults', async () => {
+    storageLocalGetMock.mockRejectedValueOnce(new Error('storage unavailable'));
+    await usePopupStore.getState().loadPersistedSettings();
+    expect(usePopupStore.getState().isSettingsLoaded).toBe(true);
+
+    const persisted: Settings = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      concurrentDownloads: 7,
+    };
+    storageLocalGetMock.mockResolvedValue({ [STORAGE_KEYS.SETTINGS]: persisted });
+
+    usePopupStore.getState().updateSettings({ defaultQuality: '720p' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(storageLocalSetMock).toHaveBeenCalledTimes(1);
+    const written = storageLocalSetMock.mock.calls[0][0][
+      STORAGE_KEYS.SETTINGS
+    ] as Settings;
+    expect(written.concurrentDownloads).toBe(7);
+    expect(written.defaultQuality).toBe('720p');
+  });
+
   it('DEFAULT_SETTINGS includes parallel conversion defaults', () => {
     expect(DEFAULT_SETTINGS.parallelConversion).toBe('auto');
     expect(DEFAULT_SETTINGS.manualWorkerCount).toBe(4);
