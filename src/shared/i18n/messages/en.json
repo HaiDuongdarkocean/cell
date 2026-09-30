@@ -1885,5 +1885,6 @@
   "ankiImport.action.continue": "Continue",
   "ankiImport.action.start": "Start import",
   "ankiImport.action.close": "Close",
-  "ankiImport.action.studyNow": "Study now"
+  "ankiImport.action.studyNow": "Study now",
+  "ankiImport.source.readError": "Could not read data from Anki"
 }

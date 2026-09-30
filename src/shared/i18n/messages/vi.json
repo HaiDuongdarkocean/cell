@@ -1885,5 +1885,6 @@
   "ankiImport.action.continue": "Tiếp tục",
   "ankiImport.action.start": "Bắt đầu import",
   "ankiImport.action.close": "Đóng",
-  "ankiImport.action.studyNow": "Học ngay"
+  "ankiImport.action.studyNow": "Học ngay",
+  "ankiImport.source.readError": "Không đọc được dữ liệu từ Anki"
 }

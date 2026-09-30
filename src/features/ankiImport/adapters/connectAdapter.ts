@@ -50,6 +50,49 @@ async function* chunked<T>(items: readonly T[], size: number): AsyncGenerator<T[
   for (let i = 0; i < items.length; i += size) yield items.slice(i, i + size);
 }
 
+const MSG_SIZE_LIMIT = /maximum allowed size/i;
+
+async function invokeRows<R>(
+  invoke: AnkiConnectInvoker,
+  action: string,
+  paramKey: 'notes' | 'cards',
+  ids: readonly number[],
+): Promise<R[]> {
+  try {
+    return (await invoke(action, { [paramKey]: [...ids] })) as R[];
+  } catch (err) {
+    if (ids.length > 1 && err instanceof Error && MSG_SIZE_LIMIT.test(err.message)) {
+      const mid = Math.ceil(ids.length / 2);
+      const [a, b] = await Promise.all([
+        invokeRows<R>(invoke, action, paramKey, ids.slice(0, mid)),
+        invokeRows<R>(invoke, action, paramKey, ids.slice(mid)),
+      ]);
+      return [...a, ...b];
+    }
+    throw err;
+  }
+}
+
+async function invokeCardMap(
+  invoke: AnkiConnectInvoker,
+  action: string,
+  ids: readonly number[],
+): Promise<Record<string, ReviewRow[]>> {
+  try {
+    return (await invoke(action, { cards: [...ids] })) as Record<string, ReviewRow[]>;
+  } catch (err) {
+    if (ids.length > 1 && err instanceof Error && MSG_SIZE_LIMIT.test(err.message)) {
+      const mid = Math.ceil(ids.length / 2);
+      const [a, b] = await Promise.all([
+        invokeCardMap(invoke, action, ids.slice(0, mid)),
+        invokeCardMap(invoke, action, ids.slice(mid)),
+      ]);
+      return { ...a, ...b };
+    }
+    throw err;
+  }
+}
+
 export interface ConnectReadOptions {
   readonly signal?: AbortSignal;
   readonly onStage?: (stage: 'decks' | 'notetypes' | 'notes' | 'cards' | 'reviews', done: number, total: number) => void;
@@ -112,7 +155,7 @@ export async function readViaAnkiConnect(
   let noteDone = 0;
   for await (const chunk of chunked(noteIds, CHUNK)) {
     throwIfAborted();
-    const infos = (await invoke('notesInfo', { notes: chunk })) as NotesInfoRow[];
+    const infos = await invokeRows<NotesInfoRow>(invoke, 'notesInfo', 'notes', chunk);
     for (const info of infos) {
       const modelId = modelIdByName.get(info.modelName) ?? info.modelName;
       const order = fieldOrderByModel.get(modelId);
@@ -136,7 +179,7 @@ export async function readViaAnkiConnect(
   let cardDone = 0;
   for await (const chunk of chunked(noteCardIds, CHUNK)) {
     throwIfAborted();
-    const infos = (await invoke('cardsInfo', { cards: chunk })) as CardsInfoRow[];
+    const infos = await invokeRows<CardsInfoRow>(invoke, 'cardsInfo', 'cards', chunk);
     for (const c of infos) {
       cards.push({
         id: c.cardId,
@@ -172,7 +215,7 @@ export async function readViaAnkiConnect(
   for await (const chunk of chunked(noteCardIds, CHUNK)) {
     throwIfAborted();
     try {
-      const reviews = (await invoke('getReviewsOfCards', { cards: chunk })) as Record<string, ReviewRow[]>;
+      const reviews = await invokeCardMap(invoke, 'getReviewsOfCards', chunk);
       for (const [cardIdStr, list] of Object.entries(reviews)) {
         const cardId = Number(cardIdStr);
         for (const r of list) {

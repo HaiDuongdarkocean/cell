@@ -40,6 +40,7 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
   const [connectFailed, setConnectFailed] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorSource, setErrorSource] = useState<'connect' | 'file' | 'run'>('file');
   const [noScheduling, setNoScheduling] = useState(false);
   const [deckIds, setDeckIds] = useState<ReadonlySet<string>>(new Set());
   const [ntIds, setNtIds] = useState<ReadonlySet<string>>(new Set());
@@ -104,8 +105,9 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
         onStage: (_s, done, total) => setProgress({ done, total }),
       });
       acceptData(d);
-    } catch {
-      setConnectFailed(true);
+    } catch (err) {
+      setErrorSource('connect');
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setConnecting(false);
     }
@@ -120,6 +122,7 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
     try {
       acceptData(await readFromApkg(file));
     } catch (err) {
+      setErrorSource('file');
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setParsing(false);
@@ -178,6 +181,7 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
         setStep('report');
         onImported();
       } else {
+        setErrorSource('run');
         setError(err instanceof Error ? err.message : String(err));
         setStep('report');
       }
@@ -216,6 +220,7 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
           failed={connectFailed}
           parsing={parsing}
           error={error}
+          errorSource={errorSource}
           onConnect={() => { void tryConnect(); }}
           onPickFile={pickFile}
         />
@@ -312,12 +317,13 @@ function StepRail({ step }: { step: Step }): React.JSX.Element {
 }
 
 function SourceStep({
-  connecting, failed, parsing, error, onConnect, onPickFile,
+  connecting, failed, parsing, error, errorSource, onConnect, onPickFile,
 }: {
   readonly connecting: boolean;
   readonly failed: boolean;
   readonly parsing: boolean;
   readonly error: string | null;
+  readonly errorSource: 'connect' | 'file' | 'run';
   readonly onConnect: () => void;
   readonly onPickFile: () => void;
 }): React.JSX.Element {
@@ -343,7 +349,7 @@ function SourceStep({
       {parsing && (
         <HStack gap="2"><Spinner size="sm" /><Text variant="label">{t('ankiImport.source.parsing')}</Text></HStack>
       )}
-      {error && <Alert variant="error" icon={<Icon name="info" />} title={t('ankiImport.source.parseError')} description={error} />}
+      {error && <Alert variant="error" icon={<Icon name="info" />} title={t(errorSource === 'connect' ? 'ankiImport.source.readError' : 'ankiImport.source.parseError')} description={error} />}
       {failed && (
         <>
           <Alert
