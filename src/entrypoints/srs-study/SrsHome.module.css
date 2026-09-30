@@ -361,10 +361,6 @@
   text-align: center;
 }
 
-.addDeckButton {
-  color: var(--color-primary);
-}
-
 .footerNote {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);

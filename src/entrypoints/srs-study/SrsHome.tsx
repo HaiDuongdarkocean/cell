@@ -372,11 +372,7 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
               {t('srs.edit.cancel')}
             </Button>
           </Box>
-        ) : (
-          <Button variant="ghost" fullWidth className={styles.addDeckButton} onClick={() => { setAddParentId(null); setAdding(true); }}>
-            <Icon name="plus" /> {t('srs.home.addDeck')}
-          </Button>
-        )}
+        ) : null}
       </Box>
 
       <Text className={styles.footerNote}>{t('srs.app.desc')}</Text>
