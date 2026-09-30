@@ -20,6 +20,7 @@ import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCrea
 import { fetchMediaFile, type MediaFile } from '@/features/cardCreator/media/mediaFile';
 import { addToOceanSrs, openSrsStudyPage } from '@/features/dictionaryPopup/services/addToOceanSrs';
 import { formatDefinitions, parseDefinitionsText } from '@/features/dictionary/logic/formatDefinitions';
+import { formatDefEntry, formatDefFromLookup } from '@/features/srs';
 import { loadSettingsOrToast } from '@/features/subtitle/ui/subtitleControllerHelpers';
 import { showToast, showProgressToast } from '@/features/subtitle/ui/subtitleUI';
 import { sendMessage } from '@/shared/lib/chrome-apis';
@@ -28,6 +29,15 @@ import { t } from '@/shared/i18n';
 import type { PanelMountController } from './panelBridge';
 import type { CueRange, PopupLevel } from './controllerTypes';
 import { isLookupFromSubtitle, lookupCueRange } from './lookupTargetDom';
+
+function definitionsFieldText(prefill: PopupCardCreatorPrefill): string {
+  const senses = formatDefinitions(prefill.definitions);
+  if (!senses.trim()) return '';
+  return prefill.lookupResult
+    ? formatDefFromLookup(prefill.lookupResult, senses, prefill.term)
+    : formatDefEntry({ term: prefill.term, reading: prefill.reading, senses });
+}
+
 
 export interface CardCreatorBridgeDeps {
   readonly container: HTMLElement;
@@ -260,7 +270,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
       });
     }
 
-    const definitionsText = formatDefinitions(prefill.definitions);
+    const definitionsText = definitionsFieldText(prefill);
 
     const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
     const targetLang = settings.subtitleOverlayNativeLanguage || deps.getNativeLang() || 'vi';
@@ -609,7 +619,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
             initialMedia: media.initialMedia,
             prefill: {
               targetWord: prefill.term,
-              definitions: formatDefinitions(prefill.definitions),
+              definitions: definitionsFieldText(prefill),
               sentence: prefill.contextSentence,
               sentenceTranslation,
               wordAudioUrls: media.wordAudioUrls,

@@ -4,13 +4,15 @@ import { Icon } from '@/shared/ui/Icon';
 import { Sheet } from '@/shared/ui/Sheet';
 import { t } from '@/shared/i18n';
 import { audioAssetId, imageAssetId } from '@/features/srs/lib/helpers';
+import { parseDefEntries } from '@/features/srs';
 import { ensureFirstRun } from '@/features/srs/services/firstRunService';
 import { getCollection } from '@/features/srs/repositories/collectionRepository';
 import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepository';
+import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DictionaryPanelView } from '@/features/dictionaryPopup/ui/DictionaryPanelView';
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote } from '@/entities/srs/types';
-import { HighlightedSentence, playAudio, useImageBlobUrl } from './srsCardShared';
+import { HighlightedSentence, playAudio, playAudioUrl, useImageBlobUrl } from './srsCardShared';
 import styles from './SrsReviewCard.module.css';
 
 const BUILTIN_FIELDS = new Set(['target', 'ipa', 'sentence', 'def', 'wordAudio', 'sentAudio', 'image', 'translation', 'notes', 'examples']);
@@ -19,6 +21,10 @@ const FIELD_LABEL_KEYS: Record<string, Parameters<typeof t>[0]> = {
   examples: 'srs.review.examples',
   notes: 'srs.review.notes',
 };
+
+function playableUrl(value: string): string | undefined {
+  return /^(data:|https?:|blob:)/.test(value) ? value : undefined;
+}
 
 function fieldText(value: SrsFieldValue | undefined): string {
   if (!value) return '';
@@ -84,6 +90,26 @@ function BackImage({ note, value, asset }: { note: SrsNote; value: SrsFieldValue
   );
 }
 
+function DefEntryBlock({ entry }: { entry: { header: string; otherForms: string; senses: string } }): React.JSX.Element {
+  const lines = entry.senses.split('\n').map((l) => l.trim()).filter(Boolean);
+  const hasBullets = lines.some((l) => l.startsWith('•'));
+  return (
+    <Box className={styles.defBlock}>
+      {entry.header && <Text className={styles.defEntryHeader}>{entry.header}</Text>}
+      {entry.otherForms && <Text className={styles.otherForms}>{entry.otherForms}</Text>}
+      {lines.map((line, i) =>
+        line.startsWith('•') ? (
+          <Text key={i} className={styles.defSense}>{line}</Text>
+        ) : hasBullets ? (
+          <Text key={i} className={styles.defExample}>{line}</Text>
+        ) : (
+          <Text key={i} className={styles.defSense}>{line}</Text>
+        ),
+      )}
+    </Box>
+  );
+}
+
 interface SrsReviewCardBackProps {
   readonly note: SrsNote;
   readonly audioCache: ReadonlyMap<string, SrsAudioAsset>;
@@ -103,10 +129,15 @@ export function SrsReviewCardBack({
   const sentAudio = note.fields.sentAudio?.kind === 'audio' ? note.fields.sentAudio : undefined;
   const imageFields = Object.entries(note.fields).filter(([, v]) => v.kind === 'image');
 
-  const wordAudioAsset = wordAudio ? audioCache.get(audioAssetId(note.id, 'wordAudio', wordAudio.source)) : undefined;
-  const sentAudioAsset = sentAudio ? audioCache.get(audioAssetId(note.id, 'sentAudio', sentAudio.source)) : undefined;
-
   const [repoImages, setRepoImages] = useState<ReadonlyMap<string, SrsImageAsset>>(new Map());
+  const [repoAudio, setRepoAudio] = useState<ReadonlyMap<string, SrsAudioAsset>>(new Map());
+
+  const wordAudioAsset = wordAudio
+    ? (audioCache.get(audioAssetId(note.id, 'wordAudio', wordAudio.source)) ?? repoAudio.get('wordAudio'))
+    : undefined;
+  const sentAudioAsset = sentAudio
+    ? (audioCache.get(audioAssetId(note.id, 'sentAudio', sentAudio.source)) ?? repoAudio.get('sentAudio'))
+    : undefined;
 
   useEffect(() => {
     if (imageFields.length === 0) return;
@@ -114,6 +145,13 @@ export function SrsReviewCardBack({
       .then((assets) => { setRepoImages(new Map(assets.map((a) => [a.fieldId, a]))); })
       .catch(() => {});
   }, [note.id, imageFields.length]);
+
+  useEffect(() => {
+    if (!wordAudio && !sentAudio) return;
+    void getAudioAssetsByNote(note.id)
+      .then((assets) => { setRepoAudio(new Map(assets.map((a) => [a.fieldId, a]))); })
+      .catch(() => {});
+  }, [note.id, wordAudio, sentAudio]);
 
   useEffect(() => {
     void (async () => {
@@ -164,43 +202,45 @@ export function SrsReviewCardBack({
         </Button>
       </Box>
 
-      {(sentAudioAsset || wordAudioAsset) && (
+      {(sentAudioAsset || playableUrl(sentAudio?.value ?? '') || wordAudioAsset || playableUrl(wordAudio?.value ?? '')) && (
         <Box className={styles.audioRow}>
-          {sentAudioAsset && (
+          {(sentAudioAsset || playableUrl(sentAudio?.value ?? '')) && (
             <Button
-              shape="circle"
               size="md"
               variant="primary"
-              onClick={() => playAudio(sentAudioAsset)}
+              className={styles.audioPill}
+              onClick={() => { sentAudioAsset ? playAudio(sentAudioAsset) : playAudioUrl(playableUrl(sentAudio?.value ?? '')!); }}
               aria-label={t('srs.review.playSentence')}
             >
-              <Icon name="play" />
+              <Icon name="audioWave" />
             </Button>
           )}
-          {wordAudioAsset && (
+          {(wordAudioAsset || playableUrl(wordAudio?.value ?? '')) && (
             <Button
               shape="circle"
               size="md"
               variant="primary"
-              onClick={() => playAudio(wordAudioAsset)}
+              onClick={() => { wordAudioAsset ? playAudio(wordAudioAsset) : playAudioUrl(playableUrl(wordAudio?.value ?? '')!); }}
               aria-label={t('srs.review.playWord')}
             >
-              <Icon name="play" />
+              <Icon name="volumeHigh" />
             </Button>
           )}
         </Box>
       )}
 
-      {(note.fields.def || ipa) && (
+      {note.fields.def ? (
+        parseDefEntries(fieldText(note.fields.def)).map((entry, i) => (
+          <DefEntryBlock key={i} entry={entry} />
+        ))
+      ) : ipa ? (
         <Box className={styles.defBlock}>
           <Box className={styles.defHeader}>
             <Text className={styles.defTarget}>{note.targetWord}</Text>
-            {ipa && <Text className={styles.defIpa}>({ipa})</Text>}
-            <Text className={styles.defStar} aria-hidden="true">★★★</Text>
+            <Text className={styles.defIpa}>({ipa})</Text>
           </Box>
-          {note.fields.def && <BackFieldValue value={note.fields.def} />}
         </Box>
-      )}
+      ) : null}
 
       {imageFields.map(([id, value]) => (
         <BackImage

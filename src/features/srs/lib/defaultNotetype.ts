@@ -2,16 +2,15 @@ import type { SrsField, SrsNotetype } from '@/entities/srs/types';
 
 const DEFAULT_FIELDS: readonly SrsField[] = [
   { id: 'target', name: 'Target word', order: 0, type: 'text' },
-  { id: 'ipa', name: 'IPA', order: 1, type: 'text' },
-  { id: 'sentence', name: 'Sentence', order: 2, type: 'text' },
-  { id: 'def', name: 'Definition', order: 3, type: 'text' },
-  { id: 'wordAudio', name: 'Word audio', order: 4, type: 'audio' },
-  { id: 'sentAudio', name: 'Sentence audio', order: 5, type: 'audio' },
-  { id: 'image', name: 'Image', order: 6, type: 'image' },
-  { id: 'examples', name: 'Examples', order: 7, type: 'list' },
-  { id: 'notes', name: 'Notes', order: 8, type: 'text' },
-  { id: 'translation', name: 'Translation', order: 9, type: 'translation' },
-  { id: 'context', name: 'Context', order: 10, type: 'context' },
+  { id: 'sentence', name: 'Sentence', order: 1, type: 'text' },
+  { id: 'def', name: 'Definition', order: 2, type: 'text' },
+  { id: 'wordAudio', name: 'Word audio', order: 3, type: 'audio' },
+  { id: 'sentAudio', name: 'Sentence audio', order: 4, type: 'audio' },
+  { id: 'image', name: 'Image', order: 5, type: 'image' },
+  { id: 'examples', name: 'Examples', order: 6, type: 'list' },
+  { id: 'notes', name: 'Notes', order: 7, type: 'text' },
+  { id: 'translation', name: 'Translation', order: 8, type: 'translation' },
+  { id: 'context', name: 'Context', order: 9, type: 'context' },
 ];
 
 /** Create the default notetype for a collection (V1: 8 front templates + showAll back). */
@@ -27,8 +26,8 @@ export function createDefaultNotetype(collectionId: string): SrsNotetype {
       { id: `sound-word-audio-${collectionId}`, componentType: 'sound', stimulusType: 'word-audio', fieldIds: ['wordAudio'], requiresInput: false },
       // Sound — sentence audio
       { id: `sound-sentence-audio-${collectionId}`, componentType: 'sound', stimulusType: 'sentence-audio', fieldIds: ['sentAudio'], maskFieldId: 'sentence', maskTarget: true, requiresInput: false },
-      // Sound — IPA fallback
-      { id: `sound-ipa-${collectionId}`, componentType: 'sound', stimulusType: 'ipa', fieldIds: ['ipa'], requiresInput: false, prompt: 'Pronounce this word' },
+      // Sound — pronounce fallback (text-only notes without audio)
+      { id: `sound-pronounce-${collectionId}`, componentType: 'sound', stimulusType: 'ipa', fieldIds: ['target'], requiresInput: false, prompt: 'Pronounce this word' },
       // Meaning — image
       { id: `meaning-image-${collectionId}`, componentType: 'meaning', stimulusType: 'image', fieldIds: ['image'], requiresInput: false },
       // Meaning — definition
@@ -41,7 +40,7 @@ export function createDefaultNotetype(collectionId: string): SrsNotetype {
       { id: `spelling-sentence-${collectionId}`, componentType: 'spelling', stimulusType: 'sentence', fieldIds: ['sentence'], maskFieldId: 'sentence', maskTarget: true, requiresInput: true },
     ],
     backTemplate: {
-      fieldIds: ['target', 'ipa', 'sentence', 'def', 'wordAudio', 'sentAudio', 'image', 'examples', 'notes', 'translation'],
+      fieldIds: ['target', 'sentence', 'def', 'wordAudio', 'sentAudio', 'image', 'examples', 'notes', 'translation'],
       showAll: true,
     },
   };

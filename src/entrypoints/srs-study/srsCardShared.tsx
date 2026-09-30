@@ -14,6 +14,10 @@ export function playAudio(asset: SrsAudioAsset): void {
   };
 }
 
+export function playAudioUrl(url: string): void {
+  void new Audio(url).play().catch(() => {});
+}
+
 export function useImageBlobUrl(asset: SrsImageAsset | undefined): string | undefined {
   return useMemo(() => {
     if (!asset) return undefined;

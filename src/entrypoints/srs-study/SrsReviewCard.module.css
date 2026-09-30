@@ -143,10 +143,34 @@
   border-radius: var(--radius-md);
 }
 
-.stimulusAudio {
-  width: 100%;
-  max-width: 20rem;
-  margin-inline: auto;
+.stimulusAudioButton,
+.stimulusAudioPill {
+  appearance: none;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-in-out);
+}
+
+.stimulusAudioButton {
+  width: var(--space-10);
+  height: var(--space-10);
+}
+
+.stimulusAudioPill {
+  min-width: var(--space-14);
+  padding: var(--space-2) var(--space-4);
+  gap: var(--space-1-5);
+}
+
+.stimulusAudioButton:hover,
+.stimulusAudioPill:hover {
+  background: var(--color-primary-hover);
 }
 
 .spellingInput {
@@ -185,6 +209,12 @@
   display: flex;
   gap: var(--space-3);
   justify-content: center;
+}
+
+.audioPill {
+  border-radius: var(--radius-full);
+  min-width: var(--space-14);
+  padding-inline: var(--space-4);
 }
 
 .translationHint {
@@ -262,6 +292,32 @@
 .defStar {
   color: var(--color-text-accent-strong);
   font-size: var(--font-size-md);
+}
+
+.defEntryHeader {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-accent-strong);
+  margin-bottom: var(--space-1);
+}
+
+.otherForms {
+  display: block;
+  font-size: var(--font-size-md);
+  margin-bottom: var(--space-1);
+}
+
+.defSense {
+  display: block;
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-2);
+}
+
+.defExample {
+  display: block;
+  font-size: var(--font-size-sm);
+  margin-left: var(--space-4);
+  color: var(--color-text-secondary);
 }
 
 .defBlock p,

@@ -1,8 +1,9 @@
 import { Box, Heading, InputField } from '@/shared/ui';
+import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import type { SrsNote, SrsStimulus } from '@/entities/srs/types';
 import { stimulusLabel } from './srsLabels';
-import { formatFieldValue, HighlightedSentence } from './srsCardShared';
+import { formatFieldValue, HighlightedSentence, playAudioUrl } from './srsCardShared';
 import styles from './SrsReviewCard.module.css';
 
 const FRONT_SKIP_FIELDS: ReadonlySet<string> = new Set(['sentence', 'ipa']);
@@ -17,7 +18,14 @@ function StimulusView({ stimulus, targetWord, skipFieldIds }: { stimulus: SrsSti
           {value.kind === 'image' ? (
             <img src={value.value} alt={stimulusLabel(stimulus.type)} className={styles.stimulusImage} />
           ) : value.kind === 'audio' ? (
-            <audio controls src={value.value} className={styles.stimulusAudio} />
+            <button
+              type="button"
+              className={fieldId === 'sentAudio' ? styles.stimulusAudioPill : styles.stimulusAudioButton}
+              onClick={(e) => { e.stopPropagation(); playAudioUrl(value.value); }}
+              aria-label={fieldId === 'sentAudio' ? t('srs.review.playSentence') : t('srs.review.playWord')}
+            >
+              <Icon name={fieldId === 'sentAudio' ? 'audioWave' : 'volumeHigh'} />
+            </button>
           ) : (
             <HighlightedSentence sentence={formatFieldValue(value)} target={targetWord} />
           )}

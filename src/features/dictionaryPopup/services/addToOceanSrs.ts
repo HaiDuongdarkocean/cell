@@ -1,6 +1,8 @@
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { t } from '@/shared/i18n';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { formatDefinitions } from '@/features/dictionary'
+import { formatDefEntry, formatDefFromLookup } from '@/features/srs';
 import type { PopupCardCreatorPrefill } from '@/entities/dictionary';
 import type { SrsFieldValue } from '@/entities/srs/types';
 import type { MessageResponse, SrsAddNotePayload, SrsAddNoteResult } from '@/entities/message/types';
@@ -23,14 +25,12 @@ export function buildSrsFieldsFromPrefill(prefill: PopupCardCreatorPrefill): Rec
     fields['context'] = { kind: 'context', value: prefill.contextSentence };
   }
   if (prefill.definitions.length) {
-    const first = prefill.definitions[0];
-    fields['def'] = { kind: 'text', value: first.text };
-    fields['examples'] = {
-      kind: 'list',
-      value: [
-        ...prefill.definitions.map((d) => d.text),
-        ...prefill.definitions.flatMap((d) => d.selectedExamples ?? []),
-      ],
+    const senses = formatDefinitions(prefill.definitions);
+    fields['def'] = {
+      kind: 'text',
+      value: prefill.lookupResult
+        ? formatDefFromLookup(prefill.lookupResult, senses, prefill.term)
+        : formatDefEntry({ term: prefill.term, reading: prefill.reading, senses }),
     };
   }
   if (prefill.wordAudioUrls?.length) {

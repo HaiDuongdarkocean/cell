@@ -14,22 +14,23 @@ function makePrefill(definitions: PopupCardCreatorPrefill['definitions']): Popup
 }
 
 describe('buildSrsFieldsFromPrefill', () => {
-  it('keeps all definition texts and appends ticked example sentences', () => {
+  it('keeps all definition texts and ticked examples inside the def entry', () => {
     const fields = buildSrsFieldsFromPrefill(makePrefill([
       { pos: 'n', text: 'def one', selectedExamples: ['ex a', 'ex b'] },
       { pos: 'v', text: 'def two', selectedExamples: ['ex c'] },
     ]));
-    expect(fields['def']).toEqual({ kind: 'text', value: 'def one' });
-    expect(fields['examples']).toEqual({
-      kind: 'list',
-      value: ['def one', 'def two', 'ex a', 'ex b', 'ex c'],
+    expect(fields['def']).toEqual({
+      kind: 'text',
+      value: 'Hello\n• n def one\nex a\nex b\n\n• v def two\nex c',
     });
+    expect(fields['examples']).toBeUndefined();
   });
 
   it('def-only selection ships no example sentences', () => {
     const fields = buildSrsFieldsFromPrefill(makePrefill([
       { text: 'def one', selectedExamples: [] },
     ]));
-    expect(fields['examples']).toEqual({ kind: 'list', value: ['def one'] });
+    expect(fields['def']).toEqual({ kind: 'text', value: 'Hello\n• def one' });
+    expect(fields['examples']).toBeUndefined();
   });
 });

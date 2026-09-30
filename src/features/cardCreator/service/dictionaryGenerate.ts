@@ -21,7 +21,8 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_PRONUNCIATION_SETTINGS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import { PronunciationAudioOrchestrator } from '@/features/pronunciation/services/pronunciationAudioOrchestrator';
-import { formatDefinitions } from '@/features/dictionary/logic/formatDefinitions';
+import { formatDefinitions } from '@/features/dictionary'
+import { formatDefEntry, joinDefEntries } from '@/features/srs';
 import type { MessageResponse } from '@/entities/message/types';
 import type {
   FetchImagesResponse,
@@ -100,28 +101,15 @@ async function fetchImageUrls(term: string, langCode: string): Promise<readonly 
   }
 }
 
-/**
- * Look up `term` in the dictionary and build a CardCreatorPrefill-shaped
- * source: formatted definitions + media URLs. Returns null when the lookup
- * itself fails or the term has no dictionary entry.
- */
-export async function lookupDictionaryResources(
-  term: string,
-  langCode: string,
-  contextSentence: string,
-): Promise<CardCreatorPrefill | null> {
-  const trimmed = term.trim();
-  if (!trimmed) return null;
-
+async function lookupTerm(term: string, langCode: string, contextSentence: string): Promise<LookupResult | null> {
   const request: LookupRequest = {
-    term: trimmed,
+    term,
     langCode,
-    contextSentence: (contextSentence.trim() || trimmed).slice(0, 500),
+    contextSentence: (contextSentence.trim() || term).slice(0, 500),
     cursorOffset: 0,
     fallback: true,
   };
 
-  let winner: LookupResult | null;
   try {
     const response = await withTimeout(
       sendMessage<MessageResponse<LookupResult[]>>({
@@ -130,11 +118,42 @@ export async function lookupDictionaryResources(
       }),
       LOOKUP_TIMEOUT_MS,
     );
-    winner = response?.success && response.data?.length ? response.data[0]! : null;
+    return response?.success && response.data?.length ? response.data[0]! : null;
   } catch {
     return null;
   }
-  if (!winner) return null;
+}
+
+function formatEntryFromLookup(winner: LookupResult): string {
+  return formatDefEntry({
+    term: winner.term,
+    reading: winner.reading,
+    frequencyStars: winner.frequencyStars,
+    otherForms: winner.inflections?.flatMap((g) => g.forms).join(', '),
+    senses: formatDefinitions(winner.definitions),
+  });
+}
+
+/**
+ * Look up `term` in the dictionary and build a CardCreatorPrefill-shaped
+ * source: formatted definitions + media URLs. Returns null when the lookup
+ * itself fails or the term has no dictionary entry.
+ *
+ * Comma-separated terms ("hormone, reset") are looked up individually and
+ * joined into one `def` block separated by `---` (see defEntry.ts).
+ */
+export async function lookupDictionaryResources(
+  term: string,
+  langCode: string,
+  contextSentence: string,
+): Promise<CardCreatorPrefill | null> {
+  const terms = term.split(/[,;、]/).map((w) => w.trim()).filter(Boolean);
+  if (terms.length === 0) return null;
+
+  const winners = (await Promise.all(terms.map((w) => lookupTerm(w, langCode, contextSentence))))
+    .filter((w): w is LookupResult => w !== null);
+  if (winners.length === 0) return null;
+  const winner = winners[0]!;
 
   const [wordAudioUrls, sentenceAudioUrls, imageUrls] = await Promise.all([
     fetchWordAudioUrls(winner.term, winner.langCode),
@@ -143,8 +162,8 @@ export async function lookupDictionaryResources(
   ]);
 
   return {
-    targetWord: winner.term,
-    definitions: formatDefinitions(winner.definitions),
+    targetWord: terms.join(', '),
+    definitions: joinDefEntries(winners.map(formatEntryFromLookup)),
     wordAudioUrls,
     sentenceAudioUrls,
     imageUrls,
