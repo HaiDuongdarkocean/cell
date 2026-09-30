@@ -2955,6 +2955,28 @@
         "popup-dictionary"
       ],
       "trigger": "Sau một migration/refactor (vd overlay vanilla → React), một tính năng chỉ hoạt động ở MỘT mode/đường (click) còn các mode khác (hover, hover+modifier) im lặng không làm gì — dù settings đúng, listener attach đúng, unit test của module logic vẫn xanh"
+    },
+    {
+      "type": "experience",
+      "id": "stealth-chrome-cdp-load-unpacked",
+      "title": "Chrome 137+ block --load-extension → dùng CDP Extensions.loadUnpacked qua nodriver (browser.send), session-only, không bị YouTube flag như Playwright Chromium",
+      "category": [
+        "testing",
+        "build"
+      ],
+      "tags": [
+        "extension-testing",
+        "nodriver",
+        "stealth",
+        "cdp",
+        "load-unpacked",
+        "youtube",
+        "bot-flag",
+        "main-world",
+        "xhr-hook",
+        "evaluate"
+      ],
+      "trigger": "Cần test extension trên YouTube/real Chrome nhưng Playwright Chromium bị bot-flag (playability LOGIN_REQUIRED) hoặc Chrome 137+ block --load-extension; hoặc main-world hook (XHR/fetch) bị uBlock re-wrap sau document_start — gate bằng __YT_MAIN_WORLD_INJECTED chứ không phải toString() probe"
     }
   ]
 }

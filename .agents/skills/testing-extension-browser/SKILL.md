@@ -16,6 +16,8 @@ Four principles:
 3. **Clone, don't share.** Each run clones from master — parallel agents never collide on the profile lock.
 4. **Contract before click.** Define "pass" as a concrete DOM state before interacting. "It works" is not a contract.
 
+**Stealth path when Chromium is bot-flagged or real Chrome is required** (YouTube, Netflix): `script/stealth_cell_browser.py` (`uv run --with nodriver`, import the `stealth_cell_browser` module) launches the installed Chrome and session-loads Cell + uBOLite via **CDP `Extensions.loadUnpacked`** — bypasses the Chrome 137+ `--load-extension` block without a profile clone. Same loop applies: `launch()` → `gate_extension()` → navigate/trigger/verify.
+
 ## When to Use
 
 - Any Cell browser test; verifying a fix on a real page; shadow DOM inspection or event dispatch; bugs that only appear on a specific host page
@@ -44,7 +46,8 @@ Each arrow has a guard — do not advance until it passes.
 
 ## Hard-won rules (do not relearn the hard way)
 
-- **Google Chrome 137+ blocks `--load-extension` and `external_crx` on Windows.** The deterministic merge-gate path is **Playwright bundled Chromium/Chrome for Testing** with a cloned profile and `--load-extension` (after a warm-up launch). Packed `.crx` + External Extensions JSON is for Linux/macOS real Chrome; Windows requires the Web Store or registry. After each `npm run build`, re-pack with `--rebuild`.
+- **Google Chrome 137+ blocks `--load-extension` and `external_crx` on Windows.** Two paths: **Playwright bundled Chromium** + clone + `--load-extension` (merge gate, but bot-flagged by YouTube), or **nodriver + CDP `Extensions.loadUnpacked`** (`stealth_cell_browser.py`, stealth session, extensions gone on exit — re-load per launch). Packed `.crx` + External Extensions JSON is for Linux/macOS only. After each `npm run build`, re-pack with `--rebuild`.
+- **Stealth/nodriver evaluate quirks:** `evaluate()` doesn't await promises → stash async results in `window.__r_*` and poll; returns CDP `[[key,{type,value}]]` pairs → normalize (`ev()` handles both). Inline `<script>` injection is CSP-blocked on YouTube — `evaluate()` the source directly instead. `xhrPatched`/`fetchPatched` toString() probes are false-negative: uBOLite re-wraps after `document_start` while still calling ours — gate on `__YT_MAIN_WORLD_INJECTED`, verify hooks functionally.
 - **uBlock is ALWAYS loaded alongside Cell via `--load-extension=dist,data/extension/uBOLite`** (comma-separated, same flag + same `--disable-extensions-except` list). The External Extensions JSON written by `setup-cell-profile.py` does NOT install anything on Windows — the uBlock .crx packs fine yet silently never loads. `data/extension/uBOLite` + `ublock-key.pem` are gitignored — copy them from the main repo into a fresh worktree before setup.
 - **Never hand-roll a launcher.** `script/launch-cell-context.mjs` exposes `prepareCellEnvironment({rebuild})`, `warmUpCellContext(clonePath)`, `launchCellContext(clonePath)` — new test scripts import these and start at navigate/trigger/verify.
 - **Autoplay blocks `video.play()` from script** — click the play button first, then seek via `page.evaluate`.
