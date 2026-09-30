@@ -371,6 +371,6 @@
 
 /* design-system: intentional override — warm gradient is the visual identity for "remember"; no standard Button variant maps to a warning→error gradient. */
 .gradeRow .rememberButton {
-  background: linear-gradient(135deg, var(--color-warning), var(--color-error));
-  color: var(--color-text-on-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary-emphasis);
 }

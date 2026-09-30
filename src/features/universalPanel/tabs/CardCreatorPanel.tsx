@@ -13,6 +13,7 @@ import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/c
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { DictionaryPanelPrefill } from '@/features/universalPanel/types';
 import { formatDefinitions } from '@/features/dictionary/logic/formatDefinitions';
+import { formatDefEntry, formatDefFromLookup } from '@/features/srs';
 import type { AudioItem, ImageItem } from '@/entities/dictionary';
 import styles from './CardCreatorPanel.module.css';
 
@@ -64,7 +65,13 @@ function buildOpenContext(
     prefill: context
       ? {
           targetWord: context.term,
-          definitions: formatDefinitions(context.definitions),
+          definitions: context.lookupResult
+            ? formatDefFromLookup(context.lookupResult, formatDefinitions(context.definitions), context.term)
+            : formatDefEntry({
+                term: context.term ?? '',
+                reading: context.reading,
+                senses: formatDefinitions(context.definitions),
+              }),
           sentence: context.contextSentence,
           sentenceTranslation: context.translation,
           wordAudioUrls: context.wordAudioUrls,

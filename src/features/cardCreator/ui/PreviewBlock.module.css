@@ -14,7 +14,7 @@
   padding: var(--space-3);
   background: var(--input-bg);
   border: var(--border-width-hairline) solid transparent;
-  border-radius: var(--radius-md);
+  border-radius: var(--input-radius);
   text-align: center;
   line-height: var(--leading-normal);
 }
