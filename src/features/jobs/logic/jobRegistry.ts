@@ -68,6 +68,7 @@ export class JobRegistry {
   private readonly executors = new Map<JobKind, JobExecutor>();
   private readonly maxRunning: Readonly<Partial<Record<JobKind, number>>>;
   private restored = false;
+  private writeError: unknown = null;
 
   constructor(deps: JobRegistryDeps, options?: { maxRunning?: Partial<Record<JobKind, number>> }) {
     this.deps = deps;
@@ -80,8 +81,8 @@ export class JobRegistry {
 
   async restore(): Promise<void> {
     if (this.restored) return;
+    const persisted = await this.deps.loadPersisted();
     this.restored = true;
-    const persisted = await this.deps.loadPersisted().catch((): Job[] => []);
     for (const job of persisted) {
       this.jobs.set(job.id, { job, lastPersistedAt: 0, persistTimer: null, writeChain: Promise.resolve() });
     }
@@ -189,13 +190,12 @@ export class JobRegistry {
     }
     this.jobs.delete(id);
     this.deps.broadcastRemoved(id);
-    tracked.writeChain = tracked.writeChain.then(() =>
-      this.deps.unpersist(id).catch((err) => {
-        console.warn(`[jobRegistry] unpersist failed for ${id}:`, err);
-      }),
-    );
-    await tracked.writeChain;
+    const unpersistAttempt = tracked.writeChain.then(() => this.deps.unpersist(id));
+    tracked.writeChain = unpersistAttempt.catch((err) => {
+      console.warn(`[jobRegistry] unpersist failed for ${id}:`, err);
+    });
     this.notifyActiveCount();
+    await unpersistAttempt;
     return true;
   }
 
@@ -259,6 +259,9 @@ export class JobRegistry {
 
   async drainWrites(): Promise<void> {
     await Promise.all([...this.jobs.values()].map((t) => t.writeChain));
+    const err = this.writeError;
+    this.writeError = null;
+    if (err !== null) throw err instanceof Error ? err : new Error(String(err));
   }
 
   async sweep(): Promise<void> {
@@ -321,6 +324,7 @@ export class JobRegistry {
     const snapshot = tracked.job;
     tracked.writeChain = tracked.writeChain.then(() =>
       this.deps.persist(snapshot).catch((err) => {
+        this.writeError = err;
         console.warn(`[jobRegistry] persist failed for ${snapshot.id}:`, err);
       }),
     );

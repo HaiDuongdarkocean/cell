@@ -23,10 +23,14 @@ export function mergeWithDefaults(stored: unknown): OcrSettings {
     return { ...DEFAULT_OCR_SETTINGS };
   }
   const s = stored as Partial<OcrSettings>;
-  return {
-    schemaVersion: OCR_SETTINGS_SCHEMA_VERSION,
-    origins: typeof s.origins === 'object' && s.origins !== null ? { ...s.origins } : {},
-  };
+  if (typeof s.origins !== 'object' || s.origins === null) {
+    return { schemaVersion: OCR_SETTINGS_SCHEMA_VERSION, origins: {} };
+  }
+  const origins: Record<string, OcrOriginState> = {};
+  for (const [key, value] of Object.entries(s.origins)) {
+    origins[key.includes('://') ? key : `https://${key}`] = value;
+  }
+  return { schemaVersion: OCR_SETTINGS_SCHEMA_VERSION, origins };
 }
 
 /** Load OCR settings from chrome.storage.local. */
@@ -41,10 +45,11 @@ export async function saveOcrSettings(settings: OcrSettings): Promise<void> {
   await setStorage({ [STORAGE_KEYS.OCR_SETTINGS]: settings });
 }
 
-/** Extract origin hostname from a URL. */
+/** Extract origin (scheme + host + port) from a URL. */
 export function extractOriginFromUrl(url: string): string {
   try {
-    return new URL(url).hostname;
+    const { origin } = new URL(url);
+    return origin === 'null' ? '' : origin;
   } catch {
     return '';
   }

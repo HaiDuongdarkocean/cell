@@ -39,8 +39,13 @@ export function whenJobsReady(): Promise<void> {
   if (readyPromise !== null) return readyPromise;
   readyPromise = (async () => {
     if (!registry) return;
-    await registry.restore();
-    await registry.sweep();
+    try {
+      await registry.restore();
+      await registry.sweep();
+    } catch (err) {
+      readyPromise = null;
+      throw err;
+    }
   })();
   return readyPromise;
 }

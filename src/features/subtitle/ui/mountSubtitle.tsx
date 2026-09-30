@@ -1,4 +1,5 @@
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
+import { isDevMode } from '@/shared/lib/env/devMode';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
 import { ShadowThemeProvider } from '@/features/theme';
 import { createElement } from 'react';
@@ -226,34 +227,41 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
   host.style.inset = '0';
   host.style.pointerEvents = 'none';
 
+  const panels = (name: string): SubtitlePanelsRef | null => {
+    if (controllerRef === null && isDevMode) {
+      console.warn(`[mountSubtitle] ${name} dropped — panel controller not mounted`);
+    }
+    return controllerRef;
+  };
+
   return {
     unmount,
     host,
-    setStyles: (t, n) => controllerRef?.setStyles(t, n),
-    setIsPlaying: (playing) => controllerRef?.setIsPlaying(playing),
-    setRepeatActive: (active) => controllerRef?.setRepeatActive(active),
-    setRepeatIcon: (icon, label) => controllerRef?.setRepeatIcon(icon, label),
-    setManager: (m) => controllerRef?.setManager(m),
-    setOffset: (o) => controllerRef?.setOffset(o),
-    setManagerOpen: (open) => controllerRef?.setManagerOpen(open),
-    setOffsetOpen: (open) => controllerRef?.setOffsetOpen(open),
-    setHintOpen: (open) => controllerRef?.setHintOpen(open),
-    setGenerateNativeEnabled: (enabled) => controllerRef?.setGenerateNativeEnabled(enabled),
-    setCollapsed: (collapsed) => controllerRef?.setCollapsed(collapsed),
-    setYOffsetPercent: (y) => controllerRef?.setYOffsetPercent(y),
-    setClusterSettings: (s) => controllerRef?.setClusterSettings(s),
-    setBlockSettings: (s) => controllerRef?.setBlockSettings(s),
-    addToast: (message, variant) => controllerRef?.addToast(message, variant),
-    clearToasts: () => controllerRef?.clearToasts(),
-    setCues: (cues) => controllerRef?.setCues(cues),
-    setTokenize: (tokenize) => controllerRef?.setTokenize(tokenize),
-    setCurrentTimeMs: (timeMs) => controllerRef?.setCurrentTimeMs(timeMs),
-    setPanelBlurred: (blurred) => controllerRef?.setPanelBlurred(blurred),
-    setRemoveBracketed: (enabled) => controllerRef?.setRemoveBracketed(enabled),
-    togglePlayerMode: () => controllerRef?.togglePlayerMode(),
-    toggleSplitView: () => controllerRef?.toggleSplitView(),
-    setOcrEnabled: (enabled) => controllerRef?.setOcrEnabled(enabled),
-    setPracticeMode: (mode) => controllerRef?.setPracticeMode(mode),
-    setPlaybackSpeed: (speed) => controllerRef?.setPlaybackSpeed(speed),
+    setStyles: (t, n) => panels('setStyles')?.setStyles(t, n),
+    setIsPlaying: (playing) => panels('setIsPlaying')?.setIsPlaying(playing),
+    setRepeatActive: (active) => panels('setRepeatActive')?.setRepeatActive(active),
+    setRepeatIcon: (icon, label) => panels('setRepeatIcon')?.setRepeatIcon(icon, label),
+    setManager: (m) => panels('setManager')?.setManager(m),
+    setOffset: (o) => panels('setOffset')?.setOffset(o),
+    setManagerOpen: (open) => panels('setManagerOpen')?.setManagerOpen(open),
+    setOffsetOpen: (open) => panels('setOffsetOpen')?.setOffsetOpen(open),
+    setHintOpen: (open) => panels('setHintOpen')?.setHintOpen(open),
+    setGenerateNativeEnabled: (enabled) => panels('setGenerateNativeEnabled')?.setGenerateNativeEnabled(enabled),
+    setCollapsed: (collapsed) => panels('setCollapsed')?.setCollapsed(collapsed),
+    setYOffsetPercent: (y) => panels('setYOffsetPercent')?.setYOffsetPercent(y),
+    setClusterSettings: (s) => panels('setClusterSettings')?.setClusterSettings(s),
+    setBlockSettings: (s) => panels('setBlockSettings')?.setBlockSettings(s),
+    addToast: (message, variant) => panels('addToast')?.addToast(message, variant),
+    clearToasts: () => panels('clearToasts')?.clearToasts(),
+    setCues: (cues) => panels('setCues')?.setCues(cues),
+    setTokenize: (tokenize) => panels('setTokenize')?.setTokenize(tokenize),
+    setCurrentTimeMs: (timeMs) => panels('setCurrentTimeMs')?.setCurrentTimeMs(timeMs),
+    setPanelBlurred: (blurred) => panels('setPanelBlurred')?.setPanelBlurred(blurred),
+    setRemoveBracketed: (enabled) => panels('setRemoveBracketed')?.setRemoveBracketed(enabled),
+    togglePlayerMode: () => panels('togglePlayerMode')?.togglePlayerMode(),
+    toggleSplitView: () => panels('toggleSplitView')?.toggleSplitView(),
+    setOcrEnabled: (enabled) => panels('setOcrEnabled')?.setOcrEnabled(enabled),
+    setPracticeMode: (mode) => panels('setPracticeMode')?.setPracticeMode(mode),
+    setPlaybackSpeed: (speed) => panels('setPlaybackSpeed')?.setPlaybackSpeed(speed),
   };
 }

@@ -225,6 +225,33 @@ describe('JobRegistry', () => {
     r.setProgress('j1', { done: 5, total: 9 });
     expect(deps.events.at(-1)?.progress.done).toBe(5);
   });
+
+  it('restore propagates load failure and stays retryable', async () => {
+    const deps = makeDeps();
+    const r = reg(deps);
+    jest.mocked(deps.loadPersisted).mockRejectedValueOnce(new Error('storage gone'));
+    await expect(r.restore()).rejects.toThrow('storage gone');
+    await r.restore();
+    expect(deps.loadPersisted).toHaveBeenCalledTimes(2);
+  });
+
+  it('dismiss propagates unpersist failure so callers know the job can resurrect', async () => {
+    const deps = makeDeps();
+    const r = reg(deps);
+    r.register({ id: 'j1', kind: 'resource-delete', label: 'd', status: 'queued', ...base });
+    r.markFailed('j1', 'boom');
+    jest.mocked(deps.unpersist).mockRejectedValueOnce(new Error('disk full'));
+    await expect(r.dismiss('j1')).rejects.toThrow('disk full');
+  });
+
+  it('drainWrites surfaces the last persist failure and then clears it', async () => {
+    const deps = makeDeps();
+    const r = reg(deps);
+    jest.mocked(deps.persist).mockRejectedValueOnce(new Error('quota'));
+    r.register({ id: 'j1', kind: 'resource-delete', label: 'd', status: 'queued', ...base });
+    await expect(r.drainWrites()).rejects.toThrow('quota');
+    await expect(r.drainWrites()).resolves.toBeUndefined();
+  });
 });
 
 describe('jobIdentityKey', () => {

@@ -329,9 +329,9 @@ export interface QuickAddResponse {
 
 // === Popup controller / Card Creator prefill contracts ===
 //
-// These types are shared between the legacy popupDictionaryController and the
-// React `PopupDictionary` path. Keeping them in this pure type module lets us
-// delete the legacy UI files without breaking downstream consumers.
+// Shared between the React `PopupDictionary` path and the integrated
+// Dictionary in the Universal Panel; kept in a pure type module so UI
+// deletions don't break downstream consumers.
 
 /** Selection snapshot cloned from the popup dictionary at sendToCard time so
  *  the integrated Dictionary in the Universal Panel can initialize with the

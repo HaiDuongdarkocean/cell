@@ -99,7 +99,7 @@ describe('OcrSettingsPanel (T17-T20)', () => {
 // ─── Task 8: 108-lang dropdowns + split section ───
 
 const TEST_URL = 'https://themoviebox.xyz/movies/123';
-const TEST_ORIGIN = 'themoviebox.xyz';
+const TEST_ORIGIN = 'https://themoviebox.xyz';
 
 interface SavedOriginState {
   targetLangOverride?: string | null;

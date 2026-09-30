@@ -45,7 +45,7 @@ describe('shouldEnableOcr (T21-T25)', () => {
     storageData.ocrSettings = {
       schemaVersion: 1,
       origins: {
-        'themoviebox.xyz': { ocrEnabled: true, languageMode: 'auto', subtitleRegionPct: 15 },
+        'https://themoviebox.xyz': { ocrEnabled: true, languageMode: 'auto', subtitleRegionPct: 15 },
       },
     };
     expect(await shouldEnableOcr('https://themoviebox.xyz/movies/123')).toBe(true);
@@ -124,13 +124,13 @@ describe('saveSplitRatioForOrigin (Task 7)', () => {
     storageData.ocrSettings = {
       schemaVersion: 1,
       origins: {
-        'kisskh.co': { ...DEFAULT_OCR_ORIGIN_STATE, ocrEnabled: true, splitEnabled: true, splitRatio: 0.5, customRegion },
+        'https://kisskh.co': { ...DEFAULT_OCR_ORIGIN_STATE, ocrEnabled: true, splitEnabled: true, splitRatio: 0.5, customRegion },
       },
     };
-    await saveSplitRatioForOrigin('kisskh.co', 1.7); // out of range → clamped to 0.9
+    await saveSplitRatioForOrigin('https://kisskh.co', 1.7); // out of range → clamped to 0.9
     const saved = (storageData.ocrSettings as {
       origins: Record<string, { splitRatio: number; splitEnabled: boolean; customRegion: unknown }>;
-    }).origins['kisskh.co'];
+    }).origins['https://kisskh.co'];
     expect(saved.splitRatio).toBe(0.9);
     expect(saved.splitEnabled).toBe(true);
     expect(saved.customRegion).toEqual(customRegion);
