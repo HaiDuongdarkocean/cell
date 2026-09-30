@@ -4,7 +4,7 @@
   gap: var(--space-4);
   width: min(30rem, 92vw);
   margin: 0 auto;
-  padding: var(--space-5) 0 var(--space-10);
+  padding: var(--space-5) 0 var(--space-24);
 }
 
 .topBar {
@@ -14,31 +14,9 @@
   gap: var(--space-3);
 }
 
-.deckTitle {
+.topBarActions {
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-width: 0;
-}
-
-.deckIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--space-10);
-  height: var(--space-10);
-  border-radius: var(--radius-full);
-  background: var(--color-primary-subtle);
-  color: var(--color-text-accent);
-  flex-shrink: 0;
-}
-
-.title {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  gap: var(--space-2);
 }
 
 .chromeButton {
@@ -47,27 +25,58 @@
   flex-shrink: 0;
 }
 
-.actionRow {
-  display: flex;
-  gap: var(--space-2);
+.selectedCount {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  flex: 1;
 }
 
-.changeCard {
+.selectAllPill {
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.heroCard {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-3);
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-4) var(--space-6);
   background: var(--color-surface-elevated);
   border-radius: var(--radius-lg);
+  text-align: center;
 }
 
-.iconPickerRow {
-  display: flex;
+.heroIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-20);
+  height: var(--space-20);
+  border-radius: var(--radius-full);
+  background: var(--color-primary-subtle);
+  color: var(--color-text-accent);
 }
 
-.changeActions {
-  display: flex;
-  gap: var(--space-2);
+.heroIcon svg {
+  width: var(--space-10);
+  height: var(--space-10);
+}
+
+.heroName {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.heroCount {
+  color: var(--color-text-secondary);
+}
+
+.newPill {
+  background: var(--color-success-subtle);
+  color: var(--color-success);
 }
 
 .subdeckLine {
@@ -75,48 +84,170 @@
   color: var(--color-text-secondary);
 }
 
-.noteList {
+.notesCard {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
 .noteRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3);
-  background: var(--color-surface-elevated);
-  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
 }
 
-.noteInfo {
+.noteRowBorder {
+  border-top: var(--border-width-hairline) solid var(--color-border);
+}
+
+.noteMain {
   display: flex;
   flex-direction: column;
   gap: var(--space-0-5);
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.noteLine {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
   min-width: 0;
 }
 
 .noteWord {
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
 }
 
-.noteProgress {
-  font-size: var(--font-size-xs);
+.noteIpa {
+  color: var(--color-text-accent);
+  font-size: var(--font-size-sm);
+}
+
+.noteSentence {
   color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.noteActions {
-  display: flex;
-  gap: var(--space-1);
+.statusPill {
+  background: var(--color-success-subtle);
+  color: var(--color-success);
   flex-shrink: 0;
+}
+
+.noteEdit {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
 }
 
 .empty {
   color: var(--color-text-secondary);
+  padding: var(--space-4);
 }
 
 .error {
   color: var(--color-error);
+}
+
+.actionBar {
+  position: sticky;
+  bottom: var(--space-4);
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-full);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.actionPill {
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  text-transform: uppercase;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-wide);
+  flex-shrink: 0;
+}
+
+.actionPillDanger {
+  color: var(--color-error);
+}
+
+.confirmBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.confirmRow {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.confirmRow button {
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  font-weight: var(--font-weight-bold);
+}
+
+.markAsLabel {
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.markAsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.markAsPill {
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  font-weight: var(--font-weight-bold);
+}
+
+.resetOptions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.resetOptions button {
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  font-weight: var(--font-weight-bold);
+}
+
+.iconGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+}
+
+.pickList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.pickItem {
+  justify-content: flex-start;
 }
