@@ -49,8 +49,12 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .button:not(.transparent):hover::after {
+  .button:not(.transparent):not(.ghost):hover::after {
     background: var(--color-overlay-hover);
+  }
+
+  .ghost:hover {
+    color: var(--color-text-primary);
   }
 }
 
@@ -191,8 +195,8 @@
 }
 
 .destructive {
-  background: var(--color-error);
-  color: var(--color-text-inverse);
+  background: var(--color-destructive);
+  color: var(--color-destructive-foreground);
   border-color: transparent;
 }
 
