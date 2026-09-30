@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Button, Heading, SegmentedControl, Select, Separator, Text, Toggle } from '@/shared/ui';
+import { Box, Button, Heading, SegmentedControl, Select, Text, Toggle } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { useSrsUiPrefs, setSrsUiPrefs, resetSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
@@ -50,6 +50,7 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
     <div className={styles.overlay} role="dialog" aria-modal="true" aria-label={t('srs.settings.title')}>
       <Box className={styles.sheet}>
         <Box className={styles.header}>
+          <span />
           <Heading level={2} className={styles.title}>{t('srs.settings.title')}</Heading>
           <Button variant="ghost" size="sm" shape="circle" onClick={onClose} aria-label={t('ui.close')} className={styles.closeButton}>
             <Icon name="x" />
@@ -57,6 +58,7 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
         </Box>
 
         <SegmentedControl
+          variant="filled"
           options={[
             { value: 'general', label: t('srs.settings.tabGeneral') },
             { value: 'customize', label: t('srs.settings.tabCustomize') },
@@ -67,6 +69,7 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
           className={styles.tabs}
         />
 
+        <Box className={styles.body}>
         {tab === 'customize' ? (
           <UserCssPanel />
         ) : (
@@ -74,6 +77,7 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
             <Section title={t('srs.settings.schedule')}>
               <SettingRow label={t('srs.settings.dayBegins')}>
                 <Select
+                  className={styles.pillSelect}
                   value={String(prefs.dayStartHour)}
                   options={HOUR_OPTIONS}
                   onChange={(v) => { setSrsUiPrefs({ dayStartHour: Number(v) }); }}
@@ -82,6 +86,7 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
               </SettingRow>
               <SettingRow label={t('srs.settings.showSummary')}>
                 <Select
+                  className={styles.pillSelect}
                   value={prefs.showStudySummary}
                   options={[
                     { value: 'finished', label: t('srs.settings.summaryFinished') },
@@ -113,6 +118,7 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
               <Text className={styles.sectionDesc}>{t('srs.settings.studyOrderDesc')}</Text>
               <SettingRow label={t('srs.settings.startWith')}>
                 <Select
+                  className={styles.pillSelect}
                   value={prefs.startWith}
                   options={[
                     { value: 'reviews', label: t('srs.settings.startReviews') },
@@ -134,6 +140,7 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
             <Section title={t('srs.settings.myCards')}>
               <SettingRow label={t('srs.settings.newPerDay')}>
                 <Select
+                  className={styles.pillSelect}
                   value={String(prefs.newPerDay)}
                   options={[5, 10, 15, 20, 30, 50].map((n) => ({ value: String(n), label: String(n) }))}
                   onChange={(v) => { setSrsUiPrefs({ newPerDay: Number(v) }); }}
@@ -142,6 +149,7 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
               </SettingRow>
               <SettingRow label={t('srs.settings.perBatch')} description={t('srs.settings.perBatchDesc')}>
                 <Select
+                  className={styles.pillSelect}
                   value={String(prefs.cardsPerBatch)}
                   options={[3, 5, 7, 10].map((n) => ({ value: String(n), label: String(n) }))}
                   onChange={(v) => { setSrsUiPrefs({ cardsPerBatch: Number(v) }); }}
@@ -150,6 +158,7 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
               </SettingRow>
               <SettingRow label={t('srs.settings.graduate')} description={t('srs.settings.graduateDesc')}>
                 <Select
+                  className={styles.pillSelect}
                   value={prefs.graduatePasses === null ? 'default' : String(prefs.graduatePasses)}
                   options={[
                     { value: 'default', label: t('srs.settings.deckDefault') },
@@ -161,12 +170,12 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
               </SettingRow>
             </Section>
 
-            <Separator />
-            <Button variant="ghost" fullWidth className={styles.resetButton} onClick={() => { resetSrsUiPrefs(); }}>
+            <Button variant="primary" fullWidth className={styles.resetButton} onClick={() => { resetSrsUiPrefs(); }}>
               {t('srs.settings.reset')}
             </Button>
           </>
         )}
+        </Box>
       </Box>
     </div>
   );
