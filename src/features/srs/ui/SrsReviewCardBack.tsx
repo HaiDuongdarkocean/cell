@@ -30,10 +30,10 @@ function fieldLabel(fieldId: string): string {
 
 function FieldBox({ label, children }: { label: string; children: React.ReactNode }): React.JSX.Element {
   return (
-    <Box bg="muted" className={styles.fieldBox}>
-      <Text className={styles.fieldBoxLabel}>{label}</Text>
+    <fieldset className={styles.fieldBox}>
+      <legend className={styles.fieldBoxLabel}>{label}</legend>
       {children}
-    </Box>
+    </fieldset>
   );
 }
 
@@ -199,7 +199,6 @@ export function SrsReviewCardBack({
             <Button
               size="md"
               variant="primary"
-              className={styles.audioPill}
               onClick={() => { if (sentAudioAsset) playAudio(sentAudioAsset); else playAudioUrl(sentAudioUrl!); }}
               aria-label={t('srs.review.playSentence')}
             >

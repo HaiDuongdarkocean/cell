@@ -94,7 +94,7 @@ function StimulusAudioButton({
   return (
     <button
       type="button"
-      className={fieldId === 'sentAudio' ? styles.stimulusAudioPill : styles.stimulusAudioButton}
+      className={styles.stimulusAudioButton}
       onClick={(e) => {
         e.stopPropagation();
         if (asset) playAudio(asset);
