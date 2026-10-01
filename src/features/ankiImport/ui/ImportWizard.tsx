@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert, Badge, Button, Card, Checkbox, Dialog, Icon, IconButton,
-  SectionHeader, Select, SelectableCard, Separator, Spinner, Text,
+  Alert, Badge, Button, Card, Checkbox, Dialog, Heading, Icon, IconButton,
+  SectionHeader, Select, SelectableCard, Spinner, Text,
   HStack, VStack,
 } from '@/shared/ui';
 import { t } from '@/shared/i18n';
+import type { IconCatalogKey } from '@/shared/icons';
 import type { SrsAudioAsset, SrsImageAsset, SrsNote } from '@/entities/srs/types';
 import {
   audioAssetId, createDefaultNotetype, imageAssetId, resolveReviewSurface,
@@ -50,6 +51,7 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
   const [mappings, setMappings] = useState<Record<string, FieldMapping>>({});
   const [activeNtIdx, setActiveNtIdx] = useState(0);
   const [sampleIdx, setSampleIdx] = useState(0);
+  const [source, setSource] = useState<{ kind: 'live' | 'file'; name: string } | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const reset = useCallback(() => {
@@ -65,6 +67,7 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
     setMappings({});
     setActiveNtIdx(0);
     setSampleIdx(0);
+    setSource(null);
   }, []);
 
   useEffect(() => {
@@ -85,7 +88,9 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
     try {
       const ok = await checkAnkiConnect();
       if (!ok) { setConnectFailed(true); return; }
-      acceptData(await readFromConnect());
+      const d = await readFromConnect();
+      setSource({ kind: 'live', name: t('ankiImport.source.liveTitle') });
+      acceptData(d);
     } catch (err) {
       setErrorSource('connect');
       setError(err instanceof Error ? err.message : String(err));
@@ -101,7 +106,9 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
     setParsing(true);
     setError(null);
     try {
-      acceptData(await readFromApkg(file));
+      const d = await readFromApkg(file);
+      setSource({ kind: 'file', name: file.name });
+      acceptData(d);
     } catch (err) {
       setErrorSource('file');
       setError(err instanceof Error ? err.message : String(err));
@@ -114,6 +121,17 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
   const selectedNt = useMemo(() => {
     const withNotes = new Set((data?.notes ?? []).map((n) => n.modelId));
     return (data?.notetypes ?? []).filter((n) => !n.isCloze && withNotes.has(n.id));
+  }, [data]);
+
+  const cardCountByNt = useMemo(() => {
+    const noteModel = new Map((data?.notes ?? []).map((n) => [n.id, n.modelId]));
+    const m = new Map<string, number>();
+    for (const c of data?.cards ?? []) {
+      if (c.queue === -1) continue;
+      const nt = noteModel.get(c.noteId);
+      if (nt) m.set(nt, (m.get(nt) ?? 0) + 1);
+    }
+    return m;
   }, [data]);
 
   // Seed mappings when entering the mapping step (preset → heuristic).
@@ -162,9 +180,31 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
     else if (step === 'mapping') setStep('scope');
   }, [step]);
 
+  const activeNt = selectedNt[Math.min(activeNtIdx, selectedNt.length - 1)];
+  const mappingMeta = step === 'mapping' && activeNt
+    ? t('ankiImport.mapping.summary', [
+      activeNt.name,
+      cardCountByNt.get(activeNt.id) ?? 0,
+      Object.entries(mappings[activeNt.id] ?? {}).find(([, r]) => r === 'target')?.[0] ?? '—',
+    ])
+    : null;
+
   const body = (
-    <>
+    <div className={styles.bodyCol}>
       <StepRail step={step} />
+      {data && source && (
+        <div className={styles.sourceChip}>
+          <Icon name={source.kind === 'file' ? 'folderOpen' : 'import'} className={styles.chipIcon} />
+          <Text variant="label" className={styles.chipName}>{source.name}</Text>
+          <Badge size="sm" variant="muted">{source.kind === 'file' ? '.apkg' : 'AnkiConnect'}</Badge>
+          <Text variant="supporting" color="secondary" className={styles.chipStatus}>
+            {t(source.kind === 'file' ? 'ankiImport.source.filePicked' : 'ankiImport.source.connected')}
+          </Text>
+          <IconButton size="sm" variant="ghost" aria-label={t('ankiImport.source.change')} onClick={reset}>
+            <Icon name="x" />
+          </IconButton>
+        </div>
+      )}
       {step === 'source' && (
         <SourceStep
           connecting={connecting}
@@ -197,18 +237,35 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
           onMapping={(id, m) => setMappings((prev) => ({ ...prev, [id]: m }))}
           ntIds={ntIds}
           onNtIds={setNtIds}
+          cardCountByNt={cardCountByNt}
         />
       )}
-    </>
+    </div>
   );
 
   const footer = step === 'source' ? undefined : (
-    <>
-      <Button variant="ghost" onClick={goBack}>{t('ankiImport.action.back')}</Button>
-      <Button variant="primary" onClick={goNext} disabled={!canContinue}>
-        {step === 'mapping' ? t('ankiImport.action.start') : t('ankiImport.action.continue')}
-      </Button>
-    </>
+    <div className={styles.footerBar}>
+      {mappingMeta ? (
+        <HStack gap="2" className={styles.footerMeta}>
+          <Icon name="folderOpen" className={styles.chipIcon} />
+          <Text variant="supporting" color="secondary">{mappingMeta}</Text>
+        </HStack>
+      ) : <span />}
+      <HStack gap="2">
+        <Button variant="ghost" onClick={goBack}>{t('ankiImport.action.back')}</Button>
+        {step === 'mapping' && (
+          <Button variant="ghost" onClick={onClose}>{t('srs.edit.cancel')}</Button>
+        )}
+        <Button
+          variant="primary"
+          onClick={goNext}
+          disabled={!canContinue}
+          leadingIcon={step === 'mapping' ? <Icon name="import" /> : undefined}
+        >
+          {step === 'mapping' ? t('ankiImport.action.start') : t('ankiImport.action.continue')}
+        </Button>
+      </HStack>
+    </div>
   );
 
   return (
@@ -225,8 +282,10 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
         open={open}
         onOpenChange={(o) => { if (!o) onClose(); }}
         title={t('ankiImport.title')}
+        titleIcon={<Icon name="import" />}
+        description={t('ankiImport.desc')}
         showCloseButton
-        size={step === 'mapping' ? 'lg' : 'md'}
+        size={step === 'mapping' ? 'xl' : 'md'}
         footer={footer}
       >
         {body}
@@ -390,16 +449,16 @@ function ScopeStep({
   );
 }
 
-const SYSTEM_SLOTS: readonly { role: Exclude<FieldRole, 'skip'>; fieldId: string }[] = [
-  { role: 'target', fieldId: 'target' },
-  { role: 'sentence', fieldId: 'sentence' },
-  { role: 'definition', fieldId: 'def' },
-  { role: 'translation', fieldId: 'translation' },
-  { role: 'context', fieldId: 'context' },
-  { role: 'notes', fieldId: 'notes' },
-  { role: 'audio', fieldId: 'wordAudio' },
-  { role: 'sentenceAudio', fieldId: 'sentAudio' },
-  { role: 'image', fieldId: 'image' },
+const SYSTEM_SLOTS: readonly { role: Exclude<FieldRole, 'skip'>; fieldId: string; icon: IconCatalogKey }[] = [
+  { role: 'target', fieldId: 'target', icon: 'crosshair' },
+  { role: 'sentence', fieldId: 'sentence', icon: 'messageSquare' },
+  { role: 'definition', fieldId: 'def', icon: 'bookOpen' },
+  { role: 'translation', fieldId: 'translation', icon: 'languages' },
+  { role: 'context', fieldId: 'context', icon: 'layoutGrid' },
+  { role: 'notes', fieldId: 'notes', icon: 'captions' },
+  { role: 'audio', fieldId: 'wordAudio', icon: 'volumeHigh' },
+  { role: 'sentenceAudio', fieldId: 'sentAudio', icon: 'audioWave' },
+  { role: 'image', fieldId: 'image', icon: 'image' },
 ];
 
 const PREVIEW_NOTE_ID = 'anki-import-preview';
@@ -416,7 +475,7 @@ function previewAudioAsset(noteId: string, fieldId: string): SrsAudioAsset {
 }
 
 function MappingStep({
-  data, notetypes, mappings, activeIdx, sampleIdx, onNtIdx, onSampleIdx, onMapping, ntIds, onNtIds,
+  data, notetypes, mappings, activeIdx, sampleIdx, onNtIdx, onSampleIdx, onMapping, ntIds, onNtIds, cardCountByNt,
 }: {
   readonly data: NormalizedAnkiData;
   readonly notetypes: readonly NormalizedAnkiNotetype[];
@@ -428,10 +487,11 @@ function MappingStep({
   readonly onMapping: (ntId: string, m: FieldMapping) => void;
   readonly ntIds: ReadonlySet<string>;
   readonly onNtIds: (s: ReadonlySet<string>) => void;
+  readonly cardCountByNt: ReadonlyMap<string, number>;
 }): React.JSX.Element {
   const [flipped, setFlipped] = useState(false);
+  const [advOpen, setAdvOpen] = useState(false);
   const nt = notetypes[Math.min(activeIdx, notetypes.length - 1)];
-  const noteModel = useMemo(() => new Map(data.notes.map((n) => [n.id, n.modelId])), [data.notes]);
   const defaultNt = useMemo(() => createDefaultNotetype(PREVIEW_NOTE_ID), []);
   const mapping: FieldMapping = useMemo(() => (nt && mappings[nt.id]) ?? {}, [nt, mappings]);
   const samples = nt ? data.notes.filter((n) => n.modelId === nt.id).slice(0, 5) : [];
@@ -464,9 +524,9 @@ function MappingStep({
     return <Text variant="supporting">{t('ankiImport.mapping.noneSelected')}</Text>;
   }
   const excluded = !ntIds.has(nt.id);
-  const toggleNt = (): void => {
+  const toggleNtById = (id: string): void => {
     const next = new Set(ntIds);
-    if (next.has(nt.id)) next.delete(nt.id); else next.add(nt.id);
+    if (next.has(id)) next.delete(id); else next.add(id);
     onNtIds(next);
   };
 
@@ -480,93 +540,138 @@ function MappingStep({
     onMapping(nt.id, next);
   };
 
-  const cardCount = data.cards.filter((c) => noteModel.get(c.noteId) === nt.id && c.queue !== -1).length;
+  const activeSample = samples.length ? sampleIdx % samples.length : 0;
 
   return (
-    <VStack gap="3">
-      <HStack gap="2" className={styles.ntTabs}>
-        {notetypes.map((n, i) => (
-          <Button key={n.id} variant={i === activeIdx ? 'secondary' : 'ghost'} size="sm" className={ntIds.has(n.id) ? undefined : styles.ntTabExcluded} onClick={() => { onNtIdx(i); setFlipped(false); }}>
-            {n.name}
-          </Button>
-        ))}
-      </HStack>
-      {excluded && (
-        <Alert variant="default" icon={<Icon name="info" />} description={t('ankiImport.mapping.excludedNt')} />
-      )}
-      {!excluded && <div className={styles.mapLayout}>
-        <div>
-          {SYSTEM_SLOTS.map(({ role, fieldId }) => {
-            const sources = fieldsForRole(role);
-            return (
-              <div key={fieldId} className={styles.fieldRow}>
-                <span className={styles.fieldName}>{t(`ankiImport.role.${role}`)}</span>
-                <Select
-                  size="sm"
-                  value={sources[0] ?? ''}
-                  options={[
-                    { value: '', label: t('ankiImport.role.skip') },
-                    ...nt.fields.map((f) => ({ value: f.name, label: f.name })),
-                  ]}
-                  onChange={(v) => assignRole(role, v)}
-                  aria-label={t('ankiImport.mapping.sourceFor', [t(`ankiImport.role.${role}`)])}
-                />
-                {sources.length > 1 && (
-                  <span className={styles.fieldMore} title={t('ankiImport.mapping.moreFields', [sources.length - 1])}>+{sources.length - 1}</span>
-                )}
-              </div>
-            );
-          })}
+    <div className={styles.mapLayout}>
+      <section className={styles.settingsCol}>
+        <div className={styles.sectionHead}>
+          <span className={styles.sectionIcon}><Icon name="slidersHorizontal" /></span>
+          <div className={styles.sectionHeadText}>
+            <Heading level={3} className={styles.sectionTitle}>{t('ankiImport.mapping.settingsTitle')}</Heading>
+            <Text variant="supporting" color="secondary">{t('ankiImport.mapping.settingsDesc')}</Text>
+          </div>
         </div>
-        <div>
-          {preview && (
-            <Card className={styles.previewCardWrap} data-cell-id="anki-preview-card">
-              {flipped ? (
-                <SrsReviewCardBack
-                  note={preview.note}
-                  audioCache={preview.audioCache}
-                  imageCache={preview.imageCache}
-                  onFlipBack={() => setFlipped(false)}
-                />
-              ) : (
-                <SrsReviewCardFront
-                  note={preview.note}
-                  stimulus={preview.stimulus}
-                  isSpelling={false}
-                  typedInput=""
-                  onTypedInputChange={() => {}}
-                  inputId="anki-import-preview-input"
-                  onFlip={() => setFlipped(true)}
-                  audioCache={preview.audioCache}
-                  imageCache={preview.imageCache}
-                />
-              )}
-            </Card>
-          )}
-          <Text variant="supporting" color="secondary" className={styles.previewHint}>
-            {t(flipped ? 'ankiImport.mapping.backPreview' : 'ankiImport.mapping.previewHint')}
-          </Text>
+        {notetypes.length > 1 && (
+          <HStack gap="1" className={styles.ntTabs}>
+            {notetypes.map((n, i) => (
+              <Button key={n.id} variant={i === activeIdx ? 'secondary' : 'ghost'} size="sm" className={ntIds.has(n.id) ? undefined : styles.ntTabExcluded} onClick={() => { onNtIdx(i); setFlipped(false); }}>
+                {n.name}
+              </Button>
+            ))}
+          </HStack>
+        )}
+        {excluded && (
+          <Alert variant="default" icon={<Icon name="info" />} description={t('ankiImport.mapping.excludedNt')} />
+        )}
+        {!excluded && (
+          <div className={styles.fieldRows}>
+            {SYSTEM_SLOTS.map(({ role, fieldId, icon }) => {
+              const sources = fieldsForRole(role);
+              return (
+                <div key={fieldId} className={styles.fieldRow}>
+                  <Icon name={icon} className={styles.fieldIcon} />
+                  <span className={styles.fieldName}>{t(`ankiImport.role.${role}`)}</span>
+                  <Select
+                    size="sm"
+                    className={styles.fieldSelect}
+                    value={sources[0] ?? ''}
+                    options={[
+                      { value: '', label: t('ankiImport.role.skip') },
+                      ...nt.fields.map((f) => ({ value: f.name, label: f.name })),
+                    ]}
+                    onChange={(v) => assignRole(role, v)}
+                    aria-label={t('ankiImport.mapping.sourceFor', [t(`ankiImport.role.${role}`)])}
+                  />
+                  {sources.length > 1 && (
+                    <span className={styles.fieldMore} title={t('ankiImport.mapping.moreFields', [sources.length - 1])}>+{sources.length - 1}</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <button
+          type="button"
+          className={styles.advRow}
+          onClick={() => { setAdvOpen((v) => !v); }}
+          aria-expanded={advOpen}
+        >
+          <Icon name="slidersHorizontal" className={styles.fieldIcon} />
+          <span className={styles.advText}>
+            <Text variant="label">{t('ankiImport.advanced.title')}</Text>
+            <Text variant="supporting" color="secondary">{t('ankiImport.advanced.desc')}</Text>
+          </span>
+          <Icon name="chevronRight" className={advOpen ? styles.advChevronOpen : styles.advChevron} />
+        </button>
+        {advOpen && (
+          <div className={styles.pickList}>
+            {notetypes.map((n) => (
+              <label key={n.id} className={styles.pickRow}>
+                <Checkbox checked={ntIds.has(n.id)} onChange={() => toggleNtById(n.id)} />
+                <span className={styles.pickName}>{n.name}</span>
+                <Text variant="supporting" color="secondary">{t('ankiImport.mapping.cardCount', [cardCountByNt.get(n.id) ?? 0])}</Text>
+              </label>
+            ))}
+          </div>
+        )}
+      </section>
+      <section className={styles.previewPanel}>
+        <Heading level={3} className={styles.sectionTitle}>{t('ankiImport.preview.title')}</Heading>
+        <Text variant="supporting" color="secondary">{t('ankiImport.preview.desc')}</Text>
+        {preview && (
+          <Card className={styles.previewCardWrap} data-cell-id="anki-preview-card">
+            {flipped ? (
+              <SrsReviewCardBack
+                note={preview.note}
+                audioCache={preview.audioCache}
+                imageCache={preview.imageCache}
+                onFlipBack={() => setFlipped(false)}
+              />
+            ) : (
+              <SrsReviewCardFront
+                note={preview.note}
+                stimulus={preview.stimulus}
+                isSpelling={false}
+                typedInput=""
+                onTypedInputChange={() => {}}
+                inputId="anki-import-preview-input"
+                onFlip={() => setFlipped(true)}
+                audioCache={preview.audioCache}
+                imageCache={preview.imageCache}
+              />
+            )}
+          </Card>
+        )}
+        <div className={styles.previewNav}>
+          <div className={styles.dots}>
+            {samples.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                className={i === activeSample ? styles.dotActive : styles.dot}
+                aria-label={t('ankiImport.mapping.sample', [i + 1, samples.length])}
+                onClick={() => { onSampleIdx(i); setFlipped(false); }}
+              />
+            ))}
+          </div>
+          <HStack gap="1">
+            <IconButton size="sm" variant="ghost" disabled={sampleIdx === 0} aria-label={t('ankiImport.mapping.prev')} onClick={() => { onSampleIdx(sampleIdx - 1); setFlipped(false); }}>
+              <Icon name="chevronLeft" />
+            </IconButton>
+            <IconButton size="sm" variant="ghost" disabled={samples.length <= 1} aria-label={t('ankiImport.mapping.next')} onClick={() => { onSampleIdx(sampleIdx + 1); setFlipped(false); }}>
+              <Icon name="chevronRight" />
+            </IconButton>
+          </HStack>
         </div>
-      </div>}
-      <div className={styles.sampleNav} style={excluded ? { display: 'none' } : undefined}>
-        <IconButton size="sm" variant="ghost" disabled={sampleIdx === 0} aria-label={t('ankiImport.mapping.prev')} onClick={() => { onSampleIdx(Math.max(0, sampleIdx - 1)); setFlipped(false); }}>
-          <Icon name="chevronLeft" />
-        </IconButton>
-        <Text variant="supporting">{t('ankiImport.mapping.sample', [samples.length ? (sampleIdx % samples.length) + 1 : 0, samples.length])}</Text>
-        <IconButton size="sm" variant="ghost" disabled={samples.length <= 1} aria-label={t('ankiImport.mapping.next')} onClick={() => { onSampleIdx(sampleIdx + 1); setFlipped(false); }}>
-          <Icon name="chevronRight" />
-        </IconButton>
-      </div>
-      <Separator />
-      <HStack justify="between">
-        <Text variant="supporting" color="secondary">
-          {t('ankiImport.mapping.summary', [nt.name, cardCount, nt.fields.find((f) => mapping[f.name] === 'target')?.name ?? '—'])}
-        </Text>
-        <Button variant="ghost" size="sm" onClick={toggleNt}>
-          {excluded ? t('ankiImport.mapping.includeNt') : t('ankiImport.mapping.excludeNt')}
-        </Button>
-      </HStack>
-    </VStack>
+        <Alert
+          variant="default"
+          icon={<Icon name="info" />}
+          title={t('ankiImport.preview.tipTitle')}
+          description={t('ankiImport.preview.tipDesc')}
+        />
+      </section>
+    </div>
   );
 }
 

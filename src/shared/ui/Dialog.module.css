@@ -23,6 +23,19 @@
 
 .panelSm { max-width: var(--dialog-max-width-sm); }
 .panelLg { max-width: var(--dialog-max-width-lg); }
+.panelXl { max-width: var(--dialog-max-width-xl); }
+
+.titleIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-element);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
 
 .header {
   position: relative;

@@ -1,3 +1,9 @@
+.bodyCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
 .stepRail {
   display: flex;
   align-items: center;
@@ -24,6 +30,34 @@
 .segDone {
   background: var(--color-primary);
   transition: background var(--duration-normal) var(--ease-out);
+}
+
+.sourceChip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2-5);
+  border-radius: var(--radius-element);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  background: var(--color-surface);
+}
+
+.chipIcon {
+  flex-shrink: 0;
+  display: flex;
+  color: var(--color-text-secondary);
+}
+
+.chipName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chipStatus {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .sourceGrid {
@@ -90,6 +124,50 @@
   margin-left: auto;
 }
 
+.mapLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 400px);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.settingsCol {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.sectionIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-element);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.sectionHeadText {
+  min-width: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  line-height: var(--leading-tight);
+}
+
 .ntTabs {
   display: flex;
   gap: var(--space-1);
@@ -106,24 +184,22 @@
   text-decoration: line-through;
 }
 
-.mapLayout {
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: var(--space-4);
-  align-items: start;
-}
-
 .fieldRows {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1-5);
+  gap: var(--space-2);
 }
 
 .fieldRow {
   display: grid;
-  grid-template-columns: 112px 1fr;
-  gap: var(--space-2);
+  grid-template-columns: 18px minmax(100px, auto) minmax(0, 1fr) auto;
+  gap: var(--space-3);
   align-items: center;
+}
+
+.fieldIcon {
+  color: var(--color-text-secondary);
+  display: flex;
 }
 
 .fieldName {
@@ -131,9 +207,107 @@
   color: var(--color-text-primary);
 }
 
+.fieldSelect {
+  width: 100%;
+}
+
 .fieldMore {
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
+}
+
+.advRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  margin-top: var(--space-3);
+  padding: var(--space-2-5);
+  border: none;
+  border-radius: var(--radius-element);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.advRow:hover {
+  background: var(--color-surface-hover);
+}
+
+.advText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.advChevron,
+.advChevronOpen {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.advChevronOpen {
+  transform: rotate(90deg);
+}
+
+.previewPanel {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2-5);
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  background: var(--color-surface);
+}
+
+.previewNav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dots {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1-5);
+}
+
+.dot,
+.dotActive {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background var(--duration-normal) var(--ease-out);
+}
+
+.dot {
+  background: var(--color-surface-hover);
+}
+
+.dot:hover {
+  background: var(--color-border-emphasized);
+}
+
+.dotActive {
+  background: var(--color-primary);
+}
+
+.previewCardWrap {
+  width: 100%;
+  min-height: 0;
+  max-height: 46vh;
+  overflow-y: auto;
+  border-radius: var(--radius-card);
 }
 
 .checklistBox {
@@ -152,62 +326,30 @@
   gap: var(--space-2);
 }
 
-.centerCol {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-5) 0;
-  width: 100%;
-}
-
-.reportList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1-5);
-}
-
-.reportRow {
+.footerBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-2) var(--space-2-5);
-  border-radius: var(--radius-element);
-  background: var(--color-surface-elevated);
-}
-
-.reportValue {
-  font-variant-numeric: tabular-nums;
-}
-
-.runRow {
+  gap: var(--space-3);
   width: 100%;
+  flex-wrap: wrap;
 }
 
-.runCount {
-  flex-shrink: 0;
-  min-width: 64px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+.footerMeta {
+  min-width: 0;
+  overflow: hidden;
 }
 
-.previewHint {
-  margin-top: var(--space-2);
+.footerMeta > *:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.sampleNav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-}
-
-.previewCardWrap {
-  width: 100%;
-  min-height: 0;
-  max-height: 46vh;
-  overflow-y: auto;
-  border-radius: var(--radius-card);
+@media (max-width: 860px) {
+  .mapLayout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 560px) {
@@ -215,12 +357,9 @@
     grid-template-columns: 1fr;
   }
 
-  .mapLayout {
-    grid-template-columns: 1fr;
-  }
-
   .fieldRow {
-    grid-template-columns: 96px 1fr;
+    grid-template-columns: 18px minmax(88px, auto) minmax(0, 1fr) auto;
+    gap: var(--space-2);
   }
 
   .pickCounts {
@@ -230,5 +369,9 @@
 
   .previewCardWrap {
     max-height: 56vh;
+  }
+
+  .footerMeta {
+    flex-basis: 100%;
   }
 }

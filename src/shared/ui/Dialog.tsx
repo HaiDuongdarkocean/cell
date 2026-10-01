@@ -12,6 +12,8 @@ interface DialogProps {
   onOpenChange?: (open: boolean) => void;
   /** Dialog title. */
   title?: string;
+  /** Optional icon rendered left of the title/description block. */
+  titleIcon?: ReactNode;
   /** Dialog description. */
   description?: string;
   /** Main content. */
@@ -26,8 +28,8 @@ interface DialogProps {
   /** Center the title in the header (close button stays right via absolute
    *  positioning). Default: left-aligned with space-between. */
   centerTitle?: boolean;
-  /** Panel width variant — maps to --dialog-max-width{-sm,,-lg}. */
-  size?: 'sm' | 'md' | 'lg';
+  /** Panel width variant — maps to --dialog-max-width{-sm,,-lg,-xl}. */
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   /** Id of an element inside `children` describing the dialog. Overrides the
    *  default `description`-based wiring. */
   'aria-describedby'?: string;
@@ -44,6 +46,7 @@ export function Dialog({
   open,
   onOpenChange,
   title,
+  titleIcon,
   description,
   children,
   footer,
@@ -88,7 +91,7 @@ export function Dialog({
         ref={panelRef}
         as="div"
         variant="dialog"
-        className={[styles.panel, size === 'sm' ? styles.panelSm : size === 'lg' ? styles.panelLg : ''].filter(Boolean).join(' ')}
+        className={[styles.panel, size === 'sm' ? styles.panelSm : size === 'lg' ? styles.panelLg : size === 'xl' ? styles.panelXl : ''].filter(Boolean).join(' ')}
         onClick={handlePanelClick}
         role="dialog"
         aria-modal="true"
@@ -108,6 +111,7 @@ export function Dialog({
                 <CloseButton variant="ghost" onClick={() => onOpenChange?.(false)} />
               </HStack>
             )}
+            {titleIcon && <span className={styles.titleIcon}>{titleIcon}</span>}
             <div className={styles.headerText}>
               {title && <h2 id="dialog-title" className={styles.title}>{title}</h2>}
               {description && <p id="dialog-description" className={styles.description}>{description}</p>}
