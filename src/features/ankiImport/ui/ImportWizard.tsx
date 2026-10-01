@@ -403,12 +403,12 @@ const SYSTEM_SLOTS: readonly { role: Exclude<FieldRole, 'skip'>; fieldId: string
 ];
 
 const PREVIEW_NOTE_ID = 'anki-import-preview';
-const PREVIEW_IMAGE_BYTES = new TextEncoder().encode(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="100%" height="100%" fill="#2a2a2e"/><text x="50%" y="50%" fill="#8a8a90" font-family="sans-serif" font-size="18" text-anchor="middle" dominant-baseline="middle">image</text></svg>',
-).buffer;
 
 function previewImageAsset(noteId: string, fieldId: string): SrsImageAsset {
-  return { id: imageAssetId(noteId, fieldId), noteId, fieldId, mimeType: 'image/svg+xml', bytes: PREVIEW_IMAGE_BYTES, size: PREVIEW_IMAGE_BYTES.byteLength, lastAccessed: 0, createdAt: 0 };
+  const bytes = new TextEncoder().encode(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="100%" height="100%" fill="#2a2a2e"/><text x="50%" y="50%" fill="#8a8a90" font-family="sans-serif" font-size="18" text-anchor="middle" dominant-baseline="middle">${t('srs.stimulus.image')}</text></svg>`,
+  ).buffer;
+  return { id: imageAssetId(noteId, fieldId), noteId, fieldId, mimeType: 'image/svg+xml', bytes, size: bytes.byteLength, lastAccessed: 0, createdAt: 0 };
 }
 
 function previewAudioAsset(noteId: string, fieldId: string): SrsAudioAsset {
@@ -512,7 +512,7 @@ function MappingStep({
                   aria-label={t('ankiImport.mapping.sourceFor', [t(`ankiImport.role.${role}`)])}
                 />
                 {sources.length > 1 && (
-                  <span className={styles.fieldMore}>+{sources.length - 1}</span>
+                  <span className={styles.fieldMore} title={t('ankiImport.mapping.moreFields', [sources.length - 1])}>+{sources.length - 1}</span>
                 )}
               </div>
             );
