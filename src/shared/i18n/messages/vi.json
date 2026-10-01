@@ -1849,6 +1849,8 @@
   "ankiImport.mapping.prev": "Thẻ trước",
   "ankiImport.mapping.next": "Thẻ sau",
   "ankiImport.mapping.cardCount": "$1 thẻ",
+  "ankiImport.mapping.front": "Trước",
+  "ankiImport.mapping.back": "Sau",
   "ankiImport.mapping.noneSelected": "Không có loại thẻ nào được chọn.",
 
   "ankiImport.notetypes.title": "Loại thẻ",

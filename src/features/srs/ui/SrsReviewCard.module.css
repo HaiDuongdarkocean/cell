@@ -231,7 +231,7 @@
 .translationHint {
   border: none;
   background: none;
-  padding: var(--space-1) var(--space-2);
+  padding: 0;
   font: inherit;
   font-size: var(--font-size-md);
   color: var(--color-text-secondary);

@@ -202,6 +202,12 @@
   justify-self: end;
 }
 
+.flipBtn {
+  grid-column: 1;
+  justify-self: start;
+  min-width: var(--space-14);
+}
+
 .dot,
 .dotActive {
   width: 8px;

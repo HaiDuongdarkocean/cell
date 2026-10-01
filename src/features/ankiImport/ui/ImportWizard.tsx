@@ -604,7 +604,6 @@ function MappingStep({
     if (nt && id === nt.id) return;
     setSelectedNtId(id);
     onSampleIdx(0);
-    setFlipped(false);
   };
 
   const toggleNtById = (id: string): void => {
@@ -615,7 +614,6 @@ function MappingStep({
     if (!disabling || !nt || id !== nt.id) return;
     setSelectedNtId(nextEnabledNotetypeId(notetypes, next, cardCountByNt, id));
     onSampleIdx(0);
-    setFlipped(false);
   };
 
   const ntBar = (
@@ -751,6 +749,9 @@ function MappingStep({
       </section>
       <section className={styles.previewPanel}>
         <div className={styles.previewNav}>
+          <Button size="sm" variant="ghost" className={styles.flipBtn} onClick={() => setFlipped((f) => !f)}>
+            {t(flipped ? 'ankiImport.mapping.front' : 'ankiImport.mapping.back')}
+          </Button>
           <div className={styles.dots}>
             {samples.map((s, i) => (
               <button
@@ -759,15 +760,15 @@ function MappingStep({
                 className={i === activeSample ? styles.dotActive : styles.dot}
                 aria-label={t('ankiImport.mapping.sample', [i + 1, samples.length])}
                 aria-current={i === activeSample ? 'true' : undefined}
-                onClick={() => { onSampleIdx(i); setFlipped(false); }}
+                onClick={() => onSampleIdx(i)}
               />
             ))}
           </div>
           <HStack gap="1" className={styles.navArrows}>
-            <IconButton size="sm" variant="ghost" disabled={samples.length < 2} aria-label={t('ankiImport.mapping.prev')} onClick={() => { onSampleIdx((activeSample + samples.length - 1) % samples.length); setFlipped(false); }}>
+            <IconButton size="sm" variant="ghost" disabled={samples.length < 2} aria-label={t('ankiImport.mapping.prev')} onClick={() => onSampleIdx((activeSample + samples.length - 1) % samples.length)}>
               <Icon name="chevronLeft" />
             </IconButton>
-            <IconButton size="sm" variant="ghost" disabled={samples.length < 2} aria-label={t('ankiImport.mapping.next')} onClick={() => { onSampleIdx((activeSample + 1) % samples.length); setFlipped(false); }}>
+            <IconButton size="sm" variant="ghost" disabled={samples.length < 2} aria-label={t('ankiImport.mapping.next')} onClick={() => onSampleIdx((activeSample + 1) % samples.length)}>
               <Icon name="chevronRight" />
             </IconButton>
           </HStack>

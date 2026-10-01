@@ -1849,6 +1849,8 @@
   "ankiImport.mapping.prev": "Previous card",
   "ankiImport.mapping.next": "Next card",
   "ankiImport.mapping.cardCount": "$1 cards",
+  "ankiImport.mapping.front": "Front",
+  "ankiImport.mapping.back": "Back",
   "ankiImport.mapping.noneSelected": "No note types selected.",
 
   "ankiImport.notetypes.title": "Note types",
