@@ -50,7 +50,6 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
   const [ntIds, setNtIds] = useState<ReadonlySet<string>>(new Set());
   const [mappings, setMappings] = useState<Record<string, FieldMapping>>({});
   const [sampleIdx, setSampleIdx] = useState(0);
-  const [source, setSource] = useState<{ kind: 'live' | 'file'; name: string } | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const reset = useCallback(() => {
@@ -65,7 +64,6 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
     setNtIds(new Set());
     setMappings({});
     setSampleIdx(0);
-    setSource(null);
   }, []);
 
   useEffect(() => {
@@ -87,7 +85,6 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
       const ok = await checkAnkiConnect();
       if (!ok) { setConnectFailed(true); return; }
       const d = await readFromConnect();
-      setSource({ kind: 'live', name: t('ankiImport.source.liveTitle') });
       acceptData(d);
     } catch (err) {
       setErrorSource('connect');
@@ -105,7 +102,6 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
     setError(null);
     try {
       const d = await readFromApkg(file);
-      setSource({ kind: 'file', name: file.name });
       acceptData(d);
     } catch (err) {
       setErrorSource('file');
@@ -197,19 +193,6 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
   const body = (
     <div className={styles.bodyCol}>
       <StepRail step={step} />
-      {data && source && (
-        <div className={styles.sourceChip}>
-          <Icon name={source.kind === 'file' ? 'folderOpen' : 'import'} className={styles.chipIcon} />
-          <Text variant="label" className={styles.chipName}>{source.name}</Text>
-          <Badge size="sm" variant="muted">{source.kind === 'file' ? '.apkg' : 'AnkiConnect'}</Badge>
-          <Text variant="supporting" color="secondary" className={styles.chipStatus}>
-            {t(source.kind === 'file' ? 'ankiImport.source.filePicked' : 'ankiImport.source.connected')}
-          </Text>
-          <IconButton size="sm" variant="ghost" aria-label={t('ankiImport.source.change')} onClick={reset}>
-            <Icon name="x" />
-          </IconButton>
-        </div>
-      )}
       {step === 'source' && (
         <SourceStep
           connecting={connecting}
@@ -578,13 +561,6 @@ function MappingStep({
   return (
     <div className={styles.mapLayout}>
       <section className={styles.settingsCol}>
-        <div className={styles.sectionHead}>
-          <span className={styles.sectionIcon}><Icon name="slidersHorizontal" /></span>
-          <div className={styles.sectionHeadText}>
-            <Heading level={3} className={styles.sectionTitle}>{t('ankiImport.mapping.settingsTitle')}</Heading>
-            <Text variant="supporting" color="secondary">{t('ankiImport.mapping.settingsDesc')}</Text>
-          </div>
-        </div>
         <div className={styles.fieldRows}>
           {SYSTEM_SLOTS.map(({ role, fieldId, icon }) => {
             const sources = fieldsForRole(role);

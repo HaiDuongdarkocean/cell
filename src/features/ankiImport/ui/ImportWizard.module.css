@@ -32,34 +32,6 @@
   transition: background var(--duration-normal) var(--ease-out);
 }
 
-.sourceChip {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-2-5);
-  border-radius: var(--radius-element);
-  border: var(--border-width-hairline) solid var(--color-border-subtle);
-  background: var(--color-surface);
-}
-
-.chipIcon {
-  flex-shrink: 0;
-  display: flex;
-  color: var(--color-text-secondary);
-}
-
-.chipName {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.chipStatus {
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
 .sourceGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -136,28 +108,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-}
-
-.sectionHead {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-}
-
-.sectionIcon {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-element);
-  background: var(--color-primary-subtle);
-  color: var(--color-primary);
-}
-
-.sectionHeadText {
-  min-width: 0;
 }
 
 .sectionTitle {
