@@ -666,10 +666,15 @@ function RunningStep({ progress, onCancel }: { readonly progress: { done: number
   const pct = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
   return (
     <div className={styles.centerCol}>
-      <Spinner />
-      <Progress value={pct} style={{ width: '100%' }} />
-      <Text variant="supporting">{t('ankiImport.run.progress', [progress.done, progress.total])}</Text>
-      <Button variant="ghost" size="sm" onClick={onCancel}>{t('ankiImport.run.cancel')}</Button>
+      <HStack gap="2" className={styles.runRow}>
+        <Progress value={pct} style={{ flex: 1 }} aria-label={t('ankiImport.run.progress', [progress.done, progress.total])} />
+        <Text variant="supporting" color="secondary" className={styles.runCount}>
+          {`${progress.done} / ${progress.total}`}
+        </Text>
+        <IconButton size="sm" variant="ghost" aria-label={t('ankiImport.run.cancel')} onClick={onCancel}>
+          <Icon name="x" />
+        </IconButton>
+      </HStack>
     </div>
   );
 }
@@ -705,7 +710,7 @@ function ReportStep({
         {rows.map((r) => (
           <div key={r.label} className={styles.reportRow}>
             <HStack gap="2"><Icon name={r.icon} /><Text>{r.label}</Text></HStack>
-            <Badge size="sm">{r.value}</Badge>
+            <Text variant="label" className={styles.reportValue}>{r.value}</Text>
           </div>
         ))}
       </div>

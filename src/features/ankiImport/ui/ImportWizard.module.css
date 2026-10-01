@@ -176,6 +176,21 @@
   background: var(--color-surface-elevated);
 }
 
+.reportValue {
+  font-variant-numeric: tabular-nums;
+}
+
+.runRow {
+  width: 100%;
+}
+
+.runCount {
+  flex-shrink: 0;
+  min-width: 64px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .previewHint {
   margin-top: var(--space-2);
 }
