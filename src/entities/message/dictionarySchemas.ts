@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 // === Reusable primitives ===
 
-export const WordStatusSchema = z.enum(['unknown', 'known', 'tracking', 'ignore']);
+export const WordStatusSchema = z.enum(['unknown', 'known', 'tracking', 'learning', 'ignore']);
 export const ReadingKindSchema = z.enum(['ipa', 'pinyin', 'none']);
 export const MatchSourceSchema = z.enum(['dictionary', 'plugin', 'fallback']);
 export const AudioKindSchema = z.enum(['word', 'sentence']);

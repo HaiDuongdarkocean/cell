@@ -55,7 +55,7 @@ function firstPausableToken(
   const maxRank = freq.thresholds[LEVEL_THRESHOLD[level]];
   for (const token of tokens) {
     if (token.isSeparator) continue;
-    if (token.status !== 'unknown' && token.status !== 'tracking') continue;
+    if (token.status !== 'unknown' && token.status !== 'tracking' && token.status !== 'learning') continue;
     if (freq.unfiltered) return token;
     const rank = bestRank(token.term, freq);
     if (rank === null || rank <= 0 || rank > maxRank) continue;

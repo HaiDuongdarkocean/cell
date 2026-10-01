@@ -20,6 +20,8 @@ import { selectNextReview } from '@/features/srs/logic/selectNextReview';
 import { applyReview, resetCard, resetComponent, studyAgain } from '@/features/srs/logic/reviewEngine';
 import { getSrsStats, type SrsDeckStats } from '@/features/srs/services/getSrsStats';
 import { getSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 
 function applyUiPrefs(cfg: SrsStudyConfig): { config: SrsStudyConfig; options: { shuffle: boolean; startWith: 'reviews' | 'new' }; includeSubdecks: boolean } {
   const prefs = getSrsUiPrefs();
@@ -179,6 +181,10 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
         const result = applyReview(session, judgment, typedInput, new Date(nowISO()), config, adapter);
         await putCard(result.card);
         await putReviewEvent(result.record);
+        void sendMessage({
+          type: MESSAGE_TYPES.ANKI_STATUS_SRS_REVIEWED,
+          payload: { noteId: session.note.id, cardId: result.card.id },
+        }).catch(() => {});
         void refreshStats();
         const { options, includeSubdecks } = applyUiPrefs(config);
         const next = await selectNextReview(

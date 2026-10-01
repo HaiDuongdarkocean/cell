@@ -109,7 +109,8 @@ export async function restoreWordStatus(langCode: string, term: string): Promise
     return RESTORE_FALLBACK_STATUS;
   }
   const status = record.previousStatus ?? RESTORE_FALLBACK_STATUS;
-  statusStore.put({ term, status, updatedAt: Date.now() });
+  const now = Date.now();
+  statusStore.put({ term, status, updatedAt: now, source: 'user', sourceAt: now });
   trashStore.delete(term);
   if (isCaptureEnabled()) {
     await captureChange(statusStore, {

@@ -122,7 +122,7 @@ async function seedVocabulary(langCode: string): Promise<void> {
   if (SHOWCASE_DATA === 'empty') return;
 
   if (SHOWCASE_DATA === 'overflow') {
-    const statuses: readonly WordStatus[] = ['tracking', 'known', 'ignore'];
+    const statuses: readonly WordStatus[] = ['tracking', 'learning', 'known', 'ignore'];
     const batch = Array.from({ length: 240 }, (_, i) => ({
       term: `vocab-item-${String(i + 1).padStart(3, '0')}`,
       status: statuses[i % statuses.length],

@@ -25,7 +25,7 @@ export function deckIconName(deck: SrsDeck): keyof typeof ICON_CATALOG {
   return deck.icon && (DECK_ICONS as readonly string[]).includes(deck.icon) ? deck.icon as keyof typeof ICON_CATALOG : 'library';
 }
 
-const MARK_STATUSES: readonly WordStatus[] = ['unknown', 'known', 'tracking', 'ignore'];
+const MARK_STATUSES: readonly WordStatus[] = ['unknown', 'known', 'tracking', 'learning', 'ignore'];
 
 function fieldText(value: SrsFieldValue | undefined): string {
   if (!value) return '';

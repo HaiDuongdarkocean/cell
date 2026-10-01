@@ -1,4 +1,4 @@
-// wordStatusStore — spec §D1: IndexedDB 4-status cycle for words.
+// wordStatusStore — spec §D1: IndexedDB 5-status cycle for words.
 //
 // Status cycle: unknown → tracking → known → ignore → unknown (loop).
 // Keyed by term (unique). The popup footer cycles status on click.
@@ -9,6 +9,7 @@
 
 import { getDB, awaitTx, STORES } from '@/features/dictionary/repositories/baseRepository';
 import { STATUS_CYCLE, type WordStatus } from '@/entities/dictionary';
+import { decideStatusWrite, type WordStatusSource } from '@/features/dictionary/services/wordStatusArbitration';
 import { t } from '@/shared/i18n';
 import { captureChange, ensureSyncRuntime, isCaptureEnabled, scopeForTarget, targetOf } from '@/features/sync';
 
@@ -20,10 +21,15 @@ export { STATUS_CYCLE };
 export interface WordStatusEntry {
   /** The term (unique key). */
   readonly term: string;
-  /** The status: unknown | tracking | known | ignore. */
+  /** The status: unknown | tracking | learning | known | ignore. */
   readonly status: WordStatus;
   /** Last updated timestamp (ms). */
   readonly updatedAt: number;
+  /** Write provenance — who produced this status. Absent on legacy rows = user. */
+  readonly source?: WordStatusSource;
+  /** Origin event timestamp (ms). For sync writes this is the source system's
+   *  change time (e.g. Anki card `mod`), for user writes it equals updatedAt. */
+  readonly sourceAt?: number;
 }
 
 /** Error thrown when IndexedDB quota is exceeded. */
@@ -44,7 +50,7 @@ function isQuotaError(err: unknown): boolean {
   return false;
 }
 
-/** The 4-status cycle order lives in entities/dictionary (spec §D1). */
+/** The 5-status cycle order lives in entities/dictionary (spec §D1). */
 
 /** Get the next status in the cycle. */
 export function nextStatus(current: WordStatus): WordStatus {
@@ -107,7 +113,12 @@ export async function getWordStatuses(
  * Caller should catch + show toast "Bộ nhớ đầy — xóa resource cũ".
  * Lookup still works with existing data — graceful degradation.
  */
-export async function setWordStatus(langCode: string, term: string, status: WordStatus): Promise<void> {
+export async function setWordStatus(
+  langCode: string,
+  term: string,
+  status: WordStatus,
+  provenance?: { source?: WordStatusSource; sourceAt?: number },
+): Promise<void> {
   try {
     const db = await getDB(langCode);
     await ensureSyncRuntime();
@@ -123,9 +134,16 @@ export async function setWordStatus(langCode: string, term: string, status: Word
       await awaitTx(tx);
       return;
     }
+    const now = Date.now();
     const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
     const store = tx.objectStore(STORES.WORD_STATUS);
-    store.put({ term, status, updatedAt: Date.now() });
+    store.put({
+      term,
+      status,
+      updatedAt: now,
+      source: provenance?.source ?? 'user',
+      sourceAt: provenance?.sourceAt ?? now,
+    });
     tx.objectStore(STORES.WORD_TRASH).delete(term);
     if (capture) {
       await captureChange(store, { scope, dataClass: 'wordStatus', key: `word:${term}`, op: 'put' });
@@ -137,6 +155,51 @@ export async function setWordStatus(langCode: string, term: string, status: Word
     }
     throw err;
   }
+}
+
+/** Sync-originated status write — arbitrates against the stored entry via
+ *  last-write-wins (candidate sourceAt vs stored sourceAt/updatedAt, source
+ *  priority tiebreak, never downgrades 'known'). Returns true when written. */
+export async function setWordStatusFromSync(
+  langCode: string,
+  term: string,
+  status: Exclude<WordStatus, 'unknown'>,
+  provenance: { source: Exclude<WordStatusSource, 'user'>; sourceAt: number },
+): Promise<boolean> {
+  const db = await getDB(langCode);
+  await ensureSyncRuntime();
+  const capture = isCaptureEnabled();
+  const scope = scopeForTarget(targetOf(langCode));
+  const now = Date.now();
+  const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
+  const store = tx.objectStore(STORES.WORD_STATUS);
+  const existing = await new Promise<WordStatusEntry | undefined>((resolve, reject) => {
+    const req = store.get(term);
+    req.onsuccess = () => resolve(req.result as WordStatusEntry | undefined);
+    req.onerror = () => reject(req.error);
+  });
+  const decision = decideStatusWrite(existing, {
+    status,
+    source: provenance.source,
+    sourceAt: provenance.sourceAt,
+  });
+  if (decision === 'skip') {
+    await awaitTx(tx);
+    return false;
+  }
+  store.put({
+    term,
+    status,
+    updatedAt: now,
+    source: provenance.source,
+    sourceAt: provenance.sourceAt,
+  });
+  tx.objectStore(STORES.WORD_TRASH).delete(term);
+  if (capture) {
+    await captureChange(store, { scope, dataClass: 'wordStatus', key: `word:${term}`, op: 'put' });
+  }
+  await awaitTx(tx);
+  return true;
 }
 
 /**

@@ -42,6 +42,7 @@ const PAGE_SIZE = 200;
 const STATUS_LABEL: Record<WordStatus, MessageKey> = {
   unknown: 'vocabulary.status.unknown',
   tracking: 'vocabulary.status.tracking',
+  learning: 'vocabulary.status.learning',
   known: 'vocabulary.status.known',
   ignore: 'vocabulary.status.ignore',
 };
@@ -49,6 +50,7 @@ const STATUS_LABEL: Record<WordStatus, MessageKey> = {
 const STATUS_CLASS: Record<WordStatus, string> = {
   unknown: styles.statusUnknown,
   tracking: styles.statusTracking,
+  learning: styles.statusLearning,
   known: styles.statusKnown,
   ignore: styles.statusIgnore,
 };
@@ -56,6 +58,7 @@ const STATUS_CLASS: Record<WordStatus, string> = {
 const SEGMENT_LABEL: Record<VocabularySegment, MessageKey> = {
   all: 'vocabulary.segment.all',
   tracking: 'vocabulary.status.tracking',
+  learning: 'vocabulary.status.learning',
   known: 'vocabulary.status.known',
   ignore: 'vocabulary.status.ignore',
   trash: 'vocabulary.segment.trash',
@@ -137,6 +140,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
     () => ({
       all: state.entries.length,
       tracking: statusCounts.tracking,
+      learning: statusCounts.learning,
       known: statusCounts.known,
       ignore: statusCounts.ignore,
       trash: state.trash.length,

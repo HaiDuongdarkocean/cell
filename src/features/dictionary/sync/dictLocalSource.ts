@@ -13,6 +13,7 @@ import type { ChangeRecord, DataClass, PendingKey, RecordKey, Scope } from '@/fe
 import type { LocalValue, SnapshotEntry, StoredRecordMeta } from '@/features/sync';
 import type { ApplyContext } from '@/features/sync';
 import type { ResourceInfo, WordStatus } from '@/entities/dictionary';
+import type { WordStatusSource } from '@/features/dictionary/services/wordStatusArbitration';
 import { getDB, INDEXES, STORES } from '../repositories/baseRepository';
 import { buildPhraseIndexForResource } from '../logic/phraseIndexBuilder';
 import { gunzipFile, isGzip } from '../logic/fileDetector';
@@ -39,8 +40,17 @@ const WORD_STATUSES: ReadonlySet<WordStatus> = new Set([
   'known',
   'unknown',
   'tracking',
+  'learning',
   'ignore',
 ]);
+
+interface WordStatusWireRow {
+  readonly term: string;
+  readonly status: string;
+  readonly updatedAt: number;
+  readonly source?: WordStatusSource;
+  readonly sourceAt?: number;
+}
 
 interface ResourceKeyParts {
   readonly token: string;
@@ -418,14 +428,10 @@ class DictWordStatusLocalSource extends IdbLocalSource {
   protected async readLocalValue(tx: IDBTransaction, key: RecordKey): Promise<LocalValue> {
     if (!this.knownKey(key)) return { found: false };
     const term = key.slice(WORD_PREFIX.length);
-    const row = await getRowAt<{ term: string; status: string; updatedAt: number }>(
-      tx,
-      STORES.WORD_STATUS,
-      term,
-    );
+    const row = await getRowAt<WordStatusWireRow>(tx, STORES.WORD_STATUS, term);
     if (!row) return { found: false };
     if (await getRowAt(tx, STORES.WORD_TRASH, term)) return { found: false };
-    return { found: true, value: { term: row.term, status: row.status, updatedAt: row.updatedAt } };
+    return { found: true, value: { ...row } };
   }
 
   protected async collectSnapshotEntries(
@@ -433,11 +439,7 @@ class DictWordStatusLocalSource extends IdbLocalSource {
     scope: Scope,
   ): Promise<SnapshotEntry[]> {
     if (scope !== this.wordScope()) return [];
-    const rows = (await idbRequest(tx.objectStore(STORES.WORD_STATUS).getAll())) as {
-      term: string;
-      status: string;
-      updatedAt: number;
-    }[];
+    const rows = (await idbRequest(tx.objectStore(STORES.WORD_STATUS).getAll())) as WordStatusWireRow[];
     const entries: SnapshotEntry[] = [];
     for (const row of rows) {
       if (await getRowAt(tx, STORES.WORD_TRASH, row.term)) continue;
@@ -445,7 +447,7 @@ class DictWordStatusLocalSource extends IdbLocalSource {
       entries.push({
         key,
         metaKey: key,
-        value: { term: row.term, status: row.status, updatedAt: row.updatedAt },
+        value: { ...row },
       });
     }
     return entries;
@@ -479,7 +481,13 @@ class DictWordStatusLocalSource extends IdbLocalSource {
     const term = winner.key.slice(WORD_PREFIX.length);
     const statusStore = tx.objectStore(STORES.WORD_STATUS);
     const trashStore = tx.objectStore(STORES.WORD_TRASH);
-    const value = winner.value as { term: string; status: WordStatus; updatedAt?: number };
+    const value = winner.value as {
+      term: string;
+      status: WordStatus;
+      updatedAt?: number;
+      source?: WordStatusSource;
+      sourceAt?: number;
+    };
     if (winner.op === 'delete' || value.status === 'unknown') {
       await idbRequest(statusStore.delete(term));
       await idbRequest(trashStore.delete(term));
@@ -487,7 +495,13 @@ class DictWordStatusLocalSource extends IdbLocalSource {
     }
     await idbRequest(trashStore.delete(term));
     await idbRequest(
-      statusStore.put({ term, status: value.status, updatedAt: value.updatedAt ?? Date.now() }),
+      statusStore.put({
+        term,
+        status: value.status,
+        updatedAt: value.updatedAt ?? Date.now(),
+        source: value.source,
+        sourceAt: value.sourceAt,
+      }),
     );
   }
 

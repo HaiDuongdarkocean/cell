@@ -17,7 +17,7 @@ import { buildProfileName, profileIdForTarget, resolveSettingsFlatFields, syncFl
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 33;
+export const CURRENT_SCHEMA_VERSION = 34;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -528,6 +528,12 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
   32: (s) =>
     mergeNestedObjectDefaults(
       { ...DEFAULT_SETTINGS, ...s, schemaVersion: 33 } as Record<string, unknown>,
+      DEFAULT_SETTINGS as unknown as Record<string, unknown>,
+    ),
+  // v33 → v34: anki status sync slice (enabled/writeBackEnabled/addonPort).
+  33: (s) =>
+    mergeNestedObjectDefaults(
+      { ...DEFAULT_SETTINGS, ...s, schemaVersion: 34 } as Record<string, unknown>,
       DEFAULT_SETTINGS as unknown as Record<string, unknown>,
     ),
 };

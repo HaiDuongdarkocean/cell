@@ -1,0 +1,45 @@
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  font-family: var(--font-family, system-ui, sans-serif);
+  background: var(--color-background-muted, #F3F4F2);
+  color: var(--color-text);
+}
+.page { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
+.toolbar { display: flex; gap: 8px; margin-bottom: 20px; }
+.toolbar button {
+  padding: 6px 14px; border-radius: 999px; border: 1px solid var(--color-border);
+  background: var(--color-surface); color: var(--color-text); cursor: pointer; font-size: 13px;
+}
+.toolbar button.on { background: var(--color-primary); color: var(--color-primary-foreground); border-color: var(--color-primary); }
+h1 { font-size: 20px; margin: 0 0 4px; }
+.note { font-size: 13px; color: var(--color-text-secondary); margin: 0 0 20px; }
+h2 { font-size: 14px; margin: 28px 0 10px; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .05em; }
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 12px);
+  padding: 8px 16px 12px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.cardTitle { font-size: 15px; font-weight: 600; padding-top: 8px; }
+.rowLabel { font-size: 14px; }
+.rowHint { font-size: 12px; color: var(--color-text-secondary); max-width: 46ch; }
+.syncFoot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--color-text-secondary); }
+.syncFoot .dotWrap { display: inline-flex; align-items: center; gap: 6px; }
+
+.chips { display: flex; gap: 8px; flex-wrap: wrap; padding: 4px 0; }
+.legendRow { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; padding: 4px 0; }
+.legendItem { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+.legendItem i { width: 26px; height: 8px; border-radius: 3px; display: inline-block; }
+.kbdRow { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--color-text-secondary); align-items: center; }
+
+.statusChip {
+  padding: 3px 12px; border-radius: 999px; font-size: 12px; font-weight: 600;
+}
+.statusChip.unknown { background: var(--color-token-status-unknown-bg); color: var(--chip-status-unknown-fg); }
+.statusChip.tracking { background: var(--color-token-status-tracking-bg); color: var(--chip-status-tracking-fg); }
+.statusChip.learning { background: var(--color-token-status-learning-bg); color: var(--chip-status-learning-fg); }
+.statusChip.known { background: var(--color-token-status-known-bg); color: var(--chip-status-known-fg); }
+.statusChip.ignore { background: var(--color-token-status-ignore-bg); color: var(--chip-status-ignore-fg); }

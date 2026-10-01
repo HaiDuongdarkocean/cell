@@ -1,6 +1,6 @@
 import type { Settings, FilenameSource, KeyboardShortcut, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
-import type { CardCreatorSettings, CondensedAudioSettings, DictionaryPopupSettings, LocalPlayerSettings, PronunciationSettings, SrsSettingsSlice, TtsSettings } from '@/entities/settings';
+import type { AnkiStatusSyncSettings, CardCreatorSettings, CondensedAudioSettings, DictionaryPopupSettings, LocalPlayerSettings, PronunciationSettings, SrsSettingsSlice, TtsSettings } from '@/entities/settings';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
 import tokensJson from '@/shared/styles/tokens.json';
 
@@ -274,6 +274,12 @@ export const DEFAULT_CONDENSED_AUDIO_SETTINGS: CondensedAudioSettings = {
   padMs: 500,
 } as const;
 
+export const DEFAULT_ANKI_STATUS_SYNC_SETTINGS: AnkiStatusSyncSettings = {
+  enabled: true,
+  writeBackEnabled: false,
+  addonPort: 8766,
+} as const;
+
 export const DEFAULT_SETTINGS: Settings = {
   uiLanguage: 'auto',
   universalNativeLanguage: 'vi',
@@ -332,6 +338,8 @@ export const DEFAULT_SETTINGS: Settings = {
   srs: DEFAULT_SRS_SETTINGS,
   // === Condensed audio (spec condensed-audio — schema v33) ===
   condensedAudio: DEFAULT_CONDENSED_AUDIO_SETTINGS,
+  // === Anki status sync (spec anki-known-seed — schema v34) ===
+  ankiStatusSync: DEFAULT_ANKI_STATUS_SYNC_SETTINGS,
 };
 
 /**

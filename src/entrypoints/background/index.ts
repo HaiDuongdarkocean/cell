@@ -92,6 +92,10 @@ import { registerOcrHandlers } from './handlers/ocr';
 import { registerReaderHandlers } from './handlers/reader';
 import { registerSyncHandlers, wireSyncScheduling } from './handlers/sync';
 import { registerCondensedAudioHandlers } from './handlers/condensedAudio';
+import {
+  registerAnkiStatusSyncHandlers,
+  wireAnkiStatusSyncScheduling,
+} from './handlers/ankiStatusSync';
 import { initJobRegistry, registerJobHandlers, stopJobKeepAlive } from './handlers/jobs';
 import { sweepOrphanedWork } from './handlers/orphanSweep';
 import { seedDevDataIfEmpty } from '@/features/dictionary/logic/devSeed';
@@ -203,6 +207,7 @@ export class BackgroundService implements BackgroundContext {
     // 4. Wire event streams (network → broadcast, queue → broadcast, etc.)
     this.unsubscribers = wireEvents(this);
     this.unsubscribers.push(...wireSyncScheduling(this));
+    this.unsubscribers.push(...wireAnkiStatusSyncScheduling());
 
     // 4b. Wait for session restore to complete.
     await this.sessionReady;
@@ -301,6 +306,7 @@ export class BackgroundService implements BackgroundContext {
     registerOcrHandlers(this);
     registerSyncHandlers(this);
     registerCondensedAudioHandlers(this);
+    registerAnkiStatusSyncHandlers(this);
   }
 
   /** Type-safe wrapper around messageBus.on. */

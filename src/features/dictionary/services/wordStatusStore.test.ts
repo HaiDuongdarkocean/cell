@@ -43,16 +43,17 @@ afterAll(() => {
 });
 
 describe('STATUS_CYCLE + nextStatus', () => {
-  it('has 4 statuses in cycle order', () => {
-    expect(STATUS_CYCLE).toEqual(['unknown', 'tracking', 'known', 'ignore']);
+  it('has 5 statuses in cycle order', () => {
+    expect(STATUS_CYCLE).toEqual(['unknown', 'tracking', 'learning', 'known', 'ignore']);
   });
 
   it('cycles unknown → tracking', () => {
     expect(nextStatus('unknown')).toBe('tracking');
   });
 
-  it('cycles tracking → known', () => {
-    expect(nextStatus('tracking')).toBe('known');
+  it('cycles tracking → learning → known', () => {
+    expect(nextStatus('tracking')).toBe('learning');
+    expect(nextStatus('learning')).toBe('known');
   });
 
   it('cycles known → ignore', () => {
@@ -101,8 +102,9 @@ describe('cycleWordStatus', () => {
     expect(await getWordStatus('en', 'apple')).toBe('tracking');
   });
 
-  it('cycles through all 4 statuses and loops back', async () => {
+  it('cycles through all 5 statuses and loops back', async () => {
     expect(await cycleWordStatus('en', 'banana')).toBe('tracking');
+    expect(await cycleWordStatus('en', 'banana')).toBe('learning');
     expect(await cycleWordStatus('en', 'banana')).toBe('known');
     expect(await cycleWordStatus('en', 'banana')).toBe('ignore');
     expect(await cycleWordStatus('en', 'banana')).toBe('unknown');

@@ -8,10 +8,10 @@ export interface VocabularyEntry {
 
 export type VocabularySort = 'recent' | 'alpha' | 'grouped';
 
-export const VOCABULARY_SEGMENTS = ['all', 'tracking', 'known', 'ignore', 'trash'] as const;
+export const VOCABULARY_SEGMENTS = ['all', 'tracking', 'learning', 'known', 'ignore', 'trash'] as const;
 export type VocabularySegment = (typeof VOCABULARY_SEGMENTS)[number];
 
-export const MARKED_STATUSES: readonly WordStatus[] = ['tracking', 'known', 'ignore'];
+export const MARKED_STATUSES: readonly WordStatus[] = ['tracking', 'learning', 'known', 'ignore'];
 
 export function nextMarkedStatus(status: WordStatus): WordStatus {
   const index = MARKED_STATUSES.indexOf(status);
@@ -25,7 +25,7 @@ export function statusesForSegment(segment: VocabularySegment): ReadonlySet<Word
 }
 
 export function countByStatus(entries: readonly VocabularyEntry[]): Record<WordStatus, number> {
-  const counts: Record<WordStatus, number> = { unknown: 0, tracking: 0, known: 0, ignore: 0 };
+  const counts: Record<WordStatus, number> = { unknown: 0, tracking: 0, learning: 0, known: 0, ignore: 0 };
   for (const entry of entries) counts[entry.status] += 1;
   return counts;
 }

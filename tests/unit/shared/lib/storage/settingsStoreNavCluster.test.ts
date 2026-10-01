@@ -26,8 +26,8 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     chromeMock.storage.local.set.mockClear();
   });
 
-  it('CURRENT_SCHEMA_VERSION is 33 (V33 adds condensedAudio settings)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(33);
+  it('CURRENT_SCHEMA_VERSION is 34 (V34 adds ankiStatusSync settings)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(34);
   });
 
   it('migrates v1 settings to v13 with nav cluster + block defaults merged', async () => {

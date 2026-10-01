@@ -3022,6 +3022,59 @@
         "semantic-naming"
       ],
       "trigger": "A UI element looks 'already hovered', a hover state goes darker instead of lifting, or a dropdown/menu/panel is see-through — especially on a custom preset/theme."
+    },
+    {
+      "type": "experience",
+      "id": "bus-zod-wrap-strips-injected-tabid",
+      "title": "messageBus injects sender.tab.id into payload BEFORE registry zod parse — schemas without top-level tabId strip it",
+      "category": [
+        "messaging",
+        "schema"
+      ],
+      "tags": [
+        "messageBus",
+        "zod",
+        "tabId",
+        "sender",
+        "schema-strip",
+        "e2e-caught"
+      ],
+      "trigger": "A background handler reads request.payload.tabId to reply to the originating tab and gets undefined"
+    },
+    {
+      "type": "experience",
+      "id": "ffmpeg-workerfs-mountpoint-must-exist",
+      "title": "FFmpeg WASM WORKERFS mount fails because FS.mount requires the mount point directory to exist",
+      "category": [
+        "ffmpeg",
+        "wasm"
+      ],
+      "tags": [
+        "ffmpeg",
+        "workerfs",
+        "fs.mount",
+        "emscripten",
+        "opfs",
+        "offscreen"
+      ],
+      "trigger": "FS.mount(WORKERFS,...) throws ErrnoError FS error inside vendored ffmpeg core"
+    },
+    {
+      "type": "experience",
+      "id": "feature-cycle-break-via-bg-message",
+      "title": "Feature A needing a side effect in feature B that already imports A → background message, not a back-import",
+      "category": [
+        "architecture",
+        "messaging"
+      ],
+      "tags": [
+        "feature-cycle",
+        "deep-import",
+        "messageBus",
+        "barrel",
+        "dependency-direction"
+      ],
+      "trigger": "check-feature-cycles reports A→B→A or check-deep-imports flags a sibling-feature internal path"
     }
   ]
 }

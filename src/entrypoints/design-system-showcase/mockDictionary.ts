@@ -356,7 +356,7 @@ async function mockSendMessage(message: unknown): Promise<unknown> {
       return { success: true };
 
     case MESSAGE_TYPES.WORD_STATUSES_GET: {
-      const result: MessageResponse<{ statuses: Record<string, 'unknown' | 'known' | 'tracking' | 'ignore'> }> = {
+      const result: MessageResponse<{ statuses: Record<string, 'unknown' | 'known' | 'tracking' | 'learning' | 'ignore'> }> = {
         success: true,
         data: { statuses: {} },
       };

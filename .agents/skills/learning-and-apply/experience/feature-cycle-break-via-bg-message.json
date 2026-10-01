@@ -1,0 +1,17 @@
+{
+  "id": "feature-cycle-break-via-bg-message",
+  "title": "Feature A needs a side effect inside feature B that already imports A → send a background message, never import B back from A",
+  "category": ["architecture", "messaging"],
+  "tags": ["feature-cycle", "check-feature-cycles", "deep-import", "messageBus", "barrel", "srs", "dependency-direction"],
+  "trigger": "check-feature-cycles reports A → B → A (e.g. srs → ankiStatusSync → srs), or check-deep-imports flags '@/features/x/internal/path' from a sibling feature",
+  "principle": "Cross-feature imports are only legal through the feature's index.ts barrel, and the feature graph must stay acyclic. When the natural hook direction would close a cycle (feature B owns the event but feature A implements the reaction, and A already imports B for data), flip the call into a fire-and-forget message (MESSAGE_TYPES + zod payload in entities/message, background handler loads entities and calls A's service). The event owner then depends only on shared/lib message plumbing. For read paths, export the needed repo/logic function through the barrel instead of deep-importing — never widen a barrel with a whole subsystem when one named export suffices.",
+  "cases": [
+    {
+      "context": "anki-known-seed: SRS review needed to update wordStatus via ankiStatusSync, but ankiStatusSync already imported srs repos → srs → ankiStatusSync → srs cycle + 3 deep imports.",
+      "bad": "SrsStudyProvider imports { syncSrsReviewToStatus } from '@/features/ankiStatusSync' — closes the cycle; statusSyncService imports '@/features/dictionary/services/wordStatusStore' directly — deep import.",
+      "good": "Provider sends ANKI_STATUS_SRS_REVIEWED {noteId, cardId} via sendMessage; bg handler resolves note/card and calls the service. Service imports normalizeTerm/setWordStatusFromSync via '@/features/dictionary' barrel."
+    }
+  ],
+  "applyFor": ["any new cross-feature hook where the direction would form a cycle", "fixing check-feature-cycles/check-deep-imports violations", "choosing between direct import vs message boundary"],
+  "source": { "date": "2026-10-01" }
+}

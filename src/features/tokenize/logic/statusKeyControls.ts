@@ -8,6 +8,7 @@ const STATUS_BY_KEY: Readonly<Record<string, WordStatus>> = {
   '2': 'tracking',
   '3': 'known',
   '4': 'ignore',
+  '5': 'learning',
 };
 
 /** The word an open dictionary popup is currently showing — 1-4 keys apply to

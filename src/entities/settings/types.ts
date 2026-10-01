@@ -468,6 +468,19 @@ export interface Settings {
   // === Condensed audio (spec condensed-audio — schema v33) ===
   /** Condensed audio export settings (cue padding). */
   readonly condensedAudio?: CondensedAudioSettings;
+  // === Anki status sync (spec anki-known-seed — schema v34) ===
+  /** Anki ↔ wordStatus ↔ SRS status synchronization. */
+  readonly ankiStatusSync?: AnkiStatusSyncSettings;
+}
+
+/** Anki status sync settings slice (spec anki-known-seed). */
+export interface AnkiStatusSyncSettings {
+  /** Inbound Anki/SRS → wordStatus sync. Default: true. */
+  readonly enabled: boolean;
+  /** User-marked `known` writes back mature state to Anki cards. Default: false. */
+  readonly writeBackEnabled: boolean;
+  /** localhost port for the optional anki-bridge addon event feed. Default: 8766. */
+  readonly addonPort: number;
 }
 
 /** Condensed audio settings slice (spec condensed-audio). */

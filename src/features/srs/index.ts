@@ -15,7 +15,10 @@ export { getNote, putNoteForImport } from './repositories/noteRepository';
 export { getReviewEventsByCard, putReviewEvent } from './repositories/reviewEventRepository';
 export { getAudioAssetsByNote, putAudioAsset } from './repositories/audioAssetRepository';
 export { putImageAsset } from './repositories/imageAssetRepository';
-export { closeAllSrsDBs, clearAllSrsStores, getSrsDbName, deleteSrsDB } from './repositories/srsDatabase';
+export { closeAllSrsDBs, clearAllSrsStores, getSrsDbName, deleteSrsDB, getSrsDB, SRS_STORES } from './repositories/srsDatabase';
+export { getCollection } from './repositories/collectionRepository';
+export { getDeck } from './repositories/deckRepository';
+export { getCard } from './repositories/cardRepository';
 
 export { SrsReviewCardFront } from './ui/SrsReviewCardFront';
 export { SrsReviewCardBack } from './ui/SrsReviewCardBack';

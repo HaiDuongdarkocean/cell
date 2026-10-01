@@ -1,4 +1,5 @@
 export { sendAction } from './service/cardCreatorService';
+export { invokeAnkiConnect } from './service/ankiConnectClient';
 export type { Result } from './service/cardCreatorService';
 export { prefetchAnkiConnectData } from './service/cardCreatorPrefetch';
 export { fetchMediaFile } from './media/mediaFile';

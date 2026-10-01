@@ -1,4 +1,4 @@
-import { sendAction } from '@/features/cardCreator';
+import { sendAction, invokeAnkiConnect } from '@/features/cardCreator';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { DEFAULT_CARD_CREATOR_SETTINGS } from '@/shared/config/config';
 import type { Settings } from '@/entities/settings';
@@ -22,4 +22,12 @@ export function createBackgroundInvoker(url: string): AnkiConnectInvoker {
     if (!result.ok) throw new Error(result.error);
     return result.value;
   };
+}
+
+/** Direct AnkiConnect fetch — safe inside the service worker itself, where
+ *  chrome.runtime.sendMessage would not reach the CARD_CREATOR_REQUEST
+ *  handler (messages never loop back to their sender context). */
+export function createDirectInvoker(url: string): AnkiConnectInvoker {
+  return (action, params) =>
+    invokeAnkiConnect(globalThis.fetch.bind(globalThis), url, action, params);
 }

@@ -29,6 +29,7 @@ const EMPTY_EXAMPLE_SET: ReadonlySet<number> = new Set<number>();
 const STATUS_KEYS: Record<WordStatus, MessageKey> = {
   unknown: 'vocabulary.status.unknown',
   tracking: 'vocabulary.status.tracking',
+  learning: 'vocabulary.status.learning',
   known: 'vocabulary.status.known',
   ignore: 'vocabulary.status.ignore',
 };

@@ -1,0 +1,23 @@
+import { z } from 'zod';
+
+export const AnkiStatusSyncRunPayloadSchema = z.object({
+  tabId: z.number().optional(),
+});
+
+export const AnkiStatusSrsReviewedPayloadSchema = z.object({
+  noteId: z.string().min(1),
+  cardId: z.string().min(1),
+});
+
+export const AnkiStatusSyncStateViewSchema = z.object({
+  lastSyncAt: z.number().nullable(),
+  lastTrigger: z.string().nullable(),
+  cardsSeen: z.number(),
+  changed: z.number(),
+  errors: z.number(),
+  consecutiveFailures: z.number(),
+  addonOnline: z.boolean().nullable(),
+  writeBackUnsupportedNotified: z.boolean(),
+});
+
+export type AnkiStatusSyncStateView = z.infer<typeof AnkiStatusSyncStateViewSchema>;

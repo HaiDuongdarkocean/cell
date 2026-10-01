@@ -37,7 +37,7 @@ export function computeStats(tokens: readonly Token[], kind: ComprehensionKind):
     if (!isScorableToken(token)) continue;
     const status = token.status ?? 'unknown';
     if (status === 'known' || status === 'ignore') known++;
-    else if (status === 'tracking') tracking++;
+    else if (status === 'tracking' || status === 'learning') tracking++;
     else unknown++;
     if (isNew(status)) newTerms.add(token.term);
   }
@@ -88,7 +88,7 @@ export function createScoreTracker(
     }
     entry.count++;
     if (entry.status === 'known' || entry.status === 'ignore') known++;
-    else if (entry.status === 'tracking') tracking++;
+    else if (entry.status === 'tracking' || entry.status === 'learning') tracking++;
     else unknown++;
   }
 
@@ -117,10 +117,10 @@ export function createScoreTracker(
       if (wasNew && !nowNew) newTerms--;
       else if (!wasNew && nowNew) newTerms++;
       if (prev === 'known' || prev === 'ignore') known -= entry.count;
-      else if (prev === 'tracking') tracking -= entry.count;
+      else if (prev === 'tracking' || prev === 'learning') tracking -= entry.count;
       else unknown -= entry.count;
       if (status === 'known' || status === 'ignore') known += entry.count;
-      else if (status === 'tracking') tracking += entry.count;
+      else if (status === 'tracking' || status === 'learning') tracking += entry.count;
       else unknown += entry.count;
       return true;
     },

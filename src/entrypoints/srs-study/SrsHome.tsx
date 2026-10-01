@@ -14,6 +14,7 @@ import {
   AnkiImportJobRow, flattenDeckName, importNormalized, ImportError, ImportWizard,
   type AnkiImportJob, type AnkiImportStartPayload,
 } from '@/features/ankiImport';
+import { seedStatusesFromSrs } from '@/features/ankiStatusSync';
 import { useSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
 import { deckIconName } from './SrsDeckDetail';
 import type { SrsDeck } from '@/entities/srs/types';
@@ -168,6 +169,7 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
         },
       });
       setImportJob((j) => (j ? { ...j, status: 'done', report } : j));
+      void seedStatusesFromSrs();
     } catch (err) {
       const cancelled = err instanceof ImportError && err.code === 'ABORTED';
       setImportJob((j) => (j ? {

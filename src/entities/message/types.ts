@@ -173,6 +173,10 @@ export type MessageType =
   | 'CONDENSE_AUDIO_BLOB_URL'
   | 'CONDENSE_AUDIO_SESSION_START'
   | 'CONDENSE_AUDIO_SESSION_STOP'
+  // Anki status sync (spec: anki-known-seed)
+  | 'ANKI_STATUS_SYNC_RUN'
+  | 'ANKI_STATUS_SYNC_STATE'
+  | 'ANKI_STATUS_SRS_REVIEWED'
   | 'CONDENSE_AUDIO_CHUNK'
   | 'CONDENSE_AUDIO_RUN'
   | 'CONDENSE_AUDIO_ABORT'
@@ -809,7 +813,7 @@ export interface WordStatusGetPayload {
 export interface WordStatusResult {
   readonly term: string;
   readonly langCode: string;
-  readonly status: 'unknown' | 'known' | 'tracking' | 'ignore';
+  readonly status: WordStatus;
 }
 
 /** Content → background: set word status. */
@@ -817,7 +821,7 @@ export interface WordStatusSetPayload {
   readonly tabId?: number;
   readonly term: string;
   readonly langCode: string;
-  readonly status: 'unknown' | 'known' | 'tracking' | 'ignore';
+  readonly status: WordStatus;
 }
 
 /** Background → content: a word status changed in another tab or was just persisted. */

@@ -128,6 +128,10 @@ import {
   CondenseAudioSessionStopPayloadSchema,
   CondenseAudioStartPayloadSchema,
 } from '@/entities/message/condensedAudioSchemas';
+import {
+  AnkiStatusSyncRunPayloadSchema,
+  AnkiStatusSrsReviewedPayloadSchema,
+} from '@/entities/message/ankiStatusSyncSchemas';
 
 export type MessageDirection =
   | 'cs->bg'
@@ -966,5 +970,23 @@ export const MESSAGE_REGISTRY = {
     schema: CondenseAudioEventPayloadSchema,
     direction: 'any',
     owner: 'background/handlers/condensedAudio',
+  },
+  [MESSAGE_TYPES.ANKI_STATUS_SYNC_RUN]: {
+    type: MESSAGE_TYPES.ANKI_STATUS_SYNC_RUN,
+    schema: AnkiStatusSyncRunPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/ankiStatusSync',
+  },
+  [MESSAGE_TYPES.ANKI_STATUS_SYNC_STATE]: {
+    type: MESSAGE_TYPES.ANKI_STATUS_SYNC_STATE,
+    schema: EmptyPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/ankiStatusSync',
+  },
+  [MESSAGE_TYPES.ANKI_STATUS_SRS_REVIEWED]: {
+    type: MESSAGE_TYPES.ANKI_STATUS_SRS_REVIEWED,
+    schema: AnkiStatusSrsReviewedPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/ankiStatusSync',
   },
 } as const satisfies Record<MessageType, MessageContract>;

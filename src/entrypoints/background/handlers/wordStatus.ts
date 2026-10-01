@@ -47,6 +47,7 @@ import {
   isFirstStatusesGetForTab,
   requestRemoteCheck,
 } from '../syncTriggers';
+import { notifyUserMarkedKnown } from '@/features/ankiStatusSync';
 
 /** Broadcast a status change/delete to content scripts in all other tabs. */
 async function broadcastToOtherTabs(
@@ -75,7 +76,8 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
 
     const { term, langCode, status, tabId } = parsed.data;
     try {
-      await setWordStatus(langCode, term, status);
+      await setWordStatus(langCode, term, status, { source: 'user', sourceAt: Date.now() });
+      if (status === 'known') void notifyUserMarkedKnown(langCode, term);
       if (tabId !== undefined) {
         void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_CHANGED, { langCode, term, status });
       }
@@ -163,6 +165,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
     const { term, langCode, tabId } = parsed.data;
     try {
       const status = await cycleWordStatus(langCode, term);
+      if (status === 'known') void notifyUserMarkedKnown(langCode, term);
       void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_CHANGED, { langCode, term, status });
       requestRemoteCheck();
       return { success: true, data: { status } };
@@ -245,6 +248,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
     const { term, langCode, tabId } = parsed.data;
     try {
       const status = await restoreWordStatus(langCode, term);
+      if (status === 'known') void notifyUserMarkedKnown(langCode, term);
       void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_CHANGED, { langCode, term, status });
       requestRemoteCheck();
       return { success: true, data: { status } };

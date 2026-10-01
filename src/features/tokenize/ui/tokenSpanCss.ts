@@ -28,6 +28,7 @@ const CELL_TOKEN_MAP: Record<string, string> = {
   // Rendered as inset box-shadow on the token so it survives multi-line fragments.
   '--cell-token-status-unknown': '--color-token-status-unknown',
   '--cell-token-status-tracking': '--color-token-status-tracking',
+  '--cell-token-status-learning': '--color-token-status-learning',
   '--cell-token-status-known': '--color-token-status-known',
   '--cell-token-status-ignore': '--color-token-status-ignore',
   // Frequency bands — absolute hex tint pill + contrasting fg (variant A).
@@ -225,6 +226,11 @@ html body .js-cell-token.js-cell-token--status-tracking {
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-tracking),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
+html body .js-cell-token.js-cell-token--status-learning {
+  box-shadow:
+    inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-learning),
+    inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
+}
 html body .js-cell-token.js-cell-token--status-known:hover:not(.js-cell-token--status-off),
 html body .js-cell-token.js-cell-token--status-known.js-cell-token--popup-open:not(.js-cell-token--status-off) {
   box-shadow:
@@ -242,6 +248,7 @@ html body .js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open:
    to keep the glyph legible. */
 .js-cell-token.js-cell-token--status-unknown,
 .js-cell-token.js-cell-token--status-tracking,
+.js-cell-token.js-cell-token--status-learning,
 .js-cell-token.js-cell-token--status-known:hover,
 .js-cell-token.js-cell-token--status-known.js-cell-token--popup-open,
 .js-cell-token.js-cell-token--status-ignore:hover,
@@ -388,6 +395,11 @@ ${buildVariables(':host')}
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-tracking),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
+.js-cell-token.js-cell-token--status-learning {
+  box-shadow:
+    inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-learning),
+    inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
+}
 .js-cell-token.js-cell-token--status-known:hover:not(.js-cell-token--status-off),
 .js-cell-token.js-cell-token--status-known.js-cell-token--popup-open:not(.js-cell-token--status-off) {
   box-shadow:
@@ -403,6 +415,7 @@ ${buildVariables(':host')}
 
 .js-cell-token.js-cell-token--status-unknown,
 .js-cell-token.js-cell-token--status-tracking,
+.js-cell-token.js-cell-token--status-learning,
 .js-cell-token.js-cell-token--status-known:hover,
 .js-cell-token.js-cell-token--status-known.js-cell-token--popup-open,
 .js-cell-token.js-cell-token--status-ignore:hover,

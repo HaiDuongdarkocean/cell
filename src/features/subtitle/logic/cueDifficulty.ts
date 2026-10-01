@@ -27,7 +27,7 @@ export function cueDifficultyMap(tokenMap: CueListTokenMap): Map<number, CueDiff
     for (const token of tokens) {
       if (token.isSeparator) continue;
       if (token.status === 'unknown') unknown += 1;
-      else if (token.status === 'tracking') tracking += 1;
+      else if (token.status === 'tracking' || token.status === 'learning') tracking += 1;
     }
     map.set(cueIndex, { unknown, tracking });
   }

@@ -19,6 +19,7 @@ import { AudioPanel } from '@/features/audio';
 import { ThemePanel } from '@/features/theme';
 import { ResourcesPanel } from '@/features/dictionary';
 import { SyncPanel } from '@/features/sync';
+import { AnkiStatusSyncPanel } from '@/features/ankiStatusSync';
 import { Dictionary } from '@/features/dictionaryPopup';
 import { Toggle } from '@/shared/ui/Toggle';
 import { Label } from '@/shared/ui/Label';
@@ -742,6 +743,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                 <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.sync.desc')}</Text>
               </div>
               <SyncPanel settings={settings} />
+              <AnkiStatusSyncPanel settings={settings} onChange={onChange} />
             </Card>
 
           </div>

@@ -140,6 +140,11 @@
   color: var(--chip-status-unknown-fg);
 }
 
+.cellHeaderSecond .cellHeaderStatus--learning {
+  background: var(--chip-status-learning-bg);
+  color: var(--chip-status-learning-fg);
+}
+
 .cellHeaderSecond .cellHeaderStatus--tracking {
   background: var(--chip-status-tracking-bg);
   color: var(--chip-status-tracking-fg);

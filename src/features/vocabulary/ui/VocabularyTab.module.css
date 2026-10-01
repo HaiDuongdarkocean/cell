@@ -146,6 +146,11 @@
   color: var(--chip-status-tracking-fg);
 }
 
+.statusLearning {
+  background: var(--chip-status-learning-bg);
+  color: var(--chip-status-learning-fg);
+}
+
 .statusKnown {
   background: var(--chip-status-known-bg);
   color: var(--chip-status-known-fg);

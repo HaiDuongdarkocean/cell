@@ -152,9 +152,9 @@ describe('createVocabularySource', () => {
     await source.cycle('a');
 
     expect(callsOfType(MESSAGE_TYPES.WORD_STATUS_SET)[0]).toMatchObject({
-      payload: { tabId: -1, langCode: 'en', term: 'a', status: 'known' },
+      payload: { tabId: -1, langCode: 'en', term: 'a', status: 'learning' },
     });
-    expect(source.getState().entries[0]!.status).toBe('known');
+    expect(source.getState().entries[0]!.status).toBe('learning');
     source.destroy();
   });
 
