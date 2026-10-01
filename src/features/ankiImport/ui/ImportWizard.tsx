@@ -488,7 +488,6 @@ function MappingStep({
   const manageBtnRef = useRef<HTMLButtonElement>(null);
   const managePopRef = useRef<HTMLDivElement>(null);
   const defaultNt = useMemo(() => createDefaultNotetype(PREVIEW_NOTE_ID), []);
-  const manageableNts = useMemo(() => data.notetypes.filter((n) => !n.isCloze), [data.notetypes]);
   const pillNts = useMemo(
     () => pillNotetypes(notetypes, ntIds, cardCountByNt),
     [notetypes, ntIds, cardCountByNt],
@@ -649,8 +648,8 @@ function MappingStep({
   );
 
   const manageRows = (
-    <div className={styles.pickList}>
-      {manageableNts.map((n) => (
+    <div className={styles.ntManageList}>
+      {notetypes.map((n) => (
         <Checkbox
           key={n.id}
           variant="row"
@@ -764,10 +763,10 @@ function MappingStep({
             ))}
           </div>
           <HStack gap="1" className={styles.navArrows}>
-            <IconButton size="sm" variant="ghost" disabled={sampleIdx === 0} aria-label={t('ankiImport.mapping.prev')} onClick={() => { onSampleIdx(sampleIdx - 1); setFlipped(false); }}>
+            <IconButton size="sm" variant="ghost" disabled={samples.length < 2} aria-label={t('ankiImport.mapping.prev')} onClick={() => { onSampleIdx((activeSample + samples.length - 1) % samples.length); setFlipped(false); }}>
               <Icon name="chevronLeft" />
             </IconButton>
-            <IconButton size="sm" variant="ghost" disabled={activeSample >= samples.length - 1} aria-label={t('ankiImport.mapping.next')} onClick={() => { onSampleIdx(sampleIdx + 1); setFlipped(false); }}>
+            <IconButton size="sm" variant="ghost" disabled={samples.length < 2} aria-label={t('ankiImport.mapping.next')} onClick={() => { onSampleIdx((activeSample + 1) % samples.length); setFlipped(false); }}>
               <Icon name="chevronRight" />
             </IconButton>
           </HStack>

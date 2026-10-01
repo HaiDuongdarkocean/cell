@@ -51,7 +51,7 @@ REQ-3: Manage surface
 - Preconditions: any
 - Basic flow:
   1. actor presses the ghost manage icon
-  2. system opens a popover anchored to the icon when `useIsMobile(BREAKPOINTS.expanded)` is false (viewport ≥840px), else a bottom sheet; the surface lists `data.notetypes.filter(!isCloze)` — every non-cloze notetype including 0-card ones — with name, card count, and enable/disable toggle (existing `Checkbox variant="row"` row)
+  2. system opens a popover anchored to the icon when `useIsMobile(BREAKPOINTS.expanded)` is false (viewport ≥840px), else a bottom sheet; the surface lists the deck-scoped notetypes — every non-cloze notetype with ≥1 importable card in the current deck selection — with name, card count, and enable/disable toggle (existing `Checkbox variant="row"` row); the list container does not scroll internally (the popover menu / sheet own scrolling — no nested scroll boxes)
   3. actor toggles a notetype; system updates `ntIds`, which flows to pills, sample set, and the existing `selection.notetypeIds` import contract
 - Alt flow: surface stays open across multiple toggles (it is a manage surface, not a one-shot menu)
 - Exception: toggles are never destructive — re-enabling restores the pill and its stored mapping
@@ -172,7 +172,7 @@ notetype pill bar
 - AC-1: Mapping step renders a borderless bar above the field rows: pills for each enabled notetype with ≥1 importable card (`name — N cards`), active pill visually selected; ghost icon button at the bar's right edge. "Advanced options" disclosure no longer exists.
 - AC-2: Pressing a pill retargets role selects + preview to that notetype (`sampleIdx` reset, card unflipped); dots/arrows cycle only that notetype's samples.
 - AC-3: Selection state is explicit (`selectedNtId` or equivalent), not derived from the sample index.
-- AC-4: Manage icon opens a popover anchored to it at ≥840px and a bottom sheet below; surface lists all non-cloze notetypes with enable/disable toggles and card counts; stays open across toggles.
+- AC-4: Manage icon opens a popover anchored to it at ≥840px and a bottom sheet below; surface lists deck-scoped non-cloze notetypes (≥1 importable card in the selected decks) with enable/disable toggles and card counts; stays open across toggles; single scrollbar (surface owns scrolling).
 - AC-5: Disabling a notetype removes its pill in the same frame and excludes it from `ntIds` (import selection).
 - AC-6: Disabling the selected notetype auto-selects the next enabled notetype (list order, wrapping); manage-surface focus stays on the toggled row.
 - AC-7: With zero enabled notetypes, the column shows the empty state and the manage icon remains reachable.

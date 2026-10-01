@@ -1,5 +1,5 @@
 {
-  "active": "anki-notetype-pills",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -781,7 +781,7 @@
       "updated": "2026-09-30T17:13:24.916Z"
     },
     "anki-notetype-pills": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "interactive",
       "uiSurface": "yes",
       "artifacts": {
@@ -793,107 +793,47 @@
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-10-01T13:20:41.325Z",
-          "head": "1eed4ef94d0e2b70b2fa9c1de373dfca591342d2",
+          "at": "2026-10-01T13:28:19.098Z",
+          "head": "3f88f5ffd4cceb89dae82d2a5f97a5d4d6fdf107",
           "dirty": [
-            "docs/0-wiki.md",
-            "docs/2-architechture-system.md",
-            "src/features/ankiImport/ui/ImportWizard.module.css",
-            "src/features/ankiImport/ui/ImportWizard.tsx",
-            "src/shared/i18n/messages/en.json",
-            "src/shared/i18n/messages/vi.json",
             "src/shared/ui/Select.module.css",
-            "tasks/reports/pipeline-sessions.md",
-            "docs/intent/anki-notetype-pills-component-mapping.md",
-            "docs/intent/anki-notetype-pills-design-brief.md",
-            "docs/intent/anki-notetype-pills.md",
-            "docs/reviews/anki-notetype-pills-analyze.md",
-            "docs/reviews/anki-notetype-pills-design.md",
-            "docs/reviews/anki-notetype-pills-spec.md",
-            "docs/specs/anki-notetype-pills.md",
-            "src/entrypoints/mockup-anki-notetype-pills/",
-            "src/features/ankiImport/logic/notetypeSelection.test.ts",
-            "src/features/ankiImport/logic/notetypeSelection.ts",
-            "tasks/plan-anki-notetype-pills.md",
-            "tasks/todo-anki-notetype-pills.md"
+            "tasks/reports/pipeline-sessions.md"
           ]
         },
         "testUnit": {
           "v": "pass",
-          "at": "2026-10-01T13:23:45.775Z",
-          "head": "1eed4ef94d0e2b70b2fa9c1de373dfca591342d2",
+          "at": "2026-10-01T13:28:19.375Z",
+          "head": "3f88f5ffd4cceb89dae82d2a5f97a5d4d6fdf107",
           "dirty": [
-            "docs/0-wiki.md",
-            "docs/2-architechture-system.md",
-            "src/features/ankiImport/ui/ImportWizard.module.css",
-            "src/features/ankiImport/ui/ImportWizard.tsx",
-            "src/shared/i18n/messages/en.json",
-            "src/shared/i18n/messages/vi.json",
             "src/shared/ui/Select.module.css",
-            "tasks/reports/pipeline-sessions.md",
-            "docs/intent/anki-notetype-pills-component-mapping.md",
-            "docs/intent/anki-notetype-pills-design-brief.md",
-            "docs/intent/anki-notetype-pills.md",
-            "docs/reviews/anki-notetype-pills-analyze.md",
-            "docs/reviews/anki-notetype-pills-design.md",
-            "docs/reviews/anki-notetype-pills-spec.md",
-            "docs/specs/anki-notetype-pills.md",
-            "src/features/ankiImport/logic/notetypeSelection.test.ts",
-            "src/features/ankiImport/logic/notetypeSelection.ts",
-            "tasks/plan-anki-notetype-pills.md",
-            "tasks/todo-anki-notetype-pills.md"
+            "tasks/reports/pipeline-sessions.md"
           ]
         },
         "build": {
           "v": "pass",
-          "at": "2026-10-01T13:23:45.895Z",
-          "head": "1eed4ef94d0e2b70b2fa9c1de373dfca591342d2",
+          "at": "2026-10-01T13:28:19.503Z",
+          "head": "3f88f5ffd4cceb89dae82d2a5f97a5d4d6fdf107",
           "dirty": [
-            "docs/0-wiki.md",
-            "docs/2-architechture-system.md",
-            "src/features/ankiImport/ui/ImportWizard.module.css",
-            "src/features/ankiImport/ui/ImportWizard.tsx",
-            "src/shared/i18n/messages/en.json",
-            "src/shared/i18n/messages/vi.json",
             "src/shared/ui/Select.module.css",
-            "tasks/reports/pipeline-sessions.md",
-            "docs/intent/anki-notetype-pills-component-mapping.md",
-            "docs/intent/anki-notetype-pills-design-brief.md",
-            "docs/intent/anki-notetype-pills.md",
-            "docs/reviews/anki-notetype-pills-analyze.md",
-            "docs/reviews/anki-notetype-pills-design.md",
-            "docs/reviews/anki-notetype-pills-spec.md",
-            "docs/specs/anki-notetype-pills.md",
-            "src/features/ankiImport/logic/notetypeSelection.test.ts",
-            "src/features/ankiImport/logic/notetypeSelection.ts",
-            "tasks/plan-anki-notetype-pills.md",
-            "tasks/todo-anki-notetype-pills.md"
+            "tasks/reports/pipeline-sessions.md"
           ]
         },
         "lint": {
           "v": "pass",
-          "at": "2026-10-01T13:23:45.658Z",
-          "head": "1eed4ef94d0e2b70b2fa9c1de373dfca591342d2",
+          "at": "2026-10-01T13:28:19.239Z",
+          "head": "3f88f5ffd4cceb89dae82d2a5f97a5d4d6fdf107",
           "dirty": [
-            "docs/0-wiki.md",
-            "docs/2-architechture-system.md",
-            "src/features/ankiImport/ui/ImportWizard.module.css",
-            "src/features/ankiImport/ui/ImportWizard.tsx",
-            "src/shared/i18n/messages/en.json",
-            "src/shared/i18n/messages/vi.json",
             "src/shared/ui/Select.module.css",
-            "tasks/reports/pipeline-sessions.md",
-            "docs/intent/anki-notetype-pills-component-mapping.md",
-            "docs/intent/anki-notetype-pills-design-brief.md",
-            "docs/intent/anki-notetype-pills.md",
-            "docs/reviews/anki-notetype-pills-analyze.md",
-            "docs/reviews/anki-notetype-pills-design.md",
-            "docs/reviews/anki-notetype-pills-spec.md",
-            "docs/specs/anki-notetype-pills.md",
-            "src/features/ankiImport/logic/notetypeSelection.test.ts",
-            "src/features/ankiImport/logic/notetypeSelection.ts",
-            "tasks/plan-anki-notetype-pills.md",
-            "tasks/todo-anki-notetype-pills.md"
+            "tasks/reports/pipeline-sessions.md"
+          ]
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-10-01T13:28:19.634Z",
+          "head": "3f88f5ffd4cceb89dae82d2a5f97a5d4d6fdf107",
+          "dirty": [
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md"
           ]
         }
       },
@@ -912,12 +852,9 @@
         }
       ],
       "loops": 0,
-      "owner": {
-        "id": "devin-69186",
-        "since": "2026-10-01T12:34:39.383Z"
-      },
+      "owner": null,
       "worktree": null,
-      "updated": "2026-10-01T13:23:45.951Z"
+      "updated": "2026-10-01T13:28:19.814Z"
     }
   }
 }
