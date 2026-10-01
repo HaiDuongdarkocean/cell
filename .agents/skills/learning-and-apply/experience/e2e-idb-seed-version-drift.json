@@ -1,0 +1,17 @@
+{
+  "id": "e2e-idb-seed-version-drift",
+  "title": "E2E specs that seed the extension IndexedDB via service-worker evaluate rot silently when DB_SCHEMA_VERSION bumps — read the live version via indexedDB.databases() instead of a pinned constant",
+  "category": ["testing", "e2e"],
+  "tags": ["e2e", "indexeddb", "schema-version", "seed", "service-worker", "versionerror"],
+  "trigger": "An e2e seed helper calls indexedDB.open(dbName, PINNED_VERSION) inside a Playwright service-worker evaluate and the repository DB_SCHEMA_VERSION has moved past the pin",
+  "principle": "indexedDB.open(name, v) throws VersionError when the existing DB is newer. A pinned DB_SCHEMA_VERSION constant in the spec is a hidden version pin that goes stale every schema bump. Resolve the live version first (`indexedDB.databases()` → find by name → use its version when higher), keep the upgradeneeded guards so a fresh DB still gets all stores, and bump the pin as the floor.",
+  "cases": [
+    {
+      "context": "lookup-hot-path ship: dictionary-nested-popup.spec.ts pinned version 12 while the repo was at 13 — one test passed before the DB existed, the second failed VersionError on the same run because the extension had already created v13.",
+      "bad": "const DB_SCHEMA_VERSION = 12; indexedDB.open(dbName, DB_SCHEMA_VERSION)",
+      "good": "const existing = (await indexedDB.databases()).find(d => d.name === dbName); const version = Math.max(DB_SCHEMA_VERSION, existing?.version ?? 0); indexedDB.open(dbName, version)"
+    }
+  ],
+  "applyFor": ["any e2e/stage2 spec that writes directly into orca-dict-* or other extension IDB databases", "helpers that seed IndexedDB outside application code"],
+  "source": { "date": "2026-10-01" }
+}

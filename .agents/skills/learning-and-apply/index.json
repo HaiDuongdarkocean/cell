@@ -3075,6 +3075,24 @@
         "dependency-direction"
       ],
       "trigger": "check-feature-cycles reports A→B→A or check-deep-imports flags a sibling-feature internal path"
+    },
+    {
+      "type": "experience",
+      "id": "e2e-idb-seed-version-drift",
+      "title": "E2E IDB seed helpers must resolve the live schema version via indexedDB.databases() — a pinned constant silently rots on every DB_SCHEMA_VERSION bump",
+      "category": [
+        "testing",
+        "e2e"
+      ],
+      "tags": [
+        "e2e",
+        "indexeddb",
+        "schema-version",
+        "seed",
+        "versionerror",
+        "service-worker"
+      ],
+      "trigger": "worker.evaluate indexedDB.open(name, PINNED) throws VersionError after a repository schema bump"
     }
   ]
 }

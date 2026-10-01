@@ -1,5 +1,5 @@
 {
-  "active": null,
+  "active": "lookup-hot-path",
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -1220,6 +1220,124 @@
       "owner": null,
       "worktree": null,
       "updated": "2026-10-01T20:02:27.546Z"
+    },
+    "lookup-hot-path": {
+      "stage": "deliver",
+      "mode": "all",
+      "uiSurface": "no",
+      "artifacts": {
+        "intent": "docs/intent/lookup-hot-path.md",
+        "spec": "docs/specs/lookup-hot-path.md"
+      },
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-10-01T20:19:06.444Z",
+          "head": "25fd0d9ec3997a29cf140cfeac895c3a75582f58",
+          "dirty": [
+            "src/entrypoints/background/handlers/resources.ts",
+            "src/entrypoints/background/wireEvents.ts",
+            "src/features/dictionaryPopup/logic/lookupOrchestrator.ts",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/lookup-hot-path.md",
+            "docs/reviews/lookup-hot-path-analyze.md",
+            "docs/reviews/lookup-hot-path-spec.md",
+            "docs/specs/lookup-hot-path.md"
+          ]
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-10-01T20:29:48.201Z",
+          "head": "25fd0d9ec3997a29cf140cfeac895c3a75582f58",
+          "dirty": [
+            "e2e/extension-anki-status-sync.spec.ts",
+            "src/entrypoints/background/handlers/resources.ts",
+            "src/entrypoints/background/wireEvents.ts",
+            "src/features/dictionaryPopup/logic/lookupOrchestrator.test.ts",
+            "src/features/dictionaryPopup/logic/lookupOrchestrator.ts",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/lookup-hot-path.md",
+            "docs/reviews/lookup-hot-path-analyze.md",
+            "docs/reviews/lookup-hot-path-spec.md",
+            "docs/specs/lookup-hot-path.md",
+            "tests/unit/entrypoints/background/handlers/resources.test.ts",
+            "tests/unit/entrypoints/background/wireEvents.test.ts"
+          ]
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-10-01T20:30:31.823Z",
+          "head": "25fd0d9ec3997a29cf140cfeac895c3a75582f58",
+          "dirty": [
+            "e2e/extension-anki-status-sync.spec.ts",
+            "src/entrypoints/background/handlers/resources.ts",
+            "src/entrypoints/background/wireEvents.ts",
+            "src/features/dictionaryPopup/logic/lookupOrchestrator.test.ts",
+            "src/features/dictionaryPopup/logic/lookupOrchestrator.ts",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/lookup-hot-path.md",
+            "docs/reviews/lookup-hot-path-analyze.md",
+            "docs/reviews/lookup-hot-path-spec.md",
+            "docs/specs/lookup-hot-path.md",
+            "tests/unit/entrypoints/background/handlers/resources.test.ts",
+            "tests/unit/entrypoints/background/wireEvents.test.ts"
+          ]
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-10-01T20:32:42.668Z",
+          "head": "25fd0d9ec3997a29cf140cfeac895c3a75582f58",
+          "dirty": [
+            "e2e/extension-anki-status-sync.spec.ts",
+            "src/entrypoints/background/handlers/resources.ts",
+            "src/entrypoints/background/wireEvents.ts",
+            "src/features/dictionaryPopup/logic/lookupOrchestrator.test.ts",
+            "src/features/dictionaryPopup/logic/lookupOrchestrator.ts",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/lookup-hot-path.md",
+            "docs/reviews/lookup-hot-path-analyze.md",
+            "docs/reviews/lookup-hot-path-spec.md",
+            "docs/specs/lookup-hot-path.md",
+            "tests/unit/entrypoints/background/handlers/resources.test.ts",
+            "tests/unit/entrypoints/background/wireEvents.test.ts"
+          ]
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-10-01T20:34:13.164Z",
+          "head": "25fd0d9ec3997a29cf140cfeac895c3a75582f58",
+          "dirty": [
+            "e2e/extension-anki-status-sync.spec.ts",
+            "e2e/stage2/dictionary-nested-popup.spec.ts",
+            "src/entrypoints/background/handlers/resources.ts",
+            "src/entrypoints/background/wireEvents.ts",
+            "src/features/dictionaryPopup/logic/lookupOrchestrator.test.ts",
+            "src/features/dictionaryPopup/logic/lookupOrchestrator.ts",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/lookup-hot-path.md",
+            "docs/reviews/lookup-hot-path-analyze.md",
+            "docs/reviews/lookup-hot-path-spec.md",
+            "docs/specs/lookup-hot-path.md",
+            "tests/unit/entrypoints/background/handlers/resources.test.ts",
+            "tests/unit/entrypoints/background/wireEvents.test.ts"
+          ]
+        }
+      },
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "owner": {
+        "id": "devin-idea-pick-off-20261001",
+        "since": "2026-10-01T20:03:46.047Z"
+      },
+      "worktree": null,
+      "updated": "2026-10-01T20:34:13.215Z"
     }
   }
 }

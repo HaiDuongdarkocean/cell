@@ -170,7 +170,7 @@ test.describe('Anki status sync', () => {
     await page.close();
   });
 
-  test('settings tab shows the Anki status sync section', async ({ context }, testInfo) => {
+  test('settings tab shows the Anki status sync section', async ({ context }) => {
     const page = await context.newPage();
     await page.goto(MOCK_URL);
     await page.locator('body').waitFor({ state: 'visible' });

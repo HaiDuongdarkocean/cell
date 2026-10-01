@@ -14,6 +14,7 @@ import {
   type PhraseIndexInput,
 } from '@/features/dictionary';
 import { parsePhraseTemplate } from '@/features/dictionary';
+import * as dictionaryFeature from '@/features/dictionary';
 import type { Settings, LanguageProfile } from '@/entities/settings';
 import type { DictionaryEntry } from '@/entities/dictionary';
 import {
@@ -1338,5 +1339,158 @@ describe('lookupOrchestrator — active profile language', () => {
     expect(result.langCode).toBe('en');
     expect(result.definitions[0]!.text).toBe('greeting');
     expect(result.status).toBe('known');
+  });
+});
+
+describe('lookupOrchestrator — lookup-hot-path', () => {
+  it('reads each distinct term at most once per request', async () => {
+    await seedEnglishDictionary([
+      { term: 'kick the bucket', definition: 'to die', pos: 'idiom' },
+      { term: 'kick', definition: 'to strike with the foot', pos: 'verb' },
+    ], ['kick the bucket']);
+
+    const dictSpy = jest.spyOn(dictionaryFeature, 'findDictionaryByTerm');
+    const freqSpy = jest.spyOn(dictionaryFeature, 'findFrequencyByTerm');
+    try {
+      const results = await lookupOrchestratorMulti({
+        term: 'kicked',
+        langCode: 'en',
+        contextSentence: 'He kicked the bucket.',
+        cursorOffset: 3,
+      });
+      expect(results.map((r) => r.term)).toEqual(['kick the bucket', 'kicked', 'kick']);
+
+      const dictTerms = dictSpy.mock.calls.map(([, t]) => t);
+      expect(new Set(dictTerms).size).toBe(dictTerms.length);
+      const freqTerms = freqSpy.mock.calls.map(([, t]) => t);
+      expect(new Set(freqTerms).size).toBe(freqTerms.length);
+    } finally {
+      dictSpy.mockRestore();
+      freqSpy.mockRestore();
+    }
+  });
+
+  it('assembles candidates and lemma probes concurrently', async () => {
+    await seedEnglishDictionary(
+      [
+        { term: 'kick the bucket', definition: 'to die', pos: 'idiom' },
+        { term: 'kick', definition: 'to strike with the foot', pos: 'verb' },
+      ],
+      ['kick the bucket'],
+    );
+
+    let pending = 0;
+    let maxPending = 0;
+    const realFind = dictionaryFeature.findDictionaryByTerm;
+    const spy = jest
+      .spyOn(dictionaryFeature, 'findDictionaryByTerm')
+      .mockImplementation(async (lang, term) => {
+        pending += 1;
+        maxPending = Math.max(maxPending, pending);
+        try {
+          return await realFind(lang, term);
+        } finally {
+          pending -= 1;
+        }
+      });
+    try {
+      await lookupOrchestratorMulti({
+        term: 'kicked',
+        langCode: 'en',
+        contextSentence: 'He kicked the bucket.',
+        cursorOffset: 3,
+      });
+      expect(maxPending).toBeGreaterThanOrEqual(2);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('probes all lemma candidates in one batch and keeps the first hit', async () => {
+    await seedEnglishDictionary([
+      { term: 'bigg', definition: 'first candidate', pos: 'noun' },
+      { term: 'bigge', definition: 'later candidate', pos: 'noun' },
+    ]);
+
+    const results = await lookupOrchestratorMulti({
+      term: 'bigger',
+      langCode: 'en',
+      contextSentence: 'A bigger boat.',
+      cursorOffset: 2,
+    });
+
+    expect(results[0]!.term).toBe('bigger');
+    expect(results[0]!.definitions[0]!.text).toBe('first candidate');
+    expect(results.map((r) => r.term)).toEqual(['bigger', 'bigg', 'bigge']);
+  });
+
+  it('reaches later lemma candidates when earlier ones are empty', async () => {
+    await seedEnglishDictionary([
+      { term: 'bigge', definition: 'only later candidate', pos: 'noun' },
+    ]);
+
+    const result = await lookupOrchestrator({
+      term: 'bigger',
+      langCode: 'en',
+      contextSentence: 'A bigger boat.',
+      cursorOffset: 2,
+    });
+
+    expect(result.term).toBe('bigger');
+    expect(result.definitions[0]!.text).toBe('only later candidate');
+  });
+
+  it('keeps additional phrase candidates that have no dictionary entries', async () => {
+    await seedEnglishDictionary(
+      [{ term: 'kick the bucket', definition: 'to die', pos: 'idiom' }],
+      ['kick the bucket', 'kick the bucket hard'],
+    );
+
+    const results = await lookupOrchestratorMulti({
+      term: 'kicked',
+      langCode: 'en',
+      contextSentence: 'He kicked the bucket hard.',
+      cursorOffset: 3,
+    });
+
+    const hard = results.find((r) => r.term === 'kick the bucket hard');
+    expect(hard).toBeDefined();
+    expect(hard!.definitions).toHaveLength(0);
+  });
+
+  it('drops surface and lemma candidates that resolve to nothing', async () => {
+    await seedEnglishDictionary([{ term: 'hello', definition: 'greeting' }]);
+
+    const results = await lookupOrchestratorMulti({
+      term: 'spouted',
+      langCode: 'en',
+      contextSentence: 'The whale spouted.',
+      cursorOffset: 11,
+    });
+
+    expect(results.map((r) => r.term)).toEqual(['spouted']);
+  });
+
+  it('reuses the resource context across lookups until the cache is cleared', async () => {
+    await seedEnglishDictionary([{ term: 'hello', definition: 'greeting' }]);
+    const request = {
+      term: 'hello',
+      langCode: 'en',
+      contextSentence: 'Say hello.',
+      cursorOffset: 4,
+    };
+
+    const spy = jest.spyOn(dictionaryFeature, 'getAllResources');
+    try {
+      await lookupOrchestrator(request);
+      await lookupOrchestrator(request);
+      expect(spy.mock.calls.filter(([lang]) => lang === 'en')).toHaveLength(1);
+
+      clearDictionaryProbeCache();
+      await lookupOrchestrator(request);
+      expect(spy.mock.calls.filter(([lang]) => lang === 'en')).toHaveLength(2);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

@@ -59,11 +59,34 @@ import { tokenizeSentence } from '@/features/dictionary';
 import { getActiveProfileSettings, type Settings } from '@/entities/settings';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
-import type { ResourceInfo } from '@/entities/dictionary';
+import type { ResourceInfo, DictionaryEntry } from '@/entities/dictionary';
 import { lineToCanonicalText, buildPhraseIndexForResource, toCanonicalDefinition } from '@/features/dictionary';
 import type { SenseLine, SenseBlock, RelatedEntry, EtymologyBlock, InflectionGroup } from '@/entities/dictionary';
 
 const EMPTY_COMPONENT_SET: ReadonlySet<string> = new Set();
+
+/** lookup-hot-path: per-request read memo — dedupes identical term reads
+ *  (in-flight and resolved) within one lookup. Never shared across requests. */
+interface ReadMemo {
+  readonly dict: Map<string, Promise<DictionaryEntry[]>>;
+  readonly freq: Map<string, ReturnType<typeof findFrequencyByTerm>>;
+  readonly status: Map<string, ReturnType<typeof getWordStatus>>;
+}
+
+function createReadMemo(): ReadMemo {
+  return { dict: new Map(), freq: new Map(), status: new Map() };
+}
+
+function memoize<K, V>(map: Map<K, Promise<V>>, key: K, read: () => Promise<V>): Promise<V> {
+  let pending = map.get(key);
+  if (!pending) {
+    pending = read();
+    map.set(key, pending);
+  }
+  return pending;
+}
+
+const memoKey = (langCode: string, term: string): string => `${langCode}|${term}`;
 
 /** Check if an AbortSignal is aborted. */
 function checkAbort(signal?: AbortSignal): void {
@@ -94,11 +117,45 @@ const phraseIndexCache = new Map<string, Map<number, PhraseIndex | null>>();
 
 const phraseIndexRebuilds = new Set<string>();
 
-/** Clear lookup caches (probe + phrase indexes) after resource mutations. */
+/** lookup-hot-path: cached settings promise — resolves to DEFAULT_SETTINGS on
+ *  failure so it can never poison the cache. */
+let settingsCache: Promise<Settings> | null = null;
+
+/** lookup-hot-path: cached ResourceContext per langCode, covering
+ *  loadSettings + buildResourceContext. In-flight promise is cached so cold
+ *  lookups self-dedupe; a rejected entry is evicted immediately. */
+const lookupContextCache = new Map<string, Promise<ResourceContext>>();
+
+function loadSettingsCached(): Promise<Settings> {
+  if (!settingsCache) {
+    settingsCache = loadSettings().catch(() => DEFAULT_SETTINGS);
+  }
+  return settingsCache;
+}
+
+function getCachedResourceContext(langCode: string): Promise<ResourceContext> {
+  let pending = lookupContextCache.get(langCode);
+  if (!pending) {
+    pending = loadSettingsCached().then((settings) => buildResourceContext(langCode, settings));
+    lookupContextCache.set(langCode, pending);
+    const self = pending;
+    void pending.catch(() => {
+      if (lookupContextCache.get(langCode) === self) {
+        lookupContextCache.delete(langCode);
+      }
+    });
+  }
+  return pending;
+}
+
+/** Clear lookup caches (probe + phrase indexes + lookup context) after
+ *  resource or settings mutations. */
 export function clearDictionaryProbeCache(): void {
   probeCache.clear();
   phraseIndexCache.clear();
   phraseIndexRebuilds.clear();
+  settingsCache = null;
+  lookupContextCache.clear();
 }
 
 function schedulePhraseIndexRebuild(langCode: string, resourceId: number): void {
@@ -272,9 +329,13 @@ export async function lookupOrchestratorMulti(
   const { contextSentence, cursorOffset, term, fallback } = request;
 
   // Resolve settings and build the resource context once per lookup.
-  const settings = deps.settings ?? await loadSettings().catch(() => DEFAULT_SETTINGS);
+  // lookup-hot-path: injected settings (tests) bypass the context cache.
+  const settings = deps.settings ?? await loadSettingsCached();
   const langCode = getActiveProfileSettings(settings)?.resourceLangCode ?? request.langCode;
-  const resourceContext = await buildResourceContext(langCode, settings);
+  const resourceContext = deps.settings
+    ? await buildResourceContext(langCode, settings)
+    : await getCachedResourceContext(langCode);
+  const memo = createReadMemo();
 
   // 1. Resolve the language plugin.
   //    EN/ZH plugins are created on-the-fly (EN needs a PhraseIndex per
@@ -348,62 +409,69 @@ export async function lookupOrchestratorMulti(
   // 3. Build winner result: phrase match wins when valid; otherwise the surface
   //    token (with lemma fallback for definitions).
   const winnerResult = detectedPhrase
-    ? await assembleLookupResult(langCode, detectedPhrase.dictionaryTerm, detectedPhrase, 'plugin', plugin, resourceContext, signal)
-    : await assembleLookupResult(langCode, surfaceTerm, null, matchSource, plugin, resourceContext, signal, surfaceTerm);
+    ? await assembleLookupResult(langCode, detectedPhrase.dictionaryTerm, detectedPhrase, 'plugin', plugin, resourceContext, signal, memo)
+    : await assembleLookupResult(langCode, surfaceTerm, null, matchSource, plugin, resourceContext, signal, memo, surfaceTerm);
 
-  const additionalResults: LookupResult[] = [];
   const seen = new Set([winnerResult.term.toLowerCase()]);
 
+  // lookup-hot-path: assemble all candidates concurrently, then apply the
+  // per-source acceptance predicates in original order — output is
+  // byte-identical to the sequential baseline.
+  interface CandidateSpec {
+    readonly query: string;
+    readonly match: PhraseMatch | null;
+    readonly source: MatchSource;
+    readonly displayTerm?: string;
+    /** Step-6 phrase matches are dedupe-only — no content filter. */
+    readonly dedupeOnly: boolean;
+    /** Verbatim: the single-lemma fallback never adds to `seen`. */
+    readonly skipSeenAdd?: boolean;
+  }
+  const specs: CandidateSpec[] = [];
+
   // 4. Add the hovered surface token as a candidate whenever it differs from
-  //    the winner (e.g. phrase winner → hover word candidate, or origin winner
-  //    already resolved to surfaceTerm).
+  //    the winner.
   if (surfaceTerm.toLowerCase() !== winnerResult.term.toLowerCase()) {
-    const surfaceResult = await assembleLookupResult(
-      langCode, surfaceTerm, null, 'dictionary', plugin, resourceContext, signal, surfaceTerm,
-    );
-    if ((surfaceResult.definitions.length > 0 || surfaceResult.frequencies.length > 0 || surfaceResult.reading) && !seen.has(surfaceResult.term.toLowerCase())) {
-      seen.add(surfaceResult.term.toLowerCase());
-      additionalResults.push(surfaceResult);
-    }
+    specs.push({ query: surfaceTerm, match: null, source: 'dictionary', displayTerm: surfaceTerm, dedupeOnly: false });
   }
 
   // 5. Add origin/lemma candidates (ADR-041).
   if (plugin.lemmaCandidates) {
     for (const candidate of plugin.lemmaCandidates(surfaceTerm)) {
-      if (seen.has(candidate.toLowerCase())) continue;
-      checkAbort(signal);
-      const lemmaResult = await assembleLookupResult(
-        langCode, candidate, null, 'dictionary', plugin, resourceContext, signal,
-      );
-      if ((lemmaResult.definitions.length > 0 || lemmaResult.frequencies.length > 0 || lemmaResult.reading) && !seen.has(lemmaResult.term.toLowerCase())) {
-        seen.add(lemmaResult.term.toLowerCase());
-        additionalResults.push(lemmaResult);
-      }
+      specs.push({ query: candidate, match: null, source: 'dictionary', dedupeOnly: false });
     }
   } else if (plugin.lemma) {
     const lemma = plugin.lemma(surfaceTerm);
-    if (lemma && !seen.has(lemma.toLowerCase())) {
-      checkAbort(signal);
-      const lemmaResult = await assembleLookupResult(
-        langCode, lemma, null, 'dictionary', plugin, resourceContext, signal,
-      );
-      if ((lemmaResult.definitions.length > 0 || lemmaResult.frequencies.length > 0 || lemmaResult.reading) && !seen.has(lemmaResult.term.toLowerCase())) {
-        additionalResults.push(lemmaResult);
-      }
+    if (lemma) {
+      specs.push({ query: lemma, match: null, source: 'dictionary', dedupeOnly: false, skipSeenAdd: true });
     }
   }
 
   // 6. Add remaining phrase matches after surface/origin candidates.
   for (const match of additionalPhraseMatches) {
-    if (seen.has(match.dictionaryTerm.toLowerCase())) continue;
-    checkAbort(signal);
-    const result = await assembleLookupResult(
-      langCode, match.dictionaryTerm, match, 'plugin', plugin, resourceContext, signal,
-    );
-    if (!seen.has(result.term.toLowerCase())) {
-      seen.add(result.term.toLowerCase());
-      additionalResults.push(result);
-    }
+    specs.push({ query: match.dictionaryTerm, match, source: 'plugin', dedupeOnly: true });
+  }
+
+  const eligible = specs.filter((spec) => !seen.has(spec.query.toLowerCase()));
+  const resolved = await Promise.all(
+    eligible.map((spec) =>
+      assembleLookupResult(
+        langCode, spec.query, spec.match, spec.source, plugin,
+        resourceContext, signal, memo, spec.displayTerm,
+      ),
+    ),
+  );
+  checkAbort(signal);
+
+  const additionalResults: LookupResult[] = [];
+  for (let i = 0; i < eligible.length; i += 1) {
+    const spec = eligible[i]!;
+    const result = resolved[i]!;
+    if (seen.has(spec.query.toLowerCase())) continue;
+    if (seen.has(result.term.toLowerCase())) continue;
+    if (!spec.dedupeOnly && !(result.definitions.length > 0 || result.frequencies.length > 0 || result.reading)) continue;
+    if (!spec.skipSeenAdd) seen.add(result.term.toLowerCase());
+    additionalResults.push(result);
   }
 
   const allResults: LookupResult[] = [
@@ -437,7 +505,8 @@ async function assembleLookupResult(
   matchSource: MatchSource,
   plugin: LanguagePlugin,
   resourceContext: ResourceContext,
-  signal?: AbortSignal,
+  signal: AbortSignal | undefined,
+  memo: ReadMemo,
   /** If provided, the result header shows this surface term (e.g. the hovered
    *  token "is") while definitions are resolved from lookupTerm/its lemma. */
   displayTerm?: string,
@@ -446,11 +515,18 @@ async function assembleLookupResult(
 
   const { allowedResourceIds, resourcePriority, priorityMap } = resourceContext;
 
+  const readDict = (term: string) =>
+    memoize(memo.dict, memoKey(langCode, term), () => findDictionaryByTerm(langCode, term));
+  const readFreq = (term: string) =>
+    memoize(memo.freq, memoKey(langCode, term), () => findFrequencyByTerm(langCode, term));
+  const readStatus = (term: string) =>
+    memoize(memo.status, memoKey(langCode, term), () => getWordStatus(langCode, term));
+
   const initialSurface = displayTerm ?? lookupTerm;
   const [dictRaw, freqRaw, statusInit] = await Promise.all([
-    findDictionaryByTerm(langCode, lookupTerm),
-    findFrequencyByTerm(langCode, initialSurface),
-    getWordStatus(langCode, initialSurface),
+    readDict(lookupTerm),
+    readFreq(initialSurface),
+    readStatus(initialSurface),
   ]);
   let dictEntries = sortByResourcePriority(
     dictRaw.filter((e) => allowedResourceIds.has(e.resourceId)),
@@ -459,34 +535,34 @@ async function assembleLookupResult(
   checkAbort(signal);
 
   // Inflectional morphology fallback (ADR-041): if raw term not in dictionary,
-  // try ALL lemma candidates from the shared multi-candidate lemma module.
-  // This handles CVC doubling (bigger→big), silent-e (nicest→nice), irregular
-  // plurals (children→child), possessive (cat's→cat), etc.
+  // probe ALL lemma candidates in parallel and pick the first hit in order
+  // (bigger→big, nicest→nice, children→child, cat's→cat).
   let effectiveTerm = lookupTerm;
   if (dictEntries.length === 0 && plugin.lemmaCandidates) {
-    const candidates = plugin.lemmaCandidates(lookupTerm);
-    for (const candidate of candidates) {
-      // Skip only the exact string already queried — the by_term index is
-      // case-sensitive, so a lowercase candidate differing only by case
-      // (e.g. "i take it" for "I take it") must still be tried.
-      if (candidate === lookupTerm) continue;
-      checkAbort(signal);
-      dictEntries = sortByResourcePriority(
-        (await findDictionaryByTerm(langCode, candidate))
-          .filter((e) => allowedResourceIds.has(e.resourceId)),
-        priorityMap,
-      );
-      if (dictEntries.length > 0) {
-        effectiveTerm = candidate;
-        break;
-      }
+    // Skip only the exact string already queried — the by_term index is
+    // case-sensitive, so a lowercase candidate differing only by case
+    // (e.g. "i take it" for "I take it") must still be tried.
+    const candidates = plugin.lemmaCandidates(lookupTerm).filter((c) => c !== lookupTerm);
+    const probed = await Promise.all(
+      candidates.map(async (candidate) =>
+        sortByResourcePriority(
+          (await readDict(candidate)).filter((e) => allowedResourceIds.has(e.resourceId)),
+          priorityMap,
+        ),
+      ),
+    );
+    checkAbort(signal);
+    const hit = probed.findIndex((entries) => entries.length > 0);
+    if (hit >= 0) {
+      dictEntries = probed[hit]!;
+      effectiveTerm = candidates[hit]!;
     }
   } else if (dictEntries.length === 0 && plugin.lemma) {
     // Backward compat: single-lemma fallback for plugins without lemmaCandidates.
     const lemma = plugin.lemma(lookupTerm);
     if (lemma && lemma !== lookupTerm) {
       dictEntries = sortByResourcePriority(
-        (await findDictionaryByTerm(langCode, lemma))
+        (await readDict(lemma))
           .filter((e) => allowedResourceIds.has(e.resourceId)),
         priorityMap,
       );
@@ -500,10 +576,10 @@ async function assembleLookupResult(
   const surfaceTerm = displayTerm ?? effectiveTerm;
   let freqEntries = surfaceTerm === initialSurface
     ? freqRaw.filter((e) => allowedResourceIds.has(e.resourceId))
-    : (await findFrequencyByTerm(langCode, surfaceTerm))
+    : (await readFreq(surfaceTerm))
       .filter((e) => allowedResourceIds.has(e.resourceId));
   if (freqEntries.length === 0 && surfaceTerm !== effectiveTerm) {
-    freqEntries = (await findFrequencyByTerm(langCode, effectiveTerm))
+    freqEntries = (await readFreq(effectiveTerm))
       .filter((e) => allowedResourceIds.has(e.resourceId));
   }
   checkAbort(signal);
@@ -674,7 +750,7 @@ async function assembleLookupResult(
   // Status is looked up for the displayed surface term (phrase or hover word).
   const status = surfaceTerm === initialSurface
     ? statusInit
-    : await getWordStatus(langCode, surfaceTerm);
+    : await readStatus(surfaceTerm);
 
   return {
     term: surfaceTerm,

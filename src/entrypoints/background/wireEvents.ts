@@ -22,6 +22,7 @@ import {
   onStorageChanged,
   removeOnStorageChangedListener,
 } from '@/shared/lib/chrome-apis';
+import { clearDictionaryProbeCache } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
 import type { BackgroundContext } from './context';
 import {
   enrichVideo,
@@ -551,10 +552,22 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
   };
   onStorageChanged(onThemeStorageChanged);
 
+  // Settings writes (UPDATE_SETTINGS, direct saves, sync-applied) must drop
+  // the lookup context cache — the complete seam is storage.onChanged.
+  const onSettingsStorageChanged = (
+    changes: Record<string, chrome.storage.StorageChange>,
+    area: string,
+  ): void => {
+    if (area !== 'local' || !changes[STORAGE_KEYS.SETTINGS]) return;
+    clearDictionaryProbeCache();
+  };
+  onStorageChanged(onSettingsStorageChanged);
+
   unsubscribers.push(
     addOnTabActivatedListener(onTabActivated),
     addOnWindowFocusChangedListener(onWindowFocusChanged),
     () => removeOnStorageChangedListener(onThemeStorageChanged),
+    () => removeOnStorageChangedListener(onSettingsStorageChanged),
   );
 
   return unsubscribers;

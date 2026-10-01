@@ -238,6 +238,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     if (!parsed.success) return fail('RESOURCE_RENAME', parsed);
     try {
       await setResourceName(parsed.data.langCode, parsed.data.resourceId, parsed.data.name);
+      clearDictionaryProbeCache();
       return ok();
     } catch (err) {
       return toError(err);
@@ -260,6 +261,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     if (!parsed.success) return fail('RESOURCE_SET_COMPONENTS', parsed);
     try {
       await setResourceDisabledComponents(parsed.data.langCode, parsed.data.resourceId, parsed.data.disabledComponents);
+      clearDictionaryProbeCache();
       return ok();
     } catch (err) {
       return toError(err);

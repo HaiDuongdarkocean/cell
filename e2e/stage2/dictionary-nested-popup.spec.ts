@@ -2,7 +2,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import type { BrowserContext } from '@playwright/test';
 import { test } from '../fixtures/cellEnvironment.fixture';
 
-const DB_SCHEMA_VERSION = 12;
+const DB_SCHEMA_VERSION = 13;
 const WORD_RE = /[A-Za-zÀ-ɏ']+/;
 
 /**
@@ -29,8 +29,12 @@ async function seedDictionary(
       const dbName = `orca-dict-${typeof hash === 'string' && hash.length === 8 ? hash : 'devmode0'}-${args.lang}`;
       const reverse = (s: string): string => s.split('').reverse().join('');
 
+      let version = args.version;
+      const existing = (await indexedDB.databases?.() ?? []).find((d) => d.name === dbName);
+      if (existing?.version && existing.version > version) version = existing.version;
+
       const db = await new Promise<IDBDatabase>((resolve, reject) => {
-        const req = indexedDB.open(dbName, args.version);
+        const req = indexedDB.open(dbName, version);
         req.onupgradeneeded = () => {
           const d = req.result;
           if (!d.objectStoreNames.contains('langResourceInfo')) {
@@ -61,6 +65,12 @@ async function seedDictionary(
           }
           if (!d.objectStoreNames.contains('langWordTrash')) {
             d.createObjectStore('langWordTrash', { keyPath: 'term' });
+          }
+          if (!d.objectStoreNames.contains('syncOutbox')) {
+            d.createObjectStore('syncOutbox', { keyPath: 'id', autoIncrement: true });
+          }
+          if (!d.objectStoreNames.contains('syncMeta')) {
+            d.createObjectStore('syncMeta', { keyPath: 'key' });
           }
         };
         req.onsuccess = () => resolve(req.result);
