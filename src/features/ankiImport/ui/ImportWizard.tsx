@@ -5,7 +5,6 @@ import {
   HStack, VStack,
 } from '@/shared/ui';
 import { t } from '@/shared/i18n';
-import type { IconCatalogKey } from '@/shared/icons';
 import type { SrsAudioAsset, SrsImageAsset, SrsNote } from '@/entities/srs/types';
 import {
   audioAssetId, createDefaultNotetype, imageAssetId, resolveReviewSurface,
@@ -435,16 +434,16 @@ function ScopeStep({
   );
 }
 
-const SYSTEM_SLOTS: readonly { role: Exclude<FieldRole, 'skip'>; fieldId: string; icon: IconCatalogKey }[] = [
-  { role: 'target', fieldId: 'target', icon: 'crosshair' },
-  { role: 'sentence', fieldId: 'sentence', icon: 'messageSquare' },
-  { role: 'definition', fieldId: 'def', icon: 'bookOpen' },
-  { role: 'translation', fieldId: 'translation', icon: 'languages' },
-  { role: 'context', fieldId: 'context', icon: 'layoutGrid' },
-  { role: 'notes', fieldId: 'notes', icon: 'captions' },
-  { role: 'audio', fieldId: 'wordAudio', icon: 'volumeHigh' },
-  { role: 'sentenceAudio', fieldId: 'sentAudio', icon: 'audioWave' },
-  { role: 'image', fieldId: 'image', icon: 'image' },
+const SYSTEM_SLOTS: readonly { role: Exclude<FieldRole, 'skip'>; fieldId: string }[] = [
+  { role: 'target', fieldId: 'target' },
+  { role: 'sentence', fieldId: 'sentence' },
+  { role: 'definition', fieldId: 'def' },
+  { role: 'translation', fieldId: 'translation' },
+  { role: 'context', fieldId: 'context' },
+  { role: 'notes', fieldId: 'notes' },
+  { role: 'audio', fieldId: 'wordAudio' },
+  { role: 'sentenceAudio', fieldId: 'sentAudio' },
+  { role: 'image', fieldId: 'image' },
 ];
 
 const PREVIEW_NOTE_ID = 'anki-import-preview';
@@ -569,14 +568,11 @@ function MappingStep({
     <div className={styles.mapLayout}>
       <section className={styles.settingsCol}>
         <div className={styles.fieldRows}>
-          {SYSTEM_SLOTS.map(({ role, fieldId, icon }) => {
+          {SYSTEM_SLOTS.map(({ role, fieldId }) => {
             const sources = fieldsForRole(role);
             return (
               <SettingsRow key={fieldId} dense stacked>
-                <LabelGroup
-                  icon={<Icon name={icon} />}
-                  label={t(`ankiImport.role.${role}`)}
-                />
+                <LabelGroup label={t(`ankiImport.role.${role}`)} />
                 <Select
                   size="sm"
                   value={sources[0] ?? ''}
