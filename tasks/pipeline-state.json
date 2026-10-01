@@ -1,5 +1,5 @@
 {
-  "active": "lookup-hot-path",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -1222,7 +1222,7 @@
       "updated": "2026-10-01T20:02:27.546Z"
     },
     "lookup-hot-path": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "all",
       "uiSurface": "no",
       "artifacts": {
@@ -1232,18 +1232,11 @@
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-10-01T20:19:06.444Z",
-          "head": "25fd0d9ec3997a29cf140cfeac895c3a75582f58",
+          "at": "2026-10-01T20:44:09.880Z",
+          "head": "ddfae2025b01803a49ef6200297231e82dda7568",
           "dirty": [
-            "src/entrypoints/background/handlers/resources.ts",
-            "src/entrypoints/background/wireEvents.ts",
-            "src/features/dictionaryPopup/logic/lookupOrchestrator.ts",
             "src/shared/ui/Select.module.css",
-            "tasks/reports/pipeline-sessions.md",
-            "docs/intent/lookup-hot-path.md",
-            "docs/reviews/lookup-hot-path-analyze.md",
-            "docs/reviews/lookup-hot-path-spec.md",
-            "docs/specs/lookup-hot-path.md"
+            "tasks/reports/pipeline-sessions.md"
           ]
         },
         "lint": {
@@ -1332,12 +1325,9 @@
       "awaiting": null,
       "resolutions": [],
       "loops": 0,
-      "owner": {
-        "id": "devin-idea-pick-off-20261001",
-        "since": "2026-10-01T20:03:46.047Z"
-      },
+      "owner": null,
       "worktree": null,
-      "updated": "2026-10-01T20:34:13.215Z"
+      "updated": "2026-10-01T20:46:18.134Z"
     }
   }
 }
