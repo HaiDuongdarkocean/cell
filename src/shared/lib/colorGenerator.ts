@@ -31,9 +31,25 @@ export function generateTint(hex: string, percent: number): string {
   );
 }
 
-/** Hover color = shade 10% (darker). Used for --color-primary-hover, --color-surface-hover. */
+/** Hover color = shade 10% (darker). Used for --color-primary-hover. */
 export function generateHoverColor(hex: string): string {
   return generateShade(hex, 10);
+}
+
+/**
+ * Blend `a` toward `b` by `percent` (0-100). 0 = a, 100 = b.
+ * Mirrors color-mix(in srgb, a, b percent) so runtime-derived tokens match
+ * the static tokens.json formulas exactly.
+ */
+export function mixHex(a: string, b: string, percent: number): string {
+  const ca = hexToRgb(a);
+  const cb = hexToRgb(b);
+  const t = percent / 100;
+  return rgbToHex(
+    ca.r + (cb.r - ca.r) * t,
+    ca.g + (cb.g - ca.g) * t,
+    ca.b + (cb.b - ca.b) * t,
+  );
 }
 
 /**

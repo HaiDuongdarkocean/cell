@@ -10,6 +10,7 @@ import {
   generateHoverColor,
   generateShade,
   generateTint,
+  mixHex,
 } from '@/shared/lib/colorGenerator';
 import { hexToRgb } from '@/shared/lib/contrast';
 import { pickPrimaryForeground } from '@/shared/lib/contrastValidator';
@@ -140,7 +141,9 @@ export function deriveColorTokens(
   mode: ResolvedMode,
   preset?: PresetName,
 ): TokenRecord {
-  const surfaceHover = generateHoverColor(colors.surface);
+  const surfaceHover = mode === 'dark'
+    ? mixHex(colors.surface, colors.text, 10)
+    : mixHex(mixHex(colors.surface, colors.primary, 5), colors.background, 12);
   const secondary = colors.surface;
   const primaryForeground = pickPrimaryForeground(colors);
 
@@ -153,7 +156,7 @@ export function deriveColorTokens(
     '--color-primary-foreground': primaryForeground,
     '--color-text-on-primary': primaryForeground,
     '--color-secondary': secondary,
-    '--color-secondary-hover': generateHoverColor(secondary),
+    '--color-secondary-hover': surfaceHover,
     '--color-secondary-foreground': colors.text,
     '--color-accent': surfaceHover,
     '--color-accent-foreground': colors.text,

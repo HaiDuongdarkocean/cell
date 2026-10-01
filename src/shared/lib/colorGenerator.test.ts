@@ -6,6 +6,7 @@ import {
   generateTint,
   generateHoverColor,
   generatePalette,
+  mixHex,
 } from '@/shared/lib/colorGenerator';
 
 describe('colorGenerator', () => {
@@ -98,6 +99,14 @@ describe('colorGenerator', () => {
       expect(generateHoverColor('#ffffff')).toBe(generateShade('#ffffff', 10));
       // 10% shade of white = #e6e6e6
       expect(generateHoverColor('#ffffff')).toBe('#e6e6e6');
+    });
+  });
+
+  describe('mixHex', () => {
+    it('blends a toward b by percent (mirrors color-mix srgb)', () => {
+      expect(mixHex('#000000', '#ffffff', 0)).toBe('#000000');
+      expect(mixHex('#000000', '#ffffff', 100)).toBe('#ffffff');
+      expect(mixHex('#212121', '#f1f1f1', 10)).toBe('#363636');
     });
   });
 
