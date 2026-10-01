@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactElement } from 'react';
 import { Sidebar } from './Sidebar';
+import { Checkbox } from './Checkbox';
 import { Navigation } from './Navigation';
 import { NavItem } from './NavItem';
 import { Icon } from '@/shared/icons/Icon';
@@ -70,12 +71,8 @@ function SidebarCustomContentDemo(): ReactElement {
       <Sidebar header="Filters & Actions">
         <div style={{ padding: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Custom Body Slot</span>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--font-size-sm)' }}>
-            <input type="checkbox" defaultChecked /> Auto-refresh
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--font-size-sm)' }}>
-            <input type="checkbox" /> High priority
-          </label>
+          <Checkbox label="Auto-refresh" defaultChecked />
+          <Checkbox label="High priority" />
           <button type="button" style={{ marginTop: 'var(--space-2)', padding: 'var(--space-1) var(--space-2)', borderRadius: 'var(--radius-xs)' }}>
             Apply Filter
           </button>
