@@ -51,6 +51,10 @@ export interface SubtitleCueEngineTokenizeOptions {
   /** Cue-list token hover → feeds the tokenize controller's hoveredTerm so
    *  status keys 1-4 apply to the hovered word. */
   onTokenHover?: (term: string | null) => void;
+  /** Cue-list Ctrl/Cmd+click: toggles the term in the bulk selection. */
+  onTokenCtrlClick?: (term: string) => void;
+  /** Live bulk-selection handle shared with the cue list. */
+  selection?: import('./CueList').CueListTokenSelection;
   windowSize?: number;
 }
 

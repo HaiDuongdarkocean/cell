@@ -43,6 +43,9 @@ const CELL_TOKEN_MAP: Record<string, string> = {
   '--cell-token-freq-rare-bg': '--color-token-freq-rare-bg',
   '--cell-token-freq-rare-fg': '--color-token-freq-rare-fg',
   '--cell-token-freq-border': '--color-token-freq-border',
+  // Bulk-selection wash — layered as background-image so the status underline
+  // and frequency pill survive underneath (Concept B "water wash").
+  '--cell-token-selected': '--color-primary',
 };
 
 /** Overlay text highlight with a 45% alpha, sourced from the static
@@ -269,6 +272,10 @@ html body .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-t
   text-shadow: var(--shadow-sm) !important;
 }
 
+html body .js-cell-token.js-cell-token--selected {
+  background-image: linear-gradient(color-mix(in srgb, var(--cell-token-selected) 18%, transparent) 0 0) !important;
+}
+
 /* Global layer toggles (applied per token).
    Quadruple-specificity (html body ancestor) so host box-shadow:none!important
    resets cannot override our !important. */
@@ -430,6 +437,10 @@ ${buildVariables(':host')}
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
   text-shadow: var(--shadow-sm) !important;
+}
+
+.js-cell-token.js-cell-token--selected {
+  background-image: linear-gradient(color-mix(in srgb, var(--cell-token-selected) 18%, transparent) 0 0) !important;
 }
 
 .js-cell-token.js-cell-token--status-off {

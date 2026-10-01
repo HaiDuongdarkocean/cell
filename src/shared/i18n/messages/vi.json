@@ -1320,6 +1320,8 @@
   "srs.css.save": "Lưu CSS",
   "srs.css.saved": "Đã lưu",
   "cueList.seekTo": "Tua tới $1",
+  "tokenize.selection.count": "Đã chọn $1 từ",
+  "tokenize.selection.cleared": "Đã bỏ chọn",
   "subtitle.action.apply": "Áp dụng",
   "subtitle.action.cancel": "Hủy",
   "subtitle.action.delete": "Xóa",

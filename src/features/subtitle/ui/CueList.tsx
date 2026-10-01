@@ -21,6 +21,7 @@ import { t } from '@/shared/i18n';
 import styles from './CueList.module.css';
 
 const EMPTY_TOKEN_MAP: CueListTokenMap = new Map();
+const EMPTY_SELECTED_TERMS: ReadonlySet<string> = new Set();
 
 const UNRESOLVED_META: ResolveMeta = {
   resolved: false,
@@ -48,12 +49,22 @@ function cuesAreEqual(a: readonly BilingualCue[], b: readonly BilingualCue[]): b
   return true;
 }
 
+export interface CueListTokenSelection {
+  getTerms(): ReadonlySet<string>;
+  subscribe(cb: (terms: ReadonlySet<string>) => void): () => void;
+}
+
 export interface CueListTokenize {
   langCode: string;
   onTokenClick: (term: string, element: HTMLElement, contextSentence: string, event: ClickModifierState) => void;
   /** Hover enter/leave on a word token (null on leave) — feeds the owning
    *  controller's hoveredTerm so status keys 1-4 apply to the hovered word. */
   onTokenHover?: (term: string | null) => void;
+  /** Ctrl/Cmd+click a word token — toggles it in the bulk selection instead
+   *  of opening the dictionary. Absent → modifier-click falls back to click. */
+  onTokenCtrlClick?: (term: string) => void;
+  /** Live bulk-selection set shared with the owning controller. */
+  selection?: CueListTokenSelection;
 }
 
 interface CueListProps {
@@ -80,12 +91,16 @@ const CueTokenText = memo(function CueTokenText({
   tokens,
   onTokenClick,
   onTokenHover,
+  onTokenCtrlClick,
+  selectedTerms,
   resolving = false,
 }: {
   text: string;
   tokens: readonly Token[];
   onTokenClick: (term: string, element: HTMLElement, contextSentence: string, event: ClickModifierState) => void;
   onTokenHover?: (term: string | null) => void;
+  onTokenCtrlClick?: (term: string) => void;
+  selectedTerms?: ReadonlySet<string>;
   resolving?: boolean;
 }) {
   const children: React.ReactNode[] = [];
@@ -110,13 +125,21 @@ const CueTokenText = memo(function CueTokenText({
           token.frequencyBand && token.frequencyBand !== 'none'
             ? `js-cell-token--frequency-${token.frequencyBand}`
             : '',
+          selectedTerms?.has(token.term) ? 'js-cell-token--selected' : '',
         ]
           .filter(Boolean)
           .join(' ')}
         data-cell-term={token.term}
         data-cell-start={token.start}
         data-cell-end={token.end}
-        onClick={(event) => onTokenClick(token.term, event.currentTarget, text, event)}
+        onClick={(event) => {
+          if ((event.ctrlKey || event.metaKey) && onTokenCtrlClick) {
+            event.preventDefault();
+            onTokenCtrlClick(token.term);
+            return;
+          }
+          onTokenClick(token.term, event.currentTarget, text, event);
+        }}
         onMouseEnter={onTokenHover ? () => onTokenHover(token.term) : undefined}
         onMouseLeave={onTokenHover ? () => onTokenHover(null) : undefined}
       >
@@ -160,8 +183,17 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
 
   const tokenizeLangCode = tokenize?.langCode;
   const onTokenHover = tokenize?.onTokenHover;
+  const selection = tokenize?.selection;
+  const [selectedTerms, setSelectedTerms] = useState<ReadonlySet<string>>(
+    () => selection?.getTerms() ?? EMPTY_SELECTED_TERMS,
+  );
   const lastCuesRef = useRef<readonly BilingualCue[] | null>(null);
   const lastLangCodeRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    setSelectedTerms(selection?.getTerms() ?? EMPTY_SELECTED_TERMS);
+    return selection?.subscribe(setSelectedTerms);
+  }, [selection]);
 
   // A token unmount (panel close, cue reload, tokenize off) fires no
   // mouseleave — clear the hover so a stale term can't absorb a status key.
@@ -370,6 +402,8 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                       tokens={tokenMap.get(cue.index) ?? []}
                       onTokenClick={tokenize.onTokenClick}
                       onTokenHover={onTokenHover}
+                      onTokenCtrlClick={tokenize.onTokenCtrlClick}
+                      selectedTerms={selectedTerms}
                       resolving={resolving}
                     />
                   ) : (

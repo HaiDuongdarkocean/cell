@@ -47,6 +47,8 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings } from '@/entities/media';
 
 import type { SubtitlePanelItem } from '@/features/subtitle';
+const EMPTY_SELECTED_TERMS: ReadonlySet<string> = new Set();
+
 // === Subtitle Overlay Integration ===
 
 export function init(
@@ -377,6 +379,11 @@ export function init(
           onOpenDictionary: (term, element, contextSentence, event) =>
             openDictionaryFromToken(settings.subtitleOverlayTargetLanguage, term, element, contextSentence, event),
           onTokenHover: (term) => subtitleTokenizeCtrl?.setHoveredTerm(term),
+          onTokenCtrlClick: (term) => subtitleTokenizeCtrl?.toggleSelectedTerm(term),
+          selection: {
+            getTerms: () => subtitleTokenizeCtrl?.getState().selectedTerms ?? EMPTY_SELECTED_TERMS,
+            subscribe: (cb) => subtitleTokenizeCtrl?.subscribeSelection(cb) ?? (() => {}),
+          },
         });
       } else {
         subtitleTokenizeCtrl?.disable();

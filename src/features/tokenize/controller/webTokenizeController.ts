@@ -470,6 +470,25 @@ export async function createWebTokenizeController(
     }
   });
 
+  let prevSelectedTerms = stateStore.getState().selectedTerms;
+  const unsubscribeSelection = stateStore.subscribe((state) => {
+    if (state.selectedTerms === prevSelectedTerms) return;
+    const changed = new Set<string>();
+    for (const term of state.selectedTerms) {
+      if (!prevSelectedTerms.has(term)) changed.add(term);
+    }
+    for (const term of prevSelectedTerms) {
+      if (!state.selectedTerms.has(term)) changed.add(term);
+    }
+    prevSelectedTerms = state.selectedTerms;
+    for (const block of blocks) {
+      if (!block.isBound || !block.tokens) continue;
+      if (block.tokens.some((token) => !token.isSeparator && changed.has(token.term))) {
+        rebindBlock(block);
+      }
+    }
+  });
+
   // === MutationObserver: handle dynamically added content (React/Vue/Angular/Cloudflare) ===
   // The observer is only connected when tokenize is enabled. Keeping it
   // disconnected during page load avoids conflicts with Cloudflare Rocket
@@ -698,6 +717,7 @@ export async function createWebTokenizeController(
       onTokenClick: (term, block, element, token, event) =>
         options.onOpenDictionary?.(term, element, getSentenceText(block, token), event),
       onTokenCtrlClick: (term) => stateStore.toggleSelectedTerm(term),
+      isSelected: (term) => stateStore.getState().selectedTerms.has(term),
     };
   }
 
@@ -938,6 +958,7 @@ export async function createWebTokenizeController(
     destroy: () => {
       statusKeyControls.destroy();
       unsubscribe();
+      unsubscribeSelection();
       unsubscribeWordStatus();
       unsubscribeStatusesReload();
       scheduler.stop();

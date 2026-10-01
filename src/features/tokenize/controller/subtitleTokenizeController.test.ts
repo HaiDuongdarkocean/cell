@@ -469,4 +469,134 @@ describe('createSubtitleTokenizeController', () => {
 
     controller.destroy();
   });
+
+  it('ctrl+click marks the token selected and applies keys 1-4 to the whole selection', async () => {
+    const { target, cues, controller, onOpenDictionary } = setup();
+
+    target.textContent = cues[0]!.text;
+    controller.setCues(cues, []);
+    controller.enable();
+    controller.render(0, -1);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    const world = target.querySelector('[data-cell-term="world"]') as HTMLElement;
+    expect(hello).not.toBeNull();
+    expect(world).not.toBeNull();
+
+    hello.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+    world.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+
+    expect(onOpenDictionary).not.toHaveBeenCalled();
+    expect(controller.getState().selectedTerms.size).toBe(2);
+    expect(hello.className).toContain('js-cell-token--selected');
+    expect(world.className).toContain('js-cell-token--selected');
+
+    setWordStatus.mockClear();
+    expect(controller.handleStatusKey('3')).toBe(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'known');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'world', 'known');
+    expect(controller.getState().selectedTerms.size).toBe(0);
+    expect(hello.className).not.toContain('js-cell-token--selected');
+    expect(world.className).not.toContain('js-cell-token--selected');
+
+    controller.destroy();
+  });
+
+  it('toggleSelectedTerm shares the store the status keys read (cue-list path)', async () => {
+    const { target, cues, controller } = setup();
+
+    target.textContent = cues[0]!.text;
+    controller.setCues(cues, []);
+    controller.enable();
+    controller.render(0, -1);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const seen: number[] = [];
+    const unsubscribe = controller.subscribeSelection((terms) => seen.push(terms.size));
+
+    controller.toggleSelectedTerm('panel-term');
+    controller.toggleSelectedTerm('hello');
+
+    expect(controller.getState().selectedTerms.has('panel-term')).toBe(true);
+    expect(seen).toEqual([1, 2]);
+
+    setWordStatus.mockClear();
+    expect(controller.handleStatusKey('2')).toBe(true);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'panel-term', 'tracking');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
+    expect(controller.getState().selectedTerms.size).toBe(0);
+
+    unsubscribe();
+    controller.destroy();
+  });
+
+  it('Escape clears the selection and removes the selected wash', async () => {
+    const { target, cues, controller } = setup();
+
+    target.textContent = cues[0]!.text;
+    controller.setCues(cues, []);
+    controller.enable();
+    controller.render(0, -1);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    hello.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+    expect(hello.className).toContain('js-cell-token--selected');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    expect(controller.getState().selectedTerms.size).toBe(0);
+    expect(hello.className).not.toContain('js-cell-token--selected');
+
+    controller.destroy();
+  });
+
+  it('drops the selection when the active cue changes', async () => {
+    const { target, cues, controller } = setup();
+
+    target.textContent = cues[0]!.text;
+    controller.setCues(cues, []);
+    controller.enable();
+    controller.render(0, -1);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    hello.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+    expect(controller.getState().selectedTerms.size).toBe(1);
+
+    target.textContent = cues[1]!.text;
+    controller.render(1, -1);
+
+    expect(controller.getState().selectedTerms.size).toBe(0);
+
+    controller.destroy();
+  });
+
+  it('announces selection count changes through the shared live region', async () => {
+    const { target, cues, controller } = setup();
+
+    target.textContent = cues[0]!.text;
+    controller.setCues(cues, []);
+    controller.enable();
+    controller.render(0, -1);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    hello.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+
+    const region = document.getElementById('cell-token-selection-announcer');
+    expect(region?.getAttribute('aria-live')).toBe('polite');
+    expect(region?.textContent).toBe('1 selected');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(region?.textContent).toBe('Selection cleared');
+
+    controller.destroy();
+  });
 });

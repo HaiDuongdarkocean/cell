@@ -27,6 +27,11 @@ export interface SubtitleTokenizeController extends TokenizeController {
   /** Set/clear the hovered term — cue-list surfaces feed this via their
    *  tokenize adapter so status keys 1-4 apply to the hovered panel word. */
   setHoveredTerm(term: string | null): void;
+  /** Ctrl/Cmd-click toggle from cue-list surfaces — same store the status
+   *  keys read so keys 1-4 apply to cue-list selections. */
+  toggleSelectedTerm(term: string): void;
+  /** Subscribe to bulk-selection changes — fires only when the set changes. */
+  subscribeSelection(listener: (terms: ReadonlySet<string>) => void): () => void;
   /** Current tokenize state. */
   getState(): TokenizeState;
 }
@@ -97,6 +102,7 @@ export function createSubtitleTokenizeController(
       },
       onTokenClick: (term, block, element, _token, event) => onOpenDictionary(term, element, block.originalText, event),
       onTokenCtrlClick: (term) => stateStore.toggleSelectedTerm(term),
+      isSelected: (term) => stateStore.getState().selectedTerms.has(term),
     };
   }
 
@@ -116,6 +122,17 @@ export function createSubtitleTokenizeController(
         }
       })
       .catch(() => {});
+  });
+
+  let prevSelectedTerms = stateStore.getState().selectedTerms;
+  const unsubscribeSelection = stateStore.subscribe((state) => {
+    if (state.selectedTerms === prevSelectedTerms) return;
+    prevSelectedTerms = state.selectedTerms;
+    const bound = currentTargetBlock;
+    if (bound?.isBound && !restyleTokenBlock(bound, getDisplayOptions())) {
+      unbindTokenBlock(bound);
+      bindTokenBlock(bound, getDisplayOptions());
+    }
   });
 
   const unsubscribeMapUpdate = videoTokenMap.onUpdate((cueIndex: number) => {
@@ -236,6 +253,7 @@ export function createSubtitleTokenizeController(
       preloader.setCues(targetCues);
       clearCurrentBlocks();
       lastTargetIndex = -1;
+      stateStore.clearSelection();
     },
 
     rebind() {
@@ -246,10 +264,22 @@ export function createSubtitleTokenizeController(
 
     setHoveredTerm: (term) => stateStore.setHoveredTerm(term),
 
+    toggleSelectedTerm: (term) => stateStore.toggleSelectedTerm(term),
+
+    subscribeSelection(listener) {
+      let prev = stateStore.getState().selectedTerms;
+      return stateStore.subscribe((state) => {
+        if (state.selectedTerms === prev) return;
+        prev = state.selectedTerms;
+        listener(prev);
+      });
+    },
+
     render(activeTargetIndex, _activeNativeIndex) {
       const { target } = getLineElements();
       const targetText = targetCues[activeTargetIndex]?.text ?? '';
       const bound = currentTargetBlock;
+      if (activeTargetIndex !== lastTargetIndex) stateStore.clearSelection();
       lastTargetIndex = activeTargetIndex;
       if (!stateStore.getState().enabled) return;
 
@@ -284,6 +314,7 @@ export function createSubtitleTokenizeController(
       unsubscribeWordStatus();
       unsubscribeStatusesReload();
       unsubscribeMapUpdate();
+      unsubscribeSelection();
       preloader.destroy();
       scheduler.stop();
       clearCurrentBlocks();

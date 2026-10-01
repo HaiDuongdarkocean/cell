@@ -100,3 +100,78 @@ describe('CueList scroll desync (REQ-6)', () => {
     expect(syncPill()).toBeInTheDocument();
   });
 });
+
+describe('CueList bulk selection', () => {
+  function renderWithSelection() {
+    const terms = new Set<string>();
+    const listeners = new Set<(t: ReadonlySet<string>) => void>();
+    const tokenize = {
+      langCode: 'en',
+      onTokenClick: jest.fn(),
+      onTokenCtrlClick: jest.fn((term: string) => {
+        if (terms.has(term)) terms.delete(term);
+        else terms.add(term);
+        const next = new Set(terms);
+        for (const listener of listeners) listener(next);
+      }),
+      selection: {
+        getTerms: () => terms,
+        subscribe: (cb: (t: ReadonlySet<string>) => void) => {
+          listeners.add(cb);
+          return () => listeners.delete(cb);
+        },
+      },
+    };
+    renderList({ tokenize });
+    return tokenize;
+  }
+
+  function firstToken(): HTMLElement | null {
+    return document.querySelector<HTMLElement>('.js-cell-token[data-cell-term="first"]');
+  }
+
+  async function waitForFirstToken(): Promise<HTMLElement> {
+    let token: HTMLElement | null = null;
+    await waitFor(() => {
+      token = firstToken();
+      expect(token).not.toBeNull();
+    });
+    return token!;
+  }
+
+  it('ctrl+click toggles a term instead of opening the dictionary', async () => {
+    const tokenize = renderWithSelection();
+    const token = await waitForFirstToken();
+
+    fireEvent.click(token, { ctrlKey: true });
+
+    expect(tokenize.onTokenCtrlClick).toHaveBeenCalledWith('first');
+    expect(tokenize.onTokenClick).not.toHaveBeenCalled();
+    await waitFor(() => expect(token.className).toContain('js-cell-token--selected'));
+  });
+
+  it('plain click still opens the dictionary', async () => {
+    const tokenize = renderWithSelection();
+    const token = await waitForFirstToken();
+
+    fireEvent.click(token);
+
+    expect(tokenize.onTokenClick).toHaveBeenCalledWith(
+      'first',
+      token,
+      'first line',
+      expect.anything(),
+    );
+    expect(tokenize.onTokenCtrlClick).not.toHaveBeenCalled();
+  });
+
+  it('modifier click falls back to onTokenClick when no selection handler exists', async () => {
+    const onTokenClick = jest.fn();
+    renderList({ tokenize: { langCode: 'en', onTokenClick } });
+    const token = await waitForFirstToken();
+
+    fireEvent.click(token, { ctrlKey: true });
+
+    expect(onTokenClick).toHaveBeenCalled();
+  });
+});

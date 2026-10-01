@@ -785,6 +785,8 @@ export class ReactSubtitleController {
       langCode: options.langCode,
       onTokenClick: options.onOpenDictionary,
       onTokenHover: options.onTokenHover,
+      onTokenCtrlClick: options.onTokenCtrlClick,
+      selection: options.selection,
     });
   }
 

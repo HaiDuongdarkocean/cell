@@ -1,6 +1,7 @@
 import type { WordStatus } from '@/entities/dictionary';
 import type { TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import { extractTermsFromSelection } from '@/features/tokenize/utils/selectionTerms';
+import { createSelectionAnnouncer } from '@/features/tokenize/logic/selectionAnnouncer';
 import { isEditableEvent } from '@/shared/lib/dom/isEditable';
 
 const STATUS_BY_KEY: Readonly<Record<string, WordStatus>> = {
@@ -74,9 +75,13 @@ export function createStatusKeyControls(options: StatusKeyControlsOptions): Stat
   }
 
   window.addEventListener('keydown', handleKeydown, true);
+  const unsubscribeAnnouncer = createSelectionAnnouncer(stateStore);
 
   return {
     handleStatusKey: applyStatusKey,
-    destroy: () => window.removeEventListener('keydown', handleKeydown, true),
+    destroy: () => {
+      window.removeEventListener('keydown', handleKeydown, true);
+      unsubscribeAnnouncer();
+    },
   };
 }

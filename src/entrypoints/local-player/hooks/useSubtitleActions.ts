@@ -20,8 +20,10 @@ import {
 } from '@/shared/config/config';
 import { createWebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
-import type { LookupRequest } from '@/entities/dictionary';
+import type { LookupRequest, ClickModifierState } from '@/entities/dictionary';
 import type { CueListTokenize } from '@/features/subtitle/ui/CueList';
+import { createSubtitleTokenizeController, type SubtitleTokenizeController } from '@/features/tokenize';
+import { SPLIT_VIEW_PANEL_SELECTOR } from '@/features/subtitle/logic/scrollPositionPreserve';
 import { createCardCreatorActionPorts } from '@/features/cardCreator/service/cardCreatorActionPorts';
 import { handleCardCreatorAction } from '@/features/subtitle/actions/cardActions';
 import { startGenerateNative } from '@/features/subtitle/actions/generateNativeAction';
@@ -29,6 +31,8 @@ import type { SubtitleActionContext } from '@/features/subtitle/actions/subtitle
 import type { CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
 import { useCuesStore } from '@/features/subtitle/cuesStore';
 import type { SrtCue } from '@/entities/media';
+
+const EMPTY_SELECTED_TERMS: ReadonlySet<string> = new Set();
 
 export interface SubtitleActionHandlers {
   onQuickAdd: () => void;
@@ -55,6 +59,7 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
   const [generateNativeEnabled, setGenerateNativeEnabled] = useState(false);
   const [cueListTokenize, setCueListTokenize] = useState<CueListTokenize | null>(null);
   const webTextCtrlRef = useRef<WebTextDictionaryController | null>(null);
+  const subtitleTokenizeRef = useRef<SubtitleTokenizeController | null>(null);
   const dictionaryPopupRef = useRef<DictionaryPopupSettings>(DEFAULT_DICTIONARY_POPUP_SETTINGS);
 
   // Cues from global store (driven by SubtitleCueEngine).
@@ -72,6 +77,86 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
     });
     webTextCtrlRef.current = ctrl;
 
+    let subtitleLang = '';
+    let lastSyncedTarget: readonly SrtCue[] | null = null;
+    let lastSyncedNative: readonly SrtCue[] | null = null;
+    let rafId = 0;
+
+    const syncSubtitleCues = (): void => {
+      const subtitleCtrl = subtitleTokenizeRef.current;
+      if (!subtitleCtrl) return;
+      const s = useCuesStore.getState();
+      if (s.targetCues !== lastSyncedTarget || s.nativeCues !== lastSyncedNative) {
+        lastSyncedTarget = s.targetCues;
+        lastSyncedNative = s.nativeCues;
+        subtitleCtrl.setCues(s.targetCues, s.nativeCues);
+      }
+      subtitleCtrl.render(s.targetActiveIndex, s.nativeActiveIndex);
+    };
+
+    // React commits the new cue text after the store fires — re-render the
+    // overlay tokenization on the next frame so a fresh DOM line binds.
+    const scheduleSubtitleSync = (): void => {
+      syncSubtitleCues();
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(syncSubtitleCues);
+    };
+
+    const openTokenDictionary = (
+      langCode: string,
+      term: string,
+      element: HTMLElement,
+      contextSentence: string,
+      event?: ClickModifierState,
+    ): void => {
+      const dp = dictionaryPopupRef.current;
+      if (!dp.enabled || (event && !modifierMatches(dp.triggerMode, event))) return;
+      const request: LookupRequest = {
+        term,
+        langCode,
+        contextSentence,
+        cursorOffset: Number(element.getAttribute('data-cell-start') ?? 0),
+      };
+      const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      webTextCtrlRef.current?.handleLookup(
+        request,
+        requestId,
+        element.getBoundingClientRect(),
+        element,
+      );
+    };
+
+    const ensureSubtitleTokenize = (langCode: string): void => {
+      if (subtitleLang === langCode) return;
+      subtitleLang = langCode;
+      subtitleTokenizeRef.current?.destroy();
+      subtitleTokenizeRef.current = null;
+      lastSyncedTarget = null;
+      lastSyncedNative = null;
+      if (langCode === '') return;
+      const subtitleCtrl = createSubtitleTokenizeController({
+        langCode,
+        getLineElements: () => ({
+          target: document.querySelector<HTMLElement>(
+            '[data-cell-id="subtitle-block"] [data-role="target"] > span:not([data-cell-id])',
+          ),
+          native: document.querySelector<HTMLElement>(
+            '[data-cell-id="subtitle-block"] [data-role="native"] > span:not([data-cell-id])',
+          ),
+        }),
+        getExtraShadowRoots: () => {
+          const panel = document.querySelector<HTMLElement>(SPLIT_VIEW_PANEL_SELECTOR);
+          return panel?.shadowRoot ? [panel.shadowRoot] : [];
+        },
+        onOpenDictionary: (term, element, contextSentence, event) =>
+          openTokenDictionary(langCode, term, element, contextSentence, event),
+        getPopupStatusTarget: () => webTextCtrlRef.current?.getPopupStatusTarget() ?? null,
+      });
+      subtitleCtrl.enable();
+      subtitleTokenizeRef.current = subtitleCtrl;
+      syncSubtitleCues();
+    };
+
     const applySettings = (settings: Settings): void => {
       dictionaryPopupRef.current = settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS;
       ctrl.updateSettings({
@@ -81,27 +166,24 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
       });
       const langCode = getActiveProfileSettings(settings)?.resourceLangCode
         ?? (settings.subtitleOverlayTargetLanguage || '');
-      if (langCode === '') return;
+      ensureSubtitleTokenize(langCode);
+      if (langCode === '') {
+        setCueListTokenize(null);
+        return;
+      }
       setCueListTokenize((prev) => {
         if (prev?.langCode === langCode) return prev;
         return {
           langCode,
-          onTokenClick: (term, element, contextSentence, event) => {
-            const dp = dictionaryPopupRef.current;
-            if (!dp.enabled || (event && !modifierMatches(dp.triggerMode, event))) return;
-            const request: LookupRequest = {
-              term,
-              langCode,
-              contextSentence,
-              cursorOffset: Number(element.getAttribute('data-cell-start') ?? 0),
-            };
-            const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-            webTextCtrlRef.current?.handleLookup(
-              request,
-              requestId,
-              element.getBoundingClientRect(),
-              element,
-            );
+          onTokenClick: (term, element, contextSentence, event) =>
+            openTokenDictionary(langCode, term, element, contextSentence, event),
+          onTokenHover: (term) => subtitleTokenizeRef.current?.setHoveredTerm(term),
+          onTokenCtrlClick: (term) => subtitleTokenizeRef.current?.toggleSelectedTerm(term),
+          selection: {
+            getTerms: () =>
+              subtitleTokenizeRef.current?.getState().selectedTerms ?? EMPTY_SELECTED_TERMS,
+            subscribe: (cb) =>
+              subtitleTokenizeRef.current?.subscribeSelection(cb) ?? (() => {}),
           },
         };
       });
@@ -116,11 +198,17 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
       void loadSettings().then(applySettings);
     };
     onStorageChanged(onSettingsChange);
+    const unsubscribeCues = useCuesStore.subscribe(scheduleSubtitleSync);
 
     return () => {
+      unsubscribeCues();
+      cancelAnimationFrame(rafId);
       removeOnStorageChangedListener(onSettingsChange);
       ctrl.destroy();
       webTextCtrlRef.current = null;
+      subtitleTokenizeRef.current?.destroy();
+      subtitleTokenizeRef.current = null;
+      subtitleLang = '';
       setCueListTokenize(null);
     };
   }, [videoRef]);

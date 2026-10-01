@@ -1320,6 +1320,8 @@
   "srs.css.save": "Save CSS",
   "srs.css.saved": "Saved",
   "cueList.seekTo": "Seek to $1",
+  "tokenize.selection.count": "$1 selected",
+  "tokenize.selection.cleared": "Selection cleared",
   "subtitle.action.apply": "Apply",
   "subtitle.action.cancel": "Cancel",
   "subtitle.action.delete": "Delete",

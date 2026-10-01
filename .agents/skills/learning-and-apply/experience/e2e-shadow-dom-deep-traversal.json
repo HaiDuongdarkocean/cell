@@ -1,0 +1,17 @@
+{
+  "id": "e2e-shadow-dom-deep-traversal",
+  "title": "Playwright specs must deep-traverse shadow roots for Cell subtitle surfaces — the split-view panel host and #cell-subtitle-root are shadow hosts, and term-based CSS selectors break on apostrophes",
+  "category": ["testing", "e2e"],
+  "tags": ["e2e", "shadow-dom", "playwright", "deep-query", "subtitle", "cue-list", "click-occlusion"],
+  "trigger": "An e2e spec queries subtitle tokens or the split-view panel with document.querySelector/locator and finds zero elements even though they are rendered",
+  "principle": "Cell subtitle UI lives in shadow roots (#cell-subtitle-root, [data-cell-split-view=\"panel\"]). document.querySelector cannot pierce them — use a recursive page.evaluate walker that descends every element's shadowRoot, or locate the host first and query inside its shadowRoot. For term lookups never build [data-cell-term=\"...\"] CSS selectors — subtitle terms contain apostrophes/quotes that break the selector; match getAttribute('data-cell-term') in JS instead. When the host page's layout occludes a token's clickable point, dispatch a composed MouseEvent directly on the element — it still exercises the real React/DOM handler.",
+  "cases": [
+    {
+      "context": "subtitle-bulk-status e2e: all token counts read 0 until helpers walked shadow roots recursively; the term \"isn't\" crashed a CSS selector; real clicks on cue-list tokens hit the mock page's _playerSection overlay so a composed dispatch was used.",
+      "bad": "document.querySelector('.js-cell-token'); page.click('[data-cell-term=\"isn\\'t\"]')",
+      "good": "walk(root){root.querySelectorAll(sel);for(el of root.querySelectorAll('*'))el.shadowRoot&&walk(el.shadowRoot)} + match getAttribute('data-cell-term')===term"
+    }
+  ],
+  "applyFor": ["any e2e spec asserting inside Cell subtitle overlay/split-view/Player Mode surfaces", "e2e specs clicking subtitle tokens by term"],
+  "source": { "date": "2026-10-01" }
+}

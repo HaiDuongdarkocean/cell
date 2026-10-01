@@ -14,6 +14,8 @@ export interface TokenSpanBindOptions {
   readonly onTokenClick?: (term: string, block: TokenBlock, element: HTMLElement, token: Token, event: MouseEvent) => void;
   /** Ctrl/Cmd+click a word token to multi-select. */
   readonly onTokenCtrlClick?: (term: string, block: TokenBlock, element: HTMLElement) => void;
+  /** Whether the term is in the bulk selection — marks the selected wash. */
+  readonly isSelected?: (term: string) => boolean;
 }
 
 export const TOKEN_CLASS = 'js-cell-token';
@@ -41,6 +43,11 @@ function applyTokenClasses(span: HTMLElement, token: Token, options: TokenSpanBi
   }
   if (token.frequencyBand && token.frequencyBand !== 'none') {
     span.classList.add(`${TOKEN_CLASS}--frequency-${token.frequencyBand}`);
+  }
+  if (options.isSelected?.(token.term)) {
+    span.classList.add(`${TOKEN_CLASS}--selected`);
+  } else {
+    span.classList.remove(`${TOKEN_CLASS}--selected`);
   }
   if (!options.showStatus) {
     span.classList.add(`${TOKEN_CLASS}--status-off`);

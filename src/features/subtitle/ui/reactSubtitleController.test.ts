@@ -590,6 +590,8 @@ describe('ReactSubtitleController', () => {
       langCode: 'en',
       onTokenClick: tokenizeOptions.onOpenDictionary,
       onTokenHover: tokenizeOptions.onTokenHover,
+      onTokenCtrlClick: undefined,
+      selection: undefined,
     });
 
     controller.disableTokenize();

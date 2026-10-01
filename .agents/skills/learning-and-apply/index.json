@@ -3128,6 +3128,25 @@
         "jsdom"
       ],
       "trigger": "instrumenting content-script code with performance.mark or testing it in jsdom"
+    },
+    {
+      "type": "experience",
+      "id": "e2e-shadow-dom-deep-traversal",
+      "title": "Cell subtitle surfaces live in shadow roots — e2e specs need recursive deep-query helpers, attribute matching for term selectors, and composed dispatch when page layout occludes tokens",
+      "category": [
+        "testing",
+        "e2e"
+      ],
+      "tags": [
+        "e2e",
+        "shadow-dom",
+        "playwright",
+        "deep-query",
+        "subtitle",
+        "cue-list",
+        "click-occlusion"
+      ],
+      "trigger": "an e2e spec queries subtitle tokens or the split-view panel with document.querySelector/locator and finds zero elements even though they render"
     }
   ]
 }
