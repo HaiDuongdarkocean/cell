@@ -186,12 +186,12 @@
 
 @media (hover: hover) and (pointer: fine) {
   .option:hover::after {
-    background: var(--color-overlay-hover);
+    background: var(--color-surface-hover);
   }
 }
 
 .optionHighlighted::after {
-  background: var(--color-overlay-hover);
+  background: var(--color-surface-hover);
 }
 
 .option:active::after {

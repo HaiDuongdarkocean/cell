@@ -70,6 +70,7 @@ Có 9 core color keys: `primary`, `background`, `surface`, `text`, `textSecondar
 | `--color-surface` | Card, panel, primary container |
 | `--color-field` | Control nằm trong card (input/select/tonal row) — resting inset, borderless |
 | `--color-field-hover` | Hover trên field |
+| `--color-field-hover-solid` | **Nền panel nổi** (dropdown của select) — cùng màu `--color-field-hover` nhưng đục hoàn toàn. Bắt buộc cho layer bay trên content: token trong suốt làm nền sẽ để nội dung phía sau xuyên qua. |
 | `--color-field-active` | Pressed/trạng thái giữ trên field |
 | `--color-surface-elevated` | Popover, dropdown, tooltip, elevated card |
 | `--color-surface-hover` | Hover state trên surface |
