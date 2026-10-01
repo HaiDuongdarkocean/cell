@@ -241,10 +241,11 @@
 
 .option:hover,
 .optionHighlighted {
-  background: var(--color-overlay-hover);
+  background: var(--color-surface-hover);
 }
 
 .optionSelected {
+  background: var(--color-primary-subtle);
   color: var(--color-primary);
 }
 
