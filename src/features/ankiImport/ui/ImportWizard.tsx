@@ -507,9 +507,7 @@ function MappingStep({
       fields,
       createdAt: 0,
     };
-    const stimulus = resolveReviewSurface(note, defaultNt, 'meaning', audioCache, imageCache)?.stimulus
-      ?? { type: 'sentence' as const, payload: {} };
-    return { note, stimulus, audioCache, imageCache, mediaRequests };
+    return { note, audioCache, imageCache, mediaRequests };
   }, [nt, sample, mapping, defaultNt]);
 
   const [liveMedia, setLiveMedia] = useState<{
@@ -542,6 +540,11 @@ function MappingStep({
 
   const audioCache = liveMedia?.audio ?? preview?.audioCache;
   const imageCache = liveMedia?.image ?? preview?.imageCache;
+  const stimulus = useMemo(() => {
+    if (!preview || !audioCache || !imageCache) return null;
+    return resolveReviewSurface(preview.note, defaultNt, 'meaning', audioCache, imageCache)?.stimulus
+      ?? { type: 'sentence' as const, payload: {} };
+  }, [preview, audioCache, imageCache, defaultNt]);
 
   if (!nt) {
     return <Text variant="supporting">{t('ankiImport.mapping.noneSelected')}</Text>;
@@ -646,7 +649,7 @@ function MappingStep({
             </IconButton>
           </HStack>
         </div>
-        {preview && audioCache && imageCache && (
+        {preview && stimulus && audioCache && imageCache && (
           <Card
             className={styles.previewCardWrap}
             data-cell-id="anki-preview-card"
@@ -662,7 +665,7 @@ function MappingStep({
             ) : (
               <SrsReviewCardFront
                 note={preview.note}
-                stimulus={preview.stimulus}
+                stimulus={stimulus}
                 isSpelling={false}
                 typedInput=""
                 onTypedInputChange={() => {}}
