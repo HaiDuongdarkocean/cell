@@ -1433,6 +1433,130 @@
       "owner": null,
       "worktree": null,
       "updated": "2026-10-01T21:36:29.672Z"
+    },
+    "lookup-latency-marks": {
+      "stage": "shipped",
+      "mode": "all",
+      "uiSurface": "no",
+      "artifacts": {
+        "intent": "docs/intent/lookup-latency-marks.md",
+        "spec": "docs/specs/lookup-latency-marks.md"
+      },
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-10-01T21:55:37.812Z",
+          "head": "38396f2e9d6865afa71b2d110c2d09be94e8d23a",
+          "dirty": [
+            "src/features/dictionaryPopup/controller/popupLifecycle.ts",
+            "src/features/dictionaryPopup/logic/useDictionaryToolbar.test.ts",
+            "src/features/dictionaryPopup/logic/useDictionaryToolbar.ts",
+            "src/features/dictionaryPopup/ui/PronunciationAudioPanel.tsx",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/lookup-latency-marks.md",
+            "docs/reviews/lookup-latency-marks-analyze.md",
+            "docs/reviews/lookup-latency-marks-spec.md",
+            "docs/specs/lookup-latency-marks.md",
+            "e2e/extension-latency-marks.spec.ts",
+            "src/features/dictionaryPopup/controller/popupLifecycle.perfMarks.test.ts",
+            "src/shared/lib/perfMarks.test.ts",
+            "src/shared/lib/perfMarks.ts"
+          ]
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-10-01T21:56:15.857Z",
+          "head": "38396f2e9d6865afa71b2d110c2d09be94e8d23a",
+          "dirty": [
+            "src/features/dictionaryPopup/controller/popupLifecycle.ts",
+            "src/features/dictionaryPopup/logic/useDictionaryToolbar.test.ts",
+            "src/features/dictionaryPopup/logic/useDictionaryToolbar.ts",
+            "src/features/dictionaryPopup/ui/PronunciationAudioPanel.tsx",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/lookup-latency-marks.md",
+            "docs/reviews/lookup-latency-marks-analyze.md",
+            "docs/reviews/lookup-latency-marks-spec.md",
+            "docs/specs/lookup-latency-marks.md",
+            "e2e/extension-latency-marks.spec.ts",
+            "src/features/dictionaryPopup/controller/popupLifecycle.perfMarks.test.ts",
+            "src/shared/lib/perfMarks.test.ts",
+            "src/shared/lib/perfMarks.ts"
+          ]
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-10-01T21:59:09.693Z",
+          "head": "38396f2e9d6865afa71b2d110c2d09be94e8d23a",
+          "dirty": [
+            "src/features/dictionaryPopup/controller/popupLifecycle.ts",
+            "src/features/dictionaryPopup/logic/useDictionaryToolbar.test.ts",
+            "src/features/dictionaryPopup/logic/useDictionaryToolbar.ts",
+            "src/features/dictionaryPopup/ui/PronunciationAudioPanel.tsx",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/lookup-latency-marks.md",
+            "docs/reviews/lookup-latency-marks-analyze.md",
+            "docs/reviews/lookup-latency-marks-spec.md",
+            "docs/specs/lookup-latency-marks.md",
+            "e2e/extension-latency-marks.spec.ts",
+            "src/features/dictionaryPopup/controller/popupLifecycle.perfMarks.test.ts",
+            "src/shared/lib/perfMarks.test.ts",
+            "src/shared/lib/perfMarks.ts"
+          ]
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-10-01T21:59:20.900Z",
+          "head": "38396f2e9d6865afa71b2d110c2d09be94e8d23a",
+          "dirty": [
+            "src/features/dictionaryPopup/controller/popupLifecycle.ts",
+            "src/features/dictionaryPopup/logic/useDictionaryToolbar.test.ts",
+            "src/features/dictionaryPopup/logic/useDictionaryToolbar.ts",
+            "src/features/dictionaryPopup/ui/PronunciationAudioPanel.tsx",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/lookup-latency-marks.md",
+            "docs/reviews/lookup-latency-marks-analyze.md",
+            "docs/reviews/lookup-latency-marks-spec.md",
+            "docs/specs/lookup-latency-marks.md",
+            "e2e/extension-latency-marks.spec.ts",
+            "src/features/dictionaryPopup/controller/popupLifecycle.perfMarks.test.ts",
+            "src/shared/lib/perfMarks.test.ts",
+            "src/shared/lib/perfMarks.ts"
+          ]
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-10-01T22:00:55.820Z",
+          "head": "38396f2e9d6865afa71b2d110c2d09be94e8d23a",
+          "dirty": [
+            "docs/2-architechture-system.md",
+            "src/features/dictionaryPopup/controller/popupLifecycle.ts",
+            "src/features/dictionaryPopup/logic/useDictionaryToolbar.test.ts",
+            "src/features/dictionaryPopup/logic/useDictionaryToolbar.ts",
+            "src/features/dictionaryPopup/ui/PronunciationAudioPanel.tsx",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/lookup-latency-marks.md",
+            "docs/reviews/lookup-latency-marks-analyze.md",
+            "docs/reviews/lookup-latency-marks-spec.md",
+            "docs/specs/lookup-latency-marks.md",
+            "e2e/extension-latency-marks.spec.ts",
+            "src/features/dictionaryPopup/controller/popupLifecycle.perfMarks.test.ts",
+            "src/shared/lib/perfMarks.test.ts",
+            "src/shared/lib/perfMarks.ts"
+          ]
+        }
+      },
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "owner": null,
+      "worktree": null,
+      "updated": "2026-10-01T22:05:49.287Z"
     }
   }
 }
