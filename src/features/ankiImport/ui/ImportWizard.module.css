@@ -125,20 +125,7 @@
 .fieldRows {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-}
-
-.fieldRow {
   gap: var(--space-3);
-}
-
-.fieldLabel {
-  flex: 0 1 auto;
-}
-
-.fieldSelect {
-  flex: 1;
-  min-width: 0;
 }
 
 .fieldIcon {
@@ -266,10 +253,6 @@
 @media (max-width: 560px) {
   .sourceGrid {
     grid-template-columns: 1fr;
-  }
-
-  .fieldRow {
-    gap: var(--space-2);
   }
 
   .pickCounts {

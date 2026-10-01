@@ -573,15 +573,13 @@ function MappingStep({
           {SYSTEM_SLOTS.map(({ role, fieldId, icon }) => {
             const sources = fieldsForRole(role);
             return (
-              <SettingsRow key={fieldId} flush className={styles.fieldRow}>
+              <SettingsRow key={fieldId} dense stacked>
                 <LabelGroup
                   icon={<Icon name={icon} />}
                   label={t(`ankiImport.role.${role}`)}
-                  className={styles.fieldLabel}
                 />
                 <Select
                   size="sm"
-                  className={styles.fieldSelect}
                   value={sources[0] ?? ''}
                   options={[
                     { value: '', label: t('ankiImport.role.skip') },
