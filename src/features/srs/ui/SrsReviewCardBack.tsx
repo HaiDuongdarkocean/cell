@@ -171,25 +171,27 @@ export function SrsReviewCardBack({
         onFlipBack();
       }}
     >
-      <Heading level={1} className={styles.targetWord}>{note.targetWord}</Heading>
+      <div className={styles.backHead}>
+        <Heading level={1} className={styles.targetWord}>{note.targetWord}</Heading>
 
-      {note.fields.sentence?.kind === 'text' && (
-        <HighlightedSentence sentence={note.fields.sentence.value} target={note.targetWord} />
-      )}
+        {note.fields.sentence?.kind === 'text' && (
+          <HighlightedSentence sentence={note.fields.sentence.value} target={note.targetWord} />
+        )}
 
-      {hasTranslation && (
-        translationRevealed ? (
-          <Text className={styles.translation}>{fieldText(note.fields.translation)}</Text>
-        ) : (
-          <button
-            type="button"
-            className={styles.translationHint}
-            onClick={() => { setTranslationRevealed(true); }}
-          >
-            {t('srs.review.sentenceTranslation')}
-          </button>
-        )
-      )}
+        {hasTranslation && (
+          translationRevealed ? (
+            <Text className={styles.translation}>{fieldText(note.fields.translation)}</Text>
+          ) : (
+            <button
+              type="button"
+              className={styles.translationHint}
+              onClick={() => { setTranslationRevealed(true); }}
+            >
+              {t('srs.review.sentenceTranslation')}
+            </button>
+          )
+        )}
+      </div>
 
       {(hasSentAudio || hasWordAudio) && (
         <Box className={styles.audioRow}>
@@ -219,9 +221,11 @@ export function SrsReviewCardBack({
       )}
 
       {note.fields.def ? (
-        parseDefEntries(fieldText(note.fields.def)).map((entry, i) => (
-          <DefEntryBlock key={i} entry={entry} />
-        ))
+        <div className={styles.defList}>
+          {parseDefEntries(fieldText(note.fields.def)).map((entry, i) => (
+            <DefEntryBlock key={i} entry={entry} />
+          ))}
+        </div>
       ) : ipa ? (
         <Box className={styles.defBlock}>
           <Box className={styles.defHeader}>
