@@ -74,7 +74,6 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
   const acceptData = useCallback((d: NormalizedAnkiData) => {
     setData(d);
     setNoScheduling(!d.hasScheduling);
-    setDeckIds(new Set(d.decks.filter((x) => !x.filtered).map((x) => x.id)));
     setNtIds(new Set(d.notetypes.filter((x) => !x.isCloze).map((x) => x.id)));
     setStep('scope');
   }, []);
