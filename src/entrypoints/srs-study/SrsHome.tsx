@@ -151,7 +151,9 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
     const names = payload.data.decks
       .filter((d) => !d.filtered && payload.selection.deckIds.has(d.id))
       .map((d) => flattenDeckName(d.name));
-    const title = names.length > 1 ? `${names[0]} +${names.length - 1}` : names[0] ?? '';
+    const title = names.length > 1
+      ? t('ankiImport.job.titleMany', [names[0]!, names.length - 1])
+      : names[0] ?? '';
     setImportJob({ status: 'running', done: 0, total: payload.data.cards.length, title });
     try {
       const report = await importNormalized({
