@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert, Badge, Button, Card, Checkbox, Dialog, FlagIcon, Icon, IconButton,
-  Progress, SectionHeader, Select, SelectableCard, Separator, Spinner, Text,
+  Alert, Badge, Button, Card, Checkbox, Dialog, Icon, IconButton,
+  SectionHeader, Select, SelectableCard, Separator, Spinner, Text,
   HStack, VStack,
 } from '@/shared/ui';
 import { t } from '@/shared/i18n';
-import { loadSettings } from '@/shared/lib/storage/settingsStore';
-import type { LanguageProfile } from '@/entities/settings';
 import type { SrsAudioAsset, SrsImageAsset, SrsNote } from '@/entities/srs/types';
 import {
   audioAssetId, createDefaultNotetype, imageAssetId, resolveReviewSurface,
@@ -14,7 +12,6 @@ import {
 } from '@/features/srs';
 import { buildDeckPickerRows, resolveHomeDeckId } from '../logic/deckFlatten';
 import { buildNoteFields, guessFieldMapping } from '../logic/fieldMapping';
-import { importNormalized, ImportError, type ImportReport } from '../logic/importWriter';
 import type {
   FieldMapping, FieldRole, ImportSelection, NormalizedAnkiData, NormalizedAnkiNote, NormalizedAnkiNotetype,
 } from '../model/normalized';
@@ -22,21 +19,24 @@ import { loadMappingPreset, saveMappingPreset } from '../services/mappingPresets
 import { checkAnkiConnect, readFromApkg, readFromConnect } from '../services/importController';
 import styles from './ImportWizard.module.css';
 
-type Step = 'source' | 'scope' | 'language' | 'mapping' | 'running' | 'report';
+type Step = 'source' | 'scope' | 'mapping';
 
-const STEPS: readonly Step[] = ['source', 'scope', 'language', 'mapping', 'running', 'report'];
-const STEP_INDEX: Record<Step, number> = { source: 1, scope: 2, language: 3, mapping: 4, running: 5, report: 6 };
+const STEPS: readonly Step[] = ['source', 'scope', 'mapping'];
+const STEP_INDEX: Record<Step, number> = { source: 1, scope: 2, mapping: 3 };
 
-
+export interface AnkiImportStartPayload {
+  readonly data: NormalizedAnkiData;
+  readonly selection: ImportSelection;
+  readonly mappings: Readonly<Record<string, FieldMapping>>;
+}
 
 export interface ImportWizardProps {
   readonly open: boolean;
   readonly onClose: () => void;
-  readonly onStudyNow: () => void;
-  readonly onImported: () => void;
+  readonly onStart: (payload: AnkiImportStartPayload) => void;
 }
 
-export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWizardProps): React.JSX.Element {
+export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): React.JSX.Element {
   const [step, setStep] = useState<Step>('source');
   const [data, setData] = useState<NormalizedAnkiData | null>(null);
   const [connecting, setConnecting] = useState(false);
@@ -47,16 +47,10 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
   const [noScheduling, setNoScheduling] = useState(false);
   const [deckIds, setDeckIds] = useState<ReadonlySet<string>>(new Set());
   const [ntIds, setNtIds] = useState<ReadonlySet<string>>(new Set());
-  const [profiles, setProfiles] = useState<readonly LanguageProfile[]>([]);
-  const [targetLanguage, setTargetLanguage] = useState('');
   const [mappings, setMappings] = useState<Record<string, FieldMapping>>({});
   const [activeNtIdx, setActiveNtIdx] = useState(0);
   const [sampleIdx, setSampleIdx] = useState(0);
-  const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
-  const [report, setReport] = useState<ImportReport | null>(null);
-  const [reportPartial, setReportPartial] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
 
   const reset = useCallback(() => {
     setStep('source');
@@ -71,23 +65,11 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
     setMappings({});
     setActiveNtIdx(0);
     setSampleIdx(0);
-    setProgress({ done: 0, total: 0 });
-    setReport(null);
-    setReportPartial(false);
   }, []);
 
   useEffect(() => {
     if (open) reset();
   }, [open, reset]);
-
-  useEffect(() => {
-    if (!open) return;
-    void loadSettings().then((s) => {
-      setProfiles(s.languageProfiles);
-      const active = s.languageProfiles.find((p) => p.id === s.activeProfileId) ?? s.languageProfiles[0];
-      if (active) setTargetLanguage(active.target);
-    }).catch(() => {});
-  }, [open]);
 
   const acceptData = useCallback((d: NormalizedAnkiData) => {
     setData(d);
@@ -104,10 +86,7 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
     try {
       const ok = await checkAnkiConnect();
       if (!ok) { setConnectFailed(true); return; }
-      const d = await readFromConnect({
-        onStage: (_s, done, total) => setProgress({ done, total }),
-      });
-      acceptData(d);
+      acceptData(await readFromConnect());
     } catch (err) {
       setErrorSource('connect');
       setError(err instanceof Error ? err.message : String(err));
@@ -153,65 +132,35 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, data]);
 
-  const runImport = useCallback(async () => {
+  const startImport = useCallback(() => {
     if (!data) return;
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setStep('running');
-    setProgress({ done: 0, total: data.cards.length });
-    try {
-      for (const nt of selectedNt) {
-        if (mappings[nt.id]) void saveMappingPreset(nt.name, mappings[nt.id]!);
-      }
-      const rep = await importNormalized({
-        data,
-        selection: { deckIds, notetypeIds: ntIds } satisfies ImportSelection,
-        mappings,
-        targetLanguage,
-        now: new Date(),
-        signal: controller.signal,
-        onProgress: (done, total) => setProgress({ done, total }),
-      });
-      setReport(rep);
-      setReportPartial(false);
-      setStep('report');
-      onImported();
-    } catch (err) {
-      if (err instanceof ImportError && err.code === 'ABORTED') {
-        setReport(null);
-        setReportPartial(true);
-        setStep('report');
-        onImported();
-      } else {
-        setErrorSource('run');
-        setError(err instanceof Error ? err.message : String(err));
-        setStep('report');
-      }
+    for (const nt of selectedNt) {
+      if (mappings[nt.id]) void saveMappingPreset(nt.name, mappings[nt.id]!);
     }
-  }, [data, deckIds, ntIds, mappings, targetLanguage, selectedNt, onImported]);
-
-  const cancelRun = useCallback(() => abortRef.current?.abort(), []);
+    onStart({
+      data,
+      selection: { deckIds, notetypeIds: ntIds },
+      mappings,
+    });
+    onClose();
+  }, [data, selectedNt, mappings, deckIds, ntIds, onStart, onClose]);
 
   const canContinue = useMemo(() => {
     switch (step) {
       case 'scope': return deckIds.size > 0;
-      case 'language': return targetLanguage !== '';
       case 'mapping': return selectedNt.length === 0 || selectedNt.every((n) => mappings[n.id]);
       default: return false;
     }
-  }, [step, deckIds, targetLanguage, selectedNt, mappings]);
+  }, [step, deckIds, selectedNt, mappings]);
 
   const goNext = useCallback(() => {
-    if (step === 'scope') setStep('language');
-    else if (step === 'language') { setActiveNtIdx(0); setSampleIdx(0); setStep('mapping'); }
-    else if (step === 'mapping') void runImport();
-  }, [step, runImport]);
+    if (step === 'scope') { setActiveNtIdx(0); setSampleIdx(0); setStep('mapping'); }
+    else if (step === 'mapping') startImport();
+  }, [step, startImport]);
 
   const goBack = useCallback(() => {
     if (step === 'scope') { setStep('source'); setData(null); }
-    else if (step === 'language') setStep('scope');
-    else if (step === 'mapping') setStep('language');
+    else if (step === 'mapping') setStep('scope');
   }, [step]);
 
   const body = (
@@ -237,9 +186,6 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
           onDeckIds={setDeckIds}
         />
       )}
-      {step === 'language' && (
-        <LanguageStep profiles={profiles} value={targetLanguage} onChange={setTargetLanguage} />
-      )}
       {step === 'mapping' && data && (
         <MappingStep
           data={data}
@@ -254,31 +200,17 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
           onNtIds={setNtIds}
         />
       )}
-      {step === 'running' && <RunningStep progress={progress} onCancel={cancelRun} />}
-      {step === 'report' && <ReportStep report={report} partial={reportPartial} error={error} fidelity={data?.fidelity ?? null} />}
     </>
   );
 
-  const footer = step === 'running' ? undefined
-    : step === 'report' ? (
-      <>
-        <Button variant="ghost" onClick={onClose}>{t('ankiImport.action.close')}</Button>
-        {report && report.importedCards > 0 && (
-          <Button variant="primary" onClick={() => { onClose(); onStudyNow(); }}>{t('ankiImport.action.studyNow')}</Button>
-        )}
-      </>
-    ) : (
-      <>
-        {step !== 'source' && (
-          <Button variant="ghost" onClick={goBack}>{t('ankiImport.action.back')}</Button>
-        )}
-        {step !== 'source' && (
-          <Button variant="primary" onClick={goNext} disabled={!canContinue}>
-            {step === 'mapping' ? t('ankiImport.action.start') : t('ankiImport.action.continue')}
-          </Button>
-        )}
-      </>
-    );
+  const footer = step === 'source' ? undefined : (
+    <>
+      <Button variant="ghost" onClick={goBack}>{t('ankiImport.action.back')}</Button>
+      <Button variant="primary" onClick={goNext} disabled={!canContinue}>
+        {step === 'mapping' ? t('ankiImport.action.start') : t('ankiImport.action.continue')}
+      </Button>
+    </>
+  );
 
   return (
     <>
@@ -306,8 +238,7 @@ export function ImportWizard({ open, onClose, onStudyNow, onImported }: ImportWi
 
 function StepRail({ step }: { step: Step }): React.JSX.Element {
   const labels = [
-    t('ankiImport.rail.source'), t('ankiImport.rail.scope'), t('ankiImport.rail.language'),
-    t('ankiImport.rail.fields'), t('ankiImport.rail.run'), t('ankiImport.rail.result'),
+    t('ankiImport.rail.source'), t('ankiImport.rail.scope'), t('ankiImport.rail.fields'),
   ];
   const idx = STEP_INDEX[step];
   return (
@@ -456,28 +387,6 @@ function ScopeStep({
         {t('ankiImport.scope.summary', [summary.importable])}
         {summary.cloze > 0 ? ` · ${t('ankiImport.scope.clozeSkipped', [summary.cloze])}` : ''}
       </Text>
-    </VStack>
-  );
-}
-
-function LanguageStep({
-  profiles, value, onChange,
-}: {
-  readonly profiles: readonly LanguageProfile[];
-  readonly value: string;
-  readonly onChange: (v: string) => void;
-}): React.JSX.Element {
-  const options = profiles.length > 0
-    ? profiles.map((p) => ({ value: p.target, label: p.name || p.target }))
-    : [{ value, label: value }];
-  return (
-    <VStack gap="3">
-      <Text>{t('ankiImport.language.prompt')}</Text>
-      <Select value={value} onChange={onChange} options={options} aria-label={t('ankiImport.language.label')} />
-      <HStack gap="2">
-        <FlagIcon lang={value} size={18} />
-        <Text variant="supporting" color="secondary">{t('ankiImport.language.mergeHint')}</Text>
-      </HStack>
     </VStack>
   );
 }
@@ -662,61 +571,4 @@ function MappingStep({
   );
 }
 
-function RunningStep({ progress, onCancel }: { readonly progress: { done: number; total: number }; readonly onCancel: () => void }): React.JSX.Element {
-  const pct = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
-  return (
-    <div className={styles.centerCol}>
-      <HStack gap="2" className={styles.runRow}>
-        <Progress value={pct} style={{ flex: 1 }} aria-label={t('ankiImport.run.progress', [progress.done, progress.total])} />
-        <Text variant="supporting" color="secondary" className={styles.runCount}>
-          {`${progress.done} / ${progress.total}`}
-        </Text>
-        <IconButton size="sm" variant="ghost" aria-label={t('ankiImport.run.cancel')} onClick={onCancel}>
-          <Icon name="x" />
-        </IconButton>
-      </HStack>
-    </div>
-  );
-}
 
-function ReportStep({
-  report, partial, error, fidelity,
-}: {
-  readonly report: ImportReport | null;
-  readonly partial: boolean;
-  readonly error: string | null;
-  readonly fidelity: 'full' | 'estimated' | null;
-}): React.JSX.Element {
-  if (error) {
-    return <Alert variant="error" icon={<Icon name="info" />} title={t('ankiImport.report.failed')} description={error} />;
-  }
-  type IconName = React.ComponentProps<typeof Icon>['name'];
-  const rows: { icon: IconName; label: string; value: string }[] = report
-    ? [
-      { icon: 'check', label: t('ankiImport.report.imported'), value: String(report.importedCards) },
-      { icon: 'x', label: t('ankiImport.report.suspended'), value: String(report.skippedSuspended) },
-      { icon: 'x', label: t('ankiImport.report.cloze'), value: String(report.skippedCloze) },
-      { icon: 'rotateCcw', label: t('ankiImport.report.duplicates'), value: String(report.duplicates) },
-      { icon: 'info', label: t('ankiImport.report.failedCards'), value: String(report.failedCards) },
-      { icon: 'image', label: t('ankiImport.report.media'), value: `${report.mediaHits} ✓ · ${report.mediaMisses} ✗` },
-      { icon: 'checkDouble', label: t('ankiImport.report.reviews'), value: String(report.reviewRecords) },
-      { icon: 'folderOpen', label: t('ankiImport.report.decks'), value: String(report.decksCreated) },
-    ]
-    : [];
-  return (
-    <VStack gap="3">
-      {partial && <Alert variant="warning" icon={<Icon name="info" />} description={t('ankiImport.report.cancelled')} />}
-      <div className={styles.reportList}>
-        {rows.map((r) => (
-          <div key={r.label} className={styles.reportRow}>
-            <HStack gap="2"><Icon name={r.icon} /><Text>{r.label}</Text></HStack>
-            <Text variant="label" className={styles.reportValue}>{r.value}</Text>
-          </div>
-        ))}
-      </div>
-      {fidelity === 'estimated' && (
-        <Alert variant="default" icon={<Icon name="info" />} description={t('ankiImport.report.fidelityEstimated')} />
-      )}
-    </VStack>
-  );
-}

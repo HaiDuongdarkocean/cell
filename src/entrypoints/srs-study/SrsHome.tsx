@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Badge, Box, Button, Checkbox, ConfirmDialog, Dialog, FlagIcon, Heading, Input, Menu, MenuItem, Text } from '@/shared/ui';
+import { Badge, Box, Button, Checkbox, ConfirmDialog, Dialog, FlagIcon, Heading, Input, Menu, MenuItem, Spinner, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { spawnRipple } from '@/shared/lib/dom/ripple';
@@ -10,7 +10,10 @@ import { getDecksByCollection, putDeck } from '@/features/srs/repositories/deckR
 import { deleteDeckCascade } from '@/features/srs/repositories/deleteCascade';
 import { generateId } from '@/features/srs/lib/helpers';
 import { getSrsHomeStats, dayKeyFor, type SrsHomeStats, type SrsHomeDeckStat } from '@/features/srs/services/getSrsHomeStats';
-import { ImportWizard } from '@/features/ankiImport';
+import {
+  AnkiImportJobRow, flattenDeckName, importNormalized, ImportError, ImportWizard,
+  type AnkiImportJob, type AnkiImportStartPayload,
+} from '@/features/ankiImport';
 import { useSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
 import { deckIconName } from './SrsDeckDetail';
 import type { SrsDeck } from '@/entities/srs/types';
@@ -126,6 +129,10 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [importOpen, setImportOpen] = useState(false);
+  const [importJob, setImportJob] = useState<AnkiImportJob | null>(null);
+  const [importFidelity, setImportFidelity] = useState<'full' | 'estimated' | null>(null);
+  const importAbort = useRef<AbortController | null>(null);
+  const importPayload = useRef<AnkiImportStartPayload | null>(null);
 
   const refreshHome = useCallback(async () => {
     const result = await ensureFirstRun();
@@ -134,6 +141,41 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
     setTargetLanguage(collection.targetLanguage || 'en');
     setHome(await getSrsHomeStats(result.collectionId, prefs.dayStartHour));
   }, [prefs.dayStartHour]);
+
+  const runImport = useCallback(async (payload: AnkiImportStartPayload) => {
+    importAbort.current?.abort();
+    const controller = new AbortController();
+    importAbort.current = controller;
+    importPayload.current = payload;
+    setImportFidelity(payload.data.fidelity);
+    const names = payload.data.decks
+      .filter((d) => !d.filtered && payload.selection.deckIds.has(d.id))
+      .map((d) => flattenDeckName(d.name));
+    const title = names.length > 1 ? `${names[0]} +${names.length - 1}` : names[0] ?? '';
+    setImportJob({ status: 'running', done: 0, total: payload.data.cards.length, title });
+    try {
+      const report = await importNormalized({
+        data: payload.data,
+        selection: payload.selection,
+        mappings: payload.mappings,
+        targetLanguage: '',
+        now: new Date(),
+        signal: controller.signal,
+        onProgress: (done, total) => {
+          setImportJob((j) => (j?.status === 'running' ? { ...j, done, total } : j));
+        },
+      });
+      setImportJob((j) => (j ? { ...j, status: 'done', report } : j));
+    } catch (err) {
+      const cancelled = err instanceof ImportError && err.code === 'ABORTED';
+      setImportJob((j) => (j ? {
+        ...j,
+        status: cancelled ? 'cancelled' : 'error',
+        error: cancelled ? undefined : err instanceof Error ? err.message : String(err),
+      } : j));
+    }
+    void refreshHome();
+  }, [refreshHome]);
 
   useEffect(() => {
     void refreshHome().catch(() => {});
@@ -210,8 +252,17 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
       <Box className={styles.topBar}>
         <Heading level={1} className={styles.appTitle}>{t('srs.title')}</Heading>
         <Box className={styles.topBarActions}>
-          <Button variant="ghost" size="sm" shape="circle" onClick={() => { setImportOpen(true); }} aria-label={t('srs.home.importAnki')} className={styles.chromeButton}>
-            <Icon name="import" />
+          <Button
+            variant="ghost"
+            size="sm"
+            shape="circle"
+            onClick={() => { setImportOpen(true); }}
+            disabled={importJob?.status === 'running'}
+            aria-busy={importJob?.status === 'running'}
+            aria-label={t('srs.home.importAnki')}
+            className={styles.chromeButton}
+          >
+            {importJob?.status === 'running' ? <Spinner size="sm" /> : <Icon name="import" />}
           </Button>
           <Button variant="ghost" size="sm" shape="circle" onClick={onOpenSettings} aria-label={t('srs.settings.title')} className={styles.chromeButton}>
             <Icon name="settings" />
@@ -374,6 +425,16 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
         onConfirm={() => { void handleConfirmDelete(); }}
       />
 
+        {importJob && (
+          <AnkiImportJobRow
+            job={importJob}
+            fidelity={importFidelity}
+            onCancel={() => { importAbort.current?.abort(); }}
+            onDismiss={() => { setImportJob(null); }}
+            onStudyNow={() => { setImportJob(null); void start(); }}
+            onRetry={() => { if (importPayload.current) void runImport(importPayload.current); }}
+          />
+        )}
         {visibleDecks.length === 0 ? (
           <Text className={styles.emptyText}>{t('srs.manage.noDecks')}</Text>
         ) : (
@@ -410,8 +471,7 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
       <ImportWizard
         open={importOpen}
         onClose={() => { setImportOpen(false); }}
-        onStudyNow={() => { void start(); }}
-        onImported={() => { void refreshHome(); }}
+        onStart={(payload) => { setImportOpen(false); void runImport(payload); }}
       />
     </Box>
   );

@@ -1,0 +1,125 @@
+.job {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  background: var(--color-surface-card);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+.jobRunning {
+  border-style: dashed;
+}
+
+.jobError {
+  border-color: var(--color-destructive);
+}
+
+.jobCancelled {
+  border-color: var(--color-warning);
+}
+
+.fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-primary-subtle);
+  transition: height var(--duration-normal) var(--ease-standard);
+  pointer-events: none;
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2-5) var(--space-3);
+  min-height: 56px;
+}
+
+.deckIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+  flex: 1;
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.metaMuted {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.metaOk {
+  font-size: var(--font-size-xs);
+  color: var(--color-leaf);
+  font-variant-numeric: tabular-nums;
+}
+
+.metaErr {
+  font-size: var(--font-size-xs);
+  color: var(--color-destructive);
+}
+
+.metaDup {
+  font-size: var(--font-size-xs);
+  color: var(--color-warning);
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.pct {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.iconOk {
+  color: var(--color-leaf);
+}
+
+.iconErr {
+  color: var(--color-destructive);
+}
+
+.iconDup {
+  color: var(--color-warning);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    transition: none;
+  }
+}
