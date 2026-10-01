@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert, Badge, Button, Card, Checkbox, Dialog, Heading, Icon, IconButton,
+  Alert, Badge, Button, Card, Checkbox, Dialog, Icon, IconButton,
   LabelGroup, SectionHeader, Select, SelectableCard, SettingsRow, Spinner, Text,
   HStack, VStack,
 } from '@/shared/ui';
@@ -626,8 +626,10 @@ function MappingStep({
         )}
       </section>
       <section className={styles.previewPanel}>
-        <Heading level={3} className={styles.sectionTitle}>{t('ankiImport.preview.title')}</Heading>
-        <Text variant="supporting" color="secondary">{t('ankiImport.preview.desc')}</Text>
+        <SectionHeader
+          title={t('ankiImport.preview.title')}
+          subtitle={t('ankiImport.preview.desc')}
+        />
         <div className={styles.previewNav}>
           <div className={styles.dots}>
             {samples.map((s, i) => (
