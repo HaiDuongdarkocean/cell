@@ -172,6 +172,7 @@
 .previewPanel {
   min-width: 0;
   min-height: 0;
+  contain: size;
   display: flex;
   flex-direction: column;
   gap: var(--space-2-5);
@@ -283,6 +284,10 @@
     grid-template-rows: none;
     overflow-y: auto;
     scrollbar-width: none;
+  }
+
+  .previewPanel {
+    contain: none;
   }
 
   .mapLayout::-webkit-scrollbar {
