@@ -1852,8 +1852,6 @@
   "ankiImport.mapping.noneSelected": "Không có loại thẻ nào được chọn.",
   "ankiImport.preview.title": "Xem trước thẻ",
   "ankiImport.preview.desc": "Dữ liệu sẽ được hiển thị như thế này.",
-  "ankiImport.preview.front": "Mặt trước",
-  "ankiImport.preview.back": "Mặt sau",
   "ankiImport.advanced.title": "Tùy chọn nâng cao",
   "ankiImport.advanced.desc": "Chọn loại thẻ cần nhập…",
   "ankiImport.role.target": "Từ mục tiêu",

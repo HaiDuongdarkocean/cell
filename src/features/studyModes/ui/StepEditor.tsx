@@ -71,9 +71,6 @@ export function StepEditor({ index, step, onChange, onRemove }: StepEditorProps)
 
   return (
     <div className={styles.stepRow} data-cell-id={`step-row-${index}`}>
-      <Text as="span" variant="label" className={styles.stepIndex}>
-        {index + 1}
-      </Text>
       <VStack gap="2" className={styles.stepOptions}>
         {OptionGroup(
           t('studyModes.step.subtitle'),

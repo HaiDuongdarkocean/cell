@@ -17,8 +17,8 @@ export interface StudyModeStore extends StudyModeState {
   setAdvancedOpen: (open: boolean) => void;
   setActiveModeId: (id: string) => void;
   setAdvanced: (advanced: StudyModeAdvancedSettings) => void;
-  createCustomMode: (title: string, steps: StudyStep[]) => StudyMode | null;
-  updateCustomMode: (id: string, patch: { title?: string; steps?: StudyStep[] }) => StudyMode | null;
+  createCustomMode: (title: string, steps: StudyStep[], description?: string) => StudyMode | null;
+  updateCustomMode: (id: string, patch: { title?: string; description?: string; steps?: StudyStep[] }) => StudyMode | null;
   deleteCustomMode: (id: string) => void;
   applyActiveMode: () => Promise<void>;
 }
@@ -76,7 +76,7 @@ export const useStudyModeStore = create<StudyModeStore>((set, get) => ({
     applyToPlayer(next);
   },
 
-  createCustomMode: (title, steps) => {
+  createCustomMode: (title, steps, description) => {
     const state = get();
     const validation = validateModeName(title, state.customModes);
     if (!validation.valid) return null;
@@ -86,7 +86,7 @@ export const useStudyModeStore = create<StudyModeStore>((set, get) => ({
       type: 'custom',
       icon: 'slidersHorizontal',
       title: title.trim(),
-      description: formatModeDescription(
+      description: description?.trim() || formatModeDescription(
         {
           id: '',
           type: 'custom',
@@ -110,7 +110,7 @@ export const useStudyModeStore = create<StudyModeStore>((set, get) => ({
     return newMode;
   },
 
-  updateCustomMode: (id, { title, steps }) => {
+  updateCustomMode: (id, { title, description, steps }) => {
     const state = get();
     const index = state.customModes.findIndex((m) => m.id === id);
     if (index === -1) return null;
@@ -125,7 +125,10 @@ export const useStudyModeStore = create<StudyModeStore>((set, get) => ({
       ...current,
       title: title !== undefined ? title.trim() : current.title,
       steps: steps !== undefined ? steps : current.steps,
-      description: formatModeDescription(
+      description:
+        description !== undefined && description.trim() !== ''
+          ? description.trim()
+          : formatModeDescription(
         {
           ...current,
           title: title !== undefined ? title.trim() : current.title,

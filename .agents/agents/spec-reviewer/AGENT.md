@@ -1,7 +1,7 @@
 ---
 name: spec-reviewer
 description: Single-pass adversarial review of a spec against its intent doc and the BA/PO/TL lenses. Use when asked to review a spec document.
-model: swe
+# model: swe
 allowed-tools:
   - read
   - grep

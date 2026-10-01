@@ -9,13 +9,6 @@
   border-radius: var(--radius-md);
 }
 
-.stepIndex {
-  min-width: var(--space-5);
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  font-weight: var(--font-weight-semibold);
-}
-
 .stepOptions {
   flex: 1;
   min-width: 0;
@@ -35,6 +28,11 @@
 
 .stepChipGroup {
   flex-wrap: wrap;
+}
+
+.stepChipGroup > * {
+  min-width: var(--space-20);
+  justify-content: center;
 }
 
 @media (max-width: 639px) {

@@ -1,13 +1,12 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactElement } from 'react';
-import { Heading, Text, Button, HStack, VStack, FormGroup, Dialog } from '@/shared/ui';
+import { Heading, Button, HStack, VStack, FormGroup, Dialog } from '@/shared/ui';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { Input } from '@/shared/ui/Input';
 import { useStudyModeStore } from '../studyModeStore';
 import { t } from '@/shared/i18n';
 import { validateModeName } from '../lib/validateModeName';
-import { formatModeDescription } from '../lib/formatStepSummary';
 import type { MessageKey } from '@/shared/i18n';
-import type { StudyStep, StudyMode } from '@/entities/studyMode';
+import type { StudyStep } from '@/entities/studyMode';
 import { CueStrip } from './CueStrip';
 import { StepEditor } from './StepEditor';
 import styles from './CustomModeBuilder.module.css';
@@ -29,34 +28,32 @@ const EMPTY_STEP: StudyStep = {
 export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeBuilderProps): ReactElement {
   const store = useStudyModeStore();
   const titleId = useId();
+  const descId = useId();
   const isNew = editingId === null;
   const initial = useMemo(() => {
     if (editingId) {
       const existing = store.customModes.find((m) => m.id === editingId);
-      if (existing) return { title: existing.title, steps: existing.steps.map((s) => ({ ...s })) };
+      if (existing)
+        return {
+          title: existing.title,
+          description: existing.description,
+          steps: existing.steps.map((s) => ({ ...s })),
+        };
     }
-    return { title: '', steps: [{ ...EMPTY_STEP }] };
+    return { title: '', description: '', steps: [{ ...EMPTY_STEP }] };
   }, [editingId, store.customModes]);
 
   const [title, setTitle] = useState(initial.title);
+  const [description, setDescription] = useState(initial.description);
   const [steps, setSteps] = useState<StudyStep[]>(initial.steps);
   const [errorKey, setErrorKey] = useState<MessageKey | null>(null);
   const [discardOpen, setDiscardOpen] = useState(false);
   const [selectedStepIndex, setSelectedStepIndex] = useState(0);
 
-  const isDirty = title.trim() !== initial.title || JSON.stringify(steps) !== JSON.stringify(initial.steps);
-
-  const preview = useMemo(() => {
-    const draft: StudyMode = {
-      id: editingId ?? 'preview',
-      type: 'custom',
-      icon: 'slidersHorizontal',
-      title: title.trim() || t('studyModes.builder.previewFallback'),
-      description: '',
-      steps,
-    };
-    return formatModeDescription(draft, t);
-  }, [editingId, steps, title]);
+  const isDirty =
+    title.trim() !== initial.title ||
+    description !== initial.description ||
+    JSON.stringify(steps) !== JSON.stringify(initial.steps);
 
   const prevOpen = useRef(false);
   useEffect(() => {
@@ -64,6 +61,7 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
     prevOpen.current = open;
     if (justOpened) {
       setTitle(initial.title);
+      setDescription(initial.description);
       setSteps(initial.steps);
       setErrorKey(null);
       setDiscardOpen(false);
@@ -92,9 +90,9 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
     }
 
     if (isNew) {
-      useStudyModeStore.getState().createCustomMode(trimmedTitle, steps);
+      useStudyModeStore.getState().createCustomMode(trimmedTitle, steps, description);
     } else {
-      useStudyModeStore.getState().updateCustomMode(editingId, { title: trimmedTitle, steps });
+      useStudyModeStore.getState().updateCustomMode(editingId, { title: trimmedTitle, description, steps });
     }
     onOpenChange(false);
   };
@@ -178,6 +176,16 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
               data-cell-id="builder-title-input"
             />
           </FormGroup>
+          <FormGroup label={t('studyModes.builder.descLabel')} htmlFor={descId}>
+            <Input
+              id={descId}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t('studyModes.builder.descPlaceholder')}
+              maxLength={120}
+              data-cell-id="builder-desc-input"
+            />
+          </FormGroup>
           {errorKey && (
             <p className={styles.builderError} role="alert">
               {t(errorKey)}
@@ -185,9 +193,6 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
           )}
 
           <div>
-            <Text color="secondary" as="p" data-cell-id="builder-preview">
-              {preview}
-            </Text>
             <Heading level={3} size={4} className={styles.sectionHeading}>
               {t('studyModes.builder.steps')}
             </Heading>

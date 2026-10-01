@@ -612,10 +612,6 @@ function MappingStep({
         <Heading level={3} className={styles.sectionTitle}>{t('ankiImport.preview.title')}</Heading>
         <Text variant="supporting" color="secondary">{t('ankiImport.preview.desc')}</Text>
         <div className={styles.previewNav}>
-          <HStack gap="1">
-            <Button size="sm" variant={flipped ? 'ghost' : 'secondary'} onClick={() => setFlipped(false)}>{t('ankiImport.preview.front')}</Button>
-            <Button size="sm" variant={flipped ? 'secondary' : 'ghost'} onClick={() => setFlipped(true)}>{t('ankiImport.preview.back')}</Button>
-          </HStack>
           <div className={styles.dots}>
             {samples.map((s, i) => (
               <button

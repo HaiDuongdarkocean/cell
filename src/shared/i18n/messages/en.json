@@ -1852,8 +1852,6 @@
   "ankiImport.mapping.noneSelected": "No note types selected.",
   "ankiImport.preview.title": "Card preview",
   "ankiImport.preview.desc": "This is how the data will look.",
-  "ankiImport.preview.front": "Front",
-  "ankiImport.preview.back": "Back",
   "ankiImport.advanced.title": "Advanced options",
   "ankiImport.advanced.desc": "Choose which note types to import…",
   "ankiImport.role.target": "Target word",
