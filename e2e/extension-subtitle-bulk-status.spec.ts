@@ -37,6 +37,36 @@ async function waitDeep(page: Page, selector: string, timeout = 15_000): Promise
 
 const PANEL_SEL = '[data-cell-split-view="panel"]';
 
+/** The mock StreamFlix video is a 52px strip, so the split-view panel renders
+ *  squeezed (208x52) and `_playerSection` paints over it. For screenshot
+ *  evidence only: pin the real panel to a legible fixed rect — the component
+ *  re-lays-out and shows its true state. DOM assertions are unaffected. */
+async function raiseSplitViewForScreenshot(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const deepFind = (root: Document | ShadowRoot, s: string): Element | null => {
+      const el = root.querySelector(s);
+      if (el) return el;
+      for (const child of Array.from(root.querySelectorAll('*'))) {
+        if (child.shadowRoot) {
+          const f = deepFind(child.shadowRoot, s);
+          if (f) return f;
+        }
+      }
+      return null;
+    };
+    const panel = deepFind(document, '[data-cell-split-view="panel"]');
+    if (panel instanceof HTMLElement) {
+      panel.style.position = 'fixed';
+      panel.style.top = '90px';
+      panel.style.right = '16px';
+      panel.style.left = 'auto';
+      panel.style.width = '380px';
+      panel.style.height = '70vh';
+      panel.style.zIndex = '2147483000';
+    }
+  });
+}
+
 async function panelTerms(page: Page, limit: number): Promise<string[]> {
   return page.evaluate(
     ({ panelSel, n }) => {
@@ -274,11 +304,36 @@ test.describe('subtitle bulk status', () => {
     const terms = await panelTerms(page, 3);
     expect(terms.length).toBeGreaterThanOrEqual(2);
 
+    await raiseSplitViewForScreenshot(page);
+    await page.screenshot({ path: 'tmp/subtitle-bulk-status/cue-list-before.png' });
+
     await dispatchTermClick(page, terms[0]!, { ctrl: true }, PANEL_SEL);
     await dispatchTermClick(page, terms[1]!, { ctrl: true }, PANEL_SEL);
 
     await expect.poll(() => uniqueSelectedTerms(page)).toBe(2);
     await page.screenshot({ path: 'tmp/subtitle-bulk-status/cue-list-selected.png' });
+    const selClip = await page.evaluate((panelSel) => {
+      const deepFind = (root: Document | ShadowRoot, s: string): Element | null => {
+        const el = root.querySelector(s);
+        if (el) return el;
+        for (const child of Array.from(root.querySelectorAll('*'))) {
+          if (child.shadowRoot) {
+            const f = deepFind(child.shadowRoot, s);
+            if (f) return f;
+          }
+        }
+        return null;
+      };
+      const host = deepFind(document, panelSel);
+      const sel = host?.shadowRoot?.querySelector('.js-cell-token--selected');
+      if (!sel) return null;
+      sel.scrollIntoView({ block: 'nearest' });
+      const r = sel.getBoundingClientRect();
+      return { x: Math.max(0, r.left - 30), y: Math.max(0, r.top - 14), width: r.width + 200, height: r.height + 28 };
+    }, PANEL_SEL);
+    if (selClip) {
+      await page.screenshot({ path: 'tmp/subtitle-bulk-status/cue-list-selected-zoom.png', clip: selClip });
+    }
 
     // Announcer reflects the count.
     const announced = await page.evaluate(
@@ -292,10 +347,12 @@ test.describe('subtitle bulk status', () => {
     await expect
       .poll(() => panelStatusCount(page, 'known'), { timeout: 10_000 })
       .toBeGreaterThanOrEqual(2);
+    await page.screenshot({ path: 'tmp/subtitle-bulk-status/cue-list-status-applied.png' });
 
     // Plain click still opens the dictionary popup.
     await dispatchTermClick(page, terms[0]!, {}, PANEL_SEL);
     await expect.poll(() => deepExists(page, '.js-cell-popup-host'), { timeout: 10_000 }).toBe(true);
+    await page.screenshot({ path: 'tmp/subtitle-bulk-status/cue-list-plain-click-popup.png' });
     await page.keyboard.press('Escape');
 
     // Escape clears a fresh selection.
@@ -325,6 +382,20 @@ test.describe('subtitle bulk status', () => {
 
     await dispatchTermClick(page, firstTerm!, { ctrl: true }, '[data-cell-id="subtitle-block"]');
     await expect.poll(() => uniqueSelectedTerms(page)).toBe(1);
+    await page.screenshot({ path: 'tmp/subtitle-bulk-status/overlay-selected.png' });
+
+    const overlayClip = await page.evaluate(() => {
+      const root = document.getElementById('cell-subtitle-root')?.shadowRoot ?? document;
+      const sel = root.querySelector(
+        '[data-cell-id="subtitle-block"] .js-cell-token--selected',
+      );
+      if (!sel) return null;
+      const r = sel.getBoundingClientRect();
+      return { x: Math.max(0, r.left - 30), y: Math.max(0, r.top - 14), width: r.width + 200, height: r.height + 28 };
+    });
+    if (overlayClip) {
+      await page.screenshot({ path: 'tmp/subtitle-bulk-status/overlay-selected-zoom.png', clip: overlayClip });
+    }
   });
 
   test('player mode: cue list ctrl+click selects, Escape clears', async ({ streamFlixPage }) => {
@@ -435,8 +506,12 @@ test.describe('subtitle bulk status', () => {
     await waitDeep(page, overlayTokenSel, 30_000);
     await pauseVideo(page);
 
-    // 't' toggles the split-view cue list (PlayerView keydown handler).
-    await page.keyboard.press('t');
+    // The local player auto-opens the cue-list panel on a fresh profile
+    // (restore effect opens it while hasVideo is still false). Only press 't'
+    // when it is absent — a blind toggle would close the auto-opened panel.
+    if (!(await deepExists(page, PANEL_SEL))) {
+      await page.keyboard.press('t');
+    }
     await waitDeep(page, PANEL_SEL, 10_000);
     await expect
       .poll(() => panelTerms(page, 2), { timeout: 20_000 })
@@ -448,12 +523,41 @@ test.describe('subtitle bulk status', () => {
     await dispatchTermClick(page, cueTerms[1]!, { ctrl: true }, PANEL_SEL);
     await expect.poll(() => uniqueSelectedTerms(page)).toBe(2);
     await page.screenshot({ path: 'tmp/subtitle-bulk-status/local-selected.png' });
+    const localPanelClip = await page.evaluate((panelSel) => {
+      const deepFind = (root: Document | ShadowRoot): Element | null => {
+        const el = root.querySelector(panelSel);
+        if (el) return el;
+        for (const child of Array.from(root.querySelectorAll('*'))) {
+          if (child.shadowRoot) {
+            const found = deepFind(child.shadowRoot);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      const host = deepFind(document);
+      if (!host) return null;
+      const r = host.getBoundingClientRect();
+      return {
+        x: Math.max(0, r.x),
+        y: Math.max(0, r.y),
+        width: Math.min(r.width, window.innerWidth - r.x),
+        height: Math.min(Math.max(r.height, 300), window.innerHeight - r.y),
+      };
+    }, PANEL_SEL);
+    if (localPanelClip) {
+      await page.screenshot({
+        path: 'tmp/subtitle-bulk-status/local-panel-selected-zoom.png',
+        clip: localPanelClip,
+      });
+    }
 
     await page.keyboard.press('3');
     await expect.poll(() => selectedTermCount(page)).toBe(0);
     await expect
       .poll(() => panelStatusCount(page, 'known'), { timeout: 10_000 })
       .toBeGreaterThanOrEqual(2);
+    await page.screenshot({ path: 'tmp/subtitle-bulk-status/local-status-applied.png' });
 
     // Overlay ctrl+click selects too.
     const overlayTerm = await page.evaluate(() => {
@@ -475,6 +579,7 @@ test.describe('subtitle bulk status', () => {
     expect(overlayTerm).not.toBeNull();
     await dispatchTermClick(page, overlayTerm!, { ctrl: true }, '[data-cell-id="subtitle-block"]');
     await expect.poll(() => uniqueSelectedTerms(page)).toBe(1);
+    await page.screenshot({ path: 'tmp/subtitle-bulk-status/local-overlay-selected.png' });
     await page.keyboard.press('Escape');
     await expect.poll(() => selectedTermCount(page)).toBe(0);
 
