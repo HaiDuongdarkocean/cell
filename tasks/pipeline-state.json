@@ -1,5 +1,5 @@
 {
-  "active": null,
+  "active": "anki-known-seed",
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -855,6 +855,76 @@
       "owner": null,
       "worktree": null,
       "updated": "2026-10-01T13:28:19.814Z"
+    },
+    "condensed-playback": {
+      "stage": "dropped",
+      "mode": "interactive",
+      "uiSurface": "no",
+      "artifacts": {},
+      "gates": {},
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [
+        {
+          "flag": "user-approval:intent",
+          "note": "user decision: capability already shipped as skipNoDialogue; real want folded into condensed-audio",
+          "at": "2026-10-01T15:14:48.566Z"
+        }
+      ],
+      "loops": 0,
+      "owner": null,
+      "worktree": null,
+      "updated": "2026-10-01T15:14:48.663Z"
+    },
+    "condensed-audio": {
+      "stage": "specify",
+      "mode": "interactive",
+      "uiSurface": "yes",
+      "artifacts": {},
+      "gates": {},
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [
+        {
+          "flag": "user-approval:intent",
+          "note": "user approved intent",
+          "at": "2026-10-01T15:37:42.117Z"
+        },
+        {
+          "flag": "ownership-released",
+          "note": "devin-idea-grab-20261001 released by devin-idea-grab-20261001 — parked at specify — intent approved, build khi Anh pick-off",
+          "at": "2026-10-01T15:38:16.562Z"
+        }
+      ],
+      "loops": 0,
+      "owner": null,
+      "worktree": null,
+      "updated": "2026-10-01T15:38:16.562Z"
+    },
+    "anki-known-seed": {
+      "stage": "specify",
+      "mode": "interactive",
+      "uiSurface": "yes",
+      "artifacts": {},
+      "gates": {},
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [
+        {
+          "flag": "user-approval:intent",
+          "note": "user approved intent (expanded scope: bidirectional status sync)",
+          "at": "2026-10-01T16:12:31.459Z"
+        },
+        {
+          "flag": "ownership-released",
+          "note": "devin-idea-grab-20261001 released by devin-idea-grab-20261001 — parked at specify — intent approved, build khi Anh pick-off",
+          "at": "2026-10-01T16:12:51.789Z"
+        }
+      ],
+      "loops": 0,
+      "owner": null,
+      "worktree": null,
+      "updated": "2026-10-01T16:12:51.790Z"
     }
   }
 }
