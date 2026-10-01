@@ -7,6 +7,7 @@ import {
 } from '@/shared/ui';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { useIsMobile } from '@/shared/ui/useIsMobile';
+import { useDragScroll } from '@/shared/ui/useDragScroll';
 import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { t } from '@/shared/i18n';
 import type { SrsAudioAsset, SrsImageAsset, SrsNote } from '@/entities/srs/types';
@@ -485,6 +486,7 @@ function MappingStep({
   const [selectedNtId, setSelectedNtId] = useState<string | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
   const isMobile = useIsMobile(BREAKPOINTS.expanded);
+  const pillsRef = useDragScroll<HTMLDivElement>();
   const manageBtnRef = useRef<HTMLButtonElement>(null);
   const managePopRef = useRef<HTMLDivElement>(null);
   const defaultNt = useMemo(() => createDefaultNotetype(PREVIEW_NOTE_ID), []);
@@ -617,7 +619,7 @@ function MappingStep({
 
   const ntBar = (
     <div className={styles.ntBar}>
-      <div className={styles.ntPills}>
+      <div className={styles.ntPills} ref={pillsRef}>
         {pillNts.map((n) => (
           <Chip
             key={n.id}
@@ -637,7 +639,7 @@ function MappingStep({
       </div>
       <IconButton
         ref={manageBtnRef}
-        size="sm"
+        size="md"
         variant="ghost"
         aria-label={t('ankiImport.notetypes.manage')}
         aria-haspopup="dialog"
