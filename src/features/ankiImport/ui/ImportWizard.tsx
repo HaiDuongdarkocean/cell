@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import {
-  Alert, Badge, Button, Card, Checkbox, Dialog, Icon, IconButton,
-  LabelGroup, SectionHeader, Select, SelectableCard, SettingsRow, Spinner, Text,
+  Alert, Badge, Button, Card, Checkbox, Chip, Dialog, Icon, IconButton,
+  LabelGroup, Popover, pushEscapeLayer, SectionHeader, Select, SelectableCard,
+  SettingsRow, Spinner, Text, useDismissOnScroll,
   HStack, VStack,
 } from '@/shared/ui';
+import { BottomSheet } from '@/shared/ui/BottomSheet';
+import { useIsMobile } from '@/shared/ui/useIsMobile';
+import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { t } from '@/shared/i18n';
 import type { SrsAudioAsset, SrsImageAsset, SrsNote } from '@/entities/srs/types';
 import {
@@ -12,6 +16,7 @@ import {
 } from '@/features/srs';
 import { buildDeckPickerRows, resolveHomeDeckId } from '../logic/deckFlatten';
 import { buildNoteFields, guessFieldMapping } from '../logic/fieldMapping';
+import { nextEnabledNotetypeId, pillNotetypes } from '../logic/notetypeSelection';
 import type {
   FieldMapping, FieldRole, ImportSelection, NormalizedAnkiData, NormalizedAnkiNote, NormalizedAnkiNotetype,
 } from '../model/normalized';
@@ -174,10 +179,13 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
   const canContinue = useMemo(() => {
     switch (step) {
       case 'scope': return deckIds.size > 0;
-      case 'mapping': return selectedNt.length === 0 || selectedNt.every((n) => mappings[n.id]);
+      case 'mapping': {
+        const enabled = selectedNt.filter((n) => ntIds.has(n.id) && (cardCountByNt.get(n.id) ?? 0) > 0);
+        return enabled.length > 0 && enabled.every((n) => mappings[n.id]);
+      }
       default: return false;
     }
-  }, [step, deckIds, selectedNt, mappings]);
+  }, [step, deckIds, selectedNt, ntIds, cardCountByNt, mappings]);
 
   const goNext = useCallback(() => {
     if (step === 'scope') { setSampleIdx(0); setStep('mapping'); }
@@ -474,19 +482,23 @@ function MappingStep({
   readonly cardCountByNt: ReadonlyMap<string, number>;
 }): React.JSX.Element {
   const [flipped, setFlipped] = useState(false);
-  const [advOpen, setAdvOpen] = useState(false);
+  const [selectedNtId, setSelectedNtId] = useState<string | null>(null);
+  const [manageOpen, setManageOpen] = useState(false);
+  const isMobile = useIsMobile(BREAKPOINTS.expanded);
+  const manageBtnRef = useRef<HTMLButtonElement>(null);
+  const managePopRef = useRef<HTMLDivElement>(null);
   const defaultNt = useMemo(() => createDefaultNotetype(PREVIEW_NOTE_ID), []);
-  const ntById = useMemo(() => new Map(notetypes.map((n) => [n.id, n])), [notetypes]);
+  const manageableNts = useMemo(() => data.notetypes.filter((n) => !n.isCloze), [data.notetypes]);
+  const pillNts = useMemo(
+    () => pillNotetypes(notetypes, ntIds, cardCountByNt),
+    [notetypes, ntIds, cardCountByNt],
+  );
+  const nt = pillNts.find((n) => n.id === selectedNtId) ?? pillNts[0];
   const samples = useMemo(() => {
-    const list: NormalizedAnkiNote[] = [];
-    for (const n of notetypes) {
-      if (!ntIds.has(n.id)) continue;
-      for (const note of data.notes.filter((x) => x.modelId === n.id && importableNoteIds.has(x.id)).slice(0, 4)) list.push(note);
-    }
-    return list;
-  }, [notetypes, ntIds, data.notes, importableNoteIds]);
+    if (!nt) return [] as NormalizedAnkiNote[];
+    return data.notes.filter((x) => x.modelId === nt.id && importableNoteIds.has(x.id)).slice(0, 4);
+  }, [nt, data.notes, importableNoteIds]);
   const sample: NormalizedAnkiNote | undefined = samples[sampleIdx % Math.max(1, samples.length)];
-  const nt = sample ? ntById.get(sample.modelId) : undefined;
   const mapping: FieldMapping = useMemo(() => (nt && mappings[nt.id]) ?? {}, [nt, mappings]);
 
   const preview = useMemo(() => {
@@ -546,14 +558,154 @@ function MappingStep({
       ?? { type: 'sentence' as const, payload: {} };
   }, [preview, audioCache, imageCache, defaultNt]);
 
-  if (!nt) {
-    return <Text variant="supporting">{t('ankiImport.mapping.noneSelected')}</Text>;
-  }
+  const closeManage = useCallback(() => setManageOpen(false), []);
+  useDismissOnScroll(manageOpen && !isMobile, managePopRef, manageBtnRef, closeManage);
+
+  useEffect(() => {
+    if (!manageOpen || isMobile) return;
+    const doc = manageBtnRef.current?.ownerDocument ?? document;
+    const onPointerDown = (e: Event): void => {
+      const path = e.composedPath();
+      if (!path.includes(manageBtnRef.current as Node) && !path.includes(managePopRef.current as Node)) {
+        setManageOpen(false);
+      }
+    };
+    const popEscape = pushEscapeLayer((e) => {
+      e.preventDefault();
+      setManageOpen(false);
+      manageBtnRef.current?.focus();
+    }, doc);
+    managePopRef.current?.querySelector<HTMLElement>('input:not([disabled]), button:not([disabled])')?.focus();
+    doc.addEventListener('mousedown', onPointerDown);
+    return () => {
+      popEscape();
+      doc.removeEventListener('mousedown', onPointerDown);
+    };
+  }, [manageOpen, isMobile]);
+
+  const onManageKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
+    if (e.key !== 'Tab') return;
+    const items = Array.from(
+      managePopRef.current?.querySelectorAll<HTMLElement>('input:not([disabled]), button:not([disabled])') ?? [],
+    );
+    if (items.length === 0) return;
+    const root = managePopRef.current?.getRootNode();
+    const doc = managePopRef.current?.ownerDocument ?? document;
+    const scope: Document | ShadowRoot = root instanceof ShadowRoot ? root : doc;
+    const active = scope.activeElement as HTMLElement | null;
+    const idx = active ? items.indexOf(active) : -1;
+    e.preventDefault();
+    items[e.shiftKey ? (idx <= 0 ? items.length - 1 : idx - 1) : (idx + 1) % items.length]?.focus();
+  };
+
+  const selectNt = (id: string): void => {
+    if (nt && id === nt.id) return;
+    setSelectedNtId(id);
+    onSampleIdx(0);
+    setFlipped(false);
+  };
+
   const toggleNtById = (id: string): void => {
     const next = new Set(ntIds);
-    if (next.has(id)) next.delete(id); else next.add(id);
+    const disabling = next.has(id);
+    if (disabling) next.delete(id); else next.add(id);
     onNtIds(next);
+    if (!disabling || !nt || id !== nt.id) return;
+    setSelectedNtId(nextEnabledNotetypeId(notetypes, next, cardCountByNt, id));
+    onSampleIdx(0);
+    setFlipped(false);
   };
+
+  const ntBar = (
+    <div className={styles.ntBar}>
+      <div className={styles.ntPills}>
+        {pillNts.map((n) => (
+          <Chip
+            key={n.id}
+            as="button"
+            size="sm"
+            selected={nt?.id === n.id}
+            onClick={() => selectNt(n.id)}
+          >
+            {n.name}
+            <span className={styles.ntCount}>
+              {` · ${t('ankiImport.mapping.cardCount', [cardCountByNt.get(n.id) ?? 0])}`}
+            </span>
+          </Chip>
+        ))}
+      </div>
+      <IconButton
+        ref={manageBtnRef}
+        size="sm"
+        variant="ghost"
+        aria-label={t('ankiImport.notetypes.manage')}
+        aria-haspopup="dialog"
+        aria-expanded={manageOpen}
+        onClick={() => setManageOpen((v) => !v)}
+      >
+        <Icon name="slidersHorizontal" />
+      </IconButton>
+    </div>
+  );
+
+  const manageRows = (
+    <div className={styles.pickList}>
+      {manageableNts.map((n) => (
+        <Checkbox
+          key={n.id}
+          variant="row"
+          checked={ntIds.has(n.id)}
+          onChange={() => toggleNtById(n.id)}
+          label={(
+            <>
+              <span className={styles.pickName}>{n.name}</span>
+              <Text variant="supporting" color="secondary">{t('ankiImport.mapping.cardCount', [cardCountByNt.get(n.id) ?? 0])}</Text>
+            </>
+          )}
+        />
+      ))}
+    </div>
+  );
+
+  const manageSurface = (
+    <>
+      <Popover
+        open={manageOpen && !isMobile}
+        triggerRef={manageBtnRef}
+        contentRef={managePopRef}
+        variant="menu"
+        menuAlign="right"
+        role="group"
+        aria-label={t('ankiImport.notetypes.title')}
+        menuMaxHeight={280}
+        className={styles.ntManagePop}
+        onKeyDown={onManageKeyDown}
+      >
+        {manageRows}
+      </Popover>
+      <BottomSheet
+        open={manageOpen && isMobile}
+        onOpenChange={setManageOpen}
+        title={t('ankiImport.notetypes.title')}
+      >
+        {manageRows}
+      </BottomSheet>
+    </>
+  );
+
+  if (!nt) {
+    return (
+      <>
+        <div className={styles.mapLayout}>
+          <section className={styles.settingsCol}>
+            {ntBar}
+            <Text variant="supporting">{t('ankiImport.mapping.noneSelected')}</Text>
+          </section>
+        </div>
+        {manageSurface}
+      </>
+    );
+  }
 
   const fieldsForRole = (role: FieldRole): readonly string[] =>
     nt.fields.filter((f) => mapping[f.name] === role).map((f) => f.name);
@@ -568,8 +720,10 @@ function MappingStep({
   const activeSample = samples.length ? sampleIdx % samples.length : 0;
 
   return (
+    <>
     <div className={styles.mapLayout}>
       <section className={styles.settingsCol}>
+        {ntBar}
         <div className={styles.fieldRows}>
           {SYSTEM_SLOTS.map(({ role, fieldId }) => {
             const sources = fieldsForRole(role);
@@ -590,37 +744,6 @@ function MappingStep({
             );
           })}
         </div>
-        <button
-          type="button"
-          className={styles.advRow}
-          onClick={() => { setAdvOpen((v) => !v); }}
-          aria-expanded={advOpen}
-        >
-          <Icon name="slidersHorizontal" className={styles.fieldIcon} />
-          <span className={styles.advText}>
-            <Text variant="label">{t('ankiImport.advanced.title')}</Text>
-            <Text variant="supporting" color="secondary">{t('ankiImport.advanced.desc')}</Text>
-          </span>
-          <Icon name="chevronRight" className={advOpen ? styles.advChevronOpen : styles.advChevron} />
-        </button>
-        {advOpen && (
-          <div className={styles.pickList}>
-            {notetypes.map((n) => (
-              <Checkbox
-                key={n.id}
-                variant="row"
-                checked={ntIds.has(n.id)}
-                onChange={() => toggleNtById(n.id)}
-                label={(
-                  <>
-                    <span className={styles.pickName}>{n.name}</span>
-                    <Text variant="supporting" color="secondary">{t('ankiImport.mapping.cardCount', [cardCountByNt.get(n.id) ?? 0])}</Text>
-                  </>
-                )}
-              />
-            ))}
-          </div>
-        )}
       </section>
       <section className={styles.previewPanel}>
         <SectionHeader
@@ -679,6 +802,8 @@ function MappingStep({
         )}
       </section>
     </div>
+    {manageSurface}
+    </>
   );
 }
 
