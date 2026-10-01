@@ -57,4 +57,19 @@ describe('Menu', () => {
 
     host.remove();
   });
+
+  it('stays open when the menu surface or an item scrolls', () => {
+    const scroller = document.createElement('div');
+    document.body.appendChild(scroller);
+    render(<Harness />, { container: scroller });
+
+    const menu = document.body.querySelector('[role="menu"]') as HTMLElement;
+    fireEvent.scroll(menu);
+    expect(document.body.querySelector('[role="menu"]')).not.toBeNull();
+
+    fireEvent.scroll(menu.querySelector('[role="menuitem"]') as HTMLElement);
+    expect(document.body.querySelector('[role="menu"]')).not.toBeNull();
+
+    scroller.remove();
+  });
 });

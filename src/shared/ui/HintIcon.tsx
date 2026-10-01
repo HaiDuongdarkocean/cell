@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect, type ReactElement } from 'react';
+import { useState, useRef, useEffect, useCallback, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from './Button';
 import { Icon } from '@/shared/icons/Icon';
 import { pushEscapeLayer } from './escapeLayerStack';
+import { useDismissOnScroll } from './useDismissOnScroll';
 import { getPortalContainer } from './portalContainer';
 import styles from './HintIcon.module.css';
 
@@ -49,6 +50,8 @@ export function HintIcon({
   const [pos, setPos] = useState<PopoverPos | null>(null);
   const wrapRef = useRef<HTMLSpanElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const close = useCallback(() => setIsOpen(false), []);
+  useDismissOnScroll(isOpen, popoverRef, wrapRef, close);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -96,20 +99,16 @@ export function HintIcon({
         setIsOpen(false);
       }
     };
-    const onScroll = (): void => setIsOpen(false);
+    const onResize = (): void => setIsOpen(false);
 
     scope.addEventListener('mousedown', onClickOutside);
     const popEscapeLayer = pushEscapeLayer(() => setIsOpen(false), doc);
-    win.addEventListener('scroll', onScroll, true);
-    if (scope !== doc) scope.addEventListener('scroll', onScroll, true);
-    win.addEventListener('resize', onScroll);
+    win.addEventListener('resize', onResize);
 
     return () => {
       scope.removeEventListener('mousedown', onClickOutside);
       popEscapeLayer();
-      win.removeEventListener('scroll', onScroll, true);
-      if (scope !== doc) scope.removeEventListener('scroll', onScroll, true);
-      win.removeEventListener('resize', onScroll);
+      win.removeEventListener('resize', onResize);
       setPos(null);
     };
   }, [isOpen]);

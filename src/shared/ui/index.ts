@@ -47,6 +47,7 @@ export { Slider } from './Slider';
 export { SearchableSelect } from './SearchableSelect';
 export { HintIcon } from './HintIcon';
 export { useFocusTrap } from './useFocusTrap';
+export { useDismissOnScroll } from './useDismissOnScroll';
 export { pushEscapeLayer } from './escapeLayerStack';
 export { Tabs } from './Tabs';
 export { InkTabs, type InkTabItem } from './InkTabs';

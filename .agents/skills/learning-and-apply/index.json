@@ -18,6 +18,27 @@
   "principles": [
     {
       "type": "experience",
+      "id": "scroll-dismiss-swallows-surface-own-scrolls",
+      "title": "Capture-phase window scroll listener also sees the floating surface's own scrollable subtree — guard composedPath or scrolling inside the menu closes it",
+      "category": [
+        "ux",
+        "async"
+      ],
+      "tags": [
+        "scroll",
+        "capture-phase",
+        "popover",
+        "menu",
+        "dismiss",
+        "composedPath",
+        "fixed-position",
+        "shadow-dom",
+        "overscroll-behavior"
+      ],
+      "trigger": "A floating surface (select/menu/popover/tooltip) registers a capture-phase window 'scroll' listener to dismiss on outside scroll, AND the surface contains a scrollable subtree"
+    },
+    {
+      "type": "experience",
       "id": "refactor-selector-contract-cross-module-sync",
       "title": "Selector là contract creator-consumer → rename phải sync cross-module",
       "category": [

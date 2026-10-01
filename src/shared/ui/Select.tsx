@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/icons/Icon';
 import { useMenuPlacement } from './useMenuPlacement';
+import { useDismissOnScroll } from './useDismissOnScroll';
 import { pushEscapeLayer } from './escapeLayerStack';
 import { t } from '@/shared/i18n';
 import styles from './Select.module.css';
@@ -148,6 +149,8 @@ export function Select({
     [onChange, value, closeMenu]
   );
 
+  useDismissOnScroll(isOpen, menuRef, triggerRef, closeMenu);
+
   // Close on click outside.
   // ponytail: use `composedPath()` instead of `e.target` — inside shadow DOM,
   // `e.target` is retargeted to the shadow host, so `menuRef.contains(e.target)`
@@ -158,7 +161,6 @@ export function Select({
   useEffect(() => {
     if (!isOpen) return;
     const doc = rootRef.current?.ownerDocument ?? document;
-    const win = doc.defaultView ?? window;
     const handleClickOutside = (e: Event): void => {
       if (!rootRef.current || !triggerRef.current || !menuRef.current) return;
       const path = e.composedPath();
@@ -170,18 +172,9 @@ export function Select({
         closeMenu();
       }
     };
-    const handleScroll = (): void => closeMenu();
-    const rootNode = rootRef.current?.getRootNode();
-    const scope: Document | ShadowRoot = rootNode instanceof ShadowRoot ? rootNode : doc;
     doc.addEventListener('mousedown', handleClickOutside);
-    win.addEventListener('scroll', handleScroll, true);
-    // scroll is non-composed — it never crosses the shadow boundary, so the
-    // window listener misses scrolls inside the panel's shadow root.
-    if (scope !== doc) scope.addEventListener('scroll', handleScroll, true);
     return () => {
       doc.removeEventListener('mousedown', handleClickOutside);
-      win.removeEventListener('scroll', handleScroll, true);
-      if (scope !== doc) scope.removeEventListener('scroll', handleScroll, true);
     };
   }, [isOpen, closeMenu]);
 

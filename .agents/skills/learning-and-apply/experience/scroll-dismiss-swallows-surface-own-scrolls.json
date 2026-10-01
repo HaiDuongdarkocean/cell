@@ -1,0 +1,36 @@
+{
+  "id": "scroll-dismiss-swallows-surface-own-scrolls",
+  "title": "Capture-phase window scroll listener also sees the floating surface's own scrollable subtree — guard composedPath or scrolling inside the menu closes it",
+  "category": ["ux", "async"],
+  "tags": [
+    "scroll",
+    "capture-phase",
+    "popover",
+    "menu",
+    "dismiss",
+    "composedPath",
+    "fixed-position",
+    "shadow-dom",
+    "overscroll-behavior"
+  ],
+  "trigger": "A floating surface (select/menu/popover/tooltip) registers a capture-phase window 'scroll' listener to dismiss on outside scroll, AND the surface contains a scrollable subtree",
+  "principle": "scroll does not bubble, but a capture-phase listener on window fires for scroll events targeted at ANY descendant — including the surface's own scrollable list. Scrolling/swiping inside the menu then dismisses it. Ignore events whose composedPath() includes the surface element; scrollable overlay surfaces also need overflow-y:auto (a max-height alone does not make a scroller) plus overscroll-behavior:contain so boundary gestures don't chain to the page and trigger an outside-scroll dismissal.",
+  "cases": [
+    {
+      "context": "Select dropdown and Menu vanished the moment the user swiped to scroll the option list — the capture listener treated the list's own scroll as an outside scroll",
+      "bad": "const onScroll = () => closeMenu(); win.addEventListener('scroll', onScroll, true);",
+      "good": "const onScroll = (e) => { if (menuRef.current && e.composedPath().includes(menuRef.current)) return; closeMenu(); };"
+    },
+    {
+      "context": "Resolve doc/window/shadow scope for the listener from a ref that is mounted before the surface exists (the trigger), not from the portaled surface — on first render the trigger ref is still null so the portal lands in document.body, and the surface element is remounted into the shadow root on the next commit; an effect that captured the surface's root at mount then listens on the wrong scope",
+      "bad": "const root = surfaceRef.current.getRootNode(); // surface portaled to body at effect time → scope = document, shadow scrolls missed",
+      "good": "const anchor = triggerRef.current ?? surfaceRef.current; const scope = anchor.getRootNode(); // trigger is a normal element, always in the right tree"
+    }
+  ],
+  "applyFor": [
+    "any close-on-scroll dismissal for fixed/portal surfaces",
+    "Select, Menu, Popover, SpeedPill, ProfileMenu, HintIcon-style popovers",
+    "scrollable overlays inside shadow DOM (scroll is non-composed — needs a scope-level listener)"
+  ],
+  "source": { "date": "2026-10-01" }
+}

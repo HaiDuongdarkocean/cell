@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { Popover } from './Popover';
 import { pushEscapeLayer } from './escapeLayerStack';
+import { useDismissOnScroll } from './useDismissOnScroll';
 import type { MenuAlign } from './useMenuPlacement';
 import styles from './Menu.module.css';
 
@@ -38,19 +39,17 @@ export function Menu({
 }: MenuProps): React.JSX.Element | null {
   const menuRef = useRef<HTMLDivElement>(null);
 
+  useDismissOnScroll(open, menuRef, triggerRef, onClose);
+
   useEffect(() => {
     if (!open) return;
     const doc = triggerRef.current?.ownerDocument ?? document;
-    const win = doc.defaultView ?? window;
     const handlePointerDown = (e: Event): void => {
       const path = e.composedPath();
       if (!path.includes(triggerRef.current as Node) && !path.includes(menuRef.current as Node)) {
         onClose();
       }
     };
-    const handleScroll = (): void => onClose();
-    const rootNode = triggerRef.current?.getRootNode();
-    const scope: Document | ShadowRoot = rootNode instanceof ShadowRoot ? rootNode : doc;
     // Shared Escape stack (capture phase): the menu consumes the key before
     // ancestor surfaces (e.g. UniversalPanel) — one Escape, one layer.
     const popEscapeLayer = pushEscapeLayer((e) => {
@@ -61,15 +60,9 @@ export function Menu({
     const selected = menuRef.current?.querySelector<HTMLElement>('[aria-checked="true"]');
     (selected ?? menuRef.current?.querySelector<HTMLElement>('[role^="menuitem"]'))?.focus();
     doc.addEventListener('mousedown', handlePointerDown);
-    win.addEventListener('scroll', handleScroll, true);
-    // scroll is non-composed: it never crosses the shadow boundary, so the
-    // window listener misses .tab scrolling inside the panel's shadow root.
-    if (scope !== doc) scope.addEventListener('scroll', handleScroll, true);
     return () => {
       popEscapeLayer();
       doc.removeEventListener('mousedown', handlePointerDown);
-      win.removeEventListener('scroll', handleScroll, true);
-      if (scope !== doc) scope.removeEventListener('scroll', handleScroll, true);
     };
   }, [open, onClose, triggerRef]);
 

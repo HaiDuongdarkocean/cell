@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { useMenuPlacement } from '@/shared/ui/useMenuPlacement';
+import { useDismissOnScroll } from '@/shared/ui/useDismissOnScroll';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import type { IconCatalogKey } from '@/shared/icons';
 import styles from './LanguageProfilePanel.module.css';
@@ -42,6 +43,9 @@ export function ProfileMenu({ label, items }: { label: string; items: ProfileMen
   });
   const { minWidth: _minWidth, ...menuStyle } = placementStyle;
 
+  const close = useCallback(() => setOpen(false), []);
+  useDismissOnScroll(open, menuRef, triggerRef, close);
+
   useEffect(() => {
     if (!open) return;
     // IMPORTANT: this component may render inside a portaled iframe (showcase)
@@ -69,25 +73,19 @@ export function ProfileMenu({ label, items }: { label: string; items: ProfileMen
         triggerRef.current?.focus();
       }
     };
-    // Close on scroll — a fixed popover would detach from its trigger.
-    const onScroll = () => setOpen(false);
+    const onResize = () => setOpen(false);
     scope.addEventListener('mousedown', onDocClick);
     // Shared Escape stack (capture phase): the menu consumes the key before
     // ancestor surfaces (e.g. UniversalPanel) — one Escape, one layer.
     const popEscapeLayer = pushEscapeLayer(onKey, doc);
-    win.addEventListener('scroll', onScroll, true);
-    // Scroll events don't cross the shadow boundary — listen on the scope too.
-    if (scope !== doc) scope.addEventListener('scroll', onScroll, true);
-    win.addEventListener('resize', onScroll);
+    win.addEventListener('resize', onResize);
 
     const first = menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not(:disabled)');
     first?.focus();
     return () => {
       scope.removeEventListener('mousedown', onDocClick);
       popEscapeLayer();
-      win.removeEventListener('scroll', onScroll, true);
-      if (scope !== doc) scope.removeEventListener('scroll', onScroll, true);
-      win.removeEventListener('resize', onScroll);
+      win.removeEventListener('resize', onResize);
     };
   }, [open]);
 

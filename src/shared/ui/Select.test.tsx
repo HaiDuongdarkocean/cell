@@ -243,4 +243,19 @@ describe('Select', () => {
 
     host.remove();
   });
+
+  it('stays open when the option list scrolls; closes on outside scroll', () => {
+    render(<Select options={options} value="a" />);
+    fireEvent.click(screen.getByRole('button'));
+
+    const listbox = screen.getByRole('listbox');
+    fireEvent.scroll(listbox);
+    expect(screen.queryByRole('listbox')).toBeInTheDocument();
+
+    fireEvent.scroll(listbox.firstElementChild as HTMLElement);
+    expect(screen.queryByRole('listbox')).toBeInTheDocument();
+
+    fireEvent.scroll(document.body);
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
 });
