@@ -2,6 +2,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  flex: 1;
+  min-height: 0;
 }
 
 .stepRail {
@@ -92,21 +94,29 @@
 .mapLayout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 400px);
+  grid-template-rows: minmax(0, 1fr);
   gap: var(--space-5);
   align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
 .settingsCol {
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
 }
 
 .fieldRows {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .ntBar {
@@ -161,6 +171,7 @@
 
 .previewPanel {
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-2-5);
@@ -226,6 +237,7 @@
 }
 
 .previewCardWrap {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   flex: 1;
   width: 100%;
   min-height: 0;
@@ -262,6 +274,13 @@
 @media (max-width: 860px) {
   .mapLayout {
     grid-template-columns: 1fr;
+    grid-template-rows: none;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  .mapLayout::-webkit-scrollbar {
+    display: none;
   }
 }
 

@@ -30,6 +30,10 @@ interface DialogProps {
   centerTitle?: boolean;
   /** Panel width variant — maps to --dialog-max-width{-sm,,-lg,-xl}. */
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  /** Bound the panel to its max height and let children own their scroll
+   *  regions — the panel itself never scrolls. Use for layouts whose panes
+   *  scroll internally (e.g. a long fields column next to a card preview). */
+  fill?: boolean;
   /** Id of an element inside `children` describing the dialog. Overrides the
    *  default `description`-based wiring. */
   'aria-describedby'?: string;
@@ -54,6 +58,7 @@ export function Dialog({
   headerExtra,
   centerTitle,
   size = 'md',
+  fill = false,
   'aria-describedby': ariaDescribedBy,
   'data-cell-id': dataTestId,
 }: DialogProps): React.JSX.Element | null {
@@ -91,7 +96,7 @@ export function Dialog({
         ref={panelRef}
         as="div"
         variant="dialog"
-        className={[styles.panel, size === 'sm' ? styles.panelSm : size === 'lg' ? styles.panelLg : size === 'xl' ? styles.panelXl : ''].filter(Boolean).join(' ')}
+        className={[styles.panel, fill ? styles.panelFill : '', size === 'sm' ? styles.panelSm : size === 'lg' ? styles.panelLg : size === 'xl' ? styles.panelXl : ''].filter(Boolean).join(' ')}
         onClick={handlePanelClick}
         role="dialog"
         aria-modal="true"

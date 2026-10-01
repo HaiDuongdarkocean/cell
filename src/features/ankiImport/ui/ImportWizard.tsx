@@ -273,6 +273,7 @@ export function ImportWizard({ open, onClose, onStart }: ImportWizardProps): Rea
         description={t('ankiImport.desc')}
         showCloseButton
         size={step === 'mapping' ? 'xl' : 'md'}
+        fill={step === 'mapping'}
         footer={footer}
       >
         {body}

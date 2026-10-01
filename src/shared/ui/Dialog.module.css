@@ -25,6 +25,20 @@
 .panelLg { max-width: var(--dialog-max-width-lg); }
 .panelXl { max-width: var(--dialog-max-width-xl); }
 
+.panelFill {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panelFill .content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .titleIcon {
   flex-shrink: 0;
   display: flex;
