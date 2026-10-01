@@ -96,6 +96,11 @@
   margin-left: auto;
 }
 
+.pickControl {
+  flex: 1;
+  min-width: 0;
+}
+
 .mapLayout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 400px);
@@ -125,24 +130,21 @@
 }
 
 .fieldRow {
-  display: grid;
-  grid-template-columns: 18px minmax(100px, auto) minmax(0, 1fr);
   gap: var(--space-3);
-  align-items: center;
+}
+
+.fieldLabel {
+  flex: 0 1 auto;
+}
+
+.fieldSelect {
+  flex: 1;
+  min-width: 0;
 }
 
 .fieldIcon {
   color: var(--color-text-secondary);
   display: flex;
-}
-
-.fieldName {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
-}
-
-.fieldSelect {
-  width: 100%;
 }
 
 .advRow {
@@ -268,7 +270,6 @@
   }
 
   .fieldRow {
-    grid-template-columns: 18px minmax(88px, auto) minmax(0, 1fr);
     gap: var(--space-2);
   }
 

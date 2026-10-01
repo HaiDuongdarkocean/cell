@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert, Badge, Button, Card, Checkbox, Dialog, Heading, Icon, IconButton,
-  SectionHeader, Select, SelectableCard, Spinner, Text,
+  LabelGroup, SectionHeader, Select, SelectableCard, SettingsRow, Spinner, Text,
   HStack, VStack,
 } from '@/shared/ui';
 import { t } from '@/shared/i18n';
@@ -404,20 +404,28 @@ function ScopeStep({
           <Text variant="supporting" color="secondary">{t('ankiImport.scope.noDecks')}</Text>
         )}
         {rows.map((r) => (
-          <label key={r.deck.id} className={styles.pickRow}>
-            <Checkbox checked={deckIds.has(r.deck.id)} onChange={() => {
-              const next = new Set(deckIds);
-              if (next.has(r.deck.id)) next.delete(r.deck.id); else next.add(r.deck.id);
-              onDeckIds(next);
-            }} />
-            <span className={styles.pickName}>{r.flatName}</span>
-            <span className={styles.pickCounts}>
-              {r.counts.new > 0 && <Badge variant="success" size="sm">{t('ankiImport.scope.countNew', [r.counts.new])}</Badge>}
-              {r.counts.learning > 0 && <Badge variant="muted" size="sm">{t('ankiImport.scope.countLearning', [r.counts.learning])}</Badge>}
-              {r.counts.review > 0 && <Badge size="sm">{t('ankiImport.scope.countReview', [r.counts.review])}</Badge>}
-              {r.counts.suspended > 0 && <Badge variant="warning" size="sm">{t('ankiImport.scope.countSuspended', [r.counts.suspended])}</Badge>}
-            </span>
-          </label>
+          <div key={r.deck.id} className={styles.pickRow}>
+            <Checkbox
+              className={styles.pickControl}
+              checked={deckIds.has(r.deck.id)}
+              onChange={() => {
+                const next = new Set(deckIds);
+                if (next.has(r.deck.id)) next.delete(r.deck.id); else next.add(r.deck.id);
+                onDeckIds(next);
+              }}
+              label={(
+                <>
+                  <span className={styles.pickName}>{r.flatName}</span>
+                  <span className={styles.pickCounts}>
+                    {r.counts.new > 0 && <Badge variant="success" size="sm">{t('ankiImport.scope.countNew', [r.counts.new])}</Badge>}
+                    {r.counts.learning > 0 && <Badge variant="muted" size="sm">{t('ankiImport.scope.countLearning', [r.counts.learning])}</Badge>}
+                    {r.counts.review > 0 && <Badge size="sm">{t('ankiImport.scope.countReview', [r.counts.review])}</Badge>}
+                    {r.counts.suspended > 0 && <Badge variant="warning" size="sm">{t('ankiImport.scope.countSuspended', [r.counts.suspended])}</Badge>}
+                  </span>
+                </>
+              )}
+            />
+          </div>
         ))}
       </div>
       <Text variant="supporting" color="secondary">
@@ -565,9 +573,12 @@ function MappingStep({
           {SYSTEM_SLOTS.map(({ role, fieldId, icon }) => {
             const sources = fieldsForRole(role);
             return (
-              <div key={fieldId} className={styles.fieldRow}>
-                <Icon name={icon} className={styles.fieldIcon} />
-                <span className={styles.fieldName}>{t(`ankiImport.role.${role}`)}</span>
+              <SettingsRow key={fieldId} flush className={styles.fieldRow}>
+                <LabelGroup
+                  icon={<Icon name={icon} />}
+                  label={t(`ankiImport.role.${role}`)}
+                  className={styles.fieldLabel}
+                />
                 <Select
                   size="sm"
                   className={styles.fieldSelect}
@@ -579,7 +590,7 @@ function MappingStep({
                   onChange={(v) => assignRole(role, v)}
                   aria-label={t('ankiImport.mapping.sourceFor', [t(`ankiImport.role.${role}`)])}
                 />
-              </div>
+              </SettingsRow>
             );
           })}
         </div>
@@ -599,11 +610,19 @@ function MappingStep({
         {advOpen && (
           <div className={styles.pickList}>
             {notetypes.map((n) => (
-              <label key={n.id} className={styles.pickRow}>
-                <Checkbox checked={ntIds.has(n.id)} onChange={() => toggleNtById(n.id)} />
-                <span className={styles.pickName}>{n.name}</span>
-                <Text variant="supporting" color="secondary">{t('ankiImport.mapping.cardCount', [cardCountByNt.get(n.id) ?? 0])}</Text>
-              </label>
+              <div key={n.id} className={styles.pickRow}>
+                <Checkbox
+                  className={styles.pickControl}
+                  checked={ntIds.has(n.id)}
+                  onChange={() => toggleNtById(n.id)}
+                  label={(
+                    <>
+                      <span className={styles.pickName}>{n.name}</span>
+                      <Text variant="supporting" color="secondary">{t('ankiImport.mapping.cardCount', [cardCountByNt.get(n.id) ?? 0])}</Text>
+                    </>
+                  )}
+                />
+              </div>
             ))}
           </div>
         )}
