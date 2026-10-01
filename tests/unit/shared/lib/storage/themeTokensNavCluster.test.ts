@@ -18,11 +18,7 @@ function extractTokenValues(cssContent: string, tokenNames: string[]): Record<st
 const kebab = (s: string): string => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 
 const NAV_CLUSTER_TOKEN_NAMES = [
-  '--nav-cluster-button-size',
   '--nav-cluster-button-icon',
-  '--nav-cluster-gap',
-  '--nav-cluster-radius',
-  '--nav-cluster-shadow',
 ];
 
 const tokensJson = JSON.parse(readFileSync(TOKENS_JSON_PATH, 'utf8'));
@@ -56,19 +52,7 @@ describe('Nav cluster tokens — tokens.css + tokens.json mirror sync (ADR-018, 
     }
   });
 
-  it('nav-cluster-button-size is 36px', () => {
-    expect(expectedNavClusterValues['--nav-cluster-button-size']).toBe('36px');
-  });
-
   it('nav-cluster-button-icon is 18px', () => {
     expect(expectedNavClusterValues['--nav-cluster-button-icon']).toBe('18px');
-  });
-
-  it('nav-cluster-gap is 4px', () => {
-    expect(expectedNavClusterValues['--nav-cluster-gap']).toBe('4px');
-  });
-
-  it('nav-cluster-radius is 9999px', () => {
-    expect(expectedNavClusterValues['--nav-cluster-radius']).toBe('9999px');
   });
 });

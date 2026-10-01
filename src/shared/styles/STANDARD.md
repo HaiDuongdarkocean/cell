@@ -76,9 +76,10 @@ Có 9 core color keys: `primary`, `background`, `surface`, `text`, `textSecondar
 | `--color-surface-hover` | Hover state trên surface |
 | `--color-surface-pressed` | Active/pressed state trên surface |
 | `--color-background-muted` | Subtle section background |
-| `--color-background-elevated` | Slightly raised page area (nếu dùng) |
 
 **Borderless policy (L-BORDER):** component mặc định không viền — hierarchy do ladder trên + spacing + shadow-chỉ-cho-floating gánh. `border` chỉ khi mang thông tin: variant `outline`, state (focus/error/success/selected), affordance vật lý (drag/kbd/thumb cutout), separator cấu trúc (`--color-border-subtle`), và `prefers-contrast: more`/`forced-colors`. Luật đầy đủ: `docs/design-system/DESIGN_RATIONALE.md` L-BORDER.
+
+**Hover contract:** hover trên interactive surface mặc định = `background: var(--color-surface-hover)` + `opacity: var(--opacity-hover)` (0.9). `Card.interactive` áp sẵn; control có hover token riêng (`--button-*`, `--input-*`) giữ token đó, không đè opacity.
 
 ### 3.3 Text roles
 
@@ -145,7 +146,7 @@ SSOT là `tokens.json` `static.font.sizes`. Tên scale (không phải giá trị
 
 ### 4.3 Semantic type roles
 
-Các vai trò dùng composite tokens (`--body-md-font-size`, `--title-lg-font-size`, v.v.).
+Vai trò semantic sống trong `text-*` composite tokens mà `Text`/`Heading` consume (`--text-body-font-size`, `--text-heading-3-*`, v.v.). Scale `display/headline/title/body/label/mono` cũ đã bị xóa (không có consumer) — dùng variant của `Text`/`Heading` hoặc primitive `--font-size-*`. Bảng dưới là guidance role → kích thước:
 
 | Role | Kích thước mặc định | Dùng cho |
 |---|---|---|
@@ -225,7 +226,6 @@ Cell dùng **một adaptive density duy nhất**, không có density selector.
 
 | Token | Vai trò |
 |---|---|
-| `--shadow-0` | none — default flat |
 | `--shadow-sm` | hairline — card hover, small lift |
 | `--shadow-md` | mid — popover |
 | `--shadow-lg` | high — modal |
@@ -247,14 +247,13 @@ Cell dùng **một adaptive density duy nhất**, không có density selector.
 | `--duration-fast` | 120ms |
 | `--duration-normal` | 200ms |
 | `--duration-slow` | 300ms |
-| `--duration-slower` | 500ms — large transition |
+| `--duration-1000` / `--duration-1500` / `--duration-2000` | 1s–2s — animation dài (không dùng cho transition UI) |
 
 ### 7.2 Easing
 
 | Token | Curve |
 |---|---|
 | `--ease-default` | `cubic-bezier(0.4, 0, 0.2, 1)` |
-| `--ease-in` | `cubic-bezier(0.4, 0, 1, 1)` |
 | `--ease-out` | `cubic-bezier(0, 0, 0.2, 1)` |
 | `--ease-spring` | `cubic-bezier(0.175, 0.885, 0.32, 1.275)` |
 

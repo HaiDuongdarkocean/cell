@@ -135,22 +135,22 @@ function flattenStaticTokens(staticObj) {
   }
 
   // navCluster
-  for (const [key, value] of Object.entries(staticObj.navCluster)) {
+  for (const [key, value] of Object.entries(staticObj.navCluster ?? {})) {
     push(`nav-cluster-${key}`, value);
   }
 
   // touchTarget
-  for (const [key, value] of Object.entries(staticObj.touchTarget)) {
+  for (const [key, value] of Object.entries(staticObj.touchTarget ?? {})) {
     push(`touch-target-${key}`, value);
   }
 
   // popupImage
-  for (const [key, value] of Object.entries(staticObj.popupImage)) {
+  for (const [key, value] of Object.entries(staticObj.popupImage ?? {})) {
     push(`popup-image-${key}`, value);
   }
 
   // overlay
-  for (const [key, value] of Object.entries(staticObj.overlay)) {
+  for (const [key, value] of Object.entries(staticObj.overlay ?? {})) {
     push(`overlay-${key}`, value);
   }
 
@@ -248,11 +248,13 @@ function validateContrastPairs(mode, core, derived, component = {}) {
     }
   }
   if (derived['color-primary-emphasis']) {
-    pairs.push(
-      ['On Primary Emphasis / Primary Emphasis', derived['color-on-primary-emphasis'], derived['color-primary-emphasis']],
-      ['On Primary Emphasis / Primary Emphasis Hover', derived['color-on-primary-emphasis'], derived['color-primary-emphasis-hover']],
-      ['On Primary Emphasis / Primary Emphasis Active', derived['color-on-primary-emphasis'], derived['color-primary-emphasis-active']],
-    );
+    pairs.push(['On Primary Emphasis / Primary Emphasis', derived['color-on-primary-emphasis'], derived['color-primary-emphasis']]);
+    for (const state of ['hover', 'active']) {
+      const stateToken = derived[`color-primary-emphasis-${state}`];
+      if (stateToken) {
+        pairs.push([`On Primary Emphasis / Primary Emphasis ${state}`, derived['color-on-primary-emphasis'], stateToken]);
+      }
+    }
   }
   const failures = [];
   for (const [label, rawFg, rawBg] of pairs) {

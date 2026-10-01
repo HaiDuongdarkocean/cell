@@ -8,7 +8,8 @@
     background-color var(--duration-fast) var(--ease-in-out),
     border-color var(--duration-fast) var(--ease-in-out),
     transform var(--duration-fast) var(--ease-in-out),
-    box-shadow var(--duration-fast) var(--ease-in-out);
+    box-shadow var(--duration-fast) var(--ease-in-out),
+    opacity var(--duration-fast) var(--ease-in-out);
 }
 
 .interactive {
@@ -18,6 +19,7 @@
 @media (hover: hover) and (pointer: fine) {
   .interactive:hover {
     background: var(--color-surface-hover);
+    opacity: var(--opacity-hover);
     transform: translateY(calc(var(--space-0-5) * -0.5));
     box-shadow: var(--shadow-md);
   }

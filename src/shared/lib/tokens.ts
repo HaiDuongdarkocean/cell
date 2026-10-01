@@ -247,10 +247,10 @@ const flattenStaticTokens = (): TokenRecord => {
   for (const [k, v] of Object.entries(s.opacity ?? {})) out[`--opacity-${k}`] = String(v);
   for (const [k, v] of Object.entries(s.motion)) out[`--${k}`] = v;
   for (const [k, v] of Object.entries(s.zIndex)) out[`--z-${k}`] = String(v);
-  for (const [k, v] of Object.entries(s.navCluster)) {
+  for (const [k, v] of Object.entries(s.navCluster ?? {})) {
     out[`--nav-cluster-${k.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()}`] = String(v);
   }
-  for (const [k, v] of Object.entries(s.overlay)) {
+  for (const [k, v] of Object.entries(s.overlay ?? {})) {
     const name = `--overlay-${k}`;
     out[name] = String(v);
     const rgb = typeof v === 'string' ? tryHexToRgb(v) : null;
@@ -258,8 +258,7 @@ const flattenStaticTokens = (): TokenRecord => {
       out[`${name}-rgb`] = `${rgb.r}, ${rgb.g}, ${rgb.b}`;
     }
   }
-  for (const [k, v] of Object.entries(s.touchTarget)) out[`--touch-target-${k}`] = String(v);
-  for (const [k, v] of Object.entries(s.popupImage)) out[`--popup-image-${k}`] = String(v);
+  for (const [k, v] of Object.entries(s.touchTarget ?? {})) out[`--touch-target-${k}`] = String(v);
 
   Object.assign(out, flattenCompositeTokens());
 

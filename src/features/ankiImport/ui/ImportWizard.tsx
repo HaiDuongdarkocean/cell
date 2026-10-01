@@ -313,20 +313,20 @@ function SourceStep({
       <div className={styles.sourceGrid}>
         <SelectableCard role="button" aria-label={t('ankiImport.source.liveTitle')} onSelect={() => { if (!connecting && !parsing) onConnect(); }}>
           <div className={styles.sourceCard}>
-            <span className={styles.sourceIcon}><Icon name="import" /></span>
-            <VStack gap="1">
+            <div className={styles.sourceCardHead}>
+              <span className={styles.sourceIcon}><Icon name="import" /></span>
               <Text variant="label">{t('ankiImport.source.liveTitle')}</Text>
-              <Text variant="supporting" color="secondary">{t('ankiImport.source.liveHint')}</Text>
-            </VStack>
+            </div>
+            <Text variant="supporting" color="secondary">{t('ankiImport.source.liveHint')}</Text>
           </div>
         </SelectableCard>
         <SelectableCard role="button" aria-label={t('ankiImport.source.fileTitle')} onSelect={() => { if (!connecting && !parsing) onPickFile(); }}>
           <div className={styles.sourceCard}>
-            <span className={styles.sourceIcon}><Icon name="folderOpen" /></span>
-            <VStack gap="1">
+            <div className={styles.sourceCardHead}>
+              <span className={styles.sourceIcon}><Icon name="folderOpen" /></span>
               <Text variant="label">{t('ankiImport.source.fileTitle')}</Text>
-              <Text variant="supporting" color="secondary">{t('ankiImport.source.fileHint')}</Text>
-            </VStack>
+            </div>
+            <Text variant="supporting" color="secondary">{t('ankiImport.source.fileHint')}</Text>
           </div>
         </SelectableCard>
       </div>

@@ -327,7 +327,7 @@
 }
 
 .description {
-  font-size: var(--body-md-font-size);
+  font-size: var(--font-size-md);
   line-height: var(--leading-relaxed);
   color: var(--color-text-secondary);
 }

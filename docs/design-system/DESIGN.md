@@ -123,8 +123,8 @@ When building any UI, map each element to an existing `src/shared/ui/*` componen
 ## 5. Hover / State Rules
 
 ```css
-/* Correct hover */
-:hover { background: var(--color-surface-hover); }
+/* Correct hover — background đổi surface-hover VÀ opacity default 0.9 */
+:hover { background: var(--color-surface-hover); opacity: var(--opacity-hover); }
 
 /* Correct selected/active */
 .selected { background: var(--color-primary-subtle); color: var(--color-primary); }
@@ -137,6 +137,8 @@ When building any UI, map each element to an existing `src/shared/ui/*` componen
 ```
 
 **Forbidden:** `var(--color-accent)` for hover. Use `var(--color-surface-hover)`.
+
+**Hover opacity:** mặc định mọi interactive surface hover kèm `opacity: var(--opacity-hover)` (= 0.9) — đã tích hợp sẵn trong `Card.interactive`. Control có hover token riêng (`--button-*`, `--input-*`) giữ token đó, không đè opacity.
 
 ### 5.1 Color surface & transparency map
 
