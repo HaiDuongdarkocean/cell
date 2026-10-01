@@ -1557,6 +1557,156 @@
       "owner": null,
       "worktree": null,
       "updated": "2026-10-01T22:05:49.287Z"
+    },
+    "subtitle-bulk-status": {
+      "stage": "shipped",
+      "mode": "all",
+      "uiSurface": "yes",
+      "artifacts": {
+        "intent": "docs/intent/subtitle-bulk-status.md",
+        "spec": "docs/specs/subtitle-bulk-status.md",
+        "componentMapping": "docs/intent/subtitle-bulk-status-component-mapping.md",
+        "designBrief": "docs/intent/subtitle-bulk-status-design-brief.md"
+      },
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-10-01T23:13:21.979Z",
+          "head": "c9a1ce16c68d9e8f8aa75d410939b78452c37a40",
+          "dirty": [
+            "src/entrypoints/local-player/hooks/useSubtitleActions.ts",
+            "src/features/subtitle/ui/CueList.test.tsx",
+            "src/features/subtitle/ui/CueList.tsx",
+            "src/features/subtitle/ui/contentScriptController.ts",
+            "src/features/subtitle/ui/reactSubtitleController.test.ts",
+            "src/features/subtitle/ui/reactSubtitleController.ts",
+            "src/features/subtitle/ui/subtitleCueEngine.ts",
+            "src/features/tokenize/controller/subtitleTokenizeController.test.ts",
+            "src/features/tokenize/controller/subtitleTokenizeController.ts",
+            "src/features/tokenize/controller/webTokenizeController.ts",
+            "src/features/tokenize/logic/statusKeyControls.ts",
+            "src/features/tokenize/ui/tokenSpanCss.ts",
+            "src/features/tokenize/ui/tokenSpanRenderer.ts",
+            "src/shared/i18n/messages/en.json",
+            "src/shared/i18n/messages/vi.json",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "e2e/extension-subtitle-bulk-status.spec.ts",
+            "src/features/tokenize/logic/selectionAnnouncer.ts"
+          ]
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-10-01T23:12:34.233Z",
+          "head": "c9a1ce16c68d9e8f8aa75d410939b78452c37a40",
+          "dirty": [
+            "src/entrypoints/local-player/hooks/useSubtitleActions.ts",
+            "src/features/subtitle/ui/CueList.test.tsx",
+            "src/features/subtitle/ui/CueList.tsx",
+            "src/features/subtitle/ui/contentScriptController.ts",
+            "src/features/subtitle/ui/reactSubtitleController.test.ts",
+            "src/features/subtitle/ui/reactSubtitleController.ts",
+            "src/features/subtitle/ui/subtitleCueEngine.ts",
+            "src/features/tokenize/controller/subtitleTokenizeController.test.ts",
+            "src/features/tokenize/controller/subtitleTokenizeController.ts",
+            "src/features/tokenize/controller/webTokenizeController.ts",
+            "src/features/tokenize/logic/statusKeyControls.ts",
+            "src/features/tokenize/ui/tokenSpanCss.ts",
+            "src/features/tokenize/ui/tokenSpanRenderer.ts",
+            "src/shared/i18n/messages/en.json",
+            "src/shared/i18n/messages/vi.json",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "e2e/extension-subtitle-bulk-status.spec.ts",
+            "src/features/tokenize/logic/selectionAnnouncer.ts"
+          ]
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-10-01T23:13:25.583Z",
+          "head": "c9a1ce16c68d9e8f8aa75d410939b78452c37a40",
+          "dirty": [
+            "src/entrypoints/local-player/hooks/useSubtitleActions.ts",
+            "src/features/subtitle/ui/CueList.test.tsx",
+            "src/features/subtitle/ui/CueList.tsx",
+            "src/features/subtitle/ui/contentScriptController.ts",
+            "src/features/subtitle/ui/reactSubtitleController.test.ts",
+            "src/features/subtitle/ui/reactSubtitleController.ts",
+            "src/features/subtitle/ui/subtitleCueEngine.ts",
+            "src/features/tokenize/controller/subtitleTokenizeController.test.ts",
+            "src/features/tokenize/controller/subtitleTokenizeController.ts",
+            "src/features/tokenize/controller/webTokenizeController.ts",
+            "src/features/tokenize/logic/statusKeyControls.ts",
+            "src/features/tokenize/ui/tokenSpanCss.ts",
+            "src/features/tokenize/ui/tokenSpanRenderer.ts",
+            "src/shared/i18n/messages/en.json",
+            "src/shared/i18n/messages/vi.json",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "e2e/extension-subtitle-bulk-status.spec.ts",
+            "src/features/tokenize/logic/selectionAnnouncer.ts"
+          ]
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-10-01T23:14:29.847Z",
+          "head": "c9a1ce16c68d9e8f8aa75d410939b78452c37a40",
+          "dirty": [
+            "src/entrypoints/local-player/hooks/useSubtitleActions.ts",
+            "src/features/subtitle/ui/CueList.test.tsx",
+            "src/features/subtitle/ui/CueList.tsx",
+            "src/features/subtitle/ui/contentScriptController.ts",
+            "src/features/subtitle/ui/reactSubtitleController.test.ts",
+            "src/features/subtitle/ui/reactSubtitleController.ts",
+            "src/features/subtitle/ui/subtitleCueEngine.ts",
+            "src/features/tokenize/controller/subtitleTokenizeController.test.ts",
+            "src/features/tokenize/controller/subtitleTokenizeController.ts",
+            "src/features/tokenize/controller/webTokenizeController.ts",
+            "src/features/tokenize/logic/statusKeyControls.ts",
+            "src/features/tokenize/ui/tokenSpanCss.ts",
+            "src/features/tokenize/ui/tokenSpanRenderer.ts",
+            "src/shared/i18n/messages/en.json",
+            "src/shared/i18n/messages/vi.json",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "e2e/extension-subtitle-bulk-status.spec.ts",
+            "src/features/tokenize/logic/selectionAnnouncer.ts"
+          ]
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-10-01T23:15:21.418Z",
+          "head": "c9a1ce16c68d9e8f8aa75d410939b78452c37a40",
+          "dirty": [
+            "src/entrypoints/local-player/hooks/useSubtitleActions.ts",
+            "src/features/subtitle/ui/CueList.test.tsx",
+            "src/features/subtitle/ui/CueList.tsx",
+            "src/features/subtitle/ui/contentScriptController.ts",
+            "src/features/subtitle/ui/reactSubtitleController.test.ts",
+            "src/features/subtitle/ui/reactSubtitleController.ts",
+            "src/features/subtitle/ui/subtitleCueEngine.ts",
+            "src/features/tokenize/controller/subtitleTokenizeController.test.ts",
+            "src/features/tokenize/controller/subtitleTokenizeController.ts",
+            "src/features/tokenize/controller/webTokenizeController.ts",
+            "src/features/tokenize/logic/statusKeyControls.ts",
+            "src/features/tokenize/ui/tokenSpanCss.ts",
+            "src/features/tokenize/ui/tokenSpanRenderer.ts",
+            "src/shared/i18n/messages/en.json",
+            "src/shared/i18n/messages/vi.json",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "e2e/extension-subtitle-bulk-status.spec.ts",
+            "src/features/tokenize/logic/selectionAnnouncer.ts"
+          ]
+        }
+      },
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "owner": null,
+      "worktree": null,
+      "updated": "2026-10-01T23:21:59.802Z"
     }
   }
 }
