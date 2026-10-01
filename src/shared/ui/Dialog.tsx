@@ -111,11 +111,13 @@ export function Dialog({
                 <CloseButton variant="ghost" onClick={() => onOpenChange?.(false)} />
               </HStack>
             )}
-            {titleIcon && <span className={styles.titleIcon}>{titleIcon}</span>}
-            <div className={styles.headerText}>
-              {title && <h2 id="dialog-title" className={styles.title}>{title}</h2>}
-              {description && <p id="dialog-description" className={styles.description}>{description}</p>}
-            </div>
+            <HStack align="center" gap="3" className={styles.headerTitleGroup}>
+              {titleIcon && <span className={styles.titleIcon}>{titleIcon}</span>}
+              <div className={styles.headerText}>
+                {title && <h2 id="dialog-title" className={styles.title}>{title}</h2>}
+                {description && <p id="dialog-description" className={styles.description}>{description}</p>}
+              </div>
+            </HStack>
             {showCloseButton && !centerTitle && (
               <HStack align="center" gap="1" className={styles.headerRightGroup}>
                 {headerExtra}

@@ -168,22 +168,6 @@
   line-height: var(--leading-tight);
 }
 
-.ntTabs {
-  display: flex;
-  gap: var(--space-1);
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
-
-.ntTabs > * {
-  flex-shrink: 0;
-}
-
-.ntTabExcluded {
-  opacity: 0.45;
-  text-decoration: line-through;
-}
-
 .fieldRows {
   display: flex;
   flex-direction: column;
@@ -192,7 +176,7 @@
 
 .fieldRow {
   display: grid;
-  grid-template-columns: 18px minmax(100px, auto) minmax(0, 1fr) auto;
+  grid-template-columns: 18px minmax(100px, auto) minmax(0, 1fr);
   gap: var(--space-3);
   align-items: center;
 }
@@ -209,11 +193,6 @@
 
 .fieldSelect {
   width: 100%;
-}
-
-.fieldMore {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
 }
 
 .advRow {
@@ -326,26 +305,6 @@
   gap: var(--space-2);
 }
 
-.footerBar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  width: 100%;
-  flex-wrap: wrap;
-}
-
-.footerMeta {
-  min-width: 0;
-  overflow: hidden;
-}
-
-.footerMeta > *:last-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 @media (max-width: 860px) {
   .mapLayout {
     grid-template-columns: 1fr;
@@ -358,7 +317,7 @@
   }
 
   .fieldRow {
-    grid-template-columns: 18px minmax(88px, auto) minmax(0, 1fr) auto;
+    grid-template-columns: 18px minmax(88px, auto) minmax(0, 1fr);
     gap: var(--space-2);
   }
 
@@ -369,9 +328,5 @@
 
   .previewCardWrap {
     max-height: 56vh;
-  }
-
-  .footerMeta {
-    flex-basis: 100%;
   }
 }
