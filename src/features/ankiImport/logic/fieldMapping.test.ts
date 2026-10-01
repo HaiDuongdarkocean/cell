@@ -23,6 +23,13 @@ describe('htmlToText', () => {
     expect(htmlToText('a<br>b &amp; c <b>x</b>')).toBe('a\nb & c x');
     expect(htmlToText('[sound:a.mp3]<img src="i.png">')).toBe('');
   });
+
+  it('block tags become newlines so entry separators survive', () => {
+    expect(htmlToText('<div>a</div><div>b</div>')).toBe('a\nb');
+    expect(htmlToText('<p>a</p><p>b</p>')).toBe('a\nb');
+    expect(htmlToText('<ul><li>a</li><li>b</li></ul>')).toBe('a\nb');
+    expect(htmlToText('<div>x</div><div>---</div><div>y</div>')).toBe('x\n---\ny');
+  });
 });
 
 describe('mediaRefsIn', () => {

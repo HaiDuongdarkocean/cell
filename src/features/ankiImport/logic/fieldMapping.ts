@@ -12,14 +12,16 @@ const IMG_RE = /<img[^>]+src=["']?([^"'\s>]+)["']?[^>]*>/gi;
 const HAS_SOUND_RE = /\[sound:[^\]]+\]/;
 const HAS_IMG_RE = /<img[^>]+src=/i;
 const BR_RE = /<br\s*\/?\s*>/gi;
+const BLOCK_RE = /<\/(?:div|p|ul|ol|dl|dt|dd|h[1-6]|blockquote|pre|table|tr|td|th|section|article|header|footer|figure|figcaption|main|aside)\s*>|<(?:li|hr)\b[^>]*>/gi;
 const TAG_RE = /<[^>]+>/g;
 
-/** Strip Anki field HTML to plain text: <br>→newline, tags removed, common entities decoded. */
+/** Strip Anki field HTML to plain text: <br>/block tags→newline, tags removed, common entities decoded. */
 export function htmlToText(html: string): string {
   const text = html
     .replace(SOUND_RE, '')
     .replace(IMG_RE, '')
     .replace(BR_RE, '\n')
+    .replace(BLOCK_RE, '\n')
     .replace(TAG_RE, '')
     .replace(/&nbsp;/g, ' ')
     .replace(/&lt;/g, '<')
@@ -27,7 +29,7 @@ export function htmlToText(html: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#39;|&apos;/g, "'")
     .replace(/&amp;/g, '&');
-  return text.replace(/[ \t]+\n/g, '\n').trim();
+  return text.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 export function mediaRefsIn(html: string): { sounds: string[]; images: string[] } {
