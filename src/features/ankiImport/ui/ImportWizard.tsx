@@ -611,30 +611,6 @@ function MappingStep({
       <section className={styles.previewPanel}>
         <Heading level={3} className={styles.sectionTitle}>{t('ankiImport.preview.title')}</Heading>
         <Text variant="supporting" color="secondary">{t('ankiImport.preview.desc')}</Text>
-        {preview && audioCache && imageCache && (
-          <Card className={styles.previewCardWrap} data-cell-id="anki-preview-card">
-            {flipped ? (
-              <SrsReviewCardBack
-                note={preview.note}
-                audioCache={audioCache}
-                imageCache={imageCache}
-                onFlipBack={() => setFlipped(false)}
-              />
-            ) : (
-              <SrsReviewCardFront
-                note={preview.note}
-                stimulus={preview.stimulus}
-                isSpelling={false}
-                typedInput=""
-                onTypedInputChange={() => {}}
-                inputId="anki-import-preview-input"
-                onFlip={() => setFlipped(true)}
-                audioCache={audioCache}
-                imageCache={imageCache}
-              />
-            )}
-          </Card>
-        )}
         <div className={styles.previewNav}>
           <HStack gap="1">
             <Button size="sm" variant={flipped ? 'ghost' : 'secondary'} onClick={() => setFlipped(false)}>{t('ankiImport.preview.front')}</Button>
@@ -660,12 +636,30 @@ function MappingStep({
             </IconButton>
           </HStack>
         </div>
-        <Alert
-          variant="default"
-          icon={<Icon name="info" />}
-          title={t('ankiImport.preview.tipTitle')}
-          description={t('ankiImport.preview.tipDesc')}
-        />
+        {preview && audioCache && imageCache && (
+          <Card className={styles.previewCardWrap} data-cell-id="anki-preview-card">
+            {flipped ? (
+              <SrsReviewCardBack
+                note={preview.note}
+                audioCache={audioCache}
+                imageCache={imageCache}
+                onFlipBack={() => setFlipped(false)}
+              />
+            ) : (
+              <SrsReviewCardFront
+                note={preview.note}
+                stimulus={preview.stimulus}
+                isSpelling={false}
+                typedInput=""
+                onTypedInputChange={() => {}}
+                inputId="anki-import-preview-input"
+                onFlip={() => setFlipped(true)}
+                audioCache={audioCache}
+                imageCache={imageCache}
+              />
+            )}
+          </Card>
+        )}
       </section>
     </div>
   );

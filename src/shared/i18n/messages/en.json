@@ -1854,8 +1854,6 @@
   "ankiImport.preview.desc": "This is how the data will look.",
   "ankiImport.preview.front": "Front",
   "ankiImport.preview.back": "Back",
-  "ankiImport.preview.tipTitle": "Tip",
-  "ankiImport.preview.tipDesc": "Preview how the data will appear on the card before importing.",
   "ankiImport.advanced.title": "Advanced options",
   "ankiImport.advanced.desc": "Choose which note types to import…",
   "ankiImport.role.target": "Target word",

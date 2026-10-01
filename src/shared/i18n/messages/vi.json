@@ -1854,8 +1854,6 @@
   "ankiImport.preview.desc": "Dữ liệu sẽ được hiển thị như thế này.",
   "ankiImport.preview.front": "Mặt trước",
   "ankiImport.preview.back": "Mặt sau",
-  "ankiImport.preview.tipTitle": "Mẹo nhỏ",
-  "ankiImport.preview.tipDesc": "Bạn có thể xem trước cách dữ liệu được hiển thị trong thẻ trước khi nhập.",
   "ankiImport.advanced.title": "Tùy chọn nâng cao",
   "ankiImport.advanced.desc": "Chọn loại thẻ cần nhập…",
   "ankiImport.role.target": "Từ mục tiêu",
