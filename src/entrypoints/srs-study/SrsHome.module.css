@@ -364,3 +364,24 @@
   color: var(--color-text-secondary);
   text-align: center;
 }
+
+@media (min-width: 1024px) {
+  .home {
+    display: grid;
+    grid-template-columns: minmax(0, 26rem) minmax(0, 1fr);
+    grid-template-areas:
+      "topbar topbar"
+      "hero decks"
+      "note decks"
+      "footer footer";
+    align-items: start;
+    column-gap: var(--space-6);
+    width: min(72rem, 92vw);
+  }
+
+  .topBar { grid-area: topbar; }
+  .hero { grid-area: hero; }
+  .finishedText { grid-area: note; }
+  .decksSection { grid-area: decks; }
+  .footerNote { grid-area: footer; }
+}
