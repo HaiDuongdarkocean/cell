@@ -749,10 +749,6 @@ function MappingStep({
         </div>
       </section>
       <section className={styles.previewPanel}>
-        <SectionHeader
-          title={t('ankiImport.preview.title')}
-          subtitle={t('ankiImport.preview.desc')}
-        />
         <div className={styles.previewNav}>
           <div className={styles.dots}>
             {samples.map((s, i) => (

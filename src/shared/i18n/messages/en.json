@@ -1850,8 +1850,7 @@
   "ankiImport.mapping.next": "Next card",
   "ankiImport.mapping.cardCount": "$1 cards",
   "ankiImport.mapping.noneSelected": "No note types selected.",
-  "ankiImport.preview.title": "Card preview",
-  "ankiImport.preview.desc": "This is how the data will look.",
+
   "ankiImport.notetypes.title": "Note types",
   "ankiImport.notetypes.manage": "Manage note types",
   "ankiImport.role.target": "Target word",
