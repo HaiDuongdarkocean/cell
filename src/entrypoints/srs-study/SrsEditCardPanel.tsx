@@ -12,7 +12,7 @@ import { splitTags } from '@/features/cardCreator/service/noteUpdate';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { SrsDeck, SrsReviewRecord } from '@/entities/srs/types';
 import { componentLabel } from '@/features/srs/ui/srsLabels';
-import { HighlightedSentence } from '@/features/srs/ui/srsCardShared';
+import { SentenceText } from '@/features/srs/ui/srsCardShared';
 import { persistNoteFields, storedMedia, toEditText, NoteMediaField, orderedEditFields } from './srsNoteEditorShared';
 import styles from './SrsEditCardPanel.module.css';
 
@@ -170,7 +170,7 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
       <Box className={styles.preview}>
         <Text className={styles.previewWord}>{note.targetWord}</Text>
         {sentenceText && (
-          <HighlightedSentence sentence={sentenceText} target={note.targetWord} />
+          <SentenceText sentence={sentenceText} />
         )}
       </Box>
 

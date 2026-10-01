@@ -196,7 +196,7 @@
 }
 
 .targetWord {
-  font-size: var(--font-size-3xl);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   text-align: center;
   color: var(--color-text-accent-strong);
@@ -207,11 +207,6 @@
   line-height: 1.5;
   text-align: center;
   white-space: pre-line;
-}
-
-.sentenceTarget {
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-accent-strong);
 }
 
 .audioRow {

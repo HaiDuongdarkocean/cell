@@ -9,10 +9,10 @@ import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote, SrsStimulus 
 import { stimulusLabel } from './srsLabels';
 import {
   formatFieldValue,
-  HighlightedSentence,
   playAudio,
   playAudioUrl,
   playableUrl,
+  SentenceText,
   sequentialAudio,
   useImageBlobUrl,
 } from './srsCardShared';
@@ -39,7 +39,6 @@ function StimulusImage({
 interface StimulusViewProps {
   readonly noteId: string;
   readonly stimulus: SrsStimulus;
-  readonly targetWord: string;
   readonly audioCache: ReadonlyMap<string, SrsAudioAsset>;
   readonly imageCache: ReadonlyMap<string, SrsImageAsset>;
   readonly repoAudio: ReadonlyMap<string, SrsAudioAsset>;
@@ -50,7 +49,6 @@ interface StimulusViewProps {
 function StimulusView({
   noteId,
   stimulus,
-  targetWord,
   audioCache,
   imageCache,
   repoAudio,
@@ -76,7 +74,7 @@ function StimulusView({
               asset={audioCache.get(audioAssetId(noteId, fieldId, value.source)) ?? repoAudio.get(fieldId)}
             />
           ) : (
-            <HighlightedSentence sentence={formatFieldValue(value)} target={targetWord} />
+            <SentenceText sentence={formatFieldValue(value)} />
           )}
         </Box>
       ))}
@@ -189,12 +187,11 @@ export function SrsReviewCardFront({
     >
       <Heading level={1} className={styles.targetWord}>{note.targetWord}</Heading>
       {note.fields.sentence?.kind === 'text' && note.fields.sentence.value && (
-        <HighlightedSentence sentence={note.fields.sentence.value} target={note.targetWord} />
+        <SentenceText sentence={note.fields.sentence.value} />
       )}
       <StimulusView
         noteId={note.id}
         stimulus={stimulus}
-        targetWord={note.targetWord}
         audioCache={audioCache}
         imageCache={imageCache}
         repoAudio={repoAudio}

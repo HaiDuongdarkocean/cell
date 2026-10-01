@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { Text } from '@/shared/ui';
-import { escapeRegExp, normalizeSpelling } from '@/features/srs/lib/helpers';
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset } from '@/entities/srs/types';
 import styles from './SrsReviewCard.module.css';
 
@@ -62,19 +61,6 @@ export function formatFieldValue(value: SrsFieldValue): string {
   return value.value;
 }
 
-export function HighlightedSentence({ sentence, target }: { sentence: string; target: string }): React.JSX.Element {
-  const normalizedTarget = normalizeSpelling(target);
-  const regex = new RegExp(`(${escapeRegExp(normalizedTarget)})`, 'gi');
-  const parts = sentence.split(regex);
-  return (
-    <Text className={styles.sentence}>
-      {parts.map((part, i) =>
-        normalizeSpelling(part) === normalizedTarget ? (
-          <strong key={i} className={styles.sentenceTarget}>{part}</strong>
-        ) : (
-          <span key={i}>{part}</span>
-        ),
-      )}
-    </Text>
-  );
+export function SentenceText({ sentence }: { sentence: string }): React.JSX.Element {
+  return <Text className={styles.sentence}>{sentence}</Text>;
 }

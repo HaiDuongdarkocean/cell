@@ -7,7 +7,7 @@ import { parseDefEntries } from '@/features/srs/lib/defEntry';
 import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepository';
 import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote } from '@/entities/srs/types';
-import { HighlightedSentence, playAudio, playAudioUrl, playableUrl, sequentialAudio, useImageBlobUrl } from './srsCardShared';
+import { playAudio, playAudioUrl, playableUrl, SentenceText, sequentialAudio, useImageBlobUrl } from './srsCardShared';
 import styles from './SrsReviewCard.module.css';
 
 const BUILTIN_FIELDS = new Set(['target', 'ipa', 'sentence', 'def', 'wordAudio', 'sentAudio', 'image', 'translation', 'notes', 'examples']);
@@ -188,7 +188,7 @@ export function SrsReviewCardBack({
         <Heading level={1} className={styles.targetWord}>{note.targetWord}</Heading>
 
         {note.fields.sentence?.kind === 'text' && (
-          <HighlightedSentence sentence={note.fields.sentence.value} target={note.targetWord} />
+          <SentenceText sentence={note.fields.sentence.value} />
         )}
 
         {hasTranslation && (
