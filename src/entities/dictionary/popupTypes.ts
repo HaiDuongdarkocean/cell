@@ -66,6 +66,8 @@ export interface AudioItem {
   readonly url?: string;
   /** Raw audio bytes for sources that cannot provide a cross-context URL (e.g. local File System Access). */
   readonly audioBytes?: Uint8Array;
+  /** Wire-carried base64 of `audioBytes` — decoded at the provider boundary and stripped before UI state. */
+  readonly audioBytesB64?: string;
   /** Server hint; UI selection state ở Zustand (O10). */
   readonly defaultSelected: boolean;
 }

@@ -150,4 +150,55 @@ describe('LocalAudioProvider', () => {
     expect(items[0].audioBytes).toBeInstanceOf(Uint8Array);
     expect(Array.from(items[0].audioBytes ?? [])).toEqual([73, 68, 51, 4]);
   });
+
+  it('decodes audioBytesB64 and strips the wire field from the materialized item', async () => {
+    (globalThis as { __cellSendMessage?: unknown }).__cellSendMessage = () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          items: [
+            {
+              id: 'local-1',
+              kind: 'word',
+              source: 'local',
+              label: 'Forvo · x.mp3',
+              state: 'idle',
+              audioBytesB64: 'SUQzBA==',
+              defaultSelected: false,
+            },
+          ],
+        },
+      });
+
+    const provider = new LocalAudioProvider();
+    const items = await provider.resolve('hello', 'en');
+    expect(items).toHaveLength(1);
+    expect(Array.from(items[0].audioBytes ?? [])).toEqual([73, 68, 51, 4]);
+    expect(items[0].audioBytesB64).toBeUndefined();
+  });
+
+  it('prefers audioBytes over audioBytesB64 when both are present', async () => {
+    (globalThis as { __cellSendMessage?: unknown }).__cellSendMessage = () =>
+      Promise.resolve({
+        success: true,
+        data: {
+          items: [
+            {
+              id: 'local-1',
+              kind: 'word',
+              source: 'local',
+              label: 'Forvo · x.mp3',
+              state: 'idle',
+              audioBytes: new Uint8Array([7, 7]),
+              audioBytesB64: 'SUQzBA==',
+              defaultSelected: false,
+            },
+          ],
+        },
+      });
+
+    const provider = new LocalAudioProvider();
+    const items = await provider.resolve('hello', 'en');
+    expect(Array.from(items[0].audioBytes ?? [])).toEqual([7, 7]);
+  });
 });

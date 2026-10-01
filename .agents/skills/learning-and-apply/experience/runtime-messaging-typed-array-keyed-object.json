@@ -1,0 +1,17 @@
+{
+  "id": "runtime-messaging-typed-array-keyed-object",
+  "title": "chrome.runtime.sendMessage serializes Uint8Array as an integer-keyed plain object (~100k keys) — carry base64 on the wire, decode once at the boundary",
+  "category": ["messaging", "data"],
+  "tags": ["sendMessage", "Uint8Array", "base64", "audioBytes", "serialization", "zod", "wire-shape"],
+  "trigger": "A message response needs to carry binary bytes (audio/WAV/zip) across chrome.runtime sendMessage/sendResponse between contexts (offscreen→SW→content)",
+  "principle": "Runtime messaging JSON-serializes bodies: a Uint8Array arrives as {0:..,1:..,…} and Object.values-rehydration costs ~100k property lookups plus a second full-size allocation per item. Encode to base64 at the producer before send (reuse shared/lib/base64 encodeBase64 — widen to accept Uint8Array so view byteOffset/byteLength are respected), decode once at the provider/consumer boundary, and strip the b64 key off the materialized entity so the ~1.33× string doesn't linger in React state next to the decoded bytes. Keep a legacy-field fallback (z.unknown + toUint8Array) for tests/mocks/in-context producers — a stale content script after reload can't reach the new SW anyway, so cross-version tolerance is cheap insurance, not a real path. Worker postMessage is different: structured clone preserves ArrayBuffer — no encoding needed there.",
+  "cases": [
+    {
+      "context": "audio-tab-hot-path: FETCH_LOCAL_AUDIO + PRONUNCIATION_ESPEAK_TTS carried audioBytes:Uint8Array over the wire; eSpeak WAV (~65KB→100k+ keys) rehydrated via Object.values in toUint8Array. Fixed by audioBytesB64 wire field, encode in handler/offscreen runner, decode in LocalAudioProvider/EspeakAudioProvider with the wire key stripped from the materialized AudioItem.",
+      "bad": "response.data.items[].audioBytes = Uint8Array → arrives as {0:73,1:68,…,99999:4}; toUint8Array does Object.values → O(n) key enumeration + extra copy per item",
+      "good": "producer: { ...rest, audioBytesB64: encodeBase64(bytes) }; consumer: audioBytes = toUint8Array(item.audioBytes) ?? new Uint8Array(decodeBase64ToArrayBuffer(item.audioBytesB64)); strip audioBytesB64 from the returned entity"
+    }
+  ],
+  "applyFor": ["any new message type whose payload/response carries Uint8Array or ArrayBuffer", "auditing Object.values/toUint8Array rehydration in receivers", "schema authoring for binary fields (z.unknown fallback + b64 string)"],
+  "source": { "date": "2026-10-01" }
+}

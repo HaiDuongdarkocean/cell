@@ -16,6 +16,9 @@ jest.mock('@/features/pronunciation/repositories/lingvoDslIndexRepository', () =
   saveLingvoDslIndex: jest.fn(),
   countLingvoDslIndex: jest.fn(),
 }));
+jest.mock('@/features/pronunciation/services/lingvoDslAudioProvider', () => ({
+  LingvoDslAudioProvider: jest.fn(() => ({ resolve: mockResolve })),
+}));
 
 jest.mock('./jobs', () => {
   const { JobRegistry } = jest.requireActual<
@@ -36,6 +39,7 @@ jest.mock('./jobs', () => {
 const mockGetFileHandle = jest.mocked(getFileHandle);
 const mockParse = jest.mocked(parseLingvoDsl);
 const mockSave = jest.mocked(saveLingvoDslIndex);
+const mockResolve = jest.fn(async (): Promise<readonly unknown[]> => []);
 
 const testRegistry = jest.requireMock<{
   getJobRegistry: () => import('@/features/jobs/logic/jobRegistry').JobRegistry;
@@ -210,5 +214,55 @@ describe('LOCAL_AUDIO_OPEN_RECONNECT', () => {
     expect(create).toHaveBeenCalledWith({
       url: 'chrome-extension://ext/src/entrypoints/popup/index.html',
     });
+  });
+});
+
+describe('FETCH_LOCAL_AUDIO', () => {
+  it('sends audioBytes as audioBytesB64 on the wire', async () => {
+    mockResolve.mockResolvedValue([
+      {
+        id: 'local-1',
+        kind: 'word',
+        source: 'local',
+        label: 'Forvo · x.mp3',
+        state: 'idle',
+        audioBytes: new Uint8Array([73, 68, 51, 4]),
+        defaultSelected: false,
+      },
+    ]);
+    const ctx = createMockCtx({ packageType: 'single', audioArchiveHandleId: 'h1' });
+    registerLocalAudioHandlers(ctx as unknown as Parameters<typeof registerLocalAudioHandlers>[0]);
+    const handler = ctx.handlers.get(MESSAGE_TYPES.FETCH_LOCAL_AUDIO)!;
+    const res = await handler({
+      payload: { tabId: 0, term: 'hello', langCode: 'en', kind: 'word' },
+    }) as { success: boolean; data?: { items: Array<Record<string, unknown>> } };
+    expect(res.success).toBe(true);
+    const item = res.data?.items[0] ?? {};
+    expect(item.audioBytes).toBeUndefined();
+    expect(item.audioBytesB64).toBe('SUQzBA==');
+    expect(() => JSON.stringify(res.data)).not.toThrow();
+  });
+
+  it('passes through items without audioBytes untouched', async () => {
+    mockResolve.mockResolvedValue([
+      {
+        id: 'local-2',
+        kind: 'word',
+        source: 'local',
+        label: 'Forvo · y.mp3',
+        state: 'idle',
+        url: 'https://example.com/y.mp3',
+        defaultSelected: false,
+      },
+    ]);
+    const ctx = createMockCtx({ packageType: 'single', audioArchiveHandleId: 'h1' });
+    registerLocalAudioHandlers(ctx as unknown as Parameters<typeof registerLocalAudioHandlers>[0]);
+    const handler = ctx.handlers.get(MESSAGE_TYPES.FETCH_LOCAL_AUDIO)!;
+    const res = await handler({
+      payload: { tabId: 0, term: 'hi', langCode: 'en', kind: 'word' },
+    }) as { success: boolean; data?: { items: Array<Record<string, unknown>> } };
+    expect(res.success).toBe(true);
+    expect(res.data?.items[0]).toMatchObject({ id: 'local-2', url: 'https://example.com/y.mp3' });
+    expect(res.data?.items[0].audioBytesB64).toBeUndefined();
   });
 });

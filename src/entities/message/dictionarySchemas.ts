@@ -64,7 +64,8 @@ export const AudioItemSchema = z.object({
   accentId: z.string().optional(),
   state: AudioStateSchema,
   url: z.string().optional(),
-  audioBytes: z.instanceof(Uint8Array).optional(),
+  audioBytes: z.unknown().optional(),
+  audioBytesB64: z.string().optional(),
   defaultSelected: z.boolean(),
 });
 
@@ -323,7 +324,8 @@ export const PronunciationEspeakTtsPayloadSchema = z.object({
 });
 
 export const PronunciationEspeakTtsResponseSchema = z.object({
-  audioBytes: z.instanceof(Uint8Array),
+  audioBytes: z.unknown().optional(),
+  audioBytesB64: z.string().optional(),
 });
 
 // === Media URL fetch (FETCH_MEDIA_URL) — fetch external URL via background (CSP bypass) ===

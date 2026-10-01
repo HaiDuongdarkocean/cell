@@ -799,7 +799,8 @@ export interface PronunciationEspeakTtsPayload {
 
 /** Offscreen → background → content: eSpeak TTS result. */
 export interface PronunciationEspeakTtsResult {
-  readonly audioBytes: Uint8Array;
+  readonly audioBytes?: unknown;
+  readonly audioBytesB64?: string;
 }
 
 /** Content → background: get word status. */

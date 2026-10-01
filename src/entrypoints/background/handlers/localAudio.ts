@@ -8,6 +8,7 @@
  */
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { encodeBase64 } from '@/shared/lib/base64';
 import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
@@ -62,7 +63,12 @@ export function registerLocalAudioHandlers(ctx: BackgroundContext): void {
       }
 
       const items = await providerFor(localFile).resolve(term, langCode);
-      const data = { items };
+      const data = {
+        items: items.map((item) => {
+          const { audioBytes, ...rest } = item;
+          return audioBytes ? { ...rest, audioBytesB64: encodeBase64(audioBytes) } : rest;
+        }),
+      };
       FetchLocalAudioResponseSchema.parse(data);
       return { success: true, data };
     } catch (error) {

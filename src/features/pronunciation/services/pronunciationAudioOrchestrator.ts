@@ -9,6 +9,7 @@
 
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { decodeBase64ToArrayBuffer } from '@/shared/lib/base64';
 import type { MessageResponse } from '@/entities/message/types';
 import type { AudioItem } from '@/entities/dictionary';
 import type {
@@ -69,10 +70,13 @@ export class LocalAudioProvider implements PronunciationAudioProvider {
       payload: { tabId: 0, term, langCode, kind: 'word' },
     });
     if (!res?.success || !res.data?.items) return [];
-    return res.data.items.map((item) => ({
-      ...item,
-      audioBytes: toUint8Array(item.audioBytes),
-    }));
+    return res.data.items.map((item) => {
+      const { audioBytesB64, ...rest } = item;
+      const audioBytes =
+        toUint8Array(item.audioBytes) ??
+        (audioBytesB64 ? new Uint8Array(decodeBase64ToArrayBuffer(audioBytesB64)) : undefined);
+      return { ...rest, audioBytes };
+    });
   }
 }
 
@@ -131,7 +135,12 @@ export class EspeakAudioProvider implements PronunciationAudioProvider {
       type: MESSAGE_TYPES.PRONUNCIATION_ESPEAK_TTS,
       payload: { text: term, langCode },
     }).then((res) => {
-      const audioBytes = toUint8Array(res?.success ? res.data?.audioBytes : undefined);
+      const audioBytes = res?.success
+        ? toUint8Array(res.data?.audioBytes) ??
+          (res.data?.audioBytesB64
+            ? new Uint8Array(decodeBase64ToArrayBuffer(res.data.audioBytesB64))
+            : undefined)
+        : undefined;
       if (!audioBytes) return [];
       return [
         {

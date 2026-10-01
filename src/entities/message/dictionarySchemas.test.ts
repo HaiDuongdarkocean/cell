@@ -22,6 +22,7 @@ import {
   WorkerReadyMessageSchema,
   FetchCommunityAudioPayloadSchema,
   FetchCommunityAudioResponseSchema,
+  PronunciationEspeakTtsResponseSchema,
   FetchImagesPayloadSchema,
   FetchImagesResponseSchema,
   TtsSpeakPayloadSchema,
@@ -269,6 +270,38 @@ describe('AudioItemSchema', () => {
         }).success,
       ).toBe(true);
     }
+  });
+
+  it('accepts wire base64 audio and legacy serialized byte objects', () => {
+    const base = {
+      id: 'a',
+      kind: 'word',
+      source: 'local',
+      label: 'x',
+      state: 'idle',
+      defaultSelected: false,
+    } as const;
+    expect(AudioItemSchema.safeParse({ ...base, audioBytesB64: 'SURTNA==' }).success).toBe(true);
+    expect(
+      AudioItemSchema.safeParse({ ...base, audioBytes: new Uint8Array([1, 2]) }).success,
+    ).toBe(true);
+    expect(
+      AudioItemSchema.safeParse({ ...base, audioBytes: { 0: 1, 1: 2 } }).success,
+    ).toBe(true);
+  });
+});
+
+describe('PronunciationEspeakTtsResponseSchema', () => {
+  it('accepts base64 wire bytes and legacy byte containers', () => {
+    expect(
+      PronunciationEspeakTtsResponseSchema.safeParse({ audioBytesB64: 'UklGRg==' }).success,
+    ).toBe(true);
+    expect(
+      PronunciationEspeakTtsResponseSchema.safeParse({ audioBytes: new Uint8Array([1]) }).success,
+    ).toBe(true);
+    expect(
+      PronunciationEspeakTtsResponseSchema.safeParse({ audioBytes: { 0: 1 } }).success,
+    ).toBe(true);
   });
 });
 

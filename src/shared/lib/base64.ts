@@ -14,10 +14,10 @@ export function decodeBase64ToArrayBuffer(base64: string): ArrayBuffer {
   return bytes.buffer;
 }
 
-/** Encode an ArrayBuffer to a base64 string. Inverse of `decodeBase64ToArrayBuffer`.
+/** Encode an ArrayBuffer or Uint8Array to a base64 string. Inverse of `decodeBase64ToArrayBuffer`.
  *  Chunks to avoid `String.fromCharCode(...spread)` stack overflow on large buffers. */
-export function encodeBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
+export function encodeBase64(input: ArrayBuffer | Uint8Array): string {
+  const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
   let binary = '';
   const chunkSize = 0x8000; // 32KB — safe for V8 spread arg limit
   for (let i = 0; i < bytes.length; i += chunkSize) {

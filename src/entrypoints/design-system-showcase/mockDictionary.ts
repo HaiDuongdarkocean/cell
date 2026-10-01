@@ -1,5 +1,6 @@
 import type { AudioItem, ImageItem, LookupResult, DefinitionEntry } from '@/entities/dictionary';
 import type { MessageResponse } from '@/entities/message';
+import type { PronunciationEspeakTtsResult } from '@/entities/message/types';
 import type { ResourceInfo } from '@/entities/dictionary';
 import type { Job } from '@/entities/job/types';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -327,7 +328,18 @@ async function mockSendMessage(message: unknown): Promise<unknown> {
     }
 
     case MESSAGE_TYPES.FETCH_LOCAL_AUDIO: {
-      const result: MessageResponse<{ items: AudioItem[] }> = { success: true, data: { items: [] } };
+      const items: AudioItem[] = [
+        {
+          id: 'mock-local-audio-1',
+          kind: 'word',
+          source: 'local',
+          label: 'Local Forvo · mock',
+          state: 'idle',
+          audioBytesB64: SILENT_WAV_URL.split(',')[1],
+          defaultSelected: false,
+        },
+      ];
+      const result: MessageResponse<{ items: AudioItem[] }> = { success: true, data: { items } };
       return result;
     }
 
@@ -337,7 +349,11 @@ async function mockSendMessage(message: unknown): Promise<unknown> {
     }
 
     case MESSAGE_TYPES.PRONUNCIATION_ESPEAK_TTS: {
-      return { success: true };
+      const result: MessageResponse<PronunciationEspeakTtsResult> = {
+        success: true,
+        data: { audioBytesB64: SILENT_WAV_URL.split(',')[1] },
+      };
+      return result;
     }
 
     case MESSAGE_TYPES.FETCH_IMAGES: {

@@ -1,5 +1,5 @@
 {
-  "active": null,
+  "active": "audio-tab-hot-path",
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -1328,6 +1328,131 @@
       "owner": null,
       "worktree": null,
       "updated": "2026-10-01T20:46:18.134Z"
+    },
+    "audio-tab-hot-path": {
+      "stage": "deliver",
+      "mode": "all",
+      "uiSurface": "no",
+      "artifacts": {
+        "intent": "docs/intent/audio-tab-hot-path.md",
+        "spec": "docs/specs/audio-tab-hot-path.md"
+      },
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-10-01T21:05:56.372Z",
+          "head": "ed2b4da9915017e5bd776a603408e9f9ccca8eb1",
+          "dirty": [
+            "src/entities/dictionary/popupTypes.ts",
+            "src/entities/message/dictionarySchemas.test.ts",
+            "src/entities/message/dictionarySchemas.ts",
+            "src/entities/message/types.ts",
+            "src/entrypoints/background/handlers/localAudio.test.ts",
+            "src/entrypoints/background/handlers/localAudio.ts",
+            "src/entrypoints/design-system-showcase/mockDictionary.ts",
+            "src/entrypoints/offscreen/pronunciationRunner.ts",
+            "src/features/pronunciation/services/espeakAudioProvider.test.ts",
+            "src/features/pronunciation/services/pronunciationAudioOrchestrator.test.ts",
+            "src/features/pronunciation/services/pronunciationAudioOrchestrator.ts",
+            "src/shared/lib/base64.ts",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/audio-tab-hot-path.md",
+            "docs/reviews/audio-tab-hot-path-analyze.md",
+            "docs/reviews/audio-tab-hot-path-spec.md",
+            "docs/specs/audio-tab-hot-path.md",
+            "src/shared/lib/base64.test.ts"
+          ]
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-10-01T21:06:42.133Z",
+          "head": "ed2b4da9915017e5bd776a603408e9f9ccca8eb1",
+          "dirty": [
+            "src/entities/dictionary/popupTypes.ts",
+            "src/entities/message/dictionarySchemas.test.ts",
+            "src/entities/message/dictionarySchemas.ts",
+            "src/entities/message/types.ts",
+            "src/entrypoints/background/handlers/localAudio.test.ts",
+            "src/entrypoints/background/handlers/localAudio.ts",
+            "src/entrypoints/design-system-showcase/mockDictionary.ts",
+            "src/entrypoints/offscreen/pronunciationRunner.ts",
+            "src/features/pronunciation/services/espeakAudioProvider.test.ts",
+            "src/features/pronunciation/services/pronunciationAudioOrchestrator.test.ts",
+            "src/features/pronunciation/services/pronunciationAudioOrchestrator.ts",
+            "src/shared/lib/base64.ts",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/audio-tab-hot-path.md",
+            "docs/reviews/audio-tab-hot-path-analyze.md",
+            "docs/reviews/audio-tab-hot-path-spec.md",
+            "docs/specs/audio-tab-hot-path.md",
+            "src/shared/lib/base64.test.ts"
+          ]
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-10-01T21:07:24.625Z",
+          "head": "ed2b4da9915017e5bd776a603408e9f9ccca8eb1",
+          "dirty": [
+            "src/entities/dictionary/popupTypes.ts",
+            "src/entities/message/dictionarySchemas.test.ts",
+            "src/entities/message/dictionarySchemas.ts",
+            "src/entities/message/types.ts",
+            "src/entrypoints/background/handlers/localAudio.test.ts",
+            "src/entrypoints/background/handlers/localAudio.ts",
+            "src/entrypoints/design-system-showcase/mockDictionary.ts",
+            "src/entrypoints/offscreen/pronunciationRunner.ts",
+            "src/features/pronunciation/services/espeakAudioProvider.test.ts",
+            "src/features/pronunciation/services/pronunciationAudioOrchestrator.test.ts",
+            "src/features/pronunciation/services/pronunciationAudioOrchestrator.ts",
+            "src/shared/lib/base64.ts",
+            "src/shared/ui/Select.module.css",
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/audio-tab-hot-path.md",
+            "docs/reviews/audio-tab-hot-path-analyze.md",
+            "docs/reviews/audio-tab-hot-path-spec.md",
+            "docs/specs/audio-tab-hot-path.md",
+            "src/shared/lib/base64.test.ts"
+          ]
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-10-01T21:14:47.060Z",
+          "head": "ed2b4da9915017e5bd776a603408e9f9ccca8eb1",
+          "dirty": [
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/audio-tab-hot-path.md",
+            "docs/reviews/audio-tab-hot-path-analyze.md",
+            "docs/reviews/audio-tab-hot-path-spec.md",
+            "docs/specs/audio-tab-hot-path.md",
+            "e2e/extension-audio-wire.spec.ts"
+          ]
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-10-01T21:14:47.173Z",
+          "head": "ed2b4da9915017e5bd776a603408e9f9ccca8eb1",
+          "dirty": [
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/audio-tab-hot-path.md",
+            "docs/reviews/audio-tab-hot-path-analyze.md",
+            "docs/reviews/audio-tab-hot-path-spec.md",
+            "docs/specs/audio-tab-hot-path.md",
+            "e2e/extension-audio-wire.spec.ts"
+          ]
+        }
+      },
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "owner": {
+        "id": "devin-idea-pick-off-20261001",
+        "since": "2026-10-01T20:47:59.187Z"
+      },
+      "worktree": null,
+      "updated": "2026-10-01T21:14:47.230Z"
     }
   }
 }

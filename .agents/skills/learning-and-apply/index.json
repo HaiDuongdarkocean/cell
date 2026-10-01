@@ -3093,6 +3093,23 @@
         "service-worker"
       ],
       "trigger": "worker.evaluate indexedDB.open(name, PINNED) throws VersionError after a repository schema bump"
+    },
+    {
+      "type": "experience",
+      "id": "runtime-messaging-typed-array-keyed-object",
+      "title": "chrome.runtime.sendMessage serializes Uint8Array as an integer-keyed plain object (~100k keys) — carry base64 on the wire, decode once at the boundary",
+      "category": [
+        "messaging",
+        "data"
+      ],
+      "tags": [
+        "sendMessage",
+        "Uint8Array",
+        "base64",
+        "wire-shape",
+        "serialization"
+      ],
+      "trigger": "a message payload/response carries Uint8Array or ArrayBuffer across chrome.runtime sendMessage between contexts"
     }
   ]
 }

@@ -35,6 +35,20 @@ describe('EspeakAudioProvider', () => {
     });
   });
 
+  it('returns an AudioItem from offscreen base64 WAV bytes', async () => {
+    mockedSendMessage.mockResolvedValue({
+      success: true,
+      data: { audioBytesB64: 'UklGRg==' },
+    });
+
+    const provider = new EspeakAudioProvider();
+    const items = await provider.resolve('hello', 'en');
+
+    expect(items).toHaveLength(1);
+    expect(Array.from(items[0].audioBytes ?? [])).toEqual([0x52, 0x49, 0x46, 0x46]);
+    expect(items[0].audioBytesB64).toBeUndefined();
+  });
+
   it('returns empty array when offscreen returns failure', async () => {
     mockedSendMessage.mockResolvedValue({
       success: false,

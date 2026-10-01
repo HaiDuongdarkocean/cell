@@ -5,10 +5,12 @@
 
 import { registerOffscreenListener } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { encodeBase64 } from '@/shared/lib/base64';
 import { t } from '@/shared/i18n';
 import { PronunciationEspeakTtsPayloadSchema } from '@/entities/message/dictionarySchemas';
 import { synthesizeEspeakToWav } from '@/features/pronunciation/services/espeakOffscreenEngine';
 import type { MessageResponse } from '@/entities/message';
+import type { PronunciationEspeakTtsResult } from '@/entities/message/types';
 
 interface MessageLike {
   readonly type?: string;
@@ -38,7 +40,7 @@ registerOffscreenListener((message, sender, sendResponse) => {
     void (async () => {
       try {
         const audioBytes = await synthesizeEspeakToWav(text, langCode);
-        sendResponse({ success: true, data: { audioBytes } } as MessageResponse<{ audioBytes: Uint8Array }>);
+        sendResponse({ success: true, data: { audioBytesB64: encodeBase64(audioBytes) } } as MessageResponse<PronunciationEspeakTtsResult>);
       } catch (err) {
         const msgText = err instanceof Error ? err.message : String(err);
         sendResponse({ success: false, error: t('audio.error.espeakFailed', [msgText]) } as MessageResponse<null>);
