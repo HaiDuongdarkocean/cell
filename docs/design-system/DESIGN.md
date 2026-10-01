@@ -137,6 +137,23 @@ When building any UI, map each element to an existing `src/shared/ui/*` componen
 
 **Forbidden:** `var(--color-accent)` for hover. Use `var(--color-surface-hover)`.
 
+### 5.1 Color surface & transparency map
+
+| Intent | Token | Never |
+|---|---|---|
+| Page/dialog base | `background` / `surface-elevated` | `surface-hover`, `muted` |
+| Resting control ON a surface | `surface` | `surface-elevated` (= popup bg → looks pre-hovered), `field` (transparent) |
+| Hover/pressed on that control | `surface-hover` / `surface-pressed` | `field-hover`, `overlay-hover` (both are alpha washes) |
+| Translucent input fill | `field` / `field-hover` / `field-active` | — never as a *floating* panel bg |
+| Floating panel (menu/popover/select) | `surface-elevated`, `field-solid`, `field-hover-solid` | `field`, `field-hover`, `overlay-hover` (see-through) |
+| Quiet fill (skeleton, code, checkbox-off) | `muted` | — |
+| Scrim behind modal | `overlay` | `overlay-hover` (a wash, not a scrim) |
+| Border | `border` / `border-subtle` / `border-emphasized` | `input` (alias), `border-inverse` |
+
+Rule of thumb: `field*`, `overlay-*`, `*-subtle`, `*-hover` ending in a `transparent`-mix value are **alpha washes** — check `tokens.json`; if the formula contains `transparent`, the layer below shows through. `surface*` / `*-solid` / `*-elevated` are opaque.
+
+Full debt inventory + runtime-vs-static drift table: `docs/audits/20261001_color-token-system.md`.
+
 ---
 
 ## 6. Icon Rules

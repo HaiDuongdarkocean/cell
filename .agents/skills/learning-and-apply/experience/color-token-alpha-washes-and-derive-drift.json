@@ -1,0 +1,27 @@
+{
+  "id": "color-token-alpha-washes-and-derive-drift",
+  "title": "Surface-hover/family tokens: static tokens.json vs runtime deriveColorTokens were different formulas; alpha washes got painted as panel backgrounds",
+  "category": ["css", "ux"],
+  "tags": ["tokens", "color", "hover", "color-mix", "surface-hover", "field-hover", "deriveColorTokens", "applyTheme", "transparency", "dark-theme", "preset", "semantic-naming"],
+  "trigger": "A UI element looks 'already hovered', a hover state goes darker instead of lifting, or a dropdown/menu/panel is see-through — especially on a custom preset/theme.",
+  "principle": "Two traps in the token system. (1) tokens.json 'derived' formulas (color-mix toward text = lift) are NOT what ships: applyTheme always calls deriveColorTokens (default preset 'dawn' ⇒ the !preset fast-path never runs) and writes INLINE vars on <html>, so any formula drift there is the real color for every user — shade(10%) had made surface-hover darken instead of lift. When adding/changing a derived token, mirror the formula in deriveColorTokens with mixHex/rgbaVar and assert parity in tokens.test.ts. (2) Token names hide alpha: field/field-hover/field-active, overlay-hover/-pressed, *-subtle are TRANSPARENT washes — never a floating-panel or resting-control background; use surface-elevated/field-solid/field-hover-solid instead. And surface-elevated == popup/dialog bg: using it as a row's resting bg makes the row look pre-hovered. Cheat sheet: docs/design-system/DESIGN.md §5.1; full drift table: docs/audits/20261001_color-token-system.md.",
+  "cases": [
+    {
+      "context": "Anki-import scope step: '.pickRow' rows looked hovered at rest and sank darker on hover. Pixel probe: dialog bg #2D2D2D, rest row #2D2D2D (=surface-elevated), hover #1E1E1E (=shade(surface,10)).",
+      "bad": "pickRow rest = surface-elevated (=== dialog bg → invisible/pre-hovered look); runtime surface-hover = generateHoverColor = shade 10% → #1E1E1E darker on hover. Patching the feature CSS alone would have left 6 more drifted tokens (primary-hover/active, border-subtle, destructive-*, text-inverse).",
+      "good": "Fixed root: mixHex() mirrors color-mix(srgb) in deriveColorTokens — dark: mix(surface,text,10%) → #363636 lift; light: mix(mix(surface,primary,5%),text-inverse,12%). pickRow rest → --color-surface. Verified by pixel probe: rest rgb(33,33,33), hover rgb(54,54,54), console clean; tokens.test.ts asserts hover luminance > surface luminance."
+    },
+    {
+      "context": "Select dropdown panel used --color-field-hover (color-mix(text, transparent 81%)) as its background → the whole menu was see-through.",
+      "bad": "Choosing tokens by name similarity ('field hover ~ hover of a field-ish thing') without checking the formula's alpha.",
+      "good": "Rule: if tokens.json value contains 'transparent' it is a wash — for opaque floating surfaces use surface-elevated or the -solid rung (field-solid/field-hover-solid)."
+    }
+  ],
+  "applyFor": [
+    "Any hover/state CSS on rows, menu items, inputs — check the token's alpha first",
+    "Any change to tokens.json derived.* — keep deriveColorTokens formula-identical (mixHex mirrors color-mix), else presets silently diverge",
+    "Any 'element looks hovered at rest' report → check whether resting bg equals the parent's surface token (surface-elevated vs surface trap)",
+    "surface-hover doubles as muted/accent/secondary-hover — tuning it retints Skeleton/Avatar/Checkbox/Progress fills; prefer the split in the audit roadmap before intensifying hover"
+  ],
+  "source": { "spec": "docs/audits/20261001_color-token-system.md", "date": "2026-10-01" }
+}

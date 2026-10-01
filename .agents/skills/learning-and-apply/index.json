@@ -2998,6 +2998,30 @@
         "evaluate"
       ],
       "trigger": "Cần test extension trên YouTube/real Chrome nhưng Playwright Chromium bị bot-flag (playability LOGIN_REQUIRED) hoặc Chrome 137+ block --load-extension; hoặc main-world hook (XHR/fetch) bị uBlock re-wrap sau document_start — gate bằng __YT_MAIN_WORLD_INJECTED chứ không phải toString() probe"
+    },
+    {
+      "type": "experience",
+      "id": "color-token-alpha-washes-and-derive-drift",
+      "title": "Surface-hover/family tokens: static tokens.json vs runtime deriveColorTokens were different formulas; alpha washes got painted as panel backgrounds",
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "tokens",
+        "color",
+        "hover",
+        "color-mix",
+        "surface-hover",
+        "field-hover",
+        "deriveColorTokens",
+        "applyTheme",
+        "transparency",
+        "dark-theme",
+        "preset",
+        "semantic-naming"
+      ],
+      "trigger": "A UI element looks 'already hovered', a hover state goes darker instead of lifting, or a dropdown/menu/panel is see-through — especially on a custom preset/theme."
     }
   ]
 }
