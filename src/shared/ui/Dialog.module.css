@@ -90,7 +90,12 @@
 }
 
 .footer {
-  margin-top: var(--space-6);
+  position: sticky;
+  bottom: 0;
+  margin-top: var(--space-4);
+  padding-block: var(--space-3);
+  background: var(--dialog-bg);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
 }
 
 @keyframes dialog-in {

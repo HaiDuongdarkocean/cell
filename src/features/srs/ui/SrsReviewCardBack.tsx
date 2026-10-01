@@ -166,9 +166,22 @@ export function SrsReviewCardBack({
   return (
     <div
       className={styles.back}
+      role="button"
+      tabIndex={0}
+      data-cell-no-ripple
+      onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => {
+        if ((e.target as HTMLElement).closest('button,input,audio,a,textarea,select')) return;
+        e.preventDefault();
+      }}
       onClick={(e: React.MouseEvent<HTMLDivElement>) => {
         if ((e.target as HTMLElement).closest('button,input,audio,a,textarea,select')) return;
         onFlipBack();
+      }}
+      onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onFlipBack();
+        }
       }}
     >
       <div className={styles.backHead}>

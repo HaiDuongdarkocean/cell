@@ -632,6 +632,7 @@ function MappingStep({
                 type="button"
                 className={i === activeSample ? styles.dotActive : styles.dot}
                 aria-label={t('ankiImport.mapping.sample', [i + 1, samples.length])}
+                aria-current={i === activeSample ? 'true' : undefined}
                 onClick={() => { onSampleIdx(i); setFlipped(false); }}
               />
             ))}

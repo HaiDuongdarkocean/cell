@@ -116,9 +116,10 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.front:focus-visible {
-  outline: var(--border-width-hairline) solid var(--color-border-focus);
-  outline-offset: var(--space-1);
+.front:focus-visible,
+.back:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
 }
 
 .componentType {

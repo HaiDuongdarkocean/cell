@@ -202,8 +202,18 @@
   border-color: var(--color-text-secondary);
 }
 
+.dot:focus-visible,
+.dotActive:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
 .dotActive {
   background: var(--color-primary);
+}
+
+.dotActive:hover {
+  background: var(--color-primary-hover);
 }
 
 .previewCardWrap {
@@ -215,6 +225,13 @@
   display: flex;
   flex-direction: column;
   cursor: pointer;
+  transition: box-shadow var(--duration-fast) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .previewCardWrap:hover {
+    box-shadow: var(--shadow-md);
+  }
 }
 
 .checklistBox {
