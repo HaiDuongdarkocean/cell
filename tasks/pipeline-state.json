@@ -1,5 +1,5 @@
 {
-  "active": "audio-tab-hot-path",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -1330,7 +1330,7 @@
       "updated": "2026-10-01T20:46:18.134Z"
     },
     "audio-tab-hot-path": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "all",
       "uiSurface": "no",
       "artifacts": {
@@ -1392,28 +1392,11 @@
         },
         "testUnit": {
           "v": "pass",
-          "at": "2026-10-01T21:07:24.625Z",
-          "head": "ed2b4da9915017e5bd776a603408e9f9ccca8eb1",
+          "at": "2026-10-01T21:23:20.126Z",
+          "head": "f3de40ce4652fa4645d1521549ec91176461b9a7",
           "dirty": [
-            "src/entities/dictionary/popupTypes.ts",
-            "src/entities/message/dictionarySchemas.test.ts",
-            "src/entities/message/dictionarySchemas.ts",
-            "src/entities/message/types.ts",
-            "src/entrypoints/background/handlers/localAudio.test.ts",
-            "src/entrypoints/background/handlers/localAudio.ts",
-            "src/entrypoints/design-system-showcase/mockDictionary.ts",
-            "src/entrypoints/offscreen/pronunciationRunner.ts",
-            "src/features/pronunciation/services/espeakAudioProvider.test.ts",
-            "src/features/pronunciation/services/pronunciationAudioOrchestrator.test.ts",
-            "src/features/pronunciation/services/pronunciationAudioOrchestrator.ts",
-            "src/shared/lib/base64.ts",
             "src/shared/ui/Select.module.css",
-            "tasks/reports/pipeline-sessions.md",
-            "docs/intent/audio-tab-hot-path.md",
-            "docs/reviews/audio-tab-hot-path-analyze.md",
-            "docs/reviews/audio-tab-hot-path-spec.md",
-            "docs/specs/audio-tab-hot-path.md",
-            "src/shared/lib/base64.test.ts"
+            "tasks/reports/pipeline-sessions.md"
           ]
         },
         "build": {
@@ -1447,12 +1430,9 @@
       "awaiting": null,
       "resolutions": [],
       "loops": 0,
-      "owner": {
-        "id": "devin-idea-pick-off-20261001",
-        "since": "2026-10-01T20:47:59.187Z"
-      },
+      "owner": null,
       "worktree": null,
-      "updated": "2026-10-01T21:14:47.230Z"
+      "updated": "2026-10-01T21:36:29.672Z"
     }
   }
 }
