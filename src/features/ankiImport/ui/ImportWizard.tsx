@@ -623,10 +623,12 @@ function MappingStep({
             key={n.id}
             as="button"
             size="sm"
+            className={styles.ntPill}
             selected={nt?.id === n.id}
+            title={n.name}
             onClick={() => selectNt(n.id)}
           >
-            {n.name}
+            <span className={styles.ntName}>{n.name}</span>
             <span className={styles.ntCount}>
               {` · ${t('ankiImport.mapping.cardCount', [cardCountByNt.get(n.id) ?? 0])}`}
             </span>
@@ -657,7 +659,7 @@ function MappingStep({
           onChange={() => toggleNtById(n.id)}
           label={(
             <>
-              <span className={styles.pickName}>{n.name}</span>
+              <span className={styles.pickName} title={n.name}>{n.name}</span>
               <Text variant="supporting" color="secondary">{t('ankiImport.mapping.cardCount', [cardCountByNt.get(n.id) ?? 0])}</Text>
             </>
           )}
