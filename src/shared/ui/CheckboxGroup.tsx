@@ -21,6 +21,8 @@ export interface CheckboxGroupProps {
   disabled?: boolean;
   /** Error state. */
   error?: boolean;
+  /** 'row' renders each option as a selectable surface row (pick lists). */
+  variant?: 'plain' | 'row';
 }
 
 /**
@@ -33,6 +35,7 @@ export function CheckboxGroup({
   onChange,
   disabled,
   error,
+  variant = 'plain',
 }: CheckboxGroupProps): React.JSX.Element {
   const toggle = (optValue: string): void => {
     const next = value.includes(optValue) ? value.filter((v) => v !== optValue) : [...value, optValue];
@@ -47,6 +50,7 @@ export function CheckboxGroup({
           name={name}
           value={opt.value}
           label={opt.label}
+          variant={variant}
           checked={value.includes(opt.value)}
           disabled={disabled || opt.disabled}
           error={error}

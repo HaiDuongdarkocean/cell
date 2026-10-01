@@ -65,21 +65,6 @@
   overflow-y: auto;
 }
 
-.pickRow {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-2-5);
-  border-radius: var(--radius-element);
-  background: var(--color-surface);
-  cursor: pointer;
-}
-
-.pickRow:hover {
-  background: var(--color-surface-hover);
-}
-
 .pickName {
   flex: 1;
   min-width: 120px;
@@ -94,10 +79,6 @@
   gap: var(--space-1);
   flex-wrap: wrap;
   margin-left: auto;
-}
-
-.pickControl {
-  flex: 1;
 }
 
 .mapLayout {

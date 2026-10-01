@@ -2,6 +2,8 @@ import { useEffect, useRef, type InputHTMLAttributes, type ReactNode } from 'rea
 import styles from './Checkbox.module.css';
 
 export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
+  /** 'row' renders the whole label as a selectable surface row (pick lists). */
+  variant?: 'plain' | 'row';
   /** Label text or element shown next to the checkbox. */
   label?: ReactNode;
   /** Render as indeterminate (mixed state). */
@@ -16,6 +18,7 @@ export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement
  * Checkbox — accessible form control with label, indeterminate, error, and disabled states.
  */
 export function Checkbox({
+  variant = 'plain',
   label,
   indeterminate,
   error,
@@ -32,7 +35,7 @@ export function Checkbox({
     }
   }, [indeterminate]);
 
-  const rootClass = [styles.root, error ? styles.error : '', disabled ? styles.disabled : '', className ?? '']
+  const rootClass = [styles.root, variant === 'row' ? styles.row : '', error ? styles.error : '', disabled ? styles.disabled : '', className ?? '']
     .filter(Boolean)
     .join(' ');
   const inputClass = [styles.input, error ? styles.error : ''].filter(Boolean).join(' ');

@@ -91,6 +91,7 @@ When building any UI, map each element to an existing `src/shared/ui/*` componen
 | Text input | `Input` or `InputField` | `src/shared/ui/Input.tsx` |
 | Search input | `SearchField` | `src/shared/ui/SearchField.tsx` |
 | Toggle switch | `Toggle` | `src/shared/ui/Toggle.tsx` |
+| Checkbox / selectable pick-list row | `Checkbox` (`variant="row"` cho row) / `CheckboxGroup` | `src/shared/ui/Checkbox.tsx` |
 | Select dropdown | `Select` | `src/shared/ui/Select.tsx` |
 | Slider with label | `SliderRow` | `src/shared/ui/SliderRow.tsx` |
 | Copy button | `CopyButton` | `src/shared/ui/CopyButton.tsx` |

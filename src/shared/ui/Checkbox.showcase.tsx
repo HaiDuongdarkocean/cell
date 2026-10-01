@@ -12,6 +12,7 @@ export function Showcase(): ReactElement {
       <Checkbox label="Indeterminate" indeterminate={indeterminate} onChange={(e) => setIndeterminate(e.target.checked)} />
       <Checkbox label="With error" error helperText="This field is required" />
       <Checkbox label="Disabled" disabled />
+      <Checkbox variant="row" label="Row variant — whole row toggles" />
     </div>
   );
 }

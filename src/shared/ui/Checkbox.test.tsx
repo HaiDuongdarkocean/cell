@@ -33,4 +33,9 @@ describe('Checkbox', () => {
     render(<Checkbox label="Accept" helperText="Required" />);
     expect(screen.getByText('Required')).toBeInTheDocument();
   });
+
+  it('row variant stretches the label into a selectable row', () => {
+    render(<Checkbox variant="row" label="Pick me" />);
+    expect(screen.getByRole('checkbox', { name: 'Pick me' }).closest('label')).toHaveClass('row');
+  });
 });

@@ -404,28 +404,27 @@ function ScopeStep({
           <Text variant="supporting" color="secondary">{t('ankiImport.scope.noDecks')}</Text>
         )}
         {rows.map((r) => (
-          <div key={r.deck.id} className={styles.pickRow}>
-            <Checkbox
-              className={styles.pickControl}
-              checked={deckIds.has(r.deck.id)}
-              onChange={() => {
-                const next = new Set(deckIds);
-                if (next.has(r.deck.id)) next.delete(r.deck.id); else next.add(r.deck.id);
-                onDeckIds(next);
-              }}
-              label={(
-                <>
-                  <span className={styles.pickName}>{r.flatName}</span>
-                  <span className={styles.pickCounts}>
-                    {r.counts.new > 0 && <Badge variant="success" size="sm">{t('ankiImport.scope.countNew', [r.counts.new])}</Badge>}
-                    {r.counts.learning > 0 && <Badge variant="muted" size="sm">{t('ankiImport.scope.countLearning', [r.counts.learning])}</Badge>}
-                    {r.counts.review > 0 && <Badge size="sm">{t('ankiImport.scope.countReview', [r.counts.review])}</Badge>}
-                    {r.counts.suspended > 0 && <Badge variant="warning" size="sm">{t('ankiImport.scope.countSuspended', [r.counts.suspended])}</Badge>}
-                  </span>
-                </>
-              )}
-            />
-          </div>
+          <Checkbox
+            key={r.deck.id}
+            variant="row"
+            checked={deckIds.has(r.deck.id)}
+            onChange={() => {
+              const next = new Set(deckIds);
+              if (next.has(r.deck.id)) next.delete(r.deck.id); else next.add(r.deck.id);
+              onDeckIds(next);
+            }}
+            label={(
+              <>
+                <span className={styles.pickName}>{r.flatName}</span>
+                <span className={styles.pickCounts}>
+                  {r.counts.new > 0 && <Badge variant="success" size="sm">{t('ankiImport.scope.countNew', [r.counts.new])}</Badge>}
+                  {r.counts.learning > 0 && <Badge variant="muted" size="sm">{t('ankiImport.scope.countLearning', [r.counts.learning])}</Badge>}
+                  {r.counts.review > 0 && <Badge size="sm">{t('ankiImport.scope.countReview', [r.counts.review])}</Badge>}
+                  {r.counts.suspended > 0 && <Badge variant="warning" size="sm">{t('ankiImport.scope.countSuspended', [r.counts.suspended])}</Badge>}
+                </span>
+              </>
+            )}
+          />
         ))}
       </div>
       <Text variant="supporting" color="secondary">
@@ -608,19 +607,18 @@ function MappingStep({
         {advOpen && (
           <div className={styles.pickList}>
             {notetypes.map((n) => (
-              <div key={n.id} className={styles.pickRow}>
-                <Checkbox
-                  className={styles.pickControl}
-                  checked={ntIds.has(n.id)}
-                  onChange={() => toggleNtById(n.id)}
-                  label={(
-                    <>
-                      <span className={styles.pickName}>{n.name}</span>
-                      <Text variant="supporting" color="secondary">{t('ankiImport.mapping.cardCount', [cardCountByNt.get(n.id) ?? 0])}</Text>
-                    </>
-                  )}
-                />
-              </div>
+              <Checkbox
+                key={n.id}
+                variant="row"
+                checked={ntIds.has(n.id)}
+                onChange={() => toggleNtById(n.id)}
+                label={(
+                  <>
+                    <span className={styles.pickName}>{n.name}</span>
+                    <Text variant="supporting" color="secondary">{t('ankiImport.mapping.cardCount', [cardCountByNt.get(n.id) ?? 0])}</Text>
+                  </>
+                )}
+              />
             ))}
           </div>
         )}
