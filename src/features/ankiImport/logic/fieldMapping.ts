@@ -52,10 +52,6 @@ export function guessFieldMapping(
   samples: readonly NormalizedAnkiNote[],
 ): FieldMapping {
   const mapping: FieldMapping = {};
-  const ord0 = notetype.fields.reduce(
-    (min, f) => (f.ord < min.ord ? f : min),
-    notetype.fields[0]!,
-  );
 
   const sampleValues = (ord: number): string[] =>
     samples.map((n) => n.fields[ord] ?? '').filter((v) => v !== '');
@@ -94,10 +90,23 @@ export function guessFieldMapping(
     if (/sentence|example|câu/.test(name)) { assign(f.name, 'sentence'); continue; }
     if (/meaning|definition|glossary|nghĩa/.test(name)) { assign(f.name, 'definition'); continue; }
     if (/note|extra|comment/.test(name)) { assign(f.name, 'notes'); continue; }
+    if (/word|term|vocab|expression|front|headword|keyword|target/.test(name)
+      && !/audio|sound|image|picture|photo|sentence|example/.test(name)) {
+      assign(f.name, 'target');
+      continue;
+    }
   }
 
-  // Pass 2: ord0 → target (unless already taken).
-  if (!taken.has('target')) assign(ord0.name, 'target');
+  // Pass 2: lowest-ord unmapped field → target (unless already taken).
+  if (!taken.has('target')) {
+    const free = notetype.fields
+      .filter((f) => mapping[f.name] === undefined)
+      .reduce<NormalizedAnkiNotetype['fields'][number] | undefined>(
+        (min, f) => (min === undefined || f.ord < min.ord ? f : min),
+        undefined,
+      );
+    if (free) assign(free.name, 'target');
+  }
 
   // Pass 3: longest median text → sentence, second longest → definition.
   const textFields = notetype.fields

@@ -66,6 +66,48 @@ describe('guessFieldMapping', () => {
     expect(m['Word Audio']).toBe('audio');
   });
 
+  it('ord0 named Sentence keeps sentence role; Word field wins target', () => {
+    const nt: NormalizedAnkiNotetype = {
+      id: 'm3', name: '0.Ocean_Vocab_v4.0.0', isCloze: false,
+      fields: [
+        { name: 'Sentence', ord: 0 },
+        { name: 'Word', ord: 1 },
+        { name: 'More Examples', ord: 2 },
+        { name: 'Definition', ord: 3 },
+        { name: 'Sentence Translation', ord: 4 },
+        { name: 'Note', ord: 5 },
+        { name: 'Word Audio', ord: 6 },
+        { name: 'Sentence Audio', ord: 7 },
+        { name: 'Images', ord: 8 },
+      ],
+    };
+    const notes: NormalizedAnkiNote[] = [
+      { id: 1, modelId: 'm3', tags: [], fields: ['câu ví dụ.', 'từ', 'thêm ví dụ.', 'nghĩa', 'dịch câu', 'ghi chú', '[sound:w.mp3]', '[sound:s.mp3]', '<img src="i.png">'] },
+    ];
+    const m = guessFieldMapping(nt, notes);
+    expect(m['Word']).toBe('target');
+    expect(m['Sentence']).toBe('sentence');
+    expect(m['Word Audio']).toBe('audio');
+    expect(m['Sentence Audio']).toBe('sentenceAudio');
+    expect(m['Images']).toBe('image');
+  });
+
+  it('target falls back to lowest-ord unmapped field, never overwrites a named role', () => {
+    const nt: NormalizedAnkiNotetype = {
+      id: 'm4', name: 'Odd', isCloze: false,
+      fields: [
+        { name: 'Sentence', ord: 0 },
+        { name: 'Body', ord: 1 },
+      ],
+    };
+    const notes: NormalizedAnkiNote[] = [
+      { id: 1, modelId: 'm4', tags: [], fields: ['một câu dài đủ ký tự.', 'x'] },
+    ];
+    const m = guessFieldMapping(nt, notes);
+    expect(m['Sentence']).toBe('sentence');
+    expect(m['Body']).toBe('target');
+  });
+
   it('mixed text+media field keeps text role', () => {
     const notes = [{ ...NOTES[0]!, fields: ['捨てる', 'to throw away [sound:s.mp3]', '文。', '', '', ''] }];
     const m = guessFieldMapping(NT, notes);
