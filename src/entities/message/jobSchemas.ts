@@ -5,6 +5,7 @@ export const JobKindSchema = z.enum([
   'resource-delete',
   'voice-download',
   'local-audio-index',
+  'condense-audio',
 ]);
 
 export const JobStatusSchema = z.enum([

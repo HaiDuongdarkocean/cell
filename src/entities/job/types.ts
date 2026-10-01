@@ -2,7 +2,8 @@ export type JobKind =
   | 'resource-import'
   | 'resource-delete'
   | 'voice-download'
-  | 'local-audio-index';
+  | 'local-audio-index'
+  | 'condense-audio';
 
 export type JobStatus =
   | 'queued'

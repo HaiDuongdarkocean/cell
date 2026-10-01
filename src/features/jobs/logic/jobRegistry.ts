@@ -59,6 +59,8 @@ export function jobIdentityKey(kind: JobKind, params: Readonly<Record<string, un
       return `${kind}:${String(params.dslFileHandleId ?? '')}`;
     case 'resource-import':
       return `${kind}:${String(params.signature ?? params.jobId ?? '')}`;
+    case 'condense-audio':
+      return `${kind}:${String(params.recordId ?? '')}`;
   }
 }
 

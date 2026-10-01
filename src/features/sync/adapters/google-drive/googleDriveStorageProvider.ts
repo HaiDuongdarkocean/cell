@@ -392,6 +392,40 @@ export class GoogleDriveStorageProvider implements StorageProvider {
     });
   }
 
+  /**
+   * Upload a user-facing file into a named folder under the sync root
+   * ("Tihoka Sync/<folderName>/<name>"). Replaces a same-name file in place.
+   * Used by features that export user artifacts (e.g. condensed audio) —
+   * bypasses the `cell-sync/v1` logical path mapping, which only covers sync
+   * state.
+   */
+  async uploadUserFile(
+    connection: Connection,
+    folderName: string,
+    name: string,
+    body: Blob,
+  ): Promise<DriveFile> {
+    return this.authed(connection, async (token) => {
+      const bytes = await blobToBytes(body);
+      const rootId = await this.rootFolderId(token, connection);
+      const parentId = await this.resolveOrCreateChain(token, connection.accountKey, rootId, [folderName]);
+      const copies = await this.findInFolder(token, parentId, name);
+      const target = copies.length ? copies.reduce(newerFile) : undefined;
+      const committed =
+        bytes.byteLength > this.resumableThreshold
+          ? await this.resumableWrite(token, parentId, name, `user/${folderName}/${name}`, bytes, body.type, target)
+          : target
+            ? await this.mediaUpdate(token, target, bytes, body.type)
+            : await this.multipartCreate(token, parentId, name, bytes, body.type);
+      for (const copy of copies) {
+        if (copy.id && copy.id !== committed.id) {
+          await this.deleteFile(token, copy.id);
+        }
+      }
+      return committed;
+    });
+  }
+
   async remove(connection: Connection, path: string): Promise<void> {
     await this.authed(connection, async (token) => {
       const rootId = await this.rootFolderId(token, connection);

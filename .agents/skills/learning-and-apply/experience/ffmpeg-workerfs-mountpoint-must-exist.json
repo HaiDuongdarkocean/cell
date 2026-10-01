@@ -1,0 +1,17 @@
+{
+  "id": "ffmpeg-workerfs-mountpoint-must-exist",
+  "title": "@ffmpeg/ffmpeg mount(WORKERFS) throws 'ErrnoError: FS error' unless the mountpoint directory already exists in MEMFS",
+  "category": ["runtime", "interop"],
+  "tags": ["ffmpeg", "wasm", "workerfs", "emscripten", "offscreen", "fs-mount", "e2e-caught"],
+  "trigger": "Calling ffmpeg.mount(FFFSType.WORKERFS, {files:[f]}, '/work') on the vendored @ffmpeg/ffmpeg 0.12 bundle",
+  "principle": "Emscripten FS.mount requires the mountpoint to be an existing directory — it does not create it. Always `await ffmpeg.createDir('/work')` before `ffmpeg.mount(...)`. The error surfaces as an opaque 'ErrnoError: FS error' from the worker with no mountpoint context, so stage-tag the steps (readPart/mount/exec/encode) or debugging is a blind hunt.",
+  "cases": [
+    {
+      "context": "condensed-audio transcode leg: recorded part.webm read from OPFS fine, but mount threw ErrnoError → record failed 'io-failed' after a full recording session. Only visible via real-Chrome e2e.",
+      "bad": "await ffmpeg.mount(wasm.FFFSType.WORKERFS, { files: [part] }, '/work')",
+      "good": "await ffmpeg.createDir('/work'); await ffmpeg.mount(wasm.FFFSType.WORKERFS, { files: [part] }, '/work')"
+    }
+  ],
+  "applyFor": ["@ffmpeg/ffmpeg 0.12 mount/unmount in offscreen or worker contexts", "any Emscripten FS.mount call", "ffmpeg pipeline stages that hide ErrnoError context"],
+  "source": { "date": "2026-10-01" }
+}

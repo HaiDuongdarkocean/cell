@@ -53,7 +53,7 @@ export function createUniversalPanelController(
     if (persistedLoaded || !options.getPersistedTab) return;
     if (loadPromise) return loadPromise;
     loadPromise = options.getPersistedTab().then((tab) => {
-      if (tab && (tab === 'dictionary' || tab === 'settings' || tab === 'studyModes' || tab === 'vocabulary')) {
+      if (tab && (tab === 'dictionary' || tab === 'settings' || tab === 'studyModes' || tab === 'vocabulary' || tab === 'playlist')) {
         activeTab = tab;
       }
       persistedLoaded = true;

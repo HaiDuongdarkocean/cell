@@ -15,12 +15,13 @@ import type { ComprehensionBand } from '@/entities/comprehension';
 // ─── Schema constants ────────────────────────────────────────────────────────
 
 export const DB_NAME = 'orca-local-player';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export const STORES = {
   VIDEOS: 'videos',
   HISTORY: 'history',
   SUBTITLES: 'subtitles',
+  CONDENSED_AUDIO: 'condensedAudio',
 } as const;
 
 export const INDEXES = {
@@ -95,6 +96,9 @@ function createStores(db: IDBDatabase): void {
   if (!db.objectStoreNames.contains(STORES.SUBTITLES)) {
     db.createObjectStore(STORES.SUBTITLES, { keyPath: 'id' });
   }
+  if (!db.objectStoreNames.contains(STORES.CONDENSED_AUDIO)) {
+    db.createObjectStore(STORES.CONDENSED_AUDIO, { keyPath: 'id' });
+  }
 }
 
 /** Open the orca-local-player IndexedDB with v1 create-all migration. */
@@ -108,8 +112,10 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
-/** Get cached DB connection (or open on first call). */
-async function getDB(): Promise<IDBDatabase> {
+/** Get cached DB connection (or open on first call). Exported so sibling
+ *  repositories persisting in the same DB (condensedAudio) share the
+ *  connection + migration path. */
+export async function getDB(): Promise<IDBDatabase> {
   if (dbInstance) return dbInstance;
   dbInstance = await openDB();
   return dbInstance;

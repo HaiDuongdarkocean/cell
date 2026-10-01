@@ -1,0 +1,17 @@
+{
+  "id": "bus-zod-wrap-strips-injected-tabid",
+  "title": "background messageBus injects sender.tab.id into payload BEFORE the registry zod parse — schemas without a top-level tabId field silently strip it",
+  "category": ["messaging", "schema"],
+  "tags": ["messageBus", "zod", "tabId", "sender", "chrome.runtime", "schema-strip", "e2e-caught"],
+  "trigger": "A background handler needs the sender's tabId (e.g. to sendTabMessage back to the originating tab) and reads it from request.payload",
+  "principle": "messageBus.handleMessage copies sender.tab.id into request.payload, then bus.on() wraps the handler with MESSAGE_REGISTRY[type].schema — zod's default strip drops every key the schema doesn't declare, including the injected tabId/frameId. Any content-script-initiated message that needs tab identity MUST declare `tabId: z.number().int().optional()` (and frameId) at the payload top level; reading request.payload.tabId without declaring it always yields undefined. When it matters for routing, fail closed: a missing tabId on a stream-source request is a no-source error, not a silent default.",
+  "cases": [
+    {
+      "context": "condensed-audio START handler built `{...input.source, tabId: request.payload.tabId}` — record saved with tabId undefined → SESSION_START could never reach the tab → every record failed 'no-source'. Caught by e2e IDB dump, invisible in unit tests.",
+      "bad": "source = { ...input.source, tabId: (request.payload as {tabId?: number}).tabId } // zod already stripped it",
+      "good": "schema: tabId: z.number().int().optional() — then input.tabId survives safeParse"
+    }
+  ],
+  "applyFor": ["new message types handled in background that need sender tab context", "any handler reading payload.tabId/frameId", "schema authoring in entities/message/*Schemas.ts"],
+  "source": { "date": "2026-10-01" }
+}

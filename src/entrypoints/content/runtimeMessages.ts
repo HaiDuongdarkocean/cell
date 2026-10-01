@@ -3,6 +3,16 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { messagePayload } from '@/entities/message/payload';
 import { isCellDebug } from './debugLog';
 import { getLastRelayedVideoId } from './subtitleBridges';
+import {
+  isCondensedAudioSessionActive,
+  startCondensedAudioSession,
+  stopCondensedAudioSession,
+} from '@/features/condensedAudio/condensedAudioRecorder';
+import type {
+  CondenseAudioEventPayload,
+  CondenseAudioSessionStartPayload,
+  CondenseAudioSessionStopPayload,
+} from '@/entities/message';
 
 export function installRuntimeMessageListener(): void {
   // Debug: respond to PING from SW/DevTools so we can verify injection.
@@ -71,6 +81,50 @@ export function installRuntimeMessageListener(): void {
         }
       })();
       return true;
+    }
+
+    if (msg?.type === MESSAGE_TYPES.CONDENSE_AUDIO_SESSION_START) {
+      const payload = messagePayload<CondenseAudioSessionStartPayload>(
+        msg,
+        MESSAGE_TYPES.CONDENSE_AUDIO_SESSION_START,
+      );
+      if (!payload?.recordId || !payload.ranges?.length) {
+        sendResponse({ success: false, error: 'invalid payload' });
+        return false;
+      }
+      const result = startCondensedAudioSession(payload.recordId, payload.ranges);
+      sendResponse(result.ok ? { success: true } : { success: false, error: result.error });
+      return false;
+    }
+
+    if (msg?.type === MESSAGE_TYPES.CONDENSE_AUDIO_SESSION_STOP) {
+      const payload = messagePayload<CondenseAudioSessionStopPayload>(
+        msg,
+        MESSAGE_TYPES.CONDENSE_AUDIO_SESSION_STOP,
+      );
+      if (payload?.recordId) stopCondensedAudioSession(payload.recordId);
+      sendResponse({ success: true });
+      return false;
+    }
+
+    if (msg?.type === MESSAGE_TYPES.CONDENSE_AUDIO_EVENT) {
+      const payload = messagePayload<CondenseAudioEventPayload>(
+        msg,
+        MESSAGE_TYPES.CONDENSE_AUDIO_EVENT,
+      );
+      const removedId = payload?.removedId;
+      if (removedId && isCondensedAudioSessionActive(removedId)) {
+        stopCondensedAudioSession(removedId);
+      }
+      const record = payload?.record;
+      if (
+        record &&
+        isCondensedAudioSessionActive(record.id) &&
+        (record.status === 'failed' || record.status === 'ready' || record.status === 'missing')
+      ) {
+        stopCondensedAudioSession(record.id);
+      }
+      return false;
     }
 
     return false;

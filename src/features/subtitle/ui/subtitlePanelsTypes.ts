@@ -76,6 +76,10 @@ export interface ManagerState {
   nativeHidden?: boolean;
   /** Whether both subtitles are currently hidden in the overlay. */
   bothHidden?: boolean;
+  /** Start condensed-audio export from the currently loaded cues. */
+  onCondenseAudio?: () => void;
+  /** Whether condensed audio can start (false → no cues loaded). */
+  condenseAudioEnabled?: boolean;
 }
 
 export interface OffsetState {

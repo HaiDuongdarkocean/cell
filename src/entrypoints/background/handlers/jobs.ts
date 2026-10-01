@@ -130,6 +130,7 @@ function ensureRegistry(ctx: BackgroundContext): JobRegistry {
         'resource-delete': 2,
         'voice-download': 1,
         'local-audio-index': 1,
+        'condense-audio': 1,
       },
     });
   }

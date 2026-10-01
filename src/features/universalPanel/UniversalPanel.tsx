@@ -43,12 +43,15 @@ export interface UniversalPanelProps {
   readonly studyModesPanel: ReactNode;
   /** Content for the Settings tab. */
   readonly settingsPanel: ReactNode;
+  /** Content for the Playlist tab (condensed audio). */
+  readonly playlistPanel?: ReactNode;
 }
 
-const TABS: { key: UniversalPanelTab; icon: 'bookOpen' | 'settings' | 'slidersHorizontal' | 'scanText'; label: MessageKey }[] = [
+const TABS: { key: UniversalPanelTab; icon: 'audioWave' | 'bookOpen' | 'settings' | 'slidersHorizontal' | 'scanText'; label: MessageKey }[] = [
   { key: 'dictionary', icon: 'bookOpen', label: 'panel.tab.dictionary' },
   { key: 'vocabulary', icon: 'scanText', label: 'panel.tab.vocabulary' },
   { key: 'studyModes', icon: 'slidersHorizontal', label: 'panel.tab.studyModes' },
+  { key: 'playlist', icon: 'audioWave', label: 'panel.tab.playlist' },
   { key: 'settings', icon: 'settings', label: 'panel.tab.settings' },
 ];
 
@@ -100,6 +103,7 @@ export function UniversalPanel({
   vocabularyPanel,
   studyModesPanel,
   settingsPanel,
+  playlistPanel,
 }: UniversalPanelProps): ReactElement | null {
   const panelRef = useRef<HTMLDivElement>(null);
   const wasOpenRef = useRef(isOpen);
@@ -262,6 +266,7 @@ export function UniversalPanel({
             {activeTab === 'dictionary' && dictionaryPanel}
             {activeTab === 'vocabulary' && vocabularyPanel}
             {activeTab === 'studyModes' && studyModesPanel}
+            {activeTab === 'playlist' && playlistPanel}
             {activeTab === 'settings' && settingsPanel}
           </div>
         </div>

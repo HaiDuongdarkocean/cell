@@ -465,6 +465,15 @@ export interface Settings {
   readonly srs: SrsSettingsSlice;
   /** One-time sync migration flags (REQ-2). Absent = not run. */
   readonly syncMigrations?: { readonly profileIdentity?: 'done' };
+  // === Condensed audio (spec condensed-audio — schema v33) ===
+  /** Condensed audio export settings (cue padding). */
+  readonly condensedAudio?: CondensedAudioSettings;
+}
+
+/** Condensed audio settings slice (spec condensed-audio). */
+export interface CondensedAudioSettings {
+  /** Padding applied around each merged cue range in ms. Default: 500. */
+  readonly padMs: number;
 }
 
 // === Subtitle Search API Key (schema v21) ===

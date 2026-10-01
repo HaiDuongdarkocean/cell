@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
+  AudioLines,
   ChevronLeft,
   Download,
   EyeOff,
@@ -65,6 +66,10 @@ export interface SubtitleManagerPanelProps {
   readonly nativeHidden?: boolean;
   /** Whether both subtitles are currently hidden in the overlay. */
   readonly bothHidden?: boolean;
+  /** Start condensed-audio export from the currently loaded cues. */
+  readonly onCondenseAudio?: () => void;
+  /** Whether condensed audio can start (false → no cues loaded). */
+  readonly condenseAudioEnabled?: boolean;
   /** When true, panel is rendered inside a shared Sheet atom — hide the
    *  decorative drag handle (Sheet provides its own functional one). */
   readonly inSheet?: boolean;
@@ -376,6 +381,8 @@ export function SubtitleManagerPanel({
   targetHidden,
   nativeHidden,
   bothHidden,
+  onCondenseAudio,
+  condenseAudioEnabled = false,
   inSheet,
   exiting,
 }: SubtitleManagerPanelProps): React.JSX.Element {
@@ -635,6 +642,19 @@ export function SubtitleManagerPanel({
                     onClick={() => onHideSection(activeTab)}
                   >
                     <EyeOff size={ICON_SIZE_PX} aria-hidden="true" />
+                  </Button>
+                )}
+                {onCondenseAudio && (
+                  <Button shape="circle"
+                    size="md"
+                    variant="ghost"
+                    disabled={!condenseAudioEnabled}
+                    aria-label={t('condensedAudio.trigger.label')}
+                    title={condenseAudioEnabled ? t('condensedAudio.trigger.label') : t('condensedAudio.trigger.needCues')}
+                    data-cell-id="manager-condense-audio"
+                    onClick={onCondenseAudio}
+                  >
+                    <AudioLines size={ICON_SIZE_PX} aria-hidden="true" />
                   </Button>
                 )}
               </div>

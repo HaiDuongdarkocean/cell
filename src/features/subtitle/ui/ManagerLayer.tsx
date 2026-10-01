@@ -83,6 +83,8 @@ export function ManagerLayer({
       targetHidden: manager.targetHidden,
       nativeHidden: manager.nativeHidden,
       bothHidden: manager.bothHidden,
+      onCondenseAudio: manager.onCondenseAudio,
+      condenseAudioEnabled: manager.condenseAudioEnabled,
     }),
     [manager, onClose, generateNativeEnabled],
   );

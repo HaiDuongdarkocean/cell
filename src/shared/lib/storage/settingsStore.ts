@@ -17,7 +17,7 @@ import { buildProfileName, profileIdForTarget, resolveSettingsFlatFields, syncFl
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 32;
+export const CURRENT_SCHEMA_VERSION = 33;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -524,6 +524,12 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     }
     return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
   },
+  // v32 → v33: condensed audio settings slice (padMs).
+  32: (s) =>
+    mergeNestedObjectDefaults(
+      { ...DEFAULT_SETTINGS, ...s, schemaVersion: 33 } as Record<string, unknown>,
+      DEFAULT_SETTINGS as unknown as Record<string, unknown>,
+    ),
 };
 
 /**

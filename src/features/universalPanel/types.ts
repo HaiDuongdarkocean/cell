@@ -2,7 +2,7 @@ import type { DictionaryPanelPrefill } from '@/entities/dictionary';
 
 export type { DictionaryPanelPrefill };
 
-export type UniversalPanelTab = 'dictionary' | 'settings' | 'studyModes' | 'vocabulary';
+export type UniversalPanelTab = 'dictionary' | 'playlist' | 'settings' | 'studyModes' | 'vocabulary';
 
 export interface UniversalPanelController {
   readonly open: (tab?: UniversalPanelTab) => Promise<void>;

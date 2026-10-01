@@ -41,12 +41,12 @@ afterEach(() => {
 
 // ─── DB structure ────────────────────────────────────────────────────────────
 describe('mediaLibraryRepository — DB structure', () => {
-  it('opens DB with name orca-local-player and version 2', async () => {
+  it('opens DB with name orca-local-player and version 3', async () => {
     // Trigger DB open by calling getAllVideos.
     await getAllVideos();
     // Re-open via internal getDB is cached; verify constants.
     expect(DB_NAME).toBe('orca-local-player');
-    expect(DB_VERSION).toBe(2);
+    expect(DB_VERSION).toBe(3);
   });
 
   it('creates videos store with keyPath id', async () => {

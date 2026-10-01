@@ -24,6 +24,7 @@ import {
 import { sendMessage, registerOffscreenListener, unregisterOffscreenListener } from '@/shared/lib/chrome-apis';
 import { messagePayload } from '@/entities/message/payload';
 import { ocrMessageListener } from './ocrRunner';
+import { condensedAudioMessageListener } from './condensedAudioRunner';
 import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
 import { encodeBase64 } from '@/shared/lib/base64';
 import type {
@@ -351,6 +352,17 @@ export async function startMessageListener(): Promise<void> {
         ? { ...request, type: type.replace('_OFFSCREEN_', '') }
         : request;
       return ocrMessageListener(normalized, _sender, sendResponse);
+    }
+
+    if (
+      type === MESSAGE_TYPES.CONDENSE_AUDIO_RUN ||
+      type === MESSAGE_TYPES.CONDENSE_AUDIO_ABORT ||
+      type === MESSAGE_TYPES.CONDENSE_AUDIO_BLOB_URL ||
+      type === MESSAGE_TYPES.REVOKE_OPFS_BLOB_URL
+    ) {
+      const handled = condensedAudioMessageListener(request, _sender, sendResponse);
+      if (handled !== undefined) return handled;
+      if (type !== MESSAGE_TYPES.REVOKE_OPFS_BLOB_URL) return undefined;
     }
 
     if (type === MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2) {

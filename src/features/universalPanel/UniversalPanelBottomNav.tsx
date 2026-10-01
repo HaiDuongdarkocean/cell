@@ -3,6 +3,7 @@ import { Button } from '@/shared/ui/Button';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { Icon } from '@/shared/ui/Icon';
 import { t, type MessageKey } from '@/shared/i18n';
+import type { UniversalPanelTab } from './types';
 import styles from './UniversalPanelBottomNav.module.css';
 
 export interface ToolAction {
@@ -16,19 +17,20 @@ export interface ToolAction {
 
 export interface UniversalPanelBottomNavProps {
   /** Currently active tab. */
-  activeTab: 'dictionary' | 'studyModes' | 'settings' | 'vocabulary';
+  activeTab: UniversalPanelTab;
   /** Called when user switches tab. */
-  onTabChange: (tab: 'dictionary' | 'studyModes' | 'settings' | 'vocabulary') => void;
+  onTabChange: (tab: UniversalPanelTab) => void;
   /** Tools shown in the bottom sheet. */
   tools: ToolAction[];
   /** Optional class name. */
   className?: string;
 }
 
-const TABS: ReadonlyArray<{ key: 'dictionary' | 'vocabulary' | 'studyModes' | 'settings'; icon: 'bookOpen' | 'scanText' | 'slidersHorizontal' | 'settings'; label: MessageKey }> = [
+const TABS: ReadonlyArray<{ key: UniversalPanelTab; icon: 'audioWave' | 'bookOpen' | 'scanText' | 'slidersHorizontal' | 'settings'; label: MessageKey }> = [
   { key: 'dictionary', icon: 'bookOpen', label: 'panel.tab.dictionary' },
   { key: 'vocabulary', icon: 'scanText', label: 'panel.tab.vocabularyShort' },
   { key: 'studyModes', icon: 'slidersHorizontal', label: 'panel.tab.studyModesShort' },
+  { key: 'playlist', icon: 'audioWave', label: 'panel.tab.playlistShort' },
   { key: 'settings', icon: 'settings', label: 'panel.tab.settings' },
 ];
 

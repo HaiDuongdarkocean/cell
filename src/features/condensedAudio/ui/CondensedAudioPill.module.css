@@ -1,0 +1,41 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  min-height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--overlay-background, rgba(0, 0, 0, 0.72));
+  color: var(--overlay-text, #fff);
+  pointer-events: auto;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--error);
+  flex-shrink: 0;
+  animation: pillPulse 1.6s ease-in-out infinite;
+}
+
+.elapsed {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@keyframes pillPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    animation: none;
+  }
+}

@@ -23,6 +23,11 @@ import type {
 } from '@/entities/subtitle/searchTypes';
 import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
 import type { WordStatus } from '@/entities/dictionary';
+import type {
+  CondensedAudioRecord,
+  CondensedAudioSource,
+  CueRange,
+} from '@/entities/condensedAudio';
 
 // === Message Types ===
 
@@ -156,7 +161,24 @@ export type MessageType =
   | 'SYNC_DELETE_OLD_COPY'
   | 'SYNC_DATA_APPLIED'
   | 'SYNC_STATUS_CHANGED'
-  | 'SYNC_OUTBOX_DIRTY';
+  | 'SYNC_OUTBOX_DIRTY'
+  // Condensed audio (spec: condensed-audio)
+  | 'CONDENSE_AUDIO_START'
+  | 'CONDENSE_AUDIO_LIST'
+  | 'CONDENSE_AUDIO_DELETE'
+  | 'CONDENSE_AUDIO_RETRY'
+  | 'CONDENSE_AUDIO_CANCEL'
+  | 'CONDENSE_AUDIO_EXPORT'
+  | 'CONDENSE_AUDIO_SYNC_DRIVE'
+  | 'CONDENSE_AUDIO_BLOB_URL'
+  | 'CONDENSE_AUDIO_SESSION_START'
+  | 'CONDENSE_AUDIO_SESSION_STOP'
+  | 'CONDENSE_AUDIO_CHUNK'
+  | 'CONDENSE_AUDIO_RUN'
+  | 'CONDENSE_AUDIO_ABORT'
+  | 'CONDENSE_AUDIO_PROGRESS'
+  | 'CONDENSE_AUDIO_READ'
+  | 'CONDENSE_AUDIO_EVENT';
 
 // === Message Request ===
 
@@ -174,6 +196,94 @@ export interface MessageResponse<T = unknown> {
 }
 
 // === Typed Payloads ===
+
+// === Condensed audio (spec: condensed-audio) ===
+
+export interface CondenseAudioStartPayload {
+  readonly title: string;
+  readonly leg: 'file' | 'record';
+  readonly source: CondensedAudioSource;
+  readonly ranges: readonly CueRange[];
+  readonly durationMs: number;
+  readonly tabId?: number;
+  readonly frameId?: number;
+}
+
+export interface CondenseAudioIdPayload {
+  readonly id: string;
+}
+
+export interface CondenseAudioSessionStartPayload {
+  readonly recordId: string;
+  readonly ranges: readonly CueRange[];
+}
+
+export interface CondenseAudioSessionStopPayload {
+  readonly recordId: string;
+  readonly reason?: 'user' | 'ended' | 'error';
+}
+
+export interface CondenseAudioChunkPayload {
+  readonly recordId: string;
+  readonly seq: number;
+  readonly dataBase64: string;
+  readonly last?: boolean;
+  readonly mimeType?: string;
+  readonly elapsedMs?: number;
+  readonly error?: string;
+}
+
+export interface CondenseAudioEventPayload {
+  readonly record?: CondensedAudioRecord;
+  readonly removedId?: string;
+}
+
+export interface CondenseAudioRunPayload {
+  readonly recordId: string;
+  readonly mode: 'condense' | 'transcode';
+  readonly source?: CondensedAudioSource;
+  readonly ranges?: readonly CueRange[];
+  readonly padMs?: number;
+  readonly durationMs?: number;
+}
+
+export interface CondenseAudioRunResult {
+  readonly recordId: string;
+  readonly outputName: string;
+  readonly mimeType: string;
+  readonly sizeBytes: number;
+  readonly durationMs: number;
+}
+
+export interface CondenseAudioAbortPayload {
+  readonly recordId: string;
+}
+
+export interface CondenseAudioProgressPayload {
+  readonly recordId: string;
+  readonly percent: number;
+}
+
+export interface CondenseAudioReadPayload {
+  readonly id: string;
+  readonly offset: number;
+  readonly length: number;
+}
+
+export interface CondenseAudioReadResult {
+  readonly dataBase64: string;
+  readonly sizeBytes: number;
+  readonly done: boolean;
+}
+
+export interface CondenseAudioStartResult {
+  readonly recordId: string;
+  readonly jobId: string;
+}
+
+export interface CondenseAudioBlobUrlResult {
+  readonly url: string;
+}
 
 export interface GetDetectedMediaPayload {
   readonly tabId: number;

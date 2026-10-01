@@ -35,6 +35,9 @@ import { startWordStatusCrossTabRelay } from '@/features/dictionary/services/wor
 import { useLibraryScores } from './hooks/useLibraryScores';
 import { useImmersionSession } from './hooks/useImmersionSession';
 import { t } from '@/shared/i18n';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import type { CondenseAudioStartPayload } from '@/entities/message';
 import './styles/global.css';
 
 installRippleDelegation(document);
@@ -185,6 +188,23 @@ export function LocalPlayerApp(): React.JSX.Element {
       apiKeys: [],
       onApiKeysChange: () => {},
       onSearchResultSelect: () => {},
+      onCondenseAudio: () => {
+        if (!currentVideo?.fileHandle) return;
+        const cues = subtitleEngine.getTargetCues();
+        const source = cues.length > 0 ? cues : subtitleEngine.getNativeCues();
+        if (source.length === 0) return;
+        const payload: CondenseAudioStartPayload = {
+          title: currentVideo.title || currentVideo.filename,
+          leg: 'file',
+          source: { kind: 'library', videoId: currentVideo.id },
+          ranges: source.map((c) => ({ startMs: c.start, endMs: c.end })),
+          durationMs: currentVideo.durationMs,
+        };
+        void sendMessage({ type: MESSAGE_TYPES.CONDENSE_AUDIO_START, payload });
+      },
+      condenseAudioEnabled:
+        !!currentVideo?.fileHandle &&
+        (subtitleEngine.getTargetCues().length > 0 || subtitleEngine.getNativeCues().length > 0),
     };
   }, [
     subtitles,
@@ -192,6 +212,8 @@ export function LocalPlayerApp(): React.JSX.Element {
     handleOpenSubtitle,
     subtitleActions.onGenerateNative,
     controls,
+    currentVideo,
+    subtitleEngine,
   ]);
 
   return (

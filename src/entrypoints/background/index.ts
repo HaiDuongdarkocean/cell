@@ -91,6 +91,7 @@ import { registerSrsHandlers } from './handlers/srs';
 import { registerOcrHandlers } from './handlers/ocr';
 import { registerReaderHandlers } from './handlers/reader';
 import { registerSyncHandlers, wireSyncScheduling } from './handlers/sync';
+import { registerCondensedAudioHandlers } from './handlers/condensedAudio';
 import { initJobRegistry, registerJobHandlers, stopJobKeepAlive } from './handlers/jobs';
 import { sweepOrphanedWork } from './handlers/orphanSweep';
 import { seedDevDataIfEmpty } from '@/features/dictionary/logic/devSeed';
@@ -299,6 +300,7 @@ export class BackgroundService implements BackgroundContext {
     registerReaderHandlers(this);
     registerOcrHandlers(this);
     registerSyncHandlers(this);
+    registerCondensedAudioHandlers(this);
   }
 
   /** Type-safe wrapper around messageBus.on. */

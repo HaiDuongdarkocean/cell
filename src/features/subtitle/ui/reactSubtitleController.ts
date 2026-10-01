@@ -29,6 +29,10 @@ import { createPlayerModeHostController, type PlayerModeHostController } from '.
 import { practiceModeFromStudyModeId, setSubtitlePracticeMode } from '@/features/studyModes';
 import type { SubtitlePracticeMode } from '@/features/studyModes';
 import { t } from '@/shared/i18n';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import type { CondenseAudioStartPayload, CondenseAudioStartResult } from '@/entities/message';
+import type { MessageResponse } from '@/entities/message';
 
 import type { ICON_CATALOG } from '@/shared/icons';
 
@@ -304,7 +308,36 @@ export class ReactSubtitleController {
       targetHidden: styleController.getTargetHidden(),
       nativeHidden: styleController.getNativeHidden(),
       bothHidden: styleController.getTargetHidden() && styleController.getNativeHidden(),
+      onCondenseAudio: () => this.handleCondenseAudio(),
+      condenseAudioEnabled: this.condenseCueRanges().length > 0,
     };
+  }
+
+  private condenseCueRanges(): { startMs: number; endMs: number }[] {
+    const cues = this.engine.getTargetCues();
+    const source = cues.length > 0 ? cues : this.engine.getNativeCues();
+    return source.map((c) => ({ startMs: c.start, endMs: c.end }));
+  }
+
+  private handleCondenseAudio(): void {
+    const ranges = this.condenseCueRanges();
+    if (ranges.length === 0) return;
+    const durationMs = Number.isFinite(this.video.duration) ? this.video.duration * 1000 : 0;
+    const payload: CondenseAudioStartPayload = {
+      title: document.title || 'condensed-audio',
+      leg: 'record',
+      source: { kind: 'stream', pageKey: `${location.origin}${location.pathname}` },
+      ranges,
+      durationMs,
+    };
+    void sendMessage<MessageResponse<CondenseAudioStartResult>>({
+      type: MESSAGE_TYPES.CONDENSE_AUDIO_START,
+      payload,
+    }).then((res) => {
+      if (res && res.success === false) {
+        this.mount.addToast(t('condensedAudio.trigger.failed'), 'error');
+      }
+    });
   }
 
   /** Download a subtitle track item as SRT file. Gets cues for the role,

@@ -116,6 +116,18 @@ import {
   JobEventPayloadSchema,
   JobListPayloadSchema,
 } from '@/entities/message/jobSchemas';
+import {
+  CondenseAudioAbortPayloadSchema,
+  CondenseAudioChunkPayloadSchema,
+  CondenseAudioEventPayloadSchema,
+  CondenseAudioIdPayloadSchema,
+  CondenseAudioProgressPayloadSchema,
+  CondenseAudioReadPayloadSchema,
+  CondenseAudioRunPayloadSchema,
+  CondenseAudioSessionStartPayloadSchema,
+  CondenseAudioSessionStopPayloadSchema,
+  CondenseAudioStartPayloadSchema,
+} from '@/entities/message/condensedAudioSchemas';
 
 export type MessageDirection =
   | 'cs->bg'
@@ -858,5 +870,101 @@ export const MESSAGE_REGISTRY = {
     schema: EmptyPayloadSchema,
     direction: 'any',
     owner: 'background/handlers/sync',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_START]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_START,
+    schema: CondenseAudioStartPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/condensedAudio',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_LIST]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_LIST,
+    schema: EmptyPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/condensedAudio',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_DELETE]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_DELETE,
+    schema: CondenseAudioIdPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/condensedAudio',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_RETRY]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_RETRY,
+    schema: CondenseAudioIdPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/condensedAudio',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_CANCEL]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_CANCEL,
+    schema: CondenseAudioIdPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/condensedAudio',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_EXPORT]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_EXPORT,
+    schema: CondenseAudioIdPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/condensedAudio',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_SYNC_DRIVE]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_SYNC_DRIVE,
+    schema: CondenseAudioIdPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/condensedAudio',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_BLOB_URL]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_BLOB_URL,
+    schema: CondenseAudioIdPayloadSchema,
+    direction: 'any',
+    owner: 'entrypoints/offscreen/condensedAudioRunner',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_SESSION_START]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_SESSION_START,
+    schema: CondenseAudioSessionStartPayloadSchema,
+    direction: 'bg->cs',
+    owner: 'background/handlers/condensedAudio',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_SESSION_STOP]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_SESSION_STOP,
+    schema: CondenseAudioSessionStopPayloadSchema,
+    direction: 'bg->cs',
+    owner: 'background/handlers/condensedAudio',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_CHUNK]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_CHUNK,
+    schema: CondenseAudioChunkPayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/condensedAudio',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_RUN]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_RUN,
+    schema: CondenseAudioRunPayloadSchema,
+    direction: 'bg->offscreen',
+    owner: 'entrypoints/offscreen/condensedAudioRunner',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_ABORT]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_ABORT,
+    schema: CondenseAudioAbortPayloadSchema,
+    direction: 'bg->offscreen',
+    owner: 'entrypoints/offscreen/condensedAudioRunner',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_PROGRESS]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_PROGRESS,
+    schema: CondenseAudioProgressPayloadSchema,
+    direction: 'offscreen->bg',
+    owner: 'entrypoints/offscreen/condensedAudioRunner',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_READ]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_READ,
+    schema: CondenseAudioReadPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/condensedAudio',
+  },
+  [MESSAGE_TYPES.CONDENSE_AUDIO_EVENT]: {
+    type: MESSAGE_TYPES.CONDENSE_AUDIO_EVENT,
+    schema: CondenseAudioEventPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/condensedAudio',
   },
 } as const satisfies Record<MessageType, MessageContract>;

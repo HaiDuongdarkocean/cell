@@ -943,6 +943,22 @@ Dictionary probe cache (T23):
   → clearDictionaryProbeCache() on dictionary import
 ```
 
+### 9. Condensed Audio Flow (spec `docs/specs/condensed-audio.md`)
+
+Xuất audio chỉ-gồm-thoại từ video có cues → passive immersion (listening khi inactive).
+
+**Entry**: `SubtitleManagerPanel` → `manager-condense-audio` button (header actions, `onCondenseAudio` prop). Caller: `reactSubtitleController.handleCondenseAudio` (leg `record`, source `stream`+pageKey) và `local-player/main.tsx` (leg `file`, source `library`+videoId).
+
+**Leg A — file** (readable source): `VideoRecord.fileHandle` (FileSystemFileHandle) hoặc OPFS `output.mp4` → background `CONDENSE_AUDIO_RUN` → offscreen `condensedAudioRunner` → vendored FFmpeg WASM (`public/ffmpeg/`) mount WORKERFS (`createDir('/work')` trước `FS.mount` — mountpoint phải tồn tại) → `atrim`+`concat` theo merged cue ranges (`cueRanges.normalizeCueRanges` pad+clamp+merge) → encode mp3 (`libmp3lame`, fallback `aac`/`libopus`) → `writeOutputFile` OPFS `condensed/`.
+
+**Leg B — record** (stream, không đọc được file): bg → `sendTabMessage CONDENSE_AUDIO_SESSION_START` → `condensedAudioRecorder` chọn video (duration lớn nhất), `video.captureStream()` audio-only → `MediaRecorder` 5s chunks → `CONDENSE_AUDIO_CHUNK` base64 → bg `appendPartChunk` OPFS `condensed/<id>.part.webm`; skip gap bằng seek tới cue kế, restore playbackRate khi teardown. `last` chunk → `finalizing` → offscreen `transcode` mode (đọc part qua WORKERFS) → ready. Pill `mountCondensedAudioPill` (shadow + `flushSync` + fullscreen reparent) hiển thị REC + stop.
+
+**Records**: IDB store `condensedAudio` trong DB `orca-local-player` (v3, `getDB`/`STORES` re-export qua `features/local-player/index.ts`). Status: processing/recording/finalizing/ready/failed/missing; `CONDENSE_AUDIO_LIST/DELETE/RETRY/CANCEL/EXPORT/SYNC_DRIVE/BLOB_URL` handlers; job identity `condense-audio`+recordId trong `JobRegistry` (progress, reconcile missing output → missing).
+
+**tabId injection**: bus inject `sender.tab.id` vào payload TRƯỚC zod parse → schema phải khai báo `tabId`/`frameId` optional ở top level, không thì bị strip (bug đã sửa ở `CondenseAudioStartPayloadSchema`).
+
+**Playlist tab**: `universal-panel-tab-playlist` — `PlaylistTab` (rows: status icon, meta `duration · size · codec`, preview `<audio>` qua `CONDENSE_AUDIO_BLOB_URL`, export `chrome.downloads` subfolder `Tihoka/condensed-audio`, Drive sync `uploadUserFile` → "Condensed Audio" folder, retry/delete/cancel). Lắng nghe `CONDENSE_AUDIO_EVENT` broadcast → reload list.
+
 ---
 
 ## Test files (auto-select / auto-download feature)
