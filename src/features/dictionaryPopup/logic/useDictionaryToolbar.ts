@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { markAudio, measureAudio } from '@/shared/lib/perfMarks';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_PRONUNCIATION_SETTINGS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
@@ -212,6 +213,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     if (audioItems.length > 0) return Promise.resolve(audioItems);
     setAudioLoading(true);
     setAudioError(null);
+    markAudio('start', result.term);
 
     return (async (): Promise<readonly AudioItem[]> => {
       try {
@@ -251,6 +253,8 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
           if (wordItems.length > 0 || audioItems.length > 0) {
             setAudioItems(wordItems);
             setAudioSelection(new Map());
+            markAudio('applied', result.term);
+            measureAudio('start', 'applied', result.term);
           }
         }
 

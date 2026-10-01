@@ -20,6 +20,15 @@ jest.mock('@/features/cardCreator', () => ({
   translateSentence: jest.fn(),
 }));
 
+jest.mock('@/shared/lib/perfMarks', () => ({
+  markAudio: jest.fn(),
+  measureAudio: jest.fn(),
+  clearAudioMarks: jest.fn(),
+  markLookup: jest.fn(),
+  measureLookup: jest.fn(),
+  clearLookupMarks: jest.fn(),
+}));
+
 const mockSendMessage = jest.mocked(sendMessage);
 const mockLoadSettings = jest.mocked(loadSettings);
 const mockTranslateSentence = jest.mocked(translateSentence);
@@ -358,5 +367,43 @@ describe('useDictionaryToolbar', () => {
     act(() => { result.current.removeImageItem('i1'); });
     expect(result.current.imageItems).toHaveLength(0);
     expect(result.current.selectedImageCount).toBe(0);
+  });
+
+  it('emits audio perf marks only past the fetch guards', async () => {
+    const { markAudio, measureAudio } = jest.mocked(
+      await import('@/shared/lib/perfMarks'),
+    );
+    mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
+      const message = msg as { type: string };
+      if (message.type === MESSAGE_TYPES.FETCH_LOCAL_AUDIO) {
+        return { success: true, data: { items: [] } } as T;
+      }
+      if (message.type === MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO) {
+        return { success: true, data: { items: [makeAudio('a1', true)] } } as T;
+      }
+      if (message.type === MESSAGE_TYPES.TTS_FETCH_AUDIO) {
+        return { success: false, error: 'tts failed' } as T;
+      }
+      return { success: true } as T;
+    });
+
+    const { result } = renderHook(() => useDictionaryToolbar({
+      result: makeResult('hello'),
+      contextSentence: '',
+      sourceLang: 'en',
+      targetLang: 'vi',
+    }));
+
+    act(() => { result.current.setActiveTab('audio'); });
+    await waitFor(() => expect(result.current.audioItems.length).toBe(1));
+    expect(markAudio).toHaveBeenCalledWith('start', 'hello');
+    expect(markAudio).toHaveBeenCalledWith('applied', 'hello');
+    expect(measureAudio).toHaveBeenCalledWith('start', 'applied', 'hello');
+
+    (markAudio as jest.Mock).mockClear();
+    act(() => { result.current.setActiveTab('links'); });
+    act(() => { result.current.setActiveTab('audio'); });
+    await waitFor(() => expect(result.current.audioLoading).toBe(false));
+    expect(markAudio).not.toHaveBeenCalled();
   });
 });

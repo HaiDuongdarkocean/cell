@@ -18,6 +18,7 @@ import type { WebTriggerPointer } from '@/features/dictionaryPopup/trigger/webTr
 import { createWordHighlight, type HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
 import { emitWordStatusChanged } from '@/features/dictionary';
 import { sendMessage } from '@/shared/lib/chrome-apis';
+import { markLookup, measureLookup, clearLookupMarks } from '@/shared/lib/perfMarks';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { openSettingsSection, type PanelMountController } from './panelBridge';
 import { createPopupLevel, type PopupLevel } from './controllerTypes';
@@ -499,6 +500,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     }
 
     level.requestId = requestId;
+    markLookup('dispatch', requestId);
 
     void Promise.resolve(sendMessage({
       type: MESSAGE_TYPES.LOOKUP_REQUEST,
@@ -510,6 +512,8 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
         const owner = popupStack.find((l) => l.requestId === requestId);
         if (!owner) return;
         owner.requestId = null;
+        markLookup('response', requestId);
+        measureLookup('dispatch', 'response', requestId);
         const { success, data, error } = response as { success: boolean; data?: LookupResult[]; error?: string };
         if (success && data && data.length > 0) {
           const [winner, ...rest] = data;
@@ -519,6 +523,11 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
             deps.lookupCache.set(request.term, request.langCode, finalData, request);
           }
           renderLookupResult(owner, finalWinner, finalWinner === winner ? rest : finalData.slice(1), anchorRect, request, pointer, true);
+          requestAnimationFrame(() => {
+            markLookup('render', requestId);
+            measureLookup('dispatch', 'render', requestId);
+            clearLookupMarks(requestId);
+          });
         } else {
           console.warn('[web-text-dict] lookup failed', error);
         }

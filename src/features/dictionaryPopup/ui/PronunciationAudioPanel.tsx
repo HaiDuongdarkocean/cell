@@ -3,6 +3,7 @@ import { Icon } from '@/shared/ui/Icon';
 import { InkTabs } from '@/shared/ui/InkTabs';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { markAudio, measureAudio, clearAudioMarks } from '@/shared/lib/perfMarks';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { useAudioItemUrlMap } from '@/features/pronunciation';
 import checkStyles from './DictionaryCheckable.module.css';
@@ -41,6 +42,17 @@ export function PronunciationAudioPanel({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [activeGroup, setActiveGroup] = useState<'word' | 'sentence'>('word');
   const { getUrl } = useAudioItemUrlMap(items);
+
+  useEffect(() => {
+    if (loading || items.length === 0) return;
+    const raf = requestAnimationFrame(() => {
+      markAudio('render', term);
+      measureAudio('applied', 'render', term);
+      measureAudio('start', 'render', term);
+      clearAudioMarks(term);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [loading, items, term]);
 
   // Build display list: real items + TTS fallback item if no real items for group
   const displayItems = useMemo(() => {

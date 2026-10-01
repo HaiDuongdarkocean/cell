@@ -3110,6 +3110,24 @@
         "serialization"
       ],
       "trigger": "a message payload/response carries Uint8Array or ArrayBuffer across chrome.runtime sendMessage between contexts"
+    },
+    {
+      "type": "experience",
+      "id": "usertiming-isolated-world-shared",
+      "title": "performance.mark() from a content-script isolated world lands in the page User Timing buffer — no bridge needed; jsdom lacks the API so stub it in tests",
+      "category": [
+        "testing",
+        "e2e",
+        "instrumentation"
+      ],
+      "tags": [
+        "performance-mark",
+        "user-timing",
+        "isolated-world",
+        "e2e",
+        "jsdom"
+      ],
+      "trigger": "instrumenting content-script code with performance.mark or testing it in jsdom"
     }
   ]
 }
