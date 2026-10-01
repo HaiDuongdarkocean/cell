@@ -175,17 +175,24 @@
 }
 
 .previewNav {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: var(--space-2);
 }
 
 .dots {
-  flex: 1;
+  grid-column: 2;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: var(--space-1-5);
+}
+
+.navArrows {
+  grid-column: 3;
+  justify-self: end;
 }
 
 .dot,
@@ -218,6 +225,9 @@
   min-height: 0;
   overflow-y: auto;
   border-radius: var(--radius-card);
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
 }
 
 .checklistBox {

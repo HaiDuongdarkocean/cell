@@ -642,7 +642,7 @@ function MappingStep({
               />
             ))}
           </div>
-          <HStack gap="1">
+          <HStack gap="1" className={styles.navArrows}>
             <IconButton size="sm" variant="ghost" disabled={sampleIdx === 0} aria-label={t('ankiImport.mapping.prev')} onClick={() => { onSampleIdx(sampleIdx - 1); setFlipped(false); }}>
               <Icon name="chevronLeft" />
             </IconButton>
@@ -652,7 +652,11 @@ function MappingStep({
           </HStack>
         </div>
         {preview && audioCache && imageCache && (
-          <Card className={styles.previewCardWrap} data-cell-id="anki-preview-card">
+          <Card
+            className={styles.previewCardWrap}
+            data-cell-id="anki-preview-card"
+            onClick={(e) => { if (e.target === e.currentTarget) setFlipped((f) => !f); }}
+          >
             {flipped ? (
               <SrsReviewCardBack
                 note={preview.note}
