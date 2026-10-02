@@ -66,8 +66,6 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
   const [tags, setTags] = useState('');
   const [events, setEvents] = useState<readonly SrsReviewRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [dirty, setDirty] = useState(false);
   const [generating, setGenerating] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -108,7 +106,6 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
       initializedNoteId.current = note.id;
       dirtyRef.current = false;
       dictSourceRef.current = null;
-      setDirty(false);
       setNotice(null);
     })();
     return () => { mounted = false; };
@@ -146,7 +143,6 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
       const { targetWord, fields } = await persistNoteFields(notetype, note, s.texts, s.media, s.removedMedia);
       await updateCurrentNote({ ...note, targetWord, fields, tags: splitTags(s.tags) }, s.deckId);
       dirtyRef.current = false;
-      setDirty(false);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -165,7 +161,6 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
 
   function markDirty(): void {
     dirtyRef.current = true;
-    setDirty(true);
   }
 
   async function resolveLangs(): Promise<{ target: string; native: string }> {
@@ -271,11 +266,6 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
     } finally {
       setGenerating(null);
     }
-  }
-
-  function handleSave(): void {
-    setSaving(true);
-    void persist().finally(() => setSaving(false));
   }
 
   function handleClose(): void {
@@ -448,18 +438,6 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
 
       {notice && <Text className={styles.notice}>{notice}</Text>}
       {error && <Text className={styles.error}>{error}</Text>}
-
-      <Box className={styles.footer}>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={handleSave}
-          disabled={saving || !dirty}
-          data-cell-id="srs-edit-save"
-        >
-          {t('srs.edit.save')}
-        </Button>
-      </Box>
 
       </>
       )}
