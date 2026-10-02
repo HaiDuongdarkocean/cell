@@ -19,6 +19,16 @@
   animation: pillPulse 1.6s ease-in-out infinite;
 }
 
+.dotPaused {
+  composes: dot;
+  animation: none;
+  opacity: 0.4;
+}
+
+.dialogLayer {
+  pointer-events: auto;
+}
+
 .elapsed {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

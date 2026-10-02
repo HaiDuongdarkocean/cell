@@ -71,6 +71,7 @@ export const CondenseAudioIdPayloadSchema = z.object({
 export const CondenseAudioSessionStartPayloadSchema = z.object({
   recordId: z.string().min(1),
   ranges: z.array(CueRangeSchema),
+  padMs: z.number().nonnegative().optional(),
 });
 
 export const CondenseAudioSessionStopPayloadSchema = z.object({

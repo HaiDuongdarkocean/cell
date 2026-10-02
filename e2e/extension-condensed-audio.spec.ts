@@ -75,7 +75,7 @@ async function condenseEnabled(page: Page): Promise<boolean> {
 }
 
 test.describe('Cell condensed audio', () => {
-  test('record leg: trigger → pill → playlist ready', async ({ context }, testInfo) => {
+  test('record leg: trigger → pill → playlist ready', async ({ context }) => {
     test.setTimeout(180_000);
     const page = await context.newPage();
     page.on('console', (msg) => {
@@ -109,7 +109,7 @@ test.describe('Cell condensed audio', () => {
     await expect
       .poll(() => condenseEnabled(page), { timeout: 30_000 })
       .toBe(true);
-    await page.screenshot({ path: testInfo.outputPath('manager-condense-trigger.png') });
+    await page.screenshot({ path: 'tmp/condensed-audio/manager-condense-trigger.png' });
 
     await deepClick(page, '[data-cell-id="manager-condense-audio"]');
     try {
@@ -140,7 +140,10 @@ test.describe('Cell condensed audio', () => {
       throw err;
     }
     await page.waitForTimeout(1_500);
-    await page.screenshot({ path: testInfo.outputPath('recording-pill.png') });
+    await waitDeep(page, '[data-cell-id="condensed-audio-pause"]', 5_000);
+    await waitDeep(page, '[data-cell-id="condensed-audio-stop"]', 5_000);
+    await waitDeep(page, '[data-cell-id="condensed-audio-discard"]', 5_000);
+    await page.screenshot({ path: 'tmp/condensed-audio/recording-pill.png' });
 
     const isPlaying = await page.evaluate(() => {
       const v = document.querySelector('video');
@@ -148,8 +151,35 @@ test.describe('Cell condensed audio', () => {
     });
     expect(isPlaying).toBe(true);
 
-    await page.waitForTimeout(6_000);
-    await deepClick(page, '[data-cell-id="condensed-audio-pill"] button');
+    await deepClick(page, '[data-cell-id="condensed-audio-pause"]');
+    await expect
+      .poll(
+        () => page.evaluate(() => document.querySelector('video')?.paused ?? false),
+        { timeout: 5_000 },
+      )
+      .toBe(true);
+    await page.screenshot({ path: 'tmp/condensed-audio/recording-pill-paused.png' });
+
+    await deepClick(page, '[data-cell-id="condensed-audio-pause"]');
+    await expect
+      .poll(
+        () => page.evaluate(() => !(document.querySelector('video')?.paused ?? true)),
+        { timeout: 5_000 },
+      )
+      .toBe(true);
+
+    await deepClick(page, '[data-cell-id="condensed-audio-discard"]');
+    await waitDeep(page, '[data-cell-id="condensed-audio-discard-dialog"] [role="dialog"]', 5_000);
+    await page.screenshot({ path: 'tmp/condensed-audio/recording-pill-discard-confirm.png' });
+    await deepClick(
+      page,
+      '[data-cell-id="condensed-audio-discard-dialog"] [role="dialog"] button:first-of-type',
+    );
+    await page.waitForTimeout(300);
+    expect(await deepQuery(page, '[data-cell-id="condensed-audio-pill"]')).toBe(true);
+
+    await page.waitForTimeout(4_000);
+    await deepClick(page, '[data-cell-id="condensed-audio-stop"]');
 
     await expect
       .poll(async () => !(await deepQuery(page, '[data-cell-id="condensed-audio-pill"]')), {
@@ -217,7 +247,7 @@ test.describe('Cell condensed audio', () => {
       }
     }
     await waitDeep(page, '[data-cell-id="universal-panel-content-playlist"]', 10_000);
-    await page.screenshot({ path: testInfo.outputPath('playlist-tab.png') });
+    await page.screenshot({ path: 'tmp/condensed-audio/playlist-tab.png' });
 
     const dumpRecords = async (): Promise<void> => {
       const sw = context.serviceWorkers()[0];
@@ -253,7 +283,7 @@ test.describe('Cell condensed audio', () => {
       await dumpRecords();
       throw err;
     }
-    await page.screenshot({ path: testInfo.outputPath('playlist-ready.png') });
+    await page.screenshot({ path: 'tmp/condensed-audio/playlist-ready.png' });
 
     await page.close();
   });

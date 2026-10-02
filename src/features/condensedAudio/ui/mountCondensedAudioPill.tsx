@@ -6,15 +6,22 @@ import { buildTokenSpanCssForShadow } from '@/features/tokenize';
 import { ShadowThemeProvider } from '@/features/theme';
 import { CondensedAudioPill } from './CondensedAudioPill';
 
+export interface CondensedAudioPillHandlers {
+  readonly getElapsedMs: () => number;
+  readonly onStop: () => void;
+  readonly onTogglePause: () => void;
+  readonly onDiscard: () => void;
+}
+
 export interface CondensedAudioPillHandle {
   readonly updatePosition: () => void;
+  readonly setPaused: (paused: boolean) => void;
   readonly unmount: () => void;
 }
 
 export function mountCondensedAudioPill(
   video: HTMLVideoElement,
-  startedAt: number,
-  onStop: () => void,
+  handlers: CondensedAudioPillHandlers,
 ): CondensedAudioPillHandle {
   const mount = mountReactShadow(createElement('div'), {
     layer: 30,
@@ -26,19 +33,30 @@ export function mountCondensedAudioPill(
   host.style.pointerEvents = 'none';
   const updatePosition = (): void => {
     const rect = video.getBoundingClientRect();
+    const pillWidth = host.getBoundingClientRect().width;
     host.style.top = `${Math.max(8, rect.top + 12)}px`;
-    host.style.left = `${rect.left + rect.width / 2}px`;
-    host.style.transform = 'translateX(-50%)';
+    host.style.left = `${Math.max(8, rect.left + rect.width / 2 - pillWidth / 2)}px`;
   };
   updatePosition();
-  flushSync(() => {
+  let paused = false;
+  const render = (): void => {
     mount.root.render(
       createElement(
         ShadowThemeProvider,
         { container: mount.rootEl },
-        createElement(CondensedAudioPill, { startedAt, onStop }),
+        createElement(CondensedAudioPill, { paused, ...handlers }),
       ),
     );
-  });
-  return { updatePosition, unmount: mount.unmount };
+  };
+  flushSync(render);
+  updatePosition();
+  return {
+    updatePosition,
+    setPaused: (next: boolean) => {
+      if (next === paused) return;
+      paused = next;
+      flushSync(render);
+    },
+    unmount: mount.unmount,
+  };
 }

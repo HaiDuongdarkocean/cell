@@ -1,0 +1,22 @@
+{
+  "id": "mediarecorder-seek-bleed",
+  "title": "MediaRecorder keeps capturing during seeks and between cue ranges — gate pause()/resume() on the actual in-range state, and never put transform on a fixed shadow host that renders position:fixed children",
+  "category": ["media", "bug-pattern", "ui"],
+  "tags": ["mediarecorder", "capturestream", "condensed-audio", "seek", "recorder", "transform", "position-fixed", "shadow-dom", "dialog"],
+  "trigger": "Recording audio from a <video> via captureStream + MediaRecorder while driving currentTime to skip gaps, or rendering a fixed-position dialog inside a shadow host that uses transform for centering",
+  "principle": "MediaRecorder has no notion of your seek plan: it records whatever the captured stream emits from start() until stop(), including audio played while seeking to the next cue range and silence while the video sits outside any range. Derive the desired recorder state every tick — recording only when !userPaused && inRange && !seeking && !paused && !ended — and reconcile with pause()/resume() guarded by recorder.state (only pause() when 'recording', only resume() when 'paused'). Pause immediately after start() so the initial seek transit captures nothing. Track capturedMs by summing tick deltas while state==='recording' — wall-clock elapsed lies once you skip gaps or pause. Separately: transform/filter/contain on an ancestor turns it into the containing block for position:fixed descendants — a ConfirmDialog inside a translateX(-50%) shadow host renders anchored to the pill rect, not the viewport; center the host by computing left from its content width instead of transforming it.",
+  "cases": [
+    {
+      "context": "Condensed-audio leg B: user reported the recording contained non-subtitle audio. The tick seeked over gaps correctly, but MediaRecorder kept recording through every transit and the post-range bleed window; elapsed display also counted skipped wall time.",
+      "bad": "recorder.start(TIMESLICE); tick: if (timeMs < nextStart) video.currentTime = nextStart/1000 — recorder state untouched",
+      "good": "recorder.start(T); recorder.pause(); every tick: syncRecorder(inRange) toggles pause/resume by recorder.state; capturedMs += dt only while state==='recording'"
+    },
+    {
+      "context": "Pill host used transform: translateX(-50%) for centering; the discard ConfirmDialog (position:fixed) rendered squeezed/offset next to the pill instead of viewport-centered with full backdrop.",
+      "bad": "host.style.left = centerX; host.style.transform = 'translateX(-50%)' + fixed dialog inside",
+      "good": "host.style.left = `${centerX - host.getBoundingClientRect().width / 2}px` — no transform; fixed children anchor to viewport"
+    }
+  ],
+  "applyFor": ["any MediaRecorder session that seeks or skips source regions", "recording chips/pills mounted over video", "shadow-mounted overlays that render Dialog/ConfirmDialog (position:fixed) inside a transformed host"],
+  "source": { "date": "2026-10-02" }
+}

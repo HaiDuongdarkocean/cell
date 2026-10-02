@@ -220,6 +220,7 @@ export interface CondenseAudioIdPayload {
 export interface CondenseAudioSessionStartPayload {
   readonly recordId: string;
   readonly ranges: readonly CueRange[];
+  readonly padMs?: number;
 }
 
 export interface CondenseAudioSessionStopPayload {

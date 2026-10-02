@@ -28,6 +28,10 @@ interface RecorderSession {
   rangeIdx: number;
   seq: number;
   stopped: boolean;
+  pausedByUser: boolean;
+  seenPlaying: boolean;
+  capturedMs: number;
+  lastTickAt: number;
   pending: Promise<unknown>;
 }
 
@@ -57,10 +61,41 @@ function failSession(recordId: string, reason: string): void {
   postChunk({ recordId, seq: 0, dataBase64: '', error: reason });
 }
 
+function syncRecorder(s: RecorderSession, inRange: boolean): void {
+  const video = s.video;
+  const wantRecording =
+    !s.pausedByUser && inRange && !video.seeking && !video.paused && !video.ended;
+  try {
+    if (wantRecording && s.recorder.state === 'paused') s.recorder.resume();
+    else if (!wantRecording && s.recorder.state === 'recording') s.recorder.pause();
+  } catch {
+  }
+}
+
+function setSessionPaused(s: RecorderSession, paused: boolean): void {
+  if (s.stopped || s.pausedByUser === paused) return;
+  s.pausedByUser = paused;
+  s.pill.setPaused(paused);
+  if (paused) {
+    syncRecorder(s, false);
+    s.video.pause();
+    return;
+  }
+  if (s.video.paused && !s.video.ended) void s.video.play().catch(() => undefined);
+  tickSession(s);
+}
+
 function tickSession(s: RecorderSession): void {
   if (s.stopped) return;
   const video = s.video;
-  if (video.seeking) return;
+  const now = Date.now();
+  if (s.recorder.state === 'recording') s.capturedMs += now - s.lastTickAt;
+  s.lastTickAt = now;
+  if (!video.paused) s.seenPlaying = true;
+  if (video.seeking || video.ended) {
+    syncRecorder(s, false);
+    return;
+  }
   const timeMs = video.currentTime * 1000;
   while (s.rangeIdx < s.ranges.length && timeMs >= s.ranges[s.rangeIdx]!.endMs) {
     s.rangeIdx += 1;
@@ -70,10 +105,21 @@ function tickSession(s: RecorderSession): void {
     void finalizeSession(s);
     return;
   }
-  if (timeMs < range.startMs - RANGE_EPSILON_MS) {
-    video.currentTime = range.startMs / 1000;
-    if (video.paused) void video.play().catch(() => undefined);
+  const inRange = timeMs >= range.startMs - RANGE_EPSILON_MS && timeMs < range.endMs;
+  if (!inRange) {
+    syncRecorder(s, false);
+    if (!s.pausedByUser) {
+      video.currentTime = range.startMs / 1000;
+      if (video.paused) void video.play().catch(() => undefined);
+    }
+    return;
   }
+  if (video.paused) {
+    syncRecorder(s, false);
+    if (!s.pausedByUser && s.seenPlaying) setSessionPaused(s, true);
+    return;
+  }
+  syncRecorder(s, true);
 }
 
 async function finalizeSession(s: RecorderSession): Promise<void> {
@@ -95,7 +141,7 @@ async function finalizeSession(s: RecorderSession): Promise<void> {
     dataBase64: '',
     last: true,
     mimeType: s.recorder.mimeType || undefined,
-    elapsedMs: Date.now() - s.startedAt,
+    elapsedMs: s.capturedMs,
   });
   teardownSession(s);
 }
@@ -119,6 +165,7 @@ function teardownSession(s: RecorderSession): void {
   s.video.removeEventListener('timeupdate', s.onTimeUpdate);
   s.video.removeEventListener('ended', s.onEnded);
   s.video.playbackRate = s.previousRate;
+  if (!s.video.ended) s.video.pause();
   s.stream.getTracks().forEach((track) => track.stop());
   s.pill.unmount();
   if (session === s) session = null;
@@ -127,6 +174,7 @@ function teardownSession(s: RecorderSession): void {
 export function startCondensedAudioSession(
   recordId: string,
   rawRanges: readonly CueRange[],
+  padMs = 0,
 ): { ok: true } | { ok: false; error: string } {
   if (session) {
     if (session.recordId === recordId) return { ok: true };
@@ -170,7 +218,7 @@ export function startCondensedAudioSession(
     return { ok: false, error: 'capture-blocked' };
   }
   const durationMs = Number.isFinite(video.duration) ? video.duration * 1000 : 0;
-  const ranges = normalizeCueRanges(rawRanges, 0, durationMs);
+  const ranges = normalizeCueRanges(rawRanges, padMs, durationMs);
   if (ranges.length === 0) {
     audioStream.getTracks().forEach((track) => track.stop());
     failSession(recordId, 'no-cues');
@@ -178,7 +226,12 @@ export function startCondensedAudioSession(
   }
   const startedAt = Date.now();
   const s = {} as RecorderSession;
-  const pill = mountCondensedAudioPill(video, startedAt, () => void finalizeSession(s));
+  const pill = mountCondensedAudioPill(video, {
+    getElapsedMs: () => s.capturedMs,
+    onStop: () => void finalizeSession(s),
+    onTogglePause: () => setSessionPaused(s, !s.pausedByUser),
+    onDiscard: () => abortSession(recordId, false),
+  });
   const onTimeUpdate = (): void => tickSession(s);
   const onEnded = (): void => void finalizeSession(s);
   Object.assign(s, {
@@ -199,6 +252,10 @@ export function startCondensedAudioSession(
     rangeIdx: 0,
     seq: 0,
     stopped: false,
+    pausedByUser: false,
+    seenPlaying: false,
+    capturedMs: 0,
+    lastTickAt: startedAt,
     pending: Promise.resolve(),
   });
   session = s;
@@ -210,7 +267,7 @@ export function startCondensedAudioSession(
         recordId,
         seq: s.seq,
         dataBase64: encodeBase64(buf),
-        elapsedMs: Date.now() - startedAt,
+        elapsedMs: s.capturedMs,
       });
       s.seq += 1;
     });
@@ -223,6 +280,7 @@ export function startCondensedAudioSession(
   video.addEventListener('ended', onEnded);
   try {
     recorder.start(TIMESLICE_MS);
+    recorder.pause();
   } catch {
     abortSession(recordId, true);
     failSession(recordId, 'capture-blocked');
@@ -232,6 +290,12 @@ export function startCondensedAudioSession(
   video.currentTime = ranges[0]!.startMs / 1000;
   void video.play().catch(() => undefined);
   return { ok: true };
+}
+
+export function setCondensedAudioSessionPaused(recordId: string, paused: boolean): void {
+  const s = session;
+  if (!s || s.recordId !== recordId) return;
+  setSessionPaused(s, paused);
 }
 
 export function stopCondensedAudioSession(recordId: string): void {

@@ -3167,6 +3167,27 @@
     "subtitle-overlay"
    ],
    "trigger": "writing or auditing e2e that asserts clickability/keyboard on overlay or stacked UI surfaces"
+  },
+  {
+   "type": "experience",
+   "id": "mediarecorder-seek-bleed",
+   "title": "MediaRecorder captures seek transit and gap audio unless pause()/resume() are gated on in-range state each tick; transform on a fixed shadow host traps position:fixed children",
+   "category": [
+    "media",
+    "bug-pattern",
+    "ui"
+   ],
+   "tags": [
+    "mediarecorder",
+    "capturestream",
+    "condensed-audio",
+    "seek",
+    "transform",
+    "position-fixed",
+    "shadow-dom",
+    "dialog"
+   ],
+   "trigger": "recording video audio while seeking over cue gaps, or rendering a fixed dialog inside a transform-centered shadow host"
   }
  ]
 }

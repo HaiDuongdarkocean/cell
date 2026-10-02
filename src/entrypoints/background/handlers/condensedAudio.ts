@@ -185,11 +185,16 @@ export function registerCondensedAudioHandlers(ctx: BackgroundContext): void {
       throw new Error('no-source');
     }
     const ranges = (job.params.ranges ?? []) as CueRange[];
+    const settings = await ctx.loadSettings();
     const response = await sendTabMessage<MessageResponse>(
       source.tabId,
       {
         type: MESSAGE_TYPES.CONDENSE_AUDIO_SESSION_START,
-        payload: { recordId: record.id, ranges },
+        payload: {
+          recordId: record.id,
+          ranges,
+          padMs: settings.condensedAudio?.padMs ?? 500,
+        },
       },
     ).catch((err: unknown) => {
       throw new Error(err instanceof Error ? err.message : 'capture-blocked');

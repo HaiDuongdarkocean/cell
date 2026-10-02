@@ -92,7 +92,7 @@ export function installRuntimeMessageListener(): void {
         sendResponse({ success: false, error: 'invalid payload' });
         return false;
       }
-      const result = startCondensedAudioSession(payload.recordId, payload.ranges);
+      const result = startCondensedAudioSession(payload.recordId, payload.ranges, payload.padMs ?? 0);
       sendResponse(result.ok ? { success: true } : { success: false, error: result.error });
       return false;
     }

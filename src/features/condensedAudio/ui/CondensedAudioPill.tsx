@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { Icon } from '@/shared/ui/Icon';
 import { Text } from '@/shared/ui/Text';
 import { t } from '@/shared/i18n';
 import styles from './CondensedAudioPill.module.css';
 
 export interface CondensedAudioPillProps {
-  readonly startedAt: number;
+  readonly paused: boolean;
+  readonly getElapsedMs: () => number;
   readonly onStop: () => void;
+  readonly onTogglePause: () => void;
+  readonly onDiscard: () => void;
 }
 
 function formatElapsed(ms: number): string {
@@ -15,35 +19,74 @@ function formatElapsed(ms: number): string {
   const h = Math.floor(totalSec / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
-  const mm = String(h > 0 ? m : m).padStart(2, '0');
+  const mm = String(m).padStart(2, '0');
   const ss = String(s).padStart(2, '0');
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
 export function CondensedAudioPill({
-  startedAt,
+  paused,
+  getElapsedMs,
   onStop,
+  onTogglePause,
+  onDiscard,
 }: CondensedAudioPillProps): React.JSX.Element {
-  const [elapsedMs, setElapsedMs] = useState(() => Math.max(0, Date.now() - startedAt));
+  const [elapsedMs, setElapsedMs] = useState(() => getElapsedMs());
+  const [confirmOpen, setConfirmOpen] = useState(false);
   useEffect(() => {
-    const id = setInterval(() => setElapsedMs(Math.max(0, Date.now() - startedAt)), 1000);
+    const id = setInterval(() => setElapsedMs(getElapsedMs()), 500);
     return () => clearInterval(id);
-  }, [startedAt]);
+  }, [getElapsedMs]);
   return (
-    <div className={styles.pill} role="status" data-cell-id="condensed-audio-pill">
-      <span className={styles.dot} aria-hidden="true" />
-      <Text variant="body" className={styles.elapsed}>
-        {t('condensedAudio.pill.recording')} {formatElapsed(elapsedMs)}
-      </Text>
-      <Button
-        variant="overlay"
-        shape="circle"
-        size="md"
-        onClick={onStop}
-        aria-label={t('condensedAudio.pill.stop')}
-      >
-        <Icon name="x" size="sm" />
-      </Button>
-    </div>
+    <>
+      <div className={styles.pill} role="status" data-cell-id="condensed-audio-pill">
+        <span className={paused ? styles.dotPaused : styles.dot} aria-hidden="true" />
+        <Text variant="body" className={styles.elapsed}>
+          {paused ? t('condensedAudio.pill.paused') : t('condensedAudio.pill.recording')}{' '}
+          {formatElapsed(elapsedMs)}
+        </Text>
+        <Button
+          variant="overlay"
+          shape="circle"
+          size="md"
+          onClick={onTogglePause}
+          aria-label={t(paused ? 'condensedAudio.pill.resume' : 'condensedAudio.pill.pause')}
+          data-cell-id="condensed-audio-pause"
+        >
+          <Icon name={paused ? 'play' : 'pause'} size="sm" />
+        </Button>
+        <Button
+          variant="overlay"
+          shape="circle"
+          size="md"
+          onClick={onStop}
+          aria-label={t('condensedAudio.pill.stop')}
+          data-cell-id="condensed-audio-stop"
+        >
+          <Icon name="check" size="sm" />
+        </Button>
+        <Button
+          variant="overlay"
+          shape="circle"
+          size="md"
+          onClick={() => setConfirmOpen(true)}
+          aria-label={t('condensedAudio.pill.discard')}
+          data-cell-id="condensed-audio-discard"
+        >
+          <Icon name="trash" size="sm" />
+        </Button>
+      </div>
+      <div className={styles.dialogLayer} data-cell-id="condensed-audio-discard-dialog">
+        <ConfirmDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          title={t('condensedAudio.pill.discardTitle')}
+          description={t('condensedAudio.pill.discardBody')}
+          cancelLabel={t('condensedAudio.pill.keepRecording')}
+          confirmLabel={t('condensedAudio.pill.discardConfirm')}
+          onConfirm={onDiscard}
+        />
+      </div>
+    </>
   );
 }
