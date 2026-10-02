@@ -1,5 +1,5 @@
 {
-  "active": "srs-front-variants",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -1709,7 +1709,7 @@
       "updated": "2026-10-01T23:21:59.802Z"
     },
     "srs-front-variants": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "interactive",
       "uiSurface": "yes",
       "artifacts": {
@@ -1719,118 +1719,33 @@
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-10-02T17:31:52.222Z",
-          "head": "885e5b25820d7a985a970ea6f1d1b38702c9391b",
-          "dirty": [
-            "src/entrypoints/srs-study/SrsReviewCard.tsx",
-            "src/features/ankiImport/logic/importWriter.ts",
-            "src/features/srs/index.ts",
-            "src/features/srs/logic/progressCalculator.ts",
-            "src/features/srs/logic/reviewEngine.test.ts",
-            "src/features/srs/logic/reviewEngine.ts",
-            "src/features/srs/ui/SrsStudyProvider.tsx",
-            "src/features/srs/ui/SrsVariantsPanel.module.css",
-            "src/features/srs/ui/SrsVariantsPanel.tsx",
-            "cell-browser-sessionssessionscell-5ce134f0baff/"
-          ]
+          "at": "2026-10-02T17:41:21.139Z",
+          "head": "46790f33458a189f2c7da7492b68301975411ea7",
+          "dirty": []
         },
         "build": {
           "v": "pass",
-          "at": "2026-10-02T17:33:50.190Z",
-          "head": "885e5b25820d7a985a970ea6f1d1b38702c9391b",
-          "dirty": [
-            "src/entrypoints/srs-study/SrsReviewCard.tsx",
-            "src/features/ankiImport/logic/importWriter.ts",
-            "src/features/srs/index.ts",
-            "src/features/srs/logic/progressCalculator.ts",
-            "src/features/srs/logic/reviewEngine.test.ts",
-            "src/features/srs/logic/reviewEngine.ts",
-            "src/features/srs/ui/SrsStudyProvider.tsx",
-            "src/features/srs/ui/SrsVariantsPanel.module.css",
-            "src/features/srs/ui/SrsVariantsPanel.tsx",
-            "cell-browser-sessionssessionscell-5ce134f0baff/",
-            "src/features/ankiImport/logic/importWriter.bench.test.ts"
-          ]
+          "at": "2026-10-02T17:41:21.606Z",
+          "head": "46790f33458a189f2c7da7492b68301975411ea7",
+          "dirty": []
         },
         "browser": {
           "v": "pass",
-          "at": "2026-10-02T16:30:33.162Z",
-          "head": "63d1809b08bb3bd63c37b906de68f11f23e866b1",
-          "dirty": [
-            "docs/0-wiki.md",
-            "src/entities/srs/schemas.ts",
-            "src/entities/srs/types.ts",
-            "src/entrypoints/srs-study/SrsEditCardPanel.module.css",
-            "src/entrypoints/srs-study/SrsEditCardPanel.tsx",
-            "src/entrypoints/srs-study/SrsNoteEditorPanel.tsx",
-            "src/features/condensedAudio/ui/CondensedAudioPill.module.css",
-            "src/features/condensedAudio/ui/CondensedAudioPill.tsx",
-            "src/features/srs/logic/learningPath.ts",
-            "src/features/srs/logic/pickHighestPriority.ts",
-            "src/features/srs/logic/resolvePool.ts",
-            "src/features/srs/logic/resolveReviewSurface.ts",
-            "src/features/srs/logic/reviewEngine.ts",
-            "src/features/srs/logic/selectNextReview.ts",
-            "src/features/srs/repositories/srsDatabase.ts",
-            "src/features/srs/ui/SrsReviewCard.module.css",
-            "src/features/srs/ui/SrsReviewCardBack.tsx",
-            "src/shared/icons/index.ts",
-            "src/shared/ui/Select.module.css",
-            "tasks/reports/pipeline-sessions.md",
-            "docs/intent/srs-front-variants-component-mapping.md",
-            "docs/intent/srs-front-variants-design-brief.md",
-            "docs/intent/srs-front-variants.md",
-            "docs/reviews/srs-front-variants-analyze.md",
-            "docs/reviews/srs-front-variants-design.md",
-            "docs/reviews/srs-front-variants-spec.md",
-            "docs/specs/srs-front-variants-ui-design.md",
-            "docs/specs/srs-front-variants.md",
-            "src/entrypoints/mockup-srs-front-variants/",
-            "src/features/srs/lib/defaultVariants.ts",
-            "src/features/srs/lib/variantFront.ts",
-            "src/features/srs/repositories/variantPresetRepository.ts",
-            "src/shared/icons/recorderIcons.tsx",
-            "src/shared/icons/svg/rec-discard.svg",
-            "src/shared/icons/svg/rec-pause.svg",
-            "src/shared/icons/svg/rec-play.svg",
-            "src/shared/icons/svg/rec-stop.svg",
-            "tasks/plan-srs-front-variants.md"
-          ]
+          "at": "2026-10-02T17:41:21.755Z",
+          "head": "46790f33458a189f2c7da7492b68301975411ea7",
+          "dirty": []
         },
         "lint": {
           "v": "pass",
-          "at": "2026-10-02T17:33:24.899Z",
-          "head": "885e5b25820d7a985a970ea6f1d1b38702c9391b",
-          "dirty": [
-            "src/entrypoints/srs-study/SrsReviewCard.tsx",
-            "src/features/ankiImport/logic/importWriter.ts",
-            "src/features/srs/index.ts",
-            "src/features/srs/logic/progressCalculator.ts",
-            "src/features/srs/logic/reviewEngine.test.ts",
-            "src/features/srs/logic/reviewEngine.ts",
-            "src/features/srs/ui/SrsStudyProvider.tsx",
-            "src/features/srs/ui/SrsVariantsPanel.module.css",
-            "src/features/srs/ui/SrsVariantsPanel.tsx",
-            "cell-browser-sessionssessionscell-5ce134f0baff/",
-            "src/features/ankiImport/logic/importWriter.bench.test.ts"
-          ]
+          "at": "2026-10-02T17:41:21.300Z",
+          "head": "46790f33458a189f2c7da7492b68301975411ea7",
+          "dirty": []
         },
         "testUnit": {
           "v": "pass",
-          "at": "2026-10-02T17:32:25.075Z",
-          "head": "885e5b25820d7a985a970ea6f1d1b38702c9391b",
-          "dirty": [
-            "src/entrypoints/srs-study/SrsReviewCard.tsx",
-            "src/features/ankiImport/logic/importWriter.ts",
-            "src/features/srs/index.ts",
-            "src/features/srs/logic/progressCalculator.ts",
-            "src/features/srs/logic/reviewEngine.test.ts",
-            "src/features/srs/logic/reviewEngine.ts",
-            "src/features/srs/ui/SrsStudyProvider.tsx",
-            "src/features/srs/ui/SrsVariantsPanel.module.css",
-            "src/features/srs/ui/SrsVariantsPanel.tsx",
-            "cell-browser-sessionssessionscell-5ce134f0baff/"
-          ]
+          "at": "2026-10-02T17:41:21.459Z",
+          "head": "46790f33458a189f2c7da7492b68301975411ea7",
+          "dirty": []
         }
       },
       "confidence": "high",
@@ -1858,12 +1773,9 @@
         }
       ],
       "loops": 1,
-      "owner": {
-        "id": "devin-pill-refresh-1790958867",
-        "since": "2026-10-02T16:45:03.865Z"
-      },
+      "owner": null,
       "worktree": null,
-      "updated": "2026-10-02T17:33:50.251Z"
+      "updated": "2026-10-02T17:41:27.145Z"
     }
   }
 }
