@@ -454,6 +454,14 @@
   will-change: transform;
 }
 
+.imageItemPrev {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M18 6l-8 8 8 8' fill='none' stroke='rgb(0 0 0 / 0.55)' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M18 6l-8 8 8 8' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") 14 14, w-resize;
+}
+
+.imageItemNext {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M10 6l8 8-8 8' fill='none' stroke='rgb(0 0 0 / 0.55)' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M10 6l8 8-8 8' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") 14 14, e-resize;
+}
+
 .imageItem:focus-visible {
   outline: var(--space-0-5) solid var(--color-border-focus);
   outline-offset: calc(-1 * var(--space-0-5));

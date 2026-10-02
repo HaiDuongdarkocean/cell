@@ -348,14 +348,14 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
           <button
             key={`${item.key}#${pos}`}
             type="button"
-            className={styles.imageItem}
+            className={`${styles.imageItem} ${!isActive && abs <= hideAt ? (off < 0 ? styles.imageItemPrev : styles.imageItemNext) : ''}`}
             style={{
               transform: `translateX(-50%) translateX(${off * itemStep}px) scale(${1 - 0.3 * Math.min(abs, 1)})`,
               opacity: abs > hideAt ? 0 : 1,
               zIndex: 100 - Math.round(abs * 10),
               pointerEvents: abs > hideAt ? 'none' : undefined,
               boxShadow: abs < 0.5 ? 'var(--shadow-lg)' : undefined,
-              cursor: dragging ? 'grabbing' : isActive ? 'zoom-in' : off < 0 ? 'w-resize' : 'e-resize',
+              cursor: dragging ? 'grabbing' : undefined,
             }}
             aria-label={t('srs.review.zoomImage')}
             aria-current={isActive}
