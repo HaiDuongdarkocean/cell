@@ -4,6 +4,7 @@ import { SrsError } from '@/features/srs/lib/srsError';
 import { generateId } from '@/features/srs/lib/helpers';
 import { getNoteByTargetAndNotetype, putNote } from '@/features/srs/repositories/noteRepository';
 import { getCardByNoteAndDeck, putCard } from '@/features/srs/repositories/cardRepository';
+import { getVariantPresetForDeck } from '@/features/srs/repositories/variantPresetRepository';
 import { cacheNoteFields } from '@/features/srs/services/noteAssetLoader';
 import { createCard } from './reviewEngine';
 
@@ -28,11 +29,13 @@ export async function addNoteAndCard(
     throw new SrsError('INVALID_INPUT', 'Notetype does not belong to the collection');
   }
 
+  const variants = (await getVariantPresetForDeck(deckId)).variants;
+
   const existingNote = await getNoteByTargetAndNotetype(targetWord, notetype.id);
   if (existingNote) {
     const existingCard = await getCardByNoteAndDeck(existingNote.id, deckId);
     if (existingCard) throw new SrsError('DUPLICATE', 'Card already exists in this deck.');
-    const card = createCard(existingNote, deckId, config, now, adapter);
+    const card = createCard(existingNote, deckId, notetype, variants, config, now, adapter);
     await putCard(card);
     return { note: existingNote, card };
   }
@@ -49,7 +52,7 @@ export async function addNoteAndCard(
   await putNote(note);
   await cacheNoteFields(note);
 
-  const card = createCard(note, deckId, config, now, adapter);
+  const card = createCard(note, deckId, notetype, variants, config, now, adapter);
   await putCard(card);
 
   return { note, card };

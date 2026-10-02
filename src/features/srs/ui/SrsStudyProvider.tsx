@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type {
-  ComponentType,
   ReviewJudgment,
   SrsAudioAsset,
   SrsImageAsset,
@@ -16,22 +15,26 @@ import { putNote } from '@/features/srs/repositories/noteRepository';
 import { deleteCardCascade } from '@/features/srs/repositories/deleteCascade';
 import { putReviewEvent } from '@/features/srs/repositories/reviewEventRepository';
 import { getStudyConfig } from '@/features/srs/repositories/studyConfigRepository';
-import { selectNextReview } from '@/features/srs/logic/selectNextReview';
+import { selectNextReview, type SelectNextReviewOptions } from '@/features/srs/logic/selectNextReview';
 import { applyReview, resetCard, resetComponent, studyAgain } from '@/features/srs/logic/reviewEngine';
 import { getSrsStats, type SrsDeckStats } from '@/features/srs/services/getSrsStats';
-import { resolveReviewSurface } from '@/features/srs/logic/resolveReviewSurface';
+import { buildVariantStimulus } from '@/features/srs/logic/resolveReviewSurface';
+import { resolveVariantToggles } from '@/features/srs/lib/variantFront';
 import { audioAssetId, imageAssetId, mediaFieldValues } from '@/features/srs/lib/helpers';
 import { getSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 
-function applyUiPrefs(cfg: SrsStudyConfig): { config: SrsStudyConfig; options: { shuffle: boolean; startWith: 'reviews' | 'new' }; includeSubdecks: boolean } {
+function applyUiPrefs(cfg: SrsStudyConfig): { config: SrsStudyConfig; options: SelectNextReviewOptions; includeSubdecks: boolean } {
   const prefs = getSrsUiPrefs();
   return {
-    config: prefs.graduatePasses === null
-      ? cfg
-      : { ...cfg, learningPath: { ...cfg.learningPath, minExplores: prefs.graduatePasses } },
-    options: { shuffle: prefs.shuffleReviews, startWith: prefs.startWith },
+    config: cfg,
+    options: {
+      shuffle: prefs.shuffleReviews,
+      startWith: prefs.startWith,
+      variantToggles: prefs.variantToggles,
+      newLoopsOverride: prefs.graduatePasses ?? undefined,
+    },
     includeSubdecks: true,
   };
 }
@@ -50,7 +53,7 @@ interface SrsStudyContextValue {
   readonly goBack: () => void;
   readonly start: (deckId?: string) => Promise<void>;
   readonly submit: (judgment: ReviewJudgment, typedInput?: string) => Promise<void>;
-  readonly markStudyAgain: (componentType: ComponentType) => Promise<void>;
+  readonly markStudyAgain: (variantId: string) => Promise<void>;
   readonly resetCurrentComponent: () => Promise<void>;
   readonly resetCurrentCard: () => Promise<void>;
   readonly endSession: () => void;
@@ -230,9 +233,9 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
   );
 
   const markStudyAgain = useCallback(
-    async (componentType: ComponentType) => {
+    async (variantId: string) => {
       if (!session || !config) return;
-      const updated = studyAgain(session.card, componentType, nowISO(), config, adapter);
+      const updated = studyAgain(session.card, variantId, session.note, session.notetype, session.variants, nowISO(), config, adapter);
       await putCard(updated);
       void refreshStats();
       setSession({ ...session, card: updated });
@@ -242,7 +245,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
 
   const resetCurrentComponent = useCallback(async () => {
     if (!session || !config) return;
-    const updated = resetComponent(session.card, session.componentType, nowISO(), config, adapter);
+    const updated = resetComponent(session.card, session.variant.id, session.note, session.notetype, session.variants, nowISO(), config, adapter);
     await putCard(updated);
     void refreshStats();
     setSession({ ...session, card: updated });
@@ -250,7 +253,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
 
   const resetCurrentCard = useCallback(async () => {
     if (!session || !config) return;
-    const updated = resetCard(session.card, nowISO(), config, adapter);
+    const updated = resetCard(session.card, session.note, session.notetype, session.variants, nowISO(), config, adapter);
     await putCard(updated);
     void refreshStats();
     setSession({ ...session, card: updated });
@@ -277,15 +280,17 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
         await putCard(nextCard);
       }
       void refreshStats();
-      const surface = stimulusStale(session, nextNote)
-        ? resolveReviewSurface(nextNote, session.notetype, session.componentType, audioCache, imageCache)
+      const built = stimulusStale(session, nextNote)
+        ? buildVariantStimulus(nextNote, session.variant, audioCache, imageCache)
         : null;
       setSession({
         ...session,
         note: nextNote,
         card: nextCard,
-        stimulus: surface?.stimulus ?? session.stimulus,
-        template: surface?.template ?? session.template,
+        stimulus: built?.stimulus ?? session.stimulus,
+        toggles: built
+          ? resolveVariantToggles(session.variant, built.resolvedNote, getSrsUiPrefs().variantToggles[session.variant.id])
+          : session.toggles,
       });
     },
     [session, refreshStats, audioCache, imageCache],
@@ -296,14 +301,16 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       if (!session) return;
       for (const a of assets?.audio ?? []) audioCache.set(audioAssetId(note.id, a.fieldId, a.source, a.index ?? 0), a);
       for (const a of assets?.image ?? []) imageCache.set(imageAssetId(note.id, a.fieldId, a.index ?? 0), a);
-      const surface = stimulusStale(session, note)
-        ? resolveReviewSurface(note, session.notetype, session.componentType, audioCache, imageCache)
+      const built = stimulusStale(session, note)
+        ? buildVariantStimulus(note, session.variant, audioCache, imageCache)
         : null;
       setSession({
         ...session,
         note,
-        stimulus: surface?.stimulus ?? session.stimulus,
-        template: surface?.template ?? session.template,
+        stimulus: built?.stimulus ?? session.stimulus,
+        toggles: built
+          ? resolveVariantToggles(session.variant, built.resolvedNote, getSrsUiPrefs().variantToggles[session.variant.id])
+          : session.toggles,
       });
     },
     [session, audioCache, imageCache],

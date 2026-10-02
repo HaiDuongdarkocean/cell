@@ -8,6 +8,7 @@ export const DATA_CLASS_APPLY_ORDER: readonly DataClass[] = [
   'profileConfig',
   'studyConfig',
   'srsCollection',
+  'srsVariantPreset',
   'srsNotetype',
   'srsDeck',
   'srsNote',

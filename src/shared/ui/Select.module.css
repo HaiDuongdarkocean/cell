@@ -43,11 +43,11 @@
 
 .triggerOutline:hover {
   border-color: var(--color-border-emphasized);
-  background: var(--color-field-hover);
+  background: var(--color-field-hover-solid);
 }
 
 .triggerOutline.triggerOpen {
-  background: var(--color-field-hover);
+  background: var(--color-field-hover-solid);
 }
 
 .triggerFilled {
@@ -56,11 +56,11 @@
 }
 
 .triggerFilled:hover {
-  background: var(--color-field-hover);
+  background: var(--color-field-hover-solid);
 }
 
 .triggerFilled.triggerOpen {
-  background: var(--color-field-hover);
+  background: var(--color-field-hover-solid);
 }
 
 .triggerGhost {
@@ -166,7 +166,7 @@
   flex-direction: column;
   width: max-content;
   max-height: min(calc(var(--space-5) * 22), 70vh);
-  background: var(--color-field-hover-solid);
+  background: var(--color-field-solid);
   border: var(--border-width-hairline) solid var(--color-border-emphasized);
   border-radius: var(--dialog-radius);
   box-shadow: var(--shadow-popover);
@@ -187,7 +187,7 @@
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
-  background: var(--color-field-hover-solid);
+  background: var(--color-field-solid);
 }
 
 .searchIcon {
@@ -240,16 +240,16 @@
 }
 
 .optionHighlighted {
-  background: var(--color-surface-hover);
+  background: var(--color-field-hover-solid);
 }
 
 .option:hover {
-  background: var(--color-surface-hover);
+  background: var(--color-field-hover-solid);
 }
 
 .optionSelected {
   background: var(--color-primary-subtle);
-  color: var(--color-primary);
+  color: var(--color-text-accent-strong);
 }
 
 .optionDisabled {
@@ -268,13 +268,13 @@
 }
 
 .optionSelected .optionLabel {
-  color: var(--color-primary);
+  color: var(--color-text-accent-strong);
 }
 
 .checkMark {
   width: var(--space-4);
   height: var(--space-4);
-  color: var(--color-primary);
+  color: var(--color-text-accent-strong);
   flex-shrink: 0;
 }
 

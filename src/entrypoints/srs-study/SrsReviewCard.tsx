@@ -1,24 +1,22 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
-import { getSrsUiPrefs, setSrsUiPrefs, useSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
+import { getSrsUiPrefs, setSrsUiPrefs, setVariantToggle, useSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
 import { Box, Button, ConfirmDialog, Text } from '@/shared/ui';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
-import type { ComponentType } from '@/entities/srs/types';
-import { componentLabel } from '@/features/srs/ui/srsLabels';
-import { SrsReviewCardFront } from '@/features/srs/ui/SrsReviewCardFront';
+import type { ResolvedVariantToggles, VariantAudioToggle, VariantScopeToggle } from '@/entities/srs/types';
+import { SRS_INPUT_FIELD_ID } from '@/entities/srs/types';
+import { variantLabel } from '@/features/srs/ui/srsLabels';
+import { SrsVariantFront } from '@/features/srs/ui/SrsVariantFront';
 import { SrsReviewCardBack } from '@/features/srs/ui/SrsReviewCardBack';
 import { SrsEditCardPanel } from './SrsEditCardPanel';
+import { ICON_CATALOG, type IconCatalogKey } from '@/shared/icons';
 import styles from '@/features/srs/ui/SrsReviewCard.module.css';
 
-const COMPONENT_ICONS: Record<ComponentType, 'volumeHigh' | 'bookOpen' | 'pencil'> = {
-  sound: 'volumeHigh',
-  meaning: 'bookOpen',
-  spelling: 'pencil',
-};
-
-const COMPONENT_ORDER: readonly ComponentType[] = ['sound', 'meaning', 'spelling'];
+function variantIcon(icon: string | undefined): IconCatalogKey {
+  return icon && icon in ICON_CATALOG ? (icon as IconCatalogKey) : 'layers';
+}
 
 export function SrsReviewCard(): React.JSX.Element | null {
   const {
@@ -41,13 +39,15 @@ export function SrsReviewCard(): React.JSX.Element | null {
   const editDragRef = useRef<{ startX: number; startW: number; maxW: number } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [typedInput, setTypedInput] = useState('');
+  const [toggles, setToggles] = useState<ResolvedVariantToggles | null>(null);
   const prefs = useSrsUiPrefs();
   const inputId = useId();
 
   useEffect(() => {
     setShowAnswer(false);
     setTypedInput('');
-  }, [session?.card.id, session?.componentType]);
+    setToggles(session?.toggles ?? null);
+  }, [session?.card.id, session?.variant.id, session?.toggles]);
 
   const [narrowEdit, setNarrowEdit] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches,
@@ -85,16 +85,27 @@ export function SrsReviewCard(): React.JSX.Element | null {
 
   if (!session) return null;
 
-  const { note, componentType, stimulus, card } = session;
-  const isSpelling = componentType === 'spelling';
-  const isNew = card.components[componentType].exploreCount === 0;
+  const { note, variant, variants, stimulus, card } = session;
+  const effectiveToggles = toggles ?? session.toggles;
+  const hasInput = variant.fieldIds.includes(SRS_INPUT_FIELD_ID);
+  const isNew = (card.components[variant.id]?.exploreCount ?? 0) === 0;
 
   function handleFlip(): void {
     setShowAnswer((v) => !v);
   }
 
   function handleSubmit(judgment: 'forget' | 'remember'): void {
-    void submit(judgment, isSpelling ? typedInput : undefined);
+    void submit(judgment, hasInput ? typedInput : undefined);
+  }
+
+  function handleScopeChange(scope: VariantScopeToggle): void {
+    setToggles({ ...effectiveToggles, scope });
+    setVariantToggle(variant.id, { scope });
+  }
+
+  function handleAudioChange(audio: VariantAudioToggle): void {
+    setToggles({ ...effectiveToggles, audio });
+    setVariantToggle(variant.id, { audio });
   }
 
   function handleDelete(): void {
@@ -120,16 +131,16 @@ export function SrsReviewCard(): React.JSX.Element | null {
       {!prefs.hideProgress && (
         <>
           <div className={styles.cornerTopCenter} role="list" aria-label={t('srs.review.progressAria')}>
-        {COMPONENT_ORDER.map((ct) => (
+        {variants.map((v) => (
           <span
-            key={ct}
+            key={v.id}
             role="listitem"
-            className={[styles.stepDot, ct === componentType ? styles.stepDotActive : ''].join(' ')}
-            aria-label={componentLabel(ct)}
-            aria-current={ct === componentType ? 'step' : undefined}
-            title={componentLabel(ct)}
+            className={[styles.stepDot, v.id === variant.id ? styles.stepDotActive : ''].join(' ')}
+            aria-label={variantLabel(v)}
+            aria-current={v.id === variant.id ? 'step' : undefined}
+            title={variantLabel(v)}
           >
-            <Icon name={COMPONENT_ICONS[ct]} />
+            <Icon name={variantIcon(v.icon)} />
           </span>
         ))}
           </div>
@@ -191,12 +202,15 @@ export function SrsReviewCard(): React.JSX.Element | null {
             onFlipBack={handleFlip}
           />
         ) : (
-          <SrsReviewCardFront
+          <SrsVariantFront
+            variant={variant}
             note={note}
             stimulus={stimulus}
-            isSpelling={isSpelling}
+            toggles={effectiveToggles}
+            onScopeChange={handleScopeChange}
+            onAudioChange={handleAudioChange}
             typedInput={typedInput}
-            onTypedInputChange={setTypedInput}
+            onTypedInputChange={hasInput ? setTypedInput : undefined}
             inputId={inputId}
             onFlip={handleFlip}
             audioCache={audioCache}

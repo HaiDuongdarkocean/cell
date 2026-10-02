@@ -12,7 +12,7 @@ import { splitTags } from '@/features/cardCreator/service/noteUpdate';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { SrsAudioAsset, SrsDeck, SrsImageAsset, SrsReviewRecord } from '@/entities/srs/types';
 import { audioAssetId, imageAssetId } from '@/features/srs/lib/helpers';
-import { componentLabel } from '@/features/srs/ui/srsLabels';
+import { componentLabelById, variantLabel } from '@/features/srs/ui/srsLabels';
 import { persistNoteFields, storedMedia, toEditText, toFieldValue, NoteMediaField, orderedEditFields } from './srsNoteEditorShared';
 import { lookupDictionaryResources } from '@/features/cardCreator/service/dictionaryGenerate';
 import { translateSentence } from '@/features/cardCreator/media/translation';
@@ -39,7 +39,7 @@ function generateKind(field: SrsField): GenerateKind | null {
 function formatEventMeta(events: readonly SrsReviewRecord[], judgment: 'forget' | 'remember'): string {
   const last = [...events].reverse().find((e) => e.judgment === judgment);
   if (!last) return t('srs.edit.never');
-  return `${componentLabel(last.componentType)} ${new Date(last.answeredAt).toLocaleDateString()}`;
+  return `${componentLabelById(last.componentType)} ${new Date(last.answeredAt).toLocaleDateString()}`;
 }
 
 export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded = false }: {
@@ -447,7 +447,7 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
           variant="ghost"
           size="sm"
           onClick={() => {
-            if (session && window.confirm(t('srs.review.confirmResetComponent', [componentLabel(session.componentType)]))) {
+            if (session && window.confirm(t('srs.review.confirmResetComponent', [variantLabel(session.variant)]))) {
               void resetCurrentComponent();
             }
           }}

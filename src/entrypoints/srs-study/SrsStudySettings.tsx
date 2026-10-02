@@ -3,6 +3,7 @@ import { Box, Button, Heading, SegmentedControl, Select, Text, Toggle } from '@/
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { useSrsUiPrefs, setSrsUiPrefs, resetSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
+import { SrsVariantsPanel } from '@/features/srs/ui/SrsVariantsPanel';
 import { UserCssPanel } from './UserCssPanel';
 import styles from './SrsStudySettings.module.css';
 
@@ -44,7 +45,7 @@ export interface SrsStudySettingsProps {
 
 export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.Element {
   const prefs = useSrsUiPrefs();
-  const [tab, setTab] = useState<'general' | 'customize'>('general');
+  const [tab, setTab] = useState<'general' | 'variants' | 'customize'>('general');
 
   return (
     <div className={styles.overlay} role="dialog" aria-modal="true" aria-label={t('srs.settings.title')}>
@@ -61,6 +62,7 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
           variant="filled"
           options={[
             { value: 'general', label: t('srs.settings.tabGeneral') },
+            { value: 'variants', label: t('srs.settings.tabVariants') },
             { value: 'customize', label: t('srs.settings.tabCustomize') },
           ]}
           value={tab}
@@ -72,6 +74,8 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
         <Box className={styles.body}>
         {tab === 'customize' ? (
           <UserCssPanel />
+        ) : tab === 'variants' ? (
+          <SrsVariantsPanel />
         ) : (
           <>
             <Section title={t('srs.settings.schedule')}>

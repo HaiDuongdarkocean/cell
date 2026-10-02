@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import type { SrsVariantToggles, VariantId } from '@/entities/srs/types';
 
 export interface SrsUiPrefs {
   readonly dayStartHour: number;
@@ -13,6 +14,7 @@ export interface SrsUiPrefs {
   readonly cardsPerBatch: number;
   readonly graduatePasses: number | null;
   readonly editPaneWidth: number | null;
+  readonly variantToggles: Readonly<Record<VariantId, SrsVariantToggles>>;
 }
 
 const STORAGE_KEY = 'cell.srs.uiPrefs';
@@ -30,6 +32,7 @@ export const SRS_UI_PREF_DEFAULTS: SrsUiPrefs = {
   cardsPerBatch: 5,
   graduatePasses: null,
   editPaneWidth: null,
+  variantToggles: {},
 };
 
 function load(): SrsUiPrefs {
@@ -57,6 +60,14 @@ export function setSrsUiPrefs(patch: Partial<SrsUiPrefs>): void {
     // storage unavailable — prefs still apply for this session
   }
   for (const listener of listeners) listener();
+}
+
+/** Persist one toggle dimension of a variant — survives across cards and sessions. */
+export function setVariantToggle(variantId: VariantId, patch: SrsVariantToggles): void {
+  const current = prefs.variantToggles[variantId] ?? {};
+  setSrsUiPrefs({
+    variantToggles: { ...prefs.variantToggles, [variantId]: { ...current, ...patch } },
+  });
 }
 
 export function resetSrsUiPrefs(): void {

@@ -26,8 +26,10 @@ import type {
   SrsFsrsAdapter,
   SrsImageAsset,
   SrsNote,
+  SrsNotetype,
   SrsReviewRecord,
   SrsStudyConfig,
+  SrsVariantPreset,
 } from '@/entities/srs/types';
 import {
   SrsAudioAssetSchema,
@@ -39,6 +41,7 @@ import {
   SrsNoteSchema,
   SrsReviewRecordSchema,
   SrsStudyConfigSchema,
+  SrsVariantPresetSchema,
 } from '@/entities/srs/schemas';
 import { getSrsDB, SRS_INDEXES, SRS_STORES } from '../repositories/srsDatabase';
 import {
@@ -49,6 +52,8 @@ import {
   studyConfigScopes,
 } from '../repositories/srsSyncScope';
 import { recalcCard } from '../logic/reviewEngine';
+import { createDefaultVariants } from '../lib/defaultVariants';
+import { servableVariantIds } from '../lib/variantFront';
 import { createSrsFsrsAdapter } from '../services/srsFsrsAdapter';
 
 export type SrsDataClass =
@@ -60,7 +65,8 @@ export type SrsDataClass =
   | 'srsCard'
   | 'srsReviewEvent'
   | 'srsAudioAsset'
-  | 'srsImageAsset';
+  | 'srsImageAsset'
+  | 'srsVariantPreset';
 
 interface RowSchema {
   safeParse(value: unknown): { success: boolean };
@@ -82,6 +88,7 @@ const CLASS_DEFS: Record<SrsDataClass, SrsClassDef> = {
   srsReviewEvent: { store: SRS_STORES.REVIEW_EVENTS, prefix: 'reviewEvents:', schema: SrsReviewRecordSchema },
   srsAudioAsset: { store: SRS_STORES.AUDIO_ASSETS, prefix: 'audioAssets:', schema: SrsAudioAssetSchema },
   srsImageAsset: { store: SRS_STORES.IMAGE_ASSETS, prefix: 'imageAssets:', schema: SrsImageAssetSchema },
+  srsVariantPreset: { store: SRS_STORES.VARIANT_PRESETS, prefix: 'variantPresets:', schema: SrsVariantPresetSchema },
 };
 
 const SRS_SYNC_STORES: readonly string[] = [
@@ -94,6 +101,7 @@ const SRS_SYNC_STORES: readonly string[] = [
   SRS_STORES.AUDIO_ASSETS,
   SRS_STORES.IMAGE_ASSETS,
   SRS_STORES.REVIEW_EVENTS,
+  SRS_STORES.VARIANT_PRESETS,
   SRS_STORES.SYNC_META,
 ];
 
@@ -144,6 +152,7 @@ class SrsLocalSource extends IdbLocalSource {
     switch (this.dataClass) {
       case 'srsDeck':
       case 'srsNotetype':
+      case 'srsVariantPreset':
         return typeof row.collectionId === 'string' ? [`collections:${row.collectionId}`] : [];
       case 'srsNote':
         return [
@@ -192,6 +201,7 @@ class SrsLocalSource extends IdbLocalSource {
       }
       case 'srsDeck':
       case 'srsNotetype':
+      case 'srsVariantPreset':
         return typeof row.collectionId === 'string'
           ? scopeOfCollection(tx, row.collectionId)
           : null;
@@ -247,18 +257,31 @@ class SrsLocalSource extends IdbLocalSource {
 
   private async recalcMergedCard(tx: IDBTransaction, card: SrsCard): Promise<SrsCard> {
     const deck = await getRowAt<SrsDeck>(tx, SRS_STORES.DECKS, card.deckId);
-    const configId =
-      deck?.studyConfigId ??
-      (deck
-        ? (await getRowAt<SrsCollection>(tx, SRS_STORES.COLLECTIONS, deck.collectionId))
-            ?.defaultStudyConfigId
-        : undefined);
+    const collection = deck
+      ? await getRowAt<SrsCollection>(tx, SRS_STORES.COLLECTIONS, deck.collectionId)
+      : undefined;
+    const configId = deck?.studyConfigId ?? collection?.defaultStudyConfigId;
     const config = configId
       ? await getRowAt<SrsStudyConfig>(tx, SRS_STORES.STUDY_CONFIGS, configId)
       : undefined;
     if (!config) return card;
+
+    const presetId = deck?.variantPresetId ?? collection?.defaultVariantPresetId;
+    const preset = presetId
+      ? await getRowAt<SrsVariantPreset>(tx, SRS_STORES.VARIANT_PRESETS, presetId)
+      : undefined;
+    const variants = preset?.variants ?? createDefaultVariants();
+
+    const note = await getRowAt<SrsNote>(tx, SRS_STORES.NOTES, card.noteId);
+    const notetype = note
+      ? await getRowAt<SrsNotetype>(tx, SRS_STORES.NOTETYPES, note.notetypeId)
+      : undefined;
+    const servable = note
+      ? servableVariantIds(variants, note, notetype)
+      : new Set(variants.map((v) => v.id));
+
     this.fsrs ??= createSrsFsrsAdapter();
-    return recalcCard(card, config, new Date().toISOString(), this.fsrs);
+    return recalcCard(card, variants, servable, config, new Date().toISOString(), this.fsrs);
   }
 
   private async cascadeDelete(
@@ -436,6 +459,22 @@ class SrsLocalSource extends IdbLocalSource {
     );
     for (const deck of decks) {
       if (deck.parentId === null) await this.cascadeDeck(tx, deck.id, winner);
+    }
+    const presets = await rowsByIndexAt<SrsVariantPreset>(
+      tx,
+      SRS_STORES.VARIANT_PRESETS,
+      SRS_INDEXES.by_collection,
+      collectionId,
+    );
+    for (const preset of presets) {
+      await this.removeAndTombstone(
+        tx,
+        SRS_STORES.VARIANT_PRESETS,
+        `variantPresets:${preset.id}`,
+        preset.id,
+        winner.hlc,
+        winner.scope,
+      );
     }
     await this.removeAndTombstone(
       tx,

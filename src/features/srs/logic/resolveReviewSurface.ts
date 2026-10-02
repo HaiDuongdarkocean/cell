@@ -6,8 +6,11 @@ import type {
   SrsNote,
   SrsNotetype,
   SrsStimulus,
+  SrsVariant,
 } from '@/entities/srs/types';
+import { SRS_INPUT_FIELD_ID } from '@/entities/srs/types';
 import { audioAssetId, escapeRegExp, imageAssetId, isDataUrl, mediaFieldValues } from '@/features/srs/lib/helpers';
+import { hasVariantMaterial } from '@/features/srs/lib/variantFront';
 import type { SrsFrontTemplate } from '@/entities/srs/types';
 
 function blobUrl(blob: Blob): string {
@@ -25,6 +28,83 @@ export function maskSentence(sentence: string, targetWord: string): string {
   return sentence.replace(re, (match) => '░'.repeat(match.length));
 }
 
+/** Resolve one note field into a renderable value — media may come from the asset cache or a direct URL. */
+function resolveFieldValue(
+  note: SrsNote,
+  fieldId: string,
+  audioCache: ReadonlyMap<string, SrsAudioAsset>,
+  imageCache: ReadonlyMap<string, SrsImageAsset>,
+): SrsFieldValue | null {
+  if (fieldId === 'target') {
+    return note.targetWord.trim() ? { kind: 'text', value: note.targetWord } : null;
+  }
+  const value = note.fields[fieldId];
+  if (!value) return null;
+
+  if (value.kind === 'audio') {
+    const urls: string[] = [];
+    mediaFieldValues(value).forEach((v, i) => {
+      const cached = audioCache.get(audioAssetId(note.id, fieldId, value.source, i));
+      if (cached) {
+        urls.push(blobUrl(new Blob([cached.bytes], { type: cached.mimeType })));
+      } else if (isDataUrl(v) || /^https?:|^blob:/.test(v)) {
+        urls.push(v);
+      }
+    });
+    if (urls.length === 0) return null;
+    return { kind: 'audio', value: urls, source: value.source };
+  }
+  if (value.kind === 'image') {
+    const urls: string[] = [];
+    mediaFieldValues(value).forEach((v, i) => {
+      const cached = imageCache.get(imageAssetId(note.id, fieldId, i));
+      if (cached) {
+        urls.push(blobUrl(new Blob([cached.bytes], { type: cached.mimeType })));
+      } else if (isDataUrl(v) || /^https?:|^blob:/.test(v)) {
+        urls.push(v);
+      }
+    });
+    if (urls.length === 0) return null;
+    return { kind: 'image', value: urls };
+  }
+  return value;
+}
+
+/**
+ * Note view restricted to the fields that actually resolved — used to re-derive
+ * servability and toggles on real material instead of field-record presence.
+ */
+export function resolvedNoteOf(note: SrsNote, payload: Readonly<Record<string, SrsFieldValue>>): SrsNote {
+  return {
+    ...note,
+    targetWord: payload.target?.kind === 'text' ? note.targetWord : '',
+    fields: Object.fromEntries(
+      Object.entries(note.fields).filter(([k]) => payload[k] !== undefined),
+    ),
+  };
+}
+
+/**
+ * Build the front stimulus for a variant — every non-input field in fieldIds order.
+ * Fields that fail to resolve are dropped; returns null when nothing rendered.
+ */
+export function buildVariantStimulus(
+  note: SrsNote,
+  variant: SrsVariant,
+  audioCache: ReadonlyMap<string, SrsAudioAsset>,
+  imageCache: ReadonlyMap<string, SrsImageAsset>,
+): { stimulus: SrsStimulus; resolvedNote: SrsNote } | null {
+  const payload: Record<string, SrsFieldValue> = {};
+  for (const fieldId of variant.fieldIds) {
+    if (fieldId === SRS_INPUT_FIELD_ID) continue;
+    if (!hasVariantMaterial(fieldId, note)) continue;
+    const resolved = resolveFieldValue(note, fieldId, audioCache, imageCache);
+    if (resolved) payload[fieldId] = resolved;
+  }
+  if (Object.keys(payload).length === 0) return null;
+  return { stimulus: { type: `variant:${variant.id}`, payload }, resolvedNote: resolvedNoteOf(note, payload) };
+}
+
 /** Build a single stimulus for a template, returning null if any required field is missing or not cacheable. */
 export function buildStimulus(
   note: SrsNote,
@@ -38,35 +118,13 @@ export function buildStimulus(
     const value = note.fields[fieldId];
     if (!value) return null;
 
-    if (value.kind === 'audio') {
-      const urls: string[] = [];
-      mediaFieldValues(value).forEach((v, i) => {
-        const cached = audioCache.get(audioAssetId(note.id, fieldId, value.source, i));
-        if (cached) {
-          urls.push(blobUrl(new Blob([cached.bytes], { type: cached.mimeType })));
-        } else if (isDataUrl(v) || /^https?:|^blob:/.test(v)) {
-          urls.push(v);
-        }
-      });
-      if (urls.length === 0) return null;
-      payload[fieldId] = { kind: 'audio', value: urls, source: value.source };
-    } else if (value.kind === 'image') {
-      const urls: string[] = [];
-      mediaFieldValues(value).forEach((v, i) => {
-        const cached = imageCache.get(imageAssetId(note.id, fieldId, i));
-        if (cached) {
-          urls.push(blobUrl(new Blob([cached.bytes], { type: cached.mimeType })));
-        } else if (isDataUrl(v) || /^https?:|^blob:/.test(v)) {
-          urls.push(v);
-        }
-      });
-      if (urls.length === 0) return null;
-      payload[fieldId] = { kind: 'image', value: urls };
-    } else if (template.maskTarget && template.maskFieldId === fieldId && value.kind === 'text') {
+    if (template.maskTarget && template.maskFieldId === fieldId && value.kind === 'text') {
       payload[fieldId] = { kind: 'text', value: maskSentence(value.value, note.targetWord) };
-    } else {
-      payload[fieldId] = value;
+      continue;
     }
+    const resolved = resolveFieldValue(note, fieldId, audioCache, imageCache);
+    if (!resolved) return null;
+    payload[fieldId] = resolved;
   }
 
   return { type: template.stimulusType, payload };

@@ -29,3 +29,31 @@ export function pickHighestPriority(
   }
   return null;
 }
+
+/** Ordered candidate list — same priority rules as pickHighestPriority, for ordered-skip scanning. */
+export function orderCandidates(
+  candidates: readonly PoolCandidate[],
+  options: { readonly startWith?: 'reviews' | 'new'; readonly shuffle?: boolean } = {},
+): PoolCandidate[] {
+  const order = options.startWith === 'reviews' ? REVIEW_FIRST_ORDER : POOL_ORDER;
+  const result: PoolCandidate[] = [];
+  for (const pool of order) {
+    const bucket = candidates.filter((c) => c.pool === pool);
+    if (options.shuffle) {
+      for (let i = bucket.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [bucket[i], bucket[j]] = [bucket[j], bucket[i]];
+      }
+    } else {
+      bucket.sort((a, b) =>
+        a.effectiveDue === b.effectiveDue
+          ? a.progress - b.progress
+          : a.effectiveDue < b.effectiveDue
+            ? -1
+            : 1,
+      );
+    }
+    result.push(...bucket);
+  }
+  return result;
+}

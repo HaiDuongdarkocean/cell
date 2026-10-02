@@ -24,6 +24,7 @@ export type DataClass =
   | 'srsReviewEvent'
   | 'srsAudioAsset'
   | 'srsImageAsset'
+  | 'srsVariantPreset'
   | 'dictResource'
   | 'wordStatus'
   | 'readerBook'

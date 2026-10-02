@@ -376,7 +376,7 @@ describe('apply order', () => {
   it('exports the spec apply order for data classes', () => {
     const expected: DataClass[] = [
       'syncDirectory', 'settings', 'secondaryKey', 'profileConfig',
-      'studyConfig', 'srsCollection', 'srsNotetype', 'srsDeck', 'srsNote',
+      'studyConfig', 'srsCollection', 'srsVariantPreset', 'srsNotetype', 'srsDeck', 'srsNote',
       'srsAudioAsset', 'srsImageAsset', 'srsCard', 'srsReviewEvent',
       'dictResource', 'wordStatus', 'readerBook', 'readerProgress',
     ];

@@ -23,3 +23,6 @@ export { getCard } from './repositories/cardRepository';
 export { SrsReviewCardFront } from './ui/SrsReviewCardFront';
 export { SrsReviewCardBack } from './ui/SrsReviewCardBack';
 export { resolveReviewSurface } from './logic/resolveReviewSurface';
+export { getVariantPresetForDeck, getVariantPresetsByCollection, putVariantPreset, deleteVariantPreset, ensureDefaultVariantPreset } from './repositories/variantPresetRepository';
+export { servableVariantIds, isVariantServable, resolveVariantToggles, visibleVariantFields, expectedInputText, expectedInputField } from './lib/variantFront';
+export { createDefaultVariants } from './lib/defaultVariants';

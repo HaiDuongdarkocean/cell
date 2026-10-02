@@ -12,6 +12,33 @@ export const SrsLanguageCodeSchema = z.string();
 
 export const ComponentTypeSchema = z.enum(['meaning', 'sound', 'spelling']);
 
+/** VariantId at persistence boundary — plain string so custom variants parse. */
+export const VariantIdSchema = z.string();
+
+export const SrsVariantTogglesSchema = z.object({
+  scope: z.enum(['both', 'word', 'sentence']).optional(),
+  audio: z.enum(['word', 'sentence']).optional(),
+});
+
+export const SrsVariantSchema = z.object({
+  id: VariantIdSchema,
+  name: z.string(),
+  icon: z.string().optional(),
+  fieldIds: z.array(z.string()),
+  newLoops: z.number().int().min(1).max(3),
+  builtin: z.enum(['sound', 'meaning', 'spelling']).optional(),
+  order: z.number().int(),
+});
+
+export const SrsVariantPresetSchema = z.object({
+  id: z.string(),
+  collectionId: z.string(),
+  name: z.string(),
+  variants: z.array(SrsVariantSchema),
+  isDefault: z.boolean(),
+  createdAt: z.number().int(),
+});
+
 export const ReviewJudgmentSchema = z.enum(['forget', 'remember']);
 
 export const ReviewModeSchema = z.enum(['explore', 'normal', 'studyAgain']);
@@ -118,6 +145,7 @@ export const SrsCollectionSchema = z.object({
   defaultStudyConfigId: z.string(),
   defaultDeckId: z.string(),
   defaultNotetypeId: z.string(),
+  defaultVariantPresetId: z.string().nullable().optional(),
   createdAt: z.number().int(),
 });
 
@@ -128,6 +156,7 @@ export const SrsDeckSchema = z.object({
   name: z.string(),
   order: z.number().int(),
   studyConfigId: z.string(),
+  variantPresetId: z.string().nullable().optional(),
 });
 
 export const SrsProgressConstantsSchema = z.object({
@@ -184,7 +213,7 @@ export const SrsFsrsSerializedStateSchema = z.object({
 });
 
 export const SrsMemoryComponentSchema = z.object({
-  type: ComponentTypeSchema,
+  type: VariantIdSchema,
   progress: z.number().min(0).max(100),
   exploreCount: z.number().int().min(0),
   fsrsState: SrsFsrsSerializedStateSchema,
@@ -195,16 +224,8 @@ export const SrsCardSchema = z.object({
   id: z.string(),
   noteId: z.string(),
   deckId: z.string(),
-  components: z.object({
-    meaning: SrsMemoryComponentSchema,
-    sound: SrsMemoryComponentSchema,
-    spelling: SrsMemoryComponentSchema,
-  }),
-  studyAgainDue: z.object({
-    meaning: z.string().nullable(),
-    sound: z.string().nullable(),
-    spelling: z.string().nullable(),
-  }),
+  components: z.record(z.string(), SrsMemoryComponentSchema),
+  studyAgainDue: z.record(z.string(), z.string().nullable()),
   createdAt: z.number().int(),
   nextDue: z.string(),
   maintenanceMode: z.boolean(),
@@ -218,9 +239,10 @@ export const SrsReviewRecordSchema = z.object({
   cardId: z.string(),
   noteId: z.string(),
   notetypeId: z.string(),
-  componentType: ComponentTypeSchema,
+  componentType: VariantIdSchema,
   templateId: z.string(),
-  stimulusType: StimulusTypeSchema,
+  stimulusType: z.string(),
+  dictationMode: z.enum(['word', 'sentence']).optional(),
   startedAt: z.number().int(),
   answeredAt: z.number().int(),
   judgment: ReviewJudgmentSchema,
@@ -232,7 +254,7 @@ export const SrsReviewRecordSchema = z.object({
 });
 
 export const SrsStimulusSchema = z.object({
-  type: StimulusTypeSchema,
+  type: z.string(),
   payload: z.record(z.string(), SrsFieldValueSchema),
 });
 
@@ -240,8 +262,14 @@ export const SrsReviewSessionSchema = z.object({
   card: SrsCardSchema,
   note: SrsNoteSchema,
   notetype: SrsNotetypeSchema,
-  componentType: ComponentTypeSchema,
-  template: SrsFrontTemplateSchema,
+  variant: SrsVariantSchema,
+  variants: z.array(SrsVariantSchema),
+  toggles: z.object({
+    scope: z.enum(['both', 'word', 'sentence']),
+    audio: z.enum(['word', 'sentence']),
+    scopeToggle: z.boolean(),
+    audioToggle: z.boolean(),
+  }),
   stimulus: SrsStimulusSchema,
   mode: ReviewModeSchema,
   startedAt: z.number().int(),
@@ -280,7 +308,7 @@ export const PoolCandidateSchema = z.object({
   card: SrsCardSchema,
   note: SrsNoteSchema,
   notetype: SrsNotetypeSchema,
-  componentType: ComponentTypeSchema,
+  componentType: VariantIdSchema,
   effectiveDue: z.string(),
   progress: z.number().min(0).max(100),
   pool: PoolSchema,

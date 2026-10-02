@@ -1,6 +1,7 @@
-import type { ComponentType, SrsCard, SrsMemoryComponent, SrsReviewRecord, SrsReviewSession, SrsStudyConfig } from '@/entities/srs/types';
+import type { SrsCard, SrsMemoryComponent, SrsNote, SrsNotetype, SrsReviewRecord, SrsReviewSession, SrsStudyConfig, SrsVariant, VariantId } from '@/entities/srs/types';
 import type { SrsFsrsAdapter } from '@/entities/srs/types';
 import { generateId, minISO, FUTURE_ISO, normalizeSpelling } from '@/features/srs/lib/helpers';
+import { expectedInputField, expectedInputText, servableVariantIds } from '@/features/srs/lib/variantFront';
 import { calculateProgress } from './progressCalculator';
 import { selectNextExploreComponent } from './learningPath';
 
@@ -9,36 +10,53 @@ export interface ApplyReviewResult {
   readonly record: SrsReviewRecord;
 }
 
-/** Recalculate derived card fields after any write. */
+function emptyComponent(type: VariantId, adapter: SrsFsrsAdapter, now: string): SrsMemoryComponent {
+  return { type, progress: 0, exploreCount: 0, fsrsState: adapter.createEmpty(new Date(now)), reviewCount: 0 };
+}
+
+/**
+ * Recalculate derived card fields after any write: reconcile components against the
+ * preset variants (missing ones are created empty, orphans are kept but ignored),
+ * drop stale study-again dues, recompute nextDue and maintenanceMode over servable variants.
+ */
 export function recalcCard(
   card: SrsCard,
+  variants: readonly SrsVariant[],
+  servable: ReadonlySet<VariantId>,
   config: SrsStudyConfig,
   now: string,
   adapter: SrsFsrsAdapter,
 ): SrsCard {
   const comps = { ...card.components };
-  const studyAgainDue = { ...card.studyAgainDue };
+  for (const v of variants) {
+    comps[v.id] ??= emptyComponent(v.id, adapter, now);
+  }
+  const withComps: SrsCard = { ...card, components: comps };
 
-  // Drop study-again dues that are still in the future.
-  for (const t of Object.keys(studyAgainDue) as ComponentType[]) {
+  const studyAgainDue = { ...card.studyAgainDue };
+  for (const t of Object.keys(studyAgainDue)) {
     const due = studyAgainDue[t];
     if (due && due > now) {
       studyAgainDue[t] = null;
     }
   }
 
-  const effectiveDues = (Object.keys(comps) as ComponentType[]).map((t) => {
-    const fsrsDue = adapter.getDue(comps[t].fsrsState);
-    const study = studyAgainDue[t];
-    if (study && study <= fsrsDue) return study;
-    return fsrsDue;
-  });
+  const effectiveDues = variants
+    .filter((v) => servable.has(v.id))
+    .map((v) => {
+      const fsrsDue = adapter.getDue(comps[v.id].fsrsState);
+      const study = studyAgainDue[v.id];
+      if (study && study <= fsrsDue) return study;
+      return fsrsDue;
+    });
 
-  const exploreType = selectNextExploreComponent(card, config);
+  const exploreType = selectNextExploreComponent(withComps, variants, servable, config);
   const exploreDue = exploreType ? now : FUTURE_ISO;
 
   const nextDue = minISO(...effectiveDues, exploreDue);
-  const maintenanceMode = Object.values(comps).every((c) => c.progress >= config.targetThreshold);
+  const servableComps = variants.filter((v) => servable.has(v.id)).map((v) => comps[v.id]);
+  const maintenanceMode =
+    servableComps.length > 0 && servableComps.every((c) => c.progress >= config.targetThreshold);
 
   return { ...card, components: comps, studyAgainDue, nextDue, maintenanceMode };
 }
@@ -52,17 +70,19 @@ export function applyReview(
   config: SrsStudyConfig,
   adapter: SrsFsrsAdapter,
 ): ApplyReviewResult {
-  const { card, note, componentType, template, mode } = session;
-  const comp = card.components[componentType];
+  const { card, note, variant, toggles, mode } = session;
+  const variantId = variant.id;
+  const comp = card.components[variantId] ?? emptyComponent(variantId, adapter, now.toISOString());
 
+  const expectedField = expectedInputField(variant, note, toggles);
+  const expectedText = expectedField ? expectedInputText(variant, note, toggles) : null;
   const isSpellingCorrect =
-    componentType === 'spelling' && typedInput !== undefined
-      ? normalizeSpelling(typedInput) === normalizeSpelling(note.targetWord)
+    expectedText !== null && typedInput !== undefined
+      ? normalizeSpelling(typedInput) === normalizeSpelling(expectedText)
       : undefined;
 
   const newProgress = calculateProgress(comp, judgment, isSpellingCorrect ?? false, config, mode);
 
-  // FSRS only advances in normal/studyAgain modes; explore mode preserves fsrsState.
   const newFsrsState =
     mode === 'explore'
       ? comp.fsrsState
@@ -78,23 +98,24 @@ export function applyReview(
 
   let newCard: SrsCard = {
     ...card,
-    components: { ...card.components, [componentType]: newComp },
+    components: { ...card.components, [variantId]: newComp },
   };
 
   if (mode === 'studyAgain') {
-    newCard = { ...newCard, studyAgainDue: { ...newCard.studyAgainDue, [componentType]: null } };
+    newCard = { ...newCard, studyAgainDue: { ...newCard.studyAgainDue, [variantId]: null } };
   }
 
-  newCard = recalcCard(newCard, config, now.toISOString(), adapter);
+  const servable = servableVariantIds(session.variants, note, session.notetype);
+  newCard = recalcCard(newCard, session.variants, servable, config, now.toISOString(), adapter);
 
   const record: SrsReviewRecord = {
     id: generateId(),
     cardId: card.id,
     noteId: note.id,
     notetypeId: note.notetypeId,
-    componentType,
-    templateId: template.id,
-    stimulusType: template.stimulusType,
+    componentType: variantId,
+    templateId: `variant:${variantId}`,
+    stimulusType: session.stimulus.type,
     startedAt: session.startedAt,
     answeredAt: now.getTime(),
     judgment,
@@ -103,98 +124,96 @@ export function applyReview(
     isStudyAgain: mode === 'studyAgain',
     resultingProgress: newProgress,
     resultingFsrsState: newFsrsState,
+    dictationMode: expectedField ? (expectedField === 'sentence' ? 'sentence' : 'word') : undefined,
   };
 
   return { card: newCard, record };
 }
 
-/** Mark a component for immediate restudy within the same session. */
+/** Mark a variant component for immediate restudy within the same session. */
 export function studyAgain(
   card: SrsCard,
-  type: ComponentType,
+  variantId: VariantId,
+  note: SrsNote,
+  notetype: SrsNotetype,
+  variants: readonly SrsVariant[],
   now: string,
   config: SrsStudyConfig,
   adapter: SrsFsrsAdapter,
 ): SrsCard {
-  const comp = card.components[type];
-  if (comp.exploreCount < config.learningPath.minExplores) return card;
+  const variant = variants.find((v) => v.id === variantId);
+  const comp = card.components[variantId];
+  if (!variant || !comp) return card;
+  if (comp.exploreCount < variant.newLoops) return card;
 
   const updated: SrsCard = {
     ...card,
-    studyAgainDue: { ...card.studyAgainDue, [type]: now },
+    studyAgainDue: { ...card.studyAgainDue, [variantId]: now },
   };
-  return recalcCard(updated, config, now, adapter);
+  const servable = servableVariantIds(variants, note, notetype);
+  return recalcCard(updated, variants, servable, config, now, adapter);
 }
 
-/** Reset a single component back to empty. */
+/** Reset a single variant component back to empty. */
 export function resetComponent(
   card: SrsCard,
-  type: ComponentType,
+  variantId: VariantId,
+  note: SrsNote,
+  notetype: SrsNotetype,
+  variants: readonly SrsVariant[],
   now: string,
   config: SrsStudyConfig,
   adapter: SrsFsrsAdapter,
 ): SrsCard {
-  const empty = adapter.createEmpty(new Date(now));
   const updated: SrsCard = {
     ...card,
-    components: {
-      ...card.components,
-      [type]: {
-        type,
-        progress: 0,
-        exploreCount: 0,
-        fsrsState: empty,
-        reviewCount: 0,
-      },
-    },
-    studyAgainDue: { ...card.studyAgainDue, [type]: null },
+    components: { ...card.components, [variantId]: emptyComponent(variantId, adapter, now) },
+    studyAgainDue: { ...card.studyAgainDue, [variantId]: null },
   };
-  return recalcCard(updated, config, now, adapter);
+  const servable = servableVariantIds(variants, note, notetype);
+  return recalcCard(updated, variants, servable, config, now, adapter);
 }
 
-/** Reset the entire card back to empty. */
+/** Reset the entire card — every component back to empty. */
 export function resetCard(
   card: SrsCard,
+  note: SrsNote,
+  notetype: SrsNotetype,
+  variants: readonly SrsVariant[],
   now: string,
   config: SrsStudyConfig,
   adapter: SrsFsrsAdapter,
 ): SrsCard {
-  const empty = adapter.createEmpty(new Date(now));
-  const updated: SrsCard = {
-    ...card,
-    components: {
-      meaning: { type: 'meaning', progress: 0, exploreCount: 0, fsrsState: empty, reviewCount: 0 },
-      sound: { type: 'sound', progress: 0, exploreCount: 0, fsrsState: empty, reviewCount: 0 },
-      spelling: { type: 'spelling', progress: 0, exploreCount: 0, fsrsState: empty, reviewCount: 0 },
-    },
-    studyAgainDue: { meaning: null, sound: null, spelling: null },
-  };
-  return recalcCard(updated, config, now, adapter);
+  const components: Record<string, SrsMemoryComponent> = {};
+  for (const id of new Set([...variants.map((v) => v.id), ...Object.keys(card.components)])) {
+    components[id] = emptyComponent(id, adapter, now);
+  }
+  const updated: SrsCard = { ...card, components, studyAgainDue: {} };
+  const servable = servableVariantIds(variants, note, notetype);
+  return recalcCard(updated, variants, servable, config, now, adapter);
 }
 
-/** Create a new card for a note. */
+/** Create a new card for a note — components initialized for all preset variants. */
 export function createCard(
-  note: { readonly id: string },
+  note: SrsNote,
   deckId: string,
+  notetype: SrsNotetype,
+  variants: readonly SrsVariant[],
   config: SrsStudyConfig,
   now: Date,
   adapter: SrsFsrsAdapter,
 ): SrsCard {
-  const empty = adapter.createEmpty(now);
   const createdAt = now.getTime();
   const raw: SrsCard = {
     id: generateId(),
     noteId: note.id,
     deckId,
-    components: {
-      meaning: { type: 'meaning', progress: 0, exploreCount: 0, fsrsState: empty, reviewCount: 0 },
-      sound: { type: 'sound', progress: 0, exploreCount: 0, fsrsState: empty, reviewCount: 0 },
-      spelling: { type: 'spelling', progress: 0, exploreCount: 0, fsrsState: empty, reviewCount: 0 },
-    },
-    studyAgainDue: { meaning: null, sound: null, spelling: null },
+    components: {},
+    studyAgainDue: {},
     createdAt,
     nextDue: now.toISOString(),
     maintenanceMode: false,
   };
-  return recalcCard(raw, config, now.toISOString(), adapter);
+  const servable = servableVariantIds(variants, note, notetype);
+  return recalcCard(raw, variants, servable, config, now.toISOString(), adapter);
 }

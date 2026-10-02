@@ -5,8 +5,8 @@
 
 import { getDbHash } from '@/shared/lib/storage/dbHash';
 
-/** IndexedDB schema version cho SRS (v2 adds sync capture stores). */
-export const SRS_DB_SCHEMA_VERSION = 2;
+/** IndexedDB schema version cho SRS (v3 adds variantPresets store). */
+export const SRS_DB_SCHEMA_VERSION = 3;
 
 /** Object store names. */
 export const SRS_STORES = {
@@ -19,6 +19,7 @@ export const SRS_STORES = {
   AUDIO_ASSETS: 'audioAssets',
   IMAGE_ASSETS: 'imageAssets',
   REVIEW_EVENTS: 'reviewEvents',
+  VARIANT_PRESETS: 'variantPresets',
   SYNC_OUTBOX: 'syncOutbox',
   SYNC_META: 'syncMeta',
 } as const;
@@ -140,6 +141,11 @@ function createAllSrsStores(db: IDBDatabase, tx?: IDBTransaction): void {
     store.createIndex(SRS_INDEXES.by_card, 'cardId', { unique: false });
     store.createIndex(SRS_INDEXES.by_component, 'componentType', { unique: false });
     store.createIndex(SRS_INDEXES.by_timestamp, 'answeredAt', { unique: false });
+  }
+
+  if (!db.objectStoreNames.contains(SRS_STORES.VARIANT_PRESETS)) {
+    const store = db.createObjectStore(SRS_STORES.VARIANT_PRESETS, { keyPath: 'id' });
+    store.createIndex(SRS_INDEXES.by_collection, 'collectionId', { unique: false });
   }
 
   if (!db.objectStoreNames.contains(SRS_STORES.SYNC_OUTBOX)) {

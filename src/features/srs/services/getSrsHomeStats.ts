@@ -2,9 +2,9 @@ import { getDecksByCollection } from '@/features/srs/repositories/deckRepository
 import { getCardsByDeck } from '@/features/srs/repositories/cardRepository';
 import { getNotesByDeck } from '@/features/srs/repositories/noteRepository';
 import { getReviewEventsByTimestampRange } from '@/features/srs/repositories/reviewEventRepository';
-import type { ComponentType, SrsCard, SrsDeck } from '@/entities/srs/types';
+import { getVariantPresetForDeck } from '@/features/srs/repositories/variantPresetRepository';
+import type { SrsCard, SrsDeck, VariantId } from '@/entities/srs/types';
 
-const COMPONENT_TYPES: readonly ComponentType[] = ['sound', 'meaning', 'spelling'];
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LOOKBACK_DAYS = 42;
 const SECONDS_PER_CARD = 8;
@@ -40,13 +40,14 @@ export interface SrsStreakStats {
   readonly dayLevels: readonly StreakDayLevel[];
 }
 
-function isNew(card: SrsCard): boolean {
-  return COMPONENT_TYPES.every((type) => card.components[type].exploreCount === 0);
+function isNew(card: SrsCard, variantIds: readonly VariantId[]): boolean {
+  return variantIds.every((id) => (card.components[id]?.exploreCount ?? 0) === 0);
 }
 
-function avgProgress(card: SrsCard): number {
-  const sum = COMPONENT_TYPES.reduce((acc, type) => acc + card.components[type].progress, 0);
-  return sum / COMPONENT_TYPES.length;
+function avgProgress(card: SrsCard, variantIds: readonly VariantId[]): number {
+  if (variantIds.length === 0) return 0;
+  const sum = variantIds.reduce((acc, id) => acc + (card.components[id]?.progress ?? 0), 0);
+  return sum / variantIds.length;
 }
 
 /** Local calendar day key (YYYY-M-D) after shifting the day boundary to `dayStartHour`. */
@@ -95,15 +96,20 @@ export async function getSrsHomeStats(
   const deckStats: SrsHomeDeckStat[] = [];
 
   for (const deck of decks) {
-    const [cards, notes] = await Promise.all([getCardsByDeck(deck.id), getNotesByDeck(deck.id)]);
+    const [cards, notes, preset] = await Promise.all([
+      getCardsByDeck(deck.id),
+      getNotesByDeck(deck.id),
+      getVariantPresetForDeck(deck.id).catch(() => null),
+    ]);
+    const variantIds = preset?.variants.map((v) => v.id) ?? Object.keys(cards[0]?.components ?? {});
     let deckDue = 0;
     let deckNew = 0;
     let deckKnown = 0;
     for (const card of cards) {
       const due = card.nextDue <= nowISO;
       if (due) deckDue += 1;
-      if (due && isNew(card)) deckNew += 1;
-      if (avgProgress(card) >= KNOWN_AVG_PROGRESS) deckKnown += 1;
+      if (due && isNew(card, variantIds)) deckNew += 1;
+      if (avgProgress(card, variantIds) >= KNOWN_AVG_PROGRESS) deckKnown += 1;
     }
     for (const note of notes) {
       if (note.createdAt >= todayStart) wordsAddedToday += 1;

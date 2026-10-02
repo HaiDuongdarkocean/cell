@@ -12,6 +12,7 @@ import { getNotetype, getNotetypesByCollection } from '@/features/srs/repositori
 import { getStudyConfig } from '@/features/srs/repositories/studyConfigRepository';
 import { deleteNoteCascade, deleteDeckCascade } from '@/features/srs/repositories/deleteCascade';
 import { resetCard } from '@/features/srs/logic/reviewEngine';
+import { getVariantPresetForDeck } from '@/features/srs/repositories/variantPresetRepository';
 import { createSrsFsrsAdapter } from '@/features/srs/services/srsFsrsAdapter';
 import { setWordStatus } from '@/features/dictionary/services/wordStatusClient';
 import type { WordStatus } from '@/entities/dictionary';
@@ -39,9 +40,9 @@ function fieldByHint(note: SrsNote, notetype: SrsNotetype | undefined, hint: str
   return field ? fieldText(note.fields[field.id]) : '';
 }
 
-function isNew(card: SrsCard | undefined): boolean {
+function isNew(card: SrsCard | undefined, variantIds: readonly string[]): boolean {
   if (!card) return true;
-  return (['sound', 'meaning', 'spelling'] as const).every((c) => card.components[c].exploreCount === 0);
+  return variantIds.every((id) => (card.components[id]?.exploreCount ?? 0) === 0);
 }
 
 export interface SrsDeckDetailProps {
@@ -70,20 +71,23 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', onBack, onCha
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [dialog, setDialog] = useState<'delete' | 'reset' | 'type' | 'move' | 'deleteDeck' | null>(null);
   const [editing, setEditing] = useState<{ note: SrsNote; notetype: SrsNotetype } | null>(null);
+  const [variantIds, setVariantIds] = useState<readonly string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
-    const [n, c, collection, nts] = await Promise.all([
+    const [n, c, collection, nts, preset] = await Promise.all([
       getNotesByDeck(deck.id),
       getCardsByDeck(deck.id),
       getCollection(deck.collectionId),
       getNotetypesByCollection(deck.collectionId),
+      getVariantPresetForDeck(deck.id).catch(() => null),
     ]);
     setNotes(n);
     setCards(c);
     setTargetLanguage(collection.targetLanguage || 'en');
     setNotetypeList(nts);
     setNotetypes(new Map(nts.map((nt) => [nt.id, nt])));
+    setVariantIds(preset?.variants.map((v) => v.id) ?? []);
   }, [deck.id, deck.collectionId]);
 
   useEffect(() => {
@@ -91,7 +95,7 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', onBack, onCha
   }, [reload]);
 
   const subdecks = useMemo(() => decks.filter((d) => d.parentId === deck.id), [decks, deck.id]);
-  const newCount = useMemo(() => cards.filter((c) => isNew(c)).length, [cards]);
+  const newCount = useMemo(() => cards.filter((c) => isNew(c, variantIds)).length, [cards, variantIds]);
   const visibleNotes = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return notes;
@@ -158,9 +162,19 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', onBack, onCha
 
   async function handleResetSelected(toUnknown: boolean): Promise<void> {
     const config = await getStudyConfig(deck.studyConfigId);
+    const variants = (await getVariantPresetForDeck(deck.id)).variants;
     const adapter = createSrsFsrsAdapter();
+    const notetypeCache = new Map<string, SrsNotetype>();
     for (const card of cards.filter((c) => selected.has(c.noteId))) {
-      await putCard(resetCard(card, new Date().toISOString(), config, adapter));
+      const note = notes.find((n) => n.id === card.noteId);
+      if (!note) continue;
+      if (!notetypeCache.has(note.notetypeId)) {
+        const nt = await getNotetype(note.notetypeId);
+        if (nt) notetypeCache.set(nt.id, nt);
+      }
+      const notetype = notetypeCache.get(note.notetypeId);
+      if (!notetype) continue;
+      await putCard(resetCard(card, note, notetype, variants, new Date().toISOString(), config, adapter));
     }
     if (toUnknown) {
       for (const note of notes.filter((n) => selected.has(n.id))) {
@@ -336,7 +350,7 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', onBack, onCha
                   </span>
                   {sentence && <span className={styles.noteSentence}>{sentence}</span>}
                 </button>
-                {card && isNew(card) && !selectMode && (
+                {card && isNew(card, variantIds) && !selectMode && (
                   <Badge className={styles.statusPill}>{t('srs.notes.new')}</Badge>
                 )}
                 {!selectMode && (

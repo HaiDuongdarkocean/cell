@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
-import type { ComponentType, SrsCard, SrsNote, SrsNotetype, SrsStudyConfig, PoolCandidate } from '@/entities/srs/types';
+import type { SrsCard, SrsNote, SrsNotetype, SrsStudyConfig, PoolCandidate, VariantId } from '@/entities/srs/types';
 import { createSrsFsrsAdapter } from '@/features/srs/services/srsFsrsAdapter';
+import { createDefaultVariants } from '@/features/srs/lib/defaultVariants';
 import { resolvePool } from './resolvePool';
 import { pickHighestPriority } from './pickHighestPriority';
 import { FUTURE_ISO } from '@/features/srs/lib/helpers';
@@ -41,6 +42,8 @@ afterAll(async () => {
 
 const now = '2026-09-01T00:00:00.000Z';
 const adapter = createSrsFsrsAdapter();
+const VARIANTS = createDefaultVariants();
+const SERVABLE: ReadonlySet<VariantId> = new Set(VARIANTS.map((v) => v.id));
 
 const makeConfig = (): SrsStudyConfig => ({
   id: 'sc1',
@@ -90,7 +93,7 @@ const makeCard = (overrides?: Partial<SrsCard>): SrsCard => ({
   ...overrides,
 });
 
-const candidate = (type: ComponentType, pool: PoolCandidate['pool'], effectiveDue: string, progress: number): PoolCandidate => ({
+const candidate = (type: VariantId, pool: PoolCandidate['pool'], effectiveDue: string, progress: number): PoolCandidate => ({
   card: makeCard(),
   note: makeNote(),
   notetype: makeNotetype(),
@@ -109,7 +112,7 @@ describe('resolvePool', () => {
         spelling: { type: 'spelling', progress: 0, exploreCount: 1, fsrsState: adapter.createEmpty(new Date(now)), reviewCount: 0 },
       },
     });
-    expect(resolvePool(card, 'sound', now, makeConfig(), adapter)).toBe('explore');
+    expect(resolvePool(card, 'sound', VARIANTS, SERVABLE, now, makeConfig(), adapter)).toBe('explore');
   });
 
   it('classifies active components due now', () => {
@@ -120,7 +123,7 @@ describe('resolvePool', () => {
         spelling: { type: 'spelling', progress: 0, exploreCount: 1, fsrsState: adapter.createEmpty(new Date(now)), reviewCount: 0 },
       },
     });
-    expect(resolvePool(card, 'meaning', now, makeConfig(), adapter)).toBe('active');
+    expect(resolvePool(card, 'meaning', VARIANTS, SERVABLE, now, makeConfig(), adapter)).toBe('active');
   });
 
   it('classifies study-again components with priority over active', () => {
@@ -132,7 +135,7 @@ describe('resolvePool', () => {
       },
       studyAgainDue: { meaning: now, sound: null, spelling: null },
     });
-    expect(resolvePool(card, 'meaning', now, makeConfig(), adapter)).toBe('studyAgain');
+    expect(resolvePool(card, 'meaning', VARIANTS, SERVABLE, now, makeConfig(), adapter)).toBe('studyAgain');
   });
 
   it('returns null for components not yet due', () => {
@@ -144,7 +147,7 @@ describe('resolvePool', () => {
         spelling: { type: 'spelling', progress: 0, exploreCount: 1, fsrsState: adapter.createEmpty(new Date(now)), reviewCount: 0 },
       },
     });
-    expect(resolvePool(card, 'meaning', now, makeConfig(), adapter)).toBeNull();
+    expect(resolvePool(card, 'meaning', VARIANTS, SERVABLE, now, makeConfig(), adapter)).toBeNull();
   });
 });
 

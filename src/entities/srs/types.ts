@@ -10,6 +10,50 @@ export type SrsLanguageCode = string; // ISO/BCP-47
 
 export type ComponentType = 'meaning' | 'sound' | 'spelling';
 
+/** Variant identifier — builtin ids are the legacy ComponentType values; custom ids are user-generated. */
+export type VariantId = string;
+
+/** Pseudo-field id inside `SrsVariant.fieldIds` marking a dictation input. */
+export const SRS_INPUT_FIELD_ID = 'input';
+
+export type VariantScopeToggle = 'both' | 'word' | 'sentence';
+export type VariantAudioToggle = 'word' | 'sentence';
+
+/** Persisted per-variant toggle preference (survives across cards/sessions). */
+export interface SrsVariantToggles {
+  readonly scope?: VariantScopeToggle;
+  readonly audio?: VariantAudioToggle;
+}
+
+/** Toggle state resolved for one (variant, note) pair — flags say whether the chip renders. */
+export interface ResolvedVariantToggles {
+  readonly scope: VariantScopeToggle;
+  readonly audio: VariantAudioToggle;
+  readonly scopeToggle: boolean;
+  readonly audioToggle: boolean;
+}
+
+export interface SrsVariant {
+  readonly id: VariantId;
+  name: string;
+  readonly icon?: string;
+  /** Front materials, ordered. May include the `input` pseudo-field for dictation. */
+  fieldIds: readonly string[];
+  /** Times a new card must pass this variant in explore mode (1–3). */
+  newLoops: number;
+  readonly builtin?: 'sound' | 'meaning' | 'spelling';
+  readonly order: number;
+}
+
+export interface SrsVariantPreset {
+  readonly id: string;
+  readonly collectionId: string;
+  name: string;
+  variants: SrsVariant[];
+  readonly isDefault: boolean;
+  readonly createdAt: number;
+}
+
 export type ReviewJudgment = 'forget' | 'remember';
 
 export type ReviewMode = 'explore' | 'normal' | 'studyAgain';
@@ -24,7 +68,8 @@ export type StimulusType =
   | 'word-audio'
   | 'sentence-audio'
   | 'context'
-  | 'ipa';
+  | 'ipa'
+  | (string & {});
 
 // === Collection / Deck / Study Config ===
 
@@ -36,6 +81,7 @@ export interface SrsCollection {
   readonly defaultStudyConfigId: string;
   readonly defaultDeckId: string;
   readonly defaultNotetypeId: string;
+  readonly defaultVariantPresetId?: string | null;
   readonly createdAt: number;
 }
 
@@ -47,6 +93,8 @@ export interface SrsDeck {
   readonly icon?: string;
   readonly order: number;
   readonly studyConfigId: string;
+  /** null/undefined → collection default preset. */
+  readonly variantPresetId?: string | null;
 }
 
 export interface SrsStudyConfig {
@@ -142,8 +190,8 @@ export interface SrsCard {
   readonly id: string;
   readonly noteId: string;
   readonly deckId: string;
-  readonly components: Record<ComponentType, SrsMemoryComponent>;
-  readonly studyAgainDue: Record<ComponentType, string | null>;
+  readonly components: Record<VariantId, SrsMemoryComponent>;
+  readonly studyAgainDue: Record<VariantId, string | null>;
   readonly createdAt: number; // epoch ms
   readonly nextDue: string; // ISO, = min(effectiveDue across components)
   readonly maintenanceMode: boolean; // persisted, derived on write
@@ -151,7 +199,7 @@ export interface SrsCard {
 }
 
 export interface SrsMemoryComponent {
-  readonly type: ComponentType;
+  readonly type: VariantId;
   readonly progress: number; // 0–100
   readonly exploreCount: number;
   readonly fsrsState: SrsFsrsSerializedState;
@@ -188,9 +236,10 @@ export interface SrsReviewRecord {
   readonly cardId: string;
   readonly noteId: string;
   readonly notetypeId: string;
-  readonly componentType: ComponentType;
+  readonly componentType: VariantId;
   readonly templateId: string;
   readonly stimulusType: StimulusType;
+  readonly dictationMode?: VariantAudioToggle;
   readonly startedAt: number;
   readonly answeredAt: number;
   readonly judgment: ReviewJudgment;
@@ -205,8 +254,11 @@ export interface SrsReviewSession {
   readonly card: SrsCard;
   readonly note: SrsNote;
   readonly notetype: SrsNotetype;
-  readonly componentType: ComponentType;
-  readonly template: SrsFrontTemplate;
+  readonly variant: SrsVariant;
+  /** Ordered variant list of the deck's effective preset (for step dots + reconcile). */
+  readonly variants: readonly SrsVariant[];
+  /** Resolved toggle state for this session (after material ∩ pref). */
+  readonly toggles: ResolvedVariantToggles;
   readonly stimulus: SrsStimulus;
   readonly mode: ReviewMode;
   readonly startedAt: number;
@@ -266,7 +318,7 @@ export interface PoolCandidate {
   readonly card: SrsCard;
   readonly note: SrsNote;
   readonly notetype: SrsNotetype;
-  readonly componentType: ComponentType;
+  readonly componentType: VariantId;
   readonly effectiveDue: string;
   readonly progress: number;
   readonly pool: Pool;

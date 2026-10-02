@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import type { SrsCard, SrsNotetype, SrsStudyConfig } from '@/entities/srs/types';
+import type { SrsCard, SrsNote, SrsNotetype, SrsReviewSession, SrsStudyConfig, VariantId } from '@/entities/srs/types';
 import { createSrsFsrsAdapter } from '@/features/srs/services/srsFsrsAdapter';
 import { putCollection } from '@/features/srs/repositories/collectionRepository';
 import { putDeck } from '@/features/srs/repositories/deckRepository';
@@ -7,6 +7,8 @@ import { putNotetype } from '@/features/srs/repositories/notetypeRepository';
 import { putNote } from '@/features/srs/repositories/noteRepository';
 import { putCard } from '@/features/srs/repositories/cardRepository';
 import { closeAllSrsDBs, clearAllSrsStores, getSrsDbName, deleteSrsDB } from '@/features/srs/repositories/srsDatabase';
+import { createDefaultVariants } from '@/features/srs/lib/defaultVariants';
+import { resolveVariantToggles } from '@/features/srs/lib/variantFront';
 import { applyReview } from './reviewEngine';
 import { selectNextReview } from './selectNextReview';
 
@@ -45,6 +47,7 @@ afterAll(async () => {
 
 const now = '2026-09-01T00:00:00.000Z';
 const adapter = createSrsFsrsAdapter();
+const VARIANTS = createDefaultVariants();
 
 const makeConfig = (): SrsStudyConfig => ({
   id: 'sc1',
@@ -60,26 +63,25 @@ const makeNotetype = (): SrsNotetype => ({
   targetFieldId: 'target',
   fields: [
     { id: 'target', name: 'Target', order: 0, type: 'text' },
-    { id: 'def', name: 'Definition', order: 1, type: 'text' },
-    { id: 'sentence', name: 'Sentence', order: 2, type: 'text' },
+    { id: 'sentence', name: 'Sentence', order: 1, type: 'text' },
+    { id: 'image', name: 'Image', order: 2, type: 'image' },
+    { id: 'wordAudio', name: 'Word audio', order: 3, type: 'audio' },
+    { id: 'sentAudio', name: 'Sentence audio', order: 4, type: 'audio' },
   ],
-  frontTemplates: [
-    { id: 't-sound', componentType: 'sound', stimulusType: 'ipa', fieldIds: ['target'], requiresInput: false },
-    { id: 't-meaning', componentType: 'meaning', stimulusType: 'definition', fieldIds: ['def'], requiresInput: false },
-    { id: 't-spelling', componentType: 'spelling', stimulusType: 'sentence', fieldIds: ['sentence'], maskFieldId: 'sentence', maskTarget: true, requiresInput: true },
-  ],
-  backTemplate: { fieldIds: ['target', 'def', 'sentence'], showAll: true },
+  frontTemplates: [],
+  backTemplate: { fieldIds: ['target', 'sentence'], showAll: true },
 });
 
-const makeNote = () => ({
+const makeNote = (): SrsNote => ({
   id: 'n1',
   notetypeId: 'nt1',
   deckId: 'd1',
   targetWord: 'abandon',
   fields: {
-    target: { kind: 'text' as const, value: 'abandon' },
-    def: { kind: 'text' as const, value: 'to leave behind' },
-    sentence: { kind: 'text' as const, value: 'They decided to abandon the ship.' },
+    sentence: { kind: 'text', value: 'They decided to abandon the ship.' },
+    image: { kind: 'image', value: ['https://example.com/pic.png'] },
+    wordAudio: { kind: 'audio', value: ['https://example.com/w.mp3'], source: 'local' },
+    sentAudio: { kind: 'audio', value: ['https://example.com/s.mp3'], source: 'local' },
   },
   createdAt: 1,
 });
@@ -100,43 +102,79 @@ const makeCard = (overrides?: Partial<SrsCard>): SrsCard => ({
   ...overrides,
 });
 
+const sessionOf = (card: SrsCard, variantId: VariantId): SrsReviewSession => {
+  const note = makeNote();
+  const variant = VARIANTS.find((v) => v.id === variantId)!;
+  return {
+    card,
+    note,
+    notetype: makeNotetype(),
+    variant,
+    variants: VARIANTS,
+    toggles: resolveVariantToggles(variant, note),
+    stimulus: { type: `variant:${variantId}`, payload: {} },
+    mode: 'normal',
+    startedAt: Date.now(),
+  };
+};
+
+async function seed(): Promise<void> {
+  await putCollection({ id: 'c1', languageProfileId: 'lp1', targetLanguage: 'en', name: 'C', defaultStudyConfigId: 'sc1', defaultDeckId: 'd1', defaultNotetypeId: 'nt1', createdAt: 1 });
+  await putDeck({ id: 'd1', collectionId: 'c1', parentId: null, name: 'D', order: 0, studyConfigId: 'sc1' });
+  await putNotetype(makeNotetype());
+}
+
 describe('selectNextReview', () => {
   it('returns null when there are no cards', async () => {
-    await putCollection({ id: 'c1', languageProfileId: 'lp1', targetLanguage: 'en', name: 'C', defaultStudyConfigId: 'sc1', defaultDeckId: 'd1', defaultNotetypeId: 'nt1', createdAt: 1 });
-    await putDeck({ id: 'd1', collectionId: 'c1', parentId: null, name: 'D', order: 0, studyConfigId: 'sc1' });
-
+    await seed();
     const session = await selectNextReview('d1', false, makeConfig(), now, adapter, new Map(), new Map());
     expect(session).toBeNull();
   });
 
-  it('returns the explore component for a fresh card', async () => {
-    await putCollection({ id: 'c1', languageProfileId: 'lp1', targetLanguage: 'en', name: 'C', defaultStudyConfigId: 'sc1', defaultDeckId: 'd1', defaultNotetypeId: 'nt1', createdAt: 1 });
-    await putDeck({ id: 'd1', collectionId: 'c1', parentId: null, name: 'D', order: 0, studyConfigId: 'sc1' });
-    await putNotetype(makeNotetype());
+  it('returns the explore variant for a fresh card', async () => {
+    await seed();
     await putNote(makeNote());
     await putCard(makeCard());
 
     const session = await selectNextReview('d1', false, makeConfig(), now, adapter, new Map(), new Map());
     expect(session).not.toBeNull();
-    expect(session?.componentType).toBe('sound');
+    expect(session?.variant.id).toBe('sound');
     expect(session?.mode).toBe('explore');
-    expect(session?.stimulus.type).toBe('ipa');
+    expect(session?.stimulus.type).toBe('variant:sound');
+    expect(session?.stimulus.payload.target?.kind).toBe('text');
+    expect(session?.stimulus.payload.sentence?.kind).toBe('text');
   });
 
-  it('returns an active component after all components are explored and one is due', async () => {
-    await putCollection({ id: 'c1', languageProfileId: 'lp1', targetLanguage: 'en', name: 'C', defaultStudyConfigId: 'sc1', defaultDeckId: 'd1', defaultNotetypeId: 'nt1', createdAt: 1 });
-    await putDeck({ id: 'd1', collectionId: 'c1', parentId: null, name: 'D', order: 0, studyConfigId: 'sc1' });
-    await putNotetype(makeNotetype());
+  it('hides variants whose front material is missing', async () => {
+    await seed();
+    const textOnly = makeNote();
+    delete textOnly.fields.image;
+    delete textOnly.fields.wordAudio;
+    delete textOnly.fields.sentAudio;
+    await putNote(textOnly);
+    await putCard(makeCard());
+
+    const first = await selectNextReview('d1', false, makeConfig(), now, adapter, new Map(), new Map());
+    expect(first?.variant.id).toBe('sound');
+
+    const card = applyReview({ ...first!, mode: 'explore' }, 'remember', undefined, new Date(now), makeConfig(), adapter).card;
+    await putCard(card);
+
+    const next = await selectNextReview('d1', false, makeConfig(), now, adapter, new Map(), new Map());
+    expect(next?.variant.id).toBe('sound');
+  });
+
+  it('returns an active variant after exploration when it is due', async () => {
+    await seed();
     await putNote(makeNote());
     await putCard(makeCard());
 
-    // Explore all three components.
     let card: SrsCard | undefined;
     for (const type of ['sound', 'meaning', 'spelling'] as const) {
       const session = await selectNextReview('d1', false, makeConfig(), now, adapter, new Map(), new Map());
-      expect(session).not.toBeNull();
+      expect(session?.variant.id).toBe(type);
       card = applyReview(
-        { ...session!, note: makeNote(), notetype: makeNotetype() },
+        { ...session!, mode: 'explore' },
         'remember',
         type === 'spelling' ? 'abandon' : undefined,
         new Date(now),
@@ -146,15 +184,7 @@ describe('selectNextReview', () => {
       await putCard(card);
     }
 
-    // After exploring, review sound once so it becomes due later while the others are still due now.
-    const reviewedCard = applyReview(
-      { card: card!, note: makeNote(), notetype: makeNotetype(), componentType: 'sound', template: makeNotetype().frontTemplates[0], stimulus: { type: 'ipa', payload: {} }, mode: 'normal', startedAt: Date.now() },
-      'remember',
-      undefined,
-      new Date(now),
-      makeConfig(),
-      adapter,
-    ).card;
+    const reviewedCard = applyReview(sessionOf(card!, 'sound'), 'remember', undefined, new Date(now), makeConfig(), adapter).card;
     await putCard(reviewedCard);
 
     const session = await selectNextReview('d1', false, makeConfig(), now, adapter, new Map(), new Map());

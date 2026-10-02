@@ -1,17 +1,16 @@
-import type { ComponentType, Pool, PoolCandidate, SrsAudioAsset, SrsFsrsAdapter, SrsImageAsset, SrsReviewSession, SrsStudyConfig } from '@/entities/srs/types';
+import type { Pool, PoolCandidate, SrsAudioAsset, SrsFsrsAdapter, SrsImageAsset, SrsReviewSession, SrsStudyConfig, SrsVariant, SrsVariantToggles, VariantId } from '@/entities/srs/types';
 import type { SrsCard } from '@/entities/srs/types';
-import { SrsError } from '@/features/srs/lib/srsError';
 import { FUTURE_ISO, minISO } from '@/features/srs/lib/helpers';
 import { getCardIdsByDeckDueBefore, getCardsByIds } from '@/features/srs/repositories/cardRepository';
 import { getDeck, getDecksByCollection, getSubDecks } from '@/features/srs/repositories/deckRepository';
 import { getNotesByIds } from '@/features/srs/repositories/noteRepository';
 import { getNotetypesByIds } from '@/features/srs/repositories/notetypeRepository';
+import { getVariantPresetForDeck } from '@/features/srs/repositories/variantPresetRepository';
+import { isVariantServable, resolveVariantToggles, servableVariantIds } from '@/features/srs/lib/variantFront';
 import { resolvePool } from './resolvePool';
-import { pickHighestPriority } from './pickHighestPriority';
-import { resolveReviewSurface } from './resolveReviewSurface';
+import { orderCandidates } from './pickHighestPriority';
+import { buildVariantStimulus } from './resolveReviewSurface';
 import { loadNoteAssets } from '@/features/srs/services/noteAssetLoader';
-
-const COMPONENT_TYPES: readonly ComponentType[] = ['sound', 'meaning', 'spelling'];
 
 /** Resolve the set of deck IDs to study, optionally including all descendants. */
 async function resolveDeckIds(rootDeckId: string | null, includeSubdecks: boolean, collectionId?: string): Promise<string[]> {
@@ -39,11 +38,25 @@ async function resolveDeckIds(rootDeckId: string | null, includeSubdecks: boolea
   return result;
 }
 
-function effectiveDueFor(card: SrsCard, type: ComponentType, adapter: SrsFsrsAdapter): string {
+function effectiveDueFor(card: SrsCard, type: VariantId, adapter: SrsFsrsAdapter): string {
   const comp = card.components[type];
   const fsrsDue = adapter.getDue(comp.fsrsState);
   const studyAgain = card.studyAgainDue[type];
   return minISO(fsrsDue, studyAgain ?? FUTURE_ISO);
+}
+
+export interface SelectNextReviewOptions {
+  readonly shuffle?: boolean;
+  readonly startWith?: 'reviews' | 'new';
+  /** Persisted per-variant toggle prefs — applied when the note material still offers the option. */
+  readonly variantToggles?: Readonly<Record<VariantId, SrsVariantToggles>>;
+  /** Global loops override (Settings → "new cards need N passes") — wins over per-variant newLoops. */
+  readonly newLoopsOverride?: number;
+}
+
+function withLoopOverride(variants: readonly SrsVariant[], override?: number): readonly SrsVariant[] {
+  if (override === undefined || override === null) return variants;
+  return variants.map((v) => (v.newLoops === override ? v : { ...v, newLoops: override }));
 }
 
 /** Pick the next review session from a deck (and optionally its subdecks), or across a whole collection when `rootDeckId` is null and `collectionId` is given. */
@@ -56,11 +69,17 @@ export async function selectNextReview(
   audioCache: ReadonlyMap<string, SrsAudioAsset>,
   imageCache: ReadonlyMap<string, SrsImageAsset>,
   maxScan = 1000,
-  options: { readonly shuffle?: boolean; readonly startWith?: 'reviews' | 'new' } = {},
+  options: SelectNextReviewOptions = {},
   collectionId?: string,
 ): Promise<SrsReviewSession | null> {
   const deckIds = await resolveDeckIds(rootDeckId, includeSubdecks, collectionId);
   if (deckIds.length === 0) return null;
+
+  const variantsByDeck = new Map<string, readonly SrsVariant[]>();
+  for (const deckId of deckIds) {
+    const preset = await getVariantPresetForDeck(deckId);
+    variantsByDeck.set(deckId, withLoopOverride(preset.variants, options.newLoopsOverride));
+  }
 
   const cardIds: string[] = [];
   for (const deckId of deckIds) {
@@ -78,53 +97,68 @@ export async function selectNextReview(
 
   const candidates: PoolCandidate[] = [];
   for (const card of cards) {
+    const variants = variantsByDeck.get(card.deckId);
     const note = notes.find((n) => n.id === card.noteId);
     const notetype = note ? notetypes.find((nt) => nt.id === note.notetypeId) : undefined;
-    if (!note || !notetype) continue;
+    if (!variants || !note || !notetype) continue;
 
-    for (const type of COMPONENT_TYPES) {
-      const pool: Pool | null = resolvePool(card, type, now, config, adapter);
+    const servable = servableVariantIds(variants, note, notetype);
+
+    for (const variant of variants) {
+      const pool: Pool | null = resolvePool(card, variant.id, variants, servable, now, config, adapter);
       if (!pool) continue;
-      const effectiveDue = effectiveDueFor(card, type, adapter);
-      const comp = card.components[type];
+      const comp = card.components[variant.id];
+      if (!comp) continue;
       candidates.push({
         card,
         note,
         notetype,
-        componentType: type,
-        effectiveDue,
+        componentType: variant.id,
+        effectiveDue: effectiveDueFor(card, variant.id, adapter),
         progress: comp.progress,
         pool,
       });
     }
   }
 
-  const winner = pickHighestPriority(candidates, options);
-  if (!winner) return null;
-
   const audioMap = new Map<string, SrsAudioAsset>(audioCache);
   const imageMap = new Map<string, SrsImageAsset>(imageCache);
-  await loadNoteAssets(winner.note, audioMap, imageMap);
 
-  const surface = resolveReviewSurface(winner.note, winner.notetype, winner.componentType, audioMap, imageMap);
-  if (!surface) {
-    throw new SrsError('NO_TEMPLATE', `No usable template for ${winner.componentType} on note ${winner.note.id}`);
+  const loadedNotes = new Set<string>();
+  for (const candidate of orderCandidates(candidates, options)) {
+    const variants = variantsByDeck.get(candidate.card.deckId)!;
+    const variant = variants.find((v) => v.id === candidate.componentType)!;
+
+    if (!loadedNotes.has(candidate.note.id)) {
+      await loadNoteAssets(candidate.note, audioMap, imageMap);
+      loadedNotes.add(candidate.note.id);
+    }
+    const built = buildVariantStimulus(candidate.note, variant, audioMap, imageMap);
+    if (!built) continue;
+
+    // Re-derive toggles on material that actually resolved — dead assets degrade options.
+    const resolvedServable = isVariantServable(variant, built.resolvedNote, candidate.notetype);
+    if (!resolvedServable) continue;
+    const toggles = resolveVariantToggles(
+      variant,
+      built.resolvedNote,
+      options.variantToggles?.[variant.id],
+    );
+
+    return {
+      card: candidate.card,
+      note: candidate.note,
+      notetype: candidate.notetype,
+      variant,
+      variants,
+      toggles,
+      stimulus: built.stimulus,
+      mode: poolToMode(candidate.pool),
+      startedAt: Date.now(),
+    };
   }
 
-  const { template, stimulus } = surface;
-  const mode = poolToMode(winner.pool);
-  const startedAt = Date.now();
-
-  return {
-    card: winner.card,
-    note: winner.note,
-    notetype: winner.notetype,
-    componentType: winner.componentType,
-    template,
-    stimulus,
-    mode,
-    startedAt,
-  };
+  return null;
 }
 
 function poolToMode(pool: Pool): SrsReviewSession['mode'] {

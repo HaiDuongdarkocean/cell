@@ -65,13 +65,14 @@ describe('srsDatabase', () => {
   });
 
   describe('schema v2 create-all', () => {
-    it('creates 11 object stores', async () => {
+    it('creates 12 object stores', async () => {
       const db = await getSrsDB();
       const stores = Array.from(db.objectStoreNames);
-      expect(stores).toHaveLength(11);
+      expect(stores).toHaveLength(12);
       expect(stores).toEqual(
         expect.arrayContaining([
           SRS_STORES.COLLECTIONS,
+          SRS_STORES.VARIANT_PRESETS,
           SRS_STORES.DECKS,
           SRS_STORES.STUDY_CONFIGS,
           SRS_STORES.NOTETYPES,

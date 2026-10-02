@@ -58,6 +58,7 @@ const SRS_DATA_CLASSES: readonly SrsDataClass[] = [
   'srsReviewEvent',
   'srsAudioAsset',
   'srsImageAsset',
+  'srsVariantPreset',
 ];
 
 const READER_DATA_CLASSES: readonly ReaderDataClass[] = ['readerBook', 'readerProgress'];

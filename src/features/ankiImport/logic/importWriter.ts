@@ -5,6 +5,7 @@ import type {
   SrsFieldValue,
   SrsNote,
   SrsStudyConfig,
+  SrsVariant,
 } from '@/entities/srs/types';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import {
@@ -30,6 +31,8 @@ import {
   putReviewEvent,
   putStudyConfig,
   recalcCard,
+  getVariantPresetForDeck,
+  servableVariantIds,
 } from '@/features/srs';
 import { flattenDeckName, resolveHomeDeckId, uniqueDeckNames } from './deckFlatten';
 import { buildNoteFields, htmlToText } from './fieldMapping';
@@ -216,6 +219,13 @@ export async function importNormalized(input: ImportRunInput): Promise<ImportRep
     if (!configCache.has(id)) configCache.set(id, await getStudyConfig(id));
     return configCache.get(id)!;
   };
+  const variantsCache = new Map<string, readonly SrsVariant[]>();
+  const variantsOf = async (deckId: string) => {
+    if (!variantsCache.has(deckId)) {
+      variantsCache.set(deckId, (await getVariantPresetForDeck(deckId)).variants);
+    }
+    return variantsCache.get(deckId)!;
+  };
 
   // --- notetypes: never imported — all notes normalize onto the system notetype ---
   const ntById = new Map(data.notetypes.map((n) => [n.id, n]));
@@ -390,7 +400,8 @@ export async function importNormalized(input: ImportRunInput): Promise<ImportRep
       maintenanceMode: false,
       importSource: { provider: 'anki', cardId: card.id, noteId: note.id },
     };
-    const srsCard = recalcCard(rawCard, config, now.toISOString(), adapter);
+    const variants = await variantsOf(tDeck.id);
+    const srsCard = recalcCard(rawCard, variants, servableVariantIds(variants, srsNote, srsNt), config, now.toISOString(), adapter);
 
     await putNoteForImport(srsNote);
     await putCardForImport(srsCard);
