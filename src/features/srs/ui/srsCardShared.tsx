@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   CloseButton,
@@ -183,7 +183,7 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
     };
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!stripEl) return;
     const measure = (): void => {
       setItemStep(stripEl.clientWidth * 0.66 * 0.35);
