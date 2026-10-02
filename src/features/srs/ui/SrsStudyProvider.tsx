@@ -19,6 +19,7 @@ import { getStudyConfig } from '@/features/srs/repositories/studyConfigRepositor
 import { selectNextReview } from '@/features/srs/logic/selectNextReview';
 import { applyReview, resetCard, resetComponent, studyAgain } from '@/features/srs/logic/reviewEngine';
 import { getSrsStats, type SrsDeckStats } from '@/features/srs/services/getSrsStats';
+import { resolveReviewSurface } from '@/features/srs/logic/resolveReviewSurface';
 import { getSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -63,6 +64,13 @@ const adapter = createSrsFsrsAdapter();
 
 function nowISO(): string {
   return new Date().toISOString();
+}
+
+function stimulusStale(session: SrsReviewSession, nextNote: SrsNote): boolean {
+  if (session.note.targetWord !== nextNote.targetWord) return true;
+  return Object.keys(session.stimulus.payload).some(
+    (id) => JSON.stringify(session.note.fields[id] ?? null) !== JSON.stringify(nextNote.fields[id] ?? null),
+  );
 }
 
 function blobUrlsToRevoke(stimulus: SrsStimulus | null): string[] {
@@ -266,9 +274,18 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
         await putCard(nextCard);
       }
       void refreshStats();
-      setSession({ ...session, note: nextNote, card: nextCard });
+      const surface = stimulusStale(session, nextNote)
+        ? resolveReviewSurface(nextNote, session.notetype, session.componentType, audioCache, imageCache)
+        : null;
+      setSession({
+        ...session,
+        note: nextNote,
+        card: nextCard,
+        stimulus: surface?.stimulus ?? session.stimulus,
+        template: surface?.template ?? session.template,
+      });
     },
-    [session, refreshStats],
+    [session, refreshStats, audioCache, imageCache],
   );
 
   const deleteCurrentCard = useCallback(async () => {

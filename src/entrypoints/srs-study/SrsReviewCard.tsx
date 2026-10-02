@@ -33,6 +33,8 @@ export function SrsReviewCard(): React.JSX.Element | null {
   } = useSrsStudy();
   const [showAnswer, setShowAnswer] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [editDockMounted, setEditDockMounted] = useState(false);
+  const [editDockOpen, setEditDockOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [typedInput, setTypedInput] = useState('');
   const prefs = useSrsUiPrefs();
@@ -43,6 +45,17 @@ export function SrsReviewCard(): React.JSX.Element | null {
     setEditing(false);
     setTypedInput('');
   }, [session?.card.id, session?.componentType]);
+
+  useEffect(() => {
+    if (editing) {
+      setEditDockMounted(true);
+      const raf = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setEditDockOpen(true));
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+    setEditDockOpen(false);
+  }, [editing]);
 
   if (!session) return null;
 
@@ -61,14 +74,6 @@ export function SrsReviewCard(): React.JSX.Element | null {
   function handleDelete(): void {
     setConfirmDelete(false);
     void deleteCurrentCard();
-  }
-
-  if (editing) {
-    return (
-      <Box className={styles.stage}>
-        <SrsEditCardPanel onClose={() => { setEditing(false); }} />
-      </Box>
-    );
   }
 
   return (
@@ -146,6 +151,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
         </Button>
       </Box>
 
+      <Box className={styles.reviewArea}>
       <Box className={styles.card}>
         {isNew && <Text className={styles.badgeNew}>{t('srs.review.badgeNew')}</Text>}
         {showAnswer ? (
@@ -192,6 +198,18 @@ export function SrsReviewCard(): React.JSX.Element | null {
           <Icon name="check" />
         </Button>
       </Box>
+      </Box>
+
+      {editDockMounted && (
+        <aside
+          className={editDockOpen ? `${styles.editDock} ${styles.editDockOpen}` : styles.editDock}
+          onTransitionEnd={(e) => {
+            if (e.target === e.currentTarget && e.propertyName === 'width' && !editing) setEditDockMounted(false);
+          }}
+        >
+          <SrsEditCardPanel onClose={() => { setEditing(false); }} />
+        </aside>
+      )}
 
       <ConfirmDialog
         open={confirmDelete}

@@ -9,6 +9,42 @@
   padding: var(--space-16) var(--space-4) var(--space-20);
 }
 
+.reviewArea {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editDock {
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  transition: width var(--duration-slow) var(--ease-out);
+}
+
+.editDockOpen {
+  width: min(28rem, 100%);
+}
+
+.editDock.editDock > * {
+  flex: 0 0 auto;
+  max-height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editDock {
+    transition: none;
+  }
+}
+
 .cornerTopLeft {
   position: absolute;
   top: var(--space-4);
