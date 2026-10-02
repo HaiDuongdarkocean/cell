@@ -51,17 +51,27 @@ export function hashString(input: string): string {
 }
 
 /**
- * Stable audio asset id for a given note + field + source.
+ * Stable audio asset id for a given note + field + source. `index` selects the
+ * item within a multi-media field; index 0 keeps the legacy id for compat.
  */
-export function audioAssetId(noteId: string, fieldId: string, source: string): string {
-  return hashString(`${noteId}:${fieldId}:${source}`);
+export function audioAssetId(noteId: string, fieldId: string, source: string, index = 0): string {
+  return hashString(index === 0
+    ? `${noteId}:${fieldId}:${source}`
+    : `${noteId}:${fieldId}:${source}:${index}`);
 }
 
 /**
- * Stable image asset id for a given note + field.
+ * Stable image asset id for a given note + field. `index` selects the item
+ * within a multi-media field; index 0 keeps the legacy id for compat.
  */
-export function imageAssetId(noteId: string, fieldId: string): string {
-  return hashString(`${noteId}:${fieldId}`);
+export function imageAssetId(noteId: string, fieldId: string, index = 0): string {
+  return hashString(index === 0 ? `${noteId}:${fieldId}` : `${noteId}:${fieldId}:${index}`);
+}
+
+/** Normalize an audio/image field value to a list of media refs (legacy values stored a single string). */
+export function mediaFieldValues(value: SrsFieldValue | undefined): readonly string[] {
+  if (!value || (value.kind !== 'audio' && value.kind !== 'image')) return [];
+  return typeof value.value === 'string' ? [value.value] : value.value;
 }
 
 /**
@@ -110,11 +120,6 @@ export function mapDictionaryToSrsFields(
       case 'target':
         fields['target'] = { kind: 'text', value: result.term };
         break;
-      case 'ipa':
-        if (result.reading) {
-          fields['ipa'] = { kind: 'text', value: result.reading };
-        }
-        break;
       case 'sentence':
         if (result.sentence) {
           fields['sentence'] = { kind: 'text', value: result.sentence };
@@ -129,7 +134,7 @@ export function mapDictionaryToSrsFields(
         if (result.audioUrl) {
           fields['wordAudio'] = {
             kind: 'audio',
-            value: result.audioUrl,
+            value: [result.audioUrl],
             source: 'pronunciation',
           };
         }
@@ -138,14 +143,14 @@ export function mapDictionaryToSrsFields(
         if (result.sentenceAudioUrl) {
           fields['sentAudio'] = {
             kind: 'audio',
-            value: result.sentenceAudioUrl,
+            value: [result.sentenceAudioUrl],
             source: 'tts',
           };
         }
         break;
       case 'image':
         if (result.imageUrl) {
-          fields['image'] = { kind: 'image', value: result.imageUrl };
+          fields['image'] = { kind: 'image', value: [result.imageUrl] };
         }
         break;
       case 'translation':

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Text } from '@/shared/ui';
+import { mediaFieldValues } from '@/features/srs/lib/helpers';
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset } from '@/entities/srs/types';
 import styles from './SrsReviewCard.module.css';
 
@@ -58,6 +59,7 @@ export function useImageBlobUrl(asset: SrsImageAsset | undefined): string | unde
 
 export function formatFieldValue(value: SrsFieldValue): string {
   if (value.kind === 'list') return value.value.join(', ');
+  if (value.kind === 'audio' || value.kind === 'image') return mediaFieldValues(value)[0] ?? '';
   return value.value;
 }
 

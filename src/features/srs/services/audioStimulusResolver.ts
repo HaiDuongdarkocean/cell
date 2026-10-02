@@ -58,6 +58,7 @@ export async function cacheAudioBytes(
   bytes: ArrayBuffer,
   mimeType: string,
   source: SrsAudioAsset['source'],
+  index = 0,
 ): Promise<SrsAudioAsset> {
-  return storeAudioAsset(noteId, fieldId, bytes, mimeType, source);
+  return storeAudioAsset(noteId, fieldId, bytes, mimeType, source, index);
 }

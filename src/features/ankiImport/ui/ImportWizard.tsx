@@ -508,9 +508,12 @@ function MappingStep({
     const { fields, mediaRequests } = buildNoteFields(sample, nt, mapping);
     const audioCache = new Map<string, SrsAudioAsset>();
     const imageCache = new Map<string, SrsImageAsset>();
+    const mediaIndex = new Map<string, number>();
     for (const req of mediaRequests) {
-      if (req.kind === 'audio') audioCache.set(audioAssetId(PREVIEW_NOTE_ID, req.fieldId, 'local'), previewAudioAsset(PREVIEW_NOTE_ID, req.fieldId));
-      else imageCache.set(imageAssetId(PREVIEW_NOTE_ID, req.fieldId), previewImageAsset(PREVIEW_NOTE_ID, req.fieldId));
+      const i = mediaIndex.get(req.fieldId) ?? 0;
+      mediaIndex.set(req.fieldId, i + 1);
+      if (req.kind === 'audio') audioCache.set(audioAssetId(PREVIEW_NOTE_ID, req.fieldId, 'local', i), previewAudioAsset(PREVIEW_NOTE_ID, req.fieldId));
+      else imageCache.set(imageAssetId(PREVIEW_NOTE_ID, req.fieldId, i), previewImageAsset(PREVIEW_NOTE_ID, req.fieldId));
     }
     const target = fields.target;
     const note: SrsNote = {
@@ -536,15 +539,18 @@ function MappingStep({
     void (async () => {
       const audio = new Map(preview.audioCache);
       const image = new Map(preview.imageCache);
+      const idx = new Map<string, number>();
       for (const req of preview.mediaRequests) {
+        const i = idx.get(req.fieldId) ?? 0;
+        idx.set(req.fieldId, i + 1);
         const r = await data.media.resolve(req.filename).catch(() => null);
         if (!r || cancelled) continue;
         if (req.kind === 'audio') {
-          const id = audioAssetId(PREVIEW_NOTE_ID, req.fieldId, 'local');
-          audio.set(id, { id, noteId: PREVIEW_NOTE_ID, fieldId: req.fieldId, source: 'local', mimeType: r.mimeType, bytes: r.bytes, size: r.bytes.byteLength, lastAccessed: 0, createdAt: 0 });
+          const id = audioAssetId(PREVIEW_NOTE_ID, req.fieldId, 'local', i);
+          audio.set(id, { id, noteId: PREVIEW_NOTE_ID, fieldId: req.fieldId, index: i || undefined, source: 'local', mimeType: r.mimeType, bytes: r.bytes, size: r.bytes.byteLength, lastAccessed: 0, createdAt: 0 });
         } else {
-          const id = imageAssetId(PREVIEW_NOTE_ID, req.fieldId);
-          image.set(id, { id, noteId: PREVIEW_NOTE_ID, fieldId: req.fieldId, mimeType: r.mimeType, bytes: r.bytes, size: r.bytes.byteLength, lastAccessed: 0, createdAt: 0 });
+          const id = imageAssetId(PREVIEW_NOTE_ID, req.fieldId, i);
+          image.set(id, { id, noteId: PREVIEW_NOTE_ID, fieldId: req.fieldId, index: i || undefined, mimeType: r.mimeType, bytes: r.bytes, size: r.bytes.byteLength, lastAccessed: 0, createdAt: 0 });
         }
       }
       if (!cancelled) setLiveMedia({ audio, image });

@@ -1,5 +1,5 @@
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote } from '@/entities/srs/types';
-import { audioAssetId, imageAssetId, isDataUrl } from '@/features/srs/lib/helpers';
+import { audioAssetId, imageAssetId, isDataUrl, mediaFieldValues } from '@/features/srs/lib/helpers';
 import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
 import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepository';
 import { cacheAudioBytes } from './audioStimulusResolver';
@@ -36,37 +36,41 @@ async function cacheNoteFieldValue(
   noteId: string,
   fieldId: string,
   value: SrsFieldValue,
-): Promise<SrsAudioAsset | SrsImageAsset | undefined> {
+): Promise<(SrsAudioAsset | SrsImageAsset | undefined)[]> {
   if (value.kind === 'audio') {
-    const cached = await loadCachedAudio(noteId, fieldId);
-    if (cached) return cached;
-    const bytes = await fetchMediaAsArrayBuffer(value.value);
-    const mime = mimeFromDataUrl(value.value, 'audio/mpeg');
-    return cacheAudioBytes(noteId, fieldId, bytes, mime, value.source);
+    return Promise.all(mediaFieldValues(value).map(async (v, i) => {
+      const cached = await loadCachedAudio(noteId, fieldId, i);
+      if (cached) return cached;
+      const bytes = await fetchMediaAsArrayBuffer(v);
+      const mime = mimeFromDataUrl(v, 'audio/mpeg');
+      return cacheAudioBytes(noteId, fieldId, bytes, mime, value.source, i);
+    }));
   }
 
   if (value.kind === 'image') {
-    const cached = await loadCachedImage(noteId, fieldId);
-    if (cached) return cached;
-    if (isDataUrl(value.value)) {
-      return resolveImageDataUrl(noteId, fieldId, value.value);
-    }
-    const bytes = await fetchMediaAsArrayBuffer(value.value);
-    const mime = mimeFromDataUrl(value.value, 'image/png');
-    return cacheImageBytes(noteId, fieldId, bytes, mime);
+    return Promise.all(mediaFieldValues(value).map(async (v, i) => {
+      const cached = await loadCachedImage(noteId, fieldId, i);
+      if (cached) return cached;
+      if (isDataUrl(v)) {
+        return resolveImageDataUrl(noteId, fieldId, v, i);
+      }
+      const bytes = await fetchMediaAsArrayBuffer(v);
+      const mime = mimeFromDataUrl(v, 'image/png');
+      return cacheImageBytes(noteId, fieldId, bytes, mime, i);
+    }));
   }
 
-  return undefined;
+  return [];
 }
 
-async function loadCachedAudio(noteId: string, fieldId: string): Promise<SrsAudioAsset | undefined> {
+async function loadCachedAudio(noteId: string, fieldId: string, index: number): Promise<SrsAudioAsset | undefined> {
   const assets = await getAudioAssetsByNote(noteId);
-  return assets.find((a) => a.fieldId === fieldId);
+  return assets.find((a) => a.fieldId === fieldId && (a.index ?? 0) === index);
 }
 
-async function loadCachedImage(noteId: string, fieldId: string): Promise<SrsImageAsset | undefined> {
+async function loadCachedImage(noteId: string, fieldId: string, index: number): Promise<SrsImageAsset | undefined> {
   const assets = await getImageAssetsByNote(noteId);
-  return assets.find((a) => a.fieldId === fieldId);
+  return assets.find((a) => a.fieldId === fieldId && (a.index ?? 0) === index);
 }
 
 /**
@@ -86,10 +90,10 @@ export async function loadNoteAssets(
   ]);
 
   for (const asset of audioAssets) {
-    audioMap.set(audioAssetId(note.id, asset.fieldId, asset.source), asset);
+    audioMap.set(audioAssetId(note.id, asset.fieldId, asset.source, asset.index ?? 0), asset);
   }
 
   for (const asset of imageAssets) {
-    imageMap.set(imageAssetId(note.id, asset.fieldId), asset);
+    imageMap.set(imageAssetId(note.id, asset.fieldId, asset.index ?? 0), asset);
   }
 }

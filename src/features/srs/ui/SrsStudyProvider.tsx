@@ -20,6 +20,7 @@ import { selectNextReview } from '@/features/srs/logic/selectNextReview';
 import { applyReview, resetCard, resetComponent, studyAgain } from '@/features/srs/logic/reviewEngine';
 import { getSrsStats, type SrsDeckStats } from '@/features/srs/services/getSrsStats';
 import { resolveReviewSurface } from '@/features/srs/logic/resolveReviewSurface';
+import { audioAssetId, imageAssetId, mediaFieldValues } from '@/features/srs/lib/helpers';
 import { getSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -54,7 +55,7 @@ interface SrsStudyContextValue {
   readonly resetCurrentCard: () => Promise<void>;
   readonly endSession: () => void;
   readonly updateCurrentNote: (note: SrsNote, deckId?: string) => Promise<void>;
-  readonly previewCurrentNote: (note: SrsNote) => void;
+  readonly previewCurrentNote: (note: SrsNote, assets?: { audio?: SrsAudioAsset[]; image?: SrsImageAsset[] }) => void;
   readonly deleteCurrentCard: () => Promise<void>;
   readonly dismissError: () => void;
 }
@@ -78,8 +79,9 @@ function blobUrlsToRevoke(stimulus: SrsStimulus | null): string[] {
   if (!stimulus) return [];
   const urls: string[] = [];
   for (const v of Object.values(stimulus.payload)) {
-    if ((v.kind === 'audio' || v.kind === 'image') && typeof v.value === 'string' && v.value.startsWith('blob:')) {
-      urls.push(v.value);
+    if (v.kind !== 'audio' && v.kind !== 'image') continue;
+    for (const item of mediaFieldValues(v)) {
+      if (item.startsWith('blob:')) urls.push(item);
     }
   }
   return urls;
@@ -290,8 +292,10 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
   );
 
   const previewCurrentNote = useCallback(
-    (note: SrsNote) => {
+    (note: SrsNote, assets?: { audio?: SrsAudioAsset[]; image?: SrsImageAsset[] }) => {
       if (!session) return;
+      for (const a of assets?.audio ?? []) audioCache.set(audioAssetId(note.id, a.fieldId, a.source, a.index ?? 0), a);
+      for (const a of assets?.image ?? []) imageCache.set(imageAssetId(note.id, a.fieldId, a.index ?? 0), a);
       const surface = stimulusStale(session, note)
         ? resolveReviewSurface(note, session.notetype, session.componentType, audioCache, imageCache)
         : null;

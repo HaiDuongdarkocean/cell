@@ -13,9 +13,9 @@ function buildAssetId(noteId: string, fieldId: string): string {
 }
 
 /** Find a cached image asset for the given note and field. */
-export async function getCachedImageAsset(noteId: string, fieldId: string): Promise<SrsImageAsset | undefined> {
+export async function getCachedImageAsset(noteId: string, fieldId: string, index = 0): Promise<SrsImageAsset | undefined> {
   const assets = await getImageAssetsByNote(noteId);
-  const asset = assets.find((a) => a.fieldId === fieldId);
+  const asset = assets.find((a) => a.fieldId === fieldId && (a.index ?? 0) === index);
   if (!asset) return undefined;
   await touchImageAsset(asset.id);
   return asset;
@@ -30,6 +30,7 @@ export async function storeImageAsset(
   fieldId: string,
   dataUrl: string,
   mimeType?: string,
+  index = 0,
 ): Promise<SrsImageAsset> {
   if (!isDataUrl(dataUrl)) {
     throw new Error('External image URLs are not accepted; provide a data URL or base64 payload');
@@ -37,11 +38,12 @@ export async function storeImageAsset(
 
   const bytes = dataUrlToArrayBuffer(dataUrl);
   const detectedMime = mimeType ?? dataUrl.slice(5, dataUrl.indexOf(';')) ?? 'image/png';
-  const existing = await findExisting(noteId, fieldId);
+  const existing = await findExisting(noteId, fieldId, index);
   const asset: SrsImageAsset = {
     id: existing?.id ?? buildAssetId(noteId, fieldId),
     noteId,
     fieldId,
+    index: index || undefined,
     mimeType: detectedMime,
     bytes,
     size: bytes.byteLength,
@@ -53,7 +55,7 @@ export async function storeImageAsset(
   return asset;
 }
 
-async function findExisting(noteId: string, fieldId: string): Promise<SrsImageAsset | undefined> {
+async function findExisting(noteId: string, fieldId: string, index: number): Promise<SrsImageAsset | undefined> {
   const assets = await getImageAssetsByNote(noteId);
-  return assets.find((a) => a.fieldId === fieldId);
+  return assets.find((a) => a.fieldId === fieldId && (a.index ?? 0) === index);
 }

@@ -42,7 +42,7 @@ export async function addNoteAndCard(
     notetypeId: notetype.id,
     deckId,
     targetWord,
-    fields,
+    fields: Object.fromEntries(Object.entries(fields).filter(([k]) => k !== 'ipa')),
     tags,
     createdAt: now.getTime(),
   };

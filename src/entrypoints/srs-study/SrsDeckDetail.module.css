@@ -129,11 +129,6 @@
   font-weight: var(--font-weight-bold);
 }
 
-.noteIpa {
-  color: var(--color-text-accent);
-  font-size: var(--font-size-sm);
-}
-
 .noteSentence {
   color: var(--color-text-secondary);
   overflow: hidden;

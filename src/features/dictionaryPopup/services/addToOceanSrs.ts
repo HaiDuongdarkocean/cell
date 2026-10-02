@@ -10,7 +10,7 @@ import type { MessageResponse, SrsAddNotePayload, SrsAddNoteResult } from '@/ent
 /**
  * Build a default Ocean SRS field record from a popup prefill.
  *
- * V1 assumes the default notetype field ids (target, ipa, sentence, def,
+ * V1 assumes the default notetype field ids (target, sentence, def,
  * wordAudio, sentAudio, image, examples, notes, translation, context).
  * Extra fields are included so the background can pick whatever the active
  * notetype defines.
@@ -19,7 +19,6 @@ export function buildSrsFieldsFromPrefill(prefill: PopupCardCreatorPrefill): Rec
   const fields: Record<string, SrsFieldValue> = {};
 
   fields['target'] = { kind: 'text', value: prefill.term };
-  if (prefill.reading) fields['ipa'] = { kind: 'text', value: prefill.reading };
   if (prefill.contextSentence) {
     fields['sentence'] = { kind: 'text', value: prefill.contextSentence };
     fields['context'] = { kind: 'context', value: prefill.contextSentence };
@@ -34,13 +33,13 @@ export function buildSrsFieldsFromPrefill(prefill: PopupCardCreatorPrefill): Rec
     };
   }
   if (prefill.wordAudioUrls?.length) {
-    fields['wordAudio'] = { kind: 'audio', value: prefill.wordAudioUrls[0]!, source: 'pronunciation' };
+    fields['wordAudio'] = { kind: 'audio', value: prefill.wordAudioUrls, source: 'pronunciation' };
   }
   if (prefill.sentenceAudioUrls?.length) {
-    fields['sentAudio'] = { kind: 'audio', value: prefill.sentenceAudioUrls[0]!, source: 'tts' };
+    fields['sentAudio'] = { kind: 'audio', value: prefill.sentenceAudioUrls, source: 'tts' };
   }
   if (prefill.imageUrls?.length) {
-    fields['image'] = { kind: 'image', value: prefill.imageUrls[0]! };
+    fields['image'] = { kind: 'image', value: prefill.imageUrls };
   }
   if (prefill.translation) fields['translation'] = { kind: 'translation', value: prefill.translation };
   fields['notes'] = { kind: 'text', value: '' };

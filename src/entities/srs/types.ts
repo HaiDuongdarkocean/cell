@@ -129,10 +129,10 @@ export type SrsFieldValue =
   | { readonly kind: 'translation'; readonly value: string }
   | {
       readonly kind: 'audio';
-      readonly value: string;
+      readonly value: string | readonly string[];
       readonly source: 'local' | 'pronunciation' | 'tts';
     }
-  | { readonly kind: 'image'; readonly value: string }
+  | { readonly kind: 'image'; readonly value: string | readonly string[] }
   | { readonly kind: 'list'; readonly value: readonly string[] }
   | { readonly kind: 'context'; readonly value: string };
 
@@ -223,6 +223,7 @@ export interface SrsAudioAsset {
   readonly id: string; // hash(noteId + fieldId + source)
   readonly noteId: string;
   readonly fieldId: string;
+  readonly index?: number; // position within a multi-media field; absent = 0
   readonly source: 'local' | 'pronunciation' | 'tts';
   readonly mimeType: string;
   readonly bytes: ArrayBuffer;
@@ -235,6 +236,7 @@ export interface SrsImageAsset {
   readonly id: string; // hash(noteId + fieldId)
   readonly noteId: string;
   readonly fieldId: string;
+  readonly index?: number; // position within a multi-media field; absent = 0
   readonly mimeType: string;
   readonly bytes: ArrayBuffer;
   readonly size: number;

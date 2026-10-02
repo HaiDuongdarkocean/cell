@@ -153,7 +153,7 @@ describe('srs helpers', () => {
       expect(fields.def).toEqual({ kind: 'text', value: 'to leave behind' });
       expect(fields.wordAudio).toEqual({
         kind: 'audio',
-        value: 'https://example.com/abandon.mp3',
+        value: ['https://example.com/abandon.mp3'],
         source: 'pronunciation',
       });
       expect(fields.translation).toEqual({ kind: 'translation', value: 'từ bỏ' });

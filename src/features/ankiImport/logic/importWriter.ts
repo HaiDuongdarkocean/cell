@@ -327,31 +327,44 @@ export async function importNormalized(input: ImportRunInput): Promise<ImportRep
     const cardId = `anki-${collectionId}-c${card.id}`;
     const built = buildNoteFields(note, ntById.get(ntId)!, mapping);
 
-    // media: resolve each request → store asset; miss unsets the field
+    // media: resolve each request → store asset at its item index; misses drop only that item
     const fields: Record<string, SrsFieldValue> = { ...built.fields };
     if (!input.skipMedia) {
+      const reqsByField = new Map<string, { fieldId: string; filename: string; kind: 'audio' | 'image' }[]>();
       for (const req of built.mediaRequests) {
-        const media = await data.media.resolve(req.filename);
-        if (!media) {
-          report.mediaMisses += 1;
-          delete fields[req.fieldId];
-          continue;
+        const list = reqsByField.get(req.fieldId) ?? [];
+        list.push(req);
+        reqsByField.set(req.fieldId, list);
+      }
+      for (const [fieldId, reqs] of reqsByField) {
+        const hits: string[] = [];
+        for (const req of reqs) {
+          const media = await data.media.resolve(req.filename);
+          if (!media) { report.mediaMisses += 1; continue; }
+          report.mediaHits += 1;
+          const index = hits.length;
+          if (req.kind === 'audio') {
+            await putAudioAsset({
+              id: audioAssetId(noteId, fieldId, 'local', index),
+              noteId, fieldId, index: index || undefined, source: 'local',
+              mimeType: media.mimeType, bytes: media.bytes,
+              size: media.bytes.byteLength, lastAccessed: now.getTime(), createdAt: now.getTime(),
+            });
+          } else {
+            await putImageAsset({
+              id: imageAssetId(noteId, fieldId, index),
+              noteId, fieldId, index: index || undefined,
+              mimeType: media.mimeType, bytes: media.bytes,
+              size: media.bytes.byteLength, lastAccessed: now.getTime(), createdAt: now.getTime(),
+            });
+          }
+          hits.push(req.filename);
         }
-        report.mediaHits += 1;
-        if (req.kind === 'audio') {
-          await putAudioAsset({
-            id: audioAssetId(noteId, req.fieldId, 'local'),
-            noteId, fieldId: req.fieldId, source: 'local',
-            mimeType: media.mimeType, bytes: media.bytes,
-            size: media.bytes.byteLength, lastAccessed: now.getTime(), createdAt: now.getTime(),
-          });
-        } else {
-          await putImageAsset({
-            id: imageAssetId(noteId, req.fieldId),
-            noteId, fieldId: req.fieldId,
-            mimeType: media.mimeType, bytes: media.bytes,
-            size: media.bytes.byteLength, lastAccessed: now.getTime(), createdAt: now.getTime(),
-          });
+        const prev = fields[fieldId];
+        if (hits.length === 0) {
+          delete fields[fieldId];
+        } else if (prev && (prev.kind === 'audio' || prev.kind === 'image')) {
+          fields[fieldId] = { ...prev, value: hits };
         }
       }
     }

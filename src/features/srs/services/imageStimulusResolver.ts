@@ -25,10 +25,11 @@ export async function resolveImageDataUrl(
   noteId: string,
   fieldId: string,
   dataUrl: string,
+  index = 0,
 ): Promise<SrsImageAsset | undefined> {
-  const cached = await getCachedImageAsset(noteId, fieldId);
+  const cached = await getCachedImageAsset(noteId, fieldId, index);
   if (cached) return cached;
-  return storeImageAsset(noteId, fieldId, dataUrl);
+  return storeImageAsset(noteId, fieldId, dataUrl, undefined, index);
 }
 
 /**
@@ -40,8 +41,9 @@ export async function cacheImageBytes(
   fieldId: string,
   bytes: ArrayBuffer,
   mimeType: string,
+  index = 0,
 ): Promise<SrsImageAsset> {
   // Store as a data URL so imageAssetCache accepts it; this avoids an external URL.
   const base64 = btoa(String.fromCharCode(...new Uint8Array(bytes)));
-  return storeImageAsset(noteId, fieldId, `data:${mimeType};base64,${base64}`, mimeType);
+  return storeImageAsset(noteId, fieldId, `data:${mimeType};base64,${base64}`, mimeType, index);
 }

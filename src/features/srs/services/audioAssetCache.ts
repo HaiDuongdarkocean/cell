@@ -26,9 +26,9 @@ function buildAssetId(noteId: string, fieldId: string, source: SrsAudioAsset['so
 }
 
 /** Find a cached audio asset for the given note and field. */
-export async function getCachedAudioAsset(noteId: string, fieldId: string): Promise<SrsAudioAsset | undefined> {
+export async function getCachedAudioAsset(noteId: string, fieldId: string, index = 0): Promise<SrsAudioAsset | undefined> {
   const assets = await getAudioAssetsByNote(noteId);
-  const asset = assets.find((a) => a.fieldId === fieldId);
+  const asset = assets.find((a) => a.fieldId === fieldId && (a.index ?? 0) === index);
   if (!asset) return undefined;
   await touchAudioAsset(asset.id);
   return asset;
@@ -41,12 +41,14 @@ export async function storeAudioAsset(
   bytes: ArrayBuffer,
   mimeType: string,
   source: SrsAudioAsset['source'],
+  index = 0,
 ): Promise<SrsAudioAsset> {
-  const existing = await findExisting(noteId, fieldId, source);
+  const existing = await findExisting(noteId, fieldId, source, index);
   const asset: SrsAudioAsset = {
     id: existing?.id ?? buildAssetId(noteId, fieldId, source),
     noteId,
     fieldId,
+    index: index || undefined,
     source,
     mimeType,
     bytes,
@@ -63,9 +65,10 @@ async function findExisting(
   noteId: string,
   fieldId: string,
   source: SrsAudioAsset['source'],
+  index: number,
 ): Promise<SrsAudioAsset | undefined> {
   const assets = await getAudioAssetsByNote(noteId);
-  return assets.find((a) => a.fieldId === fieldId && a.source === source);
+  return assets.find((a) => a.fieldId === fieldId && a.source === source && (a.index ?? 0) === index);
 }
 
 /** Fetch word audio through the pronunciation fallback chain and store it. */

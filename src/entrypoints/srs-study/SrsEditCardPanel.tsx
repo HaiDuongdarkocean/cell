@@ -10,7 +10,8 @@ import { getReviewEventsByCard } from '@/features/srs/repositories/reviewEventRe
 import { FieldRow, FieldAutoGrowInput, TagInput } from '@/features/cardCreator/ui/FieldRow';
 import { splitTags } from '@/features/cardCreator/service/noteUpdate';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
-import type { SrsDeck, SrsReviewRecord } from '@/entities/srs/types';
+import type { SrsAudioAsset, SrsDeck, SrsImageAsset, SrsReviewRecord } from '@/entities/srs/types';
+import { audioAssetId, imageAssetId } from '@/features/srs/lib/helpers';
 import { componentLabel } from '@/features/srs/ui/srsLabels';
 import { persistNoteFields, storedMedia, toEditText, toFieldValue, NoteMediaField, orderedEditFields } from './srsNoteEditorShared';
 import { lookupDictionaryResources } from '@/features/cardCreator/service/dictionaryGenerate';
@@ -160,16 +161,50 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
   useEffect(() => {
     if (!note || !notetype || initializedNoteId.current !== note.id) return;
     const fields = { ...note.fields };
+    const audioAssets: SrsAudioAsset[] = [];
+    const imageAssets: SrsImageAsset[] = [];
     for (const field of notetype.fields) {
-      if (field.type === 'audio' || field.type === 'image') continue;
+      if (field.id === 'ipa') { delete fields[field.id]; continue; }
+      if (field.type === 'audio' || field.type === 'image') {
+        const files = media[field.id] ?? [];
+        if (files.length === 0) {
+          if (removedMedia.has(field.id)) delete fields[field.id];
+          continue;
+        }
+        const existing = note.fields[field.id];
+        const source = field.type === 'audio' && existing?.kind === 'audio' ? existing.source : 'local';
+        const items: string[] = [];
+        files.forEach((f, i) => {
+          items.push(f.filename);
+          const base = {
+            noteId: note.id,
+            fieldId: field.id,
+            index: i || undefined,
+            mimeType: f.mimeType,
+            bytes: f.data,
+            size: f.data.byteLength,
+            lastAccessed: Date.now(),
+            createdAt: Date.now(),
+          };
+          if (field.type === 'audio') {
+            audioAssets.push({ ...base, id: audioAssetId(note.id, field.id, source, i), source });
+          } else {
+            imageAssets.push({ ...base, id: imageAssetId(note.id, field.id, i) });
+          }
+        });
+        fields[field.id] = field.type === 'audio'
+          ? { kind: 'audio', value: items, source }
+          : { kind: 'image', value: items };
+        continue;
+      }
       const value = toFieldValue(field, texts[field.id] ?? '');
       if (value) fields[field.id] = value;
       else delete fields[field.id];
     }
     const targetWord = (texts[notetype.targetFieldId] ?? note.targetWord).trim() || note.targetWord;
     if (targetWord === note.targetWord && JSON.stringify(fields) === JSON.stringify(note.fields)) return;
-    previewCurrentNote({ ...note, targetWord, fields });
-  }, [texts, note, notetype, previewCurrentNote]);
+    previewCurrentNote({ ...note, targetWord, fields }, { audio: audioAssets, image: imageAssets });
+  }, [texts, media, removedMedia, note, notetype, previewCurrentNote]);
 
   function markDirty(): void {
     dirtyRef.current = true;

@@ -7,7 +7,7 @@ import type {
   SrsNotetype,
   SrsStimulus,
 } from '@/entities/srs/types';
-import { audioAssetId, escapeRegExp, imageAssetId, isDataUrl } from '@/features/srs/lib/helpers';
+import { audioAssetId, escapeRegExp, imageAssetId, isDataUrl, mediaFieldValues } from '@/features/srs/lib/helpers';
 import type { SrsFrontTemplate } from '@/entities/srs/types';
 
 function blobUrl(blob: Blob): string {
@@ -39,27 +39,29 @@ export function buildStimulus(
     if (!value) return null;
 
     if (value.kind === 'audio') {
-      const cached = audioCache.get(audioAssetId(note.id, fieldId, value.source));
-      if (cached) {
-        const blob = new Blob([cached.bytes], { type: cached.mimeType });
-        const url = blobUrl(blob);
-        payload[fieldId] = { kind: 'audio', value: url, source: value.source } as SrsFieldValue;
-      } else if (isDataUrl(value.value)) {
-        payload[fieldId] = value;
-      } else {
-        return null;
-      }
+      const urls: string[] = [];
+      mediaFieldValues(value).forEach((v, i) => {
+        const cached = audioCache.get(audioAssetId(note.id, fieldId, value.source, i));
+        if (cached) {
+          urls.push(blobUrl(new Blob([cached.bytes], { type: cached.mimeType })));
+        } else if (isDataUrl(v) || /^https?:|^blob:/.test(v)) {
+          urls.push(v);
+        }
+      });
+      if (urls.length === 0) return null;
+      payload[fieldId] = { kind: 'audio', value: urls, source: value.source };
     } else if (value.kind === 'image') {
-      const cached = imageCache.get(imageAssetId(note.id, fieldId));
-      if (cached) {
-        const blob = new Blob([cached.bytes], { type: cached.mimeType });
-        const url = blobUrl(blob);
-        payload[fieldId] = { kind: 'image', value: url } as SrsFieldValue;
-      } else if (isDataUrl(value.value)) {
-        payload[fieldId] = value;
-      } else {
-        return null;
-      }
+      const urls: string[] = [];
+      mediaFieldValues(value).forEach((v, i) => {
+        const cached = imageCache.get(imageAssetId(note.id, fieldId, i));
+        if (cached) {
+          urls.push(blobUrl(new Blob([cached.bytes], { type: cached.mimeType })));
+        } else if (isDataUrl(v) || /^https?:|^blob:/.test(v)) {
+          urls.push(v);
+        }
+      });
+      if (urls.length === 0) return null;
+      payload[fieldId] = { kind: 'image', value: urls };
     } else if (template.maskTarget && template.maskFieldId === fieldId && value.kind === 'text') {
       payload[fieldId] = { kind: 'text', value: maskSentence(value.value, note.targetWord) };
     } else {

@@ -63,15 +63,36 @@ describe('buildSrsFields', () => {
     const fields = buildSrsFields(NOTETYPE, draft);
     expect(fields['wordAudio']).toEqual({
       kind: 'audio',
-      value: 'https://example.com/w.mp3',
+      value: ['https://example.com/w.mp3'],
       source: 'pronunciation',
     });
     const sent = fields['sentAudio'];
     expect(sent?.kind).toBe('audio');
     if (sent?.kind === 'audio') {
-      expect(sent.value.startsWith('data:audio/mpeg;base64,')).toBe(true);
+      expect(Array.isArray(sent.value) && sent.value[0]?.startsWith('data:audio/mpeg;base64,')).toBe(true);
       expect(sent.source).toBe('local');
     }
+  });
+
+  it('serializes every media item, not just the first', () => {
+    const draft = {
+      ...createEmptyDraft('', '').fields,
+      targetWord: 'w',
+      wordAudios: [audioFile('https://a/1.mp3'), audioFile('https://a/2.mp3')],
+      images: [
+        { kind: 'image', filename: 'a.png', mimeType: 'image/png', data: new ArrayBuffer(2) },
+        { kind: 'image', filename: 'b.png', mimeType: 'image/png', data: new ArrayBuffer(2) },
+      ] as MediaFile[],
+    };
+    const fields = buildSrsFields(NOTETYPE, draft);
+    expect(fields['wordAudio']).toEqual({
+      kind: 'audio',
+      value: ['https://a/1.mp3', 'https://a/2.mp3'],
+      source: 'pronunciation',
+    });
+    const image = fields['image'];
+    expect(image?.kind).toBe('image');
+    if (image?.kind === 'image') expect(image.value).toHaveLength(2);
   });
 
   it('omits empty fields', () => {

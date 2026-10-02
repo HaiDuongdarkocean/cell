@@ -1,4 +1,5 @@
 import type { SrsFieldValue } from '@/entities/srs/types';
+import { mediaFieldValues } from '@/features/srs';
 import type {
   FieldMapping,
   FieldRole,
@@ -81,7 +82,8 @@ export function guessFieldMapping(
     }
     if (hasImg && mediaOnly) { assign(f.name, 'image'); continue; }
     if (/translation|dịch/.test(name)) { assign(f.name, 'translation'); continue; }
-    if (/ipa|kana|reading|phonetic|furigana/.test(name)) { assign(f.name, 'context'); continue; }
+    if (/ipa/.test(name)) { assign(f.name, 'skip'); continue; }
+    if (/kana|reading|phonetic|furigana/.test(name)) { assign(f.name, 'context'); continue; }
     if (/audio|sound/.test(name) && mediaOnly) {
       assign(f.name, /sent|câu|phrase/.test(name) ? 'sentenceAudio' : 'audio');
       continue;
@@ -161,12 +163,14 @@ export function buildNoteFields(
   const mediaRequests: { fieldId: string; filename: string; kind: 'audio' | 'image' }[] = [];
 
   const putMedia = (ids: readonly string[], filename: string, kind: 'audio' | 'image'): void => {
-    const id = ids.find((i) => fields[i] === undefined);
+    const id = ids.find((i) => fields[i] === undefined || fields[i]!.kind === kind);
     if (!id) return;
     mediaRequests.push({ fieldId: id, filename, kind });
+    const prev = fields[id];
+    const list = prev && (prev.kind === 'audio' || prev.kind === 'image') ? mediaFieldValues(prev) : [];
     fields[id] = kind === 'audio'
-      ? { kind: 'audio', value: filename, source: 'local' }
-      : { kind: 'image', value: filename };
+      ? { kind: 'audio', value: [...list, filename], source: 'local' }
+      : { kind: 'image', value: [...list, filename] };
   };
 
   const putText = (id: string, text: string, kind: 'text' | 'translation' | 'context'): void => {
@@ -185,11 +189,13 @@ export function buildNoteFields(
 
     if (role === 'audio' || role === 'sentenceAudio') {
       const id = ROLE_FIELD_ID[role];
-      if (refs.sounds[0]) putMedia([id, id === 'wordAudio' ? 'sentAudio' : 'wordAudio'], refs.sounds[0], 'audio');
+      for (const s of refs.sounds) {
+        putMedia([id, id === 'wordAudio' ? 'sentAudio' : 'wordAudio'], s, 'audio');
+      }
       continue;
     }
     if (role === 'image') {
-      if (refs.images[0]) putMedia(['image'], refs.images[0], 'image');
+      for (const img of refs.images) putMedia(['image'], img, 'image');
       continue;
     }
 
@@ -200,11 +206,13 @@ export function buildNoteFields(
       if (role === 'target' && fields[id]) putText('notes', text, 'text');
       else putText(id, text, kind);
     }
-    if (refs.sounds[0]) {
+    {
       const id = role === 'sentence' ? 'sentAudio' : 'wordAudio';
-      putMedia([id, id === 'wordAudio' ? 'sentAudio' : 'wordAudio'], refs.sounds[0], 'audio');
+      for (const s of refs.sounds) {
+        putMedia([id, id === 'wordAudio' ? 'sentAudio' : 'wordAudio'], s, 'audio');
+      }
     }
-    if (refs.images[0]) putMedia(['image'], refs.images[0], 'image');
+    for (const img of refs.images) putMedia(['image'], img, 'image');
   }
 
   return { fields, mediaRequests };

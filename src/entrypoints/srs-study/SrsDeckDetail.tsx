@@ -30,7 +30,7 @@ const MARK_STATUSES: readonly WordStatus[] = ['unknown', 'known', 'tracking', 'l
 function fieldText(value: SrsFieldValue | undefined): string {
   if (!value) return '';
   if (value.kind === 'list') return value.value.join(', ');
-  return value.value;
+  return typeof value.value === 'string' ? value.value : value.value.join(', ');
 }
 
 function fieldByHint(note: SrsNote, notetype: SrsNotetype | undefined, hint: string): string {
@@ -312,7 +312,6 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', onBack, onCha
           visibleNotes.map((note, i) => {
             const nt = notetypes.get(note.notetypeId);
             const card = cards.find((c) => c.noteId === note.id);
-            const ipa = fieldByHint(note, nt, 'ipa');
             const sentence = fieldByHint(note, nt, 'sentence');
             const isSel = selected.has(note.id);
             return (
@@ -334,7 +333,6 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', onBack, onCha
                 >
                   <span className={styles.noteLine}>
                     <span className={styles.noteWord}>{note.targetWord}</span>
-                    {ipa && <span className={styles.noteIpa}>{ipa}</span>}
                   </span>
                   {sentence && <span className={styles.noteSentence}>{sentence}</span>}
                 </button>

@@ -119,27 +119,26 @@ export function buildSrsFields(
 
   const wordAudioField = byId(fields, ['wordAudio']) ?? byType(fields, 'audio');
   const sentAudioField = byId(fields, ['sentAudio']) ?? byType(fields, 'audio', [wordAudioField?.id ?? '']);
-  const wordAudio = draftFields.wordAudios[0];
-  if (wordAudioField && wordAudio) {
+  if (wordAudioField && draftFields.wordAudios.length) {
+    const items = draftFields.wordAudios;
     out[wordAudioField.id] = {
       kind: 'audio',
-      value: mediaValue(wordAudio),
-      source: wordAudio.sourceUrl ? 'pronunciation' : 'local',
+      value: items.map(mediaValue),
+      source: items.every((m) => m.sourceUrl) ? 'pronunciation' : 'local',
     };
   }
-  const sentAudio = draftFields.sentenceAudios[0];
-  if (sentAudioField && sentAudio) {
+  if (sentAudioField && draftFields.sentenceAudios.length) {
+    const items = draftFields.sentenceAudios;
     out[sentAudioField.id] = {
       kind: 'audio',
-      value: mediaValue(sentAudio),
-      source: sentAudio.sourceUrl ? 'tts' : 'local',
+      value: items.map(mediaValue),
+      source: items.every((m) => m.sourceUrl) ? 'tts' : 'local',
     };
   }
 
   const imageField = byId(fields, ['image']) ?? byType(fields, 'image');
-  const image = draftFields.images[0];
-  if (imageField && image) {
-    out[imageField.id] = { kind: 'image', value: mediaValue(image) };
+  if (imageField && draftFields.images.length) {
+    out[imageField.id] = { kind: 'image', value: draftFields.images.map(mediaValue) };
   }
 
   return out;

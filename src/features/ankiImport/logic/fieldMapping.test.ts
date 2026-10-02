@@ -123,8 +123,8 @@ describe('buildNoteFields (system notetype)', () => {
     expect(fields['target']).toEqual({ kind: 'text', value: '捨てる' });
     expect(fields['def']).toEqual({ kind: 'text', value: 'to throw away' });
     expect(fields['sentence']).toEqual({ kind: 'text', value: '要らないものは捨てる。' });
-    expect(fields['wordAudio']).toEqual({ kind: 'audio', value: 'w.mp3', source: 'local' });
-    expect(fields['image']).toEqual({ kind: 'image', value: 'p.png' });
+    expect(fields['wordAudio']).toEqual({ kind: 'audio', value: ['w.mp3'], source: 'local' });
+    expect(fields['image']).toEqual({ kind: 'image', value: ['p.png'] });
     expect(mediaRequests).toEqual([
       { fieldId: 'wordAudio', filename: 'w.mp3', kind: 'audio' },
       { fieldId: 'image', filename: 'p.png', kind: 'image' },
@@ -141,9 +141,22 @@ describe('buildNoteFields (system notetype)', () => {
     const note: NormalizedAnkiNote = { ...NOTES[0]!, fields: ['猫', 'def <img src="x.png">', 'câu [sound:s.mp3]', '', '', ''] };
     const { fields, mediaRequests } = buildNoteFields(note, NT, mapping);
     expect(fields['def']).toEqual({ kind: 'text', value: 'def' });
-    expect(fields['image']).toEqual({ kind: 'image', value: 'x.png' });
-    expect(fields['sentAudio']).toEqual({ kind: 'audio', value: 's.mp3', source: 'local' });
+    expect(fields['image']).toEqual({ kind: 'image', value: ['x.png'] });
+    expect(fields['sentAudio']).toEqual({ kind: 'audio', value: ['s.mp3'], source: 'local' });
     expect(mediaRequests.map((r) => r.fieldId)).toEqual(['image', 'sentAudio']);
+  });
+
+  it('multiple sound/img refs in one field append to the same media field', () => {
+    const note: NormalizedAnkiNote = { ...NOTES[0]!, fields: ['猫', '', '', '[sound:a.mp3][sound:b.mp3]', '<img src="i1.png"><img src="i2.png">', ''] };
+    const { fields, mediaRequests } = buildNoteFields(note, NT, mapping);
+    expect(fields['wordAudio']).toEqual({ kind: 'audio', value: ['a.mp3', 'b.mp3'], source: 'local' });
+    expect(fields['image']).toEqual({ kind: 'image', value: ['i1.png', 'i2.png'] });
+    expect(mediaRequests).toEqual([
+      { fieldId: 'wordAudio', filename: 'a.mp3', kind: 'audio' },
+      { fieldId: 'wordAudio', filename: 'b.mp3', kind: 'audio' },
+      { fieldId: 'image', filename: 'i1.png', kind: 'image' },
+      { fieldId: 'image', filename: 'i2.png', kind: 'image' },
+    ]);
   });
 
   it('two text fields sharing a role merge with a blank line', () => {

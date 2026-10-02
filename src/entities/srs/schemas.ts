@@ -48,15 +48,17 @@ const SrsTranslationFieldValueSchema = z.object({
   value: z.string(),
 });
 
+const SrsMediaValueSchema = z.union([z.string(), z.array(z.string())]);
+
 const SrsAudioFieldValueSchema = z.object({
   kind: z.literal('audio'),
-  value: z.string(),
+  value: SrsMediaValueSchema,
   source: z.enum(['local', 'pronunciation', 'tts']),
 });
 
 const SrsImageFieldValueSchema = z.object({
   kind: z.literal('image'),
-  value: z.string(),
+  value: SrsMediaValueSchema,
 });
 
 const SrsListFieldValueSchema = z.object({
@@ -251,6 +253,7 @@ export const SrsAudioAssetSchema = z.object({
   id: z.string(),
   noteId: z.string(),
   fieldId: z.string(),
+  index: z.number().int().optional(),
   source: z.enum(['local', 'pronunciation', 'tts']),
   mimeType: z.string(),
   bytes: z.instanceof(ArrayBuffer),
@@ -263,6 +266,7 @@ export const SrsImageAssetSchema = z.object({
   id: z.string(),
   noteId: z.string(),
   fieldId: z.string(),
+  index: z.number().int().optional(),
   mimeType: z.string(),
   bytes: z.instanceof(ArrayBuffer),
   size: z.number().int().min(0),
