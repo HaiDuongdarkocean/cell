@@ -234,6 +234,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
               onClose={() => { setEditing(false); }}
               masked={!showAnswer}
               onReveal={handleFlip}
+              embedded
             />
           </aside>
         )}

@@ -42,10 +42,11 @@ function formatEventMeta(events: readonly SrsReviewRecord[], judgment: 'forget' 
   return `${componentLabel(last.componentType)} ${new Date(last.answeredAt).toLocaleDateString()}`;
 }
 
-export function SrsEditCardPanel({ onClose, masked = false, onReveal }: {
+export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded = false }: {
   readonly onClose: () => void;
   readonly masked?: boolean;
   readonly onReveal?: () => void;
+  readonly embedded?: boolean;
 }): React.JSX.Element | null {
   const {
     session,
@@ -286,7 +287,7 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal }: {
   }
 
   return (
-    <Box className={styles.panel}>
+    <Box className={embedded ? `${styles.panel} ${styles.embedded}` : styles.panel}>
       <Box className={styles.header}>
         <Button
           variant="ghost"
