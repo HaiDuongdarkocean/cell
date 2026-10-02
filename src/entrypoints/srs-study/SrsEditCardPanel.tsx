@@ -383,8 +383,6 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
         </Box>
       </Box>
 
-      <Heading level={3} size={4} className={styles.sectionTitle}>{t('cardCreator.section.fields')}</Heading>
-
       {orderedEditFields(notetype.fields).map((field) => (
         <FieldRow
           key={field.id}

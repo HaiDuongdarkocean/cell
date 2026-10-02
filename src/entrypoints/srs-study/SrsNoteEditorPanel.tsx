@@ -123,8 +123,6 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
         )}
       </Box>
 
-      <Heading level={3} size={4} className={styles.sectionTitle}>{t('cardCreator.section.fields')}</Heading>
-
       {orderedEditFields(notetype.fields).map((field) => (
         <FieldRow key={field.id} label={field.name} dataId={`srs-edit-${field.id}`}>
           {field.type === 'audio' || field.type === 'image' ? (

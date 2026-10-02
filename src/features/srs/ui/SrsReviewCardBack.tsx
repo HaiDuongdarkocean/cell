@@ -197,17 +197,21 @@ export function SrsReviewCardBack({
         )}
 
         {hasTranslation && (
-          <button
-            type="button"
-            className={styles.translationHint}
-            aria-expanded={translationRevealed}
-            onClick={() => { setTranslationRevealed((v) => !v); }}
-          >
-            <span className={translationRevealed ? styles.swapHidden : ''}>{t('srs.review.sentenceTranslation')}</span>
-            <span className={`${styles.translation} ${translationRevealed ? '' : styles.swapHidden}`}>
-              {fieldText(note.fields.translation)}
-            </span>
-          </button>
+          <Box className={styles.translationBox}>
+            <button
+              type="button"
+              className={styles.translationHint}
+              aria-expanded={translationRevealed}
+              onClick={() => { setTranslationRevealed((v) => !v); }}
+            >
+              {t('srs.review.sentenceTranslation')}
+            </button>
+            <div className={`${styles.translationReveal} ${translationRevealed ? styles.translationRevealOpen : ''}`}>
+              <div className={styles.translationClip}>
+                <Text className={styles.translation}>{fieldText(note.fields.translation)}</Text>
+              </div>
+            </div>
+          </Box>
         )}
       </div>
 

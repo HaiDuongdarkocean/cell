@@ -317,12 +317,18 @@
   background: var(--color-primary-hover);
 }
 
+.translationBox {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
 .translationHint {
   border: none;
   background: none;
   padding: 0;
   width: 100%;
-  display: grid;
   font: inherit;
   font-size: var(--font-size-md);
   color: var(--color-text-secondary);
@@ -330,18 +336,27 @@
   border-radius: var(--radius-md);
 }
 
-.translationHint > * {
-  grid-area: 1 / 1;
-  align-self: center;
-  min-width: 0;
-}
-
-.swapHidden {
-  visibility: hidden;
-}
-
 .translationHint:focus-visible {
   outline: var(--border-width-hairline) solid var(--color-border-focus);
+}
+
+.translationReveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--duration-normal) var(--ease-out),
+    visibility var(--duration-normal);
+}
+
+.translationRevealOpen {
+  grid-template-rows: 1fr;
+  visibility: visible;
+}
+
+.translationClip {
+  overflow: hidden;
+  min-height: 0;
 }
 
 .translation {

@@ -93,14 +93,6 @@
   text-align: center;
 }
 
-.sectionTitle {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wider);
-}
-
 .fileInput {
   display: none;
 }
