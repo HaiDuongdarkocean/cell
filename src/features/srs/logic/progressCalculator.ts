@@ -10,17 +10,17 @@ export function penalty(progress: number, constants: SrsProgressConstants): numb
   return Math.max(5, Math.floor(constants.forgetPenaltyBase - (progress * constants.forgetPenaltyStep)));
 }
 
-/** Calculate the new acquisition progress for a component after a review. */
+/** Calculate the new acquisition progress for a component after a review. `inputCorrect: undefined` means the variant had no input to grade. */
 export function calculateProgress(
   component: SrsMemoryComponent,
   judgment: ReviewJudgment,
-  isSpellingCorrect: boolean,
+  inputCorrect: boolean | undefined,
   config: SrsStudyConfig,
   mode: ReviewMode,
 ): number {
   if (mode === 'explore') return component.progress;
 
-  if (judgment === 'remember' && (component.type !== 'spelling' || isSpellingCorrect)) {
+  if (judgment === 'remember' && inputCorrect !== false) {
     return Math.min(100, component.progress + gain(component.progress, config.progressConstants));
   }
 

@@ -146,7 +146,7 @@ function VariantEditor({ variant, note, notetype, catalog, onSave, onDelete, onC
   };
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }} title={t('srs.variants.editVariant')} size="md">
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }} title={t('srs.variants.editVariant')} size="md" showCloseButton>
       <div className={styles.sheetBody}>
         <div className={styles.hero}>
           <VariantPreview variant={draft} note={note} notetype={notetype} />

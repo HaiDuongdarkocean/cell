@@ -81,18 +81,18 @@ const createTestCard = (config: SrsStudyConfig) =>
 describe('progressCalculator', () => {
   it('gain decreases as progress increases', () => {
     const config = makeConfig();
-    expect(calculateProgress({ type: 'meaning', progress: 0, exploreCount: 0, fsrsState: adapter.createEmpty(now), reviewCount: 0 } as SrsMemoryComponent, 'remember', false, config, 'normal')).toBe(20);
-    expect(calculateProgress({ type: 'meaning', progress: 50, exploreCount: 0, fsrsState: adapter.createEmpty(now), reviewCount: 0 } as SrsMemoryComponent, 'remember', false, config, 'normal')).toBe(60);
+    expect(calculateProgress({ type: 'meaning', progress: 0, exploreCount: 0, fsrsState: adapter.createEmpty(now), reviewCount: 0 } as SrsMemoryComponent, 'remember', undefined, config, 'normal')).toBe(20);
+    expect(calculateProgress({ type: 'meaning', progress: 50, exploreCount: 0, fsrsState: adapter.createEmpty(now), reviewCount: 0 } as SrsMemoryComponent, 'remember', undefined, config, 'normal')).toBe(60);
   });
 
   it('applies penalty on forget', () => {
     const config = makeConfig();
-    expect(calculateProgress({ type: 'meaning', progress: 50, exploreCount: 0, fsrsState: adapter.createEmpty(now), reviewCount: 0 } as SrsMemoryComponent, 'forget', false, config, 'normal')).toBe(43);
+    expect(calculateProgress({ type: 'meaning', progress: 50, exploreCount: 0, fsrsState: adapter.createEmpty(now), reviewCount: 0 } as SrsMemoryComponent, 'forget', undefined, config, 'normal')).toBe(43);
   });
 
   it('does not change progress in explore mode', () => {
     const config = makeConfig();
-    expect(calculateProgress({ type: 'meaning', progress: 10, exploreCount: 0, fsrsState: adapter.createEmpty(now), reviewCount: 0 } as SrsMemoryComponent, 'remember', false, config, 'explore')).toBe(10);
+    expect(calculateProgress({ type: 'meaning', progress: 10, exploreCount: 0, fsrsState: adapter.createEmpty(now), reviewCount: 0 } as SrsMemoryComponent, 'remember', undefined, config, 'explore')).toBe(10);
   });
 });
 

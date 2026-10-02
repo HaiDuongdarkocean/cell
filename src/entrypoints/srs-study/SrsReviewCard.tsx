@@ -95,7 +95,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
   }
 
   function handleSubmit(judgment: 'forget' | 'remember'): void {
-    void submit(judgment, hasInput ? typedInput : undefined);
+    void submit(judgment, hasInput ? typedInput : undefined, effectiveToggles);
   }
 
   function handleScopeChange(scope: VariantScopeToggle): void {

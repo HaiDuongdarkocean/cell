@@ -81,7 +81,7 @@ export function applyReview(
       ? normalizeSpelling(typedInput) === normalizeSpelling(expectedText)
       : undefined;
 
-  const newProgress = calculateProgress(comp, judgment, isSpellingCorrect ?? false, config, mode);
+  const newProgress = calculateProgress(comp, judgment, isSpellingCorrect, config, mode);
 
   const newFsrsState =
     mode === 'explore'
