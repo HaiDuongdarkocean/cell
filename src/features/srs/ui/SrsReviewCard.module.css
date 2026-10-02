@@ -50,11 +50,25 @@
   transition: width var(--duration-slow) var(--ease-out);
 }
 
-.editSection::before {
-  content: '';
+.editDivider {
   flex: 0 0 var(--space-0-5);
   margin: var(--space-4) var(--space-5);
   background: var(--color-border);
+  border-radius: var(--radius-full);
+  cursor: col-resize;
+  touch-action: none;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.editDivider:hover,
+.editDivider:focus-visible,
+.editSectionResizing .editDivider {
+  background: var(--color-primary);
+  outline: none;
+}
+
+.editSectionResizing {
+  transition: none;
 }
 
 .editSectionOpen {
@@ -83,7 +97,7 @@
     transition: transform var(--duration-slow) var(--ease-out);
   }
 
-  .editSection::before {
+  .editDivider {
     display: none;
   }
 

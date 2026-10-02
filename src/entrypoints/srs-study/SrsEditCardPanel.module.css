@@ -14,7 +14,8 @@
 }
 
 .embedded {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   height: 100%;
   max-height: none;
   padding: 0;

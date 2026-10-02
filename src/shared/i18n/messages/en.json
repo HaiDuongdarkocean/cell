@@ -1190,6 +1190,7 @@
   "srs.edit.maskedTitle": "Card content is hidden while you answer.",
   "srs.edit.maskedHint": "Flip the card to reveal it and edit.",
   "srs.edit.reveal": "Flip card",
+  "srs.edit.resize": "Resize editor",
   "srs.review.badgeNew": "New",
   "srs.review.playSentence": "Play sentence audio",
   "srs.review.playWord": "Play word audio",

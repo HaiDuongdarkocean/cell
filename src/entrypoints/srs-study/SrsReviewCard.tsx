@@ -35,6 +35,9 @@ export function SrsReviewCard(): React.JSX.Element | null {
   const [editing, setEditing] = useState(false);
   const [editMounted, setEditMounted] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [editWidth, setEditWidth] = useState<number | null>(null);
+  const [editDragging, setEditDragging] = useState(false);
+  const editDragRef = useRef<{ startX: number; startW: number; maxW: number } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [typedInput, setTypedInput] = useState('');
   const prefs = useSrsUiPrefs();
@@ -225,11 +228,63 @@ export function SrsReviewCard(): React.JSX.Element | null {
 
         {editMounted && (
           <aside
-            className={editOpen ? `${styles.editSection} ${styles.editSectionOpen}` : styles.editSection}
+            className={[
+              styles.editSection,
+              editOpen ? styles.editSectionOpen : '',
+              editDragging ? styles.editSectionResizing : '',
+            ].filter(Boolean).join(' ')}
+            style={editOpen && editWidth !== null && !narrowEdit ? { width: editWidth } : undefined}
             onTransitionEnd={(e) => {
               if (e.target === e.currentTarget && (e.propertyName === 'width' || e.propertyName === 'transform') && !editing) setEditMounted(false);
             }}
           >
+            <div
+              className={styles.editDivider}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label={t('srs.edit.resize')}
+              aria-valuenow={editWidth ?? undefined}
+              tabIndex={0}
+              onDoubleClick={() => { setEditWidth(null); }}
+              onPointerDown={(e) => {
+                const aside = e.currentTarget.parentElement;
+                const cardEl = aside?.closest(`.${styles.card}`) ?? aside?.parentElement?.parentElement;
+                if (!aside || !cardEl) return;
+                editDragRef.current = {
+                  startX: e.clientX,
+                  startW: aside.getBoundingClientRect().width,
+                  maxW: cardEl.getBoundingClientRect().width - 48 - 42 - 320,
+                };
+                e.currentTarget.setPointerCapture(e.pointerId);
+                setEditDragging(true);
+              }}
+              onPointerMove={(e) => {
+                const d = editDragRef.current;
+                if (!d) return;
+                setEditWidth(Math.round(Math.min(Math.max(d.startW + (d.startX - e.clientX), 280), Math.max(280, d.maxW))));
+              }}
+              onPointerUp={(e) => {
+                editDragRef.current = null;
+                setEditDragging(false);
+                e.currentTarget.releasePointerCapture(e.pointerId);
+              }}
+              onPointerCancel={(e) => {
+                editDragRef.current = null;
+                setEditDragging(false);
+                e.currentTarget.releasePointerCapture(e.pointerId);
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+                e.preventDefault();
+                const aside = e.currentTarget.parentElement;
+                const cardEl = aside?.closest(`.${styles.card}`) ?? aside?.parentElement?.parentElement;
+                if (!aside || !cardEl) return;
+                const cur = editWidth ?? aside.getBoundingClientRect().width;
+                const maxW = cardEl.getBoundingClientRect().width - 48 - 42 - 320;
+                const next = cur + (e.key === 'ArrowLeft' ? 16 : -16);
+                setEditWidth(Math.round(Math.min(Math.max(next, 280), Math.max(280, maxW))));
+              }}
+            />
             <SrsEditCardPanel
               onClose={() => { setEditing(false); }}
               masked={!showAnswer}

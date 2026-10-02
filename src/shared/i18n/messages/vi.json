@@ -1190,6 +1190,7 @@
   "srs.edit.maskedTitle": "Nội dung thẻ đang được ẩn trong khi bạn trả lời.",
   "srs.edit.maskedHint": "Lật thẻ để xem và chỉnh sửa.",
   "srs.edit.reveal": "Lật thẻ",
+  "srs.edit.resize": "Đổi kích thước editor",
   "srs.review.badgeNew": "Mới",
   "srs.review.playSentence": "Nghe câu",
   "srs.review.playWord": "Nghe từ",
