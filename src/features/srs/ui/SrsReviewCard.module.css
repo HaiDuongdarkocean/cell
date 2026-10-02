@@ -65,16 +65,6 @@
   box-shadow: inset var(--space-0-5) 0 0 var(--color-border);
 }
 
-.editingNote {
-  margin: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  max-width: 24rem;
-  text-align: center;
-}
-
 @media (max-width: 900px) {
   .cardEditing .gradeRow {
     display: none;

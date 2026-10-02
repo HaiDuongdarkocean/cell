@@ -42,7 +42,11 @@ function formatEventMeta(events: readonly SrsReviewRecord[], judgment: 'forget' 
   return `${componentLabel(last.componentType)} ${new Date(last.answeredAt).toLocaleDateString()}`;
 }
 
-export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }): React.JSX.Element | null {
+export function SrsEditCardPanel({ onClose, masked = false, onReveal }: {
+  readonly onClose: () => void;
+  readonly masked?: boolean;
+  readonly onReveal?: () => void;
+}): React.JSX.Element | null {
   const {
     session,
     audioCache,
@@ -297,6 +301,20 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
         <Heading level={2} className={styles.title}>{t('srs.edit.title')}</Heading>
       </Box>
 
+      {masked ? (
+        <Box className={styles.masked}>
+          <Icon name="eyeOff" size="lg" color="secondary" />
+          <Text className={styles.maskedTitle}>{t('srs.edit.maskedTitle')}</Text>
+          <Text className={styles.maskedHint}>{t('srs.edit.maskedHint')}</Text>
+          {onReveal && (
+            <Button variant="primarySubtle" size="sm" onClick={onReveal}>
+              {t('srs.edit.reveal')}
+            </Button>
+          )}
+        </Box>
+      ) : (
+      <>
+
       <Box className={styles.selectRow}>
         <Box className={styles.selectCol}>
           <Label>{t('srs.edit.cardType')}</Label>
@@ -437,6 +455,9 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
           {t('srs.edit.save')}
         </Button>
       </Box>
+
+      </>
+      )}
 
       <ConfirmDialog
         open={confirmDelete}
