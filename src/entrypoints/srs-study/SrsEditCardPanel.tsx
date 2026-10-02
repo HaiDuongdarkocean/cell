@@ -14,7 +14,27 @@ import type { SrsDeck, SrsReviewRecord } from '@/entities/srs/types';
 import { componentLabel } from '@/features/srs/ui/srsLabels';
 import { SentenceText } from '@/features/srs/ui/srsCardShared';
 import { persistNoteFields, storedMedia, toEditText, NoteMediaField, orderedEditFields } from './srsNoteEditorShared';
+import { lookupDictionaryResources } from '@/features/cardCreator/service/dictionaryGenerate';
+import { translateSentence } from '@/features/cardCreator/media/translation';
+import { fetchMediaList } from '@/features/cardCreator/state/prefillMerge';
+import { mediaUrlKeyMap, type MediaListKind } from '@/features/cardCreator/state/mediaListKinds';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { getActiveProfileSettings } from '@/entities/settings/lib/profileResolution';
+import type { CardCreatorPrefill } from '@/features/cardCreator/types';
+import type { SrsField } from '@/entities/srs/types';
 import styles from './SrsEditCardPanel.module.css';
+
+type GenerateKind = 'definitions' | 'note' | 'moreExample' | 'translation' | MediaListKind;
+
+function generateKind(field: SrsField): GenerateKind | null {
+  if (field.type === 'audio') return field.id === 'sentAudio' ? 'sentenceAudios' : 'wordAudios';
+  if (field.type === 'image') return 'images';
+  if (field.type === 'translation') return 'translation';
+  if (field.id === 'def') return 'definitions';
+  if (field.id === 'notes') return 'note';
+  if (field.id === 'examples') return 'moreExample';
+  return null;
+}
 
 function formatEventMeta(events: readonly SrsReviewRecord[], judgment: 'forget' | 'remember'): string {
   const last = [...events].reverse().find((e) => e.judgment === judgment);
@@ -43,6 +63,8 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [generating, setGenerating] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const note = session?.note;
@@ -50,6 +72,8 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
   const card = session?.card;
   const initializedNoteId = useRef<string | null>(null);
   const dirtyRef = useRef(false);
+  const langsRef = useRef<{ target: string; native: string } | null>(null);
+  const dictSourceRef = useRef<{ key: string; source: CardCreatorPrefill | null } | null>(null);
   const stateRef = useRef({ texts, media, tags, deckId, removedMedia });
   stateRef.current = { texts, media, tags, deckId, removedMedia };
 
@@ -78,6 +102,9 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
       setDeckId(note.deckId);
       initializedNoteId.current = note.id;
       dirtyRef.current = false;
+      dictSourceRef.current = null;
+      setDirty(false);
+      setNotice(null);
     })();
     return () => { mounted = false; };
   }, [note, notetype, audioCache, imageCache]);
@@ -132,6 +159,111 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
     setDirty(true);
   }
 
+  async function resolveLangs(): Promise<{ target: string; native: string }> {
+    if (!langsRef.current) {
+      const profile = getActiveProfileSettings(await loadSettings());
+      langsRef.current = {
+        target: profile?.resourceLangCode ?? 'en',
+        native: profile?.native ?? 'en',
+      };
+    }
+    return langsRef.current;
+  }
+
+  async function resolveSource(): Promise<CardCreatorPrefill | null> {
+    const s = stateRef.current;
+    const term = (s.texts[notetype?.targetFieldId ?? ''] ?? note?.targetWord ?? '').trim();
+    if (!term) return null;
+    const sentence = (s.texts.sentence ?? '').trim();
+    const key = `${note?.id}|${term}|${sentence}`;
+    if (dictSourceRef.current?.key === key) return dictSourceRef.current.source;
+    const { target } = await resolveLangs();
+    const source = await lookupDictionaryResources(term, target, sentence);
+    dictSourceRef.current = { key, source };
+    return source;
+  }
+
+  async function runGenerate(field: SrsField, kind: GenerateKind): Promise<void> {
+    const label = field.name;
+    const s = stateRef.current;
+    if (kind === 'translation') {
+      if ((s.texts[field.id] ?? '').trim()) { setNotice(t('cardCreator.toast.generateField.alreadyFilled', [label])); return; }
+      const sentence = (s.texts.sentence ?? '').trim();
+      if (!sentence) { setNotice(t('cardCreator.toast.generateField.noSource', [label])); return; }
+      const { target, native } = await resolveLangs();
+      const translated = await translateSentence(sentence, target, native);
+      if (translated) {
+        markDirty();
+        setTexts((prev) => ({ ...prev, [field.id]: translated }));
+        setNotice(t('cardCreator.toast.generateField.success', [label]));
+      } else {
+        setNotice(t('cardCreator.toast.generateField.failed', [label]));
+      }
+      return;
+    }
+    if (kind === 'wordAudios' || kind === 'sentenceAudios' || kind === 'images') {
+      if ((s.media[field.id] ?? []).length > 0) { setNotice(t('cardCreator.toast.generateField.alreadyFilled', [label])); return; }
+      const source = await resolveSource();
+      const urls = source?.[mediaUrlKeyMap[kind]] ?? [];
+      if (urls.length === 0) { setNotice(t('cardCreator.toast.generateField.noSource', [label])); return; }
+      const fetched = await fetchMediaList(urls, kind, setNotice);
+      if (fetched.length > 0) {
+        markDirty();
+        setMedia((prev) => ({ ...prev, [field.id]: [...(prev[field.id] ?? []), ...fetched] }));
+        setNotice(t('cardCreator.toast.generateField.success', [label]));
+      } else {
+        setNotice(t('cardCreator.toast.generateField.failed', [label]));
+      }
+      return;
+    }
+    if ((s.texts[field.id] ?? '').trim()) { setNotice(t('cardCreator.toast.generateField.alreadyFilled', [label])); return; }
+    const source = await resolveSource();
+    const value = source?.[kind]?.trim() ?? '';
+    if (value) {
+      markDirty();
+      setTexts((prev) => ({ ...prev, [field.id]: value }));
+      setNotice(t('cardCreator.toast.generateField.success', [label]));
+    } else {
+      setNotice(t('cardCreator.toast.generateField.noSource', [label]));
+    }
+  }
+
+  async function generateField(field: SrsField): Promise<void> {
+    const kind = generateKind(field);
+    if (!kind || generating) return;
+    setGenerating(field.id);
+    setNotice(null);
+    try {
+      await runGenerate(field, kind);
+    } finally {
+      setGenerating(null);
+    }
+  }
+
+  async function generateAll(): Promise<void> {
+    if (generating || !notetype) return;
+    setGenerating('all');
+    setNotice(null);
+    try {
+      const s = stateRef.current;
+      const term = (s.texts[notetype.targetFieldId] ?? note?.targetWord ?? '').trim();
+      if (!term) { setNotice(t('cardCreator.toast.generate.noTarget')); return; }
+      let filled = false;
+      for (const field of orderedEditFields(notetype.fields)) {
+        const kind = generateKind(field);
+        if (!kind) continue;
+        if (kind === 'translation' || kind === 'definitions' || kind === 'note' || kind === 'moreExample') {
+          if ((stateRef.current.texts[field.id] ?? '').trim()) continue;
+        } else if ((stateRef.current.media[field.id] ?? []).length > 0) continue;
+        await runGenerate(field, kind);
+        if ((stateRef.current.texts[field.id] ?? '').trim() || (stateRef.current.media[field.id] ?? []).length > 0) filled = true;
+      }
+      setNotice(t(filled ? 'cardCreator.toast.generate.success' : 'cardCreator.toast.generate.empty'));
+    } finally {
+      setGenerating(null);
+    }
+  }
+
   function handleSave(): void {
     setSaving(true);
     void persist().finally(() => setSaving(false));
@@ -183,10 +315,44 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
         )}
       </Box>
 
-      <Heading level={3} size={4} className={styles.sectionTitle}>{t('cardCreator.section.fields')}</Heading>
+      <Box className={styles.sectionHead}>
+        <Heading level={3} size={4} className={styles.sectionTitle}>{t('cardCreator.section.fields')}</Heading>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => { void generateAll(); }}
+          disabled={generating !== null}
+          trailingIcon={<Icon name="zap" size="sm" />}
+          collapseLabel
+          className={styles.generate}
+          data-cell-id="srs-edit-generate-all"
+        >
+          {t('cardCreator.action.generateAll')}
+        </Button>
+      </Box>
 
       {orderedEditFields(notetype.fields).map((field) => (
-        <FieldRow key={field.id} label={field.name} dataId={`srs-edit-${field.id}`}>
+        <FieldRow
+          key={field.id}
+          label={field.name}
+          dataId={`srs-edit-${field.id}`}
+          trailing={generateKind(field) ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { void generateField(field); }}
+              disabled={generating !== null}
+              aria-label={t('cardCreator.action.generateFor', [field.name])}
+              title={t('cardCreator.action.generateFor', [field.name])}
+              trailingIcon={<Icon name="zap" size="sm" />}
+              collapseLabel
+              className={styles.generate}
+              data-cell-id={`srs-edit-${field.id}-generate`}
+            >
+              {t('cardCreator.action.create')}
+            </Button>
+          ) : undefined}
+        >
           {field.type === 'audio' || field.type === 'image' ? (
             <NoteMediaField
               field={field}
@@ -257,6 +423,7 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
         <Text className={styles.metaLine}>{t('srs.edit.metaLastFail', [formatEventMeta(events, 'forget')])}</Text>
       </Box>
 
+      {notice && <Text className={styles.notice}>{notice}</Text>}
       {error && <Text className={styles.error}>{error}</Text>}
 
       <Box className={styles.footer}>
