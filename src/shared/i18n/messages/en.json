@@ -1187,6 +1187,8 @@
   "srs.review.typeWord": "Type the word",
   "srs.review.checkAnswer": "Check answer",
   "srs.review.showAnswer": "Show answer",
+  "srs.review.editingFront": "The front side has been flipped aside while you edit.",
+  "srs.review.editingFrontHint": "Flip the card to view the back.",
   "srs.review.badgeNew": "New",
   "srs.review.playSentence": "Play sentence audio",
   "srs.review.playWord": "Play word audio",

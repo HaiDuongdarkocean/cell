@@ -42,7 +42,6 @@ export function SrsReviewCard(): React.JSX.Element | null {
 
   useEffect(() => {
     setShowAnswer(false);
-    setEditing(false);
     setTypedInput('');
   }, [session?.card.id, session?.componentType]);
 
@@ -161,6 +160,28 @@ export function SrsReviewCard(): React.JSX.Element | null {
             imageCache={imageCache}
             onFlipBack={handleFlip}
           />
+        ) : editing ? (
+          <div
+            className={styles.front}
+            role="button"
+            tabIndex={0}
+            data-cell-no-ripple
+            aria-label={t('srs.review.showAnswer')}
+            onClick={handleFlip}
+            onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+              if ((e.target as HTMLElement).closest('button,input,audio,a,textarea,select')) return;
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleFlip();
+              }
+            }}
+          >
+            <Box className={styles.editingNote}>
+              <Icon name="eyeOff" size="lg" color="secondary" />
+              <Text variant="heading-3">{t('srs.review.editingFront')}</Text>
+              <Text variant="supporting" color="secondary">{t('srs.review.editingFrontHint')}</Text>
+            </Box>
+          </div>
         ) : (
           <SrsReviewCardFront
             note={note}
