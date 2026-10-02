@@ -43,11 +43,18 @@
   flex: 0 0 auto;
   box-sizing: border-box;
   width: 0;
-  padding: var(--space-4);
+  padding: 0;
   overflow: hidden;
   display: flex;
   align-items: stretch;
   transition: width var(--duration-slow) var(--ease-out);
+}
+
+.editSection::before {
+  content: '';
+  flex: 0 0 var(--space-0-5);
+  margin: var(--space-4) var(--space-5);
+  background: var(--color-border);
 }
 
 .editSectionOpen {
@@ -74,6 +81,10 @@
     overflow: visible;
     transform: translateY(calc(100% + var(--space-3)));
     transition: transform var(--duration-slow) var(--ease-out);
+  }
+
+  .editSection::before {
+    display: none;
   }
 
   .editSectionOpen {
