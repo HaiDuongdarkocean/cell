@@ -180,10 +180,7 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
   useEffect(() => {
     if (!stripEl) return;
     const measure = (): void => {
-      const itemW = stripEl.clientHeight > 0
-        ? stripEl.clientHeight * 16 / 9
-        : (stripEl.querySelector('button')?.getBoundingClientRect().width ?? 0);
-      setItemStep(itemW > 0 ? (stripEl.clientWidth - itemW) / 2 : 0);
+      setItemStep(stripEl.clientWidth * 0.58 * 0.46);
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -285,12 +282,21 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
           setDragX(0);
         }}
       >
-        {visible.map(({ item, url }, pos) => (
+        {visible.map(({ item, url }, pos) => {
+          const off = cycOffset(pos) + (itemStep > 0 ? dragX / itemStep : 0);
+          const abs = Math.abs(off);
+          return (
           <button
             key={item.key}
             type="button"
             className={styles.imageItem}
-            style={{ transform: `translateX(-50%) translateX(${cycOffset(pos) * itemStep + dragX}px)` }}
+            style={{
+              transform: `translateX(-50%) translateX(${off * itemStep}px) scale(${1 - 0.18 * Math.min(abs, 1)})`,
+              opacity: abs > 1.5 ? 0 : 1,
+              zIndex: 100 - Math.round(abs * 10),
+              pointerEvents: abs > 1.5 ? 'none' : undefined,
+              boxShadow: abs < 0.5 ? 'var(--shadow-lg)' : undefined,
+            }}
             aria-label={t('srs.review.zoomImage')}
             aria-current={pos === activePos}
             onClick={(e) => {
@@ -303,7 +309,8 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
           >
             <img src={url} alt={alt} className={styles.image} draggable={false} />
           </button>
-        ))}
+          );
+        })}
       </div>
       {visible.length > 1 && (
         <>
