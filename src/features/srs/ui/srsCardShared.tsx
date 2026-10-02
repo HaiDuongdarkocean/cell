@@ -186,7 +186,7 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
   useEffect(() => {
     if (!stripEl) return;
     const measure = (): void => {
-      setItemStep(stripEl.clientWidth * 0.58 * 0.32);
+      setItemStep(stripEl.clientWidth * 0.66 * 0.35);
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -335,6 +335,10 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
           dragRef.current = null;
           animateDrag(0, () => {});
         }}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+          if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
+        }}
       >
         {ring.map(({ item, url }, pos) => {
           const off = ringOffset(pos);
@@ -351,6 +355,7 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
               zIndex: 100 - Math.round(abs * 10),
               pointerEvents: abs > hideAt ? 'none' : undefined,
               boxShadow: abs < 0.5 ? 'var(--shadow-lg)' : undefined,
+              cursor: dragging ? 'grabbing' : isActive ? 'zoom-in' : off < 0 ? 'w-resize' : 'e-resize',
             }}
             aria-label={t('srs.review.zoomImage')}
             aria-current={isActive}
@@ -369,36 +374,6 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
           );
         })}
       </div>
-      {visible.length > 1 && (
-        <>
-          <Button
-            variant="ghost"
-            shape="circle"
-            size="sm"
-            aria-label={t('srs.review.prevImage')}
-            className={`${styles.stripArrow} ${styles.stripPrev}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              go(-1);
-            }}
-          >
-            <Icon name="chevronLeft" />
-          </Button>
-          <Button
-            variant="ghost"
-            shape="circle"
-            size="sm"
-            aria-label={t('srs.review.nextImage')}
-            className={`${styles.stripArrow} ${styles.stripNext}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              go(1);
-            }}
-          >
-            <Icon name="chevronRight" />
-          </Button>
-        </>
-      )}
       </div>
       <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
         {zoomPos !== null && (

@@ -422,7 +422,7 @@
   position: relative;
   flex-shrink: 0;
   width: 100%;
-  height: calc(58cqw * 9 / 16);
+  height: calc(66cqw * 9 / 16);
   overflow: hidden;
   touch-action: pan-y;
 }
@@ -435,27 +435,11 @@
   transition: none;
 }
 
-.stripArrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-overlay-text);
-  text-shadow: 0 0 var(--space-1) var(--color-overlay-background);
-}
-
-.stripPrev {
-  left: var(--space-1);
-}
-
-.stripNext {
-  right: var(--space-1);
-}
-
 .imageItem {
   position: absolute;
   top: 0;
   left: 50%;
-  width: 58cqw;
+  width: 66cqw;
   aspect-ratio: 16 / 9;
   display: flex;
   align-items: center;
