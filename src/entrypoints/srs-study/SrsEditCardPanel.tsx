@@ -341,6 +341,21 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
           <Icon name="chevronLeft" size="sm" />
         </Button>
         <Heading level={2} className={styles.title}>{t('srs.edit.title')}</Heading>
+        {!masked && (
+          <Button
+            variant="ghost"
+            size="sm"
+            shape="circle"
+            onClick={() => { void generateAll(); }}
+            disabled={generating !== null}
+            aria-label={t('cardCreator.action.generateAll')}
+            title={t('cardCreator.action.generateAll')}
+            className={styles.generateAll}
+            data-cell-id="srs-edit-generate-all"
+          >
+            <Icon name="zap" size="sm" color="primary" />
+          </Button>
+        )}
       </Box>
 
       {masked ? (
@@ -368,21 +383,7 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
         </Box>
       </Box>
 
-      <Box className={styles.sectionHead}>
-        <Heading level={3} size={4} className={styles.sectionTitle}>{t('cardCreator.section.fields')}</Heading>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => { void generateAll(); }}
-          disabled={generating !== null}
-          trailingIcon={<Icon name="zap" size="sm" />}
-          collapseLabel
-          className={styles.generate}
-          data-cell-id="srs-edit-generate-all"
-        >
-          {t('cardCreator.action.generateAll')}
-        </Button>
-      </Box>
+      <Heading level={3} size={4} className={styles.sectionTitle}>{t('cardCreator.section.fields')}</Heading>
 
       {orderedEditFields(notetype.fields).map((field) => (
         <FieldRow
@@ -399,7 +400,6 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
               title={t('cardCreator.action.generateFor', [field.name])}
               trailingIcon={<Icon name="zap" size="sm" />}
               collapseLabel
-              className={styles.generate}
               data-cell-id={`srs-edit-${field.id}-generate`}
             >
               {t('cardCreator.action.create')}
