@@ -27,7 +27,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Pagination',
-  description: 'Pagination control with first/prev/next/last, page numbers, ellipsis popup, and jump-to-page input. Token-driven, theme-agnostic.',
+  description: 'Pagination control with first/prev/next/last icon buttons, boundary page numbers, and an ellipsis popover with a drag slider + jump-to-page input. Token-driven, theme-agnostic.',
   level: 'molecules',
   category: 'Navigation',
   group: 'Shared UI — Navigation',

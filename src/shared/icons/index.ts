@@ -24,6 +24,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   CircleAlert,
   CircleCheck,
   CircleX,
@@ -33,6 +35,7 @@ import {
   Crop,
   Crosshair,
   Download,
+  Ellipsis,
   EllipsisVertical,
   ExternalLink,
   Eye,
@@ -150,6 +153,9 @@ import rotateCcwSvg from './svg/rotate-ccw.svg?raw';
 import panelRightSvg from './svg/panel-right.svg?raw';
 import chevronLeftSvg from './svg/chevron-left.svg?raw';
 import chevronRightSvg from './svg/chevron-right.svg?raw';
+import chevronsLeftSvg from './svg/chevrons-left.svg?raw';
+import chevronsRightSvg from './svg/chevrons-right.svg?raw';
+import ellipsisSvg from './svg/ellipsis.svg?raw';
 import repeatSvg from './svg/repeat.svg?raw';
 import triangleAlertSvg from './svg/alert-triangle.svg?raw';
 import circleCheckSvg from './svg/circle-check.svg?raw';
@@ -277,6 +283,9 @@ export const ICON_CATALOG = {
   panelRight: { component: PanelRight, svg: panelRightSvg, source: 'lucide/panel-right', tags: ['panel', 'side', 'sidebar', 'toggle'] } as IconEntry,
   chevronLeft: { component: ChevronLeft, svg: chevronLeftSvg, source: 'lucide/chevron-left', tags: ['chevron', 'left', 'back', 'arrow-left', 'prev'] } as IconEntry,
   chevronRight: { component: ChevronRight, svg: chevronRightSvg, source: 'lucide/chevron-right', tags: ['chevron', 'right', 'forward', 'arrow-right', 'next'] } as IconEntry,
+  chevronsLeft: { component: ChevronsLeft, svg: chevronsLeftSvg, source: 'lucide/chevrons-left', tags: ['chevron', 'left', 'first', 'back', 'arrow-left', 'double', 'pagination', 'skip-start'] } as IconEntry,
+  chevronsRight: { component: ChevronsRight, svg: chevronsRightSvg, source: 'lucide/chevrons-right', tags: ['chevron', 'right', 'last', 'forward', 'arrow-right', 'double', 'pagination', 'skip-end'] } as IconEntry,
+  ellipsis: { component: Ellipsis, svg: ellipsisSvg, source: 'lucide/ellipsis', tags: ['ellipsis', 'horizontal', 'more', 'dots', 'three-dots', 'pagination'] } as IconEntry,
   repeat: { component: Repeat, svg: repeatSvg, source: 'lucide/repeat', tags: ['repeat', 'loop', 'cycle'] } as IconEntry,
   triangleAlert: { component: AlertTriangle, svg: triangleAlertSvg, source: 'lucide/alert-triangle', tags: ['warning', 'alert', 'triangle', 'caution'] } as IconEntry,
   circleCheck: { component: CircleCheck, svg: circleCheckSvg, source: 'lucide/circle-check', tags: ['success', 'check', 'circle', 'done', 'ok'] } as IconEntry,

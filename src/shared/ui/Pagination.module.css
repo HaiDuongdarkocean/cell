@@ -10,11 +10,6 @@
   flex-shrink: 0;
 }
 
-.navBtn {
-  padding: 0 var(--space-1);
-  font-variant-numeric: tabular-nums;
-}
-
 .pageNumbers {
   display: flex;
   align-items: center;
@@ -24,32 +19,6 @@
 .pageBtn {
   padding: 0 var(--space-1);
   font-variant-numeric: tabular-nums;
-}
-
-.ellipsisWrap {
-  position: relative;
-}
-
-.ellipsisBtn {
-  padding: 0 var(--space-1);
-}
-
-.ellipsisPopup {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-bottom: var(--space-1);
-  background: var(--color-surface-card);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-modal);
-  padding: var(--space-2);
-  z-index: var(--z-popover);
-  min-width: 160px;
-  max-height: 240px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
 .popupHeader {
@@ -62,19 +31,29 @@
   margin-bottom: var(--space-1);
 }
 
-.popupList {
+.jumpBody {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-0-5);
-  overflow-y: auto;
-  max-height: 180px;
-  padding: var(--space-0-5);
+  flex-direction: column;
+  min-width: 208px;
+  padding: var(--space-1);
 }
 
-.popupItem {
-  padding: 0 var(--space-1);
-  font-size: var(--font-size-xs);
+.jumpRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+}
+
+.popoverField {
+  text-align: center;
+}
+
+.jumpTotal {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .jumpInput {
