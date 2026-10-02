@@ -77,6 +77,22 @@ describe('Pagination', () => {
     expect(handleChange).toHaveBeenCalledWith(41);
   });
 
+  it('blurs the clicked button after pointer activation', () => {
+    render(<Pagination current={0} total={5} onChange={() => {}} />);
+    const btn = screen.getByRole('button', { name: '3' });
+    btn.focus();
+    fireEvent.click(btn, { detail: 1 });
+    expect(btn).not.toHaveFocus();
+  });
+
+  it('keeps focus on keyboard-activated clicks', () => {
+    render(<Pagination current={0} total={5} onChange={() => {}} />);
+    const btn = screen.getByRole('button', { name: '3' });
+    btn.focus();
+    fireEvent.click(btn);
+    expect(btn).toHaveFocus();
+  });
+
   it('closes the popover on outside pointerdown', () => {
     render(<Pagination current={0} total={100} onChange={() => {}} showJump={false} />);
     fireEvent.click(screen.getByRole('button', { name: /show all pages/i }));

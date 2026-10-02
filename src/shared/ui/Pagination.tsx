@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactElement } from 'react';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Popover } from './Popover';
@@ -130,6 +130,11 @@ export function Pagination({
     setEllipsisSide(side);
   };
 
+  const activate = (e: MouseEvent<HTMLButtonElement>, action: () => void): void => {
+    action();
+    if (e.detail > 0) e.currentTarget.blur();
+  };
+
   return (
     <div ref={rootRef} className={`${styles.pagination} ${className ?? ''}`.trim()}>
       <Button
@@ -138,7 +143,7 @@ export function Pagination({
         variant="ghost"
         disabled={current === 0}
         className={styles.navEdge}
-        onClick={() => onChange(0)}
+        onClick={(e) => activate(e, () => onChange(0))}
       >
         <Icon name="chevronsLeft" />
       </Button>
@@ -147,7 +152,7 @@ export function Pagination({
         size="sm"
         variant="ghost"
         disabled={current === 0}
-        onClick={() => onChange(Math.max(0, current - 1))}
+        onClick={(e) => activate(e, () => onChange(Math.max(0, current - 1)))}
       >
         <Icon name="chevronLeft" />
       </Button>
@@ -165,7 +170,7 @@ export function Pagination({
                 aria-expanded={ellipsisSide === side}
                 size="sm"
                 variant="ghost"
-                onClick={() => openPopover(side)}
+                onClick={(e) => activate(e, () => openPopover(side))}
               >
                 <Icon name="ellipsis" />
               </Button>
@@ -179,7 +184,7 @@ export function Pagination({
               active={p - 1 === current}
               aria-current={p - 1 === current ? 'page' : undefined}
               className={styles.pageBtn}
-              onClick={() => onChange(p - 1)}
+              onClick={(e) => activate(e, () => onChange(p - 1))}
             >
               {p}
             </Button>
@@ -192,7 +197,7 @@ export function Pagination({
         size="sm"
         variant="ghost"
         disabled={current >= total - 1}
-        onClick={() => onChange(Math.min(total - 1, current + 1))}
+        onClick={(e) => activate(e, () => onChange(Math.min(total - 1, current + 1)))}
       >
         <Icon name="chevronRight" />
       </Button>
@@ -202,7 +207,7 @@ export function Pagination({
         variant="ghost"
         disabled={current >= total - 1}
         className={styles.navEdge}
-        onClick={() => onChange(total - 1)}
+        onClick={(e) => activate(e, () => onChange(total - 1))}
       >
         <Icon name="chevronsRight" />
       </Button>
@@ -263,7 +268,7 @@ export function Pagination({
             aria-label={t('ui.pagination.jump')}
             className={styles.jumpField}
           />
-          <Button shape="circle" aria-label={t('ui.pagination.jump')} size="sm" variant="ghost" onClick={handleJump}>
+          <Button shape="circle" aria-label={t('ui.pagination.jump')} size="sm" variant="ghost" onClick={(e) => activate(e, handleJump)}>
             <Icon name="search" />
           </Button>
         </div>
