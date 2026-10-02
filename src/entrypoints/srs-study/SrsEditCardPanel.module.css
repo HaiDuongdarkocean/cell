@@ -1,4 +1,5 @@
 .panel {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   width: min(26rem, 92vw);
   max-height: 90vh;
   overflow-y: auto;
