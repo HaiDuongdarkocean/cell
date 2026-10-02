@@ -159,6 +159,10 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
     return () => clearTimeout(timer);
   }, [texts, media, tags, deckId, removedMedia, persist]);
 
+  useEffect(() => () => {
+    if (dirtyRef.current) void persist();
+  }, [persist]);
+
   function markDirty(): void {
     dirtyRef.current = true;
     setDirty(true);

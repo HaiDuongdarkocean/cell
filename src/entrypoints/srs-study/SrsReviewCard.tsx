@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
 import { useSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
 import { Box, Button, ConfirmDialog, Text } from '@/shared/ui';
+import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import type { ComponentType } from '@/entities/srs/types';
@@ -178,7 +179,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
       </Box>
 
       <Box className={styles.reviewArea}>
-      <Box className={editMounted ? `${styles.card} ${styles.cardEditing}` : styles.card}>
+      <Box className={editMounted && !narrowEdit ? `${styles.card} ${styles.cardEditing}` : styles.card}>
         <div className={styles.cardRow}>
         <div className={styles.faceArea}>
         {isNew && <Text className={styles.badgeNew}>{t('srs.review.badgeNew')}</Text>}
@@ -226,16 +227,16 @@ export function SrsReviewCard(): React.JSX.Element | null {
         </Box>
         </div>
 
-        {editMounted && (
+        {editMounted && !narrowEdit && (
           <aside
             className={[
               styles.editSection,
               editOpen ? styles.editSectionOpen : '',
               editDragging ? styles.editSectionResizing : '',
             ].filter(Boolean).join(' ')}
-            style={editOpen && editWidth !== null && !narrowEdit ? { width: editWidth } : undefined}
+            style={editOpen && editWidth !== null ? { width: editWidth } : undefined}
             onTransitionEnd={(e) => {
-              if (e.target === e.currentTarget && (e.propertyName === 'width' || e.propertyName === 'transform') && !editing) setEditMounted(false);
+              if (e.target === e.currentTarget && e.propertyName === 'width' && !editing) setEditMounted(false);
             }}
           >
             <div
@@ -296,6 +297,22 @@ export function SrsReviewCard(): React.JSX.Element | null {
         </div>
       </Box>
       </Box>
+
+      {narrowEdit && (
+        <BottomSheet
+          open={editing}
+          onOpenChange={(open) => { if (!open) setEditing(false); }}
+          title={t('srs.edit.title')}
+          hideHeader
+        >
+          <SrsEditCardPanel
+            onClose={() => { setEditing(false); }}
+            masked={!showAnswer}
+            onReveal={handleFlip}
+            embedded
+          />
+        </BottomSheet>
+      )}
 
       <ConfirmDialog
         open={confirmDelete}

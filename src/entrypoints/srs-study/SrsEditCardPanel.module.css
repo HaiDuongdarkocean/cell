@@ -24,16 +24,6 @@
   box-shadow: none;
 }
 
-@media (max-width: 900px) {
-  .embedded {
-    height: auto;
-    max-height: 78dvh;
-    padding: var(--space-5);
-    border-radius: var(--radius-card);
-    box-shadow: var(--shadow-md);
-  }
-}
-
 .header {
   position: relative;
   display: flex;
