@@ -94,7 +94,10 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
   readonly dataCellId?: string;
 }): React.JSX.Element | null {
   const urls = useResolvedImageUrls(items);
-  const stripRef = useDragScroll<HTMLDivElement>();
+  const setDragRef = useDragScroll<HTMLDivElement>();
+  const [stripEl, setStripEl] = useState<HTMLDivElement | null>(null);
+  const [activePos, setActivePos] = useState(0);
+  const [scrollable, setScrollable] = useState(false);
   const [zoomIdx, setZoomIdx] = useState<number | null>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -169,22 +172,102 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
     };
   };
 
+  useEffect(() => {
+    if (!stripEl) return;
+    const update = (): void => {
+      setScrollable(stripEl.scrollWidth > stripEl.clientWidth + 1);
+      const stripRect = stripEl.getBoundingClientRect();
+      const center = stripRect.left + stripRect.width / 2;
+      let best = 0;
+      let bestDist = Infinity;
+      Array.from(stripEl.children).forEach((it, i) => {
+        const r = it.getBoundingClientRect();
+        const dist = Math.abs(r.left + r.width / 2 - center);
+        if (dist < bestDist) { bestDist = dist; best = i; }
+      });
+      setActivePos(best);
+    };
+    update();
+    let raf = 0;
+    const onScroll = (): void => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(update);
+    };
+    const ro = new ResizeObserver(update);
+    ro.observe(stripEl);
+    stripEl.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(raf);
+      stripEl.removeEventListener('scroll', onScroll);
+    };
+  }, [stripEl, visible.length]);
+
+  const scrollToPos = (pos: number): void => {
+    const target = stripEl?.children[pos];
+    if (target instanceof HTMLElement) {
+      target.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    }
+  };
+
   if (visible.length === 0) return null;
 
   return (
     <>
-      <div ref={stripRef} className={styles.imageStrip} data-cell-id={dataCellId}>
+      <div className={styles.imageGallery}>
+      <div
+        ref={(el) => { setStripEl(el); setDragRef(el); }}
+        className={styles.imageStrip}
+        data-cell-id={dataCellId}
+      >
         {visible.map(({ item, url }, pos) => (
           <button
             key={item.key}
             type="button"
             className={styles.imageItem}
             aria-label={t('srs.review.zoomImage')}
-            onClick={(e) => { e.stopPropagation(); setZoomIdx(pos); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.currentTarget.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+              setZoomIdx(pos);
+            }}
           >
             <img src={url} alt={alt} className={styles.image} draggable={false} />
           </button>
         ))}
+      </div>
+      {scrollable && visible.length > 1 && (
+        <div className={styles.stripNav} onClick={(e) => e.stopPropagation()}>
+          <Button
+            variant="ghost"
+            shape="circle"
+            size="sm"
+            aria-label={t('srs.review.prevImage')}
+            disabled={activePos === 0}
+            onClick={() => scrollToPos(Math.max(0, activePos - 1))}
+          >
+            <Icon name="chevronLeft" />
+          </Button>
+          <PaginationDots
+            count={visible.length}
+            active={activePos}
+            onSelect={scrollToPos}
+            maxDots={3}
+            label={`${activePos + 1} / ${visible.length}`}
+            itemLabel={(i) => t('srs.review.goToImage', [String(i + 1)])}
+          />
+          <Button
+            variant="ghost"
+            shape="circle"
+            size="sm"
+            aria-label={t('srs.review.nextImage')}
+            disabled={activePos === visible.length - 1}
+            onClick={() => scrollToPos(Math.min(visible.length - 1, activePos + 1))}
+          >
+            <Icon name="chevronRight" />
+          </Button>
+        </div>
+      )}
       </div>
       <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
         {zoomPos !== null && (

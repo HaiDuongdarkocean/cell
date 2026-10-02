@@ -13,6 +13,9 @@ export interface PaginationDotsProps {
   readonly label?: string;
   /** Accessible label per dot, e.g. `(i) => \`Go to image ${i + 1}\``. */
   readonly itemLabel?: (index: number) => string;
+  /** Cap on rendered dots. When `count` exceeds it, a sliding window of
+   *  `maxDots` centered on `active` is shown instead. */
+  readonly maxDots?: number;
   readonly className?: string;
 }
 
@@ -22,9 +25,15 @@ export function PaginationDots({
   onSelect,
   label,
   itemLabel,
+  maxDots,
   className,
 }: PaginationDotsProps): ReactElement | null {
   if (count <= 0) return null;
+
+  const shown = maxDots !== undefined ? Math.min(maxDots, count) : count;
+  const start = shown < count
+    ? Math.min(Math.max(0, active - Math.floor(shown / 2)), count - shown)
+    : 0;
 
   return (
     <div
@@ -32,7 +41,7 @@ export function PaginationDots({
       role="group"
       aria-label={label}
     >
-      {Array.from({ length: count }, (_, i) => {
+      {Array.from({ length: shown }, (_, k) => start + k).map((i) => {
         const isActive = i === active;
         const cls = `${styles.dot} ${isActive ? styles.dotActive : ''}`;
         if (!onSelect) {
