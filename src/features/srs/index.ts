@@ -26,3 +26,4 @@ export { resolveReviewSurface } from './logic/resolveReviewSurface';
 export { getVariantPresetForDeck, getVariantPresetsByCollection, putVariantPreset, deleteVariantPreset, ensureDefaultVariantPreset } from './repositories/variantPresetRepository';
 export { servableVariantIds, isVariantServable, resolveVariantToggles, visibleVariantFields, expectedInputText, expectedInputField } from './lib/variantFront';
 export { createDefaultVariants } from './lib/defaultVariants';
+export { SrsError } from './lib/srsError';

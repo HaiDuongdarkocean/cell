@@ -1,12 +1,23 @@
+import type { ZodTypeAny } from 'zod';
 import type {
+  SrsAudioAsset,
   SrsCard,
   SrsCollection,
   SrsDeck,
   SrsFieldValue,
+  SrsImageAsset,
   SrsNote,
+  SrsReviewRecord,
   SrsStudyConfig,
   SrsVariant,
 } from '@/entities/srs/types';
+import {
+  SrsAudioAssetSchema,
+  SrsCardSchema,
+  SrsImageAssetSchema,
+  SrsNoteSchema,
+  SrsReviewRecordSchema,
+} from '@/entities/srs/schemas';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import {
   audioAssetId,
@@ -20,22 +31,27 @@ import {
   getDeckByCollectionAndName,
   getDecksByCollection,
   getNotetype,
+  getSrsDB,
   getStudyConfig,
-  putAudioAsset,
-  putCardForImport,
   putCollection,
   putDeck,
-  putImageAsset,
   putNotetype,
-  putNoteForImport,
-  putReviewEvent,
   putStudyConfig,
   recalcCard,
   getVariantPresetForDeck,
   servableVariantIds,
+  SrsError,
+  SRS_STORES,
 } from '@/features/srs';
+import {
+  captureChange,
+  ensureSyncRuntime,
+  isCaptureEnabled,
+  scopeForTarget,
+  targetOf,
+} from '@/features/sync';
 import { flattenDeckName, resolveHomeDeckId, uniqueDeckNames } from './deckFlatten';
-import { buildNoteFields, htmlToText } from './fieldMapping';
+import { buildNoteFields, htmlToText, type BuiltNoteFields } from './fieldMapping';
 import { convertCardState } from './stateConvert';
 import { mapRevlog } from './revlogMap';
 import type {
@@ -44,10 +60,33 @@ import type {
   NormalizedAnkiCard,
   NormalizedAnkiData,
   NormalizedAnkiNote,
+  NormalizedAnkiNotetype,
   NormalizedAnkiRevlog,
 } from '../model/normalized';
 
 const DEFAULT_DR = 0.9;
+const IMPORT_CHUNK_CARDS = 120;
+const MEDIA_FETCH_CONCURRENCY = 8;
+const MEDIA_CACHE_CAP_BYTES = 128 * 1024 * 1024;
+const IMPORT_WRITE_STORES = [
+  SRS_STORES.NOTES,
+  SRS_STORES.CARDS,
+  SRS_STORES.AUDIO_ASSETS,
+  SRS_STORES.IMAGE_ASSETS,
+  SRS_STORES.REVIEW_EVENTS,
+  SRS_STORES.SYNC_OUTBOX,
+  SRS_STORES.SYNC_META,
+];
+
+type ResolvedMedia = { bytes: ArrayBuffer; mimeType: string } | null;
+
+function validated<T>(schema: ZodTypeAny, value: T): T {
+  const r = schema.safeParse(value);
+  if (!r.success) {
+    throw new SrsError('INVALID_INPUT', r.error.issues.map((e) => e.message).join('; '));
+  }
+  return value;
+}
 
 export interface ImportRunInput {
   readonly data: NormalizedAnkiData;
@@ -284,64 +323,129 @@ export async function importNormalized(input: ImportRunInput): Promise<ImportRep
     decksCreated,
   };
 
+  // Everything written by this import shares the destination collection's sync scope.
+  await ensureSyncRuntime();
+  const captured = isCaptureEnabled();
+  const scope = captured ? scopeForTarget(targetOf(collection.targetLanguage)) : null;
+  const db = await getSrsDB();
+
+  // filename → resolved bytes|null. Misses always cached; hits cached under a byte
+  // cap so a large AnkiConnect import doesn't hold the whole deck in memory.
+  const mediaCache = new Map<string, ResolvedMedia>();
+  let mediaCacheBytes = 0;
+
+  interface PendingCard {
+    readonly card: NormalizedAnkiCard;
+    readonly note: NormalizedAnkiNote;
+    readonly nt: NormalizedAnkiNotetype;
+    readonly homeDeckId: string;
+    readonly built: BuiltNoteFields;
+  }
+  interface Bundle {
+    readonly notes: SrsNote[];
+    readonly cards: SrsCard[];
+    readonly audio: SrsAudioAsset[];
+    readonly images: SrsImageAsset[];
+    readonly events: SrsReviewRecord[];
+    readonly cardIds: number[];
+  }
+
   let done = 0;
-  for (const card of data.cards) {
+  for (let start = 0; start < data.cards.length; start += IMPORT_CHUNK_CARDS) {
     abort();
-    done += 1;
-    input.onProgress?.(done, data.cards.length);
-    if (card.queue === -1) { report.skippedSuspended += 1; continue; }
-    const note = notesById.get(card.noteId);
-    const nt = note && ntById.get(note.modelId);
-    if (!note || !nt) { report.skippedUnselected += 1; continue; }
-    if (nt.isCloze) { report.skippedCloze += 1; continue; }
-    if (!selection.notetypeIds.has(nt.id)) { report.skippedUnselected += 1; continue; }
-    const homeDeckId = resolveHomeDeckId(card, decksById);
-    if (homeDeckId === null) { report.skippedUnrouted += 1; continue; }
-    if (!selection.deckIds.has(homeDeckId)) { report.skippedUnselected += 1; continue; }
-    if (importedIds.has(card.id)) { report.duplicates += 1; continue; }
+    const pending: PendingCard[] = [];
+    for (const card of data.cards.slice(start, start + IMPORT_CHUNK_CARDS)) {
+      abort();
+      done += 1;
+      input.onProgress?.(done, data.cards.length);
+      if (card.queue === -1) { report.skippedSuspended += 1; continue; }
+      const note = notesById.get(card.noteId);
+      const nt = note && ntById.get(note.modelId);
+      if (!note || !nt) { report.skippedUnselected += 1; continue; }
+      if (nt.isCloze) { report.skippedCloze += 1; continue; }
+      if (!selection.notetypeIds.has(nt.id)) { report.skippedUnselected += 1; continue; }
+      const homeDeckId = resolveHomeDeckId(card, decksById);
+      if (homeDeckId === null) { report.skippedUnrouted += 1; continue; }
+      if (!selection.deckIds.has(homeDeckId)) { report.skippedUnselected += 1; continue; }
+      if (importedIds.has(card.id)) { report.duplicates += 1; continue; }
+      pending.push({ card, note, nt, homeDeckId, built: buildNoteFields(note, nt, mappings[nt.id] ?? {}) });
+    }
+    if (pending.length === 0) continue;
+
+    // media: resolve each unique filename once, pooled; resolve errors count as misses
+    const chunkMedia = new Map<string, ResolvedMedia>();
+    if (!input.skipMedia) {
+      const missing = new Set<string>();
+      for (const p of pending) {
+        for (const req of p.built.mediaRequests) {
+          if (!mediaCache.has(req.filename)) missing.add(req.filename);
+        }
+      }
+      const queue = [...missing];
+      let cursor = 0;
+      const worker = async (): Promise<void> => {
+        while (cursor < queue.length) {
+          abort();
+          const name = queue[cursor++]!;
+          chunkMedia.set(name, await data.media.resolve(name).catch(() => null));
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(MEDIA_FETCH_CONCURRENCY, queue.length) }, worker));
+      for (const [name, media] of chunkMedia) {
+        if (media === null) mediaCache.set(name, null);
+        else if (mediaCacheBytes + media.bytes.byteLength <= MEDIA_CACHE_CAP_BYTES) {
+          mediaCache.set(name, media);
+          mediaCacheBytes += media.bytes.byteLength;
+        }
+      }
+    }
+
+    const bundle: Bundle = { notes: [], cards: [], audio: [], images: [], events: [], cardIds: [] };
+    for (const p of pending) {
+      try {
+        if ((await buildCardRecords(p, bundle, chunkMedia)) === null) report.skippedSuspended += 1;
+      } catch (err) {
+        if (err instanceof ImportError) throw err;
+        report.failedCards += 1;
+      }
+    }
 
     try {
-      await importOneCard(card, note, nt.id, homeDeckId);
-      report.importedCards += 1;
-      importedIds.add(card.id);
+      await commitBundle(bundle);
+      report.importedCards += bundle.cardIds.length;
+      report.reviewRecords += bundle.events.length;
+      for (const id of bundle.cardIds) importedIds.add(id);
     } catch (err) {
       if (err instanceof ImportError) throw err;
-      report.failedCards += 1;
+      report.failedCards += bundle.cardIds.length;
     }
   }
 
   return report;
 
-  async function importOneCard(
-    card: NormalizedAnkiCard,
-    note: NormalizedAnkiNote,
-    ntId: string,
-    homeDeckId: string,
-  ): Promise<void> {
-    const tDeck = tDeckByAnkiId.get(homeDeckId)!;
+  async function buildCardRecords(p: PendingCard, out: Bundle, chunkMedia: Map<string, ResolvedMedia>): Promise<null | void> {
+    const tDeck = tDeckByAnkiId.get(p.homeDeckId)!;
     const config = await configOf(tDeck.id);
-    const mapping = mappings[ntId] ?? {};
-    const deck = decksById.get(homeDeckId);
-    const dr = deck?.desiredRetention ?? DEFAULT_DR;
+    const mapping = mappings[p.nt.id] ?? {};
+    const dr = decksById.get(p.homeDeckId)?.desiredRetention ?? DEFAULT_DR;
 
-    const converted = convertCardState(card, {
+    const converted = convertCardState(p.card, {
       crtMs: data.crtMs,
       desiredRetention: dr,
       now,
       minExplores: config.learningPath.minExplores,
-      revlog: revlogByCard.get(card.id) ?? [],
+      revlog: revlogByCard.get(p.card.id) ?? [],
     });
-    if (!converted) { report.skippedSuspended += 1; return; }
+    if (!converted) return null;
 
-    const noteId = `anki-${collectionId}-n${card.id}`;
-    const cardId = `anki-${collectionId}-c${card.id}`;
-    const built = buildNoteFields(note, ntById.get(ntId)!, mapping);
+    const noteId = `anki-${collectionId}-n${p.card.id}`;
+    const cardId = `anki-${collectionId}-c${p.card.id}`;
 
-    // media: resolve each request → store asset at its item index; misses drop only that item
-    const fields: Record<string, SrsFieldValue> = { ...built.fields };
+    // media: hits store an asset at its item index; misses drop only that item
+    const fields: Record<string, SrsFieldValue> = { ...p.built.fields };
     if (!input.skipMedia) {
       const reqsByField = new Map<string, { fieldId: string; filename: string; kind: 'audio' | 'image' }[]>();
-      for (const req of built.mediaRequests) {
+      for (const req of p.built.mediaRequests) {
         const list = reqsByField.get(req.fieldId) ?? [];
         list.push(req);
         reqsByField.set(req.fieldId, list);
@@ -349,24 +453,24 @@ export async function importNormalized(input: ImportRunInput): Promise<ImportRep
       for (const [fieldId, reqs] of reqsByField) {
         const hits: string[] = [];
         for (const req of reqs) {
-          const media = await data.media.resolve(req.filename);
+          const media = chunkMedia.get(req.filename) ?? mediaCache.get(req.filename) ?? null;
           if (!media) { report.mediaMisses += 1; continue; }
           report.mediaHits += 1;
           const index = hits.length;
           if (req.kind === 'audio') {
-            await putAudioAsset({
+            out.audio.push(validated(SrsAudioAssetSchema, {
               id: audioAssetId(noteId, fieldId, 'local', index),
               noteId, fieldId, index: index || undefined, source: 'local',
               mimeType: media.mimeType, bytes: media.bytes,
               size: media.bytes.byteLength, lastAccessed: now.getTime(), createdAt: now.getTime(),
-            });
+            }));
           } else {
-            await putImageAsset({
+            out.images.push(validated(SrsImageAssetSchema, {
               id: imageAssetId(noteId, fieldId, index),
               noteId, fieldId, index: index || undefined,
               mimeType: media.mimeType, bytes: media.bytes,
               size: media.bytes.byteLength, lastAccessed: now.getTime(), createdAt: now.getTime(),
-            });
+            }));
           }
           hits.push(req.filename);
         }
@@ -379,16 +483,16 @@ export async function importNormalized(input: ImportRunInput): Promise<ImportRep
       }
     }
 
-    const srsNote: SrsNote = {
+    const srsNote = validated<SrsNote>(SrsNoteSchema, {
       id: noteId,
       notetypeId: srsNt.id,
       deckId: tDeck.id,
-      targetWord: targetWordOf(note, ntById.get(ntId)!, mapping),
+      targetWord: targetWordOf(p.note, p.nt, mapping),
       fields,
-      tags: note.tags,
+      tags: p.note.tags,
       createdAt: now.getTime(),
-      importSource: { provider: 'anki', cardId: card.id, noteId: note.id },
-    };
+      importSource: { provider: 'anki', cardId: p.card.id, noteId: p.note.id },
+    });
     const rawCard: SrsCard = {
       id: cardId,
       noteId,
@@ -398,17 +502,48 @@ export async function importNormalized(input: ImportRunInput): Promise<ImportRep
       createdAt: now.getTime(),
       nextDue: '',
       maintenanceMode: false,
-      importSource: { provider: 'anki', cardId: card.id, noteId: note.id },
+      importSource: { provider: 'anki', cardId: p.card.id, noteId: p.note.id },
     };
     const variants = await variantsOf(tDeck.id);
-    const srsCard = recalcCard(rawCard, variants, servableVariantIds(variants, srsNote, srsNt), config, now.toISOString(), adapter);
+    const srsCard = validated(SrsCardSchema, recalcCard(rawCard, variants, servableVariantIds(variants, srsNote, srsNt), config, now.toISOString(), adapter));
 
-    await putNoteForImport(srsNote);
-    await putCardForImport(srsCard);
-    for (const rev of revlogByCard.get(card.id) ?? []) {
-      await putReviewEvent(mapRevlog(rev, cardId, noteId, srsNt.id, converted.fsrsState, converted.progress));
-      report.reviewRecords += 1;
+    out.notes.push(srsNote);
+    out.cards.push(srsCard);
+    for (const rev of revlogByCard.get(p.card.id) ?? []) {
+      out.events.push(validated(SrsReviewRecordSchema, mapRevlog(rev, cardId, noteId, srsNt.id, converted.fsrsState, converted.progress)));
     }
+    out.cardIds.push(p.card.id);
+  }
+
+  async function commitBundle(bundle: Bundle): Promise<void> {
+    if (bundle.cardIds.length === 0) return;
+    const tx = db.transaction(IMPORT_WRITE_STORES, 'readwrite');
+    const txDone = new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+    void txDone.catch(() => undefined);
+    const notesStore = tx.objectStore(SRS_STORES.NOTES);
+    for (const n of bundle.notes) notesStore.put(n);
+    const cardsStore = tx.objectStore(SRS_STORES.CARDS);
+    for (const c of bundle.cards) cardsStore.put(c);
+    const audioStore = tx.objectStore(SRS_STORES.AUDIO_ASSETS);
+    for (const a of bundle.audio) audioStore.put(a);
+    const imageStore = tx.objectStore(SRS_STORES.IMAGE_ASSETS);
+    for (const i of bundle.images) imageStore.put(i);
+    const eventsStore = tx.objectStore(SRS_STORES.REVIEW_EVENTS);
+    for (const e of bundle.events) eventsStore.put(e);
+    if (captured) {
+      await Promise.all([
+        ...bundle.notes.map((n) => captureChange(notesStore, { scope, dataClass: 'srsNote', key: `notes:${n.id}`, op: 'put' })),
+        ...bundle.cards.map((c) => captureChange(notesStore, { scope, dataClass: 'srsCard', key: `cards:${c.id}`, op: 'put' })),
+        ...bundle.audio.map((a) => captureChange(notesStore, { scope, dataClass: 'srsAudioAsset', key: `audioAssets:${a.id}`, op: 'put' })),
+        ...bundle.images.map((i) => captureChange(notesStore, { scope, dataClass: 'srsImageAsset', key: `imageAssets:${i.id}`, op: 'put' })),
+        ...bundle.events.map((e) => captureChange(notesStore, { scope, dataClass: 'srsReviewEvent', key: `reviewEvents:${e.id}`, op: 'put' })),
+      ]);
+    }
+    await txDone;
   }
 }
 
