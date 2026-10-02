@@ -342,64 +342,6 @@ export function PlayerView({
       >
         {dragging && <DropOverlay />}
 
-        {showSubtitlePanels && (
-          <div className={styles.subtitleOverlay}>
-            <SubtitlePanels
-              ref={subtitlePanelsRef}
-              targetStyle={effectiveTargetStyle}
-              nativeStyle={effectiveNativeStyle}
-              collapsed={false}
-              isPlaying={controls.isPlaying}
-              repeatActive={subtitleEngine.repeatActive}
-              repeatIcon={subtitleEngine.repeatIcon as keyof typeof ICON_CATALOG | undefined}
-              repeatLabel={subtitleEngine.repeatLabel}
-              clusterSettings={DEFAULT_NAV_CLUSTER_SETTINGS}
-              blockSettings={DEFAULT_SUBTITLE_BLOCK_SETTINGS}
-              yOffsetPercent={75}
-              onPrev={subtitleEngine.prev}
-              onNext={subtitleEngine.next}
-              onRepeat={subtitleEngine.repeat}
-              onRewind={subtitleEngine.rewind}
-              onForward={subtitleEngine.forward}
-              onPlayPause={subtitleEngine.playPause}
-              onToggleCollapsed={() => {}}
-              onToggleSidePanel={() => subtitlePanelsRef.current?.toggleSplitView()}
-              onQuickAdd={subtitleActions.onQuickAdd}
-              onEditCard={subtitleActions.onEditCard}
-              onUpdateCurrentCard={subtitleActions.onUpdateCurrentCard}
-              onToggleManager={() => subtitlePanelsRef.current?.setManagerOpen(true)}
-              onGenerateNative={subtitleActions.onGenerateNative}
-              generateNativeEnabled={subtitleActions.generateNativeEnabled}
-              manager={manager}
-              cues={buildBilingualCues(targetCues, nativeCues)}
-              currentTimeMs={controls.currentTime * 1000}
-              offsetMs={subtitleEngine.offsetMs}
-              onSeek={(ms) => controls.seek(ms / 1000)}
-              onSplitViewChange={handleSplitViewChange}
-              playlistContent={
-                <LibraryView
-                  videos={library}
-                  subtitles={subtitlesLibrary}
-                  sortBy={librarySort}
-                  onSortChange={onSortChange}
-                  onVideoSelect={onVideoSelect}
-                  onSubtitleSelect={onSubtitleSelect}
-                  onSelectTrack={onSelectTrack}
-                  onOpenFile={onOpenFile}
-                  onOpenFolder={onOpenFolder}
-                  currentVideoId={currentVideoId}
-                  currentSubtitles={subtitles}
-                  onVideoDelete={onVideoDelete}
-                  onClearAll={onClearAll}
-                />
-              }
-              filename={filename ?? undefined}
-              fallbackPlayerContainerRef={stageRef}
-              managerShadowCss={hostManagerSheetShadowCss}
-            />
-          </div>
-        )}
-
         {hasVideo ? (
           <div className={styles.videoWrapper}>
             <video
@@ -478,6 +420,64 @@ export function PlayerView({
           </div>
         ) : (
           <EmptyState onOpenFile={onOpenFile} onOpenFolder={onOpenFolder} />
+        )}
+
+        {showSubtitlePanels && (
+          <div className={styles.subtitleOverlay}>
+            <SubtitlePanels
+              ref={subtitlePanelsRef}
+              targetStyle={effectiveTargetStyle}
+              nativeStyle={effectiveNativeStyle}
+              collapsed={false}
+              isPlaying={controls.isPlaying}
+              repeatActive={subtitleEngine.repeatActive}
+              repeatIcon={subtitleEngine.repeatIcon as keyof typeof ICON_CATALOG | undefined}
+              repeatLabel={subtitleEngine.repeatLabel}
+              clusterSettings={DEFAULT_NAV_CLUSTER_SETTINGS}
+              blockSettings={DEFAULT_SUBTITLE_BLOCK_SETTINGS}
+              yOffsetPercent={75}
+              onPrev={subtitleEngine.prev}
+              onNext={subtitleEngine.next}
+              onRepeat={subtitleEngine.repeat}
+              onRewind={subtitleEngine.rewind}
+              onForward={subtitleEngine.forward}
+              onPlayPause={subtitleEngine.playPause}
+              onToggleCollapsed={() => {}}
+              onToggleSidePanel={() => subtitlePanelsRef.current?.toggleSplitView()}
+              onQuickAdd={subtitleActions.onQuickAdd}
+              onEditCard={subtitleActions.onEditCard}
+              onUpdateCurrentCard={subtitleActions.onUpdateCurrentCard}
+              onToggleManager={() => subtitlePanelsRef.current?.setManagerOpen(true)}
+              onGenerateNative={subtitleActions.onGenerateNative}
+              generateNativeEnabled={subtitleActions.generateNativeEnabled}
+              manager={manager}
+              cues={buildBilingualCues(targetCues, nativeCues)}
+              currentTimeMs={controls.currentTime * 1000}
+              offsetMs={subtitleEngine.offsetMs}
+              onSeek={(ms) => controls.seek(ms / 1000)}
+              onSplitViewChange={handleSplitViewChange}
+              playlistContent={
+                <LibraryView
+                  videos={library}
+                  subtitles={subtitlesLibrary}
+                  sortBy={librarySort}
+                  onSortChange={onSortChange}
+                  onVideoSelect={onVideoSelect}
+                  onSubtitleSelect={onSubtitleSelect}
+                  onSelectTrack={onSelectTrack}
+                  onOpenFile={onOpenFile}
+                  onOpenFolder={onOpenFolder}
+                  currentVideoId={currentVideoId}
+                  currentSubtitles={subtitles}
+                  onVideoDelete={onVideoDelete}
+                  onClearAll={onClearAll}
+                />
+              }
+              filename={filename ?? undefined}
+              fallbackPlayerContainerRef={stageRef}
+              managerShadowCss={hostManagerSheetShadowCss}
+            />
+          </div>
         )}
       </div>
     </div>
