@@ -233,11 +233,12 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
     };
   }, [stripEl, visible.length, zoomPos]);
 
-  const cycOffset = (i: number): number => {
+  const ringOffset = (i: number): number => {
     const n = visible.length;
-    const d = ((i - activePos) % n + n) % n;
-    return d > n / 2 ? d - n : d;
+    const raw = i - activePos + (itemStep > 0 ? dragX / itemStep : 0);
+    return ((raw + n / 2) % n + n) % n - n / 2;
   };
+  const hideAt = visible.length <= 2 ? 1.5 : Math.min(1.5, visible.length / 2 - 0.05);
 
   if (visible.length === 0) return null;
 
@@ -283,7 +284,7 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
         }}
       >
         {visible.map(({ item, url }, pos) => {
-          const off = cycOffset(pos) + (itemStep > 0 ? dragX / itemStep : 0);
+          const off = ringOffset(pos);
           const abs = Math.abs(off);
           return (
           <button
@@ -292,9 +293,9 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
             className={styles.imageItem}
             style={{
               transform: `translateX(-50%) translateX(${off * itemStep}px) scale(${1 - 0.3 * Math.min(abs, 1)})`,
-              opacity: abs > 1.5 ? 0 : 1,
+              opacity: abs > hideAt ? 0 : 1,
               zIndex: 100 - Math.round(abs * 10),
-              pointerEvents: abs > 1.5 ? 'none' : undefined,
+              pointerEvents: abs > hideAt ? 'none' : undefined,
               boxShadow: abs < 0.5 ? 'var(--shadow-lg)' : undefined,
             }}
             aria-label={t('srs.review.zoomImage')}
