@@ -54,6 +54,7 @@ interface SrsStudyContextValue {
   readonly resetCurrentCard: () => Promise<void>;
   readonly endSession: () => void;
   readonly updateCurrentNote: (note: SrsNote, deckId?: string) => Promise<void>;
+  readonly previewCurrentNote: (note: SrsNote) => void;
   readonly deleteCurrentCard: () => Promise<void>;
   readonly dismissError: () => void;
 }
@@ -288,6 +289,22 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
     [session, refreshStats, audioCache, imageCache],
   );
 
+  const previewCurrentNote = useCallback(
+    (note: SrsNote) => {
+      if (!session) return;
+      const surface = stimulusStale(session, note)
+        ? resolveReviewSurface(note, session.notetype, session.componentType, audioCache, imageCache)
+        : null;
+      setSession({
+        ...session,
+        note,
+        stimulus: surface?.stimulus ?? session.stimulus,
+        template: surface?.template ?? session.template,
+      });
+    },
+    [session, audioCache, imageCache],
+  );
+
   const deleteCurrentCard = useCallback(async () => {
     if (!session || !config) return;
     const deckIdOfCard = session.card.deckId;
@@ -330,6 +347,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       resetCurrentCard,
       endSession,
       updateCurrentNote,
+      previewCurrentNote,
       deleteCurrentCard,
       dismissError,
     }),
@@ -352,6 +370,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       resetCurrentCard,
       endSession,
       updateCurrentNote,
+      previewCurrentNote,
       deleteCurrentCard,
       dismissError,
     ],

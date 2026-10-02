@@ -12,8 +12,7 @@ import { splitTags } from '@/features/cardCreator/service/noteUpdate';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { SrsDeck, SrsReviewRecord } from '@/entities/srs/types';
 import { componentLabel } from '@/features/srs/ui/srsLabels';
-import { SentenceText } from '@/features/srs/ui/srsCardShared';
-import { persistNoteFields, storedMedia, toEditText, NoteMediaField, orderedEditFields } from './srsNoteEditorShared';
+import { persistNoteFields, storedMedia, toEditText, toFieldValue, NoteMediaField, orderedEditFields } from './srsNoteEditorShared';
 import { lookupDictionaryResources } from '@/features/cardCreator/service/dictionaryGenerate';
 import { translateSentence } from '@/features/cardCreator/media/translation';
 import { fetchMediaList } from '@/features/cardCreator/state/prefillMerge';
@@ -53,6 +52,7 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
     audioCache,
     imageCache,
     updateCurrentNote,
+    previewCurrentNote,
     deleteCurrentCard,
     resetCurrentComponent,
     resetCurrentCard,
@@ -129,8 +129,6 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
     return () => { mounted = false; };
   }, [card]);
 
-  const sentenceText = texts.sentence ?? toEditText(note?.fields.sentence);
-
   const deckOptions = useMemo(
     () => decks.map((d) => ({ value: d.id, label: d.name })),
     [decks],
@@ -158,6 +156,20 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
   useEffect(() => () => {
     if (dirtyRef.current) void persist();
   }, [persist]);
+
+  useEffect(() => {
+    if (!note || !notetype || initializedNoteId.current !== note.id) return;
+    const fields = { ...note.fields };
+    for (const field of notetype.fields) {
+      if (field.type === 'audio' || field.type === 'image') continue;
+      const value = toFieldValue(field, texts[field.id] ?? '');
+      if (value) fields[field.id] = value;
+      else delete fields[field.id];
+    }
+    const targetWord = (texts[notetype.targetFieldId] ?? note.targetWord).trim() || note.targetWord;
+    if (targetWord === note.targetWord && JSON.stringify(fields) === JSON.stringify(note.fields)) return;
+    previewCurrentNote({ ...note, targetWord, fields });
+  }, [texts, note, notetype, previewCurrentNote]);
 
   function markDirty(): void {
     dirtyRef.current = true;
@@ -319,13 +331,6 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
           <Label>{t('srs.edit.deck')}</Label>
           <Select value={deckId} options={deckOptions} onChange={(v) => { markDirty(); setDeckId(v); }} />
         </Box>
-      </Box>
-
-      <Box className={styles.preview}>
-        <Text className={styles.previewWord}>{note.targetWord}</Text>
-        {sentenceText && (
-          <SentenceText sentence={sentenceText} />
-        )}
       </Box>
 
       <Box className={styles.sectionHead}>
