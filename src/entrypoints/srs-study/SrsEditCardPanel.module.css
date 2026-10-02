@@ -18,6 +18,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: var(--space-8);
 }
 
 .closeButton {
