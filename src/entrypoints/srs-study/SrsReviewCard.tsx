@@ -33,8 +33,8 @@ export function SrsReviewCard(): React.JSX.Element | null {
   } = useSrsStudy();
   const [showAnswer, setShowAnswer] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [editDockMounted, setEditDockMounted] = useState(false);
-  const [editDockOpen, setEditDockOpen] = useState(false);
+  const [editMounted, setEditMounted] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [typedInput, setTypedInput] = useState('');
   const prefs = useSrsUiPrefs();
@@ -47,13 +47,13 @@ export function SrsReviewCard(): React.JSX.Element | null {
 
   useEffect(() => {
     if (editing) {
-      setEditDockMounted(true);
+      setEditMounted(true);
       const raf = requestAnimationFrame(() => {
-        requestAnimationFrame(() => setEditDockOpen(true));
+        requestAnimationFrame(() => setEditOpen(true));
       });
       return () => cancelAnimationFrame(raf);
     }
-    setEditDockOpen(false);
+    setEditOpen(false);
   }, [editing]);
 
   if (!session) return null;
@@ -142,8 +142,9 @@ export function SrsReviewCard(): React.JSX.Element | null {
           shape="circle"
           size="sm"
           variant="ghost"
-          onClick={() => { setEditing(true); }}
+          onClick={() => { setEditing((v) => !v); }}
           aria-label={t('srs.review.editCard')}
+          aria-pressed={editing}
           className={styles.chromeButton}
         >
           <Icon name="pencil" />
@@ -151,7 +152,9 @@ export function SrsReviewCard(): React.JSX.Element | null {
       </Box>
 
       <Box className={styles.reviewArea}>
-      <Box className={styles.card}>
+      <Box className={editMounted ? `${styles.card} ${styles.cardEditing}` : styles.card}>
+        <div className={styles.cardRow}>
+        <div className={styles.faceArea}>
         {isNew && <Text className={styles.badgeNew}>{t('srs.review.badgeNew')}</Text>}
         {showAnswer ? (
           <SrsReviewCardBack
@@ -195,42 +198,43 @@ export function SrsReviewCard(): React.JSX.Element | null {
             imageCache={imageCache}
           />
         )}
-      </Box>
+        <Box className={styles.gradeRow}>
+          <Button
+            shape="circle"
+            size="lg"
+            variant="ghost"
+            onClick={() => handleSubmit('forget')}
+            aria-label={t('srs.review.forget')}
+            className={[styles.gradeButton, styles.forgetButton].join(' ')}
+          >
+            <Icon name="x" />
+          </Button>
+          <Button
+            shape="circle"
+            size="lg"
+            variant="primary"
+            onClick={() => (showAnswer ? handleSubmit('remember') : handleFlip())}
+            aria-label={showAnswer ? t('srs.review.remember') : t('srs.review.showAnswer')}
+            className={[styles.gradeButton, styles.rememberButton].join(' ')}
+          >
+            <Icon name="check" />
+          </Button>
+        </Box>
+        </div>
 
-      <Box className={styles.gradeRow}>
-        <Button
-          shape="circle"
-          size="lg"
-          variant="ghost"
-          onClick={() => handleSubmit('forget')}
-          aria-label={t('srs.review.forget')}
-          className={[styles.gradeButton, styles.forgetButton].join(' ')}
-        >
-          <Icon name="x" />
-        </Button>
-        <Button
-          shape="circle"
-          size="lg"
-          variant="primary"
-          onClick={() => (showAnswer ? handleSubmit('remember') : handleFlip())}
-          aria-label={showAnswer ? t('srs.review.remember') : t('srs.review.showAnswer')}
-          className={[styles.gradeButton, styles.rememberButton].join(' ')}
-        >
-          <Icon name="check" />
-        </Button>
+        {editMounted && (
+          <aside
+            className={editOpen ? `${styles.editSection} ${styles.editSectionOpen}` : styles.editSection}
+            onTransitionEnd={(e) => {
+              if (e.target === e.currentTarget && e.propertyName === 'width' && !editing) setEditMounted(false);
+            }}
+          >
+            <SrsEditCardPanel onClose={() => { setEditing(false); }} />
+          </aside>
+        )}
+        </div>
       </Box>
       </Box>
-
-      {editDockMounted && (
-        <aside
-          className={editDockOpen ? `${styles.editDock} ${styles.editDockOpen}` : styles.editDock}
-          onTransitionEnd={(e) => {
-            if (e.target === e.currentTarget && e.propertyName === 'width' && !editing) setEditDockMounted(false);
-          }}
-        >
-          <SrsEditCardPanel onClose={() => { setEditing(false); }} />
-        </aside>
-      )}
 
       <ConfirmDialog
         open={confirmDelete}

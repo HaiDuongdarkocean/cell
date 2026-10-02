@@ -148,10 +148,10 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
           size="sm"
           shape="circle"
           onClick={handleClose}
-          aria-label={t('ui.close')}
+          aria-label={t('ui.back')}
           className={styles.closeButton}
         >
-          <Icon name="x" size="sm" />
+          <Icon name="chevronLeft" size="sm" />
         </Button>
         <Heading level={2} className={styles.title}>{t('srs.edit.title')}</Heading>
       </Box>
