@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
-import { useSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
+import { getSrsUiPrefs, setSrsUiPrefs, useSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
 import { Box, Button, ConfirmDialog, Text } from '@/shared/ui';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { Icon } from '@/shared/ui/Icon';
@@ -36,7 +36,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
   const [editing, setEditing] = useState(false);
   const [editMounted, setEditMounted] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [editWidth, setEditWidth] = useState<number | null>(null);
+  const [editWidth, setEditWidth] = useState<number | null>(() => getSrsUiPrefs().editPaneWidth);
   const [editDragging, setEditDragging] = useState(false);
   const editDragRef = useRef<{ startX: number; startW: number; maxW: number } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -246,7 +246,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
               aria-label={t('srs.edit.resize')}
               aria-valuenow={editWidth ?? undefined}
               tabIndex={0}
-              onDoubleClick={() => { setEditWidth(null); }}
+              onDoubleClick={() => { setEditWidth(null); setSrsUiPrefs({ editPaneWidth: null }); }}
               onPointerDown={(e) => {
                 const aside = e.currentTarget.parentElement;
                 const cardEl = aside?.closest(`.${styles.card}`) ?? aside?.parentElement?.parentElement;
@@ -265,9 +265,14 @@ export function SrsReviewCard(): React.JSX.Element | null {
                 setEditWidth(Math.round(Math.min(Math.max(d.startW + (d.startX - e.clientX), 280), Math.max(280, d.maxW))));
               }}
               onPointerUp={(e) => {
+                const wasDragging = editDragRef.current !== null;
                 editDragRef.current = null;
                 setEditDragging(false);
                 e.currentTarget.releasePointerCapture(e.pointerId);
+                if (wasDragging) {
+                  const w = e.currentTarget.parentElement?.getBoundingClientRect().width;
+                  if (w) setSrsUiPrefs({ editPaneWidth: Math.round(w) });
+                }
               }}
               onPointerCancel={(e) => {
                 editDragRef.current = null;
@@ -282,8 +287,9 @@ export function SrsReviewCard(): React.JSX.Element | null {
                 if (!aside || !cardEl) return;
                 const cur = editWidth ?? aside.getBoundingClientRect().width;
                 const maxW = cardEl.getBoundingClientRect().width - 48 - 42 - 320;
-                const next = cur + (e.key === 'ArrowLeft' ? 16 : -16);
-                setEditWidth(Math.round(Math.min(Math.max(next, 280), Math.max(280, maxW))));
+                const next = Math.round(Math.min(Math.max(cur + (e.key === 'ArrowLeft' ? 16 : -16), 280), Math.max(280, maxW)));
+                setEditWidth(next);
+                setSrsUiPrefs({ editPaneWidth: next });
               }}
             />
             <SrsEditCardPanel

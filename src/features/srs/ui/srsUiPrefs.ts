@@ -12,6 +12,7 @@ export interface SrsUiPrefs {
   readonly newPerDay: number;
   readonly cardsPerBatch: number;
   readonly graduatePasses: number | null;
+  readonly editPaneWidth: number | null;
 }
 
 const STORAGE_KEY = 'cell.srs.uiPrefs';
@@ -28,6 +29,7 @@ export const SRS_UI_PREF_DEFAULTS: SrsUiPrefs = {
   newPerDay: 10,
   cardsPerBatch: 5,
   graduatePasses: null,
+  editPaneWidth: null,
 };
 
 function load(): SrsUiPrefs {
