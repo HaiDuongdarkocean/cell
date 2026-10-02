@@ -393,16 +393,15 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
           trailing={generateKind(field) ? (
             <Button
               variant="ghost"
-              size="sm"
+              size="xs"
               onClick={() => { void generateField(field); }}
               disabled={generating !== null}
               aria-label={t('cardCreator.action.generateFor', [field.name])}
               title={t('cardCreator.action.generateFor', [field.name])}
-              trailingIcon={<Icon name="zap" size="sm" />}
-              collapseLabel
+              className={styles.generateBtn}
               data-cell-id={`srs-edit-${field.id}-generate`}
             >
-              {t('cardCreator.action.create')}
+              <Icon name="zap" size="xs" color="primary" />
             </Button>
           ) : undefined}
         >

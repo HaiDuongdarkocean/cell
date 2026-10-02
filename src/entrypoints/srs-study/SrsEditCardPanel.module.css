@@ -44,6 +44,10 @@
   right: 0;
 }
 
+.generateBtn {
+  margin-block: calc(-1 * var(--space-1-5));
+}
+
 .title {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
