@@ -180,7 +180,7 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
   useEffect(() => {
     if (!stripEl) return;
     const measure = (): void => {
-      setItemStep(stripEl.clientWidth * 0.58 * 0.46);
+      setItemStep(stripEl.clientWidth * 0.58 * 0.32);
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -291,7 +291,7 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
             type="button"
             className={styles.imageItem}
             style={{
-              transform: `translateX(-50%) translateX(${off * itemStep}px) scale(${1 - 0.18 * Math.min(abs, 1)})`,
+              transform: `translateX(-50%) translateX(${off * itemStep}px) scale(${1 - 0.3 * Math.min(abs, 1)})`,
               opacity: abs > 1.5 ? 0 : 1,
               zIndex: 100 - Math.round(abs * 10),
               pointerEvents: abs > 1.5 ? 'none' : undefined,
