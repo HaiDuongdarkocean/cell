@@ -131,27 +131,44 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
       >
         {zoomPos !== null && (
           <Box className={styles.zoomStage}>
-            <img src={visible[zoomPos].url} alt={alt} className={styles.zoomImage} draggable={false} />
+            <Box className={styles.zoomImageWrap}>
+              <img src={visible[zoomPos].url} alt={alt} className={styles.zoomImage} draggable={false} />
+              {visible.length > 1 && (
+                <>
+                  <Button
+                    variant="ghost"
+                    shape="circle"
+                    aria-label={t('srs.review.prevImage')}
+                    className={`${styles.zoomArrow} ${styles.zoomPrev}`}
+                    onClick={() => setZoomIdx((zoomPos - 1 + visible.length) % visible.length)}
+                  >
+                    <Icon name="chevronLeft" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    shape="circle"
+                    aria-label={t('srs.review.nextImage')}
+                    className={`${styles.zoomArrow} ${styles.zoomNext}`}
+                    onClick={() => setZoomIdx((zoomPos + 1) % visible.length)}
+                  >
+                    <Icon name="chevronRight" />
+                  </Button>
+                </>
+              )}
+            </Box>
             {visible.length > 1 && (
-              <Box className={styles.zoomNav}>
-                <Button
-                  variant="ghost"
-                  shape="circle"
-                  aria-label={t('srs.review.prevImage')}
-                  onClick={() => setZoomIdx((zoomPos - 1 + visible.length) % visible.length)}
-                >
-                  <Icon name="chevronLeft" />
-                </Button>
-                <Text className={styles.zoomCount}>{zoomPos + 1} / {visible.length}</Text>
-                <Button
-                  variant="ghost"
-                  shape="circle"
-                  aria-label={t('srs.review.nextImage')}
-                  onClick={() => setZoomIdx((zoomPos + 1) % visible.length)}
-                >
-                  <Icon name="chevronRight" />
-                </Button>
-              </Box>
+              <div className={styles.zoomNav} role="group" aria-label={`${zoomPos + 1} / ${visible.length}`}>
+                {visible.map(({ item }, i) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={`${styles.zoomDot} ${i === zoomPos ? styles.zoomDotActive : ''}`}
+                    aria-label={t('srs.review.goToImage', [String(i + 1)])}
+                    aria-current={i === zoomPos}
+                    onClick={() => setZoomIdx(i)}
+                  />
+                ))}
+              </div>
             )}
           </Box>
         )}
