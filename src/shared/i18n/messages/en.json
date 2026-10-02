@@ -1215,6 +1215,8 @@
   "srs.review.prevImage": "Previous image",
   "srs.review.nextImage": "Next image",
   "srs.review.goToImage": "Go to image $1",
+  "srs.review.zoomIn": "Zoom in",
+  "srs.review.zoomOut": "Zoom out",
   "srs.edit.title": "Edit card",
   "srs.edit.cardType": "Card type",
   "srs.edit.deck": "Deck",

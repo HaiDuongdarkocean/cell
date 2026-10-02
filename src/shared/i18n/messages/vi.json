@@ -1215,6 +1215,8 @@
   "srs.review.prevImage": "Ảnh trước",
   "srs.review.nextImage": "Ảnh tiếp",
   "srs.review.goToImage": "Xem ảnh $1",
+  "srs.review.zoomIn": "Phóng to",
+  "srs.review.zoomOut": "Thu nhỏ",
   "srs.edit.title": "Sửa thẻ",
   "srs.edit.cardType": "Loại thẻ",
   "srs.edit.deck": "Bộ thẻ",

@@ -82,6 +82,7 @@ export { MaximizeButton } from './MaximizeButton';
 export { MinimizeButton } from './MinimizeButton';
 export { Overlay } from './Overlay';
 export { Pagination } from './Pagination';
+export { PaginationDots } from './PaginationDots';
 export { PinButton } from './PinButton';
 export { Portal } from './Portal';
 export { ResizeHandle } from './ResizeHandle';

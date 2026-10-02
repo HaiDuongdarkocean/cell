@@ -1,5 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Box, Button, Dialog, Text } from '@/shared/ui';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Button,
+  CloseButton,
+  Overlay,
+  PaginationDots,
+  Portal,
+  Text,
+  useFocusTrap,
+} from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { useDragScroll } from '@/shared/ui/useDragScroll';
 import { t } from '@/shared/i18n';
@@ -77,6 +85,9 @@ export interface GalleryItem {
   readonly asset: SrsImageAsset | undefined;
 }
 
+const MAX_IMAGE_ZOOM = 4;
+const ZOOM_STEP = 1.25;
+
 export function ReviewImageGallery({ items, alt, dataCellId }: {
   readonly items: readonly GalleryItem[];
   readonly alt: string;
@@ -85,9 +96,24 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
   const urls = useResolvedImageUrls(items);
   const stripRef = useDragScroll<HTMLDivElement>();
   const [zoomIdx, setZoomIdx] = useState<number | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [panning, setPanning] = useState(false);
+  const lightboxRef = useRef<HTMLDivElement>(null);
+  const zoomImgRef = useRef<HTMLImageElement>(null);
+  const panStart = useRef<{ id: number; x: number; y: number; px: number; py: number } | null>(null);
   const visible = items
     .map((item, i) => ({ item, url: urls[i] }))
     .filter((x): x is { item: GalleryItem; url: string } => Boolean(x.url));
+
+  const zoomPos = zoomIdx === null ? null : Math.min(zoomIdx, Math.max(0, visible.length - 1));
+  useFocusTrap(lightboxRef, zoomPos !== null);
+
+  useEffect(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setPanning(false);
+  }, [zoomPos]);
 
   useEffect(() => {
     if (zoomIdx === null) return;
@@ -102,8 +128,48 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
     return () => window.removeEventListener('keydown', onKey, true);
   }, [zoomIdx, visible.length]);
 
+  const applyZoom = (next: number): void => {
+    setZoom(Math.min(MAX_IMAGE_ZOOM, Math.max(1, next)));
+  };
+
+  useEffect(() => {
+    const img = zoomImgRef.current;
+    if (!img || zoomPos === null) return;
+    const onWheel = (e: WheelEvent): void => {
+      e.preventDefault();
+      setZoom((z) => Math.min(MAX_IMAGE_ZOOM, Math.max(1, e.deltaY < 0 ? z * ZOOM_STEP : z / ZOOM_STEP)));
+    };
+    img.addEventListener('wheel', onWheel, { passive: false });
+    return () => img.removeEventListener('wheel', onWheel);
+  }, [zoomPos]);
+
+  useEffect(() => {
+    const img = zoomImgRef.current;
+    const stage = lightboxRef.current;
+    setPan((p) => {
+      if (zoom <= 1 || !img || !stage) return { x: 0, y: 0 };
+      const maxX = Math.max(0, (img.offsetWidth * zoom - stage.clientWidth) / 2);
+      const maxY = Math.max(0, (img.offsetHeight * zoom - stage.clientHeight) / 2);
+      return {
+        x: Math.min(maxX, Math.max(-maxX, p.x)),
+        y: Math.min(maxY, Math.max(-maxY, p.y)),
+      };
+    });
+  }, [zoom]);
+
+  const clampedPan = (x: number, y: number): { x: number; y: number } => {
+    const img = zoomImgRef.current;
+    const stage = lightboxRef.current;
+    if (!img || !stage) return { x, y };
+    const maxX = Math.max(0, (img.offsetWidth * zoom - stage.clientWidth) / 2);
+    const maxY = Math.max(0, (img.offsetHeight * zoom - stage.clientHeight) / 2);
+    return {
+      x: Math.min(maxX, Math.max(-maxX, x)),
+      y: Math.min(maxY, Math.max(-maxY, y)),
+    };
+  };
+
   if (visible.length === 0) return null;
-  const zoomPos = zoomIdx === null ? null : Math.min(zoomIdx, visible.length - 1);
 
   return (
     <>
@@ -121,58 +187,103 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
         ))}
       </div>
       <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
-      <Dialog
-        open={zoomPos !== null}
-        onOpenChange={(open) => { if (!open) setZoomIdx(null); }}
-        title={alt}
-        showCloseButton
-        size="xl"
-        data-cell-id="srs-image-zoom"
-      >
         {zoomPos !== null && (
-          <Box className={styles.zoomStage}>
-            <Box className={styles.zoomImageWrap}>
-              <img src={visible[zoomPos].url} alt={alt} className={styles.zoomImage} draggable={false} />
-              {visible.length > 1 && (
-                <>
-                  <Button
-                    variant="ghost"
-                    shape="circle"
-                    aria-label={t('srs.review.prevImage')}
-                    className={`${styles.zoomArrow} ${styles.zoomPrev}`}
-                    onClick={() => setZoomIdx((zoomPos - 1 + visible.length) % visible.length)}
-                  >
-                    <Icon name="chevronLeft" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    shape="circle"
-                    aria-label={t('srs.review.nextImage')}
-                    className={`${styles.zoomArrow} ${styles.zoomNext}`}
-                    onClick={() => setZoomIdx((zoomPos + 1) % visible.length)}
-                  >
-                    <Icon name="chevronRight" />
-                  </Button>
-                </>
-              )}
-            </Box>
-            {visible.length > 1 && (
-              <div className={styles.zoomNav} role="group" aria-label={`${zoomPos + 1} / ${visible.length}`}>
-                {visible.map(({ item }, i) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className={`${styles.zoomDot} ${i === zoomPos ? styles.zoomDotActive : ''}`}
-                    aria-label={t('srs.review.goToImage', [String(i + 1)])}
-                    aria-current={i === zoomPos}
-                    onClick={() => setZoomIdx(i)}
+          <Portal>
+            <Overlay
+              elevation="high"
+              data-cell-id="srs-image-zoom"
+              onClick={(e) => { if (e.target === e.currentTarget) setZoomIdx(null); }}
+              onClose={() => setZoomIdx(null)}
+            >
+              <div
+                ref={lightboxRef}
+                className={styles.lightbox}
+                role="dialog"
+                aria-modal="true"
+                aria-label={alt}
+              >
+                <div className={styles.lightboxStage}>
+                  <img
+                    ref={zoomImgRef}
+                    src={visible[zoomPos].url}
+                    alt={alt}
+                    draggable={false}
+                    className={`${styles.lightboxImage} ${zoom > 1 ? styles.lightboxImageZoomed : ''} ${panning ? styles.lightboxImagePanning : ''}`}
+                    style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
+                    onPointerDown={(e) => {
+                      if (zoom <= 1) return;
+                      e.preventDefault();
+                      panStart.current = { id: e.pointerId, x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                      setPanning(true);
+                    }}
+                    onPointerMove={(e) => {
+                      const s = panStart.current;
+                      if (!s || s.id !== e.pointerId) return;
+                      setPan(clampedPan(s.px + e.clientX - s.x, s.py + e.clientY - s.y));
+                    }}
+                    onPointerUp={(e) => {
+                      if (panStart.current?.id === e.pointerId) { panStart.current = null; setPanning(false); }
+                    }}
+                    onPointerCancel={() => { panStart.current = null; setPanning(false); }}
+                    onDoubleClick={(e) => { e.preventDefault(); applyZoom(zoom > 1 ? 1 : 2.5); }}
                   />
-                ))}
+                </div>
+                <CloseButton className={styles.lightboxClose} onClick={() => setZoomIdx(null)} />
+                {visible.length > 1 && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      shape="circle"
+                      aria-label={t('srs.review.prevImage')}
+                      className={`${styles.lightboxArrow} ${styles.lightboxPrev}`}
+                      onClick={() => setZoomIdx((zoomPos - 1 + visible.length) % visible.length)}
+                    >
+                      <Icon name="chevronLeft" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      shape="circle"
+                      aria-label={t('srs.review.nextImage')}
+                      className={`${styles.lightboxArrow} ${styles.lightboxNext}`}
+                      onClick={() => setZoomIdx((zoomPos + 1) % visible.length)}
+                    >
+                      <Icon name="chevronRight" />
+                    </Button>
+                    <PaginationDots
+                      className={styles.lightboxDots}
+                      count={visible.length}
+                      active={zoomPos}
+                      onSelect={setZoomIdx}
+                      label={`${zoomPos + 1} / ${visible.length}`}
+                      itemLabel={(i) => t('srs.review.goToImage', [String(i + 1)])}
+                    />
+                  </>
+                )}
+                <div className={styles.lightboxZoom}>
+                  <Button
+                    variant="ghost"
+                    shape="circle"
+                    aria-label={t('srs.review.zoomOut')}
+                    disabled={zoom <= 1}
+                    onClick={() => applyZoom(zoom / ZOOM_STEP)}
+                  >
+                    <Icon name="minus" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    shape="circle"
+                    aria-label={t('srs.review.zoomIn')}
+                    disabled={zoom >= MAX_IMAGE_ZOOM}
+                    onClick={() => applyZoom(zoom * ZOOM_STEP)}
+                  >
+                    <Icon name="plus" />
+                  </Button>
+                </div>
               </div>
-            )}
-          </Box>
+            </Overlay>
+          </Portal>
         )}
-      </Dialog>
       </div>
     </>
   );
