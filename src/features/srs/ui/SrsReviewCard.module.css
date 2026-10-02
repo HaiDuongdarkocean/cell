@@ -290,6 +290,70 @@
   max-width: 20rem;
 }
 
+.dictationResult {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: var(--border-width-hairline) solid var(--color-border);
+}
+
+.dictationOk {
+  border-color: var(--color-success);
+  background: var(--color-success-subtle);
+}
+
+.dictationBad {
+  border-color: var(--color-error);
+  background: var(--color-error-subtle);
+}
+
+.dictationVerdict {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.dictationOk .dictationVerdict {
+  color: var(--color-success);
+}
+
+.dictationBad .dictationVerdict {
+  color: var(--color-error);
+}
+
+.dictationRow {
+  font-size: var(--font-size-md);
+  text-align: center;
+}
+
+.dictationLabel {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  margin-bottom: calc(var(--space-0-5) * -1);
+}
+
+.dictationText {
+  font-family: var(--font-mono, monospace);
+  letter-spacing: var(--tracking-wide);
+}
+
+.dictationMiss {
+  color: var(--color-error);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+  text-decoration-color: var(--color-error);
+  text-decoration-style: wavy;
+}
+
 .back {
   composes: hide from '@/shared/ui/Scrollable.module.css';
   flex: 1;

@@ -8,6 +8,7 @@ import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepo
 import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote } from '@/entities/srs/types';
 import { playableUrl, ReviewImageGallery, SentenceText, sequentialAudio } from './srsCardShared';
+import { alignDictation } from '@/features/srs/lib/dictationDiff';
 import styles from './SrsReviewCard.module.css';
 
 function playSources(sources: readonly (SrsAudioAsset | string)[]): void {
@@ -31,6 +32,39 @@ function fieldLabel(fieldId: string): string {
   const key = FIELD_LABEL_KEYS[fieldId];
   if (key) return t(key);
   return fieldId.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
+}
+
+function MarkedText({ text, marks, markClass }: { text: string; marks: readonly boolean[]; markClass: string }): React.JSX.Element {
+  return (
+    <span className={styles.dictationText}>
+      {[...text].map((ch, i) => (
+        <span key={i} className={marks[i] ? undefined : markClass}>{ch === ' ' ? ' ' : ch}</span>
+      ))}
+    </span>
+  );
+}
+
+function DictationResult({ typed, expected }: { typed: string; expected: string }): React.JSX.Element | null {
+  const alignment = useMemo(() => alignDictation(expected, typed), [expected, typed]);
+  if (!alignment.typed) return null;
+  return (
+    <Box className={`${styles.dictationResult} ${alignment.correct ? styles.dictationOk : styles.dictationBad}`}>
+      <Text className={styles.dictationVerdict}>
+        <Icon name={alignment.correct ? 'check' : 'x'} size="xs" />
+        {t(alignment.correct ? 'srs.review.dictationCorrect' : 'srs.review.dictationIncorrect')}
+      </Text>
+      <Text className={styles.dictationRow}>
+        <span className={styles.dictationLabel}>{t('srs.review.youTyped')}</span>
+        <MarkedText text={alignment.typed} marks={alignment.typedMarks} markClass={styles.dictationMiss} />
+      </Text>
+      {!alignment.correct && (
+        <Text className={styles.dictationRow}>
+          <span className={styles.dictationLabel}>{t('srs.review.dictationExpected')}</span>
+          <MarkedText text={alignment.expected} marks={alignment.expectedMarks} markClass={styles.dictationMiss} />
+        </Text>
+      )}
+    </Box>
+  );
 }
 
 function FieldBox({ label, children }: { label: string; children: React.ReactNode }): React.JSX.Element {
@@ -95,6 +129,7 @@ interface SrsReviewCardBackProps {
   readonly audioCache: ReadonlyMap<string, SrsAudioAsset>;
   readonly imageCache: ReadonlyMap<string, SrsImageAsset>;
   readonly onFlipBack: () => void;
+  readonly dictation?: { typed: string; expected: string } | null;
 }
 
 export function SrsReviewCardBack({
@@ -102,6 +137,7 @@ export function SrsReviewCardBack({
   audioCache,
   imageCache,
   onFlipBack,
+  dictation,
 }: SrsReviewCardBackProps): React.JSX.Element {
   const [translationRevealed, setTranslationRevealed] = useState(false);
 
@@ -190,6 +226,10 @@ export function SrsReviewCardBack({
       }}
     >
       <div className={styles.backHead}>
+        {dictation && dictation.expected && (
+          <DictationResult typed={dictation.typed} expected={dictation.expected} />
+        )}
+
         <Heading level={1} className={styles.targetWord}>{note.targetWord}</Heading>
 
         {note.fields.sentence?.kind === 'text' && (

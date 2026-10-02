@@ -7,6 +7,7 @@ import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import type { ResolvedVariantToggles, VariantAudioToggle, VariantScopeToggle } from '@/entities/srs/types';
 import { SRS_INPUT_FIELD_ID } from '@/entities/srs/types';
+import { expectedInputText } from '@/features/srs';
 import { variantLabel } from '@/features/srs/ui/srsLabels';
 import { SrsVariantFront } from '@/features/srs/ui/SrsVariantFront';
 import { SrsReviewCardBack } from '@/features/srs/ui/SrsReviewCardBack';
@@ -89,6 +90,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
   const effectiveToggles = toggles ?? session.toggles;
   const hasInput = variant.fieldIds.includes(SRS_INPUT_FIELD_ID);
   const isNew = (card.components[variant.id]?.exploreCount ?? 0) === 0;
+  const dictationExpected = hasInput ? expectedInputText(variant, note, effectiveToggles) : null;
 
   function handleFlip(): void {
     setShowAnswer((v) => !v);
@@ -200,6 +202,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
             audioCache={audioCache}
             imageCache={imageCache}
             onFlipBack={handleFlip}
+            dictation={dictationExpected !== null ? { typed: typedInput, expected: dictationExpected } : null}
           />
         ) : (
           <SrsVariantFront
