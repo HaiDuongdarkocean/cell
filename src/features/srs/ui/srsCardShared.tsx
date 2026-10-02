@@ -9,7 +9,6 @@ import {
   useFocusTrap,
 } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
-import { useDragScroll } from '@/shared/ui/useDragScroll';
 import { t } from '@/shared/i18n';
 import { mediaFieldValues } from '@/features/srs/lib/helpers';
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset } from '@/entities/srs/types';
@@ -94,10 +93,16 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
   readonly dataCellId?: string;
 }): React.JSX.Element | null {
   const urls = useResolvedImageUrls(items);
-  const setDragRef = useDragScroll<HTMLDivElement>();
   const [stripEl, setStripEl] = useState<HTMLDivElement | null>(null);
   const [activePos, setActivePos] = useState(0);
-  const [scrollable, setScrollable] = useState(false);
+  const [itemStep, setItemStep] = useState(0);
+  const [dragX, setDragX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef<{ id: number; startX: number; moved: boolean } | null>(null);
+  const suppressClickRef = useRef(false);
+  const wheelAcc = useRef(0);
+  const activityRef = useRef(0);
+  const pausedRef = useRef(false);
   const [zoomIdx, setZoomIdx] = useState<number | null>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -174,99 +179,163 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
 
   useEffect(() => {
     if (!stripEl) return;
-    const update = (): void => {
-      setScrollable(stripEl.scrollWidth > stripEl.clientWidth + 1);
-      const stripRect = stripEl.getBoundingClientRect();
-      const center = stripRect.left + stripRect.width / 2;
-      let best = 0;
-      let bestDist = Infinity;
-      Array.from(stripEl.children).forEach((it, i) => {
-        const r = it.getBoundingClientRect();
-        const dist = Math.abs(r.left + r.width / 2 - center);
-        if (dist < bestDist) { bestDist = dist; best = i; }
-      });
-      setActivePos(best);
+    const measure = (): void => {
+      const itemW = stripEl.clientHeight > 0
+        ? stripEl.clientHeight * 16 / 9
+        : (stripEl.querySelector('button')?.getBoundingClientRect().width ?? 0);
+      setItemStep(itemW > 0 ? (stripEl.clientWidth - itemW) / 2 : 0);
     };
-    update();
-    let raf = 0;
-    const onScroll = (): void => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(update);
-    };
-    const ro = new ResizeObserver(update);
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(stripEl);
-    stripEl.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      ro.disconnect();
-      cancelAnimationFrame(raf);
-      stripEl.removeEventListener('scroll', onScroll);
-    };
+    return () => ro.disconnect();
   }, [stripEl, visible.length]);
 
-  const scrollToPos = (pos: number): void => {
-    const target = stripEl?.children[pos];
-    if (target instanceof HTMLElement) {
-      target.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
-    }
+  useEffect(() => {
+    if (!stripEl || visible.length <= 1) return;
+    const onWheel = (e: WheelEvent): void => {
+      e.preventDefault();
+      activityRef.current = Date.now();
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      wheelAcc.current += delta;
+      if (Math.abs(wheelAcc.current) >= 60) {
+        const dir = wheelAcc.current > 0 ? 1 : -1;
+        wheelAcc.current = 0;
+        setActivePos((p) => (p + dir + visible.length) % visible.length);
+      }
+    };
+    stripEl.addEventListener('wheel', onWheel, { passive: false });
+    return () => stripEl.removeEventListener('wheel', onWheel);
+  }, [stripEl, visible.length]);
+
+  useEffect(() => {
+    const gallery = stripEl?.parentElement;
+    if (!stripEl || !gallery || visible.length <= 1) return;
+    const mark = (): void => { activityRef.current = Date.now(); };
+    const pause = (): void => { pausedRef.current = true; };
+    const resume = (): void => { pausedRef.current = false; };
+    const interval = setInterval(() => {
+      if (pausedRef.current || document.hidden || zoomPos !== null) return;
+      if (Date.now() - activityRef.current < 3000) return;
+      setActivePos((p) => (p + 1) % visible.length);
+    }, 2000);
+    stripEl.addEventListener('pointerdown', mark);
+    stripEl.addEventListener('touchmove', mark, { passive: true });
+    gallery.addEventListener('pointerenter', pause);
+    gallery.addEventListener('pointerleave', resume);
+    gallery.addEventListener('focusin', pause);
+    gallery.addEventListener('focusout', resume);
+    return () => {
+      clearInterval(interval);
+      stripEl.removeEventListener('pointerdown', mark);
+      stripEl.removeEventListener('touchmove', mark);
+      gallery.removeEventListener('pointerenter', pause);
+      gallery.removeEventListener('pointerleave', resume);
+      gallery.removeEventListener('focusin', pause);
+      gallery.removeEventListener('focusout', resume);
+    };
+  }, [stripEl, visible.length, zoomPos]);
+
+  const cycOffset = (i: number): number => {
+    const n = visible.length;
+    const d = ((i - activePos) % n + n) % n;
+    return d > n / 2 ? d - n : d;
   };
 
   if (visible.length === 0) return null;
 
   return (
     <>
-      <div className={styles.imageGallery}>
+      <div className={styles.imageGallery} onClick={(e) => e.stopPropagation()}>
       <div
-        ref={(el) => { setStripEl(el); setDragRef(el); }}
-        className={styles.imageStrip}
+        ref={setStripEl}
+        className={`${styles.imageStrip} ${dragging ? styles.imageStripDragging : ''}`}
         data-cell-id={dataCellId}
+        onPointerDown={(e) => {
+          if (visible.length <= 1 || e.button !== 0) return;
+          dragRef.current = { id: e.pointerId, startX: e.clientX, moved: false };
+        }}
+        onPointerMove={(e) => {
+          const d = dragRef.current;
+          if (!d || d.id !== e.pointerId) return;
+          const delta = e.clientX - d.startX;
+          if (!d.moved && Math.abs(delta) >= 4) {
+            d.moved = true;
+            e.currentTarget.setPointerCapture(e.pointerId);
+            setDragging(true);
+          }
+          if (d.moved) setDragX(delta);
+        }}
+        onPointerUp={(e) => {
+          const d = dragRef.current;
+          if (!d || d.id !== e.pointerId) return;
+          dragRef.current = null;
+          suppressClickRef.current = d.moved;
+          setDragging(false);
+          const steps = itemStep > 0 ? Math.round(dragX / itemStep) : 0;
+          setDragX(0);
+          if (steps !== 0) {
+            setActivePos((p) => ((p - steps) % visible.length + visible.length) % visible.length);
+          }
+        }}
+        onPointerCancel={(e) => {
+          if (dragRef.current?.id !== e.pointerId) return;
+          dragRef.current = null;
+          setDragging(false);
+          setDragX(0);
+        }}
       >
         {visible.map(({ item, url }, pos) => (
           <button
             key={item.key}
             type="button"
             className={styles.imageItem}
+            style={{ transform: `translateX(-50%) translateX(${cycOffset(pos) * itemStep + dragX}px)` }}
             aria-label={t('srs.review.zoomImage')}
+            aria-current={pos === activePos}
             onClick={(e) => {
               e.stopPropagation();
-              e.currentTarget.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
-              setZoomIdx(pos);
+              if (suppressClickRef.current) { suppressClickRef.current = false; return; }
+              activityRef.current = Date.now();
+              if (pos === activePos) setZoomIdx(pos);
+              else setActivePos(pos);
             }}
           >
             <img src={url} alt={alt} className={styles.image} draggable={false} />
           </button>
         ))}
       </div>
-      {scrollable && visible.length > 1 && (
-        <div className={styles.stripNav} onClick={(e) => e.stopPropagation()}>
+      {visible.length > 1 && (
+        <>
           <Button
             variant="ghost"
             shape="circle"
             size="sm"
             aria-label={t('srs.review.prevImage')}
-            disabled={activePos === 0}
-            onClick={() => scrollToPos(Math.max(0, activePos - 1))}
+            className={`${styles.stripArrow} ${styles.stripPrev}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              activityRef.current = Date.now();
+              setActivePos((activePos - 1 + visible.length) % visible.length);
+            }}
           >
             <Icon name="chevronLeft" />
           </Button>
-          <PaginationDots
-            count={visible.length}
-            active={activePos}
-            onSelect={scrollToPos}
-            maxDots={3}
-            label={`${activePos + 1} / ${visible.length}`}
-            itemLabel={(i) => t('srs.review.goToImage', [String(i + 1)])}
-          />
           <Button
             variant="ghost"
             shape="circle"
             size="sm"
             aria-label={t('srs.review.nextImage')}
-            disabled={activePos === visible.length - 1}
-            onClick={() => scrollToPos(Math.min(visible.length - 1, activePos + 1))}
+            className={`${styles.stripArrow} ${styles.stripNext}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              activityRef.current = Date.now();
+              setActivePos((activePos + 1) % visible.length);
+            }}
           >
             <Icon name="chevronRight" />
           </Button>
-        </div>
+        </>
       )}
       </div>
       <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
