@@ -98,6 +98,8 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
   const [itemStep, setItemStep] = useState(0);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const dragValRef = useRef(0);
+  const tweenRef = useRef<number | null>(null);
   const dragRef = useRef<{ id: number; startX: number; moved: boolean } | null>(null);
   const suppressClickRef = useRef(false);
   const wheelAcc = useRef(0);
@@ -196,18 +198,17 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
     if (!stripEl || visible.length <= 1) return;
     const onWheel = (e: WheelEvent): void => {
       e.preventDefault();
-      activityRef.current = Date.now();
       const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
       wheelAcc.current += delta;
       if (Math.abs(wheelAcc.current) >= 60) {
         const dir = wheelAcc.current > 0 ? 1 : -1;
         wheelAcc.current = 0;
-        setActivePos((p) => (p + dir + ringLen) % ringLen);
+        go(dir);
       }
     };
     stripEl.addEventListener('wheel', onWheel, { passive: false });
     return () => stripEl.removeEventListener('wheel', onWheel);
-  }, [stripEl, ringLen]);
+  }, [stripEl, ringLen, itemStep]);
 
   useEffect(() => {
     const gallery = stripEl?.parentElement;
@@ -218,7 +219,7 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
     const interval = setInterval(() => {
       if (pausedRef.current || document.hidden || zoomPos !== null) return;
       if (Date.now() - activityRef.current < 3000) return;
-      setActivePos((p) => (p + 1) % ringLen);
+      go(1);
     }, 2000);
     stripEl.addEventListener('pointerdown', mark);
     stripEl.addEventListener('touchmove', mark, { passive: true });
@@ -235,7 +236,52 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
       gallery.removeEventListener('focusin', pause);
       gallery.removeEventListener('focusout', resume);
     };
-  }, [stripEl, ringLen, zoomPos]);
+  }, [stripEl, ringLen, itemStep, zoomPos]);
+
+  const tweenDoneRef = useRef<(() => void) | null>(null);
+  const animateDrag = (target: number, done: () => void): void => {
+    if (tweenRef.current) cancelAnimationFrame(tweenRef.current);
+    const from = dragValRef.current;
+    const start = performance.now();
+    tweenDoneRef.current = done;
+    setDragging(true);
+    const step = (now: number): void => {
+      const t = Math.min(1, (now - start) / 260);
+      const x = from + (target - from) * (1 - Math.pow(1 - t, 3));
+      dragValRef.current = x;
+      setDragX(x);
+      if (t < 1) { tweenRef.current = requestAnimationFrame(step); return; }
+      tweenRef.current = null;
+      tweenDoneRef.current = null;
+      dragValRef.current = 0;
+      setDragX(0);
+      setDragging(false);
+      done();
+    };
+    tweenRef.current = requestAnimationFrame(step);
+  };
+
+  const settleTween = (): void => {
+    if (!tweenRef.current) return;
+    cancelAnimationFrame(tweenRef.current);
+    tweenRef.current = null;
+    const done = tweenDoneRef.current;
+    tweenDoneRef.current = null;
+    dragValRef.current = 0;
+    setDragX(0);
+    setDragging(false);
+    done?.();
+  };
+
+  useEffect(() => () => {
+    if (tweenRef.current) cancelAnimationFrame(tweenRef.current);
+  }, []);
+
+  const go = (dir: 1 | -1): void => {
+    if (ringLen <= 1 || itemStep <= 0) return;
+    activityRef.current = Date.now();
+    animateDrag(-dir * itemStep, () => setActivePos((p) => (p + dir + ringLen) % ringLen));
+  };
 
   const ringOffset = (i: number): number => {
     const raw = i - apos + (itemStep > 0 ? dragX / itemStep : 0);
@@ -254,6 +300,7 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
         data-cell-id={dataCellId}
         onPointerDown={(e) => {
           if (ringLen <= 1 || e.button !== 0) return;
+          settleTween();
           dragRef.current = { id: e.pointerId, startX: e.clientX, moved: false };
         }}
         onPointerMove={(e) => {
@@ -265,25 +312,28 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
             e.currentTarget.setPointerCapture(e.pointerId);
             setDragging(true);
           }
-          if (d.moved) setDragX(delta);
+          if (d.moved) {
+            dragValRef.current = delta;
+            setDragX(delta);
+          }
         }}
         onPointerUp={(e) => {
           const d = dragRef.current;
           if (!d || d.id !== e.pointerId) return;
           dragRef.current = null;
           suppressClickRef.current = d.moved;
-          setDragging(false);
+          if (!d.moved) return;
           const steps = itemStep > 0 ? Math.round(dragX / itemStep) : 0;
-          setDragX(0);
-          if (steps !== 0) {
-            setActivePos((p) => ((p - steps) % ringLen + ringLen) % ringLen);
-          }
+          animateDrag(steps * itemStep, () => {
+            if (steps !== 0) {
+              setActivePos((p) => ((p - steps) % ringLen + ringLen) % ringLen);
+            }
+          });
         }}
         onPointerCancel={(e) => {
           if (dragRef.current?.id !== e.pointerId) return;
           dragRef.current = null;
-          setDragging(false);
-          setDragX(0);
+          animateDrag(0, () => {});
         }}
       >
         {ring.map(({ item, url }, pos) => {
@@ -311,7 +361,7 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
               if (suppressClickRef.current) { suppressClickRef.current = false; return; }
               activityRef.current = Date.now();
               if (isActive) setZoomIdx(pos % n);
-              else setActivePos(pos);
+              else animateDrag(-off * itemStep, () => setActivePos(pos));
             }}
           >
             <img src={url} alt={alt} className={styles.image} draggable={false} />
@@ -329,8 +379,7 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
             className={`${styles.stripArrow} ${styles.stripPrev}`}
             onClick={(e) => {
               e.stopPropagation();
-              activityRef.current = Date.now();
-              setActivePos((activePos - 1 + visible.length) % visible.length);
+              go(-1);
             }}
           >
             <Icon name="chevronLeft" />
@@ -343,8 +392,7 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
             className={`${styles.stripArrow} ${styles.stripNext}`}
             onClick={(e) => {
               e.stopPropagation();
-              activityRef.current = Date.now();
-              setActivePos((activePos + 1) % visible.length);
+              go(1);
             }}
           >
             <Icon name="chevronRight" />
