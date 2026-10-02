@@ -1,20 +1,54 @@
 .pill {
+  --ca-live: #ff5c5c;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
-  min-height: 44px;
-  border-radius: var(--radius-md);
-  background: var(--overlay-background, rgba(0, 0, 0, 0.72));
+  min-height: 40px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--overlay-background, #000) 82%, transparent);
+  -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(1.4);
+  backdrop-filter: blur(var(--blur-lg)) saturate(1.4);
+  border: 1px solid rgba(var(--overlay-text-rgb, 255, 255, 255), 0.16);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(var(--overlay-text-rgb, 255, 255, 255), 0.1);
   color: var(--overlay-text, #fff);
   pointer-events: auto;
 }
 
+.status {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+.statusLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ca-live);
+}
+
+.statusLabelPaused {
+  composes: statusLabel;
+  color: rgba(var(--overlay-text-rgb, 255, 255, 255), 0.6);
+}
+
+.elapsed {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: rgba(var(--overlay-text-rgb, 255, 255, 255), 0.85);
+}
+
 .dot {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: var(--error);
+  background: var(--ca-live);
+  box-shadow: 0 0 6px var(--ca-live);
   flex-shrink: 0;
   animation: pillPulse 1.6s ease-in-out infinite;
 }
@@ -22,16 +56,37 @@
 .dotPaused {
   composes: dot;
   animation: none;
-  opacity: 0.4;
+  background: rgba(var(--overlay-text-rgb, 255, 255, 255), 0.45);
+  box-shadow: none;
+}
+
+.divider {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: rgba(var(--overlay-text-rgb, 255, 255, 255), 0.14);
+}
+
+.pill .action {
+  background: rgba(var(--overlay-text-rgb, 255, 255, 255), 0.08);
+  color: rgba(var(--overlay-text-rgb, 255, 255, 255), 0.92);
+  transition:
+    background var(--motion-duration-fast, 140ms) ease,
+    color var(--motion-duration-fast, 140ms) ease;
+}
+
+.pill .action:hover {
+  background: rgba(var(--overlay-text-rgb, 255, 255, 255), 0.18);
+  color: var(--overlay-text, #fff);
+}
+
+.pill .actionDestructive:hover {
+  background: rgba(var(--color-error-rgb, 166, 60, 60), 0.45);
+  color: color-mix(in srgb, var(--color-error, #a63c3c) 40%, #fff);
 }
 
 .dialogLayer {
   pointer-events: auto;
-}
-
-.elapsed {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
 @keyframes pillPulse {

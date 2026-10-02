@@ -110,6 +110,13 @@ import {
   NavRewind,
 } from './phosphorNavIcons';
 
+import {
+  RecDiscard,
+  RecPause,
+  RecPlay,
+  RecStop,
+} from './recorderIcons';
+
 import settingsSvg from './svg/settings.svg?raw';
 import pencilSvg from './svg/pencil.svg?raw';
 import zapSvg from './svg/zap.svg?raw';
@@ -210,6 +217,10 @@ import layoutGridSvg from './svg/layout-grid.svg?raw';
 import wireframeSvg from './svg/layout-template.svg?raw';
 import windowPageSvg from './svg/app-window.svg?raw';
 import importSvg from './svg/import.svg?raw';
+import recPauseSvg from './svg/rec-pause.svg?raw';
+import recPlaySvg from './svg/rec-play.svg?raw';
+import recStopSvg from './svg/rec-stop.svg?raw';
+import recDiscardSvg from './svg/rec-discard.svg?raw';
 
 /** Semantic icon entry — query by tags to find reuse candidates. */
 export interface IconRenderProps {
@@ -340,6 +351,10 @@ export const ICON_CATALOG = {
   wireframe: { component: LayoutTemplate, svg: wireframeSvg, source: 'lucide/layout-template', tags: ['wireframe', 'template', 'layout', 'scaffold', 'blueprint', 'sections'] } as IconEntry,
   windowPage: { component: AppWindow, svg: windowPageSvg, source: 'lucide/app-window', tags: ['page', 'window', 'browser', 'document', 'final', 'complete'] } as IconEntry,
   import: { component: Import, svg: importSvg, source: 'lucide/import', tags: ['import', 'anki', 'migrate', 'inbound', 'load', 'bring-in'] } as IconEntry,
+  recPause: { component: RecPause, svg: recPauseSvg, source: 'custom/rec-pause', tags: ['pause', 'hold', 'media', 'recording', 'transport', 'condensed-audio'] } as IconEntry,
+  recPlay: { component: RecPlay, svg: recPlaySvg, source: 'custom/rec-play', tags: ['play', 'resume', 'start', 'media', 'recording', 'transport', 'condensed-audio'] } as IconEntry,
+  recStop: { component: RecStop, svg: recStopSvg, source: 'custom/rec-stop', tags: ['stop', 'save', 'finish', 'media', 'recording', 'transport', 'condensed-audio'] } as IconEntry,
+  recDiscard: { component: RecDiscard, svg: recDiscardSvg, source: 'custom/rec-discard', tags: ['discard', 'delete', 'cancel', 'recording', 'destructive', 'condensed-audio'] } as IconEntry,
 } as const;
 
 export const ICON_SIZE_PX = 18;
