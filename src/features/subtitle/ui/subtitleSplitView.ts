@@ -31,8 +31,14 @@ function rectLog(el: Element | null | undefined): Record<string, number> | null 
 }
 
 function measureShellContentHeight(shell: HTMLElement): number {
+  // Also lift our aspect-ratio:auto override while measuring so a stylesheet
+  // aspect-ratio (e.g. StreamFlix .playerContainer 16/9) contributes natural
+  // height — shells whose children are all position:absolute would otherwise
+  // report only their overflow (~70px) and collapse the wrapper.
+  shell.style.removeProperty('aspect-ratio');
   shell.style.setProperty('height', 'auto', 'important');
   const height = shell.scrollHeight;
+  shell.style.setProperty('aspect-ratio', 'auto', 'important');
   shell.style.setProperty('height', '100%', 'important');
   return height;
 }
