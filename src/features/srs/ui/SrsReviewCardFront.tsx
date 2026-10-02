@@ -178,6 +178,7 @@ export function SrsReviewCardFront({
         if (!isSpelling) onFlip();
       }}
       onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+        if ((e.target as HTMLElement).closest('button,input,audio,a,textarea,select')) return;
         if (isSpelling) return;
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();

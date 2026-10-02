@@ -194,6 +194,7 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-2);
+  width: 100%;
 }
 
 .defList {
@@ -235,11 +236,23 @@
   border: none;
   background: none;
   padding: 0;
+  width: 100%;
+  display: grid;
   font: inherit;
   font-size: var(--font-size-md);
   color: var(--color-text-secondary);
   cursor: pointer;
   border-radius: var(--radius-md);
+}
+
+.translationHint > * {
+  grid-area: 1 / 1;
+  align-self: center;
+  min-width: 0;
+}
+
+.swapHidden {
+  visibility: hidden;
 }
 
 .translationHint:focus-visible {

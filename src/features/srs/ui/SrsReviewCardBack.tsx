@@ -178,6 +178,7 @@ export function SrsReviewCardBack({
         onFlipBack();
       }}
       onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+        if ((e.target as HTMLElement).closest('button,input,audio,a,textarea,select')) return;
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           onFlipBack();
@@ -192,17 +193,17 @@ export function SrsReviewCardBack({
         )}
 
         {hasTranslation && (
-          translationRevealed ? (
-            <Text className={styles.translation}>{fieldText(note.fields.translation)}</Text>
-          ) : (
-            <button
-              type="button"
-              className={styles.translationHint}
-              onClick={() => { setTranslationRevealed(true); }}
-            >
-              {t('srs.review.sentenceTranslation')}
-            </button>
-          )
+          <button
+            type="button"
+            className={styles.translationHint}
+            aria-expanded={translationRevealed}
+            onClick={() => { setTranslationRevealed((v) => !v); }}
+          >
+            <span className={translationRevealed ? styles.swapHidden : ''}>{t('srs.review.sentenceTranslation')}</span>
+            <span className={`${styles.translation} ${translationRevealed ? '' : styles.swapHidden}`}>
+              {fieldText(note.fields.translation)}
+            </span>
+          </button>
         )}
       </div>
 
