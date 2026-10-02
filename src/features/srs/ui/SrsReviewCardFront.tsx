@@ -12,29 +12,13 @@ import {
   playAudio,
   playAudioUrl,
   playableUrl,
+  ReviewImageGallery,
   SentenceText,
   sequentialAudio,
-  useImageBlobUrl,
 } from './srsCardShared';
 import styles from './SrsReviewCard.module.css';
 
 const FRONT_SKIP_FIELDS: ReadonlySet<string> = new Set(['sentence']);
-
-function StimulusImage({
-  src: valueSrc,
-  asset,
-  alt,
-}: { src: string; asset: SrsImageAsset | undefined; alt: string }): React.JSX.Element | null {
-  const blobUrl = useImageBlobUrl(asset);
-  useEffect(() => {
-    return () => {
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
-    };
-  }, [blobUrl]);
-  const src = playableUrl(valueSrc) ?? blobUrl;
-  if (!src) return null;
-  return <img src={src} alt={alt} className={styles.stimulusImage} />;
-}
 
 interface StimulusViewProps {
   readonly noteId: string;
@@ -62,14 +46,17 @@ function StimulusView({
       {entries.map(([fieldId, value]) => (
         <Box key={fieldId} className={styles.stimulusField}>
           {value.kind === 'image'
-            ? mediaFieldValues(value).map((v, i) => (
-                <StimulusImage
-                  key={i}
-                  src={v}
-                  asset={imageCache.get(imageAssetId(noteId, fieldId, i)) ?? repoImages.get(`${fieldId}:${i}`)}
-                  alt={stimulusLabel(stimulus.type)}
-                />
-              ))
+            ? (
+              <ReviewImageGallery
+                items={mediaFieldValues(value).map((v, i) => ({
+                  key: `${fieldId}:${i}`,
+                  src: v,
+                  asset: imageCache.get(imageAssetId(noteId, fieldId, i)) ?? repoImages.get(`${fieldId}:${i}`),
+                }))}
+                alt={stimulusLabel(stimulus.type)}
+                dataCellId={`srs-front-images-${fieldId}`}
+              />
+            )
             : value.kind === 'audio'
               ? mediaFieldValues(value).map((v, i) => (
                   <StimulusAudioButton

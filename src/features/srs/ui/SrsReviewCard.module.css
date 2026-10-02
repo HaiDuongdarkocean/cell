@@ -231,11 +231,9 @@
 .stimulusField {
   display: flex;
   justify-content: center;
-}
-
-.stimulusImage {
-  max-width: 100%;
-  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  min-width: 0;
+  width: 100%;
 }
 
 .stimulusAudioButton {
@@ -413,17 +411,76 @@
   font-size: var(--font-size-sm);
 }
 
-.imageBlock {
+.imageStrip {
+  composes: themed from '@/shared/ui/Scrollable.module.css';
+  flex-shrink: 0;
   width: 100%;
+  height: 12rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  display: flex;
+  gap: var(--space-2);
+  justify-content: safe center;
+  padding-bottom: var(--space-1);
+}
+
+.imageItem {
+  flex: 0 0 auto;
+  max-width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: var(--color-muted);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  cursor: zoom-in;
+}
+
+.imageItem:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: calc(-1 * var(--space-0-5));
 }
 
 .image {
-  width: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
   height: auto;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
+}
+
+.zoomStage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.zoomImage {
+  max-width: 100%;
+  max-height: 68dvh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+
+.zoomNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.zoomCount {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  min-width: var(--space-10);
+  text-align: center;
 }
 
 .fieldBox {

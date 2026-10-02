@@ -1,18 +1,18 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 
 const DRAG_THRESHOLD = 4;
 
 export function useDragScroll<T extends HTMLElement = HTMLElement>() {
-  const ref = useRef<T | null>(null);
+  const [el, setEl] = useState<T | null>(null);
 
   useEffect(() => {
-    const el = ref.current;
     if (!el) return;
 
     let startX = 0;
     let startLeft = 0;
     let pointerId = -1;
     let dragging = false;
+    let suppressClick = false;
 
     const onPointerDown = (e: PointerEvent): void => {
       if (e.pointerType !== 'mouse' || e.button !== 0) return;
@@ -38,8 +38,16 @@ export function useDragScroll<T extends HTMLElement = HTMLElement>() {
       pointerId = -1;
       if (!dragging) return;
       dragging = false;
+      suppressClick = true;
       if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
       el.style.userSelect = '';
+    };
+
+    const onClickCapture = (e: MouseEvent): void => {
+      if (!suppressClick) return;
+      suppressClick = false;
+      e.stopPropagation();
+      e.preventDefault();
     };
 
     const onWheel = (e: WheelEvent): void => {
@@ -55,6 +63,7 @@ export function useDragScroll<T extends HTMLElement = HTMLElement>() {
     el.addEventListener('pointerup', endDrag);
     el.addEventListener('pointercancel', endDrag);
     el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('click', onClickCapture, true);
 
     return () => {
       el.removeEventListener('pointerdown', onPointerDown);
@@ -62,8 +71,9 @@ export function useDragScroll<T extends HTMLElement = HTMLElement>() {
       el.removeEventListener('pointerup', endDrag);
       el.removeEventListener('pointercancel', endDrag);
       el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('click', onClickCapture, true);
     };
-  }, []);
+  }, [el]);
 
-  return ref;
+  return setEl;
 }

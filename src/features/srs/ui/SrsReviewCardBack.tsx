@@ -7,7 +7,7 @@ import { parseDefEntries } from '@/features/srs/lib/defEntry';
 import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepository';
 import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote } from '@/entities/srs/types';
-import { playableUrl, SentenceText, sequentialAudio, useImageBlobUrl } from './srsCardShared';
+import { playableUrl, ReviewImageGallery, SentenceText, sequentialAudio } from './srsCardShared';
 import styles from './SrsReviewCard.module.css';
 
 function playSources(sources: readonly (SrsAudioAsset | string)[]): void {
@@ -70,22 +70,6 @@ function BackFieldValue({ value }: { value: SrsFieldValue }): React.JSX.Element 
   return <Text className={styles.fieldText}>{text}</Text>;
 }
 
-function BackImage({ note, src, asset }: { note: SrsNote; src: string; asset: SrsImageAsset | undefined }): React.JSX.Element | null {
-  const blobUrl = useImageBlobUrl(asset);
-  useEffect(() => {
-    return () => {
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
-    };
-  }, [blobUrl]);
-  const resolved = blobUrl ?? (/^(https?|data|blob):/.test(src) ? src : undefined);
-  if (!resolved) return null;
-  return (
-    <Box className={styles.imageBlock}>
-      <img src={resolved} alt={note.targetWord} className={styles.image} />
-    </Box>
-  );
-}
-
 function DefEntryBlock({ entry }: { entry: { header: string; otherForms: string; senses: string } }): React.JSX.Element {
   const lines = entry.senses.split('\n').map((l) => l.trim()).filter(Boolean);
   const hasBullets = lines.some((l) => l.startsWith('•'));
@@ -124,6 +108,7 @@ export function SrsReviewCardBack({
   const wordAudio = note.fields.wordAudio?.kind === 'audio' ? note.fields.wordAudio : undefined;
   const sentAudio = note.fields.sentAudio?.kind === 'audio' ? note.fields.sentAudio : undefined;
   const imageFields = Object.entries(note.fields).filter(([, v]) => v.kind === 'image');
+  const imageCount = imageFields.reduce((n, [, v]) => n + mediaFieldValues(v).length, 0);
 
   const [repoImages, setRepoImages] = useState<ReadonlyMap<string, SrsImageAsset>>(new Map());
   const [repoAudio, setRepoAudio] = useState<ReadonlyMap<string, SrsAudioAsset>>(new Map());
@@ -144,11 +129,11 @@ export function SrsReviewCardBack({
   const hasSentAudio = sentAudioSources.length > 0;
 
   useEffect(() => {
-    if (imageFields.length === 0) return;
+    if (imageCount === 0) return;
     void getImageAssetsByNote(note.id)
       .then((assets) => { setRepoImages(new Map(assets.map((a) => [`${a.fieldId}:${a.index ?? 0}`, a]))); })
       .catch(() => {});
-  }, [note.id, imageFields.length]);
+  }, [note.id, imageCount]);
 
   useEffect(() => {
     if (!(wordAudio && !hasWordAudio) && !(sentAudio && !hasSentAudio)) return;
@@ -163,6 +148,21 @@ export function SrsReviewCardBack({
   );
 
   useEffect(() => sequentialAudio(backAudio), [backAudio]);
+
+  const imageItems = useMemo(() => {
+    const items: { key: string; src: string; asset: SrsImageAsset | undefined }[] = [];
+    for (const [id, value] of Object.entries(note.fields)) {
+      if (value.kind !== 'image') continue;
+      mediaFieldValues(value).forEach((v, i) => {
+        items.push({
+          key: `${id}:${i}`,
+          src: v,
+          asset: imageCache.get(imageAssetId(note.id, id, i)) ?? repoImages.get(`${id}:${i}`),
+        });
+      });
+    }
+    return items;
+  }, [note.id, note.fields, imageCache, repoImages]);
 
   const hasTranslation = note.fields.translation?.kind === 'translation' && Boolean(note.fields.translation.value);
   const extraFields = Object.entries(note.fields).filter(([id, v]) => !BUILTIN_FIELDS.has(id) && v.kind !== 'image' && v.kind !== 'audio' && fieldText(v).trim());
@@ -245,16 +245,7 @@ export function SrsReviewCardBack({
         </div>
       )}
 
-      {imageFields.map(([id, value]) => (
-        mediaFieldValues(value).map((v, i) => (
-          <BackImage
-            key={`${id}:${i}`}
-            note={note}
-            src={v}
-            asset={imageCache.get(imageAssetId(note.id, id, i)) ?? repoImages.get(`${id}:${i}`)}
-          />
-        ))
-      ))}
+      <ReviewImageGallery items={imageItems} alt={note.targetWord} dataCellId="srs-card-images" />
 
       {note.fields.examples && fieldText(note.fields.examples).trim() && (
         <FieldBox label={fieldLabel('examples')}>
