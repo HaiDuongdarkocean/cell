@@ -33,10 +33,10 @@ afterAll(async () => {
   await deleteSrsDB(name);
 });
 
-function makeBigData(): NormalizedAnkiData {
-  const cards: NormalizedAnkiData['cards'] = [];
-  const notes: NormalizedAnkiData['notes'] = [];
-  const revlog: NormalizedAnkiData['revlog'] = [];
+function makeBigData(resolve: (name: string) => Promise<{ bytes: ArrayBuffer; mimeType: string } | null>): NormalizedAnkiData {
+  const cards: NormalizedAnkiData['cards'] extends readonly (infer T)[] ? T[] : never = [];
+  const notes: NormalizedAnkiData['notes'] extends readonly (infer T)[] ? T[] : never = [];
+  const revlog: NormalizedAnkiData['revlog'] extends readonly (infer T)[] ? T[] : never = [];
   for (let i = 0; i < N_CARDS; i++) {
     notes.push({
       id: i,
@@ -71,7 +71,7 @@ function makeBigData(): NormalizedAnkiData {
     revlog,
     media: {
       names: [],
-      resolve: async (name) => ({ bytes: new Uint8Array([1, 2, 3]).buffer, mimeType: name.endsWith('.png') ? 'image/png' : 'audio/mpeg' }),
+      resolve,
       size: () => 3,
     },
   };
@@ -81,18 +81,15 @@ describe('importNormalized bench', () => {
   it('writes 600 cards in few transactions', async () => {
     let txCount = 0;
     const origTx = IDBDatabase.prototype.transaction;
-    IDBDatabase.prototype.transaction = function (...args: unknown[]) {
+    IDBDatabase.prototype.transaction = function (this: IDBDatabase, ...args: Parameters<IDBDatabase['transaction']>) {
       txCount += 1;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (origTx as any).apply(this, args);
-    } as typeof IDBDatabase.prototype.transaction;
-    let resolveCalls = 0;
-    const data = makeBigData();
-    const origResolve = data.media.resolve;
-    data.media = {
-      ...data.media,
-      resolve: async (n) => { resolveCalls += 1; return origResolve(n); },
+      return origTx.apply(this, args);
     };
+    let resolveCalls = 0;
+    const data = makeBigData(async (name: string) => {
+      resolveCalls += 1;
+      return { bytes: new Uint8Array([1, 2, 3]).buffer, mimeType: name.endsWith('.png') ? 'image/png' : 'audio/mpeg' };
+    });
 
     const t0 = Date.now();
     const report = await importNormalized({
