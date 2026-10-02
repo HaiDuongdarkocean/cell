@@ -65,9 +65,13 @@ export function Pagination({
   }, []);
 
   const triggerRef = ellipsisSide === 'right' ? ellipsisRightRef : ellipsisLeftRef;
+  const openedAtRef = useRef(0);
   const closePopover = useCallback(() => setEllipsisSide(null), []);
 
-  useDismissOnScroll(ellipsisSide !== null, popoverRef, triggerRef, closePopover);
+  useDismissOnScroll(ellipsisSide !== null, popoverRef, triggerRef, () => {
+    if (Date.now() - openedAtRef.current < 200) return;
+    closePopover();
+  });
 
   useEffect(() => {
     if (!ellipsisSide) return;
@@ -127,6 +131,7 @@ export function Pagination({
       return;
     }
     setJumpValue('');
+    openedAtRef.current = Date.now();
     setEllipsisSide(side);
   };
 
@@ -219,10 +224,9 @@ export function Pagination({
         variant="menu"
         role="dialog"
         aria-label={t('ui.pagination.jump')}
-        menuAlign="auto"
+        menuAlign="center"
       >
         <div className={styles.jumpBody}>
-          <div className={styles.popupHeader}>{t('ui.pagination.jump')}</div>
           <div className={styles.jumpRow}>
             <Input
               type="number"

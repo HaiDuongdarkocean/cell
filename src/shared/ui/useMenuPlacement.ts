@@ -1,11 +1,11 @@
 import { useCallback, useLayoutEffect, useState, type RefObject, type CSSProperties } from 'react';
 import { getFixedContainingBlock } from '@/shared/lib/dom/getFixedContainingBlock';
 
-export type MenuAlign = 'left' | 'right' | 'auto';
+export type MenuAlign = 'left' | 'right' | 'auto' | 'center';
 
 export interface MenuPlacement {
   /** Horizontal edge of the menu that aligns to the trigger. */
-  readonly align: 'left' | 'right';
+  readonly align: 'left' | 'right' | 'center';
   /** Whether the menu opens above or below the trigger. */
   readonly vpos: 'bottom' | 'top';
 }
@@ -122,7 +122,7 @@ export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlace
     // style. Real DOM always has layout, so this path is test-only.
     if (!hasLayout(triggerRect) && !hasLayout(menuRect)) {
       setResult({
-        placement: { align: menuAlign === 'right' ? 'right' : 'left', vpos: 'bottom' },
+        placement: { align: menuAlign === 'right' ? 'right' : menuAlign === 'center' ? 'center' : 'left', vpos: 'bottom' },
         maxWidth: Number.MAX_SAFE_INTEGER,
         maxHeight: Number.MAX_SAFE_INTEGER,
         style: { maxHeight: Number.MAX_SAFE_INTEGER },
@@ -152,8 +152,11 @@ export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlace
     // must stay beyond the left edge plus the side margin.
     const rightAvailable = triggerRect.right - bounds.left - viewportMargin;
 
-    let align: 'left' | 'right';
-    if (menuAlign === 'left') {
+    const centeredFits = menuWidth <= bounds.width - 2 * viewportMargin;
+    let align: 'left' | 'right' | 'center';
+    if (menuAlign === 'center' && centeredFits) {
+      align = 'center';
+    } else if (menuAlign === 'left') {
       align = menuWidth <= leftAvailable || leftAvailable >= rightAvailable ? 'left' : 'right';
     } else if (menuAlign === 'right') {
       align = menuWidth <= rightAvailable || rightAvailable >= leftAvailable ? 'right' : 'left';
@@ -166,7 +169,8 @@ export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlace
       }
     }
 
-    const horizontalSpace = align === 'left' ? leftAvailable : rightAvailable;
+    const horizontalSpace =
+      align === 'center' ? bounds.width - 2 * viewportMargin : align === 'left' ? leftAvailable : rightAvailable;
 
     // Menu max size: keep within available containing-block space, and allow tall menus
     // (e.g. 10+ options) while still capping at a reasonable fraction so the user can
@@ -199,8 +203,12 @@ export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlace
 
     if (align === 'left') {
       style.left = Math.round(triggerRect.left - bounds.left);
-    } else {
+    } else if (align === 'right') {
       style.right = Math.round(bounds.right - triggerRect.right);
+    } else {
+      const centeredLeft = triggerRect.left + triggerRect.width / 2 - menuWidth / 2 - bounds.left;
+      const maxLeft = Math.max(viewportMargin, bounds.width - viewportMargin - menuWidth);
+      style.left = Math.round(Math.max(viewportMargin, Math.min(maxLeft, centeredLeft)));
     }
 
     setResult({
