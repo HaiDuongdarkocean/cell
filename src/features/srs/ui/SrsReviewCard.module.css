@@ -4,7 +4,8 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   padding: var(--space-16) var(--space-4) var(--space-20);
 }
 
@@ -79,7 +80,8 @@
 .card {
   position: relative;
   width: min(30rem, 92vw);
-  min-height: 55vh;
+  height: 100%;
+  min-height: 0;
   padding: var(--space-8) var(--space-6);
   background: var(--color-surface);
   border-radius: var(--radius-card);
@@ -104,7 +106,10 @@
 }
 
 .front {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -171,7 +176,10 @@
 }
 
 .back {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
