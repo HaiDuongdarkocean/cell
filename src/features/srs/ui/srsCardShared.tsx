@@ -113,6 +113,10 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
   const visible = items
     .map((item, i) => ({ item, url: urls[i] }))
     .filter((x): x is { item: GalleryItem; url: string } => Boolean(x.url));
+  const n = visible.length;
+  const ring = n === 2 ? [...visible, ...visible] : visible;
+  const ringLen = ring.length;
+  const apos = ringLen ? ((activePos % ringLen) + ringLen) % ringLen : 0;
 
   const zoomPos = zoomIdx === null ? null : Math.min(zoomIdx, Math.max(0, visible.length - 1));
   useFocusTrap(lightboxRef, zoomPos !== null);
@@ -198,12 +202,12 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
       if (Math.abs(wheelAcc.current) >= 60) {
         const dir = wheelAcc.current > 0 ? 1 : -1;
         wheelAcc.current = 0;
-        setActivePos((p) => (p + dir + visible.length) % visible.length);
+        setActivePos((p) => (p + dir + ringLen) % ringLen);
       }
     };
     stripEl.addEventListener('wheel', onWheel, { passive: false });
     return () => stripEl.removeEventListener('wheel', onWheel);
-  }, [stripEl, visible.length]);
+  }, [stripEl, ringLen]);
 
   useEffect(() => {
     const gallery = stripEl?.parentElement;
@@ -214,7 +218,7 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
     const interval = setInterval(() => {
       if (pausedRef.current || document.hidden || zoomPos !== null) return;
       if (Date.now() - activityRef.current < 3000) return;
-      setActivePos((p) => (p + 1) % visible.length);
+      setActivePos((p) => (p + 1) % ringLen);
     }, 2000);
     stripEl.addEventListener('pointerdown', mark);
     stripEl.addEventListener('touchmove', mark, { passive: true });
@@ -231,14 +235,13 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
       gallery.removeEventListener('focusin', pause);
       gallery.removeEventListener('focusout', resume);
     };
-  }, [stripEl, visible.length, zoomPos]);
+  }, [stripEl, ringLen, zoomPos]);
 
   const ringOffset = (i: number): number => {
-    const n = visible.length;
-    const raw = i - activePos + (itemStep > 0 ? dragX / itemStep : 0);
-    return ((raw + n / 2) % n + n) % n - n / 2;
+    const raw = i - apos + (itemStep > 0 ? dragX / itemStep : 0);
+    return ((raw + ringLen / 2) % ringLen + ringLen) % ringLen - ringLen / 2;
   };
-  const hideAt = visible.length <= 2 ? 1.5 : Math.min(1.5, visible.length / 2 - 0.05);
+  const hideAt = Math.min(1.5, ringLen / 2 - 0.05);
 
   if (visible.length === 0) return null;
 
@@ -250,7 +253,7 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
         className={`${styles.imageStrip} ${dragging ? styles.imageStripDragging : ''}`}
         data-cell-id={dataCellId}
         onPointerDown={(e) => {
-          if (visible.length <= 1 || e.button !== 0) return;
+          if (ringLen <= 1 || e.button !== 0) return;
           dragRef.current = { id: e.pointerId, startX: e.clientX, moved: false };
         }}
         onPointerMove={(e) => {
@@ -273,7 +276,7 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
           const steps = itemStep > 0 ? Math.round(dragX / itemStep) : 0;
           setDragX(0);
           if (steps !== 0) {
-            setActivePos((p) => ((p - steps) % visible.length + visible.length) % visible.length);
+            setActivePos((p) => ((p - steps) % ringLen + ringLen) % ringLen);
           }
         }}
         onPointerCancel={(e) => {
@@ -283,12 +286,13 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
           setDragX(0);
         }}
       >
-        {visible.map(({ item, url }, pos) => {
+        {ring.map(({ item, url }, pos) => {
           const off = ringOffset(pos);
           const abs = Math.abs(off);
+          const isActive = pos === apos;
           return (
           <button
-            key={item.key}
+            key={`${item.key}#${pos}`}
             type="button"
             className={styles.imageItem}
             style={{
@@ -299,12 +303,14 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
               boxShadow: abs < 0.5 ? 'var(--shadow-lg)' : undefined,
             }}
             aria-label={t('srs.review.zoomImage')}
-            aria-current={pos === activePos}
+            aria-current={isActive}
+            aria-hidden={isActive ? undefined : true}
+            tabIndex={isActive ? 0 : -1}
             onClick={(e) => {
               e.stopPropagation();
               if (suppressClickRef.current) { suppressClickRef.current = false; return; }
               activityRef.current = Date.now();
-              if (pos === activePos) setZoomIdx(pos);
+              if (isActive) setZoomIdx(pos % n);
               else setActivePos(pos);
             }}
           >
