@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
 import { useSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
 import { Box, Button, ConfirmDialog, Text } from '@/shared/ui';
@@ -44,6 +44,29 @@ export function SrsReviewCard(): React.JSX.Element | null {
     setShowAnswer(false);
     setTypedInput('');
   }, [session?.card.id, session?.componentType]);
+
+  const [narrowEdit, setNarrowEdit] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches,
+  );
+  const narrowEditRef = useRef(narrowEdit);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 900px)');
+    const onChange = () => setNarrowEdit(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    if (narrowEditRef.current === narrowEdit) return;
+    narrowEditRef.current = narrowEdit;
+    if (!editing) return;
+    setEditOpen(false);
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setEditOpen(true));
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [narrowEdit, editing]);
 
   useEffect(() => {
     if (editing) {
@@ -204,7 +227,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
           <aside
             className={editOpen ? `${styles.editSection} ${styles.editSectionOpen}` : styles.editSection}
             onTransitionEnd={(e) => {
-              if (e.target === e.currentTarget && e.propertyName === 'width' && !editing) setEditMounted(false);
+              if (e.target === e.currentTarget && (e.propertyName === 'width' || e.propertyName === 'transform') && !editing) setEditMounted(false);
             }}
           >
             <SrsEditCardPanel
