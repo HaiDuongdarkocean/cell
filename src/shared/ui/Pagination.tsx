@@ -24,10 +24,11 @@ export interface PaginationProps {
 
 type PageItem = number | 'ellipsis-left' | 'ellipsis-right';
 
-function buildPageNumbers(current: number, total: number): PageItem[] {
+function buildPageNumbers(current: number, total: number, narrow: boolean): PageItem[] {
   if (total <= 9) return Array.from({ length: total }, (_, i) => i + 1);
   const cur = current + 1;
-  const numbers = [...new Set([1, 2, total - 1, total, cur - 1, cur, cur + 1])]
+  const wanted = narrow ? [1, cur, total] : [1, 2, total - 1, total, cur - 1, cur, cur + 1];
+  const numbers = [...new Set(wanted)]
     .filter((n) => n >= 1 && n <= total)
     .sort((a, b) => a - b);
   const pages: PageItem[] = [];
@@ -49,9 +50,19 @@ export function Pagination({
 }: PaginationProps): ReactElement {
   const [ellipsisSide, setEllipsisSide] = useState<'left' | 'right' | null>(null);
   const [jumpValue, setJumpValue] = useState('');
+  const [narrow, setNarrow] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const ellipsisLeftRef = useRef<HTMLButtonElement>(null);
   const ellipsisRightRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(([entry]) => setNarrow(entry.contentRect.width < 560));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const triggerRef = ellipsisSide === 'right' ? ellipsisRightRef : ellipsisLeftRef;
   const closePopover = useCallback(() => setEllipsisSide(null), []);
@@ -89,7 +100,7 @@ export function Pagination({
     return <div className={`${styles.pagination} ${className ?? ''}`.trim()} />;
   }
 
-  const pages = buildPageNumbers(current, total);
+  const pages = buildPageNumbers(current, total, narrow);
   const jumpTarget = (): number | null => {
     const n = parseInt(jumpValue, 10);
     return Number.isNaN(n) || n < 1 || n > total ? null : n;
@@ -120,12 +131,13 @@ export function Pagination({
   };
 
   return (
-    <div className={`${styles.pagination} ${className ?? ''}`.trim()}>
+    <div ref={rootRef} className={`${styles.pagination} ${className ?? ''}`.trim()}>
       <Button
         aria-label={t('ui.pagination.first')}
         size="sm"
         variant="ghost"
         disabled={current === 0}
+        className={styles.navEdge}
         onClick={() => onChange(0)}
       >
         <Icon name="chevronsLeft" />
@@ -189,6 +201,7 @@ export function Pagination({
         size="sm"
         variant="ghost"
         disabled={current >= total - 1}
+        className={styles.navEdge}
         onClick={() => onChange(total - 1)}
       >
         <Icon name="chevronsRight" />

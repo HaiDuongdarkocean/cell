@@ -2,18 +2,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
   gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-primary-subtle);
-  border-radius: var(--radius-card);
+  padding: var(--space-1) var(--space-2);
   flex-shrink: 0;
+  container-type: inline-size;
 }
 
 .pageNumbers {
   display: flex;
   align-items: center;
   gap: var(--space-0-5);
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pageNumbers::-webkit-scrollbar {
+  display: none;
+}
+
+.pageNumbers > * {
+  flex-shrink: 0;
+}
+
+.pagination > button,
+.jumpInput {
+  flex-shrink: 0;
 }
 
 .pageBtn {
@@ -68,4 +82,16 @@
   height: 28px;
   text-align: center;
   padding: 0 var(--space-1);
+}
+
+@container (max-width: 560px) {
+  .navEdge,
+  .jumpInput {
+    display: none;
+  }
+
+  .pageBtn {
+    padding: 0 var(--space-0-5);
+    min-width: 24px;
+  }
 }
