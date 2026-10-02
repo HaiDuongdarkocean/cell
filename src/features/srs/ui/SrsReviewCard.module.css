@@ -51,19 +51,32 @@
 }
 
 .editDivider {
-  flex: 0 0 var(--space-0-5);
-  margin: var(--space-4) var(--space-5);
-  background: var(--color-border);
-  border-radius: var(--radius-full);
+  flex: 0 0 calc(var(--space-0-5) + 2 * var(--space-5));
+  position: relative;
   cursor: col-resize;
   touch-action: none;
+}
+
+.editDivider::before {
+  content: '';
+  position: absolute;
+  top: var(--space-4);
+  bottom: var(--space-4);
+  left: 50%;
+  width: var(--space-0-5);
+  transform: translateX(-50%);
+  background: var(--color-border);
+  border-radius: var(--radius-full);
   transition: background var(--duration-fast) var(--ease-out);
 }
 
-.editDivider:hover,
-.editDivider:focus-visible,
-.editSectionResizing .editDivider {
+.editDivider:hover::before,
+.editDivider:focus-visible::before,
+.editSectionResizing .editDivider::before {
   background: var(--color-primary);
+}
+
+.editDivider:focus-visible {
   outline: none;
 }
 
