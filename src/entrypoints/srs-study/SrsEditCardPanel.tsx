@@ -41,6 +41,8 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
   const [tags, setTags] = useState('');
   const [events, setEvents] = useState<readonly SrsReviewRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const note = session?.note;
@@ -112,6 +114,7 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
       const { targetWord, fields } = await persistNoteFields(notetype, note, s.texts, s.media, s.removedMedia);
       await updateCurrentNote({ ...note, targetWord, fields, tags: splitTags(s.tags) }, s.deckId);
       dirtyRef.current = false;
+      setDirty(false);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -126,6 +129,12 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
 
   function markDirty(): void {
     dirtyRef.current = true;
+    setDirty(true);
+  }
+
+  function handleSave(): void {
+    setSaving(true);
+    void persist().finally(() => setSaving(false));
   }
 
   function handleClose(): void {
@@ -249,6 +258,18 @@ export function SrsEditCardPanel({ onClose }: { readonly onClose: () => void }):
       </Box>
 
       {error && <Text className={styles.error}>{error}</Text>}
+
+      <Box className={styles.footer}>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={handleSave}
+          disabled={saving || !dirty}
+          data-cell-id="srs-edit-save"
+        >
+          {t('srs.edit.save')}
+        </Button>
+      </Box>
 
       <ConfirmDialog
         open={confirmDelete}
