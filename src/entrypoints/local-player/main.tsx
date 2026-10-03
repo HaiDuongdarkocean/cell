@@ -31,6 +31,7 @@ import { STORAGE_KEYS } from '@/shared/config/config';
 import { mountComprehensionPill } from '@/features/tokenize/ui/mountComprehensionPill';
 import { comprehensionStore } from '@/features/tokenize/services/comprehensionStore';
 import { startMediaScoreSource } from '@/features/subtitle/logic/mediaScoreSource';
+import { displayableCueRanges } from '@/features/condensedAudio';
 import { startWordStatusCrossTabRelay } from '@/features/dictionary/services/wordStatusCrossTab';
 import { useLibraryScores } from './hooks/useLibraryScores';
 import { useImmersionSession } from './hooks/useImmersionSession';
@@ -192,19 +193,24 @@ export function LocalPlayerApp(): React.JSX.Element {
         if (!currentVideo?.fileHandle) return;
         const cues = subtitleEngine.getTargetCues();
         const source = cues.length > 0 ? cues : subtitleEngine.getNativeCues();
-        if (source.length === 0) return;
+        const ranges = displayableCueRanges(source);
+        if (ranges.length === 0) return;
         const payload: CondenseAudioStartPayload = {
           title: currentVideo.title || currentVideo.filename,
           leg: 'file',
           source: { kind: 'library', videoId: currentVideo.id },
-          ranges: source.map((c) => ({ startMs: c.start, endMs: c.end })),
+          ranges,
           durationMs: currentVideo.durationMs,
         };
         void sendMessage({ type: MESSAGE_TYPES.CONDENSE_AUDIO_START, payload });
       },
       condenseAudioEnabled:
         !!currentVideo?.fileHandle &&
-        (subtitleEngine.getTargetCues().length > 0 || subtitleEngine.getNativeCues().length > 0),
+        displayableCueRanges(
+          subtitleEngine.getTargetCues().length > 0
+            ? subtitleEngine.getTargetCues()
+            : subtitleEngine.getNativeCues(),
+        ).length > 0,
     };
   }, [
     subtitles,

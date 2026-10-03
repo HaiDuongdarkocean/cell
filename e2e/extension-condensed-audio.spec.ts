@@ -287,4 +287,88 @@ test.describe('Cell condensed audio', () => {
 
     await page.close();
   });
+
+  test('record leg: runs start-to-end, skips rendered-empty cues', async ({ context }) => {
+    test.setTimeout(420_000);
+    const page = await context.newPage();
+    await page.goto(STREAM_MOCK_URL, { waitUntil: 'domcontentloaded' });
+
+    await expect(page.locator('video')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('#cell-subtitle-root')).toBeAttached({ timeout: 15_000 });
+
+    await page.evaluate(() => {
+      const host = document.getElementById('cell-subtitle-root');
+      const btn = host?.shadowRoot?.querySelector<HTMLButtonElement>(
+        '[data-cell-id="manager-toggle-btn"]',
+      );
+      if (!btn) throw new Error('manager-toggle-btn not found');
+      btn.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }),
+      );
+    });
+    await waitDeep(page, '[data-cell-id="subtitle-manager-layer"]', 10_000);
+    await expect
+      .poll(() => condenseEnabled(page), { timeout: 30_000 })
+      .toBe(true);
+
+    await deepClick(page, '[data-cell-id="manager-condense-audio"]');
+    await waitDeep(page, '[data-cell-id="condensed-audio-pill"]', 20_000);
+
+    await expect
+      .poll(
+        () => page.evaluate(() => document.querySelector('video')?.currentTime ?? 0),
+        { timeout: 15_000 },
+      )
+      .toBeGreaterThan(15);
+
+    await expect
+      .poll(async () => !(await deepQuery(page, '[data-cell-id="condensed-audio-pill"]')), {
+        timeout: 330_000,
+        intervals: [5_000],
+      })
+      .toBe(true);
+
+    const readRecords = async (): Promise<unknown> =>
+      context.serviceWorkers()[0]?.evaluate(
+        () =>
+          new Promise<unknown>((resolve) => {
+            const req = indexedDB.open('orca-local-player');
+            req.onsuccess = () => {
+              try {
+                const tx = req.result.transaction('condensedAudio', 'readonly');
+                const getAll = tx.objectStore('condensedAudio').getAll();
+                getAll.onsuccess = () => resolve(getAll.result);
+                getAll.onerror = () => resolve(`err:${String(getAll.error)}`);
+              } catch (e) {
+                resolve(`throw:${String(e)}`);
+              }
+            };
+            req.onerror = () => resolve(`open-err:${String(req.error)}`);
+          }),
+      );
+
+    let record: { status: string; durationMs: number } | null = null;
+    try {
+      await expect
+        .poll(
+          async () => {
+            const rows = await readRecords();
+            if (!Array.isArray(rows)) return null;
+            const ready = (rows as { status: string; durationMs: number }[])
+              .filter((r) => r.status === 'ready')
+              .sort((a, b) => b.durationMs - a.durationMs);
+            record = ready[0] ?? null;
+            return record;
+          },
+          { timeout: 120_000, intervals: [2_000] },
+        )
+        .not.toBeNull();
+    } catch (err) {
+      process.stderr.write(`[diag] records: ${JSON.stringify(await readRecords())}\n`);
+      throw err;
+    }
+    expect(record!.durationMs).toBeGreaterThan(60_000);
+
+    await page.close();
+  });
 });

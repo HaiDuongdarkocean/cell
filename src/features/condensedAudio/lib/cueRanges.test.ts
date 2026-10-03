@@ -1,4 +1,19 @@
-import { buildCondenseFilter, normalizeCueRanges, rangesTotalMs, chunkRanges } from './cueRanges';
+import { buildCondenseFilter, normalizeCueRanges, rangesTotalMs, chunkRanges, displayableCueRanges } from './cueRanges';
+
+describe('displayableCueRanges', () => {
+  it('maps cues to ranges and drops cues cleaned to empty text', () => {
+    const out = displayableCueRanges([
+      { start: 2000, end: 20000, text: '' },
+      { start: 20200, end: 25500, text: "LYIN' ISN'T BETTER" },
+      { start: 30000, end: 31000, text: '   ' },
+      { start: 32000, end: 33000, text: 'dialogue' },
+    ]);
+    expect(out).toEqual([
+      { startMs: 20200, endMs: 25500 },
+      { startMs: 32000, endMs: 33000 },
+    ]);
+  });
+});
 
 describe('normalizeCueRanges', () => {
   it('returns empty for no/invalid ranges', () => {

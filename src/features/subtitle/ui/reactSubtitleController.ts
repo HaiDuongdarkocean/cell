@@ -20,6 +20,7 @@ import type { TriggerMode, LookupRequest } from '@/entities/dictionary';
 import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
 import { mergeCuesForPanel } from '@/features/subtitle/logic/subtitleMerge';
 import { cuesToSrt } from '@/features/subtitle/logic/cuesToSrt';
+import { displayableCueRanges } from '@/features/condensedAudio';
 import type { SubtitleSearchResult } from '@/entities/subtitle/searchTypes';
 import { resolvePlayerModeLayout, resolveVideoAspectRatio, DOCK_MIN_HEIGHT_PX } from '@/features/subtitle/logic/playerModeGeometry';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
@@ -316,7 +317,7 @@ export class ReactSubtitleController {
   private condenseCueRanges(): { startMs: number; endMs: number }[] {
     const cues = this.engine.getTargetCues();
     const source = cues.length > 0 ? cues : this.engine.getNativeCues();
-    return source.map((c) => ({ startMs: c.start, endMs: c.end }));
+    return displayableCueRanges(source);
   }
 
   private handleCondenseAudio(): void {

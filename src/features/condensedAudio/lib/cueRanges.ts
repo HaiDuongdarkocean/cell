@@ -1,5 +1,13 @@
 import type { CueRange } from '@/entities/condensedAudio';
 
+export function displayableCueRanges(
+  cues: readonly { start: number; end: number; text: string }[],
+): CueRange[] {
+  return cues
+    .filter((c) => c.text.trim().length > 0)
+    .map((c) => ({ startMs: c.start, endMs: c.end }));
+}
+
 export function normalizeCueRanges(
   ranges: readonly CueRange[],
   padMs: number,
