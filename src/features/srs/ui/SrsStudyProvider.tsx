@@ -79,6 +79,35 @@ function stimulusStale(session: SrsReviewSession, nextNote: SrsNote): boolean {
   );
 }
 
+function mergeNoteFields(prev: SrsNote, next: SrsNote): SrsNote {
+  if (prev.id !== next.id) return next;
+  let fields = next.fields;
+  for (const [id, v] of Object.entries(next.fields)) {
+    const old = prev.fields[id];
+    if (old !== undefined && old !== v && JSON.stringify(old) === JSON.stringify(v)) {
+      if (fields === next.fields) fields = { ...next.fields };
+      fields[id] = old;
+    }
+  }
+  return fields === next.fields ? next : { ...next, fields };
+}
+
+function mergeStimulusPayload(prev: SrsStimulus, next: SrsStimulus): SrsStimulus {
+  let payload = next.payload;
+  for (const [id, v] of Object.entries(next.payload)) {
+    const old = prev.payload[id];
+    if (old !== undefined && old !== v && JSON.stringify(old) === JSON.stringify(v)) {
+      if (payload === next.payload) payload = { ...next.payload };
+      payload[id] = old;
+    }
+  }
+  return payload === next.payload && next.type === prev.type ? prev : { ...next, payload };
+}
+
+function keepToggles(prev: ResolvedVariantToggles, next: ResolvedVariantToggles): ResolvedVariantToggles {
+  return JSON.stringify(prev) === JSON.stringify(next) ? prev : next;
+}
+
 function blobUrlsToRevoke(stimulus: SrsStimulus | null): string[] {
   if (!stimulus) return [];
   const urls: string[] = [];
@@ -282,16 +311,17 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
         await putCard(nextCard);
       }
       void refreshStats();
-      const built = stimulusStale(session, nextNote)
-        ? buildVariantStimulus(nextNote, session.variant, audioCache, imageCache)
+      const mergedNote = mergeNoteFields(session.note, nextNote);
+      const built = stimulusStale(session, mergedNote)
+        ? buildVariantStimulus(mergedNote, session.variant, audioCache, imageCache)
         : null;
       setSession({
         ...session,
-        note: nextNote,
+        note: mergedNote,
         card: nextCard,
-        stimulus: built?.stimulus ?? session.stimulus,
+        stimulus: built ? mergeStimulusPayload(session.stimulus, built.stimulus) : session.stimulus,
         toggles: built
-          ? resolveVariantToggles(session.variant, built.resolvedNote, getSrsUiPrefs().variantToggles[session.variant.id])
+          ? keepToggles(session.toggles, resolveVariantToggles(session.variant, built.resolvedNote, getSrsUiPrefs().variantToggles[session.variant.id]))
           : session.toggles,
       });
     },
@@ -303,15 +333,16 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       if (!session) return;
       for (const a of assets?.audio ?? []) audioCache.set(audioAssetId(note.id, a.fieldId, a.source, a.index ?? 0), a);
       for (const a of assets?.image ?? []) imageCache.set(imageAssetId(note.id, a.fieldId, a.index ?? 0), a);
-      const built = stimulusStale(session, note)
-        ? buildVariantStimulus(note, session.variant, audioCache, imageCache)
+      const mergedNote = mergeNoteFields(session.note, note);
+      const built = stimulusStale(session, mergedNote)
+        ? buildVariantStimulus(mergedNote, session.variant, audioCache, imageCache)
         : null;
       setSession({
         ...session,
-        note,
-        stimulus: built?.stimulus ?? session.stimulus,
+        note: mergedNote,
+        stimulus: built ? mergeStimulusPayload(session.stimulus, built.stimulus) : session.stimulus,
         toggles: built
-          ? resolveVariantToggles(session.variant, built.resolvedNote, getSrsUiPrefs().variantToggles[session.variant.id])
+          ? keepToggles(session.toggles, resolveVariantToggles(session.variant, built.resolvedNote, getSrsUiPrefs().variantToggles[session.variant.id]))
           : session.toggles,
       });
     },

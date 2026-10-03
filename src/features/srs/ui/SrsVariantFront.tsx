@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Box, Heading, InputField } from '@/shared/ui';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { Box, InputField } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { audioAssetId, imageAssetId, mediaFieldValues } from '@/features/srs/lib/helpers';
@@ -27,6 +27,7 @@ import {
   ReviewImageGallery,
   SentenceText,
   sequentialAudio,
+  TargetWordHeading,
 } from './srsCardShared';
 import styles from './SrsReviewCard.module.css';
 
@@ -62,7 +63,7 @@ export function nextScopeToggle(current: VariantScopeToggle): VariantScopeToggle
   return SCOPE_ORDER[(SCOPE_ORDER.indexOf(current) + 1) % SCOPE_ORDER.length];
 }
 
-function StimulusAudioButton({
+const StimulusAudioButton = memo(function StimulusAudioButton({
   fieldId,
   src,
   asset,
@@ -83,7 +84,7 @@ function StimulusAudioButton({
       <Icon name={fieldId === 'sentAudio' ? 'audioWave' : 'volumeHigh'} />
     </button>
   );
-}
+});
 
 export interface SrsVariantFrontProps {
   readonly variant: SrsVariant;
@@ -151,20 +152,21 @@ export function SrsVariantFront({
   );
 
   // Dictation fronts autoplay the selected audio once — listening is the task.
+  const autoplayFieldId = toggles.audio === 'sentence' ? 'sentAudio' : 'wordAudio';
+  const autoplayValue = stimulus.payload[autoplayFieldId];
   const audioSources = useMemo(() => {
     if (!hasInput) return [];
-    const fieldId = toggles.audio === 'sentence' ? 'sentAudio' : 'wordAudio';
-    const value = stimulus.payload[fieldId];
+    const value = autoplayValue;
     if (value?.kind !== 'audio') return [];
     const sources: (SrsAudioAsset | string)[] = [];
     mediaFieldValues(value).forEach((v, i) => {
       const url = playableUrl(v);
-      const asset = audioCache.get(audioAssetId(note.id, fieldId, value.source, i)) ?? repoAudio.get(`${fieldId}:${i}`);
+      const asset = audioCache.get(audioAssetId(note.id, autoplayFieldId, value.source, i)) ?? repoAudio.get(`${autoplayFieldId}:${i}`);
       const src = url ?? asset;
       if (src) sources.push(src);
     });
     return sources;
-  }, [hasInput, toggles.audio, stimulus, audioCache, repoAudio, note.id]);
+  }, [hasInput, autoplayFieldId, autoplayValue, audioCache, repoAudio, note.id]);
 
   const autoplayed = useRef<string | null>(null);
   useEffect(() => {
@@ -257,7 +259,7 @@ export function SrsVariantFront({
         const value = stimulus.payload[fieldId];
         if (!value) return null;
         if (fieldId === 'target' && value.kind === 'text') {
-          return <Heading key={fieldId} level={1} className={styles.targetWord}>{value.value}</Heading>;
+          return <TargetWordHeading key={fieldId} text={value.value} />;
         }
         return (
           <Box key={fieldId} className={styles.stimulusField}>

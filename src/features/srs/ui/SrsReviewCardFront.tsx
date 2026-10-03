@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Box, Heading, InputField } from '@/shared/ui';
+import { memo, useEffect, useMemo, useState } from 'react';
+import { Box, InputField } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { audioAssetId, imageAssetId, mediaFieldValues } from '@/features/srs/lib/helpers';
@@ -15,6 +15,7 @@ import {
   ReviewImageGallery,
   SentenceText,
   sequentialAudio,
+  TargetWordHeading,
 } from './srsCardShared';
 import styles from './SrsReviewCard.module.css';
 
@@ -73,7 +74,7 @@ function StimulusView({
   );
 }
 
-function StimulusAudioButton({
+const StimulusAudioButton = memo(function StimulusAudioButton({
   fieldId,
   src,
   asset,
@@ -94,7 +95,7 @@ function StimulusAudioButton({
       <Icon name={fieldId === 'sentAudio' ? 'audioWave' : 'volumeHigh'} />
     </button>
   );
-}
+});
 
 interface SrsReviewCardFrontProps {
   readonly note: SrsNote;
@@ -141,10 +142,11 @@ export function SrsReviewCardFront({
       .catch(() => {});
   }, [note.id, hasUnplayableAudio]);
 
+  const sentAudioValue = stimulus.payload['sentAudio'];
+  const wordAudioValue = stimulus.payload['wordAudio'];
   const frontAudio = useMemo(() => {
     const sources: (SrsAudioAsset | string)[] = [];
-    for (const fieldId of ['sentAudio', 'wordAudio'] as const) {
-      const value = stimulus.payload[fieldId];
+    for (const [fieldId, value] of [['sentAudio', sentAudioValue], ['wordAudio', wordAudioValue]] as const) {
       if (value?.kind !== 'audio') continue;
       mediaFieldValues(value).forEach((v, i) => {
         const url = playableUrl(v);
@@ -154,7 +156,7 @@ export function SrsReviewCardFront({
       });
     }
     return sources;
-  }, [note.id, stimulus, audioCache, repoAudio]);
+  }, [note.id, sentAudioValue, wordAudioValue, audioCache, repoAudio]);
 
   useEffect(() => sequentialAudio(frontAudio), [frontAudio]);
 
@@ -181,7 +183,7 @@ export function SrsReviewCardFront({
         }
       }}
     >
-      <Heading level={1} className={styles.targetWord}>{note.targetWord}</Heading>
+      <TargetWordHeading text={note.targetWord} />
       {note.fields.sentence?.kind === 'text' && note.fields.sentence.value && (
         <SentenceText sentence={note.fields.sentence.value} />
       )}

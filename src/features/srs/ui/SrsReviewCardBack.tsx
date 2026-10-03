@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Box, Button, Heading, Text } from '@/shared/ui';
+import { memo, useEffect, useMemo, useState } from 'react';
+import { Box, Button, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { audioAssetId, imageAssetId, mediaFieldValues } from '@/features/srs/lib/helpers';
@@ -7,7 +7,7 @@ import { parseDefEntries } from '@/features/srs/lib/defEntry';
 import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepository';
 import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote } from '@/entities/srs/types';
-import { playableUrl, ReviewImageGallery, SentenceText, sequentialAudio } from './srsCardShared';
+import { playableUrl, ReviewImageGallery, SentenceText, sequentialAudio, TargetWordHeading } from './srsCardShared';
 import { alignDictation } from '@/features/srs/lib/dictationDiff';
 import styles from './SrsReviewCard.module.css';
 
@@ -44,7 +44,7 @@ function MarkedText({ text, marks, markClass }: { text: string; marks: readonly 
   );
 }
 
-function DictationResult({ typed, expected }: { typed: string; expected: string }): React.JSX.Element | null {
+const DictationResult = memo(function DictationResult({ typed, expected }: { typed: string; expected: string }): React.JSX.Element | null {
   const alignment = useMemo(() => alignDictation(expected, typed), [expected, typed]);
   if (!alignment.typed) return null;
   return (
@@ -65,7 +65,85 @@ function DictationResult({ typed, expected }: { typed: string; expected: string 
       )}
     </Box>
   );
+});
+
+const TranslationToggle = memo(function TranslationToggle({ text }: { text: string }): React.JSX.Element {
+  const [revealed, setRevealed] = useState(false);
+  return (
+    <button
+      type="button"
+      className={`${styles.translationBox} ${revealed ? styles.translationBoxOpen : ''}`}
+      aria-expanded={revealed}
+      onClick={(e) => { e.stopPropagation(); setRevealed((v) => !v); }}
+    >
+      {revealed ? text : t('srs.review.sentenceTranslation')}
+    </button>
+  );
+});
+
+function audioSourcesEqual(a: readonly (SrsAudioAsset | string)[], b: readonly (SrsAudioAsset | string)[]): boolean {
+  return a.length === b.length && a.every((x, i) => x === b[i]);
 }
+
+const BackAudioRow = memo(function BackAudioRow({
+  sentSources,
+  wordSources,
+}: {
+  sentSources: readonly (SrsAudioAsset | string)[];
+  wordSources: readonly (SrsAudioAsset | string)[];
+}): React.JSX.Element {
+  return (
+    <Box className={styles.audioRow}>
+      {sentSources.length > 0 && (
+        <Button
+          size="md"
+          variant="primary"
+          onClick={() => playSources(sentSources)}
+          aria-label={t('srs.review.playSentence')}
+        >
+          <Icon name="audioWave" />
+        </Button>
+      )}
+      {wordSources.length > 0 && (
+        <Button
+          shape="circle"
+          size="md"
+          variant="primary"
+          onClick={() => playSources(wordSources)}
+          aria-label={t('srs.review.playWord')}
+        >
+          <Icon name="volumeHigh" />
+        </Button>
+      )}
+    </Box>
+  );
+}, (prev, next) => audioSourcesEqual(prev.sentSources, next.sentSources) && audioSourcesEqual(prev.wordSources, next.wordSources));
+
+const DefList = memo(function DefList({ text }: { text: string }): React.JSX.Element {
+  return (
+    <div className={styles.defList}>
+      {parseDefEntries(text).map((entry, i) => (
+        <DefEntryBlock key={i} entry={entry} />
+      ))}
+    </div>
+  );
+});
+
+const FieldBlock = memo(function FieldBlock({ label, value }: { label: string; value: SrsFieldValue }): React.JSX.Element {
+  return (
+    <FieldBox label={label}>
+      <BackFieldValue value={value} />
+    </FieldBox>
+  );
+});
+
+const FieldTextBlock = memo(function FieldTextBlock({ label, text }: { label: string; text: string }): React.JSX.Element {
+  return (
+    <FieldBox label={label}>
+      <Text className={styles.fieldText}>{text}</Text>
+    </FieldBox>
+  );
+});
 
 function FieldBox({ label, children }: { label: string; children: React.ReactNode }): React.JSX.Element {
   return (
@@ -139,8 +217,6 @@ export function SrsReviewCardBack({
   onFlipBack,
   dictation,
 }: SrsReviewCardBackProps): React.JSX.Element {
-  const [translationRevealed, setTranslationRevealed] = useState(false);
-
   const wordAudio = note.fields.wordAudio?.kind === 'audio' ? note.fields.wordAudio : undefined;
   const sentAudio = note.fields.sentAudio?.kind === 'audio' ? note.fields.sentAudio : undefined;
   const imageFields = Object.entries(note.fields).filter(([, v]) => v.kind === 'image');
@@ -230,80 +306,37 @@ export function SrsReviewCardBack({
           <DictationResult typed={dictation.typed} expected={dictation.expected} />
         )}
 
-        {note.targetWord.trim() && (
-          <Heading level={1} className={styles.targetWord}>{note.targetWord}</Heading>
-        )}
+        <TargetWordHeading text={note.targetWord} />
 
         {note.fields.sentence?.kind === 'text' && (
           <SentenceText sentence={note.fields.sentence.value} />
         )}
 
         {hasTranslation && (
-          <button
-            type="button"
-            className={`${styles.translationBox} ${translationRevealed ? styles.translationBoxOpen : ''}`}
-            aria-expanded={translationRevealed}
-            onClick={(e) => { e.stopPropagation(); setTranslationRevealed((v) => !v); }}
-          >
-            {translationRevealed
-              ? fieldText(note.fields.translation)
-              : t('srs.review.sentenceTranslation')}
-          </button>
+          <TranslationToggle text={fieldText(note.fields.translation)} />
         )}
       </div>
 
       {(hasSentAudio || hasWordAudio) && (
-        <Box className={styles.audioRow}>
-          {hasSentAudio && (
-            <Button
-              size="md"
-              variant="primary"
-              onClick={() => playSources(sentAudioSources)}
-              aria-label={t('srs.review.playSentence')}
-            >
-              <Icon name="audioWave" />
-            </Button>
-          )}
-          {hasWordAudio && (
-            <Button
-              shape="circle"
-              size="md"
-              variant="primary"
-              onClick={() => playSources(wordAudioSources)}
-              aria-label={t('srs.review.playWord')}
-            >
-              <Icon name="volumeHigh" />
-            </Button>
-          )}
-        </Box>
+        <BackAudioRow sentSources={sentAudioSources} wordSources={wordAudioSources} />
       )}
 
       {note.fields.def && (
-        <div className={styles.defList}>
-          {parseDefEntries(fieldText(note.fields.def)).map((entry, i) => (
-            <DefEntryBlock key={i} entry={entry} />
-          ))}
-        </div>
+        <DefList text={fieldText(note.fields.def)} />
       )}
 
       <ReviewImageGallery items={imageItems} alt={note.targetWord} dataCellId="srs-card-images" />
 
       {note.fields.examples && fieldText(note.fields.examples).trim() && (
-        <FieldBox label={fieldLabel('examples')}>
-          <BackFieldValue value={note.fields.examples} />
-        </FieldBox>
+        <FieldTextBlock label={fieldLabel('examples')} text={fieldText(note.fields.examples)} />
       )}
 
       {note.fields.notes && fieldText(note.fields.notes).trim() && (
-        <FieldBox label={fieldLabel('notes')}>
-          <BackFieldValue value={note.fields.notes} />
-        </FieldBox>
+        <FieldBlock label={fieldLabel('notes')} value={note.fields.notes} />
       )}
 
       {extraFields.map(([id, value]) => (
-        <FieldBox key={id} label={fieldLabel(id)}>
-          <BackFieldValue value={value} />
-        </FieldBox>
+        <FieldBlock key={id} label={fieldLabel(id)} value={value} />
       ))}
     </div>
   );

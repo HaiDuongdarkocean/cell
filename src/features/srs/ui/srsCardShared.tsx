@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   CloseButton,
+  Heading,
   Overlay,
   PaginationDots,
   Portal,
@@ -87,7 +88,11 @@ export interface GalleryItem {
 const MAX_IMAGE_ZOOM = 4;
 const ZOOM_STEP = 1.25;
 
-export function ReviewImageGallery({ items, alt, dataCellId }: {
+function galleryItemsEqual(a: readonly GalleryItem[], b: readonly GalleryItem[]): boolean {
+  return a.length === b.length && a.every((x, i) => x.key === b[i].key && x.src === b[i].src && x.asset === b[i].asset);
+}
+
+function ReviewImageGalleryInner({ items, alt, dataCellId }: {
   readonly items: readonly GalleryItem[];
   readonly alt: string;
   readonly dataCellId?: string;
@@ -478,12 +483,20 @@ export function ReviewImageGallery({ items, alt, dataCellId }: {
   );
 }
 
+export const ReviewImageGallery = memo(ReviewImageGalleryInner, (prev, next) =>
+  prev.alt === next.alt && prev.dataCellId === next.dataCellId && galleryItemsEqual(prev.items, next.items));
+
 export function formatFieldValue(value: SrsFieldValue): string {
   if (value.kind === 'list') return value.value.join(', ');
   if (value.kind === 'audio' || value.kind === 'image') return mediaFieldValues(value)[0] ?? '';
   return value.value;
 }
 
-export function SentenceText({ sentence }: { sentence: string }): React.JSX.Element {
+export const SentenceText = memo(function SentenceText({ sentence }: { sentence: string }): React.JSX.Element {
   return <Text className={styles.sentence}>{sentence}</Text>;
-}
+});
+
+export const TargetWordHeading = memo(function TargetWordHeading({ text }: { text: string }): React.JSX.Element | null {
+  if (!text.trim()) return null;
+  return <Heading level={1} className={styles.targetWord}>{text}</Heading>;
+});
