@@ -18,6 +18,7 @@ const SEEK_RETRY_MS = 2000;
 const SEEK_GRACE_MS = 2500;
 const PLAY_RETRY_MS = 1000;
 const PLAY_GRACE_MS = 1500;
+const PAUSE_GIVE_UP_MS = 10_000;
 
 interface RecorderSession {
   readonly recordId: string;
@@ -40,6 +41,7 @@ interface RecorderSession {
   seekedRangeIdx: number;
   lastSeekAt: number;
   lastPlayCmdAt: number;
+  pausedSince: number;
   capturedMs: number;
   lastTickAt: number;
   pending: Promise<unknown>;
@@ -120,12 +122,12 @@ function recoverOrPause(s: RecorderSession, now: number): void {
     commandPlay(s);
     return;
   }
-  if (now - s.lastPlayCmdAt < PLAY_GRACE_MS) return;
-  if (s.seenPlaying) {
+  if (s.pausedSince > 0 && now - s.pausedSince >= PAUSE_GIVE_UP_MS) {
     s.seekPending = false;
     setSessionPaused(s, true);
     return;
   }
+  if (now - s.lastPlayCmdAt < PLAY_GRACE_MS) return;
   commandPlay(s);
 }
 
@@ -138,11 +140,14 @@ function tickSession(s: RecorderSession): void {
   if (!video.paused) {
     s.seenPlaying = true;
     s.lastPlayCmdAt = 0;
+    s.pausedSince = 0;
     if (!video.seeking) s.seekPending = false;
     if (s.pausedByUser) {
       setSessionPaused(s, false);
       return;
     }
+  } else if (s.pausedSince === 0) {
+    s.pausedSince = now;
   }
   if (video.seeking || video.ended) {
     syncRecorder(s, false);
@@ -310,6 +315,7 @@ export function startCondensedAudioSession(
     seekedRangeIdx: -1,
     lastSeekAt: 0,
     lastPlayCmdAt: 0,
+    pausedSince: 0,
     capturedMs: 0,
     lastTickAt: startedAt,
     pending: Promise.resolve(),
@@ -326,7 +332,7 @@ export function startCondensedAudioSession(
         elapsedMs: s.capturedMs,
       });
       s.seq += 1;
-    });
+    }).catch(() => undefined);
   };
   recorder.onerror = () => {
     abortSession(recordId, true);

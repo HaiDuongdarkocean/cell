@@ -282,13 +282,25 @@ describe('startCondensedAudioSession', () => {
     expect(recorder.state).toBe('recording');
   });
 
-  it('treats an external site pause inside a range as user pause', () => {
+  it('resumes playback after an external site pause instead of stopping', () => {
     video.setPaused(false);
     jest.advanceTimersByTime(200);
     expect(recorder.state).toBe('recording');
     video.setPaused(true);
+    jest.advanceTimersByTime(400);
+    expect(video.isPaused()).toBe(false);
+    expect(mockSetPaused).not.toHaveBeenCalledWith(true);
+    expect(recorder.state).toBe('recording');
+  });
+
+  it('marks the session paused only when playback cannot resume', () => {
+    video.setPaused(false);
     jest.advanceTimersByTime(200);
-    expect(recorder.state).toBe('paused');
+    video.el.play = () => Promise.reject(new Error('blocked'));
+    video.setPaused(true);
+    jest.advanceTimersByTime(400);
+    expect(mockSetPaused).not.toHaveBeenCalledWith(true);
+    jest.advanceTimersByTime(10_000);
     expect(mockSetPaused).toHaveBeenCalledWith(true);
   });
 
