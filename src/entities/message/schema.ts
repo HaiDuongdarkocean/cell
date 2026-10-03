@@ -296,6 +296,8 @@ export const GetHistoryPayloadSchema = z.object({
   limit: z.number().int().min(1).optional(),
 }).optional();
 
+export const GetSessionRecapPayloadSchema = z.object({}).optional();
+
 export const SaveHistoryPayloadSchema = z.object({
   videoId: z.string().min(1),
   watchedAt: z.number(),

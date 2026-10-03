@@ -87,6 +87,8 @@ import { registerFetchMediaUrlHandlers } from './handlers/fetchMediaUrl';
 import { registerScreenshotHandlers } from './handlers/screenshot';
 import { registerSubtitleDiscoveryHandlers } from './handlers/subtitleDiscovery';
 import { registerLocalPlayerHandlers } from './handlers/localPlayer';
+import { registerSessionRecapHandlers } from './handlers/sessionRecap';
+import { createSessionEventsTap } from '@/features/sessionRecap/services/sessionEventsTap';
 import { registerSrsHandlers } from './handlers/srs';
 import { registerOcrHandlers } from './handlers/ocr';
 import { registerReaderHandlers } from './handlers/reader';
@@ -301,6 +303,8 @@ export class BackgroundService implements BackgroundContext {
     registerScreenshotHandlers(this);
     registerSubtitleDiscoveryHandlers(this);
     registerLocalPlayerHandlers(this);
+    registerSessionRecapHandlers(this);
+    this.messageBus.addTap(createSessionEventsTap());
     registerSrsHandlers(this);
     registerReaderHandlers(this);
     registerOcrHandlers(this);

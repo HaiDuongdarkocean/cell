@@ -1,8 +1,9 @@
 // mediaLibraryRepository — IndexedDB persistence for local video player library
 // + watch history + subtitle library.
 //
-// DB name: orca-local-player, version 2. Three object stores: videos (keyPath id),
-// history (keyPath id, indexes: by_videoId, by_watchedAt), subtitles (keyPath id).
+// DB name: orca-local-player, version 4. Stores: videos (keyPath id),
+// history (keyPath id, indexes: by_videoId, by_watchedAt), subtitles (keyPath id),
+// condensedAudio (keyPath id), sessionEvents (keyPath id, index: by_at).
 //
 // IndexedDB stores any object supported by the structured clone algorithm
 // (source: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API).
@@ -15,18 +16,20 @@ import type { ComprehensionBand } from '@/entities/comprehension';
 // ─── Schema constants ────────────────────────────────────────────────────────
 
 export const DB_NAME = 'orca-local-player';
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 export const STORES = {
   VIDEOS: 'videos',
   HISTORY: 'history',
   SUBTITLES: 'subtitles',
   CONDENSED_AUDIO: 'condensedAudio',
+  SESSION_EVENTS: 'sessionEvents',
 } as const;
 
 export const INDEXES = {
   by_videoId: 'by_videoId',
   by_watchedAt: 'by_watchedAt',
+  by_at: 'by_at',
 } as const;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -79,6 +82,20 @@ export type SubtitleRecord = {
   fileHandle?: FileSystemFileHandle;
 };
 
+export type SessionEventSurface = 'stream' | 'local-player' | 'other';
+
+export type SessionEvent = {
+  id: string;
+  at: number;
+  tabId: number;
+  surface: SessionEventSurface;
+  kind: 'lookup' | 'status';
+  term: string;
+  langCode?: string;
+  status?: string;
+  pos?: string;
+};
+
 // ─── DB connection (singleton) ───────────────────────────────────────────────
 
 let dbInstance: IDBDatabase | null = null;
@@ -99,6 +116,10 @@ function createStores(db: IDBDatabase): void {
   if (!db.objectStoreNames.contains(STORES.CONDENSED_AUDIO)) {
     db.createObjectStore(STORES.CONDENSED_AUDIO, { keyPath: 'id' });
   }
+  if (!db.objectStoreNames.contains(STORES.SESSION_EVENTS)) {
+    const events = db.createObjectStore(STORES.SESSION_EVENTS, { keyPath: 'id' });
+    events.createIndex(INDEXES.by_at, 'at', { unique: false });
+  }
 }
 
 /** Open the orca-local-player IndexedDB with v1 create-all migration. */
@@ -117,7 +138,12 @@ function openDB(): Promise<IDBDatabase> {
  *  connection + migration path. */
 export async function getDB(): Promise<IDBDatabase> {
   if (dbInstance) return dbInstance;
-  dbInstance = await openDB();
+  const db = await openDB();
+  db.onversionchange = () => {
+    db.close();
+    if (dbInstance === db) dbInstance = null;
+  };
+  dbInstance = db;
   return dbInstance;
 }
 
@@ -309,5 +335,47 @@ export async function clearAllSubtitles(): Promise<void> {
   const db = await getDB();
   const tx = db.transaction(STORES.SUBTITLES, 'readwrite');
   tx.objectStore(STORES.SUBTITLES).clear();
+  await txDone(tx);
+}
+
+// ─── Session events ──────────────────────────────────────────────────────────
+
+/** Append a session event. Best-effort: the caller treats persistence failure
+ *  as a dropped event (fail-closed), never as a request error. */
+export async function addSessionEvent(event: SessionEvent): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction(STORES.SESSION_EVENTS, 'readwrite');
+  tx.objectStore(STORES.SESSION_EVENTS).put(event);
+  await txDone(tx);
+}
+
+/** Get session events with `at` in [sinceMs, untilMs], ascending. */
+export async function getSessionEventsInRange(
+  sinceMs: number,
+  untilMs: number,
+): Promise<SessionEvent[]> {
+  const db = await getDB();
+  const tx = db.transaction(STORES.SESSION_EVENTS, 'readonly');
+  const range = IDBKeyRange.bound(sinceMs, untilMs);
+  const all = (await reqToPromise(
+    tx.objectStore(STORES.SESSION_EVENTS).index(INDEXES.by_at).getAll(range),
+  )) as SessionEvent[];
+  return all.sort((a, b) => a.at - b.at);
+}
+
+/** Delete events older than `olderThanMs`. Guarded so repeated calls within
+ *  one process lifetime only sweep once. */
+let sessionEventsPruned = false;
+export async function pruneSessionEventsOnce(olderThanMs: number): Promise<void> {
+  if (sessionEventsPruned) return;
+  sessionEventsPruned = true;
+  const db = await getDB();
+  const tx = db.transaction(STORES.SESSION_EVENTS, 'readwrite');
+  const range = IDBKeyRange.upperBound(olderThanMs);
+  const keys = (await reqToPromise(
+    tx.objectStore(STORES.SESSION_EVENTS).index(INDEXES.by_at).getAllKeys(range),
+  )) as IDBValidKey[];
+  const store = tx.objectStore(STORES.SESSION_EVENTS);
+  for (const key of keys) store.delete(key);
   await txDone(tx);
 }

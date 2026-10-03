@@ -466,6 +466,10 @@ export const lookupRequestSchema = z.object({
 export const LookupRequestPayloadSchema = z.object({
   requestId: z.string().min(1),
   request: lookupRequestSchema,
+  /** Marks a user-initiated lookup from an immersion surface (token click /
+   *  web-text selection). Non-immersive senders (card generator, panel
+   *  dictionary tab, prefetch) omit it — session-recap counts only this. */
+  origin: z.literal('immersion').optional(),
 });
 
 export const LookupCancelPayloadSchema = z.object({

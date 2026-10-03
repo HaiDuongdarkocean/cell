@@ -24,6 +24,7 @@ import {
   GetDetectedMediaPayloadSchema,
   GetDownloadProgressPayloadSchema,
   GetHistoryPayloadSchema,
+  GetSessionRecapPayloadSchema,
   GetKeyQuotaPayloadSchema,
   GetLibraryPayloadSchema,
   GetResumePositionPayloadSchema,
@@ -646,6 +647,12 @@ export const MESSAGE_REGISTRY = {
     schema: GetHistoryPayloadSchema,
     direction: 'panel->bg',
     owner: 'background/handlers/localPlayer',
+  },
+  [MESSAGE_TYPES.GET_SESSION_RECAP]: {
+    type: MESSAGE_TYPES.GET_SESSION_RECAP,
+    schema: GetSessionRecapPayloadSchema,
+    direction: 'panel->bg',
+    owner: 'background/handlers/sessionRecap',
   },
   [MESSAGE_TYPES.SAVE_HISTORY]: {
     type: MESSAGE_TYPES.SAVE_HISTORY,

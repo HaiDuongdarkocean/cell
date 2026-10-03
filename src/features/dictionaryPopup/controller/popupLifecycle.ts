@@ -504,7 +504,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
 
     void Promise.resolve(sendMessage({
       type: MESSAGE_TYPES.LOOKUP_REQUEST,
-      payload: { requestId, request },
+      payload: { requestId, request, origin: 'immersion' },
     }))
       .then((response: unknown) => {
         // Stale guard: the level was pruned or already re-used for a newer

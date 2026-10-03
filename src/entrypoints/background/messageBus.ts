@@ -9,8 +9,11 @@ import type {
   MessageRequest,
   MessageResponse,
   MessageHandler,
+  MessageTap,
   MessageType,
 } from '@/entities/message';
+
+export type { MessageTap };
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -33,6 +36,7 @@ function swallowNoReceivingEnd(error: unknown): void {
  */
 export class MessageBus {
   private handlers: Map<MessageType, MessageHandler> = new Map();
+  private taps: MessageTap[] = [];
   private boundListener: ((
     request: MessageRequest,
     sender: chrome.runtime.MessageSender,
@@ -65,6 +69,20 @@ export class MessageBus {
       if (this.handlers.get(type) === wrapped) {
         this.handlers.delete(type);
       }
+    };
+  }
+
+  /**
+   * Register a post-dispatch observer. Called with the dispatched request
+   * (tabId already injected from sender), the sender, and the resolved
+   * response — before it reaches sendResponse.
+   * @returns an unsubscribe function.
+   */
+  addTap(tap: MessageTap): () => void {
+    this.taps.push(tap);
+    return () => {
+      const i = this.taps.indexOf(tap);
+      if (i >= 0) this.taps.splice(i, 1);
     };
   }
 
@@ -177,7 +195,15 @@ export class MessageBus {
     }
 
     try {
-      return await handler(request);
+      const response = await handler(request);
+      for (const tap of this.taps) {
+        try {
+          tap(request, sender, response);
+        } catch {
+          // observer errors never break the response path
+        }
+      }
+      return response;
     } catch (error) {
       const message =
         error instanceof Error ? error.message : String(error);

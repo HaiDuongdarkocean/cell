@@ -26,11 +26,12 @@ export interface UniversalPanelBottomNavProps {
   className?: string;
 }
 
-const TABS: ReadonlyArray<{ key: UniversalPanelTab; icon: 'audioWave' | 'bookOpen' | 'scanText' | 'slidersHorizontal' | 'settings'; label: MessageKey }> = [
+const TABS: ReadonlyArray<{ key: UniversalPanelTab; icon: 'audioWave' | 'bookOpen' | 'clock' | 'scanText' | 'slidersHorizontal' | 'settings'; label: MessageKey }> = [
   { key: 'dictionary', icon: 'bookOpen', label: 'panel.tab.dictionary' },
   { key: 'vocabulary', icon: 'scanText', label: 'panel.tab.vocabularyShort' },
   { key: 'studyModes', icon: 'slidersHorizontal', label: 'panel.tab.studyModesShort' },
   { key: 'playlist', icon: 'audioWave', label: 'panel.tab.playlistShort' },
+  { key: 'recap', icon: 'clock', label: 'panel.tab.recapShort' },
   { key: 'settings', icon: 'settings', label: 'panel.tab.settings' },
 ];
 
