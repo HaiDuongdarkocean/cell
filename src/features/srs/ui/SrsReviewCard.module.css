@@ -688,14 +688,15 @@
   border: none;
 }
 
-/* design-system: intentional override — destructive-tinted surface for the forget grade button so it reads as a filled action like the remember button. */
+/* design-system: intentional override — solid destructive surface so the
+ * forget grade button reads as a filled action like the remember button. */
 .gradeRow .forgetButton {
-  background: var(--button-destructive-bg);
-  color: var(--button-destructive-fg);
+  background: var(--color-destructive);
+  color: var(--color-destructive-foreground);
 }
 
 .gradeRow .forgetButton:hover {
-  background: var(--button-destructive-hover-bg);
+  background: var(--color-destructive-hover);
 }
 
 /* design-system: intentional override — the delete chrome button previews the same destructive tint as the forget grade action on hover. */
