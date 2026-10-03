@@ -17,8 +17,8 @@ export async function getNote(id: string): Promise<SrsNote> {
 }
 
 export async function putNote(note: SrsNote): Promise<SrsNote> {
-  if (!note.id || !note.notetypeId || !note.deckId || !note.targetWord) {
-    throw new SrsError('INVALID_INPUT', 'Note id, notetypeId, deckId and targetWord are required');
+  if (!note.id || !note.notetypeId || !note.deckId) {
+    throw new SrsError('INVALID_INPUT', 'Note id, notetypeId and deckId are required');
   }
 
   const parsed = SrsNoteSchema.safeParse(note);
@@ -28,7 +28,9 @@ export async function putNote(note: SrsNote): Promise<SrsNote> {
 
   await ensureSyncRuntime();
   return withStore(WRITE_STORES, async (store, tx) => {
-    const existing = await getNoteByTargetAndNotetypeInStore(store, note.targetWord, note.notetypeId);
+    const existing = note.targetWord
+      ? await getNoteByTargetAndNotetypeInStore(store, note.targetWord, note.notetypeId)
+      : undefined;
     if (existing && existing.id !== note.id) {
       throw new SrsError('DUPLICATE', `Note with targetWord ${note.targetWord} and notetypeId ${note.notetypeId} already exists`);
     }

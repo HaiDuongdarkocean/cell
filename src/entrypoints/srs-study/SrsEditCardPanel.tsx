@@ -75,7 +75,9 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
   const notetype = session?.notetype;
   const card = session?.card;
   const initializedNoteId = useRef<string | null>(null);
-  const dirtyRef = useRef(false);
+  const dataVersion = useRef(0);
+  const persistedVersion = useRef(0);
+  const lastInputs = useRef<{ texts: Record<string, string>; media: Record<string, MediaFile[]>; tags: string; deckId: string; removedMedia: ReadonlySet<string> } | null>(null);
   const langsRef = useRef<{ target: string; native: string } | null>(null);
   const dictSourceRef = useRef<{ key: string; source: CardCreatorPrefill | null } | null>(null);
   const stateRef = useRef({ texts, media, tags, deckId, removedMedia });
@@ -99,13 +101,15 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
         }
       }
       if (!mounted) return;
+      const emptyMedia = new Set<string>();
       setTexts(initialTexts);
       setMedia(initialMedia);
-      setRemovedMedia(new Set());
-      setTags((note.tags ?? []).join(' '));
+      setRemovedMedia(emptyMedia);
+      const joinedTags = (note.tags ?? []).join(' ');
+      setTags(joinedTags);
       setDeckId(note.deckId);
+      lastInputs.current = { texts: initialTexts, media: initialMedia, tags: joinedTags, deckId: note.deckId, removedMedia: emptyMedia };
       initializedNoteId.current = note.id;
-      dirtyRef.current = false;
       dictSourceRef.current = null;
       setNotice(null);
     })();
@@ -138,10 +142,11 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
   const persist = useCallback(async () => {
     if (!note || !notetype || initializedNoteId.current !== note.id) return;
     const s = stateRef.current;
+    const version = dataVersion.current;
     try {
       const { targetWord, fields } = await persistNoteFields(notetype, note, s.texts, s.media, s.removedMedia);
       await updateCurrentNote({ ...note, targetWord, fields, tags: splitTags(s.tags) }, s.deckId);
-      dirtyRef.current = false;
+      persistedVersion.current = version;
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -149,13 +154,26 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
   }, [note, notetype, updateCurrentNote]);
 
   useEffect(() => {
-    if (!dirtyRef.current) return;
+    const cur = { texts, media, tags, deckId, removedMedia };
+    const last = lastInputs.current;
+    if (
+      !last ||
+      cur.texts !== last.texts ||
+      cur.media !== last.media ||
+      cur.tags !== last.tags ||
+      cur.deckId !== last.deckId ||
+      cur.removedMedia !== last.removedMedia
+    ) {
+      lastInputs.current = cur;
+      dataVersion.current += 1;
+    }
+    if (dataVersion.current === persistedVersion.current) return;
     const timer = setTimeout(() => { void persist(); }, 600);
     return () => clearTimeout(timer);
   }, [texts, media, tags, deckId, removedMedia, persist]);
 
   useEffect(() => () => {
-    if (dirtyRef.current) void persist();
+    if (dataVersion.current !== persistedVersion.current) void persist();
   }, [persist]);
 
   useEffect(() => {
@@ -201,14 +219,11 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
       if (value) fields[field.id] = value;
       else delete fields[field.id];
     }
-    const targetWord = (texts[notetype.targetFieldId] ?? note.targetWord).trim() || note.targetWord;
+    const targetWord = (texts[notetype.targetFieldId] ?? note.targetWord).trim();
     if (targetWord === note.targetWord && JSON.stringify(fields) === JSON.stringify(note.fields)) return;
     previewCurrentNote({ ...note, targetWord, fields }, { audio: audioAssets, image: imageAssets });
   }, [texts, media, removedMedia, note, notetype, previewCurrentNote]);
 
-  function markDirty(): void {
-    dirtyRef.current = true;
-  }
 
   async function resolveLangs(): Promise<{ target: string; native: string }> {
     if (!langsRef.current) {
@@ -244,7 +259,6 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
       const { target, native } = await resolveLangs();
       const translated = await translateSentence(sentence, target, native);
       if (translated) {
-        markDirty();
         setTexts((prev) => ({ ...prev, [field.id]: translated }));
         setNotice(t('cardCreator.toast.generateField.success', [label]));
       } else {
@@ -259,7 +273,6 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
       if (urls.length === 0) { setNotice(t('cardCreator.toast.generateField.noSource', [label])); return; }
       const fetched = await fetchMediaList(urls, kind, setNotice);
       if (fetched.length > 0) {
-        markDirty();
         setMedia((prev) => ({ ...prev, [field.id]: [...(prev[field.id] ?? []), ...fetched] }));
         setNotice(t('cardCreator.toast.generateField.success', [label]));
       } else {
@@ -271,7 +284,6 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
     const source = await resolveSource();
     const value = source?.[kind]?.trim() ?? '';
     if (value) {
-      markDirty();
       setTexts((prev) => ({ ...prev, [field.id]: value }));
       setNotice(t('cardCreator.toast.generateField.success', [label]));
     } else {
@@ -316,7 +328,7 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
   }
 
   function handleClose(): void {
-    if (dirtyRef.current) void persist().finally(onClose);
+    if (dataVersion.current !== persistedVersion.current) void persist().finally(onClose);
     else onClose();
   }
 
@@ -379,7 +391,7 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
         </Box>
         <Box className={styles.selectCol}>
           <Label>{t('srs.edit.deck')}</Label>
-          <Select value={deckId} options={deckOptions} onChange={(v) => { markDirty(); setDeckId(v); }} menuClassName={styles.selectMenu} />
+          <Select value={deckId} options={deckOptions} onChange={(v) => { setDeckId(v); }} menuClassName={styles.selectMenu} />
         </Box>
       </Box>
 
@@ -408,7 +420,6 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
               field={field}
               files={media[field.id] ?? []}
               onChange={(files) => {
-                markDirty();
                 setMedia((prev) => ({ ...prev, [field.id]: files }));
                 setRemovedMedia((prev) => {
                   const next = new Set(prev);
@@ -420,7 +431,7 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
           ) : (
             <FieldAutoGrowInput
               value={texts[field.id] ?? ''}
-              onChange={(v) => { markDirty(); setTexts((prev) => ({ ...prev, [field.id]: v })); }}
+              onChange={(v) => { setTexts((prev) => ({ ...prev, [field.id]: v })); }}
               aria-label={field.name}
               dataId={`srs-edit-${field.id}`}
             />
@@ -431,7 +442,7 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
       <FieldRow label={t('cardCreator.field.tags')} dataId="srs-edit-tags">
         <TagInput
           value={tags}
-          onChange={(v) => { markDirty(); setTags(v); }}
+          onChange={(v) => { setTags(v); }}
           placeholder={t('cardCreator.placeholder.tags')}
           ariaLabel={t('cardCreator.field.tags')}
           dataId="srs-edit-tags"

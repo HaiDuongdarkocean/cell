@@ -27,7 +27,9 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
   const [removedMedia, setRemovedMedia] = useState<ReadonlySet<string>>(new Set());
   const [tags, setTags] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const dirtyRef = useRef(false);
+  const dataVersion = useRef(0);
+  const persistedVersion = useRef(0);
+  const lastInputs = useRef<{ texts: Record<string, string>; media: Record<string, MediaFile[]>; tags: string; deckId: string; removedMedia: ReadonlySet<string> } | null>(null);
   const stateRef = useRef({ texts, media, tags, deckId, removedMedia });
   stateRef.current = { texts, media, tags, deckId, removedMedia };
 
@@ -49,11 +51,13 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
         }
       }
       if (!mounted) return;
+      const emptyMedia = new Set<string>();
+      const joinedTags = (note.tags ?? []).join(' ');
       setTexts(initialTexts);
       setMedia(initialMedia);
-      setRemovedMedia(new Set());
-      setTags((note.tags ?? []).join(' '));
-      dirtyRef.current = false;
+      setRemovedMedia(emptyMedia);
+      setTags(joinedTags);
+      lastInputs.current = { texts: initialTexts, media: initialMedia, tags: joinedTags, deckId, removedMedia: emptyMedia };
     })();
     return () => { mounted = false; };
   }, [note, notetype]);
@@ -63,10 +67,11 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
 
   const persist = useCallback(async () => {
     const s = stateRef.current;
+    const version = dataVersion.current;
     try {
       const { targetWord, fields } = await persistNoteFields(notetype, note, s.texts, s.media, s.removedMedia);
       await putNote({ ...note, targetWord, fields, deckId: s.deckId, tags: splitTags(s.tags) });
-      dirtyRef.current = false;
+      persistedVersion.current = version;
       setError(null);
       onSaved();
     } catch (err) {
@@ -75,17 +80,26 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
   }, [note, notetype, onSaved]);
 
   useEffect(() => {
-    if (!dirtyRef.current) return;
+    const cur = { texts, media, tags, deckId, removedMedia };
+    const last = lastInputs.current;
+    if (
+      !last ||
+      cur.texts !== last.texts ||
+      cur.media !== last.media ||
+      cur.tags !== last.tags ||
+      cur.deckId !== last.deckId ||
+      cur.removedMedia !== last.removedMedia
+    ) {
+      lastInputs.current = cur;
+      dataVersion.current += 1;
+    }
+    if (dataVersion.current === persistedVersion.current) return;
     const timer = setTimeout(() => { void persist(); }, 600);
     return () => clearTimeout(timer);
   }, [texts, media, tags, deckId, removedMedia, persist]);
 
-  function markDirty(): void {
-    dirtyRef.current = true;
-  }
-
   function handleClose(): void {
-    if (dirtyRef.current) void persist().finally(onClose);
+    if (dataVersion.current !== persistedVersion.current) void persist().finally(onClose);
     else onClose();
   }
 
@@ -112,7 +126,7 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
         </Box>
         <Box className={styles.selectCol}>
           <Label>{t('srs.edit.deck')}</Label>
-          <Select value={deckId} options={deckOptions} onChange={(v) => { markDirty(); setDeckId(v); }} />
+          <Select value={deckId} options={deckOptions} onChange={(v) => { setDeckId(v); }} />
         </Box>
       </Box>
 
@@ -130,7 +144,6 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
               field={field}
               files={media[field.id] ?? []}
               onChange={(files) => {
-                markDirty();
                 setMedia((prev) => ({ ...prev, [field.id]: files }));
                 setRemovedMedia((prev) => {
                   const next = new Set(prev);
@@ -142,7 +155,7 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
           ) : (
             <FieldAutoGrowInput
               value={texts[field.id] ?? ''}
-              onChange={(v) => { markDirty(); setTexts((prev) => ({ ...prev, [field.id]: v })); }}
+              onChange={(v) => { setTexts((prev) => ({ ...prev, [field.id]: v })); }}
               aria-label={field.name}
               dataId={`srs-edit-${field.id}`}
             />
@@ -153,7 +166,7 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
       <FieldRow label={t('cardCreator.field.tags')} dataId="srs-edit-tags">
         <TagInput
           value={tags}
-          onChange={(v) => { markDirty(); setTags(v); }}
+          onChange={(v) => { setTags(v); }}
           placeholder={t('cardCreator.placeholder.tags')}
           ariaLabel={t('cardCreator.field.tags')}
           dataId="srs-edit-tags"

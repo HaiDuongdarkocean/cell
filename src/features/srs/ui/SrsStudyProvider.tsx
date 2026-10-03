@@ -8,6 +8,7 @@ import type {
   SrsReviewSession,
   SrsStimulus,
   SrsStudyConfig,
+  SrsVariant,
 } from '@/entities/srs/types';
 import { createSrsFsrsAdapter } from '@/features/srs/services/srsFsrsAdapter';
 import { ensureFirstRun } from '@/features/srs/services/firstRunService';
@@ -20,7 +21,7 @@ import { selectNextReview, type SelectNextReviewOptions } from '@/features/srs/l
 import { applyReview, resetCard, resetComponent, studyAgain } from '@/features/srs/logic/reviewEngine';
 import { getSrsStats, type SrsDeckStats } from '@/features/srs/services/getSrsStats';
 import { buildVariantStimulus } from '@/features/srs/logic/resolveReviewSurface';
-import { resolveVariantToggles } from '@/features/srs/lib/variantFront';
+import { isVariantServable, resolveVariantToggles } from '@/features/srs/lib/variantFront';
 import { audioAssetId, imageAssetId, mediaFieldValues } from '@/features/srs/lib/helpers';
 import { getSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
@@ -106,6 +107,36 @@ function mergeStimulusPayload(prev: SrsStimulus, next: SrsStimulus): SrsStimulus
 
 function keepToggles(prev: ResolvedVariantToggles, next: ResolvedVariantToggles): ResolvedVariantToggles {
   return JSON.stringify(prev) === JSON.stringify(next) ? prev : next;
+}
+
+interface Resurfaced {
+  readonly variant: SrsVariant;
+  readonly stimulus: SrsStimulus;
+  readonly toggles: ResolvedVariantToggles;
+}
+
+function resurfaceSession(
+  session: SrsReviewSession,
+  note: SrsNote,
+  audioCache: ReadonlyMap<string, SrsAudioAsset>,
+  imageCache: ReadonlyMap<string, SrsImageAsset>,
+): Resurfaced | null {
+  const prefs = getSrsUiPrefs().variantToggles;
+  const ordered = [session.variant, ...session.variants.filter((v) => v.id !== session.variant.id)];
+  for (const variant of ordered) {
+    if (!isVariantServable(variant, note, session.notetype)) continue;
+    const built = buildVariantStimulus(note, variant, audioCache, imageCache);
+    if (!built || !isVariantServable(variant, built.resolvedNote, session.notetype)) continue;
+    const sameVariant = variant.id === session.variant.id;
+    return {
+      variant,
+      stimulus: sameVariant ? mergeStimulusPayload(session.stimulus, built.stimulus) : built.stimulus,
+      toggles: sameVariant
+        ? keepToggles(session.toggles, resolveVariantToggles(variant, built.resolvedNote, prefs[variant.id]))
+        : resolveVariantToggles(variant, built.resolvedNote, prefs[variant.id]),
+    };
+  }
+  return null;
 }
 
 function blobUrlsToRevoke(stimulus: SrsStimulus | null): string[] {
@@ -216,6 +247,36 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
     }
   }, [ensureDeck, deckId, audioCache, imageCache, revokeAllBlobUrls]);
 
+  const advanceToNext = useCallback(
+    async (current: SrsReviewSession, recordHistory: boolean) => {
+      if (!config) return;
+      const { options, includeSubdecks } = applyUiPrefs(config);
+      const next = await selectNextReview(
+        sessionCollectionId ? null : current.card.deckId,
+        includeSubdecks,
+        config,
+        nowISO(),
+        adapter,
+        audioCache,
+        imageCache,
+        1000,
+        options,
+        sessionCollectionId ?? undefined,
+      );
+      if (next) {
+        if (recordHistory) setHistory((h) => [...h, current]);
+        if (next.card.deckId !== current.card.deckId) setDeckId(next.card.deckId);
+        setSession(next);
+      } else {
+        setSession(null);
+        setFinished(true);
+        setHistory([]);
+        revokeAllBlobUrls();
+      }
+    },
+    [config, sessionCollectionId, audioCache, imageCache, revokeAllBlobUrls],
+  );
+
   const submit = useCallback(
     async (judgment: ReviewJudgment, typedInput?: string, toggles?: ResolvedVariantToggles) => {
       if (!session || !config) return;
@@ -231,36 +292,14 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
           payload: { noteId: session.note.id, cardId: result.card.id },
         }).catch(() => {});
         void refreshStats();
-        const { options, includeSubdecks } = applyUiPrefs(config);
-        const next = await selectNextReview(
-          sessionCollectionId ? null : session.card.deckId,
-          includeSubdecks,
-          config,
-          nowISO(),
-          adapter,
-          audioCache,
-          imageCache,
-          1000,
-          options,
-          sessionCollectionId ?? undefined,
-        );
-        if (next) {
-          setHistory((h) => [...h, session]);
-          if (next.card.deckId !== session.card.deckId) setDeckId(next.card.deckId);
-          setSession(next);
-        } else {
-          setSession(null);
-          setFinished(true);
-          setHistory([]);
-          revokeAllBlobUrls();
-        }
+        await advanceToNext(session, true);
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
       } finally {
         setLoading(false);
       }
     },
-    [session, sessionCollectionId, config, audioCache, imageCache, refreshStats, revokeAllBlobUrls],
+    [session, config, refreshStats, advanceToNext],
   );
 
   const markStudyAgain = useCallback(
@@ -311,40 +350,48 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
         await putCard(nextCard);
       }
       void refreshStats();
+      if (nextNote.id !== session.note.id) return;
       const mergedNote = mergeNoteFields(session.note, nextNote);
-      const built = stimulusStale(session, mergedNote)
-        ? buildVariantStimulus(mergedNote, session.variant, audioCache, imageCache)
-        : null;
-      setSession({
-        ...session,
-        note: mergedNote,
-        card: nextCard,
-        stimulus: built ? mergeStimulusPayload(session.stimulus, built.stimulus) : session.stimulus,
-        toggles: built
-          ? keepToggles(session.toggles, resolveVariantToggles(session.variant, built.resolvedNote, getSrsUiPrefs().variantToggles[session.variant.id]))
-          : session.toggles,
-      });
+      if (stimulusStale(session, mergedNote) || !isVariantServable(session.variant, mergedNote, session.notetype)) {
+        const surface = resurfaceSession(session, mergedNote, audioCache, imageCache);
+        if (!surface) {
+          await advanceToNext(session, false);
+          return;
+        }
+        setSession({
+          ...session,
+          note: mergedNote,
+          card: nextCard,
+          variant: surface.variant,
+          stimulus: surface.stimulus,
+          toggles: surface.toggles,
+        });
+        return;
+      }
+      setSession({ ...session, note: mergedNote, card: nextCard });
     },
-    [session, refreshStats, audioCache, imageCache],
+    [session, refreshStats, audioCache, imageCache, advanceToNext],
   );
 
   const previewCurrentNote = useCallback(
     (note: SrsNote, assets?: { audio?: SrsAudioAsset[]; image?: SrsImageAsset[] }) => {
-      if (!session) return;
+      if (!session || note.id !== session.note.id) return;
       for (const a of assets?.audio ?? []) audioCache.set(audioAssetId(note.id, a.fieldId, a.source, a.index ?? 0), a);
       for (const a of assets?.image ?? []) imageCache.set(imageAssetId(note.id, a.fieldId, a.index ?? 0), a);
       const mergedNote = mergeNoteFields(session.note, note);
-      const built = stimulusStale(session, mergedNote)
-        ? buildVariantStimulus(mergedNote, session.variant, audioCache, imageCache)
-        : null;
-      setSession({
-        ...session,
-        note: mergedNote,
-        stimulus: built ? mergeStimulusPayload(session.stimulus, built.stimulus) : session.stimulus,
-        toggles: built
-          ? keepToggles(session.toggles, resolveVariantToggles(session.variant, built.resolvedNote, getSrsUiPrefs().variantToggles[session.variant.id]))
-          : session.toggles,
-      });
+      if (stimulusStale(session, mergedNote) || !isVariantServable(session.variant, mergedNote, session.notetype)) {
+        const surface = resurfaceSession(session, mergedNote, audioCache, imageCache);
+        if (!surface) return;
+        setSession({
+          ...session,
+          note: mergedNote,
+          variant: surface.variant,
+          stimulus: surface.stimulus,
+          toggles: surface.toggles,
+        });
+        return;
+      }
+      setSession({ ...session, note: mergedNote });
     },
     [session, audioCache, imageCache],
   );

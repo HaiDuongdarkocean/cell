@@ -131,7 +131,7 @@ export async function persistNoteFields(
     const value = toFieldValue(field, texts[field.id] ?? '');
     if (value) fields[field.id] = value;
   }
-  const targetWord = (texts[notetype.targetFieldId] ?? note.targetWord).trim() || note.targetWord;
+  const targetWord = (texts[notetype.targetFieldId] ?? note.targetWord).trim();
   return { targetWord, fields };
 }
 

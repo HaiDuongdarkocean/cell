@@ -59,6 +59,17 @@ describe('persistNoteFields', () => {
     expect(targetWord).toBe('forsake');
     expect(fields.target).toEqual({ kind: 'text', value: 'forsake' });
   });
+
+  it('clears targetWord and the target field when the editor text is emptied', async () => {
+    const { targetWord, fields } = await persistNoteFields(
+      notetype,
+      note,
+      { target: '' },
+      {},
+    );
+    expect(targetWord).toBe('');
+    expect(fields.target).toBeUndefined();
+  });
 });
 
 describe('storedMedia', () => {
