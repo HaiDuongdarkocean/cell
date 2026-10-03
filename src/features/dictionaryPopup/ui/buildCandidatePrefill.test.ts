@@ -97,6 +97,51 @@ describe('buildPrefill', () => {
     expect(prefill.translation).toBeUndefined();
   });
 
+  it('carries rich sense metadata (labels/level/subsenses/relations) into definitions', () => {
+    const result = makeResult({
+      definitions: [
+        {
+          id: '1',
+          pos: 'verb',
+          labels: ['transitive'],
+          level: 'B1',
+          text: 'to think about something',
+          subsenses: [{ num: 'a', text: 'in a particular way' }],
+          synonyms: ['associate'],
+          antonyms: ['bring'],
+          examples: [],
+          source: 'cambridge',
+          defaultSelected: true,
+        },
+      ],
+    });
+
+    const prefill = buildPrefill(
+      result,
+      [],
+      new Map(),
+      contextSentence,
+      '',
+      [],
+      new Map(),
+      [],
+      new Map(),
+    );
+
+    expect(prefill.definitions).toEqual([
+      {
+        pos: 'verb',
+        labels: ['transitive'],
+        level: 'B1',
+        text: 'to think about something',
+        subsenses: [{ num: 'a', text: 'in a particular way' }],
+        synonyms: ['associate'],
+        antonyms: ['bring'],
+        selectedExamples: [],
+      },
+    ]);
+  });
+
   it('carries over selected audio and images, ignoring unselected items', () => {
     const result = makeResult();
     const audios = [

@@ -22,7 +22,7 @@ import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_PRONUNCIATION_SETTINGS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import { PronunciationAudioOrchestrator } from '@/features/pronunciation';
 import { formatDefinitions } from '@/features/dictionary'
-import { formatDefEntry, joinDefEntries } from '@/features/srs';
+import { formatDefFromLookup, joinDefEntries } from '@/features/srs';
 import type { MessageResponse } from '@/entities/message/types';
 import type {
   FetchImagesResponse,
@@ -125,13 +125,7 @@ async function lookupTerm(term: string, langCode: string, contextSentence: strin
 }
 
 function formatEntryFromLookup(winner: LookupResult): string {
-  return formatDefEntry({
-    term: winner.term,
-    reading: winner.reading,
-    frequencyStars: winner.frequencyStars,
-    otherForms: winner.inflections?.flatMap((g) => g.forms).join(', '),
-    senses: formatDefinitions(winner.definitions),
-  });
+  return formatDefFromLookup(winner, formatDefinitions(winner.definitions));
 }
 
 /**

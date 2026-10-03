@@ -364,7 +364,14 @@ export interface PopupCardCreatorPrefill extends PopupSelectionSnapshot {
   readonly reading: string;
   readonly definitions: readonly {
     readonly pos?: string;
+    /** Register/grammar/audience tags — rendered `[label]` before the gloss. */
+    readonly labels?: readonly string[];
+    /** Per-sense CEFR/provider level — rendered `[B1]`. */
+    readonly level?: string;
     readonly text: string;
+    readonly subsenses?: readonly { readonly num: string; readonly text: string }[];
+    readonly synonyms?: readonly string[];
+    readonly antonyms?: readonly string[];
     /** Example sentences the user ticked for this def (subset of
      *  `DefinitionEntry.examples`). `[]` = explicitly none. */
     readonly selectedExamples?: readonly string[];

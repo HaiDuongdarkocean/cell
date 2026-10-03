@@ -76,7 +76,7 @@ describe('CardCreatorPanel', () => {
     expect(openContext.sourceLang).toBe('en');
     expect(openContext.targetLang).toBe('vi');
     expect(openContext.prefill?.targetWord).toBe('hello');
-    expect(openContext.prefill?.definitions).toBe('Hello həˈloʊ\n• exclamation used as a greeting');
+    expect(openContext.prefill?.definitions).toBe('Hello həˈloʊ\n\n[exclamation] used as a greeting');
     expect(openContext.prefill?.sentence).toBe('Hello, world.');
     expect(openContext.prefill?.sentenceTranslation).toBe('xin chào');
     expect(openContext.prefill?.wordAudioUrls).toEqual(['https://example.com/word.mp3']);

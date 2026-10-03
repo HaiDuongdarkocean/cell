@@ -178,22 +178,28 @@ function BackFieldValue({ value }: { value: SrsFieldValue }): React.JSX.Element 
   return <Text className={styles.fieldText}>{text}</Text>;
 }
 
-function DefEntryBlock({ entry }: { entry: { header: string; otherForms: string; senses: string } }): React.JSX.Element {
+function DefEntryBlock({ entry }: { entry: { header: string; otherForms: string; senses: string; meta: string } }): React.JSX.Element {
   const lines = entry.senses.split('\n').map((l) => l.trim()).filter(Boolean);
-  const hasBullets = lines.some((l) => l.startsWith('•'));
+  const metaLines = entry.meta.split('\n').map((l) => l.trim()).filter(Boolean);
+  const hasLegacyBullets = lines.some((l) => l.startsWith('•'));
   return (
     <Box className={styles.defBlock}>
       {entry.header && <Text className={styles.defEntryHeader}>{entry.header}</Text>}
       {entry.otherForms && <Text className={styles.otherForms}>{entry.otherForms}</Text>}
       {lines.map((line, i) =>
-        line.startsWith('•') ? (
+        /^[-·]\s/.test(line) ? (
+          <Text key={i} className={styles.defExample}>{line}</Text>
+        ) : line.startsWith('•') ? (
           <Text key={i} className={styles.defSense}>{line}</Text>
-        ) : hasBullets ? (
+        ) : hasLegacyBullets ? (
           <Text key={i} className={styles.defExample}>{line}</Text>
         ) : (
           <Text key={i} className={styles.defSense}>{line}</Text>
         ),
       )}
+      {metaLines.map((line, i) => (
+        <Text key={`m${i}`} className={styles.otherForms}>{line}</Text>
+      ))}
     </Box>
   );
 }

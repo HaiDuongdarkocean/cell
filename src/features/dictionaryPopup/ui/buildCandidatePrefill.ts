@@ -46,7 +46,12 @@ export function buildPrefill(
     reading: result.reading,
     definitions: defs.map((d) => ({
       pos: d.pos,
+      labels: d.labels,
+      level: d.level,
       text: d.text,
+      subsenses: d.subsenses,
+      synonyms: d.synonyms,
+      antonyms: d.antonyms,
       selectedExamples: getSelectedExamples(d, exampleSelection),
     })),
     rawDefinitions: result.rawDefinitions,

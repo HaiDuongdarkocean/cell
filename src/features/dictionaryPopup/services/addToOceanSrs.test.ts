@@ -21,7 +21,7 @@ describe('buildSrsFieldsFromPrefill', () => {
     ]));
     expect(fields['def']).toEqual({
       kind: 'text',
-      value: 'Hello\n• n def one\nex a\nex b\n\n• v def two\nex c',
+      value: 'Hello\n\n[n] def one\n- ex a\n- ex b\n\n[v] def two\n- ex c',
     });
     expect(fields['examples']).toBeUndefined();
   });
@@ -30,7 +30,7 @@ describe('buildSrsFieldsFromPrefill', () => {
     const fields = buildSrsFieldsFromPrefill(makePrefill([
       { text: 'def one', selectedExamples: [] },
     ]));
-    expect(fields['def']).toEqual({ kind: 'text', value: 'Hello\n• def one' });
+    expect(fields['def']).toEqual({ kind: 'text', value: 'Hello\n\ndef one' });
     expect(fields['examples']).toBeUndefined();
   });
 });
