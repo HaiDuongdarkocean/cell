@@ -232,7 +232,7 @@ describe('createWebTextDictionaryController', () => {
 
     expect(mockSendMessage).toHaveBeenCalledWith({
       type: 'LOOKUP_REQUEST',
-      payload: { requestId: 'req-1', request },
+      payload: { requestId: 'req-1', request, origin: 'immersion' },
     });
 
     await act(async () => {
@@ -641,6 +641,7 @@ describe('createWebTextDictionaryController', () => {
       payload: {
         requestId: 'req-aa',
         request: expect.objectContaining({ langCode: 'aa' }),
+        origin: 'immersion',
       },
     });
 

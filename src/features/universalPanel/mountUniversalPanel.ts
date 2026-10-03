@@ -17,6 +17,7 @@ import { DictionaryTab } from './tabs/DictionaryTab';
 import { StudyModesTab } from '@/features/studyModes';
 import { VocabularyTab } from '@/features/vocabulary';
 import { PlaylistTab } from './tabs/PlaylistTab';
+import { RecapTab } from '@/features/sessionRecap';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { openSettingsSection } from './deepLink';
 import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/cellUiHosts';
@@ -62,7 +63,7 @@ async function restorePersistedTab(): Promise<UniversalPanelTab | null> {
   try {
     const data = await getSessionStorage<Record<string, string>>(STORAGE_KEYS.UNIVERSAL_PANEL_TAB);
     const tab = data[STORAGE_KEYS.UNIVERSAL_PANEL_TAB];
-    return tab === 'dictionary' || tab === 'settings' || tab === 'studyModes' || tab === 'vocabulary' || tab === 'playlist' ? tab : null;
+    return tab === 'dictionary' || tab === 'settings' || tab === 'studyModes' || tab === 'vocabulary' || tab === 'playlist' || tab === 'recap' ? tab : null;
   } catch {
     return null;
   }
@@ -222,6 +223,9 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
   const studyModesPanel = createElement(ErrorBoundary, null, createElement(StudyModesTab)) as ReactElement;
   const settingsPanel = createElement(ErrorBoundary, null, createElement(SettingsTab)) as ReactElement;
   const playlistPanel = createElement(ErrorBoundary, null, createElement(PlaylistTab)) as ReactElement;
+  const recapPanel = createElement(ErrorBoundary, null, createElement(RecapTab, {
+    onLookup: (term: string) => { void mountController.openDictionaryLookup(term); },
+  })) as ReactElement;
 
   // ADR-061: tokenize state lives in the universal header (above content),
   // not in the Settings tab. Subscribe at mount level so header re-renders
@@ -280,6 +284,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
           studyModesPanel,
           settingsPanel,
           playlistPanel,
+          recapPanel,
         }) as ReactElement,
       ) as ReactElement,
     );

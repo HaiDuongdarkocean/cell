@@ -1,0 +1,190 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+}
+
+.headRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.hero {
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.heroTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.duration {
+  margin: 0;
+}
+
+.coverage {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--color-primary-subtle);
+}
+
+.source {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  min-width: 0;
+}
+
+.source > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.when {
+  color: var(--color-text-secondary);
+  font-size: var(--font-sizes-xs);
+  flex-shrink: 0;
+}
+
+.metrics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.groupHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.groupLabel {
+  display: block;
+}
+
+.chips {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.statusRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+
+.statusLabel {
+  min-width: 64px;
+  flex-shrink: 0;
+}
+
+.statusChip {
+  padding: 3px 10px;
+  border: none;
+  border-radius: var(--radius-full, 999px);
+  font-size: var(--font-sizes-xs);
+  font-weight: var(--font-weights-semibold, 600);
+  font-family: inherit;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.status-learning {
+  background: var(--chip-status-learning-bg);
+  color: var(--chip-status-learning-fg);
+}
+
+.status-known {
+  background: var(--chip-status-known-bg);
+  color: var(--chip-status-known-fg);
+}
+
+.status-tracking {
+  background: var(--chip-status-tracking-bg);
+  color: var(--chip-status-tracking-fg);
+}
+
+.status-ignore {
+  background: var(--chip-status-ignore-bg);
+  color: var(--chip-status-ignore-fg);
+}
+
+.statusChip:hover {
+  filter: brightness(1.06);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+}
+
+.rowToggle {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.rowItem {
+  pointer-events: none;
+}
+
+.rowMain {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.rowMain > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowDetail {
+  padding: var(--space-1) var(--space-3) var(--space-3);
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 240px;
+}
+
+.stateWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+}

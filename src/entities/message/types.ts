@@ -115,6 +115,7 @@ export type MessageType =
   | 'SAVE_RESUME_POSITION'
   | 'GET_RESUME_POSITION'
   | 'GET_HISTORY'
+  | 'GET_SESSION_RECAP'
   | 'SAVE_HISTORY'
   | 'GET_LIBRARY'
   | 'LOCAL_PLAYER_VIDEO_OPENED'
@@ -848,6 +849,14 @@ export type MessageHandler<T = unknown> = (
   request: MessageRequest,
 ) => Promise<MessageResponse<T>> | MessageResponse<T>;
 
+/** Observes a dispatched message after its handler resolves. Taps run
+ *  fire-and-forget — a throwing tap must never break the response path. */
+export type MessageTap = (
+  request: MessageRequest,
+  sender: chrome.runtime.MessageSender,
+  response: MessageResponse,
+) => void;
+
 // === Download List Response ===
 
 export interface DownloadListResponse {
@@ -942,6 +951,11 @@ export interface GetHistoryPayload {
  *  boundary, same convention as FetchCommunityAudioResult. */
 export interface GetHistoryResult {
   readonly history: readonly unknown[];
+}
+
+/** Panel → background: composed session recaps for the Recap tab. */
+export interface GetSessionRecapResult {
+  readonly sessions: readonly import('@/features/sessionRecap/types').SessionRecap[];
 }
 
 /** Player → background: save a history entry.
