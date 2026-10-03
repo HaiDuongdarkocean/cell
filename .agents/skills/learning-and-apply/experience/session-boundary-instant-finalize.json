@@ -1,0 +1,25 @@
+{
+  "id": "session-boundary-instant-finalize",
+  "title": "Session-driven recorders must seed state before flushSync mounts, share the overlay's video finder, and re-anchor on boundary states (past-last-range / ended) instead of finalizing before any capture",
+  "category": ["media", "bug-pattern"],
+  "tags": [
+    "mediarecorder",
+    "capturestream",
+    "condensed-audio",
+    "flushsync",
+    "video-selection",
+    "shadow-dom",
+    "youtube",
+    "finalize"
+  ],
+  "trigger": "a pill/overlay flashes then disappears right after session start, or NaN shows in elapsed counters, especially on pages with multiple <video> elements (YouTube mixes, previews)",
+  "problem": "Condensed-audio record on YouTube mounted the pill showing NaN:NaN then vanished without recording. Three compounding root causes: (1) mountCondensedAudioPill ran flushSync render BEFORE Object.assign populated the session, so getElapsedMs() read undefined → formatElapsed(undefined) → 'NaN:NaN'; (2) the recorder picked its own video via querySelectorAll + longest-duration sort while the subtitle overlay picked via findLargestPlayableVideo (visible, shadow-piercing) — on multi-video pages they diverged, so cues/ranges and playback targeted different elements; (3) any boundary state reached with capturedMs===0 (currentTime past the last range end, or an 'ended' event from track transitions/ads) hit the `!range → finalize` or `ended → finalize` branch instantly → teardown in <1s.",
+  "solution": "Seed state fields the UI reads (capturedMs: 0) when constructing the session object, before mount. Reuse the same video finder the overlay uses (findLargestPlayableVideo) with the old heuristic as fallback only. Add a bounded re-anchor: when the position sits past the last range OR video.ended fires while nothing has been captured, seek back to ranges[0] (max 2 attempts) instead of finalizing; only finalize after capture has happened or re-anchors are exhausted. Gate the recovery play() on !pausedByUser so an intentional pause stays paused.",
+  "principle": "Boundary-state branches (past-end, ended) that finalize 'because nothing is left' are wrong when the session may legitimately start there — starting a recording is a user intent to capture the ranges, not a statement about current position. Re-anchor first, finalize only when re-anchoring failed. And any state read during flushSync/first render must exist at mount time — populate the object literal, don't fill it after.",
+  "files": [
+    "src/features/condensedAudio/condensedAudioRecorder.ts",
+    "src/features/condensedAudio/condensedAudioRecorder.test.ts",
+    "src/shared/lib/dom/videoFinder.ts"
+  ],
+  "related": ["mediarecorder-transit-pause-latch", "mediarecorder-seek-bleed"]
+}

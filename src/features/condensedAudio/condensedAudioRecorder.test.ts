@@ -13,10 +13,12 @@ jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
 }));
 
 let mockPillHandlers: CondensedAudioPillHandlers | null = null;
+let mockMountedVideo: unknown = null;
 const mockSetPaused = jest.fn();
 jest.mock('./ui/mountCondensedAudioPill', () => ({
-  mountCondensedAudioPill: (_video: unknown, handlers: CondensedAudioPillHandlers) => {
+  mountCondensedAudioPill: (video: unknown, handlers: CondensedAudioPillHandlers) => {
     mockPillHandlers = handlers;
+    mockMountedVideo = video;
     return { updatePosition: jest.fn(), setPaused: mockSetPaused, unmount: jest.fn() };
   },
 }));
@@ -128,6 +130,7 @@ describe('startCondensedAudioSession', () => {
     jest.useFakeTimers();
     FakeMediaRecorder.instances = [];
     mockPillHandlers = null;
+    mockMountedVideo = null;
     mockSendMessage.mockClear();
     mockSetPaused.mockClear();
     savedRecorder = globalThis.MediaRecorder;
@@ -154,6 +157,22 @@ describe('startCondensedAudioSession', () => {
     (globalThis as { MediaRecorder?: unknown }).MediaRecorder = savedRecorder;
     (globalThis as { MediaStream?: unknown }).MediaStream = savedStream;
     jest.useRealTimers();
+  });
+
+  it('picks the visible video over a longer hidden one', () => {
+    stopCondensedAudioSession('rec-1');
+    const hidden = document.createElement('video');
+    Object.defineProperty(hidden, 'duration', { value: 600, configurable: true });
+    document.body.appendChild(hidden);
+    video.el.getBoundingClientRect = () =>
+      ({ width: 640, height: 360 }) as DOMRect;
+    Object.defineProperty(video.el, 'videoWidth', { value: 640, configurable: true });
+    Object.defineProperty(video.el, 'videoHeight', { value: 360, configurable: true });
+    const result = startCondensedAudioSession('rec-visible', RANGES);
+    expect(result).toEqual({ ok: true });
+    expect(mockMountedVideo).toBe(video.el);
+    hidden.remove();
+    stopCondensedAudioSession('rec-visible');
   });
 
   it('keeps the recorder paused until playback enters the first cue range', () => {
@@ -256,12 +275,52 @@ describe('startCondensedAudioSession', () => {
 
   it('finalizes once every range has been recorded', async () => {
     video.setPaused(false);
+    jest.advanceTimersByTime(200);
+    expect(recorder.state).toBe('recording');
     video.setTime(13);
     await jest.advanceTimersByTimeAsync(200);
     const last = chunkPayloads().find((p) => p.last === true);
     expect(last).toBeDefined();
     expect(isCondensedAudioSessionActive()).toBe(false);
     expect(video.isPaused()).toBe(true);
+  });
+
+  it('re-anchors to the first cue when playback sits past the last range', () => {
+    video.setTime(50);
+    video.setPaused(false);
+    jest.advanceTimersByTime(200);
+    expect(video.el.currentTime).toBe(1);
+    jest.advanceTimersByTime(200);
+    expect(recorder.state).toBe('recording');
+  });
+
+  it('finalizes when playback stays stuck past the last range', async () => {
+    Object.defineProperty(video.el, 'currentTime', {
+      get: () => 50,
+      set: () => undefined,
+      configurable: true,
+    });
+    video.setPaused(false);
+    await jest.advanceTimersByTimeAsync(1000);
+    expect(chunkPayloads().some((p) => p.last === true)).toBe(true);
+    expect(isCondensedAudioSessionActive()).toBe(false);
+  });
+
+  it('re-anchors instead of finalizing when the video ends before any capture', () => {
+    let ended = false;
+    Object.defineProperty(video.el, 'ended', {
+      get: () => ended,
+      configurable: true,
+    });
+    ended = true;
+    video.el.dispatchEvent(new Event('ended'));
+    jest.advanceTimersByTime(0);
+    expect(isCondensedAudioSessionActive()).toBe(true);
+    ended = false;
+    video.setPaused(false);
+    jest.advanceTimersByTime(200);
+    expect(recorder.state).toBe('recording');
+    expect(video.el.currentTime).toBe(1);
   });
 
   it('user pause halts capture and playback, resume restores both', () => {

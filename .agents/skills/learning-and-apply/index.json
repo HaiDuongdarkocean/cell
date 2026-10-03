@@ -3207,6 +3207,25 @@
     "netflix"
    ],
    "trigger": "any loop that drives video.currentTime/play()/pause() on a schedule (cue-skip recording, study-mode JUMP, gap skipping) and also treats video.paused as a user-pause signal"
+  },
+  {
+   "type": "experience",
+   "id": "session-boundary-instant-finalize",
+   "title": "Session recorders must seed state before flushSync mounts, share the overlay's video finder, and re-anchor on boundary states instead of finalizing before any capture",
+   "category": [
+    "media",
+    "bug-pattern"
+   ],
+   "tags": [
+    "mediarecorder",
+    "capturestream",
+    "condensed-audio",
+    "flushsync",
+    "video-selection",
+    "youtube",
+    "finalize"
+   ],
+   "trigger": "a pill/overlay flashes then disappears right after session start, or NaN shows in elapsed counters, especially on multi-video pages"
   }
  ]
 }

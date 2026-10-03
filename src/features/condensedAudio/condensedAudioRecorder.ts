@@ -2,6 +2,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { encodeBase64 } from '@/shared/lib/base64';
 import { pauseVideo, playVideo, seekVideo } from '@/shared/lib/dom/netflixPlayback';
+import { findLargestPlayableVideo, getAllVideos } from '@/shared/lib/dom/videoFinder';
 import type { CondenseAudioChunkPayload } from '@/entities/message';
 import type { CueRange } from '@/entities/condensedAudio';
 import { normalizeCueRanges } from './lib/cueRanges';
@@ -42,6 +43,7 @@ interface RecorderSession {
   lastSeekAt: number;
   lastPlayCmdAt: number;
   pausedSince: number;
+  reanchors: number;
   capturedMs: number;
   lastTickAt: number;
   pending: Promise<unknown>;
@@ -58,7 +60,11 @@ function pickRecorderMimeType(): string | undefined {
 }
 
 function pickVideoElement(): HTMLVideoElement | null {
-  const videos = [...document.querySelectorAll('video')].filter(
+  const visible = findLargestPlayableVideo();
+  if (visible && Number.isFinite(visible.duration) && visible.duration > 0) {
+    return visible;
+  }
+  const videos = getAllVideos().filter(
     (v) => Number.isFinite(v.duration) && v.duration > 0,
   );
   videos.sort((a, b) => b.duration - a.duration);
@@ -116,6 +122,17 @@ function maybeSeekTo(s: RecorderSession, range: CueRange, timeMs: number, now: n
   seekVideo(s.video, range.startMs / 1000);
 }
 
+function reanchorSession(s: RecorderSession, now: number): boolean {
+  if (s.capturedMs > 0 || s.reanchors >= 2) return false;
+  s.reanchors += 1;
+  s.rangeIdx = 0;
+  s.seekedRangeIdx = 0;
+  s.lastSeekAt = now;
+  s.seekPending = true;
+  seekVideo(s.video, s.ranges[0]!.startMs / 1000);
+  return true;
+}
+
 function recoverOrPause(s: RecorderSession, now: number): void {
   if (s.pausedByUser) return;
   if (s.seekPending && now - s.lastSeekAt <= SEEK_GRACE_MS) {
@@ -151,6 +168,13 @@ function tickSession(s: RecorderSession): void {
   }
   if (video.seeking || video.ended) {
     syncRecorder(s, false);
+    if (video.ended && !video.seeking) {
+      if (reanchorSession(s, now)) {
+        if (!s.pausedByUser) commandPlay(s);
+        return;
+      }
+      void finalizeSession(s);
+    }
     return;
   }
   const timeMs = video.currentTime * 1000;
@@ -159,6 +183,7 @@ function tickSession(s: RecorderSession): void {
   }
   const range = s.ranges[s.rangeIdx];
   if (!range) {
+    if (reanchorSession(s, now)) return;
     void finalizeSession(s);
     return;
   }
@@ -282,7 +307,7 @@ export function startCondensedAudioSession(
     return { ok: false, error: 'no-cues' };
   }
   const startedAt = Date.now();
-  const s = {} as RecorderSession;
+  const s = { capturedMs: 0 } as RecorderSession;
   const pill = mountCondensedAudioPill(video, {
     getElapsedMs: () => s.capturedMs,
     onStop: () => void finalizeSession(s),
@@ -290,7 +315,7 @@ export function startCondensedAudioSession(
     onDiscard: () => abortSession(recordId, false),
   });
   const onTimeUpdate = (): void => tickSession(s);
-  const onEnded = (): void => void finalizeSession(s);
+  const onEnded = (): void => tickSession(s);
   Object.assign(s, {
     recordId,
     ranges,
@@ -316,6 +341,7 @@ export function startCondensedAudioSession(
     lastSeekAt: 0,
     lastPlayCmdAt: 0,
     pausedSince: 0,
+    reanchors: 0,
     capturedMs: 0,
     lastTickAt: startedAt,
     pending: Promise.resolve(),
