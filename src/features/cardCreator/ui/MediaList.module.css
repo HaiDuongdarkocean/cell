@@ -21,15 +21,16 @@
 }
 
 /* === Dropzone ===
- * Wraps the actual media content. Drag-over highlight stays inside this
- * wrapper so it never surrounds the standalone "Add" button.
+ * Wraps the media content + the "Add" button so the whole field accepts
+ * drops. Border stays invisible at rest and only appears while a file is
+ * dragged over — a filled list reads as plain content, not a drop target.
  */
 .cc-media__dropzone {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-0-5);
-  border: var(--border-width-hairline) dashed var(--color-text);
+  border: var(--border-width-hairline) dashed transparent;
   border-radius: var(--radius-md);
   background: transparent;
   transition: border-color var(--duration-fast) var(--ease-in-out),
@@ -196,22 +197,17 @@
   object-fit: cover;
 }
 
+/* Small scrim-backed remove (YouTube/Spotify overlay button): stays readable
+ * on any image, covers only the corner, turns destructive on hover. */
 .cc-media__thumb-remove {
   position: absolute;
-  top: var(--space-0-5);
-  right: var(--space-0-5);
-  width: var(--iconbutton-size-sm);
-  height: var(--iconbutton-size-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: var(--space-1);
+  right: var(--space-1);
   border: none;
-  border-radius: var(--radius-full);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: var(--font-size-xs);
-  line-height: var(--leading-none);
-  cursor: pointer;
+  background: var(--color-overlay);
+  color: var(--color-overlay-text);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
   transition: background var(--duration-fast) var(--ease-in-out),
               color var(--duration-fast) var(--ease-in-out),
               transform var(--duration-fast) var(--ease-out);
@@ -219,8 +215,8 @@
 
 .cc-media__thumb-remove:hover {
   background: var(--color-error);
-  color: var(--color-text-inverse);
-  transform: scale(1.05);
+  color: var(--color-overlay-text);
+  transform: scale(1.08);
 }
 
 .cc-media__thumb-remove:active {

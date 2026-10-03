@@ -199,7 +199,7 @@ function ImageThumb({
     >
       {url && <img className={styles['cc-media__img']} src={url} alt={file.filename} />}
       <Button
-        size="sm"
+        size="xs"
         shape="circle"
         variant="ghost"
         className={styles['cc-media__thumb-remove']}
@@ -210,7 +210,7 @@ function ImageThumb({
         }}
         data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
       >
-        <Icon name="x" size="sm" />
+        <Icon name="x" size="xs" />
       </Button>
     </div>
   );
@@ -522,7 +522,15 @@ export function MediaList({
     onFilesDrop(mediaFiles, invalid.length);
   };
 
+  const isFileDrag = (e: React.DragEvent<HTMLDivElement>): boolean => {
+    const dt = e.dataTransfer;
+    if (!dt) return false;
+    if (dt.types?.length) return Array.from(dt.types).includes('Files');
+    return (dt.files?.length ?? 0) > 0;
+  };
+
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>): void => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
     dragCounterRef.current += 1;
@@ -530,6 +538,7 @@ export function MediaList({
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>): void => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
     dragCounterRef.current -= 1;
@@ -540,14 +549,14 @@ export function MediaList({
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>): void => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
-    if (e.dataTransfer) {
-      e.dataTransfer.dropEffect = 'copy';
-    }
+    e.dataTransfer.dropEffect = 'copy';
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>): void => {
+    if (!isFileDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
     dragCounterRef.current = 0;
@@ -602,20 +611,20 @@ export function MediaList({
             dataId={dataId}
           />
         )}
+        {!isEmpty && (
+          <Button
+            variant="outline"
+            size="sm"
+            fullWidth
+            onClick={onAdd}
+            disabled={addDisabled}
+            leadingIcon={<Icon name="plus" size="sm" />}
+            data-cell-id={dataId ? `${dataId}-add` : undefined}
+          >
+            {addLabel}
+          </Button>
+        )}
       </div>
-      {!isEmpty && (
-        <Button
-          variant="outline"
-          size="sm"
-          fullWidth
-          onClick={onAdd}
-          disabled={addDisabled}
-          leadingIcon={<Icon name="plus" size="sm" />}
-          data-cell-id={dataId ? `${dataId}-add` : undefined}
-        >
-          {addLabel}
-        </Button>
-      )}
       {/* Hidden audio element for playback */}
       <audio ref={audioRef} />
       {/* Image preview overlay */}
