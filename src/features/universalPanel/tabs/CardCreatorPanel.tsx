@@ -55,6 +55,7 @@ function buildOpenContext(
   sourceLang: string,
   targetLang: string,
   context: DictionaryPanelPrefill | null | undefined,
+  frequencyFormat: 'stars' | 'rank' = 'stars',
 ): OpenContext {
   return {
     video: context?.video,
@@ -66,10 +67,16 @@ function buildOpenContext(
       ? {
           targetWord: context.term,
           definitions: context.lookupResult
-            ? formatDefFromLookup(context.lookupResult, formatDefinitions(context.definitions), context.term)
+            ? formatDefFromLookup(
+                context.lookupResult,
+                formatDefinitions(context.definitions),
+                context.term,
+                frequencyFormat,
+              )
             : formatDefEntry({
                 term: context.term ?? '',
                 reading: context.reading,
+                frequencyFormat,
                 senses: formatDefinitions(context.definitions),
               }),
           sentence: context.contextSentence,
@@ -144,13 +151,13 @@ function CardCreatorPanelCore({
   isMobile = false,
   onSettingsChange,
 }: CardCreatorPanelCoreProps): React.JSX.Element {
+  const cardCreatorSettings = settings.cardCreator ?? DEFAULT_SETTINGS.cardCreator;
   const openContext = useMemo(
-    () => buildOpenContext(sourceLang, targetLang, context),
-    [sourceLang, targetLang, context],
+    () => buildOpenContext(sourceLang, targetLang, context, cardCreatorSettings.frequencyDisplay),
+    [sourceLang, targetLang, context, cardCreatorSettings.frequencyDisplay],
   );
 
   const initialAction = context?.initialAction;
-  const cardCreatorSettings = settings.cardCreator ?? DEFAULT_SETTINGS.cardCreator;
   const state = useCardCreatorState(cardCreatorSettings, openContext, initialAction, {
     onSubmitSuccess: onAfterSubmit,
     onQueueTermSelect,

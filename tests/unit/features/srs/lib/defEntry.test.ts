@@ -20,7 +20,7 @@ const lookup = {
 } as unknown as LookupResult;
 
 describe('defEntry', () => {
-  it('formats a normalized entry header with reading, stars and [source:rank]', () => {
+  it('formats a normalized entry header with reading and a 5-slot star scale', () => {
     const text = formatDefEntry({
       term: 'resettle',
       reading: '/ˌriːˈsetl/',
@@ -30,17 +30,50 @@ describe('defEntry', () => {
       senses: '[v] to move to a new place to live\n- They resettled in Canada.',
     });
     expect(text).toBe(
-      'Resettle /ˌriːˈsetl/ ★★★ [standard:75]\n' +
+      'Resettle /ˌriːˈsetl/ ★★★☆☆\n' +
       'Other forms: resettled, resettling\n\n' +
       '[v] to move to a new place to live\n' +
       '- They resettled in Canada.',
     );
   });
 
+  it('rank mode swaps the star scale for [source:rank] tokens', () => {
+    const text = formatDefEntry({
+      term: 'resettle',
+      frequencyStars: 3,
+      frequencies: [{ rank: 75, source: 'standard' }],
+      frequencyFormat: 'rank',
+      senses: '[v] sense',
+    });
+    expect(text).toBe('Resettle [standard:75]\n\n[v] sense');
+  });
+
+  it('rank mode falls back to stars when no frequency lists exist', () => {
+    const text = formatDefEntry({
+      term: 'resettle',
+      frequencyStars: 2,
+      frequencyFormat: 'rank',
+      senses: '[v] sense',
+    });
+    expect(text).toBe('Resettle ★★☆☆☆\n\n[v] sense');
+  });
+
   it('formats from a lookup result with senses and meta sections', () => {
     const text = formatDefFromLookup(lookup, '[v] to move to a new place to live');
     expect(text).toBe(
-      'Resettle /ˌriːˈsetl/ ★★★ [standard:75]\n' +
+      'Resettle /ˌriːˈsetl/ ★★★☆☆\n' +
+      'Other forms: past resettled | progressive resettling\n\n' +
+      '[v] to move to a new place to live\n\n' +
+      'word family: noun resettlement | verb resettle\n' +
+      'phrasal verbs: settle down, settle in\n' +
+      'collocations: new home',
+    );
+  });
+
+  it('formatDefFromLookup forwards the frequency display option', () => {
+    const text = formatDefFromLookup(lookup, '[v] to move to a new place to live', undefined, 'rank');
+    expect(text).toBe(
+      'Resettle /ˌriːˈsetl/ [standard:75]\n' +
       'Other forms: past resettled | progressive resettling\n\n' +
       '[v] to move to a new place to live\n\n' +
       'word family: noun resettlement | verb resettle\n' +
@@ -68,6 +101,12 @@ describe('defEntry', () => {
     expect(entry.otherForms).toBe('Other forms: resettled, resettling');
     expect(entry.senses).toBe('[v] sense\n- example');
     expect(entry.meta).toBe('word family: noun resettlement');
+  });
+
+  it('keeps blank lines between senses so review renders the gap', () => {
+    const [entry] = parseDefEntries('[n] sense one\n\n[v] sense two\n- ex');
+    expect(entry.header).toBe('');
+    expect(entry.senses).toBe('[n] sense one\n\n[v] sense two\n- ex');
   });
 
   it('parses legacy • entries', () => {

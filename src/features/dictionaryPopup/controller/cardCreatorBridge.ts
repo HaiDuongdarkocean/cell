@@ -37,12 +37,15 @@ import type { PanelMountController } from './panelBridge';
 import type { CueRange, PopupLevel } from './controllerTypes';
 import { isLookupFromSubtitle, lookupCueRange } from './lookupTargetDom';
 
-function definitionsFieldText(prefill: PopupCardCreatorPrefill): string {
+function definitionsFieldText(
+  prefill: PopupCardCreatorPrefill,
+  frequencyFormat: 'stars' | 'rank' = 'stars',
+): string {
   const senses = formatDefinitions(prefill.definitions);
   if (!senses.trim()) return '';
   return prefill.lookupResult
-    ? formatDefFromLookup(prefill.lookupResult, senses, prefill.term)
-    : formatDefEntry({ term: prefill.term, reading: prefill.reading, senses });
+    ? formatDefFromLookup(prefill.lookupResult, senses, prefill.term, frequencyFormat)
+    : formatDefEntry({ term: prefill.term, reading: prefill.reading, frequencyFormat, senses });
 }
 
 
@@ -277,7 +280,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
       });
     }
 
-    const definitionsText = definitionsFieldText(prefill);
+    const definitionsText = definitionsFieldText(prefill, ccSettings.frequencyDisplay);
 
     const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
     const targetLang = settings.subtitleOverlayNativeLanguage || deps.getNativeLang() || 'vi';

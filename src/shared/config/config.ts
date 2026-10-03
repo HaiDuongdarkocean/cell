@@ -196,6 +196,7 @@ export const DEFAULT_CARD_CREATOR_SETTINGS: CardCreatorSettings = {
   // schema v29: per-note-type field mappings (edited in Settings → Card Creator).
   fieldMappings: {},
   audioFallback: 'community-then-tts',
+  frequencyDisplay: 'stars',
 };
 
 /** Default Pronunciation settings (spec ocean-pronunciation-engine + local-pronunciation-audio — schema v26). */

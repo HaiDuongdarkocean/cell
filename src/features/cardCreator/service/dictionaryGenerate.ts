@@ -124,8 +124,8 @@ async function lookupTerm(term: string, langCode: string, contextSentence: strin
   }
 }
 
-function formatEntryFromLookup(winner: LookupResult): string {
-  return formatDefFromLookup(winner, formatDefinitions(winner.definitions));
+function formatEntryFromLookup(winner: LookupResult, frequencyFormat?: 'stars' | 'rank'): string {
+  return formatDefFromLookup(winner, formatDefinitions(winner.definitions), undefined, frequencyFormat);
 }
 
 /**
@@ -154,10 +154,13 @@ export async function lookupDictionaryResources(
     fetchSentenceAudioUrls(contextSentence, winner.langCode),
     fetchImageUrls(winner.term, winner.langCode),
   ]);
+  const settings = await loadSettings().catch(() => DEFAULT_SETTINGS);
 
   return {
     targetWord: terms.join(', '),
-    definitions: joinDefEntries(winners.map(formatEntryFromLookup)),
+    definitions: joinDefEntries(
+      winners.map((w) => formatEntryFromLookup(w, settings.cardCreator?.frequencyDisplay)),
+    ),
     wordAudioUrls,
     sentenceAudioUrls,
     imageUrls,

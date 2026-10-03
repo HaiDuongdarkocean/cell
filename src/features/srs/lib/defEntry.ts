@@ -22,12 +22,15 @@ const RELATED_KIND_LABELS: Record<string, string> = {
   thesaurus: 'thesaurus',
 };
 
+export type FrequencyDisplay = 'stars' | 'rank';
+
 export interface DefEntryInput {
   readonly term: string;
   readonly reading?: string;
   readonly frequencyStars?: number;
   /** Per-list frequency — rendered `[source:rank]` in the header. */
   readonly frequencies?: readonly { readonly rank: number; readonly source: string }[];
+  readonly frequencyFormat?: FrequencyDisplay;
   /** Inflection groups — `type forms | type forms`, flat list when untyped. */
   readonly inflections?: readonly InflectionGroup[];
   /** formatDefinitions output — `[pos]`-headed senses, `-` example lines. */
@@ -106,12 +109,11 @@ function metaLines(input: DefEntryInput): string[] {
  * Multiple entries are joined by `\n---\n`.
  */
 export function formatDefEntry(entry: DefEntryInput): string {
-  const head = [
-    capitalize(entry.term.trim()),
-    entry.reading ?? '',
-    entry.frequencyStars ? '★'.repeat(Math.min(3, Math.max(1, entry.frequencyStars))) : '',
-    ...(entry.frequencies ?? []).map((f) => `[${f.source}:${f.rank}]`),
-  ]
+  const starCount = entry.frequencyStars ? Math.min(5, Math.max(1, entry.frequencyStars)) : 0;
+  const stars = starCount ? '★'.repeat(starCount) + '☆'.repeat(5 - starCount) : '';
+  const ranks = (entry.frequencies ?? []).map((f) => `[${f.source}:${f.rank}]`).join(' ');
+  const freq = entry.frequencyFormat === 'rank' ? ranks || stars : stars;
+  const head = [capitalize(entry.term.trim()), entry.reading ?? '', freq]
     .filter(Boolean)
     .join(' ');
   const meta = metaLines(entry);
@@ -140,12 +142,18 @@ export function joinDefEntries(entries: readonly string[]): string {
 /** Build a normalized entry from a dictionary lookup result — header,
  *  inflections and meta sections all flow from the result; `senses` is the
  *  pre-formatted selected-definitions block. */
-export function formatDefFromLookup(result: LookupResult, senses: string, fallbackTerm?: string): string {
+export function formatDefFromLookup(
+  result: LookupResult,
+  senses: string,
+  fallbackTerm?: string,
+  frequencyFormat?: FrequencyDisplay,
+): string {
   return formatDefEntry({
     term: result.term || fallbackTerm || '',
     reading: result.reading,
     frequencyStars: result.frequencyStars,
     frequencies: result.frequencies,
+    frequencyFormat,
     inflections: result.inflections,
     senses,
     wordFamily: result.wordFamily,
@@ -163,7 +171,12 @@ export function parseDefEntries(text: string): readonly ParsedDefEntry[] {
   return text
     .split(ENTRY_SEPARATOR_RE)
     .map((block) => {
-      const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
+      const raw = block.split('\n').map((l) => l.trim());
+      let start = 0;
+      let end = raw.length;
+      while (start < end && !raw[start]) start++;
+      while (end > start && !raw[end - 1]) end--;
+      const lines = raw.slice(start, end);
       const first = lines[0] ?? '';
       const hasHeader =
         lines.length > 1 &&
@@ -177,6 +190,8 @@ export function parseDefEntries(text: string): readonly ParsedDefEntry[] {
         if (OTHER_FORMS_RE.test(l)) continue;
         (META_LINE_RE.test(l) ? meta : senses).push(l);
       }
+      while (senses.length && !senses[senses.length - 1]) senses.pop();
+      while (senses.length && !senses[0]) senses.shift();
       return {
         header: hasHeader ? first : '',
         otherForms,

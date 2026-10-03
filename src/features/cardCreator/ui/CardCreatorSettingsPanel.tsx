@@ -247,6 +247,23 @@ export function CardCreatorSettingsPanel({
         />
       </div>
 
+      <div className={styles.field}>
+        <label className={styles.fieldLabel} htmlFor="cc-frequency-display">
+          {t('cardCreator.settings.frequencyDisplay.label')}
+        </label>
+        <Select
+          id="cc-frequency-display"
+          value={settings.frequencyDisplay ?? 'stars'}
+          onChange={(v) => onChange({ frequencyDisplay: v as 'stars' | 'rank' })}
+          options={[
+            { value: 'stars', label: t('cardCreator.settings.frequencyDisplay.stars') },
+            { value: 'rank', label: t('cardCreator.settings.frequencyDisplay.rank') },
+          ]}
+          aria-label={t('cardCreator.settings.frequencyDisplay.aria')}
+          data-cell-id="cc-frequency-display"
+        />
+      </div>
+
       {!isAnki && (
         <>
           <div className={styles.pairGroup} data-cell-id="cc-srs-destination-pair">

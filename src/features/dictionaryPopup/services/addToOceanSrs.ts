@@ -1,4 +1,5 @@
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { t } from '@/shared/i18n';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { formatDefinitions } from '@/features/dictionary'
@@ -15,7 +16,10 @@ import type { MessageResponse, SrsAddNotePayload, SrsAddNoteResult } from '@/ent
  * Extra fields are included so the background can pick whatever the active
  * notetype defines.
  */
-export function buildSrsFieldsFromPrefill(prefill: PopupCardCreatorPrefill): Record<string, SrsFieldValue> {
+export function buildSrsFieldsFromPrefill(
+  prefill: PopupCardCreatorPrefill,
+  frequencyFormat: 'stars' | 'rank' = 'stars',
+): Record<string, SrsFieldValue> {
   const fields: Record<string, SrsFieldValue> = {};
 
   fields['target'] = { kind: 'text', value: prefill.term };
@@ -28,8 +32,8 @@ export function buildSrsFieldsFromPrefill(prefill: PopupCardCreatorPrefill): Rec
     fields['def'] = {
       kind: 'text',
       value: prefill.lookupResult
-        ? formatDefFromLookup(prefill.lookupResult, senses, prefill.term)
-        : formatDefEntry({ term: prefill.term, reading: prefill.reading, senses }),
+        ? formatDefFromLookup(prefill.lookupResult, senses, prefill.term, frequencyFormat)
+        : formatDefEntry({ term: prefill.term, reading: prefill.reading, frequencyFormat, senses }),
     };
   }
   if (prefill.wordAudioUrls?.length) {
@@ -49,10 +53,11 @@ export function buildSrsFieldsFromPrefill(prefill: PopupCardCreatorPrefill): Rec
 
 /** Add a popup prefill to Ocean SRS. Returns the created note/card ids. */
 export async function addToOceanSrs(prefill: PopupCardCreatorPrefill): Promise<SrsAddNoteResult> {
+  const settings = await loadSettings().catch(() => undefined);
   const payload: SrsAddNotePayload = {
     targetLanguage: prefill.langCode,
     targetWord: prefill.term,
-    fields: buildSrsFieldsFromPrefill(prefill),
+    fields: buildSrsFieldsFromPrefill(prefill, settings?.cardCreator?.frequencyDisplay),
   };
   const response = await sendMessage<MessageResponse<SrsAddNoteResult>>({
     type: MESSAGE_TYPES.SRS_ADD_NOTE,

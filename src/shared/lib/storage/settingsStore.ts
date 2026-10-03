@@ -17,7 +17,7 @@ import { buildProfileName, profileIdForTarget, resolveSettingsFlatFields, syncFl
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 34;
+export const CURRENT_SCHEMA_VERSION = 35;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -534,6 +534,12 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
   33: (s) =>
     mergeNestedObjectDefaults(
       { ...DEFAULT_SETTINGS, ...s, schemaVersion: 34 } as Record<string, unknown>,
+      DEFAULT_SETTINGS as unknown as Record<string, unknown>,
+    ),
+  // v34 → v35: cardCreator.frequencyDisplay (def-field ★ scale vs `[list:rank]`).
+  34: (s) =>
+    mergeNestedObjectDefaults(
+      { ...DEFAULT_SETTINGS, ...s, schemaVersion: 35 } as Record<string, unknown>,
       DEFAULT_SETTINGS as unknown as Record<string, unknown>,
     ),
 };

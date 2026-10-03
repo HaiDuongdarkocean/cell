@@ -598,12 +598,6 @@ function DefinitionItem({
               {definition.subsenses?.map((s) => (
                 <span key={s.num} className={styles.defSubsense}>{s.num}. {s.text}</span>
               ))}
-              {definition.synonyms && definition.synonyms.length > 0 && (
-                <span className={styles.defLine} data-role="note">{t('dict.definitions.synonyms', [definition.synonyms.join(', ')])}</span>
-              )}
-              {definition.antonyms && definition.antonyms.length > 0 && (
-                <span className={styles.defLine} data-role="note">{t('dict.definitions.antonyms', [definition.antonyms.join(', ')])}</span>
-              )}
             </>
           ) : (
             definition.pos ? `[${definition.pos}] ${definition.text}` : definition.text
@@ -661,6 +655,12 @@ function DefinitionItem({
             );
           })}
         </div>
+      )}
+      {definition.synonyms && definition.synonyms.length > 0 && (
+        <span className={styles.defLine} data-role="note">{t('dict.definitions.synonyms', [definition.synonyms.join(', ')])}</span>
+      )}
+      {definition.antonyms && definition.antonyms.length > 0 && (
+        <span className={styles.defLine} data-role="note">{t('dict.definitions.antonyms', [definition.antonyms.join(', ')])}</span>
       )}
     </div>
   );

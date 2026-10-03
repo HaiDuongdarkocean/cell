@@ -179,15 +179,25 @@ function BackFieldValue({ value }: { value: SrsFieldValue }): React.JSX.Element 
 }
 
 function DefEntryBlock({ entry }: { entry: { header: string; otherForms: string; senses: string; meta: string } }): React.JSX.Element {
-  const lines = entry.senses.split('\n').map((l) => l.trim()).filter(Boolean);
+  const display: (string | null)[] = [];
+  for (const rawLine of entry.senses.split('\n')) {
+    const line = rawLine.trim();
+    if (!line) {
+      if (display.length && display[display.length - 1] !== null) display.push(null);
+    } else {
+      display.push(line);
+    }
+  }
   const metaLines = entry.meta.split('\n').map((l) => l.trim()).filter(Boolean);
-  const hasLegacyBullets = lines.some((l) => l.startsWith('•'));
+  const hasLegacyBullets = display.some((l) => l?.startsWith('•'));
   return (
     <Box className={styles.defBlock}>
       {entry.header && <Text className={styles.defEntryHeader}>{entry.header}</Text>}
       {entry.otherForms && <Text className={styles.otherForms}>{entry.otherForms}</Text>}
-      {lines.map((line, i) =>
-        /^[-·]\s/.test(line) ? (
+      {display.map((line, i) =>
+        line === null ? (
+          <div key={i} className={styles.defSpacer} />
+        ) : /^[-·]\s/.test(line) ? (
           <Text key={i} className={styles.defExample}>{line}</Text>
         ) : line.startsWith('•') ? (
           <Text key={i} className={styles.defSense}>{line}</Text>
@@ -197,6 +207,7 @@ function DefEntryBlock({ entry }: { entry: { header: string; otherForms: string;
           <Text key={i} className={styles.defSense}>{line}</Text>
         ),
       )}
+      {metaLines.length > 0 && <div className={styles.defSpacer} />}
       {metaLines.map((line, i) => (
         <Text key={`m${i}`} className={styles.otherForms}>{line}</Text>
       ))}

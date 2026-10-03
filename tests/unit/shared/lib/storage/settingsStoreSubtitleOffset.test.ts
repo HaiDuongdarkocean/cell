@@ -30,8 +30,8 @@ describe('settingsStore schema v3 migration (ADR-019 subtitleOffset)', () => {
     expect(DEFAULT_SETTINGS.subtitleOffset).toEqual({});
   });
 
-  it('CURRENT_SCHEMA_VERSION is 34 (V34 adds ankiStatusSync settings)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(34);
+  it('CURRENT_SCHEMA_VERSION is 35 (V35 adds cardCreator.frequencyDisplay)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(35);
   });
 
   it('migrates v2 settings (no subtitleOffset) to v3 with default {}', async () => {

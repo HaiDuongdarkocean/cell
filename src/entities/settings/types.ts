@@ -94,6 +94,9 @@ export interface CardCreatorSettings {
    *  anki-config-in-settings). Edited in Settings → Card Creator; the Card
    *  Creator form reads these instead of showing per-field map selects. */
   readonly fieldMappings?: Record<string, FieldMapping>;
+  /** Def-field frequency rendering — `stars` shows a 5-slot ★ scale,
+   *  `rank` shows `[list:rank]` tokens. Default 'stars' (schema v35). */
+  readonly frequencyDisplay?: 'stars' | 'rank';
 }
 
 /** Field có thể auto-complete trong Quick Add (spec §9.3.1 — trục content, khác field-map routing). */
