@@ -587,6 +587,125 @@ describe('ResourcesPanel', () => {
     await waitFor(() => expect(screen.getByTestId('panel-alert')).toHaveTextContent("Couldn't delete: Error: boom"));
     expect(listResources.mock.calls.length).toBeGreaterThan(1);
   });
+
+  it('renders an unfinished resource as an importing card inside the list, without toggle or chips', async () => {
+    const getComponents = client.getResourceComponents as jest.MockedFunction<typeof client.getResourceComponents>;
+    listResources.mockResolvedValue([
+      makeResource({ id: 1, name: 'done.json', type: 'DICTIONARY', format: 'json-entries' }),
+      makeResource({ id: 9, name: 'OALD10.normalized.json', type: 'DICTIONARY', format: 'json-entries', installationFinished: false }),
+    ]);
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByTestId('resource-card-9')).toBeInTheDocument());
+    expect(screen.getByText('OALD10')).toBeInTheDocument();
+    expect(screen.queryByTestId('enable-toggle-9')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('resource-components-9')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('drag-9')).not.toBeInTheDocument();
+    expect(getComponents).not.toHaveBeenCalledWith('en', 9);
+    expect(screen.getByTestId('enable-toggle-1')).toBeInTheDocument();
+  });
+
+  it('shows live progress on the card and suppresses the registry row once the resource exists', async () => {
+    listResources.mockResolvedValue([
+      makeResource({ id: 7, name: 'big.json', type: 'DICTIONARY', format: 'json-entries', installationFinished: false }),
+    ]);
+    setRegistryJobs([makeJob({
+      id: 'imp-1',
+      kind: 'resource-import',
+      status: 'running',
+      label: 'big.json',
+      resourceId: 7,
+      progress: { done: 12, total: 100 },
+      params: { langCode: 'en', resourceType: 'DICTIONARY', signature: 'sig' },
+    })]);
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByTestId('resource-card-7')).toBeInTheDocument());
+    expect(screen.queryByTestId('job-row-imp-1')).not.toBeInTheDocument();
+    expect(screen.getByText('Adding… 12 / 100 items')).toBeInTheDocument();
+  });
+
+  it('suppresses the done job row once its resource card is in the list', async () => {
+    listResources.mockResolvedValue([makeResource({ id: 5, name: 'new.txt' })]);
+    setRegistryJobs([makeJob({
+      id: 'imp-9',
+      kind: 'resource-import',
+      status: 'done',
+      label: 'new.txt',
+      resourceId: 5,
+      result: { resourceId: 5, wordCount: 10 },
+      params: { langCode: 'en', resourceType: 'FREQUENCY' },
+    })]);
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByTestId('resource-card-5')).toBeInTheDocument());
+    expect(screen.queryByTestId('job-row-imp-9')).not.toBeInTheDocument();
+  });
+
+  it('keeps a failed import row in the list for retry/dismiss', async () => {
+    listResources.mockResolvedValue([makeResource({ id: 1, name: 'words.txt' })]);
+    setRegistryJobs([makeJob({
+      id: 'imp-bad',
+      kind: 'resource-import',
+      status: 'failed',
+      label: 'bad.txt',
+      resourceId: 55,
+      error: 'parse fail',
+      retryable: true,
+      params: { langCode: 'en', resourceType: 'FREQUENCY' },
+    })]);
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByTestId('job-row-imp-bad')).toBeInTheDocument());
+    expect(screen.queryByTestId('resource-card-55')).not.toBeInTheDocument();
+  });
+
+  it('places the uploading row inside the list at the spot the new card will land', async () => {
+    importFile.mockImplementation(() => new Promise<{ jobId: string }>(() => {}));
+    listResources.mockResolvedValue([
+      makeResource({ id: 1, name: 'pinned.txt', priority: 0 }),
+      makeResource({ id: 2, name: 'free.txt' }),
+    ]);
+    const { container } = render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByTestId('resource-card-2')).toBeInTheDocument());
+    pickFile(1, new File(['a\n'], 'fresh.txt', { type: 'text/plain' }));
+    await waitFor(() => expect(container.querySelector('[data-cell-id^="import-job-"]')).not.toBeNull());
+    const jobRow = container.querySelector('[data-cell-id^="import-job-"]')!;
+    const card1 = screen.getByTestId('resource-card-1');
+    const card2 = screen.getByTestId('resource-card-2');
+    // New resource lands first among no-priority rows — the pending row sits
+    // between the prioritized card and the first unprioritized card.
+    expect(card1.compareDocumentPosition(jobRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(jobRow.compareDocumentPosition(card2) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('refreshes the list when an import job gains a resourceId', async () => {
+    listResources.mockResolvedValue([]);
+    const view = render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('No dictionaries yet.')).toBeInTheDocument());
+    const callsAfterMount = listResources.mock.calls.length;
+
+    setRegistryJobs([makeJob({
+      id: 'imp-1',
+      kind: 'resource-import',
+      status: 'running',
+      label: 'big.json',
+      resourceId: 42,
+      params: { langCode: 'en', resourceType: 'DICTIONARY' },
+    })]);
+    view.rerender(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(listResources.mock.calls.length).toBeGreaterThan(callsAfterMount));
+  });
+
+  it('excludes unfinished resources from select-all and bulk edit', async () => {
+    listResources.mockResolvedValue([
+      makeResource({ id: 1, name: 'a.txt' }),
+      makeResource({ id: 2, name: 'importing.txt', installationFinished: false }),
+    ]);
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByTestId('resource-card-2')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('edit-frequency'));
+    expect(screen.getByText('0 of 1 selected')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('select-all-frequency'));
+    expect(screen.getByText('1 of 1 selected')).toBeInTheDocument();
+    expect(screen.queryByTestId('check-2')).not.toBeInTheDocument();
+  });
 });
 
 // === Drag session (useSectionDrag) — ghost + placeholder + sibling shift ===

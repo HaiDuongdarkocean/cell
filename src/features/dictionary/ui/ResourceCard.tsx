@@ -25,6 +25,7 @@ import {
 } from '@/features/dictionary/services/resourceClient';
 import type { DictionaryComponent, ResourceInfo } from '@/entities/dictionary';
 import { displayResourceName } from './displayResourceName';
+import type { ResourceImportProgress } from './importJobTypes';
 import styles from './ResourceCard.module.css';
 
 const COMPONENT_LABEL: Record<DictionaryComponent, MessageKey> = {
@@ -63,6 +64,8 @@ interface ResourceCardProps {
   readonly selected?: boolean;
   readonly onSelect?: () => void;
   readonly deleteProgress?: { readonly done: number; readonly items: number; readonly index: number; readonly total: number } | null;
+  /** Live progress for a resource the importer is still filling. */
+  readonly importProgress?: ResourceImportProgress | null;
 }
 
 export function ResourceCard({
@@ -77,11 +80,32 @@ export function ResourceCard({
   selected = false,
   onSelect,
   deleteProgress,
+  importProgress,
 }: ResourceCardProps): ReactElement {
   const deletingNow = deleteProgress != null;
-  const pct = deleteProgress != null && deleteProgress.items > 0
+  const importing = resource.installationFinished === false;
+  const busy = deletingNow || importing;
+  const pct = deletingNow && deleteProgress.items > 0
     ? Math.min(100, Math.round((deleteProgress.done / deleteProgress.items) * 100))
-    : null;
+    : importing && importProgress != null && importProgress.total > 0
+      ? Math.min(100, Math.round((importProgress.done / importProgress.total) * 100))
+      : null;
+  const importMeta = !importing
+    ? null
+    : importProgress == null
+      ? t('jobs.status.running')
+      : importProgress.phase === 'wait'
+        ? t('resources.job.waiting')
+        : importProgress.phase === 'upload'
+          ? t('resources.job.uploading', [String(pct ?? 0)])
+          : importProgress.total > 0
+            ? t('resources.job.importingOf', [
+                importProgress.done.toLocaleString(),
+                importProgress.total.toLocaleString(),
+              ])
+            : importProgress.done > 0
+              ? t('resources.job.importing', [importProgress.done.toLocaleString()])
+              : t('jobs.status.running');
   const enabled = resource.enabled !== false;
   const isDict = resource.type === 'DICTIONARY';
   const resourceId = resource.id;
@@ -106,16 +130,16 @@ export function ResourceCard({
   );
 
   useEffect(() => {
-    if (!isDict || resourceId == null || components != null) return;
+    if (importing || !isDict || resourceId == null || components != null) return;
     let alive = true;
     getResourceComponents(langCode, resourceId)
       .then((list) => { if (alive) setComponents(list); })
       .catch(() => { if (alive) setComponents([]); });
     return () => { alive = false; };
-  }, [isDict, langCode, resourceId, components]);
+  }, [importing, isDict, langCode, resourceId, components]);
 
   const handleToggle = (next: boolean): void => {
-    if (deletingNow || resourceId == null || toggling) return;
+    if (busy || resourceId == null || toggling) return;
     setToggling(true);
     void setResourceEnabled(langCode, resourceId, next)
       .then(() => onChanged?.())
@@ -124,14 +148,14 @@ export function ResourceCard({
   };
 
   const startRename = (): void => {
-    if (editing || deletingNow) return;
+    if (editing || busy) return;
     committingRef.current = false;
     setDraft(displayName);
     setRenaming(true);
   };
 
   const commitRename = (): void => {
-    if (deletingNow || committingRef.current) return;
+    if (busy || committingRef.current) return;
     committingRef.current = true;
     const next = draft.trim();
     if (!next || next === displayName || resourceId == null) {
@@ -145,7 +169,7 @@ export function ResourceCard({
   };
 
   const toggleComponent = (component: DictionaryComponent): void => {
-    if (deletingNow || resourceId == null) return;
+    if (busy || resourceId == null) return;
     const next = new Set(disabledComponents);
     if (next.has(component)) next.delete(component);
     else next.add(component);
@@ -155,16 +179,16 @@ export function ResourceCard({
       .catch(() => onChanged?.());
   };
 
-  const canReorder = sectionSize > 1 && !editing && onGripPointerDown != null;
+  const canReorder = sectionSize > 1 && !editing && !importing && onGripPointerDown != null;
 
   const onGripPointerDownLocal = (e: React.PointerEvent<HTMLElement>): void => {
-    if (deletingNow) return;
+    if (busy) return;
     gripDownY.current = e.clientY;
     onGripPointerDown?.(e);
   };
 
   const onGripPointerUp = (e: React.PointerEvent<HTMLElement>): void => {
-    if (deletingNow) { gripDownY.current = null; return; }
+    if (busy) { gripDownY.current = null; return; }
     const downY = gripDownY.current;
     gripDownY.current = null;
     if (downY != null && Math.abs(e.clientY - downY) <= GRIP_TAP_THRESHOLD) {
@@ -173,7 +197,7 @@ export function ResourceCard({
   };
 
   const onGripKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
-    if (deletingNow) return;
+    if (busy) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       setMenuOpen((v) => !v);
@@ -195,7 +219,7 @@ export function ResourceCard({
       variant={editing && selected ? 'selected' : 'default'}
       className={`${styles.card} ${enabled ? '' : styles.cardDisabled} ${dragging ? styles.cardDragging : ''} ${deletingNow ? styles.cardDeleting : ''}`}
       data-cell-id={`resource-card-${resourceId}`}
-      aria-busy={deletingNow || undefined}
+      aria-busy={busy || undefined}
     >
       {deletingNow && (
         <span
@@ -205,15 +229,25 @@ export function ResourceCard({
           data-cell-id={`deleting-${resourceId}`}
         />
       )}
+      {importing && (
+        <span
+          className={styles.importFill}
+          style={{ height: pct == null ? '8%' : `${pct}%` }}
+          aria-hidden="true"
+          data-cell-id={`importing-${resourceId}`}
+        />
+      )}
       <div className={styles.row}>
         {editing ? (
-          <Checkbox
-            checked={selected}
-            onChange={() => { if (!deletingNow) onSelect?.(); }}
-            aria-label={t('resources.card.select', [displayName])}
-            className={styles.selectCheck}
-            data-cell-id={`check-${resourceId}`}
-          />
+          !importing && (
+            <Checkbox
+              checked={selected}
+              onChange={() => { if (!deletingNow) onSelect?.(); }}
+              aria-label={t('resources.card.select', [displayName])}
+              className={styles.selectCheck}
+              data-cell-id={`check-${resourceId}`}
+            />
+          )
         ) : canReorder && (
           <span ref={gripWrapRef} className={styles.gripWrap}>
             <DragHandle
@@ -254,7 +288,7 @@ export function ResourceCard({
               <button
                 type="button"
                 className={styles.nameButton}
-                onClick={deletingNow ? undefined : editing ? onSelect : startRename}
+                onClick={busy ? undefined : editing ? onSelect : startRename}
                 aria-pressed={editing ? selected : undefined}
                 aria-label={editing ? t('resources.card.select', [displayName]) : t('resources.card.rename', [displayName])}
                 data-cell-id={editing ? `select-${resourceId}` : `name-${resourceId}`}
@@ -264,13 +298,18 @@ export function ResourceCard({
             )}
           </div>
           {deletingNow && (
-            <span className={styles.deleteMeta}>
+            <span className={styles.rowMeta}>
               {deleteProgress.total > 1
                 ? t('resources.delete.progress', [deleteProgress.index, deleteProgress.total])
                 : t('resources.delete.progressOne')}
             </span>
           )}
-          {!deletingNow && isDict && components != null && components.length > 0 && (
+          {importing && (
+            <span className={styles.rowMeta} data-cell-id={`import-meta-${resourceId}`}>
+              {importMeta}
+            </span>
+          )}
+          {!busy && isDict && components != null && components.length > 0 && (
             <div
               className={styles.componentList}
               role="group"
@@ -297,10 +336,10 @@ export function ResourceCard({
           )}
         </div>
 
-        {deletingNow ? (
+        {busy ? (
           <>
-            {pct != null && <span className={styles.deletePct}>{pct}%</span>}
-            <Spinner size="sm" ariaLabel={t('resources.delete.progressOne')} />
+            {pct != null && <span className={styles.rowPct}>{pct}%</span>}
+            <Spinner size="sm" ariaLabel={importing ? (importMeta ?? undefined) : t('resources.delete.progressOne')} />
           </>
         ) : (
           <>

@@ -255,12 +255,15 @@ function buildLookupResult(term: string): LookupResult {
 }
 
 function mockResourceList(langCode: string): ResourceInfo[] {
-  return getMockResourcesForLang(langCode);
+  return [...getMockResourcesForLang(langCode), ...importedResources.values()];
 }
 
 const MOCK_IMPORT_TOTAL = 12000;
-const MOCK_IMPORT_STEPS = [2000, 6000, 10000];
+const MOCK_IMPORT_STEPS = [2000, 4000, 6000, 9000, 11000];
+const MOCK_IMPORT_STEP_MS = 1000;
 const mockJobs = new Map<string, Job>();
+const importedResources = new Map<number, ResourceInfo>();
+let nextImportedResourceId = 10_000;
 
 function pushMessage(message: unknown): void {
   const listeners = (globalThis as { __cellOnMessageListeners?: Set<(m: unknown) => void> }).__cellOnMessageListeners;
@@ -287,25 +290,47 @@ function pushJob(partial: Partial<Job> & { id: string; status: Job['status'] }):
   pushMessage({ type: MESSAGE_TYPES.JOB_EVENT, payload: { job } });
 }
 
-/** Simulate the registry-driven import: JOB_EVENT running ticks then a done
- *  job — the showcase panel renders them through JobRow like production. */
+/** Simulate the registry-driven import like production: the resource row is
+ *  created mid-flight (installationFinished=false) and stamped onto the job —
+ *  the panel renders it as an in-place importing card until the done tick. */
 async function handleResourceImport(payload: Record<string, unknown>): Promise<void> {
   const resourceType = payload.resourceType as 'DICTIONARY' | 'FREQUENCY';
   const jobId = String(payload.jobId ?? '');
   const label = String(payload.fileName ?? jobId);
   const params = { langCode: payload.langCode, resourceType, signature: payload.signature };
+  const resourceId = nextImportedResourceId++;
   pushJob({ id: jobId, status: 'running', label, params });
+  await delay(MOCK_IMPORT_STEP_MS);
+  importedResources.set(resourceId, {
+    id: resourceId,
+    name: label,
+    langCode: String(payload.langCode ?? 'en'),
+    type: resourceType,
+    format: resourceType === 'DICTIONARY' ? 'json-array' : 'txt',
+    signature: String(payload.signature ?? ''),
+    wordCount: 0,
+    installationFinished: false,
+    importedAt: Date.now(),
+    enabled: true,
+    profileIds: [],
+    metadata: {},
+  });
+  pushJob({ id: jobId, status: 'running', resourceId });
   for (const processed of MOCK_IMPORT_STEPS) {
-    await delay(350);
+    await delay(MOCK_IMPORT_STEP_MS);
     pushJob({ id: jobId, status: 'running', progress: { done: processed, total: MOCK_IMPORT_TOTAL } });
+  }
+  const row = importedResources.get(resourceId);
+  if (row != null) {
+    importedResources.set(resourceId, { ...row, installationFinished: true, wordCount: MOCK_IMPORT_TOTAL });
   }
   await delay(150);
   pushJob({
     id: jobId,
     status: 'done',
-    resourceId: 999,
+    resourceId,
     result: {
-      resourceId: 999,
+      resourceId,
       wordCount: MOCK_IMPORT_TOTAL,
       format: resourceType === 'DICTIONARY' ? 'json-array' : 'txt',
     },
@@ -398,6 +423,7 @@ async function mockSendMessage(message: unknown): Promise<unknown> {
 
     case MESSAGE_TYPES.RESOURCE_DELETE: {
       const jobId = `del-${Date.now().toString(36)}`;
+      importedResources.delete(Number(m.payload?.resourceId));
       void (async (): Promise<void> => {
         pushJob({
           id: jobId,

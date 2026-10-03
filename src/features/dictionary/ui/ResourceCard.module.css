@@ -19,13 +19,18 @@
   pointer-events: none;
 }
 
-.deleteMeta {
+.importFill {
+  composes: deleteFill;
+  background: var(--color-primary-subtle);
+}
+
+.rowMeta {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
-.deletePct {
+.rowPct {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   color: var(--color-primary);

@@ -1,7 +1,12 @@
-// ResourcesPanel — 2 sections (dictionary + frequency) + job rows + import (ADR-023, spec F11).
+// ResourcesPanel — 2 sections (dictionary + frequency) + in-place import
+// progress (ADR-023, spec F11).
 //
-// Every dropped/picked file becomes one ImportJob row inside its section's
-// list area. A single global FIFO queue runs uploads under dual bounds
+// Every dropped/picked file becomes one pending entry inside its section's
+// list at the slot its resource card will land in. Once the orchestrator has
+// created the resource row (installationFinished=false) the card itself shows
+// the fill + spinner in place and the pending entry is suppressed — one entry
+// per file, never a queue stacked above the list. A single global FIFO queue
+// runs uploads under dual bounds
 // (≤MAX_CONCURRENT_IMPORTS running AND <MAX_INFLIGHT_BYTES in-flight bytes —
 // the byte bound protects SW memory on low-RAM devices). The panel never
 // blocks: dropzones stay enabled, and each job resolves to its own outcome.
@@ -44,7 +49,7 @@ import type { DuplicateDecision, ResourceInfo, ResourceType } from '@/entities/d
 import type { FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 
 import { JobRow, useJobs, useJobTerminalWatcher, dismissJob, retryJob, jobErrorText } from '@/features/jobs';
-import { isRunningJob, makeJobId, type ImportJob } from './importJobTypes';
+import { buildPendingImports, isRunningJob, makeJobId, type ImportJob } from './importJobTypes';
 import styles from './ResourcesPanel.module.css';
 
 const SUCCESS_DISMISS_MS = 4000;
@@ -162,15 +167,21 @@ function ResourceSection({
 }: ResourceSectionProps): ReactElement {
   const [editing, setEditing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<number>>(new Set());
-  const isEditing = editing && resources.length > 0;
+  const manageable = resources.filter((r) => r.installationFinished !== false);
+  const isEditing = editing && manageable.length > 0;
   const { listRef, drag, beginDrag } = useSectionDrag((draggedId, toIndex) => {
     const from = resources.findIndex((r) => r.id === draggedId);
     if (from >= 0) onReorder(from, toIndex);
   });
-  const selectedCount = resources.reduce(
+  const selectedCount = manageable.reduce(
     (n, r) => (r.id != null && selectedIds.has(r.id) ? n + 1 : n),
     0,
   );
+  const pending = buildPendingImports(resources, jobs, registryJobs);
+  // A fresh import lands first among the priority-less rows — pending entries
+  // sit exactly there so the row and the card that replaces it share a slot.
+  const priorityEnd = resources.findIndex((r) => r.priority == null);
+  const pendingAt = priorityEnd < 0 ? resources.length : priorityEnd;
 
   const toggleEditing = (): void => {
     setEditing((v) => !v);
@@ -187,12 +198,12 @@ function ResourceSection({
   };
 
   const selectAll = (): void => {
-    setSelectedIds(new Set(resources.map((r) => r.id).filter((id): id is number => id != null)));
+    setSelectedIds(new Set(manageable.map((r) => r.id).filter((id): id is number => id != null)));
   };
 
   const bulkSetEnabled = (enabled: boolean): void => {
     if (busy) return;
-    const ids = resources
+    const ids = manageable
       .filter((r) => r.id != null && selectedIds.has(r.id))
       .map((r) => r.id as number);
     if (ids.length > 0) onSetEnabledMany(ids, enabled);
@@ -200,11 +211,47 @@ function ResourceSection({
 
   const handleContextualDelete = (): void => {
     if (busy) return;
-    const ids = resources
+    const ids = manageable
       .filter((r) => r.id != null && selectedIds.has(r.id))
       .map((r) => r.id as number);
     if (ids.length > 0) onDeleteMany(ids);
     else onDeleteAll();
+  };
+
+  const renderCard = (r: ResourceInfo, i: number): ReactElement => {
+    const dragged = drag != null && r.id === drag.draggedId;
+    const dragFrom = drag ? resources.findIndex((x) => x.id === drag.draggedId) : -1;
+    const collapsedPos = drag && dragFrom >= 0 && i > dragFrom ? i - 1 : i;
+    const shiftY = drag && !dragged && collapsedPos >= drag.toIndex
+      ? drag.cardHeight + drag.gap
+      : 0;
+    return (
+      <div
+        key={r.id}
+        data-cell-id={`slot-${r.id}`}
+        data-dragging={dragged || undefined}
+        className={`${styles.slot} ${dragged ? styles.slotDragging : ''} ${drag?.settling ? styles.slotSettling : ''}`}
+        style={drag
+          ? dragged
+            ? { top: drag.fromTop, transform: `translateY(${drag.offsetY}px)` }
+            : { transform: `translateY(${shiftY}px)` }
+          : undefined}
+      >
+        <ResourceCard
+          resource={r}
+          sectionSize={manageable.length}
+          editing={isEditing}
+          selected={r.id != null && selectedIds.has(r.id)}
+          onSelect={() => { if (r.id != null) toggleSelect(r.id); }}
+          onDelete={() => { if (!busy) onDelete(r); }}
+          onMove={(dir) => { if (!busy) onMove(i, dir); }}
+          onGripPointerDown={(e) => { if (!busy && r.id != null) beginDrag(i, r.id, e); }}
+          dragging={dragged}
+          onChanged={onChanged}
+          importProgress={r.id != null ? pending.progressByResourceId.get(r.id) ?? null : null}
+        />
+      </div>
+    );
   };
 
   return (
@@ -214,7 +261,7 @@ function ResourceSection({
         title={t(copy.title)}
         subtitle={t(copy.subtitle)}
         action={
-          resources.length > 0 ? (
+          manageable.length > 0 ? (
             <Button
               variant="ghost"
               size="sm"
@@ -234,15 +281,15 @@ function ResourceSection({
       {isEditing && (
         <div className={styles.editBar} data-cell-id={`edit-bar-${sectionId}`}>
           <Checkbox
-            checked={selectedCount === resources.length}
-            indeterminate={selectedCount > 0 && selectedCount < resources.length}
-            onChange={selectedCount === resources.length ? () => setSelectedIds(new Set()) : selectAll}
+            checked={selectedCount === manageable.length}
+            indeterminate={selectedCount > 0 && selectedCount < manageable.length}
+            onChange={selectedCount === manageable.length ? () => setSelectedIds(new Set()) : selectAll}
             label={t('resources.edit.selectAll')}
             className={styles.selectAll}
             data-cell-id={`select-all-${sectionId}`}
           />
           <span className={styles.selectionCount}>
-            {t('resources.edit.selectedCount', [selectedCount, resources.length])}
+            {t('resources.edit.selectedCount', [selectedCount, manageable.length])}
           </span>
           <div className={styles.editActions}>
             <Button
@@ -285,67 +332,34 @@ function ResourceSection({
         onFiles={(files) => { if (!busy) onFiles(files); }}
       />
       <div className={styles.resourceList} role="list" ref={listRef}>
-        {registryJobs.map((job) => (
-          <JobRow
-            key={job.id}
-            job={job}
-            onDismiss={onDismissJob}
-            onRetry={onRetryJob}
-          />
-        ))}
-        {jobs.map((job) => (
-          <ImportProgress
-            key={job.jobId}
-            job={job}
-            onResolveDuplicate={onResolveDuplicate}
-            onRerunReplace={onRerunReplace}
-            onRetry={onRetryLocal}
-            onDismiss={onDismissLocal}
-          />
-        ))}
         {loading ? (
           <>
             <ResourceCardSkeleton />
             <ResourceCardSkeleton />
           </>
-        ) : resources.length === 0 && jobs.length === 0 && registryJobs.length === 0 ? (
+        ) : resources.length === 0 && pending.rows.length === 0 ? (
           <EmptyState bordered size="sm" description={t(copy.empty)} />
         ) : (
           <>
-            {resources.map((r, i) => {
-              const dragged = drag != null && r.id === drag.draggedId;
-              const dragFrom = drag ? resources.findIndex((x) => x.id === drag.draggedId) : -1;
-              const collapsedPos = drag && dragFrom >= 0 && i > dragFrom ? i - 1 : i;
-              const shiftY = drag && !dragged && collapsedPos >= drag.toIndex
-                ? drag.cardHeight + drag.gap
-                : 0;
-              return (
-                <div
-                  key={r.id}
-                  data-cell-id={`slot-${r.id}`}
-                  data-dragging={dragged || undefined}
-                  className={`${styles.slot} ${dragged ? styles.slotDragging : ''} ${drag?.settling ? styles.slotSettling : ''}`}
-                  style={drag
-                    ? dragged
-                      ? { top: drag.fromTop, transform: `translateY(${drag.offsetY}px)` }
-                      : { transform: `translateY(${shiftY}px)` }
-                    : undefined}
-                >
-                  <ResourceCard
-                    resource={r}
-                    sectionSize={resources.length}
-                    editing={isEditing}
-                    selected={r.id != null && selectedIds.has(r.id)}
-                    onSelect={() => { if (r.id != null) toggleSelect(r.id); }}
-                    onDelete={() => { if (!busy) onDelete(r); }}
-                    onMove={(dir) => { if (!busy) onMove(i, dir); }}
-                    onGripPointerDown={(e) => { if (!busy && r.id != null) beginDrag(i, r.id, e); }}
-                    dragging={dragged}
-                    onChanged={onChanged}
-                  />
-                </div>
-              );
-            })}
+            {resources.slice(0, pendingAt).map((r, i) => renderCard(r, i))}
+            {pending.rows.map((row) => row.local != null ? (
+              <ImportProgress
+                key={row.key}
+                job={row.local}
+                onResolveDuplicate={onResolveDuplicate}
+                onRerunReplace={onRerunReplace}
+                onRetry={onRetryLocal}
+                onDismiss={onDismissLocal}
+              />
+            ) : (
+              <JobRow
+                key={row.key}
+                job={row.job}
+                onDismiss={onDismissJob}
+                onRetry={onRetryJob}
+              />
+            ))}
+            {resources.slice(pendingAt).map((r, i) => renderCard(r, pendingAt + i))}
             {drag && (
               <div
                 className={styles.dropPlaceholder}
@@ -431,6 +445,21 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     () => registryJobs.some((j) => j.kind === 'resource-delete' && isActiveJob(j)),
     [registryJobs],
   );
+
+  // The orchestrator creates the resource row mid-import (installationFinished
+  // = false) and only then stamps resourceId onto the registry job — refresh
+  // once per new id so the importing card appears in the list while it fills.
+  const seenImportResourceIds = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    const fresh = registryJobs.filter(
+      (j) => j.kind === 'resource-import' && j.resourceId != null
+        && !seenImportResourceIds.current.has(j.resourceId)
+        && !resources.some((r) => r.id === j.resourceId),
+    );
+    if (fresh.length === 0) return;
+    for (const j of fresh) seenImportResourceIds.current.add(j.resourceId!);
+    void refresh(true);
+  }, [registryJobs, resources, refresh]);
 
   useJobTerminalWatcher(registryJobs, useCallback((job: Job) => {
     void refresh(true);
@@ -712,22 +741,20 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     // Per-section cascade — deleteAllResources(langCode) clears BOTH types
     // and leaves orphaned entries, so delete each resource through the
     // cascading orchestrator path instead.
-    await runDelete(type, resources.filter((r) => r.type === type && r.id != null));
+    await runDelete(type, resources.filter(
+      (r) => r.type === type && r.id != null && r.installationFinished !== false,
+    ));
   }, [resources, runDelete, deleteBusy]);
 
   const dictionaryResources = sortByPriority(resources.filter((r) => r.type === 'DICTIONARY'));
   const frequencyResources = sortByPriority(resources.filter((r) => r.type === 'FREQUENCY'));
   const dictionaryJobs = jobs.filter((j) => j.resourceType === 'DICTIONARY');
   const frequencyJobs = jobs.filter((j) => j.resourceType === 'FREQUENCY');
-  // Registry rows: hide any job the local row still drives (queued/uploading/
-  // parked duplicate) — the local twin suppresses its registry counterpart
-  // until handoff, so the two never render twice.
-  const localJobIds = new Set(jobs.filter(isRunningJob).map((j) => j.jobId));
   const dictionaryRegistryJobs = registryJobs.filter(
-    (j) => j.params.resourceType !== 'FREQUENCY' && !localJobIds.has(j.id),
+    (j) => j.params.resourceType !== 'FREQUENCY',
   );
   const frequencyRegistryJobs = registryJobs.filter(
-    (j) => j.params.resourceType === 'FREQUENCY' && !localJobIds.has(j.id),
+    (j) => j.params.resourceType === 'FREQUENCY',
   );
 
   const bandsFooter = (
