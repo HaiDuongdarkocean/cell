@@ -110,7 +110,7 @@ function HeroSession({ session, onLookup }: MetricsProps): React.JSX.Element {
       </div>
       <div className={styles.source}>
         <Icon name={session.kind === 'local' ? 'video' : 'captions'} size="sm" />
-        <Text variant="body" color="secondary" truncate>
+        <Text variant="body" color="secondary" truncate className={styles.sourceLabel}>
           {session.sourceLabel}
         </Text>
         <Timestamp value={session.startMs} className={styles.when} />
@@ -146,9 +146,16 @@ function SessionRow({ session, onLookup, expanded, onToggle }: RowProps): React.
           className={styles.rowItem}
           leading={<Icon name={session.kind === 'local' ? 'video' : 'captions'} size="sm" />}
           trailing={
-            <Text variant="supporting" color="secondary">
-              {summary}
-            </Text>
+            <span className={styles.rowTrailing}>
+              <Text variant="supporting" color="secondary">
+                {summary}
+              </Text>
+              <Icon
+                name="chevronDown"
+                size="sm"
+                className={`${styles.chevron} ${expanded ? styles.chevronOpen : ''}`}
+              />
+            </span>
           }
         >
           <div className={styles.rowMain}>

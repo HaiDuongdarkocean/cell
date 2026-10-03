@@ -8,7 +8,10 @@ import {
   getSessionEventsInRange,
   pruneSessionEventsOnce,
 } from '@/features/local-player';
-import { getAllWordStatuses } from '@/features/dictionary/services/wordStatusStore';
+import {
+  getAllWordStatuses,
+  POS_KEY_SEP,
+} from '@/features/dictionary/services/wordStatusStore';
 import { composeSessionRecaps, SESSION_EVENTS_MAX_AGE_DAYS } from '@/features/sessionRecap';
 import type { StatusEntryLike } from '@/features/sessionRecap';
 
@@ -33,9 +36,11 @@ async function collectStatusEntries(): Promise<StatusEntryLike[]> {
   for (const langCode of langs) {
     const entries = await getAllWordStatuses(langCode).catch(() => []);
     for (const e of entries) {
+      const sep = e.term.indexOf(POS_KEY_SEP);
+      const pos = e.pos ?? (sep >= 0 ? e.term.slice(sep + POS_KEY_SEP.length) : undefined);
       out.push({
-        term: e.term,
-        ...(e.pos ? { pos: e.pos } : {}),
+        term: sep >= 0 ? e.term.slice(0, sep) : e.term,
+        ...(pos ? { pos } : {}),
         status: e.status,
         updatedAt: e.updatedAt,
         ...(e.source ? { source: e.source } : {}),

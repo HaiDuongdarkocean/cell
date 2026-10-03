@@ -33,7 +33,7 @@ function resolveTabId(
   payloadTabId: unknown,
   sender: chrome.runtime.MessageSender,
 ): number {
-  if (typeof payloadTabId === 'number') return payloadTabId;
+  if (typeof payloadTabId === 'number' && payloadTabId >= 0) return payloadTabId;
   return sender.tab?.id ?? -1;
 }
 

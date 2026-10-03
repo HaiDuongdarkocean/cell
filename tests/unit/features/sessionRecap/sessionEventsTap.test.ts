@@ -66,6 +66,25 @@ describe('toSessionEvent', () => {
     expect(e?.surface).toBe('local-player');
   });
 
+  it('falls back to sender tab when payload tabId is the -1 sentinel', () => {
+    const e = toSessionEvent(
+      req(MESSAGE_TYPES.WORD_STATUS_SET, { term: 'still', status: 'tracking', tabId: -1 }),
+      sender({ url: 'https://example.com', tab: { id: 42 } as chrome.tabs.Tab }),
+      { success: true },
+    );
+    expect(e?.tabId).toBe(42);
+    expect(e?.surface).toBe('stream');
+  });
+
+  it('keeps an explicit non-negative payload tabId', () => {
+    const e = toSessionEvent(
+      req(MESSAGE_TYPES.WORD_STATUS_SET, { term: 'still', status: 'tracking', tabId: 9 }),
+      sender({ url: 'https://example.com', tab: { id: 42 } as chrome.tabs.Tab }),
+      { success: true },
+    );
+    expect(e?.tabId).toBe(9);
+  });
+
   it('classifies sender without tab or local-player url as other', () => {
     const e = toSessionEvent(
       req(MESSAGE_TYPES.WORD_STATUS_SET, { term: '水', status: 'known' }),
