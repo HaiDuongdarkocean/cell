@@ -230,28 +230,25 @@ export function SrsReviewCardBack({
           <DictationResult typed={dictation.typed} expected={dictation.expected} />
         )}
 
-        <Heading level={1} className={styles.targetWord}>{note.targetWord}</Heading>
+        {note.targetWord.trim() && (
+          <Heading level={1} className={styles.targetWord}>{note.targetWord}</Heading>
+        )}
 
         {note.fields.sentence?.kind === 'text' && (
           <SentenceText sentence={note.fields.sentence.value} />
         )}
 
         {hasTranslation && (
-          <Box className={styles.translationBox}>
-            <button
-              type="button"
-              className={styles.translationHint}
-              aria-expanded={translationRevealed}
-              onClick={() => { setTranslationRevealed((v) => !v); }}
-            >
-              {t('srs.review.sentenceTranslation')}
-            </button>
-            <div className={`${styles.translationReveal} ${translationRevealed ? styles.translationRevealOpen : ''}`}>
-              <div className={styles.translationClip}>
-                <Text className={styles.translation}>{fieldText(note.fields.translation)}</Text>
-              </div>
-            </div>
-          </Box>
+          <button
+            type="button"
+            className={`${styles.translationBox} ${translationRevealed ? styles.translationBoxOpen : ''}`}
+            aria-expanded={translationRevealed}
+            onClick={(e) => { e.stopPropagation(); setTranslationRevealed((v) => !v); }}
+          >
+            {translationRevealed
+              ? fieldText(note.fields.translation)
+              : t('srs.review.sentenceTranslation')}
+          </button>
         )}
       </div>
 

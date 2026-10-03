@@ -7,7 +7,7 @@ import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import type { ResolvedVariantToggles, VariantAudioToggle, VariantScopeToggle } from '@/entities/srs/types';
 import { SRS_INPUT_FIELD_ID } from '@/entities/srs/types';
-import { expectedInputText } from '@/features/srs';
+import { expectedInputText, servableVariantIds } from '@/features/srs';
 import { variantLabel } from '@/features/srs/ui/srsLabels';
 import { SrsVariantFront } from '@/features/srs/ui/SrsVariantFront';
 import { SrsReviewCardBack } from '@/features/srs/ui/SrsReviewCardBack';
@@ -86,8 +86,9 @@ export function SrsReviewCard(): React.JSX.Element | null {
 
   if (!session) return null;
 
-  const { note, variant, variants, stimulus, card } = session;
+  const { note, variant, variants, stimulus, card, notetype } = session;
   const effectiveToggles = toggles ?? session.toggles;
+  const servable = servableVariantIds(variants, note, notetype);
   const hasInput = variant.fieldIds.includes(SRS_INPUT_FIELD_ID);
   const isNew = (card.components[variant.id]?.exploreCount ?? 0) === 0;
   const dictationExpected = hasInput ? expectedInputText(variant, note, effectiveToggles) : null;
@@ -133,7 +134,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
       {!prefs.hideProgress && (
         <>
           <div className={styles.cornerTopCenter} role="list" aria-label={t('srs.review.progressAria')}>
-        {variants.map((v) => (
+        {variants.filter((v) => servable.has(v.id)).map((v) => (
           <span
             key={v.id}
             role="listitem"

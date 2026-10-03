@@ -285,11 +285,6 @@
   color: var(--color-text-primary);
 }
 
-.spellingInput {
-  width: 100%;
-  max-width: 20rem;
-}
-
 .dictationResult {
   display: flex;
   flex-direction: column;
@@ -412,51 +407,28 @@
 }
 
 .translationBox {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-}
-
-.translationHint {
   border: none;
   background: none;
-  padding: 0;
+  padding: var(--space-1) var(--space-2);
   width: 100%;
   font: inherit;
   font-size: var(--font-size-md);
   color: var(--color-text-secondary);
+  text-align: center;
   cursor: pointer;
   border-radius: var(--radius-md);
 }
 
-.translationHint:focus-visible {
+.translationBox:hover {
+  background: var(--color-surface-hover);
+}
+
+.translationBoxOpen {
+  color: var(--color-text-primary);
+}
+
+.translationBox:focus-visible {
   outline: var(--border-width-hairline) solid var(--color-border-focus);
-}
-
-.translationReveal {
-  display: grid;
-  grid-template-rows: 0fr;
-  visibility: hidden;
-  transition:
-    grid-template-rows var(--duration-normal) var(--ease-out),
-    visibility var(--duration-normal);
-}
-
-.translationRevealOpen {
-  grid-template-rows: 1fr;
-  visibility: visible;
-}
-
-.translationClip {
-  overflow: hidden;
-  min-height: 0;
-}
-
-.translation {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-md);
-  text-align: center;
 }
 
 .defBlock {
