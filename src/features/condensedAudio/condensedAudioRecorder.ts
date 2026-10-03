@@ -1,6 +1,7 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { encodeBase64 } from '@/shared/lib/base64';
+import { pauseVideo, playVideo, seekVideo } from '@/shared/lib/dom/netflixPlayback';
 import type { CondenseAudioChunkPayload } from '@/entities/message';
 import type { CueRange } from '@/entities/condensedAudio';
 import { normalizeCueRanges } from './lib/cueRanges';
@@ -12,6 +13,11 @@ import {
 const TIMESLICE_MS = 5000;
 const TICK_MS = 200;
 const RANGE_EPSILON_MS = 120;
+const MIN_SEEK_GAP_MS = 2000;
+const SEEK_RETRY_MS = 2000;
+const SEEK_GRACE_MS = 2500;
+const PLAY_RETRY_MS = 1000;
+const PLAY_GRACE_MS = 1500;
 
 interface RecorderSession {
   readonly recordId: string;
@@ -30,6 +36,10 @@ interface RecorderSession {
   stopped: boolean;
   pausedByUser: boolean;
   seenPlaying: boolean;
+  seekPending: boolean;
+  seekedRangeIdx: number;
+  lastSeekAt: number;
+  lastPlayCmdAt: number;
   capturedMs: number;
   lastTickAt: number;
   pending: Promise<unknown>;
@@ -72,17 +82,51 @@ function syncRecorder(s: RecorderSession, inRange: boolean): void {
   }
 }
 
+function commandPlay(s: RecorderSession): void {
+  const now = Date.now();
+  if (now - s.lastPlayCmdAt < PLAY_RETRY_MS) return;
+  s.lastPlayCmdAt = now;
+  void playVideo(s.video).catch(() => undefined);
+}
+
 function setSessionPaused(s: RecorderSession, paused: boolean): void {
   if (s.stopped || s.pausedByUser === paused) return;
   s.pausedByUser = paused;
   s.pill.setPaused(paused);
   if (paused) {
     syncRecorder(s, false);
-    s.video.pause();
+    pauseVideo(s.video);
     return;
   }
-  if (s.video.paused && !s.video.ended) void s.video.play().catch(() => undefined);
+  s.seekedRangeIdx = -1;
+  s.seekPending = false;
+  if (s.video.paused && !s.video.ended) commandPlay(s);
   tickSession(s);
+}
+
+function maybeSeekTo(s: RecorderSession, range: CueRange, timeMs: number, now: number): void {
+  if (s.pausedByUser) return;
+  if (range.startMs - timeMs <= MIN_SEEK_GAP_MS) return;
+  if (s.seekedRangeIdx === s.rangeIdx && now - s.lastSeekAt < SEEK_RETRY_MS) return;
+  s.seekedRangeIdx = s.rangeIdx;
+  s.lastSeekAt = now;
+  s.seekPending = true;
+  seekVideo(s.video, range.startMs / 1000);
+}
+
+function recoverOrPause(s: RecorderSession, now: number): void {
+  if (s.pausedByUser) return;
+  if (s.seekPending && now - s.lastSeekAt <= SEEK_GRACE_MS) {
+    commandPlay(s);
+    return;
+  }
+  if (now - s.lastPlayCmdAt < PLAY_GRACE_MS) return;
+  if (s.seenPlaying) {
+    s.seekPending = false;
+    setSessionPaused(s, true);
+    return;
+  }
+  commandPlay(s);
 }
 
 function tickSession(s: RecorderSession): void {
@@ -91,7 +135,15 @@ function tickSession(s: RecorderSession): void {
   const now = Date.now();
   if (s.recorder.state === 'recording') s.capturedMs += now - s.lastTickAt;
   s.lastTickAt = now;
-  if (!video.paused) s.seenPlaying = true;
+  if (!video.paused) {
+    s.seenPlaying = true;
+    s.lastPlayCmdAt = 0;
+    if (!video.seeking) s.seekPending = false;
+    if (s.pausedByUser) {
+      setSessionPaused(s, false);
+      return;
+    }
+  }
   if (video.seeking || video.ended) {
     syncRecorder(s, false);
     return;
@@ -106,17 +158,17 @@ function tickSession(s: RecorderSession): void {
     return;
   }
   const inRange = timeMs >= range.startMs - RANGE_EPSILON_MS && timeMs < range.endMs;
-  if (!inRange) {
-    syncRecorder(s, false);
-    if (!s.pausedByUser) {
-      video.currentTime = range.startMs / 1000;
-      if (video.paused) void video.play().catch(() => undefined);
-    }
-    return;
-  }
   if (video.paused) {
     syncRecorder(s, false);
-    if (!s.pausedByUser && s.seenPlaying) setSessionPaused(s, true);
+    if (!s.pausedByUser && !inRange && !s.seenPlaying) {
+      maybeSeekTo(s, range, timeMs, now);
+    }
+    recoverOrPause(s, now);
+    return;
+  }
+  if (!inRange) {
+    syncRecorder(s, false);
+    maybeSeekTo(s, range, timeMs, now);
     return;
   }
   syncRecorder(s, true);
@@ -165,7 +217,7 @@ function teardownSession(s: RecorderSession): void {
   s.video.removeEventListener('timeupdate', s.onTimeUpdate);
   s.video.removeEventListener('ended', s.onEnded);
   s.video.playbackRate = s.previousRate;
-  if (!s.video.ended) s.video.pause();
+  if (!s.video.ended) pauseVideo(s.video);
   s.stream.getTracks().forEach((track) => track.stop());
   s.pill.unmount();
   if (session === s) session = null;
@@ -254,6 +306,10 @@ export function startCondensedAudioSession(
     stopped: false,
     pausedByUser: false,
     seenPlaying: false,
+    seekPending: false,
+    seekedRangeIdx: -1,
+    lastSeekAt: 0,
+    lastPlayCmdAt: 0,
     capturedMs: 0,
     lastTickAt: startedAt,
     pending: Promise.resolve(),
@@ -287,8 +343,11 @@ export function startCondensedAudioSession(
     return { ok: false, error: 'capture-blocked' };
   }
   video.playbackRate = 1;
-  video.currentTime = ranges[0]!.startMs / 1000;
-  void video.play().catch(() => undefined);
+  s.lastSeekAt = startedAt;
+  s.seekedRangeIdx = 0;
+  s.seekPending = true;
+  seekVideo(video, ranges[0]!.startMs / 1000);
+  commandPlay(s);
   return { ok: true };
 }
 

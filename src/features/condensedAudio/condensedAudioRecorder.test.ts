@@ -181,6 +181,79 @@ describe('startCondensedAudioSession', () => {
     expect(recorder.state).toBe('recording');
   });
 
+  it('plays through short gaps without seeking', () => {
+    stopCondensedAudioSession('rec-1');
+    const result = startCondensedAudioSession('rec-small', [
+      { startMs: 1000, endMs: 3000 },
+      { startMs: 4000, endMs: 5000 },
+    ]);
+    expect(result).toEqual({ ok: true });
+    const rec2 = FakeMediaRecorder.instances[1]!;
+    video.setPaused(false);
+    jest.advanceTimersByTime(200);
+    expect(rec2.state).toBe('recording');
+    video.setTime(3.5);
+    jest.advanceTimersByTime(200);
+    expect(rec2.state).toBe('paused');
+    expect(video.el.currentTime).toBe(3.5);
+    video.setTime(4.05);
+    jest.advanceTimersByTime(200);
+    expect(rec2.state).toBe('recording');
+    stopCondensedAudioSession('rec-small');
+  });
+
+  it('re-drives the initial jump to the first cue when the seek does not land', () => {
+    stopCondensedAudioSession('rec-1');
+    const result = startCondensedAudioSession('rec-far', [
+      { startMs: 30000, endMs: 32000 },
+    ]);
+    expect(result).toEqual({ ok: true });
+    video.setTime(0);
+    video.setPaused(false);
+    jest.advanceTimersByTime(400);
+    expect(video.el.currentTime).toBe(0);
+    jest.advanceTimersByTime(2000);
+    expect(video.el.currentTime).toBe(30);
+    stopCondensedAudioSession('rec-far');
+  });
+
+  it('keeps driving the first cue while playback is blocked at session start', () => {
+    stopCondensedAudioSession('rec-1');
+    const result = startCondensedAudioSession('rec-far2', [
+      { startMs: 30000, endMs: 32000 },
+    ]);
+    expect(result).toEqual({ ok: true });
+    video.setTime(0);
+    video.setPaused(true);
+    jest.advanceTimersByTime(2400);
+    expect(video.el.currentTime).toBe(30);
+    stopCondensedAudioSession('rec-far2');
+  });
+
+  it('recovers from a transient pause caused by its own seek transit', () => {
+    video.setPaused(false);
+    jest.advanceTimersByTime(200);
+    video.setTime(5);
+    jest.advanceTimersByTime(200);
+    expect(video.el.currentTime).toBe(10);
+    video.setPaused(true);
+    jest.advanceTimersByTime(400);
+    expect(video.isPaused()).toBe(false);
+    expect(mockSetPaused).not.toHaveBeenCalledWith(true);
+    expect(recorder.state).toBe('recording');
+  });
+
+  it('resumes when playback restarts externally during user pause', () => {
+    video.setPaused(false);
+    jest.advanceTimersByTime(200);
+    setCondensedAudioSessionPaused('rec-1', true);
+    expect(video.isPaused()).toBe(true);
+    video.setPaused(false);
+    jest.advanceTimersByTime(200);
+    expect(mockSetPaused).toHaveBeenLastCalledWith(false);
+    expect(recorder.state).toBe('recording');
+  });
+
   it('finalizes once every range has been recorded', async () => {
     video.setPaused(false);
     video.setTime(13);

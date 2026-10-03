@@ -1,0 +1,22 @@
+{
+  "id": "mediarecorder-transit-pause-latch",
+  "title": "A playback-driving session must distinguish self-induced transit pauses from user pauses — latching a transient video.paused as user intent deadlocks the driver; eaten seeks silently cancel the plan",
+  "category": ["media", "bug-pattern"],
+  "tags": ["mediarecorder", "capturestream", "condensed-audio", "seek", "playback", "video-pause", "netflix"],
+  "trigger": "any loop that drives video.currentTime/play()/pause() on a schedule (cue-skip recording, study-mode JUMP, gap skipping) and also treats video.paused as a user-pause signal",
+  "principle": "Setting video.currentTime or calling play() surfaces transient paused=true (post-seek site pauses, async play() startup, seekable-range clamping). If a tick observes paused during your own transit and latches it as user pause, the driver wedges — user must resume after every jump, and once latched the video may play through every gap with nothing recorded. Model the intent: mark seekPending when you issue a seek and clear it only on observed !paused && !seeking; while seekPending (bounded by a grace window) a pause means 'recover by re-issuing play', not 'user paused'. Track the last commanded play timestamp — a pause inside its grace is 'play still starting', outside it is real. Dedup seeks once-per-range with a slow retry (a seek can be silently eaten — site revert, unready main-world listener), don't re-issue every tick. Skip seeks whose gap is smaller than the seek round-trip (~2s) — playing through is faster and avoids transit churn. Route every seek/play/pause through the site's safe wrappers (netflixPlayback seekVideo/playVideo/pauseVideo) — direct currentTime/play()/pause() throws M7375 on Netflix. Finally, unlatch: if you marked user-paused but the video is playing again (user hit play on the site), resume the session instead of letting it drift dead.",
+  "cases": [
+    {
+      "context": "Condensed-audio leg B: user reported the recording waited through subtitle gaps and paused at each cue end requiring manual resume. The seek existed but transient pauses in the seek→play transit were latched as pausedByUser; once latched, seeks stopped entirely.",
+      "bad": "if (video.paused) { if (!pausedByUser && seenPlaying) setSessionPaused(true) } — any pause in-range becomes user pause, including the one your own seek just caused",
+      "good": "paused → if (seekPending && within SEEK_GRACE) commandPlay(); else if (now - lastPlayCmdAt < PLAY_GRACE) wait; else if (seenPlaying) latch user pause; else keep retrying play"
+    },
+    {
+      "context": "Same session: pressing record must jump to the first cue, but a silently eaten seek (never lands, seeking flag unreliable) left the video at its old position with no retry.",
+      "bad": "seek once at start, mark rangeIdx as handled, never verify landing",
+      "good": "maybeSeekTo: dedup per rangeIdx + retry after SEEK_RETRY_MS if still !inRange, including while paused-and-blocked at session start"
+    }
+  ],
+  "applyFor": ["MediaRecorder sessions that seek", "cue-navigation drivers that auto-play after seek", "any state machine that derives 'user paused' from video.paused while also issuing programmatic play()/seek"],
+  "source": { "date": "2026-10-03" }
+}

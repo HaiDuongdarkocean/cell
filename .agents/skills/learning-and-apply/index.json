@@ -3188,6 +3188,25 @@
     "dialog"
    ],
    "trigger": "recording video audio while seeking over cue gaps, or rendering a fixed dialog inside a transform-centered shadow host"
+  },
+  {
+   "type": "experience",
+   "id": "mediarecorder-transit-pause-latch",
+   "title": "A playback-driving session must distinguish self-induced transit pauses from user pauses — latching a transient video.paused as user intent deadlocks the driver; eaten seeks silently cancel the plan",
+   "category": [
+    "media",
+    "bug-pattern"
+   ],
+   "tags": [
+    "mediarecorder",
+    "capturestream",
+    "condensed-audio",
+    "seek",
+    "playback",
+    "video-pause",
+    "netflix"
+   ],
+   "trigger": "any loop that drives video.currentTime/play()/pause() on a schedule (cue-skip recording, study-mode JUMP, gap skipping) and also treats video.paused as a user-pause signal"
   }
  ]
 }
