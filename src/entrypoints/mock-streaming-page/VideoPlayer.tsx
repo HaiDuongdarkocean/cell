@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type ReactElement,
 } from 'react';
 import { Icon } from '@/shared/ui';
@@ -39,8 +40,10 @@ function readChildParams(): { videoIndex: number; subMode: SubMode } {
 }
 
 export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerProps): ReactElement {
+  const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrubbingRef = useRef(false);
 
   const childParams = mode === 'child' ? readChildParams() : null;
   const videoIndex = childParams?.videoIndex ?? 0;
@@ -49,12 +52,15 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [bufferedEnd, setBufferedEnd] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isBuffering, setIsBuffering] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [showControls, setShowControls] = useState(true);
-  const [subtitleLang] = useState<SubLang>('English');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isScrubbing, setIsScrubbing] = useState(false);
+  const [subtitleLang, setSubtitleLang] = useState<SubLang>('English');
 
   const [vttUrl, setVttUrl] = useState<string | null>(null);
 
@@ -68,9 +74,16 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
   useEffect(() => {
     setCurrentTime(0);
     setDuration(0);
+    setBufferedEnd(0);
     setIsPlaying(false);
     setIsBuffering(true);
   }, [activeVideo]);
+
+  useEffect(() => {
+    const onChange = (): void => setIsFullscreen(document.fullscreenElement === containerRef.current);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
 
   const handleTimeUpdate = useCallback(() => {
     setCurrentTime(videoRef.current?.currentTime ?? 0);
@@ -79,6 +92,13 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
   const handleLoadedMetadata = useCallback(() => {
     setDuration(videoRef.current?.duration ?? 0);
     setIsBuffering(false);
+  }, []);
+
+  const handleProgress = useCallback(() => {
+    const v = videoRef.current;
+    if (!v || !v.duration) return;
+    const ranges = v.buffered;
+    setBufferedEnd(ranges.length ? ranges.end(ranges.length - 1) : 0);
   }, []);
 
   const handleWaiting = useCallback(() => setIsBuffering(true), []);
@@ -98,12 +118,42 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
     v.currentTime = Math.max(0, Math.min(v.duration, v.currentTime + seconds));
   }, []);
 
-  const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  const seekFromClientX = useCallback((track: HTMLDivElement, clientX: number) => {
     const v = videoRef.current;
     if (!v || !v.duration) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pct = (e.clientX - rect.left) / rect.width;
-    v.currentTime = Math.max(0, Math.min(v.duration, pct * v.duration));
+    const rect = track.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    v.currentTime = pct * v.duration;
+  }, []);
+
+  const handleProgressPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+    }
+    scrubbingRef.current = true;
+    setIsScrubbing(true);
+    seekFromClientX(e.currentTarget, e.clientX);
+  }, [seekFromClientX]);
+
+  const handleProgressPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (scrubbingRef.current) seekFromClientX(e.currentTarget, e.clientX);
+  }, [seekFromClientX]);
+
+  const handleProgressPointerEnd = useCallback(() => {
+    scrubbingRef.current = false;
+    setIsScrubbing(false);
+  }, []);
+
+  const handleProgressKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    const v = videoRef.current;
+    if (!v || !v.duration) return;
+    if (e.key === 'ArrowLeft') v.currentTime = Math.max(0, v.currentTime - 5);
+    else if (e.key === 'ArrowRight') v.currentTime = Math.min(v.duration, v.currentTime + 5);
+    else if (e.key === 'Home') v.currentTime = 0;
+    else if (e.key === 'End') v.currentTime = v.duration;
+    else return;
+    e.preventDefault();
   }, []);
 
   const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,6 +171,17 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
     if (!v) return;
     v.muted = !v.muted;
     setIsMuted(v.muted);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void el.requestFullscreen();
+  }, []);
+
+  const toggleSubtitles = useCallback(() => {
+    setSubtitleLang(l => (l === 'Off' ? 'English' : 'Off'));
   }, []);
 
   const showControlsTemporarily = useCallback(() => {
@@ -141,15 +202,14 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
     : undefined;
 
   const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const remaining = Math.max(0, duration - currentTime);
+  const bufferedPct = duration > 0 ? Math.min((bufferedEnd / duration) * 100, 100) : 0;
 
   const volumeIcon = isMuted || volume === 0 ? 'volumeMute' : volume < 0.5 ? 'volumeLow' : 'volumeHigh';
-
-  const glassPill = styles.glassPill;
-  const glassCircle = styles.glassCircle;
+  const subtitlesOn = subtitleLang !== 'Off';
 
   return (
     <div
+      ref={containerRef}
       className={`player-container ${styles.playerContainer} ${isPlaying ? styles.playing : ''} ${showControls ? styles.controlsVisible : ''} ${isBuffering ? styles.buffering : ''} ${className ?? ''}`}
       onMouseMove={showControlsTemporarily}
       onMouseLeave={() => isPlaying && setShowControls(false)}
@@ -163,6 +223,7 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
           poster={activeVideo.thumb}
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
+          onProgress={handleProgress}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
           onWaiting={handleWaiting}
@@ -192,48 +253,74 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
         </div>
       )}
 
-      {!isPlaying && !isBuffering && (
-        <button
-          type="button"
-          className={styles.playMask}
-          onClick={handlePlayPause}
-          aria-label="Play"
-          tabIndex={-1}
-        >
-          <span className={`${glassCircle} ${styles.playCircle}`}>
-            <Icon name="play" size="lg" />
-          </span>
-        </button>
-      )}
-
       {showControls && !isBuffering && (
-        <>
-          <div className={styles.topControls}>
-            <div className={styles.topLeft}>
-              <button
-                type="button"
-                className={`${glassCircle} ${styles.closeBtn}`}
-                onClick={() => window.history.back()}
-                aria-label="Close"
-              >
-                <Icon name="x" size="sm" />
-              </button>
+        <div className={styles.controlsLayer}>
+          <div className={styles.topScrim}>
+            <span className={styles.videoTitle}>{activeVideo.title}</span>
+          </div>
 
-              <div className={`${glassPill} ${styles.topPill}`}>
-                <button type="button" className={styles.topPillBtn} aria-label="Picture in picture" disabled aria-disabled="true">
-                  <Icon name="pip" size="sm" />
-                </button>
-                <button type="button" className={styles.topPillBtn} aria-label="Cast" disabled aria-disabled="true">
-                  <Icon name="maximize" size="sm" />
-                </button>
-                <button type="button" className={styles.topPillBtn} aria-label="Share" disabled aria-disabled="true">
-                  <Icon name="externalLink" size="sm" />
-                </button>
+          <div className={styles.bottomScrim}>
+            <div
+              className={styles.progress}
+              role="slider"
+              aria-label="Seek"
+              aria-valuemin={0}
+              aria-valuemax={Math.round(duration)}
+              aria-valuenow={Math.round(currentTime)}
+              aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
+              tabIndex={0}
+              data-scrubbing={isScrubbing || undefined}
+              onPointerDown={handleProgressPointerDown}
+              onPointerMove={handleProgressPointerMove}
+              onPointerUp={handleProgressPointerEnd}
+              onPointerCancel={handleProgressPointerEnd}
+              onKeyDown={handleProgressKeyDown}
+            >
+              <div className={styles.progressTrack}>
+                <div className={styles.progressBuffered} style={{ width: `${bufferedPct}%` }} />
+                <div className={styles.progressPlayed} style={{ width: `${progressPct}%` }}>
+                  <div className={styles.progressThumb} />
+                </div>
               </div>
             </div>
 
-            <div className={styles.topRight}>
-              <div className={`${glassPill} ${styles.volumePill}`}>
+            <div className={styles.controlsRow}>
+              <button
+                type="button"
+                className={styles.ctrlBtn}
+                onClick={handlePlayPause}
+                aria-label={isPlaying ? 'Pause' : 'Play'}
+              >
+                <Icon name={isPlaying ? 'pause' : 'play'} size="md" />
+              </button>
+
+              <button
+                type="button"
+                className={styles.ctrlBtn}
+                onClick={() => handleSkip(-15)}
+                aria-label="Back 15 seconds"
+              >
+                <Icon name="navRewind" size="md" />
+              </button>
+
+              <button
+                type="button"
+                className={styles.ctrlBtn}
+                onClick={() => handleSkip(15)}
+                aria-label="Forward 15 seconds"
+              >
+                <Icon name="navForward" size="md" />
+              </button>
+
+              <div className={styles.volumeGroup}>
+                <button
+                  type="button"
+                  className={styles.ctrlBtn}
+                  onClick={toggleMute}
+                  aria-label={isMuted ? 'Unmute' : 'Mute'}
+                >
+                  <Icon name={volumeIcon} size="md" />
+                </button>
                 <input
                   type="range"
                   min="0"
@@ -242,76 +329,60 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
                   value={isMuted ? 0 : volume}
                   onChange={handleVolumeChange}
                   className={styles.volumeSlider}
+                  style={{ '--vol': `${(isMuted ? 0 : volume) * 100}%` } as CSSProperties}
                   aria-label="Volume level"
                 />
-                <button type="button" className={styles.volumeIconBtn} onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
-                  <Icon name={volumeIcon} size="sm" />
-                </button>
               </div>
-            </div>
-          </div>
 
-          <div className={styles.centerOverlay}>
-            <div className={styles.centerGroup}>
+              <span className={styles.time}>
+                {formatTime(currentTime)}
+                <span className={styles.timeTotal}> / {formatTime(duration)}</span>
+              </span>
+
+              <div className={styles.spacer} />
+
               <button
                 type="button"
-                className={`${glassCircle} ${styles.skipCircle}`}
-                onClick={(e) => { e.stopPropagation(); handleSkip(-15); }}
-                aria-label="Skip back 15 seconds"
+                className={styles.ctrlBtn}
+                data-active={subtitlesOn || undefined}
+                aria-pressed={subtitlesOn}
+                onClick={toggleSubtitles}
+                aria-label={subtitlesOn ? 'Hide subtitles' : 'Show subtitles'}
               >
-                <Icon name="navRewind" size="md" />
-                <span className={styles.skipLabel}>15</span>
+                <Icon name="captions" size="md" />
               </button>
 
               <button
                 type="button"
-                className={`${glassCircle} ${styles.playCircle}`}
-                onClick={(e) => { e.stopPropagation(); handlePlayPause(); }}
-                aria-label={isPlaying ? 'Pause' : 'Play'}
+                className={styles.ctrlBtn}
+                disabled
+                aria-disabled="true"
+                aria-label="Settings"
               >
-                <Icon name={isPlaying ? 'pause' : 'play'} size="lg" />
+                <Icon name="settings" size="md" />
               </button>
 
               <button
                 type="button"
-                className={`${glassCircle} ${styles.skipCircle}`}
-                onClick={(e) => { e.stopPropagation(); handleSkip(15); }}
-                aria-label="Skip forward 15 seconds"
+                className={styles.ctrlBtn}
+                disabled
+                aria-disabled="true"
+                aria-label="Picture in picture"
               >
-                <Icon name="navForward" size="md" />
-                <span className={styles.skipLabel}>15</span>
+                <Icon name="pip" size="md" />
+              </button>
+
+              <button
+                type="button"
+                className={styles.ctrlBtn}
+                onClick={toggleFullscreen}
+                aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              >
+                <Icon name={isFullscreen ? 'minimize' : 'maximize'} size="md" />
               </button>
             </div>
           </div>
-
-          <div className={styles.bottomControls}>
-            <div className={styles.bottomLeft}>
-              <div className={`${glassPill} ${styles.progressPill}`}>
-                <span className={styles.timeCurrent}>{formatTime(currentTime)}</span>
-                <div className={styles.progress} onClick={handleProgressClick}>
-                  <div className={styles.progressTrack}>
-                    <div className={styles.progressBuffered} style={{ width: `${Math.min(progressPct + 5, 100)}%` }} />
-                    <div className={styles.progressPlayed} style={{ width: `${progressPct}%` }}>
-                      <div className={styles.progressThumb} />
-                    </div>
-                  </div>
-                </div>
-                <span className={styles.timeRemaining}>-{formatTime(remaining)}</span>
-              </div>
-            </div>
-
-            <div className={styles.bottomRight}>
-              <div className={`${glassPill} ${styles.actionPill}`}>
-                <button type="button" className={styles.actionPillBtn} aria-label="Audio waveform" disabled aria-disabled="true">
-                  <Icon name="audioWave" size="sm" />
-                </button>
-                <button type="button" className={styles.actionPillBtn} aria-label="Comments" disabled aria-disabled="true">
-                  <Icon name="messageSquare" size="sm" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
+        </div>
       )}
 
       {activeCue && (
