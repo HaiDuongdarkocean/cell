@@ -375,11 +375,11 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
       <Box className={styles.selectRow}>
         <Box className={styles.selectCol}>
           <Label>{t('srs.edit.cardType')}</Label>
-          <Select value={notetype.id} options={[{ value: notetype.id, label: notetype.name }]} disabled />
+          <Select value={notetype.id} options={[{ value: notetype.id, label: notetype.name }]} disabled menuClassName={styles.selectMenu} />
         </Box>
         <Box className={styles.selectCol}>
           <Label>{t('srs.edit.deck')}</Label>
-          <Select value={deckId} options={deckOptions} onChange={(v) => { markDirty(); setDeckId(v); }} />
+          <Select value={deckId} options={deckOptions} onChange={(v) => { markDirty(); setDeckId(v); }} menuClassName={styles.selectMenu} />
         </Box>
       </Box>
 

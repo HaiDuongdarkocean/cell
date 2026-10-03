@@ -46,6 +46,8 @@ export interface SelectProps {
   onChange?: (value: string) => void;
   /** Optional class name. */
   className?: string;
+  /** Optional class name applied to the portaled dropdown menu. */
+  menuClassName?: string;
   /** Max height of the dropdown menu in pixels. */
   menuMaxHeight?: number;
   /** Horizontal alignment of the dropdown menu relative to the trigger.
@@ -84,6 +86,7 @@ export function Select({
   state,
   onChange,
   className,
+  menuClassName,
   menuMaxHeight,
   menuAlign = 'left',
   searchable = false,
@@ -345,7 +348,7 @@ export function Select({
 
   const menuAlignClass = styles[`menuAlign${placement.align.charAt(0).toUpperCase()}${placement.align.slice(1)}` as keyof typeof styles] ?? '';
 
-  const menuClass = [styles.menu, menuAlignClass].filter(Boolean).join(' ');
+  const menuClass = [styles.menu, menuAlignClass, menuClassName ?? ''].filter(Boolean).join(' ');
 
   // Render the menu in a portal so it escapes clipping ancestors (overflow:auto
   // dialogs, bottom sheets, scroll containers). The position is fixed and
