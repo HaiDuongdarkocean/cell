@@ -194,6 +194,7 @@ function DefEntryBlock({ entry }: { entry: { header: string; otherForms: string;
     <Box className={styles.defBlock}>
       {entry.header && <Text className={styles.defEntryHeader}>{entry.header}</Text>}
       {entry.otherForms && <Text className={styles.otherForms}>{entry.otherForms}</Text>}
+      {(entry.header || entry.otherForms) && display.length > 0 && <div className={styles.defSpacer} />}
       {display.map((line, i) =>
         line === null ? (
           <div key={i} className={styles.defSpacer} />
