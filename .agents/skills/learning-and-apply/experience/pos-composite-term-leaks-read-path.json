@@ -1,0 +1,20 @@
+{
+  "id": "pos-composite-term-leaks-read-path",
+  "title": "`langWordStatus.term` là composite `term␟pos` trên pos rows — read paths mới phải split tại boundary",
+  "category": ["data", "ux"],
+  "tags": ["pos-variants", "word-status", "POS_KEY_SEP", "composite-key", "session-recap", "derived-data"],
+  "trigger": "Bất kỳ consumer mới nào của `getAllWordStatuses`/`langWordStatus` mà hiển thị hoặc lookup `e.term` trực tiếp — pos rows mang term='still␟adverb' → chip hiện ký tự ␟ (U+241F invisible glyph) + nav lookup fail.",
+  "principle": "Store `langWordStatus` dùng `term` làm keyPath và pos-variant rows encode `term␟pos` (POS_KEY_SEP = U+241F). Write paths biết format này; READ paths thường quên. Boundary rule: ngay khi đọc, `const sep = e.term.indexOf(POS_KEY_SEP); term = sep>=0 ? e.term.slice(0,sep) : e.term; pos = e.pos ?? (sep>=0 ? e.term.slice(sep+1) : undefined)` — sau đó mọi downstream dùng term sạch.",
+  "cases": [
+    {
+      "context": "session-recap derived statuses (sessionRecap handler collectStatusEntries): legacy session suy luận marked-terms từ wordStatus rows — pos-composite row 'ember␟noun' lọt thẳng vào SessionRecap → chip render 'ember␟noun', click → openDictionaryLookup('ember␟noun') → tra cứu rác.",
+      "bad": "`out.push({ term: e.term, pos: e.pos })` verbatim — coi e.term là display term",
+      "good": "Split composite tại collectStatusEntries → term 'ember' + pos 'noun'; dedupTerms downstream tự gộp variant rows cùng base term → 1 chip"
+    }
+  ],
+  "applyFor": [
+    "Mọi feature đọc langWordStatus cho mục đích display/navigation/aggregation — split trước khi đưa vào pipeline",
+    "Vocabulary tab, export/sync, recap derive, badge counts — audit khi pos-variants ship"
+  ],
+  "source": { "fix": "548299a2", "date": "2026-10-07" }
+}

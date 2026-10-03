@@ -1,0 +1,20 @@
+{
+  "id": "payload-tabid-sentinel-shadows-sender",
+  "title": "Payload `tabId:-1` sentinel shadows `sender.tab.id` — event attribution drops the message",
+  "category": ["messaging", "data", "bug-pattern"],
+  "tags": ["tabId", "sender", "message-payload", "sentinel", "session-events", "attribution", "word-status"],
+  "trigger": "Feature ghi event theo (surface,tabId) đọc `payload.tabId` trước `sender.tab?.id` — messages từ client helpers (wordStatusClient, vocabulary, panel) luôn gửi `tabId:-1` nghĩa 'không tab-scoped' → event ghi tabId=-1 → attribution drop.",
+  "principle": "Trong Cell, `payload.tabId` là routing field (=-1 sentinel = 'any tab'), KHÔNG phải truth về tab phát sinh. Nguồn thật duy nhất cho 'tab nào sinh message' là `sender.tab.id`. Mọi code attribute event về tab phải coi payload tabId âm như absent: `payloadTabId >= 0 ? payloadTabId : sender.tab?.id ?? -1`.",
+  "cases": [
+    {
+      "context": "session-recap Brave e2e (tmp/session-recap/e2e-brave.mjs): real flow click status-cycle trong popup trên stream page — `setWordStatus` gửi WORD_STATUS_SET với `tabId:-1` hardcode; tap resolveTabId trả -1 → surface='stream' + tabId<0 → attributeEvents drop → 'Marked (0)' trên hero dù user vừa mark.",
+      "bad": "`if (typeof payloadTabId === 'number') return payloadTabId` — tin payload hơn sender",
+      "good": "`if (typeof payloadTabId === 'number' && payloadTabId >= 0) return payloadTabId; return sender.tab?.id ?? -1` — explicit positive tabId (cross-tab relay) vẫn thắng, sentinel -1 rơi về sender truth"
+    }
+  ],
+  "applyFor": [
+    "Mọi tap/listener/audit-log ghi 'event thuộc tab nào' — payload tabId chỉ nên thắng khi >=0",
+    "Client helpers gửi `tabId:-1` là convention rộng (wordStatusClient WORD_STATUS_SET/CYCLE/LIST) — server-side attribution không được dùng nó"
+  ],
+  "source": { "fix": "548299a2", "date": "2026-10-07" }
+}
