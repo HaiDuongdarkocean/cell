@@ -11,11 +11,12 @@
 import { trTableRows } from './trTableRows.mjs';
 import { cobuild } from './cobuild.mjs';
 import { macmillan } from './macmillan.mjs';
+import { macmillan2ed } from './macmillan2ed.mjs';
 import { oald } from './oald.mjs';
 import { ldoce } from './ldoce.mjs';
 import { etymonline } from './etymonline.mjs';
 
-const MARKUP_ADAPTERS = [trTableRows, cobuild, macmillan, oald, ldoce, etymonline];
+const MARKUP_ADAPTERS = [trTableRows, cobuild, macmillan, macmillan2ed, oald, ldoce, etymonline];
 
 export async function* iterMdx(mdxPath, only) {
   const mod = await import('js-mdict');
@@ -50,7 +51,7 @@ export async function* iterMdx(mdxPath, only) {
     const adapter = MARKUP_ADAPTERS.find((a) => a.matches(html));
     if (!adapter) continue;
     const parsed = adapter.parse(html);
-    if (!parsed || (!parsed.senses?.length && !parsed.etymology)) continue;
+    if (!parsed || (!parsed.senses?.length && !parsed.etymology && !parsed.entries?.length)) continue;
     if (parsed.related?.length) {
       const seen = new Set();
       parsed.related = parsed.related.filter((r) => {
@@ -79,11 +80,36 @@ export async function* iterMdx(mdxPath, only) {
         ex.senses.push(sen);
       }
     }
+    if (parsed.entries?.length) {
+      for (const [i, e] of parsed.entries.entries()) {
+        yield {
+          term: keyText,
+          reading: keyText,
+          altterm: parsed.altterm ?? '',
+          pos: e.pos,
+          pronunciation: e.pronunciation ?? '',
+          prons: e.prons,
+          senses: e.senses ?? [],
+          related: i === 0 && parsed.related?.length ? parsed.related : undefined,
+          inflections: e.inflections,
+          frequencyStars: e.frequencyStars,
+          level: i === 0 ? parsed.level : undefined,
+          etymology: i === 0 ? parsed.etymology : undefined,
+          wordFamily: i === 0 ? parsed.wordFamily : undefined,
+          wordNet: i === 0 ? parsed.wordNet : undefined,
+          derivedTerms: i === 0 ? parsed.derivedTerms : undefined,
+          anagrams: i === 0 ? parsed.anagrams : undefined,
+        };
+      }
+      continue;
+    }
     yield {
       term: keyText,
       reading: keyText,
       altterm: parsed.altterm ?? '',
+      pos: parsed.pos,
       pronunciation: parsed.pronunciation ?? '',
+      prons: parsed.prons,
       senses: parsed.senses ?? [],
       related: parsed.related?.length ? parsed.related : undefined,
       inflections: parsed.inflections,

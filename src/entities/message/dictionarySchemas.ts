@@ -103,6 +103,35 @@ export const EtymologyBlockSchema = z.object({
   variants: z.array(z.object({ text: z.string(), source: z.string().optional() })).optional(),
 });
 
+const PronunciationAccentSchema = z.object({
+  accent: z.string(),
+  ipa: z.string(),
+  audioRef: z.string().optional(),
+});
+
+const FrequencyGenresSchema = z.object({
+  spoken: z.number().optional(),
+  fiction: z.number().optional(),
+  magazine: z.number().optional(),
+  newspaper: z.number().optional(),
+  academic: z.number().optional(),
+});
+
+export const PosVariantSchema = z.object({
+  pos: z.string(),
+  prons: z.array(PronunciationAccentSchema),
+  frequencies: z.array(z.object({
+    rank: z.number().int(),
+    source: z.string(),
+    total: z.number().optional(),
+    genres: FrequencyGenresSchema.optional(),
+  })),
+  status: WordStatusSchema,
+  definitions: z.array(DefinitionEntrySchema),
+  frequencyStars: z.number().int().min(1).max(3).optional(),
+  inflections: z.array(z.object({ type: z.string(), forms: z.array(z.string()) })).optional(),
+});
+
 export const LookupResultSchema = z.object({
   term: z.string(),
   langCode: z.string().length(2),
@@ -114,6 +143,7 @@ export const LookupResultSchema = z.object({
   definitions: z.array(DefinitionEntrySchema),
   rawDefinitions: z.array(z.string()),
   detectedPhrase: PhraseMatchSchema.nullable(),
+  variants: z.array(PosVariantSchema).optional(),
   related: z.array(RelatedEntrySchema).optional(),
   inflections: z.array(z.object({ type: z.string(), forms: z.array(z.string()) })).optional(),
   level: z.string().optional(),
@@ -218,6 +248,7 @@ export const WordStatusesGetPayloadSchema = z.object({
 
 export const WordStatusSetPayloadSchema = WordStatusGetPayloadSchema.extend({
   status: WordStatusSchema,
+  pos: z.string().max(60).optional(),
 });
 
 export const WordStatusChangedPayloadSchema = z.object({
@@ -225,6 +256,7 @@ export const WordStatusChangedPayloadSchema = z.object({
   langCode: z.string().length(2),
   term: z.string().min(1).max(200),
   status: WordStatusSchema,
+  pos: z.string().max(60).optional(),
 });
 
 export const WordStatusListPayloadSchema = z.object({
@@ -232,7 +264,9 @@ export const WordStatusListPayloadSchema = z.object({
   langCode: z.string().length(2),
 });
 
-export const WordStatusCyclePayloadSchema = WordStatusGetPayloadSchema;
+export const WordStatusCyclePayloadSchema = WordStatusGetPayloadSchema.extend({
+  pos: z.string().max(60).optional(),
+});
 
 export const WordStatusDeletePayloadSchema = WordStatusGetPayloadSchema;
 

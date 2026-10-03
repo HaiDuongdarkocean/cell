@@ -3,7 +3,7 @@
 // 3 object stores: langResourceInfo, langFrequencyEntry, langDictionaryEntry.
 // Module boundary: entities/types only — no logic, no storage deps.
 
-/** Import format — 6 supported formats (spec F8).
+/** Import format — 7 supported formats (spec F8, pos-dictionary-variants).
  *  Structural ids only — never named after a source product. */
 export type ImportFormat =
   | 'txt'
@@ -11,6 +11,7 @@ export type ImportFormat =
   | 'term-bank'
   | 'sqlite'
   | 'json-entries'
+  | 'json-frequency'
   | 'wordlist-json';
 
 /** Resource type — frequency list vs dictionary (spec F7). */
@@ -64,13 +65,31 @@ export interface ResourceInfo {
   readonly metadata?: Record<string, unknown>;
 }
 
-/** Frequency entry — 1 row per word (langFrequencyEntry store). */
+/** Canonical genre buckets on a frequency row (pos-dictionary-variants).
+ *  All keys optional — rows without a genre keep it absent, never 0. */
+export interface FrequencyGenres {
+  readonly spoken?: number;
+  readonly fiction?: number;
+  readonly magazine?: number;
+  readonly newspaper?: number;
+  readonly academic?: number;
+}
+
+/** Frequency entry — 1 row per word (or per (word,pos) for pos-aware
+ *  lists — langFrequencyEntry store). Old rows lack pos/total/genres and
+ *  behave as term-level fallbacks for every variant. */
 export interface FrequencyEntry {
   readonly id?: number;
   readonly resourceId: number;
   readonly term: string;
   readonly reading: string;
+  /** Rank — lower = more frequent (`rankToBand` semantics). */
   readonly frequency: number;
+  /** Canonical pos (posNormalize output); absent = term-level row. */
+  readonly pos?: string;
+  /** Raw occurrence count when the source provides it. */
+  readonly total?: number;
+  readonly genres?: FrequencyGenres;
 }
 
 /** One content line inside a sense. `text` is always rendered;
@@ -136,6 +155,16 @@ export interface WordNetInfo {
   readonly hypernyms?: readonly string[];
 }
 
+/** One accent-scoped pronunciation of an entry (pos-dictionary-variants).
+ *  `accent` is a short provider label — 'AmE' | 'BrE' | free text;
+ *  `audioRef` keeps `sound://…` refs verbatim until the audio store
+ *  resolves them (mdd extraction phase). */
+export interface PronunciationAccent {
+  readonly accent: string;
+  readonly ipa: string;
+  readonly audioRef?: string;
+}
+
 /** Dictionary entry — 1 row per term with rich fields (langDictionaryEntry store). */
 export interface DictionaryEntry {
   readonly id?: number;
@@ -159,6 +188,9 @@ export interface DictionaryEntry {
   /** Entry-level CEFR/provider level. */
   readonly level?: string;
   readonly frequencyStars?: number;
+  /** Accent-scoped pronunciations — one per homograph/accent the source
+   *  declares. `pronunciation` stays the legacy first-IPA string. */
+  readonly prons?: readonly PronunciationAccent[];
   readonly etymology?: EtymologyBlock;
   readonly wordFamily?: WordFamily;
   readonly wordNet?: WordNetInfo;

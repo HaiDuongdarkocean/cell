@@ -5,9 +5,11 @@ import { describe, expect, it, beforeEach, beforeAll, afterAll } from '@jest/glo
 import {
   getWordStatus,
   setWordStatus,
+  setWordStatusPos,
   cycleWordStatus,
   deleteWordStatus,
   getWordStatuses,
+  getPosStatusRows,
   getTermsByStatus,
   nextStatus,
   STATUS_CYCLE,
@@ -132,6 +134,21 @@ describe('getWordStatuses (batch)', () => {
     expect(map.get('a')).toBe('tracking');
     expect(map.get('b')).toBe('known');
     expect(map.get('c')).toBe('unknown');
+  });
+
+  it('folds pos rows to the least-learned aggregate', async () => {
+    await setWordStatusPos('en', 'present', 'adjective', 'known');
+    await setWordStatusPos('en', 'present', 'verb', 'tracking');
+    const map = await getWordStatuses('en', ['present']);
+    expect(map.get('present')).toBe('tracking');
+    expect((await getPosStatusRows('en', 'present')).size).toBe(2);
+  });
+
+  it('term row participates as fallback for unmaterialized variants', async () => {
+    await setWordStatus('en', 'flat', 'known');
+    await setWordStatusPos('en', 'flat', 'verb', 'tracking');
+    const map = await getWordStatuses('en', ['flat']);
+    expect(map.get('flat')).toBe('tracking');
   });
 });
 

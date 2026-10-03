@@ -11,13 +11,19 @@ import { BatchProcessor } from '../logic/batchProcessor';
 import { normalizeWord } from '../logic/normalizationPipeline';
 import { toCanonicalDefinition } from '../logic/normalize/canonical';
 import { collectEntryComponents, sortedComponents } from '../logic/dictionaryComponents';
-import type { ImportFormat, FrequencyEntry, DictionaryEntry, DictionaryComponent, SenseBlock, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo } from '@/entities/dictionary';
+import { normalizePos } from '@/shared/lib/posNormalize';
+import type { ImportFormat, FrequencyEntry, DictionaryEntry, DictionaryComponent, SenseBlock, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo, FrequencyGenres, PronunciationAccent } from '@/entities/dictionary';
 
 /** Raw entry from parser (before normalization). */
 export interface RawFrequencyEntry {
   readonly term: string;
   readonly reading?: string;
   readonly frequency: number;
+  /** Raw pos label — normalized to canonical form on transform
+   *  (pos-dictionary-variants). Absent = term-level row. */
+  readonly pos?: string;
+  readonly total?: number;
+  readonly genres?: FrequencyGenres;
 }
 
 /** Raw dictionary entry from parser. */
@@ -42,6 +48,9 @@ export interface RawDictionaryEntry {
   readonly inflections?: readonly InflectionGroup[];
   readonly level?: string;
   readonly frequencyStars?: number;
+  /** Accent-scoped pronunciations (pos-dictionary-variants) — one row per
+   *  homograph carries that homograph's own prons. */
+  readonly prons?: readonly PronunciationAccent[];
   readonly etymology?: EtymologyBlock;
   readonly wordFamily?: WordFamily;
   readonly wordNet?: WordNetInfo;
@@ -147,11 +156,15 @@ export abstract class BaseFrequencyStrategy extends BaseImportStrategy<RawFreque
     const term = normalizeWord(raw.term);
     if (term.length === 0) return null;
     const reading = raw.reading ? raw.reading.trim().normalize('NFC') : term;
+    const pos = raw.pos ? normalizePos(raw.pos) : undefined;
     return {
       resourceId: this.options.resourceId,
       term,
       reading,
       frequency: Math.max(0, Math.floor(raw.frequency)),
+      ...(pos ? { pos } : {}),
+      ...(raw.total != null && Number.isFinite(raw.total) ? { total: Math.floor(raw.total) } : {}),
+      ...(raw.genres ? { genres: raw.genres } : {}),
     };
   }
 }
@@ -189,6 +202,7 @@ export abstract class BaseDictionaryStrategy extends BaseImportStrategy<RawDicti
       inflections: raw.inflections,
       level: raw.level,
       frequencyStars: raw.frequencyStars,
+      prons: raw.prons,
       etymology: raw.etymology,
       wordFamily: raw.wordFamily,
       wordNet: raw.wordNet,

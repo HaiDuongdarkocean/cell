@@ -63,6 +63,8 @@ export interface UseDictionaryToolbarOptions {
   /** Preload all media/translation for the integrated panel so Send to Card works
    *  without the user manually opening each tab. */
   readonly preloadMedia?: boolean;
+  /** pos-dictionary-variants: image search term override (`${term} ${pos}`). */
+  readonly imageQuery?: string;
 }
 
 export interface UseDictionaryToolbarReturn {
@@ -133,6 +135,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     initialTranslation,
     initialTranslationSelected,
     preloadMedia,
+    imageQuery,
   } = options;
 
   const [activeTab, setActiveTab] = useState<PopupTab | null>(defaultActiveTab ?? null);
@@ -297,23 +300,33 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     })();
   }, [audioItems, audioLoading, result, contextSentence]);
 
+  const loadedImageQueryRef = useRef<string | undefined>(
+    initialImageItems?.length ? result?.term : undefined,
+  );
+
   const fetchImages = useCallback((): Promise<readonly ImageItem[]> => {
     if (!result) return Promise.resolve([]);
+    const query = optionsRef.current.imageQuery ?? result.term;
     if (imageLoading) return Promise.resolve(imageItems);
-    if (imageItems.length > 0) return Promise.resolve(imageItems);
+    if (imageItems.length > 0 && loadedImageQueryRef.current === query) return Promise.resolve(imageItems);
+    if (imageItems.length > 0) {
+      setImageItems([]);
+      setImageSelection(new Map());
+    }
     setImageLoading(true);
     setImageError(null);
 
     return withTimeout(
       sendMessage<MessageResponse<FetchImagesResponse>>({
         type: MESSAGE_TYPES.FETCH_IMAGES,
-        payload: { tabId: 0, term: result.term, langCode: result.langCode },
+        payload: { tabId: 0, term: query, langCode: result.langCode },
       }),
       10_000,
     )
       .then((response) => {
         if (response?.success && response.data?.items && response.data.items.length > 0) {
           const items = response.data.items;
+          loadedImageQueryRef.current = query;
           if (mountedRef.current) {
             setImageItems(items);
             setImageSelection(new Map());
@@ -411,7 +424,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     if (activeTab === 'image') {
       void fetchImagesRef.current();
     }
-  }, [activeTab, result?.term, result?.langCode]);
+  }, [activeTab, result?.term, result?.langCode, imageQuery]);
 
   // Preload audio, image and translation in the integrated panel so the user
   // can press Send to Card immediately without opening every tab.
@@ -421,7 +434,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     void fetchAudioRef.current();
     void fetchImagesRef.current();
     void translateRef.current();
-  }, [preloadMedia, hasResult, result?.term, result?.langCode]);
+  }, [preloadMedia, hasResult, result?.term, result?.langCode, imageQuery]);
 
   const selectedAudioCount = useMemo(
     () => audioItems.filter((item) => audioSelection.get(item.id) === true).length,

@@ -149,6 +149,7 @@ async function main() {
       pos: c.pos,
       examples: c.examples,
       audio: (raw.audio ?? '').trim(),
+      ...(raw.prons?.length ? { prons: raw.prons } : {}),
       ...(raw.related?.length ? { related: raw.related } : {}),
       ...(raw.inflections?.length ? { inflections: raw.inflections } : {}),
       ...(raw.frequencyStars ? { frequencyStars: raw.frequencyStars } : {}),

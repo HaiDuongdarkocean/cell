@@ -65,6 +65,7 @@ export async function detectFormat(name: string, head: Uint8Array): Promise<Impo
     const text = decodeText(head.slice(0, 4096)).trim();
     if (ext === 'json' || text.startsWith('[') || text.startsWith('{')) {
       if (looksLikeWordlistJson(text)) return 'wordlist-json';
+      if (looksLikeJsonFrequency(text)) return 'json-frequency';
       if (looksLikeJsonEntries(text)) return 'json-entries';
       if (looksLikeJsonArray(text)) return 'json-array';
     }
@@ -92,6 +93,7 @@ export function sniffZipFormat(files: Record<string, Uint8Array>): ImportFormat 
   if (jsonFile) {
     const text = decodeText(files[jsonFile]!.slice(0, 8192));
     if (looksLikeJsonEntries(text)) return 'json-entries';
+    if (looksLikeJsonFrequency(text)) return 'json-frequency';
     if (looksLikeJsonArray(text)) return 'json-array';
     if (looksLikeWordlistJson(text)) return 'wordlist-json';
     if (looksLikePlainText(files[jsonFile]!)) return 'txt';
@@ -110,6 +112,15 @@ function looksLikeJsonEntries(text: string): boolean {
   if (!/^\s*\[\s*\{/.test(text)) return false;
   const head = text.slice(0, 4096);
   return head.includes('"term"') && head.includes('"definition"');
+}
+
+/** Heuristic: JSON array of {term, pos?, rank|frequency} objects (no
+ *  definition field) → json-frequency (pos-dictionary-variants). */
+function looksLikeJsonFrequency(text: string): boolean {
+  if (!/^\s*\[\s*\{/.test(text)) return false;
+  const head = text.slice(0, 8192);
+  if (head.includes('"definition"')) return false;
+  return head.includes('"term"') && (head.includes('"rank"') || head.includes('"frequency"'));
 }
 
 /** Heuristic: JSON object {index: {...}, list: [[term, reading, [tags]]]} → wordlist-json. */

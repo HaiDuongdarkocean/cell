@@ -17,10 +17,29 @@ const WORD_WRITE_STORES = [STORES.WORD_STATUS, STORES.WORD_TRASH, STORES.SYNC_OU
 
 export { STATUS_CYCLE };
 
-/** Word status entry — 1 row per term (langWordStatus store). */
+/** Separator between term and pos inside a composite pos-status key
+ *  (spec pos-dictionary-variants REQ-8): `term␟pos`, ␟ = U+241F. */
+export const POS_KEY_SEP = '␟';
+
+/** Composite status-store key for a (term, pos) variant. */
+export function posStatusKey(term: string, pos: string): string {
+  return `${term}${POS_KEY_SEP}${pos}`;
+}
+
+/** Inverse of posStatusKey — returns undefined for plain term keys. */
+export function splitPosKey(key: string): { term: string; pos: string } | undefined {
+  const i = key.indexOf(POS_KEY_SEP);
+  if (i <= 0 || i === key.length - 1) return undefined;
+  return { term: key.slice(0, i), pos: key.slice(i + 1) };
+}
+
+/** Word status entry — 1 row per term, or per (term␟pos) variant
+ *  (langWordStatus store). */
 export interface WordStatusEntry {
-  /** The term (unique key). */
+  /** The term (unique key) — literal `term␟pos` on pos rows. */
   readonly term: string;
+  /** Normalized pos — convenience field mirroring the key suffix (pos rows only). */
+  readonly pos?: string;
   /** The status: unknown | tracking | learning | known | ignore. */
   readonly status: WordStatus;
   /** Last updated timestamp (ms). */
@@ -61,6 +80,31 @@ export function nextStatus(current: WordStatus): WordStatus {
 /** Default status for a word not in the store. */
 export const DEFAULT_STATUS: WordStatus = 'unknown';
 
+/** Least-learned ordering for status aggregation (spec REQ-9). 'ignore' is
+ *  excluded unless every variant is ignored. */
+const LEARNED_RANK: Record<WordStatus, number> = {
+  unknown: 0, tracking: 1, learning: 2, known: 3, ignore: 4,
+};
+
+/** Aggregate a term-level status from resolved per-variant statuses.
+ *  variantPoses: dictionary-informed variant set when the caller has it;
+ *  absent → hot-path approximation over materialized pos rows only
+ *  (spec REQ-9 alt flow). */
+export function aggregatePosStatus(
+  termStatus: WordStatus | undefined,
+  posStatuses: ReadonlyMap<string, WordStatus>,
+  variantPoses?: readonly string[],
+): WordStatus {
+  const poses = variantPoses?.length ? variantPoses : [...posStatuses.keys()];
+  if (!poses.length) return termStatus ?? DEFAULT_STATUS;
+  const resolved = poses.map((p) => posStatuses.get(p) ?? termStatus ?? DEFAULT_STATUS);
+  const live = resolved.filter((s) => s !== 'ignore');
+  if (!live.length) return 'ignore';
+  let best: WordStatus = 'known';
+  for (const s of live) if (LEARNED_RANK[s] < LEARNED_RANK[best]) best = s;
+  return best;
+}
+
 /** Get the status for a term. Returns 'unknown' if not stored. */
 export async function getWordStatus(langCode: string, term: string): Promise<WordStatus> {
   const db = await getDB(langCode);
@@ -76,7 +120,9 @@ export async function getWordStatus(langCode: string, term: string): Promise<Wor
   });
 }
 
-/** Get statuses for multiple terms in one transaction. */
+/** Get statuses for multiple terms in one transaction. Terms with pos rows
+ *  fold to the least-learned aggregate over materialized rows (spec REQ-9
+ *  hot-path approximation). */
 export async function getWordStatuses(
   langCode: string,
   terms: readonly string[],
@@ -99,6 +145,10 @@ export async function getWordStatuses(
         }),
     ),
   );
+  const posRows = await getPosStatuses(langCode, terms);
+  for (const [term, rows] of posRows) {
+    result.set(term, aggregatePosStatus(result.get(term), rows));
+  }
   return result;
 }
 
@@ -267,4 +317,154 @@ export async function getTermsByStatus(langCode: string, status: WordStatus): Pr
     };
     req.onerror = () => reject(req.error);
   });
+}
+
+// === Pos-variant status (spec pos-dictionary-variants REQ-8) ===
+
+/** Pos-keyed status rows for a term — prefix scan `term␟…` in one tx.
+ *  Returns pos → status for rows that materialized. */
+export async function getPosStatusRows(
+  langCode: string,
+  term: string,
+): Promise<Map<string, WordStatus>> {
+  const db = await getDB(langCode);
+  const tx = db.transaction(STORES.WORD_STATUS, 'readonly');
+  const store = tx.objectStore(STORES.WORD_STATUS);
+  const lower = `${term}${POS_KEY_SEP}`;
+  const range = IDBKeyRange.bound(lower, `${lower}\uffff`);
+  return new Promise((resolve, reject) => {
+    const req = store.getAll(range);
+    req.onsuccess = () => {
+      const rows = new Map<string, WordStatus>();
+      for (const e of req.result as WordStatusEntry[]) {
+        const split = splitPosKey(e.term);
+        if (split) rows.set(split.pos, e.status);
+      }
+      resolve(rows);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/** Batch pos-row read — one tx, per-term `term␟…` prefix scan. Terms with no
+ *  materialized pos rows are absent from the result map. */
+export async function getPosStatuses(
+  langCode: string,
+  terms: readonly string[],
+): Promise<Map<string, Map<string, WordStatus>>> {
+  const db = await getDB(langCode);
+  const tx = db.transaction(STORES.WORD_STATUS, 'readonly');
+  const store = tx.objectStore(STORES.WORD_STATUS);
+  const result = new Map<string, Map<string, WordStatus>>();
+  await Promise.all(
+    terms.map(
+      (term) =>
+        new Promise<void>((resolve, reject) => {
+          const lower = `${term}${POS_KEY_SEP}`;
+          const req = store.getAll(IDBKeyRange.bound(lower, `${lower}\uffff`));
+          req.onsuccess = () => {
+            const rows = new Map<string, WordStatus>();
+            for (const e of req.result as WordStatusEntry[]) {
+              const split = splitPosKey(e.term);
+              if (split) rows.set(split.pos, e.status);
+            }
+            if (rows.size) result.set(term, rows);
+            resolve();
+          };
+          req.onerror = () => reject(req.error);
+        }),
+    ),
+  );
+  return result;
+}
+
+/** Variant status read: `term␟pos` row ?? `term` row ?? 'unknown'. */
+export async function getWordStatusPos(
+  langCode: string,
+  term: string,
+  pos: string,
+): Promise<WordStatus> {
+  const db = await getDB(langCode);
+  const tx = db.transaction(STORES.WORD_STATUS, 'readonly');
+  const store = tx.objectStore(STORES.WORD_STATUS);
+  return new Promise((resolve, reject) => {
+    const posReq = store.get(posStatusKey(term, pos));
+    posReq.onsuccess = () => {
+      const posEntry = posReq.result as WordStatusEntry | undefined;
+      if (posEntry) {
+        resolve(posEntry.status);
+        return;
+      }
+      const termReq = store.get(term);
+      termReq.onsuccess = () =>
+        resolve((termReq.result as WordStatusEntry | undefined)?.status ?? DEFAULT_STATUS);
+      termReq.onerror = () => reject(termReq.error);
+    };
+    posReq.onerror = () => reject(posReq.error);
+  });
+}
+
+/** Write a pos-variant status — same cycle/normalization as term writes:
+ *  'unknown' deletes the composite key; real statuses clear the composite
+ *  key's trash record and capture `word:term␟pos` for sync. */
+export async function setWordStatusPos(
+  langCode: string,
+  term: string,
+  pos: string,
+  status: WordStatus,
+  provenance?: { source?: WordStatusSource; sourceAt?: number },
+): Promise<void> {
+  if (!pos) return setWordStatus(langCode, term, status, provenance);
+  const key = posStatusKey(term, pos);
+  try {
+    const db = await getDB(langCode);
+    await ensureSyncRuntime();
+    const capture = isCaptureEnabled();
+    const scope = scopeForTarget(targetOf(langCode));
+    if (status === 'unknown') {
+      const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
+      const store = tx.objectStore(STORES.WORD_STATUS);
+      store.delete(key);
+      if (capture) {
+        await captureChange(store, { scope, dataClass: 'wordStatus', key: `word:${key}`, op: 'delete' });
+      }
+      await awaitTx(tx);
+      return;
+    }
+    const now = Date.now();
+    const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
+    const store = tx.objectStore(STORES.WORD_STATUS);
+    store.put({
+      term: key,
+      pos,
+      status,
+      updatedAt: now,
+      source: provenance?.source ?? 'user',
+      sourceAt: provenance?.sourceAt ?? now,
+    });
+    tx.objectStore(STORES.WORD_TRASH).delete(key);
+    if (capture) {
+      await captureChange(store, { scope, dataClass: 'wordStatus', key: `word:${key}`, op: 'put' });
+    }
+    await awaitTx(tx);
+  } catch (err) {
+    if (isQuotaError(err)) {
+      throw new WordStatusQuotaError(t('dict.error.statusQuota'));
+    }
+    throw err;
+  }
+}
+
+/** Cycle a pos-variant's status; returns the new status. Reads resolve
+ *  through the term-row fallback before cycling. */
+export async function cycleWordStatusPos(
+  langCode: string,
+  term: string,
+  pos: string,
+): Promise<WordStatus> {
+  if (!pos) return cycleWordStatus(langCode, term);
+  const current = await getWordStatusPos(langCode, term, pos);
+  const next = nextStatus(current);
+  await setWordStatusPos(langCode, term, pos, next);
+  return next;
 }

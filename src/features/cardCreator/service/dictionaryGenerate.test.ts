@@ -85,7 +85,7 @@ describe('lookupDictionaryResources', () => {
 
     expect(result).not.toBeNull();
     expect(result!.targetWord).toBe('hello');
-    expect(result!.definitions).toBe('Hello həˈləʊ\n\n[int.] a greeting\n\n[n.] a call for attention');
+    expect(result!.definitions).toBe('Hello /həˈləʊ/\n\n[int.] a greeting\n\n[n.] a call for attention');
     expect(result!.wordAudioUrls).toEqual(['us.mp3']);
     expect(result!.sentenceAudioUrls).toEqual(['sentence.mp3']);
     expect(result!.imageUrls).toEqual(['one.png']);

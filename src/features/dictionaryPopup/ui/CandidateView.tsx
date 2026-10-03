@@ -12,6 +12,7 @@ import type { AudioEngineKind } from '@/features/pronunciation';
 import { nextStatus } from '@/features/dictionary';
 import { t, type MessageKey } from '@/shared/i18n';
 import { useCandidate } from './useCandidate';
+import { PosVariantNav } from './PosVariantNav';
 import { PronunciationAudioPanel } from './PronunciationAudioPanel';
 import { ImagePanel } from './ImagePanel';
 import { TranslatePanel } from './TranslatePanel';
@@ -22,7 +23,7 @@ import { Tooltip } from '@/shared/ui/Tooltip';
 import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './CandidateView.module.css';
-import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot, SenseLine, RelatedEntry } from '@/entities/dictionary';
+import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot, SenseLine, RelatedEntry, VariantFrequency } from '@/entities/dictionary';
 
 const EMPTY_EXAMPLE_SET: ReadonlySet<number> = new Set<number>();
 
@@ -49,6 +50,18 @@ function selectionText(el: HTMLElement): string {
       ? (root as ShadowRoot & { getSelection?: () => Selection | null }).getSelection?.()
       : window.getSelection();
   return sel?.toString() ?? '';
+}
+
+function freqTitle(freq: VariantFrequency): string | undefined {
+  const parts: string[] = [];
+  if (freq.total != null) parts.push(`total ${freq.total.toLocaleString()}`);
+  if (freq.genres) {
+    const g = freq.genres;
+    for (const [k, v] of [['spoken', g.spoken], ['fiction', g.fiction], ['magazine', g.magazine], ['newspaper', g.newspaper], ['academic', g.academic]] as const) {
+      if (v != null) parts.push(`${k} ${v.toLocaleString()}`);
+    }
+  }
+  return parts.length ? parts.join(' · ') : undefined;
 }
 
 function formatReading(reading: string, readingKind: LookupResult['readingKind']): string {
@@ -179,6 +192,13 @@ export function CandidateView({
       className={styles.candidate}
       data-cell-id={`dictionary-candidate-${index}`}
     >
+      {candidate.variants && candidate.variants.length > 1 && (
+        <PosVariantNav
+          variants={candidate.variants}
+          selectedIndex={panel.variantIndex}
+          onSelect={panel.selectVariant}
+        />
+      )}
       <header className={styles.cellHeader} data-cell-id="dictionary-header">
         <div className={styles.cellHeaderRow}>
           <div className={styles.cellHeaderMain}>
@@ -226,16 +246,28 @@ export function CandidateView({
       </header>
 
       <div className={styles.cellContent} data-cell-id="dictionary-content">
-        {(candidate.reading || candidate.level || candidate.frequencyStars) && (
+        {(panel.displayReading || candidate.level || panel.displayStars) && (
           <div className={styles.cellHeaderReading}>
-            {candidate.reading && (
+            {panel.variant && panel.variant.prons.length > 0 && (
+              <button
+                type="button"
+                className={styles.cellAccentLabel}
+                disabled={panel.variant.prons.length < 2}
+                title={panel.variant.prons.length > 1 ? t('dict.accent.toggle', [panel.variant.prons[panel.accentIndex]?.accent ?? '']) : undefined}
+                onClick={panel.cycleAccent}
+                data-cell-id="dictionary-accent-toggle"
+              >
+                {(panel.variant.prons[panel.accentIndex]?.accent ?? '').toLowerCase()}
+              </button>
+            )}
+            {panel.displayReading && (
               <span className={styles.cellHeaderIpa} data-cell-id="dictionary-reading">
-                {formatReading(candidate.reading, candidate.readingKind)}
+                {formatReading(panel.displayReading, candidate.readingKind)}
               </span>
             )}
-            {candidate.frequencyStars != null && candidate.frequencyStars > 0 && (
+            {panel.displayStars != null && panel.displayStars > 0 && (
               <span className={styles.cellHeaderLevel} data-cell-id="dictionary-stars">
-                {'●'.repeat(candidate.frequencyStars)}
+                {'●'.repeat(panel.displayStars)}
               </span>
             )}
             {candidate.level && (
@@ -253,8 +285,8 @@ export function CandidateView({
           >
             {t(STATUS_KEYS[panel.status])}
           </Button>
-          {candidate.frequencies.map((freq, i) => (
-            <span key={`${freq.source}-${i}`} className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${rankToBand(freq.rank, frequencyThresholds)}`]}`} data-cell-id="dictionary-frequency">
+          {panel.displayFrequencies.map((freq, i) => (
+            <span key={`${freq.source}-${i}`} className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${rankToBand(freq.rank, frequencyThresholds)}`]}`} title={freqTitle(freq)} data-cell-id="dictionary-frequency">
               <span className={styles.cellHeaderFrequencySource}>{freq.source}</span>
               <span className={styles.cellHeaderFrequencyRank}>{freq.rank.toLocaleString()}</span>
             </span>
@@ -298,7 +330,7 @@ export function CandidateView({
             selection={panel.imageSelection}
             onToggle={panel.toggleImage}
             onImageError={panel.removeImageItem}
-            term={candidate.term}
+            term={panel.imageQueryTerm}
           />
         )}
         {panel.activeTab === 'translate' && (
@@ -326,15 +358,15 @@ export function CandidateView({
         )}
         </div>
 
-        {candidate.inflections && candidate.inflections.length > 0 && (
+        {panel.displayInflections && panel.displayInflections.length > 0 && (
           <div className={styles.cellMetaLine} data-cell-id="dictionary-word-forms">
             <span className={styles.cellMetaLabel}>{t('dict.meta.wordForms')}:</span>{' '}
-            {candidate.inflections.map((g) => (g.type ? `${g.type} ` : '') + g.forms.join(', ')).join(' · ')}
+            {panel.displayInflections.map((g) => (g.type ? `${g.type} ` : '') + g.forms.join(', ')).join(' · ')}
           </div>
         )}
 
         <section className={panelStyles.cellDef} aria-label={t('dict.definitions.aria')} data-cell-id="dictionary-definitions" data-allow-lookup>
-        {candidate.definitions.length === 0 ? (
+        {panel.displayDefinitions.length === 0 ? (
           <EmptyState
             size="md"
             description={onOpenSettings ? (
@@ -353,7 +385,7 @@ export function CandidateView({
             data-cell-id="dictionary-definitions-empty"
           />
         ) : (
-          candidate.definitions.map((def) => (
+          panel.displayDefinitions.map((def) => (
             <DefinitionItem
               key={def.id}
               definition={def}

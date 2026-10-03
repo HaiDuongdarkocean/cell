@@ -7,7 +7,7 @@ import { addResource } from '@/features/dictionary';
 import { addDictionaryEntry } from '@/features/dictionary';
 import { addFrequencyEntry } from '@/features/dictionary';
 import { putPhraseIndex, getPhraseIndex } from '@/features/dictionary';
-import { setWordStatus } from '@/features/dictionary/services/wordStatusStore';
+import { setWordStatus, setWordStatusPos } from '@/features/dictionary/services/wordStatusStore';
 import {
   compilePhraseIndex,
   serializePhraseIndex,
@@ -1492,5 +1492,146 @@ describe('lookupOrchestrator — lookup-hot-path', () => {
     } finally {
       spy.mockRestore();
     }
+  });
+});
+
+describe('lookupOrchestrator — pos variants (pos-dictionary-variants)', () => {
+  async function seedFreqResource(name = 'coca.json'): Promise<number> {
+    return addResource('en', {
+      name,
+      langCode: 'en',
+      type: 'FREQUENCY',
+      format: 'json-frequency',
+      signature: `en-freq-${Date.now()}-${Math.random()}`,
+      wordCount: 1,
+      installationFinished: true,
+      importedAt: Date.now(),
+    });
+  }
+
+  const presentEntries: SeedEntry[] = [
+    {
+      term: 'present',
+      definition: 'existing or happening now',
+      pos: 'adjective',
+      prons: [
+        { accent: 'AmE', ipa: 'ˈprezənt', audioRef: 'sound://us_present1.mp3' },
+        { accent: 'BrE', ipa: 'ˈprez(ə)nt', audioRef: 'sound://uk_present1.wav' },
+      ],
+      frequencyStars: 3,
+    },
+    {
+      term: 'present',
+      definition: 'to give something to somebody formally',
+      pos: 'verb',
+      prons: [{ accent: 'AmE', ipa: 'prɪˈzent', audioRef: 'sound://us_present2.mp3' }],
+      inflections: [{ type: 'past', forms: ['presented'] }],
+    },
+    {
+      term: 'present',
+      definition: 'a gift',
+      pos: 'noun',
+      prons: [{ accent: 'AmE', ipa: 'ˈprezənt' }],
+      inflections: [{ type: 'plural', forms: ['presents'] }],
+    },
+  ];
+
+  it('assembles one variant per pos with scoped prons, stars, inflections and defs', async () => {
+    await seedEnglishDictionary(presentEntries);
+
+    const result = await lookupOrchestrator({
+      term: 'present',
+      langCode: 'en',
+      contextSentence: 'The present task presents a challenge.',
+      cursorOffset: 4,
+    });
+
+    expect(result.variants).toHaveLength(3);
+    const [adj, verb, noun] = result.variants!;
+    expect(adj!.pos).toBe('adjective');
+    expect(adj!.prons.map((p) => p.accent)).toEqual(['AmE', 'BrE']);
+    expect(adj!.frequencyStars).toBe(3);
+    expect(adj!.definitions.map((d) => d.text)).toEqual(['existing or happening now']);
+
+    expect(verb!.pos).toBe('verb');
+    expect(verb!.prons[0]!.ipa).toBe('prɪˈzent');
+    expect(verb!.inflections?.[0]?.forms).toEqual(['presented']);
+    expect(verb!.definitions.map((d) => d.text)).toEqual(['to give something to somebody formally']);
+
+    expect(noun!.pos).toBe('noun');
+    expect(noun!.definitions.map((d) => d.text)).toEqual(['a gift']);
+  });
+
+  it('joins pos-specific frequency rows per variant; term-level rows fall back', async () => {
+    await seedEnglishDictionary(presentEntries);
+    const freqId = await seedFreqResource();
+    const otherFreqId = await seedFreqResource('legacy.json');
+    await addFrequencyEntry('en', { resourceId: freqId, term: 'present', reading: '', frequency: 818, pos: 'v', total: 53923 });
+    await addFrequencyEntry('en', { resourceId: freqId, term: 'present', reading: '', frequency: 1334, pos: 'j', total: 32520 });
+    await addFrequencyEntry('en', { resourceId: otherFreqId, term: 'present', reading: '', frequency: 900 });
+
+    const result = await lookupOrchestrator({
+      term: 'present',
+      langCode: 'en',
+      contextSentence: 'present',
+      cursorOffset: 0,
+    });
+
+    const [adj, verb, noun] = result.variants!;
+    expect(adj!.frequencies.map((f) => f.rank)).toEqual([900, 1334]);
+    expect(adj!.frequencies[1]!.total).toBe(32520);
+    expect(verb!.frequencies.map((f) => f.rank)).toEqual([900, 818]);
+    expect(verb!.frequencies[1]!.total).toBe(53923);
+    expect(noun!.frequencies.map((f) => f.rank)).toEqual([900]);
+    expect(noun!.frequencies[0]!.source).toBe('legacy');
+  });
+
+  it('resolves pos status independently and aggregates over all variants', async () => {
+    await seedEnglishDictionary(presentEntries);
+    await setWordStatusPos('en', 'present', 'verb', 'learning');
+
+    const result = await lookupOrchestrator({
+      term: 'present',
+      langCode: 'en',
+      contextSentence: 'present',
+      cursorOffset: 0,
+    });
+
+    const [adj, verb, noun] = result.variants!;
+    expect(verb!.status).toBe('learning');
+    expect(adj!.status).toBe('unknown');
+    expect(noun!.status).toBe('unknown');
+    expect(result.status).toBe('unknown');
+  });
+
+  it('pos row beats term row for the same variant; term row still feeds other variants', async () => {
+    await seedEnglishDictionary(presentEntries);
+    await setWordStatus('en', 'present', 'known');
+    await setWordStatusPos('en', 'present', 'noun', 'tracking');
+
+    const result = await lookupOrchestrator({
+      term: 'present',
+      langCode: 'en',
+      contextSentence: 'present',
+      cursorOffset: 0,
+    });
+
+    const [adj, verb, noun] = result.variants!;
+    expect(adj!.status).toBe('known');
+    expect(verb!.status).toBe('known');
+    expect(noun!.status).toBe('tracking');
+  });
+
+  it('omits variants entirely for pos-less single-variant data', async () => {
+    await seedEnglishDictionary([{ term: 'hello', definition: 'a greeting' }]);
+
+    const result = await lookupOrchestrator({
+      term: 'hello',
+      langCode: 'en',
+      contextSentence: 'Say hello.',
+      cursorOffset: 4,
+    });
+
+    expect(result.variants).toBeUndefined();
   });
 });

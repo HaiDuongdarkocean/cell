@@ -19,7 +19,7 @@
 // worker). The worker handles phrase matching + LRU; this orchestrator
 // handles dictionary DB queries + result assembly.
 
-import type { LookupRequest, LookupResult, DefinitionEntry, MatchSource } from '@/entities/dictionary';
+import type { LookupRequest, LookupResult, DefinitionEntry, MatchSource, WordStatus, PosVariant } from '@/entities/dictionary';
 import { t } from '@/shared/i18n';
 import type { Token, TermProbe, LanguagePlugin } from '../plugins/languagePlugin';
 import { pluginRegistry } from '../plugins/pluginRegistry';
@@ -29,7 +29,8 @@ import {
 } from '@/features/dictionary';
 import { findFrequencyByTerm } from '@/features/dictionary';
 import { getAllResources } from '@/features/dictionary';
-import { getWordStatus } from '@/features/dictionary';
+import { getWordStatus, getPosStatusRows, aggregatePosStatus } from '@/features/dictionary';
+import { normalizePos } from '@/shared/lib/posNormalize';
 import {
   getPhraseIndex,
 } from '@/features/dictionary';
@@ -71,10 +72,11 @@ interface ReadMemo {
   readonly dict: Map<string, Promise<DictionaryEntry[]>>;
   readonly freq: Map<string, ReturnType<typeof findFrequencyByTerm>>;
   readonly status: Map<string, ReturnType<typeof getWordStatus>>;
+  readonly posStatus: Map<string, ReturnType<typeof getPosStatusRows>>;
 }
 
 function createReadMemo(): ReadMemo {
-  return { dict: new Map(), freq: new Map(), status: new Map() };
+  return { dict: new Map(), freq: new Map(), status: new Map(), posStatus: new Map() };
 }
 
 function memoize<K, V>(map: Map<K, Promise<V>>, key: K, read: () => Promise<V>): Promise<V> {
@@ -521,6 +523,8 @@ async function assembleLookupResult(
     memoize(memo.freq, memoKey(langCode, term), () => findFrequencyByTerm(langCode, term));
   const readStatus = (term: string) =>
     memoize(memo.status, memoKey(langCode, term), () => getWordStatus(langCode, term));
+  const readPosStatuses = (term: string) =>
+    memoize(memo.posStatus, memoKey(langCode, term), () => getPosStatusRows(langCode, term));
 
   const initialSurface = displayTerm ?? lookupTerm;
   const [dictRaw, freqRaw, statusInit] = await Promise.all([
@@ -611,6 +615,19 @@ async function assembleLookupResult(
   let etymologySource: string | undefined;
   const etyExtraVariants: { text: string; source?: string }[] = [];
   let defIdx = 0;
+  const variantSeen = new Set<string>();
+  const variantOrder: string[] = [];
+  const markVariant = (key: string) => {
+    if (!variantSeen.has(key)) {
+      variantSeen.add(key);
+      variantOrder.push(key);
+    }
+  };
+  const variantDefs = new Map<string, DefinitionEntry[]>();
+  const variantProns = new Map<string, { accent: string; ipa: string; audioRef?: string }[]>();
+  const variantAccentSeen = new Map<string, Set<string>>();
+  const variantStars = new Map<string, number>();
+  const variantInfl = new Map<string, InflectionGroup[]>();
   for (const e of dictEntries) {
     const disabled = disabledOf(e.resourceId);
     const entryExamples: SenseLine[] = !disabled.has('examples') && e.examples
@@ -640,7 +657,7 @@ async function assembleLookupResult(
     for (const sense of senses) {
       const glossLines = sense.lines.filter((l) => l.role !== 'example');
       const senseExamples = disabled.has('examples') ? [] : sense.lines.filter((l) => l.role === 'example');
-      definitions.push({
+      const def: DefinitionEntry = {
         id: `def-${defIdx}`,
         pos: sense.pos || e.pos || undefined,
         labels: sense.labels,
@@ -653,7 +670,16 @@ async function assembleLookupResult(
         examples: [...senseExamples, ...entryExamples],
         source,
         defaultSelected: false,
-      });
+      };
+      definitions.push(def);
+      const vKey = normalizePos(sense.pos || e.pos || '');
+      markVariant(vKey);
+      let bucket = variantDefs.get(vKey);
+      if (!bucket) {
+        bucket = [];
+        variantDefs.set(vKey, bucket);
+      }
+      bucket.push(def);
       defIdx++;
     }
 
@@ -687,6 +713,36 @@ async function assembleLookupResult(
     }
     if (!disabled.has('level')) level ??= e.level;
     if (!disabled.has('frequencyStars')) frequencyStars ??= e.frequencyStars;
+    const eKey = normalizePos(e.pos || '');
+    if (!disabled.has('pronunciation') && e.prons?.length) {
+      markVariant(eKey);
+      let prons = variantProns.get(eKey);
+      let seen = variantAccentSeen.get(eKey);
+      if (!prons || !seen) {
+        prons = [];
+        seen = new Set();
+        variantProns.set(eKey, prons);
+        variantAccentSeen.set(eKey, seen);
+      }
+      for (const p of e.prons) {
+        if (seen.has(p.accent)) continue;
+        seen.add(p.accent);
+        prons.push(p);
+      }
+    }
+    if (!disabled.has('frequencyStars') && e.frequencyStars && !variantStars.has(eKey)) {
+      markVariant(eKey);
+      variantStars.set(eKey, e.frequencyStars);
+    }
+    if (!disabled.has('inflections') && e.inflections?.length) {
+      markVariant(eKey);
+      let infl = variantInfl.get(eKey);
+      if (!infl) {
+        infl = [];
+        variantInfl.set(eKey, infl);
+      }
+      infl.push(...e.inflections);
+    }
     if (e.etymology && !disabled.has('etymology')) {
       if (!etymology) {
         etymology = { chain: e.etymology.chain, firstKnownUse: e.etymology.firstKnownUse, variants: e.etymology.variants };
@@ -711,7 +767,7 @@ async function assembleLookupResult(
       ...(mergedEtymology.variants ?? []).map((v) => (v.source ? `${v.text} [${v.source}]` : v.text)),
     ];
     for (const text of rows) {
-      definitions.push({
+      const def: DefinitionEntry = {
         id: `def-${defIdx}`,
         labels: [t('dict.meta.wordOrigin')],
         text,
@@ -719,7 +775,15 @@ async function assembleLookupResult(
         examples: [],
         source: etymologySource ?? 'dictionary',
         defaultSelected: false,
-      });
+      };
+      definitions.push(def);
+      markVariant('');
+      let bucket = variantDefs.get('');
+      if (!bucket) {
+        bucket = [];
+        variantDefs.set('', bucket);
+      }
+      bucket.push(def);
       defIdx++;
     }
   }
@@ -736,7 +800,8 @@ async function assembleLookupResult(
 
   const freqByResource = new Map<number, (typeof freqEntries)[number]>();
   for (const e of freqEntries) {
-    if (!freqByResource.has(e.resourceId)) freqByResource.set(e.resourceId, e);
+    const cur = freqByResource.get(e.resourceId);
+    if (!cur || e.frequency < cur.frequency) freqByResource.set(e.resourceId, e);
   }
   const frequencies = [...freqByResource.values()]
     .sort((a, b) => {
@@ -748,9 +813,58 @@ async function assembleLookupResult(
     .map((e) => ({ rank: e.frequency, source: resourceNameById.get(e.resourceId) ?? 'frequency' }));
 
   // Status is looked up for the displayed surface term (phrase or hover word).
-  const status = surfaceTerm === initialSurface
+  const termStatus = surfaceTerm === initialSurface
     ? statusInit
     : await readStatus(surfaceTerm);
+  const posStatuses = dictEntries.length > 0
+    ? await readPosStatuses(surfaceTerm)
+    : new Map<string, WordStatus>();
+
+  // pos-dictionary-variants REQ-5: per-pos merged views. Variant order =
+  // first appearance across priority-sorted entries; the '' bucket renders
+  // last as 'other'. Term-level freq rows (no pos) fall back to every variant.
+  const orderedPoses = variantOrder.filter((p) => p !== '');
+  if (variantSeen.has('')) orderedPoses.push('');
+  const freqChipsFor = (vPos: string) => {
+    const posRow = new Map<number, (typeof freqEntries)[number]>();
+    const termRow = new Map<number, (typeof freqEntries)[number]>();
+    for (const f of freqEntries) {
+      if (f.pos === undefined) {
+        if (!termRow.has(f.resourceId)) termRow.set(f.resourceId, f);
+        continue;
+      }
+      if (normalizePos(f.pos) !== vPos) continue;
+      if (!posRow.has(f.resourceId)) posRow.set(f.resourceId, f);
+    }
+    const rows = [...posRow.values(), ...[...termRow.values()].filter((r) => !posRow.has(r.resourceId))];
+    rows.sort((a, b) => {
+      const pa = resourcePriority.indexOf(a.resourceId);
+      const pb = resourcePriority.indexOf(b.resourceId);
+      if (pa !== -1 || pb !== -1) return pa === -1 ? 1 : pb === -1 ? -1 : pa - pb;
+      return a.frequency - b.frequency;
+    });
+    return rows.map((r) => ({
+      rank: r.frequency,
+      source: resourceNameById.get(r.resourceId) ?? 'frequency',
+      ...(r.total != null ? { total: r.total } : {}),
+      ...(r.genres ? { genres: r.genres } : {}),
+    }));
+  };
+  const variants: PosVariant[] | undefined = orderedPoses.some((p) => p !== '')
+    ? orderedPoses.map((pos) => ({
+      pos,
+      prons: variantProns.get(pos) ?? [],
+      frequencies: freqChipsFor(pos),
+      status: posStatuses.get(pos) ?? termStatus,
+      definitions: variantDefs.get(pos) ?? [],
+      ...(variantStars.has(pos) ? { frequencyStars: variantStars.get(pos) } : {}),
+      ...(variantInfl.has(pos) ? { inflections: variantInfl.get(pos) } : {}),
+    }))
+    : undefined;
+  const aggregatePoses = [...new Set([...orderedPoses.filter((p) => p !== ''), ...posStatuses.keys()])];
+  const status = aggregatePoses.length
+    ? aggregatePosStatus(termStatus, posStatuses, aggregatePoses)
+    : termStatus;
 
   return {
     term: surfaceTerm,
@@ -781,6 +895,7 @@ async function assembleLookupResult(
       hypernyms: [...wnSets.hypernyms],
     } : undefined,
     derivedTerms: derivedTermsSet.size > 0 ? [...derivedTermsSet] : undefined,
+    variants,
     matchSource,
   };
 }

@@ -818,12 +818,14 @@ export interface WordStatusResult {
   readonly status: WordStatus;
 }
 
-/** Content → background: set word status. */
+/** Content → background: set word status. `pos` targets a pos-variant
+ *  row (spec pos-dictionary-variants); absent = term-level row. */
 export interface WordStatusSetPayload {
   readonly tabId?: number;
   readonly term: string;
   readonly langCode: string;
   readonly status: WordStatus;
+  readonly pos?: string;
 }
 
 /** Background → content: a word status changed in another tab or was just persisted. */
@@ -832,6 +834,7 @@ export interface WordStatusChangedPayload {
   readonly langCode: string;
   readonly term: string;
   readonly status: WordStatus;
+  readonly pos?: string;
 }
 
 // === Typed Message Helpers ===

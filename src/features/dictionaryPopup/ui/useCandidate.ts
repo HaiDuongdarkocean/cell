@@ -6,7 +6,7 @@ import type { ExternalDictLinkTemplate } from '@/entities/settings';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { nextStatus } from '@/features/dictionary';
 import { setWordStatus } from '@/features/dictionary';
-import { emitWordStatusChanged } from '@/features/dictionary';
+import { emitWordStatusChanged, aggregatePosStatus } from '@/features/dictionary';
 import {
   initDefinitionSelection,
   initExampleSelection,
@@ -24,6 +24,8 @@ import type {
   ExternalDictLink,
   PopupCardCreatorPrefill,
   PopupSelectionSnapshot,
+  PosVariant,
+  VariantFrequency,
 } from '@/entities/dictionary';
 import type { DefinitionSelection, ExampleSelection } from '../logic/definitionSelection';
 
@@ -51,6 +53,17 @@ export interface UseCandidateOptions {
 export interface UseCandidateReturn {
   readonly status: WordStatus;
   readonly cycleStatus: () => void;
+  readonly variant: PosVariant | undefined;
+  readonly variantIndex: number;
+  readonly selectVariant: (index: number) => void;
+  readonly accentIndex: number;
+  readonly cycleAccent: () => void;
+  readonly displayReading: string;
+  readonly displayDefinitions: readonly DefinitionEntry[];
+  readonly displayFrequencies: readonly VariantFrequency[];
+  readonly displayStars: number | undefined;
+  readonly displayInflections: LookupResult['inflections'];
+  readonly imageQueryTerm: string;
   readonly activeTab: PopupTab | null;
   readonly setActiveTab: (tab: PopupTab | null) => void;
   readonly definitionSelection: DefinitionSelection;
@@ -119,6 +132,50 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     setPrevCandidateStatus(candidate.status);
     setStatus(candidate.status);
   }
+  // pos-dictionary-variants: selected variant + per-variant accent/status.
+  const variants = candidate.variants;
+  const [variantIndex, setVariantIndex] = useState(0);
+  const variant = variants?.length ? variants[Math.min(variantIndex, variants.length - 1)] : undefined;
+  const [accentByPos, setAccentByPos] = useState<Record<string, number>>({});
+  const [variantStatusOverrides, setVariantStatusOverrides] = useState<Map<string, WordStatus>>(new Map());
+  const variantSig = (variants ?? []).map((v) => `${v.pos}:${v.status}`).join('|');
+  const [prevVariantSig, setPrevVariantSig] = useState(variantSig);
+  if (prevVariantSig !== variantSig) {
+    setPrevVariantSig(variantSig);
+    setVariantStatusOverrides(new Map());
+  }
+  const candidateKey = `${candidate.langCode}|${candidate.term}`;
+  const [prevCandidateKey, setPrevCandidateKey] = useState(candidateKey);
+  if (prevCandidateKey !== candidateKey) {
+    setPrevCandidateKey(candidateKey);
+    setVariantIndex(0);
+    setAccentByPos({});
+  }
+  const accentIndex = variant ? Math.min(accentByPos[variant.pos] ?? 0, Math.max(0, variant.prons.length - 1)) : 0;
+
+  const selectVariant = useCallback((index: number): void => {
+    setVariantIndex(index);
+  }, []);
+
+  const cycleAccent = useCallback((): void => {
+    if (!variant || variant.prons.length < 2) return;
+    setAccentByPos((prev) => ({
+      ...prev,
+      [variant.pos]: ((prev[variant.pos] ?? 0) + 1) % variant.prons.length,
+    }));
+  }, [variant]);
+
+  const displayReading = variant && variant.prons.length > accentIndex
+    ? variant.prons[accentIndex]!.ipa
+    : candidate.reading;
+  const displayDefinitions = variant?.definitions ?? candidate.definitions;
+  const displayFrequencies = variant?.frequencies.length
+    ? variant.frequencies
+    : candidate.frequencies;
+  const displayStars = variant ? (variant.frequencyStars ?? candidate.frequencyStars) : candidate.frequencyStars;
+  const displayInflections = variant ? (variant.inflections ?? candidate.inflections) : candidate.inflections;
+  const imageQueryTerm = variant?.pos ? `${candidate.term} ${variant.pos}` : candidate.term;
+
   const selectedDefinitionIds = fullSnapshot?.selectedDefinitionIds;
   const selectedExampleIds = fullSnapshot?.selectedExampleIds;
   const [definitionSelection, setDefinitionSelection] = useState<DefinitionSelection>(
@@ -190,22 +247,49 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     initialTranslation,
     initialTranslationSelected,
     preloadMedia,
+    imageQuery: variant?.pos ? imageQueryTerm : undefined,
   });
 
-  const selectedDefinitions = useMemo(
-    () => getSelectedDefinitions(candidate, definitionSelection),
-    [candidate, definitionSelection],
-  );
+  const selectedDefinitions = useMemo(() => {
+    const all = getSelectedDefinitions(candidate, definitionSelection);
+    if (!variant) return all;
+    const variantDefIds = new Set(variant.definitions.map((d) => d.id));
+    return all.filter((d) => variantDefIds.has(d.id));
+  }, [candidate, definitionSelection, variant]);
 
   const selectedDefinitionCount = selectedDefinitions.length;
 
+  const variantStatus = variant
+    ? (variantStatusOverrides.get(variant.pos) ?? variant.status)
+    : status;
+
   const cycleStatus = useCallback((): void => {
-    const newStatus = nextStatus(status);
-    setStatus(newStatus);
-    void setWordStatus(candidate.langCode, candidate.term, newStatus);
-    emitWordStatusChanged({ term: candidate.term, langCode: candidate.langCode, status: newStatus });
+    const pos = variant?.pos;
+    const newStatus = nextStatus(variantStatus);
+    if (variant && pos) {
+      setVariantStatusOverrides((prev) => new Map(prev).set(pos, newStatus));
+      void setWordStatus(candidate.langCode, candidate.term, newStatus, pos);
+      const resolved = new Map(
+        (variants ?? [])
+          .filter((v) => v.pos !== '')
+          .map((v) => [v.pos, v.pos === pos ? newStatus : (variantStatusOverrides.get(v.pos) ?? v.status)]),
+      );
+      emitWordStatusChanged({
+        term: candidate.term,
+        langCode: candidate.langCode,
+        status: aggregatePosStatus(status, resolved),
+        pos,
+      });
+    } else {
+      if (variant) {
+        setVariantStatusOverrides((prev) => new Map(prev).set('', newStatus));
+      }
+      setStatus(newStatus);
+      void setWordStatus(candidate.langCode, candidate.term, newStatus);
+      emitWordStatusChanged({ term: candidate.term, langCode: candidate.langCode, status: newStatus });
+    }
     onStatusChange?.(candidate.term, candidate.langCode, newStatus);
-  }, [candidate.langCode, candidate.term, status, onStatusChange]);
+  }, [variantStatus, variant, variants, status, variantStatusOverrides, candidate.langCode, candidate.term, onStatusChange]);
 
   const [includeAllExamples, setIncludeAllExamples] = useState(false);
   const [ttsVoices, setTtsVoices] = useState<readonly string[]>([]);
@@ -282,8 +366,9 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
       toolbar.imageItems,
       toolbar.imageSelection,
       toolbar.translationSelected,
+      variant ? { variant, accentIndex } : undefined,
     ));
-  }, [onSendToCard, toolbar, candidate, selectedDefinitions, exampleSelection, contextSentence]);
+  }, [onSendToCard, toolbar, candidate, selectedDefinitions, exampleSelection, contextSentence, variant, accentIndex]);
 
   const quickAdd = useCallback(async (): Promise<void> => {
     if (!onQuickAdd) return;
@@ -298,12 +383,24 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
       toolbar.imageItems,
       toolbar.imageSelection,
       toolbar.translationSelected,
+      variant ? { variant, accentIndex } : undefined,
     ));
-  }, [onQuickAdd, toolbar, candidate, selectedDefinitions, exampleSelection, contextSentence]);
+  }, [onQuickAdd, toolbar, candidate, selectedDefinitions, exampleSelection, contextSentence, variant, accentIndex]);
 
   return {
-    status,
+    status: variantStatus,
     cycleStatus,
+    variant,
+    variantIndex,
+    selectVariant,
+    accentIndex,
+    cycleAccent,
+    displayReading,
+    displayDefinitions,
+    displayFrequencies,
+    displayStars,
+    displayInflections,
+    imageQueryTerm,
     activeTab: toolbar.activeTab,
     setActiveTab: toolbar.setActiveTab,
     definitionSelection,

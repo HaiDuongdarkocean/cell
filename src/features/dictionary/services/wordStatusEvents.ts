@@ -4,6 +4,7 @@ export interface WordStatusChangedDetail {
   readonly langCode: string;
   readonly term: string;
   readonly status: WordStatus;
+  readonly pos?: string;
 }
 
 export interface WordStatusRemovedDetail {

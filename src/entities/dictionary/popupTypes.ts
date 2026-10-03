@@ -6,7 +6,7 @@
 // Settings v14 types (DictionaryPopupSettings, CardCreatorSettingsV14) live in
 // `@/entities/settings/types.ts`.
 
-import type { LookupRequest, PhraseMatch, SenseLine, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo } from './types';
+import type { LookupRequest, PhraseMatch, SenseLine, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo, FrequencyGenres, PronunciationAccent } from './types';
 import type { BilingualCue, MediaFile } from '@/entities/media';
 import type { CardCreatorQueueItem } from '@/entities/cardCreator';
 
@@ -87,6 +87,36 @@ export interface ExternalDictLink {
   readonly url: string;
 }
 
+/** One frequency chip on a variant — flat `rank`/`source` shape plus
+ *  optional pos-list extras surfaced on hover (total + genre breakdown). */
+export interface VariantFrequency {
+  readonly rank: number;
+  readonly source: string;
+  readonly total?: number;
+  readonly genres?: FrequencyGenres;
+}
+
+/** Merged per-pos view of a term (spec pos-dictionary-variants REQ-5).
+ *  Derived at lookup — never stored. `pos` is the posNormalize output;
+ *  `''` is the `other` bucket (pos-less senses), always ordered last. */
+export interface PosVariant {
+  readonly pos: string;
+  /** Accent-scoped pronunciations merged across providers —
+   *  dedupe first-wins per accent. */
+  readonly prons: readonly PronunciationAccent[];
+  /** Frequency rows joined to this variant (pos rows + term-level
+   *  fallback rows), sorted resourcePriority → rank. */
+  readonly frequencies: readonly VariantFrequency[];
+  /** Resolved status: `term␟pos` row ?? `term` row ?? 'unknown'. */
+  readonly status: WordStatus;
+  /** Senses belonging to this variant's pos, concatenated across
+   *  providers in resource-priority order (never aligned). */
+  readonly definitions: readonly DefinitionEntry[];
+  /** First-wins stars from the highest-priority provider that has them. */
+  readonly frequencyStars?: number;
+  readonly inflections?: readonly InflectionGroup[];
+}
+
 export interface LookupResult {
   readonly term: string;
   readonly langCode: string;
@@ -116,6 +146,9 @@ export interface LookupResult {
   readonly wordFamily?: WordFamily;
   readonly wordNet?: WordNetInfo;
   readonly derivedTerms?: readonly string[];
+  /** Per-pos merged views (pos-dictionary-variants) — absent/empty keeps
+   *  the popup on today's single-variant rendering. */
+  readonly variants?: readonly PosVariant[];
   readonly matchSource: MatchSource;
   readonly phraseIndexPending?: boolean;
 }
@@ -361,6 +394,9 @@ export interface PopupSelectionSnapshot {
 export interface PopupCardCreatorPrefill extends PopupSelectionSnapshot {
   readonly term: string;
   readonly langCode: string;
+  /** Canonical pos of the variant the card was built from
+   *  (pos-dictionary-variants); absent for term-level prefills. */
+  readonly pos?: string;
   readonly reading: string;
   readonly readingKind?: ReadingKind;
   readonly definitions: readonly {

@@ -68,6 +68,36 @@
   min-width: 0;
 }
 
+.cellAccentLabel {
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-muted-foreground);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-normal);
+  text-transform: lowercase;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.cellAccentLabel:hover:not(:disabled) {
+  color: var(--color-text-primary);
+  text-decoration: underline;
+  text-underline-offset: var(--space-0-5);
+}
+
+.cellAccentLabel:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.cellAccentLabel:disabled {
+  cursor: default;
+}
+
 .cellHeaderLevel {
   font-size: var(--font-size-sm);
   color: var(--color-text-tertiary);

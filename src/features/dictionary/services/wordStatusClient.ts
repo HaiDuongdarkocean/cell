@@ -53,10 +53,11 @@ export async function setWordStatus(
   langCode: string,
   term: string,
   status: WordStatus,
+  pos?: string,
 ): Promise<void> {
   const response = await sendMessage<MessageResponse>({
     type: MESSAGE_TYPES.WORD_STATUS_SET,
-    payload: { tabId: -1, langCode: normalizeLangCode(langCode), term, status },
+    payload: { tabId: -1, langCode: normalizeLangCode(langCode), term, status, ...(pos ? { pos } : {}) },
   });
 
   if (!response?.success) {
@@ -78,11 +79,12 @@ export async function listWordStatuses(langCode: string): Promise<WordStatusEntr
   return response.data.entries;
 }
 
-/** Cycle a term's status atomically in the background; returns the new status. */
-export async function cycleWordStatus(langCode: string, term: string): Promise<WordStatus> {
+/** Cycle a term's status atomically in the background; returns the new status.
+ *  `pos` cycles the pos-variant row instead (spec pos-dictionary-variants). */
+export async function cycleWordStatus(langCode: string, term: string, pos?: string): Promise<WordStatus> {
   const response = await sendMessage<MessageResponse<{ status: WordStatus }>>({
     type: MESSAGE_TYPES.WORD_STATUS_CYCLE,
-    payload: { tabId: -1, langCode: normalizeLangCode(langCode), term },
+    payload: { tabId: -1, langCode: normalizeLangCode(langCode), term, ...(pos ? { pos } : {}) },
   });
 
   if (!response?.success || !response.data) {

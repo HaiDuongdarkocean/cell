@@ -68,6 +68,24 @@ function parseSense(frag, pos) {
   return sense;
 }
 
+function parseProns(frag, accent) {
+  const prons = [];
+  let pendingAudio;
+  let cursor = 0;
+  for (const b of blocks(frag, 'span', 'pron')) {
+    const seg = frag.slice(cursor, b.start);
+    const audios = [...seg.matchAll(/href="(sound:\/\/[^"]+)"/g)];
+    if (audios.length) pendingAudio = audios[audios.length - 1][1];
+    const ipa = stripHtml(b.inner).replace(/^[\s/[\]]+|[\s/[\]]+$/g, '');
+    if (ipa) {
+      prons.push({ accent, ipa, ...(pendingAudio ? { audioRef: pendingAudio } : {}) });
+      pendingAudio = undefined;
+    }
+    cursor = b.end;
+  }
+  return prons;
+}
+
 function parseInflections(frag) {
   const groups = new Map();
   for (const { inner: row } of blocks(frag, 'span', 'tr')) {
@@ -118,13 +136,53 @@ export const macmillan = {
       }
     };
 
-    const pron = blockText(html, 'span', 'pron').replace(/^\/+|\/+$/g, '');
-    if (pron) out.pronunciation = pron;
-
-    const stars = blocks(html, 'span', 'stars-grp').next();
-    if (!stars.done) {
-      const n = (stars.value.inner.match(/icon-star/g) ?? []).length;
-      if (n) out.frequencyStars = n;
+    const homographs = [...blocks(html, 'div', 'homograph')];
+    if (homographs.length) {
+      const entries = [];
+      for (const { inner: hom } of homographs) {
+        const pos = blockText(hom, 'span', 'part-of-speech-ctx');
+        const entry = { ...(pos ? { pos } : {}), senses: [] };
+        const prons = parseProns(hom, 'AmE');
+        if (prons.length) {
+          entry.prons = prons;
+          entry.pronunciation = prons[0].ipa;
+        }
+        const stars = blocks(hom, 'span', 'stars-grp').next();
+        if (!stars.done) {
+          const n = (stars.value.inner.match(/icon-star/g) ?? []).length;
+          if (n) entry.frequencyStars = n;
+        }
+        const infl = parseInflections(hom);
+        if (infl.length) entry.inflections = infl;
+        for (const { inner: gref } of blocks(hom, 'div', 'gref-group')) {
+          const type = blockText(gref, 'span', 'gref-type');
+          const target = stripHtml(gref.match(/<a href="entry:\/\/[^"]+"[^>]*>([\s\S]*?)<\/a>/)?.[1] ?? '');
+          if (type && target) {
+            entry.senses.push({ ...(pos ? { pos } : {}), lines: [{ role: 'gloss', text: `${type} ${target}` }] });
+            rel(target, 'lemma');
+          }
+        }
+        for (const { inner: senseFrag } of blocks(hom, 'div', 'sense')) {
+          const sense = parseSense(senseFrag, pos);
+          if (sense) entry.senses.push(sense);
+        }
+        entries.push(entry);
+      }
+      out.entries = entries;
+    } else {
+      const prons = parseProns(html, 'AmE');
+      if (prons.length) {
+        out.prons = prons;
+        out.pronunciation = prons[0].ipa;
+      } else {
+        const pron = blockText(html, 'span', 'pron').replace(/^\/+|\/+$/g, '');
+        if (pron) out.pronunciation = pron;
+      }
+      const stars = blocks(html, 'span', 'stars-grp').next();
+      if (!stars.done) {
+        const n = (stars.value.inner.match(/icon-star/g) ?? []).length;
+        if (n) out.frequencyStars = n;
+      }
     }
 
     for (const m of html.matchAll(/<li class="pv-xref">[\s\S]*?<a href="entry:\/\/[^"]+">([\s\S]*?)<\/a>/g)) {
@@ -144,20 +202,17 @@ export const macmillan = {
       }
     }
 
-    for (const { inner: hom } of blocks(html, 'div', 'homograph')) {
-      const pos = blockText(hom, 'span', 'part-of-speech-ctx');
-      const infl = parseInflections(hom);
-      if (infl.length) (out.inflections ??= []).push(...infl);
-      for (const { inner: gref } of blocks(hom, 'div', 'gref-group')) {
+    if (!homographs.length) {
+      for (const { inner: gref } of blocks(html, 'div', 'gref-group')) {
         const type = blockText(gref, 'span', 'gref-type');
         const target = stripHtml(gref.match(/<a href="entry:\/\/[^"]+"[^>]*>([\s\S]*?)<\/a>/)?.[1] ?? '');
         if (type && target) {
-          out.senses.push({ ...(pos ? { pos } : {}), lines: [{ role: 'gloss', text: `${type} ${target}` }] });
+          out.senses.push({ lines: [{ role: 'gloss', text: `${type} ${target}` }] });
           rel(target, 'lemma');
         }
       }
-      for (const { inner: senseFrag } of blocks(hom, 'div', 'sense')) {
-        const sense = parseSense(senseFrag, pos);
+      for (const { inner: senseFrag } of blocks(html, 'div', 'sense')) {
+        const sense = parseSense(senseFrag, '');
         if (sense) out.senses.push(sense);
       }
     }

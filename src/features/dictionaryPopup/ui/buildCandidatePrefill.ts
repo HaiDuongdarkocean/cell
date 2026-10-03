@@ -1,4 +1,4 @@
-import type { LookupResult, DefinitionEntry, AudioItem, ImageItem, PopupCardCreatorPrefill } from '@/entities/dictionary';
+import type { LookupResult, DefinitionEntry, AudioItem, ImageItem, PopupCardCreatorPrefill, PosVariant } from '@/entities/dictionary';
 import { getSelectedExamples, toSelectedExampleIds } from '../logic/definitionSelection';
 import type { ExampleSelection } from '../logic/definitionSelection';
 
@@ -17,6 +17,7 @@ export function buildPrefill(
   imageItems: readonly ImageItem[],
   imageSelection: Map<string, boolean>,
   translationSelected = false,
+  variant?: { readonly variant: PosVariant; readonly accentIndex: number },
 ): PopupCardCreatorPrefill {
   const defs = selectedDefinitions.length > 0
     ? selectedDefinitions
@@ -43,8 +44,9 @@ export function buildPrefill(
   return {
     term: result.term,
     langCode: result.langCode,
-    reading: result.reading,
+    reading: variant ? (variant.variant.prons[variant.accentIndex]?.ipa ?? result.reading) : result.reading,
     readingKind: result.readingKind,
+    ...(variant?.variant.pos ? { pos: variant.variant.pos } : {}),
     definitions: defs.map((d) => ({
       pos: d.pos,
       labels: d.labels,

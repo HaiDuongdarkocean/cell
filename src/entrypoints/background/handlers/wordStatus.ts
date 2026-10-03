@@ -26,8 +26,12 @@ import {
   getWordStatus,
   getWordStatuses,
   getAllWordStatuses,
+  getPosStatusRows,
+  aggregatePosStatus,
   setWordStatus,
+  setWordStatusPos,
   cycleWordStatus,
+  cycleWordStatusPos,
   deleteWordStatus,
 } from '@/features/dictionary/services/wordStatusStore';
 import {
@@ -48,6 +52,16 @@ import {
   requestRemoteCheck,
 } from '../syncTriggers';
 import { notifyUserMarkedKnown } from '@/features/ankiStatusSync';
+
+/** Term status for cross-tab highlighting: least-learned aggregate over
+ *  materialized pos rows + the term row (spec REQ-9 approximation). */
+async function aggregateTermStatus(langCode: string, term: string): Promise<WordStatus> {
+  const [termStatus, posRows] = await Promise.all([
+    getWordStatus(langCode, term),
+    getPosStatusRows(langCode, term),
+  ]);
+  return aggregatePosStatus(termStatus, posRows);
+}
 
 /** Broadcast a status change/delete to content scripts in all other tabs. */
 async function broadcastToOtherTabs(
@@ -74,12 +88,17 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
       };
     }
 
-    const { term, langCode, status, tabId } = parsed.data;
+    const { term, langCode, status, tabId, pos } = parsed.data;
     try {
-      await setWordStatus(langCode, term, status, { source: 'user', sourceAt: Date.now() });
+      if (pos) {
+        await setWordStatusPos(langCode, term, pos, status, { source: 'user', sourceAt: Date.now() });
+      } else {
+        await setWordStatus(langCode, term, status, { source: 'user', sourceAt: Date.now() });
+      }
       if (status === 'known') void notifyUserMarkedKnown(langCode, term);
       if (tabId !== undefined) {
-        void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_CHANGED, { langCode, term, status });
+        const termStatus = pos ? await aggregateTermStatus(langCode, term) : status;
+        void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_CHANGED, { langCode, term, status: termStatus, ...(pos ? { pos } : {}) });
       }
       requestRemoteCheck();
       return { success: true };
@@ -162,11 +181,14 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
       };
     }
 
-    const { term, langCode, tabId } = parsed.data;
+    const { term, langCode, tabId, pos } = parsed.data;
     try {
-      const status = await cycleWordStatus(langCode, term);
+      const status = pos
+        ? await cycleWordStatusPos(langCode, term, pos)
+        : await cycleWordStatus(langCode, term);
       if (status === 'known') void notifyUserMarkedKnown(langCode, term);
-      void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_CHANGED, { langCode, term, status });
+      const termStatus = pos ? await aggregateTermStatus(langCode, term) : status;
+      void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_CHANGED, { langCode, term, status: termStatus, ...(pos ? { pos } : {}) });
       requestRemoteCheck();
       return { success: true, data: { status } };
     } catch (err) {

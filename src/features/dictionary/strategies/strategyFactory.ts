@@ -11,6 +11,7 @@ import { TermBankStrategy } from './termBankStrategy';
 import { JsonEntriesStrategy } from './jsonEntriesStrategy';
 import { SqliteStrategy } from './sqliteStrategy';
 import { WordlistJsonStrategy } from './wordlistJsonStrategy';
+import { JsonFrequencyStrategy } from './jsonFrequencyStrategy';
 import { UnsupportedFormatError } from '../logic/importErrors';
 import type { BaseImportStrategy } from './baseImportStrategy';
 
@@ -32,6 +33,8 @@ export function createStrategy(
       return new SqliteStrategy(options, { ...fileData, resourceType }) as unknown as BaseImportStrategy<unknown, unknown>;
     case 'json-entries':
       return new JsonEntriesStrategy(options, fileData) as unknown as BaseImportStrategy<unknown, unknown>;
+    case 'json-frequency':
+      return new JsonFrequencyStrategy(options, fileData) as unknown as BaseImportStrategy<unknown, unknown>;
     case 'wordlist-json':
       return new WordlistJsonStrategy(options, fileData) as unknown as BaseImportStrategy<unknown, unknown>;
     default:

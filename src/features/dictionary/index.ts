@@ -20,7 +20,7 @@ export type { PhraseIndexInput, PhraseIndex } from './logic/phraseIndexCompiler'
 export { parsePhraseTemplate } from './logic/phraseTemplateParser';
 export { addFrequencyEntry, findFrequencyByTerm } from './repositories/frequencyRepository';
 export { putPhraseIndex, getPhraseIndex } from './repositories/phraseIndexRepository';
-export { getWordStatus, nextStatus, setWordStatusFromSync } from './services/wordStatusStore';
+export { getWordStatus, nextStatus, setWordStatusFromSync, getPosStatusRows, getPosStatuses, getWordStatusPos, setWordStatusPos, cycleWordStatusPos, aggregatePosStatus, posStatusKey, splitPosKey } from './services/wordStatusStore';
 export { normalizeTerm } from './logic/normalizationPipeline';
 export { matchPhraseAll, comparePhraseMatches, matchPhrase, tokenizeSentence } from './logic/phraseMatcher';
 export type { PhraseMatch, PhraseMatchRequest, SentenceToken } from './logic/phraseMatcher';
