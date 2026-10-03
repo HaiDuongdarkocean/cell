@@ -26,14 +26,3 @@ div.menu {
   color: var(--color-text-secondary);
   letter-spacing: var(--tracking-wide);
 }
-
-.generate {
-  justify-content: flex-end;
-  min-inline-size: calc(11ch + var(--iconbutton-icon-sm) + var(--space-6));
-}
-
-@container (max-width: 380px) {
-  .generate {
-    min-inline-size: 0;
-  }
-}
