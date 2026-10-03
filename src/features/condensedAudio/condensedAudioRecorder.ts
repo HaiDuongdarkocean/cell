@@ -20,6 +20,8 @@ const SEEK_GRACE_MS = 2500;
 const PLAY_RETRY_MS = 1000;
 const PLAY_GRACE_MS = 1500;
 const PAUSE_GIVE_UP_MS = 10_000;
+const SOURCE_WAIT_MS = 8_000;
+const SOURCE_WAIT_POLL_MS = 250;
 
 interface RecorderSession {
   readonly recordId: string;
@@ -69,6 +71,16 @@ function pickVideoElement(): HTMLVideoElement | null {
   );
   videos.sort((a, b) => b.duration - a.duration);
   return videos[0] ?? null;
+}
+
+async function waitForVideoSource(): Promise<HTMLVideoElement | null> {
+  const deadline = Date.now() + SOURCE_WAIT_MS;
+  let video = pickVideoElement();
+  while (!video && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, SOURCE_WAIT_POLL_MS));
+    video = pickVideoElement();
+  }
+  return video;
 }
 
 function postChunk(payload: CondenseAudioChunkPayload): void {
@@ -253,16 +265,16 @@ function teardownSession(s: RecorderSession): void {
   if (session === s) session = null;
 }
 
-export function startCondensedAudioSession(
+export async function startCondensedAudioSession(
   recordId: string,
   rawRanges: readonly CueRange[],
   padMs = 0,
-): { ok: true } | { ok: false; error: string } {
+): Promise<{ ok: true } | { ok: false; error: string }> {
   if (session) {
     if (session.recordId === recordId) return { ok: true };
     abortSession(session.recordId, false);
   }
-  const video = pickVideoElement();
+  const video = await waitForVideoSource();
   if (!video || video.muted || video.volume === 0) {
     failSession(recordId, video ? 'capture-blocked' : 'no-source');
     return { ok: false, error: video ? 'capture-blocked' : 'no-source' };

@@ -1,0 +1,24 @@
+{
+  "id": "tabs-sendmessage-all-frames",
+  "title": "chrome.tabs.sendMessage without frameId reaches EVERY frame's content script — a shared record/session keyed by one recordId gets raced by iframes; gate handlers on window.top === window or target the originating frameId",
+  "category": ["messaging", "media", "bug-pattern"],
+  "tags": [
+    "tabs-sendmessage",
+    "iframe",
+    "content-script",
+    "all-frames",
+    "condensed-audio",
+    "youtube",
+    "session",
+    "race"
+  ],
+  "trigger": "a session/record dies instantly with a 'no-source'/'cancelled' error on multi-frame pages (YouTube embeds, ads iframes) even though the top frame has a perfectly good video",
+  "problem": "On YouTube, CONDENSE_AUDIO_SESSION_START was delivered to every frame running the content script. The top frame started a healthy session and mounted the pill; an iframe with no <video> ran the same handler, hit the no-video branch, and posted failSession('no-source'). That error marked the SHARED record (one recordId) failed → background broadcast CONDENSE_AUDIO_EVENT 'failed' → the top frame tore down its own session → pill flashed and vanished, record ended 'cancelled' in <1s.",
+  "solution": "Return early in the SESSION_START handler when window.top !== window — only the top frame owns the tab-scoped session. Additionally make the start path resilient: waitForVideoSource polls pickVideoElement up to SOURCE_WAIT_MS (8s) before failing 'no-source', so clicking record while metadata is still loading (duration 0) doesn't kill the session instantly.",
+  "principle": "tabs.sendMessage is tab-scoped, not frame-scoped — every handler for a tab-scoped message that mutates shared background state must first decide which frame owns the action (top frame, or sender frameId from the originating content→bg message). If a failure branch in a non-owner frame can fail shared state, that's a race. Separately: 'no video found' at click time is often a timing artifact (metadata pending, SPA mount) — wait briefly before declaring no-source.",
+  "files": [
+    "src/entrypoints/content/runtimeMessages.ts",
+    "src/features/condensedAudio/condensedAudioRecorder.ts"
+  ],
+  "related": ["session-boundary-instant-finalize", "mediarecorder-transit-pause-latch"]
+}

@@ -3226,6 +3226,27 @@
     "finalize"
    ],
    "trigger": "a pill/overlay flashes then disappears right after session start, or NaN shows in elapsed counters, especially on multi-video pages"
+  },
+  {
+   "type": "experience",
+   "id": "tabs-sendmessage-all-frames",
+   "title": "tabs.sendMessage without frameId reaches every frame — iframes race shared state; gate on window.top === window",
+   "category": [
+    "messaging",
+    "media",
+    "bug-pattern"
+   ],
+   "tags": [
+    "tabs-sendmessage",
+    "iframe",
+    "content-script",
+    "all-frames",
+    "condensed-audio",
+    "youtube",
+    "session",
+    "race"
+   ],
+   "trigger": "a session/record dies instantly with no-source/cancelled on multi-frame pages (YouTube embeds) though the top frame has a good video"
   }
  ]
 }

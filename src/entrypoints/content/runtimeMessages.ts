@@ -84,6 +84,7 @@ export function installRuntimeMessageListener(): void {
     }
 
     if (msg?.type === MESSAGE_TYPES.CONDENSE_AUDIO_SESSION_START) {
+      if (window.top !== window) return false;
       const payload = messagePayload<CondenseAudioSessionStartPayload>(
         msg,
         MESSAGE_TYPES.CONDENSE_AUDIO_SESSION_START,
@@ -92,9 +93,12 @@ export function installRuntimeMessageListener(): void {
         sendResponse({ success: false, error: 'invalid payload' });
         return false;
       }
-      const result = startCondensedAudioSession(payload.recordId, payload.ranges, payload.padMs ?? 0);
-      sendResponse(result.ok ? { success: true } : { success: false, error: result.error });
-      return false;
+      void startCondensedAudioSession(payload.recordId, payload.ranges, payload.padMs ?? 0).then(
+        (result) => {
+          sendResponse(result.ok ? { success: true } : { success: false, error: result.error });
+        },
+      );
+      return true;
     }
 
     if (msg?.type === MESSAGE_TYPES.CONDENSE_AUDIO_SESSION_STOP) {

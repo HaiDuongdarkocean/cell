@@ -126,7 +126,7 @@ describe('startCondensedAudioSession', () => {
   let savedRecorder: unknown;
   let savedStream: unknown;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.useFakeTimers();
     FakeMediaRecorder.instances = [];
     mockPillHandlers = null;
@@ -146,7 +146,7 @@ describe('startCondensedAudioSession', () => {
       }
     };
     video = makeVideo();
-    const result = startCondensedAudioSession('rec-1', RANGES);
+    const result = await startCondensedAudioSession('rec-1', RANGES);
     recorder = FakeMediaRecorder.instances[0]!;
     expect(result).toEqual({ ok: true });
   });
@@ -159,7 +159,7 @@ describe('startCondensedAudioSession', () => {
     jest.useRealTimers();
   });
 
-  it('picks the visible video over a longer hidden one', () => {
+  it('picks the visible video over a longer hidden one', async () => {
     stopCondensedAudioSession('rec-1');
     const hidden = document.createElement('video');
     Object.defineProperty(hidden, 'duration', { value: 600, configurable: true });
@@ -168,11 +168,24 @@ describe('startCondensedAudioSession', () => {
       ({ width: 640, height: 360 }) as DOMRect;
     Object.defineProperty(video.el, 'videoWidth', { value: 640, configurable: true });
     Object.defineProperty(video.el, 'videoHeight', { value: 360, configurable: true });
-    const result = startCondensedAudioSession('rec-visible', RANGES);
+    const result = await startCondensedAudioSession('rec-visible', RANGES);
     expect(result).toEqual({ ok: true });
     expect(mockMountedVideo).toBe(video.el);
     hidden.remove();
     stopCondensedAudioSession('rec-visible');
+  });
+
+  it('waits for a video source that appears after the session starts', async () => {
+    stopCondensedAudioSession('rec-1');
+    video.el.remove();
+    const pending = startCondensedAudioSession('rec-wait', RANGES);
+    await jest.advanceTimersByTimeAsync(400);
+    const late = makeVideo();
+    await jest.advanceTimersByTimeAsync(400);
+    const result = await pending;
+    expect(result).toEqual({ ok: true });
+    stopCondensedAudioSession('rec-wait');
+    late.el.remove();
   });
 
   it('keeps the recorder paused until playback enters the first cue range', () => {
@@ -200,9 +213,9 @@ describe('startCondensedAudioSession', () => {
     expect(recorder.state).toBe('recording');
   });
 
-  it('plays through short gaps without seeking', () => {
+  it('plays through short gaps without seeking', async () => {
     stopCondensedAudioSession('rec-1');
-    const result = startCondensedAudioSession('rec-small', [
+    const result = await startCondensedAudioSession('rec-small', [
       { startMs: 1000, endMs: 3000 },
       { startMs: 4000, endMs: 5000 },
     ]);
@@ -221,9 +234,9 @@ describe('startCondensedAudioSession', () => {
     stopCondensedAudioSession('rec-small');
   });
 
-  it('re-drives the initial jump to the first cue when the seek does not land', () => {
+  it('re-drives the initial jump to the first cue when the seek does not land', async () => {
     stopCondensedAudioSession('rec-1');
-    const result = startCondensedAudioSession('rec-far', [
+    const result = await startCondensedAudioSession('rec-far', [
       { startMs: 30000, endMs: 32000 },
     ]);
     expect(result).toEqual({ ok: true });
@@ -236,9 +249,9 @@ describe('startCondensedAudioSession', () => {
     stopCondensedAudioSession('rec-far');
   });
 
-  it('keeps driving the first cue while playback is blocked at session start', () => {
+  it('keeps driving the first cue while playback is blocked at session start', async () => {
     stopCondensedAudioSession('rec-1');
-    const result = startCondensedAudioSession('rec-far2', [
+    const result = await startCondensedAudioSession('rec-far2', [
       { startMs: 30000, endMs: 32000 },
     ]);
     expect(result).toEqual({ ok: true });
