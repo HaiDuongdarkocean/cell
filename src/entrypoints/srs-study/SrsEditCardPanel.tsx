@@ -67,7 +67,7 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
   const [tags, setTags] = useState('');
   const [events, setEvents] = useState<readonly SrsReviewRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [generating, setGenerating] = useState<string | null>(null);
+  const [generating, setGenerating] = useState<ReadonlySet<string>>(new Set());
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -308,19 +308,23 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
 
   async function generateField(field: SrsField): Promise<void> {
     const kind = generateKind(field);
-    if (!kind || generating) return;
-    setGenerating(field.id);
+    if (!kind || generating.has('all') || generating.has(field.id)) return;
+    setGenerating((prev) => new Set(prev).add(field.id));
     setNotice(null);
     try {
       await runGenerate(field, kind);
     } finally {
-      setGenerating(null);
+      setGenerating((prev) => {
+        const next = new Set(prev);
+        next.delete(field.id);
+        return next;
+      });
     }
   }
 
   async function generateAll(): Promise<void> {
-    if (generating || !notetype) return;
-    setGenerating('all');
+    if (generating.size > 0 || !notetype) return;
+    setGenerating(new Set(['all']));
     setNotice(null);
     try {
       const s = stateRef.current;
@@ -338,7 +342,7 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
       }
       setNotice(t(filled ? 'cardCreator.toast.generate.success' : 'cardCreator.toast.generate.empty'));
     } finally {
-      setGenerating(null);
+      setGenerating(new Set());
     }
   }
 
@@ -371,7 +375,7 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
         {!masked && (
           <GenerateAllButton
             onClick={() => { void generateAll(); }}
-            disabled={generating !== null}
+            disabled={generating.size > 0}
             className={styles.generateAll}
             dataId="srs-edit-generate-all"
           />
@@ -433,7 +437,8 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
           const field = fieldById.get(id);
           if (field) void generateField(field);
         }}
-        generateDisabled={generating !== null}
+        generateDisabled={generating.has('all')}
+        generatingIds={generating}
         dataIdPrefix="srs-edit"
         tagsValue={tags}
         onTagsChange={(v) => { setTags(v); }}

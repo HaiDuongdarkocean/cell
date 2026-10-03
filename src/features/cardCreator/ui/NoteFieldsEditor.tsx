@@ -12,7 +12,6 @@ export interface NoteEditorField {
   readonly label: string;
   readonly kind: 'text' | 'audio' | 'image';
   readonly placeholder?: string;
-  readonly pastable?: boolean;
   readonly generatable?: boolean;
   readonly dataId?: string;
 }
@@ -24,6 +23,7 @@ interface NoteFieldsEditorProps {
   readonly renderMedia: (id: string) => ReactNode;
   readonly onGenerate?: (id: string) => void;
   readonly generateDisabled?: boolean;
+  readonly generatingIds?: ReadonlySet<string>;
   readonly dataIdPrefix: string;
   readonly tagsValue?: string;
   readonly onTagsChange?: (value: string) => void;
@@ -36,6 +36,7 @@ export function NoteFieldsEditor({
   renderMedia,
   onGenerate,
   generateDisabled = false,
+  generatingIds,
   dataIdPrefix,
   tagsValue,
   onTagsChange,
@@ -55,6 +56,7 @@ export function NoteFieldsEditor({
                 size="sm"
                 onClick={() => onGenerate(field.id)}
                 disabled={generateDisabled}
+                loading={generatingIds?.has(field.id) ?? false}
                 aria-label={t('cardCreator.action.generateFor', [field.label])}
                 title={t('cardCreator.action.generateFor', [field.label])}
                 trailingIcon={<Icon name="zap" size="sm" />}
@@ -71,7 +73,6 @@ export function NoteFieldsEditor({
                 onChange={(v) => onTextChange(field.id, v)}
                 placeholder={field.placeholder}
                 aria-label={field.label}
-                pastable={field.pastable}
                 dataId={dataId}
               />
             ) : (
