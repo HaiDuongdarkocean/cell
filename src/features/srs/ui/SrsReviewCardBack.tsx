@@ -49,10 +49,6 @@ const DictationResult = memo(function DictationResult({ typed, expected }: { typ
   if (!alignment.typed) return null;
   return (
     <Box className={`${styles.dictationResult} ${alignment.correct ? styles.dictationOk : styles.dictationBad}`}>
-      <Text className={styles.dictationVerdict}>
-        <Icon name={alignment.correct ? 'check' : 'x'} size="xs" />
-        {t(alignment.correct ? 'srs.review.dictationCorrect' : 'srs.review.dictationIncorrect')}
-      </Text>
       <Text className={styles.dictationRow}>
         <span className={styles.dictationLabel}>{t('srs.review.youTyped')}</span>
         <MarkedText text={alignment.typed} marks={alignment.typedMarks} markClass={styles.dictationMiss} />

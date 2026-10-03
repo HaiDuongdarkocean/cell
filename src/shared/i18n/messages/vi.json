@@ -1950,8 +1950,6 @@
   "settings.ankiSync.syncNow": "Đồng bộ ngay",
   "settings.ankiSync.failing": "Đồng bộ Anki thất bại liên tiếp — kiểm tra Anki và AnkiConnect đang chạy.",
   "srs.review.typeSentence": "Gõ lại câu",
-  "srs.review.dictationCorrect": "Chính xác",
-  "srs.review.dictationIncorrect": "Chưa đúng — xem các ký tự được đánh dấu",
   "srs.review.youTyped": "Bạn gõ",
   "srs.review.dictationExpected": "Đáp án",
   "srs.variant.scope.both": "Từ + Câu",

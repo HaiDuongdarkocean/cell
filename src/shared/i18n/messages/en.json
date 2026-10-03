@@ -1950,8 +1950,6 @@
   "settings.ankiSync.syncNow": "Sync now",
   "settings.ankiSync.failing": "Anki sync has failed repeatedly — check that Anki and AnkiConnect are running.",
   "srs.review.typeSentence": "Type the sentence",
-  "srs.review.dictationCorrect": "Correct",
-  "srs.review.dictationIncorrect": "Not quite — check the highlighted letters",
   "srs.review.youTyped": "You typed",
   "srs.review.dictationExpected": "Expected",
   "srs.variant.scope.both": "Word + Sentence",

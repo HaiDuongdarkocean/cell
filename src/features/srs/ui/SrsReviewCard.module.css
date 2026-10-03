@@ -306,22 +306,6 @@
   background: var(--color-error-subtle);
 }
 
-.dictationVerdict {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-}
-
-.dictationOk .dictationVerdict {
-  color: var(--color-success);
-}
-
-.dictationBad .dictationVerdict {
-  color: var(--color-error);
-}
-
 .dictationRow {
   font-size: var(--font-size-md);
   text-align: center;
