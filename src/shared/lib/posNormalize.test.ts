@@ -21,6 +21,14 @@ describe('normalizePos', () => {
     expect(normalizePos('PREP')).toBe('preposition');
   });
 
+  it('strips trailing dots from dictionary abbreviations', () => {
+    expect(normalizePos('adj.')).toBe('adjective');
+    expect(normalizePos('n.')).toBe('noun');
+    expect(normalizePos('v.')).toBe('verb');
+    expect(normalizePos('adv.')).toBe('adverb');
+    expect(normalizePos('v.t.')).toBe('verb');
+  });
+
   it('passes unknown labels through lowercased', () => {
     expect(normalizePos('X')).toBe('x');
     expect(normalizePos('modal verb')).toBe('modal verb');

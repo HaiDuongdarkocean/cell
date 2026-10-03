@@ -165,15 +165,13 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     }));
   }, [variant]);
 
-  const displayReading = variant && variant.prons.length > accentIndex
-    ? variant.prons[accentIndex]!.ipa
+  const displayReading = variant
+    ? (variant.prons[accentIndex]?.ipa ?? '')
     : candidate.reading;
   const displayDefinitions = variant?.definitions ?? candidate.definitions;
-  const displayFrequencies = variant?.frequencies.length
-    ? variant.frequencies
-    : candidate.frequencies;
-  const displayStars = variant ? (variant.frequencyStars ?? candidate.frequencyStars) : candidate.frequencyStars;
-  const displayInflections = variant ? (variant.inflections ?? candidate.inflections) : candidate.inflections;
+  const displayFrequencies = variant ? variant.frequencies : candidate.frequencies;
+  const displayStars = variant ? variant.frequencyStars : candidate.frequencyStars;
+  const displayInflections = variant ? variant.inflections : candidate.inflections;
   const imageQueryTerm = variant?.pos ? `${candidate.term} ${variant.pos}` : candidate.term;
 
   const selectedDefinitionIds = fullSnapshot?.selectedDefinitionIds;

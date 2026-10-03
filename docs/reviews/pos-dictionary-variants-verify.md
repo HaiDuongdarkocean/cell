@@ -46,6 +46,29 @@ label `ame → bre` on click; `well` nav ends with `other`; `serendipity`
 | REQ-10 prefill = selected variant | met | `buildCandidatePrefill` takes variant + accentIndex; `PopupSelectionSnapshot.pos` set |
 | REQ-11 no-pos regression | met | single/other-only terms → `variants` undefined → legacy flat render; serendipity verified |
 
+## Post-ship Brave e2e (second pass)
+
+Real Brave (MV3, production `dist`) + seeded `orca-dict-*-en` IndexedDB on mock
+StreamFlix (`tmp/pos-dictionary-variants/e2e-brave.mjs`, evidence
+`tmp/pos-dictionary-variants/e2e/*.png` — deviceScaleFactor 2): **28/28
+assertions pass** over deep shadow-DOM reads + real mouse clicks.
+
+- `still` nav `[adjective, adverb, noun, other]`; per-variant swap verified for
+  IPA (`ame /stɪl/` → `bre`), status (`Unknown`/`Learning` per pos row), COCA
+  chips (720 / 115 from raw `r` / 5,200 from raw `n` / 999 term-fallback),
+  word forms (`plural stills` noun-only), senses.
+- Status cycle writes `still␟adjective = tracking` row confirmed in IDB.
+- `matter` nav `[noun, verb]`, statuses `Known`/`Tracking` per pos row, verb
+  inflections scoped; single accent → non-interactive label.
+- `silence` (single pos) → nav hidden, IPA renders.
+
+### Defects found by the e2e (fixed post-ship)
+
+| Finding | Disposition |
+|---|---|
+| `normalizePos('adj.')` returned `'adj.'` — trailing-dot dictionary abbreviations split senses into a pos-less twin variant, divorcing defs from prons/freq/status | **Fixed** — key now strips trailing dots before alias lookup (`adj.`/`n.`/`v.`/`adv.`/`v.t.` → canonical); matches the abbreviation claim already in ADR-113/arch table |
+| POS-scoped fields leaked across variants — `displayInflections`/`displayStars`/`displayFrequencies`/`displayReading` fell back to term-level values when the selected variant lacked them (noun `plural stills` painted under adjective/adverb) | **Fixed** — strict `V.field` per spec swap contract (spec §Popup swap); term-level freq fallback still folded into `V.frequencies` at orchestration |
+
 ## Residuals
 
 - `.mdd` audio extraction deferred by spec — `sound://` refs stored verbatim.

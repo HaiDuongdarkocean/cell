@@ -51,7 +51,7 @@ const ALIASES: Readonly<Record<string, string>> = {
 };
 
 export function normalizePos(raw: string): string {
-  const key = raw.trim().toLowerCase().normalize('NFC').replace(/\s+/g, ' ');
+  const key = raw.trim().toLowerCase().normalize('NFC').replace(/\s+/g, ' ').replace(/\.+$/, '');
   if (!key) return '';
   return ALIASES[key] ?? key;
 }
