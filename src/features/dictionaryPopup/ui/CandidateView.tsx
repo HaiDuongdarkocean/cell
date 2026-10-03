@@ -656,11 +656,15 @@ function DefinitionItem({
           })}
         </div>
       )}
-      {definition.synonyms && definition.synonyms.length > 0 && (
-        <span className={styles.defLine} data-role="note">{t('dict.definitions.synonyms', [definition.synonyms.join(', ')])}</span>
-      )}
-      {definition.antonyms && definition.antonyms.length > 0 && (
-        <span className={styles.defLine} data-role="note">{t('dict.definitions.antonyms', [definition.antonyms.join(', ')])}</span>
+      {(Boolean(definition.synonyms?.length) || Boolean(definition.antonyms?.length)) && (
+        <div className={styles.defTail}>
+          {definition.synonyms && definition.synonyms.length > 0 && (
+            <span className={styles.defLine} data-role="note">{t('dict.definitions.synonyms', [definition.synonyms.join(', ')])}</span>
+          )}
+          {definition.antonyms && definition.antonyms.length > 0 && (
+            <span className={styles.defLine} data-role="note">{t('dict.definitions.antonyms', [definition.antonyms.join(', ')])}</span>
+          )}
+        </div>
       )}
     </div>
   );
