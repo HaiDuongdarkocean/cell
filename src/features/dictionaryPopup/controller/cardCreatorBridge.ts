@@ -45,7 +45,7 @@ function definitionsFieldText(
   if (!senses.trim()) return '';
   return prefill.lookupResult
     ? formatDefFromLookup(prefill.lookupResult, senses, prefill.term, frequencyFormat)
-    : formatDefEntry({ term: prefill.term, reading: prefill.reading, frequencyFormat, senses });
+    : formatDefEntry({ term: prefill.term, reading: prefill.reading, readingKind: prefill.readingKind, frequencyFormat, senses });
 }
 
 
@@ -177,6 +177,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
       term,
       langCode: context.sourceLang,
       reading: selection?.reading ?? '',
+      readingKind: selection?.readingKind,
       definitions,
       rawDefinitions,
       contextSentence: sentence,

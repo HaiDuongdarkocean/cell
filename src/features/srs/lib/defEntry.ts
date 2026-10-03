@@ -1,6 +1,7 @@
 import type {
   InflectionGroup,
   LookupResult,
+  ReadingKind,
   RelatedEntry,
   WordFamily,
   WordNetInfo,
@@ -27,6 +28,7 @@ export type FrequencyDisplay = 'stars' | 'rank';
 export interface DefEntryInput {
   readonly term: string;
   readonly reading?: string;
+  readonly readingKind?: ReadingKind;
   readonly frequencyStars?: number;
   /** Per-list frequency — rendered `[source:rank]` in the header. */
   readonly frequencies?: readonly { readonly rank: number; readonly source: string }[];
@@ -50,6 +52,13 @@ export interface ParsedDefEntry {
 
 function capitalize(s: string): string {
   return s ? s[0]!.toUpperCase() + s.slice(1) : s;
+}
+
+function formatReading(reading: string | undefined, kind: ReadingKind | undefined): string {
+  const r = reading?.trim() ?? '';
+  if (!r || kind !== 'ipa') return r;
+  if ((r.startsWith('/') && r.endsWith('/')) || (r.startsWith('[') && r.endsWith(']'))) return r;
+  return `/${r}/`;
 }
 
 function formatInflections(inflections: readonly InflectionGroup[]): string {
@@ -113,7 +122,7 @@ export function formatDefEntry(entry: DefEntryInput): string {
   const stars = starCount ? '★'.repeat(starCount) + '☆'.repeat(5 - starCount) : '';
   const ranks = (entry.frequencies ?? []).map((f) => `[${f.source}:${f.rank}]`).join(' ');
   const freq = entry.frequencyFormat === 'rank' ? ranks || stars : stars;
-  const head = [capitalize(entry.term.trim()), entry.reading ?? '', freq]
+  const head = [capitalize(entry.term.trim()), formatReading(entry.reading, entry.readingKind), freq]
     .filter(Boolean)
     .join(' ');
   const meta = metaLines(entry);
@@ -151,6 +160,7 @@ export function formatDefFromLookup(
   return formatDefEntry({
     term: result.term || fallbackTerm || '',
     reading: result.reading,
+    readingKind: result.readingKind,
     frequencyStars: result.frequencyStars,
     frequencies: result.frequencies,
     frequencyFormat,

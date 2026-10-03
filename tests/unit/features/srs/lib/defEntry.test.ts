@@ -58,6 +58,26 @@ describe('defEntry', () => {
     expect(text).toBe('Resettle ★★☆☆☆\n\n[v] sense');
   });
 
+  it('wraps a bare IPA reading in slashes, keeps wrapped and non-ipa readings', () => {
+    const base = { term: 'provide', senses: '[v] sense' };
+    expect(formatDefEntry({ ...base, reading: 'prəvaɪd', readingKind: 'ipa' }))
+      .toBe('Provide /prəvaɪd/\n\n[v] sense');
+    expect(formatDefEntry({ ...base, reading: '/prəvaɪd/', readingKind: 'ipa' }))
+      .toBe('Provide /prəvaɪd/\n\n[v] sense');
+    expect(formatDefEntry({ ...base, reading: '[prəvaɪd]', readingKind: 'ipa' }))
+      .toBe('Provide [prəvaɪd]\n\n[v] sense');
+    expect(formatDefEntry({ ...base, reading: 'hànyǔ', readingKind: 'pinyin' }))
+      .toBe('Provide hànyǔ\n\n[v] sense');
+  });
+
+  it('formatDefFromLookup applies the lookup readingKind', () => {
+    const text = formatDefFromLookup(
+      { term: 'provide', reading: 'prəvaɪd', readingKind: 'ipa' } as unknown as LookupResult,
+      '[v] sense',
+    );
+    expect(text).toBe('Provide /prəvaɪd/\n\n[v] sense');
+  });
+
   it('formats from a lookup result with senses and meta sections', () => {
     const text = formatDefFromLookup(lookup, '[v] to move to a new place to live');
     expect(text).toBe(

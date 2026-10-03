@@ -76,6 +76,7 @@ function buildOpenContext(
             : formatDefEntry({
                 term: context.term ?? '',
                 reading: context.reading,
+                readingKind: context.readingKind,
                 frequencyFormat,
                 senses: formatDefinitions(context.definitions),
               }),

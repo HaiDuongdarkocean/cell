@@ -33,7 +33,7 @@ export function buildSrsFieldsFromPrefill(
       kind: 'text',
       value: prefill.lookupResult
         ? formatDefFromLookup(prefill.lookupResult, senses, prefill.term, frequencyFormat)
-        : formatDefEntry({ term: prefill.term, reading: prefill.reading, frequencyFormat, senses }),
+        : formatDefEntry({ term: prefill.term, reading: prefill.reading, readingKind: prefill.readingKind, frequencyFormat, senses }),
     };
   }
   if (prefill.wordAudioUrls?.length) {

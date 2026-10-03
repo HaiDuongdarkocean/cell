@@ -362,6 +362,7 @@ export interface PopupCardCreatorPrefill extends PopupSelectionSnapshot {
   readonly term: string;
   readonly langCode: string;
   readonly reading: string;
+  readonly readingKind?: ReadingKind;
   readonly definitions: readonly {
     readonly pos?: string;
     /** Register/grammar/audience tags — rendered `[label]` before the gloss. */

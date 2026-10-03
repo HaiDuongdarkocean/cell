@@ -44,6 +44,7 @@ export function buildPrefill(
     term: result.term,
     langCode: result.langCode,
     reading: result.reading,
+    readingKind: result.readingKind,
     definitions: defs.map((d) => ({
       pos: d.pos,
       labels: d.labels,
