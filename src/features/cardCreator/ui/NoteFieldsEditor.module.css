@@ -1,0 +1,39 @@
+.destinationRow {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.destinationCol {
+  flex: 1 1 12rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.destinationCol button[class] {
+  border-radius: var(--radius-lg);
+}
+
+div.menu {
+  border-radius: var(--radius-lg);
+}
+
+.fieldLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-wide);
+}
+
+.generate {
+  justify-content: flex-end;
+  min-inline-size: calc(11ch + var(--iconbutton-icon-sm) + var(--space-6));
+}
+
+@container (max-width: 380px) {
+  .generate {
+    min-inline-size: 0;
+  }
+}

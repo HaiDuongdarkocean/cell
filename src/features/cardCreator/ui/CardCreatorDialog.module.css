@@ -215,51 +215,10 @@
   letter-spacing: var(--tracking-wide);
 }
 
-/* === Pair row (Note type + Deck) === */
-.cc-dialog__pair-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--space-2);
-  align-items: start;
-}
-
-.cc-dialog__pair-row > div {
-  min-width: 0;
-}
-
-/* Mobile: stack pair-row vertically */
-.cc-dialog--mobile .cc-dialog__pair-row {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.cc-dialog__field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
 /* All Select triggers inside the Card Creator dialog use the same
  * radius as the text inputs so the form looks unified. */
 .cc-dialog__select button {
   border-radius: var(--radius-md);
-}
-
-.cc-dialog__generate {
-  justify-content: flex-end;
-  min-inline-size: calc(11ch + var(--iconbutton-icon-sm) + var(--space-6));
-}
-
-@container (max-width: 380px) {
-  .cc-dialog__generate {
-    min-inline-size: 0;
-  }
-}
-
-.cc-dialog__field-label {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  letter-spacing: var(--tracking-wide);
 }
 
 /* === Footer (design-system: border-top + space-between) === */
@@ -295,11 +254,6 @@
    - pair row becomes a single column
    - selects are allowed to truncate */
 @container (max-width: 480px) {
-  .cc-dialog__pair-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .cc-dialog__field [data-cell-id] button,
   .cc-dialog__footer-mode [data-cell-id] button {
     min-width: 0;
   }

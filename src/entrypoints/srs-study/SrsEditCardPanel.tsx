@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Box, Button, ConfirmDialog, Heading, Icon, Label, Select, Text } from '@/shared/ui';
+import { Box, Button, ConfirmDialog, Heading, Icon, Text } from '@/shared/ui';
 import { t } from '@/shared/i18n';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
 import { ensureFirstRun } from '@/features/srs/services/firstRunService';
@@ -7,7 +7,7 @@ import { getDecksByCollection } from '@/features/srs/repositories/deckRepository
 import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
 import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepository';
 import { getReviewEventsByCard } from '@/features/srs/repositories/reviewEventRepository';
-import { FieldRow, FieldAutoGrowInput, TagInput } from '@/features/cardCreator/ui/FieldRow';
+import { NoteFieldsEditor, GenerateAllButton, DestinationSelects, type NoteEditorField } from '@/features/cardCreator/ui/NoteFieldsEditor';
 import { splitTags } from '@/features/cardCreator/service/noteUpdate';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { SrsAudioAsset, SrsDeck, SrsImageAsset, SrsReviewRecord } from '@/entities/srs/types';
@@ -137,6 +137,21 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
   const deckOptions = useMemo(
     () => decks.map((d) => ({ value: d.id, label: d.name })),
     [decks],
+  );
+
+  const fieldById = useMemo(
+    () => new Map((notetype?.fields ?? []).map((f) => [f.id, f])),
+    [notetype?.fields],
+  );
+
+  const editorFields = useMemo<NoteEditorField[]>(
+    () => orderedEditFields(notetype?.fields ?? []).map((field) => ({
+      id: field.id,
+      label: field.name,
+      kind: field.type === 'audio' ? 'audio' : field.type === 'image' ? 'image' : 'text',
+      generatable: generateKind(field) !== null,
+    })),
+    [notetype?.fields, notetype?.targetFieldId],
   );
 
   const persist = useCallback(async () => {
@@ -354,19 +369,12 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
         </Button>
         <Heading level={2} className={styles.title}>{t('srs.edit.title')}</Heading>
         {!masked && (
-          <Button
-            variant="ghost"
-            size="sm"
-            shape="circle"
+          <GenerateAllButton
             onClick={() => { void generateAll(); }}
             disabled={generating !== null}
-            aria-label={t('cardCreator.action.generateAll')}
-            title={t('cardCreator.action.generateAll')}
             className={styles.generateAll}
-            data-cell-id="srs-edit-generate-all"
-          >
-            <Icon name="zap" size="sm" color="primary" />
-          </Button>
+            dataId="srs-edit-generate-all"
+          />
         )}
       </Box>
 
@@ -384,70 +392,52 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
       ) : (
       <>
 
-      <Box className={styles.selectRow}>
-        <Box className={styles.selectCol}>
-          <Label>{t('srs.edit.cardType')}</Label>
-          <Select value={notetype.id} options={[{ value: notetype.id, label: notetype.name }]} disabled menuClassName={styles.selectMenu} />
-        </Box>
-        <Box className={styles.selectCol}>
-          <Label>{t('srs.edit.deck')}</Label>
-          <Select value={deckId} options={deckOptions} onChange={(v) => { setDeckId(v); }} menuClassName={styles.selectMenu} />
-        </Box>
-      </Box>
+      <DestinationSelects
+        first={{
+          label: t('srs.edit.cardType'),
+          value: notetype.id,
+          options: [{ value: notetype.id, label: notetype.name }],
+          disabled: true,
+        }}
+        second={{
+          label: t('srs.edit.deck'),
+          value: deckId,
+          options: deckOptions,
+          onChange: (v) => { setDeckId(v); },
+        }}
+      />
 
-      {orderedEditFields(notetype.fields).map((field) => (
-        <FieldRow
-          key={field.id}
-          label={field.name}
-          dataId={`srs-edit-${field.id}`}
-          trailing={generateKind(field) ? (
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={() => { void generateField(field); }}
-              disabled={generating !== null}
-              aria-label={t('cardCreator.action.generateFor', [field.name])}
-              title={t('cardCreator.action.generateFor', [field.name])}
-              className={styles.generateBtn}
-              data-cell-id={`srs-edit-${field.id}-generate`}
-            >
-              <Icon name="zap" size="xs" color="primary" />
-            </Button>
-          ) : undefined}
-        >
-          {field.type === 'audio' || field.type === 'image' ? (
+      <NoteFieldsEditor
+        fields={editorFields}
+        getText={(id) => texts[id] ?? ''}
+        onTextChange={(id, v) => { setTexts((prev) => ({ ...prev, [id]: v })); }}
+        renderMedia={(id) => {
+          const field = fieldById.get(id);
+          if (!field) return null;
+          return (
             <NoteMediaField
               field={field}
-              files={media[field.id] ?? []}
+              files={media[id] ?? []}
               onChange={(files) => {
-                setMedia((prev) => ({ ...prev, [field.id]: files }));
+                setMedia((prev) => ({ ...prev, [id]: files }));
                 setRemovedMedia((prev) => {
                   const next = new Set(prev);
-                  if (files.length === 0) next.add(field.id); else next.delete(field.id);
+                  if (files.length === 0) next.add(id); else next.delete(id);
                   return next;
                 });
               }}
             />
-          ) : (
-            <FieldAutoGrowInput
-              value={texts[field.id] ?? ''}
-              onChange={(v) => { setTexts((prev) => ({ ...prev, [field.id]: v })); }}
-              aria-label={field.name}
-              dataId={`srs-edit-${field.id}`}
-            />
-          )}
-        </FieldRow>
-      ))}
-
-      <FieldRow label={t('cardCreator.field.tags')} dataId="srs-edit-tags">
-        <TagInput
-          value={tags}
-          onChange={(v) => { setTags(v); }}
-          placeholder={t('cardCreator.placeholder.tags')}
-          ariaLabel={t('cardCreator.field.tags')}
-          dataId="srs-edit-tags"
-        />
-      </FieldRow>
+          );
+        }}
+        onGenerate={(id) => {
+          const field = fieldById.get(id);
+          if (field) void generateField(field);
+        }}
+        generateDisabled={generating !== null}
+        dataIdPrefix="srs-edit"
+        tagsValue={tags}
+        onTagsChange={(v) => { setTags(v); }}
+      />
 
       <Button variant="destructive" fullWidth onClick={() => { setConfirmDelete(true); }} className={styles.deleteButton}>
         {t('srs.edit.deleteCard')}

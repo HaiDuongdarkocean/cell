@@ -17,11 +17,10 @@ import { createPortal } from 'react-dom';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { Heading } from '@/shared/ui/Heading';
-import { Label } from '@/shared/ui/Label';
 import { Select } from '@/shared/ui/Select';
 import { Dialog } from '@/shared/ui/Dialog';
-import { FieldRow, FieldAutoGrowInput, TagInput } from './FieldRow';
 import { MediaList } from './MediaList';
+import { NoteFieldsEditor, GenerateAllButton, DestinationSelects, type NoteEditorField } from './NoteFieldsEditor';
 import { PreviewBlock } from './PreviewBlock';
 import { QueueSidebar } from './QueueSidebar';
 import { QueueSidePanel } from './QueueSidePanel';
@@ -120,27 +119,40 @@ export function CardCreatorDialogContent({
 
   const isPanel = layout === 'panel';
 
-  const fieldGenerateButton = (
-    key: keyof CardDraft['fields'],
-    dataId: string,
-    label: string,
-  ): ReactElement => (
-    <Button
-      key={`generate-${key}`}
-      variant="ghost"
-      size="sm"
-      onClick={() => void generateField(key)}
-      disabled={capturingMedia || submitting}
-      aria-label={t('cardCreator.action.generateFor', [label])}
-      title={t('cardCreator.action.generateFor', [label])}
-      trailingIcon={<Icon name="zap" size="sm" />}
-      collapseLabel
-      className={styles['cc-dialog__generate']}
-      data-cell-id={`${dataId}-generate`}
-    >
-      {t('cardCreator.action.create')}
-    </Button>
-  );
+  const editorFields: NoteEditorField[] = [
+    { id: 'targetWord', label: t('cardCreator.field.targetWord'), kind: 'text', placeholder: t('cardCreator.placeholder.targetWord'), dataId: 'cc-target-word' },
+    { id: 'sentence', label: t('cardCreator.field.sentence'), kind: 'text', dataId: 'cc-sentence' },
+    { id: 'sentenceTranslation', label: t('cardCreator.field.sentenceTranslation'), kind: 'text', dataId: 'cc-sentence-translation' },
+    { id: 'definitions', label: t('cardCreator.field.definitions'), kind: 'text', placeholder: t('cardCreator.placeholder.definitions'), dataId: 'cc-definitions' },
+    { id: 'images', label: t('cardCreator.field.image'), kind: 'image', dataId: 'cc-images' },
+    { id: 'sentenceAudios', label: t('cardCreator.field.sentenceAudio'), kind: 'audio', dataId: 'cc-sentence-audios' },
+    { id: 'wordAudios', label: t('cardCreator.field.wordAudio'), kind: 'audio', dataId: 'cc-word-audios' },
+    { id: 'note', label: t('cardCreator.field.note'), kind: 'text', placeholder: t('cardCreator.placeholder.note'), dataId: 'cc-note' },
+    { id: 'moreExample', label: t('cardCreator.field.moreExample'), kind: 'text', placeholder: t('cardCreator.placeholder.moreExample'), dataId: 'cc-more-example' },
+  ];
+
+  const mediaAddLabels: Record<string, string> = {
+    images: t('cardCreator.add.image'),
+    sentenceAudios: t('cardCreator.add.sentenceAudio'),
+    wordAudios: t('cardCreator.add.wordAudio'),
+  };
+
+  const renderDraftMedia = (id: string): ReactElement => {
+    const key = id as 'images' | 'sentenceAudios' | 'wordAudios';
+    return (
+      <MediaList
+        files={draft.fields[key]}
+        kind={key === 'images' ? 'image' : 'audio'}
+        addLabel={mediaAddLabels[key]}
+        onAdd={() => void addFileFromDisk(key)}
+        onRemove={(i) => removeMedia(key, i)}
+        onFilesDrop={(files, invalidCount) => addFiles(key, files, invalidCount)}
+        onReorder={(from, to) => reorderMedia(key, from, to)}
+        addDisabled={capturingMedia}
+        dataId={`${editorFields.find((f) => f.id === id)?.dataId ?? id}-list`}
+      />
+    );
+  };
 
   const containerClass = [
     isPanel ? styles['cc-dialog__body--panel'] : styles['cc-dialog__body'],
@@ -208,43 +220,26 @@ export function CardCreatorDialogContent({
       <div className={styles['cc-dialog__section']}>
         <div className={styles['cc-dialog__section-header']}>
           <Heading level={3} size={4} className={styles["cc-dialog__section-title"]}>{t('cardCreator.section.destination')}</Heading>
-          <Button
-            variant="ghost"
-            size="sm"
+          <GenerateAllButton
             onClick={() => void generateAll()}
             disabled={!draft.fields.targetWord.trim() || capturingMedia || submitting}
-            trailingIcon={<Icon name="zap" size="sm" />}
-            collapseLabel
-            className={styles['cc-dialog__generate']}
-            data-cell-id="cc-generate-all"
-          >
-            {t('cardCreator.action.generateAll')}
-          </Button>
+            dataId="cc-generate-all"
+          />
         </div>
-        <div className={styles['cc-dialog__pair-row']}>
-          <div className={styles['cc-dialog__field']}>
-            <Label className={styles['cc-dialog__field-label']}>{t('cardCreator.destination.noteType')}</Label>
-            <Select
-              value={draft.noteType}
-              options={noteTypes.map((n) => ({ value: n, label: n }))}
-              onChange={changeNoteType}
-              aria-label={t('cardCreator.destination.noteType')}
-              className={styles['cc-dialog__select']}
-              data-cell-id="cc-note-type"
-            />
-          </div>
-          <div className={styles['cc-dialog__field']}>
-            <Label className={styles['cc-dialog__field-label']}>{t('cardCreator.destination.deck')}</Label>
-            <Select
-              value={draft.deck}
-              options={decks.map((d) => ({ value: d, label: d }))}
-              onChange={(d) => void changeDeck(d)}
-              aria-label={t('cardCreator.destination.deck')}
-              className={styles['cc-dialog__select']}
-              data-cell-id="cc-deck"
-            />
-          </div>
-        </div>
+        <DestinationSelects
+          first={{
+            label: t('cardCreator.destination.noteType'),
+            value: draft.noteType,
+            options: noteTypes.map((n) => ({ value: n, label: n })),
+            onChange: changeNoteType,
+          }}
+          second={{
+            label: t('cardCreator.destination.deck'),
+            value: draft.deck,
+            options: decks.map((d) => ({ value: d, label: d })),
+            onChange: (d) => void changeDeck(d),
+          }}
+        />
       </div>
 
       {/* Preview block — above Fields section so user sees the card
@@ -261,154 +256,17 @@ export function CardCreatorDialogContent({
       <div className={styles['cc-dialog__section']}>
         <Heading level={3} size={4} className={styles["cc-dialog__section-title"]}>{t('cardCreator.section.fields')}</Heading>
 
-        <FieldRow
-          label={t('cardCreator.field.targetWord')}
-          trailing={fieldGenerateButton('targetWord', 'cc-target-word', t('cardCreator.field.targetWord'))}
-          dataId="cc-target-word"
-        >
-          <FieldAutoGrowInput
-            value={draft.fields.targetWord}
-            onChange={(v) => updateField('targetWord', v)}
-            placeholder={t('cardCreator.placeholder.targetWord')}
-            aria-label={t('cardCreator.field.targetWord')}
-            dataId="cc-target-word"
-          />
-        </FieldRow>
-
-        <FieldRow
-          label={t('cardCreator.field.sentence')}
-          trailing={fieldGenerateButton('sentence', 'cc-sentence', t('cardCreator.field.sentence'))}
-          dataId="cc-sentence"
-        >
-          <FieldAutoGrowInput
-            value={draft.fields.sentence}
-            onChange={(v) => updateField('sentence', v)}
-            aria-label={t('cardCreator.field.sentence')}
-            dataId="cc-sentence"
-          />
-        </FieldRow>
-
-        <FieldRow
-          label={t('cardCreator.field.sentenceTranslation')}
-          trailing={fieldGenerateButton('sentenceTranslation', 'cc-sentence-translation', t('cardCreator.field.sentenceTranslation'))}
-          dataId="cc-sentence-translation"
-        >
-          <FieldAutoGrowInput
-            value={draft.fields.sentenceTranslation}
-            onChange={(v) => updateField('sentenceTranslation', v)}
-            aria-label={t('cardCreator.field.sentenceTranslation')}
-            dataId="cc-sentence-translation"
-          />
-        </FieldRow>
-
-        <FieldRow
-          label={t('cardCreator.field.definitions')}
-          trailing={fieldGenerateButton('definitions', 'cc-definitions', t('cardCreator.field.definitions'))}
-          dataId="cc-definitions"
-        >
-          <FieldAutoGrowInput
-            value={draft.fields.definitions}
-            onChange={(v) => updateField('definitions', v)}
-            placeholder={t('cardCreator.placeholder.definitions')}
-            aria-label={t('cardCreator.field.definitions')}
-            dataId="cc-definitions"
-          />
-        </FieldRow>
-
-        <FieldRow
-          label={t('cardCreator.field.image')}
-          trailing={fieldGenerateButton('images', 'cc-images', t('cardCreator.field.image'))}
-          dataId="cc-images"
-        >
-          <MediaList
-            files={draft.fields.images}
-            kind="image"
-            addLabel={t('cardCreator.add.image')}
-            onAdd={() => void addFileFromDisk('images')}
-            onRemove={(i) => removeMedia('images', i)}
-            onFilesDrop={(files, invalidCount) => addFiles('images', files, invalidCount)}
-            onReorder={(from, to) => reorderMedia('images', from, to)}
-            addDisabled={capturingMedia}
-            dataId="cc-images-list"
-          />
-        </FieldRow>
-
-        <FieldRow
-          label={t('cardCreator.field.sentenceAudio')}
-          trailing={fieldGenerateButton('sentenceAudios', 'cc-sentence-audios', t('cardCreator.field.sentenceAudio'))}
-          dataId="cc-sentence-audios"
-        >
-          <MediaList
-            files={draft.fields.sentenceAudios}
-            kind="audio"
-            addLabel={t('cardCreator.add.sentenceAudio')}
-            onAdd={() => void addFileFromDisk('sentenceAudios')}
-            onRemove={(i) => removeMedia('sentenceAudios', i)}
-            onFilesDrop={(files, invalidCount) => addFiles('sentenceAudios', files, invalidCount)}
-            onReorder={(from, to) => reorderMedia('sentenceAudios', from, to)}
-            addDisabled={capturingMedia}
-            dataId="cc-sentence-audios-list"
-          />
-        </FieldRow>
-
-        <FieldRow
-          label={t('cardCreator.field.wordAudio')}
-          trailing={fieldGenerateButton('wordAudios', 'cc-word-audios', t('cardCreator.field.wordAudio'))}
-          dataId="cc-word-audios"
-        >
-          <MediaList
-            files={draft.fields.wordAudios}
-            kind="audio"
-            addLabel={t('cardCreator.add.wordAudio')}
-            onAdd={() => void addFileFromDisk('wordAudios')}
-            onRemove={(i) => removeMedia('wordAudios', i)}
-            onFilesDrop={(files, invalidCount) => addFiles('wordAudios', files, invalidCount)}
-            onReorder={(from, to) => reorderMedia('wordAudios', from, to)}
-            addDisabled={capturingMedia}
-            dataId="cc-word-audios-list"
-          />
-        </FieldRow>
-
-        <FieldRow
-          label={t('cardCreator.field.note')}
-          trailing={fieldGenerateButton('note', 'cc-note', t('cardCreator.field.note'))}
-          dataId="cc-note"
-        >
-          <FieldAutoGrowInput
-            value={draft.fields.note}
-            onChange={(v) => updateField('note', v)}
-            placeholder={t('cardCreator.placeholder.note')}
-            aria-label={t('cardCreator.field.note')}
-            dataId="cc-note"
-          />
-        </FieldRow>
-
-        <FieldRow
-          label={t('cardCreator.field.moreExample')}
-          trailing={fieldGenerateButton('moreExample', 'cc-more-example', t('cardCreator.field.moreExample'))}
-          dataId="cc-more-example"
-        >
-          <FieldAutoGrowInput
-            value={draft.fields.moreExample}
-            onChange={(v) => updateField('moreExample', v)}
-            placeholder={t('cardCreator.placeholder.moreExample')}
-            aria-label={t('cardCreator.field.moreExample')}
-            dataId="cc-more-example"
-          />
-        </FieldRow>
-
-        <FieldRow
-          label={t('cardCreator.field.tags')}
-          dataId="cc-tags"
-        >
-          <TagInput
-            value={draft.tags}
-            onChange={(v) => updateDraft({ tags: v })}
-            placeholder={t('cardCreator.placeholder.tags')}
-            ariaLabel={t('cardCreator.field.tags')}
-            dataId="cc-tags"
-          />
-        </FieldRow>
+        <NoteFieldsEditor
+          fields={editorFields}
+          getText={(id) => draft.fields[id as keyof CardDraft['fields']] as string}
+          onTextChange={(id, v) => updateField(id as Parameters<typeof updateField>[0], v)}
+          renderMedia={renderDraftMedia}
+          onGenerate={(id) => void generateField(id as keyof CardDraft['fields'])}
+          generateDisabled={capturingMedia || submitting}
+          dataIdPrefix="cc"
+          tagsValue={draft.tags}
+          onTagsChange={(v) => updateDraft({ tags: v })}
+        />
       </div>
 
       {/* Footer */}

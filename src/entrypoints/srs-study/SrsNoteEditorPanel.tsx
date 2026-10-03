@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Box, Button, Heading, Icon, Label, Select, Text } from '@/shared/ui';
+import { Box, Button, Heading, Icon, Text } from '@/shared/ui';
 import { t } from '@/shared/i18n';
 import { putNote } from '@/features/srs/repositories/noteRepository';
 import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
 import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepository';
-import { FieldRow, FieldAutoGrowInput, TagInput } from '@/features/cardCreator/ui/FieldRow';
+import { NoteFieldsEditor, DestinationSelects, type NoteEditorField } from '@/features/cardCreator/ui/NoteFieldsEditor';
 import { splitTags } from '@/features/cardCreator/service/noteUpdate';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { SrsAudioAsset, SrsDeck, SrsImageAsset, SrsNote, SrsNotetype } from '@/entities/srs/types';
@@ -65,6 +65,21 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
   const sentenceText = texts.sentence ?? toEditText(note.fields.sentence);
   const deckOptions = useMemo(() => decks.map((d) => ({ value: d.id, label: d.name })), [decks]);
 
+  const fieldById = useMemo(
+    () => new Map(notetype.fields.map((f) => [f.id, f])),
+    [notetype.fields],
+  );
+
+  const editorFields = useMemo<NoteEditorField[]>(
+    () => orderedEditFields(notetype.fields).map((field) => ({
+      id: field.id,
+      label: field.name,
+      kind: field.type === 'audio' ? 'audio' : field.type === 'image' ? 'image' : 'text',
+      generatable: false,
+    })),
+    [notetype.fields, notetype.targetFieldId],
+  );
+
   const persist = useCallback(async () => {
     const s = stateRef.current;
     const version = dataVersion.current;
@@ -119,16 +134,20 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
         <Heading level={2} className={styles.title}>{t('srs.edit.title')}</Heading>
       </Box>
 
-      <Box className={styles.selectRow}>
-        <Box className={styles.selectCol}>
-          <Label>{t('srs.edit.cardType')}</Label>
-          <Select value={notetype.id} options={[{ value: notetype.id, label: notetype.name }]} disabled />
-        </Box>
-        <Box className={styles.selectCol}>
-          <Label>{t('srs.edit.deck')}</Label>
-          <Select value={deckId} options={deckOptions} onChange={(v) => { setDeckId(v); }} />
-        </Box>
-      </Box>
+      <DestinationSelects
+        first={{
+          label: t('srs.edit.cardType'),
+          value: notetype.id,
+          options: [{ value: notetype.id, label: notetype.name }],
+          disabled: true,
+        }}
+        second={{
+          label: t('srs.edit.deck'),
+          value: deckId,
+          options: deckOptions,
+          onChange: (v) => { setDeckId(v); },
+        }}
+      />
 
       <Box className={styles.preview}>
         <Text className={styles.previewWord}>{note.targetWord}</Text>
@@ -137,41 +156,32 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
         )}
       </Box>
 
-      {orderedEditFields(notetype.fields).map((field) => (
-        <FieldRow key={field.id} label={field.name} dataId={`srs-edit-${field.id}`}>
-          {field.type === 'audio' || field.type === 'image' ? (
+      <NoteFieldsEditor
+        fields={editorFields}
+        getText={(id) => texts[id] ?? ''}
+        onTextChange={(id, v) => { setTexts((prev) => ({ ...prev, [id]: v })); }}
+        renderMedia={(id) => {
+          const field = fieldById.get(id);
+          if (!field) return null;
+          return (
             <NoteMediaField
               field={field}
-              files={media[field.id] ?? []}
+              files={media[id] ?? []}
               onChange={(files) => {
-                setMedia((prev) => ({ ...prev, [field.id]: files }));
+                setMedia((prev) => ({ ...prev, [id]: files }));
                 setRemovedMedia((prev) => {
                   const next = new Set(prev);
-                  if (files.length === 0) next.add(field.id); else next.delete(field.id);
+                  if (files.length === 0) next.add(id); else next.delete(id);
                   return next;
                 });
               }}
             />
-          ) : (
-            <FieldAutoGrowInput
-              value={texts[field.id] ?? ''}
-              onChange={(v) => { setTexts((prev) => ({ ...prev, [field.id]: v })); }}
-              aria-label={field.name}
-              dataId={`srs-edit-${field.id}`}
-            />
-          )}
-        </FieldRow>
-      ))}
-
-      <FieldRow label={t('cardCreator.field.tags')} dataId="srs-edit-tags">
-        <TagInput
-          value={tags}
-          onChange={(v) => { setTags(v); }}
-          placeholder={t('cardCreator.placeholder.tags')}
-          ariaLabel={t('cardCreator.field.tags')}
-          dataId="srs-edit-tags"
-        />
-      </FieldRow>
+          );
+        }}
+        dataIdPrefix="srs-edit"
+        tagsValue={tags}
+        onTagsChange={(v) => { setTags(v); }}
+      />
 
       {error && <Text className={styles.error}>{error}</Text>}
     </Box>
