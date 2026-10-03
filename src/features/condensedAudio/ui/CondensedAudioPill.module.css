@@ -17,20 +17,24 @@
   pointer-events: auto;
 }
 
+.pillDone,
+.pillReady {
+  --ca-live: #5fd389;
+  --ca-live-rgb: 95, 211, 137;
+}
+
 .pillDone {
-  --ca-live: var(--color-success, #2f7d46);
-  border-color: rgba(var(--color-success-rgb, 47, 125, 70), 0.55);
+  border-color: rgba(var(--ca-live-rgb), 0.55);
   animation: pillDoneIn var(--motion-duration-normal, 220ms) ease-out;
 }
 
 .pillReady {
-  --ca-live: var(--color-success, #2f7d46);
   gap: var(--space-1);
   padding: var(--space-1);
-  border-color: rgba(var(--color-success-rgb, 47, 125, 70), 0.65);
+  border-color: rgba(var(--ca-live-rgb), 0.65);
   box-shadow:
     0 10px 30px rgba(0, 0, 0, 0.5),
-    0 0 0 3px rgba(var(--color-success-rgb, 47, 125, 70), 0.25),
+    0 0 0 3px rgba(var(--ca-live-rgb), 0.25),
     inset 0 1px 0 rgba(var(--overlay-text-rgb, 255, 255, 255), 0.1);
   animation: pillDoneIn var(--motion-duration-normal, 220ms) ease-out;
 }
@@ -48,7 +52,7 @@
   min-height: 32px;
   border: none;
   border-radius: var(--radius-pill);
-  background: rgba(var(--color-success-rgb, 47, 125, 70), 0.28);
+  background: rgba(var(--ca-live-rgb), 0.24);
   color: var(--overlay-text, #fff);
   font: inherit;
   cursor: pointer;
@@ -58,12 +62,12 @@
 }
 
 .listenCta:hover {
-  background: rgba(var(--color-success-rgb, 47, 125, 70), 0.45);
+  background: rgba(var(--ca-live-rgb), 0.4);
   transform: scale(1.03);
 }
 
 .listenCta:focus-visible {
-  outline: 2px solid var(--color-success, #2f7d46);
+  outline: 2px solid var(--ca-live);
   outline-offset: 2px;
 }
 
@@ -89,6 +93,8 @@
 
 .statusLabelDone {
   composes: statusLabel;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
   color: var(--ca-live);
 }
 
