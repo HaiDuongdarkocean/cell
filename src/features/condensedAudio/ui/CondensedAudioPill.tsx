@@ -6,12 +6,17 @@ import { Text } from '@/shared/ui/Text';
 import { t } from '@/shared/i18n';
 import styles from './CondensedAudioPill.module.css';
 
+export type CondensedAudioPillPhase = 'live' | 'done' | 'ready';
+
 export interface CondensedAudioPillProps {
   readonly paused: boolean;
+  readonly phase: CondensedAudioPillPhase;
   readonly getElapsedMs: () => number;
   readonly onStop: () => void;
   readonly onTogglePause: () => void;
   readonly onDiscard: () => void;
+  readonly onOpenLibrary: () => void;
+  readonly onDismissDone: () => void;
 }
 
 function formatElapsed(ms: number): string {
@@ -26,17 +31,68 @@ function formatElapsed(ms: number): string {
 
 export function CondensedAudioPill({
   paused,
+  phase,
   getElapsedMs,
   onStop,
   onTogglePause,
   onDiscard,
+  onOpenLibrary,
+  onDismissDone,
 }: CondensedAudioPillProps): React.JSX.Element {
   const [elapsedMs, setElapsedMs] = useState(() => getElapsedMs());
   const [confirmOpen, setConfirmOpen] = useState(false);
   useEffect(() => {
+    if (phase !== 'live') return;
     const id = setInterval(() => setElapsedMs(getElapsedMs()), 500);
     return () => clearInterval(id);
-  }, [getElapsedMs]);
+  }, [getElapsedMs, phase]);
+  if (phase === 'done') {
+    return (
+      <div className={`${styles.pill} ${styles.pillDone}`} role="status" data-cell-id="condensed-audio-pill-done">
+        <Icon name="circleCheck" size="sm" className={styles.doneIcon} />
+        <span className={styles.status}>
+          <span className={styles.statusLabelDone}>
+            {t('condensedAudio.pill.done')}
+          </span>
+          <Text variant="body" className={styles.elapsed}>
+            {formatElapsed(elapsedMs)}
+          </Text>
+        </span>
+      </div>
+    );
+  }
+  if (phase === 'ready') {
+    return (
+      <div className={`${styles.pill} ${styles.pillReady}`} role="status" data-cell-id="condensed-audio-pill-ready">
+        <button
+          type="button"
+          className={styles.listenCta}
+          onClick={onOpenLibrary}
+          data-cell-id="condensed-audio-open-playlist"
+          aria-label={t('condensedAudio.pill.openPlaylist')}
+        >
+          <Icon name="audioWave" size="sm" />
+          <span className={styles.statusLabelDone}>
+            {t('condensedAudio.pill.listen')}
+          </span>
+          <Text variant="body" className={styles.elapsed}>
+            {formatElapsed(elapsedMs)}
+          </Text>
+        </button>
+        <Button
+          variant="overlay"
+          shape="circle"
+          size="sm"
+          className={styles.action}
+          onClick={onDismissDone}
+          aria-label={t('condensedAudio.pill.dismissDone')}
+          data-cell-id="condensed-audio-dismiss-done"
+        >
+          <Icon name="x" size="sm" />
+        </Button>
+      </div>
+    );
+  }
   return (
     <>
       <div className={styles.pill} role="status" data-cell-id="condensed-audio-pill">

@@ -4,6 +4,7 @@ import {
   setCondensedAudioSessionPaused,
   stopCondensedAudioSession,
   isCondensedAudioSessionActive,
+  notifyCondensedAudioRecordStatus,
 } from './condensedAudioRecorder';
 import type { CondensedAudioPillHandlers } from './ui/mountCondensedAudioPill';
 
@@ -15,11 +16,18 @@ jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
 let mockPillHandlers: CondensedAudioPillHandlers | null = null;
 let mockMountedVideo: unknown = null;
 const mockSetPaused = jest.fn();
+const mockSetPhase = jest.fn();
+const mockUnmount = jest.fn();
 jest.mock('./ui/mountCondensedAudioPill', () => ({
   mountCondensedAudioPill: (video: unknown, handlers: CondensedAudioPillHandlers) => {
     mockPillHandlers = handlers;
     mockMountedVideo = video;
-    return { updatePosition: jest.fn(), setPaused: mockSetPaused, unmount: jest.fn() };
+    return {
+      updatePosition: jest.fn(),
+      setPaused: mockSetPaused,
+      setPhase: mockSetPhase,
+      unmount: mockUnmount,
+    };
   },
 }));
 
@@ -133,6 +141,8 @@ describe('startCondensedAudioSession', () => {
     mockMountedVideo = null;
     mockSendMessage.mockClear();
     mockSetPaused.mockClear();
+    mockSetPhase.mockClear();
+    mockUnmount.mockClear();
     savedRecorder = globalThis.MediaRecorder;
     savedStream = globalThis.MediaStream;
     (globalThis as { MediaRecorder?: unknown }).MediaRecorder = FakeMediaRecorder;
@@ -374,6 +384,46 @@ describe('startCondensedAudioSession', () => {
     expect(mockSetPaused).not.toHaveBeenCalledWith(true);
     jest.advanceTimersByTime(10_000);
     expect(mockSetPaused).toHaveBeenCalledWith(true);
+  });
+
+  it('keeps the pill in done phase after finalize and upgrades on record ready', async () => {
+    video.setPaused(false);
+    jest.advanceTimersByTime(200);
+    video.setTime(13);
+    await jest.advanceTimersByTimeAsync(200);
+    expect(mockSetPhase).toHaveBeenLastCalledWith('done');
+    expect(mockUnmount).not.toHaveBeenCalled();
+    notifyCondensedAudioRecordStatus('rec-1', 'finalizing');
+    expect(mockSetPhase).toHaveBeenLastCalledWith('done');
+    notifyCondensedAudioRecordStatus('rec-1', 'ready');
+    expect(mockSetPhase).toHaveBeenLastCalledWith('ready');
+    expect(mockUnmount).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(60_000);
+    expect(mockUnmount).toHaveBeenCalled();
+  });
+
+  it('dismisses the finished pill when the record fails after finalize', async () => {
+    video.setPaused(false);
+    jest.advanceTimersByTime(200);
+    video.setTime(13);
+    await jest.advanceTimersByTimeAsync(200);
+    notifyCondensedAudioRecordStatus('rec-1', 'failed');
+    expect(mockUnmount).toHaveBeenCalled();
+  });
+
+  it('open-library action dismisses the pill and invokes the callback', async () => {
+    const onOpenLibrary = jest.fn();
+    stopCondensedAudioSession('rec-1');
+    await startCondensedAudioSession('rec-open', RANGES, 0, { onOpenLibrary });
+    video.setPaused(false);
+    jest.advanceTimersByTime(200);
+    video.setTime(13);
+    await jest.advanceTimersByTimeAsync(200);
+    notifyCondensedAudioRecordStatus('rec-open', 'ready');
+    mockPillHandlers!.onOpenLibrary();
+    expect(onOpenLibrary).toHaveBeenCalled();
+    expect(mockUnmount).toHaveBeenCalled();
+    stopCondensedAudioSession('rec-open');
   });
 
   it('pill discard aborts the session and reports cancelled', () => {

@@ -5,9 +5,11 @@ import { isCellDebug } from './debugLog';
 import { getLastRelayedVideoId } from './subtitleBridges';
 import {
   isCondensedAudioSessionActive,
+  notifyCondensedAudioRecordStatus,
   startCondensedAudioSession,
   stopCondensedAudioSession,
 } from '@/features/condensedAudio/condensedAudioRecorder';
+import { ensureUniversalPanelMount } from './featureInit';
 import type {
   CondenseAudioEventPayload,
   CondenseAudioSessionStartPayload,
@@ -93,7 +95,9 @@ export function installRuntimeMessageListener(): void {
         sendResponse({ success: false, error: 'invalid payload' });
         return false;
       }
-      void startCondensedAudioSession(payload.recordId, payload.ranges, payload.padMs ?? 0).then(
+      void startCondensedAudioSession(payload.recordId, payload.ranges, payload.padMs ?? 0, {
+        onOpenLibrary: () => void ensureUniversalPanelMount().open('playlist'),
+      }).then(
         (result) => {
           sendResponse(result.ok ? { success: true } : { success: false, error: result.error });
         },
@@ -119,8 +123,11 @@ export function installRuntimeMessageListener(): void {
       const removedId = payload?.removedId;
       if (removedId && isCondensedAudioSessionActive(removedId)) {
         stopCondensedAudioSession(removedId);
+      } else if (removedId) {
+        notifyCondensedAudioRecordStatus(removedId, 'removed');
       }
       const record = payload?.record;
+      if (record) notifyCondensedAudioRecordStatus(record.id, record.status);
       if (
         record &&
         isCondensedAudioSessionActive(record.id) &&

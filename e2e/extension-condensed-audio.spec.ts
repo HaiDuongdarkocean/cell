@@ -181,13 +181,25 @@ test.describe('Cell condensed audio', () => {
     await page.waitForTimeout(4_000);
     await deepClick(page, '[data-cell-id="condensed-audio-stop"]');
 
-    await expect
-      .poll(async () => !(await deepQuery(page, '[data-cell-id="condensed-audio-pill"]')), {
-        timeout: 10_000,
-      })
-      .toBe(true);
+    await waitDeep(
+      page,
+      '[data-cell-id="condensed-audio-pill-done"], [data-cell-id="condensed-audio-pill-ready"]',
+      10_000,
+    );
+    await page.screenshot({ path: 'tmp/condensed-audio/recording-done.png' });
 
-    await page.evaluate(() => {
+    await waitDeep(page, '[data-cell-id="condensed-audio-open-playlist"]', 60_000);
+    await page.screenshot({ path: 'tmp/condensed-audio/recording-ready-invite.png' });
+    await deepClick(page, '[data-cell-id="condensed-audio-open-playlist"]');
+    await waitDeep(page, '[data-cell-id="universal-panel"]', 15_000);
+
+    const pillOpenedPlaylist = await deepQuery(
+      page,
+      '[data-cell-id="universal-panel-content-playlist"]',
+    );
+
+    if (!pillOpenedPlaylist) {
+      await page.evaluate(() => {
       const deepFind = (root: Document | ShadowRoot, s: string): Element | null => {
         const el = root.querySelector(s);
         if (el) return el;
@@ -245,6 +257,8 @@ test.describe('Cell condensed audio', () => {
           break;
         }
       }
+    }
+      await waitDeep(page, '[data-cell-id="universal-panel-content-playlist"]', 10_000);
     }
     await waitDeep(page, '[data-cell-id="universal-panel-content-playlist"]', 10_000);
     await page.screenshot({ path: 'tmp/condensed-audio/playlist-tab.png' });
@@ -322,10 +336,12 @@ test.describe('Cell condensed audio', () => {
       .toBeGreaterThan(15);
 
     await expect
-      .poll(async () => !(await deepQuery(page, '[data-cell-id="condensed-audio-pill"]')), {
-        timeout: 330_000,
-        intervals: [5_000],
-      })
+      .poll(
+        async () =>
+          (await deepQuery(page, '[data-cell-id="condensed-audio-pill-done"]')) ||
+          (await deepQuery(page, '[data-cell-id="condensed-audio-pill-ready"]')),
+        { timeout: 330_000, intervals: [5_000] },
+      )
       .toBe(true);
 
     const readRecords = async (): Promise<unknown> =>
@@ -368,6 +384,8 @@ test.describe('Cell condensed audio', () => {
       throw err;
     }
     expect(record!.durationMs).toBeGreaterThan(60_000);
+    await waitDeep(page, '[data-cell-id="condensed-audio-pill-ready"]', 30_000);
+    await page.screenshot({ path: 'tmp/condensed-audio/recording-ready-invite-full-run.png' });
 
     await page.close();
   });

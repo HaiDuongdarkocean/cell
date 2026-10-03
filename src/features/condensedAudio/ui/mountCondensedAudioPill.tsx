@@ -4,18 +4,21 @@ import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
 import { buildTokenSpanCssForShadow } from '@/features/tokenize';
 import { ShadowThemeProvider } from '@/features/theme';
-import { CondensedAudioPill } from './CondensedAudioPill';
+import { CondensedAudioPill, type CondensedAudioPillPhase } from './CondensedAudioPill';
 
 export interface CondensedAudioPillHandlers {
   readonly getElapsedMs: () => number;
   readonly onStop: () => void;
   readonly onTogglePause: () => void;
   readonly onDiscard: () => void;
+  readonly onOpenLibrary: () => void;
+  readonly onDismissDone: () => void;
 }
 
 export interface CondensedAudioPillHandle {
   readonly updatePosition: () => void;
   readonly setPaused: (paused: boolean) => void;
+  readonly setPhase: (phase: CondensedAudioPillPhase) => void;
   readonly unmount: () => void;
 }
 
@@ -39,12 +42,13 @@ export function mountCondensedAudioPill(
   };
   updatePosition();
   let paused = false;
+  let phase: CondensedAudioPillPhase = 'live';
   const render = (): void => {
     mount.root.render(
       createElement(
         ShadowThemeProvider,
         { container: mount.rootEl },
-        createElement(CondensedAudioPill, { paused, ...handlers }),
+        createElement(CondensedAudioPill, { paused, phase, ...handlers }),
       ),
     );
   };
@@ -56,6 +60,12 @@ export function mountCondensedAudioPill(
       if (next === paused) return;
       paused = next;
       flushSync(render);
+    },
+    setPhase: (next: CondensedAudioPillPhase) => {
+      if (next === phase) return;
+      phase = next;
+      flushSync(render);
+      updatePosition();
     },
     unmount: mount.unmount,
   };

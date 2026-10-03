@@ -17,6 +17,56 @@
   pointer-events: auto;
 }
 
+.pillDone {
+  --ca-live: var(--color-success, #2f7d46);
+  border-color: rgba(var(--color-success-rgb, 47, 125, 70), 0.55);
+  animation: pillDoneIn var(--motion-duration-normal, 220ms) ease-out;
+}
+
+.pillReady {
+  --ca-live: var(--color-success, #2f7d46);
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-color: rgba(var(--color-success-rgb, 47, 125, 70), 0.65);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    0 0 0 3px rgba(var(--color-success-rgb, 47, 125, 70), 0.25),
+    inset 0 1px 0 rgba(var(--overlay-text-rgb, 255, 255, 255), 0.1);
+  animation: pillDoneIn var(--motion-duration-normal, 220ms) ease-out;
+}
+
+.doneIcon {
+  color: var(--ca-live);
+  margin-left: var(--space-2);
+}
+
+.listenCta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2);
+  min-height: 32px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--color-success-rgb, 47, 125, 70), 0.28);
+  color: var(--overlay-text, #fff);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background var(--motion-duration-fast, 140ms) ease,
+    transform var(--motion-duration-fast, 140ms) ease;
+}
+
+.listenCta:hover {
+  background: rgba(var(--color-success-rgb, 47, 125, 70), 0.45);
+  transform: scale(1.03);
+}
+
+.listenCta:focus-visible {
+  outline: 2px solid var(--color-success, #2f7d46);
+  outline-offset: 2px;
+}
+
 .status {
   display: inline-flex;
   align-items: baseline;
@@ -35,6 +85,11 @@
 .statusLabelPaused {
   composes: statusLabel;
   color: rgba(var(--overlay-text-rgb, 255, 255, 255), 0.6);
+}
+
+.statusLabelDone {
+  composes: statusLabel;
+  color: var(--ca-live);
 }
 
 .elapsed {
@@ -89,6 +144,17 @@
   pointer-events: auto;
 }
 
+@keyframes pillDoneIn {
+  from {
+    opacity: 0.4;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @keyframes pillPulse {
   0%,
   100% {
@@ -100,7 +166,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dot {
+  .dot,
+  .pillDone,
+  .pillReady,
+  .listenCta {
     animation: none;
+    transition: none;
   }
 }

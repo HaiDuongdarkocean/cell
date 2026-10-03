@@ -62,7 +62,7 @@ function bindTokenizeCtrlSubs(ctrl: WebTokenizeController): void {
   });
 }
 
-function ensureUniversalPanelMount(): UniversalPanelMountController {
+export function ensureUniversalPanelMount(): UniversalPanelMountController {
   if (!universalPanelMount) {
     // Initialize subtitle tokenize state from storage (async, fires once).
     void loadTokenizeSettings().then((ts) => {

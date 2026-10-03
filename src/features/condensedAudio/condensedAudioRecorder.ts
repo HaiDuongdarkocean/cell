@@ -22,6 +22,7 @@ const PLAY_GRACE_MS = 1500;
 const PAUSE_GIVE_UP_MS = 10_000;
 const SOURCE_WAIT_MS = 8_000;
 const SOURCE_WAIT_POLL_MS = 250;
+const DONE_AUTO_HIDE_MS = 60_000;
 
 interface RecorderSession {
   readonly recordId: string;
@@ -52,6 +53,21 @@ interface RecorderSession {
 }
 
 let session: RecorderSession | null = null;
+
+interface FinishedPill {
+  readonly recordId: string;
+  readonly pill: CondensedAudioPillHandle;
+  autoHideId: number;
+}
+
+let finishedPill: FinishedPill | null = null;
+
+function dismissFinishedPill(): void {
+  if (!finishedPill) return;
+  window.clearTimeout(finishedPill.autoHideId);
+  finishedPill.pill.unmount();
+  finishedPill = null;
+}
 
 function pickRecorderMimeType(): string | undefined {
   const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
@@ -237,7 +253,13 @@ async function finalizeSession(s: RecorderSession): Promise<void> {
     mimeType: s.recorder.mimeType || undefined,
     elapsedMs: s.capturedMs,
   });
-  teardownSession(s);
+  teardownSession(s, true);
+  s.pill.setPhase('done');
+  finishedPill = {
+    recordId: s.recordId,
+    pill: s.pill,
+    autoHideId: window.setTimeout(dismissFinishedPill, DONE_AUTO_HIDE_MS),
+  };
 }
 
 function abortSession(recordId: string, silent: boolean): void {
@@ -254,26 +276,32 @@ function abortSession(recordId: string, silent: boolean): void {
   teardownSession(s);
 }
 
-function teardownSession(s: RecorderSession): void {
+function teardownSession(s: RecorderSession, keepPill = false): void {
   clearInterval(s.tickId);
   s.video.removeEventListener('timeupdate', s.onTimeUpdate);
   s.video.removeEventListener('ended', s.onEnded);
   s.video.playbackRate = s.previousRate;
   if (!s.video.ended) pauseVideo(s.video);
   s.stream.getTracks().forEach((track) => track.stop());
-  s.pill.unmount();
+  if (!keepPill) s.pill.unmount();
   if (session === s) session = null;
+}
+
+export interface CondensedAudioSessionOptions {
+  readonly onOpenLibrary?: () => void;
 }
 
 export async function startCondensedAudioSession(
   recordId: string,
   rawRanges: readonly CueRange[],
   padMs = 0,
+  opts: CondensedAudioSessionOptions = {},
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (session) {
     if (session.recordId === recordId) return { ok: true };
     abortSession(session.recordId, false);
   }
+  dismissFinishedPill();
   const video = await waitForVideoSource();
   if (!video || video.muted || video.volume === 0) {
     failSession(recordId, video ? 'capture-blocked' : 'no-source');
@@ -325,6 +353,11 @@ export async function startCondensedAudioSession(
     onStop: () => void finalizeSession(s),
     onTogglePause: () => setSessionPaused(s, !s.pausedByUser),
     onDiscard: () => abortSession(recordId, false),
+    onOpenLibrary: () => {
+      opts.onOpenLibrary?.();
+      dismissFinishedPill();
+    },
+    onDismissDone: dismissFinishedPill,
   });
   const onTimeUpdate = (): void => tickSession(s);
   const onEnded = (): void => tickSession(s);
@@ -403,6 +436,20 @@ export function setCondensedAudioSessionPaused(recordId: string, paused: boolean
 
 export function stopCondensedAudioSession(recordId: string): void {
   abortSession(recordId, false);
+  if (finishedPill?.recordId === recordId) dismissFinishedPill();
+}
+
+export function notifyCondensedAudioRecordStatus(recordId: string, status: string): void {
+  if (!finishedPill || finishedPill.recordId !== recordId) return;
+  if (status === 'ready') {
+    window.clearTimeout(finishedPill.autoHideId);
+    finishedPill.autoHideId = window.setTimeout(dismissFinishedPill, DONE_AUTO_HIDE_MS);
+    finishedPill.pill.setPhase('ready');
+    return;
+  }
+  if (status === 'failed' || status === 'missing' || status === 'removed') {
+    dismissFinishedPill();
+  }
 }
 
 export function isCondensedAudioSessionActive(recordId?: string): boolean {
