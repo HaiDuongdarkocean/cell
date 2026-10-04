@@ -127,10 +127,6 @@
   cursor: grabbing;
 }
 
-.cellHeaderStars {
-  composes: cellHeaderLevel;
-  line-height: var(--leading-none);
-}
 
 .cellHeaderActions {
   display: flex;

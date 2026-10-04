@@ -128,7 +128,7 @@ export const PosVariantSchema = z.object({
   })),
   status: WordStatusSchema,
   definitions: z.array(DefinitionEntrySchema),
-  frequencyStars: z.number().int().min(1).max(3).optional(),
+  frequencyStars: z.object({ count: z.number().int().min(1).max(3), source: z.string() }).optional(),
   inflections: z.array(z.object({ type: z.string(), forms: z.array(z.string()) })).optional(),
 });
 
@@ -147,7 +147,7 @@ export const LookupResultSchema = z.object({
   related: z.array(RelatedEntrySchema).optional(),
   inflections: z.array(z.object({ type: z.string(), forms: z.array(z.string()) })).optional(),
   level: z.string().optional(),
-  frequencyStars: z.number().int().min(1).max(3).optional(),
+  frequencyStars: z.object({ count: z.number().int().min(1).max(3), source: z.string() }).optional(),
   etymology: EtymologyBlockSchema.optional(),
   wordFamily: z.object({
     nouns: z.array(z.string()).optional(),

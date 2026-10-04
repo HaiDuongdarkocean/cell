@@ -161,7 +161,7 @@ export function formatDefFromLookup(
     term: result.term || fallbackTerm || '',
     reading: result.reading,
     readingKind: result.readingKind,
-    frequencyStars: result.frequencyStars,
+    frequencyStars: result.frequencyStars?.count,
     frequencies: result.frequencies,
     frequencyFormat,
     inflections: result.inflections,

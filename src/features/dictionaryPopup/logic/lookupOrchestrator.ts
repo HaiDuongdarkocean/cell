@@ -616,7 +616,7 @@ async function assembleLookupResult(
   let hasWordFamily = false;
   let hasWordNet = false;
   let level: string | undefined;
-  let frequencyStars: number | undefined;
+  let frequencyStars: { readonly count: number; readonly source: string } | undefined;
   let etymology: EtymologyBlock | undefined;
   let etymologySource: string | undefined;
   const etyExtraVariants: { text: string; source?: string }[] = [];
@@ -632,7 +632,7 @@ async function assembleLookupResult(
   const variantDefs = new Map<string, DefinitionEntry[]>();
   const variantProns = new Map<string, { accent: string; ipa: string; audioRef?: string }[]>();
   const variantAccentSeen = new Map<string, Set<string>>();
-  const variantStars = new Map<string, number>();
+  const variantStars = new Map<string, { count: number; source: string }>();
   const variantInfl = new Map<string, InflectionGroup[]>();
   for (const e of dictEntries) {
     const disabled = disabledOf(e.resourceId);
@@ -718,7 +718,7 @@ async function assembleLookupResult(
       hasWordNet = true;
     }
     if (!disabled.has('level')) level ??= e.level;
-    if (!disabled.has('frequencyStars')) frequencyStars ??= e.frequencyStars;
+    if (!disabled.has('frequencyStars') && e.frequencyStars) frequencyStars ??= { count: e.frequencyStars, source };
     const eKey = normalizePos(e.pos || '');
     if (!disabled.has('pronunciation') && e.prons?.length) {
       markVariant(eKey);
@@ -738,7 +738,7 @@ async function assembleLookupResult(
     }
     if (!disabled.has('frequencyStars') && e.frequencyStars && !variantStars.has(eKey)) {
       markVariant(eKey);
-      variantStars.set(eKey, e.frequencyStars);
+      variantStars.set(eKey, { count: e.frequencyStars, source });
     }
     if (!disabled.has('inflections') && e.inflections?.length) {
       markVariant(eKey);

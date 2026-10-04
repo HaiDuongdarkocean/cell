@@ -1,7 +1,7 @@
 // Macmillan 2nd Ed markup adapter — font-tag records: `▪ ROMAN.` homograph
 // markers + `<sup>N</sup>`, `>UK<`/`>US<` accent labels each followed by a
 // `sound://zzz_(uk|us)_*.wav` link and a `[ipa]` in color #21887d, pos in
-// color #6020ae, `★` frequency stars, numbered senses (`<b>N.</b>` /
+// color #6020ae, numbered senses (`<b>N.</b>` /
 // `<b>Na.</b>`) with `[bracket]`/`orangered` labels and italic examples.
 // Emits one entry per homograph with dual-accent prons; a homograph missing
 // one accent keeps whatever it has; unparsable senses still emit a
@@ -100,8 +100,6 @@ export const macmillan2ed = {
         entry.prons = prons;
         entry.pronunciation = prons[0].ipa;
       }
-      const stars = (head.match(/★/g) ?? []).length;
-      if (stars) entry.frequencyStars = Math.min(3, stars);
       entry.senses = parseSenses(frag, pos, rel);
       if (!entry.senses.length && !prons.length) continue;
       entries.push(entry);

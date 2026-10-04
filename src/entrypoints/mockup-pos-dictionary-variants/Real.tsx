@@ -45,7 +45,7 @@ function toLookupResult(entry: MockEntry): LookupResult {
       source: 'mock',
       defaultSelected: i === 0,
     })),
-    ...(v.stars ? { frequencyStars: v.stars } : {}),
+    ...(v.stars ? { frequencyStars: { count: v.stars, source: 'MacmillanEnEn' } } : {}),
     ...(v.inflections.length ? { inflections: v.inflections } : {}),
   }));
   const first = variants[0];

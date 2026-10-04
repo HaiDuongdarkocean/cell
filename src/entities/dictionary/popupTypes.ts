@@ -112,8 +112,9 @@ export interface PosVariant {
   /** Senses belonging to this variant's pos, concatenated across
    *  providers in resource-priority order (never aligned). */
   readonly definitions: readonly DefinitionEntry[];
-  /** First-wins stars from the highest-priority provider that has them. */
-  readonly frequencyStars?: number;
+  /** First-wins stars from the highest-priority provider that has them,
+   *  rendered as a `{source} ★…` chip in the frequency row. */
+  readonly frequencyStars?: { readonly count: number; readonly source: string };
   readonly inflections?: readonly InflectionGroup[];
 }
 
@@ -139,8 +140,9 @@ export interface LookupResult {
   readonly inflections?: readonly InflectionGroup[];
   /** Entry-level CEFR/provider level (header `[B1]`). */
   readonly level?: string;
-  /** 1–3 frequency stars from the highest-priority dictionary that has them. */
-  readonly frequencyStars?: number;
+  /** 1–3 frequency stars from the highest-priority dictionary that has them,
+   *  rendered as a `{source} ★…` chip in the frequency row. */
+  readonly frequencyStars?: { readonly count: number; readonly source: string };
   /** Word origin — primary chain + checkable per-source variants. */
   readonly etymology?: EtymologyBlock;
   readonly wordFamily?: WordFamily;

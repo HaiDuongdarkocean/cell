@@ -246,7 +246,7 @@ export function CandidateView({
       </header>
 
       <div className={styles.cellContent} data-cell-id="dictionary-content">
-        {(panel.displayReading || candidate.level || panel.displayStars) && (
+        {(panel.displayReading || candidate.level) && (
           <div className={styles.cellHeaderReading}>
             {panel.variant && panel.variant.prons.length > 0 && (
               <button
@@ -286,12 +286,13 @@ export function CandidateView({
               <span className={styles.cellHeaderFrequencyRank}>{freq.rank.toLocaleString()}</span>
             </span>
           ))}
+          {panel.displayStars && (
+            <span className={styles.cellHeaderFrequency} title={t('resources.component.frequencyStars')} data-cell-id="dictionary-stars">
+              <span className={styles.cellHeaderFrequencySource}>{panel.displayStars.source}</span>
+              <span className={styles.cellHeaderFrequencyRank}>{'★'.repeat(panel.displayStars.count)}</span>
+            </span>
+          )}
         </div>
-        {panel.displayStars != null && panel.displayStars > 0 && (
-          <div className={styles.cellHeaderStars} data-cell-id="dictionary-stars">
-            {'●'.repeat(panel.displayStars)}
-          </div>
-        )}
 
         <DictionaryToolbar
           activeTab={panel.activeTab}

@@ -1550,7 +1550,7 @@ describe('lookupOrchestrator — pos variants (pos-dictionary-variants)', () => 
     const [adj, verb, noun] = result.variants!;
     expect(adj!.pos).toBe('adjective');
     expect(adj!.prons.map((p) => p.accent)).toEqual(['AmE', 'BrE']);
-    expect(adj!.frequencyStars).toBe(3);
+    expect(adj!.frequencyStars).toEqual({ count: 3, source: 'cambridge' });
     expect(adj!.definitions.map((d) => d.text)).toEqual(['existing or happening now']);
 
     expect(verb!.pos).toBe('verb');

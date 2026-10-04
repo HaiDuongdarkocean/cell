@@ -1,6 +1,7 @@
 // Macmillan-markup adapter — records shaped as `.dict-american|.dict-british`
-// homograph blocks: `.part-of-speech-ctx` pos, `.stars-grp .icon-star`
-// frequency stars, `.pron` pronunciation, `.wordforms` inflection table
+// homograph blocks: `.part-of-speech-ctx` pos, `.pron` pronunciation,
+// `.wordforms` inflection table (Macmillan frequency stars intentionally
+// NOT extracted — dictionary frequency is not imported; see ADR-113)
 // (.inflection-type → .inflection-entry pairs), `.sense > .sense-body`
 // (a.sense-num + .syntax-coding [labels] + .definition gloss + .examples >
 // strong pattern headers / p.example + .thes thesaurus synonyms) +
@@ -147,11 +148,6 @@ export const macmillan = {
           entry.prons = prons;
           entry.pronunciation = prons[0].ipa;
         }
-        const stars = blocks(hom, 'span', 'stars-grp').next();
-        if (!stars.done) {
-          const n = (stars.value.inner.match(/icon-star/g) ?? []).length;
-          if (n) entry.frequencyStars = n;
-        }
         const infl = parseInflections(hom);
         if (infl.length) entry.inflections = infl;
         for (const { inner: gref } of blocks(hom, 'div', 'gref-group')) {
@@ -177,11 +173,6 @@ export const macmillan = {
       } else {
         const pron = blockText(html, 'span', 'pron').replace(/^\/+|\/+$/g, '');
         if (pron) out.pronunciation = pron;
-      }
-      const stars = blocks(html, 'span', 'stars-grp').next();
-      if (!stars.done) {
-        const n = (stars.value.inner.match(/icon-star/g) ?? []).length;
-        if (n) out.frequencyStars = n;
       }
     }
 

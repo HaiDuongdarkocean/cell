@@ -93,6 +93,12 @@ e2e harness hardened: `brave-ext`/`brave-profile` are wiped each run and `dist/m
 |---|---|
 | Inflection type labels (`singular`, `plural`, `past tense`, `present participle`, …) rendered in the same bright color as the forms — chrome text competed with the actual inflection values | **Fixed** — type labels use `cellMetaLabel` (muted, same tone as `word forms:`); forms stay primary-bright (`07-matter-verb.png`) |
 
+### User-reported defects after manual import (fixed round 5)
+
+| Finding | Disposition |
+|---|---|
+| Dictionary `●●●` stars row — user wants dictionary-supplied frequency shown as a chip like COCA (`source ★★★`), not a bare dots line; and Macmillan frequency NOT extracted into converted JSONs | **Fixed** — `PosVariant`/`LookupResult.frequencyStars` now `{count, source}` (orchestrator tags the supplying resource); CandidateView renders it as a freq chip `{source} ★★★` inside the chip row (`01-still-adjective.png`, e2e asserts `EnEn (e2e)★★★` inside `freq-row`, absent from IPA row). `macmillan.mjs`/`macmillan2ed.mjs` no longer emit `frequencyStars`; both JSONs regenerated (0 `frequencyStars` occurrences). `defEntry` card path passes `.count` (behavior unchanged) |
+
 ## Residuals
 
 - `.mdd` audio extraction deferred by spec — `sound://` refs stored verbatim.

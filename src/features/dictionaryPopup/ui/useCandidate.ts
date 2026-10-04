@@ -64,7 +64,7 @@ export interface UseCandidateReturn {
   readonly displayReading: string;
   readonly displayDefinitions: readonly DefinitionEntry[];
   readonly displayFrequencies: readonly VariantFrequency[];
-  readonly displayStars: number | undefined;
+  readonly displayStars: { readonly count: number; readonly source: string } | undefined;
   readonly displayInflections: LookupResult['inflections'];
   readonly imageQueryTerm: string;
   readonly activeTab: PopupTab | null;
