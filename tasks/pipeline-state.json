@@ -2043,7 +2043,7 @@
       "updated": "2026-10-03T17:34:53.583Z"
     },
     "session-recap": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "all",
       "uiSurface": "yes",
       "artifacts": {
@@ -2269,12 +2269,9 @@
         }
       ],
       "loops": 0,
-      "owner": {
-        "id": "devin-session-recap-1791049127",
-        "since": "2026-10-03T17:38:48.049Z"
-      },
+      "owner": null,
       "worktree": "../cell-worktrees/session-recap",
-      "updated": "2026-10-04T04:52:59.092Z"
+      "updated": "2026-10-04T04:57:26.307Z"
     },
     "unified-resource-import": {
       "stage": "deliver",
