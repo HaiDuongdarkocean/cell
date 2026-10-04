@@ -10,7 +10,7 @@ const lookup = {
     { type: 'past', forms: ['resettled'] },
     { type: 'progressive', forms: ['resettling'] },
   ],
-  frequencyStars: 3,
+  frequencyStars: { count: 3, source: 'test' },
   wordFamily: { nouns: ['resettlement'], verbs: ['resettle'] },
   related: [
     { term: 'settle down', kind: 'phrasal' },
