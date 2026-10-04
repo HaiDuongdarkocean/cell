@@ -21,6 +21,7 @@ import {
   detectByExtension,
   looksLikePlainText,
 } from './fileDetector';
+import { ParseError } from './importErrors';
 
 /** Detect format from file name + first 1MB bytes. */
 export async function detectFormat(name: string, head: Uint8Array): Promise<ImportFormat> {
@@ -47,7 +48,8 @@ export async function detectFormat(name: string, head: Uint8Array): Promise<Impo
       const files = unzipAll(head);
       const sniffed = sniffZipFormat(files);
       if (sniffed) return sniffed;
-    } catch {
+    } catch (e) {
+      if (e instanceof ParseError) throw e;
       // corrupt or truncated zip (>1MB head) — fall through to extension;
       // importFile re-sniffs on full bytes before running the strategy.
     }
@@ -64,10 +66,8 @@ export async function detectFormat(name: string, head: Uint8Array): Promise<Impo
   if (ext === 'json' || ext === 'txt') {
     const text = decodeText(head.slice(0, 4096)).trim();
     if (ext === 'json' || text.startsWith('[') || text.startsWith('{')) {
-      if (looksLikeWordlistJson(text)) return 'wordlist-json';
-      if (looksLikeJsonFrequency(text)) return 'json-frequency';
-      if (looksLikeJsonEntries(text)) return 'json-entries';
-      if (looksLikeJsonArray(text)) return 'json-array';
+      const kind = detectJsonKind(text);
+      if (kind) return kind;
     }
     if (ext === 'txt') return 'txt';
   }
@@ -153,16 +153,51 @@ export function sniffZipFormat(files: Record<string, Uint8Array>): ImportFormat 
   ) {
     return 'term-bank';
   }
-  const jsonFile = paths.find((p) => p.endsWith('.json'));
-  if (jsonFile) {
-    const text = decodeText(files[jsonFile]!.slice(0, 8192));
-    if (looksLikeJsonEntries(text)) return 'json-entries';
-    if (looksLikeJsonFrequency(text)) return 'json-frequency';
-    if (looksLikeJsonArray(text)) return 'json-array';
-    if (looksLikeWordlistJson(text)) return 'wordlist-json';
-    if (looksLikePlainText(files[jsonFile]!)) return 'txt';
+  const json = selectZipDataJson(files);
+  if (json) return json.format;
+  const txtPaths = paths.filter((p) => p.endsWith('.txt'));
+  if (txtPaths.length > 1) {
+    throw new ParseError(`Zip contains ${txtPaths.length} word lists — import them one at a time.`);
   }
-  if (paths.some((p) => p.endsWith('.txt'))) return 'txt';
+  if (txtPaths.length === 1) return 'txt';
+  return null;
+}
+
+export interface ZipDataEntry {
+  readonly path: string;
+  readonly bytes: Uint8Array;
+  readonly format: ImportFormat;
+}
+
+const isDataJsonPath = (p: string): boolean =>
+  p.endsWith('.json') && !p.endsWith('index.json') && !p.includes('_bank_');
+
+/** The single data-shaped .json inside a zip — verified by content, not by
+ *  position. More than one = ambiguous container (a strategy can only import
+ *  one) → ParseError rather than silently dropping files. Returns null when
+ *  no .json sniffs as importable data. */
+export function selectZipDataJson(files: Record<string, Uint8Array>): ZipDataEntry | null {
+  const matched: ZipDataEntry[] = [];
+  for (const path of Object.keys(files)) {
+    if (!isDataJsonPath(path)) continue;
+    const bytes = files[path]!;
+    const format =
+      detectJsonKind(decodeText(bytes.slice(0, 8192))) ??
+      (looksLikePlainText(bytes) ? 'txt' : null);
+    if (format) matched.push({ path, bytes, format });
+  }
+  if (matched.length > 1) {
+    throw new ParseError(`Zip contains ${matched.length} data files — import them one at a time.`);
+  }
+  return matched[0] ?? null;
+}
+
+/** JSON shape → format. The shapes are mutually exclusive by construction. */
+export function detectJsonKind(text: string): ImportFormat | null {
+  if (looksLikeJsonEntries(text)) return 'json-entries';
+  if (looksLikeJsonFrequency(text)) return 'json-frequency';
+  if (looksLikeJsonArray(text)) return 'json-array';
+  if (looksLikeWordlistJson(text)) return 'wordlist-json';
   return null;
 }
 

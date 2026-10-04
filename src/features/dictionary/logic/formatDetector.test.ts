@@ -87,4 +87,42 @@ describe('formatDetector', () => {
     const zipped = zipSync({ 'unknown.dat': strToU8('binary') });
     await expect(detectFormat('unknown.zip', zipped)).resolves.toBe('term-bank');
   });
+
+  it('rejects a zip holding two data-shaped .json files instead of dropping one', async () => {
+    const zipped = zipSync({
+      'entries.json': strToU8(JSON.stringify([{ term: 'a', definition: 'b' }])),
+      'freq.json': strToU8(JSON.stringify(['x', 'y'])),
+    });
+    await expect(detectFormat('mixed.zip', zipped)).rejects.toThrow(/import them one at a time/);
+  });
+
+  it('rejects a zip holding two .txt word lists', async () => {
+    const zipped = zipSync({
+      'a.txt': strToU8('one\n'),
+      'b.txt': strToU8('two\n'),
+    });
+    await expect(detectFormat('lists.zip', zipped)).rejects.toThrow(/import them one at a time/);
+  });
+
+  it('ignores index.json and bank files when picking the data .json', async () => {
+    const zipped = zipSync({
+      'index.json': strToU8('{"title":"t"}'),
+      'data.json': strToU8(JSON.stringify(['a', 'b'])),
+    });
+    await expect(detectFormat('freq.zip', zipped)).resolves.toBe('json-array');
+  });
+
+  it('detects large .txt.gz via inner extension when the head cannot decompress', async () => {
+    const head = strToU8('hello\nworld\n');
+    const gz = gzipSync(head);
+    const truncatedHead = gz.slice(0, Math.floor(gz.length / 2));
+    await expect(detectFormat('words.txt.gz', truncatedHead)).resolves.toBe('txt');
+  });
+
+  it('detects large .json.gz via inner extension when the head cannot decompress', async () => {
+    const head = strToU8('["hello","world"]');
+    const gz = gzipSync(head);
+    const truncatedHead = gz.slice(0, Math.floor(gz.length / 2));
+    await expect(detectFormat('freq.json.gz', truncatedHead)).resolves.toBe('json-array');
+  });
 });

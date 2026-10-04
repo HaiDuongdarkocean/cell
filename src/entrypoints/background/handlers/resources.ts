@@ -71,6 +71,9 @@ interface PendingImport {
   createdAt: number;
   stallTimer: ReturnType<typeof setTimeout> | null;
   readonly meta: ImportChunkMeta;
+  /** Latest component selection — refreshed per chunk so toggles made
+   *  mid-upload land in the payload handed to the import executor. */
+  components?: readonly DictionaryComponent[];
 }
 
 interface QueuedImportPayload extends ImportChunkMeta {
@@ -278,6 +281,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     try {
       const resource = await getResource(langCode, resourceId);
       if (!resource) return toError(new Error(t('resources.error.notFound')));
+      if (resource.installationFinished === false) return ok({ components: resource.components ?? [] });
       if (resource.components && resource.components.length > 0) return ok({ components: resource.components });
       const set = new Set<DictionaryComponent>();
       for (const entry of await findDictionaryByResource(langCode, resourceId)) {
@@ -368,11 +372,13 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
           fileName: p.fileName,
           fileMime: p.fileMime,
           langCode: p.langCode,
-          components: p.components,
           duplicateDecision: p.duplicateDecision,
         },
+        components: p.components,
       };
       pendingImports.set(p.jobId, pending);
+    } else {
+      pending.components = p.components;
     }
 
     if (p.seq < 0 || p.seq >= pending.chunks.length) {
@@ -394,12 +400,14 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     }
 
     const meta = pending.meta;
+    const components = pending.components;
     clearPending(p.jobId);
     try {
       const bytes = base64ToBytes(pending.chunks.join(''));
       importPayloads.set(p.jobId, {
         file: new File([bytes as BlobPart], meta.fileName, { type: meta.fileMime }),
         ...meta,
+        components,
       });
       const job = registry.update(p.jobId, { status: 'queued' }, { persistNow: true });
       if (job) registry.startIfSlotFree(job);

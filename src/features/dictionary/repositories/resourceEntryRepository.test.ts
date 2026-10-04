@@ -61,7 +61,7 @@ function makeDictEntry(term: string, resourceId = RESOURCE_ID) {
   };
 }
 
-describe('dictionaryRepository', () => {
+describe('resourceEntryRepository — dictionary', () => {
   it('addDictionaryEntry returns auto-generated id', async () => {
     const id = await addDictionaryEntry(LANG, makeDictEntry('hello'));
     expect(typeof id).toBe('number');

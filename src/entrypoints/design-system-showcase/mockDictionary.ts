@@ -256,8 +256,11 @@ function buildLookupResult(term: string): LookupResult {
   return getMockLookupResult(SHOWCASE_DATA, term);
 }
 
+const resourceOverrides = new Map<number, Partial<ResourceInfo>>();
+
 function mockResourceList(langCode: string): ResourceInfo[] {
-  return [...getMockResourcesForLang(langCode), ...importedResources.values()];
+  return [...getMockResourcesForLang(langCode), ...importedResources.values()]
+    .map((r) => (r.id != null && resourceOverrides.has(r.id) ? { ...r, ...resourceOverrides.get(r.id) } : r));
 }
 
 const MOCK_IMPORT_TOTAL = 12000;
@@ -479,10 +482,29 @@ async function mockSendMessage(message: unknown): Promise<unknown> {
       return result;
     }
 
+    case MESSAGE_TYPES.RESOURCE_SET_COMPONENTS: {
+      const p = m.payload ?? {};
+      resourceOverrides.set(Number(p.resourceId), {
+        disabledComponents: (p.disabledComponents as DictionaryComponent[] | undefined) ?? [],
+      });
+      return { success: true };
+    }
+
     case MESSAGE_TYPES.RESOURCE_REORDER:
     case MESSAGE_TYPES.RESOURCE_SET_ENABLED:
     case MESSAGE_TYPES.RESOURCE_SET_PROFILES:
       return { success: true };
+
+    case MESSAGE_TYPES.RESOURCE_COMPONENTS: {
+      const id = Number(m.payload?.resourceId);
+      const row = importedResources.get(id)
+        ?? getMockResourcesForLang('en').find((r) => r.id === id);
+      const result: MessageResponse<{ components: readonly DictionaryComponent[] }> = {
+        success: true,
+        data: { components: row?.components ?? [] },
+      };
+      return result;
+    }
 
     case MESSAGE_TYPES.RESOURCE_SAMPLE: {
       const result: MessageResponse<{ entries: unknown[] }> = { success: true, data: { entries: [] } };

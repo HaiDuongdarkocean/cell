@@ -168,6 +168,9 @@ export function detectByExtension(name: string): ImportFormat | null {
   if (ext === 'gz') {
     const inner = getExtension(stripExtension(name));
     if (inner === 'db') return 'sqlite';
+    if (inner === 'txt') return 'txt';
+    if (inner === 'json') return 'json-array';
+    if (inner === 'zip') return 'term-bank';
     return null;
   }
   if (ext === 'txt') return 'txt';

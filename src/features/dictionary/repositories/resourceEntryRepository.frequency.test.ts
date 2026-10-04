@@ -52,7 +52,7 @@ function makeEntry(term: string, frequency: number, resourceId = RESOURCE_ID) {
   return { resourceId, term, reading: term, frequency };
 }
 
-describe('frequencyRepository', () => {
+describe('resourceEntryRepository — frequency', () => {
   it('addFrequencyEntry returns auto-generated id', async () => {
     const id = await addFrequencyEntry(LANG, makeEntry('hello', 1));
     expect(typeof id).toBe('number');

@@ -382,7 +382,6 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deleteManyTarget, setDeleteManyTarget] = useState<readonly number[] | null>(null);
   const jobsRef = useRef<ImportJob[]>([]);
-  const successTimers = useRef<Partial<Record<string, ReturnType<typeof setTimeout>>>>({});
   const alertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // jobsRef is the SSOT — updated synchronously so pump()/runJob() read the
@@ -484,12 +483,7 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
 
   // Clear pending auto-dismiss timers on unmount.
   useEffect(() => {
-    const timers = successTimers.current;
     return () => {
-      for (const key of Object.keys(timers)) {
-        const t = timers[key];
-        if (t) clearTimeout(t);
-      }
       if (alertTimer.current) clearTimeout(alertTimer.current);
     };
   }, []);
@@ -531,13 +525,16 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
 
     patchJob(jobId, { status: 'uploading', error: null });
     try {
-      const narrowedComponents = job.selectedComponents.length !== job.detectedComponents.length
-        ? job.selectedComponents
-        : undefined;
       const outcome = await importFile(job.file as ReadableFile, {
         langCode,
         jobId,
-        components: narrowedComponents,
+        getComponents: () => {
+          const current = jobsRef.current.find((j) => j.jobId === jobId);
+          if (!current) return undefined;
+          return current.selectedComponents.length !== current.detectedComponents.length
+            ? [...current.selectedComponents]
+            : undefined;
+        },
         onUploadProgress: (sent, total) => patchJob(jobId, { uploadSent: sent, uploadTotal: total }),
         onDuplicate: job.forceReplace
           ? () => 'replace'
@@ -833,7 +830,10 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
       )}
       {deleteAllOpen && (
         <DeleteConfirmModal
-          title={t('resources.deleteAll.title', [resources.length, t(UNIFIED_COPY.noun)])}
+          title={t('resources.deleteAll.title', [
+            resources.filter((r) => r.installationFinished !== false).length,
+            t(UNIFIED_COPY.noun),
+          ])}
           description={t('resources.deleteAll.desc', [t(UNIFIED_COPY.noun)])}
           onConfirm={() => void handleDeleteAll()}
           onCancel={() => setDeleteAllOpen(false)}

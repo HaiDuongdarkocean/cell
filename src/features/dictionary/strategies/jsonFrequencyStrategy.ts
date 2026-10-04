@@ -7,7 +7,8 @@
 
 import { BaseFrequencyStrategy } from './baseImportStrategy';
 import type { StrategyOptions, RawFrequencyEntry } from './baseImportStrategy';
-import { decodeText, isGzip, gunzipFile } from '../logic/fileDetector';
+import { decodeText, isGzip, gunzipFile, isZip, unzipAll } from '../logic/fileDetector';
+import { selectZipDataJson } from '../logic/formatDetector';
 import { ParseError } from '../logic/importErrors';
 import { bulkInsertFrequencyEntries } from '../repositories/resourceEntryRepository';
 import type { FrequencyEntry, FrequencyGenres } from '@/entities/dictionary';
@@ -42,6 +43,12 @@ export class JsonFrequencyStrategy extends BaseFrequencyStrategy {
   protected async *parse(): AsyncGenerator<RawFrequencyEntry> {
     let data = this.data;
     if (isGzip(data)) data = gunzipFile(data);
+    if (isZip(data)) {
+      const files = unzipAll(data);
+      const entry = selectZipDataJson(files);
+      if (!entry) throw new ParseError('JSON frequency zip: no .json entry found.');
+      data = entry.bytes;
+    }
 
     let parsed: unknown;
     try {

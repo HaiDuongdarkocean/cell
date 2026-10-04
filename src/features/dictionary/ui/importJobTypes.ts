@@ -12,7 +12,7 @@
 // row is suppressed — the same entry never appears twice.
 
 import type { DictionaryComponent, DuplicateDecision, ResourceInfo } from '@/entities/dictionary';
-import type { Job } from '@/entities/job/types';
+import { isTerminalJob, type Job } from '@/entities/job/types';
 
 export type ImportJobStatus =
   | 'queued'
@@ -118,7 +118,7 @@ export const buildPendingImports = (
   for (const resource of resources) {
     if (resource.installationFinished !== false || resource.id == null) continue;
     const registry = registryJobs.find(
-      (j) => j.kind === 'resource-import'
+      (j) => j.kind === 'resource-import' && !isTerminalJob(j)
         && (j.resourceId === resource.id || signatureOf(j) === resource.signature),
     );
     const local = registry

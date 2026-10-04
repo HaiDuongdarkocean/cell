@@ -93,12 +93,21 @@ test.describe('Unified resource import — one section, components from content'
     await showcasePage.screenshot({ path: `${EVIDENCE_DIR}/03-mixed-import.png`, fullPage: false });
   });
 
-  test('component chip toggles via aria-pressed on a mixed card', async ({ showcasePage }) => {
+  test('component chip toggles via aria-pressed on a mixed card and persists', async ({ showcasePage }) => {
     const frame = await openResourcesSection(showcasePage);
     const chip = frame.locator('[data-cell-id="component-frequency-4"]');
     await expect(chip).toBeVisible();
     await expect(chip).toHaveAttribute('aria-pressed', 'true');
     await chip.click();
     await expect(chip).toHaveAttribute('aria-pressed', 'false');
+
+    // Remount the section — the panel re-fetches RESOURCE_LIST and the mock
+    // must still report the component disabled, like real IDB persistence.
+    await frame.locator('[data-section-id="general"]').first().click();
+    const navBack = frame.locator('[data-section-id="resources"]').first();
+    await navBack.click();
+    const chipAfter = frame.locator('[data-cell-id="component-frequency-4"]');
+    await expect(chipAfter).toBeVisible();
+    await expect(chipAfter).toHaveAttribute('aria-pressed', 'false');
   });
 });

@@ -81,8 +81,8 @@ export interface FrequencyGenres {
 }
 
 /** Frequency entry — 1 row per word (or per (word,pos) for pos-aware
- *  lists — langFrequencyEntry store). Old rows lack pos/total/genres and
- *  behave as term-level fallbacks for every variant. */
+ *  lists), stored as kind:'freq' rows in the unified entry store. Old rows
+ *  lack pos/total/genres and behave as term-level fallbacks for every variant. */
 export interface FrequencyEntry {
   readonly id?: number;
   readonly resourceId: number;

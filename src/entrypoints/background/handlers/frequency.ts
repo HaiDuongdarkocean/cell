@@ -42,7 +42,9 @@ export function registerFrequencyHandlers(ctx: BackgroundContext): void {
     const { langCode, terms } = parsed.data;
     try {
       const allowed = frequencyAllowedIds(await getAllResources(langCode));
-      const map = await findFrequencyByTerms(langCode, terms, allowed);
+      const map = allowed.size === 0
+        ? new Map<string, FrequencyEntry[]>()
+        : await findFrequencyByTerms(langCode, terms, allowed);
       const entries: Record<string, FrequencyEntry[]> = {};
       for (const [term, value] of map.entries()) {
         entries[term] = value;

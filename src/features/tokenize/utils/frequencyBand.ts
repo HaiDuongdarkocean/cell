@@ -31,7 +31,7 @@ export async function loadFrequencyBandOptions(langCode: string): Promise<Freque
   return {
     thresholds: settings.frequencyBands ?? DEFAULT_BAND_THRESHOLDS,
     resourcePriority: resources
-      .filter((r) => r.enabled !== false && resourceOffersComponent(r, 'frequency'))
+      .filter((r) => r.enabled !== false && r.installationFinished && resourceOffersComponent(r, 'frequency'))
       .map((r) => r.id!)
       .filter((id): id is number => id !== undefined),
   };

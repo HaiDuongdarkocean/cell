@@ -7,6 +7,7 @@
 import { BaseDictionaryStrategy } from './baseImportStrategy';
 import type { StrategyOptions, RawDictionaryEntry } from './baseImportStrategy';
 import { decodeText, isGzip, gunzipFile, isZip, unzipAll } from '../logic/fileDetector';
+import { selectZipDataJson } from '../logic/formatDetector';
 import { ParseError } from '../logic/importErrors';
 import { bulkInsertDictionaryEntries } from '../repositories/resourceEntryRepository';
 import type { DictionaryEntry } from '@/entities/dictionary';
@@ -30,9 +31,9 @@ export class WordlistJsonStrategy extends BaseDictionaryStrategy {
     if (isGzip(data)) data = gunzipFile(data);
     if (isZip(data)) {
       const files = unzipAll(data);
-      const jsonPath = Object.keys(files).find((p) => p.endsWith('.json'));
-      if (!jsonPath) throw new ParseError('wordlist zip: no .json entry found.');
-      data = files[jsonPath]!;
+      const entry = selectZipDataJson(files);
+      if (!entry) throw new ParseError('wordlist zip: no .json entry found.');
+      data = entry.bytes;
     }
 
     let parsed: WordlistJson;

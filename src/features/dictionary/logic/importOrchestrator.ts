@@ -5,7 +5,7 @@
 // (wordCount, installationFinished=true) → return result.
 // Error → rollbackImport(resourceId) → rethrow. Rollback-during-rollback → RollbackError.
 
-import { validateFile, readFileHead, readFileBytes, isZip, unzipAll } from '../logic/fileDetector';
+import { validateFile, readFileHead, readFileBytes, isGzip, isZip, gunzipFile, unzipAll, getExtension, stripExtension } from '../logic/fileDetector';
 import type { ReadableFile } from '../logic/fileDetector';
 import { detectFormat, sniffZipFormat } from '../logic/formatDetector';
 import { deriveResourceType } from '../logic/dictionaryComponents';
@@ -72,7 +72,15 @@ export async function importFile(
   }
 
   // 6. Read full file bytes
-  const data = await readFileBytes(file);
+  let data = await readFileBytes(file);
+
+  // 6a. A .gz whose head couldn't gunzip (or whose inner kind was guessed
+  //     from the inner extension) gets a content-truth re-sniff here —
+  //     decompressed bytes flow on to the strategy so it skips its own pass.
+  if (isGzip(data) && getExtension(file.name) === 'gz') {
+    data = gunzipFile(data);
+    format = await detectFormat(stripExtension(file.name), data.slice(0, 1024 * 1024));
+  }
 
   // 6b. Zip >1MB can't be sniffed from the head — 'term-bank' is only the
   //     extension default there. Re-sniff authoritative content on full bytes.

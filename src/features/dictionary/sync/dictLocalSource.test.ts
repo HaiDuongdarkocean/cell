@@ -263,8 +263,8 @@ describe('dictLocalSource — dictResource', () => {
     const hash = 'ch-import-1';
     const bytes = serializeResourcePortable(
       [
-        { term: 'hola mundo', reading: 'hola mundo', defs: [{ text: 'hello world' }] },
-        { term: 'gato', reading: 'gato', defs: [{ text: 'cat' }] },
+        { term: 'hola mundo', reading: 'hola mundo', definition: 'hello world' },
+        { term: 'gato', reading: 'gato', definition: 'cat' },
       ],
       [{ term: 'hola mundo', freq: 42 }],
     );
@@ -294,10 +294,46 @@ describe('dictLocalSource — dictResource', () => {
     expect(stored?.contentHash).toBe(hash);
     expect(stored?.installationFinished).toBe(true);
     expect(stored?.wordCount).toBe(3);
+    expect(stored?.type).toBe('DICTIONARY');
+    expect(stored?.components).toEqual(expect.arrayContaining(['definitions', 'frequency']));
     const entries = await findDictionaryByResource(LANG, stored!.id!);
     expect(entries.map((entry) => entry.term).sort()).toEqual(['gato', 'hola mundo']);
     const freq = await findFrequencyByResource(LANG, stored!.id!);
     expect(freq.map((entry) => entry.term)).toEqual(['hola mundo']);
+  });
+
+  it('derives FREQUENCY type and components for a frequency-only blob', async () => {
+    const source = createDictLocalSource(LANG, 'dictResource');
+    const hash = 'ch-import-freq';
+    const bytes = serializeResourcePortable(
+      [],
+      [{ term: 'hola', freq: 10 }, { term: 'mundo', freq: 20 }],
+    );
+    const remote: ChangeRecord = {
+      scope: SCOPE,
+      dataClass: 'dictResource',
+      key: `resource:${hash}`,
+      op: 'put',
+      value: {
+        name: 'Remote Freq',
+        langCode: LANG,
+        type: 'DICTIONARY',
+        format: 'txt',
+        enabled: true,
+        priority: 1,
+        contentHash: hash,
+      },
+      hlc: farFuture(),
+    };
+    const fetchBlob = jest.fn(async () => new Blob([bytes.buffer as ArrayBuffer]));
+    const result = await source.applyRemote([remote], { fetchBlob });
+    expect(result.applied).toHaveLength(1);
+
+    const stored = await findResourceBySignature(LANG, hash);
+    expect(stored?.type).toBe('FREQUENCY');
+    expect(stored?.components).toEqual(['frequency']);
+    const freq = await findFrequencyByResource(LANG, stored!.id!);
+    expect(freq.map((entry) => entry.term).sort()).toEqual(['hola', 'mundo']);
   });
 
   it('imports identical rows from a gzip-compressed blob', async () => {

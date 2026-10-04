@@ -10,7 +10,7 @@
 
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { getLocale, t, type MessageKey } from '@/shared/i18n';
-import { Card, Checkbox, Dialog, Input } from '@/shared/ui';
+import { Card, Checkbox, Chip, Dialog, Input } from '@/shared/ui';
 import { Button } from '@/shared/ui/Button';
 import { DragHandle } from '@/shared/ui/DragHandle';
 import { Menu, MenuItem } from '@/shared/ui/Menu';
@@ -64,7 +64,6 @@ interface ResourceCardProps {
   readonly editing?: boolean;
   readonly selected?: boolean;
   readonly onSelect?: () => void;
-  readonly deleteProgress?: { readonly done: number; readonly items: number; readonly index: number; readonly total: number } | null;
   /** Live progress for a resource the importer is still filling. */
   readonly importProgress?: ResourceImportProgress | null;
 }
@@ -80,17 +79,13 @@ export function ResourceCard({
   editing = false,
   selected = false,
   onSelect,
-  deleteProgress,
   importProgress,
 }: ResourceCardProps): ReactElement {
-  const deletingNow = deleteProgress != null;
   const importing = resource.installationFinished === false;
-  const busy = deletingNow || importing;
-  const pct = deletingNow && deleteProgress.items > 0
-    ? Math.min(100, Math.round((deleteProgress.done / deleteProgress.items) * 100))
-    : importing && importProgress != null && importProgress.total > 0
-      ? Math.min(100, Math.round((importProgress.done / importProgress.total) * 100))
-      : null;
+  const busy = importing;
+  const pct = importing && importProgress != null && importProgress.total > 0
+    ? Math.min(100, Math.round((importProgress.done / importProgress.total) * 100))
+    : null;
   const importMeta = !importing
     ? null
     : importProgress == null
@@ -217,18 +212,10 @@ export function ResourceCard({
     <Card
       ref={cardRef}
       variant={editing && selected ? 'selected' : 'default'}
-      className={`${styles.card} ${enabled ? '' : styles.cardDisabled} ${dragging ? styles.cardDragging : ''} ${deletingNow ? styles.cardDeleting : ''}`}
+      className={`${styles.card} ${enabled ? '' : styles.cardDisabled} ${dragging ? styles.cardDragging : ''}`}
       data-cell-id={`resource-card-${resourceId}`}
       aria-busy={busy || undefined}
     >
-      {deletingNow && (
-        <span
-          className={styles.deleteFill}
-          style={{ height: pct == null ? '8%' : `${pct}%` }}
-          aria-hidden="true"
-          data-cell-id={`deleting-${resourceId}`}
-        />
-      )}
       {importing && (
         <span
           className={styles.importFill}
@@ -242,7 +229,7 @@ export function ResourceCard({
           !importing && (
             <Checkbox
               checked={selected}
-              onChange={() => { if (!deletingNow) onSelect?.(); }}
+              onChange={() => onSelect?.()}
               aria-label={t('resources.card.select', [displayName])}
               className={styles.selectCheck}
               data-cell-id={`check-${resourceId}`}
@@ -297,13 +284,6 @@ export function ResourceCard({
               </button>
             )}
           </div>
-          {deletingNow && (
-            <span className={styles.rowMeta}>
-              {deleteProgress.total > 1
-                ? t('resources.delete.progress', [deleteProgress.index, deleteProgress.total])
-                : t('resources.delete.progressOne')}
-            </span>
-          )}
           {importing && (
             <span className={styles.rowMeta} data-cell-id={`import-meta-${resourceId}`}>
               {importMeta}
@@ -319,17 +299,18 @@ export function ResourceCard({
               {components.map((component) => {
                 const off = disabledComponents.has(component);
                 return (
-                  <button
+                  <Chip
                     key={component}
-                    type="button"
-                    className={`${styles.componentChip} ${off ? styles.componentChipOff : ''}`}
-                    aria-pressed={!off}
+                    as="button"
+                    size="sm"
+                    variant="outline"
+                    selected={!off}
                     title={t(off ? 'resources.component.enable' : 'resources.component.disable', [t(COMPONENT_LABEL[component])])}
                     onClick={() => toggleComponent(component)}
                     data-cell-id={`component-${component}-${resourceId}`}
                   >
                     {t(COMPONENT_LABEL[component])}
-                  </button>
+                  </Chip>
                 );
               })}
             </div>
@@ -339,7 +320,7 @@ export function ResourceCard({
         {busy ? (
           <>
             {pct != null && <span className={styles.rowPct}>{pct}%</span>}
-            <Spinner size="sm" ariaLabel={importing ? (importMeta ?? undefined) : t('resources.delete.progressOne')} />
+            <Spinner size="sm" ariaLabel={importMeta ?? undefined} />
           </>
         ) : (
           <>

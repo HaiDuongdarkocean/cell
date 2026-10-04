@@ -34,6 +34,9 @@ interface ImportCallbacks {
   readonly jobId?: string;
   /** Component subset the user picked on a multi-component file; absent = all detected. */
   readonly components?: readonly DictionaryComponent[];
+  /** Live selection source — called per chunk so toggles mid-upload take
+   *  effect; the background keeps the value from the last chunk received. */
+  readonly getComponents?: () => readonly DictionaryComponent[] | undefined;
   readonly onDuplicate?: (existing: ResourceInfo) => DuplicateDecision | Promise<DuplicateDecision>;
   /** Called after each base64 chunk is acknowledged by the background. */
   readonly onUploadProgress?: (sent: number, total: number) => void;
@@ -176,7 +179,7 @@ export async function importResourceFile(
   file: ReadableFile,
   options: ImportCallbacks,
 ): Promise<{ jobId: string } | { skipped: true; existingResource: ResourceInfo }> {
-  const { langCode, jobId: providedJobId, components, onDuplicate, onUploadProgress } = options;
+  const { langCode, jobId: providedJobId, components, getComponents, onDuplicate, onUploadProgress } = options;
 
   const signature = await computeSignature(file);
   const existing = (await listResources(langCode)).find((r) => r.signature === signature);
@@ -198,6 +201,7 @@ export async function importResourceFile(
   const total = Math.max(1, Math.ceil(base64.length / IMPORT_CHUNK_SIZE));
   for (let seq = 0; seq < total; seq++) {
     const last = seq === total - 1;
+    const selection = getComponents?.() ?? components;
     const res = await request<{ received?: number; jobId?: string }>(
       MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
       {
@@ -208,7 +212,7 @@ export async function importResourceFile(
         fileName: file.name,
         fileMime: (file as File).type ?? '',
         langCode,
-        components: components ? [...components] : undefined,
+        components: selection ? [...selection] : undefined,
         signature,
         duplicateDecision: decision === 'replace' ? 'replace' : undefined,
       },

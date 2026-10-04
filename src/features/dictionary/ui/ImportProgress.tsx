@@ -175,6 +175,8 @@ export function ImportProgress({ job, onToggleComponent, onResolveDuplicate, onR
                 const pickable = job.detectedComponents.length > 1
                   && PICKER_LIVE.has(job.status)
                   && onToggleComponent !== undefined;
+                const lastSelected = job.selectedComponents.length === 1
+                  && job.selectedComponents[0] === c;
                 return pickable ? (
                   <Chip
                     key={c}
@@ -182,6 +184,8 @@ export function ImportProgress({ job, onToggleComponent, onResolveDuplicate, onR
                     size="sm"
                     variant="outline"
                     selected={job.selectedComponents.includes(c)}
+                    disabled={lastSelected}
+                    title={lastSelected ? t('resources.job.componentRequired') : undefined}
                     onClick={() => onToggleComponent(job.jobId, c)}
                     aria-label={t('resources.job.componentToggle', [label])}
                     data-cell-id={`job-component-${c}-${job.jobId}`}

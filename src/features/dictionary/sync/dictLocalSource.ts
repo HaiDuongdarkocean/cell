@@ -16,7 +16,7 @@ import type { DictionaryComponent, ResourceInfo, WordStatus } from '@/entities/d
 import type { WordStatusSource } from '@/features/dictionary/services/wordStatusArbitration';
 import { getDB, INDEXES, STORES } from '../repositories/baseRepository';
 import { buildPhraseIndexForResource } from '../logic/phraseIndexBuilder';
-import { collectEntryComponents, sortedComponents, type ComponentSource } from '../logic/dictionaryComponents';
+import { collectEntryComponents, deriveResourceType, sortedComponents, type ComponentSource } from '../logic/dictionaryComponents';
 import { gunzipFile, isGzip } from '../logic/fileDetector';
 import { blobBytes } from '@/features/sync';
 import {
@@ -337,6 +337,7 @@ class DictResourceLocalSource extends IdbLocalSource {
       collectEntryComponents(componentSet, entry as unknown as ComponentSource);
     }
     if (freqRows.length > 0) componentSet.add('frequency');
+    const components = sortedComponents(componentSet);
     const ftx = db.transaction([STORES.RESOURCE], 'readwrite');
     const store = ftx.objectStore(STORES.RESOURCE);
     const fresh = (await idbRequest(store.get(row.id))) as ResourceInfo | undefined;
@@ -344,7 +345,8 @@ class DictResourceLocalSource extends IdbLocalSource {
       await idbRequest(
         store.put({
           ...fresh,
-          components: sortedComponents(componentSet),
+          type: deriveResourceType(components),
+          components,
           installationFinished: true,
           wordCount: dictRows.length + freqRows.length,
         }),

@@ -157,10 +157,15 @@ describe('ResourcesPanel', () => {
           langCode: 'en',
           onDuplicate: expect.any(Function),
           jobId: expect.any(String),
-          components: undefined,
+          getComponents: expect.any(Function),
         }),
       ),
     );
+    const [, opts] = importFile.mock.calls[0] as unknown as [
+      unknown,
+      { getComponents: () => readonly string[] | undefined },
+    ];
+    expect(opts.getComponents()).toBeUndefined();
   });
 
   it('sends a components subset only after the user narrows detection', async () => {
@@ -170,10 +175,11 @@ describe('ResourcesPanel', () => {
     (detectComponents as jest.Mock).mockImplementation(async (name: string) =>
       name === 'mixed.zip' ? ['definitions', 'frequency'] : ['frequency']);
     let resolveFirst!: (v: { jobId: string }) => void;
+    let resolveThird!: (v: { jobId: string }) => void;
     importFile
       .mockImplementationOnce(() => new Promise((r) => { resolveFirst = r; }))
       .mockImplementationOnce(() => new Promise(() => {}))
-      .mockResolvedValue({ jobId: 'job-3' });
+      .mockImplementationOnce(() => new Promise((r) => { resolveThird = r; }));
 
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
@@ -184,15 +190,16 @@ describe('ResourcesPanel', () => {
     ]);
 
     const freqChip = await screen.findByRole('button', { name: /frequency/i });
-    fireEvent.click(freqChip);
+    act(() => { fireEvent.click(freqChip); });
     act(() => resolveFirst({ jobId: 'job-1' }));
 
-    await waitFor(() =>
-      expect(importFile).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({ components: ['definitions'] }),
-      ),
-    );
+    await waitFor(() => expect(importFile).toHaveBeenCalledTimes(3));
+    const [, opts] = importFile.mock.calls[2] as unknown as [
+      unknown,
+      { getComponents: () => readonly string[] | undefined },
+    ];
+    expect(opts.getComponents()).toEqual(['definitions']);
+    act(() => resolveThird({ jobId: 'job-3' }));
   });
 
   it('dropping N files creates N independent job rows', async () => {

@@ -6,7 +6,7 @@ import { countFrequencyByResource } from '@/features/dictionary/repositories/res
 import { countDictionaryByResource } from '@/features/dictionary/repositories/resourceEntryRepository';
 import { hasPhraseIndex, getPhraseIndex } from '@/features/dictionary/repositories/phraseIndexRepository';
 
-import { strToU8 } from 'fflate';
+import { strToU8, gzipSync, zipSync } from 'fflate';
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
 
@@ -38,7 +38,10 @@ afterAll(() => {
 const LANG = 'en';
 
 function makeFile(name: string, content: string): { name: string; size: number; slice: (s: number, e: number) => { arrayBuffer(): Promise<ArrayBuffer> } } {
-  const bytes = strToU8(content);
+  return makeBytesFile(name, strToU8(content));
+}
+
+function makeBytesFile(name: string, bytes: Uint8Array): { name: string; size: number; slice: (s: number, e: number) => { arrayBuffer(): Promise<ArrayBuffer> } } {
   return {
     name,
     size: bytes.length,
@@ -87,6 +90,33 @@ describe('importOrchestrator', () => {
       expect(result.wordCount).toBe(2);
       expect(result.format).toBe('json-entries');
       expect(await countDictionaryByResource(LANG, result.resourceId)).toBe(2);
+    });
+
+    it('imports a gzipped .txt frequency list end-to-end', async () => {
+      const file = makeBytesFile('words.txt.gz', gzipSync(strToU8('hello\nworld\n')));
+      const result = await importFile(file, { langCode: LANG });
+      expect(result.format).toBe('txt');
+      expect(result.wordCount).toBe(2);
+      const resource = await getResource(LANG, result.resourceId);
+      expect(resource?.installationFinished).toBe(true);
+      expect(await countFrequencyByResource(LANG, result.resourceId)).toBe(2);
+    });
+
+    it('imports a gzipped .json frequency list end-to-end', async () => {
+      const file = makeBytesFile('freq.json.gz', gzipSync(strToU8('["alpha","beta","gamma"]')));
+      const result = await importFile(file, { langCode: LANG });
+      expect(result.format).toBe('json-array');
+      expect(result.wordCount).toBe(3);
+      expect(await countFrequencyByResource(LANG, result.resourceId)).toBe(3);
+    });
+
+    it('rejects a zip holding two data-shaped .json files with an honest error', async () => {
+      const zipped = zipSync({
+        'entries.json': strToU8(JSON.stringify([{ term: 'a', definition: 'b' }])),
+        'freq.json': strToU8(JSON.stringify(['x', 'y'])),
+      });
+      const file = makeBytesFile('mixed.zip', zipped);
+      await expect(importFile(file, { langCode: LANG })).rejects.toThrow(/import them one at a time/);
     });
   });
 

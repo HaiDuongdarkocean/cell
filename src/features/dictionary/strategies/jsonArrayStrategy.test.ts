@@ -72,7 +72,25 @@ describe('jsonArrayStrategy', () => {
       { resourceId: 1, langCode: LANG },
       { data, fileName: 'freq.json' },
     );
-    await expect(strategy.execute()).rejects.toThrow(/Expected JSON array/);
+    await expect(strategy.execute()).rejects.toThrow(/JSON array of strings/);
+  });
+
+  it('rejects an array of objects instead of importing keys as terms', async () => {
+    const data = strToU8(JSON.stringify([{ term: 'alpha', definition: 'gloss' }]));
+    const strategy = new JsonArrayStrategy(
+      { resourceId: 1, langCode: LANG },
+      { data, fileName: 'entries.json' },
+    );
+    await expect(strategy.execute()).rejects.toThrow(/JSON array of strings/);
+  });
+
+  it('rejects an array mixing strings with other values', async () => {
+    const data = strToU8('["alpha", 5, "beta"]');
+    const strategy = new JsonArrayStrategy(
+      { resourceId: 1, langCode: LANG },
+      { data, fileName: 'freq.json' },
+    );
+    await expect(strategy.execute()).rejects.toThrow(/JSON array of strings/);
   });
 
   it('auto-unzips .zip containing a .json array', async () => {
