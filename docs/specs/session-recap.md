@@ -83,7 +83,7 @@ REQ-3: Recap tab surface trong universal panel
 REQ-4: Tap term → tra lại trong dictionary tab
 - Actor: learner
 - Goal: từ trong recap mở lại lookup trong dictionary tab
-- Preconditions: `UniversalPanelController.openDictionaryLookup(term)` tồn tại (`UniversalPanelController.ts:113-117` → `pendingSearchTerm` → `initialTerm`, `mountUniversalPanel.ts:138-140,190`; `DictionaryTab` re-read `initialTerm` qua `useEffect` `:44-49` + remount khi đổi tab `UniversalPanel.tsx:266`)
+- Preconditions: `UniversalPanelController.openDictionaryLookup(term)` tồn tại (`UniversalPanelController.ts:113-117` → `pendingSearchTerm` → `initialTerm`, `mountUniversalPanel.ts:138-140,190`; `DictionaryTab` re-read `initialTerm` qua `useEffect` `:44-49` — prop-change đủ trigger, không cần remount (tab giờ keep-alive `visitedTabs` + `hidden` ở `UniversalPanel.tsx`);
 - Basic flow:
   1. Learner tap chip từ trong recap
   2. System gọi `openDictionaryLookup(term)` → panel switch sang tab dictionary với term prefill

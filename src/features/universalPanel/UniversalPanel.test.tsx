@@ -55,6 +55,69 @@ describe('UniversalPanel component', () => {
     expect(screen.queryByTestId('settings-content')).not.toBeInTheDocument();
   });
 
+  it('keeps a visited tab mounted across tab switches', () => {
+    const props = {
+      isOpen: true,
+      onTabChange: jest.fn(),
+      onClose: jest.fn(),
+      tokenizeState: TOKENIZE_OFF,
+      onToggleTokenize: jest.fn(),
+      dictionaryPanel,
+      settingsPanel,
+      studyModesPanel,
+    };
+    const { rerender } = render(<UniversalPanel {...props} activeTab="dictionary" />);
+    const dict = screen.getByTestId('dict-content');
+
+    rerender(<UniversalPanel {...props} activeTab="settings" />);
+    expect(screen.getByTestId('dict-content')).toBe(dict);
+    expect(dict.parentElement).toHaveAttribute('hidden');
+    expect(screen.getByTestId('settings-content')).toBeInTheDocument();
+
+    rerender(<UniversalPanel {...props} activeTab="dictionary" />);
+    expect(screen.getByTestId('dict-content')).toBe(dict);
+    expect(dict.parentElement).not.toHaveAttribute('hidden');
+  });
+
+  it('mounts non-active tabs lazily', () => {
+    render(
+      <UniversalPanel
+        isOpen
+        activeTab="settings"
+        onTabChange={jest.fn()}
+        onClose={jest.fn()}
+        tokenizeState={TOKENIZE_OFF}
+        onToggleTokenize={jest.fn()}
+        dictionaryPanel={dictionaryPanel}
+        settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
+      />,
+    );
+    expect(screen.getByTestId('settings-content')).toBeInTheDocument();
+    expect(screen.queryByTestId('dict-content')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('study-modes-content')).not.toBeInTheDocument();
+  });
+
+  it('still remounts the recap tab on each visit', () => {
+    const recapPanel = <div data-cell-id="recap-content">Recap</div>;
+    const props = {
+      isOpen: true,
+      onTabChange: jest.fn(),
+      onClose: jest.fn(),
+      tokenizeState: TOKENIZE_OFF,
+      onToggleTokenize: jest.fn(),
+      dictionaryPanel,
+      settingsPanel,
+      studyModesPanel,
+      recapPanel,
+    };
+    const { rerender } = render(<UniversalPanel {...props} activeTab="recap" />);
+    expect(screen.getByTestId('recap-content')).toBeInTheDocument();
+
+    rerender(<UniversalPanel {...props} activeTab="settings" />);
+    expect(screen.queryByTestId('recap-content')).not.toBeInTheDocument();
+  });
+
   it('switches tab when a tab button is clicked', () => {
     const onTabChange = jest.fn();
     render(

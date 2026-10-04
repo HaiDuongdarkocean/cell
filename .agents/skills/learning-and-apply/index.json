@@ -3342,6 +3342,28 @@
         "getComponents"
       ],
       "trigger": "Control vẫn nhận tương tác trong một in-flight operation nhiều bước (upload theo chunk, wizard, job nền) nhưng giá trị chỉ capture một lần lúc khởi động → user đổi giữa chừng bị phớt lờ lặng lẽ"
+    },
+    {
+      "type": "experience",
+      "id": "tab-conditional-render-unmount-loses-state",
+      "title": "Tab switch bằng conditional render unmount component → mất hook state + cancel in-flight work; keep-alive visited tabs dưới pane hidden",
+      "category": [
+        "state",
+        "ux",
+        "rendering"
+      ],
+      "tags": [
+        "tabs",
+        "keep-alive",
+        "unmount",
+        "state-persistence",
+        "hidden-attribute",
+        "conditional-render",
+        "universal-panel",
+        "lazy-mount",
+        "react"
+      ],
+      "trigger": "UI có tab/pane switch qua conditional render và user report quay lại tab mất state đang làm (lookup result, draft, scroll, selection)"
     }
   ]
 }

@@ -1,0 +1,21 @@
+{
+  "id": "tab-conditional-render-unmount-loses-state",
+  "title": "Tab switch bằng conditional render unmount component → mất toàn bộ hook state + cleanup cancel in-flight work; fix = keep-alive visited tabs dưới pane `hidden`",
+  "category": ["state", "ux", "rendering"],
+  "tags": ["tabs", "keep-alive", "unmount", "state-persistence", "hidden-attribute", "conditional-render", "universal-panel", "lazy-mount", "react"],
+  "trigger": "UI có tab/pane switch qua `{activeTab === 'x' && <Panel/>}` và user report 'quay lại tab thì mất state đang làm' (lookup result, draft, scroll, selection)",
+  "principle": "Conditional render mỗi switch = unmount → useState/useRef reset hết, effect cleanup chạy (cancel request đang chạy, unsubscribe listener) — symptom 'mất kết quả' thật ra là cây component bị hủy. Fix đúng không phải lift state ra module store (phải nhân bản mọi piece: result, candidates, selection, in-flight flag, ref replay) mà là keep-alive: track `visitedTabs` (render-phase setState — documented React pattern, không flash frame), mount lazy lần đầu active, inactive render trong wrapper `hidden`. Nhớ CSS pair: `.pane{display:flex}` overrides UA `[hidden]{display:none}` → cần `.pane[hidden]{display:none}` explicit. Phân biệt semantics per-tab: workspace tabs (dictionary/vocab/settings) keep-alive đúng expectation; report/snapshot tabs (recap — data accrues ngoài panel) giữ remount-per-visit để refresh. Keep-alive cũng giữ nguyên prop-driven flows: `initialTerm` prop change vẫn trigger lookup qua effect deps — không cần remount để re-seed.",
+  "cases": [
+    {
+      "context": "universalPanel: user tra từ ở Dictionary tab → switch tab khác → quay lại mất kết quả. `UniversalPanel.tsx` render `{activeTab === 'dictionary' && dictionaryPanel}` → DictionaryTab + useDictionaryLookup state (currentResult/candidates/isLoading) bị hủy; cleanup `cancelInFlight()` giết cả lookup đang chạy; sticky `pendingSearchTerm` còn làm remount replay stale term thay vì state user đang xem.",
+      "bad": "Lift lookup state ra zustand/module store hoặc chrome.storage.session — phải replicate searchTerm + currentResult + candidates + activeCandidateIndex + status + definitionSelection + contextSentence + latestLookupRef + in-flight cancellation; vẫn không cứu được request bị cancel giữa chừng, và remount vẫn reset UI state (scroll, chip index, focus)",
+      "good": "UniversalPanel.tsx: `visitedTabs` Set qua render-phase setState; mỗi visited tab wrap trong `.tabPane` `hidden={!active}` — mount lazy, không unmount; RecapTab giữ conditional (fresh report mỗi visit — mount-only `load()` là intended refresh). CSS `.tabPane[hidden]{display:none}` bắt buộc vì `.tabPane{display:flex}` thắng UA hidden rule. Test khóa semantics: assert cùng DOM node sau switch (identity = state preserved), lazy-mount khi mở thẳng tab khác, recap vẫn unmount."
+    }
+  ],
+  "applyFor": [
+    "Mọi tab/step/pane UI có stateful content (search results, form drafts, scroll position, in-flight fetch) — mặc định keep-alive visited tabs, chỉ conditional-render surface kiểu report cần fresh-per-visit",
+    "Trước khi lift state lên store để 'persist across tabs' — check trước liệu unmount có phải root cause; keep-alive thường là diff 10 dòng thay vì replicate toàn bộ hook internals",
+    "`hidden` attribute trên wrapper có author `display` rule → luôn kèm `[hidden]{display:none}` explicit, UA stylesheet thua author CSS"
+  ],
+  "source": { "spec": "docs/specs/session-recap.md", "date": "2026-10-04" }
+}

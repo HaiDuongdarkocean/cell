@@ -164,6 +164,11 @@ export function UniversalPanel({
     e.stopPropagation();
   };
 
+  const [visitedTabs, setVisitedTabs] = useState<ReadonlySet<UniversalPanelTab>>(() => new Set([activeTab]));
+  if (!visitedTabs.has(activeTab)) {
+    setVisitedTabs((prev) => new Set(prev).add(activeTab));
+  }
+
   // Keep mounted through the close animation. Without the wasOpenRef term,
   // the render where isOpen flips false (isClosing not set yet) returns null,
   // unmounting the node; the effect then remounts it with .close, flashing
@@ -267,12 +272,22 @@ export function UniversalPanel({
           />
 
           <div className={styles.content} data-cell-id={`universal-panel-content-${activeTab}`}>
-            {activeTab === 'dictionary' && dictionaryPanel}
-            {activeTab === 'vocabulary' && vocabularyPanel}
-            {activeTab === 'studyModes' && studyModesPanel}
-            {activeTab === 'playlist' && playlistPanel}
+            {visitedTabs.has('dictionary') && (
+              <div className={styles.tabPane} hidden={activeTab !== 'dictionary'}>{dictionaryPanel}</div>
+            )}
+            {visitedTabs.has('vocabulary') && vocabularyPanel && (
+              <div className={styles.tabPane} hidden={activeTab !== 'vocabulary'}>{vocabularyPanel}</div>
+            )}
+            {visitedTabs.has('studyModes') && (
+              <div className={styles.tabPane} hidden={activeTab !== 'studyModes'}>{studyModesPanel}</div>
+            )}
+            {visitedTabs.has('playlist') && playlistPanel && (
+              <div className={styles.tabPane} hidden={activeTab !== 'playlist'}>{playlistPanel}</div>
+            )}
             {activeTab === 'recap' && recapPanel}
-            {activeTab === 'settings' && settingsPanel}
+            {visitedTabs.has('settings') && (
+              <div className={styles.tabPane} hidden={activeTab !== 'settings'}>{settingsPanel}</div>
+            )}
           </div>
         </div>
       </Surface>
