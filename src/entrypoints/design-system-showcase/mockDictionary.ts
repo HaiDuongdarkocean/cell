@@ -308,12 +308,8 @@ function pushJob(partial: Partial<Job> & { id: string; status: Job['status'] }):
 async function handleResourceImport(payload: Record<string, unknown>, fileBase64: string): Promise<void> {
   const narrowed = payload.components as DictionaryComponent[] | undefined;
   const fileName = String(payload.fileName ?? '');
-  let detected: readonly DictionaryComponent[] = [];
-  try {
-    detected = await detectComponents(fileName, base64ToBytes(fileBase64));
-  } catch {
-    detected = [];
-  }
+  const detected = await detectComponents(fileName, base64ToBytes(fileBase64))
+    .catch((): readonly DictionaryComponent[] => []);
   const components = narrowed ?? (detected.length ? detected : undefined);
   const resourceType = deriveResourceType(components);
   const jobId = String(payload.jobId ?? '');

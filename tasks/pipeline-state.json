@@ -2290,15 +2290,17 @@
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-10-04T06:00:29.451Z",
-          "head": "527699535690f45a408d43fdde96bb2dea217699",
+          "at": "2026-10-04T06:29:32.216Z",
+          "head": "ebf22457d273da60f1d7d62129a99529b2f04380",
           "dirty": []
         },
         "lint": {
           "v": "pass",
-          "at": "2026-10-04T06:00:29.618Z",
-          "head": "527699535690f45a408d43fdde96bb2dea217699",
-          "dirty": []
+          "at": "2026-10-04T06:31:29.885Z",
+          "head": "ebf22457d273da60f1d7d62129a99529b2f04380",
+          "dirty": [
+            "src/entrypoints/design-system-showcase/mockDictionary.ts"
+          ]
         },
         "testUnit": {
           "v": "pass",
@@ -2339,7 +2341,7 @@
         "since": "2026-10-04T04:12:16.219Z"
       },
       "worktree": "../cell-worktrees/unified-resource-import",
-      "updated": "2026-10-04T06:00:30.230Z"
+      "updated": "2026-10-04T06:31:29.937Z"
     }
   }
 }
