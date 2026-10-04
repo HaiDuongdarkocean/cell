@@ -374,10 +374,7 @@
   flex-direction: column;
   gap: var(--space-0-5);
   padding-left: calc(var(--space-1) + var(--space-5) + var(--space-1));
-}
-
-.defTailNested {
-  padding-left: calc(var(--space-1) + var(--space-5) + var(--space-1) + var(--space-4));
+  color: var(--color-text-tertiary);
 }
 
 .cellMeta {

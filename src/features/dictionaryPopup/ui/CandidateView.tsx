@@ -629,19 +629,17 @@ function RelationTail({
   synonymGroups,
   synonyms,
   antonyms,
-  nested,
 }: {
   readonly synonymGroups?: readonly RelationGroup[];
   readonly synonyms?: readonly string[];
   readonly antonyms?: readonly string[];
-  readonly nested?: boolean;
 }): React.JSX.Element | null {
   const groups = synonymGroups?.length
     ? synonymGroups
     : (synonyms?.length ? [{ words: synonyms }] : []);
   if (!groups.length && !antonyms?.length) return null;
   return (
-    <div className={`${styles.defTail}${nested ? ` ${styles.defTailNested}` : ''}`} data-cell-id="dictionary-relations">
+    <div className={styles.defTail} data-cell-id="dictionary-relations">
       {groups.map((g, i) => (
         <span key={i} className={styles.defLine} data-role="note">
           <span className={styles.defLineMeta}>synonyms and related words: </span>
@@ -733,7 +731,7 @@ function SubsenseRow({
         onToggleExample={onToggleExample}
         translationRevealed={translationRevealed}
       />
-      <RelationTail synonymGroups={sub.synonymGroups} synonyms={sub.synonyms} antonyms={sub.antonyms} nested />
+      <RelationTail synonymGroups={sub.synonymGroups} synonyms={sub.synonyms} antonyms={sub.antonyms} />
     </div>
   );
 }
