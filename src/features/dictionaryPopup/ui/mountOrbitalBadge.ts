@@ -5,6 +5,7 @@ import { ShadowThemeProvider } from '@/features/theme';
 import { OrbitalBadge, type OrbitalBadgeProps, type OrbitalBadgeHandle } from './OrbitalBadge';
 import type { PanelMountController } from '../controller/panelBridge';
 import type { PointerPreset, Point } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
+import { CELL_PANEL_DISMISS_EXEMPT_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
 
 export interface OrbitalBadgeMountOptions {
   /** Badge diameter in px. */
@@ -111,6 +112,7 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
   const onDocPointerDown = (e: PointerEvent): void => {
     const path = e.composedPath();
     if (path.includes(mount.host)) return;
+    if (path.some((el) => el instanceof Element && el.matches(CELL_PANEL_DISMISS_EXEMPT_SELECTORS))) return;
 
     // Close the panel when the user clicks outside both the badge and panel.
     // The badge itself stays expanded — it only collapses when dragged near an

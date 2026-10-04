@@ -28,6 +28,17 @@ export const CELL_UI_POINTER_EVENT_HOST_SELECTORS =
   '.js-cell-popup-host, .js-cell-orbital-badge-host, .js-cell-token-badge-host, ' +
   '#cell-settings-dialog-host, #cell-card-creator-host, #cell-subtitle-root';
 
+/**
+ * Floating Cell surfaces that sit above the Universal Panel overlay — a
+ * pointerdown inside them must not count as "outside the panel" for the
+ * badge's dismiss guard. `#cell-subtitle-root` is deliberately absent:
+ * clicking a subtitle word while the panel is open dismisses the panel so
+ * the resulting below-panel popup becomes visible.
+ */
+export const CELL_PANEL_DISMISS_EXEMPT_SELECTORS =
+  '.js-cell-popup-host, .js-cell-orbital-badge-host, .js-cell-token-badge-host, ' +
+  '#cell-settings-dialog-host, #cell-card-creator-host';
+
 export const UNIVERSAL_PANEL_HOST_ID = 'cell-universal-panel-host';
 
 export function isInsideUniversalPanelHost(node: Node): boolean {

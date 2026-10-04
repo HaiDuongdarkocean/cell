@@ -3364,6 +3364,29 @@
         "react"
       ],
       "trigger": "UI có tab/pane switch qua conditional render và user report quay lại tab mất state đang làm (lookup result, draft, scroll, selection)"
+    },
+    {
+      "type": "experience",
+      "id": "outside-click-guard-must-exempt-sibling-overlays",
+      "title": "Document-level outside-pointerdown dismiss guard phải exempt mọi floating surface cùng stack — sibling shadow host không nằm trong getHosts() của panel",
+      "category": [
+        "ux",
+        "detection",
+        "state"
+      ],
+      "tags": [
+        "outside-click",
+        "pointerdown",
+        "composedPath",
+        "shadow-dom",
+        "universal-panel",
+        "popup-stack",
+        "dismiss-guard",
+        "orbital-badge",
+        "z-index",
+        "ssot-selector"
+      ],
+      "trigger": "Document/window pointerdown listener đóng surface A khi click outside — trong khi surface B (popup/dialog/badge) mount ở shadow host riêng, float trên A"
     }
   ]
 }
