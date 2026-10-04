@@ -29,6 +29,7 @@ import {
   CircleAlert,
   CircleCheck,
   CircleX,
+  ClipboardPaste,
   Clock,
   Component,
   Copy,
@@ -150,6 +151,7 @@ import sunSvg from './svg/sun.svg?raw';
 import powerSvg from './svg/power.svg?raw';
 import trashSvg from './svg/trash.svg?raw';
 import trash2Svg from './svg/trash-2.svg?raw';
+import clipboardPasteSvg from './svg/clipboard-paste.svg?raw';
 import copySvg from './svg/copy.svg?raw';
 import clockSvg from './svg/clock.svg?raw';
 import menuSvg from './svg/menu.svg?raw';
@@ -285,6 +287,7 @@ export const ICON_CATALOG = {
   trash: { component: Trash, svg: trashSvg, source: 'lucide/trash', tags: ['trash', 'delete', 'remove', 'bin'] } as IconEntry,
   trash2: { component: Trash2, svg: trash2Svg, source: 'lucide/trash-2', tags: ['trash', 'delete', 'remove', 'bin', 'clear'] } as IconEntry,
   copy: { component: Copy, svg: copySvg, source: 'lucide/copy', tags: ['copy', 'clipboard', 'duplicate'] } as IconEntry,
+  clipboardPaste: { component: ClipboardPaste, svg: clipboardPasteSvg, source: 'lucide/clipboard-paste', tags: ['paste', 'clipboard', 'insert', 'input'] } as IconEntry,
   clock: { component: Clock, svg: clockSvg, source: 'lucide/clock', tags: ['clock', 'time', 'duration', 'queued', 'timer'] } as IconEntry,
   menu: { component: Menu, svg: menuSvg, source: 'lucide/menu', tags: ['menu', 'hamburger', 'sidebar', 'toggle'] } as IconEntry,
   ellipsisVertical: { component: EllipsisVertical, svg: ellipsisVerticalSvg, source: 'lucide/ellipsis-vertical', tags: ['ellipsis', 'vertical', 'kebab', 'more', 'dots', 'three-dots', 'menu'] } as IconEntry,

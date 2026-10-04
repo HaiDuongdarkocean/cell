@@ -7,7 +7,7 @@ import { parseDefEntries } from '@/features/srs/lib/defEntry';
 import { getImageAssetsByNote } from '@/features/srs/repositories/imageAssetRepository';
 import { getAudioAssetsByNote } from '@/features/srs/repositories/audioAssetRepository';
 import type { SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote } from '@/entities/srs/types';
-import { playableUrl, ReviewImageGallery, SentenceText, sequentialAudio, TargetWordHeading } from './srsCardShared';
+import { MarkedText, playableUrl, ReviewImageGallery, SentenceText, sequentialAudio, TargetWordHeading } from './srsCardShared';
 import { alignDictation } from '@/features/srs/lib/dictationDiff';
 import styles from './SrsReviewCard.module.css';
 
@@ -32,16 +32,6 @@ function fieldLabel(fieldId: string): string {
   const key = FIELD_LABEL_KEYS[fieldId];
   if (key) return t(key);
   return fieldId.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
-}
-
-function MarkedText({ text, marks, markClass }: { text: string; marks: readonly boolean[]; markClass: string }): React.JSX.Element {
-  return (
-    <span className={styles.dictationText}>
-      {[...text].map((ch, i) => (
-        <span key={i} className={marks[i] ? undefined : markClass}>{ch === ' ' ? ' ' : ch}</span>
-      ))}
-    </span>
-  );
 }
 
 const DictationResult = memo(function DictationResult({ typed, expected }: { typed: string; expected: string }): React.JSX.Element | null {
@@ -291,7 +281,7 @@ export function SrsReviewCardBack({
   }, [note.id, note.fields, imageCache, repoImages]);
 
   const hasTranslation = note.fields.translation?.kind === 'translation' && Boolean(note.fields.translation.value);
-  const extraFields = Object.entries(note.fields).filter(([id, v]) => !BUILTIN_FIELDS.has(id) && v.kind !== 'image' && v.kind !== 'audio' && fieldText(v).trim());
+  const extraFields = Object.entries(note.fields).filter(([id, v]) => !BUILTIN_FIELDS.has(id) && v.kind !== 'image' && v.kind !== 'audio' && v.kind !== 'context' && fieldText(v).trim());
 
   return (
     <div

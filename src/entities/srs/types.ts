@@ -18,11 +18,13 @@ export const SRS_INPUT_FIELD_ID = 'input';
 
 export type VariantScopeToggle = 'both' | 'word' | 'sentence';
 export type VariantAudioToggle = 'word' | 'sentence';
+export type VariantDifficultyToggle = 'easy' | 'medium' | 'hard';
 
 /** Persisted per-variant toggle preference (survives across cards/sessions). */
 export interface SrsVariantToggles {
   readonly scope?: VariantScopeToggle;
   readonly audio?: VariantAudioToggle;
+  readonly difficulty?: VariantDifficultyToggle;
 }
 
 /** Toggle state resolved for one (variant, note) pair — flags say whether the chip renders. */
@@ -31,6 +33,7 @@ export interface ResolvedVariantToggles {
   readonly audio: VariantAudioToggle;
   readonly scopeToggle: boolean;
   readonly audioToggle: boolean;
+  readonly difficulty: VariantDifficultyToggle;
 }
 
 export interface SrsVariant {
@@ -245,6 +248,7 @@ export interface SrsReviewRecord {
   readonly judgment: ReviewJudgment;
   readonly typedInput?: string;
   readonly isSpellingCorrect?: boolean;
+  readonly wrongAttempts?: number;
   readonly isStudyAgain: boolean;
   readonly resultingProgress: number;
   readonly resultingFsrsState: SrsFsrsSerializedState;

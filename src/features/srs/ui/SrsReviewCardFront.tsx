@@ -1,5 +1,5 @@
-import { memo, useEffect, useMemo, useState } from 'react';
-import { Box, InputField } from '@/shared/ui';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { Box, Input } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { audioAssetId, imageAssetId, mediaFieldValues } from '@/features/srs/lib/helpers';
@@ -85,6 +85,7 @@ const StimulusAudioButton = memo(function StimulusAudioButton({
     <button
       type="button"
       className={styles.stimulusAudioButton}
+      onPointerDown={(e) => e.preventDefault()}
       onClick={(e) => {
         e.stopPropagation();
         if (asset) playAudio(asset);
@@ -158,7 +159,18 @@ export function SrsReviewCardFront({
     return sources;
   }, [note.id, sentAudioValue, wordAudioValue, audioCache, repoAudio]);
 
-  useEffect(() => sequentialAudio(frontAudio), [frontAudio]);
+  const playback = useRef<(() => void) | null>(null);
+  const replayAudio = (): void => {
+    playback.current?.();
+    playback.current = sequentialAudio(frontAudio);
+  };
+  useEffect(() => {
+    playback.current = sequentialAudio(frontAudio);
+    return () => {
+      playback.current?.();
+      playback.current = null;
+    };
+  }, [frontAudio]);
 
   return (
     <div
@@ -198,18 +210,20 @@ export function SrsReviewCardFront({
       />
 
       {isSpelling && (
-        <InputField
+        <Input
           id={inputId}
-          label={t('srs.review.typeWord')}
+          placeholder={t('srs.review.typeWord')}
+          aria-label={t('srs.review.typeWord')}
           value={typedInput}
           onChange={(e) => onTypedInputChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.stopPropagation();
               onFlip();
+            } else if (e.key === 'Control') {
+              replayAudio();
             }
           }}
-          className={styles.spellingInput}
           autoFocus
         />
       )}

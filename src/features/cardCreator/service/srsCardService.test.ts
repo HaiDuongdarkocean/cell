@@ -47,7 +47,7 @@ describe('buildSrsFields', () => {
     expect(fields['target']).toEqual({ kind: 'text', value: 'computer program' });
     expect(fields['sentence']).toEqual({ kind: 'text', value: 'a set of instructions' });
     expect(fields['translation']).toEqual({ kind: 'translation', value: 'chương trình máy tính' });
-    expect(fields['context']).toEqual({ kind: 'context', value: 'a set of instructions' });
+    expect(fields['context']).toBeUndefined();
     expect(fields['def']).toEqual({ kind: 'text', value: 'a thing' });
     expect(fields['notes']).toEqual({ kind: 'text', value: 'my note' });
     expect(fields['examples']).toEqual({ kind: 'list', value: ['ex1', 'ex2'] });

@@ -120,8 +120,8 @@ export function CardCreatorDialogContent({
   const isPanel = layout === 'panel';
 
   const editorFields: NoteEditorField[] = [
-    { id: 'targetWord', label: t('cardCreator.field.targetWord'), kind: 'text', placeholder: t('cardCreator.placeholder.targetWord'), dataId: 'cc-target-word' },
-    { id: 'sentence', label: t('cardCreator.field.sentence'), kind: 'text', dataId: 'cc-sentence' },
+    { id: 'targetWord', label: t('cardCreator.field.targetWord'), kind: 'text', placeholder: t('cardCreator.placeholder.targetWord'), pastable: true, dataId: 'cc-target-word' },
+    { id: 'sentence', label: t('cardCreator.field.sentence'), kind: 'text', pastable: true, dataId: 'cc-sentence' },
     { id: 'sentenceTranslation', label: t('cardCreator.field.sentenceTranslation'), kind: 'text', dataId: 'cc-sentence-translation' },
     { id: 'definitions', label: t('cardCreator.field.definitions'), kind: 'text', placeholder: t('cardCreator.placeholder.definitions'), dataId: 'cc-definitions' },
     { id: 'images', label: t('cardCreator.field.image'), kind: 'image', dataId: 'cc-images' },

@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { Box, InputField } from '@/shared/ui';
+import { Box, Input, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { audioAssetId, imageAssetId, mediaFieldValues } from '@/features/srs/lib/helpers';
@@ -14,13 +14,16 @@ import type {
   SrsStimulus,
   SrsVariant,
   VariantAudioToggle,
+  VariantDifficultyToggle,
   VariantScopeToggle,
 } from '@/entities/srs/types';
 import { SRS_INPUT_FIELD_ID } from '@/entities/srs/types';
 import { expectedInputField } from '@/features/srs/lib/variantFront';
+import type { DictationAlignment } from '@/features/srs/lib/dictationDiff';
 import { variantLabel } from './srsLabels';
 import {
   formatFieldValue,
+  MarkedText,
   playAudio,
   playAudioUrl,
   playableUrl,
@@ -58,9 +61,19 @@ const AUDIO_LABEL_KEYS = {
   word: 'srs.variant.audio.word',
   sentence: 'srs.variant.audio.sentence',
 } as const;
+const DIFFICULTY_ORDER: readonly VariantDifficultyToggle[] = ['easy', 'medium', 'hard'];
+const DIFFICULTY_LABEL_KEYS = {
+  easy: 'srs.variant.difficulty.easy',
+  medium: 'srs.variant.difficulty.medium',
+  hard: 'srs.variant.difficulty.hard',
+} as const;
 
 export function nextScopeToggle(current: VariantScopeToggle): VariantScopeToggle {
   return SCOPE_ORDER[(SCOPE_ORDER.indexOf(current) + 1) % SCOPE_ORDER.length];
+}
+
+function nextDifficultyToggle(current: VariantDifficultyToggle): VariantDifficultyToggle {
+  return DIFFICULTY_ORDER[(DIFFICULTY_ORDER.indexOf(current) + 1) % DIFFICULTY_ORDER.length];
 }
 
 const StimulusAudioButton = memo(function StimulusAudioButton({
@@ -74,6 +87,7 @@ const StimulusAudioButton = memo(function StimulusAudioButton({
     <button
       type="button"
       className={styles.stimulusAudioButton}
+      onPointerDown={(e) => e.preventDefault()}
       onClick={(e) => {
         e.stopPropagation();
         if (asset) playAudio(asset);
@@ -93,10 +107,14 @@ export interface SrsVariantFrontProps {
   readonly toggles: ResolvedVariantToggles;
   readonly onScopeChange?: (scope: VariantScopeToggle) => void;
   readonly onAudioChange?: (audio: VariantAudioToggle) => void;
+  readonly onDifficultyChange?: (difficulty: VariantDifficultyToggle) => void;
   readonly typedInput?: string;
   readonly onTypedInputChange?: (value: string) => void;
   readonly inputId?: string;
   readonly onFlip?: () => void;
+  readonly onAttempt?: () => void;
+  readonly attemptResult?: DictationAlignment | null;
+  readonly wrongAttempts?: number;
   readonly audioCache: ReadonlyMap<string, SrsAudioAsset>;
   readonly imageCache: ReadonlyMap<string, SrsImageAsset>;
   /** Preview mode: no autoplay, input is inert, card doesn't flip on click. */
@@ -110,10 +128,14 @@ export function SrsVariantFront({
   toggles,
   onScopeChange,
   onAudioChange,
+  onDifficultyChange,
   typedInput,
   onTypedInputChange,
   inputId,
   onFlip,
+  onAttempt,
+  attemptResult,
+  wrongAttempts = 0,
   audioCache,
   imageCache,
   preview = false,
@@ -126,6 +148,9 @@ export function SrsVariantFront({
     () => expectedInputField(variant, note, toggles),
     [variant, note, toggles],
   );
+  const typingLabel = expectedField === 'sentence'
+    ? t('srs.review.typeSentence')
+    : t('srs.review.typeWord');
 
   const hasImageField = Object.values(stimulus.payload).some((v) => v.kind === 'image');
   const hasUnplayableAudio = Object.values(stimulus.payload).some(
@@ -169,12 +194,21 @@ export function SrsVariantFront({
   }, [hasInput, autoplayFieldId, autoplayValue, audioCache, repoAudio, note.id]);
 
   const autoplayed = useRef<string | null>(null);
+  const playback = useRef<(() => void) | null>(null);
+  const replayAudio = (): void => {
+    playback.current?.();
+    playback.current = audioSources.length ? sequentialAudio(audioSources) : null;
+  };
   useEffect(() => {
     if (preview || !hasInput || audioSources.length === 0) return;
     const key = `${note.id}:${variant.id}:${toggles.audio}`;
     if (autoplayed.current === key) return;
     autoplayed.current = key;
-    return sequentialAudio(audioSources);
+    playback.current = sequentialAudio(audioSources);
+    return () => {
+      playback.current?.();
+      playback.current = null;
+    };
   }, [preview, hasInput, audioSources, note.id, variant.id, toggles.audio]);
 
   const flippable = !hasInput && !preview;
@@ -202,7 +236,7 @@ export function SrsVariantFront({
         }
       }}
     >
-      {(toggles.scopeToggle || toggles.audioToggle) && (
+      {(toggles.scopeToggle || toggles.audioToggle || (hasInput && onDifficultyChange)) && (
         <Box className={styles.frontToggles}>
           {toggles.scopeToggle && (
             <button
@@ -231,6 +265,19 @@ export function SrsVariantFront({
               {t(AUDIO_LABEL_KEYS[toggles.audio])}
             </button>
           )}
+          {hasInput && onDifficultyChange && (
+            <button
+              type="button"
+              className={styles.frontToggle}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDifficultyChange(nextDifficultyToggle(toggles.difficulty));
+              }}
+              aria-label={t('srs.variant.toggleDifficulty')}
+            >
+              {t(DIFFICULTY_LABEL_KEYS[toggles.difficulty])}
+            </button>
+          )}
         </Box>
       )}
 
@@ -238,22 +285,54 @@ export function SrsVariantFront({
         if (fieldId === SRS_INPUT_FIELD_ID) {
           if (!onTypedInputChange) return null;
           return (
-            <InputField
-              key={fieldId}
-              id={inputId}
-              label={expectedField === 'sentence' ? t('srs.review.typeSentence') : t('srs.review.typeWord')}
-              value={typedInput ?? ''}
-              onChange={(e) => onTypedInputChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.stopPropagation();
-                  onFlip?.();
-                }
-              }}
-              className={styles.spellingInput}
-              autoFocus={!preview}
-              readOnly={preview}
-            />
+            <Box key={fieldId} className={styles.inputArea}>
+              <Input
+                id={inputId}
+                placeholder={typingLabel}
+                aria-label={typingLabel}
+                value={typedInput ?? ''}
+                onChange={(e) => onTypedInputChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.stopPropagation();
+                    if (onAttempt) onAttempt();
+                    else onFlip?.();
+                  } else if (e.key === 'Control') {
+                    replayAudio();
+                  }
+                }}
+                autoFocus={!preview}
+                readOnly={preview}
+              />
+              {attemptResult && (
+                <div className={`${styles.dictationResult} ${styles.dictationBad}`} role="status">
+                  {toggles.difficulty !== 'hard' && attemptResult.typed && (
+                    <Text className={styles.dictationRow}>
+                      <span className={styles.dictationLabel}>{t('srs.review.youTyped')}</span>
+                      <MarkedText text={attemptResult.typed} marks={attemptResult.typedMarks} markClass={styles.dictationMiss} />
+                    </Text>
+                  )}
+                  {toggles.difficulty === 'easy' && (
+                    <Text className={styles.dictationRow}>
+                      <span className={styles.dictationLabel}>{t('srs.review.dictationExpected')}</span>
+                      <MarkedText text={attemptResult.expected} marks={attemptResult.expectedMarks} markClass={styles.dictationMiss} />
+                    </Text>
+                  )}
+                  {wrongAttempts >= 3 && (
+                    <button
+                      type="button"
+                      className={styles.frontToggle}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onFlip?.();
+                      }}
+                    >
+                      {t('srs.review.showAnswer')}
+                    </button>
+                  )}
+                </div>
+              )}
+            </Box>
           );
         }
         const value = stimulus.payload[fieldId];

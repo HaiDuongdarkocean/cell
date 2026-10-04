@@ -69,6 +69,7 @@ export function applyReview(
   now: Date,
   config: SrsStudyConfig,
   adapter: SrsFsrsAdapter,
+  wrongAttempts = 0,
 ): ApplyReviewResult {
   const { card, note, variant, toggles, mode } = session;
   const variantId = variant.id;
@@ -78,7 +79,7 @@ export function applyReview(
   const expectedText = expectedField ? expectedInputText(variant, note, toggles) : null;
   const isSpellingCorrect =
     expectedText !== null && typedInput !== undefined
-      ? normalizeSpelling(typedInput) === normalizeSpelling(expectedText)
+      ? normalizeSpelling(typedInput) === normalizeSpelling(expectedText) && wrongAttempts === 0
       : undefined;
 
   const newProgress = calculateProgress(comp, judgment, isSpellingCorrect, config, mode);
@@ -121,6 +122,7 @@ export function applyReview(
     judgment,
     typedInput,
     isSpellingCorrect,
+    wrongAttempts: wrongAttempts > 0 ? wrongAttempts : undefined,
     isStudyAgain: mode === 'studyAgain',
     resultingProgress: newProgress,
     resultingFsrsState: newFsrsState,

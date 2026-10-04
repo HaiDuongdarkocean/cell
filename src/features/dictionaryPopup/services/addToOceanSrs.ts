@@ -12,7 +12,7 @@ import type { MessageResponse, SrsAddNotePayload, SrsAddNoteResult } from '@/ent
  * Build a default Ocean SRS field record from a popup prefill.
  *
  * V1 assumes the default notetype field ids (target, sentence, def,
- * wordAudio, sentAudio, image, examples, notes, translation, context).
+ * wordAudio, sentAudio, image, examples, notes, translation).
  * Extra fields are included so the background can pick whatever the active
  * notetype defines.
  */
@@ -25,7 +25,6 @@ export function buildSrsFieldsFromPrefill(
   fields['target'] = { kind: 'text', value: prefill.term };
   if (prefill.contextSentence) {
     fields['sentence'] = { kind: 'text', value: prefill.contextSentence };
-    fields['context'] = { kind: 'context', value: prefill.contextSentence };
   }
   if (prefill.definitions.length) {
     const senses = formatDefinitions(prefill.definitions);

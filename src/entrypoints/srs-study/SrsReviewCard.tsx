@@ -5,9 +5,10 @@ import { Box, Button, ConfirmDialog, Text } from '@/shared/ui';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
-import type { ResolvedVariantToggles, VariantAudioToggle, VariantScopeToggle } from '@/entities/srs/types';
+import type { ResolvedVariantToggles, VariantAudioToggle, VariantDifficultyToggle, VariantScopeToggle } from '@/entities/srs/types';
 import { SRS_INPUT_FIELD_ID } from '@/entities/srs/types';
 import { expectedInputText, servableVariantIds } from '@/features/srs';
+import { alignDictation, type DictationAlignment } from '@/features/srs/lib/dictationDiff';
 import { variantLabel } from '@/features/srs/ui/srsLabels';
 import { SrsVariantFront } from '@/features/srs/ui/SrsVariantFront';
 import { SrsReviewCardBack } from '@/features/srs/ui/SrsReviewCardBack';
@@ -40,6 +41,8 @@ export function SrsReviewCard(): React.JSX.Element | null {
   const editDragRef = useRef<{ startX: number; startW: number; maxW: number } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [typedInput, setTypedInput] = useState('');
+  const [wrongAttempts, setWrongAttempts] = useState(0);
+  const [attemptResult, setAttemptResult] = useState<DictationAlignment | null>(null);
   const [toggles, setToggles] = useState<ResolvedVariantToggles | null>(null);
   const prefs = useSrsUiPrefs();
   const inputId = useId();
@@ -47,6 +50,8 @@ export function SrsReviewCard(): React.JSX.Element | null {
   useEffect(() => {
     setShowAnswer(false);
     setTypedInput('');
+    setWrongAttempts(0);
+    setAttemptResult(null);
     setToggles(session?.toggles ?? null);
   }, [session?.card.id, session?.variant.id, session?.toggles]);
 
@@ -97,18 +102,53 @@ export function SrsReviewCard(): React.JSX.Element | null {
     setShowAnswer((v) => !v);
   }
 
+  function handleAttempt(): void {
+    if (dictationExpected === null) {
+      setShowAnswer(true);
+      return;
+    }
+    const alignment = alignDictation(dictationExpected, typedInput);
+    if (alignment.correct) {
+      setAttemptResult(null);
+      setShowAnswer(true);
+      return;
+    }
+    setWrongAttempts((n) => n + 1);
+    setAttemptResult(alignment);
+  }
+
+  function handleTypedChange(value: string): void {
+    setAttemptResult(null);
+    setTypedInput(value);
+  }
+
+  function handleReveal(): void {
+    if (dictationExpected !== null && !alignDictation(dictationExpected, typedInput).correct) {
+      setWrongAttempts((n) => n + 1);
+    }
+    setAttemptResult(null);
+    setShowAnswer(true);
+  }
+
   function handleSubmit(judgment: 'forget' | 'remember'): void {
-    void submit(judgment, hasInput ? typedInput : undefined, effectiveToggles);
+    void submit(judgment, hasInput ? typedInput : undefined, effectiveToggles, wrongAttempts);
   }
 
   function handleScopeChange(scope: VariantScopeToggle): void {
     setToggles({ ...effectiveToggles, scope });
     setVariantToggle(variant.id, { scope });
+    setAttemptResult(null);
   }
 
   function handleAudioChange(audio: VariantAudioToggle): void {
     setToggles({ ...effectiveToggles, audio });
     setVariantToggle(variant.id, { audio });
+    setAttemptResult(null);
+  }
+
+  function handleDifficultyChange(difficulty: VariantDifficultyToggle): void {
+    setToggles({ ...effectiveToggles, difficulty });
+    setVariantToggle(variant.id, { difficulty });
   }
 
   function handleDelete(): void {
@@ -213,10 +253,14 @@ export function SrsReviewCard(): React.JSX.Element | null {
             toggles={effectiveToggles}
             onScopeChange={handleScopeChange}
             onAudioChange={handleAudioChange}
+            onDifficultyChange={hasInput ? handleDifficultyChange : undefined}
             typedInput={typedInput}
-            onTypedInputChange={hasInput ? setTypedInput : undefined}
+            onTypedInputChange={hasInput ? handleTypedChange : undefined}
             inputId={inputId}
             onFlip={handleFlip}
+            onAttempt={hasInput ? handleAttempt : undefined}
+            attemptResult={attemptResult}
+            wrongAttempts={wrongAttempts}
             audioCache={audioCache}
             imageCache={imageCache}
           />
@@ -236,8 +280,8 @@ export function SrsReviewCard(): React.JSX.Element | null {
             shape="circle"
             size="lg"
             variant="primary"
-            onClick={() => (showAnswer ? handleSubmit('remember') : handleFlip())}
-            aria-label={showAnswer ? t('srs.review.remember') : t('srs.review.showAnswer')}
+            onClick={() => (showAnswer ? handleSubmit('remember') : hasInput ? handleAttempt() : handleFlip())}
+            aria-label={showAnswer ? t('srs.review.remember') : hasInput ? t('srs.review.checkAnswer') : t('srs.review.showAnswer')}
             className={[styles.gradeButton, styles.rememberButton].join(' ')}
           >
             <Icon name="check" />
@@ -313,7 +357,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
             <SrsEditCardPanel
               onClose={() => { setEditing(false); }}
               masked={!showAnswer}
-              onReveal={handleFlip}
+              onReveal={hasInput ? handleReveal : handleFlip}
               embedded
             />
           </aside>
@@ -332,7 +376,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
           <SrsEditCardPanel
             onClose={() => { setEditing(false); }}
             masked={!showAnswer}
-            onReveal={handleFlip}
+            onReveal={hasInput ? handleReveal : handleFlip}
             embedded
           />
         </BottomSheet>

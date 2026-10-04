@@ -129,6 +129,11 @@ describe('resolveVariantToggles', () => {
     const t = resolveVariantToggles(variantOf('spelling'), note, { audio: 'sentence' });
     expect(t.audio).toBe('word');
   });
+
+  it('resolves dictation difficulty with medium default and persisted pref', () => {
+    expect(resolveVariantToggles(variantOf('spelling'), makeNote()).difficulty).toBe('medium');
+    expect(resolveVariantToggles(variantOf('spelling'), makeNote(), { difficulty: 'hard' }).difficulty).toBe('hard');
+  });
 });
 
 describe('visibleVariantFields', () => {

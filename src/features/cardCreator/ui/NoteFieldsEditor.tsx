@@ -12,6 +12,7 @@ export interface NoteEditorField {
   readonly label: string;
   readonly kind: 'text' | 'audio' | 'image';
   readonly placeholder?: string;
+  readonly pastable?: boolean;
   readonly generatable?: boolean;
   readonly dataId?: string;
 }
@@ -73,6 +74,7 @@ export function NoteFieldsEditor({
                 onChange={(v) => onTextChange(field.id, v)}
                 placeholder={field.placeholder}
                 aria-label={field.label}
+                pastable={field.pastable}
                 dataId={dataId}
               />
             ) : (

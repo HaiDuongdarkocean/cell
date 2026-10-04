@@ -149,6 +149,7 @@ export function SrsEditCardPanel({ onClose, masked = false, onReveal, embedded =
       id: field.id,
       label: field.name,
       kind: field.type === 'audio' ? 'audio' : field.type === 'image' ? 'image' : 'text',
+      pastable: field.id === notetype?.targetFieldId || field.id === 'sentence',
       generatable: generateKind(field) !== null,
     })),
     [notetype?.fields, notetype?.targetFieldId],

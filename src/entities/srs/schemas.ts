@@ -18,6 +18,7 @@ export const VariantIdSchema = z.string();
 export const SrsVariantTogglesSchema = z.object({
   scope: z.enum(['both', 'word', 'sentence']).optional(),
   audio: z.enum(['word', 'sentence']).optional(),
+  difficulty: z.enum(['easy', 'medium', 'hard']).optional(),
 });
 
 export const SrsVariantSchema = z.object({
@@ -248,6 +249,7 @@ export const SrsReviewRecordSchema = z.object({
   judgment: ReviewJudgmentSchema,
   typedInput: z.string().optional(),
   isSpellingCorrect: z.boolean().optional(),
+  wrongAttempts: z.number().int().optional(),
   isStudyAgain: z.boolean(),
   resultingProgress: z.number().min(0).max(100),
   resultingFsrsState: SrsFsrsSerializedStateSchema,
@@ -269,6 +271,7 @@ export const SrsReviewSessionSchema = z.object({
     audio: z.enum(['word', 'sentence']),
     scopeToggle: z.boolean(),
     audioToggle: z.boolean(),
+    difficulty: z.enum(['easy', 'medium', 'hard']).default('medium'),
   }),
   stimulus: SrsStimulusSchema,
   mode: ReviewModeSchema,

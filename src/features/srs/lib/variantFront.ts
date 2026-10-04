@@ -101,7 +101,7 @@ export function resolveVariantToggles(
   else if (hasSA && !hasWA) audio = 'sentence';
   else if (audioToggle && pref?.audio) audio = pref.audio;
 
-  return { scope, audio, scopeToggle, audioToggle };
+  return { scope, audio, scopeToggle, audioToggle, difficulty: pref?.difficulty ?? 'medium' };
 }
 
 /** Ordered field ids to render on the front after material + toggle filtering. */

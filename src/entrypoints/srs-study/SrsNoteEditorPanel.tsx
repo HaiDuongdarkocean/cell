@@ -75,6 +75,7 @@ export function SrsNoteEditorPanel({ note, notetype, decks, onClose, onSaved }: 
       id: field.id,
       label: field.name,
       kind: field.type === 'audio' ? 'audio' : field.type === 'image' ? 'image' : 'text',
+      pastable: field.id === notetype.targetFieldId || field.id === 'sentence',
       generatable: false,
     })),
     [notetype.fields, notetype.targetFieldId],

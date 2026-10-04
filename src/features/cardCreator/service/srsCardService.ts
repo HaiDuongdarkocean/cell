@@ -104,10 +104,6 @@ export function buildSrsFields(
   if (translation && draftFields.sentenceTranslation) {
     out[translation.id] = { kind: 'translation', value: draftFields.sentenceTranslation };
   }
-  const context = pick(byType(fields, 'context'));
-  if (context && draftFields.sentence) {
-    out[context.id] = { kind: 'context', value: draftFields.sentence };
-  }
   setText(pick(byId(fields, ['def', 'definition', 'definitions']) ?? byType(fields, 'text', used)), draftFields.definitions);
   setText(pick(byId(fields, ['notes', 'note']) ?? byType(fields, 'text', used)), draftFields.note);
 

@@ -72,25 +72,26 @@
    the mockup (--color-surface). Clear (x) button on the right.
 
    Layout: flex row — input fills, clear button is a flex item (not
-   absolute) so it stays vertically centered as the input grows. */
+   absolute) so it stays at the top as the input grows. The hairline is
+   painted as an inset ring (not border) so the interior is exactly
+   --iconbutton-size-md tall and the 40px clear button fits flush. */
 .fieldInput {
   display: flex;
   align-items: center;
   gap: var(--space-1);
   width: 100%; /* design-system: intentional — fill field row */
+  min-height: var(--iconbutton-size-md);
   background: var(--input-bg);
-  border: var(--border-width-hairline) solid var(--input-border);
   border-radius: var(--radius-md);
-  transition: border-color var(--duration-fast) var(--ease-in-out);
+  box-shadow: inset 0 0 0 var(--border-width-hairline) var(--input-border);
+  transition: box-shadow var(--duration-fast) var(--ease-in-out);
 }
 
 .fieldInput:hover {
-  border-color: var(--color-border-focus);
+  box-shadow: inset 0 0 0 var(--border-width-hairline) var(--color-border-focus);
 }
 
 .fieldInput:focus-within {
-  border-color: transparent;
-  outline: none;
   box-shadow: inset 0 0 0 var(--border-width-hairline) var(--color-primary);
 }
 
@@ -98,7 +99,7 @@
   flex: 1 1 auto;
   min-width: 0;
   min-height: var(--input-height);
-  padding: var(--input-padding-y) var(--input-padding-x);
+  padding: var(--input-padding-y) 0 var(--input-padding-y) var(--input-padding-x);
   border: none;
   background: transparent;
   color: var(--input-fg);
@@ -126,43 +127,17 @@
   outline: none;
 }
 
-/* Clear button — flex item (not absolute) so it stays at the top as the
-   input grows. Standard 32×32 icon button (DS IconButton sm). Bounce
-   effect on hover via scale transform. Hidden when empty (component). */
-.fieldInput__clear {
-  display: inline-flex;
+/* Clear/paste buttons — DS ghost circle md (40px) pinned top-right; flex
+   items (not absolute) so they stay at the top as the input grows. Clear
+   is hidden when empty (component). */
+.fieldInput__clear,
+.fieldInput__paste {
   align-self: flex-start;
-  align-items: center;
-  justify-content: center;
-  width: var(--iconbutton-size-sm);
-  height: var(--iconbutton-size-sm);
-  margin-top: var(--space-2);
-  margin-right: var(--space-1);
-  padding: var(--space-0);
-  border: none;
-  border-radius: var(--radius-full);
-  background: transparent;
-  color: var(--color-text-secondary);
-  cursor: pointer;
   flex-shrink: 0;
-  transition: background-color var(--duration-fast) var(--ease-in-out),
-              color var(--duration-fast) var(--ease-in-out),
-              transform var(--duration-fast) var(--ease-out);
 }
 
-.fieldInput__clear:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
-  transform: scale(1.05);
-}
-
-.fieldInput__clear:active {
-  transform: scale(1);
-}
-
-.fieldInput__clear:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: var(--space-0-5);
+.fieldInput__clear {
+  margin-right: var(--space-1);
 }
 
 /* === TagInput — chip-based tag entry === */

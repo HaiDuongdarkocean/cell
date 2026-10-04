@@ -170,6 +170,17 @@ describe('reviewEngine', () => {
     expect(right.record.isSpellingCorrect).toBe(true);
   });
 
+  it('counts a retried-correct answer as wrong for the engine', () => {
+    const config = makeConfig();
+    const card = createTestCard(config);
+    const clean = applyReview(makeSession(card, 'spelling'), 'remember', 'abandon', now, config, adapter);
+    const retried = applyReview(makeSession(card, 'spelling'), 'remember', 'abandon', now, config, adapter, 2);
+    expect(clean.record.isSpellingCorrect).toBe(true);
+    expect(retried.record.isSpellingCorrect).toBe(false);
+    expect(retried.record.wrongAttempts).toBe(2);
+    expect(clean.card.components.spelling.progress).toBeGreaterThan(retried.card.components.spelling.progress);
+  });
+
   it('dictation sentence mode expects the sentence', () => {
     const config = makeConfig();
     const card = createTestCard(config);

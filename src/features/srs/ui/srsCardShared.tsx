@@ -492,6 +492,16 @@ export function formatFieldValue(value: SrsFieldValue): string {
   return value.value;
 }
 
+export function MarkedText({ text, marks, markClass }: { text: string; marks: readonly boolean[]; markClass: string }): React.JSX.Element {
+  return (
+    <span className={styles.dictationText}>
+      {[...text].map((ch, i) => (
+        <span key={i} className={marks[i] ? undefined : markClass}>{ch === ' ' ? ' ' : ch}</span>
+      ))}
+    </span>
+  );
+}
+
 export const SentenceText = memo(function SentenceText({ sentence }: { sentence: string }): React.JSX.Element {
   return <Text className={styles.sentence}>{sentence}</Text>;
 });

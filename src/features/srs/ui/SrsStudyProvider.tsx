@@ -54,7 +54,7 @@ interface SrsStudyContextValue {
   readonly canGoBack: boolean;
   readonly goBack: () => void;
   readonly start: (deckId?: string) => Promise<void>;
-  readonly submit: (judgment: ReviewJudgment, typedInput?: string, toggles?: ResolvedVariantToggles) => Promise<void>;
+  readonly submit: (judgment: ReviewJudgment, typedInput?: string, toggles?: ResolvedVariantToggles, wrongAttempts?: number) => Promise<void>;
   readonly markStudyAgain: (variantId: string) => Promise<void>;
   readonly resetCurrentComponent: () => Promise<void>;
   readonly resetCurrentCard: () => Promise<void>;
@@ -278,13 +278,13 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
   );
 
   const submit = useCallback(
-    async (judgment: ReviewJudgment, typedInput?: string, toggles?: ResolvedVariantToggles) => {
+    async (judgment: ReviewJudgment, typedInput?: string, toggles?: ResolvedVariantToggles, wrongAttempts?: number) => {
       if (!session || !config) return;
       setLoading(true);
       setError(null);
       try {
         const graded = toggles && toggles !== session.toggles ? { ...session, toggles } : session;
-        const result = applyReview(graded, judgment, typedInput, new Date(nowISO()), config, adapter);
+        const result = applyReview(graded, judgment, typedInput, new Date(nowISO()), config, adapter, wrongAttempts);
         await putCard(result.card);
         await putReviewEvent(result.record);
         void sendMessage({

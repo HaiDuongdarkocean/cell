@@ -19,7 +19,8 @@
     "tts",
     "unlimitedStorage",
     "alarms",
-    "identity"
+    "identity",
+    "clipboardRead"
   ],
   "host_permissions": [
     "<all_urls>"

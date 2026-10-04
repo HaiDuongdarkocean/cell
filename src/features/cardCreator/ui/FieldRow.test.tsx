@@ -89,6 +89,25 @@ describe('FieldAutoGrowInput', () => {
     expect(textarea.getAttribute('rows')).toBe('3');
   });
 
+  it('pastes via execCommand when the paste button is clicked', () => {
+    const execCommand = jest.fn(() => true);
+    Object.defineProperty(document, 'execCommand', { value: execCommand, configurable: true });
+    render(<FieldAutoGrowInput value="" onChange={jest.fn()} aria-label="Test" pastable />);
+    fireEvent.click(screen.getByRole('button', { name: 'Paste from clipboard' }));
+    expect(execCommand).toHaveBeenCalledWith('paste');
+    delete (document as { execCommand?: unknown }).execCommand;
+  });
+
+  it('does not render a paste button unless pastable', () => {
+    render(<FieldAutoGrowInput value="" onChange={jest.fn()} aria-label="Test" />);
+    expect(screen.queryByRole('button', { name: 'Paste from clipboard' })).not.toBeInTheDocument();
+  });
+
+  it('hides the paste button when the field has text', () => {
+    render(<FieldAutoGrowInput value="hello" onChange={jest.fn()} aria-label="Test" pastable />);
+    expect(screen.queryByRole('button', { name: 'Paste from clipboard' })).not.toBeInTheDocument();
+  });
+
   it('renders a textarea (not input) for single-line content so it wraps and grows', () => {
     const { container } = render(<FieldAutoGrowInput value="single line" onChange={jest.fn()} aria-label="Test" />);
     const textarea = container.querySelector('textarea') as HTMLTextAreaElement;

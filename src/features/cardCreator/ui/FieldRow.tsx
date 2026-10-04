@@ -69,6 +69,8 @@ interface FieldAutoGrowInputProps extends Omit<TextareaHTMLAttributes<HTMLTextAr
   readonly onClear?: () => void;
   /** Show the clear button. Default: true (shown whenever value is non-empty). */
   readonly clearable?: boolean;
+  /** Show a paste button that inserts clipboard text at the caret (empty fields only). Default: false. */
+  readonly pastable?: boolean;
   /** Optional data id — applied to the wrapper div as `<id>-input`. */
   readonly dataId?: string;
 }
@@ -92,6 +94,7 @@ export function FieldAutoGrowInput({
   onChange,
   onClear,
   clearable = true,
+  pastable = false,
   dataId,
   className,
   ...rest
@@ -112,6 +115,27 @@ export function FieldAutoGrowInput({
     controlRef.current?.focus();
   };
 
+  const handlePaste = (): void => {
+    const el = controlRef.current;
+    if (!el) return;
+    el.focus();
+    const fallback = (): void => {
+      if (typeof document.execCommand === 'function') document.execCommand('paste');
+    };
+    if (!navigator.clipboard?.readText) {
+      fallback();
+      return;
+    }
+    navigator.clipboard
+      .readText()
+      .then((text) => {
+        if (!text) return;
+        el.setRangeText(text, el.selectionStart ?? el.value.length, el.selectionEnd ?? el.value.length, 'end');
+        onChange(el.value);
+      })
+      .catch(fallback);
+  };
+
   // JS fallback for browsers without `field-sizing: content` support:
   // derive `rows` from line count so the textarea grows vertically.
   const lineCount = Math.max(1, value.split('\n').length);
@@ -129,9 +153,22 @@ export function FieldAutoGrowInput({
         rows={lineCount}
         {...rest}
       />
+      {pastable && value.trim().length === 0 && !rest.disabled && (
+        <Button
+          size="md"
+          shape="circle"
+          variant="ghost"
+          className={styles.fieldInput__paste}
+          aria-label={t('ui.fieldInput.paste')}
+          onPointerDown={(e) => e.preventDefault()}
+          onClick={handlePaste}
+        >
+          <Icon name="clipboardPaste" size="sm" />
+        </Button>
+      )}
       {clearable && value.length > 0 && (
         <Button
-          size="sm"
+          size="md"
           shape="circle"
           variant="ghost"
           className={styles.fieldInput__clear}
