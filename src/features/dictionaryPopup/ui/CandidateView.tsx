@@ -361,7 +361,13 @@ export function CandidateView({
         {panel.displayInflections && panel.displayInflections.length > 0 && (
           <div className={styles.cellMetaLine} data-cell-id="dictionary-word-forms">
             <span className={styles.cellMetaLabel}>{t('dict.meta.wordForms')}:</span>{' '}
-            {panel.displayInflections.map((g) => (g.type ? `${g.type} ` : '') + g.forms.join(', ')).join(' · ')}
+            {panel.displayInflections.map((g, i) => (
+              <span key={i}>
+                {i > 0 && ' · '}
+                {g.type && <span className={styles.cellMetaLabel}>{g.type} </span>}
+                {g.forms.join(', ')}
+              </span>
+            ))}
           </div>
         )}
 

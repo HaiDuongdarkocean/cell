@@ -87,6 +87,12 @@ assertions pass** over deep shadow-DOM reads + real mouse clicks.
 
 e2e harness hardened: `brave-ext`/`brave-profile` are wiped each run and `dist/manifest.json` is required up-front — the prior run silently replayed a stale extension copy when `dist/` was emptied between build and copy.
 
+### User-reported defects after manual import (fixed round 4)
+
+| Finding | Disposition |
+|---|---|
+| Inflection type labels (`singular`, `plural`, `past tense`, `present participle`, …) rendered in the same bright color as the forms — chrome text competed with the actual inflection values | **Fixed** — type labels use `cellMetaLabel` (muted, same tone as `word forms:`); forms stay primary-bright (`07-matter-verb.png`) |
+
 ## Residuals
 
 - `.mdd` audio extraction deferred by spec — `sound://` refs stored verbatim.
