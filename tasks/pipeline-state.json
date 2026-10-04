@@ -1,5 +1,5 @@
 {
-  "active": "dict-sheet-breadcrumb",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -2353,7 +2353,7 @@
       "updated": "2026-10-04T09:56:56.177Z"
     },
     "dict-sheet-breadcrumb": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "all",
       "uiSurface": "yes",
       "artifacts": {
@@ -2543,12 +2543,9 @@
       "awaiting": null,
       "resolutions": [],
       "loops": 0,
-      "owner": {
-        "id": "devin-crumb-20261004",
-        "since": "2026-10-04T10:01:25.570Z"
-      },
+      "owner": null,
       "worktree": null,
-      "updated": "2026-10-04T14:08:48.637Z"
+      "updated": "2026-10-04T14:29:26.274Z"
     }
   }
 }
