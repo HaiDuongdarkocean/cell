@@ -65,3 +65,19 @@ No confirmed user-visible regressions. Legacy resources without `components` wor
 5. `frequency.ts`: `if (allowed.size === 0)` early return
 6. `importJobTypes` coverage match: exclude terminal-status jobs so failed imports re-surface the error row
 7. Cleanup sweep: dead i18n keys, suite labels, `ResourceCard` → shared `Chip`
+
+## Hardening batch — resolved (2026-10-04)
+
+All recommended fixes landed; gates re-run on the batch (typecheck + lint + 674 suites / 7958 tests + build + showcase e2e 4/4):
+
+- **A** — `JsonFrequencyStrategy` unwraps zip via `selectZipDataJson` (matches siblings); `jsonFrequencyStrategy.test.ts` covers zip/gz/raw/ambiguity/non-array.
+- **B** — `detectByExtension` maps `.gz` inner extensions (`txt`/`json`/`zip`); orchestrator gunzips the full file and re-detects by inner name, so >1MB `.txt.gz`/`.json.gz` import correctly. Detector + orchestrator tests cover truncated heads and end-to-end gz import.
+- **C** — Live narrowing: `ImportCallbacks.getComponents` is invoked per upload chunk; the SW keeps the latest per-chunk `components` and hands it to the executor. `resources.test.ts` proves the last chunk's selection wins; `ResourcesPanel.test.tsx` proves narrowing reaches `getComponents`.
+- **D+E** — `selectZipDataJson` content-verifies every data-shaped `.json`; >1 match or >1 `.txt` → `ParseError` naming the fix ("import them one at a time"). `jsonArrayStrategy` validates the full text is a JSON array of strings (residue `[]` check) — object keys no longer import as terms.
+- **F** — `buildPendingImports` requires `!isTerminalJob` for coverage; failed/interrupted jobs render as their own rows again (`importJobTypes.test.ts`).
+- **G–K + small** — FREQUENCY_GET early-returns when no resource is eligible (no cursor opened); `RESOURCE_COMPONENTS` and `frequencyBand` gate on `installationFinished`; `dictLocalSource` derives `components`+`type` from imported rows; showcase mock handles `RESOURCE_SET_COMPONENTS`/`RESOURCE_COMPONENTS` with a persistent `resourceOverrides` layer.
+- **Cleanup** — `ResourceCard` chips use shared `Chip` (custom css deleted); last selected chip disabled with reason title; delete-all counts finished resources only; 12 dead i18n keys removed, `dropHint` lists real accepted extensions, `inflections`/`wordFamily` translated in vi; suite labels renamed to `resourceEntryRepository`.
+- **Tests added** — `dictionaryComponents.test.ts` (SC-2), dual-bank zip components, FREQUENCY_GET gating (disabled/disabledComponents/unfinished/legacy fallback + early return), sync blob derive (`components`+`type` incl. FREQUENCY-only), e2e chip persistence across section remount.
+- **Foreign fix** — `defEntry.test.ts` fixture updated to `{count, source}` (broken at HEAD by `abea89b4`).
+
+Remaining known (accepted): pre-existing `rankByTerm`/`entriesToBand` divergence; latent inconsistencies noted in lane reports remain unreachable on current write paths.
