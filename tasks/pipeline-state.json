@@ -2365,10 +2365,10 @@
       "gates": {
         "build": {
           "v": "pass",
-          "at": "2026-10-04T10:22:02.982Z",
-          "head": "6a70ed1b39b85a14c8a223353705857e15596ba9",
+          "at": "2026-10-04T10:26:13.466Z",
+          "head": "b05d1c0ca22d3e9859a7abdad0cf4243f3599ed7",
           "dirty": [
-            "tasks/reports/pipeline-sessions.md",
+            "src/features/dictionaryPopup/controller/controllerTypes.ts",
             "docs/intent/dict-sheet-breadcrumb-component-mapping.md",
             "docs/intent/dict-sheet-breadcrumb-design-brief.md",
             "docs/intent/dict-sheet-breadcrumb.md",
@@ -2376,15 +2376,16 @@
             "docs/reviews/dict-sheet-breadcrumb-design.md",
             "docs/reviews/dict-sheet-breadcrumb-spec.md",
             "docs/specs/dict-sheet-breadcrumb.md",
-            "src/entrypoints/mockup-dict-sheet-breadcrumb/"
+            "src/entrypoints/mockup-dict-sheet-breadcrumb/",
+            "tasks/plan-dict-sheet-breadcrumb.md"
           ]
         },
         "testUnit": {
           "v": "pass",
-          "at": "2026-10-04T10:25:25.473Z",
-          "head": "6a70ed1b39b85a14c8a223353705857e15596ba9",
+          "at": "2026-10-04T10:26:13.815Z",
+          "head": "b05d1c0ca22d3e9859a7abdad0cf4243f3599ed7",
           "dirty": [
-            "tasks/reports/pipeline-sessions.md",
+            "src/features/dictionaryPopup/controller/controllerTypes.ts",
             "docs/intent/dict-sheet-breadcrumb-component-mapping.md",
             "docs/intent/dict-sheet-breadcrumb-design-brief.md",
             "docs/intent/dict-sheet-breadcrumb.md",
@@ -2398,10 +2399,10 @@
         },
         "typecheck": {
           "v": "pass",
-          "at": "2026-10-04T10:25:25.171Z",
-          "head": "6a70ed1b39b85a14c8a223353705857e15596ba9",
+          "at": "2026-10-04T10:26:13.563Z",
+          "head": "b05d1c0ca22d3e9859a7abdad0cf4243f3599ed7",
           "dirty": [
-            "tasks/reports/pipeline-sessions.md",
+            "src/features/dictionaryPopup/controller/controllerTypes.ts",
             "docs/intent/dict-sheet-breadcrumb-component-mapping.md",
             "docs/intent/dict-sheet-breadcrumb-design-brief.md",
             "docs/intent/dict-sheet-breadcrumb.md",
@@ -2415,10 +2416,10 @@
         },
         "lint": {
           "v": "pass",
-          "at": "2026-10-04T10:25:25.326Z",
-          "head": "6a70ed1b39b85a14c8a223353705857e15596ba9",
+          "at": "2026-10-04T10:26:13.685Z",
+          "head": "b05d1c0ca22d3e9859a7abdad0cf4243f3599ed7",
           "dirty": [
-            "tasks/reports/pipeline-sessions.md",
+            "src/features/dictionaryPopup/controller/controllerTypes.ts",
             "docs/intent/dict-sheet-breadcrumb-component-mapping.md",
             "docs/intent/dict-sheet-breadcrumb-design-brief.md",
             "docs/intent/dict-sheet-breadcrumb.md",
@@ -2432,10 +2433,10 @@
         },
         "browser": {
           "v": "pass",
-          "at": "2026-10-04T10:25:25.595Z",
-          "head": "6a70ed1b39b85a14c8a223353705857e15596ba9",
+          "at": "2026-10-04T10:26:13.960Z",
+          "head": "b05d1c0ca22d3e9859a7abdad0cf4243f3599ed7",
           "dirty": [
-            "tasks/reports/pipeline-sessions.md",
+            "src/features/dictionaryPopup/controller/controllerTypes.ts",
             "docs/intent/dict-sheet-breadcrumb-component-mapping.md",
             "docs/intent/dict-sheet-breadcrumb-design-brief.md",
             "docs/intent/dict-sheet-breadcrumb.md",
@@ -2457,7 +2458,7 @@
         "since": "2026-10-04T10:01:25.570Z"
       },
       "worktree": null,
-      "updated": "2026-10-04T10:25:25.652Z"
+      "updated": "2026-10-04T10:26:14.011Z"
     }
   }
 }
