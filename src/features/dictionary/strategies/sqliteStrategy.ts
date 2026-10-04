@@ -1,8 +1,11 @@
 // sqliteStrategy — SQLite .db / .db.gz dictionary + frequency (ADR-023 D5, spec F9).
 //
-// Expected schema:
+// Recognized tables (emitted in one pass — unified-resource-import):
 // - Dictionary: langResourceEntry(term, backwardTerm, displayTerm, termAlt, reading, definition)
-// - Frequency: langFrequencyEntry(term, reading, frequency)
+// - Frequency: langFrequencyEntry(term, reading, frequency) or legacy entries(...)
+//
+// A db containing both produces one resource with components
+// {definitions, frequency}; the user's component subset can drop a table.
 //
 // gunzip → sql.js lazy-load → exec SQL → yield entries.
 // sql.js wasm ~1MB lazy fetch from web_accessible_resources.
@@ -11,10 +14,10 @@
 import { BaseImportStrategy, type RawFrequencyEntry, type RawDictionaryEntry, type StrategyOptions } from './baseImportStrategy';
 import { gunzipFile, isGzip, isSqlite } from '../logic/fileDetector';
 import { toCanonicalDefinition } from '../logic/normalize/canonical';
+import { collectEntryComponents } from '../logic/dictionaryComponents';
 import { DatabaseError, ParseError } from '../logic/importErrors';
-import { bulkInsertDictionaryEntries } from '../repositories/dictionaryRepository';
-import { bulkInsertFrequencyEntries } from '../repositories/frequencyRepository';
-import type { FrequencyEntry, DictionaryEntry, ResourceType } from '@/entities/dictionary';
+import { bulkInsertDictionaryEntries, bulkInsertFrequencyEntries } from '../repositories/resourceEntryRepository';
+import type { FrequencyEntry, DictionaryEntry } from '@/entities/dictionary';
 
 // Local type stubs for sql.js (avoid `import type from 'sql.js'` — ts-jest
 // doesn't erase it, causing ESM parse error in jest CJS context).
@@ -34,19 +37,20 @@ interface QueryExecResult {
 export interface SqliteStrategyOptions {
   readonly data: Uint8Array;
   readonly fileName: string;
-  readonly resourceType: ResourceType;
 }
 
-/** SQLite strategy — gunzip + sql.js lazy-load + exec SQL. */
-export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDictionaryEntry, Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'>> {
+type StoredRow = Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'>;
+
+const isFreqRow = (e: StoredRow): e is Omit<FrequencyEntry, 'id'> => 'frequency' in e;
+
+/** SQLite strategy — emits every recognized table the schema contains. */
+export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDictionaryEntry, StoredRow> {
   readonly format = 'sqlite' as const;
   private readonly data: Uint8Array;
-  private readonly resourceType: ResourceType;
 
   constructor(options: StrategyOptions, fileData: SqliteStrategyOptions) {
     super(options);
     this.data = fileData.data;
-    this.resourceType = fileData.resourceType;
   }
 
   protected async *parse(): AsyncGenerator<RawFrequencyEntry | RawDictionaryEntry> {
@@ -84,34 +88,47 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
     }
 
     try {
-      this.reportTotal(this.countEntries(db));
-      if (this.resourceType === 'DICTIONARY') {
-        yield* this.parseDictionaryTable(db);
-      } else {
-        yield* this.parseFrequencyTable(db);
+      const tables = this.listTables(db);
+      const emitDict = this.wants('definitions') && tables.has('langResourceEntry');
+      const freqTable = tables.has('langFrequencyEntry') ? 'langFrequencyEntry' : tables.has('entries') ? 'entries' : undefined;
+      const emitFreq = this.wants('frequency') && freqTable !== undefined;
+      if (!emitDict && !emitFreq) {
+        throw new ParseError('SQLite: no langResourceEntry or langFrequencyEntry/entries table found.');
       }
+
+      this.reportTotal(this.countEntries(db, emitDict, freqTable, emitFreq));
+
+      if (emitDict) yield* this.parseDictionaryTable(db);
+      if (emitFreq && freqTable) yield* this.parseFrequencyTable(db, freqTable);
     } finally {
       db.close();
     }
   }
 
-  /** Exact row count on the table the parse path selects from (0 = unknown). */
-  private countEntries(db: Database): number {
+  /** Table names from sqlite_master. */
+  private listTables(db: Database): Set<string> {
+    const names = new Set<string>();
     try {
-      if (this.resourceType === 'DICTIONARY') {
-        const r = db.exec('SELECT COUNT(*) AS c FROM langResourceEntry');
-        return toCount(r);
+      const result = db.exec("SELECT name FROM sqlite_master WHERE type = 'table'");
+      for (const row of result[0]?.values ?? []) {
+        names.add(String(row[0]));
       }
-      try {
-        const r = db.exec('SELECT COUNT(*) AS c FROM langFrequencyEntry');
-        return toCount(r);
-      } catch {
-        const r = db.exec('SELECT COUNT(*) AS c FROM entries');
-        return toCount(r);
-      }
+    } catch {
+      // leave empty — emit checks below produce the ParseError
+    }
+    return names;
+  }
+
+  /** Exact row count across emitted tables (0 = unknown). */
+  private countEntries(db: Database, emitDict: boolean, freqTable: string | undefined, emitFreq: boolean): number {
+    let total = 0;
+    try {
+      if (emitDict) total += toCount(db.exec('SELECT COUNT(*) AS c FROM langResourceEntry'));
+      if (emitFreq && freqTable) total += toCount(db.exec(`SELECT COUNT(*) AS c FROM ${freqTable}`));
     } catch {
       return 0;
     }
+    return total;
   }
 
   /** Parse langResourceEntry table → dictionary entries. */
@@ -137,18 +154,13 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
     }
   }
 
-  /** Parse langFrequencyEntry table → frequency entries. */
-  private async *parseFrequencyTable(db: Database): AsyncGenerator<RawFrequencyEntry> {
+  /** Parse a frequency table → frequency entries. */
+  private async *parseFrequencyTable(db: Database, table: string): AsyncGenerator<RawFrequencyEntry> {
     let result: QueryExecResult[];
     try {
-      result = db.exec('SELECT term, reading, frequency FROM langFrequencyEntry');
-    } catch {
-      // Fallback: try legacy entries table
-      try {
-        result = db.exec('SELECT term, reading, frequency FROM entries');
-      } catch (e) {
-        throw new ParseError('SQLite: no langFrequencyEntry or entries table with term/reading/frequency.', e);
-      }
+      result = db.exec(`SELECT term, reading, frequency FROM ${table}`);
+    } catch (e) {
+      throw new ParseError(`SQLite: no ${table} table with term/reading/frequency.`, e);
     }
     if (!result || result.length === 0) return;
 
@@ -165,11 +177,19 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
     }
   }
 
-  protected transformEntry(raw: RawFrequencyEntry | RawDictionaryEntry): Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'> | null {
-    if (this.resourceType === 'DICTIONARY') {
-      return this.transformDictionaryEntry(raw as RawDictionaryEntry);
+  protected transformEntry(raw: RawFrequencyEntry | RawDictionaryEntry): StoredRow | null {
+    if ('frequency' in raw) {
+      return this.transformFrequencyEntry(raw);
     }
-    return this.transformFrequencyEntry(raw as RawFrequencyEntry);
+    return this.transformDictionaryEntry(raw);
+  }
+
+  protected collectComponents(stored: StoredRow): void {
+    if (isFreqRow(stored)) {
+      this.componentSet.add('frequency');
+    } else {
+      collectEntryComponents(this.componentSet, stored);
+    }
   }
 
   private transformDictionaryEntry(raw: RawDictionaryEntry): Omit<DictionaryEntry, 'id'> | null {
@@ -202,18 +222,11 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
     };
   }
 
-  protected async flushBatch(batch: ReadonlyArray<Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'>>): Promise<void> {
-    if (this.resourceType === 'DICTIONARY') {
-      await bulkInsertDictionaryEntries(
-        this.options.langCode,
-        batch as ReadonlyArray<Omit<DictionaryEntry, 'id'>>,
-      );
-    } else {
-      await bulkInsertFrequencyEntries(
-        this.options.langCode,
-        batch as ReadonlyArray<Omit<FrequencyEntry, 'id'>>,
-      );
-    }
+  protected async flushBatch(batch: ReadonlyArray<StoredRow>): Promise<void> {
+    const dict = batch.filter((e): e is Omit<DictionaryEntry, 'id'> => !isFreqRow(e));
+    const freq = batch.filter(isFreqRow);
+    if (dict.length > 0) await bulkInsertDictionaryEntries(this.options.langCode, dict);
+    if (freq.length > 0) await bulkInsertFrequencyEntries(this.options.langCode, freq);
   }
 }
 

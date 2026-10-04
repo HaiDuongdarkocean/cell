@@ -8,7 +8,7 @@ import { BaseDictionaryStrategy } from './baseImportStrategy';
 import type { StrategyOptions, RawDictionaryEntry } from './baseImportStrategy';
 import { decodeText, isGzip, gunzipFile, isZip, unzipAll } from '../logic/fileDetector';
 import { ParseError } from '../logic/importErrors';
-import { bulkInsertDictionaryEntries } from '../repositories/dictionaryRepository';
+import { bulkInsertDictionaryEntries } from '../repositories/resourceEntryRepository';
 import type { DictionaryEntry } from '@/entities/dictionary';
 
 interface WordlistJson {

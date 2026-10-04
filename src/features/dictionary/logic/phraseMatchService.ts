@@ -10,7 +10,7 @@ import {
 } from '../repositories/phraseIndexRepository';
 import {
   findDictionaryByTerm,
-} from '../repositories/dictionaryRepository';
+} from '../repositories/resourceEntryRepository';
 import {
   matchPhrase,
   tokenizeSentence,

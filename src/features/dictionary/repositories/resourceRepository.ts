@@ -4,7 +4,7 @@
 // findBySignature (dedupe), count, deleteAll.
 
 import { getDB, getStore, awaitTx, STORES, INDEXES } from './baseRepository';
-import type { DictionaryComponent, ImportFormat, ResourceInfo, ResourceType } from '@/entities/dictionary';
+import type { DictionaryComponent, ImportFormat, ResourceInfo } from '@/entities/dictionary';
 import { captureChange, ensureSyncRuntime, isCaptureEnabled, scopeForTarget, stableJson, targetOf, type Scope } from '@/features/sync';
 
 const WRITE_STORES = [STORES.RESOURCE, STORES.SYNC_OUTBOX, STORES.SYNC_META];
@@ -192,12 +192,13 @@ export async function findResourceBySignature(langCode: string, signature: strin
   });
 }
 
-/** Reorder resources of a given type by writing priority 0..n onto each resource in the supplied order. */
-export async function reorderResources(langCode: string, type: ResourceType, orderedIds: readonly number[]): Promise<void> {
+/** Reorder resources along the single global priority axis — writes
+ *  priority 0..n onto each resource in the supplied order. */
+export async function reorderResources(langCode: string, orderedIds: readonly number[]): Promise<void> {
   const all = await getAllResources(langCode);
   const byId = new Map<number, ResourceInfo>();
   for (const resource of all) {
-    if (resource.type === type && resource.id !== undefined) {
+    if (resource.id !== undefined) {
       byId.set(resource.id, resource);
     }
   }

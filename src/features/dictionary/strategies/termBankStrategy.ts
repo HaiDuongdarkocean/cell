@@ -1,26 +1,26 @@
 // termBankStrategy — term-bank ZIP format (ADR-023 D3, spec F9).
 //
-// Handles BOTH:
-// - term_bank_*.json → DICTIONARY entries (term, reading, definition)
+// Handles BOTH bank families in one pass (unified-resource-import):
+// - term_bank_*.json → dictionary entries (term, reading, definition)
 //   Format: [[expression, reading, definitionTags, rules, score, definitions[], ...], ...]
-// - term_meta_bank_*.json → FREQUENCY entries (term, reading, frequency)
+// - term_meta_bank_*.json → frequency entries (term, reading, frequency)
 //   Format: [[term, type, {reading?, frequency?} | number], ...]
 //
-// Mode selected by resourceType: DICTIONARY → term_bank, FREQUENCY → term_meta_bank.
+// A zip containing both families produces one resource with components
+// {definitions, frequency}; the user's component subset can drop a family.
 
 import { BaseImportStrategy, type RawFrequencyEntry, type RawDictionaryEntry, type StrategyOptions } from './baseImportStrategy';
 import { unzipAll, decodeText } from '../logic/fileDetector';
 import { toCanonicalDefinition } from '../logic/normalize/canonical';
+import { collectEntryComponents } from '../logic/dictionaryComponents';
 import { ParseError, CorruptedFileError } from '../logic/importErrors';
-import { bulkInsertFrequencyEntries } from '../repositories/frequencyRepository';
-import { bulkInsertDictionaryEntries } from '../repositories/dictionaryRepository';
-import type { FrequencyEntry, DictionaryEntry, ResourceType } from '@/entities/dictionary';
+import { bulkInsertFrequencyEntries, bulkInsertDictionaryEntries } from '../repositories/resourceEntryRepository';
+import type { FrequencyEntry, DictionaryEntry } from '@/entities/dictionary';
 
 /** Options for termBankStrategy. */
 export interface TermBankStrategyOptions {
   readonly data: Uint8Array;
   readonly fileName: string;
-  readonly resourceType: ResourceType;
 }
 
 /** Bank index.json structure. */
@@ -36,16 +36,18 @@ type TermBankEntry = [string, string, string, string, number, unknown[]];
 /** term_meta_bank entry: [term, type, {reading?, frequency?} | string | number]. */
 type TermMetaEntry = [string, string, { reading?: string; frequency?: number } | string | number];
 
-/** term-bank ZIP strategy — handles both dictionary (term_bank) + frequency (term_meta_bank). */
-export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDictionaryEntry, Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'>> {
+type StoredRow = Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'>;
+
+const isFreqRow = (e: StoredRow): e is Omit<FrequencyEntry, 'id'> => 'frequency' in e;
+
+/** term-bank ZIP strategy — emits every bank family the zip contains. */
+export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDictionaryEntry, StoredRow> {
   readonly format = 'term-bank' as const;
   private readonly data: Uint8Array;
-  private readonly resourceType: ResourceType;
 
   constructor(options: StrategyOptions, fileData: TermBankStrategyOptions) {
     super(options);
     this.data = fileData.data;
-    this.resourceType = fileData.resourceType;
   }
 
   protected async *parse(): AsyncGenerator<RawFrequencyEntry | RawDictionaryEntry> {
@@ -68,24 +70,30 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
       throw new ParseError('term-bank format: invalid index.json.', e);
     }
 
-    this.reportTotal(this.countBankEntries(files));
-
-    if (this.resourceType === 'DICTIONARY') {
-      yield* this.parseTermBanks(files);
-    } else {
-      yield* this.parseTermMetaBanks(files);
+    const paths = Object.keys(files);
+    const emitDict = this.wants('definitions') && paths.some((p) => p.includes('term_bank'));
+    const emitFreq = this.wants('frequency') && paths.some((p) => p.includes('term_meta_bank'));
+    if (!emitDict && !emitFreq) {
+      throw new ParseError('term-bank format: no term_bank_*.json or term_meta_bank_*.json files found.');
     }
+
+    this.reportTotal(this.countBankEntries(files, emitDict, emitFreq));
+
+    if (emitDict) yield* this.parseTermBanks(files);
+    if (emitFreq) yield* this.parseTermMetaBanks(files);
   }
 
-  /** Exact attempted-entry count across the relevant bank files (mode-filtered). */
-  private countBankEntries(files: Record<string, Uint8Array>): number {
-    const pattern = this.resourceType === 'DICTIONARY' ? 'term_bank' : 'term_meta_bank';
+  /** Exact attempted-entry count across the emitted bank files. */
+  private countBankEntries(files: Record<string, Uint8Array>, emitDict: boolean, emitFreq: boolean): number {
     let total = 0;
     for (const path of Object.keys(files)) {
-      if (!path.includes(pattern)) continue;
+      const isDictBank = path.includes('term_bank') && !path.includes('term_meta_bank');
+      const isFreqBank = path.includes('term_meta_bank');
+      if ((isDictBank && !emitDict) || (isFreqBank && !emitFreq)) continue;
+      if (!isDictBank && !isFreqBank) continue;
       const parsed = JSON.parse(decodeText(files[path]!));
       if (!Array.isArray(parsed)) continue;
-      if (this.resourceType === 'DICTIONARY') {
+      if (isDictBank) {
         total += parsed.length;
       } else {
         for (const entry of parsed) {
@@ -99,11 +107,8 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
   /** Parse term_bank_*.json → dictionary entries. */
   private async *parseTermBanks(files: Record<string, Uint8Array>): AsyncGenerator<RawDictionaryEntry> {
     const bankPaths = Object.keys(files)
-      .filter((p) => p.includes('term_bank'))
+      .filter((p) => p.includes('term_bank') && !p.includes('term_meta_bank'))
       .sort();
-    if (bankPaths.length === 0) {
-      throw new ParseError('term-bank dictionary format: no term_bank_*.json files found.');
-    }
 
     for (const bankPath of bankPaths) {
       let entries: TermBankEntry[];
@@ -133,9 +138,6 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
     const bankPaths = Object.keys(files)
       .filter((p) => p.includes('term_meta_bank'))
       .sort();
-    if (bankPaths.length === 0) {
-      throw new ParseError('term-bank frequency format: no term_meta_bank_*.json files found.');
-    }
 
     for (const bankPath of bankPaths) {
       let entries: TermMetaEntry[];
@@ -163,11 +165,19 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
     }
   }
 
-  protected transformEntry(raw: RawFrequencyEntry | RawDictionaryEntry): Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'> | null {
-    if (this.resourceType === 'DICTIONARY') {
-      return this.transformDictionaryEntry(raw as RawDictionaryEntry);
+  protected transformEntry(raw: RawFrequencyEntry | RawDictionaryEntry): StoredRow | null {
+    if ('frequency' in raw) {
+      return this.transformFrequencyEntry(raw);
     }
-    return this.transformFrequencyEntry(raw as RawFrequencyEntry);
+    return this.transformDictionaryEntry(raw);
+  }
+
+  protected collectComponents(stored: StoredRow): void {
+    if (isFreqRow(stored)) {
+      this.componentSet.add('frequency');
+    } else {
+      collectEntryComponents(this.componentSet, stored);
+    }
   }
 
   private transformDictionaryEntry(raw: RawDictionaryEntry): Omit<DictionaryEntry, 'id'> | null {
@@ -200,17 +210,10 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
     };
   }
 
-  protected async flushBatch(batch: ReadonlyArray<Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'>>): Promise<void> {
-    if (this.resourceType === 'DICTIONARY') {
-      await bulkInsertDictionaryEntries(
-        this.options.langCode,
-        batch as ReadonlyArray<Omit<DictionaryEntry, 'id'>>,
-      );
-    } else {
-      await bulkInsertFrequencyEntries(
-        this.options.langCode,
-        batch as ReadonlyArray<Omit<FrequencyEntry, 'id'>>,
-      );
-    }
+  protected async flushBatch(batch: ReadonlyArray<StoredRow>): Promise<void> {
+    const dict = batch.filter((e): e is Omit<DictionaryEntry, 'id'> => !isFreqRow(e));
+    const freq = batch.filter(isFreqRow);
+    if (dict.length > 0) await bulkInsertDictionaryEntries(this.options.langCode, dict);
+    if (freq.length > 0) await bulkInsertFrequencyEntries(this.options.langCode, freq);
   }
 }

@@ -10,8 +10,8 @@ import {
   sampleFrequencyEntries,
   findFrequencyEntry,
   countFrequencyByResource,
-  deleteFrequencyByResource,
-} from '@/features/dictionary/repositories/frequencyRepository';
+  deleteEntriesByResource,
+} from '@/features/dictionary/repositories/resourceEntryRepository';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
@@ -126,22 +126,22 @@ describe('frequencyRepository', () => {
     await expect(countFrequencyByResource(LANG, 9999)).resolves.toBe(0);
   });
 
-  it('deleteFrequencyByResource removes all entries for resource', async () => {
+  it('deleteEntriesByResource removes all entries for resource', async () => {
     await bulkInsertFrequencyEntries(LANG, [
       makeEntry('a', 1),
       makeEntry('b', 2),
     ]);
-    await deleteFrequencyByResource(LANG, RESOURCE_ID);
+    await deleteEntriesByResource(LANG, RESOURCE_ID);
     await expect(countFrequencyByResource(LANG, RESOURCE_ID)).resolves.toBe(0);
   });
 
-  it('deleteFrequencyByResource does not affect other resources', async () => {
+  it('deleteEntriesByResource does not affect other resources', async () => {
     await bulkInsertFrequencyEntries(LANG, [
       makeEntry('a', 1, RESOURCE_ID),
       makeEntry('b', 2, RESOURCE_ID),
       makeEntry('c', 3, 2),
     ]);
-    await deleteFrequencyByResource(LANG, RESOURCE_ID);
+    await deleteEntriesByResource(LANG, RESOURCE_ID);
     await expect(countFrequencyByResource(LANG, RESOURCE_ID)).resolves.toBe(0);
     await expect(countFrequencyByResource(LANG, 2)).resolves.toBe(1);
   });

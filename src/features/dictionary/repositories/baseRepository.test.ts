@@ -80,8 +80,8 @@ describe('baseRepository', () => {
     it('creates 4 object stores', async () => {
       const db = await getDB('en');
       expect(db.objectStoreNames.contains(STORES.RESOURCE)).toBe(true);
-      expect(db.objectStoreNames.contains(STORES.FREQUENCY)).toBe(true);
-      expect(db.objectStoreNames.contains(STORES.DICTIONARY)).toBe(true);
+      expect(db.objectStoreNames.contains(STORES.ENTRY)).toBe(true);
+      expect(db.objectStoreNames.contains(STORES.ENTRY)).toBe(true);
       expect(db.objectStoreNames.contains(STORES.PHRASE_INDEX)).toBe(true);
     });
 
@@ -97,8 +97,8 @@ describe('baseRepository', () => {
 
     it('creates 3 indexes on langFrequencyEntry', async () => {
       const db = await getDB('en');
-      const tx = db.transaction(STORES.FREQUENCY, 'readonly');
-      const store = tx.objectStore(STORES.FREQUENCY);
+      const tx = db.transaction(STORES.ENTRY, 'readonly');
+      const store = tx.objectStore(STORES.ENTRY);
       expect(store.indexNames.contains(INDEXES.by_resource)).toBe(true);
       expect(store.indexNames.contains(INDEXES.by_term)).toBe(true);
       expect(store.indexNames.contains(INDEXES.by_backwardTerm)).toBe(true);
@@ -107,8 +107,8 @@ describe('baseRepository', () => {
 
     it('creates 3 indexes on langDictionaryEntry', async () => {
       const db = await getDB('en');
-      const tx = db.transaction(STORES.DICTIONARY, 'readonly');
-      const store = tx.objectStore(STORES.DICTIONARY);
+      const tx = db.transaction(STORES.ENTRY, 'readonly');
+      const store = tx.objectStore(STORES.ENTRY);
       expect(store.indexNames.contains(INDEXES.by_resource)).toBe(true);
       expect(store.indexNames.contains(INDEXES.by_term)).toBe(true);
       expect(store.indexNames.contains(INDEXES.by_backwardTerm)).toBe(true);

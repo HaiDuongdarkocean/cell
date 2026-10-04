@@ -221,7 +221,11 @@ async function buildResourceContext(langCode: string, settings: Settings): Promi
   };
 
   const resources = allResources.filter(isAllowed);
-  const dictionaryResources = resources.filter((r) => r.type === 'DICTIONARY');
+  // Dictionary-capable = holds any dictionary component; `components` absent
+  // (pre-v14/pre-scan rows) falls back to the legacy type label.
+  const dictionaryResources = resources.filter((r) =>
+    r.components?.length ? r.components.some((c) => c !== 'frequency') : r.type === 'DICTIONARY',
+  );
 
   const allowedResourceIds = new Set<number>();
   for (const r of resources) {
@@ -600,6 +604,8 @@ async function assembleLookupResult(
   }
   const disabledOf = (resourceId: number): ReadonlySet<string> =>
     disabledByResource.get(resourceId) ?? EMPTY_COMPONENT_SET;
+  // A resource whose 'frequency' component is toggled off must not contribute ranks.
+  freqEntries = freqEntries.filter((e) => !disabledOf(e.resourceId).has('frequency'));
 
   const definitions: DefinitionEntry[] = [];
   const relatedMap = new Map<string, RelatedEntry>();

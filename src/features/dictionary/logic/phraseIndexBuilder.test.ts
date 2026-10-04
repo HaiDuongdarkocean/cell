@@ -7,7 +7,7 @@ import 'fake-indexeddb/auto';
 import { buildPhraseIndexForResource, ENGLISH_INFLECTABLE_VERBS } from './phraseIndexBuilder';
 import { closeAllDBs, clearAllStores } from '../repositories/baseRepository';
 import { addResource } from '../repositories/resourceRepository';
-import { bulkInsertDictionaryEntries } from '../repositories/dictionaryRepository';
+import { bulkInsertDictionaryEntries } from '../repositories/resourceEntryRepository';
 import { getPhraseIndex, hasPhraseIndex } from '../repositories/phraseIndexRepository';
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();

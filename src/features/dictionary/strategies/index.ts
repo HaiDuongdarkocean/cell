@@ -13,4 +13,4 @@ export { TermBankStrategy, type TermBankStrategyOptions } from './termBankStrate
 export { JsonEntriesStrategy, type JsonEntriesStrategyOptions } from './jsonEntriesStrategy';
 export { SqliteStrategy, type SqliteStrategyOptions } from './sqliteStrategy';
 export { WordlistJsonStrategy } from './wordlistJsonStrategy';
-export { createStrategy, resolveFormat } from './strategyFactory';
+export { createStrategy } from './strategyFactory';

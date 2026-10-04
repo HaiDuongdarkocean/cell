@@ -9,15 +9,13 @@
 import { importFile } from './importOrchestrator';
 import { countResources } from '../repositories/resourceRepository';
 import type { ReadableFile } from './fileDetector';
-import type { ResourceType } from '@/entities/dictionary';
 
 /** Seed file definitions — fetched from extension bundle + imported in parallel. */
 const SEED_FILES: ReadonlyArray<{
   readonly path: string;
-  readonly resourceType: ResourceType;
 }> = [
-  { path: 'seed/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json', resourceType: 'DICTIONARY' },
-  { path: 'seed/en/frequency/standard.json', resourceType: 'FREQUENCY' },
+  { path: 'seed/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json' },
+  { path: 'seed/en/frequency/standard.json' },
 ] as const;
 
 /** In-memory lock — prevents concurrent seed runs (e.g. onInstalled + Options mount). */
@@ -72,12 +70,12 @@ export async function seedDevDataIfEmpty(langCode = 'en'): Promise<void> {
       const res = await fetch(seedUrl(seed.path));
       if (!res.ok) throw new Error(`Seed fetch failed: ${seed.path} → ${res.status}`);
       const buffer = await res.arrayBuffer();
-      return { buffer, name: fileNameFromPath(seed.path), resourceType: seed.resourceType };
+      return { buffer, name: fileNameFromPath(seed.path) };
     });
     const files = await Promise.all(fetches);
 
     // Import all in parallel — importFile is concurrency-safe (auto-increment resourceId).
-    const imports = files.map((f) => importFile(wrapBuffer(f.buffer, f.name), f.resourceType, { langCode }));
+    const imports = files.map((f) => importFile(wrapBuffer(f.buffer, f.name), { langCode }));
     const results = await Promise.all(imports);
     console.info(`[autoSeed] Imported ${results.length} seed resources for "${langCode}".`, results);
   } catch (err) {

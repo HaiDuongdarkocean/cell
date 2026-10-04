@@ -7,26 +7,33 @@
 
 import { type ReactElement } from 'react';
 import { t } from '@/shared/i18n';
-import { Button } from '@/shared/ui';
+import { Button, Chip } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { Spinner } from '@/shared/ui/Spinner';
+import type { DictionaryComponent } from '@/entities/dictionary';
 import type { ImportJob } from './importJobTypes';
 import styles from './ImportProgress.module.css';
 
 interface ImportProgressProps {
   readonly job: ImportJob;
+  readonly onToggleComponent?: (jobId: string, component: DictionaryComponent) => void;
   readonly onResolveDuplicate: (jobId: string, choice: 'replace' | 'skip') => void;
   readonly onRerunReplace: (jobId: string) => void;
   readonly onRetry?: (jobId: string) => void;
   readonly onDismiss?: (jobId: string) => void;
 }
 
+const kindLabel = (c: DictionaryComponent): string =>
+  t(c === 'frequency' ? 'resources.job.kind.frequency' : 'resources.job.kind.dictionary');
+
+const PICKER_LIVE: ReadonlySet<ImportJob['status']> = new Set(['queued', 'uploading']);
+
 function percent(part: number, whole: number): number {
   if (whole <= 0) return 0;
   return Math.min(100, Math.round((part / whole) * 100));
 }
 
-export function ImportProgress({ job, onResolveDuplicate, onRerunReplace, onRetry, onDismiss }: ImportProgressProps): ReactElement {
+export function ImportProgress({ job, onToggleComponent, onResolveDuplicate, onRerunReplace, onRetry, onDismiss }: ImportProgressProps): ReactElement {
   const isUpload = job.status === 'uploading';
   const isImport = job.status === 'importing';
   const fillPct = isUpload
@@ -161,6 +168,32 @@ export function ImportProgress({ job, onResolveDuplicate, onRerunReplace, onRetr
       <div className={styles.row}>
         <div className={styles.info}>
           <span className={styles.name}>{job.fileName}</span>
+          {job.detectedComponents.length > 0 && (
+            <span className={styles.kindChips}>
+              {job.detectedComponents.map((c) => {
+                const label = kindLabel(c);
+                const pickable = job.detectedComponents.length > 1
+                  && PICKER_LIVE.has(job.status)
+                  && onToggleComponent !== undefined;
+                return pickable ? (
+                  <Chip
+                    key={c}
+                    as="button"
+                    size="sm"
+                    variant="outline"
+                    selected={job.selectedComponents.includes(c)}
+                    onClick={() => onToggleComponent(job.jobId, c)}
+                    aria-label={t('resources.job.componentToggle', [label])}
+                    data-cell-id={`job-component-${c}-${job.jobId}`}
+                  >
+                    {label}
+                  </Chip>
+                ) : job.selectedComponents.includes(c) ? (
+                  <Chip key={c} size="sm" variant="outline">{label}</Chip>
+                ) : null;
+              })}
+            </span>
+          )}
           {meta}
         </div>
         <span className={styles.right}>{right}</span>

@@ -1,6 +1,7 @@
-// Dictionary entity types (ADR-023 D1, spec F7).
+// Dictionary entity types (ADR-023 D1, spec F7; unified-resource-import spec).
 //
-// 3 object stores: langResourceInfo, langFrequencyEntry, langDictionaryEntry.
+// 2 object stores: langResourceInfo + langDictionaryEntry (unified entry
+// store — frequency rows live there too, stamped `kind: 'freq'`).
 // Module boundary: entities/types only — no logic, no storage deps.
 
 /** Import format — 7 supported formats (spec F8, pos-dictionary-variants).
@@ -14,14 +15,17 @@ export type ImportFormat =
   | 'json-frequency'
   | 'wordlist-json';
 
-/** Resource type — frequency list vs dictionary (spec F7). */
+/** Resource type — derived display label only (a resource with definitions
+ *  reads 'DICTIONARY', else 'FREQUENCY'). Kept for wire/legacy-meta compat —
+ *  never an input: business logic branches on `components`/entry payloads. */
 export type ResourceType = 'FREQUENCY' | 'DICTIONARY';
 
-/** A toggleable content component of a dictionary resource. Detected per
- *  resource at import (or by a lazy store scan) into `ResourceInfo.components`;
+/** A toggleable content component of a resource. Detected per resource at
+ *  import (or by a lazy store scan) into `ResourceInfo.components`;
  *  `disabledComponents` drops the part at lookup-merge time so lower-priority
- *  dictionaries supply it instead (e.g. word forms/IPA from dictionary 2
- *  when dictionary 1's toggle is off). */
+ *  resources supply it instead (e.g. word forms/IPA from dictionary 2
+ *  when dictionary 1's toggle is off). 'frequency' marks rank data — a
+ *  frequency list is a resource whose only component is 'frequency'. */
 export type DictionaryComponent =
   | 'definitions'
   | 'examples'
@@ -35,7 +39,8 @@ export type DictionaryComponent =
   | 'derivedTerms'
   | 'related'
   | 'level'
-  | 'frequencyStars';
+  | 'frequencyStars'
+  | 'frequency';
 
 /** Resource info — 1 row per imported file (langResourceInfo store). */
 export interface ResourceInfo {
@@ -198,6 +203,27 @@ export interface DictionaryEntry {
   readonly anagrams?: readonly string[];
 }
 
+/** Row discriminator inside the unified entry store. Only freq rows carry it
+ *  — `kind` absent means dictionary-shape, so dict rows stay byte-identical
+ *  through the v13→v14 migration (no stamp needed). */
+export type EntryKind = 'freq';
+
+/** Frequency row as stored — wire `FrequencyEntry` + internal fields.
+ *  `backwardTerm` indexes suffix lookup; `kind` marks the row in the
+ *  unified store (stripped from wire responses and portable serialize). */
+export interface StoredFrequencyEntry extends FrequencyEntry {
+  readonly kind: EntryKind;
+  readonly backwardTerm: string;
+}
+
+/** Dictionary row as stored — `backwardTerm` indexes suffix lookup. */
+export interface StoredDictionaryEntry extends DictionaryEntry {
+  readonly backwardTerm: string;
+}
+
+/** One row in the unified entry store (langDictionaryEntry). */
+export type StoredResourceEntry = StoredDictionaryEntry | StoredFrequencyEntry;
+
 /** Result of an import operation. */
 export interface ImportResult {
   readonly resourceId: number;
@@ -220,6 +246,8 @@ export interface ImportOptions {
   readonly langCode: string;
   readonly onProgress?: ImportProgressCallback;
   readonly onResourceCreated?: (resourceId: number) => void;
+  /** Component subset the user picked on a multi-component file; absent = all. */
+  readonly components?: readonly DictionaryComponent[];
   /** Called when a resource with the same signature already exists. Defaults to 'skip'. */
   readonly onDuplicate?: (existing: ResourceInfo) => DuplicateDecision | Promise<DuplicateDecision>;
 }

@@ -2,8 +2,8 @@ import 'fake-indexeddb/auto';
 import { importFile, rollbackImport, deleteResourceCascade, listResources } from '@/features/dictionary/logic/importOrchestrator';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
 import { getResource, getAllResources } from '@/features/dictionary/repositories/resourceRepository';
-import { countFrequencyByResource } from '@/features/dictionary/repositories/frequencyRepository';
-import { countDictionaryByResource } from '@/features/dictionary/repositories/dictionaryRepository';
+import { countFrequencyByResource } from '@/features/dictionary/repositories/resourceEntryRepository';
+import { countDictionaryByResource } from '@/features/dictionary/repositories/resourceEntryRepository';
 import { hasPhraseIndex, getPhraseIndex } from '@/features/dictionary/repositories/phraseIndexRepository';
 
 import { strToU8 } from 'fflate';
@@ -52,7 +52,7 @@ describe('importOrchestrator', () => {
   describe('importFile — happy path', () => {
     it('imports TXT frequency list end-to-end', async () => {
       const file = makeFile('words.txt', 'hello\nworld\nfoo\n');
-      const result = await importFile(file, 'FREQUENCY', { langCode: LANG });
+      const result = await importFile(file, { langCode: LANG });
       expect(result.wordCount).toBe(3);
       expect(result.format).toBe('txt');
       const resource = await getResource(LANG, result.resourceId);
@@ -64,14 +64,14 @@ describe('importOrchestrator', () => {
     it('calls onResourceCreated with resourceId', async () => {
       const file = makeFile('words.txt', 'hello\n');
       const onResourceCreated = jest.fn();
-      await importFile(file, 'FREQUENCY', { langCode: LANG, onResourceCreated });
+      await importFile(file, { langCode: LANG, onResourceCreated });
       expect(onResourceCreated).toHaveBeenCalledWith(expect.any(Number));
     });
 
     it('calls onProgress during import', async () => {
       const file = makeFile('words.txt', 'hello\nworld\n');
       const onProgress = jest.fn();
-      await importFile(file, 'FREQUENCY', { langCode: LANG, onProgress });
+      await importFile(file, { langCode: LANG, onProgress });
       // onProgress called after flush (may or may not depending on batch size)
       // For small files, flush happens at end
       expect(onProgress).toHaveBeenCalled();
@@ -83,7 +83,7 @@ describe('importOrchestrator', () => {
         { term: 'world', definition: 'the earth' },
       ]);
       const file = makeFile('cambridge.json', cambridge);
-      const result = await importFile(file, 'DICTIONARY', { langCode: LANG });
+      const result = await importFile(file, { langCode: LANG });
       expect(result.wordCount).toBe(2);
       expect(result.format).toBe('json-entries');
       expect(await countDictionaryByResource(LANG, result.resourceId)).toBe(2);
@@ -98,7 +98,7 @@ describe('importOrchestrator', () => {
         { term: 'hello', definition: 'greeting' },
       ]);
       const file = makeFile('cambridge.json', cambridge);
-      const result = await importFile(file, 'DICTIONARY', { langCode: LANG });
+      const result = await importFile(file, { langCode: LANG });
 
       // installationFinished only after blob persistence.
       const resource = await getResource(LANG, result.resourceId);
@@ -119,7 +119,7 @@ describe('importOrchestrator', () => {
         { term: 'etc.', definition: 'etcetera' },
       ]);
       const file = makeFile('cambridge.json', cambridge);
-      const result = await importFile(file, 'DICTIONARY', { langCode: LANG });
+      const result = await importFile(file, { langCode: LANG });
 
       // 'take off' is supported; 'and so on ...' and 'etc.' are unsupportedOpen.
       const stored = await getPhraseIndex(LANG, result.resourceId);
@@ -129,27 +129,8 @@ describe('importOrchestrator', () => {
 
     it('does not build a phrase blob for non-entry-object resources', async () => {
       const file = makeFile('words.txt', 'hello\nworld\n');
-      const result = await importFile(file, 'FREQUENCY', { langCode: LANG });
+      const result = await importFile(file, { langCode: LANG });
       expect(await hasPhraseIndex(LANG, result.resourceId)).toBe(false);
-    });
-
-    it('does not build a phrase blob for entry-object FREQUENCY resources', async () => {
-      // entry-object format detected as json-entries, but resourceType=FREQUENCY
-      // should skip the phrase build (phrase index is dictionary-only).
-      const cambridge = JSON.stringify([
-        { term: 'take off', definition: 'to remove' },
-      ]);
-      const file = makeFile('cambridge.json', cambridge);
-      // detectFormat on a .json file with array content → json-entries format,
-      // but resourceType=FREQUENCY resolves format via resolveFormat. The phrase
-      // build gate checks resourceType === 'DICTIONARY', so no blob.
-      try {
-        const result = await importFile(file, 'FREQUENCY', { langCode: LANG });
-        expect(await hasPhraseIndex(LANG, result.resourceId)).toBe(false);
-      } catch {
-        // resolveFormat may reject json-entries for FREQUENCY — that's fine,
-        // the point is no phrase blob is created. Skip if import itself fails.
-      }
     });
 
     it('persists blob even when no multiword terms exist', async () => {
@@ -158,7 +139,7 @@ describe('importOrchestrator', () => {
         { term: 'world', definition: 'the earth' },
       ]);
       const file = makeFile('cambridge.json', cambridge);
-      const result = await importFile(file, 'DICTIONARY', { langCode: LANG });
+      const result = await importFile(file, { langCode: LANG });
       // No multiword terms → empty index, but blob still persisted so the worker
       // knows this resource was processed.
       expect(await hasPhraseIndex(LANG, result.resourceId)).toBe(true);
@@ -179,7 +160,7 @@ describe('importOrchestrator', () => {
       ]);
       const file = makeFile('cambridge.json', cambridge);
 
-      await expect(importFile(file, 'DICTIONARY', { langCode: LANG })).rejects.toThrow('IDB write failed');
+      await expect(importFile(file, { langCode: LANG })).rejects.toThrow('IDB write failed');
 
       // Rollback: no resource, no entries, no blob.
       expect((await getAllResources(LANG)).length).toBe(0);
@@ -195,7 +176,7 @@ describe('importOrchestrator', () => {
         { term: 'give up', definition: 'to surrender' },
       ]);
       const file1 = makeFile('cambridge1.json', cambridge);
-      const result1 = await importFile(file1, 'DICTIONARY', { langCode: LANG });
+      const result1 = await importFile(file1, { langCode: LANG });
       expect(await hasPhraseIndex(LANG, result1.resourceId)).toBe(true);
 
       await deleteResourceCascade(LANG, result1.resourceId);
@@ -203,7 +184,7 @@ describe('importOrchestrator', () => {
 
       // Different filename → different signature → no duplicate error.
       const file2 = makeFile('cambridge2.json', cambridge);
-      const result2 = await importFile(file2, 'DICTIONARY', { langCode: LANG });
+      const result2 = await importFile(file2, { langCode: LANG });
       expect(await hasPhraseIndex(LANG, result2.resourceId)).toBe(true);
       const stored = await getPhraseIndex(LANG, result2.resourceId);
       expect(stored?.termCount).toBe(2);
@@ -213,8 +194,8 @@ describe('importOrchestrator', () => {
   describe('importFile — duplicate detection', () => {
     it('skips duplicate and returns existing resource by default', async () => {
       const file = makeFile('words.txt', 'hello\nworld\n');
-      const first = await importFile(file, 'FREQUENCY', { langCode: LANG });
-      const second = await importFile(file, 'FREQUENCY', { langCode: LANG });
+      const first = await importFile(file, { langCode: LANG });
+      const second = await importFile(file, { langCode: LANG });
       expect(second.skippedAsDuplicate).toBe(true);
       expect(second.resourceId).toBe(first.resourceId);
       expect(second.wordCount).toBe(first.wordCount);
@@ -224,9 +205,9 @@ describe('importOrchestrator', () => {
 
     it('does not create resource on duplicate skip', async () => {
       const file = makeFile('words.txt', 'hello\nworld\n');
-      await importFile(file, 'FREQUENCY', { langCode: LANG });
+      await importFile(file, { langCode: LANG });
       const countBefore = (await getAllResources(LANG)).length;
-      const result = await importFile(file, 'FREQUENCY', { langCode: LANG });
+      const result = await importFile(file, { langCode: LANG });
       const countAfter = (await getAllResources(LANG)).length;
       expect(countAfter).toBe(countBefore);
       expect(result.skippedAsDuplicate).toBe(true);
@@ -234,10 +215,10 @@ describe('importOrchestrator', () => {
 
     it('replaces an existing resource when onDuplicate returns replace', async () => {
       const file = makeFile('words.txt', 'hello\nworld\nfoo\n');
-      const first = await importFile(file, 'FREQUENCY', { langCode: LANG });
+      const first = await importFile(file, { langCode: LANG });
 
       const onDuplicate = jest.fn().mockReturnValue('replace' as const);
-      const result = await importFile(file, 'FREQUENCY', { langCode: LANG, onDuplicate });
+      const result = await importFile(file, { langCode: LANG, onDuplicate });
 
       expect(onDuplicate).toHaveBeenCalledWith(expect.objectContaining({ id: first.resourceId }));
       expect(result.skippedAsDuplicate).toBeUndefined();
@@ -248,19 +229,19 @@ describe('importOrchestrator', () => {
 
     it('supports async onDuplicate callbacks', async () => {
       const file = makeFile('words.txt', 'hello\nworld\n');
-      await importFile(file, 'FREQUENCY', { langCode: LANG });
+      await importFile(file, { langCode: LANG });
 
       const onDuplicate = jest.fn().mockResolvedValue('skip' as const);
-      const result = await importFile(file, 'FREQUENCY', { langCode: LANG, onDuplicate });
+      const result = await importFile(file, { langCode: LANG, onDuplicate });
       expect(result.skippedAsDuplicate).toBe(true);
     });
 
     it('keeps the existing resource when onDuplicate returns skip', async () => {
       const file = makeFile('words.txt', 'hello\nworld\n');
-      const first = await importFile(file, 'FREQUENCY', { langCode: LANG });
+      const first = await importFile(file, { langCode: LANG });
 
       const onDuplicate = jest.fn().mockReturnValue('skip' as const);
-      const result = await importFile(file, 'FREQUENCY', { langCode: LANG, onDuplicate });
+      const result = await importFile(file, { langCode: LANG, onDuplicate });
 
       expect(result.skippedAsDuplicate).toBe(true);
       expect(result.resourceId).toBe(first.resourceId);
@@ -273,7 +254,7 @@ describe('importOrchestrator', () => {
       // Create a file that will fail to parse as TXT (empty content is OK,
       // but let's use a file with invalid format that detectFormat will reject)
       const file = makeFile('unknown.xyz', 'binary data \x00\x01');
-      await expect(importFile(file, 'FREQUENCY', { langCode: LANG })).rejects.toThrow();
+      await expect(importFile(file, { langCode: LANG })).rejects.toThrow();
       // No resource should remain
       expect((await getAllResources(LANG)).length).toBe(0);
     });
@@ -282,7 +263,7 @@ describe('importOrchestrator', () => {
   describe('rollbackImport', () => {
     it('deletes resource + entries', async () => {
       const file = makeFile('words.txt', 'hello\nworld\n');
-      const result = await importFile(file, 'FREQUENCY', { langCode: LANG });
+      const result = await importFile(file, { langCode: LANG });
       await rollbackImport(LANG, result.resourceId);
       expect(await getResource(LANG, result.resourceId)).toBeUndefined();
       expect(await countFrequencyByResource(LANG, result.resourceId)).toBe(0);
@@ -299,7 +280,7 @@ describe('importOrchestrator', () => {
   describe('deleteResourceCascade', () => {
     it('deletes resource + cascade entries', async () => {
       const file = makeFile('words.txt', 'hello\nworld\n');
-      const result = await importFile(file, 'FREQUENCY', { langCode: LANG });
+      const result = await importFile(file, { langCode: LANG });
       await deleteResourceCascade(LANG, result.resourceId);
       expect(await getResource(LANG, result.resourceId)).toBeUndefined();
     });
@@ -309,9 +290,9 @@ describe('importOrchestrator', () => {
     it('returns all resources sorted by priority asc, then resourceId desc', async () => {
       const file1 = makeFile('a.txt', 'hello\n');
       const file2 = makeFile('b.txt', 'world\n');
-      await importFile(file1, 'FREQUENCY', { langCode: LANG });
+      await importFile(file1, { langCode: LANG });
       await new Promise((r) => setTimeout(r, 10)); // ensure different importedAt
-      await importFile(file2, 'FREQUENCY', { langCode: LANG });
+      await importFile(file2, { langCode: LANG });
       const list = await listResources(LANG);
       expect(list).toHaveLength(2);
       expect(list[0]!.name).toBe('b.txt'); // newest first

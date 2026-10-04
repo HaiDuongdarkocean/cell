@@ -44,7 +44,7 @@ test('import skips duplicates without uploading chunks', async () => {
     return { success: true, data: {} };
   };
   const file = new File(['{}'], 'dict.json', { type: 'application/json' });
-  const result = await importResourceFile(file, 'DICTIONARY', {
+  const result = await importResourceFile(file, {
     langCode: 'en',
     onDuplicate: () => 'skip',
   });
@@ -59,5 +59,5 @@ test('import sends the file as chunk(s) and returns the registry jobId', async (
     return { success: true, data: {} };
   };
   const file = new File(['{"a":1}'], 'dict.json', { type: 'application/json' });
-  await expect(importResourceFile(file, 'DICTIONARY', { langCode: 'en' })).resolves.toEqual({ jobId: 'bg-job-1' });
+  await expect(importResourceFile(file, { langCode: 'en' })).resolves.toEqual({ jobId: 'bg-job-1' });
 });

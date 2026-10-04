@@ -294,10 +294,11 @@ function pushJob(partial: Partial<Job> & { id: string; status: Job['status'] }):
  *  created mid-flight (installationFinished=false) and stamped onto the job —
  *  the panel renders it as an in-place importing card until the done tick. */
 async function handleResourceImport(payload: Record<string, unknown>): Promise<void> {
-  const resourceType = payload.resourceType as 'DICTIONARY' | 'FREQUENCY';
+  const components = payload.components as string[] | undefined;
+  const resourceType = components?.[0] === 'frequency' ? 'FREQUENCY' : 'DICTIONARY';
   const jobId = String(payload.jobId ?? '');
   const label = String(payload.fileName ?? jobId);
-  const params = { langCode: payload.langCode, resourceType, signature: payload.signature };
+  const params = { langCode: payload.langCode, signature: payload.signature };
   const resourceId = nextImportedResourceId++;
   pushJob({ id: jobId, status: 'running', label, params });
   await delay(MOCK_IMPORT_STEP_MS);

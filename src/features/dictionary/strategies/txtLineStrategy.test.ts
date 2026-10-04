@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { TxtLineStrategy } from '@/features/dictionary/strategies/txtLineStrategy';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
-import { findFrequencyByResource } from '@/features/dictionary/repositories/frequencyRepository';
+import { findFrequencyByResource } from '@/features/dictionary/repositories/resourceEntryRepository';
 import { addResource } from '@/features/dictionary/repositories/resourceRepository';
 import { zipSync, strToU8, gzipSync } from 'fflate';
 

@@ -44,15 +44,14 @@ import {
 } from '@/features/dictionary/repositories/resourceRepository';
 import {
   sampleDictionaryEntries,
-  findDictionaryEntry,
-  findDictionaryByResource,
-} from '@/features/dictionary/repositories/dictionaryRepository';
-import { collectEntryComponents, sortedComponents } from '@/features/dictionary/logic/dictionaryComponents';
-import type { DictionaryComponent, DuplicateDecision, ResourceType } from '@/entities/dictionary';
-import {
   sampleFrequencyEntries,
+  findDictionaryEntry,
   findFrequencyEntry,
-} from '@/features/dictionary/repositories/frequencyRepository';
+  findDictionaryByResource,
+  findFrequencyByResource,
+} from '@/features/dictionary/repositories/resourceEntryRepository';
+import { collectEntryComponents, sortedComponents } from '@/features/dictionary/logic/dictionaryComponents';
+import type { DictionaryComponent, DuplicateDecision } from '@/entities/dictionary';
 import { importFile, deleteResourceCascade, rollbackImport } from '@/features/dictionary/logic/importOrchestrator';
 import { clearDictionaryProbeCache } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
 
@@ -61,8 +60,8 @@ const UPLOAD_STALL_MS = 30 * 1000;
 interface ImportChunkMeta {
   readonly fileName: string;
   readonly fileMime: string;
-  readonly resourceType: ResourceType;
   readonly langCode: string;
+  readonly components?: readonly DictionaryComponent[];
   readonly duplicateDecision?: DuplicateDecision;
 }
 
@@ -114,8 +113,9 @@ async function runImport(registry: JobRegistry, job: Job): Promise<void> {
   if (!payload) {
     throw new Error(t('jobs.interrupted.reimport'));
   }
-  const result = await importFile(payload.file, payload.resourceType, {
+  const result = await importFile(payload.file, {
     langCode: payload.langCode,
+    components: payload.components,
     onProgress: (processed, estimatedTotal) => {
       registry.setProgress(job.id, { done: processed, total: estimatedTotal });
     },
@@ -199,7 +199,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
         kind: 'resource-delete',
         label: resource?.name ?? `#${resourceId}`,
         status: 'queued',
-        params: { resourceId, langCode, resourceType: resource?.type ?? parsed.data.resourceType ?? null },
+        params: { resourceId, langCode },
         retryable: true,
       });
       registry.startIfSlotFree(job);
@@ -213,7 +213,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     const parsed = ResourceReorderPayloadSchema.safeParse(request.payload);
     if (!parsed.success) return fail('RESOURCE_REORDER', parsed);
     try {
-      await reorderResources(parsed.data.langCode, parsed.data.resourceType, parsed.data.orderedIds);
+      await reorderResources(parsed.data.langCode, parsed.data.orderedIds);
       clearDictionaryProbeCache();
       return ok();
     } catch (err) {
@@ -278,10 +278,13 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     try {
       const resource = await getResource(langCode, resourceId);
       if (!resource) return toError(new Error(t('resources.error.notFound')));
-      if (resource.components) return ok({ components: resource.components });
+      if (resource.components && resource.components.length > 0) return ok({ components: resource.components });
       const set = new Set<DictionaryComponent>();
       for (const entry of await findDictionaryByResource(langCode, resourceId)) {
         collectEntryComponents(set, entry);
+      }
+      if ((await findFrequencyByResource(langCode, resourceId)).length > 0) {
+        set.add('frequency');
       }
       const components = sortedComponents(set);
       await setResourceComponents(langCode, resourceId, components);
@@ -294,11 +297,10 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
   ctx.on(MESSAGE_TYPES.RESOURCE_SAMPLE, async (request): Promise<MessageResponse> => {
     const parsed = ResourceSamplePayloadSchema.safeParse(request.payload);
     if (!parsed.success) return fail('RESOURCE_SAMPLE', parsed);
-    const { langCode, resourceId, resourceType, limit } = parsed.data;
+    const { langCode, resourceId, limit } = parsed.data;
     try {
-      const entries = resourceType === 'DICTIONARY'
-        ? await sampleDictionaryEntries(langCode, resourceId, limit)
-        : await sampleFrequencyEntries(langCode, resourceId, limit);
+      const dict = await sampleDictionaryEntries(langCode, resourceId, limit);
+      const entries = dict.length > 0 ? dict : await sampleFrequencyEntries(langCode, resourceId, limit);
       return ok({ entries });
     } catch (err) {
       return toError(err);
@@ -308,11 +310,11 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
   ctx.on(MESSAGE_TYPES.RESOURCE_FIND, async (request): Promise<MessageResponse> => {
     const parsed = ResourceFindPayloadSchema.safeParse(request.payload);
     if (!parsed.success) return fail('RESOURCE_FIND', parsed);
-    const { langCode, resourceId, resourceType, term } = parsed.data;
+    const { langCode, resourceId, term } = parsed.data;
     try {
-      const entry = resourceType === 'DICTIONARY'
-        ? await findDictionaryEntry(langCode, resourceId, term)
-        : await findFrequencyEntry(langCode, resourceId, term);
+      const entry =
+        (await findDictionaryEntry(langCode, resourceId, term)) ??
+        (await findFrequencyEntry(langCode, resourceId, term));
       return ok({ entry: entry ?? null });
     } catch (err) {
       return toError(err);
@@ -346,7 +348,6 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
             jobId: p.jobId,
             signature: p.signature ?? p.jobId,
             langCode: p.langCode,
-            resourceType: p.resourceType,
             fileName: p.fileName,
             duplicateDecision: p.duplicateDecision ?? null,
           },
@@ -366,8 +367,8 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
         meta: {
           fileName: p.fileName,
           fileMime: p.fileMime,
-          resourceType: p.resourceType,
           langCode: p.langCode,
+          components: p.components,
           duplicateDecision: p.duplicateDecision,
         },
       };

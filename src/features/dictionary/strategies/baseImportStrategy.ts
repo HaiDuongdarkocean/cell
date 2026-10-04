@@ -73,12 +73,16 @@ export interface StrategyOptions {
   /** Progress: processed entries so far + exact attempted-entry total (0 = unknown). */
   readonly onProgress?: (processed: number, total: number) => void;
   readonly signal?: AbortSignal;
+  /** Component subset the user picked on a multi-component file
+   *  ('definitions' = dictionary content). Absent = emit everything found. */
+  readonly components?: readonly DictionaryComponent[];
 }
 
 /** Abstract base — template method execute(). */
 export abstract class BaseImportStrategy<TRaw, TStored> {
   protected readonly options: StrategyOptions;
   protected readonly batchProcessor: BatchProcessor<TStored>;
+  protected readonly componentSet = new Set<DictionaryComponent>();
 
   constructor(options: StrategyOptions) {
     this.options = options;
@@ -119,9 +123,16 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
   /** Hook 4 (optional): fold a stored entry into component detection. */
   protected collectComponents(_stored: TStored): void {}
 
-  /** Components detected during execute() — undefined for non-dictionary strategies. */
-  components(): readonly DictionaryComponent[] | undefined {
-    return undefined;
+  /** Components detected during execute(). */
+  components(): readonly DictionaryComponent[] {
+    return sortedComponents(this.componentSet);
+  }
+
+  /** True when the user's component subset includes this component
+   *  (or no subset was given — emit everything found). */
+  protected wants(component: DictionaryComponent): boolean {
+    const sel = this.options.components;
+    return sel === undefined || sel.includes(component);
   }
 
   /** Hook 1: streaming parser — yield raw entries 1 at a time. */
@@ -148,9 +159,13 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
   abstract readonly format: ImportFormat;
 }
 
-/** Base for frequency strategies (writes to frequencyRepository). */
+/** Base for frequency strategies (writes freq-kind rows to the unified store). */
 export abstract class BaseFrequencyStrategy extends BaseImportStrategy<RawFrequencyEntry, Omit<FrequencyEntry, 'id'>> {
   readonly format: ImportFormat = 'txt';
+
+  protected collectComponents(_stored: Omit<FrequencyEntry, 'id'>): void {
+    this.componentSet.add('frequency');
+  }
 
   protected transformEntry(raw: RawFrequencyEntry, _index: number): Omit<FrequencyEntry, 'id'> | null {
     const term = normalizeWord(raw.term);
@@ -169,18 +184,12 @@ export abstract class BaseFrequencyStrategy extends BaseImportStrategy<RawFreque
   }
 }
 
-/** Base for dictionary strategies (writes to dictionaryRepository). */
+/** Base for dictionary strategies (writes dict rows to the unified store). */
 export abstract class BaseDictionaryStrategy extends BaseImportStrategy<RawDictionaryEntry, Omit<DictionaryEntry, 'id'>> {
   readonly format: ImportFormat = 'json-entries';
 
-  private readonly componentSet = new Set<DictionaryComponent>();
-
   protected collectComponents(stored: Omit<DictionaryEntry, 'id'>): void {
     collectEntryComponents(this.componentSet, stored);
-  }
-
-  components(): readonly DictionaryComponent[] {
-    return sortedComponents(this.componentSet);
   }
 
   protected transformEntry(raw: RawDictionaryEntry, _index: number): Omit<DictionaryEntry, 'id'> | null {

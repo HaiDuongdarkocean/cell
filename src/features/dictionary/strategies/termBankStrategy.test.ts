@@ -1,8 +1,8 @@
 import 'fake-indexeddb/auto';
 import { TermBankStrategy } from '@/features/dictionary/strategies/termBankStrategy';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
-import { findFrequencyByResource } from '@/features/dictionary/repositories/frequencyRepository';
-import { findDictionaryByResource } from '@/features/dictionary/repositories/dictionaryRepository';
+import { findFrequencyByResource } from '@/features/dictionary/repositories/resourceEntryRepository';
+import { findDictionaryByResource } from '@/features/dictionary/repositories/resourceEntryRepository';
 import { addResource } from '@/features/dictionary/repositories/resourceRepository';
 import { zipSync, strToU8 } from 'fflate';
 
@@ -66,7 +66,7 @@ describe('termBankStrategy — frequency (term_meta_bank)', () => {
     const data = makeTermBankFreqZip(entries);
     const strategy = new TermBankStrategy(
       { resourceId, langCode: LANG },
-      { data, fileName: 'dict.zip', resourceType: 'FREQUENCY' },
+      { data, fileName: 'dict.zip' },
     );
     const result = await strategy.execute();
     expect(result.wordCount).toBe(2);
@@ -83,7 +83,7 @@ describe('termBankStrategy — frequency (term_meta_bank)', () => {
     const data = makeTermBankFreqZip([['hello', 'freq', 42]]);
     const strategy = new TermBankStrategy(
       { resourceId, langCode: LANG },
-      { data, fileName: 'dict.zip', resourceType: 'FREQUENCY' },
+      { data, fileName: 'dict.zip' },
     );
     await strategy.execute();
     const stored = await findFrequencyByResource(LANG, resourceId);
@@ -94,7 +94,7 @@ describe('termBankStrategy — frequency (term_meta_bank)', () => {
     const data = zipSync({ 'term_meta_bank_1.json': strToU8('[]') });
     const strategy = new TermBankStrategy(
       { resourceId: 1, langCode: LANG },
-      { data, fileName: 'dict.zip', resourceType: 'FREQUENCY' },
+      { data, fileName: 'dict.zip' },
     );
     await expect(strategy.execute()).rejects.toThrow(/index\.json not found/);
   });
@@ -103,9 +103,9 @@ describe('termBankStrategy — frequency (term_meta_bank)', () => {
     const data = zipSync({ 'index.json': strToU8('{}') });
     const strategy = new TermBankStrategy(
       { resourceId: 1, langCode: LANG },
-      { data, fileName: 'dict.zip', resourceType: 'FREQUENCY' },
+      { data, fileName: 'dict.zip' },
     );
-    await expect(strategy.execute()).rejects.toThrow(/no term_meta_bank/);
+    await expect(strategy.execute()).rejects.toThrow(/no term_bank_\*.json or term_meta_bank_\*.json/);
   });
 
   it('sorts multiple term_meta_bank files', async () => {
@@ -120,7 +120,7 @@ describe('termBankStrategy — frequency (term_meta_bank)', () => {
     });
     const strategy = new TermBankStrategy(
       { resourceId, langCode: LANG },
-      { data, fileName: 'dict.zip', resourceType: 'FREQUENCY' },
+      { data, fileName: 'dict.zip' },
     );
     const result = await strategy.execute();
     expect(result.wordCount).toBe(2);
@@ -141,7 +141,7 @@ describe('termBankStrategy — dictionary (term_bank)', () => {
     const data = makeTermBankDictZip([termBank]);
     const strategy = new TermBankStrategy(
       { resourceId, langCode: LANG },
-      { data, fileName: 'dict-oald.zip', resourceType: 'DICTIONARY' },
+      { data, fileName: 'dict-oald.zip' },
     );
     const result = await strategy.execute();
     expect(result.wordCount).toBe(2);
@@ -162,7 +162,7 @@ describe('termBankStrategy — dictionary (term_bank)', () => {
     const data = makeTermBankDictZip([termBank]);
     const strategy = new TermBankStrategy(
       { resourceId, langCode: LANG },
-      { data, fileName: 'dict.zip', resourceType: 'DICTIONARY' },
+      { data, fileName: 'dict.zip' },
     );
     await strategy.execute();
     const stored = await findDictionaryByResource(LANG, resourceId);
@@ -180,7 +180,7 @@ describe('termBankStrategy — dictionary (term_bank)', () => {
     const data = makeTermBankDictZip([termBank]);
     const strategy = new TermBankStrategy(
       { resourceId, langCode: LANG },
-      { data, fileName: 'dict.zip', resourceType: 'DICTIONARY' },
+      { data, fileName: 'dict.zip' },
     );
     await strategy.execute();
     const stored = await findDictionaryByResource(LANG, resourceId);
@@ -192,7 +192,7 @@ describe('termBankStrategy — dictionary (term_bank)', () => {
     const data = zipSync({ 'index.json': strToU8('{}') });
     const strategy = new TermBankStrategy(
       { resourceId: 1, langCode: LANG },
-      { data, fileName: 'dict.zip', resourceType: 'DICTIONARY' },
+      { data, fileName: 'dict.zip' },
     );
     await expect(strategy.execute()).rejects.toThrow(/no term_bank/);
   });
@@ -209,7 +209,7 @@ describe('termBankStrategy — dictionary (term_bank)', () => {
     });
     const strategy = new TermBankStrategy(
       { resourceId, langCode: LANG },
-      { data, fileName: 'dict.zip', resourceType: 'DICTIONARY' },
+      { data, fileName: 'dict.zip' },
     );
     const result = await strategy.execute();
     expect(result.wordCount).toBe(2);

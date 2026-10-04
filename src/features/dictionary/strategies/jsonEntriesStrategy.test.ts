@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { JsonEntriesStrategy } from '@/features/dictionary/strategies/jsonEntriesStrategy';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
-import { findDictionaryByResource } from '@/features/dictionary/repositories/dictionaryRepository';
+import { findDictionaryByResource } from '@/features/dictionary/repositories/resourceEntryRepository';
 import { addResource } from '@/features/dictionary/repositories/resourceRepository';
 import { strToU8 } from 'fflate';
 

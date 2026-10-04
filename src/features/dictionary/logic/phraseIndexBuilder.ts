@@ -15,7 +15,7 @@ import {
   serializePhraseIndex,
   type PhraseIndexInput,
 } from './phraseIndexCompiler';
-import { findDictionaryByResource } from '../repositories/dictionaryRepository';
+import { findDictionaryByResource } from '../repositories/resourceEntryRepository';
 import { putPhraseIndex } from '../repositories/phraseIndexRepository';
 
 /**

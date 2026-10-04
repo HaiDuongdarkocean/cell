@@ -23,6 +23,22 @@ jest.mock('@/features/dictionary/logic/signatureGenerator', () => ({
   computeSignature: jest.fn().mockImplementation(async (file: File) => `sig-${file.name}`),
 }));
 
+jest.mock('@/features/dictionary/logic/formatDetector', () => {
+  const actual = jest.requireActual<typeof import('@/features/dictionary/logic/formatDetector')>('@/features/dictionary/logic/formatDetector');
+  return {
+    ...actual,
+    detectComponents: jest.fn().mockResolvedValue(['frequency']),
+  };
+});
+
+jest.mock('@/features/dictionary/logic/fileDetector', () => {
+  const actual = jest.requireActual<typeof import('@/features/dictionary/logic/fileDetector')>('@/features/dictionary/logic/fileDetector');
+  return {
+    ...actual,
+    readFileHead: jest.fn().mockResolvedValue(new Uint8Array(0)),
+  };
+});
+
 jest.mock('@/features/jobs/jobClient', () => ({
   listJobs: jest.fn().mockResolvedValue([]),
   subscribeJobEvents: jest.fn(() => () => {}),
@@ -63,7 +79,7 @@ function makeJob(overrides: Partial<Job> = {}): Job {
     label: 'a.txt',
     status: 'running',
     progress: { done: 0, total: 0 },
-    params: { langCode: 'en', resourceType: 'FREQUENCY' },
+    params: { langCode: 'en' },
     retryable: true,
     createdAt: 0,
     updatedAt: 0,
@@ -109,21 +125,18 @@ beforeEach(() => {
 });
 
 describe('ResourcesPanel', () => {
-  it('renders dictionary + frequency sections with subtitles', async () => {
+  it('renders the unified resources section', async () => {
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Dictionaries')).toBeInTheDocument());
-    expect(screen.getByText('Frequency lists')).toBeInTheDocument();
-    expect(screen.getByText('Meanings, transcriptions, audio.')).toBeInTheDocument();
-    expect(screen.getByText('Highlights common words.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    expect(screen.getByText('Dictionaries and frequency lists in one place.')).toBeInTheDocument();
   });
 
   it('shows empty state when no resources', async () => {
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('No dictionaries yet.')).toBeInTheDocument());
-    expect(screen.getByText('No lists yet.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('No resources yet.')).toBeInTheDocument());
   });
 
-  it('lists dictionary + frequency resources separately', async () => {
+  it('lists dictionary + frequency resources in one flat list', async () => {
     listResources.mockResolvedValue([
       makeResource({ id: 1, name: 'dict.json', type: 'DICTIONARY', format: 'json-entries' }),
       makeResource({ id: 2, name: 'freq.txt', type: 'FREQUENCY', format: 'txt' }),
@@ -135,13 +148,17 @@ describe('ResourcesPanel', () => {
 
   it('imports file via dropzone (frequency)', async () => {
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
-    pickFile(1, new File(['hello\nworld\n'], 'test.txt', { type: 'text/plain' }));
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFile(0, new File(['hello\nworld\n'], 'test.txt', { type: 'text/plain' }));
     await waitFor(() =>
       expect(importFile).toHaveBeenCalledWith(
         expect.anything(),
-        'FREQUENCY',
-        expect.objectContaining({ langCode: 'en', onDuplicate: expect.any(Function), jobId: expect.any(String) }),
+        expect.objectContaining({
+          langCode: 'en',
+          onDuplicate: expect.any(Function),
+          jobId: expect.any(String),
+          components: ['frequency'],
+        }),
       ),
     );
   });
@@ -149,8 +166,8 @@ describe('ResourcesPanel', () => {
   it('dropping N files creates N independent job rows', async () => {
     importFile.mockImplementation(() => new Promise<{ jobId: string }>(() => {}));
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
-    pickFiles(1, [
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFiles(0, [
       new File(['a\n'], 'one.txt', { type: 'text/plain' }),
       new File(['b\n'], 'two.txt', { type: 'text/plain' }),
       new File(['c\n'], 'three.txt', { type: 'text/plain' }),
@@ -169,8 +186,8 @@ describe('ResourcesPanel', () => {
       return new Promise<{ jobId: string }>(() => {});
     });
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
-    pickFiles(1, [
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFiles(0, [
       new File(['a\n'], 'one.txt', { type: 'text/plain' }),
       new File(['b\n'], 'two.txt', { type: 'text/plain' }),
       new File(['c\n'], 'three.txt', { type: 'text/plain' }),
@@ -182,8 +199,8 @@ describe('ResourcesPanel', () => {
   it('hands the row to the registry job after upload, then shows its done state', async () => {
     importFile.mockResolvedValue({ jobId: 'j-freq' });
     const view = render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
-    pickFile(1, new File(['hello\nworld\n'], 'test.txt', { type: 'text/plain' }));
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFile(0, new File(['hello\nworld\n'], 'test.txt', { type: 'text/plain' }));
     await waitFor(() => expect(importFile).toHaveBeenCalled());
     await waitFor(() => expect(screen.queryByText('test.txt')).not.toBeInTheDocument());
     setRegistryJobs([makeJob({
@@ -206,8 +223,8 @@ describe('ResourcesPanel', () => {
         : Promise.resolve({ jobId: 'j-ok' });
     });
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
-    pickFiles(1, [
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFiles(0, [
       new File(['bad'], 'bad.txt', { type: 'text/plain' }),
       new File(['ok'], 'good.txt', { type: 'text/plain' }),
     ]);
@@ -217,32 +234,33 @@ describe('ResourcesPanel', () => {
   });
 
   it('upload progress shows the chunk percent while uploading', async () => {
-    importFile.mockImplementation((_f, _t, options) => {
+    importFile.mockImplementation((_f, options) => {
       const opts = options as { onUploadProgress?: (sent: number, total: number) => void };
       opts.onUploadProgress?.(5, 10);
       return new Promise<{ jobId: string }>(() => {});
     });
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
-    pickFile(1, new File(['a\n'], 'big.txt', { type: 'text/plain' }));
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFile(0, new File(['a\n'], 'big.txt', { type: 'text/plain' }));
     await waitFor(() => expect(screen.getAllByText(/50%/).length).toBeGreaterThan(0));
   });
 
-  it('allows concurrent dictionary + frequency import (independent dropzones)', async () => {
+  it('runs concurrent imports through the single dropzone', async () => {
     let resolveDict: (v: { jobId: string }) => void = () => {};
     const dictPromise = new Promise<{ jobId: string }>((r) => {
       resolveDict = r;
     });
-    importFile.mockImplementation((_file, type) => {
-      if (type === 'DICTIONARY') return dictPromise;
-      return Promise.resolve({ jobId: 'j-freq' });
-    });
+    importFile.mockImplementation((file) =>
+      file.name === 'dict.json' ? dictPromise : Promise.resolve({ jobId: 'j-freq' }),
+    );
 
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
 
-    pickFile(0, new File(['[]'], 'dict.json', { type: 'application/json' }));
-    pickFile(1, new File(['a\nb\n'], 'freq.txt', { type: 'text/plain' }));
+    pickFiles(0, [
+      new File(['[]'], 'dict.json', { type: 'application/json' }),
+      new File(['a\nb\n'], 'freq.txt', { type: 'text/plain' }),
+    ]);
 
     await waitFor(() => expect(importFile).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.queryByText('freq.txt')).not.toBeInTheDocument());
@@ -253,7 +271,7 @@ describe('ResourcesPanel', () => {
 
   it('prompts on duplicate and resolves onDuplicate when "Skip" clicked', async () => {
     const existing = makeResource({ id: 5, name: 'existing.txt' });
-    importFile.mockImplementation(async (_file, _type, options) => {
+    importFile.mockImplementation(async (_file, options) => {
       const choice = await (options as { onDuplicate?: (e: ResourceInfo) => Promise<'skip' | 'replace'> })
         .onDuplicate?.(existing);
       if (choice === 'replace') return { jobId: 'j-replace' };
@@ -261,8 +279,8 @@ describe('ResourcesPanel', () => {
     });
 
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
-    pickFile(1, new File(['a\nb\n'], 'test.txt', { type: 'text/plain' }));
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFile(0, new File(['a\nb\n'], 'test.txt', { type: 'text/plain' }));
 
     await waitFor(() => expect(screen.getByText(/"existing\.txt" already exists/)).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
@@ -273,7 +291,7 @@ describe('ResourcesPanel', () => {
 
   it('resolves "Replace" so the import proceeds', async () => {
     const existing = makeResource({ id: 5, name: 'existing.txt' });
-    importFile.mockImplementation(async (_file, _type, options) => {
+    importFile.mockImplementation(async (_file, options) => {
       const choice = await (options as { onDuplicate?: (e: ResourceInfo) => Promise<'skip' | 'replace'> })
         .onDuplicate?.(existing);
       if (choice === 'replace') return { jobId: 'j-replace' };
@@ -281,8 +299,8 @@ describe('ResourcesPanel', () => {
     });
 
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
-    pickFile(1, new File(['a\nb\n'], 'test.txt', { type: 'text/plain' }));
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFile(0, new File(['a\nb\n'], 'test.txt', { type: 'text/plain' }));
 
     await waitFor(() => expect(screen.getByText(/"existing\.txt" already exists/)).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: 'Replace' }));
@@ -301,7 +319,7 @@ describe('ResourcesPanel', () => {
     // No priorities → id-desc order: [b(2), a(1)]. ArrowUp on a.txt's grip → [1, 2].
     fireEvent.keyDown(screen.getByTestId('drag-1'), { key: 'ArrowUp' });
     await waitFor(() =>
-      expect(reorderResourcesMock).toHaveBeenCalledWith('en', 'FREQUENCY', [1, 2]),
+      expect(reorderResourcesMock).toHaveBeenCalledWith('en', [1, 2]),
     );
   });
 
@@ -310,15 +328,15 @@ describe('ResourcesPanel', () => {
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('words')).toBeInTheDocument());
     expect(screen.queryByTestId('delete-button-1')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('delete-all-frequency')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('delete-selected-frequency')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('delete-all-resources')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('delete-selected-resources')).not.toBeInTheDocument();
   });
 
   it('opens delete confirm modal when delete clicked inside edit mode', async () => {
     listResources.mockResolvedValue([makeResource({ id: 1, name: 'words.txt' })]);
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('words')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('edit-frequency'));
+    fireEvent.click(screen.getByTestId('edit-resources'));
     fireEvent.click(screen.getByTestId('delete-button-1'));
     expect(screen.getByTestId('delete-confirm-modal')).toBeInTheDocument();
     expect(screen.getByText('Delete list')).toBeInTheDocument();
@@ -328,10 +346,10 @@ describe('ResourcesPanel', () => {
     listResources.mockResolvedValue([makeResource({ id: 1, name: 'words.txt' })]);
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('words')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('edit-frequency'));
+    fireEvent.click(screen.getByTestId('edit-resources'));
     fireEvent.click(screen.getByTestId('delete-button-1'));
     fireEvent.click(screen.getByTestId('confirm-delete'));
-    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, 'FREQUENCY'));
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
   });
 
   it('shows every resource regardless of profileIds (profile scoping removed)', async () => {
@@ -349,8 +367,8 @@ describe('ResourcesPanel', () => {
   it('never scopes imports to a profile', async () => {
     const setProfiles = client.setResourceProfiles as jest.MockedFunction<typeof client.setResourceProfiles>;
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Frequency lists')).toBeInTheDocument());
-    pickFile(1, new File(['hello\n'], 'test.txt', { type: 'text/plain' }));
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFile(0, new File(['hello\n'], 'test.txt', { type: 'text/plain' }));
     await waitFor(() => expect(importFile).toHaveBeenCalled());
     expect(setProfiles).not.toHaveBeenCalled();
   });
@@ -364,23 +382,23 @@ describe('ResourcesPanel', () => {
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('c')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByTestId('edit-frequency'));
+    fireEvent.click(screen.getByTestId('edit-resources'));
     expect(screen.getByTestId('delete-button-1')).toBeInTheDocument();
-    expect(screen.queryByTestId('delete-all-frequency')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('delete-all-resources')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('select-1'));
     fireEvent.click(screen.getByTestId('select-3'));
 
-    const deleteButton = screen.getByTestId('delete-selected-frequency');
+    const deleteButton = screen.getByTestId('delete-selected-resources');
     expect(deleteButton).toHaveTextContent('Delete 2 selected');
     fireEvent.click(deleteButton);
-    expect(screen.getByText('Delete 2 selected lists')).toBeInTheDocument();
+    expect(screen.getByText('Delete 2 selected resources')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, 'FREQUENCY');
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 3, 'FREQUENCY');
-    expect(deleteResourceCascade).not.toHaveBeenCalledWith('en', 2, 'FREQUENCY');
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1);
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 3);
+    expect(deleteResourceCascade).not.toHaveBeenCalledWith('en', 2);
   });
 
   it('edit mode with no selection deletes everything in the section', async () => {
@@ -391,11 +409,11 @@ describe('ResourcesPanel', () => {
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByTestId('edit-frequency'));
-    const deleteButton = screen.getByTestId('delete-selected-frequency');
+    fireEvent.click(screen.getByTestId('edit-resources'));
+    const deleteButton = screen.getByTestId('delete-selected-resources');
     expect(deleteButton).toHaveTextContent('Delete all');
     fireEvent.click(deleteButton);
-    expect(screen.getByText('Delete all 2 lists')).toBeInTheDocument();
+    expect(screen.getByText('Delete all 2 resources')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
@@ -406,16 +424,16 @@ describe('ResourcesPanel', () => {
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('a')).toBeInTheDocument());
 
-    const editButton = screen.getByTestId('edit-frequency');
-    expect(editButton).toHaveAttribute('aria-label', 'Edit Frequency lists');
+    const editButton = screen.getByTestId('edit-resources');
+    expect(editButton).toHaveAttribute('aria-label', 'Edit Resources');
     fireEvent.click(editButton);
-    expect(editButton).toHaveAttribute('aria-label', 'Finish editing Frequency lists');
+    expect(editButton).toHaveAttribute('aria-label', 'Finish editing Resources');
     fireEvent.click(editButton);
     expect(screen.queryByTestId('delete-button-1')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('delete-selected-frequency')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('delete-selected-resources')).not.toBeInTheDocument();
   });
 
-  it('delete-all cascades every resource of that section only', async () => {
+  it('delete-all cascades every resource across kinds', async () => {
     listResources.mockResolvedValue([
       makeResource({ id: 1, name: 'a.txt' }),
       makeResource({ id: 2, name: 'b.txt' }),
@@ -424,15 +442,15 @@ describe('ResourcesPanel', () => {
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByTestId('edit-frequency'));
-    fireEvent.click(screen.getByTestId('delete-selected-frequency'));
-    expect(screen.getByText('Delete all 2 lists')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('edit-resources'));
+    fireEvent.click(screen.getByTestId('delete-selected-resources'));
+    expect(screen.getByText('Delete all 3 resources')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
-    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, 'FREQUENCY');
-    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 2, 'FREQUENCY');
-    expect(deleteResourceCascade).not.toHaveBeenCalledWith('en', 3, 'DICTIONARY');
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(3));
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1);
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 2);
+    expect(deleteResourceCascade).toHaveBeenCalledWith('en', 3);
   });
 
   it('select-all checkbox selects and deselects every row', async () => {
@@ -443,8 +461,8 @@ describe('ResourcesPanel', () => {
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByTestId('edit-frequency'));
-    const selectAllBox = screen.getByTestId('select-all-frequency');
+    fireEvent.click(screen.getByTestId('edit-resources'));
+    const selectAllBox = screen.getByTestId('select-all-resources');
     expect(screen.getByText('0 of 2 selected')).toBeInTheDocument();
 
     fireEvent.click(selectAllBox);
@@ -465,10 +483,10 @@ describe('ResourcesPanel', () => {
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByTestId('edit-frequency'));
+    fireEvent.click(screen.getByTestId('edit-resources'));
     fireEvent.click(screen.getByTestId('check-2'));
     expect(screen.getByText('1 of 2 selected')).toBeInTheDocument();
-    expect(screen.getByTestId('delete-selected-frequency')).toHaveTextContent('Delete 1 selected');
+    expect(screen.getByTestId('delete-selected-resources')).toHaveTextContent('Delete 1 selected');
   });
 
   it('bulk enable applies setResourceEnabled to selected rows', async () => {
@@ -480,11 +498,11 @@ describe('ResourcesPanel', () => {
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByTestId('edit-frequency'));
-    expect(screen.getByTestId('enable-selected-frequency')).toBeDisabled();
+    fireEvent.click(screen.getByTestId('edit-resources'));
+    expect(screen.getByTestId('enable-selected-resources')).toBeDisabled();
 
     fireEvent.click(screen.getByTestId('check-1'));
-    fireEvent.click(screen.getByTestId('enable-selected-frequency'));
+    fireEvent.click(screen.getByTestId('enable-selected-resources'));
     await waitFor(() => expect(setEnabled).toHaveBeenCalledWith('en', 1, true));
     expect(setEnabled).toHaveBeenCalledTimes(1);
   });
@@ -498,20 +516,20 @@ describe('ResourcesPanel', () => {
     const view = render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('words')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByTestId('edit-frequency'));
+    fireEvent.click(screen.getByTestId('edit-resources'));
     fireEvent.click(screen.getByTestId('delete-button-1'));
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
-    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, 'FREQUENCY'));
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
     await act(async () => { release(); });
     await waitFor(() => expect(screen.queryByTestId('resource-card-1')).not.toBeInTheDocument());
     expect(screen.queryByTestId('delete-confirm-modal')).not.toBeInTheDocument();
 
-    setRegistryJobs([makeJob({ id: 'del-1', status: 'running', label: 'words.txt', params: { langCode: 'en', resourceId: 1, resourceType: 'FREQUENCY' } })]);
+    setRegistryJobs([makeJob({ id: 'del-1', status: 'running', label: 'words.txt', params: { langCode: 'en', resourceId: 1 } })]);
     view.rerender(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByTestId('job-row-del-1')).toBeInTheDocument());
 
-    setRegistryJobs([makeJob({ id: 'del-1', status: 'done', label: 'words.txt', params: { langCode: 'en', resourceId: 1, resourceType: 'FREQUENCY' } })]);
+    setRegistryJobs([makeJob({ id: 'del-1', status: 'done', label: 'words.txt', params: { langCode: 'en', resourceId: 1 } })]);
     view.rerender(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByTestId('panel-alert')).toHaveTextContent('Deleted "words.txt"'));
   });
@@ -528,14 +546,14 @@ describe('ResourcesPanel', () => {
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByTestId('edit-frequency'));
-    fireEvent.click(screen.getByTestId('delete-selected-frequency'));
+    fireEvent.click(screen.getByTestId('edit-resources'));
+    fireEvent.click(screen.getByTestId('delete-selected-resources'));
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
-    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 2, 'FREQUENCY'));
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 2));
     await act(async () => { releases[0]?.(); });
     await waitFor(() => expect(screen.queryByTestId('resource-card-2')).not.toBeInTheDocument());
-    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, 'FREQUENCY'));
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
 
     await act(async () => { releases[1]?.(); });
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
@@ -553,16 +571,16 @@ describe('ResourcesPanel', () => {
     const view = render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByTestId('edit-frequency'));
+    fireEvent.click(screen.getByTestId('edit-resources'));
     fireEvent.click(screen.getByTestId('delete-button-1'));
     fireEvent.click(screen.getByTestId('confirm-delete'));
-    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1, 'FREQUENCY'));
+    await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
 
-    setRegistryJobs([makeJob({ id: 'del-1', status: 'running', params: { langCode: 'en', resourceId: 1, resourceType: 'FREQUENCY' } })]);
+    setRegistryJobs([makeJob({ id: 'del-1', status: 'running', params: { langCode: 'en', resourceId: 1 } })]);
     view.rerender(<ResourcesPanel langCode="en" />);
     fireEvent.click(screen.getByTestId('delete-button-2'));
     expect(screen.queryByTestId('delete-confirm-modal')).toBeNull();
-    expect(screen.getByTestId('delete-selected-frequency')).toBeDisabled();
+    expect(screen.getByTestId('delete-selected-resources')).toBeDisabled();
 
     await act(async () => { release(); });
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(1));
@@ -579,8 +597,8 @@ describe('ResourcesPanel', () => {
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByTestId('edit-frequency'));
-    fireEvent.click(screen.getByTestId('delete-selected-frequency'));
+    fireEvent.click(screen.getByTestId('edit-resources'));
+    fireEvent.click(screen.getByTestId('delete-selected-resources'));
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
@@ -615,7 +633,7 @@ describe('ResourcesPanel', () => {
       label: 'big.json',
       resourceId: 7,
       progress: { done: 12, total: 100 },
-      params: { langCode: 'en', resourceType: 'DICTIONARY', signature: 'sig' },
+      params: { langCode: 'en', signature: 'sig' },
     })]);
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByTestId('resource-card-7')).toBeInTheDocument());
@@ -632,7 +650,7 @@ describe('ResourcesPanel', () => {
       label: 'new.txt',
       resourceId: 5,
       result: { resourceId: 5, wordCount: 10 },
-      params: { langCode: 'en', resourceType: 'FREQUENCY' },
+      params: { langCode: 'en' },
     })]);
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByTestId('resource-card-5')).toBeInTheDocument());
@@ -649,7 +667,7 @@ describe('ResourcesPanel', () => {
       resourceId: 55,
       error: 'parse fail',
       retryable: true,
-      params: { langCode: 'en', resourceType: 'FREQUENCY' },
+      params: { langCode: 'en' },
     })]);
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByTestId('job-row-imp-bad')).toBeInTheDocument());
@@ -664,7 +682,7 @@ describe('ResourcesPanel', () => {
     ]);
     const { container } = render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByTestId('resource-card-2')).toBeInTheDocument());
-    pickFile(1, new File(['a\n'], 'fresh.txt', { type: 'text/plain' }));
+    pickFile(0, new File(['a\n'], 'fresh.txt', { type: 'text/plain' }));
     await waitFor(() => expect(container.querySelector('[data-cell-id^="import-job-"]')).not.toBeNull());
     const jobRow = container.querySelector('[data-cell-id^="import-job-"]')!;
     const card1 = screen.getByTestId('resource-card-1');
@@ -678,7 +696,7 @@ describe('ResourcesPanel', () => {
   it('refreshes the list when an import job gains a resourceId', async () => {
     listResources.mockResolvedValue([]);
     const view = render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('No dictionaries yet.')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('No resources yet.')).toBeInTheDocument());
     const callsAfterMount = listResources.mock.calls.length;
 
     setRegistryJobs([makeJob({
@@ -687,7 +705,7 @@ describe('ResourcesPanel', () => {
       status: 'running',
       label: 'big.json',
       resourceId: 42,
-      params: { langCode: 'en', resourceType: 'DICTIONARY' },
+      params: { langCode: 'en' },
     })]);
     view.rerender(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(listResources.mock.calls.length).toBeGreaterThan(callsAfterMount));
@@ -700,9 +718,9 @@ describe('ResourcesPanel', () => {
     ]);
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByTestId('resource-card-2')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('edit-frequency'));
+    fireEvent.click(screen.getByTestId('edit-resources'));
     expect(screen.getByText('0 of 1 selected')).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('select-all-frequency'));
+    fireEvent.click(screen.getByTestId('select-all-resources'));
     expect(screen.getByText('1 of 1 selected')).toBeInTheDocument();
     expect(screen.queryByTestId('check-2')).not.toBeInTheDocument();
   });
@@ -784,7 +802,7 @@ describe('pointer drag reorder', () => {
 
     pointer(document.body, 'pointerup');
     await waitFor(() =>
-      expect(reorderResourcesMock).toHaveBeenCalledWith('en', 'FREQUENCY', [2, 3, 1]),
+      expect(reorderResourcesMock).toHaveBeenCalledWith('en', [2, 3, 1]),
     );
     expect(screen.queryByTestId('drag-placeholder')).not.toBeInTheDocument();
   });
@@ -852,7 +870,7 @@ describe('pointer drag reorder', () => {
       expect(screen.getByTestId('drag-placeholder')).toBeInTheDocument();
 
       act(() => { jest.advanceTimersByTime(250); });
-      expect(reorderResourcesMock).toHaveBeenCalledWith('en', 'FREQUENCY', [1, 2]);
+      expect(reorderResourcesMock).toHaveBeenCalledWith('en', [1, 2]);
       expect(screen.queryByTestId('drag-placeholder')).not.toBeInTheDocument();
     } finally {
       jest.useRealTimers();
@@ -881,7 +899,7 @@ describe('pointer drag reorder', () => {
     await waitFor(() => expect(screen.getByText('b')).toBeInTheDocument());
 
     expect(screen.getByTestId('drag-1')).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('edit-frequency'));
+    fireEvent.click(screen.getByTestId('edit-resources'));
     expect(screen.queryByTestId('drag-1')).not.toBeInTheDocument();
     expect(screen.queryByTestId('drag-2')).not.toBeInTheDocument();
   });

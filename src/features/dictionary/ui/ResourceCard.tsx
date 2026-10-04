@@ -42,6 +42,7 @@ const COMPONENT_LABEL: Record<DictionaryComponent, MessageKey> = {
   related: 'resources.component.related',
   level: 'resources.component.level',
   frequencyStars: 'resources.component.frequencyStars',
+  frequency: 'resources.component.frequency',
 };
 
 const GRIP_TAP_THRESHOLD = 4;
@@ -107,7 +108,6 @@ export function ResourceCard({
               ? t('resources.job.importing', [importProgress.done.toLocaleString()])
               : t('jobs.status.running');
   const enabled = resource.enabled !== false;
-  const isDict = resource.type === 'DICTIONARY';
   const resourceId = resource.id;
   const langCode = resource.langCode;
   const [toggling, setToggling] = useState(false);
@@ -130,13 +130,13 @@ export function ResourceCard({
   );
 
   useEffect(() => {
-    if (importing || !isDict || resourceId == null || components != null) return;
+    if (importing || resourceId == null || components != null) return;
     let alive = true;
     getResourceComponents(langCode, resourceId)
       .then((list) => { if (alive) setComponents(list); })
       .catch(() => { if (alive) setComponents([]); });
     return () => { alive = false; };
-  }, [importing, isDict, langCode, resourceId, components]);
+  }, [importing, langCode, resourceId, components]);
 
   const handleToggle = (next: boolean): void => {
     if (busy || resourceId == null || toggling) return;
@@ -309,7 +309,7 @@ export function ResourceCard({
               {importMeta}
             </span>
           )}
-          {!busy && isDict && components != null && components.length > 0 && (
+          {!busy && components != null && components.length > 0 && (
             <div
               className={styles.componentList}
               role="group"

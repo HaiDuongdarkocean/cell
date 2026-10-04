@@ -246,9 +246,10 @@ describe('ResourceCard', () => {
     await waitFor(() => expect(screen.getByTestId('component-definitions-6')).toBeInTheDocument());
   });
 
-  it('does not load components for frequency resources', () => {
+  it('loads components for frequency resources too', async () => {
+    getResourceComponentsMock.mockResolvedValue(['frequency']);
     renderCard(makeResource({ id: 6 }));
-    expect(getResourceComponentsMock).not.toHaveBeenCalled();
-    expect(screen.queryByTestId('resource-components-6')).not.toBeInTheDocument();
+    await waitFor(() => expect(getResourceComponentsMock).toHaveBeenCalledWith('en', 6));
+    await waitFor(() => expect(screen.getByTestId('component-frequency-6')).toBeInTheDocument());
   });
 });

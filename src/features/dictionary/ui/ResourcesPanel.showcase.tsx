@@ -12,8 +12,9 @@ function job(fileName: string, overrides: Partial<ImportJob>): ImportJob {
     jobId: `demo-${fileName}`,
     file: new File(['x'], fileName),
     fileName,
-    resourceType: 'DICTIONARY',
     signature: `sig-${fileName}`,
+    detectedComponents: ['definitions'],
+    selectedComponents: ['definitions'],
     forceReplace: false,
     status: 'queued',
     processed: 0,
@@ -42,6 +43,20 @@ const EXISTING: ResourceInfo = {
 
 const STATE_ROWS: readonly ImportJob[] = [
   job('waiting.zip', { status: 'queued' }),
+  job('mixed-yomitan.zip', {
+    status: 'uploading',
+    uploadSent: 5,
+    uploadTotal: 12,
+    detectedComponents: ['definitions', 'frequency'],
+    selectedComponents: ['definitions', 'frequency'],
+  }),
+  job('top-10k.txt', {
+    status: 'importing',
+    processed: 6400,
+    total: 10000,
+    detectedComponents: ['frequency'],
+    selectedComponents: ['frequency'],
+  }),
   job('uploading.zip', { status: 'uploading', uploadSent: 7, uploadTotal: 12 }),
   job('counting.zip', { status: 'importing', processed: 4200, total: 0 }),
   job('jmdict-entries.zip', { status: 'importing', processed: 35000, total: 73643 }),
