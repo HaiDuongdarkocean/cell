@@ -1,5 +1,5 @@
 {
-  "active": null,
+  "active": "dict-sheet-breadcrumb",
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -2337,6 +2337,127 @@
       "owner": null,
       "worktree": "../cell-worktrees/unified-resource-import",
       "updated": "2026-10-04T06:38:19.802Z"
+    },
+    "--help": {
+      "stage": "analyze",
+      "mode": "interactive",
+      "uiSurface": "unknown",
+      "artifacts": {},
+      "gates": {},
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "owner": null,
+      "worktree": null,
+      "updated": "2026-10-04T09:56:56.177Z"
+    },
+    "dict-sheet-breadcrumb": {
+      "stage": "deliver",
+      "mode": "all",
+      "uiSurface": "yes",
+      "artifacts": {
+        "designBrief": "docs/intent/dict-sheet-breadcrumb-design-brief.md",
+        "componentMapping": "docs/intent/dict-sheet-breadcrumb-component-mapping.md",
+        "mockup": "src/entrypoints/mockup-dict-sheet-breadcrumb/",
+        "plan": "tasks/plan-dict-sheet-breadcrumb.md"
+      },
+      "gates": {
+        "build": {
+          "v": "pass",
+          "at": "2026-10-04T10:22:02.982Z",
+          "head": "6a70ed1b39b85a14c8a223353705857e15596ba9",
+          "dirty": [
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/dict-sheet-breadcrumb-component-mapping.md",
+            "docs/intent/dict-sheet-breadcrumb-design-brief.md",
+            "docs/intent/dict-sheet-breadcrumb.md",
+            "docs/reviews/dict-sheet-breadcrumb-analyze.md",
+            "docs/reviews/dict-sheet-breadcrumb-design.md",
+            "docs/reviews/dict-sheet-breadcrumb-spec.md",
+            "docs/specs/dict-sheet-breadcrumb.md",
+            "src/entrypoints/mockup-dict-sheet-breadcrumb/"
+          ]
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-10-04T10:25:25.473Z",
+          "head": "6a70ed1b39b85a14c8a223353705857e15596ba9",
+          "dirty": [
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/dict-sheet-breadcrumb-component-mapping.md",
+            "docs/intent/dict-sheet-breadcrumb-design-brief.md",
+            "docs/intent/dict-sheet-breadcrumb.md",
+            "docs/reviews/dict-sheet-breadcrumb-analyze.md",
+            "docs/reviews/dict-sheet-breadcrumb-design.md",
+            "docs/reviews/dict-sheet-breadcrumb-spec.md",
+            "docs/specs/dict-sheet-breadcrumb.md",
+            "src/entrypoints/mockup-dict-sheet-breadcrumb/",
+            "tasks/plan-dict-sheet-breadcrumb.md"
+          ]
+        },
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-10-04T10:25:25.171Z",
+          "head": "6a70ed1b39b85a14c8a223353705857e15596ba9",
+          "dirty": [
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/dict-sheet-breadcrumb-component-mapping.md",
+            "docs/intent/dict-sheet-breadcrumb-design-brief.md",
+            "docs/intent/dict-sheet-breadcrumb.md",
+            "docs/reviews/dict-sheet-breadcrumb-analyze.md",
+            "docs/reviews/dict-sheet-breadcrumb-design.md",
+            "docs/reviews/dict-sheet-breadcrumb-spec.md",
+            "docs/specs/dict-sheet-breadcrumb.md",
+            "src/entrypoints/mockup-dict-sheet-breadcrumb/",
+            "tasks/plan-dict-sheet-breadcrumb.md"
+          ]
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-10-04T10:25:25.326Z",
+          "head": "6a70ed1b39b85a14c8a223353705857e15596ba9",
+          "dirty": [
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/dict-sheet-breadcrumb-component-mapping.md",
+            "docs/intent/dict-sheet-breadcrumb-design-brief.md",
+            "docs/intent/dict-sheet-breadcrumb.md",
+            "docs/reviews/dict-sheet-breadcrumb-analyze.md",
+            "docs/reviews/dict-sheet-breadcrumb-design.md",
+            "docs/reviews/dict-sheet-breadcrumb-spec.md",
+            "docs/specs/dict-sheet-breadcrumb.md",
+            "src/entrypoints/mockup-dict-sheet-breadcrumb/",
+            "tasks/plan-dict-sheet-breadcrumb.md"
+          ]
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-10-04T10:25:25.595Z",
+          "head": "6a70ed1b39b85a14c8a223353705857e15596ba9",
+          "dirty": [
+            "tasks/reports/pipeline-sessions.md",
+            "docs/intent/dict-sheet-breadcrumb-component-mapping.md",
+            "docs/intent/dict-sheet-breadcrumb-design-brief.md",
+            "docs/intent/dict-sheet-breadcrumb.md",
+            "docs/reviews/dict-sheet-breadcrumb-analyze.md",
+            "docs/reviews/dict-sheet-breadcrumb-design.md",
+            "docs/reviews/dict-sheet-breadcrumb-spec.md",
+            "docs/specs/dict-sheet-breadcrumb.md",
+            "src/entrypoints/mockup-dict-sheet-breadcrumb/",
+            "tasks/plan-dict-sheet-breadcrumb.md"
+          ]
+        }
+      },
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "owner": {
+        "id": "devin-crumb-20261004",
+        "since": "2026-10-04T10:01:25.570Z"
+      },
+      "worktree": null,
+      "updated": "2026-10-04T10:25:25.652Z"
     }
   }
 }
