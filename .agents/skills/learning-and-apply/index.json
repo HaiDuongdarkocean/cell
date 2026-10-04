@@ -3322,6 +3322,26 @@
         "detectComponents"
       ],
       "trigger": "UI detect content bang head-limited sniff roi wire thang vao payload engine → noi dung sau gioi han head bi mat lang le (mixed zip >1MB roi frequency family)"
+    },
+    {
+      "type": "experience",
+      "id": "enabled-control-must-stay-live",
+      "title": "Control vẫn interactive nhưng state bị freeze lúc handoff tệ hơn cả disabled — đọc lại selection tại từng send point hoặc disable hẳn",
+      "category": [
+        "ux",
+        "async",
+        "messaging"
+      ],
+      "tags": [
+        "frozen-selection",
+        "chunked-upload",
+        "live-narrowing",
+        "component-picker",
+        "unified-resource-import",
+        "silent-ignore",
+        "getComponents"
+      ],
+      "trigger": "Control vẫn nhận tương tác trong một in-flight operation nhiều bước (upload theo chunk, wizard, job nền) nhưng giá trị chỉ capture một lần lúc khởi động → user đổi giữa chừng bị phớt lờ lặng lẽ"
     }
   ]
 }

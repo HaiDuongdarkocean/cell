@@ -1,0 +1,23 @@
+{
+  "id": "enabled-control-must-stay-live",
+  "title": "Control vẫn interactive nhưng state bị freeze lúc handoff tệ hơn cả disabled — đọc lại selection tại từng send point hoặc disable hẳn",
+  "category": [
+    "ux",
+    "async",
+    "messaging"
+  ],
+  "tags": [
+    "frozen-selection",
+    "chunked-upload",
+    "live-narrowing",
+    "component-picker",
+    "unified-resource-import",
+    "silent-ignore",
+    "getComponents"
+  ],
+  "trigger": "Một control (chip/toggle/picker) vẫn nhận tương tác trong suốt một operation nhiều bước (upload theo chunk, wizard, job chạy nền), nhưng giá trị của nó chỉ được capture một lần lúc khởi động → user bấm giữa chừng, UI confirm, và hệ thống LẶNG LẼ phớt lờ hành động đó.",
+  "body": "## Bối cảnh\n\n`ImportProgress` component chips vẫn pickable xuyên suốt phase `uploading` (aria-pressed toggle, UI cập nhật lạc quan). Nhưng `components` subset được đọc một lần lúc bắt đầu và truyền theo MỌI chunk → user bỏ chọn 'tần suất' lúc upload 60% vẫn nhận đủ freq rows. Ba lane review độc lập cùng flag đây là defect của flagship interaction.\n\n## Nguyên tắc\n\nControl interactive trong một in-flight operation phải thỏa một trong hai:\n1. **Live**: state được đọc lại tại mỗi send point (getter per chunk/message), và phía nhận cập nhật giá trị pending trên mỗi message — message cuối thắng.\n2. **Disabled**: control bị khóa thật cho tới khi operation xong.\n\nTrạng thái giữa — trông live mà thực chất frozen — là silent-misroute: người dùng hành động, nhận feedback xác nhận, và hệ thống bỏ qua hành động.\n\n## Cách áp dụng\n\n```ts\n// ĐÚNG — đọc lại tại mỗi send point\nfor (let seq = 0; seq < total; seq++) {\n  const selection = getComponents?.() ?? detected;\n  await client.uploadChunk({ components: selection, ... });\n}\n\n// phía nhận: overwrite pending mỗi message\npending.components = payload.components; // last wins\n\n// SAI — capture một lần rồi gửi lặp lại\nconst frozen = selectedComponents();\nfor (let seq = 0; seq < total; seq++) {\n  await client.uploadChunk({ components: frozen, ... });\n}\n```\n\n## Dấu hiệu nhận biết\n\nBất kỳ giá trị user-mutable nào đi qua boundary async theo chunk/message — hỏi: 'nếu user đổi giá trị này giữa chừng thì sao?' Nếu câu trả lời là 'không sao gì' → hoặc wire getter vào send loop, hoặc disable control.",
+  "relatedSkills": [
+    "partial-detection-never-authoritative-subset"
+  ]
+}
