@@ -80,6 +80,19 @@ describe('getSelectedExamples', () => {
     expect(getSelectedExamples(def, new Map())).toEqual([]);
     expect(getSelectedExamples(def, new Map([['def-0', new Set<number>()]]))).toEqual([]);
   });
+
+  it('appends the group pattern to each shipped example so card context survives', () => {
+    const pat: DefinitionEntry = {
+      ...def,
+      examples: [
+        { role: 'example', text: 'x' },
+        { role: 'example', text: 'y', pattern: '[matter to someone]' },
+        { role: 'example', text: 'z', pattern: '[matter to someone]' },
+      ],
+    };
+    const sel = new Map([['def-0', new Set([0, 2])]]);
+    expect(getSelectedExamples(pat, sel)).toEqual(['x', 'z [matter to someone]']);
+  });
 });
 
 describe('toSelectedExampleIds', () => {

@@ -13,8 +13,16 @@ const ACCENT_RE = />(UK|US)<\/font>\s*<a href="(sound:\/\/[^"]+)"[^>]*>[\s\S]*?<
 const POS_RE = /<font color="#6020ae">([^<]+)<\/font>/;
 const LABEL_RE = /<font color="(?:#a64728|orangered)">([\s\S]*?)<\/font>/g;
 const SENSE_NUM_RE = /<b>\s*(\d+)([a-z]?)\s*\./;
+const BOLD_RE = /<b>([\s\S]*?)<\/b>/g;
+const SENSE_NUM_TEXT_RE = /^\d+[a-z]?\s*\.$/;
 const THES_RE = /Thesaurus:/;
 const ENTRY_LINK_RE = /<a href="entry:\/\/([^"]+)"[^>]*>/g;
+
+function boldPatterns(text) {
+  return [...text.matchAll(BOLD_RE)]
+    .map((m) => stripHtml(m[1]).trim())
+    .filter((t) => t && !t.includes('▪') && !SENSE_NUM_TEXT_RE.test(t));
+}
 
 function parseProns(head) {
   const prons = [];
@@ -35,6 +43,7 @@ function parseSenses(frag, pos, rel) {
   let current = null;
   let currentNum = '';
   let currentSub = null;
+  let pattern;
   for (const line of frag.split(/<br\s*\/?>/i)) {
     const text = stripHtml(line);
     if (!text) continue;
@@ -48,6 +57,7 @@ function parseSenses(frag, pos, rel) {
     }
     const num = line.match(SENSE_NUM_RE);
     if (num) {
+      pattern = undefined;
       const labels = [...line.matchAll(LABEL_RE)]
         .map((m) => stripHtml(m[1]).replace(/^\[|\]$/g, '').trim())
         .filter(Boolean);
@@ -66,14 +76,28 @@ function parseSenses(frag, pos, rel) {
       continue;
     }
     if (/<em>/.test(line)) {
-      if (currentSub) {
-        currentSub.examples = [...(currentSub.examples ?? []), { role: 'example', text }];
-      } else if (current) {
-        current.lines.push({ role: 'example', text });
+      const emIdx = line.indexOf('<em>');
+      const head = line.slice(0, emIdx);
+      const pats = boldPatterns(head);
+      const mid = stripHtml(head.replace(BOLD_RE, ''));
+      const glossBits = [...mid.matchAll(/\([^)]*\)/g)].map((m) => m[0]);
+      if (pats.length || glossBits.length) pattern = `[${[...pats, ...glossBits].join(' ')}]`;
+      const exText = stripHtml(line.slice(emIdx)).trim();
+      if (exText) {
+        const ex = { role: 'example', text: exText, ...(pattern ? { pattern } : {}) };
+        if (currentSub) {
+          currentSub.examples = [...(currentSub.examples ?? []), ex];
+        } else if (current) {
+          current.lines.push(ex);
+        }
       }
       continue;
     }
-    if (/<b>|<img/.test(line)) continue;
+    if (/<b>|<img/.test(line)) {
+      const pats = boldPatterns(line);
+      if (pats.length) pattern = `[${pats.join(' ')}]`;
+      continue;
+    }
     const gloss = stripHtml(line.replace(LABEL_RE, ''));
     const labels = [...line.matchAll(LABEL_RE)]
       .map((m) => stripHtml(m[1]).replace(/^\[|\]$/g, '').trim())

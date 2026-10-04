@@ -13,8 +13,8 @@ import { stripHtml, blocks, blockText } from './markup.mjs';
 
 function parseExamples(frag) {
   const lines = [];
+  let pattern;
   for (const { inner } of blocks(frag, 'div', 'examples')) {
-    let pattern;
     for (const m of inner.matchAll(/<strong>([\s\S]*?)<\/strong>|<p class="example">([\s\S]*?)<\/p>/g)) {
       if (m[1] !== undefined) {
         const p = stripHtml(m[1]).replace(/^\[|\]$/g, '').trim();
@@ -24,7 +24,6 @@ function parseExamples(frag) {
       const text = stripHtml(m[2]);
       if (text) {
         lines.push({ role: 'example', text, ...(pattern ? { pattern } : {}) });
-        pattern = undefined;
       }
     }
   }

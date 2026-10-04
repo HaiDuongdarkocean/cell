@@ -119,7 +119,7 @@ export function getSelectedExamples(
 /** Selected example texts of one subsense, keyed by its composite id. */
 export function getSelectedSubsenseExamples(
   def: DefinitionEntry,
-  sub: { readonly examples?: readonly { readonly text: string }[] },
+  sub: { readonly examples?: readonly { readonly text: string; readonly pattern?: string }[] },
   subIndex: number,
   selection: ExampleSelection,
 ): string[] {
@@ -128,12 +128,12 @@ export function getSelectedSubsenseExamples(
 
 function selectedExampleTexts(
   ownerId: string,
-  examples: readonly { readonly text: string }[],
+  examples: readonly { readonly text: string; readonly pattern?: string }[],
   selection: ExampleSelection,
 ): string[] {
   const indices = selection.get(ownerId);
   if (!indices || indices.size === 0) return [];
-  return examples.filter((_, i) => indices.has(i)).map((l) => l.text);
+  return examples.filter((_, i) => indices.has(i)).map((l) => (l.pattern ? `${l.text} ${l.pattern}` : l.text));
 }
 
 /** Composite `ownerId:index` ids for shipped defs + their selected

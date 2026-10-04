@@ -130,3 +130,22 @@ including DOM-order (example idx < relations idx < subsense idx), per-child
 scoped examples/relations, muted label vs words, and sub→parent selection
 closure. Evidence: `tmp/pos-dictionary-variants/e2e/07-matter-verb.png`,
 `07b-matter-verb-subsel.png`.
+
+### User-reported defects after manual import (fixed round 7)
+
+| Finding | Disposition |
+|---|---|
+| Grammar-pattern group headers (`take someone to/into/around something:`) only tagged the FIRST example — following members rendered pattern-less (screenshot: 4 examples, only #1 had `[…]`). Root cause in both adapters: EnEn reset `pattern` after the first `p.example`; 2ed folded `<b>` headers into the first example's text | **Fixed** — `macmillan.mjs` hoists `pattern` outside the `div.examples` loop so a `<strong>` header covers every member until the next header; `macmillan2ed.mjs` extracts leading `<b>` (+ `(=with you)` gloss fragments) on `<em>` lines as a persistent group pattern, reset per sense/subsense, and b-only lines now set the pattern instead of being dropped |
+| No visual grouping — pattern rendered as an inline `[…]` suffix on one example | **Fixed** — `ExampleRows` emits one `dictionary-example-pattern` header when the run's pattern changes (`07-matter-verb.png`: `[matter to someone]` once above 3 members); `SenseLineView` suppresses inline pattern on example rows |
+| Cards lost pattern context | **Fixed** — `selectedExampleTexts` appends ` {pattern}` to each shipped example |
+
+JSONs regenerated with pattern coverage — EnEn: 17,760/74,946 examples in
+16,549 pattern groups; 2ed: 26,296/58,721 in 22,611 groups. Guards: `▪`
+homograph markers and `<b>N.</b>` sense numbers can never become patterns;
+pattern state resets at each new sense/subsense boundary so a group never
+bleeds into the next sense.
+
+Gates: `tsc --noEmit` clean · jest 74 suites / 1,393 tests · `npm run build` ·
+Brave e2e **43/43 asserts** (one header per group, header above all members,
+no inline repetition). Other adapters verified unaffected — cobuild/ldoce/oald
+attach per-example patterns from their own markup (`.tips`, `PROPFORM`, `.cf`).

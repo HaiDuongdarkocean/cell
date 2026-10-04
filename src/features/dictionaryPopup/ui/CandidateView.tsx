@@ -511,10 +511,12 @@ function SenseLineView({
   line,
   revealedByDefault,
   head,
+  hidePattern,
 }: {
   readonly line: SenseLine;
   readonly revealedByDefault: boolean;
   readonly head?: string;
+  readonly hidePattern?: boolean;
 }): React.JSX.Element {
   const [override, setOverride] = useState<boolean | null>(null);
   const revealed = override ?? revealedByDefault;
@@ -524,7 +526,7 @@ function SenseLineView({
       <span className={styles.defLineMain}>
         {head ? <span className={styles.defLineHead}>{head} </span> : null}
         {line.text}
-        {line.pattern ? <span className={styles.defLineMeta}> {line.pattern}</span> : null}
+        {!hidePattern && line.pattern ? <span className={styles.defLineMeta}> {line.pattern}</span> : null}
         {line.translation ? (
           <button
             type="button"
@@ -576,9 +578,15 @@ function ExampleRows({
     <div className={styles.cellDefExamples}>
       {examples.map((ex, i) => {
         const exChecked = checkedExamples.has(i);
+        const patternHead = ex.pattern && ex.pattern !== examples[i - 1]?.pattern ? ex.pattern : null;
         return (
+          <div key={i} className={styles.exampleRun}>
+            {patternHead ? (
+              <div className={styles.defExamplePattern} data-cell-id="dictionary-example-pattern">
+                {patternHead}
+              </div>
+            ) : null}
           <div
-            key={i}
             className={checkStyles.cellDefExampleItem}
             data-cell-id="dictionary-example"
             role="checkbox"
@@ -615,8 +623,9 @@ function ExampleRows({
               </span>
             </label>
             <span className={styles.cellDefExampleText}>
-              <SenseLineView line={ex} revealedByDefault={translationRevealed} />
+              <SenseLineView line={ex} revealedByDefault={translationRevealed} hidePattern />
             </span>
+          </div>
           </div>
         );
       })}
