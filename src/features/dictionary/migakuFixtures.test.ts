@@ -2,8 +2,8 @@ import 'fake-indexeddb/auto';
 import * as path from 'path';
 import * as fs from 'fs';
 import { importFile } from './logic/importOrchestrator';
-import { findDictionaryEntry } from './repositories/dictionaryRepository';
-import { findFrequencyEntry } from './repositories/frequencyRepository';
+import { findDictionaryEntry } from './repositories/resourceEntryRepository';
+import { findFrequencyEntry } from './repositories/resourceEntryRepository';
 import { getAllResources } from './repositories/resourceRepository';
 import { closeAllDBs, clearAllStores } from './repositories/baseRepository';
 import type { ReadableFile } from './logic/fileDetector';
@@ -42,7 +42,7 @@ afterEach(() => closeAllDBs());
 
 describe('Migaku real fixtures → importFile', () => {
   it('dictionary .db.gz (pt→es Wiktionary)', async () => {
-    const res = await importFile(fileOf('pt-es-wiktionary.db.gz'), 'DICTIONARY', { langCode: 'pt' });
+    const res = await importFile(fileOf('pt-es-wiktionary.db.gz'), { langCode: 'pt' });
     expect(res.format).toBe('sqlite');
     expect(res.wordCount).toBe(7426);
     const entry = await findDictionaryEntry('pt', res.resourceId, 'katakana');
@@ -50,7 +50,7 @@ describe('Migaku real fixtures → importFile', () => {
   });
 
   it('frequency .db.gz (vi OpenSubtitle)', async () => {
-    const res = await importFile(fileOf('OpenSubtitle.db.gz'), 'FREQUENCY', { langCode: 'vi' });
+    const res = await importFile(fileOf('OpenSubtitle.db.gz'), { langCode: 'vi' });
     expect(res.format).toBe('sqlite');
     expect(res.wordCount).toBe(12087);
     const entry = await findFrequencyEntry('vi', res.resourceId, 'tôi');
@@ -58,7 +58,7 @@ describe('Migaku real fixtures → importFile', () => {
   });
 
   it('frequency .json array-of-strings (vi OpenSubtitle)', async () => {
-    const res = await importFile(fileOf('OpenSubtitle.json'), 'FREQUENCY', { langCode: 'vi' });
+    const res = await importFile(fileOf('OpenSubtitle.json'), { langCode: 'vi' });
     expect(res.format).toBe('json-array');
     expect(res.wordCount).toBeGreaterThan(10000);
     const entry = await findFrequencyEntry('vi', res.resourceId, 'tôi');
@@ -66,21 +66,21 @@ describe('Migaku real fixtures → importFile', () => {
   });
 
   it('dictionary .zip single-JSON (pt→es Wiktionary)', async () => {
-    const res = await importFile(fileOf('pt-es-wiktionary.zip'), 'DICTIONARY', { langCode: 'pt' });
+    const res = await importFile(fileOf('pt-es-wiktionary.zip'), { langCode: 'pt' });
     expect(res.wordCount).toBeGreaterThan(7000);
     const entry = await findDictionaryEntry('pt', res.resourceId, 'katakana');
     expect(entry?.definition).toContain('Katakana');
   });
 
   it('word list .json (JLPT tag list)', async () => {
-    const res = await importFile(fileOf('JLPT.json'), 'DICTIONARY', { langCode: 'ja' });
+    const res = await importFile(fileOf('JLPT.json'), { langCode: 'ja' });
     expect(res.wordCount).toBeGreaterThan(1000);
     const entry = await findDictionaryEntry('ja', res.resourceId, '道');
     expect(entry?.definition).toContain('N5');
   });
 
   it('frequency url_zip (zipped json-array, yue)', async () => {
-    const res = await importFile(fileOf('Scotts_from_Reddit.json.zip'), 'FREQUENCY', { langCode: 'yue' });
+    const res = await importFile(fileOf('Scotts_from_Reddit.json.zip'), { langCode: 'yue' });
     expect(res.format).toBe('json-array');
     expect(res.wordCount).toBeGreaterThan(1000);
     const entry = await findFrequencyEntry('yue', res.resourceId, '我');
@@ -88,7 +88,7 @@ describe('Migaku real fixtures → importFile', () => {
   }, 60000);
 
   it('dictionary .zip >1MB — head sniff fails, full-data re-sniff (ar Vicon)', async () => {
-    const res = await importFile(fileOf('ar-vicon.zip'), 'DICTIONARY', { langCode: 'ar' });
+    const res = await importFile(fileOf('ar-vicon.zip'), { langCode: 'ar' });
     expect(res.format).toBe('json-entries');
     expect(res.wordCount).toBeGreaterThan(50000);
     const entry = await findDictionaryEntry('ar', res.resourceId, 'آب');
@@ -96,8 +96,8 @@ describe('Migaku real fixtures → importFile', () => {
   }, 120000);
 
   it('re-download of the same dict is deduped by signature', async () => {
-    const first = await importFile(fileOf('pt-es-wiktionary.db.gz'), 'DICTIONARY', { langCode: 'pt' });
-    const second = await importFile(fileOf('pt-es-wiktionary.db.gz'), 'DICTIONARY', { langCode: 'pt' });
+    const first = await importFile(fileOf('pt-es-wiktionary.db.gz'), { langCode: 'pt' });
+    const second = await importFile(fileOf('pt-es-wiktionary.db.gz'), { langCode: 'pt' });
     expect(second.skippedAsDuplicate).toBe(true);
     expect(second.resourceId).toBe(first.resourceId);
     expect(await getAllResources('pt')).toHaveLength(1);

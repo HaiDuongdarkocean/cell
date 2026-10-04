@@ -1,0 +1,21 @@
+{
+  "id": "fixture-magic-bytes-verify-real-artifact",
+  "title": "Fixture magic-bytes sai vẫn pass được — verify constant production bằng artifact THẬT (sql.js export / file binary thật) trước khi 'fix' nó",
+  "category": ["testing", "detection"],
+  "tags": ["magic-bytes", "sqlite", "fixture", "false-positive", "0x4c", "isSqlite", "test-helper", "real-artifact-verification", "format-detection"],
+  "trigger": "Test fail với kiểu 'missing magic bytes' / 'invalid header' khi fixture helper tự chế byte sequence — cám dỗ đổi constant production cho khớp fixture (hoặc ngược lại) mà không biết bên nào sai.",
+  "principle": "Byte-literal trong MAGIC tables VÀ trong makeXHeader() helpers đều có thể sai — và chúng có thể sai CÙNG NHAU (self-consistent wrong) nên test vẫn xanh hàng năm. Chỉ artifact thật làm trọng tài: export 1 file thật từ engine (sql.js `db.export()`, đọc 16 byte đầu file nhị phân thật) rồi so. Trong unified-resource-import: fixture mới dùng 0x6c ('l' thường), MAGIC production dùng 0x4c ('L' hoa) → isSqlite(real magic) = false → ParseError; `node -e` build sqlite thật bằng sql.js chứng minh byte đúng là 0x4c — fixture mới sai, production đúng. Signal phụ: test pass được nhờ fallback khác (extension .db) nên magic-check path chưa từng được exercise thật trên bytes đúng — fixture 'SQLiteForm at 1' rác vẫn 'detect sqlite' nhờ ext fallback.",
+  "cases": [
+    {
+      "context": "unified-resource-import T10: rewrite sqliteStrategy.test.ts với makeSqliteHeader() byte 0x6c; MAGIC.SQLITE production = 0x4c từ commit M8. 6 test fail 'missing SQLite magic bytes' → tưởng production bug, đổi MAGIC → 0x6c → suite nổ ở apkgAdapter + migakuFixtures (fixture sqlite THẬT từ sql.js export).",
+      "bad": "Tin fixture mới của mình → 'fix' MAGIC.SQLITE 0x4c→0x6c vì đọc chữ 'SQLite' nhầm 'l' thường (header thật là 'SQL'+'ite' — chữ L là acronym nên HOA).",
+      "good": "`node -e` init sql.js → db.export() → in 16 byte đầu: [83,81,76,...] = 0x4c → revert production, sửa fixture về 0x4c. Bonus: fixture formatDetector.test.ts 'SQLiteForm at 1\\0' (rác, chưa từng match) cũng sửa về magic thật để test .db path exercise magic-check chứ không chỉ ext fallback."
+    }
+  ],
+  "applyFor": [
+    "Bất kỳ magic-bytes/header/version-prefix check nào (sqlite, zip, gzip, wasm, protobuf tag) — viết fixture bằng cách DUMP file thật 1 lần (hoặc export từ engine), không gõ byte tay từ trí nhớ tên format",
+    "Khi test fail 'invalid magic' sau refactor: check xem path đó có được exercise bởi fixture đúng chưa — test xanh năm năm có thể chỉ vì fallback khác cứu",
+    "Chữ cái trong magic string: đọc hex trực tiếp (xxd / Array.from(bytes)) — nhầm hoa/thường rất dễ ('SQLite' chứa 'L' hoa vì SQL là acronym)"
+  ],
+  "source": { "spec": "docs/specs/unified-resource-import.md", "date": "2026-10-09" }
+}

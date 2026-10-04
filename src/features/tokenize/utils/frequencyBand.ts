@@ -1,7 +1,7 @@
 // NOTE: tokenize controllers run in content scripts — repositories must be
 // reached through resourceClient (background proxy), never directly, or the
 // reads would hit the PAGE's IndexedDB and always come back empty.
-import { listResources } from '@/features/dictionary';
+import { listResources, resourceOffersComponent } from '@/features/dictionary';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_BAND_THRESHOLDS, type FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 
@@ -31,7 +31,7 @@ export async function loadFrequencyBandOptions(langCode: string): Promise<Freque
   return {
     thresholds: settings.frequencyBands ?? DEFAULT_BAND_THRESHOLDS,
     resourcePriority: resources
-      .filter((r) => r.type === 'FREQUENCY' && r.enabled !== false)
+      .filter((r) => r.enabled !== false && resourceOffersComponent(r, 'frequency'))
       .map((r) => r.id!)
       .filter((id): id is number => id !== undefined),
   };

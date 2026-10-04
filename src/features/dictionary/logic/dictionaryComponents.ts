@@ -3,7 +3,7 @@
 // store scan for resources imported before the field existed; results land
 // on ResourceInfo.components and drive the per-resource toggles.
 
-import type { DictionaryComponent, DictionaryEntry } from '@/entities/dictionary';
+import type { DictionaryComponent, DictionaryEntry, ResourceInfo, ResourceType } from '@/entities/dictionary';
 
 export const DICTIONARY_COMPONENTS: readonly DictionaryComponent[] = [
   'definitions',
@@ -19,20 +19,25 @@ export const DICTIONARY_COMPONENTS: readonly DictionaryComponent[] = [
   'related',
   'level',
   'frequencyStars',
+  'frequency',
 ];
 
-type ComponentSource = Pick<
+export type ComponentSource = Pick<
   DictionaryEntry,
   | 'definition' | 'senses' | 'pronunciation' | 'inflections' | 'etymology'
   | 'wordFamily' | 'wordNet' | 'derivedTerms' | 'related' | 'level'
   | 'frequencyStars' | 'examples'
 >;
 
-/** Fold one stored entry's components into `set`. */
+/** Fold one stored entry's components into `set`. Portable/wire rows may
+ *  lack fields the type assumes — the string reads are guarded. */
 export function collectEntryComponents(set: Set<DictionaryComponent>, e: ComponentSource): void {
   const senses = e.senses ?? [];
-  if (senses.length > 0 || e.definition.trim()) set.add('definitions');
-  if (e.pronunciation.trim()) set.add('pronunciation');
+  const definition = typeof e.definition === 'string' ? e.definition : '';
+  const pronunciation = typeof e.pronunciation === 'string' ? e.pronunciation : '';
+  const examples = typeof e.examples === 'string' ? e.examples : '';
+  if (senses.length > 0 || definition.trim()) set.add('definitions');
+  if (pronunciation.trim()) set.add('pronunciation');
   if (e.inflections?.length) set.add('inflections');
   if (e.etymology) set.add('etymology');
   if (e.wordFamily) set.add('wordFamily');
@@ -41,11 +46,34 @@ export function collectEntryComponents(set: Set<DictionaryComponent>, e: Compone
   if (e.related?.length) set.add('related');
   if (e.level) set.add('level');
   if (e.frequencyStars) set.add('frequencyStars');
-  if (e.examples?.trim() || senses.some((s) => s.lines.some((l) => l.role === 'example'))) set.add('examples');
+  if (examples.trim() || senses.some((s) => s.lines.some((l) => l.role === 'example'))) set.add('examples');
   if (senses.some((s) => s.lines.some((l) => l.translation))) set.add('translations');
   if (senses.some((s) => (s.synonyms?.length ?? 0) > 0 || (s.antonyms?.length ?? 0) > 0)) set.add('synonyms');
 }
 
 export function sortedComponents(set: ReadonlySet<DictionaryComponent>): DictionaryComponent[] {
   return DICTIONARY_COMPONENTS.filter((c) => set.has(c));
+}
+
+/** Derived display label — pure frequency data reads 'FREQUENCY'; anything
+ *  else (dictionary content, mixed, or unknown) reads 'DICTIONARY'. Label
+ *  only; logic branches on `components`. */
+export function deriveResourceType(components: readonly DictionaryComponent[] | undefined): ResourceType {
+  const hasFreq = components?.includes('frequency') ?? false;
+  const hasDict = components?.some((c) => c !== 'frequency') ?? false;
+  return hasFreq && !hasDict ? 'FREQUENCY' : 'DICTIONARY';
+}
+
+/** Does the resource currently supply `component`? Rows without `components`
+ *  (pre-v14 or pre-scan) fall back to the type label — 'frequency' only;
+ *  dict components stay unknown until the lazy scan backfills.
+ *  `disabledComponents` turns a component off even when present. */
+export function resourceOffersComponent(
+  resource: Pick<ResourceInfo, 'components' | 'disabledComponents' | 'type'>,
+  component: DictionaryComponent,
+): boolean {
+  const has = resource.components?.length
+    ? resource.components.includes(component)
+    : component === 'frequency' && resource.type === 'FREQUENCY';
+  return has && !(resource.disabledComponents?.includes(component) ?? false);
 }

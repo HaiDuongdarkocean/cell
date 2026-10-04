@@ -49,11 +49,11 @@ function makeBlob(): ArrayBuffer {
 }
 
 describe('phraseIndexRepository', () => {
-  describe('schema v13 migration', () => {
-    it('opens DB with schema version 13', async () => {
+  describe('schema v14 migration', () => {
+    it('opens DB with schema version 14', async () => {
       const db = await getDB('en');
       expect(db.version).toBe(DB_SCHEMA_VERSION);
-      expect(DB_SCHEMA_VERSION).toBe(13);
+      expect(DB_SCHEMA_VERSION).toBe(14);
     });
 
     it('creates langPhraseIndex store with by_resource index', async () => {

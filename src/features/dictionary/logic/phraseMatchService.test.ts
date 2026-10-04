@@ -7,7 +7,7 @@ import {
 } from '@/features/dictionary/repositories/phraseIndexRepository';
 import {
   addDictionaryEntry,
-} from '@/features/dictionary/repositories/dictionaryRepository';
+} from '@/features/dictionary/repositories/resourceEntryRepository';
 import {
   addResource,
 } from '@/features/dictionary/repositories/resourceRepository';

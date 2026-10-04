@@ -11,7 +11,7 @@
 // whose resource row already exists renders as the card's own progress, so the
 // row is suppressed — the same entry never appears twice.
 
-import type { DuplicateDecision, ResourceInfo, ResourceType } from '@/entities/dictionary';
+import type { DictionaryComponent, DuplicateDecision, ResourceInfo } from '@/entities/dictionary';
 import type { Job } from '@/entities/job/types';
 
 export type ImportJobStatus =
@@ -35,8 +35,13 @@ export interface ImportJob {
   readonly jobId: string;
   readonly file: File;
   readonly fileName: string;
-  readonly resourceType: ResourceType;
   readonly signature: string;
+  /** Components detected from the file head — advisory; the strategy is the
+   *  ground truth for what actually lands. */
+  readonly detectedComponents: readonly DictionaryComponent[];
+  /** User-adjusted subset (defaults to detectedComponents); read at handoff —
+   *  chips stay live while the job is queued/uploading. */
+  selectedComponents: readonly DictionaryComponent[];
   readonly forceReplace: boolean;
   status: ImportJobStatus;
   /** Entries processed so far (importing phase). */

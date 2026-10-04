@@ -59,6 +59,13 @@
   white-space: nowrap;
 }
 
+.kindChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
 .metaMuted {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);

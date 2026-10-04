@@ -8,7 +8,7 @@
 // 4. JSON content sniff: array of strings → json-array; array of {term} → json-entries;
 //    {index, list} object → wordlist-json
 
-import type { ImportFormat } from '@/entities/dictionary';
+import type { DictionaryComponent, ImportFormat } from '@/entities/dictionary';
 import {
   isGzip,
   isZip,
@@ -77,6 +77,70 @@ export async function detectFormat(name: string, head: Uint8Array): Promise<Impo
   if (fallback) return fallback;
 
   throw new Error(`Could not detect format for file "${name}".`);
+}
+
+/** Components a file can emit — advisory detection for the import badge and
+ *  the multi-component picker. 'definitions' is the token for dictionary
+ *  content, 'frequency' for rank data. The strategy stays authoritative:
+ *  it emits every content family actually present. */
+export async function detectComponents(name: string, head: Uint8Array): Promise<readonly DictionaryComponent[]> {
+  const format = await detectFormat(name, head);
+  return componentsForFormat(format, head);
+}
+
+/** Components implied by a detected format (+ content sniff for zip/sqlite). */
+export function componentsForFormat(format: ImportFormat, bytes: Uint8Array): readonly DictionaryComponent[] {
+  switch (format) {
+    case 'txt':
+    case 'json-array':
+    case 'json-frequency':
+      return ['frequency'];
+    case 'json-entries':
+    case 'wordlist-json':
+      return ['definitions'];
+    case 'term-bank': {
+      let files: Record<string, Uint8Array>;
+      try {
+        files = unzipAll(isGzip(bytes) ? gunzipFile(bytes) : bytes);
+      } catch {
+        return ['definitions'];
+      }
+      return sniffZipComponents(files) ?? ['definitions'];
+    }
+    case 'sqlite':
+      return sniffSqliteComponents(bytes);
+    default:
+      return ['definitions'];
+  }
+}
+
+/** Components for a banked zip — bank filenames are authoritative. */
+export function sniffZipComponents(files: Record<string, Uint8Array>): readonly DictionaryComponent[] | null {
+  const paths = Object.keys(files);
+  const hasDictBanks = paths.some((p) => p.includes('term_bank'));
+  const hasFreqBanks = paths.some((p) => p.includes('term_meta_bank'));
+  if (!hasDictBanks && !hasFreqBanks) return null;
+  return hasDictBanks ? (hasFreqBanks ? ['definitions', 'frequency'] : ['definitions']) : ['frequency'];
+}
+
+/** Components for a sqlite file — table names in sqlite_master are ASCII and
+ *  sit near the head, so a byte-level name sniff suffices for the badge. */
+export function sniffSqliteComponents(bytes: Uint8Array): readonly DictionaryComponent[] {
+  const text = decodeText(isGzip(bytes) ? safeGunzip(bytes) : bytes);
+  const hasDict = text.includes('langResourceEntry');
+  const hasFreq = text.includes('langFrequencyEntry') || /table\s+"?entries"?\s*\(/i.test(text);
+  const out: DictionaryComponent[] = [];
+  if (hasDict) out.push('definitions');
+  if (hasFreq) out.push('frequency');
+  return out.length > 0 ? out : ['definitions'];
+}
+
+function safeGunzip(bytes: Uint8Array): Uint8Array {
+  try {
+    return gunzipFile(bytes);
+  } catch {
+    return bytes;
+  }
 }
 
 /** Format of an unzipped entry set — shared by head sniff + full-data re-sniff. */

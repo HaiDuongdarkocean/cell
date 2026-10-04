@@ -1,19 +1,22 @@
-// baseRepository — IndexedDB connection + migration v10 create-all (ADR-023 D1-D2, ADR-037 §7.1).
+// baseRepository — IndexedDB connection + migrations (ADR-023 D1-D2, ADR-037 §7.1).
 //
-// DB name: orca-dict-{hash8}-en. 4 object stores + 7 indexes.
-// Singleton getDB() — 1 connection per lang. Migration create-all only (cell
-// fresh DB, no v1-v8 users — ponytail: skip full chain, dead code).
+// DB name: orca-dict-{hash8}-en.
+// v14 merges langFrequencyEntry into langDictionaryEntry (unified entry store —
+// freq rows stamped `kind: 'freq'`). Singleton getDB() — 1 connection per lang.
 
 import { getDbHash } from '@/shared/lib/storage/dbHash';
 
-/** IndexedDB schema version (ADR-023 D2 + ADR-037 §7.1 — v10 adds langPhraseIndex, v12 adds langWordTrash, v13 adds sync capture stores). */
-export const DB_SCHEMA_VERSION = 13;
+/** IndexedDB schema version (ADR-023 D2 + ADR-037 §7.1 — v10 adds langPhraseIndex, v12 adds langWordTrash, v13 adds sync capture stores, v14 unifies entry store). */
+export const DB_SCHEMA_VERSION = 14;
+
+/** Pre-v14 store names — migration only, never referenced elsewhere. */
+const LEGACY_FREQUENCY_STORE = 'langFrequencyEntry';
 
 /** Object store names. */
 export const STORES = {
   RESOURCE: 'langResourceInfo',
-  FREQUENCY: 'langFrequencyEntry',
-  DICTIONARY: 'langDictionaryEntry',
+  /** Unified entry store — dictionary rows + freq rows (`kind: 'freq'`). */
+  ENTRY: 'langDictionaryEntry',
   PHRASE_INDEX: 'langPhraseIndex',
   WORD_STATUS: 'langWordStatus',
   WORD_TRASH: 'langWordTrash',
@@ -71,13 +74,18 @@ export function closeAllDBs(): void {
   dbCache.clear();
 }
 
-/** Open IndexedDB with migration v9 create-all. */
+/** Open IndexedDB, running create-all on fresh DBs and incremental
+ *  migrations (v13→v14 entry-store merge) on existing ones. */
 function openDB(dbName: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(dbName, DB_SCHEMA_VERSION);
-    request.onupgradeneeded = (_event: IDBVersionChangeEvent) => {
+    request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
       const db = request.result;
-      createAllStores(db, request.transaction ?? undefined);
+      const tx = request.transaction ?? undefined;
+      createAllStores(db, tx);
+      if (tx && event.oldVersion > 0 && event.oldVersion < 14) {
+        migrateFrequencyRows(db, tx);
+      }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -85,7 +93,42 @@ function openDB(dbName: string): Promise<IDBDatabase> {
   });
 }
 
-/** Create all 4 stores + 7 indexes (ADR-023 D2 + ADR-037 §7.1 — create-all only). */
+/** v13→v14: copy langFrequencyEntry rows into the unified entry store stamped
+ *  `kind: 'freq'` (ids re-generated — both stores shared an auto-increment
+ *  keyspace, so raw ids could collide), backfill `components: ['frequency']`
+ *  on frequency resources that predate the field, then drop the legacy store.
+ *  All inside the versionchange transaction — abort-safe and idempotent
+ *  (a retried upgrade replays the whole copy). */
+function migrateFrequencyRows(db: IDBDatabase, tx: IDBTransaction): void {
+  const resources = tx.objectStore(STORES.RESOURCE);
+  const resourceScan = resources.openCursor();
+  resourceScan.onsuccess = () => {
+    const cursor = resourceScan.result;
+    if (!cursor) return;
+    const row = cursor.value as { type?: string; components?: readonly string[] };
+    if (row.type === 'FREQUENCY' && !row.components) {
+      cursor.update({ ...cursor.value, components: ['frequency'] });
+    }
+    cursor.continue();
+  };
+
+  if (!db.objectStoreNames.contains(LEGACY_FREQUENCY_STORE)) return;
+  const from = tx.objectStore(LEGACY_FREQUENCY_STORE);
+  const to = tx.objectStore(STORES.ENTRY);
+  const copy = from.openCursor();
+  copy.onsuccess = () => {
+    const cursor = copy.result;
+    if (!cursor) {
+      db.deleteObjectStore(LEGACY_FREQUENCY_STORE);
+      return;
+    }
+    const { id: _id, ...row } = cursor.value as Record<string, unknown>;
+    to.add({ ...row, kind: 'freq' });
+    cursor.continue();
+  };
+}
+
+/** Create all stores + indexes (ADR-023 D2 + ADR-037 §7.1 — create-all only). */
 function createAllStores(db: IDBDatabase, tx?: IDBTransaction): void {
   // langResourceInfo — keyPath 'id' auto, indexes: by_signature, by_type, by_order, by_contentHash
   if (!db.objectStoreNames.contains(STORES.RESOURCE)) {
@@ -100,16 +143,10 @@ function createAllStores(db: IDBDatabase, tx?: IDBTransaction): void {
       resource.createIndex(INDEXES.by_contentHash, 'contentHash', { unique: false });
     }
   }
-  // langFrequencyEntry — keyPath 'id' auto, indexes: by_resource, by_term, by_backwardTerm
-  if (!db.objectStoreNames.contains(STORES.FREQUENCY)) {
-    const freq = db.createObjectStore(STORES.FREQUENCY, { keyPath: 'id', autoIncrement: true });
-    freq.createIndex(INDEXES.by_resource, 'resourceId', { unique: false });
-    freq.createIndex(INDEXES.by_term, 'term', { unique: false });
-    freq.createIndex(INDEXES.by_backwardTerm, 'backwardTerm', { unique: false });
-  }
-  // langDictionaryEntry — keyPath 'id' auto, indexes: by_resource, by_term, by_backwardTerm
-  if (!db.objectStoreNames.contains(STORES.DICTIONARY)) {
-    const dict = db.createObjectStore(STORES.DICTIONARY, { keyPath: 'id', autoIncrement: true });
+  // langDictionaryEntry — unified entry store (dict + `kind:'freq'` rows),
+  // keyPath 'id' auto, indexes: by_resource, by_term, by_backwardTerm
+  if (!db.objectStoreNames.contains(STORES.ENTRY)) {
+    const dict = db.createObjectStore(STORES.ENTRY, { keyPath: 'id', autoIncrement: true });
     dict.createIndex(INDEXES.by_resource, 'resourceId', { unique: false });
     dict.createIndex(INDEXES.by_term, 'term', { unique: false });
     dict.createIndex(INDEXES.by_backwardTerm, 'backwardTerm', { unique: false });
@@ -181,14 +218,13 @@ export async function deleteDB(dbName: string): Promise<void> {
   });
 }
 
-/** Clear all 4 stores for a lang (test isolation — call in beforeEach). */
+/** Clear all stores for a lang (test isolation — call in beforeEach). */
 export async function clearAllStores(langCode: string): Promise<void> {
   const db = await getDB(langCode);
   return new Promise((resolve, reject) => {
-    const tx = db.transaction([STORES.RESOURCE, STORES.FREQUENCY, STORES.DICTIONARY, STORES.PHRASE_INDEX, STORES.WORD_STATUS, STORES.WORD_TRASH, STORES.SYNC_OUTBOX, STORES.SYNC_META], 'readwrite');
+    const tx = db.transaction([STORES.RESOURCE, STORES.ENTRY, STORES.PHRASE_INDEX, STORES.WORD_STATUS, STORES.WORD_TRASH, STORES.SYNC_OUTBOX, STORES.SYNC_META], 'readwrite');
     tx.objectStore(STORES.RESOURCE).clear();
-    tx.objectStore(STORES.FREQUENCY).clear();
-    tx.objectStore(STORES.DICTIONARY).clear();
+    tx.objectStore(STORES.ENTRY).clear();
     tx.objectStore(STORES.PHRASE_INDEX).clear();
     tx.objectStore(STORES.WORD_STATUS).clear();
     tx.objectStore(STORES.WORD_TRASH).clear();

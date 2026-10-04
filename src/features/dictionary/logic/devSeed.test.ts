@@ -47,12 +47,11 @@ describe('seedDevDataIfEmpty', () => {
   it('imports seed files in parallel when DB is empty', async () => {
     await seedDevDataIfEmpty('en');
     expect(countResourcesMock).toHaveBeenCalledWith('en');
-    // 2 seed files: dictionary + frequency — both imported
+    // 2 seed files: dictionary + frequency — both imported via the unified
+    // type-less import path (components are detected from content).
     expect(importFileMock).toHaveBeenCalledTimes(2);
-    // Verify resource types
-    const types = importFileMock.mock.calls.map((c) => c[1]);
-    expect(types).toContain('DICTIONARY');
-    expect(types).toContain('FREQUENCY');
+    const options = importFileMock.mock.calls.map((c) => c[1]);
+    expect(options).toEqual([{ langCode: 'en' }, { langCode: 'en' }]);
   });
 
   it('skips import when DB already has resources', async () => {

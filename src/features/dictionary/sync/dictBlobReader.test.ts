@@ -8,7 +8,7 @@ import {
   getDbName,
 } from '../repositories/baseRepository';
 import { addResource } from '../repositories/resourceRepository';
-import { bulkInsertDictionaryEntries } from '../repositories/dictionaryRepository';
+import { bulkInsertDictionaryEntries } from '../repositories/resourceEntryRepository';
 import { createDictBlobReader } from './dictBlobReader';
 import { blobToBytes } from '@/features/sync';
 import { gunzipFile, isGzip } from '../logic/fileDetector';
@@ -94,9 +94,9 @@ describe('dictBlobReader', () => {
     expect(freqRows).toEqual([]);
     expect(dictRows.map((r) => r['term']).sort()).toEqual(['apple', 'berry']);
     const db = await getDB(LANG);
-    const tx = db.transaction([STORES.DICTIONARY], 'readonly');
+    const tx = db.transaction([STORES.ENTRY], 'readonly');
     const stored = (await new Promise<Record<string, unknown>[]>((resolve, reject) => {
-      const req = tx.objectStore(STORES.DICTIONARY).getAll();
+      const req = tx.objectStore(STORES.ENTRY).getAll();
       req.onsuccess = () => resolve(req.result as Record<string, unknown>[]);
       req.onerror = () => reject(req.error);
     }));

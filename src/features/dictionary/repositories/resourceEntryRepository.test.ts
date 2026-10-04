@@ -9,8 +9,8 @@ import {
   sampleDictionaryEntries,
   findDictionaryEntry,
   countDictionaryByResource,
-  deleteDictionaryByResource,
-} from '@/features/dictionary/repositories/dictionaryRepository';
+  deleteEntriesByResource,
+} from '@/features/dictionary/repositories/resourceEntryRepository';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
@@ -118,9 +118,9 @@ describe('dictionaryRepository', () => {
     await expect(countDictionaryByResource(LANG, RESOURCE_ID)).resolves.toBe(2);
   });
 
-  it('deleteDictionaryByResource removes all entries for resource', async () => {
+  it('deleteEntriesByResource removes all entries for resource', async () => {
     await bulkInsertDictionaryEntries(LANG, [makeDictEntry('a'), makeDictEntry('b')]);
-    await deleteDictionaryByResource(LANG, RESOURCE_ID);
+    await deleteEntriesByResource(LANG, RESOURCE_ID);
     await expect(countDictionaryByResource(LANG, RESOURCE_ID)).resolves.toBe(0);
   });
 

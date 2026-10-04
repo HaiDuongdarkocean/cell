@@ -1,4 +1,4 @@
-import type { ResourceInfo, ImportFormat, ResourceType } from '@/entities/dictionary';
+import type { ResourceInfo, ImportFormat, ResourceType, DictionaryComponent } from '@/entities/dictionary';
 import { SHOWCASE_DATA, type DataVariant } from './showcaseParams';
 
 const OVERFLOW_LONG_NAME = `${'A'.repeat(120)}🎌${'あ'.repeat(60)}${'中'.repeat(50)}`;
@@ -11,6 +11,7 @@ function makeResource(
   format: ImportFormat,
   langCode: string,
   priority: number,
+  components?: readonly DictionaryComponent[],
 ): ResourceInfo {
   return {
     id,
@@ -26,14 +27,16 @@ function makeResource(
     priority,
     profileIds: [],
     metadata: {},
+    components,
   };
 }
 
 function buildFullResources(): ResourceInfo[] {
   return [
-    makeResource(1, 'CC-CEDICT (en)', 'DICTIONARY', 'term-bank', 'en', 0),
-    makeResource(2, 'Oxford English Dictionary', 'DICTIONARY', 'json-array', 'en', 1),
-    makeResource(3, 'Wordfreq top 50k', 'FREQUENCY', 'txt', 'en', 2),
+    makeResource(1, 'CC-CEDICT (en)', 'DICTIONARY', 'term-bank', 'en', 0, ['definitions', 'examples']),
+    makeResource(2, 'Oxford English Dictionary', 'DICTIONARY', 'json-entries', 'en', 1, ['definitions']),
+    makeResource(3, 'Wordfreq top 50k', 'FREQUENCY', 'txt', 'en', 2, ['frequency']),
+    makeResource(4, 'Wiktionary mega-pack', 'DICTIONARY', 'term-bank', 'en', 3, ['definitions', 'frequency']),
   ];
 }
 
@@ -54,7 +57,7 @@ function buildOverflowResources(): ResourceInfo[] {
       name = `Resource ${i + 1} — ${i % 2 === 0 ? 'Dictionary' : 'Frequency'}`;
     }
     const type: ResourceType = i % 2 === 0 ? 'DICTIONARY' : 'FREQUENCY';
-    const format: ImportFormat = type === 'DICTIONARY' ? 'json-array' : 'txt';
+    const format: ImportFormat = type === 'DICTIONARY' ? 'json-entries' : 'txt';
     resources.push(makeResource(id, name, type, format, 'en', i));
     id += 1;
   }

@@ -19,13 +19,10 @@ jest.mock('@/features/dictionary/repositories/resourceRepository', () => ({
   setResourceComponents: jest.fn(),
 }));
 
-jest.mock('@/features/dictionary/repositories/dictionaryRepository', () => ({
+jest.mock('@/features/dictionary/repositories/resourceEntryRepository', () => ({
   sampleDictionaryEntries: jest.fn(async () => []),
   findDictionaryEntry: jest.fn(),
   findDictionaryByResource: jest.fn(async () => []),
-}));
-
-jest.mock('@/features/dictionary/repositories/frequencyRepository', () => ({
   sampleFrequencyEntries: jest.fn(async () => []),
   findFrequencyEntry: jest.fn(),
 }));

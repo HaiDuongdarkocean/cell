@@ -8,8 +8,9 @@
 import { validateFile, readFileHead, readFileBytes, isZip, unzipAll } from '../logic/fileDetector';
 import type { ReadableFile } from '../logic/fileDetector';
 import { detectFormat, sniffZipFormat } from '../logic/formatDetector';
+import { deriveResourceType } from '../logic/dictionaryComponents';
 import { computeSignature } from '../logic/signatureGenerator';
-import { resolveFormat, createStrategy } from '../strategies/strategyFactory';
+import { createStrategy } from '../strategies/strategyFactory';
 import {
   RollbackError,
   QuotaExceededError,
@@ -23,22 +24,20 @@ import {
   deleteResource,
   getAllResources,
 } from '../repositories/resourceRepository';
-import { deleteFrequencyByResource, countFrequencyByResource } from '../repositories/frequencyRepository';
-import { deleteDictionaryByResource, countDictionaryByResource } from '../repositories/dictionaryRepository';
+import { deleteEntriesByResource, countEntriesByResource } from '../repositories/resourceEntryRepository';
 import { deletePhraseIndex } from '../repositories/phraseIndexRepository';
 import { buildPhraseIndexForResource } from '../logic/phraseIndexBuilder';
 import type {
   ImportFormat,
   ImportOptions,
   ImportResult,
-  ResourceType,
   ResourceInfo,
 } from '@/entities/dictionary';
 
-/** Import a file: validate → detect → signature → dedupe → create → execute → finalize. */
+/** Import a file: validate → detect → signature → dedupe → create → execute → finalize.
+ *  Format and content kind are content-derived — no declared resource type. */
 export async function importFile(
   file: ReadableFile,
-  resourceType: ResourceType,
   options: ImportOptions,
 ): Promise<ImportResult> {
   const { langCode, onProgress, onResourceCreated } = options;
@@ -50,8 +49,7 @@ export async function importFile(
   const head = await readFileHead(file);
 
   // 3. Detect format
-  const detectedFormat = await detectFormat(file.name, head);
-  let format = resolveFormat(detectedFormat, resourceType);
+  let format = await detectFormat(file.name, head);
 
   // 4. Compute signature (SHA-256(first1MB)_size_name)
   const signature = await computeSignature(file);
@@ -87,7 +85,7 @@ export async function importFile(
   const resourceId = await addResource(langCode, {
     name: file.name,
     langCode,
-    type: resourceType,
+    type: 'DICTIONARY',
     format: format as ImportFormat,
     signature,
     wordCount: 0,
@@ -98,24 +96,24 @@ export async function importFile(
 
   // 8. Execute strategy
   try {
-    const strategy = createStrategy(format, resourceType, { resourceId, langCode, onProgress }, { data, fileName: file.name });
+    const strategy = createStrategy(format, { resourceId, langCode, onProgress, components: options.components }, { data, fileName: file.name });
     const result = await strategy.execute();
 
     // 9. Build phrase index for entry-object dictionaries (ADR-037 §7.2).
     //    Must succeed before installationFinished=true so a blob failure
-    //    rolls back the whole import. Other formats / non-dictionary resources
-    //    skip this step.
-    if (format === 'json-entries' && resourceType === 'DICTIONARY') {
+    //    rolls back the whole import.
+    if (format === 'json-entries') {
       await buildPhraseIndexForResource(langCode, resourceId);
     }
 
-    // 10. Finalize resource (wordCount + components + installationFinished=true)
+    // 10. Finalize resource (wordCount + components + derived type + installationFinished=true)
     const resource = await getResource(langCode, resourceId);
     if (resource) {
       await updateResource(langCode, {
         ...resource,
+        type: deriveResourceType(result.components),
         wordCount: result.wordCount,
-        ...(result.components ? { components: result.components } : {}),
+        components: result.components ?? [],
         installationFinished: true,
       });
     }
@@ -135,8 +133,7 @@ export async function importFile(
 /** Rollback: delete entries + resource. Rollback-during-rollback → RollbackError. */
 export async function rollbackImport(langCode: string, resourceId: number): Promise<void> {
   try {
-    await deleteDictionaryByResource(langCode, resourceId);
-    await deleteFrequencyByResource(langCode, resourceId);
+    await deleteEntriesByResource(langCode, resourceId);
     await deletePhraseIndex(langCode, resourceId);
     await deleteResource(langCode, resourceId);
   } catch (rollbackErr) {
@@ -160,14 +157,8 @@ export async function deleteResourceCascade(
   resourceId: number,
   onProgress?: (done: number, total: number) => void,
 ): Promise<void> {
-  let dictCount = 0;
-  let total = 0;
-  if (onProgress) {
-    dictCount = await countDictionaryByResource(langCode, resourceId);
-    total = dictCount + (await countFrequencyByResource(langCode, resourceId));
-  }
-  await deleteDictionaryByResource(langCode, resourceId, onProgress ? (d) => onProgress(d, total) : undefined);
-  await deleteFrequencyByResource(langCode, resourceId, onProgress ? (d) => onProgress(dictCount + d, total) : undefined);
+  const total = onProgress ? await countEntriesByResource(langCode, resourceId) : 0;
+  await deleteEntriesByResource(langCode, resourceId, onProgress ? (d) => onProgress(d, total) : undefined);
   await deletePhraseIndex(langCode, resourceId);
   await deleteResource(langCode, resourceId);
 }

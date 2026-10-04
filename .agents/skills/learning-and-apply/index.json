@@ -3284,6 +3284,25 @@
         "derived-data"
       ],
       "trigger": "Consumer mới của getAllWordStatuses dùng e.term verbatim → chip/nav lộ ký tự ␟ + lookup rác"
+    },
+    {
+      "type": "experience",
+      "id": "fixture-magic-bytes-verify-real-artifact",
+      "title": "Fixture magic-bytes sai vẫn pass được — verify constant production bằng artifact THẬT trước khi 'fix' nó",
+      "category": [
+        "testing",
+        "detection"
+      ],
+      "tags": [
+        "magic-bytes",
+        "sqlite",
+        "fixture",
+        "false-positive",
+        "isSqlite",
+        "real-artifact-verification",
+        "format-detection"
+      ],
+      "trigger": "Test fail 'missing magic bytes' với fixture tự chế — verify constant production bằng file thật (sql.js export) trước khi đổi"
     }
   ]
 }

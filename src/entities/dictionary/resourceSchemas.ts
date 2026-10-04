@@ -6,12 +6,12 @@ import { z } from 'zod';
 
 const LangCode = z.string().min(1);
 const ResourceId = z.number().int();
-const ResourceKind = z.enum(['DICTIONARY', 'FREQUENCY']);
 const ComponentName = z.enum([
   'definitions', 'examples', 'translations', 'synonyms', 'pronunciation',
   'inflections', 'etymology', 'wordFamily', 'wordNet', 'derivedTerms',
-  'related', 'level', 'frequencyStars',
+  'related', 'level', 'frequencyStars', 'frequency',
 ]);
+const ComponentSubset = z.array(ComponentName).min(1).optional();
 
 export const ResourceListPayloadSchema = z.object({
   langCode: LangCode,
@@ -20,7 +20,6 @@ export const ResourceListPayloadSchema = z.object({
 export const ResourceDeletePayloadSchema = z.object({
   langCode: LangCode,
   resourceId: ResourceId,
-  resourceType: ResourceKind.optional(),
   jobId: z.string().min(1).optional(),
   /** Injected by the message bus for content-script senders. */
   tabId: z.number().int().optional(),
@@ -28,7 +27,6 @@ export const ResourceDeletePayloadSchema = z.object({
 
 export const ResourceReorderPayloadSchema = z.object({
   langCode: LangCode,
-  resourceType: ResourceKind,
   orderedIds: z.array(ResourceId),
 });
 
@@ -64,14 +62,12 @@ export const ResourceComponentsPayloadSchema = z.object({
 export const ResourceSamplePayloadSchema = z.object({
   langCode: LangCode,
   resourceId: ResourceId,
-  resourceType: ResourceKind,
   limit: z.number().int().positive(),
 });
 
 export const ResourceFindPayloadSchema = z.object({
   langCode: LangCode,
   resourceId: ResourceId,
-  resourceType: ResourceKind,
   term: z.string(),
 });
 
@@ -83,8 +79,9 @@ export const ResourceImportChunkPayloadSchema = z.object({
   data: z.string(), // base64 slice
   fileName: z.string().min(1),
   fileMime: z.string(),
-  resourceType: ResourceKind,
   langCode: LangCode,
+  /** Component subset the user picked on a multi-component file; absent = all detected. */
+  components: ComponentSubset,
   /** Pre-resolved by the caller after its own signature check. */
   duplicateDecision: z.enum(['skip', 'replace']).optional(),
   /** Content signature computed by the caller — drives job dedup. */

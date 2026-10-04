@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { JsonArrayStrategy } from '@/features/dictionary/strategies/jsonArrayStrategy';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
-import { findFrequencyByResource } from '@/features/dictionary/repositories/frequencyRepository';
+import { findFrequencyByResource } from '@/features/dictionary/repositories/resourceEntryRepository';
 import { addResource } from '@/features/dictionary/repositories/resourceRepository';
 import { strToU8, zipSync, gzipSync } from 'fflate';
 

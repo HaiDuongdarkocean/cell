@@ -21,7 +21,6 @@ import type {
   DictionaryComponent,
   DuplicateDecision,
   ResourceInfo,
-  ResourceType,
 } from '@/entities/dictionary';
 import type { MessageResponse } from '@/entities/message';
 import { t } from '@/shared/i18n';
@@ -33,6 +32,8 @@ interface ImportCallbacks {
   readonly langCode: string;
   /** Panel-minted job id — the row tracking this import. Falls back to an internal id. */
   readonly jobId?: string;
+  /** Component subset the user picked on a multi-component file; absent = all detected. */
+  readonly components?: readonly DictionaryComponent[];
   readonly onDuplicate?: (existing: ResourceInfo) => DuplicateDecision | Promise<DuplicateDecision>;
   /** Called after each base64 chunk is acknowledged by the background. */
   readonly onUploadProgress?: (sent: number, total: number) => void;
@@ -93,19 +94,17 @@ export async function listResources(langCode: string): Promise<ResourceInfo[]> {
 export async function deleteResource(
   langCode: string,
   resourceId: number,
-  resourceType?: ResourceType,
 ): Promise<{ jobId: string }> {
-  const data = await request<{ jobId: string }>(MESSAGE_TYPES.RESOURCE_DELETE, { langCode, resourceId, resourceType });
+  const data = await request<{ jobId: string }>(MESSAGE_TYPES.RESOURCE_DELETE, { langCode, resourceId });
   notifyResourcesChanged(langCode);
   return data;
 }
 
 export async function reorderResources(
   langCode: string,
-  resourceType: ResourceType,
   orderedIds: readonly number[],
 ): Promise<void> {
-  await request(MESSAGE_TYPES.RESOURCE_REORDER, { langCode, resourceType, orderedIds: [...orderedIds] });
+  await request(MESSAGE_TYPES.RESOURCE_REORDER, { langCode, orderedIds: [...orderedIds] });
   notifyResourcesChanged(langCode);
 }
 
@@ -175,10 +174,9 @@ function readAsDataUrl(file: ReadableFile): Promise<string> {
  */
 export async function importResourceFile(
   file: ReadableFile,
-  resourceType: ResourceType,
   options: ImportCallbacks,
 ): Promise<{ jobId: string } | { skipped: true; existingResource: ResourceInfo }> {
-  const { langCode, jobId: providedJobId, onDuplicate, onUploadProgress } = options;
+  const { langCode, jobId: providedJobId, components, onDuplicate, onUploadProgress } = options;
 
   const signature = await computeSignature(file);
   const existing = (await listResources(langCode)).find((r) => r.signature === signature);
@@ -209,8 +207,8 @@ export async function importResourceFile(
         data: base64.slice(seq * IMPORT_CHUNK_SIZE, (seq + 1) * IMPORT_CHUNK_SIZE),
         fileName: file.name,
         fileMime: (file as File).type ?? '',
-        resourceType,
         langCode,
+        components: components ? [...components] : undefined,
         signature,
         duplicateDecision: decision === 'replace' ? 'replace' : undefined,
       },

@@ -133,7 +133,7 @@ describe('resourceRepository', () => {
     const idB = await addResource(LANG, makeResource({ type: 'FREQUENCY', name: 'b' }));
     const idDict = await addResource(LANG, makeResource({ type: 'DICTIONARY', name: 'dict' }));
 
-    await reorderResources(LANG, 'FREQUENCY', [idB, idA, 9999]);
+    await reorderResources(LANG, [idB, idA, 9999]);
 
     const a = await getResource(LANG, idA);
     const b = await getResource(LANG, idB);

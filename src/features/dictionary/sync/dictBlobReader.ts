@@ -1,7 +1,7 @@
 import type { BlobReader } from '@/features/sync';
 import { idbRequest } from '@/features/sync';
 import { getDB, INDEXES, STORES } from '../repositories/baseRepository';
-import { serializeResourcePortable } from './resourceIdentity';
+import { partitionResourceRows, serializeResourcePortable } from './resourceIdentity';
 import { gzipSync } from 'fflate';
 import type { ResourceInfo } from '@/entities/dictionary';
 
@@ -27,15 +27,11 @@ async function readResourceBlob(langCode: string, contentHash: string): Promise<
   )) as ResourceInfo[];
   const resource = resources.find((r) => r.id !== undefined);
   if (resource === undefined) return null;
-  const wtx = db.transaction([STORES.DICTIONARY, STORES.FREQUENCY], 'readonly');
-  const [dictRows, freqRows] = (await Promise.all([
-    idbRequest(
-      wtx.objectStore(STORES.DICTIONARY).index(INDEXES.by_resource).getAll(resource.id),
-    ),
-    idbRequest(
-      wtx.objectStore(STORES.FREQUENCY).index(INDEXES.by_resource).getAll(resource.id),
-    ),
-  ])) as [Record<string, unknown>[], Record<string, unknown>[]];
+  const wtx = db.transaction([STORES.ENTRY], 'readonly');
+  const rows = (await idbRequest(
+    wtx.objectStore(STORES.ENTRY).index(INDEXES.by_resource).getAll(resource.id),
+  )) as Record<string, unknown>[];
+  const { dictRows, freqRows } = partitionResourceRows(rows);
   const bytes = gzipSync(serializeResourcePortable(dictRows, freqRows), { mtime: 0 });
   const buffer = bytes.buffer.slice(
     bytes.byteOffset,

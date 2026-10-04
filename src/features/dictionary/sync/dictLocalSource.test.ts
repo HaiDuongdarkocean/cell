@@ -22,7 +22,7 @@ import {
   getDB,
   getDbName,
 } from '../repositories/baseRepository';
-import { findDictionaryByResource } from '../repositories/dictionaryRepository';
+import { findDictionaryByResource, findFrequencyByResource } from '../repositories/resourceEntryRepository';
 import { getWordStatus, setWordStatus } from '../services/wordStatusStore';
 import { createDictLocalSource } from './dictLocalSource';
 import { serializeResourcePortable } from './resourceIdentity';
@@ -293,9 +293,11 @@ describe('dictLocalSource — dictResource', () => {
     expect(stored).toBeDefined();
     expect(stored?.contentHash).toBe(hash);
     expect(stored?.installationFinished).toBe(true);
-    expect(stored?.wordCount).toBe(2);
+    expect(stored?.wordCount).toBe(3);
     const entries = await findDictionaryByResource(LANG, stored!.id!);
     expect(entries.map((entry) => entry.term).sort()).toEqual(['gato', 'hola mundo']);
+    const freq = await findFrequencyByResource(LANG, stored!.id!);
+    expect(freq.map((entry) => entry.term)).toEqual(['hola mundo']);
   });
 
   it('imports identical rows from a gzip-compressed blob', async () => {
@@ -331,9 +333,11 @@ describe('dictLocalSource — dictResource', () => {
 
     const stored = await findResourceBySignature(LANG, hash);
     expect(stored?.installationFinished).toBe(true);
-    expect(stored?.wordCount).toBe(2);
+    expect(stored?.wordCount).toBe(3);
     const entries = await findDictionaryByResource(LANG, stored!.id!);
     expect(entries.map((entry) => entry.term).sort()).toEqual(['gato', 'hola mundo']);
+    const freq = await findFrequencyByResource(LANG, stored!.id!);
+    expect(freq.map((entry) => entry.term)).toEqual(['hola mundo']);
   });
 
   it('surfaces CorruptedFileError for a corrupt gzip blob', async () => {

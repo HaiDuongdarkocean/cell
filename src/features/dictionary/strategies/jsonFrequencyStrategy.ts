@@ -9,7 +9,7 @@ import { BaseFrequencyStrategy } from './baseImportStrategy';
 import type { StrategyOptions, RawFrequencyEntry } from './baseImportStrategy';
 import { decodeText, isGzip, gunzipFile } from '../logic/fileDetector';
 import { ParseError } from '../logic/importErrors';
-import { bulkInsertFrequencyEntries } from '../repositories/frequencyRepository';
+import { bulkInsertFrequencyEntries } from '../repositories/resourceEntryRepository';
 import type { FrequencyEntry, FrequencyGenres } from '@/entities/dictionary';
 
 export interface JsonFrequencyStrategyOptions {

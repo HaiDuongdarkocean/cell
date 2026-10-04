@@ -3,7 +3,22 @@ import { idbRequest } from '@/features/sync';
 import { INDEXES, STORES } from '../repositories/baseRepository';
 import type { ResourceInfo } from '@/entities/dictionary';
 
-const STRIPPED_FIELDS = new Set(['id', 'resourceId']);
+const STRIPPED_FIELDS = new Set(['id', 'resourceId', 'kind']);
+
+/** Split unified-store rows into wire partitions — `kind: 'freq'` marks a
+ *  frequency row; everything else is dictionary content. */
+export function partitionResourceRows(rows: readonly Record<string, unknown>[]): {
+  dictRows: Record<string, unknown>[];
+  freqRows: Record<string, unknown>[];
+} {
+  const dictRows: Record<string, unknown>[] = [];
+  const freqRows: Record<string, unknown>[] = [];
+  for (const row of rows) {
+    if (row.kind === 'freq') freqRows.push(row);
+    else dictRows.push(row);
+  }
+  return { dictRows, freqRows };
+}
 
 export function serializeResourcePortable(
   dictRows: readonly Record<string, unknown>[],
@@ -53,13 +68,11 @@ export async function ensureResourceContentHash(
 ): Promise<ResourceInfo> {
   if (resource.contentHash) return resource;
   if (resource.id === undefined) return resource;
-  const rtx = db.transaction([STORES.DICTIONARY, STORES.FREQUENCY], 'readonly');
-  const dictRows = (await idbRequest(
-    rtx.objectStore(STORES.DICTIONARY).index(INDEXES.by_resource).getAll(resource.id),
+  const rtx = db.transaction([STORES.ENTRY], 'readonly');
+  const rows = (await idbRequest(
+    rtx.objectStore(STORES.ENTRY).index(INDEXES.by_resource).getAll(resource.id),
   )) as Record<string, unknown>[];
-  const freqRows = (await idbRequest(
-    rtx.objectStore(STORES.FREQUENCY).index(INDEXES.by_resource).getAll(resource.id),
-  )) as Record<string, unknown>[];
+  const { dictRows, freqRows } = partitionResourceRows(rows);
   const hash = await sha256Hex(serializeResourcePortable(dictRows, freqRows));
   const wtx = db.transaction([STORES.RESOURCE], 'readwrite');
   const store = wtx.objectStore(STORES.RESOURCE);

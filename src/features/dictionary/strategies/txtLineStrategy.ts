@@ -6,7 +6,7 @@ import { BaseFrequencyStrategy } from './baseImportStrategy';
 import type { StrategyOptions, RawFrequencyEntry } from './baseImportStrategy';
 import { isGzip, gunzipFile, isZip, unzipAll, decodeText, looksLikePlainText } from '../logic/fileDetector';
 import { CorruptedFileError } from '../logic/importErrors';
-import { bulkInsertFrequencyEntries } from '../repositories/frequencyRepository';
+import { bulkInsertFrequencyEntries } from '../repositories/resourceEntryRepository';
 import type { FrequencyEntry } from '@/entities/dictionary';
 
 /** Options for txtLineStrategy. */
