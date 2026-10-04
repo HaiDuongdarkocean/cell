@@ -64,4 +64,4 @@ Verified against every reveal path:
 ## Verdict
 D1, D2, D3 are properly fixed at the root cause. All AC-1..AC-10 are met. No new defects found. The three minor observations are spec-literalness notes, not failures.
 
-**VERDICT: PASS**
+VERDICT: PASS
