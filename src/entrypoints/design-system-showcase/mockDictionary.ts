@@ -1,7 +1,7 @@
 import type { AudioItem, ImageItem, LookupResult, DefinitionEntry } from '@/entities/dictionary';
 import type { MessageResponse } from '@/entities/message';
 import type { PronunciationEspeakTtsResult } from '@/entities/message/types';
-import type { ResourceInfo } from '@/entities/dictionary';
+import type { DictionaryComponent, ResourceInfo } from '@/entities/dictionary';
 import type { Job } from '@/entities/job/types';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { SHOWCASE_DATA, type DataVariant } from './showcaseParams';
@@ -294,7 +294,7 @@ function pushJob(partial: Partial<Job> & { id: string; status: Job['status'] }):
  *  created mid-flight (installationFinished=false) and stamped onto the job —
  *  the panel renders it as an in-place importing card until the done tick. */
 async function handleResourceImport(payload: Record<string, unknown>): Promise<void> {
-  const components = payload.components as string[] | undefined;
+  const components = payload.components as DictionaryComponent[] | undefined;
   const resourceType = components?.[0] === 'frequency' ? 'FREQUENCY' : 'DICTIONARY';
   const jobId = String(payload.jobId ?? '');
   const label = String(payload.fileName ?? jobId);
@@ -315,6 +315,7 @@ async function handleResourceImport(payload: Record<string, unknown>): Promise<v
     enabled: true,
     profileIds: [],
     metadata: {},
+    components,
   });
   pushJob({ id: jobId, status: 'running', resourceId });
   for (const processed of MOCK_IMPORT_STEPS) {
