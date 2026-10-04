@@ -29,6 +29,9 @@ import type {
 } from '@/entities/dictionary';
 import type { DefinitionSelection, ExampleSelection } from '../logic/definitionSelection';
 
+const ACCENT_PREF_KEY = 'dictAccentPreference';
+let accentPrefCache: string | undefined;
+
 export interface UseCandidateOptions {
   readonly candidate: LookupResult;
   readonly contextSentence: string;
@@ -151,7 +154,31 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     setVariantIndex(0);
     setAccentByPos({});
   }
-  const accentIndex = variant ? Math.min(accentByPos[variant.pos] ?? 0, Math.max(0, variant.prons.length - 1)) : 0;
+  const [preferredAccent, setPreferredAccent] = useState<string | undefined>(accentPrefCache);
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || !chrome.storage?.local) return;
+    let alive = true;
+    void chrome.storage.local.get(ACCENT_PREF_KEY).then((stored) => {
+      const saved = stored[ACCENT_PREF_KEY];
+      if (alive && typeof saved === 'string' && saved) {
+        accentPrefCache = saved;
+        setPreferredAccent(saved);
+      }
+    }).catch(() => undefined);
+    return () => { alive = false; };
+  }, []);
+
+  const accentIndex = (() => {
+    if (!variant) return 0;
+    const max = Math.max(0, variant.prons.length - 1);
+    const explicit = accentByPos[variant.pos];
+    if (explicit != null) return Math.min(explicit, max);
+    if (preferredAccent) {
+      const idx = variant.prons.findIndex((p) => p.accent === preferredAccent);
+      if (idx >= 0) return idx;
+    }
+    return 0;
+  })();
 
   const selectVariant = useCallback((index: number): void => {
     setVariantIndex(index);
@@ -159,11 +186,17 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
 
   const cycleAccent = useCallback((): void => {
     if (!variant || variant.prons.length < 2) return;
-    setAccentByPos((prev) => ({
-      ...prev,
-      [variant.pos]: ((prev[variant.pos] ?? 0) + 1) % variant.prons.length,
-    }));
-  }, [variant]);
+    const next = ((accentByPos[variant.pos] ?? accentIndex) + 1) % variant.prons.length;
+    setAccentByPos((prev) => ({ ...prev, [variant.pos]: next }));
+    const accent = variant.prons[next]?.accent;
+    if (accent) {
+      accentPrefCache = accent;
+      setPreferredAccent(accent);
+      if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+        void chrome.storage.local.set({ [ACCENT_PREF_KEY]: accent });
+      }
+    }
+  }, [variant, accentByPos, accentIndex]);
 
   const displayReading = variant
     ? (variant.prons[accentIndex]?.ipa ?? '')

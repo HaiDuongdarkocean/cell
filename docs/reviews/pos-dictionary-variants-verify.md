@@ -78,6 +78,15 @@ assertions pass** over deep shadow-DOM reads + real mouse clicks.
 | Accent label rendered lowercase `ame`/`bre` (CSS `text-transform` + `.toLowerCase()`) | **Fixed** — renders `AmE`/`BrE` verbatim |
 | PosVariantNav colors inverted — inactive links were primary+underlined, active was plain | **Fixed** — inactive = `--color-text` no underline, `:hover` = underline, active = `--color-primary` + semibold |
 
+### User-reported defects after manual import (fixed round 3)
+
+| Finding | Disposition |
+|---|---|
+| Accent pick did not persist — `accentByPos` reset per candidate, so `BrE` chosen on one lookup reverted to `AmE` on the next | **Fixed** — last accent written to `chrome.storage.local` (`dictAccentPreference`); new candidates default to it when the variant carries that accent. Brave e2e: `still` re-lookup after `matter`/`silence` shows `BrE` (assert + `09-still-persisted-bre.png`) |
+| `●●●` frequency stars rendered on the IPA row, duplicating the COCA rank chip | **Fixed** — stars moved to their own line directly under the frequency chip row (`01-still-adjective.png`); e2e asserts stars absent from IPA row and geometrically below the chips |
+
+e2e harness hardened: `brave-ext`/`brave-profile` are wiped each run and `dist/manifest.json` is required up-front — the prior run silently replayed a stale extension copy when `dist/` was emptied between build and copy.
+
 ## Residuals
 
 - `.mdd` audio extraction deferred by spec — `sound://` refs stored verbatim.

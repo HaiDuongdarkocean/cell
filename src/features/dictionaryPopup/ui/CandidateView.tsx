@@ -265,11 +265,6 @@ export function CandidateView({
                 {formatReading(panel.displayReading, candidate.readingKind)}
               </span>
             )}
-            {panel.displayStars != null && panel.displayStars > 0 && (
-              <span className={styles.cellHeaderLevel} data-cell-id="dictionary-stars">
-                {'●'.repeat(panel.displayStars)}
-              </span>
-            )}
             {candidate.level && (
               <span className={styles.cellHeaderLevel} data-cell-id="dictionary-level">[{candidate.level}]</span>
             )}
@@ -292,6 +287,11 @@ export function CandidateView({
             </span>
           ))}
         </div>
+        {panel.displayStars != null && panel.displayStars > 0 && (
+          <div className={styles.cellHeaderStars} data-cell-id="dictionary-stars">
+            {'●'.repeat(panel.displayStars)}
+          </div>
+        )}
 
         <DictionaryToolbar
           activeTab={panel.activeTab}
