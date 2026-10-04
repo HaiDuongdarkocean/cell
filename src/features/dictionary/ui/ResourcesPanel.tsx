@@ -531,10 +531,13 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
 
     patchJob(jobId, { status: 'uploading', error: null });
     try {
+      const narrowedComponents = job.selectedComponents.length !== job.detectedComponents.length
+        ? job.selectedComponents
+        : undefined;
       const outcome = await importFile(job.file as ReadableFile, {
         langCode,
         jobId,
-        components: job.selectedComponents,
+        components: narrowedComponents,
         onUploadProgress: (sent, total) => patchJob(jobId, { uploadSent: sent, uploadTotal: total }),
         onDuplicate: job.forceReplace
           ? () => 'replace'

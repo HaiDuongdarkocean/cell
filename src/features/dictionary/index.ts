@@ -18,6 +18,7 @@ export { addResource, getAllResources } from './repositories/resourceRepository'
 export { compilePhraseIndex, serializePhraseIndex, deserializePhraseIndex } from './logic/phraseIndexCompiler';
 export type { PhraseIndexInput, PhraseIndex } from './logic/phraseIndexCompiler';
 export { parsePhraseTemplate } from './logic/phraseTemplateParser';
+export { resourceOffersComponent } from './logic/dictionaryComponents';
 export { addFrequencyEntry, findFrequencyByTerm } from './repositories/resourceEntryRepository';
 export { putPhraseIndex, getPhraseIndex } from './repositories/phraseIndexRepository';
 export { getWordStatus, nextStatus, setWordStatusFromSync, getPosStatusRows, getPosStatuses, getWordStatusPos, setWordStatusPos, cycleWordStatusPos, aggregatePosStatus, posStatusKey, splitPosKey } from './services/wordStatusStore';

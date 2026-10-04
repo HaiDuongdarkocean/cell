@@ -3,7 +3,7 @@
 // store scan for resources imported before the field existed; results land
 // on ResourceInfo.components and drive the per-resource toggles.
 
-import type { DictionaryComponent, DictionaryEntry, ResourceType } from '@/entities/dictionary';
+import type { DictionaryComponent, DictionaryEntry, ResourceInfo, ResourceType } from '@/entities/dictionary';
 
 export const DICTIONARY_COMPONENTS: readonly DictionaryComponent[] = [
   'definitions',
@@ -62,4 +62,17 @@ export function deriveResourceType(components: readonly DictionaryComponent[] | 
   const hasFreq = components?.includes('frequency') ?? false;
   const hasDict = components?.some((c) => c !== 'frequency') ?? false;
   return hasFreq && !hasDict ? 'FREQUENCY' : 'DICTIONARY';
+}
+
+/** Does the resource currently supply `component`? Rows without `components`
+ *  (pre-v14 or pre-scan) fall back to the type label; `disabledComponents`
+ *  turns a component off even when present. */
+export function resourceOffersComponent(
+  resource: Pick<ResourceInfo, 'components' | 'disabledComponents' | 'type'>,
+  component: DictionaryComponent,
+): boolean {
+  const has = resource.components?.length
+    ? resource.components.includes(component)
+    : component === 'frequency' && resource.type === 'FREQUENCY';
+  return has && !(resource.disabledComponents?.includes(component) ?? false);
 }

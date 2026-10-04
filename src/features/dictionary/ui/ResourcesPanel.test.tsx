@@ -157,8 +157,40 @@ describe('ResourcesPanel', () => {
           langCode: 'en',
           onDuplicate: expect.any(Function),
           jobId: expect.any(String),
-          components: ['frequency'],
+          components: undefined,
         }),
+      ),
+    );
+  });
+
+  it('sends a components subset only after the user narrows detection', async () => {
+    const { detectComponents } = jest.requireMock<typeof import('@/features/dictionary/logic/formatDetector')>(
+      '@/features/dictionary/logic/formatDetector',
+    );
+    (detectComponents as jest.Mock).mockImplementation(async (name: string) =>
+      name === 'mixed.zip' ? ['definitions', 'frequency'] : ['frequency']);
+    let resolveFirst!: (v: { jobId: string }) => void;
+    importFile
+      .mockImplementationOnce(() => new Promise((r) => { resolveFirst = r; }))
+      .mockImplementationOnce(() => new Promise(() => {}))
+      .mockResolvedValue({ jobId: 'job-3' });
+
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFiles(0, [
+      new File(['a\n'], 'one.txt', { type: 'text/plain' }),
+      new File(['b\n'], 'two.txt', { type: 'text/plain' }),
+      new File(['zip'], 'mixed.zip'),
+    ]);
+
+    const freqChip = await screen.findByRole('button', { name: /frequency/i });
+    fireEvent.click(freqChip);
+    act(() => resolveFirst({ jobId: 'job-1' }));
+
+    await waitFor(() =>
+      expect(importFile).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ components: ['definitions'] }),
       ),
     );
   });

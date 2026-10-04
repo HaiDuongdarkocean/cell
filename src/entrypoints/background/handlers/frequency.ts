@@ -15,20 +15,15 @@ import type { MessageResponse } from '@/entities/message';
 import { FrequencyGetPayloadSchema } from '@/entities/message/dictionarySchemas';
 import { findFrequencyByTerms } from '@/features/dictionary/repositories/resourceEntryRepository';
 import { getAllResources } from '@/features/dictionary/repositories/resourceRepository';
+import { resourceOffersComponent } from '@/features/dictionary/logic/dictionaryComponents';
 import type { FrequencyEntry, ResourceInfo } from '@/entities/dictionary';
 
-/** Enabled resources that may contribute frequency ranks. `components`
- *  absent/empty (pre-v14 or pre-scan rows) falls back to the legacy
- *  type label so old synced resources keep contributing. */
+/** Enabled resources that may contribute frequency ranks. */
 function frequencyAllowedIds(resources: readonly ResourceInfo[]): Set<number> {
   const ids = new Set<number>();
   for (const r of resources) {
     if (r.id === undefined || r.enabled === false || !r.installationFinished) continue;
-    const components = r.components?.length ? r.components : undefined;
-    const hasFreq = components ? components.includes('frequency') : r.type === 'FREQUENCY';
-    if (!hasFreq) continue;
-    if (r.disabledComponents?.includes('frequency')) continue;
-    ids.add(r.id);
+    if (resourceOffersComponent(r, 'frequency')) ids.add(r.id);
   }
   return ids;
 }
