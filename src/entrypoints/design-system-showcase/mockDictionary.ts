@@ -266,6 +266,7 @@ function mockResourceList(langCode: string): ResourceInfo[] {
 const MOCK_IMPORT_TOTAL = 12000;
 const MOCK_IMPORT_STEPS = [2000, 4000, 6000, 9000, 11000];
 const MOCK_IMPORT_STEP_MS = 1000;
+const MOCK_DELETE_STEP_MS = 800;
 const mockJobs = new Map<string, Job>();
 const importedResources = new Map<number, ResourceInfo>();
 const importChunks = new Map<string, string[]>();
@@ -443,17 +444,26 @@ async function mockSendMessage(message: unknown): Promise<unknown> {
     }
 
     case MESSAGE_TYPES.RESOURCE_DELETE: {
-      const jobId = `del-${Date.now().toString(36)}`;
-      importedResources.delete(Number(m.payload?.resourceId));
+      const resourceId = Number(m.payload?.resourceId);
+      const langCode = String(m.payload?.langCode ?? 'en');
+      const row = importedResources.get(resourceId)
+        ?? getMockResourcesForLang(langCode).find((r) => r.id === resourceId);
+      const jobId = `del-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      const total = row?.wordCount ?? MOCK_IMPORT_TOTAL;
       void (async (): Promise<void> => {
         pushJob({
           id: jobId,
           kind: 'resource-delete',
           status: 'running',
-          label: 'resource',
-          params: { langCode: m.payload?.langCode, resourceId: m.payload?.resourceId },
+          label: row?.name ?? `resource ${resourceId}`,
+          params: { langCode, resourceId, signature: row?.signature },
+          progress: { done: 0, total },
         });
-        await delay(400);
+        for (const done of [Math.floor(total / 3), Math.floor((total * 2) / 3), total]) {
+          await delay(MOCK_DELETE_STEP_MS);
+          pushJob({ id: jobId, status: 'running', progress: { done, total } });
+        }
+        importedResources.delete(resourceId);
         pushJob({ id: jobId, status: 'done' });
       })();
       const result: MessageResponse<{ jobId: string }> = { success: true, data: { jobId } };

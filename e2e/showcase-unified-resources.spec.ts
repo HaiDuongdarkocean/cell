@@ -163,6 +163,44 @@ test.describe('Unified resource import — one section, components from content'
     await showcasePage.screenshot({ path: `${EVIDENCE_DIR}/14-narrowed-card.png`, fullPage: false });
   });
 
+  test('delete drains the card in place; a re-dropped file waits for removal then imports', async ({ showcasePage }) => {
+    const frame = await openResourcesSection(showcasePage);
+
+    const filePath = resolve(EVIDENCE_DIR, 'delete-cycle.txt');
+    mkdirSync(EVIDENCE_DIR, { recursive: true });
+    writeFileSync(filePath, 'del\n'.repeat(4_000_000));
+
+    const panel = frame.locator('[data-cell-id="resources-panel"]');
+    const list = panel.locator('[role="list"]').first();
+
+    await frame.locator('[data-cell-id="dropzone-input"]').setInputFiles(filePath);
+    const card = list.locator('[data-cell-id="resource-card-10000"]');
+    await expect(card).toBeAttached({ timeout: IMPORT_DONE_MS });
+
+    await frame.locator('[data-cell-id="edit-resources"]').click();
+    await frame.locator('[data-cell-id="delete-button-10000"]').click();
+    await frame.locator('[data-cell-id="confirm-delete"]').click();
+
+    const drain = frame.locator('[data-cell-id="deleting-10000"]');
+    await expect(drain).toBeAttached({ timeout: IMPORT_DONE_MS });
+    await expect(frame.locator('[data-cell-id="delete-meta-10000"]')).toContainText('Removing…');
+    await card.scrollIntoViewIfNeeded();
+    await showcasePage.screenshot({ path: `${EVIDENCE_DIR}/16-deleting-card.png`, fullPage: false });
+
+    // Re-dropping the same file must queue behind the removal, not race it.
+    await frame.locator('[data-cell-id="dropzone-input"]').setInputFiles(filePath);
+    const heldRow = frame.locator('text=Waiting for removal…');
+    await expect(heldRow).toBeAttached({ timeout: 5_000 });
+    await heldRow.scrollIntoViewIfNeeded();
+    await showcasePage.screenshot({ path: `${EVIDENCE_DIR}/17-held-import.png`, fullPage: false });
+
+    const landed = list.locator('[data-cell-id="resource-card-10001"]');
+    await expect(landed).toBeAttached({ timeout: IMPORT_DONE_MS * 2 });
+    await expect(card).toHaveCount(0);
+    await landed.scrollIntoViewIfNeeded();
+    await showcasePage.screenshot({ path: `${EVIDENCE_DIR}/18-reimported.png`, fullPage: false });
+  });
+
   test('failed import keeps a visible error row with retry/dismiss', async ({ showcasePage }) => {
     const frame = await openResourcesSection(showcasePage);
 

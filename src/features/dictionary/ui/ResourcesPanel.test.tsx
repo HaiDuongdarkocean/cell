@@ -546,31 +546,89 @@ describe('ResourcesPanel', () => {
     expect(setEnabled).toHaveBeenCalledTimes(1);
   });
 
-  it('queues the delete, hides the card, and announces when the job goes done', async () => {
-    let release: () => void = () => {};
-    deleteResourceCascade.mockImplementationOnce(
-      () => new Promise<{ jobId: string }>((r) => { release = () => r({ jobId: 'del-1' }); }),
-    );
-    listResources.mockResolvedValue([makeResource({ id: 1, name: 'words.txt' })]);
+  it('drains the card in place while the delete job runs, then removes it', async () => {
+    deleteResourceCascade.mockResolvedValueOnce({ jobId: 'del-1' });
+    listResources.mockResolvedValue([makeResource({ id: 1, name: 'words.txt', signature: 'sig-words.txt' })]);
     const view = render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('words')).toBeInTheDocument());
 
     fireEvent.click(screen.getByTestId('edit-resources'));
     fireEvent.click(screen.getByTestId('delete-button-1'));
     fireEvent.click(screen.getByTestId('confirm-delete'));
-
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
-    await act(async () => { release(); });
+
+    // The card stays mounted — no optimistic vanish — and shows the drain.
+    expect(screen.getByTestId('resource-card-1')).toBeInTheDocument();
+    setRegistryJobs([makeJob({
+      id: 'del-1',
+      status: 'running',
+      label: 'words.txt',
+      progress: { done: 3000, total: 12000 },
+      params: { langCode: 'en', resourceId: 1, signature: 'sig-words.txt' },
+    })]);
+    view.rerender(<ResourcesPanel langCode="en" />);
+
+    await waitFor(() => expect(screen.getByTestId('deleting-1')).toBeInTheDocument());
+    expect(screen.getByTestId('delete-meta-1')).toHaveTextContent('Removing… 3,000 / 12,000 items');
+    expect(screen.queryByTestId('job-row-del-1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('enable-toggle-1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('resource-components-1')).not.toBeInTheDocument();
+
+    listResources.mockResolvedValue([]);
+    setRegistryJobs([makeJob({
+      id: 'del-1',
+      status: 'done',
+      label: 'words.txt',
+      params: { langCode: 'en', resourceId: 1, signature: 'sig-words.txt' },
+    })]);
+    view.rerender(<ResourcesPanel langCode="en" />);
+
     await waitFor(() => expect(screen.queryByTestId('resource-card-1')).not.toBeInTheDocument());
-    expect(screen.queryByTestId('delete-confirm-modal')).not.toBeInTheDocument();
-
-    setRegistryJobs([makeJob({ id: 'del-1', status: 'running', label: 'words.txt', params: { langCode: 'en', resourceId: 1 } })]);
-    view.rerender(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByTestId('job-row-del-1')).toBeInTheDocument());
-
-    setRegistryJobs([makeJob({ id: 'del-1', status: 'done', label: 'words.txt', params: { langCode: 'en', resourceId: 1 } })]);
-    view.rerender(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByTestId('panel-alert')).toHaveTextContent('Deleted "words.txt"'));
+    expect(screen.queryByTestId('job-row-del-1')).not.toBeInTheDocument();
+  });
+
+  it('holds a same-signature import until removal finishes', async () => {
+    listResources.mockResolvedValue([makeResource({ id: 1, name: 'words.txt', signature: 'sig-words.txt' })]);
+    setRegistryJobs([makeJob({
+      id: 'del-1',
+      status: 'running',
+      label: 'words.txt',
+      progress: { done: 4000, total: 12000 },
+      params: { langCode: 'en', resourceId: 1, signature: 'sig-words.txt' },
+    })]);
+    const view = render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByTestId('deleting-1')).toBeInTheDocument());
+
+    pickFile(0, new File(['hello\nworld\n'], 'words.txt', { type: 'text/plain' }));
+    await waitFor(() => expect(screen.getByText('Waiting for removal…')).toBeInTheDocument());
+    expect(importFile).not.toHaveBeenCalled();
+
+    listResources.mockResolvedValue([]);
+    setRegistryJobs([makeJob({
+      id: 'del-1',
+      status: 'done',
+      label: 'words.txt',
+      params: { langCode: 'en', resourceId: 1, signature: 'sig-words.txt' },
+    })]);
+    view.rerender(<ResourcesPanel langCode="en" />);
+
+    await waitFor(() => expect(importFile).toHaveBeenCalled());
+  });
+
+  it('still imports a different file while an unrelated delete runs', async () => {
+    listResources.mockResolvedValue([makeResource({ id: 1, name: 'words.txt', signature: 'sig-words.txt' })]);
+    setRegistryJobs([makeJob({
+      id: 'del-1',
+      status: 'running',
+      label: 'words.txt',
+      params: { langCode: 'en', resourceId: 1, signature: 'sig-words.txt' },
+    })]);
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByTestId('deleting-1')).toBeInTheDocument());
+
+    pickFile(0, new File(['other\n'], 'other.txt', { type: 'text/plain' }));
+    await waitFor(() => expect(importFile).toHaveBeenCalled());
   });
 
   it('queues delete jobs card-by-card during delete-all', async () => {
@@ -591,7 +649,8 @@ describe('ResourcesPanel', () => {
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 2));
     await act(async () => { releases[0]?.(); });
-    await waitFor(() => expect(screen.queryByTestId('resource-card-2')).not.toBeInTheDocument());
+    // Cards persist through the run — the registry drives their removal.
+    expect(screen.getByTestId('resource-card-2')).toBeInTheDocument();
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
 
     await act(async () => { releases[1]?.(); });

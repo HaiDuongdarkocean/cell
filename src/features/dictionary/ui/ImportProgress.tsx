@@ -16,6 +16,9 @@ import styles from './ImportProgress.module.css';
 
 interface ImportProgressProps {
   readonly job: ImportJob;
+  /** The file's resource is still being removed — the job stays queued until
+   *  the delete finishes, then uploads on its own. */
+  readonly waitingRemoval?: boolean;
   readonly onToggleComponent?: (jobId: string, component: DictionaryComponent) => void;
   readonly onResolveDuplicate: (jobId: string, choice: 'replace' | 'skip') => void;
   readonly onRerunReplace: (jobId: string) => void;
@@ -33,7 +36,7 @@ function percent(part: number, whole: number): number {
   return Math.min(100, Math.round((part / whole) * 100));
 }
 
-export function ImportProgress({ job, onToggleComponent, onResolveDuplicate, onRerunReplace, onRetry, onDismiss }: ImportProgressProps): ReactElement {
+export function ImportProgress({ job, waitingRemoval, onToggleComponent, onResolveDuplicate, onRerunReplace, onRetry, onDismiss }: ImportProgressProps): ReactElement {
   const isUpload = job.status === 'uploading';
   const isImport = job.status === 'importing';
   const fillPct = isUpload
@@ -52,8 +55,8 @@ export function ImportProgress({ job, onToggleComponent, onResolveDuplicate, onR
 
   switch (job.status) {
     case 'queued':
-      meta = <span className={styles.metaMuted}>{t('resources.job.waiting')}</span>;
-      right = <Spinner size="sm" ariaLabel={t('resources.job.waiting')} />;
+      meta = <span className={styles.metaMuted}>{t(waitingRemoval === true ? 'resources.job.waitingRemoval' : 'resources.job.waiting')}</span>;
+      right = <Spinner size="sm" ariaLabel={t(waitingRemoval === true ? 'resources.job.waitingRemoval' : 'resources.job.waiting')} />;
       break;
     case 'uploading':
       if (job.uploadTotal === 0) {

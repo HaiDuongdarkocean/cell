@@ -51,7 +51,7 @@ import { readFileHead } from '@/features/dictionary/logic/fileDetector';
 import type { FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 
 import { JobRow, useJobs, useJobTerminalWatcher, dismissJob, retryJob, jobErrorText } from '@/features/jobs';
-import { buildPendingImports, isRunningJob, makeJobId, signatureOf, type ImportJob } from './importJobTypes';
+import { buildPendingImports, deletingSignatures, isRunningJob, makeJobId, signatureOf, type ImportJob } from './importJobTypes';
 import styles from './ResourcesPanel.module.css';
 
 const SUCCESS_DISMISS_MS = 4000;
@@ -171,6 +171,7 @@ function ResourceSection({
     0,
   );
   const pending = buildPendingImports(resources, jobs, registryJobs);
+  const heldSigs = deletingSignatures(registryJobs, resources);
   // A fresh import lands first among the priority-less rows — pending entries
   // sit exactly there so the row and the card that replaces it share a slot.
   const priorityEnd = resources.findIndex((r) => r.priority == null);
@@ -242,6 +243,7 @@ function ResourceSection({
           dragging={dragged}
           onChanged={onChanged}
           importProgress={r.id != null ? pending.progressByResourceId.get(r.id) ?? null : null}
+          deleteProgress={r.id != null ? pending.deletingByResourceId.get(r.id) ?? null : null}
         />
       </div>
     );
@@ -321,8 +323,8 @@ function ResourceSection({
         label={t(copy.dropLabel)}
         hint={t(copy.dropHint)}
         accept={copy.accept}
-        disabled={busy}
-        onFiles={(files) => { if (!busy) onFiles(files); }}
+        disabled={false}
+        onFiles={onFiles}
       />
       <div className={styles.resourceList} role="list" ref={listRef}>
         {loading ? (
@@ -339,6 +341,7 @@ function ResourceSection({
               <ImportProgress
                 key={row.key}
                 job={row.local}
+                waitingRemoval={row.local.signature !== '' && heldSigs.has(row.local.signature)}
                 onToggleComponent={onToggleComponent}
                 onResolveDuplicate={onResolveDuplicate}
                 onRerunReplace={onRerunReplace}
@@ -439,6 +442,15 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     [registryJobs],
   );
 
+  // Import of the same file waits for its removal — the pump reads the
+  // freshest set through the ref so a signature lands before it releases.
+  const deletingSigs = useMemo(
+    () => deletingSignatures(registryJobs, resources),
+    [registryJobs, resources],
+  );
+  const deleteSigsRef = useRef<ReadonlySet<string>>(deletingSigs);
+  const prevSigsRef = useRef<ReadonlySet<string>>(deletingSigs);
+
   // The orchestrator creates the resource row mid-import (installationFinished
   // = false) and only then stamps resourceId onto the registry job — refresh
   // once per new id so the importing card appears in the list while it fills.
@@ -491,7 +503,8 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
   const runJobRef = useRef<(jobId: string) => Promise<void>>(async () => {});
 
   /** Start queued jobs while the dual bound allows. A parked duplicate holds
-   *  no in-flight bytes; a lone oversized file still gets to run. */
+   *  no in-flight bytes; a lone oversized file still gets to run. A queued
+   *  job whose signature matches a live delete waits for removal first. */
   const pump = useCallback(() => {
     const jobs = jobsRef.current;
     const running = jobs.filter(isRunningJob);
@@ -503,12 +516,25 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     for (const job of jobs) {
       if (running.length >= MAX_CONCURRENT_IMPORTS) break;
       if (job.status !== 'queued') continue;
+      if (job.signature === '') continue;
+      if (deleteSigsRef.current.has(job.signature)) continue;
       if (running.length > 0 && inflightBytes + job.file.size > MAX_INFLIGHT_BYTES) continue;
       running.push(job);
       inflightBytes += job.file.size;
       void runJobRef.current(job.jobId);
     }
   }, []);
+
+  // Keep the pump's view fresh; release held imports only when a signature
+  // actually left the active-delete set — unrelated refreshes recompute the
+  // set identity and must not start queued jobs early.
+  useEffect(() => {
+    deleteSigsRef.current = deletingSigs;
+    const prev = prevSigsRef.current;
+    prevSigsRef.current = deletingSigs;
+    const released = [...prev].some((s) => !deletingSigs.has(s));
+    if (released) pump();
+  }, [deletingSigs, pump]);
 
   const handleRetryLocal = useCallback((jobId: string) => {
     setJobs((prev) => prev.map((j) => j.jobId === jobId
@@ -721,8 +747,9 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     let firstError: string | null = null;
     for (const r of doomed) {
       try {
+        // The card drains in place via the delete job's progress — removal
+        // from the list happens on the terminal refresh, not here.
         await deleteResource(langCode, r.id!);
-        setResources((prev) => prev.filter((x) => x.id !== r.id));
       } catch (e) {
         firstError = firstError ?? String(e);
       }

@@ -25,7 +25,7 @@ import {
 } from '@/features/dictionary/services/resourceClient';
 import type { DictionaryComponent, ResourceInfo } from '@/entities/dictionary';
 import { displayResourceName } from './displayResourceName';
-import type { ResourceImportProgress } from './importJobTypes';
+import type { ResourceDeleteProgress, ResourceImportProgress } from './importJobTypes';
 import styles from './ResourceCard.module.css';
 
 const COMPONENT_LABEL: Record<DictionaryComponent, MessageKey> = {
@@ -66,6 +66,9 @@ interface ResourceCardProps {
   readonly onSelect?: () => void;
   /** Live progress for a resource the importer is still filling. */
   readonly importProgress?: ResourceImportProgress | null;
+  /** Live progress for a resource the delete job is still draining — the
+   *  card stays in place until removal finishes. */
+  readonly deleteProgress?: ResourceDeleteProgress | null;
 }
 
 export function ResourceCard({
@@ -80,12 +83,28 @@ export function ResourceCard({
   selected = false,
   onSelect,
   importProgress,
+  deleteProgress,
 }: ResourceCardProps): ReactElement {
   const importing = resource.installationFinished === false;
-  const busy = importing;
+  const deleting = deleteProgress != null;
+  const busy = importing || deleting;
   const pct = importing && importProgress != null && importProgress.total > 0
     ? Math.min(100, Math.round((importProgress.done / importProgress.total) * 100))
     : null;
+  const deletePct = deleting && deleteProgress.total > 0
+    ? Math.min(100, Math.round((deleteProgress.done / deleteProgress.total) * 100))
+    : null;
+  const remainingPct = deletePct == null ? 100 : 100 - deletePct;
+  const deleteMeta = !deleting
+    ? null
+    : deleteProgress.status === 'queued'
+      ? t('resources.job.waiting')
+      : deleteProgress.total > 0
+        ? t('resources.job.removingOf', [
+            deleteProgress.done.toLocaleString(),
+            deleteProgress.total.toLocaleString(),
+          ])
+        : t('resources.job.removing');
   const importMeta = !importing
     ? null
     : importProgress == null
@@ -224,9 +243,17 @@ export function ResourceCard({
           data-cell-id={`importing-${resourceId}`}
         />
       )}
+      {deleting && (
+        <span
+          className={styles.deleteFill}
+          style={{ height: `${remainingPct}%` }}
+          aria-hidden="true"
+          data-cell-id={`deleting-${resourceId}`}
+        />
+      )}
       <div className={styles.row}>
         {editing ? (
-          !importing && (
+          !busy && (
             <Checkbox
               checked={selected}
               onChange={() => onSelect?.()}
@@ -289,6 +316,11 @@ export function ResourceCard({
               {importMeta}
             </span>
           )}
+          {deleting && (
+            <span className={styles.rowMeta} data-cell-id={`delete-meta-${resourceId}`}>
+              {deleteMeta}
+            </span>
+          )}
           {!busy && components != null && components.length > 0 && (
             <div
               className={styles.componentList}
@@ -319,8 +351,8 @@ export function ResourceCard({
 
         {busy ? (
           <>
-            {pct != null && <span className={styles.rowPct}>{pct}%</span>}
-            <Spinner size="sm" ariaLabel={importMeta ?? undefined} />
+            {(pct ?? deletePct) != null && <span className={styles.rowPct}>{pct ?? deletePct}%</span>}
+            <Spinner size="sm" ariaLabel={(importMeta ?? deleteMeta) ?? undefined} />
           </>
         ) : (
           <>

@@ -12,7 +12,7 @@
 // row is suppressed — the same entry never appears twice.
 
 import type { DictionaryComponent, DuplicateDecision, ResourceInfo } from '@/entities/dictionary';
-import { isTerminalJob, type Job } from '@/entities/job/types';
+import { isActiveJob, isTerminalJob, type Job } from '@/entities/job/types';
 
 export type ImportJobStatus =
   | 'queued'
@@ -75,9 +75,18 @@ export type PendingRow =
   | { readonly key: string; readonly ts: number; readonly local: ImportJob; readonly job?: undefined }
   | { readonly key: string; readonly ts: number; readonly local?: undefined; readonly job: Job };
 
+export interface ResourceDeleteProgress {
+  readonly status: Job['status'];
+  readonly done: number;
+  readonly total: number;
+}
+
 export interface PendingImports {
   readonly rows: readonly PendingRow[];
   readonly progressByResourceId: ReadonlyMap<number, ResourceImportProgress>;
+  /** Live delete progress per resource — the card drains in place, mirroring
+   *  the importing fill. */
+  readonly deletingByResourceId: ReadonlyMap<number, ResourceDeleteProgress>;
 }
 
 const LOCAL_PROGRESS_STATUSES: ReadonlySet<ImportJobStatus> = new Set(['queued', 'uploading', 'importing']);
@@ -107,14 +116,50 @@ const toProgress = (source: Job | ImportJob): ResourceImportProgress => {
 export const signatureOf = (job: Job): string | null =>
   typeof job.params.signature === 'string' ? job.params.signature : null;
 
+/** Signatures of resources with a live delete job — an import of the same
+ *  file must wait for removal to finish before it starts. Newer jobs carry
+ *  the signature in params; older persisted jobs resolve through the
+ *  still-listed resource row. */
+export const deletingSignatures = (
+  registryJobs: readonly Job[],
+  resources: readonly ResourceInfo[],
+): ReadonlySet<string> => {
+  const set = new Set<string>();
+  for (const job of registryJobs) {
+    if (job.kind !== 'resource-delete' || !isActiveJob(job)) continue;
+    const signature = signatureOf(job)
+      ?? resources.find((r) => r.id === job.params.resourceId)?.signature;
+    if (signature != null && signature !== '') set.add(signature);
+  }
+  return set;
+};
+
 export const buildPendingImports = (
   resources: readonly ResourceInfo[],
   jobs: readonly ImportJob[],
   registryJobs: readonly Job[],
 ): PendingImports => {
   const progressByResourceId = new Map<number, ResourceImportProgress>();
+  const deletingByResourceId = new Map<number, ResourceDeleteProgress>();
   const coveredRegistry = new Set<string>();
   const coveredLocal = new Set<string>();
+
+  for (const job of registryJobs) {
+    if (job.kind !== 'resource-delete') continue;
+    if (job.status === 'done') {
+      coveredRegistry.add(job.id);
+      continue;
+    }
+    if (!isActiveJob(job)) continue;
+    const resourceId = typeof job.params.resourceId === 'number' ? job.params.resourceId : undefined;
+    if (resourceId == null) continue;
+    deletingByResourceId.set(resourceId, {
+      status: job.status,
+      done: job.progress.done,
+      total: job.progress.total,
+    });
+    if (resources.some((r) => r.id === resourceId)) coveredRegistry.add(job.id);
+  }
 
   for (const resource of resources) {
     if (resource.installationFinished !== false || resource.id == null) continue;
@@ -155,5 +200,6 @@ export const buildPendingImports = (
   return {
     rows: [...rows.values()].sort((a, b) => b.ts - a.ts),
     progressByResourceId,
+    deletingByResourceId,
   };
 };

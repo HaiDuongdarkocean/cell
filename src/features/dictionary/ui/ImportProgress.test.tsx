@@ -53,6 +53,11 @@ describe('ImportProgress', () => {
     expect(screen.getByText('Waiting')).toBeInTheDocument();
   });
 
+  it('queued row held behind a delete explains the wait', () => {
+    render(<ImportProgress job={makeJob({ status: 'queued' })} waitingRemoval onResolveDuplicate={noop} onRerunReplace={noop} onRetry={noop} onDismiss={noop} />);
+    expect(screen.getByText('Waiting for removal…')).toBeInTheDocument();
+  });
+
   it('uploading row shows upload percent', () => {
     render(<ImportProgress
       job={makeJob({ status: 'uploading', uploadSent: 5, uploadTotal: 10 })}

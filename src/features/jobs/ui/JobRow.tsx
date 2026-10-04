@@ -46,7 +46,9 @@ function statusIcon(job: Job): ReactElement {
 
 function metaText(job: Job): string {
   const { done, total, unit } = job.progress;
-  const statusText = t(STATUS_KEYS[job.status]);
+  const statusText = job.kind === 'resource-delete' && job.status === 'running'
+    ? t('jobs.status.removing')
+    : t(STATUS_KEYS[job.status]);
   if (job.status === 'done') {
     const count = job.result?.wordCount ?? job.result?.count;
     if (typeof count === 'number') {

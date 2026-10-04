@@ -202,7 +202,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
         kind: 'resource-delete',
         label: resource?.name ?? `#${resourceId}`,
         status: 'queued',
-        params: { resourceId, langCode },
+        params: { resourceId, langCode, signature: resource?.signature },
         retryable: true,
       });
       registry.startIfSlotFree(job);
