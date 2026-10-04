@@ -1,5 +1,5 @@
 {
-  "active": "unified-resource-import",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -2274,7 +2274,7 @@
       "updated": "2026-10-04T04:57:26.307Z"
     },
     "unified-resource-import": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "interactive",
       "uiSurface": "yes",
       "artifacts": {
@@ -2290,34 +2290,32 @@
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-10-04T06:29:32.216Z",
-          "head": "ebf22457d273da60f1d7d62129a99529b2f04380",
+          "at": "2026-10-04T06:38:00.372Z",
+          "head": "146922f3d6dea140dd2a0fd733e7d4059166b902",
           "dirty": []
         },
         "lint": {
           "v": "pass",
-          "at": "2026-10-04T06:31:29.885Z",
-          "head": "ebf22457d273da60f1d7d62129a99529b2f04380",
-          "dirty": [
-            "src/entrypoints/design-system-showcase/mockDictionary.ts"
-          ]
+          "at": "2026-10-04T06:33:10.844Z",
+          "head": "146922f3d6dea140dd2a0fd733e7d4059166b902",
+          "dirty": []
         },
         "testUnit": {
           "v": "pass",
-          "at": "2026-10-04T06:00:29.795Z",
-          "head": "527699535690f45a408d43fdde96bb2dea217699",
+          "at": "2026-10-04T06:34:44.793Z",
+          "head": "146922f3d6dea140dd2a0fd733e7d4059166b902",
           "dirty": []
         },
         "build": {
           "v": "pass",
-          "at": "2026-10-04T06:00:29.982Z",
-          "head": "527699535690f45a408d43fdde96bb2dea217699",
+          "at": "2026-10-04T06:36:29.903Z",
+          "head": "146922f3d6dea140dd2a0fd733e7d4059166b902",
           "dirty": []
         },
         "browser": {
           "v": "pass",
-          "at": "2026-10-04T06:00:30.157Z",
-          "head": "527699535690f45a408d43fdde96bb2dea217699",
+          "at": "2026-10-04T06:37:12.279Z",
+          "head": "146922f3d6dea140dd2a0fd733e7d4059166b902",
           "dirty": []
         }
       },
@@ -2336,12 +2334,9 @@
         }
       ],
       "loops": 0,
-      "owner": {
-        "id": "devin-unified-import-1791170400",
-        "since": "2026-10-04T04:12:16.219Z"
-      },
+      "owner": null,
       "worktree": "../cell-worktrees/unified-resource-import",
-      "updated": "2026-10-04T06:31:29.937Z"
+      "updated": "2026-10-04T06:38:19.802Z"
     }
   }
 }
