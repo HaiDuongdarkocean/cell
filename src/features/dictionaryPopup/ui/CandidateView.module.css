@@ -416,17 +416,6 @@
   color: var(--color-text-secondary);
 }
 
-.exampleRun {
-  display: flex;
-  flex-direction: column;
-}
-
-.defExamplePattern {
-  padding-left: calc(var(--space-1) + var(--space-5) + var(--space-1));
-  color: var(--color-text-primary);
-  font-weight: var(--font-weight-medium);
-}
-
 .cellDefExampleText {
   flex: 1 1 auto;
   min-width: 0;

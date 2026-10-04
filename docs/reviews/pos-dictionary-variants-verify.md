@@ -182,3 +182,15 @@ Gates: `tsc --noEmit` clean · jest 74 suites / 1,393 tests · `npm run build` �
 Brave e2e **51/51 asserts** (hyponym labeled group, `antonyms:` line,
 `see also:`/`phrasal verbs:` meta sections). JSONs regenerated:
 2ed gloss lines 82988 → 76741 (section lines no longer pollute glosses).
+
+### User-reported defects after manual import (fixed round 10)
+
+| Finding | Disposition |
+|---|---|
+| Multi-member pattern rendered as a standalone bold header line BETWEEN examples — reads as unattached note | **Fixed** — run-grouping/header logic removed from `ExampleRows`; every covered example now renders its own muted `[pattern]` suffix after the text (`does it matter what I wear [matter to someone]` × all members), matching the per-example semantics the source data carries and the user's earlier "notes go after the example" rule. `hidePattern` prop, `.exampleRun`/`.defExamplePattern` CSS removed |
+
+Gates: `tsc --noEmit` clean · jest 52 suites / 718 tests (dictionaryPopup) ·
+`npm run build` · Brave e2e **51/51 asserts** (pattern suffix after every
+member, no standalone header). Note: a `vendor/.vite-deps-zod` CSP false
+alarm during this session traced to stale optimizeDeps cache emission —
+clean rebuild (with and without the change) emits no zod vendor chunk.

@@ -512,12 +512,10 @@ function SenseLineView({
   line,
   revealedByDefault,
   head,
-  hidePattern,
 }: {
   readonly line: SenseLine;
   readonly revealedByDefault: boolean;
   readonly head?: string;
-  readonly hidePattern?: boolean;
 }): React.JSX.Element {
   const [override, setOverride] = useState<boolean | null>(null);
   const revealed = override ?? revealedByDefault;
@@ -527,7 +525,7 @@ function SenseLineView({
       <span className={styles.defLineMain}>
         {head ? <span className={styles.defLineHead}>{head} </span> : null}
         {line.text}
-        {!hidePattern && line.pattern ? <span className={styles.defLineMeta}> {line.pattern}</span> : null}
+        {line.pattern ? <span className={styles.defLineMeta}> {line.pattern}</span> : null}
         {line.translation ? (
           <button
             type="button"
@@ -579,21 +577,9 @@ function ExampleRows({
     <div className={styles.cellDefExamples}>
       {examples.map((ex, i) => {
         const exChecked = checkedExamples.has(i);
-        let runStart = i;
-        while (runStart > 0 && ex.pattern && examples[runStart - 1]?.pattern === ex.pattern) runStart -= 1;
-        let runEnd = i;
-        while (runEnd + 1 < examples.length && ex.pattern && examples[runEnd + 1]?.pattern === ex.pattern) runEnd += 1;
-        const runSize = runEnd - runStart + 1;
-        const patternHead = ex.pattern && i === runStart && runSize >= 2 ? ex.pattern : null;
-        const inlinePattern = Boolean(ex.pattern) && runSize === 1;
         return (
-          <div key={i} className={styles.exampleRun}>
-            {patternHead ? (
-              <div className={styles.defExamplePattern} data-cell-id="dictionary-example-pattern">
-                {patternHead}
-              </div>
-            ) : null}
           <div
+            key={i}
             className={checkStyles.cellDefExampleItem}
             data-cell-id="dictionary-example"
             role="checkbox"
@@ -630,9 +616,8 @@ function ExampleRows({
               </span>
             </label>
             <span className={styles.cellDefExampleText}>
-              <SenseLineView line={ex} revealedByDefault={translationRevealed} hidePattern={!inlinePattern} />
+              <SenseLineView line={ex} revealedByDefault={translationRevealed} />
             </span>
-          </div>
           </div>
         );
       })}
