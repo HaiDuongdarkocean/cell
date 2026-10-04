@@ -3303,6 +3303,25 @@
         "format-detection"
       ],
       "trigger": "Test fail 'missing magic bytes' với fixture tự chế — verify constant production bằng file thật (sql.js export) trước khi đổi"
+    },
+    {
+      "type": "experience",
+      "id": "partial-detection-never-authoritative-subset",
+      "title": "Detection partial (head sniff / heuristic UI) khong bao gio duoc gui xuong engine lam subset authoritative — chi user-narrowed selection moi duoc",
+      "category": [
+        "import",
+        "detection",
+        "correctness"
+      ],
+      "tags": [
+        "advisory-vs-authoritative",
+        "head-sniff",
+        "component-subset",
+        "unified-resource-import",
+        "silent-data-loss",
+        "detectComponents"
+      ],
+      "trigger": "UI detect content bang head-limited sniff roi wire thang vao payload engine → noi dung sau gioi han head bi mat lang le (mixed zip >1MB roi frequency family)"
     }
   ]
 }

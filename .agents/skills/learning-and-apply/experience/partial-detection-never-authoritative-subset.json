@@ -1,0 +1,23 @@
+{
+  "id": "partial-detection-never-authoritative-subset",
+  "title": "Detection partial (head sniff / heuristic UI) KHÔNG BAO GIỜ được gửi xuống engine làm subset authoritative — chỉ user-narrowed selection mới được",
+  "category": [
+    "import",
+    "detection",
+    "correctness"
+  ],
+  "tags": [
+    "advisory-vs-authoritative",
+    "head-sniff",
+    "component-subset",
+    "unified-resource-import",
+    "silent-data-loss",
+    "1MB-head-limit",
+    "detectComponents"
+  ],
+  "trigger": "UI detect content bằng head-limited sniff (1MB, magic bytes, bank paths đầu zip) rồi wire kết quả đó thẳng vào payload của engine → engine thực hiện parse giới hạn theo subset → nội dung nằm sau giới hạn head bị mất LẶNG LẼ (mixed zip >1MB rơi frequency family; freq-only zip >1MB hard-fail).",
+  "body": "## Bối cảnh\n\n`ResourcesPanel` sniff file head để show badge + component picker (advisory). Code cũ luôn truyền `components: detected ∩ selected` xuống `importFile` → strategy emit theo đúng subset đó. Khi file >1MB và family chỉ xuất hiện sau byte 1MB, advisory detect thiếu → subset sai → strategy (có quyền đọc TOÀN file) bị ràng buộc sai.\n\n## Nguyên tắc\n\nPhân biệt 3 nguồn thông tin:\n1. **Advisory detection** (head sniff) → chỉ dùng cho UI signal (badge, pre-selected chips). KHÔNG đưa vào payload nếu nó không phải intent người dùng.\n2. **User narrowing** (user chủ động bỏ chọn chip) → đây mới là `components` subset gửi xuống.\n3. **Engine truth** → strategy luôn scan toàn file và emit mọi family có mặt; subset chỉ *loại bỏ*, không *giới hạn*.\n\n## Cách áp dụng\n\n```ts\n// ĐÚNG — undefined = 'engine tự detect toàn bộ'\nconst narrowed = selected.length !== detected.length ? selected : undefined;\nawait importFile(file, { components: narrowed });\n\n// SAI — truyền advisory detection như authoritative\nawait importFile(file, { components: detected ∩ selected });\n```\n\n## Dấu hiệu nhận biết\n\nBất kỳ chỗ nào UI 'đoán' nội dung file rồi truyền kết quả đó xuống layer thực thi — hỏi: detection này có đọc toàn bộ input không? Nếu không, nó là advisory và phải default `undefined` khi user không can thiệp.",
+  "relatedSkills": [
+    "fixture-magic-bytes-verify-real-artifact"
+  ]
+}
