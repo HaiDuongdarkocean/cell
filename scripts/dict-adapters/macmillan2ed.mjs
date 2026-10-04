@@ -90,7 +90,10 @@ export const macmillan2ed = {
     for (const frag of homographs) {
       const head = frag.split(/<br\s*\/?>/i)[0] ?? frag;
       const entry = { senses: [] };
-      const pos = frag.match(POS_RE)?.[1]?.trim();
+      // #6020ae is reused for the `variant` cross-reference label — it is not
+      // a pos; only accept real pos labels (allow comma-joined multi-pos).
+      const posRaw = frag.match(POS_RE)?.[1]?.trim();
+      const pos = posRaw && posRaw !== 'variant' ? posRaw : '';
       if (pos) entry.pos = pos;
       const prons = parseProns(head);
       if (prons.length) {

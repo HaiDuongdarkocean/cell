@@ -18,19 +18,19 @@
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-text);
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   line-height: var(--leading-none);
   cursor: pointer;
-  text-decoration: underline;
+  text-decoration: none;
   text-underline-offset: var(--space-0-5);
   transition: color var(--duration-fast) var(--ease-out);
 }
 
 .link:hover {
-  color: var(--color-primary-hover);
+  text-decoration: underline;
 }
 
 .link:focus-visible {
@@ -39,8 +39,6 @@
 }
 
 .linkActive {
-  color: var(--color-text-primary);
+  color: var(--color-primary);
   font-weight: var(--font-weight-semibold);
-  text-decoration: none;
-  cursor: default;
 }

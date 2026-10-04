@@ -257,7 +257,7 @@ export function CandidateView({
                 onClick={panel.cycleAccent}
                 data-cell-id="dictionary-accent-toggle"
               >
-                {(panel.variant.prons[panel.accentIndex]?.accent ?? '').toLowerCase()}
+                {panel.variant.prons[panel.accentIndex]?.accent ?? ''}
               </button>
             )}
             {panel.displayReading && (

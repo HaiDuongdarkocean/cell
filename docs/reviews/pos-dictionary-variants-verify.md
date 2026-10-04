@@ -69,6 +69,15 @@ assertions pass** over deep shadow-DOM reads + real mouse clicks.
 | `normalizePos('adj.')` returned `'adj.'` — trailing-dot dictionary abbreviations split senses into a pos-less twin variant, divorcing defs from prons/freq/status | **Fixed** — key now strips trailing dots before alias lookup (`adj.`/`n.`/`v.`/`adv.`/`v.t.` → canonical); matches the abbreviation claim already in ADR-113/arch table |
 | POS-scoped fields leaked across variants — `displayInflections`/`displayStars`/`displayFrequencies`/`displayReading` fell back to term-level values when the selected variant lacked them (noun `plural stills` painted under adjective/adverb) | **Fixed** — strict `V.field` per spec swap contract (spec §Popup swap); term-level freq fallback still folded into `V.frequencies` at orchestration |
 
+### User-reported defects after manual import (fixed round 2)
+
+| Finding | Disposition |
+|---|---|
+| `macmillan2ed` emitted `pos: 'variant'` (638 rows) — the `#6020ae` purple font is reused for spelling-variant stubs ("Main entry: …"), producing a bogus `variant` nav option | **Fixed** — adapter rejects `variant` as pos (falls to `''`/other bucket); `macmillan-2ed.json` regenerated, `a` now `[noun, determiner, abbreviation, other]` |
+| `JsonEntriesStrategy` dropped `prons` at import — converted files carried per-accent prons but the strategy never forwarded them → variants had no IPA/accent at all | **Fixed** — `JsonEntry.prons` forwarded + regression test asserting stored `prons` |
+| Accent label rendered lowercase `ame`/`bre` (CSS `text-transform` + `.toLowerCase()`) | **Fixed** — renders `AmE`/`BrE` verbatim |
+| PosVariantNav colors inverted — inactive links were primary+underlined, active was plain | **Fixed** — inactive = `--color-text` no underline, `:hover` = underline, active = `--color-primary` + semibold |
+
 ## Residuals
 
 - `.mdd` audio extraction deferred by spec — `sound://` refs stored verbatim.

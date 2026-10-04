@@ -89,6 +89,28 @@ describe('jsonEntriesStrategy', () => {
     expect(stored?.derivedTerms).toEqual(['taker']);
   });
 
+  it('passes prons through for pos-variant lookups', async () => {
+    const resourceId = await addResource(LANG, {
+      name: 'mac.json', langCode: LANG, type: 'DICTIONARY', format: 'json-entries',
+      signature: 'sig-mac', wordCount: 0, installationFinished: false, importedAt: Date.now(),
+    });
+    const prons = [
+      { accent: 'BrE', ipa: 'ˈprezənt', audioRef: 'sound://uk.wav' },
+      { accent: 'AmE', ipa: 'ˈprezənt', audioRef: 'sound://us.mp3' },
+    ];
+    const data = strToU8(JSON.stringify([
+      { term: 'present', pos: 'adjective', prons, pronunciation: 'ˈprezənt' },
+    ]));
+    const strategy = new JsonEntriesStrategy(
+      { resourceId, langCode: LANG },
+      { data, fileName: 'mac.json' },
+    );
+    await strategy.execute();
+    const [stored] = await findDictionaryByResource(LANG, resourceId);
+    expect(stored?.prons).toEqual(prons);
+    expect(stored?.pos).toBe('adjective');
+  });
+
   it('skips entries without term', async () => {
     const resourceId = await addResource(LANG, {
       name: 'cambridge.json', langCode: LANG, type: 'DICTIONARY', format: 'json-entries',

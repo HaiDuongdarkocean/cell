@@ -8,7 +8,7 @@ import type { StrategyOptions, RawDictionaryEntry } from './baseImportStrategy';
 import { decodeText, isGzip, gunzipFile, isZip, unzipAll } from '../logic/fileDetector';
 import { ParseError } from '../logic/importErrors';
 import { bulkInsertDictionaryEntries } from '../repositories/dictionaryRepository';
-import type { DictionaryEntry, SenseBlock, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo } from '@/entities/dictionary';
+import type { DictionaryEntry, SenseBlock, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo, PronunciationAccent } from '@/entities/dictionary';
 
 /** Options for jsonEntriesStrategy. */
 export interface JsonEntriesStrategyOptions {
@@ -26,6 +26,7 @@ interface JsonEntry {
   readonly definition?: string;
   readonly senses?: SenseBlock[];
   readonly pos?: string;
+  readonly prons?: PronunciationAccent[];
   readonly examples?: string;
   readonly audio?: string;
   readonly related?: RelatedEntry[];
@@ -89,6 +90,7 @@ export class JsonEntriesStrategy extends BaseDictionaryStrategy {
         definition: entry.definition ?? '',
         senses: Array.isArray(entry.senses) ? entry.senses : undefined,
         pos: entry.pos ?? '',
+        prons: Array.isArray(entry.prons) ? entry.prons : undefined,
         examples: entry.examples ?? '',
         audio: entry.audio ?? '',
         related: Array.isArray(entry.related) ? entry.related : undefined,
