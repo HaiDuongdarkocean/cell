@@ -149,3 +149,9 @@ Gates: `tsc --noEmit` clean · jest 74 suites / 1,393 tests · `npm run build` �
 Brave e2e **43/43 asserts** (one header per group, header above all members,
 no inline repetition). Other adapters verified unaffected — cobuild/ldoce/oald
 attach per-example patterns from their own markup (`.tips`, `PROPFORM`, `.cf`).
+
+### Follow-up (round 7b)
+
+| Finding | Disposition |
+|---|---|
+| User wants pattern annotations rendered AFTER the example, not before | **Fixed** — `ExampleRows` now measures each pattern run: multi-member groups (≥2) keep the single covering header (GoldenDict semantics), single-member patterns render as a muted `[pattern]` suffix after the example text (`07-matter-verb.png`: `what is the matter with you [matter with someone]`). Brave e2e 45/45 asserts both render modes |

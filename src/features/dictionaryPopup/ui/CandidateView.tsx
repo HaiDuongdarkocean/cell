@@ -578,7 +578,13 @@ function ExampleRows({
     <div className={styles.cellDefExamples}>
       {examples.map((ex, i) => {
         const exChecked = checkedExamples.has(i);
-        const patternHead = ex.pattern && ex.pattern !== examples[i - 1]?.pattern ? ex.pattern : null;
+        let runStart = i;
+        while (runStart > 0 && ex.pattern && examples[runStart - 1]?.pattern === ex.pattern) runStart -= 1;
+        let runEnd = i;
+        while (runEnd + 1 < examples.length && ex.pattern && examples[runEnd + 1]?.pattern === ex.pattern) runEnd += 1;
+        const runSize = runEnd - runStart + 1;
+        const patternHead = ex.pattern && i === runStart && runSize >= 2 ? ex.pattern : null;
+        const inlinePattern = Boolean(ex.pattern) && runSize === 1;
         return (
           <div key={i} className={styles.exampleRun}>
             {patternHead ? (
@@ -623,7 +629,7 @@ function ExampleRows({
               </span>
             </label>
             <span className={styles.cellDefExampleText}>
-              <SenseLineView line={ex} revealedByDefault={translationRevealed} hidePattern />
+              <SenseLineView line={ex} revealedByDefault={translationRevealed} hidePattern={!inlinePattern} />
             </span>
           </div>
           </div>
