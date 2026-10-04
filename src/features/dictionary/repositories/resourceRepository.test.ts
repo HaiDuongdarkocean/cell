@@ -128,7 +128,7 @@ describe('resourceRepository', () => {
     await expect(countResources(LANG)).resolves.toBe(0);
   });
 
-  it('reorderResources writes priority 0..n onto existing resources of the given type', async () => {
+  it('reorderResources writes priority 0..n onto existing resources', async () => {
     const idA = await addResource(LANG, makeResource({ type: 'FREQUENCY', name: 'a' }));
     const idB = await addResource(LANG, makeResource({ type: 'FREQUENCY', name: 'b' }));
     const idDict = await addResource(LANG, makeResource({ type: 'DICTIONARY', name: 'dict' }));

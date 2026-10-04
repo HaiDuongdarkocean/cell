@@ -69,8 +69,8 @@ export class JsonArrayStrategy extends BaseFrequencyStrategy {
       let unescaped: string;
       try {
         unescaped = JSON.parse(`"${raw}"`);
-      } catch {
-        continue; // skip malformed string
+      } catch (e) {
+        throw new ParseError('Malformed string entry in JSON array.', e);
       }
       index++;
       yield { term: unescaped, reading: unescaped, frequency: index };

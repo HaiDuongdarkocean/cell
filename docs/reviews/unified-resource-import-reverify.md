@@ -81,3 +81,17 @@ All recommended fixes landed; gates re-run on the batch (typecheck + lint + 674 
 - **Foreign fix** — `defEntry.test.ts` fixture updated to `{count, source}` (broken at HEAD by `abea89b4`).
 
 Remaining known (accepted): pre-existing `rankByTerm`/`entriesToBand` divergence; latent inconsistencies noted in lane reports remain unreachable on current write paths.
+
+## Round 3 — live-flow verification (2026-10-05)
+
+User-driven re-verify: 3 fresh subagent lanes (SC-1..7, SC-8..14 + blast radius, flow/UI-UX audit) plus a new live-flow e2e lane with screenshot evidence. Verdict: **all 14 SCs PASS**; no user-visible regression in popup, tokenize/frequency-band, sync, FREQUENCY_GET, resource ops, or legacy resources. The open section updates **in place** at every stage — no leave/re-enter needed: local upload row → registry job row → in-place importing card → finished card + visible Alert.
+
+Fixed in this round:
+
+- **Live-flow UX** (`21b9ee93`) — import completion/failure shows a visible `Alert` (previously sr-only announce); `ImportJob.langCode` added so registry jobs filter per panel language and `runJob` cannot misroute after a profile switch; job rows dedupe against registry `signature` and skip signatures already in the resource list; skipped-duplicate rows get dismiss; upload with zero acked chunks shows "Preparing…" instead of a false 0%; mixed-kind zip (json data + word list) fails with a clear one-at-a-time `ParseError`.
+- **Stage2 e2e blast radius** — six specs hardcoded `DB_SCHEMA_VERSION = 12` without the `existing?.version` bump guard: once the app opened the DB at v14, seeding threw `VersionError`, and `immersion-playback` also transacted the removed `langFrequencyEntry` store (`NotFoundError`). All six now probe `indexedDB.databases()` first; `immersion-playback` seeds freq rows into `langDictionaryEntry` with `kind:'freq'` + `components` on resources when the legacy store is gone. Verified live: `immersion-playback` 5/5, `popup-status-keys` seed resolves the popup at v14.
+- **Polish** — `deserializeResourcePortable` emits the friendly 'corrupt portable resource blob' error for malformed/1-char lines (was raw `SyntaxError`); `jsonArrayStrategy` throws `ParseError` on a malformed string instead of silently skipping it (also fixes inflated `reportTotal`); stale test name fixed.
+
+Evidence: `tmp/unified-resource-import/` — `10-uploading-row.png` (local row + live chips), `11-importing-card.png` (resource card mid-import in place), `12-done-card.png` (finished card + success alert, same mount), `13-live-chips.png`, `14-narrowed-card.png` (queued narrowing lands definitions-only), `15-error-row.png` (failed import keeps retry/dismiss row). Showcase e2e 7/7; unit gates re-run on HEAD.
+
+Residual (accepted): `popup-status-keys` has 2 pre-existing stale assertions unrelated to this feature (badge text capitalized since `6be1fd87`; `CueRecommendFab` migrated to shared `Menu` at `b5abd84f`); `disabledComponents:['frequency']` inside the lookup merge lacks a dedicated test — covered by the eligibility predicate and `frequency.test.ts` handler tests.

@@ -92,8 +92,12 @@ async function seedDictionaryAndFrequency(
       const dbName = `orca-dict-${typeof hash === 'string' && hash.length === 8 ? hash : 'devmode0'}-${args.lang}`;
       const reverse = (s: string): string => s.split('').reverse().join('');
 
+      let version = args.version;
+      const existing = (await indexedDB.databases?.() ?? []).find((d) => d.name === dbName);
+      if (existing?.version && existing.version > version) version = existing.version;
+
       const db = await new Promise<IDBDatabase>((resolve, reject) => {
-        const req = indexedDB.open(dbName, args.version);
+        const req = indexedDB.open(dbName, version);
         req.onupgradeneeded = () => {
           const d = req.result;
           if (!d.objectStoreNames.contains('langResourceInfo')) {
@@ -131,19 +135,23 @@ async function seedDictionaryAndFrequency(
         req.onblocked = () => reject(new Error('IndexedDB open blocked'));
       });
 
+      const hasFreqStore = db.objectStoreNames.contains('langFrequencyEntry');
       const tx = db.transaction(
-        ['langResourceInfo', 'langDictionaryEntry', 'langFrequencyEntry'],
+        hasFreqStore
+          ? ['langResourceInfo', 'langDictionaryEntry', 'langFrequencyEntry']
+          : ['langResourceInfo', 'langDictionaryEntry'],
         'readwrite',
       );
       const resourceStore = tx.objectStore('langResourceInfo');
       const dictStore = tx.objectStore('langDictionaryEntry');
-      const freqStore = tx.objectStore('langFrequencyEntry');
+      const freqStore = hasFreqStore ? tx.objectStore('langFrequencyEntry') : dictStore;
 
       const dictId = await new Promise<number>((resolve, reject) => {
         const req = resourceStore.add({
           name: 'e2e-dict',
           langCode: args.lang,
           type: 'DICTIONARY',
+          components: ['definitions'],
           format: 'json-array',
           signature: `e2e-dict-${Date.now()}`,
           wordCount: 1,
@@ -171,6 +179,7 @@ async function seedDictionaryAndFrequency(
           name: 'e2e-freq',
           langCode: args.lang,
           type: 'FREQUENCY',
+          components: ['frequency'],
           format: 'json-array',
           signature: `e2e-freq-${Date.now()}`,
           wordCount: args.freq.length,
@@ -188,6 +197,7 @@ async function seedDictionaryAndFrequency(
           reading: '',
           frequency: e.rank,
           backwardTerm: reverse(e.term),
+          ...(hasFreqStore ? {} : { kind: 'freq' }),
         });
       }
 

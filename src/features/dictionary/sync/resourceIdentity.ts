@@ -39,10 +39,15 @@ export function deserializeResourcePortable(bytes: Uint8Array): {
   const freqRows: Record<string, unknown>[] = [];
   for (const line of new TextDecoder().decode(bytes).split('\n')) {
     if (line.length === 0) continue;
-    const row = JSON.parse(line.slice(1)) as Record<string, unknown>;
+    if (line[0] !== 'd' && line[0] !== 'f') throw new Error('corrupt portable resource blob');
+    let row: Record<string, unknown>;
+    try {
+      row = JSON.parse(line.slice(1)) as Record<string, unknown>;
+    } catch {
+      throw new Error('corrupt portable resource blob');
+    }
     if (line[0] === 'd') dictRows.push(row);
-    else if (line[0] === 'f') freqRows.push(row);
-    else throw new Error('corrupt portable resource blob');
+    else freqRows.push(row);
   }
   return { dictRows, freqRows };
 }
