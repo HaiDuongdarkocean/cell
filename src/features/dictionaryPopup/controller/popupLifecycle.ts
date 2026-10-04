@@ -160,12 +160,26 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     while (popupStack.length > index) {
       destroyLevel(popupStack.pop()!);
     }
+    syncTrail();
     if (popupStack.length === 0) {
       deps.resumeVideo();
       deps.resetVideoPlaying();
     } else {
       popupStack[popupStack.length - 1]?.mount?.focus();
     }
+  }
+
+  // Every mounted level mirrors the full lookup chain (sheet mode renders it
+  // as a breadcrumb strip); `isTopLevel` flips modality/inertness so only the
+  // top sheet claims the dialog role and receives focus.
+  function syncTrail(): void {
+    const trail = popupStack.map((level) => level.lookupTerm ?? '');
+    popupStack.forEach((level, index) => {
+      level.mount?.setOptions({
+        trail,
+        isTopLevel: index === popupStack.length - 1,
+      });
+    });
   }
 
   function closePopup(): void {
@@ -201,6 +215,9 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
   function mountPopupLevel(level: PopupLevel, options: MountPopupDictionaryOptions): void {
     level.mount = mountPopupDictionary({
       ...options,
+      trail: popupStack.map((l) => l.lookupTerm ?? ''),
+      isTopLevel: popupStack[popupStack.length - 1] === level,
+      onTrailNavigate: (index) => closeFromLevel(index + 1),
       onClose: () => closeFromLevel(popupStack.indexOf(level)),
       onSizeChange: handlePopupSizeChange,
       onSendToCard: (prefill) => deps.onCardCreatorAction(level, 'edit-card', prefill),
@@ -220,10 +237,13 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
 
   function handlePopupSizeChange(size: PopupSize, sheetHeight: number): void {
     const sheetHeightVh = Math.round((sheetHeight / window.innerHeight) * 100);
+    const current = deps.getDpSettings();
     deps.setDpSettings({
-      ...deps.getDpSettings(),
-      popupWidthPx: size.width,
-      popupMaxHeightPx: size.maxHeight,
+      ...current,
+      // Sheet resizes report {width:0, maxHeight:0} — they carry no popup
+      // geometry, so keep the previous popup size instead of persisting 0.
+      popupWidthPx: size.width > 0 ? size.width : current.popupWidthPx,
+      popupMaxHeightPx: size.maxHeight > 0 ? size.maxHeight : current.popupMaxHeightPx,
       popupSheetHeightVh: Math.max(20, Math.min(95, sheetHeightVh)),
     });
     void sendMessage({
@@ -384,7 +404,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     // content inside popup level N → level N+1. Deeper levels are pruned; the
     // target level is reused when it exists.
     const sourceIdx = levelIndexForTarget(popupStack, highlightTarget);
-    const targetIdx = isSheetMode() ? 0 : sourceIdx + 1;
+    const targetIdx = sourceIdx + 1;
     const sourceAbovePanel = sourceIdx >= 0 ? popupStack[sourceIdx]?.abovePanel : undefined;
     if (popupStack.length > targetIdx + 1) closeFromLevel(targetIdx + 1);
 
@@ -411,6 +431,8 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     // keys can't hit the stale word while the new result is loading.
     level.term = null;
     level.termLangCode = null;
+    level.lookupTerm = request.term;
+    syncTrail();
     if (highlightTarget instanceof Range && highlightTarget.startContainer instanceof Text) {
       const parent = highlightTarget.startContainer.parentElement;
       level.highlightAnchor = parent
@@ -582,6 +604,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
       (level) => level.mount !== null && path.includes(level.mount.host),
     );
     if (idx < 0 || idx >= popupStack.length - 1) return;
+    e.preventDefault();
     closeFromLevel(idx + 1);
   };
 

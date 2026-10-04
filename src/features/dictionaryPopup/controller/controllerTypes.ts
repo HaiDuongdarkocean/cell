@@ -35,6 +35,9 @@ export interface PopupLevel {
    *  target it). Null while a lookup is still loading. */
   term: string | null;
   termLangCode: string | null;
+  /** Term the user looked up at this level — breadcrumb label. Known at
+   *  request time, unlike `term` which waits for the winning result. */
+  lookupTerm: string | null;
   abovePanel: boolean;
   highlight: WordHighlight;
 }
@@ -50,6 +53,7 @@ export function createPopupLevel(): PopupLevel {
     popupTokenEl: null,
     term: null,
     termLangCode: null,
+    lookupTerm: null,
     abovePanel: true,
     highlight: createWordHighlight(),
   };

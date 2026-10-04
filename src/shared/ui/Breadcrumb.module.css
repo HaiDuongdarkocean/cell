@@ -21,7 +21,7 @@
 }
 
 .item:not(:last-child)::after {
-  content: '/';
+  content: var(--breadcrumb-separator, '/');
   color: var(--color-border);
 }
 

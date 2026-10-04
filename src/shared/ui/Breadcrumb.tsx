@@ -16,6 +16,8 @@ export interface BreadcrumbProps {
   items: BreadcrumbItem[];
   /** Optional accessible label. */
   ariaLabel?: string;
+  /** Separator glyph between items. Default: '/'. */
+  separator?: string;
   /** Optional class name. */
   className?: string;
 }
@@ -25,7 +27,7 @@ export interface BreadcrumbProps {
  *
  * Last item is automatically marked as current if no item has `current=true`.
  */
-export function Breadcrumb({ items, ariaLabel = t('ui.breadcrumb.aria'), className }: BreadcrumbProps): React.JSX.Element | null {
+export function Breadcrumb({ items, ariaLabel = t('ui.breadcrumb.aria'), separator, className }: BreadcrumbProps): React.JSX.Element | null {
   if (items.length === 0) return null;
 
   const lastIndex = items.findIndex((i) => i.current) !== -1
@@ -33,7 +35,11 @@ export function Breadcrumb({ items, ariaLabel = t('ui.breadcrumb.aria'), classNa
     : items.length - 1;
 
   return (
-    <nav className={[styles.breadcrumb, className ?? ''].filter(Boolean).join(' ')} aria-label={ariaLabel}>
+    <nav
+      className={[styles.breadcrumb, className ?? ''].filter(Boolean).join(' ')}
+      aria-label={ariaLabel}
+      style={separator ? { '--breadcrumb-separator': `'${separator}'` } as React.CSSProperties : undefined}
+    >
       <ol className={styles.list}>
         {items.map((item, index) => (
           <li

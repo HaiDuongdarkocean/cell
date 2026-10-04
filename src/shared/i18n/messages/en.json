@@ -134,6 +134,7 @@
   "dict.badge.drag": "Drag to move",
   "dict.badge.open": "Open dictionary",
   "dict.toolbar.aria": "Dictionary materials",
+  "dict.trail.backTo": "Back to $1",
   "dict.tab.audio": "Audio",
   "dict.tab.image": "Image",
   "dict.tab.translate": "Translate",

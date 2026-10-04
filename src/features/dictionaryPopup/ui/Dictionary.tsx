@@ -4,6 +4,7 @@ import { Surface } from '@/shared/ui/Surface';
 import { DictionaryPanelView } from './DictionaryPanelView';
 import { usePopupPosition } from './usePopupPosition';
 import { Sheet } from '@/shared/ui/Sheet';
+import { LookupTrail } from './LookupTrail';
 import styles from './PopupDictionary.module.css';
 import type { ComponentProps } from 'react';
 import type { PopupAnchor, PopupLineRect, PopupPointerHint, PopupSize } from './usePopupPosition';
@@ -20,6 +21,14 @@ export interface DictionaryPopupProps extends Omit<DictionaryPanelProps, 'isOpen
   readonly anchorVersion?: number;
   readonly initialSize?: Partial<PopupSize>;
   readonly initialSheetHeight?: number;
+  /** Lookup chain terms (level 1 → N) — rendered as a breadcrumb strip in
+   *  sheet mode when the chain is deeper than one level. */
+  readonly trail?: readonly string[];
+  /** False when this level is covered by a deeper sheet — drops modal
+   *  semantics and goes inert. Default: true. */
+  readonly isTopLevel?: boolean;
+  /** Breadcrumb tap: jump back to trail index `index`. */
+  readonly onTrailNavigate?: (index: number) => void;
   readonly onClose: () => void;
   readonly onSizeChange?: (size: PopupSize, sheetHeight: number) => void;
   readonly style?: React.CSSProperties;
@@ -39,6 +48,9 @@ function DictionaryPopup(props: DictionaryPopupProps): React.JSX.Element {
     anchorVersion,
     initialSize,
     initialSheetHeight,
+    trail,
+    isTopLevel,
+    onTrailNavigate,
     onClose,
     onSizeChange,
     style: incomingStyle,
@@ -74,6 +86,13 @@ function DictionaryPopup(props: DictionaryPopupProps): React.JSX.Element {
         aria-label={t('dict.sheet.aria')}
         initialHeight={initialSheetHeight}
         onHeightChange={(h) => onSizeChange?.({ width: 0, maxHeight: 0 }, h)}
+        header={
+          trail && onTrailNavigate ? (
+            <LookupTrail trail={trail} onNavigate={onTrailNavigate} />
+          ) : undefined
+        }
+        modal={isTopLevel ?? true}
+        inert={isTopLevel === false}
         data-cell-id="popup-dictionary"
       >
         <DictionaryPanelView {...panelProps} isOpen variant="popup" />

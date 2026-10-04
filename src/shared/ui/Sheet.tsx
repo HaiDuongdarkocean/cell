@@ -1,4 +1,4 @@
-import { useCallback, useEffect, type ReactNode, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useRef, type ReactNode, type KeyboardEvent } from 'react';
 import { useSheet } from './useSheet';
 import { useFocusTrap } from './useFocusTrap';
 import { pushEscapeLayer } from './escapeLayerStack';
@@ -18,6 +18,15 @@ export interface SheetProps {
   readonly maxHeight?: number;
   /** Called when sheet height changes (for persistence). */
   readonly onHeightChange?: (height: number) => void;
+  /** Content pinned between the drag handle and the scrollable content area
+   *  (e.g. a breadcrumb trail). Stays fixed while content scrolls. */
+  readonly header?: ReactNode;
+  /** Whether this sheet claims dialog modality (aria-modal). Only the top
+   *  sheet of a stacked set should be modal. Default: true. */
+  readonly modal?: boolean;
+  /** Render inert — removed from tab order and the accessibility tree. Use
+   *  for covered stack levels. Default: false. */
+  readonly inert?: boolean;
   /** Sheet content. */
   readonly children?: ReactNode;
   /** Custom className for the sheet container (extends styles.sheet). */
@@ -42,6 +51,9 @@ export function Sheet({
   initialHeight,
   maxHeight,
   onHeightChange,
+  header,
+  modal = true,
+  inert = false,
   children,
   className,
   contentClassName,
@@ -55,6 +67,19 @@ export function Sheet({
     onPointerDownContent,
   } = useSheet({ initialHeight, maxHeight, onClose, onHeightChange });
   useFocusTrap(sheetRef, open);
+
+  // A covered sheet is inert; when the stack pops back to it the attribute is
+  // removed and the sheet becomes the interactive top again. Refocus it here —
+  // callers can't time this themselves (the inert attr must be committed
+  // before focus() works, and the trap doesn't re-fire while `open` is stable).
+  const wasInertRef = useRef(inert);
+  useEffect(() => {
+    if (wasInertRef.current && !inert && sheetRef.current) {
+      if (sheetRef.current.tabIndex < 0) sheetRef.current.tabIndex = -1;
+      sheetRef.current.focus();
+    }
+    wasInertRef.current = inert;
+  }, [inert, sheetRef]);
 
   // Stop non-Escape keyboard events from leaking to the host page while the
   // sheet is open. The drag handle and content may need arrow/Enter/Space;
@@ -85,39 +110,56 @@ export function Sheet({
   if (!open) return null;
 
   return (
-    <div
-      ref={sheetRef}
-      className={className ? `${styles.sheet} ${className}` : styles.sheet}
-      role="dialog"
-      aria-modal="true"
-      aria-label={ariaLabel}
-      data-cell-id={dataTestId}
-      style={style}
-      onKeyDown={handleKeyDown}
-      onKeyUp={handleKeyUp}
-    >
+    <>
       <div
-        className={styles.handle}
-        role="separator"
-        aria-orientation="horizontal"
-        tabIndex={0}
-        aria-label={t('ui.sheet.resizeAria')}
-        onPointerDown={onPointerDownHandle}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onClose?.();
-            return;
-          }
-          onKeyDownHandle(e);
-        }}
-      />
-      <div
-        className={contentClassName ? `${styles.content} ${contentClassName}` : styles.content}
-        onPointerDown={onPointerDownContent}
+        ref={sheetRef}
+        className={className ? `${styles.sheet} ${className}` : styles.sheet}
+        role="dialog"
+        aria-modal={modal ? 'true' : undefined}
+        aria-label={ariaLabel}
+        inert={inert}
+        data-cell-id={dataTestId}
+        style={style}
+        onKeyDown={handleKeyDown}
+        onKeyUp={handleKeyUp}
       >
-        {children}
+        <div
+          className={styles.handle}
+          role="separator"
+          aria-orientation="horizontal"
+          tabIndex={0}
+          aria-label={t('ui.sheet.resizeAria')}
+          onPointerDown={onPointerDownHandle}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onClose?.();
+              return;
+            }
+            onKeyDownHandle(e);
+          }}
+        />
+        {header}
+        <div
+          className={contentClassName ? `${styles.content} ${contentClassName}` : styles.content}
+          onPointerDown={onPointerDownContent}
+        >
+          {children}
+        </div>
       </div>
-    </div>
+      {inert ? (
+        // Inert subtrees are skipped by hit-testing — without this catcher a
+        // tap on a covered sheet's exposed area would land on the page behind
+        // it (a page lookup could reset the whole stack). The catcher sits
+        // inside this host so the stack's pointer routing sees the tap and
+        // pops back to this level instead.
+        <div
+          className={styles.cover}
+          style={{ height: style.height, maxHeight: style.maxHeight, transform: style.transform }}
+          data-cell-id="sheet-inert-cover"
+          aria-hidden="true"
+        />
+      ) : null}
+    </>
   );
 }

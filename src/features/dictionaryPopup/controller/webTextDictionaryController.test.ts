@@ -2066,6 +2066,153 @@ describe('nested popup stack', () => {
     act(() => { ctrl.destroy() });
   });
 
+  describe('sheet-mode lookup trail', () => {
+    function setViewport(width: number): void {
+      Object.defineProperty(window, 'innerWidth', { value: width, configurable: true });
+    }
+
+    function sheetOf(host: HTMLElement): HTMLElement {
+      return host.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]') as HTMLElement;
+    }
+
+    function trailOf(host: HTMLElement): HTMLElement | null {
+      return host.shadowRoot!.querySelector('[data-cell-id="lookup-trail"]');
+    }
+
+    function crumbTexts(host: HTMLElement): string[] {
+      const trail = trailOf(host);
+      if (!trail) return [];
+      return Array.from(trail.querySelectorAll('li')).map((li) => li.textContent ?? '');
+    }
+
+    async function withSheetViewport(fn: () => Promise<void>): Promise<void> {
+      setViewport(500);
+      try {
+        await fn();
+      } finally {
+        setViewport(1024);
+      }
+    }
+
+    it('pushes a new sheet level and renders the breadcrumb trail', async () => {
+      await withSheetViewport(async () => {
+        makeLookupForTerms();
+        const ctrl = createWebTextDictionaryController(makeDeps());
+
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'above' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('above')) });
+        await flushLookup();
+        const lv1 = popupHosts()[0]!;
+        expect(trailOf(lv1)).toBeNull();
+
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'used' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'used')) });
+        await flushLookup();
+
+        const hosts = popupHosts();
+        expect(hosts).toHaveLength(2);
+        expect(crumbTexts(hosts[1]!)).toEqual(['above', 'used']);
+        const items = trailOf(hosts[1]!)!.querySelectorAll('li');
+        expect(items[1]!.getAttribute('aria-current')).toBe('page');
+        expect(items[0]!.querySelector('button')).not.toBeNull();
+        act(() => { ctrl.destroy() });
+      });
+    });
+
+    it('tapping an ancestor crumb closes deeper levels', async () => {
+      await withSheetViewport(async () => {
+        makeLookupForTerms();
+        const ctrl = createWebTextDictionaryController(makeDeps());
+
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'above' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('above')) });
+        await flushLookup();
+        const lv1 = popupHosts()[0]!;
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'used' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'used')) });
+        await flushLookup();
+        const lv2 = popupHosts()[1]!;
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'set' }), 'r3', new DOMRect(70, 80, 50, 20), rangeInPopup(lv2, 'set')) });
+        await flushLookup();
+        expect(popupHosts()).toHaveLength(3);
+
+        const crumb = trailOf(popupHosts()[2]!)!.querySelectorAll('button')[0]! as HTMLElement;
+        await act(async () => { crumb.click(); });
+
+        expect(popupHosts()).toHaveLength(1);
+        expect(popupHosts()[0]).toBe(lv1);
+        expect(trailOf(lv1)).toBeNull();
+        act(() => { ctrl.destroy() });
+      });
+    });
+
+    it('a page lookup resets the chain back to level 1', async () => {
+      await withSheetViewport(async () => {
+        makeLookupForTerms();
+        const ctrl = createWebTextDictionaryController(makeDeps());
+
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'above' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('above')) });
+        await flushLookup();
+        const lv1 = popupHosts()[0]!;
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'used' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'used')) });
+        await flushLookup();
+        expect(popupHosts()).toHaveLength(2);
+
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'fresh' }), 'r3', new DOMRect(90, 100, 50, 20), pageRange('fresh')) });
+        await flushLookup();
+
+        expect(popupHosts()).toHaveLength(1);
+        expect(popupHosts()[0]).toBe(lv1);
+        expect(trailOf(lv1)).toBeNull();
+        expect(crumbTexts(popupHosts()[0]!)).toEqual([]);
+        act(() => { ctrl.destroy() });
+      });
+    });
+
+    it('only the top sheet claims modal semantics — covered levels go inert', async () => {
+      await withSheetViewport(async () => {
+        makeLookupForTerms();
+        const ctrl = createWebTextDictionaryController(makeDeps());
+
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'above' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('above')) });
+        await flushLookup();
+        const lv1 = popupHosts()[0]!;
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'used' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'used')) });
+        await flushLookup();
+        const lv2 = popupHosts()[1]!;
+
+        const sheet1 = sheetOf(lv1);
+        const sheet2 = sheetOf(lv2);
+        expect(sheet1.hasAttribute('inert')).toBe(true);
+        expect(sheet1.getAttribute('aria-modal')).toBeNull();
+        expect(sheet2.hasAttribute('inert')).toBe(false);
+        expect(sheet2.getAttribute('aria-modal')).toBe('true');
+        act(() => { ctrl.destroy() });
+      });
+    });
+
+    it('Escape on the top sheet pops one level and reveals the parent', async () => {
+      await withSheetViewport(async () => {
+        makeLookupForTerms();
+        const ctrl = createWebTextDictionaryController(makeDeps());
+
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'above' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('above')) });
+        await flushLookup();
+        const lv1 = popupHosts()[0]!;
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'used' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'used')) });
+        await flushLookup();
+        const lv2 = popupHosts()[1]!;
+
+        await act(async () => {
+          sheetOf(lv2).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }));
+        });
+
+        expect(popupHosts()).toHaveLength(1);
+        expect(popupHosts()[0]).toBe(lv1);
+        const sheet1 = sheetOf(lv1);
+        expect(sheet1.hasAttribute('inert')).toBe(false);
+        expect(sheet1.getAttribute('aria-modal')).toBe('true');
+        act(() => { ctrl.destroy() });
+      });
+    });
+  });
+
   describe('popup z-index vs universal panel', () => {
     function panelRange(text: string): Range {
       const host = document.createElement('div');
