@@ -5,7 +5,7 @@
   gap: var(--space-1);
   padding-bottom: var(--space-2);
   margin-bottom: var(--space-2);
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-bottom: var(--border-width-hairline) dashed;
 }
 
 .sep {
