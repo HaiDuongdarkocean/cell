@@ -56,8 +56,13 @@ export function ImportProgress({ job, onToggleComponent, onResolveDuplicate, onR
       right = <Spinner size="sm" ariaLabel={t('resources.job.waiting')} />;
       break;
     case 'uploading':
-      meta = <span className={styles.metaMuted}>{t('resources.job.uploading', [fillPct])}</span>;
-      right = <span className={styles.pct}>{fillPct}%</span>;
+      if (job.uploadTotal === 0) {
+        meta = <span className={styles.metaMuted}>{t('resources.job.preparing')}</span>;
+        right = <Spinner size="sm" ariaLabel={t('resources.job.preparing')} />;
+      } else {
+        meta = <span className={styles.metaMuted}>{t('resources.job.uploading', [fillPct])}</span>;
+        right = <span className={styles.pct}>{fillPct}%</span>;
+      }
       break;
     case 'importing':
       meta = (
@@ -149,6 +154,16 @@ export function ImportProgress({ job, onToggleComponent, onResolveDuplicate, onR
             >
               {t('resources.job.replace')}
             </Button>
+            {onDismiss !== undefined && (
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => onDismiss(job.jobId)}
+                data-cell-id={`job-dismiss-${job.jobId}`}
+              >
+                {t('jobs.action.dismiss')}
+              </Button>
+            )}
           </span>
         </span>
       );

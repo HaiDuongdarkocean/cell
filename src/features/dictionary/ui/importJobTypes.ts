@@ -33,6 +33,7 @@ export interface JobDuplicate {
 
 export interface ImportJob {
   readonly jobId: string;
+  readonly langCode: string;
   readonly file: File;
   readonly fileName: string;
   readonly signature: string;
@@ -103,7 +104,7 @@ const toProgress = (source: Job | ImportJob): ResourceImportProgress => {
   return { phase: 'import', done: source.progress.done, total: source.progress.total };
 };
 
-const signatureOf = (job: Job): string | null =>
+export const signatureOf = (job: Job): string | null =>
   typeof job.params.signature === 'string' ? job.params.signature : null;
 
 export const buildPendingImports = (

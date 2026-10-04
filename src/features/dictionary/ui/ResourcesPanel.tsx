@@ -38,7 +38,7 @@ import {
   reorderResources,
   setResourceEnabled,
 } from '@/features/dictionary/services/resourceClient';
-import { isActiveJob, type Job } from '@/entities/job/types';
+import { isActiveJob, isTerminalJob, type Job } from '@/entities/job/types';
 import { getUserMessage, isImportError } from '@/features/dictionary/logic/importErrors';
 import { useSectionDrag } from '@/shared/lib/useSectionDrag';
 import { computeSignature } from '@/features/dictionary/logic/signatureGenerator';
@@ -51,7 +51,7 @@ import { readFileHead } from '@/features/dictionary/logic/fileDetector';
 import type { FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 
 import { JobRow, useJobs, useJobTerminalWatcher, dismissJob, retryJob, jobErrorText } from '@/features/jobs';
-import { buildPendingImports, isRunningJob, makeJobId, type ImportJob } from './importJobTypes';
+import { buildPendingImports, isRunningJob, makeJobId, signatureOf, type ImportJob } from './importJobTypes';
 import styles from './ResourcesPanel.module.css';
 
 const SUCCESS_DISMISS_MS = 4000;
@@ -442,36 +442,36 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
   // The orchestrator creates the resource row mid-import (installationFinished
   // = false) and only then stamps resourceId onto the registry job — refresh
   // once per new id so the importing card appears in the list while it fills.
-  const seenImportResourceIds = useRef<Set<number>>(new Set());
+  const seenImportResourceIds = useRef<Set<string>>(new Set());
   useEffect(() => {
     const fresh = registryJobs.filter(
       (j) => j.kind === 'resource-import' && j.resourceId != null
-        && !seenImportResourceIds.current.has(j.resourceId)
+        && !seenImportResourceIds.current.has(`${langCode}:${j.resourceId}`)
         && !resources.some((r) => r.id === j.resourceId),
     );
     if (fresh.length === 0) return;
-    for (const j of fresh) seenImportResourceIds.current.add(j.resourceId!);
+    for (const j of fresh) seenImportResourceIds.current.add(`${langCode}:${j.resourceId!}`);
     void refresh(true);
-  }, [registryJobs, resources, refresh]);
+  }, [langCode, registryJobs, resources, refresh]);
 
   useJobTerminalWatcher(registryJobs, useCallback((job: Job) => {
     void refresh(true);
+    // The visible Alert is itself role=status — announcing again would
+    // duplicate the utterance for screen readers.
     if (job.kind === 'resource-import') {
       if (job.status === 'done') {
-        announce(t('resources.announce.added', [job.label, job.result?.wordCount ?? 0]));
+        showPanelAlert('success', t('resources.announce.added', [job.label, job.result?.wordCount ?? 0]));
       } else {
-        announce(t('resources.announce.failed', [job.label, jobErrorText(job.error ?? job.status)]));
+        showPanelAlert('error', t('resources.announce.failed', [job.label, jobErrorText(job.error ?? job.status)]));
       }
     } else if (job.kind === 'resource-delete') {
       if (job.status === 'done') {
-        announce(t('resources.delete.one', [job.label]));
         showPanelAlert('success', t('resources.delete.one', [job.label]));
       } else {
-        announce(t('resources.delete.failed', [jobErrorText(job.error ?? job.status)]));
         showPanelAlert('error', t('resources.delete.failed', [jobErrorText(job.error ?? job.status)]));
       }
     }
-  }, [refresh, announce, showPanelAlert]));
+  }, [refresh, showPanelAlert]));
 
   const handleDismissJob = useCallback((jobId: string) => {
     void dismissJob(jobId).catch(() => undefined);
@@ -490,16 +490,20 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
 
   const runJobRef = useRef<(jobId: string) => Promise<void>>(async () => {});
 
-  /** Start queued jobs while the dual bound allows. */
+  /** Start queued jobs while the dual bound allows. A parked duplicate holds
+   *  no in-flight bytes; a lone oversized file still gets to run. */
   const pump = useCallback(() => {
     const jobs = jobsRef.current;
     const running = jobs.filter(isRunningJob);
     if (running.length >= MAX_CONCURRENT_IMPORTS) return;
-    let inflightBytes = running.reduce((sum, j) => sum + j.file.size, 0);
+    let inflightBytes = running.reduce(
+      (sum, j) => (j.status === 'duplicate' ? sum : sum + j.file.size),
+      0,
+    );
     for (const job of jobs) {
       if (running.length >= MAX_CONCURRENT_IMPORTS) break;
       if (job.status !== 'queued') continue;
-      if (inflightBytes + job.file.size > MAX_INFLIGHT_BYTES) continue;
+      if (running.length > 0 && inflightBytes + job.file.size > MAX_INFLIGHT_BYTES) continue;
       running.push(job);
       inflightBytes += job.file.size;
       void runJobRef.current(job.jobId);
@@ -515,6 +519,9 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
 
   const handleDismissLocal = useCallback((jobId: string) => {
     setJobs((prev) => prev.filter((j) => j.jobId !== jobId));
+    // A post-handoff failure shares this id in the registry — dismiss its
+    // twin too so it doesn't resurface as an interrupted JobRow.
+    void dismissJob(jobId).catch(() => undefined);
   }, [setJobs]);
 
   /** Upload one job's bytes; the background owns everything after handoff —
@@ -526,7 +533,7 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     patchJob(jobId, { status: 'uploading', error: null });
     try {
       const outcome = await importFile(job.file as ReadableFile, {
-        langCode,
+        langCode: job.langCode,
         jobId,
         getComponents: () => {
           const current = jobsRef.current.find((j) => j.jobId === jobId);
@@ -563,26 +570,27 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     } finally {
       pump();
     }
-  }, [langCode, patchJob, announce, refresh, pump, setJobs]);
+  }, [patchJob, announce, refresh, pump, setJobs]);
 
   // Keep the scheduler's lazy reference fresh every render.
   runJobRef.current = runJob;
 
-  /** Drop/pick handler — validate, dedupe, sniff components, enqueue. */
+  /** Drop/pick handler — a row lands per file immediately, then
+   *  validate/detect/sign patches it in place so feedback is instant even
+   *  with many files or a slow device. */
   const handleFiles = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
 
     const allowed = allowedExtensions(UNIFIED_COPY.accept);
-    const activeSignatures = new Set(
-      jobsRef.current.filter((j) => j.status === 'queued' || isRunningJob(j)).map((j) => j.signature),
-    );
+    // A new drop clears persisted error rows.
+    setJobs((prev) => prev.filter((j) => j.status !== 'error'));
     const seen = new Set<string>();
-    const newJobs: ImportJob[] = [];
 
     for (const file of files) {
       const jobId = makeJobId();
       const base: ImportJob = {
         jobId,
+        langCode,
         file,
         fileName: file.name,
         signature: '',
@@ -600,35 +608,38 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
         duplicate: null,
       };
 
-      if (!allowed.has(getExtension(file.name))) {
-        newJobs.push({ ...base, status: 'error', error: t('resources.error.format', [file.name]) });
-        continue;
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        newJobs.push({ ...base, status: 'error', error: t('resources.error.tooLarge', [file.name, formatBytes(file.size)]) });
-        continue;
-      }
+      const syncError = !allowed.has(getExtension(file.name))
+        ? t('resources.error.format', [file.name])
+        : file.size > MAX_FILE_SIZE
+          ? t('resources.error.tooLarge', [file.name, formatBytes(file.size)])
+          : null;
+      setJobs((prev) => [...prev, syncError != null ? { ...base, status: 'error', error: syncError } : base]);
+      if (syncError != null) continue;
 
-      let detected: readonly DictionaryComponent[];
       try {
-        detected = await detectComponents(file.name, await readFileHead(file));
-      } catch (e) {
-        newJobs.push({ ...base, status: 'error', error: t('resources.error.detect', [file.name, String(e)]) });
-        continue;
-      }
-      const signature = await computeSignature(file);
-      if (activeSignatures.has(signature) || seen.has(signature)) {
-        newJobs.push({ ...base, signature, status: 'skipped' });
-        continue;
-      }
-      seen.add(signature);
-      newJobs.push({ ...base, signature, detectedComponents: detected, selectedComponents: detected });
-    }
+        const detected = await detectComponents(file.name, await readFileHead(file));
+        patchJob(jobId, { detectedComponents: detected, selectedComponents: detected });
 
-    // A new drop clears persisted error rows.
-    setJobs((prev) => [...prev.filter((j) => j.status !== 'error'), ...newJobs]);
-    pump();
-  }, [pump, setJobs]);
+        const signature = await computeSignature(file);
+        const duplicateInFlight = jobsRef.current.some(
+          (j) => j.jobId !== jobId && j.signature !== '' && j.signature === signature
+            && (j.status === 'queued' || isRunningJob(j)),
+        );
+        const duplicateRegistered = registryJobs.some(
+          (j) => j.kind === 'resource-import' && !isTerminalJob(j) && signatureOf(j) === signature,
+        );
+        if (duplicateInFlight || duplicateRegistered || seen.has(signature)) {
+          patchJob(jobId, { signature, status: 'skipped' });
+          continue;
+        }
+        seen.add(signature);
+        patchJob(jobId, { signature });
+        pump();
+      } catch (e) {
+        patchJob(jobId, { status: 'error', error: t('resources.error.detect', [file.name, String(e)]) });
+      }
+    }
+  }, [langCode, registryJobs, patchJob, pump, setJobs]);
 
   const resolveDuplicate = useCallback((jobId: string, choice: DuplicateDecision): void => {
     const job = jobsRef.current.find((j) => j.jobId === jobId);
@@ -791,7 +802,7 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
             copy={UNIFIED_COPY}
             sectionId="resources"
             resources={sortedResources}
-            jobs={jobs}
+            jobs={jobs.filter((j) => j.langCode === langCode)}
             registryJobs={registryJobs}
             loading={loading}
             busy={deleteBusy}

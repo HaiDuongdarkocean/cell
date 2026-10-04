@@ -943,3 +943,95 @@ describe('pointer drag reorder', () => {
     expect(screen.queryByTestId('drag-2')).not.toBeInTheDocument();
   });
 });
+
+describe('ResourcesPanel — import flow hardening', () => {
+  it('starts a lone file larger than the in-flight byte bound', async () => {
+    const big = new File(['x'], 'huge.db');
+    Object.defineProperty(big, 'size', { value: 300 * 1024 * 1024 });
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFile(0, big);
+    await waitFor(() => expect(importFile).toHaveBeenCalledTimes(1));
+  });
+
+  it('shows an error row when signature computation fails instead of silently dropping', async () => {
+    const { computeSignature } = jest.requireMock<typeof import('@/features/dictionary/logic/signatureGenerator')>(
+      '@/features/dictionary/logic/signatureGenerator',
+    );
+    (computeSignature as jest.Mock).mockRejectedValueOnce(new Error('no subtle crypto'));
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFile(0, new File(['a\n'], 'plain.txt', { type: 'text/plain' }));
+    await waitFor(() => expect(screen.getByText(/no subtle crypto/)).toBeInTheDocument());
+    expect(importFile).not.toHaveBeenCalled();
+  });
+
+  it('a queued job keeps its drop-time language after a profile switch', async () => {
+    let resolveFirst!: (v: { jobId: string }) => void;
+    importFile
+      .mockImplementationOnce(() => new Promise((r) => { resolveFirst = r; }))
+      .mockImplementationOnce(() => new Promise(() => {}))
+      .mockImplementationOnce(() => new Promise(() => {}));
+    const { rerender } = render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFiles(0, [
+      new File(['a\n'], 'one.txt', { type: 'text/plain' }),
+      new File(['b\n'], 'two.txt', { type: 'text/plain' }),
+      new File(['c\n'], 'three.txt', { type: 'text/plain' }),
+    ]);
+    await waitFor(() => expect(importFile).toHaveBeenCalledTimes(2));
+
+    rerender(<ResourcesPanel langCode="ja" />);
+    act(() => resolveFirst({ jobId: 'job-1' }));
+
+    await waitFor(() => expect(importFile).toHaveBeenCalledTimes(3));
+    const [, opts] = importFile.mock.calls[2] as unknown as [unknown, { langCode: string }];
+    expect(opts.langCode).toBe('en');
+  });
+
+  it('skips a file already importing in the registry', async () => {
+    setRegistryJobs([
+      makeJob({
+        id: 'imp-existing',
+        kind: 'resource-import',
+        status: 'running',
+        params: { langCode: 'en', signature: 'sig-dup.txt' },
+      }),
+    ]);
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFile(0, new File(['x\n'], 'dup.txt', { type: 'text/plain' }));
+    await waitFor(() => expect(screen.getByText(/skipped/i)).toBeInTheDocument());
+    expect(importFile).not.toHaveBeenCalled();
+  });
+
+  it('dismissing a local error row also dismisses its registry twin', async () => {
+    const { dismissJob } = jest.requireMock<typeof import('@/features/jobs')>('@/features/jobs');
+    importFile.mockRejectedValueOnce(new Error('boom'));
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFile(0, new File(['a\n'], 'bad.txt', { type: 'text/plain' }));
+    const dismiss = await screen.findByTestId(/^job-dismiss-/);
+    const jobId = dismiss.getAttribute('data-cell-id')!.slice('job-dismiss-'.length);
+    fireEvent.click(dismiss);
+    await waitFor(() => expect(dismissJob).toHaveBeenCalledWith(jobId));
+    expect(screen.queryByText('bad.txt')).not.toBeInTheDocument();
+  });
+
+  it('shows one row per dropped file immediately, before detection resolves', async () => {
+    const { detectComponents } = jest.requireMock<typeof import('@/features/dictionary/logic/formatDetector')>(
+      '@/features/dictionary/logic/formatDetector',
+    );
+    let resolveDetect!: (v: readonly string[]) => void;
+    (detectComponents as jest.Mock).mockImplementation(
+      () => new Promise<readonly string[]>((r) => { resolveDetect = r; }),
+    );
+    importFile.mockImplementation(() => new Promise<{ jobId: string }>(() => {}));
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    pickFile(0, new File(['a\n'], 'slow.txt', { type: 'text/plain' }));
+    await waitFor(() => expect(screen.getByText('slow.txt')).toBeInTheDocument());
+    act(() => resolveDetect(['frequency']));
+    await waitFor(() => expect(importFile).toHaveBeenCalledTimes(1));
+  });
+});

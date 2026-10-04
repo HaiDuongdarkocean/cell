@@ -632,6 +632,7 @@
   "resources.deleteModal.delete": "Xóa",
   "resources.job.waiting": "Chờ lượt",
   "resources.job.counting": "Đang đếm",
+  "resources.job.preparing": "Đang chuẩn bị…",
   "resources.job.uploading": "Đang tải lên… $1%",
   "resources.job.importing": "Đang thêm… $1 mục",
   "resources.job.importingOf": "Đang thêm… $1 / $2 mục",

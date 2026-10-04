@@ -154,8 +154,13 @@ export function sniffZipFormat(files: Record<string, Uint8Array>): ImportFormat 
     return 'term-bank';
   }
   const json = selectZipDataJson(files);
-  if (json) return json.format;
   const txtPaths = paths.filter((p) => p.endsWith('.txt'));
+  if (json) {
+    if (txtPaths.length > 0) {
+      throw new ParseError('Zip contains both a JSON data file and a word list — import them one at a time.');
+    }
+    return json.format;
+  }
   if (txtPaths.length > 1) {
     throw new ParseError(`Zip contains ${txtPaths.length} word lists — import them one at a time.`);
   }

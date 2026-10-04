@@ -632,6 +632,7 @@
   "resources.deleteModal.delete": "Delete",
   "resources.job.waiting": "Waiting",
   "resources.job.counting": "Counting",
+  "resources.job.preparing": "Preparing…",
   "resources.job.uploading": "Uploading… $1%",
   "resources.job.importing": "Adding… $1 items",
   "resources.job.importingOf": "Adding… $1 / $2 items",

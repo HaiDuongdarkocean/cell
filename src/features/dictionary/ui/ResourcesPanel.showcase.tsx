@@ -10,6 +10,7 @@ const noop = (): void => {};
 function job(fileName: string, overrides: Partial<ImportJob>): ImportJob {
   return {
     jobId: `demo-${fileName}`,
+    langCode: 'en',
     file: new File(['x'], fileName),
     fileName,
     signature: `sig-${fileName}`,

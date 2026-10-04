@@ -20,6 +20,7 @@ function existingResource(installationFinished = true): ResourceInfo {
 function makeJob(overrides: Partial<ImportJob>): ImportJob {
   return {
     jobId: 'job-1',
+    langCode: 'en',
     file: new File(['x'], 'dict.zip', { type: 'application/zip' }),
     fileName: 'dict.zip',
     signature: 'sig',
