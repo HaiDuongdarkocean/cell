@@ -2260,15 +2260,21 @@
         }
       },
       "confidence": "medium",
-      "awaiting": "blocked:sync-on-use-wip-lint-fieldrow",
-      "resolutions": [],
+      "awaiting": null,
+      "resolutions": [
+        {
+          "flag": "blocked:sync-on-use-wip-lint-fieldrow",
+          "note": "foreign WIP lint fixed+committed by sync-on-use owner (d2901ee3); main tree clean",
+          "at": "2026-10-04T04:52:59.092Z"
+        }
+      ],
       "loops": 0,
       "owner": {
         "id": "devin-session-recap-1791049127",
         "since": "2026-10-03T17:38:48.049Z"
       },
       "worktree": "../cell-worktrees/session-recap",
-      "updated": "2026-10-03T19:39:02.787Z"
+      "updated": "2026-10-04T04:52:59.092Z"
     },
     "unified-resource-import": {
       "stage": "deliver",
@@ -2322,38 +2328,9 @@
         },
         "lint": {
           "v": "pass",
-          "at": "2026-10-04T04:49:22.971Z",
-          "head": "6b2e17a7ca1dd7d50648c1a0c70d639c0d7aa0aa",
-          "dirty": [
-            "public/manifest.json",
-            "src/entities/srs/schemas.ts",
-            "src/entities/srs/types.ts",
-            "src/entrypoints/srs-study/SrsEditCardPanel.tsx",
-            "src/entrypoints/srs-study/SrsNoteEditorPanel.tsx",
-            "src/entrypoints/srs-study/SrsReviewCard.tsx",
-            "src/features/cardCreator/service/srsCardService.test.ts",
-            "src/features/cardCreator/service/srsCardService.ts",
-            "src/features/cardCreator/ui/CardCreatorDialogContent.tsx",
-            "src/features/cardCreator/ui/FieldRow.module.css",
-            "src/features/cardCreator/ui/FieldRow.test.tsx",
-            "src/features/cardCreator/ui/FieldRow.tsx",
-            "src/features/cardCreator/ui/NoteFieldsEditor.tsx",
-            "src/features/dictionaryPopup/services/addToOceanSrs.ts",
-            "src/features/srs/lib/variantFront.test.ts",
-            "src/features/srs/lib/variantFront.ts",
-            "src/features/srs/logic/reviewEngine.test.ts",
-            "src/features/srs/logic/reviewEngine.ts",
-            "src/features/srs/ui/SrsReviewCard.module.css",
-            "src/features/srs/ui/SrsReviewCardBack.tsx",
-            "src/features/srs/ui/SrsReviewCardFront.tsx",
-            "src/features/srs/ui/SrsStudyProvider.tsx",
-            "src/features/srs/ui/SrsVariantFront.tsx",
-            "src/features/srs/ui/srsCardShared.tsx",
-            "src/shared/i18n/messages/en.json",
-            "src/shared/i18n/messages/vi.json",
-            "src/shared/icons/index.ts",
-            "src/shared/icons/svg/clipboard-paste.svg"
-          ]
+          "at": "2026-10-04T04:52:10.698Z",
+          "head": "d2901ee32973eb1222b4ef484141b56c82cc1b41",
+          "dirty": []
         }
       },
       "confidence": "medium",
@@ -2376,7 +2353,7 @@
         "since": "2026-10-04T04:12:16.219Z"
       },
       "worktree": "../cell-worktrees/unified-resource-import",
-      "updated": "2026-10-04T04:49:23.035Z"
+      "updated": "2026-10-04T04:52:10.745Z"
     }
   }
 }
