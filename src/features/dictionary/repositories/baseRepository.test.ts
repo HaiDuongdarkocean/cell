@@ -55,7 +55,7 @@ describe('baseRepository', () => {
   });
 
   describe('getDB', () => {
-    it('opens a connection with schema version 10', async () => {
+    it('opens a connection at the current schema version', async () => {
       const db = await getDB('en');
       expect(db).toBeInstanceOf(IDBDatabase);
       expect(db.version).toBe(DB_SCHEMA_VERSION);
@@ -76,11 +76,10 @@ describe('baseRepository', () => {
     });
   });
 
-  describe('migration v9 create-all', () => {
-    it('creates 4 object stores', async () => {
+  describe('fresh-DB create-all', () => {
+    it('creates all object stores', async () => {
       const db = await getDB('en');
       expect(db.objectStoreNames.contains(STORES.RESOURCE)).toBe(true);
-      expect(db.objectStoreNames.contains(STORES.ENTRY)).toBe(true);
       expect(db.objectStoreNames.contains(STORES.ENTRY)).toBe(true);
       expect(db.objectStoreNames.contains(STORES.PHRASE_INDEX)).toBe(true);
     });
@@ -95,17 +94,7 @@ describe('baseRepository', () => {
       await awaitTx(tx);
     });
 
-    it('creates 3 indexes on langFrequencyEntry', async () => {
-      const db = await getDB('en');
-      const tx = db.transaction(STORES.ENTRY, 'readonly');
-      const store = tx.objectStore(STORES.ENTRY);
-      expect(store.indexNames.contains(INDEXES.by_resource)).toBe(true);
-      expect(store.indexNames.contains(INDEXES.by_term)).toBe(true);
-      expect(store.indexNames.contains(INDEXES.by_backwardTerm)).toBe(true);
-      await awaitTx(tx);
-    });
-
-    it('creates 3 indexes on langDictionaryEntry', async () => {
+    it('creates 3 indexes on the unified entry store', async () => {
       const db = await getDB('en');
       const tx = db.transaction(STORES.ENTRY, 'readonly');
       const store = tx.objectStore(STORES.ENTRY);

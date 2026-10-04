@@ -327,7 +327,7 @@ async function handleResourceImport(payload: Record<string, unknown>, fileBase64
     name: label,
     langCode: String(payload.langCode ?? 'en'),
     type: resourceType,
-    format: resourceType === 'DICTIONARY' ? 'json-array' : 'txt',
+    format: resourceType === 'DICTIONARY' ? 'json-entries' : 'txt',
     signature: String(payload.signature ?? ''),
     wordCount: 0,
     installationFinished: false,
@@ -354,7 +354,7 @@ async function handleResourceImport(payload: Record<string, unknown>, fileBase64
     result: {
       resourceId,
       wordCount: MOCK_IMPORT_TOTAL,
-      format: resourceType === 'DICTIONARY' ? 'json-array' : 'txt',
+      format: resourceType === 'DICTIONARY' ? 'json-entries' : 'txt',
     },
   });
 }

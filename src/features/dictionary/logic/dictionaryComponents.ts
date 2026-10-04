@@ -65,8 +65,9 @@ export function deriveResourceType(components: readonly DictionaryComponent[] | 
 }
 
 /** Does the resource currently supply `component`? Rows without `components`
- *  (pre-v14 or pre-scan) fall back to the type label; `disabledComponents`
- *  turns a component off even when present. */
+ *  (pre-v14 or pre-scan) fall back to the type label — 'frequency' only;
+ *  dict components stay unknown until the lazy scan backfills.
+ *  `disabledComponents` turns a component off even when present. */
 export function resourceOffersComponent(
   resource: Pick<ResourceInfo, 'components' | 'disabledComponents' | 'type'>,
   component: DictionaryComponent,
