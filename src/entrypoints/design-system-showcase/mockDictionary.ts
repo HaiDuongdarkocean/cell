@@ -4,6 +4,8 @@ import type { PronunciationEspeakTtsResult } from '@/entities/message/types';
 import type { DictionaryComponent, ResourceInfo } from '@/entities/dictionary';
 import type { Job } from '@/entities/job/types';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { detectComponents } from '@/features/dictionary/logic/formatDetector';
+import { deriveResourceType } from '@/features/dictionary/logic/dictionaryComponents';
 import { SHOWCASE_DATA, type DataVariant } from './showcaseParams';
 import { getMockResourcesForLang } from './mockResources';
 
@@ -263,7 +265,15 @@ const MOCK_IMPORT_STEPS = [2000, 4000, 6000, 9000, 11000];
 const MOCK_IMPORT_STEP_MS = 1000;
 const mockJobs = new Map<string, Job>();
 const importedResources = new Map<number, ResourceInfo>();
+const importChunks = new Map<string, string[]>();
 let nextImportedResourceId = 10_000;
+
+const base64ToBytes = (base64: string): Uint8Array => {
+  const bin = atob(base64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+};
 
 function pushMessage(message: unknown): void {
   const listeners = (globalThis as { __cellOnMessageListeners?: Set<(m: unknown) => void> }).__cellOnMessageListeners;
@@ -292,10 +302,20 @@ function pushJob(partial: Partial<Job> & { id: string; status: Job['status'] }):
 
 /** Simulate the registry-driven import like production: the resource row is
  *  created mid-flight (installationFinished=false) and stamped onto the job —
- *  the panel renders it as an in-place importing card until the done tick. */
-async function handleResourceImport(payload: Record<string, unknown>): Promise<void> {
-  const components = payload.components as DictionaryComponent[] | undefined;
-  const resourceType = components?.[0] === 'frequency' ? 'FREQUENCY' : 'DICTIONARY';
+ *  the panel renders it as an in-place importing card until the done tick.
+ *  `payload.components` is only a user-narrowed subset — when absent the mock
+ *  detects from the uploaded bytes like the real orchestrator does. */
+async function handleResourceImport(payload: Record<string, unknown>, fileBase64: string): Promise<void> {
+  const narrowed = payload.components as DictionaryComponent[] | undefined;
+  const fileName = String(payload.fileName ?? '');
+  let detected: readonly DictionaryComponent[] = [];
+  try {
+    detected = await detectComponents(fileName, base64ToBytes(fileBase64));
+  } catch {
+    detected = [];
+  }
+  const components = narrowed ?? (detected.length ? detected : undefined);
+  const resourceType = deriveResourceType(components);
   const jobId = String(payload.jobId ?? '');
   const label = String(payload.fileName ?? jobId);
   const params = { langCode: payload.langCode, signature: payload.signature };
@@ -480,16 +500,21 @@ async function mockSendMessage(message: unknown): Promise<unknown> {
 
     case MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK: {
       const p = m.payload ?? {};
+      const jobKey = String(p.jobId ?? '');
+      const chunks = importChunks.get(jobKey) ?? [];
+      chunks.push(String(p.data ?? ''));
       const isLast = Number(p.seq) === Number(p.total) - 1;
       if (!isLast) {
+        importChunks.set(jobKey, chunks);
         await delay(80);
         const result: MessageResponse<{ received: number }> = { success: true, data: { received: Number(p.seq) + 1 } };
         return result;
       }
+      importChunks.delete(jobKey);
       if (/fail/i.test(String(p.fileName ?? ''))) {
         return { success: false, error: `Mock import failed for ${String(p.fileName)}` };
       }
-      void handleResourceImport(p);
+      void handleResourceImport(p, chunks.join(''));
       const result: MessageResponse<{ jobId: string }> = {
         success: true,
         data: { jobId: String(p.jobId ?? '') },
