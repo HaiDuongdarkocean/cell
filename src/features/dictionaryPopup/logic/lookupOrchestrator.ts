@@ -656,9 +656,16 @@ async function assembleLookupResult(
       level: s.level,
       lines: s.lines
         .map((l) => disabled.has('translations') ? { ...l, translation: undefined } : l),
-      subsenses: s.subsenses,
+      subsenses: (disabled.has('synonyms') || disabled.has('examples'))
+        ? s.subsenses?.map((sub) => ({
+            ...sub,
+            ...(disabled.has('synonyms') ? { synonymGroups: undefined, synonyms: undefined, antonyms: undefined } : {}),
+            ...(disabled.has('examples') ? { examples: undefined } : {}),
+          }))
+        : s.subsenses,
       synonyms: disabled.has('synonyms') ? undefined : s.synonyms,
       antonyms: disabled.has('synonyms') ? undefined : s.antonyms,
+      synonymGroups: disabled.has('synonyms') ? undefined : s.synonymGroups,
     }));
     for (const sense of senses) {
       const glossLines = sense.lines.filter((l) => l.role !== 'example');
@@ -673,6 +680,7 @@ async function assembleLookupResult(
         subsenses: sense.subsenses,
         synonyms: sense.synonyms,
         antonyms: sense.antonyms,
+        synonymGroups: sense.synonymGroups,
         examples: [...senseExamples, ...entryExamples],
         source,
         defaultSelected: false,

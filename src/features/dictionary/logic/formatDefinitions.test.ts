@@ -82,7 +82,7 @@ describe('formatDefinitions', () => {
     );
   });
 
-  it('emits subsenses and per-sense relations after the gloss', () => {
+  it('emits relations and subsenses after the gloss with canonical markers', () => {
     const result = formatDefinitions([
       {
         pos: 'verb',
@@ -94,9 +94,36 @@ describe('formatDefinitions', () => {
     ]);
     expect(result).toBe(
       '[verb] to think about something\n' +
-      'a. in a particular way\n' +
-      'Synonyms: associate, go by\n' +
-      'Opposite: bring',
+      'synonyms and related words: associate, go by\n' +
+      'antonyms: bring\n' +
+      'a. in a particular way',
+    );
+  });
+
+  it('emits labeled groups and nested subsense examples/relations', () => {
+    const result = formatDefinitions([
+      {
+        pos: 'adjective',
+        text: 'right according to the facts',
+        selectedExamples: ['the correct answer'],
+        synonymGroups: [{ label: 'Exact and accurate', words: ['nuanced', 'exact'] }],
+        subsenses: [
+          {
+            num: 'b',
+            text: 'right according to the established rules',
+            selectedExamples: ['a grammatically correct sentence'],
+            synonymGroups: [{ label: 'Morally good or correct', words: ['moral', 'right'] }],
+          },
+        ],
+      },
+    ]);
+    expect(result).toBe(
+      '[adjective] right according to the facts\n' +
+      '- the correct answer\n' +
+      'synonyms and related words: Exact and accurate: nuanced, exact\n' +
+      'b. right according to the established rules\n' +
+      '- a grammatically correct sentence\n' +
+      'synonyms and related words: Morally good or correct: moral, right',
     );
   });
 

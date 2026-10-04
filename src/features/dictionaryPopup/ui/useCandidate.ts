@@ -11,6 +11,8 @@ import {
   initDefinitionSelection,
   initExampleSelection,
   getSelectedDefinitions,
+  splitSelectionId,
+  examplesForSelectionId,
 } from '../logic/definitionSelection';
 import { buildPrefill } from './buildCandidatePrefill';
 import { useDictionaryToolbar } from '../logic/useDictionaryToolbar';
@@ -340,12 +342,19 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
   }, []);
 
   const toggleDefinition = useCallback((id: string, selected: boolean): void => {
-    setDefinitionSelection((prev) => new Map(prev).set(id, selected));
+    const { defId, subIndex } = splitSelectionId(id);
+    setDefinitionSelection((prev) => {
+      const next = new Map(prev).set(id, selected);
+      if (subIndex !== undefined && selected) next.set(defId, true);
+      return next;
+    });
     setExampleSelection((prev) => {
       const next = new Map(prev);
       if (selected && includeAllExamples) {
-        const def = candidate.definitions.find((d) => d.id === id);
-        next.set(id, new Set((def?.examples ?? []).map((_, i) => i)));
+        for (const ownerId of subIndex === undefined ? [id] : [id, defId]) {
+          const examples = examplesForSelectionId(candidate, ownerId) ?? [];
+          next.set(ownerId, new Set(examples.map((_, i) => i)));
+        }
       } else {
         next.delete(id);
       }
@@ -353,18 +362,22 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     });
   }, [candidate, includeAllExamples]);
 
-  const toggleExample = useCallback((defId: string, index: number, selected: boolean): void => {
+  const toggleExample = useCallback((ownerId: string, index: number, selected: boolean): void => {
     setExampleSelection((prev) => {
       const next = new Map(prev);
-      const indices = new Set(prev.get(defId) ?? []);
+      const indices = new Set(prev.get(ownerId) ?? []);
       if (selected) indices.add(index); else indices.delete(index);
-      next.set(defId, indices);
+      next.set(ownerId, indices);
       return next;
     });
     if (selected) {
-      setDefinitionSelection((prev) => (
-        prev.get(defId) === true ? prev : new Map(prev).set(defId, true)
-      ));
+      const { defId } = splitSelectionId(ownerId);
+      setDefinitionSelection((prev) => {
+        if (prev.get(ownerId) === true && prev.get(defId) === true) return prev;
+        const next = new Map(prev).set(ownerId, true);
+        next.set(defId, true);
+        return next;
+      });
     }
   }, []);
 
@@ -390,6 +403,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
       candidate,
       selectedDefinitions,
       exampleSelection,
+      definitionSelection,
       contextSentence,
       toolbar.translation,
       toolbar.audioItems,
@@ -399,7 +413,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
       toolbar.translationSelected,
       variant ? { variant, accentIndex } : undefined,
     ));
-  }, [onSendToCard, toolbar, candidate, selectedDefinitions, exampleSelection, contextSentence, variant, accentIndex]);
+  }, [onSendToCard, toolbar, candidate, selectedDefinitions, exampleSelection, definitionSelection, contextSentence, variant, accentIndex]);
 
   const quickAdd = useCallback(async (): Promise<void> => {
     if (!onQuickAdd) return;
@@ -407,6 +421,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
       candidate,
       selectedDefinitions,
       exampleSelection,
+      definitionSelection,
       contextSentence,
       toolbar.translation,
       toolbar.audioItems,
@@ -416,7 +431,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
       toolbar.translationSelected,
       variant ? { variant, accentIndex } : undefined,
     ));
-  }, [onQuickAdd, toolbar, candidate, selectedDefinitions, exampleSelection, contextSentence, variant, accentIndex]);
+  }, [onQuickAdd, toolbar, candidate, selectedDefinitions, exampleSelection, definitionSelection, contextSentence, variant, accentIndex]);
 
   return {
     status: variantStatus,

@@ -57,6 +57,7 @@ describe('buildPrefill', () => {
       result,
       selectedDefinitions,
       new Map(),
+      undefined,
       contextSentence,
       translation,
       [makeAudio({ id: 'audio-word-1', kind: 'word', url: 'https://example.com/word.mp3' })],
@@ -85,6 +86,7 @@ describe('buildPrefill', () => {
       result,
       [],
       new Map(),
+      undefined,
       contextSentence,
       '',
       [],
@@ -120,6 +122,7 @@ describe('buildPrefill', () => {
       result,
       [],
       new Map(),
+      new Map([['1', true], ['1#0', true]]),
       contextSentence,
       '',
       [],
@@ -134,9 +137,53 @@ describe('buildPrefill', () => {
         labels: ['transitive'],
         level: 'B1',
         text: 'to think about something',
-        subsenses: [{ num: 'a', text: 'in a particular way' }],
+        subsenses: [{ num: 'a', text: 'in a particular way', selectedExamples: [] }],
         synonyms: ['associate'],
         antonyms: ['bring'],
+        selectedExamples: [],
+      },
+    ]);
+    expect(prefill.selectedDefinitionIds).toEqual(['1', '1#0']);
+  });
+
+  it('a subsense-only pick ships its parent def as context with just that subsense', () => {
+    const result = makeResult({
+      definitions: [
+        {
+          id: '1',
+          pos: 'adjective',
+          text: 'right according to the facts, with no mistakes',
+          subsenses: [
+            { num: 'a', text: 'right according to your opinion', synonyms: ['exact'] },
+            { num: 'b', text: 'right according to the established rules', synonyms: ['moral'] },
+          ],
+          synonyms: ['accurate', 'exact'],
+          examples: [],
+          source: 'macmillan',
+          defaultSelected: true,
+        },
+      ],
+    });
+
+    const prefill = buildPrefill(
+      result,
+      [result.definitions[0]!],
+      new Map(),
+      new Map([['1#1', true]]),
+      contextSentence,
+      '',
+      [],
+      new Map(),
+      [],
+      new Map(),
+    );
+
+    expect(prefill.definitions).toEqual([
+      {
+        pos: 'adjective',
+        text: 'right according to the facts, with no mistakes',
+        subsenses: [{ num: 'b', text: 'right according to the established rules', synonyms: ['moral'], selectedExamples: [] }],
+        synonyms: ['accurate', 'exact'],
         selectedExamples: [],
       },
     ]);
@@ -158,6 +205,7 @@ describe('buildPrefill', () => {
       result,
       [result.definitions[0]!],
       new Map(),
+      undefined,
       contextSentence,
       translation,
       audios,
@@ -187,6 +235,7 @@ describe('buildPrefill', () => {
       result,
       [],
       new Map(),
+      undefined,
       contextSentence,
       '',
       audios,
@@ -211,6 +260,7 @@ describe('buildPrefill', () => {
       result,
       [],
       new Map(),
+      undefined,
       contextSentence,
       '',
       audios,
@@ -241,6 +291,7 @@ describe('buildPrefill', () => {
       result,
       [result.definitions[1]!],
       new Map(),
+      undefined,
       contextSentence,
       translation,
       audios,
@@ -269,6 +320,7 @@ describe('buildPrefill', () => {
       result,
       [],
       new Map(),
+      undefined,
       contextSentence,
       '',
       audios,
@@ -299,6 +351,7 @@ describe('buildPrefill', () => {
       result,
       [result.definitions[0]!],
       exampleSelection,
+      undefined,
       contextSentence,
       '',
       [],
@@ -322,6 +375,7 @@ describe('buildPrefill', () => {
       result,
       [],
       new Map(),
+      undefined,
       contextSentence,
       '',
       audios,

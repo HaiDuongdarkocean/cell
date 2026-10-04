@@ -31,6 +31,36 @@ function parseExamples(frag) {
   return lines;
 }
 
+const ENTRY_LINK_WORD_RE = /<a href="entry:\/\/[^"#]+[^"]*"[^>]*>([^<]+)<\/a>/g;
+const CATTITLE_RE = /<a\b[^>]*\bclass="[^"]*\bcattitle\b[^"]*"[^>]*>([\s\S]*?)<\/a>/;
+
+function parseThes(frag) {
+  const groups = [];
+  for (const { inner } of blocks(frag, 'div', 'thes')) {
+    for (const { inner: snip } of blocks(inner, 'div', 'thessnippet')) {
+      const label = stripHtml(snip.match(CATTITLE_RE)?.[1] ?? '')
+        .replace(/:\s*$/, '')
+        .trim();
+      const words = [
+        ...new Set(
+          [...blocks(snip, 'span', 'synonyms')].flatMap(({ inner: w }) =>
+            [...w.matchAll(ENTRY_LINK_WORD_RE)].map((m) => stripHtml(m[1])).filter(Boolean),
+          ),
+        ),
+      ];
+      if (words.length) groups.push({ ...(label ? { label } : {}), words });
+    }
+  }
+  return groups;
+}
+
+function applyRelations(target, frag) {
+  const groups = parseThes(frag);
+  if (!groups.length) return;
+  target.synonymGroups = groups;
+  target.synonyms = [...new Set(groups.flatMap((g) => g.words))];
+}
+
 function parseSense(frag, pos) {
   const subStart = frag.indexOf('<ol class="sub-senses');
   const main = subStart >= 0 ? frag.slice(0, subStart) : frag;
@@ -47,22 +77,18 @@ function parseSense(frag, pos) {
     ...(labels.length ? { labels } : {}),
     lines,
   };
-  const syns = [
-    ...new Set(
-      [...blocks(main, 'div', 'thes')].flatMap(({ inner }) =>
-        [...inner.matchAll(/<a href="entry:\/\/[^"#]+[^"]*"[^>]*>([^<]+)<\/a>/g)]
-          .map((m) => stripHtml(m[1]))
-          .filter(Boolean),
-      ),
-    ),
-  ];
-  if (syns.length) sense.synonyms = syns;
+  applyRelations(sense, main);
   const subs = [];
   for (const { inner: subZone } of blocks(frag, 'ol', 'sub-senses')) {
     for (const { inner: body } of blocks(subZone, 'div', 'sub-sense-body')) {
       const num = stripHtml(body.match(/<a class="sense-num"[^>]*>([^<]+)<\/a>/)?.[1] ?? '');
       const text = blockText(body, 'span', 'definition');
-      if (text) subs.push({ ...(num ? { num } : {}), text });
+      if (!text) continue;
+      const sub = { ...(num ? { num } : {}), text };
+      const examples = parseExamples(body);
+      if (examples.length) sub.examples = examples;
+      applyRelations(sub, body);
+      subs.push(sub);
     }
   }
   if (subs.length) sense.subsenses = subs;

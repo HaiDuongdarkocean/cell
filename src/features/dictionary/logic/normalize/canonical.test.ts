@@ -158,9 +158,9 @@ describe('toCanonicalDefinition', () => {
       'verb [transitive] [move] [B1]<br>' +
       'to move or go with someone — đưa ai đi<br>' +
       '· Barney took us to the airport [VERB noun] (LDOCE)<br>' +
-      'a. to carry something<br>' +
-      'Synonyms: bring, carry<br>' +
-      'Opposite: leave',
+      'synonyms and related words: bring, carry<br>' +
+      'antonyms: leave<br>' +
+      'a. to carry something',
     );
   });
 

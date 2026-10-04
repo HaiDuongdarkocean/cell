@@ -3,6 +3,11 @@ import type { LookupResult, DefinitionEntry } from '@/entities/dictionary';
 import {
   initExampleSelection,
   getSelectedExamples,
+  getSelectedDefinitions,
+  getSelectedSubsenseIndexes,
+  getSelectedSubsenseExamples,
+  makeSubsenseId,
+  splitSelectionId,
   toSelectedExampleIds,
 } from './definitionSelection';
 
@@ -94,5 +99,48 @@ describe('toSelectedExampleIds', () => {
   it('selection for a def not in defs is not emitted', () => {
     const sel = new Map([['def-9', new Set([0])]]);
     expect(toSelectedExampleIds(defs, sel)).toEqual([]);
+  });
+
+  it('emits subsense example ids under their composite owner id', () => {
+    const subDef: DefinitionEntry = {
+      ...makeDef('def-0', ['a']),
+      subsenses: [{ num: 'b', text: 'sub b', examples: [{ role: 'example' as const, text: 'sub ex' }] }],
+    };
+    const sel = new Map([['def-0#0', new Set([0])]]);
+    expect(toSelectedExampleIds([subDef], sel)).toEqual(['def-0#0:0']);
+  });
+});
+
+describe('subsense selection', () => {
+  const defWithSubs: DefinitionEntry = {
+    ...makeDef('def-0', ['ex p']),
+    subsenses: [
+      { num: 'a', text: 'sub a', examples: [{ role: 'example' as const, text: 'ex a1' }] },
+      { num: 'b', text: 'sub b' },
+    ],
+  };
+  const result = makeResult([defWithSubs, makeDef('def-1', [])]);
+
+  it('splitSelectionId parses composite and plain ids', () => {
+    expect(splitSelectionId('def-0#1')).toEqual({ defId: 'def-0', subIndex: 1 });
+    expect(splitSelectionId('def-0')).toEqual({ defId: 'def-0' });
+    expect(splitSelectionId('def-0#x')).toEqual({ defId: 'def-0#x' });
+  });
+
+  it('makeSubsenseId round-trips through splitSelectionId', () => {
+    expect(makeSubsenseId('def-0', 1)).toBe('def-0#1');
+    expect(splitSelectionId(makeSubsenseId('def-0', 1))).toEqual({ defId: 'def-0', subIndex: 1 });
+  });
+
+  it('a checked subsense alone selects its parent def', () => {
+    const sel = new Map([['def-0#1', true]]);
+    expect(getSelectedDefinitions(result, sel)).toEqual([defWithSubs]);
+    expect(getSelectedSubsenseIndexes(defWithSubs, sel)).toEqual([1]);
+  });
+
+  it('subsense example ids restore through initExampleSelection', () => {
+    const sel = initExampleSelection(result, ['def-0#0:0']);
+    expect(sel.get('def-0#0')).toEqual(new Set([0]));
+    expect(getSelectedSubsenseExamples(defWithSubs, defWithSubs.subsenses![0]!, 0, sel)).toEqual(['ex a1']);
   });
 });

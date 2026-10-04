@@ -6,7 +6,7 @@
 // Settings v14 types (DictionaryPopupSettings, CardCreatorSettingsV14) live in
 // `@/entities/settings/types.ts`.
 
-import type { LookupRequest, PhraseMatch, SenseLine, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo, FrequencyGenres, PronunciationAccent } from './types';
+import type { LookupRequest, PhraseMatch, SenseLine, SubsenseBlock, RelationGroup, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo, FrequencyGenres, PronunciationAccent } from './types';
 import type { BilingualCue, MediaFile } from '@/entities/media';
 import type { CardCreatorQueueItem } from '@/entities/cardCreator';
 
@@ -40,10 +40,13 @@ export interface DefinitionEntry {
   /** Structured sense lines when available (new imports + legacy fallback
    *  classifier) — enables per-line rendering + translation reveal. */
   readonly lines?: readonly SenseLine[];
-  readonly subsenses?: readonly { readonly num: string; readonly text: string }[];
-  /** Per-sense relations — rendered as "Synonyms: a, b" / "Opposite: c". */
+  readonly subsenses?: readonly SubsenseBlock[];
+  /** Per-sense relations — flat term lists for card text and search. */
   readonly synonyms?: readonly string[];
   readonly antonyms?: readonly string[];
+  /** Labeled relation groups — keeps the provider's muted topic label
+   *  (e.g. 'Exact and accurate') for display. */
+  readonly synonymGroups?: readonly RelationGroup[];
   /** Selectable example rows under this definition — sense-level
    *  `role:'example'` lines hoisted at assembly + entry-level `examples`
    *  strings wrapped as SenseLines. Text/pattern/citation/translation
@@ -408,9 +411,13 @@ export interface PopupCardCreatorPrefill extends PopupSelectionSnapshot {
     /** Per-sense CEFR/provider level — rendered `[B1]`. */
     readonly level?: string;
     readonly text: string;
-    readonly subsenses?: readonly { readonly num: string; readonly text: string }[];
+    readonly subsenses?: readonly (SubsenseBlock & {
+      /** Example sentences the user ticked for this subsense. */
+      readonly selectedExamples?: readonly string[];
+    })[];
     readonly synonyms?: readonly string[];
     readonly antonyms?: readonly string[];
+    readonly synonymGroups?: readonly RelationGroup[];
     /** Example sentences the user ticked for this def (subset of
      *  `DefinitionEntry.examples`). `[]` = explicitly none. */
     readonly selectedExamples?: readonly string[];

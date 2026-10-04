@@ -110,6 +110,28 @@ export interface SenseLine {
   readonly pattern?: string;
 }
 
+/** One thesaurus relation group — a provider's "synonyms and related
+ *  words" line. `label` is the topic title the source prints muted
+ *  (Macmillan `cattitle`, e.g. 'Exact and accurate'); `words` are the
+ *  related terms the system can auto-look-up. */
+export interface RelationGroup {
+  readonly label?: string;
+  readonly words: readonly string[];
+}
+
+/** A lettered subsense (Macmillan `a.`/`b.`) — a sense nested inside its
+ *  numbered parent. `text` is the gloss; `examples`/`synonyms`/`antonyms`
+ *  are scoped to this subsense alone, never shared with the parent. */
+export interface SubsenseBlock {
+  readonly num?: string;
+  readonly text: string;
+  readonly labels?: readonly string[];
+  readonly examples?: readonly SenseLine[];
+  readonly synonymGroups?: readonly RelationGroup[];
+  readonly synonyms?: readonly string[];
+  readonly antonyms?: readonly string[];
+}
+
 /** One structured sense — optional pos label + ordered content lines.
  *  `labels` carries register/grammar/audience tags rendered as `[label]`
  *  (e.g. 'transitive', 'informal', 'move', 'kids', 'slang'). */
@@ -119,10 +141,13 @@ export interface SenseBlock {
   /** CEFR or provider level, e.g. 'B1' — rendered as plain `[B1]`. */
   readonly level?: string;
   readonly lines: readonly SenseLine[];
-  readonly subsenses?: readonly { readonly num: string; readonly text: string }[];
-  /** Per-sense relations — "Synonyms: a, b" / "Opposite: c". */
+  readonly subsenses?: readonly SubsenseBlock[];
+  /** Per-sense relations — flat term lists used for card text and search. */
   readonly synonyms?: readonly string[];
   readonly antonyms?: readonly string[];
+  /** Labeled relation groups — display form of `synonyms` that keeps the
+   *  provider's muted topic label (e.g. 'Exact and accurate'). */
+  readonly synonymGroups?: readonly RelationGroup[];
 }
 
 /** A kind-tagged link to another entry — phrasal verbs, idioms, collocations,

@@ -39,6 +39,22 @@ export interface CanonicalFields {
   readonly examples: string;
 }
 
+function relationLines(s: {
+  readonly synonymGroups?: readonly { readonly label?: string; readonly words: readonly string[] }[];
+  readonly synonyms?: readonly string[];
+  readonly antonyms?: readonly string[];
+}): string[] {
+  const groups = s.synonymGroups?.length
+    ? s.synonymGroups
+    : (s.synonyms?.length ? [{ words: s.synonyms }] : []);
+  return [
+    ...groups.map(
+      (g) => `synonyms and related words: ${g.label ? `${g.label}: ` : ''}${g.words.join(', ')}`,
+    ),
+    ...(s.antonyms?.length ? [`antonyms: ${s.antonyms.join(', ')}`] : []),
+  ];
+}
+
 function serializeSense(sense: SenseBlock): string {
   const head = [
     sense.pos,
@@ -48,9 +64,12 @@ function serializeSense(sense: SenseBlock): string {
   const parts = [
     ...(head ? [head] : []),
     ...sense.lines.map(lineToCanonicalText),
-    ...(sense.subsenses ?? []).map((s) => `${s.num}. ${s.text}`),
-    ...(sense.synonyms?.length ? [`Synonyms: ${sense.synonyms.join(', ')}`] : []),
-    ...(sense.antonyms?.length ? [`Opposite: ${sense.antonyms.join(', ')}`] : []),
+    ...relationLines(sense),
+    ...(sense.subsenses ?? []).flatMap((s) => [
+      `${s.num ? `${s.num}. ` : ''}${s.text}`.trim(),
+      ...(s.examples ?? []).map(lineToCanonicalText),
+      ...relationLines(s),
+    ]),
   ];
   return parts.join(CANON_BREAK);
 }

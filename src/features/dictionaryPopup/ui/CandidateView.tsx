@@ -23,7 +23,8 @@ import { Tooltip } from '@/shared/ui/Tooltip';
 import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './CandidateView.module.css';
-import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot, SenseLine, RelatedEntry, VariantFrequency } from '@/entities/dictionary';
+import { makeSubsenseId } from '../logic/definitionSelection';
+import type { LookupResult, DefinitionEntry, SubsenseBlock, RelationGroup, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot, SenseLine, RelatedEntry, VariantFrequency } from '@/entities/dictionary';
 
 const EMPTY_EXAMPLE_SET: ReadonlySet<number> = new Set<number>();
 
@@ -398,6 +399,8 @@ export function CandidateView({
               definition={def}
               selected={panel.definitionSelection.get(def.id) === true}
               checkedExamples={panel.exampleSelection.get(def.id) ?? EMPTY_EXAMPLE_SET}
+              definitionSelection={panel.definitionSelection}
+              exampleSelection={panel.exampleSelection}
               onToggle={panel.toggleDefinition}
               onToggleExample={panel.toggleExample}
               translationRevealed={translationRevealed}
@@ -555,10 +558,191 @@ function defHead(definition: DefinitionEntry): string | undefined {
   return parts.length ? parts.join(' ') : undefined;
 }
 
+function ExampleRows({
+  ownerId,
+  examples,
+  checkedExamples,
+  onToggleExample,
+  translationRevealed,
+}: {
+  readonly ownerId: string;
+  readonly examples: readonly SenseLine[];
+  readonly checkedExamples: ReadonlySet<number>;
+  readonly onToggleExample: (ownerId: string, index: number, selected: boolean) => void;
+  readonly translationRevealed: boolean;
+}): React.JSX.Element | null {
+  if (!examples.length) return null;
+  return (
+    <div className={styles.cellDefExamples}>
+      {examples.map((ex, i) => {
+        const exChecked = checkedExamples.has(i);
+        return (
+          <div
+            key={i}
+            className={checkStyles.cellDefExampleItem}
+            data-cell-id="dictionary-example"
+            role="checkbox"
+            aria-checked={exChecked}
+            tabIndex={0}
+            onClick={(e) => {
+              const el = e.target as HTMLElement;
+              if (el.closest(`.${styles.cellDefExampleText}`) !== null) return;
+              if (selectionText(el)) return;
+              onToggleExample(ownerId, i, !exChecked);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleExample(ownerId, i, !exChecked);
+              }
+            }}
+          >
+            <label
+              className={`${checkStyles.cellDefCheck} ${exChecked ? checkStyles['cellDefCheck--checked'] : ''}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <input
+                type="checkbox"
+                className={checkStyles.cellDefCheckInput}
+                checked={exChecked}
+                onChange={(e) => onToggleExample(ownerId, i, e.target.checked)}
+                tabIndex={-1}
+                aria-hidden="true"
+              />
+              <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
+                <Icon name="check" size="md" />
+              </span>
+            </label>
+            <span className={styles.cellDefExampleText}>
+              <SenseLineView line={ex} revealedByDefault={translationRevealed} />
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function RelationTail({
+  synonymGroups,
+  synonyms,
+  antonyms,
+  nested,
+}: {
+  readonly synonymGroups?: readonly RelationGroup[];
+  readonly synonyms?: readonly string[];
+  readonly antonyms?: readonly string[];
+  readonly nested?: boolean;
+}): React.JSX.Element | null {
+  const groups = synonymGroups?.length
+    ? synonymGroups
+    : (synonyms?.length ? [{ words: synonyms }] : []);
+  if (!groups.length && !antonyms?.length) return null;
+  return (
+    <div className={`${styles.defTail}${nested ? ` ${styles.defTailNested}` : ''}`} data-cell-id="dictionary-relations">
+      {groups.map((g, i) => (
+        <span key={i} className={styles.defLine} data-role="note">
+          <span className={styles.defLineMeta}>synonyms and related words: </span>
+          {g.label ? <span className={styles.defLineMeta}>{`${g.label}: `}</span> : null}
+          {g.words.join(', ')}
+        </span>
+      ))}
+      {antonyms?.length ? (
+        <span className={styles.defLine} data-role="note">
+          <span className={styles.defLineMeta}>antonyms: </span>
+          {antonyms.join(', ')}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function SubsenseRow({
+  defId,
+  sub,
+  index,
+  definitionSelection,
+  exampleSelection,
+  onToggle,
+  onToggleExample,
+  translationRevealed,
+}: {
+  readonly defId: string;
+  readonly sub: SubsenseBlock;
+  readonly index: number;
+  readonly definitionSelection: ReadonlyMap<string, boolean>;
+  readonly exampleSelection: ReadonlyMap<string, ReadonlySet<number>>;
+  readonly onToggle: (id: string, selected: boolean) => void;
+  readonly onToggleExample: (ownerId: string, index: number, selected: boolean) => void;
+  readonly translationRevealed: boolean;
+}): React.JSX.Element {
+  const subId = makeSubsenseId(defId, index);
+  const checked = definitionSelection.get(subId) === true;
+  return (
+    <div className={styles.defSubGroup} data-cell-id="dictionary-subsense-group">
+      <div
+        className={checkStyles.cellDefItem}
+        data-cell-id="dictionary-subsense"
+        role="checkbox"
+        aria-checked={checked}
+        tabIndex={0}
+        onClick={(e) => {
+          const el = e.target as HTMLElement;
+          if (el.closest(`.${styles.cellDefText}`) !== null) return;
+          if (selectionText(el)) return;
+          onToggle(subId, !checked);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggle(subId, !checked);
+          }
+        }}
+      >
+        <div className={styles.cellDefRow}>
+          <label
+            className={`${checkStyles.cellDefCheck} ${checked ? checkStyles['cellDefCheck--checked'] : ''}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              className={checkStyles.cellDefCheckInput}
+              checked={checked}
+              onChange={(e) => onToggle(subId, e.target.checked)}
+              tabIndex={-1}
+              aria-hidden="true"
+            />
+            <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
+              <Icon name="check" size="md" />
+            </span>
+          </label>
+          <span className={styles.cellDefText}>
+            {sub.num ? <span className={styles.defSubsenseNum}>{sub.num}. </span> : null}
+            {(sub.labels ?? []).map((l) => `[${l}] `)}
+            {sub.text}
+          </span>
+        </div>
+      </div>
+      <ExampleRows
+        ownerId={subId}
+        examples={sub.examples ?? []}
+        checkedExamples={exampleSelection.get(subId) ?? EMPTY_EXAMPLE_SET}
+        onToggleExample={onToggleExample}
+        translationRevealed={translationRevealed}
+      />
+      <RelationTail synonymGroups={sub.synonymGroups} synonyms={sub.synonyms} antonyms={sub.antonyms} nested />
+    </div>
+  );
+}
+
 function DefinitionItem({
   definition,
   selected,
   checkedExamples,
+  definitionSelection,
+  exampleSelection,
   onToggle,
   onToggleExample,
   translationRevealed,
@@ -566,8 +750,10 @@ function DefinitionItem({
   readonly definition: DefinitionEntry;
   readonly selected: boolean;
   readonly checkedExamples: ReadonlySet<number>;
+  readonly definitionSelection: ReadonlyMap<string, boolean>;
+  readonly exampleSelection: ReadonlyMap<string, ReadonlySet<number>>;
   readonly onToggle: (id: string, selected: boolean) => void;
-  readonly onToggleExample: (defId: string, index: number, selected: boolean) => void;
+  readonly onToggleExample: (ownerId: string, index: number, selected: boolean) => void;
   readonly translationRevealed: boolean;
 }): React.JSX.Element {
   const checked = selected;
@@ -634,9 +820,6 @@ function DefinitionItem({
                   head={head}
                 />
               ) : null}
-              {definition.subsenses?.map((s) => (
-                <span key={s.num} className={styles.defSubsense}>{s.num}. {s.text}</span>
-              ))}
             </>
           ) : (
             definition.pos ? `[${definition.pos}] ${definition.text}` : definition.text
@@ -645,66 +828,31 @@ function DefinitionItem({
       </div>
       </div>
       )}
-      {definition.examples.length > 0 && (
-        <div className={styles.cellDefExamples}>
-          {definition.examples.map((ex, i) => {
-            const exChecked = checkedExamples.has(i);
-            return (
-              <div
-                key={i}
-                className={checkStyles.cellDefExampleItem}
-                data-cell-id="dictionary-example"
-                role="checkbox"
-                aria-checked={exChecked}
-                tabIndex={0}
-                onClick={(e) => {
-                  const el = e.target as HTMLElement;
-                  if (el.closest(`.${styles.cellDefExampleText}`) !== null) return;
-                  if (selectionText(el)) return;
-                  onToggleExample(definition.id, i, !exChecked);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === ' ' || e.key === 'Enter') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onToggleExample(definition.id, i, !exChecked);
-                  }
-                }}
-              >
-                <label
-                  className={`${checkStyles.cellDefCheck} ${exChecked ? checkStyles['cellDefCheck--checked'] : ''}`}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <input
-                    type="checkbox"
-                    className={checkStyles.cellDefCheckInput}
-                    checked={exChecked}
-                    onChange={(e) => onToggleExample(definition.id, i, e.target.checked)}
-                    tabIndex={-1}
-                    aria-hidden="true"
-                  />
-                  <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
-                    <Icon name="check" size="md" />
-                  </span>
-                </label>
-                <span className={styles.cellDefExampleText}>
-                  <SenseLineView line={ex} revealedByDefault={translationRevealed} />
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-      {(Boolean(definition.synonyms?.length) || Boolean(definition.antonyms?.length)) && (
-        <div className={styles.defTail}>
-          {definition.synonyms && definition.synonyms.length > 0 && (
-            <span className={styles.defLine} data-role="note">{t('dict.definitions.synonyms', [definition.synonyms.join(', ')])}</span>
-          )}
-          {definition.antonyms && definition.antonyms.length > 0 && (
-            <span className={styles.defLine} data-role="note">{t('dict.definitions.antonyms', [definition.antonyms.join(', ')])}</span>
-          )}
-        </div>
-      )}
+      <ExampleRows
+        ownerId={definition.id}
+        examples={definition.examples}
+        checkedExamples={checkedExamples}
+        onToggleExample={onToggleExample}
+        translationRevealed={translationRevealed}
+      />
+      <RelationTail
+        synonymGroups={definition.synonymGroups}
+        synonyms={definition.synonyms}
+        antonyms={definition.antonyms}
+      />
+      {definition.subsenses?.map((sub, i) => (
+        <SubsenseRow
+          key={i}
+          defId={definition.id}
+          sub={sub}
+          index={i}
+          definitionSelection={definitionSelection}
+          exampleSelection={exampleSelection}
+          onToggle={onToggle}
+          onToggleExample={onToggleExample}
+          translationRevealed={translationRevealed}
+        />
+      ))}
     </div>
   );
 }

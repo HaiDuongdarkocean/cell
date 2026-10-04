@@ -41,6 +41,21 @@ export const SenseLineSchema = z.object({
   pattern: z.string().optional(),
 });
 
+export const RelationGroupSchema = z.object({
+  label: z.string().optional(),
+  words: z.array(z.string()),
+});
+
+export const SubsenseBlockSchema = z.object({
+  num: z.string().optional(),
+  text: z.string(),
+  labels: z.array(z.string()).optional(),
+  examples: z.array(SenseLineSchema).optional(),
+  synonymGroups: z.array(RelationGroupSchema).optional(),
+  synonyms: z.array(z.string()).optional(),
+  antonyms: z.array(z.string()).optional(),
+});
+
 export const DefinitionEntrySchema = z.object({
   id: z.string(),
   pos: z.string().optional(),
@@ -48,9 +63,10 @@ export const DefinitionEntrySchema = z.object({
   level: z.string().optional(),
   text: z.string(),
   lines: z.array(SenseLineSchema).optional(),
-  subsenses: z.array(z.object({ num: z.string(), text: z.string() })).optional(),
+  subsenses: z.array(SubsenseBlockSchema).optional(),
   synonyms: z.array(z.string()).optional(),
   antonyms: z.array(z.string()).optional(),
+  synonymGroups: z.array(RelationGroupSchema).optional(),
   examples: z.array(z.string()),
   source: z.string(),
   defaultSelected: z.boolean(),

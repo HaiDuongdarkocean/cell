@@ -4,8 +4,46 @@
 
 import type { LookupResult, DefinitionEntry } from '@/entities/dictionary';
 
-/** Selection state for definitions (checkboxes). */
+/** Selection state for definitions (checkboxes). Subsenses are keyed by
+ *  composite ids (`defId#index`) — selecting one implies its parent def
+ *  ships as context (gloss + relations), never as a synthetic merged row. */
 export type DefinitionSelection = Map<string, boolean>;
+
+const SUB_ID_SEP = '#';
+
+export function makeSubsenseId(defId: string, subIndex: number): string {
+  return `${defId}${SUB_ID_SEP}${subIndex}`;
+}
+
+/** Split a selection id into parent def id + optional subsense index. */
+export function splitSelectionId(id: string): { readonly defId: string; readonly subIndex?: number } {
+  const sep = id.lastIndexOf(SUB_ID_SEP);
+  if (sep <= 0 || sep === id.length - 1) return { defId: id };
+  const subIndex = Number(id.slice(sep + 1));
+  return Number.isInteger(subIndex) && subIndex >= 0
+    ? { defId: id.slice(0, sep), subIndex }
+    : { defId: id };
+}
+
+/** Examples owned by a selection id — def-level or one subsense's. */
+export function examplesForSelectionId(
+  result: LookupResult,
+  id: string,
+): DefinitionEntry['examples'] | undefined {
+  const { defId, subIndex } = splitSelectionId(id);
+  const def = result.definitions.find((d) => d.id === defId);
+  return subIndex === undefined ? def?.examples : def?.subsenses?.[subIndex]?.examples;
+}
+
+/** Indices of a def's subsenses the user checked. */
+export function getSelectedSubsenseIndexes(
+  def: DefinitionEntry,
+  selection: DefinitionSelection,
+): readonly number[] {
+  return (def.subsenses ?? [])
+    .map((_, i) => i)
+    .filter((i) => selection.get(makeSubsenseId(def.id, i)) === true);
+}
 
 /** Initialize definition selection.
  *  - If `selectedIds` is omitted, every definition starts unchecked.
@@ -20,16 +58,22 @@ export function initDefinitionSelection(
   const map = new Map<string, boolean>();
   for (const def of result.definitions) {
     map.set(def.id, selectedSet ? selectedSet.has(def.id) : false);
+    for (let i = 0; i < (def.subsenses?.length ?? 0); i += 1) {
+      map.set(makeSubsenseId(def.id, i), selectedSet ? selectedSet.has(makeSubsenseId(def.id, i)) : false);
+    }
   }
   return map;
 }
 
-/** Get the definitions the user explicitly selected. */
+/** Get the definitions to ship — a def is included when it is checked OR
+ *  any of its subsenses is checked (the parent rides along as context). */
 export function getSelectedDefinitions(
   result: LookupResult,
   selection: DefinitionSelection,
 ): DefinitionEntry[] {
-  return result.definitions.filter((def) => selection.get(def.id) === true);
+  return result.definitions.filter(
+    (def) => selection.get(def.id) === true || getSelectedSubsenseIndexes(def, selection).length > 0,
+  );
 }
 
 /** Selection state for example lines, keyed by definition id → example indices. */
@@ -53,13 +97,13 @@ export function initExampleSelection(
   for (const id of selectedExampleIds) {
     const sep = id.lastIndexOf(EXAMPLE_ID_SEP);
     if (sep <= 0 || sep === id.length - 1) continue;
-    const defId = id.slice(0, sep);
+    const ownerId = id.slice(0, sep);
     const index = Number(id.slice(sep + 1));
-    const def = result.definitions.find((d) => d.id === defId);
-    if (!def || !Number.isInteger(index) || index < 0 || index >= def.examples.length) continue;
-    const set = map.get(defId) ?? new Set<number>();
+    const examples = examplesForSelectionId(result, ownerId);
+    if (!examples || !Number.isInteger(index) || index < 0 || index >= examples.length) continue;
+    const set = map.get(ownerId) ?? new Set<number>();
     set.add(index);
-    map.set(defId, set);
+    map.set(ownerId, set);
   }
   return map;
 }
@@ -69,22 +113,47 @@ export function getSelectedExamples(
   def: DefinitionEntry,
   selection: ExampleSelection,
 ): string[] {
-  const indices = selection.get(def.id);
-  if (!indices || indices.size === 0) return [];
-  return def.examples.filter((_, i) => indices.has(i)).map((l) => l.text);
+  return selectedExampleTexts(def.id, def.examples, selection);
 }
 
-/** Composite `defId:index` ids for the shipped defs, in def + index order. */
+/** Selected example texts of one subsense, keyed by its composite id. */
+export function getSelectedSubsenseExamples(
+  def: DefinitionEntry,
+  sub: { readonly examples?: readonly { readonly text: string }[] },
+  subIndex: number,
+  selection: ExampleSelection,
+): string[] {
+  return selectedExampleTexts(makeSubsenseId(def.id, subIndex), sub.examples ?? [], selection);
+}
+
+function selectedExampleTexts(
+  ownerId: string,
+  examples: readonly { readonly text: string }[],
+  selection: ExampleSelection,
+): string[] {
+  const indices = selection.get(ownerId);
+  if (!indices || indices.size === 0) return [];
+  return examples.filter((_, i) => indices.has(i)).map((l) => l.text);
+}
+
+/** Composite `ownerId:index` ids for shipped defs + their selected
+ *  subsenses, in def → subsense → index order. */
 export function toSelectedExampleIds(
   defs: readonly DefinitionEntry[],
   selection: ExampleSelection,
 ): string[] {
   const ids: string[] = [];
+  const pushFor = (ownerId: string, count: number) => {
+    const indices = selection.get(ownerId);
+    if (!indices) return;
+    for (let i = 0; i < count; i += 1) {
+      if (indices.has(i)) ids.push(makeExampleId(ownerId, i));
+    }
+  };
   for (const def of defs) {
-    const indices = selection.get(def.id);
-    if (!indices) continue;
-    for (let i = 0; i < def.examples.length; i += 1) {
-      if (indices.has(i)) ids.push(makeExampleId(def.id, i));
+    pushFor(def.id, def.examples.length);
+    for (const [i, sub] of (def.subsenses ?? []).entries()) {
+      if (sub.examples?.length) pushFor(makeSubsenseId(def.id, i), sub.examples.length);
     }
   }
   return ids;

@@ -1616,8 +1616,6 @@
   "dict.audio.unknownRegion": "Khu vực không rõ",
   "dict.audio.unknownSpeaker": "Người đọc không rõ",
   "dict.audio.wiktionaryUser": "$1 · Wiktionary",
-  "dict.definitions.antonyms": "Trái nghĩa: $1",
-  "dict.definitions.synonyms": "Đồng nghĩa: $1",
   "dict.error.srs": "Không thêm được vào hàng ôn tập.",
   "dict.error.statusCycle": "Không đổi được trạng thái từ.",
   "dict.error.statusDelete": "Không xóa được trạng thái từ.",

@@ -1616,8 +1616,6 @@
   "dict.audio.unknownRegion": "Unknown region",
   "dict.audio.unknownSpeaker": "Unknown speaker",
   "dict.audio.wiktionaryUser": "$1 · Wiktionary",
-  "dict.definitions.antonyms": "Opposite: $1",
-  "dict.definitions.synonyms": "Synonyms: $1",
   "dict.error.srs": "Couldn't add it to the review queue.",
   "dict.error.statusCycle": "Couldn't change the word's status.",
   "dict.error.statusDelete": "Couldn't remove the word's status.",

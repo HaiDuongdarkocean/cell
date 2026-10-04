@@ -9,16 +9,55 @@ function bracketize(token: string): string {
   return /^[[(]/.test(t) ? t : `[${t}]`;
 }
 
+interface RelationGroupLike {
+  readonly label?: string;
+  readonly words: readonly string[];
+}
+
+interface SubsenseLike {
+  readonly num?: string;
+  readonly text: string;
+  readonly labels?: readonly string[];
+  readonly synonymGroups?: readonly RelationGroupLike[];
+  readonly synonyms?: readonly string[];
+  readonly antonyms?: readonly string[];
+  readonly selectedExamples?: readonly string[];
+}
+
+function relationLines(s: {
+  readonly synonymGroups?: readonly RelationGroupLike[];
+  readonly synonyms?: readonly string[];
+  readonly antonyms?: readonly string[];
+}): string[] {
+  const groups = s.synonymGroups?.length
+    ? s.synonymGroups
+    : (s.synonyms?.length ? [{ words: s.synonyms }] : []);
+  return [
+    ...groups.map(
+      (g) => `synonyms and related words: ${g.label ? `${g.label}: ` : ''}${g.words.join(', ')}`,
+    ),
+    ...(s.antonyms?.length ? [`antonyms: ${s.antonyms.join(', ')}`] : []),
+  ];
+}
+
+function exampleLines(examples: readonly string[] | undefined): string[] {
+  return (examples ?? []).map((ex) => `- ${ex.replace(EXAMPLE_MARKER_RE, '')}`.trim());
+}
+
 /** Format selected definitions for Card Creator / Quick Add:
  *  - Each definition: `[pos] [label]… [level] {text}` — meta tokens are
  *    bracketed; a bare `{text}` is emitted when the sense has no meta.
- *  - Each subsense: `{num}. {text}` (keyboard-native `a.`/`1.` numbering)
- *  - Each ticked example: `- {text}` on its own line under its definition
- *  - Per-sense relations: `Synonyms: a, b` / `Opposite: c`
+ *  - Each ticked example: `- {text}` right under its own definition
+ *  - Per-sense relations as lowercase canonical markers —
+ *    `synonyms and related words: {label}: a, b` / `antonyms: c` — so the
+ *    system can locate and auto-look-up the related terms.
+ *  - Each selected subsense: `{num}. {text}` with its own examples and
+ *    relations nested under it; a subsense pick ships its parent as
+ *    context, never a merged gloss.
  *  - Definitions separated by exactly one blank line (\n\n)
- *  Respects user selection — only checked definitions are included.
- *  `selectedExamples` is the opt-in selection field; raw dictionary example
- *  lists (`DefinitionEntry.examples`) are never emitted implicitly.
+ *  Respects user selection — only checked definitions/subsenses are
+ *  included. `selectedExamples` is the opt-in selection field; raw
+ *  dictionary example lists are never emitted implicitly.
  *  Strips any leading `•`/`·`/`-` markers already present in the source text
  *  so the output never doubles a marker. */
 export function formatDefinitions(defs: readonly {
@@ -26,7 +65,8 @@ export function formatDefinitions(defs: readonly {
   readonly labels?: readonly string[];
   readonly level?: string;
   readonly text: string;
-  readonly subsenses?: readonly { readonly num: string; readonly text: string }[];
+  readonly subsenses?: readonly SubsenseLike[];
+  readonly synonymGroups?: readonly RelationGroupLike[];
   readonly synonyms?: readonly string[];
   readonly antonyms?: readonly string[];
   readonly selectedExamples?: readonly string[];
@@ -44,13 +84,14 @@ export function formatDefinitions(defs: readonly {
       const head = `${meta ? `${meta} ` : ''}${text}`.trim();
       const lines = [
         head,
-        ...(d.subsenses ?? []).map((s) => `${s.num}. ${s.text}`),
-        ...(d.selectedExamples ?? []).map(
-          (ex) => `- ${ex.replace(EXAMPLE_MARKER_RE, '')}`.trim(),
-        ),
+        ...exampleLines(d.selectedExamples),
+        ...relationLines(d),
+        ...(d.subsenses ?? []).flatMap((s) => [
+          `${s.num ? `${s.num}. ` : ''}${s.labels?.length ? `${s.labels.map(bracketize).join(' ')} ` : ''}${s.text}`.trim(),
+          ...exampleLines(s.selectedExamples),
+          ...relationLines(s),
+        ]),
       ];
-      if (d.synonyms?.length) lines.push(`Synonyms: ${d.synonyms.join(', ')}`);
-      if (d.antonyms?.length) lines.push(`Opposite: ${d.antonyms.join(', ')}`);
       return lines.join('\n');
     })
     .join('\n\n')
