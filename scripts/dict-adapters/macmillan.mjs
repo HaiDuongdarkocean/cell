@@ -60,12 +60,39 @@ function applyRelations(target, frag) {
   target.synonyms = [...new Set(groups.flatMap((g) => g.words))];
 }
 
+const REGISTER_CLASSES = new Set(['dialect', 'style-level', 'subject-area']);
+const LABEL_CLASSES = ['syntax-coding', 'restriction-class', 'dialect', 'style-level', 'subject-area'];
+
+function parseLabels(frag) {
+  const spans = [];
+  for (const cls of LABEL_CLASSES) {
+    for (const b of blocks(frag, 'span', cls)) {
+      const text = stripHtml(b.inner).replace(/^\s*\[|\]\s*$/g, '').trim();
+      if (text) spans.push({ cls, start: b.start, text });
+    }
+  }
+  spans.sort((a, b) => a.start - b.start);
+  const labels = [];
+  let register = [];
+  for (const s of spans) {
+    if (REGISTER_CLASSES.has(s.cls)) {
+      register.push(s.text);
+      continue;
+    }
+    if (register.length) {
+      labels.push(register.join(' '));
+      register = [];
+    }
+    labels.push(s.text);
+  }
+  if (register.length) labels.push(register.join(' '));
+  return labels;
+}
+
 function parseSense(frag, pos) {
   const subStart = frag.indexOf('<ol class="sub-senses');
   const main = subStart >= 0 ? frag.slice(0, subStart) : frag;
-  const labels = [...blocks(main, 'span', 'syntax-coding')]
-    .map(({ inner }) => stripHtml(inner).replace(/^\[|\]$/g, '').trim())
-    .filter(Boolean);
+  const labels = parseLabels(main);
   const gloss = blockText(main, 'span', 'definition');
   const lines = [];
   if (gloss) lines.push({ role: 'gloss', text: gloss });
@@ -84,6 +111,8 @@ function parseSense(frag, pos) {
       const text = blockText(body, 'span', 'definition');
       if (!text) continue;
       const sub = { ...(num ? { num } : {}), text };
+      const subLabels = parseLabels(body);
+      if (subLabels.length) sub.labels = subLabels;
       const examples = parseExamples(body);
       if (examples.length) sub.examples = examples;
       applyRelations(sub, body);

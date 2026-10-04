@@ -155,3 +155,18 @@ attach per-example patterns from their own markup (`.tips`, `PROPFORM`, `.cf`).
 | Finding | Disposition |
 |---|---|
 | User wants pattern annotations rendered AFTER the example, not before | **Fixed** — `ExampleRows` now measures each pattern run: multi-member groups (≥2) keep the single covering header (GoldenDict semantics), single-member patterns render as a muted `[pattern]` suffix after the example text (`07-matter-verb.png`: `what is the matter with you [matter with someone]`). Brave e2e 45/45 asserts both render modes |
+
+### User-reported defects after manual import (fixed round 8)
+
+| Finding | Disposition |
+|---|---|
+| Register/dialect labels dropped — `American informal`, `literary`, `British` visible in GoldenDict but absent in popup | **Fixed** — `macmillan.mjs` now parses `dialect`/`style-level`/`subject-area` spans (merged in document order into one register label, e.g. `American informal`) plus `restriction-class` (`[usually singular]`, `[never progressive]`) alongside the existing `syntax-coding`; subsense bodies get the same parse. `macmillan2ed.mjs` extracts `#ff5400` (dialect) and `#af7f7f` (style) font labels — which previously leaked INTO the gloss text — with a `hyponym`/`synonym`/inflection-marker exclusion set so thesaurus annotations can't become labels |
+
+Coverage in regenerated JSONs: EnEn 21,298 labeled senses (5,361 with
+register labels) of 227,938; 2ed 17,724 labeled (4,332 register) of 77,375.
+GoldenDict parity verified: `take` sense 24 → `[transitive] [American informal]`,
+sense 25 → `[literary]`, sense 26 → `[British]`; `depend` → `[never progressive]`;
+`interest` → `[uncountable] [business]`.
+
+Gates: `tsc --noEmit` clean · jest 74 suites / 1,393 tests · `npm run build` ·
+Brave e2e **46/46 asserts** (def head renders `[v.] [transitive] [American informal]`).

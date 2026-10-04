@@ -11,7 +11,32 @@ import { stripHtml } from './markup.mjs';
 
 const ACCENT_RE = />(UK|US)<\/font>\s*<a href="(sound:\/\/[^"]+)"[^>]*>[\s\S]*?<font color="#21887d">\[([^\]]+)\]<\/font>/g;
 const POS_RE = /<font color="#6020ae">([^<]+)<\/font>/;
-const LABEL_RE = /<font color="(?:#a64728|orangered)">([\s\S]*?)<\/font>/g;
+const ALL_LABEL_FONT_RE = /<font color="(#a64728|orangered|#ff5400|#af7f7f)">([\s\S]*?)<\/font>/g;
+const REGISTER2_COLORS = new Set(['#ff5400', '#af7f7f']);
+const NON_LABEL_TEXTS = new Set([
+  'hyponym', 'synonym', 'antonym', 'past tense', 'past participle',
+  'present participle', 'plural', '3rd person singular', 'ing form', 'ed form',
+]);
+
+function parseLabels2ed(line) {
+  const labels = [];
+  let register = [];
+  for (const m of line.matchAll(ALL_LABEL_FONT_RE)) {
+    const text = stripHtml(m[2]).replace(/^\s*\[|\]\s*$/g, '').trim();
+    if (!text || NON_LABEL_TEXTS.has(text.toLowerCase())) continue;
+    if (REGISTER2_COLORS.has(m[1])) {
+      register.push(text);
+      continue;
+    }
+    if (register.length) {
+      labels.push(register.join(' '));
+      register = [];
+    }
+    labels.push(text);
+  }
+  if (register.length) labels.push(register.join(' '));
+  return labels;
+}
 const SENSE_NUM_RE = /<b>\s*(\d+)([a-z]?)\s*\./;
 const BOLD_RE = /<b>([\s\S]*?)<\/b>/g;
 const SENSE_NUM_TEXT_RE = /^\d+[a-z]?\s*\.$/;
@@ -58,10 +83,8 @@ function parseSenses(frag, pos, rel) {
     const num = line.match(SENSE_NUM_RE);
     if (num) {
       pattern = undefined;
-      const labels = [...line.matchAll(LABEL_RE)]
-        .map((m) => stripHtml(m[1]).replace(/^\[|\]$/g, '').trim())
-        .filter(Boolean);
-      const gloss = stripHtml(line.replace(LABEL_RE, ''))
+      const labels = parseLabels2ed(line);
+      const gloss = stripHtml(line.replace(ALL_LABEL_FONT_RE, ''))
         .replace(/^\d+[a-z]?\s*\.\s*/, '').trim();
       if (num[2] && current && num[1] === currentNum) {
         currentSub = { num: num[2], text: gloss, ...(labels.length ? { labels } : {}) };
@@ -98,14 +121,14 @@ function parseSenses(frag, pos, rel) {
       if (pats.length) pattern = `[${pats.join(' ')}]`;
       continue;
     }
-    const gloss = stripHtml(line.replace(LABEL_RE, ''));
-    const labels = [...line.matchAll(LABEL_RE)]
-      .map((m) => stripHtml(m[1]).replace(/^\[|\]$/g, '').trim())
-      .filter(Boolean);
+    const gloss = stripHtml(line.replace(ALL_LABEL_FONT_RE, ''));
+    const labels = parseLabels2ed(line);
     if (!gloss) continue;
     if (!current) {
       current = { ...(pos ? { pos } : {}), ...(labels.length ? { labels } : {}), lines: [] };
       senses.push(current);
+    } else if (labels.length && !current.labels?.length) {
+      current.labels = labels;
     }
     current.lines.push({ role: 'gloss', text: gloss });
   }
