@@ -40,8 +40,11 @@ function parseLabels2ed(line) {
 const SENSE_NUM_RE = /<b>\s*(\d+)([a-z]?)\s*\./;
 const BOLD_RE = /<b>([\s\S]*?)<\/b>/g;
 const SENSE_NUM_TEXT_RE = /^\d+[a-z]?\s*\.$/;
-const THES_RE = /Thesaurus:/;
-const ENTRY_LINK_RE = /<a href="entry:\/\/([^"]+)"[^>]*>/g;
+const GREEN_SECTION_RE = /<font color="#019444"><font>([^<]+):<\/font>/;
+const ENTRY_LINK_RE = /<a href="entry:\/\/([^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+const THES_LINK_RE = /<a href="entry:\/\/([^"]+)"[^>]*>([\s\S]*?)<\/a>\s*(?:<sub><font[^>]*>(synonym|hyponym|hypernym|meronym|antonym)<\/font><\/sub>)?/g;
+const REL_GROUP_LABEL = { hyponym: 'hyponyms', hypernym: 'hypernyms', meronym: 'meronyms' };
+const SECTION_KIND = { 'see also': 'see-also', 'phrasal verbs': 'phrasal', phrases: 'expression', phrase: 'expression' };
 
 function boldPatterns(text) {
   return [...text.matchAll(BOLD_RE)]
@@ -57,9 +60,21 @@ function parseProns(head) {
   return prons;
 }
 
-function addRelation(target, term) {
+function addRelation(target, term, type) {
   if (!term) return;
-  target.synonymGroups = [...(target.synonymGroups ?? []), { words: [term] }];
+  if (type === 'antonym') {
+    target.antonyms = [...new Set([...(target.antonyms ?? []), term])];
+    return;
+  }
+  const label = REL_GROUP_LABEL[type];
+  const groups = [...(target.synonymGroups ?? [])];
+  const last = groups[groups.length - 1];
+  if (last && last.label === label) {
+    groups[groups.length - 1] = { ...last, words: [...last.words, term] };
+  } else {
+    groups.push({ ...(label ? { label } : {}), words: [term] });
+  }
+  target.synonymGroups = groups;
   target.synonyms = [...new Set([...(target.synonyms ?? []), term])];
 }
 
@@ -72,11 +87,21 @@ function parseSenses(frag, pos, rel) {
   for (const line of frag.split(/<br\s*\/?>/i)) {
     const text = stripHtml(line);
     if (!text) continue;
-    if (THES_RE.test(line)) {
+    const green = line.match(GREEN_SECTION_RE);
+    const section = green?.[1].replace(/[\s]+/g, ' ').trim().toLowerCase();
+    if (section === 'thesaurus') {
       const target = currentSub ?? current;
+      for (const m of line.matchAll(THES_LINK_RE)) {
+        const term = stripHtml(m[2]) || stripHtml(m[1]);
+        rel(term, 'thesaurus');
+        if (target) addRelation(target, term, m[3]);
+      }
+      continue;
+    }
+    const sectionKind = section ? SECTION_KIND[section] : undefined;
+    if (sectionKind) {
       for (const m of line.matchAll(ENTRY_LINK_RE)) {
-        rel(m[1], 'thesaurus');
-        if (target) addRelation(target, stripHtml(m[1]));
+        rel(stripHtml(m[2]) || stripHtml(m[1]), sectionKind);
       }
       continue;
     }

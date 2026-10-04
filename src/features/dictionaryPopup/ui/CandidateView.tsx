@@ -417,6 +417,7 @@ export function CandidateView({
 
 const RELATED_KIND_LABELS: Record<string, MessageKey> = {
   phrasal: 'dict.meta.related.phrasal',
+  'see-also': 'dict.meta.related.seeAlso',
   idiom: 'dict.meta.related.idiom',
   collocation: 'dict.meta.related.collocation',
   expression: 'dict.meta.related.expression',

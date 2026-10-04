@@ -170,3 +170,15 @@ sense 25 → `[literary]`, sense 26 → `[British]`; `depend` → `[never progre
 
 Gates: `tsc --noEmit` clean · jest 74 suites / 1,393 tests · `npm run build` ·
 Brave e2e **46/46 asserts** (def head renders `[v.] [transitive] [American informal]`).
+
+### User-reported defects after manual import (fixed round 9)
+
+| Finding | Disposition |
+|---|---|
+| `See also:`/`Phrases:`/`Phrasal Verbs:` lines rendered INSIDE the last sense's def block + hyponyms rendered as plain synonyms ("bị lẫn thông tin") | **Fixed** — `macmillan2ed.mjs` now detects green-label sections (`#019444` nested font): `Thesaurus:` links carry `<sub>` type markers (`synonym`/`hyponym`/`hypernym`/`meronym`/`antonym`) → antonyms go to the `antonyms:` line, hyponym/hypernym/meronym become labeled relation groups (`hyponyms:` muted label + searchable words); `See also:`/`Phrases:`/`Phrasal Verbs:`/`Phrase:` emit entry-level `related` links (`see-also`/`expression`/`phrasal` kinds) rendered in the meta panel, never inside a def. Green labels use `\u00a0` inside (`See\u00A0also:`) so the section regex normalizes whitespace. `macmillan.mjs` parses sense-scoped `seealso-group` → same `see-also` related kind (`bring`, `pity 1` from EnEn now reach the meta panel). New i18n key `dict.meta.related.seeAlso` |
+| "example của một def khác" — `Mr Churchley will be taking you for English.` under sense 26 | **Not a bug** — genuine 2ed example of the same sense with pattern `[take someone for something]` (EnEn omits it); old import rendered it as `pattern : text` inline which looked alien; new data renders `Mr Churchley… [take someone for something]` |
+
+Gates: `tsc --noEmit` clean · jest 74 suites / 1,393 tests · `npm run build` ·
+Brave e2e **51/51 asserts** (hyponym labeled group, `antonyms:` line,
+`see also:`/`phrasal verbs:` meta sections). JSONs regenerated:
+2ed gloss lines 82988 → 76741 (section lines no longer pollute glosses).

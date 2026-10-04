@@ -1641,6 +1641,7 @@
   "dict.meta.related.idiom": "idioms",
   "dict.meta.related.lemma": "lemmas",
   "dict.meta.related.phrasal": "phrasal verbs",
+  "dict.meta.related.seeAlso": "see also",
   "dict.meta.related.thesaurus": "thesaurus",
   "dict.meta.synset": "synset",
   "dict.meta.wordFamily": "word family",

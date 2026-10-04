@@ -89,7 +89,9 @@ function parseLabels(frag) {
   return labels;
 }
 
-function parseSense(frag, pos) {
+const SEEALSO_LINK_RE = /<a href="entry:\/\/[^"]+"[^>]*>([\s\S]*?)<\/a>/g;
+
+function parseSense(frag, pos, rel) {
   const subStart = frag.indexOf('<ol class="sub-senses');
   const main = subStart >= 0 ? frag.slice(0, subStart) : frag;
   const labels = parseLabels(main);
@@ -104,6 +106,13 @@ function parseSense(frag, pos) {
     lines,
   };
   applyRelations(sense, main);
+  if (rel) {
+    for (const { inner: seealso } of blocks(frag, 'div', 'seealso-group')) {
+      for (const m of seealso.matchAll(SEEALSO_LINK_RE)) {
+        rel(stripHtml(m[1].replace(/<sup>/g, ' <sup>')), 'see-also');
+      }
+    }
+  }
   const subs = [];
   for (const { inner: subZone } of blocks(frag, 'ol', 'sub-senses')) {
     for (const { inner: body } of blocks(subZone, 'div', 'sub-sense-body')) {
@@ -213,7 +222,7 @@ export const macmillan = {
           }
         }
         for (const { inner: senseFrag } of blocks(hom, 'div', 'sense')) {
-          const sense = parseSense(senseFrag, pos);
+          const sense = parseSense(senseFrag, pos, rel);
           if (sense) entry.senses.push(sense);
         }
         entries.push(entry);
@@ -257,7 +266,7 @@ export const macmillan = {
         }
       }
       for (const { inner: senseFrag } of blocks(html, 'div', 'sense')) {
-        const sense = parseSense(senseFrag, '');
+        const sense = parseSense(senseFrag, '', rel);
         if (sense) out.senses.push(sense);
       }
     }
