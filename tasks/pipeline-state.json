@@ -2290,43 +2290,32 @@
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-10-04T04:48:31.531Z",
-          "head": "6b2e17a7ca1dd7d50648c1a0c70d639c0d7aa0aa",
-          "dirty": [
-            "public/manifest.json",
-            "src/entities/srs/schemas.ts",
-            "src/entities/srs/types.ts",
-            "src/entrypoints/srs-study/SrsEditCardPanel.tsx",
-            "src/entrypoints/srs-study/SrsNoteEditorPanel.tsx",
-            "src/entrypoints/srs-study/SrsReviewCard.tsx",
-            "src/features/cardCreator/service/srsCardService.test.ts",
-            "src/features/cardCreator/service/srsCardService.ts",
-            "src/features/cardCreator/ui/CardCreatorDialogContent.tsx",
-            "src/features/cardCreator/ui/FieldRow.module.css",
-            "src/features/cardCreator/ui/FieldRow.test.tsx",
-            "src/features/cardCreator/ui/FieldRow.tsx",
-            "src/features/cardCreator/ui/NoteFieldsEditor.tsx",
-            "src/features/dictionaryPopup/services/addToOceanSrs.ts",
-            "src/features/srs/lib/variantFront.test.ts",
-            "src/features/srs/lib/variantFront.ts",
-            "src/features/srs/logic/reviewEngine.test.ts",
-            "src/features/srs/logic/reviewEngine.ts",
-            "src/features/srs/ui/SrsReviewCard.module.css",
-            "src/features/srs/ui/SrsReviewCardBack.tsx",
-            "src/features/srs/ui/SrsReviewCardFront.tsx",
-            "src/features/srs/ui/SrsStudyProvider.tsx",
-            "src/features/srs/ui/SrsVariantFront.tsx",
-            "src/features/srs/ui/srsCardShared.tsx",
-            "src/shared/i18n/messages/en.json",
-            "src/shared/i18n/messages/vi.json",
-            "src/shared/icons/index.ts",
-            "src/shared/icons/svg/clipboard-paste.svg"
-          ]
+          "at": "2026-10-04T05:55:52.256Z",
+          "head": "1cb0719384039ba0205fcd3f6a537876eb80dd9b",
+          "dirty": []
         },
         "lint": {
           "v": "pass",
-          "at": "2026-10-04T04:52:10.698Z",
-          "head": "d2901ee32973eb1222b4ef484141b56c82cc1b41",
+          "at": "2026-10-04T05:55:52.424Z",
+          "head": "1cb0719384039ba0205fcd3f6a537876eb80dd9b",
+          "dirty": []
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-10-04T05:55:52.578Z",
+          "head": "1cb0719384039ba0205fcd3f6a537876eb80dd9b",
+          "dirty": []
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-10-04T05:55:52.755Z",
+          "head": "1cb0719384039ba0205fcd3f6a537876eb80dd9b",
+          "dirty": []
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-10-04T05:55:52.930Z",
+          "head": "1cb0719384039ba0205fcd3f6a537876eb80dd9b",
           "dirty": []
         }
       },
@@ -2350,7 +2339,7 @@
         "since": "2026-10-04T04:12:16.219Z"
       },
       "worktree": "../cell-worktrees/unified-resource-import",
-      "updated": "2026-10-04T04:52:10.745Z"
+      "updated": "2026-10-04T05:55:52.997Z"
     }
   }
 }
