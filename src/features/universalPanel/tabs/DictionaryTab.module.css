@@ -45,5 +45,20 @@
     height: var(--space-14);
     overflow: visible;
     border-bottom: none;
+    transition: height var(--duration-300) var(--ease-standard);
+  }
+
+  .dictionaryTab:has([data-snap='half']) .rightPane.dictionaryTab__sheet {
+    height: 50%;
+  }
+
+  .dictionaryTab:has([data-snap='full']) .rightPane.dictionaryTab__sheet {
+    height: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rightPane.dictionaryTab__sheet {
+      transition: none;
+    }
   }
 }

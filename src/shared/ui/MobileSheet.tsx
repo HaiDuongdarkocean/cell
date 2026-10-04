@@ -248,6 +248,7 @@ export function MobileSheet({
       style={sheetStyle}
       aria-label={ariaLabel}
       data-cell-id={dataTestId}
+      data-snap={snap}
     >
       <div
         className={styles.handle}

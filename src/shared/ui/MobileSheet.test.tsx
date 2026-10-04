@@ -69,6 +69,7 @@ describe('MobileSheet', () => {
     pointer('pointerup', pill, { clientY: 500 });
     expect(onSnapChange).toHaveBeenLastCalledWith('half');
     expect(getSheet()).toHaveClass('snapHalf');
+    expect(getSheet()).toHaveAttribute('data-snap', 'half');
     expect(getPill()).toHaveAttribute('aria-expanded', 'true');
 
     // Tap — collapse back to the peek.
@@ -76,6 +77,7 @@ describe('MobileSheet', () => {
     pointer('pointerup', pill, { clientY: 500 });
     expect(onSnapChange).toHaveBeenLastCalledWith('collapsed');
     expect(getSheet()).toHaveClass('snapCollapsed');
+    expect(getSheet()).toHaveAttribute('data-snap', 'collapsed');
   });
 
   it('tapping re-expands to the last expanded snap point, not always half', () => {
