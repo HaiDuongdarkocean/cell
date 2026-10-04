@@ -109,3 +109,24 @@ e2e harness hardened: `brave-ext`/`brave-profile` are wiped each run and `dist/m
 - Full COCA/Macmillan bulk import into a live profile not run end-to-end;
   converters verified on real MDX fixtures per-term (`present`, `water`,
   `tomato`) + full COCA conversion run completed during build.
+
+### User-reported defects after manual import (fixed round 6)
+
+| Finding | Disposition |
+|---|---|
+| Examples were pushed below the subsense rows instead of staying under their owning gloss; subsenses had no examples or relations at all | **Root-caused across the pipeline** — `macmillan.mjs` only read `span.definition` inside `sub-sense-body` (dropped nested `.examples`/`.thes`); the orchestrator split `sense.lines` into `def.lines` + `def.examples` so the UI could not interleave; `DefinitionSelection` was keyed only by top-level def ids. **Fixed** end-to-end: `SubsenseBlock`/`RelationGroup` types, adapters parse scoped examples + thesaurus `cattitle` labels (`Exact and accurate` now captured from nested `<h2>`), `macmillan2ed` nests `1a./1b.` under the matching `1.` root, renderer emits GoldenDict order gloss → examples → relations → a/b children |
+| Thesaurus category label (`Exact and accurate`) was dropped and, per user feedback, should render muted like examples — it is a topic label, not a synonym | **Fixed** — `RelationGroup {label?, words[]}`; label renders `defLineMeta` (tertiary) while words stay primary. Brave e2e asserts computed colors differ (`07-matter-verb.png`) |
+| Selecting subsense `b.` should carry parent context (gloss + parent relations) without a synthetic merged meaning row | **Fixed** — composite selection ids `def-N#i`; selecting a child auto-checks the parent (`07b-matter-verb-subsel.png`), prefill emits parent + only the selected child blocks; parent pick alone does not select children |
+| Canonical relation markers should be lowercase so the system can auto-find terms | **Fixed** — `synonyms and related words:` / `antonyms:` emitted in `formatDefinitions` + `canonical.ts`; dead i18n keys `dict.definitions.synonyms/antonyms` removed |
+
+Regenerated both converted dictionaries with the new adapters:
+`macmillan-enen.json` (122,051 entries — `correct` carries full parent/child
+examples + `Exact and accurate`/`Morally good or correct` groups) and
+`macmillan-2ed.json` (48,399 entries, 3,869 with nested subsenses).
+
+Gates: `tsc --noEmit` clean · jest dictionaryPopup/dictionary-logic/defEntry
+73 suites / 1,386 tests · `npm run build` · Brave e2e **40/40 asserts**
+including DOM-order (example idx < relations idx < subsense idx), per-child
+scoped examples/relations, muted label vs words, and sub→parent selection
+closure. Evidence: `tmp/pos-dictionary-variants/e2e/07-matter-verb.png`,
+`07b-matter-verb-subsel.png`.
