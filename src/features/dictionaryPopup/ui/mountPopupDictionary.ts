@@ -86,8 +86,6 @@ export interface MountPopupDictionaryOptions {
   /** Lookup chain terms (level 1 → N) — sheet mode renders them as a
    *  breadcrumb strip. Synced by the stack controller after push/prune. */
   readonly trail?: readonly string[];
-  /** False on covered stack levels — sheet drops aria-modal and goes inert. */
-  readonly isTopLevel?: boolean;
   /** Breadcrumb tap: jump back to trail index `index` (closes deeper levels). */
   readonly onTrailNavigate?: (index: number) => void;
 }
@@ -105,8 +103,8 @@ export interface PopupDictionaryMountController {
   readonly setResult: (result: LookupResult, candidates?: readonly LookupResult[]) => void;
   /** Update the active result's status from an external source (e.g. keyboard shortcut). */
   readonly setStatus: (term: string, status: WordStatus) => void;
-  /** Update mutable options (sourceLang, targetLang, size, sheetHeight, term, context, defaultActiveTab) without re-mounting. */
-  readonly setOptions: (options: Partial<Pick<MountPopupDictionaryOptions, 'sourceLang' | 'targetLang' | 'initialSize' | 'initialSheetHeight' | 'initialTerm' | 'contextSentence' | 'cursorOffset' | 'defaultActiveTab' | 'trail' | 'isTopLevel'>>) => void;
+  /** Update mutable options (sourceLang, targetLang, size, sheetHeight, term, context, defaultActiveTab, dismiss policy) without re-mounting. */
+  readonly setOptions: (options: Partial<Pick<MountPopupDictionaryOptions, 'sourceLang' | 'targetLang' | 'initialSize' | 'initialSheetHeight' | 'initialTerm' | 'contextSentence' | 'cursorOffset' | 'defaultActiveTab' | 'trail' | 'dismissOnOutsideClick'>>) => void;
   /** Move the popup to a new anchor without re-mounting (same-level re-lookup). */
   readonly setAnchor: (anchor: PopupAnchor, pointer?: PopupPointerHint, lineRect?: PopupLineRect | null) => void;
 }
@@ -188,7 +186,6 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
     onCandidateChange: current.onCandidateChange,
     onOpenSettings: current.onOpenSettings,
     trail: current.trail,
-    isTopLevel: current.isTopLevel,
     onTrailNavigate: current.onTrailNavigate,
     defaultActiveTab: current.defaultActiveTab,
     syncStatus: current.syncStatus,

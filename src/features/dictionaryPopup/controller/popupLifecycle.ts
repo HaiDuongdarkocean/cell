@@ -13,6 +13,7 @@ import type { PopupAnchor, PopupSize } from '../ui/usePopupPosition';
 import {
   mountPopupDictionary,
   type MountPopupDictionaryOptions,
+  type PopupDictionaryMountController,
 } from '../ui/mountPopupDictionary';
 import type { WebTriggerPointer } from '@/features/dictionaryPopup/trigger/webTriggerController';
 import { createWordHighlight, type HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
@@ -142,6 +143,56 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     return window.innerWidth < POPUP_SHEET_BREAKPOINT_PX;
   }
 
+  // Which representation the stack currently renders as. Sheet mode keeps a
+  // single physical mount — on level 0 — whose content always mirrors the
+  // top logical level; desktop mode keeps one mount per level. A resize
+  // across the breakpoint re-materializes the stack without losing the
+  // lookup chain. Null until the first mount establishes the representation.
+  let viewIsSheet: boolean | null = null;
+
+  /** The mount that renders `level`'s content. In sheet mode that is always
+   *  the shared mount owned by level 0, no matter which logical level the
+   *  content belongs to. */
+  function viewMountOf(level: PopupLevel): PopupDictionaryMountController | null {
+    return isSheetMode() ? popupStack[0]?.mount ?? null : level.mount;
+  }
+
+  function uniqueViewMounts(): PopupDictionaryMountController[] {
+    const mounts = new Set<PopupDictionaryMountController>();
+    for (const level of popupStack) {
+      const mount = viewMountOf(level);
+      if (mount) mounts.add(mount);
+    }
+    return [...mounts];
+  }
+
+  function defaultTabFor(langCode: string) {
+    const dp = deps.getDpSettings();
+    const perLang = dp.defaultActiveTabPerLang?.[langCode];
+    return perLang !== undefined ? perLang : dp.defaultActiveTab;
+  }
+
+  /** Repaint the shared sheet mount with the top level's cached lookup data —
+   *  breadcrumb navigation prunes deeper levels, then this restores the
+   *  surfaced level without another dictionary round-trip. */
+  function restoreTopLevelView(): void {
+    const top = popupStack[popupStack.length - 1];
+    const view = popupStack[0]?.mount;
+    if (!top || !view) return;
+    const langCode = top.request?.langCode ?? top.termLangCode ?? '';
+    view.setOptions({
+      sourceLang: langCode,
+      targetLang: deps.getNativeLang() || 'vi',
+      initialTerm: top.request?.term ?? top.lookupTerm ?? '',
+      contextSentence: top.request?.contextSentence,
+      cursorOffset: top.request?.cursorOffset,
+      defaultActiveTab: defaultTabFor(langCode),
+    });
+    if (top.result) view.setResult(top.result, top.candidates);
+    else view.setLoading(true);
+    view.focus();
+  }
+
   function destroyLevel(level: PopupLevel): void {
     if (level.requestId) {
       deps.sendLookupCancel(level.requestId);
@@ -154,7 +205,9 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
   }
 
   /** Close level `index` and every deeper level. Resumes the video only once
-   *  the whole stack is gone; otherwise focus lands on the exposed parent. */
+   *  the whole stack is gone; otherwise focus lands on the exposed level —
+   *  which in sheet mode means repainting the shared mount with that level's
+   *  cached result. */
   function closeFromLevel(index: number): void {
     if (index < 0 || index >= popupStack.length) return;
     while (popupStack.length > index) {
@@ -164,22 +217,18 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     if (popupStack.length === 0) {
       deps.resumeVideo();
       deps.resetVideoPlaying();
+    } else if (isSheetMode()) {
+      restoreTopLevelView();
     } else {
       popupStack[popupStack.length - 1]?.mount?.focus();
     }
   }
 
   // Every mounted level mirrors the full lookup chain (sheet mode renders it
-  // as a breadcrumb strip); `isTopLevel` flips modality/inertness so only the
-  // top sheet claims the dialog role and receives focus.
+  // as a breadcrumb strip on the single shared mount).
   function syncTrail(): void {
     const trail = popupStack.map((level) => level.lookupTerm ?? '');
-    popupStack.forEach((level, index) => {
-      level.mount?.setOptions({
-        trail,
-        isTopLevel: index === popupStack.length - 1,
-      });
-    });
+    for (const mount of uniqueViewMounts()) mount.setOptions({ trail });
   }
 
   function closePopup(): void {
@@ -211,19 +260,25 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
   const unsubscribePanelOpenChange = deps.panelController?.onOpenChange?.(syncPanelZIndex);
 
   /** Mount a popup for `level`, wiring every popup callback back to that
-   *  level so nested lookups / status changes / card actions stay scoped. */
+   *  level so nested lookups / status changes / card actions stay scoped. In
+   *  sheet mode the single mount on level 0 displays the TOP level, so the
+   *  callbacks resolve the displayed level dynamically instead of the mount
+   *  owner. */
   function mountPopupLevel(level: PopupLevel, options: MountPopupDictionaryOptions): void {
+    const viewLevel = (): PopupLevel =>
+      (isSheetMode() ? popupStack[popupStack.length - 1] : level) ?? level;
     level.mount = mountPopupDictionary({
       ...options,
       trail: popupStack.map((l) => l.lookupTerm ?? ''),
-      isTopLevel: popupStack[popupStack.length - 1] === level,
       onTrailNavigate: (index) => closeFromLevel(index + 1),
-      onClose: () => closeFromLevel(popupStack.indexOf(level)),
+      // Sheet mode's one close affordance dismisses the whole chain at once;
+      // a desktop popup closes itself and every deeper level.
+      onClose: () => closeFromLevel(isSheetMode() ? 0 : popupStack.indexOf(level)),
       onSizeChange: handlePopupSizeChange,
-      onSendToCard: (prefill) => deps.onCardCreatorAction(level, 'edit-card', prefill),
-      onQuickAdd: (prefill) => { void deps.onQuickAdd(level, prefill); },
-      onStatusChange: (term, langCode, status) => handlePopupStatusChange(level, term, langCode, status),
-      onCandidateChange: (term) => expandHighlightForTerm(level, term),
+      onSendToCard: (prefill) => deps.onCardCreatorAction(viewLevel(), 'edit-card', prefill),
+      onQuickAdd: (prefill) => { void deps.onQuickAdd(viewLevel(), prefill); },
+      onStatusChange: (term, langCode, status) => handlePopupStatusChange(viewLevel(), term, langCode, status),
+      onCandidateChange: (term) => expandHighlightForTerm(viewLevel(), term),
       onOpenSettings: deps.panelController
         ? () => { closePopup(); void openSettingsSection(deps.panelController!, 'resources'); }
         : undefined,
@@ -232,6 +287,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
       isReanchorPointerDown,
       onOutsidePointerDown: closePopup,
     });
+    viewIsSheet = isSheetMode();
     applyLevelZIndex(level);
   }
 
@@ -258,7 +314,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
 
   function handlePopupStatusChange(level: PopupLevel, term: string, langCode: string, status: WordStatus): void {
     emitWordStatusChanged({ term, langCode, status });
-    level.mount?.setStatus(term, status);
+    viewMountOf(level)?.setStatus(term, status);
     deps.onStatusChange?.(term, langCode, status);
     const token = level.popupTokenEl ?? (level.popupTokenId ? getTokenById(level.popupTokenId) : null);
     if (token) {
@@ -273,7 +329,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
   function getPopupStatusTarget(): PopupStatusTarget | null {
     for (let i = popupStack.length - 1; i >= 0; i--) {
       const level = popupStack[i]!;
-      if (!level.mount || !level.term || !level.termLangCode) continue;
+      if (!level.term || !level.termLangCode) continue;
       const term = level.term;
       const langCode = level.termLangCode;
       return {
@@ -320,15 +376,22 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
       : undefined;
 
     const dpSettings = deps.getDpSettings();
-    const perLang = dpSettings.defaultActiveTabPerLang?.[result.langCode];
-    const defaultTab = perLang !== undefined ? perLang : dpSettings.defaultActiveTab;
+    const defaultTab = defaultTabFor(result.langCode);
 
-    if (level.mount) {
-      // Reused level (same-level re-lookup, sheet chain, or the async
-      // response for a loading shell): feed the result in without
+    // Cache the outcome on the level so breadcrumb restore / breakpoint
+    // re-materialization can repaint without another lookup.
+    level.request = request;
+    level.result = result;
+    level.candidates = additional;
+    level.anchor = anchor;
+
+    const viewMount = viewMountOf(level);
+    if (viewMount) {
+      // Reused mount (same-level re-lookup, the shared sheet view, or the
+      // async response for a loading shell): feed the result in without
       // re-mounting and move the popup to the new anchor.
-      level.mount.setResult(result, additional);
-      level.mount.setOptions({
+      viewMount.setResult(result, additional);
+      viewMount.setOptions({
         sourceLang: result.langCode,
         targetLang: deps.getNativeLang() || 'vi',
         initialTerm: request.term,
@@ -337,7 +400,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
         defaultActiveTab: defaultTab,
       });
       if (!isResponseUpdate) {
-        level.mount.setAnchor(anchor, pointerHint, lineRect);
+        viewMount.setAnchor(anchor, pointerHint, lineRect);
       }
     } else {
       mountPopupLevel(level, {
@@ -402,8 +465,11 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
 
     // Route the lookup to its level: page/subtitle text → level 1 (index 0),
     // content inside popup level N → level N+1. Deeper levels are pruned; the
-    // target level is reused when it exists.
-    const sourceIdx = levelIndexForTarget(popupStack, highlightTarget);
+    // target level is reused when it exists. Sheet mode renders every level
+    // inside level 0's single mount — a target there always chains off the
+    // top logical level, which the DOM alone can't distinguish.
+    let sourceIdx = levelIndexForTarget(popupStack, highlightTarget);
+    if (isSheetMode() && sourceIdx >= 0) sourceIdx = popupStack.length - 1;
     const targetIdx = sourceIdx + 1;
     const sourceAbovePanel = sourceIdx >= 0 ? popupStack[sourceIdx]?.abovePanel : undefined;
     if (popupStack.length > targetIdx + 1) closeFromLevel(targetIdx + 1);
@@ -432,6 +498,9 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     level.term = null;
     level.termLangCode = null;
     level.lookupTerm = request.term;
+    level.request = request;
+    level.result = null;
+    level.candidates = [];
     syncTrail();
     if (highlightTarget instanceof Range && highlightTarget.startContainer instanceof Text) {
       const parent = highlightTarget.startContainer.parentElement;
@@ -462,6 +531,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
       right: anchorRect.right,
       bottom: anchorRect.bottom + 4,
     };
+    level.anchor = anchor;
     const pointerHint = pointer
       ? {
           tip: { x: pointer.x, y: pointer.y },
@@ -485,13 +555,14 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
 
     // Mount a React loading shell immediately with the term + context so the
     // user gets instant feedback on click/hover. When data arrives,
-    // renderLookupResult calls setResult on the same mount.
+    // renderLookupResult calls setResult on the same mount. Sheet mode has
+    // exactly one physical mount — pushing a logical level repaints it.
     const dpSettings = deps.getDpSettings();
-    if (level.mount) {
-      const perLang = dpSettings.defaultActiveTabPerLang?.[request.langCode];
-      const defaultTab = perLang !== undefined ? perLang : dpSettings.defaultActiveTab;
-      level.mount.setLoading(true);
-      level.mount.setOptions({
+    const defaultTab = defaultTabFor(request.langCode);
+    const viewMount = viewMountOf(level);
+    if (viewMount) {
+      viewMount.setLoading(true);
+      viewMount.setOptions({
         sourceLang: request.langCode,
         targetLang: deps.getNativeLang() || 'vi',
         initialTerm: request.term,
@@ -499,10 +570,8 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
         cursorOffset: request.cursorOffset,
         defaultActiveTab: defaultTab,
       });
-      level.mount.setAnchor(anchor, pointerHint, lineRect);
+      viewMount.setAnchor(anchor, pointerHint, lineRect);
     } else {
-      const perLang = dpSettings.defaultActiveTabPerLang?.[request.langCode];
-      const defaultTab = perLang !== undefined ? perLang : dpSettings.defaultActiveTab;
       mountPopupLevel(level, {
         anchor,
         pointer: pointerHint,
@@ -569,14 +638,14 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
   }
 
   function syncStatus(term: string, status: WordStatus): void {
-    for (const level of popupStack) {
-      level.mount?.setStatus(term, status);
+    for (const mount of uniqueViewMounts()) {
+      mount.setStatus(term, status);
     }
   }
 
   function syncMountSettings(nativeLang: string, settings: DictionaryPopupSettings): void {
-    for (const level of popupStack) {
-      level.mount?.setOptions({
+    for (const mount of uniqueViewMounts()) {
+      mount.setOptions({
         targetLang: nativeLang,
         initialSize: { width: settings.popupWidthPx, maxHeight: settings.popupMaxHeightPx },
         initialSheetHeight: Math.round(window.innerHeight * ((settings.popupSheetHeightVh ?? 72) / 100)),
@@ -584,27 +653,183 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     }
   }
 
+  function anchorFromRect(rect: DOMRect): PopupAnchor {
+    return { top: rect.top, left: rect.left, right: rect.right, bottom: rect.bottom + 4 };
+  }
+
+  /** First whole-word occurrence of `term` inside a mounted popup's lookup
+   *  region — used to re-anchor materialized nested popups after the parent's
+   *  DOM was rebuilt across a breakpoint crossing. */
+  function findTermRange(host: HTMLElement, term: string | null): Range | null {
+    if (!term) return null;
+    const root = host.shadowRoot;
+    const region = root?.querySelector('[data-allow-lookup]') ?? root;
+    if (!region) return null;
+    const needle = term.toLowerCase();
+    const boundary = /[0-9A-Za-zÀ-ɏ'-]/;
+    const walker = document.createTreeWalker(region, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode() as Text | null;
+    while (node) {
+      const text = node.textContent ?? '';
+      const idx = text.toLowerCase().indexOf(needle);
+      if (idx >= 0) {
+        const before = text[idx - 1];
+        const after = text[idx + needle.length];
+        if (!(before && boundary.test(before)) && !(after && boundary.test(after))) {
+          const range = document.createRange();
+          range.setStart(node, idx);
+          range.setEnd(node, idx + needle.length);
+          return range;
+        }
+      }
+      node = walker.nextNode() as Text | null;
+    }
+    return null;
+  }
+
+  /** Where a materialized desktop popup should sit after a mobile → desktop
+   *  crossing. Level 0 anchors to live page text (still valid). Deeper levels
+   *  anchored to tokens inside their parent's popup content — after a sheet
+   *  phase that DOM is stale, so re-find the term inside the freshly mounted
+   *  parent and re-apply the highlight there. Falls back to the level's last
+   *  known anchor rect. */
+  function resolveMaterializedAnchor(
+    level: PopupLevel,
+    index: number,
+  ): { anchor: PopupAnchor; lineRect: PopupLineRect | null } {
+    if (index > 0) {
+      const parentHost = popupStack[index - 1]?.mount?.host;
+      const range = parentHost ? findTermRange(parentHost, level.lookupTerm) : null;
+      const rect = range && typeof range.getBoundingClientRect === 'function'
+        ? range.getBoundingClientRect()
+        : null;
+      if (range && rect && (rect.width > 0 || rect.height > 0)) {
+        level.highlight.clear();
+        level.highlight.show(range);
+        level.highlightTarget = range;
+        return { anchor: anchorFromRect(rect), lineRect: computeLineRect(range) };
+      }
+    } else if (level.highlightTarget && typeof level.highlightTarget.getBoundingClientRect === 'function') {
+      const rect = level.highlightTarget.getBoundingClientRect();
+      if (rect.width > 0 || rect.height > 0) {
+        return { anchor: anchorFromRect(rect), lineRect: computeLineRect(level.highlightTarget) };
+      }
+    }
+    const anchor = level.anchor ?? {
+      top: window.innerHeight / 2,
+      left: window.innerWidth / 2 - 160,
+      right: window.innerWidth / 2 + 160,
+      bottom: window.innerHeight / 2,
+    };
+    return { anchor, lineRect: null };
+  }
+
+  const nextFrame = (): Promise<void> =>
+    new Promise((resolve) => {
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => resolve());
+      } else {
+        setTimeout(resolve, 0);
+      }
+    });
+
+  /** Desktop → mobile crossing: every level stays in the logical stack, but
+   *  only level 0 keeps its mount — repainted with the top level's content.
+   *  The mount itself flips Surface → Sheet via usePopupPosition's own
+   *  resize listener. */
+  function collapseToSheetView(): void {
+    for (let i = popupStack.length - 1; i >= 1; i--) {
+      const level = popupStack[i]!;
+      level.mount?.destroy();
+      level.mount = null;
+      clearPopupTokenId(level);
+      level.highlight.clear();
+    }
+    const view = popupStack[0]?.mount;
+    if (!view) return;
+    view.setOptions({ dismissOnOutsideClick: false });
+    restoreTopLevelView();
+    syncTrail();
+  }
+
+  /** Mobile → desktop crossing: materialize one popup per logical level.
+   *  Level 0's existing mount self-flips Sheet → Surface; deeper levels get
+   *  fresh mounts anchored to term occurrences inside their parent's
+   *  content. A frame between mounts lets React commit so the term search
+   *  sees rendered text. */
+  async function materializeDesktopStack(): Promise<void> {
+    const dpSettings = deps.getDpSettings();
+    for (let i = 0; i < popupStack.length; i++) {
+      if (isSheetMode()) return; // crossed back mid-transition — collapse owns it
+      const level = popupStack[i]!;
+      const { anchor, lineRect } = resolveMaterializedAnchor(level, i);
+      const langCode = level.request?.langCode ?? level.termLangCode ?? '';
+      const shared = {
+        sourceLang: langCode,
+        targetLang: deps.getNativeLang() || 'vi',
+        initialTerm: level.request?.term ?? level.lookupTerm ?? '',
+        contextSentence: level.request?.contextSentence,
+        cursorOffset: level.request?.cursorOffset,
+        defaultActiveTab: defaultTabFor(langCode),
+        dismissOnOutsideClick: true,
+      };
+      if (level.mount) {
+        level.mount.setOptions(shared);
+        if (level.result) level.mount.setResult(level.result, level.candidates);
+        else level.mount.setLoading(true);
+        level.mount.setAnchor(anchor, undefined, lineRect);
+      } else {
+        mountPopupLevel(level, {
+          anchor,
+          lineRect,
+          langCode,
+          ...shared,
+          initialResult: level.result ?? undefined,
+          initialCandidates: level.candidates,
+          getTokenStatus: deps.getTokenStatus,
+          isLoading: !level.result,
+          initialSize: { width: dpSettings.popupWidthPx, maxHeight: dpSettings.popupMaxHeightPx },
+          initialSheetHeight: Math.round(window.innerHeight * ((dpSettings.popupSheetHeightVh ?? 72) / 100)),
+        });
+      }
+      await nextFrame();
+    }
+    syncTrail();
+  }
+
+  const onViewportResize = (): void => {
+    if (popupStack.length === 0) return;
+    const sheet = isSheetMode();
+    if (viewIsSheet === null || sheet === viewIsSheet) return;
+    viewIsSheet = sheet;
+    if (sheet) collapseToSheetView();
+    else void materializeDesktopStack();
+  };
+
+  listeners.add(window, 'resize', onViewportResize);
+
   // Stack-level keyboard/pointer routing. The per-popup Surface already owns
   // Escape when focus is inside it (and stops propagation); this document
-  // listener covers Escape with focus outside the popup — it closes the top
-  // level only, so repeated Escape walks the stack down level by level.
+  // listener covers Escape with focus outside the popup. Desktop pops one
+  // level per Escape; the single sheet dismisses the whole chain at once.
   const onStackKeydown = (e: KeyboardEvent): void => {
     if (e.key !== 'Escape' || popupStack.length === 0) return;
     e.preventDefault();
     e.stopPropagation();
-    closeFromLevel(popupStack.length - 1);
+    closeFromLevel(isSheetMode() ? 0 : popupStack.length - 1);
   };
 
   // A pointerdown inside an ancestor level's host closes every deeper level
   // and lands focus on that ancestor; the surviving level stays interactive.
+  // Sheet mode has no per-level hosts to disambiguate — taps inside the one
+  // shared sheet must never prune.
   const onStackPointerDown = (e: PointerEvent): void => {
-    if (popupStack.length < 2) return;
+    if (isSheetMode() || popupStack.length < 2) return;
     const path = e.composedPath();
     const idx = popupStack.findIndex(
       (level) => level.mount !== null && path.includes(level.mount.host),
     );
     if (idx < 0 || idx >= popupStack.length - 1) return;
-    e.preventDefault();
     closeFromLevel(idx + 1);
   };
 

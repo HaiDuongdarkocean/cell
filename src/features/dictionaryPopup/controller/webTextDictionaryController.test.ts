@@ -2085,74 +2085,106 @@ describe('nested popup stack', () => {
       return Array.from(trail.querySelectorAll('li')).map((li) => li.textContent ?? '');
     }
 
-    async function withSheetViewport(fn: () => Promise<void>): Promise<void> {
+    function termOf(host: HTMLElement): string | null {
+      return host.shadowRoot!.querySelector('[data-cell-id="dictionary-term"]')?.textContent ?? null;
+    }
+
+    // prefetchAdjacentTerms also emits LOOKUP_REQUESTs — count only the terms
+    // this test actually looked up so prefetch noise can't skew assertions.
+    function lookupRequestCount(terms: readonly string[]): number {
+      const wanted = new Set(terms);
+      return mockSendMessage.mock.calls.filter((call) => {
+        const msg = call[0] as { type?: string; payload?: { request?: { term?: string } } };
+        return msg.type === 'LOOKUP_REQUEST' && wanted.has(msg.payload?.request?.term ?? '');
+      }).length;
+    }
+
+    async function resizeTo(width: number): Promise<void> {
+      setViewport(width);
+      await act(async () => {
+        window.dispatchEvent(new Event('resize'));
+        await new Promise((resolve) => { setTimeout(resolve, 0); });
+      });
+    }
+
+    // The controller's own resize listener re-materializes mounts — a leaked
+    // (undestroyed) controller would add stray hosts to later tests, so
+    // destroy is unconditional here.
+    async function withSheetViewport(
+      fn: (ctrl: ReturnType<typeof createWebTextDictionaryController>) => Promise<void>,
+    ): Promise<void> {
       setViewport(500);
+      const ctrl = createWebTextDictionaryController(makeDeps());
       try {
-        await fn();
+        await fn(ctrl);
       } finally {
+        act(() => { ctrl.destroy() });
         setViewport(1024);
       }
     }
 
-    it('pushes a new sheet level and renders the breadcrumb trail', async () => {
-      await withSheetViewport(async () => {
+    it('keeps a single sheet mount and swaps its content for deeper lookups', async () => {
+      await withSheetViewport(async (ctrl) => {
         makeLookupForTerms();
-        const ctrl = createWebTextDictionaryController(makeDeps());
 
         act(() => { ctrl.handleLookup(makeRequest({ term: 'above' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('above')) });
         await flushLookup();
         const lv1 = popupHosts()[0]!;
         expect(trailOf(lv1)).toBeNull();
+        expect(termOf(lv1)).toBe('above');
 
         act(() => { ctrl.handleLookup(makeRequest({ term: 'used' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'used')) });
         await flushLookup();
 
         const hosts = popupHosts();
-        expect(hosts).toHaveLength(2);
-        expect(crumbTexts(hosts[1]!)).toEqual(['above', 'used']);
-        const items = trailOf(hosts[1]!)!.querySelectorAll('li');
+        expect(hosts).toHaveLength(1);
+        expect(hosts[0]).toBe(lv1);
+        expect(crumbTexts(lv1)).toEqual(['above', 'used']);
+        expect(termOf(lv1)).toBe('used');
+        const items = trailOf(lv1)!.querySelectorAll('li');
         expect(items[1]!.getAttribute('aria-current')).toBe('page');
         expect(items[0]!.querySelector('button')).not.toBeNull();
-        act(() => { ctrl.destroy() });
       });
     });
 
-    it('tapping an ancestor crumb closes deeper levels', async () => {
-      await withSheetViewport(async () => {
+    it('tapping an ancestor crumb restores that level in the same sheet', async () => {
+      await withSheetViewport(async (ctrl) => {
         makeLookupForTerms();
-        const ctrl = createWebTextDictionaryController(makeDeps());
 
         act(() => { ctrl.handleLookup(makeRequest({ term: 'above' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('above')) });
         await flushLookup();
         const lv1 = popupHosts()[0]!;
         act(() => { ctrl.handleLookup(makeRequest({ term: 'used' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'used')) });
         await flushLookup();
-        const lv2 = popupHosts()[1]!;
-        act(() => { ctrl.handleLookup(makeRequest({ term: 'set' }), 'r3', new DOMRect(70, 80, 50, 20), rangeInPopup(lv2, 'set')) });
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'set' }), 'r3', new DOMRect(70, 80, 50, 20), rangeInPopup(lv1, 'set')) });
         await flushLookup();
-        expect(popupHosts()).toHaveLength(3);
+        expect(popupHosts()).toHaveLength(1);
+        expect(crumbTexts(lv1)).toEqual(['above', 'used', 'set']);
 
-        const crumb = trailOf(popupHosts()[2]!)!.querySelectorAll('button')[0]! as HTMLElement;
+        const crumb = trailOf(lv1)!.querySelectorAll('button')[0]! as HTMLElement;
         await act(async () => { crumb.click(); });
 
         expect(popupHosts()).toHaveLength(1);
         expect(popupHosts()[0]).toBe(lv1);
+        // Depth 1 hides the strip again; the cached level-1 result repaints.
         expect(trailOf(lv1)).toBeNull();
-        act(() => { ctrl.destroy() });
+        expect(termOf(lv1)).toBe('above');
+        // Restore is served from the level cache — no fourth lookup.
+        expect(lookupRequestCount(['above', 'used', 'set'])).toBe(3);
       });
     });
 
     it('a page lookup resets the chain back to level 1', async () => {
-      await withSheetViewport(async () => {
+      await withSheetViewport(async (ctrl) => {
         makeLookupForTerms();
-        const ctrl = createWebTextDictionaryController(makeDeps());
 
         act(() => { ctrl.handleLookup(makeRequest({ term: 'above' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('above')) });
         await flushLookup();
         const lv1 = popupHosts()[0]!;
         act(() => { ctrl.handleLookup(makeRequest({ term: 'used' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'used')) });
         await flushLookup();
-        expect(popupHosts()).toHaveLength(2);
+        expect(popupHosts()).toHaveLength(1);
+        expect(crumbTexts(lv1)).toEqual(['above', 'used']);
 
         act(() => { ctrl.handleLookup(makeRequest({ term: 'fresh' }), 'r3', new DOMRect(90, 100, 50, 20), pageRange('fresh')) });
         await flushLookup();
@@ -2160,56 +2192,83 @@ describe('nested popup stack', () => {
         expect(popupHosts()).toHaveLength(1);
         expect(popupHosts()[0]).toBe(lv1);
         expect(trailOf(lv1)).toBeNull();
-        expect(crumbTexts(popupHosts()[0]!)).toEqual([]);
-        act(() => { ctrl.destroy() });
+        expect(termOf(lv1)).toBe('fresh');
       });
     });
 
-    it('only the top sheet claims modal semantics — covered levels go inert', async () => {
-      await withSheetViewport(async () => {
+    it('Escape dismisses the whole chain at once', async () => {
+      await withSheetViewport(async (ctrl) => {
         makeLookupForTerms();
-        const ctrl = createWebTextDictionaryController(makeDeps());
 
         act(() => { ctrl.handleLookup(makeRequest({ term: 'above' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('above')) });
         await flushLookup();
         const lv1 = popupHosts()[0]!;
         act(() => { ctrl.handleLookup(makeRequest({ term: 'used' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'used')) });
         await flushLookup();
-        const lv2 = popupHosts()[1]!;
-
-        const sheet1 = sheetOf(lv1);
-        const sheet2 = sheetOf(lv2);
-        expect(sheet1.hasAttribute('inert')).toBe(true);
-        expect(sheet1.getAttribute('aria-modal')).toBeNull();
-        expect(sheet2.hasAttribute('inert')).toBe(false);
-        expect(sheet2.getAttribute('aria-modal')).toBe('true');
-        act(() => { ctrl.destroy() });
-      });
-    });
-
-    it('Escape on the top sheet pops one level and reveals the parent', async () => {
-      await withSheetViewport(async () => {
-        makeLookupForTerms();
-        const ctrl = createWebTextDictionaryController(makeDeps());
-
-        act(() => { ctrl.handleLookup(makeRequest({ term: 'above' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('above')) });
-        await flushLookup();
-        const lv1 = popupHosts()[0]!;
-        act(() => { ctrl.handleLookup(makeRequest({ term: 'used' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'used')) });
-        await flushLookup();
-        const lv2 = popupHosts()[1]!;
+        expect(popupHosts()).toHaveLength(1);
 
         await act(async () => {
-          sheetOf(lv2).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }));
+          sheetOf(lv1).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }));
         });
 
-        expect(popupHosts()).toHaveLength(1);
-        expect(popupHosts()[0]).toBe(lv1);
-        const sheet1 = sheetOf(lv1);
-        expect(sheet1.hasAttribute('inert')).toBe(false);
-        expect(sheet1.getAttribute('aria-modal')).toBe('true');
-        act(() => { ctrl.destroy() });
+        expect(popupHosts()).toHaveLength(0);
       });
+    });
+
+    it('expanding the viewport materializes one popup per logical level', async () => {
+      await withSheetViewport(async (ctrl) => {
+        makeLookupForTerms();
+
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'above' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('above')) });
+        await flushLookup();
+        const lv1 = popupHosts()[0]!;
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'used' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'used')) });
+        await flushLookup();
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'set' }), 'r3', new DOMRect(70, 80, 50, 20), rangeInPopup(lv1, 'set')) });
+        await flushLookup();
+        expect(popupHosts()).toHaveLength(1);
+
+        await resizeTo(1024);
+        await waitFor(() => expect(popupHosts()).toHaveLength(3));
+        const hosts = popupHosts();
+        expect(hosts[0]).toBe(lv1);
+        expect(termOf(hosts[0]!)).toBe('above');
+        expect(termOf(hosts[1]!)).toBe('used');
+        expect(termOf(hosts[2]!)).toBe('set');
+        // Materialization replays cached results — no repeat lookups.
+        expect(lookupRequestCount(['above', 'used', 'set'])).toBe(3);
+      });
+    });
+
+    it('shrinking the viewport collapses the popups back into one sheet', async () => {
+      setViewport(1024);
+      const ctrl = createWebTextDictionaryController(makeDeps());
+      try {
+        makeLookupForTerms();
+
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'above' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('above')) });
+        await flushLookup();
+        const lv1 = popupHosts()[0]!;
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'used' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'used')) });
+        await flushLookup();
+        act(() => { ctrl.handleLookup(makeRequest({ term: 'set' }), 'r3', new DOMRect(70, 80, 50, 20), rangeInPopup(popupHosts()[1]!, 'set')) });
+        await flushLookup();
+        expect(popupHosts()).toHaveLength(3);
+
+        await resizeTo(500);
+        const hosts = popupHosts();
+        expect(hosts).toHaveLength(1);
+        expect(hosts[0]).toBe(lv1);
+        expect(crumbTexts(lv1)).toEqual(['above', 'used', 'set']);
+        expect(termOf(lv1)).toBe('set');
+
+        // And a second crossing materializes the preserved chain again.
+        await resizeTo(1024);
+        await waitFor(() => expect(popupHosts()).toHaveLength(3));
+      } finally {
+        act(() => { ctrl.destroy() });
+        setViewport(1024);
+      }
     });
   });
 

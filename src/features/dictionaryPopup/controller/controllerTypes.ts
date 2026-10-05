@@ -1,4 +1,6 @@
 import type { PopupDictionaryMountController } from '../ui/mountPopupDictionary';
+import type { PopupAnchor } from '../ui/usePopupPosition';
+import type { LookupRequest, LookupResult } from '@/entities/dictionary';
 import { createWordHighlight, type HighlightTarget, type WordHighlight } from '../ui/wordHighlight';
 
 /** Minimal cue range used for sentence audio capture. */
@@ -38,6 +40,15 @@ export interface PopupLevel {
   /** Term the user looked up at this level — breadcrumb label. Known at
    *  request time, unlike `term` which waits for the winning result. */
   lookupTerm: string | null;
+  /** Lookup request + result snapshot so the level can be re-rendered without
+   *  a worker round-trip — breadcrumb restore in sheet mode and re-materializing
+   *  desktop popups after a viewport breakpoint crossing. */
+  request: LookupRequest | null;
+  result: LookupResult | null;
+  candidates: readonly LookupResult[];
+  /** Last anchor rect this level's popup/sheet was placed on — fallback
+   *  position when re-materializing after the source token is gone. */
+  anchor: PopupAnchor | null;
   abovePanel: boolean;
   highlight: WordHighlight;
 }
@@ -54,6 +65,10 @@ export function createPopupLevel(): PopupLevel {
     term: null,
     termLangCode: null,
     lookupTerm: null,
+    request: null,
+    result: null,
+    candidates: [],
+    anchor: null,
     abovePanel: true,
     highlight: createWordHighlight(),
   };

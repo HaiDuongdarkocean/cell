@@ -24,9 +24,6 @@ export interface DictionaryPopupProps extends Omit<DictionaryPanelProps, 'isOpen
   /** Lookup chain terms (level 1 → N) — rendered as a breadcrumb strip in
    *  sheet mode when the chain is deeper than one level. */
   readonly trail?: readonly string[];
-  /** False when this level is covered by a deeper sheet — drops modal
-   *  semantics and goes inert. Default: true. */
-  readonly isTopLevel?: boolean;
   /** Breadcrumb tap: jump back to trail index `index`. */
   readonly onTrailNavigate?: (index: number) => void;
   readonly onClose: () => void;
@@ -49,7 +46,6 @@ function DictionaryPopup(props: DictionaryPopupProps): React.JSX.Element {
     initialSize,
     initialSheetHeight,
     trail,
-    isTopLevel,
     onTrailNavigate,
     onClose,
     onSizeChange,
@@ -91,8 +87,6 @@ function DictionaryPopup(props: DictionaryPopupProps): React.JSX.Element {
             <LookupTrail trail={trail} onNavigate={onTrailNavigate} />
           ) : undefined
         }
-        modal={isTopLevel ?? true}
-        inert={isTopLevel === false}
         data-cell-id="popup-dictionary"
       >
         <DictionaryPanelView {...panelProps} isOpen variant="popup" />

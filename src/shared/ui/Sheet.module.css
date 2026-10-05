@@ -68,22 +68,6 @@
   composes: hide from '@/shared/ui/Scrollable.module.css';
 }
 
-/* Hit catcher rendered as a sibling of an inert (covered) sheet — inert
-   subtrees are transparent to hit-testing, so taps would fall through to the
-   page behind. Mirrors the sheet's fixed rect; height/transform come inline
-   so it tracks drag/resize state exactly. */
-.cover {
-  position: fixed;
-  left: var(--space-2);
-  right: var(--space-2);
-  bottom: var(--space-2);
-  max-height: calc(100vh - var(--space-2) * 2);
-  z-index: var(--z-overlay-top);
-  pointer-events: auto;
-  touch-action: none;
-  background: transparent;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .sheet {
     transition: none;

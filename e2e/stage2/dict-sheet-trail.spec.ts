@@ -5,15 +5,17 @@ import { test } from '../fixtures/cellEnvironment.fixture';
 const DB_SCHEMA_VERSION = 13;
 const WORD_RE = /[A-Za-zÀ-ɏ']+/;
 const MOBILE_VIEWPORT = { width: 390, height: 844 };
+const DESKTOP_VIEWPORT = { width: 1280, height: 800 };
 
 /**
- * Contract (spec docs/specs/dict-sheet-breadcrumb.md):
- *   Given: a level-1 dictionary sheet opened at mobile width (<599px)
- *   Then:  a lookup inside its definitions pushes a NEW sheet level while
- *          level 1 stays mounted; the top sheet shows a breadcrumb strip
- *          "lv1 > lv2 > ... > lvN" (hidden at depth 1); tapping a crumb closes
- *          the deeper levels via closeFromLevel; a page lookup resets the
- *          chain; only the top sheet keeps aria-modal (covered levels inert).
+ * Contract: at mobile width (<599px) the dictionary renders as ONE bottom
+ * sheet. A lookup inside its content pushes a logical level — the same sheet
+ * repaints with the new result and the breadcrumb strip grows
+ * "lv1 > lv2 > ... > lvN" (hidden at depth 1). Tapping a crumb restores that
+ * level's cached result and closes deeper levels; Escape/close dismisses the
+ * whole chain at once; a page lookup resets the chain. Crossing the
+ * breakpoint materializes one desktop popup per logical level, and shrinking
+ * back collapses them into the single sheet.
  */
 
 /** Seed one DICTIONARY resource + entries into the extension's IndexedDB so a
@@ -206,9 +208,9 @@ async function nestedWordPoint(
 async function wordPoint(locator: Locator, word?: string): Promise<{ x: number; y: number } | null> {
   return locator.evaluate(async (el, args) => {
     // Popup sheet hosts cover page text — elementFromPoint returns their host
-    // element even when the sheet's inner content is inert, so the word under
-    // them can never be probed. Disable pointer-events while probing, like
-    // the extension's own caret resolver (withUiHostsPointerEventsDisabled).
+    // element, so the word under them can never be probed. Disable
+    // pointer-events while probing, like the extension's own caret resolver
+    // (withUiHostsPointerEventsDisabled).
     const uiHosts: HTMLElement[] = [
       ...Array.from(document.querySelectorAll<HTMLElement>('.js-cell-popup-host')),
       ...Array.from(
@@ -284,6 +286,8 @@ const sheetOf = (page: Page, index: number) =>
   popupHosts(page).nth(index).locator('[data-cell-id="popup-dictionary"]');
 const trailOf = (page: Page, index: number) =>
   popupHosts(page).nth(index).locator('[data-cell-id="lookup-trail"]');
+const winnerOf = (page: Page, index: number) =>
+  popupHosts(page).nth(index).locator('[data-cell-id="dictionary-candidate-0"]');
 
 test.describe('Stage 2: Sheet-mode lookup trail', () => {
   test.beforeEach(async ({ cellContext, streamFlixPage }) => {
@@ -299,7 +303,7 @@ test.describe('Stage 2: Sheet-mode lookup trail', () => {
     await streamFlixPage.setViewportSize(MOBILE_VIEWPORT);
   });
 
-  test('nested lookups stack sheets with a navigable breadcrumb trail', async ({ streamFlixPage }) => {
+  test('nested lookups repaint one sheet with a navigable breadcrumb trail', async ({ streamFlixPage }) => {
     await streamFlixPage.keyboard.press('g');
 
     const cueTexts = streamFlixPage.locator('[data-cell-id="cue-target-text"]');
@@ -314,54 +318,39 @@ test.describe('Stage 2: Sheet-mode lookup trail', () => {
     await expect(sheetOf(streamFlixPage, 0)).toHaveAttribute('aria-modal', 'true');
     await expect(trailOf(streamFlixPage, 0)).toHaveCount(0);
 
-    // Level 2 — push, not replace: level 1 stays mounted and goes inert while
-    // the top sheet shows "silence > absence".
+    // Level 2 — same sheet, swapped content: still one host, the single
+    // trail reads "silence > absence".
     const lv1Defs = popupHosts(streamFlixPage).nth(0).locator('[data-allow-lookup]');
     await expect(lv1Defs).toContainText(/absence/i, { timeout: 15_000 });
     const lv2Point = await nestedWordPoint(streamFlixPage, 0, 'absence');
     expect(lv2Point).not.toBeNull();
     await streamFlixPage.mouse.click(lv2Point!.x, lv2Point!.y);
-    await expect(popupHosts(streamFlixPage)).toHaveCount(2, { timeout: 10_000 });
+    await expect(winnerOf(streamFlixPage, 0)).toContainText(/absence/i, { timeout: 10_000 });
+    await expect(popupHosts(streamFlixPage)).toHaveCount(1);
 
-    const trail2 = trailOf(streamFlixPage, 1);
+    const trail2 = trailOf(streamFlixPage, 0);
     await expect(trail2.locator('li')).toHaveCount(2);
     await expect(trail2).toContainText(/silence/i);
     await expect(trail2).toContainText(/absence/i);
-    await expect(sheetOf(streamFlixPage, 0)).toHaveAttribute('inert', '');
-    expect(await sheetOf(streamFlixPage, 0).getAttribute('aria-modal')).toBeNull();
-    // Covered sheets render a hit catcher so taps on their exposed area route
-    // back into the stack instead of falling through to the page.
-    await expect(popupHosts(streamFlixPage).nth(0).locator('[data-cell-id="sheet-inert-cover"]')).toHaveCount(1);
-    await expect(popupHosts(streamFlixPage).nth(1).locator('[data-cell-id="sheet-inert-cover"]')).toHaveCount(0);
 
-    // Deeper levels keep stacking; the trail mirrors the whole chain
-    // (seeded chain: silence→absence→state→condition→mode).
-    const lv2Defs = popupHosts(streamFlixPage).nth(1).locator('[data-allow-lookup]').first();
-    await expect(lv2Defs).toContainText(/state/i, { timeout: 15_000 });
-    const lv3Point = await nestedWordPoint(streamFlixPage, 1, 'state');
-    expect(lv3Point).not.toBeNull();
-    await streamFlixPage.mouse.click(lv3Point!.x, lv3Point!.y);
-    await expect(popupHosts(streamFlixPage)).toHaveCount(3, { timeout: 10_000 });
+    // Deeper levels keep pushing logically; the trail mirrors the whole chain
+    // while the host count stays at one (chain: silence→absence→state→
+    // condition→mode).
+    for (const word of ['state', 'condition', 'mode'] as const) {
+      const defs = popupHosts(streamFlixPage).nth(0).locator('[data-allow-lookup]').first();
+      await expect(defs).toContainText(new RegExp(word, 'i'), { timeout: 15_000 });
+      const point = await nestedWordPoint(streamFlixPage, 0, word);
+      expect(point).not.toBeNull();
+      await streamFlixPage.mouse.click(point!.x, point!.y);
+      await expect(winnerOf(streamFlixPage, 0)).toContainText(new RegExp(word, 'i'), { timeout: 10_000 });
+      await expect(popupHosts(streamFlixPage)).toHaveCount(1);
+    }
 
-    const lv3Defs = popupHosts(streamFlixPage).nth(2).locator('[data-allow-lookup]').first();
-    await expect(lv3Defs).toContainText(/condition/i, { timeout: 15_000 });
-    const lv4Point = await nestedWordPoint(streamFlixPage, 2, 'condition');
-    expect(lv4Point).not.toBeNull();
-    await streamFlixPage.mouse.click(lv4Point!.x, lv4Point!.y);
-    await expect(popupHosts(streamFlixPage)).toHaveCount(4, { timeout: 10_000 });
-
-    const lv4Defs = popupHosts(streamFlixPage).nth(3).locator('[data-allow-lookup]').first();
-    await expect(lv4Defs).toContainText(/mode/i, { timeout: 15_000 });
-    const lv5Point = await nestedWordPoint(streamFlixPage, 3, 'mode');
-    expect(lv5Point).not.toBeNull();
-    await streamFlixPage.mouse.click(lv5Point!.x, lv5Point!.y);
-    await expect(popupHosts(streamFlixPage)).toHaveCount(5, { timeout: 10_000 });
-
-    const trail5 = trailOf(streamFlixPage, 4);
+    const trail5 = trailOf(streamFlixPage, 0);
     await expect(trail5.locator('li')).toHaveCount(5);
     await streamFlixPage.screenshot({ path: 'tmp/dict-sheet-breadcrumb/e2e-deep-chain.png' });
 
-    // A freshly mounted overflowing strip lands scrolled to the newest crumb.
+    // A grown strip lands scrolled to the newest crumb.
     const scrollState = await trail5.evaluate((el) => ({
       left: el.scrollLeft,
       right: el.scrollLeft + el.clientWidth,
@@ -379,29 +368,22 @@ test.describe('Stage 2: Sheet-mode lookup trail', () => {
     });
     expect(wheelDelta.after).toBeLessThan(wheelDelta.before);
 
-    // Tap crumb index 1 ("absence") → deeper levels close, depth = 2.
+    // Tap crumb index 1 ("absence") → deeper levels close, the same sheet
+    // repaints that level's cached result, depth = 2.
     const crumbs = trail5.locator('button');
     await expect(crumbs).toHaveCount(4);
     await crumbs.nth(1).click();
-    await expect(popupHosts(streamFlixPage)).toHaveCount(2, { timeout: 10_000 });
-    await expect(trailOf(streamFlixPage, 1).locator('li')).toHaveCount(2);
-    await expect(sheetOf(streamFlixPage, 1)).toHaveAttribute('aria-modal', 'true');
-    // The surviving sheet gets focus back once its inert attr is lifted.
-    const focused = await streamFlixPage.evaluate(() => {
-      const hosts = document
-        .getElementById('cell-subtitle-root')
-        ?.shadowRoot?.querySelectorAll('.js-cell-popup-host') ?? [];
-      const host = hosts[hosts.length - 1] as HTMLElement | undefined;
-      return host?.shadowRoot?.activeElement?.getAttribute('data-cell-id') ?? null;
-    });
-    expect(focused).toBe('popup-dictionary');
+    await expect(popupHosts(streamFlixPage)).toHaveCount(1, { timeout: 10_000 });
+    await expect(trailOf(streamFlixPage, 0).locator('li')).toHaveCount(2);
+    await expect(winnerOf(streamFlixPage, 0)).toContainText(/absence/i);
     await streamFlixPage.screenshot({ path: 'tmp/dict-sheet-breadcrumb/e2e-after-crumb-nav.png' });
 
     // Player Mode runs in native fullscreen (#cell-subtitle-root) — in a real
     // browser the first Escape exits fullscreen natively before page code sees
     // the key (Player Mode then unmounts on fullscreenchange). CDP delivers
     // Escape to page JS instead, so emulate the browser step with
-    // exitFullscreen(); the next Escape reaches the sheet stack and pops top.
+    // exitFullscreen(); the next Escape reaches the sheet and closes the
+    // WHOLE chain at once.
     await streamFlixPage.evaluate(() => document.exitFullscreen());
     await expect(streamFlixPage.locator('#cell-subtitle-root')).not.toHaveAttribute(
       'data-cell-player-mode',
@@ -409,56 +391,41 @@ test.describe('Stage 2: Sheet-mode lookup trail', () => {
       { timeout: 10_000 },
     );
     await streamFlixPage.keyboard.press('Escape');
-    await expect(popupHosts(streamFlixPage)).toHaveCount(1, { timeout: 10_000 });
-    await expect(sheetOf(streamFlixPage, 0)).not.toHaveAttribute('inert', '');
+    await expect(popupHosts(streamFlixPage)).toHaveCount(0, { timeout: 10_000 });
 
-    // Re-enter Player Mode for the remaining page-lookup step, then rebuild
-    // depth 2 and check a page lookup resets the whole chain.
+    // Re-enter Player Mode, rebuild depth 2, then check a page lookup resets
+    // the whole chain. The sheet defaults to ~75vh and covers the cue area —
+    // shrink it via the drag handle's keyboard resize (-32px/press) so cue
+    // text becomes clickable above it.
     await streamFlixPage.keyboard.press('g');
     await expect(cueTexts.first()).toBeVisible({ timeout: 15_000 });
+    const silencePoint2 = await wordPoint(
+      cueTexts.filter({ hasText: /silence/i }).first(),
+      'silence',
+    );
+    expect(silencePoint2).not.toBeNull();
+    await streamFlixPage.mouse.click(silencePoint2!.x, silencePoint2!.y);
+    await expect(popupHosts(streamFlixPage)).toHaveCount(1, { timeout: 10_000 });
+    await expect(lv1Defs).toContainText(/absence/i, { timeout: 15_000 });
     const lv2Point2 = await nestedWordPoint(streamFlixPage, 0, 'absence');
     expect(lv2Point2).not.toBeNull();
     await streamFlixPage.mouse.click(lv2Point2!.x, lv2Point2!.y);
-    await expect(popupHosts(streamFlixPage)).toHaveCount(2, { timeout: 10_000 });
+    await expect(winnerOf(streamFlixPage, 0)).toContainText(/absence/i, { timeout: 10_000 });
+    await expect(trailOf(streamFlixPage, 0).locator('li')).toHaveCount(2);
 
-    // The sheets default to ~75vh and cover the whole cue area — shrink them
-    // via the drag handle's keyboard resize (-32px/press). Covered sheets are
-    // inert (unfocusable), so dispatch ArrowDown on each handle directly —
-    // it still runs the real onKeyDownHandle resize path. Level 1 shrinks less
-    // so a band of it stays exposed above level 2 for the cover-tap check.
     await streamFlixPage.evaluate(() => {
-      const hosts = document
+      const host = document
         .getElementById('cell-subtitle-root')
-        ?.shadowRoot?.querySelectorAll('.js-cell-popup-host') ?? [];
-      hosts.forEach((h, i) => {
-        const handle = (h as HTMLElement).shadowRoot?.querySelector('[role="separator"]');
-        for (let p = 0; p < (i === 0 ? 4 : 10); p++) {
-          handle?.dispatchEvent(
-            new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
-          );
-        }
-      });
+        ?.shadowRoot?.querySelectorAll('.js-cell-popup-host')[0] as HTMLElement | undefined;
+      const handle = host?.shadowRoot?.querySelector('[role="separator"]');
+      for (let p = 0; p < 10; p++) {
+        handle?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      }
       const scroller = document
         .getElementById('cell-subtitle-root')
         ?.shadowRoot?.querySelector<HTMLElement>('[data-cell-id="cue-list-scroll"]');
       if (scroller) scroller.scrollTop = 0;
     });
-
-    // A tap on the exposed band of the covered level-1 sheet hits its inert
-    // cover instead of falling through to the page — the stack routes it as
-    // "return to level 1" and closes level 2.
-    const lv1Top = await streamFlixPage.evaluate(() => {
-      const host = document
-        .getElementById('cell-subtitle-root')
-        ?.shadowRoot?.querySelectorAll('.js-cell-popup-host')[0] as HTMLElement | undefined;
-      const sheet = host?.shadowRoot?.querySelector('[data-cell-id="popup-dictionary"]');
-      return sheet?.getBoundingClientRect().top ?? null;
-    });
-    expect(lv1Top).not.toBeNull();
-    await streamFlixPage.mouse.click(195, lv1Top! + 12);
-    await expect(popupHosts(streamFlixPage)).toHaveCount(1, { timeout: 10_000 });
-    // lv1 kept its own content — the tap did not fall through to a page lookup.
-    await expect(popupHosts(streamFlixPage).nth(0)).toContainText(/absence/i);
 
     let resetPoint = await wordPoint(silenceCue, 'better');
     if (!resetPoint) {
@@ -471,5 +438,48 @@ test.describe('Stage 2: Sheet-mode lookup trail', () => {
     await streamFlixPage.mouse.click(resetPoint!.x, resetPoint!.y);
     await expect(popupHosts(streamFlixPage)).toHaveCount(1, { timeout: 10_000 });
     await expect(trailOf(streamFlixPage, 0)).toHaveCount(0);
+    await expect(winnerOf(streamFlixPage, 0)).toContainText(/better/i);
+  });
+
+  test('crossing the breakpoint materializes one popup per level and back', async ({ streamFlixPage }) => {
+    await streamFlixPage.keyboard.press('g');
+
+    const cueTexts = streamFlixPage.locator('[data-cell-id="cue-target-text"]');
+    await expect(cueTexts.first()).toBeVisible({ timeout: 15_000 });
+
+    const silenceCue = cueTexts.filter({ hasText: /silence/i }).first();
+    const silencePoint = await wordPoint(silenceCue, 'silence');
+    expect(silencePoint).not.toBeNull();
+    await streamFlixPage.mouse.click(silencePoint!.x, silencePoint!.y);
+    await expect(popupHosts(streamFlixPage)).toHaveCount(1, { timeout: 10_000 });
+
+    // Build a 3-level chain inside the single sheet.
+    for (const word of ['absence', 'state'] as const) {
+      const defs = popupHosts(streamFlixPage).nth(0).locator('[data-allow-lookup]').first();
+      await expect(defs).toContainText(new RegExp(word, 'i'), { timeout: 15_000 });
+      const point = await nestedWordPoint(streamFlixPage, 0, word);
+      expect(point).not.toBeNull();
+      await streamFlixPage.mouse.click(point!.x, point!.y);
+      await expect(winnerOf(streamFlixPage, 0)).toContainText(new RegExp(word, 'i'), { timeout: 10_000 });
+    }
+    await expect(popupHosts(streamFlixPage)).toHaveCount(1);
+    await expect(trailOf(streamFlixPage, 0).locator('li')).toHaveCount(3);
+
+    // Widening past the breakpoint materializes the logical chain as one
+    // desktop popup per level, each showing its own cached result.
+    await streamFlixPage.setViewportSize(DESKTOP_VIEWPORT);
+    await expect(popupHosts(streamFlixPage)).toHaveCount(3, { timeout: 10_000 });
+    await expect(winnerOf(streamFlixPage, 0)).toContainText(/silence/i, { timeout: 10_000 });
+    await expect(winnerOf(streamFlixPage, 1)).toContainText(/absence/i, { timeout: 10_000 });
+    await expect(winnerOf(streamFlixPage, 2)).toContainText(/state/i, { timeout: 10_000 });
+    await streamFlixPage.screenshot({ path: 'tmp/dict-sheet-breadcrumb/e2e-materialized.png' });
+
+    // Shrinking back collapses to the one sheet again — full trail preserved,
+    // top level's content visible.
+    await streamFlixPage.setViewportSize(MOBILE_VIEWPORT);
+    await expect(popupHosts(streamFlixPage)).toHaveCount(1, { timeout: 10_000 });
+    await expect(trailOf(streamFlixPage, 0).locator('li')).toHaveCount(3);
+    await expect(winnerOf(streamFlixPage, 0)).toContainText(/state/i, { timeout: 10_000 });
+    await streamFlixPage.screenshot({ path: 'tmp/dict-sheet-breadcrumb/e2e-collapsed.png' });
   });
 });
