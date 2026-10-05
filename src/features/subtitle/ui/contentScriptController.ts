@@ -938,6 +938,10 @@ export function init(
   document.addEventListener('visibilitychange', onVisibilityChange);
   window.addEventListener('yt-navigate-finish', onSpaNav);
   window.addEventListener('popstate', onSpaNav);
+  // pushState-only SPAs (and same-<video> source swaps) never emit
+  // yt-navigate-finish/popstate — the media load itself is the nav signal.
+  // onSpaNav gates on the canonical URL, so a same-video loadstart is a no-op.
+  video.addEventListener('loadstart', onSpaNav);
 
   // Return cleanup so the caller can tear down before re-init on SPA episode
   // switch (Angular replaces <video> → old overlay UI removed by framework
@@ -950,6 +954,7 @@ export function init(
     document.removeEventListener('visibilitychange', onVisibilityChange);
     window.removeEventListener('yt-navigate-finish', onSpaNav);
     window.removeEventListener('popstate', onSpaNav);
+    video.removeEventListener('loadstart', onSpaNav);
     window.removeEventListener('keydown', onKeydown, true);
     window.removeEventListener('keyup', onKeyup, true);
     document.removeEventListener('__NF_SEEK', onNfSeek);

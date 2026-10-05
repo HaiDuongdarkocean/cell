@@ -565,7 +565,21 @@ export async function pushAutoLoadSubtitles(
   tabId: number,
   subtitles: DetectedSubtitle[],
   frameId?: number,
+  opts?: { pushNullWhenNoMatch?: boolean; pageUrl?: string },
 ): Promise<void> {
+  // Captured synchronously at call time — the page that produced these
+  // subtitles. Read inside the async body would race a navigation clearTab
+  // and return undefined, losing the stale-push guard on the content side.
+  const pageUrl = opts?.pageUrl ?? ctx.networkInterceptor.getLastPageUrl(tabId);
+  // Watched across the whole async body: a clearTab mid-flight (SPA nav,
+  // VIDEO_EPISODE_CHANGED) means these subtitles were captured pre-wipe and
+  // the push must not land after the nav clear or it repopulates stale cues.
+  let clearedMidFlight = false;
+  const offTabCleared = ctx.networkInterceptor.onTabCleared(
+    (clearedTabId) => {
+      if (clearedTabId === tabId) clearedMidFlight = true;
+    },
+  );
   try {
     const settings = await loadSettings();
     let preferences: SubtitlePreference | undefined;
@@ -596,12 +610,31 @@ export async function pushAutoLoadSubtitles(
     }
 
     if (!result) {
+      // Tracks exist but none match the configured overlay languages — the
+      // overlay must clear stale cues from a previous video instead of
+      // silently keeping them. Gated on the auto-load toggle: when the user
+      // disabled auto-load, this path must not touch the overlay.
+      if (opts?.pushNullWhenNoMatch && settings.subtitleOverlayAutoLoad) {
+        await sendMessageToAllFramesInTab(tabId, {
+          type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
+          payload: {
+            tabId,
+            target: null,
+            native: null,
+            pageUrl,
+            targetMatches: [],
+            nativeMatches: [],
+          } satisfies AutoLoadSubtitlesPayload,
+        });
+      }
       return;
     }
+    if (clearedMidFlight) return;
     const payload: AutoLoadSubtitlesPayload = {
       tabId,
       target: result.target,
       native: result.native,
+      pageUrl,
       targetMatches: result.targetMatches,
       nativeMatches: result.nativeMatches,
     };
@@ -628,6 +661,8 @@ export async function pushAutoLoadSubtitles(
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.warn(`AUTO_LOAD_SUBTITLES push failed for tab ${tabId}: ${msg}`);
+  } finally {
+    offTabCleared();
   }
 }
 

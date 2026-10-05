@@ -238,6 +238,7 @@ export class SubtitleCueEngine {
     this.targetCues = [];
     this.nativeCues = [];
     this.bilingual = false;
+    this.heldCueIndex = -1;
     this.lastTargetIndex = -1;
     this.lastNativeIndex = -1;
     this.emitCuesUpdated();

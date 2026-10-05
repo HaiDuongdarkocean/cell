@@ -12,6 +12,7 @@ import {
   sendMessage,
   queryTabs,
   sendTabMessage,
+  sendMessageToAllFramesInTab,
   getTab,
 } from '@/shared/lib/chrome-apis';
 import type { BackgroundContext } from '../context';
@@ -19,7 +20,7 @@ import {
   updateBadgeForTab,
   clearSessionMedia,
 } from '../helpers';
-import type { MessageResponse } from '@/entities/message';
+import type { MessageResponse, AutoLoadSubtitlesPayload } from '@/entities/message';
 import {
   TogglePlayPayloadSchema,
   OpenSidePanelPayloadSchema,
@@ -300,6 +301,22 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
     ctx.autoDownloadedTabs.delete(tabId);
     ctx.networkInterceptor.setLastPageUrl(tabId, payload.pageUrl ?? '');
     updateBadgeForTab(ctx, tabId);
+    // Episode switches that keep the page URL (in-page <video> src swap,
+    // element replacement, player-iframe provider swap) fire no navigation
+    // event — without this push the overlay keeps the previous episode's cues
+    // when the new one has no subtitles. pageUrl is intentionally unset: the
+    // payload's pageUrl is a media/iframe URL, not the document URL, so
+    // stamping it would trip the content-side stale-push drop.
+    void sendMessageToAllFramesInTab(tabId, {
+      type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
+      payload: {
+        tabId,
+        target: null,
+        native: null,
+        targetMatches: [],
+        nativeMatches: [],
+      } satisfies AutoLoadSubtitlesPayload,
+    });
     return { success: true };
   });
 }

@@ -565,6 +565,7 @@ export const AutoLoadSubtitlesPayloadSchema = z.object({
   tabId: z.number().int(),
   target: SubtitleForOverlayResultSchema.nullable(),
   native: SubtitleForOverlayResultSchema.nullable(),
+  pageUrl: z.string().optional(),
   targetMatches: z.array(SubtitleForOverlayResultSchema).optional(),
   nativeMatches: z.array(SubtitleForOverlayResultSchema).optional(),
 });

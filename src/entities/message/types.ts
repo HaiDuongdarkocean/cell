@@ -476,6 +476,13 @@ export interface AutoLoadSubtitlesPayload {
   readonly target: SubtitleForOverlayResult | null;
   readonly native: SubtitleForOverlayResult | null;
   /**
+   * URL of the page that produced these subtitles, captured at detection time.
+   * Lets the top-frame content-script drop a stale push that lands after SPA
+   * navigation (payload has no video identity otherwise, so a delayed push for
+   * the previous video could repopulate cues on the new one).
+   */
+  readonly pageUrl?: string;
+  /**
    * All subtitles matching target language (ADR-014 D3, V2 subtitle selector).
    * Empty when only 1 match (V1 behavior, no dropdown needed).
    * Content-script uses this to render dropdown when ≥2 matches.

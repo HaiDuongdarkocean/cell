@@ -200,7 +200,10 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
 
     const allSubtitles = ctx.networkInterceptor.getSubtitles(tabId);
     if (allSubtitles.length > 0) {
-      void pushAutoLoadSubtitles(ctx, tabId, allSubtitles, payload.frameId);
+      void pushAutoLoadSubtitles(ctx, tabId, allSubtitles, payload.frameId, {
+        pushNullWhenNoMatch: true,
+        pageUrl: payload.pageUrl,
+      });
     }
     // Persist the scanned subtitle set so REQUEST_AUTO_LOAD_SUBTITLES can
     // re-push when the player content script is not ready at the first scan.

@@ -54,6 +54,20 @@ describe('SubtitleCueEngine', () => {
     expect(engine.getActiveIndices().target).toBe(1);
   });
 
+  it('clearCues releases a held cue so a new cue list is not pinned', () => {
+    const video = document.createElement('video');
+    const engine = new SubtitleCueEngine(video);
+    engine.loadCues([makeCue(1, 2000, 6000, 'One')]);
+    engine.setHeldCue(0);
+
+    engine.clearCues();
+    engine.loadCues([makeCue(1, 0, 1000, 'Fresh'), makeCue(2, 2000, 3000, 'Two')]);
+
+    video.currentTime = 2.5;
+    engine.onTimeUpdate();
+    expect(engine.getActiveIndices().target).toBe(1);
+  });
+
   it('resolves the native cue that overlaps the held target cue', () => {
     const video = document.createElement('video');
     const engine = new SubtitleCueEngine(video);

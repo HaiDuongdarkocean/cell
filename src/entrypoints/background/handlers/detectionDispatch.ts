@@ -30,6 +30,7 @@ import {
   updateBadgeForTab,
   pushAutoLoadSubtitles,
   saveSessionAutoDownloadedTabs,
+  clearSessionMedia,
 } from '../helpers';
 import type {
   MessageResponse,
@@ -57,6 +58,12 @@ export function registerDetectionDispatchHandlers(
       }
 
       const source = payload.source;
+      // Detection-time page identity for the AUTO_LOAD stale-push guard.
+      // YouTube carries videoId; the canonical watch URL round-trips through
+      // canonicalNavUrl on the content side.
+      const sourcePageUrl = payload.videoId
+        ? `https://www.youtube.com/watch?v=${payload.videoId}`
+        : undefined;
       let subtitles: DetectedSubtitle[];
       if (source === 'iqiyi') {
         // IQ: origin from data.dstl (dynamic, MAIN world passes via payload).
@@ -101,6 +108,7 @@ export function registerDetectionDispatchHandlers(
         ctx.networkInterceptor.clearTab(tabId);
         ctx.autoDownloadedTabs.delete(tabId);
         saveSessionAutoDownloadedTabs(ctx);
+        clearSessionMedia(ctx, tabId);
         ctx.lastCuesByTab.delete(tabId);
         ctx.messageBus.broadcast({
           type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
@@ -117,6 +125,7 @@ export function registerDetectionDispatchHandlers(
             tabId,
             target: null,
             native: null,
+            pageUrl: sourcePageUrl,
             targetMatches: [],
             nativeMatches: [],
           } satisfies AutoLoadSubtitlesPayload,
@@ -137,7 +146,10 @@ export function registerDetectionDispatchHandlers(
           } satisfies DetectedMediaUpdatePayload,
         });
         updateBadgeForTab(ctx, tabId);
-        void pushAutoLoadSubtitles(ctx, tabId, allSubtitles);
+        void pushAutoLoadSubtitles(ctx, tabId, allSubtitles, undefined, {
+          pushNullWhenNoMatch: true,
+          pageUrl: sourcePageUrl,
+        });
       }
       return { success: true };
     },
