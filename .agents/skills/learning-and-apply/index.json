@@ -3477,6 +3477,27 @@
         "containing-block"
       ],
       "trigger": "Wrapping/resizing a player shell collapses the video to h:0 on sites that size the player box with padding-top instead of a real height (m.youtube #player.player-size; common legacy aspect-ratio trick)"
+    },
+    {
+      "type": "experience",
+      "id": "dom-serialization-in-poll-loop",
+      "title": "documentElement.innerHTML/outerHTML inside a poll loop multiplies a multi-MB serialize per tick — read the page global (ytcfg.get) or scan inline script text instead",
+      "category": [
+        "async",
+        "state"
+      ],
+      "tags": [
+        "performance",
+        "innerHTML",
+        "outerHTML",
+        "polling",
+        "dom-serialize",
+        "gc-pressure",
+        "youtube",
+        "innertube",
+        "main-world"
+      ],
+      "trigger": "Poll/retry loop needs a string from page HTML and serializes documentElement.innerHTML/outerHTML every tick — O(DOM) + MB GC churn per tick, worsens as SPA DOM grows"
     }
   ]
 }

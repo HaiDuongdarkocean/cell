@@ -27,7 +27,10 @@ import {
   onInstalled,
   getExtensionId,
   getTab,
+  getSessionStorage,
+  setSessionStorage,
 } from '@/shared/lib/chrome-apis';
+import { STORAGE_KEYS, ORPHAN_SWEEP_INTERVAL_MS } from '@/shared/config/config';
 import { createImmersionTracker, type ImmersionTracker } from './helpers/immersionTracker';
 import { addHistoryEntry } from '@/features/local-player/services/mediaLibraryRepository';
 import type { BackgroundContext } from './context';
@@ -228,15 +231,19 @@ export class BackgroundService implements BackgroundContext {
       await initJobRegistry().catch((err: unknown) => {
         console.warn('[background] Job registry restore/sweep failed:', err);
       });
+      const store = await getSessionStorage<Partial<Record<string, number>>>(
+        STORAGE_KEYS.ORPHAN_SWEEP_AT,
+      );
+      const lastAt = store[STORAGE_KEYS.ORPHAN_SWEEP_AT] ?? 0;
+      if (Date.now() - lastAt < ORPHAN_SWEEP_INTERVAL_MS) return;
+      await setSessionStorage({ [STORAGE_KEYS.ORPHAN_SWEEP_AT]: Date.now() });
       await sweepOrphanedWork(this).catch((err: unknown) => {
         console.warn('[background] Orphan sweep failed:', err);
       });
+      await cleanupOrphanedDownloads().catch((err: unknown) => {
+        console.warn('[background] OPFS orphan cleanup failed:', err);
+      });
     })();
-
-    // 7. Clean up orphaned OPFS temp files from crashed sessions.
-    void cleanupOrphanedDownloads().catch((err: unknown) => {
-      console.warn('[background] OPFS orphan cleanup failed:', err);
-    });
 
     // 7. Update the toolbar badge for the currently active tab.
     if (this.extensionActive) {

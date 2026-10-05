@@ -406,7 +406,12 @@ export const STORAGE_KEYS = {
   OCR_REGION_RESULT: '__ocrRegionResult',
   /** Dev-only dictionary lookup log ring buffer (lookupLogStore). */
   LOOKUP_LOG: 'lookupLog',
+  /** Timestamp of the last orphan sweep (session storage — once per browser session). */
+  ORPHAN_SWEEP_AT: 'orphanSweepAt',
 } as const;
+
+/** Minimum interval between orphan sweeps across MV3 service-worker restarts. */
+export const ORPHAN_SWEEP_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 // === Popup Dimensions ===
 

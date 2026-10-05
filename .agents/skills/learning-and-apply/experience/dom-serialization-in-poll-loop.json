@@ -1,0 +1,21 @@
+{
+  "id": "dom-serialization-in-poll-loop",
+  "title": "documentElement.innerHTML/outerHTML inside a poll loop or per-request path multiplies a multi-MB serialize per tick — read the page global directly (ytcfg.get) or scope the scan to inline <script> text",
+  "category": ["async", "state"],
+  "tags": ["performance", "innerHTML", "outerHTML", "polling", "dom-serialize", "gc-pressure", "youtube", "innertube", "main-world", "cumulative-slowdown"],
+  "trigger": "Poll/retry/scan loop cần một chuỗi nằm trong page HTML (config var như INNERTUBE_API_KEY, playerjsSubtitle, subtitleTracks) và đọc documentElement.innerHTML/outerHTML mỗi tick — serialize toàn DOM của SPA lớn tốn hàng chục ms + MB GC mỗi lần, đắt dần khi DOM phình trong session dài.",
+  "principle": "Serialize toàn DOM (innerHTML/outerHTML) là O(DOM) + GC-heavy — cấm đặt trong poll interval, mutation callback, hay per-request handler. Thứ tự rẻ→đắt: (1) đọc page global trực tiếp (window.ytcfg.get('INNERTUBE_API_KEY') — MAIN world thấy được), (2) scan chỉ inline <script> textContent qua document.scripts (JS config vars luôn nằm trong script tags), (3) full innerHTML serialize chỉ là last resort một lần, kèm memoize kết quả. Cùng pattern với dedup: overlapping intervals từ nhiều trigger (yt-navigate-finish + popstate + pushState hook) nhân đôi cost — giữ một interval, refresh deadline mỗi trigger thay vì stack hoặc drop.",
+  "cases": [
+    {
+      "context": "youtube-main-world pollForVideoIdChange tick 100ms gọi extractInnertubeApiKey(documentElement.innerHTML) mỗi tick tới khi API key xuất hiện — trên DOM YouTube vài MB = serialize + GC churn liên tục trong 2-10s đầu mỗi page load + mỗi SPA nav, và stacking intervals (yt-navigate-finish + popstate + pushState hook) nhân lên.",
+      "bad": "const interval = setInterval(() => {\n  if (currentVideoId !== lastVideoId) {\n    const apiKey = extractInnertubeApiKey(document.documentElement.innerHTML); // MB serialize mỗi 100ms\n    ...\n  }\n}, 100);",
+      "good": "let cachedApiKey = null;\nfunction resolveInnertubeApiKey() {\n  if (cachedApiKey) return cachedApiKey;\n  const key = window.ytcfg?.get?.('INNERTUBE_API_KEY'); // O(1) global read\n  if (typeof key === 'string' && key) { cachedApiKey = key; return key; }\n  let t = '';\n  for (const s of document.scripts) { if (!s.src) t += s.textContent + '\\n'; }\n  return cachedApiKey = extractInnertubeApiKey(t); // script-text only, memoized\n}\n// + single poll interval với pollDeadline được refresh mỗi nav trigger."
+    }
+  ],
+  "applyFor": [
+    "Bất kỳ poll/interval/mutation-callback nào đọc innerHTML/outerHTML trên SPA lớn",
+    "Extract config/API key từ page trong MAIN world — thử page global trước (ytcfg.set data luôn exposed qua ytcfg.get)",
+    "Subtitle/player variable fallback scan — biến JS var luôn trong inline <script>, scan script text đủ",
+    "Multiple event triggers arming cùng một poll — dedupe interval + refresh deadline, đừng stack hay drop"
+  ]
+}

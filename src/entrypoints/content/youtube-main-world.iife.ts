@@ -48,6 +48,26 @@ declare const __CELL_DEBUG__: string | undefined;
     return match?.[1] ?? null;
   }
 
+  let cachedApiKey: string | null = null;
+  function resolveInnertubeApiKey(): string | null {
+    if (cachedApiKey) return cachedApiKey;
+    try {
+      const ytcfg = (window as unknown as { ytcfg?: { get?: (k: string) => unknown } }).ytcfg;
+      const key = ytcfg?.get?.('INNERTUBE_API_KEY');
+      if (typeof key === 'string' && key) {
+        cachedApiKey = key;
+        return key;
+      }
+    } catch {}
+    let scriptsText = '';
+    for (const script of document.scripts) {
+      if (script.src) continue;
+      scriptsText += `${script.textContent ?? ''}\n`;
+    }
+    cachedApiKey = extractInnertubeApiKey(scriptsText);
+    return cachedApiKey;
+  }
+
   function getVideoIdFromPlayerResponse(playerResponse: unknown): string | null {
     if (typeof playerResponse !== 'object' || playerResponse === null) return null;
     const details = (playerResponse as Record<string, unknown>).videoDetails;
@@ -561,7 +581,7 @@ declare const __CELL_DEBUG__: string | undefined;
       debug.lastVideoId = videoId;
       if (!videoId || videoId === lastVideoId) return;
 
-      const apiKey = extractInnertubeApiKey(document.documentElement.innerHTML);
+      const apiKey = resolveInnertubeApiKey();
       if (!apiKey) {
         // Page HTML not yet fully rendered (API key injected by YouTube's
         // script after initial paint). Do NOT cache lastVideoId — allow retry
@@ -597,10 +617,13 @@ declare const __CELL_DEBUG__: string | undefined;
     }
   }
 
+  let pollInterval: ReturnType<typeof setInterval> | null = null;
+  let pollDeadline = 0;
   function pollForVideoIdChange(timeoutMs: number): void {
-    const start = Date.now();
+    pollDeadline = Date.now() + timeoutMs;
+    if (pollInterval) return;
     debug.pollCycles++;
-    const interval = setInterval(() => {
+    pollInterval = setInterval(() => {
       const playerResponse = (window as unknown as Record<string, unknown>)
         .ytInitialPlayerResponse;
       const currentVideoId =
@@ -609,13 +632,17 @@ declare const __CELL_DEBUG__: string | undefined;
       // (YouTube injects INNERTUBE_API_KEY into HTML after initial paint —
       // detecting before that fails with "no API key" and wastes the attempt).
       if (currentVideoId && currentVideoId !== lastVideoId) {
-        const apiKey = extractInnertubeApiKey(document.documentElement.innerHTML);
-        if (apiKey) {
-          clearInterval(interval);
+        const apiKey = resolveInnertubeApiKey();
+        if (apiKey && pollInterval !== null) {
+          clearInterval(pollInterval);
+          pollInterval = null;
           void detect();
         }
-      } else if (Date.now() - start > timeoutMs) {
-        clearInterval(interval);
+      } else if (Date.now() > pollDeadline) {
+        if (pollInterval !== null) {
+          clearInterval(pollInterval);
+          pollInterval = null;
+        }
       }
     }, 100);
   }

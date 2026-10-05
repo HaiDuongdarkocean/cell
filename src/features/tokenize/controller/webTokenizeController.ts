@@ -303,6 +303,7 @@ export async function createWebTokenizeController(
   }
 
   const blocks: TokenBlock[] = [];
+  const blockSet = new Set<TokenBlock>();
   let isActive = false;
   let cancelPendingActivation: (() => void) | null = null;
 
@@ -347,12 +348,13 @@ export async function createWebTokenizeController(
       // VDLT-Predict FR4: bindViewportNow may have already scanned + cached
       // this block during cold-start. The same text node reuses one TokenBlock
       // object, so membership in `blocks` is the duplicate guard.
-      if (blocks.includes(block)) continue;
+      if (blockSet.has(block)) continue;
       // Do not cache offscreen blocks yet. Adding them to the LRU cache now
       // would evict the viewport blocks we just bound during cold-start,
       // breaking scroll parse. The cache is populated lazily in onEnter when
       // the block enters the viewport/overscan.
       blocks.push(block);
+      blockSet.add(block);
       // Observe the new block immediately. Disconnected nodes are harmless to
       // observe (the callback simply won't fire) and match the original test
       // expectation that a root-only node is registered.
@@ -395,6 +397,7 @@ export async function createWebTokenizeController(
       for (const block of scanned) {
         cache.set(block);
         blocks.push(block);
+        blockSet.add(block);
         visibleElements.add(block.element);
         try {
           bindVisibleBlock(block);
@@ -444,6 +447,7 @@ export async function createWebTokenizeController(
       visibleElements.clear();
       unbindAll();
       blocks.length = 0;
+      blockSet.clear();
       cache.clear();
       pendingAddedNodes = [];
       mutationFlushPending = false;
@@ -514,8 +518,9 @@ export async function createWebTokenizeController(
     for (const block of newBlocks) {
       // The same text node now reuses a single TokenBlock object across scans,
       // so membership in the observed list is the duplicate guard.
-      if (blocks.includes(block)) continue;
+      if (blockSet.has(block)) continue;
       blocks.push(block);
+      blockSet.add(block);
       // Only eager-bind small mutation batches. Large batches (e.g. hydration,
       // re-rendering a whole subtree) can produce hundreds of blocks; doing a
       // synchronous getBoundingClientRect for each one forces repeated layout.
@@ -555,6 +560,7 @@ export async function createWebTokenizeController(
       const block = blocks[i]!;
       if (!block.element.isConnected) {
         blocks.splice(i, 1);
+        blockSet.delete(block);
         cache.delete(block.id);
         viewport.unobserve(block.element);
         visibleElements.delete(block.element);
@@ -740,7 +746,10 @@ export async function createWebTokenizeController(
     // mutation can create a fresh one instead of leaving text untokenized.
     if (!block.isBound) {
       const idx = blocks.indexOf(block);
-      if (idx >= 0) blocks.splice(idx, 1);
+      if (idx >= 0) {
+        blocks.splice(idx, 1);
+        blockSet.delete(block);
+      }
       cache.delete(block.id);
       return;
     }

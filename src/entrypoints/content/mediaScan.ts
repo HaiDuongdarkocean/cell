@@ -165,7 +165,14 @@ function runSubtitleDiscoveryScan(): void {
   }
 
   // 2. HTML player variable fallback (MyAsianTV/kisscloud, vidrift).
-  const html = document.documentElement.outerHTML;
+  let html = '';
+  for (const script of document.scripts) {
+    if (script.src) continue;
+    const text = script.textContent ?? '';
+    if (text.includes('playerjsSubtitle') || text.includes('subtitleTracks')) {
+      html += `${text}\n`;
+    }
+  }
   const hasPlayerjsSubtitle = html.includes('playerjsSubtitle');
   const hasSubtitleTracks = html.includes('subtitleTracks');
   if (hasPlayerjsSubtitle || hasSubtitleTracks) {
