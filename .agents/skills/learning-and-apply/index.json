@@ -3498,6 +3498,27 @@
         "main-world"
       ],
       "trigger": "Poll/retry loop needs a string from page HTML and serializes documentElement.innerHTML/outerHTML every tick — O(DOM) + MB GC churn per tick, worsens as SPA DOM grows"
+    },
+    {
+      "type": "experience",
+      "id": "fixed-shell-inflow-wrapper-escape",
+      "title": "A position:fixed player shell has no meaningful DOM slot — an in-flow wrapper inserted there lands at the parent content top and pushes page flow",
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "position-fixed",
+        "out-of-flow",
+        "sticky-player",
+        "wrapper",
+        "split-view",
+        "m.youtube",
+        "dom-position-vs-visual-position",
+        "letterbox",
+        "video-player"
+      ],
+      "trigger": "A feature wraps/moves a player shell that turns out to be position:fixed (sticky/mini players — m.youtube #player-container-id sits directly on body). The inserted in-flow wrapper appears at the wrong place: covers fixed chrome at page top and shifts every flow sibling down by the wrapper height"
     }
   ]
 }

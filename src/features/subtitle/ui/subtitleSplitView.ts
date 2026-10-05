@@ -477,6 +477,14 @@ export function useSplitView({
         && Number.isFinite(insertParentComputedHeight)
         && insertParentComputedHeight > 1
         && insertParent.getBoundingClientRect().height <= playerRect.height * 1.1;
+      // position:fixed shells (e.g. m.youtube's sticky player sits directly
+      // on <body>) have no meaningful DOM slot: an in-flow wrapper inserted
+      // there lands at the parent's content top, covering fixed chrome
+      // (masthead) and pushing the whole page flow down by the wrapper
+      // height. Re-anchor the wrapper at the shell's visual rect so it
+      // stays where the player was. Absolute shells keep the in-flow path —
+      // their DOM position usually sits inside the intended slot anyway.
+      const shellOutOfFlow = playerComputedStyle.position === 'fixed';
       const viewportCapH = Math.max(
         SPLIT_VIEW_MIN_HEIGHT,
         window.innerHeight - playerRect.top - SPLIT_VIEW_VIEWPORT_MARGIN,
@@ -496,6 +504,7 @@ export function useSplitView({
         isBroadShell,
         hasFlexSiblings,
         wrapperFlex,
+        shellOutOfFlow,
         parentPixelHeight: Math.round(parentPixelHeight),
         videoRect: rectLog(videoEl),
         playerRect: { w: Math.round(playerRect.width), h: Math.round(playerRect.height) },
@@ -506,11 +515,15 @@ export function useSplitView({
       // wrapper to the parent's full height, making the panel tower above
       // the video). Non-YouTube: keep flex stretch so tight shells fill.
       const isYoutube = isYoutubePage();
+      const shellZIndexCss = shellOutOfFlow && playerComputedStyle.zIndex !== 'auto'
+        ? `z-index:${playerComputedStyle.zIndex};`
+        : '';
+      const wrapperAnchorCss = shellOutOfFlow
+        ? `position:fixed;top:${Math.round(playerRect.top)}px;left:${Math.round(playerRect.left)}px;width:${Math.round(playerRect.width)}px;${shellZIndexCss}`
+        : 'position:relative;width:100%;';
       wrapper.style.cssText = isYoutube
-        ? `display:flex;flex-direction:row;width:100%;height:${wrapperHeightStyle}!important;flex:0 0 auto;overflow:hidden;position:relative;`
-        : hasFlexSiblings
-          ? `display:flex;flex-direction:row;flex:${wrapperFlex};height:${wrapperHeightStyle};align-self:stretch;overflow:hidden;position:relative;`
-          : `display:flex;flex-direction:row;width:100%;height:${wrapperHeightStyle};flex:${wrapperFlex};align-self:stretch;overflow:hidden;position:relative;`;
+        ? `display:flex;flex-direction:row;height:${wrapperHeightStyle}!important;flex:0 0 auto;overflow:hidden;${wrapperAnchorCss}`
+        : `display:flex;flex-direction:row;flex:${wrapperFlex};height:${wrapperHeightStyle};align-self:stretch;overflow:hidden;${wrapperAnchorCss}`;
 
       if (playerComputedStyle.position === 'fixed') {
         playerShell.style.setProperty('position', 'absolute', 'important');
@@ -571,9 +584,15 @@ export function useSplitView({
             true,
           );
         } else if (isYoutube) {
-          // m.youtube (parent lacks definite height) keeps the px measured
-          // at open — re-measuring mid-split would read our own overrides.
-          liveHeight = youtubeFollowsParent ? '100%' : wrapperHeightStyle;
+          // Desktop shell: parent owns a definite height slot → 100%.
+          // Padding-driven shells (m.youtube) size the video off the stage
+          // WIDTH, so the wrapper must follow the video's rendered height —
+          // the px measured at open is the pre-shrink shell height and
+          // letterboxes the video inside the stage.
+          const liveVideoHeight = videoEl?.getBoundingClientRect().height;
+          liveHeight = youtubeFollowsParent
+            ? '100%'
+            : `${Math.round(liveVideoHeight || playerRect.height)}px`;
         } else {
           const rect = wrapper.getBoundingClientRect();
           const keyChanged = !lastLayoutKey

@@ -126,3 +126,17 @@ Live probing in Brave surfaced two split-view defects the original fix exposed:
    `height:100%` when the insert parent has a definite content-box height
    *and* is roughly the player's own height — a definite slot — otherwise it
    takes the measured-px path like every other site.
+
+3. **Split view wrapper covers fixed chrome and letterboxes on m.youtube.**
+   `#player-container-id` is `position:fixed` directly on `<body>` (sticky
+   player) — its DOM slot carries no layout meaning, so an in-flow wrapper
+   inserted there landed at body `y:0`, covering the fixed masthead and
+   pushing `ytm-app` down by the wrapper height (the page already reserves
+   the player's slot via padding). And because m.youtube sizes the video off
+   the stage *width*, the open-time px height (pre-shrink `221`) letterboxed
+   the `118`-tall video inside the stage. Fixes: when the shell's computed
+   position is `fixed`, the wrapper takes `position:fixed` anchored at the
+   shell's measured rect (keeping the shell's z-index) instead of entering
+   flow; and for the non-`100%` path the wrapper height follows the video's
+   rendered height live in `recalcWrapperLayout`, so the stage hugs the
+   video with no dead space.

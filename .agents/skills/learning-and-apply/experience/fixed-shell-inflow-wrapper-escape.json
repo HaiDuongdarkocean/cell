@@ -1,0 +1,20 @@
+{
+  "id": "fixed-shell-inflow-wrapper-escape",
+  "title": "A position:fixed player shell has no meaningful DOM slot — an in-flow wrapper inserted there lands at the parent's content top and pushes page flow",
+  "category": ["css", "ux"],
+  "tags": ["position-fixed", "out-of-flow", "sticky-player", "wrapper", "split-view", "m.youtube", "dom-position-vs-visual-position", "letterbox", "video-player"],
+  "trigger": "A feature wraps/moves a player shell that turns out to be position:fixed (sticky/mini players — m.youtube #player-container-id sits directly on <body>). The inserted in-flow wrapper appears at the wrong place: covers fixed chrome at page top and shifts every flow sibling down by the wrapper height, while the page's reserved space for the player stays empty.",
+  "principle": "For out-of-flow (fixed/absolute) elements, DOM position and visual position are decoupled — the DOM slot is just bookkeeping. A restructuring that inserts an in-flow box at that slot lands wherever the slot happens to be in the parent's flow, not where the element painted. When wrapping such a shell, the wrapper must replicate the shell's positioning (position:fixed + measured top/left/width + z-index) so it anchors at the original visual rect and leaves page flow untouched. Sticky shells are in-flow — they don't need this. Separately: when the video inside sizes itself off the stage WIDTH (padding-driven aspect-ratio), the stage height must follow the video's live rendered height — any px height captured before the width shrink letterboxes the video with dead space.",
+  "cases": [
+    {
+      "context": "m.youtube split view: #player-container-id is position:fixed on body, sibling of ytm-app (page content reserves the player slot via padding). In-flow wrapper inserted at that slot → y:0, covers the 48px masthead, pushes videoTitle 269→490; and stage height 221 letterboxed the 118px video (width-driven 16:9).",
+      "bad": "wrapper.style.cssText = 'position:relative;width:100%;height:221px;...';\ninsertParent.appendChild(wrapper); // lands at body top, covers masthead",
+      "good": "const shellOutOfFlow = cs.position === 'fixed';\nconst anchor = shellOutOfFlow\n  ? `position:fixed;top:${rect.top}px;left:${rect.left}px;width:${rect.width}px;z-index:${cs.zIndex};`\n  : 'position:relative;width:100%;';\n// and in recalc: liveHeight = `${video.getBoundingClientRect().height}px`\n// (video height follows stage width — stage hugs video, no letterbox)"
+    }
+  ],
+  "applyFor": [
+    "Wrapping/reparenting any site element that may be position:fixed or absolute (sticky players, miniplayers, floating widgets)",
+    "Split view / player mode layout injection on mobile web video sites",
+    "Debugging 'page content shifted down / chrome covered after opening panel' bugs"
+  ]
+}

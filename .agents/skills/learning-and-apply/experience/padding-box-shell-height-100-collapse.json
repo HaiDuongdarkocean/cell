@@ -9,7 +9,7 @@
     {
       "context": "m.youtube split view: playerShell resolved to #movie_player (absolute inside #player.player-size, content h:0). Wrapper inserted in-flow → height:100% of 0 → stageCell 210×0, video black, cue panel painted over the player box.",
       "bad": "if (moviePlayer.contains(video)) return moviePlayer; // same id,\n// wrong layout semantics on m.youtube — wrapper h:100% of a\n// padding-box shell → collapse",
-      "good": "// skip the short-circuit when the mobile shell exists:\nif (!document.getElementById('player-container-id')?.contains(video)) {\n  moviePlayer short-circuit...\n}\n// walk-up then returns #player-container-id (same-size, owns controls);\n// and wrapper height falls back to px when playerShell.id !== 'movie_player'"
+      "good": "// structural escape, not id-keyed: skip the short-circuit when\n// movie_player's parent has no content-box height:\nconst parentH = parseFloat(getComputedStyle(parent).height);\nif (Number.isFinite(parentH) && parentH <= 1) { /* fall through to walk */ }\n// and gate wrapper height:100% on the insert parent having a definite\n// slot (computed height >1px AND rect ≈ player height), else measure px."
     }
   ],
   "applyFor": [
