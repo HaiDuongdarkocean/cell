@@ -465,13 +465,21 @@ export function useSplitView({
       // CSS based on video aspect ratio + available width, and updates on
       // resize. The old approach (parentPixelHeight px) froze the wrapper
       // at the initial size → empty space below after browser resize.
+      //
+      // m.youtube: playerShell resolves to #player-container-id whose
+      // insert parent is the page column / #player.player-size (content
+      // height 0, padding-top-driven box) — height:100% never resolves and
+      // the stage collapses to h:0. Keep 100% only for the desktop shell
+      // (#movie_player, whose parent #container has a definite height);
+      // everywhere else fall back to the measured px path.
+      const youtubeFollowsParent = isYoutubePage() && playerShell.id === 'movie_player';
       const viewportCapH = Math.max(
         SPLIT_VIEW_MIN_HEIGHT,
         window.innerHeight - playerRect.top - SPLIT_VIEW_VIEWPORT_MARGIN,
       );
       const wrapperHeightStyle = viewportBound
         ? wrapperHeight
-        : isYoutubePage()
+        : youtubeFollowsParent
           ? '100%'
         : isBroadShell
           ? `${Math.min(Math.round(videoRect!.height), viewportCapH)}px`
@@ -559,7 +567,9 @@ export function useSplitView({
             true,
           );
         } else if (isYoutube) {
-          liveHeight = '100%';
+          // m.youtube (parent lacks definite height) keeps the px measured
+          // at open — re-measuring mid-split would read our own overrides.
+          liveHeight = youtubeFollowsParent ? '100%' : wrapperHeightStyle;
         } else {
           const rect = wrapper.getBoundingClientRect();
           const keyChanged = !lastLayoutKey
@@ -730,6 +740,11 @@ export function useSplitView({
       const restoreNow = (): void => {
       if (restoreDone) return;
       restoreDone = true;
+      // Capture #cell-subtitle-root BEFORE wrapper.remove() detaches it —
+      // getElementById only searches connected nodes, so reading it after
+      // the wrapper is gone returns null and the restore below never runs,
+      // leaving the subtitle host permanently detached.
+      const cellRootCleanup = document.getElementById('cell-subtitle-root');
       if (isPlayerFullscreen) {
         // Move children back from stageCell to playerShell (preserving order).
         const childrenToRestore = Array.from(stageCell.children);
@@ -823,9 +838,10 @@ export function useSplitView({
       // unavailable (cellRoot didn't exist when Split View opened).
       // attachFullscreenReparenting will reposition it on the next
       // fullscreenchange if needed.
-      const cellRootCleanup = document.getElementById('cell-subtitle-root');
-      const cellRootTarget = cellRootOriginalParent ?? playerShell;
-      if (cellRootCleanup && cellRootCleanup.parentElement !== cellRootTarget) {
+      const cellRootTarget = cellRootOriginalParent?.isConnected
+        ? cellRootOriginalParent
+        : playerShell;
+      if (cellRootCleanup && cellRootTarget.isConnected && cellRootCleanup.parentElement !== cellRootTarget) {
         cellRootTarget.appendChild(cellRootCleanup);
       }
       // Remove YouTube CSS overrides in both branches (normal + fullscreen).

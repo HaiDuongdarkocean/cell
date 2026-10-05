@@ -3433,6 +3433,50 @@
         "video-player"
       ],
       "trigger": "An injected overlay is visually/interactively under a host site's overlay even though its z-index looks high — and the host overlay element is not inside the same subtree as the injected one"
+    },
+    {
+      "type": "experience",
+      "id": "detached-element-query-after-ancestor-removal",
+      "title": "document.getElementById only finds connected nodes — capture the element ref BEFORE removing its ancestor, not after",
+      "category": [
+        "state",
+        "ux"
+      ],
+      "tags": [
+        "getElementById",
+        "detached-dom",
+        "cleanup-order",
+        "remove",
+        "wrapper",
+        "restore",
+        "mutation",
+        "split-view",
+        "subtitle-overlay",
+        "teardown"
+      ],
+      "trigger": "Cleanup code removes a wrapper/ancestor element, then tries to re-query or restore a descendant via document.getElementById/querySelector — the descendant was detached along with the ancestor so the lookup returns null and the restore silently never runs"
+    },
+    {
+      "type": "experience",
+      "id": "padding-box-shell-height-100-collapse",
+      "title": "height:100% is inert inside a padding-driven aspect-ratio shell (content height 0) — measured px or a different shell must be chosen",
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "aspect-ratio",
+        "padding-top",
+        "height-100",
+        "player-size",
+        "m.youtube",
+        "split-view",
+        "flex-layout",
+        "collapse",
+        "video-player",
+        "containing-block"
+      ],
+      "trigger": "Wrapping/resizing a player shell collapses the video to h:0 on sites that size the player box with padding-top instead of a real height (m.youtube #player.player-size; common legacy aspect-ratio trick)"
     }
   ]
 }

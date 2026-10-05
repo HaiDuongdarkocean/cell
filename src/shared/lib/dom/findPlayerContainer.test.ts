@@ -241,6 +241,58 @@ describe('findPlayerContainer', () => {
     });
   });
 
+  describe('findFarthestSameSizeContainer — m.youtube shell', () => {
+    it('skips the #movie_player short-circuit and walks to #player-container-id', () => {
+      // m.youtube: #movie_player is position:absolute inside
+      // #player.player-size (content height 0, padding-top-driven). Wrapping
+      // it collapses the split-view stage to h:0 — the walk must reach the
+      // shared shell #player-container-id that owns video + controls.
+      const shell = document.createElement('div');
+      shell.id = 'player-container-id';
+      const player = document.createElement('div');
+      player.id = 'player';
+      const moviePlayer = document.createElement('div');
+      moviePlayer.id = 'movie_player';
+      const videoContainer = document.createElement('div');
+      const controls = document.createElement('div');
+      controls.id = 'player-control-container';
+      const video = document.createElement('video');
+
+      document.body.appendChild(shell);
+      shell.appendChild(player);
+      player.appendChild(moviePlayer);
+      moviePlayer.appendChild(videoContainer);
+      videoContainer.appendChild(video);
+      shell.appendChild(controls);
+
+      setBoundingClientRect(video, 361, 203);
+      setBoundingClientRect(videoContainer, 361, 0); // html5-video-container h:0
+      setBoundingClientRect(moviePlayer, 361, 203);
+      setBoundingClientRect(player, 361, 203);
+      setBoundingClientRect(shell, 361, 203);
+
+      expect(findFarthestSameSizeContainer(video)).toBe(shell);
+    });
+
+    it('still short-circuits to #movie_player on desktop YouTube', () => {
+      const player = document.createElement('div');
+      player.id = 'player';
+      const moviePlayer = document.createElement('div');
+      moviePlayer.id = 'movie_player';
+      const video = document.createElement('video');
+
+      document.body.appendChild(player);
+      player.appendChild(moviePlayer);
+      moviePlayer.appendChild(video);
+
+      setBoundingClientRect(video, 640, 360);
+      setBoundingClientRect(moviePlayer, 640, 360);
+      setBoundingClientRect(player, 640, 360);
+
+      expect(findFarthestSameSizeContainer(video)).toBe(moviePlayer);
+    });
+  });
+
   describe('findPlayerContainer', () => {
     it('returns the player container for a direct video', () => {
       const video = createVideo(640, 360);

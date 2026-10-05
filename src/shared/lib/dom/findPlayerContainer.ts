@@ -47,9 +47,19 @@ export function findFarthestSameSizeContainer(
   // .html5-video-container → video height collapses to 0. Short-circuit to the
   // known shell when present. Ponytail ceiling: hardcoded YouTube selector;
   // upgrade path = per-host adapter registry if more structured hosts appear.
-  const moviePlayer = document.querySelector('#movie_player');
-  if (moviePlayer instanceof HTMLElement && moviePlayer.contains(video)) {
-    return moviePlayer;
+  //
+  // m.youtube keeps the same #movie_player id but renders it position:absolute
+  // inside #player.player-size, whose content height is 0 (its box comes from
+  // a padding-top aspect-ratio trick). Wrapping #movie_player in an in-flow
+  // wrapper makes height:100% resolve against 0 → the stage collapses and the
+  // video goes black. The mobile shell keeps video + #player-control-container
+  // together under #player-container-id, so let the walk pick it instead.
+  const mwebShell = document.getElementById('player-container-id');
+  if (!mwebShell || !mwebShell.contains(video)) {
+    const moviePlayer = document.querySelector('#movie_player');
+    if (moviePlayer instanceof HTMLElement && moviePlayer.contains(video)) {
+      return moviePlayer;
+    }
   }
 
   const baseRect = video.getBoundingClientRect();

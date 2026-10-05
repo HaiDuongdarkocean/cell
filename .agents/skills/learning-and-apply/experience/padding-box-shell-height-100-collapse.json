@@ -1,0 +1,20 @@
+{
+  "id": "padding-box-shell-height-100-collapse",
+  "title": "height:100% is inert inside a padding-driven aspect-ratio shell (content height 0) — measured px or a different shell must be chosen",
+  "category": ["css", "ux"],
+  "tags": ["aspect-ratio", "padding-top", "height-100", "player-size", "m.youtube", "split-view", "flex-layout", "collapse", "video-player", "containing-block"],
+  "trigger": "Wrapping/resizing a player shell collapses the video to h:0 on sites that size the player box with padding-top instead of a real height (m.youtube #player.player-size; common legacy aspect-ratio trick)",
+  "principle": "Percentage heights resolve against the parent's CONTENT height — a box built as `height:0; padding-top:56.25%` has content height 0, so height:100% on any in-flow descendant resolves to 0 and the whole stage collapses (absolute-positioned descendants still resolve against the padding box, which is why the video looked fine before wrapping). When picking a shell to restructure, prefer the ancestor with a real computed height (on m.youtube the same-size walk reaches #player-container-id — position:fixed, definite height — which also owns the sibling control overlays). Desktop-only selectors/short-circuits (e.g. #movie_player) may exist on the mobile DOM too but with different positioning semantics — gate them on the mobile-shell marker, don't assume id equality means layout equality.",
+  "cases": [
+    {
+      "context": "m.youtube split view: playerShell resolved to #movie_player (absolute inside #player.player-size, content h:0). Wrapper inserted in-flow → height:100% of 0 → stageCell 210×0, video black, cue panel painted over the player box.",
+      "bad": "if (moviePlayer.contains(video)) return moviePlayer; // same id,\n// wrong layout semantics on m.youtube — wrapper h:100% of a\n// padding-box shell → collapse",
+      "good": "// skip the short-circuit when the mobile shell exists:\nif (!document.getElementById('player-container-id')?.contains(video)) {\n  moviePlayer short-circuit...\n}\n// walk-up then returns #player-container-id (same-size, owns controls);\n// and wrapper height falls back to px when playerShell.id !== 'movie_player'"
+    }
+  ],
+  "applyFor": [
+    "Feature code that wraps/moves a site's player shell (split view, player mode, layout injection)",
+    "Debugging 'element h:0 after moving' on mobile web players",
+    "Choosing between a short-circuit id match and the generic same-size walk — verify the mobile variant's box model first"
+  ]
+}

@@ -99,3 +99,27 @@ dialog/dictionary popup/Card Creator.
 - Player Mode / Split View untouched: `findPlayerContainer` (playerShell) is not
   used for the overlay mount, and the lifted m.youtube shell is an ancestor of
   the shell, so host reparenting and fullscreen still function.
+
+## Follow-up (same-day live verification on m.youtube)
+
+Live probing in Brave surfaced two split-view defects the original fix exposed:
+
+1. **`#cell-subtitle-root` permanently lost on split-view close (all sites).**
+   `useSplitView` cleanup ran `wrapper.remove()` — detaching the stageCell that
+   holds the subtitle host — *before* re-querying it via
+   `document.getElementById`, which only searches connected DOM → null → the
+   restore never ran. Fixed by capturing the element reference while still
+   connected and restoring it after wrapper removal (with `isConnected`
+   fallback to `playerShell`).
+
+2. **Video collapses to `h:0` when split view opens on m.youtube.**
+   `findFarthestSameSizeContainer` short-circuits to `#movie_player`, but on
+   m.youtube that element is `position:absolute` inside
+   `#player.player-size` — a padding-top aspect-ratio box whose *content*
+   height is 0. Wrapping it in an in-flow flex wrapper makes `height:100%`
+   resolve against 0 → black stage, panel overlaying the player. Fix: the
+   short-circuit is skipped when `#player-container-id` contains the video, so
+   the walk picks the real sized shell (which also owns the sibling control
+   overlays); and the split-view wrapper only uses `height:100%` when
+   `playerShell.id === 'movie_player'` (desktop shell with a definite-height
+   parent) — m.youtube falls back to the measured-px path.
