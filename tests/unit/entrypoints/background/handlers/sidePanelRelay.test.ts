@@ -3,7 +3,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { SetPlaybackRatePayloadSchema } from '@/entities/message/schema';
 import type { BackgroundContext } from '@/entrypoints/background/context';
 import type { MessageRequest, MessageResponse } from '@/entities/message';
-import { sendTabMessage, queryTabs } from '@/shared/lib/chrome-apis';
+import { sendTabMessage, queryTabs, sendMessageToAllFramesInTab } from '@/shared/lib/chrome-apis';
 
 jest.mock('@/shared/lib/chrome-apis', () => ({
   openSidePanel: jest.fn(),
@@ -11,6 +11,7 @@ jest.mock('@/shared/lib/chrome-apis', () => ({
   sendMessage: jest.fn(),
   queryTabs: jest.fn(),
   sendTabMessage: jest.fn(),
+  sendMessageToAllFramesInTab: jest.fn(),
   getTab: jest.fn(),
 }));
 
@@ -152,5 +153,54 @@ describe('immersion tracker observe calls', () => {
       payload: { currentTimeMs: 1, durationMs: 2 },
     });
     expect(tracker.noteTimeUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('VIDEO_EPISODE_CHANGED null auto-load push', () => {
+  const mockedSendAllFrames = sendMessageToAllFramesInTab as jest.MockedFunction<
+    typeof sendMessageToAllFramesInTab
+  >;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockedSendAllFrames.mockResolvedValue(undefined);
+  });
+
+  it('broadcasts a null AUTO_LOAD_SUBTITLES to every frame so the overlay drops stale cues', async () => {
+    const ctx = makeMockContext();
+    registerSidePanelRelayHandlers(ctx);
+    const handler = getHandler(ctx, MESSAGE_TYPES.VIDEO_EPISODE_CHANGED);
+
+    const response = await handler({
+      type: MESSAGE_TYPES.VIDEO_EPISODE_CHANGED,
+      payload: { tabId: 42, pageUrl: 'https://cdn.example.com/ep2.mp4' },
+    });
+
+    expect(response.success).toBe(true);
+    expect(mockedSendAllFrames).toHaveBeenCalledWith(42, {
+      type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
+      payload: {
+        tabId: 42,
+        target: null,
+        native: null,
+        targetMatches: [],
+        nativeMatches: [],
+      },
+    });
+  });
+
+  it('does not push when the episode pageUrl already replaced the media (fresh scan won)', async () => {
+    const ctx = makeMockContext();
+    (ctx.networkInterceptor.getLastPageUrl as jest.Mock).mockReturnValue('https://cdn.example.com/ep2.mp4');
+    registerSidePanelRelayHandlers(ctx);
+    const handler = getHandler(ctx, MESSAGE_TYPES.VIDEO_EPISODE_CHANGED);
+
+    const response = await handler({
+      type: MESSAGE_TYPES.VIDEO_EPISODE_CHANGED,
+      payload: { tabId: 42, pageUrl: 'https://cdn.example.com/ep2.mp4' },
+    });
+
+    expect(response.success).toBe(true);
+    expect(mockedSendAllFrames).not.toHaveBeenCalled();
   });
 });

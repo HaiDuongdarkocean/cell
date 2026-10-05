@@ -21,6 +21,7 @@ import {
   getWindowIdNone,
   onStorageChanged,
   removeOnStorageChangedListener,
+  sendMessageToAllFramesInTab,
 } from '@/shared/lib/chrome-apis';
 import { clearDictionaryProbeCache } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
 import type { BackgroundContext } from './context';
@@ -55,6 +56,7 @@ import type {
 import type {
   MessageRequest,
   MessageResponse,
+  AutoLoadSubtitlesPayload,
   DetectedMediaUpdatePayload,
   DownloadProgressUpdatePayload,
   ConvertTsToMp4V2Payload,
@@ -492,6 +494,20 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     ctx.lastCuesByTab.delete(details.tabId);
     ctx.immersionTracker.closeTab(details.tabId);
     updateBadgeForTab(ctx, details.tabId);
+    // Tell every frame's content-script the media switched — without this the
+    // overlay keeps showing the previous video's cues on sites whose detection
+    // arrives late or finds no tracks (generic, non-YouTube SPAs).
+    void sendMessageToAllFramesInTab(details.tabId, {
+      type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
+      payload: {
+        tabId: details.tabId,
+        target: null,
+        native: null,
+        pageUrl: details.url,
+        targetMatches: [],
+        nativeMatches: [],
+      } satisfies AutoLoadSubtitlesPayload,
+    });
   };
   chrome.webNavigation.onHistoryStateUpdated.addListener(onHistoryStateUpdated);
   unsubscribers.push(() => chrome.webNavigation.onHistoryStateUpdated.removeListener(onHistoryStateUpdated));

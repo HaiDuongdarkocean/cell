@@ -82,7 +82,10 @@ export function registerYouTubeFallbackHandlers(
           } satisfies DetectedMediaUpdatePayload,
         });
         updateBadgeForTab(ctx, tabId);
-        void pushAutoLoadSubtitles(ctx, tabId, allSubtitles);
+        void pushAutoLoadSubtitles(ctx, tabId, allSubtitles, undefined, {
+          pushNullWhenNoMatch: true,
+          pageUrl: `https://www.youtube.com/watch?v=${payload.videoId}`,
+        });
       }
       return { success: true };
     },

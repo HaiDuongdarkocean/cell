@@ -39,16 +39,21 @@ export function createContentScriptLifecycleHandlers(ctx: ContentScriptContext):
   // background round-trip (MAIN-world detect → DETECTED_SUBTITLES →
   // AUTO_LOAD_SUBTITLES null) is delayed/lost (poll timeout 2s, InnerTube
   // error, SW restart). Native yt-navigate-finish + popstate fire reliably
-  // on YouTube SPA nav → clear ngay, không đợi background.
-  // Ceiling: nav without URL change (rare on YouTube) → not caught. Upgrade:
-  // MutationObserver on <video> src.
+  // on YouTube SPA nav; video 'loadstart' covers pushState-only sites where
+  // no nav event fires — clear ngay, không đợi background.
+  // navBaseline tracks the URL of the last clear/load so consecutive
+  // navigations without an intervening auto-load still clear. lastAutoLoadUrl
+  // takes precedence when set: an AUTO_LOAD that landed for the current URL
+  // marks that URL as the active baseline.
+  let navBaseline = canonicalNavUrl(location.href);
   const onSpaNav = (): void => {
     // Tokenize enablement is per-URL — re-evaluate on every nav, even when the
     // cue-clearing path below early-returns (e.g. no auto-load ran yet).
     void ctx.syncSubtitleTokenize();
     const lastAutoLoadUrl = ctx.getLastAutoLoadUrl();
     const currentNavUrl = canonicalNavUrl(location.href);
-    if (lastAutoLoadUrl === undefined || lastAutoLoadUrl === currentNavUrl) return;
+    if ((lastAutoLoadUrl ?? navBaseline) === currentNavUrl) return;
+    navBaseline = currentNavUrl;
     if (isCellDebug()) {
       try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'spaNav-clear', lastAutoLoadUrl, navUrl: currentNavUrl, href: location.href, t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
     }

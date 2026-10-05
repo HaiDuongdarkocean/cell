@@ -88,7 +88,9 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
       if (!entry || entry.subtitles.length === 0) {
         return { success: true };
       }
-      await pushAutoLoadSubtitles(ctx, tabId, entry.subtitles, payload.frameId);
+      await pushAutoLoadSubtitles(ctx, tabId, entry.subtitles, payload.frameId, {
+        pushNullWhenNoMatch: true,
+      });
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       console.warn(`REQUEST_AUTO_LOAD_SUBTITLES failed for tab ${tabId}: ${msg}`);

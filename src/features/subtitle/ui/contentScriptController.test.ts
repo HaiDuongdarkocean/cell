@@ -573,6 +573,75 @@ describe('contentScriptController', () => {
     cleanupCalled = true;
   });
 
+  describe('SPA navigation cue clearing', () => {
+    afterEach(() => {
+      history.pushState({}, '', '/');
+    });
+
+    it('clears overlay cues on yt-navigate-finish to a different URL even without prior auto-load', async () => {
+      history.pushState({}, '', '/watch?v=video-a');
+      cleanup = init(video);
+      await flushPromises();
+
+      blockController.clearCues.mockClear();
+      history.pushState({}, '', '/watch?v=video-b');
+      window.dispatchEvent(new Event('yt-navigate-finish'));
+
+      expect(blockController.clearCues).toHaveBeenCalled();
+
+      cleanup!();
+      cleanupCalled = true;
+    });
+
+    it('clears overlay cues on video loadstart after a URL change (pushState-only SPA)', async () => {
+      history.pushState({}, '', '/watch?v=video-a');
+      cleanup = init(video);
+      await flushPromises();
+
+      blockController.clearCues.mockClear();
+      history.pushState({}, '', '/watch?v=video-b');
+      video.dispatchEvent(new Event('loadstart'));
+
+      expect(blockController.clearCues).toHaveBeenCalled();
+
+      cleanup!();
+      cleanupCalled = true;
+    });
+
+    it('does not clear on nav events without a canonical URL change', async () => {
+      history.pushState({}, '', '/watch?v=video-a');
+      cleanup = init(video);
+      await flushPromises();
+
+      blockController.clearCues.mockClear();
+      window.dispatchEvent(new Event('yt-navigate-finish'));
+      window.dispatchEvent(new Event('popstate'));
+      video.dispatchEvent(new Event('loadstart'));
+
+      expect(blockController.clearCues).not.toHaveBeenCalled();
+
+      cleanup!();
+      cleanupCalled = true;
+    });
+
+    it('clears again on a second consecutive nav with no auto-load in between', async () => {
+      history.pushState({}, '', '/watch?v=video-a');
+      cleanup = init(video);
+      await flushPromises();
+
+      history.pushState({}, '', '/watch?v=video-b');
+      window.dispatchEvent(new Event('yt-navigate-finish'));
+      expect(blockController.clearCues).toHaveBeenCalledTimes(1);
+
+      history.pushState({}, '', '/watch?v=video-c');
+      window.dispatchEvent(new Event('yt-navigate-finish'));
+      expect(blockController.clearCues).toHaveBeenCalledTimes(2);
+
+      cleanup!();
+      cleanupCalled = true;
+    });
+  });
+
   it('onMessage AUTO_LOAD_SUBTITLES with no matches clears state', async () => {
     cleanup = init(video);
     await flushPromises();

@@ -126,6 +126,21 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
     if (m?.type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES) {
       const payload = messagePayload<AutoLoadSubtitlesPayload>(msg, MESSAGE_TYPES.AUTO_LOAD_SUBTITLES);
       if (!payload) return false;
+      // Stale-push drop: the payload names the page that produced these
+      // subtitles (detection-time URL). On the top frame, if that page no
+      // longer matches the current document, the push belongs to the previous
+      // video — drop it before it can touch state. Host-gated so a payload
+      // stamped with a player iframe's URL never drops a legit top-frame load.
+      if (payload.pageUrl !== undefined && window.top === window) {
+        try {
+          const sameHost = new URL(payload.pageUrl).host === location.host;
+          if (sameHost && canonicalNavUrl(payload.pageUrl) !== canonicalNavUrl(location.href)) {
+            return false;
+          }
+        } catch {
+          // Malformed pageUrl — fall through to the key/URL guards below.
+        }
+      }
       if (cellDebug()) {
         try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'msg-received', hasTarget: !!payload?.target, hasNative: !!payload?.native, targetUrl: payload?.target?.url?.slice(0, 60), nativeUrl: payload?.native?.url?.slice(0, 60), t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
       }
@@ -138,6 +153,16 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
         return;
       }
       ctx.setLastAutoLoadKey(autoLoadKey);
+
+      // Stale-land guard for the async continuation below: an AUTO_LOAD whose
+      // fetch/parse finishes after an SPA nav must not write video-A cues into
+      // video-B. A nav clear resets lastAutoLoadKey to undefined and changes
+      // the canonical URL — either signal makes this payload stale. A newer
+      // AUTO_LOAD also replaces the key, superseding this one.
+      const receiptNavUrl = canonicalNavUrl(location.href);
+      const isStaleAutoLoad = (): boolean =>
+        ctx.getLastAutoLoadKey() !== autoLoadKey ||
+        canonicalNavUrl(location.href) !== receiptNavUrl;
 
       // Debug: notify the top frame that this iframe's controller received the
       // auto-load message. Helps verify broadcast-to-all-frames on moviepire.
@@ -206,11 +231,13 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
       }
       void (async () => {
         const currentSettings = await loadSettings();
+        if (isStaleAutoLoad()) return;
         await handleAutoLoadSubtitles(payload, {
         controller: {
-          loadBilingualCues: (t: SrtCue[], n: SrtCue[]) => { blockController?.loadBilingualCues(t, n); ctx.showOverlay(); },
-          loadCues: (c: SrtCue[]) => { blockController?.loadCues(c); ctx.showOverlay(); },
+          loadBilingualCues: (t: SrtCue[], n: SrtCue[]) => { if (isStaleAutoLoad()) return; blockController?.loadBilingualCues(t, n); ctx.showOverlay(); },
+          loadCues: (c: SrtCue[]) => { if (isStaleAutoLoad()) return; blockController?.loadCues(c); ctx.showOverlay(); },
           clearCues: () => {
+            if (isStaleAutoLoad()) return;
             blockController?.clearCues();
             // ADR-019: subtitles cleared → reset offset + cancel lazy
             ctx.getOffsetController()?.loadCues(false);
@@ -221,6 +248,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
         },
         tabUrl: window.location.href,
         onPanelRender: (targetCues: SrtCue[], nativeCues: SrtCue[]) => {
+          if (isStaleAutoLoad()) return;
           if (cellDebug()) {
             try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'rendered', t: targetCues.length, n: nativeCues.length, time: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
           }
@@ -239,6 +267,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
           broadcastCues(ctx.getBilingualCues());
         },
         onLoadStatus: (role, status) => {
+          if (isStaleAutoLoad()) return;
           if (cellDebug()) {
             try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'status', role, state: status.state, err: status.errorType, t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
           }
@@ -246,6 +275,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
         },
         autoTranslate: currentSettings.subtitleOverlayAutoTranslate,
         onStartTranslatePrefill: (targetCues: SrtCue[]) => {
+          if (isStaleAutoLoad()) return;
           // ADR-021: start background prefill to translate target→native.
           // Translate function sends TRANSLATE message to background SW (CORS bypass).
           const sl = currentSettings.subtitleOverlayTargetLanguage;
@@ -306,6 +336,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
           translatePrefill.start(targetCues, sl, tl);
         },
         onSubtitleMatches: (targetM, nativeM) => {
+          if (isStaleAutoLoad()) return;
           // ADR-015 T4/T10: build auto panel items from matches in-place.
           syncController.setAutoMatches([...targetM], [...nativeM]);
           ctx.refreshPanel('target');

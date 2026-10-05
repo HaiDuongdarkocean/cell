@@ -1,11 +1,13 @@
 import { registerDetectionDispatchHandlers } from './detectionDispatch';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { pushAutoLoadSubtitles, clearSessionMedia } from '../helpers';
 
 jest.mock('../helpers', () => ({
   getActiveTabId: jest.fn().mockResolvedValue(7),
   updateBadgeForTab: jest.fn(),
   pushAutoLoadSubtitles: jest.fn().mockResolvedValue(undefined),
   saveSessionAutoDownloadedTabs: jest.fn(),
+  clearSessionMedia: jest.fn(),
 }));
 
 jest.mock('@/shared/lib/chrome-apis', () => ({
@@ -128,6 +130,26 @@ describe('DETECTED_SUBTITLES dispatch', () => {
     expect(ctx.networkInterceptor.clearTab).toHaveBeenCalledWith(1);
     expect(ctx.messageBus.broadcast).toHaveBeenCalledWith(
       expect.objectContaining({ type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE }),
+    );
+  });
+
+  it('clears session media on a zero-track detection so stale subs cannot re-push', async () => {
+    const ctx = createMockCtx();
+    const handler = register(ctx);
+    await handler({ payload: { tabId: 1, tracks: [] } });
+    expect(clearSessionMedia).toHaveBeenCalledWith(ctx, 1);
+  });
+
+  it('requests a null-push fallback when the new video has tracks but no overlay match', async () => {
+    const ctx = createMockCtx();
+    const handler = register(ctx);
+    await handler({ payload: { tabId: 1, tracks: [ytTrack] } });
+    expect(pushAutoLoadSubtitles).toHaveBeenCalledWith(
+      ctx,
+      1,
+      [],
+      undefined,
+      { pushNullWhenNoMatch: true },
     );
   });
 });
