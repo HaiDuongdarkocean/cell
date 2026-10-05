@@ -18,11 +18,16 @@ export interface SubtitleBlockDrag {
 
 const DRAG_START_THRESHOLD_PX = 8;
 const SUBTITLE_BLOCK_SELECTOR = '[data-cell-id="subtitle-block"]';
+const DRAG_TRIGGER_SELECTOR = '[data-cell-id="subtitle-block-drag"]';
+const COLLAPSED_CLUSTER_SELECTOR = '[data-cell-id="nav-expand"]';
 
 // ADR-025: drag-to-reposition theo trục Y. Pointer Events + rAF throttle +
 // transform (atom ux-drag-transform-willchange-raf). touch-action:none trên .root
-// (atom ux-touch-action-none-for-pointer-drag). Drag chỉ trên background —
-// cluster/button/text có pointer-events:auto nên không trigger drag.
+// (atom ux-touch-action-none-for-pointer-drag). .root có pointer-events:none —
+// click xuyên xuống video (atom overlay-band-pointer-events-swallow-touch-taps).
+// Drag triggers: dedicated DragHandle (capture ngay, mọi pointer), collapsed
+// nav-expand pill + touch trên subtitle-block (capture sau threshold — tap/click
+// nhỏ hơn threshold vẫn resolve thành expand/word lookup bình thường).
 export function useSubtitleBlockDrag({
   rootRef,
   yOffsetPercent,
@@ -42,12 +47,12 @@ export function useSubtitleBlockDrag({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>): void => {
       const target = e.target;
-      const isRootBackground = target === e.currentTarget;
-      const isTouchBlockStart =
-        e.pointerType === 'touch' &&
-        target instanceof Element &&
-        target.closest(SUBTITLE_BLOCK_SELECTOR) !== null;
-      if (!isRootBackground && !isTouchBlockStart) return;
+      if (!(target instanceof Element)) return;
+      const isHandleStart = target.closest(DRAG_TRIGGER_SELECTOR) !== null;
+      const isDeferredStart =
+        target.closest(COLLAPSED_CLUSTER_SELECTOR) !== null ||
+        (e.pointerType === 'touch' && target.closest(SUBTITLE_BLOCK_SELECTOR) !== null);
+      if (!isHandleStart && !isDeferredStart) return;
       const root = rootRef.current;
       if (!root) return;
       const rootNode = root.getRootNode();
@@ -60,9 +65,9 @@ export function useSubtitleBlockDrag({
         containerHeight,
         rafId: null,
         pendingDelta: 0,
-        captured: isRootBackground,
+        captured: isHandleStart,
       };
-      if (isRootBackground) {
+      if (isHandleStart) {
         setDragging(true);
         root.setPointerCapture?.(e.pointerId);
       }

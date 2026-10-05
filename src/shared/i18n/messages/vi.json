@@ -1372,6 +1372,7 @@
   "subtitle.appearance.tabButtons": "Nút bấm",
   "subtitle.autoTranslate.off": "Đã tắt tự động dịch",
   "subtitle.autoTranslate.on": "Đã bật tự động dịch",
+  "subtitle.block.dragAria": "Kéo để di chuyển phụ đề",
   "subtitle.blockSettings.bgOpacityAria": "Độ mờ nền khối phụ đề",
   "subtitle.blockSettings.position": "Vị trí",
   "subtitle.blockSettings.positionAria": "Vị trí dọc",

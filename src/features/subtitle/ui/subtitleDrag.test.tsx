@@ -30,6 +30,10 @@ function Harness({ onDragReposition }: { readonly onDragReposition?: (y: number)
             <span data-cell-id="drag-test-text">subtitle line</span>
           </div>
         </div>
+        <div data-cell-id="subtitle-block-drag">
+          <span data-cell-id="drag-handle-dot" />
+        </div>
+        <button type="button" data-cell-id="nav-expand">expand</button>
       </div>
     </div>
   );
@@ -56,7 +60,21 @@ describe('useSubtitleBlockDrag', () => {
     jest.useRealTimers();
   });
 
-  it('drags immediately from the root background (desktop band)', () => {
+  it('drags immediately from the drag handle (any pointer type)', () => {
+    const onDragReposition = jest.fn();
+    render(<Harness onDragReposition={onDragReposition} />);
+    stubHostRect();
+    const handle = screen.getByTestId('drag-handle-dot');
+
+    dispatchPointer(handle, 'pointerdown', 100, 'mouse');
+    dispatchPointer(handle, 'pointermove', 140, 'mouse');
+    act(() => jest.advanceTimersByTime(20));
+    dispatchPointer(handle, 'pointerup', 140, 'mouse');
+
+    expect(onDragReposition).toHaveBeenCalledWith(dragDeltaToYOffset(START_OFFSET, 40, HOST_HEIGHT));
+  });
+
+  it('pointer events on the band background never drag (click-through to player)', () => {
     const onDragReposition = jest.fn();
     render(<Harness onDragReposition={onDragReposition} />);
     stubHostRect();
@@ -67,6 +85,25 @@ describe('useSubtitleBlockDrag', () => {
     act(() => jest.advanceTimersByTime(20));
     dispatchPointer(root, 'pointerup', 140, 'mouse');
 
+    expect(onDragReposition).not.toHaveBeenCalled();
+  });
+
+  it('mouse drag on the collapsed nav pill engages after the threshold (tap still expands)', () => {
+    const onDragReposition = jest.fn();
+    render(<Harness onDragReposition={onDragReposition} />);
+    stubHostRect();
+    const pill = screen.getByTestId('nav-expand');
+
+    dispatchPointer(pill, 'pointerdown', 100, 'mouse');
+    dispatchPointer(pill, 'pointermove', 104, 'mouse');
+    act(() => jest.advanceTimersByTime(20));
+    dispatchPointer(pill, 'pointerup', 104, 'mouse');
+    expect(onDragReposition).not.toHaveBeenCalled();
+
+    dispatchPointer(pill, 'pointerdown', 100, 'mouse');
+    dispatchPointer(pill, 'pointermove', 140, 'mouse');
+    act(() => jest.advanceTimersByTime(20));
+    dispatchPointer(pill, 'pointerup', 140, 'mouse');
     expect(onDragReposition).toHaveBeenCalledWith(dragDeltaToYOffset(START_OFFSET, 40, HOST_HEIGHT));
   });
 

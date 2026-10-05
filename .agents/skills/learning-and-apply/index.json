@@ -1182,7 +1182,7 @@
     {
       "type": "experience",
       "id": "overlay-band-pointer-events-swallow-touch-taps",
-      "title": "Full-width pointer-events:auto overlay band swallows touch taps meant for the player — gate it to (hover:hover) and (pointer:fine)",
+      "title": "Full-width pointer-events:auto overlay band swallows clicks meant for the player — keep the band pointer-events:none on all devices and drag via a dedicated handle",
       "category": [
         "css",
         "ux"
@@ -1200,7 +1200,7 @@
         "tap-through",
         "video-player"
       ],
-      "trigger": "A shadow-DOM overlay band/row covering part of a video has pointer-events:auto (e.g. as a drag surface), and on touch devices taps into that band never reach the player — play/pause/toggle-controls appear dead under the covered region"
+      "trigger": "A shadow-DOM overlay band/row covering part of a video has pointer-events:auto (e.g. as a drag surface) — clicks/taps into that band never reach the player: play/pause/toggle-controls appear dead under the covered region on touch AND desktop"
     },
     {
       "type": "experience",
