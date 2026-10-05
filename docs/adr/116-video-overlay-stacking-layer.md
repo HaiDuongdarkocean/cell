@@ -143,3 +143,23 @@ Live probing in Brave surfaced two split-view defects the original fix exposed:
    .html5-video-container → video`, so the video element fills the stage
    and `object-fit:contain` letterboxes the frame internally — identical to
    desktop split-view behavior.
+
+4. **Never override `display` on host elements.** The previous generic path
+   set `display:flex;flex-direction:column` on the player shell and
+   `display:block!important` on every intermediate between it and the
+   video. Both are layout-mode hijacks: flexing the shell *blockifies* its
+   direct children (an inline Angular host like `APP-WATCH` becomes a real
+   block containing block, which intercepts descendants' `height:100%`
+   resolution — that is what collapsed kisskh's `.videoplayer`), and
+   forcing `display:block` on an intermediate that is natively `flex`,
+   `grid`, or `inline-flex` detonates that element's children arrangement —
+   the mechanism by which a host control bar explodes into a vertical icon
+   column. The replacement keeps the shell's native display and only pins
+   `width/height/min-height` on intermediates: percentage heights resolve
+   against the nearest *block-level* ancestor anyway, so inline wrappers
+   are skipped automatically and the site's own `height:100%` chain (e.g.
+   kisskh `.videoplayer{height:100%}` → `.video{height:100%}`) re-links
+   straight against the shell's definite height with zero display
+   mutations. Rule of thumb: on host territory we may change *metrics*
+   (width/height/inset/margin) but never *layout mode* (`display`,
+   `position` beyond the fixed→absolute re-anchor).

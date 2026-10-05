@@ -284,7 +284,7 @@ export function useSplitView({
     for (const property of playerShellStyleProperties) {
       savedPlayerShellStyles[property] = playerShell.style.getPropertyValue(property);
     }
-    const chainStyleProps = ['display', 'width', 'height', 'min-height'];
+    const chainStyleProps = ['width', 'height', 'min-height'];
     const savedChainStyles: Array<{ el: HTMLElement; values: Record<string, string> }> = [];
     const stageCell = document.createElement('div');
     stageCell.setAttribute('data-cell-split-view', 'stage');
@@ -543,9 +543,12 @@ export function useSplitView({
       playerShell.style.setProperty('aspect-ratio', 'auto', 'important');
       playerShell.style.setProperty('margin', '0', 'important');
       playerShell.style.setProperty('box-sizing', 'border-box', 'important');
-      playerShell.style.setProperty('display', 'flex', 'important');
-      playerShell.style.setProperty('flex-direction', 'column', 'important');
-      playerShell.style.setProperty('justify-content', 'center', 'important');
+      // The shell keeps its native display — forcing display:flex would
+      // blockify its direct children, re-parenting every descendant's
+      // height:100% resolution onto a blockified intermediate that sizes
+      // to content (kisskh's APP-WATCH/MAT-VIDEO are inline, so their
+      // block-level descendants resolve %height straight against the
+      // shell — leave them alone and the host's own fill chain works).
       // jwplayer/megaplay sets overflow:hidden on #megaplay-player, which
       // clips the control bar (especially right-side controls like the
       // fullscreen button) at the player bounds. Override to visible so
@@ -557,16 +560,15 @@ export function useSplitView({
       // wrapper's stageCell if transitioning from a previous normal run).
       stageCell.appendChild(playerShell);
 
-      // Re-link the "video fills shell" percentage chain. Turning the
-      // shell into a flex column blockifies its direct child — that child
-      // becomes a containing block and intercepts descendants' height:100%
-      // resolution (kisskh: APP-WATCH/MAT-VIDEO inline wrappers →
-      // .videoplayer collapses to the video's natural height, leaving dead
-      // bands inside the preserved-height stage). Pin height:100% on every
-      // intermediate down to the video; the video element letterboxes its
-      // content natively inside the filled box. YouTube is skipped — its
-      // MAIN-world YT_SPLIT_CSS bridge owns the same fill behavior plus
-      // .ytp-chrome specifics. Broad shells keep video-driven height.
+      // Re-link the "video fills shell" percentage chain between video and
+      // shell — WITHOUT changing display. An intermediate that is already
+      // a block/flex/grid box keeps its layout mode (forcing display:block
+      // on a flex container would collapse its children's arrangement —
+      // that is how host control bars explode into a vertical stack);
+      // inline intermediates are skipped by %height resolution anyway.
+      // YouTube is skipped — its MAIN-world YT_SPLIT_CSS bridge owns the
+      // same fill behavior plus .ytp-chrome specifics. Broad shells keep
+      // video-driven height.
       if (!isYoutube && !isBroadShell && videoEl) {
         let node: HTMLElement | null = videoEl.parentElement;
         while (node && node !== playerShell && node !== document.body) {
@@ -575,7 +577,6 @@ export function useSplitView({
             values[property] = node.style.getPropertyValue(property);
           }
           savedChainStyles.push({ el: node, values });
-          node.style.setProperty('display', 'block', 'important');
           node.style.setProperty('width', '100%', 'important');
           node.style.setProperty('height', '100%', 'important');
           node.style.setProperty('min-height', '0', 'important');
@@ -638,7 +639,6 @@ export function useSplitView({
             lastLayoutKey = { w: rect.width, vh: window.innerHeight };
             playerShell.style.setProperty('width', '100%', 'important');
             playerShell.style.setProperty('margin', '0', 'important');
-            playerShell.style.setProperty('justify-content', 'center', 'important');
             panel.style.visibility = 'hidden';
             panel.style.position = 'absolute';
             let measuredH: number;
@@ -668,11 +668,9 @@ export function useSplitView({
           if (targetW > SPLIT_VIEW_MIN_STAGE_WIDTH && targetW < stageW) {
             playerShell.style.setProperty('width', `${targetW}px`, 'important');
             playerShell.style.setProperty('margin', '0 auto', 'important');
-            playerShell.style.setProperty('justify-content', 'flex-start', 'important');
           } else {
             playerShell.style.setProperty('width', '100%', 'important');
             playerShell.style.setProperty('margin', '0', 'important');
-            playerShell.style.setProperty('justify-content', 'center', 'important');
           }
           liveHeight = `${cappedH}px`;
         }
