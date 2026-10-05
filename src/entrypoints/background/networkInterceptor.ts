@@ -28,6 +28,87 @@ export type ListingDetectedCallback = (
   initiator: string | undefined,
 ) => void;
 
+type IndexedMedia = Pick<DetectedVideo, 'id' | 'url' | 'tabId'>;
+
+interface TabMediaBucket<T extends IndexedMedia> {
+  readonly byId: Map<string, T>;
+  readonly byUrl: Map<string, T>;
+}
+
+function tabBucket<T extends IndexedMedia>(
+  index: Map<number, TabMediaBucket<T>>,
+  tabId: number,
+): TabMediaBucket<T> {
+  let bucket = index.get(tabId);
+  if (bucket === undefined) {
+    bucket = { byId: new Map(), byUrl: new Map() };
+    index.set(tabId, bucket);
+  }
+  return bucket;
+}
+
+function indexIntoTab<T extends IndexedMedia>(
+  index: Map<number, TabMediaBucket<T>>,
+  item: T,
+): void {
+  const bucket = tabBucket(index, item.tabId);
+  bucket.byId.set(item.id, item);
+  const atUrl = bucket.byUrl.get(item.url);
+  if (atUrl === undefined || atUrl.id === item.id) {
+    bucket.byUrl.set(item.url, item);
+  }
+}
+
+function indexMedia<T extends IndexedMedia>(
+  index: Map<number, TabMediaBucket<T>>,
+  byId: Map<string, T>,
+  item: T,
+): void {
+  byId.set(item.id, item);
+  indexIntoTab(index, item);
+}
+
+function updateIndexedMedia<T extends IndexedMedia>(
+  index: Map<number, TabMediaBucket<T>>,
+  byId: Map<string, T>,
+  id: string,
+  updated: T,
+): void {
+  const stored = byId.get(id);
+  if (stored === undefined) {
+    return;
+  }
+  byId.set(id, updated);
+  const bucket = index.get(stored.tabId);
+  if (bucket !== undefined) {
+    if (stored.url !== updated.url && bucket.byUrl.get(stored.url)?.id === id) {
+      bucket.byUrl.delete(stored.url);
+    }
+    if (stored.tabId !== updated.tabId) {
+      bucket.byId.delete(id);
+      if (bucket.byId.size === 0) {
+        index.delete(stored.tabId);
+      }
+    }
+  }
+  indexIntoTab(index, updated);
+}
+
+function clearTabIndex<T extends IndexedMedia>(
+  index: Map<number, TabMediaBucket<T>>,
+  byId: Map<string, T>,
+  tabId: number,
+): void {
+  const bucket = index.get(tabId);
+  if (bucket === undefined) {
+    return;
+  }
+  for (const id of bucket.byId.keys()) {
+    byId.delete(id);
+  }
+  index.delete(tabId);
+}
+
 /**
  * Wraps `chrome.webRequest.onBeforeRequest` to detect downloadable video and
  * subtitle URLs. Detected media is stored per-tab in memory and interested
@@ -39,6 +120,8 @@ export type ListingDetectedCallback = (
 export class NetworkInterceptor {
   private readonly videos: Map<string, DetectedVideo> = new Map();
   private readonly subtitles: Map<string, DetectedSubtitle> = new Map();
+  private readonly videosByTab: Map<number, TabMediaBucket<DetectedVideo>> = new Map();
+  private readonly subtitlesByTab: Map<number, TabMediaBucket<DetectedSubtitle>> = new Map();
   private readonly listeners: Set<MediaDetectedCallback> = new Set();
   private listingListener: ListingDetectedCallback | null = null;
   private listingMatcher: ((url: string) => boolean) | null = null;
@@ -151,22 +234,18 @@ export class NetworkInterceptor {
       // for this tab, skip it. Without this, every page reload or repeated
       // request to the same m3u8 URL creates a new entry (with a new UUID),
       // causing unbounded accumulation of duplicate media in the popup.
-      const existing = this.getVideos(details.tabId).find(
-        (v) => v.url === video.url,
-      );
+      const existing = this.videosByTab.get(details.tabId)?.byUrl.get(video.url);
       if (existing === undefined) {
-        this.videos.set(video.id, video);
+        indexMedia(this.videosByTab, this.videos, video);
         detectedNewMedia = true;
       }
     }
 
     if (subtitle !== null) {
       // Same dedup for subtitles: skip if the same URL is already stored.
-      const existingSub = this.getSubtitles(details.tabId).find(
-        (s) => s.url === subtitle.url,
-      );
+      const existingSub = this.subtitlesByTab.get(details.tabId)?.byUrl.get(subtitle.url);
       if (existingSub === undefined) {
-        this.subtitles.set(subtitle.id, subtitle);
+        indexMedia(this.subtitlesByTab, this.subtitles, subtitle);
         detectedNewMedia = true;
       }
     }
@@ -180,7 +259,8 @@ export class NetworkInterceptor {
    * Get all detected videos for a tab.
    */
   getVideos(tabId: number): DetectedVideo[] {
-    return [...this.videos.values()].filter((video) => video.tabId === tabId);
+    const bucket = this.videosByTab.get(tabId);
+    return bucket === undefined ? [] : [...bucket.byId.values()];
   }
 
   /**
@@ -188,18 +268,14 @@ export class NetworkInterceptor {
    * and page title after detection). No-op if the video id is not known.
    */
   updateVideo(id: string, updated: DetectedVideo): void {
-    if (this.videos.has(id)) {
-      this.videos.set(id, updated);
-    }
+    updateIndexedMedia(this.videosByTab, this.videos, id, updated);
   }
 
   /**
    * Update a stored subtitle in-place. No-op if the subtitle id is not known.
    */
   updateSubtitle(id: string, updated: DetectedSubtitle): void {
-    if (this.subtitles.has(id)) {
-      this.subtitles.set(id, updated);
-    }
+    updateIndexedMedia(this.subtitlesByTab, this.subtitles, id, updated);
   }
 
   /**
@@ -217,7 +293,8 @@ export class NetworkInterceptor {
    * Get all detected subtitles for a tab.
    */
   getSubtitles(tabId: number): DetectedSubtitle[] {
-    return [...this.subtitles.values()].filter((subtitle) => subtitle.tabId === tabId);
+    const bucket = this.subtitlesByTab.get(tabId);
+    return bucket === undefined ? [] : [...bucket.byId.values()];
   }
 
   /**
@@ -249,16 +326,8 @@ export class NetworkInterceptor {
    */
   clearTab(tabId: number): void {
     this.lastPageUrlByTab.delete(tabId);
-    for (const [id, video] of this.videos) {
-      if (video.tabId === tabId) {
-        this.videos.delete(id);
-      }
-    }
-    for (const [id, subtitle] of this.subtitles) {
-      if (subtitle.tabId === tabId) {
-        this.subtitles.delete(id);
-      }
-    }
+    clearTabIndex(this.videosByTab, this.videos, tabId);
+    clearTabIndex(this.subtitlesByTab, this.subtitles, tabId);
     for (const listener of this.tabClearedListeners) {
       try {
         listener(tabId);
@@ -289,6 +358,8 @@ export class NetworkInterceptor {
   clearAll(): void {
     this.videos.clear();
     this.subtitles.clear();
+    this.videosByTab.clear();
+    this.subtitlesByTab.clear();
   }
 
   /**
@@ -302,10 +373,10 @@ export class NetworkInterceptor {
    */
   restoreMedia(videos: DetectedVideo[], subtitles: DetectedSubtitle[]): void {
     for (const video of videos) {
-      this.videos.set(video.id, video);
+      indexMedia(this.videosByTab, this.videos, video);
     }
     for (const subtitle of subtitles) {
-      this.subtitles.set(subtitle.id, subtitle);
+      indexMedia(this.subtitlesByTab, this.subtitles, subtitle);
     }
   }
 
@@ -325,18 +396,16 @@ export class NetworkInterceptor {
     let added = 0;
     let updated = 0;
     for (const subtitle of subtitles) {
-      const existing = this.getSubtitles(subtitle.tabId).find(
-        (s) => s.url === subtitle.url,
-      );
+      const existing = this.subtitlesByTab.get(subtitle.tabId)?.byUrl.get(subtitle.url);
       if (existing === undefined) {
-        this.subtitles.set(subtitle.id, subtitle);
+        indexMedia(this.subtitlesByTab, this.subtitles, subtitle);
         added++;
       } else if (
         existing.language === 'unknown' &&
         subtitle.language !== undefined &&
         subtitle.language !== 'unknown'
       ) {
-        this.subtitles.set(existing.id, {
+        updateIndexedMedia(this.subtitlesByTab, this.subtitles, existing.id, {
           ...existing,
           language: subtitle.language,
           displayName: subtitle.displayName ?? existing.displayName,
