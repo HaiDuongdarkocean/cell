@@ -1,6 +1,6 @@
 import { sendMessage, onMessage, onStorageChanged, removeOnMessageListener, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
-import { findVideoContainer } from '@/shared/lib/dom/findPlayerContainer';
+import { findVideoOverlayContainer } from '@/shared/lib/dom/findPlayerContainer';
 import type { SubtitleApiKey } from '@/entities/settings';
 import { getActiveStudyMode, subscribeToStudyMode } from '@/features/studyModes';
 import { modeUsesBandProbe } from '@/features/studyModes';
@@ -60,7 +60,7 @@ export function init(
   // ADR-008 D2: overlay UI neo vào video container — không cần F0, không cần
   // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
   // G8: walk-up để xử lý sites có video.parentElement height=0 (YouTube pattern).
-  const container = findVideoContainer(video);
+  const container = findVideoOverlayContainer(video);
 
   // ADR-015 T12: inject theme tokens so panel/toast var(--color-*) resolve.
   // Content-script isolated world cannot access popup's theme.css.

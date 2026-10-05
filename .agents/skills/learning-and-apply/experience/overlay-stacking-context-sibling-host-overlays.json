@@ -1,0 +1,31 @@
+{
+  "id": "overlay-stacking-context-sibling-host-overlays",
+  "title": "z-index cannot beat a host overlay in a sibling subtree — lift the mount to the shared ancestor, then order layers with the z token band",
+  "category": ["css", "ux"],
+  "tags": ["z-index", "stacking-context", "overlay", "subtitle-overlay", "mount-parent", "sibling", "mobile", "youtube", "player-control-overlay", "dom-order", "video-player"],
+  "trigger": "An injected overlay is visually/interactively under a host site's overlay even though its z-index looks high — and the host overlay element is not inside the same subtree as the injected one",
+  "principle": "z-index only competes within a stacking context. If the host site keeps its own video overlays in a sibling subtree of the element you mount into (m.youtube: #player-control-container is a sibling of #player), no internal z-index — not even max-int — can paint your overlay above it; the parent context is compared as a whole. The root-cause fix is to mount into the shared ancestor that contains BOTH the video and the host overlay (appended last wins DOM-order ties), NOT to raise z-index. Then order extension surfaces with a semantic band: subtitle/video overlay at --z-overlay-video (10000) — above every host player layer (YouTube in-player max ~1000) — with transient in-container siblings at +1 (drag hint, OCR hitboxes), interactive selectors high (99998), portals/sheets at max-int, and body-level surfaces (dictionary popup, universal panel, dialogs) automatically above because they live outside the video container's stacking context. Always verify the same-size guard when lifting so inset:0 keeps tracking the video box, and beware lifted mounts escaping the playerShell that Player Mode / split view moves — that is why the lift is a guarded per-host adapter, not a generic farthest-ancestor walk.",
+  "cases": [
+    {
+      "context": "m.youtube: subtitle host (#cell-subtitle-root, z:200) mounted inside #player; #player-control-container (native controls + scrim) is a sibling that paints above the entire #player subtree — subtitle under scrim, buttons unreachable.",
+      "bad": "// mount into findVideoContainer(video) → deepest sized ancestor inside #player\n// then try host.style.zIndex = '999999' — still under the sibling overlay\n// because the comparison happens at the #player-container-id level",
+      "good": "findVideoOverlayContainer(video) → #player-container-id (shared ancestor,\nsame-size guarded) → host appended last + z-index: var(--z-overlay-video)\n→ paints above host controls; body-level Cell surfaces still above it."
+    },
+    {
+      "context": "Choosing the lift target — generic 'farthest same-size positioned ancestor' seems elegant but on desktop YouTube overshoots #movie_player to #player, which is OUTSIDE the playerShell that Player Mode/Split View physically moves — overlay gets orphaned in the vacated container.",
+      "bad": "mount into findFarthestSameSizeContainer(video) unconditionally\n// desktop YT: returns #player → PM moves #movie_player to stage,\n// overlay stays behind with no video",
+      "good": "// guarded per-host adapter: only lift when the known covering sibling\n// exists (player-control-container) AND the shared ancestor is same-size;\n// otherwise keep the nearest container — Player Mode untouched"
+    },
+    {
+      "context": "Raising the subtitle host to --z-overlay-video (10000) silently re-orders in-container siblings that hardcoded z against the old 200 (e.g. .subtitle-drag-hint z:300 'above subtitle shadow host').",
+      "bad": "host z → 10000; hint stays 300 → hint now painted UNDER the subtitle\nband — 'drag to import' overlay invisible",
+      "good": "bump siblings that must read above the host to calc(var(--z-overlay-video)+1)\n(OCR overlay 10001 literal — foreign-document CSS can't use var()); check\nevery element in the same parent for stale 'above/below' assumptions."
+    }
+  ],
+  "applyFor": [
+    "Any injected overlay that must sit above host-site video/player overlays",
+    "Diagnosing 'my z-index is huge but still under X' — first check whether X is in a sibling stacking context",
+    "Choosing mount parents for content-script UI on sites with complex player DOMs",
+    "Re-ordering an extension's internal layer band without breaking sibling overlays"
+  ]
+}

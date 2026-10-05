@@ -17,7 +17,7 @@ import { checkIcon, xIcon, cropIcon, moveVerticalIcon, rotateCcwIcon, chevronLef
 import type { CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import type { SplitHalf } from '@/features/ocr/pipeline/splitRegion';
 import { computeSplitHalves } from '@/features/ocr/pipeline/splitRegion';
-import { findVideoContainer } from '@/shared/lib/dom/findPlayerContainer';
+import { findVideoOverlayContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { mapShellToIntrinsic, mapIntrinsicToShell, readVideoGeometry, computeContentRect } from '@/features/ocr/pipeline/regionMapping';
 
 export type RegionSelectorMode = 'view' | 'select' | 'edit';
@@ -222,10 +222,10 @@ export class RegionSelector {
     this.video = video;
     this.mode = mode;
     // SSOT: use the same container-finding algorithm as the subtitle overlay
-    // (findVideoContainer — ADR-008 D2). Both OCR region selector + subtitle
-    // block must attach to the SAME container so the region rect aligns with
-    // the subtitle block's coordinate space.
-    const parent = findVideoContainer(video);
+    // (findVideoOverlayContainer — ADR-008 D2). Both OCR region selector +
+    // subtitle block must attach to the SAME container so the region rect
+    // aligns with the subtitle block's coordinate space.
+    const parent = findVideoOverlayContainer(video);
     if (!parent) return;
     parent.style.position = 'relative';
 

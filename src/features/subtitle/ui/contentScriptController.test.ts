@@ -10,7 +10,7 @@ import {
 } from '@/shared/config/config';
 import { init } from './contentScriptController';
 import { ReactSubtitleController } from './reactSubtitleController';
-import { findVideoContainer } from '@/shared/lib/dom/findPlayerContainer';
+import { findVideoOverlayContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { getActiveStudyMode, subscribeToStudyMode } from '@/features/studyModes';
 import {
   sendMessage,
@@ -38,7 +38,7 @@ import type { AutoLoadDeps } from '@/features/subtitle/logic/subtitleAutoLoad';
 jest.mock('./reactSubtitleController');
 
 jest.mock('@/shared/lib/dom/findPlayerContainer', () => ({
-  findVideoContainer: jest.fn(),
+  findVideoOverlayContainer: jest.fn(),
 }));
 
 jest.mock('@/features/studyModes', () => ({
@@ -191,7 +191,7 @@ interface MockController {
 }
 
 const MockedReactSubtitleController = jest.mocked(ReactSubtitleController) as unknown as jest.Mock;
-const mockFindVideoContainer = jest.mocked(findVideoContainer);
+const mockFindVideoContainer = jest.mocked(findVideoOverlayContainer);
 const mockGetActiveStudyMode = jest.mocked(getActiveStudyMode);
 const mockSubscribeToStudyMode = jest.mocked(subscribeToStudyMode);
 const mockOnMessage = onMessage as unknown as jest.Mock;

@@ -82,12 +82,12 @@ ${componentTokens}
 
 /* Drag-drop hint overlay — full-cover video, visible only while dragging.
    pointer-events:none so it never blocks video controls or the container's
-   drop listener. z-index above subtitle shadow host (z:200) so the hint
-   reads on top. */
+   drop listener. z-index above subtitle shadow host (--z-overlay-video) so
+   the hint reads on top. */
 .subtitle-drag-hint {
   position: absolute;
   inset: 0;
-  z-index: 300;
+  z-index: calc(var(--z-overlay-video, 10000) + 1);
   display: flex;
   align-items: center;
   justify-content: center;

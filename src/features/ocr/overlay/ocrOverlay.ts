@@ -6,7 +6,7 @@
 import type { OcrResultItem } from '@/features/ocr/engine/types';
 import type { ScriptRun } from '../language/scriptRunSegmenter';
 import { routeScript } from '../language/languageRouter';
-import { findFarthestSameSizeContainer } from '@/shared/lib/dom/findPlayerContainer';
+import { findVideoOverlayContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { t } from '@/shared/i18n';
 
 /** Base styling shared by every OCR hitbox — injected inline to avoid a stylesheet
@@ -120,16 +120,18 @@ export class OcrOverlay {
   private hitboxes: HTMLSpanElement[] = [];
 
   /** Attach overlay to a video element's player container.
-   *  Uses findFarthestSameSizeContainer — same algorithm as the subtitle/drag-drop
-   *  layer — so the overlay covers the real player shell, not a thin wrapper. */
+   *  Uses findVideoOverlayContainer — same algorithm as the subtitle/drag-drop
+   *  layer — so the overlay covers the real player shell, not a thin wrapper.
+   *  z 10001 sits one step above the subtitle host (--z-overlay-video 10000):
+   *  Cell overlays order above the subtitle panel, below dialogs. */
   attach(video: HTMLVideoElement): void {
     if (this.container) return;
-    const parent = findFarthestSameSizeContainer(video);
+    const parent = findVideoOverlayContainer(video);
     if (!parent) return;
     parent.style.position = 'relative';
     this.container = document.createElement('div');
     this.container.className = 'cell-ocr-overlay';
-    this.container.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;user-select:none;-webkit-user-select:none;';
+    this.container.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10001;user-select:none;-webkit-user-select:none;';
     parent.appendChild(this.container);
   }
 

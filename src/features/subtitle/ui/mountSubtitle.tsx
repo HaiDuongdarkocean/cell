@@ -223,9 +223,13 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
   // Host fills the video container but lets clicks pass through to player controls.
   // pointer-events:none on host → player controls stay interactive.
   // .root (panelsRoot) sets pointer-events:auto on its interactive children.
+  // z-overlay-video sits above every host-site player overlay (YouTube's
+  // in-player ad/controls layers reach ~z:1000) but below Cell's body-level
+  // surfaces (popup/panel/dialog) and portals (manager sheet, block layer).
   host.id = 'cell-subtitle-root';
   host.style.inset = '0';
   host.style.pointerEvents = 'none';
+  host.style.zIndex = 'var(--z-overlay-video, 10000)';
 
   const panels = (name: string): SubtitlePanelsRef | null => {
     if (controllerRef === null && isDevMode) {

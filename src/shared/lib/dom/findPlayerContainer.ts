@@ -115,9 +115,9 @@ export function findLargestPlayableVideo(): HTMLVideoElement | null {
  * the parent already matches the video height, so the walk-up stops immediately.
  * Falls back to `video.parentElement` (or `document.body`) if no suitable ancestor.
  *
- * This is the SSOT container-finding algorithm for subtitle overlay + OCR region
- * selector — both must attach to the SAME container so the region rect aligns
- * with the subtitle block's coordinate space.
+ * Callers that mount Cell video-level UI should go through
+ * findVideoOverlayContainer, which lifts the result to the shared ancestor
+ * on hosts whose own overlays live outside the video subtree.
  */
 export function findVideoContainer(video: HTMLVideoElement): HTMLElement {
   const videoHeight = video.getBoundingClientRect().height;
@@ -138,4 +138,35 @@ export function findVideoContainer(video: HTMLVideoElement): HTMLElement {
     el = el.parentElement;
   }
   return video.parentElement ?? shadowHost ?? document.body;
+}
+
+/** Mount container for Cell video-level UI (subtitle overlay host, toasts,
+ *  drag hint). Usually the nearest sized ancestor (findVideoContainer), but
+ *  when the host site keeps its own video overlays in a SIBLING subtree of
+ *  the video, no z-index inside the video subtree can paint above them.
+ *  m.youtube: #player-control-container (native controls + scrim) is a
+ *  sibling of #player — mount into the shared parent #player-container-id so
+ *  Cell UI, appended last with var(--z-overlay-video), wins the context.
+ *  Cell's body-level surfaces (dictionary popup, universal panel, dialogs)
+ *  still render above via their own stacking contexts, and portals via
+ *  higher z-index. The same-size guard keeps `inset:0` anchored to the
+ *  video box; any layout divergence falls back to the nearest container.
+ *  ponytail: hardcoded m.youtube selectors — if more hosts keep overlays
+ *  outside the video subtree, upgrade to a per-host adapter or generic
+ *  "covering sibling" detection. */
+export function findVideoOverlayContainer(video: HTMLVideoElement): HTMLElement {
+  const shell = document.getElementById('player-container-id');
+  if (shell && document.getElementById('player-control-container') && shell.contains(video)) {
+    const videoRect = video.getBoundingClientRect();
+    const shellRect = shell.getBoundingClientRect();
+    if (
+      videoRect.width > 0 &&
+      videoRect.height > 0 &&
+      Math.abs(shellRect.width - videoRect.width) / videoRect.width <= DEFAULT_DIMENSION_TOLERANCE &&
+      Math.abs(shellRect.height - videoRect.height) / videoRect.height <= DEFAULT_DIMENSION_TOLERANCE
+    ) {
+      return shell;
+    }
+  }
+  return findVideoContainer(video);
 }

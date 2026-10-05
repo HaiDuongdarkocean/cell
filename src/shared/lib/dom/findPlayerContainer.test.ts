@@ -2,6 +2,7 @@ import {
   findFarthestSameSizeContainer,
   findLargestPlayableVideo,
   findPlayerContainer,
+  findVideoOverlayContainer,
 } from './findPlayerContainer';
 
 function setBoundingClientRect(el: HTMLElement, w: number, h: number): void {
@@ -194,6 +195,49 @@ describe('findPlayerContainer', () => {
       Object.defineProperty(video, 'readyState', { value: 0, configurable: true });
 
       expect(findLargestPlayableVideo()).toBe(video);
+    });
+  });
+
+  describe('findVideoOverlayContainer', () => {
+    function createMwebDom(shellW = 361, shellH = 203): { shell: HTMLElement; video: HTMLVideoElement } {
+      const shell = document.createElement('div');
+      shell.id = 'player-container-id';
+      const player = document.createElement('div');
+      player.id = 'player';
+      const controls = document.createElement('div');
+      controls.id = 'player-control-container';
+      const video = document.createElement('video');
+
+      document.body.appendChild(shell);
+      shell.appendChild(player);
+      player.appendChild(video);
+      shell.appendChild(controls);
+
+      setBoundingClientRect(video, 361, 203);
+      setBoundingClientRect(player, 361, 203);
+      setBoundingClientRect(shell, shellW, shellH);
+      return { shell, video };
+    }
+
+    it('lifts to #player-container-id when the host control overlay is a sibling subtree (m.youtube)', () => {
+      const { shell, video } = createMwebDom();
+      expect(findVideoOverlayContainer(video)).toBe(shell);
+    });
+
+    it('falls back to the nearest sized ancestor when no #player-control-container exists', () => {
+      const video = createVideo(640, 360);
+      const parent = document.createElement('div');
+      document.body.appendChild(parent);
+      parent.appendChild(video);
+      setBoundingClientRect(parent, 640, 360);
+
+      expect(findVideoOverlayContainer(video)).toBe(parent);
+    });
+
+    it('falls back when #player-container-id is not same-size as the video', () => {
+      const { video } = createMwebDom(361, 600);
+      const player = video.parentElement as HTMLElement;
+      expect(findVideoOverlayContainer(video)).toBe(player);
     });
   });
 

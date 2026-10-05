@@ -3410,6 +3410,29 @@
         "ssot-selector"
       ],
       "trigger": "Document/window pointerdown listener đóng surface A khi click outside — trong khi surface B (popup/dialog/badge) mount ở shadow host riêng, float trên A"
+    },
+    {
+      "type": "experience",
+      "id": "overlay-stacking-context-sibling-host-overlays",
+      "title": "z-index cannot beat a host overlay in a sibling subtree — lift the mount to the shared ancestor, then order layers with the z token band",
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "z-index",
+        "stacking-context",
+        "overlay",
+        "subtitle-overlay",
+        "mount-parent",
+        "sibling",
+        "mobile",
+        "youtube",
+        "player-control-overlay",
+        "dom-order",
+        "video-player"
+      ],
+      "trigger": "An injected overlay is visually/interactively under a host site's overlay even though its z-index looks high — and the host overlay element is not inside the same subtree as the injected one"
     }
   ]
 }
