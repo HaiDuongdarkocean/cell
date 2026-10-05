@@ -1,4 +1,4 @@
-import { waitForCachedSubtitleBody } from '@/features/subtitle';
+import { waitForCachedSubtitleBody } from '@/features/subtitle/logic/subtitleResponseCache';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { messagePayload } from '@/entities/message/payload';
 import { isCellDebug } from './debugLog';
@@ -9,7 +9,6 @@ import {
   startCondensedAudioSession,
   stopCondensedAudioSession,
 } from '@/features/condensedAudio/condensedAudioRecorder';
-import { ensureUniversalPanelMount } from './featureInit';
 import type {
   CondenseAudioEventPayload,
   CondenseAudioSessionStartPayload,
@@ -96,7 +95,7 @@ export function installRuntimeMessageListener(): void {
         return false;
       }
       void startCondensedAudioSession(payload.recordId, payload.ranges, payload.padMs ?? 0, {
-        onOpenLibrary: () => void ensureUniversalPanelMount().open('playlist'),
+        onOpenLibrary: () => void import('./featureInit').then((m) => m.ensureUniversalPanelMount().open('playlist')),
       }).then(
         (result) => {
           sendResponse(result.ok ? { success: true } : { success: false, error: result.error });

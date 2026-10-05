@@ -1,36 +1,57 @@
-import { createElement } from 'react';
-import { createRoot } from 'react-dom/client';
 import {
   installManagerSheetBridge,
   setHostSheetCallbacks,
   sendManagerActionToChild,
   sendManagerCloseToChild,
 } from '@/features/subtitle/logic/iframeManagerBridgeHost';
-import { HostManagerSheet } from '@/features/subtitle/ui/HostManagerSheet';
-import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
-import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
-import { hostManagerSheetShadowCss } from '@/features/subtitle/ui/hostManagerSheetShadowCss';
 import type { SerializedManagerState, ManagerAction } from '@/features/subtitle/logic/iframeManagerBridgeTypes';
+
+interface SheetRenderDeps {
+  createElement: typeof import('react').createElement;
+  createRoot: typeof import('react-dom/client').createRoot;
+  HostManagerSheet: typeof import('@/features/subtitle/ui/HostManagerSheet').HostManagerSheet;
+  ShadowThemeProvider: typeof import('@/features/theme/ui/ShadowThemeProvider').ShadowThemeProvider;
+  injectShadowCss: typeof import('@/shared/lib/shadowRoot/injectShadowCss').injectShadowCss;
+  hostManagerSheetShadowCss: string[];
+}
 
 // Host-side manager sheet bridge — renders bottom sheet on host page
 // when a cross-origin child iframe requests it (mobile scenario where the
 // iframe cannot expand its own overlay beyond its viewport).
 export function installHostManagerSheet(): void {
-  let hostSheetRoot: ReturnType<typeof createRoot> | null = null;
+  let depsPromise: Promise<SheetRenderDeps> | null = null;
+  const loadDeps = (): Promise<SheetRenderDeps> =>
+    (depsPromise ??= Promise.all([
+      import('react'),
+      import('react-dom/client'),
+      import('@/features/subtitle/ui/HostManagerSheet'),
+      import('@/features/theme/ui/ShadowThemeProvider'),
+      import('@/shared/lib/shadowRoot/injectShadowCss'),
+      import('@/features/subtitle/ui/hostManagerSheetShadowCss'),
+    ]).then(([react, reactDom, sheet, theme, css, sheetCss]) => ({
+      createElement: react.createElement,
+      createRoot: reactDom.createRoot,
+      HostManagerSheet: sheet.HostManagerSheet,
+      ShadowThemeProvider: theme.ShadowThemeProvider,
+      injectShadowCss: css.injectShadowCss,
+      hostManagerSheetShadowCss: sheetCss.hostManagerSheetShadowCss,
+    })));
+
+  let hostSheetRoot: ReturnType<SheetRenderDeps['createRoot']> | null = null;
   let hostSheetHost: HTMLDivElement | null = null;
   let hostSheetInner: HTMLDivElement | null = null;
   let sheetCssCleanup: (() => void) | null = null;
   let currentFrameSrc = '';
   let currentState: SerializedManagerState | null = null;
 
-  function renderHostSheet(): void {
+  function renderHostSheet(deps: SheetRenderDeps): void {
     if (!hostSheetRoot || !currentState || !hostSheetInner) return;
     const frameSrc = currentFrameSrc;
     hostSheetRoot.render(
-      createElement(
-        ShadowThemeProvider,
+      deps.createElement(
+        deps.ShadowThemeProvider,
         { container: hostSheetInner },
-        createElement(HostManagerSheet, {
+        deps.createElement(deps.HostManagerSheet, {
           state: currentState,
           onAction: (action: ManagerAction, args: Record<string, unknown>) =>
             sendManagerActionToChild(frameSrc, action, args),
@@ -65,20 +86,25 @@ export function installHostManagerSheet(): void {
         'position:fixed;inset:0;pointer-events:auto;z-index:2147483647;';
       document.body.appendChild(hostSheetHost);
 
-      const shadow = hostSheetHost.attachShadow({ mode: 'open' });
-      sheetCssCleanup = injectShadowCss(shadow, { css: hostManagerSheetShadowCss });
+      void loadDeps().then((deps) => {
+        if (!hostSheetHost || currentState !== state) return;
+        const shadow = hostSheetHost.shadowRoot ?? hostSheetHost.attachShadow({ mode: 'open' });
+        sheetCssCleanup = deps.injectShadowCss(shadow, { css: deps.hostManagerSheetShadowCss });
 
-      hostSheetInner = document.createElement('div');
-      hostSheetInner.style.display = 'contents';
-      shadow.appendChild(hostSheetInner);
+        hostSheetInner = document.createElement('div');
+        hostSheetInner.style.display = 'contents';
+        shadow.appendChild(hostSheetInner);
 
-      hostSheetRoot = createRoot(hostSheetInner);
-      renderHostSheet();
+        hostSheetRoot = deps.createRoot(hostSheetInner);
+        renderHostSheet(deps);
+      }).catch((err: unknown) => {
+        console.warn('[content-script] host manager sheet init failed', err);
+      });
     },
     onStateUpdate: (partialState: Partial<SerializedManagerState>, _frameSrc: string): void => {
       if (!currentState) return;
       currentState = { ...currentState, ...partialState };
-      renderHostSheet();
+      void loadDeps().then(renderHostSheet);
     },
     onClose: (_frameSrc: string): void => {
       if (hostSheetRoot) {

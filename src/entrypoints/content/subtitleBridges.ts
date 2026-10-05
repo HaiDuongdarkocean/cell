@@ -1,7 +1,7 @@
 import { sendMessage } from '@/shared/lib/chrome-apis';
-import { cacheSubtitleBody } from '@/features/subtitle';
+import { cacheSubtitleBody } from '@/features/subtitle/logic/subtitleResponseCache';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { subtitleSignalSchema } from '@/features/detection/subtitleDiscovery';
+import { subtitleSignalSchema } from '@/features/detection/subtitleDiscovery/schema';
 import { isCellDebug } from './debugLog';
 import { isResolvableHttpOrigin } from '@/shared/lib/dom/frameOrigin';
 

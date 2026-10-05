@@ -20,6 +20,7 @@ export interface OverrideResult {
 }
 
 import { parseSubtitle } from './subtitleParser';
+import { autoLoadSubtitleCache } from './autoLoadCache';
 import { cleanTargetCues } from './subtitleCleanupRuntime';
 import { convertAssToSrt } from '@/shared/lib/parsers/assToSrt';
 import {
@@ -87,13 +88,7 @@ export function validateOverride(config: OverrideConfig): OverrideResult {
 /** Fetch timeout (ms) for content-script + background fetch (spec F8, Case 1). */
 const FETCH_TIMEOUT_MS = 15_000;
 
-/** Per-URL cache: { cues, format }. Cleared on tab navigate (content-script re-inject). */
-const subtitleCache = new Map<string, { cues: SrtCue[]; format: string }>();
-
-/** Clear the auto-load cache (called on content-script re-inject / tab navigate). */
-export function clearAutoLoadCache(): void {
-  subtitleCache.clear();
-}
+export { clearAutoLoadCache } from './autoLoadCache';
 
 const GZIP_MAGIC = new Uint8Array([0x1f, 0x8b]);
 const ZIP_MAGIC = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
@@ -195,7 +190,7 @@ export async function fetchAndParseSubtitle(
   tabUrl?: string,
   initiator?: string,
 ): Promise<ParseResult> {
-  const cached = subtitleCache.get(url);
+  const cached = autoLoadSubtitleCache.get(url);
   if (cached) {
     return { success: true, cues: cached.cues, format: cached.format as SubtitleFormat };
   }
@@ -315,12 +310,12 @@ export async function fetchAndParseSubtitle(
       return { success: false, cues: [], format: detectedFormat, error: 'ASS conversion produced no cues' };
     }
     const result = parseSubtitle(srtContent, 'srt');
-    if (result.success) subtitleCache.set(url, { cues: result.cues, format: 'srt' });
+    if (result.success) autoLoadSubtitleCache.set(url, { cues: result.cues, format: 'srt' });
     return result;
   }
 
   const result = parseSubtitle(content, detectedFormat);
-  if (result.success) subtitleCache.set(url, { cues: result.cues, format: result.format });
+  if (result.success) autoLoadSubtitleCache.set(url, { cues: result.cues, format: result.format });
   return result;
 }
 

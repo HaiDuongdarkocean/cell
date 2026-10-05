@@ -12,8 +12,8 @@ export {
   type ImportRoleAssignment,
   type ParsedFile,
 } from './subtitleImport';
+export { clearAutoLoadCache } from './autoLoadCache';
 export {
-  clearAutoLoadCache,
   decompressSubtitleBytes,
   fetchAndParseSubtitle,
   formatFromUrl,

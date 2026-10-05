@@ -4,7 +4,7 @@ jest.mock('@/shared/lib/chrome-apis', () => ({
   sendMessage: jest.fn(() => Promise.resolve({ success: true })),
 }));
 
-jest.mock('@/features/subtitle', () => ({
+jest.mock('@/features/subtitle/logic/subtitleResponseCache', () => ({
   cacheSubtitleBody: jest.fn(),
 }));
 
@@ -14,7 +14,7 @@ jest.mock('./debugLog', () => ({
 
 import { installMainWorldBridge } from './subtitleBridges';
 import { sendMessage } from '@/shared/lib/chrome-apis';
-import { cacheSubtitleBody } from '@/features/subtitle';
+import { cacheSubtitleBody } from '@/features/subtitle/logic/subtitleResponseCache';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 
 const mockSendMessage = sendMessage as jest.MockedFunction<typeof sendMessage>;

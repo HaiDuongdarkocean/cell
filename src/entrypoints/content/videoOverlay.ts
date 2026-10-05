@@ -1,9 +1,6 @@
-import { initContentScriptController } from '@/features/subtitle';
-import { createCardCreatorActionPorts } from '@/features/cardCreator/service/cardCreatorActionPorts';
 import { isVideoReady } from '@/shared/lib/dom/videoReady';
 import { findLargestPlayableVideo, hasVideo } from '@/shared/lib/dom/videoFinder';
 import { runPageScan } from './mediaScan';
-import { ensureWebTextCtrl, handleTokenizeStatusKey } from './featureInit';
 
 // Find video element and init overlay (defer until DOM ready, observe SPA late mounts)
 // ADR-012: SPA frameworks (Angular on kisskh.co) render <video> in two phases —
@@ -62,12 +59,21 @@ function finishVideoInit(video: HTMLVideoElement): void {
   currentPendingVideo = null;
   currentOverlayCleanup?.();
   currentVideo = video;
-  currentOverlayCleanup = initContentScriptController(
-    video,
-    ensureWebTextCtrl(),
-    handleTokenizeStatusKey,
-    createCardCreatorActionPorts(),
-  );
+  void Promise.all([
+    import('@/features/subtitle'),
+    import('@/features/cardCreator/service/cardCreatorActionPorts'),
+    import('./featureInit'),
+  ]).then(([subtitleMod, portsMod, featureInitMod]) => {
+    if (video !== currentVideo) return;
+    currentOverlayCleanup = subtitleMod.initContentScriptController(
+      video,
+      featureInitMod.ensureWebTextCtrl(),
+      featureInitMod.handleTokenizeStatusKey,
+      portsMod.createCardCreatorActionPorts(),
+    );
+  }).catch((err: unknown) => {
+    console.warn('[content-script] overlay init failed', err);
+  });
   runPageScan();
 }
 

@@ -1,7 +1,5 @@
-import {
-  clearAutoLoadCache,
-  clearSubtitleBodyCache,
-} from '@/features/subtitle';
+import { clearAutoLoadCache } from '@/features/subtitle/logic/autoLoadCache';
+import { clearSubtitleBodyCache } from '@/features/subtitle/logic/subtitleResponseCache';
 import { installIframePlayerModeBridge } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import { startWordStatusCrossTabRelay } from '@/features/dictionary/services/wordStatusCrossTab';
 import { installHostManagerSheet } from './hostManagerSheet';
@@ -15,15 +13,11 @@ import { installRuntimeMessageListener } from './runtimeMessages';
 import { initMediaScan } from './mediaScan';
 import { cleanupVideoOverlay, findAndInitOverlay } from './videoOverlay';
 import { cleanupEpisodeWatcher, initEpisodeChangeWatcherOnReady } from './episodeWatcher';
-import {
-  cleanupFeatureInit,
-  initComprehension,
-  initHeavyFeatures,
-  initTokenize,
-  initWebTextDictionary,
-  installSettingsReloader,
-  installTokenizeNavListeners,
-} from './featureInit';
+
+type FeatureInitModule = typeof import('./featureInit');
+let featureInitModule: FeatureInitModule | null = null;
+const loadFeatureInit = async (): Promise<FeatureInitModule> =>
+  (featureInitModule ??= await import('./featureInit'));
 
 // Top-frame coordinator for Player Mode when the actual video is inside a
 // cross-origin iframe. Child frames request the host container via postMessage.
@@ -62,7 +56,6 @@ installRuntimeMessageListener();
 installMainWorldBridge();
 
 initMediaScan();
-installTokenizeNavListeners();
 initEpisodeChangeWatcherOnReady();
 
 function cleanupVideoLevelState(): void {
@@ -73,7 +66,7 @@ function cleanupVideoLevelState(): void {
 window.addEventListener('beforeunload', () => {
   try {
     cleanupVideoLevelState();
-    cleanupFeatureInit();
+    featureInitModule?.cleanupFeatureInit();
   } catch {
     // Best-effort cleanup on content-script teardown.
   }
@@ -98,6 +91,17 @@ window.addEventListener('pagehide', () => {
 // make sense in the top-level frame anyway.
 const isTopFrame = window.self === window.top;
 
+function initTopFrameFeatures(): void {
+  void loadFeatureInit().then((m) => {
+    m.installTokenizeNavListeners();
+    m.installSettingsReloader();
+    void m.initWebTextDictionary();
+    void m.initTokenize();
+    void m.initComprehension();
+    void m.initHeavyFeatures(isTopFrame);
+  });
+}
+
 // Run heavy DOM setup (tokenize + dictionary) at DOMContentLoaded, before
 // Angular/Vue hydration rewires the DOM. These features only observe when
 // enabled, so the initial badge append is cheap. findAndInitOverlay is kept
@@ -105,26 +109,15 @@ const isTopFrame = window.self === window.top;
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', findAndInitOverlay);
   if (isTopFrame) {
-    document.addEventListener('DOMContentLoaded', () => { void initWebTextDictionary(); });
-    document.addEventListener('DOMContentLoaded', () => { void initTokenize(); });
-    document.addEventListener('DOMContentLoaded', () => { void initComprehension(); });
+    document.addEventListener('DOMContentLoaded', initTopFrameFeatures);
   }
 } else {
   findAndInitOverlay();
   if (isTopFrame) {
-    void initWebTextDictionary();
-    void initTokenize();
-    void initComprehension();
+    initTopFrameFeatures();
   }
 }
 
-installSettingsReloader();
-
 if (isTopFrame) {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => { void initHeavyFeatures(isTopFrame); });
-  } else {
-    void initHeavyFeatures(isTopFrame);
-  }
   scheduleMediaLog(isTopFrame);
 }

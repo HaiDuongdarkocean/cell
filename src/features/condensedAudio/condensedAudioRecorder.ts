@@ -6,10 +6,7 @@ import { findLargestPlayableVideo, getAllVideos } from '@/shared/lib/dom/videoFi
 import type { CondenseAudioChunkPayload } from '@/entities/message';
 import type { CueRange } from '@/entities/condensedAudio';
 import { normalizeCueRanges } from './lib/cueRanges';
-import {
-  mountCondensedAudioPill,
-  type CondensedAudioPillHandle,
-} from './ui/mountCondensedAudioPill';
+import type { CondensedAudioPillHandle } from './ui/mountCondensedAudioPill';
 
 const TIMESLICE_MS = 5000;
 const TICK_MS = 200;
@@ -348,6 +345,7 @@ export async function startCondensedAudioSession(
   }
   const startedAt = Date.now();
   const s = { capturedMs: 0 } as RecorderSession;
+  const { mountCondensedAudioPill } = await import('./ui/mountCondensedAudioPill');
   const pill = mountCondensedAudioPill(video, {
     getElapsedMs: () => s.capturedMs,
     onStop: () => void finalizeSession(s),
