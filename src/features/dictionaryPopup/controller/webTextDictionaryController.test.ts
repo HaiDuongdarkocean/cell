@@ -1517,7 +1517,7 @@ describe('createWebTextDictionaryController', () => {
     act(() => { ctrl.destroy() });
   });
 
-  it('does not pause video on plain web-text lookup', async () => {
+  it('pauses video on plain web-text lookup and resumes on close', async () => {
     jest.useFakeTimers();
     mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult()] } as unknown as never);
 
@@ -1543,7 +1543,58 @@ describe('createWebTextDictionaryController', () => {
       await Promise.resolve();
     });
 
-    expect(mockVideo.pause).not.toHaveBeenCalled();
+    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
+
+    act(() => { ctrl.dismissLookup() });
+    act(() => { jest.advanceTimersByTime(500) });
+
+    expect(mockVideo.play).toHaveBeenCalledTimes(1);
+
+    act(() => { ctrl.destroy() });
+    jest.useRealTimers();
+  });
+
+  it('does not resume when the user paused the video while the popup was open', async () => {
+    jest.useFakeTimers();
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult()] } as unknown as never);
+
+    let paused = false;
+    const listeners = new Map<string, Set<EventListener>>();
+    const mockVideo = {
+      get paused() { return paused; },
+      pause: jest.fn(() => { paused = true; listeners.get('pause')?.forEach((fn) => fn(new Event('pause'))); }),
+      play: jest.fn(() => { paused = false; }),
+      addEventListener: jest.fn((type: string, fn: EventListener) => {
+        if (!listeners.has(type)) listeners.set(type, new Set());
+        listeners.get(type)!.add(fn);
+      }),
+      removeEventListener: jest.fn((type: string, fn: EventListener) => {
+        listeners.get(type)?.delete(fn);
+      }),
+    } as unknown as HTMLVideoElement;
+
+    const ctrl = createWebTextDictionaryController(makeDeps());
+    ctrl.configureVideo({ hasVideo: true, video: mockVideo, getTargetCues: () => [] });
+
+    const p = document.createElement('p');
+    p.textContent = 'Take off your shoes.';
+    document.body.appendChild(p);
+    const range = document.createRange();
+    range.selectNodeContents(p.firstChild as Text);
+
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-takeover', new DOMRect(0, 0, 0, 0), range) });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      paused = false;
+      listeners.get('pause')?.forEach((fn) => fn(new Event('pause')));
+      paused = true;
+    });
 
     act(() => { ctrl.dismissLookup() });
     act(() => { jest.advanceTimersByTime(500) });

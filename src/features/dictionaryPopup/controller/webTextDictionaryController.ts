@@ -21,6 +21,8 @@ import type { CardCreatorOpenContext } from '@/features/cardCreator';
 import type { CardCreatorAction } from '@/features/cardCreator';
 
 import { sendMessage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
+import { pauseVideo, playVideo } from '@/shared/lib/dom/netflixPlayback';
+import { findLargestPlayableVideo } from '@/shared/lib/dom/videoFinder';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
@@ -126,12 +128,19 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   let nativeLang = deps.nativeLanguage ?? '';
 
   // Mutable video/cue config — late-bound by subtitle overlay controller.
-  let hasVideo = deps.hasVideo;
+  // deps.hasVideo is intentionally not consulted for pause/resume: a visible
+  // playing <video> anywhere on the page is pausable, even when the subtitle
+  // overlay never late-bound one (see resolveVideo).
   let video: HTMLVideoElement | undefined = deps.video;
   let getTargetCues: (() => readonly CueRange[]) | undefined = deps.getTargetCues;
   let getNativeCues: (() => readonly CueRange[]) | undefined = deps.getNativeCues;
 
   let popupDictWasPlaying = false;
+  // The 'pause' listener below distinguishes our own pause from a manual one:
+  // a user pause while the popup is open clears the flag so closing the popup
+  // never overrides the user's intent to stay paused.
+  let selfInitiatedPause = false;
+  let pauseGuardVideo: HTMLVideoElement | null = null;
 
   const lookupCache = createLookupCache();
 
@@ -145,18 +154,38 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     });
   }
 
-  function pauseVideoIfNeeded(): void {
-    if (hasVideo && video && !video.paused) {
-      video.pause();
-      popupDictWasPlaying = true;
+  function resolveVideo(): HTMLVideoElement | undefined {
+    if (video && video.isConnected !== false) return video;
+    return findLargestPlayableVideo() ?? undefined;
+  }
+
+  function onVideoPause(): void {
+    if (selfInitiatedPause) {
+      selfInitiatedPause = false;
+      return;
     }
+    popupDictWasPlaying = false;
+  }
+
+  function pauseVideoIfNeeded(): void {
+    const target = resolveVideo();
+    if (!target || target.paused) return;
+    if (pauseGuardVideo !== target && typeof target.addEventListener === 'function') {
+      pauseGuardVideo?.removeEventListener('pause', onVideoPause);
+      pauseGuardVideo = target;
+      pauseGuardVideo.addEventListener('pause', onVideoPause);
+    }
+    selfInitiatedPause = true;
+    pauseVideo(target);
+    popupDictWasPlaying = true;
   }
 
   function resumeVideoIfNeeded(): void {
-    if (hasVideo && video && popupDictWasPlaying) {
-      void video.play();
-      popupDictWasPlaying = false;
+    const target = resolveVideo();
+    if (target?.paused && popupDictWasPlaying) {
+      void Promise.resolve(playVideo(target)).catch(() => { /* autoplay may be blocked */ });
     }
+    popupDictWasPlaying = false;
   }
 
   const lifecycle = createPopupLifecycle({
@@ -234,7 +263,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   function configureVideo(config: WebTextDictionaryVideoConfig): void {
-    hasVideo = config.hasVideo;
     video = config.video;
     getTargetCues = config.getTargetCues;
     getNativeCues = config.getNativeCues;
@@ -271,6 +299,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
   function destroy(): void {
     removeOnStorageChangedListener(onSettingsStorageChange);
+    pauseGuardVideo?.removeEventListener('pause', onVideoPause);
+    pauseGuardVideo = null;
     detach();
     lifecycle.dispose();
     cardBridge.unmount();

@@ -461,7 +461,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     // A new lookup is starting — cancel any pending delayed dismiss so the
     // popup doesn't vanish mid-interaction.
     cancelPendingDismiss();
-    if (getTokenElement(highlightTarget)) deps.pauseVideo();
+    deps.pauseVideo();
 
     // Route the lookup to its level: page/subtitle text → level 1 (index 0),
     // content inside popup level N → level N+1. Deeper levels are pruned; the
