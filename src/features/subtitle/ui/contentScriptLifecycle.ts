@@ -59,24 +59,17 @@ export function createContentScriptLifecycleHandlers(ctx: ContentScriptContext):
     }
     blockController?.clearCues();
     ctx.getOffsetController()?.loadCues(false);
-    syncController.latestTargetCues = [];
     ctx.getTranslatePrefill()?.clear();
     ctx.setTranslatePrefill(null);
-    ctx.clearTranslatedNativeState();
-    syncController.activeNativeSource = 'auto';
-    ctx.updateGenerateNativeEnabled();
-    ctx.setLastAutoLoadKey(undefined);
-    ctx.setLastAutoLoadUrl(undefined);
     // Clear auto-detected track list + manager panel so stale tracks from the
     // previous video don't persist. Without this, the SubtitleManagerPanel
     // keeps showing the old video's tracks after SPA nav to a video with no
     // subtitles (onSpaNav cleared overlay cues but not the panel items).
-    syncController.autoTargetItems = [];
-    syncController.autoNativeItems = [];
-    syncController.targetMatches = [];
-    syncController.nativeMatches = [];
-    syncController.activeTargetIndex = 0;
-    syncController.activeNativeIndex = 0;
+    syncController.reset();
+    ctx.clearTranslatedNativeState();
+    ctx.updateGenerateNativeEnabled();
+    ctx.setLastAutoLoadKey(undefined);
+    ctx.setLastAutoLoadUrl(undefined);
     ctx.refreshPanel('target');
     ctx.refreshPanel('native');
     useCuesStore.getState().setLoadStatus('target', { state: 'none' });

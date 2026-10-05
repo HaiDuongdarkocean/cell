@@ -193,7 +193,8 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
         blockController?.clearCues();
         ctx.getOffsetController()?.loadCues(false);
         // updateCues([], []);
-        syncController.latestTargetCues = [];
+        syncController.reset();
+        ctx.clearTranslatedNativeState();
         // Reset inline load status so stale messages from the previous video
         // don't persist into the new one (auto-load will set 'loading' or 'none').
         useCuesStore.getState().setLoadStatus('target', { state: 'idle' });
@@ -211,21 +212,15 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
         ctx.getTranslatePrefill()?.clear();
         ctx.setTranslatePrefill(null);
         ctx.clearTranslatedNativeState();
-        syncController.activeNativeSource = 'auto';
-        ctx.updateGenerateNativeEnabled();
-        useCuesStore.getState().setLoadStatus('target', { state: 'none' });
-        useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
         // Clear auto-detected track list + manager panel so stale tracks from
         // the previous video don't persist in the panel UI. onSpaNav may have
         // already cleared these (proactive clear on yt-navigate-finish), but
         // if onSpaNav didn't fire (lastAutoLoadUrl was undefined) this is the
         // only clear path.
-        syncController.autoTargetItems = [];
-        syncController.autoNativeItems = [];
-        syncController.targetMatches = [];
-        syncController.nativeMatches = [];
-        syncController.activeTargetIndex = 0;
-        syncController.activeNativeIndex = 0;
+        syncController.reset();
+        ctx.updateGenerateNativeEnabled();
+        useCuesStore.getState().setLoadStatus('target', { state: 'none' });
+        useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
         ctx.refreshPanel('target');
         ctx.refreshPanel('native');
       }

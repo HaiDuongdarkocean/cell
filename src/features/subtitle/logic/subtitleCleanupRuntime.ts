@@ -40,6 +40,9 @@ export function cleanTargetCues(cues: readonly SrtCue[]): SrtCue[] {
     return { ...cue, rawText, text: applyCleanupRules(rawText, activeRules) };
   });
   cleanedByRaw.set(cues, cleaned);
+  for (const ref of liveCleaned) {
+    if (ref.deref() === undefined) liveCleaned.delete(ref);
+  }
   liveCleaned.add(new WeakRef(cleaned));
   return cleaned;
 }

@@ -12,6 +12,7 @@ import {
 } from '@/features/subtitle';
 import type { SubtitlePanelItem } from '@/features/subtitle';
 import { cleanTargetCues } from '../logic/subtitleCleanupRuntime';
+import { canonicalNavUrl } from './contentScriptShared';
 import { t } from '@/shared/i18n';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
@@ -77,9 +78,11 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
     // before the async fetch. The fetch can fail (CORS/offline), but the selected
     // index should still be visible as the user's choice.
     ctx.refreshPanel(role);
+    const receiptNavUrl = canonicalNavUrl(location.href);
 
     try {
       const result = await fetchAndParseSubtitle(sub.url, resolveFormat(sub.format, sub.url), window.location.href, sub.initiator);
+      if (canonicalNavUrl(location.href) !== receiptNavUrl) return;
       if (!result.success || result.cues.length === 0) {
         console.error('[onSubtitleSelect] failed', result.error);
         showToast(t('subtitle.select.loadTrackFailed', [index + 1]), container, { variant: 'error' });
@@ -242,10 +245,12 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
       cues = cachedCues;
     } else {
       // Ask background to resolve the download (fetch + decode archive).
+      const receiptNavUrl = canonicalNavUrl(location.href);
       const response = await sendMessage<{ success?: boolean; data?: ResolveSubtitleDownloadResult; error?: string }>({
         type: MESSAGE_TYPES.RESOLVE_SUBTITLE_DOWNLOAD,
         payload: { result, role },
       });
+      if (canonicalNavUrl(location.href) !== receiptNavUrl) return;
       if (!response?.success || !response.data?.content) {
         const msg = response?.error ?? response?.data?.error?.type ?? t('subtitle.select.downloadFailed');
         showToast(t('subtitle.select.loadFailed', [msg]), container, { variant: 'error' });

@@ -64,8 +64,9 @@ jest.mock('@/shared/lib/storage/settingsStore', () => ({
   saveSettings: jest.fn(),
 }));
 
+const mockThemeTokensCleanup = jest.fn();
 jest.mock('@/features/theme/logic/themeTokens', () => ({
-  injectThemeTokens: jest.fn(),
+  injectThemeTokens: jest.fn(() => mockThemeTokensCleanup),
 }));
 
 jest.mock('@/features/tokenize', () => {
@@ -549,6 +550,7 @@ describe('contentScriptController', () => {
   it('cleanup removes listeners and destroys the controller', async () => {
     cleanup = init(video);
     await flushPromises();
+    const videoRemoveListener = jest.spyOn(video, 'removeEventListener');
 
     expect(onMessageCallbacks.length).toBeGreaterThanOrEqual(2);
 
@@ -564,8 +566,13 @@ describe('contentScriptController', () => {
     expect(windowRemoveListener).toHaveBeenCalledWith('keyup', expect.any(Function), true);
     expect(windowRemoveListener).toHaveBeenCalledWith('yt-navigate-finish', expect.any(Function));
     expect(windowRemoveListener).toHaveBeenCalledWith('popstate', expect.any(Function));
+    expect(videoRemoveListener).toHaveBeenCalledWith('timeupdate', expect.any(Function));
+    expect(videoRemoveListener).toHaveBeenCalledWith('play', expect.any(Function));
+    expect(videoRemoveListener).toHaveBeenCalledWith('pause', expect.any(Function));
+    expect(videoRemoveListener).toHaveBeenCalledWith('loadstart', expect.any(Function));
     expect(documentRemoveListener).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
     expect(documentRemoveListener).toHaveBeenCalledWith('__NF_SEEK', expect.any(Function));
+    expect(mockThemeTokensCleanup).toHaveBeenCalled();
 
     // onStorageChanged listener is removed in cleanup.
     expect(removeOnStorageChangedListener).toHaveBeenCalled();

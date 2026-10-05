@@ -8,7 +8,7 @@ import {
   createDragHint,
   type ParsedFile,
 } from '@/features/subtitle';
-import { loadTargetNativeLangs } from './contentScriptShared';
+import { canonicalNavUrl, loadTargetNativeLangs } from './contentScriptShared';
 import { cleanTargetCues } from '../logic/subtitleCleanupRuntime';
 import { t } from '@/shared/i18n';
 import type { ContentScriptContext } from './contentScriptContext';
@@ -23,8 +23,10 @@ export function createProcessImportedFiles(ctx: ContentScriptContext): (files: F
    */
   return async function processImportedFiles(files: File[], _container: HTMLElement): Promise<void> {
     if (files.length === 0) return;
+    const receiptNavUrl = canonicalNavUrl(location.href);
     const { targetLang, nativeLang } = await loadTargetNativeLangs();
     const parsed = await parseAndDetectFiles(files);
+    if (canonicalNavUrl(location.href) !== receiptNavUrl) return;
     if (parsed.length === 0) {
       ctx.debouncedToast(t('subtitle.import.noValid'), _container, { variant: 'error' });
       return;

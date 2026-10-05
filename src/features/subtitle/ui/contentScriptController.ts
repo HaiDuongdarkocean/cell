@@ -64,7 +64,7 @@ export function init(
 
   // ADR-015 T12: inject theme tokens so panel/toast var(--color-*) resolve.
   // Content-script isolated world cannot access popup's theme.css.
-  injectThemeTokens(container, [navClusterModuleCss]);
+  const themeTokensCleanup = injectThemeTokens(container, [navClusterModuleCss]);
 
   // ADR-025: live style/overlay settings. The block controller is created
   // synchronously so cue messages can be handled before storage finishes loading.
@@ -863,7 +863,7 @@ export function init(
   // Wire timeupdate → send VIDEO_TIME_UPDATE to Side Panel (via background)
   // ponytail: throttle to ~4fps to avoid message flooding (timeupdate fires ~60fps)
   let lastTimeUpdateSent = 0;
-  video.addEventListener('timeupdate', () => {
+  const onTimeUpdate = (): void => {
     const now = performance.now();
     if (now - lastTimeUpdateSent < 250) return; // 4fps throttle
     lastTimeUpdateSent = now;
@@ -883,10 +883,11 @@ export function init(
         isPlaying: !video.paused,
       },
     });
-  });
+  };
+  video.addEventListener('timeupdate', onTimeUpdate);
 
   // Wire play/pause → send VIDEO_PLAY_STATE to Side Panel
-  video.addEventListener('play', () => {
+  const onVideoPlay = (): void => {
     // Playback resuming means the user moved on — close any open lookup popup
     // (auto-pause popup, x/z vocab nav, or a manual click popup left behind).
     if (currentAdvanced?.popupCloseOnResume ?? true) sharedWebTextCtrl?.closePopup();
@@ -894,13 +895,15 @@ export function init(
       type: MESSAGE_TYPES.VIDEO_PLAY_STATE,
       payload: { tabId: undefined, isPlaying: true },
     });
-  });
-  video.addEventListener('pause', () => {
+  };
+  const onVideoPause = (): void => {
     void sendMessage({
       type: MESSAGE_TYPES.VIDEO_PLAY_STATE,
       payload: { tabId: undefined, isPlaying: false },
     });
-  });
+  };
+  video.addEventListener('play', onVideoPlay);
+  video.addEventListener('pause', onVideoPause);
 
   onMessage(onRuntimeMessage);
 
@@ -955,12 +958,16 @@ export function init(
     window.removeEventListener('yt-navigate-finish', onSpaNav);
     window.removeEventListener('popstate', onSpaNav);
     video.removeEventListener('loadstart', onSpaNav);
+    video.removeEventListener('timeupdate', onTimeUpdate);
+    video.removeEventListener('play', onVideoPlay);
+    video.removeEventListener('pause', onVideoPause);
     window.removeEventListener('keydown', onKeydown, true);
     window.removeEventListener('keyup', onKeyup, true);
     document.removeEventListener('__NF_SEEK', onNfSeek);
     removeOnMessageListener(onRuntimeMessage);
     removeOnMessageListener(onRuntimeMessage2);
     if (onStorageChangedCallback) removeOnStorageChangedListener(onStorageChangedCallback);
+    themeTokensCleanup();
     // ADR-027: React UI is unmounted in ReactSubtitleController.destroy().
     subtitleTokenizeCtrl?.destroy();
     unknownResolver?.destroy();
