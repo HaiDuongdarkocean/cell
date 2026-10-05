@@ -3519,6 +3519,45 @@
         "video-player"
       ],
       "trigger": "A feature wraps/moves a player shell that turns out to be position:fixed (sticky/mini players — m.youtube #player-container-id sits directly on body). The inserted in-flow wrapper appears at the wrong place: covers fixed chrome at page top and shifts every flow sibling down by the wrapper height"
+    },
+    {
+      "type": "experience",
+      "id": "flex-row-sibling-height-inflates-wrapper",
+      "title": "Sizing a wrapper to the flex-row parent's height actually sizes it to the tallest SIBLING — keep the shell's own rect height",
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "flexbox",
+        "flex-wrap",
+        "sibling-stretch",
+        "wrapper",
+        "split-view",
+        "height",
+        "kisskh",
+        "layout"
+      ],
+      "trigger": "A wrapper inserted into a flex-row (or wrap) container gets its height from parentHeight / max(sibling heights) on the theory that the row is 'sibling-stretch-driven', and the wrapper towers over the element it replaced — e.g. capped to the full viewport"
+    },
+    {
+      "type": "experience",
+      "id": "flex-item-blockify-intercepts-percent-height-chain",
+      "title": "Turning a container into display:flex blockifies its direct child — the new block box intercepts descendants' height:100% chains and collapses them to auto",
+      "category": [
+        "css"
+      ],
+      "tags": [
+        "flexbox",
+        "blockification",
+        "containing-block",
+        "height-100-percent",
+        "video-player",
+        "split-view",
+        "kisskh",
+        "angular-host-elements"
+      ],
+      "trigger": "After setting display:flex (column) on a shell element, a descendant that used height:100% (e.g. a video styled by the site to fill its player) collapses to content height — dead bands appear inside the shell even though the shell itself keeps its height"
     }
   ]
 }

@@ -1,0 +1,23 @@
+{
+  "id": "flex-item-blockify-intercepts-percent-height-chain",
+  "title": "Turning a container into display:flex blockifies its direct child — the new block box intercepts descendants' height:100% chains and collapses them to auto",
+  "category": ["css"],
+  "tags": ["flexbox", "blockification", "containing-block", "height-100-percent", "video-player", "split-view", "kisskh", "angular-host-elements"],
+  "trigger": "After setting display:flex (column) on a shell element, a descendant that used height:100% (e.g. a video styled by the site to fill its player) collapses to content height — dead bands appear inside the shell even though the shell itself keeps its height",
+  "principle": "Percentage heights resolve against the nearest ancestor with a definite height — and for in-flow elements, only block-level ancestors count; inline ancestors (framework host elements like Angular's <app-watch>) are skipped. Before flexing the shell, a descendant's height:100% could skip those inline wrappers and resolve against the shell directly. Once the shell is display:flex, its direct child is blockified into a containing block — now it intercepts the chain but computes to auto → everything below collapses. Re-link the chain by pinning height:100% (and display:block so inlines honor it) on every element between the shell and the video; a % that resolves to a definite value makes the next level's % resolvable, so the chain propagates all the way down.",
+  "cases": [
+    {
+      "context": "kisskh desktop: .col-12 shell (stretched to row height 736px) > APP-WATCH > MAT-VIDEO > .videoplayer{height:100%} > video. Natively .videoplayer skips the inline ancestors and takes .col-12's height → video fills the column. After split view set .col-12 to display:flex column, APP-WATCH blockified and .videoplayer collapsed 736→287 — video floated mid-stage with ~440px dead space.",
+      "bad": "playerShell.style.display = 'flex'; playerShell.style.flexDirection = 'column';\n// descendants' height:100% now hit a blockified auto-height flex item",
+      "good": "let n = videoEl.parentElement;\nwhile (n && n !== playerShell && n !== document.body) {\n  n.style.setProperty('display','block','important');\n  n.style.setProperty('height','100%','important');\n  n.style.setProperty('width','100%','important');\n  n.style.setProperty('min-height','0','important');\n  n = n.parentElement;\n}\nvideoEl.style.setProperty('height','100%','important');"
+    }
+  ],
+  "applyFor": [
+    "Restructuring any element to display:flex/absolute when descendants rely on percentage heights",
+    "Debugging video/media that suddenly shrinks to natural height after a container became a flex context"
+  ],
+  "check": {
+    "type": "manual",
+    "command": "Repro: Brave + kisskh desktop viewport — press 't'; the video element must fill the stage height (letterboxed content inside), not collapse to its natural 16:9 height."
+  }
+}

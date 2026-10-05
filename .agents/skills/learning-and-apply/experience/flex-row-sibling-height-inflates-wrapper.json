@@ -1,0 +1,23 @@
+{
+  "id": "flex-row-sibling-height-inflates-wrapper",
+  "title": "Sizing a wrapper to the flex-row parent's height actually sizes it to the tallest SIBLING — keep the shell's own rect height",
+  "category": ["css", "ux"],
+  "tags": ["flexbox", "flex-wrap", "sibling-stretch", "wrapper", "split-view", "height", "kisskh", "layout"],
+  "trigger": "A wrapper inserted into a flex-row (or wrap) container gets its height from parentHeight / max(sibling heights) on the theory that the row is 'sibling-stretch-driven', and the wrapper towers over the element it replaced — e.g. capped to the full viewport",
+  "principle": "A flex row's height is the tallest item's height — not the moved element's slot. If the element WAS stretch-inflated by the row, its getBoundingClientRect().height already reports the stretched value, so reading the element's own rect preserves the original footprint exactly, for free. Reading the parent/sibling height instead only adds a failure mode: wrapped or stacked layouts where a tall unrelated sibling (a side info column) inflates the wrapper to browser height. Floor recalc measurements at the open-time rect so the reserved page slot is never under-filled, while still allowing growth when reflow legitimately makes content taller.",
+  "cases": [
+    {
+      "context": "kisskh episode page: player shell .col-12.col-xl-7 sits in Bootstrap .row (display:flex, flex-wrap:wrap) next to a ~1400px drama-info column. wrapperHeightStyle used min(parentPixelHeight, viewportCap) and recalc used max sibling height → wrapper became ~924px (viewport) for a 308px player — video floated mid-column with hundreds of px dead space.",
+      "bad": "const h = isFlexRow ? parentRect.height : shellRect.height;\n// recalc: measuredH = Math.max(...siblingHeights) || contentHeight",
+      "good": "const h = shellRect.height; // original slot — always\n// recalc: measuredH = Math.max(contentHeight, openTimeShellHeight)"
+    }
+  ],
+  "applyFor": [
+    "Computing a wrapper/replacement element's height inside a flex or grid parent with unrelated siblings",
+    "Deciding whether to read parent height vs element rect when preserving layout"
+  ],
+  "check": {
+    "type": "manual",
+    "command": "Repro: Brave + kisskh episode page, narrow and desktop viewports — press 't'; wrapper must equal the player's pre-split height, .row must not grow."
+  }
+}

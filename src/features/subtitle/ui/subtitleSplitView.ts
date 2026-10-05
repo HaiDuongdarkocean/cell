@@ -284,6 +284,8 @@ export function useSplitView({
     for (const property of playerShellStyleProperties) {
       savedPlayerShellStyles[property] = playerShell.style.getPropertyValue(property);
     }
+    const chainStyleProps = ['display', 'width', 'height', 'min-height'];
+    const savedChainStyles: Array<{ el: HTMLElement; values: Record<string, string> }> = [];
     const stageCell = document.createElement('div');
     stageCell.setAttribute('data-cell-split-view', 'stage');
     stageCell.style.cssText = `flex:1 1 0;min-width:min(${SPLIT_VIEW_MIN_STAGE_WIDTH}px,55%);min-height:0;height:100%;position:relative;overflow:hidden;`;
@@ -554,6 +556,39 @@ export function useSplitView({
       // Move playerShell into new stageCell FIRST (detaches from old
       // wrapper's stageCell if transitioning from a previous normal run).
       stageCell.appendChild(playerShell);
+
+      // Re-link the "video fills shell" percentage chain. Turning the
+      // shell into a flex column blockifies its direct child — that child
+      // becomes a containing block and intercepts descendants' height:100%
+      // resolution (kisskh: APP-WATCH/MAT-VIDEO inline wrappers →
+      // .videoplayer collapses to the video's natural height, leaving dead
+      // bands inside the preserved-height stage). Pin height:100% on every
+      // intermediate down to the video; the video element letterboxes its
+      // content natively inside the filled box. YouTube is skipped — its
+      // MAIN-world YT_SPLIT_CSS bridge owns the same fill behavior plus
+      // .ytp-chrome specifics. Broad shells keep video-driven height.
+      if (!isYoutube && !isBroadShell && videoEl) {
+        let node: HTMLElement | null = videoEl.parentElement;
+        while (node && node !== playerShell && node !== document.body) {
+          const values: Record<string, string> = {};
+          for (const property of chainStyleProps) {
+            values[property] = node.style.getPropertyValue(property);
+          }
+          savedChainStyles.push({ el: node, values });
+          node.style.setProperty('display', 'block', 'important');
+          node.style.setProperty('width', '100%', 'important');
+          node.style.setProperty('height', '100%', 'important');
+          node.style.setProperty('min-height', '0', 'important');
+          node = node.parentElement;
+        }
+        const videoValues: Record<string, string> = {};
+        for (const property of chainStyleProps) {
+          videoValues[property] = videoEl.style.getPropertyValue(property);
+        }
+        savedChainStyles.push({ el: videoEl, values: videoValues });
+        videoEl.style.setProperty('width', '100%', 'important');
+        videoEl.style.setProperty('height', '100%', 'important');
+      }
       // Move #cell-subtitle-root into stageCell so its position:absolute +
       // inset:0 fills the video stage (stageCell is position:relative),
       // not the subtitle panel. No inline overrides needed.
@@ -854,6 +889,13 @@ export function useSplitView({
         playerShell.style.removeProperty(property);
         const value = savedPlayerShellStyles[property];
         if (value) playerShell.style.setProperty(property, value);
+      }
+      for (const { el, values } of savedChainStyles) {
+        for (const property of chainStyleProps) {
+          el.style.removeProperty(property);
+          const value = values[property];
+          if (value) el.style.setProperty(property, value);
+        }
       }
       // Move #cell-subtitle-root back to its pre-Split-View parent (e.g.
       // .art-video-player with position:relative), NOT to playerShell.
