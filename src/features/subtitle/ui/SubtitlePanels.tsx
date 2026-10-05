@@ -10,8 +10,6 @@ import { SubtitleToast } from './SubtitleToast';
 import { useToasts } from './subtitleToasts';
 import { SubtitleHint } from './SubtitleHint';
 import { useSubtitleBlockDrag } from './subtitleDrag';
-import { clampYOffset } from '../logic/subtitleBlockDrag';
-import { DragHandle } from '@/shared/ui/DragHandle';
 import { usePlayerMode } from './subtitlePlayerMode';
 import { PlayerModeLayer } from './PlayerModeLayer';
 import { SubtitlePanel } from './SubtitlePanel';
@@ -34,8 +32,6 @@ import type {
   SubtitlePanelsProps,
   IconCatalogKey,
 } from './subtitlePanelsTypes';
-
-const DRAG_KEY_STEP = 5;
 
 // Re-export for backward compatibility — SSOT lives in subtitlePanelsTypes.ts
 export type {
@@ -269,22 +265,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       onDragReposition,
     });
 
-    const handleDragKeyDown = useCallback(
-      (e: React.KeyboardEvent<HTMLDivElement>): void => {
-        let next: number | null = null;
-        if (e.key === 'ArrowUp') next = yOffsetPercent - DRAG_KEY_STEP;
-        else if (e.key === 'ArrowDown') next = yOffsetPercent + DRAG_KEY_STEP;
-        else if (e.key === 'Home') next = 0;
-        else if (e.key === 'End') next = 95;
-        if (next === null) return;
-        e.preventDefault();
-        const clamped = clampYOffset(next);
-        setYOffsetPercent(clamped);
-        onDragReposition?.(clamped);
-      },
-      [yOffsetPercent, onDragReposition],
-    );
-
     // Cluster settings CSS variables — áp dụng cho cả clusterLeft (NavCluster) + clusterRight
     // Cluster CSS vars — SSOT: buildClusterCssVars (shared with NavCluster + PlayerModeOverlay + OverlayPreview)
     const clusterRightStyle = buildClusterCssVars(clusterSettings);
@@ -369,17 +349,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         </div>
 
         <div className={styles.blockLayer}>
-          <div className={styles.blockWrap}>
-            <DragHandle
-              size="sm"
-              className={styles.blockDragHandle}
-              data-cell-id="subtitle-block-drag"
-              aria-label={t('subtitle.block.dragAria')}
-              onKeyDown={handleDragKeyDown}
-              onDragStart={(e) => e.preventDefault()}
-            />
-            <SubtitleBlock targetStyle={targetStyle} nativeStyle={nativeStyle} blockSettings={blockSettings} removeBracketed={removeBracketed} />
-          </div>
+          <SubtitleBlock targetStyle={targetStyle} nativeStyle={nativeStyle} blockSettings={blockSettings} removeBracketed={removeBracketed} />
         </div>
 
         {!collapsed && (

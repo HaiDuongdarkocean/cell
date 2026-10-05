@@ -63,30 +63,6 @@
   pointer-events: auto;
 }
 
-.blockWrap {
-  position: relative;
-  pointer-events: none;
-}
-
-.blockDragHandle {
-  position: absolute;
-  bottom: calc(100% + var(--space-0-5));
-  left: 50%;
-  transform: translateX(-50%);
-  pointer-events: auto;
-  color: var(--color-overlay-text);
-  background: color-mix(in srgb, var(--color-overlay-background) 40%, transparent);
-  border-radius: var(--radius-md);
-  opacity: 0.45;
-  transition: opacity var(--transition);
-}
-
-.blockDragHandle:hover,
-.blockDragHandle:focus-visible,
-.dragging .blockDragHandle {
-  opacity: 1;
-}
-
 .toastLayer {
   position: absolute;
   bottom: 30%;

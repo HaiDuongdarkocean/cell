@@ -18,16 +18,15 @@ export interface SubtitleBlockDrag {
 
 const DRAG_START_THRESHOLD_PX = 8;
 const SUBTITLE_BLOCK_SELECTOR = '[data-cell-id="subtitle-block"]';
-const DRAG_TRIGGER_SELECTOR = '[data-cell-id="subtitle-block-drag"]';
 const COLLAPSED_CLUSTER_SELECTOR = '[data-cell-id="nav-expand"]';
 
 // ADR-025: drag-to-reposition theo trục Y. Pointer Events + rAF throttle +
 // transform (atom ux-drag-transform-willchange-raf). touch-action:none trên .root
 // (atom ux-touch-action-none-for-pointer-drag). .root có pointer-events:none —
 // click xuyên xuống video (atom overlay-band-pointer-events-swallow-touch-taps).
-// Drag triggers: dedicated DragHandle (capture ngay, mọi pointer), collapsed
-// nav-expand pill + touch trên subtitle-block (capture sau threshold — tap/click
-// nhỏ hơn threshold vẫn resolve thành expand/word lookup bình thường).
+// Drag triggers: subtitle-block + collapsed nav-expand pill — cả hai deferred
+// (capture sau |deltaY| >= 8px) để tap/click vẫn thành word lookup / expand,
+// và horizontal mouse drag vẫn select text.
 export function useSubtitleBlockDrag({
   rootRef,
   yOffsetPercent,
@@ -48,11 +47,10 @@ export function useSubtitleBlockDrag({
     (e: React.PointerEvent<HTMLDivElement>): void => {
       const target = e.target;
       if (!(target instanceof Element)) return;
-      const isHandleStart = target.closest(DRAG_TRIGGER_SELECTOR) !== null;
       const isDeferredStart =
-        target.closest(COLLAPSED_CLUSTER_SELECTOR) !== null ||
-        (e.pointerType === 'touch' && target.closest(SUBTITLE_BLOCK_SELECTOR) !== null);
-      if (!isHandleStart && !isDeferredStart) return;
+        target.closest(SUBTITLE_BLOCK_SELECTOR) !== null ||
+        target.closest(COLLAPSED_CLUSTER_SELECTOR) !== null;
+      if (!isDeferredStart) return;
       const root = rootRef.current;
       if (!root) return;
       const rootNode = root.getRootNode();
@@ -65,12 +63,8 @@ export function useSubtitleBlockDrag({
         containerHeight,
         rafId: null,
         pendingDelta: 0,
-        captured: isHandleStart,
+        captured: false,
       };
-      if (isHandleStart) {
-        setDragging(true);
-        root.setPointerCapture?.(e.pointerId);
-      }
     },
     [rootRef, yOffsetPercent],
   );
@@ -84,7 +78,12 @@ export function useSubtitleBlockDrag({
         if (Math.abs(st.pendingDelta) < DRAG_START_THRESHOLD_PX) return;
         st.captured = true;
         setDragging(true);
-        rootRef.current?.setPointerCapture?.(e.pointerId);
+        e.preventDefault();
+        const root = rootRef.current;
+        root?.setPointerCapture?.(e.pointerId);
+        const scope = (root?.getRootNode() ?? document) as Document;
+        scope.getSelection?.()?.removeAllRanges();
+        window.getSelection?.()?.removeAllRanges();
       }
       if (st.rafId !== null) return;
       st.rafId = requestAnimationFrame(() => {

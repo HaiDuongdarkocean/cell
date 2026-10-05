@@ -1182,7 +1182,7 @@
     {
       "type": "experience",
       "id": "overlay-band-pointer-events-swallow-touch-taps",
-      "title": "Full-width pointer-events:auto overlay band swallows clicks meant for the player — keep the band pointer-events:none on all devices and drag via a dedicated handle",
+      "title": "Full-width pointer-events:auto overlay band swallows clicks meant for the player — keep the band pointer-events:none on all devices and drag from the interactive child with deferred capture",
       "category": [
         "css",
         "ux"

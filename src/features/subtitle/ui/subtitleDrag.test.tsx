@@ -30,9 +30,6 @@ function Harness({ onDragReposition }: { readonly onDragReposition?: (y: number)
             <span data-cell-id="drag-test-text">subtitle line</span>
           </div>
         </div>
-        <div data-cell-id="subtitle-block-drag">
-          <span data-cell-id="drag-handle-dot" />
-        </div>
         <button type="button" data-cell-id="nav-expand">expand</button>
       </div>
     </div>
@@ -60,16 +57,16 @@ describe('useSubtitleBlockDrag', () => {
     jest.useRealTimers();
   });
 
-  it('drags immediately from the drag handle (any pointer type)', () => {
+  it('mouse drag on the subtitle block engages after the threshold', () => {
     const onDragReposition = jest.fn();
     render(<Harness onDragReposition={onDragReposition} />);
     stubHostRect();
-    const handle = screen.getByTestId('drag-handle-dot');
+    const text = screen.getByTestId('drag-test-text');
 
-    dispatchPointer(handle, 'pointerdown', 100, 'mouse');
-    dispatchPointer(handle, 'pointermove', 140, 'mouse');
+    dispatchPointer(text, 'pointerdown', 100, 'mouse');
+    dispatchPointer(text, 'pointermove', 140, 'mouse');
     act(() => jest.advanceTimersByTime(20));
-    dispatchPointer(handle, 'pointerup', 140, 'mouse');
+    dispatchPointer(text, 'pointerup', 140, 'mouse');
 
     expect(onDragReposition).toHaveBeenCalledWith(dragDeltaToYOffset(START_OFFSET, 40, HOST_HEIGHT));
   });
@@ -135,16 +132,16 @@ describe('useSubtitleBlockDrag', () => {
     expect(onDragReposition).not.toHaveBeenCalled();
   });
 
-  it('mouse pointerdown inside the subtitle block never drags (text selection stays)', () => {
+  it('mouse press on the subtitle block under the threshold does not reposition (click/lookup stays)', () => {
     const onDragReposition = jest.fn();
     render(<Harness onDragReposition={onDragReposition} />);
     stubHostRect();
     const text = screen.getByTestId('drag-test-text');
 
     dispatchPointer(text, 'pointerdown', 100, 'mouse');
-    dispatchPointer(text, 'pointermove', 140, 'mouse');
+    dispatchPointer(text, 'pointermove', 104, 'mouse');
     act(() => jest.advanceTimersByTime(20));
-    dispatchPointer(text, 'pointerup', 140, 'mouse');
+    dispatchPointer(text, 'pointerup', 104, 'mouse');
 
     expect(onDragReposition).not.toHaveBeenCalled();
   });
