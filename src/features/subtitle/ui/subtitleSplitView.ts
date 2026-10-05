@@ -381,19 +381,17 @@ export function useSplitView({
       // NORMAL: wrap playerShell in a flex row wrapper.
       wrapper = document.createElement('div');
       wrapper.setAttribute('data-cell-split-view', 'wrapper');
-      // Wrapper height: the goal is to match the video's display height
-      // so the subtitle panel doesn't tower above/below the video.
+      // Wrapper height: preserve the slot the container occupied before
+      // split — the page layout was built around exactly that box.
       //
       // Two cases:
       // 1. Tight shell (playerShell ≈ video width, e.g. kisskh.co):
-      //    The shell is just the video + controls. Fill the parent's
-      //    height — only valid when the insert parent is a flex row,
-      //    whose height is sibling-stretch-driven. Column/block parents
-      //    contain unrelated content (whole page column), so their
-      //    height would tower; use playerShell's own height instead.
-      //    The video stretches via height:100% and the panel matches.
-      //    This avoids empty space below the Split View area
-      //    when the parent is taller than the video (hidden siblings).
+      //    The shell is just the video + controls — keep its own rendered
+      //    height. Never the flex-row parent's height: a wrap/stacked row
+      //    is sized by the tallest SIBLING (kisskh's drama-info column),
+      //    which towers over the player slot and can hit the viewport cap.
+      //    A shell stretch-inflated by its row already reports the
+      //    stretched rect, so the original footprint is still preserved.
       //
       // 2. Broad shell (playerShell >> video width, e.g. themoviebox):
       //    The shell includes side-by-side content (resources panel,
@@ -489,15 +487,20 @@ export function useSplitView({
         SPLIT_VIEW_MIN_HEIGHT,
         window.innerHeight - playerRect.top - SPLIT_VIEW_VIEWPORT_MARGIN,
       );
+      // Tight shells keep the shell's own rendered height — that is the
+      // slot the container occupied before split, and the page already
+      // reserves it (m.youtube pads scroll content; kisskh's fixed .col-12
+      // sits over a top-padded flow). Filling the flex-row parent's height
+      // instead stretches the wrapper to the tallest SIBLING (kisskh's
+      // drama-info col is ~1400px → capped to the viewport) — the stage
+      // towers over the video with dead space above and below.
       const wrapperHeightStyle = viewportBound
         ? wrapperHeight
         : youtubeFollowsParent
           ? '100%'
         : isBroadShell
           ? `${Math.min(Math.round(videoRect!.height), viewportCapH)}px`
-          : insertParentIsFlexRow
-            ? `${Math.min(Math.round(parentPixelHeight), viewportCapH)}px`
-            : `${Math.min(Math.round(playerRect.height), viewportCapH)}px`;
+          : `${Math.min(Math.round(playerRect.height), viewportCapH)}px`;
       svLog('NORMAL wrapper height', {
         viewportBound,
         isYoutube: isYoutubePage(),
@@ -606,14 +609,16 @@ export function useSplitView({
             let measuredH: number;
             if (isBroadShell) {
               measuredH = playerShell.querySelector('video')?.getBoundingClientRect().height ?? 0;
-            } else if (insertParentIsFlexRow) {
-              const siblingH = Math.max(0, ...Array.from(insertParent.children)
-                .filter((c) => c !== wrapper
-                  && !(c as HTMLElement).hasAttribute?.('data-cell-split-view'))
-                .map((c) => c.getBoundingClientRect().height));
-              measuredH = siblingH || measureShellContentHeight(playerShell);
             } else {
-              measuredH = measureShellContentHeight(playerShell);
+              // Floor at the shell's open-time height: that slot is what the
+              // page reserved for the player — shrinking below it leaves dead
+              // space (fixed shells like kisskh .col-12 keep their reserved
+              // spot regardless of flow). Natural content height still wins
+              // when reflow legitimately makes the shell taller (resize).
+              measuredH = Math.max(
+                measureShellContentHeight(playerShell),
+                Math.round(playerRect.height),
+              );
             }
             panel.style.visibility = '';
             panel.style.position = '';
