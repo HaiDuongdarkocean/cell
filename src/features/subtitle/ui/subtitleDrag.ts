@@ -16,6 +16,9 @@ export interface SubtitleBlockDrag {
   handlePointerUp: (e: React.PointerEvent<HTMLDivElement>) => void;
 }
 
+const DRAG_START_THRESHOLD_PX = 8;
+const SUBTITLE_BLOCK_SELECTOR = '[data-cell-id="subtitle-block"]';
+
 // ADR-025: drag-to-reposition theo trục Y. Pointer Events + rAF throttle +
 // transform (atom ux-drag-transform-willchange-raf). touch-action:none trên .root
 // (atom ux-touch-action-none-for-pointer-drag). Drag chỉ trên background —
@@ -33,13 +36,18 @@ export function useSubtitleBlockDrag({
     containerHeight: number;
     rafId: number | null;
     pendingDelta: number;
+    captured: boolean;
   } | null>(null);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>): void => {
-      // Chỉ drag khi nhấn trực tiếp lên root background (không qua child interactive).
-      // Children interactive có pointer-events:auto + e.target !== currentTarget.
-      if (e.target !== e.currentTarget) return;
+      const target = e.target;
+      const isRootBackground = target === e.currentTarget;
+      const isTouchBlockStart =
+        e.pointerType === 'touch' &&
+        target instanceof Element &&
+        target.closest(SUBTITLE_BLOCK_SELECTOR) !== null;
+      if (!isRootBackground && !isTouchBlockStart) return;
       const root = rootRef.current;
       if (!root) return;
       const rootNode = root.getRootNode();
@@ -52,9 +60,12 @@ export function useSubtitleBlockDrag({
         containerHeight,
         rafId: null,
         pendingDelta: 0,
+        captured: isRootBackground,
       };
-      setDragging(true);
-      root.setPointerCapture(e.pointerId);
+      if (isRootBackground) {
+        setDragging(true);
+        root.setPointerCapture?.(e.pointerId);
+      }
     },
     [rootRef, yOffsetPercent],
   );
@@ -64,6 +75,12 @@ export function useSubtitleBlockDrag({
       const st = dragState.current;
       if (!st) return;
       st.pendingDelta = e.clientY - st.startY;
+      if (!st.captured) {
+        if (Math.abs(st.pendingDelta) < DRAG_START_THRESHOLD_PX) return;
+        st.captured = true;
+        setDragging(true);
+        rootRef.current?.setPointerCapture?.(e.pointerId);
+      }
       if (st.rafId !== null) return;
       st.rafId = requestAnimationFrame(() => {
         st.rafId = null;
@@ -71,7 +88,7 @@ export function useSubtitleBlockDrag({
         setYOffsetPercent(next);
       });
     },
-    [setYOffsetPercent],
+    [rootRef, setYOffsetPercent],
   );
 
   const handlePointerUp = useCallback(
@@ -82,14 +99,18 @@ export function useSubtitleBlockDrag({
         cancelAnimationFrame(st.rafId);
         st.rafId = null;
       }
+      dragState.current = null;
+      setDragging(false);
+      if (!st.captured) return;
       const finalDelta = e.clientY - st.startY;
       // Release ở đâu giữ nguyên đó — chỉ clamp 0-95%, không snap (theo yêu cầu).
       const next = dragDeltaToYOffset(st.startOffset, finalDelta, st.containerHeight);
       setYOffsetPercent(next);
       onDragReposition?.(next);
-      dragState.current = null;
-      setDragging(false);
-      rootRef.current?.releasePointerCapture(e.pointerId);
+      const root = rootRef.current;
+      if (root?.hasPointerCapture?.(e.pointerId)) {
+        root.releasePointerCapture(e.pointerId);
+      }
     },
     [rootRef, onDragReposition, setYOffsetPercent],
   );

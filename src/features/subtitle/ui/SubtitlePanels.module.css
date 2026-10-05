@@ -10,12 +10,18 @@
   justify-content: space-between;
   gap: clamp(var(--space-1), 1.5cqw, var(--space-3));
   padding: 0 clamp(var(--space-1), 2cqw, var(--space-4));
-  pointer-events: auto;
+  pointer-events: none;
   touch-action: none;
   cursor: grab;
   container-type: inline-size;
   z-index: var(--z-base);
   transition: top var(--duration-normal) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .root {
+    pointer-events: auto;
+  }
 }
 
 .root > * {

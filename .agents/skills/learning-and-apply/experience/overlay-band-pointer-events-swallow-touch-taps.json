@@ -1,0 +1,26 @@
+{
+  "id": "overlay-band-pointer-events-swallow-touch-taps",
+  "title": "Full-width pointer-events:auto overlay band swallows touch taps meant for the player — gate it to (hover:hover) and (pointer:fine)",
+  "category": ["css", "ux"],
+  "tags": ["pointer-events", "touch", "mobile", "overlay", "hit-testing", "subtitle-overlay", "drag", "coarse-pointer", "media-query", "tap-through", "video-player"],
+  "trigger": "A shadow-DOM overlay band/row covering part of a video has pointer-events:auto (e.g. as a drag surface), and on touch devices taps into that band never reach the player — play/pause/toggle-controls appear dead under the covered region",
+  "principle": "pointer-events:auto on a wide overlay container consumes every pointer hit inside its box — the host page below never sees the tap. On desktop this is survivable (users click elsewhere, and a big grab band is a deliberate affordance); on touch, tap-to-toggle-controls is THE primary player gesture, so a dead band reads as 'the site is broken'. Scope the container's pointer-events:auto to '@media (hover:hover) and (pointer:fine)' so coarse-pointer devices get pointer-events:none and taps fall through to the player natively — no synthetic re-dispatch needed. Keep the drag affordance on touch by letting the gesture start from a real interactive child (e.g. the subtitle text block) with a small movement threshold + deferred setPointerCapture, so a short tap still resolves as a normal click (word lookup / text selection) and only a real drag captures the pointer. Hit-test inside shadow DOM via shadowRoot.elementFromPoint — document.elementFromPoint retargets to the host.",
+  "cases": [
+    {
+      "context": "SubtitlePanels .root band (full video width, ~74px, pointer-events:auto + touch-action:none) existed to drag-reposition subtitles. On a 203px-tall mobile YouTube player it swallowed ~36% of the tap area — users could not toggle the native controls scrim at all and reported 'lớp che không thể thao tác'.",
+      "bad": ".root {\n  pointer-events: auto; /* whole band is a drag surface — eats every tap */\n  touch-action: none;\n}\n// handlePointerDown: if (e.target !== e.currentTarget) return; // only background drags",
+      "good": ".root {\n  pointer-events: none; /* taps pass to player on touch */\n}\n@media (hover: hover) and (pointer: fine) {\n  .root { pointer-events: auto; } /* desktop keeps band drag */\n}\n// hook: allow touch drag from [data-cell-id=\"subtitle-block\"], deferred capture\n// after |deltaY| >= 8px — tap still fires click for word lookup"
+    },
+    {
+      "context": "Verification probe: document.elementFromPoint inside the video rect returned #cell-subtitle-root (retargeted from the .root shadow child); shadowRoot.elementFromPoint revealed the real hit (band vs button vs subtitle .layer).",
+      "bad": "// assumed host pointer-events:none meant click-through — but a shadow child with\n// pointer-events:auto still intercepts; document.elementFromPoint only shows the host",
+      "good": "// probe both levels:\nconst el = document.elementFromPoint(x, y);        // → #cell-subtitle-root\nconst deep = el?.shadowRoot?.elementFromPoint(x, y); // → real interceptor (.root band)\n// post-fix: band points resolve to the <video> element; only the subtitle\n// .layer text box + cluster buttons remain Cell hit targets"
+    }
+  ],
+  "applyFor": [
+    "Any injected overlay band/bar covering part of a video player on touch devices",
+    "Drag surfaces that double as dead zones for the content underneath",
+    "Shadow-DOM hit-test debugging — always probe shadowRoot.elementFromPoint too",
+    "Deciding between pointer-events media-query gating vs synthetic event forwarding"
+  ]
+}

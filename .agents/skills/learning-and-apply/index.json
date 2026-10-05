@@ -1181,6 +1181,29 @@
     },
     {
       "type": "experience",
+      "id": "overlay-band-pointer-events-swallow-touch-taps",
+      "title": "Full-width pointer-events:auto overlay band swallows touch taps meant for the player — gate it to (hover:hover) and (pointer:fine)",
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "pointer-events",
+        "touch",
+        "mobile",
+        "overlay",
+        "hit-testing",
+        "subtitle-overlay",
+        "drag",
+        "coarse-pointer",
+        "media-query",
+        "tap-through",
+        "video-player"
+      ],
+      "trigger": "A shadow-DOM overlay band/row covering part of a video has pointer-events:auto (e.g. as a drag surface), and on touch devices taps into that band never reach the player — play/pause/toggle-controls appear dead under the covered region"
+    },
+    {
+      "type": "experience",
       "id": "css-shadow-dom-scrollbar-scope",
       "title": "Shadow DOM utility CSS must be scoped — global * leaks to host page",
       "category": [
