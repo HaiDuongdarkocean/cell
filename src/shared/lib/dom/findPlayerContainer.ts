@@ -48,16 +48,17 @@ export function findFarthestSameSizeContainer(
   // known shell when present. Ponytail ceiling: hardcoded YouTube selector;
   // upgrade path = per-host adapter registry if more structured hosts appear.
   //
-  // m.youtube keeps the same #movie_player id but renders it position:absolute
-  // inside #player.player-size, whose content height is 0 (its box comes from
-  // a padding-top aspect-ratio trick). Wrapping #movie_player in an in-flow
-  // wrapper makes height:100% resolve against 0 → the stage collapses and the
-  // video goes black. The mobile shell keeps video + #player-control-container
-  // together under #player-container-id, so let the walk pick it instead.
-  const mwebShell = document.getElementById('player-container-id');
-  if (!mwebShell || !mwebShell.contains(video)) {
-    const moviePlayer = document.querySelector('#movie_player');
-    if (moviePlayer instanceof HTMLElement && moviePlayer.contains(video)) {
+  // Structural escape: when movie_player's parent has no content-box height
+  // (padding-driven aspect-ratio shells like m.youtube .player-size set
+  // height:0 + padding-top:56.25%), the shell is a floating surface, not a
+  // flow box — wrapping it collapses the stage to h:0 and the outer same-size
+  // ancestor is the real shell. Let the walk continue instead.
+  const moviePlayer = document.querySelector('#movie_player');
+  if (moviePlayer instanceof HTMLElement && moviePlayer.contains(video)) {
+    const parent = moviePlayer.parentElement;
+    const parentHeight = parent ? parseFloat(getComputedStyle(parent).height) : 0;
+    const paddingDrivenParent = Number.isFinite(parentHeight) && parentHeight <= 1;
+    if (!paddingDrivenParent) {
       return moviePlayer;
     }
   }

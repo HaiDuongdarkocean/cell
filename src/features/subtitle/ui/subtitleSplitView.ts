@@ -466,13 +466,17 @@ export function useSplitView({
       // resize. The old approach (parentPixelHeight px) froze the wrapper
       // at the initial size → empty space below after browser resize.
       //
-      // m.youtube: playerShell resolves to #player-container-id whose
-      // insert parent is the page column / #player.player-size (content
-      // height 0, padding-top-driven box) — height:100% never resolves and
-      // the stage collapses to h:0. Keep 100% only for the desktop shell
-      // (#movie_player, whose parent #container has a definite height);
-      // everywhere else fall back to the measured px path.
-      const youtubeFollowsParent = isYoutubePage() && playerShell.id === 'movie_player';
+      // height:100% is only meaningful when the insert parent hands the
+      // shell a real slot: a definite content-box height (>1px — rules out
+      // padding-driven aspect-ratio shells where 100% resolves against 0,
+      // e.g. m.youtube .player-size) that is roughly the player's own
+      // height (rules out body-level parents where 100% would tower over
+      // the video). Anything else takes the measured px path.
+      const insertParentComputedHeight = parseFloat(insertParentCs.height);
+      const youtubeFollowsParent = isYoutubePage()
+        && Number.isFinite(insertParentComputedHeight)
+        && insertParentComputedHeight > 1
+        && insertParent.getBoundingClientRect().height <= playerRect.height * 1.1;
       const viewportCapH = Math.max(
         SPLIT_VIEW_MIN_HEIGHT,
         window.innerHeight - playerRect.top - SPLIT_VIEW_VIEWPORT_MARGIN,

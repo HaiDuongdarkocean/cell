@@ -117,9 +117,12 @@ Live probing in Brave surfaced two split-view defects the original fix exposed:
    m.youtube that element is `position:absolute` inside
    `#player.player-size` — a padding-top aspect-ratio box whose *content*
    height is 0. Wrapping it in an in-flow flex wrapper makes `height:100%`
-   resolve against 0 → black stage, panel overlaying the player. Fix: the
-   short-circuit is skipped when `#player-container-id` contains the video, so
-   the walk picks the real sized shell (which also owns the sibling control
-   overlays); and the split-view wrapper only uses `height:100%` when
-   `playerShell.id === 'movie_player'` (desktop shell with a definite-height
-   parent) — m.youtube falls back to the measured-px path.
+   resolve against 0 → black stage, panel overlaying the player. Fix is
+   structural, not id-keyed: the short-circuit is skipped when
+   `#movie_player`'s parent has no content-box height (`computed height <= 1px`
+   — a padding-driven box), so the walk reaches the outer same-size shell
+   (which on m.youtube is `#player-container-id`, the element that also owns
+   the sibling control overlays); and the split-view wrapper only uses
+   `height:100%` when the insert parent has a definite content-box height
+   *and* is roughly the player's own height — a definite slot — otherwise it
+   takes the measured-px path like every other site.

@@ -242,15 +242,16 @@ describe('findPlayerContainer', () => {
   });
 
   describe('findFarthestSameSizeContainer — m.youtube shell', () => {
-    it('skips the #movie_player short-circuit and walks to #player-container-id', () => {
+    it('skips the #movie_player short-circuit when its parent has no content-box height', () => {
       // m.youtube: #movie_player is position:absolute inside
       // #player.player-size (content height 0, padding-top-driven). Wrapping
       // it collapses the split-view stage to h:0 — the walk must reach the
-      // shared shell #player-container-id that owns video + controls.
+      // outer same-size shell that owns video + controls.
       const shell = document.createElement('div');
       shell.id = 'player-container-id';
       const player = document.createElement('div');
       player.id = 'player';
+      player.style.height = '0px';
       const moviePlayer = document.createElement('div');
       moviePlayer.id = 'movie_player';
       const videoContainer = document.createElement('div');
@@ -277,6 +278,7 @@ describe('findPlayerContainer', () => {
     it('still short-circuits to #movie_player on desktop YouTube', () => {
       const player = document.createElement('div');
       player.id = 'player';
+      player.style.height = '360px';
       const moviePlayer = document.createElement('div');
       moviePlayer.id = 'movie_player';
       const video = document.createElement('video');
