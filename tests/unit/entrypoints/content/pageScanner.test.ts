@@ -193,6 +193,9 @@ describe('PageScanner', () => {
   });
 
   describe('startObserving / stopObserving', () => {
+    const flushDebounce = (): Promise<void> =>
+      new Promise((resolve) => setTimeout(resolve, 300));
+
     it('calls the callback when new media is added to the DOM', async () => {
       const callback = jest.fn();
       scanner.startObserving(callback);
@@ -202,13 +205,27 @@ describe('PageScanner', () => {
       video.src = 'https://example.com/dynamic.mp4';
       document.body.appendChild(video);
 
-      // jsdom MutationObserver fires on a microtask; flush it.
-      await Promise.resolve();
-      await Promise.resolve();
+      // jsdom MutationObserver fires on a microtask; the scan is debounced.
+      await flushDebounce();
 
       expect(callback).toHaveBeenCalled();
       const result: ScannedUrls = callback.mock.calls[0][0];
       expect(result.videoUrls).toContain('https://example.com/dynamic.mp4');
+    });
+
+    it('does not rescan for mutations that touch no media elements', async () => {
+      const callback = jest.fn();
+      scanner.startObserving(callback);
+
+      const div = document.createElement('div');
+      div.textContent = 'layout churn with no media inside';
+      document.body.appendChild(div);
+      div.setAttribute('class', 'restyle');
+      div.appendChild(document.createElement('span')).textContent = 'nested text';
+
+      await flushDebounce();
+
+      expect(callback).not.toHaveBeenCalled();
     });
 
     it('does not call the callback after stopObserving', async () => {
@@ -220,8 +237,7 @@ describe('PageScanner', () => {
       video.src = 'https://example.com/late.mp4';
       document.body.appendChild(video);
 
-      await Promise.resolve();
-      await Promise.resolve();
+      await flushDebounce();
 
       expect(callback).not.toHaveBeenCalled();
     });

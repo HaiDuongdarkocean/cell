@@ -87,6 +87,7 @@ export class PageScanner {
   private observer: MutationObserver | null = null;
   private onScanCallback: ((urls: ScannedUrls) => void) | null = null;
   private lastScanned: ScannedUrls = { videoUrls: [], subtitleUrls: [], trackSubtitles: [] };
+  private rescanTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     // no-op
@@ -213,19 +214,13 @@ export class PageScanner {
     this.onScanCallback = callback;
     this.lastScanned = this.scan();
 
-    this.observer = new MutationObserver(() => {
-      const current = this.scan();
-      const hasNewVideo = current.videoUrls.some((u) => !this.lastScanned.videoUrls.includes(u));
-      const hasNewSubtitle = current.subtitleUrls.some(
-        (u) => !this.lastScanned.subtitleUrls.includes(u),
-      );
-      const hasNewTrack = current.trackSubtitles.some(
-        (t) => !this.lastScanned.trackSubtitles.some((lt) => lt.url === t.url),
-      );
-      if (hasNewVideo || hasNewSubtitle || hasNewTrack) {
-        this.lastScanned = current;
-        this.onScanCallback?.(current);
-      }
+    this.observer = new MutationObserver((mutations) => {
+      if (!this.mutationTouchesMediaElements(mutations)) return;
+      if (this.rescanTimer !== null) return;
+      this.rescanTimer = setTimeout(() => {
+        this.rescanTimer = null;
+        this.rescanIfChanged();
+      }, 250);
     });
 
     const root = document.body ?? document.documentElement;
@@ -248,6 +243,42 @@ export class PageScanner {
     return { ...this.lastScanned };
   }
 
+  private mutationTouchesMediaElements(mutations: readonly MutationRecord[]): boolean {
+    for (const mutation of mutations) {
+      if (mutation.type === 'attributes') {
+        const target = mutation.target;
+        if (
+          target instanceof Element &&
+          /^(VIDEO|SOURCE|TRACK|A)$/.test(target.tagName)
+        ) {
+          return true;
+        }
+        continue;
+      }
+      for (const node of mutation.addedNodes) {
+        if (!(node instanceof Element)) continue;
+        if (/^(VIDEO|SOURCE|TRACK|A)$/.test(node.tagName)) return true;
+        if (node.querySelector('video,source,track,a[href]')) return true;
+      }
+    }
+    return false;
+  }
+
+  private rescanIfChanged(): void {
+    const current = this.scan();
+    const hasNewVideo = current.videoUrls.some((u) => !this.lastScanned.videoUrls.includes(u));
+    const hasNewSubtitle = current.subtitleUrls.some(
+      (u) => !this.lastScanned.subtitleUrls.includes(u),
+    );
+    const hasNewTrack = current.trackSubtitles.some(
+      (t) => !this.lastScanned.trackSubtitles.some((lt) => lt.url === t.url),
+    );
+    if (hasNewVideo || hasNewSubtitle || hasNewTrack) {
+      this.lastScanned = current;
+      this.onScanCallback?.(current);
+    }
+  }
+
   /**
    * Stop observing DOM mutations.
    */
@@ -255,5 +286,9 @@ export class PageScanner {
     this.observer?.disconnect();
     this.observer = null;
     this.onScanCallback = null;
+    if (this.rescanTimer !== null) {
+      clearTimeout(this.rescanTimer);
+      this.rescanTimer = null;
+    }
   }
 }
