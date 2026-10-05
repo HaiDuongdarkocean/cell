@@ -132,11 +132,14 @@ Live probing in Brave surfaced two split-view defects the original fix exposed:
    player) — its DOM slot carries no layout meaning, so an in-flow wrapper
    inserted there landed at body `y:0`, covering the fixed masthead and
    pushing `ytm-app` down by the wrapper height (the page already reserves
-   the player's slot via padding). And because m.youtube sizes the video off
-   the stage *width*, the open-time px height (pre-shrink `221`) letterboxed
-   the `118`-tall video inside the stage. Fixes: when the shell's computed
-   position is `fixed`, the wrapper takes `position:fixed` anchored at the
-   shell's measured rect (keeping the shell's z-index) instead of entering
-   flow; and for the non-`100%` path the wrapper height follows the video's
-   rendered height live in `recalcWrapperLayout`, so the stage hugs the
-   video with no dead space.
+   the player's slot via padding). Fixes: when the shell's computed position
+   is `fixed`, the wrapper takes `position:fixed` anchored at the shell's
+   measured rect (keeping the shell's z-index) instead of entering flow —
+   the container keeps its original `221px` height so the reserved slot is
+   exactly filled and nothing below shifts. Then, because m.youtube sizes
+   the video off the stage *width* (`#player.player-size` padding trick),
+   `YT_SPLIT_CSS` gains stage-scoped rules that kill the padding hack and
+   chain `height:100%` down `.player-size → #movie_player →
+   .html5-video-container → video`, so the video element fills the stage
+   and `object-fit:contain` letterboxes the frame internally — identical to
+   desktop split-view behavior.

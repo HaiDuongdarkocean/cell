@@ -584,15 +584,13 @@ export function useSplitView({
             true,
           );
         } else if (isYoutube) {
-          // Desktop shell: parent owns a definite height slot → 100%.
-          // Padding-driven shells (m.youtube) size the video off the stage
-          // WIDTH, so the wrapper must follow the video's rendered height —
-          // the px measured at open is the pre-shrink shell height and
-          // letterboxes the video inside the stage.
-          const liveVideoHeight = videoEl?.getBoundingClientRect().height;
-          liveHeight = youtubeFollowsParent
-            ? '100%'
-            : `${Math.round(liveVideoHeight || playerRect.height)}px`;
+          // The wrapper keeps the shell's original height: the page reserves
+          // that slot for the player (m.youtube pads its scroll content), so
+          // shrinking leaves dead space below and growing covers neighbors.
+          // The video fills the stage via the YT_SPLIT_CSS bridge
+          // (object-fit:contain) — re-measuring the video would read back
+          // the same value anyway.
+          liveHeight = youtubeFollowsParent ? '100%' : wrapperHeightStyle;
         } else {
           const rect = wrapper.getBoundingClientRect();
           const keyChanged = !lastLayoutKey
