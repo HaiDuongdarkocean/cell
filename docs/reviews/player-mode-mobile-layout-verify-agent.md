@@ -83,3 +83,16 @@ New evidence: `docs/mockups/player-mode-mobile-layout-impl-v2-dark.png`, `-v2-li
 Gates re-run on `3289c05c`: typecheck ✓, lint ✓ (0 errors), test:unit ✓ 8045, build ✓, browser ✓.
 
 VERDICT: PASS
+
+---
+
+## Round 3 — user-reported defects (committed `2b90446a`)
+
+User screenshot review found 3 new defects; spec gained AC-17/18/19 and all were fixed + browser-verified (390×780, light + dark):
+
+1. **AC-17 — manager-toggle dead in PM**: `SubtitlePanels` early-returned `PlayerModeLayer`, so the `managerOpen` portal (non-PM branch) never rendered — button flipped state but showed nothing (desktop PM too). Fix: `managerPortal` hoisted above the branch; renders in both. Verified: CC tap opens `subtitle-manager-layer` Sheet over the PM overlay (mockup `real` concept wires the real `SubtitleManagerPanel`+`Sheet`); unit test `SubtitlePanels.test.tsx` covers both orders (open→PM, PM→open).
+2. **AC-18 — non-uniform floating buttons**: CC was lg(48), fab md(40), generate lg(48); rail anchored `bottom: space-7` (off-axis). Fix: all rail buttons `size="lg"` 48×48; `pmRail` moved into `anchorRow` flow (generate shares the CC/pill center axis), `pm-fab-slot` absolutely anchored `bottom: calc(100% + space-2)` flush-right above it; `.anchorSpacer` removed; orbital clearance moved to `anchorRow` `padding-right`. DOM verify: cc 48×48 cy=650.7, generate 48×48 cy=650.7 — identical axis.
+3. **AC-19 — active card border magnified the card**: `cueCurrent` used `border: space-1` (4px) vs `hairline` on siblings → +~7px/side. Fix: `border-color: primary` (width unchanged) + `box-shadow: var(--shadow-inset-selected)` (2px primary ring INSIDE the box) + `shadow-floating` + `surface-elevated` — emphasis inside bounds. DOM verify: all 5 cards `border-width: 0.667px` equal, width 366px equal; only the current card carries the inset ring.
+
+Evidence: `docs/mockups/player-mode-mobile-layout-impl-v3-{manager,dark,anchor}.png`.
+Gates re-run on `2b90446a`: typecheck ✓, lint ✓, test:unit ✓ 8047 (+2 new AC-17 tests), build ✓, browser ✓.
