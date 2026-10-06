@@ -6,10 +6,14 @@
   flex-direction: column;
   width: 100%;
   background: var(--color-surface);
-  --card-background: var(--color-surface-elevated);
-  --color-surface-card: var(--color-surface-elevated);
   /* Keeps the settings body from stretching unnaturally inside the
-     1280px universal panel. */
+    1280px universal panel. */
   max-width: calc(var(--space-5) * 60);
   overflow: hidden;
+}
+
+/* Loading stub before settings resolve — centers inside the flex host. */
+.loading {
+  justify-content: center;
+  align-items: center;
 }

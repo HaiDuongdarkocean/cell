@@ -53,6 +53,11 @@
    to the real page/panel scroller. */
 .integratedMode {
   overscroll-behavior: auto;
+  --universal-panel-tab-scroll-inset: inherit;
+  /* Universal Panel tab-layout contract: last row rests off the bottom chrome
+     (collapsed MobileSheet peek on ≤839px; nav hairline elsewhere). The var is
+     declared on the panel's .body; the fallback keeps non-panel hosts working. */
+  padding-block-end: var(--universal-panel-tab-scroll-inset, var(--space-4));
 }
 
 .searchRow {

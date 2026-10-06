@@ -37,23 +37,20 @@
   overflow: hidden;
   background: var(--universal-panel-body-bg, var(--color-surface));
   color: var(--universal-panel-body-fg, var(--color-text));
+  --universal-panel-tab-gutter: var(--space-3) var(--space-4);
+  --universal-panel-tab-scroll-inset: var(--space-4);
+  --card-background: var(--color-surface-elevated);
+  --color-surface-card: var(--color-surface-elevated);
 }
 
+/* Flush clip boundary — tabs own their own gutters via
+   --universal-panel-tab-gutter; no per-tab padding lives here. */
 .content {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: var(--space-4);
-}
-
-/* Tabs that own their own padding leave the content wrapper flush. */
-.content[data-cell-id="universal-panel-content-dictionary"],
-.content[data-cell-id="universal-panel-content-studyModes"],
-.content[data-cell-id="universal-panel-content-vocabulary"],
-.content[data-cell-id="universal-panel-content-settings"] {
-  padding: var(--space-0);
 }
 
 .tabPane {
@@ -98,7 +95,6 @@
   .content {
     flex: 1;
     min-height: 0;
-    padding: var(--space-3);
   }
 }
 
@@ -107,10 +103,6 @@
     width: 100%;
     height: 100%;
     border-radius: 0;
-  }
-
-  .content {
-    padding: var(--space-2);
   }
 }
 

@@ -1,11 +1,13 @@
 .tab {
-  padding: var(--space-4);
+  composes: scrollport from '@/shared/ui/Scrollable.module.css';
+  --universal-panel-tab-gutter: inherit;
+  --universal-panel-tab-scroll-inset: inherit;
+  padding: var(--universal-panel-tab-gutter, var(--space-3));
+  padding-block-end: var(--universal-panel-tab-scroll-inset, var(--space-3));
   color: var(--color-text-primary);
   min-height: 100%;
   box-sizing: border-box;
-  overflow-y: auto;
   background: var(--color-surface);
-  --card-background: var(--color-surface-elevated);
 }
 
 .sectionHeader {

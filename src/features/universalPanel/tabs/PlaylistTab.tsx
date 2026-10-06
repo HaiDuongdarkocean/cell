@@ -80,7 +80,13 @@ async function send<T>(type: string, payload: unknown): Promise<MessageResponse<
   return sendMessage<MessageResponse<T>>({ type, payload });
 }
 
-export function PlaylistTab(): React.JSX.Element {
+export interface PlaylistTabProps {
+  /** Bound at the mount seam: `open && currentTab === 'playlist'`. False while
+   * the pane sits under `[hidden]` — no user-perceivable output allowed. */
+  readonly isActive: boolean;
+}
+
+export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
   const [records, setRecords] = useState<readonly CondensedAudioRecord[] | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -115,6 +121,13 @@ export function PlaylistTab(): React.JSX.Element {
     setPreviewId(id);
     setPreviewUrl(url);
   }, []);
+
+  // Teardown on deactivate: unmounts <audio> and revokes the blob URL.
+  // `previewUrl` is a dep so a chunk read resolving while inactive still gets
+  // revoked instead of leaking an autoplay element under [hidden].
+  useEffect(() => {
+    if (!isActive) setPreview(null, null);
+  }, [isActive, previewUrl, setPreview]);
 
   const onPreview = useCallback(
     async (record: CondensedAudioRecord): Promise<void> => {

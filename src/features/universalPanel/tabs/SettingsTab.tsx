@@ -67,7 +67,7 @@ export function SettingsTab(): React.JSX.Element | null {
   }, []);
 
   if (!settings) {
-    return <div className={styles.settingsTab} data-cell-id="settings-tab-loading">{t('panel.settings.loading')}</div>;
+    return <div className={`${styles.settingsTab} ${styles.loading}`} data-cell-id="settings-tab-loading">{t('panel.settings.loading')}</div>;
   }
 
   return (

@@ -272,7 +272,9 @@ export function UniversalPanel({
             {(visitedTabs.has('playlist') || activeTab === 'playlist') && playlistPanel && (
               <div className={styles.tabPane} hidden={activeTab !== 'playlist'}>{playlistPanel}</div>
             )}
-            {activeTab === 'recap' && recapPanel}
+            {(visitedTabs.has('recap') || activeTab === 'recap') && recapPanel && (
+              <div className={styles.tabPane} hidden={activeTab !== 'recap'}>{recapPanel}</div>
+            )}
             {(visitedTabs.has('settings') || activeTab === 'settings') && (
               <div className={styles.tabPane} hidden={activeTab !== 'settings'}>{settingsPanel}</div>
             )}

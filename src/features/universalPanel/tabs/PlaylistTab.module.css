@@ -1,8 +1,13 @@
 .list {
+  composes: scrollport from '@/shared/ui/Scrollable.module.css';
+  --universal-panel-tab-gutter: inherit;
+  --universal-panel-tab-scroll-inset: inherit;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--universal-panel-tab-gutter, var(--space-3));
+  padding-block-end: var(--universal-panel-tab-scroll-inset, var(--space-3));
+  container-type: inline-size;
 }
 
 .itemRow {
@@ -54,9 +59,12 @@
 }
 
 .empty {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
   padding: var(--space-5) var(--space-4);
   color: var(--color-text-secondary);

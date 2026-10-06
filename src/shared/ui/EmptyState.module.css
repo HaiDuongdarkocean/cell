@@ -2,6 +2,7 @@
    Centered flex column: icon → title → description → action. */
 
 .root {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -104,6 +105,7 @@
 
 /* === bordered — dashed placeholder card (inline list empty states) === */
 .root.bordered {
+  flex: none;
   padding: var(--space-4);
   gap: var(--space-1);
   border: var(--border-width-hairline) dashed var(--color-border);

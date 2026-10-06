@@ -98,7 +98,7 @@ describe('UniversalPanel component', () => {
     expect(screen.queryByTestId('study-modes-content')).not.toBeInTheDocument();
   });
 
-  it('still remounts the recap tab on each visit', () => {
+  it('keeps the recap tab mounted across tab switches', () => {
     const recapPanel = <div data-cell-id="recap-content">Recap</div>;
     const props = {
       isOpen: true,
@@ -112,10 +112,16 @@ describe('UniversalPanel component', () => {
       recapPanel,
     };
     const { rerender } = render(<UniversalPanel {...props} activeTab="recap" />);
-    expect(screen.getByTestId('recap-content')).toBeInTheDocument();
+    const recap = screen.getByTestId('recap-content');
+    expect(recap).toBeInTheDocument();
 
     rerender(<UniversalPanel {...props} activeTab="settings" />);
-    expect(screen.queryByTestId('recap-content')).not.toBeInTheDocument();
+    expect(screen.getByTestId('recap-content')).toBe(recap);
+    expect(recap.parentElement).toHaveAttribute('hidden');
+
+    rerender(<UniversalPanel {...props} activeTab="recap" />);
+    expect(screen.getByTestId('recap-content')).toBe(recap);
+    expect(recap.parentElement).not.toHaveAttribute('hidden');
   });
 
   it('switches tab when a tab button is clicked', () => {

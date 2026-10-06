@@ -45,6 +45,19 @@ jest.mock('@/features/vocabulary/ui/VocabularyTab', () => ({
   ),
 }));
 
+jest.mock('./tabs/PlaylistTab', () => ({
+  PlaylistTab: (props: { isActive: boolean }) => (
+    <div data-cell-id="playlist-tab" data-is-active={String(props.isActive)} />
+  ),
+}));
+
+jest.mock('@/features/sessionRecap', () => ({
+  ...jest.requireActual('@/features/sessionRecap'),
+  RecapTab: (props: { isActive: boolean }) => (
+    <div data-cell-id="recap-tab" data-is-active={String(props.isActive)} />
+  ),
+}));
+
 jest.mock('@/shared/lib/storage/settingsStore', () => ({
   loadSettings: jest.fn(),
   saveSettings: jest.fn(),
@@ -185,6 +198,24 @@ describe('mountUniversalPanel', () => {
 
     await waitFor(() => expect(getByTestId('universal-panel-content-vocabulary')).toBeTruthy());
     expect(getByTestId('vocabulary-tab')).toBeTruthy();
+  });
+
+  it('binds isActive = open && currentTab for playlist and recap panes', async () => {
+    await act(async () => { await controller.open('playlist'); });
+    await waitFor(() => expect(getByTestId('playlist-tab')).toBeTruthy());
+    expect(getByTestId('playlist-tab')).toHaveAttribute('data-is-active', 'true');
+
+    // A kept-alive pane flips inactive on switch; the recap pane mounts active.
+    await act(async () => { await controller.switchTab('recap'); });
+    await waitFor(() => expect(getByTestId('recap-tab')).toBeTruthy());
+    expect(getByTestId('playlist-tab')).toHaveAttribute('data-is-active', 'false');
+    expect(getByTestId('recap-tab')).toHaveAttribute('data-is-active', 'true');
+
+    // Panel close counts as inactive even for the still-visible tab.
+    await act(async () => { controller.close(); });
+    await waitFor(() =>
+      expect(getByTestId('recap-tab')).toHaveAttribute('data-is-active', 'false'),
+    );
   });
 
   it('openDictionaryLookup pre-fills the dictionary term without arming the card creator', async () => {

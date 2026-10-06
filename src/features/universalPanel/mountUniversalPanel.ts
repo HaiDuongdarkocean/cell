@@ -222,10 +222,19 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
 
   const studyModesPanel = createElement(ErrorBoundary, null, createElement(StudyModesTab)) as ReactElement;
   const settingsPanel = createElement(ErrorBoundary, null, createElement(SettingsTab)) as ReactElement;
-  const playlistPanel = createElement(ErrorBoundary, null, createElement(PlaylistTab)) as ReactElement;
-  const recapPanel = createElement(ErrorBoundary, null, createElement(RecapTab, {
-    onLookup: (term: string) => { void mountController.openDictionaryLookup(term); },
-  })) as ReactElement;
+
+  // `isActive` is the pane lifecycle signal (up-tab-layout-contract): a kept-alive
+  // `.tabPane[hidden]` subtree must produce no user-perceivable output, so tabs
+  // with live resources bind the prop at element creation — same seam as
+  // `renderDictionaryPanel(open)`.
+  const renderPlaylistPanel = (isActive: boolean): ReactElement =>
+    createElement(ErrorBoundary, null, createElement(PlaylistTab, { isActive })) as ReactElement;
+
+  const renderRecapPanel = (isActive: boolean): ReactElement =>
+    createElement(ErrorBoundary, null, createElement(RecapTab, {
+      isActive,
+      onLookup: (term: string) => { void mountController.openDictionaryLookup(term); },
+    })) as ReactElement;
 
   // ADR-061: tokenize state lives in the universal header (above content),
   // not in the Settings tab. Subscribe at mount level so header re-renders
@@ -283,8 +292,8 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
           vocabularyPanel: renderVocabularyPanel(),
           studyModesPanel,
           settingsPanel,
-          playlistPanel,
-          recapPanel,
+          playlistPanel: renderPlaylistPanel(open && currentTab === 'playlist'),
+          recapPanel: renderRecapPanel(open && currentTab === 'recap'),
         }) as ReactElement,
       ) as ReactElement,
     );

@@ -177,9 +177,13 @@ function SessionRow({ session, onLookup, expanded, onToggle }: RowProps): React.
 
 export interface RecapTabProps {
   readonly onLookup: (term: string) => void;
+  /** Bound at the mount seam: `open && currentTab === 'recap'`. Re-activation
+   * revalidates the session list while the kept-alive pane preserves
+   * scroll + expansion. */
+  readonly isActive: boolean;
 }
 
-export function RecapTab({ onLookup }: RecapTabProps): React.JSX.Element {
+export function RecapTab({ onLookup, isActive }: RecapTabProps): React.JSX.Element {
   const [sessions, setSessions] = useState<readonly SessionRecap[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -199,10 +203,12 @@ export function RecapTab({ onLookup }: RecapTabProps): React.JSX.Element {
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (isActive) void load();
+  }, [isActive, load]);
 
-  if (failed) {
+  // A failed refresh over displayed data keeps the stale list — the error view
+  // is only for an empty cache (sessions === null).
+  if (failed && sessions === null) {
     return (
       <div className={styles.stateWrap}>
         <Alert
