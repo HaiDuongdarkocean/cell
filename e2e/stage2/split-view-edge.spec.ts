@@ -154,20 +154,55 @@ test.describe('Stage 2: Split View edge — layout integrity', () => {
     await expect(episodeList.first()).toBeVisible();
   });
 
-  test('SV-64: narrow viewport keeps panel within bounds', async ({ streamFlixPage }) => {
+  test('SV-64: narrow viewport stacks video above panel (AC-4.11)', async ({ streamFlixPage }) => {
     await streamFlixPage.setViewportSize({ width: 390, height: 800 });
     await streamFlixPage.waitForTimeout(400);
     const scrollBefore = await streamFlixPage.evaluate(() => document.documentElement.scrollWidth);
     await openSplitView(streamFlixPage);
+    const wrapperBox = await streamFlixPage.locator(WRAPPER).boundingBox();
     const panelBox = await streamFlixPage.locator(PANEL).boundingBox();
     const videoBox = await streamFlixPage.locator(VIDEO).boundingBox();
-    expect(panelBox!.width).toBeGreaterThanOrEqual(190);
-    expect(panelBox!.width).toBeLessThanOrEqual(390 * 0.65);
-    expect(videoBox!.width).toBeGreaterThan(0);
+    const direction = await streamFlixPage
+      .locator(WRAPPER)
+      .evaluate((el) => getComputedStyle(el).flexDirection);
+    expect(direction).toBe('column');
+    // Column layout: stage full slot width on top, panel below it.
+    expect(videoBox!.width).toBeGreaterThanOrEqual(300);
+    expect(videoBox!.height).toBeGreaterThan(0);
+    expect(panelBox!.width).toBeGreaterThanOrEqual(300);
+    expect(panelBox!.height).toBeGreaterThan(0);
+    expect(panelBox!.y).toBeGreaterThanOrEqual(videoBox!.y + videoBox!.height - 1);
+    expect(wrapperBox!.width).toBeLessThanOrEqual(390);
     // AC: split view must not INCREASE page overflow (mock page itself has a
     // fixed-width header — baseline overflow is a pre-existing mock trait).
     const scrollAfter = await streamFlixPage.evaluate(() => document.documentElement.scrollWidth);
     expect(scrollAfter).toBeLessThanOrEqual(scrollBefore + 2);
+  });
+
+  test('SV-65: resize desktop→narrow→desktop keeps video+panel visible (AC-4.11)', async ({
+    streamFlixPage,
+  }) => {
+    await openSplitView(streamFlixPage);
+    const wideVideo = await streamFlixPage.locator(VIDEO).boundingBox();
+
+    await streamFlixPage.setViewportSize({ width: 390, height: 800 });
+    await waitStable(streamFlixPage);
+    const narrowVideo = await streamFlixPage.locator(VIDEO).boundingBox();
+    const narrowPanel = await streamFlixPage.locator(PANEL).boundingBox();
+    expect(narrowVideo!.width).toBeGreaterThan(0);
+    expect(narrowVideo!.x).toBeGreaterThanOrEqual(0);
+    expect(narrowVideo!.x + narrowVideo!.width).toBeLessThanOrEqual(391);
+    expect(narrowPanel!.height).toBeGreaterThan(0);
+    expect(narrowPanel!.x).toBeGreaterThanOrEqual(0);
+    expect(narrowPanel!.x + narrowPanel!.width).toBeLessThanOrEqual(391);
+
+    await streamFlixPage.setViewportSize({ width: 1280, height: 800 });
+    await waitStable(streamFlixPage);
+    const backVideo = await streamFlixPage.locator(VIDEO).boundingBox();
+    const backPanel = await streamFlixPage.locator(PANEL).boundingBox();
+    expect(backVideo!.width).toBeGreaterThan(0);
+    expect(backPanel!.width).toBeGreaterThan(0);
+    expect(Math.abs(backVideo!.width - wideVideo!.width)).toBeLessThanOrEqual(4);
   });
 });
 
