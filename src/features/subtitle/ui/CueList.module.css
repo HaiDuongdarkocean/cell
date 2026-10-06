@@ -223,7 +223,6 @@
 }
 
 .pmMobile .actions {
-  margin-top: var(--space-3);
   font-size: var(--font-size-xs);
   /* Fixed footer height = xs button height — cards keep the same height
      whether the action buttons render or not (no jump on cue change). */

@@ -435,9 +435,9 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
             data-current={isCurrent ? 'true' : 'false'}
             data-upcoming={isUpcoming ? 'true' : 'false'}
             data-heat={band}
-            data-cell-ripple-self
+            data-cell-ripple-self={mobile ? undefined : ''}
             onPointerDown={(event) => {
-              if (event.button === 0) spawnRipple(event.currentTarget, event.clientX, event.clientY);
+              if (!mobile && event.button === 0) spawnRipple(event.currentTarget, event.clientX, event.clientY);
             }}
             className={`${styles.cue} ${isCurrent ? styles.cueCurrent : ''}`}
           >
