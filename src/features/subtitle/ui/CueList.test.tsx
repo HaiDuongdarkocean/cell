@@ -175,3 +175,43 @@ describe('CueList bulk selection', () => {
     expect(onTokenClick).toHaveBeenCalled();
   });
 });
+
+describe('CueList mobile PM mode', () => {
+  it('renders all cues as cards in list mode', () => {
+    renderList({ mobile: true, displayMode: 'list', showAllCues: true });
+    const items = document.querySelectorAll('[data-cell-id="cue-item"]');
+    expect(items.length).toBe(3);
+    expect(document.querySelector('[data-cell-id="cue-list-scroll"]')).not.toBeNull();
+  });
+
+  it('active mode renders only the current cue', () => {
+    renderList({ mobile: true, displayMode: 'active' });
+    const items = document.querySelectorAll('[data-cell-id="cue-item"]');
+    expect(items.length).toBe(1);
+    expect(items[0].textContent).toContain('first line');
+  });
+
+  it('active mode falls back to the next upcoming cue after the last', () => {
+    renderList({ mobile: true, displayMode: 'active', currentTimeMs: 5000 });
+    const items = document.querySelectorAll('[data-cell-id="cue-item"]');
+    expect(items.length).toBeLessThanOrEqual(1);
+  });
+
+  it('renders card actions inside the active cue card', () => {
+    renderList({
+      mobile: true,
+      displayMode: 'list',
+      showAllCues: true,
+      cardActions: <button data-cell-id="quick-add-btn" />,
+    });
+    const actions = document.querySelectorAll('[data-cell-id="pm-card-actions"]');
+    expect(actions.length).toBe(1);
+    expect(actions[0].querySelector('[data-cell-id="quick-add-btn"]')).not.toBeNull();
+  });
+
+  it('does not render the user-scroll desync pill in mobile mode', async () => {
+    renderList({ mobile: true, displayMode: 'list', showAllCues: true });
+    await waitFor(() => expect(document.querySelector('[data-cell-id="cue-list-scroll"]')).not.toBeNull());
+    expect(document.querySelector('[data-cell-id="cue-list-sync"]')).toBeNull();
+  });
+});

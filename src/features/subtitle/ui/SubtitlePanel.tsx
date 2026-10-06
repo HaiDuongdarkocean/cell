@@ -9,6 +9,7 @@
 //     <SubtitlePanel ... playlistContent={<LibraryView .../>} onOpenFile={...} onOpenFolder={...} />
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
@@ -81,6 +82,18 @@ export interface SubtitlePanelProps {
   /** Tokenize cue target text into clickable word tokens. */
   tokenize?: CueListTokenize | null;
   panelBlurred?: boolean;
+  /** Player Mode mobile (<600px): card-style cues, chrome hidden (header +
+   *  study bar/practice options move into the overlay's ⋯ menu). */
+  pmMobile?: boolean;
+  /** Cue display mode from PLAYER_MODE_CUE_DISPLAY — PM mobile only. */
+  cueDisplayMode?: 'list' | 'active';
+  /** Session override for cueDisplayMode='active' — render the full list. */
+  showAllCues?: boolean;
+  /** Actions rendered inside the current cue card (PM mobile). */
+  cardActions?: ReactNode;
+  /** PM mobile: portal target for the cue-filter fab (lives in the overlay's
+   *  anchor rail so it stays put while the panel re-renders). */
+  fabPortalTarget?: HTMLElement | null;
 }
 
 type PanelTab = 'subtitles' | 'playlist';
@@ -116,6 +129,11 @@ function SubtitlePanelImpl({
   translationEnabled = true,
   tokenize,
   panelBlurred = false,
+  pmMobile = false,
+  cueDisplayMode = 'list',
+  showAllCues = false,
+  cardActions,
+  fabPortalTarget,
 }: SubtitlePanelProps): React.JSX.Element {
   const hasPlaylist = playlistContent !== undefined;
   const cleanupRulesSetting = useStudyModeStore((s) => s.advanced.cleanupRules);
@@ -211,7 +229,8 @@ function SubtitlePanelImpl({
     !panelBlurred &&
     difficulties !== null &&
     difficulties.size > 0 &&
-    cueCounts !== null;
+    cueCounts !== null &&
+    !(pmMobile && cueDisplayMode === 'active' && !showAllCues);
 
   const cueFilter = useMemo(() => {
     if (!cueFilterEnabled || filterMode === 'all' || !difficulties) return undefined;
@@ -304,6 +323,10 @@ function SubtitlePanelImpl({
         cueFilter={cueFilter}
         filterEpoch={filterMode}
         cueDifficulty={cueFilterEnabled ? difficulties ?? undefined : undefined}
+        mobile={pmMobile}
+        displayMode={cueDisplayMode}
+        showAllCues={showAllCues}
+        cardActions={cardActions}
       />
     ) : (
       <SubtitlePracticeSession
@@ -375,20 +398,35 @@ function SubtitlePanelImpl({
 
   const cueFilterFab =
     cueFilterEnabled && cueCounts !== null ? (
-      <CueRecommendFab
-        mode={filterMode}
-        counts={cueCounts}
-        onModeChange={handleFilterModeChange}
-      />
+      pmMobile && fabPortalTarget ? (
+        createPortal(
+          <CueRecommendFab
+            mode={filterMode}
+            counts={cueCounts}
+            onModeChange={handleFilterModeChange}
+            variant="neutralSubtle"
+            size="md"
+          />,
+          fabPortalTarget,
+        )
+      ) : (
+        <CueRecommendFab
+          mode={filterMode}
+          counts={cueCounts}
+          onModeChange={handleFilterModeChange}
+        />
+      )
     ) : null;
 
   return (
     <div
       className={styles.panel}
       data-cell-id="subtitle-panel"
+      data-cell-pm-mobile={pmMobile ? 'true' : 'false'}
       data-practice-mode={practiceMode}
       data-has-close={onClose ? 'true' : 'false'}
     >
+      {!pmMobile && (
       <div className={styles.header} data-cell-id="subtitle-panel-header">
         {onClose && (
           <Button shape="circle" variant="transparent"
@@ -404,7 +442,8 @@ function SubtitlePanelImpl({
         <span className={styles.title}>{filename ?? t('subtitle.panel.title')}</span>
         {mediaStats && <ComprehensionBadge stats={mediaStats} />}
       </div>
-      {onStudyModeChange ? (
+      )}
+      {!pmMobile && onStudyModeChange ? (
         <StudyModeActionBar
           activeModeId={activeModeId ?? (practiceMode === 'off' ? 'normal' : practiceMode)}
           customModes={customModes}
@@ -412,7 +451,7 @@ function SubtitlePanelImpl({
           onModeChange={onStudyModeChange}
           onSpeedChange={onPlaybackSpeedChange ?? noop}
         />
-      ) : onPracticeModeChange ? (
+      ) : !pmMobile && onPracticeModeChange ? (
         <PracticeOptions
           mode={practiceMode}
           playbackSpeed={playbackSpeed}

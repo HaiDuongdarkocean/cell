@@ -249,6 +249,146 @@
   }
 }
 
+/* === Mobile <600px — reading-first layout (spec player-mode-mobile-layout) ===
+   Stack: videoStage (inset, rounded) → pmCueWrap (flex:1) → pm-bottom-bar.
+   pmCueWrap holds the cue region + the floating anchor band that overlays
+   its bottom edge. The comprehension pill docks itself via :host-context on
+   data-cell-player-mode-mobile (ComprehensionPill.module.css). */
+.videoStageMobile {
+  width: auto;
+  margin: var(--space-3) var(--space-3) 0;
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+}
+
+.videoStageFill {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.pmCueWrap {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.pmCueWrapCollapsed {
+  flex: 0 0 auto;
+}
+
+.pmCueRegion {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+}
+
+/* Floating anchor band — fully transparent, overlays the cue region bottom;
+   cards fade under it via the cue list's mask-image. pointer-events:none on
+   the band so taps pass through to cards; re-enabled on interactive children. */
+.anchorBand {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding-top: var(--space-6);
+  pointer-events: none;
+  z-index: var(--z-overlay-base);
+}
+
+.anchorRow {
+  display: flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-5);
+  pointer-events: none;
+}
+
+.anchorRow button,
+.anchorBand .pmRail button,
+.anchorBand .pmRail [data-cell-id='cue-filter'] {
+  pointer-events: auto;
+}
+
+/* Symmetric spacer matching the CC button width — keeps the fixed-positioned
+   comprehension pill visually centered on the row. */
+.anchorSpacer {
+  width: var(--iconbutton-size-lg);
+  margin-left: auto;
+}
+
+.caption {
+  margin: 0;
+  padding: 0 var(--space-3) var(--space-1);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  pointer-events: none;
+}
+
+/* Right-edge rail: cue-filter fab (portal slot, floats over the peeking card)
+   on top of generate-native level with the CC/pill row. */
+.pmRail {
+  position: absolute;
+  right: var(--space-5);
+  bottom: var(--space-7);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.pmRail [data-cell-id='cue-filter'] {
+  position: static;
+}
+
+.pmRail [data-cell-id='pm-fab-slot']:empty {
+  display: none;
+}
+
+/* Bottom transport bar — the only fixed surface on mobile PM. */
+.bottomBar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  background: var(--color-overlay-background);
+  pointer-events: auto;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Hero play — xl token is 56px; the mockup's hero is 64px so it overrides
+   width/height while keeping the xl icon scale (iconbutton-icon-xl 28px). */
+.barHero.barHero {
+  width: var(--space-16);
+  height: var(--space-16);
+}
+
+/* The overflow menu portals outside .overlay — lift it above the overlay
+   root (z-overlay-settings) so it stays visible inside PM. */
+.pmMoreMenu.pmMoreMenu {
+  z-index: var(--z-overlay-top);
+}
+
+/* Short-height phones: mirror the dock's practice-mode hide rule. */
+@media (max-height: 568px) {
+  .overlay[data-practice-active='true'] .bottomBar,
+  .overlay[data-practice-active='true'] .anchorBand {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .overlay,
   .dock,

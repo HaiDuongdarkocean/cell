@@ -16,9 +16,13 @@ import type { ICON_CATALOG } from '@/shared/icons';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
 import { ClusterRightToolbar } from './ClusterRightToolbar';
-import { resolvePlayerModeLayout, DOCK_MIN_HEIGHT_PX } from '../logic/playerModeGeometry';
+import { resolvePlayerModeLayout, DOCK_MIN_HEIGHT_PX, PM_MOBILE_BAR_HEIGHT_PX } from '../logic/playerModeGeometry';
 import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
-import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
+import { getStorage, setStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
+import { Button } from '@/shared/ui/Button';
+import { Menu, MenuItem, MenuSeparator } from '@/shared/ui/Menu';
+import { Icon } from '@/shared/icons/Icon';
+import { PRESETS } from '@/entities/studyMode/constants';
 import { t } from '@/shared/i18n';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { buildClusterCssVars } from './subtitleUI';
@@ -97,7 +101,12 @@ export interface PlayerModeOverlayProps {
   /** Tokenize cue target text into clickable word tokens. */
   tokenize?: CueListTokenize | null;
   panelBlurred?: boolean;
+  /** Active target track label shown in the mobile anchor caption. */
+  trackLabel?: string;
 }
+
+const PM_MOBILE_BREAKPOINT = 600;
+const PM_MENU_SPEEDS: readonly PlaybackSpeed[] = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 function PlayerModeOverlayInner({
   targetStyle,
@@ -143,9 +152,19 @@ function PlayerModeOverlayInner({
   onContinueCue,
   tokenize,
   panelBlurred,
+  trackLabel,
 }: PlayerModeOverlayProps): React.JSX.Element {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [cueListOpen, setCueListOpen] = useState(true);
+  const [cueDisplayMode, setCueDisplayMode] = useState<'list' | 'active'>('list');
+  const [showAllCues, setShowAllCues] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [fabSlot, setFabSlot] = useState<HTMLDivElement | null>(null);
+  const [overlayEl, setOverlayEl] = useState<HTMLDivElement | null>(null);
+  const moreBtnRef = useRef<HTMLButtonElement>(null);
+  const bottomBarRef = useRef<HTMLElement>(null);
+  const anchorRowRef = useRef<HTMLDivElement>(null);
+  const captionRef = useRef<HTMLParagraphElement>(null);
   // Content panel width % in split layout (>480px). Default 30%. Clamp 20-60%.
   // Persisted to chrome.storage.local — survives reload + re-enter Player Mode.
   const [contentPct, setContentPct] = useState(CONTENT_PCT_DEFAULT);
@@ -354,8 +373,61 @@ function PlayerModeOverlayInner({
     window.dispatchEvent(new Event('resize'));
   }, [viewport, contentPct]);
 
-  const layout = resolvePlayerModeLayout(viewport.w, viewport.h, videoAspectRatio, DOCK_MIN_HEIGHT_PX);
+  const isMobilePm = viewport.w < PM_MOBILE_BREAKPOINT;
+  const layout = resolvePlayerModeLayout(
+    viewport.w,
+    viewport.h,
+    videoAspectRatio,
+    isMobilePm ? PM_MOBILE_BAR_HEIGHT_PX : DOCK_MIN_HEIGHT_PX,
+  );
   const clusterRightStyle = buildClusterCssVars(clusterSettings);
+
+  // PM mobile: cue display mode (list | active) persisted in storage and
+  // live-updated via chrome.storage.onChanged (scoped to this key).
+  useEffect(() => {
+    let cancelled = false;
+    const key = STORAGE_KEYS.PLAYER_MODE_CUE_DISPLAY;
+    getStorage<Record<string, unknown>>(key)
+      .then((data) => {
+        const v = data[key];
+        if (!cancelled && (v === 'list' || v === 'active')) setCueDisplayMode(v);
+      })
+      .catch(() => undefined);
+    const onChanged = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      area: string,
+    ): void => {
+      if (area !== 'local') return;
+      const v = changes[key]?.newValue;
+      if (v === 'list' || v === 'active') setCueDisplayMode(v);
+    };
+    onStorageChanged(onChanged);
+    return () => {
+      cancelled = true;
+      removeOnStorageChangedListener(onChanged);
+    };
+  }, []);
+
+  // PM mobile: flag + anchor offset on <html> — the comprehension pill's
+  // :host-context rule re-docks it centered above the bottom bar. Pure CSS
+  // mechanism: remount-safe and self-restoring when the attribute is removed.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!isMobilePm) {
+      root.removeAttribute('data-cell-player-mode-mobile');
+      root.style.removeProperty('--pm-anchor-bottom');
+      return;
+    }
+    root.setAttribute('data-cell-player-mode-mobile', 'true');
+    const bar = bottomBarRef.current?.offsetHeight ?? 0;
+    const caption = captionRef.current?.offsetHeight ?? 0;
+    const row = anchorRowRef.current?.offsetHeight ?? 0;
+    root.style.setProperty('--pm-anchor-bottom', `${Math.round(bar + caption + row / 2)}px`);
+    return () => {
+      root.removeAttribute('data-cell-player-mode-mobile');
+      root.style.removeProperty('--pm-anchor-bottom');
+    };
+  }, [isMobilePm, viewport, cueListOpen, trackLabel, cues]);
 
   useEffect(() => {
     const onWindowKeyDown = (e: KeyboardEvent): void => {
@@ -456,6 +528,321 @@ function PlayerModeOverlayInner({
     setContentPct(clamped);
     setStorage({ [STORAGE_KEYS.PLAYER_MODE_CONTENT_PCT]: clamped }).catch(() => undefined);
   }, [contentPct]);
+
+  const hasCues = (cues ?? []).length > 0;
+  const closeMoreMenu = (): void => setMoreMenuOpen(false);
+
+  const pmCardActions =
+    onQuickAdd || onEditCard ? (
+      <>
+        {onQuickAdd && (
+          <Button
+            variant="primarySubtle"
+            size="md"
+            elevation="low"
+            aria-label={t('subtitle.toolbar.quickAdd')}
+            title={t('subtitle.toolbar.quickAddTitle')}
+            data-cell-id="quick-add-btn"
+            onClick={onQuickAdd}
+          >
+            <Icon name="zap" />
+          </Button>
+        )}
+        {onEditCard && (
+          <Button
+            variant="errorSubtle"
+            size="md"
+            elevation="low"
+            aria-label={t('subtitle.toolbar.editCard')}
+            title={t('subtitle.toolbar.editCardTitle')}
+            data-cell-id="edit-card-btn"
+            onClick={onEditCard}
+          >
+            <Icon name="pencil" />
+          </Button>
+        )}
+      </>
+    ) : undefined;
+
+  const pmStudyModes = [...PRESETS, ...(customModes ?? [])];
+
+  if (isMobilePm) {
+    return (
+      <div
+        className={`${styles.overlay} ${styles.overlayMobile}`}
+        data-cell-id="player-mode-overlay"
+        data-practice-active={practiceMode && practiceMode !== 'off' ? 'true' : 'false'}
+        role="application"
+        aria-label={t('subtitle.playerMode.aria')}
+        ref={setOverlayEl}
+      >
+        <div className={styles.split} data-cell-id="player-mode-split">
+          <div
+            className={`${styles.videoStage} ${styles.videoStageMobile} ${!cueListOpen || !onSeek ? styles.videoStageFill : ''}`}
+            style={cueListOpen && onSeek ? { height: `${layout.videoStageHeight}px` } : undefined}
+            data-cell-id="player-mode-video-stage"
+            aria-hidden="true"
+            ref={videoStageRef}
+          >
+            <slot name="cell-video" />
+          </div>
+          <div className={`${styles.pmCueWrap} ${!cueListOpen || !onSeek ? styles.pmCueWrapCollapsed : ''}`}>
+            {cueListOpen && onSeek && (
+              <div className={styles.pmCueRegion} data-cell-id="pm-cue-region">
+                <SubtitlePanel
+                  cues={cues ?? []}
+                  currentTimeMs={currentTimeMs ?? 0}
+                  offsetMs={offsetMs}
+                  onSeek={onSeek}
+                  activeModeId={activeModeId}
+                  customModes={customModes}
+                  onStudyModeChange={onStudyModeChange}
+                  practiceMode={practiceMode}
+                  onPracticeModeChange={onPracticeModeChange}
+                  isPlaying={isPlaying}
+                  playbackSpeed={playbackSpeed}
+                  onPlaybackSpeedChange={onPlaybackSpeedChange}
+                  onPlayPause={onPlayPause}
+                  onPreviousCue={onPreviousCue}
+                  onReplayCue={onReplayCue}
+                  onContinueCue={onContinueCue}
+                  tokenize={tokenize}
+                  panelBlurred={panelBlurred}
+                  pmMobile
+                  cueDisplayMode={cueDisplayMode}
+                  showAllCues={showAllCues}
+                  cardActions={pmCardActions}
+                  fabPortalTarget={fabSlot}
+                />
+              </div>
+            )}
+            <div className={styles.anchorBand} data-cell-id="pm-anchor-band">
+              <div className={styles.anchorRow} ref={anchorRowRef} data-cell-id="pm-anchor-row">
+                {onToggleManager && (
+                  <Button
+                    variant="neutralSubtle"
+                    size="lg"
+                    aria-label={t('subtitle.toolbar.openManager')}
+                    title={t('subtitle.toolbar.openManager')}
+                    data-cell-id="manager-toggle-btn"
+                    onClick={onToggleManager}
+                  >
+                    <Icon name="captions" />
+                  </Button>
+                )}
+                <span className={styles.anchorSpacer} aria-hidden="true" />
+              </div>
+              {trackLabel && (
+                <p className={styles.caption} ref={captionRef} data-cell-id="pm-caption">
+                  {t('subtitle.playerMode.trackCaption', [trackLabel])}
+                </p>
+              )}
+              <div className={styles.pmRail} data-cell-id="player-mode-actions">
+                <div ref={setFabSlot} data-cell-id="pm-fab-slot" />
+                {onGenerateNative && (
+                  <Button
+                    variant="neutralSubtle"
+                    size="md"
+                    elevation="low"
+                    aria-label={t('subtitle.toolbar.generateNative')}
+                    title={t('subtitle.toolbar.generateNativeTitle')}
+                    data-cell-id="generate-native-btn"
+                    onClick={onGenerateNative}
+                    disabled={!generateNativeEnabled}
+                  >
+                    <Icon name="generateNative" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <nav
+          className={styles.bottomBar}
+          ref={bottomBarRef}
+          data-cell-id="pm-bottom-bar"
+          aria-label={t('subtitle.playerMode.menuLabel')}
+        >
+          <Button
+            variant="ghost"
+            size="md"
+            aria-label={t('subtitle.toolbar.exitPlayerMode')}
+            title={t('subtitle.toolbar.exitPlayerModeTitle')}
+            data-cell-id="player-mode-exit-btn"
+            onClick={onExit}
+          >
+            <Icon name="x" />
+          </Button>
+          <div className={styles.transport} data-cell-id="nav-cluster">
+            {hasCues ? (
+              <Button
+                variant="primarySubtle"
+                size="lg"
+                aria-label={t('settings.shortcuts.action.prevCue')}
+                data-cell-id="nav-prev"
+                onClick={onPrev}
+              >
+                <Icon name="chevronLeft" />
+              </Button>
+            ) : (
+              <Button
+                variant="primarySubtle"
+                size="lg"
+                aria-label={t('subtitle.nav.rewind')}
+                data-cell-id="nav-rewind"
+                onClick={onRewind}
+              >
+                <Icon name="navRewind" />
+              </Button>
+            )}
+            <Button
+              variant="primarySubtle"
+              size="lg"
+              aria-label={repeatActive ? t('subtitle.nav.repeatCancel') : repeatLabel ?? t('player.nav.repeat')}
+              data-cell-id="nav-repeat"
+              active={repeatActive}
+              onClick={onRepeat}
+            >
+              <Icon name="rotateCcw" />
+            </Button>
+            <Button
+              variant="warningSubtle"
+              size="xl"
+              elevation="low"
+              className={styles.barHero}
+              aria-label={isPlaying ? t('subtitle.nav.pause') : t('subtitle.nav.play')}
+              data-cell-id="nav-play"
+              onClick={onPlayPause}
+            >
+              <Icon name={isPlaying ? 'pause' : 'play'} />
+            </Button>
+            {hasCues ? (
+              <Button
+                variant="primarySubtle"
+                size="lg"
+                aria-label={t('settings.shortcuts.action.nextCue')}
+                data-cell-id="nav-next"
+                onClick={onNext}
+              >
+                <Icon name="chevronRight" />
+              </Button>
+            ) : (
+              <Button
+                variant="primarySubtle"
+                size="lg"
+                aria-label={t('subtitle.nav.forward')}
+                data-cell-id="nav-forward"
+                onClick={onForward}
+              >
+                <Icon name="navForward" />
+              </Button>
+            )}
+          </div>
+          <Button
+            ref={moreBtnRef}
+            variant="ghost"
+            size="md"
+            aria-label={t('subtitle.playerMode.more')}
+            aria-haspopup="menu"
+            aria-expanded={moreMenuOpen}
+            data-cell-id="pm-more-btn"
+            onClick={() => setMoreMenuOpen((v) => !v)}
+          >
+            <Icon name="ellipsis" />
+          </Button>
+          <Menu
+            open={moreMenuOpen}
+            onClose={closeMoreMenu}
+            triggerRef={moreBtnRef}
+            align="right"
+            ariaLabel={t('subtitle.playerMode.menuLabel')}
+            className={styles.pmMoreMenu}
+            container={overlayEl ?? undefined}
+            data-cell-id="pm-more-menu"
+          >
+            <MenuItem
+              icon={<Icon name="sidePanel" />}
+              data-cell-id="panel-toggle-btn"
+              onSelect={() => { setCueListOpen((v) => !v); closeMoreMenu(); }}
+            >
+              {cueListOpen ? t('subtitle.playerMode.hideCueList') : t('subtitle.playerMode.showCueList')}
+            </MenuItem>
+            {onToggleOcr && (
+              <MenuItem
+                icon={<Icon name="scanText" />}
+                selected={ocrEnabled}
+                data-cell-id="ocr-toggle-btn"
+                onSelect={() => { onToggleOcr(); closeMoreMenu(); }}
+              >
+                {ocrEnabled ? t('subtitle.toolbar.disableOcr') : t('subtitle.toolbar.enableOcr')}
+              </MenuItem>
+            )}
+            {cueDisplayMode === 'active' && !showAllCues && (
+              <MenuItem
+                icon={<Icon name="captions" />}
+                data-cell-id="pm-show-all-cues"
+                onSelect={() => { setShowAllCues(true); closeMoreMenu(); }}
+              >
+                {t('subtitle.playerMode.showAllCues')}
+              </MenuItem>
+            )}
+            {onStudyModeChange && pmStudyModes.length > 0 && (
+              <>
+                <MenuSeparator />
+                {pmStudyModes.map((mode) => (
+                  <MenuItem
+                    key={mode.id}
+                    radio
+                    icon={<Icon name={mode.icon} />}
+                    selected={activeModeId === mode.id || (!activeModeId && mode.id === 'normal')}
+                    data-cell-id={`study-mode-${mode.id}`}
+                    onSelect={() => { onStudyModeChange(mode.id); closeMoreMenu(); }}
+                  >
+                    {mode.titleKey ? t(mode.titleKey) : mode.title}
+                  </MenuItem>
+                ))}
+              </>
+            )}
+            {onPlaybackSpeedChange && (
+              <>
+                <MenuSeparator />
+                {PM_MENU_SPEEDS.map((speed) => (
+                  <MenuItem
+                    key={speed}
+                    radio
+                    icon={<Icon name="gauge" />}
+                    selected={playbackSpeed === speed}
+                    data-cell-id={`pm-speed-${speed}`}
+                    onSelect={() => { onPlaybackSpeedChange(speed); closeMoreMenu(); }}
+                  >
+                    {t('subtitle.playerMode.speedValue', [speed])}
+                  </MenuItem>
+                ))}
+              </>
+            )}
+            {onPracticeModeChange && (
+              <>
+                <MenuSeparator />
+                {(['off', 'dictation', 'cloze'] as const).map((mode) => (
+                  <MenuItem
+                    key={mode}
+                    radio
+                    icon={<Icon name="bookOpen" />}
+                    selected={practiceMode === mode}
+                    data-cell-id={`pm-practice-${mode}`}
+                    onSelect={() => { onPracticeModeChange(mode); closeMoreMenu(); }}
+                  >
+                    {t(`studyModes.practice.${mode}`)}
+                  </MenuItem>
+                ))}
+              </>
+            )}
+          </Menu>
+        </nav>
+      </div>
+    );
+  }
 
   return (
     <div

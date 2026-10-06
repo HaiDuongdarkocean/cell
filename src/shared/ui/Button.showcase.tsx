@@ -48,6 +48,17 @@ export function Showcase(): ReactElement {
       </Section>
 
       <Section
+        title="Subtle variants"
+        caption="Tint background of the root hue + pure root foreground — the comprehension-pill pairing. One color family per button; use for floating/secondary actions."
+      >
+        <Button variant="primarySubtle">Primary Subtle</Button>
+        <Button variant="successSubtle">Success Subtle</Button>
+        <Button variant="warningSubtle">Warning Subtle</Button>
+        <Button variant="errorSubtle">Error Subtle</Button>
+        <Button variant="neutralSubtle">Neutral Subtle</Button>
+      </Section>
+
+      <Section
         title="Sizes"
         caption="sm / md / lg / xl. xl is the hero CTA — taller, semibold, for prominent actions."
       >
@@ -113,7 +124,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Button',
-  description: 'Button atom — solid only (Liquid Glass removed 2026-09-08). 9 canonical variants (primary, secondary, primarySubtle, outline, ghost, success, destructive, link, transparent). 5 sizes (xs/sm/md/lg/xl). 2 orientations. 8 states (default, hover, focus, pressed, active, disabled, loading, error). Pill shape, theme-agnostic tokens.',
+  description: 'Button atom — solid only (Liquid Glass removed 2026-09-08). 9 canonical variants (primary, secondary, primarySubtle, outline, ghost, success, destructive, link, transparent) + subtle family (successSubtle, warningSubtle, errorSubtle, neutralSubtle). 5 sizes (xs/sm/md/lg/xl). 2 orientations. 8 states (default, hover, focus, pressed, active, disabled, loading, error). Pill shape, theme-agnostic tokens.',
   level: 'atoms',
   category: 'Action',
   group: 'Shared UI — Action',

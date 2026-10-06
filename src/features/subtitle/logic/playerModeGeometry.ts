@@ -50,6 +50,8 @@ export function resolvePlayerModeVideoStyles(): Readonly<Record<string, string>>
 
 /** Minimum Player Action Dock height in px (touch targets + 2 rows of controls). */
 export const DOCK_MIN_HEIGHT_PX = 160;
+/** Mobile (<600px) bottom transport bar height in px — hero 64px + compact padding. */
+export const PM_MOBILE_BAR_HEIGHT_PX = 80;
 /** Maximum Player Action Dock height as percent of viewport (avoid eating the video). */
 export const DOCK_MAX_HEIGHT_PERCENT = 35;
 

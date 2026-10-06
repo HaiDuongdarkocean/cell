@@ -177,9 +177,39 @@
   opacity: 1;
 }
 
+/* Subtle family — nền tint của gốc + foreground gốc nguyên màu (cùng cặp
+   success-subtle/success của comprehension-pill). Icon/text giữ hue gốc. */
 .primarySubtle {
   background: var(--color-primary-subtle);
-  color: var(--color-text-accent-strong);
+  color: var(--color-primary);
+  border-color: transparent;
+  font-weight: var(--button-primary-subtle-font-weight);
+}
+
+.successSubtle {
+  background: var(--color-success-subtle);
+  color: var(--color-success);
+  border-color: transparent;
+  font-weight: var(--button-primary-subtle-font-weight);
+}
+
+.warningSubtle {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+  border-color: transparent;
+  font-weight: var(--button-primary-subtle-font-weight);
+}
+
+.errorSubtle {
+  background: var(--color-error-subtle);
+  color: var(--color-error);
+  border-color: transparent;
+  font-weight: var(--button-primary-subtle-font-weight);
+}
+
+.neutralSubtle {
+  background: var(--color-tint-gray-background);
+  color: var(--color-tint-gray-icon);
   border-color: transparent;
   font-weight: var(--button-primary-subtle-font-weight);
 }
@@ -355,8 +385,8 @@
 .iconOnly.xl,
 .xl.circle,
 .circle.xl {
-  width: var(--button-height-xl);
-  height: var(--button-height-xl);
+  width: var(--iconbutton-size-xl);
+  height: var(--iconbutton-size-xl);
 }
 
 /* Icon sizing inside icon-only/circle buttons. */
@@ -398,6 +428,14 @@
 .lg.circle .label > * svg {
   width: var(--iconbutton-icon-lg);
   height: var(--iconbutton-icon-lg);
+}
+
+.xl.iconOnly .label > svg,
+.xl.iconOnly .label > * svg,
+.xl.circle .label > svg,
+.xl.circle .label > * svg {
+  width: var(--iconbutton-icon-xl);
+  height: var(--iconbutton-icon-xl);
 }
 
 /* === Icons === */

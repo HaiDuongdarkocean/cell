@@ -454,6 +454,23 @@
   gap: var(--space-1);
 }
 
+/* ─── Cue display mode (PM mobile) — static row above the footer ─── */
+.displayModeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  flex-shrink: 0;
+}
+
+.displayModeLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
 /* ─── Latency — pill group + reset button ─── */
 .latency {
   margin-top: var(--space-1-5);

@@ -25,6 +25,10 @@ export interface PopoverProps {
   /** External ref to the surface element — lets callers own dismiss/keyboard logic. */
   readonly contentRef?: React.RefObject<HTMLDivElement | null>;
   readonly onKeyDown?: KeyboardEventHandler<HTMLDivElement>;
+  /** Portal target override — needed when the surface must stay inside a
+   *  high z-index stacking context (e.g. Player Mode overlay). */
+  readonly container?: Element | DocumentFragment | null;
+  readonly 'data-cell-id'?: string;
 }
 
 function getPortalContainer(trigger: HTMLElement | null): Element | DocumentFragment {
@@ -51,6 +55,8 @@ export function Popover({
   variant = 'toolbar',
   contentRef,
   onKeyDown,
+  container,
+  'data-cell-id': dataCellId,
 }: PopoverProps): React.JSX.Element | null {
   const internalRef = useRef<HTMLDivElement>(null);
   const menuRef = contentRef ?? internalRef;
@@ -68,12 +74,13 @@ export function Popover({
     .join(' ');
 
   return (
-    <Portal container={getPortalContainer(triggerRef.current)}>
+    <Portal container={container ?? getPortalContainer(triggerRef.current)}>
       <div
         ref={menuRef}
         className={cls}
         style={style}
         role={role}
+        data-cell-id={dataCellId}
         aria-label={ariaLabel}
         aria-activedescendant={ariaActiveDescendant}
         onKeyDown={onKeyDown}

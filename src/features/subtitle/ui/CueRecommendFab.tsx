@@ -26,12 +26,18 @@ export interface CueRecommendFabProps {
   readonly mode: CueFilterMode;
   readonly counts: Readonly<Record<CueFilterMode, number>>;
   readonly onModeChange: (mode: CueFilterMode) => void;
+  /** Button variant — default keeps the surface (secondary/primary) pairing. */
+  readonly variant?: 'secondary' | 'neutralSubtle';
+  /** Button size — default lg FAB. PM mobile rail uses md. */
+  readonly size?: 'md' | 'lg';
 }
 
 export function CueRecommendFab({
   mode,
   counts,
   onModeChange,
+  variant,
+  size = 'lg',
 }: CueRecommendFabProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -63,8 +69,8 @@ export function CueRecommendFab({
     <div className={styles.fab} data-cell-id="cue-filter">
       <Button
         ref={triggerRef}
-        variant={mode === 'all' ? 'secondary' : 'primary'}
-        size="lg"
+        variant={variant ?? (mode === 'all' ? 'secondary' : 'primary')}
+        size={size}
         shape="circle"
         elevation="high"
         aria-label={t('cueFilter.fabAriaLabel', [i1Count])}

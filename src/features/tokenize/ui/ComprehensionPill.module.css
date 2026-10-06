@@ -14,6 +14,18 @@
   font-family: var(--font-family-body);
 }
 
+/* Player Mode mobile (<600px): the overlay sets data-cell-player-mode-mobile
+   on <html> and --pm-anchor-bottom = bottomBar + anchor-band height. The pill
+   re-anchors to sit centered above the transport bar — pure CSS so it is
+   remount-safe and restores itself when the attribute is removed. */
+:host-context([data-cell-player-mode-mobile='true']) .pill {
+  top: auto;
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: var(--pm-anchor-bottom, 132px);
+}
+
 .toggle {
   display: flex;
   gap: var(--space-1);

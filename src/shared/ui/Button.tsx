@@ -3,7 +3,7 @@ import { Spinner } from './Spinner';
 import { spawnRipple } from '@/shared/lib/dom/ripple';
 import styles from './Button.module.css';
 
-type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link' | 'success' | 'transparent' | 'overlay';
+type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link' | 'success' | 'successSubtle' | 'warningSubtle' | 'errorSubtle' | 'neutralSubtle' | 'transparent' | 'overlay';
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 type ButtonShape = 'pill' | 'circle';
 type ButtonOrientation = 'horizontal' | 'vertical';
@@ -53,8 +53,11 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * Button — primary click target with consistent hover, active, focus, disabled,
  * and loading states across the extension.
  *
- * Variants: primary, secondary, outline, ghost, destructive, link, overlay.
- * Sizes: sm, md, lg.
+ * Variants: primary, secondary, outline, ghost, destructive, link, overlay,
+ * plus the subtle family (primarySubtle, successSubtle, warningSubtle,
+ * errorSubtle, neutralSubtle) — tint background of the root hue + pure root
+ * foreground, same pairing as the comprehension pill.
+ * Sizes: xs, sm, md, lg, xl.
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
   variant = 'primary',

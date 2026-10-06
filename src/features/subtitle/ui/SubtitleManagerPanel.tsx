@@ -13,6 +13,8 @@ import { ICON_SIZE_PX } from '@/shared/icons';
 import { Button, InkTabs, Input, Label } from '@/shared/ui';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import { t } from '@/shared/i18n';
+import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import type { SubtitlePanelItem} from './subtitlePanelModel';
 import { formatBytes } from '@/shared/lib/formatBytes';
 import { SubtitleSearchPanel } from './SubtitleSearchPanel';
@@ -407,6 +409,19 @@ export function SubtitleManagerPanel({
   viewRef.current = view;
   const [activeTab, setActiveTab] = useState<'target' | 'native'>('target');
   const [appearanceTab, setAppearanceTab] = useState<'block' | 'target' | 'native' | 'buttons'>('block');
+  // PM mobile cue display mode — shared storage key; the overlay subscribes
+  // via chrome.storage.onChanged so the switch applies live.
+  const [cueDisplayMode, setCueDisplayMode] = useState<'list' | 'active'>('list');
+  useEffect(() => {
+    let cancelled = false;
+    getStorage<Record<string, unknown>>(STORAGE_KEYS.PLAYER_MODE_CUE_DISPLAY)
+      .then((data) => {
+        const v = data[STORAGE_KEYS.PLAYER_MODE_CUE_DISPLAY];
+        if (!cancelled && (v === 'list' || v === 'active')) setCueDisplayMode(v);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
   const customizeBtnRef = useRef<HTMLButtonElement>(null);
 
   // Auto-hide header/footer on scroll (mobile only, tracks view)
@@ -697,6 +712,25 @@ export function SubtitleManagerPanel({
                 />
               </div>
             )}
+          </div>
+
+          <div className={styles.displayModeRow} data-cell-id="pm-cue-display-row">
+            <span className={styles.displayModeLabel}>
+              {t('subtitle.playerMode.displayMode')}
+            </span>
+            <InkTabs
+              aria-label={t('subtitle.playerMode.displayMode')}
+              items={[
+                { value: 'list', label: t('subtitle.playerMode.displayMode.list') },
+                { value: 'active', label: t('subtitle.playerMode.displayMode.active') },
+              ]}
+              value={cueDisplayMode}
+              onValueChange={(v) => {
+                const mode = v === 'active' ? 'active' : 'list';
+                setCueDisplayMode(mode);
+                void setStorage({ [STORAGE_KEYS.PLAYER_MODE_CUE_DISPLAY]: mode }).catch(() => undefined);
+              }}
+            />
           </div>
 
           <SubtitleManagerFooter

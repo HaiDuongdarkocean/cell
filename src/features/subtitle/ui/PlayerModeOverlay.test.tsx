@@ -36,9 +36,23 @@ beforeAll(() => {
           return Promise.resolve();
         }) as unknown as typeof chrome.storage.local.set,
       },
+      onChanged: {
+        addListener: (cb: (changes: Record<string, { newValue?: unknown }>, area: string) => void) => {
+          storageChangedListeners.add(cb);
+        },
+        removeListener: (cb: (changes: Record<string, { newValue?: unknown }>, area: string) => void) => {
+          storageChangedListeners.delete(cb);
+        },
+      },
     },
   } as unknown as typeof chrome;
 });
+const storageChangedListeners = new Set<
+  (changes: Record<string, { newValue?: unknown }>, area: string) => void
+>();
+function fireStorageChanged(changes: Record<string, { newValue?: unknown }>): void {
+  for (const cb of storageChangedListeners) cb(changes, 'local');
+}
 beforeEach(() => {
   for (const k of Object.keys(storageData)) delete storageData[k];
 });
@@ -203,6 +217,194 @@ describe('PlayerModeOverlay', () => {
     // startPct=45, deltaPx=-100, splitWidth=1000 → deltaPct=+10 → next=55.
     await waitFor(() => {
       expect(storageData[STORAGE_KEYS.PLAYER_MODE_CONTENT_PCT]).toBe(55);
+    });
+  });
+});
+
+describe('mobile layout (<600px)', () => {
+  const origW = window.innerWidth;
+  const origH = window.innerHeight;
+
+  function renderMobile(cues?: BilingualCue[]): void {
+    render(
+      <PlayerModeOverlay
+        targetStyle={style}
+        nativeStyle={style}
+        isPlaying
+        repeatActive={false}
+        videoAspectRatio={16 / 9}
+        generateNativeEnabled
+        toolsExpanded={false}
+        onQuickAdd={noop}
+        onEditCard={noop}
+        onToggleOcr={noop}
+        onGenerateNative={noop}
+        onToggleSidePanel={noop}
+        onToggleManager={noop}
+        onToggleTools={noop}
+        onPrev={noop}
+        onNext={noop}
+        onRepeat={noop}
+        onRewind={noop}
+        onForward={noop}
+        onPlayPause={noop}
+        onToggleCollapsed={noop}
+        onExit={noop}
+        cues={cues}
+        currentTimeMs={0}
+        offsetMs={0}
+        onSeek={cues ? noop : undefined}
+        trackLabel="English"
+        activeModeId="normal"
+        onStudyModeChange={noop}
+        practiceMode="off"
+        onPracticeModeChange={noop}
+        playbackSpeed={1}
+        onPlaybackSpeedChange={noop}
+      />,
+    );
+  }
+
+  beforeEach(() => {
+    Object.defineProperty(window, 'innerWidth', { value: 390, configurable: true });
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true });
+  });
+  afterEach(() => {
+    Object.defineProperty(window, 'innerWidth', { value: origW, configurable: true });
+    Object.defineProperty(window, 'innerHeight', { value: origH, configurable: true });
+  });
+
+  it('renders the mobile stack instead of the desktop dock', () => {
+    renderMobile(sampleCues);
+    expect(screen.getByTestId('pm-bottom-bar')).toBeInTheDocument();
+    expect(screen.getByTestId('pm-cue-region')).toBeInTheDocument();
+    expect(screen.getByTestId('pm-anchor-band')).toBeInTheDocument();
+    expect(screen.getByTestId('pm-anchor-row')).toBeInTheDocument();
+    expect(screen.getByTestId('pm-caption')).toHaveTextContent('English');
+    expect(screen.getByTestId('cue-list')).toBeInTheDocument();
+    expect(screen.queryByTestId('overlay-player-action')).toBeNull();
+    expect(screen.queryByTestId('player-mode-content')).toBeNull();
+    expect(screen.queryByTestId('subtitle-block')).toBeNull();
+    expect(document.documentElement.getAttribute('data-cell-player-mode-mobile')).toBe('true');
+  });
+
+  it('removes the mobile attribute on unmount', () => {
+    const { unmount } = render(
+      <PlayerModeOverlay
+        targetStyle={style}
+        nativeStyle={style}
+        isPlaying
+        repeatActive={false}
+        videoAspectRatio={16 / 9}
+        generateNativeEnabled
+        toolsExpanded={false}
+        onQuickAdd={noop}
+        onEditCard={noop}
+        onToggleOcr={noop}
+        onGenerateNative={noop}
+        onToggleSidePanel={noop}
+        onToggleManager={noop}
+        onToggleTools={noop}
+        onPrev={noop}
+        onNext={noop}
+        onRepeat={noop}
+        onRewind={noop}
+        onForward={noop}
+        onPlayPause={noop}
+        onToggleCollapsed={noop}
+        onExit={noop}
+      />,
+    );
+    expect(document.documentElement.getAttribute('data-cell-player-mode-mobile')).toBe('true');
+    unmount();
+    expect(document.documentElement.getAttribute('data-cell-player-mode-mobile')).toBeNull();
+  });
+
+  it('shows prev/next with cues, rewind/forward without', () => {
+    renderMobile(sampleCues);
+    expect(screen.getByTestId('nav-prev')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-next')).toBeInTheDocument();
+    expect(screen.queryByTestId('nav-rewind')).toBeNull();
+    expect(screen.queryByTestId('nav-forward')).toBeNull();
+  });
+
+  it('shows rewind/forward without cues', () => {
+    renderMobile();
+    expect(screen.getByTestId('nav-rewind')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-forward')).toBeInTheDocument();
+    expect(screen.queryByTestId('nav-prev')).toBeNull();
+    expect(screen.queryByTestId('nav-next')).toBeNull();
+  });
+
+  it('renders the action rail with generate-native and the fab slot', () => {
+    renderMobile(sampleCues);
+    const rail = screen.getByTestId('player-mode-actions');
+    expect(rail).toContainElement(screen.getByTestId('pm-fab-slot'));
+    expect(rail).toContainElement(screen.getByTestId('generate-native-btn'));
+    expect(screen.getByTestId('manager-toggle-btn')).toBeInTheDocument();
+  });
+
+  it('overflow menu lists cue-toggle/ocr/study/speed and no nav duplicates', () => {
+    renderMobile(sampleCues);
+    fireEvent.click(screen.getByTestId('pm-more-btn'));
+    const menu = screen.getByTestId('pm-more-menu');
+    expect(menu).toContainElement(screen.getByTestId('panel-toggle-btn'));
+    expect(menu).toContainElement(screen.getByTestId('ocr-toggle-btn'));
+    expect(menu).toContainElement(screen.getByTestId('study-mode-normal'));
+    expect(menu).toContainElement(screen.getByTestId('pm-speed-1'));
+    for (const id of ['nav-prev', 'nav-next', 'nav-rewind', 'nav-forward', 'nav-repeat', 'nav-play']) {
+      expect(menu.querySelector(`[data-cell-id="${id}"]`)).toBeNull();
+    }
+  });
+
+  it('closes the menu before exiting on Escape', () => {
+    const onExit = jest.fn();
+    render(
+      <PlayerModeOverlay
+        targetStyle={style}
+        nativeStyle={style}
+        isPlaying
+        repeatActive={false}
+        videoAspectRatio={16 / 9}
+        generateNativeEnabled
+        toolsExpanded={false}
+        onQuickAdd={noop}
+        onEditCard={noop}
+        onToggleOcr={noop}
+        onGenerateNative={noop}
+        onToggleSidePanel={noop}
+        onToggleManager={noop}
+        onToggleTools={noop}
+        onPrev={noop}
+        onNext={noop}
+        onRepeat={noop}
+        onRewind={noop}
+        onForward={noop}
+        onPlayPause={noop}
+        onToggleCollapsed={noop}
+        onExit={onExit}
+        cues={sampleCues}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('pm-more-btn'));
+    expect(screen.getByTestId('pm-more-menu')).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByTestId('pm-more-menu')).toBeNull();
+    expect(onExit).not.toHaveBeenCalled();
+  });
+
+  it('live-updates cue display mode from storage', async () => {
+    storageData[STORAGE_KEYS.PLAYER_MODE_CUE_DISPLAY] = 'list';
+    renderMobile(sampleCues);
+    fireEvent.click(screen.getByTestId('pm-more-btn'));
+    expect(screen.queryByTestId('pm-show-all-cues')).toBeNull();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByTestId('pm-more-menu')).toBeNull());
+
+    fireStorageChanged({ [STORAGE_KEYS.PLAYER_MODE_CUE_DISPLAY]: { newValue: 'active' } });
+    fireEvent.click(screen.getByTestId('pm-more-btn'));
+    await waitFor(() => {
+      expect(screen.getByTestId('pm-show-all-cues')).toBeInTheDocument();
     });
   });
 });

@@ -315,6 +315,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           onContinueCue={onContinueCue}
           tokenize={tokenize}
           panelBlurred={panelBlurred}
+          trackLabel={manager?.targetItems[manager.targetActiveIndex]?.name}
         />
       );
     }

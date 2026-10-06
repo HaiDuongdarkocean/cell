@@ -382,6 +382,8 @@ export const STORAGE_KEYS = {
   DICTIONARY_SEARCH_HISTORY: 'dictionarySearchHistory',
   /** Player Mode split content width % (20-60). Survives reload + re-enter. */
   PLAYER_MODE_CONTENT_PCT: 'playerModeContentPct',
+  /** Player Mode mobile (<600px) cue display mode ('list'|'active'). Survives reload + re-enter. */
+  PLAYER_MODE_CUE_DISPLAY: 'playerModeCueDisplay',
   /** Split View CueList panel width % (20-60). Survives reload + re-toggle. */
   SPLIT_VIEW_PCT: 'splitViewPct',
   /** Cue difficulty filter mode ('all'|'i1'|'hasUnknown'|'allKnown'|'dense'|'tracking'). Survives reload + surface switch. */

@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "generated": "2026-09-30T13:41:46.952Z",
-  "count": 52,
+  "generated": "2026-10-05T07:40:01.888Z",
+  "count": 53,
   "skills": [
     {
       "name": "animation-vocabulary",
@@ -257,6 +257,11 @@
       "name": "vision-reader",
       "description": "Delegate screenshot/image reading to a vision subagent. Use when the main model can't see images.",
       "path": ".agents/skills/vision-reader/SKILL.md"
+    },
+    {
+      "name": "visual-reference-design",
+      "description": "Reconstruct a UI faithfully from an image or verbal reference by decomposing it as a designer before mapping to the design system. Use when user supplies a screenshot/mockup/reference to match. Not for audits without a target or single-icon work.",
+      "path": ".agents/skills/visual-reference-design/SKILL.md"
     },
     {
       "name": "write-skill",

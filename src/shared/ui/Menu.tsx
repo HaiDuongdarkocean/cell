@@ -17,6 +17,11 @@ export interface MenuProps {
   readonly maxHeight?: number;
   /** Render item labels in semibold (bottom-sheet action style). */
   readonly emphasis?: boolean;
+  /** Extra class merged onto the popover surface (e.g. layer overrides). */
+  readonly className?: string;
+  /** Portal target override (passed through to Popover). */
+  readonly container?: Element | DocumentFragment | null;
+  readonly 'data-cell-id'?: string;
 }
 
 /**
@@ -36,6 +41,9 @@ export function Menu({
   align = 'left',
   maxHeight,
   emphasis = false,
+  className,
+  container,
+  'data-cell-id': dataCellId,
 }: MenuProps): React.JSX.Element | null {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -105,11 +113,13 @@ export function Menu({
       contentRef={menuRef}
       variant="menu"
       role="menu"
-      className={emphasis ? styles.emphasis : ''}
+      className={[emphasis ? styles.emphasis : '', className].filter(Boolean).join(' ')}
       aria-label={ariaLabel}
       menuAlign={align}
       menuMaxHeight={maxHeight}
       onKeyDown={handleKeyDown}
+      container={container}
+      data-cell-id={dataCellId}
     >
       {children}
     </Popover>

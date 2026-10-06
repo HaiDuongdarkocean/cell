@@ -16,7 +16,7 @@ import { cueHeatBand, type CueDifficulty } from '@/features/subtitle/logic/cueDi
 import { formatCueTimestamp } from '@/features/subtitle/logic/cueTime';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
 import { spawnRipple } from '@/shared/lib/dom/ripple';
-import { Button, Icon, VisuallyHidden } from '@/shared/ui';
+import { Button, EmptyState, Icon, VisuallyHidden } from '@/shared/ui';
 import { t } from '@/shared/i18n';
 import styles from './CueList.module.css';
 
@@ -82,6 +82,14 @@ interface CueListProps {
   filterEpoch?: string;
   /** Per-cue difficulty for the ambient heat bar. Omit → no indicator. */
   cueDifficulty?: ReadonlyMap<number, CueDifficulty>;
+  /** Player Mode mobile (<600px): card visuals, non-scroll region. */
+  mobile?: boolean;
+  /** 'list' = full cue list; 'active' = only the current (or next upcoming) card. */
+  displayMode?: 'list' | 'active';
+  /** Session override for displayMode='active' — render the full list. */
+  showAllCues?: boolean;
+  /** Actions rendered inside the current cue card, top-right (pm mobile). */
+  cardActions?: ReactNode;
 }
 
 const formatTimestamp = formatCueTimestamp;
@@ -159,7 +167,7 @@ const CueTokenText = memo(function CueTokenText({
   return <>{children}</>;
 });
 
-export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueContent, showNative = true, tokenize, onTokensResolved, cueFilter, filterEpoch, cueDifficulty }: CueListProps) {
+export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueContent, showNative = true, tokenize, onTokensResolved, cueFilter, filterEpoch, cueDifficulty, mobile = false, displayMode = 'list', showAllCues = false, cardActions }: CueListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const highlightedRef = useRef<number | null>(null);
@@ -283,6 +291,22 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   );
   const currentCueIndex = currentIndex >= 0 ? filteredCues[currentIndex].index : null;
 
+  // 'active' display mode (PM mobile): render only the current cue; in a gap,
+  // fall back to the next upcoming cue rendered dimmed; past the last cue the
+  // region shows a compact empty state instead of a stale card.
+  const activeOnly = displayMode === 'active' && !showAllCues;
+  const upcomingIndex = activeOnly && currentIndex < 0
+    ? filteredCues.findIndex((c) => c.start > effectiveMs)
+    : -1;
+  const renderedCues = activeOnly
+    ? currentIndex >= 0
+      ? [filteredCues[currentIndex]]
+      : upcomingIndex >= 0
+        ? [filteredCues[upcomingIndex]]
+        : []
+    : filteredCues;
+  const renderedCurrentIndex = activeOnly && currentIndex >= 0 ? 0 : -1;
+
   useEffect(() => {
     const list = listRef.current;
     if (list) {
@@ -302,8 +326,9 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   // center the panel in the viewport → page jumps ("giật màn hình").
   // Manual scrollTop only scrolls the list, clamped to [0, maxScrollTop].
   useEffect(() => {
-    if (desynced || currentIndex < 0) return;
-    const el = itemRefs.current[currentIndex];
+    const alignIndex = activeOnly ? renderedCurrentIndex : currentIndex;
+    if (desynced || alignIndex < 0) return;
+    const el = itemRefs.current[alignIndex];
     const list = listRef.current;
     if (!el || !list) return;
     const cueTop = (): number => {
@@ -330,7 +355,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [currentIndex, currentCueIndex, effectiveMs, filterEpoch, desynced]);
+  }, [currentIndex, renderedCurrentIndex, activeOnly, currentCueIndex, effectiveMs, filterEpoch, desynced]);
 
   const handleListScroll = (): void => {
     const list = listRef.current;
@@ -345,10 +370,10 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
 
 
 
-  itemRefs.current.length = filteredCues.length;
+  itemRefs.current.length = renderedCues.length;
 
   return (
-    <div className={styles.cueWrap}>
+    <div className={`${styles.cueWrap} ${mobile ? styles.pmMobile : ''}`}>
       <div
         ref={listRef}
         className={`${styles.list} ${desynced ? styles.listDesynced : ''}`}
@@ -356,8 +381,12 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
         data-cell-id="cue-list-scroll"
         onScroll={handleListScroll}
       >
-      {filteredCues.map((cue, i) => {
-        const isCurrent = i === currentIndex;
+      {renderedCues.length === 0 && (
+        <EmptyState size="compact" title={t('panel.empty.title')} style={{ flex: 1 }} />
+      )}
+      {renderedCues.map((cue, i) => {
+        const isCurrent = activeOnly ? renderedCurrentIndex === i : i === currentIndex;
+        const isUpcoming = activeOnly && currentIndex < 0;
         const customContent = renderCueContent?.(cue, i, isCurrent);
         const heat = cueDifficulty?.get(cue.index);
         const band = heat === undefined ? undefined : cueHeatBand(heat);
@@ -371,6 +400,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
             data-cue-start={cue.start}
             data-cue-end={cue.end}
             data-current={isCurrent ? 'true' : 'false'}
+            data-upcoming={isUpcoming ? 'true' : 'false'}
             data-heat={band}
             data-cell-ripple-self
             onPointerDown={(event) => {
@@ -435,9 +465,22 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                     list shows the VIDEO time at which this cue will display
                     (matches overlay + highlight). onSeek still sends raw
                     cue.start; SEEK_TO handler subtracts offset. */}
-                {formatTimestamp(cue.start - offsetMs, hasHours)}
+                {mobile
+                  ? `${formatTimestamp(cue.start - offsetMs, hasHours)} – ${formatTimestamp(cue.end - offsetMs, hasHours)}`
+                  : formatTimestamp(cue.start - offsetMs, hasHours)}
               </button>
+              {mobile && (
+                <span className={styles.cardFooterIcons} aria-hidden="true">
+                  <Icon name="pin" size="xs" />
+                  <Icon name="layers" size="xs" />
+                </span>
+              )}
             </div>
+            {mobile && isCurrent && cardActions && (
+              <div className={styles.cardActions} data-cell-id="pm-card-actions">
+                {cardActions}
+              </div>
+            )}
           </div>
         );
       })}
