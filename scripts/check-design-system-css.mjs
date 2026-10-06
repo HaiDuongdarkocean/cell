@@ -212,27 +212,26 @@ function shouldExclude(file) {
   );
 }
 
-async function findTargetFiles(inputPath) {
-  if (!inputPath) {
+async function findTargetFiles(inputPaths) {
+  if (inputPaths.length === 0) {
     return (await glob('src/shared/ui/*.module.css', { cwd: ROOT, absolute: true })).filter(
       (f) => !shouldExclude(f),
     );
   }
 
-  const resolved = isAbsolute(inputPath) ? inputPath : resolve(process.cwd(), inputPath);
-  const info = await stat(resolved).catch(() => null);
+  const files = [];
+  for (const inputPath of inputPaths) {
+    const resolved = isAbsolute(inputPath) ? inputPath : resolve(process.cwd(), inputPath);
+    const info = await stat(resolved).catch(() => null);
 
-  if (info?.isFile()) {
-    return shouldExclude(resolved) ? [] : [resolved];
+    if (info?.isFile()) {
+      files.push(resolved);
+    } else if (info?.isDirectory()) {
+      files.push(...await glob('**/*.module.css', { cwd: resolved, absolute: true }));
+    }
   }
 
-  if (info?.isDirectory()) {
-    return (await glob('**/*.module.css', { cwd: resolved, absolute: true })).filter(
-      (f) => !shouldExclude(f),
-    );
-  }
-
-  return [];
+  return files;
 }
 
 /**
@@ -417,13 +416,36 @@ async function auditFile(file, registry) {
   return findings;
 }
 
+function parseArgs(argv) {
+  const paths = [];
+  const rules = new Set();
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === '--rules') {
+      i += 1;
+      for (const rule of (argv[i] ?? '').split(',')) {
+        const trimmed = rule.trim();
+        if (trimmed) rules.add(trimmed);
+      }
+    } else {
+      paths.push(arg);
+    }
+  }
+  return { paths, rules };
+}
+
+function ruleAllowed(finding, rules) {
+  const rule = finding.split('\t')[1] ?? '';
+  return rule === 'parse-error' || rules.size === 0 || rules.has(rule);
+}
+
 async function main() {
-  const inputPath = process.argv[2];
-  const files = await findTargetFiles(inputPath);
+  const { paths, rules } = parseArgs(process.argv.slice(2));
+  const files = await findTargetFiles(paths);
 
   if (files.length === 0) {
     console.log('No matching .module.css files found.');
-    process.exit(0);
+    process.exit(paths.length > 0 ? 2 : 0);
   }
 
   const registry = await loadTokenRegistry();
@@ -431,7 +453,7 @@ async function main() {
 
   for (const file of files) {
     const findings = await auditFile(file, registry);
-    allFindings.push(...findings);
+    allFindings.push(...findings.filter((f) => ruleAllowed(f, rules)));
   }
 
   if (allFindings.length === 0) {

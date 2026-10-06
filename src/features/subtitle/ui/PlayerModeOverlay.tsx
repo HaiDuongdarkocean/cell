@@ -22,6 +22,7 @@ import { getStorage, setStorage, onStorageChanged, removeOnStorageChangedListene
 import { Button } from '@/shared/ui/Button';
 import { MenuItem, MenuSeparator } from '@/shared/ui/Menu';
 import { Sheet } from '@/shared/ui/Sheet';
+import { hasEscapeLayers } from '@/shared/ui/escapeLayerStack';
 import { StepperSection, StepperValue } from '@/shared/ui/StepperSection';
 import { PLAYBACK_SPEEDS } from '@/entities/studyMode/types';
 import { Icon } from '@/shared/icons/Icon';
@@ -500,6 +501,10 @@ function PlayerModeOverlayInner({
   useEffect(() => {
     const onWindowKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
+        // This capture listener runs before the escape-layer stack's document
+        // listener; while an inner surface (more-menu Sheet, popup, panel) has
+        // a layer the Escape belongs to it — do not consume the key.
+        if (hasEscapeLayers()) return;
         // In native fullscreen: explicitly exit fullscreen so Player Mode
         // closes on Esc in both real user and automation contexts. The
         // fullscreenchange listener in SubtitlePanels then sets playerMode false.
@@ -526,8 +531,8 @@ function PlayerModeOverlayInner({
         setCueListOpen((v) => !v);
       }
     };
-    window.addEventListener('keydown', onWindowKeyDown);
-    return () => window.removeEventListener('keydown', onWindowKeyDown);
+    window.addEventListener('keydown', onWindowKeyDown, true);
+    return () => window.removeEventListener('keydown', onWindowKeyDown, true);
   }, [onExit, cueListOpen]);
 
   // Load persisted contentPct on mount (survives reload + re-enter Player Mode).

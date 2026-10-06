@@ -146,7 +146,7 @@
   min-height: 0;
   height: var(--space-5);
   padding: 0 var(--space-2);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
@@ -234,7 +234,7 @@
   box-sizing: border-box;
   height: var(--space-5);
   white-space: nowrap;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   overflow: hidden;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);

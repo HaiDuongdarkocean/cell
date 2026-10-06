@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 
 export interface SectionDrag {
   readonly draggedId: number | string;
@@ -177,9 +178,6 @@ export function useSectionDrag(
     };
     const onUp = (): void => endDrag(true);
     const onCancel = (): void => endDrag(false);
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') endDrag(false);
-    };
     const onScroll = (): void => updateDrag();
     const tick = (): void => {
       const cur = sessionRef.current;
@@ -191,18 +189,18 @@ export function useSectionDrag(
       cur.rafId = requestAnimationFrame(tick);
     };
 
+    const unregisterEscape = pushEscapeLayer(() => endDrag(false));
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onCancel);
-    window.addEventListener('keydown', onKey);
     s.scrollParent?.addEventListener('scroll', onScroll);
     s.rafId = requestAnimationFrame(tick);
 
     return () => {
+      unregisterEscape();
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onCancel);
-      window.removeEventListener('keydown', onKey);
       s.scrollParent?.removeEventListener('scroll', onScroll);
       if (s.rafId) cancelAnimationFrame(s.rafId);
     };

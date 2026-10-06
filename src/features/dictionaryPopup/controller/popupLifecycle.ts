@@ -22,6 +22,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis';
 import { markLookup, measureLookup, clearLookupMarks } from '@/shared/lib/perfMarks';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { openSettingsSection, type PanelMountController } from './panelBridge';
+import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import { createPopupLevel, type PopupLevel } from './controllerTypes';
 import { setWordStatus } from '@/features/dictionary';
 import type { PopupStatusTarget } from '@/features/tokenize';
@@ -215,6 +216,8 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     }
     syncTrail();
     if (popupStack.length === 0) {
+      unregisterEscapeLayer?.();
+      unregisterEscapeLayer = null;
       deps.resumeVideo();
       deps.resetVideoPlaying();
     } else if (isSheetMode()) {
@@ -485,6 +488,9 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     } else {
       level = createPopupLevel();
       popupStack.push(level);
+      if (popupStack.length === 1) {
+        unregisterEscapeLayer = pushEscapeLayer(onStackEscape);
+      }
     }
 
     level.abovePanel = sourceAbovePanel
@@ -808,15 +814,19 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
 
   listeners.add(window, 'resize', onViewportResize);
 
-  // Stack-level keyboard/pointer routing. The per-popup Surface already owns
-  // Escape when focus is inside it (and stops propagation); this document
-  // listener covers Escape with focus outside the popup. Desktop pops one
-  // level per Escape; the single sheet dismisses the whole chain at once.
-  const onStackKeydown = (e: KeyboardEvent): void => {
-    if (e.key !== 'Escape' || popupStack.length === 0) return;
-    e.preventDefault();
-    e.stopPropagation();
-    closeFromLevel(isSheetMode() ? 0 : popupStack.length - 1);
+  // Stack-level Escape lives on the shared escape-layer stack (registered on
+  // the first level, unregistered when the stack empties or on dispose) so it
+  // orders correctly against other pushed layers. The handler resolves the
+  // level owning the event's composed path — focused level + descendants, or
+  // the top level when focus is outside every host. Sheet mode dismisses the
+  // whole chain at once.
+  let unregisterEscapeLayer: (() => void) | null = null;
+  const onStackEscape = (e: KeyboardEvent): void => {
+    const path = e.composedPath();
+    const idx = popupStack.findIndex(
+      (level) => level.mount !== null && path.includes(level.mount.host),
+    );
+    closeFromLevel(isSheetMode() ? 0 : idx >= 0 ? idx : popupStack.length - 1);
   };
 
   // A pointerdown inside an ancestor level's host closes every deeper level
@@ -833,12 +843,13 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     closeFromLevel(idx + 1);
   };
 
-  listeners.add(document, 'keydown', onStackKeydown as EventListener);
   listeners.add(document, 'pointerdown', onStackPointerDown as EventListener, true);
 
   function dispose(): void {
     cancelPendingDismiss();
     unsubscribePanelOpenChange?.();
+    unregisterEscapeLayer?.();
+    unregisterEscapeLayer = null;
     listeners.removeAll();
     for (const level of popupStack) level.highlight.destroy();
     closePopup();

@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ResourceCard } from '@/features/dictionary/ui/ResourceCard';
+import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import type { ResourceInfo } from '@/entities/dictionary';
 
 jest.mock('@/features/dictionary/services/resourceClient', () => ({
@@ -194,7 +195,9 @@ describe('ResourceCard', () => {
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
   });
 
-  it('Escape cancels the rename without persisting', () => {
+  it('Escape cancels the rename without persisting or popping the panel layer', () => {
+    const panelLayer = jest.fn();
+    const unregisterPanelLayer = pushEscapeLayer(panelLayer);
     renderCard(makeResource({ id: 4, name: 'words.txt' }));
     fireEvent.click(screen.getByTestId('name-4'));
     const input = screen.getByTestId('rename-input-4');
@@ -202,6 +205,8 @@ describe('ResourceCard', () => {
     fireEvent.keyDown(input, { key: 'Escape' });
     expect(renameResourceMock).not.toHaveBeenCalled();
     expect(screen.getByTestId('name-4')).toBeInTheDocument();
+    expect(panelLayer).not.toHaveBeenCalled();
+    unregisterPanelLayer();
   });
 
   it('ignores an unchanged or empty rename', () => {

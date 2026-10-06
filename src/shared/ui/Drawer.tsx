@@ -1,6 +1,7 @@
-import { useRef, type ReactNode, type KeyboardEvent } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Button } from './Button';
 import { useFocusTrap } from './useFocusTrap';
+import { pushEscapeLayer } from './escapeLayerStack';
 import { t } from '@/shared/i18n';
 import styles from './Drawer.module.css';
 
@@ -37,14 +38,9 @@ export function Drawer({
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, open);
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
-    if (e.key === 'Escape') {
-      // Consume the key so ancestor surfaces (e.g. UniversalPanel) don't
-      // close too — one Escape closes one layer.
-      e.stopPropagation();
-      onOpenChange?.(false);
-    }
-  };
+  const onOpenChangeRef = useRef(onOpenChange);
+  useEffect(() => { onOpenChangeRef.current = onOpenChange; });
+  useEffect(() => open ? pushEscapeLayer(() => onOpenChangeRef.current?.(false)) : undefined, [open]);
 
   const handleOverlayClick = (): void => {
     onOpenChange?.(false);
@@ -57,7 +53,7 @@ export function Drawer({
   if (!open) return null;
 
   return (
-    <div className={styles.overlay} onClick={handleOverlayClick} role="presentation" onKeyDown={handleKeyDown}>
+    <div className={styles.overlay} onClick={handleOverlayClick} role="presentation">
       <div
         ref={panelRef}
         className={[styles.panel, styles[side], className ?? ''].filter(Boolean).join(' ')}

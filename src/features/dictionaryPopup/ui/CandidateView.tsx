@@ -250,8 +250,8 @@ export function CandidateView({
         {(panel.displayReading || candidate.level) && (
           <div className={styles.cellHeaderReading}>
             {panel.variant && panel.variant.prons.length > 0 && (
-              <button
-                type="button"
+              <Button
+                variant="unstyled"
                 className={styles.cellAccentLabel}
                 disabled={panel.variant.prons.length < 2}
                 title={panel.variant.prons.length > 1 ? t('dict.accent.toggle', [panel.variant.prons[panel.accentIndex]?.accent ?? '']) : undefined}
@@ -259,7 +259,7 @@ export function CandidateView({
                 data-cell-id="dictionary-accent-toggle"
               >
                 {panel.variant.prons[panel.accentIndex]?.accent ?? ''}
-              </button>
+              </Button>
             )}
             {panel.displayReading && (
               <span className={styles.cellHeaderIpa} data-cell-id="dictionary-reading">
@@ -380,14 +380,14 @@ export function CandidateView({
             description={onOpenSettings ? (
               <>
                 {t('dict.definitions.empty')}{' '}
-                <button
-                  type="button"
+                <Button
+                  variant="unstyled"
                   className={styles.cellEmptyLink}
                   onClick={onOpenSettings}
                   data-cell-id="dictionary-import-dictionary"
                 >
                   {t('dict.definitions.import')}
-                </button>
+                </Button>
               </>
             ) : t('dict.definitions.emptyHint')}
             data-cell-id="dictionary-definitions-empty"
@@ -527,8 +527,8 @@ function SenseLineView({
         {line.text}
         {line.pattern ? <span className={styles.defLineMeta}> {line.pattern}</span> : null}
         {line.translation ? (
-          <button
-            type="button"
+          <Button
+            variant="unstyled"
             className={styles.defLineReveal}
             aria-expanded={revealed}
             aria-label={revealed ? t('dict.definitions.hideTranslation') : t('dict.definitions.showTranslation')}
@@ -539,7 +539,7 @@ function SenseLineView({
             }}
           >
             <Icon name="chevronDown" size="sm" className={revealed ? styles.defLineRevealOpen : undefined} />
-          </button>
+          </Button>
         ) : null}
         {line.citation ? <span className={styles.defLineCitation}> — {line.citation}</span> : null}
       </span>
@@ -599,22 +599,13 @@ function ExampleRows({
               }
             }}
           >
-            <label
+            <span
               className={`${checkStyles.cellDefCheck} ${exChecked ? checkStyles['cellDefCheck--checked'] : ''}`}
-              onClick={(e) => e.stopPropagation()}
             >
-              <input
-                type="checkbox"
-                className={checkStyles.cellDefCheckInput}
-                checked={exChecked}
-                onChange={(e) => onToggleExample(ownerId, i, e.target.checked)}
-                tabIndex={-1}
-                aria-hidden="true"
-              />
               <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
                 <Icon name="check" size="md" />
               </span>
-            </label>
+            </span>
             <span className={styles.cellDefExampleText}>
               <SenseLineView line={ex} revealedByDefault={translationRevealed} />
             </span>
@@ -701,22 +692,13 @@ function SubsenseRow({
         }}
       >
         <div className={styles.cellDefRow}>
-          <label
+          <span
             className={`${checkStyles.cellDefCheck} ${checked ? checkStyles['cellDefCheck--checked'] : ''}`}
-            onClick={(e) => e.stopPropagation()}
           >
-            <input
-              type="checkbox"
-              className={checkStyles.cellDefCheckInput}
-              checked={checked}
-              onChange={(e) => onToggle(subId, e.target.checked)}
-              tabIndex={-1}
-              aria-hidden="true"
-            />
             <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
               <Icon name="check" size="md" />
             </span>
-          </label>
+          </span>
           <span className={styles.cellDefText}>
             {sub.num ? <span className={styles.defSubsenseNum}>{sub.num}. </span> : null}
             {(sub.labels ?? []).map((l) => `[${l}] `)}
@@ -784,22 +766,13 @@ function DefinitionItem({
         }}
       >
       <div className={styles.cellDefRow}>
-        <label
+        <span
           className={`${checkStyles.cellDefCheck} ${checked ? checkStyles['cellDefCheck--checked'] : ''}`}
-          onClick={(e) => e.stopPropagation()}
         >
-          <input
-            type="checkbox"
-            className={checkStyles.cellDefCheckInput}
-            checked={checked}
-            onChange={(e) => onToggle(definition.id, e.target.checked)}
-            tabIndex={-1}
-            aria-hidden="true"
-          />
           <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
             <Icon name="check" size="md" />
           </span>
-        </label>
+        </span>
         <span className={styles.cellDefText}>
           {definition.lines ? (
             <>

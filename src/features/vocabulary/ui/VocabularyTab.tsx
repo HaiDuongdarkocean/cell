@@ -11,7 +11,7 @@ import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { Dialog } from '@/shared/ui/Dialog';
 import { EmptyState } from '@/shared/ui/EmptyState';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import { Pagination } from '@/shared/ui/Pagination';
 import { Menu, MenuItem, MenuSeparator } from '@/shared/ui/Menu';
 import { SearchField } from '@/shared/ui/SearchField';
@@ -220,7 +220,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
           onClick={() => setMenu(menu === 'filter' ? null : 'filter')}
           data-cell-id="vocabulary-filter"
         >
-          <Icon name="slidersHorizontal" size={16} />
+          <Icon name="slidersHorizontal" size="xs" />
           {t(SEGMENT_LABEL[segment])}
           <Icon name="chevronDown" size={14} />
         </Button>
@@ -250,7 +250,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
             onClick={() => setEditMode((v) => !v)}
             data-cell-id="vocabulary-edit-toggle"
           >
-            <Icon name="pencil" size={16} />
+            <Icon name="pencil" size="xs" />
             {editMode ? t('vocabulary.done') : t('vocabulary.edit')}
           </Button>
         )}
@@ -280,7 +280,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
         <MenuItem
           radio
           selected={inTrash}
-          icon={<Icon name="trash2" size={16} />}
+          icon={<Icon name="trash2" size="xs" />}
           onSelect={() => handleSegmentChange('trash')}
           data-cell-id="vocabulary-segment-trash"
           trailing={
@@ -308,7 +308,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
               setMenu(null);
             }}
             data-cell-id={`vocabulary-sort-${o.value}`}
-            trailing={sort === o.value ? <Icon name="check" size={16} /> : undefined}
+            trailing={sort === o.value ? <Icon name="check" size="xs" /> : undefined}
           >
             {t(o.label)}
           </MenuItem>

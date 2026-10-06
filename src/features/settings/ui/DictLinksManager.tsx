@@ -8,10 +8,11 @@
 // (--iconbutton-size-md) — the shared touch-target mins (44px mobile) are
 // overridden locally per NFR-5.
 
-import { useRef, useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { t } from '@/shared/i18n';
 import { Button, Card, Dialog, EmptyState, HintIcon, Icon, Input, SectionHeader, Text } from '@/shared/ui';
 import { DragHandle } from '@/shared/ui/DragHandle';
+import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import { useSectionDrag } from '@/shared/lib/useSectionDrag';
 import { reorderItems } from '@/shared/lib/reorderItems';
 import {
@@ -97,6 +98,8 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
 
   const deleting = links.find((l) => l.id === deletingId);
 
+  useEffect(() => renamingId !== null ? pushEscapeLayer(() => setRenamingId(null)) : undefined, [renamingId]);
+
   return (
     <section className={styles.section} data-cell-id="dict-links-manager">
       <SectionHeader
@@ -169,7 +172,6 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
                           onChange={(e) => setDraft(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); commitRename(link.id); }
-                            else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setRenamingId(null); }
                           }}
                           onBlur={() => commitRename(link.id)}
                           aria-label={t('settings.dictionaryPopup.links.rename', [link.name])}

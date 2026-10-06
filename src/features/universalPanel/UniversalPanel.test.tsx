@@ -254,6 +254,8 @@ describe('UniversalPanel component', () => {
         studyModesPanel={studyModesPanel}
       />,
     );
+    // Both surfaces are on the escape-layer stack; the capture-phase
+    // listener fires the topmost layer (the dialog) before React sees the key.
     fireEvent.keyDown(screen.getByTestId('inner-dialog'), { key: 'Escape' });
     expect(onDialogChange).toHaveBeenCalledWith(false);
     expect(onClose).not.toHaveBeenCalled();
@@ -311,6 +313,8 @@ describe('UniversalPanel component', () => {
     );
     fireEvent.click(screen.getByTestId('universal-panel-mobile-tools'));
     expect(screen.getByTestId('universal-panel-tools-sheet')).toBeInTheDocument();
+    // The sheet's escape-layer stack entry sits above the panel's layer —
+    // topmost wins, the panel stays open.
     fireEvent.keyDown(screen.getByTestId('universal-panel-tools-sheet'), { key: 'Escape' });
     expect(screen.queryByTestId('universal-panel-tools-sheet')).not.toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();

@@ -305,9 +305,11 @@ export class RegionSelector {
 
     if (mode !== 'view') {
       this.boundOnKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') this.handleCancel();
+        if (e.key !== 'Escape') return;
+        e.preventDefault();
+        this.handleCancel();
       };
-      window.addEventListener('keydown', this.boundOnKeyDown);
+      window.addEventListener('keydown', this.boundOnKeyDown, true);
     }
   }
 
@@ -321,12 +323,14 @@ export class RegionSelector {
     if (mode !== 'view') {
       if (!this.boundOnKeyDown) {
         this.boundOnKeyDown = (e: KeyboardEvent) => {
-          if (e.key === 'Escape') this.handleCancel();
+          if (e.key !== 'Escape') return;
+          e.preventDefault();
+          this.handleCancel();
         };
-        window.addEventListener('keydown', this.boundOnKeyDown);
+        window.addEventListener('keydown', this.boundOnKeyDown, true);
       }
     } else if (this.boundOnKeyDown) {
-      window.removeEventListener('keydown', this.boundOnKeyDown);
+      window.removeEventListener('keydown', this.boundOnKeyDown, true);
       this.boundOnKeyDown = null;
     }
   }
@@ -387,7 +391,7 @@ export class RegionSelector {
   /** Detach overlay from DOM. */
   detach(): void {
     if (this.boundOnKeyDown) {
-      window.removeEventListener('keydown', this.boundOnKeyDown);
+      window.removeEventListener('keydown', this.boundOnKeyDown, true);
       this.boundOnKeyDown = null;
     }
     this.detachResizeObservers();

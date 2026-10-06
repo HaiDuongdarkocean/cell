@@ -7,11 +7,11 @@
 
 .itemRow {
   border-radius: var(--radius-md);
-  border-left: var(--border-width-thick, 2px) solid var(--color-border-subtle, #e3e3e0);
+  border-left: var(--border-width-thick) solid var(--color-border-subtle);
 }
 
 .itemError {
-  border-left: var(--border-width-thick, 2px) solid var(--error, var(--color-error));
+  border-left: var(--border-width-thick) solid var(--color-error);
 }
 
 .itemInner {
@@ -64,15 +64,15 @@
 }
 
 .errorText {
-  color: var(--error, var(--color-error));
+  color: var(--color-error);
 }
 
 .iconOk {
-  color: var(--success, var(--color-success));
+  color: var(--color-success);
 }
 
 .iconErr {
-  color: var(--error, var(--color-error));
+  color: var(--color-error);
 }
 
 .iconDim {

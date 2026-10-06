@@ -97,12 +97,12 @@
   flex-direction: column;
   gap: var(--space-3);
   padding-top: var(--space-3);
-  border-top: var(--borderWidth-hairline, 1px) solid var(--color-divider);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 
 .cleanupBlock {
   padding-top: var(--space-3);
-  border-top: var(--borderWidth-hairline, 1px) solid var(--color-divider);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 
 .advancedLabel {
@@ -118,7 +118,7 @@
 .rulesList {
   display: flex;
   flex-direction: column;
-  border: var(--borderWidth-hairline, 1px) solid var(--color-border-subtle);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
   border-radius: var(--card-radius);
   overflow: hidden;
 }
@@ -131,7 +131,7 @@
 }
 
 .ruleRow + .ruleRow {
-  border-top: var(--borderWidth-hairline, 1px) solid var(--color-divider);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 
 .ruleBody {
@@ -150,7 +150,7 @@
 
 .ruleName {
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
 }
 
@@ -185,10 +185,10 @@
 .customsDivider {
   padding: var(--space-2) var(--space-3) 0;
   font-size: var(--font-size-xs);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   color: var(--color-text-muted);
-  border-top: var(--borderWidth-hairline, 1px) solid var(--color-divider);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 
 .groupHeader {

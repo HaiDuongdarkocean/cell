@@ -65,6 +65,9 @@ export function createStatusKeyControls(options: StatusKeyControlsOptions): Stat
   function handleKeydown(e: KeyboardEvent): void {
     if (isEditableEvent(e)) return;
     if (e.key === 'Escape') {
+      const state = stateStore.getState();
+      if (state.selectedTerms.size === 0 && !state.hoveredTerm) return;
+      e.preventDefault();
       stateStore.clearSelection();
       stateStore.setHoveredTerm(null);
       return;

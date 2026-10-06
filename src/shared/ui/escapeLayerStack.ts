@@ -65,3 +65,14 @@ export function pushEscapeLayer(
     }
   };
 }
+
+/**
+ * Whether `doc`'s stack currently has any registered layers. Capture-phase
+ * consumers that run before the stack's document listener (e.g. window-level
+ * `keydown` capture handlers) use this to yield: while an inner surface has a
+ * layer, the Escape belongs to it and the capture consumer must not
+ * `preventDefault`/`stopPropagation`.
+ */
+export function hasEscapeLayers(doc: Document = document): boolean {
+  return (stacks.get(doc)?.handlers.length ?? 0) > 0;
+}

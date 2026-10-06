@@ -3,7 +3,7 @@ import { Spinner } from './Spinner';
 import { spawnRipple } from '@/shared/lib/dom/ripple';
 import styles from './Button.module.css';
 
-type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link' | 'success' | 'successSubtle' | 'warningSubtle' | 'errorSubtle' | 'neutralSubtle' | 'transparent' | 'overlay';
+type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link' | 'success' | 'successSubtle' | 'warningSubtle' | 'errorSubtle' | 'neutralSubtle' | 'transparent' | 'overlay' | 'unstyled';
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 type ButtonShape = 'pill' | 'circle';
 type ButtonOrientation = 'horizontal' | 'vertical';
@@ -11,7 +11,8 @@ type ButtonElevation = 'none' | 'low' | 'med' | 'high';
 type ButtonActiveStyle = 'default' | 'flat';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  /** Visual style. Default: primary. */
+  /** Visual style. Default: primary. `unstyled` renders the bare element —
+   *  consumer className only, no chrome, no ripple, children unwrapped. */
   variant?: ButtonVariant;
   /** Hide label when nested in a container narrower than 380px. */
   collapseLabel?: boolean;
@@ -85,6 +86,24 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 }: ButtonProps, ref): React.JSX.Element {
   const [pulsing, setPulsing] = useState(false);
   const pulseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  if (variant === 'unstyled') {
+    return (
+      <button
+        ref={ref}
+        type="button"
+        className={className}
+        style={style}
+        disabled={disabled || loading}
+        aria-busy={loading || undefined}
+        aria-invalid={error || undefined}
+        onPointerDown={onPointerDown}
+        {...rest}
+      >
+        {children}
+      </button>
+    );
+  }
 
   const handlePointerDown = (e: ReactPointerEvent<HTMLButtonElement>): void => {
     onPointerDown?.(e);

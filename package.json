@@ -7,7 +7,7 @@
   "scripts": {
     "predev": "node scripts/generate-tokens.js",
     "dev": "vite",
-    "prebuild": "node scripts/generate-tokens.js && node scripts/check-icons.js && node scripts/check-feature-cycles.mjs",
+    "prebuild": "node scripts/generate-tokens.js && node scripts/check-icons.js && node scripts/check-feature-cycles.mjs && npm run check-design-system-css:features",
     "build": "vite build",
     "prebuild:dev": "node scripts/generate-tokens.js",
     "build:dev": "vite build --mode development",
@@ -42,6 +42,7 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
     "check-design-system-css": "node scripts/check-design-system-css.mjs",
+    "check-design-system-css:features": "node scripts/check-design-system-css.mjs --rules undefined-token src/features/universalPanel src/features/sessionRecap src/features/studyModes src/features/vocabulary src/features/settings src/features/dictionaryPopup src/features/cardCreator",
     "check:cycles": "node scripts/check-feature-cycles.mjs",
     "check-icons": "node scripts/check-icons.js",
     "mock": "node scripts/serve-mock-pages.mjs",

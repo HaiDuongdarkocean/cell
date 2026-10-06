@@ -105,12 +105,6 @@ function DictionaryPopup(props: DictionaryPopupProps): React.JSX.Element {
       tabIndex={-1}
       style={{ ...style, ...incomingStyle }}
       data-cell-id="popup-dictionary"
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') {
-          e.stopPropagation();
-          onClose();
-        }
-      }}
       className={styles.popup}
     >
       <div

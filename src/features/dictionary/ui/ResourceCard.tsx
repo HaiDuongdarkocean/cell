@@ -14,6 +14,7 @@ import { Card, Checkbox, Chip, Dialog, Input } from '@/shared/ui';
 import { Button } from '@/shared/ui/Button';
 import { DragHandle } from '@/shared/ui/DragHandle';
 import { Menu, MenuItem } from '@/shared/ui/Menu';
+import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import { Toggle } from '@/shared/ui/Toggle';
 import { Spinner } from '@/shared/ui/Spinner';
 import { Icon } from '@/shared/ui/Icon';
@@ -193,6 +194,8 @@ export function ResourceCard({
       .catch(() => onChanged?.());
   };
 
+  useEffect(() => renaming ? pushEscapeLayer(() => setRenaming(false)) : undefined, [renaming]);
+
   const canReorder = sectionSize > 1 && !editing && !importing && onGripPointerDown != null;
 
   const onGripPointerDownLocal = (e: React.PointerEvent<HTMLElement>): void => {
@@ -292,7 +295,6 @@ export function ResourceCard({
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); commitRename(); }
-                  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setRenaming(false); }
                 }}
                 onBlur={commitRename}
                 aria-label={t('resources.card.rename', [displayName])}

@@ -15,7 +15,6 @@
   min-width: 0;
   display: flex;
   box-shadow: var(--panel-shadow);
-  will-change: transform, opacity;
 }
 
 .open {

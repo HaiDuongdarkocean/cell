@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ResourcesPanel } from '@/features/dictionary/ui/ResourcesPanel';
+import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import * as client from '@/features/dictionary/services/resourceClient';
 import type { ResourceInfo } from '@/entities/dictionary';
 import type { Job } from '@/entities/job/types';
@@ -926,8 +927,10 @@ describe('pointer drag reorder', () => {
     expect(reorderResourcesMock).not.toHaveBeenCalled();
   });
 
-  it('Escape cancels the drag session', async () => {
+  it('Escape cancels the drag session without popping the panel layer', async () => {
     mockReducedMotion();
+    const panelLayer = jest.fn();
+    const unregisterPanelLayer = pushEscapeLayer(panelLayer);
     listResources.mockResolvedValue([
       makeResource({ id: 1, name: 'a.txt' }),
       makeResource({ id: 2, name: 'b.txt' }),
@@ -944,6 +947,8 @@ describe('pointer drag reorder', () => {
     fireEvent.keyDown(document.body, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByTestId('drag-placeholder')).not.toBeInTheDocument());
     expect(reorderResourcesMock).not.toHaveBeenCalled();
+    expect(panelLayer).not.toHaveBeenCalled();
+    unregisterPanelLayer();
   });
 
   it('settles the ghost over ~200ms then commits (non-reduced-motion path)', async () => {

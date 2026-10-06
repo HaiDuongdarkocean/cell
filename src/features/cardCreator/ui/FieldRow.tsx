@@ -23,7 +23,9 @@
  */
 import { useRef, useState, type ChangeEvent, type KeyboardEvent, type TextareaHTMLAttributes, type ReactElement, type ReactNode } from 'react';
 import { Button } from '@/shared/ui/Button';
+import { Input } from '@/shared/ui/Input';
 import { Label } from '@/shared/ui/Label';
+import { Textarea } from '@/shared/ui/Textarea';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import styles from './FieldRow.module.css';
@@ -145,7 +147,8 @@ export function FieldAutoGrowInput({
 
   return (
     <div className={styles.fieldInput} data-cell-id={dataId ? `${dataId}-input` : undefined}>
-      <textarea
+      <Textarea
+        variant="unstyled"
         ref={controlRef}
         className={controlClass}
         value={value}
@@ -222,6 +225,7 @@ export function TagInput({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
+    if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter' || e.key === ' ' || e.key === ',') {
       e.preventDefault();
       commit(input);
@@ -261,7 +265,8 @@ export function TagInput({
           </Button>
         </span>
       ))}
-      <input
+      <Input
+        variant="unstyled"
         ref={inputRef}
         type="text"
         className={styles.tagInput__field}

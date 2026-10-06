@@ -3,12 +3,13 @@ import { Spinner } from './Spinner';
 import styles from './Input.module.css';
 
 type InputSize = 'sm' | 'md' | 'lg';
-type InputVariant = 'filled' | 'outline' | 'ghost';
+type InputVariant = 'filled' | 'outline' | 'ghost' | 'unstyled';
 
 export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'prefix'> {
   /** Size. Default: md. */
   size?: InputSize;
-  /** Visual variant. Default: filled. */
+  /** Visual variant. Default: filled. `unstyled` renders the bare element —
+   *  consumer className only, no wrapper divs, prefix/suffix/messages dropped. */
   variant?: InputVariant;
   /** Error state. */
   error?: boolean;
@@ -76,6 +77,21 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const errorId = errorMessage ? `${id}-error` : undefined;
   const helperId = helperText ? `${id}-helper` : undefined;
   const describedBy = [ariaDescribedBy, errorId, helperId].filter(Boolean).join(' ') || undefined;
+
+  if (variant === 'unstyled') {
+    return (
+      <input
+        ref={ref}
+        className={className}
+        disabled={disabled || loading}
+        readOnly={readOnly}
+        aria-invalid={error || undefined}
+        aria-describedby={describedBy}
+        aria-busy={loading || undefined}
+        {...rest}
+      />
+    );
+  }
 
   return (
     <div className={styles.root}>

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MultiSelect } from '@/shared/ui/MultiSelect';
 import type { MultiSelectOption } from '@/shared/ui/MultiSelect';
 
@@ -114,7 +114,7 @@ describe('MultiSelect (tag field)', () => {
   it('Escape blurs the search input', () => {
     renderMultiSelect();
     const input = screen.getByRole('searchbox');
-    input.focus();
+    act(() => input.focus());
     expect(document.activeElement).toBe(input);
     fireEvent.keyDown(input, { key: 'Escape' });
     expect(document.activeElement).not.toBe(input);

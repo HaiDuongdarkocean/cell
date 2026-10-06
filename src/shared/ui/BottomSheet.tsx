@@ -1,9 +1,10 @@
-import { useRef, type ReactNode, type KeyboardEvent } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { Flex, HStack, VStack } from '.';
 import { Button } from './Button';
 import { Heading } from './Heading';
 import { useFocusTrap } from './useFocusTrap';
+import { pushEscapeLayer } from './escapeLayerStack';
 import { t } from '@/shared/i18n';
 import styles from './BottomSheet.module.css';
 
@@ -56,14 +57,9 @@ export function BottomSheet({
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, open);
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
-    if (e.key === 'Escape') {
-      // Consume the key so ancestor surfaces (e.g. UniversalPanel) don't
-      // close too — one Escape closes one layer.
-      e.stopPropagation();
-      onOpenChange?.(false);
-    }
-  };
+  const onOpenChangeRef = useRef(onOpenChange);
+  useEffect(() => { onOpenChangeRef.current = onOpenChange; });
+  useEffect(() => open ? pushEscapeLayer(() => onOpenChangeRef.current?.(false)) : undefined, [open]);
 
   const handleOverlayClick = (): void => {
     onOpenChange?.(false);
@@ -81,7 +77,6 @@ export function BottomSheet({
       justify="center"
       className={styles.overlay}
       onClick={handleOverlayClick}
-      onKeyDown={handleKeyDown}
       role="presentation"
       data-cell-id={dataTestId}
     >

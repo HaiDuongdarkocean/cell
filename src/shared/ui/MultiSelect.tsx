@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState, type KeyboardEvent, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactElement } from 'react';
 import { Icon } from '@/shared/ui/Icon';
+import { pushEscapeLayer } from './escapeLayerStack';
 import { t } from '@/shared/i18n';
 import styles from './MultiSelect.module.css';
 
@@ -55,6 +56,8 @@ export function MultiSelect({
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => focused ? pushEscapeLayer(() => inputRef.current?.blur()) : undefined, [focused]);
+
   const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
   const exclusiveSet = useMemo(() => new Set(exclusiveValues), [exclusiveValues]);
   const optionByValue = useMemo(
@@ -97,11 +100,6 @@ export function MultiSelect({
       add(suggestions[0].value);
     } else if (e.key === 'Backspace' && !query && selectedValues.length > 0) {
       remove(selectedValues[selectedValues.length - 1]);
-    } else if (e.key === 'Escape') {
-      // The first Escape only blurs the input — consume it so an ancestor
-      // surface (e.g. UniversalPanel) doesn't close on the same keypress.
-      e.stopPropagation();
-      inputRef.current?.blur();
     }
   };
 

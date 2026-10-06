@@ -1,14 +1,16 @@
-import { useRef, useState, useEffect, useCallback, type ReactElement, type ReactNode, type KeyboardEvent } from 'react';
+import { useRef, useState, useEffect, useLayoutEffect, useCallback, type ReactElement, type ReactNode } from 'react';
 import { Surface } from '@/shared/ui/Surface';
 import { Dialog } from '@/shared/ui/Dialog';
 import { RadioGroup } from '@/shared/ui/RadioGroup';
 import { useFocusTrap } from '@/shared/ui/useFocusTrap';
+import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import { CollapsibleSidebar } from '@/shared/ui';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { UniversalPanelHeader } from './UniversalPanelHeader';
 import { UniversalPanelBottomNav } from './UniversalPanelBottomNav';
 import { getLocalPlayerUrl } from './localPlayerLink';
+import { PANEL_TABS } from './panelTabs';
 import { t, type MessageKey } from '@/shared/i18n';
 import type { TokenizePanelState } from '@/features/tokenize';
 import type { UniversalPanelTab } from './types';
@@ -49,15 +51,6 @@ export interface UniversalPanelProps {
   readonly recapPanel?: ReactNode;
 }
 
-const TABS: { key: UniversalPanelTab; icon: 'audioWave' | 'bookOpen' | 'clock' | 'settings' | 'slidersHorizontal' | 'scanText'; label: MessageKey }[] = [
-  { key: 'dictionary', icon: 'bookOpen', label: 'panel.tab.dictionary' },
-  { key: 'vocabulary', icon: 'scanText', label: 'panel.tab.vocabulary' },
-  { key: 'studyModes', icon: 'slidersHorizontal', label: 'panel.tab.studyModes' },
-  { key: 'playlist', icon: 'audioWave', label: 'panel.tab.playlist' },
-  { key: 'recap', icon: 'clock', label: 'panel.tab.recap' },
-  { key: 'settings', icon: 'settings', label: 'panel.tab.settings' },
-];
-
 const TOOLS: { id: string; icon: 'library' | 'layers' | 'playRoundedRect'; title: MessageKey; description: MessageKey; onClick: () => void; 'data-cell-id'?: string }[] = [
   {
     id: 'reader',
@@ -86,10 +79,10 @@ const TOOLS: { id: string; icon: 'library' | 'layers' | 'playRoundedRect'; title
 ];
 
 /**
- * UniversalPanel — slide-in side panel shell with Dictionary / Settings tabs.
+ * UniversalPanel — centered 94% modal inside a full-surface overlay.
  *
- * Desktop: vertical tab bar on the left, right-edge panel, max-width 1280px.
- * Mobile (<= 768px): full-screen with bottom tab bar.
+ * Desktop: vertical tab rail on the left via CollapsibleSidebar.
+ * <= 839px: bottom nav bar; <= 599px: full-screen.
  */
 export function UniversalPanel({
   isOpen,
@@ -145,16 +138,13 @@ export function UniversalPanel({
     return () => window.clearTimeout(fallback);
   }, [isOpen]);
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
-    if (e.key === 'Escape') {
-      // A descendant overlay already consumed this Escape (marked
-      // preventDefault or stopped propagation earlier) — topmost layer wins,
-      // so the panel must not close on the same keypress.
-      if (e.defaultPrevented) return;
-      e.preventDefault();
-      onClose();
-    }
-  };
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
+  // Layout effect so the layer registers in the commit phase — before any
+  // passive-effect push from a descendant overlay that mounts open in the
+  // same commit (React runs children's passive effects before the parent's,
+  // which would otherwise park the panel's layer above the inner surface's).
+  useLayoutEffect(() => isOpen ? pushEscapeLayer(() => onCloseRef.current()) : undefined, [isOpen]);
 
   const handleBackdropClick = (): void => {
     onClose();
@@ -165,9 +155,9 @@ export function UniversalPanel({
   };
 
   const [visitedTabs, setVisitedTabs] = useState<ReadonlySet<UniversalPanelTab>>(() => new Set([activeTab]));
-  if (!visitedTabs.has(activeTab)) {
-    setVisitedTabs((prev) => new Set(prev).add(activeTab));
-  }
+  useEffect(() => {
+    setVisitedTabs((prev) => (prev.has(activeTab) ? prev : new Set(prev).add(activeTab)));
+  }, [activeTab]);
 
   // Keep mounted through the close animation. Without the wasOpenRef term,
   // the render where isOpen flips false (isClosing not set yet) returns null,
@@ -184,7 +174,6 @@ export function UniversalPanel({
     <div
       className={`${overlayClass} js-cell-universal-panel`}
       onClick={handleBackdropClick}
-      role="presentation"
       data-cell-id="universal-panel-backdrop"
     >
       <Surface
@@ -195,7 +184,6 @@ export function UniversalPanel({
         aria-modal="true"
         aria-label={t('panel.aria')}
         onClick={handlePanelClick}
-        onKeyDown={handleKeyDown}
         onAnimationEnd={() => {
           if (isClosing) {
             setIsClosing(false);
@@ -220,7 +208,7 @@ export function UniversalPanel({
             {
               id: 'tabs',
               label: t('panel.tabs.aria'),
-              items: TABS.map((tab) => ({
+              items: PANEL_TABS.map((tab) => ({
                 id: tab.key,
                 icon: tab.icon,
                 label: t(tab.label),
@@ -272,20 +260,20 @@ export function UniversalPanel({
           />
 
           <div className={styles.content} data-cell-id={`universal-panel-content-${activeTab}`}>
-            {visitedTabs.has('dictionary') && (
+            {(visitedTabs.has('dictionary') || activeTab === 'dictionary') && (
               <div className={styles.tabPane} hidden={activeTab !== 'dictionary'}>{dictionaryPanel}</div>
             )}
-            {visitedTabs.has('vocabulary') && vocabularyPanel && (
+            {(visitedTabs.has('vocabulary') || activeTab === 'vocabulary') && vocabularyPanel && (
               <div className={styles.tabPane} hidden={activeTab !== 'vocabulary'}>{vocabularyPanel}</div>
             )}
-            {visitedTabs.has('studyModes') && (
+            {(visitedTabs.has('studyModes') || activeTab === 'studyModes') && (
               <div className={styles.tabPane} hidden={activeTab !== 'studyModes'}>{studyModesPanel}</div>
             )}
-            {visitedTabs.has('playlist') && playlistPanel && (
+            {(visitedTabs.has('playlist') || activeTab === 'playlist') && playlistPanel && (
               <div className={styles.tabPane} hidden={activeTab !== 'playlist'}>{playlistPanel}</div>
             )}
             {activeTab === 'recap' && recapPanel}
-            {visitedTabs.has('settings') && (
+            {(visitedTabs.has('settings') || activeTab === 'settings') && (
               <div className={styles.tabPane} hidden={activeTab !== 'settings'}>{settingsPanel}</div>
             )}
           </div>

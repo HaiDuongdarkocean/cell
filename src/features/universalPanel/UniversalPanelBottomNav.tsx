@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { Icon } from '@/shared/ui/Icon';
-import { t, type MessageKey } from '@/shared/i18n';
+import { t } from '@/shared/i18n';
+import { PANEL_TABS } from './panelTabs';
 import type { UniversalPanelTab } from './types';
 import styles from './UniversalPanelBottomNav.module.css';
 
@@ -26,15 +27,6 @@ export interface UniversalPanelBottomNavProps {
   className?: string;
 }
 
-const TABS: ReadonlyArray<{ key: UniversalPanelTab; icon: 'audioWave' | 'bookOpen' | 'clock' | 'scanText' | 'slidersHorizontal' | 'settings'; label: MessageKey }> = [
-  { key: 'dictionary', icon: 'bookOpen', label: 'panel.tab.dictionary' },
-  { key: 'vocabulary', icon: 'scanText', label: 'panel.tab.vocabularyShort' },
-  { key: 'studyModes', icon: 'slidersHorizontal', label: 'panel.tab.studyModesShort' },
-  { key: 'playlist', icon: 'audioWave', label: 'panel.tab.playlistShort' },
-  { key: 'recap', icon: 'clock', label: 'panel.tab.recapShort' },
-  { key: 'settings', icon: 'settings', label: 'panel.tab.settings' },
-];
-
 /**
  * UniversalPanelBottomNav — mobile bottom bar (Dictionary · Study · Settings · Tools)
  * plus the Tools bottom sheet.
@@ -50,7 +42,7 @@ export function UniversalPanelBottomNav({
   return (
     <>
       <nav className={`${styles.bottomNav} ${className ?? ''}`.trim()} aria-label={t('panel.nav.aria')} data-cell-id="universal-panel-bottom-nav">
-        {TABS.map((tab) => {
+        {PANEL_TABS.map((tab) => {
           const isActive = activeTab === tab.key;
           return (
             <Button
@@ -65,7 +57,7 @@ export function UniversalPanelBottomNav({
               data-cell-id={`universal-panel-mobile-tab-${tab.key}`}
               leadingIcon={<Icon name={tab.icon} />}
             >
-              {t(tab.label)}
+              {t(tab.shortLabel)}
             </Button>
           );
         })}

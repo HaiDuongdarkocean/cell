@@ -51,7 +51,7 @@
 
 .when {
   color: var(--color-text-secondary);
-  font-size: var(--font-sizes-xs);
+  font-size: var(--font-size-xs);
   flex-shrink: 0;
 }
 
@@ -98,9 +98,9 @@
 .statusChip {
   padding: 3px 10px;
   border: none;
-  border-radius: var(--radius-full, 999px);
-  font-size: var(--font-sizes-xs);
-  font-weight: var(--font-weights-semibold, 600);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   font-family: inherit;
   cursor: pointer;
   min-height: 44px;
@@ -165,7 +165,7 @@
 
 .chevron {
   color: var(--color-text-secondary);
-  transition: transform var(--motion-duration-fast, 120ms) ease;
+  transition: transform var(--duration-fast) ease;
 }
 
 .chevronOpen {

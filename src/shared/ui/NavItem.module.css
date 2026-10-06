@@ -99,7 +99,7 @@
   transform: translateX(-50%);
   width: var(--space-5);
   height: var(--border-width-thick);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
 }
 
 .disabled {
@@ -160,7 +160,7 @@
     width: var(--touch-target);
     height: var(--touch-target);
     padding: 0;
-    border-radius: 50%;
+    border-radius: var(--radius-pill);
     justify-content: center;
     align-self: center;
     gap: 0;
