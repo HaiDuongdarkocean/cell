@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { Popover } from './Popover';
+import { Icon } from '@/shared/icons/Icon';
 import { pushEscapeLayer } from './escapeLayerStack';
 import { useDismissOnScroll } from './useDismissOnScroll';
 import type { MenuAlign } from './useMenuPlacement';
@@ -154,6 +155,7 @@ export function MenuItem({
   disabled = false,
   'data-cell-id': dataCellId,
 }: MenuItemProps): React.JSX.Element {
+  const trailingContent = trailing ?? (radio && selected ? <Icon name="check" className={styles.check} /> : null);
   return (
     <button
       type="button"
@@ -166,7 +168,7 @@ export function MenuItem({
     >
       {icon && <span className={styles.icon}>{icon}</span>}
       <span className={styles.label}>{children}</span>
-      {trailing && <span className={styles.trailing}>{trailing}</span>}
+      {trailingContent && <span className={styles.trailing}>{trailingContent}</span>}
     </button>
   );
 }
