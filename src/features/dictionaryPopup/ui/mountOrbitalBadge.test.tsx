@@ -124,3 +124,65 @@ describe('mountOrbitalBadge panel dismiss guard', () => {
     expect(panelController.close).not.toHaveBeenCalled();
   });
 });
+
+describe('mountOrbitalBadge panel-open suppression', () => {
+  let badge: OrbitalBadgeMountController | undefined;
+  afterEach(() => { badge?.destroy(); badge = undefined; });
+
+  function makeOpenController(initiallyOpen: boolean): PanelMountController & { emit: (open: boolean) => void } {
+    const listeners = new Set<(open: boolean) => void>();
+    let open = initiallyOpen;
+    const panelHost = document.createElement('div');
+    panelHost.id = UNIVERSAL_PANEL_HOST_ID;
+    document.body.appendChild(panelHost);
+    return {
+      open: jest.fn(() => Promise.resolve()),
+      close: jest.fn(),
+      isOpen: jest.fn(() => open),
+      getHosts: () => [panelHost],
+      sendToCard: jest.fn(() => Promise.resolve()),
+      onOpenChange: (listener: (open: boolean) => void) => {
+        listeners.add(listener);
+        return () => { listeners.delete(listener); };
+      },
+      emit: (next: boolean) => {
+        open = next;
+        for (const listener of listeners) listener(next);
+      },
+    };
+  }
+
+  const badgeHost = (): HTMLElement =>
+    document.querySelector<HTMLElement>('.js-cell-orbital-badge-host')!;
+
+  it('hides the badge host while the panel is open and restores it on close', () => {
+    const panelController = makeOpenController(false);
+    badge = mountOrbitalBadge({ panelController });
+    expect(badgeHost().style.display).toBe('');
+
+    panelController.emit(true);
+    expect(badgeHost().style.display).toBe('none');
+
+    panelController.emit(false);
+    expect(badgeHost().style.display).toBe('');
+  });
+
+  it('mounts suppressed when the panel is already open', () => {
+    const panelController = makeOpenController(true);
+    badge = mountOrbitalBadge({ panelController });
+    expect(badgeHost().style.display).toBe('none');
+  });
+
+  it('keeps the badge suppressed across fullscreenchange display-restore', () => {
+    const panelController = makeOpenController(false);
+    badge = mountOrbitalBadge({ panelController });
+
+    panelController.emit(true);
+    document.dispatchEvent(new Event('fullscreenchange'));
+    expect(badgeHost().style.display).toBe('none');
+
+    panelController.emit(false);
+    document.dispatchEvent(new Event('fullscreenchange'));
+    expect(badgeHost().style.display).toBe('');
+  });
+});

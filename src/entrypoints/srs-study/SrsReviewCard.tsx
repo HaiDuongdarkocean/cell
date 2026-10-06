@@ -372,6 +372,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
           onOpenChange={(open) => { if (!open) setEditing(false); }}
           title={t('srs.edit.title')}
           hideHeader
+          hideDragHandle
         >
           <SrsEditCardPanel
             onClose={() => { setEditing(false); }}

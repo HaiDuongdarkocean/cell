@@ -42,7 +42,9 @@
   .rightPane.dictionaryTab__sheet {
     flex: 0 0 auto;
     position: static;
-    height: var(--space-14);
+    /* Reserves the collapsed MobileSheet peek: handle (--touch-target) +
+       24px name row (the `header` prop slot, up-mobile-chrome). */
+    height: calc(var(--touch-target) + var(--space-6));
     overflow: visible;
     border-bottom: none;
     transition: height var(--duration-300) var(--ease-standard);

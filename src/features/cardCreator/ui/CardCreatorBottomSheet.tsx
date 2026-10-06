@@ -74,6 +74,7 @@ export function CardCreatorBottomSheet({
       onOpenChange={handleOpenChange}
       title={t('cardCreator.title')}
       centerTitle
+      hideDragHandle
       data-cell-id="card-creator-bottom-sheet"
     >
       <CardCreatorDialogContent state={state} variant="mobile" />

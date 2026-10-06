@@ -124,6 +124,22 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
 
   document.addEventListener('pointerdown', onDocPointerDown, true);
 
+  // The badge host (--z-overlay-orbital) sits above the panel host
+  // (--z-overlay-secondary), so the badge must be suppressed while the panel
+  // is open. Suppression rides panel open state via the existing
+  // `onOpenChange` channel — a flag consulted by the fullscreen restore below
+  // (reparenting unconditionally resets display, which would otherwise leak
+  // the badge over the open panel).
+  let panelSuppressed = panelController?.isOpen() ?? false;
+  const applyPanelSuppression = (): void => {
+    mount.host.style.display = panelSuppressed ? 'none' : '';
+  };
+  const unsubscribePanelOpen = panelController?.onOpenChange?.((open) => {
+    panelSuppressed = open;
+    applyPanelSuppression();
+  });
+  if (panelSuppressed) mount.host.style.display = 'none';
+
   // A fullscreen element with shadow DOM swallows light-DOM children that
   // are not slotted (e.g. #cell-subtitle-root in Player Mode) — the badge
   // must go inside the shadow tree to render.
@@ -151,13 +167,14 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
     }
     // Non-iframe fullscreen (e.g. Cell Player Mode container) or exit: move
     // the badge into the fullscreen element so it stays visible, or back to
-    // body when leaving. Always restore display.
+    // body when leaving. Restore display — unless the panel is open, in
+    // which case the badge stays suppressed across the transition.
     if (fsEl) {
       attachToFullscreen(fsEl);
     } else if (mount.host.getRootNode() !== document) {
       document.body.appendChild(mount.host);
     }
-    mount.host.style.display = '';
+    applyPanelSuppression();
   };
 
   document.addEventListener('fullscreenchange', onFullscreenChange);
@@ -169,6 +186,7 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
   }
 
   const destroy = (): void => {
+    unsubscribePanelOpen?.();
     document.removeEventListener('pointerdown', onDocPointerDown, true);
     document.removeEventListener('fullscreenchange', onFullscreenChange);
     document.removeEventListener('webkitfullscreenchange', onFullscreenChange);

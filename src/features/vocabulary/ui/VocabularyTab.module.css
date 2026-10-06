@@ -13,18 +13,30 @@
 
 /* ---------- Compact toolbar (Concept B) ---------- */
 
+/* Scroll region, not a clipped row: at narrow widths (320px) the control set
+   slides horizontally instead of slicing the last chip; controls never shrink
+   and the spacer collapses to zero. No visible scrollbar — identical layout
+   whenever everything already fits. */
 .toolbar {
   display: flex;
   align-items: center;
   gap: var(--space-1);
   flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.toolbar::-webkit-scrollbar {
+  display: none;
 }
 
 .toolbarSpacer {
   flex: 1;
+  min-width: 0;
 }
 
 .toolBtn {
+  flex-shrink: 0;
   gap: var(--space-1);
   color: var(--color-text-secondary);
 }

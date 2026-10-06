@@ -19,6 +19,7 @@
 }
 
 .navItem {
+  position: relative;
   flex: 1;
   min-width: 0;
   height: var(--universal-panel-bottom-nav-item-height);
@@ -26,36 +27,42 @@
 }
 
 .bottomNav .navItem {
-  /* Beat Button's min-width: min-content so 4 items can share the row
-     and shrink below their label content regardless of CSS load order. */
+  /* Beat Button's min-width: min-content so items can share the row
+     and shrink below their label content regardless of CSS load order.
+     Slot width is the label budget — Button's default side padding would
+     consume ~24px and clip the widest shipped labels ("Dictionary" ≈59px
+     at --font-size-xs in a ~61px slot at 320px). Labels never render below
+     --font-size-xs (12px floor) and never truncate mid-glyph. */
+  min-width: 0;
+  padding-inline: var(--space-0);
+}
+
+.bottomNav .navItem [class*="label"] {
   min-width: 0;
 }
 
-@media (max-width: 359px) {
-  .bottomNav .navItem {
-    /* Compact label token for the narrowest phones; the Button's vertical
-       label picks this up via its --button-vertical-label-size variable. */
-    --button-vertical-label-size: var(--font-size-2xs);
-  }
-
-  .bottomNav .navItem > span:nth-child(2) {
-    /* Button's label is the second <span> (leading icon first, label second).
-       Keep the icon token size and let the label shrink with ellipsis. */
-    font-size: var(--font-size-2xs);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-  }
-}
-
-/* Active tab — color-only indicator, no fill. Mobile bottom navs show state
-   via tint; a background block reads like a stuck focus highlight.
-   (0,3,0) beats Button's .solid.ghost (0,2,0) regardless of CSS injection order. */
-.bottomNav .navItem[aria-current],
-.bottomNav .navItem[aria-current]:focus {
+/* Active destination — color + the NavItem `.horizontal .pill` recipe ported
+   as ::after (bottom-centered bar): position marks state, never color alone.
+   (0,4,0) specificity keeps this above Button's `.button::after` overlay and
+   its hover/pressed repaints regardless of CSS injection order. */
+.bottomNav .navItem.navItem[aria-current],
+.bottomNav .navItem.navItem[aria-current]:focus {
   background: transparent;
   color: var(--universal-panel-bottom-nav-active-fg);
+}
+
+.bottomNav .navItem.navItem[aria-current]::after {
+  content: '';
+  position: absolute;
+  top: auto;
+  right: auto;
+  left: 50%;
+  bottom: var(--space-0-5);
+  transform: translateX(-50%);
+  width: var(--space-5);
+  height: var(--border-width-thick);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
 }
 
 /* Touch: after a tap the button keeps :focus — don't let it retain a fill;
@@ -99,6 +106,29 @@
 .toolsList .toolRow:hover {
   background: var(--universal-panel-tool-row-hover-bg);
   border-color: var(--color-border-emphasized);
+}
+
+/* Demoted nav row active state — the NavItem vertical `.pill` recipe ported
+   as ::before (left-edge bar) + the bottom-nav active foreground. */
+.toolsList .toolRow.navRowActive {
+  color: var(--universal-panel-bottom-nav-active-fg);
+}
+
+.toolsList .toolRow.navRowActive::before {
+  content: '';
+  position: absolute;
+  left: var(--space-1);
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--space-1);
+  height: var(--space-4);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--color-primary);
+}
+
+.navRowLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
 }
 
 .toolBody {

@@ -1,9 +1,9 @@
+/* Natural-width segmented capsule — sized to content (no stretch), with a
+   hairline seam between the two halves so it reads as one split control. */
 .capsule {
-  flex: 1;
-  flex-shrink: 1;
-  min-width: 0;
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   gap: var(--space-0);
   height: var(--universal-panel-tokenize-height);
   border: var(--border-width-hairline) solid var(--color-border-subtle);
@@ -15,8 +15,14 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* Halves fill the pill without their own rounded corners, so the capsule
+/* Halves hug their icon without their own rounded corners, so the capsule
    keeps a clean rounded outline and the split seam stays sharp. */
 .capsule .half {
   border-radius: var(--radius-none);
+  height: 100%;
+  padding: 0 var(--space-3);
+}
+
+.capsule .half + .half {
+  border-left: var(--border-width-hairline) solid var(--color-divider);
 }

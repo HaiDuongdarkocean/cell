@@ -695,6 +695,7 @@ function MappingStep({
         open={manageOpen && isMobile}
         onOpenChange={setManageOpen}
         title={t('ankiImport.notetypes.title')}
+        hideDragHandle
       >
         {manageRows}
       </BottomSheet>

@@ -35,7 +35,6 @@ function TokenizeHalf({ active, disabled = false, icon, label, onClick, testId }
     <Button
       shape="pill"
       variant={active ? 'primarySubtle' : 'ghost'}
-      fullWidth
       aria-pressed={active}
       aria-label={label}
       title={disabled ? t('panel.tokenize.noMedia') : t('panel.tokenize.state', [label, active ? t('common.state.on') : t('common.state.off')])}

@@ -34,10 +34,16 @@
   min-width: 0;
 }
 
+/* Peek header title — the collapsed sheet's name row (MobileSheet `header`
+   prop). Tertiary small label; single-line ellipsis, never wraps. */
 .sheetHeaderTitle {
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
+  min-width: 0;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sheetHeaderTerm {

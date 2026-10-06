@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { Icon } from '@/shared/ui/Icon';
+import { Separator } from '@/shared/ui/Separator';
 import { t } from '@/shared/i18n';
-import { PANEL_TABS } from './panelTabs';
+import { PANEL_BAR_TABS, PANEL_TOOLS_TABS } from './panelTabs';
 import type { UniversalPanelTab } from './types';
 import styles from './UniversalPanelBottomNav.module.css';
 
@@ -28,8 +29,9 @@ export interface UniversalPanelBottomNavProps {
 }
 
 /**
- * UniversalPanelBottomNav — mobile bottom bar (Dictionary · Study · Settings · Tools)
- * plus the Tools bottom sheet.
+ * UniversalPanelBottomNav — mobile bottom bar (4 bar tabs + Tools = 5
+ * destinations) plus the Tools bottom sheet, which also carries the demoted
+ * tabs as navigation rows (up-mobile-chrome).
  */
 export function UniversalPanelBottomNav({
   activeTab,
@@ -42,7 +44,7 @@ export function UniversalPanelBottomNav({
   return (
     <>
       <nav className={`${styles.bottomNav} ${className ?? ''}`.trim()} aria-label={t('panel.nav.aria')} data-cell-id="universal-panel-bottom-nav">
-        {PANEL_TABS.map((tab) => {
+        {PANEL_BAR_TABS.map((tab) => {
           const isActive = activeTab === tab.key;
           return (
             <Button
@@ -81,8 +83,37 @@ export function UniversalPanelBottomNav({
         open={isToolsOpen}
         onOpenChange={setIsToolsOpen}
         title={t('panel.tools.sheetTitle')}
+        hideDragHandle
         data-cell-id="universal-panel-tools-sheet"
       >
+        {PANEL_TOOLS_TABS.length > 0 && (
+          <>
+            <ul className={styles.toolsList}>
+              {PANEL_TOOLS_TABS.map((tab) => {
+                const isActive = activeTab === tab.key;
+                return (
+                  <li key={tab.key}>
+                    <Button
+                      variant="ghost"
+                      shape="pill"
+                      className={isActive ? `${styles.toolRow} ${styles.navRowActive}` : styles.toolRow}
+                      aria-current={isActive ? 'page' : undefined}
+                      leadingIcon={<Icon name={tab.icon} size="md" />}
+                      onClick={() => {
+                        onTabChange(tab.key);
+                        setIsToolsOpen(false);
+                      }}
+                      data-cell-id={`universal-panel-mobile-tab-${tab.key}`}
+                    >
+                      <span className={styles.navRowLabel}>{t(tab.label)}</span>
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+            <Separator />
+          </>
+        )}
         <ul className={styles.toolsList}>
           {tools.map((tool) => (
             <li key={tool.id}>

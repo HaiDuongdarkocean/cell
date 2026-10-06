@@ -199,6 +199,7 @@ function CardCreatorPanelCore({
         <MobileSheet
           defaultSnap="collapsed"
           aria-label={t('cardCreator.title')}
+          header={<span className={styles.sheetHeaderTitle}>{t('cardCreator.title')}</span>}
           contentClassName={styles.sheetContent}
           className={styles.sheet}
           data-cell-id="card-creator-mobile-sheet"

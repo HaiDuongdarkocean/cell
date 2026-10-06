@@ -146,6 +146,7 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
         open={open}
         onOpenChange={handleCloseAttempt}
         title={isNew ? t('studyModes.builder.titleNew') : t('studyModes.builder.titleEdit')}
+        hideDragHandle
         data-cell-id="custom-mode-builder"
         footer={
           <HStack gap="3" justify="between" className={styles.builderFooter}>

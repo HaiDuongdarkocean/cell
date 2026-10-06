@@ -82,7 +82,7 @@ const TOOLS: { id: string; icon: 'library' | 'layers' | 'playRoundedRect'; title
  * UniversalPanel — centered 94% modal inside a full-surface overlay.
  *
  * Desktop: vertical tab rail on the left via CollapsibleSidebar.
- * <= 839px: bottom nav bar; <= 599px: full-screen.
+ * <= 839px: full-screen (100% x dynamic viewport) with bottom nav bar.
  */
 export function UniversalPanel({
   isOpen,
@@ -269,6 +269,7 @@ export function UniversalPanel({
             hasMedia={hasMedia}
             activeProfile={activeProfile}
             onProfileClick={handleProfileClick}
+            activeTab={activeTab}
           />
 
           <div className={styles.content} data-cell-id={`universal-panel-content-${activeTab}`}>

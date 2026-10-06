@@ -4,8 +4,10 @@ import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { FlagIcon } from '@/shared/ui/FlagIcon';
 import { TokenizeControls } from './TokenizeControls';
+import { PANEL_TABS } from './panelTabs';
 import { t } from '@/shared/i18n';
 import type { TokenizePanelState } from '@/features/tokenize';
+import type { UniversalPanelTab } from './types';
 import styles from './UniversalPanelHeader.module.css';
 
 export interface UniversalPanelHeaderProps {
@@ -21,12 +23,15 @@ export interface UniversalPanelHeaderProps {
   readonly activeProfile?: { readonly name: string; readonly target?: string } | null;
   /** Called when the profile button is clicked. */
   readonly onProfileClick?: () => void;
+  /** Active tab — the header names it (full `panel.tab.*` label) on mobile widths. */
+  readonly activeTab?: UniversalPanelTab;
 }
 
 /**
  * UniversalPanelHeader — minimal horizontal header above the panel content.
  *
- * Layout (left → right): language profile select (optional) … tokenize split capsule (Text / Media) … close button (right edge).
+ * Layout (left → right): language profile select (optional) … active-tab title
+ * (≤839px only) … tokenize split capsule (Text / Media) … close button (right edge).
  */
 export function UniversalPanelHeader({
   tokenizeState,
@@ -35,12 +40,14 @@ export function UniversalPanelHeader({
   hasMedia = true,
   activeProfile,
   onProfileClick,
+  activeTab,
 }: UniversalPanelHeaderProps): ReactElement {
   const handleToggle = useCallback((mode: 'text' | 'media'): void => {
     onToggleTokenize(mode === 'text' ? 'enabled' : 'subtitleEnabled');
   }, [onToggleTokenize]);
 
   const profileName = activeProfile?.name ?? t('panel.profile.select');
+  const activeTabLabel = activeTab ? PANEL_TABS.find((tab) => tab.key === activeTab)?.label : undefined;
 
   return (
     <header className={styles.header} data-cell-id="universal-panel-header">
@@ -57,6 +64,12 @@ export function UniversalPanelHeader({
         >
           <FlagIcon lang={activeProfile.target ?? ''} title={profileName} />
         </Button>
+      )}
+
+      {activeTabLabel && (
+        <span className={styles.headerTitle} data-cell-id="universal-panel-header-title">
+          {t(activeTabLabel)}
+        </span>
       )}
 
       <TokenizeControls
