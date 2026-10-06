@@ -222,7 +222,7 @@ export const VISUAL_MATRIX: VisualCase[] = [
     component: 'Select',
     state: 'open',
     theme: 'light',
-    target: (page) => main(page).getByRole('listbox'),
+    target: (page) => page.getByRole('listbox'),
     action: 'open',
     actionArg: (page) => main(page).locator('button[aria-haspopup="listbox"]').first(),
     note: 'Select listbox opened.',
