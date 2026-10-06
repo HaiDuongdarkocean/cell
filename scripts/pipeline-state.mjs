@@ -243,9 +243,15 @@ const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 function runNpmGates() {
   const failed = [];
+  const logDir = join(ROOT, 'tmp', 'pipeline-gates');
   for (const g of ['typecheck', 'lint', 'test:unit', 'build']) {
     const r = spawnSync(npmCmd, ['run', g], { cwd: ROOT, encoding: 'utf8', timeout: 600000, shell: true });
-    if (r.status !== 0) failed.push(`npm run ${g} (exit ${r.status})`);
+    if (r.status !== 0) {
+      mkdirSync(logDir, { recursive: true });
+      const log = join(logDir, `${g.replace(':', '-')}.log`);
+      writeFileSync(log, `${r.stdout || ''}\n${r.stderr || ''}`);
+      failed.push(`npm run ${g} (exit ${r.status}) — log: ${log}`);
+    }
   }
   return failed;
 }

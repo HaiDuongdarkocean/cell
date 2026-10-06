@@ -24,7 +24,11 @@ function makeRoot(): string {
 }
 
 function run(root: string, ...args: string[]): Result {
-  const r = spawnSync(process.execPath, [SCRIPT, ...args], { cwd: root, encoding: 'utf8' });
+  const r = spawnSync(process.execPath, [SCRIPT, ...args], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, CELL_AGENT_ID: '' },
+  });
   return { status: r.status, stdout: r.stdout ?? '', stderr: r.stderr ?? '' };
 }
 
