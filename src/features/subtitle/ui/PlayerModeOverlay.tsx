@@ -107,6 +107,9 @@ export interface PlayerModeOverlayProps {
 
 const PM_MOBILE_BREAKPOINT = 600;
 const PM_MENU_SPEEDS: readonly PlaybackSpeed[] = [0.5, 0.75, 1, 1.25, 1.5, 2];
+const ORBITAL_POSITION_KEY = 'orbitalBadgePosition';
+const ORBITAL_BADGE_DEFAULT_SIZE = 36;
+type StoredOrbitalPosition = { edge?: 'left' | 'right' | 'top' | 'bottom' };
 
 function PlayerModeOverlayInner({
   targetStyle,
@@ -408,6 +411,52 @@ function PlayerModeOverlayInner({
     };
   }, []);
 
+  // Session override reset: switching display mode (or leaving/re-entering a
+  // mode via storage) drops "show all cues" so 'active' returns to 1 card.
+  useEffect(() => {
+    setShowAllCues(false);
+  }, [cueDisplayMode]);
+
+  // REQ-8: when the orbital badge is snapped to the right edge, reserve
+  // badge-size + space-2 clearance for the floating rail. Default badge
+  // preset is right/center, so an absent stored position still clears.
+  const [orbitalRightPx, setOrbitalRightPx] = useState(0);
+  useEffect(() => {
+    if (!isMobilePm) {
+      setOrbitalRightPx(0);
+      return;
+    }
+    let cancelled = false;
+    const sync = (): void => {
+      Promise.all([
+        getStorage<Record<string, StoredOrbitalPosition | undefined>>(ORBITAL_POSITION_KEY),
+        getStorage<Record<string, { dictionaryPopup?: { badgePointerTrigger?: { size?: number } } }>>(
+          STORAGE_KEYS.SETTINGS,
+        ),
+      ])
+        .then(([posData, settingsData]) => {
+          if (cancelled) return;
+          const edge = posData[ORBITAL_POSITION_KEY]?.edge ?? 'right';
+          const size = settingsData[STORAGE_KEYS.SETTINGS]?.dictionaryPopup?.badgePointerTrigger?.size;
+          setOrbitalRightPx(edge === 'right' ? (typeof size === 'number' ? size : ORBITAL_BADGE_DEFAULT_SIZE) : 0);
+        })
+        .catch(() => undefined);
+    };
+    sync();
+    const onChanged = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      area: string,
+    ): void => {
+      if (area !== 'local') return;
+      if (ORBITAL_POSITION_KEY in changes || STORAGE_KEYS.SETTINGS in changes) sync();
+    };
+    onStorageChanged(onChanged);
+    return () => {
+      cancelled = true;
+      removeOnStorageChangedListener(onChanged);
+    };
+  }, [isMobilePm]);
+
   // PM mobile: flag + anchor offset on <html> — the comprehension pill's
   // :host-context rule re-docks it centered above the bottom bar. Pure CSS
   // mechanism: remount-safe and self-restoring when the attribute is removed.
@@ -572,6 +621,8 @@ function PlayerModeOverlayInner({
         className={`${styles.overlay} ${styles.overlayMobile}`}
         data-cell-id="player-mode-overlay"
         data-practice-active={practiceMode && practiceMode !== 'off' ? 'true' : 'false'}
+        data-orbital-edge={orbitalRightPx > 0 ? 'right' : undefined}
+        style={orbitalRightPx > 0 ? ({ '--pm-orbital-badge': `${orbitalRightPx}px` } as React.CSSProperties) : undefined}
         role="application"
         aria-label={t('subtitle.playerMode.aria')}
         ref={setOverlayEl}
@@ -586,7 +637,10 @@ function PlayerModeOverlayInner({
           >
             <slot name="cell-video" />
           </div>
-          <div className={`${styles.pmCueWrap} ${!cueListOpen || !onSeek ? styles.pmCueWrapCollapsed : ''}`}>
+          <div
+            className={`${styles.pmCueWrap} ${!cueListOpen || !onSeek ? styles.pmCueWrapCollapsed : ''}`}
+            data-cell-id="player-mode-content"
+          >
             {cueListOpen && onSeek && (
               <div className={styles.pmCueRegion} data-cell-id="pm-cue-region">
                 <SubtitlePanel
@@ -642,7 +696,7 @@ function PlayerModeOverlayInner({
                 {onGenerateNative && (
                   <Button
                     variant="neutralSubtle"
-                    size="md"
+                    size="lg"
                     elevation="low"
                     aria-label={t('subtitle.toolbar.generateNative')}
                     title={t('subtitle.toolbar.generateNativeTitle')}
@@ -666,7 +720,7 @@ function PlayerModeOverlayInner({
         >
           <Button
             variant="ghost"
-            size="md"
+            size="lg"
             aria-label={t('subtitle.toolbar.exitPlayerMode')}
             title={t('subtitle.toolbar.exitPlayerModeTitle')}
             data-cell-id="player-mode-exit-btn"
@@ -675,74 +729,82 @@ function PlayerModeOverlayInner({
             <Icon name="x" />
           </Button>
           <div className={styles.transport} data-cell-id="nav-cluster">
-            {hasCues ? (
+            {hasCues
+              ? onPrev && (
+                  <Button
+                    variant="primarySubtle"
+                    size="lg"
+                    aria-label={t('settings.shortcuts.action.prevCue')}
+                    data-cell-id="nav-prev"
+                    onClick={onPrev}
+                  >
+                    <Icon name="chevronLeft" />
+                  </Button>
+                )
+              : onRewind && (
+                  <Button
+                    variant="primarySubtle"
+                    size="lg"
+                    aria-label={t('subtitle.nav.rewind')}
+                    data-cell-id="nav-rewind"
+                    onClick={onRewind}
+                  >
+                    <Icon name="navRewind" />
+                  </Button>
+                )}
+            {onRepeat && (
               <Button
                 variant="primarySubtle"
                 size="lg"
-                aria-label={t('settings.shortcuts.action.prevCue')}
-                data-cell-id="nav-prev"
-                onClick={onPrev}
+                aria-label={repeatActive ? t('subtitle.nav.repeatCancel') : repeatLabel ?? t('player.nav.repeat')}
+                data-cell-id="nav-repeat"
+                active={repeatActive}
+                onClick={onRepeat}
               >
-                <Icon name="chevronLeft" />
-              </Button>
-            ) : (
-              <Button
-                variant="primarySubtle"
-                size="lg"
-                aria-label={t('subtitle.nav.rewind')}
-                data-cell-id="nav-rewind"
-                onClick={onRewind}
-              >
-                <Icon name="navRewind" />
-              </Button>
-            )}
-            <Button
-              variant="primarySubtle"
-              size="lg"
-              aria-label={repeatActive ? t('subtitle.nav.repeatCancel') : repeatLabel ?? t('player.nav.repeat')}
-              data-cell-id="nav-repeat"
-              active={repeatActive}
-              onClick={onRepeat}
-            >
-              <Icon name="rotateCcw" />
-            </Button>
-            <Button
-              variant="warningSubtle"
-              size="xl"
-              elevation="low"
-              className={styles.barHero}
-              aria-label={isPlaying ? t('subtitle.nav.pause') : t('subtitle.nav.play')}
-              data-cell-id="nav-play"
-              onClick={onPlayPause}
-            >
-              <Icon name={isPlaying ? 'pause' : 'play'} />
-            </Button>
-            {hasCues ? (
-              <Button
-                variant="primarySubtle"
-                size="lg"
-                aria-label={t('settings.shortcuts.action.nextCue')}
-                data-cell-id="nav-next"
-                onClick={onNext}
-              >
-                <Icon name="chevronRight" />
-              </Button>
-            ) : (
-              <Button
-                variant="primarySubtle"
-                size="lg"
-                aria-label={t('subtitle.nav.forward')}
-                data-cell-id="nav-forward"
-                onClick={onForward}
-              >
-                <Icon name="navForward" />
+                <Icon name="rotateCcw" />
               </Button>
             )}
+            {onPlayPause && (
+              <Button
+                variant="warningSubtle"
+                size="xl"
+                elevation="low"
+                className={styles.barHero}
+                aria-label={isPlaying ? t('subtitle.nav.pause') : t('subtitle.nav.play')}
+                data-cell-id="nav-play"
+                onClick={onPlayPause}
+              >
+                <Icon name={isPlaying ? 'pause' : 'play'} />
+              </Button>
+            )}
+            {hasCues
+              ? onNext && (
+                  <Button
+                    variant="primarySubtle"
+                    size="lg"
+                    aria-label={t('settings.shortcuts.action.nextCue')}
+                    data-cell-id="nav-next"
+                    onClick={onNext}
+                  >
+                    <Icon name="chevronRight" />
+                  </Button>
+                )
+              : onForward && (
+                  <Button
+                    variant="primarySubtle"
+                    size="lg"
+                    aria-label={t('subtitle.nav.forward')}
+                    data-cell-id="nav-forward"
+                    onClick={onForward}
+                  >
+                    <Icon name="navForward" />
+                  </Button>
+                )}
           </div>
           <Button
             ref={moreBtnRef}
             variant="ghost"
-            size="md"
+            size="lg"
             aria-label={t('subtitle.playerMode.more')}
             aria-haspopup="menu"
             aria-expanded={moreMenuOpen}

@@ -269,7 +269,7 @@ PM mount ──► viewportW?
 - [ ] AC-13: bảng C5 branch-scoped trên đúng 100% (giữ/dropped/reuse đúng cột).
 - [ ] AC-14: không listener resize/layout mới; storage subscription cleanup on unmount; unit tests cho adaptive nav + display mode pass.
 - [ ] AC-15: `pm-cue-region` không scroll (overflow hidden + no scrollbar + no user scroll); active cue luôn trong vùng nhìn thấy; peek clip dưới mask.
-- [ ] AC-16: icon-in-button scale đúng token `iconbutton-icon-{xs,sm,md,lg,xl}` = 16/18/20/24/28; transport/CC glyphs bare (`chevronLeft`/`navRepeat`/`play`/`pause`/`chevronRight`/`captions`).
+- [ ] AC-16: icon-in-button scale đúng token `iconbutton-icon-{xs,sm,md,lg,xl}` = 16/18/20/24/28; transport/CC glyphs bare (`chevronLeft`/`rotateCcw`/`play`/`pause`/`chevronRight`/`captions`).
 
 ## Definition of Done
 

@@ -283,7 +283,7 @@ describe('mobile layout (<600px)', () => {
     expect(screen.getByTestId('pm-caption')).toHaveTextContent('English');
     expect(screen.getByTestId('cue-list')).toBeInTheDocument();
     expect(screen.queryByTestId('overlay-player-action')).toBeNull();
-    expect(screen.queryByTestId('player-mode-content')).toBeNull();
+    expect(screen.getByTestId('player-mode-content')).toBeInTheDocument();
     expect(screen.queryByTestId('subtitle-block')).toBeNull();
     expect(document.documentElement.getAttribute('data-cell-player-mode-mobile')).toBe('true');
   });

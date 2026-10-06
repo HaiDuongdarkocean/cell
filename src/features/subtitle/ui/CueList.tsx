@@ -94,6 +94,10 @@ interface CueListProps {
 
 const formatTimestamp = formatCueTimestamp;
 
+// PM mobile list mode mounts a bounded window around the active cue instead
+// of the full list — the region never scrolls, so extra DOM is pure waste.
+const PM_MOBILE_LIST_WINDOW = 8;
+
 const CueTokenText = memo(function CueTokenText({
   text,
   tokens,
@@ -298,14 +302,29 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   const upcomingIndex = activeOnly && currentIndex < 0
     ? filteredCues.findIndex((c) => c.start > effectiveMs)
     : -1;
-  const renderedCues = activeOnly
-    ? currentIndex >= 0
+  // 'list' display mode on mobile: render a bounded window around the active
+  // cue (REQ-10) — the region is a non-scroll surface, so mounting hundreds
+  // of cards wastes memory; the window recenters when the anchor moves.
+  const listWindowed =
+    mobile && !activeOnly && filteredCues.length > PM_MOBILE_LIST_WINDOW;
+  let renderedCues: BilingualCue[];
+  if (activeOnly) {
+    renderedCues = currentIndex >= 0
       ? [filteredCues[currentIndex]]
       : upcomingIndex >= 0
         ? [filteredCues[upcomingIndex]]
-        : []
-    : filteredCues;
-  const renderedCurrentIndex = activeOnly && currentIndex >= 0 ? 0 : -1;
+        : [];
+  } else if (listWindowed) {
+    const anchor = currentIndex >= 0
+      ? currentIndex
+      : filteredCues.findIndex((c) => c.start > effectiveMs);
+    const anchorStart = anchor < 0 ? filteredCues.length - PM_MOBILE_LIST_WINDOW : anchor - 2;
+    const start = Math.max(0, Math.min(anchorStart, filteredCues.length - PM_MOBILE_LIST_WINDOW));
+    renderedCues = filteredCues.slice(start, start + PM_MOBILE_LIST_WINDOW);
+  } else {
+    renderedCues = filteredCues;
+  }
+  const renderedCurrentIndex = renderedCues.findIndex((c) => c.index === currentCueIndex);
 
   useEffect(() => {
     const list = listRef.current;
@@ -326,7 +345,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   // center the panel in the viewport → page jumps ("giật màn hình").
   // Manual scrollTop only scrolls the list, clamped to [0, maxScrollTop].
   useEffect(() => {
-    const alignIndex = activeOnly ? renderedCurrentIndex : currentIndex;
+    const alignIndex = renderedCurrentIndex;
     if (desynced || alignIndex < 0) return;
     const el = itemRefs.current[alignIndex];
     const list = listRef.current;
@@ -355,7 +374,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [currentIndex, renderedCurrentIndex, activeOnly, currentCueIndex, effectiveMs, filterEpoch, desynced]);
+  }, [renderedCurrentIndex, renderedCues.length, currentCueIndex, effectiveMs, filterEpoch, desynced]);
 
   const handleListScroll = (): void => {
     const list = listRef.current;
@@ -385,7 +404,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
         <EmptyState size="compact" title={t('panel.empty.title')} style={{ flex: 1 }} />
       )}
       {renderedCues.map((cue, i) => {
-        const isCurrent = activeOnly ? renderedCurrentIndex === i : i === currentIndex;
+        const isCurrent = i === renderedCurrentIndex;
         const isUpcoming = activeOnly && currentIndex < 0;
         const customContent = renderCueContent?.(cue, i, isCurrent);
         const heat = cueDifficulty?.get(cue.index);
@@ -424,7 +443,11 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
             {customContent !== undefined ? (
               customContent
             ) : (
-              <div className={styles.text} data-allow-lookup>
+              <div
+                className={styles.text}
+                data-allow-lookup
+                data-cell-id={mobile && isCurrent ? 'pm-cue-active-card' : undefined}
+              >
                 <div data-cell-id="cue-target-text" className={styles.targetText}>
                   {tokenize ? (
                     <CueTokenText

@@ -214,4 +214,33 @@ describe('CueList mobile PM mode', () => {
     await waitFor(() => expect(document.querySelector('[data-cell-id="cue-list-scroll"]')).not.toBeNull());
     expect(document.querySelector('[data-cell-id="cue-list-sync"]')).toBeNull();
   });
+
+  it('list mode mounts a bounded window around the active cue', () => {
+    const manyCues: BilingualCue[] = Array.from({ length: 20 }, (_, i) => ({
+      index: i + 1,
+      start: i * 1000,
+      end: i * 1000 + 900,
+      targetText: `line ${i + 1}`,
+      nativeText: '',
+    }));
+    render(
+      <CueList
+        cues={manyCues}
+        currentTimeMs={10_500}
+        onSeek={jest.fn()}
+        mobile
+        displayMode="list"
+      />,
+    );
+    const items = document.querySelectorAll('[data-cell-id="cue-item"]');
+    expect(items.length).toBe(8);
+    expect(document.querySelector('[data-cue-index="11"][data-current="true"]')).not.toBeNull();
+  });
+
+  it('marks the active card with pm-cue-active-card', () => {
+    renderList({ mobile: true, displayMode: 'list' });
+    const marker = document.querySelector('[data-cell-id="pm-cue-active-card"]');
+    expect(marker).not.toBeNull();
+    expect(marker!.closest('[data-cell-id="cue-item"]')).toHaveAttribute('data-cue-index', '1');
+  });
 });

@@ -148,6 +148,16 @@
   padding-bottom: calc(var(--touch-target) + var(--space-6));
 }
 
+/* PM mobile variant: the cue region is a flat color-background frame so the
+   color-surface cue cards pop per the mockup — the translucent blurred panel
+   chrome is desktop/split-view only. */
+.panel[data-cell-pm-mobile='true'] {
+  background: var(--color-background);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: none;
+}
+
 .panel[data-practice-mode='dictation'] .cueListWrap,
 .panel[data-practice-mode='cloze'] .cueListWrap {
   min-height: calc(var(--touch-target) + var(--space-2) * 2);

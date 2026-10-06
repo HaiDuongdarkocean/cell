@@ -30,6 +30,9 @@ export interface CueRecommendFabProps {
   readonly variant?: 'secondary' | 'neutralSubtle';
   /** Button size — default lg FAB. PM mobile rail uses md. */
   readonly size?: 'md' | 'lg';
+  /** Portal target for the filter menu — needed when the fab is portaled into
+   *  a high z-index surface (PM mobile rail) so the menu stays on top. */
+  readonly menuContainer?: Element | null;
 }
 
 export function CueRecommendFab({
@@ -38,6 +41,7 @@ export function CueRecommendFab({
   onModeChange,
   variant,
   size = 'lg',
+  menuContainer,
 }: CueRecommendFabProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -92,6 +96,7 @@ export function CueRecommendFab({
         triggerRef={triggerRef}
         align="right"
         ariaLabel={t('cueFilter.menuLabel')}
+        container={menuContainer ?? undefined}
       >
         {CUE_FILTER_MODES.map((m) => (
           <MenuItem

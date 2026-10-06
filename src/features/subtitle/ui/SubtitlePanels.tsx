@@ -22,6 +22,8 @@ import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { buildClusterCssVars } from './subtitleUI';
 import styles from './SubtitlePanels.module.css';
 import { useManagerHostDelegation } from './subtitleManagerHost';
+import { getStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import { t } from '@/shared/i18n';
 import type { SubtitlePracticeMode } from '@/features/studyModes';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
@@ -158,6 +160,32 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     }, [isMobile]);
     const [offsetOpen, setOffsetOpen] = useState(false);
     const [hintOpen, setHintOpen] = useState(false);
+    // PM mobile caption fallback — when the manager has no active target track
+    // label, the anchor caption falls back to the overlay target language code.
+    const [targetLangCode, setTargetLangCode] = useState('');
+    useEffect(() => {
+      let cancelled = false;
+      const sync = (): void => {
+        getStorage<Record<string, { subtitleOverlayTargetLanguage?: unknown }>>(STORAGE_KEYS.SETTINGS)
+          .then((data) => {
+            const v = data[STORAGE_KEYS.SETTINGS]?.subtitleOverlayTargetLanguage;
+            if (!cancelled) setTargetLangCode(typeof v === 'string' ? v : '');
+          })
+          .catch(() => undefined);
+      };
+      sync();
+      const onChanged = (
+        changes: Record<string, chrome.storage.StorageChange>,
+        area: string,
+      ): void => {
+        if (area === 'local' && STORAGE_KEYS.SETTINGS in changes) sync();
+      };
+      onStorageChanged(onChanged);
+      return () => {
+        cancelled = true;
+        removeOnStorageChangedListener(onChanged);
+      };
+    }, []);
     const { toasts, addToast, clearToasts, removeToast } = useToasts();
     const [generateNativeEnabled, setGenerateNativeEnabled] = useState(initialGenerateNativeEnabled);
     const [ocrEnabledState, setOcrEnabledState] = useState(ocrEnabled ?? false);
@@ -315,7 +343,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           onContinueCue={onContinueCue}
           tokenize={tokenize}
           panelBlurred={panelBlurred}
-          trackLabel={manager?.targetItems[manager.targetActiveIndex]?.name}
+          trackLabel={manager?.targetItems[manager.targetActiveIndex]?.name ?? (targetLangCode || undefined)}
         />
       );
     }
