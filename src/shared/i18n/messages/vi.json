@@ -411,6 +411,8 @@
   "settings.nav.theme": "Giao diện",
   "settings.nav.resources": "Tài nguyên",
   "settings.nav.sync": "Đồng bộ",
+  "settings.nav.scrollLeft": "Cuộn các mục sang trái",
+  "settings.nav.scrollRight": "Cuộn các mục sang phải",
   "settings.sync.title": "Đồng bộ",
   "settings.sync.desc": "Giữ dữ liệu học tập đồng bộ giữa các thiết bị.",
   "settings.sync.loading": "Đang tải trạng thái đồng bộ",

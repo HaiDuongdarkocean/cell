@@ -1,5 +1,8 @@
 import { useState, useId, useRef, useEffect, useLayoutEffect, useCallback, Children, isValidElement, cloneElement, type ReactNode, type Ref } from 'react';
+import { t } from '@/shared/i18n';
 import { NavItem, type NavItemProps } from './NavItem';
+import { Button } from './Button';
+import { Icon } from './Icon';
 import styles from './Navigation.module.css';
 
 export type NavigationOrientation = 'vertical' | 'horizontal';
@@ -30,6 +33,9 @@ export function Navigation({
   const id = useId();
   const navRef = useRef<HTMLElement>(null);
   const clickScrollingRef = useRef(false);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
+  const itemCount = Children.count(children);
 
   const setActiveId = useCallback(
     (nextId: string): void => {
@@ -120,6 +126,41 @@ export function Navigation({
     return () => root.removeEventListener('scroll', onScroll);
   }, [contentRef, sectionRefs, setActiveId]);
 
+  useEffect(() => {
+    if (orientation !== 'horizontal') {
+      setShowLeftArrow(false);
+      setShowRightArrow(false);
+      return;
+    }
+    const nav = navRef.current;
+    if (!nav) return;
+
+    const updateOverflow = (): void => {
+      const nextLeft = nav.scrollLeft > 0;
+      const nextRight = nav.scrollLeft < nav.scrollWidth - nav.clientWidth - 1;
+      setShowLeftArrow((prev) => (prev === nextLeft ? prev : nextLeft));
+      setShowRightArrow((prev) => (prev === nextRight ? prev : nextRight));
+    };
+
+    updateOverflow();
+    const observer = new ResizeObserver(updateOverflow);
+    observer.observe(nav);
+    const mutation = new MutationObserver(updateOverflow);
+    mutation.observe(nav, { characterData: true, subtree: true });
+    nav.addEventListener('scroll', updateOverflow, { passive: true });
+    return () => {
+      observer.disconnect();
+      mutation.disconnect();
+      nav.removeEventListener('scroll', updateOverflow);
+    };
+  }, [orientation, itemCount]);
+
+  const scrollStripBy = (direction: -1 | 1): void => {
+    const nav = navRef.current;
+    if (!nav) return;
+    nav.scrollBy({ left: direction * nav.clientWidth * 0.75, behavior: 'smooth' });
+  };
+
   const handleItemClick = (sectionId: string): void => {
     const root = (contentRef as React.RefObject<HTMLElement> | undefined)?.current;
     const target = sectionRefs?.current[sectionId];
@@ -162,7 +203,13 @@ export function Navigation({
     if (sectionId) handleItemClick(sectionId);
   };
 
-  const navClasses = [styles.nav, orientation === 'horizontal' ? styles.horizontal : styles.vertical, className ?? '']
+  const navClasses = [
+    styles.nav,
+    orientation === 'horizontal' ? styles.horizontal : styles.vertical,
+    showLeftArrow ? styles.fadeStart : '',
+    showRightArrow ? styles.fadeEnd : '',
+    className ?? '',
+  ]
     .filter(Boolean)
     .join(' ');
 
@@ -173,9 +220,47 @@ export function Navigation({
     return child;
   });
 
-  return (
+  const navElement = (
     <nav id={id} ref={navRef} className={navClasses} aria-label={ariaLabel} onClick={handleNavClick}>
       {orientedChildren}
     </nav>
+  );
+
+  if (orientation !== 'horizontal') return navElement;
+
+  return (
+    <div className={styles.navWrap}>
+      {showLeftArrow && (
+        <Button
+          type="button"
+          size="sm"
+          shape="circle"
+          variant="secondary"
+          ripple={false}
+          className={styles.arrow}
+          aria-label={t('settings.nav.scrollLeft')}
+          data-cell-id="settings-nav-scroll-left"
+          onClick={() => scrollStripBy(-1)}
+        >
+          <Icon name="chevronLeft" size="sm" />
+        </Button>
+      )}
+      {navElement}
+      {showRightArrow && (
+        <Button
+          type="button"
+          size="sm"
+          shape="circle"
+          variant="secondary"
+          ripple={false}
+          className={styles.arrow}
+          aria-label={t('settings.nav.scrollRight')}
+          data-cell-id="settings-nav-scroll-right"
+          onClick={() => scrollStripBy(1)}
+        >
+          <Icon name="chevronRight" size="sm" />
+        </Button>
+      )}
+    </div>
   );
 }

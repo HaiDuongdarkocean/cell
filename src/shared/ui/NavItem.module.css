@@ -112,12 +112,7 @@
   justify-content: center;
   width: auto;
   min-width: var(--touch-target);
-  padding: 0;
-  gap: 0;
-}
-
-.horizontal .label {
-  display: none;
+  padding: 0 var(--space-3);
 }
 
 .vertical {
@@ -140,12 +135,15 @@
 
 .label {
   line-height: var(--leading-tight);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   transition: opacity var(--duration-normal) ease-in-out;
   z-index: 1;
+}
+
+.vertical .label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @container (width <= 80px) {

@@ -411,6 +411,8 @@
   "settings.nav.theme": "Theme",
   "settings.nav.resources": "Resources",
   "settings.nav.sync": "Sync",
+  "settings.nav.scrollLeft": "Scroll sections left",
+  "settings.nav.scrollRight": "Scroll sections right",
   "settings.sync.title": "Sync",
   "settings.sync.desc": "Keep your learning data in sync across devices.",
   "settings.sync.loading": "Loading sync status",

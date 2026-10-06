@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeAll, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { Settings } from '@/entities/media';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
@@ -158,5 +158,52 @@ describe('SettingsDialogContent — merged Audio card', () => {
         }),
       }),
     );
+  });
+});
+
+describe('SettingsDialogContent — nav orientation cutoff', () => {
+  const OriginalResizeObserver = globalThis.ResizeObserver;
+
+  beforeAll(() => {
+    if (typeof Element.prototype.scrollTo !== 'function') {
+      Element.prototype.scrollTo = jest.fn();
+    }
+    if (typeof Element.prototype.scrollIntoView !== 'function') {
+      Element.prototype.scrollIntoView = jest.fn();
+    }
+  });
+
+  const mockContainerWidth = (width: number): void => {
+    globalThis.ResizeObserver = jest.fn(
+      (cb: (entries: { contentRect: { width: number } }[]) => void) => ({
+        observe: jest.fn(() => cb([{ contentRect: { width } }])),
+        unobserve: jest.fn(),
+        disconnect: jest.fn(),
+      }),
+    ) as unknown as typeof ResizeObserver;
+  };
+
+  afterEach(() => {
+    globalThis.ResizeObserver = OriginalResizeObserver;
+  });
+
+  it('renders the horizontal labeled strip at 700px instead of the collapsed rail', () => {
+    mockContainerWidth(700);
+    const { container } = renderContent();
+
+    const sidebar = container.querySelector('aside[data-orientation]');
+    expect(sidebar).toHaveAttribute('data-orientation', 'horizontal');
+    expect(sidebar).not.toHaveAttribute('data-collapsed');
+    expect(container.querySelector('nav')).toHaveClass('horizontal');
+  });
+
+  it('renders the expanded vertical sidebar at ≥768px', () => {
+    mockContainerWidth(800);
+    const { container } = renderContent();
+
+    const sidebar = container.querySelector('aside[data-orientation]');
+    expect(sidebar).toHaveAttribute('data-orientation', 'vertical');
+    expect(sidebar).not.toHaveAttribute('data-collapsed');
+    expect(container.querySelector('nav')).toHaveClass('vertical');
   });
 });

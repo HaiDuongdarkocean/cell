@@ -37,6 +37,38 @@
   touch-action: pan-x;
   scroll-behavior: smooth;
   scroll-padding: var(--space-2);
+  overscroll-behavior-x: contain;
+}
+
+.navWrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.navWrap > .nav {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.arrow {
+  flex: none;
+  min-block-size: var(--touch-target);
+  min-inline-size: var(--touch-target);
+}
+
+.fadeStart {
+  mask-image: linear-gradient(to right, transparent, #000 var(--space-6));
+}
+
+.fadeEnd {
+  mask-image: linear-gradient(to left, transparent, #000 var(--space-6));
+}
+
+.fadeStart.fadeEnd {
+  mask-image: linear-gradient(to right, transparent, #000 var(--space-6), #000 calc(100% - var(--space-6)), transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

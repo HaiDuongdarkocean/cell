@@ -41,7 +41,6 @@ import { NavItem } from '@/shared/ui/NavItem';
 import { Navigation } from '@/shared/ui/Navigation';
 import { Sidebar } from '@/shared/ui/Sidebar';
 import { VStack } from '@/shared/ui/Stack';
-import { BREAKPOINTS } from '@/shared/lib/tokens';
 
 import styles from './SettingsDialog.module.css';
 
@@ -136,7 +135,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
     return () => ro.disconnect();
   }, []);
 
-  const navOrientation = navMode === 'horizontal' || containerWidth < BREAKPOINTS.medium ? 'horizontal' : 'vertical';
+  const navOrientation = navMode === 'horizontal' || containerWidth < SIDEBAR_LABEL_MIN_WIDTH ? 'horizontal' : 'vertical';
   const sidebarExpanded = containerWidth >= SIDEBAR_LABEL_MIN_WIDTH;
   const activeProfile = getActiveProfileSettings(settings);
 
