@@ -222,15 +222,22 @@ function SubtitlePanelImpl({
     [difficulties],
   );
 
-  const cueFilterEnabled =
+  const cueFilterAvailable =
     Boolean(tokenize) &&
     !scoreSuppressed &&
     practiceMode === 'off' &&
     !panelBlurred &&
+    cueSetKey !== null &&
+    !(pmMobile && cueDisplayMode === 'active' && !showAllCues);
+
+  const cueFilterEnabled =
+    cueFilterAvailable &&
     difficulties !== null &&
     difficulties.size > 0 &&
-    cueCounts !== null &&
-    !(pmMobile && cueDisplayMode === 'active' && !showAllCues);
+    cueCounts !== null;
+
+  const cueFilterFabVisible =
+    cueFilterAvailable && (difficulties === null || difficulties.size > 0);
 
   const cueFilter = useMemo(() => {
     if (!cueFilterEnabled || filterMode === 'all' || !difficulties) return undefined;
@@ -397,7 +404,7 @@ function SubtitlePanelImpl({
     ) : null;
 
   const cueFilterFab =
-    cueFilterEnabled && cueCounts !== null ? (
+    cueFilterFabVisible ? (
       pmMobile && fabPortalTarget ? (
         createPortal(
           <CueRecommendFab
@@ -478,7 +485,7 @@ function SubtitlePanelImpl({
             <div
               className={styles.cueListWrap}
               data-panel-blurred={panelBlurred ? 'true' : 'false'}
-              data-cue-filter={cueFilterEnabled ? 'true' : 'false'}
+              data-cue-filter={cueFilterFabVisible ? 'true' : 'false'}
             >
               {cueFilterStrip}
               {subtitleContent}
@@ -504,7 +511,7 @@ function SubtitlePanelImpl({
         <div
           className={styles.cueListWrap}
           data-panel-blurred={panelBlurred ? 'true' : 'false'}
-          data-cue-filter={cueFilterEnabled ? 'true' : 'false'}
+          data-cue-filter={cueFilterFabVisible ? 'true' : 'false'}
         >
           {cueFilterStrip}
           {subtitleContent}

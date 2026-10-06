@@ -105,15 +105,17 @@ describe('SubtitlePanel cue filter', () => {
   it('shows the FAB with the i+1 badge count once metadata resolves', async () => {
     renderPanel();
 
-    await waitFor(() => expect(screen.getByTestId('cue-filter-fab')).toBeInTheDocument());
-    expect(screen.getByTestId('cue-filter-badge').textContent).toBe('1');
+    await waitFor(() =>
+      expect(screen.getByTestId('cue-filter-badge').textContent).toBe('1'),
+    );
   });
 
-  it('hides the FAB while resolution is still pending', () => {
+  it('shows a pending FAB while resolution is still pending', () => {
     resolveMock.mockReturnValue(new Promise(() => undefined));
     renderPanel();
 
-    expect(screen.queryByTestId('cue-filter-fab')).toBeNull();
+    expect(screen.getByTestId('cue-filter-fab')).toBeInTheDocument();
+    expect(screen.getByTestId('cue-filter-badge').textContent).toBe('…');
   });
 
   it('does not render the FAB when tokenize is off', async () => {
@@ -218,18 +220,20 @@ describe('SubtitlePanel cue filter', () => {
     expect(screen.getAllByTestId('cue-item')).toHaveLength(3);
   });
 
-  it('hides the FAB when the status side fails', async () => {
+  it('keeps the FAB in a pending state when the status side fails', async () => {
     resolveMock.mockImplementation((map) =>
       Promise.resolve({ map, meta: resolvedMeta({ failed: true }) }),
     );
-    renderPanel();
+    const { unmount } = renderPanel();
     await waitFor(() => expect(resolveMock).toHaveBeenCalled());
     await new Promise((r) => setTimeout(r, 10));
 
-    expect(screen.queryByTestId('cue-filter-fab')).toBeNull();
+    expect(screen.getByTestId('cue-filter-fab')).toBeInTheDocument();
+    expect(screen.getByTestId('cue-filter-badge').textContent).toBe('…');
+    unmount();
   });
 
-  it('clears the last good resolution when the cue set changes', async () => {
+  it('shows a pending FAB while a changed cue set re-resolves', async () => {
     const { rerender } = renderPanel();
     await waitFor(() => expect(screen.getByTestId('cue-filter-fab')).toBeInTheDocument());
 
@@ -247,7 +251,9 @@ describe('SubtitlePanel cue filter', () => {
       />,
     );
 
-    await waitFor(() => expect(screen.queryByTestId('cue-filter-fab')).toBeNull());
+    await waitFor(() =>
+      expect(screen.getByTestId('cue-filter-badge').textContent).toBe('…'),
+    );
   });
 
   it('counts every new word regardless of the unknown level — the badge matches the pills you see', async () => {
@@ -288,9 +294,8 @@ describe('SubtitlePanel cue heat', () => {
 
   it('renders a heat band on every cue once difficulty resolves', async () => {
     renderPanel();
-    await waitFor(() => expect(screen.getByTestId('cue-filter-fab')).toBeInTheDocument());
 
-    expect(heatBands()).toEqual(['easy', 'i1', 'dense']);
+    await waitFor(() => expect(heatBands()).toEqual(['easy', 'i1', 'dense']));
     expect(document.querySelectorAll('[data-cell-id="cue-heat"]')).toHaveLength(3);
   });
 

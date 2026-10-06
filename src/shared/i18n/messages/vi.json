@@ -104,6 +104,7 @@
   "settings.wordBadge.pointerScale": "Tỷ lệ mũi tên",
   "settings.wordBadge.hint": "Nút nổi có mũi tên chỉ hướng. Kéo trên màn hình để di chuyển.",
   "cueFilter.fabAriaLabel": "Lọc cue theo độ khó. $1 cue i+1.",
+  "cueFilter.fabAriaLabelPending": "Lọc cue theo độ khó. Đang tải dữ liệu từ.",
   "cueFilter.fabTooltip": "Lọc cue theo độ khó",
   "cueFilter.menuLabel": "Bộ lọc cue",
   "cueFilter.mode.all": "Tất cả cue",

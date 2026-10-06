@@ -15,7 +15,7 @@ function renderFab(overrides: Partial<Parameters<typeof CueRecommendFab>[0]> = {
   render(
     <CueRecommendFab
       mode={overrides.mode ?? 'all'}
-      counts={overrides.counts ?? COUNTS}
+      counts={overrides.counts !== undefined ? overrides.counts : COUNTS}
       onModeChange={onModeChange}
     />,
   );
@@ -43,6 +43,15 @@ describe('CueRecommendFab', () => {
     renderFab({ counts: { ...COUNTS, i1: 150 } });
 
     expect(screen.getByTestId('cue-filter-badge').textContent).toBe('99+');
+  });
+
+  it('shows a pending badge and still opens the menu when counts are unavailable', () => {
+    renderFab({ counts: null });
+
+    expect(screen.getByTestId('cue-filter-badge').textContent).toBe('…');
+
+    fireEvent.click(screen.getByTestId('cue-filter-fab'));
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(5);
   });
 
   it('opens a menu with five menuitemradio options and the active mode checked', () => {

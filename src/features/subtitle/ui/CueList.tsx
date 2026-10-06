@@ -22,6 +22,8 @@ import styles from './CueList.module.css';
 
 const EMPTY_TOKEN_MAP: CueListTokenMap = new Map();
 const EMPTY_SELECTED_TERMS: ReadonlySet<string> = new Set();
+const RESOLVE_MAX_ATTEMPTS = 3;
+const RESOLVE_RETRY_DELAY_MS = 1500;
 
 const UNRESOLVED_META: ResolveMeta = {
   resolved: false,
@@ -250,18 +252,31 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     resolvingRef.current = true;
     setResolving(true);
     let active = true;
-    void resolveCueListTokenMetadata(immediate, tokenizeLangCode).then(({ map, meta }) => {
+    void (async () => {
+      for (let attempt = 0; attempt < RESOLVE_MAX_ATTEMPTS; attempt += 1) {
+        if (!active) return;
+        try {
+          const { map, meta } = await resolveCueListTokenMetadata(immediate, tokenizeLangCode);
+          if (!active) return;
+          metaRef.current = meta;
+          setTokenMap(
+            applyCueListTokenStatuses(
+              map,
+              statusOverridesRef.current.get(tokenizeLangCode) ?? new Map<string, WordStatus>(),
+            ),
+          );
+          if (!meta.failed) break;
+        } catch {
+          if (!active) return;
+        }
+        if (attempt < RESOLVE_MAX_ATTEMPTS - 1) {
+          await new Promise<void>((resolve) => setTimeout(resolve, RESOLVE_RETRY_DELAY_MS));
+        }
+      }
       if (!active) return;
-      metaRef.current = meta;
       resolvingRef.current = false;
       setResolving(false);
-      setTokenMap(
-        applyCueListTokenStatuses(
-          map,
-          statusOverridesRef.current.get(tokenizeLangCode) ?? new Map<string, WordStatus>(),
-        ),
-      );
-    });
+    })();
     return () => {
       active = false;
     };

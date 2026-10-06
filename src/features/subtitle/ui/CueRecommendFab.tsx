@@ -24,7 +24,7 @@ export function cueFilterModeLabel(mode: CueFilterMode): string {
 
 export interface CueRecommendFabProps {
   readonly mode: CueFilterMode;
-  readonly counts: Readonly<Record<CueFilterMode, number>>;
+  readonly counts: Readonly<Record<CueFilterMode, number>> | null;
   readonly onModeChange: (mode: CueFilterMode) => void;
   /** Button variant — default keeps the surface (secondary/primary) pairing. */
   readonly variant?: 'secondary' | 'neutralSubtle';
@@ -46,8 +46,8 @@ export function CueRecommendFab({
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  const i1Count = counts.i1;
-  const badgeText = i1Count > 99 ? '99+' : String(i1Count);
+  const i1Count = counts?.i1 ?? 0;
+  const badgeText = counts === null ? '…' : i1Count > 99 ? '99+' : String(i1Count);
 
   const closeMenu = useCallback((restoreFocus = false): void => {
     setIsOpen(false);
@@ -77,7 +77,11 @@ export function CueRecommendFab({
         size={size}
         shape="circle"
         elevation="high"
-        aria-label={t('cueFilter.fabAriaLabel', [i1Count])}
+        aria-label={
+          counts === null
+            ? t('cueFilter.fabAriaLabelPending')
+            : t('cueFilter.fabAriaLabel', [i1Count])
+        }
         aria-haspopup="menu"
         aria-expanded={isOpen}
         title={t('cueFilter.fabTooltip')}
@@ -103,7 +107,7 @@ export function CueRecommendFab({
             key={m}
             radio
             selected={m === mode}
-            trailing={counts[m]}
+            trailing={counts?.[m]}
             onSelect={() => selectMode(m)}
           >
             {cueFilterModeLabel(m)}
