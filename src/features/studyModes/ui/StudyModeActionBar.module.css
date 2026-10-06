@@ -2,7 +2,7 @@
   flex: none;
   overflow: hidden;
   padding: var(--space-2) var(--space-3);
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-bottom: var(--border-width-hairline) solid var(--color-divider);
   background: var(--color-surface);
   container-type: inline-size;
   container-name: actionBar;

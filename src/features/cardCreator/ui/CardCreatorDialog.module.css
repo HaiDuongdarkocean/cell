@@ -44,7 +44,7 @@
   align-items: center;
   flex-shrink: 0;
   padding: var(--space-2) var(--space-4);
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-bottom: var(--border-width-hairline) solid var(--color-divider);
 }
 
 .cc-dialog__panel-header > :first-child {
@@ -229,7 +229,7 @@
   gap: var(--space-3);
   margin-top: var(--space-5);
   padding-top: var(--space-3);
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 
 .cc-dialog__footer-mode {

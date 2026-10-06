@@ -28,7 +28,7 @@
 
 /* ─── Divider — top hairline between rows ─── */
 .divider {
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 
 /* ─── Flush — remove padding for nested rows ─── */

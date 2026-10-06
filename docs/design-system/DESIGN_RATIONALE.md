@@ -189,7 +189,7 @@ Mỗi nhóm token trình bày theo khung: **Tồn tại vì → Dùng khi → Kh
    - **Variant explicit**: `outline` (button/input/chip/badge…).
    - **State**: `focus` (ring/border-focus), `error`, `success`, `selected` (ring), `checked` (fill).
    - **Affordance vật lý**: drag handle, resize grip, drop-zone, kbd key-cap, slider-thumb cutout, avatar edge mask.
-   - **Separator cấu trúc**: đường kẻ phân cách giữa vùng/row — `--color-border-subtle` hairline. Separator ≠ khung bao: nó không bao quanh component.
+   - **Separator cấu trúc**: đường kẻ phân cách giữa vùng/row — `--color-divider` hairline (derived từ `surface-elevated` nên giữ ~1.6:1 trên cả elevated surfaces; `border-subtle` chỉ cho outline — nó tính từ `surface` nên biến mất trên popover/sheet). Separator ≠ khung bao: nó không bao quanh component.
    - **Accessibility mode**: `prefers-contrast: more` / `forced-colors` phải trả boundary cho control.
 3. Bỏ viền không được reflow: giữ `border-width` + `transparent`, hoặc dùng `box-shadow`/`outline` cho ring state.
 4. Control trong card dùng `--color-field` (text-mix, trung tính, tự đảo theo mode) — nấc "resting inset" thấp nhất sau surface.

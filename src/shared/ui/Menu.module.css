@@ -88,6 +88,6 @@
 
 .separator {
   height: var(--border-width-hairline);
-  background: var(--color-border-subtle);
+  background: var(--color-divider);
   margin: var(--space-1) var(--space-2);
 }

@@ -100,7 +100,7 @@
 }
 
 .noteRowBorder {
-  border-top: var(--border-width-hairline) solid var(--color-border);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 
 .noteMain {

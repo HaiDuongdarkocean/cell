@@ -126,7 +126,7 @@
 /* Manage keys panel — shown when keys exist + panel open */
 .manageKeysPanel {
   padding: var(--space-2) 0;
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 
 /* ─── Target / Native tabs — filter results by language ─── */

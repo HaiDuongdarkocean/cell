@@ -1,7 +1,7 @@
 .practiceOptions {
   flex: none;
   padding: var(--space-2) var(--space-3);
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-bottom: var(--border-width-hairline) solid var(--color-divider);
 }
 
 .row {

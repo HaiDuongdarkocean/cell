@@ -118,7 +118,7 @@
   flex-wrap: wrap;
   gap: var(--space-3);
   padding-top: var(--space-3);
-  border-top: var(--border-width-hairline) solid var(--color-border);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 
 .legendItem {

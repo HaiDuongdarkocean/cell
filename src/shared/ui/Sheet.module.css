@@ -71,7 +71,7 @@
 .footer {
   flex: 0 0 auto;
   padding: var(--space-2) 0 var(--space-3);
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 
 @media (prefers-reduced-motion: reduce) {

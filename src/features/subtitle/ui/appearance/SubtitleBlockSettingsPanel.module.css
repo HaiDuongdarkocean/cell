@@ -24,7 +24,7 @@
 }
 
 .row + .row {
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 
 /* ─── Slider header — label left, value right ─── */

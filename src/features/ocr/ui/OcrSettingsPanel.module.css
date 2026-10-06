@@ -42,7 +42,7 @@
 
 /* ─── Divider — top hairline between fields ─── */
 .divider {
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 
 /* ─── Info button — compact, hover/focus → info color ─── */
@@ -91,7 +91,7 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   line-height: var(--leading-normal);
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 .hintStrong {
   color: var(--color-text-primary);

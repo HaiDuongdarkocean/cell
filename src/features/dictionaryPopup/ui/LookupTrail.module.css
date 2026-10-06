@@ -3,7 +3,7 @@
   margin: 0 calc(var(--space-3) * -1);
   padding: var(--space-1) var(--space-3);
   background: var(--color-surface-card);
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-bottom: var(--border-width-hairline) solid var(--color-divider);
   overflow-x: auto;
   overscroll-behavior: contain;
   touch-action: pan-x;

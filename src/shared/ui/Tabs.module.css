@@ -3,7 +3,7 @@
   gap: 0;
   padding: 0;
   background: transparent;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-divider);
   border-radius: 0;
 }
 

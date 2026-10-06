@@ -154,7 +154,7 @@
   background: color-mix(in srgb, var(--color-surface) 85%, transparent);
   backdrop-filter: blur(var(--blur-lg));
   -webkit-backdrop-filter: blur(var(--blur-lg));
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
   pointer-events: auto;
   container-type: inline-size;
 }
@@ -355,7 +355,7 @@
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
   /* color-background (not overlay-background — that token is solid black in
      every theme and reads as a black strip in light mode). */
   background: var(--color-background);

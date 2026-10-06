@@ -34,7 +34,7 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-4);
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-bottom: var(--border-width-hairline) solid var(--color-divider);
 }
 
 .title {
@@ -55,7 +55,7 @@
   justify-content: flex-end;
   gap: var(--space-3);
   padding: var(--space-4);
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 
 @keyframes drawer-in {

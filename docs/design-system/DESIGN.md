@@ -152,6 +152,7 @@ When building any UI, map each element to an existing `src/shared/ui/*` componen
 | Quiet fill (skeleton, code, checkbox-off) | `muted` | — |
 | Scrim behind modal | `overlay` | `overlay-hover` (a wash, not a scrim) |
 | Border | `border` / `border-subtle` / `border-emphasized` | `input` (alias), `border-inverse` |
+| Divider (hairline separating regions/rows) | `divider` | `border-subtle` (outlines only — it vanishes on elevated surfaces) |
 
 Rule of thumb: `field*`, `overlay-*`, `*-subtle`, `*-hover` ending in a `transparent`-mix value are **alpha washes** — check `tokens.json`; if the formula contains `transparent`, the layer below shows through. `surface*` / `*-solid` / `*-elevated` are opaque.
 

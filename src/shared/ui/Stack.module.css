@@ -42,11 +42,11 @@
 
 /* === Divider — renders border between children via gap + child borders === */
 .vertical.divider > * + * {
-  border-top: var(--border-width-hairline) solid var(--color-border);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 
 .horizontal.divider > * + * {
-  border-left: var(--border-width-hairline) solid var(--color-border);
+  border-left: var(--border-width-hairline) solid var(--color-divider);
 }
 
 /* === Gap (only applied when prop is passed) === */

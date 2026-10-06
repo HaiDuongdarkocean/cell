@@ -12,7 +12,6 @@
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
   overflow: hidden;
-  --manager-divider: color-mix(in srgb, var(--color-text) 12%, transparent);
 }
 
 /* Drag handle — visible on all viewports (YouTube settings style) */
@@ -106,7 +105,7 @@
   justify-content: space-between;
   min-height: var(--space-10);
   padding: var(--space-1) var(--space-2);
-  border-bottom: var(--border-width-hairline) solid var(--manager-divider);
+  border-bottom: var(--border-width-hairline) solid var(--color-divider);
 }
 
 /* Header buttons stay ghost/icon-only — no border chrome (shared Button
@@ -259,7 +258,7 @@
   align-items: center;
   gap: var(--space-1-5);
   padding: var(--space-1) var(--space-2);
-  border-bottom: var(--border-width-hairline) solid var(--manager-divider);
+  border-bottom: var(--border-width-hairline) solid var(--color-divider);
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
@@ -461,7 +460,7 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
   flex-shrink: 0;
 }
 
@@ -485,8 +484,8 @@
   min-width: 0;
   display: inline-flex;
   align-items: stretch;
-  border-left: var(--border-width-hairline) solid var(--manager-divider);
-  border-right: var(--border-width-hairline) solid var(--manager-divider);
+  border-left: var(--border-width-hairline) solid var(--color-divider);
+  border-right: var(--border-width-hairline) solid var(--color-divider);
   background: transparent;
 }
 
@@ -553,7 +552,7 @@
 /* Appearance view tabs — shared InkTabs row under the sticky preview. */
 .appearanceTabs {
   flex: 0 0 auto;
-  border-bottom: var(--border-width-hairline) solid var(--manager-divider);
+  border-bottom: var(--border-width-hairline) solid var(--color-divider);
   padding: var(--space-1) var(--space-2);
 }
 

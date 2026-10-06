@@ -36,7 +36,7 @@
 }
 
 .row + .row {
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-top: var(--border-width-hairline) solid var(--color-divider);
 }
 
 /* ─── Two-column row (color pickers, opacity sliders) ─── */
@@ -53,7 +53,7 @@
 
   .pairRow > .row + .row {
     border-top: none;
-    border-left: var(--border-width-hairline) solid var(--color-border-subtle);
+    border-left: var(--border-width-hairline) solid var(--color-divider);
   }
 }
 
@@ -95,7 +95,7 @@
   }
 
   .customShadowRow > .row + .row {
-    border-left: var(--border-width-hairline) solid var(--color-border-subtle);
+    border-left: var(--border-width-hairline) solid var(--color-divider);
   }
 
   .customShadowRow > .row:nth-child(3) {

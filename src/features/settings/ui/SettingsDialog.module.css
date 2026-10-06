@@ -117,7 +117,7 @@
 .childField {
   margin-left: var(--space-4);
   padding-left: var(--space-3);
-  border-left: var(--space-0-5) solid var(--color-border-subtle);
+  border-left: var(--space-0-5) solid var(--color-divider);
 }
 
 @media (max-width: 599px) {

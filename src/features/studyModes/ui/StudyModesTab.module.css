@@ -97,12 +97,12 @@
   flex-direction: column;
   gap: var(--space-3);
   padding-top: var(--space-3);
-  border-top: var(--borderWidth-hairline, 1px) solid var(--color-border-subtle);
+  border-top: var(--borderWidth-hairline, 1px) solid var(--color-divider);
 }
 
 .cleanupBlock {
   padding-top: var(--space-3);
-  border-top: var(--borderWidth-hairline, 1px) solid var(--color-border-subtle);
+  border-top: var(--borderWidth-hairline, 1px) solid var(--color-divider);
 }
 
 .advancedLabel {
@@ -131,7 +131,7 @@
 }
 
 .ruleRow + .ruleRow {
-  border-top: var(--borderWidth-hairline, 1px) solid var(--color-border-subtle);
+  border-top: var(--borderWidth-hairline, 1px) solid var(--color-divider);
 }
 
 .ruleBody {
@@ -188,7 +188,7 @@
   font-weight: 600;
   text-transform: uppercase;
   color: var(--color-text-muted);
-  border-top: var(--borderWidth-hairline, 1px) solid var(--color-border-subtle);
+  border-top: var(--borderWidth-hairline, 1px) solid var(--color-divider);
 }
 
 .groupHeader {
