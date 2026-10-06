@@ -32,6 +32,12 @@
   z-index: var(--z-overlay-base);
 }
 
+/* PM mobile: float above the anchor band (same clearance the list
+   reserves) so the pill sits over the cards, not over the CC/pill row. */
+.pmMobile .syncPill {
+  bottom: calc(var(--space-16) + var(--space-8) + var(--space-2));
+}
+
 .cue {
   position: relative;
   display: flex;
@@ -219,6 +225,9 @@
 .pmMobile .actions {
   margin-top: var(--space-3);
   font-size: var(--font-size-xs);
+  /* Fixed footer height = xs button height — cards keep the same height
+     whether the action buttons render or not (no jump on cue change). */
+  height: var(--iconbutton-size-xs);
 }
 
 .pmMobile .timestamp {
