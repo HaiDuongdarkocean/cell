@@ -56,3 +56,30 @@ Top-3 must-fix:
 3. **C5 contract: restore `player-mode-content` on the cue region + emit `pm-cue-active-card`** (gaps 1-2) — plus `trackLabel` fallback (gap 6) so `pm-caption` actually shows.
 
 VERDICT: FAIL
+
+---
+
+## Round 2 — resolution pass (committed `3289c05c`)
+
+All gaps above were fixed and re-verified in a real Chrome session (390×780 mobile emulation):
+
+1. `pm-cue-active-card` → emitted on the active card's content wrapper (`CueList.tsx` — `cue-item` root contract kept; unit test asserts the marker resolves inside `[data-cue-index]` of the current cue).
+2. `player-mode-content` → restored on the mobile content wrap (`player-mode-content` + `pm-cue-region` both present; test now asserts presence).
+3. Fab menu z-dead → `CueRecommendFab` gained `menuContainer`; `SubtitlePanel` passes the overlay element (`fabPortalTarget.closest('[data-cell-id="player-mode-overlay"]')`) — same fix as `pm-more-menu`.
+4. Context cards pop → `.panel[data-cell-pm-mobile='true']` flattens to `color-background` (no blur/slide) so `color-surface` cards read as cards; verified in v2 screenshots.
+5. Serif menu leak → `.overlay` sets `font-family: var(--font-family)` (DOM check: menu item computes `Inter`).
+6. `trackLabel` fallback → `SubtitlePanels` reads `subtitleOverlayTargetLanguage` from `STORAGE_KEYS.SETTINGS` with live `onChanged` sync; caption hides only when both sources empty.
+7. Touch targets → exit/⋯/generate-native bumped `md`→`lg` (48px ≥ 44; DOM check `48x48`).
+8. `showAllCues` one-way leak → reset effect on `cueDisplayMode` change.
+9. REQ-10 window → `PM_MOBILE_LIST_WINDOW = 8` slice around the active cue in mobile list mode (20-cue test renders exactly 8, current included); align effect retargeted to `renderedCues` indexes.
+10. REQ-8 badge clearance → overlay reads `orbitalBadgePosition` + `dictionaryPopup.badgePointerTrigger.size` (live `onChanged`), sets `data-orbital-edge` + `--pm-orbital-badge`; `.pmRail` right offset = badge + space-2 when edge=right (DOM check: `data-orbital-edge="right"` live in session).
+11. `color-overlay-background` → `.overlayMobile` + `.bottomBar` use `color-background`; `.videoStageMobile` uses `color-surface` — light theme no longer shows a black strip (v2 light screenshot).
+12. Dead `data-cell-pm-mobile` → now the actual style hook for the mobile panel chrome (gap-4 fix).
+13. Fab badge anchor → `.pmRail [data-cell-id='cue-filter']` is `position: relative` (+ `inset: auto`) so the count badge anchors to the button.
+14. REQ-2 absent-handler rule → every transport button is guard-rendered (`onPrev && …` etc.).
+15. AC-16 spec text → corrected `navRepeat` → `rotateCcw` (impl follows REQ-11 + mockup).
+
+New evidence: `docs/mockups/player-mode-mobile-layout-impl-v2-dark.png`, `-v2-light.png`.
+Gates re-run on `3289c05c`: typecheck ✓, lint ✓ (0 errors), test:unit ✓ 8045, build ✓, browser ✓.
+
+VERDICT: PASS
