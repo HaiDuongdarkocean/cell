@@ -454,16 +454,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                 </VisuallyHidden>
               </>
             )}
-            {mobile && isCurrent && cardActions ? (
-              <div className={styles.cueBody}>
-                {cueContent}
-                <div className={styles.cardActions} data-cell-id="pm-card-actions">
-                  {cardActions}
-                </div>
-              </div>
-            ) : (
-              cueContent
-            )}
+            {cueContent}
             <div className={styles.actions} data-cell-id="cue-actions">
               <button
                 type="button"
@@ -486,6 +477,11 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                   ? `${formatTimestamp(cue.start - offsetMs, hasHours)} – ${formatTimestamp(cue.end - offsetMs, hasHours)}`
                   : formatTimestamp(cue.start - offsetMs, hasHours)}
               </button>
+              {mobile && isCurrent && cardActions && (
+                <div className={styles.cardActions} data-cell-id="pm-card-actions">
+                  {cardActions}
+                </div>
+              )}
             </div>
           </div>
         );

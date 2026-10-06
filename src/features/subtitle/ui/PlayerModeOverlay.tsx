@@ -612,7 +612,7 @@ function PlayerModeOverlayInner({
         {onQuickAdd && (
           <Button
             variant="primarySubtle"
-            size="md"
+            size="xs"
             elevation="low"
             aria-label={t('subtitle.toolbar.quickAdd')}
             title={t('subtitle.toolbar.quickAddTitle')}
@@ -625,7 +625,7 @@ function PlayerModeOverlayInner({
         {onEditCard && (
           <Button
             variant="errorSubtle"
-            size="md"
+            size="xs"
             elevation="low"
             aria-label={t('subtitle.toolbar.editCard')}
             title={t('subtitle.toolbar.editCardTitle')}
