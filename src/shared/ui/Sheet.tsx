@@ -2,6 +2,7 @@ import { useCallback, useEffect, type ReactNode, type KeyboardEvent } from 'reac
 import { useSheet } from './useSheet';
 import { useFocusTrap } from './useFocusTrap';
 import { pushEscapeLayer } from './escapeLayerStack';
+import { acquireSurfaceLayer } from './surfaceLayer';
 import { t } from '@/shared/i18n';
 import styles from './Sheet.module.css';
 
@@ -88,6 +89,11 @@ export function Sheet({
       onClose?.();
     });
   }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    return acquireSurfaceLayer();
+  }, [open]);
 
   if (!open) return null;
 

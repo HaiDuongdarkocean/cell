@@ -1,5 +1,6 @@
 import { useEffect, type HTMLAttributes, type ReactNode } from 'react';
 import { pushEscapeLayer } from './escapeLayerStack';
+import { acquireSurfaceLayer } from './surfaceLayer';
 import styles from './Overlay.module.css';
 
 type OverlayElevation = 'low' | 'med' | 'high';
@@ -43,6 +44,11 @@ export function Overlay({
     const handler = onClose;
     return pushEscapeLayer(() => handler());
   }, [visible, onClose]);
+
+  useEffect(() => {
+    if (!visible) return;
+    return acquireSurfaceLayer();
+  }, [visible]);
 
   const cls = [
     styles.overlay,

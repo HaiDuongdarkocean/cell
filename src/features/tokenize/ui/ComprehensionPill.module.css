@@ -30,6 +30,13 @@
   padding-block: 0;
 }
 
+/* The pill is a body-level floating host — it cannot join the z-order of
+   surfaces that live inside other stacking contexts, so it steps aside
+   whenever an extension surface (menu, sheet, dialog) is open. */
+:host-context([data-cell-surface-open]) .pill {
+  display: none;
+}
+
 .toggle {
   display: flex;
   gap: var(--space-1);

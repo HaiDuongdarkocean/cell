@@ -1,6 +1,7 @@
-import { useRef, type KeyboardEventHandler } from 'react';
+import { useEffect, useRef, type KeyboardEventHandler } from 'react';
 import { Portal } from './Portal';
 import { useMenuPlacement, type MenuAlign } from './useMenuPlacement';
+import { acquireSurfaceLayer } from './surfaceLayer';
 import styles from './Popover.module.css';
 
 export interface PopoverProps {
@@ -60,6 +61,10 @@ export function Popover({
 }: PopoverProps): React.JSX.Element | null {
   const internalRef = useRef<HTMLDivElement>(null);
   const menuRef = contentRef ?? internalRef;
+  useEffect(() => {
+    if (!open) return;
+    return acquireSurfaceLayer();
+  }, [open]);
   const { style } = useMenuPlacement({
     isOpen: open,
     menuAlign,
