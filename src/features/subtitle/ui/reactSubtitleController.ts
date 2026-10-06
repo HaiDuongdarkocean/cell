@@ -55,7 +55,7 @@ export class ReactSubtitleController {
   private readonly video: HTMLVideoElement;
   private readonly container: HTMLElement;
   private playerModeHost: PlayerModeHostController | null = null;
-  private readonly videoAspectRatio: number;
+  private videoAspectRatio: number;
   private readonly url: string;
   /** Storage key for subtitle offset — site origin (not full URL) so the
    *  latency persists across episodes on SPAs like kisskh where each episode
@@ -136,12 +136,7 @@ export class ReactSubtitleController {
   ) {
     this.video = video;
     this.container = container;
-    const videoRect = video.getBoundingClientRect();
-    this.videoAspectRatio = resolveVideoAspectRatio(
-      video.videoWidth,
-      video.videoHeight,
-      resolveVideoAspectRatio(videoRect.width, videoRect.height),
-    );
+    this.videoAspectRatio = resolveVideoAspectRatio(video.videoWidth, video.videoHeight);
     this.url = window.location?.href ?? '';
     this.offsetKey = this.resolveOffsetKey(this.url);
     this.onCardCreatorAction = onCardCreatorAction;
@@ -224,6 +219,8 @@ export class ReactSubtitleController {
     // stays empty until the next load/offset change.
     // Also update CueList currentTimeMs for highlight sync in Player Mode.
     video.addEventListener('timeupdate', this.onVideoTimeUpdate);
+    video.addEventListener('loadedmetadata', this.refreshVideoAspectRatio);
+    video.addEventListener('resize', this.refreshVideoAspectRatio);
   }
 
   /** Resolve the storage key for subtitle offset. Prefer the site origin so
@@ -403,6 +400,17 @@ export class ReactSubtitleController {
     this.engine.onTimeUpdate();
     this.mount.setCurrentTimeMs(this.video.currentTime * 1000);
     this.syncStudyMode();
+  };
+
+  private readonly refreshVideoAspectRatio = (): void => {
+    const next = resolveVideoAspectRatio(this.video.videoWidth, this.video.videoHeight);
+    if (next === this.videoAspectRatio) return;
+    this.videoAspectRatio = next;
+    this.mount.setVideoAspectRatio(next);
+    if (!this.isPlayerModeActive) return;
+    const videoStageHeight = this.getPlayerModeVideoStageHeight();
+    this.playerModeHost?.update(videoStageHeight);
+    this.setPlayerModeBounds(videoStageHeight);
   };
 
   private applyGenerateNativeEnabled(enabled: boolean): void {
@@ -854,6 +862,7 @@ export class ReactSubtitleController {
       return;
     }
 
+    this.refreshVideoAspectRatio();
     this.playerModeHost?.restore();
     this.playerModeHost = createPlayerModeHostController(this.video, this.container);
     const updateLayout = (): void => {
@@ -927,6 +936,8 @@ export class ReactSubtitleController {
     this.video.removeEventListener('pause', this.onVideoPause);
     this.video.removeEventListener('seeking', this.onVideoSeeking);
     this.video.removeEventListener('timeupdate', this.onVideoTimeUpdate);
+    this.video.removeEventListener('loadedmetadata', this.refreshVideoAspectRatio);
+    this.video.removeEventListener('resize', this.refreshVideoAspectRatio);
     this.studyMode.destroy();
     this.engine.setHeldCue(this.studyMode.heldCueIndex);
     this.mount.unmount();

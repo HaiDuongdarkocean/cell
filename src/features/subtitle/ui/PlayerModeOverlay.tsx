@@ -652,7 +652,7 @@ function PlayerModeOverlayInner({
       >
         <div className={styles.split} data-cell-id="player-mode-split">
           <div
-            className={`${styles.videoStage} ${styles.videoStageMobile} ${!cueListOpen || !onSeek ? styles.videoStageFill : ''}`}
+            className={`${styles.videoStage} ${!cueListOpen || !onSeek ? styles.videoStageFill : ''}`}
             style={cueListOpen && onSeek ? { height: `${layout.videoStageHeight}px` } : undefined}
             data-cell-id="player-mode-video-stage"
             aria-hidden="true"

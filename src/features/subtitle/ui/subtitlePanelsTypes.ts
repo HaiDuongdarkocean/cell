@@ -118,6 +118,8 @@ export interface SubtitlePanelsRef {
   setRepeatIcon: (icon: IconCatalogKey, label?: string) => void;
   /** Enable or disable the manager-panel generate-native button. */
   setGenerateNativeEnabled: (enabled: boolean) => void;
+  /** Update the video aspect ratio once metadata loads (Player Mode stage height). */
+  setVideoAspectRatio: (ratio: number) => void;
   /** Collapse or expand the nav cluster. */
   setCollapsed: (collapsed: boolean) => void;
   /** Update the block vertical position (percent 0-95). */

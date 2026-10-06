@@ -254,7 +254,7 @@
 }
 
 /* === Mobile <600px — reading-first layout (spec player-mode-mobile-layout) ===
-   Stack: videoStage (inset, rounded) → pmCueWrap (flex:1) → pm-bottom-bar.
+   Stack: videoStage → pmCueWrap (flex:1) → pm-bottom-bar.
    pmCueWrap holds the cue region + the floating anchor band that overlays
    its bottom edge. The comprehension pill docks itself via :host-context on
    data-cell-player-mode-mobile (ComprehensionPill.module.css).
@@ -264,16 +264,6 @@
 .overlayMobile {
   background: var(--color-background);
 }
-.videoStageMobile {
-  width: auto;
-  margin: var(--space-3) var(--space-3) 0;
-  border-radius: var(--radius-2xl);
-  overflow: hidden;
-  /* Surface frame keeps the inset + rounded edge visible around letterboxed
-     video (overlay bg is solid black in every theme). */
-  background: var(--color-surface);
-}
-
 .videoStageFill {
   flex: 1 1 0;
   min-height: 0;

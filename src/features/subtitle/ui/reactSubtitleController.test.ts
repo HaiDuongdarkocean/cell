@@ -79,6 +79,7 @@ function createFakeMount(): MountSubtitleResult {
     setOffsetOpen: jest.fn(),
     setHintOpen: jest.fn(),
     setGenerateNativeEnabled: jest.fn(),
+    setVideoAspectRatio: jest.fn(),
     setCollapsed: jest.fn(),
     setYOffsetPercent: jest.fn(),
     setClusterSettings: jest.fn(),
@@ -244,6 +245,37 @@ describe('ReactSubtitleController', () => {
     expect(addEventListenerSpy).toHaveBeenCalledWith('play', expect.any(Function));
     expect(addEventListenerSpy).toHaveBeenCalledWith('pause', expect.any(Function));
     expect(addEventListenerSpy).toHaveBeenCalledWith('timeupdate', expect.any(Function));
+  });
+
+  it('falls back to 16:9 before metadata — never the host-stretched rendered box', () => {
+    controller.destroy();
+    jest
+      .spyOn(video, 'getBoundingClientRect')
+      .mockReturnValue({ width: 722, height: 761 } as DOMRect);
+
+    new ReactSubtitleController(video, container);
+
+    const options = mockMountSubtitle.mock.calls.at(-1)![0];
+    expect(options.videoAspectRatio).toBeCloseTo(16 / 9);
+  });
+
+  it('updates the mount aspect ratio when video metadata loads late', () => {
+    Object.defineProperty(video, 'videoWidth', { value: 720, configurable: true });
+    Object.defineProperty(video, 'videoHeight', { value: 480, configurable: true });
+
+    video.dispatchEvent(new Event('loadedmetadata'));
+
+    expect(fakeMount.setVideoAspectRatio).toHaveBeenCalledWith(1.5);
+  });
+
+  it('re-reads aspect ratio when player mode turns on', () => {
+    Object.defineProperty(video, 'videoWidth', { value: 720, configurable: true });
+    Object.defineProperty(video, 'videoHeight', { value: 480, configurable: true });
+
+    const options = mockMountSubtitle.mock.calls[0][0];
+    options.onTogglePlayerMode?.(true);
+
+    expect(fakeMount.setVideoAspectRatio).toHaveBeenCalledWith(1.5);
   });
 
   it('re-renders cue tokens after player mode remounts the subtitle block', () => {
@@ -478,6 +510,8 @@ describe('ReactSubtitleController', () => {
     expect(removeEventListenerSpy).toHaveBeenCalledWith('play', expect.any(Function));
     expect(removeEventListenerSpy).toHaveBeenCalledWith('pause', expect.any(Function));
     expect(removeEventListenerSpy).toHaveBeenCalledWith('timeupdate', expect.any(Function));
+    expect(removeEventListenerSpy).toHaveBeenCalledWith('loadedmetadata', expect.any(Function));
+    expect(removeEventListenerSpy).toHaveBeenCalledWith('resize', expect.any(Function));
     expect(fakeMount.unmount).toHaveBeenCalled();
   });
 

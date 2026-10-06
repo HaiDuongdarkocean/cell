@@ -80,6 +80,7 @@ export interface MountSubtitleResult {
   setOffsetOpen: (open: boolean) => void;
   setHintOpen: (open: boolean) => void;
   setGenerateNativeEnabled: (enabled: boolean) => void;
+  setVideoAspectRatio: (ratio: number) => void;
   setCollapsed: (collapsed: boolean) => void;
   setYOffsetPercent: (yOffsetPercent: number) => void;
   setClusterSettings: (settings: NavClusterSettings) => void;
@@ -251,6 +252,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     setOffsetOpen: (open) => panels('setOffsetOpen')?.setOffsetOpen(open),
     setHintOpen: (open) => panels('setHintOpen')?.setHintOpen(open),
     setGenerateNativeEnabled: (enabled) => panels('setGenerateNativeEnabled')?.setGenerateNativeEnabled(enabled),
+    setVideoAspectRatio: (ratio) => panels('setVideoAspectRatio')?.setVideoAspectRatio(ratio),
     setCollapsed: (collapsed) => panels('setCollapsed')?.setCollapsed(collapsed),
     setYOffsetPercent: (y) => panels('setYOffsetPercent')?.setYOffsetPercent(y),
     setClusterSettings: (s) => panels('setClusterSettings')?.setClusterSettings(s),

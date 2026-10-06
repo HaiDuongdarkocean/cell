@@ -73,7 +73,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       manager: initialManager,
       offset: initialOffset,
       generateNativeEnabled: initialGenerateNativeEnabled = true,
-      videoAspectRatio = 16 / 9,
+      videoAspectRatio: initialVideoAspectRatio = 16 / 9,
       onTogglePlayerMode,
       cues: initialCues,
       currentTimeMs: initialCurrentTimeMs,
@@ -160,6 +160,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [hintOpen, setHintOpen] = useState(false);
     const { toasts, addToast, clearToasts, removeToast } = useToasts();
     const [generateNativeEnabled, setGenerateNativeEnabled] = useState(initialGenerateNativeEnabled);
+    const [videoAspectRatio, setVideoAspectRatio] = useState(initialVideoAspectRatio);
     const [ocrEnabledState, setOcrEnabledState] = useState(ocrEnabled ?? false);
     const [toolsExpanded, setToolsExpanded] = useState(false);
     const rootRef = useRef<HTMLDivElement>(null);
@@ -241,6 +242,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setRepeatIcon,
         setRepeatLabel,
         setGenerateNativeEnabled,
+        setVideoAspectRatio,
         setCollapsed,
         setYOffsetPercent,
         setCues,
