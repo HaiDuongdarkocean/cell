@@ -96,3 +96,26 @@ User screenshot review found 3 new defects; spec gained AC-17/18/19 and all were
 
 Evidence: `docs/mockups/player-mode-mobile-layout-impl-v3-{manager,dark,anchor}.png`.
 Gates re-run on `2b90446a`: typecheck ✓, lint ✓, test:unit ✓ 8047 (+2 new AC-17 tests), build ✓, browser ✓.
+
+---
+
+## Round 4 — user-reported defect: anchor row not axis-aligned with bottom bar
+
+User screenshot `quetta_fE6uPRgoqB.png`: the CC button did not share a vertical axis with the bottom-bar `X`, and the right rail did not share an axis with `⋯`. Two root causes:
+
+1. `.anchorRow` used `padding: space-1 space-5` while `.bottomBar` uses `space-2 space-3` → each side off by 8px. Fix: `anchorRow` horizontal padding → `space-3` (mockup `.pmAnchorRow` synced).
+2. Round-3's REQ-8 clearance added `padding-right: badge + space-2` to `.anchorRow` when the orbital badge is on the right edge → rail pushed left, off-axis with `⋯` by ~32px. Replaced with a **vertical dodge**: `--pm-orbital-lift` raises the `pm-fab-slot` above the badge only when the badge's stored `y` ± size/2 actually overlaps the rail's fab zone (computed from `player-mode-actions` rect; default right/center badge → lift 0). Rail stays flush-right always — alignment is structural, not compensated.
+
+Spec AC-18 extended: horizontal-center of `manager-toggle-btn` must equal `player-mode-exit-btn`, and `generate-native-btn`/`cue-filter-fab` must equal `pm-more-btn` (≤1px).
+
+### E2E verification (real extension on StreamFlix, 390×780)
+
+New spec `e2e/stage2/player-mode-mobile-alignment.spec.ts` (Playwright, headed Chromium + dist build):
+
+- **AC-18**: measures `getBoundingClientRect()` of `manager-toggle-btn` / `player-mode-exit-btn` / `generate-native-btn` / `pm-more-btn` / `player-mode-actions` — asserts 48×48 boxes, `|Δcx|` ≤ 1.5px for both axes and `|Δcy|` ≤ 1.5px for manager/generate. **PASS**.
+- **AC-17**: `manager-toggle-btn` click opens `subtitle-manager-layer` Sheet while PM stays mounted; `subtitle-manager-close` closes it without exiting PM. **PASS** (notes: PM runs fullscreen so the first Escape exits fullscreen — Sheet's escape layer intentionally ignores it; toggle button is open-only `setManagerOpen(true)`, close goes through the panel's close control).
+
+Evidence: `docs/mockups/player-mode-mobile-layout-impl-v4-{alignment,manager}.png` (real extension, dark, 390×780 — CC/✕ and A/⋯ columns visibly flush).
+Gates: typecheck ✓, eslint ✓ (0 errors), test:unit ✓ 8047, build ✓, e2e stage2 alignment spec ✓ 2/2.
+
+VERDICT: PASS

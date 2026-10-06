@@ -313,7 +313,7 @@
 .anchorRow {
   display: flex;
   align-items: center;
-  padding: var(--space-1) var(--space-5);
+  padding: var(--space-1) var(--space-3);
   pointer-events: none;
 }
 
@@ -349,13 +349,7 @@
 .pmRail [data-cell-id='pm-fab-slot'] {
   position: absolute;
   right: 0;
-  bottom: calc(100% + var(--space-2));
-}
-
-/* REQ-8: when the orbital badge snaps to the right edge, keep the rail clear
-   of it — reserve badge diameter + space-2 measured from the right edge. */
-.overlay[data-orbital-edge='right'] .anchorRow {
-  padding-right: calc(var(--pm-orbital-badge, 36px) + var(--space-2));
+  bottom: calc(100% + var(--space-2) + var(--pm-orbital-lift, 0px));
 }
 
 /* The fab's own CSS pins it absolute bottom-right; in the rail it must stay

@@ -109,7 +109,8 @@ const PM_MOBILE_BREAKPOINT = 600;
 const PM_MENU_SPEEDS: readonly PlaybackSpeed[] = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const ORBITAL_POSITION_KEY = 'orbitalBadgePosition';
 const ORBITAL_BADGE_DEFAULT_SIZE = 36;
-type StoredOrbitalPosition = { edge?: 'left' | 'right' | 'top' | 'bottom' };
+const PM_FAB_GAP_PX = 8;
+type StoredOrbitalPosition = { edge?: 'left' | 'right' | 'top' | 'bottom'; y?: number };
 
 function PlayerModeOverlayInner({
   targetStyle,
@@ -417,13 +418,14 @@ function PlayerModeOverlayInner({
     setShowAllCues(false);
   }, [cueDisplayMode]);
 
-  // REQ-8: when the orbital badge is snapped to the right edge, reserve
-  // badge-size + space-2 clearance for the floating rail. Default badge
-  // preset is right/center, so an absent stored position still clears.
-  const [orbitalRightPx, setOrbitalRightPx] = useState(0);
+  // REQ-8: when the orbital badge is snapped to the right edge and its
+  // vertical span overlaps the rail, lift the fab above the badge — keeps
+  // the rail's right edge flush with the bottom bar (AC-18). Default badge
+  // preset is right/center, which sits clear of the rail → lift = 0.
+  const [orbitalLiftPx, setOrbitalLiftPx] = useState(0);
   useEffect(() => {
     if (!isMobilePm) {
-      setOrbitalRightPx(0);
+      setOrbitalLiftPx(0);
       return;
     }
     let cancelled = false;
@@ -436,9 +438,24 @@ function PlayerModeOverlayInner({
       ])
         .then(([posData, settingsData]) => {
           if (cancelled) return;
-          const edge = posData[ORBITAL_POSITION_KEY]?.edge ?? 'right';
-          const size = settingsData[STORAGE_KEYS.SETTINGS]?.dictionaryPopup?.badgePointerTrigger?.size;
-          setOrbitalRightPx(edge === 'right' ? (typeof size === 'number' ? size : ORBITAL_BADGE_DEFAULT_SIZE) : 0);
+          const pos = posData[ORBITAL_POSITION_KEY];
+          const edge = pos?.edge ?? 'right';
+          if (edge !== 'right') {
+            setOrbitalLiftPx(0);
+            return;
+          }
+          const sizeValue = settingsData[STORAGE_KEYS.SETTINGS]?.dictionaryPopup?.badgePointerTrigger?.size;
+          const size = typeof sizeValue === 'number' ? sizeValue : ORBITAL_BADGE_DEFAULT_SIZE;
+          const badgeCy = typeof pos?.y === 'number' ? pos.y : window.innerHeight / 2;
+          const badgeTop = badgeCy - size / 2;
+          const badgeBottom = badgeCy + size / 2;
+          const railRect = anchorRowRef.current
+            ?.querySelector<HTMLElement>('[data-cell-id="player-mode-actions"]')
+            ?.getBoundingClientRect();
+          const railTop = railRect?.top ?? 0;
+          const fabZoneTop = railTop - (railRect?.height ?? 0) - PM_FAB_GAP_PX;
+          const overlapsFab = badgeBottom > fabZoneTop && badgeTop < railTop;
+          setOrbitalLiftPx(railTop > 0 && overlapsFab ? railTop - badgeTop : 0);
         })
         .catch(() => undefined);
     };
@@ -621,8 +638,7 @@ function PlayerModeOverlayInner({
         className={`${styles.overlay} ${styles.overlayMobile}`}
         data-cell-id="player-mode-overlay"
         data-practice-active={practiceMode && practiceMode !== 'off' ? 'true' : 'false'}
-        data-orbital-edge={orbitalRightPx > 0 ? 'right' : undefined}
-        style={orbitalRightPx > 0 ? ({ '--pm-orbital-badge': `${orbitalRightPx}px` } as React.CSSProperties) : undefined}
+        style={orbitalLiftPx > 0 ? ({ '--pm-orbital-lift': `${orbitalLiftPx}px` } as React.CSSProperties) : undefined}
         role="application"
         aria-label={t('subtitle.playerMode.aria')}
         ref={setOverlayEl}
