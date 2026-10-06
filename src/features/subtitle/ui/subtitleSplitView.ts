@@ -46,6 +46,9 @@ function measureShellContentHeight(shell: HTMLElement): number {
 const SPLIT_VIEW_MIN_STAGE_WIDTH = 200;
 const SPLIT_VIEW_MIN_HEIGHT = 160;
 const SPLIT_VIEW_VIEWPORT_MARGIN = 8;
+// Below this wrapper width the row layout cannot keep both the video and
+// the panel usable — stack them vertically instead (video on top).
+const SPLIT_VIEW_COLUMN_BELOW = 600;
 
 function clampToVisibleViewport(contentHeight: number, topEdge: number): number {
   const available = window.innerHeight - topEdge - SPLIT_VIEW_VIEWPORT_MARGIN;
@@ -326,6 +329,7 @@ export function useSplitView({
     let onPageScrollRef: ((() => void) | null) = null;
     let lastLayoutKey: { w: number; vh: number } | null = null;
     let cachedContentH = 0;
+    let isNarrowLayout = false;
 
     if (isPlayerFullscreen) {
       // FULLSCREEN: playerShell is the top-layer fullscreen element. Moving
@@ -503,6 +507,13 @@ export function useSplitView({
         : isBroadShell
           ? `${Math.min(Math.round(videoRect!.height), viewportCapH)}px`
           : `${Math.min(Math.round(playerRect.height), viewportCapH)}px`;
+      // Video aspect captured before the fill chain re-sizes the shell —
+      // narrow (column) mode sizes the stage from it so the video never
+      // distorts. The shell rect includes letterbox/controls space the
+      // site adds around the video, so prefer the video's own rect.
+      const stageAspect = videoRect && videoRect.height > 0
+        ? videoRect.width / videoRect.height
+        : playerRect.width / Math.max(playerRect.height, 1) || 16 / 9;
       svLog('NORMAL wrapper height', {
         viewportBound,
         isYoutube: isYoutubePage(),
@@ -615,8 +626,68 @@ export function useSplitView({
       splitViewWrapperRef.current = wrapper;
       const recalcWrapperLayout = (): void => {
         if (!wrapper?.isConnected) return;
+        const rect = wrapper.getBoundingClientRect();
+        // Row layout needs stage (min 200) + panel (min 200) + handle —
+        // below the column breakpoint that cannot fit, so stack the panel
+        // under the video instead of pushing it off-screen. The slot width
+        // comes from the parent, not the wrapper: the wrapper may still
+        // carry a stale px flex-basis that overflows the viewport.
+        const slotW = Math.max(insertParent.clientWidth, 1);
+        const narrow = slotW < SPLIT_VIEW_COLUMN_BELOW;
+        isNarrowLayout = narrow;
+        // Site responsive CSS can switch the shell to position:fixed at
+        // narrow widths (kisskh .portrait covers the viewport), which rips
+        // it out of the stage and buries the panel. Pin it back into the
+        // stage whenever it is fixed — open-time or after a breakpoint
+        // change. In-flow shells are untouched.
+        if (getComputedStyle(playerShell).position === 'fixed') {
+          playerShell.style.setProperty('position', 'absolute', 'important');
+          playerShell.style.setProperty('inset', '0', 'important');
+        }
+        if (narrow) {
+          wrapper.style.flexDirection = 'column';
+          stageCell.style.flex = '0 0 auto';
+          stageCell.style.minWidth = '0';
+          stageCell.style.width = '100%';
+          stageCell.style.height = `${Math.round(slotW / stageAspect)}px`;
+          handle.style.flex = '0 0 var(--space-1-5)';
+          handle.style.width = '100%';
+          handle.style.height = 'auto';
+          handle.style.cursor = 'default';
+          panel.style.flex = '1 1 0';
+          panel.style.minWidth = '0';
+          panel.style.maxWidth = 'none';
+          panel.style.width = '100%';
+          panel.style.height = 'auto';
+          panel.style.minHeight = '0';
+        } else {
+          wrapper.style.flexDirection = 'row';
+          stageCell.style.flex = '1 1 0';
+          stageCell.style.minWidth = `min(${SPLIT_VIEW_MIN_STAGE_WIDTH}px,55%)`;
+          stageCell.style.width = '';
+          stageCell.style.height = '100%';
+          handle.style.flex = '0 0 var(--space-1-5)';
+          handle.style.width = '';
+          handle.style.height = '100%';
+          handle.style.cursor = 'col-resize';
+          panel.style.flex = `0 0 ${splitViewPctRef.current}%`;
+          panel.style.minWidth = 'min(200px,45%)';
+          panel.style.maxWidth = `min(60%,calc(100% - ${SPLIT_VIEW_MIN_STAGE_WIDTH}px))`;
+          panel.style.width = '';
+          panel.style.height = '100%';
+          panel.style.minHeight = '';
+        }
         let liveHeight: string;
-        if (viewportBound) {
+        if (narrow) {
+          const stageH = Math.round(slotW / stageAspect);
+          const panelH = Math.max(
+            SPLIT_VIEW_MIN_HEIGHT,
+            Math.round((stageH * splitViewPctRef.current) / Math.max(100 - splitViewPctRef.current, 1)),
+          );
+          liveHeight = `${clampToVisibleViewport(stageH + panelH, rect.top)}px`;
+          playerShell.style.setProperty('width', '100%', 'important');
+          playerShell.style.setProperty('margin', '0', 'important');
+        } else if (viewportBound) {
           liveHeight = resolveSplitViewWrapperHeight(
             playerShell.getBoundingClientRect().height,
             window.innerHeight,
@@ -631,7 +702,6 @@ export function useSplitView({
           // the same value anyway.
           liveHeight = youtubeFollowsParent ? '100%' : wrapperHeightStyle;
         } else {
-          const rect = wrapper.getBoundingClientRect();
           const keyChanged = !lastLayoutKey
             || Math.abs(rect.width - lastLayoutKey.w) > 1
             || Math.abs(window.innerHeight - lastLayoutKey.vh) > 1;
@@ -675,7 +745,13 @@ export function useSplitView({
           liveHeight = `${cappedH}px`;
         }
         wrapper.style.height = liveHeight;
-        if (hasFlexSiblings) {
+        if (narrow) {
+          // Full width so the video column's siblings wrap below it. Only a
+          // flex-row parent honors a % basis on the width axis — on a column
+          // parent the basis lands on the HEIGHT axis and would override the
+          // explicit height above (collapses the whole split view).
+          wrapper.style.flex = insertParentIsFlexRow ? '0 0 100%' : '0 0 auto';
+        } else if (hasFlexSiblings) {
           const cs = getComputedStyle(insertParent);
           const parentContentW = insertParent.clientWidth
             - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
@@ -684,7 +760,10 @@ export function useSplitView({
               && !(c as HTMLElement).hasAttribute?.('data-cell-split-view'))
             .reduce((sum, c) => sum + c.getBoundingClientRect().width, 0);
           const basis = Math.round(parentContentW - siblingW);
-          if (basis > 0) wrapper.style.flex = `0 0 ${basis}px`;
+          // Siblings may have wrapped to their own rows after a viewport
+          // shrink — a stale px basis would then overflow the viewport,
+          // so fall back to filling the row.
+          wrapper.style.flex = basis > 0 ? `0 0 ${basis}px` : '1 1 100%';
         }
       };
       scheduleLayoutRecalc = (): void => {
@@ -739,6 +818,8 @@ export function useSplitView({
     const flexContainer = wrapper ?? playerShell;
     let dragStart: { x: number; startPct: number; wrapperW: number } | null = null;
     const onPointerDown = (e: PointerEvent): void => {
+      // Column (narrow) layout has no horizontal split to drag.
+      if (isNarrowLayout) return;
       e.preventDefault();
       dragStart = { x: e.clientX, startPct: splitViewPctRef.current, wrapperW: flexContainer.getBoundingClientRect().width };
       handle.setPointerCapture(e.pointerId);
