@@ -94,10 +94,6 @@ interface CueListProps {
 
 const formatTimestamp = formatCueTimestamp;
 
-// PM mobile list mode mounts a bounded window around the active cue instead
-// of the full list — the region never scrolls, so extra DOM is pure waste.
-const PM_MOBILE_LIST_WINDOW = 8;
-
 const CueTokenText = memo(function CueTokenText({
   text,
   tokens,
@@ -302,11 +298,6 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   const upcomingIndex = activeOnly && currentIndex < 0
     ? filteredCues.findIndex((c) => c.start > effectiveMs)
     : -1;
-  // 'list' display mode on mobile: render a bounded window around the active
-  // cue (REQ-10) — the region is a non-scroll surface, so mounting hundreds
-  // of cards wastes memory; the window recenters when the anchor moves.
-  const listWindowed =
-    mobile && !activeOnly && filteredCues.length > PM_MOBILE_LIST_WINDOW;
   let renderedCues: BilingualCue[];
   if (activeOnly) {
     renderedCues = currentIndex >= 0
@@ -314,13 +305,6 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       : upcomingIndex >= 0
         ? [filteredCues[upcomingIndex]]
         : [];
-  } else if (listWindowed) {
-    const anchor = currentIndex >= 0
-      ? currentIndex
-      : filteredCues.findIndex((c) => c.start > effectiveMs);
-    const anchorStart = anchor < 0 ? filteredCues.length - PM_MOBILE_LIST_WINDOW : anchor - 2;
-    const start = Math.max(0, Math.min(anchorStart, filteredCues.length - PM_MOBILE_LIST_WINDOW));
-    renderedCues = filteredCues.slice(start, start + PM_MOBILE_LIST_WINDOW);
   } else {
     renderedCues = filteredCues;
   }
@@ -409,6 +393,36 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
         const customContent = renderCueContent?.(cue, i, isCurrent);
         const heat = cueDifficulty?.get(cue.index);
         const band = heat === undefined ? undefined : cueHeatBand(heat);
+        const cueContent = customContent !== undefined ? (
+          customContent
+        ) : (
+          <div
+            className={styles.text}
+            data-allow-lookup
+            data-cell-id={mobile && isCurrent ? 'pm-cue-active-card' : undefined}
+          >
+            <div data-cell-id="cue-target-text" className={styles.targetText}>
+              {tokenize ? (
+                <CueTokenText
+                  text={cue.targetText}
+                  tokens={tokenMap.get(cue.index) ?? []}
+                  onTokenClick={tokenize.onTokenClick}
+                  onTokenHover={onTokenHover}
+                  onTokenCtrlClick={tokenize.onTokenCtrlClick}
+                  selectedTerms={selectedTerms}
+                  resolving={resolving}
+                />
+              ) : (
+                cue.targetText
+              )}
+            </div>
+            {showNative && cue.nativeText && (
+              <div data-cell-id="cue-native-text" className={styles.nativeText}>
+                {cue.nativeText}
+              </div>
+            )}
+          </div>
+        );
         return (
           <div
             key={cue.index}
@@ -440,35 +454,15 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                 </VisuallyHidden>
               </>
             )}
-            {customContent !== undefined ? (
-              customContent
-            ) : (
-              <div
-                className={styles.text}
-                data-allow-lookup
-                data-cell-id={mobile && isCurrent ? 'pm-cue-active-card' : undefined}
-              >
-                <div data-cell-id="cue-target-text" className={styles.targetText}>
-                  {tokenize ? (
-                    <CueTokenText
-                      text={cue.targetText}
-                      tokens={tokenMap.get(cue.index) ?? []}
-                      onTokenClick={tokenize.onTokenClick}
-                      onTokenHover={onTokenHover}
-                      onTokenCtrlClick={tokenize.onTokenCtrlClick}
-                      selectedTerms={selectedTerms}
-                      resolving={resolving}
-                    />
-                  ) : (
-                    cue.targetText
-                  )}
+            {mobile && isCurrent && cardActions ? (
+              <div className={styles.cueBody}>
+                {cueContent}
+                <div className={styles.cardActions} data-cell-id="pm-card-actions">
+                  {cardActions}
                 </div>
-                {showNative && cue.nativeText && (
-                  <div data-cell-id="cue-native-text" className={styles.nativeText}>
-                    {cue.nativeText}
-                  </div>
-                )}
               </div>
+            ) : (
+              cueContent
             )}
             <div className={styles.actions} data-cell-id="cue-actions">
               <button
@@ -493,11 +487,6 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                   : formatTimestamp(cue.start - offsetMs, hasHours)}
               </button>
             </div>
-            {mobile && isCurrent && cardActions && (
-              <div className={styles.cardActions} data-cell-id="pm-card-actions">
-                {cardActions}
-              </div>
-            )}
           </div>
         );
       })}

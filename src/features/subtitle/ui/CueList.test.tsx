@@ -209,13 +209,16 @@ describe('CueList mobile PM mode', () => {
     expect(actions[0].querySelector('[data-cell-id="quick-add-btn"]')).not.toBeNull();
   });
 
-  it('does not render the user-scroll desync pill in mobile mode', async () => {
+  it('shows the sync pill when the user scrolls away in mobile mode', async () => {
     renderList({ mobile: true, displayMode: 'list', showAllCues: true });
     await waitFor(() => expect(document.querySelector('[data-cell-id="cue-list-scroll"]')).not.toBeNull());
     expect(document.querySelector('[data-cell-id="cue-list-sync"]')).toBeNull();
+
+    userScrollTo(100);
+    await waitFor(() => expect(document.querySelector('[data-cell-id="cue-list-sync"]')).not.toBeNull());
   });
 
-  it('list mode mounts a bounded window around the active cue', () => {
+  it('list mode mounts the full cue list for scrolling', () => {
     const manyCues: BilingualCue[] = Array.from({ length: 20 }, (_, i) => ({
       index: i + 1,
       start: i * 1000,
@@ -233,7 +236,7 @@ describe('CueList mobile PM mode', () => {
       />,
     );
     const items = document.querySelectorAll('[data-cell-id="cue-item"]');
-    expect(items.length).toBe(8);
+    expect(items.length).toBe(20);
     expect(document.querySelector('[data-cue-index="11"][data-current="true"]')).not.toBeNull();
   });
 
