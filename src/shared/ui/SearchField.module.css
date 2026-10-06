@@ -2,8 +2,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--size-icon-sm);
-  height: var(--size-icon-sm);
+  width: var(--touch-target);
+  height: var(--touch-target);
   padding: 0;
   margin: 0;
   border: none;
@@ -22,6 +22,6 @@
 }
 
 .clear svg {
-  width: 100%;
-  height: 100%;
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
 }

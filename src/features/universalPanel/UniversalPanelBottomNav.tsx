@@ -52,7 +52,7 @@ export function UniversalPanelBottomNav({
               size="md"
               orientation="vertical"
               className={styles.navItem}
-              aria-current={isActive ? 'true' : undefined}
+              aria-current={isActive ? 'page' : undefined}
               onClick={() => onTabChange(tab.key)}
               data-cell-id={`universal-panel-mobile-tab-${tab.key}`}
               leadingIcon={<Icon name={tab.icon} />}

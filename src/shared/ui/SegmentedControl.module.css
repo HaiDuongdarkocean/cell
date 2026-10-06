@@ -147,7 +147,7 @@
 
 .chips .segment {
   flex: 0 1 auto;
-  min-height: var(--touch-target-desktop);
+  min-height: var(--touch-target);
   padding: var(--space-1) var(--space-3);
   border: var(--border-width-hairline) solid transparent;
   border-radius: var(--radius-pill);

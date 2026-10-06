@@ -1,11 +1,9 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { Icon } from '@/shared/ui/Icon';
 import { Flex, HStack, VStack } from '.';
-import { Button } from './Button';
+import { CloseButton } from './CloseButton';
 import { Heading } from './Heading';
 import { useFocusTrap } from './useFocusTrap';
 import { pushEscapeLayer } from './escapeLayerStack';
-import { t } from '@/shared/i18n';
 import styles from './BottomSheet.module.css';
 
 export interface BottomSheetProps {
@@ -100,15 +98,12 @@ export function BottomSheet({
             {title && (
               <Heading level={2} id="bottom-sheet-title" className={styles.title}>{title}</Heading>
             )}
-            <Button shape="circle"
+            <CloseButton
               size="sm"
               variant="ghost"
-              aria-label={t('ui.close')}
               onClick={() => onOpenChange?.(false)}
               className={centerTitle ? styles.closeButtonAbsolute : styles.closeIcon}
-            >
-              <Icon name="x"  />
-            </Button>
+            />
           </HStack>
         )}
         {children && <VStack gap="3">{children}</VStack>}

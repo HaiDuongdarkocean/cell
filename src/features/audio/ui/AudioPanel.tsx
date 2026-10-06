@@ -221,6 +221,7 @@ export function AudioPanel({
                 variant="primary"
                 shape="circle"
                 size="xs"
+                className={styles.testerPlay}
                 onClick={() => void handlePlay()}
                 loading={testing}
                 aria-label={t('audio.tester.playAria')}

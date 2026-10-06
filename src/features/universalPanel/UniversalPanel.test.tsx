@@ -438,7 +438,7 @@ describe('UniversalPanel component', () => {
     expect(onToggleTokenize).toHaveBeenCalledWith('subtitleEnabled');
   });
 
-  it('renders header as <header> and sidebar tab bar as <aside>', () => {
+  it('renders header as <header> and sidebar tab bar as <nav>', () => {
     render(
       <UniversalPanel
         isOpen
@@ -456,7 +456,7 @@ describe('UniversalPanel component', () => {
     expect(header.tagName.toLowerCase()).toBe('header');
 
     const sidebar = screen.getByTestId('universal-panel-tab-bar');
-    expect(sidebar.tagName.toLowerCase()).toBe('aside');
+    expect(sidebar.tagName.toLowerCase()).toBe('nav');
   });
 });
 

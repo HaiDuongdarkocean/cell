@@ -65,6 +65,15 @@
   display: none;
 }
 
+/* Panel-scope hit-target floor: every button inside the body column (header +
+   tab panes + inline sheets/dialogs) presents at least the pointer-adaptive
+   --touch-target box. Beats Button's `.iconOnly,.circle { min-*: 0 }` reset on
+   specificity (0,2,1 vs 0,2,0). */
+.panel .body button {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+}
+
 .desktopSidebar {
   display: flex;
   background: var(--universal-panel-aside-bg);
@@ -77,7 +86,7 @@
   .panel {
     max-width: none;
     border-radius: var(--radius-md);
-    flex-direction: column-reverse;
+    flex-direction: column;
   }
 
   /* Doubled class = specificity (0,2,0) beats CollapsibleSidebar's `.sidebar`

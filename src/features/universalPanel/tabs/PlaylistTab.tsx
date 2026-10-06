@@ -4,12 +4,14 @@ import { Card } from '@/shared/ui/Card';
 import { Icon } from '@/shared/ui/Icon';
 import { Spinner } from '@/shared/ui/Spinner';
 import { Text } from '@/shared/ui/Text';
+import { VisuallyHidden } from '@/shared/ui/VisuallyHidden';
 import { t, type MessageKey } from '@/shared/i18n';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { decodeBase64ToArrayBuffer } from '@/shared/lib/base64';
 import { formatBytes } from '@/shared/lib/formatBytes';
 import { formatDuration } from '@/features/reader';
+import { summarizeStatusTransitions } from './playlistStatusSummary';
 import type {
   CondenseAudioEventPayload,
   CondenseAudioReadResult,
@@ -91,11 +93,22 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState('');
   const previewUrlRef = useRef<string | null>(null);
+  const prevStatusRef = useRef<Map<string, CondensedAudioStatus> | null>(null);
+  const lastAnnouncedRef = useRef('');
 
   const refresh = useCallback(async (): Promise<void> => {
     const res = await send<CondensedAudioRecord[]>(MESSAGE_TYPES.CONDENSE_AUDIO_LIST, {});
-    if (res?.success && res.data) setRecords(res.data);
+    if (res?.success && res.data) {
+      const summary = summarizeStatusTransitions(prevStatusRef.current, res.data);
+      prevStatusRef.current = new Map(res.data.map((record) => [record.id, record.status]));
+      setRecords(res.data);
+      if (summary && summary !== lastAnnouncedRef.current) {
+        lastAnnouncedRef.current = summary;
+        setAnnouncement(summary);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -174,30 +187,44 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
     [refresh],
   );
 
+  const announcer = (
+    <VisuallyHidden as="div" role="status" aria-atomic="true" data-cell-id="playlist-status-announcer">
+      {announcement}
+    </VisuallyHidden>
+  );
+
   if (records === null) {
     return (
-      <div className={styles.empty} role="status">
-        <Spinner size="md" ariaLabel={t('condensedAudio.status.processing')} />
-      </div>
+      <>
+        {announcer}
+        <div className={styles.empty}>
+          <Spinner size="md" ariaLabel={t('condensedAudio.status.processing')} />
+        </div>
+      </>
     );
   }
 
   if (records.length === 0) {
     return (
-      <div className={styles.empty}>
-        <Icon name="audioWave" size="md" className={styles.iconDim} />
-        <Text variant="body" color="secondary">
-          {t('condensedAudio.list.emptyTitle')}
-        </Text>
-        <Text variant="supporting" color="secondary">
-          {t('condensedAudio.list.emptyHint')}
-        </Text>
-      </div>
+      <>
+        {announcer}
+        <div className={styles.empty}>
+          <Icon name="audioWave" size="md" className={styles.iconDim} />
+          <Text variant="body" color="secondary">
+            {t('condensedAudio.list.emptyTitle')}
+          </Text>
+          <Text variant="supporting" color="secondary">
+            {t('condensedAudio.list.emptyHint')}
+          </Text>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className={styles.list} role="list" aria-label={t('panel.tab.playlist')}>
+    <>
+      {announcer}
+      <div className={styles.list} role="list" aria-label={t('panel.tab.playlist')}>
       {records.map((record) => {
         const busy = busyId === record.id;
         const active =
@@ -209,7 +236,6 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
             key={record.id}
             className={`${styles.itemRow} ${record.status === 'failed' ? styles.itemError : ''}`}
             role="listitem"
-            aria-live="polite"
           >
             <div className={styles.itemInner}>
               <span className={styles.itemLead}>
@@ -332,6 +358,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
           </Card>
         );
       })}
-    </div>
+      </div>
+    </>
   );
 }

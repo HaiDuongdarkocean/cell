@@ -1,6 +1,6 @@
 .textarea {
   width: 100%;
-  min-height: var(--space-20);
+  min-height: max(var(--space-20), var(--touch-target));
   padding: var(--space-2) var(--space-3);
   border: var(--border-width-hairline) solid var(--input-border);
   border-radius: var(--radius-pill);

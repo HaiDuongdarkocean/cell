@@ -1,3 +1,10 @@
+/* Doubled class beats Button's `.iconOnly,.circle { min-*: 0 }` reset — this
+   module loads later than Button's in the module graph. */
+.closeBtn.closeBtn {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+}
+
 .closeBtn {
   display: flex;
   align-items: center;

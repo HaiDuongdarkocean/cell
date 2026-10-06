@@ -22,6 +22,10 @@ export interface ToggleProps {
   name?: string;
   /** When true, toggle is disabled (not clickable, dimmed). */
   disabled?: boolean;
+  /** Optional aria-controls passthrough (id of the region this switch controls). */
+  ariaControls?: string;
+  /** Optional aria-describedby passthrough (id of hint text). */
+  ariaDescribedby?: string;
 }
 
 export function Toggle({
@@ -34,6 +38,8 @@ export function Toggle({
   title,
   name,
   disabled,
+  ariaControls,
+  ariaDescribedby,
 }: ToggleProps): ReactElement {
   const fallbackId = useId();
   const inputId = id ?? fallbackId;
@@ -56,6 +62,8 @@ export function Toggle({
         role="switch"
         aria-checked={checked}
         aria-label={ariaLabel}
+        aria-controls={ariaControls}
+        aria-describedby={ariaDescribedby}
         name={name}
         checked={checked}
         disabled={disabled}

@@ -17,19 +17,19 @@
 }
 
 /* Profile button is flag-only (no label) — sits at the far left of the header.
-   Scope under .header to beat Button's .md.circle width/height and keep the
-   intended 34×34 flag size. */
-.header .profileButton {
-  width: var(--universal-panel-profile-flag-size);
-  height: var(--universal-panel-profile-flag-size);
+   The button box reaches the --touch-target floor; the flag paint stays at
+   --universal-panel-profile-flag-size (34px) centered inside it. */
+.header .profileButton.profileButton {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
   padding: var(--space-0);
   overflow: hidden;
   flex-shrink: 0;
 }
 
 .profileButton [class*="flag"] {
-  width: 100%;
-  height: 100%;
+  width: var(--universal-panel-profile-flag-size);
+  height: var(--universal-panel-profile-flag-size);
   border-radius: var(--radius-pill);
   overflow: hidden;
   flex-shrink: 0;

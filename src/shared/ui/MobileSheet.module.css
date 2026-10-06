@@ -32,7 +32,7 @@
    JS component sets it to the pill handle height only.
    Content is hidden in collapsed to keep the peek minimal — only the pill
    (and optional header) are visible until the user drags or taps to expand. */
-.snapCollapsed { height: var(--mobile-sheet-peek-height, calc(var(--space-8) + var(--space-6))); }
+.snapCollapsed { height: var(--mobile-sheet-peek-height, calc(var(--touch-target) + var(--space-6))); }
 .snapCollapsed .content { display: none; }
 /* While dragging, content must be visible so it can be seen as the sheet grows. */
 .dragging .content { display: block; }
@@ -49,8 +49,9 @@
 }
 
 /* Full-width grab zone — the entire bar is draggable/tappable, the pill
-   inside is the visual affordance. 32px so handle (32) + header (24)
-   fit the 56px collapsed peek. */
+   inside is the visual affordance. Bound to the --touch-target floor;
+   the collapsed peek is calc(touch-target + header row) so it eats the
+   growth (64px fine / 68px coarse). */
 .handle {
   flex: 0 0 auto;
   display: flex;
@@ -58,6 +59,7 @@
   justify-content: center;
   width: 100%;
   height: var(--space-8);
+  min-height: var(--touch-target);
   margin: 0;
   padding: 0;
   background: transparent;

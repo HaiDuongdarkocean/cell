@@ -121,6 +121,23 @@ export function UniversalPanel({
 
   useFocusTrap(panelRef, isOpen);
 
+  // On tab switch the previously focused element can end up outside the
+  // dialog (unmounted) or inside a pane that just got `hidden`. Move focus to
+  // the visible nav item for the new tab so focus stays inside aria-modal.
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!isOpen || !panel) return;
+    const root = panel.getRootNode() as Document | ShadowRoot;
+    const ae = root.activeElement as HTMLElement | null;
+    if (ae && panel.contains(ae) && ae.offsetParent !== null) return;
+    const item = Array.from(
+      panel.querySelectorAll<HTMLElement>(
+        `[data-cell-id="universal-panel-tab-${activeTab}"],[data-cell-id="universal-panel-mobile-tab-${activeTab}"]`,
+      ),
+    ).find((el) => el.offsetParent !== null);
+    item?.focus();
+  }, [activeTab, isOpen]);
+
   useEffect(() => {
     const wasOpen = wasOpenRef.current;
     wasOpenRef.current = isOpen;
@@ -192,13 +209,8 @@ export function UniversalPanel({
         className={panelClass}
         data-cell-id="universal-panel"
       >
-        <UniversalPanelBottomNav
-          activeTab={activeTab}
-          onTabChange={onTabChange}
-          tools={TOOLS.map((tool) => ({ ...tool, title: t(tool.title), description: t(tool.description) }))}
-        />
         <CollapsibleSidebar
-          as="aside"
+          as="nav"
           collapsed={isCollapsed}
           onCollapsedChange={setIsCollapsed}
           aria-label={t('panel.tabs.aria')}
@@ -261,25 +273,31 @@ export function UniversalPanel({
 
           <div className={styles.content} data-cell-id={`universal-panel-content-${activeTab}`}>
             {(visitedTabs.has('dictionary') || activeTab === 'dictionary') && (
-              <div className={styles.tabPane} hidden={activeTab !== 'dictionary'}>{dictionaryPanel}</div>
+              <div className={styles.tabPane} role="region" aria-label={t('panel.tab.dictionary')} hidden={activeTab !== 'dictionary'}>{dictionaryPanel}</div>
             )}
             {(visitedTabs.has('vocabulary') || activeTab === 'vocabulary') && vocabularyPanel && (
-              <div className={styles.tabPane} hidden={activeTab !== 'vocabulary'}>{vocabularyPanel}</div>
+              <div className={styles.tabPane} role="region" aria-label={t('panel.tab.vocabulary')} hidden={activeTab !== 'vocabulary'}>{vocabularyPanel}</div>
             )}
             {(visitedTabs.has('studyModes') || activeTab === 'studyModes') && (
-              <div className={styles.tabPane} hidden={activeTab !== 'studyModes'}>{studyModesPanel}</div>
+              <div className={styles.tabPane} role="region" aria-label={t('panel.tab.studyModes')} hidden={activeTab !== 'studyModes'}>{studyModesPanel}</div>
             )}
             {(visitedTabs.has('playlist') || activeTab === 'playlist') && playlistPanel && (
-              <div className={styles.tabPane} hidden={activeTab !== 'playlist'}>{playlistPanel}</div>
+              <div className={styles.tabPane} role="region" aria-label={t('panel.tab.playlist')} hidden={activeTab !== 'playlist'}>{playlistPanel}</div>
             )}
             {(visitedTabs.has('recap') || activeTab === 'recap') && recapPanel && (
-              <div className={styles.tabPane} hidden={activeTab !== 'recap'}>{recapPanel}</div>
+              <div className={styles.tabPane} role="region" aria-label={t('panel.tab.recap')} hidden={activeTab !== 'recap'}>{recapPanel}</div>
             )}
             {(visitedTabs.has('settings') || activeTab === 'settings') && (
-              <div className={styles.tabPane} hidden={activeTab !== 'settings'}>{settingsPanel}</div>
+              <div className={styles.tabPane} role="region" aria-label={t('panel.tab.settings')} hidden={activeTab !== 'settings'}>{settingsPanel}</div>
             )}
           </div>
         </div>
+
+        <UniversalPanelBottomNav
+          activeTab={activeTab}
+          onTabChange={onTabChange}
+          tools={TOOLS.map((tool) => ({ ...tool, title: t(tool.title), description: t(tool.description) }))}
+        />
       </Surface>
     </div>
   );

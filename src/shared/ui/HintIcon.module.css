@@ -8,7 +8,12 @@
   align-items: center;
 }
 
-/* === Hint button — size comes from Button sm + iconOnly (32×32), icon 20px === */
+/* === Hint button — icon 20px; hit box bound to the --touch-target floor === */
+.hintBtn.hintBtn {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+}
+
 .hintBtn {
   color: var(--color-text-secondary);
   cursor: help;

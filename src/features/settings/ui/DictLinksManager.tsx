@@ -4,9 +4,8 @@
 // Row: DragHandle (pointer drag via shared useSectionDrag, ArrowUp/Down =
 // keyboard reorder) · name (click = inline rename) · URL preview · pencil =
 // edit dialog (name + URL) · trash = delete confirm dialog. Add button opens
-// the same editor dialog empty. All controls pinned to 40px
-// (--iconbutton-size-md) — the shared touch-target mins (44px mobile) are
-// overridden locally per NFR-5.
+// the same editor dialog empty. Row controls bind to the pointer-adaptive
+// --touch-target floor (44px coarse / 40px fine).
 
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { t } from '@/shared/i18n';

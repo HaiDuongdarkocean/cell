@@ -30,9 +30,17 @@ export function useFocusTrap(panelRef: RefObject<HTMLElement | null>, open: bool
     const previouslyFocused = (root.activeElement ??
       document.activeElement) as HTMLElement | null;
 
-    // Move focus into the panel (first focusable element).
-    const first = panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
-    first?.focus();
+    // Move focus into the panel — first *visible* focusable. The DOM-first
+    // node can be display:none (e.g. the desktop-hidden bottom nav), where
+    // .focus() no-ops and leaves focus outside the aria-modal dialog.
+    const first = Array.from(
+      panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+    ).find((el) => el.offsetParent !== null || el === root.activeElement);
+    if (first) {
+      first.focus();
+    } else if (panel.tabIndex >= 0) {
+      panel.focus();
+    }
 
     const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.key !== 'Tab') return;

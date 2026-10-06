@@ -12,12 +12,6 @@ import styles from './MobileSheet.module.css';
 export type MobileSheetSnap = 'collapsed' | 'half' | 'full';
 
 const SNAP_ORDER: readonly MobileSheetSnap[] = ['collapsed', 'half', 'full'];
-/** Pill drag handle height in px — keep in sync with `.handle` height in the CSS module. */
-const PILL_HEIGHT_PX = 32;
-/** Extra header row height in px. */
-const HEADER_ROW_HEIGHT_PX = 24;
-/** Collapsed peek height with a header row. */
-const PEEK_HEIGHT_PX = PILL_HEIGHT_PX + HEADER_ROW_HEIGHT_PX;
 /** Pointer travel (px) below which a press on the pill counts as a tap. */
 const TAP_THRESHOLD_PX = 4;
 
@@ -141,7 +135,16 @@ export function MobileSheet({
   const isControlledRef = useRef(isControlled);
 
   const hasHeader = header !== undefined && header !== null;
-  const peekHeight = hasHeader ? PEEK_HEIGHT_PX : PILL_HEIGHT_PX;
+
+  const handleRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  // Peek height in px for the drag math — measured from the rendered handle +
+  // header so the CSS (--touch-target + --space-6) stays the single source.
+  const measurePeekHeightPx = (): number => {
+    const handlePx = handleRef.current?.getBoundingClientRect().height ?? 0;
+    const headerPx = headerRef.current?.getBoundingClientRect().height ?? 0;
+    return handlePx + headerPx;
+  };
 
   useEffect(() => { onSnapChangeRef.current = onSnapChange; }, [onSnapChange]);
   useEffect(() => { isControlledRef.current = isControlled; }, [isControlled]);
@@ -183,8 +186,8 @@ export function MobileSheet({
     if (!session.moved && Math.abs(dy) <= TAP_THRESHOLD_PX) return;
     session.moved = true;
     // Sheet is anchored at the bottom, so dragging up grows the height 1:1.
-    const min = snapHeightPx('collapsed', session.containerHeight, peekHeight);
-    const max = snapHeightPx('full', session.containerHeight, peekHeight);
+    const min = snapHeightPx('collapsed', session.containerHeight, measurePeekHeightPx());
+    const max = snapHeightPx('full', session.containerHeight, measurePeekHeightPx());
     const next = Math.max(min, Math.min(session.startHeight - dy, max));
     dragHeightRef.current = next;
     setDragHeight(next);
@@ -204,7 +207,7 @@ export function MobileSheet({
       applySnap(snapRef.current === 'collapsed' ? lastExpandedRef.current : 'collapsed');
       return;
     }
-    applySnap(nearestSnap(height, session.containerHeight, peekHeight));
+    applySnap(nearestSnap(height, session.containerHeight, measurePeekHeightPx()));
   };
 
   const handlePointerUp = (e: ReactPointerEvent<HTMLDivElement>): void => finishDrag(e, false);
@@ -236,7 +239,9 @@ export function MobileSheet({
     .filter(Boolean)
     .join(' ');
   const sheetStyle: CSSProperties = {
-    '--mobile-sheet-peek-height': `${peekHeight}px`,
+    '--mobile-sheet-peek-height': hasHeader
+      ? 'calc(var(--touch-target) + var(--space-6))'
+      : 'var(--touch-target)',
     ...(dragHeight !== null ? { '--mobile-sheet-drag-height': `${dragHeight}px` } : {}),
   } as CSSProperties;
   const contentClass = contentClassName ? `${styles.content} ${contentClassName}` : styles.content;
@@ -251,6 +256,7 @@ export function MobileSheet({
       data-snap={snap}
     >
       <div
+        ref={handleRef}
         className={styles.handle}
         role="button"
         tabIndex={0}
@@ -267,7 +273,7 @@ export function MobileSheet({
         <span className={styles.pill} aria-hidden="true" />
       </div>
       {header !== undefined && header !== null && (
-        <div className={styles.header}>{header}</div>
+        <div ref={headerRef} className={styles.header}>{header}</div>
       )}
       <div className={contentClass}>{children}</div>
     </section>

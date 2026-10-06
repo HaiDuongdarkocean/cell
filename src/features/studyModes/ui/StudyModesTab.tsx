@@ -14,6 +14,7 @@ import {
   SegmentedControl,
   SelectableCard,
   SliderRow,
+  VisuallyHidden,
 } from '@/shared/ui';
 import { t, type MessageKey } from '@/shared/i18n';
 import { loadStudyModeState, useStudyModeStore } from '../studyModeStore';
@@ -160,7 +161,7 @@ export function StudyModesTab(): ReactElement {
             </Button>
           </HStack>
           {store.customModes.length > 0 ? (
-            <div className={styles.grid} role="group" aria-label={t('studyModes.custom.groupAria')}>
+            <div className={styles.grid} role="radiogroup" aria-label={t('studyModes.custom.groupAria')}>
               {store.customModes.map((mode) => (
                 <ModeCard
                   key={mode.id}
@@ -330,11 +331,22 @@ function AdvancedSection({
           checked={open}
           onChange={onOpenChange}
           ariaLabel={t('studyModes.advancedToggle.aria')}
+          ariaControls="advanced-settings-region"
+          ariaDescribedby="advanced-settings-toggle-hint"
           dataTestId="advanced-toggle"
         />
       </HStack>
-      {open && (
-        <VStack gap="4" data-cell-id="advanced-settings">
+      <VisuallyHidden id="advanced-settings-toggle-hint">
+        {t('studyModes.advancedToggle.hint')}
+      </VisuallyHidden>
+      <VStack
+        gap="4"
+        id="advanced-settings-region"
+        role="region"
+        aria-label={t('studyModes.advancedToggle.regionAria')}
+        data-cell-id="advanced-settings"
+        hidden={!open}
+      >
           <SegmentedField
             label={t('studyModes.advanced.skip.label')}
             groupAria={t('studyModes.advanced.skip.aria')}
@@ -398,8 +410,7 @@ function AdvancedSection({
               onChange={(cleanupRules) => onChange({ ...advanced, cleanupRules })}
             />
           </div>
-        </VStack>
-      )}
+      </VStack>
     </section>
   );
 }

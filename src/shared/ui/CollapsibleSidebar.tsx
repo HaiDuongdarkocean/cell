@@ -80,7 +80,7 @@ export function CollapsibleSidebar({
                     label={item.label}
                     orientation="vertical"
                     active={item.active}
-                    aria-current={item.active ? 'true' : undefined}
+                    aria-current={item.active ? 'page' : undefined}
                     onClick={item.onClick}
                     data-cell-id={item['data-cell-id']}
                   />

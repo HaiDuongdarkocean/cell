@@ -199,18 +199,52 @@ async function overlayOpen(page: Page): Promise<boolean> {
   });
 }
 
-async function collectMetrics(page: Page, tab: Tab, viewportLabel: string): Promise<void> {
-  const isMobileWidth = (await page.evaluate(() => window.innerWidth)) <= 839;
-  const threshold = isMobileWidth ? 44 : 40;
+interface CollectedMetrics {
+  pointerCoarse?: boolean;
+  touchTargetMin?: number;
+  interactiveCount?: number;
+  touchTargetViolations?: { cellId: string; tag: string; label: string; width: number; height: number }[];
+  touchTargetOverlaps?: { a: string; b: string; overlapWidth: number; overlapHeight: number }[];
+  [key: string]: unknown;
+}
+
+async function collectMetrics(page: Page, tab: Tab, viewportLabel: string): Promise<CollectedMetrics | null> {
   const data = await page.evaluate(
-    ({ t, touchTargetMin }) => {
+    ({ t }) => {
+      const coarse = window.matchMedia('(pointer: coarse)').matches;
+      const touchTargetMin = coarse ? 44 : 40;
       const host = document.getElementById('cell-universal-panel-host');
       const root = host?.shadowRoot;
       if (!root) return null;
+      // Element box intersected with the padding boxes of every clipping
+      // ancestor — the part that can actually be seen and tapped. A card
+      // scrolled under the fixed bottom nav reports a full border box via
+      // getBoundingClientRect even though the overflow:hidden pane clips it,
+      // so raw rects create phantom target overlaps.
+      const effectiveRect = (el: Element): { left: number; top: number; right: number; bottom: number; width: number; height: number } => {
+        let { left, top, right, bottom } = el.getBoundingClientRect();
+        for (let p = el.parentElement; p; p = p.parentElement) {
+          const s = getComputedStyle(p);
+          if (!/(hidden|auto|scroll|clip)/.test(`${s.overflowX} ${s.overflowY}`)) continue;
+          const pr = p.getBoundingClientRect();
+          const bl = parseFloat(s.borderLeftWidth) || 0;
+          const bt = parseFloat(s.borderTopWidth) || 0;
+          const br = parseFloat(s.borderRightWidth) || 0;
+          const bb = parseFloat(s.borderBottomWidth) || 0;
+          left = Math.max(left, pr.left + bl);
+          top = Math.max(top, pr.top + bt);
+          right = Math.min(right, pr.right - br);
+          bottom = Math.min(bottom, pr.bottom - bb);
+        }
+        const width = Math.max(0, right - left);
+        const height = Math.max(0, bottom - top);
+        return { left, top, right, bottom, width, height };
+      };
       const vis = (el: Element): boolean => {
-        const r = el.getBoundingClientRect();
         const s = getComputedStyle(el);
-        return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden';
+        if (s.display === 'none' || s.visibility === 'hidden') return false;
+        const r = effectiveRect(el);
+        return r.width > 0 && r.height > 0;
       };
       const snap = (el: Element) => {
         const s = getComputedStyle(el);
@@ -231,6 +265,8 @@ async function collectMetrics(page: Page, tab: Tab, viewportLabel: string): Prom
           rect: { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) },
         };
       };
+      const describe = (el: Element): string =>
+        `${el.getAttribute('data-cell-id') || el.tagName.toLowerCase()} "${(el.getAttribute('aria-label') ?? el.textContent ?? '').trim().slice(0, 40)}"`;
       const panel = root.querySelector('[data-cell-id="universal-panel"]');
       const header = root.querySelector('[data-cell-id="universal-panel-header"]');
       const pane = root.querySelector(`[data-cell-id="universal-panel-content-${t}"]`);
@@ -244,25 +280,58 @@ async function collectMetrics(page: Page, tab: Tab, viewportLabel: string): Prom
       ).filter(vis);
       const cards = cardCandidates.slice(0, 3).map(snap);
       const panelTop = panel.getBoundingClientRect().top;
-      const interactives = Array.from(
+      const interactiveEls = Array.from(
         panel.querySelectorAll('button,[role="button"],input,select,textarea,a[href],[tabindex]:not([tabindex="-1"])'),
       )
         .filter(vis)
         .filter((el) => el.getBoundingClientRect().top - panelTop < 2000)
-        .slice(0, 200)
-        .map((el) => {
-          const r = el.getBoundingClientRect();
-          return {
-            ...snap(el),
-            label: (el.getAttribute('aria-label') ?? el.textContent ?? '').trim().slice(0, 50),
-            height: Math.round(r.height * 10) / 10,
-          };
-        });
+        .slice(0, 200);
+      const interactives = interactiveEls.map((el) => {
+        const r = el.getBoundingClientRect();
+        return {
+          ...snap(el),
+          label: (el.getAttribute('aria-label') ?? el.textContent ?? '').trim().slice(0, 50),
+          width: Math.round(r.width * 10) / 10,
+          height: Math.round(r.height * 10) / 10,
+        };
+      });
       const tooSmall = interactives
-        .filter((it) => it.height < touchTargetMin)
-        .map((it) => ({ cellId: it.cellId, tag: it.tag, label: it.label, height: it.height }));
+        .filter((it) => it.width < touchTargetMin || it.height < touchTargetMin)
+        .map((it) => ({ cellId: it.cellId, tag: it.tag, label: it.label, width: it.width, height: it.height }));
+      const overlaps: { a: string; b: string; overlapWidth: number; overlapHeight: number }[] = [];
+      let whitelistedContainments = 0;
+      for (let i = 0; i < interactiveEls.length; i += 1) {
+        const a = interactiveEls[i]!;
+        const ra = effectiveRect(a);
+        for (let j = i + 1; j < interactiveEls.length; j += 1) {
+          const b = interactiveEls[j]!;
+          const rb = effectiveRect(b);
+          const ow = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
+          const oh = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
+          // Subpixel seams (e.g. two halves of a segmented capsule sharing an
+          // edge at a fractional width) are float noise, not intersecting
+          // targets; anything ≥ 0.5px on both axes is a real overlap.
+          if (ow < 0.5 || oh < 0.5) continue;
+          // Whitelisted ancestor containment: one target sits fully inside the
+          // other (DOM ancestor — e.g. icon inside a button — or the designed
+          // overlay case like the mode-card kebab painted over its radio card).
+          // Partial intersections between disjoint targets are real defects.
+          const smallerArea = Math.min(ra.width * ra.height, rb.width * rb.height);
+          if (a.contains(b) || b.contains(a) || ow * oh >= smallerArea - 0.5) {
+            whitelistedContainments += 1;
+            continue;
+          }
+          overlaps.push({
+            a: describe(a),
+            b: describe(b),
+            overlapWidth: Math.round(ow * 10) / 10,
+            overlapHeight: Math.round(oh * 10) / 10,
+          });
+        }
+      }
       return {
         tab: t,
+        pointerCoarse: coarse,
         touchTargetMin,
         panel: snap(panel),
         header: header && vis(header) ? snap(header) : null,
@@ -271,12 +340,159 @@ async function collectMetrics(page: Page, tab: Tab, viewportLabel: string): Prom
         cards,
         interactiveCount: interactives.length,
         touchTargetViolations: tooSmall,
+        touchTargetOverlaps: overlaps,
+        whitelistedContainments,
       };
     },
-    { t: tab, touchTargetMin: threshold },
+    { t: tab },
   );
   if (!metricsStore[viewportLabel]) metricsStore[viewportLabel] = {};
   metricsStore[viewportLabel][tab] = data ?? { tab, error: 'panel or pane not found' };
+  return data as CollectedMetrics | null;
+}
+
+interface A11yStructure {
+  navs?: { cellId: string | null; tag: string; ariaLabel: string | null; visible: boolean; itemCount: number; currentValue: string | null }[];
+  panes?: { role: string | null; ariaLabel: string | null; hidden: boolean }[];
+  domOrder?: { sidebarBeforeBody: string; bodyBeforeBottomNav: string; lastFocusableInBottomNav: boolean };
+  advancedSwitch?: {
+    ariaChecked: string | null;
+    ariaControls: string | null;
+    ariaDescribedby: string | null;
+    ariaExpanded: string | null;
+    describedbyExists: boolean;
+    controlledExists: boolean;
+    controlledRole: string | null;
+    controlledLabel: string | null;
+  } | null;
+  radiogroups?: { ariaLabel: string | null; ariaLabelledby: string | null; radios: number }[];
+  statusRegions?: { cellId: string | null; ariaAtomic: string | null; visible: boolean; text: string }[];
+  ariaLiveInActivePane?: number | null;
+  initialFocus?: { insidePanel: boolean; visible: boolean; cellId: string | null; label: string };
+  error?: string;
+  [key: string]: unknown;
+}
+
+async function collectA11yStructure(page: Page): Promise<A11yStructure> {
+  return page.evaluate(() => {
+    const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
+    if (!root) return { error: 'no shadow root' } as A11yStructure;
+    const panel = root.querySelector('[data-cell-id="universal-panel"]');
+    if (!panel) return { error: 'no panel' } as A11yStructure;
+    const vis = (el: Element): boolean => {
+      const r = el.getBoundingClientRect();
+      const s = getComputedStyle(el);
+      return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden';
+    };
+    const attr = (el: Element | null | undefined, name: string): string | null =>
+      el?.getAttribute(name) ?? null;
+    const navs = Array.from(panel.querySelectorAll('nav,[role="navigation"]')).map((el) => {
+      const current = el.querySelector('[aria-current]');
+      return {
+        cellId: attr(el, 'data-cell-id'),
+        tag: el.tagName.toLowerCase(),
+        ariaLabel: attr(el, 'aria-label'),
+        visible: vis(el),
+        itemCount: el.querySelectorAll('button,[role="tab"],a').length,
+        currentValue: attr(current, 'aria-current'),
+      };
+    });
+    const contentWrap = panel.querySelector('[data-cell-id^="universal-panel-content-"]');
+    const panes = contentWrap
+      ? Array.from(contentWrap.children).map((el) => ({
+          role: attr(el, 'role'),
+          ariaLabel: attr(el, 'aria-label'),
+          hidden: el.hasAttribute('hidden'),
+        }))
+      : [];
+    const sidebar = panel.querySelector('[data-cell-id="universal-panel-tab-bar"]');
+    const bottomNav = panel.querySelector('[data-cell-id="universal-panel-bottom-nav"]');
+    const headerEl = panel.querySelector('[data-cell-id="universal-panel-header"]');
+    const body = headerEl?.parentElement ?? null;
+    const pos = (a: Element | null, b: Element | null): string => {
+      if (!a || !b) return 'unknown';
+      if (a === b) return 'same';
+      return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? 'before' : 'after';
+    };
+    const focusableSel = 'button,[role="button"],input,select,textarea,a[href],[tabindex]:not([tabindex="-1"])';
+    const focusables = Array.from(panel.querySelectorAll(focusableSel)).filter(vis);
+    const lastFocusable = focusables[focusables.length - 1] ?? null;
+    const sw = panel.querySelector('[role="switch"]');
+    const controlledId = attr(sw, 'aria-controls');
+    const describedId = attr(sw, 'aria-describedby');
+    const controlled = controlledId ? root.getElementById(controlledId) : null;
+    const described = describedId ? root.getElementById(describedId) : null;
+    const advancedSwitch = sw
+      ? {
+          ariaChecked: attr(sw, 'aria-checked'),
+          ariaControls: controlledId,
+          ariaDescribedby: describedId,
+          ariaExpanded: attr(sw, 'aria-expanded'),
+          describedbyExists: !!described,
+          controlledExists: !!controlled,
+          controlledRole: attr(controlled, 'role'),
+          controlledLabel: attr(controlled, 'aria-label'),
+        }
+      : null;
+    const radiogroups = Array.from(panel.querySelectorAll('[role="radiogroup"]')).map((el) => ({
+      ariaLabel: attr(el, 'aria-label'),
+      ariaLabelledby: attr(el, 'aria-labelledby'),
+      radios: el.querySelectorAll('[role="radio"]').length,
+    }));
+    const statusRegions = Array.from(panel.querySelectorAll('[role="status"]')).map((el) => ({
+      cellId: attr(el, 'data-cell-id'),
+      ariaAtomic: attr(el, 'aria-atomic'),
+      visible: vis(el),
+      text: (el.textContent ?? '').trim().slice(0, 120),
+    }));
+    const ae = (root as unknown as DocumentOrShadowRoot).activeElement as HTMLElement | null;
+    const initialFocus = ae
+      ? {
+          insidePanel: panel.contains(ae),
+          visible: vis(ae),
+          cellId: attr(ae, 'data-cell-id'),
+          label: (attr(ae, 'aria-label') ?? ae.textContent ?? '').trim().slice(0, 60),
+        }
+      : { insidePanel: false, visible: false, cellId: null, label: '' };
+    return {
+      navs,
+      panes,
+      domOrder: {
+        sidebarBeforeBody: pos(sidebar, body),
+        bodyBeforeBottomNav: pos(body, bottomNav),
+        lastFocusableInBottomNav: !!(lastFocusable && bottomNav?.contains(lastFocusable)),
+      },
+      advancedSwitch,
+      radiogroups,
+      statusRegions,
+      ariaLiveInActivePane: (() => {
+        if (!contentWrap) return null;
+        const active = Array.from(contentWrap.children).find((c) => !c.hasAttribute('hidden'));
+        return active ? active.querySelectorAll('[aria-live]').length : null;
+      })(),
+      initialFocus,
+    } as A11yStructure;
+  });
+}
+
+async function focusTrail(page: Page, steps: number): Promise<string[]> {
+  const seq: string[] = [];
+  for (let i = 0; i < steps; i += 1) {
+    const label = await page.evaluate(() => {
+      const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
+      const panel = root?.querySelector('[data-cell-id="universal-panel"]');
+      const ae = root?.activeElement as HTMLElement | null;
+      if (!ae) return 'none';
+      if (panel && !panel.contains(ae)) return 'OUTSIDE-PANEL';
+      const id = ae.getAttribute('data-cell-id') || ae.tagName.toLowerCase();
+      const txt = (ae.getAttribute('aria-label') ?? ae.textContent ?? '').trim().slice(0, 40);
+      return `${id}|${txt}`;
+    });
+    seq.push(label);
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(80);
+  }
+  return seq;
 }
 
 async function hoverFirstPrimaryButton(
@@ -553,6 +769,110 @@ test.describe('universal panel UX audit', () => {
       if (!(await panelOpen(page))) await ensurePanelOpen(page, universalPanel);
     } else {
       notes.push('mobile: no profile button in header');
+    }
+  });
+
+  test('a11y: pointer-adaptive hit target floor, focus and semantics', async ({ universalPanel, streamFlixPage }) => {
+    test.setTimeout(600_000);
+    const page = streamFlixPage;
+    attachConsole(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.waitForTimeout(400);
+    await ensurePanelOpen(page, universalPanel);
+
+    // --- Fine pointer (desktop default) — floor is 40px in both dims ---
+    expect(await page.evaluate(() => window.matchMedia('(pointer: coarse)').matches)).toBe(false);
+    for (const tab of TABS) {
+      await clickTab(page, tab);
+      const data = await collectMetrics(page, tab, 'a11y-fine-1440x900');
+      expect(data?.pointerCoarse).toBe(false);
+      expect(data?.touchTargetMin).toBe(40);
+      expect(data?.touchTargetViolations ?? []).toEqual([]);
+      expect(data?.touchTargetOverlaps ?? []).toEqual([]);
+    }
+    await shot(page, 'a11y', 'fine-desktop-studyModes.png');
+
+    // --- Desktop semantics ---
+    await clickTab(page, 'studyModes');
+    const desktop = await collectA11yStructure(page);
+    metricsStore['a11y'] = { desktop };
+    const desktopNav = desktop.navs?.find((n) => n.cellId === 'universal-panel-tab-bar');
+    expect(desktopNav?.tag).toBe('nav');
+    expect(desktopNav?.ariaLabel).toBeTruthy();
+    expect(desktopNav?.currentValue).toBe('page');
+    expect(desktop.panes?.every((p) => p.role === 'region' && !!p.ariaLabel)).toBe(true);
+    expect(desktop.panes?.filter((p) => !p.hidden)).toHaveLength(1);
+    expect(desktop.domOrder?.sidebarBeforeBody).toBe('before');
+    expect(desktop.domOrder?.bodyBeforeBottomNav).toBe('before');
+    const adv = desktop.advancedSwitch;
+    expect(adv?.ariaChecked).not.toBeNull();
+    expect(adv?.ariaControls).toBe('advanced-settings-region');
+    expect(adv?.controlledExists).toBe(true);
+    expect(adv?.controlledRole).toBe('region');
+    expect(adv?.controlledLabel).toBeTruthy();
+    expect(adv?.ariaDescribedby).toBe('advanced-settings-toggle-hint');
+    expect(adv?.describedbyExists).toBe(true);
+    expect(adv?.ariaExpanded).toBeNull();
+    expect(desktop.radiogroups?.length).toBeGreaterThanOrEqual(1);
+    expect(desktop.initialFocus?.insidePanel).toBe(true);
+    expect(desktop.initialFocus?.visible).toBe(true);
+
+    // Focus trap: Tab stays inside the panel.
+    const trail = await focusTrail(page, 10);
+    metricsStore['a11y-focus-trail-desktop'] = { trail };
+    expect(trail.every((s) => s !== 'OUTSIDE-PANEL' && s !== 'none')).toBe(true);
+
+    // --- Playlist single status announcer ---
+    await clickTab(page, 'playlist');
+    const playlist = await collectA11yStructure(page);
+    metricsStore['a11y'] = { ...(metricsStore['a11y'] ?? {}), playlist };
+    const announcers = playlist.statusRegions?.filter((s) => s.cellId === 'playlist-status-announcer') ?? [];
+    expect(announcers).toHaveLength(1);
+    expect(announcers[0]?.ariaAtomic).toBe('true');
+    expect(playlist.ariaLiveInActivePane).toBe(0);
+
+    // --- Mobile DOM order + bottom nav last ---
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(400);
+    await ensurePanelOpen(page, universalPanel);
+    const mobile = await collectA11yStructure(page);
+    metricsStore['a11y'] = { ...(metricsStore['a11y'] ?? {}), mobile };
+    const mobileNav = mobile.navs?.find((n) => n.cellId === 'universal-panel-bottom-nav');
+    expect(mobileNav?.visible).toBe(true);
+    expect(mobileNav?.ariaLabel).toBeTruthy();
+    expect(mobileNav?.currentValue).toBe('page');
+    expect(mobile.domOrder?.sidebarBeforeBody).toBe('before');
+    expect(mobile.domOrder?.bodyBeforeBottomNav).toBe('before');
+    expect(mobile.domOrder?.lastFocusableInBottomNav).toBe(true);
+    const mobileTrail = await focusTrail(page, 8);
+    metricsStore['a11y-focus-trail-mobile'] = { trail: mobileTrail };
+    expect(mobileTrail.every((s) => s !== 'OUTSIDE-PANEL' && s !== 'none')).toBe(true);
+    await shot(page, 'a11y', 'fine-mobile-dom-order.png');
+
+    // --- Coarse pointer via CDP touch emulation: a primary touch point makes
+    // (pointer: coarse) match, which is what the floor tokens respond to. ---
+    const cdp = await page.context().newCDPSession(page);
+    try {
+      await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+      expect(await page.evaluate(() => window.matchMedia('(pointer: coarse)').matches)).toBe(true);
+      for (const tab of TABS) {
+        await clickTab(page, tab);
+        const data = await collectMetrics(page, tab, 'a11y-coarse-390x844');
+        expect(data?.pointerCoarse).toBe(true);
+        expect(data?.touchTargetMin).toBe(44);
+        expect(data?.touchTargetViolations ?? []).toEqual([]);
+        expect(data?.touchTargetOverlaps ?? []).toEqual([]);
+      }
+      await shot(page, 'a11y', 'coarse-mobile-studyModes.png');
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.waitForTimeout(300);
+      await clickTab(page, 'studyModes');
+      const desktopCoarse = await collectMetrics(page, 'studyModes', 'a11y-coarse-1440x900');
+      expect(desktopCoarse?.touchTargetViolations ?? []).toEqual([]);
+      await shot(page, 'a11y', 'coarse-desktop-studyModes.png');
+    } finally {
+      await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false }).catch(() => {});
+      await cdp.detach().catch(() => {});
     }
   });
 });

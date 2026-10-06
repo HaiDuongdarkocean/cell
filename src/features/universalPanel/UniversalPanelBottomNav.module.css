@@ -52,8 +52,8 @@
 /* Active tab — color-only indicator, no fill. Mobile bottom navs show state
    via tint; a background block reads like a stuck focus highlight.
    (0,3,0) beats Button's .solid.ghost (0,2,0) regardless of CSS injection order. */
-.bottomNav .navItem[aria-current="true"],
-.bottomNav .navItem[aria-current="true"]:focus {
+.bottomNav .navItem[aria-current],
+.bottomNav .navItem[aria-current]:focus {
   background: transparent;
   color: var(--universal-panel-bottom-nav-active-fg);
 }

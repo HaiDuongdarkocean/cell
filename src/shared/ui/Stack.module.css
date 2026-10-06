@@ -3,6 +3,10 @@
   box-sizing: border-box;
 }
 
+.stack[hidden] {
+  display: none;
+}
+
 /* === Direction === */
 .vertical { flex-direction: column; }
 .horizontal { flex-direction: row; }
