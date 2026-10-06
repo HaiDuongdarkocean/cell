@@ -22,7 +22,7 @@ Four principles:
 
 - Any Cell browser test; verifying a fix on a real page; shadow DOM inspection or event dispatch; bugs that only appear on a specific host page
 
-**When NOT to use:** non-extension pages → Playwright with a temporary profile; performance traces → `chrome-devtools` MCP; headless CI → `npm run test:e2e` (Playwright fixtures); unit tests → `npm run test:unit`.
+**When NOT to use:** non-extension pages → Playwright with a temporary profile; performance traces → `chrome-devtools` MCP; headless CI → `npm run test:e2e` (Playwright fixtures); unit tests → `npm run test:unit`; persistent/interactive debug session where the user browses manually and the agent inspects on demand (intermittent bugs) → `testing-browser-with-profile`.
 
 ## The Test Loop
 
@@ -56,6 +56,9 @@ Each arrow has a guard — do not advance until it passes.
 - **`chrome.storage` is undefined in page world** — inspect DOM attributes instead.
 - **One Chrome per clone** — launch fails with profile lock → `context.close()` the old one, wait 3s, retry.
 - **Verify probe:** `fetchPatched: true` is the strongest liveness signal (runs `document_start`, MAIN world, `<all_urls>`). `subtitleRoot` false on a video-less page is not a failure.
+- **Extension paths with spaces silently break `--load-extension` when launched via `Start-Process`/raw command line** — inner quotes get stripped, the arg splits at the space, and Chrome-family opens the fragments as bogus `http://...` tabs while loading no extension. Always use the no-space junctions `C:\cell-browser-sessions\ext-dist` + `ext-ublock` (junctions → live `dist/`/`uBOLite`, never stale). Verify via `GET /json` targets: any `http://ecosystem/...`-style junk tab means the arg split. (Playwright `launchPersistentContext` is immune — Node spawn quotes argv correctly; this only bites shell launches.)
+- **`browser.close()` on a `connectOverCDP` connection closes the real browser**, not just the socket. To keep a debug browser alive, end probe scripts with `process.exit(0)`; call `close()` only to intentionally end the session.
+- **Console/exceptions can't be recovered by attaching CDP after the bug** — for intermittent bugs, a watcher must log `Runtime.consoleAPICalled`/`exceptionThrown`/`Log.entryAdded` from t=0 (see `testing-browser-with-profile/script/watch.mjs`).
 
 → Step-by-step actions and code snippets (video seek, shadow DOM inspection, composed event dispatch, popup check), evidence-capture template: `references/workflow-detail.md`
 → Symptom→cause→falsify table, SSOT paths, setup check, test sites, timeboxing: `references/troubleshooting.md`

@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "generated": "2026-10-05T07:40:01.888Z",
-  "count": 53,
+  "generated": "2026-10-06T09:07:26.388Z",
+  "count": 54,
   "skills": [
     {
       "name": "animation-vocabulary",
@@ -237,6 +237,11 @@
       "name": "test-driven-development",
       "description": "Failing test first, then implement. Use when implementing logic or fixing a bug.",
       "path": ".agents/skills/test-driven-development/SKILL.md"
+    },
+    {
+      "name": "testing-browser-with-profile",
+      "description": "Brave debug browser for intermittent bugs.",
+      "path": ".agents/skills/testing-browser-with-profile/SKILL.md"
     },
     {
       "name": "testing-extension-browser",
