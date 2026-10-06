@@ -12,11 +12,10 @@ import {
   type CueListTokenMap,
   type ResolveMeta,
 } from '@/features/tokenize';
-import { cueHeatBand, type CueDifficulty } from '@/features/subtitle/logic/cueDifficulty';
 import { formatCueTimestamp } from '@/features/subtitle/logic/cueTime';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
 import { spawnRipple } from '@/shared/lib/dom/ripple';
-import { Button, EmptyState, Icon, VisuallyHidden } from '@/shared/ui';
+import { Button, EmptyState, Icon } from '@/shared/ui';
 import { t } from '@/shared/i18n';
 import styles from './CueList.module.css';
 
@@ -82,8 +81,6 @@ interface CueListProps {
   onTokensResolved?: (map: CueListTokenMap, meta: ResolveMeta) => void;
   cueFilter?: (cueIndex: number) => boolean;
   filterEpoch?: string;
-  /** Per-cue difficulty for the ambient heat bar. Omit → no indicator. */
-  cueDifficulty?: ReadonlyMap<number, CueDifficulty>;
   /** Player Mode mobile (<600px): card visuals, non-scroll region. */
   mobile?: boolean;
   /** 'list' = full cue list; 'active' = only the current (or next upcoming) card. */
@@ -169,7 +166,7 @@ const CueTokenText = memo(function CueTokenText({
   return <>{children}</>;
 });
 
-export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueContent, showNative = true, tokenize, onTokensResolved, cueFilter, filterEpoch, cueDifficulty, mobile = false, displayMode = 'list', showAllCues = false, cardActions }: CueListProps) {
+export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueContent, showNative = true, tokenize, onTokensResolved, cueFilter, filterEpoch, mobile = false, displayMode = 'list', showAllCues = false, cardActions }: CueListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const highlightedRef = useRef<number | null>(null);
@@ -411,8 +408,6 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
         const isCurrent = i === renderedCurrentIndex;
         const isUpcoming = activeOnly && currentIndex < 0;
         const customContent = renderCueContent?.(cue, i, isCurrent);
-        const heat = cueDifficulty?.get(cue.index);
-        const band = heat === undefined ? undefined : cueHeatBand(heat);
         const cueContent = customContent !== undefined ? (
           customContent
         ) : (
@@ -454,26 +449,12 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
             data-cue-end={cue.end}
             data-current={isCurrent ? 'true' : 'false'}
             data-upcoming={isUpcoming ? 'true' : 'false'}
-            data-heat={band}
             data-cell-ripple-self={mobile ? undefined : ''}
             onPointerDown={(event) => {
               if (!mobile && event.button === 0) spawnRipple(event.currentTarget, event.clientX, event.clientY);
             }}
             className={`${styles.cue} ${isCurrent ? styles.cueCurrent : ''}`}
           >
-            {heat !== undefined && band !== undefined && (
-              <>
-                <span
-                  className={`${styles.heat} ${styles[`heat_${band}`]}`}
-                  data-cell-id="cue-heat"
-                  title={t(`cueHeat.tooltip.${band}`, [heat.unknown + heat.tracking])}
-                  aria-hidden="true"
-                />
-                <VisuallyHidden id={`cue-heat-sr-${cue.index}`}>
-                  {t('cueHeat.srLabel', [heat.unknown + heat.tracking])}
-                </VisuallyHidden>
-              </>
-            )}
             {cueContent}
             <div className={styles.actions} data-cell-id="cue-actions">
               <button
@@ -486,7 +467,6 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                   onSeek(cue.start);
                 }}
                 aria-label={t('cueList.seekTo', [formatTimestamp(cue.start - offsetMs, hasHours)])}
-                aria-describedby={band !== undefined ? `cue-heat-sr-${cue.index}` : undefined}
                 className={styles.timestamp}
               >
                 {/* ADR-019 sync: shift displayed timestamp by -offsetMs so the

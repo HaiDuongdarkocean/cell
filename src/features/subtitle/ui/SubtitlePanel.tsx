@@ -18,7 +18,7 @@ import type { ComprehensionStats } from '@/entities/comprehension';
 
 
 
-import { computeStats, ComprehensionBadge, applyCueListTokenStatus, type Token, type CueListTokenMap, type ResolveMeta, type FrequencyBandThresholds } from '@/features/tokenize';
+import { computeStats, ComprehensionBadge, applyCueListTokenStatus, type Token, type CueListTokenMap, type ResolveMeta } from '@/features/tokenize';
 import { onWordStatusChanged, onWordStatusRemoved } from '@/features/dictionary';
 import { languageMatches } from '@/shared/config/languageRegistry';
 import { CueList, type CueListTokenize } from './CueList';
@@ -103,8 +103,6 @@ const noop = (): void => undefined;
 interface LastGoodResolution {
   readonly cueSetKey: string;
   readonly tokenMap: CueListTokenMap;
-  readonly thresholds: FrequencyBandThresholds;
-  readonly freqUnfiltered: boolean;
 }
 
 function SubtitlePanelImpl({
@@ -206,8 +204,6 @@ function SubtitlePanelImpl({
       setLastGood({
         cueSetKey,
         tokenMap: map,
-        thresholds: meta.thresholds,
-        freqUnfiltered: meta.freqUnfiltered,
       });
     }
   }, [scoreSuppressed, cueSetKey]);
@@ -329,7 +325,6 @@ function SubtitlePanelImpl({
         onTokensResolved={tokenize ? handleTokensResolved : undefined}
         cueFilter={cueFilter}
         filterEpoch={filterMode}
-        cueDifficulty={cueFilterEnabled ? difficulties ?? undefined : undefined}
         mobile={pmMobile}
         displayMode={cueDisplayMode}
         showAllCues={showAllCues}

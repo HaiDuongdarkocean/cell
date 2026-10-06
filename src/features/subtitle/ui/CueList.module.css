@@ -69,37 +69,6 @@
   background: var(--cue-list-item-active-bg);
 }
 
-.heat {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: var(--cue-list-indicator-width);
-}
-
-.heat::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 10px;
-}
-
-.heat_easy {
-  background: var(--color-token-status-known);
-  opacity: 0.45;
-}
-
-.heat_i1 {
-  background: var(--color-token-status-tracking);
-  opacity: 0.7;
-}
-
-.heat_dense {
-  background: var(--color-token-status-unknown);
-}
-
 .timestamp {
   /* sits inside .actions; the row controls alignment and spacing. */
   padding: 0;
