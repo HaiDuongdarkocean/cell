@@ -249,14 +249,13 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       overrides ?? new Map<string, WordStatus>(),
     );
     setTokenMap(immediate);
-    resolvingRef.current = true;
-    setResolving(true);
     let active = true;
-    void (async () => {
-      for (let attempt = 0; attempt < RESOLVE_MAX_ATTEMPTS; attempt += 1) {
-        if (!active) return;
-        try {
-          const { map, meta } = await resolveCueListTokenMetadata(immediate, tokenizeLangCode);
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    const runResolve = (attempt: number): void => {
+      resolvingRef.current = true;
+      setResolving(true);
+      void resolveCueListTokenMetadata(immediate, tokenizeLangCode)
+        .then(({ map, meta }) => {
           if (!active) return;
           metaRef.current = meta;
           setTokenMap(
@@ -265,20 +264,26 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
               statusOverridesRef.current.get(tokenizeLangCode) ?? new Map<string, WordStatus>(),
             ),
           );
-          if (!meta.failed) break;
-        } catch {
+          if (meta.failed && attempt < RESOLVE_MAX_ATTEMPTS) {
+            retryTimer = setTimeout(() => runResolve(attempt + 1), RESOLVE_RETRY_DELAY_MS);
+          }
+        })
+        .catch(() => {
           if (!active) return;
-        }
-        if (attempt < RESOLVE_MAX_ATTEMPTS - 1) {
-          await new Promise<void>((resolve) => setTimeout(resolve, RESOLVE_RETRY_DELAY_MS));
-        }
-      }
-      if (!active) return;
-      resolvingRef.current = false;
-      setResolving(false);
-    })();
+          if (attempt < RESOLVE_MAX_ATTEMPTS) {
+            retryTimer = setTimeout(() => runResolve(attempt + 1), RESOLVE_RETRY_DELAY_MS);
+          }
+        })
+        .finally(() => {
+          if (!active) return;
+          resolvingRef.current = false;
+          setResolving(false);
+        });
+    };
+    runResolve(1);
     return () => {
       active = false;
+      if (retryTimer !== undefined) clearTimeout(retryTimer);
     };
   }, [visibleCues, tokenizeLangCode]);
 
