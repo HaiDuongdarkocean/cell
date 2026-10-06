@@ -492,12 +492,6 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                   ? `${formatTimestamp(cue.start - offsetMs, hasHours)} – ${formatTimestamp(cue.end - offsetMs, hasHours)}`
                   : formatTimestamp(cue.start - offsetMs, hasHours)}
               </button>
-              {mobile && (
-                <span className={styles.cardFooterIcons} aria-hidden="true">
-                  <Icon name="pin" size="xs" />
-                  <Icon name="layers" size="xs" />
-                </span>
-              )}
             </div>
             {mobile && isCurrent && cardActions && (
               <div className={styles.cardActions} data-cell-id="pm-card-actions">

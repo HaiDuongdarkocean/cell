@@ -23,6 +23,8 @@ export interface SheetProps {
   readonly header?: ReactNode;
   /** Sheet content. */
   readonly children?: ReactNode;
+  /** Pinned below the scrollable content (e.g. a stepper the thumb reaches). */
+  readonly footer?: ReactNode;
   /** Custom className for the sheet container (extends styles.sheet). */
   readonly className?: string;
   /** Custom className for the content area. */
@@ -47,6 +49,7 @@ export function Sheet({
   onHeightChange,
   header,
   children,
+  footer,
   className,
   contentClassName,
   'data-cell-id': dataTestId,
@@ -123,6 +126,7 @@ export function Sheet({
       >
         {children}
       </div>
+      {footer ? <div className={styles.footer}>{footer}</div> : null}
     </div>
   );
 }

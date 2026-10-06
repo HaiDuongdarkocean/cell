@@ -14,10 +14,10 @@ describe('SpeedPill', () => {
     expect(onChange).toHaveBeenCalledWith(1.25);
   });
 
-  it('clamps speed between 0.5x and 10x', () => {
+  it('clamps speed between 0.25x and 10x', () => {
     const onChange = jest.fn();
-    const { unmount } = render(<SpeedPill speed={0.5} onChange={onChange} />);
-    fireEvent.click(screen.getByRole('button', { name: /decrease playback speed from 0\.5x/i }));
+    const { unmount } = render(<SpeedPill speed={0.25} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /decrease playback speed from 0\.25x/i }));
     expect(onChange).not.toHaveBeenCalled();
     unmount();
 

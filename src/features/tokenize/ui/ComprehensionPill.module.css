@@ -24,6 +24,8 @@
   left: 50%;
   transform: translateX(-50%);
   bottom: var(--pm-anchor-bottom, 132px);
+  height: var(--iconbutton-size-md);
+  padding-block: 0;
 }
 
 .toggle {

@@ -471,63 +471,11 @@
   color: var(--color-text-secondary);
 }
 
-/* ─── Latency — pill group + reset button ─── */
-.latency {
-  margin-top: var(--space-1-5);
-  padding: var(--space-1-5);
-}
-
-.latencyHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-2);
-  margin-bottom: var(--space-1);
-}
-
-.latencyLabel {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-}
-
-.latencySave {
-  font-size: var(--font-size-xs);
-  color: var(--color-success);
-}
-
-.latencyRow {
-  display: flex;
-  align-items: stretch;
-  gap: var(--space-1-5);
-}
-
-/* ─── Pill group: [-0.5s] [input] [+0.5s] — full pill, 40px height ─── */
+/* ─── Latency — StepperSection shared molecule; manager keeps slots ─── */
+/* Stepper slot: [-0.5s] [input] [+0.5s] — the Stepper atom owns the pill
+   surface; the manager only stretches it to fill the latency row. */
 .pillGroup {
   flex: 1 1 auto;
-  display: flex;
-  align-items: stretch;
-  background: var(--color-field);
-  border: var(--border-width-hairline) solid var(--input-border);
-  border-radius: var(--radius-pill);
-  overflow: hidden;
-  transition: border-color var(--duration-fast) var(--ease-out);
-}
-
-.pillGroup:hover {
-  border-color: var(--color-primary);
-}
-
-.pillGroup:focus-within {
-  border-color: transparent;
-  box-shadow: 0 0 0 var(--space-0-5) var(--color-primary-subtle);
-}
-
-.stepLabel {
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-medium);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
 }
 
 /* ─── Input field ─── */
@@ -677,8 +625,8 @@
    These overrides remove them for the YouTube-style uniform charcoal surface.
    Placed last so same-specificity rules win the cascade. */
 @media (min-width: 840px) {
-  .pillGroup,
-  .pillGroup:hover {
+  .pillGroup.pillGroup,
+  .pillGroup.pillGroup:hover {
     border: 0;
     border-color: transparent;
   }

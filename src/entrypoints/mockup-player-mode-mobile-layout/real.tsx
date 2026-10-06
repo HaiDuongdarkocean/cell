@@ -4,6 +4,7 @@ import { SubtitleManagerPanel } from '@/features/subtitle/ui/SubtitleManagerPane
 import { Sheet } from '@/shared/ui/Sheet';
 import { MOCK_CUES, MOCK_TARGET_STYLE, MOCK_NATIVE_STYLE } from './mockData';
 import type { SubtitlePanelItem } from '@/features/subtitle/ui/subtitlePanelModel';
+import type { PlaybackSpeed } from '@/entities/studyMode/types';
 
 const MOCK_TARGET_ITEMS: SubtitlePanelItem[] = [
   { id: 't1', name: 'English #1', format: 'vtt', source: 'auto', role: 'target', index: 0 },
@@ -17,6 +18,7 @@ export function RealPanel(): React.ReactElement {
   const [playing, setPlaying] = useState(false);
   const [timeMs, setTimeMs] = useState(352000);
   const [managerOpen, setManagerOpen] = useState(false);
+  const [speed, setSpeed] = useState<PlaybackSpeed>(1);
   const noop = useCallback((): void => undefined, []);
   return (
     <>
@@ -48,7 +50,9 @@ export function RealPanel(): React.ReactElement {
         currentTimeMs={timeMs}
         onSeek={setTimeMs}
         tokenize={{ langCode: 'en', onTokenClick: noop }}
-        trackLabel="English #1"
+        playbackSpeed={speed}
+        onPlaybackSpeedChange={setSpeed}
+
       />
       <Sheet
         open={managerOpen}

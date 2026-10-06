@@ -227,13 +227,6 @@
   font-size: var(--font-size-xs);
 }
 
-.cardFooterIcons {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-text-secondary);
-}
-
 /* Quick-add + edit-card rail: inside the active card, top-right corner. */
 .cardActions {
   position: absolute;

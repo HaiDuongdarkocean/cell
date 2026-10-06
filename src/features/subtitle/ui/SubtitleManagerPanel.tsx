@@ -10,7 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { ICON_SIZE_PX } from '@/shared/icons';
-import { Button, InkTabs, Input, Label } from '@/shared/ui';
+import { Button, InkTabs, Input, Label, StepperSection } from '@/shared/ui';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import { t } from '@/shared/i18n';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
@@ -251,50 +251,25 @@ function OffsetStepper({
   const saveLabel = state.saveState === 'saving' ? t('subtitle.offset.saving') : t('subtitle.offset.saved');
 
   return (
-    <div className={styles.latency}>
-      <div className={styles.latencyHead}>
-        <span className={styles.latencyLabel}>{t('subtitle.offset.latency')}</span>
-        <span className={styles.latencySave} role="status" data-cell-id={`manager-offset-save-${role}`}>
+    <StepperSection
+      label={t('subtitle.offset.latency')}
+      status={
+        <span role="status" data-cell-id={`manager-offset-save-${role}`}>
           {saveLabel}
         </span>
-      </div>
-      <div className={styles.latencyRow}>
-        <div className={styles.pillGroup}>
-          <Button
-            variant="ghost"
-            size="md"
-            aria-label={t('subtitle.offset.decrease', [label, OFFSET_STEP])}
-            data-cell-id={`manager-offset-dec-${role}`}
-            onClick={() => bump(-OFFSET_STEP)}
-          >
-            <span className={styles.stepLabel}>-0.5s</span>
-          </Button>
-          <Label className={styles.valueField}>
-            <Input
-              type="text"
-              inputMode="decimal"
-              className={styles.valueInput}
-              value={state.offset}
-              onChange={handleInputChange}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-              onKeyDown={handleKeyDown}
-              aria-label={t('subtitle.offset.inputAria', [label])}
-              variant="ghost"
-              data-cell-id={`manager-offset-input-${role}`}
-            />
-          </Label>
-          <Button
-            variant="ghost"
-            size="md"
-            aria-label={t('subtitle.offset.increase', [label, OFFSET_STEP])}
-            data-cell-id={`manager-offset-inc-${role}`}
-            onClick={() => bump(OFFSET_STEP)}
-          >
-            <span className={styles.stepLabel}>+0.5s</span>
-          </Button>
-        </div>
-        <Button shape="circle"
+      }
+      stepperClassName={styles.pillGroup}
+      decreaseLabel="-0.5s"
+      increaseLabel="+0.5s"
+      decreaseAriaLabel={t('subtitle.offset.decrease', [label, OFFSET_STEP])}
+      increaseAriaLabel={t('subtitle.offset.increase', [label, OFFSET_STEP])}
+      onDecrease={() => bump(-OFFSET_STEP)}
+      onIncrease={() => bump(OFFSET_STEP)}
+      decreaseDataCellId={`manager-offset-dec-${role}`}
+      increaseDataCellId={`manager-offset-inc-${role}`}
+      trailing={
+        <Button
+          shape="circle"
           size="md"
           variant="ghost"
           aria-label={t('subtitle.offset.resetAria')}
@@ -304,8 +279,24 @@ function OffsetStepper({
         >
           <RotateCcw size={ICON_SIZE_PX} aria-hidden="true" />
         </Button>
-      </div>
-    </div>
+      }
+    >
+      <Label className={styles.valueField}>
+        <Input
+          type="text"
+          inputMode="decimal"
+          className={styles.valueInput}
+          value={state.offset}
+          onChange={handleInputChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          aria-label={t('subtitle.offset.inputAria', [label])}
+          variant="ghost"
+          data-cell-id={`manager-offset-input-${role}`}
+        />
+      </Label>
+    </StepperSection>
   );
 }
 

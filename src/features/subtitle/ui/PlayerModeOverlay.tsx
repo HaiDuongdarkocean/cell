@@ -20,7 +20,10 @@ import { resolvePlayerModeLayout, DOCK_MIN_HEIGHT_PX, PM_MOBILE_BAR_HEIGHT_PX } 
 import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { getStorage, setStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { Button } from '@/shared/ui/Button';
-import { Menu, MenuItem, MenuSeparator } from '@/shared/ui/Menu';
+import { MenuItem, MenuSeparator } from '@/shared/ui/Menu';
+import { Sheet } from '@/shared/ui/Sheet';
+import { StepperSection, StepperValue } from '@/shared/ui/StepperSection';
+import { PLAYBACK_SPEEDS } from '@/entities/studyMode/types';
 import { Icon } from '@/shared/icons/Icon';
 import { PRESETS } from '@/entities/studyMode/constants';
 import { t } from '@/shared/i18n';
@@ -101,16 +104,19 @@ export interface PlayerModeOverlayProps {
   /** Tokenize cue target text into clickable word tokens. */
   tokenize?: CueListTokenize | null;
   panelBlurred?: boolean;
-  /** Active target track label shown in the mobile anchor caption. */
-  trackLabel?: string;
 }
 
 const PM_MOBILE_BREAKPOINT = 600;
-const PM_MENU_SPEEDS: readonly PlaybackSpeed[] = [0.5, 0.75, 1, 1.25, 1.5, 2];
+const PM_MENU_SPEEDS: readonly PlaybackSpeed[] = PLAYBACK_SPEEDS;
+const PM_SHEET_HEIGHT_RATIO = 0.62;
 const ORBITAL_POSITION_KEY = 'orbitalBadgePosition';
 const ORBITAL_BADGE_DEFAULT_SIZE = 36;
 const PM_FAB_GAP_PX = 8;
 type StoredOrbitalPosition = { edge?: 'left' | 'right' | 'top' | 'bottom'; y?: number };
+
+function formatPlaybackSpeed(speed: PlaybackSpeed | undefined): string {
+  return `${speed ?? 1}×`;
+}
 
 function PlayerModeOverlayInner({
   targetStyle,
@@ -156,7 +162,6 @@ function PlayerModeOverlayInner({
   onContinueCue,
   tokenize,
   panelBlurred,
-  trackLabel,
 }: PlayerModeOverlayProps): React.JSX.Element {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [cueListOpen, setCueListOpen] = useState(true);
@@ -164,11 +169,9 @@ function PlayerModeOverlayInner({
   const [showAllCues, setShowAllCues] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [fabSlot, setFabSlot] = useState<HTMLDivElement | null>(null);
-  const [overlayEl, setOverlayEl] = useState<HTMLDivElement | null>(null);
-  const moreBtnRef = useRef<HTMLButtonElement>(null);
+
   const bottomBarRef = useRef<HTMLElement>(null);
   const anchorRowRef = useRef<HTMLDivElement>(null);
-  const captionRef = useRef<HTMLParagraphElement>(null);
   // Content panel width % in split layout (>480px). Default 30%. Clamp 20-60%.
   // Persisted to chrome.storage.local — survives reload + re-enter Player Mode.
   const [contentPct, setContentPct] = useState(CONTENT_PCT_DEFAULT);
@@ -486,14 +489,13 @@ function PlayerModeOverlayInner({
     }
     root.setAttribute('data-cell-player-mode-mobile', 'true');
     const bar = bottomBarRef.current?.offsetHeight ?? 0;
-    const caption = captionRef.current?.offsetHeight ?? 0;
     const row = anchorRowRef.current?.offsetHeight ?? 0;
-    root.style.setProperty('--pm-anchor-bottom', `${Math.round(bar + caption + row / 2)}px`);
+    root.style.setProperty('--pm-anchor-bottom', `${Math.round(bar + row / 2)}px`);
     return () => {
       root.removeAttribute('data-cell-player-mode-mobile');
       root.style.removeProperty('--pm-anchor-bottom');
     };
-  }, [isMobilePm, viewport, cueListOpen, trackLabel, cues]);
+  }, [isMobilePm, viewport, cueListOpen, cues]);
 
   useEffect(() => {
     const onWindowKeyDown = (e: KeyboardEvent): void => {
@@ -597,6 +599,12 @@ function PlayerModeOverlayInner({
 
   const hasCues = (cues ?? []).length > 0;
   const closeMoreMenu = (): void => setMoreMenuOpen(false);
+  const speedIndex = Math.max(PM_MENU_SPEEDS.indexOf(playbackSpeed ?? 1), 0);
+  const stepPlaybackSpeed = (delta: number): void => {
+    const next = PM_MENU_SPEEDS[speedIndex + delta];
+    if (!onPlaybackSpeedChange || next === undefined) return;
+    onPlaybackSpeedChange(next);
+  };
 
   const pmCardActions =
     onQuickAdd || onEditCard ? (
@@ -641,7 +649,6 @@ function PlayerModeOverlayInner({
         style={orbitalLiftPx > 0 ? ({ '--pm-orbital-lift': `${orbitalLiftPx}px` } as React.CSSProperties) : undefined}
         role="application"
         aria-label={t('subtitle.playerMode.aria')}
-        ref={setOverlayEl}
       >
         <div className={styles.split} data-cell-id="player-mode-split">
           <div
@@ -691,7 +698,7 @@ function PlayerModeOverlayInner({
                 {onToggleManager && (
                   <Button
                     variant="neutralSubtle"
-                    size="lg"
+                    size="md"
                     aria-label={t('subtitle.toolbar.openManager')}
                     title={t('subtitle.toolbar.openManager')}
                     data-cell-id="manager-toggle-btn"
@@ -705,7 +712,7 @@ function PlayerModeOverlayInner({
                   {onGenerateNative && (
                     <Button
                       variant="neutralSubtle"
-                      size="lg"
+                      size="md"
                       elevation="low"
                       aria-label={t('subtitle.toolbar.generateNative')}
                       title={t('subtitle.toolbar.generateNativeTitle')}
@@ -718,11 +725,6 @@ function PlayerModeOverlayInner({
                   )}
                 </div>
               </div>
-              {trackLabel && (
-                <p className={styles.caption} ref={captionRef} data-cell-id="pm-caption">
-                  {t('subtitle.playerMode.trackCaption', [trackLabel])}
-                </p>
-              )}
             </div>
           </div>
         </div>
@@ -733,22 +735,24 @@ function PlayerModeOverlayInner({
           data-cell-id="pm-bottom-bar"
           aria-label={t('subtitle.playerMode.menuLabel')}
         >
-          <Button
-            variant="ghost"
-            size="lg"
-            aria-label={t('subtitle.toolbar.exitPlayerMode')}
-            title={t('subtitle.toolbar.exitPlayerModeTitle')}
-            data-cell-id="player-mode-exit-btn"
-            onClick={onExit}
-          >
-            <Icon name="x" />
-          </Button>
+          <div className={styles.barEdge}>
+            <Button
+              variant="ghost"
+              size="md"
+              aria-label={t('subtitle.toolbar.exitPlayerMode')}
+              title={t('subtitle.toolbar.exitPlayerModeTitle')}
+              data-cell-id="player-mode-exit-btn"
+              onClick={onExit}
+            >
+              <Icon name="x" />
+            </Button>
+          </div>
           <div className={styles.transport} data-cell-id="nav-cluster">
             {hasCues
               ? onPrev && (
                   <Button
                     variant="primarySubtle"
-                    size="lg"
+                    size="md"
                     aria-label={t('settings.shortcuts.action.prevCue')}
                     data-cell-id="nav-prev"
                     onClick={onPrev}
@@ -759,7 +763,7 @@ function PlayerModeOverlayInner({
               : onRewind && (
                   <Button
                     variant="primarySubtle"
-                    size="lg"
+                    size="md"
                     aria-label={t('subtitle.nav.rewind')}
                     data-cell-id="nav-rewind"
                     onClick={onRewind}
@@ -770,7 +774,7 @@ function PlayerModeOverlayInner({
             {onRepeat && (
               <Button
                 variant="primarySubtle"
-                size="lg"
+                size="md"
                 aria-label={repeatActive ? t('subtitle.nav.repeatCancel') : repeatLabel ?? t('player.nav.repeat')}
                 data-cell-id="nav-repeat"
                 active={repeatActive}
@@ -781,10 +785,8 @@ function PlayerModeOverlayInner({
             )}
             {onPlayPause && (
               <Button
-                variant="warningSubtle"
-                size="xl"
-                elevation="low"
-                className={styles.barHero}
+                variant="primarySubtle"
+                size="md"
                 aria-label={isPlaying ? t('subtitle.nav.pause') : t('subtitle.nav.play')}
                 data-cell-id="nav-play"
                 onClick={onPlayPause}
@@ -796,7 +798,7 @@ function PlayerModeOverlayInner({
               ? onNext && (
                   <Button
                     variant="primarySubtle"
-                    size="lg"
+                    size="md"
                     aria-label={t('settings.shortcuts.action.nextCue')}
                     data-cell-id="nav-next"
                     onClick={onNext}
@@ -807,7 +809,7 @@ function PlayerModeOverlayInner({
               : onForward && (
                   <Button
                     variant="primarySubtle"
-                    size="lg"
+                    size="md"
                     aria-label={t('subtitle.nav.forward')}
                     data-cell-id="nav-forward"
                     onClick={onForward}
@@ -816,28 +818,49 @@ function PlayerModeOverlayInner({
                   </Button>
                 )}
           </div>
-          <Button
-            ref={moreBtnRef}
-            variant="ghost"
-            size="lg"
-            aria-label={t('subtitle.playerMode.more')}
-            aria-haspopup="menu"
-            aria-expanded={moreMenuOpen}
-            data-cell-id="pm-more-btn"
-            onClick={() => setMoreMenuOpen((v) => !v)}
-          >
-            <Icon name="ellipsis" />
-          </Button>
-          <Menu
-            open={moreMenuOpen}
-            onClose={closeMoreMenu}
-            triggerRef={moreBtnRef}
-            align="right"
-            ariaLabel={t('subtitle.playerMode.menuLabel')}
-            className={styles.pmMoreMenu}
-            container={overlayEl ?? undefined}
-            data-cell-id="pm-more-menu"
-          >
+          <div className={styles.barEdge}>
+            <Button
+              variant="ghost"
+              size="md"
+              aria-label={t('subtitle.playerMode.more')}
+              aria-haspopup="dialog"
+              aria-expanded={moreMenuOpen}
+              data-cell-id="pm-more-btn"
+              onClick={() => setMoreMenuOpen((v) => !v)}
+            >
+              <Icon name="ellipsis" />
+            </Button>
+          </div>
+        </nav>
+
+        <Sheet
+          open={moreMenuOpen}
+          onClose={closeMoreMenu}
+          aria-label={t('subtitle.playerMode.menuLabel')}
+          initialHeight={Math.round(viewport.h * PM_SHEET_HEIGHT_RATIO)}
+          data-cell-id="pm-more-menu"
+          footer={
+            <StepperSection
+              label={t('studyModes.speed.aria')}
+              dataCellId="pm-speed-stepper"
+              decreaseLabel={<Icon name="minus" />}
+              increaseLabel={<Icon name="plus" />}
+              decreaseAriaLabel={t('subtitle.playerMode.speedSlower')}
+              increaseAriaLabel={t('subtitle.playerMode.speedFaster')}
+              decreaseDisabled={speedIndex <= 0}
+              increaseDisabled={speedIndex >= PM_MENU_SPEEDS.length - 1}
+              decreaseDataCellId="pm-speed-dec"
+              increaseDataCellId="pm-speed-inc"
+              onDecrease={() => stepPlaybackSpeed(-1)}
+              onIncrease={() => stepPlaybackSpeed(1)}
+            >
+              <StepperValue dataCellId="pm-speed-value">
+                {formatPlaybackSpeed(playbackSpeed)}
+              </StepperValue>
+            </StepperSection>
+          }
+        >
+          <div className={styles.pmSheetList} role="menu" aria-label={t('subtitle.playerMode.menuLabel')}>
             <MenuItem
               icon={<Icon name="sidePanel" />}
               data-cell-id="panel-toggle-btn"
@@ -881,42 +904,8 @@ function PlayerModeOverlayInner({
                 ))}
               </>
             )}
-            {onPlaybackSpeedChange && (
-              <>
-                <MenuSeparator />
-                {PM_MENU_SPEEDS.map((speed) => (
-                  <MenuItem
-                    key={speed}
-                    radio
-                    icon={<Icon name="gauge" />}
-                    selected={playbackSpeed === speed}
-                    data-cell-id={`pm-speed-${speed}`}
-                    onSelect={() => { onPlaybackSpeedChange(speed); closeMoreMenu(); }}
-                  >
-                    {t('subtitle.playerMode.speedValue', [speed])}
-                  </MenuItem>
-                ))}
-              </>
-            )}
-            {onPracticeModeChange && (
-              <>
-                <MenuSeparator />
-                {(['off', 'dictation', 'cloze'] as const).map((mode) => (
-                  <MenuItem
-                    key={mode}
-                    radio
-                    icon={<Icon name="bookOpen" />}
-                    selected={practiceMode === mode}
-                    data-cell-id={`pm-practice-${mode}`}
-                    onSelect={() => { onPracticeModeChange(mode); closeMoreMenu(); }}
-                  >
-                    {t(`studyModes.practice.${mode}`)}
-                  </MenuItem>
-                ))}
-              </>
-            )}
-          </Menu>
-        </nav>
+          </div>
+        </Sheet>
       </div>
     );
   }

@@ -254,7 +254,7 @@ describe('mobile layout (<600px)', () => {
         currentTimeMs={0}
         offsetMs={0}
         onSeek={cues ? noop : undefined}
-        trackLabel="English"
+
         activeModeId="normal"
         onStudyModeChange={noop}
         practiceMode="off"
@@ -280,7 +280,7 @@ describe('mobile layout (<600px)', () => {
     expect(screen.getByTestId('pm-cue-region')).toBeInTheDocument();
     expect(screen.getByTestId('pm-anchor-band')).toBeInTheDocument();
     expect(screen.getByTestId('pm-anchor-row')).toBeInTheDocument();
-    expect(screen.getByTestId('pm-caption')).toHaveTextContent('English');
+    expect(screen.queryByTestId('pm-caption')).toBeNull();
     expect(screen.getByTestId('cue-list')).toBeInTheDocument();
     expect(screen.queryByTestId('overlay-player-action')).toBeNull();
     expect(screen.getByTestId('player-mode-content')).toBeInTheDocument();
@@ -351,10 +351,58 @@ describe('mobile layout (<600px)', () => {
     expect(menu).toContainElement(screen.getByTestId('panel-toggle-btn'));
     expect(menu).toContainElement(screen.getByTestId('ocr-toggle-btn'));
     expect(menu).toContainElement(screen.getByTestId('study-mode-normal'));
-    expect(menu).toContainElement(screen.getByTestId('pm-speed-1'));
+    expect(menu).toContainElement(screen.getByTestId('pm-speed-stepper'));
+    expect(screen.getByTestId('pm-speed-value')).toHaveTextContent('1×');
+    expect(menu.querySelector('[data-cell-id="pm-practice-off"]')).toBeNull();
     for (const id of ['nav-prev', 'nav-next', 'nav-rewind', 'nav-forward', 'nav-repeat', 'nav-play']) {
       expect(menu.querySelector(`[data-cell-id="${id}"]`)).toBeNull();
     }
+  });
+
+  it('speed chip opens the sheet and the stepper walks the playback speeds', () => {
+    const onPlaybackSpeedChange = jest.fn();
+    render(
+      <PlayerModeOverlay
+        targetStyle={style}
+        nativeStyle={style}
+        isPlaying
+        repeatActive={false}
+        videoAspectRatio={16 / 9}
+        generateNativeEnabled
+        toolsExpanded={false}
+        onQuickAdd={noop}
+        onEditCard={noop}
+        onToggleOcr={noop}
+        onGenerateNative={noop}
+        onToggleSidePanel={noop}
+        onToggleManager={noop}
+        onToggleTools={noop}
+        onPrev={noop}
+        onNext={noop}
+        onRepeat={noop}
+        onRewind={noop}
+        onForward={noop}
+        onPlayPause={noop}
+        onToggleCollapsed={noop}
+        onExit={noop}
+        cues={sampleCues}
+        currentTimeMs={0}
+        offsetMs={0}
+        onSeek={noop}
+        playbackSpeed={2}
+        onPlaybackSpeedChange={onPlaybackSpeedChange}
+      />,
+    );
+
+    expect(screen.queryByTestId('pm-more-menu')).toBeNull();
+    fireEvent.click(screen.getByTestId('pm-more-btn'));
+    expect(screen.getByTestId('pm-more-menu')).toBeInTheDocument();
+    expect(screen.getByTestId('pm-speed-value')).toHaveTextContent('2×');
+
+    fireEvent.click(screen.getByTestId('pm-speed-inc'));
+    expect(onPlaybackSpeedChange).toHaveBeenCalledWith(2.5);
+    fireEvent.click(screen.getByTestId('pm-speed-dec'));
+    expect(onPlaybackSpeedChange).toHaveBeenCalledWith(1.5);
   });
 
   it('closes the menu before exiting on Escape', () => {

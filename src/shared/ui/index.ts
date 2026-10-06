@@ -39,6 +39,8 @@ export { SettingsRow } from './SettingsRow';
 export { Skeleton } from './Skeleton';
 export { SliderRow } from './SliderRow';
 export { Spinner } from './Spinner';
+export { Stepper, type StepperProps } from './Stepper';
+export { StepperSection, StepperValue, type StepperSectionProps } from './StepperSection';
 export { Surface } from './Surface';
 export { Textarea } from './Textarea';
 export { Toggle } from './Toggle';

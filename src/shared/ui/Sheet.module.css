@@ -68,6 +68,12 @@
   composes: hide from '@/shared/ui/Scrollable.module.css';
 }
 
+.footer {
+  flex: 0 0 auto;
+  padding: var(--space-2) 0 var(--space-3);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sheet {
     transition: none;

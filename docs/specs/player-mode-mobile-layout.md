@@ -38,7 +38,7 @@ REQ-2: Bottom transport bar
 - Goal: transport + exit 1 tay
 - Preconditions: PM mobile mounted
 - Basic flow:
-  1. system render `bottomBar`: [exit `player-mode-exit-btn` tint-gray pill] | [`nav-prev`] [`nav-repeat`] [`nav-play` hero] [`nav-next`] | [`pm-more-btn` tint-gray pill]
+  1. system render `bottomBar`: [exit `player-mode-exit-btn` tint-gray pill] | [`nav-prev`] [`nav-repeat`] [`nav-play`] [`nav-next`] | [`pm-more-btn` tint-gray pill] — mọi nút cùng box `md` (40px, `--iconbutton-size-md`), transport gap `space-1` thành một cluster ngón cái; grid 3 cột giữ transport căn giữa
   2. actor tap → handler hiện có (`onExit`/`onPrev`/`onRepeat`/`onPlayPause`/`onNext`)
   3. state reflect: `repeatActive`, play/pause icon theo `isPlaying`
 - Alt flow: `cues.length===0` → prev/next swap thành [`nav-rewind`/`nav-forward`] gọi `onRewind`/`onForward`; cues load → swap về.
@@ -66,9 +66,9 @@ REQ-4: Floating anchor band + pill reposition
 - Goal: status surfaces nổi trên đáy cueRegion như mockup (card kế peek phía sau)
 - Preconditions: PM mobile mounted
 - Basic flow:
-  1. system render `pm-anchor-band` **absolute đè đáy `pm-cue-wrap`** (sibling của `pm-cue-region`, **trong suốt hoàn toàn**; `pm-cue-region` scroll có `mask-image` fade đáy — card tan dần khi vào vùng band): row [CC `manager-toggle-btn` trái | **pill căn giữa tuyệt đối** (`left:50%`) | rail pair phải (REQ-3)] + caption `Subtitles: <label>` dòng riêng **căn giữa**, màu `color-primary`
+  1. system render `pm-anchor-band` **absolute đè đáy `pm-cue-wrap`** (sibling của `pm-cue-region`, **trong suốt hoàn toàn**; `pm-cue-region` scroll có `mask-image` fade đáy — card tan dần khi vào vùng band): row [CC `manager-toggle-btn` trái | **pill căn giữa tuyệt đối** (`left:50%`) | rail pair phải (REQ-3)]. Không còn caption `Subtitles: <label>` (AC-20) — band chỉ còn một hàng nút, tiết kiệm chiều cao
   2. **Pill mechanism (decided)**: PM mobile set `data-cell-player-mode-mobile="true"` trên `document.documentElement` khi mount (cleanup remove). `ComprehensionPill.module.css` thêm `:host-context([data-cell-player-mode-mobile]) .pill { top:auto; bottom: calc(var(--pm-anchor-bottom, <bottombar+caption px>)); }` — pure CSS: remount-safe (không inline style), tự restore khi attr gỡ, không đụng `mountComprehensionPill` internals. PM set `--pm-anchor-bottom` trên documentElement theo chiều cao bottomBar+caption+band thực tế.
-- Alt flow: pill không data → pill host tự unmount (existing store logic), band vẫn giữ CC + caption. Track label source: manager state's active target track label; fallback = `subtitleOverlayTargetLanguage` code; none → caption ẩn. Prop mới `trackLabel?: string` qua SubtitlePanels → PlayerModeLayer.
+- Alt flow: pill không data → pill host tự unmount (existing store logic), band vẫn giữ CC + rail.
 - Exception: PM enter khi pill chưa mount → CSS vẫn đúng khi pill mount sau (host-context match lúc render).
 - Rules: cueRegion **không scroll** (REQ-10 — không scrollbar, không user scroll; vị trí card do system điều khiển theo active cue); band `pointer-events:none`, chỉ CC/pill/nút rail `auto` (không nuốt tap card bên dưới); z dưới ⋯ menu/sheets.
 - Postcondition: manager reachable; pill căn giữa neo band; card cuối peek/fade dưới band.
@@ -79,16 +79,16 @@ REQ-5: ⋯ overflow menu
 - Goal: mọi PM action còn lại reachable
 - Preconditions: PM mobile mounted
 - Basic flow:
-  1. actor tap `pm-more-btn` → `Menu` mở (align right, anchor trigger)
+  1. actor tap `pm-more-btn` → **`Sheet`** (SSOT bottom sheet, `data-cell-id="pm-more-menu"`) mở — không còn popup `Menu` (AC-22); bottom bar không có speed chip riêng (AC-23)
   2. items (có icon + label i18n, `data-cell-id` reuse khi có):
      - `panel-toggle-btn` behavior: "Ẩn/hiện danh sách cue" (tương đương `t` — session toggle)
      - `ocr-toggle-btn` (MenuItem selected state khi `ocrEnabled`)
-     - study modes: MenuItem radio per mode (active mode checked) + speed: MenuItem radio group (0.5–2×) — vì mobile cueRegion không render StudyModeActionBar (REQ-7)
-     - practice options nếu `onPracticeModeChange` có
-  3. chọn → handler chạy, menu đóng
+     - study modes: MenuItem radio per mode (active mode checked) — vì mobile cueRegion không render StudyModeActionBar (REQ-7)
+  3. footer sheet (ghim, không scroll) = **speed stepper** `Stepper` (`pm-speed-stepper`) `[-] [N×] [+]` đi qua ladder `PLAYBACK_SPEEDS` 0.25×–10×; `pm-speed-dec`/`pm-speed-inc` gọi `onPlaybackSpeedChange`; không có list radio tốc độ (AC-23)
+  4. chọn → handler chạy, sheet đóng
 - Alt flow: item không applicable → disabled/omitted nhất quán desktop.
-- Exception: Esc/outside-click/scroll → Menu tự đóng (có sẵn: escapeLayer + composedPath + useDismissOnScroll).
-- Rules: chỉ `Menu`/`MenuItem`/`MenuSeparator`; hai item list-toggle phân biệt rõ: "Ẩn danh sách cue" (session UI) vs active-mode "Hiện toàn bộ cue" (REQ-6 override) — label riêng; `toolsExpanded` prop không còn UI trên mobile (group bị giải thể — giữ trên desktop).
+- Exception: Esc/drag-handle/backdrop → Sheet tự đóng (có sẵn: escapeLayer + useSheet).
+- Rules: chỉ `Sheet` + `MenuItem`/`MenuSeparator` + `Stepper` (shared SSOT); hai item list-toggle phân biệt rõ: "Ẩn danh sách cue" (session UI) vs active-mode "Hiện toàn bộ cue" (REQ-6 override) — label riêng; nhóm practice `off/dictation/cloze` **đã xoá** (duplicate study modes — AC-22); `toolsExpanded` prop không còn UI trên mobile (group bị giải thể — giữ trên desktop).
 - Postcondition: 0 action mất.
 - NFR refs: NFR-2, NFR-5
 
@@ -110,7 +110,7 @@ REQ-7: Cue card visual + cueRegion chrome (mobile PM)
 - Actor: mobile learner (view)
 - Goal: cue = card theo mockup
 - Preconditions: cueRegion render
-- Basic flow: system render cue item card-style: `radius-2xl` + `surface`, `padding space-5/space-4`, target text prominent (`font-size-xl`/`semibold` active, `font-size-lg`/`medium` muted), native `font-size-base` secondary, footer timestamp `font-size-xs` + icons pin/layers gọn trái; current cue emphasized **trong bounds** (AC-19): border giữ `hairline` + `--shadow-inset-selected` (vòng primary inset) + `surface-elevated` + `shadow-floating` — outer box không đổi; card kế sau peek nguyên opacity (fade chỉ do `mask-image` đáy scroll region). Video stage inset `space-3` + `radius-2xl` (mockup bo góc, không full-bleed).
+- Basic flow: system render cue item card-style: `radius-2xl` + `surface`, `padding space-5/space-4`, target text prominent (`font-size-xl`/`semibold` active, `font-size-lg`/`medium` muted), native `font-size-base` secondary, footer **chỉ còn timestamp** `font-size-xs` (icons pin/layers trang trí đã xoá — AC-21); current cue emphasized **trong bounds** (AC-19): border giữ `hairline` + `--shadow-inset-selected` (vòng primary inset) + `surface-elevated` + `shadow-floating` — outer box không đổi; card kế sau peek nguyên opacity (fade chỉ do `mask-image` đáy scroll region). Video stage inset `space-3` + `radius-2xl` (mockup bo góc, không full-bleed).
 - Alt flow: tokenize → token spans trong card giữ status colors.
 - Exception: cue dài wrap, không clip.
 - Rules: scoped variant (vd `SubtitlePanel` prop `barebones`/`data-cell-pm-mobile` trên `.panel`): mobile PM **không render** panel header (`subtitle-panel-header`) và `StudyModeActionBar`/`PracticeOptions` — chức năng chuyển vào ⋯ (REQ-5); split-view/desktop giữ chrome. Kích thước/cỡ chữ/radius bám mockup bằng tokens. Cue region **không scroll** (REQ-10).
@@ -146,7 +146,7 @@ REQ-10: Cue region no-scroll + icon system scale
   2. Icon-in-button scale (DS redesign — `iconbutton` tokens): icon = **~50–57% container**, ramp theo size — xs 28→16, sm 32→18, md 40→20, lg 48→24, xl 56→28 (M3/HIG alignment: M3 standard 24@40, FAB 56/24; HIG 44pt touch; DS trước flat 18px ở mọi size → sửa lại cho đúng thang).
 - Alt flow: cue list cần duyệt dài → Subtitle Manager (full cue list) thay vì scroll trong PM.
 - Exception: `list` mode render N context cards tràn vùng → clip bởi `overflow:hidden` + `mask-image` fade (peek giữ nguyên, không scroll được).
-- Rules: touch target ≥44px (`iconbutton-size-md` trở lên đạt); xl circle dùng `iconbutton-size-xl` (mới — trước thiếu, rơi về `button-height-xl` với icon 18px); hero `size xl` + layout override 64px → icon `iconbutton-icon-xl` 28px.
+- Rules: nút icon dùng `iconbutton-size-md` (40px, hệ thống — ≥ WCAG 2.2 AA 24px); nút có chữ giữ `min-height: var(--touch-target)` (44px mobile); không còn hero `size xl` 64px.
 - Postcondition: không scroll surface trong PM mobile; icon tỷ lệ đúng với container trên toàn hệ thống.
 - NFR refs: NFR-1, NFR-3
 
@@ -171,13 +171,13 @@ REQ-11: Transport/manager icon glyphs — bare forms (user-approved cross-screen
 | `manager-toggle-btn`, `player-mode-exit-btn`, `generate-native-btn`, `panel-toggle-btn`, `ocr-toggle-btn`, `cue-filter-fab` | giữ | giữ (floating rail / anchorRow / ⋯ item) |
 | `tools-toggle-btn`, `subtitle-tools-extra` | giữ | **dropped trên mobile** (group giải thể; items → card rail/rail/⋯) |
 | `subtitle-panel-header`, `study-mode-bar`… | n/a | hidden trên PM mobile (component vẫn render ở split-view) |
-| mới | — | `pm-bottom-bar`, `pm-anchor-band`, `pm-caption`, `pm-card-actions`, `pm-more-btn`, `pm-more-menu`, `pm-fab-slot`, `pm-cue-active-card` |
+| mới | — | `pm-bottom-bar`, `pm-anchor-band`, `pm-card-actions`, `pm-more-btn`, `pm-more-menu` (Sheet), `pm-fab-slot`, `pm-cue-active-card`, `pm-speed-stepper`, `pm-speed-value`, `pm-speed-dec`, `pm-speed-inc` |
 
 ### Non-functional (NFR)
 
 | ID | Requirement | Class | Target |
 |---|---|---|---|
-| NFR-1 | Touch ≥ `--touch-target-mobile` (44px); `env(safe-area-inset-bottom)` trên bottomBar | U | visual verify |
+| NFR-1 | Nút icon = `--iconbutton-size-md` (40px, ≥ WCAG 2.2 AA 24px); nút chữ giữ `--touch-target-mobile` (44px); `env(safe-area-inset-bottom)` trên bottomBar | U | visual verify |
 | NFR-2 | Contrast ≥4.5:1 cho text/icon trên `surface`/`overlay` bg; mọi nút dùng Button subtle-family — `*-subtle` nền + gốc thuần fg (primarySubtle/warningSubtle/errorSubtle/neutralSubtle) | U | token map |
 | NFR-3 | Kích thước/radius/typography bám `docs/mockups/player-mode-mobile-layout.png`, dùng tokens | U | screenshot diff |
 | NFR-4 | Không thêm listener layout/resize ngoài rAF hiện có; `chrome.storage.onChanged` subscription cho display mode được phép (scope key, cleanup on unmount) | P | audit |
@@ -258,11 +258,11 @@ PM mount ──► viewportW?
 ## Success Criteria
 
 - [ ] AC-1: <600px PM render stack videoStage→cueRegion(flex:1)→anchorRow→bottomBar + actionRail mép phải; `player-mode-*` ids giữ.
-- [ ] AC-2: bottomBar đúng thứ tự X|prev|repeat|play(hero)|next|⋯; nút ≥44px; handler đúng.
+- [ ] AC-2: bottomBar đúng thứ tự X|prev|repeat|play|next|speed-chip|⋯; mọi nút cùng box `md` (40px, `--iconbutton-size-md`); handler đúng; play = `primarySubtle` như các nút transport khác (không còn hero `warningSubtle` 64px).
 - [ ] AC-3: cues=0 → prev/next render rewind/forward (`nav-rewind`/`nav-forward`); cues>0 → cue-nav.
 - [ ] AC-4: quick-add + edit-card nằm **trong** active cue card (`pm-card-actions`, compact, không đè text); `player-mode-actions` = cột dọc cue-filter-fab + generate-native ở mép phải anchor band (filter trên, generate ngang hàng CC), đối xứng với CC trái; ordering khớp mockup vùng 3–6.
-- [ ] AC-5: `pm-anchor-band` nổi đè đáy cueRegion (card cuối peek dưới band): `manager-toggle-btn` trái, pill **căn giữa** cả khi pill mount trễ; caption `Subtitles: <label>` căn giữa màu primary khi có track.
-- [ ] AC-6: ⋯ mở `Menu`; chứa toggle cuelist, OCR, study modes, speed, practice nếu có; rewind/forward KHÔNG nằm trong menu (chúng chỉ là adaptive swap của prev/next trên bar khi cues=0); Esc/outside đóng; đủ items = desktop action parity.
+- [ ] AC-5: `pm-anchor-band` nổi đè đáy cueRegion (card cuối peek dưới band): `manager-toggle-btn` trái, pill **căn giữa** cả khi pill mount trễ; pill cao `--iconbutton-size-md` (40px) khớp hai nút đối xứng.
+- [ ] AC-6: ⋯ (hoặc speed chip) mở `Sheet` (`pm-more-menu`); chứa toggle cuelist, OCR, study modes; rewind/forward KHÔNG nằm trong sheet; Esc/drag/backdrop đóng; đủ items = desktop action parity.
 - [ ] AC-7: cue card mobile: radius/spacing/cỡ chữ match mockup; current emphasized; tokenize status colors hoạt động; panel header + action bar ẩn.
 - [ ] AC-8: orbital badge hiển thị + drag/snap OK trong PM mobile (desktop+child-fs nuance giữ).
 - [ ] AC-9: <600px không render `.dock`; ≥600px dock giữ nguyên.
@@ -274,7 +274,11 @@ PM mount ──► viewportW?
 - [ ] AC-15: `pm-cue-region` không scroll (overflow hidden + no scrollbar + no user scroll); active cue luôn trong vùng nhìn thấy; peek clip dưới mask.
 - [ ] AC-16: icon-in-button scale đúng token `iconbutton-icon-{xs,sm,md,lg,xl}` = 16/18/20/24/28; transport/CC glyphs bare (`chevronLeft`/`rotateCcw`/`play`/`pause`/`chevronRight`/`captions`).
 - [ ] AC-17: `manager-toggle-btn` trong `pm-anchor-row` mở `subtitle-manager-layer` (ManagerLayer — Sheet mobile / panelLayer desktop) **khi PM đang active** — cả <600px và ≥600px; sheet render trên PM overlay (z cao hơn), `onClose`/backdrop/Esc đóng sheet mà không thoát PM.
-- [ ] AC-18: mọi nút tròn floating trong `pm-anchor-band` (`manager-toggle-btn`, `cue-filter-fab`, `generate-native-btn`) cùng box `--iconbutton-size-lg` (48×48, đạt ≥44px touch); nút đáy của rail phải ngang trục giữa (vertical-center) với `manager-toggle-btn`, sai khác ≤1px; cột rail mép phải thẳng (right edges flush); badge `99+` của fab không làm đổi box nút (badge absolute); trục dọc (horizontal-center) của `manager-toggle-btn` trùng `player-mode-exit-btn` và trục dọc của cột rail (`generate-native-btn`/`cue-filter-fab`) trùng `pm-more-btn`, sai khác ≤1px.
+- [ ] AC-18: mọi nút icon trong `pm-anchor-band` + `pm-bottom-bar` (`manager-toggle-btn`, `cue-filter-fab`, `generate-native-btn`, `player-mode-exit-btn`, transport, `pm-more-btn`) cùng box `--iconbutton-size-md` (40×40 — size hệ thống; ≥ WCAG 2.2 AA 24px); nút đáy của rail phải ngang trục giữa (vertical-center) với `manager-toggle-btn`, sai khác ≤1px; cột rail mép phải thẳng (right edges flush); badge `99+` của fab không làm đổi box nút (badge absolute); trục dọc (horizontal-center) của `manager-toggle-btn` trùng `player-mode-exit-btn` và trục dọc của cột rail (`generate-native-btn`/`cue-filter-fab`) trùng `pm-more-btn`, sai khác ≤1px.
+- [ ] AC-20: `pm-anchor-band` **không render caption** `Subtitles: <label>` — không còn `pm-caption` trong DOM; `--pm-anchor-bottom` = bottomBar + band/2; prop `trackLabel` + fallback `subtitleOverlayTargetLanguage` gỡ khỏi overlay.
+- [ ] AC-21: cue card mobile footer **chỉ có timestamp** — không render icon pin/layers (không còn `cardFooterIcons`).
+- [ ] AC-22: `pm-more-btn` mở **`Sheet`** (`pm-more-menu`) chứ không phải popup `Menu`; sheet chứa panel-toggle/OCR/show-all/study modes; **không** còn nhóm practice `off/dictation/cloze` (`pm-practice-*` không tồn tại trong DOM).
+- [ ] AC-23: bottom bar **không render** speed chip (`pm-speed-btn` không tồn tại trong DOM — tối giản); `pm-more-btn` mở `Sheet` có footer ghim `Stepper` (`pm-speed-stepper`) `[-] [N×] [+]` đi qua ladder `PLAYBACK_SPEEDS` (0.25×–10×), `pm-speed-dec`/`pm-speed-inc` gọi `onPlaybackSpeedChange`, disable ở hai đầu ladder; **không** có list radio tốc độ.
 - [ ] AC-19: `pm-cue-active-card` giữ **cùng outer box** với context cue cards cùng content — emphasis render **bên trong** border box: border-width giữ `--border-width-hairline` (không tăng), stroke primary = `--shadow-inset-selected` (inset), nền `surface-elevated`, `shadow-floating` ngoài (không ảnh hưởng layout), typography đậm/lớn hơn. Verify: `getBoundingClientRect()` của active card vs card kề cùng nội dung → width/height bằng nhau; không card nào "phóng to" so với hàng xóm.
 
 ## Definition of Done

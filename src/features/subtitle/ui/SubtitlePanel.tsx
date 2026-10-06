@@ -405,7 +405,7 @@ function SubtitlePanelImpl({
             counts={cueCounts}
             onModeChange={handleFilterModeChange}
             variant="neutralSubtle"
-            size="lg"
+            size="md"
             menuContainer={fabPortalTarget.closest('[data-cell-id="player-mode-overlay"]')}
           />,
           fabPortalTarget,

@@ -52,8 +52,8 @@ test.describe('Stage 2: Player Mode mobile <600px > anchor alignment', () => {
 
     for (const [name, rect] of Object.entries({ manager, exit, generate, more, rail })) {
       expect(rect, `${name} must render`).not.toBeNull();
-      expect(rect!.w, `${name} width`).toBe(48);
-      expect(rect!.h, `${name} height`).toBe(48);
+      expect(rect!.w, `${name} width`).toBe(40);
+      expect(rect!.h, `${name} height`).toBe(40);
     }
 
     expect(Math.abs(manager!.cx - exit!.cx), 'manager-toggle shares X axis with exit').toBeLessThanOrEqual(
@@ -66,8 +66,110 @@ test.describe('Stage 2: Player Mode mobile <600px > anchor alignment', () => {
       AXIS_TOLERANCE_PX,
     );
 
+    const play = await shadowRect(streamFlixPage, '[data-cell-id="nav-play"]');
+    expect(play!.w, 'play matches the sibling buttons').toBe(40);
+    expect(play!.h, 'play matches the sibling buttons').toBe(40);
+
+    const transportCenters = await streamFlixPage.evaluate(
+      ({ host }: { host: string }) => {
+        const root = document.getElementById(host)?.shadowRoot;
+        return Array.from(
+          root?.querySelectorAll<HTMLElement>('[data-cell-id="nav-cluster"] [data-cell-id]') ?? [],
+        ).map((el) => {
+          const r = el.getBoundingClientRect();
+          return { id: el.dataset.cellId, cy: Math.round(r.y + r.height / 2) };
+        });
+      },
+      { host: HOST_ID },
+    );
+    expect(transportCenters.length, 'transport renders buttons').toBeGreaterThan(0);
+    expect(new Set(transportCenters.map((t) => t.cy)).size, 'transport shares one axis').toBe(1);
+
     await streamFlixPage.screenshot({
-      path: 'docs/mockups/player-mode-mobile-layout-impl-v4-alignment.png',
+      path: 'docs/mockups/player-mode-mobile-layout-impl-v5-alignment.png',
+    });
+  });
+
+  test('AC-20/21: no anchor caption and no decorative card footer icons', async ({
+    streamFlixPage,
+  }) => {
+    await streamFlixPage.setViewportSize(MOBILE_VIEWPORT);
+    await streamFlixPage.keyboard.press('g');
+    await expect(streamFlixPage.locator('[data-cell-id="pm-anchor-band"]')).toBeAttached({
+      timeout: 15_000,
+    });
+
+    await expect(streamFlixPage.locator('[data-cell-id="pm-caption"]')).toHaveCount(0);
+    await expect(
+      streamFlixPage.locator('[data-cell-id="cue-item"]').first(),
+    ).toBeAttached({ timeout: 15_000 });
+
+    const cardIcons = await streamFlixPage.evaluate(
+      ({ host }: { host: string }) => {
+        const root = document.getElementById(host)?.shadowRoot;
+        const cards = Array.from(root?.querySelectorAll('[data-cell-id="cue-item"]') ?? []);
+        return cards.map((card) => ({
+          hasActions: card.querySelector('[data-cell-id="pm-card-actions"]') !== null,
+          svgs: card.querySelectorAll('svg').length,
+        }));
+      },
+      { host: HOST_ID },
+    );
+    expect(cardIcons.length, 'cue cards render').toBeGreaterThan(0);
+    for (const card of cardIcons) {
+      if (!card.hasActions) {
+        expect(card.svgs, 'context cards carry no decorative icons').toBe(0);
+      }
+    }
+  });
+
+  test('AC-22/23: ⋯ opens a sheet with the speed stepper and no practice group', async ({
+    streamFlixPage,
+  }) => {
+    await streamFlixPage.setViewportSize(MOBILE_VIEWPORT);
+    await streamFlixPage.keyboard.press('g');
+    await expect(streamFlixPage.locator('[data-cell-id="pm-anchor-band"]')).toBeAttached({
+      timeout: 15_000,
+    });
+
+    await expect(streamFlixPage.locator('[data-cell-id="pm-speed-btn"]')).toHaveCount(0);
+
+    await streamFlixPage.locator('[data-cell-id="pm-more-btn"]').click();
+    const sheet = streamFlixPage.locator('[data-cell-id="pm-more-menu"]');
+    await expect(sheet).toBeVisible({ timeout: 15_000 });
+    await expect(streamFlixPage.locator('[data-cell-id="pm-practice-off"]')).toHaveCount(0);
+    await expect(streamFlixPage.locator('[data-cell-id="pm-practice-dictation"]')).toHaveCount(0);
+    await expect(streamFlixPage.locator('[data-cell-id="pm-speed-stepper"]')).toBeVisible();
+    const speedValue = streamFlixPage.locator('[data-cell-id="pm-speed-value"]');
+    await expect(speedValue).toBeVisible();
+    const initialSpeed = (await speedValue.textContent())?.trim();
+
+    await expect
+      .poll(
+        async () => {
+          const box = await sheet.boundingBox();
+          return box ? Math.round(box.y + box.height) : -1;
+        },
+        { timeout: 5_000, intervals: [100, 150, 200] },
+      )
+      .toBeLessThanOrEqual(MOBILE_VIEWPORT.height);
+
+    const sheetBox = await sheet.boundingBox();
+    const stepperBox = await streamFlixPage.locator('[data-cell-id="pm-speed-stepper"]').boundingBox();
+    expect(sheetBox).not.toBeNull();
+    expect(stepperBox).not.toBeNull();
+    expect(
+      Math.round(sheetBox!.y + sheetBox!.height - (stepperBox!.y + stepperBox!.height)),
+      'stepper pinned to the sheet bottom',
+    ).toBeLessThanOrEqual(40);
+
+    await streamFlixPage.locator('[data-cell-id="pm-speed-inc"]').click();
+    await expect(streamFlixPage.locator('[data-cell-id="pm-speed-value"]')).not.toHaveText(
+      initialSpeed ?? '1×',
+    );
+
+    await streamFlixPage.screenshot({
+      path: 'docs/mockups/player-mode-mobile-layout-impl-v5-sheet.png',
     });
   });
 

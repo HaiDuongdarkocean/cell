@@ -119,3 +119,32 @@ Evidence: `docs/mockups/player-mode-mobile-layout-impl-v4-{alignment,manager}.pn
 Gates: typecheck ✓, eslint ✓ (0 errors), test:unit ✓ 8047, build ✓, e2e stage2 alignment spec ✓ 2/2.
 
 VERDICT: PASS
+
+---
+
+## Round 5 — compact redesign: uniform 40px controls, Sheet menu, speed stepper
+
+User screenshot `quetta_9RgqTYaaLU.png` + follow-ups: controls too spread out; play must match siblings (size + color); remove decorative cue-card footer icons; remove duplicated practice group; "tua" = playback speed — a `[-][N×][+]` stepper pinned at the bottom of a real `Sheet` (SSOT, not popup/list); all icon buttons → `md` 40px (system size); remove the speed chip from the bar (minimal); stepper must be the same component family as the Subtitle Manager latency stepper.
+
+Changes:
+
+1. **Uniform 40px**: every icon button in `pm-anchor-band` + `pm-bottom-bar` is `size="md"` (40×40); play/pause switched from `warningSubtle` hero to `primarySubtle` — same family/color/size as transport siblings. Bottom bar is a 3-col grid (`exit | transport | ⋯`); transport gap `space-1` = one thumb cluster. `pm-caption` ("Subtitles: …") removed; `--pm-anchor-bottom` no longer includes caption height; `trackLabel` + `subtitleOverlayTargetLanguage` fallback removed from overlay.
+2. **Cue cards**: footer renders only the timestamp (`cardFooterIcons` dropped on the mobile branch).
+3. **More menu → Sheet**: `pm-more-btn` opens `Sheet` (`pm-more-menu`) with panel-toggle / OCR / show-all-cues / study-mode MenuItems; `pm-practice-off/dictation/cloze` group removed (study modes are the SSOT); no popup `Menu` remains.
+4. **Speed stepper via shared molecule**: `PLAYBACK_SPEEDS` extended to 0.25×–10×; the latency-stepper pattern was extracted from `SubtitleManagerPanel` into `src/shared/ui/StepperSection` (+`StepperValue`) — both the manager `OffsetStepper` and the PM sheet footer now render the same labeled pill group (`[-] [1.25×] [+]`) with dividers + `space-10` field-height center. `data-cell-id`s kept: `pm-speed-stepper/pm-speed-dec/pm-speed-value/pm-speed-inc`, `manager-offset-*` unchanged. `pm-speed-btn` chip removed from the bottom bar entirely (AC-23: must not exist in DOM).
+5. `SpeedPill` min-boundary test updated for the new 0.25× floor.
+
+### E2E verification (real extension on StreamFlix, 390×780)
+
+`e2e/stage2/player-mode-mobile-alignment.spec.ts` — **4/4 PASS**:
+
+- **AC-18**: all measured buttons 40×40; `cx(manager)==cx(exit)`, `cx(generate)==cx(more)`, `cy(manager)==cy(generate)` ≤1.5px; transport cluster shares one `cy` (measured over actual rendered buttons — covers prev/next OR rewind/forward adaptive case).
+- **AC-20/21**: `pm-caption` count 0; context cue cards carry 0 svgs.
+- **AC-22/23**: `pm-speed-btn` count 0; `pm-more-btn` opens `pm-more-menu` Sheet; no `pm-practice-*`; stepper pinned — sheet-bottom minus stepper-bottom ≤ 40px measured **after** the slide-up settles (polls sheet bottom ≤ viewport height first — earlier failures were mid-animation reads, not layout bugs); `pm-speed-inc` changes `pm-speed-value`.
+- **AC-17**: manager Sheet opens/closes without exiting PM.
+
+Evidence: `docs/mockups/player-mode-mobile-layout-impl-v5-{alignment,sheet}.png`.
+
+Gates: typecheck ✓, lint ✓ (0 errors), test:unit ✓ 8049, build ✓, e2e ✓ 4/4.
+
+VERDICT: PASS
