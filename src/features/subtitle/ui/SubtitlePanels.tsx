@@ -297,8 +297,28 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // Cluster CSS vars — SSOT: buildClusterCssVars (shared with NavCluster + PlayerModeOverlay + OverlayPreview)
     const clusterRightStyle = buildClusterCssVars(clusterSettings);
 
+    // Manager portal renders above every surface — including Player Mode
+    // (the portal host carries max z-index, so the sheet floats over the PM
+    // overlay). Without this shared hoist the manager was unreachable in PM.
+    const managerPortal =
+      managerOpen && manager && managerPortalTarget && !managerOpenOnHost
+        ? createPortal(
+            <ShadowThemeProvider container={managerPortalTarget}>
+              <ManagerLayer
+                manager={manager}
+                isMobile={isMobile}
+                exiting={managerExiting}
+                onClose={closeManager}
+                generateNativeEnabled={generateNativeEnabled}
+              />
+            </ShadowThemeProvider>,
+            managerPortalTarget,
+          )
+        : null;
+
     if (playerMode) {
       return (
+        <>
         <PlayerModeLayer
           targetStyle={targetStyle}
           nativeStyle={nativeStyle}
@@ -345,6 +365,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           panelBlurred={panelBlurred}
           trackLabel={manager?.targetItems[manager.targetActiveIndex]?.name ?? (targetLangCode || undefined)}
         />
+        {managerPortal}
+        </>
       );
     }
 
@@ -401,18 +423,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           />
         )}
 
-        {managerOpen && manager && managerPortalTarget && !managerOpenOnHost && createPortal(
-          <ShadowThemeProvider container={managerPortalTarget}>
-            <ManagerLayer
-              manager={manager}
-              isMobile={isMobile}
-              exiting={managerExiting}
-              onClose={closeManager}
-              generateNativeEnabled={generateNativeEnabled}
-            />
-          </ShadowThemeProvider>,
-          managerPortalTarget,
-        )}
+        {managerPortal}
 
         {offsetOpen && offset && (
           <OffsetLayer offset={offset} />

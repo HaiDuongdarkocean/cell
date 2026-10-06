@@ -323,13 +323,6 @@
   pointer-events: auto;
 }
 
-/* Symmetric spacer matching the CC button width — keeps the fixed-positioned
-   comprehension pill visually centered on the row. */
-.anchorSpacer {
-  width: var(--iconbutton-size-lg);
-  margin-left: auto;
-}
-
 .caption {
   margin: 0;
   padding: 0 var(--space-3) var(--space-1);
@@ -340,23 +333,29 @@
   pointer-events: none;
 }
 
-/* Right-edge rail: cue-filter fab (portal slot, floats over the peeking card)
-   on top of generate-native level with the CC/pill row. */
+/* Right-edge rail — sits in the anchor row flow so generate-native shares
+   the CC/pill center axis; width matches the CC button for symmetry. The
+   fab slot is anchored above the rail's top edge, flush right. */
 .pmRail {
-  position: absolute;
-  right: var(--space-5);
-  bottom: var(--space-7);
+  position: relative;
+  margin-left: auto;
+  flex: 0 0 var(--iconbutton-size-lg);
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--space-2);
+  align-items: center;
+  justify-content: flex-end;
   pointer-events: none;
+}
+
+.pmRail [data-cell-id='pm-fab-slot'] {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--space-2));
 }
 
 /* REQ-8: when the orbital badge snaps to the right edge, keep the rail clear
    of it — reserve badge diameter + space-2 measured from the right edge. */
-.overlay[data-orbital-edge='right'] .pmRail {
-  right: calc(var(--pm-orbital-badge, 36px) + var(--space-2));
+.overlay[data-orbital-edge='right'] .anchorRow {
+  padding-right: calc(var(--pm-orbital-badge, 36px) + var(--space-2));
 }
 
 /* The fab's own CSS pins it absolute bottom-right; in the rail it must stay

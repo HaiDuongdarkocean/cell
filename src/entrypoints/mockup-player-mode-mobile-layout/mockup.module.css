@@ -1,0 +1,297 @@
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-family);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 100000;
+  background: var(--color-background);
+}
+
+.ctrlGroup {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.ctrlLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-right: var(--space-1);
+}
+
+.ctrlBtn {
+  font: inherit;
+  font-size: var(--font-size-xs);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  min-height: 28px;
+}
+
+.ctrlBtnActive {
+  background: var(--color-primary-subtle);
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.note {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-3);
+  max-width: 70ch;
+  line-height: var(--line-height-normal);
+}
+
+.stageWrap {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+.stage {
+  container-type: inline-size;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  position: relative;
+  transform: translateZ(0);
+}
+
+.stageMobile {
+  width: 390px;
+  height: 780px;
+}
+
+.stageDesktop {
+  width: 960px;
+  height: 600px;
+}
+
+/* === Target concept: mobile Player Mode (<600px) — mockup-faithful === */
+
+.pmFrame {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background);
+}
+
+.pmVideo {
+  flex: none;
+  margin: var(--space-3) var(--space-3) 0;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  color: var(--color-text-subtle);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+}
+
+.pmCueWrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.pmCueRegion {
+  position: absolute;
+  inset: 0;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  padding: var(--space-3);
+  padding-bottom: calc(var(--space-16) + var(--space-8));
+  mask-image: linear-gradient(to bottom, black calc(100% - var(--space-16) * 2), transparent calc(100% - var(--space-16) + var(--space-4)));
+}
+
+.pmCueRegion::-webkit-scrollbar {
+  display: none;
+}
+
+.pmCards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.cueCard {
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid transparent;
+  border-radius: var(--radius-2xl);
+  padding: var(--space-5) var(--space-4);
+}
+
+.cueCardMuted {
+  color: var(--color-text-secondary);
+}
+
+.cueCardMuted .cueTarget {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.cueCardActive {
+  background: var(--color-surface-elevated);
+  border: 4px solid var(--color-primary);
+  box-shadow: var(--shadow-floating);
+  padding-right: calc(var(--space-4) + var(--space-10) + var(--space-2));
+}
+
+.cueTarget {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--color-text);
+}
+
+.cueNative {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+.cueFooter {
+  margin-top: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.cueFooterIcons {
+  display: inline-flex;
+  gap: var(--space-2);
+}
+
+/* quick-add + send-to-card: inside active card, top-right corner, compact */
+.cardRail {
+  position: absolute;
+  right: var(--space-3);
+  top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* filter + generate: column anchored to the anchor row's right end — generate
+   sits in flow (same axis as CC/pill), filter floats directly above, flush
+   right. Uniform lg buttons; the fab's badge never inflates the button box. */
+.pmRail {
+  position: relative;
+  margin-left: auto;
+  flex: 0 0 var(--iconbutton-size-lg);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.pmRailFab {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--space-2));
+}
+
+/* anchor band floats over cueRegion bottom: CC left | pill center | caption —
+   fully transparent, the card beneath shows through between elements */
+.pmAnchorBand {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding-top: var(--space-6);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.pmAnchorBand .pmAnchorRow button,
+.pmAnchorBand .pmPill,
+.pmAnchorBand .pmRail {
+  pointer-events: auto;
+}
+
+.pmAnchorRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-5);
+  pointer-events: none;
+}
+
+.pmPill {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-success-subtle);
+  color: var(--color-success);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.pmPillDot {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+}
+
+.pmCaption {
+  margin: 0;
+  padding: 0 var(--space-3) var(--space-1);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+}
+
+.pmBottomBar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-border-subtle);
+  background: var(--color-background);
+}
+
+.barTransport {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.barHero.barHero {
+  width: var(--space-16);
+  height: var(--space-16);
+}

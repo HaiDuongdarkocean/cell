@@ -110,7 +110,7 @@ REQ-7: Cue card visual + cueRegion chrome (mobile PM)
 - Actor: mobile learner (view)
 - Goal: cue = card theo mockup
 - Preconditions: cueRegion render
-- Basic flow: system render cue item card-style: `radius-2xl` + `surface`, `padding space-5/space-4`, target text prominent (`font-size-xl`/`semibold` active, `font-size-lg`/`medium` muted), native `font-size-base` secondary, footer timestamp `font-size-xs` + icons pin/layers gọn trái; current cue `border 4px color-primary` + `surface-elevated` + `shadow-floating`; card kế sau peek nguyên opacity (fade chỉ do `mask-image` đáy scroll region). Video stage inset `space-3` + `radius-2xl` (mockup bo góc, không full-bleed).
+- Basic flow: system render cue item card-style: `radius-2xl` + `surface`, `padding space-5/space-4`, target text prominent (`font-size-xl`/`semibold` active, `font-size-lg`/`medium` muted), native `font-size-base` secondary, footer timestamp `font-size-xs` + icons pin/layers gọn trái; current cue emphasized **trong bounds** (AC-19): border giữ `hairline` + `--shadow-inset-selected` (vòng primary inset) + `surface-elevated` + `shadow-floating` — outer box không đổi; card kế sau peek nguyên opacity (fade chỉ do `mask-image` đáy scroll region). Video stage inset `space-3` + `radius-2xl` (mockup bo góc, không full-bleed).
 - Alt flow: tokenize → token spans trong card giữ status colors.
 - Exception: cue dài wrap, không clip.
 - Rules: scoped variant (vd `SubtitlePanel` prop `barebones`/`data-cell-pm-mobile` trên `.panel`): mobile PM **không render** panel header (`subtitle-panel-header`) và `StudyModeActionBar`/`PracticeOptions` — chức năng chuyển vào ⋯ (REQ-5); split-view/desktop giữ chrome. Kích thước/cỡ chữ/radius bám mockup bằng tokens. Cue region **không scroll** (REQ-10).
@@ -236,6 +236,9 @@ PM mount ──► viewportW?
 | N10 | NFR-4 | AC-14 |
 | N11 | REQ-10 | AC-15 |
 | N12 | REQ-11 | AC-16 |
+| N4 | REQ-4 | AC-17 |
+| N3 | REQ-3 | AC-18 |
+| N7 | REQ-7 | AC-19 |
 
 | Journey step | REQ |
 |---|---|
@@ -270,6 +273,9 @@ PM mount ──► viewportW?
 - [ ] AC-14: không listener resize/layout mới; storage subscription cleanup on unmount; unit tests cho adaptive nav + display mode pass.
 - [ ] AC-15: `pm-cue-region` không scroll (overflow hidden + no scrollbar + no user scroll); active cue luôn trong vùng nhìn thấy; peek clip dưới mask.
 - [ ] AC-16: icon-in-button scale đúng token `iconbutton-icon-{xs,sm,md,lg,xl}` = 16/18/20/24/28; transport/CC glyphs bare (`chevronLeft`/`rotateCcw`/`play`/`pause`/`chevronRight`/`captions`).
+- [ ] AC-17: `manager-toggle-btn` trong `pm-anchor-row` mở `subtitle-manager-layer` (ManagerLayer — Sheet mobile / panelLayer desktop) **khi PM đang active** — cả <600px và ≥600px; sheet render trên PM overlay (z cao hơn), `onClose`/backdrop/Esc đóng sheet mà không thoát PM.
+- [ ] AC-18: mọi nút tròn floating trong `pm-anchor-band` (`manager-toggle-btn`, `cue-filter-fab`, `generate-native-btn`) cùng box `--iconbutton-size-lg` (48×48, đạt ≥44px touch); nút đáy của rail phải ngang trục giữa (vertical-center) với `manager-toggle-btn`, sai khác ≤1px; cột rail mép phải thẳng (right edges flush); badge `99+` của fab không làm đổi box nút (badge absolute).
+- [ ] AC-19: `pm-cue-active-card` giữ **cùng outer box** với context cue cards cùng content — emphasis render **bên trong** border box: border-width giữ `--border-width-hairline` (không tăng), stroke primary = `--shadow-inset-selected` (inset), nền `surface-elevated`, `shadow-floating` ngoài (không ảnh hưởng layout), typography đậm/lớn hơn. Verify: `getBoundingClientRect()` của active card vs card kề cùng nội dung → width/height bằng nhau; không card nào "phóng to" so với hàng xóm.
 
 ## Definition of Done
 

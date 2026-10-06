@@ -684,30 +684,29 @@ function PlayerModeOverlayInner({
                     <Icon name="captions" />
                   </Button>
                 )}
-                <span className={styles.anchorSpacer} aria-hidden="true" />
+                <div className={styles.pmRail} data-cell-id="player-mode-actions">
+                  <div ref={setFabSlot} data-cell-id="pm-fab-slot" />
+                  {onGenerateNative && (
+                    <Button
+                      variant="neutralSubtle"
+                      size="lg"
+                      elevation="low"
+                      aria-label={t('subtitle.toolbar.generateNative')}
+                      title={t('subtitle.toolbar.generateNativeTitle')}
+                      data-cell-id="generate-native-btn"
+                      onClick={onGenerateNative}
+                      disabled={!generateNativeEnabled}
+                    >
+                      <Icon name="generateNative" />
+                    </Button>
+                  )}
+                </div>
               </div>
               {trackLabel && (
                 <p className={styles.caption} ref={captionRef} data-cell-id="pm-caption">
                   {t('subtitle.playerMode.trackCaption', [trackLabel])}
                 </p>
               )}
-              <div className={styles.pmRail} data-cell-id="player-mode-actions">
-                <div ref={setFabSlot} data-cell-id="pm-fab-slot" />
-                {onGenerateNative && (
-                  <Button
-                    variant="neutralSubtle"
-                    size="lg"
-                    elevation="low"
-                    aria-label={t('subtitle.toolbar.generateNative')}
-                    title={t('subtitle.toolbar.generateNativeTitle')}
-                    data-cell-id="generate-native-btn"
-                    onClick={onGenerateNative}
-                    disabled={!generateNativeEnabled}
-                  >
-                    <Icon name="generateNative" />
-                  </Button>
-                )}
-              </div>
             </div>
           </div>
         </div>
