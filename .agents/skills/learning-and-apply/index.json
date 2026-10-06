@@ -3558,6 +3558,26 @@
         "angular-host-elements"
       ],
       "trigger": "After setting display:flex (column) on a shell element, a descendant that used height:100% (e.g. a video styled by the site to fill its player) collapses to content height — dead bands appear inside the shell even though the shell itself keeps its height"
+    },
+    {
+      "type": "experience",
+      "id": "rebuild-kills-running-unpacked-ext",
+      "title": "Rebuilding dist/ under a running unpacked extension silently kills content-script injection — reload the SW before re-verifying; SPA mocks may need a click before a <video> exists",
+      "category": [
+        "testing",
+        "build"
+      ],
+      "tags": [
+        "unpacked-extension",
+        "service-worker",
+        "hashed-loader",
+        "content-script",
+        "cdp",
+        "chrome-runtime-reload",
+        "mock-youtube",
+        "spa-navigation"
+      ],
+      "trigger": "Live verification shows zero Cell elements (no #cell-subtitle-root, no universal-panel host) on a page where the extension previously mounted — page has <video> + <track> but nothing injects"
     }
   ]
 }
