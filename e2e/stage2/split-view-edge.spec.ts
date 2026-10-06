@@ -154,7 +154,9 @@ test.describe('Stage 2: Split View edge — layout integrity', () => {
     await expect(episodeList.first()).toBeVisible();
   });
 
-  test('SV-64: narrow viewport stacks video above panel (AC-4.11)', async ({ streamFlixPage }) => {
+  test('SV-64: narrow viewport floats panel as a bottom sheet (AC-4.11)', async ({
+    streamFlixPage,
+  }) => {
     await streamFlixPage.setViewportSize({ width: 390, height: 800 });
     await streamFlixPage.waitForTimeout(400);
     const scrollBefore = await streamFlixPage.evaluate(() => document.documentElement.scrollWidth);
@@ -162,17 +164,26 @@ test.describe('Stage 2: Split View edge — layout integrity', () => {
     const wrapperBox = await streamFlixPage.locator(WRAPPER).boundingBox();
     const panelBox = await streamFlixPage.locator(PANEL).boundingBox();
     const videoBox = await streamFlixPage.locator(VIDEO).boundingBox();
-    const direction = await streamFlixPage
-      .locator(WRAPPER)
-      .evaluate((el) => getComputedStyle(el).flexDirection);
-    expect(direction).toBe('column');
-    // Column layout: stage full slot width on top, panel below it.
+    // Sheet mode: the panel leaves the page flow and docks to the viewport
+    // bottom so the video keeps its natural slot instead of sharing the
+    // wrapper height with an inline panel.
+    const sheetState = await streamFlixPage.locator(PANEL).evaluate((el) => ({
+      position: getComputedStyle(el).position,
+      parentIsBody: el.parentElement === document.body,
+    }));
+    expect(sheetState.position).toBe('fixed');
+    expect(sheetState.parentIsBody).toBe(true);
+    // Video keeps its slot: full width, on-screen, aspect height.
     expect(videoBox!.width).toBeGreaterThanOrEqual(300);
     expect(videoBox!.height).toBeGreaterThan(0);
-    expect(panelBox!.width).toBeGreaterThanOrEqual(300);
-    expect(panelBox!.height).toBeGreaterThan(0);
-    expect(panelBox!.y).toBeGreaterThanOrEqual(videoBox!.y + videoBox!.height - 1);
+    expect(videoBox!.x).toBeGreaterThanOrEqual(0);
+    expect(videoBox!.x + videoBox!.width).toBeLessThanOrEqual(391);
     expect(wrapperBox!.width).toBeLessThanOrEqual(390);
+    // Sheet is fully inside the viewport, docked at the bottom.
+    expect(panelBox!.x).toBeGreaterThanOrEqual(0);
+    expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(391);
+    expect(panelBox!.height).toBeGreaterThan(0);
+    expect(panelBox!.y + panelBox!.height).toBeLessThanOrEqual(801);
     // AC: split view must not INCREASE page overflow (mock page itself has a
     // fixed-width header — baseline overflow is a pre-existing mock trait).
     const scrollAfter = await streamFlixPage.evaluate(() => document.documentElement.scrollWidth);
@@ -189,10 +200,16 @@ test.describe('Stage 2: Split View edge — layout integrity', () => {
     await waitStable(streamFlixPage);
     const narrowVideo = await streamFlixPage.locator(VIDEO).boundingBox();
     const narrowPanel = await streamFlixPage.locator(PANEL).boundingBox();
+    const narrowSheet = await streamFlixPage.locator(PANEL).evaluate((el) => ({
+      position: getComputedStyle(el).position,
+      parentIsBody: el.parentElement === document.body,
+    }));
     expect(narrowVideo!.width).toBeGreaterThan(0);
     expect(narrowVideo!.x).toBeGreaterThanOrEqual(0);
     expect(narrowVideo!.x + narrowVideo!.width).toBeLessThanOrEqual(391);
     expect(narrowPanel!.height).toBeGreaterThan(0);
+    expect(narrowSheet.position).toBe('fixed');
+    expect(narrowSheet.parentIsBody).toBe(true);
     expect(narrowPanel!.x).toBeGreaterThanOrEqual(0);
     expect(narrowPanel!.x + narrowPanel!.width).toBeLessThanOrEqual(391);
 
@@ -200,8 +217,13 @@ test.describe('Stage 2: Split View edge — layout integrity', () => {
     await waitStable(streamFlixPage);
     const backVideo = await streamFlixPage.locator(VIDEO).boundingBox();
     const backPanel = await streamFlixPage.locator(PANEL).boundingBox();
+    const backSheet = await streamFlixPage.locator(PANEL).evaluate((el) => ({
+      position: getComputedStyle(el).position,
+      parentIsBody: el.parentElement === document.body,
+    }));
     expect(backVideo!.width).toBeGreaterThan(0);
     expect(backPanel!.width).toBeGreaterThan(0);
+    expect(backSheet.parentIsBody).toBe(false);
     expect(Math.abs(backVideo!.width - wideVideo!.width)).toBeLessThanOrEqual(4);
   });
 });

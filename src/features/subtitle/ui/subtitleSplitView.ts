@@ -46,9 +46,16 @@ function measureShellContentHeight(shell: HTMLElement): number {
 const SPLIT_VIEW_MIN_STAGE_WIDTH = 200;
 const SPLIT_VIEW_MIN_HEIGHT = 160;
 const SPLIT_VIEW_VIEWPORT_MARGIN = 8;
-// Below this wrapper width the row layout cannot keep both the video and
-// the panel usable — stack them vertically instead (video on top).
+// Below this width the row layout cannot keep both the video and the panel
+// usable. A narrow viewport (mobile) mounts the panel as a bottom sheet
+// overlay — the Cell Sheet pattern (inset space-2, radius-element,
+// surface-popover) — so the video keeps its slot and the cue list gets a
+// proper height instead of an inline panel squeezing both. A narrow slot
+// inside a wide viewport still stacks column-in-place.
 const SPLIT_VIEW_COLUMN_BELOW = 600;
+const SPLIT_VIEW_SHEET_HEIGHT_RATIO = 0.5;
+const SPLIT_VIEW_SHEET_MAX_HEIGHT = 460;
+const PANEL_INNER_BASE_BG = 'color-mix(in srgb, var(--color-surface) 85%, transparent)';
 
 function clampToVisibleViewport(contentHeight: number, topEdge: number): number {
   const available = window.innerHeight - topEdge - SPLIT_VIEW_VIEWPORT_MARGIN;
@@ -314,7 +321,7 @@ export function useSplitView({
     // Translucent surface + blur (same spec as SubtitlePanel/.contentOther)
     // so the split-view column never looks empty even before/if the panel
     // content portals in.
-    panelInner.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;background:color-mix(in srgb, var(--color-surface) 85%, transparent);backdrop-filter:blur(var(--blur-lg));-webkit-backdrop-filter:blur(var(--blur-lg));';
+    panelInner.style.cssText = `width:100%;height:100%;display:flex;flex-direction:column;background:${PANEL_INNER_BASE_BG};backdrop-filter:blur(var(--blur-lg));-webkit-backdrop-filter:blur(var(--blur-lg));`;
     panelShadow.appendChild(panelInner);
 
     const handle = document.createElement('div');
@@ -633,8 +640,13 @@ export function useSplitView({
         // comes from the parent, not the wrapper: the wrapper may still
         // carry a stale px flex-basis that overflows the viewport.
         const slotW = Math.max(insertParent.clientWidth, 1);
-        const narrow = slotW < SPLIT_VIEW_COLUMN_BELOW;
+        // Mobile viewport → the panel leaves the page flow and floats as a
+        // bottom sheet (video keeps its natural slot). A narrow slot on a
+        // wide viewport stacks column-in-place instead.
+        const sheetMode = window.innerWidth < SPLIT_VIEW_COLUMN_BELOW;
+        const narrow = sheetMode || slotW < SPLIT_VIEW_COLUMN_BELOW;
         isNarrowLayout = narrow;
+        const stageH = Math.round(slotW / stageAspect);
         // Site responsive CSS can switch the shell to position:fixed at
         // narrow widths (kisskh .portrait covers the viewport), which rips
         // it out of the stage and buries the panel. Pin it back into the
@@ -644,23 +656,67 @@ export function useSplitView({
           playerShell.style.setProperty('position', 'absolute', 'important');
           playerShell.style.setProperty('inset', '0', 'important');
         }
+        const restorePanelIntoWrapper = (): void => {
+          if (panel.parentElement === document.body) {
+            wrapper?.appendChild(panel);
+          }
+          panel.style.position = 'relative';
+          panel.style.left = '';
+          panel.style.right = '';
+          panel.style.top = '';
+          panel.style.bottom = '';
+          panel.style.zIndex = '';
+          panel.style.borderRadius = '';
+          panelInner.style.borderRadius = '';
+          panelInner.style.background = PANEL_INNER_BASE_BG;
+          handle.style.display = '';
+        };
         if (narrow) {
           wrapper.style.flexDirection = 'column';
           stageCell.style.flex = '0 0 auto';
           stageCell.style.minWidth = '0';
           stageCell.style.width = '100%';
-          stageCell.style.height = `${Math.round(slotW / stageAspect)}px`;
-          handle.style.flex = '0 0 var(--space-1-5)';
-          handle.style.width = '100%';
-          handle.style.height = 'auto';
-          handle.style.cursor = 'default';
-          panel.style.flex = '1 1 0';
-          panel.style.minWidth = '0';
-          panel.style.maxWidth = 'none';
-          panel.style.width = '100%';
-          panel.style.height = 'auto';
-          panel.style.minHeight = '0';
+          stageCell.style.height = `${stageH}px`;
+          if (sheetMode) {
+            handle.style.display = 'none';
+            if (panel.parentElement !== document.body) {
+              document.body.appendChild(panel);
+              // The entry transform was translateX(100%) — retarget it to
+              // slide up so the sheet enters like every other Cell sheet.
+              if (panel.style.transform === 'translateX(100%)') {
+                panel.style.transform = 'translateY(100%)';
+              }
+            }
+            panel.style.position = 'fixed';
+            panel.style.left = 'var(--space-2, 8px)';
+            panel.style.right = 'var(--space-2, 8px)';
+            panel.style.bottom = 'var(--space-2, 8px)';
+            panel.style.top = 'auto';
+            panel.style.width = 'auto';
+            panel.style.height = `${Math.min(Math.round(window.innerHeight * SPLIT_VIEW_SHEET_HEIGHT_RATIO), SPLIT_VIEW_SHEET_MAX_HEIGHT)}px`;
+            panel.style.flex = 'none';
+            panel.style.minWidth = '0';
+            panel.style.maxWidth = 'none';
+            panel.style.minHeight = '0';
+            panel.style.zIndex = 'var(--z-overlay-top, 10003)';
+            panel.style.borderRadius = 'var(--radius-element, 12px)';
+            panelInner.style.borderRadius = 'var(--radius-element)';
+            panelInner.style.background = 'var(--color-surface-popover)';
+          } else {
+            restorePanelIntoWrapper();
+            handle.style.flex = '0 0 var(--space-1-5)';
+            handle.style.width = '100%';
+            handle.style.height = 'auto';
+            handle.style.cursor = 'default';
+            panel.style.flex = '1 1 0';
+            panel.style.minWidth = '0';
+            panel.style.maxWidth = 'none';
+            panel.style.width = '100%';
+            panel.style.height = 'auto';
+            panel.style.minHeight = '0';
+          }
         } else {
+          restorePanelIntoWrapper();
           wrapper.style.flexDirection = 'row';
           stageCell.style.flex = '1 1 0';
           stageCell.style.minWidth = `min(${SPLIT_VIEW_MIN_STAGE_WIDTH}px,55%)`;
@@ -678,8 +734,13 @@ export function useSplitView({
           panel.style.minHeight = '';
         }
         let liveHeight: string;
-        if (narrow) {
-          const stageH = Math.round(slotW / stageAspect);
+        if (narrow && sheetMode) {
+          // The wrapper is just the video slot — the sheet lives outside
+          // the flow, so don't reserve panel height under the stage.
+          liveHeight = `${stageH}px`;
+          playerShell.style.setProperty('width', '100%', 'important');
+          playerShell.style.setProperty('margin', '0', 'important');
+        } else if (narrow) {
           const panelH = Math.max(
             SPLIT_VIEW_MIN_HEIGHT,
             Math.round((stageH * splitViewPctRef.current) / Math.max(100 - splitViewPctRef.current, 1)),
@@ -806,7 +867,10 @@ export function useSplitView({
     // Apple §1: respond instantly — slide panel in from right on next frame.
     // rAF ensures the initial translateX(100%) is painted before animating to 0.
     requestAnimationFrame(() => {
-      panel.style.transform = 'translateX(0)';
+      // Sheet mode reparents the panel onto <body> — slide up, not in.
+      panel.style.transform = panel.parentElement === document.body
+        ? 'translateY(0)'
+        : 'translateX(0)';
       panel.style.opacity = '1';
     });
     // CSS handles all YouTube player sizing now (height:100%!important,
@@ -871,7 +935,9 @@ export function useSplitView({
       // §1: start the animation immediately, defer DOM removal until it settles.
       const subtitlePanelEl = panelInner.querySelector('[data-cell-id="subtitle-panel"]') as HTMLElement | null;
       if (subtitlePanelEl) subtitlePanelEl.setAttribute('data-closing', 'true');
-      panel.style.transform = 'translateX(100%)';
+      panel.style.transform = panel.parentElement === document.body
+        ? 'translateY(100%)'
+        : 'translateX(100%)';
       panel.style.opacity = '0.3';
       panel.style.flexBasis = '0%';
       panel.style.minWidth = '0';
