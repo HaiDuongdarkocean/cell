@@ -6,7 +6,7 @@ import { test } from './fixtures/cellEnvironment.fixture';
 const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
 const STREAM_ORIGIN = `http://127.0.0.1:${4321 + portOffset}`;
 const LOCAL_PLAYER_PATH = 'src/entrypoints/local-player/index.html';
-const EXTENSION_ID = 'acaplpheplggagjpekjlmcjhgghimcfm';
+const EXTENSION_ID = 'ifceodogdeeaacmdigljgmafnhkbfnia';
 
 const VIDEO_PATH = resolve('data/extension/uBOLite/web_accessible_resources/noop-1s.mp4');
 const SRT_PATH = resolve('tests/data-test/auto-match-test/test-video.en.srt');

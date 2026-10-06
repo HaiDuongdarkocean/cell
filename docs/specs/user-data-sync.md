@@ -618,7 +618,7 @@ SRS DB v1→v2, dictionary DB v12→v13 and Reader DB v1→v2 upgrades install `
 
 - Silent renewal via `launchWebAuthFlow` + `prompt=none` depends on the provider session cookie inside the auth web view (Chrome: may need `abortOnLoadForNonInteractive: false` + `timeoutMsForNonInteractive`). DELIVER spikes this first on both browsers; worst case is more frequent `needs-reauth`, never data loss.
 - Firefox redirect URI (`https://32cdbde6…extensions.allizom.org/`) is derived; DELIVER asserts it equals `identity.getRedirectURL()` before auth work; mismatch → owner updates the Google console.
-- Unpacked dev builds: DELIVER adds the public `key` (derived from `tihoka-key.pem`) to `public/manifest.json` so dev and packed builds share id `ifceodogdeeaacmdigljgmafnhkbfnia` (manifest change → real Chrome test).
+- Unpacked dev builds: the public `key` (derived from `tihoka-key.pem`) is pinned in `public/manifest.json` so dev, CRX and store-less Chromium installs (Quetta/Edge/forks) all share id `ifceodogdeeaacmdigljgmafnhkbfnia` (manifest change → real Chrome test). Enforced by `tests/unit/manifest.test.ts` (2026-10-06: the key had drifted, so only the dev id `acaplphe…` was whitelisted while every CRX user hit `redirect_uri_mismatch`).
 - Firefox for Android `identity` support unverified; if absent, the Sync section shows "not available on this browser". Not a Success Criterion.
 - Clock skew: a device whose clock runs ahead wins LWW for fields it edits, and HLC propagation lifts other devices' clocks to its wall time until real time catches up — accepted (no loss; only "which concurrent edit wins" is affected).
 - Card merge keeps the component with the later review; an explore-only bump on the losing side keeps only its `exploreCount` (max) — accepted.

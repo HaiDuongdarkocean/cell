@@ -6,7 +6,7 @@ import { test } from './fixtures/cellEnvironment.fixture';
 const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
 const STREAM_ORIGIN = `http://127.0.0.1:${4321 + portOffset}`;
 const LOCAL_PLAYER_PATH = 'src/entrypoints/local-player/index.html';
-const EXTENSION_ID = 'acaplpheplggagjpekjlmcjhgghimcfm';
+const EXTENSION_ID = 'ifceodogdeeaacmdigljgmafnhkbfnia';
 
 // A real-size video (188s) so the split-view shell measures ~300px after the
 // layout settles — the 1s noop fixture leaves it stuck at the <video> default
