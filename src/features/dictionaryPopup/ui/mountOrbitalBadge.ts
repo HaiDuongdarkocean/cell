@@ -124,6 +124,18 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
 
   document.addEventListener('pointerdown', onDocPointerDown, true);
 
+  // A fullscreen element with shadow DOM swallows light-DOM children that
+  // are not slotted (e.g. #cell-subtitle-root in Player Mode) — the badge
+  // must go inside the shadow tree to render.
+  const attachToFullscreen = (fsEl: Element): void => {
+    const shadow = fsEl.shadowRoot;
+    if (shadow) {
+      if (mount.host.getRootNode() !== shadow) shadow.appendChild(mount.host);
+      return;
+    }
+    if (mount.host.parentElement !== fsEl) fsEl.appendChild(mount.host);
+  };
+
   const onFullscreenChange = (): void => {
     const fsEl = document.fullscreenElement;
     // When a child iframe's video goes native fullscreen, the browser puts
@@ -140,9 +152,9 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
     // Non-iframe fullscreen (e.g. Cell Player Mode container) or exit: move
     // the badge into the fullscreen element so it stays visible, or back to
     // body when leaving. Always restore display.
-    if (fsEl && fsEl !== mount.host.parentElement) {
-      fsEl.appendChild(mount.host);
-    } else if (!fsEl && mount.host.parentElement !== document.body) {
+    if (fsEl) {
+      attachToFullscreen(fsEl);
+    } else if (mount.host.getRootNode() !== document) {
       document.body.appendChild(mount.host);
     }
     mount.host.style.display = '';
@@ -152,8 +164,8 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
   document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
   // If already in fullscreen when mount is called, attach to fullscreen element.
-  if (document.fullscreenElement && document.fullscreenElement !== mount.host.parentElement) {
-    document.fullscreenElement.appendChild(mount.host);
+  if (document.fullscreenElement) {
+    attachToFullscreen(document.fullscreenElement);
   }
 
   const destroy = (): void => {
