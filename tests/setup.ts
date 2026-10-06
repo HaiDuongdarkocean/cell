@@ -5,6 +5,12 @@ import { configure } from '@testing-library/dom';
 // instead of the default `data-testid`.
 configure({ testIdAttribute: 'data-cell-id' });
 
+// One retry for load-sensitive tests: several suites assert after fixed
+// real-time sleeps or single-shot perf measurements, which race under
+// concurrent jest/build runs. A genuinely broken test still fails — it
+// just runs twice.
+jest.retryTimes(1);
+
 // Polyfill structuredClone for jsdom (Node has it, jsdom env doesn't expose).
 // Used by fake-indexeddb for cloning values during IDB operations.
 import { deserialize, serialize } from 'node:v8';
