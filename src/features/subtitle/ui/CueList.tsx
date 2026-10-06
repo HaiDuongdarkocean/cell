@@ -15,7 +15,7 @@ import {
 import { formatCueTimestamp } from '@/features/subtitle/logic/cueTime';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
 import { spawnRipple } from '@/shared/lib/dom/ripple';
-import { Button, EmptyState, Icon } from '@/shared/ui';
+import { Button, CueCard, EmptyState, Icon } from '@/shared/ui';
 import { t } from '@/shared/i18n';
 import styles from './CueList.module.css';
 
@@ -408,16 +408,24 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
         const isCurrent = i === renderedCurrentIndex;
         const isUpcoming = activeOnly && currentIndex < 0;
         const customContent = renderCueContent?.(cue, i, isCurrent);
-        const cueContent = customContent !== undefined ? (
-          customContent
-        ) : (
-          <div
-            className={styles.text}
-            data-allow-lookup
-            data-cell-id={mobile && isCurrent ? 'pm-cue-active-card' : undefined}
-          >
-            <div data-cell-id="cue-target-text" className={styles.targetText}>
-              {tokenize ? (
+        return (
+          <CueCard
+            key={cue.index}
+            ref={(el) => { itemRefs.current[i] = el; }}
+            role="listitem"
+            data-cell-id="cue-item"
+            data-cue-index={cue.index}
+            data-cue-start={cue.start}
+            data-cue-end={cue.end}
+            data-cell-ripple-self={mobile ? undefined : ''}
+            onPointerDown={(event) => {
+              if (!mobile && event.button === 0) spawnRipple(event.currentTarget, event.clientX, event.clientY);
+            }}
+            current={isCurrent}
+            upcoming={isUpcoming}
+            content={customContent}
+            title={
+              tokenize ? (
                 <CueTokenText
                   text={cue.targetText}
                   tokens={tokenMap.get(cue.index) ?? []}
@@ -429,61 +437,40 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                 />
               ) : (
                 cue.targetText
-              )}
-            </div>
-            {showNative && cue.nativeText && (
-              <div data-cell-id="cue-native-text" className={styles.nativeText}>
-                {cue.nativeText}
-              </div>
-            )}
-          </div>
-        );
-        return (
-          <div
-            key={cue.index}
-            ref={(el) => { itemRefs.current[i] = el; }}
-            role="listitem"
-            data-cell-id="cue-item"
-            data-cue-index={cue.index}
-            data-cue-start={cue.start}
-            data-cue-end={cue.end}
-            data-current={isCurrent ? 'true' : 'false'}
-            data-upcoming={isUpcoming ? 'true' : 'false'}
-            data-cell-ripple-self={mobile ? undefined : ''}
-            onPointerDown={(event) => {
-              if (!mobile && event.button === 0) spawnRipple(event.currentTarget, event.clientX, event.clientY);
-            }}
-            className={`${styles.cue} ${isCurrent ? styles.cueCurrent : ''}`}
-          >
-            {cueContent}
-            <div className={styles.actions} data-cell-id="cue-actions">
-              <button
-                type="button"
-                data-cell-id="cue-timestamp"
-                data-cue-index={cue.index}
-                data-no-lookup
-                onClick={() => {
-                  resumeFollow(false);
-                  onSeek(cue.start);
-                }}
-                aria-label={t('cueList.seekTo', [formatTimestamp(cue.start - offsetMs, hasHours)])}
-                className={styles.timestamp}
-              >
-                {/* ADR-019 sync: shift displayed timestamp by -offsetMs so the
-                    list shows the VIDEO time at which this cue will display
-                    (matches overlay + highlight). onSeek still sends raw
-                    cue.start; SEEK_TO handler subtracts offset. */}
-                {mobile
-                  ? `${formatTimestamp(cue.start - offsetMs, hasHours)} – ${formatTimestamp(cue.end - offsetMs, hasHours)}`
-                  : formatTimestamp(cue.start - offsetMs, hasHours)}
-              </button>
-              {mobile && isCurrent && cardActions && (
-                <div className={styles.cardActions} data-cell-id="pm-card-actions">
-                  {cardActions}
-                </div>
-              )}
-            </div>
-          </div>
+              )
+            }
+            subtitle={showNative && cue.nativeText ? cue.nativeText : undefined}
+            textProps={mobile && isCurrent ? { 'data-cell-id': 'pm-cue-active-card' } : undefined}
+            actions={
+              <>
+                <button
+                  type="button"
+                  data-cell-id="cue-timestamp"
+                  data-cue-index={cue.index}
+                  data-no-lookup
+                  onClick={() => {
+                    resumeFollow(false);
+                    onSeek(cue.start);
+                  }}
+                  aria-label={t('cueList.seekTo', [formatTimestamp(cue.start - offsetMs, hasHours)])}
+                  className={styles.timestamp}
+                >
+                  {/* ADR-019 sync: shift displayed timestamp by -offsetMs so the
+                      list shows the VIDEO time at which this cue will display
+                      (matches overlay + highlight). onSeek still sends raw
+                      cue.start; SEEK_TO handler subtracts offset. */}
+                  {mobile
+                    ? `${formatTimestamp(cue.start - offsetMs, hasHours)} – ${formatTimestamp(cue.end - offsetMs, hasHours)}`
+                    : formatTimestamp(cue.start - offsetMs, hasHours)}
+                </button>
+                {mobile && isCurrent && cardActions && (
+                  <div className={styles.cardActions} data-cell-id="pm-card-actions">
+                    {cardActions}
+                  </div>
+                )}
+              </>
+            }
+          />
         );
       })}
       </div>

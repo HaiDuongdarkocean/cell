@@ -100,8 +100,8 @@ function createFakeMount(): MountSubtitleResult {
 }
 
 function createFakeEngine(): FakeEngine {
-  const targetCues: SrtCue[] = [];
-  const nativeCues: SrtCue[] = [];
+  let targetCues: SrtCue[] = [];
+  let nativeCues: SrtCue[] = [];
   let targetIndex = -1;
   let nativeIndex = -1;
   let targetStyle = { ...DEFAULT_OVERLAY_STYLE_TARGET };
@@ -132,23 +132,24 @@ function createFakeEngine(): FakeEngine {
     getCurrentNativeText: jest.fn(() => nativeCues[nativeIndex]?.text ?? ''),
     getActiveIndices: jest.fn(() => ({ target: targetIndex, native: nativeIndex })),
     loadCues: jest.fn((cues: SrtCue[]) => {
-      targetCues.length = 0;
-      targetCues.push(...cues);
-      nativeCues.length = 0;
+      targetCues = [...cues];
+      nativeCues = [];
       targetIndex = -1;
       nativeIndex = -1;
     }),
     loadBilingualCues: jest.fn((target: SrtCue[], native: SrtCue[]) => {
-      targetCues.length = 0;
-      targetCues.push(...target);
-      nativeCues.length = 0;
-      nativeCues.push(...native);
+      if (target.length > 0) targetCues = [...target];
+      if (native.length > 0) nativeCues = [...native];
+      if (target.length === 0 && native.length === 0) {
+        targetCues = [];
+        nativeCues = [];
+      }
       targetIndex = -1;
       nativeIndex = -1;
     }),
     clearCues: jest.fn(() => {
-      targetCues.length = 0;
-      nativeCues.length = 0;
+      targetCues = [];
+      nativeCues = [];
       targetIndex = -1;
       nativeIndex = -1;
     }),
@@ -309,10 +310,10 @@ describe('ReactSubtitleController', () => {
     expect(fakeMount.setIsPlaying).toHaveBeenCalledWith(!video.paused);
     expect(controller.getTargetCues()).toEqual(cues);
 
-    // Characterization: loadCues does NOT update the mount cue list or current
-    // time directly. Those are handled by loadBilingualCues and the video
-    // timeupdate listener respectively.
-    expect(fakeMount.setCues).not.toHaveBeenCalled();
+    // The mount cue list is kept in sync via the panel merge (engine cue-set
+    // changes always rebuild panelCues so late-arriving native tracks land in
+    // the list too). Current time is handled by the video timeupdate listener.
+    expect(fakeMount.setCues).toHaveBeenCalledWith(mergeCuesForPanel(cues, []));
     expect(fakeMount.setCurrentTimeMs).not.toHaveBeenCalled();
   });
 

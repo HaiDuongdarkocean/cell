@@ -417,6 +417,8 @@ function SubtitlePanelImpl({
           mode={filterMode}
           counts={cueCounts}
           onModeChange={handleFilterModeChange}
+          variant="neutralSubtle"
+          size="md"
         />
       )
     ) : null;

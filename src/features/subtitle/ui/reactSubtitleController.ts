@@ -373,8 +373,24 @@ export class ReactSubtitleController {
     input.click();
   }
 
+  private lastMergedTarget: readonly SrtCue[] = [];
+  private lastMergedNative: readonly SrtCue[] = [];
+
+  private syncPanelCues(): void {
+    const targetCues = this.engine.getTargetCues();
+    const nativeCues = this.engine.getNativeCues();
+    if (targetCues === this.lastMergedTarget && nativeCues === this.lastMergedNative) return;
+    this.lastMergedTarget = targetCues;
+    this.lastMergedNative = nativeCues;
+    this.panelCues = mergeCuesForPanel(targetCues, nativeCues).filter(
+      (c) => c.targetText.trim().length > 0 || c.nativeText.trim().length > 0,
+    );
+    this.mount.setCues(this.panelCues);
+  }
+
   private syncFromEngine(): void {
     this.setIsPlaying(!this.video.paused);
+    this.syncPanelCues();
     this.onCuesUpdated?.();
   }
 
@@ -504,11 +520,6 @@ export class ReactSubtitleController {
     this.engine.loadBilingualCues(targetCues, nativeCues);
     this.engine.onTimeUpdate();
     this.syncFromEngine();
-    // Sync CueList in Player Mode with merged bilingual cues.
-    this.panelCues = mergeCuesForPanel(targetCues, nativeCues).filter(
-      (c) => c.targetText.trim().length > 0 || c.nativeText.trim().length > 0,
-    );
-    this.mount.setCues(this.panelCues);
     this.studyMode.setCues(this.engine.getTargetCues(), this.getOffsetMs());
     this.syncStudyMode();
   }
@@ -516,8 +527,6 @@ export class ReactSubtitleController {
   clearCues(): void {
     this.engine.clearCues();
     this.syncFromEngine();
-    this.panelCues = [];
-    this.mount.setCues([]);
     this.studyMode.clearCues(this.getOffsetMs());
   }
 

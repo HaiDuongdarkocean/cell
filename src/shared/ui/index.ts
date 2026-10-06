@@ -4,6 +4,7 @@ export { Alert } from './Alert';
 export { Badge } from './Badge';
 export { Button } from './Button';
 export { Card } from './Card';
+export { CueCard, type CueCardProps } from './CueCard';
 export { SelectableCard } from './SelectableCard';
 export { MultiSelect } from './MultiSelect';
 export { Checkbox } from './Checkbox';
