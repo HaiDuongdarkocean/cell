@@ -1,4 +1,5 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import { waitFor } from '@testing-library/dom';
 import type { TokenizeSettings } from '@/features/tokenize/types';
 import type { FrequencyEntry } from '@/entities/dictionary';
 
@@ -370,29 +371,32 @@ describe('createWebTokenizeController', () => {
     controller.enable();
     MockIntersectionObserver.trigger(p1);
     MockIntersectionObserver.trigger(p2);
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(p1.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
-    expect(p2.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(p1.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
+      expect(p2.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
+    });
 
     // OFF
     controller.disable();
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(p1.querySelectorAll('.js-cell-token').length).toBe(0);
-    expect(p2.querySelectorAll('.js-cell-token').length).toBe(0);
+    await waitFor(() => {
+      expect(p1.querySelectorAll('.js-cell-token').length).toBe(0);
+      expect(p2.querySelectorAll('.js-cell-token').length).toBe(0);
+    });
 
     // ON again
     controller.enable();
     MockIntersectionObserver.trigger(p1);
     MockIntersectionObserver.trigger(p2);
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(p1.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
-    expect(p2.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(p1.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
+      expect(p2.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
+    });
 
     // OFF again — ALL spans must be gone (no orphans)
     controller.disable();
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    const remainingSpans = root.querySelectorAll('.js-cell-token');
-    expect(remainingSpans.length).toBe(0);
+    await waitFor(() => {
+      expect(root.querySelectorAll('.js-cell-token').length).toBe(0);
+    });
     expect(p1.textContent).toBe('Hello world.');
     expect(p2.textContent).toBe('Foo bar baz.');
 
@@ -710,17 +714,22 @@ describe('createWebTokenizeController', () => {
 
     controller.enable();
     MockIntersectionObserver.trigger(paragraph);
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const helloSpansBefore = paragraph.querySelectorAll('[data-cell-term="hello"]');
-    expect(helloSpansBefore.length).toBe(2);
-    expect(Array.from(helloSpansBefore[0]!.classList).some((c) => c === 'js-cell-token--status-unknown')).toBe(true);
+    await waitFor(() => {
+      const helloSpansBefore = paragraph.querySelectorAll('[data-cell-term="hello"]');
+      expect(helloSpansBefore.length).toBe(2);
+      expect(Array.from(helloSpansBefore[0]!.classList).some((c) => c === 'js-cell-token--status-unknown')).toBe(true);
+    });
 
     // Simulate popup status cycle: applyStatusForTerm must NOT call setWordStatus
     // (popup already persisted) but must rebind visible tokens with new status.
     setWordStatus.mockClear();
     controller.applyStatusForTerm('hello', 'known');
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await waitFor(() => {
+      const helloSpansAfter = paragraph.querySelectorAll('[data-cell-term="hello"]');
+      for (const span of helloSpansAfter) {
+        expect(span.classList.contains('js-cell-token--status-known')).toBe(true);
+      }
+    });
 
     expect(setWordStatus).not.toHaveBeenCalled();
     const helloSpansAfter = paragraph.querySelectorAll('[data-cell-term="hello"]');
@@ -750,17 +759,17 @@ describe('createWebTokenizeController', () => {
 
     controller.enable();
     MockIntersectionObserver.trigger(paragraph);
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const before = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
-    expect(before?.className).toContain('js-cell-token--status-unknown');
+    await waitFor(() => {
+      const before = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+      expect(before?.className).toContain('js-cell-token--status-unknown');
+    });
 
     emitWordStatusChanged({ langCode: 'en', term: 'hello', status: 'known' });
-    await new Promise((resolve) => setTimeout(resolve, 20));
-
-    const after = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
-    expect(after?.className).toContain('js-cell-token--status-known');
-    expect(after?.className).not.toContain('js-cell-token--status-unknown');
+    await waitFor(() => {
+      const after = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+      expect(after?.className).toContain('js-cell-token--status-known');
+      expect(after?.className).not.toContain('js-cell-token--status-unknown');
+    });
 
     controller.destroy();
   });
@@ -780,18 +789,18 @@ describe('createWebTokenizeController', () => {
 
     controller.enable();
     MockIntersectionObserver.trigger(paragraph);
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const before = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
-    expect(before?.className).toContain('js-cell-token--status-unknown');
+    await waitFor(() => {
+      const before = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+      expect(before?.className).toContain('js-cell-token--status-unknown');
+    });
 
     getWordStatuses.mockResolvedValue(new Map([['hello', 'known']]));
     emitWordStatusesReload('en');
-    await new Promise((resolve) => setTimeout(resolve, 20));
-
-    const after = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
-    expect(after?.className).toContain('js-cell-token--status-known');
-    expect(after?.className).not.toContain('js-cell-token--status-unknown');
+    await waitFor(() => {
+      const after = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+      expect(after?.className).toContain('js-cell-token--status-known');
+      expect(after?.className).not.toContain('js-cell-token--status-unknown');
+    });
 
     controller.destroy();
   });
