@@ -63,6 +63,28 @@ describe('createVideoTokenMap', () => {
     expect(map.applyStatus('xyz', 'known')).toBe(false);
   });
 
+  it('keeps readings for terms a chunked resolve pass does not cover', () => {
+    const map = createVideoTokenMap('en');
+    map.prepare(0, 'Hello world');
+    map.prepare(1, 'Goodbye world');
+
+    map.resolveMetadata(0, new Map(), new Map(), new Map([['hello', 'həˈloʊ']]));
+    expect(map.get(0)!.tokens.find((t) => t.term === 'hello')?.reading).toBe('həˈloʊ');
+
+    map.resolveMetadata(0, new Map(), new Map(), new Map([['goodbye', 'ˌɡʊdˈbaɪ']]));
+    expect(map.get(0)!.tokens.find((t) => t.term === 'hello')?.reading).toBe('həˈloʊ');
+  });
+
+  it('clears a reading when the covering resolve pass reports none', () => {
+    const map = createVideoTokenMap('en');
+    map.prepare(0, 'Hello');
+
+    map.resolveMetadata(0, new Map(), new Map(), new Map([['hello', 'həˈloʊ']]));
+    map.resolveMetadata(0, new Map(), new Map(), new Map([['hello', '']]));
+
+    expect(map.get(0)!.tokens.find((t) => t.term === 'hello')?.reading).toBeUndefined();
+  });
+
   it('clears all cues and listeners still work after clear', () => {
     const map = createVideoTokenMap('en');
     map.prepare(0, 'Hello world');

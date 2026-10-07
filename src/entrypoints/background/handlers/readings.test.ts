@@ -40,7 +40,7 @@ function makeResource(id: number, overrides: Partial<ResourceInfo> = {}): Resour
     name: `res-${id}`,
     langCode: 'zh',
     type: 'DICTIONARY',
-    format: 'json',
+    format: 'json-entries',
     signature: `sig-${id}`,
     wordCount: 10,
     installationFinished: true,

@@ -119,13 +119,14 @@ export function createVideoTokenPreloader(
 
       // null = fetch failed → pass undefined so existing readings survive;
       // a resolved map is authoritative, with frequency rows as fallback.
+      // Every fetched term is marked ('' = covered, no reading) so chunked
+      // passes clear stale readings without wiping other chunks' results.
       let readings: Map<string, string> | undefined;
       if (dictReadings) {
         readings = new Map(dictReadings);
         for (const term of terms) {
           if (!readings.has(term)) {
-            const fallback = pickFrequencyReading(term, freqMaps.get(term) ?? []);
-            if (fallback) readings.set(term, fallback);
+            readings.set(term, pickFrequencyReading(term, freqMaps.get(term) ?? []) ?? '');
           }
         }
       }

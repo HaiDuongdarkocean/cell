@@ -114,10 +114,12 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
         const status = statuses.get(token.term) ?? termStatusCache.get(token.term) ?? 'unknown';
         const frequencyBand = frequencies.get(token.term) ?? termFrequencyCache.get(token.term) ?? 'none';
         // readings === undefined → leg skipped/failed: keep the existing value.
-        // A provided map is authoritative: absent term = no reading.
+        // A provided map is authoritative only for terms it covers (the caller
+        // marks covered-but-empty terms with '') — chunked resolve passes must
+        // not wipe readings fetched by an earlier chunk.
         let reading = token.reading;
-        if (readings) {
-          reading = readings.get(token.term);
+        if (readings?.has(token.term)) {
+          reading = readings.get(token.term) || undefined;
           if (reading) termReadingCache.set(token.term, reading);
           else termReadingCache.delete(token.term);
         }
