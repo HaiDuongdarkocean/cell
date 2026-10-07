@@ -2,7 +2,10 @@ import {
   upsertEntry,
   removeEntry,
   selectEntries,
-  paginateEntries,
+  selectAllTerms,
+  pruneSelection,
+  snapshotStatuses,
+  groupByStatus,
   type VocabularyEntry,
 } from './vocabularyList';
 
@@ -73,25 +76,63 @@ describe('selectEntries', () => {
   });
 });
 
-describe('paginateEntries', () => {
-  const entries = Array.from({ length: 5 }, (_, i) => entry(`t${i}`, 'known', i));
-
-  it('slices the requested page', () => {
-    const page = paginateEntries(entries, 2, 1);
-    expect(page.entries.map((e) => e.term)).toEqual(['t2', 't3']);
-    expect(page.pageCount).toBe(3);
-    expect(page.total).toBe(5);
+describe('selectAllTerms', () => {
+  it('returns every term in the filtered result', () => {
+    const selected = selectAllTerms([entry('a', 'known', 1), entry('b', 'tracking', 2)]);
+    expect([...selected].sort()).toEqual(['a', 'b']);
   });
 
-  it('clamps an out-of-range page index (A18)', () => {
-    const page = paginateEntries(entries, 2, 10);
-    expect(page.pageIndex).toBe(2);
-    expect(page.entries.map((e) => e.term)).toEqual(['t4']);
+  it('returns an empty set for an empty list', () => {
+    expect(selectAllTerms([]).size).toBe(0);
+  });
+});
+
+describe('pruneSelection', () => {
+  it('drops selected terms that vanished from the source', () => {
+    const pruned = pruneSelection(new Set(['a', 'gone', 'b']), [
+      entry('a', 'known', 1),
+      entry('b', 'known', 2),
+    ]);
+    expect([...pruned].sort()).toEqual(['a', 'b']);
   });
 
-  it('returns one empty page for an empty list', () => {
-    const page = paginateEntries([], 2, 0);
-    expect(page.pageIndex).toBe(0);
-    expect(page.entries).toEqual([]);
+  it('keeps the full selection when every term still exists', () => {
+    const pruned = pruneSelection(new Set(['a']), [entry('a', 'known', 1), entry('x', 'known', 2)]);
+    expect([...pruned]).toEqual(['a']);
+  });
+
+  it('returns an empty set for an empty selection', () => {
+    expect(pruneSelection(new Set(), [entry('a', 'known', 1)]).size).toBe(0);
+  });
+});
+
+describe('snapshotStatuses', () => {
+  const entries = [entry('a', 'known', 1), entry('b', 'tracking', 2), entry('c', 'ignore', 3)];
+
+  it('captures previous statuses for the given terms', () => {
+    const map = snapshotStatuses(entries, new Set(['a', 'c']));
+    expect(map.get('a')).toBe('known');
+    expect(map.get('c')).toBe('ignore');
+    expect(map.has('b')).toBe(false);
+  });
+
+  it('skips terms that are not in the list', () => {
+    const map = snapshotStatuses(entries, ['a', 'ghost']);
+    expect(map.size).toBe(1);
+  });
+});
+
+describe('groupByStatus', () => {
+  it('groups terms by their previous status for undo writes', () => {
+    const groups = groupByStatus(
+      new Map<string, VocabularyEntry['status']>([
+        ['a', 'known'],
+        ['b', 'tracking'],
+        ['c', 'known'],
+      ]),
+    );
+    expect(groups.get('known')?.sort()).toEqual(['a', 'c']);
+    expect(groups.get('tracking')).toEqual(['b']);
+    expect(groups.has('ignore')).toBe(false);
   });
 });

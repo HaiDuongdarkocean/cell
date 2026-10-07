@@ -17,8 +17,11 @@ import {
   WordStatusListPayloadSchema,
   WordStatusCyclePayloadSchema,
   WordStatusDeletePayloadSchema,
+  WordStatusSetManyPayloadSchema,
+  WordStatusTrashManyPayloadSchema,
   WordStatusTrashPayloadSchema,
   WordStatusTrashListPayloadSchema,
+  WordStatusRestoreManyPayloadSchema,
   WordStatusRestorePayloadSchema,
   WordStatusTrashDeletePayloadSchema,
 } from '@/entities/message/dictionarySchemas';
@@ -29,6 +32,7 @@ import {
   getPosStatusRows,
   aggregatePosStatus,
   setWordStatus,
+  setWordStatuses,
   setWordStatusPos,
   cycleWordStatus,
   cycleWordStatusPos,
@@ -36,9 +40,11 @@ import {
 } from '@/features/dictionary/services/wordStatusStore';
 import {
   trashWordStatus,
+  trashWordStatuses,
   listWordTrash,
   purgeExpiredTrash,
   restoreWordStatus,
+  restoreWordStatuses,
   deleteWordTrash,
   type TrashedWordEntry,
 } from '@/features/dictionary/services/wordTrashStore';
@@ -75,6 +81,10 @@ async function broadcastToOtherTabs(
   await Promise.allSettled(
     targets.map((tab) => sendMessageToAllFramesInTab(tab.id!, message)),
   );
+}
+
+async function notifyKnownSequentially(langCode: string, terms: readonly string[]): Promise<void> {
+  for (const term of terms) await notifyUserMarkedKnown(langCode, term);
 }
 
 /** Register word status handlers. */
@@ -210,6 +220,72 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
     try {
       await deleteWordStatus(langCode, term);
       void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_DELETED, { langCode, term });
+      requestRemoteCheck();
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
+    }
+  });
+
+  ctx.on(MESSAGE_TYPES.WORD_STATUS_SET_MANY, async (request): Promise<MessageResponse> => {
+    const parsed = WordStatusSetManyPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid WORD_STATUS_SET_MANY payload: ${parsed.error.message}`,
+      };
+    }
+
+    const { langCode, terms, status, tabId } = parsed.data;
+    try {
+      await setWordStatuses(langCode, terms, status, { source: 'user', sourceAt: Date.now() });
+      if (status === 'known') void notifyKnownSequentially(langCode, terms);
+      void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_SET_MANY, { langCode, terms, status });
+      requestRemoteCheck();
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
+    }
+  });
+
+  ctx.on(MESSAGE_TYPES.WORD_STATUS_TRASH_MANY, async (request): Promise<MessageResponse> => {
+    const parsed = WordStatusTrashManyPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid WORD_STATUS_TRASH_MANY payload: ${parsed.error.message}`,
+      };
+    }
+
+    const { langCode, terms, tabId } = parsed.data;
+    try {
+      await trashWordStatuses(langCode, terms);
+      void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_TRASH_MANY, { langCode, terms });
+      requestRemoteCheck();
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
+    }
+  });
+
+  ctx.on(MESSAGE_TYPES.WORD_STATUS_RESTORE_MANY, async (request): Promise<MessageResponse> => {
+    const parsed = WordStatusRestoreManyPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid WORD_STATUS_RESTORE_MANY payload: ${parsed.error.message}`,
+      };
+    }
+
+    const { langCode, terms, tabId } = parsed.data;
+    try {
+      const restored = await restoreWordStatuses(langCode, terms);
+      const restoredKnown = [...restored].filter(([, status]) => status === 'known').map(([term]) => term);
+      void notifyKnownSequentially(langCode, restoredKnown);
+      void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_RESTORE_MANY, { langCode, terms });
       requestRemoteCheck();
       return { success: true };
     } catch (err) {

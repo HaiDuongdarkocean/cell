@@ -28,6 +28,17 @@ export function startWordStatusCrossTabRelay(): () => void {
       emitWordStatusRemoved({ langCode: deleted.langCode, term: deleted.term });
       return false;
     }
+    for (const type of [
+      MESSAGE_TYPES.WORD_STATUS_SET_MANY,
+      MESSAGE_TYPES.WORD_STATUS_TRASH_MANY,
+      MESSAGE_TYPES.WORD_STATUS_RESTORE_MANY,
+    ]) {
+      const batch = messagePayload<{ langCode: string }>(message, type);
+      if (batch) {
+        emitWordStatusesReload(batch.langCode);
+        return false;
+      }
+    }
     return false;
   };
 

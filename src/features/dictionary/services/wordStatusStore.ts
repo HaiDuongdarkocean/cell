@@ -252,6 +252,59 @@ export async function setWordStatusFromSync(
   return true;
 }
 
+/** Batch variant of setWordStatus for user-originated bulk writes — one
+ *  transaction instead of N. Same semantics per term: 'unknown' normalizes
+ *  to a status-row delete that leaves pending trash records alone, real
+ *  statuses upsert + clear the term's trash record, every write captures
+ *  for sync. */
+export async function setWordStatuses(
+  langCode: string,
+  terms: readonly string[],
+  status: WordStatus,
+  provenance?: { source?: WordStatusSource; sourceAt?: number },
+): Promise<void> {
+  if (terms.length === 0) return;
+  try {
+    const db = await getDB(langCode);
+    await ensureSyncRuntime();
+    const capture = isCaptureEnabled();
+    const scope = scopeForTarget(targetOf(langCode));
+    const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
+    const store = tx.objectStore(STORES.WORD_STATUS);
+    if (status === 'unknown') {
+      for (const term of terms) {
+        store.delete(term);
+        if (capture) {
+          await captureChange(store, { scope, dataClass: 'wordStatus', key: `word:${term}`, op: 'delete' });
+        }
+      }
+      await awaitTx(tx);
+      return;
+    }
+    const now = Date.now();
+    const trashStore = tx.objectStore(STORES.WORD_TRASH);
+    for (const term of terms) {
+      store.put({
+        term,
+        status,
+        updatedAt: now,
+        source: provenance?.source ?? 'user',
+        sourceAt: provenance?.sourceAt ?? now,
+      });
+      trashStore.delete(term);
+      if (capture) {
+        await captureChange(store, { scope, dataClass: 'wordStatus', key: `word:${term}`, op: 'put' });
+      }
+    }
+    await awaitTx(tx);
+  } catch (err) {
+    if (isQuotaError(err)) {
+      throw new WordStatusQuotaError(t('dict.error.statusQuota'));
+    }
+    throw err;
+  }
+}
+
 export interface SyncStatusUpdate {
   readonly term: string;
   readonly status: Exclude<WordStatus, 'unknown'>;

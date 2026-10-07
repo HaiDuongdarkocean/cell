@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Badge, Box, Button, Checkbox, ConfirmDialog, Dialog, FlagIcon, Heading, Input, Menu, MenuItem, Spinner, Text } from '@/shared/ui';
+import { Badge, Box, Button, Checkbox, ConfirmDialog, Dialog, FlagIcon, Heading, Input, Menu, MenuItem, SelectionBar, Spinner, Text } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { spawnRipple } from '@/shared/lib/dom/ripple';
@@ -461,17 +461,18 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
           ))
         )}
 
-        {selectMode ? (
-          <Box bg="popover" className={styles.selectBar}>
-            <Text className={styles.selectCount}>{t('srs.deck.selectedCount', [selected.size])}</Text>
-            <Button variant="destructive" size="sm" onClick={() => { void handleDeleteSelected(); }} disabled={selected.size === 0}>
-              {t('srs.manage.delete')}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={exitSelectMode}>
-              {t('srs.edit.cancel')}
-            </Button>
-          </Box>
-        ) : null}
+        <SelectionBar
+          open={selectMode}
+          label={<Text className={styles.selectCount}>{t('srs.deck.selectedCount', [selected.size])}</Text>}
+          data-cell-id="srs-select-bar"
+        >
+          <Button variant="destructive" size="sm" onClick={() => { void handleDeleteSelected(); }} disabled={selected.size === 0}>
+            {t('srs.manage.delete')}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={exitSelectMode}>
+            {t('srs.edit.cancel')}
+          </Button>
+        </SelectionBar>
       </Box>
 
       <Text className={styles.footerNote}>{t('srs.app.desc')}</Text>

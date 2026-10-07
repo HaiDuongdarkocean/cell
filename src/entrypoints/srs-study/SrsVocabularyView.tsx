@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Button, FlagIcon, Heading } from '@/shared/ui';
+import { Box, Button, Heading } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { VocabularyTab } from '@/features/vocabulary';
@@ -29,9 +29,6 @@ export function SrsVocabularyView({ onBack }: SrsVocabularyViewProps): React.JSX
           <Icon name="chevronLeft" />
         </Button>
         <Heading level={1} className={styles.title}>{t('panel.tab.vocabulary')}</Heading>
-        <Box className={styles.heroChip}>
-          <FlagIcon lang={targetLanguage} size={16} />
-        </Box>
       </Box>
       <VocabularyTab langCode={targetLanguage} onLookup={() => {}} />
     </Box>

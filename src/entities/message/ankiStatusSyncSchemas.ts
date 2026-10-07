@@ -4,6 +4,10 @@ export const AnkiStatusSyncRunPayloadSchema = z.object({
   tabId: z.number().optional(),
 });
 
+export const AnkiStatusCardTermsPayloadSchema = z.object({
+  langCode: z.string().length(2),
+});
+
 export const AnkiStatusSrsReviewedPayloadSchema = z.object({
   noteId: z.string().min(1),
   cardId: z.string().min(1),

@@ -1,15 +1,36 @@
 import { registerWordStatusHandlers } from './wordStatus';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import * as wordStatusStore from '@/features/dictionary/services/wordStatusStore';
+import * as wordTrashStore from '@/features/dictionary/services/wordTrashStore';
+import { notifyUserMarkedKnown } from '@/features/ankiStatusSync';
 import { isFirstStatusesGetForTab, requestRemoteCheck } from '../syncTriggers';
 
 jest.mock('@/features/dictionary/services/wordStatusStore', () => ({
   setWordStatus: jest.fn(),
+  setWordStatuses: jest.fn(),
+  setWordStatusPos: jest.fn(),
   getWordStatus: jest.fn(),
   getWordStatuses: jest.fn(),
   getAllWordStatuses: jest.fn(),
+  getPosStatusRows: jest.fn(async () => []),
+  aggregatePosStatus: jest.fn((s: unknown) => s),
   cycleWordStatus: jest.fn(),
+  cycleWordStatusPos: jest.fn(),
   deleteWordStatus: jest.fn(),
+}));
+
+jest.mock('@/features/dictionary/services/wordTrashStore', () => ({
+  trashWordStatus: jest.fn(),
+  trashWordStatuses: jest.fn(),
+  listWordTrash: jest.fn(async () => []),
+  purgeExpiredTrash: jest.fn(async () => undefined),
+  restoreWordStatus: jest.fn(async () => 'tracking'),
+  restoreWordStatuses: jest.fn(async () => new Map()),
+  deleteWordTrash: jest.fn(),
+}));
+
+jest.mock('@/features/ankiStatusSync', () => ({
+  notifyUserMarkedKnown: jest.fn(),
 }));
 
 jest.mock('../syncTriggers', () => ({
@@ -283,5 +304,146 @@ describe('remote check triggers (SC-12)', () => {
       expect.objectContaining({ success: false }),
     );
     expect(mockedCheck).not.toHaveBeenCalled();
+  });
+});
+
+describe('WORD_STATUS_SET_MANY', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockTabsQuery.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    mockGetAllFrames.mockResolvedValue([{ frameId: 0 }]);
+  });
+
+  it('writes all terms via one store call and broadcasts SET_MANY to other tabs', async () => {
+    (wordStatusStore.setWordStatuses as jest.Mock).mockResolvedValue(undefined);
+
+    const ctx = createMockCtx();
+    registerWordStatusHandlers(ctx as unknown as Parameters<typeof registerWordStatusHandlers>[0]);
+
+    const handler = ctx.handlers.get(MESSAGE_TYPES.WORD_STATUS_SET_MANY);
+    const response = await handler?.({
+      payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'], status: 'learning' },
+    });
+
+    expect(response).toEqual({ success: true });
+    expect(wordStatusStore.setWordStatuses).toHaveBeenCalledWith(
+      'en',
+      ['a', 'b'],
+      'learning',
+      expect.objectContaining({ source: 'user' }),
+    );
+    await flushPromises();
+    expect(mockTabsSendMessage).toHaveBeenCalledWith(
+      2,
+      expect.objectContaining({
+        type: MESSAGE_TYPES.WORD_STATUS_SET_MANY,
+        payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'], status: 'learning' },
+      }),
+      { frameId: 0 },
+    );
+    expect(mockTabsSendMessage).not.toHaveBeenCalledWith(1, expect.anything(), expect.anything());
+    expect(requestRemoteCheck).toHaveBeenCalled();
+  });
+
+  it('notifies known-marked terms for Anki write-back', async () => {
+    (wordStatusStore.setWordStatuses as jest.Mock).mockResolvedValue(undefined);
+    const ctx = createMockCtx();
+    registerWordStatusHandlers(ctx as unknown as Parameters<typeof registerWordStatusHandlers>[0]);
+
+    const handler = ctx.handlers.get(MESSAGE_TYPES.WORD_STATUS_SET_MANY);
+    await handler?.({ payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'], status: 'known' } });
+    await flushPromises();
+
+    expect(notifyUserMarkedKnown).toHaveBeenCalledWith('en', 'a');
+    expect(notifyUserMarkedKnown).toHaveBeenCalledWith('en', 'b');
+  });
+
+  it('rejects an empty terms array', async () => {
+    const ctx = createMockCtx();
+    registerWordStatusHandlers(ctx as unknown as Parameters<typeof registerWordStatusHandlers>[0]);
+
+    const handler = ctx.handlers.get(MESSAGE_TYPES.WORD_STATUS_SET_MANY);
+    const response = await handler?.({ payload: { tabId: 1, langCode: 'en', terms: [], status: 'known' } });
+
+    expect((response as { success: boolean }).success).toBe(false);
+    expect(wordStatusStore.setWordStatuses).not.toHaveBeenCalled();
+  });
+});
+
+describe('WORD_STATUS_TRASH_MANY', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockTabsQuery.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    mockGetAllFrames.mockResolvedValue([{ frameId: 0 }]);
+  });
+
+  it('trashes all terms via one store call and broadcasts TRASH_MANY', async () => {
+    (wordTrashStore.trashWordStatuses as jest.Mock).mockResolvedValue(undefined);
+
+    const ctx = createMockCtx();
+    registerWordStatusHandlers(ctx as unknown as Parameters<typeof registerWordStatusHandlers>[0]);
+
+    const handler = ctx.handlers.get(MESSAGE_TYPES.WORD_STATUS_TRASH_MANY);
+    const response = await handler?.({ payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'] } });
+
+    expect(response).toEqual({ success: true });
+    expect(wordTrashStore.trashWordStatuses).toHaveBeenCalledWith('en', ['a', 'b']);
+    await flushPromises();
+    expect(mockTabsSendMessage).toHaveBeenCalledWith(
+      2,
+      expect.objectContaining({
+        type: MESSAGE_TYPES.WORD_STATUS_TRASH_MANY,
+        payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'] },
+      }),
+      { frameId: 0 },
+    );
+    expect(requestRemoteCheck).toHaveBeenCalled();
+  });
+
+  it('returns the error and skips broadcast when the store write fails', async () => {
+    (wordTrashStore.trashWordStatuses as jest.Mock).mockRejectedValue(new Error('idb failed'));
+
+    const ctx = createMockCtx();
+    registerWordStatusHandlers(ctx as unknown as Parameters<typeof registerWordStatusHandlers>[0]);
+
+    const handler = ctx.handlers.get(MESSAGE_TYPES.WORD_STATUS_TRASH_MANY);
+    const response = await handler?.({ payload: { tabId: 1, langCode: 'en', terms: ['a'] } });
+
+    expect(response).toEqual({ success: false, error: 'The vocabulary action failed: idb failed' });
+    expect(mockTabsSendMessage).not.toHaveBeenCalled();
+  });
+});
+
+describe('WORD_STATUS_RESTORE_MANY', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockTabsQuery.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    mockGetAllFrames.mockResolvedValue([{ frameId: 0 }]);
+  });
+
+  it('restores all terms and broadcasts RESTORE_MANY', async () => {
+    (wordTrashStore.restoreWordStatuses as jest.Mock).mockResolvedValue(
+      new Map([['a', 'known'], ['b', 'tracking']]),
+    );
+
+    const ctx = createMockCtx();
+    registerWordStatusHandlers(ctx as unknown as Parameters<typeof registerWordStatusHandlers>[0]);
+
+    const handler = ctx.handlers.get(MESSAGE_TYPES.WORD_STATUS_RESTORE_MANY);
+    const response = await handler?.({ payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'] } });
+
+    expect(response).toEqual({ success: true });
+    expect(wordTrashStore.restoreWordStatuses).toHaveBeenCalledWith('en', ['a', 'b']);
+    await flushPromises();
+    expect(mockTabsSendMessage).toHaveBeenCalledWith(
+      2,
+      expect.objectContaining({
+        type: MESSAGE_TYPES.WORD_STATUS_RESTORE_MANY,
+        payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'] },
+      }),
+      { frameId: 0 },
+    );
+    expect(notifyUserMarkedKnown).toHaveBeenCalledWith('en', 'a');
+    expect(notifyUserMarkedKnown).not.toHaveBeenCalledWith('en', 'b');
   });
 });

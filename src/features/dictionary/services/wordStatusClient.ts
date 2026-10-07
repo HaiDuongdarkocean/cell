@@ -94,6 +94,52 @@ export async function cycleWordStatus(langCode: string, term: string, pos?: stri
   return response.data.status;
 }
 
+/** Persist one status for many terms in a single background write. */
+export async function setWordStatuses(
+  langCode: string,
+  terms: readonly string[],
+  status: WordStatus,
+): Promise<void> {
+  const response = await sendMessage<MessageResponse>({
+    type: MESSAGE_TYPES.WORD_STATUS_SET_MANY,
+    payload: { tabId: -1, langCode: normalizeLangCode(langCode), terms: [...terms], status },
+  });
+
+  if (!response?.success) {
+    throw new Error(response?.error ?? t('dict.error.statusSet'));
+  }
+}
+
+/** Soft-delete many terms into the 24h trash window in one background write. */
+export async function trashWordStatuses(
+  langCode: string,
+  terms: readonly string[],
+): Promise<void> {
+  const response = await sendMessage<MessageResponse>({
+    type: MESSAGE_TYPES.WORD_STATUS_TRASH_MANY,
+    payload: { tabId: -1, langCode: normalizeLangCode(langCode), terms: [...terms] },
+  });
+
+  if (!response?.success) {
+    throw new Error(response?.error ?? t('dict.error.statusTrash'));
+  }
+}
+
+/** Restore many trashed terms to their previous statuses in one write. */
+export async function restoreWordStatuses(
+  langCode: string,
+  terms: readonly string[],
+): Promise<void> {
+  const response = await sendMessage<MessageResponse>({
+    type: MESSAGE_TYPES.WORD_STATUS_RESTORE_MANY,
+    payload: { tabId: -1, langCode: normalizeLangCode(langCode), terms: [...terms] },
+  });
+
+  if (!response?.success) {
+    throw new Error(response?.error ?? t('dict.error.statusRestore'));
+  }
+}
+
 /** Delete a term's status row (unmark). */
 export async function deleteWordStatus(langCode: string, term: string): Promise<void> {
   const response = await sendMessage<MessageResponse>({

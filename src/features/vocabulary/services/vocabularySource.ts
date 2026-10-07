@@ -1,18 +1,23 @@
 import {
   listWordStatuses,
   setWordStatus,
+  setWordStatuses,
   trashWordStatus,
+  trashWordStatuses,
   listWordTrash,
   restoreWordStatus,
+  restoreWordStatuses,
   deleteWordTrash,
   normalizeLangCode,
   emitWordStatusChanged,
   emitWordStatusRemoved,
+  emitWordStatusesReload,
   onWordStatusChanged,
   onWordStatusRemoved,
   onWordStatusesReload,
   type TrashedWordEntry,
 } from '@/features/dictionary';
+import { getCardSourceTerms } from '@/features/ankiStatusSync';
 import {
   nextMarkedStatus,
   upsertEntry,
@@ -25,9 +30,17 @@ type SourceEvent =
   | { kind: 'changed'; term: string; status: WordStatus }
   | { kind: 'removed'; term: string };
 
+export interface CardSources {
+  readonly anki: ReadonlySet<string>;
+  readonly srs: ReadonlySet<string>;
+}
+
+const EMPTY_CARD_SOURCES: CardSources = { anki: new Set(), srs: new Set() };
+
 export interface VocabularySourceState {
   readonly entries: readonly VocabularyEntry[];
   readonly trash: readonly TrashedWordEntry[];
+  readonly cardSources: CardSources;
   readonly loaded: boolean;
 }
 
@@ -38,14 +51,18 @@ export interface VocabularySource {
   readonly trash: (term: string) => Promise<void>;
   readonly restore: (term: string) => Promise<void>;
   readonly deleteTrash: (term: string) => Promise<void>;
+  readonly setStatusMany: (terms: readonly string[], status: WordStatus) => Promise<void>;
+  readonly trashMany: (terms: readonly string[]) => Promise<void>;
+  readonly restoreMany: (terms: readonly string[]) => Promise<void>;
   readonly refreshTrash: () => Promise<void>;
+  readonly refreshCardSources: () => Promise<void>;
   readonly refresh: () => Promise<void>;
   readonly destroy: () => void;
 }
 
 export function createVocabularySource(langCode: string): VocabularySource {
   const lang = normalizeLangCode(langCode);
-  let state: VocabularySourceState = { entries: [], trash: [], loaded: false };
+  let state: VocabularySourceState = { entries: [], trash: [], cardSources: EMPTY_CARD_SOURCES, loaded: false };
   let buffer: SourceEvent[] | null = [];
   let destroyed = false;
   const listeners = new Set<(state: VocabularySourceState) => void>();
@@ -82,7 +99,11 @@ export function createVocabularySource(langCode: string): VocabularySource {
   });
 
   async function load(): Promise<void> {
-    const [entries, trash] = await Promise.all([listWordStatuses(lang), listWordTrash(lang)]);
+    const [entries, trash, cardSources] = await Promise.all([
+      listWordStatuses(lang),
+      listWordTrash(lang),
+      loadCardSources(),
+    ]);
     if (destroyed) return;
     const pending = buffer ?? [];
     buffer = null;
@@ -96,7 +117,7 @@ export function createVocabularySource(langCode: string): VocabularySource {
         next = removeEntry(next, event.term);
       }
     }
-    state = { entries: next, trash: nextTrash, loaded: true };
+    state = { entries: next, trash: nextTrash, cardSources, loaded: true };
     notify();
   }
 
@@ -104,6 +125,22 @@ export function createVocabularySource(langCode: string): VocabularySource {
     const trash = await listWordTrash(lang);
     if (destroyed) return;
     state = { ...state, trash };
+    notify();
+  }
+
+  async function loadCardSources(): Promise<CardSources> {
+    try {
+      const terms = await getCardSourceTerms(lang);
+      return { anki: new Set(terms.anki), srs: new Set(terms.srs) };
+    } catch {
+      return EMPTY_CARD_SOURCES;
+    }
+  }
+
+  async function refreshCardSources(): Promise<void> {
+    const cardSources = await loadCardSources();
+    if (destroyed) return;
+    state = { ...state, cardSources };
     notify();
   }
 
@@ -137,7 +174,22 @@ export function createVocabularySource(langCode: string): VocabularySource {
       state = { ...state, trash: state.trash.filter((e) => e.term !== term) };
       notify();
     },
+    async setStatusMany(terms, status) {
+      await setWordStatuses(lang, terms, status);
+      emitWordStatusesReload(lang);
+    },
+    async trashMany(terms) {
+      await trashWordStatuses(lang, terms);
+      emitWordStatusesReload(lang);
+      await refreshTrash();
+    },
+    async restoreMany(terms) {
+      await restoreWordStatuses(lang, terms);
+      emitWordStatusesReload(lang);
+      await refreshTrash();
+    },
     refreshTrash,
+    refreshCardSources,
     refresh: load,
     destroy() {
       destroyed = true;

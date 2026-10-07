@@ -36,6 +36,7 @@ import {
   appendWriteBackLog,
   dequeueWriteBack,
   enqueueWriteBack,
+  getAllLinks,
   getLinksByTerm,
   getSyncState,
   listWriteBackQueue,
@@ -146,6 +147,53 @@ async function srsOutcomesByTerm(
     logger.warn('anki-status-sync: srs scan failed', { error: errMessage(err) });
   }
   return map;
+}
+
+export interface CardSourceTerms {
+  readonly anki: readonly string[];
+  readonly srs: readonly string[];
+}
+
+/** Terms with cards in each card source — Anki via stored card links, Tihoka
+ *  SRS via notes whose deck's collection matches the language (notes on
+ *  collections with no target language count for every language, matching
+ *  srsOutcomesByTerm). Powers the vocabulary card-source badges; failures are
+ *  non-fatal and return empty lists. */
+export async function listCardSourceTerms(langCode: string): Promise<CardSourceTerms> {
+  const anki = new Set<string>();
+  const srs = new Set<string>();
+  try {
+    for (const link of await getAllLinks()) {
+      if (link.langCode === langCode) anki.add(link.term);
+    }
+  } catch (err) {
+    logger.warn('anki-status-sync: card link scan failed', { error: errMessage(err) });
+  }
+  try {
+    const db = await getSrsDB();
+    const tx = db.transaction(
+      [SRS_STORES.COLLECTIONS, SRS_STORES.DECKS, SRS_STORES.NOTES],
+      'readonly',
+    );
+    const collections = await idbAll<{ id: string; targetLanguage: string }>(
+      tx.objectStore(SRS_STORES.COLLECTIONS),
+    );
+    const decks = await idbAll<{ id: string; collectionId: string }>(
+      tx.objectStore(SRS_STORES.DECKS),
+    );
+    const notes = await idbAll<SrsNote>(tx.objectStore(SRS_STORES.NOTES));
+    const langByCollection = new Map(collections.map((c) => [c.id, c.targetLanguage]));
+    const collectionByDeck = new Map(decks.map((d) => [d.id, d.collectionId]));
+    for (const note of notes) {
+      const collectionId = collectionByDeck.get(note.deckId);
+      const target = collectionId ? langByCollection.get(collectionId) : undefined;
+      if (target !== undefined && target !== langCode) continue;
+      if (note.targetWord) srs.add(normalizeTerm(note.targetWord));
+    }
+  } catch (err) {
+    logger.warn('anki-status-sync: srs note scan failed', { error: errMessage(err) });
+  }
+  return { anki: [...anki], srs: [...srs] };
 }
 
 function idbGet<T>(store: IDBObjectStore, key: string): Promise<T | undefined> {
