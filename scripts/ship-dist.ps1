@@ -9,6 +9,8 @@
 #   npm run build
 #   .\scripts\ship-dist.ps1
 #   npm run ship:dist
+#   npm run release              # one-shot: bump patch -> build -> pack -> GitHub release
+#   npm run release:minor|major  # same with a different bump
 #
 # Configuration: edit `scripts/ship.config.json` before shipping.
 #
@@ -20,7 +22,9 @@
 param(
   [string]$SourceRoot = '',
   [string]$TargetRoot = 'G:\My Drive\Language\Tool',
-  [string]$ConfigPath = ''
+  [string]$ConfigPath = '',
+  [string]$Bump,
+  [switch]$Build
 )
 
 $ErrorActionPreference = 'Stop'
@@ -37,6 +41,33 @@ $tihokaDir    = Join-Path $TargetRoot 'tihoka'
 $release    = Join-Path $tihokaDir 'release'
 $archive    = Join-Path $tihokaDir 'archive'
 $keyFile    = Join-Path $SourceRoot 'tihoka-key.pem'
+
+if ($Bump) {
+  $current = (Get-Content (Join-Path $SourceRoot 'package.json') -Raw | ConvertFrom-Json).version
+  $p = $current -split '\.'
+  switch -Regex ($Bump) {
+    '^major$' { $p[0] = [int]$p[0] + 1; $p[1] = 0; $p[2] = 0 }
+    '^minor$' { $p[1] = [int]$p[1] + 1; $p[2] = 0 }
+    '^patch$' { $p[2] = [int]$p[2] + 1 }
+    '^\d+\.\d+\.\d+$' { $p = $Bump -split '\.' }
+    default { throw "-Bump must be major|minor|patch or an explicit x.y.z version" }
+  }
+  $newVersion = $p -join '.'
+  foreach ($f in 'package.json', 'public\manifest.json', 'manifest.json') {
+    $path = Join-Path $SourceRoot $f
+    if (Test-Path $path) {
+      $t = Get-Content $path -Raw
+      $t = [regex]::Replace($t, '"version"\s*:\s*"\d+\.\d+\.\d+"', '"version": "' + $newVersion + '"', 1)
+      [IO.File]::WriteAllText($path, $t, (New-Object Text.UTF8Encoding $false))
+    }
+  }
+  Write-Host "  [bump] $current -> $newVersion (package.json, public\manifest.json, manifest.json)"
+}
+
+if ($Build) {
+  & npm.cmd --prefix "$SourceRoot" run build
+  if ($LASTEXITCODE -ne 0) { throw 'npm run build failed' }
+}
 
 if (-not (Test-Path $sourceDist -PathType Container)) {
   throw "dist folder not found at: $sourceDist. Run 'npm run build' first."
