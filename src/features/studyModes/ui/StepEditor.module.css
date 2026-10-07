@@ -31,7 +31,6 @@
 }
 
 .stepChipGroup > * {
-  min-width: var(--space-20);
   justify-content: center;
 }
 

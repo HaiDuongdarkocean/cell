@@ -13,6 +13,7 @@ import { Button } from '@/shared/ui/Button';
 
 import { useRef, useCallback, useEffect } from 'react';
 import { Icon } from '@/shared/ui/Icon';
+import { Text } from '@/shared/ui/Text';
 import { t } from '@/shared/i18n';
 import type { CardCreatorQueueItem, Toast } from '../types';
 import styles from './QueueSidebar.module.css';
@@ -138,9 +139,9 @@ export function QueueSidebar({
     <aside ref={asideRef} {...sharedAsideProps}>
       {!overlay && (
         <div className={styles['cc-queue__header']}>
-          <span className={styles['cc-queue__title']}>
+          <Text variant="label" color="secondary" className={styles['cc-queue__title']}>
             {t('cardCreator.queue.title', [queueActiveIndex + 1, queueItems.length])}
-          </span>
+          </Text>
         </div>
       )}
       <ul className={styles['cc-queue__list']} aria-label={t('cardCreator.queue.itemsAria')}>

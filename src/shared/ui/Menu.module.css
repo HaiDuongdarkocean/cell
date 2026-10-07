@@ -33,7 +33,13 @@
 }
 
 .item[aria-checked='true'] {
+  background: var(--color-primary-subtle);
   color: var(--color-primary);
+}
+
+.item[aria-checked='true']:hover,
+.item[aria-checked='true']:focus-visible {
+  background: var(--button-primary-subtle-hover-bg);
 }
 
 .item[aria-checked='true'] .icon {
@@ -68,7 +74,8 @@
   color: var(--color-muted-foreground);
 }
 
-.emphasis .label {
+.emphasis .label,
+.itemEmphasis .label {
   font-weight: var(--font-weight-semibold);
 }
 

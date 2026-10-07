@@ -3,12 +3,15 @@ import { Button } from '@/shared/ui/Button';
 import styles from './Chip.module.css';
 
 export type ChipColor = 'success' | 'error' | 'primary' | 'warning' | 'muted';
+export type ChipStatus = 'unknown' | 'tracking' | 'learning' | 'known' | 'ignore';
 
 interface ChipBaseProps {
   /** Visual style. Default: default. */
   variant?: 'default' | 'outline';
   /** Color accent. Default: none. */
   color?: ChipColor;
+  /** Word-status colorway (consumes the `--chip-status-*` pairs). */
+  status?: ChipStatus;
   /** Selected (active) state — only meaningful when `as="button"`. */
   selected?: boolean;
   /** Size. Default: md. */
@@ -42,7 +45,8 @@ type ChipProps = ChipAsButton | ChipAsSpan;
 export function Chip({
   variant = 'default',
   color,
-  selected = false,
+  status,
+  selected,
   size = 'md',
   leadingIcon,
   children,
@@ -50,7 +54,7 @@ export function Chip({
   ripple = true,
   ...rest
 }: ChipProps): React.JSX.Element {
-  const cls = [styles.chip, styles[variant], color ? styles[color] : '', styles[size], selected ? styles.selected : '', className ?? '']
+  const cls = [styles.chip, styles[variant], color ? styles[color] : '', status ? styles[`status-${status}`] : '', styles[size], selected ? styles.selected : '', className ?? '']
     .filter(Boolean)
     .join(' ');
 

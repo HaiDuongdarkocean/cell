@@ -86,11 +86,6 @@
 }
 
 .groupLabel {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
   padding: var(--space-2) var(--space-3) var(--space-1);
   margin-top: var(--space-2);
 }
@@ -107,11 +102,7 @@
 }
 
 .downloadGroupTitle {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-widest);
+  padding-bottom: var(--space-1);
 }
 
 .childField {

@@ -39,8 +39,8 @@ export interface SegmentedControlProps<T extends string> {
  * do not re-skin per feature. Three variants cover the surfaces that existed:
  * - `raised`  — active segment floats (surface + shadow) on a tinted track.
  * - `accent`  — active segment tinted `primary-subtle` on an elevated track.
- * - `filled`  — active segment solid `primary` on a tinted track; wraps.
- * - `chips`   — no track; separate field-bg pills, active = solid primary.
+ * - `filled`  — active segment `primary-subtle` tint on a tinted track; wraps.
+ * - `chips`   — no track; separate field-bg pills, active = `primary-subtle`.
  *
  * Semantics: `radiogroup` + `radio`, roving tabindex, Arrow/Home/End keys
  * move AND select (shadow-DOM safe — navigation uses DOM siblings).

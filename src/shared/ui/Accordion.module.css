@@ -12,6 +12,7 @@
   padding: var(--space-3) 0;
   border: none;
   background: transparent;
+  box-shadow: none;
   color: var(--color-text);
   font-family: var(--font-family);
   font-size: var(--font-size-base);

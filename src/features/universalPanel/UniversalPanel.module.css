@@ -14,6 +14,7 @@
   max-width: calc(var(--space-5) * 64);
   min-width: 0;
   display: flex;
+  border: var(--border-width-hairline) solid var(--panel-border);
   box-shadow: var(--panel-shadow);
 }
 
@@ -94,6 +95,7 @@
     height: 100%;
     height: 100dvh;
     max-width: none;
+    border: none;
     border-radius: 0;
     flex-direction: column;
   }

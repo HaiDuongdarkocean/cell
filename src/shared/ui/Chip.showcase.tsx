@@ -18,6 +18,13 @@ export function Showcase(): ReactElement {
         <Chip as="button" color="success">Success</Chip>
         <Chip as="button" color="error">Error</Chip>
       </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+        <Chip status="unknown">Unknown</Chip>
+        <Chip status="tracking">Tracking</Chip>
+        <Chip status="learning">Learning</Chip>
+        <Chip status="known">Known</Chip>
+        <Chip status="ignore">Ignore</Chip>
+      </div>
     </div>
   );
 }

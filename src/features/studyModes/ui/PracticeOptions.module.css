@@ -16,14 +16,7 @@
 }
 
 .eyebrow {
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
   white-space: nowrap;
-}
-
-.eyebrow.text {
-  color: var(--color-text-secondary);
 }
 
 .speedSelect {

@@ -24,5 +24,4 @@ div.menu {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
-  letter-spacing: var(--tracking-wide);
 }

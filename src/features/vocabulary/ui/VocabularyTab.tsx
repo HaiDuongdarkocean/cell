@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
+import { Chip } from '@/shared/ui/Chip';
 import { Dialog } from '@/shared/ui/Dialog';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Icon } from '@/shared/ui/Icon';
@@ -45,14 +46,6 @@ const STATUS_LABEL: Record<WordStatus, MessageKey> = {
   learning: 'vocabulary.status.learning',
   known: 'vocabulary.status.known',
   ignore: 'vocabulary.status.ignore',
-};
-
-const STATUS_CLASS: Record<WordStatus, string> = {
-  unknown: styles.statusUnknown,
-  tracking: styles.statusTracking,
-  learning: styles.statusLearning,
-  known: styles.statusKnown,
-  ignore: styles.statusIgnore,
 };
 
 const SEGMENT_LABEL: Record<VocabularySegment, MessageKey> = {
@@ -211,7 +204,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
       <div className={styles.toolbar}>
         <Button
           ref={filterTriggerRef}
-          variant="ghost"
+          variant="secondary"
           size="sm"
           className={styles.toolBtn}
           aria-haspopup="menu"
@@ -227,7 +220,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
         {!inTrash && (
           <Button
             ref={sortTriggerRef}
-            variant="ghost"
+            variant="secondary"
             size="sm"
             className={styles.toolBtn}
             aria-haspopup="menu"
@@ -344,11 +337,16 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
             state.trash.length === 0 ? (
               <EmptyState
                 title={t('vocabulary.emptyTrash')}
+                description={t('vocabulary.emptyTrashHint')}
                 size="compact"
                 data-cell-id="vocabulary-trash-empty"
               />
             ) : (
-              <EmptyState title={t('vocabulary.emptyFiltered')} size="compact" />
+              <EmptyState
+                title={t('vocabulary.emptyFiltered')}
+                description={t('vocabulary.emptyFilteredHint')}
+                size="compact"
+              />
             )
           ) : (
             <>
@@ -369,11 +367,14 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                       >
                         {entry.term}
                       </Button>
-                      <span
-                        className={`${styles.statusBadge} ${styles.statusBadgeStatic} ${STATUS_CLASS[entry.previousStatus]}`}
+                      <Chip
+                        as="span"
+                        size="sm"
+                        status={entry.previousStatus}
+                        className={styles.rowChip}
                       >
                         {t(STATUS_LABEL[entry.previousStatus])}
-                      </span>
+                      </Chip>
                       <Text variant="supporting" color="secondary" className={styles.time}>
                         {t('vocabulary.trash.expiresIn', [
                           String(trashHoursLeft(entry.trashedAt, Date.now(), TRASH_TTL_MS)),
@@ -414,9 +415,9 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
           )}
         </>
       ) : state.entries.length === 0 ? (
-        <EmptyState title={t('vocabulary.empty')} size="compact" />
+        <EmptyState title={t('vocabulary.empty')} description={t('vocabulary.emptyHint')} size="compact" />
       ) : page.entries.length === 0 ? (
-        <EmptyState title={t('vocabulary.emptyFiltered')} size="compact" />
+        <EmptyState title={t('vocabulary.emptyFiltered')} description={t('vocabulary.emptyFilteredHint')} size="compact" />
       ) : (
         <>
           <ul className={styles.list}>
@@ -444,15 +445,17 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                       >
                         {entry.term}
                       </Button>
-                      <Button
-                        variant="transparent"
-                        className={`${styles.statusBadge} ${STATUS_CLASS[entry.status]}`}
+                      <Chip
+                        as="button"
+                        size="sm"
+                        status={entry.status}
+                        className={styles.rowChip}
                         aria-label={t('vocabulary.row.cycle', [entry.term])}
                         onClick={() => handleCycle(entry.term)}
                         data-cell-id={`vocabulary-cycle-${entry.term}`}
                       >
                         {t(STATUS_LABEL[entry.status])}
-                      </Button>
+                      </Chip>
                       <span className={styles.actionSlot}>
                         {editMode && (
                           <Button

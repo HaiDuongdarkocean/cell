@@ -6,7 +6,7 @@
   flex-shrink: 0;
   gap: var(--space-0);
   height: var(--universal-panel-tokenize-height);
-  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-pill);
   overflow: hidden;
   white-space: nowrap;
@@ -25,4 +25,11 @@
 
 .capsule .half + .half {
   border-left: var(--border-width-hairline) solid var(--color-divider);
+}
+
+@media (hover: hover) {
+  .capsule .half:hover {
+    background: var(--color-primary-subtle);
+    color: var(--color-primary);
+  }
 }

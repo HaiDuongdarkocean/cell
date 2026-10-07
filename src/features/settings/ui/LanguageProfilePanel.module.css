@@ -26,9 +26,9 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   background: var(--color-primary-subtle);
-  border: 1px dashed var(--color-border);
+  border: var(--border-width-hairline) dashed var(--color-border);
 }
 
 .banner.editing,
@@ -50,11 +50,6 @@
 }
 
 .bannerLabel {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -98,11 +93,7 @@
 }
 
 .sectionLabel {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  min-width: 0;
 }
 
 /* Text action — primary color, no chrome (the bordered "link" variant is too
@@ -259,66 +250,9 @@
   text-overflow: ellipsis;
 }
 
-/* === Kebab popover ===
-   The menu is portaled to body (escapes .sectionCard overflow:hidden), so this
-   wrapper only keeps the trigger from shrinking — no positioning context. */
 .menuWrap {
   flex-shrink: 0;
 }
-
-/* Portaled to document.body → position: fixed, coordinates set inline from
-   the trigger rect. Escapes every clipping ancestor (sectionCard
-   overflow:hidden, scrollable columns). */
-.menu {
-  position: fixed;
-  z-index: var(--z-popover);
-  min-width: 190px;
-  background: var(--color-surface-elevated);
-  border: none;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-floating);
-  padding: var(--space-1-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-0-5);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  transform-origin: top right;
-  animation: menuIn var(--duration-fast) var(--ease-out);
-}
-
-.menuFlip {
-  transform-origin: bottom right;
-}
-
-.menuItem {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 0;
-  background: transparent;
-  border-radius: var(--radius-md);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
-  text-align: left;
-  cursor: pointer;
-}
-
-@media (hover: hover) {
-  .menuItem:hover { background: var(--color-overlay-hover); }
-}
-
-.menuItem:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
-
-.menuItem:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.menuItemDanger { color: var(--color-error); }
 
 /* === Inline profile form (add + edit) === */
 .profileForm {
@@ -411,8 +345,13 @@
 }
 
 .choice[aria-checked='true'] {
-  border-color: var(--color-primary);
   background: var(--color-primary-subtle);
+  box-shadow: var(--shadow-inset-selected);
+  color: var(--color-text-accent-strong);
+}
+
+.choice[aria-checked='true'] .choiceDesc {
+  color: var(--color-text-accent-strong);
 }
 
 .choice:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
@@ -441,15 +380,7 @@
   }
 }
 
-@keyframes menuIn {
-  from {
-    opacity: 0;
-    transform: scale(0.96) translateY(calc(var(--space-0-5) * -1));
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .menu,
   .formError,
   .choiceGrid {
     animation: none;

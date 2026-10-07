@@ -140,6 +140,10 @@ export interface MenuItemProps {
   readonly radio?: boolean;
   /** Destructive action — label and icon render in error colour. */
   readonly destructive?: boolean;
+  /** Semibold label (sheet action style). */
+  readonly emphasis?: boolean;
+  /** Marks the row as the current destination (nav rows inside a sheet). */
+  readonly 'aria-current'?: boolean | 'page' | 'step' | 'location' | 'date' | 'time';
   readonly disabled?: boolean;
   readonly 'data-cell-id'?: string;
 }
@@ -152,6 +156,8 @@ export function MenuItem({
   selected = false,
   radio = false,
   destructive = false,
+  emphasis = false,
+  'aria-current': ariaCurrent,
   disabled = false,
   'data-cell-id': dataCellId,
 }: MenuItemProps): React.JSX.Element {
@@ -161,7 +167,8 @@ export function MenuItem({
       type="button"
       role={radio ? 'menuitemradio' : 'menuitem'}
       aria-checked={radio ? selected : undefined}
-      className={`${styles.item}${destructive ? ` ${styles.itemDanger}` : ''}`}
+      aria-current={ariaCurrent}
+      className={`${styles.item}${destructive ? ` ${styles.itemDanger}` : ''}${emphasis ? ` ${styles.itemEmphasis}` : ''}`}
       disabled={disabled}
       onClick={onSelect}
       data-cell-id={dataCellId}

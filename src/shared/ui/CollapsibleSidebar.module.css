@@ -42,6 +42,11 @@
   container-type: inline-size;
 }
 
+.sectionSeparator {
+  margin: 0 var(--space-2);
+  width: auto;
+}
+
 .section li {
   display: flex;
   min-width: 0;

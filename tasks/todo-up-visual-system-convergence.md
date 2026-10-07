@@ -1,0 +1,23 @@
+# Todo — up-visual-system-convergence
+
+- [x] Survey all cited sites (atoms + features) — done via reads
+- [x] REQ-2 tokens: panel.shadow→modal, panel.border→border, popover.border→border (all presets)
+- [x] REQ-2 SearchableSelect menu hairline + option surfaces de-alpha
+- [x] REQ-1 MenuItem checked bg + hover composition; QueueSidebar accent text
+- [x] REQ-1 SegmentedControl filled/chips → accent recipe (contrast gate)
+- [x] REQ-1 LanguageProfilePanel `.choice` → inset-selected; StudyModes `.modeCard` → Card selected
+- [x] REQ-5 Button `.secondary` + consumer sweep (offRow leak documented)
+- [x] REQ-5 footer trio + playlist errorSubtle + disabled-only-opacity check
+- [x] REQ-3 vocab triggers → secondary+chevron; LPP kebab→Menu; profile switcher→Menu; toolRow→MenuItem; tool-row tokens retire
+- [x] REQ-4 Chip `status` prop + consumers (RecapTab, VocabTab) + showcase + test
+- [x] REQ-6 sidebar Separator + seam collapse
+- [x] REQ-7 playlist EmptyState + vocab empty hints (i18n en+vi)
+- [x] REQ-8 uppercase sweep (11 sites) + NavItem xs→sm
+- [x] REQ-9 HintIcon ghost; --color-track 85→75%; V-19 tiles; chrome-icon borders
+- [x] REQ-10 failure stated once (banner vs status row)
+- [x] REQ-11 header overflow Menu (if applicable post-31) + slidersHorizontal→flame on Study Modes
+- [x] REQ-12 card scale + opacity→tokens + dashed family
+- [x] Sweeps: floats / uppercase / opacity / secondary-overrides / dashed / chips
+- [x] Gates: typecheck, lint, test:unit, build; check-design-system-css(+features)
+- [x] Update docs/2-architechture-system.md (+ 0-wiki if needed)
+- [x] Report

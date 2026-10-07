@@ -38,6 +38,8 @@ interface CardCreatorSettingsPanelProps {
   srsNotetypeId?: string | null;
   /** Called when the SRS deck/notetype selection changes. */
   onSrsSelectionChange?: (selection: { deckId?: string; notetypeId?: string }) => void;
+  /** Suppress the offline failure detail while a blocking banner states it. */
+  suppressFailureDetail?: boolean;
 }
 
 type ConnectionStatus = 'idle' | 'testing' | 'online' | 'offline';
@@ -88,6 +90,7 @@ export function CardCreatorSettingsPanel({
   srsDeckId,
   srsNotetypeId,
   onSrsSelectionChange,
+  suppressFailureDetail = false,
 }: CardCreatorSettingsPanelProps): ReactElement {
   const [status, setStatus] = useState<ConnectionStatus>('idle');
   const [version, setVersion] = useState<number | null>(null);
@@ -414,7 +417,9 @@ export function CardCreatorSettingsPanel({
                     <span className={styles.statusDot} aria-hidden="true" />
                     <span className={styles.statusLabel}>{statusLabel(status)}</span>
                     <span className={styles.statusDetail}>
-                      {buildStatusDetail(status, version, settings.ankiConnectUrl)}
+                      {suppressFailureDetail && status === 'offline'
+                        ? shortUrl(settings.ankiConnectUrl)
+                        : buildStatusDetail(status, version, settings.ankiConnectUrl)}
                     </span>
                   </div>
                   <Button

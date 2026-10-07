@@ -75,14 +75,15 @@ function SessionMetrics({ session, onLookup }: MetricsProps): React.JSX.Element 
               </Text>
               <div className={styles.chips}>
                 {group.terms.map((term) => (
-                  <button
+                  <Chip
                     key={term}
-                    type="button"
-                    className={`${styles.statusChip} ${styles[`status-${group.status}`]}`}
+                    as="button"
+                    size="sm"
+                    status={group.status}
                     onClick={() => onLookup(term)}
                   >
                     {term}
-                  </button>
+                  </Chip>
                 ))}
                 {group.moreCount > 0 && <Chip size="sm">+{group.moreCount}</Chip>}
               </div>

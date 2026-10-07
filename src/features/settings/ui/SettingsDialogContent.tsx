@@ -549,7 +549,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               </div>
               <div className={styles.downloadCardBody}>
                 <VStack gap="3" className={styles.downloadGroup}>
-                  <div className={styles.downloadGroupTitle}>{t('settings.download.group.concurrency')}</div>
+                  <Text variant="label" color="secondary" as="div" className={styles.downloadGroupTitle}>{t('settings.download.group.concurrency')}</Text>
                   <SettingsRow dense stacked>
                     <Label className={styles.rowLabel} size="sm" htmlFor="set-concurrent">{t('settings.download.concurrent')}</Label>
                     <Select
@@ -564,7 +564,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                 </VStack>
 
                 <VStack gap="3" className={styles.downloadGroup}>
-                  <div className={styles.downloadGroupTitle}>{t('settings.download.group.formatQuality')}</div>
+                  <Text variant="label" color="secondary" as="div" className={styles.downloadGroupTitle}>{t('settings.download.group.formatQuality')}</Text>
                   <VStack columns={2} responsive gapResponsive={{ mobile: '2', desktop: '4' }}>
                     <SettingsRow dense stacked>
                       <Label className={styles.rowLabel} size="sm" htmlFor="set-format">{t('settings.download.format')}</Label>
@@ -592,7 +592,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                 </VStack>
 
                 <VStack gap="3" className={styles.downloadGroup}>
-                  <div className={styles.downloadGroupTitle}>{t('settings.download.group.conversion')}</div>
+                  <Text variant="label" color="secondary" as="div" className={styles.downloadGroupTitle}>{t('settings.download.group.conversion')}</Text>
                   <SettingsRow dense stacked>
                     <Label className={styles.rowLabel} size="sm" htmlFor="set-convert">{t('settings.download.convert')}</Label>
                     <Select
@@ -641,7 +641,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                 </VStack>
 
                 <VStack gap="3" className={styles.downloadGroup}>
-                  <div className={styles.downloadGroupTitle}>{t('settings.download.group.filename')}</div>
+                  <Text variant="label" color="secondary" as="div" className={styles.downloadGroupTitle}>{t('settings.download.group.filename')}</Text>
                   <SettingsRow dense stacked>
                     <Label className={styles.rowLabel} size="sm" htmlFor="set-filename-source">{t('settings.download.filenameSource')}</Label>
                     <Select
@@ -671,7 +671,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                 <div className={styles.shortcutSection}>
                   {SHORTCUT_GROUPS.map((group) => (
                     <VStack key={group.label} gap="1" className={styles.shortcutGroupWrap}>
-                      <div className={styles.groupLabel}>{t(group.label)}</div>
+                      <Text variant="label" color="secondary" as="div" className={styles.groupLabel}>{t(group.label)}</Text>
                       <VStack columns={2} responsive gap="2" className={styles.shortcutGroup}>
                         {group.actions.map((action) => {
                           const shortcut = settings.keyboardShortcuts.find((s) => s.action === action);

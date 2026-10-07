@@ -11,9 +11,6 @@
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-3);
-  border-width: var(--space-0-5);
-  --card-radius: var(--radius-pill);
-  --card-background: var(--color-field);
   cursor: pointer;
   text-align: center;
 }

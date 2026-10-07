@@ -38,10 +38,8 @@
 .toolBtn {
   flex-shrink: 0;
   gap: var(--space-1);
-  color: var(--color-text-secondary);
 }
 
-.toolBtn[aria-expanded="true"],
 .toolBtn[aria-pressed="true"] {
   color: var(--color-primary);
 }
@@ -69,12 +67,12 @@
 }
 
 .groupHeader {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold, 600);
+  font-size: var(--text-label-font-size);
+  font-weight: var(--text-label-font-weight);
+  line-height: var(--text-label-line-height);
+  letter-spacing: var(--text-label-letter-spacing);
   color: var(--color-text-secondary);
   padding: var(--space-2) var(--space-1) var(--space-1);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 /* ---------- Rows ---------- */
@@ -123,62 +121,8 @@
   height: 100%;
 }
 
-/* Status chip — same pastel language as the dictionary popup's
-   .cellHeaderStatus (theme-invariant --chip-status-* tokens). */
-.statusBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  min-width: calc(var(--space-3) * 7);
-  min-height: 0;
-  height: var(--space-5);
-  padding: 0 var(--space-2);
-  border: var(--border-width-hairline) solid transparent;
-  border-radius: var(--radius-pill);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--leading-none);
-  white-space: nowrap;
+.rowChip {
   flex-shrink: 0;
-  transition: filter var(--duration-fast) var(--ease-out);
-}
-
-.statusBadge:not(.statusBadgeStatic) {
-  cursor: pointer;
-  height: auto;
-  min-height: var(--touch-target);
-  border-block: calc((var(--touch-target) - var(--space-5)) / 2) solid transparent;
-  background-clip: padding-box;
-}
-
-.statusBadge:not(.statusBadgeStatic):hover {
-  filter: brightness(0.95);
-}
-
-.statusUnknown {
-  background: var(--chip-status-unknown-bg);
-  color: var(--chip-status-unknown-fg);
-}
-
-.statusTracking {
-  background: var(--chip-status-tracking-bg);
-  color: var(--chip-status-tracking-fg);
-}
-
-.statusLearning {
-  background: var(--chip-status-learning-bg);
-  color: var(--chip-status-learning-fg);
-}
-
-.statusKnown {
-  background: var(--chip-status-known-bg);
-  color: var(--chip-status-known-fg);
-}
-
-.statusIgnore {
-  background: var(--chip-status-ignore-bg);
-  color: var(--chip-status-ignore-fg);
 }
 
 .pagination {

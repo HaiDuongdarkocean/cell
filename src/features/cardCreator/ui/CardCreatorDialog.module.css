@@ -207,12 +207,7 @@
 }
 
 .cc-dialog__section-title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
   margin: var(--space-0);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
 }
 
 /* All Select triggers inside the Card Creator dialog use the same

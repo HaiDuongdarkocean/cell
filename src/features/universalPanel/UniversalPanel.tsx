@@ -1,7 +1,5 @@
-import { useRef, useState, useEffect, useLayoutEffect, useCallback, type ReactElement, type ReactNode } from 'react';
+import { useRef, useState, useEffect, useLayoutEffect, type ReactElement, type ReactNode } from 'react';
 import { Surface } from '@/shared/ui/Surface';
-import { Dialog } from '@/shared/ui/Dialog';
-import { RadioGroup } from '@/shared/ui/RadioGroup';
 import { useFocusTrap } from '@/shared/ui/useFocusTrap';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import { CollapsibleSidebar } from '@/shared/ui';
@@ -51,12 +49,11 @@ export interface UniversalPanelProps {
   readonly recapPanel?: ReactNode;
 }
 
-const TOOLS: { id: string; icon: 'library' | 'layers' | 'playRoundedRect'; title: MessageKey; description: MessageKey; onClick: () => void; 'data-cell-id'?: string }[] = [
+const TOOLS: { id: string; icon: 'library' | 'layers' | 'playRoundedRect'; title: MessageKey; onClick: () => void; 'data-cell-id'?: string }[] = [
   {
     id: 'reader',
     icon: 'library',
     title: 'panel.tools.reader.title',
-    description: 'panel.tools.reader.desc',
     onClick: () => { void sendMessage({ type: MESSAGE_TYPES.OPEN_READER, payload: {} }); },
     'data-cell-id': 'universal-panel-reader',
   },
@@ -64,7 +61,6 @@ const TOOLS: { id: string; icon: 'library' | 'layers' | 'playRoundedRect'; title
     id: 'srs',
     icon: 'layers',
     title: 'panel.tools.srs.title',
-    description: 'panel.tools.srs.desc',
     onClick: () => { void sendMessage({ type: MESSAGE_TYPES.SRS_OPEN_STUDY_PAGE, payload: {} }); },
     'data-cell-id': 'universal-panel-srs-study',
   },
@@ -72,7 +68,6 @@ const TOOLS: { id: string; icon: 'library' | 'layers' | 'playRoundedRect'; title
     id: 'player',
     icon: 'playRoundedRect',
     title: 'panel.tools.player.title',
-    description: 'panel.tools.player.desc',
     onClick: () => { window.open(getLocalPlayerUrl(), '_blank'); },
     'data-cell-id': 'universal-panel-tab-local-player',
   },
@@ -105,19 +100,7 @@ export function UniversalPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const wasOpenRef = useRef(isOpen);
   const [isClosing, setIsClosing] = useState(false);
-  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const profileOptions = languageProfiles.map((p) => ({ value: p.id, label: p.name }));
-  const activeProfile = languageProfiles.find((p) => p.id === activeProfileId);
-
-  const handleProfileSelect = useCallback((id: string): void => {
-    onProfileChange(id);
-    setIsProfileDialogOpen(false);
-  }, [onProfileChange]);
-
-  const handleProfileClick = useCallback((): void => {
-    setIsProfileDialogOpen(true);
-  }, []);
 
   useFocusTrap(panelRef, isOpen);
 
@@ -243,32 +226,15 @@ export function UniversalPanel({
           ]}
         />
 
-        {languageProfiles.length > 0 && (
-          <Dialog
-            open={isProfileDialogOpen}
-            onOpenChange={setIsProfileDialogOpen}
-            title={t('panel.profileDialog.title')}
-            description={t('panel.profileDialog.desc')}
-            showCloseButton
-            data-cell-id="universal-panel-profile-dialog"
-          >
-            <RadioGroup
-              name="profile"
-              value={activeProfileId ?? ''}
-              options={profileOptions}
-              onChange={handleProfileSelect}
-            />
-          </Dialog>
-        )}
-
         <div className={styles.body}>
           <UniversalPanelHeader
             tokenizeState={tokenizeState}
             onToggleTokenize={onToggleTokenize}
             onClose={onClose}
             hasMedia={hasMedia}
-            activeProfile={activeProfile}
-            onProfileClick={handleProfileClick}
+            languageProfiles={languageProfiles}
+            activeProfileId={activeProfileId}
+            onProfileChange={onProfileChange}
             activeTab={activeTab}
           />
 
@@ -297,7 +263,7 @@ export function UniversalPanel({
         <UniversalPanelBottomNav
           activeTab={activeTab}
           onTabChange={onTabChange}
-          tools={TOOLS.map((tool) => ({ ...tool, title: t(tool.title), description: t(tool.description) }))}
+          tools={TOOLS.map((tool) => ({ ...tool, title: t(tool.title) }))}
         />
       </Surface>
     </div>

@@ -105,10 +105,10 @@
 }
 
 .popularLabel {
-  font-size: var(--font-size-xs);
+  font-size: var(--text-label-font-size);
+  font-weight: var(--text-label-font-weight);
+  letter-spacing: var(--text-label-letter-spacing);
   color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
 }
 
 .popChip {

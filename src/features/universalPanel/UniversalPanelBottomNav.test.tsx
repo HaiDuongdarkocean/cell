@@ -4,7 +4,7 @@ import { UniversalPanelBottomNav, type ToolAction } from './UniversalPanelBottom
 import { PANEL_BAR_TABS, PANEL_TOOLS_TABS } from './panelTabs';
 
 const TOOLS: ToolAction[] = [
-  { id: 'reader', icon: 'library', title: 'Open Reader', description: 'Read saved articles', onClick: jest.fn() },
+  { id: 'reader', icon: 'library', title: 'Open Reader', onClick: jest.fn() },
 ];
 
 function renderNav(activeTab: Parameters<typeof UniversalPanelBottomNav>[0]['activeTab'] = 'dictionary', onTabChange = jest.fn()) {
@@ -59,11 +59,15 @@ describe('UniversalPanelBottomNav (up-mobile-chrome)', () => {
     expect(screen.queryByTestId('universal-panel-tools-sheet')).not.toBeInTheDocument();
   });
 
-  it('marks the active demoted row with aria-current inside the sheet', () => {
+  it('marks the active demoted row inside the sheet', () => {
     renderNav('recap');
     fireEvent.click(screen.getByTestId('universal-panel-mobile-tools'));
-    expect(screen.getByTestId('universal-panel-mobile-tab-recap')).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByTestId('universal-panel-mobile-tab-playlist')).not.toHaveAttribute('aria-current');
+    const recapRow = screen.getByTestId('universal-panel-mobile-tab-recap');
+    const playlistRow = screen.getByTestId('universal-panel-mobile-tab-playlist');
+    expect(recapRow).toHaveAttribute('aria-current', 'page');
+    expect(recapRow).toHaveAttribute('aria-checked', 'true');
+    expect(playlistRow).not.toHaveAttribute('aria-current');
+    expect(playlistRow).toHaveAttribute('aria-checked', 'false');
   });
 
   it('renders the Tools sheet without a decorative drag handle', () => {

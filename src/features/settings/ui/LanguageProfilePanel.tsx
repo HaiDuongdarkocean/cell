@@ -23,6 +23,7 @@ import {
 } from '@/entities/settings';
 import { ProfileForm } from './ProfileForm';
 import { ProfileMenu } from './ProfileMenu';
+import { Text } from '@/shared/ui/Text';
 import styles from './LanguageProfilePanel.module.css';
 
 interface LanguageProfilePanelProps {
@@ -173,7 +174,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
             <div className={styles.bannerRow}>
               <FlagIcon lang={bannerDraft} size={22} title={langLabel(bannerDraft)} />
               <div className={styles.bannerText}>
-                <div className={styles.bannerLabel}>{t('settings.profiles.banner.label')}</div>
+                <Text variant="label" color="secondary" as="div" className={styles.bannerLabel}>{t('settings.profiles.banner.label')}</Text>
                 <div className={styles.bannerValue}>{langShort(bannerDraft)}</div>
               </div>
             </div>
@@ -206,7 +207,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
           <>
             <FlagIcon lang={settings.universalNativeLanguage} size={22} title={langLabel(settings.universalNativeLanguage)} />
             <div className={styles.bannerText}>
-              <div className={styles.bannerLabel}>{t('settings.profiles.banner.label')}</div>
+              <Text variant="label" color="secondary" as="div" className={styles.bannerLabel}>{t('settings.profiles.banner.label')}</Text>
               <div className={styles.bannerValue} data-testid="universal-native-banner-value">{langShort(settings.universalNativeLanguage)}</div>
             </div>
             <Button
@@ -228,7 +229,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
           long list never pushes it out of reach. */}
       {profiles.length > 0 && (
         <div className={styles.toolbar}>
-          <span className={styles.sectionLabel}>{t('settings.profiles.list.label', [profiles.length])}</span>
+          <Text variant="label" color="secondary" className={styles.sectionLabel}>{t('settings.profiles.list.label', [profiles.length])}</Text>
           <button
             type="button"
             className={styles.linkBtn}

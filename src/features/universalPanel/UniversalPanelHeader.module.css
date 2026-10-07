@@ -36,6 +36,19 @@
   flex-shrink: 0;
 }
 
+.header .profileButton.profileButton,
+.header .closeButton.closeButton {
+  border: var(--border-width-hairline) solid var(--color-border);
+}
+
+@media (hover: hover) {
+  .header .profileButton.profileButton:hover,
+  .header .closeButton.closeButton:hover {
+    background: var(--color-primary-subtle);
+    color: var(--color-primary);
+  }
+}
+
 /* Profile button is flag-only (no label) — sits at the far left of the header.
    The button box reaches the --touch-target floor; the flag paint stays at
    --universal-panel-profile-flag-size (34px) centered inside it. */

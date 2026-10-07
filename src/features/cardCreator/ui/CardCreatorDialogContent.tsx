@@ -290,7 +290,7 @@ export function CardCreatorDialogContent({
         )}
         <div className={styles['cc-dialog__footer-actions']}>
           <Button
-            variant="outline"
+            variant="errorSubtle"
             size="sm"
             onClick={() => setConfirmOpen(true)}
             disabled={submitting}
@@ -299,7 +299,7 @@ export function CardCreatorDialogContent({
             {t('cardCreator.action.clear')}
           </Button>
           <Button
-            variant="primarySubtle"
+            variant="secondary"
             size="sm"
             onClick={() => { void submit('add'); }}
             disabled={submitting}
@@ -390,6 +390,7 @@ export function CardCreatorDialogContent({
       onClose={handleSettingsClose}
       settings={appSettings}
       onChange={onSettingsChange ?? (() => {})}
+      suppressFailureDetail={loadStatus === 'error' && !settingsOpen}
     />
   ) : null;
 

@@ -99,41 +99,6 @@
   flex-shrink: 0;
 }
 
-.statusChip {
-  padding: 3px 10px;
-  border: none;
-  border-radius: var(--radius-pill);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  font-family: inherit;
-  cursor: pointer;
-  min-height: 44px;
-}
-
-.status-learning {
-  background: var(--chip-status-learning-bg);
-  color: var(--chip-status-learning-fg);
-}
-
-.status-known {
-  background: var(--chip-status-known-bg);
-  color: var(--chip-status-known-fg);
-}
-
-.status-tracking {
-  background: var(--chip-status-tracking-bg);
-  color: var(--chip-status-tracking-fg);
-}
-
-.status-ignore {
-  background: var(--chip-status-ignore-bg);
-  color: var(--chip-status-ignore-fg);
-}
-
-.statusChip:hover {
-  filter: brightness(1.06);
-}
-
 .list {
   display: flex;
   flex-direction: column;

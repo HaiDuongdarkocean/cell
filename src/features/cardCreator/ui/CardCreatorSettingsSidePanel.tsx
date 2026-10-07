@@ -15,6 +15,8 @@ interface CardCreatorSettingsSidePanelProps {
   readonly settings: Settings;
   /** Called when settings change. */
   readonly onChange: (settings: Settings) => void;
+  /** Suppress the status row's failure text while a blocking banner states it. */
+  readonly suppressFailureDetail?: boolean;
 }
 
 /**
@@ -27,6 +29,7 @@ export function CardCreatorSettingsSidePanel({
   onClose,
   settings,
   onChange,
+  suppressFailureDetail = false,
 }: CardCreatorSettingsSidePanelProps): ReactElement | null {
   const handleUpdateCardCreator = (partial: Partial<CardCreatorSettings>): void => {
     onChange({
@@ -75,6 +78,7 @@ export function CardCreatorSettingsSidePanel({
         srsDeckId={settings.srs?.activeDeckId}
         srsNotetypeId={settings.srs?.activeNotetypeId}
         onSrsSelectionChange={handleSrsSelectionChange}
+        suppressFailureDetail={suppressFailureDetail}
       />
     </CardCreatorSidePanel>
   );

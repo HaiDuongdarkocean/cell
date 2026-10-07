@@ -342,14 +342,15 @@
 }
 
 /* Off row — compact, left-aligned, blends with track rows.
-   Doubled class beats shared Button's `.button` chrome (solid surface +
-   floating shadow + center justify) regardless of stylesheet injection
-   order inside shadow DOM. `variant="secondary"` has no `.secondary` class
-   — it falls back to base `.button`, so the row chrome is owned here. */
+   Doubled class beats shared Button's `.button`/`.secondary` chrome (border,
+   pill radius, solid surface, floating shadow, center justify) regardless of
+   stylesheet injection order inside shadow DOM — the row chrome is owned here. */
 .offRow.offRow {
   justify-content: flex-start;
   text-align: left;
   min-height: var(--space-9);
+  border: 0;
+  border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
   background: transparent;
   box-shadow: none;

@@ -1,7 +1,8 @@
-import { type ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import type { ICON_CATALOG } from '@/shared/icons';
 import { t } from '@/shared/i18n';
 import { NavItem } from './NavItem';
+import { Separator } from './Separator';
 import styles from './CollapsibleSidebar.module.css';
 
 export interface CollapsibleSidebarItem {
@@ -65,28 +66,30 @@ export function CollapsibleSidebar({
       {header && <div className={styles.header}>{header}</div>}
 
       <div className={styles.sections}>
-        {sections.map((section) => {
+        {sections.map((section, sectionIndex) => {
           const sectionKey = section.id ?? section.items.map((i) => i.id).join('-');
           return (
-            <ul
-              key={sectionKey}
-              className={styles.section}
-              aria-label={section.label}
-            >
-              {section.items.map((item) => (
-                <li key={item.id}>
-                  <NavItem
-                    icon={item.icon}
-                    label={item.label}
-                    orientation="vertical"
-                    active={item.active}
-                    aria-current={item.active ? 'page' : undefined}
-                    onClick={item.onClick}
-                    data-cell-id={item['data-cell-id']}
-                  />
-                </li>
-              ))}
-            </ul>
+            <Fragment key={sectionKey}>
+              {sectionIndex > 0 && <Separator className={styles.sectionSeparator} />}
+              <ul
+                className={styles.section}
+                aria-label={section.label}
+              >
+                {section.items.map((item) => (
+                  <li key={item.id}>
+                    <NavItem
+                      icon={item.icon}
+                      label={item.label}
+                      orientation="vertical"
+                      active={item.active}
+                      aria-current={item.active ? 'page' : undefined}
+                      onClick={item.onClick}
+                      data-cell-id={item['data-cell-id']}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </Fragment>
           );
         })}
       </div>

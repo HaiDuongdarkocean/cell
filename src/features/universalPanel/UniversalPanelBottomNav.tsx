@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { Icon } from '@/shared/ui/Icon';
-import { Separator } from '@/shared/ui/Separator';
+import { MenuItem, MenuSeparator } from '@/shared/ui/Menu';
 import { t } from '@/shared/i18n';
 import { PANEL_BAR_TABS, PANEL_TOOLS_TABS } from './panelTabs';
 import type { UniversalPanelTab } from './types';
@@ -12,7 +12,6 @@ export interface ToolAction {
   id: string;
   icon: 'library' | 'layers' | 'playRoundedRect';
   title: string;
-  description: string;
   onClick: () => void;
   'data-cell-id'?: string;
 }
@@ -86,56 +85,40 @@ export function UniversalPanelBottomNav({
         hideDragHandle
         data-cell-id="universal-panel-tools-sheet"
       >
-        {PANEL_TOOLS_TABS.length > 0 && (
-          <>
-            <ul className={styles.toolsList}>
-              {PANEL_TOOLS_TABS.map((tab) => {
-                const isActive = activeTab === tab.key;
-                return (
-                  <li key={tab.key}>
-                    <Button
-                      variant="ghost"
-                      shape="pill"
-                      className={isActive ? `${styles.toolRow} ${styles.navRowActive}` : styles.toolRow}
-                      aria-current={isActive ? 'page' : undefined}
-                      leadingIcon={<Icon name={tab.icon} size="md" />}
-                      onClick={() => {
-                        onTabChange(tab.key);
-                        setIsToolsOpen(false);
-                      }}
-                      data-cell-id={`universal-panel-mobile-tab-${tab.key}`}
-                    >
-                      <span className={styles.navRowLabel}>{t(tab.label)}</span>
-                    </Button>
-                  </li>
-                );
-              })}
-            </ul>
-            <Separator />
-          </>
-        )}
-        <ul className={styles.toolsList}>
-          {tools.map((tool) => (
-            <li key={tool.id}>
-              <Button
-                variant="ghost"
-                shape="pill"
-                className={styles.toolRow}
-                leadingIcon={<Icon name={tool.icon} size="md" />}
-                onClick={() => {
-                  tool.onClick();
-                  setIsToolsOpen(false);
-                }}
-                data-cell-id={tool['data-cell-id']}
-              >
-                <span className={styles.toolBody}>
-                  <span className={styles.toolTitle}>{tool.title}</span>
-                  <span className={styles.toolDesc}>{tool.description}</span>
-                </span>
-              </Button>
-            </li>
+        <div role="menu" aria-label={t('panel.tools.sheetTitle')} className={styles.toolsList}>
+          {PANEL_TOOLS_TABS.map((tab) => (
+            <MenuItem
+              key={tab.key}
+              radio
+              selected={activeTab === tab.key}
+              aria-current={activeTab === tab.key ? 'page' : undefined}
+              emphasis
+              icon={<Icon name={tab.icon} size="md" />}
+              onSelect={() => {
+                onTabChange(tab.key);
+                setIsToolsOpen(false);
+              }}
+              data-cell-id={`universal-panel-mobile-tab-${tab.key}`}
+            >
+              {t(tab.label)}
+            </MenuItem>
           ))}
-        </ul>
+          {PANEL_TOOLS_TABS.length > 0 && <MenuSeparator />}
+          {tools.map((tool) => (
+            <MenuItem
+              key={tool.id}
+              emphasis
+              icon={<Icon name={tool.icon} size="md" />}
+              onSelect={() => {
+                tool.onClick();
+                setIsToolsOpen(false);
+              }}
+              data-cell-id={tool['data-cell-id']}
+            >
+              {tool.title}
+            </MenuItem>
+          ))}
+        </div>
       </BottomSheet>
     </>
   );

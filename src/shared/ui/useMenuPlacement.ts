@@ -96,8 +96,8 @@ function getContainingBlockBounds(element: HTMLElement, win: Window): Bounds {
  *   so the menu stays anchored to the trigger even when a transformed ancestor
  *   (e.g. Split View panel) becomes the containing block.
  *
- * ponytail: placement only recomputes on open and window resize. Nested scroll
- * containers and anchor mutation between open/close are not tracked.
+ * ponytail: placement recomputes on open, window resize, and trigger resize
+ * (covers anchor hide/show). Nested scroll containers are not tracked.
  */
 export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlacementResult {
   const { isOpen, menuAlign, menuMaxHeight, triggerRef, menuRef } = options;
@@ -127,6 +127,14 @@ export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlace
         maxHeight: Number.MAX_SAFE_INTEGER,
         style: { maxHeight: Number.MAX_SAFE_INTEGER },
       });
+      return;
+    }
+
+    if (!hasLayout(triggerRect)) {
+      setResult((prev) => ({
+        ...prev,
+        style: { ...prev.style, visibility: 'hidden' },
+      }));
       return;
     }
 
@@ -230,9 +238,15 @@ export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlace
     const win = trigger?.ownerDocument?.defaultView ?? window;
     const handleResize = (): void => compute();
     win.addEventListener('resize', handleResize);
+    let observer: ResizeObserver | undefined;
+    if (trigger && typeof win.ResizeObserver === 'function') {
+      observer = new win.ResizeObserver(() => compute());
+      observer.observe(trigger);
+    }
     return () => {
       cancelAnimationFrame(frame);
       win.removeEventListener('resize', handleResize);
+      observer?.disconnect();
     };
   }, [isOpen, compute, triggerRef]);
 

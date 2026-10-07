@@ -5,6 +5,7 @@
   gap: var(--space-1);
   min-height: var(--touch-target);
   border: var(--border-width-hairline) solid transparent;
+  box-shadow: none;
   border-radius: var(--radius-pill);
   font-family: var(--font-family);
   font-weight: var(--font-weight-medium);
@@ -60,6 +61,51 @@
   color: var(--color-muted-foreground);
 }
 
+.chip.status-unknown {
+  background: var(--chip-status-unknown-bg);
+  color: var(--chip-status-unknown-fg);
+}
+
+.chip.status-tracking {
+  background: var(--chip-status-tracking-bg);
+  color: var(--chip-status-tracking-fg);
+}
+
+.chip.status-learning {
+  background: var(--chip-status-learning-bg);
+  color: var(--chip-status-learning-fg);
+}
+
+.chip.status-known {
+  background: var(--chip-status-known-bg);
+  color: var(--chip-status-known-fg);
+}
+
+.chip.status-ignore {
+  background: var(--chip-status-ignore-bg);
+  color: var(--chip-status-ignore-fg);
+}
+
+button.chip.status-unknown:hover {
+  background: color-mix(in srgb, var(--chip-status-unknown-bg), var(--color-text) 8%);
+}
+
+button.chip.status-tracking:hover {
+  background: color-mix(in srgb, var(--chip-status-tracking-bg), var(--color-text) 8%);
+}
+
+button.chip.status-learning:hover {
+  background: color-mix(in srgb, var(--chip-status-learning-bg), var(--color-text) 8%);
+}
+
+button.chip.status-known:hover {
+  background: color-mix(in srgb, var(--chip-status-known-bg), var(--color-text) 8%);
+}
+
+button.chip.status-ignore:hover {
+  background: color-mix(in srgb, var(--chip-status-ignore-bg), var(--color-text) 8%);
+}
+
 /* === Selected state === */
 .selected {
   background: var(--color-primary-subtle);
@@ -68,7 +114,13 @@
 
 /* === Interactive (button) hover/active === */
 button.chip {
+  border-color: transparent;
+  box-shadow: none;
   cursor: pointer;
+}
+
+button.chip.outline {
+  border-color: var(--color-border);
 }
 
 button.chip:hover {

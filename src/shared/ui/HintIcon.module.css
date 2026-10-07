@@ -21,13 +21,14 @@
 }
 
 .hintBtn:hover {
-  color: var(--color-text-accent-strong);
-  background: var(--color-primary-subtle);
+  color: var(--color-text-primary);
+  background: var(--color-surface-hover);
 }
 
 .hintBtn:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
   outline-offset: var(--space-0-5);
+  color: var(--color-primary);
 }
 
 .hintBtn[aria-expanded="true"] {

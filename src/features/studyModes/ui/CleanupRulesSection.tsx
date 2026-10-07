@@ -143,7 +143,9 @@ export function CleanupRulesSection({ setting, onChange }: CleanupRulesSectionPr
       </div>
       <div className={styles.rulesList} role="group" aria-label={t('cleanup.rulesGroup')}>
         {builtins.map(ruleRow)}
-        {customs.length > 0 && <div className={styles.customsDivider}>{t('cleanup.customDivider')}</div>}
+        {customs.length > 0 && (
+          <Text variant="label" color="secondary" as="div" className={styles.customsDivider}>{t('cleanup.customDivider')}</Text>
+        )}
         {customs.map(ruleRow)}
       </div>
 

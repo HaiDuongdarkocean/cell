@@ -18,9 +18,14 @@ describe('Chip', () => {
     expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('aria-pressed is false when not selected', () => {
-    render(<Chip as="button">Inactive</Chip>);
+  it('aria-pressed is false when selected={false}', () => {
+    render(<Chip as="button" selected={false}>Inactive</Chip>);
     expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('omits aria-pressed when selected is not provided', () => {
+    render(<Chip as="button">Action</Chip>);
+    expect(screen.getByRole('button')).not.toHaveAttribute('aria-pressed');
   });
 
   it('renders all variants', () => {
@@ -37,6 +42,15 @@ describe('Chip', () => {
     expect(success.firstChild).toHaveClass('success');
     const { container: error } = render(<Chip as="button" color="error">Error</Chip>);
     expect(error.firstChild).toHaveClass('error');
+  });
+
+  it('renders word-status colorways', () => {
+    const statuses = ['unknown', 'tracking', 'learning', 'known', 'ignore'] as const;
+    for (const status of statuses) {
+      const { container, unmount } = render(<Chip status={status}>{status}</Chip>);
+      expect(container.firstChild).toHaveClass(`status-${status}`);
+      unmount();
+    }
   });
 
   it('renders all sizes', () => {

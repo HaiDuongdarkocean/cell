@@ -231,6 +231,12 @@
   color: var(--color-error);
 }
 
+.secondary {
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-fg);
+  border-color: var(--color-border);
+}
+
 /* Low-emphasis variants */
 .outline,
 .ghost,

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { Card } from '@/shared/ui/Card';
+import { EmptyState } from '@/shared/ui/EmptyState';
 import { Icon } from '@/shared/ui/Icon';
 import { Spinner } from '@/shared/ui/Spinner';
 import { Text } from '@/shared/ui/Text';
@@ -208,15 +209,14 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
     return (
       <>
         {announcer}
-        <div className={styles.empty}>
-          <Icon name="audioWave" size="md" className={styles.iconDim} />
-          <Text variant="body" color="secondary">
-            {t('condensedAudio.list.emptyTitle')}
-          </Text>
-          <Text variant="supporting" color="secondary">
-            {t('condensedAudio.list.emptyHint')}
-          </Text>
-        </div>
+        <EmptyState
+          icon={<Icon name="audioWave" size="md" />}
+          title={t('condensedAudio.list.emptyTitle')}
+          description={t('condensedAudio.list.emptyHint')}
+          size="compact"
+          className={styles.empty}
+          data-cell-id="playlist-empty"
+        />
       </>
     );
   }
@@ -234,7 +234,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
         return (
           <Card
             key={record.id}
-            className={`${styles.itemRow} ${record.status === 'failed' ? styles.itemError : ''}`}
+            className={record.status === 'failed' ? styles.itemError : undefined}
             role="listitem"
           >
             <div className={styles.itemInner}>
@@ -320,7 +320,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
                 )}
                 {(active || record.status === 'missing' || record.status === 'failed') && (
                   <Button
-                    variant="ghost"
+                    variant="errorSubtle"
                     size="md"
                     shape="circle"
                     aria-label={active ? t('condensedAudio.action.cancel') : t('condensedAudio.action.delete')}
@@ -341,7 +341,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
                 )}
                 {record.status === 'ready' && (
                   <Button
-                    variant="ghost"
+                    variant="errorSubtle"
                     size="md"
                     shape="circle"
                     aria-label={t('condensedAudio.action.delete')}

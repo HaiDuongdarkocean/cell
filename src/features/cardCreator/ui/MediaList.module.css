@@ -83,8 +83,8 @@
   min-width: 100%;
   min-height: calc(var(--input-height) + 2 * var(--border-width-hairline));
   padding: var(--input-padding-y) var(--input-padding-x);
-  border: var(--border-width-hairline) dashed var(--color-text);
-  border-radius: var(--radius-md);
+  border: var(--border-width-hairline) dashed var(--color-border);
+  border-radius: var(--radius-lg);
   background: var(--input-bg);
   color: var(--input-placeholder);
   font-size: var(--input-font-size);

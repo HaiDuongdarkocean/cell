@@ -40,12 +40,13 @@
 }
 
 .cueBlockSelected {
-  border-color: var(--color-primary);
   background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
 .cueAdd {
-  border-style: dashed;
+  border: var(--border-width-hairline) dashed var(--color-border);
+  background: transparent;
   color: var(--color-text-secondary);
 }
 

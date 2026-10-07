@@ -1,8 +1,9 @@
-import { useCallback, type ReactElement } from 'react';
+import { useCallback, useRef, useState, type ReactElement } from 'react';
 import { Button } from '@/shared/ui/Button';
 
 import { Icon } from '@/shared/ui/Icon';
 import { FlagIcon } from '@/shared/ui/FlagIcon';
+import { Menu, MenuItem } from '@/shared/ui/Menu';
 import { TokenizeControls } from './TokenizeControls';
 import { PANEL_TABS } from './panelTabs';
 import { t } from '@/shared/i18n';
@@ -19,10 +20,12 @@ export interface UniversalPanelHeaderProps {
   readonly onClose: () => void;
   /** Whether the current page has a video (disables the Media half). */
   readonly hasMedia?: boolean;
-  /** Active language profile for the header profile button. */
-  readonly activeProfile?: { readonly name: string; readonly target?: string } | null;
-  /** Called when the profile button is clicked. */
-  readonly onProfileClick?: () => void;
+  /** Language profiles for the profile switcher menu. */
+  readonly languageProfiles?: readonly { readonly id: string; readonly name: string; readonly target?: string }[];
+  /** Active profile id. */
+  readonly activeProfileId?: string | null;
+  /** Called when user switches active profile. */
+  readonly onProfileChange?: (profileId: string) => void;
   /** Active tab — the header names it (full `panel.tab.*` label) on mobile widths. */
   readonly activeTab?: UniversalPanelTab;
 }
@@ -38,32 +41,64 @@ export function UniversalPanelHeader({
   onToggleTokenize,
   onClose,
   hasMedia = true,
-  activeProfile,
-  onProfileClick,
+  languageProfiles = [],
+  activeProfileId = null,
+  onProfileChange,
   activeTab,
 }: UniversalPanelHeaderProps): ReactElement {
+  const profileTriggerRef = useRef<HTMLButtonElement>(null);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+
   const handleToggle = useCallback((mode: 'text' | 'media'): void => {
     onToggleTokenize(mode === 'text' ? 'enabled' : 'subtitleEnabled');
   }, [onToggleTokenize]);
 
+  const activeProfile = languageProfiles.find((p) => p.id === activeProfileId);
   const profileName = activeProfile?.name ?? t('panel.profile.select');
   const activeTabLabel = activeTab ? PANEL_TABS.find((tab) => tab.key === activeTab)?.label : undefined;
 
   return (
     <header className={styles.header} data-cell-id="universal-panel-header">
-      {activeProfile && onProfileClick && (
-        <Button
-          size="md"
-          variant="ghost"
-          shape="circle"
-          className={styles.profileButton}
-          onClick={onProfileClick}
-          aria-label={t('panel.profile.switch', [profileName])}
-          title={profileName}
-          data-cell-id="universal-panel-profile-button"
-        >
-          <FlagIcon lang={activeProfile.target ?? ''} title={profileName} />
-        </Button>
+      {activeProfile && onProfileChange && (
+        <>
+          <Button
+            ref={profileTriggerRef}
+            size="md"
+            variant="ghost"
+            shape="circle"
+            className={styles.profileButton}
+            onClick={() => setIsProfileMenuOpen(true)}
+            aria-label={t('panel.profile.switch', [profileName])}
+            aria-haspopup="menu"
+            aria-expanded={isProfileMenuOpen}
+            title={profileName}
+            data-cell-id="universal-panel-profile-button"
+          >
+            <FlagIcon lang={activeProfile.target ?? ''} title={profileName} />
+          </Button>
+          <Menu
+            open={isProfileMenuOpen}
+            onClose={() => setIsProfileMenuOpen(false)}
+            triggerRef={profileTriggerRef}
+            ariaLabel={t('panel.profileDialog.title')}
+            data-cell-id="universal-panel-profile-menu"
+          >
+            {languageProfiles.map((profile) => (
+              <MenuItem
+                key={profile.id}
+                radio
+                selected={profile.id === activeProfileId}
+                onSelect={() => {
+                  onProfileChange(profile.id);
+                  setIsProfileMenuOpen(false);
+                }}
+                data-cell-id={`universal-panel-profile-option-${profile.id}`}
+              >
+                {profile.name}
+              </MenuItem>
+            ))}
+          </Menu>
+        </>
       )}
 
       {activeTabLabel && (
