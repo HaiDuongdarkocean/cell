@@ -85,6 +85,28 @@ describe('createVideoTokenMap', () => {
     expect(map.get(0)!.tokens.find((t) => t.term === 'hello')?.reading).toBeUndefined();
   });
 
+  it('resolveTerms only touches cues containing the given terms', () => {
+    const map = createVideoTokenMap('en');
+    const listener = jest.fn();
+    map.prepare(0, 'Hello world');
+    map.prepare(1, 'Completely unrelated');
+    map.onUpdate(listener);
+    listener.mockClear();
+
+    map.resolveTerms(
+      new Set(['hello']),
+      new Map<string, WordStatus>([['hello', 'known']]),
+      new Map<string, TokenFrequencyBand>(),
+      new Map([['hello', 'həˈloʊ']]),
+    );
+
+    expect(map.get(0)!.tokens.find((t) => t.term === 'hello')?.status).toBe('known');
+    expect(map.get(0)!.tokens.find((t) => t.term === 'hello')?.reading).toBe('həˈloʊ');
+    expect(listener).toHaveBeenCalledWith(0);
+    expect(listener).not.toHaveBeenCalledWith(1);
+    expect(map.get(1)!.tokens.every((t) => t.status === 'unknown')).toBe(true);
+  });
+
   it('clears all cues and listeners still work after clear', () => {
     const map = createVideoTokenMap('en');
     map.prepare(0, 'Hello world');

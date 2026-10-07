@@ -19,6 +19,12 @@ export interface VideoTokenMap {
     frequencies: ReadonlyMap<string, TokenFrequencyBand>,
     readings?: ReadonlyMap<string, string> | null,
   ) => void;
+  readonly resolveTerms: (
+    terms: ReadonlySet<string>,
+    statuses: ReadonlyMap<string, WordStatus>,
+    frequencies: ReadonlyMap<string, TokenFrequencyBand>,
+    readings?: ReadonlyMap<string, string> | null,
+  ) => void;
   readonly applyStatus: (term: string, status: WordStatus) => boolean;
   readonly terms: () => ReadonlySet<string>;
   readonly onUpdate: (listener: (cueIndex: number) => void) => () => void;
@@ -73,6 +79,66 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
     }
   }
 
+  function resolveCue(
+    cueIndex: number,
+    statuses: ReadonlyMap<string, WordStatus>,
+    frequencies: ReadonlyMap<string, TokenFrequencyBand>,
+    readings?: ReadonlyMap<string, string> | null,
+  ): void {
+    const cue = cues.get(cueIndex);
+    if (!cue) return;
+
+    let changed = false;
+    const tokens = cue.tokens.map((token) => {
+      if (token.isSeparator) return token;
+      const status = statuses.get(token.term) ?? termStatusCache.get(token.term) ?? 'unknown';
+      const frequencyBand = frequencies.get(token.term) ?? termFrequencyCache.get(token.term) ?? 'none';
+      // readings === undefined → leg skipped/failed: keep the existing value.
+      // A provided map is authoritative only for terms it covers (the caller
+      // marks covered-but-empty terms with '') — chunked resolve passes must
+      // not wipe readings fetched by an earlier chunk.
+      let reading = token.reading;
+      if (readings?.has(token.term)) {
+        reading = readings.get(token.term) || undefined;
+        if (reading) termReadingCache.set(token.term, reading);
+        else termReadingCache.delete(token.term);
+      }
+      if (status !== token.status || frequencyBand !== token.frequencyBand || reading !== token.reading) {
+        changed = true;
+      }
+      if (!token.isSeparator) {
+        termStatusCache.set(token.term, status);
+        termFrequencyCache.set(token.term, frequencyBand);
+        resolvedTerms.add(token.term);
+      }
+      return { ...token, status, frequencyBand, reading };
+    });
+    const allResolved = tokens.every(
+      (token) => token.isSeparator || resolvedTerms.has(token.term),
+    );
+    cues.set(cueIndex, { ...cue, tokens, metadataResolved: allResolved });
+    if (changed) emit(cueIndex);
+  }
+
+  function resolveTermsInCues(
+    terms: ReadonlySet<string>,
+    statuses: ReadonlyMap<string, WordStatus>,
+    frequencies: ReadonlyMap<string, TokenFrequencyBand>,
+    readings?: ReadonlyMap<string, string> | null,
+  ): void {
+    const affected = new Set<number>();
+    for (const term of terms) {
+      const cueSet = termToCues.get(term);
+      if (!cueSet) continue;
+      for (const cueIndex of cueSet) {
+        affected.add(cueIndex);
+      }
+    }
+    for (const cueIndex of affected) {
+      resolveCue(cueIndex, statuses, frequencies, readings);
+    }
+  }
+
   return {
     langCode,
 
@@ -105,40 +171,10 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
       frequencies: ReadonlyMap<string, TokenFrequencyBand>,
       readings?: ReadonlyMap<string, string> | null,
     ): void {
-      const cue = cues.get(cueIndex);
-      if (!cue) return;
-
-      let changed = false;
-      const tokens = cue.tokens.map((token) => {
-        if (token.isSeparator) return token;
-        const status = statuses.get(token.term) ?? termStatusCache.get(token.term) ?? 'unknown';
-        const frequencyBand = frequencies.get(token.term) ?? termFrequencyCache.get(token.term) ?? 'none';
-        // readings === undefined → leg skipped/failed: keep the existing value.
-        // A provided map is authoritative only for terms it covers (the caller
-        // marks covered-but-empty terms with '') — chunked resolve passes must
-        // not wipe readings fetched by an earlier chunk.
-        let reading = token.reading;
-        if (readings?.has(token.term)) {
-          reading = readings.get(token.term) || undefined;
-          if (reading) termReadingCache.set(token.term, reading);
-          else termReadingCache.delete(token.term);
-        }
-        if (status !== token.status || frequencyBand !== token.frequencyBand || reading !== token.reading) {
-          changed = true;
-        }
-        if (!token.isSeparator) {
-          termStatusCache.set(token.term, status);
-          termFrequencyCache.set(token.term, frequencyBand);
-          resolvedTerms.add(token.term);
-        }
-        return { ...token, status, frequencyBand, reading };
-      });
-      const allResolved = tokens.every(
-        (token) => token.isSeparator || resolvedTerms.has(token.term),
-      );
-      cues.set(cueIndex, { ...cue, tokens, metadataResolved: allResolved });
-      if (changed) emit(cueIndex);
+      resolveCue(cueIndex, statuses, frequencies, readings);
     },
+
+    resolveTerms: resolveTermsInCues,
 
     applyStatus(term: string, status: WordStatus): boolean {
       termStatusCache.set(term, status);

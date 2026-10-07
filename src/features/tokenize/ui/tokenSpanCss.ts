@@ -140,8 +140,14 @@ ${buildVariables()}
   --cell-token-guard: currentColor;
 }
 
-.js-cell-token--word {
-  /* word-level wrapper; children inherit alignment */
+/* Reading caps need real layout space: inline-block + margin-top grows the
+   line box, so caps on wrapped lines never overlap the line above. All word
+   tokens reserve the same headroom — lines stay uniform while readings resolve
+   asynchronously. Margin (not padding) keeps frequency-pill backgrounds off the
+   reserved area. */
+html body .js-cell-token--word:not(.js-cell-token--reading-off) {
+  display: inline-block !important;
+  margin-top: 0.85em !important;
 }
 
 .js-cell-token-word {
@@ -153,23 +159,22 @@ ${buildVariables()}
   position: relative !important;
 }
 
-/* Ruby cap (spec reading-annotation): the reading rides above the token as a
-   pseudo-element, so it never widens the line, never wraps, and stays out of
-   copy/selection. Absent/empty data-reading produces no artifact. */
+/* Ruby cap (spec reading-annotation): the reading rides above the token inside
+   the headroom the word token reserves — never overlaps the line above, never
+   enters copy/selection. Absent/empty data-reading produces no artifact. */
 html body .js-cell-token:not(.js-cell-token--reading-off) .js-cell-token-word[data-reading]::before {
   content: attr(data-reading);
   position: absolute;
   left: 50%;
   bottom: 100%;
   transform: translateX(-50%);
-  font-size: 0.55em;
-  line-height: 1;
+  font-size: 0.68em;
+  line-height: 1.15;
   white-space: nowrap;
   font-style: normal;
   font-weight: 500;
-  letter-spacing: -0.01em;
   color: inherit;
-  opacity: 0.72;
+  opacity: 0.92;
   text-shadow: var(--shadow-sm);
   pointer-events: none;
 }
@@ -356,6 +361,13 @@ ${buildVariables(':host')}
   --cell-token-guard: currentColor;
 }
 
+/* Same reserved headroom as the light-DOM builder — see the comment above
+   the ::before rule. */
+.js-cell-token--word:not(.js-cell-token--reading-off) {
+  display: inline-block !important;
+  margin-top: 0.85em !important;
+}
+
 .js-cell-token-word {
   display: inline !important;
   background: transparent !important;
@@ -365,21 +377,21 @@ ${buildVariables(':host')}
 }
 
 /* Ruby cap (spec reading-annotation) — pseudo-element reads data-reading from
-   the inner word span; no layout impact, not selectable, not copied. */
+   the inner word span and paints inside the reserved headroom; not selectable,
+   not copied, never overlaps the line above. */
 .js-cell-token:not(.js-cell-token--reading-off) .js-cell-token-word[data-reading]::before {
   content: attr(data-reading);
   position: absolute;
   left: 50%;
   bottom: 100%;
   transform: translateX(-50%);
-  font-size: 0.55em;
-  line-height: 1;
+  font-size: 0.68em;
+  line-height: 1.15;
   white-space: nowrap;
   font-style: normal;
   font-weight: 500;
-  letter-spacing: -0.01em;
   color: inherit;
-  opacity: 0.72;
+  opacity: 0.92;
   text-shadow: var(--shadow-sm);
   pointer-events: none;
 }

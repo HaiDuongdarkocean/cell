@@ -135,9 +135,7 @@ export function createVideoTokenPreloader(
         resolvedTerms.add(term);
       }
 
-      for (let i = 0; i < cues.length; i++) {
-        map.resolveMetadata(i, statuses, frequencies, readings);
-      }
+      map.resolveTerms(new Set(terms), statuses, frequencies, readings);
     } catch (err) {
       for (const term of terms) {
         if (!resolvedTerms.has(term)) {
