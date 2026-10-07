@@ -136,16 +136,17 @@ async function searchCommonsAudio(
   const results = data.query?.search ?? [];
   if (results.length === 0) return [];
 
+  const infos = await Promise.all(
+    results.slice(0, 10).map((result) => fetchCommonsFileInfo(result.title)),
+  );
   const items: AudioItem[] = [];
-  let idx = 0;
-  for (const result of results.slice(0, 10)) {
-    const info = await fetchCommonsFileInfo(result.title);
+  for (const info of infos) {
     if (!info) continue;
     if (!validate(info.title, info.user)) continue;
 
     const accentId = detectAccentFromFilename(info.title);
     items.push({
-      id: `${sourcePrefix}-${accentId ?? 'XX'}-${idx}`,
+      id: `${sourcePrefix}-${accentId ?? 'XX'}-${items.length}`,
       kind: 'word',
       source: 'community',
       label: labelFn(info.title, info.user),
@@ -154,7 +155,6 @@ async function searchCommonsAudio(
       url: info.url,
       defaultSelected: false,
     });
-    idx += 1;
   }
   return items;
 }

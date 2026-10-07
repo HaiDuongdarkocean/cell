@@ -3578,6 +3578,24 @@
         "spa-navigation"
       ],
       "trigger": "Live verification shows zero Cell elements (no #cell-subtitle-root, no universal-panel host) on a page where the extension previously mounted — page has <video> + <track> but nothing injects"
+    },
+    {
+      "type": "experience",
+      "id": "await-in-loop-serializes-independent-io",
+      "title": "await in a loop over independent I/O multiplies latency by N — batch or Promise.all",
+      "category": [
+        "async",
+        "data"
+      ],
+      "tags": [
+        "performance",
+        "promise-all",
+        "idb",
+        "transaction",
+        "latency",
+        "n-plus-1",
+        "batch"
+      ]
     }
   ]
 }

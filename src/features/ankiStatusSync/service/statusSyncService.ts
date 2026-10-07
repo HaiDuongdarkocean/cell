@@ -16,7 +16,8 @@ import {
   htmlToText,
 } from '@/features/ankiImport';
 import type { AnkiConnectInvoker } from '@/features/ankiImport';
-import { normalizeTerm, setWordStatusFromSync } from '@/features/dictionary';
+import { normalizeTerm, setWordStatusFromSync, setWordStatusesFromSync } from '@/features/dictionary';
+import type { SyncStatusUpdate } from '@/features/dictionary';
 import { getSrsDB, SRS_STORES } from '@/features/srs';
 import { logger } from '@/shared/lib/logger';
 import {
@@ -92,7 +93,7 @@ async function activeLangCode(settings: Settings | undefined): Promise<string | 
   return active?.target ?? null;
 }
 
-async function getTermFromCard(card: CardsInfoRow): Promise<string | null> {
+function getTermFromCard(card: CardsInfoRow): string | null {
   const fields = card.fields;
   if (fields) {
     const first = Object.values(fields).sort((a, b) => a.order - b.order)[0];
@@ -259,10 +260,20 @@ async function flushWriteBackQueue(
   if (tasks.length === 0) return 0;
   let flushed = 0;
   const todayIndex = await resolveTodayIndex(invoke);
+  let cardsById: Map<number, CardsInfoRow> | null;
+  try {
+    const infos = (await invoke('cardsInfo', {
+      cards: tasks.map((task) => task.cardId),
+    })) as CardsInfoRow[];
+    cardsById = new Map((infos ?? []).map((info) => [info.cardId, info]));
+  } catch {
+    cardsById = null;
+  }
   for (const task of tasks) {
     try {
-      const infos = (await invoke('cardsInfo', { cards: [task.cardId] })) as CardsInfoRow[];
-      const card = infos?.[0];
+      const card = cardsById
+        ? cardsById.get(task.cardId)
+        : ((await invoke('cardsInfo', { cards: [task.cardId] })) as CardsInfoRow[])?.[0];
       if (!card) {
         await dequeueWriteBack(task.cardId);
         await appendWriteBackLog({
@@ -370,7 +381,7 @@ async function changedCardsViaAddon(
     const infos = (await invoke('cardsInfo', { cards: ids })) as CardsInfoRow[];
     const cards: ChangedCard[] = [];
     for (const info of infos ?? []) {
-      cards.push({ ...info, term: await getTermFromCard(info) });
+      cards.push({ ...info, term: getTermFromCard(info) });
     }
     return { cards, nextCursor: Math.max(state.addonCursor, parsed.cursor) };
   } catch {
@@ -392,7 +403,7 @@ async function changedCardsViaPoll(
     const infos = (await invoke('cardsInfo', { cards: chunk })) as CardsInfoRow[];
     for (const info of infos ?? []) {
       if (typeof info.mod === 'number' && info.mod <= lastSyncSec) continue;
-      changed.push({ ...info, term: await getTermFromCard(info) });
+      changed.push({ ...info, term: getTermFromCard(info) });
     }
   }
   return changed;
@@ -477,6 +488,7 @@ export async function runAnkiStatusSync(
   if (links.length > 0) await putLinks(links);
 
   let changed = 0;
+  const statusUpdates: SyncStatusUpdate[] = [];
   for (const [term, agg] of byTerm) {
     const merged = mergeOutcomes([...agg.outcomes, srsMap.get(term) ?? 'skip']);
     const status = outcomeToStatus(merged);
@@ -486,16 +498,16 @@ export async function runAnkiStatusSync(
       logger.warn('anki-status-sync: clock skew clamped', { term });
       sourceAt = now;
     }
-    try {
-      const wrote = await setWordStatusFromSync(langCode, term, status, {
-        source: 'anki',
-        sourceAt,
-      });
-      if (wrote) changed += 1;
-    } catch (err) {
-      errors += 1;
-      logger.warn('anki-status-sync: status write failed', { term, error: errMessage(err) });
-    }
+    statusUpdates.push({ term, status, sourceAt });
+  }
+  try {
+    changed = (await setWordStatusesFromSync(langCode, statusUpdates, { source: 'anki' })).written;
+  } catch (err) {
+    errors += 1;
+    logger.warn('anki-status-sync: status write failed', {
+      terms: statusUpdates.length,
+      error: errMessage(err),
+    });
   }
 
   let writeBacksFlushed = 0;
@@ -541,18 +553,18 @@ export async function seedStatusesFromSrs(): Promise<void> {
     if (!langCode) return;
     const map = await srsOutcomesByTerm(langCode);
     const now = Date.now();
-    for (const [term, outcome] of map) {
-      try {
-        await setWordStatusFromSync(langCode, term, outcome, {
-          source: 'srs',
-          sourceAt: now,
-        });
-      } catch (err) {
-        logger.warn('anki-status-sync: srs seed write failed', {
-          term,
-          error: errMessage(err),
-        });
-      }
+    const updates: SyncStatusUpdate[] = [...map.entries()].map(([term, outcome]) => ({
+      term,
+      status: outcome,
+      sourceAt: now,
+    }));
+    try {
+      await setWordStatusesFromSync(langCode, updates, { source: 'srs' });
+    } catch (err) {
+      logger.warn('anki-status-sync: srs seed write failed', {
+        terms: updates.length,
+        error: errMessage(err),
+      });
     }
   } catch (err) {
     logger.warn('anki-status-sync: srs seed failed', { error: errMessage(err) });

@@ -6,6 +6,7 @@ import {
   getWordStatus,
   setWordStatus,
   setWordStatusPos,
+  setWordStatusesFromSync,
   cycleWordStatus,
   deleteWordStatus,
   getWordStatuses,
@@ -166,6 +167,55 @@ describe('getTermsByStatus', () => {
   it('returns empty for a status with no terms', async () => {
     const ignore = await getTermsByStatus('en', 'ignore');
     expect(ignore).toEqual([]);
+  });
+});
+
+describe('setWordStatusesFromSync (batch sync write)', () => {
+  it('writes many terms in one call', async () => {
+    const res = await setWordStatusesFromSync(
+      'en',
+      [
+        { term: 'a', status: 'known', sourceAt: 100 },
+        { term: 'b', status: 'learning', sourceAt: 100 },
+      ],
+      { source: 'anki' },
+    );
+    expect(res.written).toBe(2);
+    expect(await getWordStatus('en', 'a')).toBe('known');
+    expect(await getWordStatus('en', 'b')).toBe('learning');
+  });
+
+  it('returns written: 0 for empty updates', async () => {
+    const res = await setWordStatusesFromSync('en', [], { source: 'anki' });
+    expect(res.written).toBe(0);
+  });
+
+  it('never downgrades a stored known via non-user source', async () => {
+    await setWordStatus('en', 'keep', 'known', { source: 'user', sourceAt: 1000 });
+    const res = await setWordStatusesFromSync(
+      'en',
+      [{ term: 'keep', status: 'tracking', sourceAt: 2000 }],
+      { source: 'anki' },
+    );
+    expect(res.written).toBe(0);
+    expect(await getWordStatus('en', 'keep')).toBe('known');
+  });
+
+  it('newer sourceAt overwrites; older skips — same tx batch', async () => {
+    await setWordStatusesFromSync('en', [{ term: 'mix', status: 'tracking', sourceAt: 500 }], {
+      source: 'anki',
+    });
+    const res = await setWordStatusesFromSync(
+      'en',
+      [
+        { term: 'mix', status: 'known', sourceAt: 400 }, // older → skip
+        { term: 'mix2', status: 'known', sourceAt: 600 }, // new term → write
+      ],
+      { source: 'anki' },
+    );
+    expect(res.written).toBe(1);
+    expect(await getWordStatus('en', 'mix')).toBe('tracking');
+    expect(await getWordStatus('en', 'mix2')).toBe('known');
   });
 });
 

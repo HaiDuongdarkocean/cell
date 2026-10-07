@@ -252,6 +252,74 @@ export async function setWordStatusFromSync(
   return true;
 }
 
+export interface SyncStatusUpdate {
+  readonly term: string;
+  readonly status: Exclude<WordStatus, 'unknown'>;
+  readonly sourceAt: number;
+}
+
+/** Batch variant of setWordStatusFromSync for sync passes that write many
+ *  terms at once — one transaction + pipelined gets instead of N sequential
+ *  transactions. Arbitration (decideStatusWrite) is applied per term exactly
+ *  as in the single-write path. Transaction-level failure (quota, abort)
+ *  rejects the whole batch — matching the per-term outcome under a
+ *  persistent failure mode, where every term would fail anyway. */
+export async function setWordStatusesFromSync(
+  langCode: string,
+  updates: readonly SyncStatusUpdate[],
+  provenance: { source: Exclude<WordStatusSource, 'user'> },
+): Promise<{ written: number }> {
+  if (updates.length === 0) return { written: 0 };
+  const db = await getDB(langCode);
+  await ensureSyncRuntime();
+  const capture = isCaptureEnabled();
+  const scope = scopeForTarget(targetOf(langCode));
+  const now = Date.now();
+  const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
+  try {
+    const store = tx.objectStore(STORES.WORD_STATUS);
+    const trashStore = tx.objectStore(STORES.WORD_TRASH);
+    const existing = await Promise.all(
+      updates.map(
+        (u) =>
+          new Promise<WordStatusEntry | undefined>((resolve, reject) => {
+            const req = store.get(u.term);
+            req.onsuccess = () => resolve(req.result as WordStatusEntry | undefined);
+            req.onerror = () => reject(req.error);
+          }),
+      ),
+    );
+    let written = 0;
+    for (const [i, u] of updates.entries()) {
+      const decision = decideStatusWrite(existing[i], {
+        status: u.status,
+        source: provenance.source,
+        sourceAt: u.sourceAt,
+      });
+      if (decision === 'skip') continue;
+      store.put({
+        term: u.term,
+        status: u.status,
+        updatedAt: now,
+        source: provenance.source,
+        sourceAt: u.sourceAt,
+      });
+      trashStore.delete(u.term);
+      if (capture) {
+        await captureChange(store, { scope, dataClass: 'wordStatus', key: `word:${u.term}`, op: 'put' });
+      }
+      written += 1;
+    }
+    await awaitTx(tx);
+    return { written };
+  } catch (err) {
+    if (isQuotaError(err)) {
+      throw new WordStatusQuotaError(t('dict.error.statusQuota'));
+    }
+    throw err;
+  }
+}
+
 /**
  * Cycle the status for a term: get current → next → set.
  * On quota error: returns the next status (UI updates) but throws

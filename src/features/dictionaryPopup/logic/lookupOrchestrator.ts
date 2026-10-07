@@ -283,9 +283,12 @@ export async function createDictionaryProbeAsync(
   const terms = new Set<string>();
 
   // Load all dictionary terms. For CEDICT this is ~120k entries.
-  for (const r of dictionaryResources) {
-    if (r.id === undefined) continue;
-    const entries = await findDictionaryByResource(langCode, r.id);
+  const entryLists = await Promise.all(
+    dictionaryResources.map((r) =>
+      r.id === undefined ? Promise.resolve([]) : findDictionaryByResource(langCode, r.id),
+    ),
+  );
+  for (const entries of entryLists) {
     for (const e of entries) {
       terms.add(e.term.trim().toLowerCase());
     }

@@ -61,13 +61,19 @@ export async function fetchMissingMedia(
 ): Promise<Record<string, MediaFile>> {
   const urls = mediaUrlsToFetch(plan);
   if (urls.length === 0) return {};
+  const fetched = await Promise.all(
+    urls.map(async (url) => {
+      try {
+        return [url, await fetchMediaFile(url, mediaKindMap[kind])] as const;
+      } catch {
+        warn(t(mediaFetchToastKey[kind], [url]));
+        return null;
+      }
+    }),
+  );
   const result: Record<string, MediaFile> = {};
-  for (const url of urls) {
-    try {
-      result[url] = await fetchMediaFile(url, mediaKindMap[kind]);
-    } catch {
-      warn(t(mediaFetchToastKey[kind], [url]));
-    }
+  for (const entry of fetched) {
+    if (entry) result[entry[0]] = entry[1];
   }
   return result;
 }
@@ -77,15 +83,17 @@ export async function fetchMediaList(
   kind: MediaListKind,
   warn: (message: string) => void,
 ): Promise<MediaFile[]> {
-  const fetched: MediaFile[] = [];
-  for (const url of urls) {
-    try {
-      fetched.push(await fetchMediaFile(url, mediaKindMap[kind]));
-    } catch {
-      warn(t(mediaFetchToastKey[kind], [url]));
-    }
-  }
-  return fetched;
+  const fetched = await Promise.all(
+    urls.map(async (url) => {
+      try {
+        return await fetchMediaFile(url, mediaKindMap[kind]);
+      } catch {
+        warn(t(mediaFetchToastKey[kind], [url]));
+        return null;
+      }
+    }),
+  );
+  return fetched.filter((f): f is MediaFile => f !== null);
 }
 
 async function preloadSelectedItems(

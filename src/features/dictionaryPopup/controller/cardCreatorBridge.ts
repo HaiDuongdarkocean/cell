@@ -335,11 +335,12 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
         } catch { /* non-fatal */ }
         chip.dismiss();
         if (recorded) return;
-        for (const url of prefill.sentenceAudioUrls ?? []) {
-          try {
-            const file = await fetchMediaFile(url, 'audio');
-            cardCreatorMount?.addMediaFiles('sentenceAudios', [file]);
-          } catch { /* non-fatal */ }
+        const audioUrls = prefill.sentenceAudioUrls ?? [];
+        const audioFiles = await Promise.all(
+          audioUrls.map((url) => fetchMediaFile(url, 'audio').catch(() => null)),
+        );
+        for (const file of audioFiles) {
+          if (file) cardCreatorMount?.addMediaFiles('sentenceAudios', [file]);
         }
         if ((prefill.sentenceAudioUrls ?? []).length === 0 && prefill.contextSentence) {
           try {

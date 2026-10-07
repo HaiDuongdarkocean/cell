@@ -77,11 +77,13 @@ export function useVideoLibrary(deps: VideoLibraryDeps): VideoLibrary {
       dirHandle: FileSystemDirectoryHandle | null,
       subtitleHandles?: ReadonlyMap<string, FileSystemFileHandle>,
     ): Promise<void> => {
-      for (const [filename, file] of subtitles) {
-        const subRecord = buildSubtitleRecord(file, subtitleHandles?.get(filename));
-        subRecord.id = filename;
-        await persistSubtitleRecord(subRecord);
-      }
+      await Promise.all(
+        [...subtitles].map(async ([filename, file]) => {
+          const subRecord = buildSubtitleRecord(file, subtitleHandles?.get(filename));
+          subRecord.id = filename;
+          await persistSubtitleRecord(subRecord);
+        }),
+      );
 
       if (videos.length > 0) {
         const matched = matchVideosWithSubtitles(
@@ -90,13 +92,15 @@ export function useVideoLibrary(deps: VideoLibraryDeps): VideoLibrary {
           'en',
           'vi',
         );
-        for (const { video, subtitles: subs } of matched) {
-          const record = buildVideoRecord(video.file);
-          record.fileHandle = video.handle;
-          if (dirHandle) record.dirHandle = dirHandle;
-          record.hasSubtitle = subs.target !== null;
-          await persistVideoRecord(record);
-        }
+        await Promise.all(
+          matched.map(async ({ video, subtitles: subs }) => {
+            const record = buildVideoRecord(video.file);
+            record.fileHandle = video.handle;
+            if (dirHandle) record.dirHandle = dirHandle;
+            record.hasSubtitle = subs.target !== null;
+            await persistVideoRecord(record);
+          }),
+        );
       }
 
       const { videos: allVideos, subtitles: allSubs } = await refreshLibrary();

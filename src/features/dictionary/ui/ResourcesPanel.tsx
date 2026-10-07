@@ -612,6 +612,7 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     setJobs((prev) => prev.filter((j) => j.status !== 'error'));
     const seen = new Set<string>();
 
+    const queueable: { file: File; jobId: string }[] = [];
     for (const file of files) {
       const jobId = makeJobId();
       const base: ImportJob = {
@@ -640,31 +641,35 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
           ? t('resources.error.tooLarge', [file.name, formatBytes(file.size)])
           : null;
       setJobs((prev) => [...prev, syncError != null ? { ...base, status: 'error', error: syncError } : base]);
-      if (syncError != null) continue;
-
-      try {
-        const detected = await detectComponents(file.name, await readFileHead(file));
-        patchJob(jobId, { detectedComponents: detected, selectedComponents: detected });
-
-        const signature = await computeSignature(file);
-        const duplicateInFlight = jobsRef.current.some(
-          (j) => j.jobId !== jobId && j.signature !== '' && j.signature === signature
-            && (j.status === 'queued' || isRunningJob(j)),
-        );
-        const duplicateRegistered = registryJobs.some(
-          (j) => j.kind === 'resource-import' && !isTerminalJob(j) && signatureOf(j) === signature,
-        );
-        if (duplicateInFlight || duplicateRegistered || seen.has(signature)) {
-          patchJob(jobId, { signature, status: 'skipped' });
-          continue;
-        }
-        seen.add(signature);
-        patchJob(jobId, { signature });
-        pump();
-      } catch (e) {
-        patchJob(jobId, { status: 'error', error: t('resources.error.detect', [file.name, String(e)]) });
-      }
+      if (syncError == null) queueable.push({ file, jobId });
     }
+
+    await Promise.all(
+      queueable.map(async ({ file, jobId }) => {
+        try {
+          const detected = await detectComponents(file.name, await readFileHead(file));
+          patchJob(jobId, { detectedComponents: detected, selectedComponents: detected });
+
+          const signature = await computeSignature(file);
+          const duplicateInFlight = jobsRef.current.some(
+            (j) => j.jobId !== jobId && j.signature !== '' && j.signature === signature
+              && (j.status === 'queued' || isRunningJob(j)),
+          );
+          const duplicateRegistered = registryJobs.some(
+            (j) => j.kind === 'resource-import' && !isTerminalJob(j) && signatureOf(j) === signature,
+          );
+          if (duplicateInFlight || duplicateRegistered || seen.has(signature)) {
+            patchJob(jobId, { signature, status: 'skipped' });
+            return;
+          }
+          seen.add(signature);
+          patchJob(jobId, { signature });
+          pump();
+        } catch (e) {
+          patchJob(jobId, { status: 'error', error: t('resources.error.detect', [file.name, String(e)]) });
+        }
+      }),
+    );
   }, [langCode, registryJobs, patchJob, pump, setJobs]);
 
   const resolveDuplicate = useCallback((jobId: string, choice: DuplicateDecision): void => {

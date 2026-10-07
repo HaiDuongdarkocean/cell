@@ -1,0 +1,22 @@
+{
+  "id": "await-in-loop-serializes-independent-io",
+  "title": "`await` inside a loop over independent I/O multiplies latency by N — batch the API call or Promise.all the fetches",
+  "category": ["async", "data"],
+  "tags": ["performance", "promise-all", "idb", "transaction", "latency", "n-plus-1", "batch"],
+  "trigger": "Perf audit or a data path that scales with item count (N cards, N terms, N files, N resources) and feels slow under real payloads",
+  "principle": "Sequential `await` per item turns roundtrip cost into N×RTT (or N transactions). If the items are independent, collapse them: one batched API call (multi-id request), Promise.all over fetches, or a single-IDB-transaction writer. Preserve ordering/failure semantics explicitly — parallelize the I/O, keep validation sequential. For pipelines, prefetch depth-1 so the next fetch overlaps the current import. Inverting a filter condition during such a rewrite is the classic regression — re-check skip-vs-keep polarity before committing.",
+  "cases": [
+    {
+      "context": "Anki status write-back queue called cardsInfo per card and setWordStatusFromSync per term — hundreds of serial RTTs + one IDB tx per term on every sync cycle",
+      "bad": "for (const t of queue) { const info = await cardsInfo(t.cardId); ... } for (const u of updates) await setWordStatusFromSync(...)",
+      "good": "const infos = await cardsInfo(allIds) (per-card fallback on failure) → collect updates → await setWordStatusesFromSync(lang, updates) — one tx, one broadcast"
+    },
+    {
+      "context": "Commons audio search fetched file info for ≤10 titles serially — user waits RTT×10 for the audio list",
+      "bad": "for (const r of results.slice(0,10)) items.push(await fetchCommonsFileInfo(r.title))",
+      "good": "const infos = await Promise.all(results.slice(0,10).map(r => fetchCommonsFileInfo(r.title))); then validate/build sequentially over resolved infos"
+    }
+  ],
+  "applyFor": ["sync write-back paths", "per-term IDB writes", "metadata prefetch lists (audio/images/media)", "multi-resource probes", "file import loops", "persistence loops in hooks"],
+  "source": { "date": "2026-10-06" }
+}

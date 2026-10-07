@@ -296,11 +296,14 @@ class DictResourceLocalSource extends IdbLocalSource {
     const rows = (await idbRequest(
       db.transaction([STORES.RESOURCE], 'readonly').objectStore(STORES.RESOURCE).getAll(),
     )) as ResourceInfo[];
-    for (const row of rows) {
-      if (row.installationFinished || !row.contentHash || row.signature !== row.contentHash) {
-        continue;
-      }
-      const blob = await ctx.fetchBlob(row.contentHash);
+    const pendingRows = rows.filter(
+      (row) => !row.installationFinished && row.contentHash && row.signature === row.contentHash,
+    );
+    let inflight: Promise<Blob | null> | undefined;
+    for (let i = 0; i < pendingRows.length; i++) {
+      const row = pendingRows[i]!;
+      const blob = await (inflight ?? ctx.fetchBlob(row.contentHash!));
+      inflight = undefined;
       if (!blob) {
         logger.warn('dict sync: resource blob unavailable, deferring import', {
           resourceId: row.id,
@@ -308,6 +311,8 @@ class DictResourceLocalSource extends IdbLocalSource {
         });
         continue;
       }
+      const next = pendingRows[i + 1];
+      if (next?.contentHash) inflight = ctx.fetchBlob(next.contentHash);
       await this.importResourceBlob(db, row, blob);
     }
   }
