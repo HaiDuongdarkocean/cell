@@ -31,6 +31,7 @@ export { Progress } from './Progress';
 export { Radio } from './Radio';
 export { RadioGroup } from './RadioGroup';
 export { SearchField } from './SearchField';
+export { SelectionBar, type SelectionBarProps } from './SelectionBar';
 export { Navigation, type NavigationProps, type NavigationOrientation } from './Navigation';
 export { Sidebar, type SidebarProps } from './Sidebar';
 export { Select } from './Select';

@@ -1,0 +1,59 @@
+.bar {
+  position: sticky;
+  bottom: var(--space-3);
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--color-surface-popover);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(var(--space-2));
+  pointer-events: none;
+  transition:
+    opacity var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out),
+    visibility 0s linear var(--duration-normal);
+}
+
+.bar[data-open] {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition:
+    opacity var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out),
+    visibility 0s;
+}
+
+.label {
+  flex: 0 0 auto;
+  padding-inline: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.actions {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.actions > * {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    transition: visibility 0s;
+  }
+}

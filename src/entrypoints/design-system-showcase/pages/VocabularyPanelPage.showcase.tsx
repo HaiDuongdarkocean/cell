@@ -4,13 +4,16 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import {
   getAllWordStatuses,
   setWordStatus,
+  setWordStatuses,
   cycleWordStatus,
   deleteWordStatus,
 } from '@/features/dictionary/services/wordStatusStore';
 import {
   trashWordStatus,
+  trashWordStatuses,
   listWordTrash,
   restoreWordStatus,
+  restoreWordStatuses,
   deleteWordTrash,
   purgeExpiredTrash,
 } from '@/features/dictionary/services/wordTrashStore';
@@ -49,6 +52,11 @@ const SEED_TRASH: readonly { term: string; previousStatus: WordStatus }[] = [
   { term: 'outdated', previousStatus: 'tracking' },
 ];
 
+const SEED_ANKI_TERMS: readonly string[] = ['hello', 'water'];
+const SEED_SRS_TERMS: readonly string[] = ['book', 'serendipity'];
+
+const OVERFLOW_COUNT = 240;
+
 interface WordStatusPayload {
   readonly langCode?: string;
   readonly term?: string;
@@ -77,6 +85,17 @@ async function handleWordStatusMessage(message: unknown): Promise<unknown> {
       case MESSAGE_TYPES.WORD_STATUS_SET:
         await setWordStatus(langCode, term, payload.status ?? 'tracking');
         return { success: true };
+      case MESSAGE_TYPES.WORD_STATUS_SET_MANY:
+        await setWordStatuses(langCode, payload.terms ?? [], payload.status ?? 'tracking');
+        return { success: true };
+      case MESSAGE_TYPES.WORD_STATUS_TRASH_MANY:
+        await trashWordStatuses(langCode, payload.terms ?? []);
+        return { success: true };
+      case MESSAGE_TYPES.WORD_STATUS_RESTORE_MANY:
+        await restoreWordStatuses(langCode, payload.terms ?? []);
+        return { success: true };
+      case MESSAGE_TYPES.ANKI_STATUS_CARD_TERMS:
+        return { success: true, data: { anki: [...SEED_ANKI_TERMS], srs: [...SEED_SRS_TERMS] } };
       case MESSAGE_TYPES.WORD_STATUS_CYCLE: {
         const status = await cycleWordStatus(langCode, term);
         return { success: true, data: { status } };
@@ -123,11 +142,13 @@ async function seedVocabulary(langCode: string): Promise<void> {
 
   if (SHOWCASE_DATA === 'overflow') {
     const statuses: readonly WordStatus[] = ['tracking', 'learning', 'known', 'ignore'];
-    const batch = Array.from({ length: 240 }, (_, i) => ({
-      term: `vocab-item-${String(i + 1).padStart(3, '0')}`,
-      status: statuses[i % statuses.length],
-    }));
-    for (const w of batch) await setWordStatus(langCode, w.term, w.status);
+    for (const status of statuses) {
+      const terms = Array.from({ length: OVERFLOW_COUNT / statuses.length }, (_, i) => {
+        const n = i * statuses.length + statuses.indexOf(status) + 1;
+        return `vocab-item-${String(n).padStart(5, '0')}`;
+      });
+      await setWordStatuses(langCode, terms, status);
+    }
     return;
   }
 
@@ -165,7 +186,7 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Vocabulary Panel',
   description:
-    'Universal Panel tab for managing tracked vocabulary. Toolbar with filter/sort menus, search, segments, edit mode, status badges, trash, and pagination.',
+    'Universal Panel tab for managing vocabulary. Hero progress card, filter/sort menus, search, incremental list, multi-select bulk actions, trash, and card-source badges.',
   level: 'pages' as const,
   category: 'Side Panel',
   order: 36,

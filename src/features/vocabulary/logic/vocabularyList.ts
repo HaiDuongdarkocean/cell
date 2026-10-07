@@ -8,10 +8,11 @@ export interface VocabularyEntry {
 
 export type VocabularySort = 'recent' | 'alpha' | 'grouped';
 
-export const VOCABULARY_SEGMENTS = ['all', 'tracking', 'learning', 'known', 'ignore', 'trash'] as const;
+export const VOCABULARY_SEGMENTS = ['all', 'tracking', 'learning', 'known', 'ignore'] as const;
 export type VocabularySegment = (typeof VOCABULARY_SEGMENTS)[number];
 
 export const MARKED_STATUSES: readonly WordStatus[] = ['tracking', 'learning', 'known', 'ignore'];
+export type MarkedStatus = Exclude<WordStatus, 'unknown'>;
 
 export function nextMarkedStatus(status: WordStatus): WordStatus {
   const index = MARKED_STATUSES.indexOf(status);
@@ -20,7 +21,6 @@ export function nextMarkedStatus(status: WordStatus): WordStatus {
 
 export function statusesForSegment(segment: VocabularySegment): ReadonlySet<WordStatus> {
   if (segment === 'all') return new Set(MARKED_STATUSES);
-  if (segment === 'trash') return new Set();
   return new Set([segment]);
 }
 
@@ -45,13 +45,6 @@ export function trashHoursLeft(trashedAt: number, now: number, ttlMs: number): n
 export interface VocabularyFilter {
   readonly statuses: ReadonlySet<WordStatus>;
   readonly query: string;
-}
-
-export interface VocabularyPage<T = VocabularyEntry> {
-  readonly entries: readonly T[];
-  readonly pageIndex: number;
-  readonly pageCount: number;
-  readonly total: number;
 }
 
 export function upsertEntry(
@@ -99,17 +92,45 @@ export function selectEntries(
   return sorted;
 }
 
-export function paginateEntries<T>(
-  sorted: readonly T[],
-  pageSize: number,
-  pageIndex: number,
-): VocabularyPage<T> {
-  const pageCount = Math.max(1, Math.ceil(sorted.length / pageSize));
-  const clamped = Math.min(Math.max(0, pageIndex), pageCount - 1);
-  return {
-    entries: sorted.slice(clamped * pageSize, clamped * pageSize + pageSize),
-    pageIndex: clamped,
-    pageCount,
-    total: sorted.length,
-  };
+export function selectAllTerms(entries: readonly VocabularyEntry[]): Set<string> {
+  return new Set(entries.map((e) => e.term));
+}
+
+export function pruneSelection(
+  selection: ReadonlySet<string>,
+  entries: readonly { readonly term: string }[],
+): Set<string> {
+  if (selection.size === 0) return new Set();
+  const present = new Set(entries.map((e) => e.term));
+  let dropped = false;
+  const next = new Set<string>();
+  for (const term of selection) {
+    if (present.has(term)) next.add(term);
+    else dropped = true;
+  }
+  return dropped ? next : new Set(selection);
+}
+
+export function snapshotStatuses(
+  entries: readonly VocabularyEntry[],
+  terms: Iterable<string>,
+): Map<string, WordStatus> {
+  const wanted = new Set(terms);
+  const map = new Map<string, WordStatus>();
+  for (const entry of entries) {
+    if (wanted.has(entry.term)) map.set(entry.term, entry.status);
+  }
+  return map;
+}
+
+export function groupByStatus(
+  statuses: ReadonlyMap<string, WordStatus>,
+): Map<WordStatus, string[]> {
+  const groups = new Map<WordStatus, string[]>();
+  for (const [term, status] of statuses) {
+    const list = groups.get(status);
+    if (list) list.push(term);
+    else groups.set(status, [term]);
+  }
+  return groups;
 }

@@ -1,14 +1,22 @@
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { VocabularyTab } from './VocabularyTab';
-import type { VocabularySource, VocabularySourceState } from '../services/vocabularySource';
+import type { VocabularySource, VocabularySourceState, CardSources } from '../services/vocabularySource';
 import type { VocabularyEntry } from '../logic/vocabularyList';
 import type { TrashedWordEntry } from '@/features/dictionary';
+
+jest.mock('@/features/ankiStatusSync', () => ({
+  runAnkiSyncNow: jest.fn().mockResolvedValue(undefined),
+}));
 
 const mockCycle = jest.fn().mockResolvedValue(undefined);
 const mockTrash = jest.fn().mockResolvedValue(undefined);
 const mockRestore = jest.fn().mockResolvedValue(undefined);
 const mockDeleteTrash = jest.fn().mockResolvedValue(undefined);
+const mockSetStatusMany = jest.fn().mockResolvedValue(undefined);
+const mockTrashMany = jest.fn().mockResolvedValue(undefined);
+const mockRestoreMany = jest.fn().mockResolvedValue(undefined);
 const mockRefreshTrash = jest.fn().mockResolvedValue(undefined);
+const mockRefreshCardSources = jest.fn().mockResolvedValue(undefined);
 const mockDestroy = jest.fn();
 let currentState: VocabularySourceState;
 const listeners = new Set<(s: VocabularySourceState) => void>();
@@ -24,172 +32,232 @@ jest.mock('../services/vocabularySource', () => ({
     trash: mockTrash,
     restore: mockRestore,
     deleteTrash: mockDeleteTrash,
+    setStatusMany: mockSetStatusMany,
+    trashMany: mockTrashMany,
+    restoreMany: mockRestoreMany,
     refreshTrash: mockRefreshTrash,
+    refreshCardSources: mockRefreshCardSources,
     refresh: jest.fn(),
     destroy: mockDestroy,
   } satisfies VocabularySource)),
 }));
 
-const state = (entries: VocabularyEntry[], trash: TrashedWordEntry[] = []): VocabularySourceState => ({
-  entries,
-  trash,
-  loaded: true,
-});
+const NO_CARDS: CardSources = { anki: new Set(), srs: new Set() };
+
+const state = (
+  entries: VocabularyEntry[],
+  trash: TrashedWordEntry[] = [],
+  cardSources: CardSources = NO_CARDS,
+): VocabularySourceState => ({ entries, trash, cardSources, loaded: true });
 
 const DEFAULT_ENTRIES: VocabularyEntry[] = [
   { term: 'apple', status: 'known', updatedAt: 10 },
   { term: 'banana', status: 'tracking', updatedAt: 30 },
   { term: 'cherry', status: 'ignore', updatedAt: 20 },
+  { term: 'date', status: 'learning', updatedAt: 5 },
 ];
 
-const segment = (name: string): HTMLElement =>
-  document.querySelector(`[data-cell-id="vocabulary-segment-${name}"]`)!;
-
-const openFilterMenu = (): void => {
-  fireEvent.click(document.querySelector('[data-cell-id="vocabulary-filter"]')!);
+const byId = (id: string): HTMLElement | null => document.querySelector(`[data-cell-id="${id}"]`);
+const click = (id: string): void => {
+  fireEvent.click(byId(id)!);
 };
+const selectTerm = (term: string): void => {
+  fireEvent.click(byId(`vocabulary-select-${term}`)!);
+};
+const bulkBarOpen = (): boolean => byId('vocabulary-bulk-bar')?.hasAttribute('data-open') ?? false;
+
+let ioCallback: IntersectionObserverCallback | null = null;
 
 beforeEach(() => {
   jest.clearAllMocks();
   listeners.clear();
   currentState = state(DEFAULT_ENTRIES);
+  ioCallback = null;
+  (globalThis as { IntersectionObserver?: unknown }).IntersectionObserver = class {
+    constructor(cb: IntersectionObserverCallback) {
+      ioCallback = cb;
+    }
+    observe(): void {}
+    disconnect(): void {}
+    unobserve(): void {}
+    takeRecords(): IntersectionObserverEntry[] {
+      return [];
+    }
+  };
 });
 
+const renderTab = (onLookup = jest.fn()): ReturnType<typeof render> =>
+  render(<VocabularyTab langCode="en" onLookup={onLookup} />);
+
 describe('VocabularyTab', () => {
-  it('renders rows with status badges (A1)', () => {
-    render(<VocabularyTab langCode="en" onLookup={jest.fn()} />);
+  it('renders the hero with known count and status breakdown', () => {
+    renderTab();
+    const hero = byId('vocabulary-hero')!;
+    expect(within(hero).getByText('Known words')).toBeTruthy();
+    expect(hero.textContent).toContain('1');
+    expect(hero.textContent).toMatch(/1\s*learning/);
+    expect(hero.textContent).toMatch(/1\s*tracked/);
+    expect(hero.textContent).toMatch(/1\s*ignored/);
+  });
+
+  it('shows the word count meta and rows', () => {
+    renderTab();
+    expect(byId('vocabulary-meta')!.textContent).toBe('4 words');
     expect(screen.getByText('apple')).toBeTruthy();
-    expect(screen.getByText('banana')).toBeTruthy();
-    expect(screen.getByText('cherry')).toBeTruthy();
+    expect(screen.getByText('date')).toBeTruthy();
   });
 
-  it('renders a single-select filter menu with counts (REQ-1)', () => {
-    render(<VocabularyTab langCode="en" onLookup={jest.fn()} />);
-    openFilterMenu();
-    expect(document.querySelector('[role="menu"]')).toBeTruthy();
-    expect(segment('all').getAttribute('aria-checked')).toBe('true');
-    expect(segment('tracking')).toBeTruthy();
-    expect(segment('known')).toBeTruthy();
-    expect(segment('ignore')).toBeTruthy();
-    expect(segment('trash')).toBeTruthy();
+  it('selecting a row updates the meta line and opens the bulk bar', () => {
+    renderTab();
+    expect(bulkBarOpen()).toBe(false);
+    selectTerm('apple');
+    expect(byId('vocabulary-meta')!.textContent).toBe('1 selected');
+    expect(bulkBarOpen()).toBe(true);
   });
 
-  it('filters rows by the selected segment', () => {
-    render(<VocabularyTab langCode="en" onLookup={jest.fn()} />);
-    openFilterMenu();
-    fireEvent.click(segment('tracking'));
-    expect(screen.queryByText('apple')).toBeNull();
-    expect(screen.getByText('banana')).toBeTruthy();
-    expect(screen.queryByText('cherry')).toBeNull();
+  it('select all selects every filtered term, then deselect all clears', () => {
+    renderTab();
+    click('vocabulary-select-all');
+    expect(byId('vocabulary-meta')!.textContent).toBe('4 selected');
+    expect(byId('vocabulary-select-all')!.textContent).toBe('Deselect all');
+    click('vocabulary-select-all');
+    expect(byId('vocabulary-meta')!.textContent).toBe('4 words');
+    expect(bulkBarOpen()).toBe(false);
   });
 
-  it('searches by substring (A3)', () => {
-    render(<VocabularyTab langCode="en" onLookup={jest.fn()} />);
+  it('bulk change status writes all selected terms in one call', () => {
+    renderTab();
+    selectTerm('apple');
+    selectTerm('banana');
+    click('vocabulary-bulk-status');
+    click('vocabulary-bulk-status-known');
+    expect(mockSetStatusMany).toHaveBeenCalledTimes(1);
+    expect([...mockSetStatusMany.mock.calls[0][0]].sort()).toEqual(['apple', 'banana']);
+    expect(mockSetStatusMany.mock.calls[0][1]).toBe('known');
+    expect(bulkBarOpen()).toBe(false);
+  });
+
+  it('undo after a bulk status change restores previous statuses grouped by status', async () => {
+    renderTab();
+    selectTerm('apple');
+    selectTerm('banana');
+    click('vocabulary-bulk-status');
+    click('vocabulary-bulk-status-ignore');
+    mockSetStatusMany.mockClear();
+    click('vocabulary-undo');
+    await waitFor(() => expect(mockSetStatusMany).toHaveBeenCalledTimes(2));
+    const calls = mockSetStatusMany.mock.calls.map(([terms, status]) => [status, [...terms]]);
+    expect(calls).toEqual(expect.arrayContaining([['known', ['apple']], ['tracking', ['banana']]]));
+    expect((byId('vocabulary-undo') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('bulk delete asks for confirmation then trashes, and undo restores', async () => {
+    renderTab();
+    selectTerm('cherry');
+    click('vocabulary-bulk-delete');
+    expect(screen.getByText('Delete 1 word?')).toBeTruthy();
+    click('vocabulary-bulk-delete-confirm');
+    await waitFor(() => expect(mockTrashMany).toHaveBeenCalledWith(['cherry']));
+    click('vocabulary-undo');
+    await waitFor(() => expect(mockRestoreMany).toHaveBeenCalledWith(['cherry']));
+  });
+
+  it('cycles a term status via the status circle and records undo', async () => {
+    renderTab();
+    fireEvent.click(screen.getByLabelText('Cycle status for apple'));
+    expect(mockCycle).toHaveBeenCalledWith('apple');
+    click('vocabulary-undo');
+    await waitFor(() => expect(mockSetStatusMany).toHaveBeenCalledWith(['apple'], 'known'));
+  });
+
+  it('opens the dictionary lookup on term click', () => {
+    const onLookup = jest.fn();
+    renderTab(onLookup);
+    fireEvent.click(screen.getByText('apple'));
+    expect(onLookup).toHaveBeenCalledWith('apple');
+  });
+
+  it('search toggle reveals the search field and filters by substring', () => {
+    renderTab();
+    expect(byId('vocabulary-search')).toBeNull();
+    click('vocabulary-search-toggle');
     fireEvent.change(screen.getByPlaceholderText('Search words…'), { target: { value: 'app' } });
     expect(screen.getByText('apple')).toBeTruthy();
     expect(screen.queryByText('banana')).toBeNull();
   });
 
-  it('cycles a term status via the source (A5)', () => {
-    render(<VocabularyTab langCode="en" onLookup={jest.fn()} />);
-    fireEvent.click(screen.getByLabelText('Cycle status for apple'));
-    expect(mockCycle).toHaveBeenCalledWith('apple');
+  it('filter change narrows rows and clears the selection', () => {
+    renderTab();
+    selectTerm('banana');
+    click('vocabulary-filter');
+    click('vocabulary-segment-tracking');
+    expect(screen.queryByText('apple')).toBeNull();
+    expect(screen.getByText('banana')).toBeTruthy();
+    expect(byId('vocabulary-meta')!.textContent).toBe('1 word');
+    expect(bulkBarOpen()).toBe(false);
   });
 
-  it('opens the dictionary lookup on term click (A6)', () => {
-    const onLookup = jest.fn();
-    render(<VocabularyTab langCode="en" onLookup={onLookup} />);
-    fireEvent.click(screen.getByText('apple'));
-    expect(onLookup).toHaveBeenCalledWith('apple');
+  it('renders card-source indicators with accessible labels', () => {
+    currentState = state(DEFAULT_ENTRIES, [], { anki: new Set(['apple']), srs: new Set(['apple', 'banana']) });
+    renderTab();
+    expect(byId('vocabulary-card-anki-apple')!.getAttribute('aria-label')).toBe('In Anki');
+    expect(byId('vocabulary-card-srs-apple')!.getAttribute('aria-label')).toBe('In Memory');
+    expect(byId('vocabulary-card-srs-banana')).toBeTruthy();
+    expect(byId('vocabulary-card-anki-banana')).toBeNull();
   });
 
-  it('hides remove buttons in view mode and reveals them in edit mode (REQ-6)', () => {
-    render(<VocabularyTab langCode="en" onLookup={jest.fn()} />);
-    expect(document.querySelector('[data-cell-id="vocabulary-delete-apple"]')).toBeNull();
-    fireEvent.click(document.querySelector('[data-cell-id="vocabulary-edit-toggle"]')!);
-    expect(document.querySelector('[data-cell-id="vocabulary-delete-apple"]')).toBeTruthy();
+  it('renders rows incrementally and appends on sentinel intersection', () => {
+    currentState = state(
+      Array.from({ length: 250 }, (_, i) => ({ term: `w${String(i).padStart(3, '0')}`, status: 'known', updatedAt: i })),
+    );
+    renderTab();
+    expect(document.querySelectorAll('[data-cell-id^="vocabulary-row-"]').length).toBe(100);
+    act(() => {
+      ioCallback?.([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+    });
+    expect(document.querySelectorAll('[data-cell-id^="vocabulary-row-"]').length).toBe(200);
   });
 
-  it('trashes a word after confirmation (REQ-7)', async () => {
-    render(<VocabularyTab langCode="en" onLookup={jest.fn()} />);
-    fireEvent.click(document.querySelector('[data-cell-id="vocabulary-edit-toggle"]')!);
-    fireEvent.click(document.querySelector('[data-cell-id="vocabulary-delete-apple"]')!);
-    expect(screen.getByText('Remove word?')).toBeTruthy();
-    expect(screen.getByText(/moves to Trash/)).toBeTruthy();
-    fireEvent.click(document.querySelector('[data-cell-id="vocabulary-delete-confirm"]')!);
-    await waitFor(() => expect(mockTrash).toHaveBeenCalledWith('apple'));
-  });
-
-  it('switching to the Trash segment exits edit mode', () => {
-    render(<VocabularyTab langCode="en" onLookup={jest.fn()} />);
-    fireEvent.click(document.querySelector('[data-cell-id="vocabulary-edit-toggle"]')!);
-    openFilterMenu();
-    fireEvent.click(segment('trash'));
-    expect(document.querySelector('[data-cell-id="vocabulary-edit-toggle"]')).toBeNull();
-    openFilterMenu();
-    fireEvent.click(segment('all'));
-    expect(screen.getByText('Edit')).toBeTruthy();
-  });
-
-  it('shows trash entries with restore + delete-forever actions (REQ-9)', async () => {
+  it('opens Trash from the more menu with restore and delete-forever actions', async () => {
     currentState = state(DEFAULT_ENTRIES, [
       { term: 'zebra', previousStatus: 'known', trashedAt: Date.now() - 60 * 60 * 1000 },
     ]);
-    render(<VocabularyTab langCode="en" onLookup={jest.fn()} />);
-    openFilterMenu();
-    fireEvent.click(segment('trash'));
+    renderTab();
+    click('vocabulary-more');
+    click('vocabulary-more-trash');
     await waitFor(() => expect(screen.getByText('zebra')).toBeTruthy());
-    const row = document.querySelector('[data-cell-id="vocabulary-trash-row-zebra"]')!;
-    expect(within(row as HTMLElement).getByText('Known')).toBeTruthy();
-    expect(within(row as HTMLElement).getByText(/left$/)).toBeTruthy();
-    expect(document.querySelector('[data-cell-id="vocabulary-restore-zebra"]')).toBeTruthy();
-    expect(document.querySelector('[data-cell-id="vocabulary-trash-delete-zebra"]')).toBeTruthy();
-    expect(document.querySelector('[data-cell-id="vocabulary-sort"]')).toBeNull();
+    const row = byId('vocabulary-trash-row-zebra')!;
+    expect(within(row).getByText('Known')).toBeTruthy();
+    expect(within(row).getByText(/left$/)).toBeTruthy();
+    expect(byId('vocabulary-hero')).toBeNull();
+    expect(byId('vocabulary-sort')).toBeNull();
     expect(mockRefreshTrash).toHaveBeenCalled();
-  });
-
-  it('restores a trashed word via the source (REQ-10)', async () => {
-    currentState = state(DEFAULT_ENTRIES, [
-      { term: 'zebra', previousStatus: 'tracking', trashedAt: Date.now() },
-    ]);
-    render(<VocabularyTab langCode="en" onLookup={jest.fn()} />);
-    openFilterMenu();
-    fireEvent.click(segment('trash'));
-    await waitFor(() => expect(screen.getByText('zebra')).toBeTruthy());
-    fireEvent.click(document.querySelector('[data-cell-id="vocabulary-restore-zebra"]')!);
+    click('vocabulary-restore-zebra');
     await waitFor(() => expect(mockRestore).toHaveBeenCalledWith('zebra'));
-  });
-
-  it('confirms before deleting a trash record forever (REQ-11)', async () => {
-    currentState = state(DEFAULT_ENTRIES, [
-      { term: 'zebra', previousStatus: 'ignore', trashedAt: Date.now() },
-    ]);
-    render(<VocabularyTab langCode="en" onLookup={jest.fn()} />);
-    openFilterMenu();
-    fireEvent.click(segment('trash'));
-    await waitFor(() => expect(screen.getByText('zebra')).toBeTruthy());
-    fireEvent.click(document.querySelector('[data-cell-id="vocabulary-trash-delete-zebra"]')!);
+    click('vocabulary-trash-delete-zebra');
     expect(screen.getByText('Delete forever?')).toBeTruthy();
-    fireEvent.click(document.querySelector('[data-cell-id="vocabulary-trash-delete-confirm"]')!);
+    click('vocabulary-trash-delete-confirm');
     await waitFor(() => expect(mockDeleteTrash).toHaveBeenCalledWith('zebra'));
+    click('vocabulary-trash-back');
+    expect(byId('vocabulary-hero')).toBeTruthy();
   });
 
   it('shows the trash empty state', () => {
-    render(<VocabularyTab langCode="en" onLookup={jest.fn()} />);
-    openFilterMenu();
-    fireEvent.click(segment('trash'));
-    expect(document.querySelector('[data-cell-id="vocabulary-trash-empty"]')).toBeTruthy();
-    expect(screen.getByText('Trash is empty')).toBeTruthy();
+    renderTab();
+    click('vocabulary-more');
+    click('vocabulary-more-trash');
+    expect(byId('vocabulary-trash-empty')).toBeTruthy();
   });
 
-  it('shows the empty state when the store has no rows (A12)', () => {
+  it('shows the empty state when the store has no rows', () => {
     currentState = state([]);
-    render(<VocabularyTab langCode="en" onLookup={jest.fn()} />);
+    renderTab();
     expect(screen.getByText('No words marked yet')).toBeTruthy();
+    expect(byId('vocabulary-select-all')).toBeNull();
   });
 
   it('destroys the source on unmount', () => {
-    const { unmount } = render(<VocabularyTab langCode="en" onLookup={jest.fn()} />);
+    const { unmount } = renderTab();
     unmount();
     expect(mockDestroy).toHaveBeenCalled();
   });

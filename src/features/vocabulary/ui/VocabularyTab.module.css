@@ -1,9 +1,7 @@
 .tab {
   --universal-panel-tab-gutter: inherit;
   --universal-panel-tab-scroll-inset: inherit;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  composes: scrollport from '@/shared/ui/Scrollable.module.css';
   padding: var(--universal-panel-tab-gutter, var(--space-3));
   padding-block-end: var(--universal-panel-tab-scroll-inset, var(--space-3));
   height: 100%;
@@ -11,45 +9,131 @@
   background: var(--color-surface);
 }
 
-/* ---------- Compact toolbar (Concept B) ---------- */
+.content {
+  width: 100%;
+  max-width: var(--universal-panel-content-max-width);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: min-content;
+}
 
-/* Scroll region, not a clipped row: at narrow widths (320px) the control set
-   slides horizontally instead of slicing the last chip; controls never shrink
-   and the spacer collapses to zero. No visible scrollbar — identical layout
-   whenever everything already fits. */
-.toolbar {
+/* ---------- Top bar ---------- */
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   flex-shrink: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
+  padding-block: var(--space-1);
+  margin-block: calc(-1 * var(--space-1));
+  background: var(--color-surface);
 }
 
-.toolbar::-webkit-scrollbar {
-  display: none;
-}
-
-.toolbarSpacer {
+.topBarSpacer {
   flex: 1;
   min-width: 0;
 }
 
-.toolBtn {
+.selectAllBtn {
   flex-shrink: 0;
-  gap: var(--space-1);
 }
 
-.toolBtn[aria-pressed="true"] {
-  color: var(--color-primary);
+.trashTitle {
+  margin-inline-start: var(--space-1);
 }
+
+/* ---------- Hero ---------- */
+
+.hero {
+  padding: var(--space-6) var(--space-4);
+}
+
+.heroInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.heroFlag {
+  flex-shrink: 0;
+  margin-block-end: var(--space-3);
+}
+
+.heroHeadline {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.heroCount {
+  color: var(--chip-status-known-fg);
+}
+
+.heroBreakdown {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  margin-block-start: var(--space-1);
+  color: var(--color-text);
+}
+
+.countLearning {
+  color: var(--chip-status-learning-fg);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.countTracking {
+  color: var(--chip-status-tracking-fg);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.countIgnore {
+  color: var(--chip-status-ignore-fg);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+/* ---------- Search + pills ---------- */
 
 .search {
   flex-shrink: 0;
   width: 100%;
 }
 
-.retention {
+.pillRow {
+  display: flex;
+  gap: var(--space-4);
+  flex-shrink: 0;
+}
+
+.pillRow .pill {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.pillRow .pill > span {
+  min-width: 0;
+}
+
+.pillRow .pill svg {
+  flex-shrink: 0;
+}
+
+.pillLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  text-align: center;
   flex-shrink: 0;
 }
 
@@ -57,8 +141,17 @@
   flex-shrink: 0;
 }
 
+.retention {
+  flex-shrink: 0;
+}
+
+/* ---------- List card + rows ---------- */
+
+.listCard {
+  padding: 0 var(--space-4);
+}
+
 .list {
-  composes: scrollport from '@/shared/ui/Scrollable.module.css';
   list-style: none;
   margin: 0;
   padding: 0;
@@ -75,27 +168,87 @@
   padding: var(--space-2) var(--space-1) var(--space-1);
 }
 
-/* ---------- Rows ---------- */
-
-.rowBody {
+.row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: var(--touch-target);
+  min-height: calc(var(--touch-target) + var(--space-3));
   padding: var(--space-1) 0;
-  border-bottom: 1px solid var(--color-divider);
+  border-bottom: var(--border-width-hairline) solid var(--color-divider);
 }
 
-.term {
-  flex: 1;
-  min-width: 0;
-  justify-content: flex-start;
-  text-align: left;
-  font-weight: var(--font-weight-medium, 500);
+.row:last-child {
+  border-bottom: none;
+}
+
+.checkbox {
+  flex-shrink: 0;
+  margin-inline-end: var(--space-3);
 }
 
 .row .term {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: flex-start;
+  text-align: left;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
+}
+
+.termLabel {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.srcIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-accent-strong);
+}
+
+.row .statusCircle {
+  flex-shrink: 0;
+}
+
+.row .statusCircle.status-tracking {
+  background: var(--chip-status-tracking-bg);
+  color: var(--chip-status-tracking-fg);
+}
+
+.row .statusCircle.status-learning {
+  background: var(--chip-status-learning-bg);
+  color: var(--chip-status-learning-fg);
+}
+
+.row .statusCircle.status-known {
+  background: var(--chip-status-known-bg);
+  color: var(--chip-status-known-fg);
+}
+
+.row .statusCircle.status-ignore {
+  background: var(--chip-status-ignore-bg);
+  color: var(--chip-status-ignore-fg);
+}
+
+.row .statusCircle.status-tracking:hover {
+  background: color-mix(in srgb, var(--chip-status-tracking-bg), var(--color-text) 8%);
+}
+
+.row .statusCircle.status-learning:hover {
+  background: color-mix(in srgb, var(--chip-status-learning-bg), var(--color-text) 8%);
+}
+
+.row .statusCircle.status-known:hover {
+  background: color-mix(in srgb, var(--chip-status-known-bg), var(--color-text) 8%);
+}
+
+.row .statusCircle.status-ignore:hover {
+  background: color-mix(in srgb, var(--chip-status-ignore-bg), var(--color-text) 8%);
 }
 
 .time {
@@ -105,27 +258,21 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Reserved action slot — keeps row width stable when Edit mode reveals the
-   delete button (user refinement on Concept B). */
-.actionSlot {
-  width: var(--touch-target);
-  height: var(--touch-target);
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.actionSlot > button {
-  width: 100%;
-  height: 100%;
-}
-
 .rowChip {
   flex-shrink: 0;
 }
 
-.pagination {
-  flex-shrink: 0;
+.sentinel {
+  list-style: none;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+}
+
+.loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
   justify-content: center;
+  padding: var(--space-6);
 }

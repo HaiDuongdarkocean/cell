@@ -251,6 +251,102 @@ describe('createVocabularySource', () => {
     source.destroy();
   });
 
+  it('setStatusMany sends WORD_STATUS_SET_MANY and reloads the list', async () => {
+    mockBackend({
+      [MESSAGE_TYPES.WORD_STATUS_LIST]: listResponse([{ term: 'a', status: 'tracking', updatedAt: 1 }]),
+      [MESSAGE_TYPES.ANKI_STATUS_CARD_TERMS]: { success: true, data: { anki: [], srs: [] } },
+    });
+
+    const source = createVocabularySource('en');
+    await flush();
+    await source.setStatusMany(['a'], 'known');
+    await flush();
+
+    expect(callsOfType(MESSAGE_TYPES.WORD_STATUS_SET_MANY)[0]).toMatchObject({
+      payload: { tabId: -1, langCode: 'en', terms: ['a'], status: 'known' },
+    });
+    source.destroy();
+  });
+
+  it('trashMany sends WORD_STATUS_TRASH_MANY and refreshes the trash list', async () => {
+    mockBackend({
+      [MESSAGE_TYPES.WORD_STATUS_LIST]: listResponse([{ term: 'a', status: 'known', updatedAt: 1 }]),
+      [MESSAGE_TYPES.WORD_STATUS_TRASH_LIST]: listResponse([]),
+      [MESSAGE_TYPES.ANKI_STATUS_CARD_TERMS]: { success: true, data: { anki: [], srs: [] } },
+    });
+
+    const source = createVocabularySource('en');
+    await flush();
+    await source.trashMany(['a']);
+
+    expect(callsOfType(MESSAGE_TYPES.WORD_STATUS_TRASH_MANY)[0]).toMatchObject({
+      payload: { tabId: -1, langCode: 'en', terms: ['a'] },
+    });
+    source.destroy();
+  });
+
+  it('restoreMany sends WORD_STATUS_RESTORE_MANY and refreshes the trash list', async () => {
+    mockBackend({
+      [MESSAGE_TYPES.WORD_STATUS_LIST]: listResponse([]),
+      [MESSAGE_TYPES.WORD_STATUS_TRASH_LIST]: listResponse([
+        { term: 'a', previousStatus: 'known', trashedAt: 3 },
+      ]),
+      [MESSAGE_TYPES.ANKI_STATUS_CARD_TERMS]: { success: true, data: { anki: [], srs: [] } },
+    });
+
+    const source = createVocabularySource('en');
+    await flush();
+    await source.restoreMany(['a']);
+
+    expect(callsOfType(MESSAGE_TYPES.WORD_STATUS_RESTORE_MANY)[0]).toMatchObject({
+      payload: { tabId: -1, langCode: 'en', terms: ['a'] },
+    });
+    source.destroy();
+  });
+
+  it('loads card-source term sets and tolerates lookup failure', async () => {
+    mockBackend({
+      [MESSAGE_TYPES.WORD_STATUS_LIST]: listResponse([]),
+      [MESSAGE_TYPES.WORD_STATUS_TRASH_LIST]: listResponse([]),
+      [MESSAGE_TYPES.ANKI_STATUS_CARD_TERMS]: {
+        success: true,
+        data: { anki: ['a', 'b'], srs: ['b'] },
+      },
+    });
+
+    const source = createVocabularySource('en');
+    await flush();
+
+    expect(source.getState().cardSources.anki.has('a')).toBe(true);
+    expect(source.getState().cardSources.srs.has('b')).toBe(true);
+    expect(source.getState().cardSources.srs.has('a')).toBe(false);
+    source.destroy();
+  });
+
+  it('refreshCardSources re-reads the card-term message', async () => {
+    let cardCalls = 0;
+    sendMessage.mockImplementation((message) => {
+      const type = (message as { type: string }).type;
+      if (type === MESSAGE_TYPES.ANKI_STATUS_CARD_TERMS) {
+        cardCalls += 1;
+        return Promise.resolve({
+          success: true,
+          data: cardCalls === 1 ? { anki: ['a'], srs: [] } : { anki: ['a', 'z'], srs: ['z'] },
+        });
+      }
+      return Promise.resolve(listResponse([]));
+    });
+
+    const source = createVocabularySource('en');
+    await flush();
+    expect(source.getState().cardSources.anki.has('z')).toBe(false);
+
+    await source.refreshCardSources();
+    expect(source.getState().cardSources.anki.has('z')).toBe(true);
+    expect(source.getState().cardSources.srs.has('z')).toBe(true);
+    source.destroy();
+  });
+
   it('stops applying events after destroy', async () => {
     mockBackend({ [MESSAGE_TYPES.WORD_STATUS_LIST]: listResponse([]) });
 
