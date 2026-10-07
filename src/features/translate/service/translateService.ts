@@ -15,6 +15,18 @@ import type { SrtCue } from '@/entities/media';
 export const GOOGLE_TRANSLATE_ENDPOINT = 'https://translate.googleapis.com/translate_a/single';
 
 /**
+ * Restore g-dropping contractions (`leavin'` → `leaving`, `LEAVIN'` →
+ * `LEAVING`) before sending text to a provider — unnormalized slang comes
+ * back echoed or mistranslated, especially in ALL-CAPS subtitle tracks.
+ * The letter lookahead protects possessives like `Martin's`.
+ */
+export function normalizeTranslationInput(text: string): string {
+  return text.replace(/(in)'(?![a-z])/gi, (_m, stem: string) =>
+    stem === stem.toUpperCase() ? `${stem}G` : `${stem}g`,
+  );
+}
+
+/**
  * Build the Google Translate unofficial request URL.
  *
  * @param text - Text to translate (multi-line joined cues, ≤ 1500 chars per chunk).
@@ -28,7 +40,7 @@ export function buildTranslateUrl(text: string, sl: string, tl: string): string 
     sl,
     tl,
     dt: 't',
-    q: text,
+    q: normalizeTranslationInput(text),
   });
   return `${GOOGLE_TRANSLATE_ENDPOINT}?${params.toString()}`;
 }
@@ -66,7 +78,7 @@ const MYMEMORY_TRANSLATE_ENDPOINT = 'https://api.mymemory.translated.net/get';
 export function buildMyMemoryUrl(text: string, sl: string, tl: string): string {
   const sourceLang = sl === 'auto' ? 'en' : sl;
   const params = new URLSearchParams({
-    q: text,
+    q: normalizeTranslationInput(text),
     langpair: `${sourceLang}|${tl}`,
   });
   return `${MYMEMORY_TRANSLATE_ENDPOINT}?${params.toString()}`;

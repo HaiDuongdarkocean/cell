@@ -1,6 +1,7 @@
 import type { SrtCue } from '@/entities/media';
 import {
   buildTranslateUrl,
+  normalizeTranslationInput,
   parseGoogleResponse,
   joinCueTexts,
   alignTranslatedSegments,
@@ -10,6 +11,23 @@ import {
 } from '@/features/translate/service/translateService';
 
 describe('translateService', () => {
+  describe('normalizeTranslationInput', () => {
+    it('restores g-dropping slang', () => {
+      expect(normalizeTranslationInput("leavin' isn't better than tryin'"))
+        .toBe("leaving isn't better than trying");
+    });
+
+    it('preserves case on ALL-CAPS tracks', () => {
+      expect(normalizeTranslationInput("LEAVIN' ISN'T BETTER THAN TRYIN'"))
+        .toBe("LEAVING ISN'T BETTER THAN TRYING");
+    });
+
+    it('leaves possessives and inner apostrophes alone', () => {
+      expect(normalizeTranslationInput("Martin's guitar")).toBe("Martin's guitar");
+      expect(normalizeTranslationInput("isn't ain't")).toBe("isn't ain't");
+    });
+  });
+
   describe('buildTranslateUrl', () => {
     it('builds URL with client=gtx, sl, tl, dt=t, q params', () => {
       const url = buildTranslateUrl('hello world', 'en', 'vi');
