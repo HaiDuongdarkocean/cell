@@ -73,6 +73,21 @@ describe('tokenSpanRenderer', () => {
     expect(span!.classList.contains('js-cell-token--status-off')).toBe(true);
     expect(span!.classList.contains('js-cell-token--frequency-off')).toBe(true);
   });
+
+  it('mirrors token.gloss onto data-gloss and marks gloss-off when hidden', () => {
+    const block = makeBlock('Hello.', [
+      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'none', reading: undefined, gloss: 'xin chào' },
+    ]);
+    bindTokenBlock(block, { showStatus: true, showFrequency: true, showGlosses: true });
+    const word = block.element.querySelector('.js-cell-token-word');
+    expect(word!.getAttribute('data-gloss')).toBe('xin chào');
+    expect(block.element.querySelector('.js-cell-token--gloss-off')).toBeNull();
+
+    unbindTokenBlock(block);
+    bindTokenBlock(block, { showStatus: true, showFrequency: true });
+    const off = block.element.querySelector('.js-cell-token--gloss-off');
+    expect(off).not.toBeNull();
+  });
 });
 
 describe('tokenSpanCss', () => {

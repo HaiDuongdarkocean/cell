@@ -147,3 +147,65 @@ export function alignTranslatedSegments(
   }
   return result;
 }
+
+/**
+ * Join terms into a single marker-tagged string for one Google request.
+ * Same contract as `joinCueTexts` but with `⟦T{i}⟧...⟦/T{i}⟧` tags so each
+ * translated term can be aligned back by index (spec word-translation REQ-1).
+ */
+export function joinTermTexts(terms: readonly string[]): string {
+  // Newline between markers is load-bearing: glued `⟦T0⟧a⟦/T0⟧⟦T1⟧b⟦/T1⟧`
+  // reads as one opaque token to Google and comes back untranslated — with
+  // '\n' separators the markers survive AND each term is translated.
+  return terms
+    .map((term, i) => `⟦T${i}⟧${term.replace(/\n/g, ' ')}⟦/T${i}⟧`)
+    .join('\n');
+}
+
+/**
+ * Align translated segments back to per-term glosses using term markers.
+ * Mirrors `alignTranslatedSegments`; absent markers yield `''`.
+ */
+export function alignTermGlosses(
+  translated: readonly string[],
+  expectedCount: number,
+): string[] {
+  const joined = translated.join('');
+  const markerRegex = /⟦T(\d+)⟧(.*?)⟦\/T\1⟧/gs;
+  const map = new Map<number, string>();
+  for (const match of joined.matchAll(markerRegex)) {
+    const idx = Number(match[1]);
+    map.set(idx, (match[2] ?? '').trim());
+  }
+
+  const result: string[] = [];
+  for (let i = 0; i < expectedCount; i++) {
+    result.push(map.get(i) ?? '');
+  }
+  return result;
+}
+
+/**
+ * Group terms into marker-joined request bodies, each ≤ `maxChars`.
+ * Indices inside each chunk restart at 0 — the caller aligns per chunk.
+ */
+export function chunkTermMarkerTexts(
+  terms: readonly string[],
+  maxChars: number = 1500,
+): string[][] {
+  const chunks: string[][] = [];
+  let current: string[] = [];
+  let chars = 0;
+  for (const term of terms) {
+    const marked = `⟦T${current.length}⟧${term.replace(/\n/g, ' ')}⟦/T${current.length}⟧\n`;
+    if (current.length > 0 && chars + marked.length > maxChars) {
+      chunks.push(current);
+      current = [];
+      chars = 0;
+    }
+    current.push(term);
+    chars += marked.length;
+  }
+  if (current.length > 0) chunks.push(current);
+  return chunks;
+}

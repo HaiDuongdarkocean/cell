@@ -129,6 +129,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
         base?.subtitleOverlayAutoTranslate ?? DEFAULT_SETTINGS.subtitleOverlayAutoTranslate,
       dictionaryPopup: base?.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS,
       showReadings: base?.showReadings ?? (toIso6391(baseLangCode(target)) === 'zh'),
+      showWordTranslations: base?.showWordTranslations ?? false,
     };
     onChange({
       ...settings,

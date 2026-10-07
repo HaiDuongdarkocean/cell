@@ -9,6 +9,9 @@ export interface TokenSpanBindOptions {
   /** Show the reading cap above tokens. Absent → caps hidden; web-tokenize
    *  surfaces omit this (v1 renders on controlled surfaces only). */
   readonly showReadings?: boolean;
+  /** Show the native-language gloss below tokens. Absent → glosses hidden;
+   *  subtitle overlay only in v1. */
+  readonly showGlosses?: boolean;
   /** Hover a word token (desktop). */
   readonly onTokenEnter?: (term: string, block: TokenBlock, element: HTMLElement) => void;
   /** Leave a word token (desktop). */
@@ -27,6 +30,7 @@ const SEPARATOR_CLASS = 'js-cell-token--separator';
 const WORD_INNER_CLASS = 'js-cell-token-word';
 const STATUS_CLASS = 'js-cell-token-status';
 const READING_OFF_CLASS = 'js-cell-token--reading-off';
+const GLOSS_OFF_CLASS = 'js-cell-token--gloss-off';
 
 function createSeparatorSpan(text: string, block: TokenBlock): HTMLSpanElement {
   const span = document.createElement('span');
@@ -67,6 +71,11 @@ function applyTokenClasses(span: HTMLElement, token: Token, options: TokenSpanBi
   } else {
     span.classList.remove(READING_OFF_CLASS);
   }
+  if (!options.showGlosses) {
+    span.classList.add(GLOSS_OFF_CLASS);
+  } else {
+    span.classList.remove(GLOSS_OFF_CLASS);
+  }
 }
 
 /** Mirror token.reading onto the inner word span's data-reading attribute —
@@ -79,6 +88,11 @@ function applyTokenReading(span: HTMLElement, token: Token): void {
     word.setAttribute('data-reading', token.reading);
   } else {
     word.removeAttribute('data-reading');
+  }
+  if (token.gloss) {
+    word.setAttribute('data-gloss', token.gloss);
+  } else {
+    word.removeAttribute('data-gloss');
   }
 }
 

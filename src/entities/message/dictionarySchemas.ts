@@ -474,6 +474,15 @@ export const TranslatePayloadSchema = z.object({
   tl: z.string().length(2),
 });
 
+// === Term glosses (spec word-translation — TRANSLATE_TERMS) ===
+
+export const TranslateTermsPayloadSchema = z.object({
+  tabId: z.number().int(),
+  sl: z.string().min(1).max(10),
+  tl: z.string().length(2),
+  terms: z.array(z.string().min(1).max(200)).max(500),
+});
+
 // === Quick Add (spec §9.4 B — QUICK_ADD) ===
 
 export const QuickAddPayloadMessageSchema = QuickAddPayloadSchema.extend({

@@ -4,6 +4,9 @@ import {
   parseGoogleResponse,
   joinCueTexts,
   alignTranslatedSegments,
+  joinTermTexts,
+  alignTermGlosses,
+  chunkTermMarkerTexts,
 } from '@/features/translate/service/translateService';
 
 describe('translateService', () => {
@@ -155,6 +158,58 @@ describe('translateService', () => {
       const spaced = joined.replace(/⟦/g, ' ⟦').replace(/⟧/g, '⟧ ');
       const aligned = alignTranslatedSegments([spaced], 2);
       expect(aligned).toEqual(['Xin chào.', 'Tạm biệt.']);
+    });
+  });
+
+  describe('joinTermTexts', () => {
+    it('wraps each term in ⟦Ti⟧ markers separated by newlines', () => {
+      // '\n' separators keep Google translating the terms instead of echoing
+      // the marker-glued blob back untranslated.
+      expect(joinTermTexts(['hello', 'world'])).toBe('⟦T0⟧hello⟦/T0⟧\n⟦T1⟧world⟦/T1⟧');
+    });
+
+    it('strips newlines from terms', () => {
+      expect(joinTermTexts(['a\nb'])).toBe('⟦T0⟧a b⟦/T0⟧');
+    });
+  });
+
+  describe('alignTermGlosses', () => {
+    it('maps marked segments back to indices', () => {
+      const aligned = alignTermGlosses(['⟦T0⟧xin chào⟦/T0⟧⟦T1⟧thế giới⟦/T1⟧'], 2);
+      expect(aligned).toEqual(['xin chào', 'thế giới']);
+    });
+
+    it('pads with empty strings for absent markers', () => {
+      expect(alignTermGlosses(['⟦T1⟧thế giới⟦/T1⟧'], 2)).toEqual(['', 'thế giới']);
+    });
+
+    it('survives the provider reordering markers', () => {
+      const aligned = alignTermGlosses(['⟦T1⟧thế giới⟦/T1⟧ ⟦T0⟧xin chào⟦/T0⟧'], 2);
+      expect(aligned).toEqual(['xin chào', 'thế giới']);
+    });
+  });
+
+  describe('chunkTermMarkerTexts', () => {
+    it('keeps every chunk under the char budget', () => {
+      const terms = Array.from({ length: 50 }, (_, i) => `term-${i}-${'x'.repeat(40)}`);
+      const chunks = chunkTermMarkerTexts(terms, 1500);
+      expect(chunks.length).toBeGreaterThan(1);
+      for (const chunk of chunks) {
+        expect(joinTermTexts(chunk).length).toBeLessThanOrEqual(1500);
+      }
+      expect(chunks.flat()).toEqual(terms);
+    });
+
+    it('restarts marker indices per chunk', () => {
+      // 1484 + 11 marker chars = 1495; adding "b" (12 marked chars) overflows.
+      const chunks = chunkTermMarkerTexts(['a'.repeat(1484), 'b'], 1500);
+      expect(chunks).toHaveLength(2);
+      expect(joinTermTexts(chunks[1]!)).toBe('⟦T0⟧b⟦/T0⟧');
+    });
+
+    it('returns a single chunk for a lone oversized term', () => {
+      const chunks = chunkTermMarkerTexts(['a'.repeat(2000)], 1500);
+      expect(chunks).toHaveLength(1);
     });
   });
 });

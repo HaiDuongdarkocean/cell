@@ -25,9 +25,14 @@ jest.mock('@/features/tokenize/utils/frequencyBand', () => ({
   }),
 }));
 
+jest.mock('@/features/translate', () => ({
+  getWordTranslations: jest.fn(),
+}));
+
 import { getWordStatuses } from '@/features/dictionary';
 import { getFrequencyEntries } from '@/features/dictionary';
 import { loadFrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
+import { getWordTranslations } from '@/features/translate';
 
 function makeCues(count: number): SrtCue[] {
   return Array.from({ length: count }, (_, i) => ({
@@ -115,6 +120,46 @@ describe('createVideoTokenPreloader', () => {
     await waitForMicrotasks();
 
     expect(getWordStatuses).toHaveBeenCalled();
+  });
+
+  it('fetches glosses only when showGlosses and a target language are set', async () => {
+    (getWordTranslations as jest.Mock).mockResolvedValue(new Map([['hello', 'xin chào']]));
+
+    const preloader = createVideoTokenPreloader({ langCode: 'en', map, scheduler });
+    preloader.setCues(makeCues(1));
+    await flushScheduler(scheduler);
+    await waitForMicrotasks();
+    expect(getWordTranslations).not.toHaveBeenCalled();
+
+    preloader.setShowGlosses(true);
+    await flushScheduler(scheduler);
+    await waitForMicrotasks();
+    // No target language yet — still zero requests.
+    expect(getWordTranslations).not.toHaveBeenCalled();
+
+    preloader.setGlossTargetLanguage('vi');
+    await flushScheduler(scheduler);
+    await waitForMicrotasks();
+    expect(getWordTranslations).toHaveBeenCalledWith('en', 'vi', expect.arrayContaining(['hello']));
+    expect(map.get(0)!.tokens.find((t) => t.term === 'hello')?.gloss).toBe('xin chào');
+  });
+
+  it('re-fetches glosses when the native language changes', async () => {
+    (getWordTranslations as jest.Mock).mockResolvedValue(new Map([['hello', 'xin chào']]));
+
+    const preloader = createVideoTokenPreloader({
+      langCode: 'en', map, scheduler,
+      showGlosses: true, glossTargetLanguage: 'vi',
+    });
+    preloader.setCues(makeCues(1));
+    await flushScheduler(scheduler);
+    await waitForMicrotasks();
+    expect(getWordTranslations).toHaveBeenCalledTimes(1);
+
+    preloader.setGlossTargetLanguage('ja');
+    await flushScheduler(scheduler);
+    await waitForMicrotasks();
+    expect(getWordTranslations).toHaveBeenCalledWith('en', 'ja', expect.arrayContaining(['hello']));
   });
 
   it('deduplicates in-flight term lookups', async () => {

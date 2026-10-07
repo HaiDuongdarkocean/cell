@@ -81,6 +81,7 @@ import {
   PronunciationEspeakTtsPayloadSchema,
   ReadingsGetPayloadSchema,
   TranslatePayloadSchema,
+  TranslateTermsPayloadSchema,
   TtsDownloadProgressPayloadSchema,
   TtsDownloadVoicePayloadSchema,
   TtsFetchAudioPayloadSchema,
@@ -420,6 +421,12 @@ export const MESSAGE_REGISTRY = {
     schema: TranslatePayloadSchema,
     direction: 'cs->bg',
     owner: 'background/handlers/translate',
+  },
+  [MESSAGE_TYPES.TRANSLATE_TERMS]: {
+    type: MESSAGE_TYPES.TRANSLATE_TERMS,
+    schema: TranslateTermsPayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/translateTerms',
   },
   [MESSAGE_TYPES.CARD_CREATOR_REQUEST]: {
     type: MESSAGE_TYPES.CARD_CREATOR_REQUEST,

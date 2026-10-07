@@ -26,8 +26,8 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     chromeMock.storage.local.set.mockClear();
   });
 
-  it('CURRENT_SCHEMA_VERSION is 35 (V35 adds cardCreator.frequencyDisplay)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(35);
+  it('CURRENT_SCHEMA_VERSION is 37 (V37 adds showWordTranslations)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(37);
   });
 
   it('migrates v1 settings to v13 with nav cluster + block defaults merged', async () => {

@@ -18,7 +18,7 @@ import { toIso6391, baseLangCode } from '@/shared/config/languageRegistry';
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 36;
+export const CURRENT_SCHEMA_VERSION = 37;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -426,6 +426,7 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
       dictionaryPopup: (merged.dictionaryPopup ??
         DEFAULT_DICTIONARY_POPUP_SETTINGS) as LanguageProfile['dictionaryPopup'],
       showReadings: toIso6391(baseLangCode(oldTarget)) === 'zh',
+      showWordTranslations: false,
     };
 
     merged.universalNativeLanguage = universalNative;
@@ -553,6 +554,18 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
         ...p,
         showReadings:
           p.showReadings ?? (toIso6391(baseLangCode(p.target)) === 'zh'),
+      }));
+    }
+    return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
+  },
+  // v36 → v37: showWordTranslations flat field + per-profile boolean
+  // (spec word-translation). Default off for every target.
+  36: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 37 } as Record<string, unknown>;
+    if (Array.isArray(merged.languageProfiles)) {
+      merged.languageProfiles = (merged.languageProfiles as LanguageProfile[]).map((p) => ({
+        ...p,
+        showWordTranslations: p.showWordTranslations ?? false,
       }));
     }
     return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);

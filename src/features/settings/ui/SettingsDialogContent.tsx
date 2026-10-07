@@ -41,6 +41,7 @@ import { NavItem } from '@/shared/ui/NavItem';
 import { Navigation } from '@/shared/ui/Navigation';
 import { Sidebar } from '@/shared/ui/Sidebar';
 import { VStack } from '@/shared/ui/Stack';
+import { observeScrollDirection } from '@/shared/lib/dom/observeScrollDirection';
 
 import styles from './SettingsDialog.module.css';
 
@@ -139,6 +140,47 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
   const sidebarExpanded = containerWidth >= SIDEBAR_LABEL_MIN_WIDTH;
   const activeProfile = getActiveProfileSettings(settings);
 
+  useEffect(() => {
+    if (navOrientation !== 'horizontal') return;
+    const wrapper = wrapperRef.current;
+    const main = mainColRef.current;
+    const sidebar = wrapper?.querySelector<HTMLElement>('aside[data-orientation]');
+    if (!wrapper || !main || !sidebar) return;
+
+    const NAV_HIDE_CLEARANCE_PX = 16;
+    const safeScrollDistance = sidebar.getBoundingClientRect().height + NAV_HIDE_CLEARANCE_PX;
+
+    const showNav = (): void => {
+      delete wrapper.dataset.navHidden;
+      sidebar.inert = false;
+      sidebar.removeAttribute('aria-hidden');
+    };
+    const hideNav = (): void => {
+      wrapper.dataset.navHidden = 'true';
+      sidebar.inert = true;
+      sidebar.setAttribute('aria-hidden', 'true');
+    };
+
+    const stop = observeScrollDirection(main, {
+      threshold: 8,
+      cooldownMs: 300,
+      swipeThreshold: 20,
+      canChange: (direction) => {
+        if (direction === 'up') return true;
+        const active = (wrapper.getRootNode() as Document | ShadowRoot).activeElement;
+        return main.scrollHeight - main.clientHeight > safeScrollDistance && !sidebar.contains(active);
+      },
+      onDirection: (direction) => {
+        if (direction === 'down') hideNav();
+        else showNav();
+      },
+    });
+    return () => {
+      stop();
+      showNav();
+    };
+  }, [navOrientation]);
+
   const update = <K extends keyof Settings>(key: K, value: Settings[K]): void => {
     onChange({ ...settings, [key]: value });
   };
@@ -190,7 +232,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                 <NavItem
                   key={item.id}
                   data-section-id={item.id}
-                  icon={item.icon}
+                  icon={navOrientation === 'vertical' ? item.icon : undefined}
                   label={item.label}
                   tooltip={item.label}
                   aria-label={item.label}
@@ -433,6 +475,21 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                     checked={settings.showReadings}
                     onChange={(next) => update('showReadings', next)}
                     ariaLabel={t('settings.block.showReadings')}
+                  />
+                </SettingsRow>
+
+                <SettingsRow dense divider>
+                  <span className={styles.rowLabel}>
+                    {t('settings.block.showWordTranslations')}
+                    <HintIcon
+                      hint={t('settings.block.showWordTranslations.hint')}
+                      ariaLabel={t('settings.hint.aria', [t('settings.block.showWordTranslations')])}
+                    />
+                  </span>
+                  <Toggle
+                    checked={settings.showWordTranslations}
+                    onChange={(next) => update('showWordTranslations', next)}
+                    ariaLabel={t('settings.block.showWordTranslations')}
                   />
                 </SettingsRow>
               </VStack>

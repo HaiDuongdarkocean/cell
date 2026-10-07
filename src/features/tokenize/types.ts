@@ -23,6 +23,8 @@ export interface Token {
   frequencyBand: TokenFrequencyBand | undefined;
   /** Pronunciation/reading annotation; undefined until resolved or absent. */
   reading: string | undefined;
+  /** Native-language gloss; undefined until resolved or absent. */
+  gloss?: string;
 }
 
 export interface TokenBlock {
@@ -58,6 +60,8 @@ export interface TokenizeDisplayOptions {
   readonly showFrequency: boolean;
   /** Show reading annotation above tokens (controlled surfaces only). */
   readonly showReadings: boolean;
+  /** Show native-language gloss below tokens (subtitle overlay only). */
+  readonly showGlosses?: boolean;
 }
 
 export interface TokenizeSettings {
@@ -97,6 +101,7 @@ export interface TokenizeController {
   readonly setShowStatus: (show: boolean) => void;
   readonly setShowFrequency: (show: boolean) => void;
   readonly setShowReadings?: (show: boolean) => void;
+  readonly setShowGlosses?: (show: boolean) => void;
   readonly destroy: () => void;
 }
 

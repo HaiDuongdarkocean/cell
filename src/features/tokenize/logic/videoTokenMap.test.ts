@@ -107,6 +107,40 @@ describe('createVideoTokenMap', () => {
     expect(map.get(1)!.tokens.every((t) => t.status === 'unknown')).toBe(true);
   });
 
+  it('resolves glosses and caches them into newly prepared cues', () => {
+    const map = createVideoTokenMap('en');
+    map.prepare(0, 'Hello world');
+
+    map.resolveMetadata(0, new Map(), new Map(), undefined, new Map([['hello', 'xin chào']]));
+    expect(map.get(0)!.tokens.find((t) => t.term === 'hello')?.gloss).toBe('xin chào');
+
+    map.prepare(1, 'Hello again');
+    expect(map.get(1)!.tokens.find((t) => t.term === 'hello')?.gloss).toBe('xin chào');
+  });
+
+  it('keeps glosses when the gloss leg is skipped (undefined map)', () => {
+    const map = createVideoTokenMap('en');
+    map.prepare(0, 'Hello');
+
+    map.resolveMetadata(0, new Map(), new Map(), undefined, new Map([['hello', 'xin chào']]));
+    map.resolveMetadata(0, new Map(), new Map());
+
+    expect(map.get(0)!.tokens.find((t) => t.term === 'hello')?.gloss).toBe('xin chào');
+  });
+
+  it('clearGlosses drops cached glosses for future prepares', () => {
+    const map = createVideoTokenMap('en');
+    map.prepare(0, 'Hello world');
+    map.resolveMetadata(0, new Map(), new Map(), undefined, new Map([['hello', 'xin chào']]));
+
+    map.clearGlosses();
+    map.prepare(1, 'Hello again');
+
+    expect(map.get(1)!.tokens.find((t) => t.term === 'hello')?.gloss).toBeUndefined();
+    // Existing tokens keep the stale hint until a re-resolve overwrites it.
+    expect(map.get(0)!.tokens.find((t) => t.term === 'hello')?.gloss).toBe('xin chào');
+  });
+
   it('clears all cues and listeners still work after clear', () => {
     const map = createVideoTokenMap('en');
     map.prepare(0, 'Hello world');

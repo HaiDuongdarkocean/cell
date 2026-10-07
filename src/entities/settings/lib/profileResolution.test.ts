@@ -15,6 +15,7 @@ const mockProfile = (overrides: Partial<LanguageProfile> = {}): LanguageProfile 
   dictionaryPopup: { enabled: true, triggerMode: 'click', defaultActiveTab: null, popupWidthPx: 560, popupMaxHeightPx: 480, popupSheetHeightVh: 75, tts: { enabled: true, savedVoices: [], voices: [], maxDisplay: 3, autoplayCount: 0, preferredAccent: 'US', localTtsEnabled: false, localTtsLanguage: 'en', downloadedLanguages: [], hiddenLanguages: [] }, externalDictLinks: [], srsDestination: 'anki', badgePointerTrigger: { position: 'center', size: 36, pointerScale: 0.25 } },
 
   showReadings: false,
+  showWordTranslations: false,
   ...overrides,
 });
 

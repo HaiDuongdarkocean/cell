@@ -47,6 +47,7 @@ export const MESSAGE_TYPES = {
   INNERTUBE_FALLBACK_REQUEST: 'INNERTUBE_FALLBACK_REQUEST',
   FETCH_REQUEST: 'FETCH_REQUEST',
   TRANSLATE: 'TRANSLATE',
+  TRANSLATE_TERMS: 'TRANSLATE_TERMS',
   CARD_CREATOR_REQUEST: 'CARD_CREATOR_REQUEST',
   // === Popup Dictionary (spec §9.4 B) — scrape / status / Anki ===
   // Worker dict match uses the dedicated requestId bridge, NOT this fan-out.

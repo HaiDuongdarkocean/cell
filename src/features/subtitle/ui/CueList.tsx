@@ -141,6 +141,9 @@ const CueTokenText = memo(function CueTokenText({
             : '',
           selectedTerms?.has(token.term) ? 'js-cell-token--selected' : '',
           showReadings ? '' : 'js-cell-token--reading-off',
+          // Glosses are subtitle-overlay only (spec word-translation) —
+          // suppress the ::after lane and its reserved footroom here.
+          'js-cell-token--gloss-off',
         ]
           .filter(Boolean)
           .join(' ')}

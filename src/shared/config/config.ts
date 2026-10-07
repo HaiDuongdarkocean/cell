@@ -313,6 +313,9 @@ export const DEFAULT_SETTINGS: Settings = {
   // Reading annotations (spec reading-annotation, schema v36): default OFF at
   // the flat level — zh profiles carry true; flat value mirrors active profile.
   showReadings: false,
+  // Word-translation glosses (spec word-translation, schema v37): flat level
+  // mirrors the active profile; default OFF for all targets.
+  showWordTranslations: false,
   subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
   subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
   subtitlePreference: {},

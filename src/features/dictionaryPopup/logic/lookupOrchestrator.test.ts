@@ -133,6 +133,7 @@ function makeProfile(id: string, target: string): LanguageProfile {
     subtitleOverlayAutoLoadAsr: false,
     subtitleOverlayAutoTranslate: false,
     showReadings: false,
+    showWordTranslations: false,
     dictionaryPopup: DEFAULT_DICTIONARY_POPUP_SETTINGS,
   };
 }

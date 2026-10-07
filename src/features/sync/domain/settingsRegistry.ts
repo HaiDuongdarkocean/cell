@@ -14,6 +14,7 @@ const ACTIVE_PROFILE_MIRROR_EXCLUSIONS: readonly PathPattern[] = [
   ['subtitleOverlayNativeStyle'],
   ['dictionaryPopup'],
   ['showReadings'],
+  ['showWordTranslations'],
 ];
 
 const TTS_LOCAL_EXCLUSIONS: readonly PathPattern[] = [

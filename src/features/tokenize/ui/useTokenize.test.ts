@@ -6,7 +6,7 @@ import type { TokenizeState, TokenizeStateStore } from '@/features/tokenize/serv
 function createMockStore(initial: Partial<TokenizeState> = {}): TokenizeStateStore {
   const listeners = new Set<(state: TokenizeState) => void>();
   let state: TokenizeState = {
-    enabled: false, showStatus: false, showFrequency: false, showReadings: false,
+    enabled: false, showStatus: false, showFrequency: false, showReadings: false, showGlosses: false,
     ...initial,
     hoveredTerm: null,
     selectedTerms: new Set<string>() as ReadonlySet<string>,
@@ -24,6 +24,7 @@ function createMockStore(initial: Partial<TokenizeState> = {}): TokenizeStateSto
     setShowStatus: (show: boolean) => { state = { ...state, showStatus: show }; notify(); },
     setShowFrequency: (show: boolean) => { state = { ...state, showFrequency: show }; notify(); },
     setShowReadings: (show: boolean) => { state = { ...state, showReadings: show }; notify(); },
+    setShowGlosses: (show: boolean) => { state = { ...state, showGlosses: show }; notify(); },
     setHoveredTerm: () => {},
     toggleSelectedTerm: () => {},
     addSelectedTerm: () => {},

@@ -18,13 +18,18 @@ export interface VideoTokenMap {
     statuses: ReadonlyMap<string, WordStatus>,
     frequencies: ReadonlyMap<string, TokenFrequencyBand>,
     readings?: ReadonlyMap<string, string> | null,
+    glosses?: ReadonlyMap<string, string> | null,
   ) => void;
   readonly resolveTerms: (
     terms: ReadonlySet<string>,
     statuses: ReadonlyMap<string, WordStatus>,
     frequencies: ReadonlyMap<string, TokenFrequencyBand>,
     readings?: ReadonlyMap<string, string> | null,
+    glosses?: ReadonlyMap<string, string> | null,
   ) => void;
+  /** Drop cached glosses (native-language change). Tokens keep their current
+   *  gloss until the next resolve overwrites it — stale hint beats blank. */
+  readonly clearGlosses: () => void;
   readonly applyStatus: (term: string, status: WordStatus) => boolean;
   readonly terms: () => ReadonlySet<string>;
   readonly onUpdate: (listener: (cueIndex: number) => void) => () => void;
@@ -38,6 +43,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
   const termStatusCache = new Map<string, WordStatus>();
   const termFrequencyCache = new Map<string, TokenFrequencyBand>();
   const termReadingCache = new Map<string, string>();
+  const termGlossCache = new Map<string, string>();
   const listeners = new Set<(cueIndex: number) => void>();
 
   function emit(cueIndex: number): void {
@@ -84,6 +90,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
     statuses: ReadonlyMap<string, WordStatus>,
     frequencies: ReadonlyMap<string, TokenFrequencyBand>,
     readings?: ReadonlyMap<string, string> | null,
+    glosses?: ReadonlyMap<string, string> | null,
   ): void {
     const cue = cues.get(cueIndex);
     if (!cue) return;
@@ -103,7 +110,15 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
         if (reading) termReadingCache.set(token.term, reading);
         else termReadingCache.delete(token.term);
       }
-      if (status !== token.status || frequencyBand !== token.frequencyBand || reading !== token.reading) {
+      // glosses follows the readings contract: undefined/null = leg skipped or
+      // failed (keep existing); a provided map is authoritative per term.
+      let gloss = token.gloss;
+      if (glosses?.has(token.term)) {
+        gloss = glosses.get(token.term) || undefined;
+        if (gloss) termGlossCache.set(token.term, gloss);
+        else termGlossCache.delete(token.term);
+      }
+      if (status !== token.status || frequencyBand !== token.frequencyBand || reading !== token.reading || gloss !== token.gloss) {
         changed = true;
       }
       if (!token.isSeparator) {
@@ -111,7 +126,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
         termFrequencyCache.set(token.term, frequencyBand);
         resolvedTerms.add(token.term);
       }
-      return { ...token, status, frequencyBand, reading };
+      return { ...token, status, frequencyBand, reading, gloss };
     });
     const allResolved = tokens.every(
       (token) => token.isSeparator || resolvedTerms.has(token.term),
@@ -125,6 +140,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
     statuses: ReadonlyMap<string, WordStatus>,
     frequencies: ReadonlyMap<string, TokenFrequencyBand>,
     readings?: ReadonlyMap<string, string> | null,
+    glosses?: ReadonlyMap<string, string> | null,
   ): void {
     const affected = new Set<number>();
     for (const term of terms) {
@@ -135,7 +151,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
       }
     }
     for (const cueIndex of affected) {
-      resolveCue(cueIndex, statuses, frequencies, readings);
+      resolveCue(cueIndex, statuses, frequencies, readings, glosses);
     }
   }
 
@@ -148,6 +164,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
         status: (termStatusCache.get(token.term) ?? 'unknown') as Token['status'],
         frequencyBand: (termFrequencyCache.get(token.term) ?? 'none') as Token['frequencyBand'],
         reading: termReadingCache.get(token.term),
+        gloss: termGlossCache.get(token.term),
       }));
       const termSet = buildTermIndex(tokens);
       removeFromTermIndex(cueIndex, cues.get(cueIndex)?.termSet ?? new Set());
@@ -170,11 +187,16 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
       statuses: ReadonlyMap<string, WordStatus>,
       frequencies: ReadonlyMap<string, TokenFrequencyBand>,
       readings?: ReadonlyMap<string, string> | null,
+      glosses?: ReadonlyMap<string, string> | null,
     ): void {
-      resolveCue(cueIndex, statuses, frequencies, readings);
+      resolveCue(cueIndex, statuses, frequencies, readings, glosses);
     },
 
     resolveTerms: resolveTermsInCues,
+
+    clearGlosses(): void {
+      termGlossCache.clear();
+    },
 
     applyStatus(term: string, status: WordStatus): boolean {
       termStatusCache.set(term, status);
@@ -218,6 +240,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
       termStatusCache.clear();
       termFrequencyCache.clear();
       termReadingCache.clear();
+      termGlossCache.clear();
     },
   };
 }

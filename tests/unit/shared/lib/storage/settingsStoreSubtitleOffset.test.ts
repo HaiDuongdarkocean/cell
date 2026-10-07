@@ -30,8 +30,8 @@ describe('settingsStore schema v3 migration (ADR-019 subtitleOffset)', () => {
     expect(DEFAULT_SETTINGS.subtitleOffset).toEqual({});
   });
 
-  it('CURRENT_SCHEMA_VERSION is 36 (V36 adds showReadings)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(36);
+  it('CURRENT_SCHEMA_VERSION is 37 (V37 adds showWordTranslations)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(37);
   });
 
   it('migrates v2 settings (no subtitleOffset) to v3 with default {}', async () => {

@@ -26,6 +26,10 @@ export interface SubtitleTokenizeController extends TokenizeController {
   rebind(): void;
   /** Toggle reading caps — mirrors store + preloader then rebinds. */
   setShowReadings(show: boolean): void;
+  /** Toggle native-language glosses — mirrors store + preloader then rebinds. */
+  setShowGlosses(show: boolean): void;
+  /** Native subtitle language changed — drops cached glosses and re-fetches. */
+  setGlossTargetLanguage(tl: string): void;
   handleStatusKey(key: string): boolean;
   /** Set/clear the hovered term — cue-list surfaces feed this via their
    *  tokenize adapter so status keys 1-4 apply to the hovered panel word. */
@@ -57,6 +61,10 @@ export interface SubtitleTokenizeControllerOptions {
   readonly windowSize?: number;
   /** Show reading caps above tokens (profile setting `showReadings`). */
   readonly showReadings?: boolean;
+  /** Show native-language glosses below tokens (profile setting `showWordTranslations`). */
+  readonly showGlosses?: boolean;
+  /** Gloss destination language — `subtitleOverlayNativeLanguage`. */
+  readonly glossTargetLanguage?: string;
 }
 
 /** Build a TokenBlock from the current text node of a cue line. */
@@ -83,6 +91,7 @@ export function createSubtitleTokenizeController(
   const stateStore: TokenizeStateStore = createTokenizeStateStore({
     initialEnabled: false,
     initialShowReadings: options.showReadings ?? false,
+    initialShowGlosses: options.showGlosses ?? false,
   });
   const videoTokenMap: VideoTokenMap = createVideoTokenMap(langCode);
   const preloader: VideoTokenPreloader = createVideoTokenPreloader({
@@ -91,6 +100,8 @@ export function createSubtitleTokenizeController(
     scheduler,
     bufferSize: windowSize,
     showReadings: options.showReadings ?? false,
+    showGlosses: options.showGlosses ?? false,
+    glossTargetLanguage: options.glossTargetLanguage ?? '',
   });
   let targetCues: readonly SrtCue[] = [];
   let lastTargetIndex = -1;
@@ -102,6 +113,7 @@ export function createSubtitleTokenizeController(
       showStatus: state.showStatus,
       showFrequency: state.showFrequency,
       showReadings: state.showReadings,
+      showGlosses: state.showGlosses,
       onTokenEnter: (term) => stateStore.setHoveredTerm(term),
       onTokenLeave: (term) => {
         if (stateStore.getState().hoveredTerm === term) {
@@ -269,6 +281,17 @@ export function createSubtitleTokenizeController(
       stateStore.setShowReadings(show);
       preloader.setShowReadings(show);
       this.rebind();
+    },
+
+    setShowGlosses(show: boolean) {
+      if (stateStore.getState().showGlosses === show) return;
+      stateStore.setShowGlosses(show);
+      preloader.setShowGlosses(show);
+      this.rebind();
+    },
+
+    setGlossTargetLanguage(tl: string) {
+      preloader.setGlossTargetLanguage(tl);
     },
 
     setCues(nextTargetCues, _nextNativeCues) {

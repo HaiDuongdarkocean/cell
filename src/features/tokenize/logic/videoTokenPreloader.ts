@@ -7,6 +7,7 @@ import { PRIORITY_VIEWPORT, PRIORITY_PREPARE, PRIORITY_IDLE } from './tokenizeSc
 import { getWordStatuses } from '@/features/dictionary';
 import { getFrequencyEntries } from '@/features/dictionary';
 import { getReadings } from '@/features/dictionary';
+import { getWordTranslations } from '@/features/translate';
 import {
   entriesToBand,
   loadFrequencyBandOptions,
@@ -24,6 +25,11 @@ export interface VideoTokenPreloaderOptions {
   readonly chunkSize?: number;
   /** Fetch pronunciation/readings alongside status/frequency metadata. */
   readonly showReadings?: boolean;
+  /** Fetch native-language glosses for word tokens (subtitle overlay only). */
+  readonly showGlosses?: boolean;
+  /** Gloss destination language — `subtitleOverlayNativeLanguage`. Empty or
+   *  absent = gloss leg skipped (zero requests). */
+  readonly glossTargetLanguage?: string;
 }
 
 export interface VideoTokenPreloader {
@@ -35,6 +41,12 @@ export interface VideoTokenPreloader {
   /** Toggle reading fetch. Turning on re-resolves already-fetched terms so
    *  existing tokens pick up readings without a cue reload. */
   readonly setShowReadings: (show: boolean) => void;
+  /** Toggle gloss fetch. Turning on re-resolves already-fetched terms. */
+  readonly setShowGlosses: (show: boolean) => void;
+  /** Gloss destination language change — clears the gloss cache so stale
+   *  glosses in the old language cannot leak into newly prepared cues, then
+   *  re-queues every term. */
+  readonly setGlossTargetLanguage: (tl: string) => void;
   /** Dictionary corpus changed — drop the resolved-term dedupe and re-fetch
    *  statuses/frequencies/readings for every prepared term. */
   readonly invalidate: () => void;
@@ -51,9 +63,13 @@ export function createVideoTokenPreloader(
     bufferSize = 5,
     chunkSize = 100,
     showReadings: initialShowReadings = false,
+    showGlosses: initialShowGlosses = false,
+    glossTargetLanguage: initialGlossTargetLanguage = '',
   } = options;
 
   let showReadings = initialShowReadings;
+  let showGlosses = initialShowGlosses;
+  let glossTargetLanguage = initialGlossTargetLanguage;
 
   let cues: readonly SrtCue[] = [];
   const prepared = new Set<number>();
@@ -99,11 +115,14 @@ export function createVideoTokenPreloader(
     }
 
     try {
-      const [statusMap, freqMaps, bandOpts, dictReadings] = await Promise.all([
+      const [statusMap, freqMaps, bandOpts, dictReadings, termGlosses] = await Promise.all([
         getWordStatuses(langCode, terms),
         getFrequencyEntries(langCode, terms),
         loadBandOptions(),
         showReadings ? getReadings(langCode, terms).catch(() => null) : Promise.resolve(null),
+        showGlosses && glossTargetLanguage
+          ? getWordTranslations(langCode, glossTargetLanguage, terms).catch(() => null)
+          : Promise.resolve(null),
       ]);
 
       const frequencies = new Map<string, TokenFrequencyBand>();
@@ -135,7 +154,7 @@ export function createVideoTokenPreloader(
         resolvedTerms.add(term);
       }
 
-      map.resolveTerms(new Set(terms), statuses, frequencies, readings);
+      map.resolveTerms(new Set(terms), statuses, frequencies, readings, termGlosses ?? undefined);
     } catch (err) {
       for (const term of terms) {
         if (!resolvedTerms.has(term)) {
@@ -263,6 +282,24 @@ export function createVideoTokenPreloader(
       showReadings = show;
       if (!show) return;
       resolvedTerms.clear();
+      scheduleResolve(map.terms(), PRIORITY_IDLE);
+    },
+
+    setShowGlosses(show: boolean): void {
+      if (show === showGlosses) return;
+      showGlosses = show;
+      if (!show) return;
+      resolvedTerms.clear();
+      scheduleResolve(map.terms(), PRIORITY_IDLE);
+    },
+
+    setGlossTargetLanguage(tl: string): void {
+      if (tl === glossTargetLanguage) return;
+      glossTargetLanguage = tl;
+      map.clearGlosses();
+      if (!showGlosses) return;
+      resolvedTerms.clear();
+      pendingTerms.clear();
       scheduleResolve(map.terms(), PRIORITY_IDLE);
     },
 

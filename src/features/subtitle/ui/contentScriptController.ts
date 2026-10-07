@@ -365,6 +365,8 @@ export function init(
               openDictionaryFromToken(settings.subtitleOverlayTargetLanguage, term, element, contextSentence, event),
             getPopupStatusTarget: () => sharedWebTextCtrl?.getPopupStatusTarget?.() ?? null,
             showReadings: settings.showReadings,
+            showGlosses: settings.showWordTranslations,
+            glossTargetLanguage: settings.subtitleOverlayNativeLanguage ?? '',
           });
         }
         subtitleTokenizeCtrl.enable();
@@ -611,6 +613,15 @@ export function init(
       if (newSettings?.showReadings !== undefined) {
         subtitleTokenizeCtrl?.setShowReadings(newSettings.showReadings);
         blockController.setTokenizeShowReadings(newSettings.showReadings);
+      }
+
+      // Word-translation glosses (spec word-translation): live-toggle display
+      // and re-resolve when the native target language changes.
+      if (newSettings?.showWordTranslations !== undefined) {
+        subtitleTokenizeCtrl?.setShowGlosses(newSettings.showWordTranslations);
+      }
+      if (newSettings?.subtitleOverlayNativeLanguage !== undefined) {
+        subtitleTokenizeCtrl?.setGlossTargetLanguage(newSettings.subtitleOverlayNativeLanguage);
       }
 
       // Live-update dictionary popup settings (defaultActiveTab, triggerMode, etc.)

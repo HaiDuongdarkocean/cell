@@ -150,6 +150,14 @@ html body .js-cell-token--word:not(.js-cell-token--reading-off) {
   margin-top: 0.85em !important;
 }
 
+/* Gloss footroom (spec word-translation): same mechanism as the reading
+   headroom — all word tokens reserve the lane uniformly so asynchronously
+   resolved glosses never reflow the line. */
+html body .js-cell-token--word:not(.js-cell-token--gloss-off) {
+  display: inline-block !important;
+  margin-bottom: 0.95em !important;
+}
+
 .js-cell-token-word {
   display: inline !important;
   background: transparent !important;
@@ -177,6 +185,31 @@ html body .js-cell-token:not(.js-cell-token--reading-off) .js-cell-token-word[da
   opacity: 0.92;
   text-shadow: var(--shadow-sm);
   pointer-events: none;
+}
+
+/* Gloss footnote (spec word-translation): the native-language gloss rides below
+   the token inside the reserved footroom — mirror of the ::before reading cap.
+   Bounded to the token width + separator-gap bleed; longer glosses ellipsis
+   instead of reflowing the line. Never selectable, never copied. */
+html body .js-cell-token:not(.js-cell-token--gloss-off) .js-cell-token-word[data-gloss]::after {
+  content: attr(data-gloss);
+  position: absolute;
+  top: 100%;
+  left: -0.4em;
+  right: -0.4em;
+  text-align: center;
+  font-size: 0.6em;
+  line-height: 1.15;
+  white-space: nowrap;
+  font-style: normal;
+  font-weight: 500;
+  color: inherit;
+  opacity: 0.85;
+  text-shadow: var(--shadow-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  user-select: none;
 }
 
 /* Status span is kept in the DOM for tests/backwards compatibility but the
@@ -368,6 +401,11 @@ ${buildVariables(':host')}
   margin-top: 0.85em !important;
 }
 
+.js-cell-token--word:not(.js-cell-token--gloss-off) {
+  display: inline-block !important;
+  margin-bottom: 0.95em !important;
+}
+
 .js-cell-token-word {
   display: inline !important;
   background: transparent !important;
@@ -394,6 +432,27 @@ ${buildVariables(':host')}
   opacity: 0.92;
   text-shadow: var(--shadow-sm);
   pointer-events: none;
+}
+
+.js-cell-token:not(.js-cell-token--gloss-off) .js-cell-token-word[data-gloss]::after {
+  content: attr(data-gloss);
+  position: absolute;
+  top: 100%;
+  left: -0.4em;
+  right: -0.4em;
+  text-align: center;
+  font-size: 0.6em;
+  line-height: 1.15;
+  white-space: nowrap;
+  font-style: normal;
+  font-weight: 500;
+  color: inherit;
+  opacity: 0.85;
+  text-shadow: var(--shadow-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  user-select: none;
 }
 
 .js-cell-token-status {

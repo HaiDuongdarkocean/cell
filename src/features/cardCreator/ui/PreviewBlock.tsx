@@ -103,6 +103,8 @@ function tokenClassName(token: Token, resolving: boolean, showReadings: boolean)
       ? `js-cell-token--frequency-${token.frequencyBand}`
       : '',
     showReadings ? '' : 'js-cell-token--reading-off',
+    // Glosses are subtitle-overlay only (spec word-translation).
+    'js-cell-token--gloss-off',
     styles['cc-preview__token'],
   ]
     .filter(Boolean)

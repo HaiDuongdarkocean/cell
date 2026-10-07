@@ -73,6 +73,7 @@ import { registerSidePanelRelayHandlers } from './handlers/sidePanelRelay';
 import { registerYouTubeFallbackHandlers } from './handlers/youtubeDetection';
 import { registerDetectionDispatchHandlers } from './handlers/detectionDispatch';
 import { registerTranslateHandlers } from './handlers/translate';
+import { registerTranslateTermsHandlers } from './handlers/translateTerms';
 import { registerCardCreatorHandlers } from './handlers/cardCreator';
 import { registerLookupHandlers } from './handlers/lookup';
 import { registerWordStatusHandlers } from './handlers/wordStatus';
@@ -295,6 +296,7 @@ export class BackgroundService implements BackgroundContext {
     registerDetectionDispatchHandlers(this);
     registerYouTubeFallbackHandlers(this);
     registerTranslateHandlers(this);
+    registerTranslateTermsHandlers(this);
     registerCardCreatorHandlers(this);
     registerLookupHandlers(this);
     registerWordStatusHandlers(this);

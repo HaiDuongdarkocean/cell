@@ -287,6 +287,8 @@ export interface LanguageProfile {
   readonly dictionaryPopup: DictionaryPopupSettings;
   /** Show pronunciation/reading annotations on tokenized tokens. Default: zh targets true, others false (schema v36). */
   readonly showReadings: boolean;
+  /** Show native-language glosses below subtitle-overlay tokens (spec word-translation). Default false (schema v37). */
+  readonly showWordTranslations: boolean;
 }
 
 /** Active profile with inheritance resolved. */
@@ -415,6 +417,8 @@ export interface Settings {
   readonly subtitleOverlayAutoTranslate: boolean;
   /** Reading annotation toggle (mirrors active LanguageProfile.showReadings). Default false (schema v36); zh profiles default true. */
   readonly showReadings: boolean;
+  /** Word-translation gloss toggle (mirrors active LanguageProfile.showWordTranslations). Default false (schema v37). */
+  readonly showWordTranslations: boolean;
   /** Per-layer appearance config for target subtitle overlay (ADR-013, ADR-025). Independent from native. */
   readonly subtitleOverlayTargetStyle?: OverlayStyleConfig;
   /** Per-layer appearance config for native subtitle overlay (ADR-013, ADR-025). Independent from target. */

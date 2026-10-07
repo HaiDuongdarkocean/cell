@@ -34,6 +34,7 @@ function makeLanguageProfile(
     subtitleOverlayAutoLoadAsr: DEFAULT_SETTINGS.subtitleOverlayAutoLoadAsr,
     subtitleOverlayAutoTranslate: DEFAULT_SETTINGS.subtitleOverlayAutoTranslate,
     showReadings: false,
+    showWordTranslations: false,
     dictionaryPopup: DEFAULT_DICTIONARY_POPUP_SETTINGS,
   };
 }

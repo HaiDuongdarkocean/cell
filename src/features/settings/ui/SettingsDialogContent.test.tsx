@@ -206,4 +206,65 @@ describe('SettingsDialogContent — nav orientation cutoff', () => {
     expect(sidebar).not.toHaveAttribute('data-collapsed');
     expect(container.querySelector('nav')).toHaveClass('vertical');
   });
+
+  const makeScrollableMain = (container: HTMLElement): HTMLElement => {
+    const main = container.querySelector<HTMLElement>('.mainCol');
+    if (!main) throw new Error('main column not rendered');
+    let top = 0;
+    Object.defineProperties(main, {
+      scrollHeight: { value: 2000, configurable: true },
+      clientHeight: { value: 400, configurable: true },
+      scrollTop: {
+        get: () => top,
+        set: (v: number) => { top = v; },
+        configurable: true,
+      },
+    });
+    return main;
+  };
+
+  it('hides the horizontal nav on downward scroll and reveals it on scroll up', async () => {
+    mockContainerWidth(700);
+    const { container } = renderContent();
+    const body = container.firstElementChild as HTMLElement;
+    const aside = container.querySelector('aside[data-orientation="horizontal"]');
+    const main = makeScrollableMain(container);
+
+    main.scrollTop = 200;
+    fireEvent.scroll(main);
+    expect(body).toHaveAttribute('data-nav-hidden', 'true');
+    expect(aside).toHaveAttribute('aria-hidden', 'true');
+
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    main.scrollTop = 80;
+    fireEvent.scroll(main);
+    expect(body).not.toHaveAttribute('data-nav-hidden');
+    expect(aside).not.toHaveAttribute('aria-hidden');
+  });
+
+  it('reveals the horizontal nav immediately at scroll top', () => {
+    mockContainerWidth(700);
+    const { container } = renderContent();
+    const body = container.firstElementChild as HTMLElement;
+    const main = makeScrollableMain(container);
+
+    main.scrollTop = 200;
+    fireEvent.scroll(main);
+    expect(body).toHaveAttribute('data-nav-hidden', 'true');
+
+    main.scrollTop = 0;
+    fireEvent.scroll(main);
+    expect(body).not.toHaveAttribute('data-nav-hidden');
+  });
+
+  it('never hides the nav in vertical orientation', () => {
+    mockContainerWidth(800);
+    const { container } = renderContent();
+    const body = container.firstElementChild as HTMLElement;
+    const main = makeScrollableMain(container);
+
+    main.scrollTop = 200;
+    fireEvent.scroll(main);
+    expect(body).not.toHaveAttribute('data-nav-hidden');
+  });
 });
