@@ -62,6 +62,44 @@ describe('PumpPlayer', () => {
     expect(preloads).toEqual(['blob:b']);
   });
 
+  it('pause during the gap after an asset item stays paused', async () => {
+    let releaseGap!: () => void;
+    const { deps: d, speakCalls } = deps({
+      sleep: jest.fn(() => new Promise<void>((r) => { releaseGap = r; })),
+    });
+    const { states, cb } = collect();
+    const p = new PumpPlayer(d, cb);
+    p.start([assetItem('a'), ttsItem('b')], { repeat: 1, gapSeconds: 1 });
+    await flush();
+    expect(states.at(-1)?.phase).toBe('playing');
+    p.pause();
+    releaseGap();
+    await flush();
+    expect(states.at(-1)?.phase).toBe('paused');
+    expect(speakCalls).toEqual([]);
+    p.resume();
+    await flush();
+    expect(speakCalls).toEqual(['s-b']);
+  });
+
+  it('a skip resets repeatsDone so the next item gets the full repeat count', async () => {
+    const { deps: d, speakCalls } = deps();
+    let calls = 0;
+    d.speak = jest.fn((text: string) => {
+      speakCalls.push(text);
+      calls += 1;
+      return calls === 2 ? Promise.reject(new Error('tts failed')) : Promise.resolve();
+    });
+    const { states, cb } = collect();
+    const p = new PumpPlayer(d, cb);
+    p.start([ttsItem('a'), ttsItem('b')], { repeat: 2, gapSeconds: 0 });
+    await flush(12);
+    expect(speakCalls).toEqual(['s-a', 's-a', 's-b', 's-b']);
+    expect(states.at(-1)?.phase).toBe('done');
+    expect(states.at(-1)?.skipped).toBe(1);
+    expect(states.at(-1)?.played).toBe(3);
+  });
+
   it('repeats an item N times before advancing', async () => {
     const { deps: d, speakCalls } = deps();
     const { cb } = collect();

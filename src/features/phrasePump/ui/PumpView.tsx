@@ -70,7 +70,9 @@ export function PumpView({ onBack, initialDeckId }: PumpViewProps): React.JSX.El
     shuffle: shuffleOn,
   };
   const startSession = (): void => {
-    void rebuild().then((items) => pump.start(items, startConfig));
+    void rebuild().then((items) => {
+      if (items.length > 0) pump.start(items, startConfig);
+    });
   };
 
   const item = state.items[state.index];

@@ -190,6 +190,7 @@ export class PumpPlayer {
         const { handle, settled } = this.deps.playUrl(item.audioUrl);
         this.active = handle;
         await settled;
+        this.active = null;
       } else {
         this.activeIsTts = true;
         this.active = { pause: () => undefined, resume: () => undefined, stop: () => this.deps.speakStop() };
@@ -199,6 +200,7 @@ export class PumpPlayer {
       // Settlements after a user-initiated stop/skip are stale — discard.
       if (gen !== this.generation) return;
       this.skipped += 1;
+      this.repeatsDone = 0;
       await this.advance(gen);
       return;
     }
