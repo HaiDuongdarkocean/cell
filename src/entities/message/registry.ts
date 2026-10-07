@@ -90,10 +90,13 @@ import {
   WordStatusDeletedPayloadSchema,
   WordStatusGetPayloadSchema,
   WordStatusListPayloadSchema,
+  WordStatusRestoreManyPayloadSchema,
   WordStatusRestorePayloadSchema,
+  WordStatusSetManyPayloadSchema,
   WordStatusSetPayloadSchema,
   WordStatusTrashDeletePayloadSchema,
   WordStatusTrashListPayloadSchema,
+  WordStatusTrashManyPayloadSchema,
   WordStatusTrashPayloadSchema,
   WordStatusesGetPayloadSchema,
 } from './dictionarySchemas';
@@ -130,6 +133,7 @@ import {
   CondenseAudioStartPayloadSchema,
 } from '@/entities/message/condensedAudioSchemas';
 import {
+  AnkiStatusCardTermsPayloadSchema,
   AnkiStatusSyncRunPayloadSchema,
   AnkiStatusSrsReviewedPayloadSchema,
 } from '@/entities/message/ankiStatusSyncSchemas';
@@ -533,6 +537,24 @@ export const MESSAGE_REGISTRY = {
     type: MESSAGE_TYPES.WORD_STATUS_DELETE,
     schema: WordStatusDeletePayloadSchema,
     direction: 'cs->bg',
+    owner: 'background/handlers/wordStatus',
+  },
+  [MESSAGE_TYPES.WORD_STATUS_SET_MANY]: {
+    type: MESSAGE_TYPES.WORD_STATUS_SET_MANY,
+    schema: WordStatusSetManyPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/wordStatus',
+  },
+  [MESSAGE_TYPES.WORD_STATUS_TRASH_MANY]: {
+    type: MESSAGE_TYPES.WORD_STATUS_TRASH_MANY,
+    schema: WordStatusTrashManyPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/wordStatus',
+  },
+  [MESSAGE_TYPES.WORD_STATUS_RESTORE_MANY]: {
+    type: MESSAGE_TYPES.WORD_STATUS_RESTORE_MANY,
+    schema: WordStatusRestoreManyPayloadSchema,
+    direction: 'any',
     owner: 'background/handlers/wordStatus',
   },
   [MESSAGE_TYPES.WORD_STATUS_CHANGED]: {
@@ -995,6 +1017,12 @@ export const MESSAGE_REGISTRY = {
     type: MESSAGE_TYPES.ANKI_STATUS_SYNC_STATE,
     schema: EmptyPayloadSchema,
     direction: 'any',
+    owner: 'background/handlers/ankiStatusSync',
+  },
+  [MESSAGE_TYPES.ANKI_STATUS_CARD_TERMS]: {
+    type: MESSAGE_TYPES.ANKI_STATUS_CARD_TERMS,
+    schema: AnkiStatusCardTermsPayloadSchema,
+    direction: 'cs->bg',
     owner: 'background/handlers/ankiStatusSync',
   },
   [MESSAGE_TYPES.ANKI_STATUS_SRS_REVIEWED]: {

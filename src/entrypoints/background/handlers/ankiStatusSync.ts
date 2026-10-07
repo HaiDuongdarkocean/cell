@@ -5,6 +5,7 @@ import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import {
+  AnkiStatusCardTermsPayloadSchema,
   AnkiStatusSyncRunPayloadSchema,
   AnkiStatusSrsReviewedPayloadSchema,
 } from '@/entities/message/ankiStatusSyncSchemas';
@@ -12,9 +13,11 @@ import {
   ANKI_STATUS_SYNC_ALARM,
   ANKI_SYNC_PERIOD_MINUTES,
   getSyncState,
+  listCardSourceTerms,
   runAnkiStatusSync,
   syncSrsReviewToStatus,
 } from '@/features/ankiStatusSync';
+import type { CardSourceTerms } from '@/features/ankiStatusSync';
 import { getCard, getNote } from '@/features/srs';
 import { logger } from '@/shared/lib/logger';
 
@@ -58,6 +61,23 @@ export function registerAnkiStatusSyncHandlers(ctx: BackgroundContext): void {
     try {
       const state = await getSyncState();
       return { success: true, data: state };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
+    }
+  });
+
+  ctx.on(MESSAGE_TYPES.ANKI_STATUS_CARD_TERMS, async (request): Promise<MessageResponse<CardSourceTerms>> => {
+    const parsed = AnkiStatusCardTermsPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid ANKI_STATUS_CARD_TERMS payload: ${parsed.error.message}`,
+      };
+    }
+    try {
+      const data = await listCardSourceTerms(parsed.data.langCode);
+      return { success: true, data };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return { success: false, error: t('vocabulary.error.actionFailed', [message]) };

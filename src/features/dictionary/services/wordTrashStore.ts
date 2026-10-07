@@ -91,6 +91,40 @@ export async function purgeExpiredTrash(langCode: string): Promise<void> {
   await listWordTrash(langCode);
 }
 
+/** Batch variant of trashWordStatus — one tx over the same stores; per-term
+ *  semantics identical (trash record from the stored row's status, no status
+ *  row → skip). */
+export async function trashWordStatuses(
+  langCode: string,
+  terms: readonly string[],
+): Promise<void> {
+  if (terms.length === 0) return;
+  const db = await getDB(langCode);
+  await ensureSyncRuntime();
+  const tx = db.transaction([STORES.WORD_STATUS, STORES.WORD_TRASH, STORES.SYNC_OUTBOX, STORES.SYNC_META], 'readwrite');
+  const statusStore = tx.objectStore(STORES.WORD_STATUS);
+  const trashStore = tx.objectStore(STORES.WORD_TRASH);
+  const rows = await Promise.all(
+    terms.map((term) => request(statusStore.get(term)) as Promise<WordStatusEntry | undefined>),
+  );
+  const now = Date.now();
+  for (const [i, term] of terms.entries()) {
+    const row = rows[i];
+    if (row === undefined) continue;
+    trashStore.put({ term, previousStatus: row.status, trashedAt: now });
+    statusStore.delete(term);
+    if (isCaptureEnabled()) {
+      await captureChange(statusStore, {
+        scope: scopeForTarget(targetOf(langCode)),
+        dataClass: 'wordStatus',
+        key: `word:${term}`,
+        op: 'delete',
+      });
+    }
+  }
+  await awaitTx(tx);
+}
+
 /**
  * Restore a trashed word: write {previousStatus, updatedAt: now} to the
  * status store and delete the trash record — one tx. Missing/corrupt
@@ -122,6 +156,44 @@ export async function restoreWordStatus(langCode: string, term: string): Promise
   }
   await awaitTx(tx);
   return status;
+}
+
+/** Batch variant of restoreWordStatus — one tx; per-term semantics identical
+ *  (missing record → skipped, corrupt previousStatus → 'tracking'). Returns
+ *  the term → restored-status map for terms that were actually restored. */
+export async function restoreWordStatuses(
+  langCode: string,
+  terms: readonly string[],
+): Promise<Map<string, WordStatus>> {
+  const restored = new Map<string, WordStatus>();
+  if (terms.length === 0) return restored;
+  const db = await getDB(langCode);
+  await ensureSyncRuntime();
+  const tx = db.transaction([STORES.WORD_TRASH, STORES.WORD_STATUS, STORES.SYNC_OUTBOX, STORES.SYNC_META], 'readwrite');
+  const trashStore = tx.objectStore(STORES.WORD_TRASH);
+  const statusStore = tx.objectStore(STORES.WORD_STATUS);
+  const records = await Promise.all(
+    terms.map((term) => request(trashStore.get(term)) as Promise<TrashedWordEntry | undefined>),
+  );
+  const now = Date.now();
+  for (const [i, term] of terms.entries()) {
+    const record = records[i];
+    if (record === undefined) continue;
+    const status = record.previousStatus ?? RESTORE_FALLBACK_STATUS;
+    statusStore.put({ term, status, updatedAt: now, source: 'user', sourceAt: now });
+    trashStore.delete(term);
+    restored.set(term, status);
+    if (isCaptureEnabled()) {
+      await captureChange(statusStore, {
+        scope: scopeForTarget(targetOf(langCode)),
+        dataClass: 'wordStatus',
+        key: `word:${term}`,
+        op: 'put',
+      });
+    }
+  }
+  await awaitTx(tx);
+  return restored;
 }
 
 /** Delete a trash record permanently (delete-forever or re-mark cleanup). */

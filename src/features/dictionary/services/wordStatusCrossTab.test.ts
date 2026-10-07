@@ -101,6 +101,28 @@ describe('startWordStatusCrossTabRelay', () => {
     expect(emitWordStatusesReload).not.toHaveBeenCalled();
   });
 
+  it('emits a reload when a batch status message arrives', () => {
+    startWordStatusCrossTabRelay();
+    registeredListener({
+      type: MESSAGE_TYPES.WORD_STATUS_SET_MANY,
+      payload: { tabId: 2, langCode: 'en', terms: ['a', 'b'], status: 'known' },
+    });
+    registeredListener({
+      type: MESSAGE_TYPES.WORD_STATUS_TRASH_MANY,
+      payload: { tabId: 2, langCode: 'ja', terms: ['x'] },
+    });
+    registeredListener({
+      type: MESSAGE_TYPES.WORD_STATUS_RESTORE_MANY,
+      payload: { tabId: 2, langCode: 'en', terms: ['a'] },
+    });
+
+    expect(emitWordStatusesReload).toHaveBeenCalledTimes(3);
+    expect(emitWordStatusesReload).toHaveBeenNthCalledWith(1, 'en');
+    expect(emitWordStatusesReload).toHaveBeenNthCalledWith(2, 'ja');
+    expect(emitWordStatusesReload).toHaveBeenNthCalledWith(3, 'en');
+    expect(emitWordStatusChanged).not.toHaveBeenCalled();
+  });
+
   it('returns a cleanup function', () => {
     const cleanup = startWordStatusCrossTabRelay();
     cleanup();

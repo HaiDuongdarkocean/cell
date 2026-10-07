@@ -302,6 +302,20 @@ export const WordStatusRestorePayloadSchema = WordStatusGetPayloadSchema;
 
 export const WordStatusTrashDeletePayloadSchema = WordStatusGetPayloadSchema;
 
+export const WordStatusManyPayloadSchema = z.object({
+  tabId: z.number().int(),
+  langCode: z.string().length(2),
+  terms: z.array(z.string().min(1).max(200)).min(1).max(10000),
+});
+
+export const WordStatusSetManyPayloadSchema = WordStatusManyPayloadSchema.extend({
+  status: WordStatusSchema,
+});
+
+export const WordStatusTrashManyPayloadSchema = WordStatusManyPayloadSchema;
+
+export const WordStatusRestoreManyPayloadSchema = WordStatusManyPayloadSchema;
+
 export const TrashedWordEntrySchema = z.object({
   term: z.string().min(1).max(200),
   previousStatus: WordStatusSchema,

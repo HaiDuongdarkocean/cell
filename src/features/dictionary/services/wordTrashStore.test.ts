@@ -2,9 +2,11 @@ import 'fake-indexeddb/auto';
 import { describe, expect, it, beforeEach, afterAll } from '@jest/globals';
 import {
   trashWordStatus,
+  trashWordStatuses,
   listWordTrash,
   purgeExpiredTrash,
   restoreWordStatus,
+  restoreWordStatuses,
   deleteWordTrash,
   TRASH_TTL_MS,
   type TrashedWordEntry,
@@ -192,5 +194,78 @@ describe('status-store invariants (REQ-8/REQ-12)', () => {
     const entries = await getAllWordStatuses('en');
     expect(entries.map((e) => e.term)).toEqual(['live']);
     expect(await getWordStatus('en', 'legacy')).toBe('unknown');
+  });
+});
+
+describe('trashWordStatuses (bulk)', () => {
+  it('moves every status row into trash in one transaction', async () => {
+    await setWordStatus('en', 'a', 'known');
+    await setWordStatus('en', 'b', 'tracking');
+    const db = await getDB('en');
+    const txSpy = jest.spyOn(db, 'transaction');
+
+    await trashWordStatuses('en', ['a', 'b']);
+
+    expect(txSpy).toHaveBeenCalledTimes(1);
+    expect(await getWordStatus('en', 'a')).toBe('unknown');
+    expect(await getWordStatus('en', 'b')).toBe('unknown');
+    const records = await listWordTrash('en');
+    expect(records).toHaveLength(2);
+    expect(records.find((e) => e.term === 'a')?.previousStatus).toBe('known');
+    expect(records.find((e) => e.term === 'b')?.previousStatus).toBe('tracking');
+  });
+
+  it('skips terms with no status row', async () => {
+    await setWordStatus('en', 'a', 'known');
+    await trashWordStatuses('en', ['a', 'ghost']);
+    const records = await listWordTrash('en');
+    expect(records.map((e) => e.term)).toEqual(['a']);
+  });
+
+  it('is a no-op for an empty term list', async () => {
+    const db = await getDB('en');
+    const txSpy = jest.spyOn(db, 'transaction');
+    await trashWordStatuses('en', []);
+    expect(txSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('restoreWordStatuses (bulk)', () => {
+  it('restores each term to its own previousStatus in one transaction', async () => {
+    await setWordStatus('en', 'a', 'known');
+    await setWordStatus('en', 'b', 'ignore');
+    await trashWordStatuses('en', ['a', 'b']);
+    const db = await getDB('en');
+    const txSpy = jest.spyOn(db, 'transaction');
+
+    const restored = await restoreWordStatuses('en', ['a', 'b']);
+
+    expect(txSpy).toHaveBeenCalledTimes(1);
+    expect(restored.get('a')).toBe('known');
+    expect(restored.get('b')).toBe('ignore');
+    expect(await getWordStatus('en', 'a')).toBe('known');
+    expect(await getWordStatus('en', 'b')).toBe('ignore');
+    expect(await listWordTrash('en')).toEqual([]);
+  });
+
+  it('skips missing records and falls back to tracking on corrupt previousStatus', async () => {
+    await putTrashRecord({ term: 'corrupt', previousStatus: undefined as never, trashedAt: Date.now() });
+    await putTrashRecord({ term: 'ok', previousStatus: 'known', trashedAt: Date.now() });
+
+    const restored = await restoreWordStatuses('en', ['ok', 'corrupt', 'ghost']);
+
+    expect(restored.get('ok')).toBe('known');
+    expect(restored.get('corrupt')).toBe('tracking');
+    expect(restored.has('ghost')).toBe(false);
+    expect(await getWordStatus('en', 'corrupt')).toBe('tracking');
+    expect(await getWordStatus('en', 'ghost')).toBe('unknown');
+  });
+
+  it('is a no-op for an empty term list', async () => {
+    const db = await getDB('en');
+    const txSpy = jest.spyOn(db, 'transaction');
+    const restored = await restoreWordStatuses('en', []);
+    expect(restored.size).toBe(0);
+    expect(txSpy).not.toHaveBeenCalled();
   });
 });

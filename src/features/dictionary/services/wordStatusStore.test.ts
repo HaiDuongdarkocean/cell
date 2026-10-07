@@ -5,6 +5,7 @@ import { describe, expect, it, beforeEach, beforeAll, afterAll } from '@jest/glo
 import {
   getWordStatus,
   setWordStatus,
+  setWordStatuses,
   setWordStatusPos,
   setWordStatusesFromSync,
   cycleWordStatus,
@@ -17,7 +18,8 @@ import {
   DEFAULT_STATUS,
   WordStatusQuotaError,
 } from './wordStatusStore';
-import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
+import { closeAllDBs, clearAllStores, getDB } from '@/features/dictionary/repositories/baseRepository';
+import { listWordTrash } from './wordTrashStore';
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
 
@@ -239,5 +241,51 @@ describe('WordStatusQuotaError (spec §10 failure path)', () => {
     const err = new WordStatusQuotaError('Bộ nhớ đầy — xóa resource cũ trong Settings → Resources');
     expect(err.message).toContain('Settings');
     expect(err.message).toContain('Resources');
+  });
+});
+
+describe('setWordStatuses (bulk)', () => {
+  it('writes every term in one transaction', async () => {
+    const db = await getDB('en');
+    const txSpy = jest.spyOn(db, 'transaction');
+
+    await setWordStatuses('en', ['a', 'b', 'c'], 'known');
+
+    expect(txSpy).toHaveBeenCalledTimes(1);
+    expect(await getWordStatus('en', 'a')).toBe('known');
+    expect(await getWordStatus('en', 'b')).toBe('known');
+    expect(await getWordStatus('en', 'c')).toBe('known');
+  });
+
+  it('clears pending trash records on a real-status write', async () => {
+    await setWordStatus('en', 'word', 'known');
+    const { trashWordStatus } = await import('./wordTrashStore');
+    await trashWordStatus('en', 'word');
+    expect((await listWordTrash('en')).map((e) => e.term)).toEqual(['word']);
+
+    await setWordStatuses('en', ['word'], 'tracking');
+
+    expect(await getWordStatus('en', 'word')).toBe('tracking');
+    expect(await listWordTrash('en')).toEqual([]);
+  });
+
+  it("'unknown' deletes status rows but keeps pending trash records", async () => {
+    const { trashWordStatus } = await import('./wordTrashStore');
+    await setWordStatus('en', 'a', 'known');
+    await setWordStatus('en', 'b', 'known');
+    await trashWordStatus('en', 'b');
+
+    await setWordStatuses('en', ['a', 'b'], 'unknown');
+
+    expect(await getWordStatus('en', 'a')).toBe('unknown');
+    expect(await getWordStatus('en', 'b')).toBe('unknown');
+    expect((await listWordTrash('en')).map((e) => e.term)).toEqual(['b']);
+  });
+
+  it('is a no-op for an empty term list', async () => {
+    const db = await getDB('en');
+    const txSpy = jest.spyOn(db, 'transaction');
+    await setWordStatuses('en', [], 'known');
+    expect(txSpy).not.toHaveBeenCalled();
   });
 });
