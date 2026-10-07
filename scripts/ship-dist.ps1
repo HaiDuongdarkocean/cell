@@ -73,7 +73,7 @@ if ($distManifest.version -ne $version) {
 $updateUrl = $null
 $codebaseUrl = $null
 if ($githubRepo) {
-  $updateUrl = "https://raw.githubusercontent.com/$githubRepo/$releaseBranch/$updateXmlPath"
+  $updateUrl = "https://github.com/$githubRepo/releases/latest/download/$updateXmlPath"
   $codebaseUrl = "https://github.com/$githubRepo/releases/download/v$version/$crxAssetName"
   Write-Host "Update URL:  $updateUrl"
   Write-Host "Codebase URL: $codebaseUrl"

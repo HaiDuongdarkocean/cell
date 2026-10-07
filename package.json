@@ -1,6 +1,6 @@
 {
   "name": "tihoka",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "description": "Tihoka - Chrome MV3 extension: turn any content into study material (video + subtitle capture + Anki cards)",
   "type": "module",
   "private": true,
@@ -17,6 +17,7 @@
     "build:mock": "vite build --mode mock",
     "postbuild": "node scripts/patch-ocr-csp.mjs",
     "ship:dist": "powershell -ExecutionPolicy Bypass -File scripts/ship-dist.ps1",
+    "release:github": "powershell -ExecutionPolicy Bypass -File scripts/release-github.ps1",
     "design-system": "npx http-server build/showcase -p 8123 -c-1 -o /design-system-showcase.html",
     "design-system:dev": "vite --config vite.showcase.config.ts",
     "design-system:open:universal-panel": "start \"Cell\" chrome \"http://localhost:5180/src/entrypoints/design-system-showcase/index.html?showcase=Universal+Panel+Page&mode=light&viewport=full\"",
