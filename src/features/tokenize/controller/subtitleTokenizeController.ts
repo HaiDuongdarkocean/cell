@@ -7,6 +7,7 @@ import { bindTokenBlock, restyleTokenBlock, unbindTokenBlock, type TokenSpanBind
 import { getWordStatuses, setWordStatus } from '@/features/dictionary';
 import {
   emitWordStatusChanged,
+  onDictionaryChanged,
   onWordStatusChanged,
   onWordStatusesReload,
 } from '@/features/dictionary';
@@ -23,6 +24,8 @@ export interface SubtitleTokenizeController extends TokenizeController {
   render(activeTargetIndex: number, activeNativeIndex: number): void;
   /** Force rebind with current state (used after showStatus/showFrequency changes). */
   rebind(): void;
+  /** Toggle reading caps — mirrors store + preloader then rebinds. */
+  setShowReadings(show: boolean): void;
   handleStatusKey(key: string): boolean;
   /** Set/clear the hovered term — cue-list surfaces feed this via their
    *  tokenize adapter so status keys 1-4 apply to the hovered panel word. */
@@ -52,6 +55,8 @@ export interface SubtitleTokenizeControllerOptions {
   readonly getPopupStatusTarget?: () => PopupStatusTarget | null;
   /** Number of cues before/after the active cue to keep prepared. */
   readonly windowSize?: number;
+  /** Show reading caps above tokens (profile setting `showReadings`). */
+  readonly showReadings?: boolean;
 }
 
 /** Build a TokenBlock from the current text node of a cue line. */
@@ -77,6 +82,7 @@ export function createSubtitleTokenizeController(
   const scheduler = new TokenizeScheduler();
   const stateStore: TokenizeStateStore = createTokenizeStateStore({
     initialEnabled: false,
+    initialShowReadings: options.showReadings ?? false,
   });
   const videoTokenMap: VideoTokenMap = createVideoTokenMap(langCode);
   const preloader: VideoTokenPreloader = createVideoTokenPreloader({
@@ -84,6 +90,7 @@ export function createSubtitleTokenizeController(
     map: videoTokenMap,
     scheduler,
     bufferSize: windowSize,
+    showReadings: options.showReadings ?? false,
   });
   let targetCues: readonly SrtCue[] = [];
   let lastTargetIndex = -1;
@@ -94,6 +101,7 @@ export function createSubtitleTokenizeController(
     return {
       showStatus: state.showStatus,
       showFrequency: state.showFrequency,
+      showReadings: state.showReadings,
       onTokenEnter: (term) => stateStore.setHoveredTerm(term),
       onTokenLeave: (term) => {
         if (stateStore.getState().hoveredTerm === term) {
@@ -122,6 +130,14 @@ export function createSubtitleTokenizeController(
         }
       })
       .catch(() => {});
+  });
+
+  // Dictionary corpus changed (import/delete/toggle/reorder) — re-resolve
+  // statuses/frequencies/readings for every prepared term. map.resolveMetadata
+  // overwrites tokens in place, so readings update without a DOM rebuild.
+  const unsubscribeDictionaryChanged = onDictionaryChanged(({ langCode: eventLangCode }) => {
+    if (eventLangCode && eventLangCode !== langCode) return;
+    preloader.invalidate();
   });
 
   let prevSelectedTerms = stateStore.getState().selectedTerms;
@@ -248,6 +264,13 @@ export function createSubtitleTokenizeController(
       this.rebind();
     },
 
+    setShowReadings(show: boolean) {
+      if (stateStore.getState().showReadings === show) return;
+      stateStore.setShowReadings(show);
+      preloader.setShowReadings(show);
+      this.rebind();
+    },
+
     setCues(nextTargetCues, _nextNativeCues) {
       targetCues = nextTargetCues;
       preloader.setCues(targetCues);
@@ -313,6 +336,7 @@ export function createSubtitleTokenizeController(
       statusKeyControls.destroy();
       unsubscribeWordStatus();
       unsubscribeStatusesReload();
+      unsubscribeDictionaryChanged();
       unsubscribeMapUpdate();
       unsubscribeSelection();
       preloader.destroy();

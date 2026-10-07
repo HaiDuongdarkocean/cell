@@ -21,8 +21,8 @@ function makeBlock(text: string, tokens: Token[]): TokenBlock {
 describe('tokenSpanRenderer', () => {
   it('binds token spans into a block', () => {
     const block = makeBlock('Hello world.', [
-      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'core' },
-      { text: 'world', term: 'world', start: 6, end: 11, isSeparator: false, sentenceIndex: 0, status: 'known', frequencyBand: 'common' },
+      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'core', reading: undefined },
+      { text: 'world', term: 'world', start: 6, end: 11, isSeparator: false, sentenceIndex: 0, status: 'known', frequencyBand: 'common', reading: undefined },
     ]);
     bindTokenBlock(block, { showStatus: true, showFrequency: true });
 
@@ -38,7 +38,7 @@ describe('tokenSpanRenderer', () => {
 
   it('unbind restores original text node', () => {
     const block = makeBlock('Hello world.', [
-      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'none' },
+      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'none', reading: undefined },
     ]);
     bindTokenBlock(block, { showStatus: true, showFrequency: true });
     expect(block.element.textContent).toBe('Hello world.');
@@ -50,7 +50,7 @@ describe('tokenSpanRenderer', () => {
 
   it('soft-unbind preserves tokens so rebind does not re-tokenize (VDLT-Predict FR2)', () => {
     const tokens = [
-      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown' as const, frequencyBand: 'none' as const },
+      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown' as const, frequencyBand: 'none' as const, reading: undefined },
     ];
     const block = makeBlock('Hello world.', tokens);
     bindTokenBlock(block, { showStatus: true, showFrequency: true });
@@ -66,7 +66,7 @@ describe('tokenSpanRenderer', () => {
 
   it('hides status and frequency when toggled off', () => {
     const block = makeBlock('Hello.', [
-      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'core' },
+      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'core', reading: undefined },
     ]);
     bindTokenBlock(block, { showStatus: false, showFrequency: false });
     const span = block.element.querySelector('.js-cell-token');

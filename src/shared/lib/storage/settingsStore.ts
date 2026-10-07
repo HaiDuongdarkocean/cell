@@ -14,10 +14,11 @@
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_LOCAL_PLAYER_SETTINGS, DEFAULT_FREQUENCY_BANDS } from '@/shared/config/config';
 import { buildProfileName, profileIdForTarget, resolveSettingsFlatFields, syncFlatFieldsToActiveProfile } from '@/entities/settings';
+import { toIso6391, baseLangCode } from '@/shared/config/languageRegistry';
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 35;
+export const CURRENT_SCHEMA_VERSION = 36;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -424,6 +425,7 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
         DEFAULT_SETTINGS.subtitleOverlayAutoTranslate) as boolean,
       dictionaryPopup: (merged.dictionaryPopup ??
         DEFAULT_DICTIONARY_POPUP_SETTINGS) as LanguageProfile['dictionaryPopup'],
+      showReadings: toIso6391(baseLangCode(oldTarget)) === 'zh',
     };
 
     merged.universalNativeLanguage = universalNative;
@@ -542,6 +544,19 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
       { ...DEFAULT_SETTINGS, ...s, schemaVersion: 35 } as Record<string, unknown>,
       DEFAULT_SETTINGS as unknown as Record<string, unknown>,
     ),
+  // v35 → v36: showReadings flat field + per-profile boolean. zh-target
+  // profiles default on; all other targets default off.
+  35: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 36 } as Record<string, unknown>;
+    if (Array.isArray(merged.languageProfiles)) {
+      merged.languageProfiles = (merged.languageProfiles as LanguageProfile[]).map((p) => ({
+        ...p,
+        showReadings:
+          p.showReadings ?? (toIso6391(baseLangCode(p.target)) === 'zh'),
+      }));
+    }
+    return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
+  },
 };
 
 /**

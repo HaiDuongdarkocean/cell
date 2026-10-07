@@ -126,7 +126,7 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
       );
     };
 
-    const ensureSubtitleTokenize = (langCode: string): void => {
+    const ensureSubtitleTokenize = (langCode: string, showReadings: boolean): void => {
       if (subtitleLang === langCode) return;
       subtitleLang = langCode;
       subtitleTokenizeRef.current?.destroy();
@@ -136,6 +136,7 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
       if (langCode === '') return;
       const subtitleCtrl = createSubtitleTokenizeController({
         langCode,
+        showReadings,
         getLineElements: () => ({
           target: document.querySelector<HTMLElement>(
             '[data-cell-id="subtitle-block"] [data-role="target"] > span:not([data-cell-id])',
@@ -166,15 +167,19 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
       });
       const langCode = getActiveProfileSettings(settings)?.resourceLangCode
         ?? (settings.subtitleOverlayTargetLanguage || '');
-      ensureSubtitleTokenize(langCode);
+      const showReadings = settings.showReadings ?? false;
+      ensureSubtitleTokenize(langCode, showReadings);
+      // Live-toggle caps on an existing controller when only the flag moved.
+      subtitleTokenizeRef.current?.setShowReadings(showReadings);
       if (langCode === '') {
         setCueListTokenize(null);
         return;
       }
       setCueListTokenize((prev) => {
-        if (prev?.langCode === langCode) return prev;
+        if (prev?.langCode === langCode && prev.showReadings === showReadings) return prev;
         return {
           langCode,
+          showReadings,
           onTokenClick: (term, element, contextSentence, event) =>
             openTokenDictionary(langCode, term, element, contextSentence, event),
           onTokenHover: (term) => subtitleTokenizeRef.current?.setHoveredTerm(term),

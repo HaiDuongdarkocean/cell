@@ -9,6 +9,7 @@ export interface TokenizeState {
   enabled: boolean;
   showStatus: boolean;
   showFrequency: boolean;
+  showReadings: boolean;
   hoveredTerm: string | null;
   selectedTerms: ReadonlySet<string>;
 }
@@ -18,6 +19,7 @@ export interface TokenizeStateStore {
   setEnabled(enabled: boolean): void;
   setShowStatus(show: boolean): void;
   setShowFrequency(show: boolean): void;
+  setShowReadings(show: boolean): void;
   setHoveredTerm(term: string | null): void;
   toggleSelectedTerm(term: string): void;
   addSelectedTerm(term: string): void;
@@ -30,6 +32,7 @@ export interface CreateTokenizeStateStoreOptions {
   initialEnabled?: boolean;
   initialShowStatus?: boolean;
   initialShowFrequency?: boolean;
+  initialShowReadings?: boolean;
 }
 
 export function createTokenizeStateStore(options: CreateTokenizeStateStoreOptions = {}): TokenizeStateStore {
@@ -37,6 +40,7 @@ export function createTokenizeStateStore(options: CreateTokenizeStateStoreOption
     enabled: options.initialEnabled ?? false,
     showStatus: options.initialShowStatus ?? true,
     showFrequency: options.initialShowFrequency ?? true,
+    showReadings: options.initialShowReadings ?? false,
     hoveredTerm: null,
     selectedTerms: new Set<string>(),
   };
@@ -61,6 +65,7 @@ export function createTokenizeStateStore(options: CreateTokenizeStateStoreOption
     setEnabled: (enabled) => set('enabled', enabled),
     setShowStatus: (show) => set('showStatus', show),
     setShowFrequency: (show) => set('showFrequency', show),
+    setShowReadings: (show) => set('showReadings', show),
     setHoveredTerm: (term) => set('hoveredTerm', term),
 
     toggleSelectedTerm(term) {

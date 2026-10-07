@@ -68,6 +68,7 @@ import {
   VideoTimeUpdatePayloadSchema,
 } from './schema';
 import {
+  DictionaryChangedPayloadSchema,
   FetchCommunityAudioPayloadSchema,
   FetchImagesPayloadSchema,
   FetchLocalAudioPayloadSchema,
@@ -78,6 +79,7 @@ import {
   LookupRequestPayloadSchema,
   LookupResultPayloadSchema,
   PronunciationEspeakTtsPayloadSchema,
+  ReadingsGetPayloadSchema,
   TranslatePayloadSchema,
   TtsDownloadProgressPayloadSchema,
   TtsDownloadVoicePayloadSchema,
@@ -576,6 +578,18 @@ export const MESSAGE_REGISTRY = {
     schema: FrequencyGetPayloadSchema,
     direction: 'cs->bg',
     owner: 'background/handlers/frequency',
+  },
+  [MESSAGE_TYPES.READINGS_GET]: {
+    type: MESSAGE_TYPES.READINGS_GET,
+    schema: ReadingsGetPayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/readings',
+  },
+  [MESSAGE_TYPES.DICTIONARY_CHANGED]: {
+    type: MESSAGE_TYPES.DICTIONARY_CHANGED,
+    schema: DictionaryChangedPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/resources',
   },
   [MESSAGE_TYPES.LOOKUP_REQUEST]: {
     type: MESSAGE_TYPES.LOOKUP_REQUEST,

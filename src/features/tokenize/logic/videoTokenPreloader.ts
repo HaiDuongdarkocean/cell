@@ -6,9 +6,11 @@ import type { TokenizeScheduler } from './tokenizeScheduler';
 import { PRIORITY_VIEWPORT, PRIORITY_PREPARE, PRIORITY_IDLE } from './tokenizeScheduler';
 import { getWordStatuses } from '@/features/dictionary';
 import { getFrequencyEntries } from '@/features/dictionary';
+import { getReadings } from '@/features/dictionary';
 import {
   entriesToBand,
   loadFrequencyBandOptions,
+  pickFrequencyReading,
   DEFAULT_BAND_THRESHOLDS,
   type FrequencyBandOptions,
 } from '@/features/tokenize/utils/frequencyBand';
@@ -20,6 +22,8 @@ export interface VideoTokenPreloaderOptions {
   readonly viewportSize?: number;
   readonly bufferSize?: number;
   readonly chunkSize?: number;
+  /** Fetch pronunciation/readings alongside status/frequency metadata. */
+  readonly showReadings?: boolean;
 }
 
 export interface VideoTokenPreloader {
@@ -28,6 +32,12 @@ export interface VideoTokenPreloader {
   readonly pause: () => void;
   readonly resume: () => void;
   readonly destroy: () => void;
+  /** Toggle reading fetch. Turning on re-resolves already-fetched terms so
+   *  existing tokens pick up readings without a cue reload. */
+  readonly setShowReadings: (show: boolean) => void;
+  /** Dictionary corpus changed — drop the resolved-term dedupe and re-fetch
+   *  statuses/frequencies/readings for every prepared term. */
+  readonly invalidate: () => void;
 }
 
 export function createVideoTokenPreloader(
@@ -40,7 +50,10 @@ export function createVideoTokenPreloader(
     viewportSize = 1,
     bufferSize = 5,
     chunkSize = 100,
+    showReadings: initialShowReadings = false,
   } = options;
+
+  let showReadings = initialShowReadings;
 
   let cues: readonly SrtCue[] = [];
   const prepared = new Set<number>();
@@ -86,10 +99,11 @@ export function createVideoTokenPreloader(
     }
 
     try {
-      const [statusMap, freqMaps, bandOpts] = await Promise.all([
+      const [statusMap, freqMaps, bandOpts, dictReadings] = await Promise.all([
         getWordStatuses(langCode, terms),
         getFrequencyEntries(langCode, terms),
         loadBandOptions(),
+        showReadings ? getReadings(langCode, terms).catch(() => null) : Promise.resolve(null),
       ]);
 
       const frequencies = new Map<string, TokenFrequencyBand>();
@@ -103,12 +117,25 @@ export function createVideoTokenPreloader(
       }
       const statuses = new Map<string, WordStatus>(statusMap);
 
+      // null = fetch failed → pass undefined so existing readings survive;
+      // a resolved map is authoritative, with frequency rows as fallback.
+      let readings: Map<string, string> | undefined;
+      if (dictReadings) {
+        readings = new Map(dictReadings);
+        for (const term of terms) {
+          if (!readings.has(term)) {
+            const fallback = pickFrequencyReading(term, freqMaps.get(term) ?? []);
+            if (fallback) readings.set(term, fallback);
+          }
+        }
+      }
+
       for (const term of terms) {
         resolvedTerms.add(term);
       }
 
       for (let i = 0; i < cues.length; i++) {
-        map.resolveMetadata(i, statuses, frequencies);
+        map.resolveMetadata(i, statuses, frequencies, readings);
       }
     } catch (err) {
       for (const term of terms) {
@@ -125,7 +152,7 @@ export function createVideoTokenPreloader(
     }
   }
 
-  function scheduleResolve(terms: Set<string>, priority: number): void {
+  function scheduleResolve(terms: ReadonlySet<string>, priority: number): void {
     let hasNew = false;
     for (const term of terms) {
       if (resolvedTerms.has(term)) continue;
@@ -230,6 +257,20 @@ export function createVideoTokenPreloader(
       prepared.clear();
       resolvedTerms.clear();
       pendingTerms.clear();
+    },
+
+    setShowReadings(show: boolean): void {
+      if (show === showReadings) return;
+      showReadings = show;
+      if (!show) return;
+      resolvedTerms.clear();
+      scheduleResolve(map.terms(), PRIORITY_IDLE);
+    },
+
+    invalidate(): void {
+      resolvedTerms.clear();
+      pendingTerms.clear();
+      scheduleResolve(map.terms(), PRIORITY_IDLE);
     },
   };
 }

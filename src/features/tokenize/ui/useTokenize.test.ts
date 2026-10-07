@@ -3,9 +3,10 @@ import { renderHook, act } from '@testing-library/react';
 import { useTokenize } from './useTokenize';
 import type { TokenizeState, TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 
-function createMockStore(initial = { enabled: false, showStatus: false, showFrequency: false }): TokenizeStateStore {
+function createMockStore(initial: Partial<TokenizeState> = {}): TokenizeStateStore {
   const listeners = new Set<(state: TokenizeState) => void>();
   let state: TokenizeState = {
+    enabled: false, showStatus: false, showFrequency: false, showReadings: false,
     ...initial,
     hoveredTerm: null,
     selectedTerms: new Set<string>() as ReadonlySet<string>,
@@ -22,6 +23,7 @@ function createMockStore(initial = { enabled: false, showStatus: false, showFreq
     setEnabled: (enabled: boolean) => { state = { ...state, enabled }; notify(); },
     setShowStatus: (show: boolean) => { state = { ...state, showStatus: show }; notify(); },
     setShowFrequency: (show: boolean) => { state = { ...state, showFrequency: show }; notify(); },
+    setShowReadings: (show: boolean) => { state = { ...state, showReadings: show }; notify(); },
     setHoveredTerm: () => {},
     toggleSelectedTerm: () => {},
     addSelectedTerm: () => {},

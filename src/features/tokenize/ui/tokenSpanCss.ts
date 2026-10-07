@@ -149,6 +149,29 @@ ${buildVariables()}
   background: transparent !important;
   color: inherit !important;
   text-decoration: none !important;
+  /* Reading cap anchors to this inner span (attr(data-reading) lives here). */
+  position: relative !important;
+}
+
+/* Ruby cap (spec reading-annotation): the reading rides above the token as a
+   pseudo-element, so it never widens the line, never wraps, and stays out of
+   copy/selection. Absent/empty data-reading produces no artifact. */
+html body .js-cell-token:not(.js-cell-token--reading-off) .js-cell-token-word[data-reading]::before {
+  content: attr(data-reading);
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  font-size: 0.55em;
+  line-height: 1;
+  white-space: nowrap;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: inherit;
+  opacity: 0.72;
+  text-shadow: var(--shadow-sm);
+  pointer-events: none;
 }
 
 /* Status span is kept in the DOM for tests/backwards compatibility but the
@@ -333,11 +356,32 @@ ${buildVariables(':host')}
   --cell-token-guard: currentColor;
 }
 
-.js-cell-token--word {
+.js-cell-token-word {
   display: inline !important;
   background: transparent !important;
   color: inherit !important;
   text-decoration: none !important;
+  position: relative !important;
+}
+
+/* Ruby cap (spec reading-annotation) — pseudo-element reads data-reading from
+   the inner word span; no layout impact, not selectable, not copied. */
+.js-cell-token:not(.js-cell-token--reading-off) .js-cell-token-word[data-reading]::before {
+  content: attr(data-reading);
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  font-size: 0.55em;
+  line-height: 1;
+  white-space: nowrap;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: inherit;
+  opacity: 0.72;
+  text-shadow: var(--shadow-sm);
+  pointer-events: none;
 }
 
 .js-cell-token-status {

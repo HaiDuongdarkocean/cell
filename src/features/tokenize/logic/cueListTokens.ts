@@ -3,11 +3,13 @@ import type { FrequencyEntry, WordStatus } from '@/entities/dictionary';
 import type { Token } from '@/features/tokenize/types';
 import { getWordStatuses } from '@/features/dictionary';
 import { getFrequencyEntries } from '@/features/dictionary';
+import { getReadings } from '@/features/dictionary';
 import {
   DEFAULT_BAND_THRESHOLDS,
   entriesToBand,
   loadFrequencyBandOptions,
   pickBestFrequencyEntry,
+  pickFrequencyReading,
   type FrequencyBandOptions,
   type FrequencyBandThresholds,
 } from '@/features/tokenize/utils/frequencyBand';
@@ -95,6 +97,7 @@ async function fetchTermsChunked<T>(
 export async function resolveCueListTokenMetadata(
   tokenMap: CueListTokenMap,
   langCode: string,
+  options?: { readonly includeReadings?: boolean },
 ): Promise<ResolvedCueListTokens> {
   const terms = new Set<string>();
   for (const tokens of tokenMap.values()) {
@@ -116,10 +119,13 @@ export async function resolveCueListTokenMetadata(
     };
   }
 
-  const [statusRes, freqRes, bandRes] = await Promise.allSettled([
+  const [statusRes, freqRes, bandRes, readingsRes] = await Promise.allSettled([
     fetchTermsChunked(langCode, termList, getWordStatuses),
     fetchTermsChunked(langCode, termList, getFrequencyEntries),
     loadFrequencyBandOptions(langCode),
+    options?.includeReadings
+      ? fetchTermsChunked(langCode, termList, getReadings)
+      : Promise.resolve(null),
   ]);
 
   const statusMap =
@@ -142,19 +148,27 @@ export async function resolveCueListTokenMetadata(
     rankByTerm.set(term, pickBestFrequencyEntry(enabled)?.frequency ?? null);
   }
 
+  // null = reading fetch skipped (toggle off) or failed → keep existing
+  // readings; a resolved map is authoritative, frequency rows as fallback.
+  const dictReadings =
+    readingsRes.status === 'fulfilled' ? readingsRes.value : null;
+
   const resolved = new Map<number, readonly Token[]>();
   for (const [cueIndex, tokens] of tokenMap) {
     resolved.set(
       cueIndex,
-      tokens.map((token) =>
-        token.isSeparator
-          ? token
-          : {
-              ...token,
-              status: statusMap ? (statusMap.get(token.term) ?? 'unknown') : token.status,
-              frequencyBand: entriesToBand(freqMaps.get(token.term) ?? [], bandOpts),
-            },
-      ),
+      tokens.map((token) => {
+        if (token.isSeparator) return token;
+        const freqEntries = freqMaps.get(token.term) ?? [];
+        return {
+          ...token,
+          status: statusMap ? (statusMap.get(token.term) ?? 'unknown') : token.status,
+          frequencyBand: entriesToBand(freqEntries, bandOpts),
+          reading: dictReadings
+            ? dictReadings.get(token.term) ?? pickFrequencyReading(token.term, freqEntries)
+            : token.reading,
+        };
+      }),
     );
   }
 

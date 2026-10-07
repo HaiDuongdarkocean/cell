@@ -285,6 +285,8 @@ export interface LanguageProfile {
   readonly subtitleOverlayAutoLoadAsr: boolean;
   readonly subtitleOverlayAutoTranslate: boolean;
   readonly dictionaryPopup: DictionaryPopupSettings;
+  /** Show pronunciation/reading annotations on tokenized tokens. Default: zh targets true, others false (schema v36). */
+  readonly showReadings: boolean;
 }
 
 /** Active profile with inheritance resolved. */
@@ -411,6 +413,8 @@ export interface Settings {
    * clear on SPA nav.
    */
   readonly subtitleOverlayAutoTranslate: boolean;
+  /** Reading annotation toggle (mirrors active LanguageProfile.showReadings). Default false (schema v36); zh profiles default true. */
+  readonly showReadings: boolean;
   /** Per-layer appearance config for target subtitle overlay (ADR-013, ADR-025). Independent from native. */
   readonly subtitleOverlayTargetStyle?: OverlayStyleConfig;
   /** Per-layer appearance config for native subtitle overlay (ADR-013, ADR-025). Independent from target. */

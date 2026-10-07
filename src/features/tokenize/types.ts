@@ -21,6 +21,8 @@ export interface Token {
   status: TokenStatus | undefined;
   /** Frequency band for known words; undefined until resolved. */
   frequencyBand: TokenFrequencyBand | undefined;
+  /** Pronunciation/reading annotation; undefined until resolved or absent. */
+  reading: string | undefined;
 }
 
 export interface TokenBlock {
@@ -54,6 +56,8 @@ export interface TokenizeDisplayOptions {
   readonly showStatus: boolean;
   /** Show frequency background/text color. */
   readonly showFrequency: boolean;
+  /** Show reading annotation above tokens (controlled surfaces only). */
+  readonly showReadings: boolean;
 }
 
 export interface TokenizeSettings {
@@ -92,6 +96,7 @@ export interface TokenizeController {
   readonly disable: () => void;
   readonly setShowStatus: (show: boolean) => void;
   readonly setShowFrequency: (show: boolean) => void;
+  readonly setShowReadings?: (show: boolean) => void;
   readonly destroy: () => void;
 }
 

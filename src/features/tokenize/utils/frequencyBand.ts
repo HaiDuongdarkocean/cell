@@ -2,6 +2,7 @@
 // reached through resourceClient (background proxy), never directly, or the
 // reads would hit the PAGE's IndexedDB and always come back empty.
 import { listResources, resourceOffersComponent } from '@/features/dictionary';
+import type { FrequencyEntry } from '@/entities/dictionary';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_BAND_THRESHOLDS, type FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 
@@ -35,4 +36,15 @@ export async function loadFrequencyBandOptions(langCode: string): Promise<Freque
       .map((r) => r.id!)
       .filter((id): id is number => id !== undefined),
   };
+}
+
+/** Fallback reading for a term when dictionary entries carry none — the first
+ *  frequency-row reading that differs from the term itself (imported rows may
+ *  store `reading === term`, which is not a real annotation). */
+export function pickFrequencyReading(term: string, entries: readonly FrequencyEntry[]): string | undefined {
+  const lower = term.toLowerCase();
+  for (const entry of entries) {
+    if (entry.reading && entry.reading.toLowerCase() !== lower) return entry.reading;
+  }
+  return undefined;
 }

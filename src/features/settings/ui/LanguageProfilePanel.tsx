@@ -5,7 +5,7 @@ import { FlagIcon } from '@/shared/ui/FlagIcon';
 import { SearchableSelect } from '@/shared/ui/SearchableSelect';
 import { SelectableCard } from '@/shared/ui/SelectableCard';
 import { EmptyState } from '@/shared/ui/EmptyState';
-import { OVERLAY_LANGUAGE_OPTIONS } from '@/shared/config/languageRegistry';
+import { OVERLAY_LANGUAGE_OPTIONS, toIso6391, baseLangCode } from '@/shared/config/languageRegistry';
 import { t } from '@/shared/i18n';
 import {
   DEFAULT_OVERLAY_STYLE_TARGET,
@@ -128,6 +128,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
       subtitleOverlayAutoTranslate:
         base?.subtitleOverlayAutoTranslate ?? DEFAULT_SETTINGS.subtitleOverlayAutoTranslate,
       dictionaryPopup: base?.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS,
+      showReadings: base?.showReadings ?? (toIso6391(baseLangCode(target)) === 'zh'),
     };
     onChange({
       ...settings,

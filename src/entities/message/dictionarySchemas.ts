@@ -324,6 +324,21 @@ export const FrequencyGetPayloadSchema = z.object({
   terms: z.array(z.string().min(1).max(200)).min(1).max(1000),
 });
 
+// === Reading annotations (spec reading-annotation — READINGS_GET) ===
+
+export const ReadingsGetPayloadSchema = z.object({
+  tabId: z.number().int(),
+  langCode: z.string().length(2),
+  terms: z.array(z.string().min(1).max(200)).min(1).max(1000),
+});
+
+/** bg→cs broadcast: dictionary corpus changed (import/delete/toggle/reorder) —
+ *  consumers re-resolve readings. `reason` is diagnostic only. */
+export const DictionaryChangedPayloadSchema = z.object({
+  reason: z.string().min(1).max(60),
+  langCode: z.string().length(2).optional(),
+});
+
 // === Audio fetch (spec §9.4 B — FETCH_COMMUNITY_AUDIO) ===
 
 export const FetchCommunityAudioPayloadSchema = z.object({

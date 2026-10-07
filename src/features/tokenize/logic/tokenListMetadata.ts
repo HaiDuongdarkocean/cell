@@ -3,9 +3,11 @@ import type { Token } from '@/features/tokenize/types';
 import { tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
 import { getWordStatuses } from '@/features/dictionary';
 import { getFrequencyEntries } from '@/features/dictionary';
+import { getReadings } from '@/features/dictionary';
 import {
   entriesToBand,
   loadFrequencyBandOptions,
+  pickFrequencyReading,
 } from '@/features/tokenize/utils/frequencyBand';
 
 export function createTokenList(text: string, langCode: string): Token[] {
@@ -13,6 +15,7 @@ export function createTokenList(text: string, langCode: string): Token[] {
     ...token,
     status: 'unknown' as const,
     frequencyBand: 'none' as const,
+    reading: undefined,
   }));
 }
 
@@ -33,6 +36,7 @@ export function applyTokenListStatus(
 export async function resolveTokenListMetadata(
   tokens: readonly Token[],
   langCode: string,
+  options?: { readonly includeReadings?: boolean },
 ): Promise<readonly Token[]> {
   const terms = new Set<string>();
   for (const token of tokens) {
@@ -42,21 +46,30 @@ export async function resolveTokenListMetadata(
 
   const termList = [...terms];
   try {
-    const [statusMap, freqMaps, bandOpts] = await Promise.all([
+    const [statusMap, freqMaps, bandOpts, dictReadings] = await Promise.all([
       getWordStatuses(langCode, termList),
       getFrequencyEntries(langCode, termList),
       loadFrequencyBandOptions(langCode),
+      options?.includeReadings
+        ? getReadings(langCode, termList).catch(() => null)
+        : Promise.resolve(null),
     ]);
 
-    return tokens.map((token) =>
-      token.isSeparator
-        ? token
-        : {
-            ...token,
-            status: statusMap.get(token.term) ?? 'unknown',
-            frequencyBand: entriesToBand(freqMaps.get(token.term) ?? [], bandOpts),
-          },
-    );
+    return tokens.map((token) => {
+      if (token.isSeparator) return token;
+      const freqEntries = freqMaps.get(token.term) ?? [];
+      // null = reading fetch failed → keep the existing reading rather than
+      // flicker to blank; a resolved map is authoritative.
+      const reading = dictReadings
+        ? dictReadings.get(token.term) ?? pickFrequencyReading(token.term, freqEntries)
+        : token.reading;
+      return {
+        ...token,
+        status: statusMap.get(token.term) ?? 'unknown',
+        frequencyBand: entriesToBand(freqEntries, bandOpts),
+        reading,
+      };
+    });
   } catch {
     return tokens;
   }

@@ -55,6 +55,8 @@ export interface SubtitleCueEngineTokenizeOptions {
   onTokenCtrlClick?: (term: string) => void;
   /** Live bulk-selection handle shared with the cue list. */
   selection?: import('./CueList').CueListTokenSelection;
+  /** Profile `showReadings` — cue-list tokens render reading caps. */
+  showReadings?: boolean;
   windowSize?: number;
 }
 

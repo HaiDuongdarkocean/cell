@@ -584,6 +584,7 @@ describe('createWebTextDictionaryController', () => {
       subtitleOverlayAutoLoadAsr: false,
       subtitleOverlayAutoTranslate: false,
       dictionaryPopup: DEFAULT_DICTIONARY_POPUP_SETTINGS,
+      showReadings: false,
     });
     const settingsFor = (profileId: string, target: string): { settings: Settings } => ({
       settings: {

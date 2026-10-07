@@ -420,6 +420,21 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                     disabled={!settings.subtitleOverlayAutoLoad}
                   />
                 </SettingsRow>
+
+                <SettingsRow dense divider>
+                  <span className={styles.rowLabel}>
+                    {t('settings.block.showReadings')}
+                    <HintIcon
+                      hint={t('settings.block.showReadings.hint')}
+                      ariaLabel={t('settings.hint.aria', [t('settings.block.showReadings')])}
+                    />
+                  </span>
+                  <Toggle
+                    checked={settings.showReadings}
+                    onChange={(next) => update('showReadings', next)}
+                    ariaLabel={t('settings.block.showReadings')}
+                  />
+                </SettingsRow>
               </VStack>
             </Card>
 

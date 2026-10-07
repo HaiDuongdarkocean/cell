@@ -15,6 +15,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { subscribeJobEvents } from '@/features/jobs';
 import { isTerminalJob } from '@/entities/job/types';
+import { emitDictionaryChanged } from './dictionaryEvents';
 import { computeSignature } from '../logic/signatureGenerator';
 import type { ReadableFile } from '../logic/fileDetector';
 import type {
@@ -62,6 +63,7 @@ export function subscribeResourceChanges(listener: ResourceChangeListener): () =
 
 function notifyResourcesChanged(langCode: string): void {
   for (const listener of changeListeners) listener(langCode);
+  emitDictionaryChanged({ langCode, reason: 'resource-mutation' });
 }
 
 // Resource mutations now complete inside background-owned jobs — re-notify

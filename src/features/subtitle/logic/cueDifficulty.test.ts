@@ -24,6 +24,8 @@ function token(
     sentenceIndex: 0,
     status,
     frequencyBand: undefined,
+
+    reading: undefined,
   };
 }
 

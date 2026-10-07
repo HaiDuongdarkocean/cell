@@ -2,8 +2,11 @@ export { getWordStatuses, setWordStatus, listWordStatuses, cycleWordStatus, dele
 export { TRASH_TTL_MS } from './services/wordTrashStore';
 export type { TrashedWordEntry } from './services/wordTrashStore';
 export { getFrequencyEntries } from './services/frequencyClient';
+export { getReadings } from './services/readingsClient';
 export { subscribeResourceChanges, setResourceEnabled } from './services/resourceClient';
 export { onWordStatusChanged, emitWordStatusChanged, onWordStatusRemoved, emitWordStatusRemoved, onWordStatusesReload, emitWordStatusesReload } from './services/wordStatusEvents';
+export { onDictionaryChanged, emitDictionaryChanged } from './services/dictionaryEvents';
+export type { DictionaryChangedDetail } from './services/dictionaryEvents';
 export type { WordStatusChangedDetail } from './services/wordStatusEvents';
 export { classifyLine, lineToCanonicalText } from './logic/normalize/rules';
 export { toCanonicalDefinition } from './logic/normalize/canonical';

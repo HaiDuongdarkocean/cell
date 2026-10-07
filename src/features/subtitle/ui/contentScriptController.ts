@@ -364,6 +364,7 @@ export function init(
             onOpenDictionary: (term, element, contextSentence, event) =>
               openDictionaryFromToken(settings.subtitleOverlayTargetLanguage, term, element, contextSentence, event),
             getPopupStatusTarget: () => sharedWebTextCtrl?.getPopupStatusTarget?.() ?? null,
+            showReadings: settings.showReadings,
           });
         }
         subtitleTokenizeCtrl.enable();
@@ -376,6 +377,7 @@ export function init(
         subtitleTokenizeCtrl.render(activeTarget, activeNative);
         blockController.enableTokenize({
           langCode: settings.subtitleOverlayTargetLanguage,
+          showReadings: settings.showReadings,
           onOpenDictionary: (term, element, contextSentence, event) =>
             openDictionaryFromToken(settings.subtitleOverlayTargetLanguage, term, element, contextSentence, event),
           onTokenHover: (term) => subtitleTokenizeCtrl?.setHoveredTerm(term),
@@ -602,6 +604,13 @@ export function init(
       } else if (newSettings?.subtitleOverlayTargetLanguage) {
         // Target language changed — re-evaluate with current tokenize settings.
         void syncSubtitleTokenize();
+      }
+
+      // Reading caps are a profile-level toggle — live-update overlay tokens
+      // and the cue list when the profile setting flips (reading-annotation).
+      if (newSettings?.showReadings !== undefined) {
+        subtitleTokenizeCtrl?.setShowReadings(newSettings.showReadings);
+        blockController.setTokenizeShowReadings(newSettings.showReadings);
       }
 
       // Live-update dictionary popup settings (defaultActiveTab, triggerMode, etc.)

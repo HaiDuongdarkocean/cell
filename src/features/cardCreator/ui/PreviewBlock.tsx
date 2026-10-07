@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { t } from '@/shared/i18n';
-import { onWordStatusChanged } from '@/features/dictionary';
+import { onDictionaryChanged, onWordStatusChanged } from '@/features/dictionary';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import {
   applyTokenListStatus,
   createTokenList,
@@ -15,6 +16,8 @@ export interface PreviewBlockProps {
   readonly langCode?: string;
   readonly onTokenClick?: (term: string, contextSentence: string) => void;
   readonly dataId?: string;
+  /** Profile `showReadings`. Undefined → loaded from settings once. */
+  readonly showReadings?: boolean;
 }
 
 export function PreviewBlock({
@@ -23,16 +26,30 @@ export function PreviewBlock({
   langCode = 'en',
   onTokenClick,
   dataId,
+  showReadings: showReadingsProp,
 }: PreviewBlockProps): ReactElement {
   const baseTokens = useMemo(() => createTokenList(sentence, langCode), [sentence, langCode]);
   const [tokens, setTokens] = useState<readonly Token[]>(baseTokens);
   const [resolving, setResolving] = useState(false);
+  const [loadedShowReadings, setLoadedShowReadings] = useState(false);
+  const showReadings = showReadingsProp ?? loadedShowReadings;
+  // Dictionary-changed bumps re-run resolution so caps/bands refresh.
+  const [dictEpoch, setDictEpoch] = useState(0);
+
+  useEffect(() => {
+    if (showReadingsProp !== undefined) return;
+    let active = true;
+    void loadSettings()
+      .then((settings) => { if (active) setLoadedShowReadings(settings.showReadings); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [showReadingsProp]);
 
   useEffect(() => {
     setTokens(baseTokens);
     setResolving(true);
     let active = true;
-    void resolveTokenListMetadata(baseTokens, langCode).then((resolved) => {
+    void resolveTokenListMetadata(baseTokens, langCode, { includeReadings: showReadings }).then((resolved) => {
       if (!active) return;
       setResolving(false);
       setTokens(resolved);
@@ -45,14 +62,21 @@ export function PreviewBlock({
       active = false;
       unsubscribe();
     };
-  }, [baseTokens, langCode]);
+  }, [baseTokens, langCode, showReadings, dictEpoch]);
+
+  useEffect(() => {
+    return onDictionaryChanged(({ langCode: changed }) => {
+      if (changed && changed !== langCode) return;
+      setDictEpoch((n) => n + 1);
+    });
+  }, [langCode]);
 
   const targetTerms = useMemo(
     () => targetWord.toLowerCase().trim().split(/\s+/).filter((term) => term.length > 0),
     [targetWord],
   );
 
-  const tokenSpans = buildTokenSpans(tokens, targetTerms, sentence, onTokenClick, resolving);
+  const tokenSpans = buildTokenSpans(tokens, targetTerms, sentence, onTokenClick, resolving, showReadings);
 
   return (
     <div
@@ -69,7 +93,7 @@ export function PreviewBlock({
   );
 }
 
-function tokenClassName(token: Token, resolving: boolean): string {
+function tokenClassName(token: Token, resolving: boolean, showReadings: boolean): string {
   return [
     'js-cell-token',
     'js-cell-token--word',
@@ -78,6 +102,7 @@ function tokenClassName(token: Token, resolving: boolean): string {
     token.frequencyBand && token.frequencyBand !== 'none'
       ? `js-cell-token--frequency-${token.frequencyBand}`
       : '',
+    showReadings ? '' : 'js-cell-token--reading-off',
     styles['cc-preview__token'],
   ]
     .filter(Boolean)
@@ -90,6 +115,7 @@ function buildTokenSpans(
   sentence: string,
   onTokenClick: ((term: string, contextSentence: string) => void) | undefined,
   resolving: boolean,
+  showReadings: boolean,
 ): React.ReactNode[] {
   const gapClass = `js-cell-token js-cell-token--separator ${styles['cc-preview__gap']}`;
   const children: React.ReactNode[] = [];
@@ -130,7 +156,8 @@ function buildTokenSpans(
             token={phraseToken}
             sentence={sentence}
             onTokenClick={onTokenClick}
-            className={tokenClassName(phraseToken, resolving)}
+            className={tokenClassName(phraseToken, resolving, showReadings)}
+            showReading={showReadings}
           />,
         );
         phraseLastEnd = phraseToken.end;
@@ -151,7 +178,8 @@ function buildTokenSpans(
         token={token}
         sentence={sentence}
         onTokenClick={onTokenClick}
-        className={tokenClassName(token, resolving)}
+        className={tokenClassName(token, resolving, showReadings)}
+        showReading={showReadings}
       />,
     );
     lastEnd = token.end;
@@ -187,9 +215,10 @@ interface TokenSpanProps {
   readonly sentence: string;
   readonly onTokenClick: ((term: string, contextSentence: string) => void) | undefined;
   readonly className: string;
+  readonly showReading: boolean;
 }
 
-function TokenSpan({ token, sentence, onTokenClick, className }: TokenSpanProps): React.JSX.Element {
+function TokenSpan({ token, sentence, onTokenClick, className, showReading }: TokenSpanProps): React.JSX.Element {
   return (
     <span
       className={className}
@@ -198,7 +227,12 @@ function TokenSpan({ token, sentence, onTokenClick, className }: TokenSpanProps)
       data-cell-end={token.end}
       onClick={onTokenClick ? () => onTokenClick(token.term, sentence) : undefined}
     >
-      <span className="js-cell-token-word">{token.text}</span>
+      <span
+        className="js-cell-token-word"
+        data-reading={showReading ? token.reading : undefined}
+      >
+        {token.text}
+      </span>
       <span className="js-cell-token-status" aria-hidden="true" />
     </span>
   );

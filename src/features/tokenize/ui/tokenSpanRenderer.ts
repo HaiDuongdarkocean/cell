@@ -6,6 +6,9 @@ export interface TokenSpanBindOptions {
   readonly showStatus: boolean;
   /** Show frequency background/text layer. */
   readonly showFrequency: boolean;
+  /** Show the reading cap above tokens. Absent → caps hidden; web-tokenize
+   *  surfaces omit this (v1 renders on controlled surfaces only). */
+  readonly showReadings?: boolean;
   /** Hover a word token (desktop). */
   readonly onTokenEnter?: (term: string, block: TokenBlock, element: HTMLElement) => void;
   /** Leave a word token (desktop). */
@@ -23,6 +26,7 @@ const WORD_CLASS = 'js-cell-token--word';
 const SEPARATOR_CLASS = 'js-cell-token--separator';
 const WORD_INNER_CLASS = 'js-cell-token-word';
 const STATUS_CLASS = 'js-cell-token-status';
+const READING_OFF_CLASS = 'js-cell-token--reading-off';
 
 function createSeparatorSpan(text: string, block: TokenBlock): HTMLSpanElement {
   const span = document.createElement('span');
@@ -57,6 +61,24 @@ function applyTokenClasses(span: HTMLElement, token: Token, options: TokenSpanBi
   // shown when the user wants 100% frequency coverage.
   if (!options.showFrequency) {
     span.classList.add(`${TOKEN_CLASS}--frequency-off`);
+  }
+  if (!options.showReadings) {
+    span.classList.add(READING_OFF_CLASS);
+  } else {
+    span.classList.remove(READING_OFF_CLASS);
+  }
+}
+
+/** Mirror token.reading onto the inner word span's data-reading attribute —
+ *  the CSS ::before cap reads attr() from that element. Runs on both bind and
+ *  in-place restyle so late metadata updates don't rebuild the DOM. */
+function applyTokenReading(span: HTMLElement, token: Token): void {
+  const word = span.querySelector<HTMLElement>(`.${WORD_INNER_CLASS}`);
+  if (!word) return;
+  if (token.reading) {
+    word.setAttribute('data-reading', token.reading);
+  } else {
+    word.removeAttribute('data-reading');
   }
 }
 
@@ -105,6 +127,7 @@ function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBind
   word.className = WORD_INNER_CLASS;
   word.textContent = token.text;
   span.appendChild(word);
+  applyTokenReading(span, token);
 
   const status = document.createElement('span');
   status.className = STATUS_CLASS;
@@ -181,6 +204,7 @@ export function restyleTokenBlock(block: TokenBlock, options: TokenSpanBindOptio
       return false;
     }
     applyTokenClasses(span, token, options);
+    applyTokenReading(span, token);
   }
   return true;
 }

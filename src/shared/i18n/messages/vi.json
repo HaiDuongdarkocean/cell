@@ -492,6 +492,8 @@
   "settings.block.autoLoadAsr.hint": "Tải cả phụ đề do YouTube tạo tự động. Tắt = chỉ phụ đề thủ công.",
   "settings.block.autoTranslate": "Dịch khi thiếu phụ đề bản địa",
   "settings.block.autoTranslate.hint": "Không có phụ đề bản địa? Tihoka tự dịch từ phụ đề đích qua Google Translate — miễn phí, không cần API key.",
+  "settings.block.showReadings": "Hiện cách đọc",
+  "settings.block.showReadings.hint": "Hiển thị cách đọc (pinyin, IPA) phía trên mỗi token trong phụ đề và danh sách câu — lấy từ từ điển đã import. Mặc định bật cho profile tiếng Trung.",
   "settings.download.group.concurrency": "Tốc độ",
   "settings.download.group.formatQuality": "Định dạng & chất lượng",
   "settings.download.group.conversion": "Chuyển đổi",

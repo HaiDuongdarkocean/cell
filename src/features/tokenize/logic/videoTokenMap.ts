@@ -17,6 +17,7 @@ export interface VideoTokenMap {
     cueIndex: number,
     statuses: ReadonlyMap<string, WordStatus>,
     frequencies: ReadonlyMap<string, TokenFrequencyBand>,
+    readings?: ReadonlyMap<string, string> | null,
   ) => void;
   readonly applyStatus: (term: string, status: WordStatus) => boolean;
   readonly terms: () => ReadonlySet<string>;
@@ -30,6 +31,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
   const resolvedTerms = new Set<string>();
   const termStatusCache = new Map<string, WordStatus>();
   const termFrequencyCache = new Map<string, TokenFrequencyBand>();
+  const termReadingCache = new Map<string, string>();
   const listeners = new Set<(cueIndex: number) => void>();
 
   function emit(cueIndex: number): void {
@@ -79,6 +81,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
         ...token,
         status: (termStatusCache.get(token.term) ?? 'unknown') as Token['status'],
         frequencyBand: (termFrequencyCache.get(token.term) ?? 'none') as Token['frequencyBand'],
+        reading: termReadingCache.get(token.term),
       }));
       const termSet = buildTermIndex(tokens);
       removeFromTermIndex(cueIndex, cues.get(cueIndex)?.termSet ?? new Set());
@@ -100,6 +103,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
       cueIndex: number,
       statuses: ReadonlyMap<string, WordStatus>,
       frequencies: ReadonlyMap<string, TokenFrequencyBand>,
+      readings?: ReadonlyMap<string, string> | null,
     ): void {
       const cue = cues.get(cueIndex);
       if (!cue) return;
@@ -109,7 +113,15 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
         if (token.isSeparator) return token;
         const status = statuses.get(token.term) ?? termStatusCache.get(token.term) ?? 'unknown';
         const frequencyBand = frequencies.get(token.term) ?? termFrequencyCache.get(token.term) ?? 'none';
-        if (status !== token.status || frequencyBand !== token.frequencyBand) {
+        // readings === undefined → leg skipped/failed: keep the existing value.
+        // A provided map is authoritative: absent term = no reading.
+        let reading = token.reading;
+        if (readings) {
+          reading = readings.get(token.term);
+          if (reading) termReadingCache.set(token.term, reading);
+          else termReadingCache.delete(token.term);
+        }
+        if (status !== token.status || frequencyBand !== token.frequencyBand || reading !== token.reading) {
           changed = true;
         }
         if (!token.isSeparator) {
@@ -117,7 +129,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
           termFrequencyCache.set(token.term, frequencyBand);
           resolvedTerms.add(token.term);
         }
-        return { ...token, status, frequencyBand };
+        return { ...token, status, frequencyBand, reading };
       });
       const allResolved = tokens.every(
         (token) => token.isSeparator || resolvedTerms.has(token.term),
@@ -167,6 +179,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
       resolvedTerms.clear();
       termStatusCache.clear();
       termFrequencyCache.clear();
+      termReadingCache.clear();
     },
   };
 }

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import type { ClickModifierState, WordStatus } from '@/entities/dictionary';
 import type { Token } from '@/features/tokenize';
-import { onWordStatusChanged } from '@/features/dictionary';
+import { onDictionaryChanged, onWordStatusChanged } from '@/features/dictionary';
 import {
   applyCueListTokenStatus,
   applyCueListTokenStatuses,
@@ -66,6 +66,8 @@ export interface CueListTokenize {
   onTokenCtrlClick?: (term: string) => void;
   /** Live bulk-selection set shared with the owning controller. */
   selection?: CueListTokenSelection;
+  /** Profile `showReadings` — fetch + render reading caps on word tokens. */
+  showReadings?: boolean;
 }
 
 interface CueListProps {
@@ -103,6 +105,7 @@ const CueTokenText = memo(function CueTokenText({
   onTokenHover,
   onTokenCtrlClick,
   selectedTerms,
+  showReadings = false,
   resolving = false,
 }: {
   text: string;
@@ -111,6 +114,7 @@ const CueTokenText = memo(function CueTokenText({
   onTokenHover?: (term: string | null) => void;
   onTokenCtrlClick?: (term: string) => void;
   selectedTerms?: ReadonlySet<string>;
+  showReadings?: boolean;
   resolving?: boolean;
 }) {
   const children: React.ReactNode[] = [];
@@ -136,6 +140,7 @@ const CueTokenText = memo(function CueTokenText({
             ? `js-cell-token--frequency-${token.frequencyBand}`
             : '',
           selectedTerms?.has(token.term) ? 'js-cell-token--selected' : '',
+          showReadings ? '' : 'js-cell-token--reading-off',
         ]
           .filter(Boolean)
           .join(' ')}
@@ -153,7 +158,12 @@ const CueTokenText = memo(function CueTokenText({
         onMouseEnter={onTokenHover ? () => onTokenHover(token.term) : undefined}
         onMouseLeave={onTokenHover ? () => onTokenHover(null) : undefined}
       >
-        <span className="js-cell-token-word">{token.text}</span>
+        <span
+          className="js-cell-token-word"
+          data-reading={showReadings ? token.reading : undefined}
+        >
+          {token.text}
+        </span>
         <span className="js-cell-token-status" aria-hidden="true" />
       </span>,
     );
@@ -194,11 +204,17 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   const tokenizeLangCode = tokenize?.langCode;
   const onTokenHover = tokenize?.onTokenHover;
   const selection = tokenize?.selection;
+  const showReadings = tokenize?.showReadings ?? false;
   const [selectedTerms, setSelectedTerms] = useState<ReadonlySet<string>>(
     () => selection?.getTerms() ?? EMPTY_SELECTED_TERMS,
   );
   const lastCuesRef = useRef<readonly BilingualCue[] | null>(null);
   const lastLangCodeRef = useRef<string | null>(null);
+  const lastShowReadingsRef = useRef<boolean>(showReadings);
+  // Bumped when the dictionary corpus changes → full metadata re-resolve so
+  // readings/frequency bands reflect imported/toggled resources.
+  const [dictEpoch, setDictEpoch] = useState(0);
+  const lastDictEpochRef = useRef(0);
 
   useEffect(() => {
     setSelectedTerms(selection?.getTerms() ?? EMPTY_SELECTED_TERMS);
@@ -225,6 +241,14 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   }, [tokenizeLangCode]);
 
   useEffect(() => {
+    if (!tokenizeLangCode) return;
+    return onDictionaryChanged(({ langCode }) => {
+      if (langCode && langCode !== tokenizeLangCode) return;
+      setDictEpoch((n) => n + 1);
+    });
+  }, [tokenizeLangCode]);
+
+  useEffect(() => {
     if (!tokenizeLangCode) {
       lastCuesRef.current = null;
       lastLangCodeRef.current = null;
@@ -237,12 +261,16 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     if (
       lastCuesRef.current !== null &&
       cuesAreEqual(visibleCues, lastCuesRef.current) &&
-      tokenizeLangCode === lastLangCodeRef.current
+      tokenizeLangCode === lastLangCodeRef.current &&
+      showReadings === lastShowReadingsRef.current &&
+      dictEpoch === lastDictEpochRef.current
     ) {
       return;
     }
     lastCuesRef.current = visibleCues;
     lastLangCodeRef.current = tokenizeLangCode;
+    lastShowReadingsRef.current = showReadings;
+    lastDictEpochRef.current = dictEpoch;
     const overrides = statusOverridesRef.current.get(tokenizeLangCode);
     const immediate = applyCueListTokenStatuses(
       createCueListTokenMap(visibleCues, tokenizeLangCode),
@@ -254,7 +282,9 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     const runResolve = (attempt: number): void => {
       resolvingRef.current = true;
       setResolving(true);
-      void resolveCueListTokenMetadata(immediate, tokenizeLangCode)
+      void resolveCueListTokenMetadata(immediate, tokenizeLangCode, {
+        includeReadings: showReadings,
+      })
         .then(({ map, meta }) => {
           if (!active) return;
           metaRef.current = meta;
@@ -285,7 +315,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       active = false;
       if (retryTimer !== undefined) clearTimeout(retryTimer);
     };
-  }, [visibleCues, tokenizeLangCode]);
+  }, [visibleCues, tokenizeLangCode, showReadings, dictEpoch]);
 
   useEffect(() => {
     if (!resolvingRef.current) onTokensResolved?.(tokenMap, metaRef.current);
@@ -436,6 +466,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                   onTokenHover={onTokenHover}
                   onTokenCtrlClick={tokenize.onTokenCtrlClick}
                   selectedTerms={selectedTerms}
+                  showReadings={tokenize?.showReadings ?? false}
                   resolving={resolving}
                 />
               ) : (

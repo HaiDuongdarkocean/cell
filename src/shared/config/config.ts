@@ -310,6 +310,9 @@ export const DEFAULT_SETTINGS: Settings = {
   // ADR-021: auto-translate target→native when site has no native track.
   // Default true — kim chỉ nam "user vào và học thôi" (auto-dịch khi native thiếu).
   subtitleOverlayAutoTranslate: true,
+  // Reading annotations (spec reading-annotation, schema v36): default OFF at
+  // the flat level — zh profiles carry true; flat value mirrors active profile.
+  showReadings: false,
   subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
   subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
   subtitlePreference: {},

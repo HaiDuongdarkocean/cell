@@ -492,6 +492,8 @@
   "settings.block.autoLoadAsr.hint": "Also loads captions YouTube generated automatically. Off = manual captions only.",
   "settings.block.autoTranslate": "Translate when native is missing",
   "settings.block.autoTranslate.hint": "No native-language track? Tihoka translates the target track via Google Translate — free, no API key.",
+  "settings.block.showReadings": "Show readings",
+  "settings.block.showReadings.hint": "Show the pronunciation (pinyin, IPA) above each token in subtitles and cue lists — sourced from your imported dictionaries. Default on for Chinese profiles.",
   "settings.download.group.concurrency": "Speed",
   "settings.download.group.formatQuality": "Format & quality",
   "settings.download.group.conversion": "Conversion",

@@ -127,18 +127,18 @@ describe('getSentenceText', () => {
 describe('resolveTokenMetadata', () => {
   it('fills status and frequency band for unique terms', async () => {
     const tokens: Token[] = [
-      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: undefined, frequencyBand: undefined },
-      { text: 'hello', term: 'hello', start: 6, end: 11, isSeparator: false, sentenceIndex: 0, status: undefined, frequencyBand: undefined },
-      { text: ' ', term: ' ', start: 5, end: 6, isSeparator: true, sentenceIndex: 0, status: undefined, frequencyBand: undefined },
+      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: undefined, frequencyBand: undefined, reading: undefined },
+      { text: 'hello', term: 'hello', start: 6, end: 11, isSeparator: false, sentenceIndex: 0, status: undefined, frequencyBand: undefined, reading: undefined },
+      { text: ' ', term: ' ', start: 5, end: 6, isSeparator: true, sentenceIndex: 0, status: undefined, frequencyBand: undefined, reading: undefined },
     ];
     await resolveTokenMetadata(
       tokens,
       async (term) => (term === 'hello' ? 'known' : 'unknown'),
       async (term) => (term === 'hello' ? 'core' : 'none'),
     );
-    expect(tokens[0]).toMatchObject({ status: 'known', frequencyBand: 'core' });
-    expect(tokens[1]).toMatchObject({ status: 'known', frequencyBand: 'core' });
-    expect(tokens[2]).toMatchObject({ status: undefined, frequencyBand: undefined });
+    expect(tokens[0]).toMatchObject({ status: 'known', frequencyBand: 'core', reading: undefined });
+    expect(tokens[1]).toMatchObject({ status: 'known', frequencyBand: 'core', reading: undefined });
+    expect(tokens[2]).toMatchObject({ status: undefined, frequencyBand: undefined, reading: undefined });
   });
 });
 
@@ -156,8 +156,8 @@ describe('prepareTokenBlock', () => {
 
   it('does not re-tokenize when block.tokens is already set', () => {
     const tokens: Token[] = [
-      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'none' },
-      { text: 'world', term: 'world', start: 6, end: 11, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'none' },
+      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'none', reading: undefined },
+      { text: 'world', term: 'world', start: 6, end: 11, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'none', reading: undefined },
     ];
     const block = {
       id: 'b1',

@@ -18,6 +18,7 @@ import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import { JobDuplicateError, type JobRegistry } from '@/features/jobs/logic/jobRegistry';
 import { getJobRegistry, whenJobsReady } from './jobs';
+import { broadcastDictionaryChanged } from './dictionaryBroadcast';
 import type { Job } from '@/entities/job/types';
 import {
   ResourceListPayloadSchema,
@@ -218,6 +219,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     try {
       await reorderResources(parsed.data.langCode, parsed.data.orderedIds);
       clearDictionaryProbeCache();
+      broadcastDictionaryChanged(ctx, parsed.data.langCode, 'resource-reorder');
       return ok();
     } catch (err) {
       return toError(err);
@@ -230,6 +232,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     try {
       await setResourceEnabled(parsed.data.langCode, parsed.data.resourceId, parsed.data.enabled);
       clearDictionaryProbeCache();
+      broadcastDictionaryChanged(ctx, parsed.data.langCode, 'resource-enabled');
       return ok();
     } catch (err) {
       return toError(err);
@@ -265,6 +268,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     try {
       await setResourceDisabledComponents(parsed.data.langCode, parsed.data.resourceId, parsed.data.disabledComponents);
       clearDictionaryProbeCache();
+      broadcastDictionaryChanged(ctx, parsed.data.langCode, 'resource-components');
       return ok();
     } catch (err) {
       return toError(err);

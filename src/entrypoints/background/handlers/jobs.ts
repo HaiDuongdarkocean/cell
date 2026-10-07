@@ -17,6 +17,8 @@ import {
   type JobRegistryDeps,
 } from '@/features/jobs/logic/jobRegistry';
 import type { Job } from '@/entities/job/types';
+import { isTerminalJob } from '@/entities/job/types';
+import { broadcastDictionaryChanged } from './dictionaryBroadcast';
 
 const JOB_KEY_PREFIX = 'cellJob:';
 const KEEP_ALIVE_INTERVAL_MS = 20_000;
@@ -113,6 +115,17 @@ function makeDeps(ctx: BackgroundContext): JobRegistryDeps {
     },
     broadcast: (job) => {
       ctx.messageBus.broadcast({ type: MESSAGE_TYPES.JOB_EVENT, payload: { job } });
+      // Terminal resource jobs change the dictionary corpus — notify token
+      // surfaces so readings/frequency bands re-resolve (reading-annotation).
+      if (
+        isTerminalJob(job) &&
+        (job.kind === 'resource-import' || job.kind === 'resource-delete')
+      ) {
+        const langCode = job.params.langCode;
+        if (typeof langCode === 'string' && langCode.length === 2) {
+          broadcastDictionaryChanged(ctx, langCode, `job-${job.kind}`);
+        }
+      }
     },
     broadcastRemoved: (id) => {
       ctx.messageBus.broadcast({ type: MESSAGE_TYPES.JOB_EVENT, payload: { removedId: id } });

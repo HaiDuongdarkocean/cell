@@ -250,6 +250,7 @@ export function CardCreatorDialogContent({
         langCode={state.sourceLang}
         onTokenClick={state.lookupTerm}
         dataId="cc-preview"
+        showReadings={appSettings?.showReadings}
       />
 
       {/* Section: Fields */}

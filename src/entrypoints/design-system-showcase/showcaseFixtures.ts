@@ -33,6 +33,7 @@ function makeLanguageProfile(
     subtitleOverlayAutoLoad: DEFAULT_SETTINGS.subtitleOverlayAutoLoad,
     subtitleOverlayAutoLoadAsr: DEFAULT_SETTINGS.subtitleOverlayAutoLoadAsr,
     subtitleOverlayAutoTranslate: DEFAULT_SETTINGS.subtitleOverlayAutoTranslate,
+    showReadings: false,
     dictionaryPopup: DEFAULT_DICTIONARY_POPUP_SETTINGS,
   };
 }

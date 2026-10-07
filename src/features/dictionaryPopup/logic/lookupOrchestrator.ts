@@ -196,8 +196,9 @@ function buildPriorityMap(resources: readonly ResourceInfo[]): Map<number, numbe
 }
 
 /** Build the resource priority ordering: lower explicit priority first, then
- *  resourceId descending for unprioritized resources (newest import wins). */
-function buildResourcePriority(resources: readonly ResourceInfo[]): number[] {
+ *  resourceId descending for unprioritized resources (newest import wins).
+ *  Exported for the readings batch path which shares the same ordering. */
+export function buildResourcePriority(resources: readonly ResourceInfo[]): number[] {
   return [...resources]
     .sort((a, b) => {
       const pa = a.priority ?? Number.MAX_SAFE_INTEGER;

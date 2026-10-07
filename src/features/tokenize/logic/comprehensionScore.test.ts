@@ -8,7 +8,7 @@ import {
 } from './comprehensionScore';
 
 function tok(term: string, status?: WordStatus, isSeparator = false): Token {
-  return { text: term, term, start: 0, end: term.length, isSeparator, sentenceIndex: 0, status, frequencyBand: undefined };
+  return { text: term, term, start: 0, end: term.length, isSeparator, sentenceIndex: 0, status, frequencyBand: undefined, reading: undefined };
 }
 
 describe('bandForCoverage', () => {

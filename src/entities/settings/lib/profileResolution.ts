@@ -77,6 +77,7 @@ const FLAT_FIELD_KEYS: (keyof ResolvedProfile & keyof Settings)[] = [
   'subtitleOverlayTargetStyle',
   'subtitleOverlayNativeStyle',
   'dictionaryPopup',
+  'showReadings',
 ];
 
 /** Fill in missing TTS fields from defaults so incomplete persisted slices don't crash the UI. */
@@ -131,6 +132,7 @@ export function syncFlatFieldsToActiveProfile(settings: Settings): Settings {
     subtitleOverlayTargetStyle: settings.subtitleOverlayTargetStyle ?? DEFAULT_OVERLAY_STYLE_TARGET,
     subtitleOverlayNativeStyle: settings.subtitleOverlayNativeStyle ?? DEFAULT_OVERLAY_STYLE_NATIVE,
     dictionaryPopup: settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS,
+    showReadings: settings.showReadings,
   };
 
   return {

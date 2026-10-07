@@ -33,6 +33,7 @@ import { comprehensionStore } from '@/features/tokenize/services/comprehensionSt
 import { startMediaScoreSource } from '@/features/subtitle/logic/mediaScoreSource';
 import { displayableCueRanges } from '@/features/condensedAudio';
 import { startWordStatusCrossTabRelay } from '@/features/dictionary/services/wordStatusCrossTab';
+import { startDictionaryCrossTabRelay } from '@/features/dictionary/services/dictionaryCrossTab';
 import { useLibraryScores } from './hooks/useLibraryScores';
 import { useImmersionSession } from './hooks/useImmersionSession';
 import { t } from '@/shared/i18n';
@@ -44,6 +45,7 @@ import './styles/global.css';
 installRippleDelegation(document);
 document.title = t('settings.localPlayer.title');
 startWordStatusCrossTabRelay();
+startDictionaryCrossTabRelay();
 
 export function LocalPlayerApp(): React.JSX.Element {
   const videoRef = useRef<HTMLVideoElement>(null);

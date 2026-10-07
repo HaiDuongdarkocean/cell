@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { rankToBand, entriesToBand } from './frequencyBand';
+import { rankToBand, entriesToBand, pickFrequencyReading } from './frequencyBand';
 import type { FrequencyEntry } from '@/entities/dictionary';
 
 describe('frequencyBand', () => {
@@ -26,5 +26,22 @@ describe('frequencyBand', () => {
 
   it('falls back to rare for missing entries so every token is colored', () => {
     expect(entriesToBand([])).toBe('rare');
+  });
+
+  it('pickFrequencyReading returns the first reading that differs from the term', () => {
+    const entries: FrequencyEntry[] = [
+      { id: 1, resourceId: 1, term: 'walk', reading: 'walk', frequency: 10 },
+      { id: 2, resourceId: 2, term: 'walk', reading: 'wɔːk', frequency: 20 },
+    ];
+    expect(pickFrequencyReading('walk', entries)).toBe('wɔːk');
+  });
+
+  it('pickFrequencyReading returns undefined when every reading echoes the term', () => {
+    const entries: FrequencyEntry[] = [
+      { id: 1, resourceId: 1, term: 'walk', reading: 'walk', frequency: 10 },
+      { id: 2, resourceId: 2, term: 'walk', reading: '', frequency: 20 },
+    ];
+    expect(pickFrequencyReading('walk', entries)).toBeUndefined();
+    expect(pickFrequencyReading('walk', [])).toBeUndefined();
   });
 });

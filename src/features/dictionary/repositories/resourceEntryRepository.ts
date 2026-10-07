@@ -219,6 +219,64 @@ export async function findFrequencyByTerms(
   });
 }
 
+/** Find dictionary entries for multiple exact terms in a single bounded cursor
+ *  pass (READINGS_GET). Same skip-ahead walk as findFrequencyByTerms; rows
+ *  without `kind: 'dict'` are skipped. `resourceIds` optionally restricts to
+ *  eligible dictionary resources. */
+export async function findDictionaryByTerms(
+  langCode: string,
+  terms: readonly string[],
+  resourceIds?: ReadonlySet<number>,
+): Promise<Map<string, DictionaryEntry[]>> {
+  const result = new Map<string, DictionaryEntry[]>();
+  if (terms.length === 0) return result;
+
+  const sortedTerms = [...terms].sort();
+  for (const term of terms) {
+    result.set(term, []);
+  }
+
+  const db = await getDB(langCode);
+  const tx = db.transaction(STORES.ENTRY, 'readonly');
+  const index = tx.objectStore(STORES.ENTRY).index(INDEXES.by_term);
+  const lower = sortedTerms[0];
+  const upper = sortedTerms[sortedTerms.length - 1] + '￿';
+
+  return new Promise((resolve, reject) => {
+    let termIndex = 0;
+    const request = index.openCursor(IDBKeyRange.bound(lower, upper, false, false));
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) {
+        resolve(result);
+        return;
+      }
+
+      const key = cursor.key as string;
+      while (termIndex < sortedTerms.length && sortedTerms[termIndex] < key) {
+        termIndex++;
+      }
+      if (termIndex >= sortedTerms.length) {
+        resolve(result);
+        return;
+      }
+
+      if (sortedTerms[termIndex] === key) {
+        const value = cursor.value as StoredResourceEntry;
+        if (isDictRow(value) && (!resourceIds || resourceIds.has(value.resourceId))) {
+          const entries = result.get(key) ?? [];
+          entries.push(toWireDict(value));
+          result.set(key, entries);
+        }
+        cursor.continue();
+      } else {
+        cursor.continue(sortedTerms[termIndex]);
+      }
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
 /** Sample the first N rows of one kind for a resource via cursor. */
 async function sampleEntries<T extends StoredResourceEntry>(
   langCode: string,

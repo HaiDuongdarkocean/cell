@@ -67,6 +67,7 @@ export function tokenizeTextBlock(text: string, langCode: string = DEFAULT_LANG)
       sentenceIndex,
       status: undefined,
       frequencyBand: undefined,
+      reading: undefined,
     });
   }
 

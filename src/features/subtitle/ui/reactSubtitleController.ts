@@ -805,7 +805,17 @@ export class ReactSubtitleController {
       onTokenHover: options.onTokenHover,
       onTokenCtrlClick: options.onTokenCtrlClick,
       selection: options.selection,
+      showReadings: options.showReadings,
     });
+  }
+
+  /** Live-toggle reading caps on the cue list without rebuilding the
+   *  tokenize wiring (spec reading-annotation). */
+  setTokenizeShowReadings(show: boolean): void {
+    if (!this.engine.isTokenizeEnabled()) return;
+    const options = this.engine.getTokenizeOptions();
+    if (!options || options.showReadings === show) return;
+    this.enableTokenize({ ...options, showReadings: show });
   }
 
   disableTokenize(): void {

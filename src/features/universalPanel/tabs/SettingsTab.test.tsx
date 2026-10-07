@@ -85,6 +85,7 @@ describe('SettingsTab', () => {
         subtitleOverlayAutoLoad: DEFAULT_SETTINGS.subtitleOverlayAutoLoad,
         subtitleOverlayAutoLoadAsr: DEFAULT_SETTINGS.subtitleOverlayAutoLoadAsr,
         subtitleOverlayAutoTranslate: DEFAULT_SETTINGS.subtitleOverlayAutoTranslate,
+        showReadings: false,
         dictionaryPopup: DEFAULT_SETTINGS.dictionaryPopup!,
       }],
       subtitleOverlayAutoLoad: false,

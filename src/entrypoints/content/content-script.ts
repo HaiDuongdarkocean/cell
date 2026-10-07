@@ -2,6 +2,7 @@ import { clearAutoLoadCache } from '@/features/subtitle/logic/autoLoadCache';
 import { clearSubtitleBodyCache } from '@/features/subtitle/logic/subtitleResponseCache';
 import { installIframePlayerModeBridge } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import { startWordStatusCrossTabRelay } from '@/features/dictionary/services/wordStatusCrossTab';
+import { startDictionaryCrossTabRelay } from '@/features/dictionary/services/dictionaryCrossTab';
 import { installHostManagerSheet } from './hostManagerSheet';
 import {
   installDebugFrameMessageListener,
@@ -26,6 +27,9 @@ installIframePlayerModeBridge();
 // Relay cross-tab word status changes into the local event bus so all tabs
 // sharing a video stay in sync.
 startWordStatusCrossTabRelay();
+// Relay dictionary-corpus broadcasts so token surfaces re-resolve
+// readings/frequency bands after imports/toggles/reorders (reading-annotation).
+startDictionaryCrossTabRelay();
 
 // ponytail: lazy-import dep preloads resolve against the host page and always
 // 404 in content-script context; swallowing the error lets the real
