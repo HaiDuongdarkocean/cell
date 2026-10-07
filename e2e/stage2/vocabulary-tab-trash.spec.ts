@@ -1,19 +1,19 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test';
 import { test } from '../fixtures/actors/universalPanel.fixture';
 
-const DB_SCHEMA_VERSION = 12;
-
 /**
- * Contract (spec docs/specs/vocabulary-tab-redesign.md):
- *   1. Compact toolbar: filter menu lists All/Tracking/Known/Ignored/Trash
- *      with live counts; legacy `unknown` rows are swept and never render.
- *   2. Search filters the live view; Edit mode reveals remove buttons;
- *      confirmed remove soft-deletes into Trash (24h TTL).
- *   3. Trash view: ordered by trashedAt desc, no sort/Edit controls,
+ * Contract (plan tasks/plan/vocabulary-migaku-redesign.md):
+ *   1. Hero shows the known count plus the learning/tracked/ignored breakdown;
+ *      filter menu lists All/Tracking/Learning/Known/Ignored with live counts;
+ *      legacy `unknown` rows are swept and never render.
+ *   2. Search lives behind the top-bar toggle and filters the live view.
+ *   3. Row checkbox selection drives the bulk bar; confirmed Delete
+ *      soft-deletes the selection into Trash (24h TTL) and Undo restores it.
+ *   4. Trash opens from the more menu: no hero, no sort, no selection;
  *      Restore returns the previous status, Delete forever purges.
- *   4. Cycle tracking→known→ignore→tracking (3 persisted states only);
+ *   5. Cycle tracking→known→ignore→tracking (3 persisted states only);
  *      `unknown` is only set externally and removes the row.
- *   5. Everything persists in real IndexedDB across page reloads.
+ *   6. Everything persists in real IndexedDB across page reloads.
  */
 
 interface LiveSeed {
@@ -34,17 +34,13 @@ async function seedVocabulary(
 ): Promise<void> {
   const worker = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker'));
   await worker.evaluate(
-    async (args: { live: readonly LiveSeed[]; trash: readonly TrashSeed[]; version: number }) => {
+    async (args: { live: readonly LiveSeed[]; trash: readonly TrashSeed[] }) => {
       const storage = await chrome.storage.local.get('orca');
       const hash = (storage?.orca as Record<string, unknown> | undefined)?.dbHash;
       const dbName = `orca-dict-${typeof hash === 'string' && hash.length === 8 ? hash : 'devmode0'}-en`;
 
-      let version = args.version;
-      const existing = (await indexedDB.databases?.() ?? []).find((d) => d.name === dbName);
-      if (existing?.version && existing.version > version) version = existing.version;
-
       const db = await new Promise<IDBDatabase>((resolve, reject) => {
-        const req = indexedDB.open(dbName, version);
+        const req = indexedDB.open(dbName);
         req.onupgradeneeded = () => {
           const d = req.result;
           if (!d.objectStoreNames.contains('langResourceInfo')) {
@@ -99,7 +95,7 @@ async function seedVocabulary(
       });
       db.close();
     },
-    { live, trash, version: DB_SCHEMA_VERSION },
+    { live, trash },
   );
 }
 
@@ -172,8 +168,16 @@ const trashRow = (term: string): string => `[data-cell-id="vocabulary-trash-row-
 const segCount = (s: string): string => `[data-cell-id="vocabulary-segment-count-${s}"]`;
 const openFilter = (page: Page): Promise<void> =>
   shadowClick(page, '[data-cell-id="vocabulary-filter"]');
+const openMore = (page: Page): Promise<void> =>
+  shadowClick(page, '[data-cell-id="vocabulary-more"]');
+const openTrash = async (page: Page): Promise<void> => {
+  await openMore(page);
+  await shadowClick(page, '[data-cell-id="vocabulary-more-trash"]');
+};
+const backToLive = (page: Page): Promise<void> =>
+  shadowClick(page, '[data-cell-id="vocabulary-trash-back"]');
 
-test('vocabulary tab: segments, edit-mode soft delete, trash restore/purge, persistence', async ({
+test('vocabulary tab: hero, segments, bulk delete, trash restore/purge, persistence', async ({
   cellContext,
   streamFlixPage,
   universalPanel,
@@ -206,14 +210,17 @@ test('vocabulary tab: segments, edit-mode soft delete, trash restore/purge, pers
     .poll(() => shadowCount(page, row('alpha')), { timeout: 15_000 })
     .toBe(1);
 
-  // Filter menu counts; legacy 'unknown' zeta row is swept, never rendered.
+  // Hero reports the known count; legacy 'unknown' zeta row is swept.
+  expect(await shadowText(page, '[data-cell-id="vocabulary-hero"]')).toContain('1 Known words');
+  expect(await shadowCount(page, row('zeta'))).toBe(0);
+
+  // Filter menu counts.
   await openFilter(page);
   await expect.poll(() => shadowText(page, segCount('all'))).toBe('4');
   await expect.poll(() => shadowText(page, segCount('tracking'))).toBe('2');
   await expect.poll(() => shadowText(page, segCount('known'))).toBe('1');
   await expect.poll(() => shadowText(page, segCount('ignore'))).toBe('1');
-  await expect.poll(() => shadowText(page, segCount('trash'))).toBe('1');
-  expect(await shadowCount(page, row('zeta'))).toBe(0);
+  await expect.poll(() => shadowText(page, segCount('learning'))).toBe('0');
 
   // Segment filter (menu already open).
   await shadowClick(page, '[data-cell-id="vocabulary-segment-tracking"]');
@@ -223,47 +230,45 @@ test('vocabulary tab: segments, edit-mode soft delete, trash restore/purge, pers
   await openFilter(page);
   await shadowClick(page, '[data-cell-id="vocabulary-segment-all"]');
 
-  // Search filters the live view.
+  // Search lives behind the top-bar toggle and filters the live view.
+  await shadowClick(page, '[data-cell-id="vocabulary-search-toggle"]');
   await shadowType(page, 'input[data-cell-id="vocabulary-search"]', 'alph');
   await expect.poll(() => shadowCount(page, '[data-cell-id^="vocabulary-row-"]')).toBe(1);
   expect(await shadowCount(page, row('alpha'))).toBe(1);
   await shadowType(page, 'input[data-cell-id="vocabulary-search"]', '');
+  await shadowClick(page, '[data-cell-id="vocabulary-search-toggle"]');
 
-  // View mode hides destructive controls; Edit reveals them.
-  expect(await shadowCount(page, '[data-cell-id="vocabulary-delete-alpha"]')).toBe(0);
-  await shadowClick(page, '[data-cell-id="vocabulary-edit-toggle"]');
+  // Selection drives the bulk bar; confirmed Delete soft-deletes into Trash.
+  expect(await shadowText(page, '[data-cell-id="vocabulary-meta"]')).toBe('4 words');
+  await shadowClick(page, '[data-cell-id="vocabulary-select-alpha"]');
+  await expect.poll(() => shadowText(page, '[data-cell-id="vocabulary-meta"]')).toBe('1 selected');
+  await shadowClick(page, '[data-cell-id="vocabulary-bulk-delete"]');
   await expect
-    .poll(() => shadowCount(page, '[data-cell-id="vocabulary-delete-alpha"]'), { timeout: 10_000 })
+    .poll(() => shadowCount(page, '[data-cell-id="vocabulary-bulk-delete-dialog"]'), { timeout: 10_000 })
     .toBe(1);
-
-  // Confirmed remove soft-deletes alpha into Trash.
-  await shadowClick(page, '[data-cell-id="vocabulary-delete-alpha"]');
-  await expect
-    .poll(() => shadowCount(page, '[data-cell-id="vocabulary-delete-dialog"]'), { timeout: 10_000 })
-    .toBe(1);
-  await shadowClick(page, '[data-cell-id="vocabulary-delete-confirm"]');
+  await shadowClick(page, '[data-cell-id="vocabulary-bulk-delete-confirm"]');
   await expect.poll(() => shadowCount(page, row('alpha')), { timeout: 10_000 }).toBe(0);
 
-  // Trash view: rows ordered trashedAt desc, no sort/Edit controls.
-  await openFilter(page);
-  await expect.poll(() => shadowText(page, segCount('trash'))).toBe('2');
-  await shadowClick(page, '[data-cell-id="vocabulary-segment-trash"]');
+  // Trash opens from the more menu: no hero, no sort, no selection.
+  await openMore(page);
+  await expect
+    .poll(() => shadowText(page, '[data-cell-id="vocabulary-trash-count"]'), { timeout: 10_000 })
+    .toBe('2');
+  await shadowClick(page, '[data-cell-id="vocabulary-more-trash"]');
   await expect.poll(() => shadowCount(page, trashRow('alpha')), { timeout: 10_000 }).toBe(1);
   expect(await shadowCount(page, trashRow('epsilon'))).toBe(1);
   expect(await shadowCount(page, '[data-cell-id="vocabulary-sort"]')).toBe(0);
-  expect(await shadowCount(page, '[data-cell-id="vocabulary-edit-toggle"]')).toBe(0);
+  expect(await shadowCount(page, '[data-cell-id="vocabulary-hero"]')).toBe(0);
+  expect(await shadowCount(page, '[data-cell-id="vocabulary-select-alpha"]')).toBe(0);
 
   // Restore alpha → returns to live list with previous status.
   await shadowClick(page, '[data-cell-id="vocabulary-restore-alpha"]');
   await expect.poll(() => shadowCount(page, trashRow('alpha')), { timeout: 10_000 }).toBe(0);
-  await openFilter(page);
-  await shadowClick(page, '[data-cell-id="vocabulary-segment-all"]');
+  await backToLive(page);
   await expect.poll(() => shadowCount(page, row('alpha')), { timeout: 10_000 }).toBe(1);
-  await openFilter(page);
-  await expect.poll(() => shadowText(page, segCount('trash'))).toBe('1');
 
   // Delete forever purges epsilon from trash.
-  await shadowClick(page, '[data-cell-id="vocabulary-segment-trash"]');
+  await openTrash(page);
   await shadowClick(page, '[data-cell-id="vocabulary-trash-delete-epsilon"]');
   await expect
     .poll(() => shadowCount(page, '[data-cell-id="vocabulary-trash-delete-dialog"]'), { timeout: 10_000 })
@@ -272,10 +277,9 @@ test('vocabulary tab: segments, edit-mode soft delete, trash restore/purge, pers
   await expect
     .poll(() => shadowCount(page, '[data-cell-id="vocabulary-trash-empty"]'), { timeout: 10_000 })
     .toBe(1);
+  await backToLive(page);
 
   // Cycle beta known→ignore→tracking (3-status loop; row stays in live list).
-  await openFilter(page);
-  await shadowClick(page, '[data-cell-id="vocabulary-segment-all"]');
   await shadowClick(page, '[data-cell-id="vocabulary-cycle-beta"]');
   await openFilter(page);
   await expect.poll(() => shadowText(page, segCount('ignore')), { timeout: 10_000 }).toBe('2');
@@ -293,7 +297,11 @@ test('vocabulary tab: segments, edit-mode soft delete, trash restore/purge, pers
   await universalPanel.openTab('vocabulary');
   await openFilter(page);
   await expect.poll(() => shadowText(page, segCount('all')), { timeout: 15_000 }).toBe('4');
-  await expect.poll(() => shadowText(page, segCount('trash'))).toBe('0');
   await shadowClick(page, '[data-cell-id="vocabulary-segment-all"]');
+  await openMore(page);
+  await expect
+    .poll(() => shadowText(page, '[data-cell-id="vocabulary-trash-count"]'), { timeout: 10_000 })
+    .toBe('0');
+  await page.keyboard.press('Escape');
   expect(await shadowCount(page, row('zeta'))).toBe(0);
 });
