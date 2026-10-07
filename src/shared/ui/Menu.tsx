@@ -6,6 +6,43 @@ import { useDismissOnScroll } from './useDismissOnScroll';
 import type { MenuAlign } from './useMenuPlacement';
 import styles from './Menu.module.css';
 
+/**
+ * Arrow/Home/End roving focus across `[role^="menuitem"]` children of
+ * `container` — shared by `Menu` and any static menu surface (e.g. the
+ * universal panel tools sheet) so `role="menu"` keeps its keyboard contract.
+ * Inside a shadow root `document.activeElement` is the host — the real
+ * focused item lives on the root node's `activeElement`.
+ */
+export function menuRovingKeyDown(
+  e: KeyboardEvent<HTMLElement>,
+  container: HTMLElement | null,
+): void {
+  const keys = ['ArrowDown', 'ArrowUp', 'Home', 'End'];
+  if (!keys.includes(e.key)) return;
+  const items = Array.from(
+    container?.querySelectorAll<HTMLElement>('[role^="menuitem"]:not(:disabled)') ?? [],
+  );
+  if (items.length === 0) return;
+  e.preventDefault();
+  const root = container?.getRootNode();
+  const doc = container?.ownerDocument ?? document;
+  const scope: Document | ShadowRoot = root instanceof ShadowRoot ? root : doc;
+  const active = scope.activeElement as HTMLElement | null;
+  const index = active ? items.indexOf(active) : -1;
+  const last = items.length - 1;
+  const next =
+    e.key === 'ArrowDown'
+      ? (index + 1) % items.length
+      : e.key === 'ArrowUp'
+        ? index <= 0
+          ? last
+          : index - 1
+        : e.key === 'Home'
+          ? 0
+          : last;
+  items[next]?.focus();
+}
+
 export interface MenuProps {
   readonly open: boolean;
   readonly onClose: () => void;
@@ -77,34 +114,9 @@ export function Menu({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLDivElement>): void => {
-      const keys = ['ArrowDown', 'ArrowUp', 'Home', 'End'];
-      if (!keys.includes(e.key)) return;
-      const items = Array.from(
-        menuRef.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]:not(:disabled)') ?? [],
-      );
-      if (items.length === 0) return;
-      e.preventDefault();
-      // Inside a shadow root, document.activeElement is the host — the real
-      // focused item lives on the root node's activeElement.
-      const root = triggerRef.current?.getRootNode();
-      const doc = triggerRef.current?.ownerDocument ?? document;
-      const scope: Document | ShadowRoot = root instanceof ShadowRoot ? root : doc;
-      const active = scope.activeElement as HTMLElement | null;
-      const index = active ? items.indexOf(active) : -1;
-      const last = items.length - 1;
-      const next =
-        e.key === 'ArrowDown'
-          ? (index + 1) % items.length
-          : e.key === 'ArrowUp'
-            ? index <= 0
-              ? last
-              : index - 1
-            : e.key === 'Home'
-              ? 0
-              : last;
-      items[next]?.focus();
+      menuRovingKeyDown(e, menuRef.current);
     },
-    [triggerRef],
+    [],
   );
 
   return (

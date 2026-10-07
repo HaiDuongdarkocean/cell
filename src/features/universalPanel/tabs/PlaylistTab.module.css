@@ -43,8 +43,8 @@
 }
 
 .itemActions :global(button) {
-  min-width: 44px;
-  min-height: 44px;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
 }
 
 .preview {

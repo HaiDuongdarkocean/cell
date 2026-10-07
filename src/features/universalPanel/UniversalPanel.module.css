@@ -86,14 +86,13 @@
 @media (max-width: 839px) {
   /* One resolved chrome model for the whole ≤839px band: the panel owns the
      viewport edge to edge — no rounded card, no host-page strip (the former
-     ≤599px sizing now covers the 600–839px hybrid band too). height:100dvh
-     tracks the dynamic viewport under browser-chrome show/hide and rotation;
-     height:100% is the documented fallback for forks without dvh (the host
-     is position:fixed inset:0, so 100% already resolves to the viewport). */
+     ≤599px sizing now covers the 600–839px hybrid band too). height:100%
+     resolves against the position:fixed inset:0 host, which already tracks
+     the dynamic viewport under browser-chrome show/hide — plain 100dvh would
+     overflow the host on classic-scrollbar desktops. */
   .panel {
     width: 100%;
     height: 100%;
-    height: 100dvh;
     max-width: none;
     border: none;
     border-radius: 0;

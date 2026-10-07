@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { Icon } from '@/shared/ui/Icon';
-import { MenuItem, MenuSeparator } from '@/shared/ui/Menu';
+import { MenuItem, MenuSeparator, menuRovingKeyDown } from '@/shared/ui/Menu';
 import { t } from '@/shared/i18n';
 import { PANEL_BAR_TABS, PANEL_TOOLS_TABS } from './panelTabs';
 import type { UniversalPanelTab } from './types';
@@ -85,7 +85,12 @@ export function UniversalPanelBottomNav({
         hideDragHandle
         data-cell-id="universal-panel-tools-sheet"
       >
-        <div role="menu" aria-label={t('panel.tools.sheetTitle')} className={styles.toolsList}>
+        <div
+          role="menu"
+          aria-label={t('panel.tools.sheetTitle')}
+          className={styles.toolsList}
+          onKeyDown={(e) => menuRovingKeyDown(e, e.currentTarget)}
+        >
           {PANEL_TOOLS_TABS.map((tab) => (
             <MenuItem
               key={tab.key}
