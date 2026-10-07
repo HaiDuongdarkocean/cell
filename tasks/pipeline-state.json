@@ -1,5 +1,5 @@
 {
-  "active": "phrase-pump",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -4142,7 +4142,7 @@
       "updated": "2026-10-07T07:16:21.202Z"
     },
     "phrase-pump": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "all",
       "uiSurface": "yes",
       "artifacts": {
@@ -4331,18 +4331,37 @@
             "tihoka-firefox-0.1.3.zip",
             "tihoka-source-0.1.3.tar.gz"
           ]
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-10-07T08:49:59.519Z",
+          "head": "f70489b2ff43107a959f24bbd0ef28c2c8f08327",
+          "dirty": [
+            "docs/mockups/player-mode-mobile-layout-impl-v4-manager.png",
+            "docs/mockups/player-mode-mobile-layout-impl-v5-alignment.png",
+            "docs/mockups/player-mode-mobile-layout-impl-v5-sheet.png",
+            "package.json",
+            "tasks/reports/pipeline-sessions.md",
+            "LICENSE",
+            "docs/audits/20261005-screen-atomic-map.md",
+            "docs/audits/penpot-atomic-audit.md",
+            "docs/reviews/phrase-pump-verify.md",
+            "public/LICENSE.txt",
+            "scripts/pack-firefox.ps1",
+            "scripts/release-github.ps1",
+            "tasks/plan-figma-atomic-design-system.md",
+            "tihoka-firefox-0.1.3.zip",
+            "tihoka-source-0.1.3.tar.gz"
+          ]
         }
       },
       "confidence": "medium",
       "awaiting": null,
       "resolutions": [],
       "loops": 0,
-      "owner": {
-        "id": "devin-queue-verify",
-        "since": "2026-10-07T07:17:11.580Z"
-      },
+      "owner": null,
       "worktree": null,
-      "updated": "2026-10-07T08:37:38.371Z"
+      "updated": "2026-10-07T08:54:50.373Z"
     }
   }
 }
