@@ -165,6 +165,7 @@ function SubtitleBlockInner({
   const blockStyle: React.CSSProperties = {
     transform: `scale(${globalScale})`,
     transformOrigin: 'center',
+    maxWidth: `${100 / globalScale}%`,
   };
 
   // ADR-025: block container luôn render để giữ 3-zone layout shape khi cues rỗng.
