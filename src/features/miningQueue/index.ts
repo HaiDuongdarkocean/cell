@@ -21,9 +21,10 @@ export {
 export type { QueueNotify } from './services/capture';
 export {
   queueItemToPrefill,
-  quickAddQueueItem,
+  queueQuickAddDestination,
+  quickAddQueueItemToSrs,
 } from './services/queueActions';
-export type { QueueQuickAddDestination } from './services/queueActions';
+export type { QueueQuickAddDestination, OceanSrsAdder } from './services/queueActions';
 export {
   addQueueItem,
   listQueueRows,

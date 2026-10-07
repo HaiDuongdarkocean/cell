@@ -22,8 +22,9 @@ export interface DictionaryTabProps {
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
   /** One-action capture into the mining queue (spec mining-queue). */
   readonly onSaveToQueue?: (prefill: PopupCardCreatorPrefill) => void;
-  /** Called after a successful Add/Update in the integrated Card Creator. */
-  readonly onAfterSubmit?: () => void;
+  /** Called after a successful Add/Update — carries the submitted context's
+   *  queueItemId so the caller removes exactly the replayed mining-queue row. */
+  readonly onAfterSubmit?: (queueItemId?: string) => void;
   /** Called from the empty-definitions state to open Settings → Resources. */
   readonly onOpenSettings?: () => void;
 }
@@ -56,6 +57,7 @@ export function DictionaryTab({
       ...(prev ?? {}),
       ...next,
       term: next.term,
+      queueItemId: undefined,
     } as DictionaryPanelPrefill));
   }, []);
 
@@ -65,6 +67,7 @@ export function DictionaryTab({
       ...next,
       term: next.term,
       initialAction: 'quick-add',
+      queueItemId: undefined,
     } as DictionaryPanelPrefill));
   }, []);
 
@@ -99,7 +102,7 @@ export function DictionaryTab({
           sourceLang={sourceLang}
           targetLang={targetLang}
           context={cardCreatorContext}
-          onAfterSubmit={onAfterSubmit}
+          onAfterSubmit={() => onAfterSubmit?.(cardCreatorContext?.queueItemId)}
           onQueueTermSelect={handleQueueTermSelect}
         />
       </div>

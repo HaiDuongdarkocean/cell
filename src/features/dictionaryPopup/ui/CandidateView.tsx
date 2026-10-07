@@ -237,6 +237,7 @@ export function CandidateView({
                 shape="circle"
                 size="sm"
                 variant="outline"
+                className={styles.saveToQueue}
                 aria-label={panel.queuedAt ? t('queue.saved') : t('queue.action.saveTerm')}
                 title={panel.queuedAt ? t('queue.saved') : t('queue.action.saveTerm')}
                 onClick={panel.saveToQueue}

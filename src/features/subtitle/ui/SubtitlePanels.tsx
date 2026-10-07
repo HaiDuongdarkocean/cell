@@ -14,6 +14,7 @@ import { usePlayerMode } from './subtitlePlayerMode';
 import { PlayerModeLayer } from './PlayerModeLayer';
 import { SubtitlePanel } from './SubtitlePanel';
 import { saveCueToQueue } from '@/features/miningQueue';
+import { canonicalNavUrl } from './contentScriptShared';
 import { useOverlayPortals } from './subtitlePortals';
 import { useSplitView } from './subtitleSplitView';
 import { ShadowThemeProvider } from '@/features/theme';
@@ -173,11 +174,14 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       (cue: BilingualCue): void => {
         saveCueToQueue(cue, {
           langCode: tokenize?.langCode,
-          sourceLabel: typeof document !== 'undefined' ? document.title || undefined : undefined,
+          // Local-player hosts pass the media filename; content overlays get the
+          // page title (document.title on an extension page would be ours).
+          sourceLabel: filename ?? (typeof document !== 'undefined' ? document.title || undefined : undefined),
+          videoId: filename ?? (typeof location !== 'undefined' ? canonicalNavUrl(location.href) : undefined),
           notify: addToast,
         });
       },
-      [addToast, tokenize],
+      [addToast, tokenize, filename],
     );
     const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
     const [practiceMode, setPracticeMode] = useState<SubtitlePracticeMode>(initialPracticeMode);

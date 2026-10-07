@@ -11,7 +11,8 @@ import { EmptyState } from '@/shared/ui/EmptyState';
 import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
 import { handleShortcutKey } from '@/features/subtitle';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
-import { sendMessage, onMessage, removeOnMessageListener, addOnTabActivatedListener, addOnTabUpdatedListener } from '@/shared/lib/chrome-apis';
+import { sendMessage, onMessage, removeOnMessageListener, addOnTabActivatedListener, addOnTabUpdatedListener, getTab } from '@/shared/lib/chrome-apis';
+import { canonicalNavUrl } from '@/features/subtitle/ui/contentScriptShared';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { messagePayload } from '@/entities/message/payload';
 import type { BilingualCue, KeyboardShortcut } from '@/entities/media';
@@ -40,6 +41,7 @@ export function App() {
   // once) always reads the latest value without re-subscribing. Mirrors the
   // pattern in popup's useDetectedMedia (ADR-011: side panel per-tab state).
   const activeTabIdRef = useRef<number | undefined>(undefined);
+  const activeTabInfoRef = useRef<{ title?: string; url?: string } | undefined>(undefined);
 
   // Reset store + re-fetch cached cues for a tab. Called on mount and on
   // chrome.tabs.onActivated (user switches tab). Reset is required so a tab
@@ -47,6 +49,14 @@ export function App() {
   // tab's stale cues.
   const syncActiveTab = async (tabId: number | undefined): Promise<void> => {
     activeTabIdRef.current = tabId;
+    activeTabInfoRef.current = undefined;
+    if (tabId !== undefined) {
+      void getTab(tabId).then((tab) => {
+        if (activeTabIdRef.current === tabId) {
+          activeTabInfoRef.current = { title: tab.title, url: tab.url };
+        }
+      }).catch(() => { /* tab gone */ });
+    }
     const store = useSidePanelStore.getState();
     store.setCues([]);
     store.setCurrentTime(0, 0);
@@ -324,8 +334,10 @@ export function App() {
           onReplayCue={handleReplayCue}
           onContinueCue={handleContinueCue}
           onSaveCue={(cue) => {
+            const tab = activeTabInfoRef.current;
             saveCueToQueue(cue, {
-              sourceLabel: typeof document !== 'undefined' ? document.title || undefined : undefined,
+              sourceLabel: tab?.title || undefined,
+              videoId: tab?.url ? canonicalNavUrl(tab.url) : undefined,
               notify: addToast,
             });
           }}

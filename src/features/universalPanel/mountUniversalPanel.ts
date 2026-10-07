@@ -21,7 +21,8 @@ import { RecapTab } from '@/features/sessionRecap';
 import {
   QueueTab,
   queueItemToPrefill,
-  quickAddQueueItem,
+  queueQuickAddDestination,
+  quickAddQueueItemToSrs,
   queueRemove,
   savePrefillToQueue,
 } from '@/features/miningQueue';
@@ -208,8 +209,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
           notify: (message, variant) => queueToast(message, variant),
         });
       },
-      onAfterSubmit: () => {
-        const queueItemId = pendingCardCreatorContext?.queueItemId;
+      onAfterSubmit: (queueItemId) => {
         if (queueItemId) {
           void queueRemove(queueItemId).catch(() => {});
         }
@@ -270,9 +270,19 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       onQuickAdd: (item) => {
         void (async () => {
           try {
-            const destination = await quickAddQueueItem(item, (msg) => queueToast(msg, 'info'), addToOceanSrs);
-            await queueRemove(item.id);
-            queueToast(t('queue.added', [destination === 'ocean-srs' ? 'Ocean SRS' : 'Anki']), 'success');
+            const destination = await queueQuickAddDestination();
+            if (destination === 'ocean-srs') {
+              await quickAddQueueItemToSrs(item, addToOceanSrs);
+              await queueRemove(item.id);
+              queueToast(t('queue.added', ['Ocean SRS']), 'success');
+              return;
+            }
+            // Anki: replay through the card creator quick-add path — it
+            // auto-submits and removes the row via the queueItemId wiring.
+            await mountController.sendToCard({
+              ...queueItemToPrefill(item),
+              initialAction: 'quick-add',
+            });
           } catch (err) {
             queueToast(err instanceof Error ? err.message : String(err), 'error');
           }

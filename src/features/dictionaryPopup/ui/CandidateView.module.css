@@ -11,6 +11,13 @@
   justify-content: center;
 }
 
+/* Queue save affordance — REQ-9 hit-target floor; the painted circle keeps
+   `sm` sizing but the box grows to --touch-target via transparent border. */
+.saveToQueue {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+}
+
 .cellHeader {
   padding: 0;
   display: flex;

@@ -1,31 +1,19 @@
-import { queueItemToPrefill, quickAddQueueItem } from './queueActions';
+import {
+  queueItemToPrefill,
+  queueQuickAddDestination,
+  quickAddQueueItemToSrs,
+} from './queueActions';
 import type { MiningQueueItem } from '@/entities/miningQueue';
 import type { PopupCardCreatorPrefill } from '@/entities/dictionary';
 
 jest.mock('@/shared/lib/storage/settingsStore', () => ({
   loadSettings: jest.fn(),
 }));
-jest.mock('@/features/cardCreator', () => ({
-  listModelFields: jest.fn(),
-  resolveFieldMapping: jest.fn(),
-  quickAddNote: jest.fn(),
-  fetchMediaList: jest.fn(),
-}));
 
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
-import {
-  listModelFields,
-  resolveFieldMapping,
-  quickAddNote,
-  fetchMediaList,
-} from '@/features/cardCreator';
 
 const loadSettingsMock = loadSettings as jest.Mock;
 const addToOceanSrsMock = jest.fn();
-const listModelFieldsMock = listModelFields as jest.Mock;
-const resolveFieldMappingMock = resolveFieldMapping as jest.Mock;
-const quickAddNoteMock = quickAddNote as jest.Mock;
-const fetchMediaListMock = fetchMediaList as jest.Mock;
 
 const SNAPSHOT: PopupCardCreatorPrefill = {
   term: '猫',
@@ -66,7 +54,6 @@ const SENTENCE_ITEM: MiningQueueItem = {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  fetchMediaListMock.mockResolvedValue([]);
 });
 
 describe('queueItemToPrefill', () => {
@@ -86,54 +73,32 @@ describe('queueItemToPrefill', () => {
   });
 });
 
-describe('quickAddQueueItem', () => {
-  it('routes to Ocean SRS when configured', async () => {
+describe('queueQuickAddDestination', () => {
+  it('reads the configured srs destination', async () => {
     loadSettingsMock.mockResolvedValue({ dictionaryPopup: { srsDestination: 'ocean-srs' } });
-    addToOceanSrsMock.mockResolvedValue({ noteId: 'n1', cardId: 'c1' });
-    const dest = await quickAddQueueItem(TERM_ITEM, () => {}, addToOceanSrsMock);
-    expect(dest).toBe('ocean-srs');
-    expect(addToOceanSrsMock).toHaveBeenCalledWith(SNAPSHOT);
-    expect(quickAddNoteMock).not.toHaveBeenCalled();
+    await expect(queueQuickAddDestination()).resolves.toBe('ocean-srs');
   });
 
-  it('throws instead of silently adding when Ocean SRS gets no snapshot', async () => {
-    loadSettingsMock.mockResolvedValue({ dictionaryPopup: { srsDestination: 'ocean-srs' } });
-    await expect(quickAddQueueItem(SENTENCE_ITEM, () => {}, addToOceanSrsMock)).rejects.toThrow();
+  it('defaults to anki when unset', async () => {
+    loadSettingsMock.mockResolvedValue({});
+    await expect(queueQuickAddDestination()).resolves.toBe('anki');
+  });
+});
+
+describe('quickAddQueueItemToSrs', () => {
+  it('passes the stored snapshot to the injected Ocean SRS port', async () => {
+    addToOceanSrsMock.mockResolvedValue({ noteId: 'n1', cardId: 'c1' });
+    await quickAddQueueItemToSrs(TERM_ITEM, addToOceanSrsMock);
+    expect(addToOceanSrsMock).toHaveBeenCalledWith(SNAPSHOT);
+  });
+
+  it('throws instead of silently adding when there is no snapshot', async () => {
+    await expect(quickAddQueueItemToSrs(SENTENCE_ITEM, addToOceanSrsMock)).rejects.toThrow();
     expect(addToOceanSrsMock).not.toHaveBeenCalled();
   });
 
-  it('adds through AnkiConnect with mapped fields when destination is anki', async () => {
-    loadSettingsMock.mockResolvedValue({
-      dictionaryPopup: { srsDestination: 'anki' },
-      cardCreator: {
-        ankiConnectUrl: 'http://x',
-        defaultDeck: 'D',
-        defaultNoteType: 'M',
-        defaultTags: 't1',
-        fieldMappings: { M: { targetWord: 'Front' } },
-      },
-    });
-    listModelFieldsMock.mockResolvedValue({ ok: true, value: ['Front'] });
-    resolveFieldMappingMock.mockReturnValue({ mapping: { targetWord: 'Front' }, shouldPersist: false });
-    quickAddNoteMock.mockResolvedValue({ ok: true, noteId: 42 });
-    const dest = await quickAddQueueItem(TERM_ITEM, () => {}, addToOceanSrsMock);
-    expect(dest).toBe('anki');
-    expect(quickAddNoteMock).toHaveBeenCalledWith(
-      'http://x', 'D', 'M', { targetWord: 'Front' }, 't1',
-      expect.objectContaining({ targetWord: '猫', sentence: '猫が好き' }),
-      expect.objectContaining({ images: [], sentenceAudios: [], wordAudios: [] }),
-      expect.any(Function),
-    );
-  });
-
-  it('propagates anki failures so the caller keeps the row', async () => {
-    loadSettingsMock.mockResolvedValue({
-      cardCreator: {
-        ankiConnectUrl: 'http://x', defaultDeck: 'D',
-        defaultNoteType: 'M', defaultTags: '',
-      },
-    });
-    listModelFieldsMock.mockResolvedValue({ ok: false, error: 'no connect' });
-    await expect(quickAddQueueItem(TERM_ITEM, () => {}, addToOceanSrsMock)).rejects.toThrow('no connect');
+  it('propagates SRS failures so the caller keeps the row', async () => {
+    addToOceanSrsMock.mockRejectedValue(new Error('srs offline'));
+    await expect(quickAddQueueItemToSrs(TERM_ITEM, addToOceanSrsMock)).rejects.toThrow('srs offline');
   });
 });

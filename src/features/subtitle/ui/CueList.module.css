@@ -65,12 +65,12 @@
 
 .saveCue {
   /* sits inside the card's actions row next to the timestamp. Icon-only
-     affordance — the 24px min size keeps the touch target inside the row. */
+     affordance — hit box follows the --touch-target floor (REQ-9). */
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  min-height: 24px;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
   padding: 0;
   border: 0;
   background: transparent;
@@ -95,11 +95,6 @@
 @media (max-width: 599px) {
   .timestamp {
     font-size: var(--font-size-xs);
-  }
-
-  .saveCue {
-    min-width: 28px;
-    min-height: 28px;
   }
 }
 
