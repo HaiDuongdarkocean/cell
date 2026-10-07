@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Box, Button, Heading, Text } from '@/shared/ui';
 import { t } from '@/shared/i18n';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
+import { PumpView } from '@/features/phrasePump';
 import { SrsReviewCard } from './SrsReviewCard';
 import { SrsHome } from './SrsHome';
 import { SrsStudySettings } from './SrsStudySettings';
@@ -11,9 +12,20 @@ import { SrsDeckDetail } from './SrsDeckDetail';
 import type { SrsDeck } from '@/entities/srs/types';
 import styles from './App.module.css';
 
+type SrsView = 'home' | 'deck' | 'streaks' | 'vocabulary' | 'pump';
+
+function initialSearch(): { view: SrsView; deckId: string | undefined } {
+  const params = new URLSearchParams(location.search);
+  return {
+    view: params.get('view') === 'pump' ? 'pump' : 'home',
+    deckId: params.get('deckId') ?? undefined,
+  };
+}
+
 export function App() {
   const { loading, error, session, dismissError } = useSrsStudy();
-  const [view, setView] = useState<'home' | 'deck' | 'streaks' | 'vocabulary'>('home');
+  const [initial] = useState(initialSearch);
+  const [view, setView] = useState<SrsView>(initial.view);
   const [deckTarget, setDeckTarget] = useState<{ deck: SrsDeck; decks: readonly SrsDeck[]; mode: 'view' | 'change' } | null>(null);
   const [decksVersion, setDecksVersion] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -45,11 +57,14 @@ export function App() {
         <SrsStreaksView onBack={() => { setView('home'); }} />
       ) : view === 'vocabulary' ? (
         <SrsVocabularyView onBack={() => { setView('home'); }} />
+      ) : view === 'pump' ? (
+        <PumpView onBack={() => { setView('home'); }} initialDeckId={initial.deckId} />
       ) : (
         <SrsHome
           onOpenSettings={() => { setSettingsOpen(true); }}
           onOpenStreaks={() => { setView('streaks'); }}
           onOpenVocabulary={() => { setView('vocabulary'); }}
+          onOpenPump={() => { setView('pump'); }}
           onOpenDeck={(deck, mode, decks) => {
             setDeckTarget({ deck, decks, mode });
             setView('deck');

@@ -1040,6 +1040,8 @@ export interface SrsAddNoteResult {
 export interface SrsOpenStudyPagePayload {
   /** Optional deck id to scope the study session. */
   readonly deckId?: string;
+  /** Optional landing view on the study page (e.g. 'pump'). */
+  readonly view?: string;
 }
 
 /** Content → background: list decks and notetypes for a collection.

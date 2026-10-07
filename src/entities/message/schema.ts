@@ -270,6 +270,7 @@ export const SrsAddNotePayloadSchema = z.object({
 
 export const SrsOpenStudyPagePayloadSchema = z.object({
   deckId: z.string().optional(),
+  view: z.string().optional(),
 });
 
 export const SrsGetDecksNotetypesPayloadSchema = z.object({

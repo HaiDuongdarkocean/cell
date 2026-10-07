@@ -84,8 +84,16 @@ export function registerSrsHandlers(ctx: BackgroundContext): void {
       }
       let url = chrome.runtime.getURL(SRS_STUDY_PATH);
       const payload = parsed.data as SrsOpenStudyPagePayload;
+      const params = new URLSearchParams();
       if (payload?.deckId) {
-        url += `?deckId=${encodeURIComponent(payload.deckId)}`;
+        params.set('deckId', payload.deckId);
+      }
+      if (payload?.view) {
+        params.set('view', payload.view);
+      }
+      const qs = params.toString();
+      if (qs) {
+        url += `?${qs}`;
       }
       const tab = await chrome.tabs.create({ url });
       if (tab.id === undefined) {

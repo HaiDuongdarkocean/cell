@@ -114,10 +114,11 @@ export interface SrsHomeProps {
   readonly onOpenSettings: () => void;
   readonly onOpenStreaks: () => void;
   readonly onOpenVocabulary: () => void;
+  readonly onOpenPump: () => void;
   readonly onOpenDeck: (deck: SrsDeck, mode: 'view' | 'change', decks: readonly SrsDeck[]) => void;
 }
 
-export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpenDeck }: SrsHomeProps): React.JSX.Element {
+export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpenPump, onOpenDeck }: SrsHomeProps): React.JSX.Element {
   const { start, loading, finished, stats } = useSrsStudy();
   const prefs = useSrsUiPrefs();
   const [home, setHome] = useState<SrsHomeStats | null>(null);
@@ -351,6 +352,9 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
 
         <Button variant="primary" className={styles.continueButton} fullWidth onClick={() => { void start(); }} disabled={loading}>
           {loading ? t('srs.action.loading') : t('srs.home.continue')}
+        </Button>
+        <Button variant="secondary" fullWidth onClick={onOpenPump} data-cell-id="srs-home-pump">
+          <Icon name="audioWave" /> {t('pump.launcher')}
         </Button>
       </Box>
 

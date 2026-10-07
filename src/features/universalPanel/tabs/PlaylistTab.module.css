@@ -74,6 +74,17 @@
   color: var(--color-error);
 }
 
+.pumpLauncher {
+  margin-bottom: var(--space-2);
+  cursor: pointer;
+  min-height: var(--touch-target);
+}
+
+.pumpLauncher:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .iconDim {
   color: var(--color-text-secondary);
 }

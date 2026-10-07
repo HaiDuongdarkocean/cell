@@ -17,9 +17,11 @@ export { getReviewEventsByCard, putReviewEvent } from './repositories/reviewEven
 export { getAudioAssetsByNote, putAudioAsset } from './repositories/audioAssetRepository';
 export { putImageAsset } from './repositories/imageAssetRepository';
 export { closeAllSrsDBs, clearAllSrsStores, getSrsDbName, deleteSrsDB, getSrsDB, SRS_STORES } from './repositories/srsDatabase';
-export { getCollection } from './repositories/collectionRepository';
-export { getDeck } from './repositories/deckRepository';
-export { getCard } from './repositories/cardRepository';
+export { getCollection, getAllCollections } from './repositories/collectionRepository';
+export { getDeck, getSubDecks } from './repositories/deckRepository';
+export { getCard, getCardsByIds, getCardIdsByDeckDueBefore } from './repositories/cardRepository';
+export { getNotesByIds } from './repositories/noteRepository';
+export { getNotetypesByIds } from './repositories/notetypeRepository';
 
 export { SrsReviewCardFront } from './ui/SrsReviewCardFront';
 export { SrsReviewCardBack } from './ui/SrsReviewCardBack';

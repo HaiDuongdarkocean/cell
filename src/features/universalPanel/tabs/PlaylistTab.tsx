@@ -3,6 +3,7 @@ import { Button } from '@/shared/ui/Button';
 import { Card } from '@/shared/ui/Card';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Icon } from '@/shared/ui/Icon';
+import { ListItem } from '@/shared/ui/ListItem';
 import { Spinner } from '@/shared/ui/Spinner';
 import { Text } from '@/shared/ui/Text';
 import { VisuallyHidden } from '@/shared/ui/VisuallyHidden';
@@ -194,6 +195,35 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
     </VisuallyHidden>
   );
 
+  const launchPump = (): void => {
+    void send(MESSAGE_TYPES.SRS_OPEN_STUDY_PAGE, { view: 'pump' });
+  };
+
+  const pumpLauncher = (
+    <ListItem
+      className={styles.pumpLauncher}
+      role="button"
+      tabIndex={0}
+      leading={<Icon name="audioWave" size="sm" />}
+      trailing={<Icon name="chevronRight" size="sm" />}
+      onClick={launchPump}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          launchPump();
+        }
+      }}
+      data-cell-id="playlist-phrase-pump"
+    >
+      <Text variant="body" truncate>
+        {t('pump.launcher')}
+      </Text>
+      <Text as="p" variant="supporting" color="secondary">
+        {t('pump.launcher.hint')}
+      </Text>
+    </ListItem>
+  );
+
   if (records === null) {
     return (
       <>
@@ -209,6 +239,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
     return (
       <>
         {announcer}
+        {pumpLauncher}
         <EmptyState
           icon={<Icon name="audioWave" size="md" />}
           title={t('condensedAudio.list.emptyTitle')}
@@ -224,6 +255,7 @@ export function PlaylistTab({ isActive }: PlaylistTabProps): React.JSX.Element {
   return (
     <>
       {announcer}
+      {pumpLauncher}
       <div className={styles.list} role="list" aria-label={t('panel.tab.playlist')}>
       {records.map((record) => {
         const busy = busyId === record.id;
