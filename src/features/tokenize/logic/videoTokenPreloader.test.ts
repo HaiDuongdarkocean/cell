@@ -162,6 +162,37 @@ describe('createVideoTokenPreloader', () => {
     expect(getWordTranslations).toHaveBeenCalledWith('en', 'ja', expect.arrayContaining(['hello']));
   });
 
+  it('drops glosses that resolve after the target language changed', async () => {
+    const resolvers: Array<(m: Map<string, string>) => void> = [];
+    (getWordTranslations as jest.Mock).mockImplementation(
+      () => new Promise<Map<string, string>>((res) => { resolvers.push(res); }),
+    );
+
+    const preloader = createVideoTokenPreloader({
+      langCode: 'en', map, scheduler,
+      showGlosses: true, glossTargetLanguage: 'vi',
+    });
+    preloader.setCues(makeCues(1));
+    // Fire the drain without awaiting — the vi fetch stays pending inside.
+    const firstFlush = flushScheduler(scheduler);
+    await waitForMicrotasks();
+    expect(getWordTranslations).toHaveBeenCalledWith('en', 'vi', expect.anything());
+
+    // Language switches while the vi request is still in flight. Its late
+    // resolution must be dropped; the requeued fr request wins instead.
+    preloader.setGlossTargetLanguage('fr');
+    resolvers[0]!(new Map([['hello', 'xin chào']]));
+    await waitForMicrotasks();
+    // Stale vi result was dropped; the requeued fr request is in-flight.
+    expect(map.get(0)!.tokens.find((t) => t.term === 'hello')?.gloss).toBeUndefined();
+    expect(getWordTranslations).toHaveBeenCalledWith('en', 'fr', expect.anything());
+
+    resolvers[1]!(new Map([['hello', 'bonjour']]));
+    await firstFlush;
+    await waitForMicrotasks();
+    expect(map.get(0)!.tokens.find((t) => t.term === 'hello')?.gloss).toBe('bonjour');
+  });
+
   it('deduplicates in-flight term lookups', async () => {
     const preloader = createVideoTokenPreloader({ langCode: 'en', map, scheduler, chunkSize: 200 });
     const cues = makeCues(2);

@@ -114,14 +114,19 @@ export function createVideoTokenPreloader(
       pendingTerms.delete(term);
     }
 
+    const tl = glossTargetLanguage;
     try {
       const [statusMap, freqMaps, bandOpts, dictReadings, termGlosses] = await Promise.all([
         getWordStatuses(langCode, terms),
         getFrequencyEntries(langCode, terms),
         loadBandOptions(),
         showReadings ? getReadings(langCode, terms).catch(() => null) : Promise.resolve(null),
-        showGlosses && glossTargetLanguage
-          ? getWordTranslations(langCode, glossTargetLanguage, terms).catch(() => null)
+        showGlosses && tl
+          ? getWordTranslations(langCode, tl, terms)
+              // Drop results that resolve after a target-language switch —
+              // writing them would persist the old language's glosses.
+              .then((g) => (glossTargetLanguage === tl ? g : null))
+              .catch(() => null)
           : Promise.resolve(null),
       ]);
 

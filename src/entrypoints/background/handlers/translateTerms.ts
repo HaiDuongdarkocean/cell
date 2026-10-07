@@ -65,15 +65,21 @@ async function translateTermChunk(
     return plain.map((g) => g.trim());
   }
 
+  if (terms.length === 1) {
+    // All segments belong to the one term — join them.
+    return plain.length > 0 ? [plain.join(' ').trim()] : [];
+  }
+
   // Fallback: marker-joined request realigns by ⟦Ti⟧ index even when the
   // provider merges or splits lines.
-  if (terms.length > 1) {
-    const marked = await fetchSegments(joinTermTexts(terms), sl, tl);
-    if (marked.length > 0) {
-      return alignTermGlosses(marked, terms.length);
-    }
+  const marked = await fetchSegments(joinTermTexts(terms), sl, tl);
+  if (marked.length > 0) {
+    return alignTermGlosses(marked, terms.length);
   }
-  return plain.length > 0 ? plain : [];
+  // A wrong-length plain result must not zip positionally — misaligned
+  // glosses are worse than none. Failing the sub-batch keeps existing
+  // glosses (resolve semantics treat absent terms as uncovered).
+  return [];
 }
 
 export function registerTranslateTermsHandlers(ctx: BackgroundContext): void {
