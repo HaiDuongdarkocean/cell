@@ -13,6 +13,7 @@ import { useSubtitleBlockDrag } from './subtitleDrag';
 import { usePlayerMode } from './subtitlePlayerMode';
 import { PlayerModeLayer } from './PlayerModeLayer';
 import { SubtitlePanel } from './SubtitlePanel';
+import { saveCueToQueue } from '@/features/miningQueue';
 import { useOverlayPortals } from './subtitlePortals';
 import { useSplitView } from './subtitleSplitView';
 import { ShadowThemeProvider } from '@/features/theme';
@@ -168,6 +169,16 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [playerMode, setPlayerMode] = useState(false);
     const [cues, setCues] = useState<readonly BilingualCue[]>(initialCues ?? []);
     const [tokenize, setTokenize] = useState(initialTokenize);
+    const handleSaveCue = useCallback(
+      (cue: BilingualCue): void => {
+        saveCueToQueue(cue, {
+          langCode: tokenize?.langCode,
+          sourceLabel: typeof document !== 'undefined' ? document.title || undefined : undefined,
+          notify: addToast,
+        });
+      },
+      [addToast, tokenize],
+    );
     const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
     const [practiceMode, setPracticeMode] = useState<SubtitlePracticeMode>(initialPracticeMode);
     const [panelBlurred, setPanelBlurred] = useState(false);
@@ -337,6 +348,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           onContinueCue={onContinueCue}
           tokenize={tokenize}
           panelBlurred={panelBlurred}
+          onSaveCue={handleSaveCue}
         />
         {managerPortal}
         </>
@@ -435,6 +447,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             onContinueCue={onContinueCue}
             tokenize={tokenize}
             panelBlurred={panelBlurred}
+            onSaveCue={handleSaveCue}
           />,
           splitViewPortalTarget,
         )}

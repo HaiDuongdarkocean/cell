@@ -18,6 +18,15 @@ import { StudyModesTab } from '@/features/studyModes';
 import { VocabularyTab } from '@/features/vocabulary';
 import { PlaylistTab } from './tabs/PlaylistTab';
 import { RecapTab } from '@/features/sessionRecap';
+import {
+  QueueTab,
+  queueItemToPrefill,
+  quickAddQueueItem,
+  queueRemove,
+  savePrefillToQueue,
+} from '@/features/miningQueue';
+import { showToast } from '@/features/subtitle';
+import { addToOceanSrs } from '@/features/srs';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { openSettingsSection } from './deepLink';
 import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/cellUiHosts';
@@ -26,6 +35,7 @@ import { STORAGE_KEYS } from '@/shared/config/config';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { getActiveProfileSettings, resolveProfile, type Settings } from '@/entities/settings';
 import { useCardCreatorStore } from '@/features/cardCreator';
+import { t } from '@/shared/i18n';
 import type { TokenizePanelState } from '@/features/tokenize';
 import type { UniversalPanelTab, DictionaryPanelPrefill } from './types';
 
@@ -63,7 +73,7 @@ async function restorePersistedTab(): Promise<UniversalPanelTab | null> {
   try {
     const data = await getSessionStorage<Record<string, string>>(STORAGE_KEYS.UNIVERSAL_PANEL_TAB);
     const tab = data[STORAGE_KEYS.UNIVERSAL_PANEL_TAB];
-    return tab === 'dictionary' || tab === 'settings' || tab === 'studyModes' || tab === 'vocabulary' || tab === 'playlist' || tab === 'recap' ? tab : null;
+    return tab === 'dictionary' || tab === 'settings' || tab === 'studyModes' || tab === 'vocabulary' || tab === 'playlist' || tab === 'queue' || tab === 'recap' ? tab : null;
   } catch {
     return null;
   }
@@ -192,7 +202,17 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       isOpen: open,
       prefill: pendingCardCreatorContext,
       onOpenSettings: () => { void openSettingsSection(mountController, 'resources'); },
+      onSaveToQueue: (prefill) => {
+        savePrefillToQueue(prefill, {
+          sourceLabel: typeof document !== 'undefined' ? document.title || undefined : undefined,
+          notify: (message, variant) => queueToast(message, variant),
+        });
+      },
       onAfterSubmit: () => {
+        const queueItemId = pendingCardCreatorContext?.queueItemId;
+        if (queueItemId) {
+          void queueRemove(queueItemId).catch(() => {});
+        }
         const store = useCardCreatorStore.getState();
         const { queueItems, queueActiveIndex } = store;
         const remaining = queueItems.filter((_, i) => i !== queueActiveIndex);
@@ -234,6 +254,31 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     createElement(ErrorBoundary, null, createElement(RecapTab, {
       isActive,
       onLookup: (term: string) => { void mountController.openDictionaryLookup(term); },
+    })) as ReactElement;
+
+  const queueToast = (message: string, variant: 'info' | 'success' | 'error'): void => {
+    showToast(message, mount.rootEl, { variant });
+  };
+
+  const renderQueuePanel = (): ReactElement =>
+    createElement(ErrorBoundary, null, createElement(QueueTab, {
+      onCardify: (item) => {
+        void mountController.sendToCard(queueItemToPrefill(item)).catch((err: unknown) => {
+          queueToast(err instanceof Error ? err.message : String(err), 'error');
+        });
+      },
+      onQuickAdd: (item) => {
+        void (async () => {
+          try {
+            const destination = await quickAddQueueItem(item, (msg) => queueToast(msg, 'info'), addToOceanSrs);
+            await queueRemove(item.id);
+            queueToast(t('queue.added', [destination === 'ocean-srs' ? 'Ocean SRS' : 'Anki']), 'success');
+          } catch (err) {
+            queueToast(err instanceof Error ? err.message : String(err), 'error');
+          }
+        })();
+      },
+      onActionError: (message) => queueToast(message, 'error'),
     })) as ReactElement;
 
   // ADR-061: tokenize state lives in the universal header (above content),
@@ -293,6 +338,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
           studyModesPanel,
           settingsPanel,
           playlistPanel: renderPlaylistPanel(open && currentTab === 'playlist'),
+          queuePanel: renderQueuePanel(),
           recapPanel: renderRecapPanel(open && currentTab === 'recap'),
         }) as ReactElement,
       ) as ReactElement,

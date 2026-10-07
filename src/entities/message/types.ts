@@ -183,7 +183,13 @@ export type MessageType =
   | 'CONDENSE_AUDIO_ABORT'
   | 'CONDENSE_AUDIO_PROGRESS'
   | 'CONDENSE_AUDIO_READ'
-  | 'CONDENSE_AUDIO_EVENT';
+  | 'CONDENSE_AUDIO_EVENT'
+  // Mining queue (spec: mining-queue.md)
+  | 'QUEUE_ADD'
+  | 'QUEUE_LIST'
+  | 'QUEUE_GET'
+  | 'QUEUE_REMOVE'
+  | 'QUEUE_CHANGED';
 
 // === Message Request ===
 

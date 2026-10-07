@@ -94,6 +94,9 @@ export interface SubtitlePanelProps {
   /** PM mobile: portal target for the cue-filter fab (lives in the overlay's
    *  anchor rail so it stays put while the panel re-renders). */
   fabPortalTarget?: HTMLElement | null;
+  /** One-action sentence capture into the mining queue — adds a save button to
+   *  every cue row (spec mining-queue). */
+  onSaveCue?: (cue: BilingualCue) => void;
 }
 
 type PanelTab = 'subtitles' | 'playlist';
@@ -132,6 +135,7 @@ function SubtitlePanelImpl({
   showAllCues = false,
   cardActions,
   fabPortalTarget,
+  onSaveCue,
 }: SubtitlePanelProps): React.JSX.Element {
   const hasPlaylist = playlistContent !== undefined;
   const cleanupRulesSetting = useStudyModeStore((s) => s.advanced.cleanupRules);
@@ -329,6 +333,7 @@ function SubtitlePanelImpl({
         displayMode={cueDisplayMode}
         showAllCues={showAllCues}
         cardActions={cardActions}
+        onSaveCue={onSaveCue}
       />
     ) : (
       <SubtitlePracticeSession

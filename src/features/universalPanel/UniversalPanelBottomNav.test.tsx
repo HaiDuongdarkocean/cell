@@ -12,9 +12,9 @@ function renderNav(activeTab: Parameters<typeof UniversalPanelBottomNav>[0]['act
 }
 
 describe('UniversalPanelBottomNav (up-mobile-chrome)', () => {
-  it('the registry splits 4 bar tabs from 2 demoted tabs', () => {
+  it('the registry splits 4 bar tabs from 3 demoted tabs', () => {
     expect(PANEL_BAR_TABS.map((t) => t.key)).toEqual(['dictionary', 'vocabulary', 'studyModes', 'settings']);
-    expect(PANEL_TOOLS_TABS.map((t) => t.key)).toEqual(['playlist', 'recap']);
+    expect(PANEL_TOOLS_TABS.map((t) => t.key)).toEqual(['playlist', 'queue', 'recap']);
   });
 
   it('renders at most 5 destinations — 4 bar tabs + the Tools button', () => {

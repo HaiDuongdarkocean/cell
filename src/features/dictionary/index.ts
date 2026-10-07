@@ -12,7 +12,7 @@ export { formatDefinitions, parseDefinitionsText } from './logic/formatDefinitio
 export { isSqlite, isZip, unzipAll, decodeText } from './logic/fileDetector';
 export type { LookupLogEntry, LogToken, PhraseMatchTrace, MatchTraceData, CandidateMatchTrace, RankedCandidateTrace } from './logic/lookupLogTypes';
 export { segmentFMM, isChengyu } from './logic/chineseSegmenter';
-export { closeAllDBs, clearAllStores } from './repositories/baseRepository';
+export { closeAllDBs, clearAllStores, awaitTx } from './repositories/baseRepository';
 export { addDictionaryEntry, findDictionaryByTerm, findDictionaryByResource } from './repositories/resourceEntryRepository';
 export { addResource, getAllResources } from './repositories/resourceRepository';
 export { compilePhraseIndex, serializePhraseIndex, deserializePhraseIndex } from './logic/phraseIndexCompiler';

@@ -3,7 +3,7 @@ import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { t } from '@/shared/i18n';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { formatDefinitions } from '@/features/dictionary'
-import { formatDefEntry, formatDefFromLookup } from '@/features/srs';
+import { formatDefEntry, formatDefFromLookup } from '../lib/defEntry';
 import type { PopupCardCreatorPrefill } from '@/entities/dictionary';
 import type { SrsFieldValue } from '@/entities/srs/types';
 import type { MessageResponse, SrsAddNotePayload, SrsAddNoteResult } from '@/entities/message/types';

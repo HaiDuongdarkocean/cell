@@ -26,7 +26,7 @@ import type {
   CardCreatorOpenContext,
   MediaFile,
 } from '@/features/cardCreator';
-import { addToOceanSrs, openSrsStudyPage } from '@/features/dictionaryPopup/services/addToOceanSrs';
+import { addToOceanSrs, openSrsStudyPage } from '@/features/srs';
 import { formatDefinitions, parseDefinitionsText } from '@/features/dictionary';
 import { formatDefEntry, formatDefFromLookup } from '@/features/srs';
 import { loadSettingsOrToast, showProgressToast, showToast } from '@/features/subtitle';

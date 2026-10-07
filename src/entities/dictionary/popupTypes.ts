@@ -480,4 +480,8 @@ export interface DictionaryPanelPrefill extends Omit<PopupCardCreatorPrefill, 't
    *  CardCreatorOpenContext.mediaPending so submit stays disabled until the
    *  follow-up context lands. */
   readonly mediaPending?: boolean;
+  /** Mining-queue row this prefill was replayed from — the sender removes the
+   *  row after a successful submit (spec mining-queue: cardify keeps the row
+   *  until the card actually saves). */
+  readonly queueItemId?: string;
 }

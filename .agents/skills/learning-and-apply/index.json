@@ -3596,6 +3596,24 @@
         "n-plus-1",
         "batch"
       ]
+    },
+    {
+      "type": "experience",
+      "id": "feature-cycles-ports-and-lazy-imports",
+      "title": "New feature edge creating a cycle — break it with a caller-injected port or lazy import, not a deep import",
+      "category": [
+        "architecture",
+        "async"
+      ],
+      "tags": [
+        "feature-cycle",
+        "deep-imports",
+        "barrel",
+        "dependency-injection",
+        "lazy-import",
+        "check-feature-cycles",
+        "jest"
+      ]
     }
   ]
 }

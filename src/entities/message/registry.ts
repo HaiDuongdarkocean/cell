@@ -133,6 +133,13 @@ import {
   AnkiStatusSyncRunPayloadSchema,
   AnkiStatusSrsReviewedPayloadSchema,
 } from '@/entities/message/ankiStatusSyncSchemas';
+import {
+  QueueAddPayloadSchema,
+  QueueChangedPayloadSchema,
+  QueueGetPayloadSchema,
+  QueueListPayloadSchema,
+  QueueRemovePayloadSchema,
+} from '@/entities/message/miningQueueSchemas';
 
 export type MessageDirection =
   | 'cs->bg'
@@ -995,5 +1002,37 @@ export const MESSAGE_REGISTRY = {
     schema: AnkiStatusSrsReviewedPayloadSchema,
     direction: 'any',
     owner: 'background/handlers/ankiStatusSync',
+  },
+  // Mining queue (spec: mining-queue.md) — background owns the IDB store;
+  // content scripts and extension pages share it via these messages.
+  [MESSAGE_TYPES.QUEUE_ADD]: {
+    type: MESSAGE_TYPES.QUEUE_ADD,
+    schema: QueueAddPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/miningQueue',
+  },
+  [MESSAGE_TYPES.QUEUE_LIST]: {
+    type: MESSAGE_TYPES.QUEUE_LIST,
+    schema: QueueListPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/miningQueue',
+  },
+  [MESSAGE_TYPES.QUEUE_GET]: {
+    type: MESSAGE_TYPES.QUEUE_GET,
+    schema: QueueGetPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/miningQueue',
+  },
+  [MESSAGE_TYPES.QUEUE_REMOVE]: {
+    type: MESSAGE_TYPES.QUEUE_REMOVE,
+    schema: QueueRemovePayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/miningQueue',
+  },
+  [MESSAGE_TYPES.QUEUE_CHANGED]: {
+    type: MESSAGE_TYPES.QUEUE_CHANGED,
+    schema: QueueChangedPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/miningQueue',
   },
 } as const satisfies Record<MessageType, MessageContract>;

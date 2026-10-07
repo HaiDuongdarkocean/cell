@@ -1,0 +1,17 @@
+{
+  "id": "feature-cycles-ports-and-lazy-imports",
+  "title": "A new feature edge can create a feature cycle — break it with a caller-injected port or lazy import, not a deep import",
+  "category": ["architecture", "async"],
+  "tags": ["feature-cycle", "deep-imports", "barrel", "dependency-injection", "lazy-import", "check-feature-cycles", "jest"],
+  "trigger": "check-feature-cycles or check-deep-imports fails after wiring a new feature into existing ones",
+  "principle": "Cross-feature imports may only go through the feature's index.ts barrel, and the feature dependency graph must stay acyclic — test files count as edges too. When a needed service lives in the wrong feature (a sink service under a producer feature), move it to its true owner rather than import across. When the needed capability would re-create a cycle, inject it as a function parameter (port) from the composition layer that already depends on both features. When the dependency is heavy UI only needed on a rare action, dynamic import() keeps it out of the lean entrypoint bundle and out of jsdom test module graphs — but jest.mock the barrel, not deep paths, since guards scan imports in tests too.",
+  "cases": [
+    {
+      "context": "miningQueue.quickAddQueueItem imported addToOceanSrs from dictionaryPopup — created cycle dictionaryPopup→subtitle→miningQueue→dictionaryPopup; static cardCreator barrel import also crashed jsdom tests via unrelated UI exports",
+      "bad": "import { addToOceanSrs } from '@/features/dictionaryPopup'; import { quickAddNote } from '@/features/cardCreator' in queueActions.ts",
+      "good": "Move addToOceanSrs to features/srs (its true owner); type OceanSrsAdder port injected by mountUniversalPanel; anki path uses await import('@/features/cardCreator') so the dialog stack stays lazy and test-mockable at the barrel"
+    }
+  ],
+  "applyFor": ["wiring a new feature that needs an existing feature's service", "deep-import guard failures", "jest module-graph crashes from barrel side-effects", "keeping heavy dialogs out of lean bundles"],
+  "source": { "date": "2026-10-08" }
+}

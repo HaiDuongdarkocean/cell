@@ -105,6 +105,8 @@ export interface PlayerModeOverlayProps {
   /** Tokenize cue target text into clickable word tokens. */
   tokenize?: CueListTokenize | null;
   panelBlurred?: boolean;
+  /** One-action sentence capture into the mining queue (spec mining-queue). */
+  onSaveCue?: (cue: BilingualCue) => void;
 }
 
 const PM_MOBILE_BREAKPOINT = 600;
@@ -163,6 +165,7 @@ function PlayerModeOverlayInner({
   onContinueCue,
   tokenize,
   panelBlurred,
+  onSaveCue,
 }: PlayerModeOverlayProps): React.JSX.Element {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [cueListOpen, setCueListOpen] = useState(true);
@@ -695,6 +698,7 @@ function PlayerModeOverlayInner({
                   showAllCues={showAllCues}
                   cardActions={pmCardActions}
                   fabPortalTarget={fabSlot}
+                  onSaveCue={onSaveCue}
                 />
               </div>
             )}
@@ -979,6 +983,7 @@ function PlayerModeOverlayInner({
               onContinueCue={onContinueCue}
               tokenize={tokenize}
               panelBlurred={panelBlurred}
+              onSaveCue={onSaveCue}
             />
           )}
         </div>

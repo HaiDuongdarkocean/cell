@@ -20,6 +20,8 @@ export interface DictionaryTabProps {
   readonly prefill?: DictionaryPanelPrefill | null;
   /** Called when the user presses "Quick Add" in the dictionary header. */
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  /** One-action capture into the mining queue (spec mining-queue). */
+  readonly onSaveToQueue?: (prefill: PopupCardCreatorPrefill) => void;
   /** Called after a successful Add/Update in the integrated Card Creator. */
   readonly onAfterSubmit?: () => void;
   /** Called from the empty-definitions state to open Settings → Resources. */
@@ -34,6 +36,7 @@ export function DictionaryTab({
   isOpen,
   prefill: externalPrefill,
   onQuickAdd,
+  onSaveToQueue,
   onAfterSubmit,
   onOpenSettings,
 }: DictionaryTabProps): React.JSX.Element {
@@ -84,6 +87,7 @@ export function DictionaryTab({
           isOpen={isOpen}
           onSendToCard={handlePanelSendToCard}
           onQuickAdd={onQuickAdd ?? handlePanelQuickAdd}
+          onSaveToQueue={onSaveToQueue}
           onOpenSettings={onOpenSettings}
         />
       </div>

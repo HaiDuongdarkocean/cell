@@ -34,6 +34,8 @@ import { type CueRange } from './controllerTypes';
 import { createLookupCache } from './lookupCache';
 import { createPopupLifecycle } from './popupLifecycle';
 import { createCardCreatorBridge } from './cardCreatorBridge';
+import { savePrefillToQueue } from '@/features/miningQueue';
+import { showToast } from '@/features/subtitle';
 import { createOrbitalBadgeSync } from './orbitalBadgeSync';
 
 export type { CueRange };
@@ -202,6 +204,12 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     sendLookupCancel: cancelLookup,
     onCardCreatorAction: (level, action, prefill) => cardBridge.handlePopupCardCreatorAction(level, action, prefill),
     onQuickAdd: (level, prefill) => cardBridge.handlePopupQuickAdd(level, prefill),
+    onSaveToQueue: (prefill) => {
+      savePrefillToQueue(prefill, {
+        sourceLabel: document.title || undefined,
+        notify: (message, variant) => showToast(message, deps.container, { variant }),
+      });
+    },
   });
 
   const cardBridge = createCardCreatorBridge({

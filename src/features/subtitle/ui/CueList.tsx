@@ -89,6 +89,9 @@ interface CueListProps {
   showAllCues?: boolean;
   /** Actions rendered inside the current cue card, top-right (pm mobile). */
   cardActions?: ReactNode;
+  /** One-action sentence capture into the mining queue — adds a save button to
+   *  every cue row (spec mining-queue). */
+  onSaveCue?: (cue: BilingualCue) => void;
 }
 
 const formatTimestamp = formatCueTimestamp;
@@ -166,7 +169,7 @@ const CueTokenText = memo(function CueTokenText({
   return <>{children}</>;
 });
 
-export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueContent, showNative = true, tokenize, onTokensResolved, cueFilter, filterEpoch, mobile = false, displayMode = 'list', showAllCues = false, cardActions }: CueListProps) {
+export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueContent, showNative = true, tokenize, onTokensResolved, cueFilter, filterEpoch, mobile = false, displayMode = 'list', showAllCues = false, cardActions, onSaveCue }: CueListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const highlightedRef = useRef<number | null>(null);
@@ -463,6 +466,23 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                     ? `${formatTimestamp(cue.start - offsetMs, hasHours)} – ${formatTimestamp(cue.end - offsetMs, hasHours)}`
                     : formatTimestamp(cue.start - offsetMs, hasHours)}
                 </button>
+                {onSaveCue && (
+                  <button
+                    type="button"
+                    data-cell-id="cue-save"
+                    data-cue-index={cue.index}
+                    data-no-lookup
+                    aria-label={t('queue.action.saveSentence')}
+                    title={t('queue.action.saveSentence')}
+                    className={styles.saveCue}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onSaveCue(cue);
+                    }}
+                  >
+                    <Icon name="layers" size="xs" />
+                  </button>
+                )}
                 {mobile && isCurrent && cardActions && (
                   <div className={styles.cardActions} data-cell-id="pm-card-actions">
                     {cardActions}

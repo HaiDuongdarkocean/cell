@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSidePanelStore } from './store/sidePanelStore';
 import { SubtitlePanel } from '@/features/subtitle/ui/SubtitlePanel';
+import { SubtitleToast } from '@/features/subtitle/ui/SubtitleToast';
+import { useToasts } from '@/features/subtitle/ui/subtitleToasts';
+import { saveCueToQueue } from '@/features/miningQueue';
 import { practiceModeFromStudyModeId } from '@/features/studyModes/lib/practiceModeState';
 import { loadStudyModeState, useStudyModeStore } from '@/features/studyModes/studyModeStore';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
@@ -26,6 +29,7 @@ export function App() {
   const practiceMode = practiceModeFromStudyModeId(activeModeId);
   const [playbackSpeed, setPlaybackSpeed] = useState<PlaybackSpeed>(1);
   const [nativeVisible, setNativeVisible] = useState(true);
+  const { toasts, addToast, removeToast } = useToasts();
   const [shortcuts] = useState<KeyboardShortcut[]>(() => {
     // Load shortcuts from storage async; start with defaults so hotkeys
     // work immediately on panel open. Updated below via effect.
@@ -319,8 +323,15 @@ export function App() {
           onPreviousCue={handlePreviousCue}
           onReplayCue={handleReplayCue}
           onContinueCue={handleContinueCue}
+          onSaveCue={(cue) => {
+            saveCueToQueue(cue, {
+              sourceLabel: typeof document !== 'undefined' ? document.title || undefined : undefined,
+              notify: addToast,
+            });
+          }}
         />
       )}
+      <SubtitleToast toasts={toasts} onRemove={removeToast} />
     </div>
   );
 }

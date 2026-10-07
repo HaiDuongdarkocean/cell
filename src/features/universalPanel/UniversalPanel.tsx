@@ -47,6 +47,8 @@ export interface UniversalPanelProps {
   readonly playlistPanel?: ReactNode;
   /** Content for the Recap tab (session recap). */
   readonly recapPanel?: ReactNode;
+  /** Content for the Queue tab (mining queue). */
+  readonly queuePanel?: ReactNode;
 }
 
 const TOOLS: { id: string; icon: 'library' | 'layers' | 'playRoundedRect'; title: MessageKey; onClick: () => void; 'data-cell-id'?: string }[] = [
@@ -96,6 +98,7 @@ export function UniversalPanel({
   settingsPanel,
   playlistPanel,
   recapPanel,
+  queuePanel,
 }: UniversalPanelProps): ReactElement | null {
   const panelRef = useRef<HTMLDivElement>(null);
   const wasOpenRef = useRef(isOpen);
@@ -250,6 +253,9 @@ export function UniversalPanel({
             )}
             {(visitedTabs.has('playlist') || activeTab === 'playlist') && playlistPanel && (
               <div className={styles.tabPane} role="region" aria-label={t('panel.tab.playlist')} hidden={activeTab !== 'playlist'}>{playlistPanel}</div>
+            )}
+            {(visitedTabs.has('queue') || activeTab === 'queue') && queuePanel && (
+              <div className={styles.tabPane} role="region" aria-label={t('panel.tab.queue')} hidden={activeTab !== 'queue'}>{queuePanel}</div>
             )}
             {(visitedTabs.has('recap') || activeTab === 'recap') && recapPanel && (
               <div className={styles.tabPane} role="region" aria-label={t('panel.tab.recap')} hidden={activeTab !== 'recap'}>{recapPanel}</div>

@@ -101,6 +101,7 @@ import {
   registerAnkiStatusSyncHandlers,
   wireAnkiStatusSyncScheduling,
 } from './handlers/ankiStatusSync';
+import { registerMiningQueueHandlers } from './handlers/miningQueue';
 import { initJobRegistry, registerJobHandlers, stopJobKeepAlive } from './handlers/jobs';
 import { sweepOrphanedWork } from './handlers/orphanSweep';
 import { seedDevDataIfEmpty } from '@/features/dictionary/logic/devSeed';
@@ -318,6 +319,7 @@ export class BackgroundService implements BackgroundContext {
     registerSyncHandlers(this);
     registerCondensedAudioHandlers(this);
     registerAnkiStatusSyncHandlers(this);
+    registerMiningQueueHandlers(this);
   }
 
   /** Type-safe wrapper around messageBus.on. */

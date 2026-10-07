@@ -1,4 +1,5 @@
 export { formatDefEntry, formatDefFromLookup, joinDefEntries, parseDefEntries } from './lib/defEntry';
+export { addToOceanSrs, openSrsStudyPage, buildSrsFieldsFromPrefill } from './services/addToOceanSrs';
 export type { DefEntryInput, ParsedDefEntry } from './lib/defEntry';
 
 export { generateId, audioAssetId, imageAssetId, mediaFieldValues } from './lib/helpers';
