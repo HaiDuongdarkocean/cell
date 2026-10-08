@@ -25,6 +25,21 @@ import {
 const GOOGLE_TRANSLATE_TIMEOUT_MS = 4000;
 const MYMEMORY_TRANSLATE_TIMEOUT_MS = 6000;
 const TERM_REQUEST_CHAR_BUDGET = 1500;
+const GLOSS_CACHE_MAX = 20000;
+
+const glossCache = new Map<string, string>();
+
+function glossCacheKey(sl: string, tl: string, term: string): string {
+  return `${sl}|${tl}|${term}`;
+}
+
+function glossCacheSet(key: string, gloss: string): void {
+  if (glossCache.size >= GLOSS_CACHE_MAX) {
+    const oldest = glossCache.keys().next().value;
+    if (oldest !== undefined) glossCache.delete(oldest);
+  }
+  glossCache.set(key, gloss);
+}
 
 async function fetchSegments(text: string, sl: string, tl: string): Promise<string[]> {
   try {
@@ -94,13 +109,24 @@ export function registerTranslateTermsHandlers(ctx: BackgroundContext): void {
     }
 
     const glosses: Record<string, string> = {};
-    for (const chunk of chunkTermMarkerTexts(terms, TERM_REQUEST_CHAR_BUDGET)) {
+    const misses: string[] = [];
+    for (const term of terms) {
+      const cached = glossCache.get(glossCacheKey(sl, tl, term));
+      if (cached !== undefined) {
+        if (cached) glosses[term] = cached;
+      } else {
+        misses.push(term);
+      }
+    }
+
+    for (const chunk of chunkTermMarkerTexts(misses, TERM_REQUEST_CHAR_BUDGET)) {
       const aligned = await translateTermChunk(chunk, sl, tl);
       for (let i = 0; i < chunk.length; i++) {
-        const raw = aligned[i] ?? '';
-        if (!raw) continue;
-        const gloss = raw.trim();
-        glosses[chunk[i]!] = gloss.toLowerCase() === chunk[i]!.toLowerCase() ? '' : gloss;
+        const term = chunk[i]!;
+        const gloss = (aligned[i] ?? '').trim();
+        const final = gloss.toLowerCase() === term.toLowerCase() ? '' : gloss;
+        glossCacheSet(glossCacheKey(sl, tl, term), final);
+        if (final) glosses[term] = final;
       }
     }
     return { success: true, data: { glosses } };

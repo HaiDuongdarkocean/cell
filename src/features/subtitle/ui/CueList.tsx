@@ -23,6 +23,7 @@ const EMPTY_TOKEN_MAP: CueListTokenMap = new Map();
 const EMPTY_SELECTED_TERMS: ReadonlySet<string> = new Set();
 const RESOLVE_MAX_ATTEMPTS = 3;
 const RESOLVE_RETRY_DELAY_MS = 1500;
+const TOKENIZE_CHUNK_SIZE = 250;
 
 const UNRESOLVED_META: ResolveMeta = {
   resolved: false,
@@ -209,6 +210,27 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     [visibleCues, cueFilter],
   );
 
+  const activeOnly = displayMode === 'active' && !showAllCues;
+  const effectiveMs = currentTimeMs + offsetMs;
+  const currentIndex = filteredCues.findIndex(
+    (c) => c.start <= effectiveMs && c.end > effectiveMs,
+  );
+  const currentCueIndex = currentIndex >= 0 ? filteredCues[currentIndex].index : null;
+  const upcomingIndex = activeOnly && currentIndex < 0
+    ? filteredCues.findIndex((c) => c.start > effectiveMs)
+    : -1;
+  let renderedCues: BilingualCue[];
+  if (activeOnly) {
+    renderedCues = currentIndex >= 0
+      ? [filteredCues[currentIndex]]
+      : upcomingIndex >= 0
+        ? [filteredCues[upcomingIndex]]
+        : [];
+  } else {
+    renderedCues = filteredCues;
+  }
+  const renderedCurrentIndex = renderedCues.findIndex((c) => c.index === currentCueIndex);
+
   const tokenizeLangCode = tokenize?.langCode;
   const onTokenHover = tokenize?.onTokenHover;
   const selection = tokenize?.selection;
@@ -260,45 +282,48 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     });
   }, [tokenizeLangCode]);
 
+  const coveredCueIndicesRef = useRef<Set<number>>(new Set());
+
   useEffect(() => {
     if (!tokenizeLangCode) {
       lastCuesRef.current = null;
       lastLangCodeRef.current = null;
       metaRef.current = UNRESOLVED_META;
       resolvingRef.current = false;
+      coveredCueIndicesRef.current.clear();
       setResolving(false);
       setTokenMap(EMPTY_TOKEN_MAP);
       return;
     }
-    if (
-      lastCuesRef.current !== null &&
-      cuesAreEqual(visibleCues, lastCuesRef.current) &&
-      tokenizeLangCode === lastLangCodeRef.current &&
-      showReadings === lastShowReadingsRef.current &&
-      showGlosses === lastShowGlossesRef.current &&
-      glossTargetLanguage === lastGlossTargetLanguageRef.current &&
-      dictEpoch === lastDictEpochRef.current
-    ) {
-      return;
+    const scopeChanged =
+      lastCuesRef.current === null ||
+      !cuesAreEqual(visibleCues, lastCuesRef.current) ||
+      tokenizeLangCode !== lastLangCodeRef.current ||
+      showReadings !== lastShowReadingsRef.current ||
+      showGlosses !== lastShowGlossesRef.current ||
+      glossTargetLanguage !== lastGlossTargetLanguageRef.current ||
+      dictEpoch !== lastDictEpochRef.current;
+    if (scopeChanged) {
+      lastCuesRef.current = visibleCues;
+      lastLangCodeRef.current = tokenizeLangCode;
+      lastShowReadingsRef.current = showReadings;
+      lastShowGlossesRef.current = showGlosses;
+      lastGlossTargetLanguageRef.current = glossTargetLanguage;
+      lastDictEpochRef.current = dictEpoch;
+      coveredCueIndicesRef.current.clear();
+      setTokenMap(EMPTY_TOKEN_MAP);
     }
-    lastCuesRef.current = visibleCues;
-    lastLangCodeRef.current = tokenizeLangCode;
-    lastShowReadingsRef.current = showReadings;
-    lastShowGlossesRef.current = showGlosses;
-    lastGlossTargetLanguageRef.current = glossTargetLanguage;
-    lastDictEpochRef.current = dictEpoch;
-    const overrides = statusOverridesRef.current.get(tokenizeLangCode);
-    const immediate = applyCueListTokenStatuses(
-      createCueListTokenMap(visibleCues, tokenizeLangCode),
-      overrides ?? new Map<string, WordStatus>(),
-    );
-    setTokenMap(immediate);
+    const uncovered = renderedCues.filter((c) => !coveredCueIndicesRef.current.has(c.index));
+    if (uncovered.length === 0) return;
+
     let active = true;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
-    const runResolve = (attempt: number): void => {
+    let chunkTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const resolveChunk = (chunkMap: CueListTokenMap, attempt: number): void => {
       resolvingRef.current = true;
       setResolving(true);
-      void resolveCueListTokenMetadata(immediate, tokenizeLangCode, {
+      void resolveCueListTokenMetadata(chunkMap, tokenizeLangCode, {
         includeReadings: showReadings,
         includeGlosses: showGlosses,
         glossTargetLanguage,
@@ -306,20 +331,22 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
         .then(({ map, meta }) => {
           if (!active) return;
           metaRef.current = meta;
-          setTokenMap(
-            applyCueListTokenStatuses(
-              map,
+          setTokenMap((current) => {
+            const merged = new Map(current);
+            for (const [cueIndex, tokens] of map) merged.set(cueIndex, tokens);
+            return applyCueListTokenStatuses(
+              merged,
               statusOverridesRef.current.get(tokenizeLangCode) ?? new Map<string, WordStatus>(),
-            ),
-          );
+            );
+          });
           if (meta.failed && attempt < RESOLVE_MAX_ATTEMPTS) {
-            retryTimer = setTimeout(() => runResolve(attempt + 1), RESOLVE_RETRY_DELAY_MS);
+            retryTimer = setTimeout(() => resolveChunk(chunkMap, attempt + 1), RESOLVE_RETRY_DELAY_MS);
           }
         })
         .catch(() => {
           if (!active) return;
           if (attempt < RESOLVE_MAX_ATTEMPTS) {
-            retryTimer = setTimeout(() => runResolve(attempt + 1), RESOLVE_RETRY_DELAY_MS);
+            retryTimer = setTimeout(() => resolveChunk(chunkMap, attempt + 1), RESOLVE_RETRY_DELAY_MS);
           }
         })
         .finally(() => {
@@ -328,12 +355,32 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
           setResolving(false);
         });
     };
-    runResolve(1);
+
+    const buildChunk = (pending: readonly BilingualCue[]): void => {
+      const slice = pending.slice(0, TOKENIZE_CHUNK_SIZE);
+      const chunkMap = applyCueListTokenStatuses(
+        createCueListTokenMap(slice, tokenizeLangCode),
+        statusOverridesRef.current.get(tokenizeLangCode) ?? new Map<string, WordStatus>(),
+      );
+      for (const cue of slice) coveredCueIndicesRef.current.add(cue.index);
+      setTokenMap((current) => {
+        const merged = new Map(current);
+        for (const [cueIndex, tokens] of chunkMap) merged.set(cueIndex, tokens);
+        return merged;
+      });
+      resolveChunk(chunkMap, 1);
+      const rest = pending.slice(TOKENIZE_CHUNK_SIZE);
+      if (rest.length > 0) {
+        chunkTimer = setTimeout(() => buildChunk(rest), 0);
+      }
+    };
+    buildChunk(uncovered);
     return () => {
       active = false;
       if (retryTimer !== undefined) clearTimeout(retryTimer);
+      if (chunkTimer !== undefined) clearTimeout(chunkTimer);
     };
-  }, [visibleCues, tokenizeLangCode, showReadings, showGlosses, glossTargetLanguage, dictEpoch]);
+  }, [visibleCues, renderedCues, tokenizeLangCode, showReadings, showGlosses, glossTargetLanguage, dictEpoch]);
 
   useEffect(() => {
     if (!resolvingRef.current) onTokensResolved?.(tokenMap, metaRef.current);
@@ -345,38 +392,9 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   const lastEnd = filteredCues.length > 0 ? filteredCues[filteredCues.length - 1].end : 0;
   const hasHours = lastEnd - offsetMs >= 3_600_000;
 
-  // ADR-019 sync: highlight cue at effective time so the highlighted cue
-  // matches the overlay (which finds cues at currentTime + offsetMs).
-  const effectiveMs = currentTimeMs + offsetMs;
-
-  // Find current cue. Half-open [start, end): at boundary t = cue[i].end =
-  // cue[i+1].start, only the NEXT cue matches (subtitle semantics: a cue is
-  // visible from start inclusive to end exclusive). Closed interval [start,end]
-  // would match both cues and findIndex returns the earlier one → replay-cue
-  // "jumps back to previous cue" bug.
-  const currentIndex = filteredCues.findIndex(
-    (c) => c.start <= effectiveMs && c.end > effectiveMs,
-  );
-  const currentCueIndex = currentIndex >= 0 ? filteredCues[currentIndex].index : null;
-
   // 'active' display mode (PM mobile): render only the current cue; in a gap,
   // fall back to the next upcoming cue rendered dimmed; past the last cue the
   // region shows a compact empty state instead of a stale card.
-  const activeOnly = displayMode === 'active' && !showAllCues;
-  const upcomingIndex = activeOnly && currentIndex < 0
-    ? filteredCues.findIndex((c) => c.start > effectiveMs)
-    : -1;
-  let renderedCues: BilingualCue[];
-  if (activeOnly) {
-    renderedCues = currentIndex >= 0
-      ? [filteredCues[currentIndex]]
-      : upcomingIndex >= 0
-        ? [filteredCues[upcomingIndex]]
-        : [];
-  } else {
-    renderedCues = filteredCues;
-  }
-  const renderedCurrentIndex = renderedCues.findIndex((c) => c.index === currentCueIndex);
 
   useEffect(() => {
     const list = listRef.current;

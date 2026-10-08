@@ -52,6 +52,8 @@ export interface VideoTokenPreloader {
   readonly invalidate: () => void;
 }
 
+const IDLE_LOOKAHEAD_CUES = 60;
+
 export function createVideoTokenPreloader(
   options: VideoTokenPreloaderOptions,
 ): VideoTokenPreloader {
@@ -230,7 +232,9 @@ export function createVideoTokenPreloader(
     const bufferEnd = Math.min(cues.length - 1, index + bufferSize);
     prepareRange(bufferStart, bufferEnd, PRIORITY_PREPARE);
 
-    prepareRange(0, cues.length - 1, PRIORITY_IDLE);
+    const idleStart = Math.max(0, index - IDLE_LOOKAHEAD_CUES);
+    const idleEnd = Math.min(cues.length - 1, index + IDLE_LOOKAHEAD_CUES);
+    prepareRange(idleStart, idleEnd, PRIORITY_IDLE);
   }
 
   return {
@@ -248,7 +252,7 @@ export function createVideoTokenPreloader(
       }
       freqOptsPromise = null;
       frequencyBandOptions = null;
-      prepareRange(0, cues.length - 1, PRIORITY_IDLE);
+      prepareRange(0, Math.min(cues.length - 1, IDLE_LOOKAHEAD_CUES), PRIORITY_IDLE);
     },
 
     setActiveIndex(index: number): void {

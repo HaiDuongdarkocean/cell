@@ -15,22 +15,40 @@ interface TimeBudget {
 
 /** Idle scheduler for tokenization tasks: viewport > buffer > idle. */
 export class TokenizeScheduler {
-  private queue: ScheduledTask[] = [];
+  private buckets = new Map<number, ScheduledTask[]>();
   private running = false;
   private scheduledFrameId: number | undefined;
   private scheduledFrameKind: 'fast' | 'idle' | undefined;
   private nextId = 0;
 
+  private frontTask(): ScheduledTask | undefined {
+    let best: ScheduledTask[] | undefined;
+    let bestPriority = Number.MAX_SAFE_INTEGER;
+    for (const [priority, bucket] of this.buckets) {
+      if (bucket.length > 0 && priority < bestPriority) {
+        bestPriority = priority;
+        best = bucket;
+      }
+    }
+    return best?.[0];
+  }
+
   /** Add a task with a priority. Lower priority runs first. */
   schedule(fn: () => void | Promise<void>, priority: number = PRIORITY_IDLE): () => void {
     const id = this.nextId++;
     const task: ScheduledTask = { fn, priority, id };
-    const index = this.queue.findIndex((t) => t.priority > priority || (t.priority === priority && t.id > id));
-    if (index === -1) this.queue.push(task);
-    else this.queue.splice(index, 0, task);
+    let bucket = this.buckets.get(priority);
+    if (!bucket) {
+      bucket = [];
+      this.buckets.set(priority, bucket);
+    }
+    bucket.push(task);
     this.start();
     return () => {
-      this.queue = this.queue.filter((t) => t.id !== id);
+      const b = this.buckets.get(priority);
+      if (!b) return;
+      const i = b.findIndex((t) => t.id === id);
+      if (i !== -1) b.splice(i, 1);
     };
   }
 
@@ -38,10 +56,11 @@ export class TokenizeScheduler {
    *  task arrives while an idle frame is still pending. */
   start(): void {
     if (this.running) {
+      const front = this.frontTask();
       if (
         this.scheduledFrameKind === 'idle' &&
-        this.queue.length > 0 &&
-        this.queue[0]!.priority < PRIORITY_BUFFER
+        front !== undefined &&
+        front.priority < PRIORITY_BUFFER
       ) {
         this.cancelFrame();
         this.scheduleFrame();
@@ -69,7 +88,7 @@ export class TokenizeScheduler {
   }
 
   /** Drop all pending tasks without running them. Used during disable to prevent stale binds. */
-  clear(): void { this.queue = []; }
+  clear(): void { this.buckets.clear(); }
 
   /** Process all pending tasks synchronously until the queue is empty. Test helper. */
   async flush(): Promise<void> {
@@ -80,17 +99,20 @@ export class TokenizeScheduler {
 
   /** Number of pending tasks. */
   get size(): number {
-    return this.queue.length;
+    let n = 0;
+    for (const bucket of this.buckets.values()) n += bucket.length;
+    return n;
   }
 
   private scheduleFrame(): void {
     if (!this.running) return;
     this.cancelFrame();
-    if (this.queue.length === 0) {
+    const front = this.frontTask();
+    if (front === undefined) {
       this.running = false;
       return;
     }
-    const frontPriority = this.queue[0]!.priority;
+    const frontPriority = front.priority;
     // Viewport + prepare tasks must run in the next frame, NOT gated on browser
     // idle. requestIdleCallback only fires when the browser is idle, which
     // during fast scrolling can be delayed by seconds — making tokenize feel
@@ -123,10 +145,13 @@ export class TokenizeScheduler {
   }
 
   private async runLoop(budget: TimeBudget, maxPriority: number): Promise<void> {
-    while (this.queue.length > 0 && budget.timeRemaining() > 1) {
-      const next = this.queue[0]!;
+    while (budget.timeRemaining() > 1) {
+      const next = this.frontTask();
+      if (next === undefined) break;
       if (next.priority >= maxPriority) break; // leave lower-priority tasks for their own frame
-      const task = this.queue.shift()!;
+      const bucket = this.buckets.get(next.priority)!;
+      const task = bucket.shift()!;
+      if (bucket.length === 0) this.buckets.delete(next.priority);
       try {
         const result = task.fn();
         if (result instanceof Promise) {
@@ -140,7 +165,7 @@ export class TokenizeScheduler {
         console.error('[TokenizeScheduler] task failed:', err);
       }
     }
-    if (this.running && this.queue.length > 0) {
+    if (this.running && this.frontTask() !== undefined) {
       this.scheduleFrame();
     } else {
       this.running = false;
