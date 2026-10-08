@@ -247,12 +247,18 @@
    dark theme uses deep shades, not alpha tints, so the inverted rank text
    stays readable. */
 .cellHeaderFrequencySource {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
   padding: var(--space-1) var(--space-2-5);
   background: var(--freq-bg, var(--color-primary));
   color: var(--freq-fg, var(--color-overlay-text));
 }
 
 .cellHeaderFrequencyRank {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
   padding: var(--space-1) var(--space-2-5);
   background: var(--freq-fg, transparent);
   color: var(--freq-bg, var(--color-text-secondary));
@@ -323,7 +329,6 @@
   display: block;
   padding-left: var(--space-3);
   color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
 }
 
 .defLineReveal {
@@ -409,7 +414,6 @@
   overflow-wrap: anywhere;
   /* Subordinate indent: example dot sits ~where the old `•` bullet painted. */
   padding-left: var(--space-4);
-  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
 }
 
