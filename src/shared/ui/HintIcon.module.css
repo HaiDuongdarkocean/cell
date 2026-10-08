@@ -8,10 +8,13 @@
   align-items: center;
 }
 
-/* === Hint button — icon 20px; hit box bound to the --touch-target floor === */
+/* === Hint button — secondary affordance: compact hit box (WCAG 2.2 floor) === */
 .hintBtn.hintBtn {
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
+  width: var(--space-6);
+  height: var(--space-6);
+  min-width: var(--space-6);
+  min-height: var(--space-6);
+  opacity: 0.7;
 }
 
 .hintBtn {
@@ -23,6 +26,7 @@
 .hintBtn:hover {
   color: var(--color-text-primary);
   background: var(--color-surface-hover);
+  opacity: 1;
 }
 
 .hintBtn:focus-visible {
@@ -36,8 +40,8 @@
 }
 
 .hintBtn svg {
-  width: var(--space-4-5);
-  height: var(--space-4-5);
+  width: var(--iconbutton-icon-xs);
+  height: var(--iconbutton-icon-xs);
 }
 
 /* === Floating hint popover (nổi lên trên icon) === */

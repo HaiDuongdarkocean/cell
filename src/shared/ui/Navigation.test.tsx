@@ -94,42 +94,26 @@ describe('Navigation', () => {
       expect(screen.getByRole('navigation', { name: 'Settings sections' })).toBe(nav);
     });
 
-    it('shows only the right arrow at the start bound and pages the strip on click', () => {
-      const { nav } = renderStrip();
+    it('keeps edge fades without arrow controls across the horizontal scroll range', () => {
+      const { container, nav } = renderStrip();
+      const arrows = '[data-cell-id^="settings-nav-scroll-"]';
       setScrollMetrics(nav, { scrollWidth: 1000, clientWidth: 400, scrollLeft: 0 });
       fireEvent.scroll(nav);
-
-      const rightArrow = screen.getByTestId('settings-nav-scroll-right');
-      expect(rightArrow).toHaveAttribute('aria-label', 'Scroll sections right');
-      expect(rightArrow).toHaveAttribute('type', 'button');
-      expect(screen.queryByTestId('settings-nav-scroll-left')).not.toBeInTheDocument();
       expect(nav.className).toContain('fadeEnd');
       expect(nav.className).not.toContain('fadeStart');
-
-      const scrollBySpy = jest.fn();
-      Object.defineProperty(nav, 'scrollBy', { value: scrollBySpy, configurable: true });
-      fireEvent.click(rightArrow);
-      expect(scrollBySpy).toHaveBeenCalledWith({ left: 300, behavior: 'smooth' });
-    });
-
-    it('shows both arrows mid-scroll and hides the right arrow at the end bound', () => {
-      const { nav } = renderStrip();
-      setScrollMetrics(nav, { scrollWidth: 1000, clientWidth: 400, scrollLeft: 0 });
-      fireEvent.scroll(nav);
+      expect(container.querySelector(arrows)).not.toBeInTheDocument();
 
       setScrollMetrics(nav, { scrollLeft: 200 });
       fireEvent.scroll(nav);
-      expect(screen.getByTestId('settings-nav-scroll-left')).toHaveAttribute('aria-label', 'Scroll sections left');
-      expect(screen.getByTestId('settings-nav-scroll-right')).toBeInTheDocument();
       expect(nav.className).toContain('fadeStart');
       expect(nav.className).toContain('fadeEnd');
+      expect(container.querySelector(arrows)).not.toBeInTheDocument();
 
       setScrollMetrics(nav, { scrollLeft: 599 });
       fireEvent.scroll(nav);
-      expect(screen.getByTestId('settings-nav-scroll-left')).toBeInTheDocument();
-      expect(screen.queryByTestId('settings-nav-scroll-right')).not.toBeInTheDocument();
       expect(nav.className).toContain('fadeStart');
       expect(nav.className).not.toContain('fadeEnd');
+      expect(container.querySelector(arrows)).not.toBeInTheDocument();
     });
 
     it('never renders arrows in vertical orientation', () => {

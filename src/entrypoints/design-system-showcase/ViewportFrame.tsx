@@ -57,6 +57,8 @@ export function ViewportFrame({
 
       const parentTheme = document.documentElement.getAttribute('data-theme');
       if (parentTheme) doc.documentElement.setAttribute('data-theme', parentTheme);
+      const parentPreset = document.documentElement.getAttribute('data-preset');
+      if (parentPreset) doc.documentElement.setAttribute('data-preset', parentPreset);
 
       doc.body.style.margin = '0';
       doc.body.style.padding = '0';
@@ -83,13 +85,28 @@ export function ViewportFrame({
     return () => iframe.removeEventListener('load', setup);
   }, []);
 
-  // Sync theme attribute to iframe when mode changes (without remounting)
+  // Mirror theme + preset from the parent document so palette-scoped tokens
+  // ([data-preset][data-theme]) resolve inside the iframe too.
   useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe || !theme) return;
+    if (!iframe) return;
     const doc = iframe.contentDocument;
     if (!doc) return;
-    doc.documentElement.setAttribute('data-theme', theme);
+
+    const mirror = (): void => {
+      const parent = document.documentElement;
+      const parentTheme = parent.getAttribute('data-theme');
+      const parentPreset = parent.getAttribute('data-preset');
+      if (parentTheme) doc.documentElement.setAttribute('data-theme', parentTheme);
+      if (parentPreset) doc.documentElement.setAttribute('data-preset', parentPreset);
+    };
+
+    if (theme) doc.documentElement.setAttribute('data-theme', theme);
+    mirror();
+
+    const observer = new MutationObserver(mirror);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-preset'] });
+    return () => observer.disconnect();
   }, [theme]);
 
   // Reset scroll inside iframe after content is portal'd in
@@ -104,10 +121,13 @@ export function ViewportFrame({
   }, [portalTarget]);
 
   const frameWidth = width === 'full' ? '100%' : `${width}px`;
-  const frameHeight = height ? `${height}px` : '100%';
+  const fill = width === 'full' && height === undefined;
+  const style: React.CSSProperties = { width: frameWidth };
+  if (height) style.height = `${height}px`;
+  else if (!fill) style.height = '100%';
 
   return (
-    <div className={styles.frame} style={{ width: frameWidth, height: frameHeight }}>
+    <div className={`${styles.frame}${fill ? ` ${styles.frameFill}` : ''}`} style={style}>
       <iframe ref={iframeRef} className={styles.iframe} title="Viewport preview" />
       {portalTarget && createPortal(children, portalTarget)}
     </div>

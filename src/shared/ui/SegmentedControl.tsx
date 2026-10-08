@@ -90,6 +90,7 @@ export function SegmentedControl<T extends string>({
           tabIndex={i === focusIdx ? 0 : -1}
           data-value={option.value}
           data-cell-id={option.testId}
+          data-compact-hit={variant === 'chips' || undefined}
           className={`${styles.segment} ${option.value === value ? styles.segmentActive : ''}`}
           onClick={() => onChange(option.value)}
           onKeyDown={handleKeyDown}

@@ -59,8 +59,9 @@
 
 .horizontal.active,
 .horizontal[aria-current="true"] {
-  background: transparent;
+  background: var(--color-primary-subtle);
   color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
 }
 
 .horizontal.active .icon,
@@ -70,7 +71,11 @@
 
 .horizontal.active:hover:not(:disabled),
 .horizontal[aria-current="true"]:hover:not(:disabled) {
-  background: transparent;
+  background: var(--color-primary-subtle);
+}
+
+.horizontal:hover:not(:disabled) {
+  background: var(--color-surface-card);
 }
 
 .pill {
@@ -93,13 +98,7 @@
 }
 
 .horizontal .pill {
-  left: 50%;
-  top: auto;
-  bottom: var(--space-0-5);
-  transform: translateX(-50%);
-  width: var(--space-5);
-  height: var(--border-width-thick);
-  border-radius: var(--radius-pill);
+  display: none;
 }
 
 .disabled {
@@ -112,7 +111,9 @@
   justify-content: center;
   width: auto;
   min-width: var(--touch-target);
-  padding: 0 var(--space-3);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-card);
 }
 
 .vertical {

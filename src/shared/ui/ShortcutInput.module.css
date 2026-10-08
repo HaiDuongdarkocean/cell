@@ -1,21 +1,20 @@
-/* === ShortcutInput atom — pill-style input (ADR-021 D7 combo support) ===
-   All instances share the same min-width (pill radius-full) for visual alignment.
-   Single-char: pill shows uppercase char centered.
-   Combo: pill shows kbd chips (Ctrl + Shift + T), modifier subtle bg, key solid primary. */
+/* === ShortcutInput atom — keycap input (ADR-021 D7 combo support) ===
+   Single-char: keycap shows uppercase char centered.
+   Combo: keycap shows kbd chips (Ctrl + Shift + T), modifier subtle bg, key solid primary. */
 
 .shortcutPill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  min-width: calc(var(--space-5) * 7);
-  min-height: var(--touch-target);
-  padding: var(--space-1) var(--space-2-5);
+  min-width: var(--size-element-md);
+  min-height: var(--size-element-md);
+  padding: var(--space-0-5) var(--space-2);
   font-family: var(--font-family);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   border: var(--border-width-hairline) solid var(--input-border);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   background: var(--color-field);
   color: var(--color-text);
   cursor: pointer;
@@ -46,7 +45,7 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   background: var(--color-surface-hover);
   color: var(--color-text);
   line-height: var(--leading-none);
@@ -63,7 +62,7 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   background: var(--color-primary);
   color: var(--color-text-inverse);
   line-height: var(--leading-none);

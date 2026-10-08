@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { Button, Badge, Box, Card, Heading, SearchField, Select, Text, Tree } from '@/shared/ui';
+import { Button, Badge, Box, Card, Drawer, Heading, SearchField, Select, Text, Tree } from '@/shared/ui';
+import { useIsMobile } from '@/shared/ui/useIsMobile';
 import { Icon } from '@/shared/icons/Icon';
 import { type TreeNode } from '@/shared/ui/Tree';
 import { PresetSwitcher } from '@/features/theme/ui/PresetSwitcher';
@@ -49,6 +50,8 @@ export function ShowcaseGallery(): ReactElement | null {
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const [mode, setMode] = useState<ThemeMode>(parseInitialMode);
   const [preset, setPreset] = useState<PresetName>(parseInitialPreset);
+  const [navOpen, setNavOpen] = useState(false);
+  const isMobile = useIsMobile(768);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', mode);
@@ -198,6 +201,7 @@ export function ShowcaseGallery(): ReactElement | null {
 
   const handleSelect = useCallback((id: string, _node: TreeNode): void => {
     if (byId[id]) setActiveShowcaseId(id);
+    setNavOpen(false);
   }, [byId]);
 
   const handleToggle = useCallback((id: string, expanded: boolean): void => {
@@ -211,63 +215,102 @@ export function ShowcaseGallery(): ReactElement | null {
 
   if (allShowcases.length === 0) return null;
 
+  const searchField = (
+    <SearchField
+      value={filter}
+      onChange={setFilter}
+      placeholder="Search components…"
+      className={styles.searchField}
+    />
+  );
+
+  const treeView = (
+    <Tree
+      nodes={treeData}
+      activeId={activeShowcase?.id}
+      expandedIds={expandedIds}
+      onSelect={handleSelect}
+      onToggle={handleToggle}
+      ariaLabel="Library navigation tree"
+    />
+  );
+
+  const themeButton = (
+    <Button shape="circle"
+      type="button"
+      variant="ghost"
+      size="sm"
+      onClick={() => setMode((m) => (m === 'light' ? 'dark' : 'light'))}
+      aria-label={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}
+      className={styles.themeToggle}
+    >
+      <Icon name={mode === 'light' ? 'moon' : 'sun'} size={18} />
+    </Button>
+  );
+
+  const presetSwitcher = (
+    <PresetSwitcher value={preset} onChange={setPreset} data-cell-id="showcase-preset-switcher" />
+  );
+
+  const stageControls = (
+    <>
+      <Select
+        value={currentData}
+        options={dataOptions}
+        onChange={(value) => applyData(value as DataVariant)}
+        aria-label="Mock data mode"
+        data-cell-id="showcase-data-select"
+        size="sm"
+      />
+      <Select
+        value={String(currentViewport)}
+        options={viewportOptions}
+        onChange={(value) => applyViewport(value as ViewportWidth)}
+        aria-label="Preview viewport"
+        data-cell-id="showcase-viewport-select"
+        size="sm"
+      />
+    </>
+  );
+
   return (
     <div className={styles.root}>
       <div className={styles.main}>
-        <aside className={styles.sidebar} aria-label="Library tree">
-          <div className={styles.sidebarHeader}>
+        {isMobile ? (
+          <div className={styles.mobileBar}>
             <Heading level={2} size={2} className={styles.sidebarTitle}>
               Design System
             </Heading>
-            <SearchField
-              value={filter}
-              onChange={setFilter}
-              placeholder="Search components…"
-              className={styles.searchField}
-            />
+            <div className={styles.mobileBarActions}>
+              {themeButton}
+              <Button shape="circle"
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setNavOpen(true)}
+                aria-label="Browse components"
+                data-cell-id="showcase-nav-trigger"
+              >
+                <Icon name="layers" size={18} />
+              </Button>
+            </div>
           </div>
-          <div className={styles.tree}>
-            <Tree
-              nodes={treeData}
-              activeId={activeShowcase?.id}
-              expandedIds={expandedIds}
-              onSelect={handleSelect}
-              onToggle={handleToggle}
-              ariaLabel="Library navigation tree"
-            />
-          </div>
-          <div className={styles.sidebarControls}>
-            <Select
-              value={currentData}
-              options={dataOptions}
-              onChange={(value) => applyData(value as DataVariant)}
-              aria-label="Mock data mode"
-              data-cell-id="showcase-data-select"
-              size="sm"
-            />
-            <Select
-              value={String(currentViewport)}
-              options={viewportOptions}
-              onChange={(value) => applyViewport(value as ViewportWidth)}
-              aria-label="Preview viewport"
-              data-cell-id="showcase-viewport-select"
-              size="sm"
-            />
-          </div>
-          <div className={styles.sidebarFooter}>
-            <PresetSwitcher value={preset} onChange={setPreset} data-cell-id="showcase-preset-switcher" />
-            <Button shape="circle"
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setMode((m) => (m === 'light' ? 'dark' : 'light'))}
-              aria-label={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}
-              className={styles.themeToggle}
-            >
-              <Icon name={mode === 'light' ? 'moon' : 'sun'} size={18} />
-            </Button>
-          </div>
-        </aside>
+        ) : (
+          <aside className={styles.sidebar} aria-label="Library tree">
+            <div className={styles.sidebarHeader}>
+              <Heading level={2} size={2} className={styles.sidebarTitle}>
+                Design System
+              </Heading>
+              {searchField}
+            </div>
+            <div className={styles.tree}>{treeView}</div>
+            <div className={styles.sidebarControls}>{stageControls}</div>
+            <div className={styles.sidebarFooter}>
+              {presetSwitcher}
+              {themeButton}
+            </div>
+          </aside>
+        )}
 
         <main className={styles.viewport}>
           {activeShowcase ? (
@@ -326,6 +369,25 @@ export function ShowcaseGallery(): ReactElement | null {
           )}
         </main>
       </div>
+
+      {isMobile && (
+        <Drawer
+          open={navOpen}
+          onOpenChange={setNavOpen}
+          title="Browse components"
+          side="left"
+          className={styles.navDrawer}
+        >
+          <div className={styles.drawerBody}>
+            {searchField}
+            <div className={styles.tree}>{treeView}</div>
+            <div className={styles.sidebarControls}>
+              {presetSwitcher}
+              {stageControls}
+            </div>
+          </div>
+        </Drawer>
+      )}
     </div>
   );
 }

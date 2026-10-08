@@ -81,6 +81,40 @@
   min-height: var(--iconbutton-size-sm);
 }
 
+.mobileBar {
+  position: sticky;
+  top: var(--space-3);
+  z-index: var(--z-sticky);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.mobileBarActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.drawerBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.navDrawer .tree {
+  flex: none;
+  overflow: visible;
+}
+
 .viewport {
   display: flex;
   flex-direction: column;
@@ -241,14 +275,6 @@
     padding: var(--space-3);
     gap: var(--space-3);
     overflow: auto;
-  }
-
-  .sidebar {
-    width: 100%;
-    height: auto;
-    max-height: 45vh;
-    padding: var(--space-3);
-    border-radius: var(--radius-xl);
   }
 
   .viewport {

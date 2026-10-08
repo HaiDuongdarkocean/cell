@@ -129,12 +129,13 @@ export function HintIcon({
       <Button shape="circle" variant="ghost" size="sm"
         id={id}
         data-cell-id={dataTestId}
+        data-compact-hit
         className={styles.hintBtn}
         aria-expanded={isOpen}
         aria-label={ariaLabel}
         onClick={() => setIsOpen((v) => !v)}
       >
-        <Icon name="info" size="var(--iconbutton-icon-md)" />
+        <Icon name="info" size="var(--iconbutton-icon-xs)" />
       </Button>
       {popover && createPortal(popover, getPortalContainer(wrapRef.current))}
     </span>

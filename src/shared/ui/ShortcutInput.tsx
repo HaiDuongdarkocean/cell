@@ -115,6 +115,7 @@ export function ShortcutInput({
       onKeyDown={handleKeyDown}
       aria-label={ariaLabel}
       data-cell-id={testId}
+      data-compact-hit
       data-cell-keycapture
     >
       {hasCombo ? (

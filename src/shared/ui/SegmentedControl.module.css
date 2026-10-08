@@ -147,19 +147,20 @@
 
 .chips .segment {
   flex: 0 1 auto;
-  min-height: var(--touch-target);
+  min-height: var(--size-element-md);
   padding: var(--space-1) var(--space-3);
-  border: var(--border-width-hairline) solid transparent;
-  border-radius: var(--radius-pill);
-  background: var(--color-field);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-hover);
   color: var(--color-text);
   transition:
     background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out);
 }
 
 .chips .segment:hover {
-  background: var(--color-surface-hover);
+  border-color: var(--color-border-emphasized);
   color: var(--color-text-primary);
 }
 
@@ -171,6 +172,7 @@
 .chips .segmentActive,
 .chips .segmentActive:hover {
   background: var(--color-primary-subtle);
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
   color: var(--color-text-accent-strong);
 }
 

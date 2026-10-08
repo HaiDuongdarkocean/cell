@@ -65,10 +65,10 @@
   border-radius: var(--radius-pill);
 }
 
-/* Exclusive values (e.g. 'all') — filled mode chip */
+/* Exclusive values (e.g. 'all') — same emphasis as regular chips, ring marks
+   that the value excludes every other selection. */
 .chipExclusive {
-  color: var(--color-text-inverse);
-  background: var(--color-primary);
+  box-shadow: inset 0 0 0 var(--border-width-hairline) color-mix(in srgb, var(--color-primary) 45%, transparent);
 }
 
 .chipRemove {

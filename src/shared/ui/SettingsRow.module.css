@@ -8,7 +8,7 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   min-width: 0;
 }
@@ -45,7 +45,7 @@
 /* ─── Dense — padding 0, parent (cardBody 16px + gap) owns spacing.
    M3 Box Contract: the container owns the inset, rows stay flush. ─── */
 .dense {
-  padding: 0;
+  padding: var(--space-2) 0;
   min-height: var(--touch-target);
 }
 
