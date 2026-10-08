@@ -5,10 +5,8 @@ import { Icon } from '@/shared/ui/Icon';
 import { FlagIcon } from '@/shared/ui/FlagIcon';
 import { Menu, MenuItem } from '@/shared/ui/Menu';
 import { TokenizeControls } from './TokenizeControls';
-import { PANEL_TABS } from './panelTabs';
 import { t } from '@/shared/i18n';
 import type { TokenizePanelState } from '@/features/tokenize';
-import type { UniversalPanelTab } from './types';
 import styles from './UniversalPanelHeader.module.css';
 
 export interface UniversalPanelHeaderProps {
@@ -26,15 +24,13 @@ export interface UniversalPanelHeaderProps {
   readonly activeProfileId?: string | null;
   /** Called when user switches active profile. */
   readonly onProfileChange?: (profileId: string) => void;
-  /** Active tab — the header names it (full `panel.tab.*` label) on mobile widths. */
-  readonly activeTab?: UniversalPanelTab;
 }
 
 /**
  * UniversalPanelHeader — minimal horizontal header above the panel content.
  *
- * Layout (left → right): language profile select (optional) … active-tab title
- * (≤839px only) … tokenize split capsule (Text / Media) … close button (right edge).
+ * Layout (left → right): language profile select (optional) … tokenize split
+ * capsule (Text / Media) … close button (right edge).
  */
 export function UniversalPanelHeader({
   tokenizeState,
@@ -44,7 +40,6 @@ export function UniversalPanelHeader({
   languageProfiles = [],
   activeProfileId = null,
   onProfileChange,
-  activeTab,
 }: UniversalPanelHeaderProps): ReactElement {
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -55,7 +50,6 @@ export function UniversalPanelHeader({
 
   const activeProfile = languageProfiles.find((p) => p.id === activeProfileId);
   const profileName = activeProfile?.name ?? t('panel.profile.select');
-  const activeTabLabel = activeTab ? PANEL_TABS.find((tab) => tab.key === activeTab)?.label : undefined;
 
   return (
     <header className={styles.header} data-cell-id="universal-panel-header">
@@ -99,12 +93,6 @@ export function UniversalPanelHeader({
             ))}
           </Menu>
         </>
-      )}
-
-      {activeTabLabel && (
-        <span className={styles.headerTitle} data-cell-id="universal-panel-header-title">
-          {t(activeTabLabel)}
-        </span>
       )}
 
       <TokenizeControls

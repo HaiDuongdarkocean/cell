@@ -10,15 +10,10 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4) var(--space-4);
+  gap: var(--space-2);
 }
 
-@media (min-width: 600px) {
-  .panel {
-    padding: var(--space-4) var(--space-5) var(--space-5);
-  }
-}
+@media (min-width: 600px) {}
 
 /* === Universal native banner === */
 .banner {
@@ -90,6 +85,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  margin-top: var(--space-3);
 }
 
 .sectionLabel {

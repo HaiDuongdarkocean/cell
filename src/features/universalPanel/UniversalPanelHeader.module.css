@@ -4,31 +4,11 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-2);
+  padding: var(--space-2);
   background: var(--universal-panel-header-bg);
   color: var(--universal-panel-header-fg);
   height: var(--universal-panel-header-height);
-}
-
-/* Active-tab title — names the surface on mobile chrome (≤839px). flex:1
-   pushes the capsule + close to the right edge; at extremely narrow widths
-   the title ellipsizes first while capsule and close keep natural size. */
-.headerTitle {
-  flex: 1;
-  min-width: 0;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--leading-tight);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (min-width: 840px) {
-  .headerTitle {
-    display: none;
-  }
 }
 
 .closeButton {
@@ -70,7 +50,6 @@
 
 @media (max-width: 839px) {
   .header {
-    padding: var(--space-2);
     gap: var(--space-2);
   }
 }

@@ -267,7 +267,7 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
           </div>
 
           <section className={styles.block} aria-label={t('settings.sync.accounts.title')}>
-            <Heading level={5} size={4} className={styles.blockTitle}>
+            <Heading level={5} size={5} className={styles.blockTitle}>
               {t('settings.sync.accounts.title')}
             </Heading>
             <ul className={styles.list}>
@@ -348,7 +348,7 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
           </section>
 
           <section className={styles.block} aria-label={t('settings.sync.profiles.title')}>
-            <Heading level={5} size={4} className={styles.blockTitle}>
+            <Heading level={5} size={5} className={styles.blockTitle}>
               {t('settings.sync.profiles.title')}
             </Heading>
             {profiles.length === 0 ? (

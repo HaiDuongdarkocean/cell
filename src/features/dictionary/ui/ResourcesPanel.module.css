@@ -22,10 +22,10 @@
   min-width: 0;
 }
 
+/* Stacked below the breakpoint the lookup preview is dead weight under the
+   resource list — it only earns its place as a side column. */
 .lookupColumn {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
+  display: none;
 }
 
 @container (min-width: 860px) {
@@ -35,6 +35,9 @@
   }
 
   .lookupColumn {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
     flex: 0 0 360px;
     position: sticky;
     top: var(--space-4);

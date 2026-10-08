@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 
 import { useDictionaryPanel } from './useDictionaryPanel';
@@ -18,6 +18,7 @@ import {
   removeSearchHistoryTerm,
 } from '@/features/dictionaryPopup/logic/searchHistory';
 import { ViewportTracker } from '@/features/tokenize';
+import { observeScrollDirection } from '@/shared/lib/dom/observeScrollDirection';
 import { CandidateView } from './CandidateView';
 import type { LookupResult, WordStatus, PopupCardCreatorPrefill, PopupTab, PopupSelectionSnapshot } from '@/entities/dictionary';
 import candidateStyles from './CandidateView.module.css';
@@ -25,7 +26,7 @@ import checkStyles from './DictionaryCheckable.module.css';
 import toolbarStyles from './DictionaryToolbar.module.css';
 import styles from './DictionaryPanelView.module.css';
 
-const SEARCH_INPUT_ID = 'dictionary-panel-search-input';
+const SEARCH_INPUT_ID_PREFIX = 'dictionary-panel-search-input';
 
 interface DictionaryPanelViewProps {
   readonly langCode: string;
@@ -100,6 +101,7 @@ export function DictionaryPanelView({
     syncStatus,
   });
 
+  const searchInputId = `${SEARCH_INPUT_ID_PREFIX}-${useId()}`;
   const [searchHistory, setSearchHistory] = useState<readonly string[]>([]);
   const [activeChipIndex, setActiveChipIndex] = useState(0);
   const [chipsHidden, setChipsHidden] = useState(false);
@@ -296,24 +298,18 @@ export function DictionaryPanelView({
       container.closest<HTMLElement>('[data-cell-id="popup-dictionary-content"]'),
       container.querySelector<HTMLElement>('[data-cell-id="dictionary-candidate-list"]'),
     ].filter((el): el is HTMLElement => el !== null);
-    const lastTops = new WeakMap<HTMLElement, number>();
-    scrollers.forEach((el) => lastTops.set(el, el.scrollTop));
-    const onScroll = (e: Event): void => {
-      const el = e.currentTarget as HTMLElement;
-      const top = el.scrollTop;
-      const delta = top - (lastTops.get(el) ?? top);
-      lastTops.set(el, top);
-      if (spySuppressRef.current) {
+    const stop = observeScrollDirection(scrollers, {
+      threshold: 8,
+      onScroll: () => {
+        if (!spySuppressRef.current) return false;
         if (spyQuietTimerRef.current) clearTimeout(spyQuietTimerRef.current);
         spyQuietTimerRef.current = setTimeout(() => { spySuppressRef.current = false; }, 150);
-        return;
-      }
-      if (Math.abs(delta) < 8) return;
-      setChipsHidden(top > 0 && delta > 0);
-    };
-    scrollers.forEach((el) => el.addEventListener('scroll', onScroll, { passive: true }));
+        return true;
+      },
+      onDirection: (direction, top) => setChipsHidden(top > 0 && direction === 'down'),
+    });
     return () => {
-      scrollers.forEach((el) => el.removeEventListener('scroll', onScroll));
+      stop();
       if (spyQuietTimerRef.current) clearTimeout(spyQuietTimerRef.current);
     };
   }, [allCandidates]);
@@ -345,7 +341,7 @@ export function DictionaryPanelView({
       {variant !== 'popup' && (
         <div className={styles.searchRow}>
           <SearchField
-            id={SEARCH_INPUT_ID}
+            id={searchInputId}
             data-cell-id="dictionary-search-input"
             value={searchTerm}
             onChange={handleSearchChange}

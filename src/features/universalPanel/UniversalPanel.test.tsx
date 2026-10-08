@@ -341,6 +341,7 @@ describe('UniversalPanel component', () => {
       />,
     );
     expect(screen.getByTestId('universal-panel-header')).toBeInTheDocument();
+    expect(screen.queryByTestId('universal-panel-header-title')).not.toBeInTheDocument();
     expect(screen.getByTestId('universal-panel-header-tokenize-text')).toBeInTheDocument();
     expect(screen.getByTestId('universal-panel-header-tokenize-media')).toBeInTheDocument();
     expect(screen.getByTestId('universal-panel-close')).toBeInTheDocument();

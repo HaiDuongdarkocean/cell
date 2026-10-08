@@ -2,13 +2,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4) var(--space-4);
 }
 
 @media (min-width: 600px) {
-  .panel {
-    padding: var(--space-4) var(--space-5) var(--space-5);
-  }
+
 }
 
 .loading {
@@ -41,6 +38,9 @@
 
 .blockTitle {
   margin: 0;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
 }
 
 .list {

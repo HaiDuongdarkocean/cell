@@ -14,6 +14,7 @@ import { Button, InkTabs, Input, Label, StepperSection } from '@/shared/ui';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import { t } from '@/shared/i18n';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
+import { observeScrollDirection } from '@/shared/lib/dom/observeScrollDirection';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { SubtitlePanelItem} from './subtitlePanelModel';
 import { formatBytes } from '@/shared/lib/formatBytes';
@@ -417,8 +418,6 @@ export function SubtitleManagerPanel({
 
   // Auto-hide header/footer on scroll (mobile only, tracks view)
   const tracksBodyRef = useRef<HTMLDivElement>(null);
-  const lastScrollTopRef = useRef(0);
-  const cooldownUntilRef = useRef(0);
   const [scrolledDir, setScrolledDir] = useState<'up' | 'down' | null>(null);
 
   useEffect(() => {
@@ -427,66 +426,18 @@ export function SubtitleManagerPanel({
     if (!el) return;
 
     setScrolledDir(null);
-    lastScrollTopRef.current = 0;
 
     // Hide is only safe if content stays scrollable after header/footer collapse.
     // ~100px = header(50) + footer(45); less than that → clamp → stuck.
     const HIDE_THRESHOLD_PX = 100;
-    const COOLDOWN_MS = 300;
-    const SWIPE_THRESHOLD_PX = 20;
 
-    const canHideSafely = (): boolean =>
-      el.scrollHeight - el.clientHeight > HIDE_THRESHOLD_PX;
-
-    const setDir = (dir: 'up' | 'down'): void => {
-      setScrolledDir(dir);
-      cooldownUntilRef.current = performance.now() + COOLDOWN_MS;
-    };
-
-    const onScroll = (): void => {
-      const scrollTop = el.scrollTop;
-
-      // At top: show immediately, bypass cooldown —
-      // hide→expand→clamp→0 fires a scroll event that cooldown would swallow.
-      if (scrollTop <= 0) {
-        setScrolledDir('up');
-        lastScrollTopRef.current = 0;
-        cooldownUntilRef.current = 0;
-        return;
-      }
-
-      const delta = scrollTop - lastScrollTopRef.current;
-      if (performance.now() < cooldownUntilRef.current) {
-        lastScrollTopRef.current = scrollTop;
-        return;
-      }
-
-      if (delta > 1 && canHideSafely()) setDir('down');
-      else if (delta < -1) setDir('up');
-
-      lastScrollTopRef.current = scrollTop;
-    };
-
-    // Touch swipe: when content fits (no scroll), user can still swipe to toggle.
-    let touchStartY = 0;
-    const onTouchStart = (e: TouchEvent): void => {
-      touchStartY = e.touches[0].clientY;
-    };
-    const onTouchEnd = (e: TouchEvent): void => {
-      if (performance.now() < cooldownUntilRef.current) return;
-      const deltaY = e.changedTouches[0].clientY - touchStartY;
-      if (deltaY < -SWIPE_THRESHOLD_PX) setDir('up');
-      else if (deltaY > SWIPE_THRESHOLD_PX && canHideSafely()) setDir('down');
-    };
-
-    el.addEventListener('scroll', onScroll, { passive: true });
-    el.addEventListener('touchstart', onTouchStart, { passive: true });
-    el.addEventListener('touchend', onTouchEnd, { passive: true });
-    return () => {
-      el.removeEventListener('scroll', onScroll);
-      el.removeEventListener('touchstart', onTouchStart);
-      el.removeEventListener('touchend', onTouchEnd);
-    };
+    return observeScrollDirection(el, {
+      threshold: 1,
+      cooldownMs: 300,
+      swipeThreshold: 20,
+      canChange: (direction) => direction === 'up' || el.scrollHeight - el.clientHeight > HIDE_THRESHOLD_PX,
+      onDirection: setScrolledDir,
+    });
   }, [view]);
   const backBtnRef = useRef<HTMLButtonElement>(null);
   const searchBtnRef = useRef<HTMLButtonElement>(null);

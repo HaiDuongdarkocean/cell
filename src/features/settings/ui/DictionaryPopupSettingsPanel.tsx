@@ -1,11 +1,9 @@
 // DictionaryPopupSettingsPanel — spec §M1 Settings → Dictionary Popup.
 //
-// Global behavior stays in the numbered timeline (trigger mode, default tab,
+// Global behavior stays in the step list (trigger mode, default tab,
 // example selection). Per-surface settings sit under a tab strip mirroring the
 // popup toolbar (audio / image / translate / links) — the links tab hosts the
 // external dictionary links manager (spec dict-links-manager REQ-8).
-//
-// Visual model: connected timeline + pill groups (one-tap selection).
 
 import { useState, type ReactElement } from 'react';
 import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
@@ -64,19 +62,16 @@ const SURFACE_TABS: readonly { key: SurfaceTab; icon: 'audioWave' | 'image' | 'l
 
 const STEPS = [
   {
-    num: 1,
     labelKey: 'settings.dictionaryPopup.openWith' as MessageKey,
     valueKey: 'triggerMode' as const,
     options: TRIGGER_MODES.map((mode) => ({ value: mode, labelKey: TRIGGER_LABEL_KEYS[mode] })),
   },
   {
-    num: 2,
     labelKey: 'settings.dictionaryPopup.showFirst' as MessageKey,
     valueKey: 'defaultActiveTab' as const,
     options: TAB_OPTIONS.map((tab) => ({ value: tab, labelKey: TAB_LABEL_KEYS[tab] })),
   },
   {
-    num: 3,
     labelKey: 'settings.dictionaryPopup.examples' as MessageKey,
     valueKey: 'includeAllExamplesOnDefSelect' as const,
     options: EXAMPLE_OPTIONS.map((o) => ({ value: o, labelKey: EXAMPLE_LABEL_KEYS[o] })),
@@ -102,8 +97,7 @@ export function DictionaryPopupSettingsPanel({
   return (
     <div className={styles.panel}>
       <div className={styles.timeline}>
-        {STEPS.map((step, index) => {
-          const isLast = index === STEPS.length - 1;
+        {STEPS.map((step) => {
           const value = step.valueKey === 'defaultActiveTab'
             ? (settings.defaultActiveTab ?? '')
             : step.valueKey === 'includeAllExamplesOnDefSelect'
@@ -112,10 +106,6 @@ export function DictionaryPopupSettingsPanel({
 
           return (
             <div key={step.valueKey} className={styles.timelineItem}>
-              <div className={styles.timelineTrack}>
-                <div className={styles.timelineDot}>{step.num}</div>
-                {!isLast && <div className={styles.timelineLine} />}
-              </div>
               <div className={styles.timelineContent}>
                 <Text as="span" className={styles.timelineLabel}>
                   {t(step.labelKey)}

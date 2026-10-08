@@ -238,7 +238,6 @@ export function UniversalPanel({
             languageProfiles={languageProfiles}
             activeProfileId={activeProfileId}
             onProfileChange={onProfileChange}
-            activeTab={activeTab}
           />
 
           <div className={styles.content} data-cell-id={`universal-panel-content-${activeTab}`}>
