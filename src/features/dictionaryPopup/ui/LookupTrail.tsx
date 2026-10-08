@@ -45,12 +45,15 @@ export function LookupTrail({ trail, onNavigate }: LookupTrailProps): React.JSX.
     return () => el.removeEventListener('wheel', onWheel);
   }, [visible]);
 
-  if (!visible) return null;
-
   const lastIndex = trail.length - 1;
   return (
-    <div ref={stripRef} className={styles.trail} data-cell-id="lookup-trail" onScroll={syncFades}>
-      <nav className={styles.nav} aria-label={t('ui.breadcrumb.aria')}>
+    <div
+      ref={stripRef}
+      className={`${styles.trail} ${visible ? '' : styles.trailHidden}`}
+      data-cell-id="lookup-trail"
+      onScroll={syncFades}
+    >
+      <nav className={styles.nav} aria-label={t('ui.breadcrumb.aria')} aria-hidden={!visible || undefined}>
         <ol className={styles.list}>
           {trail.map((term, index) => (
             <li

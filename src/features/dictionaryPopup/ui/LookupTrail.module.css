@@ -7,6 +7,7 @@
   max-height: var(--space-12);
   overscroll-behavior: contain;
   touch-action: pan-x;
+  scroll-behavior: smooth;
   animation: trailIn var(--duration-normal) var(--ease-out);
   transition:
     max-height var(--duration-normal) var(--ease-out),
@@ -15,8 +16,11 @@
   composes: hide from '@/shared/ui/Scrollable.module.css';
 }
 
-/* Scroll-down collapse — the strip folds bottom-up into the sheet header. */
-[data-dict-collapsed] .trail {
+/* Scroll-down collapse — the strip folds bottom-up into the sheet header.
+   .trailHidden covers the same fold when the trail drops below 2 crumbs
+   (strip stays mounted so the exit animates instead of teleporting away). */
+[data-dict-collapsed] .trail,
+.trailHidden {
   max-height: 0;
   padding-block: 0;
   opacity: 0;
@@ -46,6 +50,12 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* New crumb slides in from the right as the strip smooth-scrolls to it —
+   keyed <li> remounts only the appended crumb. */
+.list > li {
+  animation: crumbIn var(--duration-fast) var(--ease-out) both;
 }
 
 .crumb {
@@ -81,9 +91,25 @@
   }
 }
 
+@keyframes crumbIn {
+  from {
+    opacity: 0;
+    transform: translateX(var(--space-2));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .trail {
     animation: none;
     transition: none;
+    scroll-behavior: auto;
+  }
+
+  .list > li {
+    animation: none;
   }
 }
