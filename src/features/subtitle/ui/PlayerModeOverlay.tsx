@@ -19,6 +19,7 @@ import { NavCluster } from './NavCluster';
 import { ClusterRightToolbar } from './ClusterRightToolbar';
 import { resolvePlayerModeLayout, PM_MOBILE_BAR_HEIGHT_PX } from '../logic/playerModeGeometry';
 import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
+import { videoAncestorChain } from '@/shared/lib/dom/videoAncestorChain';
 import { getStorage, setStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { Button } from '@/shared/ui/Button';
 import { MenuItem, MenuSeparator } from '@/shared/ui/Menu';
@@ -38,6 +39,19 @@ import panelStyles from './SubtitlePanels.module.css';
 const CONTENT_PCT_MIN = 20;
 const CONTENT_PCT_MAX = 60;
 const CONTENT_PCT_DEFAULT = 30;
+const PLAYER_CHAIN_SAVED_PROPS = [
+  'width',
+  'height',
+  'max-width',
+  'max-height',
+  'aspect-ratio',
+  'flex',
+  'position',
+  'top',
+  'right',
+  'bottom',
+  'left',
+] as const;
 
 type IconCatalogKey = keyof typeof ICON_CATALOG;
 
@@ -294,14 +308,12 @@ function PlayerModeOverlayInner({
     // persist after exit and the video stays stretched instead of returning
     // to host layout.
     const savedDescendantStyles: Array<{ el: HTMLElement; props: Record<string, string> }> = [];
-    let desc: HTMLElement | null = player.firstElementChild as HTMLElement | null;
-    while (desc) {
+    for (const desc of videoAncestorChain(player)) {
       const props: Record<string, string> = {};
-      for (const p of ['width', 'height', 'max-width', 'max-height', 'aspect-ratio', 'flex']) {
+      for (const p of PLAYER_CHAIN_SAVED_PROPS) {
         props[p] = desc.style.getPropertyValue(p);
       }
       savedDescendantStyles.push({ el: desc, props });
-      desc = desc.firstElementChild as HTMLElement | null;
     }
 
     player.setAttribute('slot', 'cell-video');
@@ -395,15 +407,20 @@ function PlayerModeOverlayInner({
     player.style.margin = '0';
     player.style.display = 'block';
     player.style.position = 'relative';
-    let child: HTMLElement | null = player.firstElementChild as HTMLElement | null;
-    while (child) {
+    for (const child of videoAncestorChain(player)) {
       child.style.setProperty('width', `${stageW}px`, 'important');
       child.style.setProperty('height', `${stageH}px`, 'important');
       child.style.setProperty('max-width', 'none', 'important');
       child.style.setProperty('max-height', 'none', 'important');
       child.style.setProperty('aspect-ratio', 'auto', 'important');
       child.style.setProperty('flex', '1 1 0', 'important');
-      child = child.firstElementChild as HTMLElement | null;
+      // Hosts may keep player wrappers on fixed/sticky (m.youtube #player) —
+      // a fixed wrapper escapes the stage box and overlays the viewport.
+      const pos = getComputedStyle(child).position;
+      if (pos === 'fixed' || pos === 'sticky') {
+        child.style.setProperty('position', 'absolute', 'important');
+      }
+      child.style.setProperty('inset', '0', 'important');
     }
     // Generic: notify the host page's player JS that the player size changed.
     // Most video players (YouTube, Video.js, JW Player, etc.) listen for

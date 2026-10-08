@@ -16,11 +16,29 @@ if (args[0] === '--list') {
 }
 
 const browser = await chromium.connectOverCDP(`http://127.0.0.1:${PORT}`);
+const ctx = browser.contexts()[0];
+
+if (args.includes('--ext')) {
+  const sws = ctx.serviceWorkers().filter((w) => w.url().startsWith('chrome-extension://'));
+  for (const sw of sws) {
+    await sw.evaluate(() => chrome.runtime.reload()).catch(() => {});
+    console.log('reloaded ext', sw.url().slice(0, 80));
+  }
+  await new Promise((r) => setTimeout(r, 1500));
+}
+
 const pageTargets = targets.filter((t) => t.type === 'page' && !t.url.startsWith('chrome://'));
+const mi = args.indexOf('--match');
+const match = mi >= 0 ? args[mi + 1] : null;
 const pi = args.indexOf('--page');
 const idx = pi >= 0 ? +args[pi + 1] : 0;
-const wanted = pageTargets[idx]?.url;
-const page = browser.contexts()[0].pages().find((p) => p.url() === wanted) ?? browser.contexts()[0].pages()[0];
+const wanted = match ? pageTargets.find((t) => t.url.includes(match))?.url : pageTargets[idx]?.url;
+const page = ctx.pages().find((p) => p.url() === wanted) ?? ctx.pages()[0];
+
+if (args.includes('--reload')) {
+  await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+  console.log('reloaded', page.url().slice(0, 100));
+}
 
 const ei = args.indexOf('--eval');
 if (ei >= 0) console.log(JSON.stringify(await page.evaluate(args[ei + 1]), null, 1));

@@ -3614,6 +3614,29 @@
         "check-feature-cycles",
         "jest"
       ]
+    },
+    {
+      "type": "experience",
+      "id": "player-sizing-video-ancestor-chain",
+      "title": "Sizing host player subtree bằng firstElementChild chain gãy khi real subtree không phải first child — walk video ancestor chain",
+      "category": [
+        "rendering",
+        "detection"
+      ],
+      "tags": [
+        "player-mode",
+        "video",
+        "reparent",
+        "firstelementchild",
+        "ancestor-chain",
+        "m.youtube",
+        "fixed-position",
+        "slot",
+        "shadow-dom",
+        "inline-style",
+        "split-view"
+      ],
+      "trigger": "Effect reparent/size host player container vào overlay/stage rồi set pixel size hoặc snapshot styles dọc theo chain giả định single-child (firstElementChild lặp)"
     }
   ]
 }

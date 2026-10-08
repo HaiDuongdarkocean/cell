@@ -32,10 +32,20 @@ If it dies, restart it; only lines in the gap were lost.
 ## When the bug appears
 
 1. Read `console.jsonl` around that minute.
-2. `probe.mjs --list` → `--page N --eval "..."`
+2. `probe.mjs --list` → `--match <url-substr> --eval "..."`
    or `--shot name.png` for a screenshot.
+   `/json` target order shifts when tabs open/close —
+   `--match` (URL substring) beats `--page N`.
 3. Patch the live page with `--eval` first; if the
    bug vanishes you found the cause — then edit source.
+
+## After a rebuild
+
+`probe.mjs --match <url-substr> --ext --reload` —
+calls `chrome.runtime.reload()` on every extension
+service worker, waits 1.5s, then reloads the matched
+page so fresh content scripts re-inject. `--ext` or
+`--reload` alone work too.
 
 ## Safety
 

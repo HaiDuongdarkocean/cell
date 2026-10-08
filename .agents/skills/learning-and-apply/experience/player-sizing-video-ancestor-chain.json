@@ -1,0 +1,21 @@
+{
+  "id": "player-sizing-video-ancestor-chain",
+  "title": "Sizing host player subtree bằng firstElementChild chain gãy khi real subtree không phải first child — walk video ancestor chain",
+  "category": ["rendering", "detection"],
+  "tags": ["player-mode", "video", "reparent", "firstelementchild", "ancestor-chain", "m.youtube", "fixed-position", "slot", "shadow-dom", "inline-style", "split-view"],
+  "trigger": "Effect reparent/size host player container vào overlay/stage rồi set pixel size hoặc snapshot styles dọc theo chain giả định single-child (firstElementChild lặp)",
+  "principle": "Đừng giả định player container là single-child chain — host sites nhét thumbnail overlays, cinematics, control containers làm siblings của player subtree. Tìm <video> bên trong rồi đi ngược parentElement tới container: đó là path thật cần size/snapshot/restore. Kiểm tra computed position từng wrapper, không chỉ lúc mở — site responsive CSS có thể để wrapper ở fixed/sticky (m.youtube #player), phải re-pin absolute;inset:0 vào stage.",
+  "cases": [
+    {
+      "context": "Player Mode trên m.youtube.com: #player-container-id có nhiều con — IMG#player-thumbnail-overlay là firstElementChild, #player (chứa video) là child thứ 3. Bounds effect walk firstElementChild chỉ style được thumbnail rồi dừng; .html5-video-container giữ height:0 → video height:100%!important của 0 → stage đen khi nhấn g. #player còn position:fixed (sticky player của m.youtube) → phủ viewport trong suốt.",
+      "bad": "let child = player.firstElementChild;\nwhile (child) {\n  child.style.setProperty('width', stageW + 'px', 'important');\n  child.style.setProperty('height', stageH + 'px', 'important');\n  child = child.firstElementChild;\n}\n// Dừng ngay ở IMG thumbnail — video subtree không nhận gì",
+      "good": "for (const el of videoAncestorChain(player)) {\n  el.style.setProperty('width', stageW + 'px', 'important');\n  el.style.setProperty('height', stageH + 'px', 'important');\n  const pos = getComputedStyle(el).position;\n  if (pos === 'fixed' || pos === 'sticky') {\n    el.style.setProperty('position', 'absolute', 'important');\n  }\n  el.style.setProperty('inset', '0', 'important');\n}\n// videoAncestorChain(player): querySelector('video') → parentElement walk tới player;\n// fallback firstElementChild chain khi không có <video> (canvas players)"
+    }
+  ],
+  "applyFor": [
+    "Reparent host player container vào shadow-DOM slot hoặc split-view stage rồi resize subtree",
+    "Snapshot/restore inline styles của wrappers giữa player container và video",
+    "Host có sticky/fixed player wrapper (m.youtube #player, kisskh .portrait)",
+    "Bất kỳ traversal nào giả định single-child chain trên DOM của site lạ"
+  ]
+}
