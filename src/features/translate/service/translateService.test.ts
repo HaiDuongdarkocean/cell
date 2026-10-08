@@ -177,6 +177,33 @@ describe('translateService', () => {
       const aligned = alignTranslatedSegments([spaced], 2);
       expect(aligned).toEqual(['Xin chào.', 'Tạm biệt.']);
     });
+
+    it('aligns cues when Google ASCII-ifies markers into [[Cn]]', () => {
+      // Observed on YouTube ASR lyric tracks: ⟦/C60⟧ comes back as [[/C60]] —
+      // without normalization the cue text would swallow the neighbour's
+      // markers and print `[[/C60]][[C61]]` to the user.
+      const aligned = alignTranslatedSegments(
+        ['⟦C0⟧Anh sẽ chờ tình yêu[[/C0]]\n[[C1]]I will wait for love[[/C1]]'],
+        2,
+      );
+      expect(aligned).toEqual(['Anh sẽ chờ tình yêu', 'I will wait for love']);
+    });
+
+    it('strips marker residue that lands inside extracted cue text', () => {
+      const aligned = alignTranslatedSegments(
+        ['⟦C0⟧Anh sẽ chờ [[/C99]] tình yêu⟦/C0⟧'],
+        1,
+      );
+      expect(aligned).toEqual(['Anh sẽ chờ tình yêu']);
+    });
+
+    it('accepts fullwidth 【Cn】 marker variants', () => {
+      const aligned = alignTranslatedSegments(
+        ['【C0】xin chào【/C0】'],
+        1,
+      );
+      expect(aligned).toEqual(['xin chào']);
+    });
   });
 
   describe('joinTermTexts', () => {

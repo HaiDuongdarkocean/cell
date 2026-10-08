@@ -124,9 +124,12 @@ export function parseMyMemoryResponse(response: unknown): string[] {
  * @returns Single string with cue markers for parsing after translate.
  */
 export function joinCueTexts(cues: readonly SrtCue[]): string {
+  // Newline between markers is load-bearing (same lesson as joinTermTexts):
+  // glued `⟦C0⟧a⟦/C0⟧⟦C1⟧b⟦/C1⟧` reads as one opaque token to Google and
+  // comes back ASCII-ified (`[[C0]]`), echoed, or word-level bilingual mash.
   return cues
     .map((c, i) => `⟦C${i}⟧${c.text.replace(/\n/g, ' ')}⟦/C${i}⟧`)
-    .join('');
+    .join('\n');
 }
 
 /**
@@ -140,17 +143,32 @@ export function joinCueTexts(cues: readonly SrtCue[]): string {
  * @param expectedCount - Number of input cues.
  * @returns Array of decoded translated texts, length = expectedCount.
  */
+/**
+ * Google non-deterministically ASCII-ifies the `⟦ ⟧` bracket pair into
+ * `[[ ]]`, `【 】`, or single `[ ]` (e.g. `⟦/C60⟧` → `[[/C60]]`). Normalize
+ * every observed variant back to `⟦C…⟧`/`⟦/C…⟧` so the marker regex still
+ * aligns — closes must normalize before opens since `/` disambiguates them.
+ */
+function normalizeCueMarkers(text: string): string {
+  return text
+    .replace(/\[\[\/C(\d+)\]\]|【\/C(\d+)】|\[\/C(\d+)\]/g, '⟦/C$1$2$3⟧')
+    .replace(/\[\[C(\d+)\]\]|【C(\d+)】|\[C(\d+)\]/g, '⟦C$1$2$3⟧');
+}
+
+/** Residual marker fragments that can still leak inside an extracted cue. */
+const MARKER_RESIDUE_RE = /⟦\/?C\d+⟧|\[\[\/?C\d+\]\]|【\/?C\d+】|\[\/?C\d+\]/g;
+
 export function alignTranslatedSegments(
   translated: readonly string[],
   expectedCount: number,
 ): string[] {
-  const joined = translated.join('');
+  const joined = normalizeCueMarkers(translated.join(''));
   const markerRegex = /⟦C(\d+)⟧(.*?)⟦\/C\1⟧/gs;
   const map = new Map<number, string>();
   for (const match of joined.matchAll(markerRegex)) {
     const idx = Number(match[1]);
     const text = match[2] ?? '';
-    map.set(idx, text.trim());
+    map.set(idx, text.replace(MARKER_RESIDUE_RE, ' ').replace(/\s{2,}/g, ' ').trim());
   }
 
   const result: string[] = [];
