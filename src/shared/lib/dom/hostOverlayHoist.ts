@@ -8,7 +8,7 @@
 // the popup stage at viewport level with its original page CSS intact.
 
 const OVERLAY_NAME_RE =
-  /dialog|modal|popup|popper|sheet|toast|snackbar|dropdown|drawer|lightbox/i;
+  /dialog|modal|popup|popper|sheet|toast|snackbar|dropdown|drawer|lightbox|overlay[-_]?(container|root|host|portal|wrapper|pane)/i;
 const MENU_NAME_RE = /menu/i;
 const MENU_MIN_AREA_RATIO = 0.15;
 const OVERLAY_ROLES = new Set([
@@ -59,7 +59,11 @@ const isOverlayNamed = (el: HTMLElement): boolean =>
 
 const isPositioned = (el: HTMLElement): boolean => {
   const p = getComputedStyle(el).position;
-  return p === 'fixed' || p === 'absolute';
+  // '' means the element is unrendered — an unslotted light-DOM child of a
+  // shadow host (framework appended its overlay root straight onto the
+  // fullscreen host). Those still qualify: slotting is what makes them
+  // render at all.
+  return p === 'fixed' || p === 'absolute' || p === '';
 };
 
 // Outermost positioned overlay-ish ancestor (inclusive). Host overlays nest
@@ -84,7 +88,10 @@ export const overlayRoot = (node: Element): HTMLElement | null => {
 // overlay roots into it. Returns a cleanup that disconnects and restores
 // each element to its original parent/sibling.
 export function startHostOverlayHoist(shadowHost: HTMLElement): () => void {
-  const hoisted = new Map<HTMLElement, { parent: Node | null; next: Node | null }>();
+  const hoisted = new Map<
+    HTMLElement,
+    { parent: Node | null; next: Node | null; pointerEvents: string }
+  >();
 
   // NOTE: [data-cell-player-mode] must NOT be a closest() exclusion — Player
   // Mode sets data-cell-player-mode on <html> itself while active, which
@@ -98,17 +105,36 @@ export function startHostOverlayHoist(shadowHost: HTMLElement): () => void {
     el.closest('[data-cell-id]') !== null ||
     el.closest('script,style,template,noscript') !== null;
 
-  const hoist = (node: Element): void => {
-    const root = overlayRoot(node);
-    if (!root || isExcluded(root) || root.parentElement === shadowHost) return;
+  const adopt = (root: HTMLElement, parent: Node | null, next: Node | null): void => {
     // Keep the FIRST saved position for restore — the host framework may
     // re-insert the element elsewhere (Polymer morphs the sheet container
     // back into the player on each open); re-hoist without overwriting the
     // original anchor.
     if (!hoisted.has(root)) {
-      hoisted.set(root, { parent: root.parentNode, next: root.nextSibling });
+      hoisted.set(root, { parent, next, pointerEvents: root.style.pointerEvents });
     }
     root.setAttribute('slot', OVERLAY_SLOT);
+    // The popup stage is pointer-events:none and slotted roots would
+    // inherit that, so pin each root's own value — read AFTER slotting so
+    // previously unrendered roots (framework-appended to the host) resolve
+    // their stylesheet value. Pass-through containers
+    // (cdk-overlay-container) keep passing clicks to Cell UI.
+    root.style.pointerEvents = getComputedStyle(root).pointerEvents;
+  };
+
+  const hoist = (node: Element): void => {
+    const root = overlayRoot(node);
+    if (!root || isExcluded(root)) return;
+    if (root.parentElement === shadowHost) {
+      // Framework mounted its overlay root onto the fullscreen element
+      // itself (Angular CDK appends .cdk-overlay-container to
+      // document.fullscreenElement). Unslotted light-DOM children never
+      // render — assigning the slot is all it needs; on cleanup it goes to
+      // body, its usual mount point when no fullscreen is active.
+      adopt(root, document.body, null);
+      return;
+    }
+    adopt(root, root.parentNode, root.nextSibling);
     shadowHost.appendChild(root);
   };
 
@@ -139,6 +165,7 @@ export function startHostOverlayHoist(shadowHost: HTMLElement): () => void {
     observer.disconnect();
     for (const [el, saved] of hoisted) {
       el.removeAttribute('slot');
+      el.style.pointerEvents = saved.pointerEvents;
       if (!(saved.parent instanceof Element) || !saved.parent.isConnected) continue;
       if (saved.next && saved.next.parentNode === saved.parent) {
         saved.parent.insertBefore(el, saved.next);

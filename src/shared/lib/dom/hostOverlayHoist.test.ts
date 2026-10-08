@@ -105,6 +105,22 @@ describe('startHostOverlayHoist', () => {
     stop();
   });
 
+  it('slots an overlay root the framework appended to the host itself', async () => {
+    document.body.innerHTML = '<div id="host"></div>';
+    const host = document.getElementById('host')!;
+    const stop = startHostOverlayHoist(host);
+    const cdk = document.createElement('div');
+    cdk.className = 'cdk-overlay-container';
+    cdk.style.position = 'fixed';
+    host.appendChild(cdk);
+    await flush();
+    expect(cdk.getAttribute('slot')).toBe('cell-host-popup');
+    expect(cdk.parentElement).toBe(host);
+    stop();
+    expect(cdk.hasAttribute('slot')).toBe(false);
+    expect(cdk.parentElement).toBe(document.body);
+  });
+
   it('ignores cell-owned and non-overlay mutations', async () => {
     document.body.innerHTML = `
       <div id="host"></div>
