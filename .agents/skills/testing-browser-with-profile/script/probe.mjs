@@ -6,7 +6,7 @@ import fs from 'node:fs';
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(SCRIPT_DIR, '../../../..');
 const PORT = process.env.CELL_DEBUG_PORT ?? '9223';
-const OUT = path.join(ROOT, 'tmp', 'debug-brave');
+const OUT = path.join(ROOT, 'tmp', process.env.CELL_DEBUG_OUT ?? 'debug-brave');
 const args = process.argv.slice(2);
 const targets = await (await fetch(`http://127.0.0.1:${PORT}/json`)).json();
 

@@ -5,7 +5,7 @@ import path from 'node:path';
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(SCRIPT_DIR, '../../../..');
 const PORT = process.env.CELL_DEBUG_PORT ?? '9223';
-const LOG_DIR = path.join(ROOT, 'tmp', 'debug-brave');
+const LOG_DIR = path.join(ROOT, 'tmp', process.env.CELL_DEBUG_OUT ?? 'debug-brave');
 const LOG = path.join(LOG_DIR, 'console.jsonl');
 const CDP_HTTP = `http://127.0.0.1:${PORT}`;
 
