@@ -37,12 +37,13 @@ export function createOrbitalBadgeSync(deps: OrbitalBadgeSyncDeps): OrbitalBadge
   let orbitalBadgeSize: number | null = null;
   let orbitalBadgeScale: number | null = null;
   // In a child iframe, the orbital badge only mounts while the child document
-  // is in native fullscreen (the top-frame badge covers the viewport otherwise).
-  // This listener re-runs sync on fullscreen transitions so the badge appears
-  // on enter and is torn down on exit — keeping exactly one visible badge
-  // across normal + fullscreen modes.
+  // is in native fullscreen or iframe Player Mode (the top-frame badge covers
+  // the viewport otherwise). These listeners re-run sync on those transitions
+  // so the badge appears on enter and is torn down on exit — keeping exactly
+  // one visible badge across normal + fullscreen modes.
   const listeners = createListenerRegistry();
   let fullscreenListenerInstalled = false;
+  let pmObserver: MutationObserver | null = null;
 
   function persistBadgePointerPreset(preset: PointerPreset): void {
     const dpSettings = deps.getDpSettings();
@@ -77,12 +78,25 @@ export function createOrbitalBadgeSync(deps: OrbitalBadgeSyncDeps): OrbitalBadge
       fullscreenListenerInstalled = true;
       listeners.add(document, 'fullscreenchange', onFs);
       listeners.add(document, 'webkitfullscreenchange', onFs);
+      // Iframe Player Mode runs via the top-frame bridge: the top document
+      // fullscreens the <iframe>, so no fullscreenchange fires in this child
+      // document. Player Mode marks itself with data-cell-player-mode on
+      // <html> — observe that attribute to re-sync on PM enter/exit.
+      pmObserver = new MutationObserver(() => { sync(deps.getDpSettings()); });
+      pmObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-cell-player-mode'],
+      });
     }
     // Child iframe: the orbital badge is only useful while this child document
-    // is in native fullscreen. In normal mode the top-frame badge covers the
-    // viewport, so mounting a second badge here would duplicate it (the
-    // original 2-badge bug). Mount on fullscreen enter, tear down on exit.
-    if (isChildFrame() && !document.fullscreenElement) {
+    // is in native fullscreen or iframe Player Mode. In normal mode the
+    // top-frame badge covers the viewport, so mounting a second badge here
+    // would duplicate it (the original 2-badge bug). Mount on fullscreen or
+    // Player Mode enter, tear down on exit.
+    const pmHost = isChildFrame()
+      ? document.querySelector('#cell-subtitle-root[data-cell-player-mode]')
+      : null;
+    if (isChildFrame() && !document.fullscreenElement && !pmHost) {
       teardownBadge();
       return;
     }
@@ -120,9 +134,15 @@ export function createOrbitalBadgeSync(deps: OrbitalBadgeSyncDeps): OrbitalBadge
       // ADR-065: the generic `panelController` is toggled by the badge and
       // manages its own subscription lifecycle.
     }
+    // Player Mode transitions do not fire fullscreenchange when the bridge
+    // uses its CSS fill fallback or when only the child document marks PM —
+    // re-resolve the badge attach target on every sync.
+    orbitalBadge?.reattach();
   }
 
   function dispose(): void {
+    pmObserver?.disconnect();
+    pmObserver = null;
     teardownBadge();
     listeners.removeAll();
     fullscreenListenerInstalled = false;

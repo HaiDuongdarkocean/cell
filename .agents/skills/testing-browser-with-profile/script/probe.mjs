@@ -40,8 +40,20 @@ if (args.includes('--reload')) {
   console.log('reloaded', page.url().slice(0, 100));
 }
 
+const fi = args.indexOf('--fmatch');
+let target = page;
+if (fi >= 0) {
+  const m = args[fi + 1];
+  target = page.frames().find((f) => f.url().includes(m)) ?? page.mainFrame();
+  for (const f of page.frames()) {
+    if (f.url().includes(m)) continue;
+    const real = await f.evaluate(() => location.href).catch(() => '');
+    if (real.includes(m)) { target = f; break; }
+  }
+}
+
 const ei = args.indexOf('--eval');
-if (ei >= 0) console.log(JSON.stringify(await page.evaluate(args[ei + 1]), null, 1));
+if (ei >= 0) console.log(JSON.stringify(await target.evaluate(args[ei + 1]), null, 1));
 const si = args.indexOf('--shot');
 if (si >= 0) {
   fs.mkdirSync(OUT, { recursive: true });

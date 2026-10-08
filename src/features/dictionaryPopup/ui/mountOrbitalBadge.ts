@@ -27,6 +27,10 @@ export interface OrbitalBadgeMountOptions {
 }
 
 export interface OrbitalBadgeMountController {
+  /** Re-resolve the attach target (fullscreen element or Player Mode host)
+   *  and move the badge host into it. Needed for transitions that do not
+   *  fire fullscreenchange, e.g. iframe Player Mode via the top-frame bridge. */
+  reattach: () => void;
   /** Update the pointer preset. */
   setPreset: (preset: PointerPreset) => void;
   /** Update badge dimensions without remounting (preserves position state). */
@@ -152,6 +156,15 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
     if (mount.host.parentElement !== fsEl) fsEl.appendChild(mount.host);
   };
 
+  // In a cross-origin iframe the top document fullscreens the <iframe>
+  // element, so the child document's fullscreenElement stays null and the
+  // child-frame Player Mode host (#cell-subtitle-root) covers the viewport
+  // with a max-int z-index instead. The badge must attach into that host's
+  // shadow tree or it stays invisible behind the overlay.
+  const resolveAttachTarget = (): Element | null =>
+    document.fullscreenElement
+    ?? document.querySelector('#cell-subtitle-root[data-cell-player-mode]');
+
   const onFullscreenChange = (): void => {
     const fsEl = document.fullscreenElement;
     // When a child iframe's video goes native fullscreen, the browser puts
@@ -165,12 +178,14 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
       mount.host.style.display = 'none';
       return;
     }
-    // Non-iframe fullscreen (e.g. Cell Player Mode container) or exit: move
-    // the badge into the fullscreen element so it stays visible, or back to
-    // body when leaving. Restore display — unless the panel is open, in
-    // which case the badge stays suppressed across the transition.
-    if (fsEl) {
-      attachToFullscreen(fsEl);
+    // Non-iframe fullscreen (e.g. Cell Player Mode container), a child-frame
+    // Player Mode host, or exit: move the badge into that element so it stays
+    // visible, or back to body when leaving. Restore display — unless the
+    // panel is open, in which case the badge stays suppressed across the
+    // transition.
+    const target = resolveAttachTarget();
+    if (target) {
+      attachToFullscreen(target);
     } else if (mount.host.getRootNode() !== document) {
       document.body.appendChild(mount.host);
     }
@@ -180,9 +195,11 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
   document.addEventListener('fullscreenchange', onFullscreenChange);
   document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
-  // If already in fullscreen when mount is called, attach to fullscreen element.
-  if (document.fullscreenElement) {
-    attachToFullscreen(document.fullscreenElement);
+  // If already in fullscreen or a child-frame Player Mode when mount is
+  // called, attach into that element.
+  const initialTarget = resolveAttachTarget();
+  if (initialTarget) {
+    attachToFullscreen(initialTarget);
   }
 
   const destroy = (): void => {
@@ -194,6 +211,7 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
   };
 
   return {
+    reattach: onFullscreenChange,
     setPreset: (preset) => {
       badgeRef.current?.setPreset(preset);
     },

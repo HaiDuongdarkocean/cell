@@ -829,6 +829,38 @@ describe('createWebTextDictionaryController', () => {
     }
   });
 
+  it('child frame in iframe Player Mode mounts an orbital badge inside the PM host shadow', async () => {
+    // Iframe Player Mode fullscreens the <iframe> element in the TOP document,
+    // so this child document's fullscreenElement stays null. The badge must
+    // still mount — attached into the PM host shadow — instead of being
+    // gated out by the missing fullscreenElement.
+    jest.mocked(isChildFrame).mockReturnValue(true);
+    setFullscreenElement(null);
+    const pmHost = document.createElement('div');
+    pmHost.id = 'cell-subtitle-root';
+    pmHost.setAttribute('data-cell-player-mode', 'true');
+    pmHost.attachShadow({ mode: 'open' });
+    document.body.appendChild(pmHost);
+    try {
+      const ctrl = createWebTextDictionaryController(makeDeps({ dictionaryPopupSettings: makePopupSettings({ enabled: false }) }));
+      await act(async () => {
+        await act(async () => {
+        ctrl.updateSettings({
+          dictionaryPopup: makePopupSettings({ enabled: true }),
+          cardCreator: makeCardCreatorSettings(),
+          subtitleOverlayNativeLanguage: 'vi',
+        });
+        });
+      });
+      const host = pmHost.shadowRoot!.querySelector('.js-cell-orbital-badge-host');
+      expect(host).not.toBeNull();
+      act(() => { ctrl.destroy() });
+    } finally {
+      jest.mocked(isChildFrame).mockReturnValue(false);
+      pmHost.remove();
+    }
+  });
+
   it('top frame hides the orbital badge while a child iframe is native-fullscreen', async () => {
     // Top frame: isChildFrame = false (default mock). The badge mounts, then
     // the fullscreenchange handler in mountOrbitalBadge must hide it when

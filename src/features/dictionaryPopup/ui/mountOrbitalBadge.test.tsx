@@ -186,3 +186,51 @@ describe('mountOrbitalBadge panel-open suppression', () => {
     expect(badgeHost().style.display).toBe('');
   });
 });
+
+describe('mountOrbitalBadge Player Mode host attach', () => {
+  let badge: OrbitalBadgeMountController | undefined;
+  afterEach(() => {
+    badge?.destroy();
+    badge = undefined;
+    document.querySelectorAll('#cell-subtitle-root').forEach((el) => el.remove());
+  });
+
+  function makePmHost(): HTMLElement {
+    const host = document.createElement('div');
+    host.id = 'cell-subtitle-root';
+    host.setAttribute('data-cell-player-mode', 'true');
+    host.attachShadow({ mode: 'open' });
+    document.body.appendChild(host);
+    return host;
+  }
+
+  const badgeHost = (pmHost?: HTMLElement): HTMLElement =>
+    (pmHost?.shadowRoot?.querySelector<HTMLElement>('.js-cell-orbital-badge-host')
+      ?? document.querySelector<HTMLElement>('.js-cell-orbital-badge-host'))!;
+
+  it('attaches the badge into the PM host shadow when Player Mode is active without fullscreen', () => {
+    const pmHost = makePmHost();
+    badge = mountOrbitalBadge({});
+    expect(badgeHost(pmHost).getRootNode()).toBe(pmHost.shadowRoot);
+  });
+
+  it('reattach moves the badge into the PM host shadow when PM starts without fullscreenchange', () => {
+    badge = mountOrbitalBadge({});
+    expect(badgeHost().getRootNode()).toBe(document);
+
+    const pmHost = makePmHost();
+    badge.reattach();
+    expect(badgeHost(pmHost).getRootNode()).toBe(pmHost.shadowRoot);
+  });
+
+  it('reattach returns the badge to body when Player Mode ends', () => {
+    const pmHost = makePmHost();
+    badge = mountOrbitalBadge({});
+    expect(badgeHost(pmHost).getRootNode()).toBe(pmHost.shadowRoot);
+
+    pmHost.removeAttribute('data-cell-player-mode');
+    badge.reattach();
+    expect(badgeHost().getRootNode()).toBe(document);
+    expect(badgeHost().parentElement).toBe(document.body);
+  });
+});

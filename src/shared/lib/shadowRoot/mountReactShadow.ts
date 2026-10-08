@@ -115,8 +115,17 @@ export function attachFullscreenReparenting(
       ? ((el as HTMLElement).parentElement ?? document.body)
       : ((el as HTMLElement).shadowRoot ?? (el as HTMLElement));
 
+  // In a cross-origin iframe, Player Mode runs via the top-frame bridge: the
+  // top document fullscreens the <iframe> element, so this document's
+  // fullscreenElement stays null. The child PM host covers the iframe
+  // viewport with a max-int z-index — surfaces must attach into its shadow
+  // tree the same way they attach into a fullscreen element.
+  const resolveFsLikeElement = (): Element | null =>
+    document.fullscreenElement
+    ?? document.querySelector('#cell-subtitle-root[data-cell-player-mode]');
+
   const onFullscreenChange = (): void => {
-    const fsEl = document.fullscreenElement;
+    const fsEl = resolveFsLikeElement();
     if (fsEl) {
       // The fullscreen element can be this host itself (Player Mode roots the
       // overlay host) — appending it into its own shadow throws.
@@ -131,9 +140,19 @@ export function attachFullscreenReparenting(
   document.addEventListener('fullscreenchange', onFullscreenChange);
   document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
+  // The PM host attribute does not fire fullscreenchange — Player Mode marks
+  // itself via data-cell-player-mode on <html>. MutationObserver callbacks run
+  // after the commit, so the host attribute is already set when we resolve.
+  const pmObserver = new MutationObserver(onFullscreenChange);
+  pmObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-cell-player-mode'],
+  });
+
   onFullscreenChange();
 
   return () => {
+    pmObserver.disconnect();
     document.removeEventListener('fullscreenchange', onFullscreenChange);
     document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
   };
