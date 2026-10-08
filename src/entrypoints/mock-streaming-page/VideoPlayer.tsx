@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -39,6 +40,26 @@ function readChildParams(): { videoIndex: number; subMode: SubMode } {
   };
 }
 
+function readCueScale(): number {
+  const n = Number(new URLSearchParams(window.location.search).get('cueScale') ?? '0');
+  return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 10000) : 0;
+}
+
+function scaleCues(cues: MockVideo['cues'], target: number): MockVideo['cues'] {
+  if (target <= 0 || cues.length === 0 || cues.length >= target) return cues;
+  const period = (cues[cues.length - 1]?.end ?? 0) + 500;
+  if (period <= 0) return cues;
+  const out: MockVideo['cues'][number][] = [];
+  for (let block = 0; out.length < target; block++) {
+    const offset = block * period;
+    for (const c of cues) {
+      out.push({ index: out.length + 1, start: c.start + offset, end: c.end + offset, text: c.text });
+      if (out.length >= target) break;
+    }
+  }
+  return out;
+}
+
 export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -49,6 +70,8 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
   const videoIndex = childParams?.videoIndex ?? 0;
   const activeVideo = mode === 'child' ? (VIDEOS[videoIndex] ?? propVideo) : propVideo;
   const subMode = childParams?.subMode ?? 'track';
+  const cueScale = useMemo(() => readCueScale(), []);
+  const scaledCues = useMemo(() => scaleCues(activeVideo.cues, cueScale), [activeVideo.cues, cueScale]);
 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -65,11 +88,11 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
   const [vttUrl, setVttUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    const blob = new Blob([srtToVtt(activeVideo.cues)], { type: 'text/vtt' });
+    const blob = new Blob([srtToVtt(scaledCues)], { type: 'text/vtt' });
     const url = URL.createObjectURL(blob);
     setVttUrl(url);
     return () => URL.revokeObjectURL(url);
-  }, [activeVideo.cues]);
+  }, [scaledCues]);
 
   useEffect(() => {
     setCurrentTime(0);
@@ -198,7 +221,7 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
   }, [isPlaying, showControlsTemporarily]);
 
   const activeCue = subMode === 'hash' && isPlaying && subtitleLang !== 'Off'
-    ? activeVideo.cues.find(c => c.start <= currentTime * 1000 && c.end > currentTime * 1000)
+    ? scaledCues.find(c => c.start <= currentTime * 1000 && c.end > currentTime * 1000)
     : undefined;
 
   const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0;
