@@ -147,7 +147,7 @@ ${buildVariables()}
    reserved area. */
 html body .js-cell-token--word:not(.js-cell-token--reading-off) {
   display: inline-block !important;
-  margin-top: 0.85em !important;
+  margin-top: 1.2em !important;
 }
 
 /* Gloss footroom (spec word-translation): same mechanism as the reading
@@ -155,7 +155,7 @@ html body .js-cell-token--word:not(.js-cell-token--reading-off) {
    resolved glosses never reflow the line. */
 html body .js-cell-token--word:not(.js-cell-token--gloss-off) {
   display: inline-block !important;
-  margin-bottom: 0.95em !important;
+  margin-bottom: 1.15em !important;
 }
 
 .js-cell-token-word {
@@ -174,9 +174,9 @@ html body .js-cell-token:not(.js-cell-token--reading-off) .js-cell-token-word[da
   content: attr(data-reading);
   position: absolute;
   left: 50%;
-  bottom: 100%;
+  bottom: calc(100% + 0.15em);
   transform: translateX(-50%);
-  font-size: 0.68em;
+  font-size: 0.88em;
   line-height: 1.15;
   white-space: nowrap;
   font-style: normal;
@@ -194,11 +194,11 @@ html body .js-cell-token:not(.js-cell-token--reading-off) .js-cell-token-word[da
 html body .js-cell-token:not(.js-cell-token--gloss-off) .js-cell-token-word[data-gloss]::after {
   content: attr(data-gloss);
   position: absolute;
-  top: 100%;
+  top: calc(100% + 0.15em);
   left: -0.4em;
   right: -0.4em;
   text-align: center;
-  font-size: 0.6em;
+  font-size: 0.8em;
   line-height: 1.15;
   white-space: nowrap;
   font-style: normal;
@@ -398,12 +398,12 @@ ${buildVariables(':host')}
    the ::before rule. */
 .js-cell-token--word:not(.js-cell-token--reading-off) {
   display: inline-block !important;
-  margin-top: 0.85em !important;
+  margin-top: 1.2em !important;
 }
 
 .js-cell-token--word:not(.js-cell-token--gloss-off) {
   display: inline-block !important;
-  margin-bottom: 0.95em !important;
+  margin-bottom: 1.15em !important;
 }
 
 .js-cell-token-word {
@@ -421,9 +421,9 @@ ${buildVariables(':host')}
   content: attr(data-reading);
   position: absolute;
   left: 50%;
-  bottom: 100%;
+  bottom: calc(100% + 0.15em);
   transform: translateX(-50%);
-  font-size: 0.68em;
+  font-size: 0.88em;
   line-height: 1.15;
   white-space: nowrap;
   font-style: normal;
@@ -437,11 +437,11 @@ ${buildVariables(':host')}
 .js-cell-token:not(.js-cell-token--gloss-off) .js-cell-token-word[data-gloss]::after {
   content: attr(data-gloss);
   position: absolute;
-  top: 100%;
+  top: calc(100% + 0.15em);
   left: -0.4em;
   right: -0.4em;
   text-align: center;
-  font-size: 0.6em;
+  font-size: 0.8em;
   line-height: 1.15;
   white-space: nowrap;
   font-style: normal;
