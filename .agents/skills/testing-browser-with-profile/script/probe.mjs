@@ -1,3 +1,4 @@
+/* global chrome, location */
 import { chromium } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
