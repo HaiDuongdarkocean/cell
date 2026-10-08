@@ -168,7 +168,17 @@ export async function initTokenize(): Promise<void> {
     const settings = await loadSettings();
     const langCode = getActiveProfileSettings(settings)?.resourceLangCode
       ?? (settings.subtitleOverlayTargetLanguage || 'en');
-    if (webTokenizeCtrl && tokenizeLang === langCode) return;
+    const showReadings = settings.showReadings ?? false;
+    const showGlosses = settings.showWordTranslations ?? false;
+    const glossTargetLanguage = settings.subtitleOverlayNativeLanguage ?? '';
+    if (webTokenizeCtrl && tokenizeLang === langCode) {
+      // Settings change mid-session: push the annotation toggles into the live
+      // controller instead of rebuilding it (same path local-player takes).
+      webTokenizeCtrl.setShowReadings?.(showReadings);
+      webTokenizeCtrl.setShowGlosses?.(showGlosses);
+      webTokenizeCtrl.setGlossTargetLanguage?.(glossTargetLanguage);
+      return;
+    }
     webTokenizeCtrl?.destroy();
     webTokenizeCtrl = null;
     stopTextScoreSource?.();
@@ -178,6 +188,9 @@ export async function initTokenize(): Promise<void> {
       url: window.location.href,
       root: document.body,
       langCode,
+      showReadings,
+      showGlosses,
+      glossTargetLanguage,
       onOpenDictionary: (term, element, contextSentence, event) => {
         const ctrl = ensureWebTextCtrl();
         if (!tokenLookupEnabled || !modifierMatches(tokenLookupMode, event)) return;

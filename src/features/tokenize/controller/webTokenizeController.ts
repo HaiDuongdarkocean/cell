@@ -15,15 +15,16 @@ import {
   setTokenizeEnabledForUrl,
 } from '@/features/tokenize/services/tokenizeSettingsStore';
 import { isCellDebug } from '@/shared/lib/cellDebug';
-import { getFrequencyEntries } from '@/features/dictionary';
+import { getFrequencyEntries, getReadings } from '@/features/dictionary';
 import { getWordStatuses, setWordStatus } from '@/features/dictionary';
+import { getWordTranslations } from '@/features/translate';
 import {
   emitWordStatusChanged,
   onWordStatusChanged,
   onWordStatusesReload,
 } from '@/features/dictionary';
 import type { WordStatus } from '@/entities/dictionary';
-import { entriesToBand, loadFrequencyBandOptions, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
+import { entriesToBand, loadFrequencyBandOptions, pickFrequencyReading, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
 import { createStatusKeyControls, type PopupStatusTarget } from '@/features/tokenize/logic/statusKeyControls';
 import type { Token, TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
@@ -86,6 +87,14 @@ export interface WebTokenizeControllerOptions {
   readonly onBlocksChanged?: () => void;
   /** Open popup's looked-up term — 1-4 status keys target it before selection/hover. */
   readonly getPopupStatusTarget?: () => PopupStatusTarget | null;
+  /** Render reading caps (IPA/pinyin) above word tokens — mirrors the
+   *  profile showReadings setting; seeds the session toggle. */
+  readonly showReadings?: boolean;
+  /** Render native-language glosses below word tokens — mirrors the profile
+   *  showWordTranslations setting; seeds the session toggle. */
+  readonly showGlosses?: boolean;
+  /** Target language for gloss lanes (settings.subtitleOverlayNativeLanguage). */
+  readonly glossTargetLanguage?: string;
 }
 
 export interface WebTokenizeController extends TokenizeController {
@@ -97,6 +106,10 @@ export interface WebTokenizeController extends TokenizeController {
   readonly toggleEnabled: () => void;
   readonly toggleShowStatus: () => void;
   readonly toggleShowFrequency: () => void;
+  readonly toggleShowReadings: () => void;
+  readonly toggleShowGlosses: () => void;
+  /** Retarget the gloss lane language — re-resolves glosses for bound blocks. */
+  readonly setGlossTargetLanguage: (tl: string) => void;
   /** Pick a dictionary term from current state (for "Open Dictionary" btn). */
   readonly pickDictionaryTerm: () => string | null;
   /** Apply a 1-4 keyboard status shortcut when the user has a token selected or hovered. */
@@ -133,7 +146,10 @@ export async function createWebTokenizeController(
     initialEnabled,
     initialShowStatus: true,
     initialShowFrequency: true,
+    initialShowReadings: options.showReadings ?? false,
+    initialShowGlosses: options.showGlosses ?? false,
   });
+  let glossTargetLanguage = options.glossTargetLanguage ?? '';
 
   const cache = new TokenizeCache({
     capacity: CACHE_CAPACITY,
@@ -167,6 +183,9 @@ export async function createWebTokenizeController(
   let frequencyBandOptions: Promise<FrequencyBandOptions> | null = null;
   const metadataResolved = new WeakSet<TokenBlock>();
   const metadataPending = new WeakSet<TokenBlock>();
+  // Blocks whose annotation lanes (reading/gloss) were fetched — gates the
+  // re-resolve that runs when a lane is enabled after the block resolved.
+  const annotationsResolved = new WeakSet<TokenBlock>();
   // Race guard: keyboard / popup status changes that happen while a metadata
   // flush is mid-await must win over the stale background snapshot. Each local
   // override records the status and a monotonic version; the flush captures the
@@ -179,6 +198,11 @@ export async function createWebTokenizeController(
 
   function createViewport(rootMargin: string): ViewportTracker {
     return new ViewportTracker({ rootMargin });
+  }
+
+  function displayFlags(state: TokenizeState): Pick<TokenizeState, 'showStatus' | 'showFrequency' | 'showReadings' | 'showGlosses'> {
+    const { showStatus, showFrequency, showReadings, showGlosses } = state;
+    return { showStatus, showFrequency, showReadings, showGlosses };
   }
 
   /** Recreate the ViewportTracker with a new rootMargin and re-observe all connected blocks. */
@@ -234,11 +258,23 @@ export async function createWebTokenizeController(
       return;
     }
     const termList = [...terms];
-    const [statusMap, freqMaps, bandOpts] = await Promise.all([
+    const { showReadings, showGlosses } = stateStore.getState();
+    const tl = glossTargetLanguage;
+    const [statusMap, freqMaps, bandOpts, dictReadings, termGlosses] = await Promise.all([
       getWordStatuses(langCode, termList),
       getFrequencyEntries(langCode, termList),
       frequencyBandOptions ??= loadFrequencyBandOptions(langCode)
         .catch(() => ({ thresholds: DEFAULT_BAND_THRESHOLDS, resourcePriority: [] })),
+      // Annotation lanes ride the same batched flush — skipped entirely when
+      // their display toggles are off so annotation-off pages cost nothing.
+      showReadings ? getReadings(langCode, termList).catch(() => null) : Promise.resolve(null),
+      showGlosses && tl
+        ? getWordTranslations(langCode, tl, termList)
+            // Drop results that resolve after a target-language switch —
+            // writing them would persist the old language's glosses.
+            .then((g) => (glossTargetLanguage === tl ? g : null))
+            .catch(() => null)
+        : Promise.resolve(null),
     ]);
     for (const block of batch) {
       if (!block.tokens) {
@@ -250,6 +286,22 @@ export async function createWebTokenizeController(
         (term) => Promise.resolve(statusMap.get(term) ?? 'unknown'),
         (term) => Promise.resolve(entriesToBand(freqMaps.get(term) ?? [], bandOpts)),
       );
+      // Resolved maps are authoritative ('' = covered, no annotation) so late
+      // re-resolves clear stale lanes; null = fetch failed, keep existing.
+      if (dictReadings !== null || termGlosses !== null) {
+        for (const token of block.tokens) {
+          if (token.isSeparator) continue;
+          if (dictReadings !== null) {
+            token.reading = dictReadings.get(token.term)
+              ?? pickFrequencyReading(token.term, freqMaps.get(token.term) ?? [])
+              ?? '';
+          }
+          if (termGlosses !== null) {
+            token.gloss = termGlosses.get(token.term) ?? '';
+          }
+        }
+        annotationsResolved.add(block);
+      }
       // Race guard: re-apply any status override with a version newer than the
       // one this flush started with, so a stale background snapshot cannot
       // clobber a user change made while the flush was in flight.
@@ -268,10 +320,7 @@ export async function createWebTokenizeController(
     }
   }
 
-  function scheduleMetadataResolve(block: TokenBlock): void {
-    if (metadataResolved.has(block) || metadataPending.has(block)) return;
-    metadataPending.add(block);
-    metadataQueue.push(block);
+  function scheduleMetadataFlush(): void {
     if (!metadataFlushTimer) {
       // Flush in the next microtask so multiple visible blocks arriving in the
       // same scheduler tick are batched into one background request. Capture the
@@ -280,6 +329,22 @@ export async function createWebTokenizeController(
       nextFlushVersion = statusVersionCounter;
       metadataFlushTimer = setTimeout(() => void flushMetadataQueue(), 0);
     }
+  }
+
+  function scheduleMetadataResolve(block: TokenBlock): void {
+    if (metadataResolved.has(block) || metadataPending.has(block)) return;
+    metadataPending.add(block);
+    metadataQueue.push(block);
+    scheduleMetadataFlush();
+  }
+
+  /** Force a bound block back into the metadata queue — used when an
+   *  annotation lane is enabled after the block already resolved status/freq
+   *  without annotations, and when the gloss target language changes. */
+  function requeueForAnnotations(block: TokenBlock): void {
+    if (metadataPending.has(block) || !block.isBound || !block.tokens) return;
+    metadataPending.add(block);
+    metadataQueue.push(block);
   }
 
   // Token FAB removed — settings panel is now integrated into the orbital
@@ -491,6 +556,35 @@ export async function createWebTokenizeController(
         rebindBlock(block);
       }
     }
+  });
+
+  // Display-flag changes (status/frequency/reading/gloss layers) restyle
+  // bound visible blocks in place — classes and lane attrs swap without
+  // rebuilding token DOM, so an open selection survives the toggle.
+  // getState() returns the live state object, so the snapshot must copy the
+  // flags out — keeping the reference would compare state against itself.
+  let prevDisplay = displayFlags(stateStore.getState());
+  const unsubscribeDisplay = stateStore.subscribe((state) => {
+    const flagsChanged =
+      state.showStatus !== prevDisplay.showStatus ||
+      state.showFrequency !== prevDisplay.showFrequency ||
+      state.showReadings !== prevDisplay.showReadings ||
+      state.showGlosses !== prevDisplay.showGlosses;
+    const annotationsEnabled =
+      (state.showReadings && !prevDisplay.showReadings) ||
+      (state.showGlosses && !prevDisplay.showGlosses);
+    prevDisplay = displayFlags(state);
+    if (!flagsChanged && !annotationsEnabled) return;
+    for (const block of blocks) {
+      if (!block.isBound) continue;
+      if (visibleElements.has(block.element)) rebindBlock(block);
+      // Blocks bound before an annotation lane was enabled never fetched
+      // readings/glosses — re-queue so their lanes fill in.
+      if (annotationsEnabled && !annotationsResolved.has(block)) {
+        requeueForAnnotations(block);
+      }
+    }
+    if (annotationsEnabled) scheduleMetadataFlush();
   });
 
   // === MutationObserver: handle dynamically added content (React/Vue/Angular/Cloudflare) ===
@@ -714,6 +808,8 @@ export async function createWebTokenizeController(
     return {
       showStatus: state.showStatus,
       showFrequency: state.showFrequency,
+      showReadings: state.showReadings,
+      showGlosses: state.showGlosses,
       onTokenEnter: (term) => stateStore.setHoveredTerm(term),
       onTokenLeave: (term) => {
         if (stateStore.getState().hoveredTerm === term) {
@@ -935,6 +1031,8 @@ export async function createWebTokenizeController(
 
     setShowStatus: (show) => stateStore.setShowStatus(show),
     setShowFrequency: (show) => stateStore.setShowFrequency(show),
+    setShowReadings: (show) => stateStore.setShowReadings(show),
+    setShowGlosses: (show) => stateStore.setShowGlosses(show),
 
     /** Subscribe to tokenize state changes (for orbital panel sync). */
     subscribe: (cb: (state: TokenizeState) => void) => stateStore.subscribe(cb),
@@ -943,6 +1041,16 @@ export async function createWebTokenizeController(
     toggleEnabled: () => toggleEnabled(),
     toggleShowStatus: () => stateStore.setShowStatus(!stateStore.getState().showStatus),
     toggleShowFrequency: () => stateStore.setShowFrequency(!stateStore.getState().showFrequency),
+    toggleShowReadings: () => stateStore.setShowReadings(!stateStore.getState().showReadings),
+    toggleShowGlosses: () => stateStore.setShowGlosses(!stateStore.getState().showGlosses),
+
+    setGlossTargetLanguage: (tl) => {
+      if (glossTargetLanguage === tl) return;
+      glossTargetLanguage = tl;
+      if (!stateStore.getState().showGlosses) return;
+      for (const block of blocks) requeueForAnnotations(block);
+      scheduleMetadataFlush();
+    },
 
     /** Pick a dictionary term from current state (for "Open Dictionary" btn). */
     pickDictionaryTerm: () => pickDictionaryTerm(stateStore.getState()),
@@ -968,6 +1076,7 @@ export async function createWebTokenizeController(
       statusKeyControls.destroy();
       unsubscribe();
       unsubscribeSelection();
+      unsubscribeDisplay();
       unsubscribeWordStatus();
       unsubscribeStatusesReload();
       scheduler.stop();

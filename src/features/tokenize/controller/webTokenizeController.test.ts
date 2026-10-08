@@ -32,6 +32,16 @@ jest.mock('@/features/dictionary/services/frequencyClient', () => ({
   getFrequencyEntries,
 }));
 
+const getReadings = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, string>>>;
+const getWordTranslations = jest.fn() as jest.MockedFunction<(sl: string, tl: string, terms: readonly string[]) => Promise<Map<string, string> | null>>;
+
+jest.mock('@/features/dictionary/services/readingsClient', () => ({
+  getReadings,
+}));
+jest.mock('@/features/translate', () => ({
+  getWordTranslations,
+}));
+
 import { createWebTokenizeController } from './webTokenizeController';
 import { emitWordStatusChanged, emitWordStatusesReload } from '@/features/dictionary';
 
@@ -112,6 +122,8 @@ beforeEach(() => {
   getWordStatuses.mockResolvedValue(new Map<string, string>());
   getFrequencyEntries.mockResolvedValue(new Map<string, FrequencyEntry[]>());
   setWordStatus.mockResolvedValue(undefined);
+  getReadings.mockResolvedValue(new Map<string, string>());
+  getWordTranslations.mockResolvedValue(new Map<string, string>());
   document.body.innerHTML = '';
 });
 
@@ -916,5 +928,116 @@ describe('createWebTokenizeController', () => {
       Object.defineProperty(window, 'scrollY', { value: 0, writable: true, configurable: true });
       Object.defineProperty(window, 'innerHeight', { value: 768, writable: true, configurable: true });
     }
+  });
+
+  it('resolves reading + gloss lanes on web text when the toggles are seeded on', async () => {
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Hello world.';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+
+    getReadings.mockResolvedValue(new Map([['hello', 'həˈloʊ'], ['world', 'wɜːld']]));
+    getWordTranslations.mockResolvedValue(new Map([['hello', 'xin chào'], ['world', 'thế giới']]));
+
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root,
+      showReadings: true,
+      showGlosses: true,
+      glossTargetLanguage: 'vi',
+    });
+
+    controller.enable();
+    MockIntersectionObserver.trigger(paragraph);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(getReadings).toHaveBeenCalledWith('en', expect.arrayContaining(['hello', 'world']));
+    expect(getWordTranslations).toHaveBeenCalledWith('en', 'vi', expect.arrayContaining(['hello', 'world']));
+
+    const hello = paragraph.querySelector<HTMLElement>('.js-cell-token[data-cell-term="hello"]');
+    expect(hello?.getAttribute('data-reading')).toBe('həˈloʊ');
+    expect(hello?.getAttribute('data-gloss')).toBe('xin chào');
+    expect(hello?.classList.contains('js-cell-token--reading-off')).toBe(false);
+    expect(hello?.classList.contains('js-cell-token--gloss-off')).toBe(false);
+
+    controller.destroy();
+  });
+
+  it('skips annotation requests entirely while the toggles stay off', async () => {
+    getReadings.mockClear();
+    getWordTranslations.mockClear();
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Hello world.';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+
+    const controller = await createWebTokenizeController({ url: 'https://example.com/', root });
+    controller.enable();
+    MockIntersectionObserver.trigger(paragraph);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(getReadings).not.toHaveBeenCalled();
+    expect(getWordTranslations).not.toHaveBeenCalled();
+    const hello = paragraph.querySelector<HTMLElement>('.js-cell-token[data-cell-term="hello"]');
+    expect(hello?.classList.contains('js-cell-token--reading-off')).toBe(true);
+    expect(hello?.classList.contains('js-cell-token--gloss-off')).toBe(true);
+
+    controller.destroy();
+  });
+
+  it('fills annotation lanes for already-bound blocks when a toggle turns on mid-session', async () => {
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Hello world.';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+
+    const controller = await createWebTokenizeController({ url: 'https://example.com/', root });
+    controller.enable();
+    MockIntersectionObserver.trigger(paragraph);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    getReadings.mockResolvedValue(new Map([['hello', 'həˈloʊ'], ['world', 'wɜːld']]));
+    controller.setShowReadings?.(true);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const hello = paragraph.querySelector<HTMLElement>('.js-cell-token[data-cell-term="hello"]');
+    expect(hello?.getAttribute('data-reading')).toBe('həˈloʊ');
+    expect(hello?.classList.contains('js-cell-token--reading-off')).toBe(false);
+
+    controller.destroy();
+  });
+
+  it('re-resolves glosses in the new language when the target language changes', async () => {
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Hello world.';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+
+    getWordTranslations.mockResolvedValue(new Map([['hello', 'xin chào']]));
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root,
+      showGlosses: true,
+      glossTargetLanguage: 'vi',
+    });
+    controller.enable();
+    MockIntersectionObserver.trigger(paragraph);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(getWordTranslations).toHaveBeenCalledWith('en', 'vi', expect.any(Array));
+
+    getWordTranslations.mockClear();
+    getWordTranslations.mockResolvedValue(new Map([['hello', 'こんにちは']]));
+    controller.setGlossTargetLanguage('ja');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(getWordTranslations).toHaveBeenCalledWith('en', 'ja', expect.arrayContaining(['hello']));
+    const hello = paragraph.querySelector<HTMLElement>('.js-cell-token[data-cell-term="hello"]');
+    expect(hello?.getAttribute('data-gloss')).toBe('こんにちは');
+
+    controller.destroy();
   });
 });
