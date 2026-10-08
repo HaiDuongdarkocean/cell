@@ -85,9 +85,9 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
 
   const getAvailableHeight = useCallback((): number => {
     if (typeof maxHeight === 'number' && Number.isFinite(maxHeight) && maxHeight > 0) return maxHeight;
-    // Subtract 2 margins: bottom (sheet anchor) + top (gap from top edge).
-    // Matches CSS max-height: calc(100vh - var(--space-2) * 2).
-    return Math.max(0, getClientHeight() - SHEET_MARGIN_PX * 2);
+    // Subtract only the top gap — the sheet is edge-to-edge (bottom is flush).
+    // Matches CSS max-height: calc(100vh - var(--space-2)).
+    return Math.max(0, getClientHeight() - SHEET_MARGIN_PX);
   }, [maxHeight]);
 
   /** Effective min — clamps to avail on tiny viewports so state/viz never mismatch. */

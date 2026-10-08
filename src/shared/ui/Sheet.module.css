@@ -1,20 +1,22 @@
 /* === Sheet — shared bottom sheet atom (SSOT) ===
    Used by: Dictionary popup (mobile), SubtitleManager (mobile).
-   94% width centered, slide-up from bottom, all 4 corners rounded.
+   Edge-to-edge (flush to viewport left/right/bottom), slide-up from bottom,
+   top corners rounded. Max height leaves a space-2 top gap so the sheet
+   still reads as a sheet, not a fullscreen page.
    Drag handle: 1:1 height resize + click-to-close.
    Content drag: translateY dismiss + spring snap-back. */
 
 .sheet {
   position: fixed;
-  left: var(--space-2);
-  right: var(--space-2);
-  bottom: var(--space-2);
-  max-height: calc(100vh - var(--space-2) * 2);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: calc(100vh - var(--space-2));
   display: flex;
   flex-direction: column;
   background: var(--color-surface-popover);
   color: var(--color-text-primary);
-  border-radius: var(--radius-element);
+  border-radius: var(--radius-element) var(--radius-element) 0 0;
   overflow: hidden;
   pointer-events: auto;
   z-index: var(--z-overlay-top);

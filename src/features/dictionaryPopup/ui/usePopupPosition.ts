@@ -602,11 +602,11 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
   const style: CSSProperties = isSheet
     ? {
         position: 'fixed',
-        left: '3%',
-        right: '3%',
+        left: 0,
+        right: 0,
         top: sheetTop,
-        bottom: playerModeBounds?.bottom ?? 'var(--space-2)',
-        width: '94%',
+        bottom: playerModeBounds?.bottom ?? 0,
+        width: '100%',
         height: Math.max(
           POPUP_MIN_HEIGHT_PX,
           Math.min(sheetHeight, sheetAvailableHeight),

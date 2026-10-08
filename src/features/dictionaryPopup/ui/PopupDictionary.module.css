@@ -102,10 +102,10 @@
 
 .isSheet {
   position: fixed;
-  inset: auto 3% var(--space-2) 3%;
-  width: 94%;
+  inset: auto 0 0 0;
+  width: 100%;
   max-height: calc(100vh - var(--space-2));
-  border-radius: var(--radius-element);
+  border-radius: var(--radius-element) var(--radius-element) 0 0;
   border: none;
 }
 

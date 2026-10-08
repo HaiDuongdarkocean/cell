@@ -36,7 +36,7 @@ export interface SheetProps {
 
 /**
  * Sheet — shared bottom sheet atom (SSOT).
- * 94% width centered, slide-up from bottom, all 4 corners rounded.
+ * Edge-to-edge, slide-up from bottom, top corners rounded.
  * Drag handle: 1:1 height resize + click-to-close.
  * Content drag: translateY dismiss + spring snap-back.
  * Used by: Dictionary popup (mobile), SubtitleManager (mobile).

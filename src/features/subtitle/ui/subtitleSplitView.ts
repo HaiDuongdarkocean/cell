@@ -48,7 +48,7 @@ const SPLIT_VIEW_MIN_HEIGHT = 160;
 const SPLIT_VIEW_VIEWPORT_MARGIN = 8;
 // Below this width the row layout cannot keep both the video and the panel
 // usable. A narrow viewport (mobile) mounts the panel as a bottom sheet
-// overlay — the Cell Sheet pattern (inset space-2, radius-element,
+// overlay — the Cell Sheet pattern (edge-to-edge, top radius-element,
 // surface-popover) — so the video keeps its slot and the cue list gets a
 // proper height instead of an inline panel squeezing both. A narrow slot
 // inside a wide viewport still stacks column-in-place.
@@ -689,9 +689,9 @@ export function useSplitView({
               }
             }
             panel.style.position = 'fixed';
-            panel.style.left = 'var(--space-2, 8px)';
-            panel.style.right = 'var(--space-2, 8px)';
-            panel.style.bottom = 'var(--space-2, 8px)';
+            panel.style.left = '0';
+            panel.style.right = '0';
+            panel.style.bottom = '0';
             panel.style.top = 'auto';
             panel.style.width = 'auto';
             panel.style.height = `${Math.min(Math.round(window.innerHeight * SPLIT_VIEW_SHEET_HEIGHT_RATIO), SPLIT_VIEW_SHEET_MAX_HEIGHT)}px`;
@@ -700,8 +700,8 @@ export function useSplitView({
             panel.style.maxWidth = 'none';
             panel.style.minHeight = '0';
             panel.style.zIndex = 'var(--z-overlay-top, 10003)';
-            panel.style.borderRadius = 'var(--radius-element, 12px)';
-            panelInner.style.borderRadius = 'var(--radius-element)';
+            panel.style.borderRadius = 'var(--radius-element, 12px) var(--radius-element, 12px) 0 0';
+            panelInner.style.borderRadius = 'var(--radius-element) var(--radius-element) 0 0';
             panelInner.style.background = 'var(--color-surface-popover)';
           } else {
             restorePanelIntoWrapper();
