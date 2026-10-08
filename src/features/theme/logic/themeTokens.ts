@@ -2,8 +2,9 @@
  * Inject design-system theme tokens into a container (ADR-015 T12, ADR-022 D3).
  *
  * Content-script isolated world — cannot access popup stylesheets. Injects a
- * `<style>` block with theme tokens (light + dark) into document.head, sets
- * `data-theme` on the video container.
+ * `<style>` block with theme tokens into document.head, sets `data-theme` on
+ * the video container. Single-palette: the light palette is emitted under both
+ * [data-theme] selectors (dark palette removed).
  *
  * ADR-022 port: tokens now generated from chrome.storage.local.themeConfig
  * (customColors palette) instead of hardcoded strings. Falls back to
@@ -45,8 +46,11 @@ function buildStyleContent(config: ThemeConfig, extraCss: readonly string[] = []
   const staticTokens = formatStaticTokens();
   const componentTokens = formatComponentTokens();
   const preset = config.preset ?? 'dawn';
+  // Single-palette: the [data-theme="dark"] block emits the light palette so
+  // stray dark-attributed hosts (site attrs, copied hoist fallbacks) still
+  // resolve Cell surfaces to the one palette.
   const lightTokens = buildColorTokenCSS(config.customColors.light, 'light', preset);
-  const darkTokens = buildColorTokenCSS(config.customColors.dark, 'dark', preset);
+  const darkTokens = lightTokens;
   const selectorPrefix = `[data-preset="${preset}"]`;
   return `
 :root {
@@ -110,13 +114,9 @@ ${extraCss.join('\n')}
 `;
 }
 
-/** Resolve 'system' mode → 'light'|'dark' via prefers-color-scheme. */
-function resolveSystemMode(): ResolvedMode {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
-function resolveMode(mode: ThemeMode): ResolvedMode {
-  return mode === 'system' ? resolveSystemMode() : mode;
+/** Single-palette: every mode resolves to 'light' (dark palette removed). */
+function resolveMode(_mode: ThemeMode): ResolvedMode {
+  return 'light';
 }
 
 /**
@@ -132,7 +132,7 @@ function resolveMode(mode: ThemeMode): ResolvedMode {
  */
 export function syncElementTheme(element: HTMLElement, container: HTMLElement): () => void {
   const apply = (): void => {
-    const theme = container.getAttribute('data-theme') ?? 'dark';
+    const theme = container.getAttribute('data-theme') ?? 'light';
     const preset = container.getAttribute('data-preset') ?? '';
     element.setAttribute('data-theme', theme);
     if (preset) {
@@ -196,8 +196,8 @@ export function injectThemeTokens(container: HTMLElement, extraCss: readonly str
     document.head.appendChild(style);
   }
 
-  // Set initial theme synchronously to default 'dark' to avoid FOUC.
-  container.setAttribute('data-theme', 'dark');
+  // Set initial theme synchronously to default 'light' to avoid FOUC.
+  container.setAttribute('data-theme', 'light');
   container.setAttribute(THEME_CARRIER_ATTR, '');
 
   // Load mode + config from storage, then apply.

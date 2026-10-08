@@ -73,12 +73,12 @@ describe('ThemeProvider', () => {
     expect(useThemeStore.getState().isLoaded).toBe(true);
   });
 
-  it('applies theme to :root after init (dark)', async () => {
+  it('applies the light palette to :root even when mode is dark', async () => {
     await act(async () => {
       render(<ThemeProvider><Child /></ThemeProvider>);
     });
-    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
-    expect(document.documentElement.style.getPropertyValue('--color-primary')).toBe(DEFAULT_THEME_CONFIG.customColors.dark.primary);
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    expect(document.documentElement.style.getPropertyValue('--color-primary')).toBe(DEFAULT_THEME_CONFIG.customColors.light.primary);
   });
 
   it('applies light theme when themeMode = light', async () => {
@@ -97,7 +97,7 @@ describe('ThemeProvider', () => {
     await act(async () => {
       render(<ThemeProvider><Child /></ThemeProvider>);
     });
-    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     act(() => {
       useThemeStore.getState().switchMode('light');
     });
@@ -111,8 +111,8 @@ describe('ThemeProvider', () => {
     const customConfig: ThemeConfig = {
       preset: 'dawn',
       customColors: {
-        light: DEFAULT_THEME_CONFIG.customColors.light,
-        dark: { ...DEFAULT_THEME_CONFIG.customColors.dark, primary: '#ff0000' },
+        light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' },
+        dark: DEFAULT_THEME_CONFIG.customColors.dark,
       },
     };
     act(() => {

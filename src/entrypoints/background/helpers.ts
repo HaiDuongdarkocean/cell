@@ -5,9 +5,8 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { t } from '@/shared/i18n';
-import { loadThemeMode, loadThemeConfig, DEFAULT_THEME_MODE } from '@/features/theme/logic/themeStorage';
+import { loadThemeConfig } from '@/features/theme/logic/themeStorage';
 import { getColorTokens } from '@/shared/lib/tokens';
-import type { ResolvedMode, ThemeMode } from '@/entities/theme';
 import {
   getStorage,
   setStorage,
@@ -150,22 +149,10 @@ export async function reloadActiveTab(_ctx: BackgroundContext): Promise<void> {
 
 // --- badge helpers ---
 
-// ponytail: matchMedia không có trên ServiceWorkerGlobalScope ở mọi browser —
-// mode 'system' trong SW fallback về DEFAULT_THEME_MODE; UI threads vẫn
-// resolve đúng qua prefers-color-scheme.
-function resolveBadgeMode(mode: ThemeMode): ResolvedMode {
-  if (mode !== 'system') return mode;
-  return typeof matchMedia === 'function' &&
-    matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : DEFAULT_THEME_MODE === 'system' ? 'dark' : DEFAULT_THEME_MODE;
-}
-
-/** Badge colors follow the active theme's primary palette (preset + custom colors). */
+/** Badge colors follow the theme's primary palette (preset + custom colors). */
 async function badgeThemeColors(): Promise<{ bg: string; fg: string }> {
-  const [mode, config] = await Promise.all([loadThemeMode(), loadThemeConfig()]);
-  const resolved = resolveBadgeMode(mode);
-  const tokens = getColorTokens(config.customColors[resolved], resolved, config.preset);
+  const config = await loadThemeConfig();
+  const tokens = getColorTokens(config.customColors.light, 'light', config.preset);
   return {
     bg: tokens['--color-primary'],
     fg: tokens['--color-text-on-primary'],

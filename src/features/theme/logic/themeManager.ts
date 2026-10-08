@@ -7,10 +7,9 @@
 import { getColorTokens } from '@/shared/lib/tokens';
 import type { ThemeMode, ResolvedMode, ThemeConfig, CoreColorTokens } from '@/entities/theme';
 
-/** Resolve 'system' mode → 'light'|'dark' qua prefers-color-scheme media query. */
-export function resolveMode(mode: ThemeMode): ResolvedMode {
-  if (mode !== 'system') return mode;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+/** Single-palette: every mode resolves to 'light' (dark palette removed). */
+export function resolveMode(_mode: ThemeMode): ResolvedMode {
+  return 'light';
 }
 
 /**
@@ -23,13 +22,14 @@ export function applyTheme(
   config: ThemeConfig,
   target: HTMLElement = document.documentElement,
 ): void {
-  const tokens = getColorTokens(config.customColors[mode], mode, config.preset);
+  const resolved = resolveMode(mode);
+  const tokens = getColorTokens(config.customColors[resolved], resolved, config.preset);
 
   for (const [name, value] of Object.entries(tokens)) {
     target.style.setProperty(name, value);
   }
 
-  target.setAttribute('data-theme', mode);
+  target.setAttribute('data-theme', resolved);
   target.setAttribute('data-preset', config.preset ?? 'dawn');
 }
 
@@ -39,8 +39,8 @@ export function applyTheme(
  */
 export function registerSystemModeListener(onChange: (resolved: ResolvedMode) => void): () => void {
   const mql = window.matchMedia('(prefers-color-scheme: dark)');
-  const handler = (e: MediaQueryListEvent): void => {
-    onChange(e.matches ? 'dark' : 'light');
+  const handler = (): void => {
+    onChange(resolveMode('system'));
   };
   mql.addEventListener('change', handler);
   return () => mql.removeEventListener('change', handler);
@@ -48,5 +48,5 @@ export function registerSystemModeListener(onChange: (resolved: ResolvedMode) =>
 
 /** Get current palette for a resolved mode (helper for UI preview). */
 export function getPalette(config: ThemeConfig, mode: ResolvedMode): CoreColorTokens {
-  return config.customColors[mode];
+  return config.customColors[resolveMode(mode)];
 }

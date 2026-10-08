@@ -70,13 +70,13 @@ describe('injectThemeTokens (ADR-015 T12, ADR-022 D3)', () => {
     expect(styles.length).toBe(1);
   });
 
-  it('sets data-theme="dark" by default synchronously and after load', async () => {
+  it('sets data-theme="light" by default synchronously and after load', async () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
     injectThemeTokens(container);
-    expect(container.getAttribute('data-theme')).toBe('dark');
+    expect(container.getAttribute('data-theme')).toBe('light');
     await flushMicrotasks();
-    expect(container.getAttribute('data-theme')).toBe('dark');
+    expect(container.getAttribute('data-theme')).toBe('light');
   });
 
   it('sets data-theme="light" when themeMode = light', async () => {
@@ -88,13 +88,13 @@ describe('injectThemeTokens (ADR-015 T12, ADR-022 D3)', () => {
     expect(container.getAttribute('data-theme')).toBe('light');
   });
 
-  it('sets data-theme="dark" when themeMode = dark', async () => {
+  it('sets data-theme="light" when themeMode = dark (single-palette)', async () => {
     storageData[STORAGE_KEYS.THEME_MODE] = 'dark';
     const container = document.createElement('div');
     document.body.appendChild(container);
     injectThemeTokens(container);
     await flushMicrotasks();
-    expect(container.getAttribute('data-theme')).toBe('dark');
+    expect(container.getAttribute('data-theme')).toBe('light');
   });
 
   it('resolves system mode via prefers-color-scheme (light)', async () => {
@@ -107,30 +107,26 @@ describe('injectThemeTokens (ADR-015 T12, ADR-022 D3)', () => {
     expect(container.getAttribute('data-theme')).toBe('light');
   });
 
-  it('resolves system mode via prefers-color-scheme (dark)', async () => {
+  it('resolves system mode to light even under prefers-color-scheme dark', async () => {
     storageData[STORAGE_KEYS.THEME_MODE] = 'system';
     (window.matchMedia as unknown as jest.Mock).mockReturnValue({ matches: true });
     const container = document.createElement('div');
     document.body.appendChild(container);
     injectThemeTokens(container);
     await flushMicrotasks();
-    expect(container.getAttribute('data-theme')).toBe('dark');
+    expect(container.getAttribute('data-theme')).toBe('light');
   });
 
-  it('responds to chrome.storage.onChanged for themeMode', async () => {
+  it('responds to chrome.storage.onChanged for themeMode (always light)', async () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
     injectThemeTokens(container);
     await flushMicrotasks();
-    expect(container.getAttribute('data-theme')).toBe('dark');
-    for (const listener of storageListeners) {
-      listener({ [STORAGE_KEYS.THEME_MODE]: { newValue: 'light' } }, 'local');
-    }
     expect(container.getAttribute('data-theme')).toBe('light');
     for (const listener of storageListeners) {
       listener({ [STORAGE_KEYS.THEME_MODE]: { newValue: 'dark' } }, 'local');
     }
-    expect(container.getAttribute('data-theme')).toBe('dark');
+    expect(container.getAttribute('data-theme')).toBe('light');
   });
 
   it('responds to chrome.storage.onChanged for themeConfig (re-injects style)', async () => {
@@ -150,7 +146,7 @@ describe('injectThemeTokens (ADR-015 T12, ADR-022 D3)', () => {
     }
     const style = document.getElementById('subtitle-theme-tokens');
     expect(style?.textContent).toContain('#ff0000'); // custom light primary
-    expect(style?.textContent).toContain('#00ff00'); // custom dark primary
+    expect(style?.textContent).not.toContain('#00ff00'); // dark palette is never emitted
   });
 
   it('cleanup removes storage listener', () => {
@@ -169,7 +165,7 @@ describe('injectThemeTokens (ADR-015 T12, ADR-022 D3)', () => {
     const style = document.getElementById('subtitle-theme-tokens');
     expect(style?.textContent).toContain('[data-theme="dark"]');
     expect(style?.textContent).toContain('#5EA5E9'); // default Dawn light primary
-    expect(style?.textContent).toContain('#6AB2F5'); // default Dawn dark primary
+    expect(style?.textContent).not.toContain('#6AB2F5'); // dark palette is never emitted
   });
 
   it('applies custom themeConfig from storage on load', async () => {
@@ -250,11 +246,11 @@ describe('syncElementTheme (ADR-024)', () => {
     expect(element.getAttribute('data-theme')).toBe('light');
   });
 
-  it('defaults to dark when container has no data-theme', () => {
+  it('defaults to light when container has no data-theme', () => {
     const container = document.createElement('div');
     const element = document.createElement('div');
     syncElementTheme(element, container);
-    expect(element.getAttribute('data-theme')).toBe('dark');
+    expect(element.getAttribute('data-theme')).toBe('light');
   });
 
   it('updates element when container data-theme changes', async () => {
@@ -273,12 +269,12 @@ describe('syncElementTheme (ADR-024)', () => {
     const container = document.createElement('div');
     const element = document.createElement('div');
     const cleanup = syncElementTheme(element, container);
-    expect(element.getAttribute('data-theme')).toBe('dark');
+    expect(element.getAttribute('data-theme')).toBe('light');
 
     cleanup();
-    container.setAttribute('data-theme', 'light');
+    container.setAttribute('data-theme', 'dark');
     await new Promise<void>((r) => setTimeout(r, 0));
-    expect(element.getAttribute('data-theme')).toBe('dark');
+    expect(element.getAttribute('data-theme')).toBe('light');
   });
 
   it('syncs data-preset alongside data-theme', () => {

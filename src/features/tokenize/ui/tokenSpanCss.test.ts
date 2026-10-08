@@ -111,6 +111,5 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     for (const value of values) {
       expect(value).not.toContain('var(--color-text)');
     }
-    expect(source).toMatch(/color-mix\([^)]*#F1F1F1[^)]*\)/);
   });
 });
