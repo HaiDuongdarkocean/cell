@@ -283,6 +283,20 @@
   justify-self: end;
 }
 
+/* Host popup stage — slotted host overlay roots (menus, sheets, dialogs)
+   project here at viewport level, above every Cell layer. pointer-events
+   pass through except on the slotted popup itself. */
+.popupStage {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-overlay-top);
+}
+
+.popupStage ::slotted([slot='cell-host-popup']) {
+  pointer-events: auto;
+}
+
 /* Sheet list + pinned speed stepper (opened via ⋯). */
 .pmSheetList {
   display: flex;

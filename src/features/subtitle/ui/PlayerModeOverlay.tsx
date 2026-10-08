@@ -20,6 +20,7 @@ import { ClusterRightToolbar } from './ClusterRightToolbar';
 import { resolvePlayerModeLayout, PM_MOBILE_BAR_HEIGHT_PX } from '../logic/playerModeGeometry';
 import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { videoAncestorChain } from '@/shared/lib/dom/videoAncestorChain';
+import { startHostOverlayHoist } from '@/shared/lib/dom/hostOverlayHoist';
 import { getStorage, setStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { Button } from '@/shared/ui/Button';
 import { MenuItem, MenuSeparator } from '@/shared/ui/Menu';
@@ -394,6 +395,20 @@ function PlayerModeOverlayInner({
         originalHostParent.appendChild(shadowHost);
       }
     };
+  }, []);
+
+  // Host popups (settings sheets, menus, dialogs) can't render while our
+  // host owns native fullscreen — document-level ones are outside the
+  // fullscreen subtree, and player-internal ones are clipped/mispositioned
+  // by the stage wrap. Hoist overlay roots into the host's "cell-host-popup"
+  // slot so they project into the popup stage at viewport level.
+  useEffect(() => {
+    const stage = videoStageRef.current;
+    if (!stage) return;
+    const root = stage.getRootNode();
+    const shadowHost = root instanceof ShadowRoot ? root.host : null;
+    if (!(shadowHost instanceof HTMLElement)) return;
+    return startHostOverlayHoist(shadowHost);
   }, []);
 
   // Responsive bounds: update player + intermediate container pixel sizes to
@@ -998,6 +1013,10 @@ function PlayerModeOverlayInner({
             )}
           </div>
         </Sheet>
+
+        <div className={styles.popupStage}>
+          <slot name="cell-host-popup" />
+        </div>
       </div>
     );
   }
@@ -1133,6 +1152,10 @@ function PlayerModeOverlayInner({
             onExit={onExit}
           />
         </div>
+      </div>
+
+      <div className={styles.popupStage}>
+        <slot name="cell-host-popup" />
       </div>
     </div>
   );
