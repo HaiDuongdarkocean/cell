@@ -18,6 +18,7 @@ import type { SubtitlePanelItem } from './subtitlePanelModel';
 import { SubtitleCueEngine, type SubtitleCueEngineUpdate, type CardCreatorAction, type SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
 import type { TriggerMode, LookupRequest } from '@/entities/dictionary';
 import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
+import { suppressNativeCaptions } from './nativeCaptionSuppressor';
 import { mergeCuesForPanel } from '@/features/subtitle/logic/subtitleMerge';
 import { cuesToSrt } from '@/features/subtitle/logic/cuesToSrt';
 import { displayableCueRanges } from '@/features/condensedAudio';
@@ -62,6 +63,7 @@ export class ReactSubtitleController {
    *  has a different URL but the same origin. ADR-019 amendment (per-site). */
   private readonly offsetKey: string;
   private destroyed = false;
+  private restoreNativeCaptions: (() => void) | null = null;
   private readonly onGenerateNative: () => void;
   private readonly onCardCreatorAction: (action: CardCreatorAction) => void;
   private offsetMs = 0;
@@ -202,6 +204,8 @@ export class ReactSubtitleController {
       onReplayCue: (cue: BilingualCue) => this.handleReplayCue(cue),
       onContinueCue: (cue: BilingualCue) => this.handleContinueCue(cue),
     });
+
+    this.restoreNativeCaptions = suppressNativeCaptions(document, video);
 
     this.styleController = new SubtitleStyleController({
       engine: this.engine,
@@ -978,6 +982,8 @@ export class ReactSubtitleController {
     this.video.removeEventListener('resize', this.refreshVideoAspectRatio);
     this.studyMode.destroy();
     this.engine.setHeldCue(this.studyMode.heldCueIndex);
+    this.restoreNativeCaptions?.();
+    this.restoreNativeCaptions = null;
     this.mount.unmount();
   }
 }
