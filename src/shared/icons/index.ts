@@ -17,6 +17,7 @@ import {
   ArrowUpDown,
   Atom,
   AudioLines,
+  Bookmark,
   BookOpen,
   Captions,
   Check,
@@ -118,6 +119,7 @@ import {
   RecStop,
 } from './recorderIcons';
 
+import bookmarkSvg from './svg/bookmark.svg?raw';
 import settingsSvg from './svg/settings.svg?raw';
 import pencilSvg from './svg/pencil.svg?raw';
 import zapSvg from './svg/zap.svg?raw';
@@ -283,6 +285,7 @@ export const ICON_CATALOG = {
   moon: { component: Moon, svg: moonSvg, source: 'lucide/moon', tags: ['moon', 'dark', 'night', 'theme-dark'] } as IconEntry,
   sun: { component: Sun, svg: sunSvg, source: 'lucide/sun', tags: ['sun', 'light', 'day', 'theme-light'] } as IconEntry,
   star: { component: Star, svg: starSvg, source: 'lucide/star', tags: ['star', 'rating', 'favorite', 'bookmark'] } as IconEntry,
+  bookmark: { component: Bookmark, svg: bookmarkSvg, source: 'lucide/bookmark', tags: ['bookmark', 'save', 'save-for-later', 'queue', 'ribbon'] } as IconEntry,
   power: { component: Power, svg: powerSvg, source: 'lucide/power', tags: ['power', 'on', 'off', 'toggle', 'enable', 'disable'] } as IconEntry,
   trash: { component: Trash, svg: trashSvg, source: 'lucide/trash', tags: ['trash', 'delete', 'remove', 'bin'] } as IconEntry,
   trash2: { component: Trash2, svg: trash2Svg, source: 'lucide/trash-2', tags: ['trash', 'delete', 'remove', 'bin', 'clear'] } as IconEntry,

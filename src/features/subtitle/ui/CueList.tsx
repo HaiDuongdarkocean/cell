@@ -68,6 +68,10 @@ export interface CueListTokenize {
   selection?: CueListTokenSelection;
   /** Profile `showReadings` — fetch + render reading caps on word tokens. */
   showReadings?: boolean;
+  /** Profile `showWordTranslations` — fetch + render gloss lane under word tokens. */
+  showGlosses?: boolean;
+  /** Gloss destination language (`subtitleOverlayNativeLanguage`). */
+  glossTargetLanguage?: string;
 }
 
 interface CueListProps {
@@ -106,6 +110,7 @@ const CueTokenText = memo(function CueTokenText({
   onTokenCtrlClick,
   selectedTerms,
   showReadings = false,
+  showGlosses = false,
   resolving = false,
 }: {
   text: string;
@@ -115,6 +120,7 @@ const CueTokenText = memo(function CueTokenText({
   onTokenCtrlClick?: (term: string) => void;
   selectedTerms?: ReadonlySet<string>;
   showReadings?: boolean;
+  showGlosses?: boolean;
   resolving?: boolean;
 }) {
   const children: React.ReactNode[] = [];
@@ -141,9 +147,7 @@ const CueTokenText = memo(function CueTokenText({
             : '',
           selectedTerms?.has(token.term) ? 'js-cell-token--selected' : '',
           showReadings ? '' : 'js-cell-token--reading-off',
-          // Glosses are subtitle-overlay only (spec word-translation) —
-          // suppress the ::after lane and its reserved footroom here.
-          'js-cell-token--gloss-off',
+          showGlosses ? '' : 'js-cell-token--gloss-off',
         ]
           .filter(Boolean)
           .join(' ')}
@@ -164,6 +168,7 @@ const CueTokenText = memo(function CueTokenText({
         <span
           className="js-cell-token-word"
           data-reading={showReadings ? token.reading : undefined}
+          data-gloss={showGlosses ? token.gloss || undefined : undefined}
         >
           {token.text}
         </span>
@@ -208,12 +213,16 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   const onTokenHover = tokenize?.onTokenHover;
   const selection = tokenize?.selection;
   const showReadings = tokenize?.showReadings ?? false;
+  const showGlosses = tokenize?.showGlosses ?? false;
+  const glossTargetLanguage = tokenize?.glossTargetLanguage;
   const [selectedTerms, setSelectedTerms] = useState<ReadonlySet<string>>(
     () => selection?.getTerms() ?? EMPTY_SELECTED_TERMS,
   );
   const lastCuesRef = useRef<readonly BilingualCue[] | null>(null);
   const lastLangCodeRef = useRef<string | null>(null);
   const lastShowReadingsRef = useRef<boolean>(showReadings);
+  const lastShowGlossesRef = useRef<boolean>(showGlosses);
+  const lastGlossTargetLanguageRef = useRef<string | undefined>(glossTargetLanguage);
   // Bumped when the dictionary corpus changes → full metadata re-resolve so
   // readings/frequency bands reflect imported/toggled resources.
   const [dictEpoch, setDictEpoch] = useState(0);
@@ -266,6 +275,8 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       cuesAreEqual(visibleCues, lastCuesRef.current) &&
       tokenizeLangCode === lastLangCodeRef.current &&
       showReadings === lastShowReadingsRef.current &&
+      showGlosses === lastShowGlossesRef.current &&
+      glossTargetLanguage === lastGlossTargetLanguageRef.current &&
       dictEpoch === lastDictEpochRef.current
     ) {
       return;
@@ -273,6 +284,8 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     lastCuesRef.current = visibleCues;
     lastLangCodeRef.current = tokenizeLangCode;
     lastShowReadingsRef.current = showReadings;
+    lastShowGlossesRef.current = showGlosses;
+    lastGlossTargetLanguageRef.current = glossTargetLanguage;
     lastDictEpochRef.current = dictEpoch;
     const overrides = statusOverridesRef.current.get(tokenizeLangCode);
     const immediate = applyCueListTokenStatuses(
@@ -287,6 +300,8 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       setResolving(true);
       void resolveCueListTokenMetadata(immediate, tokenizeLangCode, {
         includeReadings: showReadings,
+        includeGlosses: showGlosses,
+        glossTargetLanguage,
       })
         .then(({ map, meta }) => {
           if (!active) return;
@@ -318,7 +333,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       active = false;
       if (retryTimer !== undefined) clearTimeout(retryTimer);
     };
-  }, [visibleCues, tokenizeLangCode, showReadings, dictEpoch]);
+  }, [visibleCues, tokenizeLangCode, showReadings, showGlosses, glossTargetLanguage, dictEpoch]);
 
   useEffect(() => {
     if (!resolvingRef.current) onTokensResolved?.(tokenMap, metaRef.current);
@@ -470,6 +485,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                   onTokenCtrlClick={tokenize.onTokenCtrlClick}
                   selectedTerms={selectedTerms}
                   showReadings={tokenize?.showReadings ?? false}
+                  showGlosses={showGlosses}
                   resolving={resolving}
                 />
               ) : (
@@ -512,7 +528,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                       onSaveCue(cue);
                     }}
                   >
-                    <Icon name="layers" size="xs" />
+                    <Icon name="bookmark" size="xs" />
                   </button>
                 )}
                 {mobile && isCurrent && cardActions && (
