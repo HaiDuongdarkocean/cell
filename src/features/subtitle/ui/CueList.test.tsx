@@ -176,6 +176,14 @@ describe('CueList bulk selection', () => {
   });
 });
 
+describe('CueList timestamp', () => {
+  it('renders the start–end range on both desktop and mobile', async () => {
+    renderList();
+    await waitFor(() => expect(scroller()).toBeInTheDocument());
+    expect(screen.getAllByTestId('cue-timestamp')[0].textContent).toBe('0:00 – 0:01');
+  });
+});
+
 describe('CueList mobile PM mode', () => {
   it('renders all cues as cards in list mode', () => {
     renderList({ mobile: true, displayMode: 'list', showAllCues: true });

@@ -38,8 +38,8 @@ describe('CueList', () => {
 
     const timestamps = screen.getAllByTestId('cue-timestamp');
     expect(timestamps).toHaveLength(2);
-    expect(timestamps[0].textContent).toBe('0:01');
-    expect(timestamps[1].textContent).toBe('0:03');
+    expect(timestamps[0].textContent).toBe('0:01 – 0:03');
+    expect(timestamps[1].textContent).toBe('0:03 – 0:05');
   });
 
   it('calls onSeek with cue start time when cue-timestamp clicked', () => {
@@ -165,8 +165,8 @@ describe('CueList', () => {
       // 'Hello' 1000 → 6000 (00:00:06), 'How are you?' 3500 → 8500 (00:00:08.500).
       render(<CueList cues={sampleCues} currentTimeMs={0} offsetMs={-5000} onSeek={jest.fn()} />);
       const timestamps = screen.getAllByTestId('cue-timestamp');
-      expect(timestamps[0].textContent).toBe('0:06');
-      expect(timestamps[1].textContent).toBe('0:08');
+      expect(timestamps[0].textContent).toBe('0:06 – 0:08');
+      expect(timestamps[1].textContent).toBe('0:08 – 0:10');
     });
 
     it('onSeek still sends raw cue.start (SEEK_TO handler subtracts offset)', () => {

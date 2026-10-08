@@ -496,9 +496,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                       list shows the VIDEO time at which this cue will display
                       (matches overlay + highlight). onSeek still sends raw
                       cue.start; SEEK_TO handler subtracts offset. */}
-                  {mobile
-                    ? `${formatTimestamp(cue.start - offsetMs, hasHours)} – ${formatTimestamp(cue.end - offsetMs, hasHours)}`
-                    : formatTimestamp(cue.start - offsetMs, hasHours)}
+                  {`${formatTimestamp(cue.start - offsetMs, hasHours)} – ${formatTimestamp(cue.end - offsetMs, hasHours)}`}
                 </button>
                 {onSaveCue && (
                   <button

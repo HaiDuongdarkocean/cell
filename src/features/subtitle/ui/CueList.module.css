@@ -48,7 +48,6 @@
   border: 0;
   background: transparent;
   text-align: left;
-  font-family: var(--font-family-mono);
   font-variant-numeric: tabular-nums;
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
