@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { SrsVariantToggles, VariantId } from '@/entities/srs/types';
+import { STORAGE_KEYS } from '@/shared/config/config';
+import { setStorage } from '@/shared/lib/chrome-apis';
 
 export interface SrsUiPrefs {
   readonly dayStartHour: number;
@@ -48,6 +50,10 @@ function load(): SrsUiPrefs {
 let prefs: SrsUiPrefs = load();
 const listeners = new Set<() => void>();
 
+void setStorage({
+  [STORAGE_KEYS.SRS_UI_PREFS_MIRROR]: { dayStartHour: prefs.dayStartHour },
+}).catch(() => undefined);
+
 export function getSrsUiPrefs(): SrsUiPrefs {
   return prefs;
 }
@@ -59,6 +65,9 @@ export function setSrsUiPrefs(patch: Partial<SrsUiPrefs>): void {
   } catch {
     // storage unavailable — prefs still apply for this session
   }
+  void setStorage({
+    [STORAGE_KEYS.SRS_UI_PREFS_MIRROR]: { dayStartHour: prefs.dayStartHour },
+  }).catch(() => undefined);
   for (const listener of listeners) listener();
 }
 

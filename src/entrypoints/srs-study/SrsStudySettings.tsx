@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Button, Heading, SegmentedControl, Select, Text, Toggle } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import { useSrsUiPrefs, setSrsUiPrefs, resetSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
 import { SrsVariantsPanel } from '@/features/srs/ui/SrsVariantsPanel';
+import { getReminderState } from '@/features/srs/services/reminderState';
+import { getNotificationPermissionLevel } from '@/shared/lib/chrome-apis';
+import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
+import type { SrsSettingsSlice } from '@/entities/settings';
 import { UserCssPanel } from './UserCssPanel';
 import styles from './SrsStudySettings.module.css';
 
@@ -38,6 +42,78 @@ const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => ({
   value: String(h),
   label: `${String(h).padStart(2, '0')}:00`,
 }));
+
+function ReminderSection(): React.JSX.Element | null {
+  const [srs, setSrs] = useState<SrsSettingsSlice | null>(null);
+  const [permission, setPermission] = useState<string>('denied');
+  const [learnedHour, setLearnedHour] = useState<number | null>(null);
+
+  useEffect(() => {
+    void loadSettings().then((s) => setSrs(s.srs));
+    void getNotificationPermissionLevel().then(setPermission);
+    void getReminderState().then((state) => setLearnedHour(state.learnedHour));
+  }, []);
+
+  if (!srs) return null;
+  const reminder = srs.reminder;
+
+  const saveReminder = async (patch: Partial<SrsSettingsSlice['reminder']>): Promise<void> => {
+    const next = { ...srs, reminder: { ...reminder, ...patch } };
+    setSrs(next);
+    await saveSettings({ srs: next });
+  };
+
+  const requestPermission = async (): Promise<boolean> => {
+    const granted = await chrome.permissions.request({ permissions: ['notifications'] });
+    setPermission(await getNotificationPermissionLevel());
+    return granted;
+  };
+
+  const onToggle = (enabled: boolean): void => {
+    if (enabled && permission !== 'granted') void requestPermission();
+    void saveReminder({ enabled });
+  };
+
+  const hourLabel = (h: number): string => `${String(h).padStart(2, '0')}:00`;
+  const effectiveHour = learnedHour ?? reminder.preferredHour;
+  const blocked = reminder.enabled && permission !== 'granted';
+
+  return (
+    <Section title={t('srs.settings.reminder')}>
+      <SettingRow label={t('srs.settings.reminderEnable')} description={t('srs.settings.reminderEnableDesc')}>
+        <Toggle checked={reminder.enabled} onChange={onToggle} ariaLabel={t('srs.settings.reminderEnable')} size="xs" />
+      </SettingRow>
+      {reminder.enabled && (
+        <>
+          <SettingRow label={t('srs.settings.reminderHour')}>
+            <Select
+              className={styles.pillSelect}
+              value={String(reminder.preferredHour)}
+              options={HOUR_OPTIONS}
+              onChange={(v) => { void saveReminder({ preferredHour: Number(v) }); }}
+              aria-label={t('srs.settings.reminderHour')}
+            />
+          </SettingRow>
+          {blocked ? (
+            <div className={styles.reminderBlocked} role="alert">
+              <Icon name="triangleAlert" />
+              <Text className={styles.reminderBlockedText}>{t('srs.settings.reminderBlocked')}</Text>
+              <Button variant="ghost" size="sm" onClick={() => { void requestPermission(); }}>
+                {t('srs.settings.reminderRetry')}
+              </Button>
+            </div>
+          ) : (
+            <Text className={styles.reminderStatus}>
+              {learnedHour !== null
+                ? t('srs.settings.reminderLearned', [hourLabel(effectiveHour)])
+                : t('srs.settings.reminderScheduled', [hourLabel(effectiveHour)])}
+            </Text>
+          )}
+        </>
+      )}
+    </Section>
+  );
+}
 
 export interface SrsStudySettingsProps {
   readonly onClose: () => void;
@@ -102,6 +178,8 @@ export function SrsStudySettings({ onClose }: SrsStudySettingsProps): React.JSX.
                 />
               </SettingRow>
             </Section>
+
+            <ReminderSection />
 
             <Section title={t('srs.settings.answering')}>
               <SettingRow label={t('srs.settings.shuffle')}>

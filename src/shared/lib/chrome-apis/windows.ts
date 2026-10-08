@@ -18,3 +18,10 @@ export function addOnWindowFocusChangedListener(
 export function getWindowIdNone(): number {
   return chrome.windows.WINDOW_ID_NONE;
 }
+
+export function updateWindow(
+  windowId: number,
+  updateInfo: chrome.windows.UpdateInfo,
+): Promise<chrome.windows.Window> {
+  return chrome.windows.update(windowId, updateInfo);
+}

@@ -14,3 +14,5 @@ export * from './offscreen';
 export * from './sidePanel';
 export * from './action';
 export * from './windows';
+export * from './alarms';
+export * from './notifications';

@@ -236,7 +236,20 @@ export const DEFAULT_SRS_SETTINGS: SrsSettingsSlice = {
     audioQuotaMb: 50,
     imageQuotaMb: 50,
   },
+  reminder: {
+    enabled: false,
+    preferredHour: 20,
+  },
 };
+
+/** Daily study reminder alarm + tuning (spec srs-daily-reminder). */
+export const SRS_REMINDER_ALARM = 'srs-reminder';
+export const SRS_REMINDER_NOTIFICATION_ID = 'srs-daily-reminder';
+export const SRS_REMINDER_LOOKBACK_DAYS = 28;
+export const SRS_REMINDER_MIN_STUDY_DAYS = 5;
+export const SRS_REMINDER_MIN_COUNT = 3;
+export const SRS_REMINDER_MARGIN = 2;
+export const SRS_REMINDER_SNOOZE_MS = 60 * 60 * 1000;
 
 export const DEFAULT_TTS_SETTINGS: TtsSettings = {
   enabled: true,
@@ -416,6 +429,11 @@ export const STORAGE_KEYS = {
   LOOKUP_LOG: 'lookupLog',
   /** Timestamp of the last orphan sweep (session storage — once per browser session). */
   ORPHAN_SWEEP_AT: 'orphanSweepAt',
+  /** SRS daily reminder runtime state (spec srs-daily-reminder). SW-readable. */
+  SRS_REMINDER_STATE: 'srsReminderState',
+  /** Mirror of srsUiPrefs fields the service worker needs (localStorage is
+   *  unreachable from SW) — currently { dayStartHour }. */
+  SRS_UI_PREFS_MIRROR: 'srsUiPrefsMirror',
 } as const;
 
 /** Minimum interval between orphan sweeps across MV3 service-worker restarts. */

@@ -211,6 +211,13 @@ export interface SrsDataLifecycleConfig {
   readonly imageQuotaMb: number;
 }
 
+/** Ocean SRS daily reminder settings (spec srs-daily-reminder — schema v38). */
+export interface SrsReminderConfig {
+  readonly enabled: boolean;
+  /** User-chosen ideal reminder hour (0-23, local). */
+  readonly preferredHour: number;
+}
+
 /** Ocean SRS settings slice (schema v27). */
 export interface SrsSettingsSlice {
   readonly defaultStudyConfigId: string | null;
@@ -219,6 +226,7 @@ export interface SrsSettingsSlice {
   readonly activeNotetypeId: string | null;
   readonly activeLanguageProfileId: string | null;
   readonly dataLifecycle: SrsDataLifecycleConfig;
+  readonly reminder: SrsReminderConfig;
 }
 
 /** Dictionary Popup settings slice (spec §9.3 — schema v14). */

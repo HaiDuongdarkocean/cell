@@ -103,6 +103,7 @@ import {
   registerAnkiStatusSyncHandlers,
   wireAnkiStatusSyncScheduling,
 } from './handlers/ankiStatusSync';
+import { wireSrsReminderScheduling } from './handlers/srsReminder';
 import { registerMiningQueueHandlers } from './handlers/miningQueue';
 import { initJobRegistry, registerJobHandlers, stopJobKeepAlive } from './handlers/jobs';
 import { sweepOrphanedWork } from './handlers/orphanSweep';
@@ -216,6 +217,7 @@ export class BackgroundService implements BackgroundContext {
     this.unsubscribers = wireEvents(this);
     this.unsubscribers.push(...wireSyncScheduling(this));
     this.unsubscribers.push(...wireAnkiStatusSyncScheduling());
+    this.unsubscribers.push(...wireSrsReminderScheduling());
 
     // 4b. Wait for session restore to complete.
     await this.sessionReady;

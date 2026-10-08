@@ -67,6 +67,17 @@ export function reloadTab(tabId: number): Promise<void> {
   return chrome.tabs.reload(tabId);
 }
 
+export function createTab(createProperties: chrome.tabs.CreateProperties): Promise<chrome.tabs.Tab> {
+  return chrome.tabs.create(createProperties);
+}
+
+export function updateTab(
+  tabId: number,
+  updateProperties: chrome.tabs.UpdateProperties,
+): Promise<chrome.tabs.Tab | undefined> {
+  return chrome.tabs.update(tabId, updateProperties);
+}
+
 /** Add a listener for tabs.onUpdated. Returns an unsubscribe function. */
 export function addOnTabUpdatedListener(
   listener: (

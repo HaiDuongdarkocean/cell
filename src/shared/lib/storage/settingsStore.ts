@@ -18,7 +18,7 @@ import { toIso6391, baseLangCode } from '@/shared/config/languageRegistry';
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 37;
+export const CURRENT_SCHEMA_VERSION = 38;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -570,6 +570,13 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     }
     return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
   },
+  // v37 → v38: srs.reminder { enabled, preferredHour } — daily study reminder
+  // (spec srs-daily-reminder). Additive nested-field fill.
+  37: (s) =>
+    mergeNestedObjectDefaults(
+      { ...DEFAULT_SETTINGS, ...s, schemaVersion: 38 } as Record<string, unknown>,
+      DEFAULT_SETTINGS as unknown as Record<string, unknown>,
+    ),
 };
 
 /**

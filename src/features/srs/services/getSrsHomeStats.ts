@@ -56,14 +56,14 @@ export function dayKeyFor(timestampMs: number, dayStartHour: number): string {
   return `${shifted.getFullYear()}-${shifted.getMonth() + 1}-${shifted.getDate()}`;
 }
 
-function dayStartMs(now: Date, dayStartHour: number): number {
+export function dayStartMs(now: Date, dayStartHour: number): number {
   const start = new Date(now);
   start.setHours(dayStartHour, 0, 0, 0);
   if (start.getTime() > now.getTime()) start.setTime(start.getTime() - DAY_MS);
   return start.getTime();
 }
 
-function computeStreak(activeDayKeys: ReadonlySet<string>, dayStartHour: number, now: Date): number {
+export function computeStreak(activeDayKeys: ReadonlySet<string>, dayStartHour: number, now: Date): number {
   let streak = 0;
   let offset = activeDayKeys.has(dayKeyFor(now.getTime(), dayStartHour)) ? 0 : 1;
   while (activeDayKeys.has(dayKeyFor(now.getTime() - offset * DAY_MS, dayStartHour))) {

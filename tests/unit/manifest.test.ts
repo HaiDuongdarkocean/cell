@@ -32,4 +32,13 @@ describe('public/manifest.json', () => {
   it('pins the shipped extension id so unpacked and CRX builds share the OAuth redirect URI', () => {
     expect(extensionIdOfManifestKey()).toBe(SHIPPED_EXTENSION_ID);
   });
+
+  it('keeps notifications optional so updates never force a re-approval disable', () => {
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as {
+      permissions?: string[];
+      optional_permissions?: string[];
+    };
+    expect(manifest.permissions ?? []).not.toContain('notifications');
+    expect(manifest.optional_permissions ?? []).toContain('notifications');
+  });
 });
