@@ -22,6 +22,7 @@ import type { CardCreatorAction } from '@/features/cardCreator';
 
 import { sendMessage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { pauseVideo, playVideo } from '@/shared/lib/dom/netflixPlayback';
+import { runWhenMediaSettled } from '@/shared/lib/dom/playbackSettle';
 import { findLargestPlayableVideo } from '@/shared/lib/dom/videoFinder';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
@@ -144,6 +145,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   // never overrides the user's intent to stay paused.
   let selfInitiatedPause = false;
   let pauseGuardVideo: HTMLVideoElement | null = null;
+  let cancelSettledPause: (() => void) | null = null;
+  let cancelSettledResume: (() => void) | null = null;
 
   const lookupCache = createLookupCache();
 
@@ -170,23 +173,44 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     popupDictWasPlaying = false;
   }
 
+  // runWhenMediaSettled: a play()/pause() issued while an opposite media event
+  // is still undelivered lets toggle-synced host players (KissKH mat-play-button)
+  // start a self-sustaining pause/play oscillator.
   function pauseVideoIfNeeded(): void {
     const target = resolveVideo();
-    if (!target || target.paused) return;
-    if (pauseGuardVideo !== target && typeof target.addEventListener === 'function') {
-      pauseGuardVideo?.removeEventListener('pause', onVideoPause);
-      pauseGuardVideo = target;
-      pauseGuardVideo.addEventListener('pause', onVideoPause);
+    if (!target) return;
+    if (cancelSettledResume) {
+      cancelSettledResume();
+      cancelSettledResume = null;
+      popupDictWasPlaying = true;
     }
-    selfInitiatedPause = true;
-    pauseVideo(target);
-    popupDictWasPlaying = true;
+    if (target.paused) return;
+    cancelSettledPause?.();
+    cancelSettledPause = runWhenMediaSettled(target, () => {
+      cancelSettledPause = null;
+      if (resolveVideo() !== target || target.paused) return;
+      if (pauseGuardVideo !== target && typeof target.addEventListener === 'function') {
+        pauseGuardVideo?.removeEventListener('pause', onVideoPause);
+        pauseGuardVideo = target;
+        pauseGuardVideo.addEventListener('pause', onVideoPause);
+      }
+      selfInitiatedPause = true;
+      pauseVideo(target);
+      popupDictWasPlaying = true;
+    });
   }
 
   function resumeVideoIfNeeded(): void {
+    cancelSettledPause?.();
+    cancelSettledPause = null;
     const target = resolveVideo();
     if (target?.paused && popupDictWasPlaying) {
-      void Promise.resolve(playVideo(target)).catch(() => { /* autoplay may be blocked */ });
+      cancelSettledResume?.();
+      cancelSettledResume = runWhenMediaSettled(target, () => {
+        cancelSettledResume = null;
+        if (!target.paused) return;
+        void Promise.resolve(playVideo(target)).catch(() => { /* autoplay may be blocked */ });
+      });
     }
     popupDictWasPlaying = false;
   }
@@ -310,6 +334,10 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     // after re-attach.
     lifecycle.cancelPendingDismiss();
     lifecycle.cancelInFlightLookup();
+    cancelSettledPause?.();
+    cancelSettledPause = null;
+    cancelSettledResume?.();
+    cancelSettledResume = null;
     webTrigger?.detach();
     webTrigger = null;
     currentAttachedMode = null;

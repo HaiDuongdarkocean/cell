@@ -1514,12 +1514,74 @@ describe('createWebTextDictionaryController', () => {
     await Promise.resolve();
     await Promise.resolve();
     });
+    act(() => { jest.advanceTimersByTime(10) });
 
     expect(mockVideo.pause).toHaveBeenCalledTimes(1);
 
     act(() => { ctrl.dismissLookup() });
+    act(() => { jest.advanceTimersByTime(800) });
+
+    expect(mockVideo.play).toHaveBeenCalledTimes(1);
+
+    act(() => { ctrl.destroy() });
+    jest.useRealTimers();
+  });
+
+  it('serializes an outside-click resume and a new lookup pause in the same gesture', async () => {
+    jest.useFakeTimers();
+    mockSendMessage.mockResolvedValue({ success: true, data: [makeResult()] } as unknown as never);
+
+    // Regression: KissKH's mat-play-button toggles its internal flag on every
+    // 'play'/'pause' event. An outside pointerdown closing the popup (resume →
+    // play()) followed by a token click opening a new lookup (pause()) inside
+    // one user gesture seeded a self-sustaining pause/play oscillator when both
+    // commands landed before the first event was delivered.
+    const listeners = new Map<string, Set<EventListener>>();
+    let paused = false;
+    const mockVideo = {
+      get paused() { return paused; },
+      pause: jest.fn(() => { paused = true; listeners.get('pause')?.forEach((fn) => fn(new Event('pause'))); }),
+      play: jest.fn(() => { paused = false; listeners.get('play')?.forEach((fn) => fn(new Event('play'))); return Promise.resolve(); }),
+      addEventListener: jest.fn((type: string, fn: EventListener) => {
+        if (!listeners.has(type)) listeners.set(type, new Set());
+        listeners.get(type)!.add(fn);
+      }),
+      removeEventListener: jest.fn((type: string, fn: EventListener) => {
+        listeners.get(type)?.delete(fn);
+      }),
+    } as unknown as HTMLVideoElement;
+
+    const ctrl = createWebTextDictionaryController(makeDeps());
+    ctrl.configureVideo({ hasVideo: true, video: mockVideo, getTargetCues: () => [] });
+
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-g1', new DOMRect(0, 0, 0, 0), tokenizedRange('take')) });
+    act(() => { jest.advanceTimersByTime(10) });
+    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
+
+    // One gesture: outside pointerdown (close → resume) then a fresh lookup.
+    // The new lookup cancels the pending resume — opposite commands can never
+    // be in flight together inside the media-event window.
+    act(() => { document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true })); });
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-g2', new DOMRect(0, 0, 0, 0), tokenizedRange('off')) });
     act(() => { jest.advanceTimersByTime(500) });
 
+    expect(mockVideo.play).not.toHaveBeenCalled();
+    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
+
+    // A lookup while a resume is pending still pauses a playing video once the
+    // media settles — pause-on-lookup is preserved, just serialized.
+    act(() => {
+      paused = false;
+      listeners.get('play')?.forEach((fn) => fn(new Event('play')));
+    });
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-g3', new DOMRect(0, 0, 0, 0), tokenizedRange('shoes')) });
+    act(() => { jest.advanceTimersByTime(500) });
+    expect(mockVideo.pause).toHaveBeenCalledTimes(2);
+
+    // The cancelled resume's "video paused by us" intent is preserved —
+    // closing the reopened popup still resumes playback.
+    act(() => { ctrl.dismissLookup() });
+    act(() => { jest.advanceTimersByTime(800) });
     expect(mockVideo.play).toHaveBeenCalledTimes(1);
 
     act(() => { ctrl.destroy() });
@@ -1543,6 +1605,7 @@ describe('createWebTextDictionaryController', () => {
     const range = tokenizedRange('take');
 
     act(() => { ctrl.handleLookup(makeRequest(), 'req-video-early', new DOMRect(0, 0, 0, 0), range) });
+    await act(async () => { await new Promise((resolve) => { setTimeout(resolve, 30); }); });
 
     expect(mockVideo.pause).toHaveBeenCalledTimes(1);
 
@@ -1582,11 +1645,12 @@ describe('createWebTextDictionaryController', () => {
       await Promise.resolve();
       await Promise.resolve();
     });
+    act(() => { jest.advanceTimersByTime(10) });
 
     expect(mockVideo.pause).toHaveBeenCalledTimes(1);
 
     act(() => { ctrl.dismissLookup() });
-    act(() => { jest.advanceTimersByTime(500) });
+    act(() => { jest.advanceTimersByTime(800) });
 
     expect(mockVideo.play).toHaveBeenCalledTimes(1);
 
@@ -1627,6 +1691,7 @@ describe('createWebTextDictionaryController', () => {
       await Promise.resolve();
       await Promise.resolve();
     });
+    act(() => { jest.advanceTimersByTime(10) });
 
     expect(mockVideo.pause).toHaveBeenCalledTimes(1);
 
@@ -1682,6 +1747,7 @@ describe('createWebTextDictionaryController', () => {
       await Promise.resolve();
       await Promise.resolve();
     });
+    await act(async () => { await new Promise((resolve) => { setTimeout(resolve, 30); }); });
 
     expect(mockVideo.pause).toHaveBeenCalledTimes(1);
     const popup = document.querySelector('.js-cell-popup-host');
@@ -1708,6 +1774,7 @@ describe('createWebTextDictionaryController', () => {
     // A true outside click still dismisses and resumes once.
     act(() => { document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true })); });
     expect(document.querySelector('.js-cell-popup-host')).toBeNull();
+    await act(async () => { await new Promise((resolve) => { setTimeout(resolve, 300); }); });
     expect(mockVideo.play).toHaveBeenCalledTimes(1);
 
     token1.remove();
@@ -1795,6 +1862,7 @@ describe('createWebTextDictionaryController', () => {
     });
 
     expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    await act(async () => { await new Promise((resolve) => { setTimeout(resolve, 30); }); });
     expect(mockVideo.pause).toHaveBeenCalledTimes(1);
 
     act(() => { line.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true, clientX: 30, clientY: 10 })); });
@@ -1808,6 +1876,7 @@ describe('createWebTextDictionaryController', () => {
 
     act(() => { line.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true, clientX: 30, clientY: 10 })); });
     expect(document.querySelector('.js-cell-popup-host')).toBeNull();
+    await act(async () => { await new Promise((resolve) => { setTimeout(resolve, 300); }); });
     expect(mockVideo.play).toHaveBeenCalledTimes(1);
 
     docWithCaret.caretRangeFromPoint = originalCaret;
@@ -2111,9 +2180,11 @@ describe('nested popup stack', () => {
 
     act(() => { ctrl.handleLookup(makeRequest({ term: 'a' }), 'r1', new DOMRect(10, 10, 40, 20), tokenizedRange('a')) });
     await flushLookup();
+    act(() => { jest.advanceTimersByTime(10) });
     const lv1 = popupHosts()[0]!;
     act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
     await flushLookup();
+    act(() => { jest.advanceTimersByTime(10) });
 
     expect(mockVideo.pause).toHaveBeenCalledTimes(1);
     expect(popupHosts()).toHaveLength(2);
@@ -2128,7 +2199,7 @@ describe('nested popup stack', () => {
 
     // Closing the last level resumes playback.
     act(() => { ctrl.dismissLookup() });
-    act(() => { jest.advanceTimersByTime(600) });
+    act(() => { jest.advanceTimersByTime(800) });
     await flushLookup();
     expect(popupHosts()).toHaveLength(0);
     expect(mockVideo.play).toHaveBeenCalledTimes(1);
