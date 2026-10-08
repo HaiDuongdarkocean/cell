@@ -14,8 +14,9 @@ interface ChipBaseProps {
   status?: ChipStatus;
   /** Selected (active) state — only meaningful when `as="button"`. */
   selected?: boolean;
-  /** Size. Default: md. */
-  size?: 'sm' | 'md';
+  /** Size. Default: md. `xs` is dense (no touch-target floor) for inline
+   *  nav strips. */
+  size?: 'xs' | 'sm' | 'md';
   /** Optional icon before the label. */
   leadingIcon?: ReactNode;
   /** Chip label. */

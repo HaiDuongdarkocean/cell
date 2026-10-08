@@ -217,7 +217,7 @@ export function CandidateView({
             {onSendToCard && (
               <Button
                 shape="circle"
-                size="sm"
+                size="md"
                 variant="outline"
                 className={styles.cellHeaderSend}
                 aria-label={t('dict.action.sendToCard')}
@@ -231,7 +231,7 @@ export function CandidateView({
             {onQuickAdd && (
               <Button
                 shape="circle"
-                size="sm"
+                size="md"
                 variant="primary"
                 className={styles.cellHeaderQuickAdd}
                 aria-label={t('dict.action.quickAdd')}

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
-import { Breadcrumb } from '@/shared/ui/Breadcrumb';
-import { Button } from '@/shared/ui/Button';
+import { Chip } from '@/shared/ui/Chip';
 import { t } from '@/shared/i18n';
 import styles from './LookupTrail.module.css';
 
@@ -51,29 +50,33 @@ export function LookupTrail({ trail, onNavigate }: LookupTrailProps): React.JSX.
   const lastIndex = trail.length - 1;
   return (
     <div ref={stripRef} className={styles.trail} data-cell-id="lookup-trail" onScroll={syncFades}>
-      <Breadcrumb
-        className={styles.nav}
-        separator=">"
-        items={trail.map((term, index) => ({
-          id: `${index}-${term}`,
-          current: index === lastIndex,
-          label:
-            index === lastIndex ? (
-              <span className={styles.crumbCurrent}>{term}</span>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className={styles.crumb}
-                aria-label={t('dict.trail.backTo', [term])}
-                title={t('dict.trail.backTo', [term])}
-                onClick={() => onNavigate(index)}
-              >
-                {term}
-              </Button>
-            ),
-        }))}
-      />
+      <nav className={styles.nav} aria-label={t('ui.breadcrumb.aria')}>
+        <ol className={styles.list}>
+          {trail.map((term, index) => (
+            <li
+              key={`${index}-${term}`}
+              aria-current={index === lastIndex ? 'page' : undefined}
+            >
+              {index === lastIndex ? (
+                <Chip size="xs" className={styles.crumbCurrent}>
+                  {term}
+                </Chip>
+              ) : (
+                <Chip
+                  as="button"
+                  size="xs"
+                  className={styles.crumb}
+                  aria-label={t('dict.trail.backTo', [term])}
+                  title={t('dict.trail.backTo', [term])}
+                  onClick={() => onNavigate(index)}
+                >
+                  {term}
+                </Chip>
+              )}
+            </li>
+          ))}
+        </ol>
+      </nav>
     </div>
   );
 }

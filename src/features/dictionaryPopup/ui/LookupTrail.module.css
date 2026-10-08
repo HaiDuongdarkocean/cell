@@ -1,9 +1,7 @@
 .trail {
   flex: 0 0 auto;
   margin: 0 calc(var(--space-3) * -1);
-  padding: var(--space-1) var(--space-3);
-  background: var(--color-surface-card);
-  border-bottom: var(--border-width-hairline) solid var(--color-divider);
+  padding: var(--space-1) var(--space-4);
   overflow-x: auto;
   overscroll-behavior: contain;
   touch-action: pan-x;
@@ -27,23 +25,32 @@
   min-width: min-content;
 }
 
+.list {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .crumb {
   max-width: var(--space-24);
 }
 
-.crumb > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.crumbCurrent {
+  composes: crumb;
 }
 
-.crumbCurrent {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--touch-target);
-  padding: var(--space-1-5) var(--space-2);
-  max-width: var(--space-24);
+/* Current crumb = inverted pair (auto-swaps with theme), beating Chip's
+   .default fill. The <li> already carries aria-current for a11y. */
+.crumb.crumbCurrent {
+  background: var(--color-background-inverted);
+  color: var(--color-text-inverse);
+}
+
+.crumb > span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

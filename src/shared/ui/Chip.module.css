@@ -14,6 +14,13 @@
   transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
 
+.chip.xs {
+  min-height: 0;
+  height: var(--space-8);
+  padding: var(--space-1) var(--space-4);
+  font-size: var(--font-size-sm);
+}
+
 .sm {
   padding: var(--space-0-5) var(--space-2);
   font-size: var(--font-size-xs);

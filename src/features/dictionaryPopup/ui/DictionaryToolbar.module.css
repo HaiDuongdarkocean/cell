@@ -25,10 +25,10 @@
   position: relative;
   flex-shrink: 0;
   border-radius: var(--radius-full);
-  height: var(--touch-target);
-  min-height: var(--touch-target);
+  height: var(--iconbutton-size-md);
+  min-height: var(--iconbutton-size-md);
   width: auto;
-  min-width: var(--touch-target);
+  min-width: var(--iconbutton-size-md);
   padding: 0;
   gap: 0;
   justify-content: center;
