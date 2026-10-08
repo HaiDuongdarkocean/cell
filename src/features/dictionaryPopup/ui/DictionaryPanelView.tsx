@@ -486,6 +486,7 @@ export function DictionaryPanelView({
                       }
                     }}
                     title={c.term}
+                    data-cell-no-ripple
                     data-cell-id={`dictionary-candidate-chip-${idx}`}
                   >
                     {c.term}

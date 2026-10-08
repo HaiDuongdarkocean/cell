@@ -334,10 +334,8 @@ li.searchHistoryItem .searchHistoryRemove.searchHistoryRemove svg {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: var(--size-element-lg);
+  height: var(--size-element-md);
   max-width: 45%;
-  margin: 0;
-  padding: 0 var(--space-3);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
