@@ -213,17 +213,14 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       drainPendingRestore,
     } = useSplitView({ playerMode, onSplitViewChange, fallbackPlayerContainerRef });
 
-    const handleSplitViewOpenChange = useCallback((open: boolean): void => {
-      setSplitViewOpen(open);
-      onSplitViewChange?.(open);
-    }, [setSplitViewOpen, onSplitViewChange]);
+    const [pmCueListOpen, setPmCueListOpen] = useState(true);
 
     const prevPlayerModeRef = useRef(playerMode);
     useEffect(() => {
       const wasPlayerMode = prevPlayerModeRef.current;
       prevPlayerModeRef.current = playerMode;
-      if (playerMode && !wasPlayerMode) handleSplitViewOpenChange(true);
-    }, [playerMode, handleSplitViewOpenChange]);
+      if (playerMode && !wasPlayerMode) setPmCueListOpen(true);
+    }, [playerMode]);
 
     const { managerOpenOnHost } = useManagerHostDelegation({
       managerOpen,
@@ -351,8 +348,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           yOffsetPercent={yOffsetPercent}
           setYOffsetPercent={setYOffsetPercent}
           onDragReposition={onDragReposition}
-          cueListOpen={splitViewOpen}
-          onCueListOpenChange={handleSplitViewOpenChange}
+          cueListOpen={pmCueListOpen}
+          onCueListOpenChange={setPmCueListOpen}
           cues={cues as BilingualCue[]}
           currentTimeMs={currentTimeMs}
           offsetMs={offsetMs}

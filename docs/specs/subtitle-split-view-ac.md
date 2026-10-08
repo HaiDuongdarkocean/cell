@@ -74,6 +74,7 @@ toàn bộ nhóm AC liên quan. Chi tiết stress-test e2e: `split-view-stress-t
 | AC-6.2 | Panel min-width 200px, max-width 60% — không bao giờ nuốt stage hoặc overflow viewport |
 | AC-6.3 | `g` vào Player Mode khi split view open: teardown sạch qua live anchor (`liveAnchorParent/liveAnchorSibling`), exit PM restore đúng — không strand player trong detached subtree |
 | AC-6.4 | `t` trong Player Mode bị block (PM dùng `t` cho CueList) — không tạo wrapper |
+| AC-6.5 | PM cue list là state riêng (`pmCueListOpen` trong `SubtitlePanels`), độc lập với `splitViewOpen`: `g` vào/ra PM không đụng `splitViewOpen`/`onSplitViewChange` — exit PM khi normal-mode split view đang đóng KHÔNG mount `[data-cell-split-view]` vào page; nếu split view đã mở trước PM thì exit PM restore nguyên (AC-6.3) |
 
 ## Regression notes (đã fix — giữ AC phòng regress)
 

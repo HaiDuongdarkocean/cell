@@ -135,6 +135,21 @@ test.describe('Stage 2: Split View edge — player mode interplay', () => {
     expect(await streamFlixPage.locator('[data-cell-split-view]').count()).toBe(0);
     await streamFlixPage.keyboard.press('g');
   });
+
+  test('SV-33: exiting Player Mode mounts no split-view nodes in page DOM (AC-6.5)', async ({
+    streamFlixPage,
+  }) => {
+    await streamFlixPage.keyboard.press('g');
+    await streamFlixPage.waitForTimeout(1500);
+    await streamFlixPage.keyboard.press('g');
+    await streamFlixPage.waitForTimeout(1500);
+    // querySelectorAll does not pierce shadow roots — PM's own wrapper/stage
+    // (inside #cell-subtitle-root) are excluded; only leaked page-DOM nodes count.
+    const lightDomNodes = await streamFlixPage.evaluate(
+      () => document.querySelectorAll('[data-cell-split-view]').length,
+    );
+    expect(lightDomNodes).toBe(0);
+  });
 });
 
 test.describe('Stage 2: Split View edge — layout integrity', () => {

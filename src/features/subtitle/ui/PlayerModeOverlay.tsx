@@ -91,7 +91,7 @@ export interface PlayerModeOverlayProps {
   yOffsetPercent?: number;
   setYOffsetPercent?: Dispatch<SetStateAction<number>>;
   onDragReposition?: (yOffsetPercent: number) => void;
-  /** Cue-list panel visibility — shared split-view state, synced with normal mode. */
+  /** Cue-list panel visibility — Player Mode's own state, independent from the normal-mode Split View. */
   cueListOpen: boolean;
   onCueListOpenChange: (open: boolean) => void;
   /** Bilingual cues for CueList display in the split-view panel. */
