@@ -6,7 +6,6 @@
   gap: var(--button-gap);
   width: auto;
   min-width: min-content;
-  min-height: var(--touch-target);
   height: var(--button-height);
   padding: var(--button-padding-y) var(--button-padding-x);
   border: var(--border-width-hairline) solid var(--button-solid-border);
@@ -77,9 +76,7 @@
 
 /* === Sizes === */
 .xs {
-  min-height: var(--touch-target);
-  min-width: var(--touch-target);
-  height: auto;
+  height: var(--size-element-sm);
   padding: var(--space-1) var(--space-2);
   font-size: var(--font-size-xs);
 }
@@ -91,10 +88,7 @@
 }
 
 .sm {
-  /* Visual content stays compact (font/icon), but hit box follows --touch-target. */
-  min-height: var(--touch-target);
-  min-width: var(--touch-target);
-  height: auto;
+  height: var(--button-height-sm);
   padding: var(--button-padding-y-sm) var(--button-padding-x-sm);
   font-size: var(--button-font-size-sm);
 }
