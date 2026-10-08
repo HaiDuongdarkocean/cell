@@ -309,7 +309,8 @@ export function CandidateView({
 
         {/* key=activeTab remounts on tab switch so .cellTabContent replays
            its entrance — panels animate in instead of teleporting. */}
-        <div key={panel.activeTab ?? 'none'} className={styles.cellTabContent}>
+        {panel.activeTab && (
+        <div key={panel.activeTab} className={styles.cellTabContent}>
         {panel.activeTab === 'audio' && (
           <PronunciationAudioPanel
             items={panel.audioItems}
@@ -359,6 +360,7 @@ export function CandidateView({
           </div>
         )}
         </div>
+        )}
 
         {panel.displayInflections && panel.displayInflections.length > 0 && (
           <div className={styles.cellMetaLine} data-cell-id="dictionary-word-forms">
