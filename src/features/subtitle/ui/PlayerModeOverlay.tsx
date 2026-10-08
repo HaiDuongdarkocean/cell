@@ -296,6 +296,8 @@ function PlayerModeOverlayInner({
       minHeight: player.style.minHeight,
       margin: player.style.margin,
       boxSizing: player.style.boxSizing,
+      overflow: player.style.overflow,
+      transform: player.style.transform,
       top: player.style.top,
       right: player.style.right,
       bottom: player.style.bottom,
@@ -312,7 +314,11 @@ function PlayerModeOverlayInner({
     // persist after exit and the video stays stretched instead of returning
     // to host layout.
     const savedDescendantStyles: Array<{ el: HTMLElement; props: Record<string, string> }> = [];
-    for (const desc of videoAncestorChain(player)) {
+    const styledTargets = new Set<HTMLElement>([
+      ...Array.from(player.children).filter((c): c is HTMLElement => c instanceof HTMLElement),
+      ...videoAncestorChain(player),
+    ]);
+    for (const desc of styledTargets) {
       const props: Record<string, string> = {};
       for (const p of PLAYER_CHAIN_SAVED_PROPS) {
         props[p] = desc.style.getPropertyValue(p);
@@ -346,6 +352,8 @@ function PlayerModeOverlayInner({
       player.style.minHeight = savedStyle.minHeight;
       player.style.margin = savedStyle.margin;
       player.style.boxSizing = savedStyle.boxSizing;
+      player.style.overflow = savedStyle.overflow;
+      player.style.transform = savedStyle.transform;
       player.style.top = savedStyle.top;
       player.style.right = savedStyle.right;
       player.style.bottom = savedStyle.bottom;
@@ -417,7 +425,25 @@ function PlayerModeOverlayInner({
     player.style.position = 'relative';
     // m.youtube offsets the container for its app bar (top:48px) — the stage
     // has no such chrome; zero all inset so the player fills the stage box.
+    // overflow:hidden wraps host chrome that spills past the stage box;
+    // transform makes the container the containing block for any nested
+    // position:fixed descendant (fixed escapes plain overflow clipping).
     player.style.setProperty('inset', '0', 'important');
+    player.style.setProperty('overflow', 'hidden', 'important');
+    player.style.setProperty('transform', 'translateZ(0)', 'important');
+    // Wrap every direct child layer inside the stage box: viewport-anchored
+    // layers (m.youtube #player-control-container is position:fixed at full
+    // viewport height — its action menu covered the cue region) re-pin inside;
+    // bottom-anchored host chrome lands on the video's bottom edge instead.
+    for (const child of Array.from(player.children)) {
+      if (!(child instanceof HTMLElement)) continue;
+      if (child.matches('[data-cell-id],[data-cell-player-mode]')) continue;
+      const pos = getComputedStyle(child).position;
+      if (pos === 'fixed' || pos === 'sticky') {
+        child.style.setProperty('position', 'absolute', 'important');
+      }
+      child.style.setProperty('inset', '0', 'important');
+    }
     for (const child of videoAncestorChain(player)) {
       child.style.setProperty('width', `${stageW}px`, 'important');
       child.style.setProperty('height', `${stageH}px`, 'important');
