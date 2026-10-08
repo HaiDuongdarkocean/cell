@@ -820,4 +820,41 @@ describe('CueList', () => {
       expect(screen.queryByTestId('cue-list-sync')).toBeNull();
     });
   });
+
+  describe('virtualization', () => {
+    const manyCues: BilingualCue[] = Array.from({ length: 200 }, (_, i) => ({
+      index: i + 1,
+      start: i * 3000,
+      end: i * 3000 + 2000,
+      targetText: `Cue number ${i + 1}`,
+    }));
+
+    it('mounts only the scroll window instead of the whole list', async () => {
+      render(<CueList cues={manyCues} currentTimeMs={0} onSeek={jest.fn()} />);
+      await waitFor(() => {
+        const items = screen.getAllByTestId('cue-item');
+        expect(items.length).toBeGreaterThan(0);
+        expect(items.length).toBeLessThan(60);
+      });
+      expect(screen.queryByText('Cue number 200')).toBeNull();
+    });
+
+    it('moves the render window on scroll', async () => {
+      render(<CueList cues={manyCues} currentTimeMs={0} onSeek={jest.fn()} />);
+      const list = screen.getByTestId('cue-list-scroll') as HTMLElement;
+      await waitFor(() => expect(screen.getByText('Cue number 1')).toBeTruthy());
+
+      act(() => {
+        list.scrollTop = 9000;
+      });
+      fireEvent.scroll(list);
+
+      await waitFor(() => {
+        const items = screen.getAllByTestId('cue-item');
+        const indices = items.map((el) => Number(el.getAttribute('data-cue-index')));
+        expect(Math.min(...indices)).toBeGreaterThan(50);
+        expect(screen.queryByText('Cue number 1')).toBeNull();
+      });
+    });
+  });
 });

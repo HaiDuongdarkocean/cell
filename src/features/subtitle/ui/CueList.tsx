@@ -24,6 +24,9 @@ const EMPTY_SELECTED_TERMS: ReadonlySet<string> = new Set();
 const RESOLVE_MAX_ATTEMPTS = 3;
 const RESOLVE_RETRY_DELAY_MS = 1500;
 const TOKENIZE_CHUNK_SIZE = 250;
+const ROW_ESTIMATE_PX = 72;
+const OVERSCAN_PX = 480;
+const VIRTUALIZE_MIN_ROWS = 80;
 
 const UNRESOLVED_META: ResolveMeta = {
   resolved: false,
@@ -32,6 +35,34 @@ const UNRESOLVED_META: ResolveMeta = {
   rankByTerm: new Map(),
   thresholds: DEFAULT_BAND_THRESHOLDS,
 };
+
+function buildRowPositions(heights: Float64Array, count: number, gapPx: number): number[] {
+  const pos = new Array<number>(count + 1);
+  pos[0] = 0;
+  for (let i = 0; i < count; i++) {
+    pos[i + 1] = pos[i] + (heights[i] > 0 ? heights[i] : ROW_ESTIMATE_PX) + gapPx;
+  }
+  if (count > 0) pos[count] -= gapPx;
+  return pos;
+}
+
+function findRowAt(pos: number[], y: number): number {
+  let lo = 0;
+  let hi = pos.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (pos[mid] <= y) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo;
+}
+
+function orderFromCurrent(cues: readonly BilingualCue[], currentCueIndex: number | null): BilingualCue[] {
+  if (currentCueIndex === null) return [...cues];
+  const split = cues.findIndex((c) => c.index >= currentCueIndex);
+  if (split < 0) return [...cues];
+  return [...cues.slice(split), ...cues.slice(0, split)];
+}
 
 function cuesAreEqual(a: readonly BilingualCue[], b: readonly BilingualCue[]): boolean {
   if (a === b) return true;
@@ -199,6 +230,17 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   const [resolving, setResolving] = useState(false);
   const [desynced, setDesynced] = useState(false);
   const expectedScrollTopRef = useRef(0);
+  const heightsRef = useRef<Float64Array>(new Float64Array(0));
+  const positionsRef = useRef<number[]>([0]);
+  const heightsDirtyRef = useRef(true);
+  const gapPxRef = useRef(12);
+  const rowElsRef = useRef(new Map<HTMLElement, number>());
+  const rowByIndexRef = useRef(new Map<number, HTMLElement>());
+  const rowRORef = useRef<ResizeObserver | null>(null);
+  const updateWindowRef = useRef<(() => void) | null>(null);
+  const scrollRafRef = useRef(0);
+  const lastRenderedRef = useRef<readonly BilingualCue[] | null>(null);
+  const [viewWindow, setViewWindow] = useState({ start: 0, end: VIRTUALIZE_MIN_ROWS });
 
   const visibleCues = useMemo(
     () => cues.filter((c) => c.targetText.trim().length > 0),
@@ -230,6 +272,25 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     renderedCues = filteredCues;
   }
   const renderedCurrentIndex = renderedCues.findIndex((c) => c.index === currentCueIndex);
+
+  const virtualized = !activeOnly && renderedCues.length > VIRTUALIZE_MIN_ROWS;
+  if (renderedCues !== lastRenderedRef.current) {
+    lastRenderedRef.current = renderedCues;
+    heightsRef.current = new Float64Array(renderedCues.length);
+    heightsDirtyRef.current = true;
+    rowElsRef.current = new Map();
+  }
+  const rowCount = renderedCues.length;
+  const ensurePositions = useCallback((): number[] => {
+    if (heightsDirtyRef.current) {
+      positionsRef.current = buildRowPositions(heightsRef.current, rowCount, gapPxRef.current);
+      heightsDirtyRef.current = false;
+    }
+    return positionsRef.current;
+  }, [rowCount]);
+  const positions = virtualized ? ensurePositions() : null;
+  const vStart = virtualized ? Math.min(viewWindow.start, rowCount) : 0;
+  const vEnd = virtualized ? Math.min(viewWindow.end, rowCount) : rowCount;
 
   const tokenizeLangCode = tokenize?.langCode;
   const onTokenHover = tokenize?.onTokenHover;
@@ -283,6 +344,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   }, [tokenizeLangCode]);
 
   const coveredCueIndicesRef = useRef<Set<number>>(new Set());
+  const scopeGenRef = useRef(0);
 
   useEffect(() => {
     if (!tokenizeLangCode) {
@@ -304,6 +366,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       glossTargetLanguage !== lastGlossTargetLanguageRef.current ||
       dictEpoch !== lastDictEpochRef.current;
     if (scopeChanged) {
+      scopeGenRef.current += 1;
       lastCuesRef.current = visibleCues;
       lastLangCodeRef.current = tokenizeLangCode;
       lastShowReadingsRef.current = showReadings;
@@ -313,12 +376,25 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       coveredCueIndicesRef.current.clear();
       setTokenMap(EMPTY_TOKEN_MAP);
     }
-    const uncovered = renderedCues.filter((c) => !coveredCueIndicesRef.current.has(c.index));
+    const uncovered = orderFromCurrent(
+      renderedCues.filter((c) => !coveredCueIndicesRef.current.has(c.index)),
+      currentCueIndex,
+    );
     if (uncovered.length === 0) return;
 
     let active = true;
+    const scopeGen = scopeGenRef.current;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     let chunkTimer: ReturnType<typeof setTimeout> | undefined;
+    let idleHandle = 0;
+
+    const scheduleChunk = (fn: () => void): void => {
+      if (typeof requestIdleCallback === 'function') {
+        idleHandle = requestIdleCallback(() => fn(), { timeout: 2000 });
+      } else {
+        chunkTimer = setTimeout(fn, 0);
+      }
+    };
 
     const resolveChunk = (chunkMap: CueListTokenMap, attempt: number): void => {
       resolvingRef.current = true;
@@ -329,7 +405,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
         glossTargetLanguage,
       })
         .then(({ map, meta }) => {
-          if (!active) return;
+          if (scopeGenRef.current !== scopeGen) return;
           metaRef.current = meta;
           setTokenMap((current) => {
             const merged = new Map(current);
@@ -344,7 +420,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
           }
         })
         .catch(() => {
-          if (!active) return;
+          if (!active || scopeGenRef.current !== scopeGen) return;
           if (attempt < RESOLVE_MAX_ATTEMPTS) {
             retryTimer = setTimeout(() => resolveChunk(chunkMap, attempt + 1), RESOLVE_RETRY_DELAY_MS);
           }
@@ -371,7 +447,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       resolveChunk(chunkMap, 1);
       const rest = pending.slice(TOKENIZE_CHUNK_SIZE);
       if (rest.length > 0) {
-        chunkTimer = setTimeout(() => buildChunk(rest), 0);
+        scheduleChunk(() => buildChunk(rest));
       }
     };
     buildChunk(uncovered);
@@ -379,12 +455,72 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       active = false;
       if (retryTimer !== undefined) clearTimeout(retryTimer);
       if (chunkTimer !== undefined) clearTimeout(chunkTimer);
+      if (idleHandle && typeof cancelIdleCallback === 'function') cancelIdleCallback(idleHandle);
     };
-  }, [visibleCues, renderedCues, tokenizeLangCode, showReadings, showGlosses, glossTargetLanguage, dictEpoch]);
+  }, [visibleCues, renderedCues, tokenizeLangCode, showReadings, showGlosses, glossTargetLanguage, dictEpoch, currentCueIndex]);
 
   useEffect(() => {
     if (!resolvingRef.current) onTokensResolved?.(tokenMap, metaRef.current);
   }, [tokenMap, resolving, onTokensResolved]);
+
+  useEffect(() => {
+    if (!virtualized) return;
+    const updateWindow = (): void => {
+      const list = listRef.current;
+      if (!list) return;
+      const pos = ensurePositions();
+      const scrollTop = list.scrollTop;
+      const viewportH = list.clientHeight;
+      const start = Math.min(
+        Math.max(0, findRowAt(pos, Math.max(0, scrollTop - OVERSCAN_PX))),
+        Math.max(0, rowCount - 1),
+      );
+      const end = Math.max(
+        start + 1,
+        Math.min(rowCount, findRowAt(pos, scrollTop + viewportH + OVERSCAN_PX) + 1),
+      );
+      setViewWindow((w) => (w.start === start && w.end === end ? w : { start, end }));
+    };
+    updateWindowRef.current = updateWindow;
+    const list = listRef.current;
+    if (list) {
+      gapPxRef.current = parseFloat(getComputedStyle(list).rowGap) || 12;
+      const ro = new ResizeObserver(() => updateWindow());
+      ro.observe(list);
+      updateWindow();
+      return () => ro.disconnect();
+    }
+    return undefined;
+  }, [virtualized, rowCount, ensurePositions]);
+
+  useEffect(() => {
+    if (!virtualized) return;
+    const ro = new ResizeObserver((entries) => {
+      const map = rowElsRef.current;
+      const heights = heightsRef.current;
+      let dirty = false;
+      for (const entry of entries) {
+        const i = map.get(entry.target as HTMLElement);
+        if (i === undefined) continue;
+        const h =
+          entry.borderBoxSize?.[0]?.blockSize ??
+          (entry.target as HTMLElement).offsetHeight;
+        if (h > 0 && heights[i] !== h) {
+          heights[i] = h;
+          dirty = true;
+        }
+      }
+      if (dirty) {
+        heightsDirtyRef.current = true;
+        updateWindowRef.current?.();
+      }
+    });
+    rowRORef.current = ro;
+    return () => {
+      ro.disconnect();
+      rowRORef.current = null;
+    };
+  }, [virtualized]);
 
   // ponytail: infer hasHours from last cue end - offset (displayed max). O(1).
   // Edge case: offset shift could push an earlier cue's display ≥ 1h while last
@@ -419,7 +555,23 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     if (desynced || alignIndex < 0) return;
     const el = itemRefs.current[alignIndex];
     const list = listRef.current;
-    if (!el || !list) return;
+    if (!list) return;
+    if (!el) {
+      if (!virtualized) return;
+      const pos = ensurePositions();
+      const estH = heightsRef.current[alignIndex] || ROW_ESTIMATE_PX;
+      const top = pos[alignIndex];
+      const target =
+        estH >= list.clientHeight ? top : top - (list.clientHeight - estH) / 2;
+      const max = Math.max(0, pos[pos.length - 1] - list.clientHeight);
+      const next = Math.max(0, Math.min(target, max));
+      if (Math.abs(list.scrollTop - next) > 2) {
+        highlightedRef.current = currentCueIndex;
+        list.scrollTop = next;
+        expectedScrollTopRef.current = next;
+      }
+      return;
+    }
     const cueTop = (): number => {
       const cueRect = el.getBoundingClientRect();
       const listRect = list.getBoundingClientRect();
@@ -444,12 +596,18 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [renderedCurrentIndex, renderedCues.length, currentCueIndex, effectiveMs, filterEpoch, desynced]);
+  }, [renderedCurrentIndex, renderedCues.length, currentCueIndex, effectiveMs, filterEpoch, desynced, virtualized, viewWindow, ensurePositions]);
 
   const handleListScroll = (): void => {
     const list = listRef.current;
     if (!list) return;
     if (Math.abs(list.scrollTop - expectedScrollTopRef.current) > 2) setDesynced(true);
+    if (virtualized && !scrollRafRef.current) {
+      scrollRafRef.current = requestAnimationFrame(() => {
+        scrollRafRef.current = 0;
+        updateWindowRef.current?.();
+      });
+    }
   };
 
   const resumeFollow = useCallback((realign: boolean): void => {
@@ -473,14 +631,39 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       {renderedCues.length === 0 && (
         <EmptyState size="compact" title={t('panel.empty.title')} style={{ flex: 1 }} />
       )}
-      {renderedCues.map((cue, i) => {
+      {virtualized && positions && vStart > 0 && (
+        <div style={{ height: positions[vStart], flexShrink: 0 }} aria-hidden="true" />
+      )}
+      {renderedCues.slice(vStart, vEnd).map((cue, j) => {
+        const i = vStart + j;
         const isCurrent = i === renderedCurrentIndex;
         const isUpcoming = activeOnly && currentIndex < 0;
         const customContent = renderCueContent?.(cue, i, isCurrent);
         return (
           <CueCard
             key={cue.index}
-            ref={(el) => { itemRefs.current[i] = el; }}
+            ref={(el) => {
+              itemRefs.current[i] = el;
+              if (!virtualized) return;
+              const rows = rowByIndexRef.current;
+              const old = rows.get(i);
+              if (old && old !== el) {
+                rowRORef.current?.unobserve(old);
+                rowElsRef.current.delete(old);
+                rows.delete(i);
+              }
+              if (el) {
+                rows.set(i, el);
+                rowElsRef.current.set(el, i);
+                rowRORef.current?.observe(el);
+                const h = el.offsetHeight;
+                if (h > 0 && heightsRef.current[i] !== h) {
+                  heightsRef.current[i] = h;
+                  heightsDirtyRef.current = true;
+                  updateWindowRef.current?.();
+                }
+              }
+            }}
             role="listitem"
             data-cell-id="cue-item"
             data-cue-index={cue.index}
@@ -559,6 +742,12 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
           />
         );
       })}
+      {virtualized && positions && vEnd < rowCount && (
+        <div
+          style={{ height: positions[positions.length - 1] - positions[vEnd], flexShrink: 0 }}
+          aria-hidden="true"
+        />
+      )}
       </div>
       {desynced && (
         <Button
