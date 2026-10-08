@@ -329,7 +329,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     } else if (level.highlightTarget) {
       applyTokenStatus(level.highlightTarget, status);
     }
-    deps.lookupCache.updateStatus(term, langCode, status);
+    deps.lookupCache.invalidate(term, langCode);
   }
 
   function getPopupStatusTarget(): PopupStatusTarget | null {

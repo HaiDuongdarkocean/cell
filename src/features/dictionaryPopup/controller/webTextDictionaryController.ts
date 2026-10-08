@@ -37,6 +37,7 @@ import { createCardCreatorBridge } from './cardCreatorBridge';
 import { savePrefillToQueue } from '@/features/miningQueue';
 import { showToast } from '@/features/subtitle';
 import { createOrbitalBadgeSync } from './orbitalBadgeSync';
+import { onWordStatusChanged, onWordStatusRemoved, onWordStatusesReload } from '@/features/dictionary';
 
 export type { CueRange };
 
@@ -257,6 +258,16 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   onStorageChanged(onSettingsStorageChange);
   void refreshProfileLang();
 
+  const unsubWordStatusChanged = onWordStatusChanged(({ term, langCode }) => {
+    lookupCache.invalidate(term, langCode);
+  });
+  const unsubWordStatusRemoved = onWordStatusRemoved(({ term, langCode }) => {
+    lookupCache.invalidate(term, langCode);
+  });
+  const unsubWordStatusesReload = onWordStatusesReload(() => {
+    lookupCache.clear();
+  });
+
   function handleLookup(
     request: LookupRequest,
     requestId: string,
@@ -307,6 +318,9 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
   function destroy(): void {
     removeOnStorageChangedListener(onSettingsStorageChange);
+    unsubWordStatusChanged();
+    unsubWordStatusRemoved();
+    unsubWordStatusesReload();
     pauseGuardVideo?.removeEventListener('pause', onVideoPause);
     pauseGuardVideo = null;
     detach();

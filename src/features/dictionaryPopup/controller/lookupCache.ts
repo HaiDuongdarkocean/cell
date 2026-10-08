@@ -1,4 +1,4 @@
-import type { LookupRequest, LookupResult, WordStatus } from '@/entities/dictionary';
+import type { LookupRequest, LookupResult } from '@/entities/dictionary';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { nextRequestId } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
@@ -15,7 +15,7 @@ export interface LookupCache {
   readonly get: (term: string, langCode: string, context?: LookupContext) => LookupResult[] | undefined;
   readonly has: (term: string, langCode: string, context?: LookupContext) => boolean;
   readonly set: (term: string, langCode: string, results: LookupResult[], context?: LookupContext) => void;
-  readonly updateStatus: (term: string, langCode: string, status: WordStatus) => void;
+  readonly invalidate: (term: string, langCode: string) => void;
   readonly clear: () => void;
 }
 
@@ -65,13 +65,12 @@ export function createLookupCache(): LookupCache {
         if (first) lookupCache.delete(first);
       }
     },
-    updateStatus(term, langCode, status) {
-      const entry = lookupCache.get(keyFor(term, langCode));
-      if (entry && entry.results[0] && entry.results[0].status !== status) {
-        lookupCache.set(keyFor(term, langCode), {
-          results: [{ ...entry.results[0], status }, ...entry.results.slice(1)],
-          contextKey: entry.contextKey,
-        });
+    invalidate(term, langCode) {
+      const needle = term.toLowerCase();
+      for (const [key, entry] of lookupCache) {
+        const hit = key === keyFor(term, langCode)
+          || entry.results.some((r) => r.langCode === langCode && r.term.toLowerCase() === needle);
+        if (hit) lookupCache.delete(key);
       }
     },
     clear() {

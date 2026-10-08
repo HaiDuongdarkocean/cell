@@ -34,7 +34,7 @@ import type { WebTextDictionaryControllerDeps } from './webTextDictionaryControl
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
 import { captureSentenceAudio, seekAndWaitReady } from '@/features/cardCreator';
-import { onWordStatusChanged, type WordStatusChangedDetail } from '@/features/dictionary';
+import { emitWordStatusChanged, onWordStatusChanged, type WordStatusChangedDetail } from '@/features/dictionary';
 import { CURRENT_SCHEMA_VERSION } from '@/shared/lib/storage/settingsStore';
 import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/cellUiHosts';
 import type { LookupResult, LookupRequest } from '@/entities/dictionary';
@@ -426,6 +426,44 @@ describe('createWebTextDictionaryController', () => {
     expect(onStatusChange).toHaveBeenCalledWith('take off', 'en', 'known');
 
     unsubscribe();
+    act(() => { ctrl.destroy() });
+  });
+
+  it('re-lookups the term after a word-status event instead of serving the stale cached entry', async () => {
+    mockSendMessage.mockResolvedValue({ success: true, data: [makeResult()] } as unknown as never);
+
+    const ctrl = createWebTextDictionaryController(makeDeps());
+    const request = makeRequest();
+    const p = document.createElement('p');
+    p.textContent = 'Take off your shoes.';
+    document.body.appendChild(p);
+    const range = document.createRange();
+    range.selectNodeContents(p.firstChild as Text);
+
+    act(() => { ctrl.handleLookup(request, 'req-1', new DOMRect(0, 0, 0, 0), range) });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    act(() => {
+      emitWordStatusChanged({ term: 'take off', langCode: 'en', status: 'tracking', pos: 'verb' });
+    });
+
+    act(() => { ctrl.handleLookup(request, 'req-2', new DOMRect(0, 0, 0, 0), range) });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const relookup = mockSendMessage.mock.calls.find(
+      (c) => (c[0] as { payload?: { requestId?: string } }).payload?.requestId === 'req-2',
+    );
+    expect(relookup?.[0]).toEqual({
+      type: 'LOOKUP_REQUEST',
+      payload: { requestId: 'req-2', request, origin: 'immersion' },
+    });
+
     act(() => { ctrl.destroy() });
   });
 

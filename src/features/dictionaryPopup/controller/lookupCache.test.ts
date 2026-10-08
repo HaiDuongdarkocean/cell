@@ -1,9 +1,10 @@
 import { createLookupCache } from '@/features/dictionaryPopup/controller/lookupCache';
 import type { LookupResult } from '@/entities/dictionary';
 
-function makeResult(term: string): LookupResult {
+function makeResult(term: string, langCode = 'en'): LookupResult {
   return {
     term,
+    langCode,
     definitions: [],
     status: 'unknown',
     sourceResourceId: 1,
@@ -51,13 +52,41 @@ describe('lookupCache', () => {
     expect(cache.get('want', 'en', { contextSentence: sentence, cursorOffset: 19 })).toBeUndefined();
   });
 
-  it('keeps the context key when updating a word status', () => {
+  it('drops the entry when a word status is invalidated', () => {
     const cache = createLookupCache();
     const context = { contextSentence: 'Wrap your head around something.', cursorOffset: 25 };
     cache.set('something', 'en', [makeResult('something')], context);
 
-    cache.updateStatus('something', 'en', 'tracking');
+    cache.invalidate('something', 'en');
 
-    expect(cache.get('something', 'en', context)?.[0]?.status).toBe('tracking');
+    expect(cache.get('something', 'en', context)).toBeUndefined();
+    expect(cache.has('something', 'en', context)).toBe(false);
+  });
+
+  it('invalidates entries cached under a different surface key but containing the resolved term', () => {
+    const cache = createLookupCache();
+    const context = { contextSentence: 'She is leaving soon.', cursorOffset: 7 };
+    const withVariants = {
+      ...makeResult('leave'),
+      variants: [{ pos: 'verb', status: 'unknown' }],
+    } as unknown as LookupResult;
+    cache.set('leaving', 'en', [withVariants], context);
+
+    cache.invalidate('leave', 'en');
+
+    expect(cache.get('leaving', 'en', context)).toBeUndefined();
+  });
+
+  it('keeps entries for other terms and languages intact on invalidate', () => {
+    const cache = createLookupCache();
+    const context = { contextSentence: 'Wrap your head around something.', cursorOffset: 25 };
+    cache.set('something', 'en', [makeResult('something')], context);
+    cache.set('other', 'en', [makeResult('other')], context);
+    cache.set('something', 'ja', [makeResult('something', 'ja')], context);
+
+    cache.invalidate('something', 'en');
+
+    expect(cache.get('other', 'en', context)).toHaveLength(1);
+    expect(cache.get('something', 'ja', context)).toHaveLength(1);
   });
 });

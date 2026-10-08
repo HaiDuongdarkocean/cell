@@ -89,7 +89,7 @@ function makeDeps(): PopupLifecycleDeps {
     getDpSettings: () => DEFAULT_DICTIONARY_POPUP_SETTINGS,
     setDpSettings: jest.fn(),
     getNativeLang: () => 'vi',
-    lookupCache: { get: jest.fn(() => undefined), set: jest.fn() } as never,
+    lookupCache: { get: jest.fn(() => undefined), set: jest.fn(), invalidate: jest.fn() } as never,
     pauseVideo: jest.fn(),
     resumeVideo: jest.fn(),
     resetVideoPlaying: jest.fn(),
