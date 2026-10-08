@@ -30,6 +30,7 @@ export function mountCondensedAudioPill(
     layer: 30,
     position: 'fixed',
     reparentOnFullscreen: true,
+    chromeLayer: true,
     css: [...allModuleCss, buildTokenSpanCssForShadow()],
   });
   const host = mount.host;

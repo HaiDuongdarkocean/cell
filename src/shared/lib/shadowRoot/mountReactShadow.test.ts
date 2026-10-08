@@ -86,6 +86,82 @@ describe('mountReactShadow', () => {
     await act(async () => unmount());
   });
 
+  it('projects chrome-marked hosts into the overlay chrome slot', async () => {
+    const pmHost = document.createElement('div');
+    const pmShadow = pmHost.attachShadow({ mode: 'open' });
+    pmShadow.appendChild(document.createElement('slot')).name = 'cell-host-chrome';
+    document.body.appendChild(pmHost);
+
+    const Component = () => createElement('span');
+    const { host, unmount } = mountReactShadow(createElement(Component), {
+      reparentOnFullscreen: true,
+      chromeLayer: true,
+    });
+    await act(async () => {});
+
+    (document as unknown as { fullscreenElement: HTMLElement }).fullscreenElement = pmHost;
+    document.dispatchEvent(new Event('fullscreenchange'));
+
+    await act(async () => {});
+    expect(host.parentElement).toBe(pmHost);
+    expect(host.slot).toBe('cell-host-chrome');
+
+    (document as unknown as { fullscreenElement: HTMLElement | null }).fullscreenElement = null;
+    document.dispatchEvent(new Event('fullscreenchange'));
+
+    await act(async () => {});
+    expect(host.parentElement).toBe(document.body);
+    expect(host.slot).toBe('');
+
+    pmHost.remove();
+    await act(async () => unmount());
+  });
+
+  it('projects chrome hosts when mounting while fullscreen is already active', async () => {
+    const pmHost = document.createElement('div');
+    const pmShadow = pmHost.attachShadow({ mode: 'open' });
+    pmShadow.appendChild(document.createElement('slot')).name = 'cell-host-chrome';
+    document.body.appendChild(pmHost);
+    (document as unknown as { fullscreenElement: HTMLElement }).fullscreenElement = pmHost;
+
+    const Component = () => createElement('span');
+    const { host, unmount } = mountReactShadow(createElement(Component), {
+      reparentOnFullscreen: true,
+      chromeLayer: true,
+    });
+    await act(async () => {});
+
+    expect(host.parentElement).toBe(pmHost);
+    expect(host.slot).toBe('cell-host-chrome');
+
+    (document as unknown as { fullscreenElement: HTMLElement | null }).fullscreenElement = null;
+    pmHost.remove();
+    await act(async () => unmount());
+  });
+
+  it('keeps chrome-marked hosts on the normal path when no chrome slot exists', async () => {
+    const fsContainer = document.createElement('div');
+    document.body.appendChild(fsContainer);
+
+    const Component = () => createElement('span');
+    const { host, unmount } = mountReactShadow(createElement(Component), {
+      reparentOnFullscreen: true,
+      chromeLayer: true,
+    });
+    await act(async () => {});
+
+    (document as unknown as { fullscreenElement: HTMLElement }).fullscreenElement = fsContainer;
+    document.dispatchEvent(new Event('fullscreenchange'));
+
+    await act(async () => {});
+    expect(host.parentElement).toBe(fsContainer);
+    expect(host.slot).toBe('');
+
+    (document as unknown as { fullscreenElement: HTMLElement | null }).fullscreenElement = null;
+    fsContainer.remove();
+    await act(async () => unmount());
+  });
+
   it('skips the exit restore when the original parent is inside the host', async () => {
     const container = document.createElement('div');
     document.body.appendChild(container);

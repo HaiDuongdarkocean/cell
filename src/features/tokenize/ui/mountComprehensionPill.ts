@@ -34,6 +34,7 @@ export function mountComprehensionPill(options: MountComprehensionPillOptions = 
         position: 'fixed',
         css: allModuleCss,
         reparentOnFullscreen: true,
+        chromeLayer: true,
       });
       mount.host.classList.add('js-cell-comprehension-pill-host');
       mount.host.style.zIndex = 'var(--z-overlay-settings)';

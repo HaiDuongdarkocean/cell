@@ -1014,6 +1014,8 @@ function PlayerModeOverlayInner({
           </div>
         </Sheet>
 
+        <slot name="cell-host-chrome" />
+
         <div className={styles.popupStage}>
           <slot name="cell-host-popup" />
         </div>
@@ -1153,6 +1155,8 @@ function PlayerModeOverlayInner({
           />
         </div>
       </div>
+
+      <slot name="cell-host-chrome" />
 
       <div className={styles.popupStage}>
         <slot name="cell-host-popup" />

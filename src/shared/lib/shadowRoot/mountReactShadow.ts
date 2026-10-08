@@ -24,6 +24,13 @@ export interface MountShadowOptions {
    * on YouTube/Netflix-style video fullscreen.
    */
   reparentOnFullscreen?: boolean;
+  /**
+   * Persistent chrome surface (e.g. a pill docked in the PM layout): when the
+   * fullscreen-like target's shadow exposes a `cell-host-chrome` slot, project
+   * the host there instead of the top shadow level — so hoisted host menus and
+   * sheets still render above it. Has no effect without `reparentOnFullscreen`.
+   */
+  chromeLayer?: boolean;
 }
 
 export interface ShadowMount {
@@ -72,6 +79,7 @@ export function mountReactShadow(
 
   const removeKeyboardTrap = attachKeyboardTrap(shadow);
 
+  if (options.chromeLayer) host.setAttribute('data-cell-chrome', '');
   const removeFullscreenListeners = reparentOnFullscreen
     ? attachFullscreenReparenting(host, parent)
     : null;
@@ -130,10 +138,28 @@ export function attachFullscreenReparenting(
       // The fullscreen element can be this host itself (Player Mode roots the
       // overlay host) — appending it into its own shadow throws.
       if (fsEl === host || host.contains(fsEl)) return;
+      // Chrome surfaces (persistent chrome like pills) project into the
+      // overlay's chrome layer — below the popup stage so hoisted host menus
+      // and sheets still render above them. Only possible when the target's
+      // shadow exposes the chrome slot; a slotted element without a matching
+      // slot never renders.
+      if (
+        host.hasAttribute('data-cell-chrome')
+        && fsEl instanceof HTMLElement
+        && fsEl.shadowRoot?.querySelector('slot[name="cell-host-chrome"]')
+      ) {
+        host.slot = 'cell-host-chrome';
+        if (host.parentElement !== fsEl) fsEl.appendChild(host);
+        return;
+      }
+      host.removeAttribute('slot');
       const target = mountPoint(fsEl);
       if (target !== host.parentNode) target.appendChild(host);
-    } else if (host.parentNode !== parent && !host.contains(parent)) {
-      parent.appendChild(host);
+    } else {
+      host.removeAttribute('slot');
+      if (host.parentNode !== parent && !host.contains(parent)) {
+        parent.appendChild(host);
+      }
     }
   };
 
