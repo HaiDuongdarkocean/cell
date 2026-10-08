@@ -472,7 +472,7 @@ export function DictionaryPanelView({
             <div className={styles.cellCandidatesChips}>
               <div className={styles.cellCandidatesChipsScroll} data-cell-id="dictionary-candidates-scroll">
                 {allCandidates.map((c, idx) => (
-                  <Button variant="ghost" size="sm"
+                  <Button variant="unstyled"
                     key={`${c.term}-${idx}`}
                     className={styles.cellChip}
                     aria-current={idx === activeChipIndex ? 'true' : undefined}

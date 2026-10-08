@@ -326,22 +326,35 @@ li.searchHistoryItem .searchHistoryRemove.searchHistoryRemove svg {
   gap: var(--space-0-5);
   overflow-x: auto;
   min-width: 0;
-  padding-inline: var(--space-1);
+  padding: var(--space-1) var(--space-4);
 }
 
 .cellChip {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: var(--space-8);
+  min-width: 0;
   max-width: 45%;
+  padding: 0 var(--space-3);
   overflow: hidden;
   text-overflow: ellipsis;
+  border: none;
   border-radius: var(--radius-full);
   white-space: nowrap;
-  background: transparent !important;
-  border-color: transparent !important;
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
+  background: transparent;
+  cursor: pointer;
 }
 
 .cellChip[aria-current="true"] {
-  color: var(--color-primary) !important;
+  color: var(--color-primary);
   text-decoration: underline;
   text-decoration-thickness: var(--border-width-thick);
   text-underline-offset: var(--space-0-5);
