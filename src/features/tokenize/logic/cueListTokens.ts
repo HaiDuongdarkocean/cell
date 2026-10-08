@@ -95,6 +95,28 @@ async function fetchTermsChunked<T>(
   return merged;
 }
 
+export interface CueListResolveCache {
+  readonly seenBase: Set<string>;
+  readonly statuses: Map<string, WordStatus>;
+  readonly freqEntries: Map<string, FrequencyEntry[]>;
+  readonly seenReadings: Set<string>;
+  readonly readings: Map<string, string>;
+  readonly seenGlosses: Set<string>;
+  readonly glosses: Map<string, string>;
+}
+
+export function createCueListResolveCache(): CueListResolveCache {
+  return {
+    seenBase: new Set(),
+    statuses: new Map(),
+    freqEntries: new Map(),
+    seenReadings: new Set(),
+    readings: new Map(),
+    seenGlosses: new Set(),
+    glosses: new Map(),
+  };
+}
+
 export async function resolveCueListTokenMetadata(
   tokenMap: CueListTokenMap,
   langCode: string,
@@ -102,6 +124,7 @@ export async function resolveCueListTokenMetadata(
     readonly includeReadings?: boolean;
     readonly includeGlosses?: boolean;
     readonly glossTargetLanguage?: string;
+    readonly cache?: CueListResolveCache;
   },
 ): Promise<ResolvedCueListTokens> {
   const terms = new Set<string>();
@@ -124,24 +147,76 @@ export async function resolveCueListTokenMetadata(
     };
   }
 
+  const cache = options?.cache;
+  const baseTerms = cache ? termList.filter((t) => !cache.seenBase.has(t)) : termList;
+  const readingTerms = cache
+    ? termList.filter((t) => !cache.seenReadings.has(t))
+    : termList;
+  const glossTerms = cache
+    ? termList.filter((t) => !cache.seenGlosses.has(t))
+    : termList;
+  const wantReadings = Boolean(options?.includeReadings);
+  const wantGlosses = Boolean(options?.includeGlosses && options.glossTargetLanguage);
+
   const [statusRes, freqRes, bandRes, readingsRes, glossesRes] = await Promise.allSettled([
-    fetchTermsChunked(langCode, termList, getWordStatuses),
-    fetchTermsChunked(langCode, termList, getFrequencyEntries),
+    baseTerms.length > 0
+      ? fetchTermsChunked(langCode, baseTerms, getWordStatuses)
+      : Promise.resolve(new Map<string, WordStatus>()),
+    baseTerms.length > 0
+      ? fetchTermsChunked(langCode, baseTerms, getFrequencyEntries)
+      : Promise.resolve(new Map<string, FrequencyEntry[]>()),
     loadFrequencyBandOptions(langCode),
-    options?.includeReadings
-      ? fetchTermsChunked(langCode, termList, getReadings)
+    wantReadings && readingTerms.length > 0
+      ? fetchTermsChunked(langCode, readingTerms, getReadings)
       : Promise.resolve(null),
-    options?.includeGlosses && options.glossTargetLanguage
-      ? getWordTranslations(langCode, options.glossTargetLanguage, termList)
+    wantGlosses && glossTerms.length > 0 && options?.glossTargetLanguage
+      ? getWordTranslations(langCode, options.glossTargetLanguage, glossTerms)
       : Promise.resolve(null),
   ]);
 
-  const statusMap =
-    statusRes.status === 'fulfilled' && statusRes.value.size > 0 ? statusRes.value : null;
-  const failed = statusMap === null;
-  const freqMaps =
+  const statusFresh =
+    statusRes.status === 'fulfilled' ? statusRes.value : new Map<string, WordStatus>();
+  const freqFresh =
     freqRes.status === 'fulfilled' ? freqRes.value : new Map<string, FrequencyEntry[]>();
-  const freqFailed = freqRes.status === 'rejected' || freqMaps.size === 0;
+  const readingsFresh =
+    readingsRes.status === 'fulfilled' ? readingsRes.value : null;
+  const glossesFresh =
+    glossesRes.status === 'fulfilled' ? glossesRes.value : null;
+
+  let statusMap: Map<string, WordStatus>;
+  let freqMaps: Map<string, FrequencyEntry[]>;
+  let dictReadings: Map<string, string> | null;
+  let dictGlosses: Map<string, string> | null;
+  if (cache) {
+    if (statusRes.status === 'fulfilled' && freqRes.status === 'fulfilled') {
+      for (const term of baseTerms) cache.seenBase.add(term);
+    }
+    if (statusRes.status === 'fulfilled') {
+      for (const [term, value] of statusFresh) cache.statuses.set(term, value);
+    }
+    for (const [term, value] of freqFresh) cache.freqEntries.set(term, value);
+    if (wantReadings && readingsRes.status === 'fulfilled') {
+      for (const term of readingTerms) cache.seenReadings.add(term);
+      if (readingsFresh) for (const [term, value] of readingsFresh) cache.readings.set(term, value);
+    }
+    if (wantGlosses && glossesRes.status === 'fulfilled') {
+      for (const term of glossTerms) cache.seenGlosses.add(term);
+      if (glossesFresh) for (const [term, value] of glossesFresh) cache.glosses.set(term, value);
+    }
+    statusMap = cache.statuses;
+    freqMaps = cache.freqEntries;
+    dictReadings = wantReadings ? cache.readings : null;
+    dictGlosses = wantGlosses ? cache.glosses : null;
+  } else {
+    statusMap = statusFresh;
+    freqMaps = freqFresh;
+    dictReadings = readingsFresh;
+    dictGlosses = glossesFresh;
+  }
+
+  const failed = statusRes.status === 'rejected' || (statusRes.status === 'fulfilled' && statusFresh.size === 0 && statusMap.size === 0);
+  const freqFailed =
+    freqRes.status === 'rejected' || (baseTerms.length > 0 && freqFresh.size === 0 && freqMaps.size === 0);
   const bandOpts: FrequencyBandOptions =
     bandRes.status === 'fulfilled'
       ? bandRes.value
@@ -156,17 +231,6 @@ export async function resolveCueListTokenMetadata(
     rankByTerm.set(term, pickBestFrequencyEntry(enabled)?.frequency ?? null);
   }
 
-  // null = reading fetch skipped (toggle off) or failed → keep existing
-  // readings; a resolved map is authoritative, frequency rows as fallback.
-  const dictReadings =
-    readingsRes.status === 'fulfilled' ? readingsRes.value : null;
-
-  // Same contract for glosses (spec word-translation): null = leg skipped or
-  // failed → keep existing glosses; a resolved map is authoritative — the
-  // whole termList was sent, so an absent term means "covered, no gloss".
-  const dictGlosses =
-    glossesRes.status === 'fulfilled' ? glossesRes.value : null;
-
   const resolved = new Map<number, readonly Token[]>();
   for (const [cueIndex, tokens] of tokenMap) {
     resolved.set(
@@ -176,7 +240,7 @@ export async function resolveCueListTokenMetadata(
         const freqEntries = freqMaps.get(token.term) ?? [];
         return {
           ...token,
-          status: statusMap ? (statusMap.get(token.term) ?? 'unknown') : token.status,
+          status: failed ? token.status : (statusMap.get(token.term) ?? 'unknown'),
           frequencyBand: entriesToBand(freqEntries, bandOpts),
           reading: dictReadings
             ? dictReadings.get(token.term) ?? pickFrequencyReading(token.term, freqEntries)

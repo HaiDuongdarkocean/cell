@@ -826,6 +826,7 @@ describe('CueList', () => {
       index: i + 1,
       start: i * 3000,
       end: i * 3000 + 2000,
+      nativeText: `Bản dịch ${i + 1}`,
       targetText: `Cue number ${i + 1}`,
     }));
 

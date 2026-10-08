@@ -7,7 +7,8 @@ import { onDictionaryChanged, onWordStatusChanged } from '@/features/dictionary'
 import {
   applyCueListTokenStatus,
   applyCueListTokenStatuses,
-  createCueListTokenMap,
+  createCueListResolveCache,
+  createTokenList,
   resolveCueListTokenMetadata,
   type CueListTokenMap,
   type ResolveMeta,
@@ -23,7 +24,9 @@ const EMPTY_TOKEN_MAP: CueListTokenMap = new Map();
 const EMPTY_SELECTED_TERMS: ReadonlySet<string> = new Set();
 const RESOLVE_MAX_ATTEMPTS = 3;
 const RESOLVE_RETRY_DELAY_MS = 1500;
-const TOKENIZE_CHUNK_SIZE = 250;
+const TOKENIZE_BUDGET_MS = 24;
+const TOKENIZE_MIN_CUES = 8;
+const EMIT_THROTTLE_MS = 250;
 const ROW_ESTIMATE_PX = 72;
 const OVERSCAN_PX = 480;
 const VIRTUALIZE_MIN_ROWS = 80;
@@ -345,6 +348,10 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
 
   const coveredCueIndicesRef = useRef<Set<number>>(new Set());
   const scopeGenRef = useRef(0);
+  const resolveCacheRef = useRef(createCueListResolveCache());
+  const renderedCountRef = useRef(0);
+  const lastEmitAtRef = useRef(0);
+  const emitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!tokenizeLangCode) {
@@ -367,6 +374,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       dictEpoch !== lastDictEpochRef.current;
     if (scopeChanged) {
       scopeGenRef.current += 1;
+      resolveCacheRef.current = createCueListResolveCache();
       lastCuesRef.current = visibleCues;
       lastLangCodeRef.current = tokenizeLangCode;
       lastShowReadingsRef.current = showReadings;
@@ -376,6 +384,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       coveredCueIndicesRef.current.clear();
       setTokenMap(EMPTY_TOKEN_MAP);
     }
+    renderedCountRef.current = renderedCues.length;
     const uncovered = orderFromCurrent(
       renderedCues.filter((c) => !coveredCueIndicesRef.current.has(c.index)),
       currentCueIndex,
@@ -384,6 +393,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
 
     let active = true;
     const scopeGen = scopeGenRef.current;
+    const resolveCache = resolveCacheRef.current;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     let chunkTimer: ReturnType<typeof setTimeout> | undefined;
     let idleHandle = 0;
@@ -403,6 +413,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
         includeReadings: showReadings,
         includeGlosses: showGlosses,
         glossTargetLanguage,
+        cache: resolveCache,
       })
         .then(({ map, meta }) => {
           if (scopeGenRef.current !== scopeGen) return;
@@ -432,25 +443,36 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
         });
     };
 
-    const buildChunk = (pending: readonly BilingualCue[]): void => {
-      const slice = pending.slice(0, TOKENIZE_CHUNK_SIZE);
-      const chunkMap = applyCueListTokenStatuses(
-        createCueListTokenMap(slice, tokenizeLangCode),
-        statusOverridesRef.current.get(tokenizeLangCode) ?? new Map<string, WordStatus>(),
-      );
-      for (const cue of slice) coveredCueIndicesRef.current.add(cue.index);
+    const buildChunk = (pending: readonly BilingualCue[], offset: number): void => {
+      const statuses = statusOverridesRef.current.get(tokenizeLangCode);
+      const chunkMap = new Map<number, readonly Token[]>();
+      const deadline = performance.now() + TOKENIZE_BUDGET_MS;
+      let i = offset;
+      while (i < pending.length && (i - offset < TOKENIZE_MIN_CUES || performance.now() < deadline)) {
+        const cue = pending[i];
+        let tokens = createTokenList(cue.targetText, tokenizeLangCode);
+        if (statuses) {
+          tokens = tokens.map((token) => {
+            if (token.isSeparator) return token;
+            const status = statuses.get(token.term);
+            return status && token.status !== status ? { ...token, status } : token;
+          });
+        }
+        chunkMap.set(cue.index, tokens);
+        coveredCueIndicesRef.current.add(cue.index);
+        i++;
+      }
       setTokenMap((current) => {
         const merged = new Map(current);
         for (const [cueIndex, tokens] of chunkMap) merged.set(cueIndex, tokens);
         return merged;
       });
       resolveChunk(chunkMap, 1);
-      const rest = pending.slice(TOKENIZE_CHUNK_SIZE);
-      if (rest.length > 0) {
-        scheduleChunk(() => buildChunk(rest));
+      if (i < pending.length) {
+        scheduleChunk(() => buildChunk(pending, i));
       }
     };
-    buildChunk(uncovered);
+    buildChunk(uncovered, 0);
     return () => {
       active = false;
       if (retryTimer !== undefined) clearTimeout(retryTimer);
@@ -460,7 +482,24 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   }, [visibleCues, renderedCues, tokenizeLangCode, showReadings, showGlosses, glossTargetLanguage, dictEpoch, currentCueIndex]);
 
   useEffect(() => {
-    if (!resolvingRef.current) onTokensResolved?.(tokenMap, metaRef.current);
+    if (resolvingRef.current || !onTokensResolved) return;
+    const allCovered = coveredCueIndicesRef.current.size >= renderedCountRef.current;
+    const emit = (): void => {
+      lastEmitAtRef.current = performance.now();
+      onTokensResolved(tokenMap, metaRef.current);
+    };
+    if (allCovered || performance.now() - lastEmitAtRef.current >= EMIT_THROTTLE_MS) {
+      emit();
+      return;
+    }
+    if (emitTimerRef.current !== null) clearTimeout(emitTimerRef.current);
+    emitTimerRef.current = setTimeout(emit, EMIT_THROTTLE_MS);
+    return () => {
+      if (emitTimerRef.current !== null) {
+        clearTimeout(emitTimerRef.current);
+        emitTimerRef.current = null;
+      }
+    };
   }, [tokenMap, resolving, onTokensResolved]);
 
   useEffect(() => {

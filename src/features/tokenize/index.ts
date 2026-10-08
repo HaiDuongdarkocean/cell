@@ -4,6 +4,7 @@ export {
   resolveCueListTokenMetadata,
   applyCueListTokenStatus,
   applyCueListTokenStatuses,
+  createCueListResolveCache,
   type CueListTokenMap,
   type ResolveMeta,
   type ResolvedCueListTokens,
