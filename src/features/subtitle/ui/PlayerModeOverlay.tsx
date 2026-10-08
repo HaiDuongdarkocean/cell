@@ -296,6 +296,10 @@ function PlayerModeOverlayInner({
       minHeight: player.style.minHeight,
       margin: player.style.margin,
       boxSizing: player.style.boxSizing,
+      top: player.style.top,
+      right: player.style.right,
+      bottom: player.style.bottom,
+      left: player.style.left,
     };
     const savedHostStyle = {
       width: shadowHost.style.width,
@@ -342,6 +346,10 @@ function PlayerModeOverlayInner({
       player.style.minHeight = savedStyle.minHeight;
       player.style.margin = savedStyle.margin;
       player.style.boxSizing = savedStyle.boxSizing;
+      player.style.top = savedStyle.top;
+      player.style.right = savedStyle.right;
+      player.style.bottom = savedStyle.bottom;
+      player.style.left = savedStyle.left;
       for (const { el, props } of savedDescendantStyles) {
         for (const [p, val] of Object.entries(props)) {
           el.style.removeProperty(p);
@@ -407,6 +415,9 @@ function PlayerModeOverlayInner({
     player.style.margin = '0';
     player.style.display = 'block';
     player.style.position = 'relative';
+    // m.youtube offsets the container for its app bar (top:48px) — the stage
+    // has no such chrome; zero all inset so the player fills the stage box.
+    player.style.setProperty('inset', '0', 'important');
     for (const child of videoAncestorChain(player)) {
       child.style.setProperty('width', `${stageW}px`, 'important');
       child.style.setProperty('height', `${stageH}px`, 'important');
