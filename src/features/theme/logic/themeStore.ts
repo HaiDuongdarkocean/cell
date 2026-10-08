@@ -15,7 +15,7 @@ import type { ThemeMode, ThemeConfig, PresetName } from '@/entities/theme';
 interface ThemeStore {
   /** Current theme mode ('light'|'dark'|'system'). Source of truth. */
   mode: ThemeMode;
-  /** Current theme config (customColors palette cho light + dark). */
+  /** Current theme config (customColors palette — single light palette). */
   config: ThemeConfig;
   /** True sau khi init() load xong từ storage. */
   isLoaded: boolean;
@@ -70,7 +70,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
     const next: ThemeConfig = {
       ...get().config,
       preset,
-      customColors: { ...getPresetColors(preset) },
+      customColors: { light: getPresetColors(preset) },
     };
     set({ config: next });
     void saveThemeConfig(next);

@@ -74,7 +74,6 @@ describe('themeManager', () => {
         preset: 'dawn',
         customColors: {
           light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' },
-          dark: DEFAULT_THEME_CONFIG.customColors.dark,
         },
       };
       applyTheme('light', custom);
@@ -101,9 +100,8 @@ describe('themeManager', () => {
   });
 
   describe('getPalette', () => {
-    it('returns the light palette for every mode', () => {
-      expect(getPalette(DEFAULT_THEME_CONFIG, 'dark')).toEqual(DEFAULT_THEME_CONFIG.customColors.light);
-      expect(getPalette(DEFAULT_THEME_CONFIG, 'light')).toEqual(DEFAULT_THEME_CONFIG.customColors.light);
+    it('returns the single light palette', () => {
+      expect(getPalette(DEFAULT_THEME_CONFIG)).toEqual(DEFAULT_THEME_CONFIG.customColors.light);
     });
   });
 });

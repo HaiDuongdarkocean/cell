@@ -24,7 +24,7 @@ import {
   formatComponentTokens,
   formatStaticTokens,
 } from '@/shared/lib/tokens';
-import type { ThemeMode, ThemeConfig, ResolvedMode } from '@/entities/theme';
+import type { ThemeMode, ThemeConfig } from '@/entities/theme';
 
 /** ID of the injected `<style>` element holding theme tokens. Exported so
  *  other modules (e.g. mountCardCreatorDialog) can clone it into fullscreen
@@ -49,7 +49,7 @@ function buildStyleContent(config: ThemeConfig, extraCss: readonly string[] = []
   // Single-palette: the [data-theme="dark"] block emits the light palette so
   // stray dark-attributed hosts (site attrs, copied hoist fallbacks) still
   // resolve Cell surfaces to the one palette.
-  const lightTokens = buildColorTokenCSS(config.customColors.light, 'light', preset);
+  const lightTokens = buildColorTokenCSS(config.customColors.light, preset);
   const darkTokens = lightTokens;
   const selectorPrefix = `[data-preset="${preset}"]`;
   return `
@@ -115,7 +115,7 @@ ${extraCss.join('\n')}
 }
 
 /** Single-palette: every mode resolves to 'light' (dark palette removed). */
-function resolveMode(_mode: ThemeMode): ResolvedMode {
+function resolveMode(_mode: ThemeMode): 'light' {
   return 'light';
 }
 
@@ -223,7 +223,7 @@ export function injectThemeTokens(container: HTMLElement, extraCss: readonly str
       currentMode = storedMode;
     }
     const storedConfig = configData[STORAGE_KEYS.THEME_CONFIG] as ThemeConfig | undefined;
-    if (storedConfig?.customColors?.light && storedConfig?.customColors?.dark) {
+    if (storedConfig?.customColors?.light) {
       currentConfig = storedConfig;
     }
     applyResolved(currentMode, currentConfig);
@@ -244,7 +244,7 @@ export function injectThemeTokens(container: HTMLElement, extraCss: readonly str
     }
     if (changes[STORAGE_KEYS.THEME_CONFIG]?.newValue) {
       const newConfig = changes[STORAGE_KEYS.THEME_CONFIG].newValue as ThemeConfig | undefined;
-      if (newConfig?.customColors?.light && newConfig?.customColors?.dark) {
+      if (newConfig?.customColors?.light) {
         currentConfig = newConfig;
         changed = true;
       }

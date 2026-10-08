@@ -9,8 +9,8 @@ import { STORAGE_KEYS } from '@/shared/config/config';
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
 import type { ThemeMode, ThemeConfig, PresetName } from '@/entities/theme';
 
-/** Default theme mode khi storage absent (V5 default dark — giữ pre-port default). */
-export const DEFAULT_THEME_MODE: ThemeMode = 'dark';
+/** Default theme mode khi storage absent (single-palette: all modes render light). */
+export const DEFAULT_THEME_MODE: ThemeMode = 'light';
 
 const PRESETS: readonly PresetName[] = ['dawn', 'forest', 'ocean', 'warmth'];
 
@@ -32,7 +32,7 @@ export async function loadThemeMode(): Promise<ThemeMode> {
 export async function loadThemeConfig(): Promise<ThemeConfig> {
   const data = await getStorage<Record<string, unknown>>(STORAGE_KEYS.THEME_CONFIG);
   const config = data[STORAGE_KEYS.THEME_CONFIG] as ThemeConfig | undefined;
-  if (config && config.customColors && config.customColors.light && config.customColors.dark) {
+  if (config && config.customColors && config.customColors.light) {
     const storedPreset = (config as { preset?: unknown }).preset;
     const preset = PRESETS.includes(storedPreset as PresetName) ? (storedPreset as PresetName) : 'dawn';
     return { ...config, preset };

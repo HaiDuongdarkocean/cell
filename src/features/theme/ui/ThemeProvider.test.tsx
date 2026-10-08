@@ -112,7 +112,6 @@ describe('ThemeProvider', () => {
       preset: 'dawn',
       customColors: {
         light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' },
-        dark: DEFAULT_THEME_CONFIG.customColors.dark,
       },
     };
     act(() => {
@@ -125,13 +124,13 @@ describe('ThemeProvider', () => {
     await act(async () => {
       render(<ThemeProvider><Child /></ThemeProvider>);
     });
-    expect(useThemeStore.getState().mode).toBe('dark');
+    expect(useThemeStore.getState().mode).toBe('light');
     act(() => {
       for (const listener of storageChangedListeners) {
-        listener({ [STORAGE_KEYS.THEME_MODE]: { newValue: 'light' } }, 'local');
+        listener({ [STORAGE_KEYS.THEME_MODE]: { newValue: 'system' } }, 'local');
       }
     });
-    expect(useThemeStore.getState().mode).toBe('light');
+    expect(useThemeStore.getState().mode).toBe('system');
   });
 
   it('syncs from storage.onChanged (themeConfig)', async () => {
@@ -141,8 +140,7 @@ describe('ThemeProvider', () => {
     const customConfig: ThemeConfig = {
       preset: 'dawn',
       customColors: {
-        light: DEFAULT_THEME_CONFIG.customColors.light,
-        dark: { ...DEFAULT_THEME_CONFIG.customColors.dark, primary: '#abcdef' },
+        light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#abcdef' },
       },
     };
     act(() => {

@@ -138,7 +138,6 @@ describe('injectThemeTokens (ADR-015 T12, ADR-022 D3)', () => {
       preset: 'dawn',
       customColors: {
         light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' },
-        dark: { ...DEFAULT_THEME_CONFIG.customColors.dark, primary: '#00ff00' },
       },
     };
     for (const listener of storageListeners) {
@@ -146,7 +145,6 @@ describe('injectThemeTokens (ADR-015 T12, ADR-022 D3)', () => {
     }
     const style = document.getElementById('subtitle-theme-tokens');
     expect(style?.textContent).toContain('#ff0000'); // custom light primary
-    expect(style?.textContent).not.toContain('#00ff00'); // dark palette is never emitted
   });
 
   it('cleanup removes storage listener', () => {
@@ -173,7 +171,6 @@ describe('injectThemeTokens (ADR-015 T12, ADR-022 D3)', () => {
       preset: 'dawn',
       customColors: {
         light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#abcdef' },
-        dark: DEFAULT_THEME_CONFIG.customColors.dark,
       },
     };
     storageData[STORAGE_KEYS.THEME_CONFIG] = customConfig;
@@ -218,7 +215,7 @@ describe('buildStyleContent', () => {
 
 describe('buildColorTokenCSS', () => {
   it('returns 9 core + derived token lines', () => {
-    const css = buildColorTokenCSS(DEFAULT_THEME_CONFIG.customColors.dark, 'dark');
+    const css = buildColorTokenCSS(DEFAULT_THEME_CONFIG.customColors.light);
     expect(css).toContain('--color-primary:');
     expect(css).toContain('--color-primary-hover:');
     expect(css).toContain('--color-primary-subtle:');
@@ -231,8 +228,8 @@ describe('buildColorTokenCSS', () => {
   });
 
   it('uses custom primary color', () => {
-    const custom = { ...DEFAULT_THEME_CONFIG.customColors.dark, primary: '#ff0000' };
-    const css = buildColorTokenCSS(custom, 'dark');
+    const custom = { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' };
+    const css = buildColorTokenCSS(custom);
     expect(css).toContain('--color-primary: #ff0000;');
   });
 });

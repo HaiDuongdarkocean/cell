@@ -152,7 +152,7 @@ export async function reloadActiveTab(_ctx: BackgroundContext): Promise<void> {
 /** Badge colors follow the theme's primary palette (preset + custom colors). */
 async function badgeThemeColors(): Promise<{ bg: string; fg: string }> {
   const config = await loadThemeConfig();
-  const tokens = getColorTokens(config.customColors.light, 'light', config.preset);
+  const tokens = getColorTokens(config.customColors.light, config.preset);
   return {
     bg: tokens['--color-primary'],
     fg: tokens['--color-text-on-primary'],

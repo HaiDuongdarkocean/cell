@@ -9,7 +9,7 @@
 
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useThemeStore } from '@/features/theme/logic/themeStore';
-import { applyTheme, resolveMode, registerSystemModeListener } from '@/features/theme/logic/themeManager';
+import { applyTheme, registerSystemModeListener } from '@/features/theme/logic/themeManager';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { ThemeConfig } from '@/entities/theme';
@@ -50,7 +50,7 @@ export function ThemeProvider({ children, container }: ThemeProviderProps): Reac
       target.classList.add('theme-transitioning');
     }
 
-    applyTheme(resolveMode(mode), config, target);
+    applyTheme(mode, config, target);
 
     if (isFirstApply.current) {
       isFirstApply.current = false;

@@ -300,9 +300,10 @@ async function main() {
 
   const tokens = JSON.parse(await readFile(tokensPath, 'utf8'));
 
-  // Compute accessible primary-foreground text color at build time so the
-  // generated tokens.css always ships a WCAG AA --color-text-on-primary.
-  for (const mode of ['light', 'dark']) {
+  // Single-palette: only the light palette exists. The [data-theme="dark"]
+  // selector still gets emitted with the same light block so stray host-page
+  // data-theme="dark" attributes can never swap Cell surfaces to dark.
+  for (const mode of ['light']) {
     tokens.derived[mode]['color-text-on-primary'] = pickPrimaryForeground(tokens.core[mode]);
   }
 
@@ -310,24 +311,25 @@ async function main() {
   const compositeBlock = flattenCompositeTokens(tokens.composite);
   const componentBlock = flattenComponentTokens(tokens.component);
   const lightColorBlock = buildColorBlock(tokens.core.light, tokens.derived.light, 'light');
-  const darkColorBlock = buildColorBlock(tokens.core.dark, tokens.derived.dark, 'dark');
 
   const contrastFailures = [
     ...validateContrastPairs('light', tokens.core.light, tokens.derived.light, tokens.component),
-    ...validateContrastPairs('dark', tokens.core.dark, tokens.derived.dark, tokens.component),
   ];
 
   // Per-preset blocks: merge default core/derived with the preset override.
+  // Each preset emits both theme selectors with the same light block.
   const presetBlocks = [];
   const presets = tokens.presets || {};
   for (const [name, preset] of Object.entries(presets)) {
     for (const mode of ['light', 'dark']) {
-      const mergedCore = { ...tokens.core[mode], ...preset.core[mode] };
-      const mergedDerived = { ...tokens.derived[mode], ...preset.derived[mode] };
+      const mergedCore = { ...tokens.core.light, ...preset.core.light };
+      const mergedDerived = { ...tokens.derived.light, ...preset.derived.light };
       // Ensure the computed --color-text-on-primary matches the merged palette.
       mergedDerived['color-text-on-primary'] = pickPrimaryForeground(mergedCore);
-      const colorBlock = buildColorBlock(mergedCore, mergedDerived, mode);
-      contrastFailures.push(...validateContrastPairs(mode, mergedCore, mergedDerived, tokens.component));
+      const colorBlock = buildColorBlock(mergedCore, mergedDerived, 'light');
+      if (mode === 'light') {
+        contrastFailures.push(...validateContrastPairs('light', mergedCore, mergedDerived, tokens.component));
+      }
       presetBlocks.push(`[data-preset="${name}"][data-theme="${mode}"] {\n${colorBlock}\n${componentBlock}\n}`);
     }
   }
@@ -364,7 +366,7 @@ ${componentBlock}
 }
 
 [data-theme="dark"] {
-${darkColorBlock}
+${lightColorBlock}
 ${componentBlock}
 }
 
