@@ -12,6 +12,14 @@ const getFrequencyEntries = jest.fn() as jest.MockedFunction<
 const loadFrequencyBandOptions = jest.fn() as jest.MockedFunction<
   (langCode: string) => Promise<FrequencyBandOptions>
 >;
+const getWordTranslations = jest.fn() as jest.MockedFunction<
+  (sl: string, tl: string, terms: readonly string[]) => Promise<Map<string, string> | null>
+>;
+
+jest.mock('@/features/translate', () => ({
+  getWordTranslations: (sl: string, tl: string, terms: readonly string[]) =>
+    getWordTranslations(sl, tl, terms),
+}));
 
 jest.mock('@/features/dictionary', () => ({
   ...(jest.requireActual('@/features/dictionary/logic/phraseMatcher') as Record<string, unknown>),
@@ -46,6 +54,7 @@ beforeEach(() => {
   getWordStatuses.mockReset().mockResolvedValue(new Map<string, WordStatus>());
   getFrequencyEntries.mockReset().mockResolvedValue(new Map<string, FrequencyEntry[]>());
   loadFrequencyBandOptions.mockReset().mockResolvedValue(ENABLED_BAND_OPTS);
+  getWordTranslations.mockReset().mockResolvedValue(new Map());
 });
 
 describe('createCueListTokenMap', () => {
@@ -228,6 +237,61 @@ describe('resolveCueListTokenMetadata', () => {
 
     expect(meta.rankByTerm.get('hello')).toBe(500);
     expect(meta.rankByTerm.get('world')).toBeNull();
+  });
+
+  it('hydrates token.gloss when includeGlosses and a gloss target language are set', async () => {
+    const map = createCueListTokenMap(cues, 'en');
+    getWordStatuses.mockResolvedValue(new Map([['hello', 'known']]));
+    getWordTranslations.mockResolvedValue(
+      new Map([
+        ['hello', 'xin chào'],
+        ['world', 'thế giới'],
+      ]),
+    );
+
+    const { map: resolved } = await resolveCueListTokenMetadata(map, 'en', {
+      includeGlosses: true,
+      glossTargetLanguage: 'vi',
+    });
+
+    expect(getWordTranslations).toHaveBeenCalledWith(
+      'en',
+      'vi',
+      expect.arrayContaining(['hello', 'world', 'again']),
+    );
+    expect(resolved.get(1)?.find((t) => t.term === 'hello')?.gloss).toBe('xin chào');
+    expect(resolved.get(1)?.find((t) => t.term === 'world')?.gloss).toBe('thế giới');
+    expect(resolved.get(2)?.find((t) => t.term === 'again')?.gloss).toBeUndefined();
+  });
+
+  it('sends zero translate requests when includeGlosses is off or the target language is empty', async () => {
+    const map = createCueListTokenMap(cues, 'en');
+    getWordStatuses.mockResolvedValue(new Map([['hello', 'known']]));
+
+    await resolveCueListTokenMetadata(map, 'en');
+    await resolveCueListTokenMetadata(map, 'en', { includeGlosses: false, glossTargetLanguage: 'vi' });
+    await resolveCueListTokenMetadata(map, 'en', { includeGlosses: true, glossTargetLanguage: '' });
+
+    expect(getWordTranslations).not.toHaveBeenCalled();
+  });
+
+  it('keeps existing glosses when the translate leg fails', async () => {
+    const map = createCueListTokenMap(cues, 'en');
+    getWordStatuses.mockResolvedValue(new Map([['hello', 'known']]));
+    getWordTranslations.mockResolvedValueOnce(new Map([['hello', 'xin chào']]));
+
+    const { map: resolved } = await resolveCueListTokenMetadata(map, 'en', {
+      includeGlosses: true,
+      glossTargetLanguage: 'vi',
+    });
+
+    getWordTranslations.mockResolvedValueOnce(null);
+    const { map: reresolved } = await resolveCueListTokenMetadata(resolved, 'en', {
+      includeGlosses: true,
+      glossTargetLanguage: 'vi',
+    });
+
+    expect(reresolved.get(1)?.find((t) => t.term === 'hello')?.gloss).toBe('xin chào');
   });
 
   it('makes no client calls when there are no terms', async () => {

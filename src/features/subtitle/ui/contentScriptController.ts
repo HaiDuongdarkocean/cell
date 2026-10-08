@@ -380,6 +380,8 @@ export function init(
         blockController.enableTokenize({
           langCode: settings.subtitleOverlayTargetLanguage,
           showReadings: settings.showReadings,
+          showGlosses: settings.showWordTranslations,
+          glossTargetLanguage: settings.subtitleOverlayNativeLanguage ?? '',
           onOpenDictionary: (term, element, contextSentence, event) =>
             openDictionaryFromToken(settings.subtitleOverlayTargetLanguage, term, element, contextSentence, event),
           onTokenHover: (term) => subtitleTokenizeCtrl?.setHoveredTerm(term),
@@ -616,12 +618,15 @@ export function init(
       }
 
       // Word-translation glosses (spec word-translation): live-toggle display
-      // and re-resolve when the native target language changes.
+      // and re-resolve when the native target language changes — the cue list
+      // lane follows the same profile flag via the block controller.
       if (newSettings?.showWordTranslations !== undefined) {
         subtitleTokenizeCtrl?.setShowGlosses(newSettings.showWordTranslations);
+        blockController.setTokenizeShowGlosses(newSettings.showWordTranslations);
       }
       if (newSettings?.subtitleOverlayNativeLanguage !== undefined) {
         subtitleTokenizeCtrl?.setGlossTargetLanguage(newSettings.subtitleOverlayNativeLanguage);
+        blockController.setTokenizeGlossTargetLanguage(newSettings.subtitleOverlayNativeLanguage);
       }
 
       // Live-update dictionary popup settings (defaultActiveTab, triggerMode, etc.)

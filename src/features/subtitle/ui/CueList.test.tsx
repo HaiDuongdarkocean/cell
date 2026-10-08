@@ -1,4 +1,14 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+
+const getWordTranslations = jest.fn() as jest.MockedFunction<
+  (sl: string, tl: string, terms: readonly string[]) => Promise<Map<string, string> | null>
+>;
+
+jest.mock('@/features/translate', () => ({
+  getWordTranslations: (sl: string, tl: string, terms: readonly string[]) =>
+    getWordTranslations(sl, tl, terms),
+}));
+
 import { CueList } from './CueList';
 import type { BilingualCue } from '@/entities/media';
 
@@ -181,6 +191,48 @@ describe('CueList timestamp', () => {
     renderList();
     await waitFor(() => expect(scroller()).toBeInTheDocument());
     expect(screen.getAllByTestId('cue-timestamp')[0].textContent).toBe('0:00 – 0:01');
+  });
+});
+
+describe('CueList word glosses', () => {
+  beforeEach(() => {
+    getWordTranslations.mockReset().mockResolvedValue(
+      new Map([
+        ['first', 'đầu tiên'],
+        ['line', 'dòng'],
+        ['second', 'thứ hai'],
+        ['third', 'thứ ba'],
+      ]),
+    );
+  });
+
+  it('renders data-gloss under tokens and drops the gloss-off lane when showGlosses is on', async () => {
+    renderList({
+      tokenize: {
+        langCode: 'en',
+        onTokenClick: jest.fn(),
+        showGlosses: true,
+        glossTargetLanguage: 'vi',
+      },
+    });
+
+    await waitFor(() => {
+      const word = document.querySelector<HTMLElement>(
+        '.js-cell-token[data-cell-term="first"] .js-cell-token-word',
+      );
+      expect(word).toHaveAttribute('data-gloss', 'đầu tiên');
+    });
+    expect(document.querySelector('.js-cell-token--gloss-off')).toBeNull();
+  });
+
+  it('keeps the gloss lane suppressed and sends no translate request when showGlosses is off', async () => {
+    renderList({ tokenize: { langCode: 'en', onTokenClick: jest.fn() } });
+
+    await waitFor(() =>
+      expect(document.querySelector('.js-cell-token--gloss-off')).not.toBeNull(),
+    );
+    expect(document.querySelector('[data-gloss]')).toBeNull();
+    expect(getWordTranslations).not.toHaveBeenCalled();
   });
 });
 

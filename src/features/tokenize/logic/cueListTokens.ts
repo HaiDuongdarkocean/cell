@@ -4,6 +4,7 @@ import type { Token } from '@/features/tokenize/types';
 import { getWordStatuses } from '@/features/dictionary';
 import { getFrequencyEntries } from '@/features/dictionary';
 import { getReadings } from '@/features/dictionary';
+import { getWordTranslations } from '@/features/translate';
 import {
   DEFAULT_BAND_THRESHOLDS,
   entriesToBand,
@@ -97,7 +98,11 @@ async function fetchTermsChunked<T>(
 export async function resolveCueListTokenMetadata(
   tokenMap: CueListTokenMap,
   langCode: string,
-  options?: { readonly includeReadings?: boolean },
+  options?: {
+    readonly includeReadings?: boolean;
+    readonly includeGlosses?: boolean;
+    readonly glossTargetLanguage?: string;
+  },
 ): Promise<ResolvedCueListTokens> {
   const terms = new Set<string>();
   for (const tokens of tokenMap.values()) {
@@ -119,12 +124,15 @@ export async function resolveCueListTokenMetadata(
     };
   }
 
-  const [statusRes, freqRes, bandRes, readingsRes] = await Promise.allSettled([
+  const [statusRes, freqRes, bandRes, readingsRes, glossesRes] = await Promise.allSettled([
     fetchTermsChunked(langCode, termList, getWordStatuses),
     fetchTermsChunked(langCode, termList, getFrequencyEntries),
     loadFrequencyBandOptions(langCode),
     options?.includeReadings
       ? fetchTermsChunked(langCode, termList, getReadings)
+      : Promise.resolve(null),
+    options?.includeGlosses && options.glossTargetLanguage
+      ? getWordTranslations(langCode, options.glossTargetLanguage, termList)
       : Promise.resolve(null),
   ]);
 
@@ -153,6 +161,12 @@ export async function resolveCueListTokenMetadata(
   const dictReadings =
     readingsRes.status === 'fulfilled' ? readingsRes.value : null;
 
+  // Same contract for glosses (spec word-translation): null = leg skipped or
+  // failed → keep existing glosses; a resolved map is authoritative — the
+  // whole termList was sent, so an absent term means "covered, no gloss".
+  const dictGlosses =
+    glossesRes.status === 'fulfilled' ? glossesRes.value : null;
+
   const resolved = new Map<number, readonly Token[]>();
   for (const [cueIndex, tokens] of tokenMap) {
     resolved.set(
@@ -167,6 +181,7 @@ export async function resolveCueListTokenMetadata(
           reading: dictReadings
             ? dictReadings.get(token.term) ?? pickFrequencyReading(token.term, freqEntries)
             : token.reading,
+          gloss: dictGlosses ? dictGlosses.get(token.term) : token.gloss,
         };
       }),
     );

@@ -154,6 +154,8 @@ interface MockController {
   disableTokenize: jest.Mock;
   enableTokenize: jest.Mock;
   setTokenizeShowReadings: jest.Mock;
+  setTokenizeShowGlosses: jest.Mock;
+  setTokenizeGlossTargetLanguage: jest.Mock;
   enableDictionaryPopup: jest.Mock;
   disableDictionaryPopup: jest.Mock;
   setHasSearchKeys: jest.Mock;
@@ -242,6 +244,8 @@ function createMockController(): MockController {
     disableTokenize: jest.fn(),
     enableTokenize: jest.fn(),
     setTokenizeShowReadings: jest.fn(),
+    setTokenizeShowGlosses: jest.fn(),
+    setTokenizeGlossTargetLanguage: jest.fn(),
     enableDictionaryPopup: jest.fn(),
     disableDictionaryPopup: jest.fn(),
     setHasSearchKeys: jest.fn(),

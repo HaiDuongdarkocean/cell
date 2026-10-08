@@ -126,7 +126,12 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
       );
     };
 
-    const ensureSubtitleTokenize = (langCode: string, showReadings: boolean): void => {
+    const ensureSubtitleTokenize = (
+      langCode: string,
+      showReadings: boolean,
+      showGlosses: boolean,
+      glossTargetLanguage: string,
+    ): void => {
       if (subtitleLang === langCode) return;
       subtitleLang = langCode;
       subtitleTokenizeRef.current?.destroy();
@@ -137,6 +142,8 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
       const subtitleCtrl = createSubtitleTokenizeController({
         langCode,
         showReadings,
+        showGlosses,
+        glossTargetLanguage,
         getLineElements: () => ({
           target: document.querySelector<HTMLElement>(
             '[data-cell-id="subtitle-block"] [data-role="target"] > span:not([data-cell-id])',
@@ -168,18 +175,29 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
       const langCode = getActiveProfileSettings(settings)?.resourceLangCode
         ?? (settings.subtitleOverlayTargetLanguage || '');
       const showReadings = settings.showReadings ?? false;
-      ensureSubtitleTokenize(langCode, showReadings);
+      const showGlosses = settings.showWordTranslations ?? false;
+      const glossTargetLanguage = settings.subtitleOverlayNativeLanguage ?? '';
+      ensureSubtitleTokenize(langCode, showReadings, showGlosses, glossTargetLanguage);
       // Live-toggle caps on an existing controller when only the flag moved.
       subtitleTokenizeRef.current?.setShowReadings(showReadings);
+      subtitleTokenizeRef.current?.setShowGlosses(showGlosses);
+      subtitleTokenizeRef.current?.setGlossTargetLanguage(glossTargetLanguage);
       if (langCode === '') {
         setCueListTokenize(null);
         return;
       }
       setCueListTokenize((prev) => {
-        if (prev?.langCode === langCode && prev.showReadings === showReadings) return prev;
+        if (
+          prev?.langCode === langCode &&
+          prev.showReadings === showReadings &&
+          prev.showGlosses === showGlosses &&
+          prev.glossTargetLanguage === glossTargetLanguage
+        ) return prev;
         return {
           langCode,
           showReadings,
+          showGlosses,
+          glossTargetLanguage,
           onTokenClick: (term, element, contextSentence, event) =>
             openTokenDictionary(langCode, term, element, contextSentence, event),
           onTokenHover: (term) => subtitleTokenizeRef.current?.setHoveredTerm(term),

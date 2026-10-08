@@ -57,6 +57,10 @@ export interface SubtitleCueEngineTokenizeOptions {
   selection?: import('./CueList').CueListTokenSelection;
   /** Profile `showReadings` — cue-list tokens render reading caps. */
   showReadings?: boolean;
+  /** Profile `showWordTranslations` — cue-list tokens render the gloss lane. */
+  showGlosses?: boolean;
+  /** Gloss destination language (`subtitleOverlayNativeLanguage`). */
+  glossTargetLanguage?: string;
   windowSize?: number;
 }
 

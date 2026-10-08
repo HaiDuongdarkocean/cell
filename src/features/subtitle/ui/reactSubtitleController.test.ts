@@ -57,6 +57,7 @@ interface FakeEngine {
   enableTokenize: jest.Mock;
   disableTokenize: jest.Mock;
   isTokenizeEnabled: jest.Mock;
+  getTokenizeOptions: jest.Mock;
   enableDictionaryPopup: jest.Mock;
   disableDictionaryPopup: jest.Mock;
   setDictionaryPopupTriggerMode: jest.Mock;
@@ -167,6 +168,7 @@ function createFakeEngine(): FakeEngine {
     enableTokenize: jest.fn(),
     disableTokenize: jest.fn(),
     isTokenizeEnabled: jest.fn(() => false),
+    getTokenizeOptions: jest.fn(() => null),
     enableDictionaryPopup: jest.fn(),
     disableDictionaryPopup: jest.fn(),
     setDictionaryPopupTriggerMode: jest.fn(),
@@ -612,7 +614,7 @@ describe('ReactSubtitleController', () => {
     expect(fakeMount.toggleSplitView).toHaveBeenCalled();
   });
 
-  it('tokenize and dictionary popup methods delegate to the cue engine', () => {
+  it('tokenize methods delegate to the cue engine', () => {
     const tokenizeOptions: SubtitleCueEngineTokenizeOptions = {
       langCode: 'en',
       onOpenDictionary: jest.fn(),
@@ -627,13 +629,46 @@ describe('ReactSubtitleController', () => {
       onTokenHover: tokenizeOptions.onTokenHover,
       onTokenCtrlClick: undefined,
       selection: undefined,
+      showReadings: undefined,
+      showGlosses: undefined,
+      glossTargetLanguage: undefined,
     });
 
     controller.disableTokenize();
     expect(fakeEngine.disableTokenize).toHaveBeenCalled();
     expect(fakeMount.setTokenize).toHaveBeenLastCalledWith(null);
     expect(controller.isTokenizeEnabled()).toBe(false);
+  });
 
+  it('setTokenizeShowGlosses / setTokenizeGlossTargetLanguage re-enable tokenize with updated options', () => {
+    const tokenizeOptions: SubtitleCueEngineTokenizeOptions = {
+      langCode: 'en',
+      onOpenDictionary: jest.fn(),
+      showGlosses: false,
+      glossTargetLanguage: 'vi',
+    };
+    fakeEngine.isTokenizeEnabled.mockReturnValue(true);
+    fakeEngine.getTokenizeOptions.mockReturnValue(tokenizeOptions);
+
+    controller.setTokenizeShowGlosses(true);
+    expect(fakeEngine.enableTokenize).toHaveBeenCalledWith({ ...tokenizeOptions, showGlosses: true });
+    expect(fakeMount.setTokenize).toHaveBeenLastCalledWith(
+      expect.objectContaining({ showGlosses: true, glossTargetLanguage: 'vi' }),
+    );
+
+    controller.setTokenizeGlossTargetLanguage('ja');
+    expect(fakeEngine.enableTokenize).toHaveBeenCalledWith({ ...tokenizeOptions, glossTargetLanguage: 'ja' });
+
+    // No-ops: same values → no re-enable; tokenize disabled → early return.
+    controller.setTokenizeShowGlosses(false);
+    expect(fakeEngine.enableTokenize).toHaveBeenCalledTimes(2);
+    fakeEngine.isTokenizeEnabled.mockReturnValue(false);
+    controller.setTokenizeShowGlosses(true);
+    controller.setTokenizeGlossTargetLanguage('fr');
+    expect(fakeEngine.enableTokenize).toHaveBeenCalledTimes(2);
+  });
+
+  it('dictionary popup methods delegate to the cue engine', () => {
     const onLookup = jest.fn();
     const onCancel = jest.fn();
     const onClear = jest.fn();

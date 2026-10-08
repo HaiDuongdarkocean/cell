@@ -806,6 +806,8 @@ export class ReactSubtitleController {
       onTokenCtrlClick: options.onTokenCtrlClick,
       selection: options.selection,
       showReadings: options.showReadings,
+      showGlosses: options.showGlosses,
+      glossTargetLanguage: options.glossTargetLanguage,
     });
   }
 
@@ -816,6 +818,23 @@ export class ReactSubtitleController {
     const options = this.engine.getTokenizeOptions();
     if (!options || options.showReadings === show) return;
     this.enableTokenize({ ...options, showReadings: show });
+  }
+
+  /** Live-toggle the cue-list gloss lane without rebuilding the tokenize
+   *  wiring (spec word-translation — cue-list follow-up). */
+  setTokenizeShowGlosses(show: boolean): void {
+    if (!this.engine.isTokenizeEnabled()) return;
+    const options = this.engine.getTokenizeOptions();
+    if (!options || options.showGlosses === show) return;
+    this.enableTokenize({ ...options, showGlosses: show });
+  }
+
+  /** Native language changed — glosses re-resolve against the new target. */
+  setTokenizeGlossTargetLanguage(tl: string): void {
+    if (!this.engine.isTokenizeEnabled()) return;
+    const options = this.engine.getTokenizeOptions();
+    if (!options || (options.glossTargetLanguage ?? '') === tl) return;
+    this.enableTokenize({ ...options, glossTargetLanguage: tl });
   }
 
   disableTokenize(): void {
