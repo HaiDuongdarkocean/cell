@@ -102,9 +102,7 @@ export function buildTokenSpanCss(): string {
 ${buildVariables()}
 
 /* Tokens are wrapped inline and kept visually lightweight.  No padding,
-   margin, or line-height is added so the host page box model is preserved.
-   box-decoration-break: clone ensures a multi-line token still gets styled
-   per line fragment. */
+   margin, or line-height is added so the host page box model is preserved. */
 .js-cell-token {
   display: inline !important;
   vertical-align: baseline !important;
@@ -118,17 +116,13 @@ ${buildVariables()}
   word-break: normal !important;
   cursor: pointer !important;
   border: none !important;
-  border-radius: var(--radius-xs) !important;
   outline: none !important;
-  box-shadow: var(--shadow-sm) !important;
   background: transparent !important;
   color: inherit !important;
   font: inherit !important;
   user-select: text !important;
   -webkit-user-select: text !important;
   text-decoration: none !important;
-  -webkit-box-decoration-break: clone !important;
-  box-decoration-break: clone !important;
   /* Framer and similar gradient-text hosts set -webkit-text-fill-color: transparent
      on an ancestor (with -webkit-background-clip: text). That property inherits and
      overrides color, making our token text invisible over the pill background.
@@ -140,42 +134,50 @@ ${buildVariables()}
   --cell-token-guard: currentColor;
 }
 
-/* Reading caps need real layout space: inline-block + margin-top grows the
-   line box, so caps on wrapped lines never overlap the line above. All word
-   tokens reserve the same headroom — lines stay uniform while readings resolve
-   asynchronously. Margin (not padding) keeps frequency-pill backgrounds off the
-   reserved area. */
+/* Each word token is a self-sizing vertical unit: cap lane, word lane, gloss
+   lane stacked in flow. The column width is the widest lane, so a long reading
+   or gloss widens the whole unit and centers the shorter lanes instead of
+   overlapping neighbouring tokens. The lanes always exist (content may be
+   empty) and keep their line-height as reserved space, so asynchronously
+   resolved metadata never reflows the line — same invariant the old margins
+   provided. Annotation-off tokens degrade to a single-item column, visually
+   identical to the original inline word. */
+html body .js-cell-token--word {
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0.15em !important;
+}
+
+/* The column's baseline is its first flex item (the cap lane). When the cap
+   lane exists, lift the column by the cap-to-word baseline distance so the
+   word lands back on the parent text baseline — word alignment stays exact
+   relative to any inline ancestor (<a>, <sup>, separators), on both host
+   pages and subtitle surfaces. 1.6em = cap lane (0.88em × 1.15) + lane gap
+   (0.15em) + word ascent; calibrated on real layout to <0.2px error. */
 html body .js-cell-token--word:not(.js-cell-token--reading-off) {
-  display: inline-block !important;
-  margin-top: 1.2em !important;
+  vertical-align: 1.6em !important;
 }
 
-/* Gloss footroom (spec word-translation): same mechanism as the reading
-   headroom — all word tokens reserve the lane uniformly so asynchronously
-   resolved glosses never reflow the line. */
-html body .js-cell-token--word:not(.js-cell-token--gloss-off) {
-  display: inline-block !important;
-  margin-bottom: 1.15em !important;
-}
-
+/* The inner span is the word lane of the token column — every painted visual
+   (pill background, hairline border, status underline, selected wash, subtle
+   drop shadow) targets it so the decoration hugs the word instead of framing
+   the annotation lanes above/below. */
 .js-cell-token-word {
   display: inline !important;
   background: transparent !important;
   color: inherit !important;
   text-decoration: none !important;
-  /* Reading cap anchors to this inner span (attr(data-reading) lives here). */
-  position: relative !important;
+  border-radius: var(--radius-xs) !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 
-/* Ruby cap (spec reading-annotation): the reading rides above the token inside
-   the headroom the word token reserves — never overlaps the line above, never
-   enters copy/selection. Absent/empty data-reading produces no artifact. */
-html body .js-cell-token:not(.js-cell-token--reading-off) .js-cell-token-word[data-reading]::before {
+/* Ruby cap (spec reading-annotation): in-flow lane above the word, always
+   generated so the reserved headroom exists before data-reading arrives.
+   min-height is in the lane's own ems (0.88em font → ~1em of parent). */
+html body .js-cell-token--word:not(.js-cell-token--reading-off)::before {
   content: attr(data-reading);
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 0.15em);
-  transform: translateX(-50%);
+  min-height: 1.15em;
   font-size: 0.88em;
   line-height: 1.15;
   white-space: nowrap;
@@ -185,19 +187,15 @@ html body .js-cell-token:not(.js-cell-token--reading-off) .js-cell-token-word[da
   opacity: 0.92;
   text-shadow: var(--shadow-sm);
   pointer-events: none;
+  user-select: none;
 }
 
-/* Gloss footnote (spec word-translation): the native-language gloss rides below
-   the token inside the reserved footroom — mirror of the ::before reading cap.
-   Bounded to the token width + separator-gap bleed; longer glosses ellipsis
-   instead of reflowing the line. Never selectable, never copied. */
-html body .js-cell-token:not(.js-cell-token--gloss-off) .js-cell-token-word[data-gloss]::after {
+/* Gloss footnote (spec word-translation): in-flow lane below the word — the
+   lane's natural width widens the unit instead of overflowing it, so glosses
+   never ellipsis and never collide. Never selectable, never copied. */
+html body .js-cell-token--word:not(.js-cell-token--gloss-off)::after {
   content: attr(data-gloss);
-  position: absolute;
-  top: calc(100% + 0.15em);
-  left: -0.4em;
-  right: -0.4em;
-  text-align: center;
+  min-height: 1.15em;
   font-size: 0.8em;
   line-height: 1.15;
   white-space: nowrap;
@@ -206,15 +204,12 @@ html body .js-cell-token:not(.js-cell-token--gloss-off) .js-cell-token-word[data
   color: inherit;
   opacity: 0.85;
   text-shadow: var(--shadow-sm);
-  overflow: hidden;
-  text-overflow: ellipsis;
   pointer-events: none;
   user-select: none;
 }
 
 /* Status span is kept in the DOM for tests/backwards compatibility but the
-   visual status bar is rendered as an inset box-shadow on the token itself
-   so it follows multi-line fragments via box-decoration-break. */
+   visual status bar is rendered as an inset box-shadow on the word lane. */
 .js-cell-token-status {
   display: none !important;
 }
@@ -223,12 +218,14 @@ html body .js-cell-token:not(.js-cell-token--gloss-off) .js-cell-token-word[data
    suppressed until metadata resolves, preventing the whole panel from flashing
    as colors pop in. */
 html body .js-cell-token.js-cell-token--resolving {
-  background-color: transparent !important;
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
-  box-shadow: none !important;
   text-shadow: none !important;
   transition: none !important;
+}
+html body .js-cell-token.js-cell-token--resolving .js-cell-token-word {
+  background-color: transparent !important;
+  box-shadow: none !important;
 }
 
 .js-cell-token--separator {
@@ -238,71 +235,83 @@ html body .js-cell-token.js-cell-token--resolving {
   color: inherit !important;
 }
 
-/* Frequency bands: solid pill background + contrasting text.
-   Quadruple-specificity (html body .js-cell-token.js-cell-token--frequency-*) = (0,2,2)
+/* Frequency bands: contrasting fg on the token column (cap + gloss lanes
+   inherit it) while the pill background + hairline paint only the word lane.
+   Quadruple-specificity (html body .js-cell-token.js-cell-token--frequency-*)
    so host pages with high-specificity box-shadow:none!important rules (e.g.
    GeeksforGeeks Next.js resets at (0,2,1)) cannot override our !important.
    Band colors resolve from the injected --cell-token-* variables, which
    cascade from :root, prefers-color-scheme, or a [data-theme] ancestor. */
 html body .js-cell-token.js-cell-token--frequency-core {
-  background-color: var(--cell-token-freq-core-bg) !important;
   color: var(--cell-token-freq-core-fg) !important;
   -webkit-text-fill-color: var(--cell-token-freq-core-fg) !important;
+}
+html body .js-cell-token.js-cell-token--frequency-core .js-cell-token-word {
+  background-color: var(--cell-token-freq-core-bg) !important;
   box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 html body .js-cell-token.js-cell-token--frequency-common {
-  background-color: var(--cell-token-freq-common-bg) !important;
   color: var(--cell-token-freq-common-fg) !important;
   -webkit-text-fill-color: var(--cell-token-freq-common-fg) !important;
+}
+html body .js-cell-token.js-cell-token--frequency-common .js-cell-token-word {
+  background-color: var(--cell-token-freq-common-bg) !important;
   box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 html body .js-cell-token.js-cell-token--frequency-general {
-  background-color: var(--cell-token-freq-general-bg) !important;
   color: var(--cell-token-freq-general-fg) !important;
   -webkit-text-fill-color: var(--cell-token-freq-general-fg) !important;
+}
+html body .js-cell-token.js-cell-token--frequency-general .js-cell-token-word {
+  background-color: var(--cell-token-freq-general-bg) !important;
   box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 html body .js-cell-token.js-cell-token--frequency-advanced {
-  background-color: var(--cell-token-freq-advanced-bg) !important;
   color: var(--cell-token-freq-advanced-fg) !important;
   -webkit-text-fill-color: var(--cell-token-freq-advanced-fg) !important;
+}
+html body .js-cell-token.js-cell-token--frequency-advanced .js-cell-token-word {
+  background-color: var(--cell-token-freq-advanced-bg) !important;
   box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 html body .js-cell-token.js-cell-token--frequency-rare {
-  background-color: var(--cell-token-freq-rare-bg) !important;
   color: var(--cell-token-freq-rare-fg) !important;
   -webkit-text-fill-color: var(--cell-token-freq-rare-fg) !important;
+}
+html body .js-cell-token.js-cell-token--frequency-rare .js-cell-token-word {
+  background-color: var(--cell-token-freq-rare-bg) !important;
   box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 
 /* Status bar: 3px inset underline in the semantic color plus a 3px overlay-text
-   highlight at the same offset. The highlight lightens the underline when the
-   status color matches the pill background (e.g. known on a core green token).
-   Quadruple-specificity (html body ancestor) so host box-shadow:none!important
-   resets (GeeksforGeeks at (0,2,1)) cannot override our !important. */
-html body .js-cell-token.js-cell-token--status-unknown {
+   highlight at the same offset — painted on the word lane so the underline
+   hugs the word, not the annotation lanes. The highlight lightens the
+   underline when the status color matches the pill background (e.g. known on
+   a core green token). Quadruple-specificity (html body ancestor) so host
+   box-shadow:none!important resets cannot override our !important. */
+html body .js-cell-token.js-cell-token--status-unknown .js-cell-token-word {
   box-shadow:
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-unknown),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
-html body .js-cell-token.js-cell-token--status-tracking {
+html body .js-cell-token.js-cell-token--status-tracking .js-cell-token-word {
   box-shadow:
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-tracking),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
-html body .js-cell-token.js-cell-token--status-learning {
+html body .js-cell-token.js-cell-token--status-learning .js-cell-token-word {
   box-shadow:
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-learning),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
-html body .js-cell-token.js-cell-token--status-known:hover:not(.js-cell-token--status-off),
-html body .js-cell-token.js-cell-token--status-known.js-cell-token--popup-open:not(.js-cell-token--status-off) {
+html body .js-cell-token.js-cell-token--status-known:hover:not(.js-cell-token--status-off) .js-cell-token-word,
+html body .js-cell-token.js-cell-token--status-known.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-word {
   box-shadow:
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-known),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
-html body .js-cell-token.js-cell-token--status-ignore:hover:not(.js-cell-token--status-off),
-html body .js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open:not(.js-cell-token--status-off) {
+html body .js-cell-token.js-cell-token--status-ignore:hover:not(.js-cell-token--status-off) .js-cell-token-word,
+html body .js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-word {
   box-shadow:
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-ignore),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
@@ -327,13 +336,16 @@ html body .js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open:
 html body .js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open),
 html body .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) {
   --cell-token-guard: currentColor;
-  background-color: transparent !important;
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
   text-shadow: var(--shadow-sm) !important;
 }
+html body .js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-word,
+html body .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-word {
+  background-color: transparent !important;
+}
 
-html body .js-cell-token.js-cell-token--selected {
+html body .js-cell-token.js-cell-token--selected .js-cell-token-word {
   background-image: linear-gradient(color-mix(in srgb, var(--cell-token-selected) 18%, transparent) 0 0) !important;
 }
 
@@ -341,14 +353,18 @@ html body .js-cell-token.js-cell-token--selected {
    Quadruple-specificity (html body ancestor) so host box-shadow:none!important
    resets cannot override our !important. */
 html body .js-cell-token.js-cell-token--status-off {
-  box-shadow: var(--shadow-sm) !important;
   text-shadow: var(--shadow-sm) !important;
+}
+html body .js-cell-token.js-cell-token--status-off .js-cell-token-word {
+  box-shadow: var(--shadow-sm) !important;
 }
 html body .js-cell-token.js-cell-token--frequency-off {
   --cell-token-guard: currentColor;
-  background-color: transparent !important;
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
+}
+html body .js-cell-token.js-cell-token--frequency-off .js-cell-token-word {
+  background-color: transparent !important;
 }
 `.trim();
 }
@@ -379,31 +395,31 @@ ${buildVariables(':host')}
   word-break: normal !important;
   cursor: pointer !important;
   border: none !important;
-  border-radius: var(--radius-xs) !important;
   outline: none !important;
-  box-shadow: var(--shadow-sm) !important;
   background: transparent !important;
   color: inherit !important;
   font: inherit !important;
   user-select: text !important;
   -webkit-user-select: text !important;
   text-decoration: none !important;
-  -webkit-box-decoration-break: clone !important;
-  box-decoration-break: clone !important;
   -webkit-text-fill-color: currentColor !important;
   --cell-token-guard: currentColor;
 }
 
-/* Same reserved headroom as the light-DOM builder — see the comment above
-   the ::before rule. */
-.js-cell-token--word:not(.js-cell-token--reading-off) {
-  display: inline-block !important;
-  margin-top: 1.2em !important;
+/* Self-sizing annotation column — same mechanism as the light-DOM builder:
+   cap/word/gloss lanes stacked in flow so the widest lane widens the unit and
+   neighbors never overlap. */
+.js-cell-token--word {
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0.15em !important;
 }
 
-.js-cell-token--word:not(.js-cell-token--gloss-off) {
-  display: inline-block !important;
-  margin-bottom: 1.15em !important;
+/* Column baseline = cap lane baseline; lift by the cap-to-word distance so
+   the word lands back on the parent text baseline (see light-DOM rule). */
+.js-cell-token--word:not(.js-cell-token--reading-off) {
+  vertical-align: 1.6em !important;
 }
 
 .js-cell-token-word {
@@ -411,18 +427,15 @@ ${buildVariables(':host')}
   background: transparent !important;
   color: inherit !important;
   text-decoration: none !important;
-  position: relative !important;
+  border-radius: var(--radius-xs) !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 
-/* Ruby cap (spec reading-annotation) — pseudo-element reads data-reading from
-   the inner word span and paints inside the reserved headroom; not selectable,
-   not copied, never overlaps the line above. */
-.js-cell-token:not(.js-cell-token--reading-off) .js-cell-token-word[data-reading]::before {
+/* Ruby cap (spec reading-annotation): in-flow lane above the word — never
+   selectable, never copied. */
+.js-cell-token--word:not(.js-cell-token--reading-off)::before {
   content: attr(data-reading);
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 0.15em);
-  transform: translateX(-50%);
+  min-height: 1.15em;
   font-size: 0.88em;
   line-height: 1.15;
   white-space: nowrap;
@@ -432,15 +445,14 @@ ${buildVariables(':host')}
   opacity: 0.92;
   text-shadow: var(--shadow-sm);
   pointer-events: none;
+  user-select: none;
 }
 
-.js-cell-token:not(.js-cell-token--gloss-off) .js-cell-token-word[data-gloss]::after {
+/* Gloss footnote (spec word-translation): in-flow lane below the word — its
+   natural width widens the unit so glosses never ellipsis or collide. */
+.js-cell-token--word:not(.js-cell-token--gloss-off)::after {
   content: attr(data-gloss);
-  position: absolute;
-  top: calc(100% + 0.15em);
-  left: -0.4em;
-  right: -0.4em;
-  text-align: center;
+  min-height: 1.15em;
   font-size: 0.8em;
   line-height: 1.15;
   white-space: nowrap;
@@ -449,8 +461,6 @@ ${buildVariables(':host')}
   color: inherit;
   opacity: 0.85;
   text-shadow: var(--shadow-sm);
-  overflow: hidden;
-  text-overflow: ellipsis;
   pointer-events: none;
   user-select: none;
 }
@@ -461,12 +471,14 @@ ${buildVariables(':host')}
 
 /* Resolving: suppress status/frequency visuals while metadata is loading. */
 .js-cell-token.js-cell-token--resolving {
-  background-color: transparent !important;
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
-  box-shadow: none !important;
   text-shadow: none !important;
   transition: none !important;
+}
+.js-cell-token.js-cell-token--resolving .js-cell-token-word {
+  background-color: transparent !important;
+  box-shadow: none !important;
 }
 
 .js-cell-token--separator {
@@ -477,59 +489,69 @@ ${buildVariables(':host')}
 }
 
 .js-cell-token.js-cell-token--frequency-core {
-  background-color: var(--cell-token-freq-core-bg) !important;
   color: var(--cell-token-freq-core-fg) !important;
   -webkit-text-fill-color: var(--cell-token-freq-core-fg) !important;
+}
+.js-cell-token.js-cell-token--frequency-core .js-cell-token-word {
+  background-color: var(--cell-token-freq-core-bg) !important;
   box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 .js-cell-token.js-cell-token--frequency-common {
-  background-color: var(--cell-token-freq-common-bg) !important;
   color: var(--cell-token-freq-common-fg) !important;
   -webkit-text-fill-color: var(--cell-token-freq-common-fg) !important;
+}
+.js-cell-token.js-cell-token--frequency-common .js-cell-token-word {
+  background-color: var(--cell-token-freq-common-bg) !important;
   box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 .js-cell-token.js-cell-token--frequency-general {
-  background-color: var(--cell-token-freq-general-bg) !important;
   color: var(--cell-token-freq-general-fg) !important;
   -webkit-text-fill-color: var(--cell-token-freq-general-fg) !important;
+}
+.js-cell-token.js-cell-token--frequency-general .js-cell-token-word {
+  background-color: var(--cell-token-freq-general-bg) !important;
   box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 .js-cell-token.js-cell-token--frequency-advanced {
-  background-color: var(--cell-token-freq-advanced-bg) !important;
   color: var(--cell-token-freq-advanced-fg) !important;
   -webkit-text-fill-color: var(--cell-token-freq-advanced-fg) !important;
+}
+.js-cell-token.js-cell-token--frequency-advanced .js-cell-token-word {
+  background-color: var(--cell-token-freq-advanced-bg) !important;
   box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 .js-cell-token.js-cell-token--frequency-rare {
-  background-color: var(--cell-token-freq-rare-bg) !important;
   color: var(--cell-token-freq-rare-fg) !important;
   -webkit-text-fill-color: var(--cell-token-freq-rare-fg) !important;
+}
+.js-cell-token.js-cell-token--frequency-rare .js-cell-token-word {
+  background-color: var(--cell-token-freq-rare-bg) !important;
   box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 
-.js-cell-token.js-cell-token--status-unknown {
+.js-cell-token.js-cell-token--status-unknown .js-cell-token-word {
   box-shadow:
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-unknown),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
-.js-cell-token.js-cell-token--status-tracking {
+.js-cell-token.js-cell-token--status-tracking .js-cell-token-word {
   box-shadow:
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-tracking),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
-.js-cell-token.js-cell-token--status-learning {
+.js-cell-token.js-cell-token--status-learning .js-cell-token-word {
   box-shadow:
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-learning),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
-.js-cell-token.js-cell-token--status-known:hover:not(.js-cell-token--status-off),
-.js-cell-token.js-cell-token--status-known.js-cell-token--popup-open:not(.js-cell-token--status-off) {
+.js-cell-token.js-cell-token--status-known:hover:not(.js-cell-token--status-off) .js-cell-token-word,
+.js-cell-token.js-cell-token--status-known.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-word {
   box-shadow:
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-known),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
-.js-cell-token.js-cell-token--status-ignore:hover:not(.js-cell-token--status-off),
-.js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open:not(.js-cell-token--status-off) {
+.js-cell-token.js-cell-token--status-ignore:hover:not(.js-cell-token--status-off) .js-cell-token-word,
+.js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-word {
   box-shadow:
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-ignore),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
@@ -548,25 +570,32 @@ ${buildVariables(':host')}
 .js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open),
 .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) {
   --cell-token-guard: currentColor;
-  background-color: transparent !important;
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
   text-shadow: var(--shadow-sm) !important;
 }
+.js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-word,
+.js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-word {
+  background-color: transparent !important;
+}
 
-.js-cell-token.js-cell-token--selected {
+.js-cell-token.js-cell-token--selected .js-cell-token-word {
   background-image: linear-gradient(color-mix(in srgb, var(--cell-token-selected) 18%, transparent) 0 0) !important;
 }
 
 .js-cell-token.js-cell-token--status-off {
-  box-shadow: var(--shadow-sm) !important;
   text-shadow: var(--shadow-sm) !important;
+}
+.js-cell-token.js-cell-token--status-off .js-cell-token-word {
+  box-shadow: var(--shadow-sm) !important;
 }
 .js-cell-token.js-cell-token--frequency-off {
   --cell-token-guard: currentColor;
-  background-color: transparent !important;
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
+}
+.js-cell-token.js-cell-token--frequency-off .js-cell-token-word {
+  background-color: transparent !important;
 }
 `.trim();
 }

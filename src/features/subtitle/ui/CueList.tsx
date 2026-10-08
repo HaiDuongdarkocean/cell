@@ -190,6 +190,8 @@ const CueTokenText = memo(function CueTokenText({
         data-cell-term={token.term}
         data-cell-start={token.start}
         data-cell-end={token.end}
+        data-reading={showReadings ? token.reading : undefined}
+        data-gloss={showGlosses ? token.gloss || undefined : undefined}
         onClick={(event) => {
           if ((event.ctrlKey || event.metaKey) && onTokenCtrlClick) {
             event.preventDefault();
@@ -201,13 +203,7 @@ const CueTokenText = memo(function CueTokenText({
         onMouseEnter={onTokenHover ? () => onTokenHover(token.term) : undefined}
         onMouseLeave={onTokenHover ? () => onTokenHover(null) : undefined}
       >
-        <span
-          className="js-cell-token-word"
-          data-reading={showReadings ? token.reading : undefined}
-          data-gloss={showGlosses ? token.gloss || undefined : undefined}
-        >
-          {token.text}
-        </span>
+        <span className="js-cell-token-word">{token.text}</span>
         <span className="js-cell-token-status" aria-hidden="true" />
       </span>,
     );

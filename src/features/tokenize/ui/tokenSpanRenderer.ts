@@ -78,21 +78,21 @@ function applyTokenClasses(span: HTMLElement, token: Token, options: TokenSpanBi
   }
 }
 
-/** Mirror token.reading onto the inner word span's data-reading attribute —
- *  the CSS ::before cap reads attr() from that element. Runs on both bind and
- *  in-place restyle so late metadata updates don't rebuild the DOM. */
+/** Mirror token.reading/token.gloss onto the token span's data-reading and
+ *  data-gloss attributes — the CSS ::before cap lane and ::after gloss lane
+ *  are in-flow items of the token's flex column and read attr() from the
+ *  token element itself. Runs on both bind and in-place restyle so late
+ *  metadata updates don't rebuild the DOM. */
 function applyTokenReading(span: HTMLElement, token: Token): void {
-  const word = span.querySelector<HTMLElement>(`.${WORD_INNER_CLASS}`);
-  if (!word) return;
   if (token.reading) {
-    word.setAttribute('data-reading', token.reading);
+    span.setAttribute('data-reading', token.reading);
   } else {
-    word.removeAttribute('data-reading');
+    span.removeAttribute('data-reading');
   }
   if (token.gloss) {
-    word.setAttribute('data-gloss', token.gloss);
+    span.setAttribute('data-gloss', token.gloss);
   } else {
-    word.removeAttribute('data-gloss');
+    span.removeAttribute('data-gloss');
   }
 }
 

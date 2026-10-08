@@ -217,10 +217,9 @@ describe('CueList word glosses', () => {
     });
 
     await waitFor(() => {
-      const word = document.querySelector<HTMLElement>(
-        '.js-cell-token[data-cell-term="first"] .js-cell-token-word',
-      );
-      expect(word).toHaveAttribute('data-gloss', 'đầu tiên');
+      expect(
+        document.querySelector<HTMLElement>('.js-cell-token[data-cell-term="first"]'),
+      ).toHaveAttribute('data-gloss', 'đầu tiên');
     });
     expect(document.querySelector('.js-cell-token--gloss-off')).toBeNull();
   });

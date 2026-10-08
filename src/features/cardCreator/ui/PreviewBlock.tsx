@@ -227,14 +227,10 @@ function TokenSpan({ token, sentence, onTokenClick, className, showReading }: To
       data-cell-term={token.term}
       data-cell-start={token.start}
       data-cell-end={token.end}
+      data-reading={showReading ? token.reading : undefined}
       onClick={onTokenClick ? () => onTokenClick(token.term, sentence) : undefined}
     >
-      <span
-        className="js-cell-token-word"
-        data-reading={showReading ? token.reading : undefined}
-      >
-        {token.text}
-      </span>
+      <span className="js-cell-token-word">{token.text}</span>
       <span className="js-cell-token-status" aria-hidden="true" />
     </span>
   );

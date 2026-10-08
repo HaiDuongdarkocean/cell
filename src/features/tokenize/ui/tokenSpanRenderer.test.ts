@@ -79,8 +79,8 @@ describe('tokenSpanRenderer', () => {
       { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'none', reading: undefined, gloss: 'xin chào' },
     ]);
     bindTokenBlock(block, { showStatus: true, showFrequency: true, showGlosses: true });
-    const word = block.element.querySelector('.js-cell-token-word');
-    expect(word!.getAttribute('data-gloss')).toBe('xin chào');
+    const span = block.element.querySelector('.js-cell-token');
+    expect(span!.getAttribute('data-gloss')).toBe('xin chào');
     expect(block.element.querySelector('.js-cell-token--gloss-off')).toBeNull();
 
     unbindTokenBlock(block);
