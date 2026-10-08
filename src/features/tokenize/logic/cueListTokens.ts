@@ -64,6 +64,7 @@ export function applyCueListTokenStatuses(
   tokenMap: CueListTokenMap,
   statuses: ReadonlyMap<string, WordStatus>,
 ): CueListTokenMap {
+  if (statuses.size === 0) return tokenMap;
   let changed = false;
   const resolved = new Map<number, readonly Token[]>();
   for (const [cueIndex, tokens] of tokenMap) {

@@ -113,13 +113,41 @@ Measured (Brave real profile, 2,400 cues, CPU×6):
 | Cue rows mounted | 2,040 | 15 | 15 | **136×** |
 | PM token spans | 21,240 | 149 | 149 | **142×** |
 
-### Iteration 4+ — pending
+### Iteration 4 — lazy gloss hydration + O(chunk) merge
+
+Fixes:
+
+1. **Gloss leg moved out of bulk resolve** — glosses are display-only (not needed
+   for comprehension stats); a dedicated effect fetches `getWordTranslations`
+   only for unglossed terms on mounted rows (view window), stores results in a
+   per-scope gloss cache (`''` = covered, no gloss — prevents refetch churn), and
+   merges into tokenMap. Translation network cost now scales with rows viewed,
+   not corpus size.
+2. **O(chunk) merge in resolveChunk** — `applyCueListTokenStatuses` now applies
+   to the incoming chunk only, not the whole merged map; empty-statuses fast path
+   added to `applyCueListTokenStatuses`.
+
+Measured (Brave real profile, 2,400 cues, CPU×6):
+
+| Metric | v0.1.7 | iter 3 | iter 4 | Total vs before |
+|---|---:|---:|---:|---:|
+| 'g' → PM overlay | 4.9s | 1.2s | **0.51s** | **9.6×** |
+| 'g' → PM tokens | 27.8s | 4.6s | 4.7s | **5.9×** |
+| Full settle | 43.5s | 8.7s | 8.8s | **4.9×** |
+| PM longtasks total | 32.1s | 2.3s | **0.93s** | **34.6×** |
+| Max single longtask | 15.1s | 0.64s | **0.41s** | **37×** |
+| Heap end | 88MB | 40MB | 31.5MB | **2.8× less** |
+| Cue rows mounted | 2,040 | 15 | 15 | **136×** |
+| PM token spans | 21,240 | 149 | 149 | **142×** |
+
+### Iteration 5+ — pending
 
 Residual bottlenecks:
 
-- PM longtasks still 2.3s total / 0.64s max — likely IDB metadata resolve +
-  `computeStats` flatten per emit + React commit. Candidates: worker-side
-  tokenize, `scheduler.postTask` priorities.
+- `pmTokensMs` ~4.7s is now latency-bound (metadata IDB/SW roundtrips under 6×
+  CPU), not compute-bound — the PM active-card token path may use the separate
+  `videoTokenPreloader`/overlay pipeline rather than CueList; next trace should
+  attribute which.
 - `createUnknownCueResolver` bulk-tokenizes the full corpus when `pauseOnUnknown`
   or adaptive subtitles are enabled — lazy-init candidate.
 - Gloss cache is SW-memory only — lost on worker termination; IDB persist candidate.

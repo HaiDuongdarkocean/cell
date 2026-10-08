@@ -4,6 +4,7 @@ import type { BilingualCue } from '@/entities/media';
 import type { ClickModifierState, WordStatus } from '@/entities/dictionary';
 import type { Token } from '@/features/tokenize';
 import { onDictionaryChanged, onWordStatusChanged } from '@/features/dictionary';
+import { getWordTranslations } from '@/features/translate';
 import {
   applyCueListTokenStatus,
   applyCueListTokenStatuses,
@@ -349,6 +350,8 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   const coveredCueIndicesRef = useRef<Set<number>>(new Set());
   const scopeGenRef = useRef(0);
   const resolveCacheRef = useRef(createCueListResolveCache());
+  const glossCacheRef = useRef(new Map<string, string>());
+  const glossPendingRef = useRef(new Set<string>());
   const renderedCountRef = useRef(0);
   const lastEmitAtRef = useRef(0);
   const emitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -375,6 +378,8 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     if (scopeChanged) {
       scopeGenRef.current += 1;
       resolveCacheRef.current = createCueListResolveCache();
+      glossCacheRef.current = new Map();
+      glossPendingRef.current.clear();
       lastCuesRef.current = visibleCues;
       lastLangCodeRef.current = tokenizeLangCode;
       lastShowReadingsRef.current = showReadings;
@@ -411,20 +416,29 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       setResolving(true);
       void resolveCueListTokenMetadata(chunkMap, tokenizeLangCode, {
         includeReadings: showReadings,
-        includeGlosses: showGlosses,
+        includeGlosses: false,
         glossTargetLanguage,
         cache: resolveCache,
       })
         .then(({ map, meta }) => {
           if (scopeGenRef.current !== scopeGen) return;
           metaRef.current = meta;
+          const statuses = statusOverridesRef.current.get(tokenizeLangCode);
+          const glossCache = glossCacheRef.current;
+          const nextChunk = statuses && statuses.size > 0 ? applyCueListTokenStatuses(map, statuses) : map;
           setTokenMap((current) => {
             const merged = new Map(current);
-            for (const [cueIndex, tokens] of map) merged.set(cueIndex, tokens);
-            return applyCueListTokenStatuses(
-              merged,
-              statusOverridesRef.current.get(tokenizeLangCode) ?? new Map<string, WordStatus>(),
-            );
+            for (const [cueIndex, tokens] of nextChunk) {
+              merged.set(
+                cueIndex,
+                tokens.map((token) =>
+                  !token.isSeparator && token.gloss === undefined && glossCache.has(token.term)
+                    ? { ...token, gloss: glossCache.get(token.term) }
+                    : token,
+                ),
+              );
+            }
+            return merged;
           });
           if (meta.failed && attempt < RESOLVE_MAX_ATTEMPTS) {
             retryTimer = setTimeout(() => resolveChunk(chunkMap, attempt + 1), RESOLVE_RETRY_DELAY_MS);
@@ -501,6 +515,51 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       }
     };
   }, [tokenMap, resolving, onTokensResolved]);
+
+  useEffect(() => {
+    if (!tokenizeLangCode || !showGlosses || !glossTargetLanguage) return;
+    const cache = glossCacheRef.current;
+    const pending = glossPendingRef.current;
+    const needed = new Set<string>();
+    for (const cue of renderedCues.slice(vStart, vEnd)) {
+      const tokens = tokenMap.get(cue.index);
+      if (!tokens) continue;
+      for (const token of tokens) {
+        if (token.isSeparator || token.gloss !== undefined) continue;
+        if (!cache.has(token.term) && !pending.has(token.term)) needed.add(token.term);
+      }
+    }
+    if (needed.size === 0) return;
+    for (const term of needed) pending.add(term);
+    const scopeGen = scopeGenRef.current;
+    void getWordTranslations(tokenizeLangCode, glossTargetLanguage, [...needed])
+      .then((glosses) => {
+        if (scopeGenRef.current !== scopeGen || !glosses) return;
+        for (const term of needed) {
+          pending.delete(term);
+          cache.set(term, glosses.get(term) ?? '');
+        }
+        setTokenMap((current) => {
+          const merged = new Map(current);
+          let changed = false;
+          for (const [cueIndex, tokens] of current) {
+            const nextTokens = tokens.map((token) =>
+              !token.isSeparator && token.gloss === undefined && cache.has(token.term)
+                ? { ...token, gloss: cache.get(token.term) }
+                : token,
+            );
+            if (nextTokens.some((t, i) => t !== tokens[i])) {
+              changed = true;
+              merged.set(cueIndex, nextTokens);
+            }
+          }
+          return changed ? merged : current;
+        });
+      })
+      .catch(() => {
+        for (const term of needed) pending.delete(term);
+      });
+  }, [tokenMap, vStart, vEnd, renderedCues, tokenizeLangCode, showGlosses, glossTargetLanguage]);
 
   useEffect(() => {
     if (!virtualized) return;
