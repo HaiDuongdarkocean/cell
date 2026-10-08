@@ -1166,7 +1166,6 @@
   "queue.age.minutes": "$1m ago",
   "queue.age.hours": "$1h ago",
   "queue.age.days": "$1d ago",
-  "queue.action.saveTerm": "Save to queue",
   "queue.action.saveSentence": "Save sentence to queue",
   "queue.action.cardify": "Make card",
   "queue.action.quickAdd": "Quick-add",

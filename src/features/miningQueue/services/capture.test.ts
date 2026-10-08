@@ -1,7 +1,6 @@
-import { savePrefillToQueue, saveCueToQueue } from './capture';
+import { saveCueToQueue } from './capture';
 import { queueSave } from './miningQueueClient';
 import type { BilingualCue } from '@/entities/media';
-import type { PopupCardCreatorPrefill } from '@/entities/dictionary';
 
 jest.mock('./miningQueueClient', () => ({
   queueSave: jest.fn(),
@@ -14,15 +13,6 @@ jest.mock('@/entities/settings', () => ({
 }));
 
 const queueSaveMock = queueSave as jest.Mock;
-
-const PREFILL = {
-  term: '猫',
-  langCode: 'ja',
-  reading: '',
-  definitions: [],
-  rawDefinitions: [],
-  contextSentence: '猫が好き',
-} as PopupCardCreatorPrefill;
 
 const CUE: BilingualCue = {
   index: 3,
@@ -38,31 +28,6 @@ beforeEach(() => {
 });
 
 const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
-
-describe('savePrefillToQueue', () => {
-  it('notifies success on first save', async () => {
-    const notify = jest.fn();
-    savePrefillToQueue(PREFILL, { notify });
-    await flush();
-    expect(notify).toHaveBeenCalledWith(expect.any(String), 'success');
-  });
-
-  it('notifies saved-again when deduped', async () => {
-    queueSaveMock.mockResolvedValue({ id: 'x', deduped: true });
-    const notify = jest.fn();
-    savePrefillToQueue(PREFILL, { notify });
-    await flush();
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining('queued'), 'success');
-  });
-
-  it('surfaces store errors instead of swallowing them', async () => {
-    queueSaveMock.mockRejectedValue(new Error('disk full'));
-    const notify = jest.fn();
-    savePrefillToQueue(PREFILL, { notify });
-    await flush();
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining('disk full'), 'error');
-  });
-});
 
 describe('saveCueToQueue', () => {
   it('persists cue sentences with the caller language', async () => {

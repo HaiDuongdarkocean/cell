@@ -69,8 +69,6 @@ export interface PopupLifecycleDeps {
     prefill: PopupCardCreatorPrefill,
   ) => OnCardCreatorActionResult;
   readonly onQuickAdd: (level: PopupLevel, prefill: PopupCardCreatorPrefill) => void;
-  /** One-action capture into the mining queue (spec mining-queue). */
-  readonly onSaveToQueue?: (prefill: PopupCardCreatorPrefill) => void;
 }
 
 export interface PopupLifecycle {
@@ -282,7 +280,6 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
       onSizeChange: handlePopupSizeChange,
       onSendToCard: (prefill) => deps.onCardCreatorAction(viewLevel(), 'edit-card', prefill),
       onQuickAdd: (prefill) => { void deps.onQuickAdd(viewLevel(), prefill); },
-      onSaveToQueue: deps.onSaveToQueue,
       onStatusChange: (term, langCode, status) => handlePopupStatusChange(viewLevel(), term, langCode, status),
       onCandidateChange: (term) => expandHighlightForTerm(viewLevel(), term),
       onOpenSettings: deps.panelController

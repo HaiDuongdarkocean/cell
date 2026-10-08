@@ -41,9 +41,6 @@ export interface UseCandidateOptions {
   readonly targetLang: string;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
-  /** One-action capture into the mining queue (spec mining-queue). Receives the
-   *  same prefill snapshot as sendToCard so cardify later is identical. */
-  readonly onSaveToQueue?: (prefill: PopupCardCreatorPrefill) => void;
   /** Called when the user cycles the word status inside this candidate. */
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Default media tab to open when this candidate first appears. */
@@ -108,9 +105,6 @@ export interface UseCandidateReturn {
   readonly autoplayCount: number;
   readonly sendToCard: () => Promise<void>;
   readonly quickAdd: () => Promise<void>;
-  readonly saveToQueue: () => void;
-  /** Timestamp of the last queue save — drives the in-place check confirm. */
-  readonly queuedAt: number;
 }
 
 export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
@@ -121,7 +115,6 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     targetLang,
     onSendToCard,
     onQuickAdd,
-    onSaveToQueue,
     onStatusChange,
     defaultActiveTab,
     selectionSnapshot,
@@ -440,36 +433,6 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     ));
   }, [onQuickAdd, toolbar, candidate, selectedDefinitions, exampleSelection, definitionSelection, contextSentence, variant, accentIndex]);
 
-  const [queuedAt, setQueuedAt] = useState(0);
-  const queuedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(
-    () => () => {
-      if (queuedTimerRef.current !== null) clearTimeout(queuedTimerRef.current);
-    },
-    [],
-  );
-
-  const saveToQueue = useCallback((): void => {
-    if (!onSaveToQueue) return;
-    onSaveToQueue(buildPrefill(
-      candidate,
-      selectedDefinitions,
-      exampleSelection,
-      definitionSelection,
-      contextSentence,
-      toolbar.translation,
-      toolbar.audioItems,
-      toolbar.audioSelection,
-      toolbar.imageItems,
-      toolbar.imageSelection,
-      toolbar.translationSelected,
-      variant ? { variant, accentIndex } : undefined,
-    ));
-    setQueuedAt(Date.now());
-    if (queuedTimerRef.current !== null) clearTimeout(queuedTimerRef.current);
-    queuedTimerRef.current = setTimeout(() => setQueuedAt(0), 2000);
-  }, [onSaveToQueue, toolbar, candidate, selectedDefinitions, exampleSelection, definitionSelection, contextSentence, variant, accentIndex]);
-
   return {
     status: variantStatus,
     cycleStatus,
@@ -520,7 +483,5 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     autoplayCount,
     sendToCard,
     quickAdd,
-    saveToQueue,
-    queuedAt,
   };
 }

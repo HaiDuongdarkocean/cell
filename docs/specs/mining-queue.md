@@ -10,7 +10,7 @@ Give the immersion learner a durable capture queue: one action on a lookup resul
 
 | Actor | Triggers | Inputs | Receives/Views |
 |---|---|---|---|
-| Learner | tap save action (popup toolbar / cue row) | which item to keep | toast-less quiet confirmation; queue list; per-item actions |
+| Learner | tap save action (cue row) | which item to keep | toast-less quiet confirmation; queue list; per-item actions |
 | Learner | open queue, cardify / quick-add / discard an item | item id | card creator prefilled; item removed |
 | System (timer/env) | SW restart, browser relaunch | — | — (queue must survive; no actor input) |
 
@@ -18,19 +18,7 @@ Give the immersion learner a durable capture queue: one action on a lookup resul
 
 ### Functional
 
-REQ-1: Save lookup result to queue
-- Actor: learner
-- Goal: keep the looked-up term with its sentence/media context for later cardifying
-- Preconditions: dictionary popup or panel shows a candidate
-- Basic flow:
-  1. actor activates the save action on the candidate
-  2. system builds a queue item (kind=`term`) from the same `PopupCardCreatorPrefill` snapshot the card actions use — term, pos, reading, definitions, contextSentence, translation, media URL/item lists, `lookupResult`
-  3. system persists via background queue store; confirms optimistically in place (render before write ack; failure → error toast, no silent drop)
-- Alt flow: save activated while a sink-destination is `ocean-srs` — queueing is destination-agnostic, same item
-- Exception: store write fails → surface an error toast (unlike sessionEvents' drop-on-error); item is not silently lost
-- Rules: dedupe — identical normalized (kind+term+sentence) already `queued` → no-op (refresh `createdAt`), confirm same
-- Postcondition: item retrievable on every surface
-- NFR refs: NFR-1, NFR-3, NFR-4
+REQ-1: ~~Save lookup result to queue~~ — REMOVED 2026-10: the dictionary popup save affordance was dropped; the cue row is the only capture point. Legacy kind=`term` rows in user queues remain supported by cardify/quick-add replay (`queueItemToPrefill`).
 
 REQ-2: Save cue sentence to queue (term-less)
 - Actor: learner
@@ -142,7 +130,7 @@ Save dedupe: `same normalized key + still queued → touch createdAt, no new row
 |---|---|
 | persist capture | background `miningQueueRepository` (own IDB DB `orca-mining-queue` v1, store `items`), message handlers QUEUE_ADD/LIST/GET/REMOVE/CHANGED |
 | dedupe + cap | `logic/queueLogic.ts` pure fns (dedupeKey, applyCap) |
-| capture affordance | popup save action (`useCandidate`/`useDictionaryToolbar` slot), CueList row save button |
+| capture affordance | CueList row save button |
 | review | `QueueTab` in universalPanel (`mobileNav:'tools'`), rows via ListItem conventions — "mining queue", not to be confused with the card creator's internal `CardCreatorQueueItem` sidebar |
 | cardify | adapter → `openStandaloneCardCreator` / panel `sendToCard` with rebuilt prefill + `queueItemId`; removal wired through existing `onSubmitSuccess`/`onAfterSubmit` |
 | quick-add | replay through `handlePopupQuickAdd` sink fork ('quick-add' → Dictionary flow / `addToOceanSrs`) |
@@ -189,7 +177,7 @@ Projection split: `QUEUE_LIST` returns lean rows (no `lookupResult`, no media li
 
 ## Success Criteria
 
-- [ ] SC-1: From a dictionary popup candidate, one activation saves the term item; no dialog opens; video is never paused by the save; confirmation is transient and in-place.
+- [x] SC-1: REMOVED 2026-10 — dictionary popup save dropped; cue row is the only capture point.
 - [ ] SC-2: From a cue row, one activation saves a sentence item carrying cue text + source ref.
 - [ ] SC-3: Items persist across service-worker sleep and browser relaunch (verified by reopening the panel list).
 - [ ] SC-4: Queue tab lists queued items newest-first with term-or-sentence, source, age, and total count; empty state exists.
@@ -205,7 +193,7 @@ Projection split: `QUEUE_LIST` returns lean rows (no `lookupResult`, no media li
 - [ ] All Success Criteria pass
 - [ ] `npm run typecheck && npm run lint && npm run test:unit && npm run build` green
 - [ ] UI pass through design stage (concepts → mockup → mapping) and design-system check
-- [ ] Browser verify: save from popup + cue, restart SW, cardify, discard — on a real page
+- [ ] Browser verify: save from cue, restart SW, cardify, discard — on a real page
 - [ ] `docs/2-architechture-system.md` + `docs/0-wiki.md` updated
 
 ## Alternatives considered

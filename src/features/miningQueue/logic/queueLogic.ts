@@ -66,22 +66,6 @@ export function buildQueueItem(
   };
 }
 
-export function queueItemFromPrefill(
-  prefill: PopupCardCreatorPrefill,
-  sourceLabel?: string,
-): MiningQueueInput {
-  return {
-    kind: 'term',
-    term: prefill.term,
-    pos: prefill.pos,
-    langCode: prefill.langCode,
-    sentence: prefill.contextSentence,
-    translation: prefill.translation,
-    sourceLabel,
-    snapshot: stripSnapshot(prefill),
-  };
-}
-
 export function queueItemFromCue(
   cue: BilingualCue,
   langCode: string,

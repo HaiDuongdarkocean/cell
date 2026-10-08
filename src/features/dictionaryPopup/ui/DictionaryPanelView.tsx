@@ -42,8 +42,6 @@ interface DictionaryPanelViewProps {
   readonly onResult?: (winner: LookupResult, candidates: readonly LookupResult[], contextSentence: string) => void;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
-  /** One-action capture into the mining queue — same prefill as sendToCard. */
-  readonly onSaveToQueue?: (prefill: PopupCardCreatorPrefill) => void;
   /** Called when the user cycles a candidate's word status. */
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Called when the user switches to a different candidate (chip click). */
@@ -76,7 +74,6 @@ export function DictionaryPanelView({
   onResult,
   onSendToCard,
   onQuickAdd,
-  onSaveToQueue,
   onStatusChange,
   onCandidateChange,
   onOpenSettings,
@@ -451,7 +448,6 @@ export function DictionaryPanelView({
                   targetLang={targetLang}
                   onSendToCard={onSendToCard}
                   onQuickAdd={onQuickAdd}
-                  onSaveToQueue={onSaveToQueue}
                   onStatusChange={onStatusChange}
                   onOpenSettings={onOpenSettings}
                   defaultActiveTab={defaultActiveTab}

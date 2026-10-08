@@ -106,8 +106,6 @@ export interface CandidateViewProps {
   readonly targetLang: string;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
-  /** One-action capture into the mining queue — same prefill as sendToCard. */
-  readonly onSaveToQueue?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Called from the empty-definitions state to open Settings → Resources. */
   readonly onOpenSettings?: () => void;
@@ -127,7 +125,6 @@ export function CandidateView({
   targetLang,
   onSendToCard,
   onQuickAdd,
-  onSaveToQueue,
   onStatusChange,
   onOpenSettings,
   defaultActiveTab,
@@ -141,7 +138,6 @@ export function CandidateView({
     targetLang,
     onSendToCard,
     onQuickAdd,
-    onSaveToQueue,
     onStatusChange,
     defaultActiveTab,
     selectionSnapshot,
@@ -230,21 +226,6 @@ export function CandidateView({
                 data-cell-id="dictionary-send-to-card"
               >
                 <Icon name="pencil"  />
-              </Button>
-            )}
-            {onSaveToQueue && (
-              <Button
-                shape="circle"
-                size="sm"
-                variant="outline"
-                className={styles.saveToQueue}
-                aria-label={panel.queuedAt ? t('queue.saved') : t('queue.action.saveTerm')}
-                title={panel.queuedAt ? t('queue.saved') : t('queue.action.saveTerm')}
-                onClick={panel.saveToQueue}
-                data-cell-id="dictionary-save-to-queue"
-                data-queued={panel.queuedAt ? 'true' : undefined}
-              >
-                <Icon name={panel.queuedAt ? 'check' : 'layers'} />
               </Button>
             )}
             {onQuickAdd && (

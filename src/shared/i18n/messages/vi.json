@@ -1166,7 +1166,6 @@
   "queue.age.minutes": "$1 phút trước",
   "queue.age.hours": "$1 giờ trước",
   "queue.age.days": "$1 ngày trước",
-  "queue.action.saveTerm": "Lưu vào hàng chờ",
   "queue.action.saveSentence": "Lưu câu vào hàng chờ",
   "queue.action.cardify": "Tạo thẻ",
   "queue.action.quickAdd": "Thêm nhanh",

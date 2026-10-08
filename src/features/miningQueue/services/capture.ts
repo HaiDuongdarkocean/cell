@@ -1,14 +1,13 @@
 // capture — one-action save entry points for the mining queue.
-// Every surface (dictionary popup, cue rows, integrated panel) funnels through
-// these: queueSave → success/dedupe/error notify. Persistence failures always
-// surface via notify — never silent (spec mining-queue.md).
+// Cue rows funnel through these: queueSave → success/dedupe/error notify.
+// Persistence failures always surface via notify — never silent
+// (spec mining-queue.md).
 
 import { queueSave } from './miningQueueClient';
-import { queueItemFromPrefill, queueItemFromCue } from '../logic/queueLogic';
+import { queueItemFromCue } from '../logic/queueLogic';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { getActiveProfileSettings } from '@/entities/settings';
 import { t } from '@/shared/i18n';
-import type { PopupCardCreatorPrefill } from '@/entities/dictionary';
 import type { BilingualCue } from '@/entities/media';
 
 export type QueueNotify = (message: string, variant: 'success' | 'error' | 'info') => void;
@@ -16,17 +15,6 @@ export type QueueNotify = (message: string, variant: 'success' | 'error' | 'info
 function notifyError(notify: QueueNotify | undefined, err: unknown): void {
   const msg = err instanceof Error ? err.message : String(err);
   notify?.(t('queue.error.action', [msg]), 'error');
-}
-
-export function savePrefillToQueue(
-  prefill: PopupCardCreatorPrefill,
-  opts: { sourceLabel?: string; notify?: QueueNotify } = {},
-): void {
-  void queueSave(queueItemFromPrefill(prefill, opts.sourceLabel))
-    .then(({ deduped }) =>
-      opts.notify?.(t(deduped ? 'queue.savedAgain' : 'queue.saved'), 'success'),
-    )
-    .catch((err: unknown) => notifyError(opts.notify, err));
 }
 
 export function saveCueToQueue(

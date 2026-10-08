@@ -24,7 +24,6 @@ import {
   queueQuickAddDestination,
   quickAddQueueItemToSrs,
   queueRemove,
-  savePrefillToQueue,
 } from '@/features/miningQueue';
 import { showToast } from '@/features/subtitle';
 import { addToOceanSrs } from '@/features/srs';
@@ -203,12 +202,6 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       isOpen: open,
       prefill: pendingCardCreatorContext,
       onOpenSettings: () => { void openSettingsSection(mountController, 'resources'); },
-      onSaveToQueue: (prefill) => {
-        savePrefillToQueue(prefill, {
-          sourceLabel: typeof document !== 'undefined' ? document.title || undefined : undefined,
-          notify: (message, variant) => queueToast(message, variant),
-        });
-      },
       onAfterSubmit: (queueItemId) => {
         if (queueItemId) {
           void queueRemove(queueItemId).catch(() => {});

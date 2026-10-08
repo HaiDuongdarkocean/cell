@@ -51,8 +51,6 @@ export interface MountPopupDictionaryOptions {
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   /** Called when the user triggers a quick add. */
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
-  /** One-action capture into the mining queue — same prefill as sendToCard. */
-  readonly onSaveToQueue?: (prefill: PopupCardCreatorPrefill) => void;
   /** Called when the user cycles a word's status inside the popup. */
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Called when the user switches to a different candidate. */
@@ -184,7 +182,6 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
     onSizeChange: current.onSizeChange,
     onSendToCard: current.onSendToCard,
     onQuickAdd: current.onQuickAdd,
-    onSaveToQueue: current.onSaveToQueue,
     onStatusChange: current.onStatusChange,
     onCandidateChange: current.onCandidateChange,
     onOpenSettings: current.onOpenSettings,

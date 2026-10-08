@@ -2,7 +2,6 @@ import { describe, expect, it } from '@jest/globals';
 import {
   queueDedupeKey,
   stripSnapshot,
-  queueItemFromPrefill,
   queueItemFromCue,
   evictOverflow,
   toQueueRow,
@@ -83,19 +82,7 @@ describe('stripSnapshot', () => {
   });
 });
 
-describe('queueItemFromPrefill / queueItemFromCue', () => {
-  it('term item carries prefill snapshot', () => {
-    const input = queueItemFromPrefill(
-      { term: 'x', langCode: 'en', reading: '', definitions: [], rawDefinitions: [], contextSentence: 'see x now' },
-      'YouTube',
-    );
-    expect(input.kind).toBe('term');
-    expect(input.term).toBe('x');
-    expect(input.sentence).toBe('see x now');
-    expect(input.sourceLabel).toBe('YouTube');
-    expect(input.snapshot).toBeDefined();
-  });
-
+describe('queueItemFromCue', () => {
   it('cue item carries source refs', () => {
     const cue: BilingualCue = { index: 7, start: 4200, end: 5000, targetText: 'line', nativeText: 'trans' };
     const input = queueItemFromCue(cue, 'en', { sourceLabel: 'movie.mkv', videoId: 'vid-9' });

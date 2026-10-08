@@ -2,7 +2,6 @@ export {
   queueDedupeKey,
   stripSnapshot,
   buildQueueItem,
-  queueItemFromPrefill,
   queueItemFromCue,
   evictOverflow,
   toQueueRow,
@@ -15,7 +14,6 @@ export {
   onQueueChanged,
 } from './services/miningQueueClient';
 export {
-  savePrefillToQueue,
   saveCueToQueue,
 } from './services/capture';
 export type { QueueNotify } from './services/capture';
