@@ -138,145 +138,18 @@
   }
 }
 
-/* Player Action Dock — fixed at bottom, always visible.
-   Three regions mirror the original subtitle overlay: NavCluster left,
-   SubtitleBlock center, action cluster right. */
-.dock {
-  flex: 0 0 auto;
-  width: 100%;
-  display: grid;
-  grid-template-columns: minmax(92px, auto) minmax(0, 1fr) minmax(var(--touch-target-mobile), auto); /* 92px is a local minimum for the nav cluster; no exact space token matches */
-  grid-template-areas: 'nav subtitle actions';
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  padding-bottom: max(var(--space-2), env(safe-area-inset-bottom));
-  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
-  backdrop-filter: blur(var(--blur-lg));
-  -webkit-backdrop-filter: blur(var(--blur-lg));
-  border-top: var(--border-width-hairline) solid var(--color-divider);
-  pointer-events: auto;
-  container-type: inline-size;
-}
-
-/* Restore handle for the hidden dock — same circular overlay-button language
-   as NavCluster's collapsed handle; anchored bottom-left where the nav
-   cluster lives when the dock is shown. */
-.dockRestore {
-  position: absolute;
-  left: var(--space-3);
-  /* Lift above the host player's bottom control bar (~48px row) so the
-     handle stays clickable instead of overlapping native controls. */
-  bottom: var(--space-16);
-  z-index: var(--z-overlay-base);
-}
-
-/* Hidden-dock float stage — positioning context for the reused normal-mode
+/* Subtitle overlay stage — positioning context for the reused normal-mode
    overlay row (SubtitlePanels .root: nav | block | toolbar at --sb-y%).
    Covers the video stage only; right edge is set inline to the content
    panel's left border. pointer-events:none so the stage clicks pass through;
    the row itself manages its own hit targets like normal mode. */
-.dockFloat {
+.subtitleOverlay {
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
   pointer-events: none;
   z-index: var(--z-overlay-base);
-}
-
-.subtitleArea {
-  grid-area: subtitle;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-width: 0;
-  min-height: var(--space-7);
-  pointer-events: auto;
-}
-
-.navArea {
-  grid-area: nav;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  width: auto;
-  pointer-events: auto;
-}
-
-.actionArea {
-  grid-area: actions;
-  align-self: center;
-  pointer-events: auto !important;
-}
-
-/* Keep NavCluster's two vertical columns, matching the original overlay
-   composition used in the desired Player Mode dock. */
-.navArea [data-cell-id='nav-main'],
-.navArea [data-cell-id='nav-secondary'] {
-  flex-direction: column !important;
-  gap: var(--space-1) !important;
-}
-
-/* Dock buttons: ensure 44px touch target on mobile — applies to both
-   NavCluster (left) and actionArea (right) so both clusters respect
-   the same system touch-target standard alongside clusterSettings. */
-.navArea :global(button),
-.navArea :global([role='button']),
-.actionArea :global(button),
-.actionArea :global([role='button']) {
-  min-width: var(--touch-target-mobile);
-  min-height: var(--touch-target-mobile);
-}
-
-/* Player Mode icon size: pins cluster icons to the system 18px standard on
-   44px touch-target buttons (cluster clamp would shrink them on narrow docks). */
-.dock .navArea :global(button) :global(span):not([data-cell-ripple]),
-.dock .navArea :global([role='button']) :global(span):not([data-cell-ripple]),
-.dock .actionArea :global(button) :global(span):not([data-cell-ripple]),
-.dock .actionArea :global([role='button']) :global(span):not([data-cell-ripple]) {
-  width: var(--space-4-5) !important;
-  height: var(--space-4-5) !important;
-}
-
-/* Subtitle text: readable in dock, prevent overflow on long lines. */
-.subtitleArea :global(.text) {
-  max-height: var(--space-10);
-  overflow: hidden;
-}
-
-/* No-subtitle state: compact dock without subtitle area. */
-.dock:has(:global([data-cell-id='nav-no-sub'])) .subtitleArea {
-  display: none;
-}
-
-/* Mobile <600px: tighter spacing, full-width dock. */
-@container (max-width: 599px) {
-  .dock {
-    padding: var(--space-1) var(--space-2);
-    padding-bottom: max(var(--space-1), env(safe-area-inset-bottom));
-    gap: var(--space-1);
-  }
-  .subtitleArea {
-    max-width: 100%;
-  }
-  .navArea > * {
-    gap: var(--space-1) !important;
-  }
-}
-
-@media (max-height: 568px) {
-  @container (max-width: 599px) {
-    .overlay[data-practice-active='true'] .dock {
-      display: none;
-    }
-
-    .overlay[data-practice-active='true'] .videoStage {
-      height: min(40dvh, 40%) !important;
-    }
-  }
 }
 
 /* === Mobile <600px — reading-first layout (spec player-mode-mobile-layout) ===
@@ -427,7 +300,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .overlay,
-  .dock,
   .videoStage,
   .contentOther {
     transition: none;

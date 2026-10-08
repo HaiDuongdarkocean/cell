@@ -28,8 +28,6 @@ export interface ClusterRightToolbarProps {
   playerMode?: boolean;
   /** Player only: exit */
   onExit?: () => void;
-  /** Player only: hide the subtitle dock (restore handle takes over). */
-  onHideDock?: () => void;
 }
 
 /**
@@ -55,7 +53,6 @@ export function ClusterRightToolbar({
   onTogglePlayerMode,
   playerMode,
   onExit,
-  onHideDock,
 }: ClusterRightToolbarProps): React.JSX.Element {
   const wrapperId = mode === 'overlay' ? 'nav-cluster-right' : 'player-mode-actions';
   const wrapperClass = `${sharedStyles.clusterRight} ${wrapperClassName ?? ''}`.trim();
@@ -154,18 +151,6 @@ export function ClusterRightToolbar({
             onClick={onToggleManager}
           >
             <Icon name="subtitleManager" />
-          </Button>
-        )}
-        {mode === 'player' && onHideDock && (
-          <Button shape="circle"
-            variant="overlay"
-            aria-label={t('subtitle.playerMode.hideDock')}
-            title={t('subtitle.playerMode.hideDock')}
-            data-cell-id="dock-hide-btn"
-            size="sm"
-            onClick={onHideDock}
-          >
-            <Icon name="panelBottomClose" />
           </Button>
         )}
         {mode === 'overlay' ? (

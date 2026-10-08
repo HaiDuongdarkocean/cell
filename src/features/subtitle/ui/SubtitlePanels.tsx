@@ -336,6 +336,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           onPlayPause={onPlayPause}
           onToggleCollapsed={handleToggleCollapsed}
           onExit={() => { void handleTogglePlayerMode(); }}
+          yOffsetPercent={yOffsetPercent}
+          setYOffsetPercent={setYOffsetPercent}
+          onDragReposition={onDragReposition}
           cues={cues as BilingualCue[]}
           currentTimeMs={currentTimeMs}
           offsetMs={offsetMs}

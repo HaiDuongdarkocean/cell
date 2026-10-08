@@ -99,7 +99,7 @@ function renderPlayerMode(): HTMLElement {
       onExit={noop}
     />,
   );
-  return screen.getByTestId('overlay-player-action');
+  return screen.getByTestId('pm-subtitle-overlay');
 }
 
 const sampleCues: BilingualCue[] = [
@@ -137,17 +137,19 @@ function renderPlayerModeWithCues(cues?: BilingualCue[]): HTMLElement {
       onSeek={cues ? noop : undefined}
     />,
   );
-  return screen.getByTestId('overlay-player-action');
+  return screen.getByTestId('pm-subtitle-overlay');
 }
 
 describe('PlayerModeOverlay', () => {
-  it('keeps subtitle, NavCluster, and action cluster inside PlayerActionDock', () => {
-    const dock = renderPlayerMode();
+  it('renders the shared overlay row (nav | subtitle | actions) over the video stage', () => {
+    const overlay = renderPlayerMode();
 
-    expect(dock).toContainElement(screen.getByTestId('subtitle-block'));
-    expect(dock).toContainElement(screen.getByTestId('nav-cluster'));
-    expect(dock).toContainElement(screen.getByTestId('player-mode-actions'));
-    expect(dock).toContainElement(screen.getByTestId('generate-native-btn'));
+    expect(overlay).toContainElement(screen.getByTestId('subtitle-block'));
+    expect(overlay).toContainElement(screen.getByTestId('nav-cluster'));
+    expect(overlay).toContainElement(screen.getByTestId('player-mode-actions'));
+    expect(overlay).toContainElement(screen.getByTestId('generate-native-btn'));
+    expect(screen.queryByTestId('overlay-player-action')).toBeNull();
+    expect(screen.queryByTestId('pm-dock-restore')).toBeNull();
   });
 
   it('shows CueList in contentOther by default when cues are provided', () => {
@@ -220,49 +222,15 @@ describe('PlayerModeOverlay', () => {
     });
   });
 
-  it('hides the dock to a floating restore button and restores on click', async () => {
+  it('lets the cue list close itself while the subtitle overlay stays up', async () => {
     renderPlayerModeWithCues(sampleCues);
-
-    fireEvent.click(screen.getByTestId('dock-hide-btn'));
-
-    expect(screen.queryByTestId('overlay-player-action')).toBeNull();
-    expect(screen.getByTestId('pm-dock-restore')).toBeInTheDocument();
-    // Hidden dock still floats nav/subtitle/tools over the video stage.
-    const float = screen.getByTestId('pm-dock-float');
-    expect(float).toContainElement(screen.getByTestId('subtitle-block'));
-    expect(float).toContainElement(screen.getByTestId('nav-cluster'));
-    expect(float).toContainElement(screen.getByTestId('player-mode-actions'));
-    // Cue list survives the hidden dock.
-    expect(screen.getByTestId('cue-list')).toBeInTheDocument();
-    expect(storageData[STORAGE_KEYS.PLAYER_MODE_DOCK_PLACEMENT]).toBe('hidden');
-
-    fireEvent.click(screen.getByTestId('pm-dock-restore'));
-    await waitFor(() => {
-      expect(screen.getByTestId('overlay-player-action')).toBeInTheDocument();
-    });
-    expect(storageData[STORAGE_KEYS.PLAYER_MODE_DOCK_PLACEMENT]).toBe('bottom');
-  });
-
-  it('honours a persisted hidden dock on mount', async () => {
-    storageData[STORAGE_KEYS.PLAYER_MODE_DOCK_PLACEMENT] = 'hidden';
-    renderPlayerModeWithCues(sampleCues);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('pm-dock-restore')).toBeInTheDocument();
-    });
-    expect(screen.queryByTestId('overlay-player-action')).toBeNull();
-  });
-
-  it('lets the cue list close itself while the dock is hidden', async () => {
-    renderPlayerModeWithCues(sampleCues);
-
-    fireEvent.click(screen.getByTestId('dock-hide-btn'));
-    expect(screen.queryByTestId('overlay-player-action')).toBeNull();
 
     fireEvent.click(screen.getByTestId('subtitle-panel-close'));
     await waitFor(() => {
       expect(screen.queryByTestId('cue-list')).not.toBeInTheDocument();
     });
+    expect(screen.getByTestId('pm-subtitle-overlay')).toBeInTheDocument();
+    expect(screen.getByTestId('subtitle-block')).toBeInTheDocument();
   });
 });
 
@@ -327,7 +295,7 @@ describe('mobile layout (<600px)', () => {
     expect(screen.getByTestId('pm-anchor-row')).toBeInTheDocument();
     expect(screen.queryByTestId('pm-caption')).toBeNull();
     expect(screen.getByTestId('cue-list')).toBeInTheDocument();
-    expect(screen.queryByTestId('overlay-player-action')).toBeNull();
+    expect(screen.queryByTestId('pm-subtitle-overlay')).toBeNull();
     expect(screen.getByTestId('player-mode-content')).toBeInTheDocument();
     expect(screen.queryByTestId('subtitle-block')).toBeNull();
     expect(document.documentElement.getAttribute('data-cell-player-mode-mobile')).toBe('true');

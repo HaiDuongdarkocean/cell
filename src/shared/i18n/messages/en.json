@@ -1582,8 +1582,6 @@
   "subtitle.playerMode.crashHint": "Check console for details.",
   "subtitle.playerMode.crashed": "Player Mode crashed:",
   "subtitle.playerMode.resizeList": "Resize subtitle list",
-  "subtitle.playerMode.hideDock": "Hide subtitle bar",
-  "subtitle.playerMode.showDock": "Show subtitle bar",
   "subtitle.playerMode.unreachable": "Player mode could not reach the host player",
   "subtitle.preview.clickToEdit": "Click text to edit",
   "subtitle.preview.live": "Live Preview",

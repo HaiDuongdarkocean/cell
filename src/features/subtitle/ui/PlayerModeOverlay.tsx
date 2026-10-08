@@ -5,6 +5,7 @@
 // to its original parent on unmount.
 
 import { memo, useEffect, useRef, useState, useCallback } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import { SubtitlePanel } from './SubtitlePanel';
@@ -16,7 +17,7 @@ import type { ICON_CATALOG } from '@/shared/icons';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
 import { ClusterRightToolbar } from './ClusterRightToolbar';
-import { resolvePlayerModeLayout, DOCK_MIN_HEIGHT_PX, PM_MOBILE_BAR_HEIGHT_PX } from '../logic/playerModeGeometry';
+import { resolvePlayerModeLayout, PM_MOBILE_BAR_HEIGHT_PX } from '../logic/playerModeGeometry';
 import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { getStorage, setStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { Button } from '@/shared/ui/Button';
@@ -86,6 +87,10 @@ export interface PlayerModeOverlayProps {
   onToggleCollapsed: () => void;
   /** Exit Player Mode. */
   onExit: () => void;
+  /** Shared subtitle block vertical offset (% of video stage) — same state as normal mode. */
+  yOffsetPercent?: number;
+  setYOffsetPercent?: Dispatch<SetStateAction<number>>;
+  onDragReposition?: (yOffsetPercent: number) => void;
   /** Bilingual cues for CueList display in player-mode-content. */
   cues?: BilingualCue[];
   /** Current video time in milliseconds (for CueList highlight). */
@@ -151,6 +156,9 @@ function PlayerModeOverlayInner({
   onPlayPause,
   onToggleCollapsed,
   onExit,
+  yOffsetPercent,
+  setYOffsetPercent,
+  onDragReposition,
   cues,
   currentTimeMs,
   offsetMs,
@@ -171,21 +179,25 @@ function PlayerModeOverlayInner({
 }: PlayerModeOverlayProps): React.JSX.Element {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [cueListOpen, setCueListOpen] = useState(true);
-  // Desktop dock visibility — 'bottom' (default) or 'hidden' with a floating
-  // restore handle. Persisted like PLAYER_MODE_CONTENT_PCT.
-  const [dockPlacement, setDockPlacement] = useState<'bottom' | 'hidden'>('bottom');
   const [cueDisplayMode, setCueDisplayMode] = useState<'list' | 'active'>('list');
   const [showAllCues, setShowAllCues] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [fabSlot, setFabSlot] = useState<HTMLDivElement | null>(null);
   const floatRowRef = useRef<HTMLDivElement>(null);
-  const [floatY, setFloatY] = useState(75);
+  const [floatYLocal, setFloatYLocal] = useState(75);
+  const floatY = yOffsetPercent ?? floatYLocal;
+  const setFloatY = setYOffsetPercent ?? setFloatYLocal;
   const {
     dragging: floatDragging,
     handlePointerDown: onFloatPointerDown,
     handlePointerMove: onFloatPointerMove,
     handlePointerUp: onFloatPointerUp,
-  } = useSubtitleBlockDrag({ rootRef: floatRowRef, yOffsetPercent: floatY, setYOffsetPercent: setFloatY });
+  } = useSubtitleBlockDrag({
+    rootRef: floatRowRef,
+    yOffsetPercent: floatY,
+    setYOffsetPercent: setFloatY,
+    onDragReposition,
+  });
 
   const bottomBarRef = useRef<HTMLElement>(null);
   const anchorRowRef = useRef<HTMLDivElement>(null);
@@ -402,7 +414,7 @@ function PlayerModeOverlayInner({
     viewport.w,
     viewport.h,
     videoAspectRatio,
-    isMobilePm ? PM_MOBILE_BAR_HEIGHT_PX : DOCK_MIN_HEIGHT_PX,
+    isMobilePm ? PM_MOBILE_BAR_HEIGHT_PX : 0,
   );
   const clusterRightStyle = buildClusterCssVars(clusterSettings);
 
@@ -437,39 +449,6 @@ function PlayerModeOverlayInner({
   useEffect(() => {
     setShowAllCues(false);
   }, [cueDisplayMode]);
-
-  // Desktop dock visibility: persisted, live-updated via storage (same channel
-  // as PLAYER_MODE_CUE_DISPLAY). Mobile branch ignores it — the bottom
-  // transport bar is its own surface.
-  const applyDockPlacement = useCallback((next: 'bottom' | 'hidden'): void => {
-    setDockPlacement(next);
-    setStorage({ [STORAGE_KEYS.PLAYER_MODE_DOCK_PLACEMENT]: next }).catch(() => undefined);
-  }, []);
-  useEffect(() => {
-    let cancelled = false;
-    const key = STORAGE_KEYS.PLAYER_MODE_DOCK_PLACEMENT;
-    const read = (v: unknown): 'bottom' | 'hidden' | null =>
-      v === 'bottom' || v === 'hidden' ? v : null;
-    getStorage<Record<string, unknown>>(key)
-      .then((data) => {
-        const v = read(data[key]);
-        if (!cancelled && v) setDockPlacement(v);
-      })
-      .catch(() => undefined);
-    const onChanged = (
-      changes: Record<string, chrome.storage.StorageChange>,
-      area: string,
-    ): void => {
-      if (area !== 'local') return;
-      const v = read(changes[key]?.newValue);
-      if (v) setDockPlacement(v);
-    };
-    onStorageChanged(onChanged);
-    return () => {
-      cancelled = true;
-      removeOnStorageChangedListener(onChanged);
-    };
-  }, []);
 
   // REQ-8: when the orbital badge is snapped to the right edge and its
   // vertical span overlaps the rail, lift the fab above the badge — keeps
@@ -1036,129 +1015,66 @@ function PlayerModeOverlayInner({
         </div>
       </div>
 
-      {/* Player Action Dock — band at the bottom; 'hidden' unmounts it and
-          leaves a floating restore handle so the video runs unobstructed. */}
-      {dockPlacement !== 'hidden' && (
+      {/* Subtitle overlay — same row composition as normal mode
+          (SubtitlePanels .root: NavCluster | SubtitleBlock | toolbar at
+          --sb-y%), floated over the video stage. */}
       <div
-        className={styles.dock}
-        style={{ height: `${layout.dockHeight}px` }}
-        data-cell-id="overlay-player-action"
+        className={styles.subtitleOverlay}
+        style={{ right: `calc(${contentPct}% + var(--space-1-5))` }}
+        data-cell-id="pm-subtitle-overlay"
       >
-        <div className={styles.navArea}>
-          <NavCluster
-            collapsed={false}
-            isPlaying={isPlaying}
-            repeatActive={repeatActive}
-            repeatIcon={repeatIcon}
-            repeatLabel={repeatLabel}
-            clusterSettings={clusterSettings}
-            onToggleCollapsed={onToggleCollapsed}
-            onPrev={onPrev}
-            onNext={onNext}
-            onRepeat={onRepeat}
-            onRewind={onRewind}
-            onForward={onForward}
-            onPlayPause={onPlayPause}
-          />
-        </div>
-        <div className={styles.subtitleArea}>
-          <SubtitleBlock
-            targetStyle={targetStyle}
-            nativeStyle={nativeStyle}
-            blockSettings={blockSettings}
-          />
-        </div>
-        <ClusterRightToolbar
-          mode="player"
-          clusterRightStyle={clusterRightStyle}
-          wrapperClassName={styles.actionArea}
-          onQuickAdd={onQuickAdd}
-          onEditCard={onEditCard}
-          onToggleOcr={onToggleOcr}
-          ocrEnabled={ocrEnabled}
-          onToggleManager={onToggleManager}
-          onGenerateNative={onGenerateNative}
-          generateNativeEnabled={generateNativeEnabled}
-          onToggleSidePanel={onToggleSidePanel ? () => setCueListOpen((v) => !v) : undefined}
-          sidePanelLabel={t('subtitle.toolbar.toggleList')}
-          toolsExpanded={toolsExpanded}
-          onToggleTools={onToggleTools ?? (() => undefined)}
-          onExit={onExit}
-          onHideDock={() => applyDockPlacement('hidden')}
-        />
-      </div>
-      )}
-      {dockPlacement === 'hidden' && (
-        <>
-          <div
-            className={styles.dockFloat}
-            style={{ right: `calc(${contentPct}% + var(--space-1-5))` }}
-            data-cell-id="pm-dock-float"
-          >
-            <div
-              ref={floatRowRef}
-              className={`${panelStyles.root}${floatDragging ? ` ${panelStyles.dragging}` : ''}`}
-              style={{ '--sb-y': floatY } as React.CSSProperties}
-              data-cell-id="pm-float-row"
-              onPointerDown={onFloatPointerDown}
-              onPointerMove={onFloatPointerMove}
-              onPointerUp={onFloatPointerUp}
-              onPointerCancel={onFloatPointerUp}
-            >
-              <div className={panelStyles.navLayer}>
-                <NavCluster
-                  collapsed={false}
-                  isPlaying={isPlaying}
-                  repeatActive={repeatActive}
-                  repeatIcon={repeatIcon}
-                  repeatLabel={repeatLabel}
-                  clusterSettings={clusterSettings}
-                  onToggleCollapsed={onToggleCollapsed}
-                  onPrev={onPrev}
-                  onNext={onNext}
-                  onRepeat={onRepeat}
-                  onRewind={onRewind}
-                  onForward={onForward}
-                  onPlayPause={onPlayPause}
-                />
-              </div>
-              <div className={panelStyles.blockLayer}>
-                <SubtitleBlock
-                  targetStyle={targetStyle}
-                  nativeStyle={nativeStyle}
-                  blockSettings={blockSettings}
-                />
-              </div>
-              <ClusterRightToolbar
-                mode="player"
-                clusterRightStyle={clusterRightStyle}
-                onQuickAdd={onQuickAdd}
-                onEditCard={onEditCard}
-                onToggleOcr={onToggleOcr}
-                ocrEnabled={ocrEnabled}
-                onToggleManager={onToggleManager}
-                onGenerateNative={onGenerateNative}
-                generateNativeEnabled={generateNativeEnabled}
-                onToggleSidePanel={onToggleSidePanel ? () => setCueListOpen((v) => !v) : undefined}
-                sidePanelLabel={t('subtitle.toolbar.toggleList')}
-                toolsExpanded={toolsExpanded}
-                onToggleTools={onToggleTools ?? (() => undefined)}
-                onExit={onExit}
-              />
-            </div>
+        <div
+          ref={floatRowRef}
+          className={`${panelStyles.root}${floatDragging ? ` ${panelStyles.dragging}` : ''}`}
+          style={{ '--sb-y': floatY } as React.CSSProperties}
+          data-cell-id="pm-subtitle-row"
+          onPointerDown={onFloatPointerDown}
+          onPointerMove={onFloatPointerMove}
+          onPointerUp={onFloatPointerUp}
+          onPointerCancel={onFloatPointerUp}
+        >
+          <div className={panelStyles.navLayer}>
+            <NavCluster
+              collapsed={false}
+              isPlaying={isPlaying}
+              repeatActive={repeatActive}
+              repeatIcon={repeatIcon}
+              repeatLabel={repeatLabel}
+              clusterSettings={clusterSettings}
+              onToggleCollapsed={onToggleCollapsed}
+              onPrev={onPrev}
+              onNext={onNext}
+              onRepeat={onRepeat}
+              onRewind={onRewind}
+              onForward={onForward}
+              onPlayPause={onPlayPause}
+            />
           </div>
-          <Button shape="circle"
-            variant="overlay"
-            className={styles.dockRestore}
-            aria-label={t('subtitle.playerMode.showDock')}
-            title={t('subtitle.playerMode.showDock')}
-            data-cell-id="pm-dock-restore"
-            onClick={() => applyDockPlacement('bottom')}
-          >
-            <Icon name="captions" />
-          </Button>
-        </>
-      )}
+          <div className={panelStyles.blockLayer}>
+            <SubtitleBlock
+              targetStyle={targetStyle}
+              nativeStyle={nativeStyle}
+              blockSettings={blockSettings}
+            />
+          </div>
+          <ClusterRightToolbar
+            mode="player"
+            clusterRightStyle={clusterRightStyle}
+            onQuickAdd={onQuickAdd}
+            onEditCard={onEditCard}
+            onToggleOcr={onToggleOcr}
+            ocrEnabled={ocrEnabled}
+            onToggleManager={onToggleManager}
+            onGenerateNative={onGenerateNative}
+            generateNativeEnabled={generateNativeEnabled}
+            onToggleSidePanel={onToggleSidePanel ? () => setCueListOpen((v) => !v) : undefined}
+            sidePanelLabel={t('subtitle.toolbar.toggleList')}
+            toolsExpanded={toolsExpanded}
+            onToggleTools={onToggleTools ?? (() => undefined)}
+            onExit={onExit}
+          />
+        </div>
+      </div>
     </div>
   );
 }
