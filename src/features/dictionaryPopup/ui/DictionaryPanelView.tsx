@@ -472,16 +472,24 @@ export function DictionaryPanelView({
             <div className={styles.cellCandidatesChips}>
               <div className={styles.cellCandidatesChipsScroll} data-cell-id="dictionary-candidates-scroll">
                 {allCandidates.map((c, idx) => (
-                  <Button variant="unstyled"
+                  <p
                     key={`${c.term}-${idx}`}
                     className={styles.cellChip}
+                    role="button"
+                    tabIndex={0}
                     aria-current={idx === activeChipIndex ? 'true' : undefined}
                     onClick={() => handleChipClick(idx)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleChipClick(idx);
+                      }
+                    }}
                     title={c.term}
                     data-cell-id={`dictionary-candidate-chip-${idx}`}
                   >
                     {c.term}
-                  </Button>
+                  </p>
                 ))}
               </div>
             </div>
