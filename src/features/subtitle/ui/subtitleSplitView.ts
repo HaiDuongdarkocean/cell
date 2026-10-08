@@ -105,6 +105,7 @@ export function useSplitView({
     const onChange = (): void => {
       const nowFullscreen = Boolean(document.fullscreenElement);
       setIsFullscreen(nowFullscreen);
+      if (playerMode) return;
       setSplitViewOpenState((open) => {
         if (!open) return false;
         savedScrollRef.current = saveScrollPosition();
@@ -122,7 +123,7 @@ export function useSplitView({
       cleanupRef.current?.();
       cleanupRef.current = null;
     };
-  }, []);
+  }, [playerMode]);
 
   useEffect(() => {
     if (!splitViewPortalTarget || savedScrollRef.current == null) return;

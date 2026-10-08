@@ -52,7 +52,9 @@ export function Showcase(): ReactElement {
             onToggleSidePanel={() => setCueListOpen((v) => !v)}
             onToggleManager={() => {}}
             generateNativeEnabled
-            cues={cueListOpen ? MOCK_CUES : undefined}
+            cueListOpen={cueListOpen}
+            onCueListOpenChange={setCueListOpen}
+            cues={MOCK_CUES}
             currentTimeMs={currentTimeMs}
             onSeek={(ms) => setCurrentTimeMs(ms)}
           />

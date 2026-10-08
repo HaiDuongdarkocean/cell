@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PlayerModeOverlay } from './PlayerModeOverlay';
+import type { PlayerModeOverlayProps } from './PlayerModeOverlay';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { BilingualCue } from '@/entities/media';
@@ -72,9 +74,18 @@ const style: OverlayStyleConfig = {
 
 const noop = (): void => undefined;
 
+type HarnessProps = Omit<PlayerModeOverlayProps, 'cueListOpen' | 'onCueListOpenChange'>;
+
+function PlayerModeHarness(props: HarnessProps): React.JSX.Element {
+  const [cueListOpen, setCueListOpen] = useState(true);
+  return <PlayerModeOverlay {...props} cueListOpen={cueListOpen} onCueListOpenChange={setCueListOpen} />;
+}
+
+const splitViewPanel = (): HTMLElement | null => document.querySelector<HTMLElement>('[data-cell-split-view="panel"]');
+
 function renderPlayerMode(): HTMLElement {
   render(
-    <PlayerModeOverlay
+    <PlayerModeHarness
       targetStyle={style}
       nativeStyle={style}
       isPlaying
@@ -108,7 +119,7 @@ const sampleCues: BilingualCue[] = [
 
 function renderPlayerModeWithCues(cues?: BilingualCue[]): HTMLElement {
   render(
-    <PlayerModeOverlay
+    <PlayerModeHarness
       targetStyle={style}
       nativeStyle={style}
       isPlaying
@@ -152,11 +163,12 @@ describe('PlayerModeOverlay', () => {
     expect(screen.queryByTestId('pm-dock-restore')).toBeNull();
   });
 
-  it('shows CueList in contentOther by default when cues are provided', () => {
+  it('shows CueList in the shared split-view panel when cues are provided', () => {
     renderPlayerModeWithCues(sampleCues);
 
-    const content = screen.getByTestId('player-mode-content');
-    expect(content).toContainElement(screen.getByTestId('cue-list'));
+    const panel = splitViewPanel();
+    expect(panel).not.toBeNull();
+    expect(panel).toContainElement(screen.getByTestId('cue-list'));
   });
 
   it('does not render CueList when no cues are provided', () => {
@@ -180,6 +192,24 @@ describe('PlayerModeOverlay', () => {
     expect(screen.queryByTestId('cue-list')).not.toBeInTheDocument();
   });
 
+  it('closing the panel removes the container and handle — no leftover gap', () => {
+    renderPlayerModeWithCues(sampleCues);
+
+    expect(splitViewPanel()).not.toBeNull();
+    expect(document.querySelector('[data-cell-split-view="handle"]')).not.toBeNull();
+
+    fireEvent.keyDown(window, { key: 't' });
+
+    expect(splitViewPanel()).toBeNull();
+    expect(document.querySelector('[data-cell-split-view="handle"]')).toBeNull();
+    expect(document.querySelector('[data-cell-split-view="wrapper"]')).not.toBeNull();
+    expect(document.querySelector('[data-cell-split-view="stage"]')).not.toBeNull();
+
+    fireEvent.keyDown(window, { key: 't' });
+
+    expect(splitViewPanel()).not.toBeNull();
+  });
+
   it('persists contentPct to chrome.storage.local after resize drag ends', async () => {
     storageData[STORAGE_KEYS.PLAYER_MODE_CONTENT_PCT] = 45;
 
@@ -187,15 +217,17 @@ describe('PlayerModeOverlay', () => {
 
     // Wait for the async load effect to apply the persisted value to the DOM
     // (contentOther uses --content-pct CSS var).
-    const content = screen.getByTestId('player-mode-content');
+    const content = splitViewPanel();
+    expect(content).not.toBeNull();
     await waitFor(() => {
-      expect((content.style.getPropertyValue('--content-pct') || '').trim()).toBe('45%');
+      expect((content!.style.getPropertyValue('--content-pct') || '').trim()).toBe('45%');
     });
 
     // Stub the split container's rect so drag math has a non-zero splitWidth.
-    const split = screen.getByTestId('player-mode-split');
+    const split = document.querySelector<HTMLElement>('[data-cell-split-view="wrapper"]');
+    expect(split).not.toBeNull();
     const rectStub = { width: 1000, height: 600, left: 0, top: 0, right: 1000, bottom: 600, x: 0, y: 0, toJSON: () => '' };
-    Object.defineProperty(split, 'getBoundingClientRect', { value: () => rectStub, configurable: true });
+    Object.defineProperty(split!, 'getBoundingClientRect', { value: () => rectStub, configurable: true });
 
     const handle = screen.getByRole('separator');
     // jsdom doesn't implement pointer capture — stub on the prototype.
@@ -240,7 +272,7 @@ describe('mobile layout (<600px)', () => {
 
   function renderMobile(cues?: BilingualCue[]): void {
     render(
-      <PlayerModeOverlay
+      <PlayerModeHarness
         targetStyle={style}
         nativeStyle={style}
         isPlaying
@@ -296,14 +328,14 @@ describe('mobile layout (<600px)', () => {
     expect(screen.queryByTestId('pm-caption')).toBeNull();
     expect(screen.getByTestId('cue-list')).toBeInTheDocument();
     expect(screen.queryByTestId('pm-subtitle-overlay')).toBeNull();
-    expect(screen.getByTestId('player-mode-content')).toBeInTheDocument();
+    expect(splitViewPanel()).not.toBeNull();
     expect(screen.queryByTestId('subtitle-block')).toBeNull();
     expect(document.documentElement.getAttribute('data-cell-player-mode-mobile')).toBe('true');
   });
 
   it('removes the mobile attribute on unmount', () => {
     const { unmount } = render(
-      <PlayerModeOverlay
+      <PlayerModeHarness
         targetStyle={style}
         nativeStyle={style}
         isPlaying
@@ -375,7 +407,7 @@ describe('mobile layout (<600px)', () => {
   it('speed chip opens the sheet and the stepper walks the playback speeds', () => {
     const onPlaybackSpeedChange = jest.fn();
     render(
-      <PlayerModeOverlay
+      <PlayerModeHarness
         targetStyle={style}
         nativeStyle={style}
         isPlaying
@@ -421,7 +453,7 @@ describe('mobile layout (<600px)', () => {
   it('closes the menu before exiting on Escape', () => {
     const onExit = jest.fn();
     render(
-      <PlayerModeOverlay
+      <PlayerModeHarness
         targetStyle={style}
         nativeStyle={style}
         isPlaying

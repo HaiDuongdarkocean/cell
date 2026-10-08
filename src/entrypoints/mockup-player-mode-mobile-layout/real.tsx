@@ -19,6 +19,7 @@ export function RealPanel(): React.ReactElement {
   const [timeMs, setTimeMs] = useState(352000);
   const [managerOpen, setManagerOpen] = useState(false);
   const [speed, setSpeed] = useState<PlaybackSpeed>(1);
+  const [cueListOpen, setCueListOpen] = useState(true);
   const noop = useCallback((): void => undefined, []);
   return (
     <>
@@ -46,6 +47,8 @@ export function RealPanel(): React.ReactElement {
         onPlayPause={() => setPlaying((p) => !p)}
         onToggleCollapsed={noop}
         onExit={noop}
+        cueListOpen={cueListOpen}
+        onCueListOpenChange={setCueListOpen}
         cues={MOCK_CUES}
         currentTimeMs={timeMs}
         onSeek={setTimeMs}

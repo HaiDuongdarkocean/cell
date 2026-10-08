@@ -91,7 +91,10 @@ export interface PlayerModeOverlayProps {
   yOffsetPercent?: number;
   setYOffsetPercent?: Dispatch<SetStateAction<number>>;
   onDragReposition?: (yOffsetPercent: number) => void;
-  /** Bilingual cues for CueList display in player-mode-content. */
+  /** Cue-list panel visibility — shared split-view state, synced with normal mode. */
+  cueListOpen: boolean;
+  onCueListOpenChange: (open: boolean) => void;
+  /** Bilingual cues for CueList display in the split-view panel. */
   cues?: BilingualCue[];
   /** Current video time in milliseconds (for CueList highlight). */
   currentTimeMs?: number;
@@ -176,9 +179,10 @@ function PlayerModeOverlayInner({
   tokenize,
   panelBlurred,
   onSaveCue,
+  cueListOpen,
+  onCueListOpenChange,
 }: PlayerModeOverlayProps): React.JSX.Element {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
-  const [cueListOpen, setCueListOpen] = useState(true);
   const [cueDisplayMode, setCueDisplayMode] = useState<'list' | 'active'>('list');
   const [showAllCues, setShowAllCues] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
@@ -545,7 +549,7 @@ function PlayerModeOverlayInner({
         e.preventDefault();
         e.stopPropagation();
         if (cueListOpen) {
-          setCueListOpen(false);
+          onCueListOpenChange(false);
         } else {
           onExit();
         }
@@ -556,12 +560,12 @@ function PlayerModeOverlayInner({
         if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
         e.preventDefault();
         e.stopPropagation();
-        setCueListOpen((v) => !v);
+        onCueListOpenChange(!cueListOpen);
       }
     };
     window.addEventListener('keydown', onWindowKeyDown, true);
     return () => window.removeEventListener('keydown', onWindowKeyDown, true);
-  }, [onExit, cueListOpen]);
+  }, [onExit, cueListOpen, onCueListOpenChange]);
 
   // Load persisted contentPct on mount (survives reload + re-enter Player Mode).
   useEffect(() => {
@@ -683,11 +687,11 @@ function PlayerModeOverlayInner({
         role="application"
         aria-label={t('subtitle.playerMode.aria')}
       >
-        <div className={styles.split} data-cell-id="player-mode-split">
+        <div className={styles.split} data-cell-split-view="wrapper">
           <div
             className={`${styles.videoStage} ${!cueListOpen || !onSeek ? styles.videoStageFill : ''}`}
             style={cueListOpen && onSeek ? { height: `${layout.videoStageHeight}px` } : undefined}
-            data-cell-id="player-mode-video-stage"
+            data-cell-split-view="stage"
             aria-hidden="true"
             ref={videoStageRef}
           >
@@ -695,7 +699,7 @@ function PlayerModeOverlayInner({
           </div>
           <div
             className={`${styles.pmCueWrap} ${!cueListOpen || !onSeek ? styles.pmCueWrapCollapsed : ''}`}
-            data-cell-id="player-mode-content"
+            data-cell-split-view="panel"
           >
             {cueListOpen && onSeek && (
               <div className={styles.pmCueRegion} data-cell-id="pm-cue-region">
@@ -898,7 +902,7 @@ function PlayerModeOverlayInner({
             <MenuItem
               icon={<Icon name="sidePanel" />}
               data-cell-id="panel-toggle-btn"
-              onSelect={() => { setCueListOpen((v) => !v); closeMoreMenu(); }}
+              onSelect={() => { onCueListOpenChange(!cueListOpen); closeMoreMenu(); }}
             >
               {cueListOpen ? t('subtitle.playerMode.hideCueList') : t('subtitle.playerMode.showCueList')}
             </MenuItem>
@@ -955,64 +959,65 @@ function PlayerModeOverlayInner({
       {/* Player Mode split — video-stage + content.
           >480px: row (video left, content right, resizable).
           <480px: column (video top, content bottom). */}
-      <div className={styles.split} ref={splitRef} data-cell-id="player-mode-split">
+      <div className={styles.split} ref={splitRef} data-cell-split-view="wrapper">
         <div
           className={styles.videoStage}
           style={{ height: `${layout.videoStageHeight}px` }}
-          data-cell-id="player-mode-video-stage"
+          data-cell-split-view="stage"
           aria-hidden="true"
           ref={videoStageRef}
         >
           <slot name="cell-video" />
         </div>
 
-        {/* Resize handle — only visible >480px (CSS controls display). */}
-        <div
-          className={styles.resizeHandle}
-          onPointerDown={onResizePointerDown}
-          onPointerMove={onResizePointerMove}
-          onPointerUp={onResizePointerUp}
-          onPointerCancel={onResizePointerUp}
-          onKeyDown={onResizeKeyDown}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label={t('subtitle.playerMode.resizeList')}
-          aria-valuenow={Math.round(contentPct)}
-          aria-valuemin={CONTENT_PCT_MIN}
-          aria-valuemax={CONTENT_PCT_MAX}
-          tabIndex={0}
-        />
-
-        <div
-          className={styles.contentOther}
-          style={{ '--content-pct': `${contentPct}%` } as React.CSSProperties}
-          data-cell-id="player-mode-content"
-        >
-          {cueListOpen && onSeek && (
-            <SubtitlePanel
-              cues={cues ?? []}
-              currentTimeMs={currentTimeMs ?? 0}
-              offsetMs={offsetMs}
-              onSeek={onSeek}
-              onClose={() => setCueListOpen(false)}
-              activeModeId={activeModeId}
-              customModes={customModes}
-              onStudyModeChange={onStudyModeChange}
-              practiceMode={practiceMode}
-              onPracticeModeChange={onPracticeModeChange}
-              isPlaying={isPlaying}
-              playbackSpeed={playbackSpeed}
-              onPlaybackSpeedChange={onPlaybackSpeedChange}
-              onPlayPause={onPlayPause}
-              onPreviousCue={onPreviousCue}
-              onReplayCue={onReplayCue}
-              onContinueCue={onContinueCue}
-              tokenize={tokenize}
-              panelBlurred={panelBlurred}
-              onSaveCue={onSaveCue}
+        {cueListOpen && onSeek && (
+          <>
+            <div
+              className={styles.resizeHandle}
+              data-cell-split-view="handle"
+              onPointerDown={onResizePointerDown}
+              onPointerMove={onResizePointerMove}
+              onPointerUp={onResizePointerUp}
+              onPointerCancel={onResizePointerUp}
+              onKeyDown={onResizeKeyDown}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label={t('subtitle.playerMode.resizeList')}
+              aria-valuenow={Math.round(contentPct)}
+              aria-valuemin={CONTENT_PCT_MIN}
+              aria-valuemax={CONTENT_PCT_MAX}
+              tabIndex={0}
             />
-          )}
-        </div>
+            <div
+              className={styles.contentOther}
+              style={{ '--content-pct': `${contentPct}%` } as React.CSSProperties}
+              data-cell-split-view="panel"
+            >
+              <SubtitlePanel
+                cues={cues ?? []}
+                currentTimeMs={currentTimeMs ?? 0}
+                offsetMs={offsetMs}
+                onSeek={onSeek}
+                onClose={() => onCueListOpenChange(false)}
+                activeModeId={activeModeId}
+                customModes={customModes}
+                onStudyModeChange={onStudyModeChange}
+                practiceMode={practiceMode}
+                onPracticeModeChange={onPracticeModeChange}
+                isPlaying={isPlaying}
+                playbackSpeed={playbackSpeed}
+                onPlaybackSpeedChange={onPlaybackSpeedChange}
+                onPlayPause={onPlayPause}
+                onPreviousCue={onPreviousCue}
+                onReplayCue={onReplayCue}
+                onContinueCue={onContinueCue}
+                tokenize={tokenize}
+                panelBlurred={panelBlurred}
+                onSaveCue={onSaveCue}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Subtitle overlay — same row composition as normal mode
@@ -1020,7 +1025,7 @@ function PlayerModeOverlayInner({
           --sb-y%), floated over the video stage. */}
       <div
         className={styles.subtitleOverlay}
-        style={{ right: `calc(${contentPct}% + var(--space-1-5))` }}
+        style={{ right: cueListOpen && onSeek ? `calc(${contentPct}% + var(--space-1-5))` : 'var(--space-1-5)' }}
         data-cell-id="pm-subtitle-overlay"
       >
         <div
@@ -1067,8 +1072,8 @@ function PlayerModeOverlayInner({
             onToggleManager={onToggleManager}
             onGenerateNative={onGenerateNative}
             generateNativeEnabled={generateNativeEnabled}
-            onToggleSidePanel={onToggleSidePanel ? () => setCueListOpen((v) => !v) : undefined}
-            sidePanelLabel={t('subtitle.toolbar.toggleList')}
+            onToggleSidePanel={onToggleSidePanel ? () => onCueListOpenChange(!cueListOpen) : undefined}
+            sidePanelLabel={cueListOpen ? t('subtitle.toolbar.closeList') : t('subtitle.toolbar.openList')}
             toolsExpanded={toolsExpanded}
             onToggleTools={onToggleTools ?? (() => undefined)}
             onExit={onExit}
