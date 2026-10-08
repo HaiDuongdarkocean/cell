@@ -1,0 +1,39 @@
+Tihoka — Proprietary License
+
+Copyright © 2026 Nguyễn Hải Dương. All rights reserved.
+
+This software and associated documentation files (the "Software") are the
+exclusive property of the copyright holder. By installing or using the
+Software you agree to the following terms:
+
+1. Grant of license. You are granted a non-exclusive, non-transferable,
+   revocable license to install and use the Software for its intended
+   purpose on devices you own or control.
+
+2. Restrictions. You may NOT, without prior written permission from the
+   copyright holder:
+   a. copy, modify, adapt, translate, or create derivative works of the
+      Software;
+   b. distribute, sublicense, sell, rent, lease, lend, or otherwise
+      transfer the Software or any portion of it to any third party;
+   c. reverse engineer or attempt to extract the source code of the
+      Software, except to the extent such restriction is prohibited by
+      applicable law;
+   d. remove, alter, or obscure any copyright, trademark, or other
+      proprietary notices contained in the Software;
+   e. republish or re-upload the Software, in whole or in part, to any
+      browser extension store, repository, or distribution channel.
+
+3. Third-party components. The Software bundles third-party components
+   that remain governed by their own licenses. Nothing in this license
+   grants rights to those components beyond their respective terms.
+
+4. No warranty. The Software is provided "as is", without warranty of any
+   kind, express or implied.
+
+5. Termination. This license terminates automatically upon any breach of
+   its terms. Upon termination you must cease all use of the Software and
+   destroy all copies in your possession.
+
+Violation of these terms may result in takedown action and legal remedies
+under applicable intellectual property law.
