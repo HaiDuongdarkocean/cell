@@ -19,6 +19,7 @@ import {
 } from '@/features/dictionaryPopup/logic/searchHistory';
 import { ViewportTracker } from '@/features/tokenize';
 import { observeScrollDirection } from '@/shared/lib/dom/observeScrollDirection';
+import { collapseOnScroll, findScrollableAncestor } from '@/shared/lib/dom/collapseOnScroll';
 import { CandidateView } from './CandidateView';
 import type { LookupResult, WordStatus, PopupCardCreatorPrefill, PopupTab, PopupSelectionSnapshot } from '@/entities/dictionary';
 import candidateStyles from './CandidateView.module.css';
@@ -101,7 +102,6 @@ export function DictionaryPanelView({
   const searchInputId = `${SEARCH_INPUT_ID_PREFIX}-${useId()}`;
   const [searchHistory, setSearchHistory] = useState<readonly string[]>([]);
   const [activeChipIndex, setActiveChipIndex] = useState(0);
-  const [chipsHidden, setChipsHidden] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -149,6 +149,16 @@ export function DictionaryPanelView({
   useEffect(() => {
     setActiveChipIndex(0);
   }, [panel.currentResult?.term]);
+
+  useEffect(() => {
+    const panel = containerRef.current;
+    if (!panel) return;
+    const host =
+      panel.closest<HTMLElement>('[data-cell-id="popup-dictionary"]') ?? panel;
+    return collapseOnScroll(findScrollableAncestor(panel) ?? panel, {
+      onCollapsed: (hidden) => host.toggleAttribute('data-dict-collapsed', hidden),
+    });
+  }, []);
 
   const handleRemoveHistory = useCallback((term: string): void => {
     setSearchHistory((previous) => {
@@ -303,7 +313,7 @@ export function DictionaryPanelView({
         spyQuietTimerRef.current = setTimeout(() => { spySuppressRef.current = false; }, 150);
         return true;
       },
-      onDirection: (direction, top) => setChipsHidden(top > 0 && direction === 'down'),
+      onDirection: () => undefined,
     });
     return () => {
       stop();
@@ -459,7 +469,7 @@ export function DictionaryPanelView({
           </div>
 
           {allCandidates.length > 1 && (
-            <div className={`${styles.cellCandidatesChips}${chipsHidden ? ` ${styles.cellCandidatesChipsHidden}` : ''}`}>
+            <div className={styles.cellCandidatesChips}>
               <div className={styles.cellCandidatesChipsScroll} data-cell-id="dictionary-candidates-scroll">
                 {allCandidates.map((c, idx) => (
                   <Button variant="ghost" size="sm"

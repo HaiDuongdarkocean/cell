@@ -294,14 +294,14 @@ li.searchHistoryItem .searchHistoryRemove.searchHistoryRemove svg {
 
 .cellCandidatesChips {
   position: sticky;
-  bottom: var(--space-1);
+  bottom: var(--space-3);
   flex-shrink: 0;
   z-index: var(--z-sticky);
   display: flex;
   align-items: center;
   gap: 0;
   padding: 0;
-  margin: 0 var(--space-2);
+  margin: 0;
   background: var(--color-surface-elevated);
   border: var(--border-width-hairline) solid var(--color-border-emphasized);
   border-radius: var(--radius-full);
@@ -313,8 +313,8 @@ li.searchHistoryItem .searchHistoryRemove.searchHistoryRemove svg {
     opacity var(--duration-normal) var(--ease-out);
 }
 
-.cellCandidatesChipsHidden {
-  transform: translateY(calc(100% + var(--space-2)));
+[data-dict-collapsed] .cellCandidatesChips {
+  transform: translateY(calc(100% + var(--space-3)));
   opacity: 0;
   pointer-events: none;
 }

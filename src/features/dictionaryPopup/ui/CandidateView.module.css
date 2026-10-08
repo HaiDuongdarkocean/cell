@@ -71,7 +71,7 @@
 .cellAccentLabel {
   padding: 0;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-muted-foreground);
   font-family: var(--font-family);

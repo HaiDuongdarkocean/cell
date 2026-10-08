@@ -1,12 +1,26 @@
 .trail {
   flex: 0 0 auto;
   margin: 0 calc(var(--space-3) * -1);
-  padding: var(--space-1) var(--space-4);
+  padding: var(--space-0) var(--space-4) var(--space-2);
   overflow-x: auto;
+  overflow-y: hidden;
+  max-height: var(--space-12);
   overscroll-behavior: contain;
   touch-action: pan-x;
   animation: trailIn var(--duration-normal) var(--ease-out);
+  transition:
+    max-height var(--duration-normal) var(--ease-out),
+    padding-block var(--duration-normal) var(--ease-out),
+    opacity var(--duration-normal) var(--ease-out);
   composes: hide from '@/shared/ui/Scrollable.module.css';
+}
+
+/* Scroll-down collapse — the strip folds bottom-up into the sheet header. */
+[data-dict-collapsed] .trail {
+  max-height: 0;
+  padding-block: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .fadeStart {
@@ -70,5 +84,6 @@
 @media (prefers-reduced-motion: reduce) {
   .trail {
     animation: none;
+    transition: none;
   }
 }
