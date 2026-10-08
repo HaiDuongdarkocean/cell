@@ -9,6 +9,7 @@
 
 const OVERLAY_NAME_RE =
   /dialog|modal|popup|popper|sheet|toast|snackbar|dropdown|drawer|lightbox|overlay[-_]?(container|root|host|portal|wrapper|pane)/i;
+const OVERLAY_CONTAINER_RE = /overlay[-_]?(container|root|host|portal|wrapper)/i;
 const MENU_NAME_RE = /menu/i;
 const MENU_MIN_AREA_RATIO = 0.15;
 const OVERLAY_ROLES = new Set([
@@ -57,25 +58,37 @@ const isMenuOverlay = (el: HTMLElement): boolean => {
 const isOverlayNamed = (el: HTMLElement): boolean =>
   OVERLAY_NAME_RE.test(overlaySignal(el)) || isMenuOverlay(el);
 
-const isPositioned = (el: HTMLElement): boolean => {
+// '' position means unrendered. That only qualifies for container-type or
+// semantic roots sitting inside `insideHost` — frameworks like Angular CDK
+// append .cdk-overlay-container straight onto document.fullscreenElement,
+// where unslotted light-DOM children never render until given a slot.
+// Detached teardown leftovers (empty/static panes the framework is
+// dismantling) must not pass: they are outside the host or only loosely
+// named, so a ghost layer can never stick in the popup stage.
+const isPositioned = (el: HTMLElement, insideHost?: HTMLElement): boolean => {
   const p = getComputedStyle(el).position;
-  // '' means the element is unrendered — an unslotted light-DOM child of a
-  // shadow host (framework appended its overlay root straight onto the
-  // fullscreen host). Those still qualify: slotting is what makes them
-  // render at all.
-  return p === 'fixed' || p === 'absolute' || p === '';
+  if (p === 'fixed' || p === 'absolute') return true;
+  return (
+    p === '' &&
+    insideHost !== undefined &&
+    insideHost.contains(el) &&
+    (OVERLAY_CONTAINER_RE.test(overlaySignal(el)) || isSemanticOverlay(el))
+  );
 };
 
 // Outermost positioned overlay-ish ancestor (inclusive). Host overlays nest
 // (scrim > sheet > menu) — hoisting the outermost keeps them together.
-export const overlayRoot = (node: Element): HTMLElement | null => {
+export const overlayRoot = (
+  node: Element,
+  insideHost?: HTMLElement,
+): HTMLElement | null => {
   let root: HTMLElement | null = null;
   let cur: Element | null = node;
   while (cur && cur !== document.body && cur !== document.documentElement) {
     if (
       cur instanceof HTMLElement &&
       (isOverlayNamed(cur) || isSemanticOverlay(cur)) &&
-      isPositioned(cur)
+      isPositioned(cur, insideHost)
     ) {
       root = cur;
     }
@@ -123,8 +136,8 @@ export function startHostOverlayHoist(shadowHost: HTMLElement): () => void {
   };
 
   const hoist = (node: Element): void => {
-    const root = overlayRoot(node);
-    if (!root || isExcluded(root)) return;
+    const root = overlayRoot(node, shadowHost);
+    if (!root || !root.isConnected || isExcluded(root)) return;
     if (root.parentElement === shadowHost) {
       // Framework mounted its overlay root onto the fullscreen element
       // itself (Angular CDK appends .cdk-overlay-container to

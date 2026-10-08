@@ -121,6 +121,41 @@ describe('startHostOverlayHoist', () => {
     expect(cdk.parentElement).toBe(document.body);
   });
 
+  it('does not slot loosely-named leftovers appended to the host', async () => {
+    document.body.innerHTML = '<div id="host"></div>';
+    const host = document.getElementById('host')!;
+    const stop = startHostOverlayHoist(host);
+    const sheet = document.createElement('mat-bottom-sheet-container');
+    host.appendChild(sheet);
+    const pane = document.createElement('div');
+    pane.className = 'cdk-overlay-pane';
+    host.appendChild(pane);
+    await flush();
+    expect(sheet.getAttribute('slot')).toBeNull();
+    expect(pane.getAttribute('slot')).toBeNull();
+    stop();
+  });
+
+  it('does not adopt elements the framework detached during teardown', async () => {
+    document.body.innerHTML = '<div id="host"></div><div id="app"></div>';
+    const host = document.getElementById('host')!;
+    const app = document.getElementById('app')!;
+    const stop = startHostOverlayHoist(host);
+    const sheet = document.createElement('mat-bottom-sheet-container');
+    sheet.style.position = 'absolute';
+    app.appendChild(sheet);
+    await flush();
+    expect(sheet.parentElement).toBe(host);
+    sheet.remove();
+    await flush();
+    const readded = document.createElement('mat-caption-bottomsheet');
+    readded.style.position = 'static';
+    app.appendChild(readded);
+    await flush();
+    expect(readded.parentElement).not.toBe(host);
+    stop();
+  });
+
   it('ignores cell-owned and non-overlay mutations', async () => {
     document.body.innerHTML = `
       <div id="host"></div>
