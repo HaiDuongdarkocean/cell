@@ -169,6 +169,9 @@ function PlayerModeOverlayInner({
 }: PlayerModeOverlayProps): React.JSX.Element {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [cueListOpen, setCueListOpen] = useState(true);
+  // Desktop dock visibility — 'bottom' (default) or 'hidden' with a floating
+  // restore handle. Persisted like PLAYER_MODE_CONTENT_PCT.
+  const [dockPlacement, setDockPlacement] = useState<'bottom' | 'hidden'>('bottom');
   const [cueDisplayMode, setCueDisplayMode] = useState<'list' | 'active'>('list');
   const [showAllCues, setShowAllCues] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
@@ -424,6 +427,39 @@ function PlayerModeOverlayInner({
   useEffect(() => {
     setShowAllCues(false);
   }, [cueDisplayMode]);
+
+  // Desktop dock visibility: persisted, live-updated via storage (same channel
+  // as PLAYER_MODE_CUE_DISPLAY). Mobile branch ignores it — the bottom
+  // transport bar is its own surface.
+  const applyDockPlacement = useCallback((next: 'bottom' | 'hidden'): void => {
+    setDockPlacement(next);
+    setStorage({ [STORAGE_KEYS.PLAYER_MODE_DOCK_PLACEMENT]: next }).catch(() => undefined);
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    const key = STORAGE_KEYS.PLAYER_MODE_DOCK_PLACEMENT;
+    const read = (v: unknown): 'bottom' | 'hidden' | null =>
+      v === 'bottom' || v === 'hidden' ? v : null;
+    getStorage<Record<string, unknown>>(key)
+      .then((data) => {
+        const v = read(data[key]);
+        if (!cancelled && v) setDockPlacement(v);
+      })
+      .catch(() => undefined);
+    const onChanged = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      area: string,
+    ): void => {
+      if (area !== 'local') return;
+      const v = read(changes[key]?.newValue);
+      if (v) setDockPlacement(v);
+    };
+    onStorageChanged(onChanged);
+    return () => {
+      cancelled = true;
+      removeOnStorageChangedListener(onChanged);
+    };
+  }, []);
 
   // REQ-8: when the orbital badge is snapped to the right edge and its
   // vertical span overlaps the rail, lift the fab above the badge — keeps
@@ -969,6 +1005,7 @@ function PlayerModeOverlayInner({
               currentTimeMs={currentTimeMs ?? 0}
               offsetMs={offsetMs}
               onSeek={onSeek}
+              onClose={() => setCueListOpen(false)}
               activeModeId={activeModeId}
               customModes={customModes}
               onStudyModeChange={onStudyModeChange}
@@ -989,7 +1026,9 @@ function PlayerModeOverlayInner({
         </div>
       </div>
 
-      {/* Player Action Dock — fixed at bottom, always visible */}
+      {/* Player Action Dock — band at the bottom; 'hidden' unmounts it and
+          leaves a floating restore handle so the video runs unobstructed. */}
+      {dockPlacement !== 'hidden' && (
       <div
         className={styles.dock}
         style={{ height: `${layout.dockHeight}px` }}
@@ -1035,8 +1074,71 @@ function PlayerModeOverlayInner({
           toolsExpanded={toolsExpanded}
           onToggleTools={onToggleTools ?? (() => undefined)}
           onExit={onExit}
+          onHideDock={() => applyDockPlacement('hidden')}
         />
       </div>
+      )}
+      {dockPlacement === 'hidden' && (
+        <>
+          <div
+            className={styles.dockFloat}
+            style={{ right: `calc(${contentPct}% + var(--space-1-5))` }}
+            data-cell-id="pm-dock-float"
+          >
+            <div className={styles.floatEdge}>
+              <NavCluster
+                collapsed={false}
+                isPlaying={isPlaying}
+                repeatActive={repeatActive}
+                repeatIcon={repeatIcon}
+                repeatLabel={repeatLabel}
+                clusterSettings={clusterSettings}
+                onToggleCollapsed={onToggleCollapsed}
+                onPrev={onPrev}
+                onNext={onNext}
+                onRepeat={onRepeat}
+                onRewind={onRewind}
+                onForward={onForward}
+                onPlayPause={onPlayPause}
+              />
+            </div>
+            <div className={styles.floatBlock}>
+              <SubtitleBlock
+                targetStyle={targetStyle}
+                nativeStyle={nativeStyle}
+                blockSettings={blockSettings}
+              />
+            </div>
+            <ClusterRightToolbar
+              mode="player"
+              clusterRightStyle={clusterRightStyle}
+              wrapperClassName={styles.floatEdge}
+              onQuickAdd={onQuickAdd}
+              onEditCard={onEditCard}
+              onToggleOcr={onToggleOcr}
+              ocrEnabled={ocrEnabled}
+              onToggleManager={onToggleManager}
+              onGenerateNative={onGenerateNative}
+              generateNativeEnabled={generateNativeEnabled}
+              onToggleSidePanel={onToggleSidePanel ? () => setCueListOpen((v) => !v) : undefined}
+              sidePanelLabel={t('subtitle.toolbar.toggleList')}
+              toolsExpanded={toolsExpanded}
+              onToggleTools={onToggleTools ?? (() => undefined)}
+              onExit={onExit}
+            />
+          </div>
+          <Button shape="circle"
+            variant="overlay"
+            className={styles.dockRestore}
+            aria-label={t('subtitle.playerMode.showDock')}
+            title={t('subtitle.playerMode.showDock')}
+            data-cell-id="pm-dock-restore"
+            onClick={() => applyDockPlacement('bottom')}
+          >
+            <Icon name="captions" />
+          </Button>
+        </>
+      )}
     </div>
   );
 }

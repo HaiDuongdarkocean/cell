@@ -219,6 +219,51 @@ describe('PlayerModeOverlay', () => {
       expect(storageData[STORAGE_KEYS.PLAYER_MODE_CONTENT_PCT]).toBe(55);
     });
   });
+
+  it('hides the dock to a floating restore button and restores on click', async () => {
+    renderPlayerModeWithCues(sampleCues);
+
+    fireEvent.click(screen.getByTestId('dock-hide-btn'));
+
+    expect(screen.queryByTestId('overlay-player-action')).toBeNull();
+    expect(screen.getByTestId('pm-dock-restore')).toBeInTheDocument();
+    // Hidden dock still floats nav/subtitle/tools over the video stage.
+    const float = screen.getByTestId('pm-dock-float');
+    expect(float).toContainElement(screen.getByTestId('subtitle-block'));
+    expect(float).toContainElement(screen.getByTestId('nav-cluster'));
+    expect(float).toContainElement(screen.getByTestId('player-mode-actions'));
+    // Cue list survives the hidden dock.
+    expect(screen.getByTestId('cue-list')).toBeInTheDocument();
+    expect(storageData[STORAGE_KEYS.PLAYER_MODE_DOCK_PLACEMENT]).toBe('hidden');
+
+    fireEvent.click(screen.getByTestId('pm-dock-restore'));
+    await waitFor(() => {
+      expect(screen.getByTestId('overlay-player-action')).toBeInTheDocument();
+    });
+    expect(storageData[STORAGE_KEYS.PLAYER_MODE_DOCK_PLACEMENT]).toBe('bottom');
+  });
+
+  it('honours a persisted hidden dock on mount', async () => {
+    storageData[STORAGE_KEYS.PLAYER_MODE_DOCK_PLACEMENT] = 'hidden';
+    renderPlayerModeWithCues(sampleCues);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('pm-dock-restore')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('overlay-player-action')).toBeNull();
+  });
+
+  it('lets the cue list close itself while the dock is hidden', async () => {
+    renderPlayerModeWithCues(sampleCues);
+
+    fireEvent.click(screen.getByTestId('dock-hide-btn'));
+    expect(screen.queryByTestId('overlay-player-action')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('subtitle-panel-close'));
+    await waitFor(() => {
+      expect(screen.queryByTestId('cue-list')).not.toBeInTheDocument();
+    });
+  });
 });
 
 describe('mobile layout (<600px)', () => {

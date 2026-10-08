@@ -1582,6 +1582,8 @@
   "subtitle.playerMode.crashHint": "Mở console để xem chi tiết.",
   "subtitle.playerMode.crashed": "Chế độ toàn màn hình bị lỗi:",
   "subtitle.playerMode.resizeList": "Đổi kích thước danh sách câu",
+  "subtitle.playerMode.hideDock": "Ẩn thanh phụ đề",
+  "subtitle.playerMode.showDock": "Hiện thanh phụ đề",
   "subtitle.playerMode.unreachable": "Chế độ toàn màn hình không kết nối được tới trình phát",
   "subtitle.preview.clickToEdit": "Nhấn vào chữ để sửa",
   "subtitle.preview.live": "Xem trước trực tiếp",
