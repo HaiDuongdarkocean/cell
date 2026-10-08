@@ -21,6 +21,7 @@ import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { getStorage, setStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { Button } from '@/shared/ui/Button';
 import { MenuItem, MenuSeparator } from '@/shared/ui/Menu';
+import { useSubtitleBlockDrag } from './subtitleDrag';
 import { Sheet } from '@/shared/ui/Sheet';
 import { hasEscapeLayers } from '@/shared/ui/escapeLayerStack';
 import { StepperSection, StepperValue } from '@/shared/ui/StepperSection';
@@ -31,6 +32,7 @@ import { t } from '@/shared/i18n';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { buildClusterCssVars } from './subtitleUI';
 import styles from './PlayerModeOverlay.module.css';
+import panelStyles from './SubtitlePanels.module.css';
 
 const CONTENT_PCT_MIN = 20;
 const CONTENT_PCT_MAX = 60;
@@ -176,6 +178,14 @@ function PlayerModeOverlayInner({
   const [showAllCues, setShowAllCues] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [fabSlot, setFabSlot] = useState<HTMLDivElement | null>(null);
+  const floatRowRef = useRef<HTMLDivElement>(null);
+  const [floatY, setFloatY] = useState(75);
+  const {
+    dragging: floatDragging,
+    handlePointerDown: onFloatPointerDown,
+    handlePointerMove: onFloatPointerMove,
+    handlePointerUp: onFloatPointerUp,
+  } = useSubtitleBlockDrag({ rootRef: floatRowRef, yOffsetPercent: floatY, setYOffsetPercent: setFloatY });
 
   const bottomBarRef = useRef<HTMLElement>(null);
   const anchorRowRef = useRef<HTMLDivElement>(null);
@@ -1085,47 +1095,57 @@ function PlayerModeOverlayInner({
             style={{ right: `calc(${contentPct}% + var(--space-1-5))` }}
             data-cell-id="pm-dock-float"
           >
-            <div className={styles.floatEdge}>
-              <NavCluster
-                collapsed={false}
-                isPlaying={isPlaying}
-                repeatActive={repeatActive}
-                repeatIcon={repeatIcon}
-                repeatLabel={repeatLabel}
-                clusterSettings={clusterSettings}
-                onToggleCollapsed={onToggleCollapsed}
-                onPrev={onPrev}
-                onNext={onNext}
-                onRepeat={onRepeat}
-                onRewind={onRewind}
-                onForward={onForward}
-                onPlayPause={onPlayPause}
+            <div
+              ref={floatRowRef}
+              className={`${panelStyles.root}${floatDragging ? ` ${panelStyles.dragging}` : ''}`}
+              style={{ '--sb-y': floatY } as React.CSSProperties}
+              data-cell-id="pm-float-row"
+              onPointerDown={onFloatPointerDown}
+              onPointerMove={onFloatPointerMove}
+              onPointerUp={onFloatPointerUp}
+              onPointerCancel={onFloatPointerUp}
+            >
+              <div className={panelStyles.navLayer}>
+                <NavCluster
+                  collapsed={false}
+                  isPlaying={isPlaying}
+                  repeatActive={repeatActive}
+                  repeatIcon={repeatIcon}
+                  repeatLabel={repeatLabel}
+                  clusterSettings={clusterSettings}
+                  onToggleCollapsed={onToggleCollapsed}
+                  onPrev={onPrev}
+                  onNext={onNext}
+                  onRepeat={onRepeat}
+                  onRewind={onRewind}
+                  onForward={onForward}
+                  onPlayPause={onPlayPause}
+                />
+              </div>
+              <div className={panelStyles.blockLayer}>
+                <SubtitleBlock
+                  targetStyle={targetStyle}
+                  nativeStyle={nativeStyle}
+                  blockSettings={blockSettings}
+                />
+              </div>
+              <ClusterRightToolbar
+                mode="player"
+                clusterRightStyle={clusterRightStyle}
+                onQuickAdd={onQuickAdd}
+                onEditCard={onEditCard}
+                onToggleOcr={onToggleOcr}
+                ocrEnabled={ocrEnabled}
+                onToggleManager={onToggleManager}
+                onGenerateNative={onGenerateNative}
+                generateNativeEnabled={generateNativeEnabled}
+                onToggleSidePanel={onToggleSidePanel ? () => setCueListOpen((v) => !v) : undefined}
+                sidePanelLabel={t('subtitle.toolbar.toggleList')}
+                toolsExpanded={toolsExpanded}
+                onToggleTools={onToggleTools ?? (() => undefined)}
+                onExit={onExit}
               />
             </div>
-            <div className={styles.floatBlock}>
-              <SubtitleBlock
-                targetStyle={targetStyle}
-                nativeStyle={nativeStyle}
-                blockSettings={blockSettings}
-              />
-            </div>
-            <ClusterRightToolbar
-              mode="player"
-              clusterRightStyle={clusterRightStyle}
-              wrapperClassName={styles.floatEdge}
-              onQuickAdd={onQuickAdd}
-              onEditCard={onEditCard}
-              onToggleOcr={onToggleOcr}
-              ocrEnabled={ocrEnabled}
-              onToggleManager={onToggleManager}
-              onGenerateNative={onGenerateNative}
-              generateNativeEnabled={generateNativeEnabled}
-              onToggleSidePanel={onToggleSidePanel ? () => setCueListOpen((v) => !v) : undefined}
-              sidePanelLabel={t('subtitle.toolbar.toggleList')}
-              toolsExpanded={toolsExpanded}
-              onToggleTools={onToggleTools ?? (() => undefined)}
-              onExit={onExit}
-            />
           </div>
           <Button shape="circle"
             variant="overlay"

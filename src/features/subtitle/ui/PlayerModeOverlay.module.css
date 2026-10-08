@@ -171,56 +171,18 @@
   z-index: var(--z-overlay-base);
 }
 
-/* Hidden-dock float layer — mirrors the normal-mode overlay composition
-   (SubtitlePanels root): nav cluster on the left edge, subtitle block
-   bottom-center, action toolbar on the right edge, all overlaid on the
-   video stage. Right edge is set inline to the content panel's left border. */
+/* Hidden-dock float stage — positioning context for the reused normal-mode
+   overlay row (SubtitlePanels .root: nav | block | toolbar at --sb-y%).
+   Covers the video stage only; right edge is set inline to the content
+   panel's left border. pointer-events:none so the stage clicks pass through;
+   the row itself manages its own hit targets like normal mode. */
 .dockFloat {
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
   pointer-events: none;
   z-index: var(--z-overlay-base);
-  container-type: inline-size;
-}
-
-.dockFloat > * {
-  pointer-events: none;
-}
-
-.dockFloat > * > * {
-  pointer-events: auto;
-}
-
-/* Edge clusters hug the video stage's left/right borders, vertically
-   centered — same placement as the normal-mode overlay row. */
-.floatEdge {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  padding: 0 var(--space-2);
-  pointer-events: none;
-}
-
-.floatEdge > * {
-  pointer-events: auto;
-}
-
-/* Subtitle block pinned to the bottom of the video stage, clear of the
-   host player's control row (~64px) and of the floating restore handle. */
-.floatBlock {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  padding-bottom: var(--space-16);
-  padding-inline: var(--space-16);
 }
 
 .subtitleArea {

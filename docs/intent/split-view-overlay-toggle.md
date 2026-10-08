@@ -38,7 +38,7 @@
 
 ## Scope
 
-**In**: desktop Player Mode dock show/hide + persistence; when hidden the dock's nav/subtitle/toolbar float over the video stage (overlay-style, like normal mode); restore handle; hide icon in PM dock toolbar. Mobile PM branch: same toggle in the `pm-more-menu` Sheet if cheap, else explicit non-goal.
+**In**: desktop Player Mode dock show/hide + persistence; when hidden the dock's nav/subtitle/toolbar float over the video stage — implemented by reusing the normal-mode row verbatim (`SubtitlePanels.module.css` `.root`/`.navLayer`/`.blockLayer` + `useSubtitleBlockDrag`), not a bespoke PM layout; restore handle; hide icon in PM dock toolbar. Mobile PM branch: same toggle in the `pm-more-menu` Sheet if cheap, else explicit non-goal.
 **Out**: normal-mode overlay/split-view changes; ~~cue-list content changes~~ **(under review — N8 cue-list gloss lane may pull it in if Anh wants it bundled; default recommendation: ship as its own item right after this one)**; dock placement other than bottom (top/sides); auto-hide-on-idle.
 
 N8 note — if bundled or done next: cue-list resolve hydrates **all** cues' unique terms in one wave (unlike the overlay's time-windowed preloader), so gloss volume is the real cost — mitigate by resolving glosses only for the rendered window or chunking like `fetchTermsChunked`; zero requests when `showWordTranslations` off or native lang unset.
