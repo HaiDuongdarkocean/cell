@@ -156,4 +156,28 @@ describe('createVideoTokenMap', () => {
     map.prepare(0, 'Hello world');
     expect(listener).not.toHaveBeenCalled();
   });
+
+  it('resolveTerms still resolves every cue when an update listener throws', () => {
+    const map = createVideoTokenMap('en');
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    map.onUpdate(() => {
+      throw new Error('UI listener blew up');
+    });
+    map.prepare(0, 'Hello world');
+    map.prepare(1, 'Hello again');
+
+    expect(() =>
+      map.resolveTerms(
+        new Set(['hello']),
+        new Map<string, WordStatus>([['hello', 'known']]),
+        new Map<string, TokenFrequencyBand>(),
+      ),
+    ).not.toThrow();
+
+    expect(map.get(0)!.tokens.find((t) => t.term === 'hello')?.status).toBe('known');
+    expect(map.get(1)!.tokens.find((t) => t.term === 'hello')?.status).toBe('known');
+    expect(map.get(0)!.metadataResolved).toBe(true);
+    expect(map.get(1)!.metadataResolved).toBe(true);
+    errorSpy.mockRestore();
+  });
 });

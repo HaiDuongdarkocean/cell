@@ -48,7 +48,13 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
 
   function emit(cueIndex: number): void {
     for (const listener of [...listeners]) {
-      listener(cueIndex);
+      try {
+        listener(cueIndex);
+      } catch (err) {
+        // Listener throw must not abort resolveTerms mid-batch — the map write
+        // already landed; the DOM rebind is best-effort.
+        console.error('[videoTokenMap] update listener failed:', err);
+      }
     }
   }
 

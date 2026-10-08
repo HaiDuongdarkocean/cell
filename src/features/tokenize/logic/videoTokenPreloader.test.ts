@@ -193,6 +193,36 @@ describe('createVideoTokenPreloader', () => {
     expect(map.get(0)!.tokens.find((t) => t.term === 'hello')?.gloss).toBe('bonjour');
   });
 
+  it('recovers when a metadata leg hangs: watchdog re-queues instead of wedging isFlushing', async () => {
+    jest.useFakeTimers({ doNotFake: ['requestAnimationFrame', 'cancelAnimationFrame'] });
+    try {
+      let statusCalls = 0;
+      (getWordStatuses as jest.Mock).mockImplementation(() => {
+        statusCalls += 1;
+        return statusCalls === 1
+          ? new Promise<never>(() => {})
+          : Promise.resolve(new Map([['hello', 'known']]));
+      });
+
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const preloader = createVideoTokenPreloader({ langCode: 'en', map, scheduler });
+      preloader.setCues(makeCues(1));
+
+      const run = flushScheduler(scheduler);
+      await Promise.resolve();
+      expect(statusCalls).toBe(1);
+
+      await jest.advanceTimersByTimeAsync(31_000);
+      await run;
+
+      expect(statusCalls).toBe(2);
+      expect(map.get(0)!.tokens.find((t) => t.term === 'hello')?.status).toBe('known');
+      errorSpy.mockRestore();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('deduplicates in-flight term lookups', async () => {
     const preloader = createVideoTokenPreloader({ langCode: 'en', map, scheduler, chunkSize: 200 });
     const cues = makeCues(2);

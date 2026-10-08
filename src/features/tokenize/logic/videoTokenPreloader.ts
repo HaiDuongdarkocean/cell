@@ -53,6 +53,9 @@ export interface VideoTokenPreloader {
 }
 
 const IDLE_LOOKAHEAD_CUES = 60;
+/** A service-worker/fetch leg that never resolves must not wedge isFlushing —
+ *  the batch retries as a normal failure instead of stalling silently. */
+export const METADATA_FLUSH_TIMEOUT_MS = 30_000;
 
 export function createVideoTokenPreloader(
   options: VideoTokenPreloaderOptions,
@@ -117,8 +120,10 @@ export function createVideoTokenPreloader(
     }
 
     const tl = glossTargetLanguage;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
-      const [statusMap, freqMaps, bandOpts, dictReadings, termGlosses] = await Promise.all([
+      const [statusMap, freqMaps, bandOpts, dictReadings, termGlosses] = await Promise.race([
+        Promise.all([
         getWordStatuses(langCode, terms),
         getFrequencyEntries(langCode, terms),
         loadBandOptions(),
@@ -130,6 +135,10 @@ export function createVideoTokenPreloader(
               .then((g) => (glossTargetLanguage === tl ? g : null))
               .catch(() => null)
           : Promise.resolve(null),
+        ]),
+        new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error('metadata flush timed out')), METADATA_FLUSH_TIMEOUT_MS);
+        }),
       ]);
 
       const frequencies = new Map<string, TokenFrequencyBand>();
@@ -170,6 +179,7 @@ export function createVideoTokenPreloader(
       }
       console.error('[videoTokenPreloader] flush failed:', err);
     } finally {
+      clearTimeout(timeoutId);
       isFlushing = false;
       if (pendingTerms.size > 0) {
         scheduler.schedule(() => flushPendingTerms(), PRIORITY_IDLE);
