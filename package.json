@@ -1,6 +1,6 @@
 {
   "name": "tihoka",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Tihoka - Chrome MV3 extension: turn any content into study material (video + subtitle capture + Anki cards)",
   "type": "module",
   "private": true,
