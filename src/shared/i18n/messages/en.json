@@ -1697,6 +1697,8 @@
   "subtitle.toolbar.expandTools": "Expand tools",
   "subtitle.toolbar.generateNative": "Generate native subtitle",
   "subtitle.toolbar.generateNativeTitle": "Generate native (H)",
+  "subtitle.toolbar.lockInteraction": "Lock video interaction",
+  "subtitle.toolbar.unlockInteraction": "Unlock video interaction",
   "subtitle.toolbar.openList": "Open subtitle list",
   "subtitle.toolbar.openManager": "Open subtitle manager",
   "subtitle.toolbar.quickAdd": "Quick add card",

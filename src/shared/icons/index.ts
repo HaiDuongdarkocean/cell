@@ -56,6 +56,8 @@ import {
   Library,
   Link,
   Loader,
+  Lock,
+  LockOpen,
   Maximize,
   Menu,
   MessageSquare,
@@ -141,6 +143,8 @@ import downloadSvg from './svg/download.svg?raw';
 import searchSvg from './svg/search.svg?raw';
 import starSvg from './svg/star.svg?raw';
 import loaderSvg from './svg/loader.svg?raw';
+import lockSvg from './svg/lock.svg?raw';
+import lockOpenSvg from './svg/lock-open.svg?raw';
 import playSvg from './svg/play.svg?raw';
 import pauseSvg from './svg/pause.svg?raw';
 import plusSvg from './svg/plus.svg?raw';
@@ -347,6 +351,8 @@ export const ICON_CATALOG = {
   scanText: { component: ScanText, svg: scanTextSvg, source: 'lucide/scan-text', tags: ['scan', 'text', 'ocr', 'detect-text', 'frame-text', 'recognize'] } as IconEntry,
   minimize: { component: Minimize, svg: minimizeSvg, source: 'lucide/minimize', tags: ['minimize', 'collapse', 'shrink', 'scale-down', 'reduce'] } as IconEntry,
   pip: { component: PictureInPicture, svg: pipSvg, source: 'lucide/picture-in-picture', tags: ['pip', 'picture-in-picture', 'overlay', 'mini-player', 'video'] } as IconEntry,
+  lock: { component: Lock, svg: lockSvg, source: 'lucide/lock', tags: ['lock', 'secure', 'closed', 'interaction-lock', 'block'] } as IconEntry,
+  lockOpen: { component: LockOpen, svg: lockOpenSvg, source: 'lucide/lock-open', tags: ['lock', 'open', 'unlock', 'release', 'unblock'] } as IconEntry,
   pin: { component: Pin, svg: pinSvg, source: 'lucide/pin', tags: ['pin', 'attach', 'anchor', 'fixed', 'lock-position'] } as IconEntry,
   pinOff: { component: PinOff, svg: pinOffSvg, source: 'lucide/pin-off', tags: ['pin', 'off', 'unpin', 'detach', 'release', 'unlock-position'] } as IconEntry,
   gauge: { component: Gauge, svg: gaugeSvg, source: 'lucide/gauge', tags: ['gauge', 'speed', 'meter', 'playback-speed', 'rate', 'fast', 'slow'] } as IconEntry,

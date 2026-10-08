@@ -31,6 +31,12 @@
   transition: none;
 }
 
+.lockLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+
 .navLayer {
   pointer-events: none;
   display: flex;

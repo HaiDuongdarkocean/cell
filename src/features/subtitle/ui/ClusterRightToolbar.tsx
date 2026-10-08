@@ -26,6 +26,9 @@ export interface ClusterRightToolbarProps {
   /** Overlay only: player mode toggle */
   onTogglePlayerMode?: () => void;
   playerMode?: boolean;
+  /** Interaction lock — blocks host video input, keeps Cell UI usable. */
+  interactionLocked?: boolean;
+  onToggleInteractionLock?: () => void;
   /** Player only: exit */
   onExit?: () => void;
 }
@@ -52,6 +55,8 @@ export function ClusterRightToolbar({
   onToggleTools,
   onTogglePlayerMode,
   playerMode,
+  interactionLocked,
+  onToggleInteractionLock,
   onExit,
 }: ClusterRightToolbarProps): React.JSX.Element {
   const wrapperId = mode === 'overlay' ? 'nav-cluster-right' : 'player-mode-actions';
@@ -112,6 +117,19 @@ export function ClusterRightToolbar({
                 disabled={!generateNativeEnabled}
               >
                 <Icon name="languages" />
+              </Button>
+            )}
+            {onToggleInteractionLock && (
+              <Button shape="circle"
+                variant="overlay"
+                aria-label={interactionLocked ? t('subtitle.toolbar.unlockInteraction') : t('subtitle.toolbar.lockInteraction')}
+                title={interactionLocked ? t('subtitle.toolbar.unlockInteraction') : t('subtitle.toolbar.lockInteraction')}
+                data-cell-id="interaction-lock-btn"
+                size="sm"
+                onClick={onToggleInteractionLock}
+                active={interactionLocked}
+              >
+                <Icon name={interactionLocked ? 'lock' : 'lockOpen'} />
               </Button>
             )}
           </div>

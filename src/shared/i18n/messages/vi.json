@@ -1697,6 +1697,8 @@
   "subtitle.toolbar.expandTools": "Mở rộng công cụ",
   "subtitle.toolbar.generateNative": "Tạo phụ đề bản địa",
   "subtitle.toolbar.generateNativeTitle": "Tạo phụ đề bản địa (H)",
+  "subtitle.toolbar.lockInteraction": "Khóa tương tác video",
+  "subtitle.toolbar.unlockInteraction": "Mở khóa tương tác video",
   "subtitle.toolbar.openList": "Mở danh sách câu",
   "subtitle.toolbar.openManager": "Mở quản lý phụ đề",
   "subtitle.toolbar.quickAdd": "Thêm thẻ nhanh",

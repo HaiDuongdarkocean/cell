@@ -12,6 +12,7 @@ import { SubtitleHint } from './SubtitleHint';
 import { useSubtitleBlockDrag } from './subtitleDrag';
 import { usePlayerMode } from './subtitlePlayerMode';
 import { PlayerModeLayer } from './PlayerModeLayer';
+import { LockShield } from './LockShield';
 import { SubtitlePanel } from './SubtitlePanel';
 import { saveCueToQueue } from '@/features/miningQueue';
 import { canonicalNavUrl } from './contentScriptShared';
@@ -214,6 +215,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     } = useSplitView({ playerMode, onSplitViewChange, fallbackPlayerContainerRef });
 
     const [pmCueListOpen, setPmCueListOpen] = useState(true);
+    const [interactionLocked, setInteractionLocked] = useState(false);
 
     const prevPlayerModeRef = useRef(playerMode);
     useEffect(() => {
@@ -239,6 +241,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const handlePlayPause = useCallback((): void => {
       onPlayPause();
     }, [onPlayPause]);
+
+    const handleToggleInteractionLock = useCallback((): void => {
+      setInteractionLocked((value) => !value);
+    }, []);
 
     const handleTogglePlayerMode = usePlayerMode({
       playerMode,
@@ -350,6 +356,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           onDragReposition={onDragReposition}
           cueListOpen={pmCueListOpen}
           onCueListOpenChange={setPmCueListOpen}
+          interactionLocked={interactionLocked}
+          onToggleInteractionLock={handleToggleInteractionLock}
           cues={cues as BilingualCue[]}
           currentTimeMs={currentTimeMs}
           offsetMs={offsetMs}
@@ -374,6 +382,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     }
 
     return (
+      <>
+      {interactionLocked && <LockShield className={styles.lockLayer} />}
       <div
         ref={rootRef}
         className={`${styles.root}${dragging ? ` ${styles.dragging}` : ''}`}
@@ -423,6 +433,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             onToggleTools={() => setToolsExpanded((v) => !v)}
             onTogglePlayerMode={() => { void handleTogglePlayerMode(); }}
             playerMode={playerMode}
+            interactionLocked={interactionLocked}
+            onToggleInteractionLock={handleToggleInteractionLock}
           />
         )}
 
@@ -470,6 +482,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           splitViewPortalTarget,
         )}
       </div>
+      </>
     );
   },
 );

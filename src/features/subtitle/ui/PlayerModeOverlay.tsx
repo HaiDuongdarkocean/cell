@@ -17,6 +17,7 @@ import type { ICON_CATALOG } from '@/shared/icons';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
 import { ClusterRightToolbar } from './ClusterRightToolbar';
+import { LockShield } from './LockShield';
 import { resolvePlayerModeLayout, PM_MOBILE_BAR_HEIGHT_PX } from '../logic/playerModeGeometry';
 import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { videoAncestorChain } from '@/shared/lib/dom/videoAncestorChain';
@@ -109,6 +110,9 @@ export interface PlayerModeOverlayProps {
   /** Cue-list panel visibility — Player Mode's own state, independent from the normal-mode Split View. */
   cueListOpen: boolean;
   onCueListOpenChange: (open: boolean) => void;
+  /** Interaction lock — shield over the video stage blocks host input. */
+  interactionLocked?: boolean;
+  onToggleInteractionLock?: () => void;
   /** Bilingual cues for CueList display in the split-view panel. */
   cues?: BilingualCue[];
   /** Current video time in milliseconds (for CueList highlight). */
@@ -196,6 +200,8 @@ function PlayerModeOverlayInner({
   onSaveCue,
   cueListOpen,
   onCueListOpenChange,
+  interactionLocked,
+  onToggleInteractionLock,
 }: PlayerModeOverlayProps): React.JSX.Element {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [cueDisplayMode, setCueDisplayMode] = useState<'list' | 'active'>('list');
@@ -765,6 +771,7 @@ function PlayerModeOverlayInner({
             ref={videoStageRef}
           >
             <slot name="cell-video" />
+            {interactionLocked && <LockShield className={styles.lockLayer} />}
           </div>
           <div
             className={`${styles.pmCueWrap} ${!cueListOpen || !onSeek ? styles.pmCueWrapCollapsed : ''}`}
@@ -985,6 +992,16 @@ function PlayerModeOverlayInner({
                 {ocrEnabled ? t('subtitle.toolbar.disableOcr') : t('subtitle.toolbar.enableOcr')}
               </MenuItem>
             )}
+            {onToggleInteractionLock && (
+              <MenuItem
+                icon={<Icon name={interactionLocked ? 'lock' : 'lockOpen'} />}
+                selected={interactionLocked}
+                data-cell-id="interaction-lock-btn"
+                onSelect={() => { onToggleInteractionLock(); closeMoreMenu(); }}
+              >
+                {interactionLocked ? t('subtitle.toolbar.unlockInteraction') : t('subtitle.toolbar.lockInteraction')}
+              </MenuItem>
+            )}
             {cueDisplayMode === 'active' && !showAllCues && (
               <MenuItem
                 icon={<Icon name="captions" />}
@@ -1043,6 +1060,7 @@ function PlayerModeOverlayInner({
           ref={videoStageRef}
         >
           <slot name="cell-video" />
+          {interactionLocked && <LockShield className={styles.lockLayer} />}
         </div>
 
         {cueListOpen && onSeek && (
@@ -1151,6 +1169,8 @@ function PlayerModeOverlayInner({
             sidePanelLabel={cueListOpen ? t('subtitle.toolbar.closeList') : t('subtitle.toolbar.openList')}
             toolsExpanded={toolsExpanded}
             onToggleTools={onToggleTools ?? (() => undefined)}
+            interactionLocked={interactionLocked}
+            onToggleInteractionLock={onToggleInteractionLock}
             onExit={onExit}
           />
         </div>
