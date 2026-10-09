@@ -33,6 +33,24 @@ describe('findTextBlocks', () => {
     expect(blocks.map((b) => b.originalText)).toEqual(['Visible text', 'Real words']);
   });
 
+  it('tokenizes code — inline code, code blocks and their semantic cousins', () => {
+    const root = document.createElement('div');
+    root.innerHTML =
+      '<p>Call <code>printf()</code> first.</p>' +
+      '<pre><code>int main() {\n  return 0;\n}</code></pre>' +
+      '<p><kbd>Ctrl</kbd> <samp>output</samp> <var>value</var></p>';
+    const blocks = findTextBlocks(root);
+    expect(blocks.map((b) => b.originalText)).toEqual([
+      'Call ',
+      'printf()',
+      ' first.',
+      'int main() {\n  return 0;\n}',
+      'Ctrl',
+      'output',
+      'value',
+    ]);
+  });
+
   it('tokenizes label text (radio options, dropdown faces)', () => {
     const root = document.createElement('div');
     root.innerHTML = '<form><label><input type="radio">Small</label><label for="x">Standard</label><input id="x" type="radio"></form>';
