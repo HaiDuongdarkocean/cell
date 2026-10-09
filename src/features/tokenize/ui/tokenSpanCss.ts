@@ -139,6 +139,8 @@ html body .js-cell-token--word {
   align-items: center !important;
   gap: 0.14em !important;
   margin: 0.55em 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
 }
 
 /* The column's baseline is its first flex item (the cap lane). When the cap
@@ -159,6 +161,9 @@ html body .js-cell-token--word:not(.js-cell-token--reading-off) {
   display: inline !important;
   line-height: 1.1 !important;
   background: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
 }
 
 /* Ruby cap (spec reading-annotation): in-flow lane above the word, always
@@ -210,6 +215,9 @@ html body .js-cell-token--word:not(.js-cell-token--gloss-off)::after {
   height: var(--border-width-status) !important;
   border-radius: 999px !important;
   background: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
   pointer-events: none !important;
   user-select: none !important;
 }
@@ -402,6 +410,8 @@ ${buildVariables(':host')}
   align-items: center !important;
   gap: 0.14em !important;
   margin: 0.55em 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
 }
 
 /* Column baseline = cap lane baseline; lift by the cap-to-word distance so
@@ -414,6 +424,9 @@ ${buildVariables(':host')}
   display: inline !important;
   line-height: 1.1 !important;
   background: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
 }
 
 /* Ruby cap (spec reading-annotation): in-flow lane above the word — never
@@ -459,6 +472,9 @@ ${buildVariables(':host')}
   height: var(--border-width-status) !important;
   border-radius: 999px !important;
   background: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
   pointer-events: none !important;
   user-select: none !important;
 }

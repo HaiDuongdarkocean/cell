@@ -142,6 +142,17 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     expect(lane).not.toContain('box-shadow');
   });
 
+  it.each(['host', 'shadow'])('blocks host padding/border/margin leakage into token lanes in %s CSS', (variant) => {
+    const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
+    for (const sel of ['.js-cell-token--word {', '.js-cell-token-word {', '.js-cell-token-status {']) {
+      const body = source.match(new RegExp(sel.replace(/[.{}]/g, (c) => `\\${c}`) + '([^}]*)\\}'))?.[1] ?? '';
+      expect(body).toContain('padding: 0');
+      expect(body).toContain('border: 0');
+    }
+    const status = source.match(/\.js-cell-token-status\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(status).toContain('margin: 0');
+  });
+
   it.each(['host', 'shadow'])('spaces the annotation stack by column gap alone in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
     const column = source.match(/\.js-cell-token--word\s*\{([^}]*)\}/)?.[1] ?? '';
