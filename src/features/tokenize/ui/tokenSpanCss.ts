@@ -324,18 +324,19 @@ html body .js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open:
   text-shadow: var(--shadow-sm) !important;
 }
 
-/* known/ignore render as plain text by default — no status bar, no frequency
-   pill (column padding is kept so hover reveal never reflows the line). Both
-   layers reveal on hover or while the token's dictionary popup is open
-   (.js-cell-token--popup-open). status-off keeps the bar hidden even then;
-   frequency-off (global layer toggle) keeps the pill hidden. */
-html body .js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open),
-html body .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) {
+/* known/ignore render as plain text permanently — the frequency pill chrome
+   (background, hairline, radius, padding) is fully removed so a learned word
+   is indistinguishable from surrounding text. Hover or popup-open reveals
+   only the status capsule, never the frequency background. status-off keeps
+   the bar hidden even then; frequency-off keeps the pill hidden globally. */
+html body .js-cell-token.js-cell-token--status-known,
+html body .js-cell-token.js-cell-token--status-ignore {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
   background-color: transparent !important;
   box-shadow: none !important;
-  text-shadow: var(--shadow-sm) !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
 }
 html body .js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-status,
 html body .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-status {
@@ -566,13 +567,14 @@ ${buildVariables(':host')}
   text-shadow: var(--shadow-sm) !important;
 }
 
-.js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open),
-.js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) {
+.js-cell-token.js-cell-token--status-known,
+.js-cell-token.js-cell-token--status-ignore {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
   background-color: transparent !important;
   box-shadow: none !important;
-  text-shadow: var(--shadow-sm) !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
 }
 .js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-status,
 .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-status {

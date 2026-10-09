@@ -112,13 +112,19 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     }
   });
 
-  it.each(['known', 'ignore'])('hides the %s frequency pill until hover or popup-open', (status) => {
+  it.each(['known', 'ignore'])('strips the %s frequency pill unconditionally (hover reveals only the status bar)', (status) => {
     for (const source of [buildTokenSpanCss(), buildTokenSpanCssForShadow()]) {
-      expect(source).toMatch(
-        new RegExp(`status-${status}:not\\(:hover\\):not\\(\\.js-cell-token--popup-open\\)[^}]*background-color:\\s*transparent`),
-      );
-      expect(source).toMatch(
-        new RegExp(`status-${status}:not\\(:hover\\):not\\(\\.js-cell-token--popup-open\\)[^}]*box-shadow:\\s*none`),
+      const rules = [...source.matchAll(new RegExp(`status-${status}[^;{]*\\{[^}]*\\}`, 'g'))].map((m) => m[0]);
+      const match = rules.find((r) => r.includes('padding: 0')) ?? '';
+      expect(match).not.toContain(':hover');
+      expect(match).not.toContain('popup-open');
+      expect(match).toContain('background-color: transparent');
+      expect(match).toContain('box-shadow: none');
+      expect(match).toContain('border-radius: 0');
+      // The pill must never come back on hover/popup-open — only the status
+      // capsule is gated behind those states (see the gating test above).
+      expect(source).not.toMatch(
+        new RegExp(`status-${status}:(?:hover|\\.)[^,{]*\\{[^}]*background-color:\\s*var\\(--cell-token-freq`),
       );
     }
   });
