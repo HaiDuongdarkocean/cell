@@ -12,18 +12,6 @@ jest.mock('@/features/ankiImport', () => ({
   htmlToText: (s: string) => s,
 }));
 
-jest.mock('@/features/dictionary', () => ({
-  ...jest.requireActual<typeof import('@/features/dictionary/logic/normalizationPipeline')>(
-    '@/features/dictionary/logic/normalizationPipeline',
-  ),
-  ...jest.requireActual<typeof import('@/features/dictionary/services/wordStatusSemantics')>(
-    '@/features/dictionary/services/wordStatusSemantics',
-  ),
-  ...jest.requireActual<typeof import('@/features/dictionary/services/wordStatusStore')>(
-    '@/features/dictionary/services/wordStatusStore',
-  ),
-}));
-
 import {
   reconcileTermAfterCardLoss,
   reconcileLearningFlags,
@@ -38,10 +26,10 @@ import {
 import { getSrsDB, SRS_STORES, closeAllSrsDBs } from '@/features/srs';
 import {
   getWordStatus,
-  setWordStatus,
   setWordStatusFromSync,
-} from '@/features/dictionary/services/wordStatusStore';
-import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
+  closeAllDBs,
+  clearAllStores,
+} from '@/features/dictionary';
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
 
@@ -177,9 +165,9 @@ describe('reconcileTermAfterCardLoss', () => {
   });
 
   it('leaves tracking/known/ignore terms untouched', async () => {
-    await setWordStatus('en', 't', 'tracking');
-    await setWordStatus('en', 'k', 'known');
-    await setWordStatus('en', 'i', 'ignore');
+    await setWordStatusFromSync('en', 't', 'tracking', { source: 'srs', sourceAt: 1 });
+    await setWordStatusFromSync('en', 'k', 'known', { source: 'srs', sourceAt: 1 });
+    await setWordStatusFromSync('en', 'i', 'ignore', { source: 'srs', sourceAt: 1 });
 
     await reconcileTermAfterCardLoss('en', 't');
     await reconcileTermAfterCardLoss('en', 'k');
@@ -193,7 +181,7 @@ describe('reconcileTermAfterCardLoss', () => {
 
 describe('reconcileLearningFlags', () => {
   it('restores learning on an unknown-family term with a live SRS card', async () => {
-    await setWordStatus('en', 'drifted', 'tracking');
+    await setWordStatusFromSync('en', 'drifted', 'tracking', { source: 'srs', sourceAt: 1 });
     await seedSrsGraph({ lang: 'en', deckId: 'd-en', noteId: 'n1', cardId: 'c1', targetWord: 'drifted' });
 
     await reconcileLearningFlags('en');
@@ -219,8 +207,8 @@ describe('reconcileLearningFlags', () => {
   });
 
   it('never rewrites known/ignore terms even with a live card', async () => {
-    await setWordStatus('en', 'solid', 'known');
-    await setWordStatus('en', 'muted', 'ignore');
+    await setWordStatusFromSync('en', 'solid', 'known', { source: 'srs', sourceAt: 1 });
+    await setWordStatusFromSync('en', 'muted', 'ignore', { source: 'srs', sourceAt: 1 });
     await seedSrsGraph({ lang: 'en', deckId: 'd-en', noteId: 'n1', cardId: 'c1', targetWord: 'solid' });
     await seedSrsGraph({ lang: 'en', deckId: 'd-en', noteId: 'n2', cardId: 'c2', targetWord: 'muted' });
 
@@ -231,7 +219,7 @@ describe('reconcileLearningFlags', () => {
   });
 
   it('ignores cards on collections of another language', async () => {
-    await setWordStatus('en', 'drifted', 'tracking');
+    await setWordStatusFromSync('en', 'drifted', 'tracking', { source: 'srs', sourceAt: 1 });
     await seedSrsGraph({ lang: 'ja', deckId: 'd-ja', noteId: 'n1', cardId: 'c1', targetWord: 'drifted' });
 
     await reconcileLearningFlags('en');

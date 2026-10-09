@@ -5,18 +5,6 @@
 import 'fake-indexeddb/auto';
 import type { SrsNotetype, SrsStudyConfig } from '@/entities/srs/types';
 
-jest.mock('@/features/dictionary', () => ({
-  ...jest.requireActual<typeof import('@/features/dictionary/logic/normalizationPipeline')>(
-    '@/features/dictionary/logic/normalizationPipeline',
-  ),
-  ...jest.requireActual<typeof import('@/features/dictionary/services/wordStatusSemantics')>(
-    '@/features/dictionary/services/wordStatusSemantics',
-  ),
-  ...jest.requireActual<typeof import('@/features/dictionary/services/wordStatusStore')>(
-    '@/features/dictionary/services/wordStatusStore',
-  ),
-}));
-
 import { addNoteFromMessage } from './addNoteFromMessage';
 import type { SrsAddNoteMessageInput } from './addNoteFromMessage';
 import { SrsError } from '@/features/srs/lib/srsError';
@@ -30,8 +18,7 @@ import {
   getSrsDbName,
   deleteSrsDB,
 } from '@/features/srs/repositories/srsDatabase';
-import { getWordStatus, setWordStatus } from '@/features/dictionary/services/wordStatusStore';
-import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
+import { getWordStatus, setWordStatusFromSync, closeAllDBs, clearAllStores } from '@/features/dictionary';
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
 
@@ -124,7 +111,7 @@ describe('addNoteFromMessage → learning flag (REQ-4 / AC-5)', () => {
 
   it('writes no status when note creation fails', async () => {
     await addNoteFromMessage(input('abandon'));
-    await setWordStatus('en', 'abandon', 'unknown');
+    await clearAllStores('en');
 
     await expect(addNoteFromMessage(input('abandon'))).rejects.toThrow(SrsError);
 
@@ -132,8 +119,8 @@ describe('addNoteFromMessage → learning flag (REQ-4 / AC-5)', () => {
   });
 
   it('does not overwrite known or ignore terms — arbitration wins', async () => {
-    await setWordStatus('en', 'cat', 'known');
-    await setWordStatus('en', 'dog', 'ignore');
+    await setWordStatusFromSync('en', 'cat', 'known', { source: 'srs', sourceAt: Date.now() });
+    await setWordStatusFromSync('en', 'dog', 'ignore', { source: 'srs', sourceAt: Date.now() });
 
     await addNoteFromMessage(input('cat'));
     await addNoteFromMessage(input('dog'));
