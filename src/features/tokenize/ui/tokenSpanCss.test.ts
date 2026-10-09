@@ -134,12 +134,12 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     expect(source).not.toMatch(/frequency-\w+ \.js-cell-token-word\s*\{[^}]*background-color/);
   });
 
-  it.each(['host', 'shadow'])('keeps the word lane transparent and square in %s CSS', (variant) => {
+  it.each(['host', 'shadow'])('keeps the word lane transparent and unpainted in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
     const lane = source.match(/\.js-cell-token-word\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(lane).toContain('line-height: 1.1');
     expect(lane).toContain('background: transparent');
-    expect(lane).toContain('border-radius: 0');
+    expect(lane).not.toContain('box-shadow');
   });
 
   it.each(['host', 'shadow'])('spaces the annotation stack by column gap alone in %s CSS', (variant) => {
@@ -158,6 +158,16 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     const gloss = source.match(/gloss-off\)::after\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(cap).toContain('font-size: 0.62em');
     expect(gloss).toContain('font-size: 0.62em');
+  });
+
+  it.each(['host', 'shadow'])('annotation lanes inherit the word style (color/italic/weight) in %s CSS', (variant) => {
+    const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
+    for (const lane of [/(reading-off\)::before\s*\{([^}]*)\})/, /(gloss-off\)::after\s*\{([^}]*)\})/]) {
+      const body = source.match(lane)?.[1] ?? '';
+      expect(body).toContain('font-style: inherit');
+      expect(body).toContain('font-weight: inherit');
+      expect(body).toContain('color: inherit');
+    }
   });
 
   it.each(['host', 'shadow'])('emits self-contained --cell-token-* values in %s CSS (no unresolved var(--color-text))', (variant) => {

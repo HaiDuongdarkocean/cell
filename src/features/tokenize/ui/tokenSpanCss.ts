@@ -173,8 +173,8 @@ html body .js-cell-token--word:not(.js-cell-token--reading-off)::before {
   font-size: 0.62em;
   line-height: 1.15;
   white-space: nowrap;
-  font-style: normal;
-  font-weight: 500;
+  font-style: inherit;
+  font-weight: inherit;
   color: inherit;
   opacity: 0.92;
   text-shadow: var(--shadow-sm);
@@ -191,8 +191,8 @@ html body .js-cell-token--word:not(.js-cell-token--gloss-off)::after {
   font-size: 0.62em;
   line-height: 1.15;
   white-space: nowrap;
-  font-style: normal;
-  font-weight: 500;
+  font-style: inherit;
+  font-weight: inherit;
   color: inherit;
   opacity: 0.85;
   text-shadow: var(--shadow-sm);
@@ -344,9 +344,6 @@ html body .js-cell-token.js-cell-token--selected .js-cell-token-word {
 html body .js-cell-token.js-cell-token--status-off {
   text-shadow: var(--shadow-sm) !important;
 }
-html body .js-cell-token.js-cell-token--status-off .js-cell-token-word {
-  box-shadow: var(--shadow-sm) !important;
-}
 html body .js-cell-token.js-cell-token--status-off .js-cell-token-status {
   background: transparent !important;
 }
@@ -417,10 +414,6 @@ ${buildVariables(':host')}
   display: inline !important;
   line-height: 1.1 !important;
   background: transparent !important;
-  color: inherit !important;
-  text-decoration: none !important;
-  border-radius: 0 !important;
-  box-shadow: var(--shadow-sm) !important;
 }
 
 /* Ruby cap (spec reading-annotation): in-flow lane above the word — never
@@ -432,8 +425,8 @@ ${buildVariables(':host')}
   font-size: 0.62em;
   line-height: 1.15;
   white-space: nowrap;
-  font-style: normal;
-  font-weight: 500;
+  font-style: inherit;
+  font-weight: inherit;
   color: inherit;
   opacity: 0.92;
   text-shadow: var(--shadow-sm);
@@ -449,8 +442,8 @@ ${buildVariables(':host')}
   font-size: 0.62em;
   line-height: 1.15;
   white-space: nowrap;
-  font-style: normal;
-  font-weight: 500;
+  font-style: inherit;
+  font-weight: inherit;
   color: inherit;
   opacity: 0.85;
   text-shadow: var(--shadow-sm);
@@ -576,9 +569,6 @@ ${buildVariables(':host')}
 
 .js-cell-token.js-cell-token--status-off {
   text-shadow: var(--shadow-sm) !important;
-}
-.js-cell-token.js-cell-token--status-off .js-cell-token-word {
-  box-shadow: var(--shadow-sm) !important;
 }
 .js-cell-token.js-cell-token--status-off .js-cell-token-status {
   background: transparent !important;
