@@ -1,10 +1,9 @@
 import type { TokenBlock } from '@/features/tokenize/types';
+import { hasSentenceEnd } from '@/shared/lib/sentencePunct';
 
 /** Nearest paragraph-ish container used to keep a sentence run inside one
  *  visual paragraph — a run never jumps across two separate paragraphs. */
 const CONTAINER_SELECTOR = 'p, li, dd, dt, blockquote, figcaption, td, th, h1, h2, h3, h4, h5, h6';
-
-const SENTENCE_END_RE = /[.!?]/;
 
 export interface SentenceRunEntry {
   readonly block: TokenBlock;
@@ -18,7 +17,7 @@ function tailSentence(block: TokenBlock): { sentenceIndex: number; endsSentence:
   if (!last) return null;
   return {
     sentenceIndex: last.sentenceIndex,
-    endsSentence: SENTENCE_END_RE.test(block.originalText.slice(last.end)),
+    endsSentence: hasSentenceEnd(block.originalText.slice(last.end)),
   };
 }
 
@@ -46,9 +45,13 @@ export function collectSentenceRun(
   const run: SentenceRunEntry[] = [{ block, sentenceIndex }];
 
   let cursor = block;
+  // The sentence must still be open at the end of the block we are extending
+  // from: when the block's last token belongs to a later sentence, the hovered
+  // sentence already closed inside it and nothing to the right can belong to it.
+  let rightIndex = sentenceIndex;
   for (let i = index; i + 1 < blocks.length; i++) {
     const tail = tailSentence(cursor);
-    if (!tail || tail.endsSentence) break;
+    if (!tail || tail.endsSentence || tail.sentenceIndex !== rightIndex) break;
     const next = blocks[i + 1]!;
     if (containerOf(next) !== containerOf(cursor)) break;
     const nextTail = tailSentence(next);
@@ -56,6 +59,7 @@ export function collectSentenceRun(
     run.push({ block: next, sentenceIndex: 0 });
     if (nextTail.sentenceIndex > 0) break;
     cursor = next;
+    rightIndex = 0;
   }
 
   // The run only continues left when the hovered sentence starts at the

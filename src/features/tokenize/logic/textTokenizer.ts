@@ -1,6 +1,7 @@
 import { tokenizeSentence, type SentenceToken } from '@/features/dictionary';
 import { segmentFMM } from '@/features/dictionary';
 import { languageMatches } from '@/shared/config/languageRegistry';
+import { SENTENCE_END_PUNCT_RE } from '@/shared/lib/sentencePunct';
 import type { Token, TokenStatus, TokenFrequencyBand, TokenBlock } from '@/features/tokenize/types';
 
 const DEFAULT_LANG = 'en';
@@ -51,21 +52,36 @@ export function prepareTokenBlock(block: TokenBlock, langCode: string = DEFAULT_
   block.tokens = tokenizeTextBlock(block.originalText, langCode);
 }
 
+/** Prefix count of sentence terminators per code-point offset, so the CJK path
+ *  derives a token's sentence index in O(1) — the segmenter emits terminators
+ *  as their own tokens and carries no sentence information. */
+function buildBoundaryPrefix(chars: readonly string[]): number[] {
+  const prefix = new Array<number>(chars.length + 1).fill(0);
+  for (let i = 0; i < chars.length; i++) {
+    prefix[i + 1] = prefix[i]! + (SENTENCE_END_PUNCT_RE.test(chars[i]!) ? 1 : 0);
+  }
+  return prefix;
+}
+
 /** Tokenize a block of text into word tokens with UTF-16 offsets + sentence index. */
 export function tokenizeTextBlock(text: string, langCode: string = DEFAULT_LANG): Token[] {
-  const rawTokens = langCode === 'zh' ? segmentFMM(text, { hasTerm: () => false }) : tokenizeSentence(text);
+  const isZh = langCode === 'zh';
+  const rawTokens = isZh ? segmentFMM(text, { hasTerm: () => false }) : tokenizeSentence(text);
+  // The CJK segmenter offsets index the code-point array, not UTF-16 units.
+  const boundaryPrefix = isZh ? buildBoundaryPrefix([...text]) : null;
   const result: Token[] = [];
   let sentenceIndex = 0;
 
   for (const raw of rawTokens) {
     const surface =
-      langCode === 'zh'
+      isZh
         ? raw.text
         : (raw as SentenceToken).raw ?? text.slice(raw.start, raw.end);
-    const term = langCode === 'zh' ? raw.text : raw.text.toLowerCase();
+    const term = isZh ? raw.text : raw.text.toLowerCase();
     if (!isTokenCompatibleWithLanguage(surface, langCode)) continue;
-    // English: increment sentence index when sentence-ending punctuation preceded this token.
-    if (langCode !== 'zh' && (raw as SentenceToken).precededBySentencePunct) {
+    if (boundaryPrefix) {
+      sentenceIndex = boundaryPrefix[raw.start] ?? sentenceIndex;
+    } else if ((raw as SentenceToken).precededBySentencePunct) {
       sentenceIndex++;
     }
     result.push({

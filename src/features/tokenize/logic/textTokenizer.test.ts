@@ -17,6 +17,29 @@ describe('tokenizeTextBlock', () => {
     expect(tokens[1]).toMatchObject({ text: 'go', term: 'go', start: 6, end: 8 });
   });
 
+  it('opens a new sentence when the block starts with the previous terminator', () => {
+    const tokens = tokenizeTextBlock('. The example program', 'en');
+    const words = tokens.filter((t) => !t.isSeparator);
+    expect(words.every((t) => t.sentenceIndex === 1)).toBe(true);
+  });
+
+  it.each([
+    ['CJK', '你好。世界很好', 'zh', 1],
+    ['CJK fullwidth question', '你好？世界很好', 'zh', 1],
+    ['CJK ellipsis', 'そう…ですね', 'zh', 1],
+  ])('splits %s sentences on their own terminator', (_name, text, lang, expectedLast) => {
+    const words = tokenizeTextBlock(text, lang).filter((t) => !t.isSeparator);
+    expect(words[words.length - 1]!.sentenceIndex).toBe(expectedLast);
+  });
+
+  it.each([
+    ['Arabic question mark', 'كيف حالك؟ بخير', 'ar'],
+    ['Devanagari danda', 'यह ठीक है। फिर', 'hi'],
+  ])('splits %s sentences on their own terminator', (_name, text, lang) => {
+    const words = tokenizeTextBlock(text, lang).filter((t) => !t.isSeparator);
+    expect(words[words.length - 1]!.sentenceIndex).toBe(1);
+  });
+
   it('marks compact duration stamps as separators (timestamps are chrome, not words)', () => {
     const tokens = tokenizeTextBlock('Posted 15h ago, edited 29m later', 'en');
     const byText = Object.fromEntries(tokens.map((t) => [t.text, t.isSeparator]));

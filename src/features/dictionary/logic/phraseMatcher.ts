@@ -18,6 +18,7 @@ import type { PhraseNode } from './phraseTemplateParser';
 import type { CompiledTemplate, PhraseIndex } from './phraseIndexCompiler';
 import type { PhraseMatch } from '@/entities/dictionary';
 import { englishLemmaCandidates } from './englishLemma';
+import { CLAUSE_PUNCT_RE, SENTENCE_END_PUNCT_RE } from '@/shared/lib/sentencePunct';
 import { serializeNodes } from './serializeNodes';
 import type {
   MatchTraceData,
@@ -63,10 +64,7 @@ export interface SentenceToken {
 }
 
 const WORD_RUN_RE = /[\p{L}\p{N}'-]+/gu;
-const SENTENCE_PUNCT = /[.!?,;:]/;
-
-const SENTENCE_END_PUNCT_RE = /[.!?]/;
-const CLAUSE_PUNCT_RE = /[,;:-]/;
+const SENTENCE_PUNCT = /[.!?,;:。．｡！？…‥؟۔।॥།።။។։，、；：،؛]/;
 
 /** Tokenize a sentence into normalized word tokens with UTF-16 offsets.
  *
@@ -82,7 +80,10 @@ export function tokenizeSentence(sentence: string): SentenceToken[] {
   // cursor offsets from the DOM stay valid.
   sentence = sentence.replaceAll('’', "'");
   const tokens: SentenceToken[] = [];
-  let lastEnd = -1;
+  // Start at 0 (not -1) so punctuation *before* the first word still counts as
+  // a boundary: a text node that begins with ". The next sentence" opens a new
+  // sentence instead of inheriting the previous block's sentence index.
+  let lastEnd = 0;
   WORD_RUN_RE.lastIndex = 0;
   let match: RegExpExecArray | null;
   while ((match = WORD_RUN_RE.exec(sentence)) !== null) {
@@ -100,11 +101,9 @@ export function tokenizeSentence(sentence: string): SentenceToken[] {
 
     let precededBySentencePunct = false;
     let precededByClausePunct = false;
-    if (lastEnd >= 0) {
-      const gap = sentence.slice(lastEnd, start);
-      if (SENTENCE_END_PUNCT_RE.test(gap)) precededBySentencePunct = true;
-      if (CLAUSE_PUNCT_RE.test(gap)) precededByClausePunct = true;
-    }
+    const gap = sentence.slice(lastEnd, start);
+    if (SENTENCE_END_PUNCT_RE.test(gap)) precededBySentencePunct = true;
+    if (CLAUSE_PUNCT_RE.test(gap)) precededByClausePunct = true;
 
     const text = raw.toLowerCase().normalize('NFC');
     tokens.push({ text, raw, start, end: start + raw.length, precededBySentencePunct, precededByClausePunct });

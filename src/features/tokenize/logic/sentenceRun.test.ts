@@ -63,6 +63,24 @@ describe('collectSentenceRun', () => {
     expect(run.map((e) => e.block.id)).toEqual(['b']);
   });
 
+  it('stops when the next block opens with the terminator of the hovered sentence', () => {
+    const p = document.createElement('p');
+    document.body.appendChild(p);
+    // "…use in BCPL" + ". The example program was inherited" — the second
+    // sentence is a separate sentence that only *looks* like sentence 0 of its
+    // own block.
+    const a = makeBlock('a', 'earlier use in ', [0], p);
+    const b = makeBlock('b', 'BCPL', [0], p);
+    const c = makeBlock('c', '. The example program', [1], p);
+    const blocks = [a, b, c];
+
+    const run = collectSentenceRun(blocks, b, 0);
+    expect(run.map((e) => e.block.id).sort()).toEqual(['a', 'b', 'c']);
+    // Only the leading terminator gap of block c belongs to the hovered
+    // sentence; its words are sentence 1 and must stay unwashed.
+    expect(run.find((e) => e.block.id === 'c')!.sentenceIndex).toBe(0);
+  });
+
   it('never merges across separate paragraphs', () => {
     const p1 = document.createElement('p');
     const p2 = document.createElement('p');

@@ -1,5 +1,6 @@
 import type { Token, TokenBlock } from '@/features/tokenize/types';
 import { markIPlus1Tokens } from '@/features/tokenize/logic/comprehensionScore';
+import { hasSentenceEnd } from '@/shared/lib/sentencePunct';
 import { injectTokenSpanStyle } from './tokenSpanCss';
 
 export interface TokenSpanBindOptions {
@@ -191,8 +192,14 @@ export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions)
   const fragment = document.createDocumentFragment();
   let lastEnd = 0;
   // A gap carries the sentence of the token before it — the punctuation that
-  // closes a sentence belongs to that sentence, not the next one.
-  let lastSentence = tokens[0]?.sentenceIndex ?? 0;
+  // closes a sentence belongs to that sentence, not the next one. The leading
+  // gap is the exception: when it holds the terminator of the previous
+  // sentence, it belongs to that sentence (one index below the first token).
+  const first = tokens[0];
+  const leadingSentence = first
+    ? Math.max(0, first.sentenceIndex - (hasSentenceEnd(text.slice(0, first.start)) ? 1 : 0))
+    : 0;
+  let lastSentence = leadingSentence;
   for (const token of tokens) {
     if (token.start > lastEnd) {
       fragment.appendChild(createSeparatorSpan(text.slice(lastEnd, token.start), block, lastSentence));
