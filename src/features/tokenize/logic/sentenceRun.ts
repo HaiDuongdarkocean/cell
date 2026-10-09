@@ -1,79 +1,67 @@
-import type { TokenBlock } from '@/features/tokenize/types';
 import { hasSentenceEnd } from '@/shared/lib/sentencePunct';
 
-/** Nearest paragraph-ish container used to keep a sentence run inside one
- *  visual paragraph — a run never jumps across two separate paragraphs. */
-const CONTAINER_SELECTOR = 'p, li, dd, dt, blockquote, figcaption, td, th, h1, h2, h3, h4, h5, h6';
+/**
+ * One rendered text block as the sentence run sees it: a block is a text node,
+ * so a sentence split by inline elements (links, emphasis, references) spans
+ * several blocks. Sentence indices are per block, which is why the run has to
+ * be rebuilt from both ends.
+ */
+export interface SentenceSegment {
+  /** Sentence index of the segment's last token; -1 when it holds no token. */
+  readonly lastSentenceIndex: number;
+  /** Text between the last token and the end of the segment — it carries the
+   *  terminator when the sentence closes here. */
+  readonly trailingText: string;
+}
 
 export interface SentenceRunEntry {
-  readonly block: TokenBlock;
-  /** Sentence index to highlight inside that block. */
+  /** Position of the segment in the input list. */
+  readonly segment: number;
+  /** Sentence index to highlight inside that segment. */
   readonly sentenceIndex: number;
 }
 
-function tailSentence(block: TokenBlock): { sentenceIndex: number; endsSentence: boolean } | null {
-  const words = block.tokens?.filter((token) => !token.isSeparator) ?? [];
-  const last = words[words.length - 1];
-  if (!last) return null;
-  return {
-    sentenceIndex: last.sentenceIndex,
-    endsSentence: hasSentenceEnd(block.originalText.slice(last.end)),
-  };
-}
-
-function containerOf(block: TokenBlock): Element | null {
-  return block.element.closest(CONTAINER_SELECTOR) ?? block.element.parentElement;
-}
-
 /**
- * Blocks whose text continues the hovered sentence.
+ * Segments that belong to the hovered sentence, in input order.
  *
- * A block is one text node, so a sentence split by inline elements (links,
- * emphasis) spans several blocks. Sentence indices are per block, so the run
- * is rebuilt from the two ends: a neighbouring block joins when the previous
- * block has no sentence-ending punctuation after its last token; the join
- * stops at the block that carries the boundary punctuation.
+ * The list must be in DOM order (the caller reads it from the rendered spans);
+ * block scan order is not document order, so an index-based walk over the scan
+ * list joins unrelated neighbours.
  */
 export function collectSentenceRun(
-  blocks: readonly TokenBlock[],
-  block: TokenBlock,
+  segments: readonly SentenceSegment[],
+  hoveredSegment: number,
   sentenceIndex: number,
 ): SentenceRunEntry[] {
-  const index = blocks.indexOf(block);
-  if (index < 0) return [{ block, sentenceIndex }];
+  if (hoveredSegment < 0 || hoveredSegment >= segments.length) {
+    return [{ segment: hoveredSegment, sentenceIndex }];
+  }
 
-  const run: SentenceRunEntry[] = [{ block, sentenceIndex }];
+  const run: SentenceRunEntry[] = [{ segment: hoveredSegment, sentenceIndex }];
 
-  let cursor = block;
-  // The sentence must still be open at the end of the block we are extending
-  // from: when the block's last token belongs to a later sentence, the hovered
-  // sentence already closed inside it and nothing to the right can belong to it.
+  // Right: the sentence must still be open at the end of the segment we extend
+  // from. When the segment's last token belongs to a later sentence, the
+  // hovered sentence already closed inside it.
   let rightIndex = sentenceIndex;
-  for (let i = index; i + 1 < blocks.length; i++) {
-    const tail = tailSentence(cursor);
-    if (!tail || tail.endsSentence || tail.sentenceIndex !== rightIndex) break;
-    const next = blocks[i + 1]!;
-    if (containerOf(next) !== containerOf(cursor)) break;
-    const nextTail = tailSentence(next);
-    if (!nextTail) break;
-    run.push({ block: next, sentenceIndex: 0 });
-    if (nextTail.sentenceIndex > 0) break;
-    cursor = next;
+  for (let i = hoveredSegment; i + 1 < segments.length; i++) {
+    const current = segments[i]!;
+    if (current.lastSentenceIndex !== rightIndex || hasSentenceEnd(current.trailingText)) break;
+    const next = segments[i + 1]!;
+    if (next.lastSentenceIndex < 0) break;
+    run.push({ segment: i + 1, sentenceIndex: 0 });
+    if (next.lastSentenceIndex > 0) break;
     rightIndex = 0;
   }
 
-  // The run only continues left when the hovered sentence starts at the
-  // beginning of its own block — otherwise the sentence began mid-block.
+  // Left: only when the hovered sentence starts at the beginning of its own
+  // segment — otherwise the sentence began mid-block. A previous segment whose
+  // trailing text closes a sentence is the boundary, never a continuation.
   if (sentenceIndex === 0) {
-    cursor = block;
-    for (let i = index; i > 0; i--) {
-      const prev = blocks[i - 1]!;
-      if (containerOf(prev) !== containerOf(cursor)) break;
-      const prevTail = tailSentence(prev);
-      if (!prevTail || prevTail.endsSentence) break;
-      run.push({ block: prev, sentenceIndex: prevTail.sentenceIndex });
-      if (prevTail.sentenceIndex > 0) break;
-      cursor = prev;
+    for (let i = hoveredSegment; i > 0; i--) {
+      const previous = segments[i - 1]!;
+      if (previous.lastSentenceIndex < 0 || hasSentenceEnd(previous.trailingText)) break;
+      run.push({ segment: i - 1, sentenceIndex: previous.lastSentenceIndex });
+      if (previous.lastSentenceIndex > 0) break;
     }
   }
 

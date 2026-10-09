@@ -28,7 +28,9 @@ export interface TokenSpanBindOptions {
 
 export const TOKEN_CLASS = 'js-cell-token';
 const WORD_CLASS = 'js-cell-token--word';
-const SEPARATOR_CLASS = 'js-cell-token--separator';
+export const SEPARATOR_CLASS = 'js-cell-token--separator';
+/** Sentence index of the token/gap, stamped at bind time. */
+export const SENTENCE_ATTR = 'data-cell-sentence';
 const WORD_INNER_CLASS = 'js-cell-token-word';
 const STATUS_CLASS = 'js-cell-token-status';
 const READING_OFF_CLASS = 'js-cell-token--reading-off';
@@ -39,7 +41,7 @@ function createSeparatorSpan(text: string, block: TokenBlock, sentenceIndex: num
   const span = document.createElement('span');
   span.className = `${TOKEN_CLASS} ${SEPARATOR_CLASS}`;
   span.setAttribute('data-cell-block-id', block.id);
-  span.setAttribute('data-cell-sentence', String(sentenceIndex));
+  span.setAttribute(SENTENCE_ATTR, String(sentenceIndex));
   span.textContent = text;
   return span;
 }
@@ -112,7 +114,7 @@ function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBind
   span.setAttribute('data-cell-block-id', block.id);
   span.setAttribute('data-cell-start', String(token.start));
   span.setAttribute('data-cell-end', String(token.end));
-  span.setAttribute('data-cell-sentence', String(token.sentenceIndex));
+  span.setAttribute(SENTENCE_ATTR, String(token.sentenceIndex));
 
   if (!token.isSeparator && (options.onTokenEnter || options.onTokenLeave || options.onTokenClick || options.onTokenCtrlClick)) {
     span.addEventListener('mouseenter', () => options.onTokenEnter?.(token.term, block, span));

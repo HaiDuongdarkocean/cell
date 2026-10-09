@@ -26,12 +26,11 @@ import {
 import type { WordStatus } from '@/entities/dictionary';
 import { entriesToBand, loadFrequencyBandOptions, pickFrequencyReading, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
 import { createStatusKeyControls, type PopupStatusTarget } from '@/features/tokenize/logic/statusKeyControls';
-import { collectSentenceRun } from '@/features/tokenize/logic/sentenceRun';
+import { SENTENCE_CLASS, clearSentenceHighlight, highlightSentence } from '@/features/tokenize/ui/sentenceHighlight';
 import { CELL_UI_HOST_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
 import type { Token, TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
 const DEFAULT_LANG = 'en';
-const SENTENCE_CLASS = 'js-cell-token--sentence';
 // ponytail: cache capacity is tiered by reported device RAM so low-end devices
 // (<2 GiB) keep a small resident set and higher-end devices keep a larger one.
 // Per-block cost is estimated at 500KB worst-case (maxLength 2000 chars,
@@ -211,7 +210,8 @@ export async function createWebTokenizeController(
       if (node instanceof Element && node.matches(CELL_UI_HOST_SELECTORS)) return;
     }
     pinnedSentenceKey = null;
-    clearSentenceHighlight();
+    clearSentenceHighlight(highlightedSpans);
+    highlightedSpans = [];
   }
   document.addEventListener('pointerdown', onPointerDownOutside, true);
   const termStatusVersion = new Map<string, number>();
@@ -828,28 +828,14 @@ export async function createWebTokenizeController(
     return `${block.id}:${element.getAttribute('data-cell-sentence') ?? '0'}`;
   }
 
-  function clearSentenceHighlight(): void {
-    for (const span of highlightedSpans) span.classList.remove(SENTENCE_CLASS);
+  function clearSentenceWash(): void {
+    clearSentenceHighlight(highlightedSpans);
     highlightedSpans = [];
   }
 
-  /** Wash every token of the sentence the given token belongs to. The run
-   *  spans neighbouring blocks because a sentence split by inline elements
-   *  (links, emphasis) lives in several text-node blocks. */
-  function highlightSentence(block: TokenBlock, element: HTMLElement): void {
-    const sentenceIndex = Number(element.getAttribute('data-cell-sentence') ?? '0');
-    clearSentenceHighlight();
-    const next: HTMLElement[] = [];
-    for (const entry of collectSentenceRun(blocks, block, sentenceIndex)) {
-      const spans = entry.block.element.querySelectorAll<HTMLElement>(
-        `[data-cell-block-id="${entry.block.id}"][data-cell-sentence="${entry.sentenceIndex}"]`,
-      );
-      for (const span of spans) {
-        span.classList.add(SENTENCE_CLASS);
-        next.push(span);
-      }
-    }
-    highlightedSpans = next;
+  function washSentence(element: HTMLElement): void {
+    clearSentenceWash();
+    highlightedSpans = highlightSentence(element);
   }
 
   function getDisplayOptions(): TokenSpanBindOptions {
@@ -863,17 +849,17 @@ export async function createWebTokenizeController(
         stateStore.setHoveredTerm(term);
         const key = sentenceKey(block, element);
         if (pinnedSentenceKey && pinnedSentenceKey !== key) pinnedSentenceKey = null;
-        highlightSentence(block, element);
+        washSentence(element);
       },
       onTokenLeave: (term) => {
         if (stateStore.getState().hoveredTerm === term) {
           stateStore.setHoveredTerm(null);
         }
-        if (!pinnedSentenceKey) clearSentenceHighlight();
+        if (!pinnedSentenceKey) clearSentenceWash();
       },
       onTokenClick: (term, block, element, token, event) => {
         pinnedSentenceKey = sentenceKey(block, element);
-        highlightSentence(block, element);
+        washSentence(element);
         options.onOpenDictionary?.(term, element, getSentenceText(block, token), event);
       },
       onTokenCtrlClick: (term) => stateStore.toggleSelectedTerm(term),
@@ -1132,7 +1118,7 @@ export async function createWebTokenizeController(
 
     destroy: () => {
       document.removeEventListener('pointerdown', onPointerDownOutside, true);
-      clearSentenceHighlight();
+      clearSentenceHighlight(highlightedSpans);
       statusKeyControls.destroy();
       unsubscribe();
       unsubscribeSelection();
