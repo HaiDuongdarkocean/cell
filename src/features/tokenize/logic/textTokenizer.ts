@@ -5,9 +5,14 @@ import type { Token, TokenStatus, TokenFrequencyBand, TokenBlock } from '@/featu
 
 const DEFAULT_LANG = 'en';
 
+/** Compact duration stamps ("29m", "15h", "3d", "2w", "1y") are timestamp
+ *  chrome on social feeds, not vocabulary — render as separators so no
+ *  annotation lanes appear. */
+const DURATION_STAMP_RE = /^\d+[smhdwy]$/i;
+
 /** Treat a token as a separator if it contains no letters or digits. */
 function isSeparator(surface: string): boolean {
-  return /^[^\p{L}\p{N}]+$/u.test(surface);
+  return /^[^\p{L}\p{N}]+$/u.test(surface) || DURATION_STAMP_RE.test(surface);
 }
 
 /** Allowed characters for an English token surface (ASCII letters, digits,
@@ -20,9 +25,14 @@ function isSeparator(surface: string): boolean {
  *  from the language registry or a Unicode script profile. */
 const ENGLISH_TOKEN_CHARS = /^[A-Za-z0-9'-]+$/;
 const HAS_LATIN_LETTER = /[A-Za-z]/;
+/** English has only two one-letter words ("a", "I"). Other single letters are
+ *  anti-scraping splinters (Facebook renders "Sponsored" as one letter per
+ *  span) or timestamp units ("16 h") — never worth annotating. */
+const SINGLE_LETTER_WORD = /^[ai]$/i;
 
 /** Check whether a token surface looks like an English word. */
 function isEnglishLikeToken(surface: string): boolean {
+  if (surface.length === 1 && !SINGLE_LETTER_WORD.test(surface)) return false;
   return ENGLISH_TOKEN_CHARS.test(surface) && HAS_LATIN_LETTER.test(surface);
 }
 

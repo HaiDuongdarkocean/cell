@@ -22,6 +22,7 @@ const FORBIDDEN_TAGS = new Set([
   'KBD',
   'SAMP',
   'VAR',
+  'BUTTON',
 ]);
 
 const SUBTITLE_LINE_CLASS = 'subtitle-line';
@@ -41,7 +42,7 @@ const EXTENSION_UI_HOST_SELECTORS = CELL_UI_HOST_SELECTORS;
 // is tokenized (see test). Many sites (Facebook, Twitter) add explicit
 // role="link" to anchors for ARIA redundancy — that must not disable tokenize
 // for content like names, article titles, or post text inside those anchors.
-const FORBIDDEN_ROLE_ATTRS = ['textbox', 'tab', 'menuitem'];
+const FORBIDDEN_ROLE_ATTRS = ['textbox', 'tab', 'menuitem', 'button'];
 
 export interface FindTextBlocksOptions {
   /** Maximum characters for a single text block. Longer blocks are skipped. */
@@ -73,6 +74,7 @@ function isForbiddenElement(element: Element): boolean {
   if (element.closest(EXTENSION_UI_HOST_SELECTORS)) return true;
   const role = element.getAttribute('role');
   if (role && FORBIDDEN_ROLE_ATTRS.includes(role)) return true;
+  if (element.getAttribute('aria-hidden') === 'true') return true;
   const contenteditable = element.getAttribute('contenteditable');
   if (contenteditable === 'true' || contenteditable === '') return true;
   return false;

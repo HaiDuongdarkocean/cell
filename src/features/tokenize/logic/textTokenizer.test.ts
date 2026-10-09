@@ -17,6 +17,25 @@ describe('tokenizeTextBlock', () => {
     expect(tokens[1]).toMatchObject({ text: 'go', term: 'go', start: 6, end: 8 });
   });
 
+  it('marks compact duration stamps as separators (timestamps are chrome, not words)', () => {
+    const tokens = tokenizeTextBlock('Posted 15h ago, edited 29m later', 'en');
+    const byText = Object.fromEntries(tokens.map((t) => [t.text, t.isSeparator]));
+    expect(byText['15h']).toBe(true);
+    expect(byText['29m']).toBe(true);
+    expect(byText['ago']).toBe(false);
+    expect(byText['edited']).toBe(false);
+  });
+
+  it('drops single letters other than a/I (anti-scraping splinters, timestamp units)', () => {
+    const tokens = tokenizeTextBlock('16 h a day, I saw x marks', 'en');
+    const words = tokens.filter((t) => !t.isSeparator).map((t) => t.text);
+    expect(words).toContain('a');
+    expect(words).toContain('I');
+    expect(words).toContain('day');
+    expect(words).not.toContain('h');
+    expect(words).not.toContain('x');
+  });
+
   it('tokenizes Chinese by single characters when no dict', () => {
     const tokens = tokenizeTextBlock('我喜欢你', 'zh');
     expect(tokens.map((t) => t.text)).toEqual(['我', '喜', '欢', '你']);

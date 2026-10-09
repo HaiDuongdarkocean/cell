@@ -19,11 +19,18 @@ describe('findTextBlocks', () => {
     expect(blocks[0]!.originalText).toBe('Keep me.');
   });
 
-  it('skips text inside form controls but tokenizes buttons', () => {
+  it('skips text inside form controls and buttons', () => {
     const root = document.createElement('div');
-    root.innerHTML = '<p>Normal text <a href="#">link text</a> <button>click</button> <input value="text"></p>';
+    root.innerHTML = '<p>Normal text <a href="#">link text</a> <button>click</button> <span role="button">Reply</span> <input value="text"></p>';
     const blocks = findTextBlocks(root);
-    expect(blocks.map((b) => b.originalText)).toEqual(['Normal text ', 'link text', 'click']);
+    expect(blocks.map((b) => b.originalText)).toEqual(['Normal text ', 'link text']);
+  });
+
+  it('skips text inside aria-hidden subtrees (composer placeholders, assistive duplicates)', () => {
+    const root = document.createElement('div');
+    root.innerHTML = '<p>Visible text</p><div aria-hidden="true"><span>Hidden placeholder</span></div><p><span aria-hidden="true">Assistive copy</span>Real words</p>';
+    const blocks = findTextBlocks(root);
+    expect(blocks.map((b) => b.originalText)).toEqual(['Visible text', 'Real words']);
   });
 
   it('tokenizes label text (radio options, dropdown faces)', () => {
