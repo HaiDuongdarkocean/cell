@@ -136,7 +136,11 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     expect(rule).toContain('box-shadow: none');
     expect(rule).toContain('padding: 0');
     expect(rule).toContain('border-radius: 0');
-    expect(source).toMatch(/\.js-cell-token--i1-off \.js-cell-token-status\s*\{[^}]*background:\s*transparent/);
+    // i1-off hides the capsule at rest, but hover or an open dictionary popup
+    // must reveal it — otherwise a clicked word can never show its status.
+    expect(source).toMatch(
+      /\.js-cell-token--i1-off:not\(:hover\):not\(\.js-cell-token--popup-open\) \.js-cell-token-status\s*\{[^}]*background:\s*transparent/,
+    );
     // The gate must sit after the frequency/status paint rules so equal
     // specificity resolves in its favour.
     expect(source.indexOf('.js-cell-token--i1-off')).toBeGreaterThan(source.indexOf('frequency-rare {'));
