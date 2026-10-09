@@ -17,7 +17,6 @@ const FORBIDDEN_TAGS = new Set([
   'SELECT',
   'OPTION',
   'OPTGROUP',
-  'LABEL',
   'CODE',
   'PRE',
   'KBD',

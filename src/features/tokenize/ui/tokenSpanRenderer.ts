@@ -113,9 +113,10 @@ function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBind
         options.onTokenCtrlClick?.(token.term, block, span);
         return;
       }
-      // Inside <a> or <button>: single click opens popup, double click triggers native action.
-      // e.detail === 2 on the second click of a double-click sequence.
-      const interactive = span.closest('a, button');
+      // Inside <a>, <button> or <label>: single click opens popup, double click
+      // triggers native action. preventDefault on the click also suppresses the
+      // label's control activation. e.detail === 2 on the second click.
+      const interactive = span.closest('a, button, label');
       if (interactive) {
         e.preventDefault();
         if (e.detail === 2) {
@@ -123,7 +124,7 @@ function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBind
             const href = (interactive as HTMLAnchorElement).href;
             if (href) window.location.href = href;
           } else {
-            // Re-dispatch a clean click so the button's own handler fires.
+            // Re-dispatch a clean click so the button/label's own handler fires.
             interactive.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
           }
           return;

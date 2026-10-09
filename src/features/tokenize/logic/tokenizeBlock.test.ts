@@ -26,6 +26,13 @@ describe('findTextBlocks', () => {
     expect(blocks.map((b) => b.originalText)).toEqual(['Normal text ', 'link text', 'click']);
   });
 
+  it('tokenizes label text (radio options, dropdown faces)', () => {
+    const root = document.createElement('div');
+    root.innerHTML = '<form><label><input type="radio">Small</label><label for="x">Standard</label><input id="x" type="radio"></form>';
+    const blocks = findTextBlocks(root);
+    expect(blocks.map((b) => b.originalText)).toEqual(['Small', 'Standard']);
+  });
+
   it('tokenizes text inside <a role="link"> (Facebook-style redundant ARIA)', () => {
     // Facebook/Twitter add explicit role="link" to anchors; that must not
     // disable tokenize for content like names or article titles.
