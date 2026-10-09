@@ -36,6 +36,24 @@ describe('tokenSpanRenderer', () => {
     expect(hello!.querySelector('.js-cell-token-status')).not.toBeNull();
   });
 
+  it('marks only the single unknown word of a sentence as i+1', () => {
+    const block = makeBlock('I ate durian. Then the aardvark met the platypus.', [
+      { text: 'I', term: 'i', start: 0, end: 1, isSeparator: false, sentenceIndex: 0, status: 'known', frequencyBand: 'core', reading: undefined },
+      { text: 'ate', term: 'ate', start: 2, end: 5, isSeparator: false, sentenceIndex: 0, status: 'known', frequencyBand: 'core', reading: undefined },
+      { text: 'durian', term: 'durian', start: 6, end: 12, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'rare', reading: undefined },
+      { text: 'aardvark', term: 'aardvark', start: 19, end: 27, isSeparator: false, sentenceIndex: 1, status: 'unknown', frequencyBand: 'rare', reading: undefined },
+      { text: 'platypus', term: 'platypus', start: 36, end: 44, isSeparator: false, sentenceIndex: 1, status: 'unknown', frequencyBand: 'rare', reading: undefined },
+    ]);
+    bindTokenBlock(block, { showStatus: true, showFrequency: true });
+
+    const cls = (term: string) =>
+      block.element.querySelector<HTMLElement>(`[data-cell-term="${term}"]`)!.classList;
+    expect(cls('durian').contains('js-cell-token--i1-off')).toBe(false);
+    expect(cls('aardvark').contains('js-cell-token--i1-off')).toBe(true);
+    expect(cls('platypus').contains('js-cell-token--i1-off')).toBe(true);
+    expect(cls('ate').contains('js-cell-token--i1-off')).toBe(true);
+  });
+
   it('unbind restores original text node', () => {
     const block = makeBlock('Hello world.', [
       { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'none', reading: undefined },

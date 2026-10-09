@@ -1,4 +1,5 @@
 import type { Token, TokenBlock } from '@/features/tokenize/types';
+import { markIPlus1Tokens } from '@/features/tokenize/logic/comprehensionScore';
 import { injectTokenSpanStyle } from './tokenSpanCss';
 
 export interface TokenSpanBindOptions {
@@ -31,6 +32,7 @@ const WORD_INNER_CLASS = 'js-cell-token-word';
 const STATUS_CLASS = 'js-cell-token-status';
 const READING_OFF_CLASS = 'js-cell-token--reading-off';
 const GLOSS_OFF_CLASS = 'js-cell-token--gloss-off';
+const IPLUS1_OFF_CLASS = 'js-cell-token--i1-off';
 
 function createSeparatorSpan(text: string, block: TokenBlock): HTMLSpanElement {
   const span = document.createElement('span');
@@ -51,6 +53,11 @@ function applyTokenClasses(span: HTMLElement, token: Token, options: TokenSpanBi
   }
   if (token.frequencyBand && token.frequencyBand !== 'none') {
     span.classList.add(`${TOKEN_CLASS}--frequency-${token.frequencyBand}`);
+  }
+  if (token.iPlus1) {
+    span.classList.remove(IPLUS1_OFF_CLASS);
+  } else {
+    span.classList.add(IPLUS1_OFF_CLASS);
   }
   if (options.isSelected?.(token.term)) {
     span.classList.add(`${TOKEN_CLASS}--selected`);
@@ -176,6 +183,7 @@ export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions)
   injectTokenSpanStyle();
 
   const text = block.originalText;
+  markIPlus1Tokens(block.tokens);
   const tokens = [...block.tokens].sort((a, b) => a.start - b.start);
 
   const fragment = document.createDocumentFragment();
@@ -202,6 +210,7 @@ export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions)
  *  (caller should fall back to unbind + bind). */
 export function restyleTokenBlock(block: TokenBlock, options: TokenSpanBindOptions): boolean {
   if (!block.isBound || !block.tokens) return false;
+  markIPlus1Tokens(block.tokens);
   const tokens = [...block.tokens]
     .sort((a, b) => a.start - b.start)
     .filter((token) => !token.isSeparator);

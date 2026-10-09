@@ -129,6 +129,19 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     }
   });
 
+  it.each(['host', 'shadow'])('gates the pill and status capsule behind i+1 in %s CSS', (variant) => {
+    const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
+    const rule = source.match(/\.js-cell-token--i1-off\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(rule).toContain('background-color: transparent');
+    expect(rule).toContain('box-shadow: none');
+    expect(rule).toContain('padding: 0');
+    expect(rule).toContain('border-radius: 0');
+    expect(source).toMatch(/\.js-cell-token--i1-off \.js-cell-token-status\s*\{[^}]*background:\s*transparent/);
+    // The gate must sit after the frequency/status paint rules so equal
+    // specificity resolves in its favour.
+    expect(source.indexOf('.js-cell-token--i1-off')).toBeGreaterThan(source.indexOf('frequency-rare {'));
+  });
+
   it.each(['host', 'shadow'])('frequency pill wraps the whole column in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
     // Pill background + padding + radius target the token column itself, not

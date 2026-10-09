@@ -28,6 +28,22 @@ export function isScorableToken(token: Token): boolean {
   return !token.isSeparator && !NUMERIC_RE.test(token.term);
 }
 
+/** Mark the i+1 gap of every sentence: a sentence with exactly one still-new
+ *  word is comprehensible apart from that word, so only that token carries
+ *  the frequency pill and status capsule. Tokens of sentences with zero or
+ *  two-plus gaps stay unmarked and render as plain text. */
+export function markIPlus1Tokens(tokens: readonly Token[]): void {
+  const gapsBySentence = new Map<number, number>();
+  for (const token of tokens) {
+    if (!isScorableToken(token) || !isNew(token.status)) continue;
+    gapsBySentence.set(token.sentenceIndex, (gapsBySentence.get(token.sentenceIndex) ?? 0) + 1);
+  }
+  for (const token of tokens) {
+    token.iPlus1 =
+      isScorableToken(token) && isNew(token.status) && gapsBySentence.get(token.sentenceIndex) === 1;
+  }
+}
+
 export function computeStats(tokens: readonly Token[], kind: ComprehensionKind): ComprehensionStats {
   let known = 0;
   let tracking = 0;

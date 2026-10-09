@@ -25,6 +25,10 @@ export interface Token {
   reading: string | undefined;
   /** Native-language gloss; undefined until resolved or absent. */
   gloss?: string;
+  /** True when this token is the only still-new word of its sentence — the
+   *  i+1 gap. Recomputed on every bind/restyle; only i+1 tokens paint the
+   *  frequency pill and status capsule. */
+  iPlus1?: boolean;
 }
 
 export interface TokenBlock {

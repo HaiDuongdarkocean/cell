@@ -343,6 +343,22 @@ html body .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-t
   background: transparent !important;
 }
 
+/* i+1 gate: only the single still-new word of a sentence paints the frequency
+   pill and status capsule. Every other token carries --i1-off and renders as
+   plain text — same reset as known/ignore, so a page full of unknown words
+   stays readable instead of turning into a wall of pills. */
+html body .js-cell-token.js-cell-token--i1-off {
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+html body .js-cell-token.js-cell-token--i1-off .js-cell-token-status {
+  background: transparent !important;
+}
+
 html body .js-cell-token.js-cell-token--selected .js-cell-token-word {
   background-image: linear-gradient(color-mix(in srgb, var(--cell-token-selected) 18%, transparent) 0 0) !important;
 }
@@ -578,6 +594,18 @@ ${buildVariables(':host')}
 }
 .js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-status,
 .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-status {
+  background: transparent !important;
+}
+
+.js-cell-token.js-cell-token--i1-off {
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+.js-cell-token.js-cell-token--i1-off .js-cell-token-status {
   background: transparent !important;
 }
 
