@@ -13,6 +13,7 @@ const STATIC_TOKENS_NEEDED: readonly string[] = [
   '--border-width-status',
   '--radius-md',
   '--duration-100',
+  '--z-overlay-high',
 ];
 
 /** Map cell-token variables to canonical design tokens from tokens.json.
@@ -366,12 +367,16 @@ html body .js-cell-token.js-cell-token--selected .js-cell-token-word {
 }
 
 /* Sentence highlight: while a word is hovered (or its popup is open) the whole
-   sentence is washed so the reading context is visible at a glance. The wash
-   paints the word lane and the gap spans — never the annotation lanes — so it
-   tracks the text line like a highlighter. */
-html body .js-cell-token.js-cell-token--sentence .js-cell-token-word,
-html body .js-cell-token--separator.js-cell-token--sentence {
-  background-color: color-mix(in srgb, var(--cell-token-selected) 22%, transparent) !important;
+   sentence is washed so the reading context is visible at a glance. The wash is
+   painted by band overlays (sentenceHighlight.ts), not per-token backgrounds —
+   one snapped rectangle per visual line keeps the edges straight. multiply
+   keeps the text under the band crisp like a real highlighter. */
+html body .js-cell-sentence-band {
+  position: absolute !important;
+  pointer-events: none !important;
+  z-index: var(--z-overlay-high) !important;
+  mix-blend-mode: multiply !important;
+  background: color-mix(in srgb, var(--cell-token-selected) 22%, #fff) !important;
 }
 
 /* Global layer toggles (applied per token).
@@ -624,9 +629,12 @@ ${buildVariables(':host')}
   background-image: linear-gradient(color-mix(in srgb, var(--cell-token-selected) 18%, transparent) 0 0) !important;
 }
 
-.js-cell-token.js-cell-token--sentence .js-cell-token-word,
-.js-cell-token--separator.js-cell-token--sentence {
-  background-color: color-mix(in srgb, var(--cell-token-selected) 22%, transparent) !important;
+.js-cell-sentence-band {
+  position: absolute !important;
+  pointer-events: none !important;
+  z-index: var(--z-overlay-high) !important;
+  mix-blend-mode: multiply !important;
+  background: color-mix(in srgb, var(--cell-token-selected) 22%, #fff) !important;
 }
 
 .js-cell-token.js-cell-token--status-off {

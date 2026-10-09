@@ -1,5 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
-import { clearSentenceHighlight, highlightSentence, SENTENCE_CLASS } from './sentenceHighlight';
+import {
+  clearSentenceHighlight,
+  computeSentenceBands,
+  highlightSentence,
+  SENTENCE_CLASS,
+  type BandBox,
+} from './sentenceHighlight';
 
 type Piece = readonly [text: string, sentence: number, separator?: boolean];
 
@@ -52,5 +58,44 @@ describe('highlightSentence', () => {
 
     clearSentenceHighlight(washed);
     expect(p.querySelectorAll(`.${SENTENCE_CLASS}`)).toHaveLength(0);
+  });
+});
+
+describe('computeSentenceBands', () => {
+  const box = (top: number, bottom: number, left: number, right: number): BandBox => ({
+    top,
+    bottom,
+    left,
+    right,
+  });
+
+  it('merges same-line fragments into one band spanning the gaps between them', () => {
+    const bands = computeSentenceBands([box(10, 20, 0, 30), box(10, 20, 34, 60), box(10, 20, 63, 90)], 32);
+    expect(bands).toEqual([{ top: 10, bottom: 20, left: 0, right: 90 }]);
+  });
+
+  it('snaps a protruding fragment to the line modal edge so the band stays flat', () => {
+    const bands = computeSentenceBands([box(10, 20, 0, 30), box(9, 21, 34, 60), box(10, 20, 63, 90)], 32);
+    expect(bands).toEqual([{ top: 10, bottom: 20, left: 0, right: 90 }]);
+  });
+
+  it('emits one band per visual line for a wrapped sentence', () => {
+    const bands = computeSentenceBands([box(10, 20, 0, 400), box(30, 40, 0, 120)], 32);
+    expect(bands).toEqual([
+      { top: 10, bottom: 20, left: 0, right: 400 },
+      { top: 30, bottom: 40, left: 0, right: 120 },
+    ]);
+  });
+
+  it('splits the band when the horizontal gap exceeds maxGap', () => {
+    const bands = computeSentenceBands([box(10, 20, 0, 30), box(10, 20, 90, 120)], 32);
+    expect(bands).toEqual([
+      { top: 10, bottom: 20, left: 0, right: 30 },
+      { top: 10, bottom: 20, left: 90, right: 120 },
+    ]);
+  });
+
+  it('returns no bands for empty input', () => {
+    expect(computeSentenceBands([], 32)).toEqual([]);
   });
 });

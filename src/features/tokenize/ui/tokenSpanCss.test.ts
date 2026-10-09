@@ -146,11 +146,15 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     expect(source.indexOf('.js-cell-token--i1-off')).toBeGreaterThan(source.indexOf('frequency-rare {'));
   });
 
-  it.each(['host', 'shadow'])('washes the whole sentence on hover in %s CSS', (variant) => {
+  it.each(['host', 'shadow'])('paints the sentence wash as flat band overlays in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
+    // Per-token --sentence backgrounds could never produce straight edges —
+    // the wash is one snapped overlay rect per line (see sentenceHighlight.ts).
     expect(source).toMatch(
-      /\.js-cell-token--sentence \.js-cell-token-word,\s*[^}]*\.js-cell-token--separator\.js-cell-token--sentence\s*\{[^}]*background-color:\s*color-mix\(in srgb, var\(--cell-token-selected\)/,
+      /\.js-cell-sentence-band\s*\{[^}]*mix-blend-mode:\s*multiply[^}]*color-mix\(in srgb, var\(--cell-token-selected\) 22%/,
     );
+    expect(source).not.toContain('.js-cell-token--sentence .js-cell-token-word');
+    expect(source).not.toContain('--separator.js-cell-token--sentence');
   });
 
   it.each(['host', 'shadow'])('frequency pill wraps the whole column in %s CSS', (variant) => {
