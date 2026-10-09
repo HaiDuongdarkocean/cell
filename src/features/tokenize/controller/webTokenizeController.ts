@@ -862,6 +862,18 @@ export async function createWebTokenizeController(
         washSentence(element);
         options.onOpenDictionary?.(term, element, getSentenceText(block, token), event);
       },
+      onSeparatorEnter: (block, element) => {
+        const key = sentenceKey(block, element);
+        if (pinnedSentenceKey && pinnedSentenceKey !== key) pinnedSentenceKey = null;
+        washSentence(element);
+      },
+      onSeparatorLeave: () => {
+        if (!pinnedSentenceKey) clearSentenceWash();
+      },
+      onSeparatorClick: (block, element) => {
+        pinnedSentenceKey = sentenceKey(block, element);
+        washSentence(element);
+      },
       onTokenCtrlClick: (term) => stateStore.toggleSelectedTerm(term),
       isSelected: (term) => stateStore.getState().selectedTerms.has(term),
     };

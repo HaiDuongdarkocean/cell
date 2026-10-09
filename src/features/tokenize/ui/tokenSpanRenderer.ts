@@ -22,6 +22,11 @@ export interface TokenSpanBindOptions {
   readonly onTokenClick?: (term: string, block: TokenBlock, element: HTMLElement, token: Token, event: MouseEvent) => void;
   /** Ctrl/Cmd+click a word token to multi-select. */
   readonly onTokenCtrlClick?: (term: string, block: TokenBlock, element: HTMLElement) => void;
+  /** Hover a gap span (spaces/punctuation between tokens) — washes its sentence. */
+  readonly onSeparatorEnter?: (block: TokenBlock, element: HTMLElement) => void;
+  readonly onSeparatorLeave?: (block: TokenBlock, element: HTMLElement) => void;
+  /** Click a gap span — pins the sentence wash; gaps carry no term so no popup. */
+  readonly onSeparatorClick?: (block: TokenBlock, element: HTMLElement, event: MouseEvent) => void;
   /** Whether the term is in the bulk selection — marks the selected wash. */
   readonly isSelected?: (term: string) => boolean;
 }
@@ -37,12 +42,40 @@ const READING_OFF_CLASS = 'js-cell-token--reading-off';
 const GLOSS_OFF_CLASS = 'js-cell-token--gloss-off';
 const IPLUS1_OFF_CLASS = 'js-cell-token--i1-off';
 
-function createSeparatorSpan(text: string, block: TokenBlock, sentenceIndex: number): HTMLSpanElement {
+/** Inside an <a>, <button> or <label>: single click opens our popup, double
+ *  click triggers the native action. preventDefault on the click also
+ *  suppresses the label's control activation. e.detail === 2 on the second
+ *  click. Returns true when the click was consumed by the native action. */
+function passThroughInteractiveClick(e: MouseEvent, span: HTMLElement): boolean {
+  const interactive = span.closest('a, button, label');
+  if (!interactive) return false;
+  e.preventDefault();
+  if (e.detail !== 2) return false;
+  if (interactive.tagName === 'A') {
+    const href = (interactive as HTMLAnchorElement).href;
+    if (href) window.location.href = href;
+  } else {
+    // Re-dispatch a clean click so the button/label's own handler fires.
+    interactive.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+  }
+  return true;
+}
+
+function createSeparatorSpan(text: string, block: TokenBlock, sentenceIndex: number, options: TokenSpanBindOptions): HTMLSpanElement {
   const span = document.createElement('span');
   span.className = `${TOKEN_CLASS} ${SEPARATOR_CLASS}`;
   span.setAttribute('data-cell-block-id', block.id);
   span.setAttribute(SENTENCE_ATTR, String(sentenceIndex));
   span.textContent = text;
+
+  if (options.onSeparatorEnter || options.onSeparatorLeave || options.onSeparatorClick) {
+    span.addEventListener('mouseenter', () => options.onSeparatorEnter?.(block, span));
+    span.addEventListener('mouseleave', () => options.onSeparatorLeave?.(block, span));
+    span.addEventListener('click', (e) => {
+      if (passThroughInteractiveClick(e, span)) return;
+      options.onSeparatorClick?.(block, span, e);
+    });
+  }
   return span;
 }
 
@@ -125,23 +158,7 @@ function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBind
         options.onTokenCtrlClick?.(token.term, block, span);
         return;
       }
-      // Inside <a>, <button> or <label>: single click opens popup, double click
-      // triggers native action. preventDefault on the click also suppresses the
-      // label's control activation. e.detail === 2 on the second click.
-      const interactive = span.closest('a, button, label');
-      if (interactive) {
-        e.preventDefault();
-        if (e.detail === 2) {
-          if (interactive.tagName === 'A') {
-            const href = (interactive as HTMLAnchorElement).href;
-            if (href) window.location.href = href;
-          } else {
-            // Re-dispatch a clean click so the button/label's own handler fires.
-            interactive.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-          }
-          return;
-        }
-      }
+      if (passThroughInteractiveClick(e, span)) return;
       options.onTokenClick?.(token.term, block, span, token, e);
     });
   }
@@ -204,14 +221,14 @@ export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions)
   let lastSentence = leadingSentence;
   for (const token of tokens) {
     if (token.start > lastEnd) {
-      fragment.appendChild(createSeparatorSpan(text.slice(lastEnd, token.start), block, lastSentence));
+      fragment.appendChild(createSeparatorSpan(text.slice(lastEnd, token.start), block, lastSentence, options));
     }
     fragment.appendChild(createTokenSpan(token, block, options));
     lastEnd = token.end;
     lastSentence = token.sentenceIndex;
   }
   if (lastEnd < text.length) {
-    fragment.appendChild(createSeparatorSpan(text.slice(lastEnd), block, lastSentence));
+    fragment.appendChild(createSeparatorSpan(text.slice(lastEnd), block, lastSentence, options));
   }
 
   parent.replaceChild(fragment, sourceNode);

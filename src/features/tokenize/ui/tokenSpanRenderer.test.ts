@@ -124,6 +124,29 @@ describe('tokenSpanRenderer', () => {
     const off = block.element.querySelector('.js-cell-token--gloss-off');
     expect(off).not.toBeNull();
   });
+
+  it('fires separator handlers so gaps can wash the sentence on hover/click', () => {
+    const block = makeBlock('Hello world.', [
+      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'core', reading: undefined },
+      { text: 'world', term: 'world', start: 6, end: 11, isSeparator: false, sentenceIndex: 0, status: 'known', frequencyBand: 'common', reading: undefined },
+    ]);
+    const fired: string[] = [];
+    bindTokenBlock(block, {
+      showStatus: true,
+      showFrequency: true,
+      onSeparatorEnter: () => fired.push('enter'),
+      onSeparatorLeave: () => fired.push('leave'),
+      onSeparatorClick: () => fired.push('click'),
+    });
+    const sep = block.element.querySelector('.js-cell-token--separator')!;
+    sep.dispatchEvent(new MouseEvent('mouseenter'));
+    sep.dispatchEvent(new MouseEvent('mouseleave'));
+    sep.dispatchEvent(new MouseEvent('click'));
+    expect(fired).toEqual(['enter', 'leave', 'click']);
+    // The separator must carry its sentence index so the controller can key
+    // the pinned wash off it.
+    expect(sep.getAttribute('data-cell-sentence')).toBe('0');
+  });
 });
 
 describe('tokenSpanCss', () => {
