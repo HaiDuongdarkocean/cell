@@ -25,27 +25,33 @@ beforeEach(() => {
 
 describe('themeManager', () => {
   describe('resolveMode', () => {
-    it('single-palette: every mode resolves to light', () => {
+    it('returns light/dark as-is', () => {
       expect(resolveMode('light')).toBe('light');
-      expect(resolveMode('dark')).toBe('light');
+      expect(resolveMode('dark')).toBe('dark');
+    });
+    it('resolves system via matchMedia (dark)', () => {
       window.matchMedia = jest.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia;
+      expect(resolveMode('system')).toBe('dark');
+    });
+    it('resolves system via matchMedia (light)', () => {
+      window.matchMedia = jest.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia;
       expect(resolveMode('system')).toBe('light');
     });
   });
 
   describe('applyTheme', () => {
-    it('sets 9 core CSS vars on :root from the light palette even for dark mode', () => {
+    it('sets 9 core CSS vars on :root for dark', () => {
       applyTheme('dark', DEFAULT_THEME_CONFIG);
       const root = document.documentElement;
-      expect(root.style.getPropertyValue('--color-primary')).toBe(DEFAULT_THEME_CONFIG.customColors.light.primary);
-      expect(root.style.getPropertyValue('--color-background')).toBe(DEFAULT_THEME_CONFIG.customColors.light.background);
-      expect(root.style.getPropertyValue('--color-surface')).toBe(DEFAULT_THEME_CONFIG.customColors.light.surface);
-      expect(root.style.getPropertyValue('--color-text')).toBe(DEFAULT_THEME_CONFIG.customColors.light.text);
-      expect(root.style.getPropertyValue('--color-text-secondary')).toBe(DEFAULT_THEME_CONFIG.customColors.light.textSecondary);
-      expect(root.style.getPropertyValue('--color-border')).toBe(DEFAULT_THEME_CONFIG.customColors.light.border);
-      expect(root.style.getPropertyValue('--color-success')).toBe(DEFAULT_THEME_CONFIG.customColors.light.success);
-      expect(root.style.getPropertyValue('--color-warning')).toBe(DEFAULT_THEME_CONFIG.customColors.light.warning);
-      expect(root.style.getPropertyValue('--color-error')).toBe(DEFAULT_THEME_CONFIG.customColors.light.error);
+      expect(root.style.getPropertyValue('--color-primary')).toBe(DEFAULT_THEME_CONFIG.customColors.dark.primary);
+      expect(root.style.getPropertyValue('--color-background')).toBe(DEFAULT_THEME_CONFIG.customColors.dark.background);
+      expect(root.style.getPropertyValue('--color-surface')).toBe(DEFAULT_THEME_CONFIG.customColors.dark.surface);
+      expect(root.style.getPropertyValue('--color-text')).toBe(DEFAULT_THEME_CONFIG.customColors.dark.text);
+      expect(root.style.getPropertyValue('--color-text-secondary')).toBe(DEFAULT_THEME_CONFIG.customColors.dark.textSecondary);
+      expect(root.style.getPropertyValue('--color-border')).toBe(DEFAULT_THEME_CONFIG.customColors.dark.border);
+      expect(root.style.getPropertyValue('--color-success')).toBe(DEFAULT_THEME_CONFIG.customColors.dark.success);
+      expect(root.style.getPropertyValue('--color-warning')).toBe(DEFAULT_THEME_CONFIG.customColors.dark.warning);
+      expect(root.style.getPropertyValue('--color-error')).toBe(DEFAULT_THEME_CONFIG.customColors.dark.error);
     });
 
     it('sets 9 core CSS vars for light', () => {
@@ -57,14 +63,18 @@ describe('themeManager', () => {
       applyTheme('dark', DEFAULT_THEME_CONFIG);
       const root = document.documentElement;
       // Dawn preset uses hand-tuned derived values from tokens.json
+      expect(root.style.getPropertyValue('--color-primary-hover')).toBe('#5EA5E9');
       expect(root.style.getPropertyValue('--color-border-focus')).toBe(
-        DEFAULT_THEME_CONFIG.customColors.light.primary,
+        DEFAULT_THEME_CONFIG.customColors.dark.primary,
+      );
+      expect(root.style.getPropertyValue('--color-primary-subtle')).toBe(
+        'rgba(106,178,245,0.12)',
       );
     });
 
     it('sets data-theme attribute', () => {
       applyTheme('dark', DEFAULT_THEME_CONFIG);
-      expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
       applyTheme('light', DEFAULT_THEME_CONFIG);
       expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     });
@@ -74,6 +84,7 @@ describe('themeManager', () => {
         preset: 'dawn',
         customColors: {
           light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' },
+          dark: DEFAULT_THEME_CONFIG.customColors.dark,
         },
       };
       applyTheme('light', custom);
@@ -100,8 +111,9 @@ describe('themeManager', () => {
   });
 
   describe('getPalette', () => {
-    it('returns the single light palette', () => {
-      expect(getPalette(DEFAULT_THEME_CONFIG)).toEqual(DEFAULT_THEME_CONFIG.customColors.light);
+    it('returns palette for mode', () => {
+      expect(getPalette(DEFAULT_THEME_CONFIG, 'dark')).toEqual(DEFAULT_THEME_CONFIG.customColors.dark);
+      expect(getPalette(DEFAULT_THEME_CONFIG, 'light')).toEqual(DEFAULT_THEME_CONFIG.customColors.light);
     });
   });
 });

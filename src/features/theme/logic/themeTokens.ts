@@ -2,9 +2,8 @@
  * Inject design-system theme tokens into a container (ADR-015 T12, ADR-022 D3).
  *
  * Content-script isolated world — cannot access popup stylesheets. Injects a
- * `<style>` block with theme tokens into document.head, sets `data-theme` on
- * the video container. Single-palette: the light palette is emitted under both
- * [data-theme] selectors (dark palette removed).
+ * `<style>` block with theme tokens (light + dark) into document.head, sets
+ * `data-theme` on the video container.
  *
  * ADR-022 port: tokens now generated from chrome.storage.local.themeConfig
  * (customColors palette) instead of hardcoded strings. Falls back to
@@ -24,7 +23,7 @@ import {
   formatComponentTokens,
   formatStaticTokens,
 } from '@/shared/lib/tokens';
-import type { ThemeMode, ThemeConfig } from '@/entities/theme';
+import type { ThemeMode, ThemeConfig, ResolvedMode } from '@/entities/theme';
 
 /** ID of the injected `<style>` element holding theme tokens. Exported so
  *  other modules (e.g. mountCardCreatorDialog) can clone it into fullscreen
@@ -46,11 +45,8 @@ function buildStyleContent(config: ThemeConfig, extraCss: readonly string[] = []
   const staticTokens = formatStaticTokens();
   const componentTokens = formatComponentTokens();
   const preset = config.preset ?? 'dawn';
-  // Single-palette: the [data-theme="dark"] block emits the light palette so
-  // stray dark-attributed hosts (site attrs, copied hoist fallbacks) still
-  // resolve Cell surfaces to the one palette.
-  const lightTokens = buildColorTokenCSS(config.customColors.light, preset);
-  const darkTokens = lightTokens;
+  const lightTokens = buildColorTokenCSS(config.customColors.light, 'light', preset);
+  const darkTokens = buildColorTokenCSS(config.customColors.dark, 'dark', preset);
   const selectorPrefix = `[data-preset="${preset}"]`;
   return `
 :root {
@@ -114,9 +110,13 @@ ${extraCss.join('\n')}
 `;
 }
 
-/** Single-palette: every mode resolves to 'light' (dark palette removed). */
-function resolveMode(_mode: ThemeMode): 'light' {
-  return 'light';
+/** Resolve 'system' mode → 'light'|'dark' via prefers-color-scheme. */
+function resolveSystemMode(): ResolvedMode {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function resolveMode(mode: ThemeMode): ResolvedMode {
+  return mode === 'system' ? resolveSystemMode() : mode;
 }
 
 /**
@@ -132,7 +132,7 @@ function resolveMode(_mode: ThemeMode): 'light' {
  */
 export function syncElementTheme(element: HTMLElement, container: HTMLElement): () => void {
   const apply = (): void => {
-    const theme = container.getAttribute('data-theme') ?? 'light';
+    const theme = container.getAttribute('data-theme') ?? 'dark';
     const preset = container.getAttribute('data-preset') ?? '';
     element.setAttribute('data-theme', theme);
     if (preset) {
@@ -196,8 +196,8 @@ export function injectThemeTokens(container: HTMLElement, extraCss: readonly str
     document.head.appendChild(style);
   }
 
-  // Set initial theme synchronously to default 'light' to avoid FOUC.
-  container.setAttribute('data-theme', 'light');
+  // Set initial theme synchronously to default 'dark' to avoid FOUC.
+  container.setAttribute('data-theme', 'dark');
   container.setAttribute(THEME_CARRIER_ATTR, '');
 
   // Load mode + config from storage, then apply.
@@ -223,7 +223,7 @@ export function injectThemeTokens(container: HTMLElement, extraCss: readonly str
       currentMode = storedMode;
     }
     const storedConfig = configData[STORAGE_KEYS.THEME_CONFIG] as ThemeConfig | undefined;
-    if (storedConfig?.customColors?.light) {
+    if (storedConfig?.customColors?.light && storedConfig?.customColors?.dark) {
       currentConfig = storedConfig;
     }
     applyResolved(currentMode, currentConfig);
@@ -244,7 +244,7 @@ export function injectThemeTokens(container: HTMLElement, extraCss: readonly str
     }
     if (changes[STORAGE_KEYS.THEME_CONFIG]?.newValue) {
       const newConfig = changes[STORAGE_KEYS.THEME_CONFIG].newValue as ThemeConfig | undefined;
-      if (newConfig?.customColors?.light) {
+      if (newConfig?.customColors?.light && newConfig?.customColors?.dark) {
         currentConfig = newConfig;
         changed = true;
       }

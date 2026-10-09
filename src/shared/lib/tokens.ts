@@ -14,7 +14,7 @@ import {
 } from '@/shared/lib/colorGenerator';
 import { hexToRgb } from '@/shared/lib/contrast';
 import { pickPrimaryForeground } from '@/shared/lib/contrastValidator';
-import type { CoreColorTokens, PresetName } from '@/entities/theme/types';
+import type { CoreColorTokens, PresetName, ResolvedMode } from '@/entities/theme/types';
 
 /** Map of CSS custom-property name (incl. leading --) to value. */
 export type TokenRecord = Readonly<Record<string, string>>;
@@ -65,14 +65,16 @@ const isEqualCore = (a: CoreColorTokens, b: CoreColorTokens): boolean =>
   CORE_KEYS.every((k) => a[k] === b[k]);
 
 type PresetData = {
-  readonly core: { readonly light: CoreColorTokens };
-  readonly derived: { readonly light: Record<string, string> };
+  readonly core: { readonly light: CoreColorTokens; readonly dark: CoreColorTokens };
+  readonly derived: { readonly light: Record<string, string>; readonly dark: Record<string, string> };
 };
 
 const PRESET_DATA = tokensJson.presets as Record<PresetName, PresetData>;
 
 /** Get the core palette for a named preset. */
-export const getPresetColors = (preset: PresetName): CoreColorTokens => PRESET_DATA[preset].core.light;
+export const getPresetColors = (
+  preset: PresetName,
+): { readonly light: CoreColorTokens; readonly dark: CoreColorTokens } => PRESET_DATA[preset].core;
 
 const prefixDerived = (derived: Record<string, string>): TokenRecord => {
   const out: Record<string, string> = {};
@@ -96,6 +98,9 @@ const flattenCompositeTokens = (): TokenRecord => {
 
 /** Default light core palette (from tokens.json). */
 export const DEFAULT_LIGHT_COLORS: CoreColorTokens = { ...tokensJson.core.light };
+
+/** Default dark core palette (from tokens.json). */
+export const DEFAULT_DARK_COLORS: CoreColorTokens = { ...tokensJson.core.dark };
 
 /** Breakpoint pixel values for JS matchMedia / innerWidth checks.
  *  CSS @media must hardcode the same values (CSS custom properties don't work
@@ -123,12 +128,22 @@ export const DEFAULT_LIGHT_TOKENS: TokenRecord = {
   ...flattenCompositeTokens(),
 };
 
-/** Derive the full color token map from 9 core tokens and an optional preset. */
+/** Complete default dark token map (core + derived + composite). */
+export const DEFAULT_DARK_TOKENS: TokenRecord = {
+  ...mapCoreColors(DEFAULT_DARK_COLORS),
+  ...prefixDerived(tokensJson.derived.dark),
+  ...flattenCompositeTokens(),
+};
+
+/** Derive the full color token map from 9 core tokens, a mode, and an optional preset. */
 export function deriveColorTokens(
   colors: CoreColorTokens,
+  mode: ResolvedMode,
   preset?: PresetName,
 ): TokenRecord {
-  const surfaceHover = mixHex(mixHex(colors.surface, colors.primary, 5), colors.background, 12);
+  const surfaceHover = mode === 'dark'
+    ? mixHex(colors.surface, colors.text, 10)
+    : mixHex(mixHex(colors.surface, colors.primary, 5), colors.background, 12);
   const secondary = colors.surface;
   const primaryForeground = pickPrimaryForeground(colors);
 
@@ -137,7 +152,7 @@ export function deriveColorTokens(
   const computedTokens: TokenRecord = {
     '--color-primary-hover': generateHoverColor(colors.primary),
     '--color-primary-active': generateShade(colors.primary, 20),
-    '--color-primary-subtle': rgbaVar('primary', 0.1),
+    '--color-primary-subtle': rgbaVar('primary', mode === 'dark' ? 0.12 : 0.1),
     '--color-primary-foreground': primaryForeground,
     '--color-text-on-primary': primaryForeground,
     '--color-secondary': secondary,
@@ -146,8 +161,8 @@ export function deriveColorTokens(
     '--color-accent': surfaceHover,
     '--color-accent-foreground': colors.text,
     '--color-muted': surfaceHover,
-    '--color-destructive': colors.error,
-    '--color-destructive-hover': generateHoverColor(colors.error),
+    '--color-destructive': mode === 'dark' ? generateShade(colors.error, 45) : colors.error,
+    '--color-destructive-hover': mode === 'dark' ? generateShade(colors.error, 55) : generateHoverColor(colors.error),
     '--color-destructive-foreground': '#FFFFFF',
     '--color-text-inverse': colors.background,
     '--color-border-subtle': generateShade(colors.surface, 5),
@@ -155,21 +170,21 @@ export function deriveColorTokens(
     '--color-input': colors.border,
     '--color-ring': colors.primary,
     '--color-surface-hover': surfaceHover,
-    '--color-success-subtle': rgbaVar('success', 0.1),
-    '--color-warning-subtle': rgbaVar('warning', 0.1),
-    '--color-error-subtle': rgbaVar('error', 0.1),
-    '--color-success-muted': generateTint(colors.success, 90),
-    '--color-warning-muted': generateTint(colors.warning, 95),
-    '--color-error-muted': generateTint(colors.error, 96),
+    '--color-success-subtle': rgbaVar('success', mode === 'dark' ? 0.15 : 0.1),
+    '--color-warning-subtle': rgbaVar('warning', mode === 'dark' ? 0.15 : 0.1),
+    '--color-error-subtle': rgbaVar('error', mode === 'dark' ? 0.15 : 0.1),
+    '--color-success-muted': mode === 'dark' ? generateShade(colors.success, 80) : generateTint(colors.success, 90),
+    '--color-warning-muted': mode === 'dark' ? generateShade(colors.warning, 80) : generateTint(colors.warning, 95),
+    '--color-error-muted': mode === 'dark' ? generateShade(colors.error, 80) : generateTint(colors.error, 96),
     '--color-info': colors.primary,
     '--color-info-subtle': rgbaVar('primary', 0.1),
   };
 
-  const presetDerived = preset ? prefixDerived(PRESET_DATA[preset].derived.light) : {};
+  const presetDerived = preset ? prefixDerived(PRESET_DATA[preset].derived[mode]) : {};
 
   return {
     ...mapCoreColors(colors),
-    ...prefixDerived(tokensJson.derived.light),
+    ...prefixDerived(tokensJson.derived[mode]),
     ...computedTokens,
     ...presetDerived,
     ...flattenCompositeTokens(),
@@ -179,23 +194,28 @@ export function deriveColorTokens(
 /** Get the full color token map, using precomputed defaults when they match. */
 export function getColorTokens(
   colors: CoreColorTokens,
+  mode: ResolvedMode,
   preset?: PresetName,
 ): TokenRecord {
-  const baseColors = preset ? { ...PRESET_DATA[preset].core.light, ...colors } : colors;
-  if (!preset && isEqualCore(colors, DEFAULT_LIGHT_COLORS)) {
-    return DEFAULT_LIGHT_TOKENS;
+  const baseColors = preset ? { ...PRESET_DATA[preset].core[mode], ...colors } : colors;
+  if (!preset) {
+    const defaultColors = mode === 'dark' ? DEFAULT_DARK_COLORS : DEFAULT_LIGHT_COLORS;
+    if (isEqualCore(colors, defaultColors)) {
+      return mode === 'dark' ? DEFAULT_DARK_TOKENS : DEFAULT_LIGHT_TOKENS;
+    }
   }
-  return deriveColorTokens(baseColors, preset);
+  return deriveColorTokens(baseColors, mode, preset);
 }
 
 /** Format a color token block as indented CSS declarations for injection. */
 export function buildColorTokenCSS(
   colors: CoreColorTokens,
+  mode: ResolvedMode,
   preset?: PresetName,
   indent = '  ',
 ): string {
-  const tokens = getColorTokens(colors, preset);
-  const lines: string[] = [`${indent}color-scheme: light;`];
+  const tokens = getColorTokens(colors, mode, preset);
+  const lines: string[] = [`${indent}color-scheme: ${mode};`];
   for (const [name, value] of Object.entries(tokens)) {
     lines.push(`${indent}${name}: ${value};`);
   }

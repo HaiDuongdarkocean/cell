@@ -45,10 +45,10 @@ describe('themeStorage', () => {
       storageLocalGetMock.mockResolvedValue({ [STORAGE_KEYS.THEME_MODE]: 'system' });
       await expect(loadThemeMode()).resolves.toBe('system');
     });
-    it('returns DEFAULT_THEME_MODE (light) when absent', async () => {
+    it('returns DEFAULT_THEME_MODE (dark) when absent', async () => {
       storageLocalGetMock.mockResolvedValue({});
       await expect(loadThemeMode()).resolves.toBe(DEFAULT_THEME_MODE);
-      expect(DEFAULT_THEME_MODE).toBe('light');
+      expect(DEFAULT_THEME_MODE).toBe('dark');
     });
     it('returns default when stored value invalid', async () => {
       storageLocalGetMock.mockResolvedValue({ [STORAGE_KEYS.THEME_MODE]: 'blue' });
@@ -66,6 +66,7 @@ describe('themeStorage', () => {
         preset: 'dawn',
         customColors: {
           light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' },
+          dark: DEFAULT_THEME_CONFIG.customColors.dark,
         },
       };
       storageLocalGetMock.mockResolvedValue({ [STORAGE_KEYS.THEME_CONFIG]: config });
@@ -82,7 +83,7 @@ describe('themeStorage', () => {
     });
     it('returns default when customColors missing light', async () => {
       storageLocalGetMock.mockResolvedValue({
-        [STORAGE_KEYS.THEME_CONFIG]: { customColors: {} },
+        [STORAGE_KEYS.THEME_CONFIG]: { customColors: { dark: DEFAULT_THEME_CONFIG.customColors.dark } },
       });
       await expect(loadThemeConfig()).resolves.toEqual(DEFAULT_THEME_CONFIG);
     });
@@ -90,6 +91,7 @@ describe('themeStorage', () => {
       const config = {
         customColors: {
           light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' },
+          dark: DEFAULT_THEME_CONFIG.customColors.dark,
         },
       };
       storageLocalGetMock.mockResolvedValue({ [STORAGE_KEYS.THEME_CONFIG]: config });
@@ -102,6 +104,7 @@ describe('themeStorage', () => {
         preset: 'custom',
         customColors: {
           light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' },
+          dark: DEFAULT_THEME_CONFIG.customColors.dark,
         },
       };
       storageLocalGetMock.mockResolvedValue({ [STORAGE_KEYS.THEME_CONFIG]: config });

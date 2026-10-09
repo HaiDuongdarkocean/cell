@@ -1,13 +1,13 @@
-import { deriveColorTokens, DEFAULT_LIGHT_COLORS } from './tokens';
+import { deriveColorTokens, DEFAULT_DARK_COLORS } from './tokens';
 import { getLuminance } from '@/shared/lib/contrast';
 
 describe('deriveColorTokens', () => {
-  it('derives a surface-hover visually distinct from surface', () => {
+  it('lifts surface-hover above surface on dark themes (never sinks)', () => {
     const t = deriveColorTokens(
-      { ...DEFAULT_LIGHT_COLORS, surface: '#F5F5F4' },
+      { ...DEFAULT_DARK_COLORS, surface: '#242424' },
+      'dark',
     );
     const hover = t['--color-surface-hover'];
-    expect(hover).not.toBe('#F5F5F4');
-    expect(getLuminance(hover)).toBeLessThan(getLuminance('#F5F5F4'));
+    expect(getLuminance(hover)).toBeGreaterThan(getLuminance('#242424'));
   });
 });

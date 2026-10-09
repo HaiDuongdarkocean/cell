@@ -5,11 +5,12 @@
 // registerSystemModeListener: re-apply khi OS theme đổi (chỉ khi mode='system').
 
 import { getColorTokens } from '@/shared/lib/tokens';
-import type { ThemeMode, ThemeConfig, CoreColorTokens } from '@/entities/theme';
+import type { ThemeMode, ResolvedMode, ThemeConfig, CoreColorTokens } from '@/entities/theme';
 
-/** Single-palette: every mode resolves to 'light' (dark palette removed). */
-export function resolveMode(_mode: ThemeMode): 'light' {
-  return 'light';
+/** Resolve 'system' mode → 'light'|'dark' qua prefers-color-scheme media query. */
+export function resolveMode(mode: ThemeMode): ResolvedMode {
+  if (mode !== 'system') return mode;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 /**
@@ -18,18 +19,17 @@ export function resolveMode(_mode: ThemeMode): 'light' {
  * derives them at runtime. Component tokens in tokens.css resolve these vars.
  */
 export function applyTheme(
-  mode: ThemeMode,
+  mode: ResolvedMode,
   config: ThemeConfig,
   target: HTMLElement = document.documentElement,
 ): void {
-  const resolved = resolveMode(mode);
-  const tokens = getColorTokens(config.customColors.light, config.preset);
+  const tokens = getColorTokens(config.customColors[mode], mode, config.preset);
 
   for (const [name, value] of Object.entries(tokens)) {
     target.style.setProperty(name, value);
   }
 
-  target.setAttribute('data-theme', resolved);
+  target.setAttribute('data-theme', mode);
   target.setAttribute('data-preset', config.preset ?? 'dawn');
 }
 
@@ -37,16 +37,16 @@ export function applyTheme(
  * Register prefers-color-scheme listener. Returns cleanup.
  * Caller re-apply khi change CHỈ KHI current mode === 'system'.
  */
-export function registerSystemModeListener(onChange: (resolved: 'light') => void): () => void {
+export function registerSystemModeListener(onChange: (resolved: ResolvedMode) => void): () => void {
   const mql = window.matchMedia('(prefers-color-scheme: dark)');
-  const handler = (): void => {
-    onChange(resolveMode('system'));
+  const handler = (e: MediaQueryListEvent): void => {
+    onChange(e.matches ? 'dark' : 'light');
   };
   mql.addEventListener('change', handler);
   return () => mql.removeEventListener('change', handler);
 }
 
-/** Get the single customizable palette (helper for UI preview). */
-export function getPalette(config: ThemeConfig): CoreColorTokens {
-  return config.customColors.light;
+/** Get current palette for a resolved mode (helper for UI preview). */
+export function getPalette(config: ThemeConfig, mode: ResolvedMode): CoreColorTokens {
+  return config.customColors[mode];
 }

@@ -12,7 +12,7 @@ document.title = t('launcher.title');
 
 // Set initial theme before React renders to avoid flash of unstyled content.
 // Defaults mirror DEFAULT_THEME_MODE and DEFAULT_THEME_CONFIG.preset.
-document.documentElement.setAttribute('data-theme', 'light');
+document.documentElement.setAttribute('data-theme', 'dark');
 document.documentElement.setAttribute('data-preset', 'dawn');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

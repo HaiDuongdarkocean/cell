@@ -101,9 +101,9 @@ export function seekToCue(video: HTMLVideoElement, cue: { start: number }, offse
  * Creator (var(--z-overlay-secondary)) so those float above the subtitle block.
  *
  * Theme tokens (`--color-surface` etc.) are scoped to `[data-theme]`
- * boundaries (themeTokens.ts). The original container carries `data-theme`,
- * but `.watch-video` does not. We copy the attribute so CSS variables still
- * resolve after re-parenting.
+ * boundaries (themeTokens.ts). The original container carries
+ * `data-theme="dark"`, but `.watch-video` does not. We copy the attribute
+ * so CSS variables still resolve after re-parenting.
  *
  * Non-Netflix: no-op (UI stays in original container).
  *
@@ -114,7 +114,7 @@ export function mountToWatchVideo(el: HTMLElement, container: HTMLElement): void
   if (!isNetflixPage()) return;
   const watchVideo = document.querySelector('.watch-video');
   if (!watchVideo || watchVideo === el.parentElement) return;
-  const theme = container.getAttribute('data-theme') ?? 'light';
+  const theme = container.getAttribute('data-theme') ?? 'dark';
   el.setAttribute('data-theme', theme);
   const preset = container.getAttribute('data-preset');
   if (preset) {

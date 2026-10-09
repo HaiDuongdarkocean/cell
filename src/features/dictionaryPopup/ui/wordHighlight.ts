@@ -37,6 +37,7 @@ const WORD_CONFIG: HighlightConfig = {
   overlayClass: 'js-cell-word-highlight-overlay',
   buildCss(): string {
     const lightSubtle = tokensJson.derived.light['color-primary-subtle'];
+    const darkSubtle = tokensJson.derived.dark['color-primary-subtle'];
     const radiusXs = tokensJson.static.radius.xs;
     const duration100 = tokensJson.static.motion['duration-100'];
     // --cell-highlight-subtle is resolved live from the theme carrier in
@@ -53,6 +54,14 @@ const WORD_CONFIG: HighlightConfig = {
   box-sizing: border-box !important;
   transition: background-color ${duration100} ease !important;
 }
+@media (prefers-color-scheme: dark) {
+  .${WORD_CONFIG.highlightClass} {
+    background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
+  }
+}
+[data-theme="dark"] .${WORD_CONFIG.highlightClass} {
+  background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
+}
 .${WORD_CONFIG.overlayClass} {
   position: absolute !important;
   background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${lightSubtle})) !important;
@@ -63,6 +72,14 @@ const WORD_CONFIG: HighlightConfig = {
   padding: 0 !important;
   border: none !important;
   transition: background-color ${duration100} ease !important;
+}
+@media (prefers-color-scheme: dark) {
+  .${WORD_CONFIG.overlayClass} {
+    background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
+  }
+}
+[data-theme="dark"] .${WORD_CONFIG.overlayClass} {
+  background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
 }
 @media (prefers-reduced-motion: reduce) {
   .${WORD_CONFIG.highlightClass},
