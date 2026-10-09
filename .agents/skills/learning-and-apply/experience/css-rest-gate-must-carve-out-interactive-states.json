@@ -1,0 +1,26 @@
+{
+  "id": "css-rest-gate-must-carve-out-interactive-states",
+  "title": "Gate 'hide at rest' phải loại trừ trạng thái tương tác (:hover/.popup-open) — nếu không element được focus không bao giờ reveal được layer bị ẩn",
+  "category": ["css", "ux"],
+  "tags": ["tokenize", "i1-off", "status-bar", "hover", "popup-open", "specificity", ":not", "reveal-on-demand", "real-pointer-test"],
+  "trigger": "CSS gate ẩn một indicator layer (status bar, badge, underline) bằng selector vô điều kiện (.gate .indicator { display:none/transparent }) trong khi layer đó có contract 'reveal on demand' (hover/focus/popup)",
+  "principle": "Khi một rule 'render as plain at rest' (vd --i1-off trên token) suppress indicator bằng selector vô điều kiện, nó thắng mọi paint rule có cùng specificity đứng TRƯỚC nó — kể cả lúc user hover/click để xem indicator. Gate phải tự loại trừ trạng thái tương tác: '.gate:not(:hover):not(.popup-open) .indicator { transparent }'. Nhờ đó các paint rule gốc (.status-X .indicator { color }) tự động thắng lại khi element được focus — không cần rule reveal mới, không nhân bản màu. Verify bằng REAL pointer input (Playwright page.mouse.move/click qua CDP) — synthetic dispatchEvent('mouseenter') chạy listener nhưng KHÔNG flip :hover pseudo-class, đo computed style sẽ cho kết quả âm giả.",
+  "cases": [
+    {
+      "context": "tokenSpanCss.ts: '.js-cell-token--i1-off .js-cell-token-status { background: transparent }' nằm SAU các rule paint status (unknown/tracking/learning), cùng specificity (0,3,2) → thắng vô điều kiện. Token không phải i+1 của câu (đa số trên page) không bao giờ hiện status bar — hover chỉ có sentence wash, click mở dictionary popup + pin --popup-open nhưng bar vẫn trong suốt. Reproduced: getComputedStyle(status).backgroundColor = rgba(0,0,0,0) trên token có đủ --status-unknown + --popup-open + --i1-off.",
+      "bad": "html body .js-cell-token.js-cell-token--i1-off .js-cell-token-status {\n  background: transparent !important;\n}/* unconditional — beats status-unknown/tracking/learning paint rules even on hover/popup-open */",
+      "good": "html body .js-cell-token.js-cell-token--i1-off:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-status {\n  background: transparent !important;\n}/* at-rest gate only; existing status paint rules win again under :hover/--popup-open — frequency pill stays hidden */"
+    },
+    {
+      "context": "Verify trên Brave debug profile: sau fix, page.mouse.move() lên token i1-off+status-unknown → computed backgroundColor = rgb(255,0,51) (bar paint), rest = rgba(0,0,0,0), click (popup-open) = red.",
+      "bad": "t.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));\ngetComputedStyle(status).backgroundColor // 'rgba(0,0,0,0)' — WRONG NEGATIVE: :hover never flips on synthetic events",
+      "good": "await page.mouse.move(cx, cy); // real CDP input\ngetComputedStyle(status).backgroundColor // 'rgb(255, 0, 51)' — :hover applied"
+    }
+  ],
+  "applyFor": [
+    "Bất kỳ CSS gate 'ẩn indicator ở rest' (i+1, compact mode, reduced-noise mode) — luôn hỏi user reveal bằng cách nào, rồi carve-out :not() cho đúng các trạng thái đó",
+    "Cascade-order fixes: một suppress rule đứng sau và cùng specificity với paint rules sẽ nuốt cả trạng thái tương tác nếu không có :not()",
+    "Test hover-dependent UI: phải dùng real pointer (CDP Input/Playwright mouse) — synthetic mouse events không kích :hover, chỉ chạy JS listeners",
+    "Token span CSS trên host page: giữ contract 'plain at rest, reveal on focus' giống known/ignore — pill vẫn ẩn, chỉ status capsule reveal"
+  ]
+}

@@ -3637,6 +3637,27 @@
         "split-view"
       ],
       "trigger": "Effect reparent/size host player container vào overlay/stage rồi set pixel size hoặc snapshot styles dọc theo chain giả định single-child (firstElementChild lặp)"
+    },
+    {
+      "type": "experience",
+      "id": "css-rest-gate-must-carve-out-interactive-states",
+      "title": "Gate 'hide at rest' phải loại trừ :hover/.popup-open — nếu không element được focus không bao giờ reveal được layer bị ẩn",
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "tokenize",
+        "i1-off",
+        "status-bar",
+        "hover",
+        "popup-open",
+        "specificity",
+        ":not",
+        "reveal-on-demand",
+        "real-pointer-test"
+      ],
+      "trigger": "CSS gate ẩn một indicator layer (status bar, badge, underline) bằng selector vô điều kiện trong khi layer đó có contract 'reveal on demand' (hover/focus/popup)"
     }
   ]
 }
