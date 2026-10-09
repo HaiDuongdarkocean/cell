@@ -34,10 +34,11 @@ const READING_OFF_CLASS = 'js-cell-token--reading-off';
 const GLOSS_OFF_CLASS = 'js-cell-token--gloss-off';
 const IPLUS1_OFF_CLASS = 'js-cell-token--i1-off';
 
-function createSeparatorSpan(text: string, block: TokenBlock): HTMLSpanElement {
+function createSeparatorSpan(text: string, block: TokenBlock, sentenceIndex: number): HTMLSpanElement {
   const span = document.createElement('span');
   span.className = `${TOKEN_CLASS} ${SEPARATOR_CLASS}`;
   span.setAttribute('data-cell-block-id', block.id);
+  span.setAttribute('data-cell-sentence', String(sentenceIndex));
   span.textContent = text;
   return span;
 }
@@ -110,6 +111,7 @@ function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBind
   span.setAttribute('data-cell-block-id', block.id);
   span.setAttribute('data-cell-start', String(token.start));
   span.setAttribute('data-cell-end', String(token.end));
+  span.setAttribute('data-cell-sentence', String(token.sentenceIndex));
 
   if (!token.isSeparator && (options.onTokenEnter || options.onTokenLeave || options.onTokenClick || options.onTokenCtrlClick)) {
     span.addEventListener('mouseenter', () => options.onTokenEnter?.(token.term, block, span));
@@ -188,15 +190,19 @@ export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions)
 
   const fragment = document.createDocumentFragment();
   let lastEnd = 0;
+  // A gap carries the sentence of the token before it — the punctuation that
+  // closes a sentence belongs to that sentence, not the next one.
+  let lastSentence = tokens[0]?.sentenceIndex ?? 0;
   for (const token of tokens) {
     if (token.start > lastEnd) {
-      fragment.appendChild(createSeparatorSpan(text.slice(lastEnd, token.start), block));
+      fragment.appendChild(createSeparatorSpan(text.slice(lastEnd, token.start), block, lastSentence));
     }
     fragment.appendChild(createTokenSpan(token, block, options));
     lastEnd = token.end;
+    lastSentence = token.sentenceIndex;
   }
   if (lastEnd < text.length) {
-    fragment.appendChild(createSeparatorSpan(text.slice(lastEnd), block));
+    fragment.appendChild(createSeparatorSpan(text.slice(lastEnd), block, lastSentence));
   }
 
   parent.replaceChild(fragment, sourceNode);

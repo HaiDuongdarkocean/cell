@@ -363,6 +363,15 @@ html body .js-cell-token.js-cell-token--selected .js-cell-token-word {
   background-image: linear-gradient(color-mix(in srgb, var(--cell-token-selected) 18%, transparent) 0 0) !important;
 }
 
+/* Sentence highlight: while a word is hovered (or its popup is open) the whole
+   sentence is washed so the reading context is visible at a glance. The wash
+   paints the word lane and the gap spans — never the annotation lanes — so it
+   tracks the text line like a highlighter. */
+html body .js-cell-token.js-cell-token--sentence .js-cell-token-word,
+html body .js-cell-token--separator.js-cell-token--sentence {
+  background-color: color-mix(in srgb, var(--cell-token-selected) 22%, transparent) !important;
+}
+
 /* Global layer toggles (applied per token).
    Quadruple-specificity (html body ancestor) so host box-shadow:none!important
    resets cannot override our !important. */
@@ -611,6 +620,11 @@ ${buildVariables(':host')}
 
 .js-cell-token.js-cell-token--selected .js-cell-token-word {
   background-image: linear-gradient(color-mix(in srgb, var(--cell-token-selected) 18%, transparent) 0 0) !important;
+}
+
+.js-cell-token.js-cell-token--sentence .js-cell-token-word,
+.js-cell-token--separator.js-cell-token--sentence {
+  background-color: color-mix(in srgb, var(--cell-token-selected) 22%, transparent) !important;
 }
 
 .js-cell-token.js-cell-token--status-off {

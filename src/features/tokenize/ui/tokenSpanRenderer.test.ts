@@ -54,6 +54,24 @@ describe('tokenSpanRenderer', () => {
     expect(cls('ate').contains('js-cell-token--i1-off')).toBe(true);
   });
 
+  it('stamps the sentence index on word and gap spans', () => {
+    const block = makeBlock('One. Two three.', [
+      { text: 'One', term: 'one', start: 0, end: 3, isSeparator: false, sentenceIndex: 0, status: 'known', frequencyBand: 'core', reading: undefined },
+      { text: 'Two', term: 'two', start: 5, end: 8, isSeparator: false, sentenceIndex: 1, status: 'unknown', frequencyBand: 'rare', reading: undefined },
+      { text: 'three', term: 'three', start: 9, end: 14, isSeparator: false, sentenceIndex: 1, status: 'unknown', frequencyBand: 'rare', reading: undefined },
+    ]);
+    bindTokenBlock(block, { showStatus: true, showFrequency: true });
+
+    const sentenceOf = (term: string) =>
+      block.element.querySelector(`[data-cell-term="${term}"]`)!.getAttribute('data-cell-sentence');
+    expect(sentenceOf('one')).toBe('0');
+    expect(sentenceOf('two')).toBe('1');
+    // The gap holding the sentence-closing period belongs to sentence 0.
+    const gap = block.element.querySelector('.js-cell-token--separator')!;
+    expect(gap.textContent).toBe('. ');
+    expect(gap.getAttribute('data-cell-sentence')).toBe('0');
+  });
+
   it('unbind restores original text node', () => {
     const block = makeBlock('Hello world.', [
       { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'none', reading: undefined },

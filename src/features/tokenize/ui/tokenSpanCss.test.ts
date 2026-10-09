@@ -142,6 +142,13 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     expect(source.indexOf('.js-cell-token--i1-off')).toBeGreaterThan(source.indexOf('frequency-rare {'));
   });
 
+  it.each(['host', 'shadow'])('washes the whole sentence on hover in %s CSS', (variant) => {
+    const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
+    expect(source).toMatch(
+      /\.js-cell-token--sentence \.js-cell-token-word,\s*[^}]*\.js-cell-token--separator\.js-cell-token--sentence\s*\{[^}]*background-color:\s*color-mix\(in srgb, var\(--cell-token-selected\)/,
+    );
+  });
+
   it.each(['host', 'shadow'])('frequency pill wraps the whole column in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
     // Pill background + padding + radius target the token column itself, not

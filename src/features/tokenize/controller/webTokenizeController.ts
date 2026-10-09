@@ -26,9 +26,12 @@ import {
 import type { WordStatus } from '@/entities/dictionary';
 import { entriesToBand, loadFrequencyBandOptions, pickFrequencyReading, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
 import { createStatusKeyControls, type PopupStatusTarget } from '@/features/tokenize/logic/statusKeyControls';
+import { collectSentenceRun } from '@/features/tokenize/logic/sentenceRun';
+import { CELL_UI_HOST_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
 import type { Token, TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
 const DEFAULT_LANG = 'en';
+const SENTENCE_CLASS = 'js-cell-token--sentence';
 // ponytail: cache capacity is tiered by reported device RAM so low-end devices
 // (<2 GiB) keep a small resident set and higher-end devices keep a larger one.
 // Per-block cost is estimated at 500KB worst-case (maxLength 2000 chars,
@@ -193,6 +196,24 @@ export async function createWebTokenizeController(
   // clobber a user change made while the flush was in flight.
   let statusVersionCounter = 0;
   let nextFlushVersion = 0;
+  // Sentence wash spans while a word is hovered; a click pins the wash so it
+  // survives moving to the dictionary popup, and a click anywhere outside the
+  // washed sentence releases it.
+  let highlightedSpans: HTMLElement[] = [];
+  let pinnedSentenceKey: string | null = null;
+
+  /** Release the pinned wash on a click that lands outside the washed sentence
+   *  and outside Cell's own UI (popup, panel) — clicking the popup keeps it. */
+  function onPointerDownOutside(event: Event): void {
+    if (!pinnedSentenceKey) return;
+    for (const node of event.composedPath()) {
+      if (node instanceof HTMLElement && node.classList.contains(SENTENCE_CLASS)) return;
+      if (node instanceof Element && node.matches(CELL_UI_HOST_SELECTORS)) return;
+    }
+    pinnedSentenceKey = null;
+    clearSentenceHighlight();
+  }
+  document.addEventListener('pointerdown', onPointerDownOutside, true);
   const termStatusVersion = new Map<string, number>();
   const localStatusOverrides = new Map<string, { status: WordStatus; version: number }>();
 
@@ -803,6 +824,34 @@ export async function createWebTokenizeController(
     prepareTokenBlock(block, langCode);
   }
 
+  function sentenceKey(block: TokenBlock, element: HTMLElement): string {
+    return `${block.id}:${element.getAttribute('data-cell-sentence') ?? '0'}`;
+  }
+
+  function clearSentenceHighlight(): void {
+    for (const span of highlightedSpans) span.classList.remove(SENTENCE_CLASS);
+    highlightedSpans = [];
+  }
+
+  /** Wash every token of the sentence the given token belongs to. The run
+   *  spans neighbouring blocks because a sentence split by inline elements
+   *  (links, emphasis) lives in several text-node blocks. */
+  function highlightSentence(block: TokenBlock, element: HTMLElement): void {
+    const sentenceIndex = Number(element.getAttribute('data-cell-sentence') ?? '0');
+    clearSentenceHighlight();
+    const next: HTMLElement[] = [];
+    for (const entry of collectSentenceRun(blocks, block, sentenceIndex)) {
+      const spans = entry.block.element.querySelectorAll<HTMLElement>(
+        `[data-cell-block-id="${entry.block.id}"][data-cell-sentence="${entry.sentenceIndex}"]`,
+      );
+      for (const span of spans) {
+        span.classList.add(SENTENCE_CLASS);
+        next.push(span);
+      }
+    }
+    highlightedSpans = next;
+  }
+
   function getDisplayOptions(): TokenSpanBindOptions {
     const state = stateStore.getState();
     return {
@@ -810,14 +859,23 @@ export async function createWebTokenizeController(
       showFrequency: state.showFrequency,
       showReadings: state.showReadings,
       showGlosses: state.showGlosses,
-      onTokenEnter: (term) => stateStore.setHoveredTerm(term),
+      onTokenEnter: (term, block, element) => {
+        stateStore.setHoveredTerm(term);
+        const key = sentenceKey(block, element);
+        if (pinnedSentenceKey && pinnedSentenceKey !== key) pinnedSentenceKey = null;
+        highlightSentence(block, element);
+      },
       onTokenLeave: (term) => {
         if (stateStore.getState().hoveredTerm === term) {
           stateStore.setHoveredTerm(null);
         }
+        if (!pinnedSentenceKey) clearSentenceHighlight();
       },
-      onTokenClick: (term, block, element, token, event) =>
-        options.onOpenDictionary?.(term, element, getSentenceText(block, token), event),
+      onTokenClick: (term, block, element, token, event) => {
+        pinnedSentenceKey = sentenceKey(block, element);
+        highlightSentence(block, element);
+        options.onOpenDictionary?.(term, element, getSentenceText(block, token), event);
+      },
       onTokenCtrlClick: (term) => stateStore.toggleSelectedTerm(term),
       isSelected: (term) => stateStore.getState().selectedTerms.has(term),
     };
@@ -1073,6 +1131,8 @@ export async function createWebTokenizeController(
     },
 
     destroy: () => {
+      document.removeEventListener('pointerdown', onPointerDownOutside, true);
+      clearSentenceHighlight();
       statusKeyControls.destroy();
       unsubscribe();
       unsubscribeSelection();
