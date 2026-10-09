@@ -469,7 +469,7 @@ describe('createWebTokenizeController', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'known');
     controller.destroy();
   });
 
@@ -552,8 +552,8 @@ describe('createWebTokenizeController', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'known');
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'world', 'known');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'ignore');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'world', 'ignore');
     // Selection is cleared after applying.
     expect(window.getSelection()!.isCollapsed).toBe(true);
 
@@ -589,7 +589,7 @@ describe('createWebTokenizeController', () => {
     expect(hello).not.toBeNull();
     hello!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
 
-    // Press 2 (tracking) WHILE the flush is still awaiting the background.
+    // Press 2 (known) WHILE the flush is still awaiting the background.
     setWordStatus.mockClear();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: '2', bubbles: true }));
 
@@ -598,9 +598,9 @@ describe('createWebTokenizeController', () => {
 
     // rebind recreates the span, so re-query by term after the flush settles.
     const helloAfter = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
-    expect(helloAfter.classList.contains('js-cell-token--status-tracking')).toBe(true);
+    expect(helloAfter.classList.contains('js-cell-token--status-known')).toBe(true);
     expect(helloAfter.classList.contains('js-cell-token--status-unknown')).toBe(false);
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'known');
 
     controller.destroy();
   });

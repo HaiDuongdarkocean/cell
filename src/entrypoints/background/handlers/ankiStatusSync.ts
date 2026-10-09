@@ -7,6 +7,7 @@ import type { MessageResponse } from '@/entities/message';
 import {
   AnkiStatusCardTermsPayloadSchema,
   AnkiStatusSyncRunPayloadSchema,
+  AnkiStatusSrsCardDeletedPayloadSchema,
   AnkiStatusSrsReviewedPayloadSchema,
 } from '@/entities/message/ankiStatusSyncSchemas';
 import {
@@ -14,6 +15,7 @@ import {
   ANKI_SYNC_PERIOD_MINUTES,
   getSyncState,
   listCardSourceTerms,
+  reconcileSrsCardLoss,
   runAnkiStatusSync,
   syncSrsReviewToStatus,
 } from '@/features/ankiStatusSync';
@@ -96,6 +98,23 @@ export function registerAnkiStatusSyncHandlers(ctx: BackgroundContext): void {
       const { noteId, cardId } = parsed.data;
       const [note, card] = await Promise.all([getNote(noteId), getCard(cardId)]);
       await syncSrsReviewToStatus(note, card);
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
+    }
+  });
+
+  ctx.on(MESSAGE_TYPES.ANKI_STATUS_SRS_CARD_DELETED, async (request): Promise<MessageResponse> => {
+    const parsed = AnkiStatusSrsCardDeletedPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid ANKI_STATUS_SRS_CARD_DELETED payload: ${parsed.error.message}`,
+      };
+    }
+    try {
+      await reconcileSrsCardLoss(parsed.data.deckId, parsed.data.targetWord);
       return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

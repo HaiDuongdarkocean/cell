@@ -27,9 +27,11 @@ Loop back: real panel can't mount → fix mock wiring, never skip it.
 
 **Real panel:** import production component from `src/features/[topic]/ui/[Component].tsx`; mock `Settings`/props matching production shapes; wire all mutations (add/edit/delete/reorder/activate).
 
+**No replicas — hard rule:** `real.tsx` MUST render the production component itself. Never hand-draw a lookalike of existing chrome (no `.mk*` re-implementations of a shipped popup/row/toolbar): a wrong baseline silently invalidates every concept compared against it. When deps are missing, wire the existing mock infra (`src/entrypoints/design-system-showcase/mockChrome.ts` → `installMockChrome()`, `mockDictionary.ts` → `installMockDictionarySendMessage()` + `getMockLookupResult()`); when the component is too entangled to mount or to vary, extract the smallest presentational sub-component into production code first (`StatusRow`, `StatusPill`) — an extraction, never a copy — then have both `CandidateView` and the mockup consume it. Concept variants compose real primitives (`Button`, `Icon`, `Menu`, extracted sub-components) + the production component's CSS-module classes for every element that already exists; `.mk*` styles are only for elements that do not exist yet.
+
 **Each variant:** standalone interactive wireframe on the same mock data; expresses its archetype; project tokens only; no shared layout pieces; new structural components allowed when existing ones can't express the archetype (mapped in Step 8); all states; `@container`/`@media` for desktop; touch ≥44px; motion per dial + `prefers-reduced-motion`.
 
-Loop back: breaks below 375px or in dark mode → fix before presenting.
+Loop back: breaks below 375px or in dark mode → fix before presenting. Real panel can't mount → wire mock infra or extract sub-component, never ship a replica. Concept chrome diverges from the real classes → refactor the variant to reuse them.
 
 ## Step 6 — Design brief
 

@@ -86,7 +86,7 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     expect(bar).toContain('background: transparent');
   });
 
-  it.each(['unknown', 'tracking', 'known', 'ignore'])(
+  it.each(['unknown', 'known', 'ignore'])(
     'paints the %s status capsule with a single color layer — no halo',
     (status) => {
       for (const source of [buildTokenSpanCss(), buildTokenSpanCssForShadow()]) {
@@ -95,6 +95,23 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
         )?.find((r) => r.includes('js-cell-token-status'));
         expect(rule).toBeDefined();
         expect(rule).toContain(`background: var(--cell-token-status-${status})`);
+        expect(rule).not.toContain('box-shadow');
+        expect(rule).not.toContain('overlay-text-rgb');
+      }
+    },
+  );
+
+  it.each(['tracking', 'learning'])(
+    'paints the %s flag capsule as a gradient into the unknown base — no halo',
+    (status) => {
+      for (const source of [buildTokenSpanCss(), buildTokenSpanCssForShadow()]) {
+        const rule = source.match(
+          new RegExp(`status-${status}[^{]*\\{([^}]*)\\}`, 'g'),
+        )?.find((r) => r.includes('js-cell-token-status'));
+        expect(rule).toBeDefined();
+        expect(rule).toContain(
+          `background: linear-gradient(90deg, var(--cell-token-status-${status}), var(--cell-token-status-unknown))`,
+        );
         expect(rule).not.toContain('box-shadow');
         expect(rule).not.toContain('overlay-text-rgb');
       }

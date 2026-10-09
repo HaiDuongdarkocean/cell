@@ -31,6 +31,7 @@ export interface VideoTokenMap {
    *  gloss until the next resolve overwrites it — stale hint beats blank. */
   readonly clearGlosses: () => void;
   readonly applyStatus: (term: string, status: WordStatus) => boolean;
+  readonly getStatus: (term: string) => WordStatus;
   readonly terms: () => ReadonlySet<string>;
   readonly onUpdate: (listener: (cueIndex: number) => void) => () => void;
   readonly clear: () => void;
@@ -226,6 +227,10 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
         }
       }
       return changed;
+    },
+
+    getStatus(term: string): WordStatus {
+      return termStatusCache.get(term) ?? 'unknown';
     },
 
     terms(): ReadonlySet<string> {

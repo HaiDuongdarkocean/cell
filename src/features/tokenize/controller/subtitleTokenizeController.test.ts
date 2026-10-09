@@ -106,7 +106,7 @@ describe('createSubtitleTokenizeController', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'known');
 
     controller.destroy();
   });
@@ -174,8 +174,8 @@ describe('createSubtitleTokenizeController', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'world', 'tracking');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'known');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'world', 'known');
 
     window.getSelection()?.removeAllRanges();
     controller.destroy();
@@ -225,8 +225,8 @@ describe('createSubtitleTokenizeController', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'alpha', 'known');
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'beta', 'known');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'alpha', 'ignore');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'beta', 'ignore');
 
     getSelectionSpy.mockRestore();
     controller.destroy();
@@ -290,8 +290,8 @@ describe('createSubtitleTokenizeController', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'alpha', 'known');
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'beta', 'known');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'alpha', 'ignore');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'beta', 'ignore');
 
     getSelectionSpy.mockRestore();
     controller.destroy();
@@ -311,7 +311,7 @@ describe('createSubtitleTokenizeController', () => {
     expect(controller.handleStatusKey('2')).toBe(true);
 
     await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'known');
 
     controller.setHoveredTerm(null);
     setWordStatus.mockClear();
@@ -349,7 +349,7 @@ describe('createSubtitleTokenizeController', () => {
     // The popup path owns persistence + fan-out — the tokenize apply path
     // must not run for the hovered word.
     expect(apply).toHaveBeenCalledTimes(1);
-    expect(apply).toHaveBeenCalledWith('known');
+    expect(apply).toHaveBeenCalledWith('ignore');
     expect(setWordStatus).not.toHaveBeenCalled();
 
     controller.destroy();
@@ -401,8 +401,8 @@ describe('createSubtitleTokenizeController', () => {
     expect(controller.handleStatusKey('4')).toBe(true);
 
     const after = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
-    expect(after?.className).toContain('js-cell-token--status-ignore');
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'ignore');
+    expect(after?.className).toContain('js-cell-token--status-tracking');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
 
     controller.destroy();
   });
@@ -497,8 +497,8 @@ describe('createSubtitleTokenizeController', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'known');
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'world', 'known');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'ignore');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'world', 'ignore');
     expect(controller.getState().selectedTerms.size).toBe(0);
     expect(hello.className).not.toContain('js-cell-token--selected');
     expect(world.className).not.toContain('js-cell-token--selected');
@@ -528,8 +528,8 @@ describe('createSubtitleTokenizeController', () => {
     expect(controller.handleStatusKey('2')).toBe(true);
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'panel-term', 'tracking');
-    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'panel-term', 'known');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'known');
     expect(controller.getState().selectedTerms.size).toBe(0);
 
     unsubscribe();

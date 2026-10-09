@@ -8,9 +8,12 @@ import {
   setWordStatuses,
   setWordStatusPos,
   setWordStatusesFromSync,
+  setWordStatusFromSync,
+  clearLearningFlag,
   cycleWordStatus,
   deleteWordStatus,
   getWordStatuses,
+  getWordStatusPos,
   getPosStatusRows,
   getTermsByStatus,
   nextStatus,
@@ -48,25 +51,19 @@ afterAll(() => {
 });
 
 describe('STATUS_CYCLE + nextStatus', () => {
-  it('has 5 statuses in cycle order', () => {
-    expect(STATUS_CYCLE).toEqual(['unknown', 'tracking', 'learning', 'known', 'ignore']);
+  it('has the 3 base statuses in cycle order', () => {
+    expect(STATUS_CYCLE).toEqual(['unknown', 'known', 'ignore']);
   });
 
-  it('cycles unknown → tracking', () => {
-    expect(nextStatus('unknown')).toBe('tracking');
-  });
-
-  it('cycles tracking → learning → known', () => {
-    expect(nextStatus('tracking')).toBe('learning');
-    expect(nextStatus('learning')).toBe('known');
-  });
-
-  it('cycles known → ignore', () => {
+  it('cycles unknown → known → ignore → unknown', () => {
+    expect(nextStatus('unknown')).toBe('known');
     expect(nextStatus('known')).toBe('ignore');
+    expect(nextStatus('ignore')).toBe('unknown');
   });
 
-  it('cycles ignore → unknown (loop)', () => {
-    expect(nextStatus('ignore')).toBe('unknown');
+  it('flagged statuses cycle from their base (tracking/learning → known)', () => {
+    expect(nextStatus('tracking')).toBe('known');
+    expect(nextStatus('learning')).toBe('known');
   });
 
   it('DEFAULT_STATUS is unknown', () => {
@@ -101,19 +98,101 @@ describe('setWordStatus', () => {
 });
 
 describe('cycleWordStatus', () => {
-  it('cycles from unknown to tracking', async () => {
+  it('cycles from unknown to known', async () => {
     const next = await cycleWordStatus('en', 'apple');
-    expect(next).toBe('tracking');
-    expect(await getWordStatus('en', 'apple')).toBe('tracking');
+    expect(next).toBe('known');
+    expect(await getWordStatus('en', 'apple')).toBe('known');
   });
 
-  it('cycles through all 5 statuses and loops back', async () => {
-    expect(await cycleWordStatus('en', 'banana')).toBe('tracking');
-    expect(await cycleWordStatus('en', 'banana')).toBe('learning');
+  it('cycles through the 3 base statuses and loops back', async () => {
     expect(await cycleWordStatus('en', 'banana')).toBe('known');
     expect(await cycleWordStatus('en', 'banana')).toBe('ignore');
     expect(await cycleWordStatus('en', 'banana')).toBe('unknown');
-    expect(await cycleWordStatus('en', 'banana')).toBe('tracking');
+    expect(await cycleWordStatus('en', 'banana')).toBe('known');
+  });
+});
+
+describe('learning guard (flags are system-managed)', () => {
+  it('setWordStatus rejects learning — no row written', async () => {
+    await setWordStatus('en', 'guard', 'learning');
+    expect(await getWordStatus('en', 'guard')).toBe('unknown');
+  });
+
+  it('setWordStatus rejects learning even when a tracking row exists', async () => {
+    await setWordStatus('en', 'keep-tracking', 'tracking');
+    await setWordStatus('en', 'keep-tracking', 'learning');
+    expect(await getWordStatus('en', 'keep-tracking')).toBe('tracking');
+  });
+
+  it('setWordStatuses rejects learning in bulk', async () => {
+    await setWordStatuses('en', ['x', 'y'], 'learning');
+    expect(await getWordStatus('en', 'x')).toBe('unknown');
+    expect(await getWordStatus('en', 'y')).toBe('unknown');
+  });
+
+  it('setWordStatusPos rejects learning', async () => {
+    await setWordStatusPos('en', 'pos-term', 'noun', 'learning');
+    expect(await getWordStatusPos('en', 'pos-term', 'noun')).toBe('unknown');
+  });
+
+  it('system writer setWordStatusFromSync CAN write learning', async () => {
+    const ok = await setWordStatusFromSync('en', 'srs-word', 'learning', {
+      source: 'srs',
+      sourceAt: Date.now(),
+    });
+    expect(ok).toBe(true);
+    expect(await getWordStatus('en', 'srs-word')).toBe('learning');
+  });
+
+  it('sync learning never writes onto known or ignore', async () => {
+    await setWordStatus('en', 'k', 'known');
+    await setWordStatus('en', 'i', 'ignore');
+    const res = await setWordStatusesFromSync(
+      'en',
+      [
+        { term: 'k', status: 'learning', sourceAt: Date.now() },
+        { term: 'i', status: 'learning', sourceAt: Date.now() },
+      ],
+      { source: 'srs' },
+    );
+    expect(res.written).toBe(0);
+    expect(await getWordStatus('en', 'k')).toBe('known');
+    expect(await getWordStatus('en', 'i')).toBe('ignore');
+  });
+
+  it('sync learning upgrades tracking → learning (unknown family)', async () => {
+    await setWordStatus('en', 'up', 'tracking');
+    await setWordStatusesFromSync('en', [{ term: 'up', status: 'learning', sourceAt: Date.now() }], {
+      source: 'srs',
+    });
+    expect(await getWordStatus('en', 'up')).toBe('learning');
+  });
+});
+
+describe('clearLearningFlag', () => {
+  it('deletes the row only when stored status is learning', async () => {
+    await setWordStatusFromSync('en', 'lost-card', 'learning', {
+      source: 'srs',
+      sourceAt: Date.now(),
+    });
+    expect(await clearLearningFlag('en', 'lost-card')).toBe(true);
+    expect(await getWordStatus('en', 'lost-card')).toBe('unknown');
+  });
+
+  it('leaves tracking/known/ignore untouched', async () => {
+    await setWordStatus('en', 't', 'tracking');
+    await setWordStatus('en', 'k2', 'known');
+    await setWordStatus('en', 'i2', 'ignore');
+    expect(await clearLearningFlag('en', 't')).toBe(false);
+    expect(await clearLearningFlag('en', 'k2')).toBe(false);
+    expect(await clearLearningFlag('en', 'i2')).toBe(false);
+    expect(await getWordStatus('en', 't')).toBe('tracking');
+    expect(await getWordStatus('en', 'k2')).toBe('known');
+    expect(await getWordStatus('en', 'i2')).toBe('ignore');
+  });
+
+  it('is a no-op when no row exists', async () => {
+    expect(await clearLearningFlag('en', 'nothing')).toBe(false);
   });
 });
 

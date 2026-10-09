@@ -101,6 +101,7 @@ Rules: `Component:` and `Icon:` field conventions are what `check-design-brief.m
 | Design before functions are mapped | UI decorates mechanism, not capability — the FAB failure |
 | Element with no REQ trace | Scope enters through pixels instead of docs |
 | Skip the real production panel | Side-by-side with shipped UI is the whole point of the mockup |
+| Hand-drawn replica of the real panel (`real.tsx` vẽ lại bằng `.mk*`) | Baseline sai → mọi concept so với nó đều sai. Mount component thật; thiếu deps thì wire `mockChrome`/`installMockDictionarySendMessage`; quá entangled thì extract sub-component (StatusRow) chứ không copy markup |
 | `common.tsx` shared layout across concepts | Kills visual divergence — three concepts collapse to one |
 | Write tokens/colors ad hoc | `tokens.json` names only — the linter runs at transition |
 | Treat mockup as ship code | `mockup-<slug>/` is a design-time artifact, deleted at ship |

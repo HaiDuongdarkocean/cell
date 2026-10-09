@@ -11,6 +11,7 @@ import { getCardsByDeck, getCardsByNote, putCard } from '@/features/srs/reposito
 import { getNotetype, getNotetypesByCollection } from '@/features/srs/repositories/notetypeRepository';
 import { getStudyConfig } from '@/features/srs/repositories/studyConfigRepository';
 import { deleteNoteCascade, deleteDeckCascade } from '@/features/srs/repositories/deleteCascade';
+import { reconcileLearningFlags } from '@/features/ankiStatusSync';
 import { resetCard } from '@/features/srs/logic/reviewEngine';
 import { getVariantPresetForDeck } from '@/features/srs/repositories/variantPresetRepository';
 import { createSrsFsrsAdapter } from '@/features/srs/services/srsFsrsAdapter';
@@ -26,7 +27,7 @@ export function deckIconName(deck: SrsDeck): keyof typeof ICON_CATALOG {
   return deck.icon && (DECK_ICONS as readonly string[]).includes(deck.icon) ? deck.icon as keyof typeof ICON_CATALOG : 'library';
 }
 
-const MARK_STATUSES: readonly WordStatus[] = ['unknown', 'known', 'tracking', 'learning', 'ignore'];
+const MARK_STATUSES: readonly WordStatus[] = ['unknown', 'known', 'tracking', 'ignore'];
 
 function fieldText(value: SrsFieldValue | undefined): string {
   if (!value) return '';
@@ -137,6 +138,7 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', onBack, onCha
 
   async function handleDeleteDeck(): Promise<void> {
     await deleteDeckCascade(deck.id);
+    void reconcileLearningFlags(targetLanguage);
     onChanged();
     onBack();
   }
@@ -155,6 +157,7 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', onBack, onCha
       if (status) await markStatus(note, status);
       await deleteNoteCascade(note.id);
     }
+    void reconcileLearningFlags(targetLanguage);
     exitSelectMode();
     await reload();
     onChanged();

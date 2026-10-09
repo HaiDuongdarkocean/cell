@@ -4,7 +4,7 @@ import type { ClickModifierState, WordStatus } from '@/entities/dictionary';
 import { createTokenizeStateStore, type TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import { TokenizeScheduler } from '@/features/tokenize/logic/tokenizeScheduler';
 import { bindTokenBlock, restyleTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
-import { getWordStatuses, setWordStatus } from '@/features/dictionary';
+import { getWordStatuses, setWordStatus, toggleTrackingFlag } from '@/features/dictionary';
 import {
   emitWordStatusChanged,
   onDictionaryChanged,
@@ -32,10 +32,10 @@ export interface SubtitleTokenizeController extends TokenizeController {
   setGlossTargetLanguage(tl: string): void;
   handleStatusKey(key: string): boolean;
   /** Set/clear the hovered term — cue-list surfaces feed this via their
-   *  tokenize adapter so status keys 1-4 apply to the hovered panel word. */
+   *  tokenize adapter so status keys apply to the hovered panel word. */
   setHoveredTerm(term: string | null): void;
   /** Ctrl/Cmd-click toggle from cue-list surfaces — same store the status
-   *  keys read so keys 1-4 apply to cue-list selections. */
+   *  keys read so they apply to cue-list selections. */
   toggleSelectedTerm(term: string): void;
   /** Subscribe to bulk-selection changes — fires only when the set changes. */
   subscribeSelection(listener: (terms: ReadonlySet<string>) => void): () => void;
@@ -51,11 +51,11 @@ export interface SubtitleTokenizeControllerOptions {
   readonly getLineElements: () => { target: HTMLElement | null; native: HTMLElement | null };
   /** Additional open shadow roots holding token spans outside the overlay lines
    *  (e.g. the split-view subtitle panel). Merged into selection extraction so
-   *  1-4 status keys work on selections inside those surfaces. */
+   *  status keys work on selections inside those surfaces. */
   readonly getExtraShadowRoots?: () => readonly ShadowRoot[];
   /** Called when the user clicks a token to open the Popup Dictionary. */
   readonly onOpenDictionary: (term: string, element: HTMLElement, contextSentence: string, event: ClickModifierState) => void;
-  /** Open popup's looked-up term — 1-4 status keys target it before selection/hover. */
+  /** Open popup's looked-up term — status keys target it before selection/hover. */
   readonly getPopupStatusTarget?: () => PopupStatusTarget | null;
   /** Number of cues before/after the active cue to keep prepared. */
   readonly windowSize?: number;
@@ -237,6 +237,14 @@ export function createSubtitleTokenizeController(
     }
   }
 
+  function toggleTrackingToTerms(terms: readonly string[]): void {
+    for (const term of terms) {
+      const current = videoTokenMap.getStatus(term);
+      const next = toggleTrackingFlag(current);
+      if (next !== current) applyStatusToTerms([term], next);
+    }
+  }
+
   function getShadowRoots(): ShadowRoot[] {
     const { target, native } = getLineElements();
     const roots = new Set<ShadowRoot>(getExtraShadowRoots?.() ?? []);
@@ -251,6 +259,7 @@ export function createSubtitleTokenizeController(
     stateStore,
     getShadowRoots,
     applyStatusToTerms,
+    toggleTrackingToTerms,
     getPopupTarget: options.getPopupStatusTarget,
   });
 

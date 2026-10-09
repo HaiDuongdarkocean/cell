@@ -7,6 +7,8 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { nextStatus } from '@/features/dictionary';
 import { setWordStatus } from '@/features/dictionary';
 import { emitWordStatusChanged, aggregatePosStatus } from '@/features/dictionary';
+import { toggleTrackingFlag } from '@/features/dictionary';
+import { addToOceanSrs } from '@/features/srs';
 import {
   initDefinitionSelection,
   initExampleSelection,
@@ -58,6 +60,7 @@ export interface UseCandidateOptions {
 export interface UseCandidateReturn {
   readonly status: WordStatus;
   readonly cycleStatus: () => void;
+  readonly toggleTracking: () => void;
   readonly variant: PosVariant | undefined;
   readonly variantIndex: number;
   readonly selectVariant: (index: number) => void;
@@ -105,6 +108,7 @@ export interface UseCandidateReturn {
   readonly autoplayCount: number;
   readonly sendToCard: () => Promise<void>;
   readonly quickAdd: () => Promise<void>;
+  readonly addToSrs: () => Promise<void>;
 }
 
 export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
@@ -296,12 +300,14 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     ? (variantStatusOverrides.get(variant.pos) ?? variant.status)
     : status;
 
-  const cycleStatus = useCallback((): void => {
+  // Shared status write-path: variant override or root state + optional
+  // persist (skipped for 'learning' — the SRS background handler owns that
+  // flag) + token repaint + consumer notification.
+  const applyStatus = useCallback((newStatus: WordStatus, persist: boolean): void => {
     const pos = variant?.pos;
-    const newStatus = nextStatus(variantStatus);
     if (variant && pos) {
       setVariantStatusOverrides((prev) => new Map(prev).set(pos, newStatus));
-      void setWordStatus(candidate.langCode, candidate.term, newStatus, pos);
+      if (persist) void setWordStatus(candidate.langCode, candidate.term, newStatus, pos);
       const resolved = new Map(
         (variants ?? [])
           .filter((v) => v.pos !== '')
@@ -318,11 +324,21 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
         setVariantStatusOverrides((prev) => new Map(prev).set('', newStatus));
       }
       setStatus(newStatus);
-      void setWordStatus(candidate.langCode, candidate.term, newStatus);
+      if (persist) void setWordStatus(candidate.langCode, candidate.term, newStatus);
       emitWordStatusChanged({ term: candidate.term, langCode: candidate.langCode, status: newStatus });
     }
     onStatusChange?.(candidate.term, candidate.langCode, newStatus);
-  }, [variantStatus, variant, variants, status, variantStatusOverrides, candidate.langCode, candidate.term, onStatusChange]);
+  }, [variant, variants, status, variantStatusOverrides, candidate.langCode, candidate.term, onStatusChange]);
+
+  const cycleStatus = useCallback((): void => {
+    applyStatus(nextStatus(variantStatus), true);
+  }, [applyStatus, variantStatus]);
+
+  const toggleTracking = useCallback((): void => {
+    const newStatus = toggleTrackingFlag(variantStatus);
+    if (newStatus === variantStatus) return;
+    applyStatus(newStatus, true);
+  }, [applyStatus, variantStatus]);
 
   const [includeAllExamples, setIncludeAllExamples] = useState(false);
   const [ttsVoices, setTtsVoices] = useState<readonly string[]>([]);
@@ -397,9 +413,8 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     });
   }, [candidate.langCode, candidate.term, contextSentence, ttsVoices]);
 
-  const sendToCard = useCallback(async (): Promise<void> => {
-    if (!onSendToCard) return;
-    onSendToCard(buildPrefill(
+  const buildCurrentPrefill = useCallback((): PopupCardCreatorPrefill =>
+    buildPrefill(
       candidate,
       selectedDefinitions,
       exampleSelection,
@@ -412,30 +427,32 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
       toolbar.imageSelection,
       toolbar.translationSelected,
       variant ? { variant, accentIndex } : undefined,
-    ));
-  }, [onSendToCard, toolbar, candidate, selectedDefinitions, exampleSelection, definitionSelection, contextSentence, variant, accentIndex]);
+    ), [toolbar, candidate, selectedDefinitions, exampleSelection, definitionSelection, contextSentence, variant, accentIndex]);
+
+  const sendToCard = useCallback(async (): Promise<void> => {
+    if (!onSendToCard) return;
+    onSendToCard(buildCurrentPrefill());
+  }, [onSendToCard, buildCurrentPrefill]);
 
   const quickAdd = useCallback(async (): Promise<void> => {
     if (!onQuickAdd) return;
-    onQuickAdd(buildPrefill(
-      candidate,
-      selectedDefinitions,
-      exampleSelection,
-      definitionSelection,
-      contextSentence,
-      toolbar.translation,
-      toolbar.audioItems,
-      toolbar.audioSelection,
-      toolbar.imageItems,
-      toolbar.imageSelection,
-      toolbar.translationSelected,
-      variant ? { variant, accentIndex } : undefined,
-    ));
-  }, [onQuickAdd, toolbar, candidate, selectedDefinitions, exampleSelection, definitionSelection, contextSentence, variant, accentIndex]);
+    onQuickAdd(buildCurrentPrefill());
+  }, [onQuickAdd, buildCurrentPrefill]);
+
+  const addToSrs = useCallback(async (): Promise<void> => {
+    try {
+      await addToOceanSrs(buildCurrentPrefill());
+    } catch (err) {
+      console.warn('[dictionary-popup] addToSrs failed:', err);
+      return;
+    }
+    applyStatus('learning', false);
+  }, [buildCurrentPrefill, applyStatus]);
 
   return {
     status: variantStatus,
     cycleStatus,
+    toggleTracking,
     variant,
     variantIndex,
     selectVariant,
@@ -483,5 +500,6 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     autoplayCount,
     sendToCard,
     quickAdd,
+    addToSrs,
   };
 }

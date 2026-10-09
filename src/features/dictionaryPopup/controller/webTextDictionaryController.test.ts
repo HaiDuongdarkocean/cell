@@ -370,7 +370,7 @@ describe('createWebTextDictionaryController', () => {
     await Promise.resolve();
     });
 
-    // Click the status badge inside the popup to cycle unknown → tracking.
+    // Click the status badge inside the popup to cycle unknown → known.
     const popupHost = document.querySelector('.js-cell-popup-host') as Element & { shadowRoot?: ShadowRoot };
     await waitFor(() => expect(popupHost).not.toBeNull());
     const shadow = popupHost.shadowRoot!;
@@ -381,8 +381,8 @@ describe('createWebTextDictionaryController', () => {
     });
     act(() => { statusBadge.click() });
 
-    expect(onStatusChange).toHaveBeenCalledWith('take off', 'en', 'tracking');
-    expect(emitted).toContainEqual({ term: 'take off', langCode: 'en', status: 'tracking' });
+    expect(onStatusChange).toHaveBeenCalledWith('take off', 'en', 'known');
+    expect(emitted).toContainEqual({ term: 'take off', langCode: 'en', status: 'known' });
     unsubscribe();
     act(() => { ctrl.destroy() });
   });
@@ -2324,7 +2324,7 @@ describe('nested popup stack', () => {
         act(() => { ctrl.handleLookup(makeRequest({ term: 'above' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('above')) });
         await flushLookup();
         const lv1 = popupHosts()[0]!;
-        expect(trailOf(lv1)).toBeNull();
+        expect(trailOf(lv1)?.className).toContain('trailHidden');
         expect(termOf(lv1)).toBe('above');
 
         act(() => { ctrl.handleLookup(makeRequest({ term: 'used' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'used')) });
@@ -2361,7 +2361,7 @@ describe('nested popup stack', () => {
         expect(popupHosts()).toHaveLength(1);
         expect(popupHosts()[0]).toBe(lv1);
         // Depth 1 hides the strip again; the cached level-1 result repaints.
-        expect(trailOf(lv1)).toBeNull();
+        expect(trailOf(lv1)?.className).toContain('trailHidden');
         expect(termOf(lv1)).toBe('above');
         // Restore is served from the level cache — no fourth lookup.
         expect(lookupRequestCount(['above', 'used', 'set'])).toBe(3);
@@ -2385,7 +2385,7 @@ describe('nested popup stack', () => {
 
         expect(popupHosts()).toHaveLength(1);
         expect(popupHosts()[0]).toBe(lv1);
-        expect(trailOf(lv1)).toBeNull();
+        expect(trailOf(lv1)?.className).toContain('trailHidden');
         expect(termOf(lv1)).toBe('fresh');
       });
     });

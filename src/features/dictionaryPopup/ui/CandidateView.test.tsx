@@ -3,6 +3,7 @@ import { render, screen, waitFor, fireEvent, within, act } from '@testing-librar
 import { CandidateView } from './CandidateView';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { translateSentence } from '@/features/cardCreator';
+import { addToOceanSrs, openSrsStudyPage } from '@/features/srs';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
@@ -35,12 +36,19 @@ jest.mock('@/features/cardCreator', () => ({
   translateSentence: jest.fn(),
 }));
 
+jest.mock('@/features/srs', () => ({
+  addToOceanSrs: jest.fn(),
+  openSrsStudyPage: jest.fn(),
+}));
+
 jest.mock('@/shared/lib/storage/settingsStore', () => ({
   loadSettings: jest.fn(),
 }));
 
 const mockSendMessage = jest.mocked(sendMessage);
 const mockTranslateSentence = jest.mocked(translateSentence);
+const mockAddToOceanSrs = jest.mocked(addToOceanSrs);
+const mockOpenSrsStudyPage = jest.mocked(openSrsStudyPage);
 const mockLoadSettings = jest.mocked(loadSettings);
 
 function makeResult(term: string, overrides?: Partial<LookupResult>): LookupResult {
@@ -104,6 +112,7 @@ function setupMocks(): void {
     return { success: true } as T;
   });
   mockTranslateSentence.mockResolvedValue('xin chào');
+  mockAddToOceanSrs.mockResolvedValue({ noteId: 'n1', cardId: 'c1' });
 }
 
 describe('CandidateView', () => {
@@ -245,11 +254,11 @@ describe('CandidateView', () => {
 
     fireEvent.click(screen.getByTestId('dictionary-status-cycle'));
 
-    await waitFor(() => expect(screen.getByTestId('dictionary-status-cycle')).toHaveTextContent('Tracking'));
+    await waitFor(() => expect(screen.getByTestId('dictionary-status-cycle')).toHaveTextContent('Known'));
 
     expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({
       type: MESSAGE_TYPES.WORD_STATUS_SET,
-      payload: expect.objectContaining({ term: 'hello', langCode: 'en', status: 'tracking' }),
+      payload: expect.objectContaining({ term: 'hello', langCode: 'en', status: 'known' }),
     }));
   });
 
@@ -710,5 +719,71 @@ describe('CandidateView', () => {
     expect(screen.getByText('[corpus]')).toBeInTheDocument();
     const group = screen.getByText('Getz vocalized it').closest('[title]');
     expect(group?.getAttribute('title')).toBe('LDOCE5++ V 1-35');
+  });
+
+  // REQ-2: the SRS icon is a state-aware button — ghost creates a card,
+  // learning fill routes to the study page, disabled off the unknown family.
+  it.each(['known', 'ignore'] as const)('disables the SRS button when status is %s', (status) => {
+    render(
+      <CandidateView
+        candidate={makeResult('hello', { status })}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    expect(screen.getByTestId('dictionary-srs-card')).toBeDisabled();
+  });
+
+  it.each(['unknown', 'tracking'] as const)('enables the SRS button when status is %s', (status) => {
+    render(
+      <CandidateView
+        candidate={makeResult('hello', { status })}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    expect(screen.getByTestId('dictionary-srs-card')).toBeEnabled();
+  });
+
+  it('creates a card via addToOceanSrs and renders the learning flag', async () => {
+    render(
+      <CandidateView
+        candidate={makeResult('hello', { status: 'unknown' })}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    await act(async () => { fireEvent.click(screen.getByTestId('dictionary-srs-card')); });
+
+    expect(mockAddToOceanSrs).toHaveBeenCalledWith(expect.objectContaining({ term: 'hello' }));
+    await waitFor(() => expect(screen.getByTestId('dictionary-status-flag')).toBeInTheDocument());
+  });
+
+  it('routes to openSrsStudyPage instead of creating a card when already learning', async () => {
+    render(
+      <CandidateView
+        candidate={makeResult('hello', { status: 'learning' })}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    expect(screen.getByTestId('dictionary-status-flag')).toBeDisabled();
+
+    await act(async () => { fireEvent.click(screen.getByTestId('dictionary-srs-card')); });
+
+    expect(mockOpenSrsStudyPage).toHaveBeenCalledTimes(1);
+    expect(mockAddToOceanSrs).not.toHaveBeenCalled();
   });
 });

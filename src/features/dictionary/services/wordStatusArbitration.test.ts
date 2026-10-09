@@ -16,9 +16,15 @@ describe('decideStatusWrite', () => {
     expect(decision).toBe('write');
   });
 
-  it('older sourceAt loses', () => {
+  it('tracking→learning escalates even with older sourceAt', () => {
     expect(
       decideStatusWrite(ex('tracking', 300, 'user'), { status: 'learning', source: 'anki', sourceAt: 200 }),
+    ).toBe('write');
+  });
+
+  it('older sourceAt loses on non-escalation transitions', () => {
+    expect(
+      decideStatusWrite(ex('tracking', 300, 'user'), { status: 'known', source: 'anki', sourceAt: 200 }),
     ).toBe('skip');
   });
 
@@ -52,9 +58,42 @@ describe('decideStatusWrite', () => {
     ).toBe('write');
   });
 
-  it('legacy sourceless rows count as user truth', () => {
+  it('legacy sourceless tracking still escalates to learning', () => {
     expect(
       decideStatusWrite(ex('tracking', 100), { status: 'learning', source: 'anki', sourceAt: 100 }),
+    ).toBe('write');
+  });
+
+  it('legacy sourceless rows count as user truth on other ties', () => {
+    expect(
+      decideStatusWrite(ex('tracking', 100), { status: 'known', source: 'anki', sourceAt: 100 }),
+    ).toBe('skip');
+  });
+
+  it('non-user flags never write onto known or ignore', () => {
+    expect(
+      decideStatusWrite(ex('ignore', 100, 'user'), { status: 'learning', source: 'anki', sourceAt: 200 }),
+    ).toBe('skip');
+    expect(
+      decideStatusWrite(ex('ignore', 100, 'user'), { status: 'tracking', source: 'srs', sourceAt: 200 }),
+    ).toBe('skip');
+    expect(
+      decideStatusWrite(ex('known', 100, 'anki'), { status: 'learning', source: 'anki', sourceAt: 200 }),
+    ).toBe('skip');
+  });
+
+  it('tracking→learning escalates from any non-user source', () => {
+    expect(
+      decideStatusWrite(ex('tracking', 100, 'user'), { status: 'learning', source: 'srs', sourceAt: 50 }),
+    ).toBe('write');
+  });
+
+  it('learning→tracking is a downgrade — normal arbitration applies (newer anki wins over older srs)', () => {
+    expect(
+      decideStatusWrite(ex('learning', 100, 'srs'), { status: 'tracking', source: 'anki', sourceAt: 200 }),
+    ).toBe('write');
+    expect(
+      decideStatusWrite(ex('learning', 300, 'srs'), { status: 'tracking', source: 'anki', sourceAt: 200 }),
     ).toBe('skip');
   });
 

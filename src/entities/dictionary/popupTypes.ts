@@ -16,7 +16,9 @@ export type { LookupRequest };
 
 export type ReadingKind = 'ipa' | 'pinyin' | 'none';
 export type WordStatus = 'unknown' | 'known' | 'tracking' | 'learning' | 'ignore';
-export const STATUS_CYCLE: readonly WordStatus[] = ['unknown', 'tracking', 'learning', 'known', 'ignore'];
+/** Base-knowledge cycle only — tracking/learning are engagement flags over
+ *  `unknown`, never cycled into from the status pill. */
+export const STATUS_CYCLE: readonly WordStatus[] = ['unknown', 'known', 'ignore'];
 export type TriggerMode = 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt';
 export type ClickModifierState = Pick<MouseEvent, 'ctrlKey' | 'shiftKey' | 'altKey'>;
 export type PopupTab = 'audio' | 'image' | 'translate' | 'links' | 'pronunciation';

@@ -81,7 +81,7 @@ const SORT_OPTIONS: readonly { value: VocabularySort; label: MessageKey }[] = [
   { value: 'grouped', label: 'vocabulary.sort.grouped' },
 ];
 
-const BULK_STATUSES: readonly MarkedStatus[] = ['tracking', 'learning', 'known', 'ignore'];
+const BULK_STATUSES: readonly MarkedStatus[] = ['tracking', 'known', 'ignore'];
 
 type ToolbarMenu = 'filter' | 'sort' | 'more' | 'status';
 

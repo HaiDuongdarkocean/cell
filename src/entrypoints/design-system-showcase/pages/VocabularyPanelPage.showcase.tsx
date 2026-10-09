@@ -5,6 +5,7 @@ import {
   getAllWordStatuses,
   setWordStatus,
   setWordStatuses,
+  setWordStatusesFromSync,
   cycleWordStatus,
   deleteWordStatus,
 } from '@/features/dictionary/services/wordStatusStore';
@@ -147,7 +148,15 @@ async function seedVocabulary(langCode: string): Promise<void> {
         const n = i * statuses.length + statuses.indexOf(status) + 1;
         return `vocab-item-${String(n).padStart(5, '0')}`;
       });
-      await setWordStatuses(langCode, terms, status);
+      if (status === 'learning') {
+        await setWordStatusesFromSync(
+          langCode,
+          terms.map((term) => ({ term, status, sourceAt: Date.now() })),
+          { source: 'srs' },
+        );
+      } else {
+        await setWordStatuses(langCode, terms, status);
+      }
     }
     return;
   }

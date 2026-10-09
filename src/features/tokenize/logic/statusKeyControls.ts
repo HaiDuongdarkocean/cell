@@ -6,24 +6,28 @@ import { isEditableEvent } from '@/shared/lib/dom/isEditable';
 
 const STATUS_BY_KEY: Readonly<Record<string, WordStatus>> = {
   '1': 'unknown',
-  '2': 'tracking',
-  '3': 'known',
-  '4': 'ignore',
-  '5': 'learning',
+  '2': 'known',
+  '3': 'ignore',
 };
 
-/** The word an open dictionary popup is currently showing — 1-4 keys apply to
- *  it (and its own persist/render path) while the popup is up. */
+const TRACKING_TOGGLE_KEY = '4';
+
+/** The word an open dictionary popup is currently showing — status keys apply
+ *  to it (and its own persist/render path) while the popup is up. */
 export interface PopupStatusTarget {
   readonly term: string;
   readonly langCode: string;
   readonly apply: (status: WordStatus) => void;
+  /** Key-4 tracking toggle routed through the popup's own path. When absent,
+   *  key 4 falls back to the selection/hover terms path. */
+  readonly toggleTracking?: () => void;
 }
 
 export interface StatusKeyControlsOptions {
   readonly stateStore: TokenizeStateStore;
   readonly getShadowRoots: () => ShadowRoot[];
   readonly applyStatusToTerms: (terms: readonly string[], status: WordStatus) => void;
+  readonly toggleTrackingToTerms: (terms: readonly string[]) => void;
   /** Open popup's looked-up term, when a result is displayed. Takes priority
    *  over selection/hover because the popup is the user's current context. */
   readonly getPopupTarget?: () => PopupStatusTarget | null;
@@ -35,16 +39,9 @@ export interface StatusKeyControls {
 }
 
 export function createStatusKeyControls(options: StatusKeyControlsOptions): StatusKeyControls {
-  const { stateStore, getShadowRoots, applyStatusToTerms, getPopupTarget } = options;
+  const { stateStore, getShadowRoots, applyStatusToTerms, toggleTrackingToTerms, getPopupTarget } = options;
 
-  function applyStatusKey(key: string): boolean {
-    const status = STATUS_BY_KEY[key];
-    if (!status) return false;
-    const popupTarget = getPopupTarget?.();
-    if (popupTarget) {
-      popupTarget.apply(status);
-      return true;
-    }
+  function applyToResolvedTerms(apply: (terms: string[]) => void): boolean {
     const state = stateStore.getState();
     let terms = state.selectedTerms.size > 0 ? [...state.selectedTerms] : [];
     let usedNativeSelection = false;
@@ -56,10 +53,28 @@ export function createStatusKeyControls(options: StatusKeyControlsOptions): Stat
       terms = [state.hoveredTerm];
     }
     if (terms.length === 0) return false;
-    applyStatusToTerms(terms, status);
+    apply(terms);
     if (state.selectedTerms.size > 0) stateStore.clearSelection();
     if (usedNativeSelection) window.getSelection()?.removeAllRanges();
     return true;
+  }
+
+  function applyStatusKey(key: string): boolean {
+    const popupTarget = getPopupTarget?.();
+    if (key === TRACKING_TOGGLE_KEY) {
+      if (popupTarget?.toggleTracking) {
+        popupTarget.toggleTracking();
+        return true;
+      }
+      return applyToResolvedTerms(toggleTrackingToTerms);
+    }
+    const status = STATUS_BY_KEY[key];
+    if (!status) return false;
+    if (popupTarget) {
+      popupTarget.apply(status);
+      return true;
+    }
+    return applyToResolvedTerms((terms) => applyStatusToTerms(terms, status));
   }
 
   function handleKeydown(e: KeyboardEvent): void {

@@ -138,6 +138,7 @@ import {
 import {
   AnkiStatusCardTermsPayloadSchema,
   AnkiStatusSyncRunPayloadSchema,
+  AnkiStatusSrsCardDeletedPayloadSchema,
   AnkiStatusSrsReviewedPayloadSchema,
 } from '@/entities/message/ankiStatusSyncSchemas';
 import {
@@ -1049,6 +1050,12 @@ export const MESSAGE_REGISTRY = {
   [MESSAGE_TYPES.ANKI_STATUS_SRS_REVIEWED]: {
     type: MESSAGE_TYPES.ANKI_STATUS_SRS_REVIEWED,
     schema: AnkiStatusSrsReviewedPayloadSchema,
+    direction: 'any',
+    owner: 'background/handlers/ankiStatusSync',
+  },
+  [MESSAGE_TYPES.ANKI_STATUS_SRS_CARD_DELETED]: {
+    type: MESSAGE_TYPES.ANKI_STATUS_SRS_CARD_DELETED,
+    schema: AnkiStatusSrsCardDeletedPayloadSchema,
     direction: 'any',
     owner: 'background/handlers/ankiStatusSync',
   },

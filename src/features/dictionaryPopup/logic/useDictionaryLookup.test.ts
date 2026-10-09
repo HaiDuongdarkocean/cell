@@ -117,11 +117,11 @@ describe('useDictionaryLookup', () => {
 
     act(() => { result.current.cycleStatus(); });
 
-    expect(result.current.status).toBe('tracking');
+    expect(result.current.status).toBe('known');
     expect(mockSendMessage).toHaveBeenLastCalledWith(
       expect.objectContaining({
         type: 'WORD_STATUS_SET',
-        payload: { term: 'hello', langCode: 'en', status: 'tracking' },
+        payload: { term: 'hello', langCode: 'en', status: 'known' },
       }),
     );
   });

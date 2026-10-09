@@ -31,7 +31,9 @@ export type StatusWriteDecision = 'write' | 'skip';
  *    otherwise always beat the older origin timestamp).
  *  - Equal timestamps → higher source priority wins (user > anki > srs > import).
  *    Sourceless legacy entries are treated as 'user' (user truth).
- *  - Non-user candidates never downgrade a stored 'known'. */
+ *  - Non-user candidates never downgrade a stored 'known'.
+ *  - Non-user flag candidates (tracking/learning) never write onto a stored
+ *    'known' or 'ignore' — flags live on the unknown family only. */
 export function decideStatusWrite(
   existing: StatusWriteExisting | undefined,
   candidate: StatusWriteCandidate,
@@ -45,6 +47,18 @@ export function decideStatusWrite(
     candidate.status !== 'known'
   ) {
     return 'skip';
+  }
+  if (
+    candidate.source !== 'user' &&
+    (candidate.status === 'tracking' || candidate.status === 'learning') &&
+    (existing.status === 'known' || existing.status === 'ignore')
+  ) {
+    return 'skip';
+  }
+  // Flag escalation inside the unknown family: a card just came into
+  // existence — 'learning' supersedes 'tracking' regardless of timestamps.
+  if (existing.status === 'tracking' && candidate.status === 'learning') {
+    return 'write';
   }
   const existingAt = existing.sourceAt ?? existing.updatedAt;
   if (candidate.sourceAt > existingAt) return 'write';

@@ -168,11 +168,27 @@ describe('useCandidate', () => {
 
     act(() => { result.current.cycleStatus(); });
 
-    expect(result.current.status).toBe('tracking');
+    expect(result.current.status).toBe('known');
     expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({
       type: MESSAGE_TYPES.WORD_STATUS_SET,
-      payload: expect.objectContaining({ term: 'hello', langCode: 'en', status: 'tracking' }),
+      payload: expect.objectContaining({ term: 'hello', langCode: 'en', status: 'known' }),
     }));
+  });
+
+  it('toggles tracking flag and sends WORD_STATUS_SET', () => {
+    const candidate = makeResult('hello', { status: 'unknown' });
+
+    const { result } = renderHook(() => useCandidate({
+      candidate,
+      contextSentence: '',
+      sourceLang: 'en',
+      targetLang: 'vi',
+    }));
+
+    act(() => { result.current.toggleTracking(); });
+    expect(result.current.status).toBe('tracking');
+    act(() => { result.current.toggleTracking(); });
+    expect(result.current.status).toBe('unknown');
   });
 
   it('toggles definitions and updates selected count', () => {

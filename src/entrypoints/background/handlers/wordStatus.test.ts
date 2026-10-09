@@ -322,14 +322,14 @@ describe('WORD_STATUS_SET_MANY', () => {
 
     const handler = ctx.handlers.get(MESSAGE_TYPES.WORD_STATUS_SET_MANY);
     const response = await handler?.({
-      payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'], status: 'learning' },
+      payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'], status: 'tracking' },
     });
 
     expect(response).toEqual({ success: true });
     expect(wordStatusStore.setWordStatuses).toHaveBeenCalledWith(
       'en',
       ['a', 'b'],
-      'learning',
+      'tracking',
       expect.objectContaining({ source: 'user' }),
     );
     await flushPromises();
@@ -337,12 +337,27 @@ describe('WORD_STATUS_SET_MANY', () => {
       2,
       expect.objectContaining({
         type: MESSAGE_TYPES.WORD_STATUS_SET_MANY,
-        payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'], status: 'learning' },
+        payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'], status: 'tracking' },
       }),
       { frameId: 0 },
     );
     expect(mockTabsSendMessage).not.toHaveBeenCalledWith(1, expect.anything(), expect.anything());
     expect(requestRemoteCheck).toHaveBeenCalled();
+  });
+
+  it('rejects learning — only sync/SRS paths may set it', async () => {
+    const ctx = createMockCtx();
+    registerWordStatusHandlers(ctx as unknown as Parameters<typeof registerWordStatusHandlers>[0]);
+
+    const handler = ctx.handlers.get(MESSAGE_TYPES.WORD_STATUS_SET_MANY);
+    const response = await handler?.({
+      payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'], status: 'learning' },
+    });
+
+    expect(response).toEqual({ success: true });
+    expect(wordStatusStore.setWordStatuses).not.toHaveBeenCalled();
+    await flushPromises();
+    expect(mockTabsSendMessage).not.toHaveBeenCalled();
   });
 
   it('notifies known-marked terms for Anki write-back', async () => {

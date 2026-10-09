@@ -1,4 +1,4 @@
-import { STATUS_CYCLE, type WordStatus } from '@/entities/dictionary';
+import type { WordStatus } from '@/entities/dictionary';
 
 export interface VocabularyEntry {
   readonly term: string;
@@ -11,16 +11,19 @@ export type VocabularySort = 'recent' | 'alpha' | 'grouped';
 export const VOCABULARY_SEGMENTS = ['all', 'tracking', 'learning', 'known', 'ignore'] as const;
 export type VocabularySegment = (typeof VOCABULARY_SEGMENTS)[number];
 
-export const MARKED_STATUSES: readonly WordStatus[] = ['tracking', 'learning', 'known', 'ignore'];
+export const MARKED_STATUSES: readonly WordStatus[] = ['tracking', 'known', 'ignore'];
 export type MarkedStatus = Exclude<WordStatus, 'unknown'>;
 
 export function nextMarkedStatus(status: WordStatus): WordStatus {
+  if (status === 'learning') return 'learning';
   const index = MARKED_STATUSES.indexOf(status);
   return MARKED_STATUSES[(index + 1) % MARKED_STATUSES.length] ?? 'tracking';
 }
 
 export function statusesForSegment(segment: VocabularySegment): ReadonlySet<WordStatus> {
-  if (segment === 'all') return new Set(MARKED_STATUSES);
+  if (segment === 'all') {
+    return new Set<WordStatus>(VOCABULARY_SEGMENTS.filter((s) => s !== 'all'));
+  }
   return new Set([segment]);
 }
 
@@ -84,7 +87,7 @@ export function selectEntries(
   } else if (sort === 'alpha') {
     sorted.sort((a, b) => a.term.localeCompare(b.term, undefined, { sensitivity: 'base' }));
   } else {
-    const order = new Map(STATUS_CYCLE.map((s, i) => [s, i]));
+    const order = new Map<string, number>(VOCABULARY_SEGMENTS.map((s, i) => [s, i]));
     sorted.sort(
       (a, b) => (order.get(a.status) ?? 0) - (order.get(b.status) ?? 0) || b.updatedAt - a.updatedAt,
     );

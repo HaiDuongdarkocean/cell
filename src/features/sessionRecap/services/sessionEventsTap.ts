@@ -62,7 +62,7 @@ export function toSessionEvent(
   }
 
   if (request.type === MESSAGE_TYPES.WORD_STATUS_SET) {
-    if (!payload.term || !payload.status) return null;
+    if (!payload.term || !payload.status || payload.status === 'learning') return null;
     return {
       tabId: resolveTabId(payload.tabId, sender),
       surface: classifySurface(sender),

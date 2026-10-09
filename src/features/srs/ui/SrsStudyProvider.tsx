@@ -399,7 +399,14 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
   const deleteCurrentCard = useCallback(async () => {
     if (!session || !config) return;
     const deckIdOfCard = session.card.deckId;
+    const deletedTerm = session.note.targetWord;
     await deleteCardCascade(session.card.id);
+    if (deletedTerm) {
+      void sendMessage({
+        type: MESSAGE_TYPES.ANKI_STATUS_SRS_CARD_DELETED,
+        payload: { deckId: deckIdOfCard, targetWord: deletedTerm },
+      }).catch(() => {});
+    }
     void refreshStats();
     const { options, includeSubdecks } = applyUiPrefs(config);
     const next = await selectNextReview(sessionCollectionId ? null : deckIdOfCard, includeSubdecks, config, nowISO(), adapter, audioCache, imageCache, 1000, options, sessionCollectionId ?? undefined);

@@ -1590,7 +1590,7 @@ describe('lookupOrchestrator — pos variants (pos-dictionary-variants)', () => 
 
   it('resolves pos status independently and aggregates over all variants', async () => {
     await seedEnglishDictionary(presentEntries);
-    await setWordStatusPos('en', 'present', 'verb', 'learning');
+    await setWordStatusPos('en', 'present', 'verb', 'tracking');
 
     const result = await lookupOrchestrator({
       term: 'present',
@@ -1600,7 +1600,7 @@ describe('lookupOrchestrator — pos variants (pos-dictionary-variants)', () => 
     });
 
     const [adj, verb, noun] = result.variants!;
-    expect(verb!.status).toBe('learning');
+    expect(verb!.status).toBe('tracking');
     expect(adj!.status).toBe('unknown');
     expect(noun!.status).toBe('unknown');
     expect(result.status).toBe('unknown');

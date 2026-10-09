@@ -24,7 +24,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { openSettingsSection, type PanelMountController } from './panelBridge';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import { createPopupLevel, type PopupLevel } from './controllerTypes';
-import { setWordStatus } from '@/features/dictionary';
+import { getWordStatuses, setWordStatus, toggleTrackingFlag } from '@/features/dictionary';
 import type { PopupStatusTarget } from '@/features/tokenize';
 import {
   applyTokenStatus,
@@ -335,12 +335,22 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
       if (!level.term || !level.termLangCode) continue;
       const term = level.term;
       const langCode = level.termLangCode;
+      const apply = (status: WordStatus): void => {
+        void setWordStatus(langCode, term, status).catch(() => { /* best-effort */ });
+        handlePopupStatusChange(level, term, langCode, status);
+      };
       return {
         term,
         langCode,
-        apply: (status) => {
-          void setWordStatus(langCode, term, status).catch(() => { /* best-effort */ });
-          handlePopupStatusChange(level, term, langCode, status);
+        apply,
+        toggleTracking: () => {
+          void getWordStatuses(langCode, [term])
+            .then((statuses) => {
+              const current = statuses.get(term) ?? 'unknown';
+              const next = toggleTrackingFlag(current);
+              if (next !== current) apply(next);
+            })
+            .catch(() => { /* best-effort */ });
         },
       };
     }

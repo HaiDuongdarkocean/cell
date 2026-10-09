@@ -16,7 +16,7 @@ import {
   htmlToText,
 } from '@/features/ankiImport';
 import type { AnkiConnectInvoker } from '@/features/ankiImport';
-import { normalizeTerm, setWordStatusFromSync, setWordStatusesFromSync } from '@/features/dictionary';
+import { clearLearningFlag, getAllWordStatuses, isNotKnown, normalizeTerm, setWordStatusFromSync, setWordStatusesFromSync } from '@/features/dictionary';
 import type { SyncStatusUpdate } from '@/features/dictionary';
 import { getSrsDB, SRS_STORES } from '@/features/srs';
 import { logger } from '@/shared/lib/logger';
@@ -34,6 +34,7 @@ import {
 } from '../lib/writeBack';
 import {
   appendWriteBackLog,
+  deleteLinks,
   dequeueWriteBack,
   enqueueWriteBack,
   getAllLinks,
@@ -104,6 +105,31 @@ function getTermFromCard(card: CardsInfoRow): string | null {
   return null;
 }
 
+/** noteId → normalized targetWord for notes whose deck's collection matches
+ *  langCode; notes on lang-less collections count for every language. */
+async function loadLangNoteTerms(
+  tx: IDBTransaction,
+  langCode: string,
+): Promise<Map<string, string>> {
+  const collections = await idbAll<{ id: string; targetLanguage: string }>(
+    tx.objectStore(SRS_STORES.COLLECTIONS),
+  );
+  const decks = await idbAll<{ id: string; collectionId: string }>(
+    tx.objectStore(SRS_STORES.DECKS),
+  );
+  const notes = await idbAll<SrsNote>(tx.objectStore(SRS_STORES.NOTES));
+  const langByCollection = new Map(collections.map((c) => [c.id, c.targetLanguage]));
+  const collectionByDeck = new Map(decks.map((d) => [d.id, d.collectionId]));
+  const termByNote = new Map<string, string>();
+  for (const note of notes) {
+    const collectionId = collectionByDeck.get(note.deckId);
+    const target = collectionId ? langByCollection.get(collectionId) : undefined;
+    if (target !== undefined && target !== langCode) continue;
+    if (note.targetWord) termByNote.set(note.id, normalizeTerm(note.targetWord));
+  }
+  return termByNote;
+}
+
 async function srsOutcomesByTerm(
   langCode: string,
 ): Promise<Map<string, 'learning' | 'known'>> {
@@ -114,23 +140,8 @@ async function srsOutcomesByTerm(
       [SRS_STORES.COLLECTIONS, SRS_STORES.DECKS, SRS_STORES.NOTES, SRS_STORES.CARDS],
       'readonly',
     );
-    const collections = await idbAll<{ id: string; targetLanguage: string }>(
-      tx.objectStore(SRS_STORES.COLLECTIONS),
-    );
-    const decks = await idbAll<{ id: string; collectionId: string }>(
-      tx.objectStore(SRS_STORES.DECKS),
-    );
-    const notes = await idbAll<SrsNote>(tx.objectStore(SRS_STORES.NOTES));
+    const termByNote = await loadLangNoteTerms(tx, langCode);
     const cards = await idbAll<SrsCard>(tx.objectStore(SRS_STORES.CARDS));
-    const langByCollection = new Map(collections.map((c) => [c.id, c.targetLanguage]));
-    const collectionByDeck = new Map(decks.map((d) => [d.id, d.collectionId]));
-    const termByNote = new Map<string, string>();
-    for (const note of notes) {
-      const collectionId = collectionByDeck.get(note.deckId);
-      const target = collectionId ? langByCollection.get(collectionId) : undefined;
-      if (target !== undefined && target !== langCode) continue;
-      if (note.targetWord) termByNote.set(note.id, normalizeTerm(note.targetWord));
-    }
     for (const card of cards) {
       const term = termByNote.get(card.noteId);
       if (!term) continue;
@@ -175,20 +186,8 @@ export async function listCardSourceTerms(langCode: string): Promise<CardSourceT
       [SRS_STORES.COLLECTIONS, SRS_STORES.DECKS, SRS_STORES.NOTES],
       'readonly',
     );
-    const collections = await idbAll<{ id: string; targetLanguage: string }>(
-      tx.objectStore(SRS_STORES.COLLECTIONS),
-    );
-    const decks = await idbAll<{ id: string; collectionId: string }>(
-      tx.objectStore(SRS_STORES.DECKS),
-    );
-    const notes = await idbAll<SrsNote>(tx.objectStore(SRS_STORES.NOTES));
-    const langByCollection = new Map(collections.map((c) => [c.id, c.targetLanguage]));
-    const collectionByDeck = new Map(decks.map((d) => [d.id, d.collectionId]));
-    for (const note of notes) {
-      const collectionId = collectionByDeck.get(note.deckId);
-      const target = collectionId ? langByCollection.get(collectionId) : undefined;
-      if (target !== undefined && target !== langCode) continue;
-      if (note.targetWord) srs.add(normalizeTerm(note.targetWord));
+    for (const term of (await loadLangNoteTerms(tx, langCode)).values()) {
+      srs.add(term);
     }
   } catch (err) {
     logger.warn('anki-status-sync: srs note scan failed', { error: errMessage(err) });
@@ -223,6 +222,19 @@ async function fetchAddonFeed(port: number, cursor: number): Promise<string> {
   return res.text();
 }
 
+async function langCodeForDeck(
+  deckId: string,
+  settings: Settings | undefined,
+): Promise<string | null> {
+  const db = await getSrsDB();
+  const tx = db.transaction([SRS_STORES.DECKS, SRS_STORES.COLLECTIONS], 'readonly');
+  const deck = await idbGet<{ collectionId: string }>(tx.objectStore(SRS_STORES.DECKS), deckId);
+  const collection = deck
+    ? await idbGet<{ targetLanguage: string }>(tx.objectStore(SRS_STORES.COLLECTIONS), deck.collectionId)
+    : undefined;
+  return collection?.targetLanguage ?? (await activeLangCode(settings));
+}
+
 /** SRS → wordStatus: call after a review write completes (REQ-4). */
 export async function syncSrsReviewToStatus(
   note: SrsNote,
@@ -231,13 +243,7 @@ export async function syncSrsReviewToStatus(
   try {
     const settings = await loadSettings();
     if (settings?.ankiStatusSync?.enabled === false) return;
-    const db = await getSrsDB();
-    const tx = db.transaction([SRS_STORES.DECKS, SRS_STORES.COLLECTIONS], 'readonly');
-    const deck = await idbGet<{ collectionId: string }>(tx.objectStore(SRS_STORES.DECKS), note.deckId);
-    const collection = deck
-      ? await idbGet<{ targetLanguage: string }>(tx.objectStore(SRS_STORES.COLLECTIONS), deck.collectionId)
-      : undefined;
-    const langCode = collection?.targetLanguage ?? (await activeLangCode(settings));
+    const langCode = await langCodeForDeck(note.deckId, settings);
     const term = normalizeTerm(note.targetWord ?? '');
     if (!langCode || !term) return;
     const maxDays = Math.max(
@@ -276,6 +282,86 @@ export async function notifyUserMarkedKnown(langCode: string, term: string): Pro
     }
   } catch (err) {
     logger.warn('anki-status-sync: enqueue write-back failed', { error: errMessage(err) });
+  }
+}
+
+async function termHasSrsCard(langCode: string, term: string): Promise<boolean> {
+  const db = await getSrsDB();
+  const tx = db.transaction(
+    [SRS_STORES.COLLECTIONS, SRS_STORES.DECKS, SRS_STORES.NOTES, SRS_STORES.CARDS],
+    'readonly',
+  );
+  const termByNote = await loadLangNoteTerms(tx, langCode);
+  const noteIds = new Set<string>();
+  for (const [noteId, noteTerm] of termByNote) {
+    if (noteTerm === term) noteIds.add(noteId);
+  }
+  if (noteIds.size === 0) return false;
+  const cards = await idbAll<SrsCard>(tx.objectStore(SRS_STORES.CARDS));
+  return cards.some((card) => noteIds.has(card.noteId));
+}
+
+/** Card loss → flag reconcile (REQ-4 alt flow): clears the term's learning
+ *  flag only when no card remains in either source — internal SRS notes and
+ *  stored Anki card links. clearLearningFlag itself gates on the stored
+ *  status still being 'learning', so user writes win. Never throws. */
+export async function reconcileTermAfterCardLoss(
+  langCode: string,
+  term: string,
+): Promise<void> {
+  try {
+    if (await termHasSrsCard(langCode, term)) return;
+    if ((await getLinksByTerm(term)).length > 0) return;
+    await clearLearningFlag(langCode, term);
+  } catch (err) {
+    logger.warn('anki-status-sync: card-loss reconcile failed', { error: errMessage(err) });
+  }
+}
+
+/** Internal card/note delete hook: resolves the deck's language like the
+ *  review path, then reconciles the deleted term's flag. Never throws. */
+export async function reconcileSrsCardLoss(
+  deckId: string,
+  targetWord: string,
+): Promise<void> {
+  try {
+    const term = normalizeTerm(targetWord);
+    if (!term) return;
+    const settings = await loadSettings();
+    const langCode = await langCodeForDeck(deckId, settings);
+    if (!langCode) return;
+    await reconcileTermAfterCardLoss(langCode, term);
+  } catch (err) {
+    logger.warn('anki-status-sync: srs card-loss hook failed', { error: errMessage(err) });
+  }
+}
+
+/** REQ-4b reconcile: learning-flagged terms with no card in either source
+ *  return to unknown; stored unknown-family terms with a live internal SRS
+ *  card regain the flag. known/ignore rows are never rewritten (arbitration
+ *  also guards). Never throws. */
+export async function reconcileLearningFlags(langCode: string): Promise<void> {
+  try {
+    const [entries, links, srsMap] = await Promise.all([
+      getAllWordStatuses(langCode),
+      getAllLinks(),
+      srsOutcomesByTerm(langCode),
+    ]);
+    const ankiTerms = new Set(links.map((link) => link.term));
+    const now = Date.now();
+    const updates: SyncStatusUpdate[] = [];
+    for (const entry of entries) {
+      if (entry.status === 'learning') {
+        if (!srsMap.has(entry.term) && !ankiTerms.has(entry.term)) {
+          await clearLearningFlag(langCode, entry.term);
+        }
+      } else if (isNotKnown(entry.status) && srsMap.has(entry.term)) {
+        updates.push({ term: entry.term, status: 'learning', sourceAt: now });
+      }
+    }
+    await setWordStatusesFromSync(langCode, updates, { source: 'srs' });
+  } catch (err) {
+    logger.warn('anki-status-sync: learning reconcile failed', { error: errMessage(err) });
   }
 }
 
@@ -535,6 +621,33 @@ export async function runAnkiStatusSync(
   }
   if (links.length > 0) await putLinks(links);
 
+  try {
+    const seen = new Set(links.map((link) => link.cardId));
+    const stale = (await getAllLinks()).filter(
+      (link) => link.langCode === langCode && !seen.has(link.cardId),
+    );
+    if (stale.length > 0) {
+      const alive = new Set<number>();
+      const ids = stale.map((link) => link.cardId);
+      for (let i = 0; i < ids.length; i += 500) {
+        const infos = (await invoke('cardsInfo', {
+          cards: ids.slice(i, i + 500),
+        })) as CardsInfoRow[];
+        for (const info of infos ?? []) alive.add(info.cardId);
+      }
+      const dead = stale.filter((link) => !alive.has(link.cardId));
+      if (dead.length > 0) {
+        await deleteLinks(dead.map((link) => link.cardId));
+        for (const term of new Set(dead.map((link) => link.term))) {
+          await reconcileTermAfterCardLoss(langCode, term);
+        }
+      }
+    }
+  } catch (err) {
+    errors += 1;
+    logger.warn('anki-status-sync: link sweep failed', { error: errMessage(err) });
+  }
+
   let changed = 0;
   const statusUpdates: SyncStatusUpdate[] = [];
   for (const [term, agg] of byTerm) {
@@ -578,6 +691,8 @@ export async function runAnkiStatusSync(
     addonCursor: nextCursor,
   });
 
+  await reconcileLearningFlags(langCode);
+
   return {
     ok: errors === 0,
     offline: false,
@@ -614,6 +729,7 @@ export async function seedStatusesFromSrs(): Promise<void> {
         error: errMessage(err),
       });
     }
+    await reconcileLearningFlags(langCode);
   } catch (err) {
     logger.warn('anki-status-sync: srs seed failed', { error: errMessage(err) });
   }

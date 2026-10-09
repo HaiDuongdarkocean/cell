@@ -9,6 +9,7 @@
 
 import { getDB, awaitTx, STORES } from '@/features/dictionary/repositories/baseRepository';
 import { STATUS_CYCLE, type WordStatus } from '@/entities/dictionary';
+import { nextBaseStatus } from '@/features/dictionary/services/wordStatusSemantics';
 import { decideStatusWrite, type WordStatusSource } from '@/features/dictionary/services/wordStatusArbitration';
 import { t } from '@/shared/i18n';
 import { captureChange, ensureSyncRuntime, isCaptureEnabled, scopeForTarget, targetOf } from '@/features/sync';
@@ -71,10 +72,11 @@ function isQuotaError(err: unknown): boolean {
 
 /** The 5-status cycle order lives in entities/dictionary (spec §D1). */
 
-/** Get the next status in the cycle. */
+/** Get the next status in the base cycle. Flagged inputs resolve through
+ *  their base first so a `tracking`/`learning` word cycles to `known`
+ *  (writing a base status clears the flag). */
 export function nextStatus(current: WordStatus): WordStatus {
-  const idx = STATUS_CYCLE.indexOf(current);
-  return STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length]!;
+  return nextBaseStatus(current);
 }
 
 /** Default status for a word not in the store. */
@@ -169,6 +171,7 @@ export async function setWordStatus(
   status: WordStatus,
   provenance?: { source?: WordStatusSource; sourceAt?: number },
 ): Promise<void> {
+  if (status === 'learning') return;
   try {
     const db = await getDB(langCode);
     await ensureSyncRuntime();
@@ -263,7 +266,7 @@ export async function setWordStatuses(
   status: WordStatus,
   provenance?: { source?: WordStatusSource; sourceAt?: number },
 ): Promise<void> {
-  if (terms.length === 0) return;
+  if (terms.length === 0 || status === 'learning') return;
   try {
     const db = await getDB(langCode);
     await ensureSyncRuntime();
@@ -401,6 +404,35 @@ export async function deleteWordStatus(langCode: string, term: string): Promise<
   await awaitTx(tx);
 }
 
+/** Clear the learning flag after its last card disappeared — single-tx
+ *  conditional: the row is deleted (→ 'unknown') only when the stored status
+ *  is still 'learning', so a concurrent user write to known/ignore/tracking
+ *  wins. System writer only (SRS/Anki card-loss paths). Returns true when
+ *  the clear was applied. */
+export async function clearLearningFlag(langCode: string, term: string): Promise<boolean> {
+  const db = await getDB(langCode);
+  await ensureSyncRuntime();
+  const capture = isCaptureEnabled();
+  const scope = scopeForTarget(targetOf(langCode));
+  const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
+  const store = tx.objectStore(STORES.WORD_STATUS);
+  const existing = await new Promise<WordStatusEntry | undefined>((resolve, reject) => {
+    const req = store.get(term);
+    req.onsuccess = () => resolve(req.result as WordStatusEntry | undefined);
+    req.onerror = () => reject(req.error);
+  });
+  if (existing?.status !== 'learning') {
+    await awaitTx(tx);
+    return false;
+  }
+  store.delete(term);
+  if (capture) {
+    await captureChange(store, { scope, dataClass: 'wordStatus', key: `word:${term}`, op: 'delete' });
+  }
+  await awaitTx(tx);
+  return true;
+}
+
 /** Get every stored word-status entry for a lang. Legacy `unknown` rows found
  *  on read are deleted in the same tx (sweep) — only the 3 statuses persist. */
 export async function getAllWordStatuses(langCode: string): Promise<WordStatusEntry[]> {
@@ -535,6 +567,7 @@ export async function setWordStatusPos(
   status: WordStatus,
   provenance?: { source?: WordStatusSource; sourceAt?: number },
 ): Promise<void> {
+  if (status === 'learning') return;
   if (!pos) return setWordStatus(langCode, term, status, provenance);
   const key = posStatusKey(term, pos);
   try {

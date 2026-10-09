@@ -154,7 +154,7 @@ export function createVocabularySource(langCode: string): VocabularySource {
     },
     async cycle(term) {
       const entry = state.entries.find((e) => e.term === term);
-      const status = nextMarkedStatus(entry?.status ?? 'tracking');
+      const status = entry ? nextMarkedStatus(entry.status) : 'tracking';
       await setWordStatus(lang, term, status);
       emitWordStatusChanged({ langCode: lang, term, status });
     },

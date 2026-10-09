@@ -133,7 +133,7 @@ describe('DictionaryTab', () => {
     await waitFor(() => expect(screen.getByTestId('dictionary-term')).toHaveTextContent('hello'));
 
     fireEvent.click(screen.getByTestId('dictionary-status-cycle'));
-    await waitFor(() => expect(screen.getByTestId('dictionary-status-cycle')).toHaveTextContent('Tracking'));
+    await waitFor(() => expect(screen.getByTestId('dictionary-status-cycle')).toHaveTextContent('Known'));
   });
 
   it('opens translate tab and translates the search term', async () => {

@@ -13,6 +13,11 @@ export const AnkiStatusSrsReviewedPayloadSchema = z.object({
   cardId: z.string().min(1),
 });
 
+export const AnkiStatusSrsCardDeletedPayloadSchema = z.object({
+  deckId: z.string().min(1),
+  targetWord: z.string().min(1),
+});
+
 export const AnkiStatusSyncStateViewSchema = z.object({
   lastSyncAt: z.number().nullable(),
   lastTrigger: z.string().nullable(),

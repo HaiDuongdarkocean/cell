@@ -86,6 +86,15 @@ export async function putLinks(links: readonly AnkiCardLink[]): Promise<void> {
   await txDone(tx);
 }
 
+export async function deleteLinks(cardIds: readonly number[]): Promise<void> {
+  if (cardIds.length === 0) return;
+  const db = await openDb();
+  const tx = db.transaction(AKS_STORES.LINKS, 'readwrite');
+  const store = tx.objectStore(AKS_STORES.LINKS);
+  for (const id of cardIds) await req(store.delete(id));
+  await txDone(tx);
+}
+
 export async function getLinksByTerm(term: string): Promise<readonly AnkiCardLink[]> {
   const db = await openDb();
   const tx = db.transaction(AKS_STORES.LINKS, 'readonly');

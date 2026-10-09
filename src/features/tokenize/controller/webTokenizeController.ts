@@ -16,7 +16,7 @@ import {
 } from '@/features/tokenize/services/tokenizeSettingsStore';
 import { isCellDebug } from '@/shared/lib/cellDebug';
 import { getFrequencyEntries, getReadings } from '@/features/dictionary';
-import { getWordStatuses, setWordStatus } from '@/features/dictionary';
+import { getWordStatuses, setWordStatus, toggleTrackingFlag } from '@/features/dictionary';
 import { getWordTranslations } from '@/features/translate';
 import {
   emitWordStatusChanged,
@@ -87,7 +87,7 @@ export interface WebTokenizeControllerOptions {
   /** Fired when the scanned block list changes (scan, dynamic adds, removals,
    *  token invalidation). Used by the comprehension text-score source. */
   readonly onBlocksChanged?: () => void;
-  /** Open popup's looked-up term — 1-4 status keys target it before selection/hover. */
+  /** Open popup's looked-up term — status keys target it before selection/hover. */
   readonly getPopupStatusTarget?: () => PopupStatusTarget | null;
   /** Render reading caps (IPA/pinyin) above word tokens — mirrors the
    *  profile showReadings setting; seeds the session toggle. */
@@ -993,6 +993,14 @@ export async function createWebTokenizeController(
     return 'unknown';
   }
 
+  function toggleTrackingToTerms(terms: readonly string[]): void {
+    for (const term of terms) {
+      const current = getStatusForTerm(term);
+      const next = toggleTrackingFlag(current);
+      if (next !== current) applyStatusToTerms([term], next);
+    }
+  }
+
   const unsubscribeWordStatus = onWordStatusChanged(({ langCode: eventLangCode, term, status }) => {
     if (eventLangCode === langCode) applyStatusForTerm(term, status);
   });
@@ -1048,6 +1056,7 @@ export async function createWebTokenizeController(
     stateStore,
     getShadowRoots,
     applyStatusToTerms,
+    toggleTrackingToTerms,
     getPopupTarget: options.getPopupStatusTarget,
   });
 

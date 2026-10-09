@@ -1,4 +1,5 @@
 import type { SrsCollection, SrsFieldValue, SrsNotetype, SrsStudyConfig } from '@/entities/srs/types';
+import { normalizeTerm, setWordStatusFromSync } from '@/features/dictionary';
 import { SrsError } from '@/features/srs/lib/srsError';
 import { addNoteAndCard } from '@/features/srs/logic/cardCreation';
 import { createSrsFsrsAdapter } from '@/features/srs/services/srsFsrsAdapter';
@@ -7,6 +8,7 @@ import { getCollection } from '@/features/srs/repositories/collectionRepository'
 import { getDeck } from '@/features/srs/repositories/deckRepository';
 import { getNotetype } from '@/features/srs/repositories/notetypeRepository';
 import { getStudyConfig } from '@/features/srs/repositories/studyConfigRepository';
+import { logger } from '@/shared/lib/logger';
 
 export interface SrsAddNoteMessageInput {
   readonly targetLanguage: string;
@@ -54,6 +56,20 @@ export async function addNoteFromMessage(input: SrsAddNoteMessageInput): Promise
     adapter,
     input.tags,
   );
+
+  try {
+    const term = normalizeTerm(input.targetWord);
+    if (term) {
+      await setWordStatusFromSync(input.targetLanguage, term, 'learning', {
+        source: 'srs',
+        sourceAt: Date.now(),
+      });
+    }
+  } catch (err) {
+    logger.warn('srs: learning flag write failed', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 
   return { noteId: note.id, cardId: card.id };
 }

@@ -227,6 +227,58 @@
   color: var(--chip-status-ignore-fg);
 }
 
+/* Joined [base | flag] status control — the group's pill clip owns the outer
+   edge so the segments read as one capsule; each segment keeps the status
+   chip colors minus its own radius, and a hairline marks the split. */
+.cellHeaderStatusGroup {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatus {
+  border: none;
+  border-radius: 0;
+}
+
+.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlag {
+  min-width: 0;
+  width: var(--space-7);
+  padding: 0;
+  border-left: var(--border-width-hairline) solid var(--color-divider);
+}
+
+/* The learning segment is a read-only state display — keep the chip colors
+   lit instead of the dimmed disabled look. */
+.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlag:disabled {
+  opacity: 1;
+}
+
+/* SRS card action — state-aware: dashed ghost while the word has no card,
+   learning-fill once SRS owns it. (0,3,0) out-specifies Button's transparent
+   variant chrome (border: none on :hover/:active). */
+.cellHeaderActions .cellHeaderSrs.cellHeaderSrs--idle {
+  background: transparent;
+  border: var(--border-width-medium) dashed var(--color-border);
+  color: var(--color-text-tertiary);
+}
+
+.cellHeaderActions .cellHeaderSrs.cellHeaderSrs--idle:hover:not(:disabled) {
+  color: var(--color-text-secondary);
+  border-color: var(--color-text-tertiary);
+}
+
+.cellHeaderActions .cellHeaderSrs.cellHeaderSrs--learning {
+  background: var(--chip-status-learning-bg);
+  color: var(--chip-status-learning-fg);
+  border: var(--border-width-medium) solid transparent;
+}
+
+.cellHeaderActions .cellHeaderSrs.cellHeaderSrs--learning:hover {
+  filter: brightness(0.95);
+}
+
 .cellHeaderFrequency {
   display: inline-flex;
   flex-shrink: 0;

@@ -3,38 +3,31 @@ import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Heading } from '@/shared/ui/Heading';
-import { rankToBand, DEFAULT_BAND_THRESHOLDS, type FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
+import { DEFAULT_BAND_THRESHOLDS, type FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { usePronunciation } from '@/features/pronunciation';
 import { useAudioItemUrl } from '@/features/pronunciation';
 import { PronunciationPanel } from '@/features/pronunciation';
 import type { AudioEngineKind } from '@/features/pronunciation';
-import { nextStatus } from '@/features/dictionary';
 import { t, type MessageKey } from '@/shared/i18n';
+import { baseStatus, statusFlag } from '@/features/dictionary';
+import { openSrsStudyPage } from '@/features/srs';
 import { useCandidate } from './useCandidate';
+import { StatusRow } from './StatusRow';
 import { PosVariantNav } from './PosVariantNav';
 import { PronunciationAudioPanel } from './PronunciationAudioPanel';
 import { ImagePanel } from './ImagePanel';
 import { TranslatePanel } from './TranslatePanel';
 import { LinksPanel } from './LinksPanel';
 import { DictionaryToolbar } from './DictionaryToolbar';
-import { useDragScroll } from '@/shared/ui/useDragScroll';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './CandidateView.module.css';
 import { makeSubsenseId } from '../logic/definitionSelection';
-import type { LookupResult, DefinitionEntry, SubsenseBlock, RelationGroup, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot, SenseLine, RelatedEntry, VariantFrequency } from '@/entities/dictionary';
+import type { LookupResult, DefinitionEntry, SubsenseBlock, RelationGroup, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot, SenseLine, RelatedEntry } from '@/entities/dictionary';
 
 const EMPTY_EXAMPLE_SET: ReadonlySet<number> = new Set<number>();
-
-const STATUS_KEYS: Record<WordStatus, MessageKey> = {
-  unknown: 'vocabulary.status.unknown',
-  tracking: 'vocabulary.status.tracking',
-  learning: 'vocabulary.status.learning',
-  known: 'vocabulary.status.known',
-  ignore: 'vocabulary.status.ignore',
-};
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -51,18 +44,6 @@ function selectionText(el: HTMLElement): string {
       ? (root as ShadowRoot & { getSelection?: () => Selection | null }).getSelection?.()
       : window.getSelection();
   return sel?.toString() ?? '';
-}
-
-function freqTitle(freq: VariantFrequency): string | undefined {
-  const parts: string[] = [];
-  if (freq.total != null) parts.push(`total ${freq.total.toLocaleString()}`);
-  if (freq.genres) {
-    const g = freq.genres;
-    for (const [k, v] of [['spoken', g.spoken], ['fiction', g.fiction], ['magazine', g.magazine], ['newspaper', g.newspaper], ['academic', g.academic]] as const) {
-      if (v != null) parts.push(`${k} ${v.toLocaleString()}`);
-    }
-  }
-  return parts.length ? parts.join(' · ') : undefined;
 }
 
 function formatReading(reading: string, readingKind: LookupResult['readingKind']): string {
@@ -153,7 +134,6 @@ export function CandidateView({
   const selectedWordAudio = findSelectedWordAudio(panel.audioItems, panel.audioSelection);
   const selectedWordAudioUrl = useAudioItemUrl(selectedWordAudio);
 
-  const freqScrollRef = useDragScroll<HTMLDivElement>();
   const wordRowRef = useRef<HTMLDivElement | null>(null);
   const [termTruncated, setTermTruncated] = useState(false);
 
@@ -188,6 +168,9 @@ export function CandidateView({
     return () => { isMountedRef.current = false; };
   }, []);
 
+  const srsLearning = statusFlag(panel.status) === 'learning';
+  const srsDisabled = !srsLearning && baseStatus(panel.status) !== 'unknown';
+
   return (
     <article
       className={styles.candidate}
@@ -214,6 +197,19 @@ export function CandidateView({
             </div>
           </div>
           <div className={styles.cellHeaderActions}>
+            <Button
+              shape="circle"
+              size="md"
+              variant="transparent"
+              className={`${styles.cellHeaderSrs} ${srsLearning ? styles['cellHeaderSrs--learning'] : styles['cellHeaderSrs--idle']}`}
+              aria-label={t('dict.action.srsCard')}
+              title={srsDisabled ? t('dict.action.srsCardDisabled') : t('dict.action.srsCard')}
+              disabled={srsDisabled}
+              onClick={() => { void (srsLearning ? openSrsStudyPage() : panel.addToSrs()); }}
+              data-cell-id="dictionary-srs-card"
+            >
+              <Icon name="layers" />
+            </Button>
             {onSendToCard && (
               <Button
                 shape="circle"
@@ -271,29 +267,14 @@ export function CandidateView({
             )}
           </div>
         )}
-        <div className={styles.cellHeaderSecond} ref={freqScrollRef} data-cell-id="dictionary-freq-row">
-          <Button
-            variant="transparent"
-            className={`${styles.cellHeaderStatus} ${styles[`cellHeaderStatus--${panel.status}`]}`}
-            onClick={panel.cycleStatus}
-            title={t('dict.status.cycle', [t(STATUS_KEYS[panel.status]), t(STATUS_KEYS[nextStatus(panel.status)])])}
-            data-cell-id="dictionary-status-cycle"
-          >
-            {t(STATUS_KEYS[panel.status])}
-          </Button>
-          {panel.displayFrequencies.map((freq, i) => (
-            <span key={`${freq.source}-${i}`} className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${rankToBand(freq.rank, frequencyThresholds)}`]}`} title={freqTitle(freq)} data-cell-id="dictionary-frequency">
-              <span className={styles.cellHeaderFrequencySource}>{freq.source}</span>
-              <span className={styles.cellHeaderFrequencyRank}>{freq.rank.toLocaleString()}</span>
-            </span>
-          ))}
-          {panel.displayStars && (
-            <span className={styles.cellHeaderFrequency} title={t('resources.component.frequencyStars')} data-cell-id="dictionary-stars">
-              <span className={styles.cellHeaderFrequencySource}>{panel.displayStars.source}</span>
-              <span className={styles.cellHeaderFrequencyRank}>{'★'.repeat(panel.displayStars.count)}</span>
-            </span>
-          )}
-        </div>
+        <StatusRow
+          status={panel.status}
+          onCycle={panel.cycleStatus}
+          onToggleTracking={panel.toggleTracking}
+          frequencies={panel.displayFrequencies}
+          stars={panel.displayStars}
+          thresholds={frequencyThresholds}
+        />
 
         <DictionaryToolbar
           activeTab={panel.activeTab}

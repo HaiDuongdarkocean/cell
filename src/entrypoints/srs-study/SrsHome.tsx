@@ -14,7 +14,7 @@ import {
   AnkiImportJobRow, flattenDeckName, importNormalized, ImportError, ImportWizard,
   type AnkiImportJob, type AnkiImportStartPayload,
 } from '@/features/ankiImport';
-import { seedStatusesFromSrs } from '@/features/ankiStatusSync';
+import { reconcileLearningFlags, seedStatusesFromSrs } from '@/features/ankiStatusSync';
 import { useSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
 import { deckIconName } from './SrsDeckDetail';
 import type { SrsDeck } from '@/entities/srs/types';
@@ -229,6 +229,7 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
       await deleteDeckCascade(pendingDelete.id);
     }
     setPendingDelete(null);
+    void reconcileLearningFlags(targetLanguage);
     await refreshHome();
   }
 

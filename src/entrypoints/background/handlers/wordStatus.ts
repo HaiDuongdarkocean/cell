@@ -99,6 +99,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
     }
 
     const { term, langCode, status, tabId, pos } = parsed.data;
+    if (status === 'learning') return { success: true };
     try {
       if (pos) {
         await setWordStatusPos(langCode, term, pos, status, { source: 'user', sourceAt: Date.now() });
@@ -238,6 +239,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
     }
 
     const { langCode, terms, status, tabId } = parsed.data;
+    if (status === 'learning') return { success: true };
     try {
       await setWordStatuses(langCode, terms, status, { source: 'user', sourceAt: Date.now() });
       if (status === 'known') void notifyKnownSequentially(langCode, terms);
