@@ -17,6 +17,7 @@ import { subscribeJobEvents } from '@/features/jobs';
 import { isTerminalJob } from '@/entities/job/types';
 import { emitDictionaryChanged } from './dictionaryEvents';
 import { computeSignature } from '../logic/signatureGenerator';
+import { encodeBase64 } from '@/shared/lib/base64';
 import type { ReadableFile } from '../logic/fileDetector';
 import type {
   DictionaryComponent,
@@ -28,6 +29,10 @@ import { t } from '@/shared/i18n';
 
 /** Base64 chars per import chunk message. */
 const IMPORT_CHUNK_SIZE = 4 * 1024 * 1024;
+/** Binary bytes per chunk — encodes to exactly IMPORT_CHUNK_SIZE base64 chars.
+ *  Each chunk is encoded independently so the file never exists as one giant
+ *  base64 string on the sender (matters on low-RAM phones). */
+const IMPORT_CHUNK_BYTES = (IMPORT_CHUNK_SIZE / 4) * 3;
 
 interface ImportCallbacks {
   readonly langCode: string;
@@ -155,15 +160,6 @@ export async function getResourceComponents(
   return data?.components ?? [];
 }
 
-function readAsDataUrl(file: ReadableFile): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file as File);
-  });
-}
-
 /**
  * Upload a resource file into a background-owned import job.
  *
@@ -198,19 +194,24 @@ export async function importResourceFile(
   // unavailable in the jsdom test env).
   const jobId = providedJobId ?? `imp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
-  const dataUrl = await readAsDataUrl(file);
-  const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
-  const total = Math.max(1, Math.ceil(base64.length / IMPORT_CHUNK_SIZE));
+  // Encode per chunk slice — never materialize the whole file as base64.
+  // Each chunk is a standalone base64 payload; the background decodes chunks
+  // independently on receipt and concatenates bytes once.
+  const total = Math.max(1, Math.ceil(file.size / IMPORT_CHUNK_BYTES));
   for (let seq = 0; seq < total; seq++) {
     const last = seq === total - 1;
     const selection = getComponents?.() ?? components;
+    const start = seq * IMPORT_CHUNK_BYTES;
+    const bytes = new Uint8Array(
+      await file.slice(start, Math.min(start + IMPORT_CHUNK_BYTES, file.size)).arrayBuffer(),
+    );
     const res = await request<{ received?: number; jobId?: string }>(
       MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
       {
         jobId,
         seq,
         total,
-        data: base64.slice(seq * IMPORT_CHUNK_SIZE, (seq + 1) * IMPORT_CHUNK_SIZE),
+        data: encodeBase64(bytes),
         fileName: file.name,
         fileMime: (file as File).type ?? '',
         langCode,

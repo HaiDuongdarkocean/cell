@@ -5,7 +5,7 @@
 - Không hỏi user khi thực thi (trừ `pipeline-analyze` interactive mode + `pipeline-design` approval gate); tự quyết, làm tới khi xong; không destructive vô cớ; fix root cause.
 - Không viết comment trong code — code tự giải thích qua naming/cấu trúc.
 - Gọi user "Anh yêu", xưng "em".
-- KHÔNG làm MVP/bản nháp: mọi feature phải là product hoàn chỉnh ship được cho khách hàng — edge cases đầy đủ, i18n, a11y, persist state khi user expect, polish theo design system. "V1 tối giản" chỉ khi Anh yêu nói rõ.
+- KHÔNG làm MVP/bản nháp: mọi feature phải là product hoàn chỉnh ship được cho khách hàng — edge cases đầy đủ, i18n, a11y, persist state khi user expect, polish theo design system.
 
 ## Workflow
 
@@ -39,6 +39,8 @@
 
 - Chrome 137+ block `--load-extension` trên Google Chrome; Windows cũng block `external_crx`. Skill `testing-extension-browser` pack `.crx` + clone profile; Playwright persistent Chromium/Chrome-for-Testing với `--load-extension` + warm-up để launch, navigate, verify. `chrome-devtools` MCP fallback cho trace/a11y.
 - `browser_preview` proxy hỏng trên Windows → đưa user URL dev server gốc.
+- Quetta Android test: `adb` ở `~/platform-tools-install/platform-tools/` (không trong PATH); LG V60 chỉ expose ADB interface sau khi bật USB debugging + accept RSA — device chỉ hiện MTP (VID_1004&PID_62CF) khi chưa authorized. Quetta devtools socket đổi theo PID mỗi lần restart — `scripts/ship-mobile.mjs`/`test-quetta-android.mjs` tự resolve bằng cách forward từng `chrome_devtools_remote*` rồi check `/json/version` có `Android-Package: net.quetta.browser` (KHÔNG giả định suffix PID — sau restart Quetta chiếm luôn socket trần). Skill `.agents/skills/testing-extension-android/` chứa full mechanism + setup-from-scratch — portable sang project extension khác.
+- `npm run ship:imobile` = auto-install Tihoka vào Quetta trên điện thoại: build → pack `.crx` (key `tihoka-key.pem`, giữ extension ID) → `adb reverse tcp:8799` + serve crx qua HTTP → CDP navigate tab tới `localhost:8799/tihoka.crx` → Quetta hiện "Download anyway" rồi `Add "Tihoka"?` — script tap cả hai qua `uiautomator dump` + `input tap` trên `positive_button` → verify version qua SW target → seed tokenize + reload tab → smoke test. Flags: `--skip-build`, `--skip-smoke`. Lưu ý: reinstall CRX **wipe extension storage** (settings/dictionary mất); `.crx` KHÔNG install qua `am start` intent và Quetta KHÔNG expose `Extensions.loadUnpacked` — đường duy nhất auto được là download-via-URL + tap dialog. `scripts/test-quetta-android.mjs` chạy riêng để smoke-test (cần page có video + subtitle; tự seek tới cue khi tokens=0).
 - `npm run mock` serve tất cả mock sites (KHÔNG `--youtube` — kill các site khác); `mock:stream` deprecated → `npm run dev` + entry URL trực tiếp.
 - `import.meta.env.DEV` luôn false trong build — dev-seed check `MODE === 'development'` (`src/shared/lib/env/devMode.ts`).
 - Google OAuth (user-data-sync): client ID ở `.env.local` (gitignored) → `VITE_GOOGLE_OAUTH_CLIENT_ID`, code chỉ đọc qua `import.meta.env`; KHÔNG đọc/in giá trị, KHÔNG commit, KHÔNG lưu client secret vào repo (flow `launchWebAuthFlow` không cần secret).

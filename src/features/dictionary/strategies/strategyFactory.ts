@@ -16,11 +16,13 @@ import { JsonFrequencyStrategy } from './jsonFrequencyStrategy';
 import { UnsupportedFormatError } from '../logic/importErrors';
 import type { BaseImportStrategy } from './baseImportStrategy';
 
-/** Create a strategy for a detected format. */
+/** Create a strategy for a detected format. `fileData.unzipped` carries the
+ *  orchestrator's sniff-time unzip result so the strategy doesn't decompress
+ *  the same archive a second time (>1MB zips can't be sniffed from the head). */
 export function createStrategy(
   format: ImportFormat,
   options: StrategyOptions,
-  fileData: { data: Uint8Array; fileName: string },
+  fileData: { data: Uint8Array; fileName: string; unzipped?: Record<string, Uint8Array> },
 ): BaseImportStrategy<unknown, unknown> {
   switch (format) {
     case 'txt':

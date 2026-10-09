@@ -13,6 +13,8 @@ import type { FrequencyEntry } from '@/entities/dictionary';
 export interface TxtStrategyOptions {
   readonly data: Uint8Array;
   readonly fileName: string;
+  /** Pre-unzipped entries from the orchestrator's format sniff. */
+  readonly unzipped?: Record<string, Uint8Array>;
 }
 
 /** TXT line-by-line strategy — frequency list (1 word per line). */
@@ -30,8 +32,8 @@ export class TxtLineStrategy extends BaseFrequencyStrategy {
     try {
       let data = fileData.data;
       if (isGzip(data)) data = gunzipFile(data);
-      if (isZip(data)) {
-        const files = unzipAll(data);
+      if (isZip(data) || fileData.unzipped) {
+        const files = fileData.unzipped ?? unzipAll(data);
         const txtFile =
           Object.keys(files).find((p) => p.endsWith('.txt')) ??
           Object.keys(files).find((p) => p.endsWith('.json') && looksLikePlainText(files[p]!));

@@ -4,6 +4,7 @@ import type { ClickModifierState, WordStatus } from '@/entities/dictionary';
 import { createTokenizeStateStore, type TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import { TokenizeScheduler } from '@/features/tokenize/logic/tokenizeScheduler';
 import { bindTokenBlock, restyleTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
+import { markIPlus1Tokens } from '@/features/tokenize/logic/comprehensionScore';
 import { getWordStatuses, setWordStatus } from '@/features/dictionary';
 import {
   emitWordStatusChanged,
@@ -157,6 +158,7 @@ export function createSubtitleTokenizeController(
     if (state.selectedTerms === prevSelectedTerms) return;
     prevSelectedTerms = state.selectedTerms;
     const bound = currentTargetBlock;
+    if (bound?.isBound && bound.tokens) markIPlus1Tokens(bound.tokens);
     if (bound?.isBound && !restyleTokenBlock(bound, getDisplayOptions())) {
       unbindTokenBlock(bound);
       bindTokenBlock(bound, getDisplayOptions());
@@ -169,6 +171,7 @@ export function createSubtitleTokenizeController(
     const bound = currentTargetBlock;
     if (prepared && bound?.isBound && bound.element === getLineElements().target) {
       bound.tokens = prepared.tokens as Token[];
+      markIPlus1Tokens(bound.tokens);
       if (restyleTokenBlock(bound, getDisplayOptions())) return;
     }
     bindLine(
@@ -214,6 +217,7 @@ export function createSubtitleTokenizeController(
       forceUnbindStaleTokens(element, text);
       const block = createBlock(element, text, prepared.tokens as Token[]);
       if (block) {
+        markIPlus1Tokens(block.tokens!);
         bindTokenBlock(block, getDisplayOptions());
         currentTargetBlock = block;
       }
@@ -329,6 +333,7 @@ export function createSubtitleTokenizeController(
       lastTargetIndex = activeTargetIndex;
       if (!stateStore.getState().enabled) return;
 
+      if (bound?.isBound && bound.tokens) markIPlus1Tokens(bound.tokens);
       if (
         bound &&
         bound.isBound &&

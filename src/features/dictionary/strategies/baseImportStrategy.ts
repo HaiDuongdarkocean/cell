@@ -64,6 +64,10 @@ export interface StrategyResult {
   readonly format: string;
   /** Canonical components detected across stored entries (dictionaries only). */
   readonly components?: readonly DictionaryComponent[];
+  /** Unique multiword terms collected during the stream — lets the
+   *  orchestrator build the phrase index without re-reading the store
+   *  (first-lookup rebuild used to getAll() the whole dictionary). */
+  readonly phraseTerms: readonly string[];
 }
 
 /** Options passed to strategy. */
@@ -83,6 +87,8 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
   protected readonly options: StrategyOptions;
   protected readonly batchProcessor: BatchProcessor<TStored>;
   protected readonly componentSet = new Set<DictionaryComponent>();
+  /** Unique multiword dict terms seen during execute() (phrase-index input). */
+  protected readonly phraseTermSet = new Set<string>();
 
   constructor(options: StrategyOptions) {
     this.options = options;
@@ -103,6 +109,7 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
         const stored = this.transformEntry(raw, count);
         if (stored !== null) {
           this.collectComponents(stored);
+          this.collectPhraseTerm(stored);
           await this.batchProcessor.add(stored);
           count++;
         }
@@ -117,7 +124,23 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
       }
       throw e;
     }
-    return { wordCount: count, format: this.format, components: this.components() };
+    return {
+      wordCount: count,
+      format: this.format,
+      components: this.components(),
+      phraseTerms: [...this.phraseTermSet],
+    };
+  }
+
+  /** Fold a stored dict row's term into the phrase-term set. Freq rows
+   *  (`frequency` field) and single-word terms are skipped — the phrase index
+   *  only indexes multiword terms. Stored terms are already normalized. */
+  protected collectPhraseTerm(stored: TStored): void {
+    if ('frequency' in (stored as object)) return;
+    const term = (stored as { term?: unknown }).term;
+    if (typeof term === 'string' && /\s/.test(term.trim())) {
+      this.phraseTermSet.add(term);
+    }
   }
 
   /** Hook 4 (optional): fold a stored entry into component detection. */
@@ -148,6 +171,12 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
   protected reportTotal(total: number): void {
     this.batchProcessor.setTotal(total);
     this.options.onProgress?.(0, total);
+  }
+
+  /** Grow the reported total mid-stream — parsers that can't know the count
+   *  upfront without a second pass add each discovered chunk instead. */
+  protected addReportedTotal(additional: number): void {
+    this.batchProcessor.addTotal(additional);
   }
 
   /** Helper: check if word is valid (non-empty after normalization). */

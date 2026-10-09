@@ -55,6 +55,7 @@ import { collectEntryComponents, sortedComponents } from '@/features/dictionary/
 import type { DictionaryComponent, DuplicateDecision } from '@/entities/dictionary';
 import { importFile, deleteResourceCascade, rollbackImport } from '@/features/dictionary/logic/importOrchestrator';
 import { clearDictionaryProbeCache } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
+import { decodeBase64ToBytes } from '@/shared/lib/base64';
 
 const UPLOAD_STALL_MS = 30 * 1000;
 
@@ -67,7 +68,10 @@ interface ImportChunkMeta {
 }
 
 interface PendingImport {
-  readonly chunks: string[];
+  /** Decoded bytes per chunk — decoding on arrival avoids holding the whole
+   *  base64 payload plus a joined string plus one giant atob output (peak was
+   *  ~3.6× file size in the service worker; now ~2×). */
+  readonly chunks: Uint8Array[];
   received: number;
   createdAt: number;
   stallTimer: ReturnType<typeof setTimeout> | null;
@@ -96,10 +100,14 @@ function toError(err: unknown): MessageResponse<never> {
   return { success: false, error: err instanceof Error ? err.message : String(err) };
 }
 
-function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+function concatChunks(chunks: readonly Uint8Array[]): Uint8Array {
+  const total = chunks.reduce((n, c) => n + c.length, 0);
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.length;
+  }
   return bytes;
 }
 
@@ -368,7 +376,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
         return toError(err);
       }
       pending = {
-        chunks: new Array<string>(p.total),
+        chunks: new Array<Uint8Array>(p.total),
         received: 0,
         createdAt: Date.now(),
         stallTimer: null,
@@ -389,7 +397,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
       return toError(new Error(t('resources.error.uploadRejected')));
     }
     if (pending.chunks[p.seq] === undefined) {
-      pending.chunks[p.seq] = p.data;
+      pending.chunks[p.seq] = decodeBase64ToBytes(p.data);
       pending.received++;
       registry.setProgress(p.jobId, { done: pending.received, total: pending.chunks.length, unit: 'items' });
     }
@@ -407,7 +415,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     const components = pending.components;
     clearPending(p.jobId);
     try {
-      const bytes = base64ToBytes(pending.chunks.join(''));
+      const bytes = concatChunks(pending.chunks);
       importPayloads.set(p.jobId, {
         file: new File([bytes as BlobPart], meta.fileName, { type: meta.fileMime }),
         ...meta,

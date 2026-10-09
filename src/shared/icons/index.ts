@@ -5,8 +5,8 @@
 //
 // Convention: 24×24, stroke 2, currentColor, round caps, round joins.
 //
-// Nav cluster media controls use Phosphor `fill` weight components for visibility on
-// translucent liquid-glass buttons, while their raw SVGs remain lucide for non-React DOM.
+// Nav cluster media controls render lucide thin-stroke components — same glyph set as
+// the player-mode transport bar — while their raw SVGs remain for non-React DOM.
 
 import { createElement, type ComponentType, type CSSProperties } from 'react';
 import {
@@ -81,7 +81,11 @@ import {
   Plus,
   Power,
   Repeat,
+  Repeat1,
+  Repeat2,
+  RepeatOff,
   RotateCcw,
+  RotateCw,
   ScanText,
   Search,
   Settings,
@@ -100,19 +104,6 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-
-import {
-  NavForward,
-  NavNext,
-  NavPause,
-  NavPlay,
-  NavPrev,
-  NavRepeat,
-  NavRepeatA,
-  NavRepeatB,
-  NavRepeatCancel,
-  NavRewind,
-} from './phosphorNavIcons';
 
 import {
   RecDiscard,
@@ -318,16 +309,16 @@ export const ICON_CATALOG = {
   library: { component: Library, svg: librarySvg, source: 'lucide/library', tags: ['library', 'collection', 'history', 'list', 'book-stack'] } as IconEntry,
   fileVideo: { component: FileVideo, svg: fileVideoSvg, source: 'lucide/file-video', tags: ['file', 'video', 'media', 'document', 'filename'] } as IconEntry,
   playRoundedRect: { component: PlaySquare, svg: playRoundedRectSvg, source: 'lucide/play-square', tags: ['play', 'video', 'media', 'player', 'local-player', 'rounded', 'rectangle'] } as IconEntry,
-  navPrev: { component: NavPrev, svg: navPrevSvg, source: 'phosphor/arrow-circle-left', tags: ['nav', 'prev', 'previous', 'back', 'sentence', 'arrow-circle-left', 'circle'] } as IconEntry,
-  navNext: { component: NavNext, svg: navNextSvg, source: 'phosphor/arrow-circle-right', tags: ['nav', 'next', 'forward', 'sentence', 'arrow-circle-right', 'circle'] } as IconEntry,
-  navRepeat: { component: NavRepeat, svg: navRepeatSvg, source: 'phosphor/repeat', tags: ['nav', 'repeat', 'loop', 'cycle', 'restart', 'circular-arrow'] } as IconEntry,
-  navRepeatA: { component: NavRepeatA, svg: navRepeatASvg, source: 'phosphor/repeat-once', tags: ['nav', 'repeat', 'loop', 'start', 'a', 'loop-start', 'once'] } as IconEntry,
-  navRepeatB: { component: NavRepeatB, svg: navRepeatBSvg, source: 'phosphor/repeat', tags: ['nav', 'repeat', 'loop', 'end', 'b', 'loop-end'] } as IconEntry,
-  navRepeatCancel: { component: NavRepeatCancel, svg: navRepeatCancelSvg, source: 'phosphor/prohibit', tags: ['nav', 'repeat', 'cancel', 'stop', 'loop-stop', 'prohibit'] } as IconEntry,
-  navRewind: { component: NavRewind, svg: navRewindSvg, source: 'phosphor/arrow-counter-clockwise', tags: ['nav', 'rewind', 'back', '5', 'seconds', 'seek'] } as IconEntry,
-  navForward: { component: NavForward, svg: navForwardSvg, source: 'phosphor/arrow-clockwise', tags: ['nav', 'forward', 'skip', '10', 'seconds', 'seek'] } as IconEntry,
-  navPlay: { component: NavPlay, svg: navPlaySvg, source: 'phosphor/play-circle', tags: ['nav', 'play', 'start', 'media', 'video', 'resume', 'circle'] } as IconEntry,
-  navPause: { component: NavPause, svg: navPauseSvg, source: 'phosphor/pause-circle', tags: ['nav', 'pause', 'hold', 'media', 'video', 'circle'] } as IconEntry,
+  navPrev: { component: ChevronLeft, svg: navPrevSvg, source: 'lucide/chevron-left', tags: ['nav', 'prev', 'previous', 'back', 'sentence', 'arrow-circle-left', 'circle'] } as IconEntry,
+  navNext: { component: ChevronRight, svg: navNextSvg, source: 'lucide/chevron-right', tags: ['nav', 'next', 'forward', 'sentence', 'arrow-circle-right', 'circle'] } as IconEntry,
+  navRepeat: { component: Repeat, svg: navRepeatSvg, source: 'lucide/repeat', tags: ['nav', 'repeat', 'loop', 'cycle', 'restart', 'circular-arrow'] } as IconEntry,
+  navRepeatA: { component: Repeat1, svg: navRepeatASvg, source: 'lucide/repeat-1', tags: ['nav', 'repeat', 'loop', 'start', 'a', 'loop-start', 'once'] } as IconEntry,
+  navRepeatB: { component: Repeat2, svg: navRepeatBSvg, source: 'lucide/repeat-2', tags: ['nav', 'repeat', 'loop', 'end', 'b', 'loop-end'] } as IconEntry,
+  navRepeatCancel: { component: RepeatOff, svg: navRepeatCancelSvg, source: 'lucide/repeat-off', tags: ['nav', 'repeat', 'cancel', 'stop', 'loop-stop', 'prohibit'] } as IconEntry,
+  navRewind: { component: RotateCcw, svg: navRewindSvg, source: 'lucide/rotate-ccw', tags: ['nav', 'rewind', 'back', '5', 'seconds', 'seek'] } as IconEntry,
+  navForward: { component: RotateCw, svg: navForwardSvg, source: 'lucide/rotate-cw', tags: ['nav', 'forward', 'skip', '10', 'seconds', 'seek'] } as IconEntry,
+  navPlay: { component: Play, svg: navPlaySvg, source: 'lucide/play', tags: ['nav', 'play', 'start', 'media', 'video', 'resume', 'circle'] } as IconEntry,
+  navPause: { component: Pause, svg: navPauseSvg, source: 'lucide/pause', tags: ['nav', 'pause', 'hold', 'media', 'video', 'circle'] } as IconEntry,
   generateNative: { component: Languages, svg: generateNativeSvg, source: 'lucide/languages', tags: ['generate', 'native', 'translate', 'exchange', 'bidirectional', 'arrows'] } as IconEntry,
   sidePanel: { component: PanelRightOpen, svg: sidePanelSvg, source: 'lucide/panel-right-open', tags: ['side', 'panel', 'toggle', 'split', 'rect'] } as IconEntry,
   subtitleManager: { component: Library, svg: subtitleManagerSvg, source: 'lucide/library', tags: ['subtitle', 'manager', 'list', 'panel', 'lines'] } as IconEntry,

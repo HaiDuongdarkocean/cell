@@ -100,6 +100,8 @@ export function Real({ term }: { term: string }): ReactElement {
           initialTerm={term}
           initialSize={{ width: 420, maxHeight: 380 }}
           initialResult={resultFor(term)}
+          trail={['makes', 'found', term]}
+          onTrailNavigate={() => { /* design-time */ }}
           onClose={() => setIsOpen(false)}
           onSendToCard={() => { /* design-time */ }}
           onQuickAdd={() => { /* design-time */ }}

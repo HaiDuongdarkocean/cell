@@ -15,12 +15,15 @@ import type { FrequencyEntry } from '@/entities/dictionary';
 export interface JsonArrayStrategyOptions {
   readonly data: Uint8Array;
   readonly fileName: string;
+  /** Pre-unzipped entries from the orchestrator's format sniff. */
+  readonly unzipped?: Record<string, Uint8Array>;
 }
 
 /** JSON array of strings strategy — frequency list. */
 export class JsonArrayStrategy extends BaseFrequencyStrategy {
   readonly format = 'json-array' as const;
   private readonly data: Uint8Array;
+  private readonly unzipped?: Record<string, Uint8Array>;
 
   constructor(
     options: StrategyOptions,
@@ -28,13 +31,14 @@ export class JsonArrayStrategy extends BaseFrequencyStrategy {
   ) {
     super(options);
     this.data = fileData.data;
+    this.unzipped = fileData.unzipped;
   }
 
   protected async *parse(): AsyncGenerator<RawFrequencyEntry> {
     let data = this.data;
     if (isGzip(data)) data = gunzipFile(data);
-    if (isZip(data)) {
-      const files = unzipAll(data);
+    if (isZip(data) || this.unzipped) {
+      const files = this.unzipped ?? unzipAll(data);
       const entry = selectZipDataJson(files);
       if (!entry) throw new ParseError('JSON array zip: no .json entry found.');
       data = entry.bytes;

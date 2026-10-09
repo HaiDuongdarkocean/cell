@@ -335,7 +335,11 @@ class DictResourceLocalSource extends IdbLocalSource {
     for (const entry of freqRows) entryStore.add({ ...entry, resourceId: row.id, kind: 'freq' });
     await awaitIdbTx(wtx);
     if (row.format === 'json-entries') {
-      await buildPhraseIndexForResource(this.langCode, row.id);
+      await buildPhraseIndexForResource(
+        this.langCode,
+        row.id,
+        dictRows.map((r) => r.term as string),
+      );
     }
     const componentSet = new Set<DictionaryComponent>();
     for (const entry of dictRows) {

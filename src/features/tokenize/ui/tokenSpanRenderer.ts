@@ -1,5 +1,4 @@
 import type { Token, TokenBlock } from '@/features/tokenize/types';
-import { markIPlus1Tokens } from '@/features/tokenize/logic/comprehensionScore';
 import { hasSentenceEnd } from '@/shared/lib/sentencePunct';
 import { injectTokenSpanStyle } from './tokenSpanCss';
 
@@ -197,7 +196,6 @@ export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions)
   injectTokenSpanStyle();
 
   const text = block.originalText;
-  markIPlus1Tokens(block.tokens);
   const tokens = [...block.tokens].sort((a, b) => a.start - b.start);
 
   const fragment = document.createDocumentFragment();
@@ -234,7 +232,6 @@ export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions)
  *  (caller should fall back to unbind + bind). */
 export function restyleTokenBlock(block: TokenBlock, options: TokenSpanBindOptions): boolean {
   if (!block.isBound || !block.tokens) return false;
-  markIPlus1Tokens(block.tokens);
   const tokens = [...block.tokens]
     .sort((a, b) => a.start - b.start)
     .filter((token) => !token.isSeparator);

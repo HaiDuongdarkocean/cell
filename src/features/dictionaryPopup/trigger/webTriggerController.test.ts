@@ -1425,6 +1425,53 @@ describe('WebTriggerController', () => {
       document.body.removeChild(host);
     });
 
+    it('mouseup stays blocked when the gesture started inside a UI host that closed mid-gesture', () => {
+      // Sheet handle click-to-close: pointerdown lands inside the popup host,
+      // the host unmounts before mouseup, and the mouseup hit-tests bare page
+      // text. The gesture must still be consumed — no fall-through lookup.
+      const host = document.createElement('div');
+      host.className = 'js-cell-popup-host';
+      const shadow = host.attachShadow({ mode: 'open' });
+      const handle = document.createElement('div');
+      shadow.appendChild(handle);
+      document.body.appendChild(host);
+
+      const p = document.createElement('p');
+      p.textContent = 'The quick brown fox';
+      document.body.appendChild(p);
+      setupCaretRange(p);
+
+      let lookupCount = 0;
+      const ctrl = new WebTriggerController({
+        triggerMode: 'click',
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      handle.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true }));
+      host.remove();
+
+      const up = new MouseEvent('mouseup', { bubbles: true, clientX: 50, clientY: 10 });
+      Object.defineProperty(up, 'target', { value: p });
+      document.dispatchEvent(up);
+
+      expect(lookupCount).toBe(0);
+
+      // Gesture flag is consumed — a fresh page gesture still looks up.
+      const down2 = new MouseEvent('pointerdown', { bubbles: true });
+      Object.defineProperty(down2, 'target', { value: p });
+      document.dispatchEvent(down2);
+      const up2 = new MouseEvent('mouseup', { bubbles: true, clientX: 50, clientY: 10 });
+      Object.defineProperty(up2, 'target', { value: p });
+      document.dispatchEvent(up2);
+
+      expect(lookupCount).toBe(1);
+
+      ctrl.detach();
+      document.body.removeChild(p);
+    });
+
     it('keeps a UI host hit-testable when the pointer is over a shadow data-allow-lookup region', () => {
       // Without this exemption, withUiHostsPointerEventsDisabled strips
       // pointer-events from #cell-subtitle-root and its whole shadow tree, so

@@ -84,8 +84,12 @@ export async function importFile(
 
   // 6b. Zip >1MB can't be sniffed from the head — 'term-bank' is only the
   //     extension default there. Re-sniff authoritative content on full bytes.
-  if (format === 'term-bank' && isZip(data)) {
-    const refined = sniffZipFormat(unzipAll(data));
+  //     The unzip result is handed to the strategy so the archive is
+  //     decompressed once, not twice.
+  let unzipped: Record<string, Uint8Array> | undefined;
+  if (format === 'term-bank' && isZip(data) && data.length > 1024 * 1024) {
+    unzipped = unzipAll(data);
+    const refined = sniffZipFormat(unzipped);
     if (refined) format = refined;
   }
 
@@ -104,14 +108,17 @@ export async function importFile(
 
   // 8. Execute strategy
   try {
-    const strategy = createStrategy(format, { resourceId, langCode, onProgress, components: options.components }, { data, fileName: file.name });
+    const strategy = createStrategy(format, { resourceId, langCode, onProgress, components: options.components }, { data, fileName: file.name, unzipped });
     const result = await strategy.execute();
 
-    // 9. Build phrase index for entry-object dictionaries (ADR-037 §7.2).
+    // 9. Build phrase index for every dictionary-capable resource (ADR-037
+    //    §7.2) from the terms collected during the stream — no store rescan.
     //    Must succeed before installationFinished=true so a blob failure
-    //    rolls back the whole import.
-    if (format === 'json-entries') {
-      await buildPhraseIndexForResource(langCode, resourceId);
+    //    rolls back the whole import. Persisting the blob (even an empty one)
+    //    marks the resource processed so first lookup never triggers a
+    //    lazy getAll() rebuild of the entire dictionary.
+    if (result.components?.some((c) => c !== 'frequency')) {
+      await buildPhraseIndexForResource(langCode, resourceId, result.phraseTerms);
     }
 
     // 10. Finalize resource (wordCount + components + derived type + installationFinished=true)

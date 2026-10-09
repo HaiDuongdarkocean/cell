@@ -75,6 +75,7 @@ toàn bộ nhóm AC liên quan. Chi tiết stress-test e2e: `split-view-stress-t
 | AC-6.3 | `g` vào Player Mode khi split view open: teardown sạch qua live anchor (`liveAnchorParent/liveAnchorSibling`), exit PM restore đúng — không strand player trong detached subtree |
 | AC-6.4 | `t` trong Player Mode bị block (PM dùng `t` cho CueList) — không tạo wrapper |
 | AC-6.5 | PM cue list là state riêng (`pmCueListOpen` trong `SubtitlePanels`), độc lập với `splitViewOpen`: `g` vào/ra PM không đụng `splitViewOpen`/`onSplitViewChange` — exit PM khi normal-mode split view đang đóng KHÔNG mount `[data-cell-split-view]` vào page; nếu split view đã mở trước PM thì exit PM restore nguyên (AC-6.3) |
+| AC-6.6 | `.videoStage` phải tạo stacking context (`z-index: var(--z-base)`): player shell của site slotted vào stage có thể mang `z-index` riêng (kisskh `.col-12` z-index:1) — không có context riêng thì nó thắng `.subtitleOverlay` (z=0) và nuốt toàn bộ overlay row (nav/subtitle/toolbar tồn tại trong DOM nhưng không paint) |
 
 ## Regression notes (đã fix — giữ AC phòng regress)
 
@@ -87,3 +88,4 @@ toàn bộ nhóm AC liên quan. Chi tiết stress-test e2e: `split-view-stress-t
 | Short viewport video crop trên/dưới | Fluid `padding-top` giữ nguyên khi wrapper bị cap | AC-4.6, AC-4.10 |
 | Zero fluid padding → video collapse 24px | `.vjs-fluid` box = chính padding; phải constrain width theo aspect | AC-4.10 |
 | Panel max làm wrapper co theo video | Height recompute theo stage width → shrink; phải freeze theo viewport key | AC-4.9 |
+| PM overlay row không paint trên kisskh | Site player shell `.col-12` có `z-index:1` — thắng `.subtitleOverlay` z=0 vì `.videoStage` không tạo stacking context | AC-6.6 |

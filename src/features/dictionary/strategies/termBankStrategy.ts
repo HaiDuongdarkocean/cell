@@ -21,6 +21,9 @@ import type { FrequencyEntry, DictionaryEntry } from '@/entities/dictionary';
 export interface TermBankStrategyOptions {
   readonly data: Uint8Array;
   readonly fileName: string;
+  /** Pre-unzipped entries from the orchestrator's format sniff — reuses the
+   *  single unzip pass instead of decompressing the archive twice. */
+  readonly unzipped?: Record<string, Uint8Array>;
 }
 
 /** Bank index.json structure. */
@@ -44,18 +47,24 @@ const isFreqRow = (e: StoredRow): e is Omit<FrequencyEntry, 'id'> => 'frequency'
 export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDictionaryEntry, StoredRow> {
   readonly format = 'term-bank' as const;
   private readonly data: Uint8Array;
+  private readonly unzipped?: Record<string, Uint8Array>;
 
   constructor(options: StrategyOptions, fileData: TermBankStrategyOptions) {
     super(options);
     this.data = fileData.data;
+    this.unzipped = fileData.unzipped;
   }
 
   protected async *parse(): AsyncGenerator<RawFrequencyEntry | RawDictionaryEntry> {
     let files: Record<string, Uint8Array>;
-    try {
-      files = unzipAll(this.data);
-    } catch (e) {
-      throw new CorruptedFileError('Failed to unzip term-bank file.', e);
+    if (this.unzipped) {
+      files = this.unzipped;
+    } else {
+      try {
+        files = unzipAll(this.data);
+      } catch (e) {
+        throw new CorruptedFileError('Failed to unzip term-bank file.', e);
+      }
     }
 
     // Parse index.json (validate structure)
@@ -77,31 +86,10 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
       throw new ParseError('term-bank format: no term_bank_*.json or term_meta_bank_*.json files found.');
     }
 
-    this.reportTotal(this.countBankEntries(files, emitDict, emitFreq));
+    this.reportTotal(0);
 
     if (emitDict) yield* this.parseTermBanks(files);
     if (emitFreq) yield* this.parseTermMetaBanks(files);
-  }
-
-  /** Exact attempted-entry count across the emitted bank files. */
-  private countBankEntries(files: Record<string, Uint8Array>, emitDict: boolean, emitFreq: boolean): number {
-    let total = 0;
-    for (const path of Object.keys(files)) {
-      const isDictBank = path.includes('term_bank') && !path.includes('term_meta_bank');
-      const isFreqBank = path.includes('term_meta_bank');
-      if ((isDictBank && !emitDict) || (isFreqBank && !emitFreq)) continue;
-      if (!isDictBank && !isFreqBank) continue;
-      const parsed = JSON.parse(decodeText(files[path]!));
-      if (!Array.isArray(parsed)) continue;
-      if (isDictBank) {
-        total += parsed.length;
-      } else {
-        for (const entry of parsed) {
-          if (entry?.[1] === 'freq') total++;
-        }
-      }
-    }
-    return total;
   }
 
   /** Parse term_bank_*.json → dictionary entries. */
@@ -120,6 +108,7 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
       if (!Array.isArray(entries)) {
         throw new ParseError(`term-bank format: ${bankPath} is not an array.`);
       }
+      this.addReportedTotal(entries.length);
       for (const entry of entries) {
         const [expression, reading, definitionTags, rules, , definitions] = entry;
         yield {
@@ -149,6 +138,11 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
       if (!Array.isArray(entries)) {
         throw new ParseError(`term-bank format: ${bankPath} is not an array.`);
       }
+      let freqCount = 0;
+      for (const entry of entries) {
+        if (entry?.[1] === 'freq') freqCount++;
+      }
+      this.addReportedTotal(freqCount);
       for (const entry of entries) {
         const [term, type, meta] = entry;
         if (type !== 'freq') continue;

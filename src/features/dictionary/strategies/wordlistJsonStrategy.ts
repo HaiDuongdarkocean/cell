@@ -20,17 +20,19 @@ interface WordlistJson {
 export class WordlistJsonStrategy extends BaseDictionaryStrategy {
   readonly format = 'wordlist-json' as const;
   private readonly data: Uint8Array;
+  private readonly unzipped?: Record<string, Uint8Array>;
 
-  constructor(options: StrategyOptions, fileData: { data: Uint8Array; fileName: string }) {
+  constructor(options: StrategyOptions, fileData: { data: Uint8Array; fileName: string; unzipped?: Record<string, Uint8Array> }) {
     super(options);
     this.data = fileData.data;
+    this.unzipped = fileData.unzipped;
   }
 
   protected async *parse(): AsyncGenerator<RawDictionaryEntry> {
     let data = this.data;
     if (isGzip(data)) data = gunzipFile(data);
-    if (isZip(data)) {
-      const files = unzipAll(data);
+    if (isZip(data) || this.unzipped) {
+      const files = this.unzipped ?? unzipAll(data);
       const entry = selectZipDataJson(files);
       if (!entry) throw new ParseError('wordlist zip: no .json entry found.');
       data = entry.bytes;

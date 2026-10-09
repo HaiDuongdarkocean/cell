@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "generated": "2026-10-06T09:07:26.388Z",
-  "count": 54,
+  "generated": "2026-10-08T16:57:59.514Z",
+  "count": 55,
   "skills": [
     {
       "name": "animation-vocabulary",
@@ -242,6 +242,11 @@
       "name": "testing-browser-with-profile",
       "description": "Brave debug browser for intermittent bugs.",
       "path": ".agents/skills/testing-browser-with-profile/SKILL.md"
+    },
+    {
+      "name": "testing-extension-android",
+      "description": "Install a packed .crx into Quetta (or any Chromium Android browser) over ADB and verify it via CDP. Use for on-device extension install/testing. Not for desktop Chrome testing (→ testing-extension-browser).",
+      "path": ".agents/skills/testing-extension-android/SKILL.md"
     },
     {
       "name": "testing-extension-browser",

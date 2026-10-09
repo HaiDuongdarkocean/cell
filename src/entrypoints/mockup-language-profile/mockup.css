@@ -336,7 +336,7 @@ body {
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   color: var(--color-primary);
   padding: var(--space-1) var(--space-1-5);

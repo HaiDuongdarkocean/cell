@@ -27,6 +27,12 @@ export class BatchProcessor<T> {
     this.total = Math.max(0, total);
   }
 
+  /** Grow the reported total as the parser discovers more entries —
+   *  progressive counting instead of a separate pre-parse pass. */
+  addTotal(additional: number): void {
+    this.total += Math.max(0, additional);
+  }
+
   /** Add an entry. Auto-flush when buffer reaches BATCH_SIZE. */
   async add(entry: T): Promise<void> {
     this.buffer.push(entry);

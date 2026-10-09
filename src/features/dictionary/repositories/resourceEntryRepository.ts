@@ -45,6 +45,8 @@ export async function addFrequencyEntry(langCode: string, entry: Omit<FrequencyE
   });
 }
 
+const BULK_TX_OPTIONS: IDBTransactionOptions = { durability: 'relaxed' };
+
 /** Bulk insert dictionary entries (1 transaction per batch — ADR-023 D8). */
 export async function bulkInsertDictionaryEntries(
   langCode: string,
@@ -52,7 +54,7 @@ export async function bulkInsertDictionaryEntries(
 ): Promise<void> {
   const db = await getDB(langCode);
   return new Promise((resolve, reject) => {
-    const store = getStore(db, STORES.ENTRY);
+    const store = getStore(db, STORES.ENTRY, 'readwrite', BULK_TX_OPTIONS);
     for (const entry of entries) {
       store.add({ ...entry, backwardTerm: reverseString(entry.term) });
     }
@@ -70,7 +72,7 @@ export async function bulkInsertFrequencyEntries(
 ): Promise<void> {
   const db = await getDB(langCode);
   return new Promise((resolve, reject) => {
-    const store = getStore(db, STORES.ENTRY);
+    const store = getStore(db, STORES.ENTRY, 'readwrite', BULK_TX_OPTIONS);
     for (const entry of entries) {
       store.add({ ...entry, kind: 'freq', backwardTerm: reverseString(entry.term) });
     }
@@ -411,7 +413,7 @@ export async function deleteEntriesByResource(
   const total = onProgress ? await countEntriesByResource(langCode, resourceId) : 0;
   const db = await getDB(langCode);
   return new Promise((resolve, reject) => {
-    const store = getStore(db, STORES.ENTRY);
+    const store = getStore(db, STORES.ENTRY, 'readwrite', BULK_TX_OPTIONS);
     const index = store.index(INDEXES.by_resource);
     let deleted = 0;
     const cursorRequest = index.openCursor(resourceId);

@@ -1,15 +1,32 @@
 import { describe, expect, it } from '@jest/globals';
-import type { Token } from '@/features/tokenize/types';
+import type { Token, TokenBlock } from '@/features/tokenize/types';
 import type { WordStatus } from '@/entities/dictionary';
 import {
   bandForCoverage,
   computeStats,
   createScoreTracker,
   markIPlus1Tokens,
+  markIPlus1TokensAcrossBlocks,
 } from './comprehensionScore';
 
 function tok(term: string, status?: WordStatus, isSeparator = false, sentenceIndex = 0): Token {
   return { text: term, term, start: 0, end: term.length, isSeparator, sentenceIndex, status, frequencyBand: undefined, reading: undefined };
+}
+
+function wtok(text: string, start: number, status?: WordStatus, sentenceIndex = 0): Token {
+  return { text, term: text.toLowerCase(), start, end: start + text.length, isSeparator: false, sentenceIndex, status, frequencyBand: undefined, reading: undefined };
+}
+
+function blk(text: string, tokens: Token[]): TokenBlock {
+  return {
+    id: 'b',
+    element: null as unknown as Element,
+    sourceNodes: [],
+    originalText: text,
+    tokens,
+    isBound: false,
+    lastAccessedAt: 0,
+  };
 }
 
 describe('markIPlus1Tokens', () => {
@@ -43,6 +60,71 @@ describe('markIPlus1Tokens', () => {
     ];
     markIPlus1Tokens(tokens);
     expect(tokens.map((t) => t.iPlus1)).toEqual([false, false, false, true]);
+  });
+});
+
+describe('markIPlus1TokensAcrossBlocks', () => {
+  it('counts gaps over the whole visual sentence split by inline elements', () => {
+    // "The function body consists of a single <a>statement</a>, a call to the
+    //  <code>printf</code> ..." — three new words in one rendered sentence,
+    //  each alone inside its own text-node block. Per-block marking would paint
+    //  three i+1 pills; the sentence has three gaps so none may be marked.
+    const a = blk('The function body consists of a single ', [
+      wtok('The', 0, 'known'),
+      wtok('function', 4, 'unknown'),
+      wtok('body', 13, 'known'),
+      wtok('consists', 18, 'known'),
+      wtok('of', 27, 'known'),
+      wtok('a', 30, 'known'),
+      wtok('single', 32, 'known'),
+    ]);
+    const b = blk('statement', [wtok('statement', 0, 'unknown')]);
+    const c = blk(', a call to the ', [
+      wtok('a', 2, 'known'),
+      wtok('call', 4, 'known'),
+      wtok('to', 9, 'known'),
+      wtok('the', 12, 'known'),
+    ]);
+    const d = blk('printf', [wtok('printf', 0, 'unknown')]);
+    markIPlus1TokensAcrossBlocks([a, b, c, d]);
+    expect(a.tokens!.map((t) => t.iPlus1)).toEqual([false, false, false, false, false, false, false]);
+    expect(b.tokens![0]!.iPlus1).toBe(false);
+    expect(d.tokens![0]!.iPlus1).toBe(false);
+  });
+
+  it('marks the single gap when the split sentence has exactly one new word', () => {
+    const a = blk('the cat ', [wtok('the', 0, 'known'), wtok('cat', 4, 'known')]);
+    const b = blk('sat', [wtok('sat', 0, 'unknown')]);
+    const c = blk(' down', [wtok('down', 1, 'known')]);
+    markIPlus1TokensAcrossBlocks([a, b, c]);
+    expect(a.tokens!.map((t) => t.iPlus1)).toEqual([false, false]);
+    expect(b.tokens![0]!.iPlus1).toBe(true);
+    expect(c.tokens![0]!.iPlus1).toBe(false);
+  });
+
+  it('closes the sentence when the previous block ends with a terminator', () => {
+    const a = blk('I run.', [wtok('I', 0, 'known'), wtok('run', 2, 'unknown')]);
+    const b = blk('He walks', [wtok('He', 0, 'known'), wtok('walks', 3, 'unknown')]);
+    markIPlus1TokensAcrossBlocks([a, b]);
+    expect(a.tokens![1]!.iPlus1).toBe(true);
+    expect(b.tokens![1]!.iPlus1).toBe(true);
+  });
+
+  it('treats a separator-only block carrying the terminator as the boundary', () => {
+    const a = blk('I run', [wtok('I', 0, 'known'), wtok('run', 2, 'unknown')]);
+    const dot = blk('.', [{ text: '.', term: '.', start: 0, end: 1, isSeparator: true, sentenceIndex: 0, status: undefined, frequencyBand: undefined, reading: undefined }]);
+    const b = blk(' He walks', [wtok('He', 1, 'known'), wtok('walks', 4, 'unknown')]);
+    markIPlus1TokensAcrossBlocks([a, dot, b]);
+    expect(a.tokens![1]!.iPlus1).toBe(true);
+    expect(b.tokens![1]!.iPlus1).toBe(true);
+  });
+
+  it('detects the boundary when the next block starts with a terminator', () => {
+    const a = blk('I run', [wtok('I', 0, 'known'), wtok('run', 2, 'unknown')]);
+    const b = blk('. He walks', [wtok('He', 2, 'known', 1), wtok('walks', 5, 'unknown', 1)]);
+    markIPlus1TokensAcrossBlocks([a, b]);
+    expect(a.tokens![1]!.iPlus1).toBe(true);
+    expect(b.tokens![1]!.iPlus1).toBe(true);
   });
 });
 

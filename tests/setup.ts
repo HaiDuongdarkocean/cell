@@ -51,6 +51,19 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
   })) as unknown as typeof ResizeObserver;
 }
 
+// Polyfill Blob.prototype.arrayBuffer for jsdom — Blob.slice() results lack
+// it (used by resourceClient per-chunk import reads; real Chrome has it).
+if (typeof Blob !== 'undefined' && typeof Blob.prototype.arrayBuffer !== 'function') {
+  Blob.prototype.arrayBuffer = function (): Promise<ArrayBuffer> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(this);
+    });
+  };
+}
+
 // Polyfill crypto.subtle for jsdom (used by signatureGenerator SHA-256).
 // jsdom doesn't expose crypto.subtle — use Node's webcrypto.
 import nodeCrypto from 'node:crypto';

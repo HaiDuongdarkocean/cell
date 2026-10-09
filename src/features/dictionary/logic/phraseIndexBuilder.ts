@@ -63,12 +63,20 @@ export interface PhraseIndexBuildResult {
  * Reads stored dictionary entries, collects multiword terms, parses + compiles
  * the supported subset, and calls putPhraseIndex. Throws on any failure — the
  * caller (importOrchestrator) rolls back the import.
+ *
+ * `storedTerms` lets the import path pass the terms it already streamed
+ * (normalized, deduped multiword terms) — skipping the full getAll() rescan
+ * that made first-lookup rebuilds cost a whole dictionary read.
  */
 export async function buildPhraseIndexForResource(
   langCode: string,
   resourceId: number,
+  storedTerms?: Iterable<string>,
 ): Promise<PhraseIndexBuildResult> {
-  const entries = await findDictionaryByResource(langCode, resourceId);
+  const terms = storedTerms
+    ? storedTerms
+    : (await findDictionaryByResource(langCode, resourceId)).map((e) => e.term);
+  const termList = [...terms];
 
   const seen = new Set<string>();
   const inputs: PhraseIndexInput[] = [];
@@ -89,16 +97,16 @@ export async function buildPhraseIndexForResource(
   // ponytail: marking non-verbs inflectable is safe because candidateLemmas
   // is over-generative by design — false candidates don't match any anchor.
   const firstWords = new Set<string>();
-  for (const entry of entries) {
-    const term = entry.term.trim().normalize('NFC').toLowerCase();
+  for (const rawTerm of termList) {
+    const term = rawTerm.trim().normalize('NFC').toLowerCase();
     if (!term || term.split(/\s+/).length < 2) continue;
     const firstWord = term.split(/\s+/)[0]!;
     firstWords.add(firstWord);
   }
 
   // Pass 2: parse each term with auto-collected inflectable set.
-  for (const entry of entries) {
-    const term = entry.term.trim().normalize('NFC').toLowerCase();
+  for (const rawTerm of termList) {
+    const term = rawTerm.trim().normalize('NFC').toLowerCase();
     // Only multiword terms (≥2 whitespace tokens) are phrase candidates.
     if (!term || term.split(/\s+/).length < 2) continue;
     if (seen.has(term)) continue;

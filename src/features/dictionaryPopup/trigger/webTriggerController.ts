@@ -217,6 +217,11 @@ export class WebTriggerController {
   private readonly boundSelectionChange: () => void;
   private readonly boundKeyDown: (e: KeyboardEvent) => void;
   private readonly boundMouseOut: (e: MouseEvent) => void;
+  private readonly boundPointerDown: (e: PointerEvent) => void;
+  // ponytail: gesture flag survives a surface that unmounts mid-gesture
+  // (sheet handle click-to-close) — the following mouseup must still not
+  // fall through to page text.
+  private gestureStartedOnUi = false;
   private lastPointer: { x: number; y: number; eligible: boolean } | null = null;
   private lastHoveredTerm: string | null = null;
   private lastHoveredStartContainer: Node | null = null;
@@ -229,10 +234,13 @@ export class WebTriggerController {
     this.boundSelectionChange = this.onSelectionChange.bind(this);
     this.boundKeyDown = this.onKeyDown.bind(this);
     this.boundMouseOut = this.onMouseOut.bind(this);
+    this.boundPointerDown = this.onPointerDown.bind(this);
   }
 
   /** Attach listeners to document. */
   attach(): void {
+    // Capture: inner handlers (sheet handle) stopPropagation on pointerdown.
+    document.addEventListener('pointerdown', this.boundPointerDown, true);
     if (this.deps.triggerMode === 'click') {
       document.addEventListener('mouseup', this.boundMouseUp);
       document.addEventListener('selectionchange', this.boundSelectionChange);
@@ -255,6 +263,8 @@ export class WebTriggerController {
     document.removeEventListener('selectionchange', this.boundSelectionChange);
     document.removeEventListener('keydown', this.boundKeyDown);
     document.removeEventListener('mouseout', this.boundMouseOut);
+    document.removeEventListener('pointerdown', this.boundPointerDown, true);
+    this.gestureStartedOnUi = false;
     this.lastPointer = null;
     this.lastHoveredTerm = null;
     this.lastHoveredStartContainer = null;
@@ -300,7 +310,14 @@ export class WebTriggerController {
     this.deps.onClear?.();
   }
 
+  private onPointerDown(e: PointerEvent): void {
+    this.gestureStartedOnUi = eventBlockedForLookup(e);
+  }
+
   private onMouseUp(e: MouseEvent): void {
+    const startedOnUi = this.gestureStartedOnUi;
+    this.gestureStartedOnUi = false;
+
     // Explicit lookup links (related terms inside the popup/panel carry
     // data-lookup-term) dispatch a verbatim-term lookup regardless of trigger
     // mode — an intentional click, and the full term (not word-at-point) is
@@ -328,7 +345,7 @@ export class WebTriggerController {
       return;
     }
 
-    if (eventBlockedForLookup(e)) {
+    if (startedOnUi || eventBlockedForLookup(e)) {
       // Click inside blocked extension UI (popup, badge, settings, card creator,
       // or universal panel areas outside allowed lookup zones).
       // All clicks inside these hosts are consumed by the UI itself —

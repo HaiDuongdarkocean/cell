@@ -1,5 +1,6 @@
 import type { ClickModifierState } from '@/entities/dictionary';
-import { findTextBlocks, findTextBlocksInNodes } from '@/features/tokenize/logic/tokenizeBlock';
+import { findTextBlocks, findTextBlocksInNodes, sentenceContainerOf } from '@/features/tokenize/logic/tokenizeBlock';
+import { markIPlus1TokensAcrossBlocks } from '@/features/tokenize/logic/comprehensionScore';
 import { TokenizeCache } from '@/features/tokenize/logic/tokenizeCache';
 import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_PREPARE, PRIORITY_BUFFER } from '@/features/tokenize/logic/tokenizeScheduler';
 import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
@@ -279,6 +280,7 @@ export async function createWebTokenizeController(
       return;
     }
     const termList = [...terms];
+    const syncAnchors = new Map<Element, TokenBlock>();
     const { showReadings, showGlosses } = stateStore.getState();
     const tl = glossTargetLanguage;
     const [statusMap, freqMaps, bandOpts, dictReadings, termGlosses] = await Promise.all([
@@ -336,9 +338,10 @@ export async function createWebTokenizeController(
       metadataPending.delete(block);
       metadataResolved.add(block);
       if (visibleElements.has(block.element)) {
-        rebindBlock(block);
+        syncAnchors.set(containerOf(block), block);
       }
     }
+    for (const anchor of syncAnchors.values()) syncSentenceScope(anchor);
   }
 
   function scheduleMetadataFlush(): void {
@@ -390,6 +393,10 @@ export async function createWebTokenizeController(
 
   const blocks: TokenBlock[] = [];
   const blockSet = new Set<TokenBlock>();
+  // Declared with `blocks` — not next to its users — because the cold-start
+  // activation below runs bindViewportNow before the helpers region executes;
+  // a const down there would still be in the temporal dead zone.
+  const containerByBlock = new WeakMap<TokenBlock, Element>();
   let isActive = false;
   let cancelPendingActivation: (() => void) | null = null;
 
@@ -671,9 +678,13 @@ export async function createWebTokenizeController(
     // Ancestor removals detach descendant blocks without hitting
     // cache.getByElement(node); sweep any block whose element is gone.
     let removedAny = false;
+    const removedContainers = new Set<Element>();
     for (let i = blocks.length - 1; i >= 0; i--) {
       const block = blocks[i]!;
       if (!block.element.isConnected) {
+        // The removed words were gaps of a still-live sentence — remark its
+        // scope so a surviving sibling can become the new i+1.
+        removedContainers.add(containerOf(block));
         blocks.splice(i, 1);
         blockSet.delete(block);
         cache.delete(block.id);
@@ -682,7 +693,13 @@ export async function createWebTokenizeController(
         removedAny = true;
       }
     }
-    if (removedAny) options.onBlocksChanged?.();
+    if (removedAny) {
+      options.onBlocksChanged?.();
+      for (const container of removedContainers) {
+        const anchor = blocks.find((b) => b.element.isConnected && containerOf(b) === container);
+        if (anchor) syncSentenceScope(anchor);
+      }
+    }
   }
 
   function flushPendingAddedNodes(): void {
@@ -873,12 +890,43 @@ export async function createWebTokenizeController(
     bindTokenBlock(block, getDisplayOptions());
   }
 
+  // i+1 marks live at sentence scope, and a rendered sentence can span several
+  // text-node blocks (links, code, emphasis split it). Marking must count the
+  // gaps of the whole run, then every bound member is restyled — a status
+  // change in one block can flip the i+1 flag of a sibling block's token.
+  function containerOf(block: TokenBlock): Element {
+    let container = containerByBlock.get(block);
+    if (!container) {
+      container = sentenceContainerOf(block.element);
+      containerByBlock.set(block, container);
+    }
+    return container;
+  }
+
+  function syncSentenceScope(anchor: TokenBlock): void {
+    const container = containerOf(anchor);
+    const members = blocks.filter(
+      (block) => block.element.isConnected && containerOf(block) === container,
+    );
+    // blocks order is scan order, not document order (dynamic blocks append) —
+    // the run must be read in document order or neighbours join wrongly.
+    members.sort((a, b) =>
+      a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
+    );
+    for (const member of members) prepareBlock(member);
+    markIPlus1TokensAcrossBlocks(members);
+    for (const member of members) {
+      if (member.isBound) rebindBlock(member);
+    }
+  }
+
   function bindVisibleBlock(block: TokenBlock): void {
     prepareBlock(block);
     if (!stateStore.getState().enabled || !visibleElements.has(block.element)) {
       return;
     }
     if (!block.isBound) {
+      syncSentenceScope(block);
       bindTokenBlock(block, getDisplayOptions());
     }
     // If binding could not replace the source node (e.g. SPA re-render detached
@@ -900,7 +948,8 @@ export async function createWebTokenizeController(
   function rebindVisibleBlock(block: TokenBlock): void {
     prepareBlock(block);
     if (!stateStore.getState().enabled || !visibleElements.has(block.element)) return;
-    rebindBlock(block);
+    syncSentenceScope(block);
+    if (!block.isBound) bindTokenBlock(block, getDisplayOptions());
     cache.touch(block);
     scheduleMetadataResolve(block);
   }
@@ -940,6 +989,7 @@ export async function createWebTokenizeController(
       localStatusOverrides.set(term, { status, version });
     }
     const termSet = new Set(terms);
+    const syncAnchors = new Map<Element, TokenBlock>();
     for (const block of blocks) {
       if (!block.tokens) continue;
       let changed = false;
@@ -949,10 +999,11 @@ export async function createWebTokenizeController(
           changed = true;
         }
       }
-      if (changed && visibleElements.has(block.element)) {
-        rebindBlock(block);
+      if (changed) {
+        syncAnchors.set(containerOf(block), block);
       }
     }
+    for (const anchor of syncAnchors.values()) syncSentenceScope(anchor);
     for (const term of terms) {
       emitWordStatusChanged({ langCode, term, status });
       options.onStatusChange?.(term, langCode, status);
@@ -968,6 +1019,7 @@ export async function createWebTokenizeController(
     statusVersionCounter++;
     termStatusVersion.set(term, statusVersionCounter);
     localStatusOverrides.set(term, { status, version: statusVersionCounter });
+    const syncAnchors = new Map<Element, TokenBlock>();
     for (const block of blocks) {
       if (!block.tokens) continue;
       let changed = false;
@@ -977,10 +1029,11 @@ export async function createWebTokenizeController(
           changed = true;
         }
       }
-      if (changed && visibleElements.has(block.element)) {
-        rebindBlock(block);
+      if (changed) {
+        syncAnchors.set(containerOf(block), block);
       }
     }
+    for (const anchor of syncAnchors.values()) syncSentenceScope(anchor);
   }
 
   function getStatusForTerm(term: string): WordStatus {
@@ -1015,6 +1068,7 @@ export async function createWebTokenizeController(
     }
     statusVersionCounter++;
     const version = statusVersionCounter;
+    const syncAnchors = new Map<Element, TokenBlock>();
     for (const block of blocks) {
       if (!block.tokens) continue;
       let changed = false;
@@ -1029,10 +1083,11 @@ export async function createWebTokenizeController(
         localStatusOverrides.set(token.term, { status: next, version });
         changed = true;
       }
-      if (changed && visibleElements.has(block.element)) {
-        rebindBlock(block);
+      if (changed) {
+        syncAnchors.set(containerOf(block), block);
       }
     }
+    for (const anchor of syncAnchors.values()) syncSentenceScope(anchor);
   }
 
   const unsubscribeStatusesReload = onWordStatusesReload((eventLangCode) => {

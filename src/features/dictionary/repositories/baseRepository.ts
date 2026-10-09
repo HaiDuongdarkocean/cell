@@ -182,14 +182,19 @@ function createAllStores(db: IDBDatabase, tx?: IDBTransaction): void {
   }
 }
 
-/** Open a transaction for 1+ stores (readwrite default); returns the first store. */
+/** Open a transaction for 1+ stores (readwrite default); returns the first
+ *  store. Pass `{ durability: 'relaxed' }` for bulk import/delete paths —
+ *  skipping the per-commit fsync is the single biggest IndexedDB write win on
+ *  mobile flash; crash loss is safe here because unfinished imports reconcile
+ *  (installationFinished=false → rollback) and partial deletes are retried. */
 export function getStore(
   db: IDBDatabase,
   storeName: string | readonly string[],
   mode: IDBTransactionMode = 'readwrite',
+  txOptions?: IDBTransactionOptions,
 ): IDBObjectStore {
   const names = Array.isArray(storeName) ? [...storeName] : [storeName];
-  const tx = db.transaction(names, mode);
+  const tx = txOptions ? db.transaction(names, mode, txOptions) : db.transaction(names, mode);
   return tx.objectStore(names[0]!);
 }
 

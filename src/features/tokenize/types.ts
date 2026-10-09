@@ -26,8 +26,9 @@ export interface Token {
   /** Native-language gloss; undefined until resolved or absent. */
   gloss?: string;
   /** True when this token is the only still-new word of its sentence — the
-   *  i+1 gap. Recomputed on every bind/restyle; only i+1 tokens paint the
-   *  frequency pill and status capsule. */
+   *  i+1 gap. Set by the marking pass over the token's sentence scope (a cue
+   *  for subtitles, a visual sentence run across blocks for web pages); only
+   *  i+1 tokens paint the frequency pill and status capsule. */
   iPlus1?: boolean;
 }
 

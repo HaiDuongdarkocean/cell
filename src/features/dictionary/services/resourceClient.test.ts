@@ -61,3 +61,21 @@ test('import sends the file as chunk(s) and returns the registry jobId', async (
   const file = new File(['{"a":1}'], 'dict.json', { type: 'application/json' });
   await expect(importResourceFile(file, { langCode: 'en' })).resolves.toEqual({ jobId: 'bg-job-1' });
 });
+
+test('upload encodes each chunk as self-contained base64 bytes', async () => {
+  const chunks: { seq: number; total: number; data: string }[] = [];
+  g.__cellSendMessage = async (m) => {
+    if (m.type === MESSAGE_TYPES.RESOURCE_LIST) return { success: true, data: { resources: [] } };
+    if (m.type === MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK) {
+      chunks.push(m.payload as { seq: number; total: number; data: string });
+      return { success: true, data: { jobId: 'bg-job-2' } };
+    }
+    return { success: true, data: {} };
+  };
+  const payload = new Uint8Array([0, 1, 2, 250, 251, 255, 10, 20]);
+  const file = new File([payload.buffer as ArrayBuffer], 'dict.zip');
+  await expect(importResourceFile(file, { langCode: 'en' })).resolves.toEqual({ jobId: 'bg-job-2' });
+  expect(chunks).toHaveLength(1);
+  const { decodeBase64ToBytes } = await import('@/shared/lib/base64');
+  expect(Array.from(decodeBase64ToBytes(chunks[0]!.data))).toEqual(Array.from(payload));
+});

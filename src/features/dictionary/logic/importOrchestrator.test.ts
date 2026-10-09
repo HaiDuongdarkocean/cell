@@ -177,6 +177,23 @@ describe('importOrchestrator', () => {
       expect(stored?.termCount).toBe(0);
     });
 
+    it('builds a phrase index blob during term-bank dictionary import — no lazy first-lookup rebuild', async () => {
+      const zipped = zipSync({
+        'index.json': strToU8(JSON.stringify({ title: 't', revision: '1', format: 3 })),
+        'term_bank_1.json': strToU8(JSON.stringify([
+          ['take off', 'take off', 'phr', 'v', 0, ['to remove']],
+          ['hello', 'hello', 'n', 'n', 0, ['greeting']],
+        ])),
+      });
+      const file = makeBytesFile('dict.zip', zipped);
+      const result = await importFile(file, { langCode: LANG });
+      expect(result.format).toBe('term-bank');
+      // Multiword 'take off' is indexed at import time; 'hello' excluded.
+      expect(await hasPhraseIndex(LANG, result.resourceId)).toBe(true);
+      const stored = await getPhraseIndex(LANG, result.resourceId);
+      expect(stored?.termCount).toBe(1);
+    });
+
     it('rolls back entries + blob + resource on phrase build failure', async () => {
       // Force a builder failure by mocking putPhraseIndex to throw.
       const builderModule = await import('@/features/dictionary/logic/phraseIndexBuilder');

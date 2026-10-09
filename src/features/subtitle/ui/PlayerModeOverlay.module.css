@@ -46,6 +46,7 @@
   flex: 0 0 auto;
   width: 100%;
   position: relative;
+  z-index: var(--z-base);
   /* stacking ctx keeps lockLayer's max-int scoped inside the stage —
      otherwise it would cover Cell UI outside the stage in .overlay's ctx */
   isolation: isolate;
@@ -69,6 +70,7 @@
   z-index: 2147483647;
   pointer-events: auto;
 }
+
 
 /* Content other — CueList / dictionary sheet.
    <600px: fills remaining vertical space.

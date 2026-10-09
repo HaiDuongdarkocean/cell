@@ -1,6 +1,7 @@
 import type { WordStatus } from '@/entities/dictionary';
 import type { ComprehensionBand, ComprehensionKind, ComprehensionStats } from '@/entities/comprehension';
-import type { Token } from '@/features/tokenize/types';
+import { hasSentenceEnd } from '@/shared/lib/sentencePunct';
+import type { Token, TokenBlock } from '@/features/tokenize/types';
 
 const TRACKING_WEIGHT = 0.5;
 const NUMERIC_RE = /^\p{N}+$/u;
@@ -41,6 +42,54 @@ export function markIPlus1Tokens(tokens: readonly Token[]): void {
   for (const token of tokens) {
     token.iPlus1 =
       isScorableToken(token) && isNew(token.status) && gapsBySentence.get(token.sentenceIndex) === 1;
+  }
+}
+
+/** Mark the i+1 gaps of a visual sentence that spans several blocks: inline
+ *  elements (links, code, emphasis) split one rendered sentence into multiple
+ *  text nodes, so per-block marking would score each fragment as its own
+ *  sentence and paint an i+1 pill on every one-word fragment. `blocks` must
+ *  share one sentence scope, be in document order, and all carry prepared
+ *  tokens (unprepared blocks hide their gaps and would over-mark).
+ *
+ *  Sentence continuity across a block seam: the sentence closes only when a
+ *  terminator sits in the text between the last word of a block and the first
+ *  word of the next — blocks with no scorable token contribute their whole
+ *  text to that gap so a standalone "." node still ends the sentence. */
+export function markIPlus1TokensAcrossBlocks(blocks: readonly TokenBlock[]): void {
+  const gapsBySentence = new Map<number, number>();
+  const assigned: Array<[Token, number]> = [];
+  let sentenceId = -1;
+  let interTokenText = '';
+  for (const block of blocks) {
+    const text = block.originalText;
+    const scorables = (block.tokens ?? [])
+      .filter(isScorableToken)
+      .sort((a, b) => a.start - b.start);
+    if (scorables.length === 0) {
+      interTokenText += text;
+      continue;
+    }
+    if (sentenceId < 0 || hasSentenceEnd(interTokenText + text.slice(0, scorables[0]!.start))) {
+      sentenceId++;
+    }
+    for (let i = 0; i < scorables.length; i++) {
+      const token = scorables[i]!;
+      if (i > 0) {
+        sentenceId += Math.max(0, token.sentenceIndex - scorables[i - 1]!.sentenceIndex);
+      }
+      assigned.push([token, sentenceId]);
+      if (isNew(token.status)) {
+        gapsBySentence.set(sentenceId, (gapsBySentence.get(sentenceId) ?? 0) + 1);
+      }
+    }
+    interTokenText = text.slice(scorables[scorables.length - 1]!.end);
+  }
+  for (const block of blocks) {
+    for (const token of block.tokens ?? []) token.iPlus1 = false;
+  }
+  for (const [token, id] of assigned) {
+    token.iPlus1 = isNew(token.status) && gapsBySentence.get(id) === 1;
   }
 }
 

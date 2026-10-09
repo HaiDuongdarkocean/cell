@@ -23,6 +23,18 @@ const FORBIDDEN_TAGS = new Set([
 const SUBTITLE_LINE_CLASS = 'subtitle-line';
 const SUBTITLE_NATIVE_CLASS = 'native';
 
+/** Paragraph-ish container: a rendered sentence never reaches past one of
+ *  these, so sentence-level semantics (sentence wash, i+1 marking) scope to
+ *  the nearest match. */
+export const SENTENCE_CONTAINER_SELECTOR =
+  'p, li, dd, dt, blockquote, figcaption, td, th, h1, h2, h3, h4, h5, h6';
+
+/** Sentence scope of a token block's element — falls back to the element
+ *  itself so a lone block keeps its own scope. */
+export function sentenceContainerOf(element: Element): Element {
+  return element.closest(SENTENCE_CONTAINER_SELECTOR) ?? element;
+}
+
 /** Extension UI host selectors — text inside these must NOT be tokenized.
  *  Light-DOM hosts (#cell-settings-dialog-host, #cell-card-creator-host,
  *  .js-cell-popup-host, #cell-universal-panel-host) contain React-rendered text

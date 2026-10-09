@@ -107,6 +107,7 @@ ${buildVariables()}
 .js-cell-token {
   display: ruby !important;
   ruby-position: under !important;
+  ruby-align: center !important;
   position: relative !important;
   vertical-align: baseline !important;
   --cell-token-annotation-scale: 0.62;
@@ -142,6 +143,7 @@ ${buildVariables()}
    underline. Annotation-off tokens render identical to the original text. */
 html body .js-cell-token--word {
   display: ruby !important;
+  ruby-align: center !important;
   padding: 0 !important;
   border: 0 !important;
 }
@@ -152,6 +154,7 @@ html body .js-cell-token--word {
 html body .js-cell-token-ruby {
   display: ruby !important;
   ruby-position: over !important;
+  ruby-align: center !important;
 }
 
 /* The inner span is the word lane — the ruby base both annotations measure

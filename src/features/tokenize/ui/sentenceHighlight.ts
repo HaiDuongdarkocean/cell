@@ -1,14 +1,11 @@
 import { collectSentenceRun, type SentenceSegment } from '@/features/tokenize/logic/sentenceRun';
+import { SENTENCE_CONTAINER_SELECTOR } from '@/features/tokenize/logic/tokenizeBlock';
 import { SENTENCE_ATTR, SEPARATOR_CLASS } from './tokenSpanRenderer';
 
 /** Class the CSS washes the sentence with (see buildTokenSpanCss). */
 export const SENTENCE_CLASS = 'js-cell-token--sentence';
 
 const BLOCK_ATTR = 'data-cell-block-id';
-
-/** Paragraph-ish container: a sentence never reaches past one visual
- *  paragraph, so the run is read from the spans inside the same container. */
-const CONTAINER_SELECTOR = 'p, li, dd, dt, blockquote, figcaption, td, th, h1, h2, h3, h4, h5, h6';
 
 interface Segment extends SentenceSegment {
   readonly spans: HTMLElement[];
@@ -48,7 +45,7 @@ export function clearSentenceHighlight(spans: readonly HTMLElement[]): void {
 /** Wash every rendered token of the sentence `span` belongs to, and return the
  *  washed spans so the caller can clear them later. */
 export function highlightSentence(span: HTMLElement): HTMLElement[] {
-  const container = span.closest(CONTAINER_SELECTOR) ?? span.parentElement;
+  const container = span.closest(SENTENCE_CONTAINER_SELECTOR) ?? span.parentElement;
   if (!container) return [];
 
   const segments = readSegments(container);
