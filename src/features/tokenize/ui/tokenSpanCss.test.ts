@@ -10,9 +10,12 @@ import { buildTokenSpanCss, buildTokenSpanCssForShadow } from './tokenSpanCss';
 describe('buildTokenSpanCss — static token injection (status bar visibility)', () => {
   const css = buildTokenSpanCss();
 
-  it('injects the 6 static design tokens needed by token-span CSS into :root', () => {
+  it('injects the 9 static design tokens needed by token-span CSS into :root', () => {
     const staticTokens = [
       '--space-0-5',
+      '--space-1',
+      '--space-1-5',
+      '--space-2',
       '--shadow-sm',
       '--border-width-hairline',
       '--border-width-status',
@@ -76,14 +79,26 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     });
   });
 
-  it.each(['host', 'shadow'])('keeps the %s status capsule in-flow and rounded', (variant) => {
+  it.each(['host', 'shadow'])('keeps the %s status capsule rounded and transparent until painted', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
     const bar = source.match(/\.js-cell-token-status\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(bar).toContain('display: block');
-    expect(bar).toContain('width: 100%');
     expect(bar).toContain('height: var(--border-width-status)');
     expect(bar).toContain('border-radius: 999px');
     expect(bar).toContain('background: transparent');
+  });
+
+  it('keeps the shadow status capsule in-flow at full lane width', () => {
+    const bar = buildTokenSpanCssForShadow().match(/\.js-cell-token-status\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(bar).toContain('width: 100%');
+  });
+
+  it('pins the host status capsule out of flow, tracking the pill padding vars', () => {
+    const bar = buildTokenSpanCss().match(/\.js-cell-token-status\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(bar).toContain('position: absolute');
+    expect(bar).toContain('top: calc(100% + var(--space-0-5))');
+    expect(bar).toContain('left: var(--cell-token-pill-pad-x, 0px)');
+    expect(bar).toContain('right: var(--cell-token-pill-pad-x, 0px)');
   });
 
   it.each(['unknown', 'tracking', 'known', 'ignore'])(
@@ -131,7 +146,7 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
 
   it.each(['host', 'shadow'])('gates the frequency pill but not the status capsule behind i+1 in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
-    const rule = source.match(/\.js-cell-token--i1-off\s*\{[^}]*\}/)?.[0] ?? '';
+    const rule = source.match(/\.js-cell-token--i1-off[^{]*\{[^}]*\}/)?.[0] ?? '';
     expect(rule).toContain('background-color: transparent');
     expect(rule).toContain('box-shadow: none');
     expect(rule).toContain('padding: 0');
@@ -146,28 +161,97 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
 
   it.each(['host', 'shadow'])('washes the whole sentence on hover in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
+    // The separator keeps a flat background-color; the word lane layers the
+    // wash as background-image in the host CSS so it composes over the
+    // frequency pill background instead of replacing it.
+    if (variant === 'host') {
+      expect(source).toMatch(
+        /\.js-cell-token--sentence \.js-cell-token-word\s*\{[^}]*background-image:\s*linear-gradient\(color-mix\(in srgb, var\(--cell-token-selected\) 22%/,
+      );
+    } else {
+      expect(source).toMatch(
+        /\.js-cell-token--sentence \.js-cell-token-word,\s*[^}]*\.js-cell-token--separator\.js-cell-token--sentence\s*\{[^}]*background-color:\s*color-mix\(in srgb, var\(--cell-token-selected\)/,
+      );
+    }
     expect(source).toMatch(
-      /\.js-cell-token--sentence \.js-cell-token-word,\s*[^}]*\.js-cell-token--separator\.js-cell-token--sentence\s*\{[^}]*background-color:\s*color-mix\(in srgb, var\(--cell-token-selected\)/,
+      /\.js-cell-token--separator\.js-cell-token--sentence\s*\{[^}]*background-color:\s*color-mix\(in srgb, var\(--cell-token-selected\)/,
     );
   });
 
-  it.each(['host', 'shadow'])('frequency pill wraps the whole column in %s CSS', (variant) => {
+  it.each(['host', 'shadow'])('frequency pill chrome placement in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
-    // Pill background + padding + radius target the token column itself, not
-    // the inner word lane, so the box encloses cap + word + status + gloss.
-    expect(source).toMatch(/frequency-core\s*\{[^}]*background-color:\s*var\(--cell-token-freq-core-bg\)/);
-    expect(source).toMatch(/frequency-rare\s*\{[^}]*padding:\s*0\.15em 0\.3em/);
-    expect(source).toMatch(/frequency-rare\s*\{[^}]*border-radius:\s*var\(--radius-md\)/);
-    expect(source).toMatch(/frequency-rare\s*\{[^}]*box-shadow:\s*inset 0 0 0 var\(--border-width-hairline\)/);
-    expect(source).not.toMatch(/frequency-\w+ \.js-cell-token-word\s*\{[^}]*background-color/);
+    if (variant === 'host') {
+      // Host: pill chrome targets the word lane inside the ruby wrapper so
+      // the pill hugs the word while the ruby base stays annotation-wide.
+      expect(source).toMatch(
+        /frequency-core > \.js-cell-token-ruby > \.js-cell-token-word\s*\{[^}]*background-color:\s*var\(--cell-token-freq-core-bg\)/,
+      );
+      expect(source).toMatch(
+        /frequency-rare > \.js-cell-token-ruby > \.js-cell-token-word[^}]*\{[^}]*border-radius:\s*var\(--radius-md\)/,
+      );
+      expect(source).toMatch(
+        /frequency-rare > \.js-cell-token-ruby > \.js-cell-token-word[^}]*\{[^}]*box-shadow:\s*inset 0 0 0 var\(--border-width-hairline\)/,
+      );
+      // The token keeps only the band fg so ruby-text annotations inherit it.
+      expect(source).toMatch(/frequency-core\s*\{[^}]*color:\s*var\(--cell-token-freq-core-fg\)/);
+      expect(source).not.toMatch(/frequency-core\s*\{[^}]*background-color/);
+    } else {
+      // Shadow: pill background + padding + radius stay on the token itself,
+      // so the box encloses the word and its in-flow annotation lanes.
+      expect(source).toMatch(/frequency-core\s*\{[^}]*background-color:\s*var\(--cell-token-freq-core-bg\)/);
+      expect(source).toMatch(/frequency-rare\s*\{[^}]*border-radius:\s*var\(--radius-md\)/);
+      expect(source).toMatch(/frequency-rare\s*\{[^}]*box-shadow:\s*inset 0 0 0 var\(--border-width-hairline\)/);
+      expect(source).not.toMatch(/frequency-\w+ \.js-cell-token-word\s*\{[^}]*background-color/);
+    }
+  });
+
+  it('drives the host pill padding from --cell-token-pill-pad-x/y vars on the word lane', () => {
+    const source = buildTokenSpanCss();
+    const pill = source.match(/frequency-rare > \.js-cell-token-ruby > \.js-cell-token-word[^}]*\{([^}]*)\}/)?.[1] ?? '';
+    expect(pill).toContain('--cell-token-pill-pad-x: 0.3em');
+    expect(pill).toContain('--cell-token-pill-pad-y: 0.15');
+    expect(pill).toContain('padding: calc(var(--cell-token-pill-pad-y) * 1em) var(--cell-token-pill-pad-x)');
+  });
+
+  it('keeps the shadow pill padding at 0.15em 0.3em', () => {
+    expect(buildTokenSpanCssForShadow()).toMatch(/frequency-rare\s*\{[^}]*padding:\s*0\.15em 0\.3em/);
+  });
+
+  it.each(['known', 'ignore'])('zeros the host pill pad vars when the %s pill is stripped', (status) => {
+    const source = buildTokenSpanCss();
+    const rules = [...source.matchAll(new RegExp(`status-${status}[^;{]*\\{[^}]*\\}`, 'g'))].map((m) => m[0]);
+    const match = rules.find((r) => r.includes('padding: 0')) ?? '';
+    expect(match).toContain('--cell-token-pill-pad-x: 0px');
+    expect(match).toContain('--cell-token-pill-pad-y: 0');
+  });
+
+  it.each(['i1-off', 'frequency-off'])('zeros the host pill pad vars for %s', (cls) => {
+    const rule = buildTokenSpanCss().match(new RegExp(`${cls}[^{]*\\{([^}]*)\\}`))?.[1] ?? '';
+    expect(rule).toContain('--cell-token-pill-pad-x: 0px');
+    expect(rule).toContain('--cell-token-pill-pad-y: 0');
   });
 
   it.each(['host', 'shadow'])('keeps the word lane transparent and unpainted in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
     const lane = source.match(/\.js-cell-token-word\s*\{([^}]*)\}/)?.[1] ?? '';
-    expect(lane).toContain('line-height: 1.1');
+    expect(lane).toContain('line-height:');
     expect(lane).toContain('background: transparent');
     expect(lane).not.toContain('box-shadow');
+  });
+
+  it('inherits host line-height on the word lane and anchors the status bar inside it', () => {
+    const source = buildTokenSpanCss();
+    const lane = source.match(/\.js-cell-token-word\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(lane).toContain('line-height: inherit');
+    expect(lane).toContain('position: relative');
+    // Annotation room comes from padding on the ruby-text boxes, not from a
+    // reserved line-height on the lane.
+    expect(source).not.toContain('line-height: 3.4');
+  });
+
+  it('keeps the shadow word lane at line-height 1.1', () => {
+    const lane = buildTokenSpanCssForShadow().match(/\.js-cell-token-word\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(lane).toContain('line-height: 1.1');
   });
 
   it.each(['host', 'shadow'])('blocks host padding/border/margin leakage into token lanes in %s CSS', (variant) => {
@@ -181,9 +265,35 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     expect(status).toContain('margin: 0');
   });
 
-  it.each(['host', 'shadow'])('spaces the annotation stack without gap or margin in %s CSS', (variant) => {
-    const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
+  it('makes host tokens native ruby containers (token under gloss, nested ruby over IPA)', () => {
+    const source = buildTokenSpanCss();
+    const token = source.match(/\.js-cell-token\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(token).toContain('display: ruby !important');
+    expect(token).toContain('ruby-position: under !important');
+    const word = source.match(/\.js-cell-token--word\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(word).toContain('display: ruby !important');
+    const ruby = source.match(/\.js-cell-token-ruby\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(ruby).toContain('display: ruby !important');
+    expect(ruby).toContain('ruby-position: over !important');
+    // No column layout and no baseline lift on the host variant.
+    expect(word).not.toContain('inline-flex');
+    expect(word).not.toContain('gap:');
+    expect(word).not.toContain('margin:');
+    expect(source).not.toMatch(/vertical-align:\s*1\.05em/);
+    expect(source).not.toMatch(/\.js-cell-token-word\s*\{[^}]*padding-bottom/);
+    expect(source).not.toMatch(/::after\s*\{[^}]*margin-top/);
+  });
+
+  it('collapses the ruby wrapper inside the shadow column (display: contents)', () => {
+    const ruby = buildTokenSpanCssForShadow().match(/\.js-cell-token-ruby\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(ruby).toContain('display: contents !important');
+    expect(ruby).not.toContain('ruby-position');
+  });
+
+  it('keeps the shadow word token an in-flow column lifted by the cap lane', () => {
+    const source = buildTokenSpanCssForShadow();
     const column = source.match(/\.js-cell-token--word\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(column).toContain('inline-flex');
     expect(column).not.toContain('gap:');
     expect(column).not.toContain('margin:');
     expect(source).toMatch(/vertical-align:\s*1\.05em/);
@@ -191,8 +301,24 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     expect(source).not.toMatch(/::after\s*\{[^}]*margin-top/);
   });
 
-  it.each(['host', 'shadow'])('sizes reading and gloss lanes at 0.62em in %s CSS', (variant) => {
-    const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
+  it('renders host IPA and gloss as ruby-text lanes scaled by --cell-token-annotation-scale', () => {
+    const source = buildTokenSpanCss();
+    const cap = source.match(/reading-off\) > \.js-cell-token-ruby::after\s*\{([^}]*)\}/)?.[1] ?? '';
+    const gloss = source.match(/gloss-off\)::after\s*\{([^}]*)\}/)?.[1] ?? '';
+    for (const lane of [cap, gloss]) {
+      expect(lane).toContain('display: ruby-text');
+      expect(lane).toContain('font-size: calc(var(--cell-token-annotation-scale) * 1em)');
+      expect(lane).toContain('pointer-events: none');
+      expect(lane).toContain('user-select: none');
+    }
+    expect(cap).toContain('content: attr(data-reading)');
+    expect(cap).toContain('padding: var(--space-1) .35em var(--space-0-5)');
+    expect(gloss).toContain('content: attr(data-gloss)');
+    expect(gloss).toContain('padding: var(--space-1-5) .35em var(--space-2)');
+  });
+
+  it('sizes shadow reading and gloss lanes at 0.62em', () => {
+    const source = buildTokenSpanCssForShadow();
     const cap = source.match(/reading-off\)::before\s*\{([^}]*)\}/)?.[1] ?? '';
     const gloss = source.match(/gloss-off\)::after\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(cap).toContain('font-size: 0.62em');
@@ -201,7 +327,11 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
 
   it.each(['host', 'shadow'])('annotation lanes inherit the word style (color/italic/weight) in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
-    for (const lane of [/(reading-off\)::before\s*\{([^}]*)\})/, /(gloss-off\)::after\s*\{([^}]*)\})/]) {
+    const lanes =
+      variant === 'host'
+        ? [/(reading-off\) > \.js-cell-token-ruby::after\s*\{([^}]*)\})/, /(gloss-off\)::after\s*\{([^}]*)\})/]
+        : [/(reading-off\)::before\s*\{([^}]*)\})/, /(gloss-off\)::after\s*\{([^}]*)\})/];
+    for (const lane of lanes) {
       const body = source.match(lane)?.[1] ?? '';
       expect(body).toContain('font-style: inherit');
       expect(body).toContain('font-weight: inherit');
@@ -224,11 +354,9 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     expect(darkBlock).not.toContain('#6AB2F5'); // dark primary never emitted
   });
 
-  it('keeps a line box in the empty cap lane so missing readings never lift the word', () => {
-    for (const source of [buildTokenSpanCss(), buildTokenSpanCssForShadow()]) {
-      const cap = source.match(/reading-off\)::before\s*\{([^}]*)\}/)?.[1] ?? '';
-      expect(cap).toContain("content: attr(data-reading) '\\200B'");
-      expect(cap).toContain('min-height:');
-    }
+  it('keeps a line box in the empty shadow cap lane so missing readings never lift the word', () => {
+    const cap = buildTokenSpanCssForShadow().match(/reading-off\)::before\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(cap).toContain("content: attr(data-reading) '\\200B'");
+    expect(cap).toContain('min-height:');
   });
 });

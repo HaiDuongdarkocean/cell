@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Token, TokenBlock } from '@/features/tokenize/types';
-import { bindTokenBlock, unbindTokenBlock } from './tokenSpanRenderer';
+import { markIPlus1Tokens } from '@/features/tokenize/logic/comprehensionScore';
+import { bindTokenBlock, restyleTokenBlock, unbindTokenBlock } from './tokenSpanRenderer';
 import { buildTokenSpanCss } from './tokenSpanCss';
 
 function makeBlock(text: string, tokens: Token[]): TokenBlock {
@@ -33,7 +34,36 @@ describe('tokenSpanRenderer', () => {
     expect(hello).toBeTruthy();
     expect(hello!.classList.contains('js-cell-token--status-unknown')).toBe(true);
     expect(hello!.classList.contains('js-cell-token--frequency-core')).toBe(true);
-    expect(hello!.querySelector('.js-cell-token-status')).not.toBeNull();
+
+    // token > .js-cell-token-ruby > .js-cell-token-word > [text, .js-cell-token-status]
+    const ruby = hello!.firstElementChild;
+    expect(ruby?.classList.contains('js-cell-token-ruby')).toBe(true);
+    const word = ruby!.firstElementChild;
+    expect(word?.classList.contains('js-cell-token-word')).toBe(true);
+    expect(word!.textContent).toBe('Hello');
+    expect(word!.querySelector('.js-cell-token-status')).not.toBeNull();
+  });
+
+  it('mirrors token.reading onto the token and the ruby element on bind and restyle', () => {
+    const block = makeBlock('Hello.', [
+      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'none', reading: 'həˈloʊ' },
+    ]);
+    bindTokenBlock(block, { showStatus: true, showFrequency: true, showReadings: true });
+
+    const span = block.element.querySelector('.js-cell-token')!;
+    const ruby = span.querySelector('.js-cell-token-ruby')!;
+    expect(span.getAttribute('data-reading')).toBe('həˈloʊ');
+    expect(ruby.getAttribute('data-reading')).toBe('həˈloʊ');
+
+    block.tokens![0]!.reading = 'hɛl.oʊ';
+    expect(restyleTokenBlock(block, { showStatus: true, showFrequency: true, showReadings: true })).toBe(true);
+    expect(span.getAttribute('data-reading')).toBe('hɛl.oʊ');
+    expect(ruby.getAttribute('data-reading')).toBe('hɛl.oʊ');
+
+    block.tokens![0]!.reading = undefined;
+    expect(restyleTokenBlock(block, { showStatus: true, showFrequency: true, showReadings: true })).toBe(true);
+    expect(span.getAttribute('data-reading')).toBeNull();
+    expect(ruby.getAttribute('data-reading')).toBeNull();
   });
 
   it('marks only the single unknown word of a sentence as i+1', () => {
@@ -44,6 +74,7 @@ describe('tokenSpanRenderer', () => {
       { text: 'aardvark', term: 'aardvark', start: 19, end: 27, isSeparator: false, sentenceIndex: 1, status: 'unknown', frequencyBand: 'rare', reading: undefined },
       { text: 'platypus', term: 'platypus', start: 36, end: 44, isSeparator: false, sentenceIndex: 1, status: 'unknown', frequencyBand: 'rare', reading: undefined },
     ]);
+    markIPlus1Tokens(block.tokens!);
     bindTokenBlock(block, { showStatus: true, showFrequency: true });
 
     const cls = (term: string) =>

@@ -32,6 +32,7 @@ export const SEPARATOR_CLASS = 'js-cell-token--separator';
 /** Sentence index of the token/gap, stamped at bind time. */
 export const SENTENCE_ATTR = 'data-cell-sentence';
 const WORD_INNER_CLASS = 'js-cell-token-word';
+const RUBY_CLASS = 'js-cell-token-ruby';
 const STATUS_CLASS = 'js-cell-token-status';
 const READING_OFF_CLASS = 'js-cell-token--reading-off';
 const GLOSS_OFF_CLASS = 'js-cell-token--gloss-off';
@@ -89,16 +90,20 @@ function applyTokenClasses(span: HTMLElement, token: Token, options: TokenSpanBi
   }
 }
 
-/** Mirror token.reading/token.gloss onto the token span's data-reading and
- *  data-gloss attributes — the CSS ::before cap lane and ::after gloss lane
- *  are in-flow items of the token's flex column and read attr() from the
- *  token element itself. Runs on both bind and in-place restyle so late
- *  metadata updates don't rebuild the DOM. */
+/** Mirror token.reading/token.gloss onto data attributes: data-gloss lives on
+ *  the token span (its ::after ruby-text reads attr(data-gloss); the shadow
+ *  variant's ::after does the same), while data-reading is set on both the
+ *  token (shadow ::before reads it) and the nested .js-cell-token-ruby element
+ *  whose ::after ruby-text renders the IPA on host pages. Runs on both bind
+ *  and in-place restyle so late metadata updates don't rebuild the DOM. */
 function applyTokenReading(span: HTMLElement, token: Token): void {
+  const ruby = span.querySelector(`.${RUBY_CLASS}`);
   if (token.reading) {
     span.setAttribute('data-reading', token.reading);
+    ruby?.setAttribute('data-reading', token.reading);
   } else {
     span.removeAttribute('data-reading');
+    ruby?.removeAttribute('data-reading');
   }
   if (token.gloss) {
     span.setAttribute('data-gloss', token.gloss);
@@ -153,13 +158,17 @@ function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBind
   const word = document.createElement('span');
   word.className = WORD_INNER_CLASS;
   word.textContent = token.text;
-  span.appendChild(word);
-  applyTokenReading(span, token);
 
   const status = document.createElement('span');
   status.className = STATUS_CLASS;
   status.setAttribute('aria-hidden', 'true');
-  span.appendChild(status);
+  word.appendChild(status);
+
+  const ruby = document.createElement('span');
+  ruby.className = RUBY_CLASS;
+  ruby.appendChild(word);
+  span.appendChild(ruby);
+  applyTokenReading(span, token);
 
   return span;
 }
