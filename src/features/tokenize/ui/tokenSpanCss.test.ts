@@ -129,14 +129,16 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     }
   });
 
-  it.each(['host', 'shadow'])('gates the pill and status capsule behind i+1 in %s CSS', (variant) => {
+  it.each(['host', 'shadow'])('gates the frequency pill but not the status capsule behind i+1 in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
     const rule = source.match(/\.js-cell-token--i1-off\s*\{[^}]*\}/)?.[0] ?? '';
     expect(rule).toContain('background-color: transparent');
     expect(rule).toContain('box-shadow: none');
     expect(rule).toContain('padding: 0');
     expect(rule).toContain('border-radius: 0');
-    expect(source).toMatch(/\.js-cell-token--i1-off \.js-cell-token-status\s*\{[^}]*background:\s*transparent/);
+    // --i1-off strips the pill chrome only; the status capsule stays visible
+    // for every still-new token, so no rule may blank it.
+    expect(source).not.toMatch(/--i1-off[^{}]*\.js-cell-token-status\s*\{[^}]*background:\s*transparent/);
     // The gate must sit after the frequency/status paint rules so equal
     // specificity resolves in its favour.
     expect(source.indexOf('.js-cell-token--i1-off')).toBeGreaterThan(source.indexOf('frequency-rare {'));
@@ -179,12 +181,12 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     expect(status).toContain('margin: 0');
   });
 
-  it.each(['host', 'shadow'])('spaces the annotation stack by column gap alone in %s CSS', (variant) => {
+  it.each(['host', 'shadow'])('spaces the annotation stack without gap or margin in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
     const column = source.match(/\.js-cell-token--word\s*\{([^}]*)\}/)?.[1] ?? '';
-    expect(column).toContain('gap: 0.14em');
-    expect(column).toContain('margin: 0.55em 0');
-    expect(source).toMatch(/vertical-align:\s*1\.19em/);
+    expect(column).not.toContain('gap:');
+    expect(column).not.toContain('margin:');
+    expect(source).toMatch(/vertical-align:\s*1\.05em/);
     expect(source).not.toMatch(/\.js-cell-token-word\s*\{[^}]*padding-bottom/);
     expect(source).not.toMatch(/::after\s*\{[^}]*margin-top/);
   });

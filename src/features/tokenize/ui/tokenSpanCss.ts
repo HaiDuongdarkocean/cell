@@ -124,21 +124,20 @@ ${buildVariables()}
 }
 
 /* Each word token is a self-sizing vertical unit: cap lane, word lane,
-   status bar, gloss lane stacked in flow and spaced by 'gap' alone — no
-   per-lane margins. The column width is the widest lane, so a long reading
-   or gloss widens the whole unit and centers the shorter lanes instead of
-   overlapping neighbouring tokens. The lanes always exist (content may be
-   empty) and keep their line-height as reserved space, so asynchronously
-   resolved metadata never reflows the line. Margin-block adds inter-row
-   breathing so stacked annotation columns never touch the neighbouring
-   line. Annotation-off tokens degrade to a single-item column, visually
-   identical to the original inline word. */
+   status bar, gloss lane stacked in flow — lanes sit tight against each
+   other with no gap and no per-lane margins. The column width is the widest
+   lane, so a long reading or gloss widens the whole unit and centers the
+   shorter lanes instead of overlapping neighbouring tokens. The lanes always
+   exist (content may be empty) and keep their line-height as reserved space,
+   so asynchronously resolved metadata never reflows the line. No margin — the
+   column must not inflate the host's line pitch (measured: host line-height
+   26px, column with margin produced a 39px pitch). Annotation-off tokens
+   degrade to a single-item column, visually identical to the original inline
+   word. */
 html body .js-cell-token--word {
   display: inline-flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  gap: 0.14em !important;
-  margin: 0.55em 0 !important;
   padding: 0 !important;
   border: 0 !important;
 }
@@ -147,10 +146,10 @@ html body .js-cell-token--word {
    lane exists, lift the column by the cap-to-word baseline distance so the
    word lands back on the parent text baseline — word alignment stays exact
    relative to any inline ancestor (<a>, <sup>, separators), on both host
-   pages and subtitle surfaces. 1.19em = cap lane (0.62em × 1.15) + lane gap
-   (0.14em) + word ascent; calibrated on real layout to <0.2px error. */
+   pages and subtitle surfaces. 1.05em is calibrated for cap font-size 0.62em
+   + word lane line-height 1.1; re-measure if either changes. */
 html body .js-cell-token--word:not(.js-cell-token--reading-off) {
-  vertical-align: 1.19em !important;
+  vertical-align: 1.05em !important;
 }
 
 /* The inner span is the word lane of the token column. It stays transparent
@@ -344,9 +343,8 @@ html body .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-t
 }
 
 /* i+1 gate: only the single still-new word of a sentence paints the frequency
-   pill and status capsule. Every other token carries --i1-off and renders as
-   plain text — same reset as known/ignore, so a page full of unknown words
-   stays readable instead of turning into a wall of pills. */
+   pill. Every other still-new token carries --i1-off, which strips the pill
+   chrome only — the status capsule stays visible for all still-new tokens. */
 html body .js-cell-token.js-cell-token--i1-off {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
@@ -354,9 +352,6 @@ html body .js-cell-token.js-cell-token--i1-off {
   box-shadow: none !important;
   padding: 0 !important;
   border-radius: 0 !important;
-}
-html body .js-cell-token.js-cell-token--i1-off .js-cell-token-status {
-  background: transparent !important;
 }
 
 html body .js-cell-token.js-cell-token--selected .js-cell-token-word {
@@ -428,22 +423,22 @@ ${buildVariables(':host')}
 }
 
 /* Self-sizing annotation column — same mechanism as the light-DOM builder:
-   cap/word/status/gloss lanes stacked in flow, spaced by 'gap' alone; margin
-   adds inter-row breathing so stacked columns never touch. */
+   cap/word/status/gloss lanes stacked in flow, tight against each other with
+   no gap and no margin (the column must not inflate the host's line pitch). */
 .js-cell-token--word {
   display: inline-flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  gap: 0.14em !important;
-  margin: 0.55em 0 !important;
   padding: 0 !important;
   border: 0 !important;
 }
 
 /* Column baseline = cap lane baseline; lift by the cap-to-word distance so
-   the word lands back on the parent text baseline (see light-DOM rule). */
+   the word lands back on the parent text baseline. 1.05em is calibrated for
+   cap font-size 0.62em + word lane line-height 1.1; re-measure if either
+   changes (see light-DOM rule). */
 .js-cell-token--word:not(.js-cell-token--reading-off) {
-  vertical-align: 1.19em !important;
+  vertical-align: 1.05em !important;
 }
 
 .js-cell-token-word {
@@ -606,6 +601,8 @@ ${buildVariables(':host')}
   background: transparent !important;
 }
 
+/* i+1 gate: --i1-off strips the frequency pill chrome only; the status
+   capsule stays visible for all still-new tokens (see light-DOM rule). */
 .js-cell-token.js-cell-token--i1-off {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
@@ -613,9 +610,6 @@ ${buildVariables(':host')}
   box-shadow: none !important;
   padding: 0 !important;
   border-radius: 0 !important;
-}
-.js-cell-token.js-cell-token--i1-off .js-cell-token-status {
-  background: transparent !important;
 }
 
 .js-cell-token.js-cell-token--selected .js-cell-token-word {
