@@ -1,4 +1,4 @@
-import { DEFAULT_LIGHT_TOKENS, DEFAULT_DARK_TOKENS, STATIC_TOKENS, type TokenRecord } from '@/shared/lib/tokens';
+import { DEFAULT_LIGHT_TOKENS, STATIC_TOKENS, type TokenRecord } from '@/shared/lib/tokens';
 
 const TOKEN_STYLE_ID = 'cell-token-span-style';
 
@@ -61,9 +61,10 @@ function buildVariables(rootSelector = ':root'): string {
   const lightDecls = Object.entries(CELL_TOKEN_MAP)
     .map(([cellName, designName]) => `  ${cellName}: ${resolveMappedTokenValue(DEFAULT_LIGHT_TOKENS, designName)};`)
     .join('\n');
-  const darkDecls = Object.entries(CELL_TOKEN_MAP)
-    .map(([cellName, designName]) => `  ${cellName}: ${resolveMappedTokenValue(DEFAULT_DARK_TOKENS, designName)};`)
-    .join('\n');
+  // Tokens sit on arbitrary host-page backgrounds — pin them to the light
+  // palette so OS dark mode or a host [data-theme="dark"] ancestor can never
+  // restyle them dark.
+  const darkDecls = lightDecls;
   // Static tokens (spacing/radius/shadow/border-width/motion) are theme-
   // independent; inject once into :root so var() resolves on host pages where
   // tokens.css is never loaded. Without this, the status bar box-shadow
