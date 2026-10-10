@@ -3658,6 +3658,25 @@
         "real-pointer-test"
       ],
       "trigger": "CSS gate ẩn một indicator layer (status bar, badge, underline) bằng selector vô điều kiện trong khi layer đó có contract 'reveal on demand' (hover/focus/popup)"
+    },
+    {
+      "type": "experience",
+      "id": "combo-shortcut-editable-guard-autofocus-trap",
+      "title": "Editable-guard shortcuts must exempt modifier combos or an autofocused input kills the toggle",
+      "category": [
+        "ux"
+      ],
+      "tags": [
+        "keyboard",
+        "shortcut",
+        "editable-guard",
+        "input",
+        "autofocus",
+        "toggle",
+        "panel"
+      ],
+      "trigger": "A global toggle shortcut uses the shared editable-target guard while the surface it opens autofocuses an input — the very flow the shortcut exists for (open then toggle back) dead-ends",
+      "fix": "Match the binding first; skip isEditableTarget only for bare-key bindings — modifier combos cannot be typed into an input so they may fire inside editable fields"
     }
   ]
 }
