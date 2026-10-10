@@ -36,7 +36,7 @@ interface QueueSidebarProps {
   /** Mobile layout: render as a capped top strip instead of a right rail. */
   mobile?: boolean;
   /** Overlay layout: render inside a CardCreatorSidePanel layer — no own
-   *  header (the shell provides it), fills the overlay height. */
+   *  header, fills the overlay height. */
   overlay?: boolean;
 }
 

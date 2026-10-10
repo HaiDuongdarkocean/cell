@@ -191,19 +191,7 @@ test.describe('Stage 2: Card Creator > Settings side panel in Dictionary', () =>
     expect(layer, 'Settings layer did not open').toBeTruthy();
     expect(layer?.section, 'Settings layer section').toBe('cardCreator');
 
-    const backButton = await queryInPanel(
-      universalPanel.page,
-      '[data-cell-id="cc-settings-back"]',
-    );
-    expect(backButton, 'Settings back button did not render').toBeTruthy();
-
-    const title = await queryInPanel(
-      universalPanel.page,
-      '[data-cell-id="card-creator-settings-layer"] h2',
-    );
-    expect(title?.text, 'Settings title did not render').toBeTruthy();
-
-    await clickInPanel(universalPanel.page, '[data-cell-id="cc-settings-back"]');
+    await universalPanel.page.keyboard.press('Escape');
 
     const closed = await waitForPanelSelector(
       universalPanel.page,
@@ -226,12 +214,12 @@ test.describe('Stage 2: Card Creator > Settings side panel in Dictionary', () =>
     expect(settingsButtonVisible, 'Card Creator settings button did not render').toBeTruthy();
     await clickInPanel(universalPanel.page, '[data-cell-id="cc-settings"]');
 
-    const backButton = await queryInPanel(
+    const firstLayer = await queryInPanel(
       universalPanel.page,
-      '[data-cell-id="cc-settings-back"]',
+      '[data-cell-id="card-creator-settings-layer"]',
     );
-    expect(backButton, 'Back button did not render on first open').toBeTruthy();
-    await clickInPanel(universalPanel.page, '[data-cell-id="cc-settings-back"]');
+    expect(firstLayer, 'Settings layer did not open on first click').toBeTruthy();
+    await universalPanel.page.keyboard.press('Escape');
 
     await waitForPanelSelector(
       universalPanel.page,

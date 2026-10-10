@@ -4,7 +4,6 @@ import { test } from './showcase.fixture';
 const CONTENT = '[data-cell-id="card-creator-content"]';
 const QUEUE_PANEL = '[data-cell-id="cc-queue-panel"]';
 const QUEUE_TOGGLE = '[data-cell-id="cc-queue-toggle"]';
-const QUEUE_BACK = '[data-cell-id="cc-queue-back"]';
 const QUEUE_UNDO = '[data-cell-id="cc-queue-undo"]';
 const TARGET_WORD = '[data-cell-id="cc-target-word-input"] textarea';
 
@@ -38,13 +37,13 @@ test.describe('Showcase — Card Creator queue slide-over', () => {
     }
   });
 
-  test('closes via back button and reopens via the header toggle', async ({
+  test('closes and reopens via the header toggle', async ({
     showcasePage,
   }) => {
     const panel = showcasePage.locator(QUEUE_PANEL);
     await expect(panel).toBeVisible();
 
-    await showcasePage.locator(QUEUE_BACK).click();
+    await showcasePage.locator(QUEUE_TOGGLE).click();
     await expect(panel).toBeHidden();
 
     await showcasePage.locator(QUEUE_TOGGLE).click();

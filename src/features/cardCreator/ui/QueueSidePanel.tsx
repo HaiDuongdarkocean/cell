@@ -48,13 +48,9 @@ export function QueueSidePanel({
     <CardCreatorSidePanel
       open={open}
       onClose={onClose}
-      title={queueItems.length > 0
-        ? t('cardCreator.queue.title', [queueActiveIndex + 1, queueItems.length])
-        : t('cardCreator.queue.empty')}
       side="right"
       ariaLabel={t('cardCreator.queue.aria')}
       dataCellId="cc-queue-panel"
-      backDataCellId="cc-queue-back"
       flushContent
     >
       <QueueSidebar

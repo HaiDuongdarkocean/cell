@@ -63,11 +63,9 @@ export function CardCreatorSettingsSidePanel({
     <CardCreatorSidePanel
       open={open}
       onClose={onClose}
-      title={t('settings.title')}
       side="left"
       ariaLabel={t('settings.title')}
       dataCellId="card-creator-settings-layer"
-      backDataCellId="cc-settings-back"
       dataSection="cardCreator"
     >
       <CardCreatorSettingsPanel

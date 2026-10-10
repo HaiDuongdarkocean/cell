@@ -8,12 +8,11 @@ const ADD_BTN = '[data-cell-id="cc-add"]';
 const NOTETYPE = '[data-cell-id="cc-note-type"]';
 const DECK = '[data-cell-id="cc-deck"]';
 const QUEUE_PANEL = '[data-cell-id="cc-queue-panel"]';
-const QUEUE_BACK = '[data-cell-id="cc-queue-back"]';
 
 async function closeQueue(page: import('./showcase.fixture').Page): Promise<void> {
   const panel = page.locator(QUEUE_PANEL);
   if (await panel.isVisible()) {
-    await page.click(QUEUE_BACK);
+    await page.keyboard.press('Escape');
     await expect(panel).toBeHidden();
   }
 }

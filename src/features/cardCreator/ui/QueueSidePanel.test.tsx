@@ -29,7 +29,6 @@ describe('QueueSidePanel', () => {
 
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveAttribute('data-cell-id', 'cc-queue-panel');
-    expect(screen.getByText('Queue (1/3)')).toBeInTheDocument();
     expect(screen.getByText('lyin')).toBeInTheDocument();
     expect(screen.getByText('better')).toBeInTheDocument();
   });
@@ -54,11 +53,11 @@ describe('QueueSidePanel', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('closes via the back button', () => {
+  it('closes via Escape', () => {
     const onClose = jest.fn();
     render(<QueueSidePanel {...baseProps()} open onClose={onClose} />);
 
-    fireEvent.click(screen.getByTestId('cc-queue-back'));
+    fireEvent.keyDown(document, { key: 'Escape' });
     expect(onClose).toHaveBeenCalled();
   });
 });
