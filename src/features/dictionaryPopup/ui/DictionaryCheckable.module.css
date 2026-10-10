@@ -364,7 +364,7 @@
 .cellAudioItem {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   padding: var(--space-1);
   border-radius: var(--radius-card);
   background: transparent;
@@ -411,7 +411,10 @@
   padding: 0;
   border: none;
   border-radius: var(--radius-md);
-  background: var(--color-surface);
+  /* Neutral mid-gray — transparent PNGs carry unknown ink colors; --color-surface
+     is near-black in dark themes and near-white in light ones, so either black
+     or white artwork can vanish. #8A8F98 sits mid-luminance so both read. */
+  background: var(--color-data-neutral);
   box-shadow: none;
   overflow: hidden;
   cursor: pointer;
