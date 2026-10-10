@@ -333,6 +333,27 @@ describe('mobile layout (<600px)', () => {
     expect(document.documentElement.getAttribute('data-cell-player-mode-mobile')).toBe('true');
   });
 
+  it('mounts the cue region as a resizable sheet — pill tap collapses and re-expands', () => {
+    renderMobile(sampleCues);
+    const sheet = screen.getByTestId('pm-cue-sheet');
+    const pill = screen.getByTestId('card-creator-sheet-pill');
+    expect(sheet).toHaveAttribute('data-snap', 'full');
+    const tap = (): void => {
+      const down = new MouseEvent('pointerdown', { bubbles: true });
+      const up = new MouseEvent('pointerup', { bubbles: true });
+      Object.assign(down, { pointerId: 1, pointerType: 'mouse' });
+      Object.assign(up, { pointerId: 1, pointerType: 'mouse' });
+      fireEvent(pill, down);
+      fireEvent(pill, up);
+    };
+    tap();
+    expect(sheet).toHaveAttribute('data-snap', 'collapsed');
+    expect(splitViewPanel()!.className).toContain('pmCueWrapCollapsed');
+    tap();
+    expect(sheet).toHaveAttribute('data-snap', 'full');
+    expect(splitViewPanel()!.className).not.toContain('pmCueWrapCollapsed');
+  });
+
   it('removes the mobile attribute on unmount', () => {
     const { unmount } = render(
       <PlayerModeHarness
