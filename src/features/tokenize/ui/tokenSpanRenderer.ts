@@ -54,24 +54,43 @@ export interface RenderedSentenceSegment extends SentenceSegment {
 
 /** Group the container's rendered spans into text blocks, in DOM order.
  *  Block scan order is not document order (links are scanned in a different
- *  pass than the surrounding text), so the DOM is the only reliable order. */
+ *  pass than the surrounding text), so the DOM is the only reliable order.
+ *  Untokenized text between blocks — a lone "." text node after a link, a
+ *  footnote like ".[5]" — is folded into the previous segment's trailingText:
+ *  the terminator closing a sentence often lives in that gap, and a run that
+ *  never sees it washes the next sentence into the previous one. */
 export function readSegments(container: Element): RenderedSentenceSegment[] {
   const segments: RenderedSentenceSegment[] = [];
   let current: { id: string; spans: HTMLElement[]; lastSentenceIndex: number; trailingText: string } | null = null;
+  const blockSelector = `[${BLOCK_ATTR}]`;
 
-  for (const span of container.querySelectorAll<HTMLElement>(`[${BLOCK_ATTR}]`)) {
-    const id = span.getAttribute(BLOCK_ATTR)!;
-    if (!current || current.id !== id) {
-      current = { id, spans: [], lastSentenceIndex: -1, trailingText: '' };
-      segments.push(current);
+  const walker = container.ownerDocument.createTreeWalker(
+    container,
+    NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
+  );
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (node instanceof HTMLElement && node.hasAttribute(BLOCK_ATTR)) {
+      const span = node;
+      const id = span.getAttribute(BLOCK_ATTR)!;
+      if (!current || current.id !== id) {
+        current = { id, spans: [], lastSentenceIndex: -1, trailingText: '' };
+        segments.push(current);
+      }
+      const isSeparator = span.classList.contains(SEPARATOR_CLASS);
+      current.spans.push(span);
+      if (isSeparator) {
+        current.trailingText = span.textContent ?? '';
+      } else {
+        current.trailingText = '';
+        current.lastSentenceIndex = Number(span.getAttribute(SENTENCE_ATTR) ?? '0');
+      }
+      continue;
     }
-    const isSeparator = span.classList.contains(SEPARATOR_CLASS);
-    current.spans.push(span);
-    if (isSeparator) {
-      current.trailingText = span.textContent ?? '';
-    } else {
-      current.trailingText = '';
-      current.lastSentenceIndex = Number(span.getAttribute(SENTENCE_ATTR) ?? '0');
+    if (node.nodeType === Node.TEXT_NODE && current) {
+      const parent = (node as Text).parentElement;
+      if (!parent?.closest(blockSelector)) {
+        current.trailingText += node.textContent ?? '';
+      }
     }
   }
 

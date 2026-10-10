@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Token, TokenBlock } from '@/features/tokenize/types';
-import { bindTokenBlock, restyleTokenBlock, unbindTokenBlock } from './tokenSpanRenderer';
+import { bindTokenBlock, restyleTokenBlock, unbindTokenBlock, readSegments } from './tokenSpanRenderer';
+import { collectSentenceRun } from '@/features/tokenize/logic/sentenceRun';
 import { buildTokenSpanCss } from './tokenSpanCss';
 
 function makeBlock(text: string, tokens: Token[]): TokenBlock {
@@ -89,6 +90,43 @@ describe('tokenSpanRenderer', () => {
     b3.tokens![0]!.status = 'unknown';
     restyleTokenBlock(b3, { showStatus: true, showFrequency: true });
     expect(cls('durian').contains('js-cell-token--i1-off')).toBe(true);
+  });
+
+  it('ends the sentence at an untokenized terminator text node between blocks', () => {
+    // Wikipedia footnote pattern: <a>here</a>.<sup>[5]</sup> Second sentence…
+    // The "." is its own text node — never a tokenize block — but it must
+    // still close the sentence or the run swallows the next one.
+    const p = document.createElement('p');
+    const text1 = document.createTextNode('First ends ');
+    const a = document.createElement('a');
+    a.appendChild(document.createTextNode('here'));
+    const period = document.createTextNode('.');
+    const sup = document.createElement('sup');
+    sup.appendChild(document.createTextNode('[5]'));
+    const text3 = document.createTextNode(' Second starts.');
+    p.append(text1, a, period, sup, text3);
+    const t = (term: string, start: number): Token => ({
+      text: term, term, start, end: start + term.length,
+      isSeparator: false, sentenceIndex: 0, status: 'known',
+      frequencyBand: undefined, reading: undefined,
+    });
+    const b1: TokenBlock = { id: 'b1', element: p, sourceNodes: [text1], originalText: 'First ends ', tokens: [t('first', 0), t('ends', 6)], isBound: false, lastAccessedAt: 0 };
+    const b2: TokenBlock = { id: 'b2', element: a, sourceNodes: [a.firstChild as Text], originalText: 'here', tokens: [t('here', 0)], isBound: false, lastAccessedAt: 0 };
+    const b3: TokenBlock = { id: 'b3', element: p, sourceNodes: [text3], originalText: ' Second starts.', tokens: [t('second', 1), t('starts', 8)], isBound: false, lastAccessedAt: 0 };
+    bindTokenBlock(b1, { showStatus: true, showFrequency: true });
+    bindTokenBlock(b2, { showStatus: true, showFrequency: true });
+    bindTokenBlock(b3, { showStatus: true, showFrequency: true });
+
+    const segs = readSegments(p);
+    expect(segs).toHaveLength(3);
+    expect(segs[1]!.trailingText).toContain('.');
+    // Hovering "Second" must not reach back past the "." boundary.
+    expect(collectSentenceRun(segs, 2, 0)).toEqual([{ segment: 2, sentenceIndex: 0 }]);
+    // Hovering "here"/"First" must not wash forward into the second sentence.
+    expect(collectSentenceRun(segs, 0, 0)).toEqual([
+      { segment: 0, sentenceIndex: 0 },
+      { segment: 1, sentenceIndex: 0 },
+    ]);
   });
 
   it('never marks single-word fragments (nav links, headings) as i+1', () => {
