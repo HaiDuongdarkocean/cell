@@ -46,6 +46,7 @@ import {
   Flag,
   Flame,
   FolderOpen,
+  Footprints,
   Gauge,
   Image,
   Info,
@@ -66,6 +67,7 @@ import {
   Minus,
   Moon,
   Move,
+  NotebookPen,
   PanelBottomClose,
   PanelLeftClose,
   PanelLeftOpen,
@@ -164,6 +166,7 @@ import menuSvg from './svg/menu.svg?raw';
 import ellipsisVerticalSvg from './svg/ellipsis-vertical.svg?raw';
 import videoSvg from './svg/video.svg?raw';
 import flagSvg from './svg/flag.svg?raw';
+import footprintsSvg from './svg/footprints.svg?raw';
 import rotateCcwSvg from './svg/rotate-ccw.svg?raw';
 import panelRightSvg from './svg/panel-right.svg?raw';
 import chevronLeftSvg from './svg/chevron-left.svg?raw';
@@ -218,6 +221,7 @@ import pinSvg from './svg/pin.svg?raw';
 import pinOffSvg from './svg/pin-off.svg?raw';
 import gaugeSvg from './svg/gauge.svg?raw';
 import layersSvg from './svg/layers.svg?raw';
+import notebookPenSvg from './svg/notebook-pen.svg?raw';
 import atomSvg from './svg/atom.svg?raw';
 import moleculeSvg from './svg/component.svg?raw';
 import organismSvg from './svg/users.svg?raw';
@@ -271,6 +275,7 @@ export const ICON_CATALOG = {
   link: { component: Link, svg: linkSvg, source: 'lucide/link', tags: ['link', 'chain', 'url', 'external', 'hyperlink'] } as IconEntry,
   eye: { component: Eye, svg: eyeSvg, source: 'lucide/eye', tags: ['show', 'eye', 'visible', 'reveal', 'view'] } as IconEntry,
   eyeOff: { component: EyeOff, svg: eyeOffSvg, source: 'lucide/eye-off', tags: ['hide', 'eye-off', 'invisible', 'none', 'conceal'] } as IconEntry,
+  footprints: { component: Footprints, svg: footprintsSvg, source: 'lucide/footprints', tags: ['tracking', 'footprints', 'trail', 'follow', 'watch', 'steps', 'track'] } as IconEntry,
   chevronDown: { component: ChevronDown, svg: chevronDownSvg, source: 'lucide/chevron-down', tags: ['collapse', 'chevron', 'down', 'arrow-down', 'fold', 'dropdown', 'expand'] } as IconEntry,
   panelBottomClose: { component: PanelBottomClose, svg: panelBottomCloseSvg, source: 'lucide/panel-bottom-close', tags: ['panel', 'hide', 'close', 'bottom', 'collapse-panel'] } as IconEntry,
   panelLeftCollapse: { component: PanelLeftClose, svg: panelLeftCollapseSvg, source: 'lucide/panel-left-close', tags: ['panel', 'left', 'collapse', 'sidebar', 'hide'] } as IconEntry,
@@ -357,6 +362,7 @@ export const ICON_CATALOG = {
   pinOff: { component: PinOff, svg: pinOffSvg, source: 'lucide/pin-off', tags: ['pin', 'off', 'unpin', 'detach', 'release', 'unlock-position'] } as IconEntry,
   gauge: { component: Gauge, svg: gaugeSvg, source: 'lucide/gauge', tags: ['gauge', 'speed', 'meter', 'playback-speed', 'rate', 'fast', 'slow'] } as IconEntry,
   layers: { component: Layers, svg: layersSvg, source: 'lucide/layers', tags: ['layers', 'stack', 'foundation', 'design-tokens', 'base', 'tier'] } as IconEntry,
+  notebookPen: { component: NotebookPen, svg: notebookPenSvg, source: 'lucide/notebook-pen', tags: ['notebook', 'pen', 'flashcard', 'card', 'srs', 'notes', 'write', 'study'] } as IconEntry,
   atom: { component: Atom, svg: atomSvg, source: 'lucide/atom', tags: ['atom', 'orbital', 'electron', 'nucleus', 'particle', 'smallest-unit'] } as IconEntry,
   molecule: { component: Component, svg: moleculeSvg, source: 'lucide/component', tags: ['molecule', 'bond', 'triangle', 'atoms-combined', 'compound'] } as IconEntry,
   organism: { component: Users, svg: organismSvg, source: 'lucide/users', tags: ['organism', 'cell', 'organelles', 'complex-unit', 'biological'] } as IconEntry,

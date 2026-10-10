@@ -69,7 +69,7 @@ export function StatusSegmented({ status, onCycle, onToggleTracking, srsCardCoun
         aria-label={t('dict.status.trackingToggle')}
         data-cell-id="dictionary-status-flag"
       >
-        <Icon name={flag === 'tracking' ? 'eye' : 'eyeOff'} size="sm" />
+        <Icon name="footprints" size="sm" />
       </Button>
       <StatusPill status={status} onCycle={onCycle} />
       {hasCards && (
@@ -81,7 +81,7 @@ export function StatusSegmented({ status, onCycle, onToggleTracking, srsCardCoun
           aria-label={t('dict.status.srsCards', [srsCardCount ?? 0])}
           data-cell-id="dictionary-srs-cards"
         >
-          <Icon name="layers" size="sm" />
+          <Icon name="notebookPen" size="sm" />
         </Button>
       )}
     </span>

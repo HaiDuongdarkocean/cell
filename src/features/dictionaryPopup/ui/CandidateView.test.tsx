@@ -735,7 +735,7 @@ describe('CandidateView', () => {
     expect(group?.getAttribute('title')).toBe('LDOCE5++ V 1-35');
   });
 
-  // The layers chip is indicator-only: it sits right of the status segmented
+  // The cards chip is indicator-only: it sits right of the status segmented
   // group, appears whenever the term has ≥1 card in the SRS collection (any
   // status), and opens the term-filtered study page. Card creation stays on
   // send-to-card / quick-add.
@@ -788,7 +788,7 @@ describe('CandidateView', () => {
     expect(mockAddToOceanSrs).not.toHaveBeenCalled();
   });
 
-  it('toggles tracking from the status eye segment on unknown', () => {
+  it('toggles tracking from the status tracking segment on unknown', () => {
     render(
       <CandidateView
         candidate={makeResult('hello', { status: 'unknown' })}

@@ -1,7 +1,7 @@
 // StatusRow — REQ-2/AC-3: the status pill only ever shows the 3 base statuses.
-// Layout is [eye | pill] + a standalone flashcard chip right of the group:
-// the eye toggles the user-owned tracking flag on any status and is only
-// disabled when no handler is wired; the cards chip appears whenever
+// Layout is [footprints | pill] + a standalone flashcard chip right of the group:
+// the footprints chip toggles the user-owned tracking flag on any status and is
+// only disabled when no handler is wired; the cards chip appears whenever
 // SRS_TERM_CARDS reports ≥1 card for the term, regardless of status.
 
 import { describe, expect, it, jest } from '@jest/globals';
@@ -33,7 +33,7 @@ function renderRow(
 }
 
 describe('StatusRow segmented control', () => {
-  it('renders the eye segment for unknown — click toggles tracking on', () => {
+  it('renders the footprints chip for unknown — click toggles tracking on', () => {
     const { onCycle, onToggleTracking } = renderRow('unknown');
 
     expect(screen.getByTestId('dictionary-status-cycle')).toHaveTextContent('Unknown');
@@ -46,7 +46,7 @@ describe('StatusRow segmented control', () => {
     expect(onCycle).not.toHaveBeenCalled();
   });
 
-  it('renders an active eye segment for tracking — click toggles tracking off', () => {
+  it('renders an active footprints chip for tracking — click toggles tracking off', () => {
     const { onCycle, onToggleTracking } = renderRow('tracking');
 
     expect(screen.getByTestId('dictionary-status-cycle')).toHaveTextContent('Unknown');
@@ -59,7 +59,7 @@ describe('StatusRow segmented control', () => {
   });
 
   it.each(['known', 'ignore'] as const)(
-    'renders the eye segment enabled for %s — click toggles tracking on',
+    'renders the footprints chip enabled for %s — click toggles tracking on',
     (status) => {
       const { onToggleTracking, onCycle } = renderRow(status);
 
@@ -72,7 +72,7 @@ describe('StatusRow segmented control', () => {
     },
   );
 
-  it('renders the eye segment disabled only when no tracking handler is wired', () => {
+  it('renders the footprints chip disabled only when no tracking handler is wired', () => {
     const { onToggleTracking } = renderRow('tracking', { withToggleTracking: false });
 
     const flag = screen.getByTestId('dictionary-status-flag');
