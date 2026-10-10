@@ -14,6 +14,7 @@ import { usePlayerMode } from './subtitlePlayerMode';
 import { PlayerModeLayer } from './PlayerModeLayer';
 import { LockShield } from './LockShield';
 import { SubtitlePanel } from './SubtitlePanel';
+import { MobileCueChrome } from './MobileCueChrome';
 import { saveCueToQueue } from '@/features/miningQueue';
 import { canonicalNavUrl } from './contentScriptShared';
 import { useOverlayPortals } from './subtitlePortals';
@@ -215,6 +216,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       setSplitViewOpen,
       drainPendingRestore,
     } = useSplitView({ playerMode, onSplitViewChange, fallbackPlayerContainerRef });
+    // <600px the split-view panel floats as a full cue-chrome sheet — its
+    // transport/actions subsume the on-video overlay layers.
+    const mobileSheetOpen = splitViewOpen && isMobile;
 
     const [pmCueListOpen, setPmCueListOpen] = useState(true);
     const [interactionLocked, setInteractionLocked] = useState(false);
@@ -396,6 +400,11 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
+        {/* Mobile sheet (<600px) carries the full cue chrome — transport,
+            actions, subtitles as cards — so the on-video overlay layers hide
+            while it is open and restore when it closes. */}
+        {!mobileSheetOpen && (
+          <>
         <div className={styles.navLayer}>
           <NavCluster
             collapsed={collapsed}
@@ -439,6 +448,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             onToggleInteractionLock={handleToggleInteractionLock}
           />
         )}
+          </>
+        )}
 
         {managerPortal}
 
@@ -457,30 +468,73 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         )}
 
         {splitViewOpen && splitViewPortalTarget && onSeek && createPortal(
-          <SubtitlePanel
-            cues={cues as BilingualCue[]}
-            currentTimeMs={currentTimeMs}
-            offsetMs={offsetMs}
-            onSeek={onSeek}
-            onClose={handleToggleSplitView}
-            playlistContent={playlistContent}
-            filename={filename}
-            activeModeId={activeModeId}
-            customModes={customModes}
-            onStudyModeChange={handleStudyModeChange}
-            practiceMode={practiceMode}
-            onPracticeModeChange={handlePracticeModeChange}
-            isPlaying={isPlaying}
-            playbackSpeed={playbackSpeed}
-            onPlaybackSpeedChange={handlePlaybackSpeedChange}
-            onPlayPause={onPlayPause}
-            onPreviousCue={onPreviousCue}
-            onReplayCue={onReplayCue}
-            onContinueCue={onContinueCue}
-            tokenize={tokenize}
-            panelBlurred={panelBlurred}
-            onSaveCue={handleSaveCue}
-          />,
+          isMobile ? (
+            <MobileCueChrome
+              cueListOpen
+              onExit={handleToggleSplitView}
+              exitLabel={t('subtitle.toolbar.closeList')}
+              onQuickAdd={onQuickAdd}
+              onEditCard={onEditCard}
+              onToggleOcr={onToggleOcr}
+              ocrEnabled={ocrEnabledState}
+              onGenerateNative={onGenerateNative}
+              onToggleManager={onToggleManager}
+              generateNativeEnabled={generateNativeEnabled}
+              onPrev={onPrev}
+              onNext={onNext}
+              onRepeat={onRepeat}
+              repeatActive={repeatActive}
+              repeatLabel={repeatLabel}
+              onRewind={onRewind}
+              onForward={onForward}
+              onPlayPause={onPlayPause}
+              isPlaying={isPlaying}
+              interactionLocked={interactionLocked}
+              onToggleInteractionLock={handleToggleInteractionLock}
+              cues={cues as BilingualCue[]}
+              currentTimeMs={currentTimeMs}
+              offsetMs={offsetMs}
+              onSeek={onSeek}
+              activeModeId={activeModeId}
+              customModes={customModes}
+              onStudyModeChange={handleStudyModeChange}
+              practiceMode={practiceMode}
+              onPracticeModeChange={handlePracticeModeChange}
+              playbackSpeed={playbackSpeed}
+              onPlaybackSpeedChange={handlePlaybackSpeedChange}
+              onPreviousCue={onPreviousCue}
+              onReplayCue={onReplayCue}
+              onContinueCue={onContinueCue}
+              tokenize={tokenize}
+              panelBlurred={panelBlurred}
+              onSaveCue={handleSaveCue}
+            />
+          ) : (
+            <SubtitlePanel
+              cues={cues as BilingualCue[]}
+              currentTimeMs={currentTimeMs}
+              offsetMs={offsetMs}
+              onSeek={onSeek}
+              onClose={handleToggleSplitView}
+              playlistContent={playlistContent}
+              filename={filename}
+              activeModeId={activeModeId}
+              customModes={customModes}
+              onStudyModeChange={handleStudyModeChange}
+              practiceMode={practiceMode}
+              onPracticeModeChange={handlePracticeModeChange}
+              isPlaying={isPlaying}
+              playbackSpeed={playbackSpeed}
+              onPlaybackSpeedChange={handlePlaybackSpeedChange}
+              onPlayPause={onPlayPause}
+              onPreviousCue={onPreviousCue}
+              onReplayCue={onReplayCue}
+              onContinueCue={onContinueCue}
+              tokenize={tokenize}
+              panelBlurred={panelBlurred}
+              onSaveCue={handleSaveCue}
+            />
+          ),
           splitViewPortalTarget,
         )}
       </div>

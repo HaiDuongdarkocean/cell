@@ -3,13 +3,20 @@ import { act, render, screen } from '@testing-library/react';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { ManagerState, SubtitlePanelsProps, SubtitlePanelsRef } from './subtitlePanelsTypes';
 
-jest.mock('./NavCluster', () => ({ NavCluster: () => null }));
-jest.mock('./SubtitleBlock', () => ({ SubtitleBlock: () => null }));
-jest.mock('./ClusterRightToolbar', () => ({ ClusterRightToolbar: () => null }));
+jest.mock('./NavCluster', () => ({ NavCluster: () => <div data-cell-id="nav-cluster-mock" /> }));
+jest.mock('./SubtitleBlock', () => ({ SubtitleBlock: () => <div data-cell-id="subtitle-block-mock" /> }));
+jest.mock('./ClusterRightToolbar', () => ({ ClusterRightToolbar: () => <div data-cell-id="right-toolbar-mock" /> }));
 jest.mock('./OffsetLayer', () => ({ OffsetLayer: () => null }));
 jest.mock('./SubtitleToast', () => ({ SubtitleToast: () => null }));
 jest.mock('./SubtitleHint', () => ({ SubtitleHint: () => null }));
-jest.mock('./SubtitlePanel', () => ({ SubtitlePanel: () => null }));
+jest.mock('./SubtitlePanel', () => ({ SubtitlePanel: () => <div data-cell-id="subtitle-panel-mock" /> }));
+let mockChromeProps: Record<string, unknown> | null = null;
+jest.mock('./MobileCueChrome', () => ({
+  MobileCueChrome: (props: Record<string, unknown>) => {
+    mockChromeProps = props;
+    return <div data-cell-id="mobile-cue-chrome" />;
+  },
+}));
 let mockPmProps: { cueListOpen: boolean; onCueListOpenChange: (open: boolean) => void } | null = null;
 jest.mock('./PlayerModeLayer', () => ({
   PlayerModeLayer: (props: { cueListOpen: boolean; onCueListOpenChange: (open: boolean) => void }) => {
@@ -26,11 +33,12 @@ jest.mock('./subtitlePlayerMode', () => ({
     () => setPlayerMode((p) => !p),
 }));
 const mockSetSplitViewOpen = jest.fn();
+let mockSplitView: { open: boolean; target: HTMLElement | null } = { open: false, target: null };
 jest.mock('./subtitleSplitView', () => ({
   useSplitView: () => ({
-    splitViewOpen: false,
-    splitViewPortalTarget: null,
-    handleToggleSplitView: () => undefined,
+    splitViewOpen: mockSplitView.open,
+    splitViewPortalTarget: mockSplitView.target,
+    handleToggleSplitView: () => { mockSplitView.open = !mockSplitView.open; },
     setSplitViewOpen: mockSetSplitViewOpen,
     drainPendingRestore: () => undefined,
   }),
@@ -58,7 +66,8 @@ jest.mock('./subtitlePortals', () => ({
   },
 }));
 
-jest.mock('@/shared/ui/useIsMobile', () => ({ useIsMobile: () => false }));
+let mockIsMobile = false;
+jest.mock('@/shared/ui/useIsMobile', () => ({ useIsMobile: () => mockIsMobile }));
 jest.mock('@/shared/lib/chrome-apis', () => ({
   getStorage: () => Promise.resolve({}),
   setStorage: () => Promise.resolve(),
@@ -165,5 +174,54 @@ describe('SubtitlePanels — PM cue list independent from Split View (AC-6.5)', 
     act(() => { ref.togglePlayerMode(); });
     expect(mockSetSplitViewOpen).not.toHaveBeenCalled();
     expect(onSplitViewChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('SubtitlePanels — mobile sheet chrome (<600px)', () => {
+  beforeEach(() => {
+    mockChromeProps = null;
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    mockSplitView = { open: true, target };
+  });
+  afterEach(() => {
+    mockSplitView.target?.remove();
+    mockIsMobile = false;
+    mockSplitView = { open: false, target: null };
+  });
+
+  it('renders MobileCueChrome instead of SubtitlePanel and hides on-video layers', () => {
+    mockIsMobile = true;
+    renderPanels({ onSeek: jest.fn() });
+    expect(screen.getByTestId('mobile-cue-chrome')).toBeInTheDocument();
+    expect(screen.queryByTestId('subtitle-panel-mock')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('nav-cluster-mock')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('subtitle-block-mock')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('right-toolbar-mock')).not.toBeInTheDocument();
+  });
+
+  it('keeps the on-video overlay when the sheet is closed', () => {
+    mockIsMobile = true;
+    mockSplitView.open = false;
+    renderPanels({ onSeek: jest.fn() });
+    expect(screen.queryByTestId('mobile-cue-chrome')).not.toBeInTheDocument();
+    expect(screen.getByTestId('nav-cluster-mock')).toBeInTheDocument();
+    expect(screen.getByTestId('subtitle-block-mock')).toBeInTheDocument();
+    expect(screen.getByTestId('right-toolbar-mock')).toBeInTheDocument();
+  });
+
+  it('desktop sheet keeps the regular SubtitlePanel and the overlay layers', () => {
+    renderPanels({ onSeek: jest.fn() });
+    expect(screen.getByTestId('subtitle-panel-mock')).toBeInTheDocument();
+    expect(screen.queryByTestId('mobile-cue-chrome')).not.toBeInTheDocument();
+    expect(screen.getByTestId('nav-cluster-mock')).toBeInTheDocument();
+  });
+
+  it('wires the sheet exit button to the split-view toggle', () => {
+    mockIsMobile = true;
+    renderPanels({ onSeek: jest.fn() });
+    expect(mockChromeProps?.cueListOpen).toBe(true);
+    act(() => { (mockChromeProps?.onExit as () => void)(); });
+    expect(mockSplitView.open).toBe(false);
   });
 });

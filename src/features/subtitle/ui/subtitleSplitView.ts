@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
-import { resolveSplitViewWrapperHeight } from '@/features/subtitle/logic/playerModeGeometry';
+import {
+  resolveSplitViewWrapperHeight,
+  splitViewSheetHeightPx,
+  splitViewSheetClampHeightPx,
+  splitViewSheetMaxHeightPx,
+  SPLIT_VIEW_SHEET_MIN_HEIGHT,
+} from '@/features/subtitle/logic/playerModeGeometry';
 import { isChildFrame } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { waitForPlayerSettle } from '@/features/subtitle/logic/waitForPlayerSettle';
@@ -15,6 +21,7 @@ import { buildTokenSpanCssForShadow } from '@/features/tokenize';
 import { syncElementTheme, findThemeCarrier } from '@/features/theme';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
+import { t } from '@/shared/i18n';
 import { logger } from '@/shared/lib/logger';
 
 // --- Split View diagnostic logging ---
@@ -53,8 +60,7 @@ const SPLIT_VIEW_VIEWPORT_MARGIN = 8;
 // proper height instead of an inline panel squeezing both. A narrow slot
 // inside a wide viewport still stacks column-in-place.
 const SPLIT_VIEW_COLUMN_BELOW = 600;
-const SPLIT_VIEW_SHEET_HEIGHT_RATIO = 0.5;
-const SPLIT_VIEW_SHEET_MAX_HEIGHT = 460;
+const SPLIT_VIEW_SHEET_HANDLE_HEIGHT = 24;
 const PANEL_INNER_BASE_BG = 'color-mix(in srgb, var(--color-surface) 85%, transparent)';
 
 function clampToVisibleViewport(contentHeight: number, topEdge: number): number {
@@ -86,6 +92,10 @@ export function useSplitView({
   // would re-run the effect on every pointermove tick → full DOM rebuild,
   // lost pointer capture, and a stack of deferred restore timers.
   const splitViewPctRef = useRef(30);
+  // Mobile sheet height as viewport % — null falls back to the default
+  // ratio. Persisted to storage; a vh value (not px) so a viewport resize
+  // keeps the sheet proportional instead of clamped against a stale pixel.
+  const splitViewSheetVhRef = useRef<number | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const savedScrollRef = useRef<number | null>(null);
   const [splitViewPortalTarget, setSplitViewPortalTarget] = useState<HTMLElement | null>(null);
@@ -329,6 +339,21 @@ export function useSplitView({
     handle.setAttribute('data-cell-split-view', 'handle');
     handle.style.cssText = 'flex:0 0 var(--space-1-5);height:100%;background:var(--color-border);cursor:col-resize;touch-action:none;position:relative;z-index:1;';
 
+    // Sheet-mode resize grip — lives inside panelInner (shadow DOM: light
+    // children of the host would not render) as an in-flow first child, so
+    // it reserves its band instead of overlaying the cue chrome.
+    const sheetHandle = document.createElement('div');
+    sheetHandle.setAttribute('data-cell-split-view', 'sheet-handle');
+    sheetHandle.setAttribute('role', 'separator');
+    sheetHandle.setAttribute('aria-orientation', 'horizontal');
+    sheetHandle.setAttribute('aria-label', t('subtitle.playerMode.resizeList'));
+    sheetHandle.tabIndex = 0;
+    sheetHandle.style.cssText = `display:none;flex:0 0 ${SPLIT_VIEW_SHEET_HANDLE_HEIGHT}px;position:relative;cursor:grab;touch-action:none;`;
+    const sheetHandlePill = document.createElement('div');
+    sheetHandlePill.style.cssText = 'position:absolute;top:var(--space-1);left:50%;transform:translateX(-50%);width:var(--space-10);height:var(--space-1);border-radius:var(--radius-full);background:var(--color-text-secondary);opacity:var(--opacity-50);';
+    sheetHandle.appendChild(sheetHandlePill);
+    panelInner.appendChild(sheetHandle);
+
     // Wrapper only needed in the normal (non-fullscreen) branch.
     let wrapper: HTMLDivElement | null = null;
     let layoutObserver: ResizeObserver | null = null;
@@ -338,6 +363,7 @@ export function useSplitView({
     let lastLayoutKey: { w: number; vh: number } | null = null;
     let cachedContentH = 0;
     let isNarrowLayout = false;
+    let isSheetMode = false;
 
     if (isPlayerFullscreen) {
       // FULLSCREEN: playerShell is the top-layer fullscreen element. Moving
@@ -647,6 +673,7 @@ export function useSplitView({
         const sheetMode = window.innerWidth < SPLIT_VIEW_COLUMN_BELOW;
         const narrow = sheetMode || slotW < SPLIT_VIEW_COLUMN_BELOW;
         isNarrowLayout = narrow;
+        isSheetMode = narrow && sheetMode;
         const stageH = Math.round(slotW / stageAspect);
         // Site responsive CSS can switch the shell to position:fixed at
         // narrow widths (kisskh .portrait covers the viewport), which rips
@@ -671,6 +698,7 @@ export function useSplitView({
           panelInner.style.borderRadius = '';
           panelInner.style.background = PANEL_INNER_BASE_BG;
           handle.style.display = '';
+          sheetHandle.style.display = 'none';
         };
         if (narrow) {
           wrapper.style.flexDirection = 'column';
@@ -680,6 +708,9 @@ export function useSplitView({
           stageCell.style.height = `${stageH}px`;
           if (sheetMode) {
             handle.style.display = 'none';
+            sheetHandle.style.display = 'block';
+            sheetHandle.setAttribute('aria-valuemin', String(SPLIT_VIEW_SHEET_MIN_HEIGHT));
+            sheetHandle.setAttribute('aria-valuemax', String(sheetMaxHeight()));
             if (panel.parentElement !== document.body) {
               document.body.appendChild(panel);
               // The entry transform was translateX(100%) — retarget it to
@@ -694,7 +725,8 @@ export function useSplitView({
             panel.style.bottom = '0';
             panel.style.top = 'auto';
             panel.style.width = 'auto';
-            panel.style.height = `${Math.min(Math.round(window.innerHeight * SPLIT_VIEW_SHEET_HEIGHT_RATIO), SPLIT_VIEW_SHEET_MAX_HEIGHT)}px`;
+            panel.style.height = `${resolveSheetHeight()}px`;
+            sheetHandle.setAttribute('aria-valuenow', String(Math.round(resolveSheetHeight())));
             panel.style.flex = 'none';
             panel.style.minWidth = '0';
             panel.style.maxWidth = 'none';
@@ -879,6 +911,10 @@ export function useSplitView({
     // pixel sizes that froze on resize.
     window.dispatchEvent(new Event('resize'));
 
+    const sheetMaxHeight = (): number => splitViewSheetMaxHeightPx(window.innerHeight);
+    const resolveSheetHeight = (): number =>
+      splitViewSheetHeightPx(splitViewSheetVhRef.current, window.innerHeight);
+
     // Drag resize: measure the flex container (wrapper or playerShell).
     const flexContainer = wrapper ?? playerShell;
     let dragStart: { x: number; startPct: number; wrapperW: number } | null = null;
@@ -908,6 +944,56 @@ export function useSplitView({
     handle.addEventListener('pointerup', onPointerUp);
     handle.addEventListener('pointercancel', onPointerUp);
 
+    // Sheet-mode vertical resize: drag the top-edge grip to grow/shrink the
+    // fixed bottom sheet. Height is tracked as viewport % so it survives
+    // recalcs and persists across sessions.
+    const persistSheetHeight = (): void => {
+      if (splitViewSheetVhRef.current === null) return;
+      setStorage({ [STORAGE_KEYS.SPLIT_VIEW_SHEET_HEIGHT_VH]: splitViewSheetVhRef.current })
+        .catch(() => undefined);
+    };
+    const applySheetHeight = (px: number): void => {
+      const clamped = splitViewSheetClampHeightPx(px, window.innerHeight);
+      splitViewSheetVhRef.current = (clamped / window.innerHeight) * 100;
+      panel.style.height = `${clamped}px`;
+      sheetHandle.setAttribute('aria-valuenow', String(clamped));
+    };
+    let sheetDrag: { y: number; startH: number } | null = null;
+    const onSheetPointerDown = (e: PointerEvent): void => {
+      if (!isSheetMode) return;
+      e.preventDefault();
+      sheetDrag = { y: e.clientY, startH: panel.getBoundingClientRect().height };
+      sheetHandle.setPointerCapture(e.pointerId);
+    };
+    const onSheetPointerMove = (e: PointerEvent): void => {
+      if (!sheetDrag) return;
+      applySheetHeight(sheetDrag.startH - (e.clientY - sheetDrag.y));
+    };
+    const onSheetPointerUp = (e: PointerEvent): void => {
+      if (!sheetDrag) return;
+      sheetDrag = null;
+      try { sheetHandle.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+      persistSheetHeight();
+    };
+    const onSheetKeyDown = (e: KeyboardEvent): void => {
+      if (!isSheetMode) return;
+      const step = window.innerHeight * 0.05;
+      let next: number | null = null;
+      if (e.key === 'ArrowUp') next = panel.getBoundingClientRect().height + step;
+      else if (e.key === 'ArrowDown') next = panel.getBoundingClientRect().height - step;
+      else if (e.key === 'Home') next = SPLIT_VIEW_SHEET_MIN_HEIGHT;
+      else if (e.key === 'End') next = sheetMaxHeight();
+      if (next === null) return;
+      e.preventDefault();
+      applySheetHeight(next);
+      persistSheetHeight();
+    };
+    sheetHandle.addEventListener('pointerdown', onSheetPointerDown);
+    sheetHandle.addEventListener('pointermove', onSheetPointerMove);
+    sheetHandle.addEventListener('pointerup', onSheetPointerUp);
+    sheetHandle.addEventListener('pointercancel', onSheetPointerUp);
+    sheetHandle.addEventListener('keydown', onSheetKeyDown);
+
     // Host teardown guard: if the site removes/replaces the player subtree
     // (React re-render, SPA nav, episode switch) while Split View owns it,
     // self-close instead of leaving a ghost wrapper around a detached shell.
@@ -931,6 +1017,11 @@ export function useSplitView({
       handle.removeEventListener('pointermove', onPointerMove);
       handle.removeEventListener('pointerup', onPointerUp);
       handle.removeEventListener('pointercancel', onPointerUp);
+      sheetHandle.removeEventListener('pointerdown', onSheetPointerDown);
+      sheetHandle.removeEventListener('pointermove', onSheetPointerMove);
+      sheetHandle.removeEventListener('pointerup', onSheetPointerUp);
+      sheetHandle.removeEventListener('pointercancel', onSheetPointerUp);
+      sheetHandle.removeEventListener('keydown', onSheetKeyDown);
       // Apple §7: exit along the same path as entry — slide out to right.
       // §8: hint in the direction of the gesture — rotate chevron to point right.
       // §1: start the animation immediately, defer DOM removal until it settles.
@@ -1093,11 +1184,20 @@ export function useSplitView({
 
   useEffect(() => {
     let cancelled = false;
-    getStorage<Record<string, number>>(STORAGE_KEYS.SPLIT_VIEW_PCT)
+    getStorage<Record<string, number>>([
+      STORAGE_KEYS.SPLIT_VIEW_PCT,
+      STORAGE_KEYS.SPLIT_VIEW_SHEET_HEIGHT_VH,
+    ])
       .then((data) => {
-        const stored = data[STORAGE_KEYS.SPLIT_VIEW_PCT];
-        if (cancelled || typeof stored !== 'number' || !Number.isFinite(stored)) return;
-        splitViewPctRef.current = Math.min(Math.max(stored, 20), 60);
+        if (cancelled) return;
+        const pct = data[STORAGE_KEYS.SPLIT_VIEW_PCT];
+        if (typeof pct === 'number' && Number.isFinite(pct)) {
+          splitViewPctRef.current = Math.min(Math.max(pct, 20), 60);
+        }
+        const vh = data[STORAGE_KEYS.SPLIT_VIEW_SHEET_HEIGHT_VH];
+        if (typeof vh === 'number' && Number.isFinite(vh)) {
+          splitViewSheetVhRef.current = Math.min(Math.max(vh, 20), 95);
+        }
       })
       .catch(() => undefined);
     return () => { cancelled = true; };

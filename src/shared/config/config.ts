@@ -411,6 +411,8 @@ export const STORAGE_KEYS = {
   PLAYER_MODE_CUE_DISPLAY: 'playerModeCueDisplay',
   /** Split View CueList panel width % (20-60). Survives reload + re-toggle. */
   SPLIT_VIEW_PCT: 'splitViewPct',
+  /** Split View mobile sheet height % of viewport (clamped to min px + viewport). Survives reload + re-toggle. */
+  SPLIT_VIEW_SHEET_HEIGHT_VH: 'splitViewSheetHeightVh',
   /** Cue difficulty filter mode ('all'|'i1'|'hasUnknown'|'allKnown'|'dense'|'tracking'). Survives reload + surface switch. */
   CUE_FILTER_MODE: 'cueFilterMode',
   /** Subtitle manager mobile sheet height % of viewport (20-95). Survives close/reopen. */

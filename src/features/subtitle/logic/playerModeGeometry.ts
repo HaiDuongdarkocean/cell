@@ -60,6 +60,38 @@ export const SHEET_MIN_HEIGHT_PX = 160;
 /** Maximum dictionary sheet height as percent of viewport above the dock. */
 export const SHEET_MAX_HEIGHT_PERCENT = 100;
 
+/** Split View mobile sheet: default open height = 50vh capped at 460px. */
+export const SPLIT_VIEW_SHEET_HEIGHT_RATIO = 0.5;
+export const SPLIT_VIEW_SHEET_MAX_HEIGHT = 460;
+/** Sheet-mode floor keeps the mobile cue chrome usable (bottom bar + rail + one cue card). */
+export const SPLIT_VIEW_SHEET_MIN_HEIGHT = 200;
+/** Gap kept between the sheet's top edge and the viewport edge. */
+export const SPLIT_VIEW_SHEET_VIEWPORT_MARGIN = 8;
+
+/** Tallest sheet height allowed for a viewport — the full height minus the edge margin. */
+export function splitViewSheetMaxHeightPx(viewportHeight: number): number {
+  return Math.max(SPLIT_VIEW_SHEET_MIN_HEIGHT, viewportHeight - SPLIT_VIEW_SHEET_VIEWPORT_MARGIN);
+}
+
+/** Clamp a px height to the sheet's usable band. */
+export function splitViewSheetClampHeightPx(px: number, viewportHeight: number): number {
+  return Math.min(Math.max(px, SPLIT_VIEW_SHEET_MIN_HEIGHT), splitViewSheetMaxHeightPx(viewportHeight));
+}
+
+/**
+ * Split View mobile bottom-sheet height in px. `sheetVh` is the user's
+ * dragged height as % of viewport (null → the 50vh/460px default). Clamped
+ * to [SPLIT_VIEW_SHEET_MIN_HEIGHT, viewport − margin].
+ */
+export function splitViewSheetHeightPx(sheetVh: number | null, viewportHeight: number): number {
+  const fallback = Math.min(
+    Math.round(viewportHeight * SPLIT_VIEW_SHEET_HEIGHT_RATIO),
+    SPLIT_VIEW_SHEET_MAX_HEIGHT,
+  );
+  const px = sheetVh !== null ? Math.round((viewportHeight * sheetVh) / 100) : fallback;
+  return splitViewSheetClampHeightPx(px, viewportHeight);
+}
+
 /**
  * Clamp Player Action Dock height to [DOCK_MIN_HEIGHT_PX, DOCK_MAX_HEIGHT_PERCENT% of viewport].
  * Returns px. NaN/degenerate viewport → DOCK_MIN_HEIGHT_PX.
