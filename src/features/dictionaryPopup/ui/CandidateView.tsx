@@ -211,7 +211,7 @@ export function CandidateView({
               <Button
                 shape="circle"
                 size="md"
-                variant="primary"
+                variant="primarySubtle"
                 className={styles.cellHeaderQuickAdd}
                 aria-label={t('dict.action.quickAdd')}
                 title={t('dict.action.quickAdd')}
