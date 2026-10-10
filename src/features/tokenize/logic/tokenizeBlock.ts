@@ -20,7 +20,6 @@ const FORBIDDEN_TAGS = new Set([
   'CODE',
   'PRE',
   'KBD',
-  'SAMP',
   'VAR',
   'BUTTON',
 ]);
