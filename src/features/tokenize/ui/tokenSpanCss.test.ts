@@ -207,8 +207,13 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
   it.each(['host', 'shadow'])('spaces the annotation stack by column gap alone in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
     const column = source.match(/\.js-cell-token--word\s*\{([^}]*)\}/)?.[1] ?? '';
-    expect(column).toContain('gap: 0.14em');
-    expect(column).toContain('margin: 0.55em 0');
+    // With both annotation lanes off the token must stay flat inline text —
+    // lane gap/margin only apply while a cap or gloss lane can render.
+    expect(column).toContain('gap: 0');
+    expect(column).toContain('margin: 0');
+    const annotated = source.match(/gloss-off\)\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(annotated).toContain('gap: 0.14em');
+    expect(annotated).toContain('margin: 0.55em 0');
     expect(source).toMatch(/vertical-align:\s*1\.19em/);
     expect(source).not.toMatch(/\.js-cell-token-word\s*\{[^}]*padding-bottom/);
     expect(source).not.toMatch(/::after\s*\{[^}]*margin-top/);

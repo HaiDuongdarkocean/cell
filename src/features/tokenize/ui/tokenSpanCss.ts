@@ -165,10 +165,19 @@ html body .js-cell-token--word {
   display: inline-flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  gap: 0.14em !important;
-  margin: 0.55em 0 !important;
+  gap: 0 !important;
+  margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
+}
+
+/* Lane spacing exists only while an annotation lane can render (reading cap
+   or gloss footnote enabled); with both off the token must be flat inline
+   text — no gap, no block margin inflating the host's line box. */
+html body .js-cell-token--word:not(.js-cell-token--reading-off),
+html body .js-cell-token--word:not(.js-cell-token--gloss-off) {
+  gap: 0.14em !important;
+  margin: 0.55em 0 !important;
 }
 
 /* The column's baseline is its first flex item (the cap lane). When the cap
@@ -514,10 +523,16 @@ ${buildVariables(':host')}
   display: inline-flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  gap: 0.14em !important;
-  margin: 0.55em 0 !important;
+  gap: 0 !important;
+  margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
+}
+
+.js-cell-token--word:not(.js-cell-token--reading-off),
+.js-cell-token--word:not(.js-cell-token--gloss-off) {
+  gap: 0.14em !important;
+  margin: 0.55em 0 !important;
 }
 
 /* Column baseline = cap lane baseline; lift by the cap-to-word distance so
