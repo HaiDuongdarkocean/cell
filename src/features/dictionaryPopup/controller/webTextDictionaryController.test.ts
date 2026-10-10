@@ -403,9 +403,11 @@ describe('createWebTextDictionaryController', () => {
 
     act(() => { ctrl.handleLookup(makeRequest(), 'req-key', new DOMRect(0, 0, 0, 0), range) });
 
-    // While the lookup is in flight there is no displayed term — a stale
-    // target would apply the key to the previously looked-up word.
-    expect(ctrl.getPopupStatusTarget()).toBeNull();
+    // While the lookup is in flight the target falls back to the requested
+    // term — keys pressed before the result lands still hit the looked-up word.
+    expect(ctrl.getPopupStatusTarget()).toEqual(
+      expect.objectContaining({ term: 'take', langCode: 'en' }),
+    );
 
     await act(async () => {
       await Promise.resolve();
@@ -485,11 +487,11 @@ describe('createWebTextDictionaryController', () => {
     expect(ctrl.getPopupStatusTarget()?.term).toBe('take off');
 
     // A second lookup on the same level reuses the mount — the previous term
-    // must not be reachable while the new result is loading.
+    // must not be reachable; keys target the new in-flight request instead.
     mockSendMessage.mockReturnValueOnce(new Promise(() => {}) as never);
     act(() => { ctrl.handleLookup(makeRequest({ term: 'put' }), 'req-b', new DOMRect(0, 0, 0, 0), range) });
 
-    expect(ctrl.getPopupStatusTarget()).toBeNull();
+    expect(ctrl.getPopupStatusTarget()?.term).toBe('put');
 
     act(() => { ctrl.destroy() });
   });

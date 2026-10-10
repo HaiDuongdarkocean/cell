@@ -8,7 +8,6 @@ import { nextStatus } from '@/features/dictionary';
 import { setWordStatus } from '@/features/dictionary';
 import { emitWordStatusChanged, aggregatePosStatus } from '@/features/dictionary';
 import { toggleTrackingFlag } from '@/features/dictionary';
-import { addToOceanSrs } from '@/features/srs';
 import {
   initDefinitionSelection,
   initExampleSelection,
@@ -108,7 +107,6 @@ export interface UseCandidateReturn {
   readonly autoplayCount: number;
   readonly sendToCard: () => Promise<void>;
   readonly quickAdd: () => Promise<void>;
-  readonly addToSrs: () => Promise<void>;
 }
 
 export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
@@ -439,16 +437,6 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     onQuickAdd(buildCurrentPrefill());
   }, [onQuickAdd, buildCurrentPrefill]);
 
-  const addToSrs = useCallback(async (): Promise<void> => {
-    try {
-      await addToOceanSrs(buildCurrentPrefill());
-    } catch (err) {
-      console.warn('[dictionary-popup] addToSrs failed:', err);
-      return;
-    }
-    applyStatus('learning', false);
-  }, [buildCurrentPrefill, applyStatus]);
-
   return {
     status: variantStatus,
     cycleStatus,
@@ -500,6 +488,5 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     autoplayCount,
     sendToCard,
     quickAdd,
-    addToSrs,
   };
 }

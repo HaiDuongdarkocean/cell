@@ -10,7 +10,6 @@ import { useAudioItemUrl } from '@/features/pronunciation';
 import { PronunciationPanel } from '@/features/pronunciation';
 import type { AudioEngineKind } from '@/features/pronunciation';
 import { t, type MessageKey } from '@/shared/i18n';
-import { baseStatus, statusFlag } from '@/features/dictionary';
 import { openSrsStudyPage } from '@/features/srs';
 import { useCandidate } from './useCandidate';
 import { StatusRow } from './StatusRow';
@@ -168,9 +167,6 @@ export function CandidateView({
     return () => { isMountedRef.current = false; };
   }, []);
 
-  const srsLearning = statusFlag(panel.status) === 'learning';
-  const srsDisabled = !srsLearning && baseStatus(panel.status) !== 'unknown';
-
   return (
     <article
       className={styles.candidate}
@@ -197,19 +193,6 @@ export function CandidateView({
             </div>
           </div>
           <div className={styles.cellHeaderActions}>
-            <Button
-              shape="circle"
-              size="md"
-              variant="transparent"
-              className={`${styles.cellHeaderSrs} ${srsLearning ? styles['cellHeaderSrs--learning'] : styles['cellHeaderSrs--idle']}`}
-              aria-label={t('dict.action.srsCard')}
-              title={srsDisabled ? t('dict.action.srsCardDisabled') : t('dict.action.srsCard')}
-              disabled={srsDisabled}
-              onClick={() => { void (srsLearning ? openSrsStudyPage() : panel.addToSrs()); }}
-              data-cell-id="dictionary-srs-card"
-            >
-              <Icon name="layers" />
-            </Button>
             {onSendToCard && (
               <Button
                 shape="circle"
@@ -271,6 +254,7 @@ export function CandidateView({
           status={panel.status}
           onCycle={panel.cycleStatus}
           onToggleTracking={panel.toggleTracking}
+          onOpenSrs={() => { void openSrsStudyPage(); }}
           frequencies={panel.displayFrequencies}
           stars={panel.displayStars}
           thresholds={frequencyThresholds}

@@ -1,5 +1,6 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { renderHook, waitFor, act } from '@testing-library/react';
+import type { WordStatus } from '@/entities/dictionary';
 import { useDictionaryLookup } from './useDictionaryLookup';
 
 const mockSendMessage = jest.fn<(...args: unknown[]) => Promise<unknown>>();
@@ -163,6 +164,56 @@ describe('useDictionaryLookup', () => {
     expect(result.current.candidates).toEqual([]);
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBeNull();
+  });
+
+  it('syncStatus applies the external status to every pos variant', async () => {
+    const winner = makeResult('small', {
+      status: 'unknown',
+      variants: [
+        { pos: 'adjective', prons: [], frequencies: [], status: 'unknown', definitions: [] },
+        { pos: 'noun', prons: [], frequencies: [], status: 'unknown', definitions: [] },
+      ],
+    });
+    const { result, rerender } = renderHook(
+      ({ syncStatus }) => useDictionaryLookup({
+        langCode: 'en',
+        sourceLang: 'en',
+        targetLang: 'vi',
+        initialResult: winner,
+        syncStatus,
+      }),
+      { initialProps: { syncStatus: { term: 'small', status: 'unknown' as WordStatus } } },
+    );
+
+    await waitFor(() => expect(result.current.currentResult?.term).toBe('small'));
+
+    rerender({ syncStatus: { term: 'small', status: 'tracking' } });
+
+    await waitFor(() => {
+      expect(result.current.currentResult?.variants?.map((v) => v.status)).toEqual(['tracking', 'tracking']);
+    });
+    expect(result.current.status).toBe('tracking');
+  });
+
+  it('syncStatus still updates stale variants when the root status already matches', async () => {
+    const winner = makeResult('small', {
+      status: 'tracking',
+      variants: [
+        { pos: 'adjective', prons: [], frequencies: [], status: 'tracking', definitions: [] },
+        { pos: 'noun', prons: [], frequencies: [], status: 'unknown', definitions: [] },
+      ],
+    });
+    const { result } = renderHook(() => useDictionaryLookup({
+      langCode: 'en',
+      sourceLang: 'en',
+      targetLang: 'vi',
+      initialResult: winner,
+      syncStatus: { term: 'small', status: 'tracking' },
+    }));
+
+    await waitFor(() => {
+      expect(result.current.currentResult?.variants?.map((v) => v.status)).toEqual(['tracking', 'tracking']);
+    });
   });
 
   it('re-runs the last lookup when a resource mutation notifies a change', async () => {

@@ -721,37 +721,10 @@ describe('CandidateView', () => {
     expect(group?.getAttribute('title')).toBe('LDOCE5++ V 1-35');
   });
 
-  // REQ-2: the SRS icon is a state-aware button — ghost creates a card,
-  // learning fill routes to the study page, disabled off the unknown family.
-  it.each(['known', 'ignore'] as const)('disables the SRS button when status is %s', (status) => {
-    render(
-      <CandidateView
-        candidate={makeResult('hello', { status })}
-        index={0}
-        contextSentence=""
-        sourceLang="en"
-        targetLang="vi"
-      />,
-    );
-
-    expect(screen.getByTestId('dictionary-srs-card')).toBeDisabled();
-  });
-
-  it.each(['unknown', 'tracking'] as const)('enables the SRS button when status is %s', (status) => {
-    render(
-      <CandidateView
-        candidate={makeResult('hello', { status })}
-        index={0}
-        contextSentence=""
-        sourceLang="en"
-        targetLang="vi"
-      />,
-    );
-
-    expect(screen.getByTestId('dictionary-srs-card')).toBeEnabled();
-  });
-
-  it('creates a card via addToOceanSrs and renders the learning flag', async () => {
+  // The layers icon is indicator-only: it lives in the status row, appears
+  // once a card exists (learning), and jumps to the study page. Card creation
+  // stays on send-to-card / quick-add.
+  it('renders no header SRS button — the srs segment only appears on learning', () => {
     render(
       <CandidateView
         candidate={makeResult('hello', { status: 'unknown' })}
@@ -762,13 +735,11 @@ describe('CandidateView', () => {
       />,
     );
 
-    await act(async () => { fireEvent.click(screen.getByTestId('dictionary-srs-card')); });
-
-    expect(mockAddToOceanSrs).toHaveBeenCalledWith(expect.objectContaining({ term: 'hello' }));
-    await waitFor(() => expect(screen.getByTestId('dictionary-status-flag')).toBeInTheDocument());
+    expect(screen.queryByTestId('dictionary-srs-card')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('dictionary-status-srs')).not.toBeInTheDocument();
   });
 
-  it('routes to openSrsStudyPage instead of creating a card when already learning', async () => {
+  it('routes the learning srs segment to openSrsStudyPage without creating a card', async () => {
     render(
       <CandidateView
         candidate={makeResult('hello', { status: 'learning' })}
@@ -781,9 +752,28 @@ describe('CandidateView', () => {
 
     expect(screen.getByTestId('dictionary-status-flag')).toBeDisabled();
 
-    await act(async () => { fireEvent.click(screen.getByTestId('dictionary-srs-card')); });
+    await act(async () => { fireEvent.click(screen.getByTestId('dictionary-status-srs')); });
 
     expect(mockOpenSrsStudyPage).toHaveBeenCalledTimes(1);
     expect(mockAddToOceanSrs).not.toHaveBeenCalled();
+  });
+
+  it('toggles tracking from the status eye segment on unknown', () => {
+    render(
+      <CandidateView
+        candidate={makeResult('hello', { status: 'unknown' })}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('dictionary-status-flag'));
+
+    expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({
+      type: MESSAGE_TYPES.WORD_STATUS_SET,
+      payload: expect.objectContaining({ term: 'hello', langCode: 'en', status: 'tracking' }),
+    }));
   });
 });

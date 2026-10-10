@@ -90,8 +90,9 @@ export interface PopupLifecycle {
   readonly syncMountSettings: (nativeLang: string, settings: DictionaryPopupSettings) => void;
   /** The term the deepest open popup is showing + an apply() that routes a
    *  status change through the popup path (persist + token repaint + cache +
-   *  popup pill sync). Null when no popup has a result yet — lets the 1-4
-   *  status keys target the looked-up word. */
+   *  popup pill sync). Falls back to the in-flight lookup term so keys 1-4
+   *  pressed while the result is still loading still land. Null when no
+   *  level has any term yet. */
   readonly getPopupStatusTarget: () => PopupStatusTarget | null;
   readonly dispose: () => void;
 }
@@ -332,9 +333,9 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
   function getPopupStatusTarget(): PopupStatusTarget | null {
     for (let i = popupStack.length - 1; i >= 0; i--) {
       const level = popupStack[i]!;
-      if (!level.term || !level.termLangCode) continue;
-      const term = level.term;
-      const langCode = level.termLangCode;
+      const term = level.term ?? level.request?.term ?? level.lookupTerm;
+      const langCode = level.termLangCode ?? level.request?.langCode;
+      if (!term || !langCode) continue;
       const apply = (status: WordStatus): void => {
         void setWordStatus(langCode, term, status).catch(() => { /* best-effort */ });
         handlePopupStatusChange(level, term, langCode, status);

@@ -4,7 +4,7 @@
 
 
 /* Placeholders for JSX-only class references that have no popup-specific styles. */
-.cellHeaderSend, .cellHeaderQuickAdd, .cellHeaderSrs {
+.cellHeaderSend, .cellHeaderQuickAdd {
   /* relies on global .icon-btn/.btn classes */
   display: flex;
   align-items: center;
@@ -246,37 +246,23 @@
   min-width: 0;
   width: var(--space-7);
   padding: 0;
+}
+
+/* The eye segment leads the pill → divider on its right edge; the SRS
+   segment trails → divider on its left edge. */
+.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlag:first-child {
+  border-right: var(--border-width-hairline) solid var(--color-divider);
+}
+
+.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlag:last-child {
   border-left: var(--border-width-hairline) solid var(--color-divider);
 }
 
-/* The learning segment is a read-only state display — keep the chip colors
-   lit instead of the dimmed disabled look. */
-.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlag:disabled {
-  opacity: 1;
-}
-
-/* SRS card action — state-aware: dashed ghost while the word has no card,
-   learning-fill once SRS owns it. (0,3,0) out-specifies Button's transparent
-   variant chrome (border: none on :hover/:active). */
-.cellHeaderActions .cellHeaderSrs.cellHeaderSrs--idle {
-  background: transparent;
-  border: var(--border-width-medium) dashed var(--color-border);
-  color: var(--color-text-tertiary);
-}
-
-.cellHeaderActions .cellHeaderSrs.cellHeaderSrs--idle:hover:not(:disabled) {
-  color: var(--color-text-secondary);
-  border-color: var(--color-text-tertiary);
-}
-
-.cellHeaderActions .cellHeaderSrs.cellHeaderSrs--learning {
-  background: var(--chip-status-learning-bg);
-  color: var(--chip-status-learning-fg);
-  border: var(--border-width-medium) solid transparent;
-}
-
-.cellHeaderActions .cellHeaderSrs.cellHeaderSrs--learning:hover {
-  filter: brightness(0.95);
+/* Inactive eye — the word isn't tracked yet; muted keeps it readable as a
+   segment without competing with the active status colors. */
+.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlagIdle {
+  background: var(--color-muted);
+  color: var(--color-muted-foreground);
 }
 
 .cellHeaderFrequency {

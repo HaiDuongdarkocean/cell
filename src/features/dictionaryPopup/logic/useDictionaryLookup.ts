@@ -296,11 +296,18 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
 
   // Sync an externally-driven status (e.g. keyboard shortcut) to the active
   // result without persisting — the external source already owns persistence.
+  // The sync arrives as a term-level aggregate with no pos info, so every
+  // variant takes the same status — matching a term-level write.
   useEffect(() => {
     if (!syncStatus || !currentResult) return;
     if (syncStatus.term.toLowerCase() !== currentResult.term.toLowerCase()) return;
-    if (currentResult.status === syncStatus.status) return;
-    setCurrentResult({ ...currentResult, status: syncStatus.status });
+    const staleVariants = currentResult.variants?.some((v) => v.status !== syncStatus.status) ?? false;
+    if (currentResult.status === syncStatus.status && !staleVariants) return;
+    setCurrentResult({
+      ...currentResult,
+      status: syncStatus.status,
+      variants: currentResult.variants?.map((v) => ({ ...v, status: syncStatus.status })),
+    });
     setStatus(syncStatus.status);
   }, [syncStatus, currentResult]);
 
