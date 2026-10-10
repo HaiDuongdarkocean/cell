@@ -241,18 +241,30 @@
   border: none;
   border-radius: 0;
   background: transparent;
-  color: #fff;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
 }
 
 .cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlagIdle {
-  color: var(--color-muted-foreground);
-  text-shadow: none;
+  color: var(--chip-status-idle-fg-seg);
 }
 
 .cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatus--tracking {
-  color: rgba(0, 0, 0, 0.72);
-  text-shadow: none;
+  color: var(--chip-status-tracking-fg-seg);
+}
+
+.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatus--unknown {
+  color: var(--chip-status-unknown-fg-seg);
+}
+
+.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatus--known {
+  color: var(--chip-status-known-fg-seg);
+}
+
+.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatus--ignore {
+  color: var(--chip-status-ignore-fg-seg);
+}
+
+.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatus--learning {
+  color: var(--chip-status-learning-fg-seg);
 }
 
 .cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlag {

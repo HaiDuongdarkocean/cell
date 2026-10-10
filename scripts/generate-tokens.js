@@ -245,6 +245,7 @@ function validateContrastPairs(mode, core, derived, component = {}) {
   if (chipStatus) {
     for (const status of ['unknown', 'tracking', 'known', 'ignore']) {
       pairs.push([`Chip Status ${status}`, chipStatus[`${status}-fg`], chipStatus[`${status}-bg`]]);
+      pairs.push([`Chip Status ${status} seg`, chipStatus[`${status}-fg-seg`], chipStatus[`${status}-bg-seg`]]);
     }
   }
   if (derived['color-primary-emphasis']) {
