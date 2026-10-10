@@ -3676,7 +3676,7 @@
         "panel"
       ],
       "trigger": "A global toggle shortcut uses the shared editable-target guard while the surface it opens autofocuses an input — the very flow the shortcut exists for (open then toggle back) dead-ends",
-      "fix": "Match the binding first; skip isEditableTarget only for bare-key bindings — modifier combos cannot be typed into an input so they may fire inside editable fields"
+      "fix": "Match the binding first; skip isEditableTarget only when the binding has ctrl or alt — those combos cannot produce a character so they fire inside editable fields. Shift-only combos DO type characters (Shift+T = 'T') and must stay guarded alongside bare keys"
     }
   ]
 }
