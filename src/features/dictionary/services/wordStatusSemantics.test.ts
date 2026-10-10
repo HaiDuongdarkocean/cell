@@ -50,10 +50,14 @@ describe('wordStatusSemantics', () => {
     expect(toggleTrackingFlag('tracking')).toBe('unknown');
   });
 
-  it('toggleTrackingFlag is a no-op on learning, known, ignore', () => {
-    for (const s of ['learning', 'known', 'ignore'] as const) {
-      expect(toggleTrackingFlag(s)).toBe(s);
+  it('toggleTrackingFlag switches known and ignore to tracking', () => {
+    for (const s of ['known', 'ignore'] as const) {
+      expect(toggleTrackingFlag(s)).toBe('tracking');
     }
+  });
+
+  it('toggleTrackingFlag is a no-op on learning', () => {
+    expect(toggleTrackingFlag('learning')).toBe('learning');
   });
 
   it('every enum value maps consistently (base+flag round-trip)', () => {

@@ -58,18 +58,29 @@ describe('StatusRow segmented control', () => {
     expect(onCycle).not.toHaveBeenCalled();
   });
 
-  it.each(['learning', 'known', 'ignore'] as const)(
-    'renders the eye segment disabled for %s',
+  it.each(['known', 'ignore'] as const)(
+    'renders the eye segment enabled for %s — click toggles tracking on',
     (status) => {
-      const { onToggleTracking } = renderRow(status);
+      const { onToggleTracking, onCycle } = renderRow(status);
 
       const flag = screen.getByTestId('dictionary-status-flag');
-      expect(flag).toBeDisabled();
+      expect(flag).toBeEnabled();
 
       fireEvent.click(flag);
-      expect(onToggleTracking).not.toHaveBeenCalled();
+      expect(onToggleTracking).toHaveBeenCalledTimes(1);
+      expect(onCycle).not.toHaveBeenCalled();
     },
   );
+
+  it('renders the eye segment disabled for learning', () => {
+    const { onToggleTracking } = renderRow('learning');
+
+    const flag = screen.getByTestId('dictionary-status-flag');
+    expect(flag).toBeDisabled();
+
+    fireEvent.click(flag);
+    expect(onToggleTracking).not.toHaveBeenCalled();
+  });
 
   it.each(['unknown', 'tracking', 'learning', 'known', 'ignore'] as const)(
     'renders no in-group srs segment for %s — cards live in the standalone chip',

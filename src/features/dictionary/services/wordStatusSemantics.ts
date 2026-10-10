@@ -24,10 +24,11 @@ export function nextBaseStatus(status: WordStatus): WordStatus {
   return STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length]!;
 }
 
-/** Key-4 semantics: `unknown ↔ tracking`; `learning` already implies
- *  engagement so it is a no-op; `known`/`ignore` keep their terminal state. */
+/** Key-4 semantics: `tracking` toggles off back to `unknown`; every other
+ *  status except `learning` toggles on to `tracking` (tracking implies the
+ *  unknown base). `learning` is system-managed — live cards lock the flag. */
 export function toggleTrackingFlag(status: WordStatus): WordStatus {
-  if (status === 'unknown') return 'tracking';
   if (status === 'tracking') return 'unknown';
-  return status;
+  if (status === 'learning') return status;
+  return 'tracking';
 }
