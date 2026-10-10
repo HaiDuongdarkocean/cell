@@ -108,6 +108,7 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
       element: HTMLElement,
       contextSentence: string,
       event?: ClickModifierState,
+      cursorOffset?: number,
     ): void => {
       const dp = dictionaryPopupRef.current;
       if (!dp.enabled || (event && !modifierMatches(dp.triggerMode, event))) return;
@@ -115,7 +116,7 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
         term,
         langCode,
         contextSentence,
-        cursorOffset: Number(element.getAttribute('data-cell-start') ?? 0),
+        cursorOffset: cursorOffset ?? Number(element.getAttribute('data-cell-start') ?? 0),
       };
       const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       webTextCtrlRef.current?.handleLookup(
@@ -156,8 +157,8 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
           const panel = document.querySelector<HTMLElement>(SPLIT_VIEW_PANEL_SELECTOR);
           return panel?.shadowRoot ? [panel.shadowRoot] : [];
         },
-        onOpenDictionary: (term, element, contextSentence, event) =>
-          openTokenDictionary(langCode, term, element, contextSentence, event),
+        onOpenDictionary: (term, element, contextSentence, event, cursorOffset) =>
+          openTokenDictionary(langCode, term, element, contextSentence, event, cursorOffset),
         getPopupStatusTarget: () => webTextCtrlRef.current?.getPopupStatusTarget() ?? null,
       });
       subtitleCtrl.enable();
@@ -198,8 +199,8 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
           showReadings,
           showGlosses,
           glossTargetLanguage,
-          onTokenClick: (term, element, contextSentence, event) =>
-            openTokenDictionary(langCode, term, element, contextSentence, event),
+          onTokenClick: (term, element, contextSentence, event, cursorOffset) =>
+            openTokenDictionary(langCode, term, element, contextSentence, event, cursorOffset),
           onTokenHover: (term) => subtitleTokenizeRef.current?.setHoveredTerm(term),
           onTokenCtrlClick: (term) => subtitleTokenizeRef.current?.toggleSelectedTerm(term),
           selection: {

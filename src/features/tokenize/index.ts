@@ -23,9 +23,11 @@ export {
   tokenizeTextBlock,
   sentenceRangeAtOffset,
   sentenceTextForIndex,
+  sentenceContextForIndex,
   type SentenceRange,
+  type TokenSentence,
 } from './logic/textTokenizer';
-export { sentenceTextForSpan } from './ui/sentenceHighlight';
+export { sentenceTextForSpan, sentenceContextForSpan } from './ui/sentenceHighlight';
 export {
   createScoreTracker,
   isScorableToken,

@@ -14,7 +14,7 @@ import {
 import { TokenizedParagraph } from '@/features/reader/ui/TokenizedParagraph';
 import { TtsControlBar } from '@/features/reader/ui/TtsControlBar';
 import { formatDuration } from '@/features/reader/logic/formatTime';
-import { sentenceTextForIndex, tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
+import { sentenceContextForIndex, tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
 import { DictionaryPanelView } from '@/features/dictionaryPopup/ui/DictionaryPanelView';
 import { ComprehensionBadge } from '@/features/tokenize/ui/ComprehensionBadge';
 import { createBookScoreTracker } from '@/features/reader/logic/bookScore';
@@ -320,6 +320,17 @@ export function ReaderApp(): React.JSX.Element {
     );
   }, [selectedBook, selectedParagraph]);
 
+  const selectedSentence = useMemo(() => {
+    if (!selectedBook || selectedParagraph === null || !selectedToken) return null;
+    const paragraph = selectedBook.paragraphs[selectedParagraph] ?? '';
+    return sentenceContextForIndex(
+      tokenizeTextBlock(paragraph, selectedBook.languageCode ?? 'en'),
+      paragraph,
+      selectedToken.sentenceIndex,
+      selectedToken.start,
+    );
+  }, [selectedBook, selectedParagraph, selectedToken]);
+
   return (
     <div className={styles.app}>
       <header className={styles.header}>
@@ -417,15 +428,8 @@ export function ReaderApp(): React.JSX.Element {
                   sourceLang={selectedBook.languageCode ?? 'en'}
                   targetLang={targetLang}
                   initialTerm={selectedToken.term}
-                  contextSentence={sentenceTextForIndex(
-                    tokenizeTextBlock(
-                      selectedBook.paragraphs[selectedParagraph] ?? '',
-                      selectedBook.languageCode ?? 'en',
-                    ),
-                    selectedBook.paragraphs[selectedParagraph] ?? '',
-                    selectedToken.sentenceIndex,
-                  )}
-                  cursorOffset={selectedToken.start}
+                  contextSentence={selectedSentence?.sentence}
+                  cursorOffset={selectedSentence?.cursorOffset ?? selectedToken.start}
                   onStatusChange={(term, langCode, status) =>
                     emitWordStatusChanged({ term, langCode, status })
                   }

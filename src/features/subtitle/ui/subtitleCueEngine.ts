@@ -47,7 +47,7 @@ export interface SubtitleCueEngineDictionaryOptions {
 
 export interface SubtitleCueEngineTokenizeOptions {
   langCode: string;
-  onOpenDictionary: (term: string, element: HTMLElement, contextSentence: string, event?: ClickModifierState) => void;
+  onOpenDictionary: (term: string, element: HTMLElement, contextSentence: string, event?: ClickModifierState, cursorOffset?: number) => void;
   /** Cue-list token hover → feeds the tokenize controller's hoveredTerm so
    *  status keys 1-4 apply to the hovered word. */
   onTokenHover?: (term: string | null) => void;

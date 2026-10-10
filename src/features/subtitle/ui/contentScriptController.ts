@@ -24,7 +24,7 @@ import {
 import { ReactSubtitleController } from '@/features/subtitle/ui/reactSubtitleController';
 import { SubtitleSyncController } from '@/features/subtitle/ui/subtitleSyncController';
 import { type SubtitleCueEngineUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
-import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl } from '@/features/tokenize';
+import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, sentenceContextForSpan } from '@/features/tokenize';
 import { SPLIT_VIEW_PANEL_SELECTOR } from '@/features/subtitle/logic/scrollPositionPreserve';
 import type { SubtitleTokenizeController } from '@/features/tokenize';
 import { modifierMatches, type ClickModifierState, type LookupRequest } from '@/entities/dictionary';
@@ -241,11 +241,12 @@ export function init(
     }
     span ??= termFallback;
     const anchorEl = span ?? target;
+    const ctx = span ? sentenceContextForSpan(span) : null;
     const request: LookupRequest = {
       term,
       langCode,
-      contextSentence: sentence,
-      cursorOffset: span ? Number(span.getAttribute('data-cell-start') ?? termOffset) : termOffset,
+      contextSentence: ctx?.sentence ?? sentence,
+      cursorOffset: ctx?.cursorOffset ?? (span ? Number(span.getAttribute('data-cell-start') ?? termOffset) : termOffset),
     };
     const requestId = `autopause-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     sharedWebTextCtrl.handleLookup(request, requestId, anchorEl.getBoundingClientRect(), anchorEl);
@@ -318,7 +319,7 @@ export function init(
     setTimeout(fire, 100);
   };
 
-  function openDictionaryFromToken(langCode: string, term: string, element: HTMLElement, contextSentence: string, event?: ClickModifierState): void {
+  function openDictionaryFromToken(langCode: string, term: string, element: HTMLElement, contextSentence: string, event?: ClickModifierState, cursorOffset?: number): void {
     if (!sharedWebTextCtrl) return;
     const dp = currentSettings?.dictionaryPopup;
     if (dp && dp.enabled === false) return;
@@ -327,7 +328,7 @@ export function init(
       term,
       langCode,
       contextSentence,
-      cursorOffset: Number(element.getAttribute('data-cell-start') ?? 0),
+      cursorOffset: cursorOffset ?? Number(element.getAttribute('data-cell-start') ?? 0),
     };
     const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     sharedWebTextCtrl.handleLookup(request, requestId, element.getBoundingClientRect(), element);
@@ -361,8 +362,8 @@ export function init(
               const panel = document.querySelector<HTMLElement>(SPLIT_VIEW_PANEL_SELECTOR);
               return panel?.shadowRoot ? [panel.shadowRoot] : [];
             },
-            onOpenDictionary: (term, element, contextSentence, event) =>
-              openDictionaryFromToken(settings.subtitleOverlayTargetLanguage, term, element, contextSentence, event),
+            onOpenDictionary: (term, element, contextSentence, event, cursorOffset) =>
+              openDictionaryFromToken(settings.subtitleOverlayTargetLanguage, term, element, contextSentence, event, cursorOffset),
             getPopupStatusTarget: () => sharedWebTextCtrl?.getPopupStatusTarget?.() ?? null,
             showReadings: settings.showReadings,
             showGlosses: settings.showWordTranslations,
@@ -382,8 +383,8 @@ export function init(
           showReadings: settings.showReadings,
           showGlosses: settings.showWordTranslations,
           glossTargetLanguage: settings.subtitleOverlayNativeLanguage ?? '',
-          onOpenDictionary: (term, element, contextSentence, event) =>
-            openDictionaryFromToken(settings.subtitleOverlayTargetLanguage, term, element, contextSentence, event),
+          onOpenDictionary: (term, element, contextSentence, event, cursorOffset) =>
+            openDictionaryFromToken(settings.subtitleOverlayTargetLanguage, term, element, contextSentence, event, cursorOffset),
           onTokenHover: (term) => subtitleTokenizeCtrl?.setHoveredTerm(term),
           onTokenCtrlClick: (term) => subtitleTokenizeCtrl?.toggleSelectedTerm(term),
           selection: {
@@ -856,11 +857,12 @@ export function init(
     const span = spans[idx]!;
     const cueIndex = blockController.getActiveIndices().target;
     const cue = blockController.getTargetCues()[cueIndex];
+    const ctx = sentenceContextForSpan(span);
     const request: LookupRequest = {
       term: (span.getAttribute('data-cell-term') ?? '').trim(),
       langCode,
-      contextSentence: cue?.text ?? '',
-      cursorOffset: Number(span.getAttribute('data-cell-start') ?? 0),
+      contextSentence: ctx?.sentence ?? cue?.text ?? '',
+      cursorOffset: ctx?.cursorOffset ?? Number(span.getAttribute('data-cell-start') ?? 0),
     };
     const requestId = `vocabnav-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     sharedWebTextCtrl.handleLookup(request, requestId, span.getBoundingClientRect(), span);

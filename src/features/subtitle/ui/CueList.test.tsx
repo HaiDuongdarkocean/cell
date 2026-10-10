@@ -171,6 +171,7 @@ describe('CueList bulk selection', () => {
       token,
       'first line',
       expect.anything(),
+      0,
     );
     expect(tokenize.onTokenCtrlClick).not.toHaveBeenCalled();
   });

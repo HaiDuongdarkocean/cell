@@ -191,10 +191,9 @@ export async function initTokenize(): Promise<void> {
       showReadings,
       showGlosses,
       glossTargetLanguage,
-      onOpenDictionary: (term, element, contextSentence, event) => {
+      onOpenDictionary: (term, element, contextSentence, event, cursorOffset) => {
         const ctrl = ensureWebTextCtrl();
         if (!tokenLookupEnabled || !modifierMatches(tokenLookupMode, event)) return;
-        const start = parseInt(element.getAttribute('data-cell-start') ?? '0', 10);
         const wordEl = element.querySelector('.js-cell-token-word');
         const range = document.createRange();
         if (wordEl) {
@@ -203,7 +202,7 @@ export async function initTokenize(): Promise<void> {
           range.selectNodeContents(element);
         }
         ctrl.handleLookup(
-          { term, langCode, contextSentence, cursorOffset: start },
+          { term, langCode, contextSentence, cursorOffset: cursorOffset ?? 0 },
           `tokenize-${term}`,
           element.getBoundingClientRect(),
           range,

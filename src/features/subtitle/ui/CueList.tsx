@@ -16,7 +16,7 @@ import {
   type CueListTokenMap,
   type ResolveMeta,
 } from '@/features/tokenize';
-import { sentenceTextForIndex } from '@/features/tokenize';
+import { sentenceContextForIndex } from '@/features/tokenize';
 import { formatCueTimestamp } from '@/features/subtitle/logic/cueTime';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
 import { spawnRipple } from '@/shared/lib/dom/ripple';
@@ -96,7 +96,7 @@ export interface CueListTokenSelection {
 
 export interface CueListTokenize {
   langCode: string;
-  onTokenClick: (term: string, element: HTMLElement, contextSentence: string, event: ClickModifierState) => void;
+  onTokenClick: (term: string, element: HTMLElement, contextSentence: string, event: ClickModifierState, cursorOffset?: number) => void;
   /** Hover enter/leave on a word token (null on leave) — feeds the owning
    *  controller's hoveredTerm so status keys 1-4 apply to the hovered word. */
   onTokenHover?: (term: string | null) => void;
@@ -154,7 +154,7 @@ const CueTokenText = memo(function CueTokenText({
 }: {
   text: string;
   tokens: readonly Token[];
-  onTokenClick: (term: string, element: HTMLElement, contextSentence: string, event: ClickModifierState) => void;
+  onTokenClick: (term: string, element: HTMLElement, contextSentence: string, event: ClickModifierState, cursorOffset?: number) => void;
   onTokenHover?: (term: string | null) => void;
   onTokenCtrlClick?: (term: string) => void;
   selectedTerms?: ReadonlySet<string>;
@@ -202,7 +202,8 @@ const CueTokenText = memo(function CueTokenText({
             onTokenCtrlClick(token.term);
             return;
           }
-          onTokenClick(token.term, event.currentTarget, sentenceTextForIndex(tokens, text, token.sentenceIndex), event);
+          const ctx = sentenceContextForIndex(tokens, text, token.sentenceIndex, token.start);
+          onTokenClick(token.term, event.currentTarget, ctx?.sentence ?? text, event, ctx?.cursorOffset ?? token.start);
         }}
         onMouseEnter={onTokenHover ? () => onTokenHover(token.term) : undefined}
         onMouseLeave={onTokenHover ? () => onTokenHover(null) : undefined}

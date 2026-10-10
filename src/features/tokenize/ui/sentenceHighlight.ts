@@ -230,16 +230,27 @@ function* runSpans({ segments, entries }: SentenceRun): Generator<HTMLElement> {
   }
 }
 
-/** Text of the sentence `span` belongs to — the same run the wash paints, so
- *  lookup context, TTS and card sentences match the highlight exactly. */
-export function sentenceTextForSpan(span: HTMLElement): string {
+/** Text of the sentence `span` belongs to plus `span`'s offset inside it —
+ *  the same run the wash paints, so lookup context, TTS and card sentences
+ *  match the highlight exactly and cursorOffset lands on the clicked token. */
+export function sentenceContextForSpan(span: HTMLElement): { sentence: string; cursorOffset: number } | null {
   const run = collectRunForSpan(span);
-  if (!run) return '';
+  if (!run) return null;
   let text = '';
+  let cursorOffset = -1;
   for (const candidate of runSpans(run)) {
+    if (candidate === span) cursorOffset = text.length;
     text += candidate.textContent ?? '';
   }
-  return text.trim();
+  const leadingWs = text.length - text.trimStart().length;
+  const sentence = text.trim();
+  if (!sentence || cursorOffset < 0) return null;
+  return { sentence, cursorOffset: Math.max(0, cursorOffset - leadingWs) };
+}
+
+/** Text of the sentence `span` belongs to — the same run the wash paints. */
+export function sentenceTextForSpan(span: HTMLElement): string {
+  return sentenceContextForSpan(span)?.sentence ?? '';
 }
 
 /** Wash every rendered token of the sentence `span` belongs to, and return the

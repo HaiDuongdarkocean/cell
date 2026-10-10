@@ -4,8 +4,8 @@ import { TokenizeCache } from '@/features/tokenize/logic/tokenizeCache';
 import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_PREPARE, PRIORITY_BUFFER } from '@/features/tokenize/logic/tokenizeScheduler';
 import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
 import { resolveScrollPredictMargin, type ScrollDirection } from '@/features/tokenize/logic/scrollDirection';
-import { prepareTokenBlock, resolveTokenMetadata, getSentenceText } from '@/features/tokenize/logic/textTokenizer';
-import { sentenceTextForSpan } from '@/features/tokenize/ui/sentenceHighlight';
+import { prepareTokenBlock, resolveTokenMetadata, sentenceContextForIndex } from '@/features/tokenize/logic/textTokenizer';
+import { sentenceContextForSpan } from '@/features/tokenize/ui/sentenceHighlight';
 import { bindTokenBlock, restyleTokenBlock, unbindTokenBlock, TOKEN_CLASS, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
 import { createTokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import type { TokenizeState, TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
@@ -83,7 +83,7 @@ export interface WebTokenizeControllerOptions {
   readonly langCode?: string;
   /** Callback when the user asks to open the Popup Dictionary.
    *  Provides the clicked token element and the original sentence for context. */
-  readonly onOpenDictionary?: (term: string, element: HTMLElement, contextSentence: string, event: ClickModifierState) => void;
+  readonly onOpenDictionary?: (term: string, element: HTMLElement, contextSentence: string, event: ClickModifierState, cursorOffset?: number) => void;
   /** Callback when a word status changes via keyboard shortcut or other action. */
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Fired when the scanned block list changes (scan, dynamic adds, removals,
@@ -868,7 +868,9 @@ export async function createWebTokenizeController(
       onTokenClick: (term, block, element, token, event) => {
         pinnedSentenceKey = sentenceKey(block, element);
         washSentence(element);
-        options.onOpenDictionary?.(term, element, sentenceTextForSpan(element) || getSentenceText(block, token), event);
+        const ctx = sentenceContextForSpan(element)
+          ?? sentenceContextForIndex(block.tokens ?? [], block.originalText, token.sentenceIndex, token.start);
+        options.onOpenDictionary?.(term, element, ctx?.sentence ?? block.originalText, event, ctx?.cursorOffset ?? 0);
       },
       onSeparatorEnter: (block, element) => {
         const key = sentenceKey(block, element);

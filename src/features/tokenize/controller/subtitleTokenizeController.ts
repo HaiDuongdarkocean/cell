@@ -15,8 +15,8 @@ import { createVideoTokenMap, type VideoTokenMap } from '@/features/tokenize/log
 import { getSrsCardTermSet, invalidateSrsCardTermSet, onSrsCardsChanged } from '@/features/srs';
 import { createVideoTokenPreloader, type VideoTokenPreloader } from '@/features/tokenize/logic/videoTokenPreloader';
 import { createStatusKeyControls, type PopupStatusTarget } from '@/features/tokenize/logic/statusKeyControls';
-import { getSentenceText } from '@/features/tokenize/logic/textTokenizer';
-import { sentenceTextForSpan } from '@/features/tokenize/ui/sentenceHighlight';
+import { sentenceContextForIndex } from '@/features/tokenize/logic/textTokenizer';
+import { sentenceContextForSpan } from '@/features/tokenize/ui/sentenceHighlight';
 
 const DEFAULT_WINDOW = 1;
 
@@ -57,7 +57,7 @@ export interface SubtitleTokenizeControllerOptions {
    *  status keys work on selections inside those surfaces. */
   readonly getExtraShadowRoots?: () => readonly ShadowRoot[];
   /** Called when the user clicks a token to open the Popup Dictionary. */
-  readonly onOpenDictionary: (term: string, element: HTMLElement, contextSentence: string, event: ClickModifierState) => void;
+  readonly onOpenDictionary: (term: string, element: HTMLElement, contextSentence: string, event: ClickModifierState, cursorOffset?: number) => void;
   /** Open popup's looked-up term — status keys target it before selection/hover. */
   readonly getPopupStatusTarget?: () => PopupStatusTarget | null;
   /** Number of cues before/after the active cue to keep prepared. */
@@ -123,8 +123,11 @@ export function createSubtitleTokenizeController(
           stateStore.setHoveredTerm(null);
         }
       },
-      onTokenClick: (term, block, element, token, event) =>
-        onOpenDictionary(term, element, sentenceTextForSpan(element) || getSentenceText(block, token), event),
+      onTokenClick: (term, block, element, token, event) => {
+        const ctx = sentenceContextForSpan(element)
+          ?? sentenceContextForIndex(block.tokens ?? [], block.originalText, token.sentenceIndex, token.start);
+        onOpenDictionary(term, element, ctx?.sentence ?? block.originalText, event, ctx?.cursorOffset ?? 0);
+      },
       onTokenCtrlClick: (term) => stateStore.toggleSelectedTerm(term),
       isSelected: (term) => stateStore.getState().selectedTerms.has(term),
     };

@@ -208,6 +208,31 @@ export function sentenceTextForIndex(
   return range ? text.slice(range.start, range.end).trim() : text.trim();
 }
 
+export interface TokenSentence {
+  readonly sentence: string;
+  /** Offset of `offsetInText` inside the trimmed `sentence` — the cursorOffset
+   *  LookupRequest needs so phrase detection lands on the clicked token. */
+  readonly cursorOffset: number;
+}
+
+/** Sentence slice + offset of `offsetInText` inside it. Offsets are
+ *  `text`-relative; the returned sentence is trimmed. */
+export function sentenceContextForIndex(
+  tokens: readonly Token[],
+  text: string,
+  sentenceIndex: number,
+  offsetInText: number,
+): TokenSentence | null {
+  const range = sentenceRangeForIndex(tokens, text, sentenceIndex);
+  if (!range) return null;
+  const raw = text.slice(range.start, range.end);
+  const leadingWs = raw.length - raw.trimStart().length;
+  return {
+    sentence: raw.trim(),
+    cursorOffset: Math.max(0, offsetInText - range.start - leadingWs),
+  };
+}
+
 /** Extract the sentence text containing the given token, using sentenceIndex grouping. */
 export function getSentenceText(block: TokenBlock, token: Token): string {
   const tokens = block.tokens;
