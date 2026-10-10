@@ -61,6 +61,12 @@ export function init(
   // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
   // G8: walk-up để xử lý sites có video.parentElement height=0 (YouTube pattern).
   const container = findVideoOverlayContainer(video);
+  // The overlay host mounts `position:absolute; inset:0` inside `container`.
+  // On sites whose player shell is position:static (Wikipedia figure embeds),
+  // inset:0 resolves against the nearest positioned ancestor instead and the
+  // controls leak out to the page bottom — same fix ocrOverlay.attach uses.
+  const containerWasStatic = getComputedStyle(container).position === 'static';
+  if (containerWasStatic) container.style.position = 'relative';
 
   // ADR-015 T12: inject theme tokens so panel/toast var(--color-*) resolve.
   // Content-script isolated world cannot access popup's theme.css.
@@ -995,6 +1001,7 @@ export function init(
     removeOnMessageListener(onRuntimeMessage2);
     if (onStorageChangedCallback) removeOnStorageChangedListener(onStorageChangedCallback);
     themeTokensCleanup();
+    if (containerWasStatic) container.style.position = '';
     // ADR-027: React UI is unmounted in ReactSubtitleController.destroy().
     subtitleTokenizeCtrl?.destroy();
     unknownResolver?.destroy();
