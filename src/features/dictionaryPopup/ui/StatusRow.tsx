@@ -62,6 +62,7 @@ export function StatusSegmented({ status, onCycle, onToggleTracking, srsCardCoun
     <span className={styles.cellHeaderStatusGroup}>
       <Button
         variant="transparent"
+        size="xs"
         className={`${styles.cellHeaderStatus} ${styles.cellHeaderStatusFlag} ${flag === 'tracking' ? styles['cellHeaderStatus--tracking'] : styles.cellHeaderStatusFlagIdle}`}
         disabled={!onToggleTracking}
         onClick={onToggleTracking}
@@ -75,6 +76,7 @@ export function StatusSegmented({ status, onCycle, onToggleTracking, srsCardCoun
       {hasCards && (
         <Button
           variant="transparent"
+          size="xs"
           className={`${styles.cellHeaderStatus} ${styles.cellHeaderStatusFlag} ${styles['cellHeaderStatus--learning']}`}
           onClick={onOpenSrsCards}
           title={t('dict.status.srsCards', [srsCardCount ?? 0])}

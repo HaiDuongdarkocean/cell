@@ -402,40 +402,40 @@
 .xs.iconOnly .label > * svg,
 .xs.circle .label > svg,
 .xs.circle .label > * svg {
-  width: var(--iconbutton-icon-xs);
-  height: var(--iconbutton-icon-xs);
+  width: calc(var(--iconbutton-size-xs) * var(--iconbutton-icon-ratio-xs));
+  height: calc(var(--iconbutton-size-xs) * var(--iconbutton-icon-ratio-xs));
 }
 
 .sm.iconOnly .label > svg,
 .sm.iconOnly .label > * svg,
 .sm.circle .label > svg,
 .sm.circle .label > * svg {
-  width: var(--iconbutton-icon-sm);
-  height: var(--iconbutton-icon-sm);
+  width: calc(var(--iconbutton-size-sm) * var(--iconbutton-icon-ratio-sm));
+  height: calc(var(--iconbutton-size-sm) * var(--iconbutton-icon-ratio-sm));
 }
 
 .md.iconOnly .label > svg,
 .md.iconOnly .label > * svg,
 .md.circle .label > svg,
 .md.circle .label > * svg {
-  width: var(--iconbutton-icon-md);
-  height: var(--iconbutton-icon-md);
+  width: calc(var(--iconbutton-size-md) * var(--iconbutton-icon-ratio));
+  height: calc(var(--iconbutton-size-md) * var(--iconbutton-icon-ratio));
 }
 
 .lg.iconOnly .label > svg,
 .lg.iconOnly .label > * svg,
 .lg.circle .label > svg,
 .lg.circle .label > * svg {
-  width: var(--iconbutton-icon-lg);
-  height: var(--iconbutton-icon-lg);
+  width: calc(var(--iconbutton-size-lg) * var(--iconbutton-icon-ratio));
+  height: calc(var(--iconbutton-size-lg) * var(--iconbutton-icon-ratio));
 }
 
 .xl.iconOnly .label > svg,
 .xl.iconOnly .label > * svg,
 .xl.circle .label > svg,
 .xl.circle .label > * svg {
-  width: var(--iconbutton-icon-xl);
-  height: var(--iconbutton-icon-xl);
+  width: calc(var(--iconbutton-size-xl) * var(--iconbutton-icon-ratio));
+  height: calc(var(--iconbutton-size-xl) * var(--iconbutton-icon-ratio));
 }
 
 /* === Icons === */
