@@ -1,6 +1,12 @@
 import { DEFAULT_LIGHT_TOKENS, STATIC_TOKENS, type TokenRecord } from '@/shared/lib/tokens';
+import { loadThemeConfig, DEFAULT_THEME_CONFIG } from '@/features/theme';
+import { onStorageChanged } from '@/shared/lib/chrome-apis';
+import { STORAGE_KEYS } from '@/shared/config/config';
 
 const TOKEN_STYLE_ID = 'cell-token-span-style';
+const SENTENCE_WASH_VAR = '--cell-sentence-wash';
+const SENTENCE_WASH_STYLE_ID = 'cell-sentence-wash-var';
+let sentenceWashSyncStarted = false;
 
 /** Static design tokens that token-span CSS references via var() but that are
  *  NOT loaded on host pages (tokens.css only ships in popup/sidepanel/showcase).
@@ -45,15 +51,27 @@ const CELL_TOKEN_MAP: Record<string, string> = {
   '--cell-token-selected': '--color-primary',
 };
 
+/** Sentence-highlight wash color. Resolved at build time to the default
+ *  preset's dark-palette primary, then overwritten live by
+ *  syncSentenceWashVar() from the ACTIVE theme config (customColors.dark.primary).
+ *  The dark-palette variant is the luminance-lifted primary: measured on real
+ *  pages it clears the visibility floor on BOTH dark backgrounds and stays a
+ *  soft pastel on light ones, unlike the light-variant which nearly vanishes
+ *  on dark. */
+const SENTENCE_WASH_FALLBACK = DEFAULT_THEME_CONFIG.customColors.dark.primary;
+
 function resolveMappedTokenValue(tokens: TokenRecord, designName: string): string {
   const value = tokens[designName] ?? '';
   return value.replace(/var\((--[\w-]+)\)/g, (reference, dependency: string) => tokens[dependency] ?? reference);
 }
 
 function buildVariables(rootSelector = ':root'): string {
-  const lightDecls = Object.entries(CELL_TOKEN_MAP)
-    .map(([cellName, designName]) => `  ${cellName}: ${resolveMappedTokenValue(DEFAULT_LIGHT_TOKENS, designName)};`)
-    .join('\n');
+  const lightDecls = [
+    ...Object.entries(CELL_TOKEN_MAP).map(
+      ([cellName, designName]) => `  ${cellName}: ${resolveMappedTokenValue(DEFAULT_LIGHT_TOKENS, designName)};`,
+    ),
+    `  ${SENTENCE_WASH_VAR}: ${SENTENCE_WASH_FALLBACK};`,
+  ].join('\n');
   // Tokens sit on arbitrary host-page backgrounds — pin them to the light
   // palette so OS dark mode or a host [data-theme="dark"] ancestor can never
   // restyle them dark.
@@ -387,14 +405,14 @@ html body .js-cell-token.js-cell-token--selected .js-cell-token-word {
 /* Sentence highlight: while a word is hovered (or its popup is open) the whole
    sentence is washed so the reading context is visible at a glance. The wash is
    painted by band overlays (sentenceHighlight.ts), not per-token backgrounds —
-   one snapped rectangle per visual line keeps the edges straight. multiply
-   keeps the text under the band crisp like a real highlighter. */
+   one snapped rectangle per visual line keeps the edges straight. A plain alpha
+   wash of the theme's dark-palette primary works on light AND dark host pages:
+   multiply can only darken and vanishes on dark backgrounds. */
 html body .js-cell-sentence-band {
   position: absolute !important;
   pointer-events: none !important;
   z-index: var(--z-overlay-high) !important;
-  mix-blend-mode: multiply !important;
-  background: color-mix(in srgb, var(--cell-token-selected) 22%, #fff) !important;
+  background: color-mix(in srgb, var(--cell-sentence-wash) 32%, transparent) !important;
 }
 
 /* Global layer toggles (applied per token).
@@ -416,13 +434,41 @@ html body .js-cell-token.js-cell-token--frequency-off {
 `.trim();
 }
 
+/** Re-resolve --cell-sentence-wash from the active theme config and write it to
+ *  a tiny :root override in the host document head. Custom properties inherit
+ *  through shadow boundaries, so the same var also reaches shadow-DOM token
+ *  spans (subtitle panel, card creator, ...). */
+function syncSentenceWashVar(): void {
+  void loadThemeConfig()
+    .then((config) => {
+      const primary = config.customColors?.dark?.primary;
+      if (!primary || typeof document === 'undefined') return;
+      let el = document.getElementById(SENTENCE_WASH_STYLE_ID);
+      if (!el) {
+        el = document.createElement('style');
+        el.id = SENTENCE_WASH_STYLE_ID;
+        (document.head ?? document.documentElement).appendChild(el);
+      }
+      el.textContent = `:root { ${SENTENCE_WASH_VAR}: ${primary}; }`;
+    })
+    .catch(() => {});
+}
+
 /** Inject token-span style into the host document head (idempotent). */
 export function injectTokenSpanStyle(): void {
-  if (document.getElementById(TOKEN_STYLE_ID)) return;
-  const style = document.createElement('style');
-  style.id = TOKEN_STYLE_ID;
-  style.textContent = buildTokenSpanCss();
-  (document.head ?? document.documentElement).appendChild(style);
+  if (!document.getElementById(TOKEN_STYLE_ID)) {
+    const style = document.createElement('style');
+    style.id = TOKEN_STYLE_ID;
+    style.textContent = buildTokenSpanCss();
+    (document.head ?? document.documentElement).appendChild(style);
+  }
+  if (!sentenceWashSyncStarted) {
+    sentenceWashSyncStarted = true;
+    syncSentenceWashVar();
+    onStorageChanged((changes, area) => {
+      if (area === 'local' && changes[STORAGE_KEYS.THEME_CONFIG]) syncSentenceWashVar();
+    });
+  }
 }
 
 /** Build shadow-DOM-compatible token span CSS.
@@ -663,8 +709,7 @@ ${buildVariables(':host')}
   position: absolute !important;
   pointer-events: none !important;
   z-index: var(--z-overlay-high) !important;
-  mix-blend-mode: multiply !important;
-  background: color-mix(in srgb, var(--cell-token-selected) 22%, #fff) !important;
+  background: color-mix(in srgb, var(--cell-sentence-wash) 32%, transparent) !important;
 }
 
 .js-cell-token.js-cell-token--status-off {

@@ -168,7 +168,7 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     // Per-token --sentence backgrounds could never produce straight edges —
     // the wash is one snapped overlay rect per line (see sentenceHighlight.ts).
     expect(source).toMatch(
-      /\.js-cell-sentence-band\s*\{[^}]*mix-blend-mode:\s*multiply[^}]*color-mix\(in srgb, var\(--cell-token-selected\) 22%/,
+      /\.js-cell-sentence-band\s*\{[^}]*color-mix\(in srgb, var\(--cell-sentence-wash\) 32%, transparent\)/,
     );
     expect(source).not.toContain('.js-cell-token--sentence .js-cell-token-word');
     expect(source).not.toContain('--separator.js-cell-token--sentence');
@@ -244,7 +244,10 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
   it('pins every --cell-token-* selector to the light palette (tokens never flip dark)', () => {
     const darkBlock = buildTokenSpanCss().split('[data-theme="dark"]')[1];
     expect(darkBlock).toContain('--cell-token-selected: #5E6AD2'); // light primary
-    expect(darkBlock).not.toContain('#6AB2F5'); // dark primary never emitted
+    // Pills stay light-pinned; only the sentence wash intentionally carries
+    // the dark-palette primary — it must read on both light and dark hosts.
+    expect(darkBlock.match(/#6AB2F5/g) ?? []).toHaveLength(1);
+    expect(darkBlock).toContain('--cell-sentence-wash: #6AB2F5');
   });
 
   it('keeps a line box in the empty cap lane so missing readings never lift the word', () => {
