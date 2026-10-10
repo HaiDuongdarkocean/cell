@@ -300,29 +300,38 @@ async function main() {
 
   const tokens = JSON.parse(await readFile(tokensPath, 'utf8'));
 
-  // Compute accessible primary-foreground text color at build time so the
-  // generated tokens.css always ships a WCAG AA --color-text-on-primary.
+  const defaultPreset = tokens.presets[tokens.defaultPreset];
+
+  // The default [data-theme] block IS the default preset — there is no
+  // preset-less palette. Merge its derived overrides (hand-tuned
+  // primary-foreground etc.) so the base theme equals the preset exactly.
+  const baseCore = {};
+  const baseDerived = {};
   for (const mode of ['light', 'dark']) {
-    tokens.derived[mode]['color-text-on-primary'] = pickPrimaryForeground(tokens.core[mode]);
+    baseCore[mode] = { ...defaultPreset.core[mode] };
+    baseDerived[mode] = { ...tokens.derived[mode], ...defaultPreset.derived[mode] };
+    // Compute accessible primary-foreground text color at build time so the
+    // generated tokens.css always ships a WCAG AA --color-text-on-primary.
+    baseDerived[mode]['color-text-on-primary'] = pickPrimaryForeground(baseCore[mode]);
   }
 
   const staticBlock = flattenStaticTokens(tokens.static);
   const compositeBlock = flattenCompositeTokens(tokens.composite);
   const componentBlock = flattenComponentTokens(tokens.component);
-  const lightColorBlock = buildColorBlock(tokens.core.light, tokens.derived.light, 'light');
-  const darkColorBlock = buildColorBlock(tokens.core.dark, tokens.derived.dark, 'dark');
+  const lightColorBlock = buildColorBlock(baseCore.light, baseDerived.light, 'light');
+  const darkColorBlock = buildColorBlock(baseCore.dark, baseDerived.dark, 'dark');
 
   const contrastFailures = [
-    ...validateContrastPairs('light', tokens.core.light, tokens.derived.light, tokens.component),
-    ...validateContrastPairs('dark', tokens.core.dark, tokens.derived.dark, tokens.component),
+    ...validateContrastPairs('light', baseCore.light, baseDerived.light, tokens.component),
+    ...validateContrastPairs('dark', baseCore.dark, baseDerived.dark, tokens.component),
   ];
 
-  // Per-preset blocks: merge default core/derived with the preset override.
+  // Per-preset blocks: merge default-preset core/derived with the preset override.
   const presetBlocks = [];
   const presets = tokens.presets || {};
   for (const [name, preset] of Object.entries(presets)) {
     for (const mode of ['light', 'dark']) {
-      const mergedCore = { ...tokens.core[mode], ...preset.core[mode] };
+      const mergedCore = { ...defaultPreset.core[mode], ...preset.core[mode] };
       const mergedDerived = { ...tokens.derived[mode], ...preset.derived[mode] };
       // Ensure the computed --color-text-on-primary matches the merged palette.
       mergedDerived['color-text-on-primary'] = pickPrimaryForeground(mergedCore);

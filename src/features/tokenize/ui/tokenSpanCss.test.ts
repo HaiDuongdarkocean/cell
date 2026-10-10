@@ -243,7 +243,7 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
 
   it('pins every --cell-token-* selector to the light palette (tokens never flip dark)', () => {
     const darkBlock = buildTokenSpanCss().split('[data-theme="dark"]')[1];
-    expect(darkBlock).toContain('--cell-token-selected: #5E6AD2'); // light primary
+    expect(darkBlock).toContain('--cell-token-selected: #5EA5E9'); // dawn light primary
     // Pills stay light-pinned; only the sentence wash intentionally carries
     // the dark-palette primary — it must read on both light and dark hosts.
     expect(darkBlock.match(/#6AB2F5/g) ?? []).toHaveLength(1);

@@ -93,14 +93,14 @@ function Color({ onClick }: { onClick?: () => void }) {
 
       <h3 className={styles.subsectionTitle}>Light palette</h3>
       <div className={styles.grid}>
-        <Swatch name="Background" color="var(--color-background)" value="#F9F9F7" />
+        <Swatch name="Background" color="var(--color-background)" value="#F7FAFC" />
         <Swatch name="Surface" color="var(--color-surface)" value="#FFFFFF" />
         <Swatch name="Elevated" color="var(--color-surface-elevated)" value="#FAFAF8" />
         <Swatch name="Hover" color="var(--color-surface-hover)" value="#F2F2EF" />
         <Swatch name="Text" color="var(--color-text)" value="#2A2A2B" />
         <Swatch name="Text secondary" color="var(--color-text-secondary)" value="#6E6E73" />
         <Swatch name="Text tertiary" color="var(--color-text-tertiary)" value="#9A9AA2" />
-        <Swatch name="Primary" color="var(--color-primary)" value="#5E6AD2" />
+        <Swatch name="Primary" color="var(--color-primary)" value="#5EA5E9" />
         <Swatch name="Border" color="var(--color-border)" value="#E2E2DF" />
         <Swatch name="Success" color="var(--color-success)" value="#2F7D46" />
         <Swatch name="Warning" color="var(--color-warning)" value="#9E6A1E" />
@@ -116,7 +116,7 @@ function Color({ onClick }: { onClick?: () => void }) {
         <Swatch name="Text" color="var(--color-text)" value="#F7F8F8" />
         <Swatch name="Text secondary" color="var(--color-text-secondary)" value="#AEB4BC" />
         <Swatch name="Text tertiary" color="var(--color-text-tertiary)" value="#7D838B" />
-        <Swatch name="Primary" color="var(--color-primary)" value="#5E6AD2" />
+        <Swatch name="Primary" color="var(--color-primary)" value="#6AB2F5" />
         <Swatch name="Border" color="var(--color-border)" value="#33363A" />
         <Swatch name="Success" color="var(--color-success)" value="#5FD389" />
         <Swatch name="Warning" color="var(--color-warning)" value="#F5B955" />

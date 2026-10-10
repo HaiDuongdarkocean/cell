@@ -96,11 +96,13 @@ const flattenCompositeTokens = (): TokenRecord => {
   return out;
 };
 
-/** Default light core palette (from tokens.json). */
-export const DEFAULT_LIGHT_COLORS: CoreColorTokens = { ...tokensJson.core.light };
+/** Default palette = the defaultPreset's core colors — there is no
+ *  preset-less "default" theme, every resolution goes through a preset. */
+export const DEFAULT_PRESET: PresetName = tokensJson.defaultPreset as PresetName;
 
-/** Default dark core palette (from tokens.json). */
-export const DEFAULT_DARK_COLORS: CoreColorTokens = { ...tokensJson.core.dark };
+export const DEFAULT_LIGHT_COLORS: CoreColorTokens = { ...PRESET_DATA[DEFAULT_PRESET].core.light };
+
+export const DEFAULT_DARK_COLORS: CoreColorTokens = { ...PRESET_DATA[DEFAULT_PRESET].core.dark };
 
 /** Breakpoint pixel values for JS matchMedia / innerWidth checks.
  *  CSS @media must hardcode the same values (CSS custom properties don't work
@@ -121,17 +123,19 @@ export const BREAKPOINTS = {
   extraLarge: 1600,
 } as const;
 
-/** Complete default light token map (core + derived + composite). */
+/** Complete default token maps — the defaultPreset's core + base derived +
+ *  the preset's own derived overrides + composite. */
 export const DEFAULT_LIGHT_TOKENS: TokenRecord = {
   ...mapCoreColors(DEFAULT_LIGHT_COLORS),
   ...prefixDerived(tokensJson.derived.light),
+  ...prefixDerived(PRESET_DATA[DEFAULT_PRESET].derived.light),
   ...flattenCompositeTokens(),
 };
 
-/** Complete default dark token map (core + derived + composite). */
 export const DEFAULT_DARK_TOKENS: TokenRecord = {
   ...mapCoreColors(DEFAULT_DARK_COLORS),
   ...prefixDerived(tokensJson.derived.dark),
+  ...prefixDerived(PRESET_DATA[DEFAULT_PRESET].derived.dark),
   ...flattenCompositeTokens(),
 };
 

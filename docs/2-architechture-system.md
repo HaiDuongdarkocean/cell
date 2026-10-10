@@ -130,7 +130,7 @@ src/
 │   │   ├── languageRegistry.ts  # Language codes, names, and icon mapping; `languageMatches` (BCP-47 subtag-aware) + `baseLangCode` ('zh-hans'→'zh' for length(2) message schemas)
 │   │   └── urls.ts     # External service URLs
 │   ├── styles/         #   Global design-system styles
-│   │   ├── tokens.json   # Canonical design-token source (core/derived/static/component tokens); component tokens now include `button` Liquid Glass (caustic surface/rim/ripple/text shadows, reflex multipliers, press/release/ripple motion)
+│   │   ├── tokens.json   # Canonical design-token source (`defaultPreset` + presets/derived/static/component tokens — the base `[data-theme]` palette IS the defaultPreset's core+derived, no preset-less `core` palette); component tokens now include `button` Liquid Glass (caustic surface/rim/ripple/text shadows, reflex multipliers, press/release/ripple motion)
 │   │   ├── tokens.css    # Generated from tokens.json; imported by popup/sidepanel/options + Shadow DOM popup
 │   │   ├── components.css # Global non-hashed component classes (icon-btn, btn)
 │   │   └── README.md     # Design-system usage guide for AI agents

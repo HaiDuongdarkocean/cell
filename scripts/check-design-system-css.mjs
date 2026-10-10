@@ -129,9 +129,9 @@ function buildTokenRegistryFromJson(tokens) {
     }
   };
 
-  if (tokens.core) {
+  for (const [name, preset] of Object.entries(tokens.presets || {})) {
     for (const mode of ['light', 'dark']) {
-      if (tokens.core[mode]) addColorCore(tokens.core[mode]);
+      if (preset.core?.[mode]) addColorCore(preset.core[mode]);
     }
   }
 
