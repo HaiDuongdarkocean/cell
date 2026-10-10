@@ -9,12 +9,17 @@ import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { getActiveProfileSettings } from '@/entities/settings';
 import { t } from '@/shared/i18n';
 import type { BilingualCue } from '@/entities/media';
+import type { IconCatalogKey } from '@/shared/icons';
 
-export type QueueNotify = (message: string, variant: 'success' | 'error' | 'info') => void;
+export type QueueNotify = (
+  message: string,
+  variant: 'success' | 'error' | 'info',
+  opts?: { icon?: IconCatalogKey },
+) => void;
 
 function notifyError(notify: QueueNotify | undefined, err: unknown): void {
-  const msg = err instanceof Error ? err.message : String(err);
-  notify?.(t('queue.error.action', [msg]), 'error');
+  console.warn('[queue] save failed', err);
+  notify?.(t('queue.error.save'), 'error');
 }
 
 export function saveCueToQueue(
@@ -43,7 +48,11 @@ export function saveCueToQueue(
     );
   })()
     .then(({ deduped }) =>
-      opts.notify?.(t(deduped ? 'queue.savedAgain' : 'queue.saved'), 'success'),
+      opts.notify?.(
+        t(deduped ? 'queue.savedAgain' : 'queue.saved'),
+        deduped ? 'info' : 'success',
+        deduped ? { icon: 'checkDouble' } : undefined,
+      ),
     )
     .catch((err: unknown) => notifyError(opts.notify, err));
 }

@@ -29,7 +29,9 @@ import type { WordStatus } from '@/entities/dictionary';
 import { entriesToBand, loadFrequencyBandOptions, pickFrequencyReading, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
 import { createStatusKeyControls, type PopupStatusTarget } from '@/features/tokenize/logic/statusKeyControls';
 import { SENTENCE_CLASS, clearSentenceHighlight, highlightSentence } from '@/features/tokenize/ui/sentenceHighlight';
+import { showCopyToast } from '@/features/tokenize/ui/mountCopyToast';
 import { CELL_UI_HOST_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
+import { isEditableEvent } from '@/shared/lib/dom/isEditable';
 import type { Token, TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
 const DEFAULT_LANG = 'en';
@@ -202,6 +204,7 @@ export async function createWebTokenizeController(
   // washed sentence releases it.
   let highlightedSpans: HTMLElement[] = [];
   let pinnedSentenceKey: string | null = null;
+  let lastCopiedSentence: string | null = null;
 
   /** Release the pinned wash on a click that lands outside the washed sentence
    *  and outside Cell's own UI (popup, panel) — clicking the popup keeps it. */
@@ -216,6 +219,35 @@ export async function createWebTokenizeController(
     highlightedSpans = [];
   }
   document.addEventListener('pointerdown', onPointerDownOutside, true);
+
+  /** Ctrl/Cmd+C with a washed sentence and no real selection copies the
+   *  sentence text instead of the (empty) page selection. */
+  function onCopyKeydown(event: KeyboardEvent): void {
+    if (event.isComposing) return;
+    if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) return;
+    if (event.key !== 'c' && event.key !== 'C') return;
+    if (highlightedSpans.length === 0) return;
+    if (isEditableEvent(event)) return;
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed && selection.toString()) return;
+    const span = highlightedSpans.find((s) => s.isConnected);
+    if (!span) return;
+    const sentence = sentenceContextForSpan(span)?.sentence;
+    if (!sentence) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (sentence === lastCopiedSentence) {
+      showCopyToast('success');
+      return;
+    }
+    void navigator.clipboard.writeText(sentence)
+      .then(() => {
+        lastCopiedSentence = sentence;
+        showCopyToast('success');
+      })
+      .catch(() => showCopyToast('error'));
+  }
+  document.addEventListener('keydown', onCopyKeydown, true);
   const termStatusVersion = new Map<string, number>();
   const localStatusOverrides = new Map<string, { status: WordStatus; version: number }>();
 
@@ -1177,6 +1209,7 @@ export async function createWebTokenizeController(
 
     destroy: () => {
       document.removeEventListener('pointerdown', onPointerDownOutside, true);
+      document.removeEventListener('keydown', onCopyKeydown, true);
       clearSentenceHighlight(highlightedSpans);
       statusKeyControls.destroy();
       unsubscribe();

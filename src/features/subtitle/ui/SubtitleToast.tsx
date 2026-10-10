@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import { t } from '@/shared/i18n';
 import { Icon } from '@/shared/icons/Icon';
+import type { IconCatalogKey } from '@/shared/icons';
 import styles from './SubtitleToast.module.css';
 
-export type ToastVariant = 'success' | 'error' | 'warning' | 'info';
+export type ToastVariant = 'success' | 'error' | 'warning' | 'info' | 'pending';
 
 export interface ToastItem {
   id: string;
   message: string;
   variant?: ToastVariant;
   duration?: number;
+  actionId?: string;
+  icon?: IconCatalogKey;
 }
 
 export interface SubtitleToastProps {
@@ -19,23 +22,26 @@ export interface SubtitleToastProps {
 
 function Toast({ item, onRemove }: { item: ToastItem; onRemove?: (id: string) => void }): React.JSX.Element {
   const [exiting, setExiting] = useState(false);
+  const variant = item.variant ?? 'info';
   const duration = item.duration ?? 3000;
 
   useEffect(() => {
+    if (variant === 'pending') return;
     const timer = setTimeout(() => setExiting(true), Math.max(0, duration - 300));
     const removeTimer = setTimeout(() => onRemove?.(item.id), duration);
     return () => {
       clearTimeout(timer);
       clearTimeout(removeTimer);
     };
-  }, [item.id, item.duration, duration, onRemove]);
+  }, [item.id, item.duration, duration, variant, onRemove]);
 
-  const variant = item.variant ?? 'info';
   const iconName =
-    variant === 'success' ? 'check' :
-    variant === 'error' ? 'x' :
+    item.icon ??
+    (variant === 'pending' ? 'loader' :
+    variant === 'success' ? 'circleCheck' :
+    variant === 'error' ? 'circleX' :
     variant === 'warning' ? 'triangleAlert' :
-    'circleInfo';
+    'circleInfo');
 
   return (
     <div
@@ -45,7 +51,11 @@ function Toast({ item, onRemove }: { item: ToastItem; onRemove?: (id: string) =>
       role="status"
       aria-live="polite"
     >
-      <span className={styles.icon} aria-hidden="true">
+      <span
+        key={iconName}
+        className={[styles.icon, variant === 'pending' && styles.iconSpin].filter(Boolean).join(' ')}
+        aria-hidden="true"
+      >
         <Icon name={iconName}  />
       </span>
       <span className={styles.message}>{item.message}</span>

@@ -205,20 +205,23 @@ export function createDragHint(container: HTMLElement): HTMLDivElement {
   return hint;
 }
 
-export type ToastVariant = 'success' | 'error' | 'warning' | 'info';
+import type { ToastVariant } from './SubtitleToast';
+export type { ToastVariant };
 
 export interface ToastOptions {
   variant?: ToastVariant;
 }
 
 const ICONS: Record<ToastVariant, string> = {
-  success: ICON_CATALOG.check.svg,
-  error: ICON_CATALOG.x.svg,
+  pending: ICON_CATALOG.loader.svg,
+  success: ICON_CATALOG.circleCheck.svg,
+  error: ICON_CATALOG.circleX.svg,
   warning: ICON_CATALOG.triangleAlert.svg,
   info: ICON_CATALOG.circleInfo.svg,
 };
 
 const VARIANT_COLORS: Record<ToastVariant, string> = {
+  pending: 'var(--color-text-secondary)',
   success: 'var(--color-success)',
   error: 'var(--color-error)',
   warning: 'var(--color-warning)',

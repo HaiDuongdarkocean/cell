@@ -29,7 +29,7 @@ import type {
 import { addToOceanSrs, openSrsStudyPage } from '@/features/srs';
 import { formatDefinitions, parseDefinitionsText } from '@/features/dictionary';
 import { formatDefEntry, formatDefFromLookup } from '@/features/srs';
-import { loadSettingsOrToast, showProgressToast, showToast } from '@/features/subtitle';
+import { loadSettingsOrToast, showProgressToast } from '@/features/subtitle';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { t } from '@/shared/i18n';
@@ -692,14 +692,14 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
 
   async function handlePopupAddToSrs(prefill: PopupCardCreatorPrefill): Promise<void> {
     deps.closePopup();
-    showToast(t('dict.toast.srsAdding'), deps.container, { variant: 'info' });
+    const chip = showProgressToast(t('dict.toast.srsAdding'), deps.container, { variant: 'pending' });
     try {
       await addToOceanSrs(prefill);
-      showToast(t('dict.toast.srsAdded'), deps.container, { variant: 'success' });
+      chip.finish(t('dict.toast.srsAdded'), 'success');
       await openSrsStudyPage();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      showToast(t('dict.toast.srsFailed', [msg]), deps.container, { variant: 'error' });
+      console.warn('[srs] add failed', err);
+      chip.finish(t('dict.toast.srsFailed'), 'error');
     }
   }
 

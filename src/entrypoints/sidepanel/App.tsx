@@ -335,10 +335,13 @@ export function App() {
           onContinueCue={handleContinueCue}
           onSaveCue={(cue) => {
             const tab = activeTabInfoRef.current;
+            const actionId = `cue-save:${cue.index}`;
+            addToast(t('queue.saving'), 'pending', { actionId });
             saveCueToQueue(cue, {
               sourceLabel: tab?.title || undefined,
               videoId: tab?.url ? canonicalNavUrl(tab.url) : undefined,
-              notify: addToast,
+              notify: (message, variant, notifyOpts) =>
+                addToast(message, variant, { actionId, icon: notifyOpts?.icon }),
             });
           }}
         />

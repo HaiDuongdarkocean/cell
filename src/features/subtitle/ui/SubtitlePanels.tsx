@@ -173,13 +173,15 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [tokenize, setTokenize] = useState(initialTokenize);
     const handleSaveCue = useCallback(
       (cue: BilingualCue): void => {
+        const actionId = `cue-save:${cue.index}`;
+        addToast(t('queue.saving'), 'pending', { actionId });
         saveCueToQueue(cue, {
           langCode: tokenize?.langCode,
           // Local-player hosts pass the media filename; content overlays get the
           // page title (document.title on an extension page would be ours).
           sourceLabel: filename ?? (typeof document !== 'undefined' ? document.title || undefined : undefined),
           videoId: filename ?? (typeof location !== 'undefined' ? canonicalNavUrl(location.href) : undefined),
-          notify: addToast,
+          notify: (message, variant, notifyOpts) => addToast(message, variant, { actionId, icon: notifyOpts?.icon }),
         });
       },
       [addToast, tokenize, filename],

@@ -76,6 +76,14 @@ ${componentTokens}
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
+@keyframes subtitle-toast-spin {
+  to { transform: rotate(360deg); }
+}
+
+.subtitle-toast[data-variant="pending"] .subtitle-toast-icon {
+  animation: subtitle-toast-spin var(--duration-1000) linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .subtitle-toast { animation: none; }
 }

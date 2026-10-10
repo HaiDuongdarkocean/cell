@@ -45,7 +45,24 @@ describe('saveCueToQueue', () => {
         translation: 'I like cats',
       }),
     );
-    expect(notify).toHaveBeenCalledWith(expect.any(String), 'success');
+    expect(notify).toHaveBeenCalledWith(expect.any(String), 'success', undefined);
+  });
+
+  it('notifies info with checkDouble icon when the cue was already queued', async () => {
+    queueSaveMock.mockResolvedValue({ id: 'x', deduped: true });
+    const notify = jest.fn();
+    saveCueToQueue(CUE, { langCode: 'ja', notify });
+    await flush();
+    expect(notify).toHaveBeenCalledWith(expect.any(String), 'info', { icon: 'checkDouble' });
+  });
+
+  it('notifies a friendly error without leaking the raw failure', async () => {
+    queueSaveMock.mockRejectedValue(new Error('IDB quota exceeded'));
+    const notify = jest.fn();
+    saveCueToQueue(CUE, { langCode: 'ja', notify });
+    await flush();
+    expect(notify).toHaveBeenCalledWith(expect.any(String), 'error');
+    expect(notify.mock.calls[0]![0]).not.toContain('quota');
   });
 
   it('falls back to en when no language can be resolved', async () => {
