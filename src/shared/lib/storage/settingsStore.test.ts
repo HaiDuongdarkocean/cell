@@ -196,6 +196,42 @@ describe('loadSettings migration', () => {
     expect(byAction.get('prev-vocab-token')).toBe('z');
   });
 
+  it('migrates v38 shortcuts: appends toggle-universal-panel Ctrl+U', async () => {
+    const v38Settings = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 38,
+      keyboardShortcuts: [{ action: 'prev-cue', key: 'a' }],
+    } as Record<string, unknown>;
+
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: v38Settings,
+    });
+
+    const settings = await loadSettings();
+
+    expect(settings.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    const binding = settings.keyboardShortcuts.find((sc) => sc.action === 'toggle-universal-panel');
+    expect(binding).toEqual({ action: 'toggle-universal-panel', key: 'u', ctrl: true });
+    expect(settings.keyboardShortcuts.find((sc) => sc.action === 'prev-cue')?.key).toBe('a');
+  });
+
+  it('keeps an existing toggle-universal-panel remap during migration', async () => {
+    const v38Settings = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 38,
+      keyboardShortcuts: [{ action: 'toggle-universal-panel', key: 'p', ctrl: true, shift: true }],
+    } as Record<string, unknown>;
+
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: v38Settings,
+    });
+
+    const settings = await loadSettings();
+
+    const bindings = settings.keyboardShortcuts.filter((sc) => sc.action === 'toggle-universal-panel');
+    expect(bindings).toEqual([{ action: 'toggle-universal-panel', key: 'p', ctrl: true, shift: true }]);
+  });
+
   it('resets undefined nested objects to their defaults', async () => {
     const stored = { ...DEFAULT_SETTINGS, schemaVersion: CURRENT_SCHEMA_VERSION } as Record<string, unknown>;
     stored.cardCreator = undefined;

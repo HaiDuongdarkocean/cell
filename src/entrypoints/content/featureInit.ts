@@ -14,6 +14,8 @@ import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, setSubtitleToken
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { modifierMatches, type LookupRequest, type TriggerMode } from '@/entities/dictionary';
 import { findAndInitOverlay } from './videoOverlay';
+import { isEditableTarget } from '@/shared/lib/dom/isEditable';
+import type { KeyboardShortcut } from '@/entities/settings/types';
 import { startMediaScoreSource } from '@/features/subtitle/logic/mediaScoreSource';
 import { startTextScoreSource } from '@/features/tokenize/services/textScoreSource';
 import { mountComprehensionPill, type ComprehensionPillMount } from '@/features/tokenize/ui/mountComprehensionPill';
@@ -60,6 +62,51 @@ function bindTokenizeCtrlSubs(ctrl: WebTokenizeController): void {
       cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency, subtitleEnabled: cachedSubtitleEnabled });
     }
   });
+}
+
+let pageShortcuts: KeyboardShortcut[] = [];
+let panelShortcutKeydown: ((e: KeyboardEvent) => void) | null = null;
+
+async function refreshPageShortcuts(): Promise<void> {
+  try {
+    pageShortcuts = (await loadSettings()).keyboardShortcuts ?? [];
+  } catch {
+    // Storage unavailable — keep the last resolved bindings.
+  }
+}
+
+export function toggleUniversalPanel(): void {
+  const panel = ensureUniversalPanelMount();
+  if (panel.isOpen()) {
+    panel.close();
+  } else {
+    void panel.open();
+  }
+}
+
+/** Page-level 'toggle-universal-panel' shortcut (default Ctrl+U) — works on
+ *  every page, video or not. On video pages the subtitle keyboard handler may
+ *  also see the key; it defers to this listener (see contentScriptKeyboard). */
+export function installUniversalPanelShortcut(): void {
+  void refreshPageShortcuts();
+  panelShortcutKeydown = (e) => {
+    const binding = pageShortcuts.find((s) => s.action === 'toggle-universal-panel');
+    if (!binding?.key || e.repeat || e.isComposing) return;
+    if (e.key.toLowerCase() !== binding.key) return;
+    if ((binding.ctrl ?? false) !== e.ctrlKey
+      || (binding.shift ?? false) !== e.shiftKey
+      || (binding.alt ?? false) !== e.altKey) return;
+    const realTarget = e.composedPath()[0] ?? e.target;
+    if (realTarget instanceof HTMLElement && realTarget.closest('[data-cell-keycapture]')) return;
+    // Bare-key bindings stay editable-guarded (typing protection); modifier
+    // combos can't be typed into an input, so they toggle even while the
+    // panel's search field holds focus.
+    if (!binding.ctrl && !binding.shift && !binding.alt && isEditableTarget(realTarget)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    toggleUniversalPanel();
+  };
+  window.addEventListener('keydown', panelShortcutKeydown, true);
 }
 
 export function ensureUniversalPanelMount(): UniversalPanelMountController {
@@ -241,6 +288,7 @@ export function installSettingsReloader(): void {
       void initWebTextDictionary();
       void initTokenize();
       void initComprehension();
+      void refreshPageShortcuts();
     }
   });
 }
@@ -315,6 +363,10 @@ export function cleanupFeatureInit(): void {
   tokenizeLang = null;
   tokenizeCtrlUnsub?.();
   tokenizeCtrlUnsub = null;
+  if (panelShortcutKeydown) {
+    window.removeEventListener('keydown', panelShortcutKeydown, true);
+    panelShortcutKeydown = null;
+  }
   universalPanelMount?.unmount?.();
   universalPanelMount = null;
   tokenizePanelSubs.clear();

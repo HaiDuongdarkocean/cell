@@ -745,6 +745,26 @@ describe('contentScriptController', () => {
     cleanupCalled = true;
   });
 
+  it('keydown toggle-universal-panel passes through to the page-level listener', async () => {
+    cleanup = init(video);
+    await flushPromises();
+
+    mockHandleShortcutKey.mockReturnValue('toggle-universal-panel' as ReturnType<typeof handleShortcutKey>);
+
+    const event = new KeyboardEvent('keydown', { key: 'u', ctrlKey: true, bubbles: true, cancelable: true });
+    const stopSpy = jest.spyOn(event, 'stopImmediatePropagation');
+    const preventSpy = jest.spyOn(event, 'preventDefault');
+    document.body.dispatchEvent(event);
+
+    expect(mockHandleShortcutKey).toHaveBeenCalled();
+    expect(stopSpy).not.toHaveBeenCalled();
+    expect(preventSpy).not.toHaveBeenCalled();
+    expect(toggleOverlayState).not.toHaveBeenCalled();
+
+    cleanup!();
+    cleanupCalled = true;
+  });
+
   describe('keyboard event routing inside Cell UI', () => {
     beforeEach(() => {
       mockIsInsideCellUi.mockReturnValue(true);

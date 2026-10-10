@@ -18,7 +18,7 @@ import { toIso6391, baseLangCode } from '@/shared/config/languageRegistry';
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 38;
+export const CURRENT_SCHEMA_VERSION = 39;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -577,6 +577,16 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
       { ...DEFAULT_SETTINGS, ...s, schemaVersion: 38 } as Record<string, unknown>,
       DEFAULT_SETTINGS as unknown as Record<string, unknown>,
     ),
+  // v38 → v39: add toggle-universal-panel shortcut (Ctrl+U). Additive — existing
+  // users get the default binding; customized keyboardShortcuts keep their remaps.
+  38: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 39 } as Record<string, unknown>;
+    const shortcuts = Array.isArray(merged.keyboardShortcuts) ? merged.keyboardShortcuts : [];
+    if (!shortcuts.some((sc: { action: string }) => sc.action === 'toggle-universal-panel')) {
+      merged.keyboardShortcuts = [...shortcuts, { action: 'toggle-universal-panel', key: 'u', ctrl: true }];
+    }
+    return merged;
+  },
 };
 
 /**

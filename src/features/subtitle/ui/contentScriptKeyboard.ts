@@ -169,6 +169,10 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
       return;
     }
 
+    // Page-level action owned by featureInit's global listener — let the event
+    // continue so it can toggle the universal panel.
+    if (action === 'toggle-universal-panel') return;
+
     // Context-aware T: in Player Mode, let PlayerModeOverlay's keydown handle
     // 't' (toggles CueList). Don't preventDefault/stopImmediatePropagation —
     // the overlay's window listener needs to receive the event.
@@ -313,6 +317,9 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
       shift: e.shiftKey,
       alt: e.altKey,
     });
+
+    // Page-level action owned by featureInit's global listener.
+    if (action === 'toggle-universal-panel') return;
 
     if (action) {
       // The keydown handler already performed the action. Stop keyup too so

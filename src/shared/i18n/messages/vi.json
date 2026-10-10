@@ -26,6 +26,7 @@
   "settings.shortcuts.action.editCard": "Tạo thẻ từ câu",
   "settings.shortcuts.action.nextVocabToken": "Từ tiếp theo trong câu",
   "settings.shortcuts.action.prevVocabToken": "Từ trước đó trong câu",
+  "settings.shortcuts.action.toggleUniversalPanel": "Hiện/ẩn bảng điều khiển",
   "settings.shortcuts.conflict.title": "Một phím tắt khác đang dùng phím này.",
   "settings.shortcuts.conflict.aria": "Xung đột phím tắt",
   "shortcut.modifier.ctrl": "Ctrl",

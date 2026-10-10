@@ -18,7 +18,8 @@ export type ShortcutAction =
   | 'edit-card'
   | 'play-pause'
   | 'next-vocab-token'
-  | 'prev-vocab-token';
+  | 'prev-vocab-token'
+  | 'toggle-universal-panel';
 
 /** A single keyboard shortcut binding: action ↔ key (with optional modifiers for combos). */
 export interface KeyboardShortcut {

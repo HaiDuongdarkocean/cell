@@ -99,6 +99,7 @@ function initTopFrameFeatures(): void {
   void loadFeatureInit().then((m) => {
     m.installTokenizeNavListeners();
     m.installSettingsReloader();
+    m.installUniversalPanelShortcut();
     void m.initWebTextDictionary();
     void m.initTokenize();
     void m.initComprehension();

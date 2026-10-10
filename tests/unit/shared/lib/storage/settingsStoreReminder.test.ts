@@ -42,7 +42,7 @@ describe('settingsStore schema v38 migration (srs.reminder)', () => {
       },
     };
     const settings = await loadSettings();
-    expect(settings.schemaVersion).toBe(38);
+    expect(settings.schemaVersion).toBe(39);
     expect(settings.srs.reminder).toEqual({ enabled: false, preferredHour: 20 });
     expect(settings.srs.activeCollectionId).toBe('col-1');
   });

@@ -124,6 +124,9 @@ export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
   // Immersion playback — seek between cues containing an unknown word.
   { action: 'next-vocab-token', key: 'x' },
   { action: 'prev-vocab-token', key: 'z' },
+  // Page-level: toggle the universal panel. Handled by the content-script
+  // global listener (featureInit), not the subtitle/video keyboard handler.
+  { action: 'toggle-universal-panel', key: 'u', ctrl: true },
 ];
 
 // === Default Overlay Style (ADR-013) ===
