@@ -205,6 +205,7 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
       parent: getMountParent(),
       position: 'fixed',
       css: allModuleCss,
+      reparentOnFullscreen: true,
     },
   );
 
