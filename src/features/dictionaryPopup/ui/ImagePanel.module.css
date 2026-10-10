@@ -69,8 +69,16 @@
 .cellImageNavRight.cellImageNavRight {
   position: absolute;
   top: 50%;
-  margin-top: calc(var(--space-3-5) * -1);
+  margin-top: calc(var(--iconbutton-size-sm) / -2);
   z-index: var(--z-dropdown);
+}
+
+/* Disabled arrows stay dimmed but still occupy their hit area — the global
+   `.button:disabled { pointer-events: none }` would let the click fall through
+   onto the thumbnail underneath and select it by accident. */
+.cellImageNavLeft.cellImageNavLeft:disabled,
+.cellImageNavRight.cellImageNavRight:disabled {
+  pointer-events: auto;
 }
 
 .cellImageNavLeft.cellImageNavLeft {

@@ -126,25 +126,27 @@ export function ImagePanel({
       </div>
       <Button
         variant="secondary"
-        size="xs"
+        size="sm"
         shape="circle"
         className={styles.cellImageNavLeft}
         aria-label={t('dict.images.scrollLeft')}
         disabled={!canScrollLeft}
         onClick={(): void => scroll('left')}
         data-cell-id="dictionary-image-scroll-left"
+        data-compact-hit
       >
         <Icon name="chevronLeft"  />
       </Button>
       <Button
         variant="secondary"
-        size="xs"
+        size="sm"
         shape="circle"
         className={styles.cellImageNavRight}
         aria-label={t('dict.images.scrollRight')}
         disabled={!canScrollRight}
         onClick={(): void => scroll('right')}
         data-cell-id="dictionary-image-scroll-right"
+        data-compact-hit
       >
         <Icon name="chevronRight"  />
       </Button>
