@@ -254,4 +254,76 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
       expect(cap).toContain('min-height:');
     }
   });
+
+  describe('has-card third capsule layer', () => {
+    it.each(['host', 'shadow'])(
+      'appends the learning color to the unknown capsule when the term has a card in %s CSS',
+      (variant) => {
+        const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
+        const rule = source.match(
+          /status-unknown\.js-cell-token--has-card[^{]*\{([^}]*)\}/,
+        )?.[1] ?? '';
+        expect(rule).toContain(
+          'background: linear-gradient(90deg, var(--cell-token-status-unknown), var(--cell-token-status-learning))',
+        );
+      },
+    );
+
+    it.each(['host', 'shadow'])(
+      'extends the tracking capsule to tracking → unknown → learning when the term has a card in %s CSS',
+      (variant) => {
+        const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
+        const rule = source.match(
+          /status-tracking\.js-cell-token--has-card[^{]*\{([^}]*)\}/,
+        )?.[1] ?? '';
+        expect(rule).toContain(
+          'background: linear-gradient(90deg, var(--cell-token-status-tracking), var(--cell-token-status-unknown), var(--cell-token-status-learning))',
+        );
+      },
+    );
+
+    it.each(['host', 'shadow'])(
+      'leaves the learning capsule unchanged — its gradient already implies cards in %s CSS',
+      (variant) => {
+        const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
+        expect(source).not.toMatch(/status-learning\.js-cell-token--has-card/);
+      },
+    );
+
+    it.each(['host', 'shadow'])(
+      'keeps the carded known/ignore capsules behind the same hover/popup-open gate as the plain ones in %s CSS',
+      (variant) => {
+        const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
+        for (const status of ['known', 'ignore']) {
+          const gradient = `background: linear-gradient(90deg, var(--cell-token-status-${status}), var(--cell-token-status-learning))`;
+          expect(source).toMatch(
+            new RegExp(`status-${status}\\.js-cell-token--has-card:hover:not\\(\\.js-cell-token--status-off\\) \\.js-cell-token-status[^}]*${gradient.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
+          );
+          expect(source).toMatch(
+            new RegExp(`status-${status}\\.js-cell-token--has-card\\.js-cell-token--popup-open:not\\(\\.js-cell-token--status-off\\) \\.js-cell-token-status[^}]*${gradient.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
+          );
+          // No ungated carded rule — a known/ignore carded word must stay
+          // plain at rest exactly like the uncarded one.
+          expect(source).not.toMatch(
+            new RegExp(`status-${status}\\.js-cell-token--has-card:not\\([^)]*\\) \\.js-cell-token-status\\s*\\{`),
+          );
+        }
+      },
+    );
+
+    it.each(['host', 'shadow'])(
+      'keeps the card layer behind the i+1 gate — has-card never reveals a non-i+1 capsule in %s CSS',
+      (variant) => {
+        const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
+        // The gate sits after every has-card paint rule so equal/higher
+        // specificity still resolves in its favour.
+        const gateIndex = source.indexOf('.js-cell-token--i1-off');
+        for (const status of ['unknown', 'tracking', 'known', 'ignore']) {
+          const cardIndex = source.indexOf(`status-${status}.js-cell-token--has-card`);
+          expect(cardIndex).toBeGreaterThan(-1);
+          expect(cardIndex).toBeLessThan(gateIndex);
+        }
+      },
+    );
+  });
 });

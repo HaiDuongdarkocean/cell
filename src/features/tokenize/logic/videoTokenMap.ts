@@ -30,6 +30,9 @@ export interface VideoTokenMap {
   /** Drop cached glosses (native-language change). Tokens keep their current
    *  gloss until the next resolve overwrites it — stale hint beats blank. */
   readonly clearGlosses: () => void;
+  /** Apply the whole-language carded-term set to every prepared cue — token
+   *  hasCard drives the third capsule layer. Re-applied on SRS_CARDS_CHANGED. */
+  readonly applyCardTerms: (cardTerms: ReadonlySet<string>) => void;
   readonly applyStatus: (term: string, status: WordStatus) => boolean;
   readonly getStatus: (term: string) => WordStatus;
   readonly terms: () => ReadonlySet<string>;
@@ -46,6 +49,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
   const termReadingCache = new Map<string, string>();
   const termGlossCache = new Map<string, string>();
   const listeners = new Set<(cueIndex: number) => void>();
+  let cardTermSet: ReadonlySet<string> | null = null;
 
   function emit(cueIndex: number): void {
     for (const listener of [...listeners]) {
@@ -172,6 +176,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
         frequencyBand: (termFrequencyCache.get(token.term) ?? 'none') as Token['frequencyBand'],
         reading: termReadingCache.get(token.term),
         gloss: termGlossCache.get(token.term),
+        hasCard: cardTermSet ? cardTermSet.has(token.term) : undefined,
       }));
       const termSet = buildTermIndex(tokens);
       removeFromTermIndex(cueIndex, cues.get(cueIndex)?.termSet ?? new Set());
@@ -203,6 +208,25 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
 
     clearGlosses(): void {
       termGlossCache.clear();
+    },
+
+    applyCardTerms(cardTerms: ReadonlySet<string>): void {
+      if (cardTerms === cardTermSet) return;
+      cardTermSet = cardTerms;
+      for (const [cueIndex, cue] of cues) {
+        let changed = false;
+        const tokens = cue.tokens.map((token) => {
+          if (token.isSeparator) return token;
+          const hasCard = cardTerms.has(token.term);
+          if ((token.hasCard ?? false) === hasCard) return token;
+          changed = true;
+          return { ...token, hasCard };
+        });
+        if (changed) {
+          cues.set(cueIndex, { ...cue, tokens });
+          emit(cueIndex);
+        }
+      }
     },
 
     applyStatus(term: string, status: WordStatus): boolean {
@@ -252,6 +276,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
       termFrequencyCache.clear();
       termReadingCache.clear();
       termGlossCache.clear();
+      cardTermSet = null;
     },
   };
 }

@@ -12,6 +12,8 @@ import { getNotetype, getNotetypesByCollection } from '@/features/srs/repositori
 import { getStudyConfig } from '@/features/srs/repositories/studyConfigRepository';
 import { deleteNoteCascade, deleteDeckCascade } from '@/features/srs/repositories/deleteCascade';
 import { reconcileLearningFlags } from '@/features/ankiStatusSync';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { resetCard } from '@/features/srs/logic/reviewEngine';
 import { getVariantPresetForDeck } from '@/features/srs/repositories/variantPresetRepository';
 import { createSrsFsrsAdapter } from '@/features/srs/services/srsFsrsAdapter';
@@ -140,6 +142,7 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', initialQuery,
   async function handleDeleteDeck(): Promise<void> {
     await deleteDeckCascade(deck.id);
     void reconcileLearningFlags(targetLanguage);
+    notifyCardsChanged();
     onChanged();
     onBack();
   }
@@ -153,12 +156,22 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', initialQuery,
     await setWordStatus(targetLanguage, note.targetWord, status).catch(() => {});
   }
 
+  // Direct-IDB deletes bypass the background handlers — ask it to rebroadcast
+  // so tokenized pages repaint their card layer.
+  function notifyCardsChanged(): void {
+    void sendMessage({
+      type: MESSAGE_TYPES.SRS_CARDS_CHANGED,
+      payload: { langCode: targetLanguage },
+    }).catch(() => {});
+  }
+
   async function handleDeleteSelected(status?: WordStatus): Promise<void> {
     for (const note of notes.filter((n) => selected.has(n.id))) {
       if (status) await markStatus(note, status);
       await deleteNoteCascade(note.id);
     }
     void reconcileLearningFlags(targetLanguage);
+    notifyCardsChanged();
     exitSelectMode();
     await reload();
     onChanged();
@@ -224,7 +237,7 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', initialQuery,
           notetype={editing.notetype}
           decks={decks}
           onClose={() => { setEditing(null); }}
-          onSaved={() => { void reload(); onChanged(); }}
+          onSaved={() => { notifyCardsChanged(); void reload(); onChanged(); }}
         />
       </Box>
     );

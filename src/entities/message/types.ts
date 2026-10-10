@@ -138,6 +138,8 @@ export type MessageType =
   | 'SRS_GET_DECKS_NOTETYPES'
   | 'SRS_OPEN_STUDY_PAGE'
   | 'SRS_TERM_CARDS'
+  | 'SRS_CARDS_TERMS'
+  | 'SRS_CARDS_CHANGED'
   // Dictionary resources — proxied to background because IndexedDB is
   // origin-isolated: in-page panels must not touch the page's IDB.
   | 'RESOURCE_LIST'
@@ -1067,6 +1069,24 @@ export interface SrsTermCardsPayload {
 export interface SrsTermCardsResult {
   readonly count: number;
   readonly deckIds: readonly string[];
+}
+
+/** Content → background: every normalized term with ≥1 card in the
+ *  language (Ocean SRS notes across all decks + stored Anki card links). */
+export interface SrsCardsTermsPayload {
+  readonly langCode: string;
+}
+
+/** Background → caller: the language's carded-term set for token flags. */
+export interface SrsCardsTermsResult {
+  readonly terms: readonly string[];
+}
+
+/** Background → every context (or extension page → background to request a
+ *  rebroadcast): card existence changed for a language — token layers must
+ *  refresh their card flags without a word-status change. */
+export interface SrsCardsChangedPayload {
+  readonly langCode: string;
 }
 
 /** Content → background: list decks and notetypes for a collection.

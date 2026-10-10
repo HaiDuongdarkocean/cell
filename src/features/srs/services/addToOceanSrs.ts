@@ -6,7 +6,7 @@ import { formatDefinitions } from '@/features/dictionary'
 import { formatDefEntry, formatDefFromLookup } from '../lib/defEntry';
 import type { PopupCardCreatorPrefill } from '@/entities/dictionary';
 import type { SrsFieldValue } from '@/entities/srs/types';
-import type { MessageResponse, SrsAddNotePayload, SrsAddNoteResult, SrsOpenStudyPagePayload, SrsTermCardsResult } from '@/entities/message/types';
+import type { MessageResponse, SrsAddNotePayload, SrsAddNoteResult, SrsCardsTermsResult, SrsOpenStudyPagePayload, SrsTermCardsResult } from '@/entities/message/types';
 
 /**
  * Build a default Ocean SRS field record from a popup prefill.
@@ -80,6 +80,20 @@ export async function getSrsTermCardCount(langCode: string, term: string): Promi
     throw new Error(response?.error ?? 'SRS_TERM_CARDS failed');
   }
   return response.data;
+}
+
+/** Every normalized term with ≥1 card in the language (Ocean SRS notes +
+ *  stored Anki card links). Throws on message failure — callers degrade to
+ *  an empty set. */
+export async function getSrsCardTerms(langCode: string): Promise<Set<string>> {
+  const response = await sendMessage<MessageResponse<SrsCardsTermsResult>>({
+    type: MESSAGE_TYPES.SRS_CARDS_TERMS,
+    payload: { langCode },
+  });
+  if (!response?.success || !response.data) {
+    throw new Error(response?.error ?? 'SRS_CARDS_TERMS failed');
+  }
+  return new Set(response.data.terms);
 }
 
 /** Open the srs-study page — plain home, a deck/view, or the deck(s) holding a term. */

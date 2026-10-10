@@ -14,6 +14,7 @@ import { createSrsFsrsAdapter } from '@/features/srs/services/srsFsrsAdapter';
 import { ensureFirstRun } from '@/features/srs/services/firstRunService';
 import { putCard } from '@/features/srs/repositories/cardRepository';
 import { putNote } from '@/features/srs/repositories/noteRepository';
+import { getCollection } from '@/features/srs/repositories/collectionRepository';
 import { deleteCardCascade } from '@/features/srs/repositories/deleteCascade';
 import { putReviewEvent } from '@/features/srs/repositories/reviewEventRepository';
 import { getStudyConfig } from '@/features/srs/repositories/studyConfigRepository';
@@ -344,6 +345,21 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       const deckChanged = nextDeckId !== undefined && nextDeckId !== note.deckId;
       const nextNote = deckChanged ? { ...note, deckId: nextDeckId } : note;
       await putNote(nextNote);
+      // Direct-IDB edit bypasses the background handlers — a targetWord
+      // rename moves the card flag between terms.
+      const colId = sessionCollectionId ?? collectionId;
+      if (colId) {
+        void getCollection(colId)
+          .then((collection) =>
+            collection?.targetLanguage
+              ? sendMessage({
+                  type: MESSAGE_TYPES.SRS_CARDS_CHANGED,
+                  payload: { langCode: collection.targetLanguage },
+                })
+              : undefined,
+          )
+          .catch(() => {});
+      }
       let nextCard = session.card;
       if (deckChanged) {
         nextCard = { ...session.card, deckId: nextDeckId };
@@ -370,7 +386,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       }
       setSession({ ...session, note: mergedNote, card: nextCard });
     },
-    [session, refreshStats, audioCache, imageCache, advanceToNext],
+    [session, sessionCollectionId, collectionId, refreshStats, audioCache, imageCache, advanceToNext],
   );
 
   const previewCurrentNote = useCallback(

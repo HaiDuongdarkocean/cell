@@ -279,6 +279,14 @@ export const SrsTermCardsPayloadSchema = z.object({
   term: z.string().min(1),
 });
 
+export const SrsCardsTermsPayloadSchema = z.object({
+  langCode: z.string().min(1),
+});
+
+export const SrsCardsChangedPayloadSchema = z.object({
+  langCode: z.string().min(1),
+});
+
 export const SrsGetDecksNotetypesPayloadSchema = z.object({
   collectionId: z.string().min(1).optional(),
 });

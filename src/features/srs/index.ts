@@ -1,5 +1,6 @@
 export { formatDefEntry, formatDefFromLookup, joinDefEntries, parseDefEntries } from './lib/defEntry';
-export { addToOceanSrs, openSrsStudyPage, getSrsTermCardCount, buildSrsFieldsFromPrefill } from './services/addToOceanSrs';
+export { addToOceanSrs, openSrsStudyPage, getSrsTermCardCount, getSrsCardTerms, buildSrsFieldsFromPrefill } from './services/addToOceanSrs';
+export { getSrsCardTermSet, invalidateSrsCardTermSet, emitSrsCardsChanged, onSrsCardsChanged, resetSrsCardTermSetForTest } from './services/srsCardTerms';
 export type { DefEntryInput, ParsedDefEntry } from './lib/defEntry';
 
 export { generateId, audioAssetId, imageAssetId, mediaFieldValues } from './lib/helpers';

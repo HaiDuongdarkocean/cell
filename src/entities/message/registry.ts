@@ -49,6 +49,8 @@ import {
   SetPlaybackRatePayloadSchema,
   ShortcutActionPayloadSchema,
   SrsAddNotePayloadSchema,
+  SrsCardsChangedPayloadSchema,
+  SrsCardsTermsPayloadSchema,
   SrsGetDecksNotetypesPayloadSchema,
   SrsOpenStudyPagePayloadSchema,
   SrsTermCardsPayloadSchema,
@@ -776,6 +778,18 @@ export const MESSAGE_REGISTRY = {
     type: MESSAGE_TYPES.SRS_TERM_CARDS,
     schema: SrsTermCardsPayloadSchema,
     direction: 'cs->bg',
+    owner: 'background/handlers/srs',
+  },
+  [MESSAGE_TYPES.SRS_CARDS_TERMS]: {
+    type: MESSAGE_TYPES.SRS_CARDS_TERMS,
+    schema: SrsCardsTermsPayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/srs',
+  },
+  [MESSAGE_TYPES.SRS_CARDS_CHANGED]: {
+    type: MESSAGE_TYPES.SRS_CARDS_CHANGED,
+    schema: SrsCardsChangedPayloadSchema,
+    direction: 'any',
     owner: 'background/handlers/srs',
   },
   [MESSAGE_TYPES.RESOURCE_LIST]: {

@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { t } from '@/shared/i18n';
 import { onDictionaryChanged, onWordStatusChanged } from '@/features/dictionary';
+import { getSrsCardTermSet, invalidateSrsCardTermSet, onSrsCardsChanged } from '@/features/srs';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import {
+  applyTokenListCardFlags,
   applyTokenListStatus,
   createTokenList,
   resolveTokenListMetadata,
@@ -58,9 +60,19 @@ export function PreviewBlock({
       if (detail.langCode !== langCode) return;
       setTokens((current) => applyTokenListStatus(current, detail.term, detail.status));
     });
+    const unsubscribeCards = onSrsCardsChanged((changed) => {
+      if (changed !== langCode) return;
+      invalidateSrsCardTermSet(changed);
+      void getSrsCardTermSet(changed)
+        .then((cardTerms) => {
+          setTokens((current) => applyTokenListCardFlags(current, cardTerms));
+        })
+        .catch(() => {});
+    });
     return () => {
       active = false;
       unsubscribe();
+      unsubscribeCards();
     };
   }, [baseTokens, langCode, showReadings, dictEpoch]);
 
@@ -102,6 +114,7 @@ function tokenClassName(token: Token, resolving: boolean, showReadings: boolean)
     token.frequencyBand && token.frequencyBand !== 'none'
       ? `js-cell-token--frequency-${token.frequencyBand}`
       : '',
+    token.hasCard ? 'js-cell-token--has-card' : '',
     showReadings ? '' : 'js-cell-token--reading-off',
     // Glosses are subtitle-overlay only (spec word-translation).
     'js-cell-token--gloss-off',

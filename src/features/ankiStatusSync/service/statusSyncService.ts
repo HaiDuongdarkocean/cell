@@ -69,6 +69,8 @@ export interface SyncRunResult {
   readonly changed: number;
   readonly errors: number;
   readonly writeBacksFlushed: number;
+  /** Language the run synced — absent when sync never got that far. */
+  readonly langCode?: string;
 }
 
 interface RunDeps {
@@ -323,16 +325,18 @@ export async function reconcileTermAfterCardLoss(
 export async function reconcileSrsCardLoss(
   deckId: string,
   targetWord: string,
-): Promise<void> {
+): Promise<string | null> {
   try {
     const term = normalizeTerm(targetWord);
-    if (!term) return;
+    if (!term) return null;
     const settings = await loadSettings();
     const langCode = await langCodeForDeck(deckId, settings);
-    if (!langCode) return;
+    if (!langCode) return null;
     await reconcileTermAfterCardLoss(langCode, term);
+    return langCode;
   } catch (err) {
     logger.warn('anki-status-sync: srs card-loss hook failed', { error: errMessage(err) });
+    return null;
   }
 }
 
@@ -701,6 +705,7 @@ export async function runAnkiStatusSync(
     changed,
     errors,
     writeBacksFlushed,
+    langCode,
   };
 }
 

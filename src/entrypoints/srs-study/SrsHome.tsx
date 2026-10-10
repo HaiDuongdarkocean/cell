@@ -15,6 +15,8 @@ import {
   type AnkiImportJob, type AnkiImportStartPayload,
 } from '@/features/ankiImport';
 import { reconcileLearningFlags, seedStatusesFromSrs } from '@/features/ankiStatusSync';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { useSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
 import { deckIconName } from './SrsDeckDetail';
 import type { SrsDeck } from '@/entities/srs/types';
@@ -171,6 +173,10 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
       });
       setImportJob((j) => (j ? { ...j, status: 'done', report } : j));
       void seedStatusesFromSrs();
+      void sendMessage({
+        type: MESSAGE_TYPES.SRS_CARDS_CHANGED,
+        payload: { langCode: targetLanguage },
+      }).catch(() => {});
     } catch (err) {
       const cancelled = err instanceof ImportError && err.code === 'ABORTED';
       setImportJob((j) => (j ? {
@@ -180,7 +186,7 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
       } : j));
     }
     void refreshHome();
-  }, [refreshHome]);
+  }, [refreshHome, targetLanguage]);
 
   useEffect(() => {
     void refreshHome().catch(() => {});
@@ -230,6 +236,12 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
     }
     setPendingDelete(null);
     void reconcileLearningFlags(targetLanguage);
+    // Direct-IDB deletes bypass the background handlers — ask it to
+    // rebroadcast so tokenized pages repaint their card layer.
+    void sendMessage({
+      type: MESSAGE_TYPES.SRS_CARDS_CHANGED,
+      payload: { langCode: targetLanguage },
+    }).catch(() => {});
     await refreshHome();
   }
 

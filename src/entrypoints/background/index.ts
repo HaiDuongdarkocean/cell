@@ -216,7 +216,7 @@ export class BackgroundService implements BackgroundContext {
     // 4. Wire event streams (network → broadcast, queue → broadcast, etc.)
     this.unsubscribers = wireEvents(this);
     this.unsubscribers.push(...wireSyncScheduling(this));
-    this.unsubscribers.push(...wireAnkiStatusSyncScheduling());
+    this.unsubscribers.push(...wireAnkiStatusSyncScheduling(this));
     this.unsubscribers.push(...wireSrsReminderScheduling());
 
     // 4b. Wait for session restore to complete.

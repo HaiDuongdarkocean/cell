@@ -4,10 +4,15 @@ import type { FrequencyEntry } from '@/entities/dictionary';
 const getWordStatuses = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, string>>>;
 const getFrequencyEntries = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, FrequencyEntry[]>>>;
 const setWordStatus = jest.fn() as jest.MockedFunction<(langCode: string, term: string, status: string) => Promise<void>>;
+const getSrsCardTerms = jest.fn() as jest.MockedFunction<(langCode: string) => Promise<Set<string>>>;
 
 jest.mock('@/features/dictionary/services/wordStatusClient', () => ({
   getWordStatuses,
   setWordStatus,
+}));
+
+jest.mock('@/features/srs/services/addToOceanSrs', () => ({
+  getSrsCardTerms,
 }));
 
 jest.mock('@/features/dictionary/services/frequencyClient', () => ({
@@ -16,12 +21,16 @@ jest.mock('@/features/dictionary/services/frequencyClient', () => ({
 
 import { createSubtitleTokenizeController } from './subtitleTokenizeController';
 import { emitWordStatusChanged, emitWordStatusesReload } from '@/features/dictionary';
+import { emitSrsCardsChanged, resetSrsCardTermSetForTest } from '@/features/srs';
 import type { SrtCue } from '@/entities/media';
 
 beforeEach(() => {
   getWordStatuses.mockResolvedValue(new Map<string, string>());
   getFrequencyEntries.mockResolvedValue(new Map<string, FrequencyEntry[]>());
   setWordStatus.mockResolvedValue(undefined);
+  resetSrsCardTermSetForTest();
+  getSrsCardTerms.mockReset();
+  getSrsCardTerms.mockResolvedValue(new Set());
   document.body.innerHTML = '';
 });
 
@@ -447,6 +456,49 @@ describe('createSubtitleTokenizeController', () => {
     const after = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
     expect(after?.className).toContain('js-cell-token--status-ignore');
     expect(after?.className).not.toContain('js-cell-token--status-unknown');
+
+    controller.destroy();
+  });
+
+  it('marks carded terms and repaints them when SRS_CARDS_CHANGED arrives', async () => {
+    getSrsCardTerms.mockResolvedValue(new Set(['hello']));
+    const { target, cues, controller } = setup();
+
+    target.textContent = cues[0]!.text;
+    controller.setCues(cues, []);
+    controller.enable();
+    controller.render(0, -1);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(target.querySelector('[data-cell-term="hello"]')!.className).toContain('js-cell-token--has-card');
+    expect(target.querySelector('[data-cell-term="world"]')!.className).not.toContain('js-cell-token--has-card');
+
+    getSrsCardTerms.mockResolvedValue(new Set(['world']));
+    emitSrsCardsChanged('en');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(getSrsCardTerms).toHaveBeenCalledTimes(2);
+    expect(target.querySelector('[data-cell-term="hello"]')!.className).not.toContain('js-cell-token--has-card');
+    expect(target.querySelector('[data-cell-term="world"]')!.className).toContain('js-cell-token--has-card');
+
+    controller.destroy();
+  });
+
+  it('ignores SRS_CARDS_CHANGED for other languages', async () => {
+    const { target, cues, controller } = setup();
+
+    target.textContent = cues[0]!.text;
+    controller.setCues(cues, []);
+    controller.enable();
+    controller.render(0, -1);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    getSrsCardTerms.mockClear();
+
+    emitSrsCardsChanged('ja');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(getSrsCardTerms).not.toHaveBeenCalled();
 
     controller.destroy();
   });

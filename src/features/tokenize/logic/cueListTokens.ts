@@ -5,6 +5,7 @@ import { getWordStatuses } from '@/features/dictionary';
 import { getFrequencyEntries } from '@/features/dictionary';
 import { getReadings } from '@/features/dictionary';
 import { getWordTranslations } from '@/features/translate';
+import { getSrsCardTermSet } from '@/features/srs';
 import {
   DEFAULT_BAND_THRESHOLDS,
   entriesToBand,
@@ -55,6 +56,25 @@ export function applyCueListTokenStatus(
   for (const [cueIndex, tokens] of tokenMap) {
     const nextTokens = applyTokenListStatus(tokens, term, status);
     if (nextTokens !== tokens) changed = true;
+    resolved.set(cueIndex, nextTokens);
+  }
+  return changed ? resolved : tokenMap;
+}
+
+export function applyCueListCardFlags(
+  tokenMap: CueListTokenMap,
+  cardTerms: ReadonlySet<string>,
+): CueListTokenMap {
+  let changed = false;
+  const resolved = new Map<number, readonly Token[]>();
+  for (const [cueIndex, tokens] of tokenMap) {
+    const nextTokens = tokens.map((token) => {
+      if (token.isSeparator) return token;
+      const hasCard = cardTerms.has(token.term);
+      if ((token.hasCard ?? false) === hasCard) return token;
+      changed = true;
+      return { ...token, hasCard };
+    });
     resolved.set(cueIndex, nextTokens);
   }
   return changed ? resolved : tokenMap;
@@ -159,7 +179,7 @@ export async function resolveCueListTokenMetadata(
   const wantReadings = Boolean(options?.includeReadings);
   const wantGlosses = Boolean(options?.includeGlosses && options.glossTargetLanguage);
 
-  const [statusRes, freqRes, bandRes, readingsRes, glossesRes] = await Promise.allSettled([
+  const [statusRes, freqRes, bandRes, readingsRes, glossesRes, cardTermsRes] = await Promise.allSettled([
     baseTerms.length > 0
       ? fetchTermsChunked(langCode, baseTerms, getWordStatuses)
       : Promise.resolve(new Map<string, WordStatus>()),
@@ -173,6 +193,7 @@ export async function resolveCueListTokenMetadata(
     wantGlosses && glossTerms.length > 0 && options?.glossTargetLanguage
       ? getWordTranslations(langCode, options.glossTargetLanguage, glossTerms)
       : Promise.resolve(null),
+    getSrsCardTermSet(langCode),
   ]);
 
   const statusFresh =
@@ -183,6 +204,9 @@ export async function resolveCueListTokenMetadata(
     readingsRes.status === 'fulfilled' ? readingsRes.value : null;
   const glossesFresh =
     glossesRes.status === 'fulfilled' ? glossesRes.value : null;
+  // null = card-term fetch failed → keep existing flags rather than flicker.
+  const cardTerms =
+    cardTermsRes.status === 'fulfilled' ? cardTermsRes.value : null;
 
   let statusMap: Map<string, WordStatus>;
   let freqMaps: Map<string, FrequencyEntry[]>;
@@ -247,6 +271,7 @@ export async function resolveCueListTokenMetadata(
             ? dictReadings.get(token.term) ?? pickFrequencyReading(token.term, freqEntries)
             : token.reading,
           gloss: dictGlosses ? dictGlosses.get(token.term) : token.gloss,
+          hasCard: cardTerms ? cardTerms.has(token.term) : token.hasCard,
         };
       }),
     );

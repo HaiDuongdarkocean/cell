@@ -3,12 +3,15 @@ import type { BackgroundContext } from '../context';
 import type {
   MessageResponse,
   SrsAddNoteResult,
+  SrsCardsTermsResult,
   SrsGetDecksNotetypesResult,
   SrsOpenStudyPagePayload,
   SrsTermCardsResult,
 } from '@/entities/message';
 import {
   SrsAddNotePayloadSchema,
+  SrsCardsChangedPayloadSchema,
+  SrsCardsTermsPayloadSchema,
   SrsGetDecksNotetypesPayloadSchema,
   SrsOpenStudyPagePayloadSchema,
   SrsTermCardsPayloadSchema,
@@ -19,10 +22,34 @@ import { getAllCollections, getCollection } from '@/features/srs/repositories/co
 import { getDecksByCollection } from '@/features/srs/repositories/deckRepository';
 import { getNotesByDeck } from '@/features/srs/repositories/noteRepository';
 import { getNotetypesByCollection } from '@/features/srs/repositories/notetypeRepository';
-import { getLinksByTerm } from '@/features/ankiStatusSync/repositories/statusSyncStorage';
+import { getAllLinks, getLinksByTerm } from '@/features/ankiStatusSync/repositories/statusSyncStorage';
 import { normalizeTerm } from '@/features/dictionary';
+import { broadcastSrsCardsChanged } from './srsCardsBroadcast';
 
 const SRS_STUDY_PATH = 'src/entrypoints/srs-study/index.html';
+
+/** Normalized targetWord → note count + decks holding it, across every
+ *  collection of the language. Shared by SRS_TERM_CARDS (per-term lookup)
+ *  and SRS_CARDS_TERMS (whole-language set for token card flags). */
+async function scanCardTermsByDeck(
+  langCode: string,
+): Promise<Map<string, { count: number; deckIds: string[] }>> {
+  const terms = new Map<string, { count: number; deckIds: string[] }>();
+  for (const collection of await getAllCollections()) {
+    if (collection.targetLanguage !== langCode) continue;
+    for (const deck of await getDecksByCollection(collection.id)) {
+      for (const note of await getNotesByDeck(deck.id)) {
+        const term = normalizeTerm(note.targetWord);
+        if (!term) continue;
+        const entry = terms.get(term) ?? { count: 0, deckIds: [] };
+        entry.count += 1;
+        if (!entry.deckIds.includes(deck.id)) entry.deckIds.push(deck.id);
+        terms.set(term, entry);
+      }
+    }
+  }
+  return terms;
+}
 
 /** Register Ocean SRS cross-context message handlers. */
 export function registerSrsHandlers(ctx: BackgroundContext): void {
@@ -35,6 +62,7 @@ export function registerSrsHandlers(ctx: BackgroundContext): void {
       }
       try {
         const result = await addNoteFromMessage(parsed.data);
+        void broadcastSrsCardsChanged(ctx, parsed.data.targetLanguage);
         return { success: true, data: result };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -121,27 +149,52 @@ export function registerSrsHandlers(ctx: BackgroundContext): void {
       try {
         const { langCode, term } = parsed.data;
         const needle = normalizeTerm(term);
-        const deckIds: string[] = [];
-        let count = 0;
-        for (const collection of await getAllCollections()) {
-          if (collection.targetLanguage !== langCode) continue;
-          for (const deck of await getDecksByCollection(collection.id)) {
-            const hits = (await getNotesByDeck(deck.id)).filter(
-              (note) => normalizeTerm(note.targetWord) === needle,
-            ).length;
-            if (hits > 0) {
-              count += hits;
-              deckIds.push(deck.id);
-            }
-          }
-        }
+        const scanned = (await scanCardTermsByDeck(langCode)).get(needle);
+        let count = scanned?.count ?? 0;
         const ankiLinks = await getLinksByTerm(needle).catch(() => [] as const);
         count += ankiLinks.filter((link) => link.langCode === langCode).length;
-        return { success: true, data: { count, deckIds } };
+        return { success: true, data: { count, deckIds: scanned?.deckIds ?? [] } };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         return { success: false, error: msg };
       }
+    },
+  );
+
+  ctx.on(
+    MESSAGE_TYPES.SRS_CARDS_TERMS,
+    async (request): Promise<MessageResponse<SrsCardsTermsResult>> => {
+      const parsed = SrsCardsTermsPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid SRS_CARDS_TERMS payload: ${parsed.error.message}` };
+      }
+      try {
+        const { langCode } = parsed.data;
+        const terms = new Set((await scanCardTermsByDeck(langCode)).keys());
+        const ankiLinks = await getAllLinks().catch(() => [] as const);
+        for (const link of ankiLinks) {
+          if (link.langCode === langCode && link.term) terms.add(link.term);
+        }
+        return { success: true, data: { terms: [...terms] } };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { success: false, error: msg };
+      }
+    },
+  );
+
+  // Extension pages that mutate the SRS stores directly (srs-study deck
+  // deletes bypass message handlers) ask the background to rebroadcast so
+  // tokenized pages repaint their card layer.
+  ctx.on(
+    MESSAGE_TYPES.SRS_CARDS_CHANGED,
+    async (request): Promise<MessageResponse> => {
+      const parsed = SrsCardsChangedPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid SRS_CARDS_CHANGED payload: ${parsed.error.message}` };
+      }
+      void broadcastSrsCardsChanged(ctx, parsed.data.langCode);
+      return { success: true };
     },
   );
 }

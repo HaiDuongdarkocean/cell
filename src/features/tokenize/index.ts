@@ -1,9 +1,10 @@
-export { createTokenList, applyTokenListStatus } from './logic/tokenListMetadata';
+export { createTokenList, applyTokenListStatus, applyTokenListCardFlags } from './logic/tokenListMetadata';
 export {
   createCueListTokenMap,
   resolveCueListTokenMetadata,
   applyCueListTokenStatus,
   applyCueListTokenStatuses,
+  applyCueListCardFlags,
   createCueListResolveCache,
   type CueListTokenMap,
   type ResolveMeta,

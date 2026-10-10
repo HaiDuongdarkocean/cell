@@ -12,6 +12,7 @@ import {
   onWordStatusesReload,
 } from '@/features/dictionary';
 import { createVideoTokenMap, type VideoTokenMap } from '@/features/tokenize/logic/videoTokenMap';
+import { getSrsCardTermSet, invalidateSrsCardTermSet, onSrsCardsChanged } from '@/features/srs';
 import { createVideoTokenPreloader, type VideoTokenPreloader } from '@/features/tokenize/logic/videoTokenPreloader';
 import { createStatusKeyControls, type PopupStatusTarget } from '@/features/tokenize/logic/statusKeyControls';
 
@@ -144,6 +145,20 @@ export function createSubtitleTokenizeController(
       .catch(() => {});
   });
 
+  // Card layer: the carded-term set is language-wide, so one fetch covers
+  // every prepared cue; cues prepared later pick it up via the map cache.
+  function refreshCardTerms(): void {
+    void getSrsCardTermSet(langCode)
+      .then((cardTerms) => videoTokenMap.applyCardTerms(cardTerms))
+      .catch(() => {});
+  }
+
+  const unsubscribeSrsCards = onSrsCardsChanged((eventLangCode) => {
+    if (eventLangCode !== langCode) return;
+    invalidateSrsCardTermSet(langCode);
+    if (stateStore.getState().enabled) refreshCardTerms();
+  });
+
   // Dictionary corpus changed (import/delete/toggle/reorder) — re-resolve
   // statuses/frequencies/readings for every prepared term. map.resolveMetadata
   // overwrites tokens in place, so readings update without a DOM rebuild.
@@ -267,6 +282,7 @@ export function createSubtitleTokenizeController(
     enable() {
       if (stateStore.getState().enabled) return;
       stateStore.setEnabled(true);
+      refreshCardTerms();
     },
 
     disable() {
@@ -368,6 +384,7 @@ export function createSubtitleTokenizeController(
       statusKeyControls.destroy();
       unsubscribeWordStatus();
       unsubscribeStatusesReload();
+      unsubscribeSrsCards();
       unsubscribeDictionaryChanged();
       unsubscribeMapUpdate();
       unsubscribeSelection();

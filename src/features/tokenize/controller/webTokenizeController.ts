@@ -18,6 +18,7 @@ import { isCellDebug } from '@/shared/lib/cellDebug';
 import { getFrequencyEntries, getReadings } from '@/features/dictionary';
 import { getWordStatuses, setWordStatus, toggleTrackingFlag } from '@/features/dictionary';
 import { getWordTranslations } from '@/features/translate';
+import { getSrsCardTermSet, invalidateSrsCardTermSet, onSrsCardsChanged } from '@/features/srs';
 import {
   emitWordStatusChanged,
   onWordStatusChanged,
@@ -281,7 +282,7 @@ export async function createWebTokenizeController(
     const termList = [...terms];
     const { showReadings, showGlosses } = stateStore.getState();
     const tl = glossTargetLanguage;
-    const [statusMap, freqMaps, bandOpts, dictReadings, termGlosses] = await Promise.all([
+    const [statusMap, freqMaps, bandOpts, dictReadings, termGlosses, cardTerms] = await Promise.all([
       getWordStatuses(langCode, termList),
       getFrequencyEntries(langCode, termList),
       frequencyBandOptions ??= loadFrequencyBandOptions(langCode)
@@ -296,6 +297,9 @@ export async function createWebTokenizeController(
             .then((g) => (glossTargetLanguage === tl ? g : null))
             .catch(() => null)
         : Promise.resolve(null),
+      // null = card-term fetch failed → keep existing flags rather than
+      // flicker the third layer off.
+      getSrsCardTermSet(langCode).catch(() => null),
     ]);
     for (const block of batch) {
       if (!block.tokens) {
@@ -331,6 +335,9 @@ export async function createWebTokenizeController(
         const override = localStatusOverrides.get(token.term);
         if (override && override.version > flushVersion) {
           token.status = override.status;
+        }
+        if (cardTerms !== null) {
+          token.hasCard = cardTerms.has(token.term);
         }
       }
       metadataPending.delete(block);
@@ -1059,6 +1066,34 @@ export async function createWebTokenizeController(
     if (eventLangCode === langCode) void refreshStatusesFromRemote();
   });
 
+  async function refreshCardFlagsFromRemote(): Promise<void> {
+    invalidateSrsCardTermSet(langCode);
+    let cardTerms: Set<string>;
+    try {
+      cardTerms = await getSrsCardTermSet(langCode);
+    } catch {
+      return;
+    }
+    for (const block of blocks) {
+      if (!block.tokens) continue;
+      let changed = false;
+      for (const token of block.tokens) {
+        if (token.isSeparator) continue;
+        const hasCard = cardTerms.has(token.term);
+        if ((token.hasCard ?? false) === hasCard) continue;
+        token.hasCard = hasCard;
+        changed = true;
+      }
+      if (changed && visibleElements.has(block.element)) {
+        rebindBlock(block);
+      }
+    }
+  }
+
+  const unsubscribeSrsCards = onSrsCardsChanged((eventLangCode) => {
+    if (eventLangCode === langCode) void refreshCardFlagsFromRemote();
+  });
+
   function getShadowRoots(): ShadowRoot[] {
     const root = options.root?.getRootNode();
     return root instanceof ShadowRoot ? [root] : [];
@@ -1146,6 +1181,7 @@ export async function createWebTokenizeController(
       unsubscribeDisplay();
       unsubscribeWordStatus();
       unsubscribeStatusesReload();
+      unsubscribeSrsCards();
       scheduler.stop();
       setActive(false);
       cancelPendingActivation?.();

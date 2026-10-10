@@ -5,7 +5,9 @@ import type { ClickModifierState, WordStatus } from '@/entities/dictionary';
 import type { Token } from '@/features/tokenize';
 import { onDictionaryChanged, onWordStatusChanged } from '@/features/dictionary';
 import { getWordTranslations } from '@/features/translate';
+import { getSrsCardTermSet, invalidateSrsCardTermSet, onSrsCardsChanged } from '@/features/srs';
 import {
+  applyCueListCardFlags,
   applyCueListTokenStatus,
   applyCueListTokenStatuses,
   createCueListResolveCache,
@@ -182,6 +184,7 @@ const CueTokenText = memo(function CueTokenText({
             ? `js-cell-token--frequency-${token.frequencyBand}`
             : '',
           selectedTerms?.has(token.term) ? 'js-cell-token--selected' : '',
+          token.hasCard ? 'js-cell-token--has-card' : '',
           showReadings ? '' : 'js-cell-token--reading-off',
           showGlosses ? '' : 'js-cell-token--gloss-off',
         ]
@@ -340,6 +343,19 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     return onDictionaryChanged(({ langCode }) => {
       if (langCode && langCode !== tokenizeLangCode) return;
       setDictEpoch((n) => n + 1);
+    });
+  }, [tokenizeLangCode]);
+
+  useEffect(() => {
+    if (!tokenizeLangCode) return;
+    return onSrsCardsChanged((langCode) => {
+      if (langCode !== tokenizeLangCode) return;
+      invalidateSrsCardTermSet(langCode);
+      void getSrsCardTermSet(langCode)
+        .then((cardTerms) => {
+          setTokenMap((current) => applyCueListCardFlags(current, cardTerms));
+        })
+        .catch(() => {});
     });
   }, [tokenizeLangCode]);
 

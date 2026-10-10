@@ -22,14 +22,18 @@ import {
 import type { CardSourceTerms } from '@/features/ankiStatusSync';
 import { getCard, getNote } from '@/features/srs';
 import { logger } from '@/shared/lib/logger';
+import { broadcastSrsCardsChanged } from './srsCardsBroadcast';
 
 let running = false;
 
-async function runOnce(trigger: 'alarm' | 'manual'): Promise<void> {
+async function runOnce(trigger: 'alarm' | 'manual', ctx: BackgroundContext): Promise<void> {
   if (running) return;
   running = true;
   try {
-    await runAnkiStatusSync(trigger);
+    const result = await runAnkiStatusSync(trigger);
+    // Card links may have been swept/added without a status change — repaint
+    // the token card layer in every context.
+    if (result.langCode) void broadcastSrsCardsChanged(ctx, result.langCode);
   } catch (err) {
     logger.warn('anki-status-sync: run failed', {
       error: err instanceof Error ? err.message : String(err),
@@ -50,7 +54,7 @@ export function registerAnkiStatusSyncHandlers(ctx: BackgroundContext): void {
       };
     }
     try {
-      await runOnce('manual');
+      await runOnce('manual', ctx);
       const state = await getSyncState();
       return { success: true, data: state };
     } catch (err) {
@@ -114,7 +118,8 @@ export function registerAnkiStatusSyncHandlers(ctx: BackgroundContext): void {
       };
     }
     try {
-      await reconcileSrsCardLoss(parsed.data.deckId, parsed.data.targetWord);
+      const langCode = await reconcileSrsCardLoss(parsed.data.deckId, parsed.data.targetWord);
+      if (langCode) void broadcastSrsCardsChanged(ctx, langCode);
       return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -123,11 +128,11 @@ export function registerAnkiStatusSyncHandlers(ctx: BackgroundContext): void {
   });
 }
 
-export function wireAnkiStatusSyncScheduling(): Array<() => void> {
+export function wireAnkiStatusSyncScheduling(ctx: BackgroundContext): Array<() => void> {
   const unsubs: Array<() => void> = [];
   if (typeof chrome !== 'undefined' && chrome.alarms !== undefined) {
     const onAlarm = (alarm: chrome.alarms.Alarm) => {
-      if (alarm.name === ANKI_STATUS_SYNC_ALARM) void runOnce('alarm');
+      if (alarm.name === ANKI_STATUS_SYNC_ALARM) void runOnce('alarm', ctx);
     };
     void chrome.alarms.create(ANKI_STATUS_SYNC_ALARM, {
       periodInMinutes: ANKI_SYNC_PERIOD_MINUTES,

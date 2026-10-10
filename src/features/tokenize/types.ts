@@ -25,6 +25,9 @@ export interface Token {
   reading: string | undefined;
   /** Native-language gloss; undefined until resolved or absent. */
   gloss?: string;
+  /** True when the term has ≥1 flashcard (Ocean SRS note or stored Anki card
+   *  link) — the status capsule appends the learning color as a third layer. */
+  hasCard?: boolean;
   /** True when this token is the only still-new word of its sentence — the
    *  i+1 gap. Recomputed on every bind/restyle; only i+1 tokens paint the
    *  frequency pill and status capsule. */

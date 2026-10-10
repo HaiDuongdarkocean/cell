@@ -4,6 +4,7 @@ import { tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
 import { getWordStatuses } from '@/features/dictionary';
 import { getFrequencyEntries } from '@/features/dictionary';
 import { getReadings } from '@/features/dictionary';
+import { getSrsCardTermSet } from '@/features/srs';
 import {
   entriesToBand,
   loadFrequencyBandOptions,
@@ -33,6 +34,21 @@ export function applyTokenListStatus(
   return changed ? next : tokens;
 }
 
+export function applyTokenListCardFlags(
+  tokens: readonly Token[],
+  cardTerms: ReadonlySet<string>,
+): readonly Token[] {
+  let changed = false;
+  const next = tokens.map((token) => {
+    if (token.isSeparator) return token;
+    const hasCard = cardTerms.has(token.term);
+    if ((token.hasCard ?? false) === hasCard) return token;
+    changed = true;
+    return { ...token, hasCard };
+  });
+  return changed ? next : tokens;
+}
+
 export async function resolveTokenListMetadata(
   tokens: readonly Token[],
   langCode: string,
@@ -46,13 +62,14 @@ export async function resolveTokenListMetadata(
 
   const termList = [...terms];
   try {
-    const [statusMap, freqMaps, bandOpts, dictReadings] = await Promise.all([
+    const [statusMap, freqMaps, bandOpts, dictReadings, cardTerms] = await Promise.all([
       getWordStatuses(langCode, termList),
       getFrequencyEntries(langCode, termList),
       loadFrequencyBandOptions(langCode),
       options?.includeReadings
         ? getReadings(langCode, termList).catch(() => null)
         : Promise.resolve(null),
+      getSrsCardTermSet(langCode).catch(() => null),
     ]);
 
     return tokens.map((token) => {
@@ -68,6 +85,7 @@ export async function resolveTokenListMetadata(
         status: statusMap.get(token.term) ?? 'unknown',
         frequencyBand: entriesToBand(freqEntries, bandOpts),
         reading,
+        hasCard: cardTerms ? cardTerms.has(token.term) : token.hasCard,
       };
     });
   } catch {

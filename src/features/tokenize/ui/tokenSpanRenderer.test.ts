@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Token, TokenBlock } from '@/features/tokenize/types';
-import { bindTokenBlock, unbindTokenBlock } from './tokenSpanRenderer';
+import { bindTokenBlock, restyleTokenBlock, unbindTokenBlock } from './tokenSpanRenderer';
 import { buildTokenSpanCss } from './tokenSpanCss';
 
 function makeBlock(text: string, tokens: Token[]): TokenBlock {
@@ -123,6 +123,34 @@ describe('tokenSpanRenderer', () => {
     bindTokenBlock(block, { showStatus: true, showFrequency: true });
     const off = block.element.querySelector('.js-cell-token--gloss-off');
     expect(off).not.toBeNull();
+  });
+
+  it('marks carded terms with js-cell-token--has-card and leaves uncarded terms clean', () => {
+    const block = makeBlock('Hello world.', [
+      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'core', reading: undefined, hasCard: true },
+      { text: 'world', term: 'world', start: 6, end: 11, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'common', reading: undefined },
+    ]);
+    bindTokenBlock(block, { showStatus: true, showFrequency: true });
+
+    const cls = (term: string) =>
+      block.element.querySelector<HTMLElement>(`[data-cell-term="${term}"]`)!.classList;
+    expect(cls('hello').contains('js-cell-token--has-card')).toBe(true);
+    expect(cls('world').contains('js-cell-token--has-card')).toBe(false);
+  });
+
+  it('applies and clears the has-card class on in-place restyle', () => {
+    const token: Token = { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'core', reading: undefined };
+    const block = makeBlock('Hello.', [token]);
+    bindTokenBlock(block, { showStatus: true, showFrequency: true });
+    const span = block.element.querySelector<HTMLElement>('[data-cell-term="hello"]')!;
+
+    token.hasCard = true;
+    expect(restyleTokenBlock(block, { showStatus: true, showFrequency: true })).toBe(true);
+    expect(span.classList.contains('js-cell-token--has-card')).toBe(true);
+
+    token.hasCard = false;
+    expect(restyleTokenBlock(block, { showStatus: true, showFrequency: true })).toBe(true);
+    expect(span.classList.contains('js-cell-token--has-card')).toBe(false);
   });
 
   it('fires separator handlers so gaps can wash the sentence on hover/click', () => {

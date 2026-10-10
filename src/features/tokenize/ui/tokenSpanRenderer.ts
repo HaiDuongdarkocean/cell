@@ -41,6 +41,7 @@ const STATUS_CLASS = 'js-cell-token-status';
 const READING_OFF_CLASS = 'js-cell-token--reading-off';
 const GLOSS_OFF_CLASS = 'js-cell-token--gloss-off';
 const IPLUS1_OFF_CLASS = 'js-cell-token--i1-off';
+const HAS_CARD_CLASS = 'js-cell-token--has-card';
 
 /** Inside an <a>, <button> or <label>: single click opens our popup, double
  *  click triggers the native action. preventDefault on the click also
@@ -95,6 +96,11 @@ function applyTokenClasses(span: HTMLElement, token: Token, options: TokenSpanBi
     span.classList.remove(IPLUS1_OFF_CLASS);
   } else {
     span.classList.add(IPLUS1_OFF_CLASS);
+  }
+  if (token.hasCard) {
+    span.classList.add(HAS_CARD_CLASS);
+  } else {
+    span.classList.remove(HAS_CARD_CLASS);
   }
   if (options.isSelected?.(token.term)) {
     span.classList.add(`${TOKEN_CLASS}--selected`);
