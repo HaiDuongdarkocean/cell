@@ -35,6 +35,7 @@ export function PosVariantNav({ variants, selectedIndex, onSelect }: PosVariantN
             aria-current={i === selectedIndex ? 'true' : undefined}
             onClick={() => onSelect(i)}
             data-cell-id={`dictionary-pos-${variant.pos || 'other'}`}
+            data-compact-hit
           >
             {posVariantLabel(variant.pos)}
           </button>

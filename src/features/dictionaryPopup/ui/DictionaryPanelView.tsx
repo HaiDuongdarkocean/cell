@@ -378,6 +378,7 @@ export function DictionaryPanelView({
                       search(term);
                     }}
                     data-cell-id={`dictionary-search-history-term-${term}`}
+                    data-compact-hit
                   >
                     {term}
                   </Button>
@@ -387,6 +388,7 @@ export function DictionaryPanelView({
                     title={t('dict.history.removeShort', [term])}
                     onClick={() => handleRemoveHistory(term)}
                     data-cell-id={`dictionary-search-history-remove-${term}`}
+                    data-compact-hit
                   >
                     <Icon name="x" size="xs" />
                   </Button>
@@ -400,6 +402,7 @@ export function DictionaryPanelView({
             title={t('dict.history.clear')}
             onClick={handleClearHistory}
             data-cell-id="dictionary-search-history-clear"
+            data-compact-hit
           >
             <Icon name="trash2" size="xs" />
           </Button>

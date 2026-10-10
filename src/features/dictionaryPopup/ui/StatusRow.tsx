@@ -41,6 +41,7 @@ export function StatusPill({ status, onCycle }: StatusPillProps): React.JSX.Elem
       onClick={onCycle}
       title={t('dict.status.cycle', [t(STATUS_KEYS[base]), t(STATUS_KEYS[nextBaseStatus(status)])])}
       data-cell-id="dictionary-status-cycle"
+      data-compact-hit
     >
       {t(STATUS_KEYS[base])}
     </Button>
@@ -69,6 +70,7 @@ export function StatusSegmented({ status, onCycle, onToggleTracking, srsCardCoun
         title={t('dict.status.trackingToggle')}
         aria-label={t('dict.status.trackingToggle')}
         data-cell-id="dictionary-status-flag"
+        data-compact-hit
       >
         <Icon name="footprints" size="sm" />
       </Button>
@@ -82,6 +84,7 @@ export function StatusSegmented({ status, onCycle, onToggleTracking, srsCardCoun
           title={t('dict.status.srsCards', [srsCardCount ?? 0])}
           aria-label={t('dict.status.srsCards', [srsCardCount ?? 0])}
           data-cell-id="dictionary-srs-cards"
+          data-compact-hit
         >
           <Icon name="notebookPen" size="sm" />
         </Button>

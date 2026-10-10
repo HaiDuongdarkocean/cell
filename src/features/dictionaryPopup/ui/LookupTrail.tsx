@@ -69,6 +69,7 @@ export function LookupTrail({ trail, onNavigate }: LookupTrailProps): React.JSX.
                   as="button"
                   size="xs"
                   className={styles.crumb}
+                  data-compact-hit
                   aria-label={t('dict.trail.backTo', [term])}
                   title={t('dict.trail.backTo', [term])}
                   onClick={() => onNavigate(index)}

@@ -236,6 +236,7 @@ export function CandidateView({
                 title={panel.variant.prons.length > 1 ? t('dict.accent.toggle', [panel.variant.prons[panel.accentIndex]?.accent ?? '']) : undefined}
                 onClick={panel.cycleAccent}
                 data-cell-id="dictionary-accent-toggle"
+                data-compact-hit
               >
                 {panel.variant.prons[panel.accentIndex]?.accent ?? ''}
               </Button>
@@ -353,6 +354,7 @@ export function CandidateView({
                   className={styles.cellEmptyLink}
                   onClick={onOpenSettings}
                   data-cell-id="dictionary-import-dictionary"
+                  data-compact-hit
                 >
                   {t('dict.definitions.import')}
                 </Button>
@@ -501,6 +503,7 @@ function SenseLineView({
             aria-expanded={revealed}
             aria-label={revealed ? t('dict.definitions.hideTranslation') : t('dict.definitions.showTranslation')}
             title={revealed ? t('dict.definitions.hideTranslation') : t('dict.definitions.showTranslation')}
+            data-compact-hit
             onClick={(e) => {
               e.stopPropagation();
               setOverride(!revealed);
