@@ -227,27 +227,27 @@
   color: var(--chip-status-ignore-fg);
 }
 
-/* Joined [eye | base | cards] status control — the group's pill clip owns
-   the outer edge so the segments read as one seamless capsule; each segment
-   keeps the status chip colors minus its own radius, no divider. */
+/* Status cluster: eye, status pill and cards chip are separate controls —
+   each keeps its own role color. A hairline sits between the cluster and
+   the frequency chips. */
 .cellHeaderStatusGroup {
   display: inline-flex;
   align-items: stretch;
-  border-radius: var(--radius-pill);
-  overflow: hidden;
-}
-
-.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatus {
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: inherit;
+  gap: var(--space-1-5);
 }
 
 .cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlag {
   min-width: 0;
   width: var(--space-7);
   padding: 0;
+}
+
+.cellHeaderDivider {
+  align-self: center;
+  width: var(--border-width-hairline, 1px);
+  height: calc(var(--space-5) - var(--space-1));
+  background: var(--color-divider);
+  flex: 0 0 auto;
 }
 
 /* Inactive eye — the word isn't tracked yet; muted keeps it readable as a

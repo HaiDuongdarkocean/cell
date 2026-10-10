@@ -57,19 +57,12 @@ export interface StatusSegmentedProps {
 
 export function StatusSegmented({ status, onCycle, onToggleTracking, srsCardCount, onOpenSrsCards }: StatusSegmentedProps): React.JSX.Element {
   const flag = statusFlag(status);
-  const base = baseStatus(status);
   const hasCards = (srsCardCount ?? 0) > 0;
   return (
-    <span
-      className={styles.cellHeaderStatusGroup}
-      style={{
-        background: `var(--chip-status-${base}-bg)`,
-        color: `var(--chip-status-${base}-fg)`,
-      }}
-    >
+    <span className={styles.cellHeaderStatusGroup}>
       <Button
         variant="transparent"
-        className={`${styles.cellHeaderStatus} ${styles.cellHeaderStatusFlag}`}
+        className={`${styles.cellHeaderStatus} ${styles.cellHeaderStatusFlag} ${flag === 'tracking' ? styles['cellHeaderStatus--tracking'] : styles.cellHeaderStatusFlagIdle}`}
         disabled={!onToggleTracking}
         onClick={onToggleTracking}
         title={t('dict.status.trackingToggle')}
@@ -112,6 +105,7 @@ export function StatusRow({ status, onCycle, onToggleTracking, srsCardCount, onO
   return (
     <div className={styles.cellHeaderSecond} ref={scrollRef} data-cell-id="dictionary-freq-row">
       {statusControl ?? <StatusSegmented status={status} onCycle={onCycle} onToggleTracking={onToggleTracking} srsCardCount={srsCardCount} onOpenSrsCards={onOpenSrsCards} />}
+      {frequencies.length > 0 && <span className={styles.cellHeaderDivider} aria-hidden="true" />}
       {frequencies.map((freq, i) => (
         <span key={`${freq.source}-${i}`} className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${rankToBand(freq.rank, thresholds)}`]}`} title={freqTitle(freq)} data-cell-id="dictionary-frequency">
           <span className={styles.cellHeaderFrequencySource}>{freq.source}</span>
