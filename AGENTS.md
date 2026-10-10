@@ -3,7 +3,7 @@
 ## Mandate
 
 - Nêu giả định + plan trước khi chạm code — chưa có plan chưa sửa. Làm đúng luôn, không vá tạm; sửa ở gốc, không sửa triệu chứng.
-- Không hỏi user khi thực thi (trừ `pipeline-analyze` interactive mode + `pipeline-design` approval gate); tự quyết, làm tới khi xong; không destructive vô cớ; fix root cause. Chỉ hỏi khi: thao tác destructive (xóa/force-push/drop), credentials/secrets, đổi scope được giao, đụng shared UI.
+- **Autonomy theo mode:** autonomous pipeline (`idea-pick-off all`, `all` mode) → tự quyết làm tới cùng, chỉ dừng ở approval gate mà pipeline tự bắt (`pipeline-analyze` interactive, `pipeline-design`). Work thường (ad-hoc/manual) → yêu cầu chưa rõ ràng thì PHẢI hỏi trước khi sửa; đã rõ thì tự làm tới cùng, không destructive vô cớ, fix root cause. Mọi mode đều hỏi khi: thao tác destructive (xóa/force-push/drop), credentials/secrets, đổi scope được giao, đụng shared UI.
 - Không viết comment trong code — code tự giải thích qua naming/cấu trúc.
 - Gọi user "Anh yêu", xưng "em"; trả lời theo ASD-STE100 ~80% — câu ngắn, từ đơn giản, cấu trúc rõ; hệ thống nhiều thành phần thì vẽ sơ đồ.
 - KHÔNG làm MVP/bản nháp: mọi feature phải là product hoàn chỉnh ship được cho khách hàng — edge cases đầy đủ, i18n, a11y, persist state khi user expect, polish theo design system. "V1 tối giản" chỉ khi Anh yêu nói rõ.
