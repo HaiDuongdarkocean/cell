@@ -1,5 +1,6 @@
 import type { Token, TokenBlock } from '@/features/tokenize/types';
 import { collectSentenceRun, type SentenceRunEntry, type SentenceSegment } from '@/features/tokenize/logic/sentenceRun';
+import { IPLUS1_OFF_CLASS, pickIPlus1Index } from '@/features/tokenize/logic/iPlus1Marking';
 import { hasSentenceEnd } from '@/shared/lib/sentencePunct';
 import { injectTokenSpanStyle } from './tokenSpanCss';
 
@@ -40,7 +41,6 @@ const WORD_INNER_CLASS = 'js-cell-token-word';
 const STATUS_CLASS = 'js-cell-token-status';
 const READING_OFF_CLASS = 'js-cell-token--reading-off';
 const GLOSS_OFF_CLASS = 'js-cell-token--gloss-off';
-const IPLUS1_OFF_CLASS = 'js-cell-token--i1-off';
 const HAS_CARD_CLASS = 'js-cell-token--has-card';
 const BLOCK_ATTR = 'data-cell-block-id';
 
@@ -97,11 +97,6 @@ export function readSegments(container: Element): RenderedSentenceSegment[] {
   return segments;
 }
 
-const NUMERIC_RE = /^\p{N}+$/u;
-/** A run needs real context around the gap — under 3 scorable tokens it is a
- *  label/fragment (nav link, heading, single-word block), never i+1 input. */
-const IPLUS1_MIN_SCORABLE = 3;
-
 function isNewWordSpan(span: HTMLElement): boolean {
   return (
     !span.classList.contains(`${TOKEN_CLASS}--status-known`) &&
@@ -118,9 +113,10 @@ function applyRunMark(segments: readonly RenderedSentenceSegment[], entries: rea
       words.push(span);
     }
   }
-  const scorable = words.filter((w) => !NUMERIC_RE.test(w.getAttribute('data-cell-term') ?? ''));
-  const gaps = scorable.filter(isNewWordSpan);
-  const marked = scorable.length >= IPLUS1_MIN_SCORABLE && gaps.length === 1 ? gaps[0] : null;
+  const markedIndex = pickIPlus1Index(
+    words.map((span) => ({ term: span.getAttribute('data-cell-term') ?? '', isNew: isNewWordSpan(span) })),
+  );
+  const marked = markedIndex === null ? null : words[markedIndex];
   for (const span of words) {
     span.classList.toggle(IPLUS1_OFF_CLASS, span !== marked);
   }

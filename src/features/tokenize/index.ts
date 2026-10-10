@@ -29,6 +29,7 @@ export {
 } from './logic/textTokenizer';
 export { sentenceTextForSpan, sentenceContextForSpan } from './ui/sentenceHighlight';
 export { refreshIPlus1Marking } from './ui/tokenSpanRenderer';
+export { IPLUS1_OFF_CLASS, markedTokenIndexes } from './logic/iPlus1Marking';
 export {
   createScoreTracker,
   isScorableToken,

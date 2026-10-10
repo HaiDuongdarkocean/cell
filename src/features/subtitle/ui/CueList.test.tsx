@@ -1,4 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { emitWordStatusChanged } from '@/features/dictionary';
+import { IPLUS1_OFF_CLASS } from '@/features/tokenize';
+import type { WordStatus } from '@/entities/dictionary';
 
 const getWordTranslations = jest.fn() as jest.MockedFunction<
   (sl: string, tl: string, terms: readonly string[]) => Promise<Map<string, string> | null>
@@ -305,5 +308,75 @@ describe('CueList mobile PM mode', () => {
     const marker = document.querySelector('[data-cell-id="pm-cue-active-card"]');
     expect(marker).not.toBeNull();
     expect(marker!.closest('[data-cell-id="cue-item"]')).toHaveAttribute('data-cue-index', '1');
+  });
+});
+
+describe('CueTokenText i+1 marking', () => {
+  function renderMarkedCue(targetText: string, statuses: Record<string, WordStatus> = {}) {
+    renderList({
+      cues: [{ index: 7, start: 0, end: 1000, targetText, nativeText: '' }],
+      tokenize: { langCode: 'en', onTokenClick: jest.fn() },
+    });
+    act(() => {
+      for (const [term, status] of Object.entries(statuses)) {
+        emitWordStatusChanged({ langCode: 'en', term, status });
+      }
+    });
+  }
+
+  function wordSpan(term: string): HTMLElement | null {
+    return document.querySelector<HTMLElement>(`.js-cell-token--word[data-cell-term="${term}"]`);
+  }
+
+  async function waitForWordSpans(): Promise<void> {
+    await waitFor(() => expect(document.querySelector('.js-cell-token--word')).not.toBeNull());
+  }
+
+  it('keeps the capsule only on the single unknown word of a scorable sentence', async () => {
+    renderMarkedCue('alpha beta gamma delta', { alpha: 'known', beta: 'known', gamma: 'known' });
+    await waitFor(() => {
+      const delta = wordSpan('delta');
+      expect(delta).not.toBeNull();
+      expect(delta!.classList.contains(IPLUS1_OFF_CLASS)).toBe(false);
+    });
+    for (const term of ['alpha', 'beta', 'gamma']) {
+      expect(wordSpan(term)!.classList.contains(IPLUS1_OFF_CLASS)).toBe(true);
+    }
+  });
+
+  it('dims every word when two are unknown', async () => {
+    renderMarkedCue('alpha beta gamma delta', { alpha: 'known', beta: 'known' });
+    await waitForWordSpans();
+    for (const term of ['alpha', 'beta', 'gamma', 'delta']) {
+      expect(wordSpan(term)!.classList.contains(IPLUS1_OFF_CLASS)).toBe(true);
+    }
+  });
+
+  it('dims every word of an all-known cue', async () => {
+    renderMarkedCue('alpha beta gamma delta', {
+      alpha: 'known',
+      beta: 'known',
+      gamma: 'known',
+      delta: 'known',
+    });
+    await waitForWordSpans();
+    for (const term of ['alpha', 'beta', 'gamma', 'delta']) {
+      expect(wordSpan(term)!.classList.contains(IPLUS1_OFF_CLASS)).toBe(true);
+    }
+  });
+
+  it('stamps block id and sentence index on word and gap spans', async () => {
+    renderMarkedCue('alpha beta gamma delta.');
+    await waitForWordSpans();
+    const cue = document.querySelector('[data-cue-index="7"]')!;
+    const delta = cue.querySelector<HTMLElement>('.js-cell-token--word[data-cell-term="delta"]')!;
+    expect(delta).toHaveAttribute('data-cell-block-id', 'cue-7');
+    expect(delta).toHaveAttribute('data-cell-sentence', '0');
+    const gaps = Array.from(cue.querySelectorAll<HTMLElement>('.js-cell-token--separator'));
+    expect(gaps.length).toBeGreaterThan(0);
+    for (const gap of gaps) {
+      expect(gap).toHaveAttribute('data-cell-block-id', 'cue-7');
+      expect(gap).toHaveAttribute('data-cell-sentence', '0');
+    }
   });
 });

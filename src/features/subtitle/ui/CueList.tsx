@@ -12,6 +12,8 @@ import {
   applyCueListTokenStatuses,
   createCueListResolveCache,
   createTokenList,
+  IPLUS1_OFF_CLASS,
+  markedTokenIndexes,
   resolveCueListTokenMetadata,
   type CueListTokenMap,
   type ResolveMeta,
@@ -19,6 +21,7 @@ import {
 import { sentenceContextForIndex } from '@/features/tokenize';
 import { formatCueTimestamp } from '@/features/subtitle/logic/cueTime';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
+import { hasSentenceEnd } from '@/shared/lib/sentencePunct';
 import { spawnRipple } from '@/shared/lib/dom/ripple';
 import { Button, CueCard, EmptyState, Icon } from '@/shared/ui';
 import { t } from '@/shared/i18n';
@@ -144,6 +147,7 @@ const formatTimestamp = formatCueTimestamp;
 const CueTokenText = memo(function CueTokenText({
   text,
   tokens,
+  blockId,
   onTokenClick,
   onTokenHover,
   onTokenCtrlClick,
@@ -154,6 +158,7 @@ const CueTokenText = memo(function CueTokenText({
 }: {
   text: string;
   tokens: readonly Token[];
+  blockId: string;
   onTokenClick: (term: string, element: HTMLElement, contextSentence: string, event: ClickModifierState, cursorOffset?: number) => void;
   onTokenHover?: (term: string | null) => void;
   onTokenCtrlClick?: (term: string) => void;
@@ -162,13 +167,27 @@ const CueTokenText = memo(function CueTokenText({
   showGlosses?: boolean;
   resolving?: boolean;
 }) {
+  const marked = markedTokenIndexes(tokens);
   const children: React.ReactNode[] = [];
   let lastEnd = 0;
-  for (const token of tokens) {
+  // Binder convention: a gap carries the sentence of the emitted word before
+  // it; the leading gap belongs to the previous sentence when it holds that
+  // sentence's terminator (bindTokenBlock in tokenSpanRenderer).
+  const first = tokens[0];
+  let lastSentence = first
+    ? Math.max(0, first.sentenceIndex - (hasSentenceEnd(text.slice(0, first.start)) ? 1 : 0))
+    : 0;
+  for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex++) {
+    const token = tokens[tokenIndex]!;
     if (token.isSeparator) continue;
     if (token.start > lastEnd) {
       children.push(
-        <span key={`gap-${token.start}`} className="js-cell-token js-cell-token--separator">
+        <span
+          key={`gap-${token.start}`}
+          className="js-cell-token js-cell-token--separator"
+          data-cell-block-id={blockId}
+          data-cell-sentence={lastSentence}
+        >
           {text.slice(lastEnd, token.start)}
         </span>,
       );
@@ -186,12 +205,15 @@ const CueTokenText = memo(function CueTokenText({
             : '',
           selectedTerms?.has(token.term) ? 'js-cell-token--selected' : '',
           token.hasCard ? 'js-cell-token--has-card' : '',
+          marked.has(tokenIndex) ? '' : IPLUS1_OFF_CLASS,
           showReadings ? '' : 'js-cell-token--reading-off',
           showGlosses ? '' : 'js-cell-token--gloss-off',
         ]
           .filter(Boolean)
           .join(' ')}
         data-cell-term={token.term}
+        data-cell-block-id={blockId}
+        data-cell-sentence={token.sentenceIndex}
         data-cell-start={token.start}
         data-cell-end={token.end}
         data-reading={showReadings ? token.reading : undefined}
@@ -213,10 +235,16 @@ const CueTokenText = memo(function CueTokenText({
       </span>,
     );
     lastEnd = token.end;
+    lastSentence = token.sentenceIndex;
   }
   if (lastEnd < text.length) {
     children.push(
-      <span key="tail" className="js-cell-token js-cell-token--separator">
+      <span
+        key="tail"
+        className="js-cell-token js-cell-token--separator"
+        data-cell-block-id={blockId}
+        data-cell-sentence={lastSentence}
+      >
         {text.slice(lastEnd)}
       </span>,
     );
@@ -793,6 +821,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                 <CueTokenText
                   text={cue.targetText}
                   tokens={tokenMap.get(cue.index) ?? []}
+                  blockId={`cue-${cue.index}`}
                   onTokenClick={tokenize.onTokenClick}
                   onTokenHover={onTokenHover}
                   onTokenCtrlClick={tokenize.onTokenCtrlClick}
