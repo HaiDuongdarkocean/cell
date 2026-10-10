@@ -124,7 +124,11 @@ export function findLargestPlayableVideo(): HTMLVideoElement | null {
  * has `height:0` with the `<video>` absolutely positioned inside it, while the
  * real sized container is `#movie_player` — the grandparent). On normal sites
  * the parent already matches the video height, so the walk-up stops immediately.
- * Falls back to `video.parentElement` (or `document.body`) if no suitable ancestor.
+ * Ancestors taller than ~160% of the video wrap non-video content (figure +
+ * figcaption) and are skipped — anchoring inset:0 there lands the overlay on
+ * the caption. When no tight ancestor exists, an inline direct parent wins
+ * (it shrink-wraps the video once promoted), else the first oversized
+ * ancestor, else `video.parentElement`/`document.body`.
  *
  * Callers that mount Cell video-level UI should go through
  * findVideoOverlayContainer, which lifts the result to the shared ancestor
@@ -132,7 +136,6 @@ export function findLargestPlayableVideo(): HTMLVideoElement | null {
  */
 export function findVideoContainer(video: HTMLVideoElement): HTMLElement {
   const videoHeight = video.getBoundingClientRect().height;
-  let el: HTMLElement | null = video.parentElement;
   // Shadow DOM: the video may be a direct child of a shadow root with no
   // parentElement in the light DOM. Start from the shadow host so the overlay
   // can attach to a real element instead of falling back to document.body.
@@ -140,15 +143,27 @@ export function findVideoContainer(video: HTMLVideoElement): HTMLElement {
     video.getRootNode() instanceof ShadowRoot
       ? ((video.getRootNode() as ShadowRoot).host as HTMLElement | null)
       : null;
-  if (!el) {
-    el = shadowHost;
-  }
+  const directParent = video.parentElement ?? shadowHost;
+  let el: HTMLElement | null = directParent;
+  let oversized: HTMLElement | null = null;
   while (el && el !== document.body) {
     const h = el.getBoundingClientRect().height;
-    if (videoHeight > 0 && h >= videoHeight * 0.5) return el;
+    if (videoHeight > 0 && h >= videoHeight * 0.5) {
+      // An ancestor taller than ~160% of the video carries non-video content
+      // (Wikipedia figure embeds video + figcaption) — anchoring inset:0 to it
+      // lands the overlay on the caption/text instead of the video. Prefer a
+      // tight inline wrapper, else this oversized ancestor as last resort.
+      if (h <= videoHeight * 1.6) return el;
+      oversized ??= el;
+    }
     el = el.parentElement;
   }
-  return video.parentElement ?? shadowHost ?? document.body;
+  // Inline parents (e.g. Wikipedia's SPAN.mw-tmh-player) report ~0 height but
+  // shrink-wrap the video once the caller promotes them to inline-block.
+  if (directParent && getComputedStyle(directParent).display === 'inline') {
+    return directParent;
+  }
+  return oversized ?? directParent ?? document.body;
 }
 
 /** Mount container for Cell video-level UI (subtitle overlay host, toasts,

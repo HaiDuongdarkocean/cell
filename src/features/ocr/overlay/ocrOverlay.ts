@@ -129,6 +129,7 @@ export class OcrOverlay {
     const parent = findVideoOverlayContainer(video);
     if (!parent) return;
     parent.style.position = 'relative';
+    if (getComputedStyle(parent).display === 'inline') parent.style.display = 'inline-block';
     this.container = document.createElement('div');
     this.container.className = 'cell-ocr-overlay';
     this.container.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10001;user-select:none;-webkit-user-select:none;';

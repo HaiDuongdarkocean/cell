@@ -239,6 +239,44 @@ describe('findPlayerContainer', () => {
       const player = video.parentElement as HTMLElement;
       expect(findVideoOverlayContainer(video)).toBe(player);
     });
+
+    it('prefers the tight inline wrapper over an oversized figure with figcaption (Wikipedia)', () => {
+      const figure = document.createElement('figure');
+      const caption = document.createElement('figcaption');
+      const span = document.createElement('span');
+      span.style.display = 'inline';
+      const video = createVideo(250, 141);
+
+      figure.appendChild(caption);
+      figure.appendChild(span);
+      span.appendChild(video);
+      document.body.appendChild(figure);
+
+      setBoundingClientRect(span, 250, 0); // inline wrapper reports ~0 height
+      setBoundingClientRect(figure, 256, 273); // ~194% of video height
+
+      expect(findVideoOverlayContainer(video)).toBe(span);
+    });
+
+    it('accepts an ancestor up to 160% of video height (player chrome padding)', () => {
+      const video = createVideo(250, 141);
+      const wrap = document.createElement('div');
+      wrap.appendChild(video);
+      document.body.appendChild(wrap);
+      setBoundingClientRect(wrap, 256, 220); // ~156%
+
+      expect(findVideoOverlayContainer(video)).toBe(wrap);
+    });
+
+    it('falls back to the first oversized ancestor when no tight wrapper exists', () => {
+      const figure = document.createElement('figure');
+      const video = createVideo(250, 141);
+      figure.appendChild(video);
+      document.body.appendChild(figure);
+      setBoundingClientRect(figure, 256, 273);
+
+      expect(findVideoOverlayContainer(video)).toBe(figure);
+    });
   });
 
   describe('findFarthestSameSizeContainer — m.youtube shell', () => {

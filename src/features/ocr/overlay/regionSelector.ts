@@ -228,6 +228,7 @@ export class RegionSelector {
     const parent = findVideoOverlayContainer(video);
     if (!parent) return;
     parent.style.position = 'relative';
+    if (getComputedStyle(parent).display === 'inline') parent.style.display = 'inline-block';
 
     this.container = document.createElement('div');
     this.container.className = 'cell-ocr-region-selector';

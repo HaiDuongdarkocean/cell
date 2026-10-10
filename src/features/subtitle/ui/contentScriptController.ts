@@ -1,6 +1,7 @@
 import { sendMessage, onMessage, onStorageChanged, removeOnMessageListener, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { findVideoOverlayContainer } from '@/shared/lib/dom/findPlayerContainer';
+import { findLargestPlayableVideo } from '@/shared/lib/dom/videoFinder';
 import type { SubtitleApiKey } from '@/entities/settings';
 import { getActiveStudyMode, subscribeToStudyMode } from '@/features/studyModes';
 import { modeUsesBandProbe } from '@/features/studyModes';
@@ -60,17 +61,52 @@ export function init(
   // ADR-008 D2: overlay UI neo vào video container — không cần F0, không cần
   // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
   // G8: walk-up để xử lý sites có video.parentElement height=0 (YouTube pattern).
-  const container = findVideoOverlayContainer(video);
-  // The overlay host mounts `position:absolute; inset:0` inside `container`.
-  // On sites whose player shell is position:static (Wikipedia figure embeds),
-  // inset:0 resolves against the nearest positioned ancestor instead and the
-  // controls leak out to the page bottom — same fix ocrOverlay.attach uses.
-  const containerWasStatic = getComputedStyle(container).position === 'static';
-  if (containerWasStatic) container.style.position = 'relative';
+  let container = findVideoOverlayContainer(video);
+  // The overlay host mounts `position:absolute; inset:0` inside `container`,
+  // so the container must be a real containing block: static shells resolve
+  // the host against the page instead (leak to page bottom), and inline
+  // video wrappers (Wikipedia SPAN.mw-tmh-player) report ~0 height until
+  // promoted to inline-block so they shrink-wrap the video.
+  let containerRestore: (() => void) | null = null;
+  const anchorContainer = (): void => {
+    containerRestore?.();
+    const pos = container.style.position;
+    const disp = container.style.display;
+    if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
+    if (getComputedStyle(container).display === 'inline') container.style.display = 'inline-block';
+    containerRestore = () => {
+      container.style.position = pos;
+      container.style.display = disp;
+      containerRestore = null;
+    };
+  };
+  anchorContainer();
 
   // ADR-015 T12: inject theme tokens so panel/toast var(--color-*) resolve.
   // Content-script isolated world cannot access popup's theme.css.
-  const themeTokensCleanup = injectThemeTokens(container, [navClusterModuleCss]);
+  let themeTokensCleanup = injectThemeTokens(container, [navClusterModuleCss]);
+
+  // Site JS can reparent the <video> after init (MediaWiki Timed Media
+  // Handler restructures figure embeds). The overlay host was already
+  // appended to the old container — re-resolve and move it so it stays
+  // anchored to the video instead of leaking to wherever it first landed.
+  let lastVideoParent = video.isConnected ? video.parentElement : null;
+  const reparentObserver = new MutationObserver(() => {
+    const videoGone = !video.isConnected;
+    if (!videoGone && video.parentElement === lastVideoParent) return;
+    lastVideoParent = videoGone ? null : video.parentElement;
+    const anchorVideo = videoGone ? findLargestPlayableVideo() : video;
+    if (!anchorVideo) return;
+    const next = findVideoOverlayContainer(anchorVideo);
+    if (next === container) return;
+    container = next;
+    anchorContainer();
+    themeTokensCleanup();
+    themeTokensCleanup = injectThemeTokens(container, [navClusterModuleCss]);
+    const host = document.getElementById('cell-subtitle-root');
+    if (host) container.appendChild(host);
+  });
+  reparentObserver.observe(document.documentElement, { childList: true, subtree: true });
 
   // ADR-025: live style/overlay settings. The block controller is created
   // synchronously so cue messages can be handled before storage finishes loading.
@@ -1000,8 +1036,9 @@ export function init(
     removeOnMessageListener(onRuntimeMessage);
     removeOnMessageListener(onRuntimeMessage2);
     if (onStorageChangedCallback) removeOnStorageChangedListener(onStorageChangedCallback);
+    reparentObserver.disconnect();
     themeTokensCleanup();
-    if (containerWasStatic) container.style.position = '';
+    containerRestore?.();
     // ADR-027: React UI is unmounted in ReactSubtitleController.destroy().
     subtitleTokenizeCtrl?.destroy();
     unknownResolver?.destroy();
