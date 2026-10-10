@@ -19,7 +19,16 @@ const STATIC_TOKENS_NEEDED: readonly string[] = [
   '--border-width-status',
   '--radius-md',
   '--duration-100',
+  // Full z-overlay ladder: host-page mount hosts resolve var(--z-overlay-*) inline; unresolved vars → auto → later DOM overlays win.
+  '--z-overlay-base',
+  '--z-overlay-low',
+  '--z-overlay-med',
   '--z-overlay-high',
+  '--z-overlay-video',
+  '--z-overlay-settings',
+  '--z-overlay-secondary',
+  '--z-overlay-top',
+  '--z-overlay-orbital',
 ];
 
 /** Map cell-token variables to canonical design tokens from tokens.json.
@@ -411,7 +420,7 @@ html body .js-cell-token.js-cell-token--selected .js-cell-token-word {
 html body .js-cell-sentence-band {
   position: absolute !important;
   pointer-events: none !important;
-  z-index: var(--z-overlay-high) !important;
+  z-index: var(--z-overlay-base) !important;
   background: color-mix(in srgb, var(--cell-sentence-wash) 32%, transparent) !important;
 }
 
@@ -708,7 +717,7 @@ ${buildVariables(':host')}
 .js-cell-sentence-band {
   position: absolute !important;
   pointer-events: none !important;
-  z-index: var(--z-overlay-high) !important;
+  z-index: var(--z-overlay-base) !important;
   background: color-mix(in srgb, var(--cell-sentence-wash) 32%, transparent) !important;
 }
 
