@@ -57,8 +57,15 @@ export interface StatusSegmentedProps {
 
 export function StatusSegmented({ status, onCycle, onToggleTracking, srsCardCount, onOpenSrsCards }: StatusSegmentedProps): React.JSX.Element {
   const flag = statusFlag(status);
+  const base = baseStatus(status);
+  const hasCards = (srsCardCount ?? 0) > 0;
+  const stops = [
+    flag === 'tracking' ? 'var(--chip-status-tracking-bg)' : 'var(--color-muted)',
+    `var(--chip-status-${base}-bg)`,
+    ...(hasCards ? ['var(--chip-status-learning-bg)'] : []),
+  ];
   return (
-    <span className={styles.cellHeaderStatusGroup}>
+    <span className={styles.cellHeaderStatusGroup} style={{ background: `linear-gradient(90deg, ${stops.join(', ')})` }}>
       <Button
         variant="transparent"
         className={`${styles.cellHeaderStatus} ${styles.cellHeaderStatusFlag} ${flag === 'tracking' ? styles['cellHeaderStatus--tracking'] : styles.cellHeaderStatusFlagIdle}`}
@@ -71,7 +78,7 @@ export function StatusSegmented({ status, onCycle, onToggleTracking, srsCardCoun
         <Icon name="eye" size="sm" />
       </Button>
       <StatusPill status={status} onCycle={onCycle} />
-      {(srsCardCount ?? 0) > 0 && (
+      {hasCards && (
         <Button
           variant="transparent"
           className={`${styles.cellHeaderStatus} ${styles.cellHeaderStatusFlag} ${styles['cellHeaderStatus--learning']}`}

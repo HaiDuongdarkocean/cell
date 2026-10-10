@@ -240,6 +240,7 @@
 .cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatus {
   border: none;
   border-radius: 0;
+  background: transparent;
 }
 
 .cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlag {
