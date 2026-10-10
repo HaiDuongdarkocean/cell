@@ -6,8 +6,8 @@
 }
 
 .cellToolbarTab svg {
-  width: var(--iconbutton-icon-sm);
-  height: var(--iconbutton-icon-sm);
+  width: calc(var(--iconbutton-size-md) * var(--iconbutton-icon-ratio));
+  height: calc(var(--iconbutton-size-md) * var(--iconbutton-icon-ratio));
   flex-shrink: 0;
 }
 

@@ -381,7 +381,7 @@ export function DictionaryPanelView({
                   >
                     {term}
                   </Button>
-                  <Button variant="ghost"
+                  <Button variant="ghost" size="xs"
                     className={styles.searchHistoryRemove}
                     aria-label={t('dict.history.remove', [term])}
                     title={t('dict.history.removeShort', [term])}

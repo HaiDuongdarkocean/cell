@@ -233,6 +233,7 @@
   height: var(--space-4);
   min-width: var(--space-4);
   min-height: var(--space-4);
+  --iconbutton-size-xs: var(--space-4);
   margin: 0;
   padding: 0;
   /* Hairline in the theme's text color — white in dark mode,
@@ -247,13 +248,6 @@
   transition: opacity var(--duration-fast) var(--ease-standard),
               color var(--duration-fast) var(--ease-standard),
               background var(--duration-fast) var(--ease-standard);
-}
-
-/* (0,3,2) beats Button's `.md.iconOnly .label > * svg` icon-size rule
-   (0,3,1) — icon-only buttons always get circle/iconOnly classes. */
-li.searchHistoryItem .searchHistoryRemove.searchHistoryRemove svg {
-  width: var(--space-4-5);
-  height: var(--space-4-5);
 }
 
 .searchHistoryItem:hover .searchHistoryRemove,

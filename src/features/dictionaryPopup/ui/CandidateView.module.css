@@ -379,6 +379,11 @@
   transition: transform var(--duration-fast) var(--ease-out);
 }
 
+.defLineReveal svg {
+  width: 1em;
+  height: 1em;
+}
+
 .defLineRevealOpen {
   transform: rotate(180deg);
 }
