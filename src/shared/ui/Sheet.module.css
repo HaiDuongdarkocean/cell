@@ -62,6 +62,23 @@
   background: var(--color-text-secondary);
 }
 
+/* Invisible hit-zone extension above the sheet's top edge. The sheet clips
+   children (overflow:hidden for the rounded corners), so the extension is a
+   fixed sibling glued to the top edge via `bottom: <sheet height>`. It shares
+   the handle's pointerdown — taps there close the sheet, drags resize it,
+   and content peeking above the edge (e.g. cue tokens) never sees the event. */
+.handleGuard {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: var(--space-5);
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  pointer-events: auto;
+  z-index: var(--z-overlay-top);
+}
+
 .content {
   flex: 1 1 auto;
   min-height: 0;

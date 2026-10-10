@@ -16,6 +16,34 @@ const SHEET_CLICK_THRESHOLD_PX = 4;
 const SHEET_DISMISS_THRESHOLD_PX = 100;
 /** Sheet closes when its height drops below this fraction of viewport height. */
 const SHEET_DISMISS_RATIO = 0.2;
+const CLICK_SWALLOW_WINDOW_MS = 500;
+
+let releaseClickSwallower: (() => void) | null = null;
+
+/**
+ * Closing the sheet on pointerup unmounts the pointer's target, so the browser
+ * retargets the trailing `click` to whatever now sits under the cursor — which
+ * can be a lookup trigger beneath the sheet (ghost click). Arm a one-shot
+ * capture listener that eats that click. Keyboard clicks (detail === 0) pass
+ * through and keep the swallower armed for the real pointer click.
+ */
+function armClickSwallower(): void {
+  releaseClickSwallower?.();
+  const release = (): void => {
+    clearTimeout(timer);
+    document.removeEventListener('click', onClick, true);
+    if (releaseClickSwallower === release) releaseClickSwallower = null;
+  };
+  const onClick = (e: MouseEvent): void => {
+    if (e.detail === 0) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    release();
+  };
+  const timer = setTimeout(release, CLICK_SWALLOW_WINDOW_MS);
+  releaseClickSwallower = release;
+  document.addEventListener('click', onClick, true);
+}
 
 /** Guard against NaN/negative/non-finite height values from storage or props. */
 function safeHeight(value: number | undefined, fallback: number): number {
@@ -159,18 +187,24 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
 
     const dy = clientY - session.startY;
     const vh = getClientHeight();
+    const closeFromPointer = (): void => {
+      const onClose = onCloseRef.current;
+      if (!onClose) return;
+      armClickSwallower();
+      onClose();
+    };
 
     if (session.fromHandle) {
       // Click (no meaningful movement) on handle = close.
       const dx = clientX - session.startX;
       if (Math.hypot(dx, dy) <= SHEET_CLICK_THRESHOLD_PX) {
-        onCloseRef.current?.();
+        closeFromPointer();
         return;
       }
       // Drag is 1:1 with height — dismiss if dragged past 20% of vh.
       const rawHeight = session.startHeight - dy;
       if (rawHeight < vh * SHEET_DISMISS_RATIO) {
-        onCloseRef.current?.();
+        closeFromPointer();
         return;
       }
       onHeightChangeRef.current?.(sheetHeightRef.current);
@@ -179,7 +213,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
 
     // Content drag dismiss.
     if (dy > SHEET_DISMISS_THRESHOLD_PX) {
-      onCloseRef.current?.();
+      closeFromPointer();
       return;
     }
     // Spring back to resting position.

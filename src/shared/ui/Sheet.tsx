@@ -98,41 +98,50 @@ export function Sheet({
   if (!open) return null;
 
   return (
-    <div
-      ref={sheetRef}
-      className={className ? `${styles.sheet} ${className}` : styles.sheet}
-      role="dialog"
-      aria-modal="true"
-      aria-label={ariaLabel}
-      data-cell-id={dataTestId}
-      style={style}
-      onKeyDown={handleKeyDown}
-      onKeyUp={handleKeyUp}
-    >
+    <>
       <div
-        className={styles.handle}
-        role="separator"
-        aria-orientation="horizontal"
-        tabIndex={0}
-        aria-label={t('ui.sheet.resizeAria')}
+        className={styles.handleGuard}
+        aria-hidden="true"
+        data-cell-id="sheet-handle-guard"
+        style={{ bottom: style.height }}
         onPointerDown={onPointerDownHandle}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onClose?.();
-            return;
-          }
-          onKeyDownHandle(e);
-        }}
       />
-      {header}
       <div
-        className={contentClassName ? `${styles.content} ${contentClassName}` : styles.content}
-        onPointerDown={onPointerDownContent}
+        ref={sheetRef}
+        className={className ? `${styles.sheet} ${className}` : styles.sheet}
+        role="dialog"
+        aria-modal="true"
+        aria-label={ariaLabel}
+        data-cell-id={dataTestId}
+        style={style}
+        onKeyDown={handleKeyDown}
+        onKeyUp={handleKeyUp}
       >
-        {children}
+        <div
+          className={styles.handle}
+          role="separator"
+          aria-orientation="horizontal"
+          tabIndex={0}
+          aria-label={t('ui.sheet.resizeAria')}
+          onPointerDown={onPointerDownHandle}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onClose?.();
+              return;
+            }
+            onKeyDownHandle(e);
+          }}
+        />
+        {header}
+        <div
+          className={contentClassName ? `${styles.content} ${contentClassName}` : styles.content}
+          onPointerDown={onPointerDownContent}
+        >
+          {children}
+        </div>
+        {footer ? <div className={styles.footer}>{footer}</div> : null}
       </div>
-      {footer ? <div className={styles.footer}>{footer}</div> : null}
-    </div>
+    </>
   );
 }
