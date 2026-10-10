@@ -100,27 +100,119 @@ export function tokenizeTextBlock(text: string, langCode: string = DEFAULT_LANG)
   return result;
 }
 
+export interface SentenceRange {
+  readonly start: number;
+  readonly end: number;
+}
+
+const SENTENCE_CLOSER_RE = /["'”’)\]}»›]/;
+
+/** Position after the last sentence terminator inside `text[from, to)`, or -1
+ *  when the gap holds none. */
+function lastTerminatorEnd(text: string, from: number, to: number): number {
+  let end = -1;
+  for (let i = from; i < to; i++) {
+    if (SENTENCE_END_PUNCT_RE.test(text[i]!)) end = i + 1;
+  }
+  return end;
+}
+
+/** Span of the sentence `sentenceIndex` covers.
+ *
+ *  Token surfaces can be filtered out (digits, single letters, non-target
+ *  scripts), so token.start/end alone truncates the sentence at filtered
+ *  runs like "−2 °C". The boundary lives inside the gap between kept tokens:
+ *  the last terminator in that gap closes the sentence (mirroring how the
+ *  renderer assigns the gap separator to the previous sentence). */
+export function sentenceRangeForIndex(
+  tokens: readonly Token[],
+  text: string,
+  sentenceIndex: number,
+): SentenceRange | null {
+  const words = tokens.filter((t) => !t.isSeparator);
+  const firstIdx = words.findIndex((t) => t.sentenceIndex === sentenceIndex);
+  if (firstIdx < 0) return null;
+  const first = words[firstIdx]!;
+  let last = first;
+  let next: Token | undefined;
+  for (let i = firstIdx + 1; i < words.length; i++) {
+    if (words[i]!.sentenceIndex !== sentenceIndex) {
+      next = words[i];
+      break;
+    }
+    last = words[i]!;
+  }
+
+  let start = first.start;
+  if (firstIdx === 0 && start > 0) {
+    const leadEnd = lastTerminatorEnd(text, 0, start);
+    start = leadEnd >= 0 ? leadEnd : 0;
+    while (start < first.start && SENTENCE_CLOSER_RE.test(text[start]!)) start++;
+  }
+
+  let end: number;
+  if (next) {
+    const closed = lastTerminatorEnd(text, last.end, next.start);
+    end = closed >= 0 ? closed : next.start;
+    while (end < next.start && SENTENCE_CLOSER_RE.test(text[end]!)) end++;
+  } else {
+    end = text.length;
+  }
+  return { start, end };
+}
+
+/** Sentence index of the token at `offset`; offsets on gaps (spaces,
+ *  punctuation, filtered-out surfaces) resolve to the nearest token — a tie
+ *  goes to the following token so a selection starting in the whitespace
+ *  before a sentence lands inside that sentence. */
+export function sentenceIndexAtOffset(tokens: readonly Token[], offset: number): number | null {
+  let before: Token | null = null;
+  let after: Token | null = null;
+  for (const token of tokens) {
+    if (token.isSeparator) continue;
+    if (offset >= token.start && offset < token.end) return token.sentenceIndex;
+    if (token.end <= offset) {
+      if (!before || token.end > before.end) before = token;
+      continue;
+    }
+    after = token;
+    break;
+  }
+  if (before && after) {
+    return offset - before.end < after.start - offset ? before.sentenceIndex : after.sentenceIndex;
+  }
+  return (before ?? after)?.sentenceIndex ?? null;
+}
+
+/** Locate the sentence containing `offset` inside raw text, using the same
+ *  tokenizer sentenceIndex the hover wash paints — untokenized surfaces get
+ *  the identical boundary. */
+export function sentenceRangeAtOffset(
+  text: string,
+  offset: number,
+  langCode: string = DEFAULT_LANG,
+): SentenceRange | null {
+  const tokens = tokenizeTextBlock(text, langCode);
+  const index = sentenceIndexAtOffset(tokens, offset);
+  if (index === null) return null;
+  return sentenceRangeForIndex(tokens, text, index);
+}
+
+/** Sentence text for `sentenceIndex` inside a token list of `text`. */
+export function sentenceTextForIndex(
+  tokens: readonly Token[],
+  text: string,
+  sentenceIndex: number,
+): string {
+  const range = sentenceRangeForIndex(tokens, text, sentenceIndex);
+  return range ? text.slice(range.start, range.end).trim() : text.trim();
+}
+
 /** Extract the sentence text containing the given token, using sentenceIndex grouping. */
 export function getSentenceText(block: TokenBlock, token: Token): string {
   const tokens = block.tokens;
   if (!tokens || tokens.length === 0) return block.originalText;
-  const idx = token.sentenceIndex;
-  // Find first and last token with the same sentenceIndex.
-  let start = token.start;
-  let end = token.end;
-  for (const t of tokens) {
-    if (t.sentenceIndex !== idx) continue;
-    if (t.start < start) start = t.start;
-    if (t.end > end) end = t.end;
-  }
-  // Extend end to include trailing punctuation (., !, ?) that was skipped by the tokenizer.
-  const text = block.originalText;
-  while (end < text.length && /[.!?]/.test(text[end]!)) {
-    end++;
-  }
-  // Trim leading whitespace from the slice for a clean sentence.
-  const slice = text.slice(start, end);
-  return slice.trimStart();
+  return sentenceTextForIndex(tokens, block.originalText, token.sentenceIndex);
 }
 
 /** Resolve status and frequency band for all tokens in a block. */

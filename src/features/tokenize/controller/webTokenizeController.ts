@@ -5,6 +5,7 @@ import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_PREPARE, PRIORITY_BUFFER
 import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
 import { resolveScrollPredictMargin, type ScrollDirection } from '@/features/tokenize/logic/scrollDirection';
 import { prepareTokenBlock, resolveTokenMetadata, getSentenceText } from '@/features/tokenize/logic/textTokenizer';
+import { sentenceTextForSpan } from '@/features/tokenize/ui/sentenceHighlight';
 import { bindTokenBlock, restyleTokenBlock, unbindTokenBlock, TOKEN_CLASS, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
 import { createTokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import type { TokenizeState, TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
@@ -867,7 +868,7 @@ export async function createWebTokenizeController(
       onTokenClick: (term, block, element, token, event) => {
         pinnedSentenceKey = sentenceKey(block, element);
         washSentence(element);
-        options.onOpenDictionary?.(term, element, getSentenceText(block, token), event);
+        options.onOpenDictionary?.(term, element, sentenceTextForSpan(element) || getSentenceText(block, token), event);
       },
       onSeparatorEnter: (block, element) => {
         const key = sentenceKey(block, element);

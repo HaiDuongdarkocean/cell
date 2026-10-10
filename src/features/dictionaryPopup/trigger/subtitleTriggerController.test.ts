@@ -3,14 +3,22 @@
 import { describe, expect, it, beforeEach, afterEach, jest } from '@jest/globals';
 import {
   SubtitleTriggerController,
-  wrapTokenSpans,
   buildLookupRequest,
   detectLangCode,
-  tokenizeSubtitleText,
   nextRequestId,
   HOVER_DEBOUNCE_MS,
 } from './subtitleTriggerController';
 import type { LookupRequest, TriggerMode } from '@/entities/dictionary';
+
+function makeSpan(term: string, start: number, end: number, surface = term): HTMLSpanElement {
+  const span = document.createElement('span');
+  span.className = 'js-cell-token';
+  span.textContent = surface;
+  span.setAttribute('data-cell-term', term);
+  span.setAttribute('data-cell-start', String(start));
+  span.setAttribute('data-cell-end', String(end));
+  return span;
+}
 
 // jsdom is available via jest-environment-jsdom (default for unit project).
 
@@ -50,63 +58,9 @@ describe('detectLangCode', () => {
   });
 });
 
-describe('tokenizeSubtitleText', () => {
-  it('tokenizes English by whitespace', () => {
-    const tokens = tokenizeSubtitleText('Hello world.', 'en');
-    expect(tokens).toHaveLength(2);
-    expect(tokens[0]!.text).toBe('hello');
-    expect(tokens[1]!.text).toBe('world');
-  });
-
-  it('tokenizes Chinese by single chars (empty probe)', () => {
-    const tokens = tokenizeSubtitleText('我喜欢你', 'zh');
-    expect(tokens).toHaveLength(4);
-    expect(tokens.map((t) => t.text)).toEqual(['我', '喜', '欢', '你']);
-  });
-});
-
-describe('wrapTokenSpans', () => {
-  it('wraps English text into per-word token spans', () => {
-    const parent = document.createElement('span');
-    const spans = wrapTokenSpans(parent, 'Hello world.', 'en');
-    expect(spans).toHaveLength(2);
-    expect(spans[0]!.textContent).toBe('Hello');
-    expect(spans[0]!.getAttribute('data-cell-term')).toBe('hello');
-    expect(spans[0]!.getAttribute('data-cell-start')).toBe('0');
-    expect(spans[0]!.getAttribute('data-cell-end')).toBe('5');
-    expect(spans[1]!.textContent).toBe('world');
-    expect(spans[1]!.getAttribute('data-cell-term')).toBe('world');
-  });
-
-  it('wraps Chinese text into per-char token spans', () => {
-    const parent = document.createElement('span');
-    const spans = wrapTokenSpans(parent, '我喜欢你', 'zh');
-    expect(spans).toHaveLength(4);
-    expect(spans[0]!.getAttribute('data-cell-term')).toBe('我');
-    expect(spans[1]!.getAttribute('data-cell-term')).toBe('喜');
-  });
-
-  it('preserves whitespace between tokens as text nodes', () => {
-    const parent = document.createElement('span');
-    const spans = wrapTokenSpans(parent, 'Hello world', 'en');
-    expect(spans).toHaveLength(2);
-    // Check that there's a text node between the two spans.
-    const nodes = Array.from(parent.childNodes);
-    expect(nodes.length).toBeGreaterThanOrEqual(3); // span, text, span
-  });
-
-  it('handles empty text', () => {
-    const parent = document.createElement('span');
-    const spans = wrapTokenSpans(parent, '', 'en');
-    expect(spans).toEqual([]);
-  });
-});
-
 describe('buildLookupRequest', () => {
   it('builds a LookupRequest from a token span', () => {
-    const parent = document.createElement('span');
-    const spans = wrapTokenSpans(parent, 'Hello world.', 'en');
-    const req = buildLookupRequest(spans[0]!, 'Hello world.', 'en');
+    const req = buildLookupRequest(makeSpan('hello', 0, 5, 'Hello'), 'Hello world.', 'en');
     expect(req.term).toBe('hello');
     expect(req.langCode).toBe('en');
     expect(req.contextSentence).toBe('Hello world.');
@@ -115,11 +69,24 @@ describe('buildLookupRequest', () => {
   });
 
   it('sets fallback=true when requested', () => {
-    const parent = document.createElement('span');
-    const spans = wrapTokenSpans(parent, 'Hello world.', 'en');
-    const req = buildLookupRequest(spans[1]!, 'Hello world.', 'en', true);
+    const req = buildLookupRequest(makeSpan('world', 6, 11), 'Hello world.', 'en', true);
     expect(req.fallback).toBe(true);
     expect(req.cursorOffset).toBe(6);
+  });
+
+  it('slices context to the tokenizer sentence at the token offset', () => {
+    const req = buildLookupRequest(makeSpan('three', 9, 14), 'One two. Three four.', 'en');
+    expect(req.contextSentence).toBe('Three four.');
+    expect(req.cursorOffset).toBe(0);
+  });
+
+  it('keeps the full sentence when the span carries no offset', () => {
+    const span = document.createElement('span');
+    span.textContent = 'four';
+    span.setAttribute('data-cell-term', 'four');
+    const req = buildLookupRequest(span, 'One two. Three four.', 'en');
+    expect(req.contextSentence).toBe('One two. Three four.');
+    expect(req.cursorOffset).toBe(0);
   });
 });
 
@@ -153,7 +120,8 @@ describe('SubtitleTriggerController', () => {
     onCancel = jest.fn<(requestId: string) => void>();
     onClear = jest.fn<() => void>();
     parent = document.createElement('span');
-    spans = wrapTokenSpans(parent, 'Hello world.', 'en');
+    spans = [makeSpan('hello', 0, 5, 'Hello'), makeSpan('world', 6, 11)];
+    for (const span of spans) parent.appendChild(span);
   });
 
   afterEach(() => {

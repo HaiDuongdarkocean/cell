@@ -198,7 +198,15 @@ export function wireOcrHitboxesToTrigger(
   }
   for (const [langCode, groupSpans] of byLang) {
     // sentence = full text of all spans in this lang group (for context lookup).
+    // Stamp each span's offset so lookups slice the sentence at the token.
     const sentence = groupSpans.map(s => s.dataset.cellTerm ?? '').join(' ');
+    let offset = 0;
+    for (const span of groupSpans) {
+      const term = span.dataset.cellTerm ?? '';
+      span.dataset.cellStart = String(offset);
+      span.dataset.cellEnd = String(offset + term.length);
+      offset += term.length + 1;
+    }
     triggerController.attach(groupSpans, sentence, langCode);
   }
 }

@@ -15,6 +15,8 @@ import { createVideoTokenMap, type VideoTokenMap } from '@/features/tokenize/log
 import { getSrsCardTermSet, invalidateSrsCardTermSet, onSrsCardsChanged } from '@/features/srs';
 import { createVideoTokenPreloader, type VideoTokenPreloader } from '@/features/tokenize/logic/videoTokenPreloader';
 import { createStatusKeyControls, type PopupStatusTarget } from '@/features/tokenize/logic/statusKeyControls';
+import { getSentenceText } from '@/features/tokenize/logic/textTokenizer';
+import { sentenceTextForSpan } from '@/features/tokenize/ui/sentenceHighlight';
 
 const DEFAULT_WINDOW = 1;
 
@@ -121,7 +123,8 @@ export function createSubtitleTokenizeController(
           stateStore.setHoveredTerm(null);
         }
       },
-      onTokenClick: (term, block, element, _token, event) => onOpenDictionary(term, element, block.originalText, event),
+      onTokenClick: (term, block, element, token, event) =>
+        onOpenDictionary(term, element, sentenceTextForSpan(element) || getSentenceText(block, token), event),
       onTokenCtrlClick: (term) => stateStore.toggleSelectedTerm(term),
       isSelected: (term) => stateStore.getState().selectedTerms.has(term),
     };

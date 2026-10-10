@@ -1,4 +1,4 @@
-import { collectSentenceRun, type SentenceSegment } from '@/features/tokenize/logic/sentenceRun';
+import { collectSentenceRun, type SentenceRunEntry, type SentenceSegment } from '@/features/tokenize/logic/sentenceRun';
 import { SENTENCE_ATTR, SEPARATOR_CLASS } from './tokenSpanRenderer';
 
 /** Marks the spans of the washed sentence. The wash itself is painted by band
@@ -200,27 +200,55 @@ export function clearSentenceHighlight(spans: readonly HTMLElement[]): void {
   removeSentenceBands();
 }
 
-/** Wash every rendered token of the sentence `span` belongs to, and return the
- *  washed spans so the caller can clear them later. */
-export function highlightSentence(span: HTMLElement): HTMLElement[] {
+interface SentenceRun {
+  readonly segments: Segment[];
+  readonly entries: SentenceRunEntry[];
+}
+
+/** Resolve the sentence run `span` belongs to — the same segments the wash
+ *  paints, in container DOM order. */
+function collectRunForSpan(span: HTMLElement): SentenceRun | null {
   const container = span.closest(CONTAINER_SELECTOR) ?? span.parentElement;
-  if (!container) return [];
+  if (!container) return null;
 
   const segments = readSegments(container);
   const hoveredSegment = segments.findIndex((segment) => segment.spans.includes(span));
-  if (hoveredSegment < 0) return [];
+  if (hoveredSegment < 0) return null;
 
   const sentenceIndex = Number(span.getAttribute(SENTENCE_ATTR) ?? '0');
-  const washed: HTMLElement[] = [];
-  for (const entry of collectSentenceRun(segments, hoveredSegment, sentenceIndex)) {
+  return { segments, entries: collectSentenceRun(segments, hoveredSegment, sentenceIndex) };
+}
+
+function* runSpans({ segments, entries }: SentenceRun): Generator<HTMLElement> {
+  for (const entry of [...entries].sort((a, b) => a.segment - b.segment)) {
     const segment = segments[entry.segment];
     if (!segment) continue;
     for (const candidate of segment.spans) {
       if (candidate.getAttribute(SENTENCE_ATTR) !== String(entry.sentenceIndex)) continue;
-      candidate.classList.add(SENTENCE_CLASS);
-      washed.push(candidate);
+      yield candidate;
     }
   }
+}
+
+/** Text of the sentence `span` belongs to — the same run the wash paints, so
+ *  lookup context, TTS and card sentences match the highlight exactly. */
+export function sentenceTextForSpan(span: HTMLElement): string {
+  const run = collectRunForSpan(span);
+  if (!run) return '';
+  let text = '';
+  for (const candidate of runSpans(run)) {
+    text += candidate.textContent ?? '';
+  }
+  return text.trim();
+}
+
+/** Wash every rendered token of the sentence `span` belongs to, and return the
+ *  washed spans so the caller can clear them later. */
+export function highlightSentence(span: HTMLElement): HTMLElement[] {
+  const run = collectRunForSpan(span);
+  if (!run) return [];
+  const washed = [...runSpans(run)];
+  for (const candidate of washed) candidate.classList.add(SENTENCE_CLASS);
   paintSentenceBands(washed);
   return washed;
 }

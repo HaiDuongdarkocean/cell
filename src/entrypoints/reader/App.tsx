@@ -13,9 +13,8 @@ import {
 } from '@/features/reader/services/readerRepository';
 import { TokenizedParagraph } from '@/features/reader/ui/TokenizedParagraph';
 import { TtsControlBar } from '@/features/reader/ui/TtsControlBar';
-import { getSentenceText } from '@/features/reader/logic/sentenceText';
 import { formatDuration } from '@/features/reader/logic/formatTime';
-import { tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
+import { sentenceTextForIndex, tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
 import { DictionaryPanelView } from '@/features/dictionaryPopup/ui/DictionaryPanelView';
 import { ComprehensionBadge } from '@/features/tokenize/ui/ComprehensionBadge';
 import { createBookScoreTracker } from '@/features/reader/logic/bookScore';
@@ -418,7 +417,7 @@ export function ReaderApp(): React.JSX.Element {
                   sourceLang={selectedBook.languageCode ?? 'en'}
                   targetLang={targetLang}
                   initialTerm={selectedToken.term}
-                  contextSentence={getSentenceText(
+                  contextSentence={sentenceTextForIndex(
                     tokenizeTextBlock(
                       selectedBook.paragraphs[selectedParagraph] ?? '',
                       selectedBook.languageCode ?? 'en',

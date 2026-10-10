@@ -17,6 +17,7 @@ import {
   createWordRange,
   resolveWordAtPoint,
   defaultGetCaretRange,
+  sentenceSliceForTextNode,
   type SentenceContext,
 } from '../sentence/sentenceModule';
 import { CELL_UI_HOST_SELECTORS, CELL_UI_POINTER_EVENT_HOST_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
@@ -152,14 +153,15 @@ export function buildSelectionLookupRequest(selection: Selection): LookupRequest
   if (textNode.nodeType !== Node.TEXT_NODE) return null;
 
   const langCode = detectLangCode(text);
+  const slice = sentenceSliceForTextNode(textNode, range.startOffset);
   const block = textNode.parentElement?.closest('p, div, li, h1, h2, h3, h4, h5, h6, span');
-  const sentence = block?.textContent ?? text;
+  const sentence = slice?.sentence ?? block?.textContent ?? text;
 
   return {
     term: text,
     langCode,
     contextSentence: sentence,
-    cursorOffset: 0,
+    cursorOffset: slice ? Math.max(0, slice.blockOffset - slice.sentenceStart - slice.leadingWs) : 0,
     fallback: true,
   };
 }

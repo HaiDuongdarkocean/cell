@@ -1,5 +1,14 @@
 import { describe, expect, it } from '@jest/globals';
-import { tokenizeTextBlock, resolveTokenMetadata, getSentenceText, prepareTokenBlock } from './textTokenizer';
+import {
+  tokenizeTextBlock,
+  resolveTokenMetadata,
+  getSentenceText,
+  prepareTokenBlock,
+  sentenceRangeForIndex,
+  sentenceIndexAtOffset,
+  sentenceRangeAtOffset,
+  sentenceTextForIndex,
+} from './textTokenizer';
 import type { Token, TokenBlock } from '@/features/tokenize/types';
 
 describe('tokenizeTextBlock', () => {
@@ -163,6 +172,64 @@ describe('getSentenceText', () => {
     const block = makeBlock(text, tokens);
     expect(getSentenceText(block, tokens[0]!)).toBe('Are you sure?');
     expect(getSentenceText(block, tokens[3]!)).toBe('Yes I am.');
+  });
+});
+
+describe('sentenceRangeForIndex', () => {
+  it('covers first to last token plus the closing terminator', () => {
+    const text = 'Hello world. Bye now!';
+    const tokens = tokenizeTextBlock(text, 'en');
+    expect(sentenceRangeForIndex(tokens, text, 0)).toEqual({ start: 0, end: 12 });
+    expect(sentenceRangeForIndex(tokens, text, 1)).toEqual({ start: 13, end: 21 });
+  });
+
+  it('extends over closing quotes after the terminator', () => {
+    const text = 'She said "hi." Then left.';
+    const tokens = tokenizeTextBlock(text, 'en');
+    const idx = sentenceIndexAtOffset(tokens, 1)!;
+    const range = sentenceRangeForIndex(tokens, text, idx)!;
+    expect(text.slice(range.start, range.end)).toBe('She said "hi."');
+  });
+
+  it('returns null for an unknown index', () => {
+    const tokens = tokenizeTextBlock('Hello.', 'en');
+    expect(sentenceRangeForIndex(tokens, 'Hello.', 7)).toBeNull();
+  });
+});
+
+describe('sentenceIndexAtOffset', () => {
+  const text = 'Hello world. Bye now!';
+  const tokens = tokenizeTextBlock(text, 'en');
+
+  it('resolves the token containing the offset', () => {
+    expect(sentenceIndexAtOffset(tokens, 7)).toBe(0);
+    expect(sentenceIndexAtOffset(tokens, 14)).toBe(1);
+  });
+
+  it('resolves gap offsets to the nearer sentence; ties go forward', () => {
+    expect(sentenceIndexAtOffset(tokens, 11)).toBe(0); // '.' closes sentence 0
+    expect(sentenceIndexAtOffset(tokens, 12)).toBe(1); // space before 'Bye'
+  });
+
+  it('returns null for empty token lists', () => {
+    expect(sentenceIndexAtOffset([], 0)).toBeNull();
+  });
+});
+
+describe('sentenceRangeAtOffset + sentenceTextForIndex', () => {
+  it('locates the sentence at an offset in raw text', () => {
+    const text = 'The depth is 3.5 km. That is deep.';
+    const range = sentenceRangeAtOffset(text, 5, 'en')!;
+    expect(text.slice(range.start, range.end)).toBe('The depth is 3.5 km.');
+    const deep = sentenceRangeAtOffset(text, 30, 'en')!;
+    expect(text.slice(deep.start, deep.end)).toBe('That is deep.');
+  });
+
+  it('renders the sentence text for a token index', () => {
+    const text = 'Go. The ocean is vast.';
+    const tokens = tokenizeTextBlock(text, 'en');
+    expect(sentenceTextForIndex(tokens, text, 0)).toBe('Go.');
+    expect(sentenceTextForIndex(tokens, text, 1)).toBe('The ocean is vast.');
   });
 });
 

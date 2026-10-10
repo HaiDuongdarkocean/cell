@@ -4,8 +4,7 @@ import {
   createTtsEngine,
   type TtsEngine,
 } from '@/features/tts';
-import { tokenizeTextBlock } from '@/features/tokenize';
-import { getSentenceText } from '@/features/reader/logic/sentenceText';
+import { tokenizeTextBlock, sentenceTextForIndex } from '@/features/tokenize';
 import styles from './TtsControlBar.module.css';
 
 export interface TtsControlBarProps {
@@ -42,7 +41,7 @@ export function TtsControlBar({
   );
 
   const sentenceText = useMemo(
-    () => getSentenceText(tokens, paragraph, currentIndex),
+    () => sentenceTextForIndex(tokens, paragraph, currentIndex),
     [tokens, paragraph, currentIndex],
   );
 
@@ -76,7 +75,7 @@ export function TtsControlBar({
     setCurrentIndex(next);
     engine?.stop();
     setIsPlaying(false);
-    void speak(getSentenceText(tokens, paragraph, next));
+    void speak(sentenceTextForIndex(tokens, paragraph, next));
   }, [currentIndex, engine, tokens, paragraph, speak]);
 
   const handleNext = useCallback(() => {
@@ -85,7 +84,7 @@ export function TtsControlBar({
     setCurrentIndex(next);
     engine?.stop();
     setIsPlaying(false);
-    void speak(getSentenceText(tokens, paragraph, next));
+    void speak(sentenceTextForIndex(tokens, paragraph, next));
   }, [currentIndex, maxSentence, engine, tokens, paragraph, speak]);
 
   const handleRepeat = useCallback(() => {

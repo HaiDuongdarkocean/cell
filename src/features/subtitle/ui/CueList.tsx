@@ -16,6 +16,7 @@ import {
   type CueListTokenMap,
   type ResolveMeta,
 } from '@/features/tokenize';
+import { sentenceTextForIndex } from '@/features/tokenize';
 import { formatCueTimestamp } from '@/features/subtitle/logic/cueTime';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
 import { spawnRipple } from '@/shared/lib/dom/ripple';
@@ -201,7 +202,7 @@ const CueTokenText = memo(function CueTokenText({
             onTokenCtrlClick(token.term);
             return;
           }
-          onTokenClick(token.term, event.currentTarget, text, event);
+          onTokenClick(token.term, event.currentTarget, sentenceTextForIndex(tokens, text, token.sentenceIndex), event);
         }}
         onMouseEnter={onTokenHover ? () => onTokenHover(token.term) : undefined}
         onMouseLeave={onTokenHover ? () => onTokenHover(null) : undefined}

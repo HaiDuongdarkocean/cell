@@ -3,6 +3,7 @@ import {
   clearSentenceHighlight,
   computeSentenceBands,
   highlightSentence,
+  sentenceTextForSpan,
   SENTENCE_CLASS,
   type BandBox,
 } from './sentenceHighlight';
@@ -58,6 +59,31 @@ describe('highlightSentence', () => {
 
     clearSentenceHighlight(washed);
     expect(p.querySelectorAll(`.${SENTENCE_CLASS}`)).toHaveLength(0);
+  });
+});
+
+describe('sentenceTextForSpan', () => {
+  it('returns the text of exactly the run the wash paints', () => {
+    const p = paragraph([
+      [['while', 0], [' ', 0, true], ['some', 0], [' ', 0, true]],
+      [['esoteric', 0]],
+      [['. ', 0, true], ['Other', 1], [' ', 1, true], ['words', 1], [' ', 1, true]],
+      [['Chinese', 0]],
+      [[' ', 0, true], ['or', 0], [' ', 0, true]],
+      [['more', 0]],
+      [[' ', 0, true], ['support', 0], ['.', 0, true]],
+      [[' ', 0, true], ['Another', 0], [' ', 0, true], ['sentence', 0], ['.', 0, true]],
+    ]);
+    document.body.appendChild(p);
+    const hovered = [...p.querySelectorAll<HTMLElement>('[data-cell-block-id="b3"]')][0]!;
+
+    expect(sentenceTextForSpan(hovered)).toBe('Other words Chinese or more support.');
+  });
+
+  it('returns empty for a span outside a tokenized container', () => {
+    const span = document.createElement('span');
+    document.body.appendChild(span);
+    expect(sentenceTextForSpan(span)).toBe('');
   });
 });
 

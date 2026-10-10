@@ -19,7 +19,13 @@ export {
 } from './utils/frequencyBand';
 export type { Token, TokenBlock, TokenizeController, TokenizeState, TokenFrequencyBand } from './types';
 export type { PopupStatusTarget } from './logic/statusKeyControls';
-export { tokenizeTextBlock } from './logic/textTokenizer';
+export {
+  tokenizeTextBlock,
+  sentenceRangeAtOffset,
+  sentenceTextForIndex,
+  type SentenceRange,
+} from './logic/textTokenizer';
+export { sentenceTextForSpan } from './ui/sentenceHighlight';
 export {
   createScoreTracker,
   isScorableToken,

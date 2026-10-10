@@ -2,23 +2,19 @@
 // tokens to the lookup pipeline with debounce + cancellation.
 //
 // Responsibilities:
-// 1. Token-wrap subtitle text span into per-word (EN) or per-segment (ZH)
-//    token spans with data attributes (offset, term).
-// 2. Attach click/hover event listeners based on TriggerMode setting.
-// 3. Hover debounce: 80ms (internal, no user setting — spec D9). Click is instant.
-// 4. On trigger: build LookupRequest, assign requestId, send LOOKUP to worker.
-// 5. On new trigger while in-flight: send LOOKUP_CANCEL for previous requestId.
-// 6. Route LOOKUP_RESULT by requestId — only the latest requestId's result
+// 1. Attach click/hover event listeners based on TriggerMode setting.
+// 2. Hover debounce: 80ms (internal, no user setting — spec D9). Click is instant.
+// 3. On trigger: build LookupRequest, assign requestId, send LOOKUP to worker.
+// 4. On new trigger while in-flight: send LOOKUP_CANCEL for previous requestId.
+// 5. Route LOOKUP_RESULT by requestId — only the latest requestId's result
 //    reaches the popup.
 //
 // This controller is framework-agnostic (no React) — it operates on the
 // subtitle overlay's text span DOM directly, same as subtitleUI.ts.
 
 import type { LookupRequest, TriggerMode } from '@/entities/dictionary';
-import type { Token } from '../plugins/languagePlugin';
-import { tokenizeSentence } from '@/features/dictionary';
-import { segmentFMM } from '@/features/dictionary';
 import { scriptRunSegmenter } from '@/features/ocr';
+import { sentenceRangeAtOffset } from '@/features/tokenize';
 
 /** Hover debounce: only lookup after the cursor has stayed on the token for this long. */
 export const HOVER_DEBOUNCE_MS = 80;
@@ -26,7 +22,6 @@ export const HOVER_DEBOUNCE_MS = 80;
 /** Data attributes on token spans. */
 const DATA_TERM = 'data-cell-term';
 const DATA_START = 'data-cell-start';
-const DATA_END = 'data-cell-end';
 
 /** Check if a modifier key matches the trigger mode.
  *  - click: no modifier (any click triggers).
@@ -61,65 +56,10 @@ export function detectLangCode(text: string): string {
   return 'en';
 }
 
-/** Tokenize subtitle text into tokens (EN per-word, ZH per-segment). */
-export function tokenizeSubtitleText(text: string, langCode: string): readonly Token[] {
-  if (langCode === 'zh') {
-    // ZH: FMM with empty probe → single chars (real segmentation needs dict).
-    // The worker/orchestrator does real FMM with the dictionary probe.
-    // Here we just need token spans for click/hover targeting.
-    return segmentFMM(text, { hasTerm: () => false });
-  }
-  // EN: whitespace tokenize (same as phraseMatcher).
-  return tokenizeSentence(text);
-}
-
-/**
- * Wrap a subtitle text span's content into per-token child spans.
- * Each token span has data-cell-term, data-cell-start, data-cell-end attributes.
- * Non-token characters (whitespace, punctuation) are kept as text nodes.
- *
- * Returns the list of created token span elements.
- */
-export function wrapTokenSpans(
-  textSpan: HTMLSpanElement,
-  text: string,
-  langCode: string,
-): HTMLSpanElement[] {
-  const tokens = tokenizeSubtitleText(text, langCode);
-  textSpan.textContent = '';
-
-  const tokenSpans: HTMLSpanElement[] = [];
-  let lastEnd = 0;
-
-  for (const token of tokens) {
-    // Insert any gap text (whitespace/punctuation between tokens) as text node.
-    if (token.start > lastEnd) {
-      textSpan.appendChild(document.createTextNode(text.slice(lastEnd, token.start)));
-    }
-
-    const span = document.createElement('span');
-    span.className = 'js-cell-token';
-    span.textContent = text.slice(token.start, token.end);
-    span.setAttribute(DATA_TERM, token.text);
-    span.setAttribute(DATA_START, String(token.start));
-    span.setAttribute(DATA_END, String(token.end));
-    span.style.cursor = 'pointer';
-    span.style.borderRadius = 'var(--radius-xs)';
-    textSpan.appendChild(span);
-    tokenSpans.push(span);
-
-    lastEnd = token.end;
-  }
-
-  // Trailing text.
-  if (lastEnd < text.length) {
-    textSpan.appendChild(document.createTextNode(text.slice(lastEnd)));
-  }
-
-  return tokenSpans;
-}
-
-/** Build a LookupRequest from a token span + the full subtitle sentence. */
+/** Build a LookupRequest from a token span + the full subtitle sentence.
+ *  Spans stamped with data-cell-start get their context sliced to the
+ *  tokenizer's sentence at that offset — the same boundary the hover wash
+ *  paints. Unstamped spans (no offset known) keep the whole sentence. */
 export function buildLookupRequest(
   tokenSpan: HTMLSpanElement,
   sentence: string,
@@ -128,11 +68,21 @@ export function buildLookupRequest(
 ): LookupRequest {
   const term = tokenSpan.getAttribute(DATA_TERM) ?? tokenSpan.textContent ?? '';
   const start = parseInt(tokenSpan.getAttribute(DATA_START) ?? '0', 10);
+  let contextSentence = sentence;
+  let cursorOffset = start;
+  if (tokenSpan.hasAttribute(DATA_START)) {
+    const range = sentenceRangeAtOffset(sentence, start, langCode);
+    if (range) {
+      const raw = sentence.slice(range.start, range.end);
+      contextSentence = raw.trim();
+      cursorOffset = Math.max(0, start - range.start - (raw.length - raw.trimStart().length));
+    }
+  }
   return {
     term,
     langCode,
-    contextSentence: sentence,
-    cursorOffset: start,
+    contextSentence,
+    cursorOffset,
     fallback,
   };
 }

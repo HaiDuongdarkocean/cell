@@ -1,4 +1,4 @@
-// sentenceModule — SSOT for sentence extraction, word extraction, and word-range
+// sentenceModule — SSOT for sentence context, word extraction, and word-range
 // mapping from any DOM text node.
 //
 // Consumers:
@@ -7,23 +7,18 @@
 //   - webTextDictionaryController (adjacent-term navigation)
 //   - LookupRequest.contextSentence → translation → SRS card
 //
-// All sentence/word logic lives here. No other module should duplicate
-// extractSentenceContext, extractWordAtOffset, or createWordRange.
+// Sentence boundaries delegate to the tokenizer (sentenceRangeAtOffset) —
+// the same sentenceIndex the hover wash paints — so lookup context, TTS,
+// translate and card sentences are identical everywhere.
+
+import { sentenceRangeAtOffset } from '@/features/tokenize';
+import { detectLangCode } from '../trigger/subtitleTriggerController';
 
 /** Word character: Latin word chars + CJK ideographs. */
 export const WORD_CHAR_RE = /[\w\u4e00-\u9fff\u3400-\u4dbf]/;
 
 /** CJK ideograph check — each CJK char is treated as one "word". */
 const CJK_RE = /[\u4e00-\u9fff\u3400-\u4dbf]/;
-
-/** Sentence-ending punctuation. Latin punctuation (.!?) requires whitespace
- *  or end-of-text after it. CJK punctuation (。！？) does not — CJK sentences
- *  often have no space after the period. Excludes decimal points (digit.digit). */
-const SENTENCE_BOUNDARY_RE = /(?:(?<!\d)[.!?]+(?!\d)(?:\s+|$)|[。！？]+(?:\s*|$))/g;
-
-/** Minimum word count for a sentence zone. Shorter sentences are merged
- *  with the next one so the popup stays alive across short clauses. */
-const MIN_SENTENCE_WORDS = 3;
 
 /** Tags that are always treated as block-level containers. */
 const BLOCK_TAGS = new Set(['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'TD']);
@@ -116,72 +111,28 @@ function computeBlockOffset(block: HTMLElement, textNode: Text, offsetInNode: nu
   return -1;
 }
 
-/** Count words in a string. CJK chars count as individual words. */
-function wordCount(text: string): number {
-  const trimmed = text.trim();
-  if (!trimmed) return 0;
-  // CJK: each ideograph is a word.
-  if (CJK_RE.test(trimmed[0]!)) {
-    return [...trimmed].filter((ch) => CJK_RE.test(ch) || /[\w]/.test(ch)).length;
-  }
-  return trimmed.split(/\s+/).filter(Boolean).length;
+export interface SentenceSliceInBlock {
+  /** Trimmed sentence text. */
+  readonly sentence: string;
+  /** Start offset of the raw sentence within the block's textContent. */
+  readonly sentenceStart: number;
+  /** End offset of the raw sentence within the block's textContent. */
+  readonly sentenceEnd: number;
+  /** UTF-16 offset of the cursor within the block's textContent. */
+  readonly blockOffset: number;
+  /** The block element that was walked up to. */
+  readonly blockEl: HTMLElement;
+  /** Leading whitespace stripped from the raw sentence before trimming. */
+  readonly leadingWs: number;
 }
 
-/** Find the sentence boundaries (start, end offsets within fullText)
- *  containing `cursorOffset`, splitting by punctuation and merging
- *  short sentences (< MIN_SENTENCE_WORDS) with the next one. */
-function findSentenceRange(fullText: string, cursorOffset: number): { start: number; end: number } {
-  const matches = [...fullText.matchAll(SENTENCE_BOUNDARY_RE)];
-  if (matches.length === 0) return { start: 0, end: fullText.length };
-
-  // Build sentence segments: [start, end) where end is the boundary match end.
-  const segments: { start: number; end: number }[] = [];
-  let prevEnd = 0;
-  for (const m of matches) {
-    const boundaryEnd = (m.index ?? 0) + m[0].length;
-    segments.push({ start: prevEnd, end: boundaryEnd });
-    prevEnd = boundaryEnd;
-  }
-  // Last segment: from last boundary end to end of text (if any text remains).
-  if (prevEnd < fullText.length) {
-    segments.push({ start: prevEnd, end: fullText.length });
-  }
-
-  // Find the segment containing cursorOffset.
-  const idx = segments.findIndex((s) => cursorOffset >= s.start && cursorOffset < s.end);
-  if (idx === -1) {
-    // cursorOffset is at the very end — use the last segment.
-    return { start: segments[segments.length - 1].start, end: segments[segments.length - 1].end };
-  }
-
-  // Merge forward if the current sentence is too short. Keep the original
-  // segment's start (so cursorOffset stays within the range) and extend the
-  // end to cover merged sentences.
-  const start = segments[idx].start;
-  let end = segments[idx].end;
-  let mergeIdx = idx;
-  while (mergeIdx < segments.length - 1 && wordCount(fullText.slice(start, end)) < MIN_SENTENCE_WORDS) {
-    mergeIdx++;
-    end = segments[mergeIdx].end;
-  }
-
-  return { start, end };
-}
-
-/** Extract sentence context from a text node + offset within it.
- *
- *  1. Walk up to nearest block container.
- *  2. Get block.textContent, split by sentence-ending punctuation.
- *  3. Find the sentence containing the cursor; merge if < 3 words.
- *  4. Extract the word at the cursor position.
- *  5. Return sentence text, offsets, and word info.
- *
- *  This is the SSOT — all consumers (hover, orbital, click, translation,
- *  SRS) get their sentence from this function. */
-export function extractSentenceContext(
+/** Locate the sentence containing `offsetInNode` inside the text node's block.
+ *  Boundaries come from the tokenizer — the same sentenceIndex the hover wash
+ *  paints — so every consumer slices the same sentence. */
+export function sentenceSliceForTextNode(
   textNode: Text,
   offsetInNode: number,
-): SentenceContext | null {
+): SentenceSliceInBlock | null {
   const block = findBlockContainer(textNode);
   if (!block) return null;
 
@@ -191,12 +142,41 @@ export function extractSentenceContext(
   const blockOffset = computeBlockOffset(block, textNode, offsetInNode);
   if (blockOffset < 0) return null;
 
-  const { start: sentenceStart, end: sentenceEnd } = findSentenceRange(fullText, blockOffset);
-  const rawSentence = fullText.slice(sentenceStart, sentenceEnd);
-  // Count leading whitespace to adjust word offset after trim.
+  const range = sentenceRangeAtOffset(fullText, blockOffset, detectLangCode(fullText));
+  if (!range) return null;
+
+  const rawSentence = fullText.slice(range.start, range.end);
   const leadingWs = rawSentence.length - rawSentence.trimStart().length;
   const sentence = rawSentence.trim();
   if (!sentence) return null;
+
+  return {
+    sentence,
+    sentenceStart: range.start,
+    sentenceEnd: range.end,
+    blockOffset,
+    blockEl: block,
+    leadingWs,
+  };
+}
+
+/** Extract sentence context from a text node + offset within it.
+ *
+ *  1. Walk up to nearest block container.
+ *  2. Locate the sentence at the cursor via the tokenizer boundary.
+ *  3. Extract the word at the cursor position.
+ *  4. Return sentence text, offsets, and word info.
+ *
+ *  This is the SSOT — all consumers (hover, orbital, click, translation,
+ *  SRS) get their sentence from this function. */
+export function extractSentenceContext(
+  textNode: Text,
+  offsetInNode: number,
+): SentenceContext | null {
+  const slice = sentenceSliceForTextNode(textNode, offsetInNode);
+  if (!slice) return null;
+
+  const { sentence, sentenceStart, sentenceEnd, blockOffset, blockEl, leadingWs } = slice;
 
   // Word offset is relative to the trimmed sentence.
   const wordOffsetInSentence = blockOffset - sentenceStart - leadingWs;
@@ -209,7 +189,7 @@ export function extractSentenceContext(
     blockOffset,
     term: word.text,
     word,
-    blockEl: block,
+    blockEl,
     sentenceStart,
     sentenceEnd,
     leadingWs,

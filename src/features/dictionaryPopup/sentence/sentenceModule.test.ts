@@ -92,14 +92,13 @@ describe('extractSentenceContext — punctuation split', () => {
     expect(ctx!.term).toBe('海');
   });
 
-  it('merges short CJK sentence (< 3 chars) with next', () => {
+  it('keeps a short CJK sentence to its own terminator', () => {
     const p = document.createElement('p');
     p.textContent = '去。海洋很大。';
     document.body.appendChild(p);
     const textNode = p.firstChild as Text;
-    // Hover "去" — 1 CJK char < 3 → merge with "海洋很大。"
     const ctx = extractSentenceContext(textNode, 0);
-    expect(ctx!.sentence).toBe('去。海洋很大。');
+    expect(ctx!.sentence).toBe('去。');
     expect(ctx!.term).toBe('去');
   });
 
@@ -114,24 +113,22 @@ describe('extractSentenceContext — punctuation split', () => {
   });
 });
 
-describe('extractSentenceContext — merge short sentences', () => {
-  it('merges sentence < 3 words with the next one', () => {
+describe('extractSentenceContext — tokenizer boundaries', () => {
+  it('keeps a one-word sentence to its own terminator (wash parity)', () => {
     const p = document.createElement('p');
     p.textContent = 'Go. The ocean is vast and deep.';
     document.body.appendChild(p);
     const textNode = p.firstChild as Text;
-    // Hover "Go" — sentence "Go." has 1 word → merge with next.
     const ctx = extractSentenceContext(textNode, 0);
-    expect(ctx!.sentence).toBe('Go. The ocean is vast and deep.');
+    expect(ctx!.sentence).toBe('Go.');
     expect(ctx!.term).toBe('Go');
   });
 
-  it('does not merge when sentence has >= 3 words', () => {
+  it('extracts a mid-length sentence verbatim', () => {
     const p = document.createElement('p');
     p.textContent = 'I went home. The ocean is vast.';
     document.body.appendChild(p);
     const textNode = p.firstChild as Text;
-    // Hover "went" — "I went home." has 3 words → no merge.
     const ctx = extractSentenceContext(textNode, 2);
     expect(ctx!.sentence).toBe('I went home.');
     expect(ctx!.term).toBe('went');
@@ -197,11 +194,10 @@ describe('extractSentenceContext — edge cases', () => {
     p.textContent = 'The ocean... it was vast. Very deep.';
     document.body.appendChild(p);
     const textNode = p.firstChild as Text;
-    // Hover "ocean" — "The ocean..." should be the sentence (ellipsis counts as one boundary).
+    // Hover "ocean" — the ellipsis closes the sentence.
     const ctx = extractSentenceContext(textNode, 4);
     expect(ctx!.term).toBe('ocean');
-    // "The ocean..." has 2 words → merge with "it was vast."
-    expect(ctx!.sentence).toBe('The ocean... it was vast.');
+    expect(ctx!.sentence).toBe('The ocean...');
   });
 });
 
