@@ -10,7 +10,7 @@ import {
   type FrequencyBandThresholds,
   type Token,
 } from '@/features/tokenize';
-import { getWordStatuses, getFrequencyEntries } from '@/features/dictionary';
+import { getWordStatuses, getFrequencyEntries, isNotKnown } from '@/features/dictionary';
 import { cueDifficultyMap, cueHeatBand, type CueDifficulty } from './cueDifficulty';
 
 export interface UnknownCueResolver {
@@ -55,7 +55,7 @@ function firstPausableToken(
   const maxRank = freq.thresholds[LEVEL_THRESHOLD[level]];
   for (const token of tokens) {
     if (token.isSeparator) continue;
-    if (token.status !== 'unknown' && token.status !== 'tracking' && token.status !== 'learning') continue;
+    if (!token.status || !isNotKnown(token.status)) continue;
     if (freq.unfiltered) return token;
     const rank = bestRank(token.term, freq);
     if (rank === null || rank <= 0 || rank > maxRank) continue;

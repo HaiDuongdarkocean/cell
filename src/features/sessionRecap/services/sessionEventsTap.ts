@@ -1,6 +1,8 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { MessageRequest, MessageResponse } from '@/entities/message';
 import type { MessageTap } from '@/entities/message';
+import type { WordStatus } from '@/entities/dictionary';
+import { statusFlag } from '@/features/dictionary';
 import {
   addSessionEvent,
   type SessionEvent,
@@ -62,7 +64,7 @@ export function toSessionEvent(
   }
 
   if (request.type === MESSAGE_TYPES.WORD_STATUS_SET) {
-    if (!payload.term || !payload.status || payload.status === 'learning') return null;
+    if (!payload.term || !payload.status || statusFlag(payload.status as WordStatus) === 'learning') return null;
     return {
       tabId: resolveTabId(payload.tabId, sender),
       surface: classifySurface(sender),

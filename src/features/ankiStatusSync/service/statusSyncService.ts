@@ -16,7 +16,7 @@ import {
   htmlToText,
 } from '@/features/ankiImport';
 import type { AnkiConnectInvoker } from '@/features/ankiImport';
-import { clearLearningFlag, getAllWordStatuses, isNotKnown, normalizeTerm, setWordStatusFromSync, setWordStatusesFromSync } from '@/features/dictionary';
+import { clearLearningFlag, getAllWordStatuses, isNotKnown, normalizeTerm, setWordStatusFromSync, setWordStatusesFromSync, statusFlag } from '@/features/dictionary';
 import type { SyncStatusUpdate } from '@/features/dictionary';
 import { getSrsDB, SRS_STORES } from '@/features/srs';
 import { logger } from '@/shared/lib/logger';
@@ -351,7 +351,7 @@ export async function reconcileLearningFlags(langCode: string): Promise<void> {
     const now = Date.now();
     const updates: SyncStatusUpdate[] = [];
     for (const entry of entries) {
-      if (entry.status === 'learning') {
+      if (statusFlag(entry.status) === 'learning') {
         if (!srsMap.has(entry.term) && !ankiTerms.has(entry.term)) {
           await clearLearningFlag(langCode, entry.term);
         }

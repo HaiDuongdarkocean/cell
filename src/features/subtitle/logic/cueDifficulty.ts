@@ -1,4 +1,5 @@
 import type { CueListTokenMap } from '@/features/tokenize';
+import { isNotKnown, statusFlag } from '@/features/dictionary';
 
 export type CueFilterMode = 'all' | 'i1' | 'hasUnknown' | 'allKnown' | 'tracking';
 
@@ -25,9 +26,9 @@ export function cueDifficultyMap(tokenMap: CueListTokenMap): Map<number, CueDiff
     let unknown = 0;
     let tracking = 0;
     for (const token of tokens) {
-      if (token.isSeparator) continue;
-      if (token.status === 'unknown') unknown += 1;
-      else if (token.status === 'tracking' || token.status === 'learning') tracking += 1;
+      if (token.isSeparator || !token.status) continue;
+      if (statusFlag(token.status) !== 'none') tracking += 1;
+      else if (isNotKnown(token.status)) unknown += 1;
     }
     map.set(cueIndex, { unknown, tracking });
   }

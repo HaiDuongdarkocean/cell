@@ -167,6 +167,64 @@ describe('learning guard (flags are system-managed)', () => {
     });
     expect(await getWordStatus('en', 'up')).toBe('learning');
   });
+
+  it('public tracking/unknown writes cannot demote a stored learning row', async () => {
+    await setWordStatusFromSync('en', 'carded', 'learning', {
+      source: 'srs',
+      sourceAt: Date.now(),
+    });
+    await setWordStatus('en', 'carded', 'tracking');
+    expect(await getWordStatus('en', 'carded')).toBe('learning');
+    await setWordStatus('en', 'carded', 'unknown');
+    expect(await getWordStatus('en', 'carded')).toBe('learning');
+  });
+
+  it('public known/ignore writes still land on a learning row (terminal bases clear the flag)', async () => {
+    await setWordStatusFromSync('en', 'grad', 'learning', {
+      source: 'srs',
+      sourceAt: Date.now(),
+    });
+    await setWordStatus('en', 'grad', 'known');
+    expect(await getWordStatus('en', 'grad')).toBe('known');
+    await setWordStatusFromSync('en', 'grad2', 'learning', {
+      source: 'srs',
+      sourceAt: Date.now(),
+    });
+    await setWordStatus('en', 'grad2', 'ignore');
+    expect(await getWordStatus('en', 'grad2')).toBe('ignore');
+  });
+
+  it('bulk setWordStatuses skips learning rows for tracking/unknown, lands known/ignore', async () => {
+    await setWordStatusFromSync('en', 'bulk-card', 'learning', {
+      source: 'srs',
+      sourceAt: Date.now(),
+    });
+    await setWordStatus('en', 'bulk-plain', 'tracking');
+
+    await setWordStatuses('en', ['bulk-card', 'bulk-plain'], 'tracking');
+    expect(await getWordStatus('en', 'bulk-card')).toBe('learning');
+    expect(await getWordStatus('en', 'bulk-plain')).toBe('tracking');
+
+    await setWordStatuses('en', ['bulk-card', 'bulk-plain'], 'unknown');
+    expect(await getWordStatus('en', 'bulk-card')).toBe('learning');
+    expect(await getWordStatus('en', 'bulk-plain')).toBe('unknown');
+
+    await setWordStatuses('en', ['bulk-card'], 'known');
+    expect(await getWordStatus('en', 'bulk-card')).toBe('known');
+  });
+
+  it('setWordStatusPos cannot demote a term-level learning row', async () => {
+    await setWordStatusFromSync('en', 'pos-learn', 'learning', {
+      source: 'srs',
+      sourceAt: Date.now(),
+    });
+    await setWordStatusPos('en', 'pos-learn', 'verb', 'tracking');
+    await setWordStatusPos('en', 'pos-learn', 'verb', 'unknown');
+    expect(await getWordStatusPos('en', 'pos-learn', 'verb')).toBe('learning');
+    expect((await getWordStatuses('en', ['pos-learn'])).get('pos-learn')).toBe('learning');
+    await setWordStatusPos('en', 'pos-learn', 'verb', 'known');
+    expect(await getWordStatusPos('en', 'pos-learn', 'verb')).toBe('known');
+  });
 });
 
 describe('clearLearningFlag', () => {

@@ -70,6 +70,19 @@ function isQuotaError(err: unknown): boolean {
   return false;
 }
 
+/** 'learning' is system-managed: a public write may not demote a stored
+ *  'learning' row to 'unknown' or 'tracking' — the only user edges out of
+ *  learning are the terminal bases 'known'/'ignore'. */
+function demotesLearningRow(
+  existing: WordStatusEntry | undefined,
+  incoming: WordStatus,
+): boolean {
+  return (
+    existing?.status === 'learning' &&
+    (incoming === 'unknown' || incoming === 'tracking')
+  );
+}
+
 /** The 5-status cycle order lives in entities/dictionary (spec §D1). */
 
 /** Get the next status in the base cycle. Flagged inputs resolve through
@@ -161,6 +174,8 @@ export async function getWordStatuses(
  * NOT touch pending trash records so an unmarked word keeps its recovery
  * window). A successful real-status write clears any pending trash record —
  * re-marking cancels pending deletion.
+ * Incoming 'learning' is rejected; a stored 'learning' row also ignores
+ * public 'unknown'/'tracking' demotions — only 'known'/'ignore' land.
  * Throws WordStatusQuotaError on IDB quota exceeded (spec §10 failure path).
  * Caller should catch + show toast "Bộ nhớ đầy — xóa resource cũ".
  * Lookup still works with existing data — graceful degradation.
@@ -177,9 +192,18 @@ export async function setWordStatus(
     await ensureSyncRuntime();
     const capture = isCaptureEnabled();
     const scope = scopeForTarget(targetOf(langCode));
+    const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
+    const store = tx.objectStore(STORES.WORD_STATUS);
+    const existing = await new Promise<WordStatusEntry | undefined>((resolve, reject) => {
+      const req = store.get(term);
+      req.onsuccess = () => resolve(req.result as WordStatusEntry | undefined);
+      req.onerror = () => reject(req.error);
+    });
+    if (demotesLearningRow(existing, status)) {
+      await awaitTx(tx);
+      return;
+    }
     if (status === 'unknown') {
-      const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
-      const store = tx.objectStore(STORES.WORD_STATUS);
       store.delete(term);
       if (capture) {
         await captureChange(store, { scope, dataClass: 'wordStatus', key: `word:${term}`, op: 'delete' });
@@ -188,8 +212,6 @@ export async function setWordStatus(
       return;
     }
     const now = Date.now();
-    const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
-    const store = tx.objectStore(STORES.WORD_STATUS);
     store.put({
       term,
       status,
@@ -259,7 +281,8 @@ export async function setWordStatusFromSync(
  *  transaction instead of N. Same semantics per term: 'unknown' normalizes
  *  to a status-row delete that leaves pending trash records alone, real
  *  statuses upsert + clear the term's trash record, every write captures
- *  for sync. */
+ *  for sync. Stored 'learning' rows are skipped for 'unknown'/'tracking'
+ *  (demotesLearningRow) — terminal bases still land. */
 export async function setWordStatuses(
   langCode: string,
   terms: readonly string[],
@@ -274,8 +297,19 @@ export async function setWordStatuses(
     const scope = scopeForTarget(targetOf(langCode));
     const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
     const store = tx.objectStore(STORES.WORD_STATUS);
+    const existing = await Promise.all(
+      terms.map(
+        (term) =>
+          new Promise<WordStatusEntry | undefined>((resolve, reject) => {
+            const req = store.get(term);
+            req.onsuccess = () => resolve(req.result as WordStatusEntry | undefined);
+            req.onerror = () => reject(req.error);
+          }),
+      ),
+    );
+    const targets = terms.filter((_, i) => !demotesLearningRow(existing[i], status));
     if (status === 'unknown') {
-      for (const term of terms) {
+      for (const term of targets) {
         store.delete(term);
         if (capture) {
           await captureChange(store, { scope, dataClass: 'wordStatus', key: `word:${term}`, op: 'delete' });
@@ -286,7 +320,7 @@ export async function setWordStatuses(
     }
     const now = Date.now();
     const trashStore = tx.objectStore(STORES.WORD_TRASH);
-    for (const term of terms) {
+    for (const term of targets) {
       store.put({
         term,
         status,
@@ -559,7 +593,10 @@ export async function getWordStatusPos(
 
 /** Write a pos-variant status — same cycle/normalization as term writes:
  *  'unknown' deletes the composite key; real statuses clear the composite
- *  key's trash record and capture `word:term␟pos` for sync. */
+ *  key's trash record and capture `word:term␟pos` for sync. The
+ *  demotesLearningRow guard reads the effective variant status (pos row ??
+ *  term row) so a 'tracking'/'unknown' write cannot demote a term whose
+ *  visible status is 'learning'. */
 export async function setWordStatusPos(
   langCode: string,
   term: string,
@@ -575,9 +612,27 @@ export async function setWordStatusPos(
     await ensureSyncRuntime();
     const capture = isCaptureEnabled();
     const scope = scopeForTarget(targetOf(langCode));
+    const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
+    const store = tx.objectStore(STORES.WORD_STATUS);
+    const existing = await new Promise<WordStatusEntry | undefined>((resolve, reject) => {
+      const posReq = store.get(key);
+      posReq.onsuccess = () => {
+        const posEntry = posReq.result as WordStatusEntry | undefined;
+        if (posEntry) {
+          resolve(posEntry);
+          return;
+        }
+        const termReq = store.get(term);
+        termReq.onsuccess = () => resolve(termReq.result as WordStatusEntry | undefined);
+        termReq.onerror = () => reject(termReq.error);
+      };
+      posReq.onerror = () => reject(posReq.error);
+    });
+    if (demotesLearningRow(existing, status)) {
+      await awaitTx(tx);
+      return;
+    }
     if (status === 'unknown') {
-      const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
-      const store = tx.objectStore(STORES.WORD_STATUS);
       store.delete(key);
       if (capture) {
         await captureChange(store, { scope, dataClass: 'wordStatus', key: `word:${key}`, op: 'delete' });
@@ -586,8 +641,6 @@ export async function setWordStatusPos(
       return;
     }
     const now = Date.now();
-    const tx = db.transaction(WORD_WRITE_STORES, 'readwrite');
-    const store = tx.objectStore(STORES.WORD_STATUS);
     store.put({
       term: key,
       pos,

@@ -1,4 +1,5 @@
 import type { WordStatus } from '@/entities/dictionary';
+import { statusFlag } from '@/features/dictionary';
 
 export interface VocabularyEntry {
   readonly term: string;
@@ -15,7 +16,7 @@ export const MARKED_STATUSES: readonly WordStatus[] = ['tracking', 'known', 'ign
 export type MarkedStatus = Exclude<WordStatus, 'unknown'>;
 
 export function nextMarkedStatus(status: WordStatus): WordStatus {
-  if (status === 'learning') return 'learning';
+  if (statusFlag(status) === 'learning') return 'learning';
   const index = MARKED_STATUSES.indexOf(status);
   return MARKED_STATUSES[(index + 1) % MARKED_STATUSES.length] ?? 'tracking';
 }

@@ -1,5 +1,6 @@
 import type { WordStatus } from '@/entities/dictionary';
 import type { ComprehensionBand, ComprehensionKind, ComprehensionStats } from '@/entities/comprehension';
+import { isNotKnown, statusFlag } from '@/features/dictionary';
 import type { Token } from '@/features/tokenize/types';
 
 const TRACKING_WEIGHT = 0.5;
@@ -21,7 +22,7 @@ export function bandForCoverage(coverage: number, kind: ComprehensionKind): Comp
 }
 
 function isNew(status: WordStatus | undefined): boolean {
-  return status !== 'known' && status !== 'ignore';
+  return isNotKnown(status ?? 'unknown');
 }
 
 export function isScorableToken(token: Token): boolean {
@@ -52,8 +53,8 @@ export function computeStats(tokens: readonly Token[], kind: ComprehensionKind):
   for (const token of tokens) {
     if (!isScorableToken(token)) continue;
     const status = token.status ?? 'unknown';
-    if (status === 'known' || status === 'ignore') known++;
-    else if (status === 'tracking' || status === 'learning') tracking++;
+    if (!isNotKnown(status)) known++;
+    else if (statusFlag(status) !== 'none') tracking++;
     else unknown++;
     if (isNew(status)) newTerms.add(token.term);
   }
@@ -103,8 +104,8 @@ export function createScoreTracker(
       if (isNew(entry.status)) newTerms++;
     }
     entry.count++;
-    if (entry.status === 'known' || entry.status === 'ignore') known++;
-    else if (entry.status === 'tracking' || entry.status === 'learning') tracking++;
+    if (!isNotKnown(entry.status)) known++;
+    else if (statusFlag(entry.status) !== 'none') tracking++;
     else unknown++;
   }
 
@@ -132,11 +133,11 @@ export function createScoreTracker(
       const nowNew = isNew(status);
       if (wasNew && !nowNew) newTerms--;
       else if (!wasNew && nowNew) newTerms++;
-      if (prev === 'known' || prev === 'ignore') known -= entry.count;
-      else if (prev === 'tracking' || prev === 'learning') tracking -= entry.count;
+      if (!isNotKnown(prev)) known -= entry.count;
+      else if (statusFlag(prev) !== 'none') tracking -= entry.count;
       else unknown -= entry.count;
-      if (status === 'known' || status === 'ignore') known += entry.count;
-      else if (status === 'tracking' || status === 'learning') tracking += entry.count;
+      if (!isNotKnown(status)) known += entry.count;
+      else if (statusFlag(status) !== 'none') tracking += entry.count;
       else unknown += entry.count;
       return true;
     },
