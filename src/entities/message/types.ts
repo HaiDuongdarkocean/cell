@@ -137,6 +137,7 @@ export type MessageType =
   | 'SRS_ADD_NOTE'
   | 'SRS_GET_DECKS_NOTETYPES'
   | 'SRS_OPEN_STUDY_PAGE'
+  | 'SRS_TERM_CARDS'
   // Dictionary resources — proxied to background because IndexedDB is
   // origin-isolated: in-page panels must not touch the page's IDB.
   | 'RESOURCE_LIST'
@@ -1050,6 +1051,22 @@ export interface SrsOpenStudyPagePayload {
   readonly deckId?: string;
   /** Optional landing view on the study page (e.g. 'pump'). */
   readonly view?: string;
+  /** Optional term filter — lands on the deck(s) containing notes for it. */
+  readonly term?: string;
+}
+
+/** Content/dictionary → background: count cards for a term across the
+ *  language's collection (Ocean SRS notes + stored Anki card links). */
+export interface SrsTermCardsPayload {
+  readonly langCode: string;
+  readonly term: string;
+}
+
+/** Background → caller: per-term card existence; `deckIds` are the Ocean SRS
+ *  decks holding matching notes (Anki links contribute to `count` only). */
+export interface SrsTermCardsResult {
+  readonly count: number;
+  readonly deckIds: readonly string[];
 }
 
 /** Content → background: list decks and notetypes for a collection.

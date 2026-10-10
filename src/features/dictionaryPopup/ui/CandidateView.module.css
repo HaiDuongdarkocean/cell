@@ -265,6 +265,14 @@
   color: var(--color-muted-foreground);
 }
 
+/* Standalone flashcard chip right of the segmented group — same status chip
+   chrome as the segments, shrunk to icon width like the flag segments. */
+.cellHeaderSecond .cellHeaderSrsCards {
+  min-width: 0;
+  width: var(--space-7);
+  padding: 0;
+}
+
 .cellHeaderFrequency {
   display: inline-flex;
   flex-shrink: 0;

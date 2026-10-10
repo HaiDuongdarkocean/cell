@@ -52,10 +52,9 @@ export interface StatusSegmentedProps {
   readonly status: WordStatus;
   readonly onCycle: () => void;
   readonly onToggleTracking?: () => void;
-  readonly onOpenSrs?: () => void;
 }
 
-export function StatusSegmented({ status, onCycle, onToggleTracking, onOpenSrs }: StatusSegmentedProps): React.JSX.Element {
+export function StatusSegmented({ status, onCycle, onToggleTracking }: StatusSegmentedProps): React.JSX.Element {
   const flag = statusFlag(status);
   const trackingEnabled = toggleTrackingFlag(status) !== status;
   return (
@@ -72,18 +71,6 @@ export function StatusSegmented({ status, onCycle, onToggleTracking, onOpenSrs }
         <Icon name="eye" size="sm" />
       </Button>
       <StatusPill status={status} onCycle={onCycle} />
-      {flag === 'learning' && (
-        <Button
-          variant="transparent"
-          className={`${styles.cellHeaderStatus} ${styles.cellHeaderStatusFlag} ${styles['cellHeaderStatus--learning']}`}
-          onClick={onOpenSrs}
-          title={t('dict.status.openSrs')}
-          aria-label={t('dict.status.openSrs')}
-          data-cell-id="dictionary-status-srs"
-        >
-          <Icon name="layers" size="sm" />
-        </Button>
-      )}
     </span>
   );
 }
@@ -92,18 +79,31 @@ export interface StatusRowProps {
   readonly status: WordStatus;
   readonly onCycle: () => void;
   readonly onToggleTracking?: () => void;
-  readonly onOpenSrs?: () => void;
+  readonly srsCardCount?: number;
+  readonly onOpenSrsCards?: () => void;
   readonly frequencies: readonly VariantFrequency[];
   readonly stars: { readonly count: number; readonly source: string } | undefined;
   readonly thresholds: FrequencyBandThresholds;
   readonly statusControl?: ReactNode;
 }
 
-export function StatusRow({ status, onCycle, onToggleTracking, onOpenSrs, frequencies, stars, thresholds, statusControl }: StatusRowProps): React.JSX.Element {
+export function StatusRow({ status, onCycle, onToggleTracking, srsCardCount, onOpenSrsCards, frequencies, stars, thresholds, statusControl }: StatusRowProps): React.JSX.Element {
   const scrollRef = useDragScroll<HTMLDivElement>();
   return (
     <div className={styles.cellHeaderSecond} ref={scrollRef} data-cell-id="dictionary-freq-row">
-      {statusControl ?? <StatusSegmented status={status} onCycle={onCycle} onToggleTracking={onToggleTracking} onOpenSrs={onOpenSrs} />}
+      {statusControl ?? <StatusSegmented status={status} onCycle={onCycle} onToggleTracking={onToggleTracking} />}
+      {(srsCardCount ?? 0) > 0 && (
+        <Button
+          variant="transparent"
+          className={`${styles.cellHeaderStatus} ${styles.cellHeaderSrsCards} ${styles['cellHeaderStatus--learning']}`}
+          onClick={onOpenSrsCards}
+          title={t('dict.status.srsCards', [srsCardCount ?? 0])}
+          aria-label={t('dict.status.srsCards', [srsCardCount ?? 0])}
+          data-cell-id="dictionary-srs-cards"
+        >
+          <Icon name="layers" size="sm" />
+        </Button>
+      )}
       {frequencies.map((freq, i) => (
         <span key={`${freq.source}-${i}`} className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${rankToBand(freq.rank, thresholds)}`]}`} title={freqTitle(freq)} data-cell-id="dictionary-frequency">
           <span className={styles.cellHeaderFrequencySource}>{freq.source}</span>

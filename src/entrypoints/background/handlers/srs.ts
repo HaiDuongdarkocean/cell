@@ -5,17 +5,22 @@ import type {
   SrsAddNoteResult,
   SrsGetDecksNotetypesResult,
   SrsOpenStudyPagePayload,
+  SrsTermCardsResult,
 } from '@/entities/message';
 import {
   SrsAddNotePayloadSchema,
   SrsGetDecksNotetypesPayloadSchema,
   SrsOpenStudyPagePayloadSchema,
+  SrsTermCardsPayloadSchema,
 } from '@/entities/message/schema';
 import { addNoteFromMessage } from '@/features/srs/services/addNoteFromMessage';
 import { ensureFirstRun } from '@/features/srs/services/firstRunService';
-import { getCollection } from '@/features/srs/repositories/collectionRepository';
+import { getAllCollections, getCollection } from '@/features/srs/repositories/collectionRepository';
 import { getDecksByCollection } from '@/features/srs/repositories/deckRepository';
+import { getNotesByDeck } from '@/features/srs/repositories/noteRepository';
 import { getNotetypesByCollection } from '@/features/srs/repositories/notetypeRepository';
+import { getLinksByTerm } from '@/features/ankiStatusSync/repositories/statusSyncStorage';
+import { normalizeTerm } from '@/features/dictionary';
 
 const SRS_STUDY_PATH = 'src/entrypoints/srs-study/index.html';
 
@@ -91,6 +96,9 @@ export function registerSrsHandlers(ctx: BackgroundContext): void {
       if (payload?.view) {
         params.set('view', payload.view);
       }
+      if (payload?.term) {
+        params.set('term', payload.term);
+      }
       const qs = params.toString();
       if (qs) {
         url += `?${qs}`;
@@ -100,6 +108,40 @@ export function registerSrsHandlers(ctx: BackgroundContext): void {
         return { success: false, error: 'Failed to create tab' };
       }
       return { success: true, data: { tabId: tab.id } };
+    },
+  );
+
+  ctx.on(
+    MESSAGE_TYPES.SRS_TERM_CARDS,
+    async (request): Promise<MessageResponse<SrsTermCardsResult>> => {
+      const parsed = SrsTermCardsPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid SRS_TERM_CARDS payload: ${parsed.error.message}` };
+      }
+      try {
+        const { langCode, term } = parsed.data;
+        const needle = normalizeTerm(term);
+        const deckIds: string[] = [];
+        let count = 0;
+        for (const collection of await getAllCollections()) {
+          if (collection.targetLanguage !== langCode) continue;
+          for (const deck of await getDecksByCollection(collection.id)) {
+            const hits = (await getNotesByDeck(deck.id)).filter(
+              (note) => normalizeTerm(note.targetWord) === needle,
+            ).length;
+            if (hits > 0) {
+              count += hits;
+              deckIds.push(deck.id);
+            }
+          }
+        }
+        const ankiLinks = await getLinksByTerm(needle).catch(() => [] as const);
+        count += ankiLinks.filter((link) => link.langCode === langCode).length;
+        return { success: true, data: { count, deckIds } };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { success: false, error: msg };
+      }
     },
   );
 }

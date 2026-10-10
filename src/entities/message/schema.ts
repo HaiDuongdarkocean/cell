@@ -271,6 +271,12 @@ export const SrsAddNotePayloadSchema = z.object({
 export const SrsOpenStudyPagePayloadSchema = z.object({
   deckId: z.string().optional(),
   view: z.string().optional(),
+  term: z.string().optional(),
+});
+
+export const SrsTermCardsPayloadSchema = z.object({
+  langCode: z.string().min(1),
+  term: z.string().min(1),
 });
 
 export const SrsGetDecksNotetypesPayloadSchema = z.object({

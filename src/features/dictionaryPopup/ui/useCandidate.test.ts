@@ -443,4 +443,32 @@ describe('useCandidate', () => {
     act(() => { result.current.toggleDefinition('d1', true); });
     expect(result.current.exampleSelection.get('d1')).toBeUndefined();
   });
+
+  it('exposes the SRS card count and refetches it when the status changes', async () => {
+    mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
+      const message = msg as { type: string };
+      if (message.type === MESSAGE_TYPES.SRS_TERM_CARDS) {
+        return { success: true, data: { count: 3, deckIds: ['d1'] } } as T;
+      }
+      return { success: true } as T;
+    });
+    const candidate = makeResult('hello', { status: 'unknown' });
+
+    const { result } = renderHook(() => useCandidate({
+      candidate,
+      contextSentence: '',
+      sourceLang: 'en',
+      targetLang: 'vi',
+    }));
+
+    await waitFor(() => expect(result.current.srsCardCount).toBe(3));
+    const srsCalls = () => mockSendMessage.mock.calls.filter(
+      (call) => (call[0] as { type: string }).type === MESSAGE_TYPES.SRS_TERM_CARDS,
+    );
+    expect(srsCalls()).toHaveLength(1);
+
+    await act(async () => { result.current.cycleStatus(); });
+
+    await waitFor(() => expect(srsCalls().length).toBeGreaterThan(1));
+  });
 });

@@ -50,19 +50,20 @@ export interface SrsDeckDetailProps {
   readonly deck: SrsDeck;
   readonly decks: readonly SrsDeck[];
   readonly initialMode?: 'view' | 'change';
+  readonly initialQuery?: string;
   readonly onBack: () => void;
   readonly onChanged: () => void;
 }
 
-export function SrsDeckDetail({ deck, decks, initialMode = 'view', onBack, onChanged }: SrsDeckDetailProps): React.JSX.Element {
+export function SrsDeckDetail({ deck, decks, initialMode = 'view', initialQuery, onBack, onChanged }: SrsDeckDetailProps): React.JSX.Element {
   const { start } = useSrsStudy();
   const [notes, setNotes] = useState<readonly SrsNote[]>([]);
   const [cards, setCards] = useState<readonly SrsCard[]>([]);
   const [notetypes, setNotetypes] = useState<ReadonlyMap<string, SrsNotetype>>(new Map());
   const [notetypeList, setNotetypeList] = useState<readonly SrsNotetype[]>([]);
   const [targetLanguage, setTargetLanguage] = useState('en');
-  const [searching, setSearching] = useState(false);
-  const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(() => Boolean(initialQuery));
+  const [query, setQuery] = useState(initialQuery ?? '');
   const [menuOpen, setMenuOpen] = useState(false);
   const kebabRef = useRef<HTMLButtonElement | null>(null);
   const [renaming, setRenaming] = useState(initialMode === 'change');

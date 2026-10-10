@@ -1,7 +1,8 @@
 // StatusRow — REQ-2/AC-3: the status pill only ever shows the 3 base statuses.
-// Layout is [eye | pill | srs]: the eye is always rendered and toggles
-// tracking on the unknown family; the srs segment only appears on learning
-// and jumps to the study page.
+// Layout is [eye | pill] + a standalone flashcard chip right of the group:
+// the eye is always rendered and toggles tracking on the unknown family; the
+// cards chip appears whenever SRS_TERM_CARDS reports ≥1 card for the term,
+// regardless of status, and opens the term-filtered study page.
 
 import { describe, expect, it, jest } from '@jest/globals';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -9,22 +10,26 @@ import { StatusRow } from './StatusRow';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
 import type { WordStatus } from '@/entities/dictionary';
 
-function renderRow(status: WordStatus): { onCycle: jest.Mock; onToggleTracking: jest.Mock; onOpenSrs: jest.Mock } {
+function renderRow(
+  status: WordStatus,
+  options?: { srsCardCount?: number },
+): { onCycle: jest.Mock; onToggleTracking: jest.Mock; onOpenSrsCards: jest.Mock } {
   const onCycle = jest.fn();
   const onToggleTracking = jest.fn();
-  const onOpenSrs = jest.fn();
+  const onOpenSrsCards = jest.fn();
   render(
     <StatusRow
       status={status}
       onCycle={onCycle}
       onToggleTracking={onToggleTracking}
-      onOpenSrs={onOpenSrs}
+      srsCardCount={options?.srsCardCount}
+      onOpenSrsCards={onOpenSrsCards}
       frequencies={[]}
       stars={undefined}
       thresholds={DEFAULT_BAND_THRESHOLDS}
     />,
   );
-  return { onCycle, onToggleTracking, onOpenSrs };
+  return { onCycle, onToggleTracking, onOpenSrsCards };
 }
 
 describe('StatusRow segmented control', () => {
@@ -66,24 +71,37 @@ describe('StatusRow segmented control', () => {
     },
   );
 
-  it('renders the srs segment only for learning — click calls onOpenSrs', () => {
-    const { onCycle, onOpenSrs } = renderRow('learning');
-
-    const srs = screen.getByTestId('dictionary-status-srs');
-    expect(srs).toBeEnabled();
-    expect(srs.querySelector('svg')).not.toBeNull();
-
-    fireEvent.click(srs);
-    expect(onOpenSrs).toHaveBeenCalledTimes(1);
-    expect(onCycle).not.toHaveBeenCalled();
-  });
-
-  it.each(['unknown', 'tracking', 'known', 'ignore'] as const)(
-    'renders no srs segment for %s',
+  it.each(['unknown', 'tracking', 'learning', 'known', 'ignore'] as const)(
+    'renders no in-group srs segment for %s — cards live in the standalone chip',
     (status) => {
-      renderRow(status);
+      renderRow(status, { srsCardCount: 2 });
 
       expect(screen.queryByTestId('dictionary-status-srs')).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(['unknown', 'tracking', 'learning', 'known', 'ignore'] as const)(
+    'renders the cards chip for %s when srsCardCount > 0 — click calls onOpenSrsCards',
+    (status) => {
+      const { onCycle, onOpenSrsCards } = renderRow(status, { srsCardCount: 3 });
+
+      const chip = screen.getByTestId('dictionary-srs-cards');
+      expect(chip).toBeEnabled();
+      expect(chip).toHaveAccessibleName('View 3 cards in SRS');
+      expect(chip.querySelector('svg')).not.toBeNull();
+
+      fireEvent.click(chip);
+      expect(onOpenSrsCards).toHaveBeenCalledTimes(1);
+      expect(onCycle).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([undefined, 0])(
+    'renders no cards chip when srsCardCount is %s',
+    (srsCardCount) => {
+      renderRow('learning', { srsCardCount });
+
+      expect(screen.queryByTestId('dictionary-srs-cards')).not.toBeInTheDocument();
     },
   );
 

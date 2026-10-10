@@ -51,6 +51,7 @@ import {
   SrsAddNotePayloadSchema,
   SrsGetDecksNotetypesPayloadSchema,
   SrsOpenStudyPagePayloadSchema,
+  SrsTermCardsPayloadSchema,
   SubtitleCuesLoadedPayloadSchema,
   SyncCancelRebindPayloadSchema,
   SyncConnectPayloadSchema,
@@ -768,6 +769,12 @@ export const MESSAGE_REGISTRY = {
   [MESSAGE_TYPES.SRS_OPEN_STUDY_PAGE]: {
     type: MESSAGE_TYPES.SRS_OPEN_STUDY_PAGE,
     schema: SrsOpenStudyPagePayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/srs',
+  },
+  [MESSAGE_TYPES.SRS_TERM_CARDS]: {
+    type: MESSAGE_TYPES.SRS_TERM_CARDS,
+    schema: SrsTermCardsPayloadSchema,
     direction: 'cs->bg',
     owner: 'background/handlers/srs',
   },

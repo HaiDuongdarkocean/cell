@@ -254,7 +254,8 @@ export function CandidateView({
           status={panel.status}
           onCycle={panel.cycleStatus}
           onToggleTracking={panel.toggleTracking}
-          onOpenSrs={() => { void openSrsStudyPage(); }}
+          srsCardCount={panel.srsCardCount}
+          onOpenSrsCards={() => { void openSrsStudyPage({ term: candidate.term }); }}
           frequencies={panel.displayFrequencies}
           stars={panel.displayStars}
           thresholds={frequencyThresholds}

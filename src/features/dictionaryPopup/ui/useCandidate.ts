@@ -8,6 +8,7 @@ import { nextStatus } from '@/features/dictionary';
 import { setWordStatus } from '@/features/dictionary';
 import { emitWordStatusChanged, aggregatePosStatus } from '@/features/dictionary';
 import { toggleTrackingFlag } from '@/features/dictionary';
+import { getSrsTermCardCount } from '@/features/srs';
 import {
   initDefinitionSelection,
   initExampleSelection,
@@ -60,6 +61,7 @@ export interface UseCandidateReturn {
   readonly status: WordStatus;
   readonly cycleStatus: () => void;
   readonly toggleTracking: () => void;
+  readonly srsCardCount: number;
   readonly variant: PosVariant | undefined;
   readonly variantIndex: number;
   readonly selectVariant: (index: number) => void;
@@ -338,6 +340,15 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     applyStatus(newStatus, true);
   }, [applyStatus, variantStatus]);
 
+  const [srsCardCount, setSrsCardCount] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    getSrsTermCardCount(candidate.langCode, candidate.term)
+      .then((result) => { if (alive) setSrsCardCount(result.count); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [candidate.langCode, candidate.term, variantStatus]);
+
   const [includeAllExamples, setIncludeAllExamples] = useState(false);
   const [ttsVoices, setTtsVoices] = useState<readonly string[]>([]);
   const [autoplayCount, setAutoplayCount] = useState(0);
@@ -441,6 +452,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     status: variantStatus,
     cycleStatus,
     toggleTracking,
+    srsCardCount,
     variant,
     variantIndex,
     selectVariant,

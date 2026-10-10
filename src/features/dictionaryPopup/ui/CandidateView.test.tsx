@@ -109,6 +109,9 @@ function setupMocks(): void {
     if (message.type === MESSAGE_TYPES.TTS_SPEAK || message.type === MESSAGE_TYPES.WORD_STATUS_SET) {
       return { success: true } as T;
     }
+    if (message.type === MESSAGE_TYPES.SRS_TERM_CARDS) {
+      return { success: true, data: { count: 0, deckIds: [] } } as T;
+    }
     return { success: true } as T;
   });
   mockTranslateSentence.mockResolvedValue('xin chào');
@@ -721,25 +724,11 @@ describe('CandidateView', () => {
     expect(group?.getAttribute('title')).toBe('LDOCE5++ V 1-35');
   });
 
-  // The layers icon is indicator-only: it lives in the status row, appears
-  // once a card exists (learning), and jumps to the study page. Card creation
-  // stays on send-to-card / quick-add.
-  it('renders no header SRS button — the srs segment only appears on learning', () => {
-    render(
-      <CandidateView
-        candidate={makeResult('hello', { status: 'unknown' })}
-        index={0}
-        contextSentence=""
-        sourceLang="en"
-        targetLang="vi"
-      />,
-    );
-
-    expect(screen.queryByTestId('dictionary-srs-card')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('dictionary-status-srs')).not.toBeInTheDocument();
-  });
-
-  it('routes the learning srs segment to openSrsStudyPage without creating a card', async () => {
+  // The layers chip is indicator-only: it sits right of the status segmented
+  // group, appears whenever the term has ≥1 card in the SRS collection (any
+  // status), and opens the term-filtered study page. Card creation stays on
+  // send-to-card / quick-add.
+  it('renders no cards chip when the term has no SRS cards', async () => {
     render(
       <CandidateView
         candidate={makeResult('hello', { status: 'learning' })}
@@ -750,11 +739,41 @@ describe('CandidateView', () => {
       />,
     );
 
-    expect(screen.getByTestId('dictionary-status-flag')).toBeDisabled();
+    expect(screen.queryByTestId('dictionary-srs-card')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('dictionary-status-srs')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({
+        type: MESSAGE_TYPES.SRS_TERM_CARDS,
+        payload: { langCode: 'en', term: 'hello' },
+      }));
+    });
+    expect(screen.queryByTestId('dictionary-srs-cards')).not.toBeInTheDocument();
+  });
 
-    await act(async () => { fireEvent.click(screen.getByTestId('dictionary-status-srs')); });
+  it('routes the cards chip to the term-filtered study page without creating a card', async () => {
+    mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
+      const message = msg as { type: string };
+      if (message.type === MESSAGE_TYPES.SRS_TERM_CARDS) {
+        return { success: true, data: { count: 2, deckIds: ['d1'] } } as T;
+      }
+      return { success: true } as T;
+    });
+    render(
+      <CandidateView
+        candidate={makeResult('hello', { status: 'known' })}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
 
-    expect(mockOpenSrsStudyPage).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.getByTestId('dictionary-srs-cards')).toBeInTheDocument());
+    expect(screen.queryByTestId('dictionary-status-srs')).not.toBeInTheDocument();
+
+    await act(async () => { fireEvent.click(screen.getByTestId('dictionary-srs-cards')); });
+
+    expect(mockOpenSrsStudyPage).toHaveBeenCalledWith({ term: 'hello' });
     expect(mockAddToOceanSrs).not.toHaveBeenCalled();
   });
 
