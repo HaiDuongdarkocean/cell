@@ -37,7 +37,7 @@ const PALETTES: Palette[] = [
   {
     id: 'live',
     title: 'Live — production tokens (synced: bar + chip derive from one base hue)',
-    bar: { unknown: '#FF0033', tracking: '#AF52DE', known: '#00C853', ignore: '#8E8E93' },
+    bar: { unknown: '#FF0033', tracking: '#FFCC00', known: '#00C853', ignore: '#8E8E93' },
   },
 ];
 
