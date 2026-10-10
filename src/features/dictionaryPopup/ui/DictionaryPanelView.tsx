@@ -11,6 +11,8 @@ import { Skeleton } from '@/shared/ui/Skeleton';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Heading } from '@/shared/ui/Heading';
 import { Icon } from '@/shared/ui/Icon';
+import { useIsMobile } from '@/shared/ui/useIsMobile';
+import { BREAKPOINTS } from '@/shared/lib/tokens';
 import {
   addSearchHistoryTerm,
   loadSearchHistory,
@@ -107,6 +109,7 @@ export function DictionaryPanelView({
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSearchFocusRef = useRef(false);
   const userTypedRef = useRef(false);
+  const isMobile = useIsMobile(BREAKPOINTS.expanded);
   const spySuppressRef = useRef(false);
   const spyQuietTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -229,8 +232,10 @@ export function DictionaryPanelView({
   }, [panel.isLoading, panel.currentResult]);
 
   // Focus the search input after the panel enter animation completes.
+  // Mobile (<840px, the panel's collapsed-chrome breakpoint) skips it —
+  // autofocus there pops the virtual keyboard over half the content.
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || isMobile) return;
     focusTimerRef.current = setTimeout(() => {
       containerRef.current
         ?.querySelector<HTMLInputElement>('[data-cell-id="dictionary-search-input"]')
@@ -242,7 +247,7 @@ export function DictionaryPanelView({
         focusTimerRef.current = null;
       }
     };
-  }, [isOpen]);
+  }, [isOpen, isMobile]);
 
   const allCandidates = useMemo<readonly LookupResult[]>(
     () => (panel.currentResult ? [panel.currentResult, ...panel.candidates] : []),

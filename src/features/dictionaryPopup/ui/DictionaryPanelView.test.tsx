@@ -320,4 +320,36 @@ describe('DictionaryPanelView', () => {
 
     document.body.removeChild(host);
   });
+
+  it('autofocuses the search input on open at desktop width only', async () => {
+    const originalMatchMedia = window.matchMedia;
+    const mobileMatchMedia = (query: string) => ({
+      matches: query.includes('max-width'),
+      media: query,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      onchange: null,
+      dispatchEvent: jest.fn(),
+    });
+    try {
+      // Mobile (<840px): autofocus would pop the virtual keyboard over the
+      // freshly opened panel, so the open-focus timer is skipped.
+      Object.defineProperty(window, 'matchMedia', { writable: true, value: mobileMatchMedia });
+      const { unmount } = render(
+        <DictionaryPanelView langCode="en" sourceLang="en" targetLang="vi" isOpen />,
+      );
+      await new Promise((r) => setTimeout(r, 400));
+      expect(screen.getByTestId('dictionary-search-input')).not.toHaveFocus();
+      unmount();
+
+      // Desktop: the 250ms post-animation focus still applies.
+      Object.defineProperty(window, 'matchMedia', { writable: true, value: originalMatchMedia });
+      render(<DictionaryPanelView langCode="en" sourceLang="en" targetLang="vi" isOpen />);
+      await waitFor(() => expect(screen.getByTestId('dictionary-search-input')).toHaveFocus());
+    } finally {
+      Object.defineProperty(window, 'matchMedia', { writable: true, value: originalMatchMedia });
+    }
+  });
 });
