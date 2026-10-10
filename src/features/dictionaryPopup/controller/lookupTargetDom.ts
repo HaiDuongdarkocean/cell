@@ -2,6 +2,7 @@ import type { WordStatus } from '@/entities/dictionary';
 import type { PopupLineRect } from '../ui/popupGeometry';
 import { resolveWordAtPoint } from '@/features/dictionaryPopup/sentence/sentenceModule';
 import { isInsideUniversalPanelHost } from '@/shared/lib/dom/cellUiHosts';
+import { refreshIPlus1Marking } from '@/features/tokenize';
 import type { HighlightTarget } from '../ui/wordHighlight';
 import type { CueRange, PopupLevel, PopupTokenId } from './controllerTypes';
 
@@ -111,6 +112,7 @@ export function applyTokenStatus(target: HighlightTarget | HTMLElement, status: 
     token.classList.remove(`js-cell-token--status-${s}`);
   }
   token.classList.add(`js-cell-token--status-${status}`);
+  refreshIPlus1Marking(token);
 }
 
 export function isLookupFromUniversalPanel(target: HighlightTarget): boolean {

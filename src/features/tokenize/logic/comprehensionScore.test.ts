@@ -5,46 +5,11 @@ import {
   bandForCoverage,
   computeStats,
   createScoreTracker,
-  markIPlus1Tokens,
 } from './comprehensionScore';
 
 function tok(term: string, status?: WordStatus, isSeparator = false, sentenceIndex = 0): Token {
   return { text: term, term, start: 0, end: term.length, isSeparator, sentenceIndex, status, frequencyBand: undefined, reading: undefined };
 }
-
-describe('markIPlus1Tokens', () => {
-  it('marks the only new word of a sentence and leaves the rest unmarked', () => {
-    const tokens = [
-      tok('the', 'known'),
-      tok('durian', 'unknown'),
-      tok('tastes', 'known'),
-      tok('aardvark', 'unknown', false, 1),
-      tok('met', 'known', false, 1),
-      tok('platypus', 'unknown', false, 1),
-      tok('the', 'known', false, 2),
-      tok('cat', 'known', false, 2),
-    ];
-    markIPlus1Tokens(tokens);
-    expect(tokens.map((t) => t.iPlus1)).toEqual([false, true, false, false, false, false, false, false]);
-  });
-
-  it('treats tracking as a still-new gap', () => {
-    const tokens = [tok('the', 'known'), tok('tram', 'tracking'), tok('stops', 'tracking', false, 1)];
-    markIPlus1Tokens(tokens);
-    expect(tokens.map((t) => t.iPlus1)).toEqual([false, true, true]);
-  });
-
-  it('ignores separators and pure numbers when counting gaps', () => {
-    const tokens = [
-      tok('the', 'known'),
-      tok(' ', undefined, true),
-      tok('71', 'unknown'),
-      tok('languages', 'unknown'),
-    ];
-    markIPlus1Tokens(tokens);
-    expect(tokens.map((t) => t.iPlus1)).toEqual([false, false, false, true]);
-  });
-});
 
 describe('bandForCoverage', () => {
   it('media bands: >=95 comfortable, 90-<95 stretch, <90 hard', () => {

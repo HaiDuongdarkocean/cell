@@ -1,5 +1,5 @@
 import type { Token, TokenBlock } from '@/features/tokenize/types';
-import { markIPlus1Tokens } from '@/features/tokenize/logic/comprehensionScore';
+import { collectSentenceRun, type SentenceRunEntry, type SentenceSegment } from '@/features/tokenize/logic/sentenceRun';
 import { hasSentenceEnd } from '@/shared/lib/sentencePunct';
 import { injectTokenSpanStyle } from './tokenSpanCss';
 
@@ -42,6 +42,103 @@ const READING_OFF_CLASS = 'js-cell-token--reading-off';
 const GLOSS_OFF_CLASS = 'js-cell-token--gloss-off';
 const IPLUS1_OFF_CLASS = 'js-cell-token--i1-off';
 const HAS_CARD_CLASS = 'js-cell-token--has-card';
+const BLOCK_ATTR = 'data-cell-block-id';
+
+/** Paragraph-ish container: a sentence never reaches past one visual
+ *  paragraph, so runs and i+1 marks are scoped to the spans inside it. */
+export const CONTAINER_SELECTOR = 'p, li, dd, dt, blockquote, figcaption, td, th, h1, h2, h3, h4, h5, h6';
+
+export interface RenderedSentenceSegment extends SentenceSegment {
+  readonly spans: HTMLElement[];
+}
+
+/** Group the container's rendered spans into text blocks, in DOM order.
+ *  Block scan order is not document order (links are scanned in a different
+ *  pass than the surrounding text), so the DOM is the only reliable order. */
+export function readSegments(container: Element): RenderedSentenceSegment[] {
+  const segments: RenderedSentenceSegment[] = [];
+  let current: { id: string; spans: HTMLElement[]; lastSentenceIndex: number; trailingText: string } | null = null;
+
+  for (const span of container.querySelectorAll<HTMLElement>(`[${BLOCK_ATTR}]`)) {
+    const id = span.getAttribute(BLOCK_ATTR)!;
+    if (!current || current.id !== id) {
+      current = { id, spans: [], lastSentenceIndex: -1, trailingText: '' };
+      segments.push(current);
+    }
+    const isSeparator = span.classList.contains(SEPARATOR_CLASS);
+    current.spans.push(span);
+    if (isSeparator) {
+      current.trailingText = span.textContent ?? '';
+    } else {
+      current.trailingText = '';
+      current.lastSentenceIndex = Number(span.getAttribute(SENTENCE_ATTR) ?? '0');
+    }
+  }
+
+  return segments;
+}
+
+const NUMERIC_RE = /^\p{N}+$/u;
+/** A run needs real context around the gap — under 3 scorable tokens it is a
+ *  label/fragment (nav link, heading, single-word block), never i+1 input. */
+const IPLUS1_MIN_SCORABLE = 3;
+
+function isNewWordSpan(span: HTMLElement): boolean {
+  return (
+    !span.classList.contains(`${TOKEN_CLASS}--status-known`) &&
+    !span.classList.contains(`${TOKEN_CLASS}--status-ignore`)
+  );
+}
+
+function applyRunMark(segments: readonly RenderedSentenceSegment[], entries: readonly SentenceRunEntry[]): void {
+  const words: HTMLElement[] = [];
+  for (const entry of entries) {
+    for (const span of segments[entry.segment]?.spans ?? []) {
+      if (span.classList.contains(SEPARATOR_CLASS)) continue;
+      if (span.getAttribute(SENTENCE_ATTR) !== String(entry.sentenceIndex)) continue;
+      words.push(span);
+    }
+  }
+  const scorable = words.filter((w) => !NUMERIC_RE.test(w.getAttribute('data-cell-term') ?? ''));
+  const gaps = scorable.filter(isNewWordSpan);
+  const marked = scorable.length >= IPLUS1_MIN_SCORABLE && gaps.length === 1 ? gaps[0] : null;
+  for (const span of words) {
+    span.classList.toggle(IPLUS1_OFF_CLASS, span !== marked);
+  }
+}
+
+/** Re-mark every i+1 run inside `container` — the same sentence runs the wash
+ *  paints, so a gap counts against the real cross-block sentence, not the
+ *  per-block fragment its tokenize block happens to be. */
+export function markIPlus1Runs(container: Element): void {
+  const segments = readSegments(container);
+  const seen = new Set<string>();
+  for (let segIdx = 0; segIdx < segments.length; segIdx++) {
+    const sentenceIndexes = new Set<number>();
+    for (const span of segments[segIdx]!.spans) {
+      if (!span.classList.contains(SEPARATOR_CLASS)) {
+        sentenceIndexes.add(Number(span.getAttribute(SENTENCE_ATTR) ?? '0'));
+      }
+    }
+    for (const sentenceIndex of sentenceIndexes) {
+      const entries = collectSentenceRun(segments, segIdx, sentenceIndex);
+      const key = entries
+        .map((e) => `${e.segment}:${e.sentenceIndex}`)
+        .sort()
+        .join('|');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      applyRunMark(segments, entries);
+    }
+  }
+}
+
+/** Re-mark i+1 gaps for the sentence runs around `span`. Called after bind,
+ *  restyle and direct status writes so marks follow status changes. */
+export function refreshIPlus1Marking(span: HTMLElement): void {
+  const container = span.closest(CONTAINER_SELECTOR) ?? span.parentElement;
+  if (container) markIPlus1Runs(container);
+}
 
 /** Inside an <a>, <button> or <label>: single click opens our popup, double
  *  click triggers the native action. preventDefault on the click also
@@ -91,11 +188,6 @@ function applyTokenClasses(span: HTMLElement, token: Token, options: TokenSpanBi
   }
   if (token.frequencyBand && token.frequencyBand !== 'none') {
     span.classList.add(`${TOKEN_CLASS}--frequency-${token.frequencyBand}`);
-  }
-  if (token.iPlus1) {
-    span.classList.remove(IPLUS1_OFF_CLASS);
-  } else {
-    span.classList.add(IPLUS1_OFF_CLASS);
   }
   if (token.hasCard) {
     span.classList.add(HAS_CARD_CLASS);
@@ -211,7 +303,6 @@ export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions)
   injectTokenSpanStyle();
 
   const text = block.originalText;
-  markIPlus1Tokens(block.tokens);
   const tokens = [...block.tokens].sort((a, b) => a.start - b.start);
 
   const fragment = document.createDocumentFragment();
@@ -225,11 +316,14 @@ export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions)
     ? Math.max(0, first.sentenceIndex - (hasSentenceEnd(text.slice(0, first.start)) ? 1 : 0))
     : 0;
   let lastSentence = leadingSentence;
+  let firstWordSpan: HTMLElement | null = null;
   for (const token of tokens) {
     if (token.start > lastEnd) {
       fragment.appendChild(createSeparatorSpan(text.slice(lastEnd, token.start), block, lastSentence, options));
     }
-    fragment.appendChild(createTokenSpan(token, block, options));
+    const span = createTokenSpan(token, block, options);
+    firstWordSpan ??= span;
+    fragment.appendChild(span);
     lastEnd = token.end;
     lastSentence = token.sentenceIndex;
   }
@@ -239,6 +333,7 @@ export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions)
 
   parent.replaceChild(fragment, sourceNode);
   block.isBound = true;
+  if (firstWordSpan) refreshIPlus1Marking(firstWordSpan);
 }
 
 /** Restyle a bound block in place: recompute status/frequency classes on the
@@ -248,7 +343,6 @@ export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions)
  *  (caller should fall back to unbind + bind). */
 export function restyleTokenBlock(block: TokenBlock, options: TokenSpanBindOptions): boolean {
   if (!block.isBound || !block.tokens) return false;
-  markIPlus1Tokens(block.tokens);
   const tokens = [...block.tokens]
     .sort((a, b) => a.start - b.start)
     .filter((token) => !token.isSeparator);
@@ -268,6 +362,7 @@ export function restyleTokenBlock(block: TokenBlock, options: TokenSpanBindOptio
     applyTokenClasses(span, token, options);
     applyTokenReading(span, token);
   }
+  refreshIPlus1Marking(spans[0]!);
   return true;
 }
 

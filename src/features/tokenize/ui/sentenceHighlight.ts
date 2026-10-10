@@ -1,50 +1,15 @@
-import { collectSentenceRun, type SentenceRunEntry, type SentenceSegment } from '@/features/tokenize/logic/sentenceRun';
-import { SENTENCE_ATTR, SEPARATOR_CLASS } from './tokenSpanRenderer';
+import { collectSentenceRun, type SentenceRunEntry } from '@/features/tokenize/logic/sentenceRun';
+import { SENTENCE_ATTR, SEPARATOR_CLASS, CONTAINER_SELECTOR, readSegments, type RenderedSentenceSegment } from './tokenSpanRenderer';
 
 /** Marks the spans of the washed sentence. The wash itself is painted by band
  *  overlays (see paintSentenceBands) — --sentence stays a pure marker so the
  *  band edges stay geometrically straight instead of summing per-token boxes. */
 export const SENTENCE_CLASS = 'js-cell-token--sentence';
 
-const BLOCK_ATTR = 'data-cell-block-id';
 const WORD_LANE_CLASS = 'js-cell-token-word';
 const OVERLAY_ID = 'cell-sentence-overlay';
 /** Horizontal run split: a gap wider than this many em ends the band segment. */
 const BAND_GAP_EM = 2;
-
-/** Paragraph-ish container: a sentence never reaches past one visual
- *  paragraph, so the run is read from the spans inside the same container. */
-const CONTAINER_SELECTOR = 'p, li, dd, dt, blockquote, figcaption, td, th, h1, h2, h3, h4, h5, h6';
-
-interface Segment extends SentenceSegment {
-  readonly spans: HTMLElement[];
-}
-
-/** Group the container's rendered spans into text blocks, in DOM order.
- *  Block scan order is not document order (links are scanned in a different
- *  pass than the surrounding text), so the DOM is the only reliable order. */
-function readSegments(container: Element): Segment[] {
-  const segments: Segment[] = [];
-  let current: { id: string; spans: HTMLElement[]; lastSentenceIndex: number; trailingText: string } | null = null;
-
-  for (const span of container.querySelectorAll<HTMLElement>(`[${BLOCK_ATTR}]`)) {
-    const id = span.getAttribute(BLOCK_ATTR)!;
-    if (!current || current.id !== id) {
-      current = { id, spans: [], lastSentenceIndex: -1, trailingText: '' };
-      segments.push(current);
-    }
-    const isSeparator = span.classList.contains(SEPARATOR_CLASS);
-    current.spans.push(span);
-    if (isSeparator) {
-      current.trailingText = span.textContent ?? '';
-    } else {
-      current.trailingText = '';
-      current.lastSentenceIndex = Number(span.getAttribute(SENTENCE_ATTR) ?? '0');
-    }
-  }
-
-  return segments;
-}
 
 export interface BandBox {
   readonly top: number;
@@ -201,7 +166,7 @@ export function clearSentenceHighlight(spans: readonly HTMLElement[]): void {
 }
 
 interface SentenceRun {
-  readonly segments: Segment[];
+  readonly segments: RenderedSentenceSegment[];
   readonly entries: SentenceRunEntry[];
 }
 

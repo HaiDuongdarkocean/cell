@@ -54,6 +54,63 @@ describe('tokenSpanRenderer', () => {
     expect(cls('ate').contains('js-cell-token--i1-off')).toBe(true);
   });
 
+  it('counts the i+1 gap over the cross-block sentence, not the link fragment', () => {
+    const p = document.createElement('p');
+    const text1 = document.createTextNode('I like ');
+    const a = document.createElement('a');
+    const text2 = document.createTextNode('durian');
+    a.appendChild(text2);
+    const text3 = document.createTextNode(' today.');
+    p.append(text1, a, text3);
+    const t = (term: string, start: number, status: Token['status'], sentenceIndex = 0): Token => ({
+      text: term,
+      term,
+      start,
+      end: start + term.length,
+      isSeparator: false,
+      sentenceIndex,
+      status,
+      frequencyBand: undefined,
+      reading: undefined,
+    });
+    const b1: TokenBlock = { id: 'b1', element: p, sourceNodes: [text1], originalText: 'I like ', tokens: [t('I', 0, 'known'), t('like', 2, 'known')], isBound: false, lastAccessedAt: 0 };
+    const b2: TokenBlock = { id: 'b2', element: a, sourceNodes: [text2], originalText: 'durian', tokens: [t('durian', 0, 'unknown')], isBound: false, lastAccessedAt: 0 };
+    const b3: TokenBlock = { id: 'b3', element: p, sourceNodes: [text3], originalText: ' today.', tokens: [t('today', 1, 'known')], isBound: false, lastAccessedAt: 0 };
+    bindTokenBlock(b1, { showStatus: true, showFrequency: true });
+    bindTokenBlock(b2, { showStatus: true, showFrequency: true });
+    bindTokenBlock(b3, { showStatus: true, showFrequency: true });
+
+    const cls = (term: string) => p.querySelector<HTMLElement>(`[data-cell-term="${term}"]`)!.classList;
+    // The real sentence "I like durian today." has exactly one gap → durian marked.
+    expect(cls('durian').contains('js-cell-token--i1-off')).toBe(false);
+    expect(cls('like').contains('js-cell-token--i1-off')).toBe(true);
+
+    // A second unknown in the same run makes it dense — nothing stays marked.
+    b3.tokens![0]!.status = 'unknown';
+    restyleTokenBlock(b3, { showStatus: true, showFrequency: true });
+    expect(cls('durian').contains('js-cell-token--i1-off')).toBe(true);
+  });
+
+  it('never marks single-word fragments (nav links, headings) as i+1', () => {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    const textNode = document.createTextNode('Intermediate');
+    a.appendChild(textNode);
+    li.appendChild(a);
+    const block: TokenBlock = {
+      id: 'nav-1',
+      element: a,
+      sourceNodes: [textNode],
+      originalText: 'Intermediate',
+      tokens: [{ text: 'Intermediate', term: 'intermediate', start: 0, end: 12, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: undefined, reading: undefined }],
+      isBound: false,
+      lastAccessedAt: 0,
+    };
+    bindTokenBlock(block, { showStatus: true, showFrequency: true });
+    const span = a.querySelector<HTMLElement>('[data-cell-term="intermediate"]')!;
+    expect(span.classList.contains('js-cell-token--i1-off')).toBe(true);
+  });
+
   it('stamps the sentence index on word and gap spans', () => {
     const block = makeBlock('One. Two three.', [
       { text: 'One', term: 'one', start: 0, end: 3, isSeparator: false, sentenceIndex: 0, status: 'known', frequencyBand: 'core', reading: undefined },
