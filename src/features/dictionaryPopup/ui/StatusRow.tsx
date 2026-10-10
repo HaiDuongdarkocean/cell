@@ -59,23 +59,24 @@ export function StatusSegmented({ status, onCycle, onToggleTracking, srsCardCoun
   const flag = statusFlag(status);
   const base = baseStatus(status);
   const hasCards = (srsCardCount ?? 0) > 0;
-  const stops = [
-    flag === 'tracking' ? 'var(--chip-status-tracking-bg-seg)' : 'var(--chip-status-idle-bg-seg)',
-    `var(--chip-status-${base}-bg-seg)`,
-    ...(hasCards ? ['var(--chip-status-learning-bg-seg)'] : []),
-  ];
   return (
-    <span className={styles.cellHeaderStatusGroup} style={{ background: `linear-gradient(90deg in oklch, ${stops.join(', ')})` }}>
+    <span
+      className={styles.cellHeaderStatusGroup}
+      style={{
+        background: `var(--chip-status-${base}-bg)`,
+        color: `var(--chip-status-${base}-fg)`,
+      }}
+    >
       <Button
         variant="transparent"
-        className={`${styles.cellHeaderStatus} ${styles.cellHeaderStatusFlag} ${flag === 'tracking' ? styles['cellHeaderStatus--tracking'] : styles.cellHeaderStatusFlagIdle}`}
+        className={`${styles.cellHeaderStatus} ${styles.cellHeaderStatusFlag}`}
         disabled={!onToggleTracking}
         onClick={onToggleTracking}
         title={t('dict.status.trackingToggle')}
         aria-label={t('dict.status.trackingToggle')}
         data-cell-id="dictionary-status-flag"
       >
-        <Icon name="eye" size="sm" />
+        <Icon name={flag === 'tracking' ? 'eye' : 'eyeOff'} size="sm" />
       </Button>
       <StatusPill status={status} onCycle={onCycle} />
       {hasCards && (

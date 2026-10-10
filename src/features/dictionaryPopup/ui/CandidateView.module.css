@@ -241,30 +241,7 @@
   border: none;
   border-radius: 0;
   background: transparent;
-}
-
-.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlagIdle {
-  color: var(--chip-status-idle-fg-seg);
-}
-
-.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatus--tracking {
-  color: var(--chip-status-tracking-fg-seg);
-}
-
-.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatus--unknown {
-  color: var(--chip-status-unknown-fg-seg);
-}
-
-.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatus--known {
-  color: var(--chip-status-known-fg-seg);
-}
-
-.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatus--ignore {
-  color: var(--chip-status-ignore-fg-seg);
-}
-
-.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatus--learning {
-  color: var(--chip-status-learning-fg-seg);
+  color: inherit;
 }
 
 .cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlag {
