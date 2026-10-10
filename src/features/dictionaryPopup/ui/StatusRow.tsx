@@ -60,9 +60,9 @@ export function StatusSegmented({ status, onCycle, onToggleTracking, srsCardCoun
   const base = baseStatus(status);
   const hasCards = (srsCardCount ?? 0) > 0;
   const stops = [
-    flag === 'tracking' ? 'var(--chip-status-tracking-bg)' : 'var(--color-muted)',
-    `var(--chip-status-${base}-bg)`,
-    ...(hasCards ? ['var(--chip-status-learning-bg)'] : []),
+    flag === 'tracking' ? 'var(--color-token-status-tracking)' : 'var(--color-muted)',
+    `var(--color-token-status-${base})`,
+    ...(hasCards ? ['var(--color-token-status-learning)'] : []),
   ];
   return (
     <span className={styles.cellHeaderStatusGroup} style={{ background: `linear-gradient(90deg, ${stops.join(', ')})` }}>

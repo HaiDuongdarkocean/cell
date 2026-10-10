@@ -241,6 +241,18 @@
   border: none;
   border-radius: 0;
   background: transparent;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+}
+
+.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlagIdle {
+  color: var(--color-muted-foreground);
+  text-shadow: none;
+}
+
+.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatus--tracking {
+  color: rgba(0, 0, 0, 0.72);
+  text-shadow: none;
 }
 
 .cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlag {
