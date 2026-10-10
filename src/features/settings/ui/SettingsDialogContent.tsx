@@ -105,12 +105,14 @@ const SHORTCUT_ACTION_LABELS: Record<ShortcutAction, MessageKey> = {
   'next-vocab-token': 'settings.shortcuts.action.nextVocabToken',
   'prev-vocab-token': 'settings.shortcuts.action.prevVocabToken',
   'toggle-universal-panel': 'settings.shortcuts.action.toggleUniversalPanel',
+  'open-dictionary-search': 'settings.shortcuts.action.openDictionarySearch',
 };
 
 const SHORTCUT_GROUPS: readonly { label: MessageKey; actions: readonly ShortcutAction[] }[] = [
   { label: 'settings.shortcuts.group.navigation', actions: ['prev-cue', 'next-cue', 'replay-cue', 'play-pause', 'prev-vocab-token', 'next-vocab-token'] },
   { label: 'settings.shortcuts.group.toggle', actions: ['toggle-overlay', 'toggle-panel', 'toggle-translate', 'toggle-player-mode', 'toggle-universal-panel'] },
   { label: 'settings.shortcuts.group.generate', actions: ['generate-native'] },
+  { label: 'settings.shortcuts.group.dictionary', actions: ['open-dictionary-search'] },
   { label: 'settings.shortcuts.group.cardCreator', actions: ['quick-update', 'edit-card'] },
 ];
 

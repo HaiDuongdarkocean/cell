@@ -19,7 +19,8 @@ export type ShortcutAction =
   | 'play-pause'
   | 'next-vocab-token'
   | 'prev-vocab-token'
-  | 'toggle-universal-panel';
+  | 'toggle-universal-panel'
+  | 'open-dictionary-search';
 
 /** A single keyboard shortcut binding: action ↔ key (with optional modifiers for combos). */
 export interface KeyboardShortcut {

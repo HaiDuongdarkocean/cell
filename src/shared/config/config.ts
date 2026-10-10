@@ -127,6 +127,9 @@ export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
   // Page-level: toggle the universal panel. Handled by the content-script
   // global listener (featureInit), not the subtitle/video keyboard handler.
   { action: 'toggle-universal-panel', key: 'u', ctrl: true },
+  // Page-level: open the universal panel straight into Dictionary search —
+  // instant lookup flow (also page-level, see toggle-universal-panel).
+  { action: 'open-dictionary-search', key: 't', shift: true },
 ];
 
 // === Default Overlay Style (ADR-013) ===

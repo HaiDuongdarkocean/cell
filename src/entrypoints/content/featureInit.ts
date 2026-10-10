@@ -15,7 +15,8 @@ import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigg
 import { modifierMatches, type LookupRequest, type TriggerMode } from '@/entities/dictionary';
 import { findAndInitOverlay } from './videoOverlay';
 import { isEditableTarget } from '@/shared/lib/dom/isEditable';
-import type { KeyboardShortcut } from '@/entities/settings/types';
+import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/cellUiHosts';
+import type { KeyboardShortcut, ShortcutAction } from '@/entities/settings/types';
 import { startMediaScoreSource } from '@/features/subtitle/logic/mediaScoreSource';
 import { startTextScoreSource } from '@/features/tokenize/services/textScoreSource';
 import { mountComprehensionPill, type ComprehensionPillMount } from '@/features/tokenize/ui/mountComprehensionPill';
@@ -84,27 +85,60 @@ export function toggleUniversalPanel(): void {
   }
 }
 
-/** Page-level 'toggle-universal-panel' shortcut (default Ctrl+U) — works on
- *  every page, video or not. On video pages the subtitle keyboard handler may
- *  also see the key; it defers to this listener (see contentScriptKeyboard). */
+/** Focus the Dictionary tab's search input — polls briefly because the tab
+ *  mounts asynchronously after open()/switchTab(). The input's own onFocus
+ *  selects any existing text so typing replaces it. */
+function focusDictionarySearchInput(attempts = 20): void {
+  const input = document
+    .getElementById(UNIVERSAL_PANEL_HOST_ID)
+    ?.shadowRoot
+    ?.querySelector<HTMLInputElement>('[data-cell-id="dictionary-search-input"]');
+  if (input) {
+    input.focus();
+  } else if (attempts > 0) {
+    setTimeout(() => focusDictionarySearchInput(attempts - 1), 50);
+  }
+}
+
+/** Instant-lookup shortcut: open the panel (or switch to Dictionary when it is
+ *  already open on another tab) and focus the search input. */
+export function openDictionarySearch(): void {
+  const panel = ensureUniversalPanelMount();
+  void panel.open('dictionary').then(() => focusDictionarySearchInput());
+}
+
+const PANEL_SHORTCUT_ACTIONS = new Set<ShortcutAction>([
+  'toggle-universal-panel',
+  'open-dictionary-search',
+]);
+
+/** Page-level universal-panel shortcuts (Ctrl+U toggle, Shift+T dictionary
+ *  search) — work on every page, video or not. On video pages the subtitle
+ *  keyboard handler may also see the key; it defers to this listener
+ *  (see contentScriptKeyboard). */
 export function installUniversalPanelShortcut(): void {
   void refreshPageShortcuts();
   panelShortcutKeydown = (e) => {
-    const binding = pageShortcuts.find((s) => s.action === 'toggle-universal-panel');
-    if (!binding?.key || e.repeat || e.isComposing) return;
-    if (e.key.toLowerCase() !== binding.key) return;
-    if ((binding.ctrl ?? false) !== e.ctrlKey
-      || (binding.shift ?? false) !== e.shiftKey
-      || (binding.alt ?? false) !== e.altKey) return;
+    if (e.repeat || e.isComposing) return;
+    const key = e.key.toLowerCase();
+    const binding = pageShortcuts.find(
+      (s) => PANEL_SHORTCUT_ACTIONS.has(s.action)
+        && s.key === key
+        && (s.ctrl ?? false) === e.ctrlKey
+        && (s.shift ?? false) === e.shiftKey
+        && (s.alt ?? false) === e.altKey,
+    );
+    if (!binding?.key) return;
     const realTarget = e.composedPath()[0] ?? e.target;
     if (realTarget instanceof HTMLElement && realTarget.closest('[data-cell-keycapture]')) return;
-    // Bare-key bindings stay editable-guarded (typing protection); modifier
-    // combos can't be typed into an input, so they toggle even while the
-    // panel's search field holds focus.
-    if (!binding.ctrl && !binding.shift && !binding.alt && isEditableTarget(realTarget)) return;
+    // Ctrl/Alt combos can't produce a character — safe inside editable fields
+    // (the panel autofocuses its search input). Bare keys and Shift combos do
+    // type characters, so they stay editable-guarded.
+    if (!binding.ctrl && !binding.alt && isEditableTarget(realTarget)) return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    toggleUniversalPanel();
+    if (binding.action === 'toggle-universal-panel') toggleUniversalPanel();
+    else void openDictionarySearch();
   };
   window.addEventListener('keydown', panelShortcutKeydown, true);
 }

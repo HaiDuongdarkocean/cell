@@ -18,7 +18,7 @@ import { toIso6391, baseLangCode } from '@/shared/config/languageRegistry';
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 39;
+export const CURRENT_SCHEMA_VERSION = 40;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -584,6 +584,15 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     const shortcuts = Array.isArray(merged.keyboardShortcuts) ? merged.keyboardShortcuts : [];
     if (!shortcuts.some((sc: { action: string }) => sc.action === 'toggle-universal-panel')) {
       merged.keyboardShortcuts = [...shortcuts, { action: 'toggle-universal-panel', key: 'u', ctrl: true }];
+    }
+    return merged;
+  },
+  // v39 → v40: add open-dictionary-search shortcut (Shift+T). Additive.
+  39: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 40 } as Record<string, unknown>;
+    const shortcuts = Array.isArray(merged.keyboardShortcuts) ? merged.keyboardShortcuts : [];
+    if (!shortcuts.some((sc: { action: string }) => sc.action === 'open-dictionary-search')) {
+      merged.keyboardShortcuts = [...shortcuts, { action: 'open-dictionary-search', key: 't', shift: true }];
     }
     return merged;
   },

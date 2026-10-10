@@ -232,6 +232,26 @@ describe('loadSettings migration', () => {
     expect(bindings).toEqual([{ action: 'toggle-universal-panel', key: 'p', ctrl: true, shift: true }]);
   });
 
+  it('migrates v39 shortcuts: appends open-dictionary-search Shift+T', async () => {
+    const v39Settings = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 39,
+      keyboardShortcuts: [{ action: 'toggle-universal-panel', key: 'u', ctrl: true }],
+    } as Record<string, unknown>;
+
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: v39Settings,
+    });
+
+    const settings = await loadSettings();
+
+    expect(settings.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    const binding = settings.keyboardShortcuts.find((sc) => sc.action === 'open-dictionary-search');
+    expect(binding).toEqual({ action: 'open-dictionary-search', key: 't', shift: true });
+    const toggle = settings.keyboardShortcuts.find((sc) => sc.action === 'toggle-universal-panel');
+    expect(toggle).toEqual({ action: 'toggle-universal-panel', key: 'u', ctrl: true });
+  });
+
   it('resets undefined nested objects to their defaults', async () => {
     const stored = { ...DEFAULT_SETTINGS, schemaVersion: CURRENT_SCHEMA_VERSION } as Record<string, unknown>;
     stored.cardCreator = undefined;

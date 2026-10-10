@@ -16,7 +16,14 @@ import {
 import { shouldDedupeCueSeek } from './contentScriptShared';
 import { t } from '@/shared/i18n';
 import type { ContentScriptContext } from './contentScriptContext';
-import type { SrtCue } from '@/entities/media';
+import type { ShortcutAction, SrtCue } from '@/entities/media';
+
+/** Page-level actions owned by featureInit's global listener — never swallowed
+ *  here, on keydown or keyup, so the universal panel works on video pages too. */
+const PAGE_LEVEL_ACTIONS = new Set<ShortcutAction>([
+  'toggle-universal-panel',
+  'open-dictionary-search',
+]);
 
 export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): {
   onKeydown: (e: KeyboardEvent) => void;
@@ -169,9 +176,7 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
       return;
     }
 
-    // Page-level action owned by featureInit's global listener — let the event
-    // continue so it can toggle the universal panel.
-    if (action === 'toggle-universal-panel') return;
+    if (PAGE_LEVEL_ACTIONS.has(action)) return;
 
     // Context-aware T: in Player Mode, let PlayerModeOverlay's keydown handle
     // 't' (toggles CueList). Don't preventDefault/stopImmediatePropagation —
@@ -318,8 +323,7 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
       alt: e.altKey,
     });
 
-    // Page-level action owned by featureInit's global listener.
-    if (action === 'toggle-universal-panel') return;
+    if (action !== null && PAGE_LEVEL_ACTIONS.has(action)) return;
 
     if (action) {
       // The keydown handler already performed the action. Stop keyup too so
