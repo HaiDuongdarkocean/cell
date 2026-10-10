@@ -110,7 +110,7 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
         )?.find((r) => r.includes('js-cell-token-status'));
         expect(rule).toBeDefined();
         expect(rule).toContain(
-          `background: linear-gradient(90deg, var(--cell-token-status-${status}) 60%, var(--cell-token-status-unknown))`,
+          `background: linear-gradient(90deg, var(--cell-token-status-${status}), var(--cell-token-status-unknown))`,
         );
         expect(rule).not.toContain('box-shadow');
         expect(rule).not.toContain('overlay-text-rgb');

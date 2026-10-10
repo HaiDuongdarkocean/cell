@@ -39,6 +39,17 @@ jest.mock('@/features/cardCreator', () => ({
 jest.mock('@/features/srs', () => ({
   addToOceanSrs: jest.fn(),
   openSrsStudyPage: jest.fn(),
+  getSrsTermCardCount: jest.fn(async (langCode: string, term: string) => {
+    const { sendMessage } = jest.requireMock<{ sendMessage: (msg: unknown) => Promise<{ success: boolean; data?: unknown }> }>(
+      '@/shared/lib/chrome-apis/runtime',
+    );
+    const response = await sendMessage({
+      type: jest.requireActual<typeof import('@/shared/config/messages')>('@/shared/config/messages').MESSAGE_TYPES.SRS_TERM_CARDS,
+      payload: { langCode, term },
+    });
+    if (!response?.success || !response.data) throw new Error('SRS_TERM_CARDS failed');
+    return response.data;
+  }),
 }));
 
 jest.mock('@/shared/lib/storage/settingsStore', () => ({

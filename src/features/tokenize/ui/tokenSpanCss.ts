@@ -301,10 +301,10 @@ html body .js-cell-token.js-cell-token--status-unknown .js-cell-token-status {
   background: var(--cell-token-status-unknown) !important;
 }
 html body .js-cell-token.js-cell-token--status-tracking .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-tracking) 60%, var(--cell-token-status-unknown)) !important;
+  background: linear-gradient(90deg, var(--cell-token-status-tracking), var(--cell-token-status-unknown)) !important;
 }
 html body .js-cell-token.js-cell-token--status-learning .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-learning) 60%, var(--cell-token-status-unknown)) !important;
+  background: linear-gradient(90deg, var(--cell-token-status-learning), var(--cell-token-status-unknown)) !important;
 }
 html body .js-cell-token.js-cell-token--status-known:hover:not(.js-cell-token--status-off) .js-cell-token-status,
 html body .js-cell-token.js-cell-token--status-known.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-status {
@@ -575,10 +575,10 @@ ${buildVariables(':host')}
   background: var(--cell-token-status-unknown) !important;
 }
 .js-cell-token.js-cell-token--status-tracking .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-tracking) 60%, var(--cell-token-status-unknown)) !important;
+  background: linear-gradient(90deg, var(--cell-token-status-tracking), var(--cell-token-status-unknown)) !important;
 }
 .js-cell-token.js-cell-token--status-learning .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-learning) 60%, var(--cell-token-status-unknown)) !important;
+  background: linear-gradient(90deg, var(--cell-token-status-learning), var(--cell-token-status-unknown)) !important;
 }
 .js-cell-token.js-cell-token--status-known:hover:not(.js-cell-token--status-off) .js-cell-token-status,
 .js-cell-token.js-cell-token--status-known.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-status {

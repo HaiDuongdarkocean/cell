@@ -227,9 +227,9 @@
   color: var(--chip-status-ignore-fg);
 }
 
-/* Joined [base | flag] status control — the group's pill clip owns the outer
-   edge so the segments read as one capsule; each segment keeps the status
-   chip colors minus its own radius, and a hairline marks the split. */
+/* Joined [eye | base | cards] status control — the group's pill clip owns
+   the outer edge so the segments read as one seamless capsule; each segment
+   keeps the status chip colors minus its own radius, no divider. */
 .cellHeaderStatusGroup {
   display: inline-flex;
   align-items: stretch;
@@ -248,29 +248,11 @@
   padding: 0;
 }
 
-/* The eye segment leads the pill → divider on its right edge; the SRS
-   segment trails → divider on its left edge. */
-.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlag:first-child {
-  border-right: var(--border-width-hairline) solid var(--color-divider);
-}
-
-.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlag:last-child {
-  border-left: var(--border-width-hairline) solid var(--color-divider);
-}
-
 /* Inactive eye — the word isn't tracked yet; muted keeps it readable as a
    segment without competing with the active status colors. */
 .cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlagIdle {
   background: var(--color-muted);
   color: var(--color-muted-foreground);
-}
-
-/* Standalone flashcard chip right of the segmented group — same status chip
-   chrome as the segments, shrunk to icon width like the flag segments. */
-.cellHeaderSecond .cellHeaderSrsCards {
-  min-width: 0;
-  width: var(--space-7);
-  padding: 0;
 }
 
 .cellHeaderFrequency {

@@ -52,9 +52,11 @@ export interface StatusSegmentedProps {
   readonly status: WordStatus;
   readonly onCycle: () => void;
   readonly onToggleTracking?: () => void;
+  readonly srsCardCount?: number;
+  readonly onOpenSrsCards?: () => void;
 }
 
-export function StatusSegmented({ status, onCycle, onToggleTracking }: StatusSegmentedProps): React.JSX.Element {
+export function StatusSegmented({ status, onCycle, onToggleTracking, srsCardCount, onOpenSrsCards }: StatusSegmentedProps): React.JSX.Element {
   const flag = statusFlag(status);
   const trackingEnabled = toggleTrackingFlag(status) !== status;
   return (
@@ -71,6 +73,18 @@ export function StatusSegmented({ status, onCycle, onToggleTracking }: StatusSeg
         <Icon name="eye" size="sm" />
       </Button>
       <StatusPill status={status} onCycle={onCycle} />
+      {(srsCardCount ?? 0) > 0 && (
+        <Button
+          variant="transparent"
+          className={`${styles.cellHeaderStatus} ${styles.cellHeaderStatusFlag} ${styles['cellHeaderStatus--learning']}`}
+          onClick={onOpenSrsCards}
+          title={t('dict.status.srsCards', [srsCardCount ?? 0])}
+          aria-label={t('dict.status.srsCards', [srsCardCount ?? 0])}
+          data-cell-id="dictionary-srs-cards"
+        >
+          <Icon name="layers" size="sm" />
+        </Button>
+      )}
     </span>
   );
 }
@@ -91,19 +105,7 @@ export function StatusRow({ status, onCycle, onToggleTracking, srsCardCount, onO
   const scrollRef = useDragScroll<HTMLDivElement>();
   return (
     <div className={styles.cellHeaderSecond} ref={scrollRef} data-cell-id="dictionary-freq-row">
-      {statusControl ?? <StatusSegmented status={status} onCycle={onCycle} onToggleTracking={onToggleTracking} />}
-      {(srsCardCount ?? 0) > 0 && (
-        <Button
-          variant="transparent"
-          className={`${styles.cellHeaderStatus} ${styles.cellHeaderSrsCards} ${styles['cellHeaderStatus--learning']}`}
-          onClick={onOpenSrsCards}
-          title={t('dict.status.srsCards', [srsCardCount ?? 0])}
-          aria-label={t('dict.status.srsCards', [srsCardCount ?? 0])}
-          data-cell-id="dictionary-srs-cards"
-        >
-          <Icon name="layers" size="sm" />
-        </Button>
-      )}
+      {statusControl ?? <StatusSegmented status={status} onCycle={onCycle} onToggleTracking={onToggleTracking} srsCardCount={srsCardCount} onOpenSrsCards={onOpenSrsCards} />}
       {frequencies.map((freq, i) => (
         <span key={`${freq.source}-${i}`} className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${rankToBand(freq.rank, thresholds)}`]}`} title={freqTitle(freq)} data-cell-id="dictionary-frequency">
           <span className={styles.cellHeaderFrequencySource}>{freq.source}</span>
