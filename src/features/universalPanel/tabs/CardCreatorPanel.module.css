@@ -26,33 +26,6 @@
   pointer-events: auto;
 }
 
-.sheetHeader {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-width: 0;
-}
-
-/* Peek header title — the collapsed sheet's name row (MobileSheet `header`
-   prop). Tertiary small label; single-line ellipsis, never wraps. */
-.sheetHeaderTitle {
-  min-width: 0;
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sheetHeaderTerm {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .sheetContent {
   min-width: 0;
   padding: 0 var(--space-4) var(--space-4);
