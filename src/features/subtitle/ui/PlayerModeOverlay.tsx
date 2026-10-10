@@ -27,8 +27,6 @@ import { Button } from '@/shared/ui/Button';
 import { MenuItem, MenuSeparator } from '@/shared/ui/Menu';
 import { useSubtitleBlockDrag } from './subtitleDrag';
 import { Sheet } from '@/shared/ui/Sheet';
-import { MobileSheet } from '@/shared/ui/MobileSheet';
-import type { MobileSheetSnap } from '@/shared/ui/MobileSheet';
 import { hasEscapeLayers } from '@/shared/ui/escapeLayerStack';
 import { StepperSection, StepperValue } from '@/shared/ui/StepperSection';
 import { PLAYBACK_SPEEDS } from '@/entities/studyMode/types';
@@ -754,21 +752,6 @@ function PlayerModeOverlayInner({
 
   const pmStudyModes = [...PRESETS, ...(customModes ?? [])];
 
-  // PM mobile: the cue region is a shared MobileSheet — pill drag resizes
-  // between collapsed (handle + action row only), half, and full of the
-  // region between the video stage and the bottom bar. `cueListOpen` stays
-  // the single open/closed source: collapsed maps to closed, any expanded
-  // snap to open; the last expanded snap is kept for reopen.
-  const [pmSheetSnap, setPmSheetSnap] = useState<MobileSheetSnap>('full');
-  const onPmSheetSnapChange = (snap: MobileSheetSnap): void => {
-    if (snap === 'collapsed') {
-      onCueListOpenChange(false);
-      return;
-    }
-    setPmSheetSnap(snap);
-    if (!cueListOpen) onCueListOpenChange(true);
-  };
-
   if (isMobilePm) {
     return (
       <div
@@ -794,79 +777,69 @@ function PlayerModeOverlayInner({
             className={`${styles.pmCueWrap} ${!cueListOpen || !onSeek ? styles.pmCueWrapCollapsed : ''}`}
             data-cell-split-view="panel"
           >
-            <MobileSheet
-              snap={cueListOpen && onSeek ? pmSheetSnap : 'collapsed'}
-              onSnapChange={onPmSheetSnapChange}
-              aria-label={t('subtitle.panel.title')}
-              data-cell-id="pm-cue-sheet"
-              contentClassName={styles.pmCueSheetContent}
-              header={
-                <div className={styles.anchorBand} data-cell-id="pm-anchor-band">
-                  <div className={styles.anchorRow} ref={anchorRowRef} data-cell-id="pm-anchor-row">
-                    {onToggleManager && (
-                      <Button
-                        variant="neutralSubtle"
-                        size="md"
-                        aria-label={t('subtitle.toolbar.openManager')}
-                        title={t('subtitle.toolbar.openManager')}
-                        data-cell-id="manager-toggle-btn"
-                        onClick={onToggleManager}
-                      >
-                        <Icon name="captions" />
-                      </Button>
-                    )}
-                    <div className={styles.pmRail} data-cell-id="player-mode-actions">
-                      <div ref={setFabSlot} data-cell-id="pm-fab-slot" />
-                      {onGenerateNative && (
-                        <Button
-                          variant="neutralSubtle"
-                          size="md"
-                          elevation="low"
-                          aria-label={t('subtitle.toolbar.generateNative')}
-                          title={t('subtitle.toolbar.generateNativeTitle')}
-                          data-cell-id="generate-native-btn"
-                          onClick={onGenerateNative}
-                          disabled={!generateNativeEnabled}
-                        >
-                          <Icon name="generateNative" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+            {cueListOpen && onSeek && (
+              <div className={styles.pmCueRegion} data-cell-id="pm-cue-region">
+                <SubtitlePanel
+                  cues={cues ?? []}
+                  currentTimeMs={currentTimeMs ?? 0}
+                  offsetMs={offsetMs}
+                  onSeek={onSeek}
+                  activeModeId={activeModeId}
+                  customModes={customModes}
+                  onStudyModeChange={onStudyModeChange}
+                  practiceMode={practiceMode}
+                  onPracticeModeChange={onPracticeModeChange}
+                  isPlaying={isPlaying}
+                  playbackSpeed={playbackSpeed}
+                  onPlaybackSpeedChange={onPlaybackSpeedChange}
+                  onPlayPause={onPlayPause}
+                  onPreviousCue={onPreviousCue}
+                  onReplayCue={onReplayCue}
+                  onContinueCue={onContinueCue}
+                  tokenize={tokenize}
+                  panelBlurred={panelBlurred}
+                  pmMobile
+                  cueDisplayMode={cueDisplayMode}
+                  showAllCues={showAllCues}
+                  cardActions={pmCardActions}
+                  fabPortalTarget={fabSlot}
+                  onSaveCue={onSaveCue}
+                />
+              </div>
+            )}
+            <div className={styles.anchorBand} data-cell-id="pm-anchor-band">
+              <div className={styles.anchorRow} ref={anchorRowRef} data-cell-id="pm-anchor-row">
+                {onToggleManager && (
+                  <Button
+                    variant="neutralSubtle"
+                    size="md"
+                    aria-label={t('subtitle.toolbar.openManager')}
+                    title={t('subtitle.toolbar.openManager')}
+                    data-cell-id="manager-toggle-btn"
+                    onClick={onToggleManager}
+                  >
+                    <Icon name="captions" />
+                  </Button>
+                )}
+                <div className={styles.pmRail} data-cell-id="player-mode-actions">
+                  <div ref={setFabSlot} data-cell-id="pm-fab-slot" />
+                  {onGenerateNative && (
+                    <Button
+                      variant="neutralSubtle"
+                      size="md"
+                      elevation="low"
+                      aria-label={t('subtitle.toolbar.generateNative')}
+                      title={t('subtitle.toolbar.generateNativeTitle')}
+                      data-cell-id="generate-native-btn"
+                      onClick={onGenerateNative}
+                      disabled={!generateNativeEnabled}
+                    >
+                      <Icon name="generateNative" />
+                    </Button>
+                  )}
                 </div>
-              }
-            >
-              {onSeek && (
-                <div className={styles.pmCueRegion} data-cell-id="pm-cue-region">
-                  <SubtitlePanel
-                    cues={cues ?? []}
-                    currentTimeMs={currentTimeMs ?? 0}
-                    offsetMs={offsetMs}
-                    onSeek={onSeek}
-                    activeModeId={activeModeId}
-                    customModes={customModes}
-                    onStudyModeChange={onStudyModeChange}
-                    practiceMode={practiceMode}
-                    onPracticeModeChange={onPracticeModeChange}
-                    isPlaying={isPlaying}
-                    playbackSpeed={playbackSpeed}
-                    onPlaybackSpeedChange={onPlaybackSpeedChange}
-                    onPlayPause={onPlayPause}
-                    onPreviousCue={onPreviousCue}
-                    onReplayCue={onReplayCue}
-                    onContinueCue={onContinueCue}
-                    tokenize={tokenize}
-                    panelBlurred={panelBlurred}
-                    pmMobile
-                    cueDisplayMode={cueDisplayMode}
-                    showAllCues={showAllCues}
-                    cardActions={pmCardActions}
-                    fabPortalTarget={fabSlot}
-                    onSaveCue={onSaveCue}
-                  />
-                </div>
-              )}
-            </MobileSheet>
+              </div>
+            </div>
           </div>
         </div>
 

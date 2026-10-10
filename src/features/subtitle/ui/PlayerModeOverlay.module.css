@@ -188,27 +188,27 @@
 
 .pmCueWrapCollapsed {
   flex: 0 0 auto;
-  /* Sheet container while collapsed: pill handle + anchor row (peek). */
-  height: calc(var(--touch-target) + var(--space-12));
 }
 
 .pmCueRegion {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
   pointer-events: auto;
 }
 
-/* The cue list content area inside MobileSheet — cue cards are system-
-   positioned, never user-scrolled (REQ-10), so the sheet's own scroll is off. */
-.pmCueSheetContent {
-  overflow: hidden;
-}
-
-/* Anchor band — header row of the cue sheet (pill sits above it). Stays
-   visible in the collapsed peek so CC/rail actions remain reachable. */
+/* Floating anchor band — fully transparent, overlays the cue region bottom;
+   cards fade under it via the cue list's mask-image. pointer-events:none on
+   the band so taps pass through to cards; re-enabled on interactive children. */
 .anchorBand {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding-top: var(--space-6);
   pointer-events: none;
+  z-index: var(--z-overlay-base);
 }
 
 .anchorRow {

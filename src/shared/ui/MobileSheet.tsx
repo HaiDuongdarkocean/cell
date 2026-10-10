@@ -145,14 +145,6 @@ export function MobileSheet({
     const headerPx = headerRef.current?.getBoundingClientRect().height ?? 0;
     return handlePx + headerPx;
   };
-  // The collapsed peek must fit the real handle + header height — the static
-  // formula assumes a 24px header row and clips taller headers (e.g. the PM
-  // mobile anchor row with 40px buttons).
-  const [peekPx, setPeekPx] = useState<number | null>(null);
-  useEffect(() => {
-    const px = measurePeekHeightPx();
-    if (px > 0) setPeekPx(px);
-  }, [hasHeader, snap]);
 
   useEffect(() => { onSnapChangeRef.current = onSnapChange; }, [onSnapChange]);
   useEffect(() => { isControlledRef.current = isControlled; }, [isControlled]);
@@ -247,11 +239,9 @@ export function MobileSheet({
     .filter(Boolean)
     .join(' ');
   const sheetStyle: CSSProperties = {
-    '--mobile-sheet-peek-height': peekPx !== null
-      ? `${peekPx}px`
-      : hasHeader
-        ? 'calc(var(--touch-target) + var(--space-6))'
-        : 'var(--touch-target)',
+    '--mobile-sheet-peek-height': hasHeader
+      ? 'calc(var(--touch-target) + var(--space-6))'
+      : 'var(--touch-target)',
     ...(dragHeight !== null ? { '--mobile-sheet-drag-height': `${dragHeight}px` } : {}),
   } as CSSProperties;
   const contentClass = contentClassName ? `${styles.content} ${contentClassName}` : styles.content;
