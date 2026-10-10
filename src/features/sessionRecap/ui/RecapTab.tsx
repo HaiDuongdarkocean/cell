@@ -20,7 +20,6 @@ import type { SessionRecap, SessionRecapStatus } from '../types';
 import styles from './RecapTab.module.css';
 
 const STATUS_LABEL: Record<SessionRecapStatus, MessageKey> = {
-  learning: 'vocabulary.status.learning',
   known: 'vocabulary.status.known',
   tracking: 'vocabulary.status.tracking',
   ignore: 'vocabulary.status.ignore',

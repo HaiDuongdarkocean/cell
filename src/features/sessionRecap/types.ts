@@ -1,4 +1,4 @@
-export type SessionRecapStatus = 'tracking' | 'learning' | 'known' | 'ignore';
+export type SessionRecapStatus = 'tracking' | 'known' | 'ignore';
 
 export type SessionRecapStatusGroup = {
   readonly status: SessionRecapStatus;

@@ -1,28 +1,22 @@
 import { decideStatusWrite } from './wordStatusArbitration';
 
-const ex = (status: 'tracking' | 'learning' | 'known' | 'ignore', at: number, source?: 'user' | 'anki' | 'srs' | 'import') =>
+const ex = (status: 'tracking' | 'known' | 'ignore', at: number, source?: 'user' | 'anki' | 'srs' | 'import') =>
   ({ status, updatedAt: at, source, sourceAt: at });
 
 describe('decideStatusWrite', () => {
   it('writes when no existing entry', () => {
-    expect(decideStatusWrite(undefined, { status: 'learning', source: 'anki', sourceAt: 1 })).toBe('write');
+    expect(decideStatusWrite(undefined, { status: 'tracking', source: 'anki', sourceAt: 1 })).toBe('write');
   });
 
   it('newer sourceAt wins', () => {
     const decision = decideStatusWrite(
-      ex('tracking', 100, 'user'),
-      { status: 'learning', source: 'anki', sourceAt: 200 },
+      ex('ignore', 100, 'user'),
+      { status: 'known', source: 'anki', sourceAt: 200 },
     );
     expect(decision).toBe('write');
   });
 
-  it('tracking→learning escalates even with older sourceAt', () => {
-    expect(
-      decideStatusWrite(ex('tracking', 300, 'user'), { status: 'learning', source: 'anki', sourceAt: 200 }),
-    ).toBe('write');
-  });
-
-  it('older sourceAt loses on non-escalation transitions', () => {
+  it('older sourceAt loses on normal transitions', () => {
     expect(
       decideStatusWrite(ex('tracking', 300, 'user'), { status: 'known', source: 'anki', sourceAt: 200 }),
     ).toBe('skip');
@@ -30,22 +24,22 @@ describe('decideStatusWrite', () => {
 
   it('equal timestamps break ties by source priority (user > anki > srs > import)', () => {
     expect(
-      decideStatusWrite(ex('learning', 100, 'anki'), { status: 'known', source: 'user', sourceAt: 100 }),
+      decideStatusWrite(ex('tracking', 100, 'anki'), { status: 'known', source: 'user', sourceAt: 100 }),
     ).toBe('write');
     expect(
-      decideStatusWrite(ex('learning', 100, 'user'), { status: 'ignore', source: 'anki', sourceAt: 100 }),
+      decideStatusWrite(ex('tracking', 100, 'user'), { status: 'ignore', source: 'anki', sourceAt: 100 }),
     ).toBe('skip');
     expect(
-      decideStatusWrite(ex('learning', 100, 'srs'), { status: 'known', source: 'anki', sourceAt: 100 }),
+      decideStatusWrite(ex('tracking', 100, 'srs'), { status: 'known', source: 'anki', sourceAt: 100 }),
     ).toBe('write');
     expect(
-      decideStatusWrite(ex('learning', 100, 'anki'), { status: 'known', source: 'srs', sourceAt: 100 }),
+      decideStatusWrite(ex('tracking', 100, 'anki'), { status: 'known', source: 'srs', sourceAt: 100 }),
     ).toBe('skip');
   });
 
   it('never lets non-user writes downgrade known', () => {
     expect(
-      decideStatusWrite(ex('known', 1, 'user'), { status: 'learning', source: 'anki', sourceAt: 9999 }),
+      decideStatusWrite(ex('known', 1, 'user'), { status: 'tracking', source: 'anki', sourceAt: 9999 }),
     ).toBe('skip');
     expect(
       decideStatusWrite(ex('known', 1, 'anki'), { status: 'tracking', source: 'srs', sourceAt: 9999 }),
@@ -58,42 +52,27 @@ describe('decideStatusWrite', () => {
     ).toBe('write');
   });
 
-  it('legacy sourceless tracking still escalates to learning', () => {
-    expect(
-      decideStatusWrite(ex('tracking', 100), { status: 'learning', source: 'anki', sourceAt: 100 }),
-    ).toBe('write');
-  });
-
-  it('legacy sourceless rows count as user truth on other ties', () => {
+  it('legacy sourceless rows count as user truth on ties', () => {
     expect(
       decideStatusWrite(ex('tracking', 100), { status: 'known', source: 'anki', sourceAt: 100 }),
     ).toBe('skip');
   });
 
-  it('non-user flags never write onto known or ignore', () => {
+  it('non-user tracking never writes onto known or ignore', () => {
     expect(
-      decideStatusWrite(ex('ignore', 100, 'user'), { status: 'learning', source: 'anki', sourceAt: 200 }),
+      decideStatusWrite(ex('ignore', 100, 'user'), { status: 'tracking', source: 'anki', sourceAt: 200 }),
     ).toBe('skip');
     expect(
       decideStatusWrite(ex('ignore', 100, 'user'), { status: 'tracking', source: 'srs', sourceAt: 200 }),
     ).toBe('skip');
     expect(
-      decideStatusWrite(ex('known', 100, 'anki'), { status: 'learning', source: 'anki', sourceAt: 200 }),
+      decideStatusWrite(ex('known', 100, 'anki'), { status: 'tracking', source: 'anki', sourceAt: 200 }),
     ).toBe('skip');
   });
 
-  it('tracking→learning escalates from any non-user source', () => {
+  it('non-user tracking does not escalate onto a stored tracking row either — LWW applies', () => {
     expect(
-      decideStatusWrite(ex('tracking', 100, 'user'), { status: 'learning', source: 'srs', sourceAt: 50 }),
-    ).toBe('write');
-  });
-
-  it('learning→tracking is a downgrade — normal arbitration applies (newer anki wins over older srs)', () => {
-    expect(
-      decideStatusWrite(ex('learning', 100, 'srs'), { status: 'tracking', source: 'anki', sourceAt: 200 }),
-    ).toBe('write');
-    expect(
-      decideStatusWrite(ex('learning', 300, 'srs'), { status: 'tracking', source: 'anki', sourceAt: 200 }),
+      decideStatusWrite(ex('ignore', 100, 'srs'), { status: 'tracking', source: 'anki', sourceAt: 200 }),
     ).toBe('skip');
   });
 

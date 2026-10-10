@@ -14,7 +14,7 @@ import {
   AnkiImportJobRow, flattenDeckName, importNormalized, ImportError, ImportWizard,
   type AnkiImportJob, type AnkiImportStartPayload,
 } from '@/features/ankiImport';
-import { reconcileLearningFlags, seedStatusesFromSrs } from '@/features/ankiStatusSync';
+import { seedStatusesFromSrs } from '@/features/ankiStatusSync';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { useSrsUiPrefs } from '@/features/srs/ui/srsUiPrefs';
@@ -235,7 +235,6 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
       await deleteDeckCascade(pendingDelete.id);
     }
     setPendingDelete(null);
-    void reconcileLearningFlags(targetLanguage);
     // Direct-IDB deletes bypass the background handlers — ask it to
     // rebroadcast so tokenized pages repaint their card layer.
     void sendMessage({

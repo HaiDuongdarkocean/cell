@@ -54,7 +54,7 @@ const DEFAULT_ENTRIES: VocabularyEntry[] = [
   { term: 'apple', status: 'known', updatedAt: 10 },
   { term: 'banana', status: 'tracking', updatedAt: 30 },
   { term: 'cherry', status: 'ignore', updatedAt: 20 },
-  { term: 'date', status: 'learning', updatedAt: 5 },
+  { term: 'date', status: 'tracking', updatedAt: 5 },
 ];
 
 const byId = (id: string): HTMLElement | null => document.querySelector(`[data-cell-id="${id}"]`);
@@ -95,8 +95,7 @@ describe('VocabularyTab', () => {
     const hero = byId('vocabulary-hero')!;
     expect(within(hero).getByText('Known words')).toBeTruthy();
     expect(hero.textContent).toContain('1');
-    expect(hero.textContent).toMatch(/1\s*learning/);
-    expect(hero.textContent).toMatch(/1\s*tracked/);
+    expect(hero.textContent).toMatch(/2\s*tracked/);
     expect(hero.textContent).toMatch(/1\s*ignored/);
   });
 
@@ -193,7 +192,7 @@ describe('VocabularyTab', () => {
     click('vocabulary-segment-tracking');
     expect(screen.queryByText('apple')).toBeNull();
     expect(screen.getByText('banana')).toBeTruthy();
-    expect(byId('vocabulary-meta')!.textContent).toBe('1 word');
+    expect(byId('vocabulary-meta')!.textContent).toBe('2 words');
     expect(bulkBarOpen()).toBe(false);
   });
 

@@ -72,7 +72,7 @@ function SyncSection({ addon }: { addon: 'connected' | 'absent' }) {
 }
 
 function StatusSurfaces() {
-  const statuses = ['unknown', 'tracking', 'learning', 'known', 'ignore'] as const;
+  const statuses = ['unknown', 'tracking', 'known', 'ignore'] as const;
   return (
     <>
       <div className="card">
@@ -80,9 +80,10 @@ function StatusSurfaces() {
         <div className="chips">
           {statuses.map((s) => (
             <span key={s} className={`statusChip ${s}`}>
-              {s === 'unknown' ? 'Unknown 12' : s === 'tracking' ? 'Tracking 8' : s === 'learning' ? 'Learning 5' : s === 'known' ? 'Known 240' : 'Ignore 3'}
+              {s === 'unknown' ? 'Unknown 12' : s === 'tracking' ? 'Tracking 8' : s === 'known' ? 'Known 240' : 'Ignore 3'}
             </span>
           ))}
+          <span className="statusChip carded">Has card 9</span>
         </div>
         <div className="cardTitle" style={{ fontSize: 13 }}>Token underline colors</div>
         <div className="legendRow">
@@ -99,7 +100,6 @@ function StatusSurfaces() {
           <span><Kbd>2</Kbd> tracking</span>
           <span><Kbd>3</Kbd> known</span>
           <span><Kbd>4</Kbd> ignore</span>
-          <span><Kbd>5</Kbd> learning</span>
         </div>
       </div>
     </>
@@ -116,8 +116,8 @@ function App() {
     <div className="page">
       <h1>anki-known-seed — design mockup</h1>
       <p className="note">
-        Variant: sync controls live inside Settings → Sync section card; `learning` is a 5th
-        status color (blue) added to chip/underline/keymap surfaces.
+        Variant: sync controls live inside Settings → Sync section card; `tracking` is the
+        user flag and card presence (blue) is an orthogonal `hasCard` layer.
       </p>
       <div className="toolbar">
         <button className={theme === 'light' ? 'on' : ''} onClick={() => setTheme('light')}>Light</button>

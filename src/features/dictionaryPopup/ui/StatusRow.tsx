@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { rankToBand, type FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
-import { baseStatus, nextBaseStatus, statusFlag, toggleTrackingFlag } from '@/features/dictionary';
+import { baseStatus, nextBaseStatus, statusFlag } from '@/features/dictionary';
 import { t, type MessageKey } from '@/shared/i18n';
 import { useDragScroll } from '@/shared/ui/useDragScroll';
 import styles from './CandidateView.module.css';
@@ -11,7 +11,6 @@ import type { VariantFrequency, WordStatus } from '@/entities/dictionary';
 export const STATUS_KEYS: Record<WordStatus, MessageKey> = {
   unknown: 'vocabulary.status.unknown',
   tracking: 'vocabulary.status.tracking',
-  learning: 'vocabulary.status.learning',
   known: 'vocabulary.status.known',
   ignore: 'vocabulary.status.ignore',
 };
@@ -58,13 +57,12 @@ export interface StatusSegmentedProps {
 
 export function StatusSegmented({ status, onCycle, onToggleTracking, srsCardCount, onOpenSrsCards }: StatusSegmentedProps): React.JSX.Element {
   const flag = statusFlag(status);
-  const trackingEnabled = toggleTrackingFlag(status) !== status;
   return (
     <span className={styles.cellHeaderStatusGroup}>
       <Button
         variant="transparent"
         className={`${styles.cellHeaderStatus} ${styles.cellHeaderStatusFlag} ${flag === 'tracking' ? styles['cellHeaderStatus--tracking'] : styles.cellHeaderStatusFlagIdle}`}
-        disabled={!trackingEnabled}
+        disabled={!onToggleTracking}
         onClick={onToggleTracking}
         title={t('dict.status.trackingToggle')}
         aria-label={t('dict.status.trackingToggle')}

@@ -1,15 +1,20 @@
 import { registerAnkiStatusSyncHandlers } from './ankiStatusSync';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { listCardSourceTerms, reconcileSrsCardLoss } from '@/features/ankiStatusSync';
+import { listCardSourceTerms, srsDeckLangCode } from '@/features/ankiStatusSync';
+import { broadcastSrsCardsChanged } from './srsCardsBroadcast';
 
 jest.mock('@/features/ankiStatusSync', () => ({
   ANKI_STATUS_SYNC_ALARM: 'cell.ankiStatusSync.tick',
   ANKI_SYNC_PERIOD_MINUTES: 5,
   getSyncState: jest.fn(async () => ({})),
   listCardSourceTerms: jest.fn(),
-  reconcileSrsCardLoss: jest.fn(),
+  srsDeckLangCode: jest.fn(),
   runAnkiStatusSync: jest.fn(),
   syncSrsReviewToStatus: jest.fn(),
+}));
+
+jest.mock('./srsCardsBroadcast', () => ({
+  broadcastSrsCardsChanged: jest.fn(),
 }));
 
 jest.mock('@/features/srs', () => ({
@@ -71,8 +76,8 @@ describe('ANKI_STATUS_SRS_CARD_DELETED', () => {
     jest.clearAllMocks();
   });
 
-  it('routes the deletion to reconcileSrsCardLoss', async () => {
-    (reconcileSrsCardLoss as jest.Mock).mockResolvedValue(undefined);
+  it('repaints the hasCard layer via SRS_CARDS_CHANGED — status stays untouched', async () => {
+    (srsDeckLangCode as jest.Mock).mockResolvedValue('en');
 
     const ctx = createMockCtx();
     registerAnkiStatusSyncHandlers(ctx as unknown as Parameters<typeof registerAnkiStatusSyncHandlers>[0]);
@@ -80,7 +85,21 @@ describe('ANKI_STATUS_SRS_CARD_DELETED', () => {
     const handler = ctx.handlers.get(MESSAGE_TYPES.ANKI_STATUS_SRS_CARD_DELETED);
     const response = await handler?.({ payload: { deckId: 'd1', targetWord: 'abandon' } });
 
-    expect(reconcileSrsCardLoss).toHaveBeenCalledWith('d1', 'abandon');
+    expect(srsDeckLangCode).toHaveBeenCalledWith('d1');
+    expect(broadcastSrsCardsChanged).toHaveBeenCalledWith(expect.anything(), 'en');
+    expect(response).toEqual({ success: true });
+  });
+
+  it('skips the broadcast when the deck language cannot be resolved', async () => {
+    (srsDeckLangCode as jest.Mock).mockResolvedValue(null);
+
+    const ctx = createMockCtx();
+    registerAnkiStatusSyncHandlers(ctx as unknown as Parameters<typeof registerAnkiStatusSyncHandlers>[0]);
+
+    const handler = ctx.handlers.get(MESSAGE_TYPES.ANKI_STATUS_SRS_CARD_DELETED);
+    const response = await handler?.({ payload: { deckId: 'd1', targetWord: 'abandon' } });
+
+    expect(broadcastSrsCardsChanged).not.toHaveBeenCalled();
     expect(response).toEqual({ success: true });
   });
 
@@ -92,6 +111,7 @@ describe('ANKI_STATUS_SRS_CARD_DELETED', () => {
     const response = await handler?.({ payload: { deckId: 'd1' } });
 
     expect((response as { success: boolean }).success).toBe(false);
-    expect(reconcileSrsCardLoss).not.toHaveBeenCalled();
+    expect(srsDeckLangCode).not.toHaveBeenCalled();
+    expect(broadcastSrsCardsChanged).not.toHaveBeenCalled();
   });
 });

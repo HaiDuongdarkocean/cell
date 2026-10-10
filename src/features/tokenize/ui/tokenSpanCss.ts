@@ -303,9 +303,6 @@ html body .js-cell-token.js-cell-token--status-unknown .js-cell-token-status {
 html body .js-cell-token.js-cell-token--status-tracking .js-cell-token-status {
   background: linear-gradient(90deg, var(--cell-token-status-tracking), var(--cell-token-status-unknown)) !important;
 }
-html body .js-cell-token.js-cell-token--status-learning .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-learning), var(--cell-token-status-unknown)) !important;
-}
 html body .js-cell-token.js-cell-token--status-known:hover:not(.js-cell-token--status-off) .js-cell-token-status,
 html body .js-cell-token.js-cell-token--status-known.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-status {
   background: var(--cell-token-status-known) !important;
@@ -316,8 +313,9 @@ html body .js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open:
 }
 
 /* Card layer: a term with ≥1 flashcard (Ocean SRS note or stored Anki link)
-   appends the learning color as the last gradient stop. learning needs no
-   rule (its gradient already implies cards). The :not(--status-off) keeps
+   appends the card color (--cell-token-status-learning) as the last gradient
+   stop — card presence is orthogonal to the status, so every status gets the
+   gradient suffix. The :not(--status-off) keeps
    the global status toggle winning despite the extra class raising
    specificity, and these rules stay before the i1-off gate so it can still
    hide the capsule at rest. */
@@ -338,7 +336,6 @@ html body .js-cell-token.js-cell-token--status-ignore.js-cell-token--has-card.js
 
 .js-cell-token.js-cell-token--status-unknown,
 .js-cell-token.js-cell-token--status-tracking,
-.js-cell-token.js-cell-token--status-learning,
 .js-cell-token.js-cell-token--status-known:hover,
 .js-cell-token.js-cell-token--status-known.js-cell-token--popup-open,
 .js-cell-token.js-cell-token--status-ignore:hover,
@@ -598,9 +595,6 @@ ${buildVariables(':host')}
 .js-cell-token.js-cell-token--status-tracking .js-cell-token-status {
   background: linear-gradient(90deg, var(--cell-token-status-tracking), var(--cell-token-status-unknown)) !important;
 }
-.js-cell-token.js-cell-token--status-learning .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-learning), var(--cell-token-status-unknown)) !important;
-}
 .js-cell-token.js-cell-token--status-known:hover:not(.js-cell-token--status-off) .js-cell-token-status,
 .js-cell-token.js-cell-token--status-known.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-status {
   background: var(--cell-token-status-known) !important;
@@ -628,7 +622,6 @@ ${buildVariables(':host')}
 
 .js-cell-token.js-cell-token--status-unknown,
 .js-cell-token.js-cell-token--status-tracking,
-.js-cell-token.js-cell-token--status-learning,
 .js-cell-token.js-cell-token--status-known:hover,
 .js-cell-token.js-cell-token--status-known.js-cell-token--popup-open,
 .js-cell-token.js-cell-token--status-ignore:hover,

@@ -40,6 +40,6 @@ h2 { font-size: 14px; margin: 28px 0 10px; color: var(--color-text-secondary); t
 }
 .statusChip.unknown { background: var(--color-token-status-unknown-bg); color: var(--chip-status-unknown-fg); }
 .statusChip.tracking { background: var(--color-token-status-tracking-bg); color: var(--chip-status-tracking-fg); }
-.statusChip.learning { background: var(--color-token-status-learning-bg); color: var(--chip-status-learning-fg); }
+.statusChip.carded { background: var(--color-token-status-learning-bg); color: var(--chip-status-learning-fg); }
 .statusChip.known { background: var(--color-token-status-known-bg); color: var(--chip-status-known-fg); }
 .statusChip.ignore { background: var(--color-token-status-ignore-bg); color: var(--chip-status-ignore-fg); }

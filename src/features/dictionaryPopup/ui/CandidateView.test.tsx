@@ -742,7 +742,7 @@ describe('CandidateView', () => {
   it('renders no cards chip when the term has no SRS cards', async () => {
     render(
       <CandidateView
-        candidate={makeResult('hello', { status: 'learning' })}
+        candidate={makeResult('hello', { status: 'tracking' })}
         index={0}
         contextSentence=""
         sourceLang="en"

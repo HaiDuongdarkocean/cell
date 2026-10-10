@@ -3,6 +3,7 @@ import type {
   SessionEvent,
   VideoRecord,
 } from '@/features/local-player';
+import { normalizeStoredStatus, type StoredWordStatus } from '@/features/dictionary';
 import {
   DERIVE_LOOKBACK_DAYS,
   LIVE_FLUSH_MS,
@@ -24,13 +25,11 @@ export interface StatusEntryLike {
 
 const VALID_STATUSES = new Set<SessionRecapStatus>([
   'tracking',
-  'learning',
   'known',
   'ignore',
 ]);
 
 const STATUS_ORDER: readonly SessionRecapStatus[] = [
-  'learning',
   'known',
   'tracking',
   'ignore',
@@ -146,8 +145,9 @@ function buildStatusGroups(
 ): { count: number; groups: SessionRecapStatusGroup[] } {
   const byStatus = new Map<SessionRecapStatus, { term: string; pos?: string }[]>();
   for (const e of entries) {
-    if (!VALID_STATUSES.has(e.status as SessionRecapStatus)) continue;
-    const k = e.status as SessionRecapStatus;
+    if (e.status === undefined) continue;
+    const k = normalizeStoredStatus(e.status as StoredWordStatus);
+    if (k === 'unknown' || !VALID_STATUSES.has(k)) continue;
     const list = byStatus.get(k);
     if (list) list.push(e);
     else byStatus.set(k, [e]);

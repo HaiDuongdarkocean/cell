@@ -84,11 +84,6 @@
   color: var(--color-text);
 }
 
-.countLearning {
-  color: var(--chip-status-learning-fg);
-  font-weight: var(--font-weight-semibold, 600);
-}
-
 .countTracking {
   color: var(--chip-status-tracking-fg);
   font-weight: var(--font-weight-semibold, 600);
@@ -220,11 +215,6 @@
   color: var(--chip-status-tracking-fg);
 }
 
-.row .statusCircle.status-learning {
-  background: var(--chip-status-learning-bg);
-  color: var(--chip-status-learning-fg);
-}
-
 .row .statusCircle.status-known {
   background: var(--chip-status-known-bg);
   color: var(--chip-status-known-fg);
@@ -237,10 +227,6 @@
 
 .row .statusCircle.status-tracking:hover {
   background: color-mix(in srgb, var(--chip-status-tracking-bg), var(--color-text) 8%);
-}
-
-.row .statusCircle.status-learning:hover {
-  background: color-mix(in srgb, var(--chip-status-learning-bg), var(--color-text) 8%);
 }
 
 .row .statusCircle.status-known:hover {

@@ -3,7 +3,7 @@ import { Button } from '@/shared/ui/Button';
 import styles from './Chip.module.css';
 
 export type ChipColor = 'success' | 'error' | 'primary' | 'warning' | 'muted';
-export type ChipStatus = 'unknown' | 'tracking' | 'learning' | 'known' | 'ignore';
+export type ChipStatus = 'unknown' | 'tracking' | 'known' | 'ignore';
 
 interface ChipBaseProps {
   /** Visual style. Default: default. */

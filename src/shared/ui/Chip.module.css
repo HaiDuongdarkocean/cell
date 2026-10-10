@@ -78,11 +78,6 @@
   color: var(--chip-status-tracking-fg);
 }
 
-.chip.status-learning {
-  background: var(--chip-status-learning-bg);
-  color: var(--chip-status-learning-fg);
-}
-
 .chip.status-known {
   background: var(--chip-status-known-bg);
   color: var(--chip-status-known-fg);
@@ -99,10 +94,6 @@ button.chip.status-unknown:hover {
 
 button.chip.status-tracking:hover {
   background: color-mix(in srgb, var(--chip-status-tracking-bg), var(--color-text) 8%);
-}
-
-button.chip.status-learning:hover {
-  background: color-mix(in srgb, var(--chip-status-learning-bg), var(--color-text) 8%);
 }
 
 button.chip.status-known:hover {

@@ -55,14 +55,12 @@ const RENDER_CHUNK = 100;
 const STATUS_LABEL: Record<WordStatus, MessageKey> = {
   unknown: 'vocabulary.status.unknown',
   tracking: 'vocabulary.status.tracking',
-  learning: 'vocabulary.status.learning',
   known: 'vocabulary.status.known',
   ignore: 'vocabulary.status.ignore',
 };
 
 export const STATUS_ICON: Record<MarkedStatus, IconCatalogKey> = {
   tracking: 'eye',
-  learning: 'clock',
   known: 'circleCheck',
   ignore: 'eyeOff',
 };
@@ -70,7 +68,6 @@ export const STATUS_ICON: Record<MarkedStatus, IconCatalogKey> = {
 const SEGMENT_LABEL: Record<VocabularySegment, MessageKey> = {
   all: 'vocabulary.segment.all',
   tracking: 'vocabulary.status.tracking',
-  learning: 'vocabulary.status.learning',
   known: 'vocabulary.status.known',
   ignore: 'vocabulary.status.ignore',
 };
@@ -177,7 +174,6 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
     () => ({
       all: state.entries.length,
       tracking: statusCounts.tracking,
-      learning: statusCounts.learning,
       known: statusCounts.known,
       ignore: statusCounts.ignore,
     }),
@@ -424,10 +420,6 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                 {t('vocabulary.hero.knownWords')}
               </Heading>
               <Text className={styles.heroBreakdown}>
-                <span>
-                  <span className={styles.countLearning}>{statusCounts.learning.toLocaleString()}</span>{' '}
-                  {t('vocabulary.hero.learning')}
-                </span>
                 <span>
                   <span className={styles.countTracking}>{statusCounts.tracking.toLocaleString()}</span>{' '}
                   {t('vocabulary.hero.tracking')}

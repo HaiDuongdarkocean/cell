@@ -1,6 +1,6 @@
-// addNoteFromMessage — REQ-4/AC-5: a successful SRS note creation flags the
-// term 'learning' via the system writer; failures and user-set base statuses
-// are never overridden by that write.
+// addNoteFromMessage — a successful SRS note creation flags an unknown term
+// 'tracking' via the system writer; failures and non-unknown statuses are
+// never overridden by that write.
 
 import 'fake-indexeddb/auto';
 import type { SrsNotetype, SrsStudyConfig } from '@/entities/srs/types';
@@ -101,12 +101,26 @@ const input = (targetWord: string): SrsAddNoteMessageInput => ({
   fields: { target: { kind: 'text', value: targetWord } },
 });
 
-describe('addNoteFromMessage → learning flag (REQ-4 / AC-5)', () => {
-  it('flags the normalized term learning after a successful note add', async () => {
+describe('addNoteFromMessage → tracking flag', () => {
+  it('flags the normalized term tracking after a successful note add', async () => {
     const result = await addNoteFromMessage(input('  Abandon '));
 
     expect(result.noteId).toBeTruthy();
-    expect(await getWordStatus('en', 'abandon')).toBe('learning');
+    expect(await getWordStatus('en', 'abandon')).toBe('tracking');
+  });
+
+  it('keeps an existing tracking flag and never rewrites known or ignore', async () => {
+    await setWordStatusFromSync('en', 'tr', 'tracking', { source: 'srs', sourceAt: Date.now() });
+    await setWordStatusFromSync('en', 'cat', 'known', { source: 'srs', sourceAt: Date.now() });
+    await setWordStatusFromSync('en', 'dog', 'ignore', { source: 'srs', sourceAt: Date.now() });
+
+    await addNoteFromMessage(input('tr'));
+    await addNoteFromMessage(input('cat'));
+    await addNoteFromMessage(input('dog'));
+
+    expect(await getWordStatus('en', 'tr')).toBe('tracking');
+    expect(await getWordStatus('en', 'cat')).toBe('known');
+    expect(await getWordStatus('en', 'dog')).toBe('ignore');
   });
 
   it('writes no status when note creation fails', async () => {
@@ -116,16 +130,5 @@ describe('addNoteFromMessage → learning flag (REQ-4 / AC-5)', () => {
     await expect(addNoteFromMessage(input('abandon'))).rejects.toThrow(SrsError);
 
     expect(await getWordStatus('en', 'abandon')).toBe('unknown');
-  });
-
-  it('does not overwrite known or ignore terms — arbitration wins', async () => {
-    await setWordStatusFromSync('en', 'cat', 'known', { source: 'srs', sourceAt: Date.now() });
-    await setWordStatusFromSync('en', 'dog', 'ignore', { source: 'srs', sourceAt: Date.now() });
-
-    await addNoteFromMessage(input('cat'));
-    await addNoteFromMessage(input('dog'));
-
-    expect(await getWordStatus('en', 'cat')).toBe('known');
-    expect(await getWordStatus('en', 'dog')).toBe('ignore');
   });
 });

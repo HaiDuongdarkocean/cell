@@ -1,5 +1,5 @@
 import type { SrsCollection, SrsFieldValue, SrsNotetype, SrsStudyConfig } from '@/entities/srs/types';
-import { normalizeTerm, setWordStatusFromSync } from '@/features/dictionary';
+import { getWordStatus, normalizeTerm, setWordStatusFromSync } from '@/features/dictionary';
 import { SrsError } from '@/features/srs/lib/srsError';
 import { addNoteAndCard } from '@/features/srs/logic/cardCreation';
 import { createSrsFsrsAdapter } from '@/features/srs/services/srsFsrsAdapter';
@@ -59,14 +59,14 @@ export async function addNoteFromMessage(input: SrsAddNoteMessageInput): Promise
 
   try {
     const term = normalizeTerm(input.targetWord);
-    if (term) {
-      await setWordStatusFromSync(input.targetLanguage, term, 'learning', {
+    if (term && (await getWordStatus(input.targetLanguage, term)) === 'unknown') {
+      await setWordStatusFromSync(input.targetLanguage, term, 'tracking', {
         source: 'srs',
         sourceAt: Date.now(),
       });
     }
   } catch (err) {
-    logger.warn('srs: learning flag write failed', {
+    logger.warn('srs: tracking flag write failed', {
       error: err instanceof Error ? err.message : String(err),
     });
   }

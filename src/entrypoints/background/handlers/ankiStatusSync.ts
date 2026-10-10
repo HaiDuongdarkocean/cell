@@ -15,7 +15,7 @@ import {
   ANKI_SYNC_PERIOD_MINUTES,
   getSyncState,
   listCardSourceTerms,
-  reconcileSrsCardLoss,
+  srsDeckLangCode,
   runAnkiStatusSync,
   syncSrsReviewToStatus,
 } from '@/features/ankiStatusSync';
@@ -118,7 +118,8 @@ export function registerAnkiStatusSyncHandlers(ctx: BackgroundContext): void {
       };
     }
     try {
-      const langCode = await reconcileSrsCardLoss(parsed.data.deckId, parsed.data.targetWord);
+      // Card loss only repaints the hasCard layer — word status is untouched.
+      const langCode = await srsDeckLangCode(parsed.data.deckId);
       if (langCode) void broadcastSrsCardsChanged(ctx, langCode);
       return { success: true };
     } catch (err) {

@@ -11,7 +11,6 @@ import { getCardsByDeck, getCardsByNote, putCard } from '@/features/srs/reposito
 import { getNotetype, getNotetypesByCollection } from '@/features/srs/repositories/notetypeRepository';
 import { getStudyConfig } from '@/features/srs/repositories/studyConfigRepository';
 import { deleteNoteCascade, deleteDeckCascade } from '@/features/srs/repositories/deleteCascade';
-import { reconcileLearningFlags } from '@/features/ankiStatusSync';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { resetCard } from '@/features/srs/logic/reviewEngine';
@@ -141,7 +140,6 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', initialQuery,
 
   async function handleDeleteDeck(): Promise<void> {
     await deleteDeckCascade(deck.id);
-    void reconcileLearningFlags(targetLanguage);
     notifyCardsChanged();
     onChanged();
     onBack();
@@ -170,7 +168,6 @@ export function SrsDeckDetail({ deck, decks, initialMode = 'view', initialQuery,
       if (status) await markStatus(note, status);
       await deleteNoteCascade(note.id);
     }
-    void reconcileLearningFlags(targetLanguage);
     notifyCardsChanged();
     exitSelectMode();
     await reload();

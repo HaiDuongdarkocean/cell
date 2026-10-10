@@ -101,7 +101,7 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     },
   );
 
-  it.each(['tracking', 'learning'])(
+  it.each(['tracking'])(
     'paints the %s flag capsule as a gradient into the unknown base — no halo',
     (status) => {
       for (const source of [buildTokenSpanCss(), buildTokenSpanCssForShadow()]) {
@@ -283,10 +283,10 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     );
 
     it.each(['host', 'shadow'])(
-      'leaves the learning capsule unchanged — its gradient already implies cards in %s CSS',
+      'emits no status-learning selector — learning is the card color, not a status in %s CSS',
       (variant) => {
         const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
-        expect(source).not.toMatch(/status-learning\.js-cell-token--has-card/);
+        expect(source).not.toMatch(/status-learning\./);
       },
     );
 

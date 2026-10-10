@@ -8,6 +8,7 @@
 import { getDB, awaitTx, STORES } from '@/features/dictionary/repositories/baseRepository';
 import type { WordStatus } from '@/entities/dictionary';
 import type { WordStatusEntry } from './wordStatusStore';
+import { normalizeStoredStatus, type StoredWordStatus } from './wordStatusSemantics';
 import { captureChange, ensureSyncRuntime, isCaptureEnabled, scopeForTarget, targetOf } from '@/features/sync';
 
 export interface TrashedWordEntry {
@@ -19,6 +20,12 @@ export interface TrashedWordEntry {
 export const TRASH_TTL_MS = 24 * 60 * 60 * 1000;
 
 const RESTORE_FALLBACK_STATUS: WordStatus = 'tracking';
+
+/** Legacy `learning` values stored before the tracking/hasCard split — both
+ *  status rows copied into trash and trash records written by older builds. */
+function normalizePreviousStatus(status: StoredWordStatus): WordStatus {
+  return normalizeStoredStatus(status);
+}
 
 function request<T>(req: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -40,7 +47,7 @@ export async function trashWordStatus(langCode: string, term: string): Promise<v
   const trashStore = tx.objectStore(STORES.WORD_TRASH);
   const row = (await request(statusStore.get(term))) as WordStatusEntry | undefined;
   if (row !== undefined) {
-    trashStore.put({ term, previousStatus: row.status, trashedAt: Date.now() });
+    trashStore.put({ term, previousStatus: normalizePreviousStatus(row.status as StoredWordStatus), trashedAt: Date.now() });
     statusStore.delete(term);
     if (isCaptureEnabled()) {
       await captureChange(statusStore, {
@@ -75,7 +82,8 @@ export async function listWordTrash(langCode: string): Promise<TrashedWordEntry[
     if (entry.trashedAt < cutoff || marked.has(entry.term)) {
       trashStore.delete(entry.term);
     } else {
-      survivors.push(entry);
+      const previousStatus = normalizePreviousStatus(entry.previousStatus as StoredWordStatus);
+      survivors.push(previousStatus === entry.previousStatus ? entry : { ...entry, previousStatus });
     }
   }
   await awaitTx(tx);
@@ -111,7 +119,7 @@ export async function trashWordStatuses(
   for (const [i, term] of terms.entries()) {
     const row = rows[i];
     if (row === undefined) continue;
-    trashStore.put({ term, previousStatus: row.status, trashedAt: now });
+    trashStore.put({ term, previousStatus: normalizePreviousStatus(row.status as StoredWordStatus), trashedAt: now });
     statusStore.delete(term);
     if (isCaptureEnabled()) {
       await captureChange(statusStore, {
@@ -142,7 +150,9 @@ export async function restoreWordStatus(langCode: string, term: string): Promise
     await awaitTx(tx);
     return RESTORE_FALLBACK_STATUS;
   }
-  const status = record.previousStatus ?? RESTORE_FALLBACK_STATUS;
+  const status = record.previousStatus === undefined
+    ? RESTORE_FALLBACK_STATUS
+    : normalizePreviousStatus(record.previousStatus as StoredWordStatus);
   const now = Date.now();
   statusStore.put({ term, status, updatedAt: now, source: 'user', sourceAt: now });
   trashStore.delete(term);
@@ -179,7 +189,9 @@ export async function restoreWordStatuses(
   for (const [i, term] of terms.entries()) {
     const record = records[i];
     if (record === undefined) continue;
-    const status = record.previousStatus ?? RESTORE_FALLBACK_STATUS;
+    const status = record.previousStatus === undefined
+      ? RESTORE_FALLBACK_STATUS
+      : normalizePreviousStatus(record.previousStatus as StoredWordStatus);
     statusStore.put({ term, status, updatedAt: now, source: 'user', sourceAt: now });
     trashStore.delete(term);
     restored.set(term, status);

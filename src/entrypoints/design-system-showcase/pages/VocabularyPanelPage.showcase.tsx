@@ -5,7 +5,6 @@ import {
   getAllWordStatuses,
   setWordStatus,
   setWordStatuses,
-  setWordStatusesFromSync,
   cycleWordStatus,
   deleteWordStatus,
 } from '@/features/dictionary/services/wordStatusStore';
@@ -142,21 +141,13 @@ async function seedVocabulary(langCode: string): Promise<void> {
   if (SHOWCASE_DATA === 'empty') return;
 
   if (SHOWCASE_DATA === 'overflow') {
-    const statuses: readonly WordStatus[] = ['tracking', 'learning', 'known', 'ignore'];
+    const statuses: readonly WordStatus[] = ['tracking', 'known', 'ignore'];
     for (const status of statuses) {
       const terms = Array.from({ length: OVERFLOW_COUNT / statuses.length }, (_, i) => {
         const n = i * statuses.length + statuses.indexOf(status) + 1;
         return `vocab-item-${String(n).padStart(5, '0')}`;
       });
-      if (status === 'learning') {
-        await setWordStatusesFromSync(
-          langCode,
-          terms.map((term) => ({ term, status, sourceAt: Date.now() })),
-          { source: 'srs' },
-        );
-      } else {
-        await setWordStatuses(langCode, terms, status);
-      }
+      await setWordStatuses(langCode, terms, status);
     }
     return;
   }

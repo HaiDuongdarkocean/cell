@@ -45,7 +45,7 @@ describe('Chip', () => {
   });
 
   it('renders word-status colorways', () => {
-    const statuses = ['unknown', 'tracking', 'learning', 'known', 'ignore'] as const;
+    const statuses = ['unknown', 'tracking', 'known', 'ignore'] as const;
     for (const status of statuses) {
       const { container, unmount } = render(<Chip status={status}>{status}</Chip>);
       expect(container.firstChild).toHaveClass(`status-${status}`);

@@ -8,9 +8,9 @@ import {
 } from './statusRules';
 
 describe('ankiCardOutcome', () => {
-  it('maps new/learn/day-learn/buried to learning', () => {
+  it('maps new/learn/day-learn/buried to tracking', () => {
     for (const queue of [ANKI_QUEUE.new, ANKI_QUEUE.learn, ANKI_QUEUE.dayLearn, ANKI_QUEUE.buriedSched, ANKI_QUEUE.buriedDay]) {
-      expect(ankiCardOutcome({ queue, ivl: 0 })).toBe('learning');
+      expect(ankiCardOutcome({ queue, ivl: 0 })).toBe('tracking');
     }
   });
 
@@ -18,9 +18,9 @@ describe('ankiCardOutcome', () => {
     expect(ankiCardOutcome({ queue: ANKI_QUEUE.suspended, ivl: 100 })).toBe('skip');
   });
 
-  it('maps review below threshold to learning', () => {
-    expect(ankiCardOutcome({ queue: ANKI_QUEUE.review, ivl: 20 })).toBe('learning');
-    expect(ankiCardOutcome({ queue: ANKI_QUEUE.review, ivl: 0 })).toBe('learning');
+  it('maps review below threshold to tracking', () => {
+    expect(ankiCardOutcome({ queue: ANKI_QUEUE.review, ivl: 20 })).toBe('tracking');
+    expect(ankiCardOutcome({ queue: ANKI_QUEUE.review, ivl: 0 })).toBe('tracking');
   });
 
   it('maps review at/above threshold to known', () => {
@@ -35,10 +35,10 @@ describe('ankiCardOutcome', () => {
 });
 
 describe('srsCardOutcome', () => {
-  it('maps scheduledDays >= 21 to known, else learning', () => {
+  it('maps scheduledDays >= 21 to known, else tracking', () => {
     expect(srsCardOutcome({ scheduledDays: 21 })).toBe('known');
-    expect(srsCardOutcome({ scheduledDays: 20.9 })).toBe('learning');
-    expect(srsCardOutcome({ scheduledDays: 0 })).toBe('learning');
+    expect(srsCardOutcome({ scheduledDays: 20.9 })).toBe('tracking');
+    expect(srsCardOutcome({ scheduledDays: 0 })).toBe('tracking');
   });
 
   it('skips malformed input', () => {
@@ -48,8 +48,8 @@ describe('srsCardOutcome', () => {
 
 describe('mergeOutcomes', () => {
   it('picks the stronger outcome', () => {
-    expect(mergeOutcomes(['learning', 'known'])).toBe('known');
-    expect(mergeOutcomes(['skip', 'learning'])).toBe('learning');
+    expect(mergeOutcomes(['tracking', 'known'])).toBe('known');
+    expect(mergeOutcomes(['skip', 'tracking'])).toBe('tracking');
     expect(mergeOutcomes(['skip'])).toBe('skip');
     expect(mergeOutcomes([])).toBe('skip');
   });
@@ -58,7 +58,7 @@ describe('mergeOutcomes', () => {
 describe('outcomeToStatus', () => {
   it('maps outcomes to statuses, skip to null', () => {
     expect(outcomeToStatus('known')).toBe('known');
-    expect(outcomeToStatus('learning')).toBe('learning');
+    expect(outcomeToStatus('tracking')).toBe('tracking');
     expect(outcomeToStatus('skip')).toBeNull();
   });
 });

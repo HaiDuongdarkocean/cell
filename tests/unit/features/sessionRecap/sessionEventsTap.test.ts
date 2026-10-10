@@ -52,9 +52,9 @@ describe('toSessionEvent', () => {
     const e = toSessionEvent(
       req(MESSAGE_TYPES.WORD_STATUS_CYCLE, { term: '犬' }),
       sender(),
-      { success: true, data: { status: 'learning' } },
+      { success: true, data: { status: 'tracking' } },
     );
-    expect(e).toMatchObject({ kind: 'status', term: '犬', status: 'learning' });
+    expect(e).toMatchObject({ kind: 'status', term: '犬', status: 'tracking' });
   });
 
   it('classifies local-player senders by url', () => {

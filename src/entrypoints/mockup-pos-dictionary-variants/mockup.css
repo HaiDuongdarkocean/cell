@@ -176,7 +176,6 @@ body {
 }
 .mkStatus--unknown { background: var(--chip-status-unknown-bg); color: var(--chip-status-unknown-fg); }
 .mkStatus--tracking { background: var(--chip-status-tracking-bg); color: var(--chip-status-tracking-fg); }
-.mkStatus--learning { background: var(--chip-status-learning-bg); color: var(--chip-status-learning-fg); }
 .mkStatus--known { background: var(--chip-status-known-bg); color: var(--chip-status-known-fg); }
 .mkStatus--ignore { background: var(--chip-status-ignore-bg); color: var(--chip-status-ignore-fg); }
 .mkStatus:hover { filter: brightness(0.95); }
@@ -390,7 +389,6 @@ body {
 .ccDot { width: 8px; height: 8px; border-radius: var(--radius-pill); }
 .ccDot--unknown { background: var(--chip-status-unknown-bg, var(--color-border)); }
 .ccDot--tracking { background: var(--chip-status-tracking-bg, var(--color-primary)); }
-.ccDot--learning { background: var(--chip-status-learning-bg, var(--color-primary)); }
 .ccDot--known { background: var(--chip-status-known-bg, var(--color-primary)); }
 .ccDot--ignore { background: var(--chip-status-ignore-bg, var(--color-text-secondary)); }
 

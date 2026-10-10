@@ -3,17 +3,17 @@ import {
   statusFlag,
   isNotKnown,
   nextBaseStatus,
+  normalizeStoredStatus,
   toggleTrackingFlag,
 } from './wordStatusSemantics';
 import type { WordStatus } from '@/entities/dictionary';
 
-const ALL: WordStatus[] = ['unknown', 'tracking', 'learning', 'known', 'ignore'];
+const ALL: WordStatus[] = ['unknown', 'tracking', 'known', 'ignore'];
 
 describe('wordStatusSemantics', () => {
-  it('baseStatus collapses flags onto unknown', () => {
+  it('baseStatus collapses the tracking flag onto unknown', () => {
     expect(baseStatus('unknown')).toBe('unknown');
     expect(baseStatus('tracking')).toBe('unknown');
-    expect(baseStatus('learning')).toBe('unknown');
     expect(baseStatus('known')).toBe('known');
     expect(baseStatus('ignore')).toBe('ignore');
   });
@@ -21,17 +21,20 @@ describe('wordStatusSemantics', () => {
   it('statusFlag extracts the flag', () => {
     expect(statusFlag('unknown')).toBe('none');
     expect(statusFlag('tracking')).toBe('tracking');
-    expect(statusFlag('learning')).toBe('learning');
     expect(statusFlag('known')).toBe('none');
     expect(statusFlag('ignore')).toBe('none');
   });
 
-  it('isNotKnown covers the three unknown-family branches', () => {
+  it('isNotKnown covers the unknown-family branches', () => {
     expect(isNotKnown('unknown')).toBe(true);
     expect(isNotKnown('tracking')).toBe(true);
-    expect(isNotKnown('learning')).toBe(true);
     expect(isNotKnown('known')).toBe(false);
     expect(isNotKnown('ignore')).toBe(false);
+  });
+
+  it('normalizeStoredStatus coalesces the legacy learning value', () => {
+    expect(normalizeStoredStatus('learning')).toBe('tracking');
+    for (const s of ALL) expect(normalizeStoredStatus(s)).toBe(s);
   });
 
   it('nextBaseStatus cycles unknown → known → ignore → unknown', () => {
@@ -40,9 +43,8 @@ describe('wordStatusSemantics', () => {
     expect(nextBaseStatus('ignore')).toBe('unknown');
   });
 
-  it('nextBaseStatus cycles from the base of flagged statuses', () => {
+  it('nextBaseStatus cycles from the base of a flagged status', () => {
     expect(nextBaseStatus('tracking')).toBe('known');
-    expect(nextBaseStatus('learning')).toBe('known');
   });
 
   it('toggleTrackingFlag toggles unknown ↔ tracking', () => {
@@ -56,8 +58,11 @@ describe('wordStatusSemantics', () => {
     }
   });
 
-  it('toggleTrackingFlag is a no-op on learning', () => {
-    expect(toggleTrackingFlag('learning')).toBe('learning');
+  it('toggleTrackingFlag toggles every status', () => {
+    for (const s of ALL) {
+      const next = toggleTrackingFlag(s);
+      expect(next === 'tracking' || next === 'unknown').toBe(true);
+    }
   });
 
   it('every enum value maps consistently (base+flag round-trip)', () => {

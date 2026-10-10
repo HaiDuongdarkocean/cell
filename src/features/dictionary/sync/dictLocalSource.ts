@@ -12,8 +12,9 @@ import {
 import type { ChangeRecord, DataClass, PendingKey, RecordKey, Scope } from '@/features/sync';
 import type { LocalValue, SnapshotEntry, StoredRecordMeta } from '@/features/sync';
 import type { ApplyContext } from '@/features/sync';
-import type { DictionaryComponent, ResourceInfo, WordStatus } from '@/entities/dictionary';
+import type { DictionaryComponent, ResourceInfo } from '@/entities/dictionary';
 import type { WordStatusSource } from '@/features/dictionary/services/wordStatusArbitration';
+import { normalizeStoredStatus, type StoredWordStatus } from '@/features/dictionary/services/wordStatusSemantics';
 import { getDB, INDEXES, STORES } from '../repositories/baseRepository';
 import { buildPhraseIndexForResource } from '../logic/phraseIndexBuilder';
 import { collectEntryComponents, deriveResourceType, sortedComponents, type ComponentSource } from '../logic/dictionaryComponents';
@@ -37,7 +38,10 @@ const RESOURCE_FIELDS = [
   'disabledComponents',
 ] as const;
 
-const WORD_STATUSES: ReadonlySet<WordStatus> = new Set([
+/** Wire-accepted statuses — `learning` stays readable so rows synced from a
+ *  peer running the pre-tracking/hasCard model still apply (coalesced to
+ *  `tracking` on write). */
+const WORD_STATUSES: ReadonlySet<StoredWordStatus> = new Set([
   'known',
   'unknown',
   'tracking',
@@ -431,7 +435,7 @@ class DictWordStatusLocalSource extends IdbLocalSource {
     const row = await getRowAt<WordStatusWireRow>(tx, STORES.WORD_STATUS, term);
     if (!row) return { found: false };
     if (await getRowAt(tx, STORES.WORD_TRASH, term)) return { found: false };
-    return { found: true, value: { ...row } };
+    return { found: true, value: { ...row, status: normalizeStoredStatus(row.status as StoredWordStatus) } };
   }
 
   protected async collectSnapshotEntries(
@@ -447,7 +451,7 @@ class DictWordStatusLocalSource extends IdbLocalSource {
       entries.push({
         key,
         metaKey: key,
-        value: { ...row },
+        value: { ...row, status: normalizeStoredStatus(row.status as StoredWordStatus) },
       });
     }
     return entries;
@@ -465,7 +469,7 @@ class DictWordStatusLocalSource extends IdbLocalSource {
     return (
       entry.term === record.key.slice(WORD_PREFIX.length) &&
       typeof entry.status === 'string' &&
-      WORD_STATUSES.has(entry.status as WordStatus)
+      WORD_STATUSES.has(entry.status as StoredWordStatus)
     );
   }
 
@@ -483,12 +487,13 @@ class DictWordStatusLocalSource extends IdbLocalSource {
     const trashStore = tx.objectStore(STORES.WORD_TRASH);
     const value = winner.value as {
       term: string;
-      status: WordStatus;
+      status: StoredWordStatus;
       updatedAt?: number;
       source?: WordStatusSource;
       sourceAt?: number;
     };
-    if (winner.op === 'delete' || value.status === 'unknown') {
+    const status = normalizeStoredStatus(value.status);
+    if (winner.op === 'delete' || status === 'unknown') {
       await idbRequest(statusStore.delete(term));
       await idbRequest(trashStore.delete(term));
       return;
@@ -497,7 +502,7 @@ class DictWordStatusLocalSource extends IdbLocalSource {
     await idbRequest(
       statusStore.put({
         term,
-        status: value.status,
+        status,
         updatedAt: value.updatedAt ?? Date.now(),
         source: value.source,
         sourceAt: value.sourceAt,

@@ -15,9 +15,11 @@ export type { LookupRequest };
 // === Logic output → UI input ===
 
 export type ReadingKind = 'ipa' | 'pinyin' | 'none';
-export type WordStatus = 'unknown' | 'known' | 'tracking' | 'learning' | 'ignore';
-/** Base-knowledge cycle only — tracking/learning are engagement flags over
- *  `unknown`, never cycled into from the status pill. */
+export type WordStatus = 'unknown' | 'known' | 'tracking' | 'ignore';
+/** Base-knowledge cycle only — `tracking` is an engagement flag over the base
+ *  states and is never cycled into from the status pill. Card existence is a
+ *  separate `hasCard` layer, never a status. Legacy persisted `learning`
+ *  values coalesce to `tracking` at the read boundary. */
 export const STATUS_CYCLE: readonly WordStatus[] = ['unknown', 'known', 'ignore'];
 export type TriggerMode = 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt';
 export type ClickModifierState = Pick<MouseEvent, 'ctrlKey' | 'shiftKey' | 'altKey'>;

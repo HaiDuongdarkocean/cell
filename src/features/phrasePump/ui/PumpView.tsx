@@ -172,7 +172,7 @@ export function PumpView({ onBack, initialDeckId }: PumpViewProps): React.JSX.El
           ) : item && (playing || paused) ? (
             <Box className={`${styles.card} ${styles.stage}`}>
               <Box className={styles.metaRow}>
-                <Chip status={item.source === 'srs' ? 'learning' : 'tracking'}>
+                <Chip color={item.source === 'srs' ? 'primary' : undefined} status={item.source === 'srs' ? undefined : 'tracking'}>
                   {item.source === 'srs' ? t('pump.stage.due') : t('pump.stage.queue')}
                 </Chip>
                 <Text className={styles.meta}>

@@ -1,4 +1,4 @@
-import type { AudioItem, ImageItem, LookupResult, DefinitionEntry } from '@/entities/dictionary';
+import type { AudioItem, ImageItem, LookupResult, DefinitionEntry, WordStatus } from '@/entities/dictionary';
 import type { MessageResponse } from '@/entities/message';
 import type { PronunciationEspeakTtsResult } from '@/entities/message/types';
 import type { DictionaryComponent, ResourceInfo } from '@/entities/dictionary';
@@ -419,7 +419,7 @@ async function mockSendMessage(message: unknown): Promise<unknown> {
       return { success: true };
 
     case MESSAGE_TYPES.WORD_STATUSES_GET: {
-      const result: MessageResponse<{ statuses: Record<string, 'unknown' | 'known' | 'tracking' | 'learning' | 'ignore'> }> = {
+      const result: MessageResponse<{ statuses: Record<string, WordStatus> }> = {
         success: true,
         data: { statuses: {} },
       };

@@ -301,8 +301,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     : status;
 
   // Shared status write-path: variant override or root state + optional
-  // persist (skipped for 'learning' — the SRS background handler owns that
-  // flag) + token repaint + consumer notification.
+  // persist + token repaint + consumer notification.
   const applyStatus = useCallback((newStatus: WordStatus, persist: boolean): void => {
     const pos = variant?.pos;
     if (variant && pos) {

@@ -9,7 +9,6 @@ import type { WordStatus } from '@/entities/dictionary';
 const statusToLabel: Record<WordStatus, MessageKey> = {
   unknown: 'vocabulary.status.unknown',
   tracking: 'vocabulary.status.tracking',
-  learning: 'vocabulary.status.learning',
   known: 'vocabulary.status.known',
   ignore: 'vocabulary.status.ignore',
 };
@@ -23,7 +22,6 @@ export interface StatusBadgeProps extends Omit<ButtonHTMLAttributes<HTMLButtonEl
 const statusToColor: Record<WordStatus, ChipColor> = {
   unknown: 'muted',
   tracking: 'warning',
-  learning: 'primary',
   known: 'success',
   ignore: 'error',
 };

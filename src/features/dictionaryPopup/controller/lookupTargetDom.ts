@@ -6,7 +6,7 @@ import type { HighlightTarget } from '../ui/wordHighlight';
 import type { CueRange, PopupLevel, PopupTokenId } from './controllerTypes';
 
 export const POPUP_OPEN_CLASS = 'js-cell-token--popup-open';
-export const ALL_STATUSES: WordStatus[] = ['unknown', 'tracking', 'learning', 'known', 'ignore'];
+export const ALL_STATUSES: WordStatus[] = ['unknown', 'tracking', 'known', 'ignore'];
 
 const LOOKUP_TRIGGER_SELECTOR = '.js-cell-token, .cell-ocr-hitbox';
 const LOOKUP_TEXT_SELECTOR = '[data-allow-lookup]';

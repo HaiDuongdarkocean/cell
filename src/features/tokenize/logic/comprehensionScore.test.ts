@@ -28,8 +28,8 @@ describe('markIPlus1Tokens', () => {
     expect(tokens.map((t) => t.iPlus1)).toEqual([false, true, false, false, false, false, false, false]);
   });
 
-  it('treats tracking/learning as still-new gaps', () => {
-    const tokens = [tok('the', 'known'), tok('tram', 'learning'), tok('stops', 'tracking', false, 1)];
+  it('treats tracking as a still-new gap', () => {
+    const tokens = [tok('the', 'known'), tok('tram', 'tracking'), tok('stops', 'tracking', false, 1)];
     markIPlus1Tokens(tokens);
     expect(tokens.map((t) => t.iPlus1)).toEqual([false, true, true]);
   });

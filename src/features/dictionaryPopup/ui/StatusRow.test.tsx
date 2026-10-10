@@ -1,8 +1,8 @@
 // StatusRow — REQ-2/AC-3: the status pill only ever shows the 3 base statuses.
 // Layout is [eye | pill] + a standalone flashcard chip right of the group:
-// the eye is always rendered and toggles tracking on the unknown family; the
-// cards chip appears whenever SRS_TERM_CARDS reports ≥1 card for the term,
-// regardless of status, and opens the term-filtered study page.
+// the eye toggles the user-owned tracking flag on any status and is only
+// disabled when no handler is wired; the cards chip appears whenever
+// SRS_TERM_CARDS reports ≥1 card for the term, regardless of status.
 
 import { describe, expect, it, jest } from '@jest/globals';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -12,7 +12,7 @@ import type { WordStatus } from '@/entities/dictionary';
 
 function renderRow(
   status: WordStatus,
-  options?: { srsCardCount?: number },
+  options?: { srsCardCount?: number; withToggleTracking?: boolean },
 ): { onCycle: jest.Mock; onToggleTracking: jest.Mock; onOpenSrsCards: jest.Mock } {
   const onCycle = jest.fn();
   const onToggleTracking = jest.fn();
@@ -21,7 +21,7 @@ function renderRow(
     <StatusRow
       status={status}
       onCycle={onCycle}
-      onToggleTracking={onToggleTracking}
+      onToggleTracking={options?.withToggleTracking === false ? undefined : onToggleTracking}
       srsCardCount={options?.srsCardCount}
       onOpenSrsCards={onOpenSrsCards}
       frequencies={[]}
@@ -72,8 +72,8 @@ describe('StatusRow segmented control', () => {
     },
   );
 
-  it('renders the eye segment disabled for learning', () => {
-    const { onToggleTracking } = renderRow('learning');
+  it('renders the eye segment disabled only when no tracking handler is wired', () => {
+    const { onToggleTracking } = renderRow('tracking', { withToggleTracking: false });
 
     const flag = screen.getByTestId('dictionary-status-flag');
     expect(flag).toBeDisabled();
@@ -82,7 +82,7 @@ describe('StatusRow segmented control', () => {
     expect(onToggleTracking).not.toHaveBeenCalled();
   });
 
-  it.each(['unknown', 'tracking', 'learning', 'known', 'ignore'] as const)(
+  it.each(['unknown', 'tracking', 'known', 'ignore'] as const)(
     'renders no in-group srs segment for %s — cards live in the standalone chip',
     (status) => {
       renderRow(status, { srsCardCount: 2 });
@@ -91,7 +91,7 @@ describe('StatusRow segmented control', () => {
     },
   );
 
-  it.each(['unknown', 'tracking', 'learning', 'known', 'ignore'] as const)(
+  it.each(['unknown', 'tracking', 'known', 'ignore'] as const)(
     'renders the cards chip for %s when srsCardCount > 0 — click calls onOpenSrsCards',
     (status) => {
       const { onCycle, onOpenSrsCards } = renderRow(status, { srsCardCount: 3 });
@@ -110,13 +110,13 @@ describe('StatusRow segmented control', () => {
   it.each([undefined, 0])(
     'renders no cards chip when srsCardCount is %s',
     (srsCardCount) => {
-      renderRow('learning', { srsCardCount });
+      renderRow('tracking', { srsCardCount });
 
       expect(screen.queryByTestId('dictionary-srs-cards')).not.toBeInTheDocument();
     },
   );
 
-  it.each(['unknown', 'tracking', 'learning', 'known', 'ignore'] as const)(
+  it.each(['unknown', 'tracking', 'known', 'ignore'] as const)(
     'base pill click calls onCycle for status %s',
     (status) => {
       const { onCycle } = renderRow(status);

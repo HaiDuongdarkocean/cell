@@ -345,7 +345,7 @@ describe('WORD_STATUS_SET_MANY', () => {
     expect(requestRemoteCheck).toHaveBeenCalled();
   });
 
-  it('rejects learning — only sync/SRS paths may set it', async () => {
+  it('coerces a legacy learning payload to tracking at the schema boundary', async () => {
     const ctx = createMockCtx();
     registerWordStatusHandlers(ctx as unknown as Parameters<typeof registerWordStatusHandlers>[0]);
 
@@ -355,9 +355,21 @@ describe('WORD_STATUS_SET_MANY', () => {
     });
 
     expect(response).toEqual({ success: true });
-    expect(wordStatusStore.setWordStatuses).not.toHaveBeenCalled();
+    expect(wordStatusStore.setWordStatuses).toHaveBeenCalledWith(
+      'en',
+      ['a', 'b'],
+      'tracking',
+      expect.objectContaining({ source: 'user' }),
+    );
     await flushPromises();
-    expect(mockTabsSendMessage).not.toHaveBeenCalled();
+    expect(mockTabsSendMessage).toHaveBeenCalledWith(
+      2,
+      expect.objectContaining({
+        type: MESSAGE_TYPES.WORD_STATUS_SET_MANY,
+        payload: { tabId: 1, langCode: 'en', terms: ['a', 'b'], status: 'tracking' },
+      }),
+      { frameId: 0 },
+    );
   });
 
   it('notifies known-marked terms for Anki write-back', async () => {

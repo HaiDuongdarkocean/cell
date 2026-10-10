@@ -17,7 +17,7 @@ const SENTENCE = ['The', 'quick', 'brown', 'error', 'jumps'];
 
 const STATUS_OPTIONS = [
   { value: 'new', label: 'New' },
-  { value: 'learning', label: 'Learning' },
+  { value: 'tracking', label: 'Tracking' },
   { value: 'known', label: 'Known' },
 ];
 
@@ -43,7 +43,7 @@ function dotStatus(status: string): 'success' | 'warning' | 'info' | 'neutral' {
   switch (status) {
     case 'known':
       return 'success';
-    case 'learning':
+    case 'tracking':
       return 'warning';
     case 'new':
       return 'info';

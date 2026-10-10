@@ -21,7 +21,6 @@ export function Showcase(): ReactElement {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
         <Chip status="unknown">Unknown</Chip>
         <Chip status="tracking">Tracking</Chip>
-        <Chip status="learning">Learning</Chip>
         <Chip status="known">Known</Chip>
         <Chip status="ignore">Ignore</Chip>
       </div>

@@ -2,7 +2,7 @@ import { StatusBadge } from './StatusBadge';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
-  const statuses = ['unknown', 'tracking', 'learning', 'known', 'ignore'] as const;
+  const statuses = ['unknown', 'tracking', 'known', 'ignore'] as const;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 
-export type MockStatus = 'unknown' | 'tracking' | 'learning' | 'known' | 'ignore';
+export type MockStatus = 'unknown' | 'tracking' | 'known' | 'ignore';
 
-export const STATUS_ORDER: readonly MockStatus[] = ['unknown', 'tracking', 'learning', 'known', 'ignore'];
+export const STATUS_ORDER: readonly MockStatus[] = ['unknown', 'tracking', 'known', 'ignore'];
 
 export interface MockAccent {
   label: 'ame' | 'bre';
@@ -91,7 +91,7 @@ export const ENTRIES: Record<string, MockEntry> = {
           ],
         },
         stars: 3,
-        status: 'learning',
+        status: 'tracking',
         inflections: [
           { type: 'present', forms: ['present', 'presents'] },
           { type: 'past', forms: ['presented'] },

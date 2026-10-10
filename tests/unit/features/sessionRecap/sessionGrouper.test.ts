@@ -131,7 +131,7 @@ describe('composeSessionRecaps', () => {
       events: [
         ev('status', T0 + 10_000, { term: '猫', status: 'known', surface: 'local-player' }),
         ev('status', T0 + 20_000, { term: '犬', status: 'known', surface: 'local-player' }),
-        ev('status', T0 + 30_000, { term: '山', status: 'learning', surface: 'local-player' }),
+        ev('status', T0 + 30_000, { term: '山', status: 'tracking', surface: 'local-player' }),
         ev('status', T0 + 40_000, { term: '水', status: 'bogus', surface: 'local-player' }),
       ],
       videos: [video('v1', 'Ep1')],
@@ -143,8 +143,8 @@ describe('composeSessionRecaps', () => {
     expect(changes.derived).toBe(false);
     const known = changes.groups.find((g) => g.status === 'known')!;
     expect(known.terms).toEqual(['猫', '犬']);
-    const learning = changes.groups.find((g) => g.status === 'learning')!;
-    expect(learning.terms).toEqual(['山']);
+    const tracking = changes.groups.find((g) => g.status === 'tracking')!;
+    expect(tracking.terms).toEqual(['山']);
   });
 
   it('derives status changes for sessions with no captured events (source user, in-window)', () => {
