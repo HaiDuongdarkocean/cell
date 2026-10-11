@@ -18,6 +18,7 @@ import {
   createOpfsWriter,
   deleteDownloadSubdir,
   ensureDownloadSubdir,
+  isOpfsAvailable,
   isQuotaExceededError,
   type OpfsWriter,
 } from '@/shared/lib/storage/opfsStorage';
@@ -344,13 +345,24 @@ export class Downloader {
       throw new Error(t('downloads.error.fetchVideo', [response.status]));
     }
 
+    if (!isOpfsAvailable()) {
+      const blob = await response.blob();
+      this.throwIfCancelled(downloadId, signal);
+      this.reportProgress(downloadId, 'converting', 50);
+      const filename = this.resolveVideoFilename(video, 'mp4');
+      await this.saveBlob(blob, filename);
+      this.throwIfCancelled(downloadId, signal);
+      this.reportProgress(downloadId, 'done', 100);
+      return;
+    }
+
     const dirHandle = await ensureDownloadSubdir(downloadId);
     const opfsFilename = 'input.mp4';
     const declaredBytes = Number(response.headers.get('content-length')) || 0;
     const writer = await createOpfsWriter(dirHandle, opfsFilename);
     let downloadedBytes = 0;
+    const reader = response.body?.getReader();
     try {
-      const reader = response.body?.getReader();
       if (reader) {
         for (;;) {
           this.throwIfCancelled(downloadId, signal);
@@ -373,6 +385,7 @@ export class Downloader {
         downloadedBytes = blob.size;
       }
     } finally {
+      await reader?.cancel().catch(() => undefined);
       await writer.close();
     }
 

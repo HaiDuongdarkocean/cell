@@ -248,6 +248,7 @@ describe('Downloader', () => {
   // 1. mp4 direct download (body unavailable → blob fallback → OPFS → data URL)
   test('downloadVideo with mp4 writes to OPFS and saves file', async () => {
     simulateServiceWorkerContext();
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
     const blob = makeTextBlob('mp4data');
     fetchMock.mockResolvedValue(makeResponse(blob));
     const buf = responseBuffers.get(blob)!;
@@ -273,7 +274,22 @@ describe('Downloader', () => {
     expect(opts.url).toMatch(/^data:.*;base64,/);
   });
 
+  test('downloadVideo with mp4 saves via blob path when OPFS unavailable', async () => {
+    simulateServiceWorkerContext();
+    const blob = makeTextBlob('mp4data');
+    fetchMock.mockResolvedValue(makeResponse(blob));
+
+    await downloader.downloadVideo(makeMp4Video(), 'dl-noopfs');
+
+    expect(mockWriter.write).not.toHaveBeenCalled();
+    expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
+    const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
+    expect(opts.filename).toBe('My_Video.mp4');
+    expect(opts.url).toMatch(/^data:.*;base64,/);
+  });
+
   test('downloadVideo with mp4 streams body chunks to OPFS and saves via callback', async () => {
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
     const chunks = [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5])];
     let readIndex = 0;
     const body = {
@@ -282,6 +298,7 @@ describe('Downloader', () => {
           readIndex < chunks.length
             ? { done: false as const, value: chunks[readIndex++] }
             : { done: true as const, value: undefined },
+        cancel: async () => undefined,
       }),
     };
     fetchMock.mockResolvedValue({
@@ -305,6 +322,7 @@ describe('Downloader', () => {
   });
 
   test('downloadVideo with mp4 stops streaming when cancelled mid-read', async () => {
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
     let reads = 0;
     const body = {
       getReader: () => ({
@@ -313,6 +331,7 @@ describe('Downloader', () => {
           if (reads === 2) downloader.cancel('dl-mid');
           return { done: false as const, value: new Uint8Array([1]) };
         },
+        cancel: async () => undefined,
       }),
     };
     fetchMock.mockResolvedValue({
