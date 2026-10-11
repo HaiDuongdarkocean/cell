@@ -1098,6 +1098,8 @@
   "panel.tokenize.media": "Tokenize media",
   "panel.tokenize.noMedia": "No video on this page",
   "panel.tokenize.state": "$1: $2",
+  "panel.tokenize.text.short": "Page",
+  "panel.tokenize.media.short": "Video",
   "panel.settings.loading": "Loading settings…",
   "popup.header.toggleExtension": "Turn Tihoka on or off",
   "popup.header.autoDownload": "Auto-download on this site",

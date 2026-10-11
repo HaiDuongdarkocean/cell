@@ -26,11 +26,12 @@ interface TokenizeHalfProps {
   readonly disabled?: boolean;
   readonly icon: 'scanText' | 'video';
   readonly label: string;
+  readonly caption: string;
   readonly onClick: () => void;
   readonly testId: string;
 }
 
-function TokenizeHalf({ active, disabled = false, icon, label, onClick, testId }: TokenizeHalfProps): React.JSX.Element {
+function TokenizeHalf({ active, disabled = false, icon, label, caption, onClick, testId }: TokenizeHalfProps): React.JSX.Element {
   return (
     <Button
       shape="pill"
@@ -45,7 +46,9 @@ function TokenizeHalf({ active, disabled = false, icon, label, onClick, testId }
       data-cell-id={testId}
       className={styles.half}
       leadingIcon={<Icon name={icon} size="sm" />}
-    />
+    >
+      {caption}
+    </Button>
   );
 }
 
@@ -75,6 +78,7 @@ export function TokenizeControls({
         active={text}
         icon="scanText"
         label={t('panel.tokenize.text')}
+        caption={t('panel.tokenize.text.short')}
         onClick={() => onToggle('text')}
         testId="universal-panel-header-tokenize-text"
       />
@@ -83,6 +87,7 @@ export function TokenizeControls({
         disabled={mediaDisabled}
         icon="video"
         label={t('panel.tokenize.media')}
+        caption={t('panel.tokenize.media.short')}
         onClick={() => onToggle('media')}
         testId="universal-panel-header-tokenize-media"
       />

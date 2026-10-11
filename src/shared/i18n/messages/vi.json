@@ -1098,6 +1098,8 @@
   "panel.tokenize.media": "Tách từ phụ đề",
   "panel.tokenize.noMedia": "Trang này không có video",
   "panel.tokenize.state": "$1: $2",
+  "panel.tokenize.text.short": "Trang",
+  "panel.tokenize.media.short": "Video",
   "panel.settings.loading": "Đang tải cài đặt…",
   "popup.header.toggleExtension": "Bật hoặc tắt Tihoka",
   "popup.header.autoDownload": "Tự tải nội dung của trang này",
