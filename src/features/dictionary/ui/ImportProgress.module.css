@@ -28,9 +28,11 @@
   position: absolute;
   left: 0;
   right: 0;
+  top: 0;
   bottom: 0;
   background: var(--color-primary-subtle);
-  transition: height var(--duration-normal) var(--ease-standard);
+  transform-origin: bottom;
+  transition: transform var(--duration-normal) var(--ease-standard);
   pointer-events: none;
 }
 
