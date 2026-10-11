@@ -4,7 +4,6 @@
 
 .timeline {
   width: 100%;
-  min-height: var(--touch-target);
   display: flex;
   align-items: center;
   cursor: pointer;

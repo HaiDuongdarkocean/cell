@@ -3,7 +3,6 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  min-height: var(--touch-target);
   border: var(--border-width-hairline) solid transparent;
   box-shadow: none;
   border-radius: var(--radius-pill);

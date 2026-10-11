@@ -80,7 +80,7 @@
   align-items: center;
   gap: var(--space-1);
   width: 100%; /* design-system: intentional — fill field row */
-  min-height: max(var(--iconbutton-size-md), var(--touch-target));
+  min-height: var(--iconbutton-size-md);
   background: var(--input-bg);
   border-radius: var(--radius-md);
   box-shadow: inset 0 0 0 var(--border-width-hairline) var(--input-border);
@@ -98,7 +98,7 @@
 .fieldInput__control {
   flex: 1 1 auto;
   min-width: 0;
-  min-height: max(var(--input-height), var(--touch-target));
+  min-height: var(--input-height);
   padding: var(--input-padding-y) 0 var(--input-padding-y) var(--input-padding-x);
   border: none;
   background: transparent;
@@ -147,7 +147,7 @@
   align-items: center;
   gap: var(--space-1);
   width: 100%;
-  min-height: max(var(--input-height), var(--touch-target));
+  min-height: var(--input-height);
   padding: var(--input-padding-y) var(--input-padding-x);
   background: var(--input-bg);
   border: var(--border-width-hairline) solid var(--input-border);
@@ -216,7 +216,7 @@
 .tagInput__field {
   flex: 1 1 auto;
   min-width: 80px;
-  min-height: max(var(--input-height), var(--touch-target));
+  min-height: var(--input-height);
   padding: 0;
   border: none;
   background: transparent;

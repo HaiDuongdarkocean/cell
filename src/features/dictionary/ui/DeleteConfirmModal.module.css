@@ -33,6 +33,5 @@
 }
 
 .actionBtn {
-  min-width: calc(var(--touch-target) * 2);
   justify-content: center;
 }

@@ -29,7 +29,6 @@
 .pageNumbers > button,
 .jumpInput {
   flex-shrink: 0;
-  min-width: var(--touch-target);
 }
 
 .pageBtn {

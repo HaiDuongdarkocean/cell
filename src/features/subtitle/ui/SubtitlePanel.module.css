@@ -158,11 +158,6 @@
   animation: none;
 }
 
-.panel[data-practice-mode='dictation'] .cueListWrap,
-.panel[data-practice-mode='cloze'] .cueListWrap {
-  min-height: calc(var(--touch-target) + var(--space-2) * 2);
-}
-
 .panel[data-practice-mode='dictation'][data-has-close='false'] .header,
 .panel[data-practice-mode='cloze'][data-has-close='false'] .header {
   display: none;

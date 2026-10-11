@@ -321,7 +321,6 @@
   gap: var(--button-vertical-gap);
   padding: var(--button-vertical-padding-y) var(--button-vertical-padding-x);
   height: auto;
-  min-height: var(--touch-target);
 }
 
 .vertical .label {

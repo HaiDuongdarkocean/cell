@@ -25,8 +25,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--touch-target-mobile);
-  min-height: var(--touch-target-mobile);
   padding: var(--space-1) var(--space-1-5);
   font-family: inherit;
   font-size: var(--font-size-base);

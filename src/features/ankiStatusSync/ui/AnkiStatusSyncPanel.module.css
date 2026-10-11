@@ -10,7 +10,6 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  min-height: var(--touch-target);
   font-size: var(--font-size-sm);
   color: var(--color-text);
 }

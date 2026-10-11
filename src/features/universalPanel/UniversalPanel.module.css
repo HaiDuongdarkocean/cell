@@ -66,17 +66,6 @@
   display: none;
 }
 
-/* Panel-scope hit-target floor: every button inside the body column (header +
-   tab panes + inline sheets/dialogs) presents at least the pointer-adaptive
-   --touch-target box. Beats Button's `.iconOnly,.circle { min-*: 0 }` reset on
-   specificity (0,2,1 vs 0,2,0). Components designed compact (keycaps, option
-   chips, hint affordances) opt out via `data-compact-hit` — their own CSS owns
-   the size, never below the WCAG 24px floor. */
-.panel .body button:not([data-compact-hit]) {
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
-}
-
 .desktopSidebar {
   display: flex;
   background: var(--universal-panel-aside-bg);

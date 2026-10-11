@@ -12,7 +12,6 @@
   align-items: center;
   gap: var(--space-1);
   height: var(--touch-target);
-  min-width: var(--touch-target);
   padding: 0 var(--space-2);
   border: none;
   border-radius: var(--radius-pill);

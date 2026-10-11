@@ -4,8 +4,7 @@
 // Row: DragHandle (pointer drag via shared useSectionDrag, ArrowUp/Down =
 // keyboard reorder) · name (click = inline rename) · URL preview · pencil =
 // edit dialog (name + URL) · trash = delete confirm dialog. Add button opens
-// the same editor dialog empty. Row controls bind to the pointer-adaptive
-// --touch-target floor (44px coarse / 40px fine).
+// the same editor dialog empty. Row controls size to --touch-target (40px).
 
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { t } from '@/shared/i18n';

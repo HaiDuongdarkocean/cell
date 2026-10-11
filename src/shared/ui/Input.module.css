@@ -14,7 +14,7 @@
 
 .input {
   width: 100%;
-  min-height: max(var(--input-height), var(--touch-target));
+  min-height: var(--input-height);
   padding: var(--input-padding-y) var(--input-padding-x);
   border: var(--border-width-hairline) solid var(--input-border);
   border-radius: var(--input-radius);
@@ -56,19 +56,19 @@
 
 /* === Sizes === */
 .sm {
-  min-height: max(var(--input-height-sm), var(--touch-target));
+  min-height: var(--input-height-sm);
   padding: var(--input-padding-y-sm) var(--input-padding-x-sm);
   font-size: var(--input-font-size-sm);
 }
 
 .md {
-  min-height: max(var(--input-height), var(--touch-target));
+  min-height: var(--input-height);
   padding: var(--input-padding-y) var(--input-padding-x);
   font-size: var(--input-font-size);
 }
 
 .lg {
-  min-height: max(var(--input-height-lg), var(--touch-target));
+  min-height: var(--input-height-lg);
   padding: var(--input-padding-y-lg) var(--input-padding-x-lg);
   font-size: var(--input-font-size-lg);
 }

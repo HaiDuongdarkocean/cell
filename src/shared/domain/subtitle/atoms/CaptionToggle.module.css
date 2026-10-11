@@ -1,8 +1,6 @@
 .captionToggle {
   width: calc(var(--touch-target) * 1.2);
-  min-width: calc(var(--touch-target) * 1.2);
   height: var(--touch-target);
-  min-height: var(--touch-target);
   border-radius: var(--radius-full);
   background: var(--color-border);
   position: relative;

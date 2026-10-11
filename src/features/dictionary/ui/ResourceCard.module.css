@@ -79,7 +79,6 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: var(--touch-target-mobile);
 }
 
 .info {
@@ -169,7 +168,6 @@
   border: none;
   border-radius: var(--radius-lg);
   padding: var(--space-3) var(--space-4);
-  min-height: var(--touch-target-mobile);
   animation: pulse var(--duration-1500) ease-in-out infinite;
 }
 

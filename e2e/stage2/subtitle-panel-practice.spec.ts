@@ -95,14 +95,8 @@ interface GeometryReport {
   violations: string[];
 }
 
-async function setTouchTarget(page: Page, size: number): Promise<void> {
-  await page.evaluate((value) => {
-    document.getElementById('cell-subtitle-root')?.style.setProperty('--touch-target', `${value}px`);
-  }, size);
-}
-
-async function checkPanelGeometry(page: Page, minControlHeight: number, label = ''): Promise<void> {
-  const report = await page.evaluate((minHeight): GeometryReport => {
+async function checkPanelGeometry(page: Page, label = ''): Promise<void> {
+  const report = await page.evaluate((): GeometryReport => {
     const violations: string[] = [];
     const findDeep = (root: Document | ShadowRoot | Element, selector: string): Element | null => {
       const match = root.querySelector(selector);
@@ -196,20 +190,8 @@ async function checkPanelGeometry(page: Page, minControlHeight: number, label = 
     const list = rectOf('[data-cell-id="cue-list-scroll"]');
     const footer = rectOf('[data-cell-id="practice-footer"]');
     if (list && footer && list.bottom > footer.top + 1) violations.push('list overlaps footer');
-    const controls = [
-      'subtitle-panel-more-btn',
-      'practice-previous',
-      'practice-replay',
-      'practice-next',
-    ];
-    for (const id of controls) {
-      const element = findDeep(panel, `[data-cell-id="${id}"]`);
-      if (!element || !isRendered(element)) continue;
-      const height = element.getBoundingClientRect().height;
-      if (height < minHeight - 1) violations.push(`control too small: ${id} h=${height}`);
-    }
     return { violations: [...new Set(violations)] };
-  }, minControlHeight);
+  });
   expect(report.violations.map((violation) => `${label} ${violation}`)).toEqual([]);
 }
 
@@ -392,7 +374,6 @@ test.describe('Stage 2: Subtitle panel practice', () => {
 
     await streamFlixPage.setViewportSize({ width: 320, height: 700 });
     await enterPlayerMode(streamFlixPage);
-    await setTouchTarget(streamFlixPage, 40);
     await seek(streamFlixPage, 29.5);
 
     for (let i = 0; i < 10; i++) {
@@ -429,7 +410,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     for (const id of ['practice-previous', 'practice-replay', 'practice-next']) {
       await expect(streamFlixPage.locator(`[data-cell-id="${id}"]`)).toBeVisible();
     }
-    await checkPanelGeometry(streamFlixPage, 40);
+    await checkPanelGeometry(streamFlixPage);
     const panelOverflow = await streamFlixPage.evaluate(() => {
       const findDeep = (root: Document | ShadowRoot | Element, sel: string): Element | null => {
         const hit = root.querySelector(sel);
@@ -535,8 +516,6 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     const widths = [280, 320, 360, 390, 480, 768, 1024];
     for (const width of widths) {
       await streamFlixPage.setViewportSize({ width, height: 700 });
-      const minControlHeight = 40;
-      await setTouchTarget(streamFlixPage, minControlHeight);
       if (width === widths[0]) {
         await enterPlayerMode(streamFlixPage);
         await seek(streamFlixPage, CUE2_START_S + 0.3);
@@ -550,7 +529,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
         await expect(streamFlixPage.locator('[data-cell-id="speed-decrease"]')).toBeHidden();
       }
       await streamFlixPage.locator(INPUT).fill('x'.repeat(1500));
-      await checkPanelGeometry(streamFlixPage, minControlHeight, `w${width} dictation`);
+      await checkPanelGeometry(streamFlixPage, `w${width} dictation`);
       if (width === 320) await checkFooterArrangement(streamFlixPage, true);
 
       await selectStudyMode(streamFlixPage, MODE_CLOZE);
@@ -558,7 +537,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
         streamFlixPage.locator(`${PRACTICE}[data-practice-mode="cloze"]`),
       ).toBeVisible();
       await streamFlixPage.locator(INPUT).fill('lyin than');
-      await checkPanelGeometry(streamFlixPage, minControlHeight, `w${width} cloze`);
+      await checkPanelGeometry(streamFlixPage, `w${width} cloze`);
 
       await selectStudyMode(streamFlixPage, MODE_OFF);
       await expect(streamFlixPage.locator(PRACTICE)).toHaveCount(0);
@@ -566,16 +545,14 @@ test.describe('Stage 2: Subtitle panel practice', () => {
 
     for (const [width, height] of [[280, 360], [320, 480], [480, 568]] as const) {
       await streamFlixPage.setViewportSize({ width, height });
-      const minControlHeight = 40;
-      await setTouchTarget(streamFlixPage, minControlHeight);
       await selectStudyMode(streamFlixPage, MODE_DICTATION);
       await expect(streamFlixPage.locator(INPUT)).toBeVisible();
       await streamFlixPage.locator(INPUT).focus();
-      await checkPanelGeometry(streamFlixPage, minControlHeight, `${width}x${height} dictation`);
+      await checkPanelGeometry(streamFlixPage, `${width}x${height} dictation`);
       if (width === 320) await checkFooterArrangement(streamFlixPage, false);
       await selectStudyMode(streamFlixPage, MODE_CLOZE);
       await expect(streamFlixPage.locator(INPUT)).toBeVisible();
-      await checkPanelGeometry(streamFlixPage, minControlHeight, `${width}x${height} cloze`);
+      await checkPanelGeometry(streamFlixPage, `${width}x${height} cloze`);
       await selectStudyMode(streamFlixPage, MODE_OFF);
     }
     expect(pageErrors).toEqual([]);
@@ -589,7 +566,6 @@ test.describe('Stage 2: Subtitle panel practice', () => {
 
     await streamFlixPage.setViewportSize({ width: 320, height: 700 });
     await enterPlayerMode(streamFlixPage);
-    await setTouchTarget(streamFlixPage, 40);
     await seek(streamFlixPage, CUE2_START_S + 0.3);
     await selectStudyMode(streamFlixPage, MODE_DICTATION);
     const input = streamFlixPage.locator(INPUT);
@@ -603,7 +579,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     ];
     for (const value of stressValues) {
       await input.fill(value);
-      await checkPanelGeometry(streamFlixPage, 40);
+      await checkPanelGeometry(streamFlixPage);
     }
 
     for (const scale of [80, 125, 150, 200]) {
@@ -612,7 +588,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
         const root = host?.shadowRoot?.firstElementChild as HTMLElement | null;
         if (root) root.style.fontSize = `${s}%`;
       }, scale);
-      await checkPanelGeometry(streamFlixPage, 40);
+      await checkPanelGeometry(streamFlixPage);
     }
     await streamFlixPage.evaluate(() => {
       const host = document.getElementById('cell-subtitle-root');

@@ -42,13 +42,6 @@
 
 /* --- Output mode segmented control --- */
 
-/* --- Compact audio tester --- */
-
-.testerPlay.testerPlay {
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
-}
-
 .status {
   margin: 0;
   font-size: var(--font-size-xs);

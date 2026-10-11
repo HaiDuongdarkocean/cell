@@ -15,7 +15,6 @@
   cursor: pointer;
   color: var(--color-text);
   font-size: var(--font-size-sm);
-  min-height: var(--touch-target);
   text-align: left;
   transition:
     background var(--duration-fast) var(--ease-in-out),

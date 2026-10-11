@@ -9,7 +9,6 @@
 
 .trigger {
   flex: 1;
-  min-height: var(--touch-target);
   padding: var(--space-2) var(--space-1);
   border: none;
   border-bottom: 2px solid transparent;

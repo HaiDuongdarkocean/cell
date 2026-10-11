@@ -33,8 +33,6 @@
    The button box reaches the --touch-target floor; the flag paint stays at
    --universal-panel-profile-flag-size (34px) centered inside it. */
 .header .profileButton.profileButton {
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
   padding: var(--space-0);
   overflow: hidden;
   flex-shrink: 0;

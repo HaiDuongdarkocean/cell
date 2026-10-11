@@ -59,7 +59,6 @@
   justify-content: center;
   width: 100%;
   height: var(--space-8);
-  min-height: var(--touch-target);
   margin: 0;
   padding: 0;
   background: transparent;

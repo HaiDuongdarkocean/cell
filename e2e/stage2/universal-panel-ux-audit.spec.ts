@@ -201,9 +201,7 @@ async function overlayOpen(page: Page): Promise<boolean> {
 
 interface CollectedMetrics {
   pointerCoarse?: boolean;
-  touchTargetMin?: number;
   interactiveCount?: number;
-  touchTargetViolations?: { cellId: string; tag: string; label: string; width: number; height: number }[];
   touchTargetOverlaps?: { a: string; b: string; overlapWidth: number; overlapHeight: number }[];
   [key: string]: unknown;
 }
@@ -212,7 +210,6 @@ async function collectMetrics(page: Page, tab: Tab, viewportLabel: string): Prom
   const data = await page.evaluate(
     ({ t }) => {
       const coarse = window.matchMedia('(pointer: coarse)').matches;
-      const touchTargetMin = 40;
       const host = document.getElementById('cell-universal-panel-host');
       const root = host?.shadowRoot;
       if (!root) return null;
@@ -295,9 +292,6 @@ async function collectMetrics(page: Page, tab: Tab, viewportLabel: string): Prom
           height: Math.round(r.height * 10) / 10,
         };
       });
-      const tooSmall = interactives
-        .filter((it) => it.width < touchTargetMin || it.height < touchTargetMin)
-        .map((it) => ({ cellId: it.cellId, tag: it.tag, label: it.label, width: it.width, height: it.height }));
       const overlaps: { a: string; b: string; overlapWidth: number; overlapHeight: number }[] = [];
       let whitelistedContainments = 0;
       for (let i = 0; i < interactiveEls.length; i += 1) {
@@ -332,14 +326,12 @@ async function collectMetrics(page: Page, tab: Tab, viewportLabel: string): Prom
       return {
         tab: t,
         pointerCoarse: coarse,
-        touchTargetMin,
         panel: snap(panel),
         header: header && vis(header) ? snap(header) : null,
         navKind: nav === desktopBar ? 'desktop-sidebar' : 'mobile-bottom-nav',
         navItems,
         cards,
         interactiveCount: interactives.length,
-        touchTargetViolations: tooSmall,
         touchTargetOverlaps: overlaps,
         whitelistedContainments,
       };
@@ -780,14 +772,12 @@ test.describe('universal panel UX audit', () => {
     await page.waitForTimeout(400);
     await ensurePanelOpen(page, universalPanel);
 
-    // --- Fine pointer (desktop default) — floor is 40px in both dims ---
+    // --- Fine pointer (desktop default) ---
     expect(await page.evaluate(() => window.matchMedia('(pointer: coarse)').matches)).toBe(false);
     for (const tab of TABS) {
       await clickTab(page, tab);
       const data = await collectMetrics(page, tab, 'a11y-fine-1440x900');
       expect(data?.pointerCoarse).toBe(false);
-      expect(data?.touchTargetMin).toBe(40);
-      expect(data?.touchTargetViolations ?? []).toEqual([]);
       expect(data?.touchTargetOverlaps ?? []).toEqual([]);
     }
     await shot(page, 'a11y', 'fine-desktop-studyModes.png');
@@ -850,7 +840,7 @@ test.describe('universal panel UX audit', () => {
     await shot(page, 'a11y', 'fine-mobile-dom-order.png');
 
     // --- Coarse pointer via CDP touch emulation: a primary touch point makes
-    // (pointer: coarse) match, which is what the floor tokens respond to. ---
+    // (pointer: coarse) match, which is what the touch-target tokens respond to. ---
     const cdp = await page.context().newCDPSession(page);
     try {
       await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
@@ -859,8 +849,6 @@ test.describe('universal panel UX audit', () => {
         await clickTab(page, tab);
         const data = await collectMetrics(page, tab, 'a11y-coarse-390x844');
         expect(data?.pointerCoarse).toBe(true);
-        expect(data?.touchTargetMin).toBe(40);
-        expect(data?.touchTargetViolations ?? []).toEqual([]);
         expect(data?.touchTargetOverlaps ?? []).toEqual([]);
       }
       await shot(page, 'a11y', 'coarse-mobile-studyModes.png');
@@ -868,7 +856,7 @@ test.describe('universal panel UX audit', () => {
       await page.waitForTimeout(300);
       await clickTab(page, 'studyModes');
       const desktopCoarse = await collectMetrics(page, 'studyModes', 'a11y-coarse-1440x900');
-      expect(desktopCoarse?.touchTargetViolations ?? []).toEqual([]);
+      expect(desktopCoarse?.touchTargetOverlaps ?? []).toEqual([]);
       await shot(page, 'a11y', 'coarse-desktop-studyModes.png');
     } finally {
       await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false }).catch(() => {});

@@ -46,7 +46,6 @@
    M3 Box Contract: the container owns the inset, rows stay flush. ─── */
 .dense {
   padding: var(--space-2) 0;
-  min-height: var(--touch-target);
 }
 
 @media (max-width: 480px) {

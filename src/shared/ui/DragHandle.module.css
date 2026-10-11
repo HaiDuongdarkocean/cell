@@ -4,8 +4,6 @@
   justify-content: center;
   width: var(--touch-target);
   height: var(--touch-target);
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
   background: transparent;
   border: none;
   border-radius: var(--iconbutton-radius);
@@ -22,8 +20,6 @@
 .sm {
   width: var(--iconbutton-size-xs);
   height: var(--iconbutton-size-xs);
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
 }
 
 .sm .gripDots {

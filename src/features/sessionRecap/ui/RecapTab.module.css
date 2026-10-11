@@ -119,7 +119,6 @@
   color: inherit;
   text-align: start;
   cursor: pointer;
-  min-height: var(--touch-target);
 }
 
 .rowItem {

@@ -4,8 +4,6 @@
   justify-content: center;
   width: var(--iconbutton-size-sm);
   height: var(--iconbutton-size-sm);
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
   padding: 0;
   border: none;
   border-radius: var(--iconbutton-radius);

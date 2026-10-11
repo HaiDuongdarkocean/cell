@@ -3,9 +3,7 @@
   display: inline-flex;
   align-items: center;
   width: var(--toggle-w);
-  min-width: var(--touch-target);
   height: var(--toggle-h);
-  min-height: var(--touch-target);
   flex-shrink: 0;
   cursor: pointer;
   border: none;

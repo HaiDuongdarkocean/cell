@@ -14,8 +14,6 @@
   justify-content: center;
   width: var(--touch-target);
   height: var(--touch-target);
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
   border: none;
   border-radius: var(--radius-full);
   background: transparent;

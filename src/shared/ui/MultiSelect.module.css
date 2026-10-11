@@ -38,7 +38,6 @@
 .input {
   flex: 1;
   min-width: var(--space-20, 80px);
-  min-height: var(--touch-target);
   border: none;
   outline: none;
   background: transparent;
@@ -77,8 +76,6 @@
   justify-content: center;
   width: var(--space-4);
   height: var(--space-4);
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
   padding: 0;
   border: none;
   border-radius: var(--radius-full);
@@ -112,8 +109,6 @@
 }
 
 .popChip {
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
   border: var(--border-width-hairline) solid transparent;
   border-radius: var(--radius-pill);
   background: var(--color-field);
@@ -156,7 +151,6 @@
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
-  min-height: var(--touch-target);
   border: none;
   background: transparent;
   font-family: var(--font-family);
