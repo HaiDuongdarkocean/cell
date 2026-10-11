@@ -120,7 +120,7 @@ function reportEpisodeChangedIfReplacement(video: HTMLVideoElement): void {
 function initVideoSrcWatcher(): void {
   if (videoSrcWatcherInterval) return;
   videoSrcWatcherInterval = setInterval(() => {
-    const video = getFirstVideo();
+    const video = lastSeenVideo?.isConnected ? lastSeenVideo : getFirstVideo();
     if (!video) return;
     const currentSrc = video.src || video.currentSrc || null;
     if (!currentSrc) return;

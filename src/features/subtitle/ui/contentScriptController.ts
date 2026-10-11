@@ -324,7 +324,8 @@ export function init(
   blockController.onCuesUpdated = () => {
     const targetCues = blockController.getTargetCues();
     const nativeCues = blockController.getNativeCues();
-    const cuesReloaded = targetCues !== lastFedTargetCues || nativeCues !== lastFedNativeCues;
+    const targetChanged = targetCues !== lastFedTargetCues;
+    const cuesReloaded = targetChanged || nativeCues !== lastFedNativeCues;
 
     // Any active-cue change (a/d/s/x/z nav, seeks, natural progression)
     // closes an open dictionary popup — it belongs to the previous cue.
@@ -339,7 +340,9 @@ export function init(
     if (cuesReloaded) {
       lastFedTargetCues = targetCues;
       lastFedNativeCues = nativeCues;
-      subtitleTokenizeCtrl?.setCues(targetCues, nativeCues);
+      if (targetChanged) {
+        subtitleTokenizeCtrl?.setCues(targetCues, nativeCues);
+      }
       void syncUnknownResolver();
       // Every cue-list load funnels through here — broadcast so background's
       // lastCuesByTab reflects "this tab has Cell cues" on all paths

@@ -32,22 +32,69 @@ export function mergeCuesForPanel(
   }
 
   // Target làm xương + native best-effort overlap tại cue.start.
+  if (isSortedByStart(targetCues) && isSortedByStart(nativeCues)) {
+    return mergeSortedCues(targetCues, nativeCues);
+  }
+  return targetCues.map((target) =>
+    toBilingualCue(target, findBestNativeAt(target.start, nativeCues)),
+  );
+}
+
+function toBilingualCue(target: SrtCue, native: SrtCue | null): BilingualCue {
+  return {
+    index: target.index,
+    start: target.start,
+    end: target.end,
+    targetText: target.text,
+    nativeText: native?.text ?? '',
+    ...(target.rawText !== undefined ? { rawTargetText: target.rawText } : {}),
+  };
+}
+
+function isSortedByStart(cues: readonly SrtCue[]): boolean {
+  for (let i = 1; i < cues.length; i++) {
+    if (cues[i]!.start < cues[i - 1]!.start) return false;
+  }
+  return true;
+}
+
+function mergeSortedCues(
+  targetCues: readonly SrtCue[],
+  nativeCues: readonly SrtCue[],
+): BilingualCue[] {
+  const window: SrtCue[] = [];
+  let nativeIndex = 0;
   return targetCues.map((target) => {
-    const native = findBestNativeAt(target.start, nativeCues);
-    return {
-      index: target.index,
-      start: target.start,
-      end: target.end,
-      targetText: target.text,
-      nativeText: native?.text ?? '',
-      ...(target.rawText !== undefined ? { rawTargetText: target.rawText } : {}),
-    };
+    const t = target.start;
+    while (nativeIndex < nativeCues.length && nativeCues[nativeIndex]!.start < t + 1) {
+      window.push(nativeCues[nativeIndex]!);
+      nativeIndex += 1;
+    }
+    let write = 0;
+    for (let read = 0; read < window.length; read++) {
+      if (window[read]!.end > t) {
+        window[write] = window[read]!;
+        write += 1;
+      }
+    }
+    window.length = write;
+    let best: SrtCue | null = null;
+    let bestOverlap = 0;
+    for (const cue of window) {
+      const overlap = Math.min(cue.end, t + 1) - Math.max(cue.start, t);
+      if (overlap > bestOverlap) {
+        bestOverlap = overlap;
+        best = cue;
+        if (bestOverlap >= 1) break;
+      }
+    }
+    return toBilingualCue(target, best);
   });
 }
 
 /**
  * Find the native cue with the largest overlap at the given time.
- * ponytail: linear scan (n ~ 1000 cues, runs once per panel render — not hot path).
+ * Fallback for unsorted input; sorted cues go through mergeSortedCues.
  */
 function findBestNativeAt(
   timeMs: number,

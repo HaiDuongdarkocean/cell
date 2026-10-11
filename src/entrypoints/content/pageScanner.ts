@@ -121,65 +121,46 @@ export class PageScanner {
     const trackSubtitleUrls: string[] = [];
     const trackSubtitles: ScannedTrack[] = [];
 
-    // <video> elements: collect the element's own src plus child <source> srcs.
-    // Use a shadow-DOM-aware query so players that put <video> inside open
-    // shadow roots (vidstack, custom React players) are still discoverable.
-    const videos = queryAllShadow<HTMLVideoElement>('video', doc);
-    for (const video of videos) {
-      const src = video.getAttribute('src');
-      if (src) {
-        videoUrls.push(src);
-      }
-      const sources = queryAllShadow<HTMLSourceElement>('source', video);
-      for (const source of sources) {
-        const sourceSrc = source.getAttribute('src');
-        if (sourceSrc) {
-          videoUrls.push(sourceSrc);
+    for (const el of queryAllShadow<Element>('video,source,track,a[href]', doc)) {
+      switch (el.localName) {
+        case 'video': {
+          const src = el.getAttribute('src');
+          if (src) {
+            videoUrls.push(src);
+          }
+          break;
         }
-      }
-    }
-
-    // All <source> elements (including those not nested in <video>).
-    const allSources = queryAllShadow<HTMLSourceElement>('source', doc);
-    for (const source of allSources) {
-      const src = source.getAttribute('src');
-      if (src) {
-        videoUrls.push(src);
-      }
-    }
-
-    // <track> elements are subtitles — trust the element, skip pattern filter.
-    // Keep track metadata (label, srclang, default) so background can assign
-    // the correct language and display name instead of falling back to
-    // URL-based detection, which fails for blob: URLs created by players.
-    const tracks = queryAllShadow<HTMLTrackElement>('track', doc);
-    for (const track of tracks) {
-      const src = track.getAttribute('src');
-      if (!src) continue;
-      trackSubtitleUrls.push(src);
-      const label = track.getAttribute('label') ?? '';
-      const srclang = track.getAttribute('srclang') ?? '';
-      const language = resolveTrackLanguage(label, srclang);
-      const displayName = resolveTrackDisplayName(label, srclang, src);
-      trackSubtitles.push({
-        url: src,
-        label: displayName,
-        language,
-        isDefault: track.default,
-      });
-    }
-
-    // <a> elements: classify hrefs against video/subtitle patterns.
-    const anchors = queryAllShadow<HTMLAnchorElement>('a[href]', doc);
-    for (const anchor of anchors) {
-      const href = anchor.getAttribute('href');
-      if (!href) {
-        continue;
-      }
-      if (isVideoUrl(href)) {
-        videoUrls.push(href);
-      } else if (isSubtitleUrl(href)) {
-        patternSubtitleUrls.push(href);
+        case 'source': {
+          const src = el.getAttribute('src');
+          if (src) {
+            videoUrls.push(src);
+          }
+          break;
+        }
+        case 'track': {
+          const src = el.getAttribute('src');
+          if (!src) break;
+          trackSubtitleUrls.push(src);
+          const label = el.getAttribute('label') ?? '';
+          const srclang = el.getAttribute('srclang') ?? '';
+          trackSubtitles.push({
+            url: src,
+            label: resolveTrackDisplayName(label, srclang, src),
+            language: resolveTrackLanguage(label, srclang),
+            isDefault: (el as HTMLTrackElement).default,
+          });
+          break;
+        }
+        case 'a': {
+          const href = el.getAttribute('href');
+          if (!href) break;
+          if (isVideoUrl(href)) {
+            videoUrls.push(href);
+          } else if (isSubtitleUrl(href)) {
+            patternSubtitleUrls.push(href);
+          }
+          break;
+        }
       }
     }
 

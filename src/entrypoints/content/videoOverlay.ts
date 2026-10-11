@@ -130,8 +130,31 @@ export function findAndInitOverlay(): void {
   findVideoObserver?.disconnect();
   stopVideoReadyPoll();
   stopVideoFindPoll();
-  findVideoObserver = new MutationObserver(() => {
-    const v = findLargestPlayableVideo();
+  findVideoObserver = new MutationObserver((mutations) => {
+    let sawVideoSignal = false;
+    let candidate: HTMLVideoElement | null = null;
+    for (const m of mutations) {
+      if (m.type === 'attributes') {
+        const host = m.target instanceof Element
+          ? (m.target instanceof HTMLVideoElement ? m.target : m.target.closest('video'))
+          : null;
+        if (host) {
+          sawVideoSignal = true;
+          candidate ??= host;
+        }
+        continue;
+      }
+      for (const node of m.addedNodes) {
+        if (!(node instanceof Element)) continue;
+        sawVideoSignal = true;
+        candidate ??= node instanceof HTMLVideoElement ? node : node.querySelector('video');
+      }
+    }
+    if (!sawVideoSignal) return;
+    const rect = candidate?.getBoundingClientRect();
+    const v = candidate && rect && rect.width > 0 && rect.height > 0
+      ? candidate
+      : findLargestPlayableVideo();
     if (v && v !== currentVideo) {
       findVideoObserver?.disconnect();
       findVideoObserver = null;
