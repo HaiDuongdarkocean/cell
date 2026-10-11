@@ -124,7 +124,10 @@ export interface CueListResolveCache {
   readonly readings: Map<string, string>;
   readonly seenGlosses: Set<string>;
   readonly glosses: Map<string, string>;
-  bandOpts: FrequencyBandOptions | null;
+  /** Shared in-flight/resolved band-options load so the first resolve burst
+   *  issues one settings+resources round-trip. Reset to null on rejection
+   *  so the next resolve retries. */
+  bandOpts: Promise<FrequencyBandOptions> | null;
 }
 
 export function createCueListResolveCache(): CueListResolveCache {
@@ -181,6 +184,19 @@ export async function resolveCueListTokenMetadata(
   const wantReadings = Boolean(options?.includeReadings);
   const wantGlosses = Boolean(options?.includeGlosses && options.glossTargetLanguage);
 
+  let bandOptsPromise: Promise<FrequencyBandOptions>;
+  if (cache) {
+    if (!cache.bandOpts) {
+      cache.bandOpts = loadFrequencyBandOptions(langCode).catch((err) => {
+        cache.bandOpts = null;
+        throw err;
+      });
+    }
+    bandOptsPromise = cache.bandOpts;
+  } else {
+    bandOptsPromise = loadFrequencyBandOptions(langCode);
+  }
+
   const [statusRes, freqRes, bandRes, readingsRes, glossesRes, cardTermsRes] = await Promise.allSettled([
     baseTerms.length > 0
       ? fetchTermsChunked(langCode, baseTerms, getWordStatuses)
@@ -188,7 +204,7 @@ export async function resolveCueListTokenMetadata(
     baseTerms.length > 0
       ? fetchTermsChunked(langCode, baseTerms, getFrequencyEntries)
       : Promise.resolve(new Map<string, FrequencyEntry[]>()),
-    cache?.bandOpts ? Promise.resolve(cache.bandOpts) : loadFrequencyBandOptions(langCode),
+    bandOptsPromise,
     wantReadings && readingTerms.length > 0
       ? fetchTermsChunked(langCode, readingTerms, getReadings)
       : Promise.resolve(null),
@@ -248,7 +264,6 @@ export async function resolveCueListTokenMetadata(
     bandRes.status === 'fulfilled'
       ? bandRes.value
       : { thresholds: DEFAULT_BAND_THRESHOLDS, resourcePriority: [] };
-  if (cache && bandRes.status === 'fulfilled') cache.bandOpts = bandRes.value;
   const freqUnfiltered =
     bandOpts.resourcePriority.length === 0 || freqFailed || bandRes.status === 'rejected';
 

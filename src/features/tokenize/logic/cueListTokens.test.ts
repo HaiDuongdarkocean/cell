@@ -311,6 +311,26 @@ describe('resolveCueListTokenMetadata', () => {
     expect(loadFrequencyBandOptions).toHaveBeenCalledTimes(1);
   });
 
+  it('shares one in-flight band-options load across concurrent resolves', async () => {
+    const cache = createCueListResolveCache();
+    const map1 = createCueListTokenMap(cues, 'en');
+    const map2 = createCueListTokenMap(
+      [{ index: 3, start: 2000, end: 3000, targetText: 'new terms here', nativeText: '' }],
+      'en',
+    );
+    getWordStatuses.mockResolvedValue(new Map([['hello', 'known']]));
+    loadFrequencyBandOptions.mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve(ENABLED_BAND_OPTS), 10)),
+    );
+
+    await Promise.all([
+      resolveCueListTokenMetadata(map1, 'en', { cache }),
+      resolveCueListTokenMetadata(map2, 'en', { cache }),
+    ]);
+
+    expect(loadFrequencyBandOptions).toHaveBeenCalledTimes(1);
+  });
+
   it('refetches band options after a failed load instead of caching the fallback', async () => {
     const cache = createCueListResolveCache();
     const map = createCueListTokenMap(cues, 'en');

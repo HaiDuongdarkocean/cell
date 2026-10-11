@@ -585,6 +585,10 @@ export async function createWebTokenizeController(
         clearTimeout(metadataFlushTimer);
         metadataFlushTimer = null;
       }
+      if (preparedNotifyTimer !== null) {
+        clearTimeout(preparedNotifyTimer);
+        preparedNotifyTimer = null;
+      }
       metadataQueue = [];
       mutationWindowStart = 0;
     }
@@ -860,8 +864,20 @@ export async function createWebTokenizeController(
     });
   }
 
+  let preparedNotifyTimer: number | null = null;
+
+  function schedulePreparedNotify(): void {
+    if (preparedNotifyTimer !== null) return;
+    preparedNotifyTimer = window.setTimeout(() => {
+      preparedNotifyTimer = null;
+      options.onBlocksChanged?.();
+    }, 400);
+  }
+
   function prepareBlock(block: TokenBlock): void {
+    if (block.tokens !== undefined) return;
     prepareTokenBlock(block, langCode);
+    if (block.tokens !== undefined) schedulePreparedNotify();
   }
 
   function sentenceKey(block: TokenBlock, element: HTMLElement): string {
