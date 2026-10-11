@@ -662,12 +662,6 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     };
   }, [virtualized]);
 
-  // ponytail: infer hasHours from last cue end - offset (displayed max). O(1).
-  // Edge case: offset shift could push an earlier cue's display ≥ 1h while last
-  // is < 1h — rare; upgrade path: track max displayed time explicitly.
-  const lastEnd = filteredCues.length > 0 ? filteredCues[filteredCues.length - 1].end : 0;
-  const hasHours = lastEnd - offsetMs >= 3_600_000;
-
   // 'active' display mode (PM mobile): render only the current cue; in a gap,
   // fall back to the next upcoming cue rendered dimmed; past the last cue the
   // region shows a compact empty state instead of a stale card.
@@ -847,14 +841,14 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                     resumeFollow(false);
                     onSeek(cue.start);
                   }}
-                  aria-label={t('cueList.seekTo', [formatTimestamp(cue.start - offsetMs, hasHours)])}
+                  aria-label={t('cueList.seekTo', [formatTimestamp(cue.start - offsetMs)])}
                   className={styles.timestamp}
                 >
                   {/* ADR-019 sync: shift displayed timestamp by -offsetMs so the
                       list shows the VIDEO time at which this cue will display
                       (matches overlay + highlight). onSeek still sends raw
                       cue.start; SEEK_TO handler subtracts offset. */}
-                  {`${formatTimestamp(cue.start - offsetMs, hasHours)} – ${formatTimestamp(cue.end - offsetMs, hasHours)}`}
+                  {`${formatTimestamp(cue.start - offsetMs)} – ${formatTimestamp(cue.end - offsetMs)}`}
                 </button>
                 {onSaveCue && (
                   <Button
