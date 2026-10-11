@@ -401,32 +401,53 @@ export async function countEntriesByResource(langCode: string, resourceId: numbe
   return countByResource(langCode, resourceId);
 }
 
+/** True when primary keys form one unbroken autoincrement run. */
+export function isContiguousKeys(keys: readonly IDBValidKey[]): boolean {
+  const first = keys[0];
+  if (typeof first !== 'number') return false;
+  for (let i = 1; i < keys.length; i += 1) {
+    if (keys[i] !== first + i) return false;
+  }
+  return true;
+}
+
 /** Delete all rows (any kind) for a resource — resource removal / replace-import
- *  rollback cascade. */
+ *  rollback cascade. One import's rows sit on contiguous autoincrement keys, so a
+ *  contiguous run deletes via a single IDBKeyRange; interleaved keys (concurrent
+ *  import) fall back to the per-row cursor. */
 export async function deleteEntriesByResource(
   langCode: string,
   resourceId: number,
   onProgress?: (done: number, total: number) => void,
 ): Promise<void> {
-  const total = onProgress ? await countEntriesByResource(langCode, resourceId) : 0;
   const db = await getDB(langCode);
   return new Promise((resolve, reject) => {
     const store = getStore(db, STORES.ENTRY);
     const index = store.index(INDEXES.by_resource);
-    let deleted = 0;
-    const cursorRequest = index.openCursor(resourceId);
-    cursorRequest.onsuccess = () => {
-      const cursor = cursorRequest.result;
-      if (cursor) {
-        cursor.delete();
-        deleted += 1;
-        if (deleted === total || deleted % 512 === 0) onProgress?.(deleted, total);
-        cursor.continue();
-      }
-    };
     const tx = store.transaction;
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
+    const keysRequest = index.getAllKeys(resourceId);
+    keysRequest.onsuccess = () => {
+      const keys = keysRequest.result;
+      if (isContiguousKeys(keys)) {
+        const deleteRequest = store.delete(IDBKeyRange.bound(keys[0], keys[keys.length - 1]));
+        deleteRequest.onsuccess = () => onProgress?.(keys.length, keys.length);
+        return;
+      }
+      const total = keys.length;
+      let deleted = 0;
+      const cursorRequest = index.openCursor(resourceId);
+      cursorRequest.onsuccess = () => {
+        const cursor = cursorRequest.result;
+        if (cursor) {
+          cursor.delete();
+          deleted += 1;
+          if (deleted === total || deleted % 512 === 0) onProgress?.(deleted, total);
+          cursor.continue();
+        }
+      };
+    };
   });
 }
