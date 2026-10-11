@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode, type KeyboardEvent, type MouseEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, useId, type ReactNode, type KeyboardEvent, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/icons/Icon';
@@ -107,6 +107,8 @@ export function Select({
   const selectedOption = selectedIndex !== -1 ? options[selectedIndex] : null;
 
   const validationState = state ?? (error ? 'error' : undefined);
+  const autoId = useId();
+  const triggerId = id ?? autoId;
 
   const { placement, style: menuStyle } = useMenuPlacement({
     isOpen,
@@ -379,6 +381,7 @@ export function Select({
         tabIndex={-1}
         className={[styles.options, menuAlignClass].filter(Boolean).join(' ')}
         role="listbox"
+        aria-labelledby={triggerId}
         aria-activedescendant={highlightedIndex >= 0 ? `select-option-${visibleOptions[highlightedIndex]?.value}` : undefined}
         onKeyDown={!searchable ? handleListboxKeyDown : undefined}
       >
@@ -439,7 +442,7 @@ export function Select({
       {name && <input type="hidden" name={name} value={value ?? ''} />}
       <Button variant="secondary"
         ref={triggerRef}
-        id={id}
+        id={triggerId}
         className={triggerClass}
         disabled={disabled}
         aria-haspopup="listbox"

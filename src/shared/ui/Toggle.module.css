@@ -2,6 +2,7 @@
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   width: var(--toggle-w);
   height: var(--toggle-h);
   flex-shrink: 0;
@@ -41,13 +42,13 @@
   -webkit-appearance: none;
   outline: none;
   display: block;
-  box-sizing: border-box;
+  box-sizing: content-box;
   border-block: var(--pad-block) solid transparent;
   border-inline: var(--pad-inline) solid transparent;
   background: var(--b, var(--toggle-default));
   background-clip: padding-box;
-  width: 100%;
-  height: 100%;
+  width: var(--toggle-w);
+  height: var(--toggle-h);
   padding: 0;
   margin: 0;
   border-radius: calc(var(--toggle-h) / 2 + var(--pad-inline)) / calc(var(--toggle-h) / 2 + var(--pad-block));

@@ -58,7 +58,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-1-5);
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  min-width: calc(var(--space-10) * 2);
 }
 
 .bandPrefix {
@@ -70,4 +71,5 @@
 
 .bands .bandInput {
   width: calc(var(--space-10) * 3);
+  max-width: 100%;
 }
