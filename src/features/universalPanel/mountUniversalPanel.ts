@@ -352,8 +352,13 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
   // (cb(buildPanelState()) in content-script.ts), so render must be initialized
   // first to avoid TDZ (Temporal Dead Zone) ReferenceError.
   const tokenizeUnsubscribe = options.panel?.subscribe((next) => {
+    const changed =
+      next.enabled !== tokenizeState.enabled ||
+      next.showStatus !== tokenizeState.showStatus ||
+      next.showFrequency !== tokenizeState.showFrequency ||
+      next.subtitleEnabled !== tokenizeState.subtitleEnabled;
     tokenizeState = next;
-    render();
+    if (changed) render();
   }) ?? null;
 
   // Initial render (closed; persisted tab loads in background and updates state).

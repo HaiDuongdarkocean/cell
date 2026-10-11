@@ -124,6 +124,7 @@ export interface CueListResolveCache {
   readonly readings: Map<string, string>;
   readonly seenGlosses: Set<string>;
   readonly glosses: Map<string, string>;
+  bandOpts: FrequencyBandOptions | null;
 }
 
 export function createCueListResolveCache(): CueListResolveCache {
@@ -135,6 +136,7 @@ export function createCueListResolveCache(): CueListResolveCache {
     readings: new Map(),
     seenGlosses: new Set(),
     glosses: new Map(),
+    bandOpts: null,
   };
 }
 
@@ -186,7 +188,7 @@ export async function resolveCueListTokenMetadata(
     baseTerms.length > 0
       ? fetchTermsChunked(langCode, baseTerms, getFrequencyEntries)
       : Promise.resolve(new Map<string, FrequencyEntry[]>()),
-    loadFrequencyBandOptions(langCode),
+    cache?.bandOpts ? Promise.resolve(cache.bandOpts) : loadFrequencyBandOptions(langCode),
     wantReadings && readingTerms.length > 0
       ? fetchTermsChunked(langCode, readingTerms, getReadings)
       : Promise.resolve(null),
@@ -246,6 +248,7 @@ export async function resolveCueListTokenMetadata(
     bandRes.status === 'fulfilled'
       ? bandRes.value
       : { thresholds: DEFAULT_BAND_THRESHOLDS, resourcePriority: [] };
+  if (cache && bandRes.status === 'fulfilled') cache.bandOpts = bandRes.value;
   const freqUnfiltered =
     bandOpts.resourcePriority.length === 0 || freqFailed || bandRes.status === 'rejected';
 

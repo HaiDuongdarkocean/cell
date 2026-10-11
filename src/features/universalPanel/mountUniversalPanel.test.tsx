@@ -218,6 +218,37 @@ describe('mountUniversalPanel', () => {
     );
   });
 
+  it('skips re-render when a tokenize notify carries unchanged toggle values', async () => {
+    const videoQueries = jest.spyOn(document, 'querySelector');
+    const state = { enabled: true, showStatus: false, showFrequency: false, subtitleEnabled: false };
+    let listener: ((s: typeof state) => void) | null = null;
+    const panel = {
+      getState: () => state,
+      onToggle: jest.fn(),
+      onOpenDictionary: jest.fn(),
+      subscribe: jest.fn((cb: (s: typeof state) => void) => {
+        listener = cb;
+        cb(state);
+        return jest.fn();
+      }),
+    };
+    await act(async () => { controller.unmount(); });
+    document.body.innerHTML = '';
+    await act(async () => {
+      controller = mountUniversalPanel({ panel });
+      await Promise.resolve();
+    });
+    const countVideoQueries = () =>
+      videoQueries.mock.calls.filter(([query]) => query === 'video').length;
+
+    const before = countVideoQueries();
+    act(() => { listener?.({ ...state }); });
+    expect(countVideoQueries()).toBe(before);
+    act(() => { listener?.({ ...state, showFrequency: true }); });
+    expect(countVideoQueries()).toBe(before + 1);
+    videoQueries.mockRestore();
+  });
+
   it('openDictionaryLookup pre-fills the dictionary term without arming the card creator', async () => {
     await act(async () => { await controller.open('vocabulary'); });
     await waitFor(() => expect(getByTestId('vocabulary-tab')).toBeTruthy());

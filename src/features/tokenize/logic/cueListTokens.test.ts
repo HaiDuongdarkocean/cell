@@ -36,6 +36,7 @@ jest.mock('@/features/tokenize/utils/frequencyBand', () => ({
 }));
 
 import {
+  createCueListResolveCache,
   createCueListTokenMap,
   resolveCueListTokenMetadata,
 } from './cueListTokens';
@@ -292,6 +293,35 @@ describe('resolveCueListTokenMetadata', () => {
     });
 
     expect(reresolved.get(1)?.find((t) => t.term === 'hello')?.gloss).toBe('xin chào');
+  });
+
+  it('loads band options once per resolve cache across chunk resolves', async () => {
+    const cache = createCueListResolveCache();
+    const map1 = createCueListTokenMap(cues, 'en');
+    getWordStatuses.mockResolvedValue(new Map([['hello', 'known']]));
+
+    await resolveCueListTokenMetadata(map1, 'en', { cache });
+
+    const map2 = createCueListTokenMap(
+      [{ index: 3, start: 2000, end: 3000, targetText: 'new terms here', nativeText: '' }],
+      'en',
+    );
+    await resolveCueListTokenMetadata(map2, 'en', { cache });
+
+    expect(loadFrequencyBandOptions).toHaveBeenCalledTimes(1);
+  });
+
+  it('refetches band options after a failed load instead of caching the fallback', async () => {
+    const cache = createCueListResolveCache();
+    const map = createCueListTokenMap(cues, 'en');
+    getWordStatuses.mockResolvedValue(new Map([['hello', 'known']]));
+    loadFrequencyBandOptions.mockRejectedValueOnce(new Error('settings down'));
+
+    await resolveCueListTokenMetadata(map, 'en', { cache });
+    const { meta } = await resolveCueListTokenMetadata(map, 'en', { cache });
+
+    expect(loadFrequencyBandOptions).toHaveBeenCalledTimes(2);
+    expect(meta.freqUnfiltered).toBe(false);
   });
 
   it('makes no client calls when there are no terms', async () => {
