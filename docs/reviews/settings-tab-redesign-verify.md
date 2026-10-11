@@ -61,6 +61,6 @@
 
 All HIGH/MEDIUM findings from round 1 are closed: I-1 (9/9 literal sweep sites token-based), I-2 (pixel evidence confirmed on disk and inspected), I-3 (both label associations repaired), I-5 (dead code swept), I-7 (dense rows), I-8 (label/hint structure). I-6 accepted as intentional design deviation.
 
-## VERDICT: PASS
+VERDICT: PASS
 
 Both blocking failures are resolved with code-verified fixes; the AC-7 evidence exists and the rendered output matches the approved band grammar. Recommend running `npm run typecheck && npm run lint && npm run test:unit && npm run build` before commit (not runnable here) and landing the `docs/0-wiki.md` changelog entry at ship.
