@@ -67,7 +67,7 @@ interface ImportChunkMeta {
 }
 
 interface PendingImport {
-  readonly chunks: string[];
+  readonly chunks: Uint8Array[];
   received: number;
   createdAt: number;
   stallTimer: ReturnType<typeof setTimeout> | null;
@@ -101,6 +101,12 @@ function base64ToBytes(base64: string): Uint8Array {
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes;
+}
+
+const nativeFromBase64 = (Uint8Array as unknown as { fromBase64?: (data: string) => Uint8Array }).fromBase64;
+
+function decodeChunk(data: string): Uint8Array {
+  return nativeFromBase64 !== undefined ? nativeFromBase64(data) : base64ToBytes(data);
 }
 
 function clearPending(jobId: string): void {
@@ -368,7 +374,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
         return toError(err);
       }
       pending = {
-        chunks: new Array<string>(p.total),
+        chunks: new Array<Uint8Array>(p.total),
         received: 0,
         createdAt: Date.now(),
         stallTimer: null,
@@ -389,7 +395,13 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
       return toError(new Error(t('resources.error.uploadRejected')));
     }
     if (pending.chunks[p.seq] === undefined) {
-      pending.chunks[p.seq] = p.data;
+      try {
+        pending.chunks[p.seq] = decodeChunk(p.data);
+      } catch (err) {
+        clearPending(p.jobId);
+        registry.markFailed(p.jobId, 'invalid-chunk-encoding');
+        return toError(err);
+      }
       pending.received++;
       registry.setProgress(p.jobId, { done: pending.received, total: pending.chunks.length, unit: 'items' });
     }
@@ -407,9 +419,8 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
     const components = pending.components;
     clearPending(p.jobId);
     try {
-      const bytes = base64ToBytes(pending.chunks.join(''));
       importPayloads.set(p.jobId, {
-        file: new File([bytes as BlobPart], meta.fileName, { type: meta.fileMime }),
+        file: new File(pending.chunks as BlobPart[], meta.fileName, { type: meta.fileMime }),
         ...meta,
         components,
       });

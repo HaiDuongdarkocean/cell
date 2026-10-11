@@ -65,6 +65,14 @@ const mockRegistry = {
   },
   markDone: jest.fn(),
   markInterrupted: jest.fn(),
+  markFailed(id: string, error: string) {
+    const job = this.jobs.get(id);
+    if (job) {
+      job.status = 'failed';
+      job.error = error;
+    }
+    return job;
+  },
 };
 
 jest.mock('@/entrypoints/background/handlers/jobs', () => ({
@@ -148,6 +156,25 @@ describe('resource import chunks — live component selection', () => {
     expect(opts.components).toEqual(['definitions']);
   });
 
+  it('reassembles chunked base64 into the original file bytes for the executor', async () => {
+    const handlers = makeContext();
+    const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!;
+    await send(chunk('job-bytes', 0, 3, undefined));
+    await send(chunk('job-bytes', 1, 3, undefined));
+    await send(chunk('job-bytes', 2, 3, undefined));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mockedImportFile).toHaveBeenCalledTimes(1);
+    const [file] = mockedImportFile.mock.calls[0]!;
+    const bytes = await new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(file as File);
+    });
+    expect(Buffer.from(bytes).equals(Buffer.from('fake-bytes-for-import'))).toBe(true);
+  });
+
   it('uses the first selection unchanged when chunks carry none', async () => {
     const handlers = makeContext();
     const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!;
@@ -159,5 +186,31 @@ describe('resource import chunks — live component selection', () => {
     expect(mockedImportFile).toHaveBeenCalledTimes(1);
     const [, opts] = mockedImportFile.mock.calls[0]!;
     expect(opts.components).toBeUndefined();
+  });
+
+  it('rejects a malformed-base64 chunk and fails the job', async () => {
+    const handlers = makeContext();
+    const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!;
+    const bad = {
+      type: MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
+      payload: {
+        jobId: 'job-bad', seq: 0, total: 2,
+        data: '%%%not-base64%%%',
+        fileName: 'list.txt', fileMime: 'text/plain', langCode: 'en',
+      },
+    } as MessageRequest;
+    const res = await send(bad);
+    expect((res as { error?: string }).error).toBeTruthy();
+    const job = mockRegistry.jobs.get('job-bad');
+    expect(job?.status).toBe('failed');
+    const retry = await send({
+      type: MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
+      payload: {
+        jobId: 'job-bad2', seq: 0, total: 1,
+        data: slices[0]!,
+        fileName: 'list.txt', fileMime: 'text/plain', langCode: 'en',
+      },
+    } as MessageRequest);
+    expect((retry as { error?: string }).error).toBeUndefined();
   });
 });
