@@ -22,6 +22,7 @@ import {
   loadSettingsOrToast,
   broadcastCues,
 } from '@/features/subtitle';
+import { onNavigableCuesChanged } from '@/features/subtitle/logic/navigableCues';
 import { ReactSubtitleController } from '@/features/subtitle/ui/reactSubtitleController';
 import { SubtitleSyncController } from '@/features/subtitle/ui/subtitleSyncController';
 import { type SubtitleCueEngineUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
@@ -208,6 +209,12 @@ export function init(
     blockController.applyStudyMode(next.activeMode, next.advanced);
     void syncUnknownResolver();
   });
+
+  // Cue-filter changes re-publish the rendered set — re-broadcast so the side
+  // panel's cue list + seekTime nav stay on the same filtered set.
+  const unsubscribeNavigableBroadcast = onNavigableCuesChanged(() =>
+    broadcastCues(blockController.getNavigableCues()),
+  );
 
   // Immersion playback: resolve which cues contain a learnable word so the
   // study-mode state machine can pause on them (pauseOnUnknown). The x/z
@@ -1045,5 +1052,6 @@ export function init(
     unsubscribeWordStatusForResolver();
     blockController?.destroy();
     unsubscribeStudyMode();
+    unsubscribeNavigableBroadcast();
   };
 }

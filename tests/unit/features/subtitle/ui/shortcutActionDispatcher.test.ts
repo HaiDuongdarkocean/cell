@@ -105,4 +105,11 @@ describe('navigateCue — paused anchors at the active cue', () => {
     expect(video.currentTime).toBeCloseTo(2.08);
     expect(video.play).toHaveBeenCalledTimes(1);
   });
+
+  it('replay-cue ignores an anchor hidden from the navigable set', () => {
+    const video = makeVideo({ paused: true, currentTime: 3 });
+    const filtered = [CONTIG_CUES[0], CONTIG_CUES[2]];
+    navigateCue('replay-cue', video, filtered, 3000, 0, { start: 2500, end: 3500 });
+    expect(video.currentTime).toBeCloseTo(0.08);
+  });
 });

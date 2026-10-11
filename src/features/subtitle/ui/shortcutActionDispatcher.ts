@@ -18,7 +18,11 @@ export function navigateCue(
   offsetMs: number,
   anchor?: { start: number; end: number },
 ): void {
-  const anchorCue = video.paused ? (anchor ?? undefined) : undefined;
+  const anchorCue = video.paused && anchor
+    ? action === 'replay-cue'
+      ? cues.find((c) => c.start === anchor.start && c.end === anchor.end)
+      : anchor
+    : undefined;
   switch (action) {
     case 'prev-cue': {
       const prevCue = anchorCue

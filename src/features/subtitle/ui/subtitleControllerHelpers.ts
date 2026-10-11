@@ -38,7 +38,7 @@ export function createTranslateFunction(
  *
  * Pure — only uses `cues` param + `sendMessage` import.
  */
-export function broadcastCues(cues: BilingualCue[]): void {
+export function broadcastCues(cues: readonly BilingualCue[]): void {
   void sendMessage({
     type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
     payload: { tabId: undefined, cues },
