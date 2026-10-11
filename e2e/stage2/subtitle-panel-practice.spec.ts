@@ -251,10 +251,12 @@ test.describe('Stage 2: Subtitle panel practice', () => {
 
     const speedValue = streamFlixPage.locator(`${STUDY_MENU} ${SPEED_VALUE}`);
     await expect(speedValue).toHaveText('1×');
+    const menuWidth = (await menu.boundingBox())!.width;
     await streamFlixPage.locator(`${STUDY_MENU} ${SPEED_INC}`).click();
     await streamFlixPage.locator(`${STUDY_MENU} ${SPEED_INC}`).click();
     await expect(speedValue).toHaveText('1.5×');
     await expect(menu).toBeVisible();
+    expect((await menu.boundingBox())!.width).toBe(menuWidth);
 
     await streamFlixPage.locator(`${STUDY_MENU} ${SPEED_RESET}`).click();
     await expect(speedValue).toHaveText('1×');
