@@ -1,0 +1,55 @@
+import { scanTopLevelJsonObjects, MalformedJsonArrayError } from '@/features/dictionary/logic/jsonObjectScanner';
+
+function collect(text: string): string[] {
+  return [...scanTopLevelJsonObjects(text)];
+}
+
+describe('scanTopLevelJsonObjects', () => {
+  it('yields each top-level object', () => {
+    const slices = collect('[{"a":1},{"b":2},{"c":3}]');
+    expect(slices).toEqual(['{"a":1}', '{"b":2}', '{"c":3}']);
+  });
+
+  it('yields nothing for an empty array', () => {
+    expect(collect('[]')).toEqual([]);
+    expect(collect('  [ \n ]  ')).toEqual([]);
+  });
+
+  it('handles nested objects and arrays', () => {
+    const slices = collect('[{"a":{"x":[1,{"y":2}]},"b":[]},{"c":{}}]');
+    expect(slices).toEqual(['{"a":{"x":[1,{"y":2}]},"b":[]}', '{"c":{}}']);
+  });
+
+  it('ignores braces and escapes inside strings', () => {
+    const slices = collect('[{"d":"a{b}c"},{"e":"q\\"}w"},{"f":"x\\\\"}]');
+    expect(slices).toEqual([
+      '{"d":"a{b}c"}',
+      '{"e":"q\\"}w"}',
+      '{"f":"x\\\\"}',
+    ]);
+    expect(JSON.parse(slices[1]!)).toEqual({ e: 'q"}w' });
+    expect(JSON.parse(slices[2]!)).toEqual({ f: 'x\\' });
+  });
+
+  it('skips non-object elements like the legacy parse loop did', () => {
+    const slices = collect('[{"a":1}, 5, "str", true, null, -3.5e2, {"b":2}]');
+    expect(slices).toEqual(['{"a":1}', '{"b":2}']);
+  });
+
+  it('rejects stray characters between elements', () => {
+    expect(() => collect('[{"a":1} xyz]')).toThrow(MalformedJsonArrayError);
+    expect(() => collect('[abc]')).toThrow(MalformedJsonArrayError);
+    expect(() => collect('[{"a":1}]@')).toThrow(MalformedJsonArrayError);
+  });
+
+  it('rejects unbalanced closing braces', () => {
+    expect(() => collect('[{"a":1}}]')).toThrow(MalformedJsonArrayError);
+  });
+
+  it('preserves unicode and surrogate pairs', () => {
+    const json = '[{"t":"日本語"},{"u":"𝄞 ♪"}]';
+    const slices = collect(json);
+    expect(JSON.parse(slices[0]!)).toEqual({ t: '日本語' });
+    expect(JSON.parse(slices[1]!)).toEqual({ u: '𝄞 ♪' });
+  });
+});
