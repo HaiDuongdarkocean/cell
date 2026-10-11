@@ -11,7 +11,7 @@
  * No direct coupling between this hook and SubtitleBlock.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { SubtitleCueEngine, type NavClusterIconName } from '@/features/subtitle/ui/subtitleCueEngine';
+import { SubtitleCueEngine, NAV_CLUSTER_ICONS, type NavClusterIconName } from '@/features/subtitle/ui/subtitleCueEngine';
 import { t } from '@/shared/i18n';
 import { useCuesStore } from '@/features/subtitle/cuesStore';
 import { cleanTargetCues } from '@/features/subtitle/logic/subtitleCleanupRuntime';
@@ -38,19 +38,7 @@ export interface SubtitleEngineState {
   offsetMs: number;
 }
 
-/** Map engine NavClusterIconName → ICON_CATALOG key for NavCluster component. */
-const REPEAT_ICON_MAP: Record<NavClusterIconName, string> = {
-  prev: 'navPrev',
-  next: 'navNext',
-  repeat: 'navRepeat',
-  repeatA: 'navRepeatA',
-  repeatB: 'navRepeatB',
-  repeatCancel: 'navRepeatCancel',
-  rewind: 'navRewind',
-  forward: 'navForward',
-  play: 'play',
-  pause: 'pause',
-};
+const REPEAT_ICON_MAP: Record<NavClusterIconName, string> = NAV_CLUSTER_ICONS;
 
 export interface SubtitleEngineControls extends SubtitleEngineState {
   /** Load target + native cues into the engine. */

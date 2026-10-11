@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { NavClusterSettings, SubtitleBlockSettings, BilingualCue } from '@/entities/media';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
+import { NAV_CLUSTER_ICONS } from './subtitleCueEngine';
 import { ClusterRightToolbar } from './ClusterRightToolbar';
 import { ManagerLayer } from './ManagerLayer';
 import { OffsetLayer } from './OffsetLayer';
@@ -54,7 +55,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       collapsed: initialCollapsed,
       isPlaying: initialIsPlaying,
       repeatActive: initialRepeatActive,
-      repeatIcon: initialRepeatIcon = 'repeat',
+      repeatIcon: initialRepeatIcon = NAV_CLUSTER_ICONS.repeat,
       repeatLabel: initialRepeatLabel = t('player.nav.repeat'),
       clusterSettings: initialClusterSettings,
       blockSettings: initialBlockSettings,

@@ -5,6 +5,7 @@ import { Icon } from '@/shared/icons/Icon';
 import type { ICON_CATALOG } from '@/shared/icons';
 import { Button } from '@/shared/ui';
 import { buildClusterCssVars } from './subtitleUI';
+import { NAV_CLUSTER_ICONS } from './subtitleCueEngine';
 import styles from './NavCluster.module.css';
 
 interface NavClusterProps {
@@ -40,7 +41,7 @@ function NavClusterInner({
   collapsed,
   isPlaying = false,
   repeatActive = false,
-  repeatIcon = 'navRepeat',
+  repeatIcon = NAV_CLUSTER_ICONS.repeat,
   repeatLabel = t('player.nav.repeat'),
   clusterSettings,
   onToggleCollapsed,
@@ -70,7 +71,7 @@ function NavClusterInner({
           data-cell-id="nav-expand"
           onClick={onToggleCollapsed}
         >
-          <Icon name="navRepeat"  />
+          <Icon name={NAV_CLUSTER_ICONS.repeat}  />
         </Button>
       </div>
     );
@@ -80,7 +81,7 @@ function NavClusterInner({
     <div className={rootClass} style={clusterStyle} data-cell-id="nav-cluster" aria-label={t('subtitle.nav.aria')}>
       <div className={styles.main} data-cell-id="nav-main">
         <Button shape="circle" variant="overlay" aria-label={t('settings.shortcuts.action.prevCue')} data-cell-id="nav-prev" onClick={onPrev}>
-          <Icon name="navPrev"  />
+          <Icon name={NAV_CLUSTER_ICONS.prev}  />
         </Button>
         <Button shape="circle" variant="overlay"
           aria-label={repeatActive ? t('subtitle.nav.repeatCancel') : repeatLabel}
@@ -91,18 +92,18 @@ function NavClusterInner({
           <Icon name={repeatIcon}  />
         </Button>
         <Button shape="circle" variant="overlay" aria-label={t('settings.shortcuts.action.nextCue')} data-cell-id="nav-next" onClick={onNext}>
-          <Icon name="navNext"  />
+          <Icon name={NAV_CLUSTER_ICONS.next}  />
         </Button>
       </div>
       <div className={styles.secondary} data-cell-id="nav-secondary">
         <Button shape="circle" variant="overlay" aria-label={t('subtitle.nav.rewind')} data-cell-id="nav-rewind" onClick={onRewind}>
-          <Icon name="navRewind"  />
+          <Icon name={NAV_CLUSTER_ICONS.rewind}  />
         </Button>
         <Button shape="circle" variant="overlay" aria-label={isPlaying ? t('subtitle.nav.pause') : t('subtitle.nav.play')} data-cell-id="nav-play" onClick={onPlayPause}>
-          <Icon name={isPlaying ? 'navPause' : 'navPlay'}  />
+          <Icon name={isPlaying ? NAV_CLUSTER_ICONS.pause : NAV_CLUSTER_ICONS.play}  />
         </Button>
         <Button shape="circle" variant="overlay" aria-label={t('subtitle.nav.forward')} data-cell-id="nav-forward" onClick={onForward}>
-          <Icon name="navForward"  />
+          <Icon name={NAV_CLUSTER_ICONS.forward}  />
         </Button>
       </div>
     </div>

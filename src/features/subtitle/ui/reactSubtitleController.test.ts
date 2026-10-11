@@ -18,7 +18,10 @@ import type { TriggerMode } from '@/entities/dictionary';
 import { mergeCuesForPanel } from '@/features/subtitle/logic/subtitleMerge';
 
 jest.mock('./mountSubtitle', () => ({ mountSubtitle: jest.fn() }));
-jest.mock('./subtitleCueEngine', () => ({ SubtitleCueEngine: jest.fn() }));
+jest.mock('./subtitleCueEngine', () => ({
+  SubtitleCueEngine: jest.fn(),
+  NAV_CLUSTER_ICONS: jest.requireActual('./subtitleCueEngine').NAV_CLUSTER_ICONS,
+}));
 jest.mock('@/shared/lib/storage/settingsStore', () => ({
   loadSettings: jest.fn(),
   saveSettings: jest.fn(),

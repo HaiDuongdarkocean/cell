@@ -12,6 +12,7 @@ import { prevSentence, nextSentence, seekBy, findActiveCueIndex } from './navClu
 import { seekVideo, resumeIfPaused, SEEK_LANDING_EPS_MS } from '@/shared/lib/dom/netflixPlayback';
 import { t } from '@/shared/i18n';
 import type { ClickModifierState, TriggerMode } from '@/entities/dictionary';
+import type { IconCatalogKey } from '@/shared/icons';
 
 export interface SubtitleCueEngineUpdate {
   readonly blockSettings?: Partial<SubtitleBlockSettings>;
@@ -25,6 +26,20 @@ export type CardCreatorAction = 'quick-update' | 'edit-card' | 'update-current';
 
 /** Legacy nav cluster icon names — kept for cue-engine state mapping. */
 export type NavClusterIconName = 'prev' | 'next' | 'repeat' | 'repeatA' | 'repeatB' | 'repeatCancel' | 'rewind' | 'forward' | 'play' | 'pause';
+
+/** Semantic transport icon → ICON_CATALOG key. SSOT for NavCluster + MobileCueChrome. */
+export const NAV_CLUSTER_ICONS: Record<NavClusterIconName, IconCatalogKey> = {
+  prev: 'chevronLeft',
+  next: 'chevronRight',
+  repeat: 'rotateCcw',
+  repeatA: 'navRepeatA',
+  repeatB: 'navRepeatB',
+  repeatCancel: 'navRepeatCancel',
+  rewind: 'navRewind',
+  forward: 'navForward',
+  play: 'play',
+  pause: 'pause',
+};
 
 /** Callbacks the engine fires when state changes. */
 export interface SubtitleCueEngineCallbacks {

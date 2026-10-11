@@ -16,6 +16,7 @@ import { Sheet } from '@/shared/ui/Sheet';
 import { Icon } from '@/shared/icons/Icon';
 import type { IconCatalogKey } from '@/shared/icons';
 import { PRESETS } from '@/entities/studyMode/constants';
+import { NAV_CLUSTER_ICONS } from './subtitleCueEngine';
 import { PlaybackSpeedStepper } from '@/features/studyModes';
 import { t } from '@/shared/i18n';
 import { STORAGE_KEYS } from '@/shared/config/config';
@@ -98,7 +99,7 @@ export function MobileCueChrome({
   onRepeat,
   repeatActive,
   repeatLabel,
-  repeatIcon = 'navRepeat',
+  repeatIcon = NAV_CLUSTER_ICONS.repeat,
   onRewind,
   onForward,
   onPlayPause,
@@ -369,7 +370,7 @@ export function MobileCueChrome({
                   data-cell-id="nav-prev"
                   onClick={onPrev}
                 >
-                  <Icon name="navPrev" />
+                  <Icon name={NAV_CLUSTER_ICONS.prev} />
                 </Button>
               )
             : onRewind && (
@@ -380,7 +381,7 @@ export function MobileCueChrome({
                   data-cell-id="nav-rewind"
                   onClick={onRewind}
                 >
-                  <Icon name="navRewind" />
+                  <Icon name={NAV_CLUSTER_ICONS.rewind} />
                 </Button>
               )}
           {onRepeat && (
@@ -403,7 +404,7 @@ export function MobileCueChrome({
               data-cell-id="nav-play"
               onClick={onPlayPause}
             >
-              <Icon name={isPlaying ? 'pause' : 'play'} />
+              <Icon name={isPlaying ? NAV_CLUSTER_ICONS.pause : NAV_CLUSTER_ICONS.play} />
             </Button>
           )}
           {hasCues
@@ -415,7 +416,7 @@ export function MobileCueChrome({
                   data-cell-id="nav-next"
                   onClick={onNext}
                 >
-                  <Icon name="navNext" />
+                  <Icon name={NAV_CLUSTER_ICONS.next} />
                 </Button>
               )
             : onForward && (
@@ -426,7 +427,7 @@ export function MobileCueChrome({
                   data-cell-id="nav-forward"
                   onClick={onForward}
                 >
-                  <Icon name="navForward" />
+                  <Icon name={NAV_CLUSTER_ICONS.forward} />
                 </Button>
               )}
         </div>

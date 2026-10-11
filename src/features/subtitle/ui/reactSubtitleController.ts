@@ -15,7 +15,7 @@ import {
 } from '@/features/studyModes';
 import type { PlaybackAction, UnknownCueProbe } from '@/features/studyModes';
 import type { SubtitlePanelItem } from './subtitlePanelModel';
-import { SubtitleCueEngine, type SubtitleCueEngineUpdate, type CardCreatorAction, type SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
+import { SubtitleCueEngine, NAV_CLUSTER_ICONS, type SubtitleCueEngineUpdate, type CardCreatorAction, type SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
 import type { TriggerMode, LookupRequest } from '@/entities/dictionary';
 import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
 import { suppressNativeCaptions } from './nativeCaptionSuppressor';
@@ -43,13 +43,6 @@ const OFFSET_PERSIST_DEBOUNCE_MS = 300;
 
 type IconCatalogKey = keyof typeof ICON_CATALOG;
 
-const REPEAT_ICON_MAP: Record<string, IconCatalogKey> = {
-  repeat: 'navRepeat',
-  repeatA: 'navRepeatA',
-  repeatB: 'navRepeatB',
-  repeatCancel: 'navRepeatCancel',
-};
-
 export class ReactSubtitleController {
   private readonly engine: SubtitleCueEngine;
   private readonly mount: MountSubtitleResult;
@@ -70,7 +63,7 @@ export class ReactSubtitleController {
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   private isPlaying = false;
   private repeatActive = false;
-  private repeatIcon: IconCatalogKey = 'navRepeat';
+  private repeatIcon: IconCatalogKey = NAV_CLUSTER_ICONS.repeat;
   private repeatLabel = t('player.nav.repeat');
   private managerTargetItems: SubtitlePanelItem[] = [];
   private managerNativeItems: SubtitlePanelItem[] = [];
@@ -451,7 +444,7 @@ export class ReactSubtitleController {
     }
     const state = this.engine.handleNoSubRepeatClick();
     this.repeatActive = state.active;
-    this.repeatIcon = REPEAT_ICON_MAP[state.icon] ?? 'navRepeat';
+    this.repeatIcon = NAV_CLUSTER_ICONS[state.icon] ?? NAV_CLUSTER_ICONS.repeat;
     this.repeatLabel = state.label;
     this.mount.setRepeatActive(this.repeatActive);
     this.mount.setRepeatIcon(this.repeatIcon, this.repeatLabel);
