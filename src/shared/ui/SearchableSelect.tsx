@@ -70,7 +70,9 @@ export function SearchableSelect({
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const listboxId = `${useId()}-listbox`;
+  const autoId = useId();
+  const triggerId = id ?? autoId;
+  const listboxId = `${autoId}-listbox`;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -156,7 +158,7 @@ export function SearchableSelect({
     <div className={styles.container} ref={menuRef}>
       {/* Trigger button */}
       <Button variant="secondary"
-        id={id}
+        id={triggerId}
         data-cell-id={dataTestId}
         className={`${styles.trigger} ${isOpen ? styles.triggerOpen : ''} ${disabled ? styles.triggerDisabled : ''}`}
         aria-label={ariaLabel}
@@ -205,7 +207,7 @@ export function SearchableSelect({
           </div>
 
           {/* Options list */}
-          <ul className={styles.list} role="listbox" id={listboxId}>
+          <ul className={styles.list} role="listbox" id={listboxId} aria-labelledby={triggerId}>
             {filtered.length > 0 ? (
               filtered.map((opt, index) => (
                 <li

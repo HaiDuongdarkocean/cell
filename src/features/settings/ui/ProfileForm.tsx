@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { HintIcon } from '@/shared/ui/HintIcon';
 import { Icon } from '@/shared/ui/Icon';
@@ -49,6 +49,13 @@ export function ProfileForm({
   const [startFrom, setStartFrom] = useState<'clean' | 'copy'>('clean');
   const [advOpen, setAdvOpen] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    rootRef.current
+      ?.querySelector<HTMLElement>('input:not([type="hidden"]), [aria-haspopup], select')
+      ?.focus();
+  }, []);
 
   const nativeOptions = [
     { value: UNIVERSAL_SENTINEL, label: t('settings.profiles.form.universal', [langLabel(universalNative)]) },
@@ -66,6 +73,7 @@ export function ProfileForm({
 
   return (
     <div
+      ref={rootRef}
       className={styles.profileForm}
       role="group"
       aria-label={isEdit ? t('settings.profiles.form.editAria') : t('settings.profiles.form.addAria')}

@@ -78,3 +78,42 @@ Settings tab sau redesign dùng grammar Section→Group→Row phẳng — hình 
 npm run typecheck && npm run lint && npm run test:unit && npm run build
 node tmp/settings-tab-redesign/audit4.mjs   # element-shot toggle sau fix — phải thấy pill
 ```
+
+---
+
+## Round 2 — deep-interaction pass (2026-10-11)
+
+Sau commit `3c908876`, pass thứ hai phủ các interaction chưa thao tác: dependent toggles, segmented groups, sliders, toggle keyboard, kebab→edit flow, New-profile flow, hint dismiss, menu flip, Tab order, contrast, reduced-motion.
+
+### Verified đúng (DOM + computed + pixel)
+
+| Interaction | Kết quả |
+|---|---|
+| Dependent toggles (`block`) | Parent `subtitleOverlayAutoLoad` off → children `disabled` + `opacity 0.5` (`--opacity-disabled`) ✓ |
+| SegmentedControl ×3 | `aria-checked` exclusive (đúng 1 checked mỗi group), selected `primary-subtle` bg ✓ |
+| Slider ×2 (wordBadge) | `role`/`aria-valuenow`/`min`/`max`, ArrowRight đổi value (36→37, 0.25→0.3) ✓ |
+| Toggle keyboard | `:focus-visible` ring 2px primary + Space toggle ✓ |
+| Hint dismiss | Esc + outside-click đều đóng tooltip ✓ |
+| Menu flip ở mép dưới | Select cuối trang flip lên (`menuBottom 671 < triggerTop 676`), không clip ✓ |
+| SearchableSelect | search input auto-focus, filter 184→1 option ✓ |
+| Reduced-motion | transitions `1e-05s` — `prefers-reduced-motion` tôn trọng ✓ |
+| Contrast | secondary text `rgb(90,106,122)`/surface `247,250,252` ≈ 5.2:1 AA ✓ |
+| Form validation | "Add profile" disabled khi chưa chọn target ✓ |
+| DictLinks dialogs | shared `Dialog` lo focus/trap ✓ |
+
+### Findings round 2 — đã fix
+
+| Sev | Finding | Fix | Verify |
+|---|---|---|---|
+| P1 | `ProfileForm` (add + edit) mở ra nhưng focus ở `BODY` — keyboard/SR user mất dấu form vừa mở | `ProfileForm.tsx`: `rootRef` + `useEffect` focus control đầu tiên (`input/[aria-haspopup]/select`) | `focusInsideForm: true`, `activeDesc: BUTTON.listbox` cả 2 mode |
+| P1 | `SearchableSelect` listbox không accessible name (`aria-labelledby: null`) — cùng lỗi `Select` | `SearchableSelect.tsx`: `useId` triggerId + `aria-labelledby={triggerId}` trên `<ul role=listbox>` | `aria-labelledby="_r_1c_"` → resolve "Select target language" |
+| P2 | Select + SearchableSelect popover `dialog-radius` vs canonical `Popover variant="menu"` `radius-md` — hai radius cho cùng surface-class "list of choices" | Converge `radius-md` ở cả `Select.module.css` + `SearchableSelect.module.css` | computed radius khớp Menu |
+
+### Decision — giữ nguyên (keep, không fix)
+
+- **Subnav 320px fade-only**: chevron từ `up-settings-subnav` không còn sau rebuild; fade-edge là grammar YouTube/Spotify trên mobile tab-bar và đúng chủ đích của implementation hiện tại (`showFadeStart/End` + CSS fade). Accept fade-only; nếu muốn chevron trở lại thì đó là design change riêng, không phải defect.
+- **Add-form render trên group header, Edit-form render inline trong list**: khác vị trí nhưng đúng semantics — add-form gắn với action "New profile" phía trên danh sách, edit-form thay đúng card đang sửa. Giữ.
+
+### Gates round 2
+
+typecheck sạch · lint 0 err (4 warning cũ) · 2613 tests pass · build xanh (design-system-css 0 violations).
