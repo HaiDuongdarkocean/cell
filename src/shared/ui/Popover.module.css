@@ -21,3 +21,10 @@
   overflow-y: auto;
   overscroll-behavior: contain;
 }
+
+/* Rows keep their size; overflow scrolls. flex-shrink must stay 0 because the
+   ripple's inline overflow:hidden resolves min-height:auto to 0, which would
+   let a clicked row compress instead of scrolling. */
+.menu > * {
+  flex-shrink: 0;
+}
