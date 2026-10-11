@@ -731,7 +731,7 @@ export function useSplitView({
             panel.style.minWidth = '0';
             panel.style.maxWidth = 'none';
             panel.style.minHeight = '0';
-            panel.style.zIndex = 'var(--z-overlay-top, 10003)';
+            panel.style.zIndex = 'var(--z-overlay-video, 10000)';
             panel.style.borderRadius = 'var(--radius-element, 12px) var(--radius-element, 12px) 0 0';
             panelInner.style.borderRadius = 'var(--radius-element) var(--radius-element) 0 0';
             panelInner.style.background = 'var(--color-surface-popover)';
