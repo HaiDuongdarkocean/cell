@@ -150,6 +150,7 @@ async function runImport(registry: JobRegistry, job: Job): Promise<void> {
   const result = await importFile(payload.file, {
     langCode: payload.langCode,
     components: payload.components,
+    signature: typeof job.params.signature === 'string' ? job.params.signature : undefined,
     onProgress: (processed, estimatedTotal) => {
       registry.setProgress(job.id, { done: processed, total: estimatedTotal });
     },

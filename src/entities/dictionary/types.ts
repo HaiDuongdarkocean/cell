@@ -273,6 +273,10 @@ export interface ImportOptions {
   readonly onResourceCreated?: (resourceId: number) => void;
   /** Component subset the user picked on a multi-component file; absent = all. */
   readonly components?: readonly DictionaryComponent[];
+  /** Content signature pre-computed by the sender (chunk-upload path already
+   *  hashed the file). Reused when it matches the signature format;
+   *  absent/malformed values are recomputed locally. */
+  readonly signature?: string;
   /** Called when a resource with the same signature already exists. Defaults to 'skip'. */
   readonly onDuplicate?: (existing: ResourceInfo) => DuplicateDecision | Promise<DuplicateDecision>;
 }

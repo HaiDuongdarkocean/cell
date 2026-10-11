@@ -193,6 +193,27 @@ describe('resource import chunks — live component selection', () => {
     expect(opts.components).toBeUndefined();
   });
 
+  it('hands the chunk signature through to the executor options', async () => {
+    const handlers = makeContext();
+    const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!;
+    const signature = `${'ab'.repeat(32)}_21_list`;
+    const res = await send({
+      type: MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
+      payload: {
+        jobId: 'job-sig', seq: 0, total: 1,
+        data: whole,
+        fileName: 'list.txt', fileMime: 'text/plain', langCode: 'en',
+        signature,
+      },
+    } as MessageRequest);
+    expect((res as { error?: string }).error).toBeUndefined();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mockedImportFile).toHaveBeenCalledTimes(1);
+    const [, opts] = mockedImportFile.mock.calls[0]!;
+    expect(opts.signature).toBe(signature);
+  });
+
   it('rejects a malformed-base64 chunk and fails the job', async () => {
     const handlers = makeContext();
     const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!;

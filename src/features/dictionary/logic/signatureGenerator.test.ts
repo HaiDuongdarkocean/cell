@@ -1,4 +1,4 @@
-import { computeSignature, computeSignatureFromHead, bufferToHex } from '@/features/dictionary/logic/signatureGenerator';
+import { computeSignature, computeSignatureFromHead, bufferToHex, isSignature } from '@/features/dictionary/logic/signatureGenerator';
 
 function strToU8(s: string): Uint8Array {
   return new TextEncoder().encode(s);
@@ -83,6 +83,21 @@ describe('signatureGenerator', () => {
       const sig1 = await computeSignature(file);
       const sig2 = await computeSignatureFromHead(bytes, bytes.length, 'test.txt');
       expect(sig1).toBe(sig2);
+    });
+  });
+
+  describe('isSignature', () => {
+    it('accepts the computed signature shape', async () => {
+      const file = makeFile('test.txt', 'hello');
+      expect(isSignature(await computeSignature(file))).toBe(true);
+    });
+
+    it('rejects job ids, placeholders, and non-strings', () => {
+      expect(isSignature('imp-mabc123-x7k2p9q1')).toBe(false);
+      expect(isSignature('sig-1')).toBe(false);
+      expect(isSignature(`${'a'.repeat(64)}_`)).toBe(false);
+      expect(isSignature(undefined)).toBe(false);
+      expect(isSignature(12345)).toBe(false);
     });
   });
 });

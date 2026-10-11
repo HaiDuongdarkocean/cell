@@ -279,6 +279,29 @@ describe('importOrchestrator', () => {
     });
   });
 
+  describe('importFile — sender-provided signature', () => {
+    it('reuses a sender-provided signature for dedupe', async () => {
+      const signature = `${'a'.repeat(64)}_5_words`;
+      const file = makeFile('words.txt', 'hello\n');
+      const first = await importFile(file, { langCode: LANG, signature });
+      const resource = await getResource(LANG, first.resourceId);
+      expect(resource?.signature).toBe(signature);
+      const second = await importFile(file, { langCode: LANG, signature });
+      expect(second.skippedAsDuplicate).toBe(true);
+      expect(second.resourceId).toBe(first.resourceId);
+    });
+
+    it('falls back to a computed signature when the provided value is malformed', async () => {
+      const file = makeFile('words.txt', 'hello\n');
+      const result = await importFile(file, { langCode: LANG, signature: 'not-a-signature' });
+      const resource = await getResource(LANG, result.resourceId);
+      expect(resource?.signature).not.toBe('not-a-signature');
+      expect(resource?.signature).toMatch(/^[0-9a-f]{64}_\d+_.+/);
+      const second = await importFile(file, { langCode: LANG });
+      expect(second.skippedAsDuplicate).toBe(true);
+    });
+  });
+
   describe('importFile — rollback on error', () => {
     it('rolls back resource on strategy error', async () => {
       // Create a file that will fail to parse as TXT (empty content is OK,
