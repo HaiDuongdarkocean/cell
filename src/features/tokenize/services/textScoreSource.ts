@@ -10,6 +10,16 @@ export interface TextScoreSourceDeps {
   onBlocksChanged: (listener: () => void) => () => void;
 }
 
+const blockTextHashes = new WeakMap<Element, { text: string; hash: number }>();
+
+function textHash(text: string): number {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = (hash * 31 + text.charCodeAt(i)) | 0;
+  }
+  return hash;
+}
+
 function blockSignature(blocks: readonly TokenBlock[]): string {
   let live = 0;
   let unprepared = 0;
@@ -18,9 +28,12 @@ function blockSignature(blocks: readonly TokenBlock[]): string {
     if (!b.element.isConnected) continue;
     live++;
     if (!b.tokens) unprepared++;
-    for (let i = 0; i < b.originalText.length; i++) {
-      hash = (hash * 31 + b.originalText.charCodeAt(i)) | 0;
+    let memo = blockTextHashes.get(b.element);
+    if (memo === undefined || memo.text !== b.originalText) {
+      memo = { text: b.originalText, hash: textHash(b.originalText) };
+      blockTextHashes.set(b.element, memo);
     }
+    hash = (hash * 31 + memo.hash) | 0;
   }
   if (live === 0) return '';
   return `${live}:${unprepared}:${hash}`;
@@ -38,7 +51,7 @@ export function startTextScoreSource(deps: TextScoreSourceDeps): () => void {
       store,
       getSource: () => controller.getBlocks(),
       signature: blockSignature,
-      tokenize: () => controller.getAllTokens(),
+      tokenize: (blocks) => blocks.flatMap((b) => (b.element.isConnected && b.tokens ? b.tokens : [])),
       subscribeChanges: (listener) => deps.onBlocksChanged(listener),
     });
   }
