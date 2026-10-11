@@ -4,8 +4,8 @@
 // Streaming parse yields 1 entry at a time → batch → flush → memory ~BATCH_SIZE.
 // A filled batch flushes without blocking the parse loop: the write runs
 // in flight while the next batch accumulates, and is awaited only when that
-// next batch fills (ordering is preserved — a flush never starts before the
-// previous one landed).
+// next batch fills (ordering is preserved — transactions are created in batch
+// order and IDB serializes same-store readwrite transactions).
 
 /** Batch size — 2000 entries per IDB transaction (spec F7). */
 export const BATCH_SIZE = 2000;

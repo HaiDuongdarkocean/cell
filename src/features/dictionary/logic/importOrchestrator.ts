@@ -45,10 +45,11 @@ export async function importFile(
   // 1. Validate file size ≤ 500MB
   validateFile(file);
 
-  // 2. Signature (SHA-256(first1MB)_size_name) — reuse the sender's when it
-  //    carries the real format; the chunk-upload path already hashed the
-  //    file, so a skip never touches the bytes at all.
-  const signature = isSignature(options.signature)
+  // 2. Signature (SHA-256(first1MB)_size_name) — reuse the sender's only when
+  //    its size+name tail matches this file; a stale or foreign signature can
+  //    never drive dedupe or the replace cascade.
+  const tail = `_${file.size}_${stripExtension(file.name)}`;
+  const signature = isSignature(options.signature) && options.signature.endsWith(tail)
     ? options.signature
     : await computeSignature(file);
 

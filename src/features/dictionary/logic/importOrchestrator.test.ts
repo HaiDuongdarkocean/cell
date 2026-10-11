@@ -281,7 +281,7 @@ describe('importOrchestrator', () => {
 
   describe('importFile — sender-provided signature', () => {
     it('reuses a sender-provided signature for dedupe', async () => {
-      const signature = `${'a'.repeat(64)}_5_words`;
+      const signature = `${'a'.repeat(64)}_6_words`;
       const file = makeFile('words.txt', 'hello\n');
       const first = await importFile(file, { langCode: LANG, signature });
       const resource = await getResource(LANG, first.resourceId);
@@ -297,6 +297,16 @@ describe('importOrchestrator', () => {
       const resource = await getResource(LANG, result.resourceId);
       expect(resource?.signature).not.toBe('not-a-signature');
       expect(resource?.signature).toMatch(/^[0-9a-f]{64}_\d+_.+/);
+      const second = await importFile(file, { langCode: LANG });
+      expect(second.skippedAsDuplicate).toBe(true);
+    });
+
+    it('recomputes when the provided signature tail belongs to a different file', async () => {
+      const foreignSignature = `${'a'.repeat(64)}_5_words`;
+      const file = makeFile('words.txt', 'hello\n');
+      const result = await importFile(file, { langCode: LANG, signature: foreignSignature });
+      const resource = await getResource(LANG, result.resourceId);
+      expect(resource?.signature).not.toBe(foreignSignature);
       const second = await importFile(file, { langCode: LANG });
       expect(second.skippedAsDuplicate).toBe(true);
     });

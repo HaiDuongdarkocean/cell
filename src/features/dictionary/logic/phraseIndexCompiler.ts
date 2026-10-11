@@ -510,7 +510,7 @@ function createWriter(capacity: number): ByteWriter {
 
 function ensureCapacity(w: ByteWriter, n: number): void {
   if (w.offset + n <= w.bytes.length) return;
-  let size = w.bytes.length * 2;
+  let size = Math.max(64, w.bytes.length * 2);
   while (w.offset + n > size) size *= 2;
   const next = new Uint8Array(size);
   next.set(w.bytes.subarray(0, w.offset));
