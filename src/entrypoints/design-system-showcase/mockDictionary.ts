@@ -4,6 +4,7 @@ import type { PronunciationEspeakTtsResult } from '@/entities/message/types';
 import type { DictionaryComponent, ResourceInfo } from '@/entities/dictionary';
 import type { Job } from '@/entities/job/types';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { gunzipSync } from 'fflate';
 import { detectComponents } from '@/features/dictionary/logic/formatDetector';
 import { deriveResourceType } from '@/features/dictionary/logic/dictionaryComponents';
 import { SHOWCASE_DATA, type DataVariant } from './showcaseParams';
@@ -312,7 +313,9 @@ function pushJob(partial: Partial<Job> & { id: string; status: Job['status'] }):
 async function handleResourceImport(payload: Record<string, unknown>, fileBase64: string): Promise<void> {
   const narrowed = payload.components as DictionaryComponent[] | undefined;
   const fileName = String(payload.fileName ?? '');
-  const detected = await detectComponents(fileName, base64ToBytes(fileBase64))
+  const bytes = base64ToBytes(fileBase64);
+  const raw = payload.encoding === 'gzip' ? gunzipSync(bytes) : bytes;
+  const detected = await detectComponents(fileName, raw)
     .catch((): readonly DictionaryComponent[] => []);
   const components = narrowed ?? (detected.length ? detected : undefined);
   const resourceType = deriveResourceType(components);

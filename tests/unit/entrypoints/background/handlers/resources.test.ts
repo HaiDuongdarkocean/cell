@@ -1,3 +1,4 @@
+import { gzipSync } from 'fflate';
 import { registerResourceHandlers } from '@/entrypoints/background/handlers/resources';
 import { importFile } from '@/features/dictionary/logic/importOrchestrator';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -84,6 +85,15 @@ jest.mock('@/shared/i18n', () => ({ t: (key: string) => key }));
 
 type Handler = (request: MessageRequest) => Promise<MessageResponse<unknown>>;
 
+function readFileBytes(file: File): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(Buffer.from(reader.result as ArrayBuffer));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsArrayBuffer(file);
+  });
+}
+
 function makeContext() {
   const handlers = new Map<string, Handler>();
   const ctx = {
@@ -166,13 +176,8 @@ describe('resource import chunks — live component selection', () => {
     await Promise.resolve();
     expect(mockedImportFile).toHaveBeenCalledTimes(1);
     const [file] = mockedImportFile.mock.calls[0]!;
-    const bytes = await new Promise<ArrayBuffer>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as ArrayBuffer);
-      reader.onerror = () => reject(reader.error);
-      reader.readAsArrayBuffer(file as File);
-    });
-    expect(Buffer.from(bytes).equals(Buffer.from('fake-bytes-for-import'))).toBe(true);
+    const bytes = await readFileBytes(file as File);
+    expect(bytes.equals(Buffer.from('fake-bytes-for-import'))).toBe(true);
   });
 
   it('uses the first selection unchanged when chunks carry none', async () => {
@@ -212,5 +217,74 @@ describe('resource import chunks — live component selection', () => {
       },
     } as MessageRequest);
     expect((retry as { error?: string }).error).toBeUndefined();
+  });
+});
+
+describe('resource import chunks — gzip transport', () => {
+  beforeEach(() => {
+    mockRegistry.jobs.clear();
+    mockedImportFile.mockClear();
+  });
+
+  const rawBytes = Buffer.from('fake-bytes-for-import');
+  const gzippedB64 = Buffer.from(gzipSync(new Uint8Array(rawBytes))).toString('base64');
+  const gzSlices = [gzippedB64.slice(0, 12), gzippedB64.slice(12, 24), gzippedB64.slice(24)];
+  const gzChunk = (jobId: string, seq: number, withEncoding: boolean) => ({
+    type: MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
+    payload: {
+      jobId, seq, total: gzSlices.length,
+      data: gzSlices[seq]!,
+      fileName: 'list.txt', fileMime: 'text/plain', langCode: 'en',
+      encoding: withEncoding ? 'gzip' : undefined,
+    },
+  } as MessageRequest);
+
+  it('gunzips an encoding:gzip stream so the executor sees the original bytes', async () => {
+    const handlers = makeContext();
+    const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!;
+    await send(gzChunk('job-gz', 0, true));
+    await send(gzChunk('job-gz', 1, true));
+    const res = await send(gzChunk('job-gz', 2, true));
+    expect((res as { error?: string }).error).toBeUndefined();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mockedImportFile).toHaveBeenCalledTimes(1);
+    const [file] = mockedImportFile.mock.calls[0]!;
+    const bytes = await readFileBytes(file as File);
+    expect(bytes.equals(rawBytes)).toBe(true);
+  });
+
+  it('gunzips when only the first chunk carries the encoding marker', async () => {
+    const handlers = makeContext();
+    const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!;
+    await send(gzChunk('job-gz-first', 0, true));
+    await send(gzChunk('job-gz-first', 1, false));
+    const res = await send(gzChunk('job-gz-first', 2, false));
+    expect((res as { error?: string }).error).toBeUndefined();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mockedImportFile).toHaveBeenCalledTimes(1);
+    const [file] = mockedImportFile.mock.calls[0]!;
+    const bytes = await readFileBytes(file as File);
+    expect(bytes.equals(rawBytes)).toBe(true);
+  });
+
+  it('fails the job when a flagged-gzip payload is not valid gzip', async () => {
+    const handlers = makeContext();
+    const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!;
+    const res = await send({
+      type: MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
+      payload: {
+        jobId: 'job-gz-bad', seq: 0, total: 1,
+        data: Buffer.from('not-gzip-at-all').toString('base64'),
+        fileName: 'list.txt', fileMime: 'text/plain', langCode: 'en',
+        encoding: 'gzip',
+      },
+    } as MessageRequest);
+    expect((res as { error?: string }).error).toBeTruthy();
+    const job = mockRegistry.jobs.get('job-gz-bad');
+    expect(job?.status).toBe('failed');
+    expect(job?.error).toBe('invalid-gzip-payload');
+    expect(mockedImportFile).not.toHaveBeenCalled();
   });
 });

@@ -12,6 +12,7 @@
  * JOB_LIST + JOB_EVENT from any surface.
  */
 import type { z } from 'zod';
+import { gunzipSync } from 'fflate';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
@@ -75,6 +76,9 @@ interface PendingImport {
   /** Latest component selection — refreshed per chunk so toggles made
    *  mid-upload land in the payload handed to the import executor. */
   components?: readonly DictionaryComponent[];
+  /** Whole-payload gzip (payload.encoding==='gzip' on any chunk) — the
+   *  assembled bytes are gunzipped once before File construction. */
+  gzip?: boolean;
 }
 
 interface QueuedImportPayload extends ImportChunkMeta {
@@ -107,6 +111,18 @@ const nativeFromBase64 = (Uint8Array as unknown as { fromBase64?: (data: string)
 
 function decodeChunk(data: string): Uint8Array {
   return nativeFromBase64 !== undefined ? nativeFromBase64(data) : base64ToBytes(data);
+}
+
+function concatChunks(chunks: readonly Uint8Array[]): Uint8Array {
+  let size = 0;
+  for (const chunk of chunks) size += chunk.length;
+  const out = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return out;
 }
 
 function clearPending(jobId: string): void {
@@ -385,10 +401,12 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
           duplicateDecision: p.duplicateDecision,
         },
         components: p.components,
+        gzip: p.encoding === 'gzip',
       };
       pendingImports.set(p.jobId, pending);
     } else {
       pending.components = p.components;
+      pending.gzip = pending.gzip === true || p.encoding === 'gzip';
     }
 
     if (p.seq < 0 || p.seq >= pending.chunks.length) {
@@ -417,10 +435,24 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
 
     const meta = pending.meta;
     const components = pending.components;
+    const gzip = pending.gzip === true;
     clearPending(p.jobId);
+    let file: File;
+    try {
+      // Gzip transport must be undone BEFORE the File exists: importFile
+      // computes the dedupe signature on the bytes it receives.
+      file = new File(
+        gzip ? [gunzipSync(concatChunks(pending.chunks)) as BlobPart] : (pending.chunks as BlobPart[]),
+        meta.fileName,
+        { type: meta.fileMime },
+      );
+    } catch (err) {
+      registry.markFailed(p.jobId, 'invalid-gzip-payload');
+      return toError(err);
+    }
     try {
       importPayloads.set(p.jobId, {
-        file: new File(pending.chunks as BlobPart[], meta.fileName, { type: meta.fileMime }),
+        file,
         ...meta,
         components,
       });

@@ -77,6 +77,10 @@ export const ResourceImportChunkPayloadSchema = z.object({
   seq: z.number().int().nonnegative(),
   total: z.number().int().positive(),
   data: z.string(), // base64 slice
+  /** Content encoding of the WHOLE assembled payload; absent = raw file bytes.
+   *  'gzip' = sender compressed once, then chunked the compressed bytes — the
+   *  receiver gunzips after assembly so importFile sees the original file. */
+  encoding: z.enum(['gzip']).optional(),
   fileName: z.string().min(1),
   fileMime: z.string(),
   langCode: LangCode,
