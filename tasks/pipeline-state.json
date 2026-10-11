@@ -1,5 +1,5 @@
 {
-  "active": "settings-tab-redesign",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -5653,7 +5653,7 @@
       "updated": "2026-10-11T17:07:16.369Z"
     },
     "settings-tab-redesign": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "all",
       "uiSurface": "yes",
       "artifacts": {
@@ -6100,12 +6100,9 @@
       "awaiting": null,
       "resolutions": [],
       "loops": 0,
-      "owner": {
-        "id": "devin-cli-settings-redesign",
-        "since": "2026-10-11T17:05:21.532Z"
-      },
+      "owner": null,
       "worktree": null,
-      "updated": "2026-10-11T18:12:17.472Z"
+      "updated": "2026-10-11T18:16:47.257Z"
     }
   }
 }
