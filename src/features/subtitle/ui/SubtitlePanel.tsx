@@ -14,11 +14,8 @@ import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import type { StudyMode } from '@/entities/studyMode';
-import type { ComprehensionStats } from '@/entities/comprehension';
 
-
-
-import { computeStats, ComprehensionBadge, applyCueListTokenStatus, type Token, type CueListTokenMap, type ResolveMeta } from '@/features/tokenize';
+import { applyCueListTokenStatus, type Token, type CueListTokenMap, type ResolveMeta } from '@/features/tokenize';
 import { onWordStatusChanged, onWordStatusRemoved } from '@/features/dictionary';
 import { languageMatches } from '@/shared/config/languageRegistry';
 import { CueList, type CueListTokenize } from './CueList';
@@ -166,8 +163,6 @@ function SubtitlePanelImpl({
   const [activeTab, setActiveTab] = useState<PanelTab>(
     visibleCues.length > 0 || !hasPlaylist ? 'subtitles' : 'playlist',
   );
-  const [mediaStats, setMediaStats] = useState<ComprehensionStats | null>(null);
-
   const scoreSuppressed = Boolean(tokenize?.langCode && languageMatches('zh', tokenize.langCode));
 
   const [filterMode, setFilterMode] = useState<CueFilterMode>('all');
@@ -201,20 +196,13 @@ function SubtitlePanelImpl({
   }, []);
 
   const handleTokensResolved = useCallback((map: CueListTokenMap, meta: ResolveMeta): void => {
-    if (scoreSuppressed || map.size === 0) {
-      setMediaStats(null);
-    } else {
-      const tokens: Token[] = [];
-      for (const list of map.values()) tokens.push(...list);
-      setMediaStats(computeStats(tokens, 'media'));
-    }
     if (meta.resolved && !meta.failed && cueSetKey !== null) {
       setLastGood({
         cueSetKey,
         tokenMap: map,
       });
     }
-  }, [scoreSuppressed, cueSetKey]);
+  }, [cueSetKey]);
 
   const difficulties = useMemo(() => {
     if (!lastGood || lastGood.cueSetKey !== cueSetKey) return null;
@@ -251,10 +239,6 @@ function SubtitlePanelImpl({
     };
   }, [cueFilterEnabled, filterMode, difficulties]);
 
-  const chipLive = Boolean(tokenize) && visibleCues.length > 0 && practiceMode === 'off' && !scoreSuppressed;
-  useEffect(() => {
-    if (!chipLive) setMediaStats(null);
-  }, [chipLive]);
 
   useEffect(() => {
     const lang = tokenize?.langCode;
@@ -457,7 +441,6 @@ function SubtitlePanelImpl({
           </Button>
         )}
         <span className={styles.title}>{filename ?? t('subtitle.panel.title')}</span>
-        {mediaStats && <ComprehensionBadge stats={mediaStats} />}
         {onStudyModeChange && (
           <Button
             ref={moreBtnRef}
