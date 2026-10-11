@@ -26,8 +26,8 @@ import type {
 import type { MessageResponse } from '@/entities/message';
 import { t } from '@/shared/i18n';
 
-/** Base64 chars per import chunk message. */
-const IMPORT_CHUNK_SIZE = 4 * 1024 * 1024;
+/** Raw bytes per import chunk — ≤4MiB base64 on the wire per message. */
+const IMPORT_CHUNK_BYTES = 3 * 1024 * 1024;
 
 interface ImportCallbacks {
   readonly langCode: string;
@@ -155,13 +155,30 @@ export async function getResourceComponents(
   return data?.components ?? [];
 }
 
-function readAsDataUrl(file: ReadableFile): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file as File);
-  });
+const nativeToBase64 = (Uint8Array.prototype as { toBase64?: (this: Uint8Array) => string }).toBase64;
+
+function bytesToBase64(bytes: Uint8Array): string {
+  if (nativeToBase64 !== undefined) return nativeToBase64.call(bytes);
+  // 32KB subarray slices keep spread arg counts safely under engine limits.
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 32 * 1024) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 32 * 1024));
+  }
+  return btoa(binary);
+}
+
+/** Whole-file gzip when the platform can stream+compress; skipped on
+ *  already-compressed containers and unstreamable file-likes. */
+async function gzipUpload(file: ReadableFile): Promise<Uint8Array | undefined> {
+  const streamable = file as Partial<File>;
+  if (typeof CompressionStream === 'undefined' || typeof streamable.stream !== 'function') {
+    return undefined;
+  }
+  if (/\.(gz|zip)$/i.test(file.name)) return undefined;
+  const compressed = await new Response(
+    streamable.stream().pipeThrough(new CompressionStream('gzip')),
+  ).arrayBuffer();
+  return new Uint8Array(compressed);
 }
 
 /**
@@ -198,11 +215,14 @@ export async function importResourceFile(
   // unavailable in the jsdom test env).
   const jobId = providedJobId ?? `imp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
-  const dataUrl = await readAsDataUrl(file);
-  const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
-  const total = Math.max(1, Math.ceil(base64.length / IMPORT_CHUNK_SIZE));
+  const gzipped = await gzipUpload(file).catch(() => undefined);
+  const total = Math.max(1, Math.ceil((gzipped?.length ?? file.size) / IMPORT_CHUNK_BYTES));
   for (let seq = 0; seq < total; seq++) {
     const last = seq === total - 1;
+    const start = seq * IMPORT_CHUNK_BYTES;
+    const data = gzipped !== undefined
+      ? bytesToBase64(gzipped.subarray(start, start + IMPORT_CHUNK_BYTES))
+      : bytesToBase64(new Uint8Array(await file.slice(start, start + IMPORT_CHUNK_BYTES).arrayBuffer()));
     const selection = getComponents?.() ?? components;
     const res = await request<{ received?: number; jobId?: string }>(
       MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
@@ -210,7 +230,8 @@ export async function importResourceFile(
         jobId,
         seq,
         total,
-        data: base64.slice(seq * IMPORT_CHUNK_SIZE, (seq + 1) * IMPORT_CHUNK_SIZE),
+        data,
+        encoding: gzipped !== undefined ? 'gzip' : undefined,
         fileName: file.name,
         fileMime: (file as File).type ?? '',
         langCode,

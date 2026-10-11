@@ -4,6 +4,8 @@
 // transport); onMessage is a no-op without chrome, so progress push messages
 // are unobservable here — the chunk/dedup flow is what matters.
 
+import { gunzipSync } from 'fflate';
+import { ReadableStream as NodeReadableStream, CompressionStream as NodeCompressionStream } from 'node:stream/web';
 import { listResources, importResourceFile } from './resourceClient';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { MessageResponse } from '@/entities/message';
@@ -13,7 +15,11 @@ jest.mock('../logic/signatureGenerator', () => ({
 }));
 
 type SendOverride = (m: { type: string; payload: Record<string, unknown> }) => Promise<MessageResponse>;
-const g = globalThis as { __cellSendMessage?: SendOverride };
+const g = globalThis as {
+  __cellSendMessage?: SendOverride;
+  CompressionStream?: unknown;
+  Response?: unknown;
+};
 
 const existing = {
   id: 7, name: 'dict.json', langCode: 'en', type: 'DICTIONARY' as const,
@@ -21,7 +27,86 @@ const existing = {
   installationFinished: true, importedAt: 1,
 };
 
-afterEach(() => { delete g.__cellSendMessage; });
+/** ReadableFile-shaped fake — jsdom Blob has no arrayBuffer()/stream(). */
+function makeFile(name: string, content: string | Uint8Array, streamable = false) {
+  const bytes = typeof content === 'string' ? new TextEncoder().encode(content) : content;
+  return {
+    size: bytes.length,
+    name,
+    type: 'application/json',
+    slice: (start: number, end: number) => ({
+      arrayBuffer: async () => bytes.slice(start, end).buffer as ArrayBuffer,
+    }),
+    ...(streamable
+      ? {
+          stream: () => new NodeReadableStream({
+            start(controller: { enqueue: (b: Uint8Array) => void; close: () => void }) {
+              controller.enqueue(bytes);
+              controller.close();
+            },
+          }),
+        }
+      : {}),
+  };
+}
+
+/** Minimal Response stand-in: drains a ReadableStream into one ArrayBuffer. */
+class CollectResponse {
+  private readonly stream: ReadableStream<Uint8Array>;
+  constructor(stream: ReadableStream<Uint8Array>) {
+    this.stream = stream;
+  }
+  async arrayBuffer(): Promise<ArrayBuffer> {
+    const reader = this.stream.getReader();
+    const parts: Uint8Array[] = [];
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value);
+    }
+    const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+    let offset = 0;
+    for (const p of parts) {
+      out.set(p, offset);
+      offset += p.length;
+    }
+    return out.buffer;
+  }
+}
+
+interface SentChunk {
+  seq: number;
+  total: number;
+  data: string;
+  encoding?: string;
+}
+
+function collectChunks() {
+  const chunks: SentChunk[] = [];
+  g.__cellSendMessage = async (m) => {
+    if (m.type === MESSAGE_TYPES.RESOURCE_LIST) return { success: true, data: { resources: [] } };
+    if (m.type === MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK) {
+      const p = m.payload as unknown as SentChunk;
+      chunks.push(p);
+      return { success: true, data: p.seq === p.total - 1 ? { jobId: 'bg-job-1' } : { received: p.seq + 1 } };
+    }
+    return { success: true, data: {} };
+  };
+  return chunks;
+}
+
+function joinedBytes(chunks: SentChunk[]): Buffer {
+  return Buffer.concat(chunks.map((c) => Buffer.from(c.data, 'base64')));
+}
+
+const savedCompressionStream = g.CompressionStream;
+const savedResponse = g.Response;
+
+afterEach(() => {
+  delete g.__cellSendMessage;
+  g.CompressionStream = savedCompressionStream;
+  g.Response = savedResponse;
+});
 
 test('listResources returns resources from the background response', async () => {
   g.__cellSendMessage = async (m) => {
@@ -43,8 +128,7 @@ test('import skips duplicates without uploading chunks', async () => {
     if (m.type === MESSAGE_TYPES.RESOURCE_LIST) return { success: true, data: { resources: [existing] } };
     return { success: true, data: {} };
   };
-  const file = new File(['{}'], 'dict.json', { type: 'application/json' });
-  const result = await importResourceFile(file, {
+  const result = await importResourceFile(makeFile('dict.json', '{}'), {
     langCode: 'en',
     onDuplicate: () => 'skip',
   });
@@ -58,6 +142,36 @@ test('import sends the file as chunk(s) and returns the registry jobId', async (
     if (m.type === MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK) return { success: true, data: { jobId: 'bg-job-1' } };
     return { success: true, data: {} };
   };
-  const file = new File(['{"a":1}'], 'dict.json', { type: 'application/json' });
+  await expect(importResourceFile(makeFile('dict.json', '{"a":1}'), { langCode: 'en' })).resolves.toEqual({ jobId: 'bg-job-1' });
+});
+
+test('import without CompressionStream uploads plain chunks reassembling to the file bytes', async () => {
+  g.CompressionStream = undefined;
+  const chunks = collectChunks();
+  const file = makeFile('dict.json', '{"word":"serendipity"}');
   await expect(importResourceFile(file, { langCode: 'en' })).resolves.toEqual({ jobId: 'bg-job-1' });
+  expect(chunks.length).toBe(1);
+  expect(chunks[0]!.encoding).toBeUndefined();
+  expect(joinedBytes(chunks).toString('utf8')).toBe('{"word":"serendipity"}');
+});
+
+test('import with CompressionStream uploads gzip chunks reassembling to the file bytes', async () => {
+  g.CompressionStream = NodeCompressionStream;
+  g.Response = CollectResponse;
+  const chunks = collectChunks();
+  const file = makeFile('dict.json', '{"word":"serendipity"}', true);
+  await expect(importResourceFile(file, { langCode: 'en' })).resolves.toEqual({ jobId: 'bg-job-1' });
+  expect(chunks.length).toBe(1);
+  expect(chunks.every((c) => c.encoding === 'gzip')).toBe(true);
+  const raw = gunzipSync(new Uint8Array(joinedBytes(chunks)));
+  expect(Buffer.from(raw).toString('utf8')).toBe('{"word":"serendipity"}');
+});
+
+test('import falls back to plain chunks when the file cannot stream', async () => {
+  g.CompressionStream = NodeCompressionStream;
+  const chunks = collectChunks();
+  const file = makeFile('dict.json', '{"word":"serendipity"}');
+  await expect(importResourceFile(file, { langCode: 'en' })).resolves.toEqual({ jobId: 'bg-job-1' });
+  expect(chunks[0]!.encoding).toBeUndefined();
+  expect(joinedBytes(chunks).toString('utf8')).toBe('{"word":"serendipity"}');
 });
