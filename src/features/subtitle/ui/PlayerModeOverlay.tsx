@@ -641,6 +641,7 @@ function PlayerModeOverlayInner({
             onRepeat={onRepeat}
             repeatActive={repeatActive}
             repeatLabel={repeatLabel}
+            repeatIcon={repeatIcon}
             onRewind={onRewind}
             onForward={onForward}
             onPlayPause={onPlayPause}

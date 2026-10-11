@@ -217,6 +217,12 @@ describe('SubtitlePanels — mobile sheet chrome (<600px)', () => {
     expect(screen.getByTestId('nav-cluster-mock')).toBeInTheDocument();
   });
 
+  it('forwards repeatIcon to MobileCueChrome', () => {
+    mockIsMobile = true;
+    renderPanels({ onSeek: jest.fn(), repeatIcon: 'navRepeatA' });
+    expect(mockChromeProps?.repeatIcon).toBe('navRepeatA');
+  });
+
   it('wires the sheet exit button to the split-view toggle', () => {
     mockIsMobile = true;
     renderPanels({ onSeek: jest.fn() });

@@ -485,6 +485,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
               onRepeat={onRepeat}
               repeatActive={repeatActive}
               repeatLabel={repeatLabel}
+              repeatIcon={repeatIcon}
               onRewind={onRewind}
               onForward={onForward}
               onPlayPause={onPlayPause}

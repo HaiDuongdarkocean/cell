@@ -14,6 +14,7 @@ import { Button } from '@/shared/ui/Button';
 import { MenuItem, MenuSeparator } from '@/shared/ui/Menu';
 import { Sheet } from '@/shared/ui/Sheet';
 import { Icon } from '@/shared/icons/Icon';
+import type { IconCatalogKey } from '@/shared/icons';
 import { PRESETS } from '@/entities/studyMode/constants';
 import { PlaybackSpeedStepper } from '@/features/studyModes';
 import { t } from '@/shared/i18n';
@@ -53,6 +54,7 @@ export interface MobileCueChromeProps {
   onRepeat?: () => void;
   repeatActive?: boolean;
   repeatLabel?: string;
+  repeatIcon?: IconCatalogKey;
   onRewind?: () => void;
   onForward?: () => void;
   onPlayPause?: () => void;
@@ -96,6 +98,7 @@ export function MobileCueChrome({
   onRepeat,
   repeatActive,
   repeatLabel,
+  repeatIcon = 'navRepeat',
   onRewind,
   onForward,
   onPlayPause,
@@ -366,7 +369,7 @@ export function MobileCueChrome({
                   data-cell-id="nav-prev"
                   onClick={onPrev}
                 >
-                  <Icon name="chevronLeft" />
+                  <Icon name="navPrev" />
                 </Button>
               )
             : onRewind && (
@@ -389,7 +392,7 @@ export function MobileCueChrome({
               active={repeatActive}
               onClick={onRepeat}
             >
-              <Icon name="rotateCcw" />
+              <Icon name={repeatIcon} />
             </Button>
           )}
           {onPlayPause && (
@@ -412,7 +415,7 @@ export function MobileCueChrome({
                   data-cell-id="nav-next"
                   onClick={onNext}
                 >
-                  <Icon name="chevronRight" />
+                  <Icon name="navNext" />
                 </Button>
               )
             : onForward && (
