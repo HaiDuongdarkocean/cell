@@ -31,19 +31,51 @@ describe('scanTopLevelJsonObjects', () => {
     expect(JSON.parse(slices[2]!)).toEqual({ f: 'x\\' });
   });
 
-  it('skips non-object elements like the legacy parse loop did', () => {
+  it('skips valid non-object elements like the legacy parse loop did', () => {
     const slices = collect('[{"a":1}, 5, "str", true, null, -3.5e2, {"b":2}]');
     expect(slices).toEqual(['{"a":1}', '{"b":2}']);
   });
 
-  it('rejects stray characters between elements', () => {
-    expect(() => collect('[{"a":1} xyz]')).toThrow(MalformedJsonArrayError);
-    expect(() => collect('[abc]')).toThrow(MalformedJsonArrayError);
+  it('rejects missing commas between elements', () => {
+    expect(() => collect('[{"a":1} {"b":2}]')).toThrow(MalformedJsonArrayError);
+    expect(() => collect('[{"a":1} 5]')).toThrow(MalformedJsonArrayError);
+    expect(() => collect('[{"a":1} "s"]')).toThrow(MalformedJsonArrayError);
+  });
+
+  it('rejects trailing commas and stray elements', () => {
+    expect(() => collect('[{"a":1},]')).toThrow(MalformedJsonArrayError);
+    expect(() => collect('[,{"a":1}]')).toThrow(MalformedJsonArrayError);
+  });
+
+  it('rejects content after the closing bracket', () => {
+    expect(() => collect('[{"a":1}] null')).toThrow(MalformedJsonArrayError);
+    expect(() => collect('[{"a":1}][{"b":2}]')).toThrow(MalformedJsonArrayError);
+    expect(() => collect('[{"a":1}]]')).toThrow(MalformedJsonArrayError);
     expect(() => collect('[{"a":1}]@')).toThrow(MalformedJsonArrayError);
+  });
+
+  it('rejects unterminated input', () => {
+    expect(() => collect('[{"a":{"b":1]')).toThrow(MalformedJsonArrayError);
+    expect(() => collect('[{"a":1}, "unterminated ]')).toThrow(MalformedJsonArrayError);
+    expect(() => collect('[{"a":1}')).toThrow(MalformedJsonArrayError);
+    expect(() => collect('[')).toThrow(MalformedJsonArrayError);
+    expect(() => collect('')).toThrow(MalformedJsonArrayError);
+  });
+
+  it('rejects invalid literals and stray characters', () => {
+    expect(() => collect('[tru]')).toThrow(MalformedJsonArrayError);
+    expect(() => collect('[abc]')).toThrow(MalformedJsonArrayError);
+    expect(() => collect('[+3]')).toThrow(MalformedJsonArrayError);
+    expect(() => collect('[-]')).toThrow(MalformedJsonArrayError);
+    expect(() => collect('[{"a":1} xyz]')).toThrow(MalformedJsonArrayError);
   });
 
   it('rejects unbalanced closing braces', () => {
     expect(() => collect('[{"a":1}}]')).toThrow(MalformedJsonArrayError);
+  });
+
+  it('rejects nested top-level arrays instead of extracting their objects', () => {
+    expect(() => collect('[[{"term":"x"}]]')).toThrow(MalformedJsonArrayError);
   });
 
   it('preserves unicode and surrogate pairs', () => {

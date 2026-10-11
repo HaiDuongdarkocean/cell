@@ -4,6 +4,11 @@
 // A 122MB dictionary stays as ONE decoded string; each yielded slice is a
 // substring view JSON.parse'd independently, so peak memory is bounded by
 // the largest single entry instead of the whole object graph.
+//
+// The scan enforces the array envelope (open bracket, commas between
+// elements, single closing bracket, no unterminated tail) so malformed
+// input fails the same way a whole-file JSON.parse would instead of
+// producing a silent partial/empty import.
 
 const CODE_QUOTE = 0x22;
 const CODE_BACKSLASH = 0x5c;
@@ -18,63 +23,133 @@ const CODE_LF = 0x0a;
 const CODE_CR = 0x0d;
 
 const PRIMITIVE_CHARS = new Set([
-  ...'0123456789-+.eE', // numbers
-  ...'truefalsn', // true / false / null letters
+  ...'0123456789-+.eE',
+  ...'truefalsn',
 ]);
 
-function isTopLevelSeparator(code: number): boolean {
-  return (
-    code === CODE_COMMA ||
-    code === CODE_OPEN_BRACKET ||
-    code === CODE_CLOSE_BRACKET ||
-    code === CODE_SPACE ||
-    code === CODE_TAB ||
-    code === CODE_LF ||
-    code === CODE_CR
-  );
+const JSON_PRIMITIVE = /^(?:-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null)$/;
+
+function isWhitespace(code: number): boolean {
+  return code === CODE_SPACE || code === CODE_TAB || code === CODE_LF || code === CODE_CR;
 }
 
 export class MalformedJsonArrayError extends Error {}
 
+type ScanPhase = 'pre' | 'elem' | 'sep' | 'prim' | 'done';
+
 /**
  * Yield the source text of each top-level `{...}` inside a JSON array.
- * Non-object elements (strings, numbers, literals) are skipped the same way
- * the object loop skips them after parse. Throws MalformedJsonArrayError on
- * characters that cannot appear in a JSON array of entries.
+ * Non-object elements (strings, numbers, literals) are validated then
+ * skipped, matching the legacy whole-parse-then-filter behavior.
+ * Throws MalformedJsonArrayError when the array envelope is violated
+ * (missing comma, trailing content, unbalanced braces, unterminated input).
  */
 export function* scanTopLevelJsonObjects(text: string): Generator<string, void, void> {
   let depth = 0;
   let inString = false;
   let escaped = false;
   let start = -1;
+  let primStart = -1;
+  let phase: ScanPhase = 'pre';
+  let elemAfterComma = false;
+
   for (let i = 0; i < text.length; i++) {
     const code = text.charCodeAt(i);
     if (inString) {
       if (escaped) escaped = false;
       else if (code === CODE_BACKSLASH) escaped = true;
-      else if (code === CODE_QUOTE) inString = false;
-      continue;
-    }
-    if (code === CODE_QUOTE) {
-      inString = true;
-      continue;
-    }
-    if (code === CODE_OPEN_BRACE) {
-      if (depth === 0) start = i;
-      depth++;
-      continue;
-    }
-    if (code === CODE_CLOSE_BRACE) {
-      depth--;
-      if (depth < 0) throw new MalformedJsonArrayError(`unbalanced "}" at offset ${i}`);
-      if (depth === 0) {
-        yield text.slice(start, i + 1);
-        start = -1;
+      else if (code === CODE_QUOTE) {
+        inString = false;
+        if (depth === 0) phase = 'sep';
       }
       continue;
     }
-    if (depth === 0 && !isTopLevelSeparator(code) && !PRIMITIVE_CHARS.has(text[i]!)) {
-      throw new MalformedJsonArrayError(`unexpected character "${text[i]}" at offset ${i}`);
+    if (depth > 0) {
+      if (code === CODE_QUOTE) inString = true;
+      else if (code === CODE_OPEN_BRACE) depth++;
+      else if (code === CODE_CLOSE_BRACE) {
+        depth--;
+        if (depth === 0) {
+          yield text.slice(start, i + 1);
+          start = -1;
+          phase = 'sep';
+        }
+      }
+      continue;
     }
+    switch (phase) {
+      case 'pre':
+        if (isWhitespace(code)) break;
+        if (code !== CODE_OPEN_BRACKET) {
+          throw new MalformedJsonArrayError(`expected '[' at offset ${i}`);
+        }
+        phase = 'elem';
+        elemAfterComma = false;
+        break;
+      case 'elem':
+        if (isWhitespace(code)) break;
+        if (code === CODE_CLOSE_BRACKET) {
+          if (elemAfterComma) {
+            throw new MalformedJsonArrayError(`trailing comma before ']' at offset ${i}`);
+          }
+          phase = 'done';
+          break;
+        }
+        if (code === CODE_QUOTE) {
+          inString = true;
+          break;
+        }
+        if (code === CODE_OPEN_BRACE) {
+          start = i;
+          depth = 1;
+          break;
+        }
+        if (PRIMITIVE_CHARS.has(text[i]!)) {
+          primStart = i;
+          phase = 'prim';
+          break;
+        }
+        throw new MalformedJsonArrayError(`unexpected character "${text[i]}" at offset ${i}`);
+      case 'prim': {
+        if (PRIMITIVE_CHARS.has(text[i]!)) break;
+        if (!JSON_PRIMITIVE.test(text.slice(primStart, i))) {
+          throw new MalformedJsonArrayError(`invalid literal at offset ${primStart}`);
+        }
+        primStart = -1;
+        if (isWhitespace(code)) {
+          phase = 'sep';
+          break;
+        }
+        if (code === CODE_COMMA) {
+          phase = 'elem';
+          elemAfterComma = true;
+          break;
+        }
+        if (code === CODE_CLOSE_BRACKET) {
+          phase = 'done';
+          break;
+        }
+        throw new MalformedJsonArrayError(`unexpected character "${text[i]}" at offset ${i}`);
+      }
+      case 'sep':
+        if (isWhitespace(code)) break;
+        if (code === CODE_COMMA) {
+          phase = 'elem';
+          elemAfterComma = true;
+          break;
+        }
+        if (code === CODE_CLOSE_BRACKET) {
+          phase = 'done';
+          break;
+        }
+        throw new MalformedJsonArrayError(`expected ',' or ']' at offset ${i}`);
+      case 'done':
+        if (isWhitespace(code)) break;
+        throw new MalformedJsonArrayError(`trailing content at offset ${i}`);
+    }
+  }
+
+  if (inString || depth !== 0 || phase !== 'done') {
+    throw new MalformedJsonArrayError('unterminated JSON array');
   }
 }
