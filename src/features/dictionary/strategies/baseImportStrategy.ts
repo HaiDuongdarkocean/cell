@@ -5,7 +5,7 @@
 // - transformEntry(raw, index): StoredEntry | null (raw → normalized entry)
 // - parse(): AsyncGenerator<RawEntry> (streaming, 1 entry at a time)
 //
-// execute() template: for await (raw of parse()) → transformEntry → batch.add → flush at 5000.
+// execute() template: for await (raw of parse()) → transformEntry → batch.add → flush at BATCH_SIZE.
 
 import { BatchProcessor } from '../logic/batchProcessor';
 import { createYieldChecker } from '../logic/yieldToEventLoop';
