@@ -9,7 +9,7 @@ interface SchedulerLike {
 
 export function yieldToEventLoop(): Promise<void> {
   const scheduler = (globalThis as { scheduler?: SchedulerLike }).scheduler;
-  return scheduler?.yield !== undefined
+  return typeof scheduler?.yield === 'function'
     ? scheduler.yield()
     : new Promise((resolve) => setTimeout(resolve, 0));
 }
