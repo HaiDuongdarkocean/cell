@@ -24,7 +24,7 @@ import {
   deleteResource,
   getAllResources,
 } from '../repositories/resourceRepository';
-import { deleteEntriesByResource, countEntriesByResource } from '../repositories/resourceEntryRepository';
+import { deleteEntriesByResource } from '../repositories/resourceEntryRepository';
 import { deletePhraseIndex } from '../repositories/phraseIndexRepository';
 import { buildPhraseIndexForResource } from '../logic/phraseIndexBuilder';
 import type {
@@ -111,7 +111,7 @@ export async function importFile(
     //    Must succeed before installationFinished=true so a blob failure
     //    rolls back the whole import.
     if (format === 'json-entries') {
-      await buildPhraseIndexForResource(langCode, resourceId);
+      await buildPhraseIndexForResource(langCode, resourceId, result.phraseTerms);
     }
 
     // 10. Finalize resource (wordCount + components + derived type + installationFinished=true)
@@ -165,8 +165,7 @@ export async function deleteResourceCascade(
   resourceId: number,
   onProgress?: (done: number, total: number) => void,
 ): Promise<void> {
-  const total = onProgress ? await countEntriesByResource(langCode, resourceId) : 0;
-  await deleteEntriesByResource(langCode, resourceId, onProgress ? (d) => onProgress(d, total) : undefined);
+  await deleteEntriesByResource(langCode, resourceId, onProgress);
   await deletePhraseIndex(langCode, resourceId);
   await deleteResource(langCode, resourceId);
 }

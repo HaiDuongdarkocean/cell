@@ -1,10 +1,19 @@
-import { scanTopLevelJsonObjects, MalformedJsonArrayError } from '@/features/dictionary/logic/jsonObjectScanner';
+import { scanTopLevelJsonObjectRanges, MalformedJsonArrayError } from '@/features/dictionary/logic/jsonObjectScanner';
 
 function collect(text: string): string[] {
-  return [...scanTopLevelJsonObjects(text)];
+  return [...scanTopLevelJsonObjectRanges(text)].map(({ start, end }) => text.slice(start, end));
 }
 
-describe('scanTopLevelJsonObjects', () => {
+describe('scanTopLevelJsonObjectRanges', () => {
+  it('yields exact offsets into the source text', () => {
+    const text = '[{"a":1}, {"b":2}]';
+    const ranges = [...scanTopLevelJsonObjectRanges(text)];
+    expect(ranges).toEqual([
+      { start: 1, end: 8 },
+      { start: 10, end: 17 },
+    ]);
+  });
+
   it('yields each top-level object', () => {
     const slices = collect('[{"a":1},{"b":2},{"c":3}]');
     expect(slices).toEqual(['{"a":1}', '{"b":2}', '{"c":3}']);
