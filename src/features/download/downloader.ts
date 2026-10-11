@@ -14,7 +14,14 @@ import {
   MAX_SEGMENT_CONCURRENCY,
 } from '@/shared/config/config';
 import { t } from '@/shared/i18n';
-import { deleteDownloadSubdir } from '@/shared/lib/storage/opfsStorage';
+import {
+  createOpfsWriter,
+  deleteDownloadSubdir,
+  ensureDownloadSubdir,
+  isOpfsAvailable,
+  isQuotaExceededError,
+  type OpfsWriter,
+} from '@/shared/lib/storage/opfsStorage';
 import { generateFileName, resolveFilenameBase } from '@/shared/utils/fileUtils';
 import {
   buildFetchHeaders,
@@ -337,16 +344,84 @@ export class Downloader {
     if (!response.ok) {
       throw new Error(t('downloads.error.fetchVideo', [response.status]));
     }
-    const blob = await response.blob();
+
+    if (!isOpfsAvailable()) {
+      const blob = await response.blob();
+      this.throwIfCancelled(downloadId, signal);
+      this.reportProgress(downloadId, 'converting', 50);
+      const filename = this.resolveVideoFilename(video, 'mp4');
+      await this.saveBlob(blob, filename);
+      this.throwIfCancelled(downloadId, signal);
+      this.reportProgress(downloadId, 'done', 100);
+      return;
+    }
+
+    const dirHandle = await ensureDownloadSubdir(downloadId);
+    const opfsFilename = 'input.mp4';
+    const declaredBytes = Number(response.headers.get('content-length')) || 0;
+    const writer = await createOpfsWriter(dirHandle, opfsFilename);
+    let downloadedBytes = 0;
+    const reader = response.body?.getReader();
+    try {
+      if (reader) {
+        for (;;) {
+          this.throwIfCancelled(downloadId, signal);
+          const { done, value } = await reader.read();
+          if (done) break;
+          await this.writeOpfsChunk(writer, downloadId, value);
+          downloadedBytes += value.byteLength;
+          const pct = declaredBytes > 0
+            ? Math.min(80, Math.floor((downloadedBytes / declaredBytes) * 80))
+            : 0;
+          this.reportProgress(
+            downloadId, 'downloading', pct,
+            undefined, undefined,
+            declaredBytes || undefined, downloadedBytes,
+          );
+        }
+      } else {
+        const blob = await response.blob();
+        await this.writeOpfsChunk(writer, downloadId, blob);
+        downloadedBytes = blob.size;
+      }
+    } finally {
+      await reader?.cancel().catch(() => undefined);
+      await writer.close();
+    }
 
     this.throwIfCancelled(downloadId, signal);
-    this.reportProgress(downloadId, 'converting', 50);
+    this.reportProgress(
+      downloadId, 'converting', 90,
+      undefined, undefined,
+      downloadedBytes || undefined, downloadedBytes,
+    );
 
     const filename = this.resolveVideoFilename(video, 'mp4');
-    await this.saveBlob(blob, filename);
+    await this.saveOpfsFile(downloadId, opfsFilename, filename, 'video/mp4');
 
     this.throwIfCancelled(downloadId, signal);
+    await deleteDownloadSubdir(downloadId).catch((err: unknown) => {
+      console.warn(`[downloader] OPFS cleanup failed for ${downloadId}:`, err);
+    });
     this.reportProgress(downloadId, 'done', 100);
+  }
+
+  private async writeOpfsChunk(
+    writer: OpfsWriter,
+    downloadId: string,
+    chunk: ArrayBuffer | Blob | Uint8Array,
+  ): Promise<void> {
+    try {
+      await writer.write(chunk);
+    } catch (writeErr: unknown) {
+      if (isQuotaExceededError(writeErr)) {
+        await deleteDownloadSubdir(downloadId).catch((cleanupErr) => {
+          console.warn('[downloader] OPFS cleanup after quota error failed:', cleanupErr);
+        });
+        throw new Error(t('downloads.error.quota'), { cause: writeErr });
+      }
+      throw writeErr;
+    }
   }
 
   private async downloadM3u8Video(

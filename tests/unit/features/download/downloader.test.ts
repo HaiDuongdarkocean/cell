@@ -35,7 +35,7 @@ jest.mock('@/shared/lib/storage/opfsStorage', () => {
   };
 });
 
-import { isOpfsAvailable } from '@/shared/lib/storage/opfsStorage';
+import { isOpfsAvailable, readFile } from '@/shared/lib/storage/opfsStorage';
 
 // Convenience accessor for the mock writer (populated by the jest.mock factory).
 const mockWriter = (globalThis as Record<string, unknown>).__mockWriter as {
@@ -103,6 +103,10 @@ beforeEach(() => {
   createObjectURLMock.mockImplementation((blob: Blob) => `blob:${blob.size}`);
   revokeObjectURLMock.mockImplementation(() => undefined);
   chromeDownloadsDownloadMock.mockResolvedValue(1);
+  (readFile as jest.Mock).mockResolvedValue({
+    size: 0,
+    arrayBuffer: async () => new ArrayBuffer(0),
+  } as File);
 });
 
 afterEach(() => {
@@ -241,11 +245,17 @@ describe('Downloader', () => {
     });
   });
 
-  // 1. mp4 direct download
-  test('downloadVideo with mp4 fetches URL and saves blob', async () => {
+  // 1. mp4 direct download (body unavailable → blob fallback → OPFS → data URL)
+  test('downloadVideo with mp4 writes to OPFS and saves file', async () => {
     simulateServiceWorkerContext();
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
     const blob = makeTextBlob('mp4data');
     fetchMock.mockResolvedValue(makeResponse(blob));
+    const buf = responseBuffers.get(blob)!;
+    (readFile as jest.Mock).mockResolvedValue({
+      size: buf.byteLength,
+      arrayBuffer: async () => buf,
+    } as File);
 
     await downloader.downloadVideo(makeMp4Video(), 'dl1');
 
@@ -254,6 +264,7 @@ describe('Downloader', () => {
       credentials: 'same-origin',
       headers: buildFetchHeaders('https://example.com'),
     });
+    expect(mockWriter.write).toHaveBeenCalledWith(blob);
     expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
     const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
     expect(opts.filename).toBe('My_Video.mp4');
@@ -261,6 +272,79 @@ describe('Downloader', () => {
     // MV3 service workers lack URL.createObjectURL, so the blob is saved as a
     // base64 data URL instead.
     expect(opts.url).toMatch(/^data:.*;base64,/);
+  });
+
+  test('downloadVideo with mp4 saves via blob path when OPFS unavailable', async () => {
+    simulateServiceWorkerContext();
+    const blob = makeTextBlob('mp4data');
+    fetchMock.mockResolvedValue(makeResponse(blob));
+
+    await downloader.downloadVideo(makeMp4Video(), 'dl-noopfs');
+
+    expect(mockWriter.write).not.toHaveBeenCalled();
+    expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
+    const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
+    expect(opts.filename).toBe('My_Video.mp4');
+    expect(opts.url).toMatch(/^data:.*;base64,/);
+  });
+
+  test('downloadVideo with mp4 streams body chunks to OPFS and saves via callback', async () => {
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+    const chunks = [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5])];
+    let readIndex = 0;
+    const body = {
+      getReader: () => ({
+        read: async () =>
+          readIndex < chunks.length
+            ? { done: false as const, value: chunks[readIndex++] }
+            : { done: true as const, value: undefined },
+        cancel: async () => undefined,
+      }),
+    };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      body,
+      headers: new Headers({ 'content-length': '5' }),
+    } as unknown as Response);
+    const saveOpfs = jest.fn().mockResolvedValue(undefined);
+    downloader.setSaveOpfsFileCallback(saveOpfs);
+
+    await downloader.downloadVideo(makeMp4Video(), 'dl-stream');
+
+    expect(mockWriter.write).toHaveBeenCalledTimes(2);
+    expect(mockWriter.write).toHaveBeenNthCalledWith(1, chunks[0]);
+    expect(mockWriter.write).toHaveBeenNthCalledWith(2, chunks[1]);
+    expect(saveOpfs).toHaveBeenCalledWith(
+      'dl-stream', 'input.mp4', 'My_Video.mp4', 'video/mp4',
+    );
+    expect(chromeDownloadsDownloadMock).not.toHaveBeenCalled();
+  });
+
+  test('downloadVideo with mp4 stops streaming when cancelled mid-read', async () => {
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+    let reads = 0;
+    const body = {
+      getReader: () => ({
+        read: async () => {
+          reads += 1;
+          if (reads === 2) downloader.cancel('dl-mid');
+          return { done: false as const, value: new Uint8Array([1]) };
+        },
+        cancel: async () => undefined,
+      }),
+    };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      body,
+      headers: new Headers(),
+    } as unknown as Response);
+
+    await expect(
+      downloader.downloadVideo(makeMp4Video(), 'dl-mid'),
+    ).rejects.toThrow('cancelled');
+    expect(mockWriter.close).toHaveBeenCalled();
   });
 
   // 2. m3u8 media playlist download with conversion (streaming + OPFS path)
