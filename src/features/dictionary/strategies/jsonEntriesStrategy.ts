@@ -8,6 +8,7 @@ import type { StrategyOptions, RawDictionaryEntry } from './baseImportStrategy';
 import { decodeText, isGzip, gunzipFile, isZip, unzipAll } from '../logic/fileDetector';
 import { selectZipDataJson } from '../logic/formatDetector';
 import { ParseError } from '../logic/importErrors';
+import { scanTopLevelJsonObjects, MalformedJsonArrayError } from '../logic/jsonObjectScanner';
 import { bulkInsertDictionaryEntries } from '../repositories/resourceEntryRepository';
 import type { DictionaryEntry, SenseBlock, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo, PronunciationAccent } from '@/entities/dictionary';
 
@@ -68,21 +69,37 @@ export class JsonEntriesStrategy extends BaseDictionaryStrategy {
       throw new ParseError('Failed to decode entry-object JSON file.', e);
     }
 
-    let entries: JsonEntry[];
-    try {
-      const parsed = JSON.parse(text);
-      if (!Array.isArray(parsed)) {
-        throw new ParseError('entry-object JSON: expected array of entries.');
+    const trimmed = text.trim();
+    if (!trimmed.startsWith('[')) {
+      try {
+        JSON.parse(trimmed);
+      } catch (e) {
+        throw new ParseError('entry-object JSON: invalid JSON.', e);
       }
-      entries = parsed;
-    } catch (e) {
-      if (e instanceof ParseError) throw e;
-      throw new ParseError('entry-object JSON: invalid JSON.', e);
+      throw new ParseError('entry-object JSON: expected array of entries.');
+    }
+    if (!trimmed.endsWith(']')) {
+      throw new ParseError('entry-object JSON: invalid JSON.');
     }
 
-    this.reportTotal(entries.length);
+    let total = 0;
+    try {
+      for (const _source of scanTopLevelJsonObjects(trimmed)) total++;
+    } catch (e) {
+      if (e instanceof MalformedJsonArrayError) {
+        throw new ParseError('entry-object JSON: invalid JSON.', e);
+      }
+      throw e;
+    }
+    this.reportTotal(total);
 
-    for (const entry of entries) {
+    for (const source of scanTopLevelJsonObjects(trimmed)) {
+      let entry: JsonEntry;
+      try {
+        entry = JSON.parse(source) as JsonEntry;
+      } catch (e) {
+        throw new ParseError('entry-object JSON: invalid JSON.', e);
+      }
       if (!entry || typeof entry !== 'object' || !entry.term) continue;
       yield {
         term: entry.term,

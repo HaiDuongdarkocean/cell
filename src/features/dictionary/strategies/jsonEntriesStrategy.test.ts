@@ -146,4 +146,33 @@ describe('jsonEntriesStrategy', () => {
     );
     await expect(strategy.execute()).rejects.toThrow(/invalid JSON/);
   });
+
+  it('throws ParseError on truncated array', async () => {
+    const data = strToU8('[{"term": "hello", "definition": "greeting"}');
+    const strategy = new JsonEntriesStrategy(
+      { resourceId: 1, langCode: LANG },
+      { data, fileName: 'cambridge.json' },
+    );
+    await expect(strategy.execute()).rejects.toThrow(/invalid JSON/);
+  });
+
+  it('streams entries with braces inside string fields', async () => {
+    const resourceId = await addResource(LANG, {
+      name: 'braces.json', langCode: LANG, type: 'DICTIONARY', format: 'json-entries',
+      signature: 'sig-braces', wordCount: 0, installationFinished: false, importedAt: Date.now(),
+    });
+    const data = strToU8(JSON.stringify([
+      { term: 'brace', definition: 'a {curly} bracket \\"{\\"' },
+      { term: 'nested', senses: [{ pos: 'n', lines: [{ role: 'gloss', text: '{x}' }] }] },
+    ]));
+    const strategy = new JsonEntriesStrategy(
+      { resourceId, langCode: LANG },
+      { data, fileName: 'braces.json' },
+    );
+    const result = await strategy.execute();
+    expect(result.wordCount).toBe(2);
+    const entries = await findDictionaryByResource(LANG, resourceId);
+    const brace = entries.find((e) => e.term === 'brace');
+    expect(brace?.definition).toContain('{curly}');
+  });
 });
