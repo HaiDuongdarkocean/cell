@@ -434,7 +434,7 @@ Audit 2026-09-17 bổ sung 1 lớp gap nữa — **silent failure ở ranh giớ
 - Fix: state machine `tasks/pipeline-state.json` + `scripts/pipeline-state.mjs` — transitions validate evidence **lúc gọi** (review fresh, journey structure, verdict `APPROVE*`, gates re-run thật ở `all` mode), không tin flag. Terminal `shipped`/`dropped`; `analyze → dropped` kill sớm qua `## Decision: no-go`.
 - 4 stage skills: `pipeline-analyze` (BA: BACCM → stakeholders → root-cause → go/no-go → FURPS+ → stories → journey → logic), `pipeline-specify` (use-case requirements → flows/states → function/feature → traceability), `pipeline-design` (concepts → mockup → brief → component mapping, `check-design-brief.mjs` deterministic), `pipeline-deliver` (plan → engine `autonomous-pipeline` → gates → verify → ship). Driver: `idea-pick-off`.
 - 6 skills cũ absorbed thành stubs — `/elicitation` vẫn resolve.
-- 8 hooks trên 7 events (§10.3) — fail-open warn; enforcement thật nằm ở transition-refuse, đúng nguyên tắc "hook guardrail không phải correctness".
+- 9 hooks trên 7 events (§10.3) — fail-open warn; enforcement thật nằm ở transition-refuse, đúng nguyên tắc "hook guardrail không phải correctness".
 
 ### 10.3. Primitives — rules / skills / hooks / subagents / plugins
 
@@ -444,7 +444,7 @@ Audit 2026-09-17 bổ sung 1 lớp gap nữa — **silent failure ở ranh giớ
 |---|---|---|---|
 | **Rule** | Text luôn trong context, mọi turn | Luật bất biến: conventions, boundaries, mandate | `AGENTS.md` (project) + Ponytail plugin `AGENTS.md` |
 | **Skill** | Playbook nạp on-demand khi task match | Tri thức chuyên sâu theo phase — không phải luật | 52 skills `.agents/skills/` + 6 `/ponytail:*` |
-| **Hook** | Code chạy thật ở lifecycle event, fail-open | **Enforcement** — thứ duy nhất agent không skip được | 8 hooks trên 7 events (xem bảng event dưới) |
+| **Hook** | Code chạy thật ở lifecycle event, fail-open | **Enforcement** — thứ duy nhất agent không skip được | 9 hooks trên 7 events (xem bảng event dưới) |
 | **Subagent** | Agent con, context tách, quyền hẹp hơn | Fresh-eyes verify + parallel lanes | `vision-reader` (`.devin/agents/`) + `spec-reviewer{,-swe,-glm}` (`.agents/agents/`) + built-in `subagent_general`/`subagent_explore` |
 | **Plugin** | Package gồm cả 4 thứ trên | Phân phối workflow qua git | `ponytail` v4.10.0 (`devin plugins install --local`) |
 
@@ -459,6 +459,8 @@ Audit 2026-09-17 bổ sung 1 lớp gap nữa — **silent failure ở ranh giớ
                                    │
         SessionStart ──► hook-session-prime ──► inject pipeline
                                                    state + stage
+                                                   (owner-session only —
+                                                    others get info line)
 User prompt ──► UserPromptSubmit ──► hook-ponytail (mode tracker)
                     │
                     ▼
@@ -469,10 +471,15 @@ User prompt ──► UserPromptSubmit ──► hook-ponytail (mode tracker)
                     ▼
         PreToolUse ──► hook-stage-guard ──► warn: src/ edit
                     trước stage, spec stale, state edit tay
+                    (state-file guard universal; item warnings
+                     owner-session only)
                     │
         write/edit ──► PostToolUse ──► hook-skill-index (regen)
         exec       ──► PostToolUse ──► hook-gates-tracker
-                                       (ghi gates.* khi deliver)
+                    │                  (ghi gates.*, bound session only)
+                    │                └► hook-owner-bind
+                    │                  (--owner <id> khớp owner.id
+                    │                   → owner.sessionId = session_id)
                     │
                     ▼
         pipeline-state.mjs transition ──► ENFORCEMENT THẬT:
@@ -480,28 +487,31 @@ User prompt ──► UserPromptSubmit ──► hook-ponytail (mode tracker)
         journey, gates re-run) — refuse = không đủ điều kiện
                     │
                     ▼
-        PostCompaction ──► hook-context-restore (re-inject state)
-        Stop ──► hook-stop-gate (one-shot block: dirty + gates stale)
+        PostCompaction ──► hook-context-restore (re-inject, bound only)
+        Stop ──► hook-stop-gate (one-shot block, bound session only:
+             dirty + gates stale)
         SessionEnd ──► hook-session-report (tasks/reports/)
                     │
                     ▼
               commit → CI (design-system-ci.yml)
 ```
 
-#### Hook event surface — 8 events, dùng 7 (9 hooks: 2× PostToolUse)
+#### Hook event surface — 8 events, dùng 7 (9 hooks: 3× PostToolUse)
 
 | Event | Trạng thái | Đang làm |
 |---|---|---|
-| `SessionStart` | ✅ | `hook-session-prime` — inject `pipeline-state.json` active item + stage pointer |
+| `SessionStart` | ✅ | `hook-session-prime` — inject pipeline state; resume-pointer chỉ cho bound owner session, session khác thấy info line |
 | `UserPromptSubmit` | ✅ | `hook-ponytail` — ponytail mode-tracker |
-| `PreToolUse` | ✅ | `hook-stage-guard` — warn: `src/` edit trước stage hợp lệ, spec edit stale, state-file edit tay |
-| `PostToolUse` | ✅ ×2 | `hook-skill-index` (regen index khi SKILL.md đổi) + `hook-gates-tracker` (ghi `gates.*` từ exec output khi stage=deliver) |
+| `PreToolUse` | ✅ | `hook-stage-guard` — state-file-edit guard universal; item-scoped warnings (`src/` trước stage, spec stale) chỉ bound owner session |
+| `PostToolUse` | ✅ ×3 | `hook-skill-index` (regen index khi SKILL.md đổi) + `hook-gates-tracker` (ghi `gates.*` chỉ từ bound session) + `hook-owner-bind` (exec `--owner <id>` khớp `owner.id` → `owner.sessionId = payload.session_id`) |
 | `PermissionRequest` | ⬜ trống | — |
-| `Stop` | ✅ | `hook-stop-gate` — one-shot block (`stop_hook_active` guard) khi deliver dirty + gates stale |
-| `PostCompaction` | ✅ | `hook-context-restore` — re-inject pipeline state sau nén context |
+| `Stop` | ✅ | `hook-stop-gate` — one-shot block khi deliver dirty + gates stale, chỉ bound owner session |
+| `PostCompaction` | ✅ | `hook-context-restore` — re-inject pipeline state, chỉ bound owner session |
 | `SessionEnd` | ✅ | `hook-session-report` — append report `tasks/reports/` |
 
 > Pattern sau redesign: hooks (fail-open warn) lo observability + nhắc việc; **correctness enforcement nằm ở `pipeline-state.mjs transition`** — code path duy nhất validate evidence lúc gọi và refuse khi thiếu. Hook block chỉ dùng one-shot ở `Stop` để inject reason, không làm gate thật.
+>
+> Session binding (2026-10-10): `owner.sessionId` gắn pipeline item với đúng session — trước đó mọi hook đều broadcast cho mọi session, kéo session không liên quan vào việc của owner (stop-gate block session lạ, gates-tracker ghi gates của session khác lên item). Bind chỉ xảy ra khi lệnh có `--owner <id>` tường minh khớp `owner.id` — mutate qua `human` override không chứng minh identity nên không bind. Handoff/release tạo owner object mới → sessionId tự reset; owner mới re-bind ở lệnh `--owner` đầu tiên. Item unowned/unbound → không session nào bị ép gates (đúng yêu cầu "không kéo session lạ"), owner vẫn bị ép ngay sau khi bind.
 
 #### Vì sao phân biệt 3 loại "instruction"
 

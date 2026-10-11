@@ -41,6 +41,11 @@
           "type": "command",
           "command": "node scripts/hook-gates-tracker.mjs",
           "timeout": 5
+        },
+        {
+          "type": "command",
+          "command": "node scripts/hook-owner-bind.mjs",
+          "timeout": 5
         }
       ]
     }

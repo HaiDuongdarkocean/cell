@@ -21,6 +21,7 @@ readPayload((payload) => {
   const slug = state.active;
   const item = slug && state.items[slug];
   if (!item) process.exit(0);
+  if (item.owner?.sessionId !== payload?.session_id) process.exit(0);
 
   const warnings = [];
   if (PRE_DELIVER.has(item.stage) && /(^|\/)src\//.test(fp) && !/src\/entrypoints\/mockup-/.test(fp)) {

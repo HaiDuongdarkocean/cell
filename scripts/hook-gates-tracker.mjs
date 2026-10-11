@@ -21,6 +21,7 @@ readPayload((payload) => {
   const slug = state.active;
   const item = slug && state.items[slug];
   if (!item || item.stage !== 'deliver') process.exit(0);
+  if (item.owner?.sessionId !== payload?.session_id) process.exit(0);
 
   const command = String(payload?.tool_input?.command || '');
   if (!command) process.exit(0);

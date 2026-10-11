@@ -582,6 +582,19 @@ function doHandoff(slug, args) {
   process.stdout.write(`${JSON.stringify(item, null, 2)}\n`);
 }
 
+function doBind(slug, args) {
+  const session = takeFlag(args, '--session');
+  if (!slug || !session) fail('usage: pipeline-state.mjs bind <slug> --session <id>');
+  const state = readState();
+  const item = getItem(state, slug);
+  if (item.owner && item.owner.sessionId !== session) {
+    item.owner.sessionId = session;
+    touch(item);
+    writeState(state);
+  }
+  process.stdout.write(`${JSON.stringify(item.owner ?? null)}\n`);
+}
+
 function doRelease(slug, args) {
   const fi = args.indexOf('--force');
   const force = fi >= 0;
@@ -644,6 +657,9 @@ switch (cmd) {
   case 'release':
     doRelease(slug, rest.slice(1));
     break;
+  case 'bind':
+    doBind(slug, rest.slice(1));
+    break;
   default:
-    fail('usage: pipeline-state.mjs init|activate|get|set|transition|gates|resolve|seed|request-handoff|handoff|release <slug> [args]');
+    fail('usage: pipeline-state.mjs init|activate|get|set|transition|gates|resolve|seed|request-handoff|handoff|release|bind <slug> [args]');
 }

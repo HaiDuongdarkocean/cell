@@ -760,4 +760,23 @@ describe('ownership', () => {
     expect(run(root, 'set', SLUG, 'worktree=../cell-worktrees/feat-x', '--owner', A).status).toBe(0);
     expect(stateOf(root).items[SLUG].worktree).toBe('../cell-worktrees/feat-x');
   });
+
+  it('bind attaches sessionId to the current owner; handoff resets it', () => {
+    const root = makeRoot();
+    initOwned(root);
+    expect(run(root, 'bind', SLUG, '--session', 'sess-1').status).toBe(0);
+    expect(stateOf(root).items[SLUG].owner.sessionId).toBe('sess-1');
+    run(root, 'handoff', SLUG, '--to', B, '--owner', A);
+    expect(stateOf(root).items[SLUG].owner.sessionId).toBeUndefined();
+    expect(run(root, 'bind', SLUG, '--session', 'sess-2').status).toBe(0);
+    expect(stateOf(root).items[SLUG].owner.sessionId).toBe('sess-2');
+  });
+
+  it('bind is a no-op on unowned items and refuses missing args', () => {
+    const root = makeRoot();
+    init(root); // human — unowned
+    expect(run(root, 'bind', SLUG, '--session', 'sess-1').status).toBe(0);
+    expect(stateOf(root).items[SLUG].owner).toBeNull();
+    expect(run(root, 'bind', SLUG).status).toBe(1);
+  });
 });

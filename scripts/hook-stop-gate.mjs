@@ -9,6 +9,10 @@ readPayload((payload) => {
   const item = slug && state.items[slug];
   if (!item || item.stage !== 'deliver' || item.awaiting) process.exit(0);
 
+  // Only the bound owner session carries gate pressure — other sessions must
+  // never be drafted into this item's work.
+  if (item.owner?.sessionId !== payload?.session_id) process.exit(0);
+
   const dirty = spawnSync('git', ['status', '--porcelain'], { cwd: ROOT, encoding: 'utf8' });
   if (dirty.status !== 0 || !dirty.stdout.trim()) process.exit(0);
 
