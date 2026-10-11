@@ -1,10 +1,14 @@
-// batchProcessor — accumulate + flush at 5000 (ADR-023 D8, spec F7).
+// batchProcessor — accumulate + flush at BATCH_SIZE (ADR-023 D8, spec F7).
 //
-// Memory bounded: 5000 entries in buffer, 1 IDB transaction per flush.
-// Streaming parse yields 1 entry at a time → batch → flush → memory ~5000.
+// Memory bounded: BATCH_SIZE entries in buffer, 1 IDB transaction per flush.
+// Streaming parse yields 1 entry at a time → batch → flush → memory ~BATCH_SIZE.
+// A filled batch flushes without blocking the parse loop: the write runs
+// in flight while the next batch accumulates, and is awaited only when that
+// next batch fills (ordering is preserved — transactions are created in batch
+// order and IDB serializes same-store readwrite transactions).
 
-/** Batch size — 5000 entries per IDB transaction (spec F7). */
-export const BATCH_SIZE = 5000;
+/** Batch size — 2000 entries per IDB transaction (spec F7). */
+export const BATCH_SIZE = 2000;
 
 /** Flush callback — receives batch, writes to repository. */
 export type FlushCallback<T> = (batch: ReadonlyArray<T>) => Promise<void>;
@@ -14,6 +18,8 @@ export class BatchProcessor<T> {
   private buffer: T[] = [];
   private totalProcessed = 0;
   private total = 0;
+  private inflight: Promise<void> | null = null;
+  private inflightError: unknown = null;
   private readonly flushCallback: FlushCallback<T>;
   private readonly onProgress?: (processed: number, total: number) => void;
 
@@ -27,19 +33,41 @@ export class BatchProcessor<T> {
     this.total = Math.max(0, total);
   }
 
-  /** Add an entry. Auto-flush when buffer reaches BATCH_SIZE. */
+  /** Add an entry. Auto-flush when buffer reaches BATCH_SIZE: the write
+   *  fires without blocking; this add awaits only the PREVIOUS batch so a
+   *  run fails fast while ordering stays strict (flushCallbacks invoke in
+   *  batch order, and IDB serializes same-store readwrite transactions). */
   async add(entry: T): Promise<void> {
+    if (this.inflightError !== null) throw this.inflightError;
     this.buffer.push(entry);
-    if (this.buffer.length >= BATCH_SIZE) {
-      await this.flush();
-    }
+    if (this.buffer.length < BATCH_SIZE) return;
+    const prior = this.inflight;
+    this.startFlush();
+    await prior;
   }
 
-  /** Flush remaining buffer (call at end of stream). */
+  /** Drain the in-flight write + flush remaining buffer (call at end of stream). */
   async flush(): Promise<void> {
+    await this.inflight;
+    this.inflight = null;
+    if (this.inflightError !== null) throw this.inflightError;
     if (this.buffer.length === 0) return;
     const batch = this.buffer;
     this.buffer = [];
+    await this.writeBatch(batch);
+  }
+
+  private startFlush(): void {
+    const batch = this.buffer;
+    this.buffer = [];
+    const writing = this.writeBatch(batch);
+    writing.catch((err: unknown) => {
+      this.inflightError = err;
+    });
+    this.inflight = writing;
+  }
+
+  private async writeBatch(batch: ReadonlyArray<T>): Promise<void> {
     await this.flushCallback(batch);
     this.totalProcessed += batch.length;
     this.onProgress?.(this.totalProcessed, this.total);

@@ -1,15 +1,15 @@
 // importOrchestrator — use-case + atomic rollback (ADR-023 D6, spec F10).
 //
-// Flow: validate → detect → signature → checkDuplicate → create resource
-// (installationFinished=false) → strategy.execute() → update resource
+// Flow: validate → signature → checkDuplicate → read bytes → detect → create
+// resource (installationFinished=false) → strategy.execute() → update resource
 // (wordCount, installationFinished=true) → return result.
 // Error → rollbackImport(resourceId) → rethrow. Rollback-during-rollback → RollbackError.
 
-import { validateFile, readFileHead, readFileBytes, isGzip, isZip, gunzipFile, unzipAll, getExtension, stripExtension } from '../logic/fileDetector';
+import { validateFile, readFileBytes, isGzip, isZip, gunzipFile, unzipAll, getExtension, stripExtension } from '../logic/fileDetector';
 import type { ReadableFile } from '../logic/fileDetector';
 import { detectFormat, sniffZipFormat } from '../logic/formatDetector';
 import { deriveResourceType } from '../logic/dictionaryComponents';
-import { computeSignature } from '../logic/signatureGenerator';
+import { computeSignature, isSignature } from '../logic/signatureGenerator';
 import { createStrategy } from '../strategies/strategyFactory';
 import {
   RollbackError,
@@ -34,7 +34,7 @@ import type {
   ResourceInfo,
 } from '@/entities/dictionary';
 
-/** Import a file: validate → detect → signature → dedupe → create → execute → finalize.
+/** Import a file: validate → signature → dedupe → read bytes → detect → create → execute → finalize.
  *  Format and content kind are content-derived — no declared resource type. */
 export async function importFile(
   file: ReadableFile,
@@ -45,16 +45,15 @@ export async function importFile(
   // 1. Validate file size ≤ 500MB
   validateFile(file);
 
-  // 2. Read head (first 1MB) for format detection + signature
-  const head = await readFileHead(file);
+  // 2. Signature (SHA-256(first1MB)_size_name) — reuse the sender's only when
+  //    its size+name tail matches this file; a stale or foreign signature can
+  //    never drive dedupe or the replace cascade.
+  const tail = `_${file.size}_${stripExtension(file.name)}`;
+  const signature = isSignature(options.signature) && options.signature.endsWith(tail)
+    ? options.signature
+    : await computeSignature(file);
 
-  // 3. Detect format
-  let format = await detectFormat(file.name, head);
-
-  // 4. Compute signature (SHA-256(first1MB)_size_name)
-  const signature = await computeSignature(file);
-
-  // 5. Check duplicate (same signature = re-import)
+  // 3. Check duplicate (same signature = re-import)
   const existing = await findResourceBySignature(langCode, signature);
   if (existing) {
     const decision = await (options.onDuplicate?.(existing) ?? 'skip');
@@ -71,10 +70,12 @@ export async function importFile(
     await deleteResourceCascade(langCode, existing.id ?? 0);
   }
 
-  // 6. Read full file bytes
+  // 4. Read full file bytes — detection sniffs the head slice of the full
+  //    read instead of a second 1MB fetch.
   let data = await readFileBytes(file);
+  let format = await detectFormat(file.name, data.slice(0, 1024 * 1024));
 
-  // 6a. A .gz whose head couldn't gunzip (or whose inner kind was guessed
+  // 4a. A .gz whose head couldn't gunzip (or whose inner kind was guessed
   //     from the inner extension) gets a content-truth re-sniff here —
   //     decompressed bytes flow on to the strategy so it skips its own pass.
   if (isGzip(data) && getExtension(file.name) === 'gz') {
@@ -82,14 +83,14 @@ export async function importFile(
     format = await detectFormat(stripExtension(file.name), data.slice(0, 1024 * 1024));
   }
 
-  // 6b. Zip >1MB can't be sniffed from the head — 'term-bank' is only the
+  // 4b. Zip >1MB can't be sniffed from the head — 'term-bank' is only the
   //     extension default there. Re-sniff authoritative content on full bytes.
   if (format === 'term-bank' && isZip(data)) {
     const refined = sniffZipFormat(unzipAll(data));
     if (refined) format = refined;
   }
 
-  // 7. Create resource (installationFinished=false — UI sees progress)
+  // 5. Create resource (installationFinished=false — UI sees progress)
   const resourceId = await addResource(langCode, {
     name: file.name,
     langCode,
@@ -102,19 +103,19 @@ export async function importFile(
   });
   onResourceCreated?.(resourceId);
 
-  // 8. Execute strategy
+  // 6. Execute strategy
   try {
     const strategy = createStrategy(format, { resourceId, langCode, onProgress, components: options.components }, { data, fileName: file.name });
     const result = await strategy.execute();
 
-    // 9. Build phrase index for entry-object dictionaries (ADR-037 §7.2).
+    // 7. Build phrase index for entry-object dictionaries (ADR-037 §7.2).
     //    Must succeed before installationFinished=true so a blob failure
     //    rolls back the whole import.
     if (format === 'json-entries') {
       await buildPhraseIndexForResource(langCode, resourceId, result.phraseTerms);
     }
 
-    // 10. Finalize resource (wordCount + components + derived type + installationFinished=true)
+    // 8. Finalize resource (wordCount + components + derived type + installationFinished=true)
     const resource = await getResource(langCode, resourceId);
     if (resource) {
       await updateResource(langCode, {
@@ -128,7 +129,7 @@ export async function importFile(
 
     return { resourceId, wordCount: result.wordCount, format };
   } catch (error) {
-    // 11. Rollback on any error
+    // 9. Rollback on any error
     await rollbackImport(langCode, resourceId);
     // Wrap IDB quota errors (spec §10 failure path: "Bộ nhớ đầy — xóa resource cũ")
     if (!isImportError(error) && isQuotaExceeded(error)) {

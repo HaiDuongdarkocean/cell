@@ -13,6 +13,15 @@ export interface SignableFile {
   slice(start: number, end: number): { arrayBuffer(): Promise<ArrayBuffer> };
 }
 
+const SIGNATURE_RE = /^[0-9a-f]{64}_\d+_.+/;
+
+/** True when a value carries the `${sha256}_${size}_${name}` shape — guards
+ *  sender-provided signatures so job ids and placeholders fall back to
+ *  local computation. */
+export function isSignature(value: unknown): value is string {
+  return typeof value === 'string' && SIGNATURE_RE.test(value);
+}
+
 /** Compute signature: `${sha256(first1MB)}_${size}_${nameWithoutExt}`. */
 export async function computeSignature(file: SignableFile): Promise<string> {
   const head = await file.slice(0, 1024 * 1024).arrayBuffer();

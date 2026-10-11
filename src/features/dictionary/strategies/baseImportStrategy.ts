@@ -5,10 +5,10 @@
 // - transformEntry(raw, index): StoredEntry | null (raw → normalized entry)
 // - parse(): AsyncGenerator<RawEntry> (streaming, 1 entry at a time)
 //
-// execute() template: for await (raw of parse()) → transformEntry → batch.add → flush at 5000.
+// execute() template: for await (raw of parse()) → transformEntry → batch.add → flush at BATCH_SIZE.
 
 import { BatchProcessor } from '../logic/batchProcessor';
-import { yieldToEventLoop } from '../logic/yieldToEventLoop';
+import { createYieldChecker } from '../logic/yieldToEventLoop';
 import { normalizeWord } from '../logic/normalizationPipeline';
 import { toCanonicalDefinition } from '../logic/normalize/canonical';
 import { collectEntryComponents, sortedComponents } from '../logic/dictionaryComponents';
@@ -82,10 +82,6 @@ export interface StrategyOptions {
   readonly components?: readonly DictionaryComponent[];
 }
 
-/** Raw entries between cooperative yields — keeps the worker responsive
- *  while staying far below per-entry yield overhead. */
-const YIELD_EVERY_ENTRIES = 1500;
-
 /** Abstract base — template method execute(). */
 export abstract class BaseImportStrategy<TRaw, TStored> {
   protected readonly options: StrategyOptions;
@@ -103,7 +99,7 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
   /** Template method — subclass KHÔNG override. */
   async execute(): Promise<StrategyResult> {
     let count = 0;
-    let processed = 0;
+    const maybeYield = createYieldChecker();
     try {
       for await (const raw of this.parse()) {
         if (this.options.signal?.aborted) {
@@ -115,9 +111,7 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
           await this.batchProcessor.add(stored);
           count++;
         }
-        if (++processed % YIELD_EVERY_ENTRIES === 0) {
-          await yieldToEventLoop();
-        }
+        await maybeYield();
       }
       await this.batchProcessor.flush();
     } catch (e) {

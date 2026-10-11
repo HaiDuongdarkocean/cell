@@ -1,8 +1,8 @@
 import { BatchProcessor, BATCH_SIZE } from '@/features/dictionary/logic/batchProcessor';
 
 describe('batchProcessor', () => {
-  it('BATCH_SIZE is 5000', () => {
-    expect(BATCH_SIZE).toBe(5000);
+  it('BATCH_SIZE is 2000', () => {
+    expect(BATCH_SIZE).toBe(2000);
   });
 
   it('accumulates without flushing below BATCH_SIZE', async () => {
@@ -70,5 +70,37 @@ describe('batchProcessor', () => {
     await bp.flush();
     expect(flush).toHaveBeenCalledTimes(3);
     expect(bp.count).toBe(BATCH_SIZE * 2 + 100);
+  });
+
+  it('keeps the next batch accumulating while a flush is in flight', async () => {
+    let resolveFirst: (() => void) | undefined;
+    const flush = jest
+      .fn<Promise<void>, [ReadonlyArray<number>]>()
+      .mockImplementationOnce(() => new Promise<void>((r) => { resolveFirst = r; }))
+      .mockResolvedValue(undefined);
+    const bp = new BatchProcessor<number>(flush);
+    const adds: Promise<void>[] = [];
+    for (let i = 0; i < BATCH_SIZE * 2; i++) adds.push(bp.add(i));
+    await Promise.resolve();
+    expect(flush).toHaveBeenCalledTimes(2);
+    expect(flush.mock.calls[0]![0]).toHaveLength(BATCH_SIZE);
+    expect(flush.mock.calls[1]![0]).toHaveLength(BATCH_SIZE);
+    expect(bp.pending).toBe(0);
+    resolveFirst!();
+    await Promise.all(adds);
+    await bp.flush();
+    expect(bp.count).toBe(BATCH_SIZE * 2);
+  });
+
+  it('propagates a rejected in-flight flush on the next add and on flush', async () => {
+    const flush = jest
+      .fn<Promise<void>, [ReadonlyArray<number>]>()
+      .mockRejectedValueOnce(new Error('IDB full'))
+      .mockResolvedValue(undefined);
+    const bp = new BatchProcessor<number>(flush);
+    const adds: Promise<void>[] = [];
+    for (let i = 0; i < BATCH_SIZE * 2; i++) adds.push(bp.add(i));
+    await expect(Promise.all(adds)).rejects.toThrow('IDB full');
+    await expect(bp.flush()).rejects.toThrow('IDB full');
   });
 });

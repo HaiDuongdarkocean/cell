@@ -193,6 +193,27 @@ describe('resource import chunks — live component selection', () => {
     expect(opts.components).toBeUndefined();
   });
 
+  it('hands the chunk signature through to the executor options', async () => {
+    const handlers = makeContext();
+    const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!;
+    const signature = `${'ab'.repeat(32)}_21_list`;
+    const res = await send({
+      type: MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
+      payload: {
+        jobId: 'job-sig', seq: 0, total: 1,
+        data: whole,
+        fileName: 'list.txt', fileMime: 'text/plain', langCode: 'en',
+        signature,
+      },
+    } as MessageRequest);
+    expect((res as { error?: string }).error).toBeUndefined();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mockedImportFile).toHaveBeenCalledTimes(1);
+    const [, opts] = mockedImportFile.mock.calls[0]!;
+    expect(opts.signature).toBe(signature);
+  });
+
   it('rejects a malformed-base64 chunk and fails the job', async () => {
     const handlers = makeContext();
     const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!;
@@ -267,6 +288,45 @@ describe('resource import chunks — gzip transport', () => {
     const [file] = mockedImportFile.mock.calls[0]!;
     const bytes = await readFileBytes(file as File);
     expect(bytes.equals(rawBytes)).toBe(true);
+  });
+
+  it('gunzips chunks that land out of order', async () => {
+    const handlers = makeContext();
+    const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!;
+    await send(gzChunk('job-gz-ooo', 1, true));
+    await send(gzChunk('job-gz-ooo', 0, true));
+    const res = await send(gzChunk('job-gz-ooo', 2, true));
+    expect((res as { error?: string }).error).toBeUndefined();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mockedImportFile).toHaveBeenCalledTimes(1);
+    const [file] = mockedImportFile.mock.calls[0]!;
+    const bytes = await readFileBytes(file as File);
+    expect(bytes.equals(rawBytes)).toBe(true);
+  });
+
+  it('fails the job when a gzip stream ends torn mid-upload', async () => {
+    const handlers = makeContext();
+    const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!;
+    const b64 = Buffer.from(gzipSync(new Uint8Array(rawBytes))).toString('base64');
+    const mid = Math.floor(b64.length / 8) * 4;
+    const torn = (seq: number) => ({
+      type: MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
+      payload: {
+        jobId: 'job-gz-torn', seq, total: 2,
+        data: seq === 0 ? b64.slice(0, mid) : b64.slice(mid, mid + 8),
+        fileName: 'list.txt', fileMime: 'text/plain', langCode: 'en',
+        encoding: 'gzip',
+      },
+    } as MessageRequest);
+    const first = await send(torn(0));
+    expect((first as { error?: string }).error).toBeUndefined();
+    const second = await send(torn(1));
+    expect((second as { error?: string }).error).toBeTruthy();
+    const job = mockRegistry.jobs.get('job-gz-torn');
+    expect(job?.status).toBe('failed');
+    expect(job?.error).toBe('invalid-gzip-payload');
+    expect(mockedImportFile).not.toHaveBeenCalled();
   });
 
   it('fails the job when a flagged-gzip payload is not valid gzip', async () => {

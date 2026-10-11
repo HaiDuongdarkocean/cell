@@ -12,7 +12,7 @@
  * JOB_LIST + JOB_EVENT from any surface.
  */
 import type { z } from 'zod';
-import { gunzipSync } from 'fflate';
+import { Gunzip } from 'fflate';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { t } from '@/shared/i18n';
 import type { BackgroundContext } from '../context';
@@ -70,6 +70,14 @@ interface ImportChunkMeta {
 interface PendingImport {
   readonly chunks: Uint8Array[];
   received: number;
+  /** Next seq to feed the gunzip stream — arrivals may be out of order, only
+   *  the contiguous prefix drains. */
+  nextSeq: number;
+  /** Streaming gunzip for the gzip transport — created on first drain so a
+   *  late `encoding` flag still catches the buffered prefix. */
+  gunzip?: Gunzip;
+  /** Decoded output parts collected from the gunzip stream. */
+  readonly decoded: Uint8Array[];
   createdAt: number;
   stallTimer: ReturnType<typeof setTimeout> | null;
   readonly meta: ImportChunkMeta;
@@ -77,7 +85,7 @@ interface PendingImport {
    *  mid-upload land in the payload handed to the import executor. */
   components?: readonly DictionaryComponent[];
   /** Whole-payload gzip (payload.encoding==='gzip' on any chunk) — the
-   *  assembled bytes are gunzipped once before File construction. */
+   *  stream decodes as chunks land so assembly pays no inflate burst. */
   gzip?: boolean;
 }
 
@@ -113,16 +121,16 @@ function decodeChunk(data: string): Uint8Array {
   return nativeFromBase64 !== undefined ? nativeFromBase64(data) : base64ToBytes(data);
 }
 
-function concatChunks(chunks: readonly Uint8Array[]): Uint8Array {
-  let size = 0;
-  for (const chunk of chunks) size += chunk.length;
-  const out = new Uint8Array(size);
-  let offset = 0;
-  for (const chunk of chunks) {
-    out.set(chunk, offset);
-    offset += chunk.length;
+function drainGunzip(pending: PendingImport): void {
+  pending.gunzip ??= new Gunzip((data) => {
+    pending.decoded.push(data);
+  });
+  while (pending.nextSeq < pending.chunks.length) {
+    const chunk = pending.chunks[pending.nextSeq];
+    if (chunk === undefined) break;
+    pending.nextSeq += 1;
+    pending.gunzip.push(chunk, pending.nextSeq === pending.chunks.length);
   }
-  return out;
 }
 
 function clearPending(jobId: string): void {
@@ -142,6 +150,7 @@ async function runImport(registry: JobRegistry, job: Job): Promise<void> {
   const result = await importFile(payload.file, {
     langCode: payload.langCode,
     components: payload.components,
+    signature: typeof job.params.signature === 'string' ? job.params.signature : undefined,
     onProgress: (processed, estimatedTotal) => {
       registry.setProgress(job.id, { done: processed, total: estimatedTotal });
     },
@@ -392,6 +401,8 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
       pending = {
         chunks: new Array<Uint8Array>(p.total),
         received: 0,
+        nextSeq: 0,
+        decoded: [],
         createdAt: Date.now(),
         stallTimer: null,
         meta: {
@@ -423,6 +434,15 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
       pending.received++;
       registry.setProgress(p.jobId, { done: pending.received, total: pending.chunks.length, unit: 'items' });
     }
+    if (pending.gzip === true) {
+      try {
+        drainGunzip(pending);
+      } catch (err) {
+        clearPending(p.jobId);
+        registry.markFailed(p.jobId, 'invalid-gzip-payload');
+        return toError(err);
+      }
+    }
     if (pending.stallTimer !== null) clearTimeout(pending.stallTimer);
     pending.stallTimer = setTimeout(() => {
       clearPending(p.jobId);
@@ -442,7 +462,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
       // Gzip transport must be undone BEFORE the File exists: importFile
       // computes the dedupe signature on the bytes it receives.
       file = new File(
-        gzip ? [gunzipSync(concatChunks(pending.chunks)) as BlobPart] : (pending.chunks as BlobPart[]),
+        gzip ? (pending.decoded as BlobPart[]) : (pending.chunks as BlobPart[]),
         meta.fileName,
         { type: meta.fileMime },
       );

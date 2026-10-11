@@ -13,3 +13,19 @@ export function yieldToEventLoop(): Promise<void> {
     ? scheduler.yield()
     : new Promise((resolve) => setTimeout(resolve, 0));
 }
+
+const YIELD_BUDGET_MS = 40;
+const YIELD_EVERY_ENTRIES = 4000;
+
+/** Bound synchronous bursts to ~YIELD_BUDGET_MS; the count floor keeps
+ *  degenerate fast iterations cooperative when the clock barely moves. */
+export function createYieldChecker(): () => Promise<void> {
+  let deadline = performance.now() + YIELD_BUDGET_MS;
+  let count = 0;
+  return async () => {
+    if (++count < YIELD_EVERY_ENTRIES && performance.now() < deadline) return;
+    count = 0;
+    deadline = performance.now() + YIELD_BUDGET_MS;
+    await yieldToEventLoop();
+  };
+}
