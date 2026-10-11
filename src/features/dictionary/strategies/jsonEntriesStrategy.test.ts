@@ -156,6 +156,25 @@ describe('jsonEntriesStrategy', () => {
     await expect(strategy.execute()).rejects.toThrow(/invalid JSON/);
   });
 
+  it('collects normalized multiword terms into result.phraseTerms', async () => {
+    const resourceId = await addResource(LANG, {
+      name: 'phrases.json', langCode: LANG, type: 'DICTIONARY', format: 'json-entries',
+      signature: 'sig-phrases', wordCount: 0, installationFinished: false, importedAt: Date.now(),
+    });
+    const data = strToU8(JSON.stringify([
+      { term: 'take off', definition: 'to remove' },
+      { term: 'kick the bucket', definition: 'to die' },
+      { term: 'hello', definition: 'greeting' },
+      { term: 'Take Off', definition: 'dup variant' },
+    ]));
+    const strategy = new JsonEntriesStrategy(
+      { resourceId, langCode: LANG },
+      { data, fileName: 'phrases.json' },
+    );
+    const result = await strategy.execute();
+    expect(result.phraseTerms).toEqual(['take off', 'kick the bucket']);
+  });
+
   it('streams entries with braces inside string fields', async () => {
     const resourceId = await addResource(LANG, {
       name: 'braces.json', langCode: LANG, type: 'DICTIONARY', format: 'json-entries',

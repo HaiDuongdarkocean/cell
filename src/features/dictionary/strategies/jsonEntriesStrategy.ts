@@ -4,11 +4,13 @@
 // Parse + yield dictionary entries with rich fields.
 
 import { BaseDictionaryStrategy } from './baseImportStrategy';
-import type { StrategyOptions, RawDictionaryEntry } from './baseImportStrategy';
+import type { StrategyOptions, StrategyResult, RawDictionaryEntry } from './baseImportStrategy';
 import { decodeText, isGzip, gunzipFile, isZip, unzipAll } from '../logic/fileDetector';
 import { selectZipDataJson } from '../logic/formatDetector';
 import { ParseError } from '../logic/importErrors';
-import { scanTopLevelJsonObjects, MalformedJsonArrayError } from '../logic/jsonObjectScanner';
+import { scanTopLevelJsonObjectRanges, MalformedJsonArrayError } from '../logic/jsonObjectScanner';
+import type { JsonObjectRange } from '../logic/jsonObjectScanner';
+import { yieldToEventLoop } from '../logic/yieldToEventLoop';
 import { bulkInsertDictionaryEntries } from '../repositories/resourceEntryRepository';
 import type { DictionaryEntry, SenseBlock, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo, PronunciationAccent } from '@/entities/dictionary';
 
@@ -42,14 +44,32 @@ interface JsonEntry {
   readonly anagrams?: string[];
 }
 
+/** Objects scanned/parsed between cooperative yields. */
+const YIELD_EVERY_OBJECTS = 2000;
+
+const MULTIWORD_RE = /\s/;
+
 /** entry-object JSON dictionary strategy. */
 export class JsonEntriesStrategy extends BaseDictionaryStrategy {
   readonly format = 'json-entries' as const;
   private readonly data: Uint8Array;
+  private readonly phraseTermSet = new Set<string>();
 
   constructor(options: StrategyOptions, fileData: JsonEntriesStrategyOptions) {
     super(options);
     this.data = fileData.data;
+  }
+
+  protected override transformEntry(raw: RawDictionaryEntry, _index: number): Omit<DictionaryEntry, 'id'> | null {
+    const stored = super.transformEntry(raw, _index);
+    if (stored !== null && MULTIWORD_RE.test(stored.term)) {
+      this.phraseTermSet.add(stored.term);
+    }
+    return stored;
+  }
+
+  protected override resultExtras(): Partial<StrategyResult> {
+    return { phraseTerms: [...this.phraseTermSet] };
   }
 
   protected async *parse(): AsyncGenerator<RawDictionaryEntry> {
@@ -82,21 +102,28 @@ export class JsonEntriesStrategy extends BaseDictionaryStrategy {
       throw new ParseError('entry-object JSON: invalid JSON.');
     }
 
-    let total = 0;
+    // One envelope-validating scan collects exact ranges — the count is
+    // known upfront (exact total) without a second charCodeAt pass.
+    const ranges: JsonObjectRange[] = [];
     try {
-      for (const _source of scanTopLevelJsonObjects(trimmed)) total++;
+      for (const range of scanTopLevelJsonObjectRanges(trimmed)) {
+        ranges.push(range);
+        if (ranges.length % YIELD_EVERY_OBJECTS === 0) await yieldToEventLoop();
+      }
     } catch (e) {
       if (e instanceof MalformedJsonArrayError) {
         throw new ParseError('entry-object JSON: invalid JSON.', e);
       }
       throw e;
     }
-    this.reportTotal(total);
+    this.reportTotal(ranges.length);
 
-    for (const source of scanTopLevelJsonObjects(trimmed)) {
+    let parsed = 0;
+    for (const { start, end } of ranges) {
+      if (++parsed % YIELD_EVERY_OBJECTS === 0) await yieldToEventLoop();
       let entry: JsonEntry;
       try {
-        entry = JSON.parse(source) as JsonEntry;
+        entry = JSON.parse(trimmed.slice(start, end)) as JsonEntry;
       } catch (e) {
         throw new ParseError('entry-object JSON: invalid JSON.', e);
       }

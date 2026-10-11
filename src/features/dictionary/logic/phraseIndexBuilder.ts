@@ -17,6 +17,9 @@ import {
 } from './phraseIndexCompiler';
 import { findDictionaryByResource } from '../repositories/resourceEntryRepository';
 import { putPhraseIndex } from '../repositories/phraseIndexRepository';
+import { yieldToEventLoop } from './yieldToEventLoop';
+
+const YIELD_EVERY_TERMS = 2000;
 
 /**
  * Conservative set of English verbs whose literals should be marked inflectable
@@ -67,8 +70,13 @@ export interface PhraseIndexBuildResult {
 export async function buildPhraseIndexForResource(
   langCode: string,
   resourceId: number,
+  terms?: readonly string[],
 ): Promise<PhraseIndexBuildResult> {
-  const entries = await findDictionaryByResource(langCode, resourceId);
+  // `terms` = normalized multiword terms collected in-pass by the import
+  // strategy — skips the getAll that would materialize every rich row.
+  // Absent (sync rebuilds, lazy self-heal) → read the store as before.
+  const sourceTerms: readonly string[] =
+    terms ?? (await findDictionaryByResource(langCode, resourceId)).map((e) => e.term);
 
   const seen = new Set<string>();
   const inputs: PhraseIndexInput[] = [];
@@ -89,16 +97,18 @@ export async function buildPhraseIndexForResource(
   // ponytail: marking non-verbs inflectable is safe because candidateLemmas
   // is over-generative by design — false candidates don't match any anchor.
   const firstWords = new Set<string>();
-  for (const entry of entries) {
-    const term = entry.term.trim().normalize('NFC').toLowerCase();
+  for (let i = 0; i < sourceTerms.length; i++) {
+    if (i % YIELD_EVERY_TERMS === 0 && i > 0) await yieldToEventLoop();
+    const term = sourceTerms[i]!.trim().normalize('NFC').toLowerCase();
     if (!term || term.split(/\s+/).length < 2) continue;
     const firstWord = term.split(/\s+/)[0]!;
     firstWords.add(firstWord);
   }
 
   // Pass 2: parse each term with auto-collected inflectable set.
-  for (const entry of entries) {
-    const term = entry.term.trim().normalize('NFC').toLowerCase();
+  for (let i = 0; i < sourceTerms.length; i++) {
+    if (i % YIELD_EVERY_TERMS === 0 && i > 0) await yieldToEventLoop();
+    const term = sourceTerms[i]!.trim().normalize('NFC').toLowerCase();
     // Only multiword terms (≥2 whitespace tokens) are phrase candidates.
     if (!term || term.split(/\s+/).length < 2) continue;
     if (seen.has(term)) continue;

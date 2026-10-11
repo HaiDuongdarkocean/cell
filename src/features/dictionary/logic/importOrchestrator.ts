@@ -111,7 +111,7 @@ export async function importFile(
     //    Must succeed before installationFinished=true so a blob failure
     //    rolls back the whole import.
     if (format === 'json-entries') {
-      await buildPhraseIndexForResource(langCode, resourceId);
+      await buildPhraseIndexForResource(langCode, resourceId, result.phraseTerms);
     }
 
     // 10. Finalize resource (wordCount + components + derived type + installationFinished=true)

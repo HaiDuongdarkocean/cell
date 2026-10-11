@@ -8,6 +8,7 @@
 // execute() template: for await (raw of parse()) → transformEntry → batch.add → flush at 5000.
 
 import { BatchProcessor } from '../logic/batchProcessor';
+import { yieldToEventLoop } from '../logic/yieldToEventLoop';
 import { normalizeWord } from '../logic/normalizationPipeline';
 import { toCanonicalDefinition } from '../logic/normalize/canonical';
 import { collectEntryComponents, sortedComponents } from '../logic/dictionaryComponents';
@@ -64,6 +65,9 @@ export interface StrategyResult {
   readonly format: string;
   /** Canonical components detected across stored entries (dictionaries only). */
   readonly components?: readonly DictionaryComponent[];
+  /** Normalized multiword terms collected during the store pass — feeds the
+   *  phrase index so it skips a full getAll re-read (entry-object dicts). */
+  readonly phraseTerms?: readonly string[];
 }
 
 /** Options passed to strategy. */
@@ -77,6 +81,10 @@ export interface StrategyOptions {
    *  ('definitions' = dictionary content). Absent = emit everything found. */
   readonly components?: readonly DictionaryComponent[];
 }
+
+/** Raw entries between cooperative yields — keeps the worker responsive
+ *  while staying far below per-entry yield overhead. */
+const YIELD_EVERY_ENTRIES = 1500;
 
 /** Abstract base — template method execute(). */
 export abstract class BaseImportStrategy<TRaw, TStored> {
@@ -95,6 +103,7 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
   /** Template method — subclass KHÔNG override. */
   async execute(): Promise<StrategyResult> {
     let count = 0;
+    let processed = 0;
     try {
       for await (const raw of this.parse()) {
         if (this.options.signal?.aborted) {
@@ -105,6 +114,9 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
           this.collectComponents(stored);
           await this.batchProcessor.add(stored);
           count++;
+        }
+        if (++processed % YIELD_EVERY_ENTRIES === 0) {
+          await yieldToEventLoop();
         }
       }
       await this.batchProcessor.flush();
@@ -117,7 +129,12 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
       }
       throw e;
     }
-    return { wordCount: count, format: this.format, components: this.components() };
+    return { wordCount: count, format: this.format, components: this.components(), ...this.resultExtras() };
+  }
+
+  /** Hook 5 (optional): extra fields folded into the StrategyResult. */
+  protected resultExtras(): Partial<StrategyResult> {
+    return {};
   }
 
   /** Hook 4 (optional): fold a stored entry into component detection. */

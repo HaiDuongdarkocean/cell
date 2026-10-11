@@ -1,8 +1,8 @@
 // jsonObjectScanner — split a top-level JSON array text into per-object
 // source slices without materializing the parsed graph.
 //
-// A 122MB dictionary stays as ONE decoded string; each yielded slice is a
-// substring view JSON.parse'd independently, so peak memory is bounded by
+// A 122MB dictionary stays as ONE decoded string; each yielded [start,end)
+// range is sliced + JSON.parse'd independently, so peak memory is bounded by
 // the largest single entry instead of the whole object graph.
 //
 // The scan enforces the array envelope (open bracket, commas between
@@ -37,14 +37,20 @@ export class MalformedJsonArrayError extends Error {}
 
 type ScanPhase = 'pre' | 'elem' | 'sep' | 'prim' | 'done';
 
+/** Half-open [start, end) offsets of one top-level object in the source text. */
+export interface JsonObjectRange {
+  readonly start: number;
+  readonly end: number;
+}
+
 /**
- * Yield the source text of each top-level `{...}` inside a JSON array.
+ * Yield the [start, end) range of each top-level `{...}` inside a JSON array.
  * Non-object elements (strings, numbers, literals) are validated then
  * skipped, matching the legacy whole-parse-then-filter behavior.
  * Throws MalformedJsonArrayError when the array envelope is violated
  * (missing comma, trailing content, unbalanced braces, unterminated input).
  */
-export function* scanTopLevelJsonObjects(text: string): Generator<string, void, void> {
+export function* scanTopLevelJsonObjectRanges(text: string): Generator<JsonObjectRange, void, void> {
   let depth = 0;
   let inString = false;
   let escaped = false;
@@ -70,7 +76,7 @@ export function* scanTopLevelJsonObjects(text: string): Generator<string, void, 
       else if (code === CODE_CLOSE_BRACE) {
         depth--;
         if (depth === 0) {
-          yield text.slice(start, i + 1);
+          yield { start, end: i + 1 };
           start = -1;
           phase = 'sep';
         }

@@ -126,6 +126,28 @@ describe('phraseIndexBuilder', () => {
     expect(ENGLISH_INFLECTABLE_VERBS.has('the')).toBe(false);
   });
 
+  it('produces an identical index from pre-collected multiword terms', async () => {
+    const resourceId = await seedResource([
+      { term: 'take off', definition: 'to remove' },
+      { term: 'kick the bucket', definition: 'to die' },
+      { term: 'hello', definition: 'greeting' },
+      { term: 'take off', definition: 'dup' },
+    ]);
+    const fallback = await buildPhraseIndexForResource(LANG, resourceId);
+    const fallbackBlob = (await getPhraseIndex(LANG, resourceId))!.blob;
+
+    const withTerms = await buildPhraseIndexForResource(LANG, resourceId, [
+      'take off',
+      'kick the bucket',
+    ]);
+    const termsBlob = (await getPhraseIndex(LANG, resourceId))!.blob;
+
+    expect(withTerms.termCount).toBe(fallback.termCount);
+    expect(withTerms.unsupportedCount).toBe(fallback.unsupportedCount);
+    expect(withTerms.unsupportedBreakdown).toEqual(fallback.unsupportedBreakdown);
+    expect(new Uint8Array(termsBlob)).toEqual(new Uint8Array(fallbackBlob));
+  });
+
   it('handles hyphenated and slash-alternative terms', async () => {
     const resourceId = await seedResource([
       { term: 'look up to', definition: 'admire' },
