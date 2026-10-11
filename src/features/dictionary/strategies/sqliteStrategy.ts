@@ -7,12 +7,13 @@
 // A db containing both produces one resource with components
 // {definitions, frequency}; the user's component subset can drop a table.
 //
-// gunzip → sql.js lazy-load → exec SQL → yield entries.
+// gunzip → sql.js lazy-load → prepare + stepped rows → yield entries.
 // sql.js wasm ~1MB lazy fetch from web_accessible_resources.
 // wasm load fail → DatabaseError → orchestrator catch → rollback.
 
 import { BaseImportStrategy, type RawFrequencyEntry, type RawDictionaryEntry, type StrategyOptions } from './baseImportStrategy';
 import { gunzipFile, isGzip, isSqlite } from '../logic/fileDetector';
+import { yieldToEventLoop } from '../logic/yieldToEventLoop';
 import { toCanonicalDefinition } from '../logic/normalize/canonical';
 import { collectEntryComponents } from '../logic/dictionaryComponents';
 import { DatabaseError, ParseError } from '../logic/importErrors';
@@ -26,7 +27,13 @@ interface SqlJsStatic {
 }
 interface Database {
   exec(sql: string): QueryExecResult[];
+  prepare(sql: string): Statement;
   close(): void;
+}
+interface Statement {
+  step(): boolean;
+  getAsObject(): Record<string, unknown>;
+  free(): boolean;
 }
 interface QueryExecResult {
   columns: string[];
@@ -43,6 +50,9 @@ type StoredRow = Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'>;
 
 const isFreqRow = (e: StoredRow): e is Omit<FrequencyEntry, 'id'> => 'frequency' in e;
 
+/** Rows stepped between cooperative yields. */
+const YIELD_EVERY_ROWS = 4000;
+
 /** SQLite strategy — emits every recognized table the schema contains. */
 export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDictionaryEntry, StoredRow> {
   readonly format = 'sqlite' as const;
@@ -55,7 +65,7 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
 
   protected async *parse(): AsyncGenerator<RawFrequencyEntry | RawDictionaryEntry> {
     // 1. Gunzip if needed
-    let dbData: Uint8Array;
+    let dbData: Uint8Array | undefined;
     if (isGzip(this.data)) {
       try {
         dbData = gunzipFile(this.data);
@@ -79,13 +89,15 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
       throw new DatabaseError('Failed to load sql.js wasm.', e);
     }
 
-    // 4. Open database
+    // 4. Open database (sql.js copies the bytes into wasm memory — the
+    //    JS-side buffer is dead weight from here on)
     let db: Database;
     try {
       db = new SQL.Database(dbData);
     } catch (e) {
       throw new DatabaseError('Failed to open SQLite database.', e);
     }
+    dbData = undefined;
 
     try {
       const tables = this.listTables(db);
@@ -131,49 +143,49 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
     return total;
   }
 
-  /** Parse langResourceEntry table → dictionary entries. */
+  /** Parse langResourceEntry table → dictionary entries (stepped, not materialized). */
   private async *parseDictionaryTable(db: Database): AsyncGenerator<RawDictionaryEntry> {
-    let result: QueryExecResult[];
+    let stmt: Statement;
     try {
-      result = db.exec('SELECT term, reading, definition FROM langResourceEntry');
+      stmt = db.prepare('SELECT term, reading, definition FROM langResourceEntry');
     } catch (e) {
       throw new ParseError('SQLite: no langResourceEntry table with term/reading/definition columns.', e);
     }
-    if (result.length === 0) return;
-
-    const { columns, values } = result[0]!;
-    const termIdx = columns.indexOf('term');
-    const readingIdx = columns.indexOf('reading');
-    const defIdx = columns.indexOf('definition');
-
-    for (const row of values) {
-      const term = String(row[termIdx] ?? '');
-      const reading = String(row[readingIdx] ?? term);
-      const definition = String(row[defIdx] ?? '');
-      if (term) yield { term, reading, definition };
+    try {
+      let rows = 0;
+      while (stmt.step()) {
+        const row = stmt.getAsObject();
+        const term = String(row.term ?? '');
+        const reading = String(row.reading ?? term);
+        const definition = String(row.definition ?? '');
+        if (term) yield { term, reading, definition };
+        if (++rows % YIELD_EVERY_ROWS === 0) await yieldToEventLoop();
+      }
+    } finally {
+      stmt.free();
     }
   }
 
-  /** Parse a frequency table → frequency entries. */
+  /** Parse a frequency table → frequency entries (stepped, not materialized). */
   private async *parseFrequencyTable(db: Database, table: string): AsyncGenerator<RawFrequencyEntry> {
-    let result: QueryExecResult[];
+    let stmt: Statement;
     try {
-      result = db.exec(`SELECT term, reading, frequency FROM ${table}`);
+      stmt = db.prepare(`SELECT term, reading, frequency FROM ${table}`);
     } catch (e) {
       throw new ParseError(`SQLite: no ${table} table with term/reading/frequency.`, e);
     }
-    if (!result || result.length === 0) return;
-
-    const { columns, values } = result[0]!;
-    const termIdx = columns.indexOf('term');
-    const readingIdx = columns.indexOf('reading');
-    const freqIdx = columns.indexOf('frequency');
-
-    for (const row of values) {
-      const term = String(row[termIdx] ?? '');
-      const reading = String(row[readingIdx] ?? term);
-      const frequency = Number(row[freqIdx] ?? 0);
-      if (term) yield { term, reading, frequency };
+    try {
+      let rows = 0;
+      while (stmt.step()) {
+        const row = stmt.getAsObject();
+        const term = String(row.term ?? '');
+        const reading = String(row.reading ?? term);
+        const frequency = Number(row.frequency ?? 0);
+        if (term) yield { term, reading, frequency };
+        if (++rows % YIELD_EVERY_ROWS === 0) await yieldToEventLoop();
+      }
+    } finally {
+      stmt.free();
     }
   }
 

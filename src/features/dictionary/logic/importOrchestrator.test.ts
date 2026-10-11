@@ -118,6 +118,26 @@ describe('importOrchestrator', () => {
       const file = makeBytesFile('mixed.zip', zipped);
       await expect(importFile(file, { langCode: LANG })).rejects.toThrow(/import them one at a time/);
     });
+
+    it('hands the sniffed unzip map to the term-bank strategy (no second inflate)', async () => {
+      const fileDetector = await import('@/features/dictionary/logic/fileDetector');
+      const unzipSpy = jest.spyOn(fileDetector, 'unzipAll');
+      try {
+        const zipped = zipSync({
+          'index.json': strToU8(JSON.stringify({ title: 't', revision: '1', format: 3 })),
+          'term_bank_1.json': strToU8(JSON.stringify([['hello', 'hello', 'n', 'n', 0, ['a greeting']]])),
+        });
+        const file = makeBytesFile('dict.zip', zipped);
+        const result = await importFile(file, { langCode: LANG });
+        expect(result.format).toBe('term-bank');
+        expect(result.wordCount).toBe(1);
+        expect(await countDictionaryByResource(LANG, result.resourceId)).toBe(1);
+        // Head sniff + full-data sniff — the strategy must not inflate again.
+        expect(unzipSpy).toHaveBeenCalledTimes(2);
+      } finally {
+        unzipSpy.mockRestore();
+      }
+    });
   });
 
   describe('importFile — entry-object phrase index build (ADR-037 §7.2)', () => {

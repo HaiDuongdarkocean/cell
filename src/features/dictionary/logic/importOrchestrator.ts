@@ -84,9 +84,12 @@ export async function importFile(
   }
 
   // 4b. Zip >1MB can't be sniffed from the head — 'term-bank' is only the
-  //     extension default there. Re-sniff authoritative content on full bytes.
+  //     extension default there. Re-sniff authoritative content on full bytes;
+  //     the inflated map flows on to the strategy so it skips its own pass.
+  let zipFiles: Record<string, Uint8Array> | undefined;
   if (format === 'term-bank' && isZip(data)) {
-    const refined = sniffZipFormat(unzipAll(data));
+    zipFiles = unzipAll(data);
+    const refined = sniffZipFormat(zipFiles);
     if (refined) format = refined;
   }
 
@@ -105,7 +108,7 @@ export async function importFile(
 
   // 6. Execute strategy
   try {
-    const strategy = createStrategy(format, { resourceId, langCode, onProgress, components: options.components }, { data, fileName: file.name });
+    const strategy = createStrategy(format, { resourceId, langCode, onProgress, components: options.components }, { data, fileName: file.name, zipFiles });
     const result = await strategy.execute();
 
     // 7. Build phrase index for entry-object dictionaries (ADR-037 §7.2).

@@ -11,6 +11,7 @@
 
 import { BaseImportStrategy, type RawFrequencyEntry, type RawDictionaryEntry, type StrategyOptions } from './baseImportStrategy';
 import { unzipAll, decodeText } from '../logic/fileDetector';
+import { yieldToEventLoop } from '../logic/yieldToEventLoop';
 import { toCanonicalDefinition } from '../logic/normalize/canonical';
 import { collectEntryComponents } from '../logic/dictionaryComponents';
 import { ParseError, CorruptedFileError } from '../logic/importErrors';
@@ -21,6 +22,9 @@ import type { FrequencyEntry, DictionaryEntry } from '@/entities/dictionary';
 export interface TermBankStrategyOptions {
   readonly data: Uint8Array;
   readonly fileName: string;
+  /** Pre-inflated zip entries (importOrchestrator already unzipped for the
+   *  format sniff) — reused instead of inflating `data` a second time. */
+  readonly zipFiles?: Record<string, Uint8Array>;
 }
 
 /** Bank index.json structure. */
@@ -44,18 +48,25 @@ const isFreqRow = (e: StoredRow): e is Omit<FrequencyEntry, 'id'> => 'frequency'
 export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDictionaryEntry, StoredRow> {
   readonly format = 'term-bank' as const;
   private readonly data: Uint8Array;
+  private readonly zipFiles?: Record<string, Uint8Array>;
+  private attemptedTotal = 0;
 
   constructor(options: StrategyOptions, fileData: TermBankStrategyOptions) {
     super(options);
     this.data = fileData.data;
+    this.zipFiles = fileData.zipFiles;
   }
 
   protected async *parse(): AsyncGenerator<RawFrequencyEntry | RawDictionaryEntry> {
     let files: Record<string, Uint8Array>;
-    try {
-      files = unzipAll(this.data);
-    } catch (e) {
-      throw new CorruptedFileError('Failed to unzip term-bank file.', e);
+    if (this.zipFiles) {
+      files = this.zipFiles;
+    } else {
+      try {
+        files = unzipAll(this.data);
+      } catch (e) {
+        throw new CorruptedFileError('Failed to unzip term-bank file.', e);
+      }
     }
 
     // Parse index.json (validate structure)
@@ -77,31 +88,15 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
       throw new ParseError('term-bank format: no term_bank_*.json or term_meta_bank_*.json files found.');
     }
 
-    this.reportTotal(this.countBankEntries(files, emitDict, emitFreq));
-
     if (emitDict) yield* this.parseTermBanks(files);
     if (emitFreq) yield* this.parseTermMetaBanks(files);
   }
 
-  /** Exact attempted-entry count across the emitted bank files. */
-  private countBankEntries(files: Record<string, Uint8Array>, emitDict: boolean, emitFreq: boolean): number {
-    let total = 0;
-    for (const path of Object.keys(files)) {
-      const isDictBank = path.includes('term_bank') && !path.includes('term_meta_bank');
-      const isFreqBank = path.includes('term_meta_bank');
-      if ((isDictBank && !emitDict) || (isFreqBank && !emitFreq)) continue;
-      if (!isDictBank && !isFreqBank) continue;
-      const parsed = JSON.parse(decodeText(files[path]!));
-      if (!Array.isArray(parsed)) continue;
-      if (isDictBank) {
-        total += parsed.length;
-      } else {
-        for (const entry of parsed) {
-          if (entry?.[1] === 'freq') total++;
-        }
-      }
-    }
-    return total;
+  /** Grow the attempted-entry total as each bank lands (progress total is
+   *  cumulative — it grows mid-import instead of a second parse pass). */
+  private addToAttemptedTotal(count: number): void {
+    this.attemptedTotal += count;
+    this.batchProcessor.setTotal(this.attemptedTotal);
   }
 
   /** Parse term_bank_*.json → dictionary entries. */
@@ -111,6 +106,7 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
       .sort();
 
     for (const bankPath of bankPaths) {
+      await yieldToEventLoop();
       let entries: TermBankEntry[];
       try {
         entries = JSON.parse(decodeText(files[bankPath]!));
@@ -120,6 +116,7 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
       if (!Array.isArray(entries)) {
         throw new ParseError(`term-bank format: ${bankPath} is not an array.`);
       }
+      this.addToAttemptedTotal(entries.length);
       for (const entry of entries) {
         const [expression, reading, definitionTags, rules, , definitions] = entry;
         yield {
@@ -140,6 +137,7 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
       .sort();
 
     for (const bankPath of bankPaths) {
+      await yieldToEventLoop();
       let entries: TermMetaEntry[];
       try {
         entries = JSON.parse(decodeText(files[bankPath]!));
@@ -152,6 +150,7 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
       for (const entry of entries) {
         const [term, type, meta] = entry;
         if (type !== 'freq') continue;
+        this.addToAttemptedTotal(1);
         let reading = term;
         let frequency = 0;
         if (meta && typeof meta === 'object') {
