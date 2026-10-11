@@ -735,7 +735,9 @@ User click Download All
   → subtitle: lookup video cùng tabId → resolveFilenameBase(filenameSource, videoTitle, videoTabUrl)
     → buildSubtitleFileName(base, language, ext) → "<videoBase>.<lang>.srt"
     → fallback (no video): resolveFilenameBase(filenameSource, undefined, subtitleUrl) → buildSubtitleFileName
-  → fetch segments → OPFS → convert TS→MP4 → save
+  → m3u8: fetch segments → OPFS → convert TS→MP4 → save
+  → mp4: stream response.body → OPFS input.mp4 → saveOpfsFile (Blob URL callback,
+    data-URL fallback) — không buffer toàn file trong SW
   → broadcast DOWNLOAD_PROGRESS_UPDATE
   → popup useDownloadProgress → addDownload/updateDownload
   → DownloadCard render progress (two-phase: downloadProgress + convertProgress)
