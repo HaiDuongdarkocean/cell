@@ -113,13 +113,14 @@ export class JsonFrequencyStrategy extends BaseFrequencyStrategy {
       if (seen.has(key)) continue;
       seen.add(key);
       const total = typeof row.total === 'number' && Number.isFinite(row.total) ? row.total : undefined;
+      const genres = readGenres(row.genres);
       yield {
         term,
         reading: term,
         frequency: rank,
         ...(pos ? { pos } : {}),
         ...(total != null ? { total } : {}),
-        ...(readGenres(row.genres) ? { genres: readGenres(row.genres) } : {}),
+        ...(genres ? { genres } : {}),
       };
     }
   }
