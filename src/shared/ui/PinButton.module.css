@@ -1,5 +1,5 @@
 /* === PinButton atom — controlled pin/unpin toggle (Extension group) ===
-   Consumes tokens only — no raw hex/radius. Touch target 40px desktop / 44px mobile. */
+   Consumes tokens only — no raw hex/radius. Touch target 40px. */
 
 .pinBtn {
   display: inline-flex;

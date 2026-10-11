@@ -1,5 +1,5 @@
 /* === CollapseButton atom — controlled expand/collapse with chevron rotation (Extension group) ===
-   Consumes tokens only — no raw hex/radius. Touch target 40px desktop / 44px mobile. */
+   Consumes tokens only — no raw hex/radius. Touch target 40px. */
 
 .collapseBtn {
   display: inline-flex;

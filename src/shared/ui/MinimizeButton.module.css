@@ -1,5 +1,5 @@
 /* === MinimizeButton atom — icon-only minimize button (Extension group) ===
-   Consumes tokens only — no raw hex/radius. Touch target 40px desktop / 44px mobile. */
+   Consumes tokens only — no raw hex/radius. Touch target 40px. */
 
 .minimizeBtn {
   display: inline-flex;

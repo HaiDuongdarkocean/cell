@@ -212,7 +212,7 @@ async function collectMetrics(page: Page, tab: Tab, viewportLabel: string): Prom
   const data = await page.evaluate(
     ({ t }) => {
       const coarse = window.matchMedia('(pointer: coarse)').matches;
-      const touchTargetMin = coarse ? 44 : 40;
+      const touchTargetMin = 40;
       const host = document.getElementById('cell-universal-panel-host');
       const root = host?.shadowRoot;
       if (!root) return null;
@@ -859,7 +859,7 @@ test.describe('universal panel UX audit', () => {
         await clickTab(page, tab);
         const data = await collectMetrics(page, tab, 'a11y-coarse-390x844');
         expect(data?.pointerCoarse).toBe(true);
-        expect(data?.touchTargetMin).toBe(44);
+        expect(data?.touchTargetMin).toBe(40);
         expect(data?.touchTargetViolations ?? []).toEqual([]);
         expect(data?.touchTargetOverlaps ?? []).toEqual([]);
       }

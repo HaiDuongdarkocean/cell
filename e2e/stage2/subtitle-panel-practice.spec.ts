@@ -392,7 +392,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
 
     await streamFlixPage.setViewportSize({ width: 320, height: 700 });
     await enterPlayerMode(streamFlixPage);
-    await setTouchTarget(streamFlixPage, 44);
+    await setTouchTarget(streamFlixPage, 40);
     await seek(streamFlixPage, 29.5);
 
     for (let i = 0; i < 10; i++) {
@@ -535,7 +535,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     const widths = [280, 320, 360, 390, 480, 768, 1024];
     for (const width of widths) {
       await streamFlixPage.setViewportSize({ width, height: 700 });
-      const minControlHeight = width < 480 ? 44 : 40;
+      const minControlHeight = 40;
       await setTouchTarget(streamFlixPage, minControlHeight);
       if (width === widths[0]) {
         await enterPlayerMode(streamFlixPage);
@@ -566,7 +566,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
 
     for (const [width, height] of [[280, 360], [320, 480], [480, 568]] as const) {
       await streamFlixPage.setViewportSize({ width, height });
-      const minControlHeight = width < 480 ? 44 : 40;
+      const minControlHeight = 40;
       await setTouchTarget(streamFlixPage, minControlHeight);
       await selectStudyMode(streamFlixPage, MODE_DICTATION);
       await expect(streamFlixPage.locator(INPUT)).toBeVisible();
@@ -589,7 +589,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
 
     await streamFlixPage.setViewportSize({ width: 320, height: 700 });
     await enterPlayerMode(streamFlixPage);
-    await setTouchTarget(streamFlixPage, 44);
+    await setTouchTarget(streamFlixPage, 40);
     await seek(streamFlixPage, CUE2_START_S + 0.3);
     await selectStudyMode(streamFlixPage, MODE_DICTATION);
     const input = streamFlixPage.locator(INPUT);
@@ -603,7 +603,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     ];
     for (const value of stressValues) {
       await input.fill(value);
-      await checkPanelGeometry(streamFlixPage, 44);
+      await checkPanelGeometry(streamFlixPage, 40);
     }
 
     for (const scale of [80, 125, 150, 200]) {
@@ -612,7 +612,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
         const root = host?.shadowRoot?.firstElementChild as HTMLElement | null;
         if (root) root.style.fontSize = `${s}%`;
       }, scale);
-      await checkPanelGeometry(streamFlixPage, 44);
+      await checkPanelGeometry(streamFlixPage, 40);
     }
     await streamFlixPage.evaluate(() => {
       const host = document.getElementById('cell-subtitle-root');

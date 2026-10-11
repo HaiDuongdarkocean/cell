@@ -48,7 +48,7 @@
 .slider {
   width: var(--space-12);
   /* Compact slider: no min-height; track + padding fit the thumb.
-   * Ponytail: below the design-system --touch-target (40/44px); if tap
+   * Ponytail: below the design-system --touch-target (40px); if tap
    * issues arise, bump padding or add an invisible hit-area wrapper. */
   display: flex;
   align-items: center;

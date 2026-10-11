@@ -1,5 +1,5 @@
 /* === InfoButton atom — icon-only info button (Extension group) ===
-   Consumes tokens only — no raw hex/radius. Touch target 40px desktop / 44px mobile. */
+   Consumes tokens only — no raw hex/radius. Touch target 40px. */
 
 .infoBtn {
   display: inline-flex;

@@ -1,5 +1,5 @@
 /* === MaximizeButton atom — controlled maximize/restore toggle (Extension group) ===
-   Consumes tokens only — no raw hex/radius. Touch target 40px desktop / 44px mobile. */
+   Consumes tokens only — no raw hex/radius. Touch target 40px. */
 
 .maximizeBtn {
   display: inline-flex;
