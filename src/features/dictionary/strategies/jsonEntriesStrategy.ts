@@ -10,7 +10,7 @@ import { selectZipDataJson } from '../logic/formatDetector';
 import { ParseError } from '../logic/importErrors';
 import { scanTopLevelJsonObjectRanges, MalformedJsonArrayError } from '../logic/jsonObjectScanner';
 import type { JsonObjectRange } from '../logic/jsonObjectScanner';
-import { yieldToEventLoop } from '../logic/yieldToEventLoop';
+import { createYieldChecker } from '../logic/yieldToEventLoop';
 import { bulkInsertDictionaryEntries } from '../repositories/resourceEntryRepository';
 import type { DictionaryEntry, SenseBlock, RelatedEntry, InflectionGroup, EtymologyBlock, WordFamily, WordNetInfo, PronunciationAccent } from '@/entities/dictionary';
 
@@ -43,9 +43,6 @@ interface JsonEntry {
   readonly derivedTerms?: string[];
   readonly anagrams?: string[];
 }
-
-/** Objects scanned/parsed between cooperative yields. */
-const YIELD_EVERY_OBJECTS = 2000;
 
 const MULTIWORD_RE = /\s/;
 
@@ -104,11 +101,12 @@ export class JsonEntriesStrategy extends BaseDictionaryStrategy {
 
     // One envelope-validating scan collects exact ranges — the count is
     // known upfront (exact total) without a second charCodeAt pass.
+    const maybeYield = createYieldChecker();
     const ranges: JsonObjectRange[] = [];
     try {
       for (const range of scanTopLevelJsonObjectRanges(trimmed)) {
         ranges.push(range);
-        if (ranges.length % YIELD_EVERY_OBJECTS === 0) await yieldToEventLoop();
+        await maybeYield();
       }
     } catch (e) {
       if (e instanceof MalformedJsonArrayError) {
@@ -118,9 +116,8 @@ export class JsonEntriesStrategy extends BaseDictionaryStrategy {
     }
     this.reportTotal(ranges.length);
 
-    let parsed = 0;
     for (const { start, end } of ranges) {
-      if (++parsed % YIELD_EVERY_OBJECTS === 0) await yieldToEventLoop();
+      await maybeYield();
       let entry: JsonEntry;
       try {
         entry = JSON.parse(trimmed.slice(start, end)) as JsonEntry;
