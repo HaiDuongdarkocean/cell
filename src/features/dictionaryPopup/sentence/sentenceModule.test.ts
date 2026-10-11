@@ -306,3 +306,97 @@ describe('resolveWordAtPoint — strict word-char lookup', () => {
     expect(got).toBeNull();
   });
 });
+
+// Non-content text — icon-font ligatures and decorative text nodes are real
+// text nodes but not readable words ("pause" the glyph ≠ "pause" the word).
+// Guard: aria-hidden / translate="no" / .notranslate ancestors, or an icon
+// font on the text node's element. Control elements themselves are NOT
+// excluded — real labels inside buttons/chips stay resolvable.
+describe('resolveWordAtPoint — non-content text exclusion', () => {
+  let originalCaretRange: typeof document.caretRangeFromPoint;
+
+  beforeEach(() => {
+    originalCaretRange = document.caretRangeFromPoint;
+  });
+
+  afterEach(() => {
+    document.caretRangeFromPoint = originalCaretRange;
+  });
+
+  function mockCaretAt(node: Text, offset: number): void {
+    const r = document.createRange();
+    r.setStart(node, offset);
+    r.setEnd(node, offset);
+    document.caretRangeFromPoint = jest.fn(() => r) as typeof document.caretRangeFromPoint;
+  }
+
+  function caretText(html: string, selector: string): Text {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = html;
+    document.body.appendChild(wrap);
+    return wrap.querySelector(selector)!.firstChild as Text;
+  }
+
+  it('icon ligature inside aria-hidden element does not resolve', () => {
+    const textNode = caretText(
+      '<button><span class="mat-button-wrapper"><i aria-hidden="true" class="mat-icon">pause</i></span></button>',
+      'i',
+    );
+    mockCaretAt(textNode, 1);
+    expect(resolveWordAtPoint(10, 10)).toBeNull();
+  });
+
+  it('text inside .notranslate element does not resolve', () => {
+    const textNode = caretText('<button><span class="notranslate">pause</span></button>', 'span');
+    mockCaretAt(textNode, 1);
+    expect(resolveWordAtPoint(10, 10)).toBeNull();
+  });
+
+  it('text inside translate="no" element does not resolve', () => {
+    const textNode = caretText('<div translate="no"><span>pause</span></div>', 'span');
+    mockCaretAt(textNode, 1);
+    expect(resolveWordAtPoint(10, 10)).toBeNull();
+  });
+
+  it('icon-font text without markers does not resolve', () => {
+    const textNode = caretText(
+      '<button><i style="font-family: \'Material Icons\'">pause</i></button>',
+      'i',
+    );
+    mockCaretAt(textNode, 1);
+    expect(resolveWordAtPoint(10, 10)).toBeNull();
+  });
+
+  it('aria-hidden marker on a distant ancestor still blocks', () => {
+    const textNode = caretText(
+      '<div aria-hidden="true"><div><span><i>pause</i></span></div></div>',
+      'i',
+    );
+    mockCaretAt(textNode, 1);
+    expect(resolveWordAtPoint(10, 10)).toBeNull();
+  });
+
+  it('real label text inside <button> still resolves', () => {
+    const textNode = caretText('<button><span>Sign in</span></button>', 'span');
+    mockCaretAt(textNode, 1);
+    const got = resolveWordAtPoint(10, 10);
+    expect(got).not.toBeNull();
+    expect(got!.ctx.term).toBe('Sign');
+  });
+
+  it('text inside a role="option" chip still resolves', () => {
+    const textNode = caretText('<div role="option">Indonesian</div>', 'div');
+    mockCaretAt(textNode, 2);
+    const got = resolveWordAtPoint(10, 10);
+    expect(got).not.toBeNull();
+    expect(got!.ctx.term).toBe('Indonesian');
+  });
+
+  it('link text still resolves', () => {
+    const textNode = caretText('<p>see <a href="#">article</a> now</p>', 'a');
+    mockCaretAt(textNode, 2);
+    const got = resolveWordAtPoint(10, 10);
+    expect(got).not.toBeNull();
+    expect(got!.ctx.term).toBe('article');
+  });
+});

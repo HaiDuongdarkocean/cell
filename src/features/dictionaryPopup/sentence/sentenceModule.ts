@@ -335,6 +335,30 @@ function resolveShadowTextNode(x: number, y: number): Range | null {
   return null;
 }
 
+// Non-content text: icon-font ligatures and site-marked decorative text are
+// real text nodes but not readable words — `<mat-icon>pause</mat-icon>` resolves
+// "pause" the glyph, not the word. Signals: explicit markers (aria-hidden,
+// translate="no", .notranslate) or an icon font on the text node's element.
+// Real labels inside controls (button "Sign in", mat-chip "Indonesian") carry
+// none of these markers, so they keep resolving.
+const NON_CONTENT_ANCESTOR_SELECTOR = '[aria-hidden="true"],[translate="no"],.notranslate';
+const ICON_FONT_RE = /material\s*(icons|symbols)|font\s?awesome|iconfont|glyphicons|icomoon|dashicons|ionicons|bootstrap-icons|remix\s?icon/i;
+
+function isNonContentTextNode(node: Node): boolean {
+  const fontEl = node instanceof Element ? node : node.parentElement;
+  let el: Element | null = fontEl;
+  while (el) {
+    if (el.matches(NON_CONTENT_ANCESTOR_SELECTOR)) return true;
+    if (el.parentElement) {
+      el = el.parentElement;
+      continue;
+    }
+    const root = el.getRootNode();
+    el = root instanceof ShadowRoot ? root.host : null;
+  }
+  return !!fontEl && ICON_FONT_RE.test(getComputedStyle(fontEl).fontFamily);
+}
+
 /**
  * Resolve the word at a host-page point (x, y). Only resolves when the caret
  * lands directly on a word character — a click on whitespace, punctuation, or
@@ -360,6 +384,7 @@ export function resolveWordAtPoint(
   if (node.nodeType !== Node.TEXT_NODE) return null;
 
   const textNode = node as Text;
+  if (isNonContentTextNode(textNode)) return null;
   const ctx = extractSentenceContext(textNode, caretRange.startOffset);
   if (!ctx) return null;
 
