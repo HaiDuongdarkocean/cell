@@ -42,18 +42,32 @@ describe('Menu', () => {
     scroller.remove();
   });
 
-  it('shadow DOM: closes when an element inside the shadow root scrolls', () => {
-    const { shadow, container, host } = renderInShadow();
+  it('shadow DOM: closes when the trigger shadow-root scroller scrolls', () => {
+    const { shadow, host } = renderInShadow();
     const scroller = document.createElement('div');
     shadow.appendChild(scroller);
 
-    render(<Harness />, { container });
+    render(<Harness />, { container: scroller });
     expect(shadow.querySelector('[role="menu"]')).not.toBeNull();
 
     // scroll is non-composed — it stops at the shadow boundary, so a window
     // listener never sees it. The menu must listen on the trigger's root.
     fireEvent.scroll(scroller);
     expect(shadow.querySelector('[role="menu"]')).toBeNull();
+
+    host.remove();
+  });
+
+  it('stays open when a sibling subtree scrolls — the trigger does not move', () => {
+    const { shadow, container, host } = renderInShadow();
+    const sibling = document.createElement('div');
+    shadow.appendChild(sibling);
+
+    render(<Harness />, { container });
+    expect(shadow.querySelector('[role="menu"]')).not.toBeNull();
+
+    fireEvent.scroll(sibling);
+    expect(shadow.querySelector('[role="menu"]')).not.toBeNull();
 
     host.remove();
   });

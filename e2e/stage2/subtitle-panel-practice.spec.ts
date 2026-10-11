@@ -7,10 +7,14 @@ const FOOTER = '[data-cell-id="practice-footer"]';
 const INPUT = '[data-cell-id="practice-input"]';
 const CLOZE_BLANK = '[data-cell-id="cloze-blank"]';
 const FEEDBACK = '[data-cell-id="practice-feedback"]';
+const MORE_BTN = '[data-cell-id="subtitle-panel-more-btn"]';
+const STUDY_MENU = '[data-cell-id="study-mode-action-bar"]';
 const MODE_OFF = '[data-cell-id="study-mode-normal"]';
 const MODE_DICTATION = '[data-cell-id="study-mode-dictation"]';
 const MODE_CLOZE = '[data-cell-id="study-mode-cloze"]';
-const SPEED_VALUE = '[data-cell-id="speed-value"], [data-cell-id="speed-value-circle"]';
+const SPEED_VALUE = '[data-cell-id="speed-value"]';
+const SPEED_INC = '[data-cell-id="speed-inc"]';
+const SPEED_DEC = '[data-cell-id="speed-dec"]';
 
 const CUE2_START_S = 20.2;
 const CUE2_NEXT_START_S = 29.266;
@@ -53,18 +57,29 @@ async function enterPlayerMode(page: Page): Promise<void> {
   });
 }
 
+async function openStudyMenu(page: Page): Promise<void> {
+  const menu = page.locator(STUDY_MENU);
+  if ((await menu.count()) > 0) return;
+  await page.locator(MORE_BTN).click();
+  await expect(menu).toBeVisible();
+}
+
 async function selectSpeed(page: Page, label: string): Promise<void> {
-  await page.locator(SPEED_VALUE).click();
-  const listbox = page.getByRole('listbox');
-  await expect(listbox).toBeVisible();
-  await page.getByRole('option', { name: label }).dispatchEvent('click');
-  await expect(listbox).toHaveCount(0);
+  await openStudyMenu(page);
+  const value = page.locator(`${STUDY_MENU} ${SPEED_VALUE}`);
+  const target = parseFloat(label);
+  for (let i = 0; i < 30; i++) {
+    const current = parseFloat((await value.textContent()) ?? '');
+    if (current === target) return;
+    await page.locator(`${STUDY_MENU} ${current < target ? SPEED_INC : SPEED_DEC}`).click();
+  }
+  throw new Error(`could not reach speed ${label}`);
 }
 
 async function selectStudyMode(page: Page, selector: string): Promise<void> {
-  const locator = page.locator(selector);
-  await locator.scrollIntoViewIfNeeded();
-  await locator.dispatchEvent('click');
+  await openStudyMenu(page);
+  await page.locator(selector).dispatchEvent('click');
+  await expect(page.locator(STUDY_MENU)).toHaveCount(0);
 }
 
 interface GeometryReport {
@@ -140,11 +155,8 @@ async function checkPanelGeometry(page: Page, minControlHeight: number, label = 
     if (panel.scrollWidth > panel.clientWidth + 1) violations.push('panel has horizontal overflow');
     const descendants: Element[] = [];
     collectDeep(panel, descendants);
-    const isScrollTrackContent = (element: Element): boolean =>
-      element.closest('[data-cell-id="study-mode-scroll-track"]') !== null;
     for (const element of descendants) {
       if (!isRendered(element)) continue;
-      if (isScrollTrackContent(element)) continue;
       const rect = element.getBoundingClientRect();
       if (rect.right > panelRect.right + 1 || rect.left < panelRect.left - 1) {
         violations.push(`horizontal escape: ${elementName(element)}`);
@@ -155,7 +167,7 @@ async function checkPanelGeometry(page: Page, minControlHeight: number, label = 
       }
     }
     const criticalSelectors = [
-      '[data-cell-id="study-mode-action-bar"]',
+      '[data-cell-id="subtitle-panel-more-btn"]',
       '[data-cell-id="cue-list-scroll"]',
       '[data-cell-id="practice-active-cue"]',
       '[data-cell-id="practice-footer"]',
@@ -163,7 +175,6 @@ async function checkPanelGeometry(page: Page, minControlHeight: number, label = 
       '[data-cell-id="practice-previous"]',
       '[data-cell-id="practice-replay"]',
       '[data-cell-id="practice-next"]',
-      '[data-cell-id="speed-pill"], [data-cell-id="speed-value-circle"]',
     ];
     for (const selector of criticalSelectors) {
       const element = findDeep(panel, selector);
@@ -173,17 +184,11 @@ async function checkPanelGeometry(page: Page, minControlHeight: number, label = 
       const element = findDeep(panel, selector);
       return element && isRendered(element) ? element.getBoundingClientRect() : null;
     };
-    const header = rectOf('[data-cell-id="subtitle-panel-header"]');
-    const actionBar = rectOf('[data-cell-id="study-mode-action-bar"]');
     const list = rectOf('[data-cell-id="cue-list-scroll"]');
     const footer = rectOf('[data-cell-id="practice-footer"]');
-    if (header && actionBar && header.bottom > actionBar.top + 1) violations.push('header overlaps action bar');
-    if (actionBar && list && actionBar.bottom > list.top + 1) violations.push('action bar overlaps list');
     if (list && footer && list.bottom > footer.top + 1) violations.push('list overlaps footer');
     const controls = [
-      'study-mode-dictation',
-      'study-mode-cloze',
-      'study-mode-normal',
+      'subtitle-panel-more-btn',
       'practice-previous',
       'practice-replay',
       'practice-next',
@@ -233,10 +238,12 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     await expect(
       streamFlixPage.locator(`${PRACTICE}[data-practice-mode="dictation"]`),
     ).toBeVisible();
+    await openStudyMenu(streamFlixPage);
     await expect(streamFlixPage.locator(MODE_DICTATION)).toHaveAttribute(
-      'aria-selected',
+      'aria-checked',
       'true',
     );
+    await streamFlixPage.keyboard.press('Escape');
     const input = streamFlixPage.locator(INPUT);
     await expect(input).toBeVisible();
     await expect(streamFlixPage.locator(`${FOOTER} ${INPUT}`)).toBeVisible();
@@ -355,10 +362,12 @@ test.describe('Stage 2: Subtitle panel practice', () => {
       await expect(
         streamFlixPage.locator(`${PRACTICE}[data-practice-mode="cloze"]`),
       ).toBeVisible();
+      await openStudyMenu(streamFlixPage);
       await expect(streamFlixPage.locator(MODE_DICTATION)).toHaveAttribute(
-        'aria-selected',
+        'aria-checked',
         'false',
       );
+      await streamFlixPage.keyboard.press('Escape');
       await selectStudyMode(streamFlixPage, MODE_OFF);
       await expect(streamFlixPage.locator(PRACTICE)).toHaveCount(0);
     }
@@ -437,10 +446,12 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     });
 
     await enterPlayerMode(streamFlixPage);
+    await openStudyMenu(streamFlixPage);
     await expect(streamFlixPage.locator(MODE_DICTATION)).toHaveAttribute(
-      'aria-selected',
+      'aria-checked',
       'true',
     );
+    await streamFlixPage.keyboard.press('Escape');
     await seek(streamFlixPage, CUE2_START_S + 0.3);
     await expect(
       streamFlixPage.locator(`${PRACTICE}[data-practice-mode="dictation"]`),

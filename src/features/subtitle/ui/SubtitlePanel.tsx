@@ -23,7 +23,6 @@ import { onWordStatusChanged, onWordStatusRemoved } from '@/features/dictionary'
 import { languageMatches } from '@/shared/config/languageRegistry';
 import { CueList, type CueListTokenize } from './CueList';
 import { PracticeOptions, SubtitlePracticeSession } from '@/features/studyModes';
-import { StudyModeActionBar } from '@/features/studyModes';
 import type { SubtitlePracticeMode } from '@/features/studyModes';
 import {
   countByMode,
@@ -36,6 +35,11 @@ import { CueRecommendFab, cueFilterModeLabel } from './CueRecommendFab';
 import { applyCleanupRules, resolveCleanupRules } from '@/entities/studyMode';
 import { markCueSeekIntent } from '@/shared/lib/cueSeekIntent';
 import { loadStudyModeState, useStudyModeStore } from '@/features/studyModes';
+import { PRESETS } from '@/entities/studyMode/constants';
+import { PLAYBACK_SPEEDS } from '@/entities/studyMode/types';
+import { Menu, MenuItem, MenuSeparator } from '@/shared/ui/Menu';
+import { StepperSection, StepperValue } from '@/shared/ui/StepperSection';
+import { Icon } from '@/shared/icons/Icon';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { t } from '@/shared/i18n';
@@ -170,6 +174,8 @@ function SubtitlePanelImpl({
 
   const [filterMode, setFilterMode] = useState<CueFilterMode>('all');
   const [lastGood, setLastGood] = useState<LastGoodResolution | null>(null);
+  const [studyMenuOpen, setStudyMenuOpen] = useState(false);
+  const moreBtnRef = useRef<HTMLButtonElement>(null);
 
   const cueSetKey = useMemo(() => {
     if (!tokenize || visibleCues.length === 0) return null;
@@ -275,6 +281,15 @@ function SubtitlePanelImpl({
   }, [tokenize]);
 
   const showTabs = hasPlaylist;
+
+  const studyModes = useMemo(() => [...PRESETS, ...customModes], [customModes]);
+  const resolvedModeId = activeModeId ?? (practiceMode === 'off' ? 'normal' : practiceMode);
+  const speedIndex = Math.max(PLAYBACK_SPEEDS.indexOf(playbackSpeed), 0);
+  const stepPlaybackSpeed = (delta: number): void => {
+    const next = PLAYBACK_SPEEDS[speedIndex + delta];
+    if (!onPlaybackSpeedChange || next === undefined) return;
+    onPlaybackSpeedChange(next);
+  };
 
   const prevCueCountRef = useRef(visibleCues.length);
   useEffect(() => {
@@ -451,16 +466,65 @@ function SubtitlePanelImpl({
         )}
         <span className={styles.title}>{filename ?? t('subtitle.panel.title')}</span>
         {mediaStats && <ComprehensionBadge stats={mediaStats} />}
+        {onStudyModeChange && (
+          <Button
+            ref={moreBtnRef}
+            shape="circle"
+            variant="transparent"
+            size="sm"
+            aria-label={t('studyModes.actionBar.aria')}
+            aria-haspopup="menu"
+            aria-expanded={studyMenuOpen}
+            data-cell-id="subtitle-panel-more-btn"
+            onClick={() => setStudyMenuOpen((v) => !v)}
+          >
+            <Icon name="ellipsis" />
+          </Button>
+        )}
       </div>
       )}
       {!pmMobile && onStudyModeChange ? (
-        <StudyModeActionBar
-          activeModeId={activeModeId ?? (practiceMode === 'off' ? 'normal' : practiceMode)}
-          customModes={customModes}
-          playbackSpeed={playbackSpeed}
-          onModeChange={onStudyModeChange}
-          onSpeedChange={onPlaybackSpeedChange ?? noop}
-        />
+        <Menu
+          open={studyMenuOpen}
+          onClose={() => setStudyMenuOpen(false)}
+          triggerRef={moreBtnRef}
+          ariaLabel={t('studyModes.actionBar.aria')}
+          align="right"
+          data-cell-id="study-mode-action-bar"
+        >
+          {studyModes.map((mode) => (
+            <MenuItem
+              key={mode.id}
+              radio
+              icon={<Icon name={mode.icon} />}
+              selected={resolvedModeId === mode.id}
+              data-cell-id={`study-mode-${mode.id}`}
+              onSelect={() => {
+                onStudyModeChange(mode.id);
+                setStudyMenuOpen(false);
+              }}
+            >
+              {mode.titleKey ? t(mode.titleKey) : mode.title}
+            </MenuItem>
+          ))}
+          <MenuSeparator />
+          <StepperSection
+            label={t('studyModes.speed.aria')}
+            dataCellId="speed-stepper"
+            decreaseLabel={<Icon name="minus" />}
+            increaseLabel={<Icon name="plus" />}
+            decreaseAriaLabel={t('studyModes.speed.decrease', [String(playbackSpeed)])}
+            increaseAriaLabel={t('studyModes.speed.increase', [String(playbackSpeed)])}
+            decreaseDisabled={speedIndex <= 0}
+            increaseDisabled={speedIndex >= PLAYBACK_SPEEDS.length - 1}
+            decreaseDataCellId="speed-dec"
+            increaseDataCellId="speed-inc"
+            onDecrease={() => stepPlaybackSpeed(-1)}
+            onIncrease={() => stepPlaybackSpeed(1)}
+          >
+            <StepperValue dataCellId="speed-value">{`${playbackSpeed}×`}</StepperValue>
+          </StepperSection>
+        </Menu>
       ) : !pmMobile && onPracticeModeChange ? (
         <PracticeOptions
           mode={practiceMode}

@@ -4,6 +4,15 @@ import { test } from '../fixtures/cellEnvironment.fixture';
 const WRAPPER = '[data-cell-split-view="wrapper"]';
 const PANEL = '[data-cell-split-view="panel"]';
 const HANDLE = '[data-cell-split-view="handle"]';
+// Player Mode renders the same data-cell-split-view contract INSIDE the
+// subtitle shadow root, and Playwright locators pierce shadow — assertions
+// about page-DOM split-view chrome must query the light DOM directly.
+const lightDomSplitCount = (page: import('@playwright/test').Page) =>
+  page.evaluate(() => document.querySelectorAll('[data-cell-split-view]').length);
+const lightDomWrapperCount = (page: import('@playwright/test').Page) =>
+  page.evaluate(
+    () => document.querySelectorAll('[data-cell-split-view="wrapper"]').length,
+  );
 const VIDEO = '#player-wrapper video';
 const CUE_ITEM = '[data-cell-id="cue-item"]';
 const CUE_LIST = '[data-cell-id="cue-list-scroll"]';
@@ -113,7 +122,7 @@ test.describe('Stage 2: Split View edge — player mode interplay', () => {
 
     await streamFlixPage.keyboard.press('g');
     await streamFlixPage.waitForTimeout(1500);
-    expect(await streamFlixPage.locator(WRAPPER).count()).toBe(0);
+    expect(await lightDomWrapperCount(streamFlixPage)).toBe(0);
 
     await streamFlixPage.keyboard.press('g');
     try {
@@ -132,7 +141,7 @@ test.describe('Stage 2: Split View edge — player mode interplay', () => {
     await streamFlixPage.waitForTimeout(1200);
     await streamFlixPage.keyboard.press('t');
     await streamFlixPage.waitForTimeout(800);
-    expect(await streamFlixPage.locator('[data-cell-split-view]').count()).toBe(0);
+    expect(await lightDomSplitCount(streamFlixPage)).toBe(0);
     await streamFlixPage.keyboard.press('g');
   });
 
@@ -153,6 +162,53 @@ test.describe('Stage 2: Split View edge — player mode interplay', () => {
 });
 
 test.describe('Stage 2: Split View edge — layout integrity', () => {
+  test('SV-62: wrapper holds only stage + panel; resize handle is an invisible panel-edge strip', async ({
+    streamFlixPage,
+  }) => {
+    await openSplitView(streamFlixPage);
+
+    // AC-1.1 DOM contract: the wrapper is a clean two-child row — the resize
+    // affordance is a feature of the panel edge, not a visible divider bar.
+    const wrapperChildren = await streamFlixPage
+      .locator(WRAPPER)
+      .evaluate((el) =>
+        Array.from(el.children).map((c) => c.getAttribute('data-cell-split-view')),
+      );
+    expect(wrapperChildren).toEqual(['stage', 'panel']);
+
+    // The handle lives inside the panel shadow at the left edge: finger-sized
+    // hit zone, col-resize cursor, no painted surface.
+    const handleInfo = await streamFlixPage.locator(PANEL).evaluate((el) => {
+      const h = el.shadowRoot?.querySelector('[data-cell-split-view="handle"]');
+      if (!h) return null;
+      const r = h.getBoundingClientRect();
+      const cs = getComputedStyle(h);
+      return {
+        offsetLeft: r.left - el.getBoundingClientRect().left,
+        width: r.width,
+        cursor: cs.cursor,
+        background: cs.backgroundColor,
+      };
+    });
+    expect(handleInfo).not.toBeNull();
+    expect(handleInfo!.offsetLeft).toBeLessThanOrEqual(0.5);
+    expect(handleInfo!.width).toBeGreaterThanOrEqual(12);
+    expect(handleInfo!.cursor).toBe('col-resize');
+    expect(['rgba(0, 0, 0, 0)', 'transparent']).toContain(handleInfo!.background);
+
+    // No divider lane between stage and panel — the panel border is the seam.
+    const seam = await streamFlixPage.evaluate(() => {
+      const stage = document
+        .querySelector('[data-cell-split-view="stage"]')!
+        .getBoundingClientRect();
+      const panel = document
+        .querySelector('[data-cell-split-view="panel"]')!
+        .getBoundingClientRect();
+      return panel.left - stage.right;
+    });
+    expect(seam).toBeLessThanOrEqual(2);
+  });
+
   test('SV-60: opening does not shift page scroll', async ({ streamFlixPage }) => {
     await streamFlixPage.evaluate(() => window.scrollTo(0, 300));
     const scrollBefore = await streamFlixPage.evaluate(() => window.scrollY);
@@ -177,17 +233,28 @@ test.describe('Stage 2: Split View edge — layout integrity', () => {
     const scrollBefore = await streamFlixPage.evaluate(() => document.documentElement.scrollWidth);
     await openSplitView(streamFlixPage);
     const wrapperBox = await streamFlixPage.locator(WRAPPER).boundingBox();
-    const panelBox = await streamFlixPage.locator(PANEL).boundingBox();
     const videoBox = await streamFlixPage.locator(VIDEO).boundingBox();
     // Sheet mode: the panel leaves the page flow and docks to the viewport
     // bottom so the video keeps its natural slot instead of sharing the
-    // wrapper height with an inline panel.
-    const sheetState = await streamFlixPage.locator(PANEL).evaluate((el) => ({
-      position: getComputedStyle(el).position,
-      parentIsBody: el.parentElement === document.body,
-    }));
-    expect(sheetState.position).toBe('fixed');
-    expect(sheetState.parentIsBody).toBe(true);
+    // wrapper height with an inline panel. Measure the light-DOM host —
+    // MobileCueChrome renders an inner data-cell-split-view="panel" in the
+    // sheet shadow that locator() would also match.
+    const panelState = await streamFlixPage.evaluate(() => {
+      const el = document.querySelector<HTMLElement>('[data-cell-split-view="panel"]');
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {
+        position: getComputedStyle(el).position,
+        parentIsBody: el.parentElement === document.body,
+        x: r.x,
+        y: r.y,
+        width: r.width,
+        height: r.height,
+      };
+    });
+    expect(panelState).not.toBeNull();
+    expect(panelState!.position).toBe('fixed');
+    expect(panelState!.parentIsBody).toBe(true);
     // Video keeps its slot: full width, on-screen, aspect height.
     expect(videoBox!.width).toBeGreaterThanOrEqual(300);
     expect(videoBox!.height).toBeGreaterThan(0);
@@ -195,10 +262,10 @@ test.describe('Stage 2: Split View edge — layout integrity', () => {
     expect(videoBox!.x + videoBox!.width).toBeLessThanOrEqual(391);
     expect(wrapperBox!.width).toBeLessThanOrEqual(390);
     // Sheet is fully inside the viewport, docked at the bottom.
-    expect(panelBox!.x).toBeGreaterThanOrEqual(0);
-    expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(391);
-    expect(panelBox!.height).toBeGreaterThan(0);
-    expect(panelBox!.y + panelBox!.height).toBeLessThanOrEqual(801);
+    expect(panelState!.x).toBeGreaterThanOrEqual(0);
+    expect(panelState!.x + panelState!.width).toBeLessThanOrEqual(391);
+    expect(panelState!.height).toBeGreaterThan(0);
+    expect(panelState!.y + panelState!.height).toBeLessThanOrEqual(801);
     // AC: split view must not INCREASE page overflow (mock page itself has a
     // fixed-width header — baseline overflow is a pre-existing mock trait).
     const scrollAfter = await streamFlixPage.evaluate(() => document.documentElement.scrollWidth);
@@ -211,34 +278,40 @@ test.describe('Stage 2: Split View edge — layout integrity', () => {
     await openSplitView(streamFlixPage);
     const wideVideo = await streamFlixPage.locator(VIDEO).boundingBox();
 
+    const lightPanel = () =>
+      streamFlixPage.evaluate(() => {
+        const el = document.querySelector<HTMLElement>('[data-cell-split-view="panel"]');
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return {
+          parentIsBody: el.parentElement === document.body,
+          x: r.x,
+          width: r.width,
+          height: r.height,
+          position: getComputedStyle(el).position,
+        };
+      });
+
     await streamFlixPage.setViewportSize({ width: 390, height: 800 });
     await waitStable(streamFlixPage);
     const narrowVideo = await streamFlixPage.locator(VIDEO).boundingBox();
-    const narrowPanel = await streamFlixPage.locator(PANEL).boundingBox();
-    const narrowSheet = await streamFlixPage.locator(PANEL).evaluate((el) => ({
-      position: getComputedStyle(el).position,
-      parentIsBody: el.parentElement === document.body,
-    }));
+    const narrowPanel = await lightPanel();
     expect(narrowVideo!.width).toBeGreaterThan(0);
     expect(narrowVideo!.x).toBeGreaterThanOrEqual(0);
     expect(narrowVideo!.x + narrowVideo!.width).toBeLessThanOrEqual(391);
     expect(narrowPanel!.height).toBeGreaterThan(0);
-    expect(narrowSheet.position).toBe('fixed');
-    expect(narrowSheet.parentIsBody).toBe(true);
+    expect(narrowPanel!.position).toBe('fixed');
+    expect(narrowPanel!.parentIsBody).toBe(true);
     expect(narrowPanel!.x).toBeGreaterThanOrEqual(0);
     expect(narrowPanel!.x + narrowPanel!.width).toBeLessThanOrEqual(391);
 
     await streamFlixPage.setViewportSize({ width: 1280, height: 800 });
     await waitStable(streamFlixPage);
     const backVideo = await streamFlixPage.locator(VIDEO).boundingBox();
-    const backPanel = await streamFlixPage.locator(PANEL).boundingBox();
-    const backSheet = await streamFlixPage.locator(PANEL).evaluate((el) => ({
-      position: getComputedStyle(el).position,
-      parentIsBody: el.parentElement === document.body,
-    }));
+    const backPanel = await lightPanel();
     expect(backVideo!.width).toBeGreaterThan(0);
     expect(backPanel!.width).toBeGreaterThan(0);
-    expect(backSheet.parentIsBody).toBe(false);
+    expect(backPanel!.parentIsBody).toBe(false);
     expect(Math.abs(backVideo!.width - wideVideo!.width)).toBeLessThanOrEqual(4);
   });
 });

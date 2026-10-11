@@ -8,6 +8,11 @@ import { useEffect, type RefObject } from 'react';
  * does not bubble, so the capture-phase listener sees every descendant scroll
  * — including the menu's own list, which must not close it.
  *
+ * Only a scroll that can actually move the anchor dismisses: the scrolled
+ * element must contain the anchor (its scroll containers) or be the
+ * document — a scroll in a sibling subtree (e.g. an auto-aligning cue list
+ * beside the menu trigger) leaves the anchor in place and is ignored.
+ *
  * `anchorRef` (usually the trigger) resolves the owning document/window and
  * shadow scope — it is mounted before the surface exists, which may be
  * portaled to document.body on first render and remounted into a shadow root
@@ -29,6 +34,11 @@ export function useDismissOnScroll(
     const onScroll = (e: Event): void => {
       const surface = surfaceRef.current;
       if (surface && e.composedPath().includes(surface)) return;
+      const anchorEl = anchorRef.current;
+      const scrolled = e.target;
+      if (anchorEl && scrolled instanceof Element && !scrolled.contains(anchorEl)) {
+        return;
+      }
       onDismiss();
     };
     win.addEventListener('scroll', onScroll, true);

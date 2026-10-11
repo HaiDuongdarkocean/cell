@@ -9,9 +9,10 @@ async function enterPlayerMode(page: Page): Promise<void> {
 }
 
 async function selectStudyMode(page: Page, selector: string): Promise<void> {
-  const locator = page.locator(selector);
-  await locator.scrollIntoViewIfNeeded();
-  await locator.dispatchEvent('click');
+  if ((await page.locator('[data-cell-id="study-mode-action-bar"]').count()) === 0) {
+    await page.locator('[data-cell-id="subtitle-panel-more-btn"]').click();
+  }
+  await page.locator(selector).dispatchEvent('click');
 }
 
 for (const width of widths) {

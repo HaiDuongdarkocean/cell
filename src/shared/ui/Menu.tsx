@@ -104,7 +104,12 @@ export function Menu({
       triggerRef.current?.focus();
     }, doc);
     const selected = menuRef.current?.querySelector<HTMLElement>('[aria-checked="true"]');
-    (selected ?? menuRef.current?.querySelector<HTMLElement>('[role^="menuitem"]'))?.focus();
+    // preventScroll: focusing must not scroll ancestors — the trigger's own
+    // overflow:hidden chain (e.g. subtitle .panel) fires a scroll event that
+    // would immediately dismiss the menu via useDismissOnScroll.
+    (selected ?? menuRef.current?.querySelector<HTMLElement>('[role^="menuitem"]'))?.focus({
+      preventScroll: true,
+    });
     doc.addEventListener('mousedown', handlePointerDown);
     return () => {
       popEscapeLayer();

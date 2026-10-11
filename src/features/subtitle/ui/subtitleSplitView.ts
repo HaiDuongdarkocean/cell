@@ -61,6 +61,7 @@ const SPLIT_VIEW_VIEWPORT_MARGIN = 8;
 // inside a wide viewport still stacks column-in-place.
 const SPLIT_VIEW_COLUMN_BELOW = 600;
 const SPLIT_VIEW_SHEET_HANDLE_HEIGHT = 24;
+const SPLIT_VIEW_HANDLE_HIT_PX = 14;
 const PANEL_INNER_BASE_BG = 'color-mix(in srgb, var(--color-surface) 85%, transparent)';
 
 function clampToVisibleViewport(contentHeight: number, topEdge: number): number {
@@ -332,12 +333,17 @@ export function useSplitView({
     // Translucent surface + blur (same spec as SubtitlePanel/.contentOther)
     // so the split-view column never looks empty even before/if the panel
     // content portals in.
-    panelInner.style.cssText = `width:100%;height:100%;display:flex;flex-direction:column;background:${PANEL_INNER_BASE_BG};backdrop-filter:blur(var(--blur-lg));-webkit-backdrop-filter:blur(var(--blur-lg));`;
+    panelInner.style.cssText = `width:100%;height:100%;display:flex;flex-direction:column;background:${PANEL_INNER_BASE_BG};backdrop-filter:blur(var(--blur-lg));-webkit-backdrop-filter:blur(var(--blur-lg));border-left:1px solid var(--color-border-subtle);`;
     panelShadow.appendChild(panelInner);
 
+    // The resize handle is the panel's own left edge — an invisible hit strip
+    // inside the panel shadow, so the wrapper stays a clean two-child row
+    // (stage + panel). touch-action:pan-y keeps vertical swipe scrolling the
+    // cue list while horizontal drags resize.
     const handle = document.createElement('div');
     handle.setAttribute('data-cell-split-view', 'handle');
-    handle.style.cssText = 'flex:0 0 var(--space-1-5);height:100%;background:var(--color-border);cursor:col-resize;touch-action:none;position:relative;z-index:1;';
+    handle.style.cssText = `position:absolute;top:0;bottom:0;left:0;width:${SPLIT_VIEW_HANDLE_HIT_PX}px;cursor:col-resize;touch-action:pan-y;z-index:2;`;
+    panelShadow.appendChild(handle);
 
     // Sheet-mode resize grip — lives inside panelInner (shadow DOM: light
     // children of the host would not render) as an in-flow first child, so
@@ -404,7 +410,6 @@ export function useSplitView({
       playerShell.style.setProperty('flex-direction', 'row', 'important');
       playerShell.style.setProperty('padding', '0', 'important');
       playerShell.appendChild(stageCell);
-      playerShell.appendChild(handle);
       playerShell.appendChild(panel);
       svLog('FULLSCREEN branch done', {
         playerShellRect: rectLog(playerShell),
@@ -641,7 +646,6 @@ export function useSplitView({
       const cellRootNormal = document.getElementById('cell-subtitle-root');
       if (cellRootNormal) stageCell.appendChild(cellRootNormal);
       wrapper.appendChild(stageCell);
-      wrapper.appendChild(handle);
       wrapper.appendChild(panel);
 
       // Insert new wrapper at the resolved position BEFORE removing the
@@ -737,10 +741,7 @@ export function useSplitView({
             panelInner.style.background = 'var(--color-surface-popover)';
           } else {
             restorePanelIntoWrapper();
-            handle.style.flex = '0 0 var(--space-1-5)';
-            handle.style.width = '100%';
-            handle.style.height = 'auto';
-            handle.style.cursor = 'default';
+            handle.style.display = 'none';
             panel.style.flex = '1 1 0';
             panel.style.minWidth = '0';
             panel.style.maxWidth = 'none';
@@ -755,10 +756,7 @@ export function useSplitView({
           stageCell.style.minWidth = `min(${SPLIT_VIEW_MIN_STAGE_WIDTH}px,55%)`;
           stageCell.style.width = '';
           stageCell.style.height = '100%';
-          handle.style.flex = '0 0 var(--space-1-5)';
-          handle.style.width = '';
-          handle.style.height = '100%';
-          handle.style.cursor = 'col-resize';
+          handle.style.display = '';
           panel.style.flex = `0 0 ${splitViewPctRef.current}%`;
           panel.style.minWidth = 'min(200px,45%)';
           panel.style.maxWidth = `min(60%,calc(100% - ${SPLIT_VIEW_MIN_STAGE_WIDTH}px))`;
@@ -839,6 +837,12 @@ export function useSplitView({
           liveHeight = `${cappedH}px`;
         }
         wrapper.style.height = liveHeight;
+        // Right-inset for body-level floating chrome (comprehension pill) —
+        // keeps it over the video stage instead of covering the panel header.
+        document.documentElement.style.setProperty(
+          '--cell-split-panel-w',
+          narrow ? '0px' : `${Math.round(panel.getBoundingClientRect().width)}px`,
+        );
         if (narrow) {
           // Full width so the video column's siblings wrap below it. Only a
           // flex-row parent honors a % basis on the width axis — on a column
@@ -915,6 +919,15 @@ export function useSplitView({
     const resolveSheetHeight = (): number =>
       splitViewSheetHeightPx(splitViewSheetVhRef.current, window.innerHeight);
 
+    // Seed the same inset for the fullscreen branch (no recalc there) and
+    // before the first ResizeObserver tick in the normal branch.
+    requestAnimationFrame(() => {
+      document.documentElement.style.setProperty(
+        '--cell-split-panel-w',
+        `${Math.round(panel.getBoundingClientRect().width)}px`,
+      );
+    });
+
     // Drag resize: measure the flex container (wrapper or playerShell).
     const flexContainer = wrapper ?? playerShell;
     let dragStart: { x: number; startPct: number; wrapperW: number } | null = null;
@@ -931,6 +944,10 @@ export function useSplitView({
       const next = Math.min(Math.max(dragStart.startPct + deltaPct, 20), 60);
       panel.style.flexBasis = `${next}%`;
       splitViewPctRef.current = next;
+      document.documentElement.style.setProperty(
+        '--cell-split-panel-w',
+        `${Math.round(panel.getBoundingClientRect().width)}px`,
+      );
       // CSS handles video sizing (height:100%!important, object-fit:contain).
       // No setSize needed — the video fills the stage via CSS automatically.
     };
@@ -1038,6 +1055,7 @@ export function useSplitView({
       const restoreNow = (): void => {
       if (restoreDone) return;
       restoreDone = true;
+      document.documentElement.style.removeProperty('--cell-split-panel-w');
       // Capture #cell-subtitle-root BEFORE wrapper.remove() detaches it —
       // getElementById only searches connected nodes, so reading it after
       // the wrapper is gone returns null and the restore below never runs,

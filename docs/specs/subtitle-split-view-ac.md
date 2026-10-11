@@ -2,8 +2,11 @@
 
 Scope: Split View = side subtitle panel (`t` key / "Open subtitle list" button) trên
 normal page và fullscreen. Implementation: `src/features/subtitle/ui/subtitleSplitView.ts`.
-DOM: `[data-cell-split-view]` = `wrapper` (normal branch only) → `stage` + `handle` + `panel`
-(shadow root chứa `SubtitlePanel`).
+DOM: `[data-cell-split-view]` = `wrapper` (normal branch only) → `stage` + `panel`
+(shadow root chứa `SubtitlePanel` + `handle`). `handle` là hit-strip vô hình 14px
+nằm trong panel shadow tại viền trái — panel edge chính là resize zone; wrapper
+không còn thanh chia dày (`cursor:col-resize`, `touch-action:pan-y` để swipe dọc
+vẫn scroll cue list).
 
 Đây là **AC contract cố định** — mọi PR/chỉnh sửa đụng tới `subtitleSplitView.ts`,
 `mountSubtitle.tsx`, `SubtitlePanel*.tsx`, hoặc subtitle auto-load phải re-verify
@@ -14,7 +17,7 @@ toàn bộ nhóm AC liên quan. Chi tiết stress-test e2e: `split-view-stress-t
 
 | ID | AC |
 |---|---|
-| AC-1.1 | `t` mở: wrapper + stage + handle + panel xuất hiện; panel slide-in từ phải; `#cell-subtitle-root` reparent vào stageCell (overlay phủ đúng video, không phủ panel) |
+| AC-1.1 | `t` mở: wrapper + stage + panel xuất hiện (handle là edge-strip vô hình trong panel shadow); panel slide-in từ phải; `#cell-subtitle-root` reparent vào stageCell (overlay phủ đúng video, không phủ panel) |
 | AC-1.2 | `t` đóng: panel slide-out về phải (~410ms) rồi DOM teardown; `playerShell` về đúng `originalParent`/`originalNextSibling`; mọi inline style trong `playerShellStyleProperties` restore về giá trị cũ |
 | AC-1.3 | Rapid toggle (<410ms) không pollute snapshot style, không ghost wrapper, không crash — pending restore drain đồng bộ trước khi build mới |
 | AC-1.4 | Giữ phím `t` (auto-repeat) chỉ toggle 1 lần; `Ctrl/Shift/Alt+T` không match; focus trong `<input>`/contenteditable không toggle |
@@ -54,7 +57,7 @@ toàn bộ nhóm AC liên quan. Chi tiết stress-test e2e: `split-view-stress-t
 | AC-4.8 | Scroll trang (nested scroller cũng tính — listener `capture:true`): wrapper `top` đổi → height cap recompute ngay, split view luôn bám vùng nhìn thấy |
 | AC-4.9 | **Mở panel / panel drag không đổi wrapper height**: nhấn `t` giữ chiều cao video đang có trước khi panel ăn width; kéo handle (kể cả tới max 60%) chỉ làm video co ngang + centered dọc (đệm trên/dưới qua `justify-content:center`). Height chỉ re-measure khi browser viewport đổi (wrapper width / `innerHeight`) — scroll chỉ re-cap theo `top` (AC-4.8), KHÔNG re-measure. Đo lại ở full row width bằng `visibility+position` (CẤM `display:none` — restart transition → panel nháy đóng/mở) |
 | AC-4.10 | Viewport cap kích hoạt (`cappedH < contentH`): constrain `playerShell` **width** theo aspect video (`width = cappedH × videoW/videoH`, `margin:0 auto`, `justify-content:flex-start`) — **chỉ khi `targetW` nằm trong (200px, stage width)**; targetW ≥ stage width → giữ `width:100%` + centered (cấm constrain vượt stage = video tràn ngang bị panel che); cấm zero `padding-top` của `.vjs-fluid` (collapse video về ~0) |
-| AC-4.11 | **Narrow slot — sheet khi viewport mobile, column khi slot hẹp**: `sheetMode = window.innerWidth < 600`, `narrow = sheetMode || insertParent.clientWidth < 600`. **Sheet mode** (viewport <600, mobile): panel reparent lên `document.body` thành **bottom sheet** theo convention `Sheet` atom (`position:fixed`, edge-to-edge inset `0` left/right/bottom, `radius-element` bo 2 góc trên, `surface-popover`, `z-overlay-video` (cùng tier `#cell-subtitle-root` — trên mọi host site nhưng dưới mọi Cell system surface: universal panel `z-overlay-secondary`, popup `z-overlay-top`, pill, toast), height `min(50dvh, 460px)`, enter/exit slide `translateY`) — video giữ slot tự nhiên (`wrapper height = stageH` đúng `slotW / videoAspect`), sheet nổi trên content không che/bóp video, cue list được height thực. **Column mode** (slot <600 trên viewport rộng): wrapper `flex-direction:column`, video trên, panel inline dưới fill phần còn lại — panel ở trong page flow khi vẫn có không gian dọc. Slot width đo từ `insertParent.clientWidth`, KHÔNG từ wrapper rect (wrapper có thể còn basis px stale tràn viewport). Narrow flex-basis = `0 0 100%` CHỈ cho flex-row `insertParent`; non-row parent → `0 0 auto` (% basis trên column parent rơi vào trục **height**, ghi đè `height` property → toàn bộ split view collapse về content height). Site responsive CSS biến `playerShell` thành `position:fixed` (kisskh `.portrait` phủ viewport) phải bị pin lại `position:absolute;inset:0` vào stage mỗi recalc — kiểm tra computed position hiện tại, không chỉ lúc mở. Handle `display:none` ở sheet mode / divider ngang ở column mode, drag tắt (`isNarrowLayout` guard). Round-trip sheet↔row restore đúng: panel về lại wrapper, position/inset/z-index/radius/background reset về giá trị mở (`PANEL_INNER_BASE_BG`) |
+| AC-4.11 | **Narrow slot — sheet khi viewport mobile, column khi slot hẹp**: `sheetMode = window.innerWidth < 600`, `narrow = sheetMode || insertParent.clientWidth < 600`. **Sheet mode** (viewport <600, mobile): panel reparent lên `document.body` thành **bottom sheet** theo convention `Sheet` atom (`position:fixed`, edge-to-edge inset `0` left/right/bottom, `radius-element` bo 2 góc trên, `surface-popover`, `z-overlay-video` (cùng tier `#cell-subtitle-root` — trên mọi host site nhưng dưới mọi Cell system surface: universal panel `z-overlay-secondary`, popup `z-overlay-top`, pill, toast), height `min(50dvh, 460px)`, enter/exit slide `translateY`) — video giữ slot tự nhiên (`wrapper height = stageH` đúng `slotW / videoAspect`), sheet nổi trên content không che/bóp video, cue list được height thực. **Column mode** (slot <600 trên viewport rộng): wrapper `flex-direction:column`, video trên, panel inline dưới fill phần còn lại — panel ở trong page flow khi vẫn có không gian dọc. Slot width đo từ `insertParent.clientWidth`, KHÔNG từ wrapper rect (wrapper có thể còn basis px stale tràn viewport). Narrow flex-basis = `0 0 100%` CHỈ cho flex-row `insertParent`; non-row parent → `0 0 auto` (% basis trên column parent rơi vào trục **height**, ghi đè `height` property → toàn bộ split view collapse về content height). Site responsive CSS biến `playerShell` thành `position:fixed` (kisskh `.portrait` phủ viewport) phải bị pin lại `position:absolute;inset:0` vào stage mỗi recalc — kiểm tra computed position hiện tại, không chỉ lúc mở. Handle `display:none` ở cả sheet mode và column mode, drag tắt (`isNarrowLayout` guard). Round-trip sheet↔row restore đúng: panel về lại wrapper, position/inset/z-index/radius/background reset về giá trị mở (`PANEL_INNER_BASE_BG`) |
 
 ## AC-5 · Fullscreen Split View
 
@@ -70,7 +73,8 @@ toàn bộ nhóm AC liên quan. Chi tiết stress-test e2e: `split-view-stress-t
 
 | ID | AC |
 |---|---|
-| AC-6.1 | Drag handle: panel flex-basis update trực tiếp (không rebuild DOM giữa drag — `splitViewPctRef` không nằm trong effect deps); clamp [20%, 60%]; persist `SPLIT_VIEW_PCT` 1 lần trên `pointerup` |
+| AC-6.1 | Drag handle: edge-strip vô hình 14px trong panel shadow (`data-cell-split-view="handle"`, left:0, `touch-action:pan-y`) — panel edge là resize zone, không thanh chia visible. Panel flex-basis update trực tiếp (không rebuild DOM giữa drag — `splitViewPctRef` không nằm trong effect deps); clamp [20%, 60%]; persist `SPLIT_VIEW_PCT` 1 lần trên `pointerup` |
+| AC-6.6 | Body-level floating chrome (comprehension pill) phải né panel: split view set `--cell-split-panel-w` trên `:root` = panel width (0 ở narrow/sheet), update khi recalc + khi drag, xóa khi teardown — pill anchor về góc phải video stage, không đè header panel |
 | AC-6.2 | Panel min-width 200px, max-width 60% — không bao giờ nuốt stage hoặc overflow viewport |
 | AC-6.3 | `g` vào Player Mode khi split view open: teardown sạch qua live anchor (`liveAnchorParent/liveAnchorSibling`), exit PM restore đúng — không strand player trong detached subtree |
 | AC-6.4 | `t` trong Player Mode bị block (PM dùng `t` cho CueList) — không tạo wrapper |

@@ -92,7 +92,7 @@ export class ReactSubtitleController {
   /** Player state captured when a study mode takes over; restored when the
    *  mode deactivates (back to 'normal'). */
   private studyBaseline: { playbackRate: number; targetHidden: boolean; nativeHidden: boolean } | null = null;
-  /** Speed the user picked via SpeedPill / side panel. Once set it wins over
+  /** Speed the user picked via the panel study menu / side panel. Once set it wins over
    *  study-mode per-step setSpeed actions so a cue transition can't reset it. */
   private userSpeed: PlaybackSpeed | null = null;
 
@@ -618,7 +618,7 @@ export class ReactSubtitleController {
     this.mount.setManager(this.buildManagerState());
   }
 
-  /** Record + apply a user-picked playback speed (SpeedPill, side panel).
+  /** Record + apply a user-picked playback speed (panel study menu, side panel).
    *  Sticky for the controller's lifetime: subsequent study-mode per-step
    *  setSpeed actions apply this instead of the configured step speed. */
   setUserPlaybackSpeed(speed: PlaybackSpeed): void {

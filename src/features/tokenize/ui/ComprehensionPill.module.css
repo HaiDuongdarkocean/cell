@@ -1,7 +1,9 @@
 .pill {
   position: fixed;
   top: var(--space-3);
-  right: var(--space-3);
+  /* --cell-split-panel-w is set by subtitleSplitView while a side panel is
+     open so the pill anchors to the video stage, not the panel header. */
+  right: calc(var(--space-3) + var(--cell-split-panel-w, 0px));
   z-index: var(--z-overlay-top);
   display: flex;
   align-items: center;

@@ -475,6 +475,30 @@ function PlayerModeOverlayInner({
   );
   const clusterRightStyle = buildClusterCssVars(clusterSettings);
 
+  // Body-level floating chrome (comprehension pill) anchors to the video
+  // stage edge via this inset so it never covers the side panel header.
+  // Shared contract with subtitleSplitView's --cell-split-panel-w.
+  useEffect(() => {
+    const root = document.documentElement;
+    const measure = () => {
+      const panel = splitRef.current?.querySelector<HTMLElement>(
+        '[data-cell-split-view="panel"]',
+      );
+      root.style.setProperty(
+        '--cell-split-panel-w',
+        panel && !isMobilePm
+          ? `${Math.round(panel.getBoundingClientRect().width)}px`
+          : '0px',
+      );
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => {
+      window.removeEventListener('resize', measure);
+      root.style.removeProperty('--cell-split-panel-w');
+    };
+  }, [contentPct, cueListOpen, isMobilePm]);
+
   useEffect(() => {
     const onWindowKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
