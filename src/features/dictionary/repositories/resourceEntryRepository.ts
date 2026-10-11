@@ -431,6 +431,7 @@ export async function deleteEntriesByResource(
     const keysRequest = index.getAllKeys(resourceId);
     keysRequest.onsuccess = () => {
       const keys = keysRequest.result;
+      if (keys.length > 0) onProgress?.(0, keys.length);
       if (isContiguousKeys(keys)) {
         const deleteRequest = store.delete(IDBKeyRange.bound(keys[0], keys[keys.length - 1]));
         deleteRequest.onsuccess = () => onProgress?.(keys.length, keys.length);

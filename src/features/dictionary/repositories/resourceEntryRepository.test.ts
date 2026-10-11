@@ -144,7 +144,7 @@ describe('resourceEntryRepository — dictionary', () => {
     await deleteEntriesByResource(LANG, RESOURCE_ID, (d, t) => calls.push([d, t]));
     await expect(countEntriesByResource(LANG, RESOURCE_ID)).resolves.toBe(0);
     await expect(countEntriesByResource(LANG, 2)).resolves.toBe(1);
-    expect(calls).toEqual([[4, 4]]);
+    expect(calls).toEqual([[0, 4], [4, 4]]);
   });
 
   it('deleteEntriesByResource reports progress once on the contiguous fast path', async () => {
@@ -152,7 +152,7 @@ describe('resourceEntryRepository — dictionary', () => {
     const calls: Array<[number, number]> = [];
     await deleteEntriesByResource(LANG, RESOURCE_ID, (d, t) => calls.push([d, t]));
     await expect(countEntriesByResource(LANG, RESOURCE_ID)).resolves.toBe(0);
-    expect(calls).toEqual([[600, 600]]);
+    expect(calls).toEqual([[0, 600], [600, 600]]);
   });
 
   it('deleteEntriesByResource deletes only own rows when keys interleave', async () => {
@@ -172,7 +172,7 @@ describe('resourceEntryRepository — dictionary', () => {
     await deleteEntriesByResource(LANG, RESOURCE_ID, (d, t) => calls.push([d, t]));
     await expect(countEntriesByResource(LANG, RESOURCE_ID)).resolves.toBe(0);
     await expect(countEntriesByResource(LANG, 2)).resolves.toBe(1);
-    expect(calls).toEqual([[512, 600], [600, 600]]);
+    expect(calls).toEqual([[0, 600], [512, 600], [600, 600]]);
   });
 
   it('sampleDictionaryEntries returns the first N entries for a resource', async () => {
