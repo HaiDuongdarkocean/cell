@@ -10,6 +10,11 @@ const WORD_LANE_CLASS = 'js-cell-token-word';
 const OVERLAY_ID = 'cell-sentence-overlay';
 /** Horizontal run split: a gap wider than this many em ends the band segment. */
 const BAND_GAP_EM = 2;
+/** The dictionary popup host (mountPopupDictionary) — wash bands are clipped
+ *  out of its surface rect so a translucent popup skin never shows the wash
+ *  bleeding through as if it painted over the card. */
+const POPUP_HOST_CLASS = 'js-cell-popup-host';
+const POPUP_SURFACE_SELECTOR = '[data-cell-id="popup-dictionary"]';
 
 export interface BandBox {
   readonly top: number;
@@ -103,13 +108,71 @@ function collectWashRects(spans: readonly HTMLElement[]): BandBox[] {
   return rects;
 }
 
+/** Subtract each hole rect from the band, returning the remaining pieces.
+ *  A horizontal band cut by one hole yields at most 3 fragments (top strip,
+ *  bottom strip, left/right pieces of the cut line). */
+export function subtractRects(band: BandBox, holes: readonly BandBox[]): BandBox[] {
+  let pieces: BandBox[] = [band];
+  for (const hole of holes) {
+    const next: BandBox[] = [];
+    for (const piece of pieces) {
+      const ix0 = Math.max(piece.left, hole.left);
+      const ix1 = Math.min(piece.right, hole.right);
+      const iy0 = Math.max(piece.top, hole.top);
+      const iy1 = Math.min(piece.bottom, hole.bottom);
+      if (ix1 <= ix0 || iy1 <= iy0) {
+        next.push(piece);
+        continue;
+      }
+      if (piece.top < iy0) next.push({ top: piece.top, bottom: iy0, left: piece.left, right: piece.right });
+      if (piece.bottom > iy1) next.push({ top: iy1, bottom: piece.bottom, left: piece.left, right: piece.right });
+      if (piece.left < ix0) next.push({ top: iy0, bottom: iy1, left: piece.left, right: ix0 });
+      if (piece.right > ix1) next.push({ top: iy0, bottom: iy1, left: ix1, right: piece.right });
+    }
+    pieces = next;
+  }
+  return pieces;
+}
+
+/** Viewport rects of open dictionary popup surfaces. The shadow host itself is
+ *  a 0x0 anchor, so the visible card is located inside its shadow root. */
+function popupRects(doc: Document): BandBox[] {
+  const rects: BandBox[] = [];
+  const roots: ParentNode[] = [doc];
+  const subtitleShadow = doc.getElementById('cell-subtitle-root')?.shadowRoot;
+  if (subtitleShadow) roots.push(subtitleShadow);
+  for (const root of roots) {
+    for (const host of root.querySelectorAll<HTMLElement>(`.${POPUP_HOST_CLASS}`)) {
+      const surface = host.shadowRoot?.querySelector<HTMLElement>(POPUP_SURFACE_SELECTOR) ?? host;
+      const r = surface.getBoundingClientRect();
+      if (r.width >= 1 && r.height >= 1) {
+        rects.push({ top: r.top, bottom: r.bottom, left: r.left, right: r.right });
+      }
+    }
+  }
+  return rects;
+}
+
 let overlay: HTMLElement | null = null;
 let overlaySpans: readonly HTMLElement[] = [];
+let popupObserver: { disconnect(): void } | null = null;
+let geometryRaf = 0;
+let lastHolesKey = '';
+
+function holesKey(holes: readonly BandBox[]): string {
+  return holes.map((h) => `${h.left},${h.top},${h.right},${h.bottom}`).join('|');
+}
 
 function removeSentenceBands(): void {
   overlay?.remove();
   overlay = null;
   overlaySpans = [];
+  popupObserver?.disconnect();
+  popupObserver = null;
+  if (geometryRaf) {
+    cancelAnimationFrame(geometryRaf);
+    geometryRaf = 0;
+  }
 }
 
 function repaintSentenceBands(): void {
@@ -123,6 +186,68 @@ function repaintSentenceBands(): void {
   paintSentenceBandsInto(host, overlaySpans);
 }
 
+/** Repaint only when a popup surface actually moved/resized/appeared —
+ *  pointermove fires constantly while the pointer roams the page. */
+function repaintIfPopupGeometryChanged(doc: Document): void {
+  if (geometryRaf || !overlay) return;
+  geometryRaf = requestAnimationFrame(() => {
+    geometryRaf = 0;
+    const key = holesKey(popupRects(doc));
+    if (key !== lastHolesKey) repaintSentenceBands();
+  });
+}
+
+function watchPopupGeometry(doc: Document, subtitleShadow: ShadowRoot | null): void {
+  // The host mounts empty and React fills its shadow root a tick later, so a
+  // document-level observer alone repaints before the surface exists. Watching
+  // each popup's shadow root catches the card mount and any later restyle.
+  const watchedRoots = new WeakSet<ShadowRoot>();
+  const surfaceObserver = new MutationObserver(() => repaintSentenceBands());
+  const watchPopupRoot = (host: Element): void => {
+    const root = host.shadowRoot;
+    if (root && !watchedRoots.has(root)) {
+      watchedRoots.add(root);
+      surfaceObserver.observe(root, { childList: true, subtree: true, attributes: true });
+    }
+  };
+  const observer = new MutationObserver((records) => {
+    for (const record of records) {
+      const touched = [...record.addedNodes, ...record.removedNodes].some(
+        (node) =>
+          node instanceof HTMLElement &&
+          (node.classList.contains(POPUP_HOST_CLASS) || !!node.querySelector(`.${POPUP_HOST_CLASS}`)),
+      );
+      if (touched) {
+        for (const host of doc.querySelectorAll(`.${POPUP_HOST_CLASS}`)) watchPopupRoot(host);
+        for (const host of subtitleShadow?.querySelectorAll(`.${POPUP_HOST_CLASS}`) ?? []) watchPopupRoot(host);
+        repaintSentenceBands();
+        return;
+      }
+    }
+  });
+  observer.observe(doc.documentElement, { childList: true, subtree: true });
+  if (subtitleShadow) observer.observe(subtitleShadow, { childList: true, subtree: true });
+  for (const host of doc.querySelectorAll(`.${POPUP_HOST_CLASS}`)) watchPopupRoot(host);
+  for (const host of subtitleShadow?.querySelectorAll(`.${POPUP_HOST_CLASS}`) ?? []) watchPopupRoot(host);
+
+  const onScroll = (): void => {
+    // Bands are absolute in page coords and scroll with the text; the popup is
+    // fixed in the viewport, so the clip re-intersects on every scroll.
+    if (overlay && popupRects(doc).length) repaintSentenceBands();
+  };
+  doc.addEventListener('scroll', onScroll, { capture: true, passive: true });
+  const onGeometryEvent = (): void => repaintIfPopupGeometryChanged(doc);
+  doc.defaultView?.addEventListener('pointermove', onGeometryEvent, { passive: true });
+  popupObserver = {
+    disconnect() {
+      observer.disconnect();
+      surfaceObserver.disconnect();
+      doc.removeEventListener('scroll', onScroll, { capture: true });
+      doc.defaultView?.removeEventListener('pointermove', onGeometryEvent);
+    },
+  };
+}
+
 function paintSentenceBandsInto(host: HTMLElement, spans: readonly HTMLElement[]): void {
   const first = spans[0];
   if (!first) return;
@@ -130,9 +255,12 @@ function paintSentenceBandsInto(host: HTMLElement, spans: readonly HTMLElement[]
   const view = doc.defaultView;
   const fontSize = parseFloat(view?.getComputedStyle(first).fontSize ?? '') || 16;
   const bands = computeSentenceBands(collectWashRects(spans), BAND_GAP_EM * fontSize);
+  const holes = popupRects(doc);
+  lastHolesKey = holesKey(holes);
+  const visible = holes.length ? bands.flatMap((band) => subtractRects(band, holes)) : bands;
   const scrollX = view?.scrollX ?? 0;
   const scrollY = view?.scrollY ?? 0;
-  for (const band of bands) {
+  for (const band of visible) {
     const el = doc.createElement('div');
     el.className = 'js-cell-sentence-band';
     el.setAttribute('aria-hidden', 'true');
@@ -149,14 +277,15 @@ function paintSentenceBands(spans: readonly HTMLElement[]): void {
   const first = spans[0];
   const mount = first?.ownerDocument.body;
   if (!first || !mount) return;
-  const host = first.ownerDocument.createElement('div');
+  const doc = first.ownerDocument;
+  const host = doc.createElement('div');
   host.id = OVERLAY_ID;
   host.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;';
   mount.appendChild(host);
   overlay = host;
   overlaySpans = spans;
   paintSentenceBandsInto(host, spans);
-  if (host.childNodes.length === 0) removeSentenceBands();
+  watchPopupGeometry(doc, doc.getElementById('cell-subtitle-root')?.shadowRoot ?? null);
 }
 
 /** Remove the wash from every span of the previous run. */

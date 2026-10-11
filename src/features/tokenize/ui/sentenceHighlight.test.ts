@@ -4,6 +4,7 @@ import {
   computeSentenceBands,
   highlightSentence,
   sentenceTextForSpan,
+  subtractRects,
   SENTENCE_CLASS,
   type BandBox,
 } from './sentenceHighlight';
@@ -123,5 +124,53 @@ describe('computeSentenceBands', () => {
 
   it('returns no bands for empty input', () => {
     expect(computeSentenceBands([], 32)).toEqual([]);
+  });
+});
+
+describe('subtractRects — popup clipping', () => {
+  const band: BandBox = { top: 10, bottom: 20, left: 0, right: 100 };
+
+  it('keeps the band when no holes are open', () => {
+    expect(subtractRects(band, [])).toEqual([band]);
+  });
+
+  it('splits a band around a hole covering its full height', () => {
+    expect(subtractRects(band, [{ top: 8, bottom: 24, left: 40, right: 60 }])).toEqual([
+      { top: 10, bottom: 20, left: 0, right: 40 },
+      { top: 10, bottom: 20, left: 60, right: 100 },
+    ]);
+  });
+
+  it('keeps top and bottom strips when the hole is shorter than the band', () => {
+    expect(subtractRects(band, [{ top: 12, bottom: 18, left: 0, right: 100 }])).toEqual([
+      { top: 10, bottom: 12, left: 0, right: 100 },
+      { top: 18, bottom: 20, left: 0, right: 100 },
+    ]);
+  });
+
+  it('clips only the overlapped edge for a partial overlap', () => {
+    expect(subtractRects(band, [{ top: 0, bottom: 30, left: 80, right: 200 }])).toEqual([
+      { top: 10, bottom: 20, left: 0, right: 80 },
+    ]);
+  });
+
+  it('drops the band when a hole covers it entirely', () => {
+    expect(subtractRects(band, [{ top: 0, bottom: 50, left: -10, right: 200 }])).toEqual([]);
+  });
+
+  it('ignores holes that do not intersect', () => {
+    expect(subtractRects(band, [{ top: 30, bottom: 40, left: 0, right: 100 }])).toEqual([band]);
+  });
+
+  it('subtracts multiple holes across the same band', () => {
+    const pieces = subtractRects(band, [
+      { top: 0, bottom: 30, left: 20, right: 30 },
+      { top: 0, bottom: 30, left: 70, right: 80 },
+    ]);
+    expect(pieces).toEqual([
+      { top: 10, bottom: 20, left: 0, right: 20 },
+      { top: 10, bottom: 20, left: 30, right: 70 },
+      { top: 10, bottom: 20, left: 80, right: 100 },
+    ]);
   });
 });
