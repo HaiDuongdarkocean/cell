@@ -107,7 +107,7 @@ export function AnkiImportJobRow({ job, fidelity, onCancel, onDismiss, onStudyNo
   return (
     <div className={cls} role="status" aria-live="polite" data-cell-id="anki-import-job">
       {job.status === 'running' && job.total > 0 && (
-        <span className={styles.fill} style={{ height: `${pct}%` }} aria-hidden="true" />
+        <span className={styles.fill} style={{ transform: `scaleY(${pct / 100})` }} aria-hidden="true" />
       )}
       <div className={styles.row}>
         {job.status === 'running' ? (

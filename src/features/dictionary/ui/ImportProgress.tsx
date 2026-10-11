@@ -179,7 +179,7 @@ export function ImportProgress({ job, waitingRemoval, onToggleComponent, onResol
       {(isUpload || (isImport && job.total > 0)) && (
         <span
           className={styles.fill}
-          style={{ height: `${fillPct}%` }}
+          style={{ transform: `scaleY(${fillPct / 100})` }}
           aria-hidden="true"
         />
       )}
