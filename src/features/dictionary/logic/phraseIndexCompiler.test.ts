@@ -158,6 +158,29 @@ describe('phraseIndexCompiler', () => {
       }
     });
 
+    it('round-trips a large index across writer growth', () => {
+      const inputs: PhraseIndexInput[] = [];
+      for (let i = 0; i < 20000; i++) {
+        inputs.push(tmpl(`phrase number ${i}`));
+      }
+      const index = compilePhraseIndex(inputs);
+      const buffer = serializePhraseIndex(index);
+      expect(buffer.byteLength).toBeGreaterThan(1024 * 1024);
+      const restored = deserializePhraseIndex(buffer);
+      expect(restored.termCount).toBe(index.termCount);
+      expect(restored.anchorCount).toBe(index.anchorCount);
+      for (const t of index.templates.slice(0, 50)) {
+        const r = restored.templates[t.templateId]!;
+        expect(r.normalizedTerm).toBe(t.normalizedTerm);
+        expect(r.anchors).toEqual(t.anchors);
+      }
+      for (const anchor of index.anchorKeys.slice(0, 20)) {
+        expect([...restored.lookupByAnchor(anchor)])
+          .toEqual([...index.lookupByAnchor(anchor)]);
+      }
+      expect(index.byteSize).toBe(buffer.byteLength);
+    });
+
     it('throws clear version-mismatch error on old-format blob', () => {
       // Simulate an old-format blob (version 1) by patching the version
       // field in a serialized buffer. The deserializer must throw a clear

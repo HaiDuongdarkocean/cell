@@ -18,6 +18,9 @@ const MAGIC = 0x4c584950; // "PIXL" little-endian
 const COMPILER_VERSION = 7;
 const MAX_ANCHORS = 3;
 
+const UTF8_ENCODER = new TextEncoder();
+const UTF8_DECODER = new TextDecoder();
+
 const NODE_LITERAL = 0;
 const NODE_OPTIONAL = 1;
 const NODE_ALTERNATIVE = 2;
@@ -225,46 +228,44 @@ export function serializePhraseIndex(index: PhraseIndex): ArrayBuffer {
     internNodes(t.nodes, intern);
   }
 
-  const chunks: number[] = [];
+  const w = createWriter(1024 * 1024);
 
   // Header: magic + version + termCount + anchorCount
-  pushU32(chunks, MAGIC);
-  pushU32(chunks, index.compilerVersion);
-  pushU32(chunks, index.termCount);
-  pushU32(chunks, index.anchorCount);
+  writeU32(w, MAGIC);
+  writeU32(w, index.compilerVersion);
+  writeU32(w, index.termCount);
+  writeU32(w, index.anchorCount);
 
   // Token table: count + (len + utf8)*
-  pushU32(chunks, tokenList.length);
+  writeU32(w, tokenList.length);
   for (const token of tokenList) {
-    const bytes = utf8Bytes(token);
-    pushU16(chunks, bytes.length);
-    for (const b of bytes) chunks.push(b);
+    writeString(w, token);
   }
 
   // Template table.
   for (const t of index.templates) {
-    pushString(chunks, t.sourceTerm);
-    pushString(chunks, t.normalizedTerm);
-    chunks.push(t.fixedTokenCount & 0xff);
-    chunks.push(t.minSurfaceTokens & 0xff);
-    chunks.push(t.maxSurfaceTokens & 0xff);
-    pushI32(chunks, t.frequencyRank);
-    chunks.push(t.anchors.length & 0xff);
-    for (const a of t.anchors) pushU32(chunks, intern(a));
+    writeString(w, t.sourceTerm);
+    writeString(w, t.normalizedTerm);
+    writeU8(w, t.fixedTokenCount);
+    writeU8(w, t.minSurfaceTokens);
+    writeU8(w, t.maxSurfaceTokens);
+    writeI32(w, t.frequencyRank);
+    writeU8(w, t.anchors.length);
+    for (const a of t.anchors) writeU32(w, intern(a));
     const nodeBytes = serializeNodes(t.nodes, intern);
-    pushU32(chunks, nodeBytes.length);
-    for (const b of nodeBytes) chunks.push(b);
+    writeU32(w, nodeBytes.length);
+    writeBytes(w, nodeBytes);
   }
 
   // Anchor table: per anchor — tokenId + postingCount + templateIds
   for (const key of index.anchorKeys) {
-    pushU32(chunks, intern(key));
+    writeU32(w, intern(key));
     const ids = index.lookupByAnchor(key);
-    pushU32(chunks, ids.length);
-    for (const id of ids) pushU32(chunks, id);
+    writeU32(w, ids.length);
+    for (const id of ids) writeU32(w, id);
   }
 
-  const buffer = new Uint8Array(chunks).buffer;
+  const buffer = w.bytes.slice(0, w.offset).buffer;
   (index as { byteSize: number }).byteSize = buffer.byteLength;
   return buffer;
 }
@@ -400,37 +401,37 @@ function selectAnchors(candidates: string[], postingCounts: Map<string, number>,
 
 // --- Node serialization ---
 
-function serializeNodes(nodes: readonly PhraseNode[], intern: (s: string) => number): number[] {
-  const out: number[] = [];
-  pushU16(out, nodes.length);
-  for (const n of nodes) serializeNode(n, out, intern);
-  return out;
+function serializeNodes(nodes: readonly PhraseNode[], intern: (s: string) => number): Uint8Array {
+  const w = createWriter(64);
+  writeU16(w, nodes.length);
+  for (const n of nodes) serializeNode(n, w, intern);
+  return w.bytes.subarray(0, w.offset);
 }
 
-function serializeNode(node: PhraseNode, out: number[], intern: (s: string) => number): void {
+function serializeNode(node: PhraseNode, w: ByteWriter, intern: (s: string) => number): void {
   switch (node.type) {
     case 'literal':
-      out.push(NODE_LITERAL);
-      pushU32(out, intern(node.value));
-      out.push(node.inflectableVerb ? 1 : 0);
+      writeU8(w, NODE_LITERAL);
+      writeU32(w, intern(node.value));
+      writeU8(w, node.inflectableVerb ? 1 : 0);
       break;
     case 'optional':
-      out.push(NODE_OPTIONAL);
-      pushU16(out, node.children.length);
-      for (const c of node.children) serializeNode(c, out, intern);
+      writeU8(w, NODE_OPTIONAL);
+      writeU16(w, node.children.length);
+      for (const c of node.children) serializeNode(c, w, intern);
       break;
     case 'alternative':
-      out.push(NODE_ALTERNATIVE);
-      pushU16(out, node.branches.length);
+      writeU8(w, NODE_ALTERNATIVE);
+      writeU16(w, node.branches.length);
       for (const branch of node.branches) {
-        pushU16(out, branch.length);
-        for (const c of branch) serializeNode(c, out, intern);
+        writeU16(w, branch.length);
+        for (const c of branch) serializeNode(c, w, intern);
       }
       break;
     case 'slot':
-      out.push(NODE_SLOT);
-      out.push(node.kind === 'object' ? SLOT_OBJECT : node.kind === 'person' ? SLOT_PERSON : SLOT_POSSESSIVE);
-      out.push(node.maxTokens & 0xff);
+      writeU8(w, NODE_SLOT);
+      writeU8(w, node.kind === 'object' ? SLOT_OBJECT : node.kind === 'person' ? SLOT_PERSON : SLOT_POSSESSIVE);
+      writeU8(w, node.maxTokens);
       break;
   }
 }
@@ -498,22 +499,60 @@ function deserializeNode(view: Uint8Array, offset: number, end: number, out: Phr
 
 // --- Binary helpers ---
 
-function pushU16(out: number[], v: number): void {
-  out.push(v & 0xff, (v >>> 8) & 0xff);
+interface ByteWriter {
+  bytes: Uint8Array;
+  offset: number;
 }
 
-function pushU32(out: number[], v: number): void {
-  out.push(v & 0xff, (v >>> 8) & 0xff, (v >>> 16) & 0xff, (v >>> 24) & 0xff);
+function createWriter(capacity: number): ByteWriter {
+  return { bytes: new Uint8Array(capacity), offset: 0 };
 }
 
-function pushI32(out: number[], v: number): void {
-  pushU32(out, v | 0);
+function ensureCapacity(w: ByteWriter, n: number): void {
+  if (w.offset + n <= w.bytes.length) return;
+  let size = w.bytes.length * 2;
+  while (w.offset + n > size) size *= 2;
+  const next = new Uint8Array(size);
+  next.set(w.bytes.subarray(0, w.offset));
+  w.bytes = next;
 }
 
-function pushString(out: number[], s: string): void {
+function writeU8(w: ByteWriter, v: number): void {
+  ensureCapacity(w, 1);
+  w.bytes[w.offset] = v & 0xff;
+  w.offset += 1;
+}
+
+function writeU16(w: ByteWriter, v: number): void {
+  ensureCapacity(w, 2);
+  w.bytes[w.offset] = v & 0xff;
+  w.bytes[w.offset + 1] = (v >>> 8) & 0xff;
+  w.offset += 2;
+}
+
+function writeU32(w: ByteWriter, v: number): void {
+  ensureCapacity(w, 4);
+  w.bytes[w.offset] = v & 0xff;
+  w.bytes[w.offset + 1] = (v >>> 8) & 0xff;
+  w.bytes[w.offset + 2] = (v >>> 16) & 0xff;
+  w.bytes[w.offset + 3] = (v >>> 24) & 0xff;
+  w.offset += 4;
+}
+
+function writeI32(w: ByteWriter, v: number): void {
+  writeU32(w, v | 0);
+}
+
+function writeBytes(w: ByteWriter, bytes: Uint8Array): void {
+  ensureCapacity(w, bytes.length);
+  w.bytes.set(bytes, w.offset);
+  w.offset += bytes.length;
+}
+
+function writeString(w: ByteWriter, s: string): void {
   const bytes = utf8Bytes(s);
-  pushU16(out, bytes.length);
-  for (const b of bytes) out.push(b);
+  writeU16(w, bytes.length);
+  writeBytes(w, bytes);
 }
 
 function readU16(view: Uint8Array, offset: number): number {
@@ -538,10 +577,10 @@ function skipString(view: Uint8Array, offset: number): number {
   return 2 + len;
 }
 
-function utf8Bytes(s: string): number[] {
-  return Array.from(new TextEncoder().encode(s));
+function utf8Bytes(s: string): Uint8Array {
+  return UTF8_ENCODER.encode(s);
 }
 
 function utf8String(bytes: Uint8Array): string {
-  return new TextDecoder().decode(bytes);
+  return UTF8_DECODER.decode(bytes);
 }
