@@ -31,8 +31,8 @@ interface MockSchema {
   readonly dictRows?: readonly unknown[][];
 }
 
-/** Answer exec() per query like a real db: sqlite_master lists `tables`,
- *  SELECTs throw for tables not in the schema. */
+/** Answer exec()/prepare() per query like a real db: sqlite_master + COUNT
+ *  go through exec, row SELECTs return a stepped statement. */
 function setupSqlJsMock({ tables, freqRows = [], dictRows = [] }: MockSchema): void {
   const exec = jest.fn().mockImplementation((sql: string) => {
     if (sql.includes('sqlite_master')) {
@@ -41,17 +41,29 @@ function setupSqlJsMock({ tables, freqRows = [], dictRows = [] }: MockSchema): v
     if (sql.startsWith('SELECT COUNT')) {
       return [{ columns: ['c'], values: [[freqRows.length + dictRows.length]] }];
     }
+    throw new Error(`unexpected exec: ${sql}`);
+  });
+  const prepare = jest.fn().mockImplementation((sql: string) => {
     const table = tables.find((t) => sql.includes(`FROM ${t}`));
     if (!table) throw new Error('no such table');
-    if (table === 'langResourceEntry') {
-      return [{ columns: ['term', 'reading', 'definition'], values: dictRows }];
-    }
-    return [{ columns: ['term', 'reading', 'frequency'], values: freqRows }];
+    const columns = table === 'langResourceEntry'
+      ? ['term', 'reading', 'definition']
+      : ['term', 'reading', 'frequency'];
+    const rows = table === 'langResourceEntry' ? dictRows : freqRows;
+    let index = -1;
+    return {
+      step: jest.fn().mockImplementation(() => ++index < rows.length),
+      getAsObject: jest.fn().mockImplementation(() => {
+        const row = rows[index] ?? [];
+        return Object.fromEntries(columns.map((col, j): [string, unknown] => [col, row[j]]));
+      }),
+      free: jest.fn(),
+    };
   });
-   
+
   const sqlJs = require('sql.js');
   sqlJs.default.mockResolvedValue({
-    Database: jest.fn().mockImplementation(() => ({ exec, close: jest.fn() })),
+    Database: jest.fn().mockImplementation(() => ({ exec, prepare, close: jest.fn() })),
   });
 }
 
