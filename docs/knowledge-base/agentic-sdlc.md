@@ -434,7 +434,7 @@ Audit 2026-09-17 bổ sung 1 lớp gap nữa — **silent failure ở ranh giớ
 - Fix: state machine `tasks/pipeline-state.json` + `scripts/pipeline-state.mjs` — transitions validate evidence **lúc gọi** (review fresh, journey structure, verdict `APPROVE*`, gates re-run thật ở `all` mode), không tin flag. Terminal `shipped`/`dropped`; `analyze → dropped` kill sớm qua `## Decision: no-go`.
 - 4 stage skills: `pipeline-analyze` (BA: BACCM → stakeholders → root-cause → go/no-go → FURPS+ → stories → journey → logic), `pipeline-specify` (use-case requirements → flows/states → function/feature → traceability), `pipeline-design` (concepts → mockup → brief → component mapping, `check-design-brief.mjs` deterministic), `pipeline-deliver` (plan → engine `autonomous-pipeline` → gates → verify → ship). Driver: `idea-pick-off`.
 - 6 skills cũ absorbed thành stubs — `/elicitation` vẫn resolve.
-- 9 hooks trên 7 events (§10.3) — fail-open warn; enforcement thật nằm ở transition-refuse, đúng nguyên tắc "hook guardrail không phải correctness".
+- 10 hooks trên 7 events (§10.3) — fail-open warn; enforcement thật nằm ở transition-refuse, đúng nguyên tắc "hook guardrail không phải correctness".
 
 ### 10.3. Primitives — rules / skills / hooks / subagents / plugins
 
@@ -444,7 +444,7 @@ Audit 2026-09-17 bổ sung 1 lớp gap nữa — **silent failure ở ranh giớ
 |---|---|---|---|
 | **Rule** | Text luôn trong context, mọi turn | Luật bất biến: conventions, boundaries, mandate | `AGENTS.md` (project) + Ponytail plugin `AGENTS.md` |
 | **Skill** | Playbook nạp on-demand khi task match | Tri thức chuyên sâu theo phase — không phải luật | 52 skills `.agents/skills/` + 6 `/ponytail:*` |
-| **Hook** | Code chạy thật ở lifecycle event, fail-open | **Enforcement** — thứ duy nhất agent không skip được | 9 hooks trên 7 events (xem bảng event dưới) |
+| **Hook** | Code chạy thật ở lifecycle event, fail-open | **Enforcement** — thứ duy nhất agent không skip được | 10 hooks trên 7 events (xem bảng event dưới) |
 | **Subagent** | Agent con, context tách, quyền hẹp hơn | Fresh-eyes verify + parallel lanes | `vision-reader` (`.devin/agents/`) + `spec-reviewer{,-swe,-glm}` (`.agents/agents/`) + built-in `subagent_general`/`subagent_explore` |
 | **Plugin** | Package gồm cả 4 thứ trên | Phân phối workflow qua git | `ponytail` v4.10.0 (`devin plugins install --local`) |
 
@@ -458,9 +458,11 @@ Audit 2026-09-17 bổ sung 1 lớp gap nữa — **silent failure ở ranh giớ
                     └──────────────┬──────────────────────┘
                                    │
         SessionStart ──► hook-session-prime ──► inject pipeline
-                                                   state + stage
-                                                   (owner-session only —
-                                                    others get info line)
+                    │                            state + stage
+                    │                            (owner-session only —
+                    │                             others get info line)
+                    └──► hook-ponytail-activate ──► ponytail ruleset
+                                                    theo level (plugin)
 User prompt ──► UserPromptSubmit ──► hook-ponytail (mode tracker)
                     │
                     ▼
@@ -496,11 +498,11 @@ User prompt ──► UserPromptSubmit ──► hook-ponytail (mode tracker)
               commit → CI (design-system-ci.yml)
 ```
 
-#### Hook event surface — 8 events, dùng 7 (9 hooks: 3× PostToolUse)
+#### Hook event surface — 8 events, dùng 7 (10 hooks: 3× PostToolUse)
 
 | Event | Trạng thái | Đang làm |
 |---|---|---|
-| `SessionStart` | ✅ | `hook-session-prime` — inject pipeline state; resume-pointer chỉ cho bound owner session, session khác thấy info line |
+| `SessionStart` | ✅ ×2 | `hook-session-prime` — inject pipeline state; resume-pointer chỉ cho bound owner session, session khác thấy info line · `hook-ponytail-activate` — chạy `ponytail-activate.js` của plugin (Devin không auto-load `hooks/claude-codex-hooks.json` của plugin): inject ruleset theo level + codebase map + ghi flag `~/.claude/ponytail-modes/<sha256(project)>` |
 | `UserPromptSubmit` | ✅ | `hook-ponytail` — ponytail mode-tracker |
 | `PreToolUse` | ✅ | `hook-stage-guard` — state-file-edit guard universal; item-scoped warnings (`src/` trước stage, spec stale) chỉ bound owner session |
 | `PostToolUse` | ✅ ×3 | `hook-skill-index` (regen index khi SKILL.md đổi) + `hook-gates-tracker` (ghi `gates.*` chỉ từ bound session) + `hook-owner-bind` (exec `--owner <id>` khớp `owner.id` → `owner.sessionId = payload.session_id`) |
