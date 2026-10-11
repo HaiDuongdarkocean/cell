@@ -20,7 +20,7 @@ import type { BaseImportStrategy } from './baseImportStrategy';
 export function createStrategy(
   format: ImportFormat,
   options: StrategyOptions,
-  fileData: { data: Uint8Array; fileName: string },
+  fileData: { data: Uint8Array; fileName: string; zipFiles?: Record<string, Uint8Array> },
 ): BaseImportStrategy<unknown, unknown> {
   switch (format) {
     case 'txt':

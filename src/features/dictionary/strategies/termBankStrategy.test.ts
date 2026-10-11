@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto';
 import { TermBankStrategy } from '@/features/dictionary/strategies/termBankStrategy';
+import { unzipAll } from '@/features/dictionary/logic/fileDetector';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
 import { findFrequencyByResource } from '@/features/dictionary/repositories/resourceEntryRepository';
 import { findDictionaryByResource } from '@/features/dictionary/repositories/resourceEntryRepository';
@@ -213,5 +214,69 @@ describe('termBankStrategy — dictionary (term_bank)', () => {
     );
     const result = await strategy.execute();
     expect(result.wordCount).toBe(2);
+  });
+
+  it('parses each bank file exactly once (no separate count pass)', async () => {
+    const resourceId = await addResource(LANG, {
+      name: 'dict.zip', langCode: LANG, type: 'DICTIONARY', format: 'term-bank',
+      signature: 'sig-d5', wordCount: 0, installationFinished: false, importedAt: Date.now(),
+    });
+    const data = makeTermBankDictZip([
+      [['__bank_one__', 'x', 'n', 'n', 0, ['one']]],
+      [['__bank_two__', 'y', 'n', 'n', 0, ['two']]],
+    ]);
+    const parseSpy = jest.spyOn(JSON, 'parse');
+    try {
+      const strategy = new TermBankStrategy(
+        { resourceId, langCode: LANG },
+        { data, fileName: 'dict.zip' },
+      );
+      const result = await strategy.execute();
+      expect(result.wordCount).toBe(2);
+    } finally {
+      const bankParses = (marker: string) =>
+        parseSpy.mock.calls.filter(([src]) => typeof src === 'string' && src.includes(marker)).length;
+      expect(bankParses('__bank_one__')).toBe(1);
+      expect(bankParses('__bank_two__')).toBe(1);
+      parseSpy.mockRestore();
+    }
+  });
+
+  it('reuses a caller-provided unzip map instead of re-inflating data', async () => {
+    const resourceId = await addResource(LANG, {
+      name: 'dict.zip', langCode: LANG, type: 'DICTIONARY', format: 'term-bank',
+      signature: 'sig-d6', wordCount: 0, installationFinished: false, importedAt: Date.now(),
+    });
+    const zipFiles = unzipAll(makeTermBankDictZip([
+      [['solo', 'solo', 'n', 'n', 0, ['only-def']]],
+    ]));
+    const strategy = new TermBankStrategy(
+      { resourceId, langCode: LANG },
+      { data: new Uint8Array(0), fileName: 'dict.zip', zipFiles },
+    );
+    const result = await strategy.execute();
+    expect(result.wordCount).toBe(1);
+    const stored = await findDictionaryByResource(LANG, resourceId);
+    expect(stored[0]?.term).toBe('solo');
+  });
+
+  it('grows the progress total cumulatively as banks parse', async () => {
+    const resourceId = await addResource(LANG, {
+      name: 'dict.zip', langCode: LANG, type: 'DICTIONARY', format: 'term-bank',
+      signature: 'sig-d7', wordCount: 0, installationFinished: false, importedAt: Date.now(),
+    });
+    const bank1 = Array.from({ length: 5000 }, (_, i) => [`t${i}`, `t${i}`, 'n', 'n', 0, [`d${i}`]]);
+    const bank2 = Array.from({ length: 100 }, (_, i) => [`u${i}`, `u${i}`, 'n', 'n', 0, [`e${i}`]]);
+    const data = makeTermBankDictZip([bank1, bank2]);
+    const progress: Array<[number, number]> = [];
+    const strategy = new TermBankStrategy(
+      { resourceId, langCode: LANG, onProgress: (p, t) => progress.push([p, t]) },
+      { data, fileName: 'dict.zip' },
+    );
+    const result = await strategy.execute();
+    expect(result.wordCount).toBe(5100);
+    expect(progress[0]).toEqual([5000, 5000]);
+    expect(progress[progress.length - 1]).toEqual([5100, 5100]);
+    expect(progress.some(([, total]) => total < 5100)).toBe(true);
   });
 });
