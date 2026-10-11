@@ -102,4 +102,50 @@ describe('jsonFrequencyStrategy', () => {
     );
     await expect(strategy.execute()).rejects.toThrow(/JSON array of frequency objects/);
   });
+
+  it('skips non-object elements, invalid rows and (term,pos) duplicates', async () => {
+    const resourceId = await makeResource('freq.json', 'sig5');
+    const rows = JSON.stringify([
+      { term: 'alpha', rank: 1 },
+      'junk-string',
+      42,
+      null,
+      { term: 'alpha', rank: 9 },
+      { term: 'beta', frequency: 2, pos: 'noun' },
+      { term: 'beta', frequency: 5, pos: 'noun' },
+      { term: 'beta', frequency: 3 },
+      { term: '', rank: 4 },
+      { term: 'gamma' },
+      { term: 'delta', rank: -1 },
+      { term: 'echo', rank: 6, total: 1000, genres: { spoken: 7, bogus: 1, fiction: -2 } },
+    ]);
+    const strategy = new JsonFrequencyStrategy(
+      { resourceId, langCode: LANG },
+      { data: strToU8(rows), fileName: 'freq.json' },
+    );
+    const result = await strategy.execute();
+    expect(result.wordCount).toBe(4);
+    const entries = await findFrequencyByResource(LANG, resourceId);
+    const sorted = entries.map((e) => `${e.term}:${e.pos ?? ''}:${e.frequency}`).sort();
+    expect(sorted).toEqual(['alpha::1', 'beta::3', 'beta:noun:2', 'echo::6']);
+    const echo = entries.find((e) => e.term === 'echo');
+    expect(echo?.total).toBe(1000);
+    expect(echo?.genres).toEqual({ spoken: 7 });
+  });
+
+  it('rejects a malformed array envelope', async () => {
+    const strategy = new JsonFrequencyStrategy(
+      { resourceId: 1, langCode: LANG },
+      { data: strToU8('[{"term":"a","rank":1},]'), fileName: 'freq.json' },
+    );
+    await expect(strategy.execute()).rejects.toThrow(/Failed to parse JSON frequency file/);
+  });
+
+  it('rejects trailing content after the array', async () => {
+    const strategy = new JsonFrequencyStrategy(
+      { resourceId: 1, langCode: LANG },
+      { data: strToU8('[{"term":"a","rank":1}] extra'), fileName: 'freq.json' },
+    );
+    await expect(strategy.execute()).rejects.toThrow(/Failed to parse JSON frequency file/);
+  });
 });
