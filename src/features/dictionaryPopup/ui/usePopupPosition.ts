@@ -242,10 +242,31 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     // Same-level re-lookup: drop any drag offset and snap the popup back to
     // the new anchor position.
     dragOffsetRef.current = { left: 0, top: 0 };
+    setTransform(undefined);
     setPosition(
       computeAndClampPosition(sizeRef.current, { left: 0, top: 0 }, getVw(), getVh()),
     );
   }, [anchorVersion, computeAndClampPosition, getVw, getVh]);
+
+  const clampDragVisual = useCallback(
+    (session: DragSession, offset: PopupPosition): PopupPosition => {
+      const pos = computeAndClampPosition(
+        sizeRef.current,
+        offset,
+        session.cachedVw,
+        session.cachedVh,
+      );
+      return finalizePosition(
+        pos.left,
+        pos.top,
+        session.cachedWidth,
+        session.cachedHeight,
+        session.cachedVw,
+        session.cachedVh,
+      );
+    },
+    [computeAndClampPosition],
+  );
 
   const endSession = useCallback((clientX: number, clientY: number) => {
     const session = sessionRef.current;
@@ -262,6 +283,24 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     setTransition(undefined);
     setTransform(undefined);
     lastPointerRef.current = null;
+
+    if (session.type === 'drag') {
+      // Commit the dragged position into left/top now that the transform
+      // delta is cleared — the popup lands where the transform left it.
+      dragOffsetRef.current = {
+        left: session.startOffset.left + (clientX - session.startX),
+        top: session.startOffset.top + (clientY - session.startY),
+      };
+      const committed = clampDragVisual(session, dragOffsetRef.current);
+      if (
+        committed.left !== positionRef.current.left
+        || committed.top !== positionRef.current.top
+      ) {
+        positionRef.current = committed;
+        setPosition(committed);
+      }
+      return;
+    }
 
     if (session.type === 'resize') {
       onSizeChangeRef.current?.(sizeRef.current, sheetHeightRef.current);
@@ -309,7 +348,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
       setTransition(undefined);
       setTransform(undefined);
     }, 200);
-  }, []);
+  }, [clampDragVisual]);
 
   const applyPointerUpdate = useCallback((clientX: number, clientY: number) => {
     const session = sessionRef.current;
@@ -323,23 +362,12 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
         top: session.startOffset.top + dy,
       };
       dragOffsetRef.current = offset;
-      const pos = computeAndClampPosition(
-        sizeRef.current,
-        offset,
-        session.cachedVw,
-        session.cachedVh,
+      const visual = clampDragVisual(session, offset);
+      // Visual delta rides transform so left/top (and layout) stay put during
+      // the gesture; the offset commits on pointerup.
+      setTransform(
+        `translate(${visual.left - positionRef.current.left}px, ${visual.top - positionRef.current.top}px)`,
       );
-      // Use the cached drag dims for final clamp; computeAndClampPosition uses
-      // current size which is stable during a drag.
-      const clamped = finalizePosition(
-        pos.left,
-        pos.top,
-        session.cachedWidth,
-        session.cachedHeight,
-        session.cachedVw,
-        session.cachedVh,
-      );
-      setPosition(clamped);
       return;
     }
 
@@ -390,7 +418,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
       setTransform(`translateY(${dy}px)`);
       setTransition('none');
     }
-  }, [computeAndClampPosition]);
+  }, [clampDragVisual, computeAndClampPosition]);
 
   const onPointerMove = useCallback((e: globalThis.PointerEvent) => {
     if (!sessionRef.current) return;
@@ -450,6 +478,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
         } else {
           const pos = computeAndClampPosition(nextSize, dragOffsetRef.current, vw, vh);
           setPosition(pos);
+          setTransform(undefined);
         }
       });
     };
@@ -508,7 +537,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
   ]);
 
   const startWillChange = useCallback(() => {
-    setWillChange('left, top, width, height');
+    setWillChange('transform');
   }, []);
 
   const onPointerDownHeader = useCallback((e: PointerEvent<HTMLDivElement>) => {

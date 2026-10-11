@@ -72,7 +72,17 @@ describe('usePopupPosition', () => {
     fireEvent.pointerDown(header, { clientX: 100, clientY: 100, pointerId: 1 });
     fireEvent.pointerMove(document, { clientX: 200, clientY: 150, pointerId: 1 });
 
+    // During the gesture the offset rides transform; left/top stay committed.
+    expect(root).toHaveStyle({ left: '154px', top: '104px' });
+    expect(root.style.transform).toBe('translate(100px, 50px)');
+    expect(root.style.willChange).toBe('transform');
+
+    fireEvent.pointerUp(document, { clientX: 200, clientY: 150, pointerId: 1 });
+
+    // On release the offset commits to left/top and transform clears.
     expect(root).toHaveStyle({ left: '254px', top: '154px' });
+    expect(root.style.transform).toBe('');
+    expect(root.style.willChange).toBe('');
   });
 
   it('resizes the popup from the resize handle', () => {
