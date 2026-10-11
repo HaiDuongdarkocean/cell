@@ -27,9 +27,13 @@ export function useJobs(kind?: JobKind | readonly JobKind[]): Job[] {
     });
     const unsub = subscribeJobEvents(({ job, removedId }) => {
       setJobs((prev) => {
-        if (removedId !== undefined) return prev.filter((j) => j.id !== removedId);
+        if (removedId !== undefined) {
+          return prev.some((j) => j.id === removedId) ? prev.filter((j) => j.id !== removedId) : prev;
+        }
         if (!job) return prev;
-        if (kindSet !== null && !kindSet.has(job.kind)) return prev.filter((j) => j.id !== job.id);
+        if (kindSet !== null && !kindSet.has(job.kind)) {
+          return prev.some((j) => j.id === job.id) ? prev.filter((j) => j.id !== job.id) : prev;
+        }
         const index = prev.findIndex((j) => j.id === job.id);
         if (index === -1) return [job, ...prev];
         const next = [...prev];

@@ -65,6 +65,16 @@ describe('useJobs', () => {
     await waitFor(() => expect(result.current).toHaveLength(2));
   });
 
+  it('keeps the same array reference when an event changes nothing in-kind', async () => {
+    const { result } = renderHook(() => useJobs('voice-download'));
+    emit({ job: makeJob('j1', 'done', 100) });
+    await waitFor(() => expect(result.current).toHaveLength(0));
+    const ref = result.current;
+    emit({ job: makeJob('j2', 'running', 200) });
+    emit({ removedId: 'never-tracked' });
+    expect(result.current).toBe(ref);
+  });
+
   it('drops a job when a removedId event arrives', async () => {
     const { result } = renderHook(() => useJobs());
     emit({ job: makeJob('j1', 'done', 100) });

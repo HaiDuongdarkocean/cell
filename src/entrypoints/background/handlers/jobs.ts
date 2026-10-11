@@ -139,7 +139,7 @@ function ensureRegistry(ctx: BackgroundContext): JobRegistry {
   if (!registry) {
     registry = new JobRegistry(makeDeps(ctx), {
       maxRunning: {
-        'resource-import': 2,
+        'resource-import': 1,
         'resource-delete': 2,
         'voice-download': 1,
         'local-audio-index': 1,

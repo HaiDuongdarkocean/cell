@@ -217,13 +217,34 @@ describe('JobRegistry', () => {
     expect(deps.activeCounts).toContain(1);
   });
 
-  it('JOB_EVENT broadcast fires on every update', () => {
+  it('JOB_EVENT broadcast fires immediately on status and coalesces progress bursts', () => {
     const deps = makeDeps();
     const r = reg(deps);
     r.register({ id: 'j1', kind: 'resource-delete', label: 'd', status: 'queued', ...base });
     r.markRunning('j1');
-    r.setProgress('j1', { done: 5, total: 9 });
-    expect(deps.events.at(-1)?.progress.done).toBe(5);
+    const before = deps.events.length;
+    for (let done = 1; done <= 6; done += 1) r.setProgress('j1', { done, total: 9 });
+    expect(deps.events.length).toBe(before);
+    jest.advanceTimersByTime(250);
+    expect(deps.events.length).toBe(before + 1);
+    expect(deps.events.at(-1)?.progress.done).toBe(6);
+    r.markDone('j1');
+    expect(deps.events.at(-1)?.status).toBe('done');
+  });
+
+  it('broadcasts progress again once the throttle window has passed', () => {
+    const deps = makeDeps();
+    const r = reg(deps);
+    r.register({ id: 'j1', kind: 'resource-delete', label: 'd', status: 'queued', ...base });
+    r.markRunning('j1');
+    const before = deps.events.length;
+    r.setProgress('j1', { done: 1, total: 9 });
+    jest.advanceTimersByTime(300);
+    expect(deps.events.at(-1)?.progress.done).toBe(1);
+    r.setProgress('j1', { done: 2, total: 9 });
+    jest.advanceTimersByTime(250);
+    expect(deps.events.at(-1)?.progress.done).toBe(2);
+    expect(deps.events.length).toBe(before + 2);
   });
 
   it('restore propagates load failure and stays retryable', async () => {

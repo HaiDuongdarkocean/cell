@@ -10,6 +10,7 @@ import {
 } from '@/entities/job/types';
 
 const PROGRESS_PERSIST_THROTTLE_MS = 500;
+const PROGRESS_BROADCAST_THROTTLE_MS = 250;
 
 export interface JobExecutor {
   start(job: Job): void | Promise<void>;
@@ -46,6 +47,8 @@ interface TrackedJob {
   job: Job;
   lastPersistedAt: number;
   persistTimer: ReturnType<typeof setTimeout> | null;
+  lastBroadcastAt: number;
+  broadcastTimer: ReturnType<typeof setTimeout> | null;
   writeChain: Promise<void>;
 }
 
@@ -86,7 +89,7 @@ export class JobRegistry {
     const persisted = await this.deps.loadPersisted();
     this.restored = true;
     for (const job of persisted) {
-      this.jobs.set(job.id, { job, lastPersistedAt: 0, persistTimer: null, writeChain: Promise.resolve() });
+      this.jobs.set(job.id, { job, lastPersistedAt: 0, persistTimer: null, lastBroadcastAt: 0, broadcastTimer: null, writeChain: Promise.resolve() });
     }
     this.notifyActiveCount();
   }
@@ -131,7 +134,7 @@ export class JobRegistry {
   }
 
   private track(job: Job, persistImmediate: boolean): void {
-    const tracked: TrackedJob = { job, lastPersistedAt: 0, persistTimer: null, writeChain: Promise.resolve() };
+    const tracked: TrackedJob = { job, lastPersistedAt: 0, persistTimer: null, lastBroadcastAt: 0, broadcastTimer: null, writeChain: Promise.resolve() };
     this.jobs.set(job.id, tracked);
     if (persistImmediate) {
       this.flushNow(tracked);
@@ -143,7 +146,9 @@ export class JobRegistry {
     const tracked = this.jobs.get(id);
     if (!tracked) return undefined;
     tracked.job = { ...tracked.job, ...patch, updatedAt: this.deps.now() };
-    this.deps.broadcast(tracked.job);
+    const progressOnly = patch.progress !== undefined && Object.keys(patch).every((k) => k === 'progress');
+    if (progressOnly) this.broadcastThrottled(tracked);
+    else this.broadcastNow(tracked);
     if (options?.persistNow) {
       this.flushNow(tracked);
     } else {
@@ -189,6 +194,10 @@ export class JobRegistry {
     if (tracked.persistTimer !== null) {
       clearTimeout(tracked.persistTimer);
       tracked.persistTimer = null;
+    }
+    if (tracked.broadcastTimer !== null) {
+      clearTimeout(tracked.broadcastTimer);
+      tracked.broadcastTimer = null;
     }
     this.jobs.delete(id);
     this.deps.broadcastRemoved(id);
@@ -302,6 +311,28 @@ export class JobRegistry {
     } catch {
       // stays failed — the next sweep retries again
     }
+  }
+
+  private broadcastThrottled(tracked: TrackedJob): void {
+    const elapsed = this.deps.now() - tracked.lastBroadcastAt;
+    if (elapsed >= PROGRESS_BROADCAST_THROTTLE_MS) {
+      this.broadcastNow(tracked);
+      return;
+    }
+    if (tracked.broadcastTimer !== null) return;
+    tracked.broadcastTimer = setTimeout(() => {
+      tracked.broadcastTimer = null;
+      this.broadcastNow(tracked);
+    }, PROGRESS_BROADCAST_THROTTLE_MS - elapsed);
+  }
+
+  private broadcastNow(tracked: TrackedJob): void {
+    if (tracked.broadcastTimer !== null) {
+      clearTimeout(tracked.broadcastTimer);
+      tracked.broadcastTimer = null;
+    }
+    tracked.lastBroadcastAt = this.deps.now();
+    this.deps.broadcast(tracked.job);
   }
 
   private flushThrottled(tracked: TrackedJob): void {

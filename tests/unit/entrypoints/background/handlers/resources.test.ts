@@ -148,6 +148,25 @@ describe('resource import chunks — live component selection', () => {
     expect(opts.components).toEqual(['definitions']);
   });
 
+  it('reassembles chunked base64 into the original file bytes for the executor', async () => {
+    const handlers = makeContext();
+    const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!;
+    await send(chunk('job-bytes', 0, 3, undefined));
+    await send(chunk('job-bytes', 1, 3, undefined));
+    await send(chunk('job-bytes', 2, 3, undefined));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mockedImportFile).toHaveBeenCalledTimes(1);
+    const [file] = mockedImportFile.mock.calls[0]!;
+    const bytes = await new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(file as File);
+    });
+    expect(Buffer.from(bytes).equals(Buffer.from('fake-bytes-for-import'))).toBe(true);
+  });
+
   it('uses the first selection unchanged when chunks carry none', async () => {
     const handlers = makeContext();
     const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!;
