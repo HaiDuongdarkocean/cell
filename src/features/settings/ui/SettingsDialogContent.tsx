@@ -22,7 +22,6 @@ import { SyncPanel } from '@/features/sync';
 import { AnkiStatusSyncPanel } from '@/features/ankiStatusSync';
 import { Dictionary } from '@/features/dictionaryPopup';
 import { Toggle } from '@/shared/ui/Toggle';
-import { Label } from '@/shared/ui/Label';
 import { ShortcutInput } from '@/shared/ui/ShortcutInput';
 import { isShortcutConflict } from '@/entities/settings/lib/shortcutConflicts';
 import { getActiveProfileSettings } from '@/entities/settings';
@@ -31,10 +30,8 @@ import { EmptyState } from '@/shared/ui/EmptyState';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { Select } from '@/shared/ui/Select';
-import { HintIcon } from '@/shared/ui/HintIcon';
-import { Card } from '@/shared/ui/Card';
-import { Heading } from '@/shared/ui/Heading';
-import { Text } from '@/shared/ui/Text';
+import { SettingsSection } from '@/shared/ui/SettingsSection';
+import { SettingsGroup } from '@/shared/ui/SettingsGroup';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
 
 import { NavItem } from '@/shared/ui/NavItem';
@@ -210,6 +207,8 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
     { id: 'sync', label: t('settings.nav.sync'), icon: 'navRepeat' },
   ];
 
+  const sectionRef = (id: string) => (el: HTMLElement | null) => { sectionRefs.current[id] = el; };
+
   return (
         <div
           ref={wrapperRef}
@@ -244,581 +243,503 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
             </Navigation>
           </Sidebar>
 
-          {/* === Main column (cards, scrollable) === */}
+          {/* === Main column (flat section bands, scrollable) === */}
           <div className={styles.mainCol} ref={mainColRef}>
 
-            {/* === Card 0: General === */}
-            <Card
-              ref={(el: HTMLDivElement) => { sectionRefs.current.general = el; }}
-              className={styles.sectionCard}
+            {/* === General === */}
+            <SettingsSection
+              ref={sectionRef('general')}
+              headingLevel={4}
+              title={t('settings.general.title')}
+              description={t('settings.general.desc')}
               data-section="general"
             >
-              <div className={styles.cardHeader}>
-                <Heading level={4} size={3} className={styles.cardTitle}>{t('settings.general.title')}</Heading>
-                <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.general.desc')}</Text>
-              </div>
-              <VStack className={styles.cardBody}>
-                <SettingsRow dense stacked>
-                  <Label className={styles.rowLabel} size="sm" htmlFor="set-ui-language">
-                    {t('settings.uiLanguage.label')}
-                    <HintIcon
-                      hint={t('settings.uiLanguage.hint')}
-                      ariaLabel={t('settings.uiLanguage.hintAria')}
-                    />
-                  </Label>
-                  <Select
-                    id="set-ui-language"
-                    className={styles.select}
-                    value={settings.uiLanguage ?? 'auto'}
-                    options={uiLanguageOptions}
-                    onChange={(value) => {
-                      const next = value as UiLanguagePreference;
-                      setUiLanguageOverride(next);
-                      update('uiLanguage', next);
-                    }}
-                    data-cell-id="settings-ui-language"
-                    aria-label={t('settings.uiLanguage.label')}
-                  />
-                </SettingsRow>
+              <SettingsRow
+                dense
+                stacked
+                title={t('settings.uiLanguage.label')}
+                description={t('settings.uiLanguage.hint')}
+                labelFor="set-ui-language"
+              >
+                <Select
+                  id="set-ui-language"
+                  className={styles.select}
+                  value={settings.uiLanguage ?? 'auto'}
+                  options={uiLanguageOptions}
+                  onChange={(value) => {
+                    const next = value as UiLanguagePreference;
+                    setUiLanguageOverride(next);
+                    update('uiLanguage', next);
+                  }}
+                  data-cell-id="settings-ui-language"
+                  aria-label={t('settings.uiLanguage.label')}
+                />
+              </SettingsRow>
 
-                <SettingsRow dense divider>
-                  <span className={styles.rowLabel}>
-                    {t('settings.general.showDictPopup')}
-                    <HintIcon
-                      hint={t('settings.general.showDictPopup.hint')}
-                      ariaLabel={t('settings.hint.aria', [t('settings.general.showDictPopup')])}
-                    />
-                  </span>
-                  <Toggle
-                    checked={settings.dictionaryPopup?.enabled ?? true}
-                    onChange={(next) => {
-                      const dp = settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS;
-                      onChange({ ...settings, dictionaryPopup: { ...dp, enabled: next } });
-                    }}
-                    ariaLabel={t('settings.general.showDictPopup')}
-                  />
-                </SettingsRow>
-              </VStack>
-            </Card>
+              <SettingsRow
+                dense
+                divider
+                title={t('settings.general.showDictPopup')}
+                description={t('settings.general.showDictPopup.hint')}
+              >
+                <Toggle
+                  checked={settings.dictionaryPopup?.enabled ?? true}
+                  onChange={(next) => {
+                    const dp = settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS;
+                    onChange({ ...settings, dictionaryPopup: { ...dp, enabled: next } });
+                  }}
+                  ariaLabel={t('settings.general.showDictPopup')}
+                />
+              </SettingsRow>
+            </SettingsSection>
 
-            {/* === Card 1: Language Profile === */}
-            <Card
-              ref={(el: HTMLDivElement) => { sectionRefs.current.languageProfile = el; }}
-              className={styles.sectionCard}
+            {/* === Language Profile === */}
+            <SettingsSection
+              ref={sectionRef('languageProfile')}
+              headingLevel={4}
+              title={t('settings.languageProfile.title')}
+              description={t('settings.languageProfile.desc')}
               data-section="languageProfile"
             >
-              <div className={styles.cardHeader}>
-                <Heading level={4} size={3} className={styles.cardTitle}>{t('settings.languageProfile.title')}</Heading>
-                <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.languageProfile.desc')}</Text>
-              </div>
-              <VStack className={styles.cardBody}>
-                <LanguageProfilePanel settings={settings} onChange={onChange} />
-              </VStack>
-            </Card>
+              <LanguageProfilePanel settings={settings} onChange={onChange} />
+            </SettingsSection>
 
-            {/* === Card 11: Resources === */}
-            <Card
-              ref={(el: HTMLDivElement) => { sectionRefs.current.resources = el; }}
-              className={styles.sectionCard}
+            {/* === Resources === */}
+            <SettingsSection
+              ref={sectionRef('resources')}
+              headingLevel={4}
+              title={t('settings.resources.title')}
+              description={t('settings.resources.desc')}
               data-section="resources"
             >
-              <div className={styles.cardHeader}>
-                <Heading level={4} size={3} className={styles.cardTitle}>{t('settings.resources.title')}</Heading>
-                <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.resources.desc')}</Text>
-              </div>
-              <VStack gap="0" className={styles.cardBody}>
-                {settings.languageProfiles.length === 0 ? (
-                  <EmptyState
-                    size="compact"
-                    icon={<Icon name="languages" size="lg" />}
-                    title={t('settings.resources.noProfile.title')}
-                    description={t('settings.resources.noProfile.desc')}
-                    action={
-                      <Button
-                        type="button"
-                        size="sm"
-                        data-cell-id="resources-goto-profiles"
-                        onClick={() => {
-                          setActiveSection('languageProfile');
-                          sectionRefs.current.languageProfile?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }}
-                      >
-                        {t('settings.resources.noProfile.cta')}
-                      </Button>
-                    }
-                  />
-                ) : (
-                  <ResourcesPanel
-                    langCode={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
-                    frequencyBands={settings.frequencyBands}
-                    onFrequencyBandsChange={(bands) => update('frequencyBands', bands)}
-                    lookupPanel={
-                      <Dictionary
-                        variant="integrated"
-                        langCode={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
-                        sourceLang={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
-                        targetLang={activeProfile?.native ?? settings.universalNativeLanguage}
-                        isOpen={false}
-                      />
-                    }
-                  />
-                )}
-              </VStack>
-            </Card>
+              {settings.languageProfiles.length === 0 ? (
+                <EmptyState
+                  size="compact"
+                  icon={<Icon name="languages" size="lg" />}
+                  title={t('settings.resources.noProfile.title')}
+                  description={t('settings.resources.noProfile.desc')}
+                  action={
+                    <Button
+                      type="button"
+                      size="sm"
+                      data-cell-id="resources-goto-profiles"
+                      onClick={() => {
+                        setActiveSection('languageProfile');
+                        sectionRefs.current.languageProfile?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                    >
+                      {t('settings.resources.noProfile.cta')}
+                    </Button>
+                  }
+                />
+              ) : (
+                <ResourcesPanel
+                  langCode={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
+                  frequencyBands={settings.frequencyBands}
+                  onFrequencyBandsChange={(bands) => update('frequencyBands', bands)}
+                  lookupPanel={
+                    <Dictionary
+                      variant="integrated"
+                      langCode={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
+                      sourceLang={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
+                      targetLang={activeProfile?.native ?? settings.universalNativeLanguage}
+                      isOpen={false}
+                    />
+                  }
+                />
+              )}
+            </SettingsSection>
 
-            {/* === Card 2: Media Selection === */}
-            <Card
-              ref={(el: HTMLDivElement) => { sectionRefs.current.media = el; }}
-              className={styles.sectionCard}
+            {/* === Media Selection === */}
+            <SettingsSection
+              ref={sectionRef('media')}
+              headingLevel={4}
+              title={t('settings.media.title')}
+              description={t('settings.media.desc')}
               data-section="media"
             >
-              <div className={styles.cardHeader}>
-                <Heading level={4} size={3} className={styles.cardTitle}>{t('settings.media.title')}</Heading>
-                <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.media.desc')}</Text>
-              </div>
-              <VStack gap="2" className={styles.cardBody}>
-                <SettingsRow dense>
-                  <span className={styles.rowLabel}>
-                    {t('settings.media.autoSelect')}
-                    <HintIcon
-                      hint={t('settings.media.autoSelect.hint')}
-                      ariaLabel={t('settings.hint.aria', [t('settings.media.autoSelect')])}
-                    />
-                  </span>
-                  <Toggle
-                    checked={settings.autoSelectEnabled}
-                    onChange={(next) => update('autoSelectEnabled', next)}
-                    ariaLabel={t('settings.media.autoSelect')}
+              <SettingsRow
+                dense
+                title={t('settings.media.autoSelect')}
+                description={t('settings.media.autoSelect.hint')}
+              >
+                <Toggle
+                  checked={settings.autoSelectEnabled}
+                  onChange={(next) => update('autoSelectEnabled', next)}
+                  ariaLabel={t('settings.media.autoSelect')}
+                />
+              </SettingsRow>
+
+              {settings.autoSelectEnabled && (
+                <SettingsRow
+                  dense
+                  divider
+                  stacked
+                  child
+                  title={t('settings.media.subtitleLanguages')}
+                  labelFor="subtitle-lang-multiselect"
+                >
+                  <MultiSelect
+                    id="subtitle-lang-multiselect"
+                    testId="subtitle-lang-multiselect"
+                    options={SUBTITLE_LANGUAGES}
+                    selectedValues={settings.selectedSubtitleLanguages}
+                    onChange={(values) => update('selectedSubtitleLanguages', values)}
+                    exclusiveValues={['all']}
+                    popularValues={['en', 'vi', 'ja', 'ko', 'zh', 'es', 'fr', 'de']}
                   />
                 </SettingsRow>
+              )}
+            </SettingsSection>
 
-                {settings.autoSelectEnabled && (
-                  <SettingsRow dense divider stacked>
-                    <Label className={styles.rowLabel} size="sm" htmlFor="set-subtitle-lang">{t('settings.media.subtitleLanguages')}</Label>
-                    <MultiSelect
-                      testId="subtitle-lang-multiselect"
-                      options={SUBTITLE_LANGUAGES}
-                      selectedValues={settings.selectedSubtitleLanguages}
-                      onChange={(values) => update('selectedSubtitleLanguages', values)}
-                      exclusiveValues={['all']}
-                      popularValues={['en', 'vi', 'ja', 'ko', 'zh', 'es', 'fr', 'de']}
+            {/* === Subtitle Block === */}
+            <SettingsSection
+              ref={sectionRef('block')}
+              headingLevel={4}
+              title={t('settings.block.title')}
+              description={t('settings.block.desc')}
+              data-section="block"
+            >
+              <SettingsRow
+                dense
+                title={t('settings.block.autoLoad')}
+                description={t('settings.block.autoLoad.hint')}
+              >
+                <Toggle
+                  checked={settings.subtitleOverlayAutoLoad}
+                  onChange={(next) => update('subtitleOverlayAutoLoad', next)}
+                  ariaLabel={t('settings.block.autoLoad')}
+                />
+              </SettingsRow>
+
+              <SettingsRow
+                dense
+                divider
+                title={t('settings.block.autoLoadAsr')}
+                description={t('settings.block.autoLoadAsr.hint')}
+              >
+                <Toggle
+                  checked={settings.subtitleOverlayAutoLoadAsr}
+                  onChange={(next) => update('subtitleOverlayAutoLoadAsr', next)}
+                  ariaLabel={t('settings.block.autoLoadAsr')}
+                  disabled={!settings.subtitleOverlayAutoLoad}
+                />
+              </SettingsRow>
+
+              <SettingsRow
+                dense
+                divider
+                title={t('settings.block.autoTranslate')}
+                description={t('settings.block.autoTranslate.hint')}
+              >
+                <Toggle
+                  checked={settings.subtitleOverlayAutoTranslate}
+                  onChange={(next) => update('subtitleOverlayAutoTranslate', next)}
+                  ariaLabel={t('settings.block.autoTranslate')}
+                  disabled={!settings.subtitleOverlayAutoLoad}
+                />
+              </SettingsRow>
+
+              <SettingsRow
+                dense
+                divider
+                title={t('settings.block.showReadings')}
+                description={t('settings.block.showReadings.hint')}
+              >
+                <Toggle
+                  checked={settings.showReadings}
+                  onChange={(next) => update('showReadings', next)}
+                  ariaLabel={t('settings.block.showReadings')}
+                />
+              </SettingsRow>
+
+              <SettingsRow
+                dense
+                divider
+                title={t('settings.block.showWordTranslations')}
+                description={t('settings.block.showWordTranslations.hint')}
+              >
+                <Toggle
+                  checked={settings.showWordTranslations}
+                  onChange={(next) => update('showWordTranslations', next)}
+                  ariaLabel={t('settings.block.showWordTranslations')}
+                />
+              </SettingsRow>
+            </SettingsSection>
+
+            {/* === Dictionary Popup === */}
+            <SettingsSection
+              ref={sectionRef('dictionaryPopup')}
+              headingLevel={4}
+              title={t('settings.dictionaryPopup.title')}
+              description={t('settings.dictionaryPopup.desc')}
+              hint={t('settings.dictionaryPopup.saveHint')}
+              hintAriaLabel={t('settings.hint.aria', [t('settings.dictionaryPopup.title')])}
+              data-section="dictionaryPopup"
+            >
+              <DictionaryPopupSettingsPanel
+                settings={settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS}
+                onChange={(dp) => onChange({ ...settings, dictionaryPopup: dp })}
+              />
+            </SettingsSection>
+
+            {/* === Word badge === */}
+            <SettingsSection
+              ref={sectionRef('wordBadge')}
+              headingLevel={4}
+              title={t('settings.wordBadge.title')}
+              description={t('settings.wordBadge.desc')}
+              hint={t('settings.wordBadge.hint')}
+              hintAriaLabel={t('settings.hint.aria', [t('settings.wordBadge.title')])}
+              data-section="wordBadge"
+            >
+              <WordBadgeSettingsPanel
+                badgePointerTrigger={settings.dictionaryPopup?.badgePointerTrigger ?? DEFAULT_DICTIONARY_POPUP_SETTINGS.badgePointerTrigger}
+                onChange={(badge) => {
+                  const dp = settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS;
+                  onChange({ ...settings, dictionaryPopup: { ...dp, badgePointerTrigger: badge } });
+                }}
+              />
+            </SettingsSection>
+
+            {/* === Audio (merged Pronunciation + Local Pronunciation + TTS Voices) === */}
+            <SettingsSection
+              ref={sectionRef('audio')}
+              headingLevel={4}
+              title={t('settings.audio.title')}
+              description={t('settings.audio.desc')}
+              data-section="audio"
+            >
+              <AudioPanel
+                pronunciation={settings.pronunciation ?? DEFAULT_PRONUNCIATION_SETTINGS}
+                tts={settings.dictionaryPopup?.tts ?? DEFAULT_TTS_SETTINGS}
+                targetLang={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
+                onPronunciationChange={(p) => onChange({ ...settings, pronunciation: p })}
+                onTtsChange={(tts) => onChange({ ...settings, dictionaryPopup: { ...(settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS), tts } })}
+              />
+            </SettingsSection>
+
+            {/* === Local Player === */}
+            <SettingsSection
+              ref={sectionRef('localPlayer')}
+              headingLevel={4}
+              title={t('settings.localPlayer.title')}
+              description={t('settings.localPlayer.desc')}
+              data-section="localPlayer"
+            >
+              <SettingsRow
+                dense
+                title={t('settings.localPlayer.subtitleMatch')}
+                description={t('settings.localPlayer.subtitleMatch.hint')}
+              >
+                <Toggle
+                  checked={settings.localPlayerSettings.subtitleMatchEnabled}
+                  onChange={(next) => onChange({ ...settings, localPlayerSettings: { ...settings.localPlayerSettings, subtitleMatchEnabled: next } })}
+                  ariaLabel={t('settings.localPlayer.subtitleMatch')}
+                />
+              </SettingsRow>
+              <SettingsRow
+                dense
+                divider
+                title={t('settings.localPlayer.resumePrompt')}
+                description={t('settings.localPlayer.resumePrompt.hint')}
+              >
+                <Toggle
+                  checked={settings.localPlayerSettings.resumePromptEnabled}
+                  onChange={(next) => onChange({ ...settings, localPlayerSettings: { ...settings.localPlayerSettings, resumePromptEnabled: next } })}
+                  ariaLabel={t('settings.localPlayer.resumePrompt')}
+                />
+              </SettingsRow>
+            </SettingsSection>
+
+            {/* === Download === */}
+            <SettingsSection
+              ref={sectionRef('download')}
+              headingLevel={4}
+              title={t('settings.download.title')}
+              description={t('settings.download.desc')}
+              data-section="download"
+            >
+              <SettingsGroup label={t('settings.download.group.concurrency')}>
+                <SettingsRow dense stacked title={t('settings.download.concurrent')} labelFor="set-concurrent">
+                  <Select
+                    id="set-concurrent"
+                    className={styles.select}
+                    data-cell-id="concurrent-select"
+                    value={String(settings.concurrentDownloads)}
+                    options={[1, 2, 3, 5, 10].map((n) => ({ value: String(n), label: String(n) }))}
+                    onChange={(val) => update('concurrentDownloads', Number(val))}
+                  />
+                </SettingsRow>
+              </SettingsGroup>
+
+              <SettingsGroup label={t('settings.download.group.formatQuality')}>
+                <VStack columns={2} responsive gapResponsive={{ mobile: '2', desktop: '4' }}>
+                  <SettingsRow dense stacked title={t('settings.download.format')} labelFor="set-format">
+                    <Select
+                      id="set-format"
+                      className={styles.select}
+                      data-cell-id="format-select"
+                      value={settings.preferredVideoFormat}
+                      options={PREFERRED_FORMAT_OPTIONS.map((f) => ({ value: f, label: t(PREFERRED_FORMAT_LABEL_KEYS[f]) }))}
+                      onChange={(val) => update('preferredVideoFormat', val as 'mp4' | 'm3u8')}
+                    />
+                  </SettingsRow>
+                  <SettingsRow dense stacked title={t('settings.download.quality')} labelFor="set-quality">
+                    <Select
+                      id="set-quality"
+                      className={styles.select}
+                      data-cell-id="quality-select"
+                      value={settings.defaultQuality}
+                      options={QUALITY_OPTIONS.map((q) => ({ value: q, label: QUALITY_LABEL_KEYS[q] ? t(QUALITY_LABEL_KEYS[q]!) : q }))}
+                      onChange={(val) => update('defaultQuality', val as VideoQuality)}
+                    />
+                  </SettingsRow>
+                </VStack>
+              </SettingsGroup>
+
+              <SettingsGroup label={t('settings.download.group.conversion')}>
+                <SettingsRow dense stacked title={t('settings.download.convert')} labelFor="set-convert">
+                  <Select
+                    id="set-convert"
+                    className={styles.select}
+                    data-cell-id="convert-select"
+                    value={settings.convertToMp4}
+                    options={CONVERT_OPTIONS.map((m) => ({
+                      value: m,
+                      label: m === 'small-only'
+                        ? t(CONVERT_LABEL_KEYS[m], [Math.round(MAX_CONVERT_BYTES / 1024 / 1024)])
+                        : t(CONVERT_LABEL_KEYS[m]),
+                    }))}
+                    onChange={(val) => update('convertToMp4', val as ConvertToMp4Mode)}
+                  />
+                </SettingsRow>
+                <SettingsRow
+                  dense
+                  stacked
+                  title={t('settings.download.parallel')}
+                  description={t('settings.download.parallel.hint')}
+                  labelFor="set-parallel"
+                >
+                  <Select
+                    id="set-parallel"
+                    className={styles.select}
+                    data-cell-id="parallel-select"
+                    value={settings.parallelConversion}
+                    options={PARALLEL_OPTIONS.map((m) => ({ value: m, label: t(PARALLEL_LABEL_KEYS[m]) }))}
+                    onChange={(val) => update('parallelConversion', val as ParallelConversionMode)}
+                  />
+                </SettingsRow>
+                {settings.parallelConversion === 'manual' && (
+                  <SettingsRow dense stacked child title={t('settings.download.workers')} labelFor="set-workers">
+                    <Select
+                      id="set-workers"
+                      className={styles.select}
+                      data-cell-id="workers-select"
+                      value={String(settings.manualWorkerCount)}
+                      options={WORKER_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
+                      onChange={(val) => update('manualWorkerCount', Math.max(MIN_PARALLEL_WORKERS, Math.min(MAX_PARALLEL_WORKERS, Number(val))))}
                     />
                   </SettingsRow>
                 )}
-              </VStack>
-            </Card>
+              </SettingsGroup>
 
-            {/* === Card 3: Subtitle Block === */}
-            <Card
-              ref={(el: HTMLDivElement) => { sectionRefs.current.block = el; }}
-              className={styles.sectionCard}
-              data-section="block"
-            >
-              <div className={styles.cardHeader}>
-                <Heading level={4} size={3} className={styles.cardTitle}>{t('settings.block.title')}</Heading>
-                <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.block.desc')}</Text>
-              </div>
-              <VStack gap="2" className={styles.cardBody}>
-                <SettingsRow dense>
-                  <span className={styles.rowLabel}>
-                    {t('settings.block.autoLoad')}
-                    <HintIcon
-                      hint={t('settings.block.autoLoad.hint')}
-                      ariaLabel={t('settings.hint.aria', [t('settings.block.autoLoad')])}
-                    />
-                  </span>
-                  <Toggle
-                    checked={settings.subtitleOverlayAutoLoad}
-                    onChange={(next) => update('subtitleOverlayAutoLoad', next)}
-                    ariaLabel={t('settings.block.autoLoad')}
+              <SettingsGroup label={t('settings.download.group.filename')}>
+                <SettingsRow dense stacked title={t('settings.download.filenameSource')} labelFor="set-filename-source">
+                  <Select
+                    id="set-filename-source"
+                    className={styles.select}
+                    data-cell-id="filename-source-select"
+                    value={settings.filenameSource}
+                    options={FILENAME_SOURCE_OPTIONS.map((m) => ({ value: m, label: t(FILENAME_SOURCE_LABEL_KEYS[m]) }))}
+                    onChange={(val) => update('filenameSource', val as FilenameSource)}
                   />
                 </SettingsRow>
+              </SettingsGroup>
+            </SettingsSection>
 
-                <SettingsRow dense divider>
-                  <span className={styles.rowLabel}>
-                    {t('settings.block.autoLoadAsr')}
-                    <HintIcon
-                      hint={t('settings.block.autoLoadAsr.hint')}
-                      ariaLabel={t('settings.hint.aria', [t('settings.block.autoLoadAsr')])}
-                    />
-                  </span>
-                  <Toggle
-                    checked={settings.subtitleOverlayAutoLoadAsr}
-                    onChange={(next) => update('subtitleOverlayAutoLoadAsr', next)}
-                    ariaLabel={t('settings.block.autoLoadAsr')}
-                    disabled={!settings.subtitleOverlayAutoLoad}
-                  />
-                </SettingsRow>
-
-                <SettingsRow dense divider>
-                  <span className={styles.rowLabel}>
-                    {t('settings.block.autoTranslate')}
-                    <HintIcon
-                      hint={t('settings.block.autoTranslate.hint')}
-                      ariaLabel={t('settings.hint.aria', [t('settings.block.autoTranslate')])}
-                    />
-                  </span>
-                  <Toggle
-                    checked={settings.subtitleOverlayAutoTranslate}
-                    onChange={(next) => update('subtitleOverlayAutoTranslate', next)}
-                    ariaLabel={t('settings.block.autoTranslate')}
-                    disabled={!settings.subtitleOverlayAutoLoad}
-                  />
-                </SettingsRow>
-
-                <SettingsRow dense divider>
-                  <span className={styles.rowLabel}>
-                    {t('settings.block.showReadings')}
-                    <HintIcon
-                      hint={t('settings.block.showReadings.hint')}
-                      ariaLabel={t('settings.hint.aria', [t('settings.block.showReadings')])}
-                    />
-                  </span>
-                  <Toggle
-                    checked={settings.showReadings}
-                    onChange={(next) => update('showReadings', next)}
-                    ariaLabel={t('settings.block.showReadings')}
-                  />
-                </SettingsRow>
-
-                <SettingsRow dense divider>
-                  <span className={styles.rowLabel}>
-                    {t('settings.block.showWordTranslations')}
-                    <HintIcon
-                      hint={t('settings.block.showWordTranslations.hint')}
-                      ariaLabel={t('settings.hint.aria', [t('settings.block.showWordTranslations')])}
-                    />
-                  </span>
-                  <Toggle
-                    checked={settings.showWordTranslations}
-                    onChange={(next) => update('showWordTranslations', next)}
-                    ariaLabel={t('settings.block.showWordTranslations')}
-                  />
-                </SettingsRow>
-              </VStack>
-            </Card>
-
-            {/* === Card 7: Dictionary Popup === */}
-            <Card
-              ref={(el: HTMLDivElement) => { sectionRefs.current.dictionaryPopup = el; }}
-              className={styles.sectionCard}
-              data-section="dictionaryPopup"
-            >
-              <div className={styles.cardHeader}>
-                <Heading level={4} size={3} className={styles.cardTitle}>
-                  {t('settings.dictionaryPopup.title')}
-                  <HintIcon
-                    hint={t('settings.dictionaryPopup.saveHint')}
-                    ariaLabel={t('settings.hint.aria', [t('settings.dictionaryPopup.title')])}
-                  />
-                </Heading>
-                <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.dictionaryPopup.desc')}</Text>
-              </div>
-              <VStack gap="0" className={styles.cardBody}>
-                <DictionaryPopupSettingsPanel
-                  settings={settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS}
-                  onChange={(dp) => onChange({ ...settings, dictionaryPopup: dp })}
-                />
-              </VStack>
-            </Card>
-
-            {/* === Card 7.2: Word badge === */}
-            <Card
-              ref={(el: HTMLDivElement) => { sectionRefs.current.wordBadge = el; }}
-              className={styles.sectionCard}
-              data-section="wordBadge"
-            >
-              <div className={styles.cardHeader}>
-                <Heading level={4} size={3} className={styles.cardTitle}>
-                  {t('settings.wordBadge.title')}
-                  <HintIcon
-                    hint={t('settings.wordBadge.hint')}
-                    ariaLabel={t('settings.hint.aria', [t('settings.wordBadge.title')])}
-                  />
-                </Heading>
-                <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.wordBadge.desc')}</Text>
-              </div>
-              <VStack gap="0" className={styles.cardBody}>
-                <WordBadgeSettingsPanel
-                  badgePointerTrigger={settings.dictionaryPopup?.badgePointerTrigger ?? DEFAULT_DICTIONARY_POPUP_SETTINGS.badgePointerTrigger}
-                  onChange={(badge) => {
-                    const dp = settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS;
-                    onChange({ ...settings, dictionaryPopup: { ...dp, badgePointerTrigger: badge } });
-                  }}
-                />
-              </VStack>
-            </Card>
-
-            {/* === Card 7.4: Audio (merged Pronunciation + Local Pronunciation + TTS Voices) === */}
-            <Card
-              ref={(el: HTMLDivElement) => { sectionRefs.current.audio = el; }}
-              className={styles.sectionCard}
-              data-section="audio"
-            >
-              <div className={styles.cardHeader}>
-                <Heading level={4} size={3} className={styles.cardTitle}>{t('settings.audio.title')}</Heading>
-                <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.audio.desc')}</Text>
-              </div>
-              <VStack gap="0" className={styles.cardBody}>
-                <AudioPanel
-                  pronunciation={settings.pronunciation ?? DEFAULT_PRONUNCIATION_SETTINGS}
-                  tts={settings.dictionaryPopup?.tts ?? DEFAULT_TTS_SETTINGS}
-                  targetLang={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
-                  onPronunciationChange={(p) => onChange({ ...settings, pronunciation: p })}
-                  onTtsChange={(tts) => onChange({ ...settings, dictionaryPopup: { ...(settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS), tts } })}
-                />
-              </VStack>
-            </Card>
-
-            {/* === Card 8: Local Player === */}
-            <Card
-              ref={(el: HTMLDivElement) => { sectionRefs.current.localPlayer = el; }}
-              className={styles.sectionCard}
-              data-section="localPlayer"
-            >
-              <div className={styles.cardHeader}>
-                <Heading level={4} size={3} className={styles.cardTitle}>{t('settings.localPlayer.title')}</Heading>
-                <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.localPlayer.desc')}</Text>
-              </div>
-              <VStack gap="2" className={styles.cardBody}>
-                <SettingsRow dense>
-                  <span className={styles.rowLabel}>
-                    {t('settings.localPlayer.subtitleMatch')}
-                    <HintIcon
-                      hint={t('settings.localPlayer.subtitleMatch.hint')}
-                      ariaLabel={t('settings.hint.aria', [t('settings.localPlayer.subtitleMatch')])}
-                    />
-                  </span>
-                  <Toggle
-                    checked={settings.localPlayerSettings.subtitleMatchEnabled}
-                    onChange={(next) => onChange({ ...settings, localPlayerSettings: { ...settings.localPlayerSettings, subtitleMatchEnabled: next } })}
-                    ariaLabel={t('settings.localPlayer.subtitleMatch')}
-                  />
-                </SettingsRow>
-                <SettingsRow dense divider>
-                  <span className={styles.rowLabel}>
-                    {t('settings.localPlayer.resumePrompt')}
-                    <HintIcon
-                      hint={t('settings.localPlayer.resumePrompt.hint')}
-                      ariaLabel={t('settings.hint.aria', [t('settings.localPlayer.resumePrompt')])}
-                    />
-                  </span>
-                  <Toggle
-                    checked={settings.localPlayerSettings.resumePromptEnabled}
-                    onChange={(next) => onChange({ ...settings, localPlayerSettings: { ...settings.localPlayerSettings, resumePromptEnabled: next } })}
-                    ariaLabel={t('settings.localPlayer.resumePrompt')}
-                  />
-                </SettingsRow>
-              </VStack>
-            </Card>
-
-            {/* === Card 5: Download === */}
-            <Card
-              ref={(el: HTMLDivElement) => { sectionRefs.current.download = el; }}
-              className={styles.sectionCard}
-              data-section="download"
-            >
-              <div className={styles.cardHeader}>
-                <Heading level={4} size={3} className={styles.cardTitle}>{t('settings.download.title')}</Heading>
-                <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.download.desc')}</Text>
-              </div>
-              <div className={styles.downloadCardBody}>
-                <VStack gap="3" className={styles.downloadGroup}>
-                  <Text variant="label" color="secondary" as="div" className={styles.downloadGroupTitle}>{t('settings.download.group.concurrency')}</Text>
-                  <SettingsRow dense stacked>
-                    <Label className={styles.rowLabel} size="sm" htmlFor="set-concurrent">{t('settings.download.concurrent')}</Label>
-                    <Select
-                      id="set-concurrent"
-                      className={styles.select}
-                      data-cell-id="concurrent-select"
-                      value={String(settings.concurrentDownloads)}
-                      options={[1, 2, 3, 5, 10].map((n) => ({ value: String(n), label: String(n) }))}
-                      onChange={(val) => update('concurrentDownloads', Number(val))}
-                    />
-                  </SettingsRow>
-                </VStack>
-
-                <VStack gap="3" className={styles.downloadGroup}>
-                  <Text variant="label" color="secondary" as="div" className={styles.downloadGroupTitle}>{t('settings.download.group.formatQuality')}</Text>
-                  <VStack columns={2} responsive gapResponsive={{ mobile: '2', desktop: '4' }}>
-                    <SettingsRow dense stacked>
-                      <Label className={styles.rowLabel} size="sm" htmlFor="set-format">{t('settings.download.format')}</Label>
-                      <Select
-                        id="set-format"
-                        className={styles.select}
-                        data-cell-id="format-select"
-                        value={settings.preferredVideoFormat}
-                        options={PREFERRED_FORMAT_OPTIONS.map((f) => ({ value: f, label: t(PREFERRED_FORMAT_LABEL_KEYS[f]) }))}
-                        onChange={(val) => update('preferredVideoFormat', val as 'mp4' | 'm3u8')}
-                      />
-                    </SettingsRow>
-                    <SettingsRow dense stacked>
-                      <Label className={styles.rowLabel} size="sm" htmlFor="set-quality">{t('settings.download.quality')}</Label>
-                      <Select
-                        id="set-quality"
-                        className={styles.select}
-                        data-cell-id="quality-select"
-                        value={settings.defaultQuality}
-                        options={QUALITY_OPTIONS.map((q) => ({ value: q, label: QUALITY_LABEL_KEYS[q] ? t(QUALITY_LABEL_KEYS[q]!) : q }))}
-                        onChange={(val) => update('defaultQuality', val as VideoQuality)}
-                      />
-                    </SettingsRow>
-                  </VStack>
-                </VStack>
-
-                <VStack gap="3" className={styles.downloadGroup}>
-                  <Text variant="label" color="secondary" as="div" className={styles.downloadGroupTitle}>{t('settings.download.group.conversion')}</Text>
-                  <SettingsRow dense stacked>
-                    <Label className={styles.rowLabel} size="sm" htmlFor="set-convert">{t('settings.download.convert')}</Label>
-                    <Select
-                      id="set-convert"
-                      className={styles.select}
-                      data-cell-id="convert-select"
-                      value={settings.convertToMp4}
-                      options={CONVERT_OPTIONS.map((m) => ({
-                        value: m,
-                        label: m === 'small-only'
-                          ? t(CONVERT_LABEL_KEYS[m], [Math.round(MAX_CONVERT_BYTES / 1024 / 1024)])
-                          : t(CONVERT_LABEL_KEYS[m]),
-                      }))}
-                      onChange={(val) => update('convertToMp4', val as ConvertToMp4Mode)}
-                    />
-                  </SettingsRow>
-                  <SettingsRow dense stacked>
-                    <span className={styles.rowLabel}>
-                      {t('settings.download.parallel')}
-                      <HintIcon
-                        hint={t('settings.download.parallel.hint')}
-                        ariaLabel={t('settings.hint.aria', [t('settings.download.parallel')])}
-                      />
-                    </span>
-                    <Select
-                      className={styles.select}
-                      data-cell-id="parallel-select"
-                      value={settings.parallelConversion}
-                      options={PARALLEL_OPTIONS.map((m) => ({ value: m, label: t(PARALLEL_LABEL_KEYS[m]) }))}
-                      onChange={(val) => update('parallelConversion', val as ParallelConversionMode)}
-                    />
-                  </SettingsRow>
-                  {settings.parallelConversion === 'manual' && (
-                    <SettingsRow dense stacked className={styles.childField}>
-                      <Label className={styles.rowLabel} size="sm" htmlFor="set-workers">{t('settings.download.workers')}</Label>
-                      <Select
-                        id="set-workers"
-                        className={styles.select}
-                        data-cell-id="workers-select"
-                        value={String(settings.manualWorkerCount)}
-                        options={WORKER_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
-                        onChange={(val) => update('manualWorkerCount', Math.max(MIN_PARALLEL_WORKERS, Math.min(MAX_PARALLEL_WORKERS, Number(val))))}
-                      />
-                    </SettingsRow>
-                  )}
-                </VStack>
-
-                <VStack gap="3" className={styles.downloadGroup}>
-                  <Text variant="label" color="secondary" as="div" className={styles.downloadGroupTitle}>{t('settings.download.group.filename')}</Text>
-                  <SettingsRow dense stacked>
-                    <Label className={styles.rowLabel} size="sm" htmlFor="set-filename-source">{t('settings.download.filenameSource')}</Label>
-                    <Select
-                      id="set-filename-source"
-                      className={styles.select}
-                      data-cell-id="filename-source-select"
-                      value={settings.filenameSource}
-                      options={FILENAME_SOURCE_OPTIONS.map((m) => ({ value: m, label: t(FILENAME_SOURCE_LABEL_KEYS[m]) }))}
-                      onChange={(val) => update('filenameSource', val as FilenameSource)}
-                    />
-                  </SettingsRow>
-                </VStack>
-              </div>
-            </Card>
-
-            {/* === Card 4: Keyboard Shortcuts === */}
-            <Card
-              ref={(el: HTMLDivElement) => { sectionRefs.current.shortcuts = el; }}
-              className={styles.sectionCard}
+            {/* === Keyboard Shortcuts === */}
+            <SettingsSection
+              ref={sectionRef('shortcuts')}
+              headingLevel={4}
+              title={t('settings.shortcuts.title')}
+              description={t('settings.shortcuts.desc')}
               data-section="shortcuts"
             >
-              <div className={styles.cardHeader}>
-                <Heading level={4} size={3} className={styles.cardTitle}>{t('settings.shortcuts.title')}</Heading>
-                <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.shortcuts.desc')}</Text>
-              </div>
-              <VStack gap="0" className={styles.cardBody}>
-                <div className={styles.shortcutSection}>
-                  {SHORTCUT_GROUPS.map((group) => (
-                    <VStack key={group.label} gap="1" className={styles.shortcutGroupWrap}>
-                      <Text variant="label" color="secondary" as="div" className={styles.groupLabel}>{t(group.label)}</Text>
-                      <VStack columns={2} responsive gap="2" className={styles.shortcutGroup}>
-                        {group.actions.map((action) => {
-                          const shortcut = settings.keyboardShortcuts.find((s) => s.action === action);
-                          const currentValue = shortcut
-                            ? { key: shortcut.key, ctrl: shortcut.ctrl, shift: shortcut.shift, alt: shortcut.alt }
-                            : { key: '' };
-                          const conflict = isShortcutConflict(settings.keyboardShortcuts, action);
-                          const actionLabel = t(SHORTCUT_ACTION_LABELS[action]);
-                          return (
-                            <div key={action} className={styles.shortcutField}>
-                              <Label className={styles.rowLabel} size="sm" htmlFor={`set-shortcut-${action}`}>{actionLabel}</Label>
-                              <span className={styles.shortcutInputWrap}>
-                                <ShortcutInput
-                                  id={`set-shortcut-${action}`}
-                                  data-cell-id={`shortcut-${action}`}
-                                  value={currentValue}
-                                  onChange={(newShortcut) => {
-                                    const updated = settings.keyboardShortcuts.map((s) =>
-                                      s.action === action
-                                        ? { ...s, key: newShortcut.key, ctrl: newShortcut.ctrl, shift: newShortcut.shift, alt: newShortcut.alt }
-                                        : s,
-                                    );
-                                    update('keyboardShortcuts', updated);
-                                  }}
-                                  aria-label={actionLabel}
+              <div className={styles.shortcutSection}>
+                {SHORTCUT_GROUPS.map((group) => (
+                  <SettingsGroup key={group.label} label={t(group.label)}>
+                    <VStack columns={2} responsive gap="2">
+                      {group.actions.map((action) => {
+                        const shortcut = settings.keyboardShortcuts.find((s) => s.action === action);
+                        const currentValue = shortcut
+                          ? { key: shortcut.key, ctrl: shortcut.ctrl, shift: shortcut.shift, alt: shortcut.alt }
+                          : { key: '' };
+                        const conflict = isShortcutConflict(settings.keyboardShortcuts, action);
+                        const actionLabel = t(SHORTCUT_ACTION_LABELS[action]);
+                        return (
+                          <SettingsRow
+                            key={action}
+                            dense
+                            stacked
+                            title={actionLabel}
+                            labelFor={`set-shortcut-${action}`}
+                            className={styles.shortcutField}
+                          >
+                            <span className={styles.shortcutInputWrap}>
+                              <ShortcutInput
+                                id={`set-shortcut-${action}`}
+                                data-cell-id={`shortcut-${action}`}
+                                value={currentValue}
+                                onChange={(newShortcut) => {
+                                  const updated = settings.keyboardShortcuts.map((s) =>
+                                    s.action === action
+                                      ? { ...s, key: newShortcut.key, ctrl: newShortcut.ctrl, shift: newShortcut.shift, alt: newShortcut.alt }
+                                      : s,
+                                  );
+                                  update('keyboardShortcuts', updated);
+                                }}
+                                aria-label={actionLabel}
+                              />
+                              {conflict && (
+                                <span
+                                  className={styles.conflictDot}
+                                  title={t('settings.shortcuts.conflict.title')}
+                                  aria-label={t('settings.shortcuts.conflict.aria')}
                                 />
-                                {conflict && (
-                                  <span
-                                    className={styles.conflictDot}
-                                    title={t('settings.shortcuts.conflict.title')}
-                                    aria-label={t('settings.shortcuts.conflict.aria')}
-                                  />
-                                )}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </VStack>
+                              )}
+                            </span>
+                          </SettingsRow>
+                        );
+                      })}
                     </VStack>
-                  ))}
-                </div>
-              </VStack>
-            </Card>
+                  </SettingsGroup>
+                ))}
+              </div>
+            </SettingsSection>
 
-            {/* === Card 9: Theme === */}
-            <Card
-              ref={(el: HTMLDivElement) => { sectionRefs.current.theme = el; }}
-              className={styles.sectionCard}
+            {/* === Theme === */}
+            <SettingsSection
+              ref={sectionRef('theme')}
+              headingLevel={4}
+              title={t('settings.theme.title')}
+              description={t('settings.theme.desc')}
               data-section="theme"
             >
-              <div className={styles.cardHeader}>
-                <Heading level={4} size={3} className={styles.cardTitle}>{t('settings.theme.title')}</Heading>
-                <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.theme.desc')}</Text>
-              </div>
-              <VStack gap="0" className={styles.cardBody}>
-                <ThemePanel />
-              </VStack>
-            </Card>
+              <ThemePanel />
+            </SettingsSection>
 
-            {/* === Card 13: Sync === */}
-            <Card
-              ref={(el: HTMLDivElement) => { sectionRefs.current.sync = el; }}
-              className={styles.sectionCard}
+            {/* === Sync === */}
+            <SettingsSection
+              ref={sectionRef('sync')}
+              headingLevel={4}
+              title={t('settings.sync.title')}
+              description={t('settings.sync.desc')}
               data-section="sync"
             >
-              <div className={styles.cardHeader}>
-                <Heading level={4} size={3} className={styles.cardTitle}>{t('settings.sync.title')}</Heading>
-                <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.sync.desc')}</Text>
-              </div>
               <SyncPanel settings={settings} />
               <AnkiStatusSyncPanel settings={settings} onChange={onChange} />
-            </Card>
+            </SettingsSection>
 
           </div>
         </div>

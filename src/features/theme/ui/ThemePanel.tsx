@@ -4,6 +4,7 @@
 
 import { t } from '@/shared/i18n';
 import { useThemeStore } from '@/features/theme/logic/themeStore';
+import { SettingsGroup } from '@/shared/ui/SettingsGroup';
 import { ModeCards } from './ModeCards';
 import { PresetSwitcher } from './PresetSwitcher';
 import styles from './ThemePanel.module.css';
@@ -13,15 +14,13 @@ export function ThemePanel(): React.JSX.Element {
 
   return (
     <div className={styles.panel} data-cell-id="theme-panel">
-      <div className={styles.section}>
-        <h2 className={styles.heading}>{t('theme.mode.heading')}</h2>
+      <SettingsGroup label={t('theme.mode.heading')}>
         <ModeCards value={mode} onChange={switchMode} />
-      </div>
+      </SettingsGroup>
 
-      <div className={styles.section}>
-        <h2 className={styles.heading}>{t('theme.preset.heading')}</h2>
+      <SettingsGroup label={t('theme.preset.heading')}>
         <PresetSwitcher value={config.preset} onChange={switchPreset} data-cell-id="theme-preset-switcher" />
-      </div>
+      </SettingsGroup>
     </div>
   );
 }

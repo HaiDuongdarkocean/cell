@@ -3,7 +3,7 @@ import { t } from '@/shared/i18n';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { deleteVoicePack } from '@/features/tts/services/ttsDownloadManager';
-import { SettingsRow, Toggle, Select, Button, Icon, Label } from '@/shared/ui';
+import { SettingsRow, SettingsGroup, Toggle, Select, Button, Icon } from '@/shared/ui';
 import type { SelectOption } from '@/shared/ui/Select';
 import type { TtsSettings } from '@/entities/settings/types';
 import type { MessageResponse } from '@/entities/message';
@@ -107,8 +107,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
 
   return (
     <div className={styles.panel}>
-      <SettingsRow>
-        <Label className={styles.rowLabel}>{t('tts.local.label')}</Label>
+      <SettingsRow dense title={t('tts.local.label')}>
         <Toggle
           checked={settings.localTtsEnabled}
           onChange={setLocalTtsEnabled}
@@ -120,8 +119,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
       {settings.localTtsEnabled && (
         <>
           {settings.downloadedLanguages.length > 0 && (
-            <SettingsRow className={styles.row}>
-              <Label className={styles.rowLabel}>{t('tts.local.defaultLang')}</Label>
+            <SettingsRow dense title={t('tts.local.defaultLang')} className={styles.row}>
               <Select
                 value={settings.localTtsLanguage}
                 options={languageOptions}
@@ -132,9 +130,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
             </SettingsRow>
           )}
 
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>{t('tts.local.downloaded')}</span>
-          </div>
+          <SettingsGroup label={t('tts.local.downloaded')} className={styles.sectionHeader}>
 
           {settings.downloadedLanguages.length === 0 && voiceJobs.length === 0 && (
             <p className={styles.empty}>{t('tts.local.empty')}</p>
@@ -143,7 +139,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
           {settings.downloadedLanguages.map((language) => {
             const hidden = settings.hiddenLanguages.includes(language);
             return (
-              <SettingsRow key={language} className={styles.languageRow}>
+              <SettingsRow key={language} dense className={styles.languageRow}>
                 <div className={styles.languageInfo}>
                   <span className={styles.languageName}>{language}</span>
                   {hidden && <span className={styles.hiddenBadge}>{t('tts.local.hidden')}</span>}
@@ -226,6 +222,8 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
           </div>
 
           {error && <p className={styles.error}>{error}</p>}
+
+          </SettingsGroup>
         </>
       )}
     </div>

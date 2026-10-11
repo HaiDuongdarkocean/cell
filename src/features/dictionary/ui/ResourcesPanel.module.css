@@ -1,7 +1,7 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-10);
+  gap: var(--space-6);
   container-type: inline-size;
 }
 
@@ -11,13 +11,13 @@
 .columns {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-6);
 }
 
 .sections {
   display: flex;
   flex-direction: column;
-  gap: var(--space-10);
+  gap: var(--space-6);
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -38,32 +38,13 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    flex: 0 0 360px;
+    flex: 0 0 calc(var(--space-9) * 10);
     position: sticky;
     top: var(--space-4);
     max-height: calc(100vh - var(--space-8));
     overflow-y: auto;
     overscroll-behavior: contain;
   }
-}
-
-/* Plain section group — no card surface (the parent Settings card already
-   provides the surface; nested cards create card-in-card). */
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.duplicateBody {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.duplicateActions {
-  display: flex;
-  gap: var(--space-2);
 }
 
 .sectionFooter {
@@ -174,7 +155,3 @@
     animation: none;
   }
 }
-
-
-
-

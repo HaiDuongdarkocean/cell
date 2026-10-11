@@ -1,7 +1,3 @@
-/* AudioPanel — unified Audio settings card body (Concept H "Audio Pipeline").
-   Rendered inside the Audio card, so it uses plain sections and lightweight
-   containers — never a nested Card. Design tokens only, mobile-first. */
-
 .panel {
   display: flex;
   flex-direction: column;
@@ -15,44 +11,9 @@
   gap: var(--space-3);
 }
 
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.rowLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  line-height: var(--leading-normal);
-  color: var(--color-text);
-  user-select: none;
-}
-
-.sectionTitle {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  line-height: var(--leading-normal);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-}
-
-/* --- Output mode segmented control --- */
-
 .status {
   margin: 0;
   font-size: var(--font-size-xs);
   line-height: var(--leading-normal);
   color: var(--color-text-secondary);
-}
-
-/* --- Autoplay --- */
-
-@media (prefers-reduced-motion: reduce) {
-  .segmented .mode {
-    transition: none;
-  }
 }

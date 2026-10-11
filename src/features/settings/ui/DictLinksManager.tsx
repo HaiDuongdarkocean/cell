@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { t } from '@/shared/i18n';
-import { Button, Card, Dialog, EmptyState, HintIcon, Icon, Input, SectionHeader, Text } from '@/shared/ui';
+import { Button, Card, Dialog, EmptyState, HintIcon, Icon, Input, SettingsGroup, Text } from '@/shared/ui';
 import { DragHandle } from '@/shared/ui/DragHandle';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import { useSectionDrag } from '@/shared/lib/useSectionDrag';
@@ -99,18 +99,18 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
   useEffect(() => renamingId !== null ? pushEscapeLayer(() => setRenamingId(null)) : undefined, [renamingId]);
 
   return (
-    <section className={styles.section} data-cell-id="dict-links-manager">
-      <SectionHeader
-        level={5}
-        title={t('settings.dictionaryPopup.links.title')}
-        subtitle={t('settings.dictionaryPopup.links.desc')}
-        action={
-          <Button variant="outline" size="sm" onClick={openAdd} data-cell-id="dict-link-add">
-            <Icon name="plus" size="xs" />
-            {t('settings.dictionaryPopup.links.add')}
-          </Button>
-        }
-      />
+    <SettingsGroup
+      label={t('settings.dictionaryPopup.links.title')}
+      description={t('settings.dictionaryPopup.links.desc')}
+      className={styles.section}
+      data-cell-id="dict-links-manager"
+      action={
+        <Button variant="outline" size="sm" onClick={openAdd} data-cell-id="dict-link-add">
+          <Icon name="plus" size="xs" />
+          {t('settings.dictionaryPopup.links.add')}
+        </Button>
+      }
+    >
 
       <div className={styles.list} role="list" ref={listRef}>
         {links.length === 0 && (
@@ -307,6 +307,6 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
           {t('settings.dictionaryPopup.links.deleteBody')}
         </Text>
       </Dialog>
-    </section>
+    </SettingsGroup>
   );
 }

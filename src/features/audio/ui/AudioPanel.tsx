@@ -18,7 +18,7 @@
 
 import { useMemo, useState, type ReactElement } from 'react';
 import { t } from '@/shared/i18n';
-import { Button, HintIcon, Icon, Input, SegmentedControl, Select, SettingsRow, Text } from '@/shared/ui';
+import { Button, Icon, Input, SegmentedControl, Select, SettingsGroup, SettingsRow } from '@/shared/ui';
 import type {
   AudioEngineKind,
   PronunciationSettings,
@@ -152,15 +152,14 @@ export function AudioPanel({
     <div className={styles.panel} data-cell-id="audio-panel">
       {/* Sources group: output mode → pipeline → selected source detail. */}
       <div className={styles.group}>
-        <div className={styles.section}>
-          <span className={styles.rowLabel}>
-            {t('audio.outputMode')}
-            <HintIcon
-              hint={t('audio.outputMode.hint')}
-              ariaLabel={t('audio.outputMode.aria')}
-              dataTestId="audio-mode-hint"
-            />
-          </span>
+        <SettingsRow
+          dense
+          stacked
+          title={t('audio.outputMode')}
+          hint={t('audio.outputMode.hint')}
+          hintAriaLabel={t('audio.outputMode.aria')}
+          hintTestId="audio-mode-hint"
+        >
           <SegmentedControl
             variant="filled"
             ariaLabel={t('audio.outputMode.aria')}
@@ -173,19 +172,16 @@ export function AudioPanel({
             value={activeMode}
             onChange={handleModeChange}
           />
-        </div>
+        </SettingsRow>
 
-        <div className={styles.section}>
-          <Text as="h5" className={styles.sectionTitle}>
-            {t('audio.pipeline.title')}
-          </Text>
+        <SettingsGroup label={t('audio.pipeline.title')}>
           <AudioPipeline
             engines={[...engines]}
             selected={selectedEngine}
             statuses={statuses}
             onSelect={setSelected}
           />
-        </div>
+        </SettingsGroup>
 
         {selectedEngine && (
           <SourceDetailPanel
@@ -201,10 +197,7 @@ export function AudioPanel({
 
       {/* Playback group: tester + autoplay. */}
       <div className={styles.group}>
-        <div className={styles.section}>
-          <label className={styles.rowLabel} htmlFor="audio-tester-input">
-            {t('audio.tester.label')}
-          </label>
+        <SettingsRow dense stacked title={t('audio.tester.label')} labelFor="audio-tester-input">
           <Input
             id="audio-tester-input"
             value={testText}
@@ -236,12 +229,9 @@ export function AudioPanel({
               {testStatus}
             </p>
           )}
-        </div>
+        </SettingsRow>
 
-        <SettingsRow dense stacked>
-          <label className={styles.rowLabel} htmlFor="audio-autoplay">
-            {t('audio.autoplay.label')}
-          </label>
+        <SettingsRow dense stacked title={t('audio.autoplay.label')} labelFor="audio-autoplay">
           <Select
             id="audio-autoplay"
             value={String(tts.autoplayCount)}

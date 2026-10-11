@@ -3,17 +3,11 @@
    springs. Remaining motion: menu mount keyframes, gated by
    prefers-reduced-motion. */
 
-/* Section body inset — mirrors .cardHeader (space-3 space-4, space-4 space-5
-   at 600px+). .cardBody in SettingsDialog.module.css is a dead class (no
-   rule), so the panel must pad itself or its content sits flush to the card
-   edges. */
 .panel {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
-
-@media (min-width: 600px) {}
 
 /* === Universal native banner === */
 .banner {
@@ -26,7 +20,6 @@
   border: var(--border-width-hairline) dashed var(--color-border);
 }
 
-.banner.editing,
 .bannerEditing {
   flex-direction: column;
   align-items: stretch;
@@ -79,49 +72,6 @@
   flex-shrink: 0;
 }
 
-/* === List toolbar === */
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-}
-
-.sectionLabel {
-  min-width: 0;
-}
-
-/* Text action — primary color, no chrome (the bordered "link" variant is too
-   heavy next to the section label). */
-.linkBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  border: 0;
-  background: transparent;
-  font: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-primary);
-  padding: var(--space-1) var(--space-1-5);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color var(--duration-fast) var(--ease-in-out);
-}
-
-@media (hover: hover) {
-  .linkBtn:hover { background: var(--color-primary-subtle); }
-}
-
-.linkBtn:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
-
-.linkBtn:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
 /* === Profile cards === */
 .list {
   display: flex;
@@ -149,7 +99,7 @@
   align-items: center;
   gap: var(--space-3);
   /* Card reads padding via --card-padding; override the var so the value
-     wins regardless of CSS-module load order (sectionCard zeroes it). */
+     wins regardless of CSS-module load order. */
   --card-padding: var(--space-1) var(--space-2);
 }
 
@@ -168,10 +118,10 @@
 
 /* Custom radio dot — visual mirror of aria-checked on the card. */
 .radio {
-  width: 16px;
-  height: 16px;
+  width: var(--space-4);
+  height: var(--space-4);
   border-radius: var(--radius-full);
-  border: 2px solid var(--color-border-emphasized);
+  border: var(--border-width-thick) solid var(--color-border-emphasized);
   flex-shrink: 0;
   position: relative;
 }
@@ -179,7 +129,7 @@
 .radio::after {
   content: '';
   position: absolute;
-  inset: 2px;
+  inset: var(--space-0-5);
   border-radius: var(--radius-full);
   background: var(--color-primary);
   transform: scale(0);
@@ -246,16 +196,12 @@
   text-overflow: ellipsis;
 }
 
-.menuWrap {
-  flex-shrink: 0;
-}
-
 /* === Inline profile form (add + edit) === */
 .profileForm {
   border: none;
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   background: var(--color-field);
-  padding: var(--space-5);
+  padding: var(--space-3);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -324,7 +270,7 @@
 }
 
 .choice {
-  border: 1px solid transparent;
+  border: var(--border-width-hairline) solid transparent;
   background: var(--color-field);
   border-radius: var(--radius-lg);
   padding: var(--space-3);

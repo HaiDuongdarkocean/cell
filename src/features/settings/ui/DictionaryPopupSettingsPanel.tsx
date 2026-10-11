@@ -11,6 +11,7 @@ import type { DictionaryPopupSettings } from '@/entities/settings/types';
 import { Text } from '@/shared/ui/Text';
 import { Icon } from '@/shared/ui/Icon';
 import { SegmentedControl } from '@/shared/ui/SegmentedControl';
+import { SettingsRow } from '@/shared/ui/SettingsRow';
 import { t, type MessageKey } from '@/shared/i18n';
 import { DictLinksManager } from './DictLinksManager';
 import styles from './DictionaryPopupSettingsPanel.module.css';
@@ -105,28 +106,23 @@ export function DictionaryPopupSettingsPanel({
               : settings[step.valueKey];
 
           return (
-            <div key={step.valueKey} className={styles.timelineItem}>
-              <div className={styles.timelineContent}>
-                <Text as="span" className={styles.timelineLabel}>
-                  {t(step.labelKey)}
-                </Text>
-                <SegmentedControl
-                  variant="chips"
-                  options={step.options.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
-                  value={value}
-                  onChange={(nextValue) => {
-                    if (step.valueKey === 'defaultActiveTab') {
-                      update({ defaultActiveTab: (nextValue || null) as DictionaryPopupSettings['defaultActiveTab'] });
-                    } else if (step.valueKey === 'includeAllExamplesOnDefSelect') {
-                      update({ includeAllExamplesOnDefSelect: nextValue === 'all' });
-                    } else {
-                      update({ [step.valueKey]: nextValue } as Partial<DictionaryPopupSettings>);
-                    }
-                  }}
-                  ariaLabel={t(step.labelKey)}
-                />
-              </div>
-            </div>
+            <SettingsRow key={step.valueKey} dense stacked title={t(step.labelKey)}>
+              <SegmentedControl
+                variant="chips"
+                options={step.options.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
+                value={value}
+                onChange={(nextValue) => {
+                  if (step.valueKey === 'defaultActiveTab') {
+                    update({ defaultActiveTab: (nextValue || null) as DictionaryPopupSettings['defaultActiveTab'] });
+                  } else if (step.valueKey === 'includeAllExamplesOnDefSelect') {
+                    update({ includeAllExamplesOnDefSelect: nextValue === 'all' });
+                  } else {
+                    update({ [step.valueKey]: nextValue } as Partial<DictionaryPopupSettings>);
+                  }
+                }}
+                ariaLabel={t(step.labelKey)}
+              />
+            </SettingsRow>
           );
         })}
       </div>
@@ -157,16 +153,15 @@ export function DictionaryPopupSettingsPanel({
 
       {surface === 'translate' && (
         <div className={styles.tabBody}>
-          <Text as="span" className={styles.timelineLabel}>
-            {t('settings.dictionaryPopup.translations')}
-          </Text>
-          <SegmentedControl
-            variant="chips"
-            options={TRANSLATION_OPTIONS.map((o) => ({ value: o, label: t(TRANSLATION_LABEL_KEYS[o]) }))}
-            value={settings.translationVisibility ?? 'hidden'}
-            onChange={(nextValue) => update({ translationVisibility: nextValue as 'hidden' | 'shown' })}
-            ariaLabel={t('settings.dictionaryPopup.translations')}
-          />
+          <SettingsRow dense stacked title={t('settings.dictionaryPopup.translations')}>
+            <SegmentedControl
+              variant="chips"
+              options={TRANSLATION_OPTIONS.map((o) => ({ value: o, label: t(TRANSLATION_LABEL_KEYS[o]) }))}
+              value={settings.translationVisibility ?? 'hidden'}
+              onChange={(nextValue) => update({ translationVisibility: nextValue as 'hidden' | 'shown' })}
+              ariaLabel={t('settings.dictionaryPopup.translations')}
+            />
+          </SettingsRow>
         </div>
       )}
 

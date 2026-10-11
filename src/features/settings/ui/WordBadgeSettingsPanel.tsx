@@ -2,6 +2,8 @@ import type React from 'react';
 import { useMemo } from 'react';
 import { Select } from '@/shared/ui/Select';
 import { Slider } from '@/shared/ui/Slider';
+import { SettingsRow } from '@/shared/ui/SettingsRow';
+import { Text } from '@/shared/ui/Text';
 import { t, type MessageKey } from '@/shared/i18n';
 import type { BadgePointerTriggerSettings } from '@/entities/settings/types';
 import styles from './WordBadgeSettingsPanel.module.css';
@@ -39,9 +41,9 @@ export function WordBadgeSettingsPanel({
       position: 'absolute',
       width: pointerSize,
       height: pointerSize,
-      borderRadius: '9999px',
+      borderRadius: 'var(--radius-full)',
       background: 'var(--color-primary)',
-      border: '2px solid var(--color-surface)',
+      border: 'var(--border-width-thick) solid var(--color-surface)',
     };
 
     if (position === 'top') return { ...base, left: '50%', top: `calc(50% - ${offset}px)`, transform: 'translate(-50%, 0)' };
@@ -59,49 +61,50 @@ export function WordBadgeSettingsPanel({
         </div>
       </div>
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="word-badge-position">{t('settings.wordBadge.position')}</label>
+      <SettingsRow dense stacked title={t('settings.wordBadge.position')} labelFor="word-badge-position">
         <Select
           id="word-badge-position"
           value={position}
           options={POSITION_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
           onChange={(value) => onChange({ ...badgePointerTrigger, position: value as BadgePointerTriggerSettings['position'] })}
         />
-      </div>
+      </SettingsRow>
 
-      <div className={styles.field}>
-        <div className={styles.sliderHeader}>
-          <label className={styles.label} htmlFor="word-badge-size">{t('settings.wordBadge.size')}</label>
-          <span className={styles.value}>{size}px</span>
-        </div>
-        <Slider
-          id="word-badge-size"
-          value={size}
-          min={SIZE_MIN}
-          max={SIZE_MAX}
-          step={1}
-          aria-label={t('settings.wordBadge.buttonSize.aria')}
-          data-cell-id="word-badge-size"
-          onChange={(value) => onChange({ ...badgePointerTrigger, size: value })}
-        />
-      </div>
+      <SettingsRow
+        dense
+        title={t('settings.wordBadge.size')}
+        labelFor="word-badge-size"
+      >
+        <Text as="span" variant="label" color="secondary" className={styles.value}>{size}px</Text>
+      </SettingsRow>
+      <Slider
+        id="word-badge-size"
+        value={size}
+        min={SIZE_MIN}
+        max={SIZE_MAX}
+        step={1}
+        aria-label={t('settings.wordBadge.buttonSize.aria')}
+        data-cell-id="word-badge-size"
+        onChange={(value) => onChange({ ...badgePointerTrigger, size: value })}
+      />
 
-      <div className={styles.field}>
-        <div className={styles.sliderHeader}>
-          <label className={styles.label} htmlFor="word-badge-scale">{t('settings.wordBadge.pointerScale')}</label>
-          <span className={styles.value}>{Math.round(pointerScale * 100)}%</span>
-        </div>
-        <Slider
-          id="word-badge-scale"
-          value={pointerScale}
-          min={SCALE_MIN}
-          max={SCALE_MAX}
-          step={0.05}
-          aria-label={t('settings.wordBadge.pointerScale')}
-          data-cell-id="word-badge-scale"
-          onChange={(value) => onChange({ ...badgePointerTrigger, pointerScale: value })}
-        />
-      </div>
+      <SettingsRow
+        dense
+        title={t('settings.wordBadge.pointerScale')}
+        labelFor="word-badge-scale"
+      >
+        <Text as="span" variant="label" color="secondary" className={styles.value}>{Math.round(pointerScale * 100)}%</Text>
+      </SettingsRow>
+      <Slider
+        id="word-badge-scale"
+        value={pointerScale}
+        min={SCALE_MIN}
+        max={SCALE_MAX}
+        step={0.05}
+        aria-label={t('settings.wordBadge.pointerScale')}
+        data-cell-id="word-badge-scale"
+        onChange={(value) => onChange({ ...badgePointerTrigger, pointerScale: value })}
+      />
     </div>
   );
 }

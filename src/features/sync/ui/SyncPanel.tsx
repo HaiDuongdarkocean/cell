@@ -7,9 +7,10 @@ import { Badge } from '@/shared/ui/Badge';
 import { Button } from '@/shared/ui/Button';
 import { Dialog } from '@/shared/ui/Dialog';
 import { EmptyState } from '@/shared/ui/EmptyState';
-import { Heading } from '@/shared/ui/Heading';
 import { Icon } from '@/shared/ui/Icon';
 import { Select } from '@/shared/ui/Select';
+import { SettingsGroup } from '@/shared/ui/SettingsGroup';
+import { SettingsRow } from '@/shared/ui/SettingsRow';
 import { Spinner } from '@/shared/ui/Spinner';
 import { StatusDot } from '@/shared/ui/StatusDot';
 import { Text } from '@/shared/ui/Text';
@@ -222,19 +223,25 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
               />
             )}
 
-          <div className={styles.summaryRow}>
-            {meta !== null && (
-              <StatusDot status={meta.dot} pulse={meta.pulse} aria-label={meta.label} />
-            )}
-            <div className={styles.summaryText}>
-              <Text variant="label">{meta?.label}</Text>
-              {view.directory.lastAppliedAt !== null && (
-                <Text variant="supporting" color="secondary" as="span">
+          <SettingsRow
+            dense
+            title={
+              <>
+                {meta !== null && (
+                  <StatusDot status={meta.dot} pulse={meta.pulse} aria-label={meta.label} />
+                )}
+                {meta?.label}
+              </>
+            }
+            description={
+              view.directory.lastAppliedAt !== null ? (
+                <>
                   {t('settings.sync.lastSynced')}{' '}
                   <Timestamp value={view.directory.lastAppliedAt} />
-                </Text>
-              )}
-            </div>
+                </>
+              ) : undefined
+            }
+          >
             {engineState === 'needs-reauth' ? (
               <Button
                 variant="primary"
@@ -264,12 +271,9 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
                 {t('settings.sync.syncNow')}
               </Button>
             )}
-          </div>
+          </SettingsRow>
 
-          <section className={styles.block} aria-label={t('settings.sync.accounts.title')}>
-            <Heading level={5} size={5} className={styles.blockTitle}>
-              {t('settings.sync.accounts.title')}
-            </Heading>
+          <SettingsGroup label={t('settings.sync.accounts.title')}>
             <ul className={styles.list}>
               {view.directory.connections.map((conn) => (
                 <li key={conn.connectionId} className={styles.row}>
@@ -345,12 +349,9 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
             >
               {t('settings.sync.connectAnother')}
             </Button>
-          </section>
+          </SettingsGroup>
 
-          <section className={styles.block} aria-label={t('settings.sync.profiles.title')}>
-            <Heading level={5} size={5} className={styles.blockTitle}>
-              {t('settings.sync.profiles.title')}
-            </Heading>
+          <SettingsGroup label={t('settings.sync.profiles.title')}>
             {profiles.length === 0 ? (
               <Text variant="supporting" color="secondary">
                 {t('settings.sync.profiles.empty')}
@@ -447,7 +448,7 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
                 })}
               </ul>
             )}
-          </section>
+          </SettingsGroup>
 
           <Text as="p" variant="supporting" color="secondary" className={styles.privacy}>
             {t('settings.sync.privacy')}

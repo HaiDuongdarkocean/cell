@@ -14,6 +14,8 @@ export interface MultiSelectOption {
 export interface MultiSelectProps {
   /** Test-id prefix used for data-cell-id attributes on sub-elements. */
   testId: string;
+  /** HTML id bound to the search input — enables `<label htmlFor>` association. */
+  id?: string;
   /** All available options. */
   options: readonly MultiSelectOption[];
   /** Currently selected values. */
@@ -44,6 +46,7 @@ export interface MultiSelectProps {
  */
 export function MultiSelect({
   testId,
+  id,
   options,
   selectedValues,
   onChange,
@@ -140,6 +143,7 @@ export function MultiSelect({
         })}
         <input
           ref={inputRef}
+          id={id}
           type="search"
           className={styles.input}
           placeholder={selectedValues.length > 0 ? '' : (placeholder ?? t('ui.multiSelect.searchPlaceholder'))}

@@ -21,7 +21,7 @@ import { useState, useCallback, useEffect, useMemo, useRef, type ReactElement, t
 import { t, type MessageKey } from '@/shared/i18n';
 import { Alert } from '@/shared/ui/Alert';
 import { Button, Checkbox, EmptyState } from '@/shared/ui';
-import { SectionHeader } from '@/shared/ui/SectionHeader';
+import { SettingsGroup } from '@/shared/ui/SettingsGroup';
 import { VisuallyHidden } from '@/shared/ui/VisuallyHidden';
 import { Dropzone } from './Dropzone';
 import { ResourceCard, ResourceCardSkeleton } from './ResourceCard';
@@ -250,28 +250,26 @@ function ResourceSection({
   };
 
   return (
-    <section className={styles.section}>
-      <SectionHeader
-        level={2}
-        title={t(copy.title)}
-        subtitle={t(copy.subtitle)}
-        action={
-          manageable.length > 0 ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              active={isEditing}
-              aria-pressed={isEditing}
-              aria-label={t(isEditing ? 'resources.edit.done' : 'resources.edit.start', [t(copy.title)])}
-              title={t(isEditing ? 'resources.edit.titleDone' : 'resources.edit.titleStart')}
-              onClick={toggleEditing}
-              data-cell-id={`edit-${sectionId}`}
-            >
-              <Icon name={isEditing ? 'check' : 'pencil'} size="xs" />
-            </Button>
-          ) : undefined
-        }
-      />
+    <SettingsGroup
+      label={t(copy.title)}
+      description={t(copy.subtitle)}
+      action={
+        manageable.length > 0 ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            active={isEditing}
+            aria-pressed={isEditing}
+            aria-label={t(isEditing ? 'resources.edit.done' : 'resources.edit.start', [t(copy.title)])}
+            title={t(isEditing ? 'resources.edit.titleDone' : 'resources.edit.titleStart')}
+            onClick={toggleEditing}
+            data-cell-id={`edit-${sectionId}`}
+          >
+            <Icon name={isEditing ? 'check' : 'pencil'} size="xs" />
+          </Button>
+        ) : undefined
+      }
+    >
 
       {isEditing && (
         <div className={styles.editBar} data-cell-id={`edit-bar-${sectionId}`}>
@@ -371,7 +369,7 @@ function ResourceSection({
 
       {resources.length > 0 && footer && <div className={styles.sectionFooter}>{footer}</div>}
       {resources.length === 0 && footer}
-    </section>
+    </SettingsGroup>
   );
 }
 

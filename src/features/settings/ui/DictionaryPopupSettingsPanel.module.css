@@ -8,27 +8,7 @@
 .timeline {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-}
-
-.timelineItem {
-  display: flex;
-  align-items: flex-start;
-}
-
-.timelineContent {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding-bottom: var(--space-3);
-  min-width: 0;
-}
-
-.timelineLabel {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
+  gap: var(--space-3);
 }
 
 /* Surface tabs — mirror the popup's DictionaryToolbar (32px icon+label pills). */
@@ -68,13 +48,9 @@
   color: var(--color-text);
 }
 
-.surfaceTabActive {
-  background: color-mix(in srgb, var(--color-primary) var(--button-primary-dimmed-opacity), transparent);
-  color: var(--color-primary);
-}
-
+.surfaceTabActive,
 .surfaceTabActive:hover {
-  background: color-mix(in srgb, var(--color-primary) var(--button-primary-dimmed-opacity), transparent);
+  background: var(--color-primary-subtle);
   color: var(--color-primary);
 }
 

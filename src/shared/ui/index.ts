@@ -38,6 +38,8 @@ export { Select } from './Select';
 export { SegmentedControl, type SegmentedOption } from './SegmentedControl';
 export { SectionHeader } from './SectionHeader';
 export { SettingsRow } from './SettingsRow';
+export { SettingsSection, type SettingsSectionProps } from './SettingsSection';
+export { SettingsGroup, type SettingsGroupProps } from './SettingsGroup';
 export { Skeleton } from './Skeleton';
 export { SliderRow } from './SliderRow';
 export { Spinner } from './Spinner';

@@ -113,9 +113,9 @@
 .playActive::after {
   content: '';
   position: absolute;
-  inset: -4px;
+  inset: calc(-1 * var(--space-1));
   border-radius: var(--radius-full);
-  border: 2px solid var(--color-primary);
+  border: var(--border-width-thick) solid var(--color-primary);
   animation: speakHalo 1.2s var(--ease-out) infinite;
 }
 

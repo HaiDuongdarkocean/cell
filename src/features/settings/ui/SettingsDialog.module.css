@@ -21,61 +21,14 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
   min-width: 0;
   scroll-behavior: smooth;
   scroll-padding-top: var(--space-3);
 }
 
-.sectionCard {
-  --card-padding: 0;
-  overflow: hidden;
-  scroll-margin-top: var(--space-3);
-  flex-shrink: 0;
-  animation: cardEnter var(--duration-normal) var(--ease-out) both;
-}
-
-.cardHeader {
-  padding: var(--space-4) var(--space-4) 0;
-}
-
-.cardTitle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  color: var(--color-text);
-  margin: 0;
-}
-
-.cardDesc {
-  margin: var(--space-1) 0 0;
-  font-size: var(--font-size-md);
-  color: var(--color-text-secondary);
-  line-height: var(--leading-snug);
-}
-
-.cardBody {
-  padding: var(--space-3) var(--space-4) var(--space-4);
-}
-
-.rowLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
-  letter-spacing: var(--tracking-normal);
-  user-select: none;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 /* Select inside a settings row — allow the root and its trigger to shrink so
    long values (e.g. "Auto (browser)") truncate with ellipsis instead of
-   being clipped by the card. */
+   being clipped by the row. */
 .select {
   min-width: 0;
   width: 100%;
@@ -85,62 +38,12 @@
   min-width: 0;
 }
 
-.groupLabel {
-  padding: var(--space-2) var(--space-3) var(--space-1);
-  margin-top: var(--space-2);
-}
-
-.downloadCardBody {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  padding: var(--space-4);
-}
-
-.downloadGroup {
-  gap: var(--space-3);
-}
-
-.downloadGroupTitle {
-  padding-bottom: var(--space-1);
-}
-
-.childField {
-  margin-left: var(--space-4);
-  padding-left: var(--space-3);
-  border-left: var(--space-0-5) solid var(--color-divider);
-}
-
-@media (max-width: 599px) {
-  .childField {
-    margin-left: var(--space-3);
-    padding-left: var(--space-2);
-  }
-}
-
 .shortcutSection {
   container-type: inline-size;
 }
 
-.shortcutGroupWrap + .shortcutGroupWrap {
-  margin-top: var(--space-4);
-}
-
 .shortcutField {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-1);
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-sm);
   min-width: 0;
-}
-
-.shortcutField .rowLabel {
-  white-space: normal;
-  word-break: break-word;
-  overflow: visible;
-  text-overflow: clip;
 }
 
 .shortcutInputWrap {
@@ -163,17 +66,6 @@
   background: var(--color-destructive);
 }
 
-@keyframes cardEnter {
-  from { opacity: 0; transform: translateY(var(--space-1)); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@container (min-width: 600px) {
-}
-
-@container (min-width: 840px) {
-}
-
 .popoverBody.vertical .sidebarWidth {
   width: var(--sidebar-width);
 }
@@ -194,10 +86,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebarItem,
-  .sectionCard {
-    transition: none;
-    animation: none;
-  }
   .mainCol { scroll-behavior: auto; }
 }

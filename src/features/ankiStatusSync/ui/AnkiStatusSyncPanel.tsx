@@ -4,9 +4,8 @@ import type { Settings } from '@/entities/settings';
 import type { AnkiStatusSyncState } from '@/entities/ankiStatusSync';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
-import { HintIcon } from '@/shared/ui/HintIcon';
 import { InputField } from '@/shared/ui/InputField';
-import { SectionHeader } from '@/shared/ui/SectionHeader';
+import { SettingsGroup } from '@/shared/ui/SettingsGroup';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
 import { StatusDot } from '@/shared/ui/StatusDot';
 import { Text } from '@/shared/ui/Text';
@@ -69,34 +68,29 @@ export function AnkiStatusSyncPanel({
         : t('settings.ankiSync.addon.unknown');
 
   return (
-    <section className={styles.root} aria-label={t('settings.ankiSync.title')}>
-      <SectionHeader
-        title={t('settings.ankiSync.title')}
-        subtitle={t('settings.ankiSync.desc')}
+    <SettingsGroup
+      label={t('settings.ankiSync.title')}
+      description={t('settings.ankiSync.desc')}
+      className={styles.root}
+    >
+      <SettingsRow
+        dense
+        title={t('settings.ankiSync.enabled')}
+        description={t('settings.ankiSync.enabled.hint')}
         data-cell-id="anki-status-sync"
-      />
-      <SettingsRow dense>
-        <span className={styles.rowLabel}>
-          {t('settings.ankiSync.enabled')}
-          <HintIcon
-            hint={t('settings.ankiSync.enabled.hint')}
-            ariaLabel={t('settings.hint.aria', [t('settings.ankiSync.enabled')])}
-          />
-        </span>
+      >
         <Toggle
           checked={cfg.enabled}
           onChange={(next) => update({ enabled: next })}
           ariaLabel={t('settings.ankiSync.enabled')}
         />
       </SettingsRow>
-      <SettingsRow dense>
-        <span className={styles.rowLabel}>
-          {t('settings.ankiSync.writeBack')}
-          <HintIcon
-            hint={t('settings.ankiSync.writeBack.hint')}
-            ariaLabel={t('settings.hint.aria', [t('settings.ankiSync.writeBack')])}
-          />
-        </span>
+      <SettingsRow
+        dense
+        divider
+        title={t('settings.ankiSync.writeBack')}
+        description={t('settings.ankiSync.writeBack.hint')}
+      >
         <Toggle
           checked={cfg.writeBackEnabled}
           disabled={!cfg.enabled}
@@ -104,7 +98,7 @@ export function AnkiStatusSyncPanel({
           ariaLabel={t('settings.ankiSync.writeBack')}
         />
       </SettingsRow>
-      <SettingsRow dense stacked className={styles.portRow}>
+      <SettingsRow dense divider stacked className={styles.portRow}>
         <InputField
           label={t('settings.ankiSync.addonPort')}
           type="number"
@@ -122,14 +116,19 @@ export function AnkiStatusSyncPanel({
           }}
         />
       </SettingsRow>
-      <SettingsRow dense>
-        <span className={styles.rowLabel}>
-          <StatusDot
-            status={state?.addonOnline === true ? 'success' : 'neutral'}
-            aria-label={addonLabel}
-          />
-          {t('settings.ankiSync.addon.label')}
-        </span>
+      <SettingsRow
+        dense
+        divider
+        title={
+          <>
+            <StatusDot
+              status={state?.addonOnline === true ? 'success' : 'neutral'}
+              aria-label={addonLabel}
+            />
+            {t('settings.ankiSync.addon.label')}
+          </>
+        }
+      >
         <Text as="span" variant="supporting" color="secondary">
           {addonLabel}
         </Text>
@@ -145,17 +144,20 @@ export function AnkiStatusSyncPanel({
       {state !== null && state.consecutiveFailures >= 3 && (
         <Alert variant="warning">{t('settings.ankiSync.failing')}</Alert>
       )}
-      <SettingsRow dense>
-        <span className={styles.rowLabel}>
-          {state?.lastSyncAt ? (
+      <SettingsRow
+        dense
+        divider
+        title={
+          state?.lastSyncAt ? (
             <>
               <Timestamp value={state.lastSyncAt} />{' '}
               {t('settings.ankiSync.lastSummary', [state.changed, state.errors])}
             </>
           ) : (
             t('settings.ankiSync.never')
-          )}
-        </span>
+          )
+        }
+      >
         <Button
           variant="secondary"
           size="sm"
@@ -167,6 +169,6 @@ export function AnkiStatusSyncPanel({
         </Button>
       </SettingsRow>
       {error !== null && <Alert variant="error">{error}</Alert>}
-    </section>
+    </SettingsGroup>
   );
 }

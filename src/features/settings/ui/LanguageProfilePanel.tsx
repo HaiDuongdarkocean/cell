@@ -5,6 +5,7 @@ import { FlagIcon } from '@/shared/ui/FlagIcon';
 import { SearchableSelect } from '@/shared/ui/SearchableSelect';
 import { SelectableCard } from '@/shared/ui/SelectableCard';
 import { EmptyState } from '@/shared/ui/EmptyState';
+import { SettingsGroup } from '@/shared/ui/SettingsGroup';
 import { OVERLAY_LANGUAGE_OPTIONS, toIso6391, baseLangCode } from '@/shared/config/languageRegistry';
 import { t } from '@/shared/i18n';
 import {
@@ -227,25 +228,6 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
         )}
       </div>
 
-      {/* Toolbar — the "new profile" entry point stays pinned at the top so a
-          long list never pushes it out of reach. */}
-      {profiles.length > 0 && (
-        <div className={styles.toolbar}>
-          <Text variant="label" color="secondary" className={styles.sectionLabel}>{t('settings.profiles.list.label', [profiles.length])}</Text>
-          <button
-            type="button"
-            className={styles.linkBtn}
-            aria-expanded={form?.mode === 'add'}
-            disabled={!canAdd}
-            data-cell-id="add-language-profile"
-            onClick={() => setForm(form?.mode === 'add' ? null : { mode: 'add' })}
-          >
-            <Icon name={form?.mode === 'add' ? 'x' : 'plus'} size="xs" />
-            {form?.mode === 'add' ? t('settings.profiles.closeForm') : t('settings.profiles.new')}
-          </button>
-        </div>
-      )}
-
       {form?.mode === 'add' && (
         <ProfileForm
           mode="add"
@@ -273,6 +255,23 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
           }
         />
       ) : (
+        <SettingsGroup
+          label={t('settings.profiles.list.label', [profiles.length])}
+          action={
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              aria-expanded={form?.mode === 'add'}
+              disabled={!canAdd}
+              data-cell-id="add-language-profile"
+              onClick={() => setForm(form?.mode === 'add' ? null : { mode: 'add' })}
+            >
+              <Icon name={form?.mode === 'add' ? 'x' : 'plus'} size="xs" />
+              {form?.mode === 'add' ? t('settings.profiles.closeForm') : t('settings.profiles.new')}
+            </Button>
+          }
+        >
         <div className={styles.list} role="radiogroup" aria-label={t('settings.profiles.list.aria')}>
           {profiles.map((profile, index) => {
             const resolved = resolveProfile(profile, settings.universalNativeLanguage);
@@ -355,6 +354,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
             );
           })}
         </div>
+        </SettingsGroup>
       )}
     </div>
   );
