@@ -107,6 +107,11 @@ function DictionaryPopup(props: DictionaryPopupProps): React.JSX.Element {
       data-cell-id="popup-dictionary"
       className={styles.popup}
     >
+      {trail && onTrailNavigate ? (
+        <div className={styles.trailWrap}>
+          <LookupTrail trail={trail} onNavigate={onTrailNavigate} />
+        </div>
+      ) : null}
       <div
         className={styles.content}
         data-cell-id="popup-dictionary-content"

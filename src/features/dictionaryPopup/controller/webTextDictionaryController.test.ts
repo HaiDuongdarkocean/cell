@@ -1980,7 +1980,17 @@ describe('nested popup stack', () => {
     act(() => { ctrl.destroy() });
   });
 
-  it('clicking a word inside level 1 mounts level 2 while level 1 stays', async () => {
+  function trailOf(host: HTMLElement): HTMLElement | null {
+    return host.shadowRoot!.querySelector('[data-cell-id="lookup-trail"]');
+  }
+
+  function crumbTexts(host: HTMLElement): string[] {
+    const trail = trailOf(host);
+    if (!trail) return [];
+    return Array.from(trail.querySelectorAll('li')).map((li) => li.textContent ?? '');
+  }
+
+  it('clicking a word inside the popup chains a deeper level on the same mount', async () => {
     makeLookupForTerms();
     const ctrl = createWebTextDictionaryController(makeDeps());
 
@@ -1991,54 +2001,10 @@ describe('nested popup stack', () => {
     act(() => { ctrl.handleLookup(makeRequest({ term: 'fasten' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'fasten')) });
     await flushLookup();
 
-    expect(popupHosts()).toHaveLength(2);
-    expect(popupHosts()[0]).toBe(lv1);
-    expect(document.body.contains(lv1)).toBe(true);
-    act(() => { ctrl.destroy() });
-  });
-
-  it('clicking an ancestor level prunes deeper levels and reuses its child', async () => {
-    makeLookupForTerms();
-    const ctrl = createWebTextDictionaryController(makeDeps());
-
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'a' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('a')) });
-    await flushLookup();
-    const lv1 = popupHosts()[0]!;
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
-    await flushLookup();
-    const lv2 = popupHosts()[1]!;
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'c' }), 'r3', new DOMRect(70, 80, 50, 20), rangeInPopup(lv2, 'c')) });
-    await flushLookup();
-    const lv3 = popupHosts()[2]!;
-    expect(popupHosts()).toHaveLength(3);
-
-    // Click a word in level 1 → level 3 pruned, level 2 reused for the result.
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'd' }), 'r4', new DOMRect(90, 100, 50, 20), rangeInPopup(lv1, 'd')) });
-    await flushLookup();
-
-    expect(popupHosts()).toHaveLength(2);
-    expect(popupHosts()[0]).toBe(lv1);
-    expect(popupHosts()[1]).toBe(lv2);
-    expect(document.body.contains(lv3)).toBe(false);
-    act(() => { ctrl.destroy() });
-  });
-
-  it('reuses the child level instead of stacking another popup', async () => {
-    makeLookupForTerms();
-    const ctrl = createWebTextDictionaryController(makeDeps());
-
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'a' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('a')) });
-    await flushLookup();
-    const lv1 = popupHosts()[0]!;
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
-    await flushLookup();
-    const lv2 = popupHosts()[1]!;
-
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'e' }), 'r5', new DOMRect(55, 65, 50, 20), rangeInPopup(lv1, 'e')) });
-    await flushLookup();
-
-    expect(popupHosts()).toHaveLength(2);
-    expect(popupHosts()[1]).toBe(lv2);
+    const hosts = popupHosts();
+    expect(hosts).toHaveLength(1);
+    expect(hosts[0]).toBe(lv1);
+    expect(crumbTexts(lv1)).toEqual(['lock', 'fasten']);
     act(() => { ctrl.destroy() });
   });
 
@@ -2051,7 +2017,8 @@ describe('nested popup stack', () => {
     const lv1 = popupHosts()[0]!;
     act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
     await flushLookup();
-    expect(popupHosts()).toHaveLength(2);
+    expect(popupHosts()).toHaveLength(1);
+    expect(crumbTexts(lv1)).toEqual(['a', 'b']);
 
     act(() => {
       document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true }));
@@ -2061,7 +2028,7 @@ describe('nested popup stack', () => {
     act(() => { ctrl.destroy() });
   });
 
-  it('pointerdown inside an ancestor level closes deeper levels and focuses it', async () => {
+  it('pointerdown inside the shared mount keeps the chain intact', async () => {
     makeLookupForTerms();
     const ctrl = createWebTextDictionaryController(makeDeps());
 
@@ -2070,69 +2037,38 @@ describe('nested popup stack', () => {
     const lv1 = popupHosts()[0]!;
     act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
     await flushLookup();
-    const lv2 = popupHosts()[1]!;
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'c' }), 'r3', new DOMRect(70, 80, 50, 20), rangeInPopup(lv2, 'c')) });
-    await flushLookup();
-    const lv3 = popupHosts()[2]!;
-    expect(popupHosts()).toHaveLength(3);
+    expect(crumbTexts(lv1)).toEqual(['a', 'b']);
 
     act(() => {
       lv1.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true }));
     });
 
     expect(popupHosts()).toHaveLength(1);
-    expect(popupHosts()[0]).toBe(lv1);
-    expect(document.body.contains(lv2)).toBe(false);
-    expect(document.body.contains(lv3)).toBe(false);
+    expect(crumbTexts(lv1)).toEqual(['a', 'b']);
+    act(() => { ctrl.destroy() });
+  });
+
+  it('Escape on the shared mount dismisses the whole chain', async () => {
+    makeLookupForTerms();
+    const ctrl = createWebTextDictionaryController(makeDeps());
+
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'a' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('a')) });
+    await flushLookup();
+    const lv1 = popupHosts()[0]!;
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
+    await flushLookup();
     const surface = lv1.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]') as HTMLElement;
-    expect(lv1.shadowRoot!.activeElement).toBe(surface);
-    act(() => { ctrl.destroy() });
-  });
-
-  it('pointerdown inside the top level keeps the stack intact', async () => {
-    makeLookupForTerms();
-    const ctrl = createWebTextDictionaryController(makeDeps());
-
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'a' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('a')) });
-    await flushLookup();
-    const lv1 = popupHosts()[0]!;
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
-    await flushLookup();
-    const lv2 = popupHosts()[1]!;
-
-    act(() => {
-      lv2.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true }));
-    });
-
-    expect(popupHosts()).toHaveLength(2);
-    act(() => { ctrl.destroy() });
-  });
-
-  it('Escape on level 2 closes it and keeps level 1', async () => {
-    makeLookupForTerms();
-    const ctrl = createWebTextDictionaryController(makeDeps());
-
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'a' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('a')) });
-    await flushLookup();
-    const lv1 = popupHosts()[0]!;
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
-    await flushLookup();
-    const lv2 = popupHosts()[1]!;
-    const surface = lv2.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]') as HTMLElement;
     expect(surface).not.toBeNull();
 
     await act(async () => {
       surface.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }));
     });
 
-    expect(popupHosts()).toHaveLength(1);
-    expect(popupHosts()[0]).toBe(lv1);
-    const lv1Surface = lv1.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]') as HTMLElement;
-    expect(lv1.shadowRoot!.activeElement).toBe(lv1Surface);
+    expect(popupHosts()).toHaveLength(0);
     act(() => { ctrl.destroy() });
   });
 
-  it('Escape with focus outside the popup walks the stack down level by level', async () => {
+  it('Escape with focus outside the popup dismisses the whole chain', async () => {
     makeLookupForTerms();
     const ctrl = createWebTextDictionaryController(makeDeps());
 
@@ -2141,24 +2077,14 @@ describe('nested popup stack', () => {
     const lv1 = popupHosts()[0]!;
     act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
     await flushLookup();
-    const lv2 = popupHosts()[1]!;
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'c' }), 'r3', new DOMRect(70, 80, 50, 20), rangeInPopup(lv2, 'c')) });
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'c' }), 'r3', new DOMRect(70, 80, 50, 20), rangeInPopup(lv1, 'c')) });
     await flushLookup();
-    expect(popupHosts()).toHaveLength(3);
-
-    const pressEscape = (): void => {
-      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    };
-
-    await act(async () => { pressEscape(); });
-    expect(popupHosts()).toHaveLength(2);
-    expect(lv2.shadowRoot!.activeElement).toBe(lv2.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]'));
-
-    await act(async () => { pressEscape(); });
     expect(popupHosts()).toHaveLength(1);
-    expect(lv1.shadowRoot!.activeElement).toBe(lv1.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]'));
+    expect(crumbTexts(lv1)).toEqual(['a', 'b', 'c']);
 
-    await act(async () => { pressEscape(); });
+    await act(async () => {
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
     expect(popupHosts()).toHaveLength(0);
     act(() => { ctrl.destroy() });
   });
@@ -2201,64 +2127,59 @@ describe('nested popup stack', () => {
 
   it('pauses video once and resumes only when the whole stack is gone', async () => {
     jest.useFakeTimers();
-    makeLookupForTerms();
-    let paused = false;
-    const mockVideo = {
-      get paused() { return paused; },
-      pause: jest.fn(() => { paused = true; }),
-      play: jest.fn(() => { paused = false; }),
-    } as unknown as HTMLVideoElement;
+    try {
+      makeLookupForTerms();
+      let paused = false;
+      const mockVideo = {
+        get paused() { return paused; },
+        pause: jest.fn(() => { paused = true; }),
+        play: jest.fn(() => { paused = false; }),
+      } as unknown as HTMLVideoElement;
 
-    const ctrl = createWebTextDictionaryController(makeDeps());
-    ctrl.configureVideo({ hasVideo: true, video: mockVideo, getTargetCues: () => [] });
+      const ctrl = createWebTextDictionaryController(makeDeps());
+      ctrl.configureVideo({ hasVideo: true, video: mockVideo, getTargetCues: () => [] });
 
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'a' }), 'r1', new DOMRect(10, 10, 40, 20), tokenizedRange('a')) });
-    await flushLookup();
-    act(() => { jest.advanceTimersByTime(10) });
-    const lv1 = popupHosts()[0]!;
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
-    await flushLookup();
-    act(() => { jest.advanceTimersByTime(10) });
+      act(() => { ctrl.handleLookup(makeRequest({ term: 'a' }), 'r1', new DOMRect(10, 10, 40, 20), tokenizedRange('a')) });
+      await flushLookup();
+      act(() => { jest.advanceTimersByTime(10) });
+      const lv1 = popupHosts()[0]!;
+      act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
+      await flushLookup();
+      act(() => { jest.advanceTimersByTime(10) });
+      await flushLookup();
 
-    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
-    expect(popupHosts()).toHaveLength(2);
+      expect(mockVideo.pause).toHaveBeenCalledTimes(1);
+      expect(popupHosts()).toHaveLength(1);
 
-    // Closing level 2 alone must not resume the video.
-    const surface = popupHosts()[1]!.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]') as HTMLElement;
-    await act(async () => {
-      surface.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }));
-    });
-    expect(popupHosts()).toHaveLength(1);
-    expect(mockVideo.play).not.toHaveBeenCalled();
-
-    // Closing the last level resumes playback.
-    act(() => { ctrl.dismissLookup() });
-    act(() => { jest.advanceTimersByTime(800) });
-    await flushLookup();
-    expect(popupHosts()).toHaveLength(0);
-    expect(mockVideo.play).toHaveBeenCalledTimes(1);
-    act(() => { ctrl.destroy() });
-    jest.useRealTimers();
+      // Escape dismisses the whole chain at once — the video resumes as soon
+      // as the last level is gone.
+      const surface = lv1.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]') as HTMLElement;
+      await act(async () => {
+        surface.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }));
+      });
+      expect(popupHosts()).toHaveLength(0);
+      act(() => { jest.advanceTimersByTime(800) });
+      await flushLookup();
+      expect(mockVideo.play).toHaveBeenCalledTimes(1);
+      act(() => { ctrl.destroy() });
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
-  it('stacks without a depth cap — a lookup in the deepest level mounts a new level', async () => {
+  it('chains without a depth cap — deeper lookups keep feeding the one mount', async () => {
     makeLookupForTerms();
     const ctrl = createWebTextDictionaryController(makeDeps());
 
     act(() => { ctrl.handleLookup(makeRequest({ term: 'l1' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('l1')) });
     await flushLookup();
-    for (let i = 2; i <= 7; i++) {
-      const parent = popupHosts()[i - 2]!;
-      act(() => { ctrl.handleLookup(makeRequest({ term: `l${i}` }), `r${i}`, new DOMRect(10 + i, 10 + i, 40, 20), rangeInPopup(parent, `l${i}`)) });
+    const lv1 = popupHosts()[0]!;
+    for (let i = 2; i <= 8; i++) {
+      act(() => { ctrl.handleLookup(makeRequest({ term: `l${i}` }), `r${i}`, new DOMRect(10 + i, 10 + i, 40, 20), rangeInPopup(lv1, `l${i}`)) });
       await flushLookup();
+      expect(popupHosts()).toHaveLength(1);
     }
-    expect(popupHosts()).toHaveLength(7);
-
-    const deepest = popupHosts()[6]!;
-    act(() => { ctrl.handleLookup(makeRequest({ term: 'l8' }), 'r8', new DOMRect(90, 90, 40, 20), rangeInPopup(deepest, 'l8')) });
-    await flushLookup();
-    expect(popupHosts()).toHaveLength(8);
-    expect(popupHosts()[6]).toBe(deepest);
+    expect(crumbTexts(lv1)).toEqual(['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'l8']);
     act(() => { ctrl.destroy() });
   });
 
@@ -2269,16 +2190,6 @@ describe('nested popup stack', () => {
 
     function sheetOf(host: HTMLElement): HTMLElement {
       return host.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]') as HTMLElement;
-    }
-
-    function trailOf(host: HTMLElement): HTMLElement | null {
-      return host.shadowRoot!.querySelector('[data-cell-id="lookup-trail"]');
-    }
-
-    function crumbTexts(host: HTMLElement): string[] {
-      const trail = trailOf(host);
-      if (!trail) return [];
-      return Array.from(trail.querySelectorAll('li')).map((li) => li.textContent ?? '');
     }
 
     function termOf(host: HTMLElement): string | null {
@@ -2411,7 +2322,7 @@ describe('nested popup stack', () => {
       });
     });
 
-    it('expanding the viewport materializes one popup per logical level', async () => {
+    it('a viewport crossing keeps the single mount and the whole chain', async () => {
       await withSheetViewport(async (ctrl) => {
         makeLookupForTerms();
 
@@ -2423,48 +2334,23 @@ describe('nested popup stack', () => {
         act(() => { ctrl.handleLookup(makeRequest({ term: 'set' }), 'r3', new DOMRect(70, 80, 50, 20), rangeInPopup(lv1, 'set')) });
         await flushLookup();
         expect(popupHosts()).toHaveLength(1);
+        expect(crumbTexts(lv1)).toEqual(['above', 'used', 'set']);
 
+        // Widening past the sheet breakpoint flips the mount's own layout —
+        // the chain stays inside the same shared mount, nothing remounts.
         await resizeTo(1024);
-        await waitFor(() => expect(popupHosts()).toHaveLength(3));
-        const hosts = popupHosts();
-        expect(hosts[0]).toBe(lv1);
-        expect(termOf(hosts[0]!)).toBe('above');
-        expect(termOf(hosts[1]!)).toBe('used');
-        expect(termOf(hosts[2]!)).toBe('set');
-        // Materialization replays cached results — no repeat lookups.
-        expect(lookupRequestCount(['above', 'used', 'set'])).toBe(3);
-      });
-    });
-
-    it('shrinking the viewport collapses the popups back into one sheet', async () => {
-      setViewport(1024);
-      const ctrl = createWebTextDictionaryController(makeDeps());
-      try {
-        makeLookupForTerms();
-
-        act(() => { ctrl.handleLookup(makeRequest({ term: 'above' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('above')) });
-        await flushLookup();
-        const lv1 = popupHosts()[0]!;
-        act(() => { ctrl.handleLookup(makeRequest({ term: 'used' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'used')) });
-        await flushLookup();
-        act(() => { ctrl.handleLookup(makeRequest({ term: 'set' }), 'r3', new DOMRect(70, 80, 50, 20), rangeInPopup(popupHosts()[1]!, 'set')) });
-        await flushLookup();
-        expect(popupHosts()).toHaveLength(3);
-
-        await resizeTo(500);
-        const hosts = popupHosts();
-        expect(hosts).toHaveLength(1);
-        expect(hosts[0]).toBe(lv1);
+        expect(popupHosts()).toHaveLength(1);
+        expect(popupHosts()[0]).toBe(lv1);
         expect(crumbTexts(lv1)).toEqual(['above', 'used', 'set']);
         expect(termOf(lv1)).toBe('set');
+        expect(lookupRequestCount(['above', 'used', 'set'])).toBe(3);
 
-        // And a second crossing materializes the preserved chain again.
-        await resizeTo(1024);
-        await waitFor(() => expect(popupHosts()).toHaveLength(3));
-      } finally {
-        act(() => { ctrl.destroy() });
-        setViewport(1024);
-      }
+        // And back down — still one mount, chain intact.
+        await resizeTo(500);
+        expect(popupHosts()).toHaveLength(1);
+        expect(popupHosts()[0]).toBe(lv1);
+        expect(crumbTexts(lv1)).toEqual(['above', 'used', 'set']);
+      });
     });
   });
 
@@ -2523,7 +2409,7 @@ describe('nested popup stack', () => {
       act(() => { ctrl.destroy() });
     });
 
-    it('keeps a nested popup above the panel when its parent lookup came from the panel', async () => {
+    it('keeps the popup above the panel while the chain rooted in the panel grows', async () => {
       makeLookupForTerms();
       const panelController = makePanelController();
       panelController.isOpen.mockReturnValue(true);
@@ -2537,8 +2423,8 @@ describe('nested popup stack', () => {
       act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
       await flushLookup();
 
-      expect(popupHosts()).toHaveLength(2);
-      expect(popupHosts()[1]!.style.zIndex).toBe('var(--z-overlay-top)');
+      expect(popupHosts()).toHaveLength(1);
+      expect(popupHosts()[0]!.style.zIndex).toBe('var(--z-overlay-top)');
       act(() => { ctrl.destroy() });
     });
 
@@ -2576,7 +2462,7 @@ describe('nested popup stack', () => {
       const lv1 = popupHosts()[0]!;
       act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
       await flushLookup();
-      const lv2 = popupHosts()[1]!;
+      expect(popupHosts()).toHaveLength(1);
 
       const openChange = (panelController.onOpenChange as jest.Mock).mock.calls[0]?.[0] as ((open: boolean) => void) | undefined;
       panelController.isOpen.mockReturnValue(false);
@@ -2585,7 +2471,6 @@ describe('nested popup stack', () => {
       act(() => { openChange?.(true); });
 
       expect(lv1.style.zIndex).toBe('var(--z-overlay-top)');
-      expect(lv2.style.zIndex).toBe('var(--z-overlay-top)');
       act(() => { ctrl.destroy() });
     });
 

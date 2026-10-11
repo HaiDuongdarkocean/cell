@@ -239,7 +239,7 @@ describe('popup lifecycle Escape layer', () => {
     mockSendMessage.mockResolvedValue({ success: true, data: [makeLifecycleResult('hello')] } as never);
   });
 
-  it('pops the top level on Escape with focus outside every popup host', () => {
+  it('dismisses the whole chain on Escape with focus outside every popup host', () => {
     mockMountPopupDictionary.mockReturnValue(
       makeLifecycleMount(document.createElement('div')),
     );
@@ -247,9 +247,6 @@ describe('popup lifecycle Escape layer', () => {
     const lifecycle = createPopupLifecycle(makeLifecycleDeps());
     lifecycle.handleLookup(makeLifecycleRequest('hello'), 'r1', lifecycleAnchorRect, lifecycleTarget);
     lifecycle.handleLookup(makeLifecycleRequest('world'), 'r2', lifecycleAnchorRect, lifecycleTarget);
-    expect(lifecycle.hasOpenPopup()).toBe(true);
-
-    fireEvent.keyDown(document.body, { key: 'Escape' });
     expect(lifecycle.hasOpenPopup()).toBe(true);
 
     fireEvent.keyDown(document.body, { key: 'Escape' });
