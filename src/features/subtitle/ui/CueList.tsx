@@ -857,21 +857,21 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                   {`${formatTimestamp(cue.start - offsetMs, hasHours)} – ${formatTimestamp(cue.end - offsetMs, hasHours)}`}
                 </button>
                 {onSaveCue && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="xs"
                     data-cell-id="cue-save"
                     data-cue-index={cue.index}
                     data-no-lookup
                     aria-label={t('queue.action.saveSentence')}
                     title={t('queue.action.saveSentence')}
-                    className={styles.saveCue}
                     onClick={(event) => {
                       event.stopPropagation();
                       onSaveCue(cue);
                     }}
                   >
                     <Icon name="bookmark" size="xs" />
-                  </button>
+                  </Button>
                 )}
                 {mobile && isCurrent && cardActions && (
                   <div className={styles.cardActions} data-cell-id="pm-card-actions">
