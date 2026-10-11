@@ -28,7 +28,7 @@ export function RealPanel(): React.ReactElement {
         nativeStyle={MOCK_NATIVE_STYLE}
         isPlaying={playing}
         repeatActive={false}
-        repeatIcon="rotateCcw"
+        repeatIcon="chevronFirst"
         videoAspectRatio={16 / 9}
         generateNativeEnabled
         toolsExpanded

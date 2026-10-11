@@ -31,7 +31,7 @@ export type NavClusterIconName = 'prev' | 'next' | 'repeat' | 'repeatA' | 'repea
 export const NAV_CLUSTER_ICONS: Record<NavClusterIconName, IconCatalogKey> = {
   prev: 'chevronLeft',
   next: 'chevronRight',
-  repeat: 'rotateCcw',
+  repeat: 'chevronFirst',
   repeatA: 'navRepeatA',
   repeatB: 'navRepeatB',
   repeatCancel: 'navRepeatCancel',

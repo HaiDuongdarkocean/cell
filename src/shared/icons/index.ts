@@ -23,6 +23,7 @@ import {
   Check,
   CheckCheck,
   ChevronDown,
+  ChevronFirst,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -137,6 +138,7 @@ import linkSvg from './svg/link.svg?raw';
 import eyeSvg from './svg/eye.svg?raw';
 import eyeOffSvg from './svg/eye-off.svg?raw';
 import chevronDownSvg from './svg/chevron-down.svg?raw';
+import chevronFirstSvg from './svg/chevron-first.svg?raw';
 import panelBottomCloseSvg from './svg/panel-bottom-close.svg?raw';
 import panelLeftCollapseSvg from './svg/panel-left-close.svg?raw';
 import panelLeftExpandSvg from './svg/panel-left-open.svg?raw';
@@ -307,6 +309,7 @@ export const ICON_CATALOG = {
   flag: { component: Flag, svg: flagSvg, source: 'lucide/flag', tags: ['flag', 'subtitle', 'caption', 'mark'] } as IconEntry,
   rotateCcw: { component: RotateCcw, svg: rotateCcwSvg, source: 'lucide/rotate-ccw', tags: ['rotate', 'retry', 'reset', 'undo', 'refresh'] } as IconEntry,
   panelRight: { component: PanelRight, svg: panelRightSvg, source: 'lucide/panel-right', tags: ['panel', 'side', 'sidebar', 'toggle'] } as IconEntry,
+  chevronFirst: { component: ChevronFirst, svg: chevronFirstSvg, source: 'lucide/chevron-first', tags: ['chevron', 'first', 'left', 'back', 'repeat', 'restart', 'skip-back', 'beginning'] } as IconEntry,
   chevronLeft: { component: ChevronLeft, svg: chevronLeftSvg, source: 'lucide/chevron-left', tags: ['chevron', 'left', 'back', 'arrow-left', 'prev'] } as IconEntry,
   chevronRight: { component: ChevronRight, svg: chevronRightSvg, source: 'lucide/chevron-right', tags: ['chevron', 'right', 'forward', 'arrow-right', 'next'] } as IconEntry,
   chevronsLeft: { component: ChevronsLeft, svg: chevronsLeftSvg, source: 'lucide/chevrons-left', tags: ['chevron', 'left', 'first', 'back', 'arrow-left', 'double', 'pagination', 'skip-start'] } as IconEntry,
