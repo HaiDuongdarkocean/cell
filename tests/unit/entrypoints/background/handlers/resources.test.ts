@@ -65,6 +65,14 @@ const mockRegistry = {
   },
   markDone: jest.fn(),
   markInterrupted: jest.fn(),
+  markFailed(id: string, error: string) {
+    const job = this.jobs.get(id);
+    if (job) {
+      job.status = 'failed';
+      job.error = error;
+    }
+    return job;
+  },
 };
 
 jest.mock('@/entrypoints/background/handlers/jobs', () => ({
@@ -178,5 +186,31 @@ describe('resource import chunks — live component selection', () => {
     expect(mockedImportFile).toHaveBeenCalledTimes(1);
     const [, opts] = mockedImportFile.mock.calls[0]!;
     expect(opts.components).toBeUndefined();
+  });
+
+  it('rejects a malformed-base64 chunk and fails the job', async () => {
+    const handlers = makeContext();
+    const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!;
+    const bad = {
+      type: MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
+      payload: {
+        jobId: 'job-bad', seq: 0, total: 2,
+        data: '%%%not-base64%%%',
+        fileName: 'list.txt', fileMime: 'text/plain', langCode: 'en',
+      },
+    } as MessageRequest;
+    const res = await send(bad);
+    expect((res as { error?: string }).error).toBeTruthy();
+    const job = mockRegistry.jobs.get('job-bad');
+    expect(job?.status).toBe('failed');
+    const retry = await send({
+      type: MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
+      payload: {
+        jobId: 'job-bad2', seq: 0, total: 1,
+        data: slices[0]!,
+        fileName: 'list.txt', fileMime: 'text/plain', langCode: 'en',
+      },
+    } as MessageRequest);
+    expect((retry as { error?: string }).error).toBeUndefined();
   });
 });

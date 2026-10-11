@@ -395,7 +395,13 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
       return toError(new Error(t('resources.error.uploadRejected')));
     }
     if (pending.chunks[p.seq] === undefined) {
-      pending.chunks[p.seq] = decodeChunk(p.data);
+      try {
+        pending.chunks[p.seq] = decodeChunk(p.data);
+      } catch (err) {
+        clearPending(p.jobId);
+        registry.markFailed(p.jobId, 'invalid-chunk-encoding');
+        return toError(err);
+      }
       pending.received++;
       registry.setProgress(p.jobId, { done: pending.received, total: pending.chunks.length, unit: 'items' });
     }
