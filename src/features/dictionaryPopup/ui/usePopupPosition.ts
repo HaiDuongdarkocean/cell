@@ -280,13 +280,12 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
 
     sessionRef.current = null;
     setWillChange(undefined);
-    setTransition(undefined);
-    setTransform(undefined);
     lastPointerRef.current = null;
 
     if (session.type === 'drag') {
       // Commit the dragged position into left/top now that the transform
       // delta is cleared — the popup lands where the transform left it.
+      setTransform(undefined);
       dragOffsetRef.current = {
         left: session.startOffset.left + (clientX - session.startX),
         top: session.startOffset.top + (clientY - session.startY),
@@ -299,8 +298,16 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
         positionRef.current = committed;
         setPosition(committed);
       }
+      if (snapBackTimerRef.current) clearTimeout(snapBackTimerRef.current);
+      snapBackTimerRef.current = setTimeout(() => {
+        snapBackTimerRef.current = null;
+        setTransition(undefined);
+      }, 50);
       return;
     }
+
+    setTransition(undefined);
+    setTransform(undefined);
 
     if (session.type === 'resize') {
       onSizeChangeRef.current?.(sizeRef.current, sheetHeightRef.current);
@@ -478,8 +485,8 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
         } else {
           const pos = computeAndClampPosition(nextSize, dragOffsetRef.current, vw, vh);
           setPosition(pos);
-          setTransform(undefined);
         }
+        setTransform(undefined);
       });
     };
     window.addEventListener('resize', onResize);
@@ -560,6 +567,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
       target,
       pointerId: e.pointerId,
     };
+    setTransition('none');
     startWillChange();
     try { target.setPointerCapture(e.pointerId); } catch { /* ignore */ }
   }, [startWillChange]);

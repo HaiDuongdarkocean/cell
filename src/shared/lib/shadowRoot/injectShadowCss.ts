@@ -68,7 +68,7 @@ export function injectShadowCss(
     return () => {
       cleanupRipple();
       shadow.adoptedStyleSheets = shadow.adoptedStyleSheets.filter((s) => !sheets.includes(s));
-      adoptedByRoot.delete(shadow);
+      if (adoptedByRoot.get(shadow) === sheets) adoptedByRoot.delete(shadow);
     };
   }
 
