@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, type ReactElement, type ReactNode, type KeyboardEvent } from 'react';
 import { useFocusTrap } from '@/shared/ui/useFocusTrap';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
+import { Button } from '@/shared/ui/Button';
+import { Icon } from '@/shared/ui/Icon';
+import { t } from '@/shared/i18n';
 import styles from './CardCreatorSidePanel.module.css';
 
 const EXIT_DURATION_MS = 250;
@@ -92,6 +95,19 @@ export function CardCreatorSidePanel({
       data-cell-id={dataCellId}
       data-section={dataSection}
     >
+      <div className={styles.header}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClose}
+          aria-label={t('ankiImport.action.back')}
+          data-cell-id={`${dataCellId}-back`}
+        >
+          <Icon name="chevronLeft" />
+        </Button>
+        <span className={styles.headerTitle}>{ariaLabel}</span>
+        <span aria-hidden="true" />
+      </div>
       <div className={[styles.content, flushContent && styles['content--flush']].filter(Boolean).join(' ')}>
         {children}
       </div>
