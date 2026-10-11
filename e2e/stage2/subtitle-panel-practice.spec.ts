@@ -64,22 +64,30 @@ async function openStudyMenu(page: Page): Promise<void> {
   await expect(menu).toBeVisible();
 }
 
+async function closeStudyMenu(page: Page): Promise<void> {
+  await page.keyboard.press('Escape');
+  await expect(page.locator(STUDY_MENU)).toHaveCount(0);
+}
+
 async function selectSpeed(page: Page, label: string): Promise<void> {
   await openStudyMenu(page);
   const value = page.locator(`${STUDY_MENU} ${SPEED_VALUE}`);
   const target = parseFloat(label);
   for (let i = 0; i < 30; i++) {
     const current = parseFloat((await value.textContent()) ?? '');
-    if (current === target) return;
+    if (current === target) break;
     await page.locator(`${STUDY_MENU} ${current < target ? SPEED_INC : SPEED_DEC}`).click();
+    if (i === 29) throw new Error(`could not reach speed ${label}`);
   }
-  throw new Error(`could not reach speed ${label}`);
+  await expect(page.locator(STUDY_MENU)).toBeVisible();
+  await closeStudyMenu(page);
 }
 
 async function selectStudyMode(page: Page, selector: string): Promise<void> {
   await openStudyMenu(page);
   await page.locator(selector).dispatchEvent('click');
-  await expect(page.locator(STUDY_MENU)).toHaveCount(0);
+  await expect(page.locator(STUDY_MENU)).toBeVisible();
+  await closeStudyMenu(page);
 }
 
 interface GeometryReport {
@@ -225,6 +233,32 @@ async function checkFooterArrangement(page: Page, stacked: boolean): Promise<voi
 }
 
 test.describe('Stage 2: Subtitle panel practice', () => {
+  test('study menu stays open across mode flips and repeated speed steps', async ({
+    streamFlixPage,
+  }) => {
+    await enterPlayerMode(streamFlixPage);
+    await openStudyMenu(streamFlixPage);
+
+    const menu = streamFlixPage.locator(STUDY_MENU);
+    await streamFlixPage.locator(MODE_CLOZE).dispatchEvent('click');
+    await expect(menu).toBeVisible();
+    await expect(streamFlixPage.locator(MODE_CLOZE)).toHaveAttribute('aria-checked', 'true');
+
+    await streamFlixPage.locator(MODE_OFF).dispatchEvent('click');
+    await expect(menu).toBeVisible();
+    await expect(streamFlixPage.locator(MODE_OFF)).toHaveAttribute('aria-checked', 'true');
+
+    const speedValue = streamFlixPage.locator(`${STUDY_MENU} ${SPEED_VALUE}`);
+    await expect(speedValue).toHaveText('1×');
+    await streamFlixPage.locator(`${STUDY_MENU} ${SPEED_INC}`).click();
+    await streamFlixPage.locator(`${STUDY_MENU} ${SPEED_INC}`).click();
+    await expect(speedValue).toHaveText('1.5×');
+    await expect(menu).toBeVisible();
+
+    await streamFlixPage.screenshot({ path: 'tmp/study-menu-stays-open.png' });
+    await closeStudyMenu(streamFlixPage);
+  });
+
   test('dictation: normalized answer scores 100 live and Enter advances the cue', async ({
     streamFlixPage,
   }) => {

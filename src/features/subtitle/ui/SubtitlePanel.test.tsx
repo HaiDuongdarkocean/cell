@@ -149,7 +149,7 @@ describe('SubtitlePanel study menu', () => {
     expect(container.querySelector(MORE_BTN)).not.toBeInTheDocument();
   });
 
-  it('lists modes as menuitemradio, reflects the active mode, selects and closes', () => {
+  it('lists modes as menuitemradio, reflects the active mode, selects and stays open', () => {
     const onMode = jest.fn();
     const { container } = render(
       <SubtitlePanel
@@ -169,9 +169,14 @@ describe('SubtitlePanel study menu', () => {
     expect(normal).toHaveAttribute('aria-checked', 'true');
     expect(dictation).toHaveAttribute('aria-checked', 'false');
 
+    // The menu stays open so the user can flip between modes or keep tapping
+    // the speed stepper — it only closes on outside click / Escape / re-click.
     fireEvent.click(dictation);
     expect(onMode).toHaveBeenCalledWith('dictation');
-    expect(document.querySelector(MENU)).not.toBeInTheDocument();
+    expect(document.querySelector(MENU)).toBeInTheDocument();
+    fireEvent.click(normal);
+    expect(onMode).toHaveBeenCalledWith('normal');
+    expect(document.querySelector(MENU)).toBeInTheDocument();
   });
 
   it('falls back to practiceMode for the selected item when activeModeId is unset', () => {

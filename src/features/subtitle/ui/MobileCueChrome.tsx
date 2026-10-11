@@ -526,7 +526,7 @@ export function MobileCueChrome({
                   icon={<Icon name={mode.icon} />}
                   selected={activeModeId === mode.id || (!activeModeId && mode.id === 'normal')}
                   data-cell-id={`study-mode-${mode.id}`}
-                  onSelect={() => { onStudyModeChange(mode.id); closeMoreMenu(); }}
+                  onSelect={() => onStudyModeChange(mode.id)}
                 >
                   {mode.titleKey ? t(mode.titleKey) : mode.title}
                 </MenuItem>

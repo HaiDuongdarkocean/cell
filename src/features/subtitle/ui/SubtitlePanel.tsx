@@ -499,10 +499,7 @@ function SubtitlePanelImpl({
               icon={<Icon name={mode.icon} />}
               selected={resolvedModeId === mode.id}
               data-cell-id={`study-mode-${mode.id}`}
-              onSelect={() => {
-                onStudyModeChange(mode.id);
-                setStudyMenuOpen(false);
-              }}
+              onSelect={() => onStudyModeChange(mode.id)}
             >
               {mode.titleKey ? t(mode.titleKey) : mode.title}
             </MenuItem>
