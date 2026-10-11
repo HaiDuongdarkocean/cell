@@ -100,7 +100,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
           case 'prev-cue':
           case 'next-cue':
           case 'replay-cue': {
-            navigateCue(action, video, ctx.getBilingualCues(), effectiveMs, offsetMs, blockController.getActiveIndices().target);
+            navigateCue(action, video, blockController.getNavigableCues(), effectiveMs, offsetMs, blockController.getTargetCues()[blockController.getActiveIndices().target]);
             break;
           }
           case 'toggle-overlay': {

@@ -71,37 +71,37 @@ describe('navigateCue — paused anchors at the active cue', () => {
 
   it('next-cue paused at cue 1 seeks cue 2, not cue 3', () => {
     const video = makeVideo({ paused: true, currentTime: 2 });
-    navigateCue('next-cue', video, HELD_CUES, 2000, 0, 0);
+    navigateCue('next-cue', video, HELD_CUES, 2000, 0, HELD_CUES[0]);
     expect(video.currentTime).toBeCloseTo(2.13);
   });
 
   it('next-cue while playing ignores the anchor (effectiveMs unchanged)', () => {
     const video = makeVideo({ paused: false, currentTime: 2 });
-    navigateCue('next-cue', video, HELD_CUES, 2000, 0, 0);
+    navigateCue('next-cue', video, HELD_CUES, 2000, 0, HELD_CUES[0]);
     expect(video.currentTime).toBeCloseTo(6.08);
   });
 
-  it('next-cue paused with no active cue (-1) keeps effectiveMs behavior', () => {
+  it('next-cue paused with no anchor keeps effectiveMs behavior', () => {
     const video = makeVideo({ paused: true, currentTime: 2 });
-    navigateCue('next-cue', video, HELD_CUES, 2000, 0, -1);
+    navigateCue('next-cue', video, HELD_CUES, 2000, 0, undefined);
     expect(video.currentTime).toBeCloseTo(6.08);
   });
 
-  it('next-cue paused with a stale out-of-range index keeps effectiveMs behavior', () => {
+  it('next-cue paused with an anchor outside the navigable set still anchors', () => {
     const video = makeVideo({ paused: true, currentTime: 2 });
-    navigateCue('next-cue', video, HELD_CUES, 2000, 0, 99);
+    navigateCue('next-cue', video, HELD_CUES, 2000, 0, { start: 4050, end: 5900 });
     expect(video.currentTime).toBeCloseTo(6.08);
   });
 
   it('prev-cue paused at cue 3 seeks the contiguous previous cue 2', () => {
     const video = makeVideo({ paused: true, currentTime: 4 });
-    navigateCue('prev-cue', video, CONTIG_CUES, 4000, 0, 2);
+    navigateCue('prev-cue', video, CONTIG_CUES, 4000, 0, CONTIG_CUES[2]);
     expect(video.currentTime).toBeCloseTo(2.08);
   });
 
   it('replay-cue paused at cue 2 re-seeks cue 2 and resumes', () => {
     const video = makeVideo({ paused: true, currentTime: 6 });
-    navigateCue('replay-cue', video, CONTIG_CUES, 6000, 0, 1);
+    navigateCue('replay-cue', video, CONTIG_CUES, 6000, 0, CONTIG_CUES[1]);
     expect(video.currentTime).toBeCloseTo(2.08);
     expect(video.play).toHaveBeenCalledTimes(1);
   });

@@ -13,12 +13,12 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 export function navigateCue(
   action: 'prev-cue' | 'next-cue' | 'replay-cue',
   video: HTMLVideoElement,
-  cues: BilingualCue[],
+  cues: readonly BilingualCue[],
   effectiveMs: number,
   offsetMs: number,
-  activeCueIndex = -1,
+  anchor?: { start: number; end: number },
 ): void {
-  const anchorCue = video.paused && activeCueIndex >= 0 ? cues[activeCueIndex] : undefined;
+  const anchorCue = video.paused ? (anchor ?? undefined) : undefined;
   switch (action) {
     case 'prev-cue': {
       const prevCue = anchorCue

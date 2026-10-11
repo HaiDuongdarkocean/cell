@@ -8,8 +8,8 @@ import {
   DEFAULT_NAV_CLUSTER_SETTINGS,
 } from '@/shared/config/config';
 import { dispatchCuesUpdated, type CuesUpdatedDetail } from '@/features/subtitle/events';
-import { prevSentence, nextSentence, seekBy, findActiveCueIndex } from './navClusterActions';
-import { seekVideo, resumeIfPaused, SEEK_LANDING_EPS_MS } from '@/shared/lib/dom/netflixPlayback';
+import { prevSentence, nextSentence, seekBy } from './navClusterActions';
+import { seekVideo } from '@/shared/lib/dom/netflixPlayback';
 import { t } from '@/shared/i18n';
 import type { ClickModifierState, TriggerMode } from '@/entities/dictionary';
 import type { IconCatalogKey } from '@/shared/icons';
@@ -302,32 +302,6 @@ export class SubtitleCueEngine {
     const detail = this.getCuesUpdatedDetail();
     this.callbacks.onCuesUpdated?.(detail);
     dispatchCuesUpdated(document, detail);
-  }
-
-  getCurrentCuesForRepeat(): { cues: readonly SrtCue[]; index: number } {
-    const currentMs = this.video.currentTime * 1000;
-    const offsetMs = this.getOffsetMs();
-    return findActiveCueIndex(this.targetCues, this.nativeCues, currentMs, offsetMs);
-  }
-
-  repeatOnce(): void {
-    const currentMs = this.video.currentTime * 1000;
-    const offsetMs = this.getOffsetMs();
-    const { cues, index } = findActiveCueIndex(this.targetCues, this.nativeCues, currentMs, offsetMs);
-    if (index >= 0 && cues[index]) {
-      seekVideo(this.video, (cues[index].start - offsetMs + SEEK_LANDING_EPS_MS) / 1000);
-      resumeIfPaused(this.video);
-      return;
-    }
-    const effectiveMs = currentMs + offsetMs;
-    let prevIndex = -1;
-    for (let i = cues.length - 1; i >= 0; i--) {
-      if (cues[i].end <= effectiveMs) { prevIndex = i; break; }
-    }
-    if (prevIndex >= 0 && cues[prevIndex]) {
-      seekVideo(this.video, (cues[prevIndex].start - offsetMs + SEEK_LANDING_EPS_MS) / 1000);
-      resumeIfPaused(this.video);
-    }
   }
 
   handleNoSubRepeatClick(): SubtitleCueEngineRepeatState {

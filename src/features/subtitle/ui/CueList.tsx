@@ -19,6 +19,7 @@ import {
   type ResolveMeta,
 } from '@/features/tokenize';
 import { sentenceContextForIndex } from '@/features/tokenize';
+import { publishNavigableCues } from '@/features/subtitle/logic/navigableCues';
 import { formatCueTimestamp } from '@/features/subtitle/logic/cueTime';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
 import { hasSentenceEnd } from '@/shared/lib/sentencePunct';
@@ -284,6 +285,11 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     () => (cueFilter ? visibleCues.filter((c) => cueFilter(c.index)) : visibleCues),
     [visibleCues, cueFilter],
   );
+
+  useEffect(() => {
+    publishNavigableCues(filteredCues);
+    return () => publishNavigableCues(null);
+  }, [filteredCues]);
 
   const activeOnly = displayMode === 'active' && !showAllCues;
   const effectiveMs = currentTimeMs + offsetMs;

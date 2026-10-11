@@ -166,6 +166,7 @@ interface MockController {
   onApiKeysChange: jest.Mock;
   getTargetCues: jest.Mock;
   getNativeCues: jest.Mock;
+  getNavigableCues: jest.Mock;
   getCurrentTargetText: jest.Mock;
   getCurrentNativeText: jest.Mock;
   getActiveIndices: jest.Mock;
@@ -256,6 +257,7 @@ function createMockController(): MockController {
     onApiKeysChange: jest.fn(),
     getTargetCues: jest.fn().mockReturnValue([]),
     getNativeCues: jest.fn().mockReturnValue([]),
+    getNavigableCues: jest.fn().mockReturnValue([]),
     getCurrentTargetText: jest.fn().mockReturnValue(''),
     getCurrentNativeText: jest.fn().mockReturnValue(''),
     getActiveIndices: jest.fn().mockReturnValue({ target: -1, native: -1 }),

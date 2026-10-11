@@ -201,7 +201,7 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
         // ADR-033: use getEffectiveMs so rapid press computes from intended pos.
         const offsetMs = offsetController?.getOffsetMs() ?? 0;
         const effectiveMs = ctx.getEffectiveMs();
-        navigateCue(action, video, ctx.getBilingualCues(), effectiveMs, offsetMs, blockController.getActiveIndices().target);
+        navigateCue(action, video, blockController.getNavigableCues(), effectiveMs, offsetMs, blockController.getTargetCues()[blockController.getActiveIndices().target]);
         break;
       }
       case 'toggle-overlay': {

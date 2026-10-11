@@ -18,6 +18,8 @@ import type { SubtitlePanelItem } from './subtitlePanelModel';
 import { SubtitleCueEngine, NAV_CLUSTER_ICONS, type SubtitleCueEngineUpdate, type CardCreatorAction, type SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
 import type { TriggerMode, LookupRequest } from '@/entities/dictionary';
 import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
+import { navigateCue } from './shortcutActionDispatcher';
+import { readNavigableCues } from '@/features/subtitle/logic/navigableCues';
 import { suppressNativeCaptions } from './nativeCaptionSuppressor';
 import { mergeCuesForPanel } from '@/features/subtitle/logic/subtitleMerge';
 import { cuesToSrt } from '@/features/subtitle/logic/cuesToSrt';
@@ -173,8 +175,8 @@ export class ReactSubtitleController {
       generateNativeEnabled: this.generateNativeEnabled,
       videoAspectRatio: this.videoAspectRatio,
       onTogglePlayerMode: (active) => this.handlePlayerModeToggle(active),
-      onPrev: () => this.engine.handlePrev(),
-      onNext: () => this.engine.handleNext(),
+      onPrev: () => this.navigateCueAction('prev-cue'),
+      onNext: () => this.navigateCueAction('next-cue'),
       onRepeat: () => this.handleRepeat(),
       onRewind: () => this.engine.handleRewind(),
       onForward: () => this.engine.handleForward(),
@@ -309,9 +311,9 @@ export class ReactSubtitleController {
   }
 
   private condenseCueRanges(): { startMs: number; endMs: number }[] {
-    const cues = this.engine.getTargetCues();
-    const source = cues.length > 0 ? cues : this.engine.getNativeCues();
-    return displayableCueRanges(source);
+    return displayableCueRanges(
+      this.getNavigableCues().map((c) => ({ start: c.start, end: c.end, text: c.targetText || c.nativeText })),
+    );
   }
 
   private handleCondenseAudio(): void {
@@ -439,7 +441,7 @@ export class ReactSubtitleController {
 
   private handleRepeat(): void {
     if (this.engine.hasSubtitles()) {
-      this.engine.repeatOnce();
+      this.navigateCueAction('replay-cue');
       return;
     }
     const state = this.engine.handleNoSubRepeatClick();
@@ -461,7 +463,7 @@ export class ReactSubtitleController {
   }
 
   private handlePreviousCue(cue: BilingualCue): void {
-    const textCues = this.panelCues.filter((c) => c.targetText.trim().length > 0);
+    const textCues = this.getNavigableCues().filter((c) => c.targetText.trim().length > 0);
     const index = textCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
     const prev = index > 0 ? textCues[index - 1] : undefined;
     if (prev) {
@@ -476,7 +478,7 @@ export class ReactSubtitleController {
   }
 
   private handleContinueCue(cue: BilingualCue): void {
-    const textCues = this.panelCues.filter((c) => c.targetText.trim().length > 0);
+    const textCues = this.getNavigableCues().filter((c) => c.targetText.trim().length > 0);
     const index = textCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
     const next = index >= 0 ? textCues[index + 1] : undefined;
     if (next) {
@@ -529,6 +531,23 @@ export class ReactSubtitleController {
 
   getTargetCues(): readonly SrtCue[] {
     return this.engine.getTargetCues();
+  }
+
+  /** Cue set every nav CTA operates on: the rendered list (non-empty +
+   *  active filter) when a CueList is mounted, else the merged panel set. */
+  getNavigableCues(): readonly BilingualCue[] {
+    return readNavigableCues() ?? this.panelCues;
+  }
+
+  private navigateCueAction(action: 'prev-cue' | 'next-cue' | 'replay-cue'): void {
+    navigateCue(
+      action,
+      this.video,
+      this.getNavigableCues(),
+      this.video.currentTime * 1000,
+      this.getOffsetMs(),
+      this.engine.getTargetCues()[this.engine.getActiveIndices().target],
+    );
   }
 
   getNativeCues(): readonly SrtCue[] {

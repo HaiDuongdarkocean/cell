@@ -380,3 +380,23 @@ describe('CueTokenText i+1 marking', () => {
     }
   });
 });
+
+describe('CueList navigable cue set (SSOT for nav CTAs)', () => {
+  it('publishes the rendered cue set and clears it on unmount', async () => {
+    const { readNavigableCues } = jest.requireActual<
+      typeof import('@/features/subtitle/logic/navigableCues')
+    >('@/features/subtitle/logic/navigableCues');
+    const { unmount } = renderList();
+    await waitFor(() => expect(readNavigableCues()?.map((c) => c.index)).toEqual([1, 2, 3]));
+    unmount();
+    expect(readNavigableCues()).toBeNull();
+  });
+
+  it('publishes only cues matching the active filter', async () => {
+    const { readNavigableCues } = jest.requireActual<
+      typeof import('@/features/subtitle/logic/navigableCues')
+    >('@/features/subtitle/logic/navigableCues');
+    renderList({ cueFilter: (index) => index !== 2 });
+    await waitFor(() => expect(readNavigableCues()?.map((c) => c.index)).toEqual([1, 3]));
+  });
+});
