@@ -399,11 +399,12 @@ html body .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-t
 }
 
 /* i+1 gate: only the single still-new word of a sentence paints the frequency
-   pill and status capsule. Every other token carries --i1-off and renders as
-   plain text — same reset as known/ignore, so a page full of unknown words
-   stays readable instead of turning into a wall of pills. The capsule reveals
-   on hover/popup-open (the pill stays hidden) so a focused word can still
-   show its status. */
+   pill. Every other token carries --i1-off and renders as plain text — same
+   reset as known/ignore, so a page full of unknown words stays readable
+   instead of turning into a wall of pills. The status capsule is NOT gated:
+   every unknown-family word (unknown + tracking flag) keeps its bar at rest so
+   learners can always spot unlearned words. known/ignore stay hidden at rest
+   via their own rules above and reveal on hover/popup-open. */
 html body .js-cell-token.js-cell-token--i1-off {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
@@ -411,9 +412,6 @@ html body .js-cell-token.js-cell-token--i1-off {
   box-shadow: none !important;
   padding: 0 !important;
   border-radius: 0 !important;
-}
-html body .js-cell-token.js-cell-token--i1-off:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-status {
-  background: transparent !important;
 }
 
 html body .js-cell-token.js-cell-token--selected .js-cell-token-word {
@@ -720,9 +718,6 @@ ${buildVariables(':host')}
   box-shadow: none !important;
   padding: 0 !important;
   border-radius: 0 !important;
-}
-.js-cell-token.js-cell-token--i1-off:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-status {
-  background: transparent !important;
 }
 
 .js-cell-token.js-cell-token--selected .js-cell-token-word {

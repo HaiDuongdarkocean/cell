@@ -146,21 +146,32 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     }
   });
 
-  it.each(['host', 'shadow'])('gates the pill and status capsule behind i+1 in %s CSS', (variant) => {
+  it.each(['host', 'shadow'])('gates the frequency pill — but never the status capsule — behind i+1 in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
     const rule = source.match(/\.js-cell-token--i1-off\s*\{[^}]*\}/)?.[0] ?? '';
     expect(rule).toContain('background-color: transparent');
     expect(rule).toContain('box-shadow: none');
     expect(rule).toContain('padding: 0');
     expect(rule).toContain('border-radius: 0');
-    // i1-off hides the capsule at rest, but hover or an open dictionary popup
-    // must reveal it — otherwise a clicked word can never show its status.
-    expect(source).toMatch(
-      /\.js-cell-token--i1-off:not\(:hover\):not\(\.js-cell-token--popup-open\) \.js-cell-token-status\s*\{[^}]*background:\s*transparent/,
-    );
+    // i1-off strips the pill only. The status bar must never be gated by i+1:
+    // every unknown-family word (unknown + tracking flag) keeps its bar at rest
+    // so learners can always spot unlearned words; known/ignore keep their own
+    // hover/popup-open reveal rules.
+    expect(source).not.toMatch(/i1-off[^\n}]*\.js-cell-token-status/);
     // The gate must sit after the frequency/status paint rules so equal
     // specificity resolves in its favour.
     expect(source.indexOf('.js-cell-token--i1-off')).toBeGreaterThan(source.indexOf('frequency-rare {'));
+  });
+
+  it.each(['unknown', 'tracking'])('paints the %s capsule at rest — no hover/popup-open gate', (status) => {
+    for (const source of [buildTokenSpanCss(), buildTokenSpanCssForShadow()]) {
+      const paintRule = source.match(
+        new RegExp(`status-${status} \\.js-cell-token-status\\s*\\{[^}]*\\}`),
+      )?.[0] ?? '';
+      expect(paintRule).toContain('background');
+      expect(paintRule).not.toContain(':hover');
+      expect(paintRule).not.toContain('popup-open');
+    }
   });
 
   it.each(['host', 'shadow'])('paints the sentence wash as flat band overlays in %s CSS', (variant) => {
@@ -320,11 +331,13 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     );
 
     it.each(['host', 'shadow'])(
-      'keeps the card layer behind the i+1 gate — has-card never reveals a non-i+1 capsule in %s CSS',
+      'emits the has-card paint rules before the i+1 pill gate in %s CSS',
       (variant) => {
         const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
-        // The gate sits after every has-card paint rule so equal/higher
-        // specificity still resolves in its favour.
+        // The i+1 block sits after every has-card paint rule so its pill strip
+        // still wins on equal specificity. The card layer rides the status
+        // capsule, which is no longer gated — unknown-family carded words keep
+        // their gradient bar at rest.
         const gateIndex = source.indexOf('.js-cell-token--i1-off');
         for (const status of ['unknown', 'tracking', 'known', 'ignore']) {
           const cardIndex = source.indexOf(`status-${status}.js-cell-token--has-card`);
