@@ -975,6 +975,7 @@
   "studyModes.speed.aria": "Tốc độ phát",
   "studyModes.speed.decrease": "Giảm tốc độ phát từ $1",
   "studyModes.speed.increase": "Tăng tốc độ phát từ $1",
+  "studyModes.speed.reset": "Đặt lại tốc độ phát",
   "studyModes.practice.title": "Luyện tập",
   "studyModes.practice.typeMissingOne": "Gõ từ còn thiếu",
   "studyModes.practice.typeMissingMany": "Gõ $1 từ còn thiếu",

@@ -10,3 +10,5 @@ export type { PlaybackAction, UnknownCueProbe } from './lib/studyModePlaybackCon
 export { SubtitleStudyModeController } from './lib/subtitleStudyModeController';
 export type { SubtitleStudyModeTimeState } from './lib/subtitleStudyModeController';
 export { StudyModesTab } from './ui/StudyModesTab';
+export { PlaybackSpeedStepper } from './ui/PlaybackSpeedStepper';
+export type { PlaybackSpeedStepperProps } from './ui/PlaybackSpeedStepper';

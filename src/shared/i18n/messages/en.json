@@ -975,6 +975,7 @@
   "studyModes.speed.aria": "Playback speed",
   "studyModes.speed.decrease": "Decrease playback speed from $1",
   "studyModes.speed.increase": "Increase playback speed from $1",
+  "studyModes.speed.reset": "Reset playback speed",
   "studyModes.practice.title": "Practice",
   "studyModes.practice.typeMissingOne": "Type the missing word",
   "studyModes.practice.typeMissingMany": "Type $1 missing words",

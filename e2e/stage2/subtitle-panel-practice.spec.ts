@@ -15,6 +15,7 @@ const MODE_CLOZE = '[data-cell-id="study-mode-cloze"]';
 const SPEED_VALUE = '[data-cell-id="speed-value"]';
 const SPEED_INC = '[data-cell-id="speed-inc"]';
 const SPEED_DEC = '[data-cell-id="speed-dec"]';
+const SPEED_RESET = '[data-cell-id="speed-reset"]';
 
 const CUE2_START_S = 20.2;
 const CUE2_NEXT_START_S = 29.266;
@@ -253,6 +254,11 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     await streamFlixPage.locator(`${STUDY_MENU} ${SPEED_INC}`).click();
     await streamFlixPage.locator(`${STUDY_MENU} ${SPEED_INC}`).click();
     await expect(speedValue).toHaveText('1.5×');
+    await expect(menu).toBeVisible();
+
+    await streamFlixPage.locator(`${STUDY_MENU} ${SPEED_RESET}`).click();
+    await expect(speedValue).toHaveText('1×');
+    await expect(streamFlixPage.locator(`${STUDY_MENU} ${SPEED_RESET}`)).toBeDisabled();
     await expect(menu).toBeVisible();
 
     await streamFlixPage.screenshot({ path: 'tmp/study-menu-stays-open.png' });

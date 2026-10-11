@@ -13,10 +13,9 @@ import { SubtitlePanel } from './SubtitlePanel';
 import { Button } from '@/shared/ui/Button';
 import { MenuItem, MenuSeparator } from '@/shared/ui/Menu';
 import { Sheet } from '@/shared/ui/Sheet';
-import { StepperSection, StepperValue } from '@/shared/ui/StepperSection';
-import { PLAYBACK_SPEEDS } from '@/entities/studyMode/types';
 import { Icon } from '@/shared/icons/Icon';
 import { PRESETS } from '@/entities/studyMode/constants';
+import { PlaybackSpeedStepper } from '@/features/studyModes';
 import { t } from '@/shared/i18n';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import {
@@ -26,7 +25,6 @@ import {
 } from '@/shared/lib/chrome-apis';
 import styles from './PlayerModeOverlay.module.css';
 
-const MENU_SPEEDS: readonly PlaybackSpeed[] = PLAYBACK_SPEEDS;
 const SHEET_HEIGHT_RATIO = 0.62;
 const ORBITAL_POSITION_KEY = 'orbitalBadgePosition';
 const ORBITAL_BADGE_DEFAULT_SIZE = 36;
@@ -230,12 +228,6 @@ export function MobileCueChrome({
 
   const hasCues = (cues ?? []).length > 0;
   const closeMoreMenu = (): void => setMoreMenuOpen(false);
-  const speedIndex = Math.max(MENU_SPEEDS.indexOf(playbackSpeed ?? 1), 0);
-  const stepPlaybackSpeed = (delta: number): void => {
-    const next = MENU_SPEEDS[speedIndex + delta];
-    if (!onPlaybackSpeedChange || next === undefined) return;
-    onPlaybackSpeedChange(next);
-  };
 
   const pmCardActions =
     onQuickAdd || onEditCard ? (
@@ -457,24 +449,11 @@ export function MobileCueChrome({
         initialHeight={Math.round(window.innerHeight * SHEET_HEIGHT_RATIO)}
         data-cell-id="pm-more-menu"
         footer={
-          <StepperSection
-            label={t('studyModes.speed.aria')}
-            dataCellId="pm-speed-stepper"
-            decreaseLabel={<Icon name="minus" />}
-            increaseLabel={<Icon name="plus" />}
-            decreaseAriaLabel={t('subtitle.playerMode.speedSlower')}
-            increaseAriaLabel={t('subtitle.playerMode.speedFaster')}
-            decreaseDisabled={speedIndex <= 0}
-            increaseDisabled={speedIndex >= MENU_SPEEDS.length - 1}
-            decreaseDataCellId="pm-speed-dec"
-            increaseDataCellId="pm-speed-inc"
-            onDecrease={() => stepPlaybackSpeed(-1)}
-            onIncrease={() => stepPlaybackSpeed(1)}
-          >
-            <StepperValue dataCellId="pm-speed-value">
-              {`${playbackSpeed ?? 1}×`}
-            </StepperValue>
-          </StepperSection>
+          <PlaybackSpeedStepper
+            value={playbackSpeed ?? 1}
+            onChange={onPlaybackSpeedChange ?? (() => undefined)}
+            idPrefix="pm-speed"
+          />
         }
       >
         <div className={styles.pmSheetList} role="menu" aria-label={t('subtitle.playerMode.menuLabel')}>

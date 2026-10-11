@@ -34,11 +34,9 @@ import {
 import { CueRecommendFab, cueFilterModeLabel } from './CueRecommendFab';
 import { applyCleanupRules, resolveCleanupRules } from '@/entities/studyMode';
 import { markCueSeekIntent } from '@/shared/lib/cueSeekIntent';
-import { loadStudyModeState, useStudyModeStore } from '@/features/studyModes';
+import { loadStudyModeState, PlaybackSpeedStepper, useStudyModeStore } from '@/features/studyModes';
 import { PRESETS } from '@/entities/studyMode/constants';
-import { PLAYBACK_SPEEDS } from '@/entities/studyMode/types';
 import { Menu, MenuItem, MenuSeparator } from '@/shared/ui/Menu';
-import { StepperSection, StepperValue } from '@/shared/ui/StepperSection';
 import { Icon } from '@/shared/icons/Icon';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
@@ -284,12 +282,6 @@ function SubtitlePanelImpl({
 
   const studyModes = useMemo(() => [...PRESETS, ...customModes], [customModes]);
   const resolvedModeId = activeModeId ?? (practiceMode === 'off' ? 'normal' : practiceMode);
-  const speedIndex = Math.max(PLAYBACK_SPEEDS.indexOf(playbackSpeed), 0);
-  const stepPlaybackSpeed = (delta: number): void => {
-    const next = PLAYBACK_SPEEDS[speedIndex + delta];
-    if (!onPlaybackSpeedChange || next === undefined) return;
-    onPlaybackSpeedChange(next);
-  };
 
   const prevCueCountRef = useRef(visibleCues.length);
   useEffect(() => {
@@ -505,22 +497,11 @@ function SubtitlePanelImpl({
             </MenuItem>
           ))}
           <MenuSeparator />
-          <StepperSection
-            label={t('studyModes.speed.aria')}
-            dataCellId="speed-stepper"
-            decreaseLabel={<Icon name="minus" />}
-            increaseLabel={<Icon name="plus" />}
-            decreaseAriaLabel={t('studyModes.speed.decrease', [String(playbackSpeed)])}
-            increaseAriaLabel={t('studyModes.speed.increase', [String(playbackSpeed)])}
-            decreaseDisabled={speedIndex <= 0}
-            increaseDisabled={speedIndex >= PLAYBACK_SPEEDS.length - 1}
-            decreaseDataCellId="speed-dec"
-            increaseDataCellId="speed-inc"
-            onDecrease={() => stepPlaybackSpeed(-1)}
-            onIncrease={() => stepPlaybackSpeed(1)}
-          >
-            <StepperValue dataCellId="speed-value">{`${playbackSpeed}×`}</StepperValue>
-          </StepperSection>
+          <PlaybackSpeedStepper
+            value={playbackSpeed}
+            onChange={onPlaybackSpeedChange ?? noop}
+            idPrefix="speed"
+          />
         </Menu>
       ) : !pmMobile && onPracticeModeChange ? (
         <PracticeOptions
