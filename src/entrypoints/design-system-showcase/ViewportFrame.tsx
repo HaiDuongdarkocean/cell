@@ -50,6 +50,9 @@ export function ViewportFrame({
       const doc = iframe.contentDocument;
       if (!doc) return;
 
+      doc.documentElement.lang = document.documentElement.lang || 'en';
+      doc.title = document.title;
+
       const styleNodes = document.querySelectorAll('style, link[rel="stylesheet"]');
       styleNodes.forEach((node) => {
         doc.head.appendChild(node.cloneNode(true));
@@ -76,7 +79,19 @@ export function ViewportFrame({
       doc.documentElement.scrollTop = 0;
       doc.body.scrollTop = 0;
 
-      setPortalTarget(doc.body);
+      const hidden =
+        'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0';
+      const main = doc.createElement('main');
+      const h1 = doc.createElement('h1');
+      h1.textContent = iframe.title || 'Preview';
+      h1.style.cssText = hidden;
+      const h2 = doc.createElement('h2');
+      h2.textContent = doc.title;
+      h2.style.cssText = hidden;
+      main.append(h1, h2);
+      doc.body.appendChild(main);
+
+      setPortalTarget(main);
     };
 
     iframe.addEventListener('load', setup);

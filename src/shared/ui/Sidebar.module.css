@@ -8,7 +8,7 @@
   color: var(--sidebar-fg, var(--color-text));
   border-right: var(--border-width-hairline) solid var(--color-divider);
   overflow: hidden;
-  transition: width var(--duration-normal) ease-in-out, min-width var(--duration-normal) ease-in-out;
+  transition: width var(--duration-normal) var(--ease-in-out), min-width var(--duration-normal) var(--ease-in-out);
 }
 
 .topbar {

@@ -510,7 +510,6 @@
   "settings.block.autoLoad": "Auto-load subtitles",
   "settings.block.autoLoad.hint": "Loads detected subtitles in your target language when a video plays.",
   "settings.block.autoLoadAsr": "Include YouTube auto captions",
-  "settings.block.autoLoadAsr.hint": "Also load captions YouTube generated automatically.",
   "settings.block.autoTranslate": "Translate when native is missing",
   "settings.block.autoTranslate.hint": "Falls back to Google Translate when no native-language track exists — free, no key.",
   "settings.block.showReadings": "Show readings",

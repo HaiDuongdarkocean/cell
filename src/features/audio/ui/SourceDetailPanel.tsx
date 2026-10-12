@@ -107,7 +107,7 @@ export function SourceDetailPanel({
     <div className={styles.panel} data-engine={engine} data-cell-id="source-detail-panel">
       <div className={styles.header}>
         <Icon name={ENGINE_ICONS[engine]} size="sm" color="secondary" />
-        <Text as="h5" className={styles.title}>
+        <Text as="h4" className={styles.title}>
           {t(ENGINE_LABEL_KEYS[engine])}
         </Text>
       </div>

@@ -74,7 +74,7 @@ export const SettingsRow = forwardRef<HTMLDivElement, SettingsRowProps>(function
   const titleEl = (
     <span className={styles.title}>
       {labelFor ? <label htmlFor={labelFor}>{title}</label> : title}
-      {hint && <HintIcon hint={hint} ariaLabel={hintAriaLabel ?? ''} dataTestId={hintTestId} />}
+      {hint && <HintIcon hint={hint} ariaLabel={hintAriaLabel ?? hint} dataTestId={hintTestId} />}
     </span>
   );
 

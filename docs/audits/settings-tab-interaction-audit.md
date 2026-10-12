@@ -200,3 +200,36 @@ Method: enumerate every interactive control per section → drive default/hover/
 ### Gates round 4
 
 typecheck sạch · lint 0 err (4 warning cũ) · **8628/8628 tests** · build xanh (design-system-css 0 violations) · live verify: Tab escape, arrow radio nav, banner focus, hover convergence — all pass.
+
+## Round 5 — WCAG conformance audit + environment sweep (2026-10-11)
+
+Method: `axe-core` (wcag2a/2aa/21a/21aa) on the settings showcase in light + dark, Chrome accessibility-tree dump (CDP), and an environment sweep — forced-colors, 200%-zoom reflow, RTL, reduced-motion (`tmp/settings-tab-redesign/audit-deep.mjs`).
+
+### Axe findings fixed
+
+- **color-contrast** (4 nodes, light theme): active subnav label/icon (`NavItem`), `Button` link variant, audio pipeline selected step (`AudioPipeline`), and `Alert` description (`opacity: 0.9` diluted `--alert-error-fg` to 4.44:1) — all moved to `--color-text-accent-strong` / `opacity: 1`. `color-text-accent` was an alias of `color-primary` (#5EA5E9 ≈ 2.4:1 on light surfaces — fails AA for all text usage).
+- **heading-order**: `SourceDetailPanel` title `h5` under an `h3` section → `h4`.
+- **Showcase shell**: preview iframe document lacked `lang`, `title`, a `main` landmark and any h1/h2 — `ViewportFrame` now sets `doc.lang`/`doc.title` and wraps preview content in `<main>` with visually-hidden h1+h2.
+- **Zoom-200 clipped label** ("Choose package folder…", `sw=167 cw=86`): root cause — `SettingsRow` wraps at ≤480px but children kept `min-width: 0`, so both label and control shrank-and-clipped instead of wrapping. Narrow-width children now get `min-width: auto` → the pair reflows to two lines (verified pixel: full label + full button at 320px).
+- Audit harness note: CSS `zoom: 2` does not affect media queries — zoom emulation now halves the iframe's CSS width (equivalent to real page zoom).
+
+### Cross-grade (fresh-context subagent): 76/80 ≈ 95%
+
+- **P2 missed twins** (same defect class): `SearchableSelect` `.optionSelected`/`.optionLabel`/`.checkMark` and `Menu` `.item[aria-checked]` still used `color-primary` on `primary-subtle` → `text-accent-strong`.
+- `LocalPronunciationSettingsPanel`: status line now `role="status"` (was silent); raw `err.message` no longer leaks English browser errors — localized fallback.
+- `SettingsRow`/`SettingsSection` hint icon: `aria-label` falls back to the hint text instead of `''` (empty-name icon button).
+- `Sidebar` transition `ease-in-out` keyword → `--ease-in-out` token; `BrowserVoicePanel` `.saved` → `text-accent-strong`.
+- Copy echo: `autoLoadAsr.hint` restated its title → description + key removed (en+vi).
+
+### Deferred (design-system backlog)
+
+- `--color-primary` itself fails AA as *text* color everywhere (≈2.4:1); ~20 `color: var(--color-primary)` text usages remain in other features — needs a token-level decision (darken primary vs migrate text usages), not a per-component sweep.
+- `SearchableSelect` dual `testId`/`dataTestId` props resolve confusingly — API redesign needed.
+- `MultiSelect` combobox lacks `aria-activedescendant` + arrow-key into suggestions (suggestions are Tab-reachable).
+- `BrowserVoicePanel` nested `<button>` inside `role="button"` row.
+- Menu surface recipe duplicated in Select/SearchableSelect/Popover (3 copies).
+- `sync.privacy` ~230-char inline paragraph.
+
+### Gates round 5
+
+typecheck sạch · lint 0 err (4 warning cũ) · **8628/8628 tests** · build xanh (design-system-css 0 violations) · **axe 0 violations / 37 passes (light + dark)** · axtree 207 nodes, 0 unnamed interactive · forced-colors/RTL/reduced-motion clean · zoom-reflow verified by pixel at 320px.

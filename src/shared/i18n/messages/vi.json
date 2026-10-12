@@ -510,7 +510,6 @@
   "settings.block.autoLoad": "Tự tải phụ đề",
   "settings.block.autoLoad.hint": "Tự tải phụ đề ngôn ngữ đích phát hiện được khi mở video.",
   "settings.block.autoLoadAsr": "Cả phụ đề tự động của YouTube",
-  "settings.block.autoLoadAsr.hint": "Tải cả phụ đề do YouTube tạo tự động.",
   "settings.block.autoTranslate": "Dịch khi thiếu phụ đề bản địa",
   "settings.block.autoTranslate.hint": "Dùng Google Translate khi không có phụ đề bản địa — miễn phí, không cần key.",
   "settings.block.showReadings": "Hiện cách đọc",

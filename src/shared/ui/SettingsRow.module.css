@@ -83,6 +83,11 @@
   .row {
     flex-wrap: wrap;
   }
+  /* Children may not shrink below content size, so a label+control pair that
+     would clip wraps onto two lines instead of truncating both. */
+  .row:not(.stacked) > * {
+    min-width: auto;
+  }
   .child {
     margin-left: var(--space-2);
   }

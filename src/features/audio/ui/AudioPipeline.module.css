@@ -56,7 +56,7 @@
 .stepWrapper .selected:hover,
 .stepWrapper .selected:active {
   background: var(--color-primary-subtle);
-  color: var(--color-text-accent);
+  color: var(--color-text-accent-strong);
   border-color: var(--color-primary);
 }
 

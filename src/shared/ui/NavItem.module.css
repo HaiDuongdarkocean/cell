@@ -52,19 +52,19 @@
 
 .item.active .icon,
 .item[aria-current="true"] .icon {
-  color: var(--color-primary);
+  color: var(--color-text-accent-strong);
 }
 
 .horizontal.active,
 .horizontal[aria-current="true"] {
   background: var(--color-primary-subtle);
-  color: var(--color-primary);
+  color: var(--color-text-accent-strong);
   font-weight: var(--font-weight-medium);
 }
 
 .horizontal.active .icon,
 .horizontal[aria-current="true"] .icon {
-  color: var(--color-primary);
+  color: var(--color-text-accent-strong);
 }
 
 .horizontal.active:hover:not(:disabled),

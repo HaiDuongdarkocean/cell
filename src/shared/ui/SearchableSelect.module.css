@@ -198,7 +198,7 @@
 
 .optionSelected {
   background: var(--color-primary-subtle);
-  color: var(--color-primary);
+  color: var(--color-text-accent-strong);
 }
 
 .optionLabel {
@@ -212,13 +212,13 @@
 }
 
 .optionSelected .optionLabel {
-  color: var(--color-primary);
+  color: var(--color-text-accent-strong);
 }
 
 .checkMark {
   width: var(--space-4);
   height: var(--space-4);
-  color: var(--color-primary);
+  color: var(--color-text-accent-strong);
   flex-shrink: 0;
 }
 

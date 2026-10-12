@@ -414,7 +414,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                 dense
                 divider
                 title={t('settings.block.autoLoadAsr')}
-                description={t('settings.block.autoLoadAsr.hint')}
               >
                 <Toggle
                   checked={settings.subtitleOverlayAutoLoadAsr}

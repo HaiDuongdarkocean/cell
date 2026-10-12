@@ -135,7 +135,9 @@ export function LocalPronunciationSettingsPanel({
         throw new Error(res?.error ?? t('pronunciation.local.indexFailed'));
       }
     } catch (err) {
-      setStatus(err instanceof Error ? err.message : t('pronunciation.local.pickFailed'));
+      setStatus(err instanceof Error && err.message === t('pronunciation.local.indexFailed')
+        ? err.message
+        : t('pronunciation.local.pickFailed'));
     } finally {
       setBusy(false);
     }
@@ -182,7 +184,7 @@ export function LocalPronunciationSettingsPanel({
       {status && (
         <SettingsRow dense>
           <span className={styles.rowLabel}>{t('pronunciation.local.status')}</span>
-          <span>{status}</span>
+          <span role="status">{status}</span>
         </SettingsRow>
       )}
 

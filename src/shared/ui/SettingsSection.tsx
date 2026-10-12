@@ -33,7 +33,7 @@ export const SettingsSection = forwardRef<HTMLElement, SettingsSectionProps>(fun
       <div className={styles.header}>
         <Heading level={headingLevel} size={3} className={styles.title}>
           {title}
-          {hint && <HintIcon hint={hint} ariaLabel={hintAriaLabel ?? ''} />}
+          {hint && <HintIcon hint={hint} ariaLabel={hintAriaLabel ?? hint} />}
         </Heading>
         {description && (
           <Text as="p" variant="supporting" color="secondary" className={styles.description}>

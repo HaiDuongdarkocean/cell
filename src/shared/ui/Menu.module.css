@@ -33,7 +33,7 @@
 
 .item[aria-checked='true'] {
   background: var(--color-primary-subtle);
-  color: var(--color-primary);
+  color: var(--color-text-accent-strong);
 }
 
 .item[aria-checked='true']:hover,
