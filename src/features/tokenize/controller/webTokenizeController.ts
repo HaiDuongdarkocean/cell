@@ -430,6 +430,7 @@ export async function createWebTokenizeController(
 
   const blocks: TokenBlock[] = [];
   const blockSet = new Set<TokenBlock>();
+  const blockElements = new Set<Element>();
   let isActive = false;
   let cancelPendingActivation: (() => void) | null = null;
 
@@ -481,6 +482,7 @@ export async function createWebTokenizeController(
       // the block enters the viewport/overscan.
       blocks.push(block);
       blockSet.add(block);
+      blockElements.add(block.element);
       // Observe the new block immediately. Disconnected nodes are harmless to
       // observe (the callback simply won't fire) and match the original test
       // expectation that a root-only node is registered.
@@ -524,6 +526,7 @@ export async function createWebTokenizeController(
         cache.set(block);
         blocks.push(block);
         blockSet.add(block);
+        blockElements.add(block.element);
         visibleElements.add(block.element);
         try {
           bindVisibleBlock(block);
@@ -574,8 +577,10 @@ export async function createWebTokenizeController(
       unbindAll();
       blocks.length = 0;
       blockSet.clear();
+      blockElements.clear();
       cache.clear();
       pendingAddedNodes = [];
+      pendingRemovedNodes = [];
       mutationFlushPending = false;
       if (mutationTimer) {
         clearTimeout(mutationTimer);
@@ -664,9 +669,12 @@ export async function createWebTokenizeController(
   // re-scan never fires, leaving dynamically added/replaced content untokenized.
   let mutationWindowStart = 0;
   let dynIdCounter = 0;
-  // Accumulate added nodes across multiple rapid MutationObserver callbacks so
-  // the debounced re-scan does not lose nodes that arrived between resets.
+  // Accumulate added/removed nodes across multiple rapid MutationObserver
+  // callbacks so the debounced re-scan does not lose nodes that arrived
+  // between resets — and so removed-node cleanup sweeps `blocks` once per
+  // flush instead of once per removed node.
   let pendingAddedNodes: Node[] = [];
+  let pendingRemovedNodes: Node[] = [];
 
   function processAddedNodes(added: readonly Node[], eager: boolean): void {
     if (!stateStore.getState().enabled) return;
@@ -680,6 +688,7 @@ export async function createWebTokenizeController(
       if (blockSet.has(block)) continue;
       blocks.push(block);
       blockSet.add(block);
+      blockElements.add(block.element);
       // Only eager-bind small mutation batches. Large batches (e.g. hydration,
       // re-rendering a whole subtree) can produce hundreds of blocks; doing a
       // synchronous getBoundingClientRect for each one forces repeated layout.
@@ -706,12 +715,21 @@ export async function createWebTokenizeController(
     }
   }
 
-  function handleRemovedNode(node: Node): void {
-    if (!(node instanceof Element)) return;
-    // Stop observing and release the element so a removed/re-rendered subtree
-    // does not stay alive via the tracker set until cache eviction.
-    viewport.unobserve(node);
-    visibleElements.delete(node);
+  function flushRemovedNodes(removed: readonly Node[]): void {
+    if (removed.length === 0 || blocks.length === 0) return;
+    // A removed node can only drop tracked blocks when it can contain them
+    // (has descendants) or is itself a block element — pure leaves and
+    // non-Element nodes skip the sweep entirely.
+    let needsSweep = false;
+    for (const node of removed) {
+      if (!(node instanceof Element)) continue;
+      // Stop observing and release the element so a removed/re-rendered
+      // subtree does not stay alive via the tracker set until cache eviction.
+      viewport.unobserve(node);
+      visibleElements.delete(node);
+      if (node.hasChildNodes() || blockElements.has(node)) needsSweep = true;
+    }
+    if (!needsSweep) return;
     // Ancestor removals detach descendant blocks without hitting
     // cache.getByElement(node); sweep any block whose element is gone.
     let removedAny = false;
@@ -720,6 +738,7 @@ export async function createWebTokenizeController(
       if (!block.element.isConnected) {
         blocks.splice(i, 1);
         blockSet.delete(block);
+        blockElements.delete(block.element);
         cache.delete(block.id);
         viewport.unobserve(block.element);
         visibleElements.delete(block.element);
@@ -729,12 +748,16 @@ export async function createWebTokenizeController(
     if (removedAny) options.onBlocksChanged?.();
   }
 
-  function flushPendingAddedNodes(): void {
+  function flushPendingMutations(): void {
     mutationFlushPending = false;
     if (!stateStore.getState().enabled) {
       pendingAddedNodes = [];
+      pendingRemovedNodes = [];
       return;
     }
+    const removed = pendingRemovedNodes;
+    pendingRemovedNodes = [];
+    flushRemovedNodes(removed);
     let added = pendingAddedNodes;
     if (added.length > PENDING_MUTATION_LIMIT) {
       // Chunk processing so a single microtask cannot walk an unbounded DOM
@@ -753,7 +776,7 @@ export async function createWebTokenizeController(
   function scheduleMutationFlush(): void {
     if (mutationFlushPending) return;
     mutationFlushPending = true;
-    queueMicrotask(flushPendingAddedNodes);
+    queueMicrotask(flushPendingMutations);
   }
 
   mutationObserver = new MutationObserver((mutations) => {
@@ -767,10 +790,10 @@ export async function createWebTokenizeController(
         pendingAddedNodes.push(n);
       }
       for (const n of m.removedNodes ?? []) {
-        handleRemovedNode(n);
+        pendingRemovedNodes.push(n);
       }
     }
-    if (pendingAddedNodes.length === 0) return;
+    if (pendingAddedNodes.length === 0 && pendingRemovedNodes.length === 0) return;
     if (!mutationWindowStart) mutationWindowStart = now;
     // Fast path: flush in the next microtask, before the browser paints, so new
     // content is tokenized immediately instead of waiting for a 16ms animation
@@ -959,6 +982,7 @@ export async function createWebTokenizeController(
       if (idx >= 0) {
         blocks.splice(idx, 1);
         blockSet.delete(block);
+        blockElements.delete(block.element);
       }
       cache.delete(block.id);
       return;

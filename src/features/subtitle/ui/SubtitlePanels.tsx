@@ -209,7 +209,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     }, [onPlaybackSpeedChange]);
     // Sync prop → state when cues change after mount (e.g. subtitle loaded later).
     useEffect(() => { setCues(initialCues ?? []); }, [initialCues]);
-    useEffect(() => { setCurrentTimeMs(initialCurrentTimeMs ?? 0); }, [initialCurrentTimeMs]);
     const {
       splitViewOpen,
       splitViewPortalTarget,
@@ -220,6 +219,22 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // <600px the split-view panel floats as a full cue-chrome sheet — its
     // transport/actions subsume the on-video overlay layers.
     const mobileSheetOpen = splitViewOpen && isMobile;
+
+    // timeupdate (~4Hz) only feeds the cue-highlight consumers — keep the
+    // latest value in a ref and pay the overlay re-render only while
+    // PlayerModeLayer or the split-view panel is mounted.
+    const hasTimeConsumer = playerMode || Boolean(splitViewOpen && splitViewPortalTarget && onSeek);
+    const currentTimeMsRef = useRef(currentTimeMs);
+    const hasTimeConsumerRef = useRef(hasTimeConsumer);
+    hasTimeConsumerRef.current = hasTimeConsumer;
+    if (hasTimeConsumer && currentTimeMs !== currentTimeMsRef.current) {
+      setCurrentTimeMs(currentTimeMsRef.current);
+    }
+    useEffect(() => {
+      const ms = initialCurrentTimeMs ?? 0;
+      currentTimeMsRef.current = ms;
+      if (hasTimeConsumerRef.current) setCurrentTimeMs(ms);
+    }, [initialCurrentTimeMs]);
 
     const [pmCueListOpen, setPmCueListOpen] = useState(true);
     const [interactionLocked, setInteractionLocked] = useState(false);
@@ -284,7 +299,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setYOffsetPercent,
         setCues,
         setTokenize,
-        setCurrentTimeMs,
+        setCurrentTimeMs: (ms) => {
+          currentTimeMsRef.current = ms;
+          if (hasTimeConsumerRef.current) setCurrentTimeMs(ms);
+        },
         setRemoveBracketed,
         togglePlayerMode: () => { void handleTogglePlayerMode(); },
         toggleSplitView: () => { handleToggleSplitView(); },
