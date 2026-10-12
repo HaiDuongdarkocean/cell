@@ -10,6 +10,14 @@
 /** Batch size — 2000 entries per IDB transaction (spec F7). */
 export const BATCH_SIZE = 2000;
 
+/** Pause between the previous write commit and the next write-tx creation.
+ *  A read tx only interleaves if it is created before write N+1 — and the
+ *  importer creates N+1 within microseconds of N committing, so reads from
+ *  the service worker almost never win the race without a deliberate gap.
+ *  16ms (~1 frame) per batch ≈ +1s on a 45s import; bounds lookup stall to
+ *  one gap instead of one ~1s batch commit on slow storage. */
+const READ_INTERLEAVE_MS = 16;
+
 /** Flush callback — receives batch, writes to repository. */
 export type FlushCallback<T> = (batch: ReadonlyArray<T>) => Promise<void>;
 
@@ -43,7 +51,9 @@ export class BatchProcessor<T> {
     if (this.inflightError !== null) throw this.inflightError;
     this.buffer.push(entry);
     if (this.buffer.length < BATCH_SIZE) return;
-    await this.inflight;
+    const prior = this.inflight;
+    await prior;
+    if (prior !== null) await new Promise((r) => setTimeout(r, READ_INTERLEAVE_MS));
     this.startFlush();
   }
 
