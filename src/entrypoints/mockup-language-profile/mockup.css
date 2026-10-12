@@ -515,9 +515,21 @@ body {
   background: var(--color-text-tertiary);
 }
 
-.mlp-variant[data-accent='teal'] .mlp-variant-title::before { background: var(--color-tint-teal-icon); }
-.mlp-variant[data-accent='purple'] .mlp-variant-title::before { background: var(--color-tint-purple-icon); }
-.mlp-variant[data-accent='green'] .mlp-variant-title::before { background: var(--color-tint-green-icon); }
+.mlp-variant[data-accent='fill'] .mlp-variant-title::before {
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+}
+
+.mlp-variant[data-accent='outline'] .mlp-variant-title::before {
+  background: transparent;
+  border: 1.5px solid var(--color-primary);
+}
+
+.mlp-variant[data-accent='type'] .mlp-variant-title::before {
+  background: var(--color-primary);
+  width: 3px;
+  height: var(--space-3);
+}
 
 .mlp-variant-note {
   font-size: var(--font-size-sm);
@@ -538,12 +550,11 @@ body {
   font-weight: var(--font-weight-medium);
 }
 
-/* === Concept B — popup list rows: one grouped container, hairline rows === */
+/* === Concept B — fill composition: blue marks state only, chips neutral === */
 .cb-panel {
-  --v-bg: var(--color-tint-teal-background);
-  --v-border: var(--color-tint-teal-border);
-  --v-accent: var(--color-tint-teal-icon);
-  --v-accent-text: var(--color-tint-teal-text);
+  --v-fill: var(--color-primary-subtle);
+  --v-accent: var(--color-primary);
+  --v-accent-text: var(--color-text-accent-strong);
 }
 
 .cb-group {
@@ -565,7 +576,7 @@ body {
 }
 
 .cb-item.is-active {
-  background: var(--v-bg);
+  background: var(--v-fill);
 }
 
 .cb-row {
@@ -611,8 +622,8 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--font-size-xs);
-  color: var(--v-accent-text);
-  background: var(--v-bg);
+  color: var(--color-text-secondary);
+  background: var(--color-field);
   border-radius: var(--radius-pill);
   padding: var(--space-0-5) var(--space-2);
   white-space: nowrap;
@@ -620,22 +631,16 @@ body {
 
 .cb-item.is-active .cb-chip { background: var(--color-surface); }
 
-.cb-panel .link-btn,
-.cc-panel .link-btn,
-.cd-panel .link-btn { color: var(--v-accent-text); }
+/* Fill composition continues into the select menu: selected = fill. */
+.cb-panel [role='option'] { background: transparent; }
+.cb-panel [role='option'][aria-selected='true'] { background: var(--v-fill); }
+.cb-panel input[type='search'] { box-shadow: none; background: var(--color-field); }
 
-@media (hover: hover) {
-  .cb-panel .link-btn:hover,
-  .cc-panel .link-btn:hover,
-  .cd-panel .link-btn:hover { background: var(--v-bg); }
-}
-
-/* === Concept C — popup card: elevated surface + hairline border === */
+/* === Concept C — outline composition: blue marks borders, cards stay white === */
 .cc-panel {
-  --v-bg: var(--color-tint-purple-background);
-  --v-border: var(--color-tint-purple-border);
-  --v-accent: var(--color-tint-purple-icon);
-  --v-accent-text: var(--color-tint-purple-text);
+  --v-accent: var(--color-primary);
+  --v-accent-text: var(--color-text-accent-strong);
+  --v-border-soft: color-mix(in srgb, var(--color-primary), var(--color-border) 55%);
 }
 
 .cc-list {
@@ -660,7 +665,7 @@ body {
 
 .cc-card.is-active {
   border-color: var(--v-accent);
-  background: var(--v-bg);
+  background: var(--color-surface-elevated);
 }
 
 .cc-main {
@@ -698,12 +703,12 @@ body {
 }
 
 .cc-chip {
-  border-color: var(--v-border);
+  border-color: var(--v-border-soft);
 }
 
 .cc-chipKey {
   padding: var(--space-0-5) var(--space-1-5);
-  background: var(--v-bg);
+  background: var(--color-primary-subtle);
   color: var(--v-accent-text);
 }
 
@@ -725,12 +730,19 @@ body {
   border-color: var(--v-accent);
 }
 
-/* === Concept D — text list: typography only, hairline separators === */
+/* Outline composition in the select menu: selected = inset ring, no fill. */
+.cc-panel [role='option'] { background: transparent; }
+.cc-panel [role='option'][aria-selected='true'] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--v-accent);
+  border-radius: var(--radius-md);
+}
+.cc-panel input[type='search'] { box-shadow: none; background: var(--color-field); }
+
+/* === Concept D — type & rail: blue lives in text + bar, surfaces neutral === */
 .cd-panel {
-  --v-bg: var(--color-tint-green-background);
-  --v-border: var(--color-tint-green-border);
-  --v-accent: var(--color-tint-green-icon);
-  --v-accent-text: var(--color-tint-green-text);
+  --v-accent: var(--color-primary);
+  --v-accent-text: var(--color-text-accent-strong);
 }
 
 .cd-list {
@@ -756,7 +768,7 @@ body {
   .cd-item:not(.is-active):hover { background: var(--color-surface-hover); }
 }
 
-.cd-item.is-active { background: var(--v-bg); }
+.cd-item.is-active { background: var(--color-surface-hover); }
 
 .cd-bar {
   position: absolute;
@@ -795,3 +807,12 @@ body {
 }
 
 .cd-check { color: var(--v-accent); flex-shrink: 0; }
+
+/* Type composition in the select menu: selected = accent text, no chrome. */
+.cd-panel [role='option'] { background: transparent; }
+.cd-panel [role='option'][aria-selected='true'] {
+  background: transparent;
+  color: var(--v-accent-text);
+  font-weight: var(--font-weight-medium);
+}
+.cd-panel input[type='search'] { box-shadow: none; background: var(--color-field); }

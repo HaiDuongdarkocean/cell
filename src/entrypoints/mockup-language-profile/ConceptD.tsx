@@ -6,11 +6,15 @@ import type { ConceptProps } from './common';
 import { EmptyState, KebabMenu, ProfileForm } from './common';
 import { langLabel, langShort, resolvedNative } from './mockData';
 
+const LANGUAGE_OPTIONS = OVERLAY_LANGUAGE_OPTIONS.filter((o) => o.value !== '');
+
 /**
- * Concept D — "Text list" (Spotify-minimal).
- * Pure typography: no flags, no radio chrome. Rows separated by hairlines;
- * the active row gets a left accent bar + tint + accent name. Quietest of
- * the three — leans hardest on hierarchy instead of decoration.
+ * Concept D — "Type & rail".
+ * Color architecture: blue lives only in TYPOGRAPHY + the left rail — accent
+ * name, accent check, 3px primary bar. Row backgrounds stay strictly neutral
+ * (hover/active = surface-hover), so no blue ever touches a surface fill.
+ * Quietest composition; hierarchy does all the work.
+ * Journey: skim names top-down → tap → done.
  */
 export function ConceptD({
   profiles,
@@ -31,7 +35,7 @@ export function ConceptD({
       <div className="cb-field">
         <span className="cb-label">Universal native language</span>
         <SearchableSelect
-          options={OVERLAY_LANGUAGE_OPTIONS}
+          options={LANGUAGE_OPTIONS}
           value={universalNative}
           onChange={onUniversalChange}
           ariaLabel="Universal native language"

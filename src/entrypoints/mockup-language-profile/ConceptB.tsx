@@ -7,11 +7,15 @@ import type { ConceptProps } from './common';
 import { EmptyState, KebabMenu, ProfileForm } from './common';
 import { langLabel, langShort, resolvedNative } from './mockData';
 
+const LANGUAGE_OPTIONS = OVERLAY_LANGUAGE_OPTIONS.filter((o) => o.value !== '');
+
 /**
- * Concept B — "Popup list rows".
- * IA model: one grouped container holds every profile — the dictionary popup's
- * definition-list grammar. Rows are thin: target flag + name + a compact
- * native chip + quiet kebab. Selection is a tint + accent check, not a radio.
+ * Concept B — "Fill rows".
+ * Color architecture: blue lives only in STATE — the active row fills with
+ * primary-subtle and a filled check. Chips and surfaces stay neutral gray so
+ * the single blue fill is the unmissable focal point. Menu options follow the
+ * same rule: selected = fill, no other chrome.
+ * Journey: scan the grouped list → tap a row → done.
  */
 export function ConceptB({
   profiles,
@@ -32,7 +36,7 @@ export function ConceptB({
       <div className="cb-field">
         <span className="cb-label">Universal native language</span>
         <SearchableSelect
-          options={OVERLAY_LANGUAGE_OPTIONS}
+          options={LANGUAGE_OPTIONS}
           value={universalNative}
           onChange={onUniversalChange}
           ariaLabel="Universal native language"

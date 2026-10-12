@@ -157,29 +157,29 @@ function App(): React.ReactElement {
               <LanguageProfilePanel settings={panelSettings} onChange={setPanelSettings} />
             </section>
 
-            <section className="mlp-variant" data-accent="teal">
-              <h2 className="mlp-variant-title">B — Popup list rows</h2>
+            <section className="mlp-variant" data-accent="fill">
+              <h2 className="mlp-variant-title">B — Fill rows</h2>
               <p className="mlp-variant-note">
-                One grouped container, hairline-separated rows — the dictionary popup&rsquo;s
-                definition-list grammar. Selection = tint + accent check; native becomes a chip.
+                Blue lives only in <strong>state fills</strong>: active row + check. Surfaces and
+                chips stay neutral — one blue fill = one focal point. Journey: scan → tap → done.
               </p>
               <ConceptB {...conceptProps} />
             </section>
 
-            <section className="mlp-variant" data-accent="purple">
-              <h2 className="mlp-variant-title">C — Popup card</h2>
+            <section className="mlp-variant" data-accent="outline">
+              <h2 className="mlp-variant-title">C — Outline cards</h2>
               <p className="mlp-variant-note">
-                Cards stay, but with popup grammar: elevated surface + hairline border,
-                headword/meta hierarchy, two-tone native chip, small accent dot.
+                Blue lives only in <strong>outlines</strong>: primary border + dot on the active
+                card; cards keep their white elevated surface. Journey: compare → pick → done.
               </p>
               <ConceptC {...conceptProps} />
             </section>
 
-            <section className="mlp-variant" data-accent="green">
-              <h2 className="mlp-variant-title">D — Text list</h2>
+            <section className="mlp-variant" data-accent="type">
+              <h2 className="mlp-variant-title">D — Type &amp; rail</h2>
               <p className="mlp-variant-note">
-                Spotify-minimal: pure typography, hairline separators, left accent bar on the
-                active row. No flags, no radio chrome.
+                Blue lives only in <strong>typography + the left rail</strong> — accent name,
+                check, 3px bar. No surface ever fills blue. Journey: skim → tap → done.
               </p>
               <ConceptD {...conceptProps} />
             </section>
