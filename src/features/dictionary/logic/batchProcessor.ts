@@ -2,10 +2,10 @@
 //
 // Memory bounded: BATCH_SIZE entries in buffer, 1 IDB transaction per flush.
 // Streaming parse yields 1 entry at a time → batch → flush → memory ~BATCH_SIZE.
-// A filled batch flushes without blocking the parse loop: the write runs
-// in flight while the next batch accumulates, and is awaited only when that
-// next batch fills (ordering is preserved — transactions are created in batch
-// order and IDB serializes same-store readwrite transactions).
+// A filled batch waits for the in-flight write before its own transaction is
+// created: IDB serializes same-scope transactions FIFO by creation order, so
+// creating the next write tx while the previous one runs would make every
+// lookup read tx queue behind BOTH writes instead of interleaving in the gap.
 
 /** Batch size — 2000 entries per IDB transaction (spec F7). */
 export const BATCH_SIZE = 2000;
@@ -33,17 +33,18 @@ export class BatchProcessor<T> {
     this.total = Math.max(0, total);
   }
 
-  /** Add an entry. Auto-flush when buffer reaches BATCH_SIZE: the write
-   *  fires without blocking; this add awaits only the PREVIOUS batch so a
-   *  run fails fast while ordering stays strict (flushCallbacks invoke in
+  /** Add an entry. Auto-flush when buffer reaches BATCH_SIZE: this add awaits
+   *  the in-flight flush BEFORE the next write transaction is created — read
+   *  transactions queued during write N then interleave in the gap before
+   *  write N+1 instead of queueing behind it. The buffer keeps filling while
+   *  a flush is in flight; ordering stays strict (flushCallbacks invoke in
    *  batch order, and IDB serializes same-store readwrite transactions). */
   async add(entry: T): Promise<void> {
     if (this.inflightError !== null) throw this.inflightError;
     this.buffer.push(entry);
     if (this.buffer.length < BATCH_SIZE) return;
-    const prior = this.inflight;
+    await this.inflight;
     this.startFlush();
-    await prior;
   }
 
   /** Drain the in-flight write + flush remaining buffer (call at end of stream). */
@@ -60,6 +61,7 @@ export class BatchProcessor<T> {
   private startFlush(): void {
     const batch = this.buffer;
     this.buffer = [];
+    if (batch.length === 0) return;
     const writing = this.writeBatch(batch);
     writing.catch((err: unknown) => {
       this.inflightError = err;

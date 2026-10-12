@@ -77,13 +77,24 @@ export function gunzipFile(compressed: Uint8Array): Uint8Array {
   }
 }
 
-/** Unzip a Uint8Array → { [path]: Uint8Array } (fflate). Throws if not zip or corrupt. */
-export function unzipAll(compressed: Uint8Array): Record<string, Uint8Array> {
+/** Entries the dictionary importer can consume inside a zip — index/bank
+ *  JSON + data .json/.txt candidates. Media and other payload entries are
+ *  never parsed, so filtered unzips skip inflating them; kept names stay
+ *  listable for ambiguity errors. */
+export const isImportZipEntry = (name: string): boolean =>
+  name.endsWith('.json') || name.endsWith('.txt') || name.includes('_bank_');
+
+/** Unzip a Uint8Array → { [path]: Uint8Array } (fflate). Throws if not zip or
+ *  corrupt. `keepEntry` skips inflating entries whose name fails the check. */
+export function unzipAll(
+  compressed: Uint8Array,
+  keepEntry?: (name: string) => boolean,
+): Record<string, Uint8Array> {
   if (!isZip(compressed)) {
     throw new Error('Not a zip file (magic bytes PK missing).');
   }
   try {
-    return unzipSync(compressed);
+    return unzipSync(compressed, keepEntry ? { filter: (file) => keepEntry(file.name) } : undefined);
   } catch (e) {
     throw new CorruptedFileError('unzip failed — corrupt zip data', e);
   }

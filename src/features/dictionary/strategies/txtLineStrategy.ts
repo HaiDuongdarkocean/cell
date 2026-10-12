@@ -4,7 +4,7 @@
 
 import { BaseFrequencyStrategy } from './baseImportStrategy';
 import type { StrategyOptions, RawFrequencyEntry } from './baseImportStrategy';
-import { isGzip, gunzipFile, isZip, unzipAll, decodeText, looksLikePlainText } from '../logic/fileDetector';
+import { isGzip, gunzipFile, isZip, unzipAll, isImportZipEntry, decodeText, looksLikePlainText } from '../logic/fileDetector';
 import { CorruptedFileError } from '../logic/importErrors';
 import { bulkInsertFrequencyEntries } from '../repositories/resourceEntryRepository';
 import type { FrequencyEntry } from '@/entities/dictionary';
@@ -31,7 +31,7 @@ export class TxtLineStrategy extends BaseFrequencyStrategy {
       let data = fileData.data;
       if (isGzip(data)) data = gunzipFile(data);
       if (isZip(data)) {
-        const files = unzipAll(data);
+        const files = unzipAll(data, isImportZipEntry);
         const txtFile =
           Object.keys(files).find((p) => p.endsWith('.txt')) ??
           Object.keys(files).find((p) => p.endsWith('.json') && looksLikePlainText(files[p]!));

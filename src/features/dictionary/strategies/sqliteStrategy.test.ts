@@ -46,17 +46,11 @@ function setupSqlJsMock({ tables, freqRows = [], dictRows = [] }: MockSchema): v
   const prepare = jest.fn().mockImplementation((sql: string) => {
     const table = tables.find((t) => sql.includes(`FROM ${t}`));
     if (!table) throw new Error('no such table');
-    const columns = table === 'langResourceEntry'
-      ? ['term', 'reading', 'definition']
-      : ['term', 'reading', 'frequency'];
     const rows = table === 'langResourceEntry' ? dictRows : freqRows;
     let index = -1;
     return {
       step: jest.fn().mockImplementation(() => ++index < rows.length),
-      getAsObject: jest.fn().mockImplementation(() => {
-        const row = rows[index] ?? [];
-        return Object.fromEntries(columns.map((col, j): [string, unknown] => [col, row[j]]));
-      }),
+      get: jest.fn().mockImplementation(() => rows[index] ?? []),
       free: jest.fn(),
     };
   });

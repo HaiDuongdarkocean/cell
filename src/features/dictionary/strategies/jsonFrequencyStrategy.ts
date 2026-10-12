@@ -7,7 +7,7 @@
 
 import { BaseFrequencyStrategy } from './baseImportStrategy';
 import type { StrategyOptions, RawFrequencyEntry } from './baseImportStrategy';
-import { decodeText, isGzip, gunzipFile, isZip, unzipAll } from '../logic/fileDetector';
+import { decodeText, isGzip, gunzipFile, isZip, unzipAll, isImportZipEntry } from '../logic/fileDetector';
 import { selectZipDataJson } from '../logic/formatDetector';
 import { scanTopLevelJsonObjectRanges, MalformedJsonArrayError } from '../logic/jsonObjectScanner';
 import type { JsonObjectRange } from '../logic/jsonObjectScanner';
@@ -50,7 +50,7 @@ export class JsonFrequencyStrategy extends BaseFrequencyStrategy {
     let data = this.data;
     if (isGzip(data)) data = gunzipFile(data);
     if (isZip(data)) {
-      const files = unzipAll(data);
+      const files = unzipAll(data, isImportZipEntry);
       const entry = selectZipDataJson(files);
       if (!entry) throw new ParseError('JSON frequency zip: no .json entry found.');
       data = entry.bytes;

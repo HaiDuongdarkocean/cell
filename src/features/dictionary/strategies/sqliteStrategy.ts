@@ -32,7 +32,7 @@ interface Database {
 }
 interface Statement {
   step(): boolean;
-  getAsObject(): Record<string, unknown>;
+  get(): unknown[];
   free(): boolean;
 }
 interface QueryExecResult {
@@ -154,10 +154,10 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
     try {
       let rows = 0;
       while (stmt.step()) {
-        const row = stmt.getAsObject();
-        const term = String(row.term ?? '');
-        const reading = String(row.reading ?? term);
-        const definition = String(row.definition ?? '');
+        const row = stmt.get();
+        const term = String(row[0] ?? '');
+        const reading = String(row[1] ?? term);
+        const definition = String(row[2] ?? '');
         if (term) yield { term, reading, definition };
         if (++rows % YIELD_EVERY_ROWS === 0) await yieldToEventLoop();
       }
@@ -177,10 +177,10 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
     try {
       let rows = 0;
       while (stmt.step()) {
-        const row = stmt.getAsObject();
-        const term = String(row.term ?? '');
-        const reading = String(row.reading ?? term);
-        const frequency = Number(row.frequency ?? 0);
+        const row = stmt.get();
+        const term = String(row[0] ?? '');
+        const reading = String(row[1] ?? term);
+        const frequency = Number(row[2] ?? 0);
         if (term) yield { term, reading, frequency };
         if (++rows % YIELD_EVERY_ROWS === 0) await yieldToEventLoop();
       }

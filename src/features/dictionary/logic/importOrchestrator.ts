@@ -5,7 +5,7 @@
 // (wordCount, installationFinished=true) → return result.
 // Error → rollbackImport(resourceId) → rethrow. Rollback-during-rollback → RollbackError.
 
-import { validateFile, readFileBytes, isGzip, isZip, gunzipFile, unzipAll, getExtension, stripExtension } from '../logic/fileDetector';
+import { validateFile, readFileBytes, isGzip, isZip, gunzipFile, unzipAll, isImportZipEntry, getExtension, stripExtension } from '../logic/fileDetector';
 import type { ReadableFile } from '../logic/fileDetector';
 import { detectFormat, sniffZipFormat } from '../logic/formatDetector';
 import { deriveResourceType } from '../logic/dictionaryComponents';
@@ -89,7 +89,7 @@ export async function importFile(
   //     the inflated map flows on to the strategy so it skips its own pass.
   let zipFiles: Record<string, Uint8Array> | undefined;
   if (format === 'term-bank' && isZip(data)) {
-    zipFiles = unzipAll(data);
+    zipFiles = unzipAll(data, isImportZipEntry);
     const refined = sniffZipFormat(zipFiles);
     if (refined) format = refined;
   }
