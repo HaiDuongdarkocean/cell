@@ -111,6 +111,7 @@
   justify-content: center;
   width: auto;
   min-width: var(--touch-target);
+  min-height: var(--chip-height);
   padding: 0 var(--space-2);
   border-radius: var(--radius-lg);
   background: var(--color-surface-card);
