@@ -91,7 +91,11 @@ export function SegmentedControl<T extends string>({
           data-value={option.value}
           data-cell-id={option.testId}
           data-compact-hit={variant === 'chips' || undefined}
-          className={`${styles.segment} ${option.value === value ? styles.segmentActive : ''}`}
+          className={
+            variant === 'chips'
+              ? [styles.chipOption, option.value === value ? styles.chipOptionActive : ''].filter(Boolean).join(' ')
+              : `${styles.segment} ${option.value === value ? styles.segmentActive : ''}`
+          }
           onClick={() => onChange(option.value)}
           onKeyDown={handleKeyDown}
         >

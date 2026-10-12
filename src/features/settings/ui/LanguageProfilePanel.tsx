@@ -176,12 +176,8 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
           focused → pick. */}
       <SettingsRow
         dense
-        title={
-          <>
-            <FlagIcon lang={settings.universalNativeLanguage} size={18} title={langLabel(settings.universalNativeLanguage)} />
-            {t('settings.profiles.banner.label')}
-          </>
-        }
+        stacked
+        title={t('settings.profiles.banner.label')}
         labelFor="universal-native-language"
       >
         <SearchableSelect

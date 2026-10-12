@@ -72,10 +72,6 @@
   background: var(--color-primary-subtle);
 }
 
-.horizontal:hover:not(:disabled) {
-  background: var(--color-surface-card);
-}
-
 .pill {
   position: absolute;
   left: 0;
@@ -105,18 +101,22 @@
 }
 
 .horizontal {
+  composes: chip sm outline from './Chip.module.css';
   flex-direction: row;
   justify-content: center;
   width: auto;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface-card);
+}
+
+.item.horizontal {
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-pill);
 }
 
 .vertical {
   flex-direction: row;
   justify-content: flex-start;
   width: 100%;
+  min-height: var(--touch-target);
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
 }

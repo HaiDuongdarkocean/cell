@@ -249,7 +249,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               ref={sectionRef('languageProfile')}
               headingLevel={3}
               title={t('settings.languageProfile.title')}
-              description={t('settings.languageProfile.desc')}
               data-section="languageProfile"
             >
               <LanguageProfilePanel settings={settings} onChange={onChange} />
@@ -260,7 +259,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               ref={sectionRef('resources')}
               headingLevel={3}
               title={t('settings.resources.title')}
-              description={t('settings.resources.desc')}
               data-section="resources"
             >
               {settings.languageProfiles.length === 0 ? (
@@ -306,7 +304,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               ref={sectionRef('media')}
               headingLevel={3}
               title={t('settings.media.title')}
-              description={t('settings.media.desc')}
               data-section="media"
             >
               <SettingsRow
@@ -447,7 +444,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               ref={sectionRef('dictionaryPopup')}
               headingLevel={3}
               title={t('settings.dictionaryPopup.title')}
-              description={t('settings.dictionaryPopup.desc')}
               data-section="dictionaryPopup"
             >
               <SettingsRow
@@ -475,7 +471,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               ref={sectionRef('wordBadge')}
               headingLevel={3}
               title={t('settings.wordBadge.title')}
-              description={t('settings.wordBadge.desc')}
               hint={t('settings.wordBadge.hint')}
               hintAriaLabel={t('settings.hint.aria', [t('settings.wordBadge.title')])}
               data-section="wordBadge"
@@ -494,7 +489,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               ref={sectionRef('audio')}
               headingLevel={3}
               title={t('settings.audio.title')}
-              description={t('settings.audio.desc')}
               data-section="audio"
             >
               <AudioPanel
