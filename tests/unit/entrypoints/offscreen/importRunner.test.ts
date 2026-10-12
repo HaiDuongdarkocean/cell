@@ -143,26 +143,33 @@ describe('importRunner', () => {
     expect(posted).toHaveLength(0);
   });
 
-  it('serializes runs — a second request while busy is ignored', async () => {
-    const { port, emit } = fakePort();
+  it('acks on receipt and queues a second request while busy', async () => {
+    const { port, posted, emit } = fakePort();
     startImportRunner(port);
     let release: (() => void) | undefined;
-    mockedImportFile.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          release = () => resolve({ resourceId: 1, wordCount: 1, format: 'txt' });
-        }),
-    );
+    mockedImportFile
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            release = () => resolve({ resourceId: 1, wordCount: 1, format: 'txt' });
+          }),
+      )
+      .mockResolvedValue({ resourceId: 2, wordCount: 2, format: 'txt' });
 
     emit(runRequest({ jobId: 'job-1' }));
     emit(runRequest({ jobId: 'job-2' }));
     await flush();
+    expect(posted).toContainEqual({ type: 'import-accepted', jobId: 'job-1' });
+    expect(posted).toContainEqual({ type: 'import-accepted', jobId: 'job-2' });
     expect(mockedImportFile).toHaveBeenCalledTimes(1);
 
     release?.();
     await flush();
-    emit(runRequest({ jobId: 'job-3' }));
-    await flush();
     expect(mockedImportFile).toHaveBeenCalledTimes(2);
+    expect(posted.at(-1)).toEqual({
+      type: 'import-done',
+      jobId: 'job-2',
+      result: { resourceId: 2, wordCount: 2, format: 'txt' },
+    });
   });
 });

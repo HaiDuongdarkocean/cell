@@ -109,6 +109,7 @@ import {
 import {
   ResourceDeletePayloadSchema,
   ResourceFindPayloadSchema,
+  ResourceImportBeginPayloadSchema,
   ResourceImportChunkPayloadSchema,
   ResourceListPayloadSchema,
   ResourceReorderPayloadSchema,
@@ -856,6 +857,12 @@ export const MESSAGE_REGISTRY = {
     type: MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
     schema: ResourceImportChunkPayloadSchema,
     direction: 'cs->bg',
+    owner: 'background/handlers/resources',
+  },
+  [MESSAGE_TYPES.RESOURCE_IMPORT_BEGIN]: {
+    type: MESSAGE_TYPES.RESOURCE_IMPORT_BEGIN,
+    schema: ResourceImportBeginPayloadSchema,
+    direction: 'panel->bg',
     owner: 'background/handlers/resources',
   },
   [MESSAGE_TYPES.JOB_LIST]: {
