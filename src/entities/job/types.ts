@@ -18,6 +18,7 @@ export const JOB_TERMINAL_STATUSES: readonly JobStatus[] = ['done', 'failed', 'i
 
 export const JOB_ERROR_INTERRUPTED_RESTART = 'interrupted-restart';
 export const JOB_ERROR_INTERRUPTED_UPLOAD_STALL = 'interrupted-upload-stall';
+export const JOB_ERROR_INTERRUPTED_OFFSCREEN = 'interrupted-offscreen';
 export const JOB_ERROR_DUPLICATE = 'JOB_DUPLICATE';
 
 export interface JobProgress {

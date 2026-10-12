@@ -54,7 +54,8 @@ import {
 } from '@/features/dictionary/repositories/resourceEntryRepository';
 import { collectEntryComponents, sortedComponents } from '@/features/dictionary/logic/dictionaryComponents';
 import type { DictionaryComponent, DuplicateDecision } from '@/entities/dictionary';
-import { importFile, deleteResourceCascade, rollbackImport } from '@/features/dictionary/logic/importOrchestrator';
+import { deleteResourceCascade, rollbackImport } from '@/features/dictionary/logic/importOrchestrator';
+import { executeResourceImport } from '@/entrypoints/background/importDispatch';
 import { clearDictionaryProbeCache } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
 
 const UPLOAD_STALL_MS = 30 * 1000;
@@ -141,24 +142,13 @@ function clearPending(jobId: string): void {
   pendingImports.delete(jobId);
 }
 
-async function runImport(registry: JobRegistry, job: Job): Promise<void> {
+async function runImport(ctx: BackgroundContext, registry: JobRegistry, job: Job): Promise<void> {
   const payload = importPayloads.get(job.id);
   importPayloads.delete(job.id);
   if (!payload) {
     throw new Error(t('jobs.interrupted.reimport'));
   }
-  const result = await importFile(payload.file, {
-    langCode: payload.langCode,
-    components: payload.components,
-    signature: typeof job.params.signature === 'string' ? job.params.signature : undefined,
-    onProgress: (processed, estimatedTotal) => {
-      registry.setProgress(job.id, { done: processed, total: estimatedTotal });
-    },
-    onResourceCreated: (resourceId) => {
-      registry.setResourceId(job.id, resourceId);
-    },
-    onDuplicate: async () => payload.duplicateDecision ?? 'skip',
-  });
+  const result = await executeResourceImport(ctx.offscreenManager, registry, job, payload);
   clearDictionaryProbeCache();
   registry.markDone(job.id, {
     resourceId: result.resourceId,
@@ -200,7 +190,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
   const registry = getJobRegistry();
 
   registry.registerExecutor('resource-import', {
-    start: (job) => runImport(registry, job),
+    start: (job) => runImport(ctx, registry, job),
     reconcile: reconcileImport,
   });
   registry.registerExecutor('resource-delete', {

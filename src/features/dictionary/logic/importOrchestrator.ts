@@ -14,6 +14,7 @@ import { createStrategy } from '../strategies/strategyFactory';
 import {
   RollbackError,
   QuotaExceededError,
+  DatabaseError,
   isImportError,
 } from '../logic/importErrors';
 import {
@@ -120,15 +121,19 @@ export async function importFile(
 
     // 8. Finalize resource (wordCount + components + derived type + installationFinished=true)
     const resource = await getResource(langCode, resourceId);
-    if (resource) {
-      await updateResource(langCode, {
-        ...resource,
-        type: deriveResourceType(result.components),
-        wordCount: result.wordCount,
-        components: result.components ?? [],
-        installationFinished: true,
-      });
+    // The row can vanish mid-import when a restarted SW reconciles the job as
+    // interrupted and rolls back while an offscreen runner is still working —
+    // claiming success here would orphan the inserted entries.
+    if (!resource) {
+      throw new DatabaseError(`Resource ${resourceId} disappeared mid-import.`);
     }
+    await updateResource(langCode, {
+      ...resource,
+      type: deriveResourceType(result.components),
+      wordCount: result.wordCount,
+      components: result.components ?? [],
+      installationFinished: true,
+    });
 
     return { resourceId, wordCount: result.wordCount, format };
   } catch (error) {
