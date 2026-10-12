@@ -206,6 +206,7 @@ export async function createWebTokenizeController(
   let pinnedSentenceKey: string | null = null;
   let washedSentenceKey: string | null = null;
   let lastCopiedSentence: string | null = null;
+  let preparedNotifyTimer: number | null = null;
 
   /** Release the pinned wash on a click that lands outside the washed sentence
    *  and outside Cell's own UI (popup, panel) — clicking the popup keeps it. */
@@ -888,8 +889,6 @@ export async function createWebTokenizeController(
       stateStore.setEnabled(isTokenizeEnabledForUrl(s, window.location.href));
     });
   }
-
-  let preparedNotifyTimer: number | null = null;
 
   function schedulePreparedNotify(): void {
     if (preparedNotifyTimer !== null) return;

@@ -1,4 +1,4 @@
-import { emitDictionaryChanged, onDictionaryChanged, onDictionaryChangedVisible } from './dictionaryEvents';
+import { emitDictionaryChanged, onDictionaryChangedVisible } from './dictionaryEvents';
 
 const setVisibility = (v: DocumentVisibilityState): void => {
   Object.defineProperty(document, 'visibilityState', { value: v, configurable: true });
