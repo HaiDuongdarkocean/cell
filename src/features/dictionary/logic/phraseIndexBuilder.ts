@@ -96,20 +96,19 @@ export async function buildPhraseIndexForResource(
   // is over-generative by design — false candidates don't match any anchor.
   const maybeYield = createYieldChecker();
   const firstWords = new Set<string>();
+  const multiwordTerms: string[] = [];
   for (let i = 0; i < sourceTerms.length; i++) {
     await maybeYield();
     const term = sourceTerms[i]!.trim().normalize('NFC').toLowerCase();
-    if (!term || term.split(/\s+/).length < 2) continue;
-    const firstWord = term.split(/\s+/)[0]!;
-    firstWords.add(firstWord);
+    const tokens = term.split(/\s+/);
+    if (tokens.length < 2) continue;
+    firstWords.add(tokens[0]!);
+    multiwordTerms.push(term);
   }
 
   // Pass 2: parse each term with auto-collected inflectable set.
-  for (let i = 0; i < sourceTerms.length; i++) {
+  for (const term of multiwordTerms) {
     await maybeYield();
-    const term = sourceTerms[i]!.trim().normalize('NFC').toLowerCase();
-    // Only multiword terms (≥2 whitespace tokens) are phrase candidates.
-    if (!term || term.split(/\s+/).length < 2) continue;
     if (seen.has(term)) continue;
     seen.add(term);
 
