@@ -501,7 +501,23 @@ body {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
+
+.mlp-variant-title::before {
+  content: '';
+  flex-shrink: 0;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-text-tertiary);
+}
+
+.mlp-variant[data-accent='teal'] .mlp-variant-title::before { background: var(--color-tint-teal-icon); }
+.mlp-variant[data-accent='purple'] .mlp-variant-title::before { background: var(--color-tint-purple-icon); }
+.mlp-variant[data-accent='green'] .mlp-variant-title::before { background: var(--color-tint-green-icon); }
 
 .mlp-variant-note {
   font-size: var(--font-size-sm);
@@ -523,6 +539,13 @@ body {
 }
 
 /* === Concept B — popup list rows: one grouped container, hairline rows === */
+.cb-panel {
+  --v-bg: var(--color-tint-teal-background);
+  --v-border: var(--color-tint-teal-border);
+  --v-accent: var(--color-tint-teal-icon);
+  --v-accent-text: var(--color-tint-teal-text);
+}
+
 .cb-group {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
@@ -542,7 +565,7 @@ body {
 }
 
 .cb-item.is-active {
-  background: var(--color-primary-subtle);
+  background: var(--v-bg);
 }
 
 .cb-row {
@@ -569,7 +592,7 @@ body {
   width: var(--space-4);
   display: inline-flex;
   flex-shrink: 0;
-  color: var(--color-primary);
+  color: var(--v-accent);
 }
 
 .cb-text {
@@ -588,14 +611,33 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  background: var(--color-field);
+  color: var(--v-accent-text);
+  background: var(--v-bg);
   border-radius: var(--radius-pill);
   padding: var(--space-0-5) var(--space-2);
   white-space: nowrap;
 }
 
+.cb-item.is-active .cb-chip { background: var(--color-surface); }
+
+.cb-panel .link-btn,
+.cc-panel .link-btn,
+.cd-panel .link-btn { color: var(--v-accent-text); }
+
+@media (hover: hover) {
+  .cb-panel .link-btn:hover,
+  .cc-panel .link-btn:hover,
+  .cd-panel .link-btn:hover { background: var(--v-bg); }
+}
+
 /* === Concept C — popup card: elevated surface + hairline border === */
+.cc-panel {
+  --v-bg: var(--color-tint-purple-background);
+  --v-border: var(--color-tint-purple-border);
+  --v-accent: var(--color-tint-purple-icon);
+  --v-accent-text: var(--color-tint-purple-text);
+}
+
 .cc-list {
   display: flex;
   flex-direction: column;
@@ -617,8 +659,8 @@ body {
 }
 
 .cc-card.is-active {
-  border-color: var(--color-primary);
-  background: var(--color-primary-subtle);
+  border-color: var(--v-accent);
+  background: var(--v-bg);
 }
 
 .cc-main {
@@ -655,10 +697,14 @@ body {
   white-space: nowrap;
 }
 
+.cc-chip {
+  border-color: var(--v-border);
+}
+
 .cc-chipKey {
   padding: var(--space-0-5) var(--space-1-5);
-  background: var(--color-field);
-  color: var(--color-text-tertiary);
+  background: var(--v-bg);
+  color: var(--v-accent-text);
 }
 
 .cc-chipVal {
@@ -675,11 +721,18 @@ body {
 }
 
 .cc-card.is-active .cc-dot {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+  background: var(--v-accent);
+  border-color: var(--v-accent);
 }
 
 /* === Concept D — text list: typography only, hairline separators === */
+.cd-panel {
+  --v-bg: var(--color-tint-green-background);
+  --v-border: var(--color-tint-green-border);
+  --v-accent: var(--color-tint-green-icon);
+  --v-accent-text: var(--color-tint-green-text);
+}
+
 .cd-list {
   display: flex;
   flex-direction: column;
@@ -703,7 +756,7 @@ body {
   .cd-item:not(.is-active):hover { background: var(--color-surface-hover); }
 }
 
-.cd-item.is-active { background: var(--color-primary-subtle); }
+.cd-item.is-active { background: var(--v-bg); }
 
 .cd-bar {
   position: absolute;
@@ -715,7 +768,7 @@ body {
   background: transparent;
 }
 
-.cd-item.is-active .cd-bar { background: var(--color-primary); }
+.cd-item.is-active .cd-bar { background: var(--v-accent); }
 
 .cd-row {
   display: flex;
@@ -734,11 +787,11 @@ body {
 .cd-row:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
 
 .cd-name { font-weight: var(--font-weight-medium); }
-.cd-name.is-active { color: var(--color-text-accent-strong); }
+.cd-name.is-active { color: var(--v-accent-text); }
 
 .cd-meta {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
 }
 
-.cd-check { color: var(--color-primary); flex-shrink: 0; }
+.cd-check { color: var(--v-accent); flex-shrink: 0; }

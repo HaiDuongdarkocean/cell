@@ -157,7 +157,7 @@ function App(): React.ReactElement {
               <LanguageProfilePanel settings={panelSettings} onChange={setPanelSettings} />
             </section>
 
-            <section className="mlp-variant">
+            <section className="mlp-variant" data-accent="teal">
               <h2 className="mlp-variant-title">B — Popup list rows</h2>
               <p className="mlp-variant-note">
                 One grouped container, hairline-separated rows — the dictionary popup&rsquo;s
@@ -166,7 +166,7 @@ function App(): React.ReactElement {
               <ConceptB {...conceptProps} />
             </section>
 
-            <section className="mlp-variant">
+            <section className="mlp-variant" data-accent="purple">
               <h2 className="mlp-variant-title">C — Popup card</h2>
               <p className="mlp-variant-note">
                 Cards stay, but with popup grammar: elevated surface + hairline border,
@@ -175,7 +175,7 @@ function App(): React.ReactElement {
               <ConceptC {...conceptProps} />
             </section>
 
-            <section className="mlp-variant">
+            <section className="mlp-variant" data-accent="green">
               <h2 className="mlp-variant-title">D — Text list</h2>
               <p className="mlp-variant-note">
                 Spotify-minimal: pure typography, hairline separators, left accent bar on the
