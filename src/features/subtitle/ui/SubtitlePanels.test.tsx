@@ -3,13 +3,25 @@ import { act, render, screen } from '@testing-library/react';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { ManagerState, SubtitlePanelsProps, SubtitlePanelsRef } from './subtitlePanelsTypes';
 
-jest.mock('./NavCluster', () => ({ NavCluster: () => <div data-cell-id="nav-cluster-mock" /> }));
+let navClusterRenders = 0;
+jest.mock('./NavCluster', () => ({
+  NavCluster: () => {
+    navClusterRenders += 1;
+    return <div data-cell-id="nav-cluster-mock" />;
+  },
+}));
 jest.mock('./SubtitleBlock', () => ({ SubtitleBlock: () => <div data-cell-id="subtitle-block-mock" /> }));
 jest.mock('./ClusterRightToolbar', () => ({ ClusterRightToolbar: () => <div data-cell-id="right-toolbar-mock" /> }));
 jest.mock('./OffsetLayer', () => ({ OffsetLayer: () => null }));
 jest.mock('./SubtitleToast', () => ({ SubtitleToast: () => null }));
 jest.mock('./SubtitleHint', () => ({ SubtitleHint: () => null }));
-jest.mock('./SubtitlePanel', () => ({ SubtitlePanel: () => <div data-cell-id="subtitle-panel-mock" /> }));
+let mockPanelProps: { currentTimeMs?: number } | null = null;
+jest.mock('./SubtitlePanel', () => ({
+  SubtitlePanel: (props: { currentTimeMs?: number }) => {
+    mockPanelProps = props;
+    return <div data-cell-id="subtitle-panel-mock" />;
+  },
+}));
 let mockChromeProps: Record<string, unknown> | null = null;
 jest.mock('./MobileCueChrome', () => ({
   MobileCueChrome: (props: Record<string, unknown>) => {
@@ -17,9 +29,13 @@ jest.mock('./MobileCueChrome', () => ({
     return <div data-cell-id="mobile-cue-chrome" />;
   },
 }));
-let mockPmProps: { cueListOpen: boolean; onCueListOpenChange: (open: boolean) => void } | null = null;
+let mockPmProps: {
+  cueListOpen: boolean;
+  onCueListOpenChange: (open: boolean) => void;
+  currentTimeMs?: number;
+} | null = null;
 jest.mock('./PlayerModeLayer', () => ({
-  PlayerModeLayer: (props: { cueListOpen: boolean; onCueListOpenChange: (open: boolean) => void }) => {
+  PlayerModeLayer: (props: { cueListOpen: boolean; onCueListOpenChange: (open: boolean) => void; currentTimeMs?: number }) => {
     mockPmProps = props;
     return <div data-cell-id="pm-layer" />;
   },
@@ -174,6 +190,66 @@ describe('SubtitlePanels — PM cue list independent from Split View (AC-6.5)', 
     act(() => { ref.togglePlayerMode(); });
     expect(mockSetSplitViewOpen).not.toHaveBeenCalled();
     expect(onSplitViewChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('SubtitlePanels — currentTimeMs only re-renders mounted consumers', () => {
+  beforeEach(() => {
+    navClusterRenders = 0;
+    mockPmProps = null;
+    mockPanelProps = null;
+  });
+  afterEach(() => {
+    mockSplitView.target?.remove();
+    mockSplitView = { open: false, target: null };
+  });
+
+  it('skips the overlay re-render while no time consumer is mounted', () => {
+    const ref = renderPanels();
+    const renders = navClusterRenders;
+
+    act(() => {
+      ref.setCurrentTimeMs(1000);
+      ref.setCurrentTimeMs(2000);
+      ref.setCurrentTimeMs(3000);
+    });
+
+    expect(navClusterRenders).toBe(renders);
+  });
+
+  it('delivers the latest time to PlayerModeLayer the moment it mounts', () => {
+    const ref = renderPanels();
+    act(() => { ref.setCurrentTimeMs(4200); });
+    expect(screen.queryByTestId('pm-layer')).not.toBeInTheDocument();
+
+    act(() => { ref.togglePlayerMode(); });
+    expect(mockPmProps?.currentTimeMs).toBe(4200);
+
+    act(() => { ref.setCurrentTimeMs(5000); });
+    expect(mockPmProps?.currentTimeMs).toBe(5000);
+  });
+
+  it('delivers updates to the split-view panel while it is open', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    mockSplitView = { open: true, target };
+    const ref = renderPanels({ onSeek: jest.fn() });
+    expect(mockPanelProps?.currentTimeMs).toBe(0);
+
+    act(() => { ref.setCurrentTimeMs(777); });
+    expect(mockPanelProps?.currentTimeMs).toBe(777);
+  });
+
+  it('delivers the latest time when split view opens after updates', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const ref = renderPanels({ onSeek: jest.fn() });
+    act(() => { ref.setCurrentTimeMs(9100); });
+    expect(mockPanelProps).toBeNull();
+
+    mockSplitView = { open: true, target };
+    act(() => { ref.setCollapsed(true); });
+    expect(mockPanelProps?.currentTimeMs).toBe(9100);
   });
 });
 
