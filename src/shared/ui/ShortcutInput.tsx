@@ -21,6 +21,10 @@ interface ShortcutInputProps {
   'data-cell-id'?: string;
   /** HTML id for label association. */
   id?: string;
+  /** Marks the value as conflicting. */
+  'aria-invalid'?: boolean;
+  /** Id of the element describing the conflict. */
+  'aria-describedby'?: string;
 }
 
 /** Modifier keys that should not be captured as the final key (only as modifiers). */
@@ -80,11 +84,13 @@ export function ShortcutInput({
   id,
   'aria-label': ariaLabel,
   'data-cell-id': testId,
+  'aria-invalid': ariaInvalid,
+  'aria-describedby': ariaDescribedby,
 }: ShortcutInputProps): React.JSX.Element {
   const pillRef = useRef<HTMLButtonElement>(null);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>): void => {
-    if (e.key === 'Escape') return;
+    if (e.key === 'Escape' || e.key === 'Tab') return;
     e.preventDefault();
     e.stopPropagation();
     // Ignore pure modifier presses (user holding Ctrl/Shift/Alt)
@@ -110,10 +116,11 @@ export function ShortcutInput({
       ref={pillRef}
       id={id}
       type="button"
-      role="button"
       className={styles.shortcutPill}
       onKeyDown={handleKeyDown}
       aria-label={ariaLabel}
+      aria-invalid={ariaInvalid}
+      aria-describedby={ariaDescribedby}
       data-cell-id={testId}
       data-compact-hit
       data-cell-keycapture

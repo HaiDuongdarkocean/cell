@@ -140,13 +140,13 @@ describe('Select', () => {
       render(<Select options={searchableOptions} searchable />);
       fireEvent.click(screen.getByRole('button'));
       expect(screen.getByRole('listbox')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument();
     });
 
     it('filters options when typing', () => {
       render(<Select options={searchableOptions} searchable />);
       fireEvent.click(screen.getByRole('button'));
-      const input = screen.getByPlaceholderText('Search...');
+      const input = screen.getByPlaceholderText('Search…');
       fireEvent.change(input, { target: { value: 'Eng' } });
       expect(screen.getByRole('option', { name: 'English' })).toBeInTheDocument();
       expect(screen.queryByRole('option', { name: '日本語' })).not.toBeInTheDocument();
@@ -156,7 +156,7 @@ describe('Select', () => {
       const onChange = jest.fn();
       render(<Select options={searchableOptions} onChange={onChange} searchable />);
       fireEvent.click(screen.getByRole('button'));
-      const input = screen.getByPlaceholderText('Search...');
+      const input = screen.getByPlaceholderText('Search…');
       fireEvent.change(input, { target: { value: '日本' } });
       fireEvent.click(screen.getByRole('option', { name: '日本語' }));
       expect(onChange).toHaveBeenCalledWith('ja');
@@ -165,7 +165,7 @@ describe('Select', () => {
     it('shows empty state when no matches', () => {
       render(<Select options={searchableOptions} searchable />);
       fireEvent.click(screen.getByRole('button'));
-      const input = screen.getByPlaceholderText('Search...');
+      const input = screen.getByPlaceholderText('Search…');
       fireEvent.change(input, { target: { value: 'xyz' } });
       expect(screen.queryByRole('option')).not.toBeInTheDocument();
       expect(screen.getByText('No results found.')).toBeInTheDocument();
@@ -178,7 +178,7 @@ describe('Select', () => {
       ];
       render(<Select options={opts} searchable />);
       fireEvent.click(screen.getByRole('button'));
-      const input = screen.getByPlaceholderText('Search...');
+      const input = screen.getByPlaceholderText('Search…');
       fireEvent.change(input, { target: { value: 'viet' } });
       expect(screen.getByRole('option', { name: '🇻🇳 VN' })).toBeInTheDocument();
       expect(screen.queryByRole('option', { name: '🇺🇸 US' })).not.toBeInTheDocument();
@@ -187,14 +187,14 @@ describe('Select', () => {
     it('resets query on close', () => {
       render(<Select options={searchableOptions} searchable />);
       fireEvent.click(screen.getByRole('button'));
-      const input = screen.getByPlaceholderText('Search...');
+      const input = screen.getByPlaceholderText('Search…');
       fireEvent.change(input, { target: { value: 'eng' } });
       fireEvent.keyDown(input, { key: 'Escape' });
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
       // Re-open; all options should be back and query empty.
       fireEvent.click(screen.getByRole('button'));
       expect(screen.getByRole('option', { name: '日本語' })).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Search...')).toHaveValue('');
+      expect(screen.getByPlaceholderText('Search…')).toHaveValue('');
     });
   });
 

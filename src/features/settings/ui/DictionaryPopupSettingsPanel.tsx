@@ -165,7 +165,7 @@ export function DictionaryPopupSettingsPanel({
         ))}
       </div>
 
-      <div role="tabpanel" id={`dict-popup-panel-${surface}`} aria-labelledby={`dict-popup-tab-${surface}`}>
+      <div role="tabpanel" id={`dict-popup-panel-${surface}`} aria-labelledby={`dict-popup-tab-${surface}`} tabIndex={0}>
       {surface === 'links' && (
         <DictLinksManager
           links={settings.externalDictLinks ?? DEFAULT_DICTIONARY_POPUP_SETTINGS.externalDictLinks}

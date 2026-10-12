@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { FlagIcon } from '@/shared/ui/FlagIcon';
@@ -23,6 +23,7 @@ import {
   resolveProfile,
   validateLanguageProfile,
 } from '@/entities/settings';
+import { handleRadioGroupKeyDown } from '@/shared/lib/dom/radioGroupKeyNav';
 import { ProfileForm } from './ProfileForm';
 import { ProfileMenu } from './ProfileMenu';
 import { Text } from '@/shared/ui/Text';
@@ -48,6 +49,13 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [bannerEditing, setBannerEditing] = useState(false);
   const [bannerDraft, setBannerDraft] = useState(settings.universalNativeLanguage);
+  const bannerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (bannerEditing) {
+      bannerRef.current?.querySelector<HTMLElement>('[aria-haspopup]')?.focus();
+    }
+  }, [bannerEditing]);
 
   const profiles = useMemo(
     () => [...(settings.languageProfiles ?? [])].sort((a, b) => a.order - b.order),
@@ -174,7 +182,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
       {/* Universal native — global setting shared by every profile. View mode
           shows flag + value; Change swaps the whole banner into edit mode with
           a live draft preview + explicit Cancel/Save. */}
-      <div className={`${styles.banner} ${bannerEditing ? styles.bannerEditing : ''}`}>
+      <div ref={bannerRef} className={`${styles.banner} ${bannerEditing ? styles.bannerEditing : ''}`}>
         {bannerEditing ? (
           <>
             <div className={styles.bannerRow}>
@@ -275,10 +283,11 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
             </Button>
           }
         >
-        <div className={styles.list} role="radiogroup" aria-label={t('settings.profiles.list.aria')}>
+        <div className={styles.list} role="radiogroup" aria-label={t('settings.profiles.list.aria')} onKeyDown={handleRadioGroupKeyDown}>
           {profiles.map((profile, index) => {
             const resolved = resolveProfile(profile, settings.universalNativeLanguage);
             const isActive = settings.activeProfileId === profile.id;
+            const noActive = !profiles.some((p) => p.id === settings.activeProfileId);
 
             if (form?.mode === 'edit' && form.id === profile.id) {
               return (
@@ -301,6 +310,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
                 <SelectableCard
                   role="radio"
                   selected={isActive}
+                  tabIndex={isActive || (noActive && index === 0) ? 0 : -1}
                   onSelect={() => setActive(profile.id)}
                   className={styles.card}
                   data-cell-id={`language-profile-card-${profile.id}`}

@@ -109,6 +109,10 @@
   border-radius: var(--radius-sm);
 }
 
+.nameButton:hover {
+  background: var(--color-surface-hover);
+}
+
 .nameButton:focus-visible {
   outline: var(--space-0-5) solid var(--color-border-focus);
   outline-offset: var(--space-0-5);

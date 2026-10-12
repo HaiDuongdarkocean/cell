@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, type ReactElement } from 'react';
+import { useState, useRef, useEffect, useCallback, useId, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from './Button';
 import { Icon } from '@/shared/icons/Icon';
@@ -48,6 +48,7 @@ export function HintIcon({
 }: HintIconProps): ReactElement {
   const [isOpen, setIsOpen] = useState(false);
   const [pos, setPos] = useState<PopoverPos | null>(null);
+  const tipId = useId();
   const wrapRef = useRef<HTMLSpanElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const close = useCallback(() => setIsOpen(false), []);
@@ -59,8 +60,6 @@ export function HintIcon({
     const wrap = wrapRef.current;
     const doc = wrap?.ownerDocument ?? document;
     const win = doc.defaultView ?? window;
-    const rootNode = wrap?.getRootNode();
-    const scope: Document | ShadowRoot = rootNode instanceof ShadowRoot ? rootNode : doc;
 
     const popover = popoverRef.current;
     const trigger = wrap?.querySelector('button') ?? wrap;
@@ -94,19 +93,19 @@ export function HintIcon({
     }
 
     const onClickOutside = (e: Event): void => {
-      const target = e.target as Node;
-      if (!wrap?.contains(target) && !popoverRef.current?.contains(target)) {
+      const path = e.composedPath();
+      if (wrap && !path.includes(wrap) && !(popoverRef.current && path.includes(popoverRef.current))) {
         setIsOpen(false);
       }
     };
     const onResize = (): void => setIsOpen(false);
 
-    scope.addEventListener('mousedown', onClickOutside);
+    doc.addEventListener('mousedown', onClickOutside);
     const popEscapeLayer = pushEscapeLayer(() => setIsOpen(false), doc);
     win.addEventListener('resize', onResize);
 
     return () => {
-      scope.removeEventListener('mousedown', onClickOutside);
+      doc.removeEventListener('mousedown', onClickOutside);
       popEscapeLayer();
       win.removeEventListener('resize', onResize);
       setPos(null);
@@ -118,6 +117,7 @@ export function HintIcon({
       ref={popoverRef}
       className={`${styles.hintText} ${pos?.flip ? styles['flip-top'] : ''} ${pos ? styles[`align-${pos.align}`] : ''}`}
       style={pos ? { top: pos.top, left: pos.left } : { visibility: 'hidden' }}
+      id={tipId}
       role="tooltip"
     >
       {hint}
@@ -132,6 +132,7 @@ export function HintIcon({
         data-compact-hit
         className={styles.hintBtn}
         aria-expanded={isOpen}
+        aria-describedby={isOpen ? tipId : undefined}
         aria-label={ariaLabel}
         onClick={() => setIsOpen((v) => !v)}
       >

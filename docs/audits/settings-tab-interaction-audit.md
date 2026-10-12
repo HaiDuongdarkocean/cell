@@ -158,3 +158,45 @@ Request: per-section minimalism audit, cut non-essential copy, plus a grading ch
 ### Gates round 3
 
 typecheck sạch · 2444 tests pass (settings+shared/ui+dictionary) · build xanh · screenshots regenerated 320/600.
+
+---
+
+## Round 4 — state coverage audit + cross-grade fixes (2026-10-11)
+
+Method: enumerate every interactive control per section → drive default/hover/focus/active/selected/disabled → diff computed styles + pixel evidence (`tmp/settings-tab-redesign/audit-states/`). Then an independent fresh-context grader scored against `settings-ui-checklist.md`: **69/84 ≈ 82%** → all actionable findings fixed below.
+
+### State-audit findings fixed (mine)
+
+- Select option hover used `--color-field-hover-solid` (dark) vs canonical list-item hover `--color-surface-hover` — converged; measured identical to Menu item hover.
+- `nameButton` (DictLinksManager + ResourceCard) had zero hover feedback — added `surface-hover`.
+- False positives verified: slider/shortcutPill/nameButton focus rings work under real focus (programmatic-focus heuristic quirk).
+
+### Cross-grade findings fixed (subagent)
+
+- **P1 keyboard trap**: `ShortcutInput` captured `Tab`/`Shift+Tab` as shortcut bindings — the whole Shortcuts section was a keyboard dead-end. Tab now escapes.
+- `SearchableSelect` close didn't restore focus to trigger (focus fell to `<body>`) — `triggerRef` + focus on close/select/Esc; dead `handleOptionKeyDown` removed.
+- Two hand-rolled `radiogroup`s (profile cards, ProfileForm start-from) had all radios `tabIndex=0`, no arrows — new shared `radioGroupKeyNav` (roving tabindex + Arrow/Home/End, select-follows-focus).
+- `MultiSelect` field focus was a 1px border change only — added `--shadow-focus` ring + `combobox`/`aria-expanded`/`aria-controls` wiring.
+- Shortcut conflict dot invisible to AT — `role="img"` + `aria-invalid`/`aria-describedby` on the pill.
+- Missing hovers: `.shortcutPill`, `.disclosure`, `.choice`.
+- Dead hint "Quick Add sends new cards here" pointed at a phantom row — removed + 4 dead i18n keys dropped (en+vi).
+- "Change" banner unmounted focused button without moving focus — banner ref now focuses the revealed select trigger.
+- `HintIcon` tooltip unlinked + outside-click scoped to shadow root — `id`/`aria-describedby` + `ownerDocument` listener with `composedPath()`.
+- Dict-popup `tabpanel` now `tabIndex={0}` (keyboard-reachable scroll region).
+- Token cleanups: `opacity:0.5`→`--opacity-disabled` (Slider/Input/NavItem/ResourceCard), `0.7`→`--opacity-70` (HintIcon), `1px`→`--border-width-hairline`, `ease`/`ease-in-out` keywords→`--ease-in-out` (MultiSelect/NavItem/ResourceCard), dead CSS var fallbacks removed, redundant `opacity` in `.triggerDisabled` + `role="button"` on `<button>` + dead `styles.menuWrap` removed.
+- Copy: `uiLanguage.hint` section-name mismatch, `advancedHint` capitalization, `Search...`→`Search…` (en+vi); `surfaceTabActive` color → `text-accent-strong`.
+- Tests updated: MultiSelect searchbox→combobox role queries, Select `Search…` placeholder, shortcuts heading level 3.
+
+### Deferred (noted for design-system backlog)
+
+- Focus-ring recipe fragmentation (5 implementations render similarly; needs a shared `.focusRing`/token decision).
+- `.slot`/`.nameButton` CSS duplicated across DictLinksManager/ResourcesPanel/ResourceCard — extract shared stylesheet later.
+- Select vs SearchableSelect option surface recipes (radius, selected-text color) still differ; SearchableSelect menu is in-flow vs overlay.
+- `ResourceCard` `min-width: 280px` literal — no matching size token.
+- `sync.privacy` 267-char inline paragraph — move to HintIcon/learn-more row (SyncPanel scope).
+- 32px icon buttons < 40px touch target — shared sizing decision.
+- No way to clear a bound shortcut — feature gap, needs design.
+
+### Gates round 4
+
+typecheck sạch · lint 0 err (4 warning cũ) · **8628/8628 tests** · build xanh (design-system-css 0 violations) · live verify: Tab escape, arrow radio nav, banner focus, hover convergence — all pass.

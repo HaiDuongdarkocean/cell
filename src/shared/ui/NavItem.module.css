@@ -23,10 +23,10 @@
   overflow: hidden;
   transition: background-color var(--duration-fast) var(--ease-standard),
               color var(--duration-fast) var(--ease-standard),
-              height var(--duration-normal) ease-in-out,
-              padding var(--duration-normal) ease-in-out,
-              border-radius var(--duration-normal) ease-in-out,
-              gap var(--duration-normal) ease-in-out;
+              height var(--duration-normal) var(--ease-in-out),
+              padding var(--duration-normal) var(--ease-in-out),
+              border-radius var(--duration-normal) var(--ease-in-out),
+              gap var(--duration-normal) var(--ease-in-out);
 }
 
 .item:hover:not(:disabled) {
@@ -100,7 +100,7 @@
 }
 
 .disabled {
-  opacity: 0.5;
+  opacity: var(--opacity-disabled);
   cursor: not-allowed;
 }
 
@@ -134,7 +134,7 @@
 .label {
   line-height: var(--leading-tight);
   white-space: nowrap;
-  transition: opacity var(--duration-normal) ease-in-out;
+  transition: opacity var(--duration-normal) var(--ease-in-out);
   z-index: 1;
 }
 

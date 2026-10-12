@@ -259,6 +259,8 @@
   border-radius: var(--radius-md);
 }
 
+.disclosure:hover { color: var(--color-primary); }
+
 .disclosure:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
 
 .choiceGrid {
@@ -284,6 +286,10 @@
   transition:
     border-color var(--duration-fast) var(--ease-in-out),
     background-color var(--duration-fast) var(--ease-in-out);
+}
+
+.choice:not([aria-checked='true']):hover {
+  background: var(--color-field-hover);
 }
 
 .choice[aria-checked='true'] {

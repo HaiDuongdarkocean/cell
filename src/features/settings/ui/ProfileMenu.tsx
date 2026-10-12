@@ -3,7 +3,7 @@ import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
 import { Menu, MenuItem } from '@/shared/ui/Menu';
 import type { IconCatalogKey } from '@/shared/icons';
-import styles from './LanguageProfilePanel.module.css';
+
 
 export interface ProfileMenuItem {
   readonly key: string;
@@ -19,7 +19,7 @@ export function ProfileMenu({ label, items }: { label: string; items: ProfileMen
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <div className={styles.menuWrap}>
+    <div>
       <Button
         ref={triggerRef}
         shape="circle"

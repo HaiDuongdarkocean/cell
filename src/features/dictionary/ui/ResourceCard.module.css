@@ -35,7 +35,7 @@
 
 /* Visual-only dimming for disabled resources — controls remain usable. */
 .cardDisabled {
-  opacity: 0.5;
+  opacity: var(--opacity-disabled);
 }
 
 /* Ghost look while the section's drag session lifts this card — the wrapper
@@ -112,6 +112,10 @@
   border-radius: var(--radius-sm);
 }
 
+.nameButton:hover {
+  background: var(--color-surface-hover);
+}
+
 .nameButton:focus-visible {
   outline: var(--space-0-5) solid var(--color-border-focus);
   outline-offset: var(--space-0-5);
@@ -168,7 +172,7 @@
   border: none;
   border-radius: var(--radius-lg);
   padding: var(--space-3) var(--space-4);
-  animation: pulse var(--duration-1500) ease-in-out infinite;
+  animation: pulse var(--duration-1500) var(--ease-in-out) infinite;
 }
 
 @keyframes pulse {

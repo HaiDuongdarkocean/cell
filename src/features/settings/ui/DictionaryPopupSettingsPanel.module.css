@@ -56,7 +56,7 @@
 .surfaceTabActive,
 .surfaceTabActive:hover {
   background: var(--color-primary-subtle);
-  color: var(--color-primary);
+  color: var(--color-text-accent-strong);
 }
 
 .tabBody {

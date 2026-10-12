@@ -69,6 +69,7 @@ export function SearchableSelect({
   const [query, setQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const autoId = useId();
   const triggerId = id ?? autoId;
@@ -90,16 +91,21 @@ export function SearchableSelect({
     }
   };
 
+  const closeMenu = (): void => {
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  };
+
   const handleSelect = (selectedValue: string): void => {
     onChange(selectedValue);
-    setIsOpen(false);
+    closeMenu();
     setQuery('');
   };
 
   const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Escape') {
       e.stopPropagation();
-      setIsOpen(false);
+      closeMenu();
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
       setHighlightedIndex((prev) => Math.min(prev + 1, filtered.length - 1));
@@ -110,13 +116,6 @@ export function SearchableSelect({
       e.preventDefault();
       const clampedIndex = Math.min(highlightedIndex, filtered.length - 1);
       handleSelect(filtered[clampedIndex].value);
-    }
-  };
-
-  const handleOptionKeyDown = (e: KeyboardEvent<HTMLLIElement>, optValue: string): void => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleSelect(optValue);
     }
   };
 
@@ -139,7 +138,7 @@ export function SearchableSelect({
   // the menu consumes the key before ancestor surfaces (e.g. UniversalPanel).
   useEffect(() => {
     if (!isOpen) return;
-    return pushEscapeLayer(() => setIsOpen(false));
+    return pushEscapeLayer(() => { setIsOpen(false); triggerRef.current?.focus(); });
   }, [isOpen]);
 
   // Clamp highlighted index when the filtered list shrinks (e.g. search query narrows).
@@ -158,6 +157,7 @@ export function SearchableSelect({
     <div className={styles.container} ref={menuRef}>
       {/* Trigger button */}
       <Button variant="secondary"
+        ref={triggerRef}
         id={triggerId}
         data-cell-id={dataTestId}
         className={`${styles.trigger} ${isOpen ? styles.triggerOpen : ''} ${disabled ? styles.triggerDisabled : ''}`}
@@ -219,7 +219,6 @@ export function SearchableSelect({
                   data-cell-id={`${testId}-option-${opt.value}`}
                   onPointerDown={(e) => spawnRipple(e.currentTarget, e.clientX, e.clientY)}
                   onClick={() => handleSelect(opt.value)}
-                  onKeyDown={(e) => handleOptionKeyDown(e, opt.value)}
                 >
                   <span className={styles.optionLabel}>{opt.label}</span>
                   {opt.value === value && (

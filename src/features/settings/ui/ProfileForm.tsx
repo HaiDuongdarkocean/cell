@@ -3,6 +3,7 @@ import { Button } from '@/shared/ui/Button';
 import { HintIcon } from '@/shared/ui/HintIcon';
 import { Icon } from '@/shared/ui/Icon';
 import { SearchableSelect } from '@/shared/ui/SearchableSelect';
+import { handleRadioGroupKeyDown } from '@/shared/lib/dom/radioGroupKeyNav';
 import { OVERLAY_LANGUAGE_OPTIONS } from '@/shared/config/languageRegistry';
 import { t } from '@/shared/i18n';
 import styles from './LanguageProfilePanel.module.css';
@@ -143,11 +144,12 @@ export function ProfileForm({
             />
           </div>
           {advOpen && (
-            <div className={styles.choiceGrid} role="radiogroup" aria-label={t('settings.profiles.form.advanced')}>
+            <div className={styles.choiceGrid} role="radiogroup" aria-label={t('settings.profiles.form.advanced')} onKeyDown={handleRadioGroupKeyDown}>
               <button
                 type="button"
                 role="radio"
                 aria-checked={startFrom === 'clean'}
+                tabIndex={startFrom === 'clean' ? 0 : -1}
                 className={styles.choice}
                 onClick={() => setStartFrom('clean')}
               >
@@ -158,6 +160,7 @@ export function ProfileForm({
                 type="button"
                 role="radio"
                 aria-checked={startFrom === 'copy'}
+                tabIndex={startFrom === 'copy' ? 0 : -1}
                 className={styles.choice}
                 onClick={() => setStartFrom('copy')}
               >

@@ -34,7 +34,7 @@ describe('SettingsDialog — Keyboard Shortcuts section', () => {
         onClose={noop}
       />,
     );
-    expect(screen.getByRole('heading', { name: /keyboard shortcuts/i, level: 4 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /shortcuts/i, level: 3 })).toBeInTheDocument();
   });
 
   it('renders input field for each shortcut action (incl. play-pause)', () => {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactElement } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactElement } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { pushEscapeLayer } from './escapeLayerStack';
 import { t } from '@/shared/i18n';
@@ -58,6 +58,7 @@ export function MultiSelect({
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listboxId = useId();
 
   useEffect(() => focused ? pushEscapeLayer(() => inputRef.current?.blur()) : undefined, [focused]);
 
@@ -145,6 +146,9 @@ export function MultiSelect({
           ref={inputRef}
           id={id}
           type="search"
+          role="combobox"
+          aria-expanded={showSuggestions}
+          aria-controls={listboxId}
           className={styles.input}
           placeholder={selectedValues.length > 0 ? '' : (placeholder ?? t('ui.multiSelect.searchPlaceholder'))}
           aria-label={t('ui.multiSelect.addAria')}
@@ -178,6 +182,7 @@ export function MultiSelect({
       {showSuggestions && (
         <ul
           className={styles.suggestions}
+          id={listboxId}
           role="listbox"
           aria-label={t('common.searchOptions.aria')}
           style={maxHeight !== undefined ? ({ '--multi-select-max-height': `${maxHeight}px` } as React.CSSProperties) : undefined}

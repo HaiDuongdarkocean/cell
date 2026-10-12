@@ -22,6 +22,10 @@
   transition: border-color var(--transition);
 }
 
+.shortcutPill:hover {
+  border-color: var(--color-border-emphasized);
+}
+
 .shortcutPill:focus {
   outline: none;
 }

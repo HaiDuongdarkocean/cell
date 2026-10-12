@@ -165,7 +165,7 @@
 }
 
 .input:disabled {
-  opacity: 0.5;
+  opacity: var(--opacity-disabled);
   cursor: not-allowed;
   background: var(--input-disabled-bg);
   color: var(--input-disabled-fg);

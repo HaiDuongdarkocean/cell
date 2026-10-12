@@ -31,12 +31,12 @@ describe('MultiSelect (tag field)', () => {
 
   it('renders the search input', () => {
     renderMultiSelect();
-    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
   it('uses the i18n default search placeholder when nothing is selected', () => {
     renderMultiSelect();
-    expect(screen.getByRole('searchbox')).toHaveAttribute('placeholder', 'Search languages…');
+    expect(screen.getByRole('combobox')).toHaveAttribute('placeholder', 'Search languages…');
   });
 
   it('renders selected values as chips', () => {
@@ -49,14 +49,14 @@ describe('MultiSelect (tag field)', () => {
 
   it('shows the suggestion listbox when the input is focused', () => {
     renderMultiSelect();
-    fireEvent.focus(screen.getByRole('searchbox'));
+    fireEvent.focus(screen.getByRole('combobox'));
     expect(screen.getByRole('listbox')).toBeInTheDocument();
     expect(screen.getAllByRole('option')).toHaveLength(options.length);
   });
 
   it('filters suggestions by label when typing', () => {
     renderMultiSelect();
-    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Span' } });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Span' } });
     const visible = screen.getAllByRole('option');
     expect(visible).toHaveLength(1);
     expect(visible[0]).toHaveTextContent('Spanish');
@@ -64,7 +64,7 @@ describe('MultiSelect (tag field)', () => {
 
   it('matches native name in parentheses, case-insensitive', () => {
     renderMultiSelect();
-    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'español' } });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'español' } });
     const visible = screen.getAllByRole('option');
     expect(visible).toHaveLength(1);
     expect(visible[0]).toHaveTextContent('Spanish');
@@ -72,13 +72,13 @@ describe('MultiSelect (tag field)', () => {
 
   it('hides already-selected values from suggestions', () => {
     renderMultiSelect({ selectedValues: ['en'] });
-    fireEvent.focus(screen.getByRole('searchbox'));
+    fireEvent.focus(screen.getByRole('combobox'));
     expect(screen.queryByTestId('lang-option-en')).not.toBeInTheDocument();
   });
 
   it('shows empty state when search yields no results', () => {
     renderMultiSelect();
-    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'klingon' } });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'klingon' } });
     expect(screen.getByText('No results found.')).toBeInTheDocument();
   });
 
@@ -86,7 +86,7 @@ describe('MultiSelect (tag field)', () => {
 
   it('clicking a suggestion adds it via onChange', () => {
     const onChange = renderMultiSelect();
-    fireEvent.focus(screen.getByRole('searchbox'));
+    fireEvent.focus(screen.getByRole('combobox'));
     screen.getByTestId('lang-option-en').click();
     expect(onChange).toHaveBeenCalledWith(['en']);
   });
@@ -99,7 +99,7 @@ describe('MultiSelect (tag field)', () => {
 
   it('Enter adds the first suggestion', () => {
     const onChange = renderMultiSelect();
-    const input = screen.getByRole('searchbox');
+    const input = screen.getByRole('combobox');
     fireEvent.change(input, { target: { value: 'chin' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(onChange).toHaveBeenCalledWith(['zh']);
@@ -107,13 +107,13 @@ describe('MultiSelect (tag field)', () => {
 
   it('Backspace on empty query removes the last chip', () => {
     const onChange = renderMultiSelect({ selectedValues: ['en', 'fr'] });
-    fireEvent.keyDown(screen.getByRole('searchbox'), { key: 'Backspace' });
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Backspace' });
     expect(onChange).toHaveBeenCalledWith(['en']);
   });
 
   it('Escape blurs the search input', () => {
     renderMultiSelect();
-    const input = screen.getByRole('searchbox');
+    const input = screen.getByRole('combobox');
     act(() => input.focus());
     expect(document.activeElement).toBe(input);
     fireEvent.keyDown(input, { key: 'Escape' });
@@ -124,14 +124,14 @@ describe('MultiSelect (tag field)', () => {
 
   it('adding an exclusive value clears other selections', () => {
     const onChange = renderMultiSelect({ selectedValues: ['en', 'fr'], exclusiveValues: ['all'] });
-    fireEvent.focus(screen.getByRole('searchbox'));
+    fireEvent.focus(screen.getByRole('combobox'));
     screen.getByTestId('lang-option-all').click();
     expect(onChange).toHaveBeenCalledWith(['all']);
   });
 
   it('adding a specific value while an exclusive is set drops the exclusive', () => {
     const onChange = renderMultiSelect({ selectedValues: ['all'], exclusiveValues: ['all'] });
-    fireEvent.focus(screen.getByRole('searchbox'));
+    fireEvent.focus(screen.getByRole('combobox'));
     screen.getByTestId('lang-option-es').click();
     expect(onChange).toHaveBeenCalledWith(['es']);
   });

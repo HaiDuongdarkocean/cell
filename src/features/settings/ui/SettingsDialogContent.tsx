@@ -471,8 +471,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               headingLevel={3}
               title={t('settings.dictionaryPopup.title')}
               description={t('settings.dictionaryPopup.desc')}
-              hint={t('settings.dictionaryPopup.saveHint')}
-              hintAriaLabel={t('settings.hint.aria', [t('settings.dictionaryPopup.title')])}
               data-section="dictionaryPopup"
             >
               <DictionaryPopupSettingsPanel
@@ -694,11 +692,15 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                                   update('keyboardShortcuts', updated);
                                 }}
                                 aria-label={actionLabel}
+                                aria-invalid={conflict || undefined}
+                                aria-describedby={conflict ? `shortcut-conflict-${action}` : undefined}
                               />
                               {conflict && (
                                 <span
+                                  id={`shortcut-conflict-${action}`}
                                   className={styles.conflictDot}
                                   title={t('settings.shortcuts.conflict.title')}
+                                  role="img"
                                   aria-label={t('settings.shortcuts.conflict.aria')}
                                 />
                               )}

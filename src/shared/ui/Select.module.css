@@ -239,11 +239,11 @@
 }
 
 .optionHighlighted {
-  background: var(--color-field-hover-solid);
+  background: var(--color-surface-hover);
 }
 
 .option:hover {
-  background: var(--color-field-hover-solid);
+  background: var(--color-surface-hover);
 }
 
 .optionSelected {
