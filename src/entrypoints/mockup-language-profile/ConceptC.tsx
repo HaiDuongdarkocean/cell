@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { FlagIcon } from '@/shared/ui/FlagIcon';
+import { SearchableSelect } from '@/shared/ui/SearchableSelect';
+import { OVERLAY_LANGUAGE_OPTIONS } from '@/shared/config/languageRegistry';
 import type { ConceptProps } from './common';
-import { EmptyState, KebabMenu, NativeBanner, ProfileForm } from './common';
+import { EmptyState, KebabMenu, ProfileForm } from './common';
 import { langLabel, langShort, resolvedNative } from './mockData';
 
 /**
- * Selected direction — "Selectable cards".
- * IA model: the list IS the switcher. Clicking a card activates the profile
- * (radio semantics); all secondary actions collapse into one kebab menu.
- * "New profile" lives in a persistent toolbar above the list and opens the
- * add-form inline at the top — reachable without scrolling.
+ * Concept C — "Popup card".
+ * Cards stay, but follow the dictionary popup's surface grammar: elevated
+ * surface + hairline border, headword/meta hierarchy, two-tone meta chip
+ * (native | Tiếng Việt), small accent dot instead of a big radio ring.
  */
-export function ConceptA({
+export function ConceptC({
   profiles,
   activeId,
   universalNative,
@@ -27,25 +28,32 @@ export function ConceptA({
   const [editingId, setEditingId] = useState<string | null>(null);
 
   return (
-    <div>
-      <NativeBanner universalNative={universalNative} onChange={onUniversalChange} />
+    <div className="cc-panel">
+      <div className="cb-field">
+        <span className="cb-label">Universal native language</span>
+        <SearchableSelect
+          options={OVERLAY_LANGUAGE_OPTIONS}
+          value={universalNative}
+          onChange={onUniversalChange}
+          ariaLabel="Universal native language"
+          placeholder="Search languages..."
+        />
+      </div>
 
-      {profiles.length > 0 && (
-        <div className="list-toolbar">
-          <span className="section-label">Profiles · {profiles.length}</span>
-          <button
-            type="button"
-            className="link-btn"
-            aria-expanded={adding}
-            onClick={() => {
-              setEditingId(null);
-              setAdding((v) => !v);
-            }}
-          >
-            <Icon name={adding ? 'x' : 'plus'} size="xs" /> {adding ? 'Close' : 'New profile'}
-          </button>
-        </div>
-      )}
+      <div className="list-toolbar">
+        <span className="section-label">Profiles · {profiles.length}</span>
+        <button
+          type="button"
+          className="link-btn"
+          aria-expanded={adding}
+          onClick={() => {
+            setEditingId(null);
+            setAdding((v) => !v);
+          }}
+        >
+          <Icon name={adding ? 'x' : 'plus'} size="xs" /> {adding ? 'Close' : 'New profile'}
+        </button>
+      </div>
 
       {adding && (
         <ProfileForm
@@ -62,11 +70,10 @@ export function ConceptA({
       {profiles.length === 0 && !adding ? (
         <EmptyState onAdd={() => setAdding(true)} />
       ) : (
-        <div className="ca-list" role="radiogroup" aria-label="Language profiles">
+        <div className="cc-list" role="radiogroup" aria-label="Language profiles">
           {profiles.map((p, i) => {
             const isActive = p.id === activeId;
             const nat = resolvedNative(p, universalNative);
-            // Edit = in-place: the card morphs into the identity form.
             if (editingId === p.id) {
               return (
                 <ProfileForm
@@ -85,29 +92,28 @@ export function ConceptA({
               );
             }
             return (
-              <div key={p.id} className="row" style={{ gap: 'var(--space-1)' }}>
+              <div key={p.id} className={`cc-card${isActive ? ' is-active' : ''}`}>
                 <button
                   type="button"
                   role="radio"
                   aria-checked={isActive}
-                  className="ca-card grow"
+                  className="cc-main grow"
                   onClick={() => onActivate(p.id)}
                 >
-                  <span className="ca-radio" aria-hidden="true" />
-                  <span className="ca-flags">
-                    <FlagIcon lang={nat} size={20} title={langLabel(nat)} />
-                    <Icon name="chevronRight" size="xs" />
-                    <FlagIcon lang={p.target} size={28} title={langLabel(p.target)} />
-                  </span>
+                  <FlagIcon lang={p.target} size={28} title={langLabel(p.target)} />
                   <span className="grow">
-                    <span className="ca-name ellipsis" style={{ display: 'block' }}>
+                    <span className="cc-name ellipsis" style={{ display: 'block' }}>
                       {langLabel(p.target)}
                     </span>
-                    <span className="ca-meta ellipsis" style={{ display: 'block' }}>
-                      Native: {langShort(nat)}{p.native ? ' · custom' : ''}
+                    <span className="cc-chiprow">
+                      <span className="cc-chip">
+                        <span className="cc-chipKey">native</span>
+                        <span className="cc-chipVal">{langShort(nat)}{p.native ? ' · custom' : ''}</span>
+                      </span>
                     </span>
                   </span>
                 </button>
+                <span className="cc-dot" aria-hidden="true" />
                 <KebabMenu
                   label={`Actions for ${p.name}`}
                   items={[

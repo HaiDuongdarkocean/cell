@@ -10,7 +10,9 @@ import {
   DEFAULT_OVERLAY_STYLE_NATIVE,
 } from '@/shared/config/config';
 import type { LanguageProfile, Settings } from '@/entities/settings';
-import { ConceptA } from './ConceptA';
+import { ConceptB } from './ConceptB';
+import { ConceptC } from './ConceptC';
+import { ConceptD } from './ConceptD';
 import { MOCK_PROFILES, MOCK_UNIVERSAL_NATIVE, langLabel, type MockProfile } from './mockData';
 import '@/shared/styles/document.css';
 import './mockup.css';
@@ -22,28 +24,7 @@ document.documentElement.setAttribute('data-theme', 'light');
 // ?lang=vi|en — lets Playwright/manual QA exercise both locales.
 setUiLanguageOverride(new URLSearchParams(location.search).get('lang') ?? '');
 
-type ConceptId = 'real' | 'cards';
 type Viewport = 'mobile' | 'desktop';
-
-const CONCEPTS: { id: ConceptId; label: string }[] = [
-  { id: 'real', label: 'Real panel' },
-  { id: 'cards', label: 'Mockup' },
-];
-
-const NOTES: Record<ConceptId, React.ReactNode> = {
-  real: (
-    <>
-      The production <strong>LanguageProfilePanel</strong>, live — same state wiring as the
-      settings dialog. This is the source of truth for implementation.
-    </>
-  ),
-  cards: (
-    <>
-      <strong>Selectable cards</strong> wireframe — the approved direction. The list <em>is</em> the
-      switcher: click a card to activate; actions collapse into one ⋮ menu; add/edit happen inline.
-    </>
-  ),
-};
 
 function toRealProfile(m: MockProfile, order: number): LanguageProfile {
   return {
@@ -64,7 +45,6 @@ function toRealProfile(m: MockProfile, order: number): LanguageProfile {
 }
 
 function App(): React.ReactElement {
-  const [concept, setConcept] = useState<ConceptId>('real');
   const [viewport, setViewport] = useState<Viewport>('mobile');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
@@ -146,21 +126,9 @@ function App(): React.ReactElement {
           <header className="mlp-header">
             <h1 className="mlp-title">Language Profile — redesign</h1>
             <p className="mlp-subtitle">
-              Selected direction (selectable cards) next to the shipped UI. Try mobile vs desktop, light vs dark.
+              Current panel next to three popup-grammar variants. Try mobile vs desktop, light vs dark.
             </p>
             <div className="mlp-controls">
-              <div className="mlp-seg" role="group" aria-label="Concept">
-                {CONCEPTS.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    aria-pressed={concept === c.id}
-                    onClick={() => setConcept(c.id)}
-                  >
-                    {c.label}
-                  </button>
-                ))}
-              </div>
               <div className="mlp-seg" role="group" aria-label="Viewport">
                 <button type="button" aria-pressed={viewport === 'mobile'} onClick={() => setViewport('mobile')}>
                   Mobile
@@ -180,13 +148,41 @@ function App(): React.ReactElement {
             </div>
           </header>
 
-          <p className="mlp-concept-note">{NOTES[concept]}</p>
-
           <main className="mlp-stage" data-viewport={viewport}>
-            {concept === 'real' && (
+            <section className="mlp-variant">
+              <h2 className="mlp-variant-title">A — Current (production)</h2>
+              <p className="mlp-variant-note">
+                The shipped LanguageProfilePanel, live — same state wiring as the settings dialog.
+              </p>
               <LanguageProfilePanel settings={panelSettings} onChange={setPanelSettings} />
-            )}
-            {concept === 'cards' && <ConceptA {...conceptProps} />}
+            </section>
+
+            <section className="mlp-variant">
+              <h2 className="mlp-variant-title">B — Popup list rows</h2>
+              <p className="mlp-variant-note">
+                One grouped container, hairline-separated rows — the dictionary popup&rsquo;s
+                definition-list grammar. Selection = tint + accent check; native becomes a chip.
+              </p>
+              <ConceptB {...conceptProps} />
+            </section>
+
+            <section className="mlp-variant">
+              <h2 className="mlp-variant-title">C — Popup card</h2>
+              <p className="mlp-variant-note">
+                Cards stay, but with popup grammar: elevated surface + hairline border,
+                headword/meta hierarchy, two-tone native chip, small accent dot.
+              </p>
+              <ConceptC {...conceptProps} />
+            </section>
+
+            <section className="mlp-variant">
+              <h2 className="mlp-variant-title">D — Text list</h2>
+              <p className="mlp-variant-note">
+                Spotify-minimal: pure typography, hairline separators, left accent bar on the
+                active row. No flags, no radio chrome.
+              </p>
+              <ConceptD {...conceptProps} />
+            </section>
           </main>
         </div>
       </ErrorBoundary>

@@ -483,3 +483,262 @@ body {
     transition: none;
   }
 }
+
+/* === Variant shell — each concept renders in its own labelled part === */
+.mlp-variant {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mlp-variant + .mlp-variant {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.mlp-variant-title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.mlp-variant-note {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: calc(var(--space-2) * -1) 0 var(--space-2);
+}
+
+/* Shared stacked field for the universal-native select across variants */
+.cb-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  margin-bottom: var(--space-4);
+}
+
+.cb-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+/* === Concept B — popup list rows: one grouped container, hairline rows === */
+.cb-group {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.cb-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-right: var(--space-1);
+}
+
+.cb-item + .cb-item {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.cb-item.is-active {
+  background: var(--color-primary-subtle);
+}
+
+.cb-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+@media (hover: hover) {
+  .cb-item:not(.is-active):hover { background: var(--color-surface-hover); }
+}
+
+.cb-row:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
+
+.cb-check {
+  width: var(--space-4);
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.cb-text {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+}
+
+.cb-name { font-weight: var(--font-weight-medium); flex: 1 1 auto; min-width: 12ch; }
+
+.cb-chip {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  background: var(--color-field);
+  border-radius: var(--radius-pill);
+  padding: var(--space-0-5) var(--space-2);
+  white-space: nowrap;
+}
+
+/* === Concept C — popup card: elevated surface + hairline border === */
+.cc-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cc-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-right: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-elevated);
+}
+
+@media (hover: hover) {
+  .cc-card:not(.is-active):hover { background: var(--color-surface-hover); }
+}
+
+.cc-card.is-active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.cc-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.cc-main:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
+
+.cc-name { font-weight: var(--font-weight-semibold); }
+
+.cc-chiprow {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.cc-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--font-size-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.cc-chipKey {
+  padding: var(--space-0-5) var(--space-1-5);
+  background: var(--color-field);
+  color: var(--color-text-tertiary);
+}
+
+.cc-chipVal {
+  padding: var(--space-0-5) var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.cc-dot {
+  flex-shrink: 0;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-emphasized);
+}
+
+.cc-card.is-active .cc-dot {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* === Concept D — text list: typography only, hairline separators === */
+.cd-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.cd-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  border-radius: var(--radius-md);
+  padding-right: var(--space-1);
+}
+
+.cd-item + .cd-item {
+  border-top: 1px solid var(--color-border-subtle);
+  border-radius: 0;
+}
+
+@media (hover: hover) {
+  .cd-item:not(.is-active):hover { background: var(--color-surface-hover); }
+}
+
+.cd-item.is-active { background: var(--color-primary-subtle); }
+
+.cd-bar {
+  position: absolute;
+  left: 0;
+  top: var(--space-2);
+  bottom: var(--space-2);
+  width: var(--space-0-5);
+  border-radius: var(--radius-pill);
+  background: transparent;
+}
+
+.cd-item.is-active .cd-bar { background: var(--color-primary); }
+
+.cd-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2-5) var(--space-3);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.cd-row:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
+
+.cd-name { font-weight: var(--font-weight-medium); }
+.cd-name.is-active { color: var(--color-text-accent-strong); }
+
+.cd-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.cd-check { color: var(--color-primary); flex-shrink: 0; }
