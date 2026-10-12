@@ -50,12 +50,6 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  width: 100%;
-}
-
-.shortcutInputWrap > :global([role="button"]) {
-  flex: 1;
-  min-width: 0;
 }
 
 .conflictDot {

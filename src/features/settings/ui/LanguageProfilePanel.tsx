@@ -5,6 +5,7 @@ import { FlagIcon } from '@/shared/ui/FlagIcon';
 import { SearchableSelect } from '@/shared/ui/SearchableSelect';
 import { SelectableCard } from '@/shared/ui/SelectableCard';
 import { EmptyState } from '@/shared/ui/EmptyState';
+import { Dialog } from '@/shared/ui/Dialog';
 import { SettingsGroup } from '@/shared/ui/SettingsGroup';
 import { OVERLAY_LANGUAGE_OPTIONS, toIso6391, baseLangCode } from '@/shared/config/languageRegistry';
 import { t } from '@/shared/i18n';
@@ -44,6 +45,7 @@ const langShort = (code: string): string => langLabel(code).split(' (')[0];
 
 export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePanelProps): React.JSX.Element {
   const [form, setForm] = useState<FormState>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [bannerEditing, setBannerEditing] = useState(false);
   const [bannerDraft, setBannerDraft] = useState(settings.universalNativeLanguage);
 
@@ -52,6 +54,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
     [settings.languageProfiles],
   );
   const active = useMemo(() => getActiveProfileSettings(settings), [settings]);
+  const deleting = profiles.find((p) => p.id === deletingId);
 
   /* --- Mutations --- */
 
@@ -211,7 +214,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
             <FlagIcon lang={settings.universalNativeLanguage} size={22} title={langLabel(settings.universalNativeLanguage)} />
             <div className={styles.bannerText}>
               <Text variant="label" color="secondary" as="div" className={styles.bannerLabel}>{t('settings.profiles.banner.label')}</Text>
-              <div className={styles.bannerValue} data-testid="universal-native-banner-value">{langShort(settings.universalNativeLanguage)}</div>
+              <div className={styles.bannerValue} data-cell-id="universal-native-banner-value">{langShort(settings.universalNativeLanguage)}</div>
             </div>
             <Button
               type="button"
@@ -300,7 +303,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
                   selected={isActive}
                   onSelect={() => setActive(profile.id)}
                   className={styles.card}
-                  data-testid={`language-profile-card-${profile.id}`}
+                  data-cell-id={`language-profile-card-${profile.id}`}
                 >
                   <span className={styles.radio} aria-hidden="true" />
                   <span className={styles.flags}>
@@ -346,7 +349,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
                       icon: 'trash',
                       danger: true,
                       disabled: profiles.length === 1 && isActive,
-                      onSelect: () => deleteProfile(profile.id),
+                      onSelect: () => setDeletingId(profile.id),
                     },
                   ]}
                 />
@@ -356,6 +359,35 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
         </div>
         </SettingsGroup>
       )}
+
+      <Dialog
+        open={deletingId !== null}
+        onOpenChange={(open) => { if (!open) setDeletingId(null); }}
+        title={deleting ? t('settings.profiles.delete.title', [deleting.name]) : ''}
+        showCloseButton
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setDeletingId(null)}>
+              {t('settings.profiles.delete.cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              data-cell-id="profile-delete-confirm"
+              onClick={() => {
+                if (deletingId) deleteProfile(deletingId);
+                setDeletingId(null);
+              }}
+            >
+              {t('settings.profiles.delete.confirm')}
+            </Button>
+          </>
+        }
+        data-cell-id="profile-delete-dialog"
+      >
+        <Text as="p" color="secondary">
+          {t('settings.profiles.delete.body')}
+        </Text>
+      </Dialog>
     </div>
   );
 }

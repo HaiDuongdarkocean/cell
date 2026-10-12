@@ -249,9 +249,8 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
             {/* === General === */}
             <SettingsSection
               ref={sectionRef('general')}
-              headingLevel={4}
+              headingLevel={3}
               title={t('settings.general.title')}
-              description={t('settings.general.desc')}
               data-section="general"
             >
               <SettingsRow
@@ -296,7 +295,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
             {/* === Language Profile === */}
             <SettingsSection
               ref={sectionRef('languageProfile')}
-              headingLevel={4}
+              headingLevel={3}
               title={t('settings.languageProfile.title')}
               description={t('settings.languageProfile.desc')}
               data-section="languageProfile"
@@ -307,7 +306,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
             {/* === Resources === */}
             <SettingsSection
               ref={sectionRef('resources')}
-              headingLevel={4}
+              headingLevel={3}
               title={t('settings.resources.title')}
               description={t('settings.resources.desc')}
               data-section="resources"
@@ -353,7 +352,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
             {/* === Media Selection === */}
             <SettingsSection
               ref={sectionRef('media')}
-              headingLevel={4}
+              headingLevel={3}
               title={t('settings.media.title')}
               description={t('settings.media.desc')}
               data-section="media"
@@ -395,9 +394,8 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
             {/* === Subtitle Block === */}
             <SettingsSection
               ref={sectionRef('block')}
-              headingLevel={4}
+              headingLevel={3}
               title={t('settings.block.title')}
-              description={t('settings.block.desc')}
               data-section="block"
             >
               <SettingsRow
@@ -470,7 +468,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
             {/* === Dictionary Popup === */}
             <SettingsSection
               ref={sectionRef('dictionaryPopup')}
-              headingLevel={4}
+              headingLevel={3}
               title={t('settings.dictionaryPopup.title')}
               description={t('settings.dictionaryPopup.desc')}
               hint={t('settings.dictionaryPopup.saveHint')}
@@ -486,7 +484,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
             {/* === Word badge === */}
             <SettingsSection
               ref={sectionRef('wordBadge')}
-              headingLevel={4}
+              headingLevel={3}
               title={t('settings.wordBadge.title')}
               description={t('settings.wordBadge.desc')}
               hint={t('settings.wordBadge.hint')}
@@ -505,7 +503,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
             {/* === Audio (merged Pronunciation + Local Pronunciation + TTS Voices) === */}
             <SettingsSection
               ref={sectionRef('audio')}
-              headingLevel={4}
+              headingLevel={3}
               title={t('settings.audio.title')}
               description={t('settings.audio.desc')}
               data-section="audio"
@@ -522,9 +520,8 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
             {/* === Local Player === */}
             <SettingsSection
               ref={sectionRef('localPlayer')}
-              headingLevel={4}
+              headingLevel={3}
               title={t('settings.localPlayer.title')}
-              description={t('settings.localPlayer.desc')}
               data-section="localPlayer"
             >
               <SettingsRow
@@ -555,9 +552,8 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
             {/* === Download === */}
             <SettingsSection
               ref={sectionRef('download')}
-              headingLevel={4}
+              headingLevel={3}
               title={t('settings.download.title')}
-              description={t('settings.download.desc')}
               data-section="download"
             >
               <SettingsGroup label={t('settings.download.group.concurrency')}>
@@ -661,9 +657,8 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
             {/* === Keyboard Shortcuts === */}
             <SettingsSection
               ref={sectionRef('shortcuts')}
-              headingLevel={4}
+              headingLevel={3}
               title={t('settings.shortcuts.title')}
-              description={t('settings.shortcuts.desc')}
               data-section="shortcuts"
             >
               <div className={styles.shortcutSection}>
@@ -681,7 +676,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                           <SettingsRow
                             key={action}
                             dense
-                            stacked
                             title={actionLabel}
                             labelFor={`set-shortcut-${action}`}
                             className={styles.shortcutField}
@@ -721,9 +715,8 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
             {/* === Theme === */}
             <SettingsSection
               ref={sectionRef('theme')}
-              headingLevel={4}
+              headingLevel={3}
               title={t('settings.theme.title')}
-              description={t('settings.theme.desc')}
               data-section="theme"
             >
               <ThemePanel />
@@ -732,9 +725,8 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
             {/* === Sync === */}
             <SettingsSection
               ref={sectionRef('sync')}
-              headingLevel={4}
+              headingLevel={3}
               title={t('settings.sync.title')}
-              description={t('settings.sync.desc')}
               data-section="sync"
             >
               <SyncPanel settings={settings} />

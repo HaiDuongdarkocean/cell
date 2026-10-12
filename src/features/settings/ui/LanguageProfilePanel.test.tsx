@@ -57,6 +57,7 @@ describe('LanguageProfilePanel — delete cleanup', () => {
     // Open the ⋮ menu on the first card and choose Delete.
     fireEvent.click(screen.getByRole('button', { name: 'Actions for Profile p1' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+    fireEvent.click(screen.getByTestId('profile-delete-confirm'));
 
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -83,6 +84,7 @@ describe('LanguageProfilePanel — delete cleanup', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Actions for Profile p1' })); // p1 — active but not the SRS pointer
     fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+    fireEvent.click(screen.getByTestId('profile-delete-confirm'));
 
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({

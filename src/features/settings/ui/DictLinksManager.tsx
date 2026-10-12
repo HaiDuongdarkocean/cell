@@ -126,6 +126,7 @@ export function DictLinksManager({ links, onChange }: DictLinksManagerProps): Re
           return (
             <div
               key={link.id}
+              role="listitem"
               data-cell-id={`${SLOT_PREFIX}${link.id}`}
               className={`${styles.slot} ${dragged ? styles.slotDragging : ''} ${drag?.settling ? styles.slotSettling : ''}`}
               style={drag

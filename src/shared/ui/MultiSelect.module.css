@@ -117,7 +117,7 @@
   font-size: var(--font-size-xs);
   padding: var(--space-1) var(--space-2-5);
   cursor: pointer;
-  transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
+  transition: background var(--duration-fast) var(--ease-in-out), color var(--duration-fast) var(--ease-in-out);
 }
 
 .popChip:hover {

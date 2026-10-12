@@ -117,3 +117,44 @@ Sau commit `3c908876`, pass thứ hai phủ các interaction chưa thao tác: de
 ### Gates round 2
 
 typecheck sạch · lint 0 err (4 warning cũ) · 2613 tests pass · build xanh (design-system-css 0 violations).
+
+---
+
+## Round 3 — minimalism pass + scored checklist (2026-10-11)
+
+Request: per-section minimalism audit, cut non-essential copy, plus a grading checklist a fresh subagent can score.
+
+### Scored checklist
+
+`docs/audits/settings-ui-checklist.md` — 40 criteria across A–J with evidence pointers. Independent grader (`subagent_explore`, fresh context) scored **76/88 ≈ 86%** — verdict "minor polish list". All scorable findings below were applied; runtime-only items (contrast, dark shots) were already covered by earlier rounds.
+
+### Simplification decisions (applied)
+
+- **Section descriptions removed** where they restated content — General, Subtitles, Local player, Downloads, Shortcuts, Theme, Sync (7). Kept where they teach purpose/jargon: Language profiles, Resources, Media, Dictionary popup, Word badge, Audio. Dead `*.desc` keys deleted from en+vi.
+- **Shortcut rows compacted**: `stacked` full-width inputs → label + compact key pill on one row (removed `flex:1` stretch). Section ~50% shorter, macOS-style.
+- **Long row hints tightened** (en+vi): `showReadings`, `showWordTranslations`, `autoLoadAsr`, `autoTranslate`, `download.parallel`, `ankiSync.enabled`, `ankiSync.writeBack`, `ankiSync.addon.fallback` — all ≤ ~90 chars, one idea.
+- **Nav ↔ title aligned**: `settings.shortcuts.title` "Keyboard Shortcuts"→"Shortcuts"; `dictionaryPopup.title` "Dictionary Popup"→"Dictionary popup" (en) / "Từ điển nổi"→"Tra từ nổi" (vi). General toggle renamed "Show dictionary popup" (was ambiguous with the section).
+
+### Grader findings fixed
+
+- B3 nav/title mismatch → aligned (above).
+- C2 long descriptions → tightened (above).
+- F3 literal `opacity: 0.5` → `var(--opacity-disabled)` in `Select.module.css` (trigger + option); `aria-disabled` added to disabled options (`Select.tsx`).
+- F5 focus rings: `ShortcutInput` `:focus`→`:focus-visible` + `shadow-focus-primary`; `.surfaceTab` got `:focus-visible` ring.
+- G1 non-token easings → `var(--ease-in-out)` (`Toggle` ×2, `MultiSelect`); dead `left` transition removed from Toggle thumb.
+- D2 menu border converged: Select/SearchableSelect `color-border-emphasized` → `color-border` (matches canonical `Popover variant="menu"`).
+- `role="list"` children got `role="listitem"` (`DictLinksManager`, `ResourcesPanel`).
+- Dict-popup surface tabs: full tablist pattern — roving tabindex, Arrow/Home/End nav, `aria-controls` + `role="tabpanel"`/`aria-labelledby`.
+- Heading skip fixed: `headingLevel={4}` → `{3}` (13 sections; dialog title is h2).
+- `data-testid` → `data-cell-id` in `LanguageProfilePanel` (test infra reads `data-cell-id` via `tests/setup.ts`).
+- **Profile delete now confirms**: new `Dialog` in `LanguageProfilePanel` (was instant delete while dict-link delete confirmed) + 4 i18n keys + tests updated.
+
+### Rejected/deferred
+
+- C4 (move hints to ⓘ): rejected — inline row descriptions are the deliberate redesign grammar; `HintIcon` stays for edge-case docs.
+- H5 (32px icon buttons < 40px touch target): deferred — shared sizing decision, `data-compact-hit` marker has no consumer; needs design-system-level choice.
+- J2 (menu surface recipe ×3): partial — border token converged; full extraction of a shared surface class deferred (small duplication, no drift left).
+
+### Gates round 3
+
+typecheck sạch · 2444 tests pass (settings+shared/ui+dictionary) · build xanh · screenshots regenerated 320/600.

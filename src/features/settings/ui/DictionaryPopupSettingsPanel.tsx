@@ -85,6 +85,23 @@ export function DictionaryPopupSettingsPanel({
 }: DictionaryPopupSettingsPanelProps): ReactElement {
   const [surface, setSurface] = useState<SurfaceTab>('links');
 
+  const moveTabFocus = (e: React.KeyboardEvent<HTMLButtonElement>): void => {
+    const keys = SURFACE_TABS.map((t2) => t2.key);
+    const i = keys.indexOf(surface);
+    const next =
+      e.key === 'ArrowRight' ? keys[(i + 1) % keys.length]
+      : e.key === 'ArrowLeft' ? keys[(i + keys.length - 1) % keys.length]
+      : e.key === 'Home' ? keys[0]
+      : e.key === 'End' ? keys[keys.length - 1]
+      : null;
+    if (next == null) return;
+    e.preventDefault();
+    setSurface(next);
+    e.currentTarget.parentElement
+      ?.querySelector<HTMLElement>(`#dict-popup-tab-${next}`)
+      ?.focus();
+  };
+
   const update = (partial: Partial<DictionaryPopupSettings>): void => {
     const next: DictionaryPopupSettings = {
       ...DEFAULT_DICTIONARY_POPUP_SETTINGS,
@@ -133,9 +150,13 @@ export function DictionaryPopupSettingsPanel({
             key={tab.key}
             type="button"
             role="tab"
+            id={`dict-popup-tab-${tab.key}`}
+            aria-controls={`dict-popup-panel-${tab.key}`}
             aria-selected={surface === tab.key}
+            tabIndex={surface === tab.key ? 0 : -1}
             className={`${styles.surfaceTab} ${surface === tab.key ? styles.surfaceTabActive : ''}`}
             onClick={() => setSurface(tab.key)}
+            onKeyDown={moveTabFocus}
             data-cell-id={`dict-popup-tab-${tab.key}`}
           >
             <Icon name={tab.icon} size="xs" />
@@ -144,6 +165,7 @@ export function DictionaryPopupSettingsPanel({
         ))}
       </div>
 
+      <div role="tabpanel" id={`dict-popup-panel-${surface}`} aria-labelledby={`dict-popup-tab-${surface}`}>
       {surface === 'links' && (
         <DictLinksManager
           links={settings.externalDictLinks ?? DEFAULT_DICTIONARY_POPUP_SETTINGS.externalDictLinks}
@@ -176,6 +198,7 @@ export function DictionaryPopupSettingsPanel({
           {t('settings.dictionaryPopup.links.tabEmpty.image')}
         </Text>
       )}
+      </div>
 
     </div>
   );

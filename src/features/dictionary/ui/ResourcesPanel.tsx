@@ -222,6 +222,7 @@ function ResourceSection({
     return (
       <div
         key={r.id}
+        role="listitem"
         data-cell-id={`slot-${r.id}`}
         data-dragging={dragged || undefined}
         className={`${styles.slot} ${dragged ? styles.slotDragging : ''} ${drag?.settling ? styles.slotSettling : ''}`}

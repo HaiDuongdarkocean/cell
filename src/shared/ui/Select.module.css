@@ -112,7 +112,7 @@
 
 .trigger:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: var(--opacity-disabled);
 }
 
 /* Sizes */
@@ -167,7 +167,7 @@
   width: max-content;
   max-height: min(calc(var(--space-5) * 22), 70vh);
   background: var(--color-surface-elevated);
-  border: var(--border-width-hairline) solid var(--color-border-emphasized);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-popover);
   overflow: hidden;
@@ -252,7 +252,7 @@
 }
 
 .optionDisabled {
-  opacity: 0.5;
+  opacity: var(--opacity-disabled);
   cursor: not-allowed;
 }
 

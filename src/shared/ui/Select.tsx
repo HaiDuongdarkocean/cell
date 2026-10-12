@@ -400,6 +400,7 @@ export function Select({
                 .join(' ')}
               role="option"
               aria-selected={opt.value === value}
+              aria-disabled={opt.disabled || undefined}
               onClick={(e) => handleOptionClick(e, opt.value, opt.disabled)}
               onMouseEnter={() => handleMouseEnter(index)}
             >
