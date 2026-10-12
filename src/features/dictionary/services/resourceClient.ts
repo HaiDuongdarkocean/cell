@@ -9,7 +9,10 @@
 // Long-running work (import, delete) is owned by the background JobRegistry:
 // these calls return a jobId as soon as the background owns the job; progress
 // and terminal state are observed via JOB_LIST/JOB_EVENT (see jobClient).
-// Import ships file bytes as base64 chunks (chrome messages are JSON-only).
+// Import transport: extension-origin senders (popup) hand the File to the
+// offscreen runner directly over BroadcastChannel (RESOURCE_IMPORT_BEGIN +
+// `import-run` — chrome messages are JSON-only but the channel structured-
+// clones blobs); page-origin senders ship bytes as windowed base64 chunks.
 
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -17,6 +20,7 @@ import { subscribeJobEvents } from '@/features/jobs';
 import { isTerminalJob } from '@/entities/job/types';
 import { emitDictionaryChanged } from './dictionaryEvents';
 import { computeSignature } from '../logic/signatureGenerator';
+import { openImportChannel } from '../logic/importChannel';
 import type { ReadableFile } from '../logic/fileDetector';
 import type {
   DictionaryComponent,
@@ -28,6 +32,11 @@ import { t } from '@/shared/i18n';
 
 /** Raw bytes per import chunk — ≤4MiB base64 on the wire per message. */
 const IMPORT_CHUNK_BYTES = 3 * 1024 * 1024;
+
+/** In-flight chunk messages per upload — the receiver buffers out-of-order
+ *  arrivals, so a small window overlaps encode + round-trip without SW
+ *  memory spikes. */
+const IMPORT_UPLOAD_WINDOW = 4;
 
 interface ImportCallbacks {
   readonly langCode: string;
@@ -182,6 +191,69 @@ async function gzipUpload(file: ReadableFile): Promise<Uint8Array | undefined> {
 }
 
 /**
+ * Direct File handoff for extension-origin senders (popup): the background
+ * registers the job and attaches its channel listener inside
+ * RESOURCE_IMPORT_BEGIN, then this side posts `import-run` carrying the
+ * File to the offscreen runner over BroadcastChannel('cell-import') —
+ * no byte transport, no SW-side buffering. Returns undefined whenever the
+ * handoff is unavailable or rejected so the caller can fall back to the
+ * chunk path under the same jobId.
+ */
+async function tryDirectImport(
+  file: ReadableFile,
+  input: {
+    readonly jobId: string;
+    readonly langCode: string;
+    readonly selection?: readonly DictionaryComponent[];
+    readonly signature: string;
+    readonly decision?: DuplicateDecision;
+    readonly onUploadProgress?: (sent: number, total: number) => void;
+  },
+): Promise<{ jobId: string } | undefined> {
+  if (
+    !(file instanceof File) ||
+    typeof location === 'undefined' ||
+    location.protocol !== 'chrome-extension:' ||
+    typeof BroadcastChannel !== 'function'
+  ) {
+    return undefined;
+  }
+  const duplicateDecision = input.decision === 'replace' ? ('replace' as const) : undefined;
+  try {
+    const res = await request<{ direct?: boolean; jobId?: string }>(
+      MESSAGE_TYPES.RESOURCE_IMPORT_BEGIN,
+      {
+        jobId: input.jobId,
+        fileName: file.name,
+        langCode: input.langCode,
+        signature: input.signature,
+        duplicateDecision,
+      },
+    );
+    if (res.direct !== true) return undefined;
+    const jobId = res.jobId ?? input.jobId;
+    const port = openImportChannel();
+    try {
+      port.postMessage({
+        type: 'import-run',
+        jobId,
+        file,
+        langCode: input.langCode,
+        components: input.selection,
+        signature: input.signature,
+        duplicateDecision,
+      });
+    } finally {
+      port.close();
+    }
+    input.onUploadProgress?.(1, 1);
+    return { jobId };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Upload a resource file into a background-owned import job.
  *
  * Duplicate detection runs client-side first (signature → RESOURCE_LIST) so
@@ -215,36 +287,62 @@ export async function importResourceFile(
   // unavailable in the jsdom test env).
   const jobId = providedJobId ?? `imp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
+  const direct = await tryDirectImport(file, {
+    jobId,
+    langCode,
+    selection: getComponents?.() ?? components,
+    signature,
+    decision,
+    onUploadProgress,
+  });
+  if (direct !== undefined) {
+    notifyResourcesChanged(langCode);
+    return direct;
+  }
+
   const gzipped = await gzipUpload(file).catch(() => undefined);
   const total = Math.max(1, Math.ceil((gzipped?.length ?? file.size) / IMPORT_CHUNK_BYTES));
-  for (let seq = 0; seq < total; seq++) {
-    const last = seq === total - 1;
-    const start = seq * IMPORT_CHUNK_BYTES;
-    const data = gzipped !== undefined
-      ? bytesToBase64(gzipped.subarray(start, start + IMPORT_CHUNK_BYTES))
-      : bytesToBase64(new Uint8Array(await file.slice(start, start + IMPORT_CHUNK_BYTES).arrayBuffer()));
-    const selection = getComponents?.() ?? components;
-    const res = await request<{ received?: number; jobId?: string }>(
-      MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
-      {
-        jobId,
-        seq,
-        total,
-        data,
-        encoding: gzipped !== undefined ? 'gzip' : undefined,
-        fileName: file.name,
-        fileMime: (file as File).type ?? '',
-        langCode,
-        components: selection ? [...selection] : undefined,
-        signature,
-        duplicateDecision: decision === 'replace' ? 'replace' : undefined,
-      },
-    );
-    onUploadProgress?.(seq + 1, total);
-    if (last) {
-      notifyResourcesChanged(langCode);
-      return { jobId: res.jobId ?? jobId };
+  let nextSeq = 0;
+  let completed = 0;
+  let uploadError: unknown;
+  let registryJobId: string | undefined;
+  const workers = Array.from({ length: Math.min(IMPORT_UPLOAD_WINDOW, total) }, async () => {
+    while (uploadError === undefined) {
+      const seq = nextSeq;
+      nextSeq += 1;
+      if (seq >= total) return;
+      const start = seq * IMPORT_CHUNK_BYTES;
+      const data = gzipped !== undefined
+        ? bytesToBase64(gzipped.subarray(start, start + IMPORT_CHUNK_BYTES))
+        : bytesToBase64(new Uint8Array(await file.slice(start, start + IMPORT_CHUNK_BYTES).arrayBuffer()));
+      const selection = getComponents?.() ?? components;
+      try {
+        const res = await request<{ received?: number; jobId?: string }>(
+          MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
+          {
+            jobId,
+            seq,
+            total,
+            data,
+            encoding: gzipped !== undefined ? 'gzip' : undefined,
+            fileName: file.name,
+            fileMime: (file as File).type ?? '',
+            langCode,
+            components: selection ? [...selection] : undefined,
+            signature,
+            duplicateDecision: decision === 'replace' ? 'replace' : undefined,
+          },
+        );
+        completed += 1;
+        onUploadProgress?.(completed, total);
+        if (typeof res.jobId === 'string') registryJobId = res.jobId;
+      } catch (err) {
+        uploadError ??= err;
+      }
     }
-  }
-  throw new Error(t('resources.error.uploadEnded'));
+  });
+  await Promise.all(workers);
+  if (uploadError !== undefined) throw uploadError;
+  notifyResourcesChanged(langCode);
+  return { jobId: registryJobId ?? jobId };
 }

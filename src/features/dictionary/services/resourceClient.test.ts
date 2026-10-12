@@ -175,3 +175,52 @@ test('import falls back to plain chunks when the file cannot stream', async () =
   expect(chunks[0]!.encoding).toBeUndefined();
   expect(joinedBytes(chunks).toString('utf8')).toBe('{"word":"serendipity"}');
 });
+
+test('import uploads chunks with an in-flight window and collects jobId from any response', async () => {
+  g.CompressionStream = undefined;
+  const chunks: SentChunk[] = [];
+  const pendingResolvers: ((res: MessageResponse) => void)[] = [];
+  g.__cellSendMessage = (m) => {
+    if (m.type === MESSAGE_TYPES.RESOURCE_LIST) {
+      return Promise.resolve({ success: true, data: { resources: [] } });
+    }
+    if (m.type === MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK) {
+      chunks.push(m.payload as unknown as SentChunk);
+      return new Promise<MessageResponse>((resolve) => {
+        pendingResolvers.push(resolve);
+      });
+    }
+    return Promise.resolve({ success: true, data: {} });
+  };
+  const bytes = new TextEncoder().encode('x');
+  const file = {
+    size: 14 * 1024 * 1024,
+    name: 'dict.json',
+    type: 'application/json',
+    slice: (start: number, end: number) => ({
+      arrayBuffer: async () => bytes.slice(start, Math.min(end, bytes.length)).buffer as ArrayBuffer,
+    }),
+  };
+  const waitFor = async (cond: () => boolean) => {
+    for (let i = 0; i < 100 && !cond(); i += 1) await new Promise((r) => setTimeout(r, 0));
+    expect(cond()).toBe(true);
+  };
+
+  const promise = importResourceFile(file, { langCode: 'en' });
+  await waitFor(() => pendingResolvers.length === 4);
+  await new Promise((r) => setTimeout(r, 10));
+  expect(chunks.map((c) => c.seq)).toEqual([0, 1, 2, 3]);
+
+  pendingResolvers.shift()!({ success: true, data: { received: 1 } });
+  await waitFor(() => chunks.length === 5 && pendingResolvers.length === 4);
+  expect(chunks[4]!.seq).toBe(4);
+
+  pendingResolvers.shift()!({ success: true, data: { jobId: 'bg-job-1' } });
+  for (let i = 0; i < 10 && pendingResolvers.length > 0; i += 1) {
+    for (const resolve of pendingResolvers.splice(0)) {
+      resolve({ success: true, data: { received: 1 } });
+    }
+    await new Promise((r) => setTimeout(r, 0));
+  }
+  await expect(promise).resolves.toEqual({ jobId: 'bg-job-1' });
+});

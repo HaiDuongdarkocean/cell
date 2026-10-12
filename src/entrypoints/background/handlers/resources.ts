@@ -7,9 +7,11 @@
  * proxied here so the extension origin remains the single source of truth.
  *
  * Long-running work (import, cascade delete) is owned by the JobRegistry:
- * the panel uploads base64 chunks into a background-owned job, the registry
- * detaches execution from the sender, and progress/state are observable via
- * JOB_LIST + JOB_EVENT from any surface.
+ * the panel uploads base64 chunks (or, from extension-origin surfaces, a
+ * RESOURCE_IMPORT_BEGIN + direct `import-run` handoff where the sender posts
+ * the File to the offscreen runner itself) into a background-owned job, the
+ * registry detaches execution from the sender, and progress/state are
+ * observable via JOB_LIST + JOB_EVENT from any surface.
  */
 import type { z } from 'zod';
 import { Gunzip } from 'fflate';
@@ -33,6 +35,7 @@ import {
   ResourceSamplePayloadSchema,
   ResourceFindPayloadSchema,
   ResourceImportChunkPayloadSchema,
+  ResourceImportBeginPayloadSchema,
 } from '@/features/dictionary/schema';
 import {
   getAllResources,
@@ -53,9 +56,10 @@ import {
   findFrequencyByResource,
 } from '@/features/dictionary/repositories/resourceEntryRepository';
 import { collectEntryComponents, sortedComponents } from '@/features/dictionary/logic/dictionaryComponents';
-import type { DictionaryComponent, DuplicateDecision } from '@/entities/dictionary';
+import type { DictionaryComponent, DuplicateDecision, ImportResult } from '@/entities/dictionary';
 import { deleteResourceCascade, rollbackImport } from '@/features/dictionary/logic/importOrchestrator';
-import { executeResourceImport } from '@/entrypoints/background/importDispatch';
+import { awaitImportRunEvents, executeResourceImport } from '@/entrypoints/background/importDispatch';
+import { openImportChannel } from '@/features/dictionary/logic/importChannel';
 import { clearDictionaryProbeCache } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
 
 const UPLOAD_STALL_MS = 30 * 1000;
@@ -94,8 +98,40 @@ interface QueuedImportPayload extends ImportChunkMeta {
   readonly file: File;
 }
 
+/** Direct handoff (RESOURCE_IMPORT_BEGIN): the extension-page sender posts
+ *  `import-run` carrying the File itself; the SW holds only the listen-side
+ *  promise created before the begin reply went out. */
+interface DirectImportPayload {
+  readonly run: Promise<ImportResult>;
+}
+
 const pendingImports = new Map<string, PendingImport>();
-const importPayloads = new Map<string, QueuedImportPayload>();
+const importPayloads = new Map<string, QueuedImportPayload | DirectImportPayload>();
+
+interface ImportJobFields {
+  readonly jobId: string;
+  readonly fileName: string;
+  readonly langCode: string;
+  readonly signature?: string;
+  readonly duplicateDecision?: DuplicateDecision;
+}
+
+function registerImportJob(registry: JobRegistry, p: ImportJobFields, status: 'queued' | 'uploading'): Job {
+  return registry.register({
+    id: p.jobId,
+    kind: 'resource-import',
+    label: p.fileName,
+    status,
+    params: {
+      jobId: p.jobId,
+      signature: p.signature ?? p.jobId,
+      langCode: p.langCode,
+      fileName: p.fileName,
+      duplicateDecision: p.duplicateDecision ?? null,
+    },
+    retryable: false,
+  });
+}
 
 function fail<T>(label: string, parsed: { success: false; error: z.ZodError }): MessageResponse<T> {
   return { success: false, error: `Invalid ${label} payload: ${parsed.error.message}` };
@@ -148,7 +184,9 @@ async function runImport(ctx: BackgroundContext, registry: JobRegistry, job: Job
   if (!payload) {
     throw new Error(t('jobs.interrupted.reimport'));
   }
-  const result = await executeResourceImport(ctx.offscreenManager, registry, job, payload);
+  const result = 'run' in payload
+    ? await payload.run
+    : await executeResourceImport(ctx.offscreenManager, registry, job, payload);
   clearDictionaryProbeCache();
   registry.markDone(job.id, {
     resourceId: result.resourceId,
@@ -368,20 +406,7 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
         return toError(new Error(t('resources.error.uploadRejected')));
       }
       try {
-        registry.register({
-          id: p.jobId,
-          kind: 'resource-import',
-          label: p.fileName,
-          status: 'uploading',
-          params: {
-            jobId: p.jobId,
-            signature: p.signature ?? p.jobId,
-            langCode: p.langCode,
-            fileName: p.fileName,
-            duplicateDecision: p.duplicateDecision ?? null,
-          },
-          retryable: false,
-        });
+        registerImportJob(registry, p, 'uploading');
       } catch (err) {
         if (err instanceof JobDuplicateError) {
           return toError(new Error(t('resources.error.importInProgress')));
@@ -469,6 +494,44 @@ export function registerResourceHandlers(ctx: BackgroundContext): void {
       const job = registry.update(p.jobId, { status: 'queued' }, { persistNow: true });
       if (job) registry.startIfSlotFree(job);
       return ok({ jobId: p.jobId });
+    } catch (err) {
+      return toError(err);
+    }
+  });
+
+  // Direct handoff: extension-origin senders (popup) skip byte transport —
+  // begin registers the job and attaches the channel listener BEFORE the
+  // reply, then the sender posts `import-run` carrying the File straight to
+  // the offscreen runner on BroadcastChannel('cell-import'). Any failure
+  // here is answered before registration so the sender can fall back to
+  // RESOURCE_IMPORT_CHUNK with the same jobId.
+  ctx.on(MESSAGE_TYPES.RESOURCE_IMPORT_BEGIN, async (request): Promise<MessageResponse<{ direct?: boolean; jobId?: string }>> => {
+    await whenJobsReady();
+    const parsed = ResourceImportBeginPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) return fail('RESOURCE_IMPORT_BEGIN', parsed);
+    const p = parsed.data;
+
+    try {
+      if (registry.get(p.jobId)) {
+        return toError(new Error(t('resources.error.uploadRejected')));
+      }
+      await ctx.offscreenManager.ensureOffscreenReady();
+      const port = openImportChannel();
+      let job: Job;
+      try {
+        job = registerImportJob(registry, p, 'queued');
+      } catch (err) {
+        port.close();
+        if (err instanceof JobDuplicateError) {
+          return toError(new Error(t('resources.error.importInProgress')));
+        }
+        throw err;
+      }
+      const run = awaitImportRunEvents(ctx.offscreenManager, registry, job, p.langCode, port);
+      void run.catch(() => undefined);
+      importPayloads.set(p.jobId, { run });
+      registry.startIfSlotFree(job);
+      return ok({ direct: true, jobId: p.jobId });
     } catch (err) {
       return toError(err);
     }

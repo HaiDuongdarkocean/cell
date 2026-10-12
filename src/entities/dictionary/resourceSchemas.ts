@@ -93,3 +93,17 @@ export const ResourceImportChunkPayloadSchema = z.object({
   /** Injected by the message bus for content-script senders. */
   tabId: z.number().int().optional(),
 });
+
+/** Direct File handoff — extension-origin senders carry the File themselves
+ *  over BroadcastChannel('cell-import'), so begin only registers the job. */
+export const ResourceImportBeginPayloadSchema = z.object({
+  jobId: z.string().min(1),
+  fileName: z.string().min(1),
+  langCode: LangCode,
+  /** Pre-resolved by the caller after its own signature check. */
+  duplicateDecision: z.enum(['skip', 'replace']).optional(),
+  /** Content signature computed by the caller — drives job dedup. */
+  signature: z.string().optional(),
+  /** Injected by the message bus for content-script senders. */
+  tabId: z.number().int().optional(),
+});

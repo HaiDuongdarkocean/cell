@@ -1,6 +1,7 @@
 import { gzipSync } from 'fflate';
 import { registerResourceHandlers } from '@/entrypoints/background/handlers/resources';
 import { importFile } from '@/features/dictionary/logic/importOrchestrator';
+import { JobDuplicateError } from '@/features/jobs/logic/jobRegistry';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { clearDictionaryProbeCache } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
 import type { BackgroundContext } from '@/entrypoints/background/context';
@@ -41,10 +42,54 @@ jest.mock('@/features/dictionary/logic/importOrchestrator', () => ({
   rollbackImport: jest.fn(),
 }));
 
+interface MockPort {
+  handler?: (message: unknown) => void;
+  posted: unknown[];
+  closed: boolean;
+  postMessage: (message: unknown) => void;
+  listen: (handler: (message: unknown) => void) => void;
+  close: () => void;
+}
+const mockPorts: MockPort[] = [];
+jest.mock('@/features/dictionary/logic/importChannel', () => {
+  const actual = jest.requireActual<typeof import('@/features/dictionary/logic/importChannel')>(
+    '@/features/dictionary/logic/importChannel',
+  );
+  return {
+    ...actual,
+    openImportChannel: () => {
+      const port: MockPort = {
+        posted: [],
+        closed: false,
+        postMessage: (m) => {
+          port.posted.push(m);
+        },
+        listen: (h) => {
+          port.handler = h;
+        },
+        close: () => {
+          port.closed = true;
+        },
+      };
+      mockPorts.push(port);
+      return port;
+    },
+  };
+});
+
 const mockRegistry = {
   jobs: new Map<string, Record<string, unknown>>(),
   executors: new Map<string, { start: (job: never) => Promise<void>; reconcile: unknown }>(),
-  register(job: Record<string, unknown> & { id: string }) {
+  register(job: Record<string, unknown> & { id: string; kind: string; params: Record<string, unknown>; status: string }) {
+    const key = String(job.params.signature ?? job.params.jobId ?? '');
+    const dup = [...this.jobs.values()].find((j) => {
+      const p = (j.params ?? {}) as Record<string, unknown>;
+      return j.kind === job.kind
+        && String(p.signature ?? p.jobId ?? '') === key
+        && j.id !== job.id
+        && ['queued', 'uploading', 'running'].includes(String(j.status));
+    });
+    if (dup) throw new JobDuplicateError(key);
     this.jobs.set(job.id, { ...job });
     return this.jobs.get(job.id);
   },
@@ -52,6 +97,7 @@ const mockRegistry = {
     return this.jobs.get(id);
   },
   setProgress: jest.fn(),
+  setResourceId: jest.fn(),
   update(id: string, patch: Record<string, unknown>) {
     const job = this.jobs.get(id);
     if (job) Object.assign(job, patch);
@@ -94,12 +140,18 @@ function readFileBytes(file: File): Promise<Buffer> {
   });
 }
 
+const mockOffscreen = {
+  ensureOffscreenReady: jest.fn(async () => undefined),
+  sendToOffscreen: jest.fn(async () => ({ success: true })),
+};
+
 function makeContext() {
   const handlers = new Map<string, Handler>();
   const ctx = {
     on: jest.fn((type: string, fn: Handler) => {
       handlers.set(type, fn);
     }),
+    offscreenManager: mockOffscreen,
   } as unknown as BackgroundContext;
   registerResourceHandlers(ctx);
   return handlers;
@@ -346,5 +398,79 @@ describe('resource import chunks — gzip transport', () => {
     expect(job?.status).toBe('failed');
     expect(job?.error).toBe('invalid-gzip-payload');
     expect(mockedImportFile).not.toHaveBeenCalled();
+  });
+});
+
+describe('resource import begin — direct File handoff', () => {
+  beforeEach(() => {
+    mockRegistry.jobs.clear();
+    mockPorts.length = 0;
+    mockOffscreen.ensureOffscreenReady.mockClear().mockResolvedValue(undefined);
+    (mockRegistry.markDone as jest.Mock).mockClear();
+    mockedImportFile.mockClear();
+  });
+
+  const begin = (jobId: string, extra: Record<string, unknown> = {}) => ({
+    type: MESSAGE_TYPES.RESOURCE_IMPORT_BEGIN,
+    payload: { jobId, fileName: 'list.txt', langCode: 'en', ...extra },
+  } as MessageRequest);
+
+  it('registers the job, attaches the listener before replying, and marks done on import-done', async () => {
+    const handlers = makeContext();
+    const res = await handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_BEGIN)!(begin('job-d1', { signature: 'sig-d1' }));
+    expect(res).toMatchObject({ success: true, data: { direct: true, jobId: 'job-d1' } });
+    const job = mockRegistry.jobs.get('job-d1');
+    expect(job?.status).toBe('queued');
+    expect((job?.params as Record<string, unknown>).signature).toBe('sig-d1');
+    const port = mockPorts[0]!;
+    expect(port.handler).toBeDefined();
+    expect(port.posted).toHaveLength(0);
+
+    port.handler!({ type: 'import-accepted', jobId: 'job-d1' });
+    port.handler!({ type: 'import-resource', jobId: 'job-d1', resourceId: 9 });
+    port.handler!({ type: 'import-done', jobId: 'job-d1', result: { resourceId: 9, wordCount: 5, format: 'txt' } });
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mockRegistry.markDone).toHaveBeenCalledWith('job-d1', {
+      resourceId: 9,
+      wordCount: 5,
+      format: 'txt',
+      skippedAsDuplicate: false,
+    });
+    expect(port.closed).toBe(true);
+    expect(mockedImportFile).not.toHaveBeenCalled();
+  });
+
+  it('errors without registering when the offscreen document is unavailable, so chunk fallback reuses the jobId', async () => {
+    mockOffscreen.ensureOffscreenReady.mockRejectedValueOnce(new Error('no offscreen'));
+    const handlers = makeContext();
+    const res = await handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_BEGIN)!(begin('job-f1'));
+    expect(res.success).toBe(false);
+    expect(mockRegistry.jobs.has('job-f1')).toBe(false);
+
+    const whole = Buffer.from('fallback-bytes').toString('base64');
+    const chunkRes = await handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK)!({
+      type: MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK,
+      payload: {
+        jobId: 'job-f1', seq: 0, total: 1, data: whole,
+        fileName: 'list.txt', fileMime: 'text/plain', langCode: 'en',
+      },
+    } as MessageRequest);
+    expect(chunkRes).toMatchObject({ success: true, data: { jobId: 'job-f1' } });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mockedImportFile).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a second begin while a same-signature import is active', async () => {
+    const handlers = makeContext();
+    const send = handlers.get(MESSAGE_TYPES.RESOURCE_IMPORT_BEGIN)!;
+    const first = await send(begin('job-a', { signature: 'sig-x' }));
+    expect(first.success).toBe(true);
+    const second = await send(begin('job-b', { signature: 'sig-x' }));
+    expect(second.success).toBe(false);
+    expect((second as { error?: string }).error).toContain('importInProgress');
+    expect(mockRegistry.jobs.has('job-b')).toBe(false);
   });
 });
