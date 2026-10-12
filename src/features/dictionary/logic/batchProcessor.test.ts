@@ -1,3 +1,4 @@
+import 'fake-indexeddb/auto';
 import { BatchProcessor, BATCH_SIZE } from '@/features/dictionary/logic/batchProcessor';
 
 describe('batchProcessor', () => {
@@ -79,17 +80,48 @@ describe('batchProcessor', () => {
       .mockImplementationOnce(() => new Promise<void>((r) => { resolveFirst = r; }))
       .mockResolvedValue(undefined);
     const bp = new BatchProcessor<number>(flush);
-    const adds: Promise<void>[] = [];
-    for (let i = 0; i < BATCH_SIZE * 2; i++) adds.push(bp.add(i));
-    await Promise.resolve();
-    expect(flush).toHaveBeenCalledTimes(2);
+    for (let i = 0; i < BATCH_SIZE; i++) await bp.add(i);
+    expect(flush).toHaveBeenCalledTimes(1);
     expect(flush.mock.calls[0]![0]).toHaveLength(BATCH_SIZE);
-    expect(flush.mock.calls[1]![0]).toHaveLength(BATCH_SIZE);
-    expect(bp.pending).toBe(0);
+    const tail: Promise<void>[] = [];
+    for (let i = 0; i < BATCH_SIZE; i++) tail.push(bp.add(i));
+    await Promise.resolve();
+    expect(bp.pending).toBe(BATCH_SIZE);
+    expect(flush).toHaveBeenCalledTimes(1);
     resolveFirst!();
-    await Promise.all(adds);
+    await Promise.all(tail);
+    expect(flush).toHaveBeenCalledTimes(2);
+    expect(flush.mock.calls[1]![0]).toHaveLength(BATCH_SIZE);
     await bp.flush();
     expect(bp.count).toBe(BATCH_SIZE * 2);
+  });
+
+  it('creates the next write transaction only after the in-flight write commits', async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('batch-processor-ordering', 1);
+      request.onupgradeneeded = () => { request.result.createObjectStore('entries'); };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const events: string[] = [];
+    let batchNo = 0;
+    const flush = (batch: ReadonlyArray<number>): Promise<void> => {
+      const n = ++batchNo;
+      return new Promise<void>((resolve, reject) => {
+        const tx = db.transaction('entries', 'readwrite');
+        events.push(`tx-create-${n}`);
+        tx.objectStore('entries').put(batch.length, `batch-${n}`);
+        tx.oncomplete = () => { events.push(`tx-complete-${n}`); resolve(); };
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+      });
+    };
+    const bp = new BatchProcessor<number>(flush);
+    for (let i = 0; i < BATCH_SIZE * 2; i++) await bp.add(i);
+    await bp.flush();
+    db.close();
+    expect(events.indexOf('tx-complete-1')).toBeGreaterThan(-1);
+    expect(events.indexOf('tx-create-2')).toBeGreaterThan(events.indexOf('tx-complete-1'));
   });
 
   it('propagates a rejected in-flight flush on the next add and on flush', async () => {
@@ -98,9 +130,10 @@ describe('batchProcessor', () => {
       .mockRejectedValueOnce(new Error('IDB full'))
       .mockResolvedValue(undefined);
     const bp = new BatchProcessor<number>(flush);
-    const adds: Promise<void>[] = [];
-    for (let i = 0; i < BATCH_SIZE * 2; i++) adds.push(bp.add(i));
-    await expect(Promise.all(adds)).rejects.toThrow('IDB full');
+    const run = async (): Promise<void> => {
+      for (let i = 0; i < BATCH_SIZE * 2; i++) await bp.add(i);
+    };
+    await expect(run()).rejects.toThrow('IDB full');
     await expect(bp.flush()).rejects.toThrow('IDB full');
   });
 });

@@ -10,7 +10,7 @@
 // {definitions, frequency}; the user's component subset can drop a family.
 
 import { BaseImportStrategy, type RawFrequencyEntry, type RawDictionaryEntry, type StrategyOptions } from './baseImportStrategy';
-import { unzipAll, decodeText } from '../logic/fileDetector';
+import { unzipAll, isImportZipEntry, decodeText } from '../logic/fileDetector';
 import { yieldToEventLoop } from '../logic/yieldToEventLoop';
 import { toCanonicalDefinition } from '../logic/normalize/canonical';
 import { collectEntryComponents } from '../logic/dictionaryComponents';
@@ -63,7 +63,7 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
       files = this.zipFiles;
     } else {
       try {
-        files = unzipAll(this.data);
+        files = unzipAll(this.data, isImportZipEntry);
       } catch (e) {
         throw new CorruptedFileError('Failed to unzip term-bank file.', e);
       }
@@ -113,6 +113,7 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
       } catch (e) {
         throw new ParseError(`term-bank format: invalid ${bankPath}.`, e);
       }
+      delete files[bankPath];
       if (!Array.isArray(entries)) {
         throw new ParseError(`term-bank format: ${bankPath} is not an array.`);
       }
@@ -144,6 +145,7 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
       } catch (e) {
         throw new ParseError(`term-bank format: invalid ${bankPath}.`, e);
       }
+      delete files[bankPath];
       if (!Array.isArray(entries)) {
         throw new ParseError(`term-bank format: ${bankPath} is not an array.`);
       }

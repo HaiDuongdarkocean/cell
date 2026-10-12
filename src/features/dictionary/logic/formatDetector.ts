@@ -15,6 +15,7 @@ import {
   isSqlite,
   gunzipFile,
   unzipAll,
+  isImportZipEntry,
   decodeText,
   getExtension,
   stripExtension,
@@ -45,7 +46,7 @@ export async function detectFormat(name: string, head: Uint8Array): Promise<Impo
   // 2. zip → sniff content
   if (isZip(head)) {
     try {
-      const files = unzipAll(head);
+      const files = unzipAll(head, isImportZipEntry);
       const sniffed = sniffZipFormat(files);
       if (sniffed) return sniffed;
     } catch (e) {
@@ -101,7 +102,7 @@ export function componentsForFormat(format: ImportFormat, bytes: Uint8Array): re
     case 'term-bank': {
       let files: Record<string, Uint8Array>;
       try {
-        files = unzipAll(isGzip(bytes) ? gunzipFile(bytes) : bytes);
+        files = unzipAll(isGzip(bytes) ? gunzipFile(bytes) : bytes, isImportZipEntry);
       } catch {
         return ['definitions'];
       }
