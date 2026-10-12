@@ -60,6 +60,7 @@ export async function bulkInsertDictionaryEntries(
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
+    tx.commit();
   });
 }
 
@@ -78,6 +79,7 @@ export async function bulkInsertFrequencyEntries(
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
+    tx.commit();
   });
 }
 

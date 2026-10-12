@@ -3,7 +3,7 @@
 // fflate cho cả gzip + zip (1 lib ~30KB, fewer code paths). Pure functions,
 // content-script-safe (no DOM). 500MB boundary reject before parse.
 
-import { gunzipSync, unzipSync, strFromU8 } from 'fflate';
+import { gunzipSync, unzipSync } from 'fflate';
 import type { ImportFormat } from '@/entities/dictionary';
 import { formatBytes } from '@/shared/lib/formatBytes';
 
@@ -105,9 +105,11 @@ export function extractZipFile(compressed: Uint8Array, path: string): Uint8Array
   return file;
 }
 
+const UTF8_DECODER = new TextDecoder();
+
 /** Decode Uint8Array to string (UTF-8). */
 export function decodeText(data: Uint8Array): string {
-  return strFromU8(data);
+  return UTF8_DECODER.decode(data);
 }
 
 /** True when bytes decode to non-empty text that is NOT JSON — catches
