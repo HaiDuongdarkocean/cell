@@ -219,6 +219,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
         const vp = resolveViewport(viewport);
         if (vp.width === 0 || vp.height === 0) return;
         const prevVp = prevViewportRef.current;
+        if (vp.width === prevVp.width && vp.height === prevVp.height) return;
         prevViewportRef.current = vp;
         const currentCenter = centerRef.current;
         const currentDrag = dragCenterRef.current;

@@ -22,10 +22,11 @@ export async function createBookScoreTracker(
     }
   }
   if (isCancelled()) return null;
-  const statuses = await fetchTermStatuses(
-    lang,
-    tokens.filter(isScorableToken).map((t) => t.term),
-  );
+  const terms = new Set<string>();
+  for (const token of tokens) {
+    if (isScorableToken(token)) terms.add(token.term);
+  }
+  const statuses = await fetchTermStatuses(lang, terms);
   if (isCancelled() || statuses.size === 0) return null;
   return createScoreTracker(tokens, statuses, lang);
 }

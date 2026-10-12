@@ -88,4 +88,44 @@ describe('mergeCuesForPanel', () => {
     expect(result).toHaveLength(1);
     expect(result[0]?.nativeText.length).toBeGreaterThan(0);
   });
+
+  it('breaks overlap ties by picking the first native cue in list order', () => {
+    const target = [cue(1, 500, 1500, 'Hi')];
+    const native = [cue(1, 0, 600, 'A'), cue(2, 400, 1000, 'B')];
+    const result = mergeCuesForPanel(target, native);
+    expect(result[0]?.nativeText).toBe('A');
+  });
+
+  it('slides the candidate window across sorted target cues', () => {
+    const target = [
+      cue(1, 100, 500, 'A'),
+      cue(2, 800, 1200, 'B'),
+      cue(3, 2000, 2400, 'C'),
+    ];
+    const native = [
+      cue(1, 50, 600, '甲'),
+      cue(2, 700, 1500, '乙'),
+      cue(3, 900, 1100, '丙'),
+    ];
+    const result = mergeCuesForPanel(target, native);
+    expect(result.map((r) => r.nativeText)).toEqual(['甲', '乙', '']);
+  });
+
+  it('still resolves the overlap when native cues are unsorted', () => {
+    const target = [cue(1, 500, 900, 'A')];
+    const native = [
+      cue(1, 2000, 3000, 'late'),
+      cue(2, 400, 700, 'hit'),
+      cue(3, 0, 100, 'early'),
+    ];
+    const result = mergeCuesForPanel(target, native);
+    expect(result[0]?.nativeText).toBe('hit');
+  });
+
+  it('preserves target order and per-cue matches when target cues are unsorted', () => {
+    const target = [cue(1, 2000, 2400, 'late'), cue(2, 100, 500, 'early')];
+    const native = [cue(1, 0, 600, 'first'), cue(2, 1900, 2500, 'second')];
+    const result = mergeCuesForPanel(target, native);
+    expect(result.map((r) => r.nativeText)).toEqual(['second', 'first']);
+  });
 });

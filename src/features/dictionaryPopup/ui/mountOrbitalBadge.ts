@@ -90,18 +90,15 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
     );
   };
 
-  // First mount without ShadowThemeProvider so we can pass the inner container
-  // after mountReactShadow returns it. We re-render with the provider immediately.
   const mount = mountReactShadow(badgeElement(initialPreset), {
     parent: document.body,
     position: 'fixed',
     css: allModuleCss,
+    provider: ShadowThemeProvider,
   });
 
   mount.host.classList.add('js-cell-orbital-badge-host');
   mount.host.style.zIndex = BADGE_Z_INDEX;
-
-  renderBadge(initialPreset);
 
   const isInsidePanel = (e: PointerEvent): boolean => {
     const hosts = panelController?.getHosts();

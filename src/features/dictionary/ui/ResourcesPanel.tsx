@@ -425,11 +425,9 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
 
   // Registry-owned jobs for this language — imports the panel handed off and
   // deletes it queued, plus anything started by another surface.
-  const allJobs = useJobs();
+  const allJobs = useJobs(['resource-import', 'resource-delete']);
   const registryJobs = useMemo(
-    () => allJobs.filter(
-      (j) => (j.kind === 'resource-import' || j.kind === 'resource-delete') && j.params.langCode === langCode,
-    ),
+    () => allJobs.filter((j) => j.params.langCode === langCode),
     [allJobs, langCode],
   );
   const deleteBusy = useMemo(

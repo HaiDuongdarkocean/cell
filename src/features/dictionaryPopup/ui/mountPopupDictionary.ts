@@ -206,12 +206,9 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
       position: 'fixed',
       css: allModuleCss,
       reparentOnFullscreen: true,
+      provider: ShadowThemeProvider,
     },
   );
-
-  // Re-render after mount with the actual container so ShadowThemeProvider can set
-  // the theme boundary.
-  render();
 
   mount.host.classList.add('js-cell-popup-host');
   mount.host.style.zIndex = POPUP_Z_INDEX;

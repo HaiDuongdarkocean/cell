@@ -85,6 +85,23 @@ export interface SubtitleCueEngineRepeatState {
   active: boolean;
 }
 
+function cuesEqual(a: readonly SrtCue[], b: readonly SrtCue[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (!x || !y) return false;
+    if (
+      x.index !== y.index
+      || x.start !== y.start
+      || x.end !== y.end
+      || x.text !== y.text
+      || x.rawText !== y.rawText
+    ) return false;
+  }
+  return true;
+}
+
 /**
  * Logic-only subtitle cue engine.
  *
@@ -243,13 +260,27 @@ export class SubtitleCueEngine {
   }
 
   loadBilingualCues(targetCues: SrtCue[], nativeCues: SrtCue[]): void {
-    if (targetCues.length > 0) this.targetCues = [...targetCues];
-    if (nativeCues.length > 0) this.nativeCues = [...nativeCues];
+    const prevTarget = this.targetCues;
+    const prevNative = this.nativeCues;
+    const prevBilingual = this.bilingual;
+    if (targetCues.length > 0 && !cuesEqual(this.targetCues, targetCues)) {
+      this.targetCues = [...targetCues];
+    }
+    if (nativeCues.length > 0 && !cuesEqual(this.nativeCues, nativeCues)) {
+      this.nativeCues = [...nativeCues];
+    }
     if (targetCues.length === 0 && nativeCues.length === 0) {
       this.targetCues = [];
       this.nativeCues = [];
     }
     this.bilingual = this.targetCues.length > 0 || this.nativeCues.length > 0;
+    if (
+      this.targetCues === prevTarget
+      && this.nativeCues === prevNative
+      && this.bilingual === prevBilingual
+    ) {
+      return;
+    }
     this.lastTargetIndex = -1;
     this.lastNativeIndex = -1;
     this.emitCuesUpdated();

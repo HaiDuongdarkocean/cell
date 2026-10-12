@@ -1,4 +1,4 @@
-import { type ReactElement } from 'react';
+import { createElement, type ComponentType, type ReactElement, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { injectShadowCss } from './injectShadowCss';
 
@@ -31,6 +31,7 @@ export interface MountShadowOptions {
    * sheets still render above it. Has no effect without `reparentOnFullscreen`.
    */
   chromeLayer?: boolean;
+  provider?: ComponentType<{ container: HTMLElement; children?: ReactNode }>;
 }
 
 export interface ShadowMount {
@@ -75,7 +76,11 @@ export function mountReactShadow(
   parent.appendChild(host);
 
   const root = createRoot(rootEl);
-  root.render(component);
+  root.render(
+    options.provider
+      ? createElement(options.provider, { container: rootEl }, component)
+      : component,
+  );
 
   const removeKeyboardTrap = attachKeyboardTrap(shadow);
 

@@ -1,8 +1,28 @@
-import { createElement } from 'react';
+import { createElement, type ReactNode } from 'react';
 import { act } from '@testing-library/react';
 import { mountReactShadow } from './mountReactShadow';
 
 describe('mountReactShadow', () => {
+  it('wraps the component in the given provider with the inner container', async () => {
+    let received: HTMLElement | null = null;
+    const Provider = ({ container, children }: { container: HTMLElement; children?: ReactNode }) => {
+      received = container;
+      return createElement('div', { 'data-cell-id': 'provider-wrap' }, children);
+    };
+    const Component = () => createElement('span', { 'data-cell-id': 'inner' });
+    const { shadow, rootEl, unmount } = mountReactShadow(createElement(Component), {
+      provider: Provider,
+    });
+
+    await act(async () => {});
+
+    expect(received).toBe(rootEl);
+    const wrap = shadow.querySelector('[data-cell-id="provider-wrap"]');
+    expect(wrap?.querySelector('[data-cell-id="inner"]')).not.toBeNull();
+
+    await act(async () => unmount());
+  });
+
   it('creates a shadow root, renders the component, and unmounts cleanly', async () => {
     const Component = () => createElement('button', { type: 'button' }, 'Click');
     const { host, shadow, unmount } = mountReactShadow(createElement(Component), {

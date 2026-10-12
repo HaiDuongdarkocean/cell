@@ -83,5 +83,5 @@ export function getFirstVideo(): HTMLVideoElement | null {
 
 /** True if the given video is still present in the document or a shadow root. */
 export function hasVideo(video: HTMLVideoElement): boolean {
-  return collectVideos().includes(video);
+  return video.isConnected;
 }
