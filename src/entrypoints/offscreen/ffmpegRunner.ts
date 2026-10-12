@@ -25,6 +25,8 @@ import { sendMessage, registerOffscreenListener, unregisterOffscreenListener } f
 import { messagePayload } from '@/entities/message/payload';
 import { ocrMessageListener } from './ocrRunner';
 import { condensedAudioMessageListener } from './condensedAudioRunner';
+// Static: importRunner must join its channel before the ping listener answers.
+import './importRunner';
 import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
 import { encodeBase64 } from '@/shared/lib/base64';
 import type {

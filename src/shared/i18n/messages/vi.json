@@ -679,6 +679,7 @@
   "jobs.error.interrupted-restart": "Đã dừng khi tiến trình nền của extension khởi động lại.",
   "jobs.error.interrupted-upload-stall": "Tải lên bị đứng — không nhận được dữ liệu file trong 30 giây.",
   "jobs.error.interrupted-upload-ttl": "Tải lên hết hạn trước khi nhận đủ dữ liệu file.",
+  "jobs.error.interrupted-offscreen": "Tiến trình nạp nền đã dừng — hãy nạp lại file.",
   "resources.card.drag": "Kéo để đổi thứ tự, nhấn để mở tùy chọn $1",
   "resources.card.select": "Chọn $1",
   "resources.card.rename": "Đổi tên $1",

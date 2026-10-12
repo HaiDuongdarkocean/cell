@@ -679,6 +679,7 @@
   "jobs.error.interrupted-restart": "Stopped when the extension worker restarted.",
   "jobs.error.interrupted-upload-stall": "The upload stalled — no file data arrived for 30 seconds.",
   "jobs.error.interrupted-upload-ttl": "The upload timed out before all file data arrived.",
+  "jobs.error.interrupted-offscreen": "The import worker stopped — import the file again.",
   "resources.card.drag": "Drag to reorder $1, or press for options",
   "resources.card.select": "Select $1",
   "resources.card.rename": "Rename $1",
