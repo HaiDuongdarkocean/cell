@@ -19,9 +19,9 @@ export interface SettingsSectionProps extends Omit<HTMLAttributes<HTMLElement>, 
 }
 
 /**
- * SettingsSection — flat settings-page band: title + description + body rows,
- * separated from siblings by whitespace and a hairline. Replaces the boxed
- * card recipe; forwards ref + data-section for scroll-sync anchors.
+ * SettingsSection — one card per settings group: title + description + body
+ * rows on a card surface, separated from siblings by the column gap.
+ * Forwards ref + data-section for scroll-sync anchors.
  */
 export const SettingsSection = forwardRef<HTMLElement, SettingsSectionProps>(function SettingsSection(
   { title, description, hint, hintAriaLabel, headingLevel = 3, children, className, ...rest },

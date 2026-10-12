@@ -204,9 +204,6 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
               </Button>
             }
           />
-          <Text as="p" variant="supporting" color="secondary" className={styles.privacy}>
-            {t('settings.sync.privacy')}
-          </Text>
         </>
       )}
 
@@ -449,10 +446,6 @@ export function SyncPanel({ settings }: SyncPanelProps): React.JSX.Element {
               </ul>
             )}
           </SettingsGroup>
-
-          <Text as="p" variant="supporting" color="secondary" className={styles.privacy}>
-            {t('settings.sync.privacy')}
-          </Text>
         </>
       )}
 

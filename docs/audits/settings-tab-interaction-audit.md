@@ -233,3 +233,33 @@ Method: `axe-core` (wcag2a/2aa/21a/21aa) on the settings showcase in light + dar
 ### Gates round 5
 
 typecheck sạch · lint 0 err (4 warning cũ) · **8628/8628 tests** · build xanh (design-system-css 0 violations) · **axe 0 violations / 37 passes (light + dark)** · axtree 207 nodes, 0 unnamed interactive · forced-colors/RTL/reduced-motion clean · zoom-reflow verified by pixel at 320px.
+
+## Round 6 — IA + shape redesign v2 (card-per-section, dict-popup grammar)
+
+Driver: user design crit — "cấu trúc lộn xộng, không khoảng thở" + IA misfits + component-level shape/contrast bugs. Plan: `docs/intent/settings-tab-v2-redesign-plan.md` (runtime inventory → dict-popup design language → 11-point plan).
+
+### IA merge — 13 → 11 sections
+
+- `general` dissolved: UI language → `theme` (retitled **Appearance**, en+vi); "Show dictionary popup" → `dictionaryPopup` section.
+- `localPlayer` (2 toggles) → `media` as a `SettingsGroup` ("Local player").
+- `settings.general.showDictPopup*` keys renamed → `settings.dictionaryPopup.enabled*`; stale `useState('general')` init → `'languageProfile'`; `settings.media.desc` broadened.
+
+### Component fixes (root cause, shared atoms)
+
+- `SettingsSection` → card surface (`card-background`/`border`/`radius` + `space-4` padding); `SettingsDialog` mainCol flex column `gap: space-4`.
+- `Select`/`SearchableSelect` triggers: `--input-radius` (pill) → `--radius-md` — same shape language as the menu they open.
+- `Chip` sm/md own their height (`min-height` 24/32, `height:auto`) — previously `Button`'s 40px height made component chips oversized.
+- `Toggle` thumb: inset 2px→4px, hairline `stroke: var(--color-border)`, `toggle.dot` token `primary-foreground`→`text-inverse` — Dawn's `primary-foreground` is navy (#1F2D3D) which painted the thumb dark on both tracks.
+- Profile cards: selection surface moved from `.item` (painted card+kebab) to the card itself; resting card bg `color-field`; hover `color-field-hover`; meta text `color-text` (secondary failed AA on field: 4.28:1).
+- `SettingsGroup` label optional — ResourcesPanel dropped its duplicate "Resources" title+subtitle (section above already says it); action-only header right-aligns via `:only-child:not(.lead)`.
+- `sync.privacy` 230-char paragraph ×2 → `HintIcon` on the Sync section heading (with proper `hintAriaLabel`).
+- Zoom-200 re-regression: `min-width:auto` resolves to 0 on `overflow:hidden` controls (button label clipped at cw=110) — interactive `SettingsRow` children now `flex-shrink:0` at ≤480px.
+- Tests: ResourcesPanel mount marker `getByText('Resources')` → `'Add resource'` ×18 + dropped subtitle assertion.
+
+### Cross-grade (fresh-context subagent): 85/88 ≈ 96.6% — APPROVE
+
+All majors verified fixed; remaining P3s deferred: `testId`/`dataTestId` dual API, MultiSelect `aria-activedescendant`, menu-surface recipe ×3, master-toggle convention for dictionaryPopup, raw font-size in feature CSS, literal px hairlines.
+
+### Gates round 6
+
+typecheck sạch · lint 0 err (4 warning cũ) · **8628/8628 tests** · build xanh (0 CSS violations) · axe 0/37 light+dark · axtree 207 nodes 0 unnamed · forced-colors/RTL/reduced-motion/zoom-200 clean · screenshots 320/600/840 light+dark verified.

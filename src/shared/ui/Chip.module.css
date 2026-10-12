@@ -20,12 +20,17 @@
   font-size: var(--font-size-sm);
 }
 
-.sm {
+/* Chip sizes own their height — compact tag grammar, not button height. */
+.chip.sm {
+  height: auto;
+  min-height: var(--space-6);
   padding: var(--space-0-5) var(--space-2);
   font-size: var(--font-size-xs);
 }
 
-.md {
+.chip.md {
+  height: auto;
+  min-height: var(--space-8);
   padding: var(--space-1) var(--space-2-5);
   font-size: var(--font-size-base);
 }

@@ -9,69 +9,6 @@
   gap: var(--space-2);
 }
 
-/* === Universal native banner === */
-.banner {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
-  background: var(--color-primary-subtle);
-  border: var(--border-width-hairline) dashed var(--color-border);
-}
-
-.bannerEditing {
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--space-3);
-}
-
-.bannerRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.bannerText {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.bannerLabel {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.bannerValue {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 480px) {
-  .bannerLabel,
-  .bannerValue {
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-  }
-}
-
-.bannerActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2);
-}
-
-/* Keep the Change action from shrinking when the banner text is long. */
-.banner > button,
-.banner > [role='button'] {
-  flex-shrink: 0;
-}
-
 /* === Profile cards === */
 .list {
   display: flex;
@@ -84,12 +21,6 @@
   align-items: center;
   gap: var(--space-1);
   min-width: 0;
-  border-radius: var(--card-radius);
-}
-
-.item:has(.card[aria-checked='true']) {
-  background: var(--color-primary-subtle);
-  box-shadow: var(--shadow-inset-selected);
 }
 
 .card {
@@ -98,22 +29,23 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  /* Card reads padding via --card-padding; override the var so the value
-     wins regardless of CSS-module load order. */
+  /* Card reads padding/background via its --card-* vars; override so the
+     values win regardless of CSS-module load order. Resting cards sit on a
+     white section card, so they take the field (inset) surface. */
   --card-padding: var(--space-1) var(--space-2);
+  --card-background: var(--color-field);
 }
 
-/* Selection swaps instantly — the dot and row highlight must not fade in. */
+/* Selection swaps instantly — the dot and card highlight must not fade in. */
 .list .card {
   transition: none;
 }
 
-/* The row (.item) carries the selected surface so the highlight spans the
-   kebab trigger too; the card itself stays chromeless, resting or hovered. */
+/* The card owns its selected surface; the kebab sits outside it. */
 .list .card[aria-checked='true'],
 .list .card[aria-checked='true']:hover {
-  background: transparent;
-  box-shadow: none;
+  background: var(--color-primary-subtle);
+  box-shadow: var(--shadow-inset-selected);
 }
 
 /* Custom radio dot — visual mirror of aria-checked on the card. */
@@ -141,7 +73,7 @@
    .interactive:hover / .selected:hover on specificity, not load order. */
 @media (hover: hover) and (pointer: fine) {
   .list .card:hover {
-    background: var(--card-background);
+    background: var(--color-field-hover);
     border: var(--card-border);
     transform: none;
     box-shadow: none;
@@ -190,7 +122,9 @@
   display: block;
   min-width: 0;
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  /* Field surface is ~4% darker than the section card — secondary text
+     drops below AA on it, so the meta line uses the primary text color. */
+  color: var(--color-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

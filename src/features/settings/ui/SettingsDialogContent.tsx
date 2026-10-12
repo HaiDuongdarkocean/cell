@@ -114,7 +114,7 @@ const SHORTCUT_GROUPS: readonly { label: MessageKey; actions: readonly ShortcutA
 ];
 
 export function SettingsDialogContent({ settings, onChange, className, showSidebarHeader = true, navMode = 'auto' }: SettingsDialogContentProps): React.JSX.Element {
-  const [activeSection, setActiveSection] = useState<string>('general');
+  const [activeSection, setActiveSection] = useState<string>('languageProfile');
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const mainColRef = useRef<HTMLDivElement>(null);
 
@@ -192,7 +192,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
   ];
 
   const sidebarItems: { id: string; label: string; icon: string }[] = [
-    { id: 'general', label: t('settings.nav.general'), icon: 'settings' },
     { id: 'languageProfile', label: t('settings.nav.languageProfile'), icon: 'languages' },
     { id: 'resources', label: t('settings.nav.resources'), icon: 'library' },
     { id: 'media', label: t('settings.nav.media'), icon: 'video' },
@@ -200,7 +199,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
     { id: 'dictionaryPopup', label: t('settings.nav.dictionaryPopup'), icon: 'bookOpen' },
     { id: 'wordBadge', label: t('settings.nav.wordBadge'), icon: 'move' },
     { id: 'audio', label: t('settings.nav.audio'), icon: 'audioWave' },
-    { id: 'localPlayer', label: t('settings.nav.localPlayer'), icon: 'playRoundedRect' },
     { id: 'download', label: t('settings.nav.download'), icon: 'download' },
     { id: 'shortcuts', label: t('settings.nav.shortcuts'), icon: 'slidersHorizontal' },
     { id: 'theme', label: t('settings.nav.theme'), icon: 'sun' },
@@ -245,52 +243,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
 
           {/* === Main column (flat section bands, scrollable) === */}
           <div className={styles.mainCol} ref={mainColRef}>
-
-            {/* === General === */}
-            <SettingsSection
-              ref={sectionRef('general')}
-              headingLevel={3}
-              title={t('settings.general.title')}
-              data-section="general"
-            >
-              <SettingsRow
-                dense
-                stacked
-                title={t('settings.uiLanguage.label')}
-                description={t('settings.uiLanguage.hint')}
-                labelFor="set-ui-language"
-              >
-                <Select
-                  id="set-ui-language"
-                  className={styles.select}
-                  value={settings.uiLanguage ?? 'auto'}
-                  options={uiLanguageOptions}
-                  onChange={(value) => {
-                    const next = value as UiLanguagePreference;
-                    setUiLanguageOverride(next);
-                    update('uiLanguage', next);
-                  }}
-                  data-cell-id="settings-ui-language"
-                  aria-label={t('settings.uiLanguage.label')}
-                />
-              </SettingsRow>
-
-              <SettingsRow
-                dense
-                divider
-                title={t('settings.general.showDictPopup')}
-                description={t('settings.general.showDictPopup.hint')}
-              >
-                <Toggle
-                  checked={settings.dictionaryPopup?.enabled ?? true}
-                  onChange={(next) => {
-                    const dp = settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS;
-                    onChange({ ...settings, dictionaryPopup: { ...dp, enabled: next } });
-                  }}
-                  ariaLabel={t('settings.general.showDictPopup')}
-                />
-              </SettingsRow>
-            </SettingsSection>
 
             {/* === Language Profile === */}
             <SettingsSection
@@ -389,6 +341,32 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                   />
                 </SettingsRow>
               )}
+
+              <SettingsGroup label={t('settings.localPlayer.title')}>
+                <SettingsRow
+                  dense
+                  title={t('settings.localPlayer.subtitleMatch')}
+                  description={t('settings.localPlayer.subtitleMatch.hint')}
+                >
+                  <Toggle
+                    checked={settings.localPlayerSettings.subtitleMatchEnabled}
+                    onChange={(next) => onChange({ ...settings, localPlayerSettings: { ...settings.localPlayerSettings, subtitleMatchEnabled: next } })}
+                    ariaLabel={t('settings.localPlayer.subtitleMatch')}
+                  />
+                </SettingsRow>
+                <SettingsRow
+                  dense
+                  divider
+                  title={t('settings.localPlayer.resumePrompt')}
+                  description={t('settings.localPlayer.resumePrompt.hint')}
+                >
+                  <Toggle
+                    checked={settings.localPlayerSettings.resumePromptEnabled}
+                    onChange={(next) => onChange({ ...settings, localPlayerSettings: { ...settings.localPlayerSettings, resumePromptEnabled: next } })}
+                    ariaLabel={t('settings.localPlayer.resumePrompt')}
+                  />
+                </SettingsRow>
+              </SettingsGroup>
             </SettingsSection>
 
             {/* === Subtitle Block === */}
@@ -472,6 +450,20 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               description={t('settings.dictionaryPopup.desc')}
               data-section="dictionaryPopup"
             >
+              <SettingsRow
+                dense
+                title={t('settings.dictionaryPopup.enabled')}
+                description={t('settings.dictionaryPopup.enabled.hint')}
+              >
+                <Toggle
+                  checked={settings.dictionaryPopup?.enabled ?? true}
+                  onChange={(next) => {
+                    const dp = settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS;
+                    onChange({ ...settings, dictionaryPopup: { ...dp, enabled: next } });
+                  }}
+                  ariaLabel={t('settings.dictionaryPopup.enabled')}
+                />
+              </SettingsRow>
               <DictionaryPopupSettingsPanel
                 settings={settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS}
                 onChange={(dp) => onChange({ ...settings, dictionaryPopup: dp })}
@@ -512,38 +504,6 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                 onPronunciationChange={(p) => onChange({ ...settings, pronunciation: p })}
                 onTtsChange={(tts) => onChange({ ...settings, dictionaryPopup: { ...(settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS), tts } })}
               />
-            </SettingsSection>
-
-            {/* === Local Player === */}
-            <SettingsSection
-              ref={sectionRef('localPlayer')}
-              headingLevel={3}
-              title={t('settings.localPlayer.title')}
-              data-section="localPlayer"
-            >
-              <SettingsRow
-                dense
-                title={t('settings.localPlayer.subtitleMatch')}
-                description={t('settings.localPlayer.subtitleMatch.hint')}
-              >
-                <Toggle
-                  checked={settings.localPlayerSettings.subtitleMatchEnabled}
-                  onChange={(next) => onChange({ ...settings, localPlayerSettings: { ...settings.localPlayerSettings, subtitleMatchEnabled: next } })}
-                  ariaLabel={t('settings.localPlayer.subtitleMatch')}
-                />
-              </SettingsRow>
-              <SettingsRow
-                dense
-                divider
-                title={t('settings.localPlayer.resumePrompt')}
-                description={t('settings.localPlayer.resumePrompt.hint')}
-              >
-                <Toggle
-                  checked={settings.localPlayerSettings.resumePromptEnabled}
-                  onChange={(next) => onChange({ ...settings, localPlayerSettings: { ...settings.localPlayerSettings, resumePromptEnabled: next } })}
-                  ariaLabel={t('settings.localPlayer.resumePrompt')}
-                />
-              </SettingsRow>
             </SettingsSection>
 
             {/* === Download === */}
@@ -713,13 +673,34 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               </div>
             </SettingsSection>
 
-            {/* === Theme === */}
+            {/* === Appearance === */}
             <SettingsSection
               ref={sectionRef('theme')}
               headingLevel={3}
               title={t('settings.theme.title')}
               data-section="theme"
             >
+              <SettingsRow
+                dense
+                stacked
+                title={t('settings.uiLanguage.label')}
+                description={t('settings.uiLanguage.hint')}
+                labelFor="set-ui-language"
+              >
+                <Select
+                  id="set-ui-language"
+                  className={styles.select}
+                  value={settings.uiLanguage ?? 'auto'}
+                  options={uiLanguageOptions}
+                  onChange={(value) => {
+                    const next = value as UiLanguagePreference;
+                    setUiLanguageOverride(next);
+                    update('uiLanguage', next);
+                  }}
+                  data-cell-id="settings-ui-language"
+                  aria-label={t('settings.uiLanguage.label')}
+                />
+              </SettingsRow>
               <ThemePanel />
             </SettingsSection>
 
@@ -728,6 +709,8 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               ref={sectionRef('sync')}
               headingLevel={3}
               title={t('settings.sync.title')}
+              hint={t('settings.sync.privacy')}
+              hintAriaLabel={t('settings.hint.aria', [t('settings.sync.title')])}
               data-section="sync"
             >
               <SyncPanel settings={settings} />

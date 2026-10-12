@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { FlagIcon } from '@/shared/ui/FlagIcon';
@@ -7,6 +7,7 @@ import { SelectableCard } from '@/shared/ui/SelectableCard';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Dialog } from '@/shared/ui/Dialog';
 import { SettingsGroup } from '@/shared/ui/SettingsGroup';
+import { SettingsRow } from '@/shared/ui/SettingsRow';
 import { OVERLAY_LANGUAGE_OPTIONS, toIso6391, baseLangCode } from '@/shared/config/languageRegistry';
 import { t } from '@/shared/i18n';
 import {
@@ -47,15 +48,6 @@ const langShort = (code: string): string => langLabel(code).split(' (')[0];
 export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePanelProps): React.JSX.Element {
   const [form, setForm] = useState<FormState>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [bannerEditing, setBannerEditing] = useState(false);
-  const [bannerDraft, setBannerDraft] = useState(settings.universalNativeLanguage);
-  const bannerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (bannerEditing) {
-      bannerRef.current?.querySelector<HTMLElement>('[aria-haspopup]')?.focus();
-    }
-  }, [bannerEditing]);
 
   const profiles = useMemo(
     () => [...(settings.languageProfiles ?? [])].sort((a, b) => a.order - b.order),
@@ -179,65 +171,30 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
 
   return (
     <div className={styles.panel}>
-      {/* Universal native — global setting shared by every profile. View mode
-          shows flag + value; Change swaps the whole banner into edit mode with
-          a live draft preview + explicit Cancel/Save. */}
-      <div ref={bannerRef} className={`${styles.banner} ${bannerEditing ? styles.bannerEditing : ''}`}>
-        {bannerEditing ? (
+      {/* Universal native — global setting shared by every profile. The select
+          applies immediately (no draft/save gate): click → menu with search
+          focused → pick. */}
+      <SettingsRow
+        dense
+        title={
           <>
-            <div className={styles.bannerRow}>
-              <FlagIcon lang={bannerDraft} size={22} title={langLabel(bannerDraft)} />
-              <div className={styles.bannerText}>
-                <Text variant="label" color="secondary" as="div" className={styles.bannerLabel}>{t('settings.profiles.banner.label')}</Text>
-                <div className={styles.bannerValue}>{langShort(bannerDraft)}</div>
-              </div>
-            </div>
-            <SearchableSelect
-              testId="universal-native-language"
-              dataTestId="universal-native-language"
-              options={OVERLAY_LANGUAGE_OPTIONS}
-              value={bannerDraft}
-              onChange={setBannerDraft}
-              ariaLabel={t('settings.profiles.banner.aria')}
-              placeholder={t('settings.profiles.form.search')}
-            />
-            <div className={styles.bannerActions}>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setBannerEditing(false)}>
-                {t('settings.profiles.form.cancel')}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => {
-                  onChange({ ...settings, universalNativeLanguage: bannerDraft });
-                  setBannerEditing(false);
-                }}
-              >
-                {t('settings.profiles.form.save')}
-              </Button>
-            </div>
+            <FlagIcon lang={settings.universalNativeLanguage} size={18} title={langLabel(settings.universalNativeLanguage)} />
+            {t('settings.profiles.banner.label')}
           </>
-        ) : (
-          <>
-            <FlagIcon lang={settings.universalNativeLanguage} size={22} title={langLabel(settings.universalNativeLanguage)} />
-            <div className={styles.bannerText}>
-              <Text variant="label" color="secondary" as="div" className={styles.bannerLabel}>{t('settings.profiles.banner.label')}</Text>
-              <div className={styles.bannerValue} data-cell-id="universal-native-banner-value">{langShort(settings.universalNativeLanguage)}</div>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setBannerDraft(settings.universalNativeLanguage);
-                setBannerEditing(true);
-              }}
-            >
-              {t('settings.profiles.banner.change')}
-            </Button>
-          </>
-        )}
-      </div>
+        }
+        labelFor="universal-native-language"
+      >
+        <SearchableSelect
+          id="universal-native-language"
+          testId="universal-native-language"
+          dataTestId="universal-native-language"
+          options={OVERLAY_LANGUAGE_OPTIONS}
+          value={settings.universalNativeLanguage}
+          onChange={(v) => onChange({ ...settings, universalNativeLanguage: v })}
+          ariaLabel={t('settings.profiles.banner.aria')}
+          placeholder={t('settings.profiles.form.search')}
+        />
+      </SettingsRow>
 
       {form?.mode === 'add' && (
         <ProfileForm

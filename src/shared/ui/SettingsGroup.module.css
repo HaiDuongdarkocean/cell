@@ -19,6 +19,10 @@
   min-width: 0;
 }
 
+.header > :only-child:not(.lead) {
+  margin-inline-start: auto;
+}
+
 .lead {
   min-width: 0;
 }

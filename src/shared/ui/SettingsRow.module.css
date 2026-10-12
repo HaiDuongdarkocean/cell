@@ -84,9 +84,16 @@
     flex-wrap: wrap;
   }
   /* Children may not shrink below content size, so a label+control pair that
-     would clip wraps onto two lines instead of truncating both. */
+     would clip wraps onto two lines instead of truncating both. Note
+     min-width:auto still resolves to 0 for overflow:hidden controls, so
+     interactive children also get flex-shrink:0 — they cannot wrap their own
+     text, so squeezing them can only clip. */
   .row:not(.stacked) > * {
     min-width: auto;
+  }
+
+  .row:not(.stacked) > :is(button, input, select, [role='button'], [role='switch'], [role='combobox']) {
+    flex-shrink: 0;
   }
   .child {
     margin-left: var(--space-2);

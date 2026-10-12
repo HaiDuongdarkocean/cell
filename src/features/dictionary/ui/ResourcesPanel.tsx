@@ -72,7 +72,6 @@ interface ResourcesPanelProps {
 
 interface SectionCopy {
   readonly title: MessageKey;
-  readonly subtitle: MessageKey;
   readonly dropLabel: MessageKey;
   readonly dropHint: MessageKey;
   readonly accept: string;
@@ -83,7 +82,6 @@ interface SectionCopy {
 
 const UNIFIED_COPY: SectionCopy = {
   title: 'resources.unified.title',
-  subtitle: 'resources.unified.subtitle',
   dropLabel: 'resources.unified.dropLabel',
   dropHint: 'resources.unified.dropHint',
   accept: '.txt,.json,.zip,.db,.gz',
@@ -252,8 +250,6 @@ function ResourceSection({
 
   return (
     <SettingsGroup
-      label={t(copy.title)}
-      description={t(copy.subtitle)}
       action={
         manageable.length > 0 ? (
           <Button

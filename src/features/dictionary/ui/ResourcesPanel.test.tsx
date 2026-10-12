@@ -128,8 +128,8 @@ beforeEach(() => {
 describe('ResourcesPanel', () => {
   it('renders the unified resources section', async () => {
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
-    expect(screen.getByText('Dictionaries and frequency lists in one place.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
+    expect(screen.getByText('Drop or pick a file · .txt, .json, .zip, .db, .gz')).toBeInTheDocument();
   });
 
   it('shows empty state when no resources', async () => {
@@ -149,7 +149,7 @@ describe('ResourcesPanel', () => {
 
   it('imports file via dropzone (frequency)', async () => {
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFile(0, new File(['hello\nworld\n'], 'test.txt', { type: 'text/plain' }));
     await waitFor(() =>
       expect(importFile).toHaveBeenCalledWith(
@@ -183,7 +183,7 @@ describe('ResourcesPanel', () => {
       .mockImplementationOnce(() => new Promise((r) => { resolveThird = r; }));
 
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFiles(0, [
       new File(['a\n'], 'one.txt', { type: 'text/plain' }),
       new File(['b\n'], 'two.txt', { type: 'text/plain' }),
@@ -206,7 +206,7 @@ describe('ResourcesPanel', () => {
   it('dropping N files creates N independent job rows', async () => {
     importFile.mockImplementation(() => new Promise<{ jobId: string }>(() => {}));
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFiles(0, [
       new File(['a\n'], 'one.txt', { type: 'text/plain' }),
       new File(['b\n'], 'two.txt', { type: 'text/plain' }),
@@ -226,7 +226,7 @@ describe('ResourcesPanel', () => {
       return new Promise<{ jobId: string }>(() => {});
     });
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFiles(0, [
       new File(['a\n'], 'one.txt', { type: 'text/plain' }),
       new File(['b\n'], 'two.txt', { type: 'text/plain' }),
@@ -239,7 +239,7 @@ describe('ResourcesPanel', () => {
   it('hands the row to the registry job after upload, then shows its done state', async () => {
     importFile.mockResolvedValue({ jobId: 'j-freq' });
     const view = render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFile(0, new File(['hello\nworld\n'], 'test.txt', { type: 'text/plain' }));
     await waitFor(() => expect(importFile).toHaveBeenCalled());
     await waitFor(() => expect(screen.queryByText('test.txt')).not.toBeInTheDocument());
@@ -263,7 +263,7 @@ describe('ResourcesPanel', () => {
         : Promise.resolve({ jobId: 'j-ok' });
     });
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFiles(0, [
       new File(['bad'], 'bad.txt', { type: 'text/plain' }),
       new File(['ok'], 'good.txt', { type: 'text/plain' }),
@@ -280,7 +280,7 @@ describe('ResourcesPanel', () => {
       return new Promise<{ jobId: string }>(() => {});
     });
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFile(0, new File(['a\n'], 'big.txt', { type: 'text/plain' }));
     await waitFor(() => expect(screen.getAllByText(/50%/).length).toBeGreaterThan(0));
   });
@@ -295,7 +295,7 @@ describe('ResourcesPanel', () => {
     );
 
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
 
     pickFiles(0, [
       new File(['[]'], 'dict.json', { type: 'application/json' }),
@@ -319,7 +319,7 @@ describe('ResourcesPanel', () => {
     });
 
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFile(0, new File(['a\nb\n'], 'test.txt', { type: 'text/plain' }));
 
     await waitFor(() => expect(screen.getByText(/"existing\.txt" already exists/)).toBeInTheDocument());
@@ -339,7 +339,7 @@ describe('ResourcesPanel', () => {
     });
 
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFile(0, new File(['a\nb\n'], 'test.txt', { type: 'text/plain' }));
 
     await waitFor(() => expect(screen.getByText(/"existing\.txt" already exists/)).toBeInTheDocument());
@@ -407,7 +407,7 @@ describe('ResourcesPanel', () => {
   it('never scopes imports to a profile', async () => {
     const setProfiles = client.setResourceProfiles as jest.MockedFunction<typeof client.setResourceProfiles>;
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFile(0, new File(['hello\n'], 'test.txt', { type: 'text/plain' }));
     await waitFor(() => expect(importFile).toHaveBeenCalled());
     expect(setProfiles).not.toHaveBeenCalled();
@@ -1013,7 +1013,7 @@ describe('ResourcesPanel — import flow hardening', () => {
     const big = new File(['x'], 'huge.db');
     Object.defineProperty(big, 'size', { value: 300 * 1024 * 1024 });
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFile(0, big);
     await waitFor(() => expect(importFile).toHaveBeenCalledTimes(1));
   });
@@ -1024,7 +1024,7 @@ describe('ResourcesPanel — import flow hardening', () => {
     );
     (computeSignature as jest.Mock).mockRejectedValueOnce(new Error('no subtle crypto'));
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFile(0, new File(['a\n'], 'plain.txt', { type: 'text/plain' }));
     await waitFor(() => expect(screen.getByText(/no subtle crypto/)).toBeInTheDocument());
     expect(importFile).not.toHaveBeenCalled();
@@ -1037,7 +1037,7 @@ describe('ResourcesPanel — import flow hardening', () => {
       .mockImplementationOnce(() => new Promise(() => {}))
       .mockImplementationOnce(() => new Promise(() => {}));
     const { rerender } = render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFiles(0, [
       new File(['a\n'], 'one.txt', { type: 'text/plain' }),
       new File(['b\n'], 'two.txt', { type: 'text/plain' }),
@@ -1063,7 +1063,7 @@ describe('ResourcesPanel — import flow hardening', () => {
       }),
     ]);
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFile(0, new File(['x\n'], 'dup.txt', { type: 'text/plain' }));
     await waitFor(() => expect(screen.getByText(/skipped/i)).toBeInTheDocument());
     expect(importFile).not.toHaveBeenCalled();
@@ -1073,7 +1073,7 @@ describe('ResourcesPanel — import flow hardening', () => {
     const { dismissJob } = jest.requireMock<typeof import('@/features/jobs')>('@/features/jobs');
     importFile.mockRejectedValueOnce(new Error('boom'));
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFile(0, new File(['a\n'], 'bad.txt', { type: 'text/plain' }));
     const dismiss = await screen.findByTestId(/^job-dismiss-/);
     const jobId = dismiss.getAttribute('data-cell-id')!.slice('job-dismiss-'.length);
@@ -1092,7 +1092,7 @@ describe('ResourcesPanel — import flow hardening', () => {
     );
     importFile.mockImplementation(() => new Promise<{ jobId: string }>(() => {}));
     render(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Resources')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFile(0, new File(['a\n'], 'slow.txt', { type: 'text/plain' }));
     await waitFor(() => expect(screen.getByText('slow.txt')).toBeInTheDocument());
     act(() => resolveDetect(['frequency']));
