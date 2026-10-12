@@ -16,11 +16,25 @@
   gap: var(--space-2);
 }
 
+/* The row item owns the surface so its border/background enclose the whole
+   row — card content AND the trailing kebab menu — as one unit. */
 .item {
   display: flex;
   align-items: center;
   gap: var(--space-1);
   min-width: 0;
+  padding-right: var(--space-1);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: transparent;
+}
+
+/* Edit mode swaps the row content for the inline form, which carries its
+   own surface — drop the row chrome so they don't double up. */
+.item:has(> .profileForm) {
+  padding-right: 0;
+  border-color: transparent;
+  background: transparent;
 }
 
 .card {
@@ -29,23 +43,30 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  /* Card reads padding/background via its --card-* vars; override so the
-     values win regardless of CSS-module load order. Resting cards sit on a
-     white section card, so they take the field (inset) surface. */
+  /* Card reads padding/background via its --card-* vars; the row item owns
+     the visible surface, so the card itself stays chromeless. */
   --card-padding: var(--space-1) var(--space-2);
-  --card-background: var(--color-field);
+  --card-background: transparent;
+  --card-border: none;
 }
 
-/* Selection swaps instantly — the dot and card highlight must not fade in. */
+/* Selection swaps instantly — the dot and row highlight must not fade in. */
 .list .card {
   transition: none;
 }
 
-/* The card owns its selected surface; the kebab sits outside it. */
-.list .card[aria-checked='true'],
-.list .card[aria-checked='true']:hover {
+.item:has(.card[aria-checked='true']),
+.item:has(.card[aria-checked='true']):hover {
   background: var(--color-primary-subtle);
+  border-color: transparent;
   box-shadow: var(--shadow-inset-selected);
+}
+
+/* The item row carries the selected surface — suppress Card's own
+   selected paint so the ring doesn't double up. */
+.list .card[aria-checked='true'] {
+  background: transparent;
+  box-shadow: none;
 }
 
 /* Custom radio dot — visual mirror of aria-checked on the card. */
@@ -73,14 +94,19 @@
    .interactive:hover / .selected:hover on specificity, not load order. */
 @media (hover: hover) and (pointer: fine) {
   .list .card:hover {
-    background: var(--color-field-hover);
+    background: transparent;
     border: var(--card-border);
     transform: none;
     box-shadow: none;
+    opacity: 1;
+  }
+
+  .list .item:hover:not(:has(.card[aria-checked='true'])) {
+    background: var(--color-surface-hover);
   }
 }
 
-.list .card:focus-visible {
+.item:has(.card:focus-visible) {
   outline: var(--border-width-thick) solid var(--color-border-focus);
   outline-offset: var(--space-0-5);
 }
@@ -132,9 +158,9 @@
 
 /* === Inline profile form (add + edit) === */
 .profileForm {
-  border: none;
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: var(--color-field);
+  background: var(--color-surface);
   padding: var(--space-3);
   display: flex;
   flex-direction: column;
@@ -206,8 +232,8 @@
 }
 
 .choice {
-  border: var(--border-width-hairline) solid transparent;
-  background: var(--color-field);
+  border: var(--border-width-hairline) solid var(--color-border);
+  background: transparent;
   border-radius: var(--radius-lg);
   padding: var(--space-3);
   text-align: left;
@@ -223,11 +249,12 @@
 }
 
 .choice:not([aria-checked='true']):hover {
-  background: var(--color-field-hover);
+  background: var(--color-surface-hover);
 }
 
 .choice[aria-checked='true'] {
   background: var(--color-primary-subtle);
+  border-color: transparent;
   box-shadow: var(--shadow-inset-selected);
   color: var(--color-text-accent-strong);
 }
