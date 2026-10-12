@@ -413,48 +413,67 @@ export function isContiguousKeys(keys: readonly IDBValidKey[]): boolean {
   return true;
 }
 
+/** Keys per delete transaction — chunks the delete so queued read txs
+ *  interleave in the inter-chunk gaps instead of stalling behind one giant
+ *  write tx (a 132k single-tx delete blocked lookups ~3s on phone storage). */
+const DELETE_CHUNK = 8192;
+
+/** Same interleave gap as batchProcessor — read txs can only run between
+ *  write txs if they are created before the next one exists. */
+const READ_INTERLEAVE_MS = 16;
+
 /** Delete all rows (any kind) for a resource — resource removal / replace-import
- *  rollback cascade. One import's rows sit on contiguous autoincrement keys, so a
- *  contiguous run deletes via a single IDBKeyRange; interleaved keys (concurrent
- *  import) fall back to the per-row cursor. */
+ *  rollback cascade. One import's rows sit on contiguous autoincrement keys, so
+ *  contiguous chunks delete via a single IDBKeyRange; non-contiguous keys
+ *  (concurrent import) delete per-key inside the same chunk tx. Chunks run in
+ *  separate transactions — a mid-delete failure leaves earlier chunks applied,
+ *  same atomicity as before across stores (entries → phraseIndex → resource). */
 export async function deleteEntriesByResource(
   langCode: string,
   resourceId: number,
   onProgress?: (done: number, total: number) => void,
 ): Promise<void> {
   const db = await getDB(langCode);
-  return new Promise((resolve, reject) => {
-    const store = getStore(db, STORES.ENTRY);
-    const index = store.index(INDEXES.by_resource);
-    const tx = store.transaction;
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-    const keysRequest = index.getAllKeys(resourceId);
-    keysRequest.onsuccess = () => {
-      const keys = keysRequest.result;
-      if (keys.length > 0) {
-        try {
-          onProgress?.(0, keys.length);
-        } catch {}
-      }
-      if (isContiguousKeys(keys)) {
-        const deleteRequest = store.delete(IDBKeyRange.bound(keys[0], keys[keys.length - 1]));
-        deleteRequest.onsuccess = () => onProgress?.(keys.length, keys.length);
-        return;
-      }
-      const total = keys.length;
-      let deleted = 0;
-      const cursorRequest = index.openCursor(resourceId);
-      cursorRequest.onsuccess = () => {
-        const cursor = cursorRequest.result;
-        if (cursor) {
-          cursor.delete();
-          deleted += 1;
-          if (deleted === total || deleted % 512 === 0) onProgress?.(deleted, total);
-          cursor.continue();
-        }
-      };
-    };
+  const keys = await new Promise<IDBValidKey[]>((resolve, reject) => {
+    const store = getStore(db, STORES.ENTRY, 'readonly');
+    const request = store.index(INDEXES.by_resource).getAllKeys(resourceId);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
   });
+  const total = keys.length;
+  if (total === 0) return;
+  try {
+    onProgress?.(0, total);
+  } catch {}
+  for (let start = 0, deleted = 0; start < total; ) {
+    let end = Math.min(start + DELETE_CHUNK, total);
+    if (typeof keys[start] === 'number') {
+      for (let i = start + 1; i < end; i += 1) {
+        if (keys[i] !== (keys[start] as number) + (i - start)) {
+          end = i;
+          break;
+        }
+      }
+    }
+    const contiguous = end - start > 1 && keys[end - 1] === (keys[start] as number) + (end - start - 1);
+    await new Promise<void>((resolve, reject) => {
+      const store = getStore(db, STORES.ENTRY);
+      const tx = store.transaction;
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+      if (contiguous) {
+        store.delete(IDBKeyRange.bound(keys[start]!, keys[end - 1]!));
+      } else {
+        for (let i = start; i < end; i += 1) store.delete(keys[i]!);
+      }
+      tx.commit();
+    });
+    deleted += end - start;
+    try {
+      onProgress?.(deleted, total);
+    } catch {}
+    start = end;
+    if (start < total) await new Promise((r) => setTimeout(r, READ_INTERLEAVE_MS));
+  }
 }

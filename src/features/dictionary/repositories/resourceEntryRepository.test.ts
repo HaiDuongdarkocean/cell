@@ -164,7 +164,7 @@ describe('resourceEntryRepository — dictionary', () => {
     await expect(countEntriesByResource(LANG, 2)).resolves.toBe(5);
   });
 
-  it('deleteEntriesByResource keeps 512-step progress on the interleaved cursor path', async () => {
+  it('deleteEntriesByResource reports per-chunk progress on non-contiguous keys', async () => {
     await bulkInsertDictionaryEntries(LANG, Array.from({ length: 300 }, (_, i) => makeDictEntry(`a${i}`)));
     await bulkInsertDictionaryEntries(LANG, [makeDictEntry('mid', 2)]);
     await bulkInsertDictionaryEntries(LANG, Array.from({ length: 300 }, (_, i) => makeDictEntry(`c${i}`)));
@@ -172,7 +172,7 @@ describe('resourceEntryRepository — dictionary', () => {
     await deleteEntriesByResource(LANG, RESOURCE_ID, (d, t) => calls.push([d, t]));
     await expect(countEntriesByResource(LANG, RESOURCE_ID)).resolves.toBe(0);
     await expect(countEntriesByResource(LANG, 2)).resolves.toBe(1);
-    expect(calls).toEqual([[0, 600], [512, 600], [600, 600]]);
+    expect(calls).toEqual([[0, 600], [300, 600], [600, 600]]);
   });
 
   it('sampleDictionaryEntries returns the first N entries for a resource', async () => {
