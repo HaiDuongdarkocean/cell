@@ -9,7 +9,7 @@
 // A zip containing both families produces one resource with components
 // {definitions, frequency}; the user's component subset can drop a family.
 
-import { BaseImportStrategy, type RawFrequencyEntry, type RawDictionaryEntry, type StrategyOptions } from './baseImportStrategy';
+import { BaseImportStrategy, type RawFrequencyEntry, type RawDictionaryEntry, type StrategyOptions, type StrategyResult } from './baseImportStrategy';
 import { unzipAll, isImportZipEntry, decodeText } from '../logic/fileDetector';
 import { yieldToEventLoop } from '../logic/yieldToEventLoop';
 import { toCanonicalDefinition } from '../logic/normalize/canonical';
@@ -50,6 +50,8 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
   private readonly data: Uint8Array;
   private readonly zipFiles?: Record<string, Uint8Array>;
   private attemptedTotal = 0;
+  private readonly profile = { parseMs: 0, transformMs: 0, insertMs: 0 };
+  private profileStart = 0;
 
   constructor(options: StrategyOptions, fileData: TermBankStrategyOptions) {
     super(options);
@@ -58,6 +60,7 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
   }
 
   protected async *parse(): AsyncGenerator<RawFrequencyEntry | RawDictionaryEntry> {
+    this.profileStart = performance.now();
     let files: Record<string, Uint8Array>;
     if (this.zipFiles) {
       files = this.zipFiles;
@@ -107,6 +110,7 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
 
     for (const bankPath of bankPaths) {
       await yieldToEventLoop();
+      let segStart = performance.now();
       let entries: TermBankEntry[];
       try {
         entries = JSON.parse(decodeText(files[bankPath]!));
@@ -120,14 +124,18 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
       this.addToAttemptedTotal(entries.length);
       for (const entry of entries) {
         const [expression, reading, definitionTags, rules, , definitions] = entry;
-        yield {
+        const raw: RawDictionaryEntry = {
           term: expression,
           reading: reading || expression,
           definition: typeof definitions === 'string' ? definitions : '',
           definitions: Array.isArray(definitions) ? definitions : undefined,
           pos: definitionTags || rules || '',
         };
+        this.profile.parseMs += performance.now() - segStart;
+        yield raw;
+        segStart = performance.now();
       }
+      this.profile.parseMs += performance.now() - segStart;
     }
   }
 
@@ -139,6 +147,7 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
 
     for (const bankPath of bankPaths) {
       await yieldToEventLoop();
+      let segStart = performance.now();
       let entries: TermMetaEntry[];
       try {
         entries = JSON.parse(decodeText(files[bankPath]!));
@@ -161,16 +170,25 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
         } else if (typeof meta === 'number') {
           frequency = meta;
         }
-        yield { term, reading, frequency };
+        const raw: RawFrequencyEntry = { term, reading, frequency };
+        this.profile.parseMs += performance.now() - segStart;
+        yield raw;
+        segStart = performance.now();
       }
+      this.profile.parseMs += performance.now() - segStart;
     }
   }
 
   protected transformEntry(raw: RawFrequencyEntry | RawDictionaryEntry): StoredRow | null {
-    if ('frequency' in raw) {
-      return this.transformFrequencyEntry(raw);
+    const t = performance.now();
+    try {
+      if ('frequency' in raw) {
+        return this.transformFrequencyEntry(raw);
+      }
+      return this.transformDictionaryEntry(raw);
+    } finally {
+      this.profile.transformMs += performance.now() - t;
     }
-    return this.transformDictionaryEntry(raw);
   }
 
   protected collectComponents(stored: StoredRow): void {
@@ -212,9 +230,25 @@ export class TermBankStrategy extends BaseImportStrategy<RawFrequencyEntry | Raw
   }
 
   protected async flushBatch(batch: ReadonlyArray<StoredRow>): Promise<void> {
-    const dict = batch.filter((e): e is Omit<DictionaryEntry, 'id'> => !isFreqRow(e));
-    const freq = batch.filter(isFreqRow);
-    if (dict.length > 0) await bulkInsertDictionaryEntries(this.options.langCode, dict);
-    if (freq.length > 0) await bulkInsertFrequencyEntries(this.options.langCode, freq);
+    const t = performance.now();
+    try {
+      const dict = batch.filter((e): e is Omit<DictionaryEntry, 'id'> => !isFreqRow(e));
+      const freq = batch.filter(isFreqRow);
+      if (dict.length > 0) await bulkInsertDictionaryEntries(this.options.langCode, dict);
+      if (freq.length > 0) await bulkInsertFrequencyEntries(this.options.langCode, freq);
+    } finally {
+      this.profile.insertMs += performance.now() - t;
+    }
+  }
+
+  protected resultExtras(): Partial<StrategyResult> {
+    const totalMs = performance.now() - this.profileStart;
+    const { parseMs, transformMs, insertMs } = this.profile;
+    const waitMs = Math.max(0, totalMs - parseMs - transformMs - insertMs);
+    const ms = (v: number) => v.toFixed(0);
+    console.info(
+      `[import] term-bank profile total=${ms(totalMs)}ms parse=${ms(parseMs)}ms transform=${ms(transformMs)}ms insert=${ms(insertMs)}ms wait=${ms(waitMs)}ms`,
+    );
+    return {};
   }
 }
