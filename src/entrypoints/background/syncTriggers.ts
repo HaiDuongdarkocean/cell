@@ -11,6 +11,9 @@ export const REMOTE_CHECK_LAST_KEY = 'syncLastCheckAt';
 export interface SyncTriggersDeps {
   readonly hasConnections: () => Promise<boolean>;
   readonly checkRemote: () => Promise<unknown>;
+  /** True while a resource import/delete job runs — check passes scan local
+   *  sources (IDB reads) and must not interleave with the write stream. */
+  readonly hasActiveResourceJob?: () => boolean;
   readonly now?: () => number;
   readonly sessionGet?: (key: string) => Promise<unknown>;
   readonly sessionSet?: (key: string, value: unknown) => Promise<void>;
@@ -68,6 +71,7 @@ export function isFirstStatusesGetForTab(tabId: number): boolean {
 export function requestRemoteCheck(): void {
   const current = deps;
   if (current === undefined) return;
+  if (current.hasActiveResourceJob?.()) return;
   void (async () => {
     if (lastCheckAt === undefined) {
       seedPromise ??= (async () => {

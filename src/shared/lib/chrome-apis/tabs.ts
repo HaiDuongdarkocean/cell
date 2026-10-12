@@ -40,27 +40,18 @@ export function sendTabMessageToFrame<T = unknown>(
 /**
  * Send a message to every frame in a tab. Use when the target content script
  * may live in a cross-origin player iframe and the top frame does not host the
- * <video> element. Frames without a matching listener simply ignore the message.
+ * <video> element. A plain tabs.sendMessage without frameId already fans out
+ * to all frames in the tab — enumerating frames via webNavigation.getAllFrames
+ * plus one sendMessage per frame is N+1 redundant IPCs per broadcast.
+ * Fire-and-forget: rejection (no listener) is swallowed like allSettled before.
  */
 export async function sendMessageToAllFramesInTab(
   tabId: number,
   message: unknown,
 ): Promise<void> {
   try {
-    const frames = await chrome.webNavigation.getAllFrames({ tabId });
-    if (!frames || frames.length === 0) {
-      await sendTabMessage(tabId, message);
-      return;
-    }
-    await Promise.allSettled(
-      frames.map((frame) =>
-        chrome.tabs.sendMessage(tabId, message, { frameId: frame.frameId }),
-      ),
-    );
-  } catch {
-    // getAllFrames may be unavailable on some contexts; fall back to top frame.
     await sendTabMessage(tabId, message);
-  }
+  } catch {}
 }
 
 export function reloadTab(tabId: number): Promise<void> {

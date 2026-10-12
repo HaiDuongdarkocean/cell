@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { t } from '@/shared/i18n';
-import { onDictionaryChanged, onWordStatusChanged } from '@/features/dictionary';
+import { onDictionaryChangedVisible, onWordStatusChanged } from '@/features/dictionary';
 import { getSrsCardTermSet, invalidateSrsCardTermSet, onSrsCardsChanged } from '@/features/srs';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import {
@@ -77,7 +77,7 @@ export function PreviewBlock({
   }, [baseTokens, langCode, showReadings, dictEpoch]);
 
   useEffect(() => {
-    return onDictionaryChanged(({ langCode: changed }) => {
+    return onDictionaryChangedVisible(({ langCode: changed }) => {
       if (changed && changed !== langCode) return;
       setDictEpoch((n) => n + 1);
     });

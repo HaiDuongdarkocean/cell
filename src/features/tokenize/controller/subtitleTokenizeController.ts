@@ -7,7 +7,7 @@ import { bindTokenBlock, restyleTokenBlock, unbindTokenBlock, type TokenSpanBind
 import { getWordStatuses, setWordStatus, toggleTrackingFlag } from '@/features/dictionary';
 import {
   emitWordStatusChanged,
-  onDictionaryChanged,
+  onDictionaryChangedVisible,
   onWordStatusChanged,
   onWordStatusesReload,
 } from '@/features/dictionary';
@@ -168,7 +168,7 @@ export function createSubtitleTokenizeController(
   // Dictionary corpus changed (import/delete/toggle/reorder) — re-resolve
   // statuses/frequencies/readings for every prepared term. map.resolveMetadata
   // overwrites tokens in place, so readings update without a DOM rebuild.
-  const unsubscribeDictionaryChanged = onDictionaryChanged(({ langCode: eventLangCode }) => {
+  const unsubscribeDictionaryChanged = onDictionaryChangedVisible(({ langCode: eventLangCode }) => {
     if (eventLangCode && eventLangCode !== langCode) return;
     preloader.invalidate();
   });
