@@ -1,6 +1,6 @@
 // resourceClient — contract test for the background proxy.
 //
-// sendMessage honors the __cellSendMessage override hook (showcase/test
+// sendMessage honors the __TihokaSendMessage override hook (showcase/test
 // transport); onMessage is a no-op without chrome, so progress push messages
 // are unobservable here — the chunk/dedup flow is what matters.
 
@@ -16,7 +16,7 @@ jest.mock('../logic/signatureGenerator', () => ({
 
 type SendOverride = (m: { type: string; payload: Record<string, unknown> }) => Promise<MessageResponse>;
 const g = globalThis as {
-  __cellSendMessage?: SendOverride;
+  __TihokaSendMessage?: SendOverride;
   CompressionStream?: unknown;
   Response?: unknown;
 };
@@ -83,7 +83,7 @@ interface SentChunk {
 
 function collectChunks() {
   const chunks: SentChunk[] = [];
-  g.__cellSendMessage = async (m) => {
+  g.__TihokaSendMessage = async (m) => {
     if (m.type === MESSAGE_TYPES.RESOURCE_LIST) return { success: true, data: { resources: [] } };
     if (m.type === MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK) {
       const p = m.payload as unknown as SentChunk;
@@ -103,13 +103,13 @@ const savedCompressionStream = g.CompressionStream;
 const savedResponse = g.Response;
 
 afterEach(() => {
-  delete g.__cellSendMessage;
+  delete g.__TihokaSendMessage;
   g.CompressionStream = savedCompressionStream;
   g.Response = savedResponse;
 });
 
 test('listResources returns resources from the background response', async () => {
-  g.__cellSendMessage = async (m) => {
+  g.__TihokaSendMessage = async (m) => {
     expect(m.type).toBe(MESSAGE_TYPES.RESOURCE_LIST);
     return { success: true, data: { resources: [existing] } };
   };
@@ -117,13 +117,13 @@ test('listResources returns resources from the background response', async () =>
 });
 
 test('listResources returns [] when no background is reachable', async () => {
-  g.__cellSendMessage = async () => undefined as unknown as MessageResponse;
+  g.__TihokaSendMessage = async () => undefined as unknown as MessageResponse;
   await expect(listResources('en')).resolves.toEqual([]);
 });
 
 test('import skips duplicates without uploading chunks', async () => {
   const sent: string[] = [];
-  g.__cellSendMessage = async (m) => {
+  g.__TihokaSendMessage = async (m) => {
     sent.push(m.type);
     if (m.type === MESSAGE_TYPES.RESOURCE_LIST) return { success: true, data: { resources: [existing] } };
     return { success: true, data: {} };
@@ -137,7 +137,7 @@ test('import skips duplicates without uploading chunks', async () => {
 });
 
 test('import sends the file as chunk(s) and returns the registry jobId', async () => {
-  g.__cellSendMessage = async (m) => {
+  g.__TihokaSendMessage = async (m) => {
     if (m.type === MESSAGE_TYPES.RESOURCE_LIST) return { success: true, data: { resources: [] } };
     if (m.type === MESSAGE_TYPES.RESOURCE_IMPORT_CHUNK) return { success: true, data: { jobId: 'bg-job-1' } };
     return { success: true, data: {} };

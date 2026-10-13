@@ -50,7 +50,7 @@ export function QueueSidePanel({
       onClose={onClose}
       side="right"
       ariaLabel={t('cardCreator.queue.aria')}
-      dataCellId="cc-queue-panel"
+      dataTihokaId="cc-queue-panel"
       flushContent
     >
       <QueueSidebar

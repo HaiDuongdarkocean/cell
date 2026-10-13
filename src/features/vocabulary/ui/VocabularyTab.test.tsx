@@ -57,7 +57,7 @@ const DEFAULT_ENTRIES: VocabularyEntry[] = [
   { term: 'date', status: 'tracking', updatedAt: 5 },
 ];
 
-const byId = (id: string): HTMLElement | null => document.querySelector(`[data-cell-id="${id}"]`);
+const byId = (id: string): HTMLElement | null => document.querySelector(`[data-tihoka-id="${id}"]`);
 const click = (id: string): void => {
   fireEvent.click(byId(id)!);
 };
@@ -210,11 +210,11 @@ describe('VocabularyTab', () => {
       Array.from({ length: 250 }, (_, i) => ({ term: `w${String(i).padStart(3, '0')}`, status: 'known', updatedAt: i })),
     );
     renderTab();
-    expect(document.querySelectorAll('[data-cell-id^="vocabulary-row-"]').length).toBe(100);
+    expect(document.querySelectorAll('[data-tihoka-id^="vocabulary-row-"]').length).toBe(100);
     act(() => {
       ioCallback?.([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
     });
-    expect(document.querySelectorAll('[data-cell-id^="vocabulary-row-"]').length).toBe(200);
+    expect(document.querySelectorAll('[data-tihoka-id^="vocabulary-row-"]').length).toBe(200);
   });
 
   it('opens Trash from the more menu with restore and delete-forever actions', async () => {

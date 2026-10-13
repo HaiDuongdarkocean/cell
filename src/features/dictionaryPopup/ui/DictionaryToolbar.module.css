@@ -1,17 +1,17 @@
 /* DictionaryToolbar — bottom tab bar (audio/image/translate/links/pronunciation). */
 
-.cellLabel {
+.TihokaLabel {
   display: none;
   font-size: var(--font-size-xs);
 }
 
-.cellToolbarTab svg {
+.TihokaToolbarTab svg {
   width: calc(var(--iconbutton-size-md) * var(--iconbutton-icon-ratio));
   height: calc(var(--iconbutton-size-md) * var(--iconbutton-icon-ratio));
   flex-shrink: 0;
 }
 
-.cellToolbar {
+.TihokaToolbar {
   display: flex;
   gap: var(--space-2);
   padding: 0;
@@ -19,9 +19,9 @@
 }
 
 /* Double class = specificity beats global .btn height/padding.
-   Icon-only (label hidden via .cellLabel): min-width keeps it a floor-sized
+   Icon-only (label hidden via .TihokaLabel): min-width keeps it a floor-sized
    circle. Label visible: content stretches width past min-width → pill. */
-.cellToolbar .cellToolbarTab {
+.TihokaToolbar .TihokaToolbarTab {
   position: relative;
   flex-shrink: 0;
   border-radius: var(--radius-full);
@@ -38,17 +38,17 @@
    --button-primary-dimmed-opacity, lifted on hover, lit on
    aria-selected/aria-pressed) — this module only sizes the tabs. */
 
-.cellToolbarLabel {
-  /* visibility is controlled by .cellLabel so container queries can hide it on narrow widths */
+.TihokaToolbarLabel {
+  /* visibility is controlled by .TihokaLabel so container queries can hide it on narrow widths */
 }
 
-.cellToolbarItem {
+.TihokaToolbarItem {
   position: relative;
   display: inline-flex;
   flex-shrink: 0;
 }
 
-.cellToolbarBadge {
+.TihokaToolbarBadge {
   position: absolute;
   top: calc(-1 * var(--space-1));
   right: calc(-1 * var(--space-1));
@@ -67,11 +67,11 @@
   pointer-events: none;
   z-index: var(--z-dropdown);
   transition: opacity var(--duration-fast) var(--ease-in-out);
-  animation: cellToolbarBadgeIn var(--duration-normal) var(--ease-spring) both;
+  animation: TihokaToolbarBadgeIn var(--duration-normal) var(--ease-spring) both;
 }
 
 /* Selection feedback: the badge pops in when a count first appears. */
-@keyframes cellToolbarBadgeIn {
+@keyframes TihokaToolbarBadgeIn {
   from {
     opacity: 0;
     transform: scale(0.5);
@@ -81,12 +81,12 @@
 /* Badge sleeps with its tab: dimmed at rest, fully lit on hover or when
    selected — the badge lives outside .button's overflow:hidden so it must
    track the tab's aria-selected / hover itself. */
-.cellToolbarItem:has(.cellToolbarTab[aria-selected="false"]) .cellToolbarBadge {
+.TihokaToolbarItem:has(.TihokaToolbarTab[aria-selected="false"]) .TihokaToolbarBadge {
   opacity: var(--button-primary-dimmed-opacity);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .cellToolbarItem:has(.cellToolbarTab[aria-selected="false"]:hover) .cellToolbarBadge {
+  .TihokaToolbarItem:has(.TihokaToolbarTab[aria-selected="false"]:hover) .TihokaToolbarBadge {
     opacity: 1;
   }
 }

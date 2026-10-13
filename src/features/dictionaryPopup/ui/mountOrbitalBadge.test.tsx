@@ -2,7 +2,7 @@ import { describe, expect, it, jest, beforeAll, afterEach } from '@jest/globals'
 import * as React from 'react';
 import { mountOrbitalBadge, type OrbitalBadgeMountController } from './mountOrbitalBadge';
 import type { PanelMountController } from '../controller/panelBridge';
-import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/cellUiHosts';
+import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/TihokaUiHosts';
 import type { OrbitalBadgeHandle, OrbitalBadgeProps } from './OrbitalBadge';
 
 jest.mock('./OrbitalBadge', () => ({
@@ -12,7 +12,7 @@ jest.mock('./OrbitalBadge', () => ({
       setExpanded: jest.fn(),
       getState: () => ({ expanded: false, preset: 'center' as const, center: { x: 0, y: 0 } }),
     }));
-    return React.createElement('div', { 'data-cell-id': 'orbital-badge-mock' });
+    return React.createElement('div', { 'data-tihoka-id': 'orbital-badge-mock' });
   }),
 }));
 
@@ -30,7 +30,7 @@ beforeAll(() => {
 });
 
 afterEach(() => {
-  document.querySelectorAll('.js-cell-orbital-badge-host').forEach((el) => el.remove());
+  document.querySelectorAll('.js-Tihoka-orbital-badge-host').forEach((el) => el.remove());
 });
 
 function makePanelController(open = true): PanelMountController & { close: jest.Mock; isOpen: jest.Mock } {
@@ -59,7 +59,7 @@ describe('mountOrbitalBadge panel dismiss guard', () => {
     badge = mountOrbitalBadge({ panelController });
 
     const popupHost = document.createElement('div');
-    popupHost.className = 'js-cell-popup-host';
+    popupHost.className = 'js-Tihoka-popup-host';
     popupHost.appendChild(document.createElement('span'));
     document.body.appendChild(popupHost);
     pointerDownOn(popupHost.firstChild as Element);
@@ -73,7 +73,7 @@ describe('mountOrbitalBadge panel dismiss guard', () => {
     badge = mountOrbitalBadge({ panelController });
 
     const cardHost = document.createElement('div');
-    cardHost.id = 'cell-card-creator-host';
+    cardHost.id = 'Tihoka-card-creator-host';
     document.body.appendChild(cardHost);
     pointerDownOn(cardHost);
 
@@ -98,7 +98,7 @@ describe('mountOrbitalBadge panel dismiss guard', () => {
     badge = mountOrbitalBadge({ panelController });
 
     const subtitleRoot = document.createElement('div');
-    subtitleRoot.id = 'cell-subtitle-root';
+    subtitleRoot.id = 'Tihoka-subtitle-root';
     document.body.appendChild(subtitleRoot);
     pointerDownOn(subtitleRoot);
 
@@ -153,7 +153,7 @@ describe('mountOrbitalBadge panel-open suppression', () => {
   }
 
   const badgeHost = (): HTMLElement =>
-    document.querySelector<HTMLElement>('.js-cell-orbital-badge-host')!;
+    document.querySelector<HTMLElement>('.js-Tihoka-orbital-badge-host')!;
 
   it('hides the badge host while the panel is open and restores it on close', () => {
     const panelController = makeOpenController(false);
@@ -192,21 +192,21 @@ describe('mountOrbitalBadge Player Mode host attach', () => {
   afterEach(() => {
     badge?.destroy();
     badge = undefined;
-    document.querySelectorAll('#cell-subtitle-root').forEach((el) => el.remove());
+    document.querySelectorAll('#Tihoka-subtitle-root').forEach((el) => el.remove());
   });
 
   function makePmHost(): HTMLElement {
     const host = document.createElement('div');
-    host.id = 'cell-subtitle-root';
-    host.setAttribute('data-cell-player-mode', 'true');
+    host.id = 'Tihoka-subtitle-root';
+    host.setAttribute('data-tihoka-player-mode', 'true');
     host.attachShadow({ mode: 'open' });
     document.body.appendChild(host);
     return host;
   }
 
   const badgeHost = (pmHost?: HTMLElement): HTMLElement =>
-    (pmHost?.shadowRoot?.querySelector<HTMLElement>('.js-cell-orbital-badge-host')
-      ?? document.querySelector<HTMLElement>('.js-cell-orbital-badge-host'))!;
+    (pmHost?.shadowRoot?.querySelector<HTMLElement>('.js-Tihoka-orbital-badge-host')
+      ?? document.querySelector<HTMLElement>('.js-Tihoka-orbital-badge-host'))!;
 
   it('attaches the badge into the PM host shadow when Player Mode is active without fullscreen', () => {
     const pmHost = makePmHost();
@@ -228,7 +228,7 @@ describe('mountOrbitalBadge Player Mode host attach', () => {
     badge = mountOrbitalBadge({});
     expect(badgeHost(pmHost).getRootNode()).toBe(pmHost.shadowRoot);
 
-    pmHost.removeAttribute('data-cell-player-mode');
+    pmHost.removeAttribute('data-tihoka-player-mode');
     badge.reattach();
     expect(badgeHost().getRootNode()).toBe(document);
     expect(badgeHost().parentElement).toBe(document.body);

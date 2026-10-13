@@ -64,7 +64,6 @@ const STATE_ROWS: readonly ImportJob[] = [
   job('duplicate.zip', { status: 'duplicate', duplicate: { existing: EXISTING } }),
   job('done.zip', { status: 'success', wordCount: 73643 }),
   job('broken.zip', { status: 'error', error: 'Định dạng "broken.zip" không được hỗ trợ.' }),
-  job('skipped.zip', { status: 'skipped' }),
 ];
 
 export function Showcase(): ReactElement {
@@ -75,7 +74,7 @@ export function Showcase(): ReactElement {
       </div>
       <div className={styles.panelFrame}>
         {STATE_ROWS.map((j) => (
-          <ImportProgress key={j.jobId} job={j} onResolveDuplicate={noop} onRerunReplace={noop} />
+          <ImportProgress key={j.jobId} job={j} onResolveDuplicate={noop} />
         ))}
       </div>
     </div>
@@ -84,7 +83,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Dictionary Resources Panel',
-  description: 'Dictionary + frequency resource management: per-file job rows (queued/uploading/importing/duplicate/success/error/skipped), dropzones, drag-reorder cards, delete confirm. Drop real files — the mock backend streams progress via JOB_EVENT.',
+  description: 'Dictionary + frequency resource management: per-file job rows (queued/uploading/importing/duplicate/success/error), dropzones, drag-reorder cards, delete confirm. Drop real files — the mock backend streams progress via JOB_EVENT.',
   level: 'organisms' as const,
   category: 'Dictionary',
   order: 30,

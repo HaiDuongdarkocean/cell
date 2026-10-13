@@ -30,7 +30,7 @@ export function DeleteConfirmModal({ resource, title, description, onConfirm, on
   const footer = (
     <>
       <Button variant="outline" className={styles.actionBtn} onClick={onCancel}>{t('resources.deleteModal.keep')}</Button>
-      <Button variant="destructive" className={styles.actionBtn} onClick={onConfirm} data-cell-id="confirm-delete">{t('resources.deleteModal.delete')}</Button>
+      <Button variant="destructive" className={styles.actionBtn} onClick={onConfirm} data-tihoka-id="confirm-delete">{t('resources.deleteModal.delete')}</Button>
     </>
   );
 
@@ -42,7 +42,7 @@ export function DeleteConfirmModal({ resource, title, description, onConfirm, on
       showCloseButton
       footer={footer}
       aria-describedby="delete-confirm-description"
-      data-cell-id="delete-confirm-modal"
+      data-tihoka-id="delete-confirm-modal"
     >
       <Separator className={styles.divider} />
       <p id="delete-confirm-description" className={styles.description}>{resolvedDescription}</p>

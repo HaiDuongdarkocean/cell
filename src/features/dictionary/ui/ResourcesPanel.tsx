@@ -19,11 +19,11 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef, type ReactElement, type ReactNode } from 'react';
 import { t, type MessageKey } from '@/shared/i18n';
-import { Alert } from '@/shared/ui/Alert';
-import { Button, Checkbox, EmptyState } from '@/shared/ui';
+import { createToastHost } from '@/shared/ui/mountToast';
+import { ShadowThemeProvider } from '@/features/theme';
+import { Button, Checkbox, Collapsible, Dropzone, EmptyState } from '@/shared/ui';
 import { SettingsGroup } from '@/shared/ui/SettingsGroup';
 import { VisuallyHidden } from '@/shared/ui/VisuallyHidden';
-import { Dropzone } from './Dropzone';
 import { ResourceCard, ResourceCardSkeleton } from './ResourceCard';
 import { ImportProgress } from './ImportProgress';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
@@ -55,6 +55,10 @@ import { buildPendingImports, deletingSignatures, isRunningJob, makeJobId, signa
 import styles from './ResourcesPanel.module.css';
 
 const SUCCESS_DISMISS_MS = 4000;
+
+// Completion/failure feedback rides the shared toast stack — a pill fixed
+// bottom-center of the screen, outside the panel.
+const toastHost = createToastHost({ provider: ShadowThemeProvider, ttlMs: SUCCESS_DISMISS_MS });
 
 /** Scheduler bounds — see spec REQ-3/NFR-1 memory rationale. */
 const MAX_CONCURRENT_IMPORTS = 2;
@@ -116,7 +120,6 @@ interface ResourceSectionProps {
   readonly onFiles: (files: File[]) => void;
   readonly onToggleComponent: (jobId: string, component: DictionaryComponent) => void;
   readonly onResolveDuplicate: (jobId: string, choice: DuplicateDecision) => void;
-  readonly onRerunReplace: (jobId: string) => void;
   readonly onRetryLocal: (jobId: string) => void;
   readonly onDismissLocal: (jobId: string) => void;
   readonly onRetryJob: (jobId: string) => void;
@@ -128,7 +131,6 @@ interface ResourceSectionProps {
   readonly onChanged: () => void;
   readonly onDeleteAll: () => void;
   readonly onSetEnabledMany: (ids: readonly number[], enabled: boolean) => void;
-  readonly footer?: ReactNode;
 }
 
 function ResourceSection({
@@ -142,7 +144,6 @@ function ResourceSection({
   onFiles,
   onToggleComponent,
   onResolveDuplicate,
-  onRerunReplace,
   onRetryLocal,
   onDismissLocal,
   onRetryJob,
@@ -154,7 +155,6 @@ function ResourceSection({
   onChanged,
   onDeleteAll,
   onSetEnabledMany,
-  footer,
 }: ResourceSectionProps): ReactElement {
   const [editing, setEditing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<number>>(new Set());
@@ -174,6 +174,26 @@ function ResourceSection({
   // sit exactly there so the row and the card that replaces it share a slot.
   const priorityEnd = resources.findIndex((r) => r.priority == null);
   const pendingAt = priorityEnd < 0 ? resources.length : priorityEnd;
+
+  // Drag layout math runs on absolute positions (resource slots + pending rows
+  // share the same visual list) so non-slot rows part for the drop gap too.
+  const pendingCount = pending.rows.length;
+  const dragFrom = drag ? resources.findIndex((x) => x.id === drag.draggedId) : -1;
+  const absIndex = (i: number): number => (i < pendingAt ? i : i + pendingCount);
+  const dragAbs = dragFrom >= 0 ? absIndex(dragFrom) : -1;
+  const collapsedAbs = (a: number): number => (a > dragAbs ? a - 1 : a);
+  const gapCollapsed = ((): number => {
+    if (!drag || dragFrom < 0) return 0;
+    const restCount = resources.length - 1;
+    if (drag.toIndex >= restCount) {
+      const lastIdx = dragFrom === resources.length - 1 ? resources.length - 2 : resources.length - 1;
+      return collapsedAbs(absIndex(lastIdx)) + 1;
+    }
+    const si = drag.toIndex < dragFrom ? drag.toIndex : drag.toIndex + 1;
+    return collapsedAbs(absIndex(si));
+  })();
+  const shiftForAbs = (a: number): number =>
+    drag != null && collapsedAbs(a) >= gapCollapsed ? drag.cardHeight + drag.gap : 0;
 
   const toggleEditing = (): void => {
     setEditing((v) => !v);
@@ -212,16 +232,12 @@ function ResourceSection({
 
   const renderCard = (r: ResourceInfo, i: number): ReactElement => {
     const dragged = drag != null && r.id === drag.draggedId;
-    const dragFrom = drag ? resources.findIndex((x) => x.id === drag.draggedId) : -1;
-    const collapsedPos = drag && dragFrom >= 0 && i > dragFrom ? i - 1 : i;
-    const shiftY = drag && !dragged && collapsedPos >= drag.toIndex
-      ? drag.cardHeight + drag.gap
-      : 0;
+    const shiftY = dragged ? 0 : shiftForAbs(absIndex(i));
     return (
       <div
         key={r.id}
         role="listitem"
-        data-cell-id={`slot-${r.id}`}
+        data-tihoka-id={`slot-${r.id}`}
         data-dragging={dragged || undefined}
         className={`${styles.slot} ${dragged ? styles.slotDragging : ''} ${drag?.settling ? styles.slotSettling : ''}`}
         style={drag
@@ -250,6 +266,7 @@ function ResourceSection({
 
   return (
     <SettingsGroup
+      label={t('resources.group.label', [resources.length])}
       action={
         manageable.length > 0 ? (
           <Button
@@ -260,7 +277,7 @@ function ResourceSection({
             aria-label={t(isEditing ? 'resources.edit.done' : 'resources.edit.start', [t(copy.title)])}
             title={t(isEditing ? 'resources.edit.titleDone' : 'resources.edit.titleStart')}
             onClick={toggleEditing}
-            data-cell-id={`edit-${sectionId}`}
+            data-tihoka-id={`edit-${sectionId}`}
           >
             <Icon name={isEditing ? 'check' : 'pencil'} size="xs" />
           </Button>
@@ -269,14 +286,14 @@ function ResourceSection({
     >
 
       {isEditing && (
-        <div className={styles.editBar} data-cell-id={`edit-bar-${sectionId}`}>
+        <div className={styles.editBar} data-tihoka-id={`edit-bar-${sectionId}`}>
           <Checkbox
             checked={selectedCount === manageable.length}
             indeterminate={selectedCount > 0 && selectedCount < manageable.length}
             onChange={selectedCount === manageable.length ? () => setSelectedIds(new Set()) : selectAll}
             label={t('resources.edit.selectAll')}
             className={styles.selectAll}
-            data-cell-id={`select-all-${sectionId}`}
+            data-tihoka-id={`select-all-${sectionId}`}
           />
           <span className={styles.selectionCount}>
             {t('resources.edit.selectedCount', [selectedCount, manageable.length])}
@@ -287,7 +304,7 @@ function ResourceSection({
               size="sm"
               disabled={busy || selectedCount === 0}
               onClick={() => bulkSetEnabled(true)}
-              data-cell-id={`enable-selected-${sectionId}`}
+              data-tihoka-id={`enable-selected-${sectionId}`}
             >
               {t('resources.edit.enable')}
             </Button>
@@ -296,7 +313,7 @@ function ResourceSection({
               size="sm"
               disabled={busy || selectedCount === 0}
               onClick={() => bulkSetEnabled(false)}
-              data-cell-id={`disable-selected-${sectionId}`}
+              data-tihoka-id={`disable-selected-${sectionId}`}
             >
               {t('resources.edit.disable')}
             </Button>
@@ -306,7 +323,7 @@ function ResourceSection({
               className={styles.dangerAction}
               disabled={busy}
               onClick={handleContextualDelete}
-              data-cell-id={`delete-selected-${sectionId}`}
+              data-tihoka-id={`delete-selected-${sectionId}`}
             >
               {selectedCount > 0 ? t('resources.delete.selected', [selectedCount]) : t('resources.delete.all')}
             </Button>
@@ -319,6 +336,7 @@ function ResourceSection({
         hint={t(copy.dropHint)}
         accept={copy.accept}
         disabled={false}
+        compact
         onFiles={onFiles}
       />
       <div className={styles.resourceList} role="list" ref={listRef}>
@@ -328,44 +346,49 @@ function ResourceSection({
             <ResourceCardSkeleton />
           </>
         ) : resources.length === 0 && pending.rows.length === 0 ? (
-          <EmptyState bordered size="sm" description={t(copy.empty)} />
+          <EmptyState size="sm" description={t(copy.empty)} />
         ) : (
           <>
             {resources.slice(0, pendingAt).map((r, i) => renderCard(r, i))}
-            {pending.rows.map((row) => row.local != null ? (
-              <ImportProgress
-                key={row.key}
-                job={row.local}
-                waitingRemoval={row.local.signature !== '' && heldSigs.has(row.local.signature)}
-                onToggleComponent={onToggleComponent}
-                onResolveDuplicate={onResolveDuplicate}
-                onRerunReplace={onRerunReplace}
-                onRetry={onRetryLocal}
-                onDismiss={onDismissLocal}
-              />
-            ) : (
-              <JobRow
-                key={row.key}
-                job={row.job}
-                onDismiss={onDismissJob}
-                onRetry={onRetryJob}
-              />
-            ))}
+            {pending.rows.map((row, rowIdx) => {
+              const shiftY = shiftForAbs(pendingAt + rowIdx);
+              return (
+                <div
+                  key={row.key}
+                  className={styles.slot}
+                  style={drag ? { transform: `translateY(${shiftY}px)` } : undefined}
+                >
+                  {row.local != null ? (
+                    <ImportProgress
+                      job={row.local}
+                      waitingRemoval={row.local.signature !== '' && heldSigs.has(row.local.signature)}
+                      onToggleComponent={onToggleComponent}
+                      onResolveDuplicate={onResolveDuplicate}
+                      onRetry={onRetryLocal}
+                      onDismiss={onDismissLocal}
+                    />
+                  ) : (
+                    <JobRow
+                      job={row.job}
+                      onDismiss={onDismissJob}
+                      onRetry={onRetryJob}
+                    />
+                  )}
+                </div>
+              );
+            })}
             {resources.slice(pendingAt).map((r, i) => renderCard(r, pendingAt + i))}
             {drag && (
               <div
                 className={styles.dropPlaceholder}
                 style={{ top: drag.slotTop, height: drag.cardHeight }}
-                data-cell-id="drag-placeholder"
+                data-tihoka-id="drag-placeholder"
                 aria-hidden="true"
               />
             )}
           </>
         )}
       </div>
-
-      {resources.length > 0 && footer && <div className={styles.sectionFooter}>{footer}</div>}
-      {resources.length === 0 && footer}
     </SettingsGroup>
   );
 }
@@ -374,13 +397,12 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
   const [resources, setResources] = useState<ResourceInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [jobs, setJobsState] = useState<ImportJob[]>([]);
-  const [panelAlert, setPanelAlert] = useState<{ variant: 'success' | 'error'; text: string } | null>(null);
   const [announcement, setAnnouncement] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<ResourceInfo | null>(null);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deleteManyTarget, setDeleteManyTarget] = useState<readonly number[] | null>(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const jobsRef = useRef<ImportJob[]>([]);
-  const alertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // jobsRef is the SSOT — updated synchronously so pump()/runJob() read the
   // freshest queue inside the same event tick (a setState updater would only
@@ -401,10 +423,8 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     setTimeout(() => setAnnouncement(text), 50);
   }, []);
 
-  const showPanelAlert = useCallback((variant: 'success' | 'error', text: string) => {
-    if (alertTimer.current) clearTimeout(alertTimer.current);
-    setPanelAlert({ variant, text });
-    alertTimer.current = setTimeout(() => setPanelAlert(null), SUCCESS_DISMISS_MS);
+  const showNotice = useCallback((variant: 'success' | 'error', text: string) => {
+    toastHost.showToast(text, variant);
   }, []);
 
   const refresh = useCallback(async (soft = false) => {
@@ -413,11 +433,11 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
       const list = await listResources(langCode);
       setResources(list);
     } catch (e) {
-      showPanelAlert('error', t('resources.alert.loadFailed', [String(e)]));
+      showNotice('error', t('resources.alert.loadFailed', [String(e)]));
     } finally {
       if (!soft) setLoading(false);
     }
-  }, [langCode, showPanelAlert]);
+  }, [langCode, showNotice]);
 
   useEffect(() => {
     void refresh();
@@ -461,22 +481,22 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
 
   useJobTerminalWatcher(registryJobs, useCallback((job: Job) => {
     void refresh(true);
-    // The visible Alert is itself role=status — announcing again would
+    // The toast stack is itself role=status — announcing again would
     // duplicate the utterance for screen readers.
     if (job.kind === 'resource-import') {
       if (job.status === 'done') {
-        showPanelAlert('success', t('resources.announce.added', [job.label, job.result?.wordCount ?? 0]));
+        showNotice('success', t('resources.announce.added', [job.label, job.result?.wordCount ?? 0]));
       } else {
-        showPanelAlert('error', t('resources.announce.failed', [job.label, jobErrorText(job.error ?? job.status)]));
+        showNotice('error', t('resources.announce.failed', [job.label, jobErrorText(job.error ?? job.status)]));
       }
     } else if (job.kind === 'resource-delete') {
       if (job.status === 'done') {
-        showPanelAlert('success', t('resources.delete.one', [job.label]));
+        showNotice('success', t('resources.delete.one', [job.label]));
       } else {
-        showPanelAlert('error', t('resources.delete.failed', [jobErrorText(job.error ?? job.status)]));
+        showNotice('error', t('resources.delete.failed', [jobErrorText(job.error ?? job.status)]));
       }
     }
-  }, [refresh, showPanelAlert]));
+  }, [refresh, showNotice]));
 
   const handleDismissJob = useCallback((jobId: string) => {
     void dismissJob(jobId).catch(() => undefined);
@@ -484,13 +504,6 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
 
   const handleRetryJob = useCallback((jobId: string) => {
     void retryJob(jobId).catch(() => undefined);
-  }, []);
-
-  // Clear pending auto-dismiss timers on unmount.
-  useEffect(() => {
-    return () => {
-      if (alertTimer.current) clearTimeout(alertTimer.current);
-    };
   }, []);
 
   const runJobRef = useRef<(jobId: string) => Promise<void>>(async () => {});
@@ -570,10 +583,7 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
       });
 
       if ('skipped' in outcome) {
-        patchJob(jobId, {
-          status: 'skipped',
-          duplicate: { existing: outcome.existingResource },
-        });
+        setJobs((prev) => prev.filter((j) => j.jobId !== jobId));
         announce(t('resources.announce.skipped', [job.fileName]));
         void refresh(true);
       } else {
@@ -652,7 +662,8 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
             (j) => j.kind === 'resource-import' && !isTerminalJob(j) && signatureOf(j) === signature,
           );
           if (duplicateInFlight || duplicateRegistered || seen.has(signature)) {
-            patchJob(jobId, { signature, status: 'skipped' });
+            setJobs((prev) => prev.filter((j) => j.jobId !== jobId));
+            announce(t('resources.announce.skipped', [file.name]));
             return;
           }
           seen.add(signature);
@@ -669,32 +680,16 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
     const job = jobsRef.current.find((j) => j.jobId === jobId);
     const pending = job?.duplicate;
     if (!job || !pending) return;
-    patchJob(jobId, {
-      duplicate: null,
-      status: choice === 'replace' ? 'uploading' : 'skipped',
-    });
+    if (choice === 'replace') {
+      patchJob(jobId, { duplicate: null, status: 'uploading' });
+    } else {
+      setJobs((prev) => prev.filter((j) => j.jobId !== jobId));
+    }
     if (pending.resolve) {
       pending.resolve(choice);
     }
     if (choice === 'skip') pump();
-  }, [patchJob, pump]);
-
-  /** Skipped row "Thay thế" — re-run the same file forcing 'replace' on its row. */
-  const rerunReplace = useCallback((jobId: string): void => {
-    const job = jobsRef.current.find((j) => j.jobId === jobId);
-    if (!job) return;
-    patchJob(jobId, {
-      status: 'queued',
-      forceReplace: true,
-      duplicate: null,
-      error: null,
-      processed: 0,
-      total: 0,
-      uploadSent: 0,
-      uploadTotal: 0,
-    });
-    pump();
-  }, [patchJob, pump]);
+  }, [patchJob, pump, setJobs]);
 
   /** Multi-component files can be narrowed while queued/uploading — the last
    *  remaining component can't be deselected. */
@@ -753,12 +748,12 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
       }
     }
     if (firstError != null) {
-      showPanelAlert('error', t('resources.delete.failed', [firstError]));
+      showNotice('error', t('resources.delete.failed', [firstError]));
       announce(t('resources.delete.failed', [firstError]));
       void refresh(true);
     }
     // Success announcements + refresh come from the job terminal watcher.
-  }, [langCode, deleteBusy, announce, refresh, showPanelAlert]);
+  }, [langCode, deleteBusy, announce, refresh, showNotice]);
 
   const handleDelete = useCallback(async (resource: ResourceInfo) => {
     setDeleteTarget(null);
@@ -782,13 +777,13 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
       for (const r of targets) {
         await setResourceEnabled(langCode, r.id!, enabled);
       }
-      showPanelAlert('success', t('resources.edit.toggledMany', [targets.length]));
+      showNotice('success', t('resources.edit.toggledMany', [targets.length]));
       void refresh(true);
     } catch (e) {
-      showPanelAlert('error', t('resources.edit.toggleFailed', [String(e)]));
+      showNotice('error', t('resources.edit.toggleFailed', [String(e)]));
       void refresh(true);
     }
-  }, [resources, langCode, refresh, showPanelAlert]);
+  }, [resources, langCode, refresh, showNotice]);
 
   const handleDeleteAll = useCallback(async () => {
     setDeleteAllOpen(false);
@@ -802,24 +797,11 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
 
   const sortedResources = sortByPriority(resources);
 
-  const bandsFooter = (
-    <FrequencyBandsEditor value={frequencyBands} onChange={onFrequencyBandsChange} />
-  );
-
   return (
-    <div className={styles.panel} data-cell-id="resources-panel">
+    <div className={styles.panel} data-tihoka-id="resources-panel">
       <VisuallyHidden>
         <span role="status" aria-live="polite">{announcement}</span>
       </VisuallyHidden>
-
-      {panelAlert && (
-        <Alert
-          variant={panelAlert.variant}
-          description={panelAlert.text}
-          role="status"
-          data-cell-id="panel-alert"
-        />
-      )}
 
       <div className={styles.columns}>
         <div className={styles.sections}>
@@ -834,7 +816,6 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
             onFiles={(files) => void handleFiles(files)}
             onToggleComponent={handleToggleComponent}
             onResolveDuplicate={resolveDuplicate}
-            onRerunReplace={rerunReplace}
             onDismissJob={handleDismissJob}
             onRetryJob={handleRetryJob}
             onRetryLocal={handleRetryLocal}
@@ -846,12 +827,33 @@ export function ResourcesPanel({ langCode, frequencyBands, onFrequencyBandsChang
             onChanged={() => void refresh(true)}
             onDeleteAll={() => { if (!deleteBusy) setDeleteAllOpen(true); }}
             onSetEnabledMany={(ids, enabled) => void handleSetEnabledMany(ids, enabled)}
-            footer={bandsFooter}
           />
+
+          <div className={styles.advancedGroup} role="group" aria-label={t('resources.advanced.title')}>
+            <button
+              type="button"
+              className={styles.advancedToggle}
+              onClick={() => setAdvancedOpen((o) => !o)}
+              aria-expanded={advancedOpen}
+              data-open={advancedOpen}
+              data-tihoka-id="resources-advanced-toggle"
+            >
+              <span className={styles.advancedLabel}>{t('resources.advanced.title')}</span>
+              <Icon name="chevronDown" size={16} />
+            </button>
+            <Collapsible collapsed={!advancedOpen}>
+              <SettingsGroup
+                label={t('resources.bands.title')}
+                description={t('resources.bands.hint')}
+              >
+                <FrequencyBandsEditor value={frequencyBands} onChange={onFrequencyBandsChange} />
+              </SettingsGroup>
+            </Collapsible>
+          </div>
         </div>
 
         {lookupPanel && (
-          <aside className={styles.lookupColumn} data-cell-id="resources-lookup-column">
+          <aside className={styles.lookupColumn} data-tihoka-id="resources-lookup-column">
             {lookupPanel}
           </aside>
         )}

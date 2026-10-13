@@ -1,13 +1,12 @@
-// ImportProgress — one job row per dropped file (water-fill concept).
+// ImportProgress — one job row per dropped file.
 //
-// The card IS the queue: a placeholder row appears in the resource list the
-// moment a file is dropped. A primary-subtle fill rises through the card as
-// entries stream in; the right edge shows spinner → % → terminal icon.
-// Statuses: queued | uploading | importing | duplicate | success | error | skipped.
+// Skeleton: [leading status icon] [name · meta ............ % | buttons]
+//                                  [progress bar — running states only]
+// Statuses: queued | uploading | importing | duplicate | success | error.
 
 import { type ReactElement } from 'react';
 import { t } from '@/shared/i18n';
-import { Button, Chip } from '@/shared/ui';
+import { Button, Progress } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { Spinner } from '@/shared/ui/Spinner';
 import type { DictionaryComponent } from '@/entities/dictionary';
@@ -21,63 +20,52 @@ interface ImportProgressProps {
   readonly waitingRemoval?: boolean;
   readonly onToggleComponent?: (jobId: string, component: DictionaryComponent) => void;
   readonly onResolveDuplicate: (jobId: string, choice: 'replace' | 'skip') => void;
-  readonly onRerunReplace: (jobId: string) => void;
   readonly onRetry?: (jobId: string) => void;
   readonly onDismiss?: (jobId: string) => void;
 }
-
-const kindLabel = (c: DictionaryComponent): string =>
-  t(c === 'frequency' ? 'resources.job.kind.frequency' : 'resources.job.kind.dictionary');
-
-const PICKER_LIVE: ReadonlySet<ImportJob['status']> = new Set(['queued', 'uploading']);
 
 function percent(part: number, whole: number): number {
   if (whole <= 0) return 0;
   return Math.min(100, Math.round((part / whole) * 100));
 }
 
-export function ImportProgress({ job, waitingRemoval, onToggleComponent, onResolveDuplicate, onRerunReplace, onRetry, onDismiss }: ImportProgressProps): ReactElement {
+export function ImportProgress({ job, waitingRemoval, onResolveDuplicate, onRetry, onDismiss }: ImportProgressProps): ReactElement {
   const isUpload = job.status === 'uploading';
   const isImport = job.status === 'importing';
   const fillPct = isUpload
     ? percent(job.uploadSent, job.uploadTotal)
     : percent(job.processed, job.total);
+  const running = job.status === 'queued' || isUpload || isImport;
+  const indeterminate = (isUpload && job.uploadTotal === 0) || (isImport && job.total === 0);
 
   const cls = [
     styles.job,
     job.status === 'queued' ? styles.jobQueued : '',
     job.status === 'error' ? styles.jobError : '',
-    job.status === 'duplicate' || job.status === 'skipped' ? styles.jobDup : '',
+    job.status === 'duplicate' ? styles.jobDup : '',
   ].filter(Boolean).join(' ');
 
   let meta: React.ReactNode = null;
   let right: React.ReactNode = null;
+  let leading: React.ReactNode = null;
 
   switch (job.status) {
     case 'queued':
       meta = <span className={styles.metaMuted}>{t(waitingRemoval === true ? 'resources.job.waitingRemoval' : 'resources.job.waiting')}</span>;
-      right = <Spinner size="sm" ariaLabel={t(waitingRemoval === true ? 'resources.job.waitingRemoval' : 'resources.job.waiting')} />;
+      leading = <Spinner size="lg" ariaLabel={t(waitingRemoval === true ? 'resources.job.waitingRemoval' : 'resources.job.waiting')} />;
+      right = <span className={styles.pct}>0%</span>;
       break;
     case 'uploading':
-      if (job.uploadTotal === 0) {
-        meta = <span className={styles.metaMuted}>{t('resources.job.preparing')}</span>;
-        right = <Spinner size="sm" ariaLabel={t('resources.job.preparing')} />;
-      } else {
-        meta = <span className={styles.metaMuted}>{t('resources.job.uploading', [fillPct])}</span>;
-        right = <span className={styles.pct}>{fillPct}%</span>;
-      }
+      meta = job.uploadTotal === 0
+        ? <span className={styles.metaMuted}>{t('resources.job.preparing')}</span>
+        : <span className={styles.metaMuted}>{t('resources.job.uploadingState')}</span>;
+      leading = <Spinner size="lg" ariaLabel={t('resources.job.uploadingState')} />;
+      if (job.uploadTotal > 0) right = <span className={styles.pct}>{fillPct}%</span>;
       break;
     case 'importing':
-      meta = (
-        <span className={styles.metaMuted}>
-          {job.total > 0
-            ? t('resources.job.importingOf', [job.processed.toLocaleString(), job.total.toLocaleString()])
-            : t('resources.job.importing', [job.processed.toLocaleString()])}
-        </span>
-      );
-      right = job.total > 0
-        ? <span className={styles.pct}>{fillPct}%</span>
-        : <Spinner size="sm" ariaLabel={t('resources.job.counting')} />;
+      meta = <span className={styles.metaMuted}>{t('resources.job.addingState')}</span>;
+      leading = <Spinner size="lg" ariaLabel={t(job.total > 0 ? 'resources.job.addingState' : 'resources.job.counting')} />;
+      if (job.total > 0) right = <span className={styles.pct}>{fillPct}%</span>;
       break;
     case 'duplicate': {
       const existing = job.duplicate?.existing;
@@ -86,139 +74,88 @@ export function ImportProgress({ job, waitingRemoval, onToggleComponent, onResol
         <span className={styles.metaDup}>
           {t('resources.job.exists', [existing?.name ?? ''])}
           {replaceBlocked && t('resources.job.existsBlocked')}
-          <span className={styles.dupActions}>
-            <Button
-              variant="outline"
-              size="xs"
-              disabled={replaceBlocked}
-              onClick={() => onResolveDuplicate(job.jobId, 'replace')}
-              data-cell-id={`dup-replace-${job.jobId}`}
-            >
-              {t('resources.job.replace')}
-            </Button>
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={() => onResolveDuplicate(job.jobId, 'skip')}
-              data-cell-id={`dup-skip-${job.jobId}`}
-            >
-              {t('resources.job.skip')}
-            </Button>
-          </span>
         </span>
       );
-      right = <Icon name="triangleAlert" size="sm" className={styles.iconDup} />;
+      leading = <Icon name="triangleAlert" size="md" className={styles.iconDup} />;
+      right = (
+        <>
+          <Button
+            variant="secondary"
+            size="sm"
+            className={styles.action}
+            disabled={replaceBlocked}
+            onClick={() => onResolveDuplicate(job.jobId, 'replace')}
+            data-tihoka-id={`dup-replace-${job.jobId}`}
+          >
+            {t('resources.job.replace')}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            className={styles.action}
+            onClick={() => onResolveDuplicate(job.jobId, 'skip')}
+            data-tihoka-id={`dup-skip-${job.jobId}`}
+          >
+            {t('resources.job.skip')}
+          </Button>
+        </>
+      );
       break;
     }
     case 'success':
       meta = <span className={styles.metaOk}>{t('resources.job.added', [job.wordCount?.toLocaleString() ?? ''])}</span>;
-      right = <Icon name="circleCheck" size="sm" className={styles.iconOk} />;
+      leading = <Icon name="circleCheck" size="md" className={styles.iconOk} />;
       break;
     case 'error':
-      meta = (
-        <span className={styles.metaErr}>
-          {job.error}
-          <span className={styles.dupActions}>
-            {onRetry !== undefined && (
-              <Button
-                variant="outline"
-                size="xs"
-                onClick={() => onRetry(job.jobId)}
-                data-cell-id={`job-retry-${job.jobId}`}
-              >
-                {t('jobs.action.retry')}
-              </Button>
-            )}
-            {onDismiss !== undefined && (
-              <Button
-                variant="ghost"
-                size="xs"
-                onClick={() => onDismiss(job.jobId)}
-                data-cell-id={`job-dismiss-${job.jobId}`}
-              >
-                {t('jobs.action.dismiss')}
-              </Button>
-            )}
-          </span>
-        </span>
-      );
-      right = <Icon name="alertCircle" size="sm" className={styles.iconErr} />;
-      break;
-    case 'skipped':
-      meta = (
-        <span className={styles.metaDup}>
-          {t('resources.job.skipped')}
-          <span className={styles.dupActions}>
+      meta = <span className={styles.metaErr}>{job.error}</span>;
+      leading = <Icon name="alertCircle" size="md" className={styles.iconErr} />;
+      right = (
+        <>
+          {onRetry !== undefined && (
             <Button
-              variant="outline"
-              size="xs"
-              onClick={() => onRerunReplace(job.jobId)}
-              data-cell-id={`skipped-replace-${job.jobId}`}
+              variant="secondary"
+              size="sm"
+              className={styles.action}
+              onClick={() => onRetry(job.jobId)}
+              data-tihoka-id={`job-retry-${job.jobId}`}
             >
-              {t('resources.job.replace')}
+              {t('jobs.action.retry')}
             </Button>
-            {onDismiss !== undefined && (
-              <Button
-                variant="ghost"
-                size="xs"
-                onClick={() => onDismiss(job.jobId)}
-                data-cell-id={`job-dismiss-${job.jobId}`}
-              >
-                {t('jobs.action.dismiss')}
-              </Button>
-            )}
-          </span>
-        </span>
+          )}
+          {onDismiss !== undefined && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className={styles.action}
+              onClick={() => onDismiss(job.jobId)}
+              data-tihoka-id={`job-dismiss-${job.jobId}`}
+            >
+              {t('jobs.action.dismiss')}
+            </Button>
+          )}
+        </>
       );
-      right = <Icon name="triangleAlert" size="sm" className={styles.iconDup} />;
       break;
   }
 
   return (
-    <div className={cls} data-cell-id={`import-job-${job.jobId}`} role="listitem" aria-live="polite">
-      {(isUpload || (isImport && job.total > 0)) && (
-        <span
-          className={styles.fill}
-          style={{ transform: `scaleY(${fillPct / 100})` }}
-          aria-hidden="true"
-        />
-      )}
-      <div className={styles.row}>
+    <div className={cls} data-tihoka-id={`import-job-${job.jobId}`} role="listitem" aria-live="polite">
+      {leading !== null && <span className={styles.leading}>{leading}</span>}
+      <div className={styles.body}>
         <div className={styles.info}>
           <span className={styles.name}>{job.fileName}</span>
-          {job.detectedComponents.length > 0 && (
-            <span className={styles.kindChips}>
-              {job.detectedComponents.map((c) => {
-                const label = kindLabel(c);
-                const pickable = job.detectedComponents.length > 1
-                  && PICKER_LIVE.has(job.status)
-                  && onToggleComponent !== undefined;
-                const lastSelected = job.selectedComponents.length === 1
-                  && job.selectedComponents[0] === c;
-                return pickable ? (
-                  <Chip
-                    key={c}
-                    as="button"
-                    size="sm"
-                    variant="outline"
-                    selected={job.selectedComponents.includes(c)}
-                    disabled={lastSelected}
-                    title={lastSelected ? t('resources.job.componentRequired') : undefined}
-                    onClick={() => onToggleComponent(job.jobId, c)}
-                    aria-label={t('resources.job.componentToggle', [label])}
-                    data-cell-id={`job-component-${c}-${job.jobId}`}
-                  >
-                    {label}
-                  </Chip>
-                ) : job.selectedComponents.includes(c) ? (
-                  <Chip key={c} size="sm" variant="outline">{label}</Chip>
-                ) : null;
-              })}
-            </span>
-          )}
-          {meta}
+          {meta !== null && <><span className={styles.metaSep} aria-hidden="true">·</span>{meta}</>}
+          {right !== null && <span className={styles.right}>{right}</span>}
         </div>
-        <span className={styles.right}>{right}</span>
+        {running && (
+          <Progress
+            size="sm"
+            value={fillPct}
+            indeterminate={indeterminate || undefined}
+            className={styles.progress}
+            aria-label={job.fileName}
+          />
+        )}
       </div>
     </div>
   );

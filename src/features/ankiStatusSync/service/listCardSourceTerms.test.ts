@@ -51,7 +51,7 @@ beforeEach(async () => {
   closeStatusSyncDb();
   closeAllSrsDBs();
   await deleteDb('cell-anki-status-sync');
-  await deleteDb('cell-srs-devmode0');
+  await deleteDb('Tihoka-srs-devmode0');
 });
 
 afterEach(() => {

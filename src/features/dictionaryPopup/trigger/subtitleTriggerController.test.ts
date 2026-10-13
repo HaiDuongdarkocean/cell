@@ -12,11 +12,11 @@ import type { LookupRequest, TriggerMode } from '@/entities/dictionary';
 
 function makeSpan(term: string, start: number, end: number, surface = term): HTMLSpanElement {
   const span = document.createElement('span');
-  span.className = 'js-cell-token';
+  span.className = 'js-Tihoka-token';
   span.textContent = surface;
-  span.setAttribute('data-cell-term', term);
-  span.setAttribute('data-cell-start', String(start));
-  span.setAttribute('data-cell-end', String(end));
+  span.setAttribute('data-tihoka-term', term);
+  span.setAttribute('data-tihoka-start', String(start));
+  span.setAttribute('data-tihoka-end', String(end));
   return span;
 }
 
@@ -83,7 +83,7 @@ describe('buildLookupRequest', () => {
   it('keeps the full sentence when the span carries no offset', () => {
     const span = document.createElement('span');
     span.textContent = 'four';
-    span.setAttribute('data-cell-term', 'four');
+    span.setAttribute('data-tihoka-term', 'four');
     const req = buildLookupRequest(span, 'One two. Three four.', 'en');
     expect(req.contextSentence).toBe('One two. Three four.');
     expect(req.cursorOffset).toBe(0);
@@ -260,7 +260,7 @@ describe('SubtitleTriggerController', () => {
       ctrl.attach(spans, 'Hello world.', 'en');
 
       const popupHost = document.createElement('div');
-      popupHost.className = 'js-cell-popup-host';
+      popupHost.className = 'js-Tihoka-popup-host';
       document.body.appendChild(popupHost);
 
       spans[0]!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));

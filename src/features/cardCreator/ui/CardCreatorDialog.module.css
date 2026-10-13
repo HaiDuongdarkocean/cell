@@ -250,7 +250,7 @@
    - pair row becomes a single column
    - selects are allowed to truncate */
 @container (max-width: 480px) {
-  .cc-dialog__footer-mode [data-cell-id] button {
+  .cc-dialog__footer-mode [data-tihoka-id] button {
     min-width: 0;
   }
 }

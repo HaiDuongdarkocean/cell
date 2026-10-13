@@ -10,11 +10,11 @@ function TestPopup(props: UsePopupPositionOptions): React.ReactElement {
   const { style, isSheet, popupRef, onPointerDownHeader, onPointerDownResize, onPointerDownSheet, onPointerDownContent } = usePopupPosition(props);
   return React.createElement(
     'div',
-    { ref: popupRef, style, 'data-cell-id': 'popup-root', 'data-sheet': isSheet ? 'true' : 'false' },
-    React.createElement('div', { 'data-cell-id': 'popup-header', onPointerDown: onPointerDownHeader }, 'Header'),
-    React.createElement('div', { 'data-cell-id': 'popup-sheet-handle', onPointerDown: onPointerDownSheet }, 'Handle'),
-    React.createElement('div', { 'data-cell-id': 'popup-content', onPointerDown: onPointerDownContent }, 'Content'),
-    React.createElement('div', { 'data-cell-id': 'popup-resize', onPointerDown: onPointerDownResize }, 'Resize'),
+    { ref: popupRef, style, 'data-tihoka-id': 'popup-root', 'data-sheet': isSheet ? 'true' : 'false' },
+    React.createElement('div', { 'data-tihoka-id': 'popup-header', onPointerDown: onPointerDownHeader }, 'Header'),
+    React.createElement('div', { 'data-tihoka-id': 'popup-sheet-handle', onPointerDown: onPointerDownSheet }, 'Handle'),
+    React.createElement('div', { 'data-tihoka-id': 'popup-content', onPointerDown: onPointerDownContent }, 'Content'),
+    React.createElement('div', { 'data-tihoka-id': 'popup-resize', onPointerDown: onPointerDownResize }, 'Resize'),
   );
 }
 
@@ -39,9 +39,9 @@ beforeAll(() => {
 beforeEach(() => {
   Object.defineProperty(document.documentElement, 'clientWidth', { value: 1024, configurable: true });
   Object.defineProperty(document.documentElement, 'clientHeight', { value: 768, configurable: true });
-  delete document.documentElement.dataset.cellPlayerMode;
-  document.documentElement.style.removeProperty('--cell-player-mode-video-height');
-  document.documentElement.style.removeProperty('--cell-player-mode-dock-height');
+  delete document.documentElement.dataset.tihokaPlayerMode;
+  document.documentElement.style.removeProperty('--Tihoka-player-mode-video-height');
+  document.documentElement.style.removeProperty('--Tihoka-player-mode-dock-height');
 });
 
 describe('usePopupPosition', () => {
@@ -99,9 +99,9 @@ describe('usePopupPosition', () => {
 
   it('bounds the Player Mode sheet between video and dock', () => {
     Object.defineProperty(document.documentElement, 'clientWidth', { value: 400, configurable: true });
-    document.documentElement.dataset.cellPlayerMode = 'true';
-    document.documentElement.style.setProperty('--cell-player-mode-video-height', '270px');
-    document.documentElement.style.setProperty('--cell-player-mode-dock-height', '128px');
+    document.documentElement.dataset.tihokaPlayerMode = 'true';
+    document.documentElement.style.setProperty('--Tihoka-player-mode-video-height', '270px');
+    document.documentElement.style.setProperty('--Tihoka-player-mode-dock-height', '128px');
 
     render(React.createElement(TestPopup, { anchor: defaultAnchor, onClose: jest.fn() }));
     const root = screen.getByTestId('popup-root');

@@ -10,13 +10,13 @@ export interface LinksPanelProps {
 
 export function LinksPanel({ links }: LinksPanelProps): React.JSX.Element {
   return (
-    <div className={styles.cellLinks} data-cell-id="dictionary-links-panel">
+    <div className={styles.TihokaLinks} data-tihoka-id="dictionary-links-panel">
       {links.length === 0 ? (
         <EmptyState
           size="md"
           icon={<Icon name="link"  />}
           title={t('dict.links.empty')}
-          data-cell-id="dictionary-links-empty"
+          data-tihoka-id="dictionary-links-empty"
         />
       ) : (
         links.map((link) => (
@@ -25,8 +25,8 @@ export function LinksPanel({ links }: LinksPanelProps): React.JSX.Element {
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            className={styles.cellLinksItem}
-            data-cell-id={`dictionary-link-${link.id}`}
+            className={styles.TihokaLinksItem}
+            data-tihoka-id={`dictionary-link-${link.id}`}
           >
             <Icon name="link"  />
             <span>{link.name}</span>

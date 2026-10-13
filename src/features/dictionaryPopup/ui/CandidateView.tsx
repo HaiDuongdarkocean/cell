@@ -6,9 +6,8 @@ import { Heading } from '@/shared/ui/Heading';
 import { DEFAULT_BAND_THRESHOLDS, type FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { usePronunciation } from '@/features/pronunciation';
-import { useAudioItemUrl } from '@/features/pronunciation';
-import { PronunciationPanel } from '@/features/pronunciation';
-import type { AudioEngineKind } from '@/features/pronunciation';
+import { supportsEspeakIpa } from '@/features/pronunciation';
+import { PronunciationPanel, normalizeAccent } from '@/features/pronunciation';
 import { t, type MessageKey } from '@/shared/i18n';
 import { openSrsStudyPage } from '@/features/srs';
 import { useCandidate } from './useCandidate';
@@ -24,7 +23,7 @@ import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './CandidateView.module.css';
 import { makeSubsenseId } from '../logic/definitionSelection';
-import type { LookupResult, DefinitionEntry, SubsenseBlock, RelationGroup, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot, SenseLine, RelatedEntry } from '@/entities/dictionary';
+import type { LookupResult, DefinitionEntry, SubsenseBlock, RelationGroup, WordStatus, PopupCardCreatorPrefill, PopupTab, PopupSelectionSnapshot, SenseLine, RelatedEntry } from '@/entities/dictionary';
 
 const EMPTY_EXAMPLE_SET: ReadonlySet<number> = new Set<number>();
 
@@ -53,31 +52,6 @@ function formatReading(reading: string, readingKind: LookupResult['readingKind']
   return reading;
 }
 
-function toAudioEngineKind(source: AudioSourceKind): AudioEngineKind {
-  switch (source) {
-    case 'local':
-      return 'localFile';
-    case 'espeak':
-      return 'espeak';
-    case 'cloud-tts':
-      return 'supertonic';
-    case 'system-tts':
-      return 'browserTts';
-    case 'community':
-    default:
-      return 'native';
-  }
-}
-
-function findSelectedWordAudio(
-  items: readonly AudioItem[],
-  selection: Map<string, boolean>,
-): AudioItem | undefined {
-  return items.find(
-    (item) => item.kind === 'word' && selection.get(item.id) === true,
-  );
-}
-
 export interface CandidateViewProps {
   readonly candidate: LookupResult;
   readonly index: number;
@@ -95,6 +69,8 @@ export interface CandidateViewProps {
   readonly selectionSnapshot?: PopupSelectionSnapshot;
   /** Preload media/translation in the integrated panel. */
   readonly preloadMedia?: boolean;
+  /** Popup variant only: drag-to-move session started from the header row. */
+  readonly onHeaderPointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
 }
 
 export function CandidateView({
@@ -110,6 +86,7 @@ export function CandidateView({
   defaultActiveTab,
   selectionSnapshot,
   preloadMedia,
+  onHeaderPointerDown,
 }: CandidateViewProps): React.JSX.Element {
   const panel = useCandidate({
     candidate,
@@ -124,14 +101,18 @@ export function CandidateView({
     preloadMedia,
   });
 
+  const needsEspeakReading = !panel.displayReading && supportsEspeakIpa(candidate.langCode);
+  const accentLabel = panel.variant?.prons[panel.accentIndex]?.accent ?? panel.preferredAccent;
+  const phonemeLangCode =
+    supportsEspeakIpa(candidate.langCode) && normalizeAccent(accentLabel) === 'us'
+      ? 'en-us'
+      : candidate.langCode;
   const { pronunciation } = usePronunciation({
     term: candidate.term,
-    langCode: candidate.langCode,
-    enabled: panel.activeTab === 'pronunciation',
+    langCode: phonemeLangCode,
+    enabled: panel.activeTab === 'pronunciation' || needsEspeakReading,
   });
-
-  const selectedWordAudio = findSelectedWordAudio(panel.audioItems, panel.audioSelection);
-  const selectedWordAudioUrl = useAudioItemUrl(selectedWordAudio);
+  const espeakReading = panel.displayReading ? '' : (pronunciation?.ipa ?? '');
 
   const wordRowRef = useRef<HTMLDivElement | null>(null);
   const [termTruncated, setTermTruncated] = useState(false);
@@ -140,7 +121,7 @@ export function CandidateView({
     const row = wordRowRef.current;
     if (!row) return;
     const check = (): void => {
-      const el = row.querySelector<HTMLElement>('[data-cell-id="dictionary-term"]');
+      const el = row.querySelector<HTMLElement>('[data-tihoka-id="dictionary-term"]');
       if (el) setTermTruncated(el.scrollWidth > el.clientWidth + 1);
     };
     check();
@@ -150,6 +131,7 @@ export function CandidateView({
   }, [candidate.term]);
 
   const [frequencyThresholds, setFrequencyThresholds] = useState<FrequencyBandThresholds>(DEFAULT_BAND_THRESHOLDS);
+  const [frequencyDisplay, setFrequencyDisplay] = useState<'stars' | 'rank'>('stars');
   const [translationRevealed, setTranslationRevealed] = useState(false);
   const isMountedRef = useRef(false);
   const didLoadRef = useRef(false);
@@ -161,6 +143,7 @@ export function CandidateView({
         const next = s.frequencyBands ?? DEFAULT_BAND_THRESHOLDS;
         didLoadRef.current = true;
         setFrequencyThresholds(next);
+        setFrequencyDisplay(s.dictionaryPopup?.frequencyDisplay ?? 'stars');
         setTranslationRevealed(s.dictionaryPopup?.translationVisibility === 'shown');
       })
       .catch(() => { /* keep defaults */ });
@@ -170,7 +153,7 @@ export function CandidateView({
   return (
     <article
       className={styles.candidate}
-      data-cell-id={`dictionary-candidate-${index}`}
+      data-tihoka-id={`dictionary-candidate-${index}`}
     >
       {candidate.variants && candidate.variants.length > 1 && (
         <PosVariantNav
@@ -179,30 +162,34 @@ export function CandidateView({
           onSelect={panel.selectVariant}
         />
       )}
-      <header className={styles.cellHeader} data-cell-id="dictionary-header">
-        <div className={styles.cellHeaderRow}>
-          <div className={styles.cellHeaderMain}>
-            <div className={styles.cellHeaderWordRow} ref={wordRowRef}>
+      <header className={styles.TihokaHeader} data-tihoka-id="dictionary-header">
+        <div
+          className={onHeaderPointerDown ? `${styles.TihokaHeaderRow} ${styles.TihokaHeaderRowDraggable}` : styles.TihokaHeaderRow}
+          title={onHeaderPointerDown ? t('dict.badge.drag') : undefined}
+          onPointerDown={onHeaderPointerDown}
+        >
+          <div className={styles.TihokaHeaderMain}>
+            <div className={styles.TihokaHeaderWordRow} ref={wordRowRef}>
               {termTruncated ? (
-                <Tooltip content={candidate.term} placement="bottom" activateOnClick className={styles.cellHeaderWordTooltip}>
-                  <Heading level={2} size={2} className={styles.cellHeaderWord} data-cell-id="dictionary-term">{candidate.term}</Heading>
+                <Tooltip content={candidate.term} placement="bottom" activateOnClick className={styles.TihokaHeaderWordTooltip}>
+                  <Heading level={2} size={2} className={styles.TihokaHeaderWord} data-tihoka-id="dictionary-term">{candidate.term}</Heading>
                 </Tooltip>
               ) : (
-                <Heading level={2} size={2} className={styles.cellHeaderWord} data-cell-id="dictionary-term">{candidate.term}</Heading>
+                <Heading level={2} size={2} className={styles.TihokaHeaderWord} data-tihoka-id="dictionary-term">{candidate.term}</Heading>
               )}
             </div>
           </div>
-          <div className={styles.cellHeaderActions}>
+          <div className={styles.TihokaHeaderActions}>
             {onSendToCard && (
               <Button
                 shape="circle"
                 size="md"
                 variant="outline"
-                className={styles.cellHeaderSend}
+                className={styles.TihokaHeaderSend}
                 aria-label={t('dict.action.sendToCard')}
                 title={t('dict.action.sendToCard')}
                 onClick={() => { void panel.sendToCard(); }}
-                data-cell-id="dictionary-send-to-card"
+                data-tihoka-id="dictionary-send-to-card"
               >
                 <Icon name="pencil"  />
               </Button>
@@ -212,11 +199,11 @@ export function CandidateView({
                 shape="circle"
                 size="md"
                 variant="primary"
-                className={styles.cellHeaderQuickAdd}
+                className={styles.TihokaHeaderQuickAdd}
                 aria-label={t('dict.action.quickAdd')}
                 title={t('dict.action.quickAdd')}
                 onClick={() => { void panel.quickAdd(); }}
-                data-cell-id="dictionary-quick-add"
+                data-tihoka-id="dictionary-quick-add"
               >
                 <Icon name="zap"  />
               </Button>
@@ -225,29 +212,31 @@ export function CandidateView({
         </div>
       </header>
 
-      <div className={styles.cellContent} data-cell-id="dictionary-content">
-        {(panel.displayReading || candidate.level) && (
-          <div className={styles.cellHeaderReading}>
+      <div className={styles.TihokaContent} data-tihoka-id="dictionary-content">
+        {(panel.displayReading || espeakReading || candidate.level) && (
+          <div className={styles.TihokaHeaderReading}>
             {panel.variant && panel.variant.prons.length > 0 && (
               <Button
                 variant="unstyled"
-                className={styles.cellAccentLabel}
+                className={styles.TihokaAccentLabel}
                 disabled={panel.variant.prons.length < 2}
                 title={panel.variant.prons.length > 1 ? t('dict.accent.toggle', [panel.variant.prons[panel.accentIndex]?.accent ?? '']) : undefined}
                 onClick={panel.cycleAccent}
-                data-cell-id="dictionary-accent-toggle"
+                data-tihoka-id="dictionary-accent-toggle"
                 data-compact-hit
               >
                 {panel.variant.prons[panel.accentIndex]?.accent ?? ''}
               </Button>
             )}
-            {panel.displayReading && (
-              <span className={styles.cellHeaderIpa} data-cell-id="dictionary-reading">
-                {formatReading(panel.displayReading, candidate.readingKind)}
+            {(panel.displayReading || espeakReading) && (
+              <span className={styles.TihokaHeaderIpa} data-tihoka-id="dictionary-reading">
+                {panel.displayReading
+                  ? formatReading(panel.displayReading, candidate.readingKind)
+                  : formatReading(espeakReading, 'ipa')}
               </span>
             )}
             {candidate.level && (
-              <span className={styles.cellHeaderLevel} data-cell-id="dictionary-level">[{candidate.level}]</span>
+              <span className={styles.TihokaHeaderLevel} data-tihoka-id="dictionary-level">[{candidate.level}]</span>
             )}
           </div>
         )}
@@ -260,6 +249,7 @@ export function CandidateView({
           frequencies={panel.displayFrequencies}
           stars={panel.displayStars}
           thresholds={frequencyThresholds}
+          frequencyDisplay={frequencyDisplay}
         />
 
         <DictionaryToolbar
@@ -274,10 +264,10 @@ export function CandidateView({
           }}
         />
 
-        {/* key=activeTab remounts on tab switch so .cellTabContent replays
+        {/* key=activeTab remounts on tab switch so .TihokaTabContent replays
            its entrance — panels animate in instead of teleporting. */}
         {panel.activeTab && (
-        <div key={panel.activeTab} className={styles.cellTabContent}>
+        <div key={panel.activeTab} className={styles.TihokaTabContent}>
         {panel.activeTab === 'audio' && (
           <PronunciationAudioPanel
             items={panel.audioItems}
@@ -318,11 +308,10 @@ export function CandidateView({
         )}
         {panel.activeTab === 'links' && <LinksPanel links={panel.links} />}
         {panel.activeTab === 'pronunciation' && (
-          <div data-cell-id="dictionary-pronunciation-panel">
+          <div data-tihoka-id="dictionary-pronunciation-panel">
             <PronunciationPanel
               pronunciation={pronunciation}
-              audioUrl={selectedWordAudioUrl}
-              audioSource={selectedWordAudio ? toAudioEngineKind(selectedWordAudio.source) : undefined}
+              accent={accentLabel}
             />
           </div>
         )}
@@ -330,19 +319,19 @@ export function CandidateView({
         )}
 
         {panel.displayInflections && panel.displayInflections.length > 0 && (
-          <div className={styles.cellMetaLine} data-cell-id="dictionary-word-forms">
-            <span className={styles.cellMetaLabel}>{t('dict.meta.wordForms')}:</span>{' '}
+          <div className={styles.TihokaMetaLine} data-tihoka-id="dictionary-word-forms">
+            <span className={styles.TihokaMetaLabel}>{t('dict.meta.wordForms')}:</span>{' '}
             {panel.displayInflections.map((g, i) => (
               <span key={i}>
                 {i > 0 && ' · '}
-                {g.type && <span className={styles.cellMetaLabel}>{g.type} </span>}
+                {g.type && <span className={styles.TihokaMetaLabel}>{g.type} </span>}
                 {g.forms.join(', ')}
               </span>
             ))}
           </div>
         )}
 
-        <section className={panelStyles.cellDef} aria-label={t('dict.definitions.aria')} data-cell-id="dictionary-definitions" data-allow-lookup>
+        <section className={panelStyles.TihokaDef} aria-label={t('dict.definitions.aria')} data-tihoka-id="dictionary-definitions" data-allow-lookup>
         {panel.displayDefinitions.length === 0 ? (
           <EmptyState
             size="md"
@@ -351,16 +340,16 @@ export function CandidateView({
                 {t('dict.definitions.empty')}{' '}
                 <Button
                   variant="unstyled"
-                  className={styles.cellEmptyLink}
+                  className={styles.TihokaEmptyLink}
                   onClick={onOpenSettings}
-                  data-cell-id="dictionary-import-dictionary"
+                  data-tihoka-id="dictionary-import-dictionary"
                   data-compact-hit
                 >
                   {t('dict.definitions.import')}
                 </Button>
               </>
             ) : t('dict.definitions.emptyHint')}
-            data-cell-id="dictionary-definitions-empty"
+            data-tihoka-id="dictionary-definitions-empty"
           />
         ) : (
           panel.displayDefinitions.map((def) => (
@@ -438,35 +427,35 @@ function EntryMeta({
     return null;
   }
   return (
-    <section className={styles.cellMeta} data-cell-id="dictionary-meta">
+    <section className={styles.TihokaMeta} data-tihoka-id="dictionary-meta">
       {wordFamilyParts.length > 0 && (
-        <div className={styles.cellMetaLine}>
-          <span className={styles.cellMetaLabel}>{t('dict.meta.wordFamily')}:</span>{' '}
+        <div className={styles.TihokaMetaLine}>
+          <span className={styles.TihokaMetaLabel}>{t('dict.meta.wordFamily')}:</span>{' '}
           {wordFamilyParts.map(([pos, forms]) => `${pos} ${forms.join(', ')}`).join(' · ')}
         </div>
       )}
       {wordNetParts.map(([label, terms]) => (
-        <div key={label} className={styles.cellMetaLine}>
-          <span className={styles.cellMetaLabel}>{label}:</span> {terms.join(', ')}
+        <div key={label} className={styles.TihokaMetaLine}>
+          <span className={styles.TihokaMetaLabel}>{label}:</span> {terms.join(', ')}
         </div>
       ))}
       {candidate.derivedTerms && candidate.derivedTerms.length > 0 && (
-        <div className={styles.cellMetaLine}>
-          <span className={styles.cellMetaLabel}>{t('dict.meta.derivedTerms')}:</span> {candidate.derivedTerms.join(', ')}
+        <div className={styles.TihokaMetaLine}>
+          <span className={styles.TihokaMetaLabel}>{t('dict.meta.derivedTerms')}:</span> {candidate.derivedTerms.join(', ')}
         </div>
       )}
       {relatedGroups.map(([kind, items]) => (
-        <div key={kind} className={styles.cellMetaLine}>
-          <span className={styles.cellMetaLabel}>{relatedKindLabel(kind)}:</span>{' '}
+        <div key={kind} className={styles.TihokaMetaLine}>
+          <span className={styles.TihokaMetaLabel}>{relatedKindLabel(kind)}:</span>{' '}
           {items.map((r, i) => (
             <span key={r.term}>
               {i > 0 && ', '}
               <span
-                className={styles.cellRelatedLink}
+                className={styles.TihokaRelatedLink}
                 title={r.preview}
                 data-allow-lookup
                 data-lookup-term={r.term}
-                data-cell-id={`dictionary-related-${r.term}`}
+                data-tihoka-id={`dictionary-related-${r.term}`}
               >
                 {r.term}
               </span>
@@ -545,20 +534,20 @@ function ExampleRows({
 }): React.JSX.Element | null {
   if (!examples.length) return null;
   return (
-    <div className={styles.cellDefExamples}>
+    <div className={styles.TihokaDefExamples}>
       {examples.map((ex, i) => {
         const exChecked = checkedExamples.has(i);
         return (
           <div
             key={i}
-            className={checkStyles.cellDefExampleItem}
-            data-cell-id="dictionary-example"
+            className={checkStyles.TihokaDefExampleItem}
+            data-tihoka-id="dictionary-example"
             role="checkbox"
             aria-checked={exChecked}
             tabIndex={0}
             onClick={(e) => {
               const el = e.target as HTMLElement;
-              if (el.closest(`.${styles.cellDefExampleText}`) !== null) return;
+              if (el.closest(`.${styles.TihokaDefExampleText}`) !== null) return;
               if (selectionText(el)) return;
               onToggleExample(ownerId, i, !exChecked);
             }}
@@ -571,13 +560,13 @@ function ExampleRows({
             }}
           >
             <span
-              className={`${checkStyles.cellDefCheck} ${exChecked ? checkStyles['cellDefCheck--checked'] : ''}`}
+              className={`${checkStyles.TihokaDefCheck} ${exChecked ? checkStyles['TihokaDefCheck--checked'] : ''}`}
             >
-              <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
+              <span className={checkStyles.TihokaDefCheckBox} aria-hidden="true">
                 <Icon name="check" size="md" />
               </span>
             </span>
-            <span className={styles.cellDefExampleText}>
+            <span className={styles.TihokaDefExampleText}>
               <SenseLineView line={ex} revealedByDefault={translationRevealed} />
             </span>
           </div>
@@ -601,7 +590,7 @@ function RelationTail({
     : (synonyms?.length ? [{ words: synonyms }] : []);
   if (!groups.length && !antonyms?.length) return null;
   return (
-    <div className={styles.defTail} data-cell-id="dictionary-relations">
+    <div className={styles.defTail} data-tihoka-id="dictionary-relations">
       {groups.map((g, i) => (
         <span key={i} className={styles.defLine} data-role="note">
           <span className={styles.defLineMeta}>synonyms and related words: </span>
@@ -641,16 +630,16 @@ function SubsenseRow({
   const subId = makeSubsenseId(defId, index);
   const checked = definitionSelection.get(subId) === true;
   return (
-    <div className={styles.defSubGroup} data-cell-id="dictionary-subsense-group">
+    <div className={styles.defSubGroup} data-tihoka-id="dictionary-subsense-group">
       <div
-        className={checkStyles.cellDefItem}
-        data-cell-id="dictionary-subsense"
+        className={checkStyles.TihokaDefItem}
+        data-tihoka-id="dictionary-subsense"
         role="checkbox"
         aria-checked={checked}
         tabIndex={0}
         onClick={(e) => {
           const el = e.target as HTMLElement;
-          if (el.closest(`.${styles.cellDefText}`) !== null) return;
+          if (el.closest(`.${styles.TihokaDefText}`) !== null) return;
           if (selectionText(el)) return;
           onToggle(subId, !checked);
         }}
@@ -662,15 +651,15 @@ function SubsenseRow({
           }
         }}
       >
-        <div className={styles.cellDefRow}>
+        <div className={styles.TihokaDefRow}>
           <span
-            className={`${checkStyles.cellDefCheck} ${checked ? checkStyles['cellDefCheck--checked'] : ''}`}
+            className={`${checkStyles.TihokaDefCheck} ${checked ? checkStyles['TihokaDefCheck--checked'] : ''}`}
           >
-            <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
+            <span className={checkStyles.TihokaDefCheckBox} aria-hidden="true">
               <Icon name="check" size="md" />
             </span>
           </span>
-          <span className={styles.cellDefText}>
+          <span className={styles.TihokaDefText}>
             {sub.num ? <span className={styles.defSubsenseNum}>{sub.num}. </span> : null}
             {(sub.labels ?? []).map((l) => `[${l}] `)}
             {sub.text}
@@ -715,17 +704,17 @@ function DefinitionItem({
   const headOnlyLine = !hasLines && Boolean(head) && (hasSubsenses || definition.examples.length > 0);
   const showRow = hasLines || hasSubsenses || headOnlyLine || Boolean(!definition.lines && definition.text.trim());
   return (
-    <div className={styles.cellDefGroup} title={definition.source || undefined}>
+    <div className={styles.TihokaDefGroup} title={definition.source || undefined}>
       {showRow && (
       <div
-        className={checkStyles.cellDefItem}
-        data-cell-id="dictionary-definition"
+        className={checkStyles.TihokaDefItem}
+        data-tihoka-id="dictionary-definition"
         role="checkbox"
         aria-checked={checked}
         tabIndex={0}
         onClick={(e) => {
           const el = e.target as HTMLElement;
-          if (el.closest(`.${styles.cellDefText}`) !== null) return;
+          if (el.closest(`.${styles.TihokaDefText}`) !== null) return;
           if (selectionText(el)) return;
           onToggle(definition.id, !checked);
         }}
@@ -736,15 +725,15 @@ function DefinitionItem({
           }
         }}
       >
-      <div className={styles.cellDefRow}>
+      <div className={styles.TihokaDefRow}>
         <span
-          className={`${checkStyles.cellDefCheck} ${checked ? checkStyles['cellDefCheck--checked'] : ''}`}
+          className={`${checkStyles.TihokaDefCheck} ${checked ? checkStyles['TihokaDefCheck--checked'] : ''}`}
         >
-          <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
+          <span className={checkStyles.TihokaDefCheckBox} aria-hidden="true">
             <Icon name="check" size="md" />
           </span>
         </span>
-        <span className={styles.cellDefText}>
+        <span className={styles.TihokaDefText}>
           {definition.lines ? (
             <>
               {hasLines ? (

@@ -79,6 +79,8 @@ export function buildPrefill(
     // Full lookup result + media arrays for the integrated Dictionary clone:
     // the left pane can re-render the exact candidate and its loaded tabs.
     lookupResult: result,
+    frequencies: variant ? variant.variant.frequencies : result.frequencies,
+    frequencyStars: variant ? variant.variant.frequencyStars : result.frequencyStars,
     audioItems,
     imageItems,
     selectedDefinitionIds: definitionSelection

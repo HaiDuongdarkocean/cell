@@ -21,7 +21,7 @@ export const POPUP_SHEET_BREAKPOINT_PX = BREAKPOINTS.medium; // sync with CSS @m
 
 /** Player Mode active — used for Player Mode-specific bounds, NOT for forcing sheet mode. */
 export function isPlayerModeActive(): boolean {
-  return document.documentElement?.dataset.cellPlayerMode === 'true';
+  return document.documentElement?.dataset.tihokaPlayerMode === 'true';
 }
 export const SHEET_SNAP_THRESHOLD_PX = 40;
 export const SHEET_DISMISS_THRESHOLD_PX = 100;

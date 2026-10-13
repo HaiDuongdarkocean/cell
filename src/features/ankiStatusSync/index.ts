@@ -1,6 +1,8 @@
 export {
   runAnkiStatusSync,
   getSyncState,
+  ankiStatusSyncView,
+  ankiSyncRunning,
   listCardSourceTerms,
   notifyUserMarkedKnown,
   srsDeckLangCode,

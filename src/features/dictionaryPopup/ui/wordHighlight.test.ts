@@ -22,7 +22,7 @@ describe('WordHighlight', () => {
 
     highlight.show(span);
 
-    expect(span.classList.contains('js-cell-word-highlight')).toBe(true);
+    expect(span.classList.contains('js-Tihoka-word-highlight')).toBe(true);
   });
 
   it('element mode: clear removes class', () => {
@@ -33,7 +33,7 @@ describe('WordHighlight', () => {
     highlight.show(span);
     highlight.clear();
 
-    expect(span.classList.contains('js-cell-word-highlight')).toBe(false);
+    expect(span.classList.contains('js-Tihoka-word-highlight')).toBe(false);
   });
 
   it('DOM wrap mode: wraps continuous range in <span>', () => {
@@ -48,7 +48,7 @@ describe('WordHighlight', () => {
 
     highlight.show(range);
 
-    const mark = document.querySelector('span.js-cell-word-highlight');
+    const mark = document.querySelector('span.js-Tihoka-word-highlight');
     expect(mark).not.toBeNull();
     expect(mark!.textContent).toBe('quick');
   });
@@ -66,7 +66,7 @@ describe('WordHighlight', () => {
     highlight.show(range);
     highlight.clear();
 
-    expect(document.querySelector('span.js-cell-word-highlight')).toBeNull();
+    expect(document.querySelector('span.js-Tihoka-word-highlight')).toBeNull();
     // Text content should be restored.
     expect(p.textContent).toBe('The quick brown fox');
   });
@@ -99,7 +99,7 @@ describe('WordHighlight', () => {
 
     highlight.show(range2);
 
-    const mark = document.querySelector('span.js-cell-word-highlight');
+    const mark = document.querySelector('span.js-Tihoka-word-highlight');
     expect(mark).not.toBeNull();
     expect(mark!.textContent).toBe('world');
   });
@@ -127,8 +127,8 @@ describe('WordHighlight', () => {
 
     // surroundContents should throw → fallback to overlay divs.
     // Either way, something should be highlighted.
-    const hasMark = document.querySelector('span.js-cell-word-highlight');
-    const hasOverlay = document.querySelector('.js-cell-word-highlight-overlay');
+    const hasMark = document.querySelector('span.js-Tihoka-word-highlight');
+    const hasOverlay = document.querySelector('.js-Tihoka-word-highlight-overlay');
 
     expect(hasMark !== null || hasOverlay !== null).toBe(true);
   });
@@ -152,7 +152,7 @@ describe('WordHighlight', () => {
     highlight.show(range);
     highlight.clear();
 
-    expect(document.querySelector('.js-cell-word-highlight-overlay')).toBeNull();
+    expect(document.querySelector('.js-Tihoka-word-highlight-overlay')).toBeNull();
   });
 
   it('injects <style> element with highlight CSS', () => {
@@ -165,9 +165,9 @@ describe('WordHighlight', () => {
 
     highlight.show(range);
 
-    const style = document.getElementById('cell-word-highlight-style');
+    const style = document.getElementById('Tihoka-word-highlight-style');
     expect(style).not.toBeNull();
-    expect(style!.textContent).toContain('js-cell-word-highlight');
+    expect(style!.textContent).toContain('js-Tihoka-word-highlight');
     expect(style!.textContent).toContain('!important');
   });
 
@@ -182,8 +182,8 @@ describe('WordHighlight', () => {
     highlight.show(range);
     highlight.destroy();
 
-    expect(document.getElementById('cell-word-highlight-style')).toBeNull();
-    expect(document.querySelector('span.js-cell-word-highlight')).toBeNull();
+    expect(document.getElementById('Tihoka-word-highlight-style')).toBeNull();
+    expect(document.querySelector('span.js-Tihoka-word-highlight')).toBeNull();
   });
 
   it('show replaces previous highlight (no accumulation)', () => {
@@ -209,7 +209,7 @@ describe('WordHighlight', () => {
 
     highlight.show(range2);
 
-    const marks = document.querySelectorAll('span.js-cell-word-highlight');
+    const marks = document.querySelectorAll('span.js-Tihoka-word-highlight');
     expect(marks.length).toBe(1);
     expect(marks[0]!.textContent).toBe('two');
   });

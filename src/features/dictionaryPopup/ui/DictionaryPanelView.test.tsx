@@ -19,7 +19,7 @@ jest.mock('./CandidateView', () => ({
     return require('react').createElement(
       'article',
       {
-        'data-cell-id': `dictionary-candidate-${props.index}`,
+        'data-tihoka-id': `dictionary-candidate-${props.index}`,
         'data-candidate-term': props.candidate.term,
       },
       props.candidate.term,
@@ -308,10 +308,10 @@ describe('DictionaryPanelView', () => {
     );
 
     // Candidate elements live inside the shadow root, NOT in document.
-    await waitFor(() => expect(shadow.querySelector('[data-cell-id="dictionary-candidate-0"]')).not.toBeNull());
+    await waitFor(() => expect(shadow.querySelector('[data-tihoka-id="dictionary-candidate-0"]')).not.toBeNull());
     expect(document.getElementById('dictionary-candidate-0')).toBeNull();
 
-    const chip = shadow.querySelector('[data-cell-id="dictionary-candidate-chip-1"]') as HTMLElement;
+    const chip = shadow.querySelector('[data-tihoka-id="dictionary-candidate-chip-1"]') as HTMLElement;
     expect(chip).not.toBeNull();
     fireEvent.click(chip);
 
@@ -319,6 +319,113 @@ describe('DictionaryPanelView', () => {
     expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
 
     document.body.removeChild(host);
+  });
+
+  it('restores each lookup level\'s scroll position on breadcrumb navigation', async () => {
+    // The shared popup mount repaints whichever chain level surfaces, so the
+    // scroll container is the panel's nearest overflow ancestor. scrollKey
+    // mirrors what Dictionary passes: trail + displayed result term.
+    const scroller = document.createElement('div');
+    scroller.style.overflowY = 'auto';
+    document.body.appendChild(scroller);
+    const store = { v: 0 };
+    Object.defineProperty(scroller, 'scrollTop', {
+      get: () => store.v,
+      set: (v: number) => { store.v = v; },
+    });
+
+    const view = (key: string, term: string) => (
+      <DictionaryPanelView
+        langCode="en"
+        sourceLang="en"
+        targetLang="vi"
+        initialTerm={term}
+        initialResult={makeResult(term)}
+        isOpen
+        variant="popup"
+        scrollKey={key}
+      />
+    );
+
+    const { rerender } = render(view('lv1:quick', 'quick'), { container: scroller });
+    await waitFor(() => expect(screen.getByTestId('dictionary-candidate-0')).toBeInTheDocument());
+
+    scroller.scrollTop = 300;
+    fireEvent.scroll(scroller);
+
+    rerender(view('lv2:brown', 'brown'));
+    expect(scroller.scrollTop).toBe(0);
+
+    scroller.scrollTop = 120;
+    fireEvent.scroll(scroller);
+
+    rerender(view('lv1:quick', 'quick'));
+    expect(scroller.scrollTop).toBe(300);
+
+    scroller.remove();
+  });
+
+  it('reveals nav chrome on level change and shields it from the restore scroll jump', async () => {
+    // Bug: back-navigation lands on a level whose saved scroll is deep, the
+    // restore jump reads as scroll-down and collapseOnScroll re-hides the
+    // lookup trail right away — the next crumb needs a scroll-up first.
+    const host = document.createElement('div');
+    host.setAttribute('data-tihoka-id', 'popup-dictionary');
+    const scroller = document.createElement('div');
+    scroller.style.overflowY = 'auto';
+    host.appendChild(scroller);
+    document.body.appendChild(host);
+    const store = { v: 0 };
+    Object.defineProperty(scroller, 'scrollTop', {
+      get: () => store.v,
+      set: (v: number) => { store.v = v; },
+    });
+
+    const view = (key: string, term: string) => (
+      <DictionaryPanelView
+        langCode="en"
+        sourceLang="en"
+        targetLang="vi"
+        initialTerm={term}
+        initialResult={makeResult(term)}
+        isOpen
+        variant="popup"
+        scrollKey={key}
+      />
+    );
+
+    const { rerender } = render(view('lv1:quick', 'quick'), { container: scroller });
+    await waitFor(() => expect(screen.getByTestId('dictionary-candidate-0')).toBeInTheDocument());
+
+    host.setAttribute('data-dict-collapsed', '');
+    scroller.scrollTop = 600;
+    fireEvent.scroll(scroller);
+
+    rerender(view('lv2:brown', 'brown'));
+    expect(host.hasAttribute('data-dict-collapsed')).toBe(false);
+    expect(scroller.scrollTop).toBe(0);
+
+    host.setAttribute('data-dict-collapsed', '');
+    scroller.scrollTop = 120;
+    fireEvent.scroll(scroller);
+    host.setAttribute('data-dict-collapsed', '');
+
+    rerender(view('lv1:quick', 'quick'));
+    expect(host.hasAttribute('data-dict-collapsed')).toBe(false);
+    expect(scroller.scrollTop).toBe(600);
+
+    // The restore lands deep — its async scroll event must not re-hide chrome.
+    scroller.scrollTop = 900;
+    fireEvent.scroll(scroller);
+    expect(host.hasAttribute('data-dict-collapsed')).toBe(false);
+
+    // Past the reveal window, collapse works again.
+    jest.spyOn(performance, 'now').mockReturnValue(Number.MAX_SAFE_INTEGER);
+    scroller.scrollTop = 1200;
+    fireEvent.scroll(scroller);
+    expect(host.hasAttribute('data-dict-collapsed')).toBe(true);
+
+    host.remove();
   });
 
   it('autofocuses the search input on open at desktop width only', async () => {

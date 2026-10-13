@@ -75,7 +75,7 @@ export function CardCreatorBottomSheet({
       title={t('cardCreator.title')}
       centerTitle
       hideDragHandle
-      data-cell-id="card-creator-bottom-sheet"
+      data-tihoka-id="card-creator-bottom-sheet"
     >
       <CardCreatorDialogContent state={state} variant="mobile" />
     </BottomSheet>

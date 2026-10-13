@@ -197,7 +197,7 @@ describe('useDictionaryToolbar', () => {
   it('fetches TTS of the sentence (not the term) for the sentence audio item', async () => {
     const ttsCalls: { text: string }[] = [];
     mockLoadSettings.mockResolvedValue({
-      pronunciation: { ...DEFAULT_PRONUNCIATION_SETTINGS, fallbackEngines: ['native'] },
+      pronunciation: { ...DEFAULT_PRONUNCIATION_SETTINGS, fallbackEngines: ['native', 'browserTts'] },
     } as never);
     mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
       const message = msg as { type: string; payload?: { text?: string } };
@@ -205,7 +205,40 @@ describe('useDictionaryToolbar', () => {
         return { success: true, data: { items: [] } } as T;
       }
       if (message.type === MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO) {
-        return { success: true, data: { items: [] } } as T;
+        return { success: true, data: { items: [makeAudio('a1', true)] } } as T;
+      }
+      if (message.type === MESSAGE_TYPES.TTS_FETCH_AUDIO) {
+        if (message.payload?.text) ttsCalls.push({ text: message.payload.text });
+        return { success: true, data: { url: 'data:audio/wav;base64,AAA' } } as T;
+      }
+      return { success: true } as T;
+    });
+
+    const { result } = renderHook(() => useDictionaryToolbar({
+      result: makeResult('hello'),
+      contextSentence: 'hello world this is a sentence',
+      sourceLang: 'en',
+      targetLang: 'vi',
+    }));
+
+    act(() => { result.current.setActiveTab('audio'); });
+
+    await waitFor(() => expect(result.current.audioItems.length).toBe(2));
+    expect(ttsCalls.some((c) => c.text === 'hello world this is a sentence')).toBe(true);
+    expect(ttsCalls.some((c) => c.text === 'hello')).toBe(false);
+    const sentenceItem = result.current.audioItems.find((i) => i.kind === 'sentence');
+    expect(sentenceItem?.url).toBe('data:audio/wav;base64,AAA');
+  });
+
+  it('yields no sentence audio when the chain has no sentence-capable engine', async () => {
+    const ttsCalls: { text: string }[] = [];
+    mockLoadSettings.mockResolvedValue({
+      pronunciation: { ...DEFAULT_PRONUNCIATION_SETTINGS, fallbackEngines: ['native'] },
+    } as never);
+    mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
+      const message = msg as { type: string; payload?: { text?: string } };
+      if (message.type === MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO) {
+        return { success: true, data: { items: [makeAudio('a1', true)] } } as T;
       }
       if (message.type === MESSAGE_TYPES.TTS_FETCH_AUDIO) {
         if (message.payload?.text) ttsCalls.push({ text: message.payload.text });
@@ -224,10 +257,8 @@ describe('useDictionaryToolbar', () => {
     act(() => { result.current.setActiveTab('audio'); });
 
     await waitFor(() => expect(result.current.audioItems.length).toBe(1));
-    expect(ttsCalls.some((c) => c.text === 'hello world this is a sentence')).toBe(true);
-    expect(ttsCalls.some((c) => c.text === 'hello')).toBe(false);
-    const sentenceItem = result.current.audioItems.find((i) => i.kind === 'sentence');
-    expect(sentenceItem?.url).toBe('data:audio/wav;base64,AAA');
+    expect(result.current.audioItems.some((i) => i.kind === 'sentence')).toBe(false);
+    expect(ttsCalls.some((c) => c.text === 'hello world this is a sentence')).toBe(false);
   });
 
   it('fetches images when the image tab is opened', async () => {

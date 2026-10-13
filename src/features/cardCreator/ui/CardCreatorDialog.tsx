@@ -80,7 +80,7 @@ export function CardCreatorDialog({
       size="sm"
       onClick={state.toggleQueueSidebar}
       aria-label={state.queueSidebarOpen ? t('cardCreator.queue.hide') : t('cardCreator.queue.show')}
-      data-cell-id="cc-queue-toggle"
+      data-tihoka-id="cc-queue-toggle"
     >
       <Icon name="panelRight" />
     </Button>
@@ -94,7 +94,7 @@ export function CardCreatorDialog({
       showCloseButton
       centerTitle
       headerExtra={headerExtra}
-      data-cell-id="card-creator-dialog"
+      data-tihoka-id="card-creator-dialog"
     >
       <CardCreatorDialogContent state={state} variant="desktop" />
     </Dialog>

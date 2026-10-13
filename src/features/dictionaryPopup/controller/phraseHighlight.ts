@@ -108,12 +108,12 @@ export function createPhraseRangeFromAnchor(
   return null;
 }
 
-/** Subtitle token path: the original target is a .js-cell-token span (one
- *  word). Find adjacent .js-cell-token spans that together form the phrase. */
+/** Subtitle token path: the original target is a .js-Tihoka-token span (one
+ *  word). Find adjacent .js-Tihoka-token spans that together form the phrase. */
 function createPhraseRangeFromToken(token: HTMLElement, phrase: string): Range | null {
   const line = token.closest('[data-role="target"]');
   if (!line) return null;
-  const tokens = Array.from(line.querySelectorAll('.js-cell-token--word'));
+  const tokens = Array.from(line.querySelectorAll('.js-Tihoka-token--word'));
   const tokenIdx = tokens.indexOf(token as HTMLElement);
   if (tokenIdx === -1) return null;
   const phraseWords = phrase.toLowerCase().split(/\s+/);
@@ -121,7 +121,7 @@ function createPhraseRangeFromToken(token: HTMLElement, phrase: string): Range |
   for (let startIdx = Math.max(0, tokenIdx - phraseWords.length + 1); startIdx <= tokenIdx; startIdx++) {
     const endIdx = startIdx + phraseWords.length;
     if (endIdx > tokens.length) continue;
-    const candidateWords = tokens.slice(startIdx, endIdx).map((t) => (t.getAttribute('data-cell-term') ?? '').toLowerCase());
+    const candidateWords = tokens.slice(startIdx, endIdx).map((t) => (t.getAttribute('data-tihoka-term') ?? '').toLowerCase());
     if (candidateWords.join(' ') === phraseWords.join(' ')) {
       const range = document.createRange();
       try {
@@ -156,7 +156,7 @@ function createPhraseRange(level: PopupLevel, original: HighlightTarget, phrase:
  *  - Phrase (contains spaces): create a new Range covering the full phrase
  *    in the DOM. For web text, search the text node for the phrase starting
  *    from the original word's position. For subtitle tokens, find adjacent
- *    .js-cell-token spans that together form the phrase.
+ *    .js-Tihoka-token spans that together form the phrase.
  *  Called after renderLookupResult (winner) and on candidate switch. */
 export function expandHighlightForTerm(level: PopupLevel, term: string): void {
   if (!level.originalHighlightTarget) return;

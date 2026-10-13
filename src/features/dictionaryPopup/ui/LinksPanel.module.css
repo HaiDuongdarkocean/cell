@@ -1,13 +1,13 @@
 /* LinksPanel — external dictionary links list. */
 
-.cellLinks {
+.TihokaLinks {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
 }
 
-.cellLinksItem {
+.TihokaLinksItem {
   height: fit-content;
   display: inline-flex;
   align-items: center;
@@ -21,11 +21,11 @@
   font-size: var(--font-size-xs);
 }
 
-.cellLinksItem:hover {
+.TihokaLinksItem:hover {
   background: var(--color-field-hover);
 }
 
-.cellLinksItem svg {
+.TihokaLinksItem svg {
   width: var(--space-4-5);
   height: var(--space-4-5);
   flex-shrink: 0;

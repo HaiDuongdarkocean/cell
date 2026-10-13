@@ -1,7 +1,7 @@
 // importJobTypes — per-file import job model for ResourcesPanel.
 //
 // One dropped/picked file = one job row. Lifecycle:
-//   queued → uploading → importing → success | error | skipped
+//   queued → uploading → importing → success | error
 //   uploading/importing → duplicate (parked prompt) → replace resumes / skip ends
 // Status is UI-only — the SW keeps processing uploaded jobs even if the panel
 // unmounts; rows are not restored on remount.
@@ -20,8 +20,7 @@ export type ImportJobStatus =
   | 'importing'
   | 'duplicate'
   | 'success'
-  | 'error'
-  | 'skipped';
+  | 'error';
 
 /** A parked duplicate decision shown inline on the job row. */
 export interface JobDuplicate {
@@ -187,13 +186,7 @@ export const buildPendingImports = (
   }
   for (const job of registryJobs) {
     if (rows.has(job.id) || coveredRegistry.has(job.id)) continue;
-    if (job.kind === 'resource-import' && job.status === 'done') {
-      const rid = job.resourceId ?? job.result?.resourceId;
-      const landed = rid != null
-        ? resources.some((r) => r.id === rid)
-        : signatureOf(job) != null && resources.some((r) => r.signature === signatureOf(job));
-      if (landed) continue;
-    }
+    if (job.kind === 'resource-import' && job.status === 'done') continue;
     rows.set(job.id, { key: job.id, ts: impTs(job.id) ?? job.createdAt, job });
   }
 

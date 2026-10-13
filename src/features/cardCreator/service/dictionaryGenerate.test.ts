@@ -20,11 +20,14 @@ jest.mock('@/shared/lib/storage/settingsStore', () => ({
 }));
 
 const resolveMock = jest.fn<(term: string, langCode: string) => Promise<readonly AudioItem[]>>();
+const resolveSentenceMock = jest.fn<(text: string, langCode: string) => Promise<readonly AudioItem[]>>();
 
 jest.mock('@/features/pronunciation', () => ({
   PronunciationAudioOrchestrator: jest.fn().mockImplementation(() => ({
     resolve: resolveMock,
   })),
+  resolveSentenceAudioItems: (text: string, langCode: string) => resolveSentenceMock(text, langCode),
+  audioItemDataUrl: (item: { url?: string }) => item.url,
 }));
 
 const mockedSendMessage = sendMessage as jest.MockedFunction<typeof sendMessage>;
@@ -49,6 +52,10 @@ const winner: LookupResult = {
 const wordAudio: AudioItem[] = [
   { id: 'a1', kind: 'word', source: 'community', label: 'Forvo · US', state: 'idle', url: 'us.mp3', defaultSelected: true },
   { id: 'a2', kind: 'word', source: 'community', label: 'Forvo · UK', state: 'idle', url: 'uk.mp3', defaultSelected: false },
+];
+
+const sentenceAudio: AudioItem[] = [
+  { id: 's1', kind: 'sentence', source: 'system-tts', label: 'Sentence · System voice', state: 'idle', url: 'sentence.mp3', defaultSelected: true },
 ];
 
 const imageItems: ImageItem[] = [
@@ -77,6 +84,8 @@ describe('lookupDictionaryResources', () => {
     mockedSendMessage.mockReset();
     resolveMock.mockReset();
     resolveMock.mockResolvedValue(wordAudio);
+    resolveSentenceMock.mockReset();
+    resolveSentenceMock.mockResolvedValue(sentenceAudio);
     mockMessages();
   });
 
@@ -109,10 +118,7 @@ describe('lookupDictionaryResources', () => {
     const result = await lookupDictionaryResources('hello', 'en', '');
 
     expect(result!.sentenceAudioUrls).toEqual([]);
-    const ttsCalls = mockedSendMessage.mock.calls.filter(
-      (call) => (call[0] as { type: string }).type === MESSAGE_TYPES.TTS_FETCH_AUDIO,
-    );
-    expect(ttsCalls).toHaveLength(0);
+    expect(resolveSentenceMock).not.toHaveBeenCalled();
   });
 
   it('falls back to the first available audio/image when none is default-selected', async () => {
@@ -142,6 +148,7 @@ describe('lookupDictionaryResources', () => {
 
   it('still returns definitions when all media sources fail', async () => {
     resolveMock.mockResolvedValue([]);
+    resolveSentenceMock.mockResolvedValue([]);
     mockMessages({ tts: { success: false }, images: { success: false } });
 
     const result = await lookupDictionaryResources('hello', 'en', 'Say hello.');

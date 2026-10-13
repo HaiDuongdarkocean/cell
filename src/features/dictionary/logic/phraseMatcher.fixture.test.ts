@@ -35,13 +35,13 @@ const TEST_VERBS = new Set([
 
 const FIXTURE_PATH = path.resolve(
   __dirname,
-  process.env.CELL_FIXTURE_FULL === '1'
+  process.env.Tihoka_FIXTURE_FULL === '1'
     ? '../../../../data/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json'
     : '../../../../tests/data-test/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
 );
-const FIXTURE_MISSING = process.env.CELL_FIXTURE_FULL === '1' && !existsSync(FIXTURE_PATH);
+const FIXTURE_MISSING = process.env.Tihoka_FIXTURE_FULL === '1' && !existsSync(FIXTURE_PATH);
 if (FIXTURE_MISSING) {
-  console.warn('[fixture] full Cambridge fixture missing — run without CELL_FIXTURE_FULL or restore data/resource/');
+  console.warn('[fixture] full Cambridge fixture missing — run without Tihoka_FIXTURE_FULL or restore data/resource/');
 }
 
 function loadFixtureInputs(): PhraseIndexInput[] {

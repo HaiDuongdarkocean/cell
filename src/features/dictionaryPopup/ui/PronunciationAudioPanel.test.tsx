@@ -266,7 +266,7 @@ describe('PronunciationAudioPanel', () => {
     expect(within(panel).getByText('Browser voice')).toBeInTheDocument();
   });
 
-  it('shows a reconnect hint and asks background to open the Cell page', () => {
+  it('shows a reconnect hint and asks background to open the Tihoka page', () => {
     mockSendMessage.mockClear();
     render(
       <PronunciationAudioPanel

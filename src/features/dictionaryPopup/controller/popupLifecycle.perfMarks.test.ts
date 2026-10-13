@@ -44,7 +44,7 @@ jest.mock('./lookupTargetDom', () => ({
   isReanchorPointerDown: jest.fn(() => false),
   levelIndexForTarget: jest.fn(() => -1),
   setPopupTokenId: jest.fn(),
-  POPUP_OPEN_CLASS: 'cell-popup-open',
+  POPUP_OPEN_CLASS: 'Tihoka-popup-open',
 }));
 jest.mock('./phraseHighlight', () => ({
   computeTextOffset: jest.fn(() => 0),

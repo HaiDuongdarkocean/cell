@@ -32,7 +32,7 @@ export function DictionaryToolbar({
   counts,
 }: DictionaryToolbarProps): React.JSX.Element {
   return (
-    <div className={styles.cellToolbar} role="tablist" aria-label={t('dict.toolbar.aria')} data-cell-id="dictionary-toolbar">
+    <div className={styles.TihokaToolbar} role="tablist" aria-label={t('dict.toolbar.aria')} data-tihoka-id="dictionary-toolbar">
       {TABS.map((tab) => {
         const active = activeTab === tab.key;
         const count = counts[tab.key] ?? 0;
@@ -40,22 +40,22 @@ export function DictionaryToolbar({
            ripple), so it lives on a sibling wrapper — also keeps it
            undimmed while the tab sits at dimmed opacity. */
         return (
-          <span key={tab.key} className={styles.cellToolbarItem} role="presentation">
+          <span key={tab.key} className={styles.TihokaToolbarItem} role="presentation">
             <Button variant="primary" dimmed={!active}
               role="tab"
               aria-selected={active}
               aria-pressed={active}
               aria-label={t(tab.labelKey)}
-              className={styles.cellToolbarTab}
+              className={styles.TihokaToolbarTab}
               onClick={() => onSelect(tab.key)}
-              data-cell-id={`dictionary-tab-${tab.key}`}
+              data-tihoka-id={`dictionary-tab-${tab.key}`}
             >
               <Icon name={tab.icon}  />
-              <span className={`${styles.cellToolbarLabel} ${styles.cellLabel}`}>{t(tab.labelKey)}</span>
+              <span className={`${styles.TihokaToolbarLabel} ${styles.TihokaLabel}`}>{t(tab.labelKey)}</span>
             </Button>
             {/* Links are static shortcuts, not selected materials — no count badge. */}
             {count > 0 && tab.key !== 'links' && (
-              <span className={styles.cellToolbarBadge} data-cell-id={`dictionary-badge-${tab.key}`}>{count}</span>
+              <span className={styles.TihokaToolbarBadge} data-tihoka-id={`dictionary-badge-${tab.key}`}>{count}</span>
             )}
           </span>
         );

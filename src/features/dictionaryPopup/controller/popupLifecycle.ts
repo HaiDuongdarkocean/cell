@@ -397,7 +397,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
         cursorOffset: request.cursorOffset,
         defaultActiveTab: defaultTab,
       });
-      if (!isResponseUpdate) {
+      if (!isResponseUpdate && !(level.highlightTarget && levelIndexForTarget(popupStack, level.highlightTarget) >= 0)) {
         viewMount.setAnchor(anchor, pointerHint, lineRect);
       }
     } else {
@@ -466,7 +466,8 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     // level 0's mount, so a popup-internal target always chains off the top
     // logical level — the DOM alone can't tell which level is displayed.
     let sourceIdx = levelIndexForTarget(popupStack, highlightTarget);
-    if (sourceIdx >= 0) sourceIdx = popupStack.length - 1;
+    const popupInternal = sourceIdx >= 0;
+    if (popupInternal) sourceIdx = popupStack.length - 1;
     const targetIdx = sourceIdx + 1;
     const sourceAbovePanel = sourceIdx >= 0 ? popupStack[sourceIdx]?.abovePanel : undefined;
     if (popupStack.length > targetIdx + 1) closeFromLevel(targetIdx + 1);
@@ -570,7 +571,9 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
         cursorOffset: request.cursorOffset,
         defaultActiveTab: defaultTab,
       });
-      viewMount.setAnchor(anchor, pointerHint, lineRect);
+      if (!popupInternal) {
+        viewMount.setAnchor(anchor, pointerHint, lineRect);
+      }
     } else {
       mountPopupLevel(level, {
         anchor,

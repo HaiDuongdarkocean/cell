@@ -1,15 +1,15 @@
 import type { WordStatus } from '@/entities/dictionary';
 import type { PopupLineRect } from '../ui/popupGeometry';
 import { resolveWordAtPoint } from '@/features/dictionaryPopup/sentence/sentenceModule';
-import { isInsideUniversalPanelHost } from '@/shared/lib/dom/cellUiHosts';
+import { isInsideUniversalPanelHost } from '@/shared/lib/dom/TihokaUiHosts';
 import { refreshIPlus1Marking } from '@/features/tokenize';
 import type { HighlightTarget } from '../ui/wordHighlight';
 import type { CueRange, PopupLevel, PopupTokenId } from './controllerTypes';
 
-export const POPUP_OPEN_CLASS = 'js-cell-token--popup-open';
+export const POPUP_OPEN_CLASS = 'js-Tihoka-token--popup-open';
 export const ALL_STATUSES: WordStatus[] = ['unknown', 'tracking', 'known', 'ignore'];
 
-const LOOKUP_TRIGGER_SELECTOR = '.js-cell-token, .cell-ocr-hitbox';
+const LOOKUP_TRIGGER_SELECTOR = '.js-Tihoka-token, .Tihoka-ocr-hitbox';
 const LOOKUP_TEXT_SELECTOR = '[data-allow-lookup]';
 
 /**
@@ -42,12 +42,12 @@ export function computeLineRect(target: HighlightTarget): PopupLineRect | null {
 
 export function getTokenElement(target: HighlightTarget): HTMLElement | null {
   if (target instanceof HTMLElement) {
-    return target.closest('.js-cell-token');
+    return target.closest('.js-Tihoka-token');
   }
   if (target instanceof Range) {
     const node = target.startContainer;
     const element = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
-    return element?.closest('.js-cell-token') ?? null;
+    return element?.closest('.js-Tihoka-token') ?? null;
   }
   return null;
 }
@@ -64,7 +64,7 @@ export function lookupAnchorElement(level: PopupLevel): Element | null {
  *  is only allowed for subtitle-origin lookups, not plain web text. */
 export function isLookupFromSubtitle(level: PopupLevel): boolean {
   const el = lookupAnchorElement(level);
-  return el?.closest('[data-cell-id="subtitle-block"], [data-cue-start]') !== null;
+  return el?.closest('[data-tihoka-id="subtitle-block"], [data-cue-start]') !== null;
 }
 
 /** Resolve the cue range a panel lookup was made on. CueList items carry
@@ -82,15 +82,15 @@ export function lookupCueRange(level: PopupLevel): CueRange | null {
 
 export function getTokenById(id: PopupTokenId): HTMLElement | null {
   return document.querySelector(
-    `[data-cell-term="${CSS.escape(id.term)}"][data-cell-start="${id.start}"][data-cell-block-id="${id.blockId}"]`,
+    `[data-tihoka-term="${CSS.escape(id.term)}"][data-tihoka-start="${id.start}"][data-tihoka-block-id="${id.blockId}"]`,
   );
 }
 
 export function setPopupTokenId(level: PopupLevel, token: HTMLElement): void {
   level.popupTokenId = {
-    term: token.getAttribute('data-cell-term') ?? '',
-    start: token.getAttribute('data-cell-start') ?? '',
-    blockId: token.getAttribute('data-cell-block-id') ?? '',
+    term: token.getAttribute('data-tihoka-term') ?? '',
+    start: token.getAttribute('data-tihoka-start') ?? '',
+    blockId: token.getAttribute('data-tihoka-block-id') ?? '',
   };
   level.popupTokenEl = token;
   token.classList.add(POPUP_OPEN_CLASS);
@@ -109,9 +109,9 @@ export function applyTokenStatus(target: HighlightTarget | HTMLElement, status: 
   const token = target instanceof HTMLElement ? target : getTokenElement(target);
   if (!token) return;
   for (const s of ALL_STATUSES) {
-    token.classList.remove(`js-cell-token--status-${s}`);
+    token.classList.remove(`js-Tihoka-token--status-${s}`);
   }
-  token.classList.add(`js-cell-token--status-${status}`);
+  token.classList.add(`js-Tihoka-token--status-${status}`);
   refreshIPlus1Marking(token);
 }
 
@@ -127,7 +127,7 @@ export function levelIndexForTarget(popupStack: readonly PopupLevel[], target: H
   const root = node.getRootNode();
   if (!(root instanceof ShadowRoot)) return -1;
   const host = root.host;
-  if (!(host instanceof HTMLElement) || !host.classList.contains('js-cell-popup-host')) return -1;
+  if (!(host instanceof HTMLElement) || !host.classList.contains('js-Tihoka-popup-host')) return -1;
   return popupStack.findIndex((level) => level.mount?.host === host);
 }
 
@@ -135,7 +135,7 @@ export function levelIndexForTarget(popupStack: readonly PopupLevel[], target: H
  *  must not dismiss a sibling level. */
 export function isInsideStackHostEvent(e: PointerEvent): boolean {
   return e.composedPath().some(
-    (el) => el instanceof HTMLElement && el.classList.contains('js-cell-popup-host'),
+    (el) => el instanceof HTMLElement && el.classList.contains('js-Tihoka-popup-host'),
   );
 }
 

@@ -35,12 +35,12 @@ function buildTokenizedParagraph(
     const start = match.index ?? 0;
     if (start > last) {
       const separator = document.createElement('span');
-      separator.className = 'js-cell-token js-cell-token--separator';
+      separator.className = 'js-Tihoka-token js-Tihoka-token--separator';
       separator.textContent = text.slice(last, start);
       p.appendChild(separator);
     }
     const span = document.createElement('span');
-    span.className = 'js-cell-token js-cell-token--word';
+    span.className = 'js-Tihoka-token js-Tihoka-token--word';
     span.textContent = match[0];
     p.appendChild(span);
     if (match[0] === word) token = span;
@@ -531,7 +531,7 @@ describe('WebTriggerController', () => {
 
     it('hover into popup host does not call onClear', () => {
       const popupHost = document.createElement('div');
-      popupHost.className = 'js-cell-popup-host';
+      popupHost.className = 'js-Tihoka-popup-host';
       document.body.appendChild(popupHost);
 
       const onClear = jest.fn();
@@ -583,7 +583,7 @@ describe('WebTriggerController', () => {
       const p = document.createElement('p');
       p.textContent = 'The quick brown fox';
       const token = document.createElement('span');
-      token.className = 'js-cell-token';
+      token.className = 'js-Tihoka-token';
       token.textContent = 'quick';
       p.appendChild(token);
       document.body.appendChild(p);
@@ -679,7 +679,7 @@ describe('WebTriggerController', () => {
       document.body.appendChild(p);
 
       const host = document.createElement('div');
-      host.className = 'js-cell-popup-host';
+      host.className = 'js-Tihoka-popup-host';
       host.style.pointerEvents = 'auto';
       const shadow = host.attachShadow({ mode: 'open' });
       const child = document.createElement('div');
@@ -1338,7 +1338,7 @@ describe('WebTriggerController', () => {
       setupCaretRange(p);
 
       const host = document.createElement('div');
-      host.className = 'js-cell-popup-host';
+      host.className = 'js-Tihoka-popup-host';
       document.body.appendChild(host);
 
       let lookupCount = 0;
@@ -1360,11 +1360,11 @@ describe('WebTriggerController', () => {
     });
 
     it('click inside data-allow-lookup region of a shadow-mounted UI host dispatches lookup', () => {
-      // #cell-subtitle-root hosts cue text inside an open shadow root. Events
+      // #Tihoka-subtitle-root hosts cue text inside an open shadow root. Events
       // retarget e.target to the host, so only composedPath() can see the
       // allow-lookup marker — dispatch a real composed event to mirror Chrome.
       const host = document.createElement('div');
-      host.id = 'cell-subtitle-root';
+      host.id = 'Tihoka-subtitle-root';
       const shadow = host.attachShadow({ mode: 'open' });
       const textDiv = document.createElement('div');
       textDiv.setAttribute('data-allow-lookup', '');
@@ -1396,7 +1396,7 @@ describe('WebTriggerController', () => {
 
     it('click inside shadow-mounted UI host without data-allow-lookup stays blocked', () => {
       const host = document.createElement('div');
-      host.id = 'cell-subtitle-root';
+      host.id = 'Tihoka-subtitle-root';
       const shadow = host.attachShadow({ mode: 'open' });
       const textDiv = document.createElement('div');
       textDiv.textContent = 'The quick brown fox';
@@ -1427,10 +1427,10 @@ describe('WebTriggerController', () => {
 
     it('keeps a UI host hit-testable when the pointer is over a shadow data-allow-lookup region', () => {
       // Without this exemption, withUiHostsPointerEventsDisabled strips
-      // pointer-events from #cell-subtitle-root and its whole shadow tree, so
+      // pointer-events from #Tihoka-subtitle-root and its whole shadow tree, so
       // elementFromPoint/caretRangeFromPoint can never reach cue text.
       const host = document.createElement('div');
-      host.id = 'cell-subtitle-root';
+      host.id = 'Tihoka-subtitle-root';
       const shadow = host.attachShadow({ mode: 'open' });
       const textDiv = document.createElement('div');
       textDiv.setAttribute('data-allow-lookup', '');

@@ -55,7 +55,7 @@ export function ImagePanel({
 
   if (loading) {
     return (
-      <div className={styles.cellImage} data-cell-id="dictionary-image-panel">
+      <div className={styles.TihokaImage} data-tihoka-id="dictionary-image-panel">
         <ImageSkeleton />
       </div>
     );
@@ -63,15 +63,15 @@ export function ImagePanel({
 
   if (error) {
     return (
-      <div className={styles.cellImage} data-cell-id="dictionary-image-panel">
-        <div className={panelStyles.cellImageError}>{error}</div>
+      <div className={styles.TihokaImage} data-tihoka-id="dictionary-image-panel">
+        <div className={panelStyles.TihokaImageError}>{error}</div>
       </div>
     );
   }
 
   if (items.length === 0) {
     return (
-      <div className={styles.cellImage} data-cell-id="dictionary-image-panel">
+      <div className={styles.TihokaImage} data-tihoka-id="dictionary-image-panel">
         <EmptyState
           size="md"
           icon={<Icon name="image"  />}
@@ -81,24 +81,24 @@ export function ImagePanel({
               href={`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(term)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className={styles.cellImageEmptyAction}
+              className={styles.TihokaImageEmptyAction}
             >
               {t('dict.images.searchMore')}
             </a>
           }
-          data-cell-id="dictionary-image-empty"
+          data-tihoka-id="dictionary-image-empty"
         />
       </div>
     );
   }
 
   return (
-    <div className={styles.cellImage} data-cell-id="dictionary-image-panel">
+    <div className={styles.TihokaImage} data-tihoka-id="dictionary-image-panel">
       <div
-        className={styles.cellImageStrip}
+        className={styles.TihokaImageStrip}
         ref={stripRef}
         onScroll={updateScrollState}
-        data-cell-id="dictionary-image-strip"
+        data-tihoka-id="dictionary-image-strip"
       >
         {items.map((item) => {
           const selected = selection.get(item.id) === true;
@@ -106,7 +106,7 @@ export function ImagePanel({
             <button
               type="button"
               key={item.id}
-              className={`${checkStyles.cellImageCard} ${selected ? checkStyles['cellImageCard--selected'] : ''}`}
+              className={`${checkStyles.TihokaImageCard} ${selected ? checkStyles['TihokaImageCard--selected'] : ''}`}
               role="checkbox"
               aria-checked={selected}
               onClick={(): void => onToggle(item.id, !selected)}
@@ -114,10 +114,10 @@ export function ImagePanel({
               <img
                 src={item.src}
                 alt={item.alt}
-                className={styles.cellImageThumb}
+                className={styles.TihokaImageThumb}
                 onError={(): void => onImageError(item.id)}
               />
-              <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
+              <span className={checkStyles.TihokaDefCheckBox} aria-hidden="true">
                 <Icon name="check" size="md" />
               </span>
             </button>
@@ -128,11 +128,11 @@ export function ImagePanel({
         variant="secondary"
         size="sm"
         shape="circle"
-        className={styles.cellImageNavLeft}
+        className={styles.TihokaImageNavLeft}
         aria-label={t('dict.images.scrollLeft')}
         disabled={!canScrollLeft}
         onClick={(): void => scroll('left')}
-        data-cell-id="dictionary-image-scroll-left"
+        data-tihoka-id="dictionary-image-scroll-left"
         data-compact-hit
       >
         <Icon name="chevronLeft"  />
@@ -141,11 +141,11 @@ export function ImagePanel({
         variant="secondary"
         size="sm"
         shape="circle"
-        className={styles.cellImageNavRight}
+        className={styles.TihokaImageNavRight}
         aria-label={t('dict.images.scrollRight')}
         disabled={!canScrollRight}
         onClick={(): void => scroll('right')}
-        data-cell-id="dictionary-image-scroll-right"
+        data-tihoka-id="dictionary-image-scroll-right"
         data-compact-hit
       >
         <Icon name="chevronRight"  />
@@ -156,11 +156,11 @@ export function ImagePanel({
 
 function ImageSkeleton(): React.JSX.Element {
   return (
-    <div className={styles.cellImageSkeleton} aria-hidden="true">
+    <div className={styles.TihokaImageSkeleton} aria-hidden="true">
       {/* 8 cards × 128px covers any resizable popup width (min 320px, user can
          drag to ~viewport width) so the strip never shows a right-side gap. */}
       {Array.from({ length: 8 }).map((_, i) => (
-        <Skeleton key={i} shape="rounded" className={styles.cellImageSkeletonCard} />
+        <Skeleton key={i} shape="rounded" className={styles.TihokaImageSkeletonCard} />
       ))}
     </div>
   );

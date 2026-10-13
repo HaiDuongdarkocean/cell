@@ -4,7 +4,7 @@ import { resolveWordAtTip, extractWordAtOffset } from './resolveWordAtTip';
 describe('resolveWordAtTip', () => {
   it('returns null when the tip is only over badge-owned elements', () => {
     const badge = document.createElement('div');
-    badge.setAttribute('data-cell-orbital-badge', 'true');
+    badge.setAttribute('data-tihoka-orbital-badge', 'true');
     document.body.appendChild(badge);
 
     const original = (document as unknown as { elementsFromPoint?: unknown }).elementsFromPoint;

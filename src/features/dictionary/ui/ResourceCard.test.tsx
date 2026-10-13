@@ -55,6 +55,11 @@ function renderCard(resource: ResourceInfo, extra: Partial<Parameters<typeof Res
   );
 }
 
+function openDetail(id: number): void {
+  fireEvent.click(screen.getByTestId(`menu-trigger-${id}`));
+  fireEvent.click(screen.getByTestId(`menu-detail-${id}`));
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
 });
@@ -73,19 +78,29 @@ describe('ResourceCard', () => {
     expect(screen.getByText('JMdict')).toBeInTheDocument();
   });
 
-  it('tapping the grip opens the options menu', () => {
+  it('the ⋮ button opens the options menu in every state', () => {
+    renderCard(makeResource({ id: 2 }), { sectionSize: 2, onGripPointerDown: jest.fn() });
+    fireEvent.click(screen.getByTestId('menu-trigger-2'));
+    expect(screen.getByTestId('menu-detail-2')).toBeInTheDocument();
+    expect(screen.getByTestId('menu-rename-2')).toBeInTheDocument();
+    expect(screen.getByTestId('menu-delete-2')).toBeInTheDocument();
+  });
+
+  it('the ⋮ button renders while the resource is still importing', () => {
+    renderCard(makeResource({ id: 2, installationFinished: false }), {
+      importProgress: { phase: 'import', done: 5, total: 10 },
+    });
+    fireEvent.click(screen.getByTestId('menu-trigger-2'));
+    expect(screen.getByTestId('menu-detail-2')).toBeInTheDocument();
+    expect(screen.getByTestId('menu-rename-2')).toBeDisabled();
+    expect(screen.getByTestId('menu-delete-2')).toBeDisabled();
+  });
+
+  it('tapping the grip does not open the menu', () => {
     renderCard(makeResource({ id: 2 }), { sectionSize: 2, onGripPointerDown: jest.fn() });
     const grip = screen.getByTestId('drag-2');
     fireEvent(grip, new MouseEvent('pointerdown', { bubbles: true, clientY: 10 }));
     fireEvent(grip, new MouseEvent('pointerup', { bubbles: true, clientY: 10 }));
-    expect(screen.getByTestId('menu-detail-2')).toBeInTheDocument();
-  });
-
-  it('dragging the grip does not open the menu', () => {
-    renderCard(makeResource({ id: 2 }), { sectionSize: 2, onGripPointerDown: jest.fn() });
-    const grip = screen.getByTestId('drag-2');
-    fireEvent(grip, new MouseEvent('pointerdown', { bubbles: true, clientY: 10 }));
-    fireEvent(grip, new MouseEvent('pointerup', { bubbles: true, clientY: 60 }));
     expect(screen.queryByTestId('menu-detail-2')).not.toBeInTheDocument();
   });
 
@@ -94,14 +109,26 @@ describe('ResourceCard', () => {
       sectionSize: 2,
       onGripPointerDown: jest.fn(),
     });
-    const grip = screen.getByTestId('drag-2');
-    fireEvent(grip, new MouseEvent('pointerdown', { bubbles: true, clientY: 10 }));
-    fireEvent(grip, new MouseEvent('pointerup', { bubbles: true, clientY: 10 }));
-    fireEvent.click(screen.getByTestId('menu-detail-2'));
+    openDetail(2);
     const dialog = screen.getByTestId('resource-detail-2');
     expect(dialog).toHaveTextContent('words.txt');
     expect(dialog).toHaveTextContent('txt');
     expect(dialog).toHaveTextContent('42');
+  });
+
+  it('menu "Rename" starts inline rename', () => {
+    renderCard(makeResource({ id: 2, name: 'words.txt' }));
+    fireEvent.click(screen.getByTestId('menu-trigger-2'));
+    fireEvent.click(screen.getByTestId('menu-rename-2'));
+    expect(screen.getByTestId('rename-input-2')).toBeInTheDocument();
+  });
+
+  it('menu "Delete" calls onDelete', () => {
+    const onDelete = jest.fn();
+    renderCard(makeResource({ id: 2, name: 'words.txt' }), { onDelete });
+    fireEvent.click(screen.getByTestId('menu-trigger-2'));
+    fireEvent.click(screen.getByTestId('menu-delete-2'));
+    expect(onDelete).toHaveBeenCalled();
   });
 
   it('hides the delete button outside edit mode', () => {
@@ -218,12 +245,13 @@ describe('ResourceCard', () => {
     expect(renameResourceMock).not.toHaveBeenCalled();
   });
 
-  it('renders component chips for dictionaries without expanding', async () => {
+  it('renders component chips inside the detail dialog', async () => {
     renderCard(makeResource({
       id: 5,
       type: 'DICTIONARY',
       components: ['definitions', 'examples'],
-    }));
+    }), { sectionSize: 2, onGripPointerDown: jest.fn() });
+    openDetail(5);
     expect(screen.getByTestId('resource-components-5')).toBeInTheDocument();
     expect(screen.getByTestId('component-definitions-5')).toBeInTheDocument();
     expect(screen.getByTestId('component-examples-5')).toBeInTheDocument();
@@ -236,7 +264,8 @@ describe('ResourceCard', () => {
       type: 'DICTIONARY',
       components: ['definitions', 'examples'],
       disabledComponents: ['examples'],
-    }), { onChanged });
+    }), { sectionSize: 2, onGripPointerDown: jest.fn(), onChanged });
+    openDetail(5);
     const chip = screen.getByTestId('component-examples-5');
     expect(chip).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(chip);
@@ -246,15 +275,17 @@ describe('ResourceCard', () => {
 
   it('lazily loads components for pre-existing dictionary imports', async () => {
     getResourceComponentsMock.mockResolvedValue(['definitions']);
-    renderCard(makeResource({ id: 6, type: 'DICTIONARY' }));
+    renderCard(makeResource({ id: 6, type: 'DICTIONARY' }), { sectionSize: 2, onGripPointerDown: jest.fn() });
     await waitFor(() => expect(getResourceComponentsMock).toHaveBeenCalledWith('en', 6));
+    openDetail(6);
     await waitFor(() => expect(screen.getByTestId('component-definitions-6')).toBeInTheDocument());
   });
 
   it('loads components for frequency resources too', async () => {
     getResourceComponentsMock.mockResolvedValue(['frequency']);
-    renderCard(makeResource({ id: 6 }));
+    renderCard(makeResource({ id: 6 }), { sectionSize: 2, onGripPointerDown: jest.fn() });
     await waitFor(() => expect(getResourceComponentsMock).toHaveBeenCalledWith('en', 6));
+    openDetail(6);
     await waitFor(() => expect(screen.getByTestId('component-frequency-6')).toBeInTheDocument());
   });
 });

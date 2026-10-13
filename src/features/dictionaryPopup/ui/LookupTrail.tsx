@@ -50,7 +50,7 @@ export function LookupTrail({ trail, onNavigate }: LookupTrailProps): React.JSX.
     <div
       ref={stripRef}
       className={`${styles.trail} ${visible ? '' : styles.trailHidden}`}
-      data-cell-id="lookup-trail"
+      data-tihoka-id="lookup-trail"
       onScroll={syncFades}
     >
       <nav className={styles.nav} aria-label={t('ui.breadcrumb.aria')} aria-hidden={!visible || undefined}>

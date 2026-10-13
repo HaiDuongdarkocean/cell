@@ -44,17 +44,17 @@ const noop = jest.fn();
 
 describe('ImportProgress', () => {
   it('shows the file name for every state', () => {
-    render(<ImportProgress job={makeJob({ status: 'queued' })} onResolveDuplicate={noop} onRerunReplace={noop} onRetry={noop} onDismiss={noop} />);
+    render(<ImportProgress job={makeJob({ status: 'queued' })} onResolveDuplicate={noop} onRetry={noop} onDismiss={noop} />);
     expect(screen.getByText('dict.zip')).toBeInTheDocument();
   });
 
   it('queued row shows a waiting state', () => {
-    render(<ImportProgress job={makeJob({ status: 'queued' })} onResolveDuplicate={noop} onRerunReplace={noop} onRetry={noop} onDismiss={noop} />);
+    render(<ImportProgress job={makeJob({ status: 'queued' })} onResolveDuplicate={noop} onRetry={noop} onDismiss={noop} />);
     expect(screen.getByText('Waiting')).toBeInTheDocument();
   });
 
   it('queued row held behind a delete explains the wait', () => {
-    render(<ImportProgress job={makeJob({ status: 'queued' })} waitingRemoval onResolveDuplicate={noop} onRerunReplace={noop} onRetry={noop} onDismiss={noop} />);
+    render(<ImportProgress job={makeJob({ status: 'queued' })} waitingRemoval onResolveDuplicate={noop} onRetry={noop} onDismiss={noop} />);
     expect(screen.getByText('Waiting for removal…')).toBeInTheDocument();
   });
 
@@ -62,41 +62,43 @@ describe('ImportProgress', () => {
     render(<ImportProgress
       job={makeJob({ status: 'uploading', uploadSent: 5, uploadTotal: 10 })}
       onResolveDuplicate={noop}
-      onRerunReplace={noop}
+     
       onRetry={noop}
       onDismiss={noop}
     />);
     expect(screen.getAllByText(/50%/).length).toBeGreaterThan(0);
   });
 
-  it('importing row shows exact processed / total entries', () => {
+  it('importing row shows only the state label — counts live on the bar and %', () => {
     render(<ImportProgress
       job={makeJob({ status: 'importing', processed: 5000, total: 73643 })}
       onResolveDuplicate={noop}
-      onRerunReplace={noop}
+     
       onRetry={noop}
       onDismiss={noop}
     />);
-    expect(screen.getByText(/5,000 \/ 73,643 items/)).toBeInTheDocument();
+    expect(screen.getByText('Adding…')).toBeInTheDocument();
+    expect(screen.queryByText(/items/)).not.toBeInTheDocument();
+    expect(screen.getByText('7%')).toBeInTheDocument();
   });
 
   it('importing row without a known total stays indeterminate', () => {
     render(<ImportProgress
       job={makeJob({ status: 'importing', processed: 42, total: 0 })}
       onResolveDuplicate={noop}
-      onRerunReplace={noop}
+     
       onRetry={noop}
       onDismiss={noop}
     />);
-    expect(screen.getByText(/42 items/)).toBeInTheDocument();
-    expect(screen.queryByText(/\/.*items/)).not.toBeInTheDocument();
+    expect(screen.getByText('Adding…')).toBeInTheDocument();
+    expect(screen.queryByText(/items/)).not.toBeInTheDocument();
   });
 
   it('success row reports its own word count', () => {
     render(<ImportProgress
       job={makeJob({ status: 'success', wordCount: 73643 })}
       onResolveDuplicate={noop}
-      onRerunReplace={noop}
+     
       onRetry={noop}
       onDismiss={noop}
     />);
@@ -107,7 +109,7 @@ describe('ImportProgress', () => {
     render(<ImportProgress
       job={makeJob({ status: 'error', error: 'File hỏng' })}
       onResolveDuplicate={noop}
-      onRerunReplace={noop}
+     
       onRetry={noop}
       onDismiss={noop}
     />);
@@ -120,10 +122,10 @@ describe('ImportProgress', () => {
       status: 'duplicate',
       duplicate: { existing: existingResource() },
     });
-    render(<ImportProgress job={job} onResolveDuplicate={onResolve} onRerunReplace={noop} onRetry={noop} onDismiss={noop} />);
+    render(<ImportProgress job={job} onResolveDuplicate={onResolve} onRetry={noop} onDismiss={noop} />);
     screen.getByText('Replace').click();
     expect(onResolve).toHaveBeenCalledWith('job-1', 'replace');
-    screen.getByText('Skip').click();
+    screen.getByText('Keep').click();
     expect(onResolve).toHaveBeenCalledWith('job-1', 'skip');
   });
 
@@ -132,14 +134,7 @@ describe('ImportProgress', () => {
       status: 'duplicate',
       duplicate: { existing: existingResource(false) },
     });
-    render(<ImportProgress job={job} onResolveDuplicate={noop} onRerunReplace={noop} onRetry={noop} onDismiss={noop} />);
+    render(<ImportProgress job={job} onResolveDuplicate={noop} onRetry={noop} onDismiss={noop} />);
     expect(screen.getByRole('button', { name: 'Replace' })).toBeDisabled();
-  });
-
-  it('skipped row offers a "Replace" rerun', () => {
-    const onRerun = jest.fn();
-    render(<ImportProgress job={makeJob({ status: 'skipped' })} onResolveDuplicate={noop} onRerunReplace={onRerun} onRetry={noop} onDismiss={noop} />);
-    screen.getByText('Replace').click();
-    expect(onRerun).toHaveBeenCalledWith('job-1');
   });
 });

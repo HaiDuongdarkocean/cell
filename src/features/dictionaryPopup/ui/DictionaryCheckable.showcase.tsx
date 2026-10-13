@@ -15,14 +15,14 @@ const STATES: BoxState[] = ['idle', 'revealed', 'checked', 'indeterminate', 'dis
 
 /** Box-level modifiers for forced/static states (checked is host-driven). */
 const BOX_MOD: Record<Exclude<BoxState, 'idle' | 'checked'>, string> = {
-  revealed: checkStyles['cellDefCheckBox--revealed'],
-  indeterminate: checkStyles['cellDefCheckBox--indeterminate'],
-  disabled: checkStyles['cellDefCheckBox--disabled'],
-  loading: checkStyles['cellDefCheckBox--loading'],
+  revealed: checkStyles['TihokaDefCheckBox--revealed'],
+  indeterminate: checkStyles['TihokaDefCheckBox--indeterminate'],
+  disabled: checkStyles['TihokaDefCheckBox--disabled'],
+  loading: checkStyles['TihokaDefCheckBox--loading'],
 };
 
 function boxClass(state: BoxState, checkedMod?: string): string {
-  return [checkStyles.cellDefCheckBox, checkedMod ?? '', state === 'idle' || state === 'checked' ? '' : BOX_MOD[state]]
+  return [checkStyles.TihokaDefCheckBox, checkedMod ?? '', state === 'idle' || state === 'checked' ? '' : BOX_MOD[state]]
     .filter(Boolean)
     .join(' ');
 }
@@ -49,13 +49,13 @@ function ExampleRow({ text, onCheck }: { text: string; onCheck: (checked: boolea
   const toggle = (next: boolean): void => { setChecked(next); onCheck(next); };
   return (
     <div
-      className={checkStyles.cellDefExampleItem}
+      className={checkStyles.TihokaDefExampleItem}
       role="checkbox"
       aria-checked={checked}
       tabIndex={0}
       onClick={(e) => {
         const el = e.target as HTMLElement;
-        if (el.closest(`.${candStyles.cellDefExampleText}`) !== null) return;
+        if (el.closest(`.${candStyles.TihokaDefExampleText}`) !== null) return;
         toggle(!checked);
       }}
       onKeyDown={(e) => {
@@ -66,21 +66,21 @@ function ExampleRow({ text, onCheck }: { text: string; onCheck: (checked: boolea
       }}
     >
       <label
-        className={`${checkStyles.cellDefCheck} ${checked ? checkStyles['cellDefCheck--checked'] : ''}`}
+        className={`${checkStyles.TihokaDefCheck} ${checked ? checkStyles['TihokaDefCheck--checked'] : ''}`}
         onClick={(e): void => e.stopPropagation()}
       >
         <input
           type="checkbox"
-          className={checkStyles.cellDefCheckInput}
+          className={checkStyles.TihokaDefCheckInput}
           checked={checked}
           onChange={(e): void => toggle(e.target.checked)}
           aria-label={`Select example: ${text}`}
         />
-        <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
+        <span className={checkStyles.TihokaDefCheckBox} aria-hidden="true">
           <Icon name="check" size="md" />
         </span>
       </label>
-      <span className={candStyles.cellDefExampleText}>{text}</span>
+      <span className={candStyles.TihokaDefExampleText}>{text}</span>
     </div>
   );
 }
@@ -91,19 +91,19 @@ function DefRow({ state, examples = [] }: { state: BoxState; examples?: string[]
   const disabled = state === 'disabled';
   const indeterminate = state === 'indeterminate' && !checked;
   return (
-    <div className={candStyles.cellDefGroup}>
+    <div className={candStyles.TihokaDefGroup}>
       <div
-        className={`${checkStyles.cellDefItem} ${disabled ? checkStyles['cellDefItem--disabled'] : ''}`}
+        className={`${checkStyles.TihokaDefItem} ${disabled ? checkStyles['TihokaDefItem--disabled'] : ''}`}
         onClick={disabled ? undefined : (): void => setChecked(!checked)}
       >
-        <div className={candStyles.cellDefRow}>
+        <div className={candStyles.TihokaDefRow}>
           <label
-            className={`${checkStyles.cellDefCheck} ${checked ? checkStyles['cellDefCheck--checked'] : ''}`}
+            className={`${checkStyles.TihokaDefCheck} ${checked ? checkStyles['TihokaDefCheck--checked'] : ''}`}
             onClick={(e): void => e.stopPropagation()}
           >
             <input
               type="checkbox"
-              className={checkStyles.cellDefCheckInput}
+              className={checkStyles.TihokaDefCheckInput}
               checked={checked}
               disabled={disabled}
               ref={(el): void => { if (el) el.indeterminate = indeterminate; }}
@@ -114,11 +114,11 @@ function DefRow({ state, examples = [] }: { state: BoxState; examples?: string[]
               {boxIcon(state, indeterminate)}
             </span>
           </label>
-          <span className={candStyles.cellDefText}>noun · {DEF_TEXT}</span>
+          <span className={candStyles.TihokaDefText}>noun · {DEF_TEXT}</span>
         </div>
       </div>
       {examples.length > 0 && (
-        <div className={candStyles.cellDefExamples}>
+        <div className={candStyles.TihokaDefExamples}>
           {examples.map((ex, i) => (
             <ExampleRow key={i} text={ex} onCheck={(v) => { if (v) setChecked(true); }} />
           ))}
@@ -135,7 +135,7 @@ function AudioRow({ state }: { state: BoxState }): ReactElement {
   const indeterminate = state === 'indeterminate' && !selected;
   return (
     <div
-      className={`${checkStyles.cellAudioItem} ${disabled ? checkStyles['cellAudioItem--disabled'] : ''}`}
+      className={`${checkStyles.TihokaAudioItem} ${disabled ? checkStyles['TihokaAudioItem--disabled'] : ''}`}
       role="checkbox"
       aria-checked={indeterminate ? 'mixed' : selected}
       aria-disabled={disabled}
@@ -152,11 +152,11 @@ function AudioRow({ state }: { state: BoxState }): ReactElement {
       <Button shape="circle" size="sm" variant="outline" aria-label="Play word pronunciation" onClick={(e): void => e.stopPropagation()}>
         <Icon name="audioWave" />
       </Button>
-      <span className={audioStyles.cellAudioLabel}>
-        <span className={audioStyles.cellAudioLabelName}>serendipity</span>
-        <span className={audioStyles.cellAudioLabelMeta}>Cambridge · US</span>
+      <span className={audioStyles.TihokaAudioLabel}>
+        <span className={audioStyles.TihokaAudioLabelName}>serendipity</span>
+        <span className={audioStyles.TihokaAudioLabelMeta}>Cambridge · US</span>
       </span>
-      <span className={boxClass(state, selected ? checkStyles['cellAudioCheck--checked'] : undefined)} aria-hidden="true">
+      <span className={boxClass(state, selected ? checkStyles['TihokaAudioCheck--checked'] : undefined)} aria-hidden="true">
         {boxIcon(state, indeterminate)}
       </span>
     </div>
@@ -175,13 +175,13 @@ function ImageCard({ state }: { state: BoxState }): ReactElement {
   return (
     <button
       type="button"
-      className={`${checkStyles.cellImageCard} ${selected ? checkStyles['cellImageCard--selected'] : ''} ${disabled ? checkStyles['cellImageCard--disabled'] : ''}`}
+      className={`${checkStyles.TihokaImageCard} ${selected ? checkStyles['TihokaImageCard--selected'] : ''} ${disabled ? checkStyles['TihokaImageCard--disabled'] : ''}`}
       role="checkbox"
       aria-checked={indeterminate ? 'mixed' : selected}
       disabled={disabled}
       onClick={(): void => setSelected(!selected)}
     >
-      <img src={IMG} alt="Serendipity — illustrative" className={imgStyles.cellImageThumb} />
+      <img src={IMG} alt="Serendipity — illustrative" className={imgStyles.TihokaImageThumb} />
       <span className={boxClass(state)} aria-hidden="true">
         {boxIcon(state, indeterminate)}
       </span>
@@ -196,15 +196,15 @@ function TranslateRow({ state }: { state: BoxState }): ReactElement {
   const indeterminate = state === 'indeterminate' && !selected;
   return (
     <div
-      className={`${checkStyles.cellTranslateBlock} ${selected ? checkStyles['cellTranslateBlock--selected'] : ''} ${disabled ? checkStyles['cellTranslateBlock--disabled'] : ''}`}
+      className={`${checkStyles.TihokaTranslateBlock} ${selected ? checkStyles['TihokaTranslateBlock--selected'] : ''} ${disabled ? checkStyles['TihokaTranslateBlock--disabled'] : ''}`}
       onClick={disabled ? undefined : (): void => setSelected(!selected)}
       role="button"
       aria-pressed={selected}
       tabIndex={disabled ? -1 : 0}
     >
-      <div className={transStyles.cellTranslateText}>
-        <div className={transStyles.cellTranslateTarget}>sự tình cờ may mắn</div>
-        <div className={transStyles.cellTranslateNative}>serendipity</div>
+      <div className={transStyles.TihokaTranslateText}>
+        <div className={transStyles.TihokaTranslateTarget}>sự tình cờ may mắn</div>
+        <div className={transStyles.TihokaTranslateNative}>serendipity</div>
       </div>
       <span className={boxClass(state)} aria-hidden="true">
         {boxIcon(state, indeterminate)}
@@ -217,7 +217,7 @@ export function Showcase(): ReactElement {
   return (
     <div className={styles.wrapper}>
       <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>Definition row — cellDefItem</h3>
+        <h3 className={styles.sectionTitle}>Definition row — TihokaDefItem</h3>
         {STATES.map((s) => (
           <Demo key={s} label={s}><DefRow state={s} /></Demo>
         ))}
@@ -237,21 +237,21 @@ export function Showcase(): ReactElement {
       </section>
 
       <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>Audio row — cellAudioItem</h3>
+        <h3 className={styles.sectionTitle}>Audio row — TihokaAudioItem</h3>
         {STATES.map((s) => (
           <Demo key={s} label={s}><AudioRow state={s} /></Demo>
         ))}
       </section>
 
       <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>Image card — cellImageCard</h3>
+        <h3 className={styles.sectionTitle}>Image card — TihokaImageCard</h3>
         {STATES.map((s) => (
           <Demo key={s} label={s}><ImageCard state={s} /></Demo>
         ))}
       </section>
 
       <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>Translate block — cellTranslateBlock</h3>
+        <h3 className={styles.sectionTitle}>Translate block — TihokaTranslateBlock</h3>
         {STATES.map((s) => (
           <Demo key={s} label={s}><TranslateRow state={s} /></Demo>
         ))}

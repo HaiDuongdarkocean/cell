@@ -44,7 +44,7 @@ export function TranslatePanel({
 
   if (loading && !translation) {
     return (
-      <div className={styles.cellTranslate} data-cell-id="dictionary-translate-panel">
+      <div className={styles.TihokaTranslate} data-tihoka-id="dictionary-translate-panel">
         <TranslateSkeleton />
       </div>
     );
@@ -52,8 +52,8 @@ export function TranslatePanel({
 
   if (error) {
     return (
-      <div className={styles.cellTranslate} data-cell-id="dictionary-translate-panel">
-        <div className={panelStyles.cellTranslateError}>{error}</div>
+      <div className={styles.TihokaTranslate} data-tihoka-id="dictionary-translate-panel">
+        <div className={panelStyles.TihokaTranslateError}>{error}</div>
         <EmptyState
           size="md"
           icon={<Icon name="languages"  />}
@@ -63,7 +63,7 @@ export function TranslatePanel({
               {t('dict.translate.action', [targetLang])}
             </Button>
           }
-          data-cell-id="dictionary-translate-empty"
+          data-tihoka-id="dictionary-translate-empty"
         />
       </div>
     );
@@ -71,19 +71,19 @@ export function TranslatePanel({
 
   if (translation) {
     return (
-      <div className={styles.cellTranslate} data-cell-id="dictionary-translate-panel">
+      <div className={styles.TihokaTranslate} data-tihoka-id="dictionary-translate-panel">
         <div
-          className={`${checkStyles.cellTranslateBlock} ${selected ? checkStyles['cellTranslateBlock--selected'] : ''}`}
+          className={`${checkStyles.TihokaTranslateBlock} ${selected ? checkStyles['TihokaTranslateBlock--selected'] : ''}`}
           onClick={onToggle}
           role="button"
           aria-pressed={selected}
           tabIndex={0}
         >
-          <div className={styles.cellTranslateText}>
-            <div className={styles.cellTranslateTarget}>{translation}</div>
-            <div className={styles.cellTranslateNative}>{sentence || term}</div>
+          <div className={styles.TihokaTranslateText}>
+            <div className={styles.TihokaTranslateTarget}>{translation}</div>
+            <div className={styles.TihokaTranslateNative}>{sentence || term}</div>
           </div>
-          <span className={`${checkStyles.cellDefCheckBox} ${loading ? checkStyles['cellDefCheckBox--loading'] : ''}`} aria-hidden="true">
+          <span className={`${checkStyles.TihokaDefCheckBox} ${loading ? checkStyles['TihokaDefCheckBox--loading'] : ''}`} aria-hidden="true">
             {loading ? <Spinner size="xl" color="accent" /> : <Icon name="check" size="md" />}
           </span>
         </div>
@@ -92,7 +92,7 @@ export function TranslatePanel({
   }
 
   return (
-    <div className={styles.cellTranslate} data-cell-id="dictionary-translate-panel">
+    <div className={styles.TihokaTranslate} data-tihoka-id="dictionary-translate-panel">
       <EmptyState
         size="md"
         icon={<Icon name="languages"  />}
@@ -102,7 +102,7 @@ export function TranslatePanel({
             {t('dict.translate.action', [targetLang])}
           </Button>
         }
-        data-cell-id="dictionary-translate-empty"
+        data-tihoka-id="dictionary-translate-empty"
       />
     </div>
   );
@@ -110,12 +110,12 @@ export function TranslatePanel({
 
 function TranslateSkeleton(): React.JSX.Element {
   return (
-    <div className={styles.cellTranslateSkeletonBlock} aria-hidden="true">
-      <div className={styles.cellTranslateSkeletonText}>
-        <Skeleton height="calc(var(--font-size-base) * var(--leading-normal))" className={styles.cellTranslateSkeletonLine} />
-        <Skeleton width="75%" height="calc(var(--font-size-xs) * var(--leading-normal))" className={styles.cellTranslateSkeletonLine} />
+    <div className={styles.TihokaTranslateSkeletonBlock} aria-hidden="true">
+      <div className={styles.TihokaTranslateSkeletonText}>
+        <Skeleton height="calc(var(--font-size-base) * var(--leading-normal))" className={styles.TihokaTranslateSkeletonLine} />
+        <Skeleton width="75%" height="calc(var(--font-size-xs) * var(--leading-normal))" className={styles.TihokaTranslateSkeletonLine} />
       </div>
-      <Skeleton width="var(--space-4)" height="var(--space-4)" className={styles.cellTranslateSkeletonCheck} />
+      <Skeleton width="var(--space-4)" height="var(--space-4)" className={styles.TihokaTranslateSkeletonCheck} />
     </div>
   );
 }

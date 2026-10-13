@@ -17,7 +17,7 @@ describe('FieldRow', () => {
       <FieldRow
         label="Target word"
         dataId="target"
-        trailing={<button type="button" aria-label="Generate" data-cell-id="generate-target">Generate</button>}
+        trailing={<button type="button" aria-label="Generate" data-tihoka-id="generate-target">Generate</button>}
       >
         <FieldAutoGrowInput value="" onChange={jest.fn()} />
       </FieldRow>,

@@ -10,7 +10,7 @@
 
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { getLocale, t, type MessageKey } from '@/shared/i18n';
-import { Card, Checkbox, Chip, Dialog, Input } from '@/shared/ui';
+import { Card, Checkbox, Chip, Dialog, Input, Progress } from '@/shared/ui';
 import { Button } from '@/shared/ui/Button';
 import { DragHandle } from '@/shared/ui/DragHandle';
 import { Menu, MenuItem } from '@/shared/ui/Menu';
@@ -45,8 +45,6 @@ const COMPONENT_LABEL: Record<DictionaryComponent, MessageKey> = {
   frequencyStars: 'resources.component.frequencyStars',
   frequency: 'resources.component.frequency',
 };
-
-const GRIP_TAP_THRESHOLD = 4;
 
 interface ResourceCardProps {
   readonly resource: ResourceInfo;
@@ -95,17 +93,11 @@ export function ResourceCard({
   const deletePct = deleting && deleteProgress.total > 0
     ? Math.min(100, Math.round((deleteProgress.done / deleteProgress.total) * 100))
     : null;
-  const remainingPct = deletePct == null ? 100 : 100 - deletePct;
   const deleteMeta = !deleting
     ? null
     : deleteProgress.status === 'queued'
       ? t('resources.job.waiting')
-      : deleteProgress.total > 0
-        ? t('resources.job.removingOf', [
-            deleteProgress.done.toLocaleString(),
-            deleteProgress.total.toLocaleString(),
-          ])
-        : t('resources.job.removing');
+      : t('resources.job.removing');
   const importMeta = !importing
     ? null
     : importProgress == null
@@ -113,15 +105,9 @@ export function ResourceCard({
       : importProgress.phase === 'wait'
         ? t('resources.job.waiting')
         : importProgress.phase === 'upload'
-          ? t('resources.job.uploading', [String(pct ?? 0)])
-          : importProgress.total > 0
-            ? t('resources.job.importingOf', [
-                importProgress.done.toLocaleString(),
-                importProgress.total.toLocaleString(),
-              ])
-            : importProgress.done > 0
-              ? t('resources.job.importing', [importProgress.done.toLocaleString()])
-              : t('jobs.status.running');
+          ? t('resources.job.uploadingState')
+          : t('resources.job.addingState');
+  const busyPct = pct ?? deletePct;
   const enabled = resource.enabled !== false;
   const resourceId = resource.id;
   const langCode = resource.langCode;
@@ -132,9 +118,7 @@ export function ResourceCard({
   const [detailOpen, setDetailOpen] = useState(false);
   const committingRef = useRef(false);
   const cardRef = useRef<HTMLDivElement>(null);
-  const gripWrapRef = useRef<HTMLSpanElement>(null);
-
-  const gripDownY = useRef<number | null>(null);
+  const moreRef = useRef<HTMLButtonElement>(null);
   const displayName = displayResourceName(resource.name);
 
   const [components, setComponents] = useState<readonly DictionaryComponent[] | null>(
@@ -198,29 +182,55 @@ export function ResourceCard({
 
   const canReorder = sectionSize > 1 && !editing && !importing && onGripPointerDown != null;
 
+  const componentChips = components != null && components.length > 0 && (
+    <div
+      className={styles.componentList}
+      role="group"
+      aria-label={t('resources.components.title')}
+      data-tihoka-id={`resource-components-${resourceId}`}
+    >
+      {components.map((component) => {
+        const off = disabledComponents.has(component);
+        return (
+          <Chip
+            key={component}
+            as="button"
+            size="sm"
+            variant="outline"
+            selected={!off}
+            title={t(off ? 'resources.component.enable' : 'resources.component.disable', [t(COMPONENT_LABEL[component])])}
+            onClick={() => toggleComponent(component)}
+            data-tihoka-id={`component-${component}-${resourceId}`}
+          >
+            {t(COMPONENT_LABEL[component])}
+          </Chip>
+        );
+      })}
+    </div>
+  );
+
+  const moreButton = (
+    <Button
+      ref={moreRef}
+      variant="ghost"
+      size="sm"
+      onClick={() => setMenuOpen((v) => !v)}
+      aria-label={t('resources.card.menu', [displayName])}
+      aria-haspopup="menu"
+      aria-expanded={menuOpen}
+      data-tihoka-id={`menu-trigger-${resourceId}`}
+    >
+      <Icon name="ellipsisVertical" size="xs" />
+    </Button>
+  );
+
   const onGripPointerDownLocal = (e: React.PointerEvent<HTMLElement>): void => {
     if (busy) return;
-    gripDownY.current = e.clientY;
     onGripPointerDown?.(e);
   };
 
-  const onGripPointerUp = (e: React.PointerEvent<HTMLElement>): void => {
-    if (busy) { gripDownY.current = null; return; }
-    const downY = gripDownY.current;
-    gripDownY.current = null;
-    if (downY != null && Math.abs(e.clientY - downY) <= GRIP_TAP_THRESHOLD) {
-      setMenuOpen((v) => !v);
-    }
-  };
-
   const onGripKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
-    if (busy) return;
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      setMenuOpen((v) => !v);
-      return;
-    }
-    if (!onMove) return;
+    if (busy || !onMove) return;
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       onMove(-1);
@@ -235,135 +245,100 @@ export function ResourceCard({
       ref={cardRef}
       variant={editing && selected ? 'selected' : 'default'}
       className={`${styles.card} ${enabled ? '' : styles.cardDisabled} ${dragging ? styles.cardDragging : ''}`}
-      data-cell-id={`resource-card-${resourceId}`}
+      data-tihoka-id={`resource-card-${resourceId}`}
       aria-busy={busy || undefined}
     >
-      {importing && (
-        <span
-          className={styles.importFill}
-          style={{ height: pct == null ? '8%' : `${pct}%` }}
-          aria-hidden="true"
-          data-cell-id={`importing-${resourceId}`}
-        />
-      )}
-      {deleting && (
-        <span
-          className={styles.deleteFill}
-          style={{ height: `${remainingPct}%` }}
-          aria-hidden="true"
-          data-cell-id={`deleting-${resourceId}`}
-        />
-      )}
       <div className={styles.row}>
-        {editing ? (
-          !busy && (
-            <Checkbox
-              checked={selected}
-              onChange={() => onSelect?.()}
-              aria-label={t('resources.card.select', [displayName])}
-              className={styles.selectCheck}
-              data-cell-id={`check-${resourceId}`}
-            />
-          )
-        ) : canReorder && (
-          <span ref={gripWrapRef} className={styles.gripWrap}>
-            <DragHandle
-              size="sm"
-              orientation="vertical"
-              aria-label={t('resources.card.drag', [displayName])}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              draggable={false}
-              className={styles.grip}
-              data-cell-id={`drag-${resourceId}`}
-              onPointerDown={onGripPointerDownLocal}
-              onPointerUp={onGripPointerUp}
-              onPointerCancel={() => { gripDownY.current = null; }}
-              onKeyDown={onGripKeyDown}
-            />
-          </span>
-        )}
-
-        <div className={styles.info}>
-          <div className={styles.nameLine}>
-            {renaming ? (
-              <Input
-                size="sm"
-                variant="ghost"
-                autoFocus
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); commitRename(); }
-                }}
-                onBlur={commitRename}
-                aria-label={t('resources.card.rename', [displayName])}
-                data-cell-id={`rename-input-${resourceId}`}
-              />
-            ) : (
-              <button
-                type="button"
-                className={styles.nameButton}
-                onClick={busy ? undefined : editing ? onSelect : startRename}
-                aria-pressed={editing ? selected : undefined}
-                aria-label={editing ? t('resources.card.select', [displayName]) : t('resources.card.rename', [displayName])}
-                data-cell-id={editing ? `select-${resourceId}` : `name-${resourceId}`}
-              >
-                <span className={styles.name}>{displayName}</span>
-              </button>
-            )}
-          </div>
-          {importing && (
-            <span className={styles.rowMeta} data-cell-id={`import-meta-${resourceId}`}>
-              {importMeta}
-            </span>
-          )}
-          {deleting && (
-            <span className={styles.rowMeta} data-cell-id={`delete-meta-${resourceId}`}>
-              {deleteMeta}
-            </span>
-          )}
-          {!busy && components != null && components.length > 0 && (
-            <div
-              className={styles.componentList}
-              role="group"
-              aria-label={t('resources.components.title')}
-              data-cell-id={`resource-components-${resourceId}`}
-            >
-              {components.map((component) => {
-                const off = disabledComponents.has(component);
-                return (
-                  <Chip
-                    key={component}
-                    as="button"
-                    size="sm"
-                    variant="outline"
-                    selected={!off}
-                    title={t(off ? 'resources.component.enable' : 'resources.component.disable', [t(COMPONENT_LABEL[component])])}
-                    onClick={() => toggleComponent(component)}
-                    data-cell-id={`component-${component}-${resourceId}`}
-                  >
-                    {t(COMPONENT_LABEL[component])}
-                  </Chip>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
         {busy ? (
           <>
-            {(pct ?? deletePct) != null && <span className={styles.rowPct}>{pct ?? deletePct}%</span>}
-            <Spinner size="sm" ariaLabel={(importMeta ?? deleteMeta) ?? undefined} />
+            <Spinner size="lg" ariaLabel={(importMeta ?? deleteMeta) ?? undefined} />
+            <div className={styles.info}>
+              <div className={styles.nameLine}>
+                <span className={styles.name}>{displayName}</span>
+                <span className={styles.metaSep} aria-hidden="true">·</span>
+                <span className={`${styles.rowMeta}${deleting ? ` ${styles.deletingText}` : ''}`} data-tihoka-id={deleting ? `delete-meta-${resourceId}` : `import-meta-${resourceId}`}>
+                  {deleting ? deleteMeta : importMeta}
+                </span>
+              </div>
+              <Progress
+                size="sm"
+                color={deleting ? 'error' : 'accent'}
+                value={busyPct ?? 0}
+                indeterminate={busyPct == null || undefined}
+                className={styles.busyProgress}
+                aria-label={displayName}
+                data-tihoka-id={deleting ? `deleting-${resourceId}` : `importing-${resourceId}`}
+              />
+              {componentChips}
+            </div>
+            {busyPct != null && <span className={`${styles.rowPct}${deleting ? ` ${styles.deletingText}` : ''}`}>{busyPct}%</span>}
+            {moreButton}
           </>
         ) : (
           <>
+            {editing ? (
+              <Checkbox
+                checked={selected}
+                onChange={() => onSelect?.()}
+                aria-label={t('resources.card.select', [displayName])}
+                className={styles.selectCheck}
+                data-tihoka-id={`check-${resourceId}`}
+              />
+            ) : canReorder && (
+              <span className={styles.gripWrap}>
+                <DragHandle
+                  size="sm"
+                  orientation="vertical"
+                  aria-label={t('resources.card.drag', [displayName])}
+                  draggable={false}
+                  className={styles.grip}
+                  data-tihoka-id={`drag-${resourceId}`}
+                  onPointerDown={onGripPointerDownLocal}
+                  onKeyDown={onGripKeyDown}
+                />
+              </span>
+            )}
+
+            <div className={styles.info}>
+              <div className={styles.nameLine}>
+                {renaming ? (
+                  <Input
+                    size="sm"
+                    variant="ghost"
+                    autoFocus
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); commitRename(); }
+                    }}
+                    onBlur={commitRename}
+                    aria-label={t('resources.card.rename', [displayName])}
+                    data-tihoka-id={`rename-input-${resourceId}`}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.nameButton}
+                    onClick={editing ? onSelect : startRename}
+                    aria-pressed={editing ? selected : undefined}
+                    aria-label={editing ? t('resources.card.select', [displayName]) : t('resources.card.rename', [displayName])}
+                    data-tihoka-id={editing ? `select-${resourceId}` : `name-${resourceId}`}
+                  >
+                    <span className={styles.name}>{displayName}</span>
+                  </button>
+                )}
+              </div>
+              {componentChips}
+            </div>
+
             <Toggle
               checked={enabled}
               onChange={handleToggle}
               ariaLabel={t(enabled ? 'resources.card.disable' : 'resources.card.enable', [displayName])}
               dataTestId={`enable-toggle-${resourceId}`}
             />
+
+            {moreButton}
 
             {editing && (
               <Button
@@ -372,7 +347,7 @@ export function ResourceCard({
                 className={styles.editActionIn}
                 onClick={onDelete}
                 aria-label={t('resources.card.delete', [displayName])}
-                data-cell-id={`delete-button-${resourceId}`}
+                data-tihoka-id={`delete-button-${resourceId}`}
               >
                 <Icon name="trash" size="xs" />
               </Button>
@@ -384,15 +359,31 @@ export function ResourceCard({
       <Menu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
-        triggerRef={gripWrapRef}
+        triggerRef={moreRef}
         ariaLabel={t('resources.card.menu', [displayName])}
       >
         <MenuItem
           icon={<Icon name="info" size="xs" />}
           onSelect={() => { setMenuOpen(false); setDetailOpen(true); }}
-          data-cell-id={`menu-detail-${resourceId}`}
+          data-tihoka-id={`menu-detail-${resourceId}`}
         >
           {t('resources.menu.detail')}
+        </MenuItem>
+        <MenuItem
+          icon={<Icon name="pencil" size="xs" />}
+          disabled={busy || editing}
+          onSelect={() => { setMenuOpen(false); startRename(); }}
+          data-tihoka-id={`menu-rename-${resourceId}`}
+        >
+          {t('resources.menu.rename')}
+        </MenuItem>
+        <MenuItem
+          icon={<Icon name="trash" size="xs" />}
+          disabled={busy}
+          onSelect={() => { setMenuOpen(false); onDelete(); }}
+          data-tihoka-id={`menu-delete-${resourceId}`}
+        >
+          {t('resources.menu.delete')}
         </MenuItem>
       </Menu>
 
@@ -401,7 +392,7 @@ export function ResourceCard({
         onOpenChange={setDetailOpen}
         title={displayName}
         showCloseButton
-        data-cell-id={`resource-detail-${resourceId}`}
+        data-tihoka-id={`resource-detail-${resourceId}`}
       >
         <dl className={styles.detailList}>
           <div className={styles.detailRow}>
@@ -437,5 +428,5 @@ export function ResourceCard({
 }
 
 export function ResourceCardSkeleton(): ReactElement {
-  return <div className={styles.skeleton} data-cell-id="resource-card-skeleton" aria-hidden="true" />;
+  return <div className={styles.skeleton} data-tihoka-id="resource-card-skeleton" aria-hidden="true" />;
 }

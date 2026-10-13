@@ -8,7 +8,7 @@ import type { PopupAnchor, PopupLineRect, PopupPointerHint, PopupSize } from './
 import type { LookupResult, PopupCardCreatorPrefill, WordStatus, PopupTab } from '@/entities/dictionary';
 
 
-const ORBITAL_BADGE_HOST_CLASS = 'js-cell-orbital-badge-host';
+const ORBITAL_BADGE_HOST_CLASS = 'js-Tihoka-orbital-badge-host';
 
 export interface MountPopupDictionaryOptions {
   /** Bounding box of the looked-up token. */
@@ -210,7 +210,7 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
     },
   );
 
-  mount.host.classList.add('js-cell-popup-host');
+  mount.host.classList.add('js-Tihoka-popup-host');
   mount.host.style.zIndex = POPUP_Z_INDEX;
 
   const onDocumentPointerDown = (e: PointerEvent): void => {
@@ -254,7 +254,7 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
   return {
     host: mount.host,
     focus: () => {
-      const el = mount.rootEl.querySelector<HTMLElement>('[data-cell-id="popup-dictionary"]');
+      const el = mount.rootEl.querySelector<HTMLElement>('[data-tihoka-id="popup-dictionary"]');
       if (!el) return;
       if (el.tabIndex < 0) el.tabIndex = -1;
       el.focus();

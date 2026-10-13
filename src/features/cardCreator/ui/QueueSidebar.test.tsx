@@ -64,6 +64,6 @@ describe('QueueSidebar', () => {
 
   it('renders nothing (non-overlay) when the queue is empty', () => {
     const { container } = render(<QueueSidebar {...baseProps()} queueItems={[]} />);
-    expect(container.querySelector('[data-cell-id="cc-queue-sidebar"]')).toBeNull();
+    expect(container.querySelector('[data-tihoka-id="cc-queue-sidebar"]')).toBeNull();
   });
 });

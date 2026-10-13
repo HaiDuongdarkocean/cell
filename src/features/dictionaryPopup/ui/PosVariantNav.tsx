@@ -24,7 +24,7 @@ export interface PosVariantNavProps {
 
 export function PosVariantNav({ variants, selectedIndex, onSelect }: PosVariantNavProps): React.JSX.Element {
   return (
-    <nav className={styles.nav} aria-label={t('dict.variant.selector')} data-cell-id="dictionary-pos-nav">
+    <nav className={styles.nav} aria-label={t('dict.variant.selector')} data-tihoka-id="dictionary-pos-nav">
       {variants.map((variant, i) => (
         <Fragment key={variant.pos || 'other'}>
           {i > 0 && <span className={styles.sep} aria-hidden="true">|</span>}
@@ -34,7 +34,7 @@ export function PosVariantNav({ variants, selectedIndex, onSelect }: PosVariantN
             aria-pressed={i === selectedIndex}
             aria-current={i === selectedIndex ? 'true' : undefined}
             onClick={() => onSelect(i)}
-            data-cell-id={`dictionary-pos-${variant.pos || 'other'}`}
+            data-tihoka-id={`dictionary-pos-${variant.pos || 'other'}`}
             data-compact-hit
           >
             {posVariantLabel(variant.pos)}

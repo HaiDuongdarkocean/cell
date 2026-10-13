@@ -5,10 +5,10 @@
 // because it highlights the page's own text.
 //
 // Three modes for each highlighter:
-// 1. Element mode: add `.js-cell-word-highlight` class to an existing element
+// 1. Element mode: add `.js-Tihoka-word-highlight` class to an existing element
 //    (subtitle token span). No DOM structure change.
 // 2. DOM wrap mode (primary for Range): wrap the range contents in
-//    `<span class="js-cell-word-highlight">`. Restores original DOM on clear.
+//    `<span class="js-Tihoka-word-highlight">`. Restores original DOM on clear.
 // 3. Overlay mode (fallback for Range): when surroundContents throws or the
 //    wrapper is empty (word split by inline tags, range collapsed, or host page
 //    mutates the DOM), create absolute-positioned overlay divs based on
@@ -19,7 +19,7 @@
 // - host-css-overrides-injected-elements: !important on background-color +
 //   color + explicit reset (padding, margin, box-sizing) to survive host CSS.
 // - inline-style-leak-state-transition: clear() removes everything show() set.
-// - css-js-hook-separate-from-data-attribute: `.js-cell-*` class for JS hooks.
+// - css-js-hook-separate-from-data-attribute: `.js-Tihoka-*` class for JS hooks.
 
 import tokensJson from '@/shared/styles/tokens.json';
 import { findThemeCarrier } from '@/features/theme';
@@ -32,21 +32,21 @@ type HighlightConfig = {
 };
 
 const WORD_CONFIG: HighlightConfig = {
-  styleId: 'cell-word-highlight-style',
-  highlightClass: 'js-cell-word-highlight',
-  overlayClass: 'js-cell-word-highlight-overlay',
+  styleId: 'Tihoka-word-highlight-style',
+  highlightClass: 'js-Tihoka-word-highlight',
+  overlayClass: 'js-Tihoka-word-highlight-overlay',
   buildCss(): string {
     const lightSubtle = tokensJson.derived.light['color-primary-subtle'];
     const darkSubtle = tokensJson.derived.dark['color-primary-subtle'];
     const radiusXs = tokensJson.static.radius.xs;
     const duration100 = tokensJson.static.motion['duration-100'];
-    // --cell-highlight-subtle is resolved live from the theme carrier in
+    // --Tihoka-highlight-subtle is resolved live from the theme carrier in
     // show() (preset or custom palette); --color-primary-subtle resolves for
     // spans inside a themed boundary (subtitle shadow); literals are the
     // base-palette fallback for unthemed page DOM.
     return `
 .${WORD_CONFIG.highlightClass} {
-  background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${lightSubtle})) !important;
+  background-color: var(--Tihoka-highlight-subtle, var(--color-primary-subtle, ${lightSubtle})) !important;
   color: inherit !important;
   border-radius: ${radiusXs} !important;
   padding: 0 !important;
@@ -56,15 +56,15 @@ const WORD_CONFIG: HighlightConfig = {
 }
 @media (prefers-color-scheme: dark) {
   .${WORD_CONFIG.highlightClass} {
-    background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
+    background-color: var(--Tihoka-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
   }
 }
 [data-theme="dark"] .${WORD_CONFIG.highlightClass} {
-  background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
+  background-color: var(--Tihoka-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
 }
 .${WORD_CONFIG.overlayClass} {
   position: absolute !important;
-  background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${lightSubtle})) !important;
+  background-color: var(--Tihoka-highlight-subtle, var(--color-primary-subtle, ${lightSubtle})) !important;
   border-radius: ${radiusXs} !important;
   pointer-events: none !important;
   z-index: var(--z-overlay-secondary) !important;
@@ -75,11 +75,11 @@ const WORD_CONFIG: HighlightConfig = {
 }
 @media (prefers-color-scheme: dark) {
   .${WORD_CONFIG.overlayClass} {
-    background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
+    background-color: var(--Tihoka-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
   }
 }
 [data-theme="dark"] .${WORD_CONFIG.overlayClass} {
-  background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
+  background-color: var(--Tihoka-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
 }
 @media (prefers-reduced-motion: reduce) {
   .${WORD_CONFIG.highlightClass},
@@ -93,7 +93,7 @@ const WORD_CONFIG: HighlightConfig = {
 
 /** Inject the highlight <style> into a document or shadow root (idempotent).
  *  Shadow roots need their own copy — document styles do not cross the shadow
- *  boundary (subtitle cue text lives inside #cell-subtitle-root). */
+ *  boundary (subtitle cue text lives inside #Tihoka-subtitle-root). */
 function injectStyle(config: HighlightConfig, root: Document | ShadowRoot = document): void {
   if (root.getElementById(config.styleId)) return;
   const style = document.createElement('style');
@@ -153,7 +153,7 @@ function createTextHighlight(config: HighlightConfig): TextHighlight {
 
   function applyCarrierSubtle(el: HTMLElement): void {
     const subtle = resolveCarrierSubtle();
-    if (subtle) el.style.setProperty('--cell-highlight-subtle', subtle);
+    if (subtle) el.style.setProperty('--Tihoka-highlight-subtle', subtle);
   }
 
   function showOverlay(range: Range): void {

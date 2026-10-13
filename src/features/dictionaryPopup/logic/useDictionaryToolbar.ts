@@ -21,7 +21,6 @@ import type {
   ExternalDictLink,
   FetchImagesResponse,
   LocalAudioStateResponse,
-  TtsFetchAudioResponse,
 } from '@/entities/dictionary';
 import { isSafeDictUrl, type ExternalDictLinkTemplate } from '@/entities/settings';
 import { t } from '@/shared/i18n';
@@ -222,13 +221,6 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
       try {
         // If loadSettings hangs, fall back to defaults so the audio API still gets a chance.
         const settingsP = withTimeout(loadSettings(), 5_000).catch(() => DEFAULT_SETTINGS);
-        const sentenceTtsP = withTimeout(
-          sendMessage<MessageResponse<TtsFetchAudioResponse>>({
-            type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
-            payload: { tabId: 0, text: contextSentence.trim() || result.term, langCode: result.langCode },
-          }),
-          8_000,
-        ).catch(() => undefined);
         const localAudioStateP = withTimeout(
           sendMessage<MessageResponse<LocalAudioStateResponse>>({
             type: MESSAGE_TYPES.LOCAL_AUDIO_STATE,
@@ -246,6 +238,11 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
         const orchestrator = new PronunciationAudioOrchestrator(
           settings.pronunciation ?? DEFAULT_PRONUNCIATION_SETTINGS,
         );
+        // Sentence audio shares the configured chain, restricted by the
+        // orchestrator to cloud voices + browser voice.
+        const sentenceItemsP = orchestrator
+          .resolveSentence(contextSentence.trim() || result.term, result.langCode)
+          .catch(() => [] as readonly AudioItem[]);
         const wordItems = await withTimeout(
           orchestrator.resolve(result.term, result.langCode),
           15_000,
@@ -261,28 +258,15 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
           }
         }
 
-        const sentenceTtsRes = await sentenceTtsP;
-        const items: AudioItem[] = [...wordItems];
-        if (sentenceTtsRes?.success && sentenceTtsRes.data?.url) {
-          items.push({
-            id: `tts-sentence-${result.term}`,
-            kind: 'sentence',
-            source: 'system-tts',
-            label: t('dict.audio.ttsSentence'),
-            state: 'idle',
-            url: sentenceTtsRes.data.url,
-            defaultSelected: false,
-          });
-        }
+        const sentenceItems = await sentenceItemsP;
+        const items: AudioItem[] = [...wordItems, ...sentenceItems];
 
-        if (items.length === 0) {
-          if (sentenceTtsRes?.error) console.warn('[dict] audio fetch failed:', sentenceTtsRes.error);
-          setAudioError(t('dict.error.audio'));
-        }
-
-        if (mountedRef.current && items.length !== wordItems.length) {
-          setAudioItems(items);
-          if (wordItems.length === 0) setAudioSelection(new Map());
+        if (mountedRef.current) {
+          if (items.length === 0) setAudioError(t('dict.error.audio'));
+          if (items.length !== wordItems.length) {
+            setAudioItems(items);
+            if (wordItems.length === 0) setAudioSelection(new Map());
+          }
         }
 
         return items;

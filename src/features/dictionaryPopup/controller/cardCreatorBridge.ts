@@ -28,24 +28,28 @@ import type {
 } from '@/features/cardCreator';
 import { addToOceanSrs, openSrsStudyPage } from '@/features/srs';
 import { formatDefinitions, parseDefinitionsText } from '@/features/dictionary';
-import { formatDefEntry, formatDefFromLookup } from '@/features/srs';
+import { cardLookupResult, formatDefEntry, formatDefFromLookup } from '@/features/srs';
 import { loadSettingsOrToast, showProgressToast } from '@/features/subtitle';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { audioItemDataUrl, resolveSentenceAudioItems } from '@/features/pronunciation';
 import { t } from '@/shared/i18n';
 import type { PanelMountController } from './panelBridge';
 import type { CueRange, PopupLevel } from './controllerTypes';
+import type { FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 import { isLookupFromSubtitle, lookupCueRange } from './lookupTargetDom';
 
 function definitionsFieldText(
   prefill: PopupCardCreatorPrefill,
   frequencyFormat: 'stars' | 'rank' = 'stars',
+  frequencyThresholds?: FrequencyBandThresholds,
 ): string {
   const senses = formatDefinitions(prefill.definitions);
   if (!senses.trim()) return '';
-  return prefill.lookupResult
-    ? formatDefFromLookup(prefill.lookupResult, senses, prefill.term, frequencyFormat)
-    : formatDefEntry({ term: prefill.term, reading: prefill.reading, readingKind: prefill.readingKind, frequencyFormat, senses });
+  const lookupResult = cardLookupResult(prefill);
+  return lookupResult
+    ? formatDefFromLookup(lookupResult, senses, prefill.term, frequencyFormat, frequencyThresholds)
+    : formatDefEntry({ term: prefill.term, reading: prefill.reading, readingKind: prefill.readingKind, frequencyStars: prefill.frequencyStars?.count, frequencies: prefill.frequencies, frequencyFormat, frequencyThresholds, senses });
 }
 
 
@@ -188,6 +192,8 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
       // Clone the full popup lookup result and loaded media items so the
       // integrated Dictionary can re-render the exact candidate + tabs.
       lookupResult: selection?.lookupResult,
+      frequencies: selection?.frequencies,
+      frequencyStars: selection?.frequencyStars,
       audioItems: selection?.audioItems,
       imageItems: selection?.imageItems,
       video: context.video,
@@ -281,7 +287,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
       });
     }
 
-    const definitionsText = definitionsFieldText(prefill, ccSettings.frequencyDisplay);
+    const definitionsText = definitionsFieldText(prefill, settings.dictionaryPopup?.frequencyDisplay, settings.frequencyBands);
 
     const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
     const targetLang = settings.subtitleOverlayNativeLanguage || deps.getNativeLang() || 'vi';
@@ -344,12 +350,13 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
         }
         if ((prefill.sentenceAudioUrls ?? []).length === 0 && prefill.contextSentence) {
           try {
-            const res = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
-              type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
-              payload: { tabId: 0, text: prefill.contextSentence.slice(0, 200), langCode: fromSubtitle ? sourceLang : prefill.langCode },
-            });
-            if (res?.success && res.data?.url) {
-              const file = await fetchMediaFile(res.data.url, 'audio');
+            const items = await resolveSentenceAudioItems(
+              prefill.contextSentence.slice(0, 200),
+              fromSubtitle ? sourceLang : prefill.langCode,
+            );
+            const url = items.map(audioItemDataUrl).find((u): u is string => u !== undefined);
+            if (url) {
+              const file = await fetchMediaFile(url, 'audio');
               cardCreatorMount?.addMediaFiles('sentenceAudios', [file]);
             }
           } catch { /* non-fatal */ }
@@ -415,12 +422,13 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
     if (needsSentenceAudio) {
       void (async () => {
         try {
-          const res = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
-            type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
-            payload: { tabId: 0, text: prefill.contextSentence!.slice(0, 200), langCode: fromSubtitle ? sourceLang : prefill.langCode },
-          });
-          if (res?.success && res.data?.url) {
-            const file = await fetchMediaFile(res.data.url, 'audio');
+          const items = await resolveSentenceAudioItems(
+            prefill.contextSentence!.slice(0, 200),
+            fromSubtitle ? sourceLang : prefill.langCode,
+          );
+          const url = items.map(audioItemDataUrl).find((u): u is string => u !== undefined);
+          if (url) {
+            const file = await fetchMediaFile(url, 'audio');
             cardCreatorMount?.addMediaFiles('sentenceAudios', [file]);
           }
         } catch { /* non-fatal */ }
@@ -545,13 +553,12 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
       if (wantsSentenceTts) {
         tasks.push((async (): Promise<void> => {
           try {
-            const res = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
-              type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
-              payload: { tabId: 0, text: prefill.contextSentence!.slice(0, 200), langCode: fromSubtitle ? sourceLang : prefill.langCode },
-            });
-            if (res?.success && res.data?.url) {
-              ttsSentenceUrls = [res.data.url];
-            }
+            const items = await resolveSentenceAudioItems(
+              prefill.contextSentence!.slice(0, 200),
+              fromSubtitle ? sourceLang : prefill.langCode,
+            );
+            const url = items.map(audioItemDataUrl).find((u): u is string => u !== undefined);
+            if (url) ttsSentenceUrls = [url];
           } catch { /* non-fatal */ }
         })());
       }
@@ -609,7 +616,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
             mediaPending: true,
             prefill: {
               targetWord: prefill.term,
-              definitions: definitionsFieldText(prefill),
+              definitions: definitionsFieldText(prefill, settings.dictionaryPopup?.frequencyDisplay, settings.frequencyBands),
               sentence: prefill.contextSentence,
               sentenceTranslation: prefill.translation,
               wordAudioUrls: prefill.wordAudioUrls,
@@ -655,7 +662,7 @@ export function createCardCreatorBridge(deps: CardCreatorBridgeDeps): CardCreato
             mediaPending: false,
             prefill: {
               targetWord: prefill.term,
-              definitions: definitionsFieldText(prefill),
+              definitions: definitionsFieldText(prefill, settings.dictionaryPopup?.frequencyDisplay, settings.frequencyBands),
               sentence: media.cue?.targetText || prefill.contextSentence,
               sentenceTranslation,
               wordAudioUrls: media.wordAudioUrls,

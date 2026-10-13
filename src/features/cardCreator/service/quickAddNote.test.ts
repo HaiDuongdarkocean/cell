@@ -67,9 +67,9 @@ describe('quickAddNote', () => {
   it('happy path: maps text + media, uploads, adds note', async () => {
     // storeMedia (image) → storeMedia (sentenceAudio) → storeMedia (wordAudio) → addNote
     queueResponses([
-      { result: 'cell-img-1.png' },
-      { result: 'cell-audio-2.mp3' },
-      { result: 'cell-audio-1.mp3' },
+      { result: 'Tihoka-img-1.png' },
+      { result: 'Tihoka-audio-2.mp3' },
+      { result: 'Tihoka-audio-1.mp3' },
       { result: 12345 },
     ]);
 
@@ -78,12 +78,12 @@ describe('quickAddNote', () => {
       'Default',
       'Basic',
       fieldMapping,
-      'cell learning',
+      'Tihoka learning',
       text,
       {
-        images: [makeMediaFile('image', 'cell-img-1.png')],
-        wordAudios: [makeMediaFile('audio', 'cell-audio-1.mp3')],
-        sentenceAudios: [makeMediaFile('audio', 'cell-audio-2.mp3')],
+        images: [makeMediaFile('image', 'Tihoka-img-1.png')],
+        wordAudios: [makeMediaFile('audio', 'Tihoka-audio-1.mp3')],
+        sentenceAudios: [makeMediaFile('audio', 'Tihoka-audio-2.mp3')],
       },
     );
 
@@ -101,10 +101,10 @@ describe('quickAddNote', () => {
     expect(fields.Sentence).toBe('The ephemeral nature of fame.');
     expect(fields.Translation).toBe('Bản chất ngắn ngủi của danh tiếng.');
     expect(fields.Back).toBe('(adj) lasting a very short time');
-    expect(fields.Image).toContain('<img src="cell-img-1.png">');
-    expect(fields.WordAudio).toContain('[sound:cell-audio-1.mp3]');
-    expect(fields.SentenceAudio).toContain('[sound:cell-audio-2.mp3]');
-    expect(note.tags).toEqual(['cell', 'learning']);
+    expect(fields.Image).toContain('<img src="Tihoka-img-1.png">');
+    expect(fields.WordAudio).toContain('[sound:Tihoka-audio-1.mp3]');
+    expect(fields.SentenceAudio).toContain('[sound:Tihoka-audio-2.mp3]');
+    expect(note.tags).toEqual(['Tihoka', 'learning']);
   });
 
   it('multi-line definitions: newlines become <br> so Anki keeps one sense per line', async () => {
@@ -157,7 +157,7 @@ describe('quickAddNote', () => {
     // storeMedia image fails → storeMedia wordAudio succeeds → addNote
     queueResponses([
       new Error('upload failed'),
-      { result: 'cell-audio-1.mp3' },
+      { result: 'Tihoka-audio-1.mp3' },
       { result: 42 },
     ]);
 
@@ -170,8 +170,8 @@ describe('quickAddNote', () => {
       '',
       text,
       {
-        images: [makeMediaFile('image', 'cell-img-1.png')],
-        wordAudios: [makeMediaFile('audio', 'cell-audio-1.mp3')],
+        images: [makeMediaFile('image', 'Tihoka-img-1.png')],
+        wordAudios: [makeMediaFile('audio', 'Tihoka-audio-1.mp3')],
         sentenceAudios: [],
       },
       (msg) => warnings.push(msg),
@@ -187,7 +187,7 @@ describe('quickAddNote', () => {
     const note = (last?.params as { note: Record<string, unknown> }).note;
     const fields = note.fields as Record<string, string>;
     expect(fields.Image).toBeUndefined();
-    expect(fields.WordAudio).toContain('[sound:cell-audio-1.mp3]');
+    expect(fields.WordAudio).toContain('[sound:Tihoka-audio-1.mp3]');
   });
 
   it('addNote failure: returns error result', async () => {

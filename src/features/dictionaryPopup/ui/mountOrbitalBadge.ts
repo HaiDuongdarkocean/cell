@@ -5,7 +5,7 @@ import { ShadowThemeProvider } from '@/features/theme';
 import { OrbitalBadge, type OrbitalBadgeProps, type OrbitalBadgeHandle } from './OrbitalBadge';
 import type { PanelMountController } from '../controller/panelBridge';
 import type { PointerPreset, Point } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
-import { CELL_PANEL_DISMISS_EXEMPT_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
+import { Tihoka_PANEL_DISMISS_EXEMPT_SELECTORS } from '@/shared/lib/dom/TihokaUiHosts';
 
 export interface OrbitalBadgeMountOptions {
   /** Badge diameter in px. */
@@ -97,7 +97,7 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
     provider: ShadowThemeProvider,
   });
 
-  mount.host.classList.add('js-cell-orbital-badge-host');
+  mount.host.classList.add('js-Tihoka-orbital-badge-host');
   mount.host.style.zIndex = BADGE_Z_INDEX;
 
   const isInsidePanel = (e: PointerEvent): boolean => {
@@ -113,7 +113,7 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
   const onDocPointerDown = (e: PointerEvent): void => {
     const path = e.composedPath();
     if (path.includes(mount.host)) return;
-    if (path.some((el) => el instanceof Element && el.matches(CELL_PANEL_DISMISS_EXEMPT_SELECTORS))) return;
+    if (path.some((el) => el instanceof Element && el.matches(Tihoka_PANEL_DISMISS_EXEMPT_SELECTORS))) return;
 
     // Close the panel when the user clicks outside both the badge and panel.
     // The badge itself stays expanded — it only collapses when dragged near an
@@ -142,7 +142,7 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
   if (panelSuppressed) mount.host.style.display = 'none';
 
   // A fullscreen element with shadow DOM swallows light-DOM children that
-  // are not slotted (e.g. #cell-subtitle-root in Player Mode) — the badge
+  // are not slotted (e.g. #Tihoka-subtitle-root in Player Mode) — the badge
   // must go inside the shadow tree to render.
   const attachToFullscreen = (fsEl: Element): void => {
     const shadow = fsEl.shadowRoot;
@@ -155,12 +155,12 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
 
   // In a cross-origin iframe the top document fullscreens the <iframe>
   // element, so the child document's fullscreenElement stays null and the
-  // child-frame Player Mode host (#cell-subtitle-root) covers the viewport
+  // child-frame Player Mode host (#Tihoka-subtitle-root) covers the viewport
   // with a max-int z-index instead. The badge must attach into that host's
   // shadow tree or it stays invisible behind the overlay.
   const resolveAttachTarget = (): Element | null =>
     document.fullscreenElement
-    ?? document.querySelector('#cell-subtitle-root[data-cell-player-mode]');
+    ?? document.querySelector('#Tihoka-subtitle-root[data-tihoka-player-mode]');
 
   const onFullscreenChange = (): void => {
     const fsEl = document.fullscreenElement;
@@ -175,7 +175,7 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
       mount.host.style.display = 'none';
       return;
     }
-    // Non-iframe fullscreen (e.g. Cell Player Mode container), a child-frame
+    // Non-iframe fullscreen (e.g. Tihoka Player Mode container), a child-frame
     // Player Mode host, or exit: move the badge into that element so it stays
     // visible, or back to body when leaving. Restore display — unless the
     // panel is open, in which case the badge stays suppressed across the

@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { t } from '@/shared/i18n';
-import { onDictionaryChanged, onWordStatusChanged } from '@/features/dictionary';
+import { isNotKnown, onDictionaryChanged, onWordStatusChanged } from '@/features/dictionary';
 import { getSrsCardTermSet, invalidateSrsCardTermSet, onSrsCardsChanged } from '@/features/srs';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import {
   applyTokenListCardFlags,
   applyTokenListStatus,
   createTokenList,
+  markedTokenIndexes,
   resolveTokenListMetadata,
 } from '@/features/tokenize';
+import type { AnnotationDisplayMode } from '@/entities/settings';
 import type { Token } from '@/features/tokenize';
 import styles from './PreviewBlock.module.css';
 
@@ -18,8 +20,8 @@ export interface PreviewBlockProps {
   readonly langCode?: string;
   readonly onTokenClick?: (term: string, contextSentence: string) => void;
   readonly dataId?: string;
-  /** Profile `showReadings`. Undefined → loaded from settings once. */
-  readonly showReadings?: boolean;
+  /** Profile `readingDisplay`. Undefined → loaded from settings once. */
+  readonly readingDisplay?: AnnotationDisplayMode;
 }
 
 export function PreviewBlock({
@@ -28,30 +30,30 @@ export function PreviewBlock({
   langCode = 'en',
   onTokenClick,
   dataId,
-  showReadings: showReadingsProp,
+  readingDisplay: readingDisplayProp,
 }: PreviewBlockProps): ReactElement {
   const baseTokens = useMemo(() => createTokenList(sentence, langCode), [sentence, langCode]);
   const [tokens, setTokens] = useState<readonly Token[]>(baseTokens);
   const [resolving, setResolving] = useState(false);
-  const [loadedShowReadings, setLoadedShowReadings] = useState(false);
-  const showReadings = showReadingsProp ?? loadedShowReadings;
+  const [loadedReadingDisplay, setLoadedReadingDisplay] = useState<AnnotationDisplayMode>('off');
+  const readingDisplay = readingDisplayProp ?? loadedReadingDisplay;
   // Dictionary-changed bumps re-run resolution so caps/bands refresh.
   const [dictEpoch, setDictEpoch] = useState(0);
 
   useEffect(() => {
-    if (showReadingsProp !== undefined) return;
+    if (readingDisplayProp !== undefined) return;
     let active = true;
     void loadSettings()
-      .then((settings) => { if (active) setLoadedShowReadings(settings.showReadings); })
+      .then((settings) => { if (active) setLoadedReadingDisplay(settings.readingDisplay); })
       .catch(() => {});
     return () => { active = false; };
-  }, [showReadingsProp]);
+  }, [readingDisplayProp]);
 
   useEffect(() => {
     setTokens(baseTokens);
     setResolving(true);
     let active = true;
-    void resolveTokenListMetadata(baseTokens, langCode, { includeReadings: showReadings }).then((resolved) => {
+    void resolveTokenListMetadata(baseTokens, langCode, { includeReadings: readingDisplay !== 'off' }).then((resolved) => {
       if (!active) return;
       setResolving(false);
       setTokens(resolved);
@@ -74,7 +76,7 @@ export function PreviewBlock({
       unsubscribe();
       unsubscribeCards();
     };
-  }, [baseTokens, langCode, showReadings, dictEpoch]);
+  }, [baseTokens, langCode, readingDisplay, dictEpoch]);
 
   useEffect(() => {
     return onDictionaryChanged(({ langCode: changed }) => {
@@ -88,14 +90,14 @@ export function PreviewBlock({
     [targetWord],
   );
 
-  const tokenSpans = buildTokenSpans(tokens, targetTerms, sentence, onTokenClick, resolving, showReadings);
+  const tokenSpans = buildTokenSpans(tokens, targetTerms, sentence, onTokenClick, resolving, readingDisplay);
 
   return (
     <div
       className={styles['cc-preview']}
       aria-label={t('cardCreator.preview.aria')}
       role="region"
-      data-cell-id={dataId}
+      data-tihoka-id={dataId}
       data-allow-tokenize
       data-allow-lookup
     >
@@ -105,19 +107,29 @@ export function PreviewBlock({
   );
 }
 
-function tokenClassName(token: Token, resolving: boolean, showReadings: boolean): string {
+function readingClassName(mode: AnnotationDisplayMode, token: Token, marked: boolean): string {
+  switch (mode) {
+    case 'always': return '';
+    case 'hover': return 'js-Tihoka-token--reading-hover';
+    case 'off': return 'js-Tihoka-token--reading-off';
+    case 'unknown': return isNotKnown(token.status ?? 'unknown') ? '' : 'js-Tihoka-token--reading-off';
+    case 'i1': return marked ? '' : 'js-Tihoka-token--reading-off';
+  }
+}
+
+function tokenClassName(token: Token, resolving: boolean, readingClass: string): string {
   return [
-    'js-cell-token',
-    'js-cell-token--word',
-    resolving ? 'js-cell-token--resolving' : '',
-    `js-cell-token--status-${token.status ?? 'unknown'}`,
+    'js-Tihoka-token',
+    'js-Tihoka-token--word',
+    resolving ? 'js-Tihoka-token--resolving' : '',
+    `js-Tihoka-token--status-${token.status ?? 'unknown'}`,
     token.frequencyBand && token.frequencyBand !== 'none'
-      ? `js-cell-token--frequency-${token.frequencyBand}`
+      ? `js-Tihoka-token--frequency-${token.frequencyBand}`
       : '',
-    token.hasCard ? 'js-cell-token--has-card' : '',
-    showReadings ? '' : 'js-cell-token--reading-off',
+    token.hasCard ? 'js-Tihoka-token--has-card' : '',
+    readingClass,
     // Glosses are subtitle-overlay only (spec word-translation).
-    'js-cell-token--gloss-off',
+    'js-Tihoka-token--gloss-off',
     styles['cc-preview__token'],
   ]
     .filter(Boolean)
@@ -130,9 +142,11 @@ function buildTokenSpans(
   sentence: string,
   onTokenClick: ((term: string, contextSentence: string) => void) | undefined,
   resolving: boolean,
-  showReadings: boolean,
+  readingDisplay: AnnotationDisplayMode,
 ): React.ReactNode[] {
-  const gapClass = `js-cell-token js-cell-token--separator ${styles['cc-preview__gap']}`;
+  const gapClass = `js-Tihoka-token js-Tihoka-token--separator ${styles['cc-preview__gap']}`;
+  const marked = markedTokenIndexes(tokens);
+  const hasReading = readingDisplay !== 'off';
   const children: React.ReactNode[] = [];
   let lastEnd = 0;
   let index = 0;
@@ -157,7 +171,8 @@ function buildTokenSpans(
       const phraseTokens = tokens.slice(index, index + targetTerms.length);
       let phraseLastEnd = token.start;
       const phraseChildren: React.ReactNode[] = [];
-      for (const phraseToken of phraseTokens) {
+      for (let pi = 0; pi < phraseTokens.length; pi += 1) {
+        const phraseToken = phraseTokens[pi]!;
         if (phraseToken.start > phraseLastEnd) {
           phraseChildren.push(
             <span key={`phrasegap-${phraseToken.start}`} className={gapClass}>
@@ -171,8 +186,8 @@ function buildTokenSpans(
             token={phraseToken}
             sentence={sentence}
             onTokenClick={onTokenClick}
-            className={tokenClassName(phraseToken, resolving, showReadings)}
-            showReading={showReadings}
+            className={tokenClassName(phraseToken, resolving, readingClassName(readingDisplay, phraseToken, marked.has(index + pi)))}
+            showReading={hasReading}
           />,
         );
         phraseLastEnd = phraseToken.end;
@@ -193,8 +208,8 @@ function buildTokenSpans(
         token={token}
         sentence={sentence}
         onTokenClick={onTokenClick}
-        className={tokenClassName(token, resolving, showReadings)}
-        showReading={showReadings}
+        className={tokenClassName(token, resolving, readingClassName(readingDisplay, token, marked.has(index)))}
+        showReading={hasReading}
       />,
     );
     lastEnd = token.end;
@@ -237,14 +252,14 @@ function TokenSpan({ token, sentence, onTokenClick, className, showReading }: To
   return (
     <span
       className={className}
-      data-cell-term={token.term}
-      data-cell-start={token.start}
-      data-cell-end={token.end}
+      data-tihoka-term={token.term}
+      data-tihoka-start={token.start}
+      data-tihoka-end={token.end}
       data-reading={showReading ? token.reading : undefined}
       onClick={onTokenClick ? () => onTokenClick(token.term, sentence) : undefined}
     >
-      <span className="js-cell-token-word">{token.text}</span>
-      <span className="js-cell-token-status" aria-hidden="true" />
+      <span className="js-Tihoka-token-word">{token.text}</span>
+      <span className="js-Tihoka-token-status" aria-hidden="true" />
     </span>
   );
 }

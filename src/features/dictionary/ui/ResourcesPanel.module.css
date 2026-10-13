@@ -1,7 +1,7 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-4);
   container-type: inline-size;
 }
 
@@ -11,21 +11,21 @@
 .columns {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-4);
 }
 
 .sections {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-4);
   flex: 1 1 auto;
   min-width: 0;
 }
 
-/* Stacked below the breakpoint the lookup preview is dead weight under the
-   resource list — it only earns its place as a side column. */
+/* Stacked below the breakpoint the search field spans the full panel width. */
 .lookupColumn {
-  display: none;
+  display: flex;
+  flex-direction: column;
 }
 
 @container (min-width: 860px) {
@@ -36,22 +36,11 @@
 
   .lookupColumn {
     min-width: 0;
-    display: flex;
-    flex-direction: column;
     flex: 0 0 calc(var(--space-9) * 10);
     position: sticky;
     top: var(--space-4);
-    max-height: calc(100vh - var(--space-8));
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    align-self: stretch;
   }
-}
-
-.sectionFooter {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3);
 }
 
 /* Edit-mode toolbar — select-all + bulk actions, profile-toolbar pattern
@@ -63,7 +52,6 @@
   gap: var(--space-2);
   padding: var(--space-1-5) var(--space-2);
   border-radius: var(--radius-lg);
-  background: var(--color-field);
   animation: edit-bar-in var(--duration-normal) var(--ease-out);
 }
 
@@ -138,7 +126,7 @@
   left: 0;
   right: 0;
   box-sizing: border-box;
-  border: var(--border-width-hairline) dashed var(--color-border);
+  border: var(--border-width-hairline) dashed var(--color-divider);
   border-radius: var(--radius-lg);
   pointer-events: none;
   transition: top var(--duration-fast) var(--ease-standard);
@@ -154,4 +142,50 @@
   .editBar {
     animation: none;
   }
+}
+
+/* Advanced section — full-width toggle header (previewToggle chevron pattern). */
+.advancedGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.advancedToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-1) 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.advancedToggle:hover {
+  color: var(--color-text-primary);
+}
+
+.advancedToggle:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.advancedLabel {
+  font-size: var(--text-label-font-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--text-label-line-height);
+  letter-spacing: var(--text-label-letter-spacing);
+  padding-block-start: var(--space-1);
+}
+
+.advancedToggle svg {
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.advancedToggle[data-open="true"] svg {
+  transform: rotate(180deg);
 }

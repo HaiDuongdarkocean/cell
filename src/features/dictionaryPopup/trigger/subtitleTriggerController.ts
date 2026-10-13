@@ -20,8 +20,8 @@ import { sentenceRangeAtOffset } from '@/features/tokenize';
 export const HOVER_DEBOUNCE_MS = 80;
 
 /** Data attributes on token spans. */
-const DATA_TERM = 'data-cell-term';
-const DATA_START = 'data-cell-start';
+const DATA_TERM = 'data-tihoka-term';
+const DATA_START = 'data-tihoka-start';
 
 /** Check if a modifier key matches the trigger mode.
  *  - click: no modifier (any click triggers).
@@ -57,7 +57,7 @@ export function detectLangCode(text: string): string {
 }
 
 /** Build a LookupRequest from a token span + the full subtitle sentence.
- *  Spans stamped with data-cell-start get their context sliced to the
+ *  Spans stamped with data-tihoka-start get their context sliced to the
  *  tokenizer's sentence at that offset — the same boundary the hover wash
  *  paints. Unstamped spans (no offset known) keep the whole sentence. */
 export function buildLookupRequest(
@@ -272,7 +272,7 @@ export class SubtitleTriggerController {
     // badge, do NOT clear. Otherwise schedule a clear so empty space dismisses
     // the popup immediately (next tick) while still allowing token-to-token.
     const rt = e.relatedTarget instanceof Element ? e.relatedTarget : null;
-    const movingToValidTarget = rt !== null && rt.closest('.js-cell-token, .js-cell-popup-host, [data-cell-orbital-badge]') !== null;
+    const movingToValidTarget = rt !== null && rt.closest('.js-Tihoka-token, .js-Tihoka-popup-host, [data-tihoka-orbital-badge]') !== null;
     if (movingToValidTarget) return;
 
     if (this.leaveClearTimer) clearTimeout(this.leaveClearTimer);

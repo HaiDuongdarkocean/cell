@@ -17,7 +17,7 @@ interface CardCreatorSidePanelProps {
   readonly side?: 'left' | 'right';
   /** Accessible name for the dialog layer. */
   readonly ariaLabel: string;
-  readonly dataCellId: string;
+  readonly dataTihokaId: string;
   readonly dataSection?: string;
   /** Remove content padding — the child owns its own padding + scroll. */
   readonly flushContent?: boolean;
@@ -37,7 +37,7 @@ export function CardCreatorSidePanel({
   onClose,
   side = 'left',
   ariaLabel,
-  dataCellId,
+  dataTihokaId,
   dataSection,
   flushContent,
   children,
@@ -92,7 +92,7 @@ export function CardCreatorSidePanel({
       aria-modal="true"
       aria-label={ariaLabel}
       onKeyDown={handleKeyDown}
-      data-cell-id={dataCellId}
+      data-tihoka-id={dataTihokaId}
       data-section={dataSection}
     >
       <div className={styles.header}>
@@ -101,7 +101,7 @@ export function CardCreatorSidePanel({
           size="sm"
           onClick={onClose}
           aria-label={t('ankiImport.action.back')}
-          data-cell-id={`${dataCellId}-back`}
+          data-tihoka-id={`${dataTihokaId}-back`}
         >
           <Icon name="chevronLeft" />
         </Button>

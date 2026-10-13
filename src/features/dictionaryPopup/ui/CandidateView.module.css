@@ -4,35 +4,47 @@
 
 
 /* Placeholders for JSX-only class references that have no popup-specific styles. */
-.cellHeaderSend, .cellHeaderQuickAdd {
+.TihokaHeaderSend, .TihokaHeaderQuickAdd {
   /* relies on global .icon-btn/.btn classes */
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.cellHeader {
+.TihokaHeader {
   padding: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-0-5);
 }
 
-/* Content wrapper: cellHeaderReading + cellHeaderSecond + toolbar + definitions */
-.cellContent {
+/* Content wrapper: TihokaHeaderReading + TihokaHeaderSecond + toolbar + definitions */
+.TihokaContent {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
 
-.cellHeaderRow {
+.TihokaHeaderRow {
   display: flex;
   align-items: start;
   justify-content: space-between;
   gap: var(--space-1);
 }
 
-.cellHeaderMain {
+/* Popup variant only: the row doubles as the drag handle that moves the
+   popup. touch-action:none keeps pointer-drag on touchscreens; without it
+   the browser claims the gesture for scrolling. */
+.TihokaHeaderRowDraggable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.TihokaHeaderRowDraggable:active {
+  cursor: grabbing;
+}
+
+.TihokaHeaderMain {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -41,14 +53,14 @@
   flex: 1 1 auto;
 }
 
-.cellHeaderWordRow {
+.TihokaHeaderWordRow {
   display: flex;
   align-items: center;
   box-sizing: border-box;
   min-width: 0;
 }
 
-.cellHeaderWord {
+.TihokaHeaderWord {
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-semibold);
   white-space: nowrap;
@@ -58,19 +70,19 @@
   margin-bottom: -0.12em;
 }
 
-.cellHeaderWordTooltip {
+.TihokaHeaderWordTooltip {
   min-width: 0;
   max-width: 100%;
 }
 
-.cellHeaderIpa {
+.TihokaHeaderIpa {
   font-size: var(--font-size-md);
   color: var(--color-text-secondary);
   overflow-wrap: anywhere;
   min-width: 0;
 }
 
-.cellAccentLabel {
+.TihokaAccentLabel {
   padding: 0;
   border: none;
   border-radius: var(--radius-md);
@@ -84,27 +96,27 @@
   transition: color var(--duration-fast) var(--ease-out);
 }
 
-.cellAccentLabel:hover:not(:disabled) {
+.TihokaAccentLabel:hover:not(:disabled) {
   color: var(--color-text-primary);
   text-decoration: underline;
   text-underline-offset: var(--space-0-5);
 }
 
-.cellAccentLabel:focus-visible {
+.TihokaAccentLabel:focus-visible {
   outline: var(--space-0-5) solid var(--color-border-focus);
   outline-offset: var(--space-0-5);
 }
 
-.cellAccentLabel:disabled {
+.TihokaAccentLabel:disabled {
   cursor: default;
 }
 
-.cellHeaderLevel {
+.TihokaHeaderLevel {
   font-size: var(--font-size-sm);
   color: var(--color-text-tertiary);
 }
 
-.cellHeaderReading {
+.TihokaHeaderReading {
   display: flex;
   align-items: center;
   box-sizing: border-box;
@@ -113,7 +125,7 @@
   overflow: visible;
 }
 
-.cellHeaderSecond {
+.TihokaHeaderSecond {
   display: flex;
   composes: hide from '@/shared/ui/Scrollable.module.css';
   align-items: center;
@@ -125,12 +137,12 @@
   cursor: grab;
 }
 
-.cellHeaderSecond:active {
+.TihokaHeaderSecond:active {
   cursor: grabbing;
 }
 
 
-.cellHeaderActions {
+.TihokaHeaderActions {
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -139,7 +151,7 @@
 
 /* (0,2,0) beats shared Button's .button/.transparent chrome — the module
    classes own the pastel fill, size, and spacing of the status pill. */
-.cellHeaderSecond .cellHeaderStatus {
+.TihokaHeaderSecond .TihokaHeaderStatus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -159,7 +171,7 @@
   transition: background var(--duration-fast) var(--ease-out);
 }
 
-.cellHeaderSecond .cellHeaderStatus:hover {
+.TihokaHeaderSecond .TihokaHeaderStatus:hover {
   filter: brightness(0.95);
 }
 
@@ -167,17 +179,17 @@
    fg is the status color mixed toward --color-text (55%) — one base hue per
    status keeps every surface in sync, and the mix is WCAG-validated in
    generate-tokens (Chip Status pairs). */
-.cellHeaderSecond .cellHeaderStatus--unknown {
+.TihokaHeaderSecond .TihokaHeaderStatus--unknown {
   background: var(--chip-status-unknown-bg);
   color: var(--chip-status-unknown-fg);
 }
 
-.cellHeaderSecond .cellHeaderStatus--learning {
+.TihokaHeaderSecond .TihokaHeaderStatus--learning {
   background: var(--chip-status-learning-bg);
   color: var(--chip-status-learning-fg);
 }
 
-.cellHeaderSecond .cellHeaderStatus--tracking {
+.TihokaHeaderSecond .TihokaHeaderStatus--tracking {
   background: var(--chip-status-tracking-bg);
   color: var(--chip-status-tracking-fg);
 }
@@ -185,20 +197,20 @@
 /* Tab panel entrance — the wrapper is keyed by activeTab in CandidateView,
    so each switch remounts it and replays this fade+rise. Reduced-motion is
    covered globally by .dictionaryPanel's media query. */
-@keyframes cellTabContentIn {
+@keyframes TihokaTabContentIn {
   from {
     opacity: 0;
     transform: translateY(var(--space-1));
   }
 }
 
-.cellTabContent {
-  animation: cellTabContentIn var(--duration-normal) var(--ease-out) both;
+.TihokaTabContent {
+  animation: TihokaTabContentIn var(--duration-normal) var(--ease-out) both;
 }
 
 /* Inline text link inside the empty-definitions notice — looks like a link,
    not a button. */
-.cellEmptyLink {
+.TihokaEmptyLink {
   background: none;
   border: none;
   padding: 0;
@@ -209,22 +221,22 @@
   cursor: pointer;
 }
 
-.cellEmptyLink:hover {
+.TihokaEmptyLink:hover {
   color: var(--color-primary-hover);
 }
 
-.cellEmptyLink:focus-visible {
+.TihokaEmptyLink:focus-visible {
   outline: var(--space-0-5) solid var(--color-border-focus);
   outline-offset: var(--space-0-5);
   border-radius: var(--radius-sm);
 }
 
-.cellHeaderSecond .cellHeaderStatus--known {
+.TihokaHeaderSecond .TihokaHeaderStatus--known {
   background: var(--chip-status-known-bg);
   color: var(--chip-status-known-fg);
 }
 
-.cellHeaderSecond .cellHeaderStatus--ignore {
+.TihokaHeaderSecond .TihokaHeaderStatus--ignore {
   background: var(--chip-status-ignore-bg);
   color: var(--chip-status-ignore-fg);
 }
@@ -232,20 +244,20 @@
 /* Status cluster: eye, status pill and cards chip are separate controls —
    each keeps its own role color. A hairline sits between the cluster and
    the frequency chips. */
-.cellHeaderStatusGroup {
+.TihokaHeaderStatusGroup {
   display: inline-flex;
   align-items: stretch;
   gap: var(--space-1-5);
 }
 
-.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlag {
+.TihokaHeaderSecond .TihokaHeaderStatusGroup .TihokaHeaderStatusFlag {
   min-width: 0;
   width: var(--space-6);
   padding: 0;
   --iconbutton-size-xs: var(--space-6);
 }
 
-.cellHeaderDivider {
+.TihokaHeaderDivider {
   align-self: center;
   width: var(--border-width-hairline, 1px);
   height: calc(var(--space-5) - var(--space-1));
@@ -255,12 +267,12 @@
 
 /* Inactive eye — the word isn't tracked yet; muted keeps it readable as a
    segment without competing with the active status colors. */
-.cellHeaderSecond .cellHeaderStatusGroup .cellHeaderStatusFlagIdle {
+.TihokaHeaderSecond .TihokaHeaderStatusGroup .TihokaHeaderStatusFlagIdle {
   background: var(--color-muted);
   color: var(--color-muted-foreground);
 }
 
-.cellHeaderFrequency {
+.TihokaHeaderFrequency {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -279,7 +291,7 @@
    adding a band only needs one line. Requires solid --freq-bg values —
    dark theme uses deep shades, not alpha tints, so the inverted rank text
    stays readable. */
-.cellHeaderFrequencySource {
+.TihokaHeaderFrequencySource {
   display: inline-flex;
   align-items: center;
   align-self: stretch;
@@ -288,7 +300,7 @@
   color: var(--freq-fg, var(--color-overlay-text));
 }
 
-.cellHeaderFrequencyRank {
+.TihokaHeaderFrequencyRank {
   display: inline-flex;
   align-items: center;
   align-self: stretch;
@@ -297,45 +309,45 @@
   color: var(--freq-bg, var(--color-text-secondary));
 }
 
-.cellHeaderFrequency--core {
+.TihokaHeaderFrequency--core {
   --freq-bg: var(--color-token-freq-core-bg);
   --freq-fg: var(--color-token-freq-core-fg);
 }
 
-.cellHeaderFrequency--common {
+.TihokaHeaderFrequency--common {
   --freq-bg: var(--color-token-freq-common-bg);
   --freq-fg: var(--color-token-freq-common-fg);
 }
 
-.cellHeaderFrequency--general {
+.TihokaHeaderFrequency--general {
   --freq-bg: var(--color-token-freq-general-bg);
   --freq-fg: var(--color-token-freq-general-fg);
 }
 
-.cellHeaderFrequency--advanced {
+.TihokaHeaderFrequency--advanced {
   --freq-bg: var(--color-token-freq-advanced-bg);
   --freq-fg: var(--color-token-freq-advanced-fg);
 }
 
-.cellHeaderFrequency--rare {
+.TihokaHeaderFrequency--rare {
   --freq-bg: var(--color-token-freq-rare-bg);
   --freq-fg: var(--color-token-freq-rare-fg);
 }
 
-.cellDefRow {
+.TihokaDefRow {
   display: flex;
   /* flex-start so the check slot anchors to the FIRST text line. */
   align-items: flex-start;
   gap: var(--space-1);
 }
 
-.cellDefGroup {
+.TihokaDefGroup {
   display: flex;
   flex-direction: column;
   gap: var(--space-0-75);
 }
 
-.cellDefText {
+.TihokaDefText {
   flex: 1 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
@@ -419,31 +431,31 @@
   color: var(--color-text-tertiary);
 }
 
-.cellMeta {
+.TihokaMeta {
   display: flex;
   flex-direction: column;
   gap: var(--space-0-5);
   color: var(--color-text-secondary);
 }
 
-.cellMetaLine {
+.TihokaMetaLine {
   overflow-wrap: anywhere;
 }
 
-.cellMetaLabel {
+.TihokaMetaLabel {
   color: var(--color-text-tertiary);
 }
 
-.cellRelatedLink {
+.TihokaRelatedLink {
   color: inherit;
   cursor: pointer;
 }
 
-.cellRelatedLink:hover {
+.TihokaRelatedLink:hover {
   text-decoration: underline;
 }
 
-.cellDefExamples {
+.TihokaDefExamples {
   display: flex;
   flex-direction: column;
   gap: var(--space-0-75);
@@ -453,7 +465,7 @@
   color: var(--color-text-secondary);
 }
 
-.cellDefExampleText {
+.TihokaDefExampleText {
   flex: 1 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;

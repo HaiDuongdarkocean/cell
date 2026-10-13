@@ -196,7 +196,7 @@ describe('phraseIndexCompiler', () => {
   });
 
   describe('Cambridge fixture budget', () => {
-    const fullFixture = process.env.CELL_FIXTURE_FULL === '1';
+    const fullFixture = process.env.Tihoka_FIXTURE_FULL === '1';
     const fixturePath = path.resolve(
       __dirname,
       fullFixture
@@ -205,7 +205,7 @@ describe('phraseIndexCompiler', () => {
     );
     const FIXTURE_MISSING = fullFixture && !existsSync(fixturePath);
     if (FIXTURE_MISSING) {
-      console.warn('[fixture] full Cambridge fixture missing — run without CELL_FIXTURE_FULL or restore data/resource/');
+      console.warn('[fixture] full Cambridge fixture missing — run without Tihoka_FIXTURE_FULL or restore data/resource/');
     }
 
     (FIXTURE_MISSING ? it.skip : it)('compiles all supported multiword terms under 8MB with bounded anchor stats', () => {

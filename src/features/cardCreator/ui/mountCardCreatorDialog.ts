@@ -65,8 +65,8 @@ export function mountCardCreatorDialog(
     css: SHADOW_CSS,
   });
 
-  mount.host.id = 'cell-card-creator-host';
-  mount.host.className = 'js-cell-card-creator-host';
+  mount.host.id = 'Tihoka-card-creator-host';
+  mount.host.className = 'js-Tihoka-card-creator-host';
   mount.host.style.cssText =
     'position:fixed;inset:0;width:auto;height:auto;box-sizing:border-box;margin:0;padding:0;border:none;background:transparent;color:var(--color-text);font-size:var(--font-size-base);line-height:normal;isolation:isolate;overflow:hidden;transform:none;pointer-events:none;';
 

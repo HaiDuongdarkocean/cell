@@ -11,7 +11,7 @@ function countOccurrences(sentence: string, target: string): number {
 }
 
 function findTokenByTerm(container: HTMLElement, term: string): HTMLElement | null {
-  return container.querySelector(`[data-cell-term="${term}"]`) as HTMLElement | null;
+  return container.querySelector(`[data-tihoka-term="${term}"]`) as HTMLElement | null;
 }
 
 describe('PreviewBlock', () => {
@@ -24,12 +24,12 @@ describe('PreviewBlock', () => {
   it('tokenizes the sentence into word spans', () => {
     const { container } = render(<PreviewBlock targetWord="study" sentence="I like to study." />);
     const sentence = container.querySelector('[class*="cc-preview__sentence"]')!;
-    const tokens = sentence.querySelectorAll('[data-cell-term]');
+    const tokens = sentence.querySelectorAll('[data-tihoka-term]');
     expect(tokens.length).toBe(4);
-    expect(tokens[0]).toHaveAttribute('data-cell-term', 'i');
-    expect(tokens[1]).toHaveAttribute('data-cell-term', 'like');
-    expect(tokens[2]).toHaveAttribute('data-cell-term', 'to');
-    expect(tokens[3]).toHaveAttribute('data-cell-term', 'study');
+    expect(tokens[0]).toHaveAttribute('data-tihoka-term', 'i');
+    expect(tokens[1]).toHaveAttribute('data-tihoka-term', 'like');
+    expect(tokens[2]).toHaveAttribute('data-tihoka-term', 'to');
+    expect(tokens[3]).toHaveAttribute('data-tihoka-term', 'study');
   });
 
   it('wraps all occurrences of target word in <strong>', () => {
@@ -89,7 +89,7 @@ describe('PreviewBlock', () => {
     expect(preview).toHaveAttribute('aria-label', 'Preview');
   });
 
-  it('applies data-cell-id when dataId is provided', () => {
+  it('applies data-tihoka-id when dataId is provided', () => {
     render(<PreviewBlock targetWord="study" sentence="I like to study." dataId="cc-preview" />);
     expect(screen.getByTestId('cc-preview')).toBeInTheDocument();
   });

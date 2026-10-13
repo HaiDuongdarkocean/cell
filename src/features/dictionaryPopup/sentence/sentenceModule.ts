@@ -70,7 +70,7 @@ export function extractWordAtOffset(text: string, offset: number): WordAtOffset 
 /** Check if an element is a block-level container. */
 function isBlockContainer(el: HTMLElement): boolean {
   const display = getComputedStyle(el).display;
-  if (display === 'block' || display === 'list-item' || display === 'table-cell') return true;
+  if (display === 'block' || display === 'list-item' || display === 'table-Tihoka') return true;
   return BLOCK_TAGS.has(el.tagName);
 }
 
@@ -78,12 +78,12 @@ function isBlockContainer(el: HTMLElement): boolean {
  *  wrapper, etc.) that should be skipped when finding the real sentence
  *  container. These wrappers only contain a single word, not a sentence. */
 function isExtensionWrapper(el: HTMLElement): boolean {
-  if (el.classList.contains('js-cell-token')) return true;
-  if (el.hasAttribute('data-cell-block-id')) return true;
+  if (el.classList.contains('js-Tihoka-token')) return true;
+  if (el.hasAttribute('data-tihoka-block-id')) return true;
   // Wrapper divs/spans created by token wrapping (inline/flex wrappers
   // around a single token span — not real page content containers).
   const child = el.firstElementChild;
-  if (child && child.classList.contains('js-cell-token') && el.childElementCount === 1) return true;
+  if (child && child.classList.contains('js-Tihoka-token') && el.childElementCount === 1) return true;
   return false;
 }
 

@@ -36,14 +36,14 @@ describe('mediaFile', () => {
   describe('buildAnkiFieldRef', () => {
     it('image → <img src="...">', () => {
       expect(
-        buildAnkiFieldRef({ kind: 'image', filename: 'cell-screenshot.png' }),
-      ).toBe('<img src="cell-screenshot.png">');
+        buildAnkiFieldRef({ kind: 'image', filename: 'Tihoka-screenshot.png' }),
+      ).toBe('<img src="Tihoka-screenshot.png">');
     });
 
     it('audio → [sound:...]', () => {
       expect(
-        buildAnkiFieldRef({ kind: 'audio', filename: 'cell-sentence.mp3' }),
-      ).toBe('[sound:cell-sentence.mp3]');
+        buildAnkiFieldRef({ kind: 'audio', filename: 'Tihoka-sentence.mp3' }),
+      ).toBe('[sound:Tihoka-sentence.mp3]');
     });
   });
 
@@ -72,7 +72,7 @@ describe('mediaFile', () => {
   describe('generateMediaFilename', () => {
     it('includes prefix + extension', () => {
       const name = generateMediaFilename('screenshot', 'png');
-      expect(name).toMatch(/^cell-screenshot-\d+-[a-z0-9]+\.png$/);
+      expect(name).toMatch(/^Tihoka-screenshot-\d+-[a-z0-9]+\.png$/);
     });
 
     it('generates unique names (random suffix)', () => {

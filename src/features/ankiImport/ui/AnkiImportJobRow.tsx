@@ -59,7 +59,7 @@ export function AnkiImportJobRow({ job, fidelity, onCancel, onDismiss, onStudyNo
       meta = (
         <>
           <span className={styles.metaOk}>{job.report ? doneMeta(job.report, fidelity) : ''}</span>
-          <Button variant="primary" size="xs" onClick={onStudyNow} data-cell-id="import-job-study">
+          <Button variant="primary" size="xs" onClick={onStudyNow} data-tihoka-id="import-job-study">
             {t('ankiImport.action.studyNow')}
           </Button>
         </>
@@ -77,7 +77,7 @@ export function AnkiImportJobRow({ job, fidelity, onCancel, onDismiss, onStudyNo
       meta = (
         <>
           <span className={styles.metaErr}>{job.error ?? t('ankiImport.job.failed')}</span>
-          <Button variant="outline" size="xs" onClick={onRetry} data-cell-id="import-job-retry">
+          <Button variant="outline" size="xs" onClick={onRetry} data-tihoka-id="import-job-retry">
             {t('ankiImport.job.retry')}
           </Button>
         </>
@@ -105,7 +105,7 @@ export function AnkiImportJobRow({ job, fidelity, onCancel, onDismiss, onStudyNo
   }
 
   return (
-    <div className={cls} role="status" aria-live="polite" data-cell-id="anki-import-job">
+    <div className={cls} role="status" aria-live="polite" data-tihoka-id="anki-import-job">
       {job.status === 'running' && job.total > 0 && (
         <span className={styles.fill} style={{ transform: `scaleY(${pct / 100})` }} aria-hidden="true" />
       )}

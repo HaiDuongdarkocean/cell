@@ -28,7 +28,7 @@ describe('QueueSidePanel', () => {
     render(<QueueSidePanel {...baseProps()} open onClose={jest.fn()} />);
 
     const dialog = screen.getByRole('dialog');
-    expect(dialog).toHaveAttribute('data-cell-id', 'cc-queue-panel');
+    expect(dialog).toHaveAttribute('data-tihoka-id', 'cc-queue-panel');
     expect(screen.getByText('lyin')).toBeInTheDocument();
     expect(screen.getByText('better')).toBeInTheDocument();
   });

@@ -114,7 +114,7 @@ export function PronunciationAudioPanel({
   }, [loading, items, term, autoplayCount, getUrl, playQueue, onTtsWord]);
 
   return (
-    <div className={styles.cellAudio} data-cell-id="dictionary-audio-panel">
+    <div className={styles.TihokaAudio} data-tihoka-id="dictionary-audio-panel">
       {loading ? (
         <AudioSkeleton />
       ) : (
@@ -132,8 +132,8 @@ export function PronunciationAudioPanel({
           {localAudioNeedsRegrant && (
             <button
               type="button"
-              className={styles.cellAudioReconnect}
-              data-cell-id="local-audio-reconnect"
+              className={styles.TihokaAudioReconnect}
+              data-tihoka-id="local-audio-reconnect"
               onClick={(): void => {
                 void sendMessage({
                   type: MESSAGE_TYPES.LOCAL_AUDIO_OPEN_RECONNECT,
@@ -142,18 +142,18 @@ export function PronunciationAudioPanel({
               }}
             >
               <Icon name="triangleAlert" size="sm" />
-              <span className={styles.cellAudioReconnectLabel}>{t('dict.audio.localReconnect')}</span>
+              <span className={styles.TihokaAudioReconnectLabel}>{t('dict.audio.localReconnect')}</span>
             </button>
           )}
 
-          <div className={styles.cellAudioItems}>
+          <div className={styles.TihokaAudioItems}>
           {displayItems.map((item) => {
             const selected = selection.get(item.id) === true;
             const parts = item.label.split(' · ');
             return (
               <div
                 key={item.id}
-                className={checkStyles.cellAudioItem}
+                className={checkStyles.TihokaAudioItem}
                 role="checkbox"
                 aria-checked={selected}
                 aria-label={t('dict.audio.select', [item.label])}
@@ -168,7 +168,7 @@ export function PronunciationAudioPanel({
                 }}
               >
                 <span
-                  className={styles.cellAudioPlay}
+                  className={styles.TihokaAudioPlay}
                   role="button"
                   aria-label={t('dict.audio.play', [item.label])}
                   tabIndex={0}
@@ -187,14 +187,14 @@ export function PronunciationAudioPanel({
                 >
                   <Icon name="audioWave"  />
                 </span>
-                <span className={styles.cellAudioLabel} aria-hidden="true">
-                  <span className={styles.cellAudioLabelName}>{parts[0] ?? item.label}</span>
+                <span className={styles.TihokaAudioLabel} aria-hidden="true">
+                  <span className={styles.TihokaAudioLabelName}>{parts[0] ?? item.label}</span>
                   {parts.length > 1 && (
-                    <span className={styles.cellAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
+                    <span className={styles.TihokaAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
                   )}
                 </span>
                 <span
-                  className={`${checkStyles.cellDefCheckBox} ${selected ? checkStyles['cellAudioCheck--checked'] : ''}`}
+                  className={`${checkStyles.TihokaDefCheckBox} ${selected ? checkStyles['TihokaAudioCheck--checked'] : ''}`}
                   aria-hidden="true"
                 >
                   <Icon name="check" size="md" />
@@ -211,20 +211,20 @@ export function PronunciationAudioPanel({
 
 function AudioSkeleton(): React.JSX.Element {
   return (
-    <div className={styles.cellAudioSkeleton} aria-hidden="true">
-      <div className={styles.cellAudioSkeletonSubtabs}>
-        <Skeleton width="72px" height="var(--space-4-5)" className={styles.cellAudioSkeletonPart} />
-        <Skeleton width="96px" height="var(--space-4-5)" className={styles.cellAudioSkeletonPart} />
+    <div className={styles.TihokaAudioSkeleton} aria-hidden="true">
+      <div className={styles.TihokaAudioSkeletonSubtabs}>
+        <Skeleton width="72px" height="var(--space-4-5)" className={styles.TihokaAudioSkeletonPart} />
+        <Skeleton width="96px" height="var(--space-4-5)" className={styles.TihokaAudioSkeletonPart} />
       </div>
       {/* One row is the minimal hint — real items mount with the staggered
-         cellAudioItemIn animation, so extra skeleton rows are unnecessary. */}
-      <div className={styles.cellAudioSkeletonRow}>
-        <Skeleton width="var(--iconbutton-size-sm)" height="var(--iconbutton-size-sm)" shape="circle" className={styles.cellAudioSkeletonPart} />
-        <div className={styles.cellAudioSkeletonLabel}>
-          <Skeleton width="45%" height="calc(var(--font-size-base) * var(--leading-normal))" className={styles.cellAudioSkeletonPart} />
-          <Skeleton width="30%" height="calc(var(--font-size-xs) * var(--leading-normal))" className={styles.cellAudioSkeletonPart} />
+         TihokaAudioItemIn animation, so extra skeleton rows are unnecessary. */}
+      <div className={styles.TihokaAudioSkeletonRow}>
+        <Skeleton width="var(--iconbutton-size-sm)" height="var(--iconbutton-size-sm)" shape="circle" className={styles.TihokaAudioSkeletonPart} />
+        <div className={styles.TihokaAudioSkeletonLabel}>
+          <Skeleton width="45%" height="calc(var(--font-size-base) * var(--leading-normal))" className={styles.TihokaAudioSkeletonPart} />
+          <Skeleton width="30%" height="calc(var(--font-size-xs) * var(--leading-normal))" className={styles.TihokaAudioSkeletonPart} />
         </div>
-        <Skeleton width="var(--space-4)" height="var(--space-4)" className={`${styles.cellAudioSkeletonPart} ${styles.cellAudioSkeletonCheck}`} />
+        <Skeleton width="var(--space-4)" height="var(--space-4)" className={`${styles.TihokaAudioSkeletonPart} ${styles.TihokaAudioSkeletonCheck}`} />
       </div>
     </div>
   );

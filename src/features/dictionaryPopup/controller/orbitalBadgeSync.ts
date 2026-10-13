@@ -80,12 +80,12 @@ export function createOrbitalBadgeSync(deps: OrbitalBadgeSyncDeps): OrbitalBadge
       listeners.add(document, 'webkitfullscreenchange', onFs);
       // Iframe Player Mode runs via the top-frame bridge: the top document
       // fullscreens the <iframe>, so no fullscreenchange fires in this child
-      // document. Player Mode marks itself with data-cell-player-mode on
+      // document. Player Mode marks itself with data-tihoka-player-mode on
       // <html> — observe that attribute to re-sync on PM enter/exit.
       pmObserver = new MutationObserver(() => { sync(deps.getDpSettings()); });
       pmObserver.observe(document.documentElement, {
         attributes: true,
-        attributeFilter: ['data-cell-player-mode'],
+        attributeFilter: ['data-tihoka-player-mode'],
       });
     }
     // Child iframe: the orbital badge is only useful while this child document
@@ -94,7 +94,7 @@ export function createOrbitalBadgeSync(deps: OrbitalBadgeSyncDeps): OrbitalBadge
     // would duplicate it (the original 2-badge bug). Mount on fullscreen or
     // Player Mode enter, tear down on exit.
     const pmHost = isChildFrame()
-      ? document.querySelector('#cell-subtitle-root[data-cell-player-mode]')
+      ? document.querySelector('#Tihoka-subtitle-root[data-tihoka-player-mode]')
       : null;
     if (isChildFrame() && !document.fullscreenElement && !pmHost) {
       teardownBadge();

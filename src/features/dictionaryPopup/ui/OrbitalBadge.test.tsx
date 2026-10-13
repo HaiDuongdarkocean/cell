@@ -231,7 +231,7 @@ describe('OrbitalBadge', () => {
     });
     remove();
     expect(badge.style.overflow).toBe('');
-    expect(badge.querySelector('[data-cell-ripple]')).toBeNull();
+    expect(badge.querySelector('[data-tihoka-ripple]')).toBeNull();
   });
 
   it('pointer is visible inside half-moon when collapsed at edge', () => {

@@ -1,5 +1,5 @@
 /**
- * Field mapping — auto-map Cell source fields to Anki note type fields.
+ * Field mapping — auto-map Tihoka source fields to Anki note type fields.
  *
  * On note type change, the Card Creator UI calls `autoMapFields` with the
  * note type's field names. The algorithm matches each source field to the

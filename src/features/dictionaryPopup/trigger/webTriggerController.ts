@@ -20,7 +20,7 @@ import {
   sentenceSliceForTextNode,
   type SentenceContext,
 } from '../sentence/sentenceModule';
-import { CELL_UI_HOST_SELECTORS, CELL_UI_POINTER_EVENT_HOST_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
+import { Tihoka_UI_HOST_SELECTORS, Tihoka_UI_POINTER_EVENT_HOST_SELECTORS } from '@/shared/lib/dom/TihokaUiHosts';
 import { isEditableEvent } from '@/shared/lib/dom/isEditable';
 import type { HighlightTarget } from '../ui/wordHighlight';
 
@@ -37,12 +37,12 @@ const MAX_SELECTION_LENGTH = 100;
 
 /** UI hosts that float above page text and can block `caretRangeFromPoint`.
  *  Text inside these hosts is extension UI — must not trigger dictionary lookup. */
-const UI_HOST_SELECTORS = CELL_UI_HOST_SELECTORS;
+const UI_HOST_SELECTORS = Tihoka_UI_HOST_SELECTORS;
 
 /** Only hosts whose pointer-events should be disabled when resolving a caret.
  *  The universal panel is excluded because it contains allowed lookup text
  *  (dictionary definitions and card creator preview). */
-const POINTER_EVENT_HOST_SELECTORS = CELL_UI_POINTER_EVENT_HOST_SELECTORS;
+const POINTER_EVENT_HOST_SELECTORS = Tihoka_UI_POINTER_EVENT_HOST_SELECTORS;
 
 const ALLOW_LOOKUP_SELECTOR = '[data-allow-lookup]';
 
@@ -67,7 +67,7 @@ function isInsideBlockedHostForLookup(element: Element | null): boolean {
 
 /** Event-level variant for shadow-hosted UI: e.target is retargeted to the
  *  shadow host, so target.closest() can never see data-allow-lookup regions
- *  inside the shadow tree (e.g. cue text inside #cell-subtitle-root). Walk the
+ *  inside the shadow tree (e.g. cue text inside #Tihoka-subtitle-root). Walk the
  *  composed path instead — an allow-lookup element closer to the real target
  *  than the UI host unblocks the event. */
 function eventBlockedForLookup(e: MouseEvent): boolean {
@@ -343,7 +343,7 @@ export class WebTriggerController {
     // → dismissLookup, which kills the popup the token handler just opened
     // (inverted dp.enabled behavior: checked=no popup, unchecked=popup).
     // Uses composedPath: tokens inside shadow UI retarget e.target to the host.
-    if (pathMatchesSelector(e, '.js-cell-token')) {
+    if (pathMatchesSelector(e, '.js-Tihoka-token')) {
       return;
     }
     // Skip elements explicitly marked as non-lookup (e.g. CueList timestamps —

@@ -413,9 +413,12 @@ export function isContiguousKeys(keys: readonly IDBValidKey[]): boolean {
   return true;
 }
 
+const DELETE_CHUNK_SIZE = 4096;
+
 /** Delete all rows (any kind) for a resource — resource removal / replace-import
  *  rollback cascade. One import's rows sit on contiguous autoincrement keys, so a
- *  contiguous run deletes via a single IDBKeyRange; interleaved keys (concurrent
+ *  contiguous run deletes via chunked IDBKeyRanges (one op has no progress); a
+ *  single-chunk run collapses to one op like before. Interleaved keys (concurrent
  *  import) fall back to the per-row cursor. */
 export async function deleteEntriesByResource(
   langCode: string,
@@ -439,8 +442,19 @@ export async function deleteEntriesByResource(
         } catch {}
       }
       if (isContiguousKeys(keys)) {
-        const deleteRequest = store.delete(IDBKeyRange.bound(keys[0], keys[keys.length - 1]));
-        deleteRequest.onsuccess = () => onProgress?.(keys.length, keys.length);
+        const total = keys.length;
+        let cursor = 0;
+        const deleteChunk = (): void => {
+          if (cursor >= total) return;
+          const end = Math.min(cursor + DELETE_CHUNK_SIZE, total) - 1;
+          const request = store.delete(IDBKeyRange.bound(keys[cursor], keys[end]));
+          cursor = end + 1;
+          request.onsuccess = () => {
+            onProgress?.(cursor, total);
+            deleteChunk();
+          };
+        };
+        deleteChunk();
         return;
       }
       const total = keys.length;

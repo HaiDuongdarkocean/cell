@@ -171,15 +171,15 @@ describe('cardCreatorService', () => {
 
   describe('storeMedia', () => {
     it('returns stored filename (Android may rename)', async () => {
-      queueResponses([{ result: 'cell-screenshot_123456789.png' }]);
-      const r = await storeMedia(URL, 'cell-screenshot.png', 'aGVsbG8=');
-      expect(r.ok && r.value).toBe('cell-screenshot_123456789.png');
+      queueResponses([{ result: 'Tihoka-screenshot_123456789.png' }]);
+      const r = await storeMedia(URL, 'Tihoka-screenshot.png', 'aGVsbG8=');
+      expect(r.ok && r.value).toBe('Tihoka-screenshot_123456789.png');
     });
 
     it('falls back to input filename when desktop returns null', async () => {
       queueResponses([{ result: null }]);
-      const r = await storeMedia(URL, 'cell-screenshot.png', 'aGVsbG8=');
-      expect(r.ok && r.value).toBe('cell-screenshot.png');
+      const r = await storeMedia(URL, 'Tihoka-screenshot.png', 'aGVsbG8=');
+      expect(r.ok && r.value).toBe('Tihoka-screenshot.png');
     });
   });
 
@@ -190,7 +190,7 @@ describe('cardCreatorService', () => {
         deckName: 'Default',
         modelName: 'Basic',
         fields: { Front: 'hi', Back: 'yo' },
-        tags: ['cell'],
+        tags: ['Tihoka'],
       });
       expect(r.ok && r.value).toBe(1496198395707);
     });
@@ -280,14 +280,14 @@ describe('cardCreatorService', () => {
   describe('addNoteTags — Android silent no-op detection', () => {
     it('desktop success → result null → ok', async () => {
       queueResponses([{ result: null }]);
-      const r = await addNoteTags(URL, 123, ['cell', 'learning']);
+      const r = await addNoteTags(URL, 123, ['Tihoka', 'learning']);
       expect(r.ok).toBe(true);
     });
 
     it('Android default handler → result "AnkiConnect v.6" → error', async () => {
       const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
       queueResponses([{ result: 'AnkiConnect v.6' }]);
-      const r = await addNoteTags(URL, 123, ['cell']);
+      const r = await addNoteTags(URL, 123, ['Tihoka']);
       expect(r.ok).toBe(false);
       expect(!r.ok && r.error).toContain("can't tag existing notes");
       expect(warn).toHaveBeenCalledWith(

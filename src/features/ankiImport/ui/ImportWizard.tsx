@@ -783,7 +783,7 @@ function MappingStep({
         {preview && stimulus && audioCache && imageCache && (
           <Card
             className={styles.previewCardWrap}
-            data-cell-id="anki-preview-card"
+            data-tihoka-id="anki-preview-card"
             onClick={(e) => { if (e.target === e.currentTarget) setFlipped((f) => !f); }}
           >
             {flipped ? (

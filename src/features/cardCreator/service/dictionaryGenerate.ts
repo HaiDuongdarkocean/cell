@@ -8,8 +8,8 @@
  * Reuses the exact dictionary pipeline:
  *  - `LOOKUP_REQUEST`        → definitions (same message the popup uses)
  *  - `PronunciationAudioOrchestrator` → word audio (same fallback chain as the
- *    dictionary audio tab)
- *  - `TTS_FETCH_AUDIO`       → sentence audio (only when a sentence exists —
+ *    dictionary audio tab); `resolveSentence` → sentence audio (same chain
+ *    restricted to cloud voices + browser voice, only when a sentence exists —
  *    captured/recorded sentence audio is never touched here)
  *  - `FETCH_IMAGES`          → image candidates
  *
@@ -20,15 +20,15 @@ import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_PRONUNCIATION_SETTINGS, DEFAULT_SETTINGS } from '@/shared/config/config';
-import { PronunciationAudioOrchestrator } from '@/features/pronunciation';
-import { formatDefinitions } from '@/features/dictionary'
+import { PronunciationAudioOrchestrator, audioItemDataUrl, resolveSentenceAudioItems } from '@/features/pronunciation';
+import { formatDefinitions } from '@/features/dictionary';
 import { formatDefFromLookup, joinDefEntries } from '@/features/srs';
+import type { FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 import type { MessageResponse } from '@/entities/message/types';
 import type {
   FetchImagesResponse,
   LookupRequest,
   LookupResult,
-  TtsFetchAudioResponse,
 } from '@/entities/dictionary';
 import type { CardCreatorPrefill } from '../types';
 
@@ -71,14 +71,11 @@ async function fetchWordAudioUrls(term: string, langCode: string): Promise<reado
 async function fetchSentenceAudioUrls(sentence: string, langCode: string): Promise<readonly string[]> {
   if (!sentence.trim()) return [];
   try {
-    const res = await withTimeout(
-      sendMessage<MessageResponse<TtsFetchAudioResponse>>({
-        type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
-        payload: { tabId: 0, text: sentence, langCode },
-      }),
+    const items = await withTimeout(
+      resolveSentenceAudioItems(sentence, langCode),
       MEDIA_TIMEOUT_MS,
     );
-    return res?.success && res.data?.url ? [res.data.url] : [];
+    return items.map(audioItemDataUrl).filter((url): url is string => url !== undefined);
   } catch {
     return [];
   }
@@ -124,8 +121,8 @@ async function lookupTerm(term: string, langCode: string, contextSentence: strin
   }
 }
 
-function formatEntryFromLookup(winner: LookupResult, frequencyFormat?: 'stars' | 'rank'): string {
-  return formatDefFromLookup(winner, formatDefinitions(winner.definitions), undefined, frequencyFormat);
+function formatEntryFromLookup(winner: LookupResult, frequencyFormat?: 'stars' | 'rank', frequencyThresholds?: FrequencyBandThresholds): string {
+  return formatDefFromLookup(winner, formatDefinitions(winner.definitions), undefined, frequencyFormat, frequencyThresholds);
 }
 
 /**
@@ -159,7 +156,7 @@ export async function lookupDictionaryResources(
   return {
     targetWord: terms.join(', '),
     definitions: joinDefEntries(
-      winners.map((w) => formatEntryFromLookup(w, settings.cardCreator?.frequencyDisplay)),
+      winners.map((w) => formatEntryFromLookup(w, settings.dictionaryPopup?.frequencyDisplay, settings.frequencyBands)),
     ),
     wordAudioUrls,
     sentenceAudioUrls,

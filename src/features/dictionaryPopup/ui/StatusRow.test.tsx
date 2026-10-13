@@ -8,11 +8,17 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { StatusRow } from './StatusRow';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
-import type { WordStatus } from '@/entities/dictionary';
+import type { VariantFrequency, WordStatus } from '@/entities/dictionary';
 
 function renderRow(
   status: WordStatus,
-  options?: { srsCardCount?: number; withToggleTracking?: boolean },
+  options?: {
+    srsCardCount?: number;
+    withToggleTracking?: boolean;
+    frequencies?: readonly VariantFrequency[];
+    stars?: { readonly count: number; readonly source: string };
+    frequencyDisplay?: 'stars' | 'rank';
+  },
 ): { onCycle: jest.Mock; onToggleTracking: jest.Mock; onOpenSrsCards: jest.Mock } {
   const onCycle = jest.fn();
   const onToggleTracking = jest.fn();
@@ -24,9 +30,10 @@ function renderRow(
       onToggleTracking={options?.withToggleTracking === false ? undefined : onToggleTracking}
       srsCardCount={options?.srsCardCount}
       onOpenSrsCards={onOpenSrsCards}
-      frequencies={[]}
-      stars={undefined}
+      frequencies={options?.frequencies ?? []}
+      stars={options?.stars}
       thresholds={DEFAULT_BAND_THRESHOLDS}
+      frequencyDisplay={options?.frequencyDisplay}
     />,
   );
   return { onCycle, onToggleTracking, onOpenSrsCards };
@@ -126,4 +133,74 @@ describe('StatusRow segmented control', () => {
       expect(onCycle).toHaveBeenCalledTimes(1);
     },
   );
+});
+
+describe('StatusRow frequency chips', () => {
+  const freqs = [{ source: 'COCA', rank: 4500 }] as const;
+
+  it("stars mode converts rank lists to ★ chips via band thresholds", () => {
+    renderRow('unknown', { frequencies: freqs, frequencyDisplay: 'stars' });
+
+    // rank 4500 → 'common' band → 4 stars
+    const chips = screen.getAllByTestId('dictionary-stars');
+    expect(chips).toHaveLength(1);
+    expect(chips[0]).toHaveTextContent('COCA');
+    expect(chips[0]).toHaveTextContent('★★★★');
+    expect(screen.queryByTestId('dictionary-frequency')).not.toBeInTheDocument();
+  });
+
+  it('stars mode keeps the native stars chip and skips its duplicate rank', () => {
+    renderRow('unknown', {
+      frequencies: freqs,
+      stars: { count: 3, source: 'COCA' },
+      frequencyDisplay: 'stars',
+    });
+
+    const chips = screen.getAllByTestId('dictionary-stars');
+    expect(chips).toHaveLength(1);
+    expect(chips[0]).toHaveTextContent('★★★');
+  });
+
+  it('rank mode renders rank chips and star chips side by side for different sources', () => {
+    renderRow('unknown', {
+      frequencies: freqs,
+      stars: { count: 3, source: 'JPDB' },
+      frequencyDisplay: 'rank',
+    });
+
+    const chip = screen.getByTestId('dictionary-frequency');
+    expect(chip).toHaveTextContent('COCA');
+    expect(chip).toHaveTextContent('4,500');
+    expect(screen.getByTestId('dictionary-stars')).toHaveTextContent('JPDB');
+  });
+
+  it('rank mode drops a stars chip whose source already has a rank chip', () => {
+    renderRow('unknown', {
+      frequencies: freqs,
+      stars: { count: 3, source: 'COCA' },
+      frequencyDisplay: 'rank',
+    });
+
+    expect(screen.getByTestId('dictionary-frequency')).toHaveTextContent('COCA');
+    expect(screen.queryByTestId('dictionary-stars')).not.toBeInTheDocument();
+  });
+
+  it('rank mode falls back to the stars chip when no rank lists exist', () => {
+    renderRow('unknown', { stars: { count: 2, source: 'JPDB' }, frequencyDisplay: 'rank' });
+
+    expect(screen.getByTestId('dictionary-stars')).toHaveTextContent('★★');
+  });
+
+  it('star chips wear the 5-band color of their tier', () => {
+    renderRow('unknown', {
+      frequencies: freqs,
+      stars: { count: 2, source: 'JPDB' },
+      frequencyDisplay: 'stars',
+    });
+
+    const chips = screen.getAllByTestId('dictionary-stars');
+    // JPDB 2★ → 'advanced'; COCA rank 4500 → 'common'
+    expect(chips[0].className).toContain('TihokaHeaderFrequency--advanced');
+    expect(chips[1].className).toContain('TihokaHeaderFrequency--common');
+  });
 });

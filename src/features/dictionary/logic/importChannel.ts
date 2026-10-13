@@ -13,7 +13,7 @@ import type {
   ImportResult,
 } from '@/entities/dictionary';
 
-export const IMPORT_CHANNEL = 'cell-import';
+export const IMPORT_CHANNEL = 'Tihoka-import';
 
 /** SW → offscreen: one resource-import job. */
 export interface ImportRunRequest {

@@ -334,7 +334,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
   let lastGroup: WordStatus | null = null;
 
   return (
-    <div ref={rootRef} className={styles.tab} data-cell-id="vocabulary-tab">
+    <div ref={rootRef} className={styles.tab} data-tihoka-id="vocabulary-tab">
       <div className={styles.content}>
         {inTrash ? (
           <div className={styles.topBar}>
@@ -343,7 +343,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
               shape="circle"
               aria-label={t('vocabulary.trash.back')}
               onClick={() => setInTrash(false)}
-              data-cell-id="vocabulary-trash-back"
+              data-tihoka-id="vocabulary-trash-back"
             >
               <Icon name="chevronLeft" />
             </Button>
@@ -359,7 +359,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
               aria-label={t('vocabulary.undo')}
               disabled={!undo}
               onClick={handleUndo}
-              data-cell-id="vocabulary-undo"
+              data-tihoka-id="vocabulary-undo"
             >
               <Icon name="rotateCcw" />
             </Button>
@@ -369,7 +369,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                 size="md"
                 className={styles.selectAllBtn}
                 onClick={toggleSelectAll}
-                data-cell-id="vocabulary-select-all"
+                data-tihoka-id="vocabulary-select-all"
               >
                 {t(selectAllLabel)}
               </Button>
@@ -381,7 +381,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
               aria-label={t('vocabulary.search.toggle')}
               aria-expanded={searchOpen}
               onClick={handleSearchToggle}
-              data-cell-id="vocabulary-search-toggle"
+              data-tihoka-id="vocabulary-search-toggle"
             >
               <Icon name="search" />
             </Button>
@@ -393,7 +393,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
               aria-haspopup="menu"
               aria-expanded={menu === 'more'}
               onClick={() => setMenu(menu === 'more' ? null : 'more')}
-              data-cell-id="vocabulary-more"
+              data-tihoka-id="vocabulary-more"
             >
               <Icon name="ellipsis" />
             </Button>
@@ -407,13 +407,13 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
             placeholder={t('vocabulary.search.placeholder')}
             className={styles.search}
             autoFocus
-            data-cell-id="vocabulary-search"
+            data-tihoka-id="vocabulary-search"
           />
         )}
 
         {!inTrash && (
           <Box bg="card" radius="container" className={styles.hero}>
-            <div className={styles.heroInner} data-cell-id="vocabulary-hero">
+            <div className={styles.heroInner} data-tihoka-id="vocabulary-hero">
               <FlagIcon lang={langCode} size={72} className={styles.heroFlag} />
               <Heading level={2} size={3} className={styles.heroHeadline}>
                 <span className={styles.heroCount}>{statusCounts.known.toLocaleString()}</span>{' '}
@@ -453,7 +453,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
               aria-expanded={menu === 'sort'}
               aria-label={t('vocabulary.sort.label')}
               onClick={() => setMenu(menu === 'sort' ? null : 'sort')}
-              data-cell-id="vocabulary-sort"
+              data-tihoka-id="vocabulary-sort"
             >
               <Icon name="moveVertical" size="xs" />
               <span className={styles.pillLabel}>{t(activeSort.label)}</span>
@@ -468,7 +468,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
               aria-expanded={menu === 'filter'}
               aria-label={t('vocabulary.segment.label')}
               onClick={() => setMenu(menu === 'filter' ? null : 'filter')}
-              data-cell-id="vocabulary-filter"
+              data-tihoka-id="vocabulary-filter"
             >
               <Icon name="slidersHorizontal" size="xs" />
               <span className={styles.pillLabel}>{t(SEGMENT_LABEL[segment])}</span>
@@ -478,7 +478,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
         )}
 
         {!inTrash && (
-          <div className={styles.meta} data-cell-id="vocabulary-meta">
+          <div className={styles.meta} data-tihoka-id="vocabulary-meta">
             <Text variant="supporting" color="secondary">
               {selected.size > 0
                 ? t('vocabulary.selectedCount', [selected.size.toLocaleString()])
@@ -504,7 +504,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                   title={t('vocabulary.emptyTrash')}
                   description={t('vocabulary.emptyTrashHint')}
                   size="compact"
-                  data-cell-id="vocabulary-trash-empty"
+                  data-tihoka-id="vocabulary-trash-empty"
                 />
               ) : (
                 <EmptyState
@@ -520,14 +520,14 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                     <li
                       key={entry.term}
                       className={styles.row}
-                      data-cell-id={`vocabulary-trash-row-${entry.term}`}
+                      data-tihoka-id={`vocabulary-trash-row-${entry.term}`}
                     >
                       <Button
                         variant="ghost"
                         className={styles.term}
                         title={entry.term}
                         onClick={() => onLookup(entry.term)}
-                        data-cell-id={`vocabulary-term-${entry.term}`}
+                        data-tihoka-id={`vocabulary-term-${entry.term}`}
                       >
                         <span className={styles.termLabel}>{entry.term}</span>
                       </Button>
@@ -550,7 +550,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                         shape="circle"
                         onClick={() => handleRestore(entry.term)}
                         aria-label={t('vocabulary.row.restore', [entry.term])}
-                        data-cell-id={`vocabulary-restore-${entry.term}`}
+                        data-tihoka-id={`vocabulary-restore-${entry.term}`}
                       >
                         <Icon name="rotateCcw" />
                       </Button>
@@ -560,7 +560,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                         shape="circle"
                         aria-label={t('vocabulary.row.deleteForever', [entry.term])}
                         onClick={() => setPendingPurge(entry.term)}
-                        data-cell-id={`vocabulary-trash-delete-${entry.term}`}
+                        data-tihoka-id={`vocabulary-trash-delete-${entry.term}`}
                       >
                         <Icon name="x" />
                       </Button>
@@ -591,12 +591,12 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                 return (
                   <Fragment key={entry.term}>
                     {groupHeader}
-                    <li className={styles.row} data-cell-id={`vocabulary-row-${entry.term}`}>
+                    <li className={styles.row} data-tihoka-id={`vocabulary-row-${entry.term}`}>
                       <Checkbox
                         checked={selected.has(entry.term)}
                         onChange={() => toggleSelect(entry.term)}
                         aria-label={t('vocabulary.row.select', [entry.term])}
-                        data-cell-id={`vocabulary-select-${entry.term}`}
+                        data-tihoka-id={`vocabulary-select-${entry.term}`}
                         className={styles.checkbox}
                       />
                       <Button
@@ -604,7 +604,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                         className={styles.term}
                         title={entry.term}
                         onClick={() => onLookup(entry.term)}
-                        data-cell-id={`vocabulary-term-${entry.term}`}
+                        data-tihoka-id={`vocabulary-term-${entry.term}`}
                       >
                         <span className={styles.termLabel}>{entry.term}</span>
                       </Button>
@@ -614,7 +614,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                           role="img"
                           aria-label={t('vocabulary.source.anki')}
                           title={t('vocabulary.source.anki')}
-                          data-cell-id={`vocabulary-card-anki-${entry.term}`}
+                          data-tihoka-id={`vocabulary-card-anki-${entry.term}`}
                         >
                           <Icon name="import" size="xs" />
                         </span>
@@ -625,7 +625,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                           role="img"
                           aria-label={t('vocabulary.source.srs')}
                           title={t('vocabulary.source.srs')}
-                          data-cell-id={`vocabulary-card-srs-${entry.term}`}
+                          data-tihoka-id={`vocabulary-card-srs-${entry.term}`}
                         >
                           <Icon name="layers" size="xs" />
                         </span>
@@ -637,7 +637,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                         className={`${styles.statusCircle} ${styles[`status-${entry.status}`] ?? ''}`}
                         aria-label={t('vocabulary.row.cycle', [entry.term])}
                         onClick={() => handleCycle(entry.term)}
-                        data-cell-id={`vocabulary-cycle-${entry.term}`}
+                        data-tihoka-id={`vocabulary-cycle-${entry.term}`}
                       >
                         <Icon
                           name={
@@ -657,7 +657,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
         {!inTrash && (
           <SelectionBar
             open={selected.size > 0}
-            data-cell-id="vocabulary-bulk-bar"
+            data-tihoka-id="vocabulary-bulk-bar"
           >
             <Button
               ref={statusTriggerRef}
@@ -666,7 +666,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
               aria-haspopup="menu"
               aria-expanded={menu === 'status'}
               onClick={() => setMenu(menu === 'status' ? null : 'status')}
-              data-cell-id="vocabulary-bulk-status"
+              data-tihoka-id="vocabulary-bulk-status"
             >
               {t('vocabulary.bulk.changeStatus')}
             </Button>
@@ -674,7 +674,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
               variant="errorSubtle"
               size="md"
               onClick={() => setPendingBulkDelete(true)}
-              data-cell-id="vocabulary-bulk-delete"
+              data-tihoka-id="vocabulary-bulk-delete"
             >
               <Icon name="trash" />
               {t('vocabulary.bulk.delete')}
@@ -699,7 +699,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
               setLimit(RENDER_CHUNK);
               setMenu(null);
             }}
-            data-cell-id={`vocabulary-sort-${o.value}`}
+            data-tihoka-id={`vocabulary-sort-${o.value}`}
             trailing={sort === o.value ? <Icon name="check" size="xs" /> : undefined}
           >
             {t(o.label)}
@@ -719,9 +719,9 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
             radio
             selected={segment === s}
             onSelect={() => handleSegmentChange(s)}
-            data-cell-id={`vocabulary-segment-${s}`}
+            data-tihoka-id={`vocabulary-segment-${s}`}
             trailing={
-              <span data-cell-id={`vocabulary-segment-count-${s}`}>{segmentCounts[s]}</span>
+              <span data-tihoka-id={`vocabulary-segment-count-${s}`}>{segmentCounts[s]}</span>
             }
           >
             {t(SEGMENT_LABEL[s])}
@@ -739,9 +739,9 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
         <MenuItem
           icon={<Icon name="trash2" size="xs" />}
           onSelect={enterTrash}
-          data-cell-id="vocabulary-more-trash"
+          data-tihoka-id="vocabulary-more-trash"
           trailing={
-            <span data-cell-id="vocabulary-trash-count">{state.trash.length}</span>
+            <span data-tihoka-id="vocabulary-trash-count">{state.trash.length}</span>
           }
         >
           {t('vocabulary.segment.trash')}
@@ -751,7 +751,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
           icon={syncing ? <Spinner size="sm" /> : <Icon name="repeat" size="xs" />}
           disabled={syncing}
           onSelect={runSync}
-          data-cell-id="vocabulary-more-sync"
+          data-tihoka-id="vocabulary-more-sync"
         >
           {syncing ? t('vocabulary.syncing') : t('vocabulary.sync')}
         </MenuItem>
@@ -768,7 +768,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
             key={status}
             icon={<Icon name={STATUS_ICON[status]} size="xs" />}
             onSelect={() => handleBulkStatus(status)}
-            data-cell-id={`vocabulary-bulk-status-${status}`}
+            data-tihoka-id={`vocabulary-bulk-status-${status}`}
           >
             {t(STATUS_LABEL[status])}
           </MenuItem>
@@ -791,7 +791,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
             : t('vocabulary.bulk.deleteDescription', [selected.size.toLocaleString()])
         }
         showCloseButton
-        data-cell-id="vocabulary-bulk-delete-dialog"
+        data-tihoka-id="vocabulary-bulk-delete-dialog"
         footer={
           <>
             <Button variant="ghost" onClick={() => setPendingBulkDelete(false)}>
@@ -800,7 +800,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
             <Button
               variant="destructive"
               onClick={confirmBulkDelete}
-              data-cell-id="vocabulary-bulk-delete-confirm"
+              data-tihoka-id="vocabulary-bulk-delete-confirm"
             >
               {t('vocabulary.bulk.delete')}
             </Button>
@@ -816,7 +816,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
         title={t('vocabulary.trashDelete.title')}
         description={t('vocabulary.trashDelete.description', [pendingPurge ?? ''])}
         showCloseButton
-        data-cell-id="vocabulary-trash-delete-dialog"
+        data-tihoka-id="vocabulary-trash-delete-dialog"
         footer={
           <>
             <Button variant="ghost" onClick={() => setPendingPurge(null)}>
@@ -825,7 +825,7 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
             <Button
               variant="destructive"
               onClick={confirmPurge}
-              data-cell-id="vocabulary-trash-delete-confirm"
+              data-tihoka-id="vocabulary-trash-delete-confirm"
             >
               {t('vocabulary.trashDelete.confirm')}
             </Button>

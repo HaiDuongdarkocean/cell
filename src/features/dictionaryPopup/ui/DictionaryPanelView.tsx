@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 
 import { useDictionaryPanel } from './useDictionaryPanel';
@@ -30,6 +30,7 @@ import toolbarStyles from './DictionaryToolbar.module.css';
 import styles from './DictionaryPanelView.module.css';
 
 const SEARCH_INPUT_ID_PREFIX = 'dictionary-panel-search-input';
+const NAV_CHROME_REVEAL_MS = 400;
 
 interface DictionaryPanelViewProps {
   readonly langCode: string;
@@ -59,8 +60,19 @@ interface DictionaryPanelViewProps {
   readonly syncStatus?: { readonly term: string; readonly status: WordStatus };
   /** Render mode: 'popup' is compact (no search row/history), 'integrated' is the full panel. */
   readonly variant?: 'popup' | 'integrated';
+  /** Integrated-only: hide the search-history strip (e.g. settings embeds that
+   *  don't want a second history surface). Auto-restore of the last term still
+   *  runs — only the row is hidden. */
+  readonly showHistory?: boolean;
   /** Optional popup selection snapshot used to clone checked state. */
   readonly selectionSnapshot?: PopupSelectionSnapshot;
+  /** Popup variant only: drag-to-move session started from the candidate
+   *  header row. Integrated surfaces never pass it. */
+  readonly onHeaderPointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
+  /** Lookup-chain identity (trail + result term). Changes whenever the shared
+   *  mount repaints another level's content — scroll position is remembered
+   *  per key so breadcrumb navigation restores where each level was left. */
+  readonly scrollKey?: string;
 }
 
 export function DictionaryPanelView({
@@ -84,7 +96,10 @@ export function DictionaryPanelView({
   isOpen = true,
   syncStatus,
   variant = 'integrated',
+  showHistory = true,
   selectionSnapshot,
+  onHeaderPointerDown,
+  scrollKey,
 }: DictionaryPanelViewProps): React.JSX.Element {
   const panel = useDictionaryPanel({
     langCode,
@@ -114,6 +129,40 @@ export function DictionaryPanelView({
   const spyQuietTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { searchTerm, setSearchTerm, search } = panel;
+
+  // Per-level scroll memory: the shared popup mount repaints whichever level
+  // the chain surfaces, so scrollTop is tracked under the live scrollKey and
+  // restored when the key returns (breadcrumb back-navigation).
+  const scrollerRef = useRef<HTMLElement | null>(null);
+  const scrollMemRef = useRef(new Map<string, number>());
+  const liveScrollKeyRef = useRef('');
+  // The restored level may land mid-scroll — reveal the nav chrome (lookup
+  // trail + candidate chips) and hold it briefly, or the restore jump reads
+  // as a scroll-down and collapseOnScroll re-hides it within a frame.
+  const collapsedHostRef = useRef<HTMLElement | null>(null);
+  const chromeRevealUntilRef = useRef(0);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    const scroller = el ? findScrollableAncestor(el) : null;
+    scrollerRef.current = scroller;
+    if (!scroller) return;
+    const onScroll = () => {
+      const key = liveScrollKeyRef.current;
+      if (key) scrollMemRef.current.set(key, scroller.scrollTop);
+    };
+    scroller.addEventListener('scroll', onScroll, { passive: true });
+    return () => scroller.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useLayoutEffect(() => {
+    liveScrollKeyRef.current = scrollKey ?? '';
+    if (!scrollKey) return;
+    chromeRevealUntilRef.current = performance.now() + NAV_CHROME_REVEAL_MS;
+    collapsedHostRef.current?.removeAttribute('data-dict-collapsed');
+    const scroller = scrollerRef.current;
+    if (scroller) scroller.scrollTop = scrollMemRef.current.get(scrollKey) ?? 0;
+  }, [scrollKey]);
 
   const restoredInitialRef = useRef(false);
   useEffect(() => {
@@ -157,9 +206,13 @@ export function DictionaryPanelView({
     const panel = containerRef.current;
     if (!panel) return;
     const host =
-      panel.closest<HTMLElement>('[data-cell-id="popup-dictionary"]') ?? panel;
+      panel.closest<HTMLElement>('[data-tihoka-id="popup-dictionary"]') ?? panel;
+    collapsedHostRef.current = host;
     return collapseOnScroll(findScrollableAncestor(panel) ?? panel, {
-      onCollapsed: (hidden) => host.toggleAttribute('data-dict-collapsed', hidden),
+      onCollapsed: (hidden) => {
+        if (hidden && performance.now() < chromeRevealUntilRef.current) return;
+        host.toggleAttribute('data-dict-collapsed', hidden);
+      },
     });
   }, []);
 
@@ -226,7 +279,7 @@ export function DictionaryPanelView({
     if (panel.isLoading || !panel.currentResult || !pendingSearchFocusRef.current) return;
     pendingSearchFocusRef.current = false;
     const input = containerRef.current?.querySelector<HTMLInputElement>(
-      '[data-cell-id="dictionary-search-input"]',
+      '[data-tihoka-id="dictionary-search-input"]',
     );
     input?.focus();
   }, [panel.isLoading, panel.currentResult]);
@@ -238,7 +291,7 @@ export function DictionaryPanelView({
     if (!isOpen || isMobile) return;
     focusTimerRef.current = setTimeout(() => {
       containerRef.current
-        ?.querySelector<HTMLInputElement>('[data-cell-id="dictionary-search-input"]')
+        ?.querySelector<HTMLInputElement>('[data-tihoka-id="dictionary-search-input"]')
         ?.focus();
     }, 250);
     return () => {
@@ -265,12 +318,12 @@ export function DictionaryPanelView({
     const container = containerRef.current;
     if (!container || allCandidates.length <= 1) return;
     const candidates = Array.from(
-      container.querySelectorAll<HTMLElement>('[data-cell-id]'),
-    ).filter((el) => /^dictionary-candidate-\d+$/.test(el.dataset.cellId ?? ''));
+      container.querySelectorAll<HTMLElement>('[data-tihoka-id]'),
+    ).filter((el) => /^dictionary-candidate-\d+$/.test(el.dataset.tihokaId ?? ''));
 
     const tracker = new ViewportTracker({ rootMargin: '0px 0px -50% 0px' });
     candidates.forEach((el) => {
-      const idx = Number((el.dataset.cellId ?? '').slice('dictionary-candidate-'.length));
+      const idx = Number((el.dataset.tihokaId ?? '').slice('dictionary-candidate-'.length));
       if (Number.isNaN(idx)) return;
       tracker.observe(el, {
         onEnter: () => {
@@ -283,9 +336,9 @@ export function DictionaryPanelView({
 
   useEffect(() => {
     const container = containerRef.current;
-    const scroller = container?.querySelector<HTMLElement>('[data-cell-id="dictionary-candidates-scroll"]');
+    const scroller = container?.querySelector<HTMLElement>('[data-tihoka-id="dictionary-candidates-scroll"]');
     const chip = container?.querySelector<HTMLElement>(
-      `[data-cell-id="dictionary-candidate-chip-${activeChipIndex}"]`,
+      `[data-tihoka-id="dictionary-candidate-chip-${activeChipIndex}"]`,
     );
     if (!scroller || !chip) return;
     const sRect = scroller.getBoundingClientRect();
@@ -307,8 +360,8 @@ export function DictionaryPanelView({
     const container = containerRef.current;
     if (!container) return;
     const scrollers = [
-      container.closest<HTMLElement>('[data-cell-id="popup-dictionary-content"]'),
-      container.querySelector<HTMLElement>('[data-cell-id="dictionary-candidate-list"]'),
+      container.closest<HTMLElement>('[data-tihoka-id="popup-dictionary-content"]'),
+      container.querySelector<HTMLElement>('[data-tihoka-id="dictionary-candidate-list"]'),
     ].filter((el): el is HTMLElement => el !== null);
     const stop = observeScrollDirection(scrollers, {
       threshold: 8,
@@ -330,10 +383,10 @@ export function DictionaryPanelView({
     setActiveChipIndex(index);
     // Query inside the container's root node so this works in both Shadow DOM
     // (popup variant — document.getElementById can't cross shadow boundaries)
-    // and the integrated panel (regular document). data-cell-id avoids id
+    // and the integrated panel (regular document). data-tihoka-id avoids id
     // collisions if multiple popups coexist.
     const el = containerRef.current?.querySelector<HTMLElement>(
-      `[data-cell-id="dictionary-candidate-${index}"]`,
+      `[data-tihoka-id="dictionary-candidate-${index}"]`,
     );
     if (el) {
       spySuppressRef.current = true;
@@ -349,12 +402,12 @@ export function DictionaryPanelView({
   }, [allCandidates, onCandidateChange]);
 
   return (
-    <div ref={containerRef} className={`${styles.dictionaryPanel} ${variant === 'popup' ? styles.popupMode : styles.integratedMode}`} data-cell-id="dictionary-panel">
+    <div ref={containerRef} className={`${styles.dictionaryPanel} ${variant === 'popup' ? styles.popupMode : styles.integratedMode}`} data-tihoka-id="dictionary-panel">
       {variant !== 'popup' && (
         <div className={styles.searchRow}>
           <SearchField
             id={searchInputId}
-            data-cell-id="dictionary-search-input"
+            data-tihoka-id="dictionary-search-input"
             value={searchTerm}
             onChange={handleSearchChange}
             onKeyDown={handleSearchKeyDown}
@@ -367,8 +420,8 @@ export function DictionaryPanelView({
         </div>
       )}
 
-      {variant !== 'popup' && searchHistory.length > 0 && (
-        <section className={styles.searchHistory} aria-label={t('dict.history.aria')} data-cell-id="dictionary-search-history">
+      {variant !== 'popup' && showHistory && searchHistory.length > 0 && (
+        <section className={styles.searchHistory} aria-label={t('dict.history.aria')} data-tihoka-id="dictionary-search-history">
           <ul className={styles.searchHistoryList}>
             {searchHistory.map((term) => {
               const isActive = panel.currentResult?.term.toLowerCase() === term.toLowerCase();
@@ -382,7 +435,7 @@ export function DictionaryPanelView({
                       setSearchTerm(term);
                       search(term);
                     }}
-                    data-cell-id={`dictionary-search-history-term-${term}`}
+                    data-tihoka-id={`dictionary-search-history-term-${term}`}
                     data-compact-hit
                   >
                     {term}
@@ -392,7 +445,7 @@ export function DictionaryPanelView({
                     aria-label={t('dict.history.remove', [term])}
                     title={t('dict.history.removeShort', [term])}
                     onClick={() => handleRemoveHistory(term)}
-                    data-cell-id={`dictionary-search-history-remove-${term}`}
+                    data-tihoka-id={`dictionary-search-history-remove-${term}`}
                     data-compact-hit
                   >
                     <Icon name="x" size="xs" />
@@ -406,7 +459,7 @@ export function DictionaryPanelView({
             aria-label={t('dict.history.clear')}
             title={t('dict.history.clear')}
             onClick={handleClearHistory}
-            data-cell-id="dictionary-search-history-clear"
+            data-tihoka-id="dictionary-search-history-clear"
             data-compact-hit
           >
             <Icon name="trash2" size="xs" />
@@ -417,7 +470,7 @@ export function DictionaryPanelView({
       {panel.isLoading && !panel.currentResult && (
         panel.searchTerm.trim()
           ? <CandidateSkeleton term={panel.searchTerm.trim()} />
-          : <HStack align="center" justify="center" gap="2" className={styles.loading} role="status" data-cell-id="dictionary-loading">
+          : <HStack align="center" justify="center" gap="2" className={styles.loading} role="status" data-tihoka-id="dictionary-loading">
               <Spinner size="md" />
               <span>{t('dict.status.lookingUp')}</span>
             </HStack>
@@ -429,7 +482,7 @@ export function DictionaryPanelView({
           icon={<Icon name="alertCircle"  />}
           description={panel.error}
           role="alert"
-          data-cell-id="dictionary-error"
+          data-tihoka-id="dictionary-error"
         />
       )}
 
@@ -440,13 +493,13 @@ export function DictionaryPanelView({
           icon={<Icon name="bookOpen"  />}
           title={t('dict.empty.title')}
           description={t('dict.empty.desc')}
-          data-cell-id="dictionary-empty"
+          data-tihoka-id="dictionary-empty"
         />
       )}
 
       {allCandidates.length > 0 && (
         <>
-          <div className={styles.candidateList} data-cell-id="dictionary-candidate-list">
+          <div className={styles.candidateList} data-tihoka-id="dictionary-candidate-list">
             {allCandidates.map((candidate, idx) => {
               // Pass the snapshot to the original popup winner when the snapshot
               // has no term, or to the candidate that matches the snapshot term.
@@ -471,18 +524,19 @@ export function DictionaryPanelView({
                   defaultActiveTab={defaultActiveTab}
                   selectionSnapshot={matchesSnapshot ? selectionSnapshot : undefined}
                   preloadMedia={variant === 'integrated'}
+                  onHeaderPointerDown={onHeaderPointerDown}
                 />
               );
             })}
           </div>
 
           {allCandidates.length > 1 && (
-            <div className={styles.cellCandidatesChips}>
-              <div className={styles.cellCandidatesChipsScroll} data-cell-id="dictionary-candidates-scroll">
+            <div className={styles.TihokaCandidatesChips}>
+              <div className={styles.TihokaCandidatesChipsScroll} data-tihoka-id="dictionary-candidates-scroll">
                 {allCandidates.map((c, idx) => (
                   <p
                     key={`${c.term}-${idx}`}
-                    className={styles.cellChip}
+                    className={styles.TihokaChip}
                     role="button"
                     tabIndex={0}
                     aria-current={idx === activeChipIndex ? 'true' : undefined}
@@ -494,8 +548,8 @@ export function DictionaryPanelView({
                       }
                     }}
                     title={c.term}
-                    data-cell-no-ripple
-                    data-cell-id={`dictionary-candidate-chip-${idx}`}
+                    data-tihoka-no-ripple
+                    data-tihoka-id={`dictionary-candidate-chip-${idx}`}
                   >
                     {c.term}
                   </p>
@@ -528,7 +582,7 @@ function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Eleme
   const btnSm = 'var(--iconbutton-size-sm)';       // action buttons + toolbar tabs
   const checkbox = 'var(--space-4)';               // definition checkbox (16px)
   const pillH = 'var(--space-5)';                  // status/frequency pill height
-  const statusW = 'calc(6 * var(--font-size-sm))'; // matches .cellHeaderStatus min-width: 6em
+  const statusW = 'calc(6 * var(--font-size-sm))'; // matches .TihokaHeaderStatus min-width: 6em
   const freqW = 'calc(10 * var(--font-size-sm))';  // representative frequency width
   const ipaW = 'calc(7 * var(--font-size-base))';  // representative IPA width
   const ipaH = 'calc(var(--font-size-base) * var(--leading-normal))';
@@ -536,68 +590,68 @@ function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Eleme
   const exH = 'calc(var(--font-size-xs) * var(--leading-normal))';
 
   return (
-    <article className={candidateStyles.candidate} data-cell-id="dictionary-candidate-skeleton" aria-busy="true">
-      <header className={candidateStyles.cellHeader}>
-        <div className={candidateStyles.cellHeaderRow}>
-          <div className={candidateStyles.cellHeaderMain}>
-            <div className={candidateStyles.cellHeaderWordRow}>
-              <Heading level={2} size={2} className={candidateStyles.cellHeaderWord} data-cell-id="dictionary-term">{term}</Heading>
+    <article className={candidateStyles.candidate} data-tihoka-id="dictionary-candidate-skeleton" aria-busy="true">
+      <header className={candidateStyles.TihokaHeader}>
+        <div className={candidateStyles.TihokaHeaderRow}>
+          <div className={candidateStyles.TihokaHeaderMain}>
+            <div className={candidateStyles.TihokaHeaderWordRow}>
+              <Heading level={2} size={2} className={candidateStyles.TihokaHeaderWord} data-tihoka-id="dictionary-term">{term}</Heading>
             </div>
           </div>
-          <div className={candidateStyles.cellHeaderActions}>
+          <div className={candidateStyles.TihokaHeaderActions}>
             <Skeleton width={btnSm} height={btnSm} shape="circle" className={styles.skeletonAction} />
             <Skeleton width={btnSm} height={btnSm} shape="circle" className={styles.skeletonAction} />
           </div>
         </div>
       </header>
 
-      <div className={candidateStyles.cellContent} data-cell-id="dictionary-content-skeleton">
-        <div className={candidateStyles.cellHeaderReading}>
+      <div className={candidateStyles.TihokaContent} data-tihoka-id="dictionary-content-skeleton">
+        <div className={candidateStyles.TihokaHeaderReading}>
           <Skeleton width={ipaW} height={ipaH} shape="rect" />
         </div>
 
-        <div className={candidateStyles.cellHeaderSecond}>
+        <div className={candidateStyles.TihokaHeaderSecond}>
           <Skeleton width={statusW} height={pillH} shape="rounded" />
           <Skeleton width={freqW} height={pillH} shape="rounded" />
         </div>
 
-        <div className={toolbarStyles.cellToolbar} role="presentation">
+        <div className={toolbarStyles.TihokaToolbar} role="presentation">
           <Skeleton width={btnSm} height={btnSm} shape="rounded" />
           <Skeleton width={btnSm} height={btnSm} shape="rounded" />
           <Skeleton width={btnSm} height={btnSm} shape="rounded" />
           <Skeleton width={btnSm} height={btnSm} shape="rounded" />
         </div>
 
-        <section className={styles.cellDef} aria-label={t('dict.definitions.aria')}>
-          <div className={candidateStyles.cellDefGroup}>
-            <div className={checkStyles.cellDefItem}>
-              <div className={candidateStyles.cellDefRow}>
-                <span className={`${checkStyles.cellDefCheck} ${styles.skeletonCheck}`}>
+        <section className={styles.TihokaDef} aria-label={t('dict.definitions.aria')}>
+          <div className={candidateStyles.TihokaDefGroup}>
+            <div className={checkStyles.TihokaDefItem}>
+              <div className={candidateStyles.TihokaDefRow}>
+                <span className={`${checkStyles.TihokaDefCheck} ${styles.skeletonCheck}`}>
                   <Skeleton width={checkbox} height={checkbox} shape="rounded" />
                 </span>
-                <span className={candidateStyles.cellDefText}>
+                <span className={candidateStyles.TihokaDefText}>
                   <Skeleton width="90%" height={textH} shape="rounded" />
                 </span>
               </div>
             </div>
-            <div className={candidateStyles.cellDefExamples}>
-              <div className={checkStyles.cellDefExampleItem}>
-                <span className={`${checkStyles.cellDefCheck} ${styles.skeletonCheck}`}>
+            <div className={candidateStyles.TihokaDefExamples}>
+              <div className={checkStyles.TihokaDefExampleItem}>
+                <span className={`${checkStyles.TihokaDefCheck} ${styles.skeletonCheck}`}>
                   <Skeleton width={checkbox} height={checkbox} shape="rounded" />
                 </span>
-                <span className={candidateStyles.cellDefExampleText}>
+                <span className={candidateStyles.TihokaDefExampleText}>
                   <Skeleton width="65%" height={exH} shape="rounded" />
                 </span>
               </div>
             </div>
           </div>
-          <div className={candidateStyles.cellDefGroup}>
-            <div className={checkStyles.cellDefItem}>
-              <div className={candidateStyles.cellDefRow}>
-                <span className={`${checkStyles.cellDefCheck} ${styles.skeletonCheck}`}>
+          <div className={candidateStyles.TihokaDefGroup}>
+            <div className={checkStyles.TihokaDefItem}>
+              <div className={candidateStyles.TihokaDefRow}>
+                <span className={`${checkStyles.TihokaDefCheck} ${styles.skeletonCheck}`}>
                   <Skeleton width={checkbox} height={checkbox} shape="rounded" />
                 </span>
-                <span className={candidateStyles.cellDefText}>
+                <span className={candidateStyles.TihokaDefText}>
                   <Skeleton width="75%" height={textH} shape="rounded" />
                 </span>
               </div>

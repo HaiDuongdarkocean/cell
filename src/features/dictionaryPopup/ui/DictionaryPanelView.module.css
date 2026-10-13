@@ -34,14 +34,14 @@
   overflow: visible;
 }
 
-/* Popup mode: neutralise nested scroll containers (.candidateList, .cellDef)
+/* Popup mode: neutralise nested scroll containers (.candidateList, .TihokaDef)
    so they don't steal wheel/drag scroll with overscroll-behavior:contain.
    When content fits exactly (scrollHeight === clientHeight), a nested
    overflow-y:auto + overscroll-behavior:contain element swallows the wheel
    event and blocks scroll chaining to .content (the real scroll container).
    overflow:visible makes them non-scroll-containers → events propagate up. */
 .popupMode .candidateList,
-.popupMode .cellDef {
+.popupMode .TihokaDef {
   overflow: visible;
   overscroll-behavior: auto;
 }
@@ -60,6 +60,13 @@
   padding-block-end: var(--universal-panel-tab-scroll-inset, var(--space-4));
 }
 
+/* Nested candidate scroller keeps its range but must chain at the edges —
+   a gesture reaching top/bottom continues into the host scroller (settings
+   column, DictionaryTab pane) instead of dead-ending on `contain`. */
+.integratedMode .candidateList {
+  overscroll-behavior: auto;
+}
+
 .searchRow {
   display: flex;
   gap: var(--space-2);
@@ -72,9 +79,9 @@
 }
 
 /* Big word pill — display-style input replacing the default glass look.
-   The className lands on the <input>; [data-cell-id] bumps specificity
+   The className lands on the <input>; [data-tihoka-id] bumps specificity
    above Input's .glass/.md variants. */
-.searchField[data-cell-id="dictionary-search-input"] {
+.searchField[data-tihoka-id="dictionary-search-input"] {
   min-height: var(--space-10);
   padding: var(--space-1) var(--space-4);
   padding-right: calc(var(--input-padding-x) + var(--space-6));
@@ -89,25 +96,25 @@
   line-height: var(--leading-tight);
 }
 
-.searchField[data-cell-id="dictionary-search-input"]:not(:focus-visible) {
+.searchField[data-tihoka-id="dictionary-search-input"]:not(:focus-visible) {
   box-shadow: none;
 }
 
-.searchField[data-cell-id="dictionary-search-input"]:hover:not(:disabled) {
+.searchField[data-tihoka-id="dictionary-search-input"]:hover:not(:disabled) {
   background: var(--color-surface-elevated);
   border-color: var(--color-border-emphasized);
 }
 
 /* Native search cancel button — the suffix already provides the ×. */
-.searchField[data-cell-id="dictionary-search-input"]::-webkit-search-cancel-button,
-.searchField[data-cell-id="dictionary-search-input"]::-webkit-search-decoration {
+.searchField[data-tihoka-id="dictionary-search-input"]::-webkit-search-cancel-button,
+.searchField[data-tihoka-id="dictionary-search-input"]::-webkit-search-decoration {
   -webkit-appearance: none;
   appearance: none;
 }
 
 /* Clear × inside the pill — solid text color so small strokes don't
    read as broken joints. */
-.searchField[data-cell-id="dictionary-search-input"] + span button {
+.searchField[data-tihoka-id="dictionary-search-input"] + span button {
   color: var(--color-text);
 }
 
@@ -269,7 +276,7 @@
   background: var(--color-surface);
 }
 
-.cellDef {
+.TihokaDef {
   padding: 0;
   flex: 1;
   min-height: 0;
@@ -286,7 +293,7 @@
   min-height: 0;
 }
 
-.cellCandidatesChips {
+.TihokaCandidatesChips {
   position: sticky;
   bottom: var(--space-3);
   flex-shrink: 0;
@@ -307,13 +314,13 @@
     opacity var(--duration-normal) var(--ease-out);
 }
 
-[data-dict-collapsed] .cellCandidatesChips {
+[data-dict-collapsed] .TihokaCandidatesChips {
   transform: translateY(calc(100% + var(--space-3)));
   opacity: 0;
   pointer-events: none;
 }
 
-.cellCandidatesChipsScroll {
+.TihokaCandidatesChipsScroll {
   composes: hide from '@/shared/ui/Scrollable.module.css';
   flex: 1 1 auto;
   display: flex;
@@ -323,7 +330,7 @@
   padding: var(--space-1) var(--space-4) var(--space-2) var(--space-4);
 }
 
-.cellChip {
+.TihokaChip {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -339,7 +346,7 @@
   cursor: pointer;
 }
 
-.cellChip[aria-current="true"] {
+.TihokaChip[aria-current="true"] {
   color: var(--color-primary);
   text-decoration: underline;
   text-decoration-thickness: var(--border-width-thick);
@@ -360,9 +367,9 @@
   padding: 0;
 }
 
-.cellAudioError,
-.cellImageError,
-.cellTranslateError {
+.TihokaAudioError,
+.TihokaImageError,
+.TihokaTranslateError {
   padding: var(--space-2);
   color: var(--color-error);
   font-size: var(--font-size-xs);

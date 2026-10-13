@@ -157,7 +157,11 @@ describe('CandidateView', () => {
     expect(screen.getAllByTestId('dictionary-definition')).toHaveLength(1);
   });
 
-  it('renders one frequency chip per list with its own name and rank', () => {
+  it('renders one frequency chip per list with its own name and rank', async () => {
+    mockLoadSettings.mockResolvedValue({
+      ...DEFAULT_SETTINGS,
+      dictionaryPopup: { ...DEFAULT_SETTINGS.dictionaryPopup!, frequencyDisplay: 'rank' },
+    });
     const candidate = makeResult('hello', {
       frequencies: [
         { rank: 500, source: 'wordfreq' },
@@ -175,7 +179,7 @@ describe('CandidateView', () => {
       />,
     );
 
-    const chips = screen.getAllByTestId('dictionary-frequency');
+    const chips = await screen.findAllByTestId('dictionary-frequency');
     expect(chips).toHaveLength(2);
     expect(chips[0]).toHaveTextContent('wordfreq');
     expect(chips[0]).toHaveTextContent('500');
@@ -477,10 +481,10 @@ describe('CandidateView', () => {
     const row = screen.getByTestId('dictionary-definition');
     expect(row).toHaveAttribute('aria-checked', 'false');
 
-    fireEvent.click(row.querySelector('.cellDefText')!);
+    fireEvent.click(row.querySelector('.TihokaDefText')!);
     expect(row).toHaveAttribute('aria-checked', 'false');
 
-    const exampleText = screen.getByTestId('dictionary-example').querySelector('.cellDefExampleText')!;
+    const exampleText = screen.getByTestId('dictionary-example').querySelector('.TihokaDefExampleText')!;
     fireEvent.click(exampleText);
     expect(row).toHaveAttribute('aria-checked', 'false');
 

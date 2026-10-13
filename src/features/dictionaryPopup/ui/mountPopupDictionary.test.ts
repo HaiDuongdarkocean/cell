@@ -6,7 +6,7 @@ jest.mock('./PopupDictionary', () => ({
   PopupDictionary: function PopupDictionaryMock(props: { anchor: { top: number } }) {
     return React.createElement(
       'div',
-      { 'data-cell-id': 'popup-dictionary-mock', 'data-anchor-top': props.anchor.top },
+      { 'data-tihoka-id': 'popup-dictionary-mock', 'data-anchor-top': props.anchor.top },
       'Popup',
     );
   },
@@ -33,7 +33,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  document.querySelectorAll('.js-cell-popup-host').forEach((el) => el.remove());
+  document.querySelectorAll('.js-Tihoka-popup-host').forEach((el) => el.remove());
 });
 
 describe('mountPopupDictionary', () => {
@@ -45,12 +45,12 @@ describe('mountPopupDictionary', () => {
       targetLang: 'vi',
     });
 
-    const host = document.querySelector('.js-cell-popup-host');
+    const host = document.querySelector('.js-Tihoka-popup-host');
     expect(host).not.toBeNull();
     expect(host?.shadowRoot).not.toBeNull();
 
     controller.destroy();
-    expect(document.querySelector('.js-cell-popup-host')).toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).toBeNull();
   });
 
   it('closes on click outside the popup', () => {
@@ -63,13 +63,13 @@ describe('mountPopupDictionary', () => {
       onClose,
     });
 
-    const host = document.querySelector('.js-cell-popup-host');
+    const host = document.querySelector('.js-Tihoka-popup-host');
     expect(host).not.toBeNull();
 
     document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
 
     expect(onClose).toHaveBeenCalled();
-    expect(document.querySelector('.js-cell-popup-host')).toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).toBeNull();
   });
 
   it('does not close on click inside the popup', () => {
@@ -82,19 +82,19 @@ describe('mountPopupDictionary', () => {
       onClose,
     });
 
-    const host = document.querySelector('.js-cell-popup-host') as HTMLElement;
+    const host = document.querySelector('.js-Tihoka-popup-host') as HTMLElement;
     expect(host).not.toBeNull();
 
     host.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
 
     expect(onClose).not.toHaveBeenCalled();
-    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).not.toBeNull();
   });
 
   it('stays open when an outside pointerdown is a re-anchor event (token/hitbox)', () => {
     const onClose = jest.fn();
     const token = document.createElement('span');
-    token.className = 'js-cell-token';
+    token.className = 'js-Tihoka-token';
     document.body.appendChild(token);
 
     const controller = mountPopupDictionary({
@@ -105,14 +105,14 @@ describe('mountPopupDictionary', () => {
       onClose,
       isReanchorPointerDown: (e) =>
         e.composedPath().some(
-          (el) => el instanceof HTMLElement && el.classList.contains('js-cell-token'),
+          (el) => el instanceof HTMLElement && el.classList.contains('js-Tihoka-token'),
         ),
     });
 
     token.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, composed: true }));
 
     expect(onClose).not.toHaveBeenCalled();
-    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).not.toBeNull();
 
     token.remove();
     controller.destroy();
@@ -121,7 +121,7 @@ describe('mountPopupDictionary', () => {
   it('still closes on outside pointerdown when isReanchorPointerDown returns false', () => {
     const onClose = jest.fn();
     const token = document.createElement('span');
-    token.className = 'js-cell-token';
+    token.className = 'js-Tihoka-token';
     document.body.appendChild(token);
 
     const controller = mountPopupDictionary({
@@ -136,7 +136,7 @@ describe('mountPopupDictionary', () => {
     token.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, composed: true }));
 
     expect(onClose).toHaveBeenCalled();
-    expect(document.querySelector('.js-cell-popup-host')).toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).toBeNull();
 
     token.remove();
     controller.destroy();
@@ -153,13 +153,13 @@ describe('mountPopupDictionary', () => {
     });
 
     const badge = document.createElement('div');
-    badge.className = 'js-cell-orbital-badge-host';
+    badge.className = 'js-Tihoka-orbital-badge-host';
     document.body.appendChild(badge);
 
     badge.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
 
     expect(onClose).not.toHaveBeenCalled();
-    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).not.toBeNull();
 
     badge.remove();
   });
@@ -178,7 +178,7 @@ describe('mountPopupDictionary', () => {
     document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
 
     expect(onClose).not.toHaveBeenCalled();
-    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).not.toBeNull();
 
     controller.destroy();
   });
@@ -202,7 +202,7 @@ describe('mountPopupDictionary', () => {
       targetLang: 'vi',
     });
 
-    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).not.toBeNull();
     controller.destroy();
   });
 });

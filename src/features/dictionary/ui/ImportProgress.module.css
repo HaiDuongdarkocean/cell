@@ -1,55 +1,46 @@
-/* ImportProgress — water-fill job row. Pending = dashed frame + dimmed title;
- * a primary-subtle fill rises from the bottom edge as entries stream in. */
+/* ImportProgress — job row: [leading icon] [name · meta … % | buttons]
+ * over an optional progress bar. Pending = dashed frame + field bg. */
 
 .job {
-  position: relative;
-  overflow: hidden;
-  border: var(--border-width-hairline) dashed var(--color-border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface-card);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   min-height: var(--space-12);
+  position: relative;
+  border: var(--border-width-hairline) solid var(--color-divider);
+  border-radius: var(--radius-lg);
 }
 
 .jobQueued {
   opacity: 0.7;
 }
 
-.jobError {
-  border-style: solid;
-  border-color: var(--color-destructive);
-}
-
-.jobDup {
-  border-style: solid;
-  border-color: var(--color-warning);
-}
-
-.fill {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  background: var(--color-primary-subtle);
-  transform-origin: bottom;
-  transition: transform var(--duration-normal) var(--ease-standard);
-  pointer-events: none;
-}
-
-.row {
-  position: relative;
+/* Same metrics as the resource-card grip column (iconbutton-size-xs box,
+   pulled left space-1) so status icons and names line up with the cards. */
+.leading {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  min-height: var(--space-12);
+  justify-content: center;
+  align-self: center;
+  flex-shrink: 0;
+  width: var(--iconbutton-size-xs);
+  margin-left: calc(var(--space-1) * -1);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  min-width: 0;
+  flex: 1;
 }
 
 .info {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
   min-width: 0;
-  flex: 1;
+  overflow: hidden;
 }
 
 .name {
@@ -59,43 +50,41 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 0 1 auto;
 }
 
-.kindChips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  margin-top: var(--space-1);
+.metaSep,
+.metaMuted,
+.metaOk,
+.metaErr,
+.metaDup {
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 0 1 auto;
+}
+
+.metaSep {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
 }
 
 .metaMuted {
-  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
 .metaOk {
-  font-size: var(--font-size-xs);
   color: var(--color-leaf);
 }
 
 .metaErr {
-  font-size: var(--font-size-xs);
   color: var(--color-destructive);
 }
 
 .metaDup {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  font-size: var(--font-size-xs);
   color: var(--color-warning);
-}
-
-.dupActions {
-  display: inline-flex;
-  gap: var(--space-2);
 }
 
 .right {
@@ -103,6 +92,7 @@
   align-items: center;
   gap: var(--space-2);
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .pct {
@@ -110,6 +100,18 @@
   font-weight: var(--font-weight-semibold);
   color: var(--color-primary);
   font-variant-numeric: tabular-nums;
+}
+
+.action {
+  min-width: var(--space-20);
+}
+
+/* Fill = theme primary (shared Progress defaults to --color-accent, which is
+   a neutral surface-hover tint). Also slows the indeterminate sweep — 1.5s
+   reads jittery on a 4px bar. */
+.progress > div {
+  background: var(--color-primary);
+  animation-duration: calc(var(--duration-1500) * 2);
 }
 
 .iconOk {
@@ -124,8 +126,3 @@
   color: var(--color-warning);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .fill {
-    transition: none;
-  }
-}

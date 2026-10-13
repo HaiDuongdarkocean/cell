@@ -67,6 +67,7 @@ export interface UseCandidateReturn {
   readonly selectVariant: (index: number) => void;
   readonly accentIndex: number;
   readonly cycleAccent: () => void;
+  readonly preferredAccent: string | undefined;
   readonly displayReading: string;
   readonly displayDefinitions: readonly DefinitionEntry[];
   readonly displayFrequencies: readonly VariantFrequency[];
@@ -457,6 +458,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     selectVariant,
     accentIndex,
     cycleAccent,
+    preferredAccent,
     displayReading,
     displayDefinitions,
     displayFrequencies,

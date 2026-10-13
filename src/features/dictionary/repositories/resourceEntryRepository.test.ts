@@ -155,6 +155,14 @@ describe('resourceEntryRepository — dictionary', () => {
     expect(calls).toEqual([[0, 600], [600, 600]]);
   });
 
+  it('deleteEntriesByResource reports per-chunk progress on the contiguous fast path', async () => {
+    await bulkInsertDictionaryEntries(LANG, Array.from({ length: 5000 }, (_, i) => makeDictEntry(`t${i}`)));
+    const calls: Array<[number, number]> = [];
+    await deleteEntriesByResource(LANG, RESOURCE_ID, (d, t) => calls.push([d, t]));
+    await expect(countEntriesByResource(LANG, RESOURCE_ID)).resolves.toBe(0);
+    expect(calls).toEqual([[0, 5000], [4096, 5000], [5000, 5000]]);
+  });
+
   it('deleteEntriesByResource deletes only own rows when keys interleave', async () => {
     await bulkInsertDictionaryEntries(LANG, Array.from({ length: 5 }, (_, i) => makeDictEntry(`a${i}`)));
     await bulkInsertDictionaryEntries(LANG, Array.from({ length: 5 }, (_, i) => makeDictEntry(`b${i}`, 2)));

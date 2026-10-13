@@ -101,7 +101,7 @@ export function QueueSidebar({
   // leaves the highlight off-screen.
   useEffect(() => {
     const active = asideRef.current?.querySelector(
-      `[data-cell-id="cc-queue-item-${queueActiveIndex}"]`,
+      `[data-tihoka-id="cc-queue-item-${queueActiveIndex}"]`,
     );
     (active as HTMLElement | null)?.scrollIntoView?.({ block: 'nearest' });
   }, [queueActiveIndex]);
@@ -114,7 +114,7 @@ export function QueueSidebar({
     ].filter(Boolean).join(' '),
     'aria-label': t('cardCreator.queue.aria'),
     onKeyDown: handleKeyDown,
-    'data-cell-id': 'cc-queue-sidebar',
+    'data-tihoka-id': 'cc-queue-sidebar',
   } as const;
 
   // Empty queue: keep the aside alive in overlay mode so the undo affordance
@@ -123,7 +123,7 @@ export function QueueSidebar({
     if (!overlay) return <></>;
     return (
       <aside ref={asideRef} {...sharedAsideProps}>
-        <p className={styles['cc-queue__empty']} data-cell-id="cc-queue-empty">
+        <p className={styles['cc-queue__empty']} data-tihoka-id="cc-queue-empty">
           {t('cardCreator.queue.empty')}
         </p>
         <UndoButton
@@ -178,7 +178,7 @@ function QueueItemRow({ item, index, isActive, onSelect, onDelete }: QueueItemRo
     <li
       className={`${styles['cc-queue__item']} ${isActive ? styles['cc-queue__item--active'] : ''}`}
       data-index={index}
-      data-cell-id={`cc-queue-item-${index}`}
+      data-tihoka-id={`cc-queue-item-${index}`}
     >
       <Button variant="secondary"
         className={styles['cc-queue__item-btn']}
@@ -200,7 +200,7 @@ function QueueItemRow({ item, index, isActive, onSelect, onDelete }: QueueItemRo
         className={styles['cc-queue__item-delete']}
         onClick={onDelete}
         aria-label={t('cardCreator.queue.remove', [item.term])}
-        data-cell-id={`cc-queue-delete-${index}`}
+        data-tihoka-id={`cc-queue-delete-${index}`}
       >
         <Icon name="x" size="sm" />
       </Button>
@@ -228,7 +228,7 @@ function UndoButton({ onUndo, toasts, onDismissToast }: UndoButtonProps): ReactE
       }}
       aria-label={t('cardCreator.queue.undo')}
       leadingIcon={<Icon name="rotateCcw" />}
-      data-cell-id="cc-queue-undo"
+      data-tihoka-id="cc-queue-undo"
     >
       {t('cardCreator.action.undo')}
     </Button>

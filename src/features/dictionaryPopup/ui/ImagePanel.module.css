@@ -1,26 +1,26 @@
 /* ImagePanel — image strip, cards strip, thumbnails, nav arrows, skeleton.
-   Shared checkbox contract (cellImageCard / cellDefCheckBox / --selected) lives
+   Shared checkbox contract (TihokaImageCard / TihokaDefCheckBox / --selected) lives
    in DictionaryCheckable.module.css. */
 
-.cellImage {
+.TihokaImage {
   padding: 0;
   display: flex;
   flex-direction: column;
   position: relative;
 }
 
-.cellImageEmptyAction {
+.TihokaImageEmptyAction {
   color: var(--color-primary);
   text-decoration: none;
   font-size: var(--font-size-xs);
   white-space: nowrap;
 }
 
-.cellImageEmptyAction:hover {
+.TihokaImageEmptyAction:hover {
   text-decoration: underline;
 }
 
-.cellImageSkeleton {
+.TihokaImageSkeleton {
   composes: hide from '@/shared/ui/Scrollable.module.css';
   display: flex;
   flex-wrap: nowrap;
@@ -31,12 +31,12 @@
   -ms-overflow-style: none;
 }
 
-/* Mirrors .cellImageCard metrics: same width, 4/3 box, radius-md.
+/* Mirrors .TihokaImageCard metrics: same width, 4/3 box, radius-md.
    No fixed height — aspect-ratio sizes it from the width.
    22% text over surface keeps the placeholder perceptible on both themes
    (--color-muted is nearly invisible on light, 10-16% was too faint on
    dark, and the pulse halves opacity at its low point). */
-.cellImageSkeletonCard {
+.TihokaImageSkeletonCard {
   flex: 0 0 auto;
   width: calc(var(--space-10) * 3);
   min-width: calc(var(--space-10) * 3);
@@ -45,7 +45,7 @@
   background: color-mix(in srgb, var(--color-text) 22%, var(--color-surface));
 }
 
-.cellImageStrip {
+.TihokaImageStrip {
   composes: hide from '@/shared/ui/Scrollable.module.css';
   display: flex;
   flex-wrap: nowrap;
@@ -56,7 +56,7 @@
   -ms-overflow-style: none;
 }
 
-.cellImageThumb {
+.TihokaImageThumb {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -65,8 +65,8 @@
 /* Image panel scroll controls — arrows overlaid at the two ends, vertically centered on the strip.
    Centered with negative margin instead of transform so the SSOT Button press
    transform (scale) is not overridden. Doubled class keeps these rules above `.button`. */
-.cellImageNavLeft.cellImageNavLeft,
-.cellImageNavRight.cellImageNavRight {
+.TihokaImageNavLeft.TihokaImageNavLeft,
+.TihokaImageNavRight.TihokaImageNavRight {
   position: absolute;
   top: 50%;
   margin-top: calc(var(--iconbutton-size-sm) / -2);
@@ -76,15 +76,15 @@
 /* Disabled arrows stay dimmed but still occupy their hit area — the global
    `.button:disabled { pointer-events: none }` would let the click fall through
    onto the thumbnail underneath and select it by accident. */
-.cellImageNavLeft.cellImageNavLeft:disabled,
-.cellImageNavRight.cellImageNavRight:disabled {
+.TihokaImageNavLeft.TihokaImageNavLeft:disabled,
+.TihokaImageNavRight.TihokaImageNavRight:disabled {
   pointer-events: auto;
 }
 
-.cellImageNavLeft.cellImageNavLeft {
+.TihokaImageNavLeft.TihokaImageNavLeft {
   left: var(--space-0-5);
 }
 
-.cellImageNavRight.cellImageNavRight {
+.TihokaImageNavRight.TihokaImageNavRight {
   right: var(--space-0-5);
 }

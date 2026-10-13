@@ -3,21 +3,24 @@
   --card-radius: var(--radius-lg);
   position: relative;
   overflow: hidden;
+  border: var(--border-width-hairline) solid var(--color-divider);
+  border-radius: var(--card-radius);
 }
 
-.deleteFill {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--color-error-subtle);
-  transition: height var(--duration-normal) var(--ease-standard);
-  pointer-events: none;
+.metaSep {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
 }
 
-.importFill {
-  composes: deleteFill;
-  background: var(--color-primary-subtle);
+/* Same fill as the job rows — shared Progress defaults to --color-accent.
+   space-1 on top of .info's space-0-5 gap = the job row's space-1-5 rhythm. */
+.busyProgress {
+  margin-top: var(--space-1);
+}
+
+.busyProgress > div {
+  background: var(--color-primary);
+  animation-duration: calc(var(--duration-1500) * 2);
 }
 
 .rowMeta {
@@ -33,6 +36,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+.deletingText {
+  color: var(--color-error);
+}
+
 /* Visual-only dimming for disabled resources — controls remain usable. */
 .cardDisabled {
   opacity: var(--opacity-disabled);
@@ -41,6 +48,7 @@
 /* Ghost look while the section's drag session lifts this card — the wrapper
    slot owns position/translateY; the card itself only gets the lifted skin. */
 .cardDragging {
+  background: var(--color-surface-card);
   box-shadow: var(--shadow-lg);
   transform: rotate(-0.6deg) scale(1.01);
   transition: box-shadow var(--duration-fast) var(--ease-standard);
@@ -69,6 +77,7 @@
   touch-action: none;
   cursor: grab;
   margin-left: calc(var(--space-1) * -1);
+  color: var(--color-text);
 }
 
 .grip:active {
@@ -183,8 +192,5 @@
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
     animation: none;
-  }
-  .deleteFill {
-    transition: none;
   }
 }

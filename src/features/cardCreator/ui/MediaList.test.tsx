@@ -5,7 +5,7 @@ import type { MediaFile } from '../media/mediaFile';
 describe('MediaList — image gallery', () => {
   const image: MediaFile = {
     kind: 'image',
-    filename: 'cell-image-1.png',
+    filename: 'Tihoka-image-1.png',
     mimeType: 'image/png',
     data: new Uint8Array([1, 2, 3]).buffer,
   };
@@ -105,7 +105,7 @@ describe('MediaList — image gallery', () => {
     const onReorder = jest.fn();
     const image2: MediaFile = {
       kind: 'image',
-      filename: 'cell-image-2.png',
+      filename: 'Tihoka-image-2.png',
       mimeType: 'image/png',
       data: new Uint8Array([4, 5, 6]).buffer,
     };
@@ -137,7 +137,7 @@ describe('MediaList — image gallery', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Preview cell-image-1.png/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Preview Tihoka-image-1.png/i }));
     expect(screen.getByRole('dialog', { name: 'Image preview' })).toBeInTheDocument();
   });
 
@@ -232,7 +232,7 @@ describe('MediaList — image gallery', () => {
 describe('MediaList — audio list', () => {
   const audio: MediaFile = {
     kind: 'audio',
-    filename: 'cell-audio-1.webm',
+    filename: 'Tihoka-audio-1.webm',
     mimeType: 'audio/webm',
     data: new Uint8Array([1, 2, 3]).buffer,
   };
@@ -268,7 +268,7 @@ describe('MediaList — audio list', () => {
       />
     );
 
-    expect(screen.getByText('cell-audio-1.webm')).toBeInTheDocument();
+    expect(screen.getByText('Tihoka-audio-1.webm')).toBeInTheDocument();
     expect(screen.getByTestId('cc-audio-remove-0')).toBeInTheDocument();
     expect(screen.getByTestId('cc-audio-add')).toBeInTheDocument();
   });
@@ -311,7 +311,7 @@ describe('MediaList — audio list', () => {
     const onReorder = jest.fn();
     const audio2: MediaFile = {
       kind: 'audio',
-      filename: 'cell-audio-2.webm',
+      filename: 'Tihoka-audio-2.webm',
       mimeType: 'audio/webm',
       data: new Uint8Array([4, 5, 6]).buffer,
     };

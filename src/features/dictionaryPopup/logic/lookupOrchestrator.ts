@@ -622,7 +622,6 @@ async function assembleLookupResult(
   let level: string | undefined;
   let frequencyStars: { readonly count: number; readonly source: string } | undefined;
   let etymology: EtymologyBlock | undefined;
-  let etymologySource: string | undefined;
   const etyExtraVariants: { text: string; source?: string }[] = [];
   let defIdx = 0;
   const variantSeen = new Set<string>();
@@ -638,6 +637,7 @@ async function assembleLookupResult(
   const variantAccentSeen = new Map<string, Set<string>>();
   const variantStars = new Map<string, { count: number; source: string }>();
   const variantInfl = new Map<string, InflectionGroup[]>();
+  const variantEty = new Map<string, { chain: string; firstKnownUse?: string; variants: { text: string; source?: string }[]; source: string }>();
   for (const e of dictEntries) {
     const disabled = disabledOf(e.resourceId);
     const entryExamples: SenseLine[] = !disabled.has('examples') && e.examples
@@ -764,9 +764,19 @@ async function assembleLookupResult(
     if (e.etymology && !disabled.has('etymology')) {
       if (!etymology) {
         etymology = { chain: e.etymology.chain, firstKnownUse: e.etymology.firstKnownUse, variants: e.etymology.variants };
-        etymologySource = source;
       } else {
         etyExtraVariants.push({ text: e.etymology.chain, source }, ...(e.etymology.variants ?? []));
+      }
+      const vEty = variantEty.get(eKey);
+      if (vEty) {
+        vEty.variants.push({ text: e.etymology.chain, source }, ...(e.etymology.variants ?? []));
+      } else {
+        variantEty.set(eKey, {
+          chain: e.etymology.chain,
+          firstKnownUse: e.etymology.firstKnownUse,
+          variants: [...(e.etymology.variants ?? [])],
+          source,
+        });
       }
     }
   }
@@ -776,30 +786,32 @@ async function assembleLookupResult(
     : undefined;
 
   // Word origin is selectable content like senses — emit it as labeled
-  // definition rows so it flows through the same check/card path.
-  if (mergedEtymology) {
+  // definition rows so it flows through the same check/card path. Each
+  // entry's origin stays in its own pos variant, not a shared "other" bucket.
+  for (const [etyKey, vEty] of variantEty) {
     const rows = [
-      mergedEtymology.firstKnownUse
-        ? t('dict.meta.etymologyFirstUse', [mergedEtymology.chain, mergedEtymology.firstKnownUse])
-        : mergedEtymology.chain,
-      ...(mergedEtymology.variants ?? []).map((v) => (v.source ? `${v.text} [${v.source}]` : v.text)),
+      vEty.firstKnownUse
+        ? t('dict.meta.etymologyFirstUse', [vEty.chain, vEty.firstKnownUse])
+        : vEty.chain,
+      ...vEty.variants.map((v) => (v.source ? `${v.text} [${v.source}]` : v.text)),
     ];
     for (const text of rows) {
       const def: DefinitionEntry = {
         id: `def-${defIdx}`,
+        pos: etyKey || undefined,
         labels: [t('dict.meta.wordOrigin')],
         text,
         lines: [{ role: 'gloss', text }],
         examples: [],
-        source: etymologySource ?? 'dictionary',
+        source: vEty.source,
         defaultSelected: false,
       };
       definitions.push(def);
-      markVariant('');
-      let bucket = variantDefs.get('');
+      markVariant(etyKey);
+      let bucket = variantDefs.get(etyKey);
       if (!bucket) {
         bucket = [];
-        variantDefs.set('', bucket);
+        variantDefs.set(etyKey, bucket);
       }
       bucket.push(def);
       defIdx++;

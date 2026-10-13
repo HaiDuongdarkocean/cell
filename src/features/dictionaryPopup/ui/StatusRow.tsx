@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/ui/Icon';
-import { rankToBand, type FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
+import { bandToStars, rankToBand, starsToBand, type FrequencyBandThresholds, type TokenFrequencyBand } from '@/shared/lib/frequencyBand';
 import { baseStatus, nextBaseStatus, statusFlag } from '@/features/dictionary';
 import { t, type MessageKey } from '@/shared/i18n';
 import { useDragScroll } from '@/shared/ui/useDragScroll';
@@ -37,10 +37,10 @@ export function StatusPill({ status, onCycle }: StatusPillProps): React.JSX.Elem
   return (
     <Button
       variant="transparent"
-      className={`${styles.cellHeaderStatus} ${styles[`cellHeaderStatus--${base}`]}`}
+      className={`${styles.TihokaHeaderStatus} ${styles[`TihokaHeaderStatus--${base}`]}`}
       onClick={onCycle}
       title={t('dict.status.cycle', [t(STATUS_KEYS[base]), t(STATUS_KEYS[nextBaseStatus(status)])])}
-      data-cell-id="dictionary-status-cycle"
+      data-tihoka-id="dictionary-status-cycle"
       data-compact-hit
     >
       {t(STATUS_KEYS[base])}
@@ -60,16 +60,16 @@ export function StatusSegmented({ status, onCycle, onToggleTracking, srsCardCoun
   const flag = statusFlag(status);
   const hasCards = (srsCardCount ?? 0) > 0;
   return (
-    <span className={styles.cellHeaderStatusGroup}>
+    <span className={styles.TihokaHeaderStatusGroup}>
       <Button
         variant="transparent"
         size="xs"
-        className={`${styles.cellHeaderStatus} ${styles.cellHeaderStatusFlag} ${flag === 'tracking' ? styles['cellHeaderStatus--tracking'] : styles.cellHeaderStatusFlagIdle}`}
+        className={`${styles.TihokaHeaderStatus} ${styles.TihokaHeaderStatusFlag} ${flag === 'tracking' ? styles['TihokaHeaderStatus--tracking'] : styles.TihokaHeaderStatusFlagIdle}`}
         disabled={!onToggleTracking}
         onClick={onToggleTracking}
         title={t('dict.status.trackingToggle')}
         aria-label={t('dict.status.trackingToggle')}
-        data-cell-id="dictionary-status-flag"
+        data-tihoka-id="dictionary-status-flag"
         data-compact-hit
       >
         <Icon name="footprints" size="sm" />
@@ -79,11 +79,11 @@ export function StatusSegmented({ status, onCycle, onToggleTracking, srsCardCoun
         <Button
           variant="transparent"
           size="xs"
-          className={`${styles.cellHeaderStatus} ${styles.cellHeaderStatusFlag} ${styles['cellHeaderStatus--learning']}`}
+          className={`${styles.TihokaHeaderStatus} ${styles.TihokaHeaderStatusFlag} ${styles['TihokaHeaderStatus--learning']}`}
           onClick={onOpenSrsCards}
           title={t('dict.status.srsCards', [srsCardCount ?? 0])}
           aria-label={t('dict.status.srsCards', [srsCardCount ?? 0])}
-          data-cell-id="dictionary-srs-cards"
+          data-tihoka-id="dictionary-srs-cards"
           data-compact-hit
         >
           <Icon name="notebookPen" size="sm" />
@@ -102,27 +102,46 @@ export interface StatusRowProps {
   readonly frequencies: readonly VariantFrequency[];
   readonly stars: { readonly count: number; readonly source: string } | undefined;
   readonly thresholds: FrequencyBandThresholds;
+  /** 'rank' → source+rank chips; 'stars' → ★ chips (ranks convert via
+   *  `thresholds`, from Settings → Dictionary popup → Frequency display). */
+  readonly frequencyDisplay?: 'stars' | 'rank';
   readonly statusControl?: ReactNode;
 }
 
-export function StatusRow({ status, onCycle, onToggleTracking, srsCardCount, onOpenSrsCards, frequencies, stars, thresholds, statusControl }: StatusRowProps): React.JSX.Element {
+export function StatusRow({ status, onCycle, onToggleTracking, srsCardCount, onOpenSrsCards, frequencies, stars, thresholds, frequencyDisplay = 'stars', statusControl }: StatusRowProps): React.JSX.Element {
   const scrollRef = useDragScroll<HTMLDivElement>();
+  const starChips: { readonly key: string; readonly source: string; readonly count: number; readonly band: TokenFrequencyBand }[] = [];
+  if (stars) starChips.push({ key: `stars-${stars.source}`, source: stars.source, count: stars.count, band: starsToBand(stars.count) });
+  for (const freq of frequencies) {
+    if (stars && freq.source === stars.source) continue;
+    const band = rankToBand(freq.rank, thresholds);
+    const count = bandToStars(band);
+    if (count > 0) starChips.push({ key: `rank-${freq.source}`, source: freq.source, count, band });
+  }
+  const rankSources = new Set(frequencies.map((freq) => freq.source));
+  // Rank mode: every rank list renders a chip; dict-native stars still show
+  // alongside when their source has no rank list (e.g. COCA + dict frequency).
+  const renderStars = frequencyDisplay === 'rank'
+    ? starChips.filter((chip) => !rankSources.has(chip.source))
+    : starChips;
+  const renderRanks = frequencyDisplay === 'rank' || starChips.length === 0 ? frequencies : [];
+  const hasChips = renderStars.length > 0 || renderRanks.length > 0;
   return (
-    <div className={styles.cellHeaderSecond} ref={scrollRef} data-cell-id="dictionary-freq-row">
+    <div className={styles.TihokaHeaderSecond} ref={scrollRef} data-tihoka-id="dictionary-freq-row">
       {statusControl ?? <StatusSegmented status={status} onCycle={onCycle} onToggleTracking={onToggleTracking} srsCardCount={srsCardCount} onOpenSrsCards={onOpenSrsCards} />}
-      {frequencies.length > 0 && <span className={styles.cellHeaderDivider} aria-hidden="true" />}
-      {frequencies.map((freq, i) => (
-        <span key={`${freq.source}-${i}`} className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${rankToBand(freq.rank, thresholds)}`]}`} title={freqTitle(freq)} data-cell-id="dictionary-frequency">
-          <span className={styles.cellHeaderFrequencySource}>{freq.source}</span>
-          <span className={styles.cellHeaderFrequencyRank}>{freq.rank.toLocaleString()}</span>
+      {hasChips && <span className={styles.TihokaHeaderDivider} aria-hidden="true" />}
+      {renderStars.map((chip) => (
+        <span key={chip.key} className={`${styles.TihokaHeaderFrequency} ${styles[`TihokaHeaderFrequency--${chip.band}`]}`} title={t('resources.component.frequencyStars')} data-tihoka-id="dictionary-stars">
+          <span className={styles.TihokaHeaderFrequencySource}>{chip.source}</span>
+          <span className={styles.TihokaHeaderFrequencyRank}>{'★'.repeat(chip.count)}</span>
         </span>
       ))}
-      {stars && (
-        <span className={styles.cellHeaderFrequency} title={t('resources.component.frequencyStars')} data-cell-id="dictionary-stars">
-          <span className={styles.cellHeaderFrequencySource}>{stars.source}</span>
-          <span className={styles.cellHeaderFrequencyRank}>{'★'.repeat(stars.count)}</span>
+      {renderRanks.map((freq, i) => (
+        <span key={`${freq.source}-${i}`} className={`${styles.TihokaHeaderFrequency} ${styles[`TihokaHeaderFrequency--${rankToBand(freq.rank, thresholds)}`]}`} title={freqTitle(freq)} data-tihoka-id="dictionary-frequency">
+          <span className={styles.TihokaHeaderFrequencySource}>{freq.source}</span>
+          <span className={styles.TihokaHeaderFrequencyRank}>{freq.rank.toLocaleString()}</span>
         </span>
-      )}
+      ))}
     </div>
   );
 }

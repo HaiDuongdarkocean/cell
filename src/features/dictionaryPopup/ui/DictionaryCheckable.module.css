@@ -1,38 +1,38 @@
 /* DictionaryCheckable — unified selectable-row/card contract (SSOT).
- * Owns: checkbox morph (cellDefCheck*), host classes (cellDefItem,
- * cellDefExampleItem, cellAudioItem, cellImageCard, cellTranslateBlock) and
+ * Owns: checkbox morph (TihokaDefCheck*), host classes (TihokaDefItem,
+ * TihokaDefExampleItem, TihokaAudioItem, TihokaImageCard, TihokaTranslateBlock) and
  * their hover/checked
  * compound rules. All cross-panel selectors live here because CSS-module
  * classes cannot be referenced across files.
  *
  * WARNING: every class used inside a compound selector below (the host
- * classes AND cellDefCheck-prefixed / cellDefCheckBox--*
- * modifiers / cellAudioCheck--checked / cellImageCard--selected /
- * cellTranslateBlock--selected) MUST stay in this
+ * classes AND TihokaDefCheck-prefixed / TihokaDefCheckBox--*
+ * modifiers / TihokaAudioCheck--checked / TihokaImageCard--selected /
+ * TihokaTranslateBlock--selected) MUST stay in this
  * file. Moving one to another module silently breaks the compound — the
  * un-hashed class name will match nothing. Do not split this file. */
 
 
-.cellDefItem {
+.TihokaDefItem {
   padding: 0 var(--space-1);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-in-out);
 }
 
-.cellDefItem:hover {
+.TihokaDefItem:hover {
   background: var(--color-surface-hover);
 }
 
 /* Row is the tab stop (role=checkbox in JSX); the inner input is decorative
    (tabIndex -1) so keyboard focus lands here, not on the input. */
-.cellDefItem:focus-visible {
+.TihokaDefItem:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
   outline-offset: var(--space-0-5);
 }
 
-.cellDefItem:focus-visible .cellDefCheck:not(.cellDefCheck--checked) .cellDefCheckBox,
-.cellDefExampleItem:focus-visible .cellDefCheck:not(.cellDefCheck--checked) .cellDefCheckBox {
+.TihokaDefItem:focus-visible .TihokaDefCheck:not(.TihokaDefCheck--checked) .TihokaDefCheckBox,
+.TihokaDefExampleItem:focus-visible .TihokaDefCheck:not(.TihokaDefCheck--checked) .TihokaDefCheckBox {
   opacity: var(--checkbox-disabled-opacity);
   background: var(--color-surface);
   border-color: var(--color-text);
@@ -40,9 +40,9 @@
   transform: scale(1.04);
 }
 
-/* Example rows are siblings of cellDefItem (never nested checkbox hosts) —
+/* Example rows are siblings of TihokaDefItem (never nested checkbox hosts) —
  * same dot→box reveal, own toggle zone around the gutter/row padding. */
-.cellDefExampleItem {
+.TihokaDefExampleItem {
   display: flex;
   align-items: flex-start;
   gap: var(--space-1);
@@ -52,21 +52,21 @@
   transition: background-color var(--duration-fast) var(--ease-in-out);
 }
 
-.cellDefExampleItem:hover {
+.TihokaDefExampleItem:hover {
   background: var(--color-surface-hover);
 }
 
-.cellDefExampleItem:focus-visible {
+.TihokaDefExampleItem:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
   outline-offset: var(--space-0-5);
 }
 
 /* Check slot tracks the xs example line-box, not the sm def line-box. */
-.cellDefExampleItem .cellDefCheck {
+.TihokaDefExampleItem .TihokaDefCheck {
   height: calc(var(--font-size-xs) * var(--leading-normal));
 }
 
-.cellDefCheck {
+.TihokaDefCheck {
   position: relative;
   width: var(--space-5);
   /* Marker slot = first-line line-box; +2px shifts the box/dot onto the
@@ -83,7 +83,7 @@
 
 /* Idle dot in the checkbox slot; ::before paints below the box so any
    revealed state (hover/focus/checked) covers it. */
-.cellDefCheck::before {
+.TihokaDefCheck::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -97,16 +97,16 @@
 /* Hide the bullet only where the box actually reveals. Use :focus-visible
    (not :focus-within): a mouse click leaves :focus on the row, which would
    keep the bullet hidden until the user clicks away to blur. */
-.cellDefItem:is(:hover, :focus-visible) .cellDefCheck::before,
-.cellDefExampleItem:is(:hover, :focus-visible) .cellDefCheck::before,
-.cellDefCheck--checked::before,
-.cellDefItem--disabled .cellDefCheck::before {
+.TihokaDefItem:is(:hover, :focus-visible) .TihokaDefCheck::before,
+.TihokaDefExampleItem:is(:hover, :focus-visible) .TihokaDefCheck::before,
+.TihokaDefCheck--checked::before,
+.TihokaDefItem--disabled .TihokaDefCheck::before {
   content: none;
 }
 
 /* === Unified checkbox — single SSOT for def/audio/image/translate panels ===
    16px square; the slot is always reserved so reveal never shifts layout. */
-.cellDefCheckBox {
+.TihokaDefCheckBox {
   width: var(--space-4);
   height: var(--space-4);
   border-radius: var(--radius-sm);
@@ -130,17 +130,17 @@
 
 /* Image card: unchecked box needs a surface backing so it is visible over
    arbitrary image thumbnails; selected/hover rules below override this. */
-.cellImageCard .cellDefCheckBox {
+.TihokaImageCard .TihokaDefCheckBox {
   background: var(--color-surface);
 }
 
 /* Hover → faded preview box. Disabled and already-checked/selected hosts
    are excluded so a checked box keeps its primary fill on hover. */
-.cellDefItem:not(.cellDefItem--disabled):hover .cellDefCheck:not(.cellDefCheck--checked) .cellDefCheckBox,
-.cellDefExampleItem:hover .cellDefCheck:not(.cellDefCheck--checked) .cellDefCheckBox,
-.cellAudioItem:not(.cellAudioItem--disabled):hover .cellDefCheckBox:not(.cellAudioCheck--checked),
-.cellImageCard:not(.cellImageCard--disabled):not(.cellImageCard--selected):not(:disabled):hover .cellDefCheckBox,
-.cellTranslateBlock:not(.cellTranslateBlock--disabled):not(.cellTranslateBlock--selected):hover .cellDefCheckBox {
+.TihokaDefItem:not(.TihokaDefItem--disabled):hover .TihokaDefCheck:not(.TihokaDefCheck--checked) .TihokaDefCheckBox,
+.TihokaDefExampleItem:hover .TihokaDefCheck:not(.TihokaDefCheck--checked) .TihokaDefCheckBox,
+.TihokaAudioItem:not(.TihokaAudioItem--disabled):hover .TihokaDefCheckBox:not(.TihokaAudioCheck--checked),
+.TihokaImageCard:not(.TihokaImageCard--disabled):not(.TihokaImageCard--selected):not(:disabled):hover .TihokaDefCheckBox,
+.TihokaTranslateBlock:not(.TihokaTranslateBlock--disabled):not(.TihokaTranslateBlock--selected):hover .TihokaDefCheckBox {
   opacity: var(--checkbox-disabled-opacity);
   background: var(--color-surface);
   border-color: var(--color-text);
@@ -148,32 +148,32 @@
   transform: scale(1.04);
 }
 
-.cellDefItem:not(.cellDefItem--disabled):active .cellDefCheckBox,
-.cellDefExampleItem:active .cellDefCheckBox,
-.cellAudioItem:not(.cellAudioItem--disabled):active .cellDefCheckBox,
-.cellImageCard:not(.cellImageCard--disabled):not(:disabled):active .cellDefCheckBox,
-.cellTranslateBlock:not(.cellTranslateBlock--disabled):active .cellDefCheckBox {
+.TihokaDefItem:not(.TihokaDefItem--disabled):active .TihokaDefCheckBox,
+.TihokaDefExampleItem:active .TihokaDefCheckBox,
+.TihokaAudioItem:not(.TihokaAudioItem--disabled):active .TihokaDefCheckBox,
+.TihokaImageCard:not(.TihokaImageCard--disabled):not(:disabled):active .TihokaDefCheckBox,
+.TihokaTranslateBlock:not(.TihokaTranslateBlock--disabled):active .TihokaDefCheckBox {
   transform: scale(0.95);
   transition: transform var(--duration-100) var(--ease-out);
 }
 
 /* SVG icon / spinner inside the box: 12px — fits inside the 16px box.
    The spinner size class may override, so !important keeps it contained. */
-.cellDefCheckBox svg,
-.cellDefCheckBox .spinner {
+.TihokaDefCheckBox svg,
+.TihokaDefCheckBox .spinner {
   width: var(--space-3) !important;
   height: var(--space-3) !important;
   display: block;
 }
 
-.cellDefCheckBox .spinner {
+.TihokaDefCheckBox .spinner {
   color: var(--color-primary);
 }
 
 /* Check/dash path: hidden by dash-offset, then draws in when selected.
    We target by the path's d-attribute because lucide-* class names are global
    and CSS Modules would hash them. */
-.cellDefCheckBox svg path[d="M20 6 9 17l-5-5"] {
+.TihokaDefCheckBox svg path[d="M20 6 9 17l-5-5"] {
   stroke-dasharray: 24;
   stroke-dashoffset: 24;
   stroke-width: calc(var(--stroke-width-md) * 1.75);
@@ -181,7 +181,7 @@
   transform-origin: center;
 }
 
-.cellDefCheckBox svg path[d="M5 12h14"] {
+.TihokaDefCheckBox svg path[d="M5 12h14"] {
   stroke-dasharray: 14;
   stroke-dashoffset: 14;
   stroke-width: calc(var(--stroke-width-md) * 1.75);
@@ -192,7 +192,7 @@
 /* Revealed — shows the disabled-like preview (faded empty box)
    without the host being actually disabled. !important prevents image-card
    base surface from overriding the fill. */
-.cellDefCheckBox--revealed {
+.TihokaDefCheckBox--revealed {
   opacity: var(--checkbox-disabled-opacity) !important;
   background: var(--color-surface) !important;
   border-color: var(--color-text) !important;
@@ -203,11 +203,11 @@
 /* Checked state — primary fill + thick white checkmark (all panels).
    The box pops with spring overshoot; the check path draws in after 100ms.
    Host prefix raises specificity so checked overrides hover. */
-.cellDefItem .cellDefCheck--checked .cellDefCheckBox,
-.cellDefExampleItem .cellDefCheck--checked .cellDefCheckBox,
-.cellAudioItem .cellDefCheckBox.cellAudioCheck--checked,
-.cellImageCard.cellImageCard--selected .cellDefCheckBox,
-.cellTranslateBlock.cellTranslateBlock--selected .cellDefCheckBox {
+.TihokaDefItem .TihokaDefCheck--checked .TihokaDefCheckBox,
+.TihokaDefExampleItem .TihokaDefCheck--checked .TihokaDefCheckBox,
+.TihokaAudioItem .TihokaDefCheckBox.TihokaAudioCheck--checked,
+.TihokaImageCard.TihokaImageCard--selected .TihokaDefCheckBox,
+.TihokaTranslateBlock.TihokaTranslateBlock--selected .TihokaDefCheckBox {
   opacity: 1;
   transform: scale(1);
   background: var(--color-primary);
@@ -221,18 +221,18 @@
     color var(--duration-fast) var(--ease-out);
 }
 
-.cellDefItem .cellDefCheck--checked .cellDefCheckBox svg path[d="M20 6 9 17l-5-5"],
-.cellDefExampleItem .cellDefCheck--checked .cellDefCheckBox svg path[d="M20 6 9 17l-5-5"],
-.cellAudioItem .cellDefCheckBox.cellAudioCheck--checked svg path[d="M20 6 9 17l-5-5"],
-.cellImageCard.cellImageCard--selected .cellDefCheckBox svg path[d="M20 6 9 17l-5-5"],
-.cellTranslateBlock.cellTranslateBlock--selected .cellDefCheckBox svg path[d="M20 6 9 17l-5-5"] {
+.TihokaDefItem .TihokaDefCheck--checked .TihokaDefCheckBox svg path[d="M20 6 9 17l-5-5"],
+.TihokaDefExampleItem .TihokaDefCheck--checked .TihokaDefCheckBox svg path[d="M20 6 9 17l-5-5"],
+.TihokaAudioItem .TihokaDefCheckBox.TihokaAudioCheck--checked svg path[d="M20 6 9 17l-5-5"],
+.TihokaImageCard.TihokaImageCard--selected .TihokaDefCheckBox svg path[d="M20 6 9 17l-5-5"],
+.TihokaTranslateBlock.TihokaTranslateBlock--selected .TihokaDefCheckBox svg path[d="M20 6 9 17l-5-5"] {
   stroke-dashoffset: 0;
   transition: stroke-dashoffset var(--duration-normal) var(--ease-out) var(--duration-100);
 }
 
 /* Indeterminate — filled like checked; consumer renders a "minus" icon.
    !important prevents the image-card base surface from overriding the fill. */
-.cellDefCheckBox--indeterminate {
+.TihokaDefCheckBox--indeterminate {
   opacity: 1 !important;
   background: var(--color-primary) !important;
   border-color: var(--color-primary) !important;
@@ -240,32 +240,32 @@
   transform: scale(1) !important;
 }
 
-.cellDefCheckBox--indeterminate svg path[d="M5 12h14"] {
+.TihokaDefCheckBox--indeterminate svg path[d="M5 12h14"] {
   stroke-dashoffset: 0;
   transition: stroke-dashoffset var(--duration-150) var(--ease-out) var(--duration-instant);
 }
 
 /* Disabled — visible but faded; opacity is !important so checked/selected
    states do not override it. */
-.cellDefCheckBox--disabled,
-.cellDefCheckInput:disabled + .cellDefCheckBox {
+.TihokaDefCheckBox--disabled,
+.TihokaDefCheckInput:disabled + .TihokaDefCheckBox {
   opacity: var(--checkbox-disabled-opacity) !important;
   transform: scale(1);
   pointer-events: none;
 }
 
-.cellDefItem--disabled .cellDefCheckBox,
-.cellAudioItem--disabled .cellDefCheckBox,
-.cellImageCard--disabled .cellDefCheckBox,
-.cellImageCard:disabled .cellDefCheckBox,
-.cellTranslateBlock--disabled .cellDefCheckBox {
+.TihokaDefItem--disabled .TihokaDefCheckBox,
+.TihokaAudioItem--disabled .TihokaDefCheckBox,
+.TihokaImageCard--disabled .TihokaDefCheckBox,
+.TihokaImageCard:disabled .TihokaDefCheckBox,
+.TihokaTranslateBlock--disabled .TihokaDefCheckBox {
   opacity: var(--checkbox-disabled-opacity) !important;
   transform: scale(1);
 }
 
 /* Loading — no square box, only the primary spinner in the reserved space.
    !important prevents image-card base / hover from drawing a box behind it. */
-.cellDefCheckBox--loading {
+.TihokaDefCheckBox--loading {
   opacity: 1 !important;
   transform: scale(1) !important;
   background: transparent !important;
@@ -274,19 +274,19 @@
 }
 
 /* Disabled host — the whole row/card signals "not selectable". */
-.cellDefItem--disabled,
-.cellAudioItem--disabled,
-.cellImageCard--disabled,
-.cellImageCard:disabled,
-.cellTranslateBlock--disabled {
+.TihokaDefItem--disabled,
+.TihokaAudioItem--disabled,
+.TihokaImageCard--disabled,
+.TihokaImageCard:disabled,
+.TihokaTranslateBlock--disabled {
   cursor: not-allowed;
 }
 
 /* Keyboard focus on non-input hosts reveals the disabled-like box too —
    same checked/selected exclusion as hover. */
-.cellAudioItem:focus-within .cellDefCheckBox:not(.cellAudioCheck--checked),
-.cellImageCard:focus-visible:not(.cellImageCard--selected) .cellDefCheckBox,
-.cellTranslateBlock:focus-visible:not(.cellTranslateBlock--selected) .cellDefCheckBox {
+.TihokaAudioItem:focus-within .TihokaDefCheckBox:not(.TihokaAudioCheck--checked),
+.TihokaImageCard:focus-visible:not(.TihokaImageCard--selected) .TihokaDefCheckBox,
+.TihokaTranslateBlock:focus-visible:not(.TihokaTranslateBlock--selected) .TihokaDefCheckBox {
   opacity: var(--checkbox-disabled-opacity);
   background: var(--color-surface);
   border-color: var(--color-text);
@@ -294,13 +294,13 @@
   transform: scale(1.04);
 }
 
-.cellAudioItem:focus-visible,
-.cellTranslateBlock:focus-visible {
+.TihokaAudioItem:focus-visible,
+.TihokaTranslateBlock:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
   outline-offset: var(--space-0-5);
 }
 
-.cellDefCheckInput {
+.TihokaDefCheckInput {
   position: absolute;
   opacity: 0;
   width: 0;
@@ -310,7 +310,7 @@
 
 /* Focus-visible on the real input: disabled-like box + primary outline.
    Skip when the item is already checked. */
-.cellDefCheck:not(.cellDefCheck--checked) .cellDefCheckInput:focus-visible + .cellDefCheckBox {
+.TihokaDefCheck:not(.TihokaDefCheck--checked) .TihokaDefCheckInput:focus-visible + .TihokaDefCheckBox {
   opacity: var(--checkbox-disabled-opacity);
   background: var(--color-surface);
   border-color: var(--color-text);
@@ -320,7 +320,7 @@
   outline-offset: var(--space-0-5);
 }
 
-.cellTranslateBlock {
+.TihokaTranslateBlock {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -332,36 +332,36 @@
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-in-out),
               border-color var(--duration-fast) var(--ease-in-out);
-  animation: cellCheckableIn var(--duration-normal) var(--ease-out) both;
+  animation: TihokaCheckableIn var(--duration-normal) var(--ease-out) both;
 }
 
-.cellTranslateBlock:hover {
+.TihokaTranslateBlock:hover {
   background: var(--color-surface-hover);
 }
 
 /* Compound selector keeps the selected tint+ring under :hover — a checked
    block must not fall back to the plain hover surface. */
-.cellTranslateBlock.cellTranslateBlock--selected {
+.TihokaTranslateBlock.TihokaTranslateBlock--selected {
   background: var(--color-primary-subtle);
   border-color: var(--color-primary);
 }
 
 /* Translate panel: margin offset (layout only — visual is unified) */
-.cellTranslateBlock .cellDefCheckBox {
+.TihokaTranslateBlock .TihokaDefCheckBox {
   margin-top: var(--space-0-5);
 }
 
 /* Mount entrance: checkable surfaces fade+rise in, staggered per sibling so
    loaded content cascades in instead of teleporting. Reduced-motion is
    covered globally by .dictionaryPanel's media query. */
-@keyframes cellCheckableIn {
+@keyframes TihokaCheckableIn {
   from {
     opacity: 0;
     transform: translateY(var(--space-1));
   }
 }
 
-.cellAudioItem {
+.TihokaAudioItem {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -371,36 +371,36 @@
   border: var(--border-width-hairline) solid transparent;
   cursor: pointer;
   transition: background var(--transition), border-color var(--transition);
-  animation: cellCheckableIn var(--duration-normal) var(--ease-out) both;
+  animation: TihokaCheckableIn var(--duration-normal) var(--ease-out) both;
 }
 
-.cellAudioItem:nth-child(2),
-.cellImageCard:nth-child(2) { animation-delay: 40ms; }
-.cellAudioItem:nth-child(3),
-.cellImageCard:nth-child(3) { animation-delay: 80ms; }
-.cellAudioItem:nth-child(4),
-.cellImageCard:nth-child(4) { animation-delay: 120ms; }
-.cellAudioItem:nth-child(n + 5),
-.cellImageCard:nth-child(n + 5) { animation-delay: 160ms; }
+.TihokaAudioItem:nth-child(2),
+.TihokaImageCard:nth-child(2) { animation-delay: 40ms; }
+.TihokaAudioItem:nth-child(3),
+.TihokaImageCard:nth-child(3) { animation-delay: 80ms; }
+.TihokaAudioItem:nth-child(4),
+.TihokaImageCard:nth-child(4) { animation-delay: 120ms; }
+.TihokaAudioItem:nth-child(n + 5),
+.TihokaImageCard:nth-child(n + 5) { animation-delay: 160ms; }
 
-.cellAudioItem:hover {
+.TihokaAudioItem:hover {
   background: var(--color-surface-hover);
 }
 
 /* Checked audio row gets the translate-block treatment: primary ring +
    subtle tint. :has() keeps it applied on hover (checked must not dim). */
-.cellAudioItem:has(.cellDefCheckBox.cellAudioCheck--checked) {
+.TihokaAudioItem:has(.TihokaDefCheckBox.TihokaAudioCheck--checked) {
   background: var(--color-primary-subtle);
   border-color: var(--color-primary);
 }
 
 /* Image card loading spinner: white so it is visible on top of
    arbitrary/purple thumbnails. */
-.cellImageCard .cellDefCheckBox.cellDefCheckBox--loading .spinner {
+.TihokaImageCard .TihokaDefCheckBox.TihokaDefCheckBox--loading .spinner {
   color: var(--color-overlay-text);
 }
 
-.cellImageCard {
+.TihokaImageCard {
   flex: 0 0 auto;
   position: relative;
   width: calc(var(--space-10) * 3);
@@ -419,25 +419,25 @@
   overflow: hidden;
   cursor: pointer;
   transition: transform var(--button-press-duration) var(--button-press-ease), filter var(--button-press-duration) var(--button-press-ease);
-  animation: cellCheckableIn var(--duration-normal) var(--ease-out) both;
+  animation: TihokaCheckableIn var(--duration-normal) var(--ease-out) both;
 }
 
-.cellImageCard:hover {
+.TihokaImageCard:hover {
   filter: brightness(1.05);
 }
 
-.cellImageCard:active {
+.TihokaImageCard:active {
   transform: scale(var(--button-press-scale));
   filter: brightness(0.98);
 }
 
-.cellImageCard:focus-visible {
+.TihokaImageCard:focus-visible {
   outline: var(--space-0-5) solid var(--color-border-focus);
   outline-offset: var(--space-0-5);
 }
 
-/* Image panel: unified cellDefCheckBox pinned to the card's top-right corner. */
-.cellImageCard .cellDefCheckBox {
+/* Image panel: unified TihokaDefCheckBox pinned to the card's top-right corner. */
+.TihokaImageCard .TihokaDefCheckBox {
   position: absolute;
   top: var(--space-1);
   right: var(--space-1);

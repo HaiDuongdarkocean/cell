@@ -42,10 +42,10 @@ interface PlayerModeBounds {
 }
 
 function getPlayerModeBounds(): PlayerModeBounds | null {
-  if (document.documentElement?.dataset.cellPlayerMode !== 'true') return null;
+  if (document.documentElement?.dataset.tihokaPlayerMode !== 'true') return null;
   const rootStyle = getComputedStyle(document.documentElement);
-  const top = Number.parseFloat(rootStyle.getPropertyValue('--cell-player-mode-video-height'));
-  const bottom = Number.parseFloat(rootStyle.getPropertyValue('--cell-player-mode-dock-height'));
+  const top = Number.parseFloat(rootStyle.getPropertyValue('--Tihoka-player-mode-video-height'));
+  const bottom = Number.parseFloat(rootStyle.getPropertyValue('--Tihoka-player-mode-dock-height'));
   if (!Number.isFinite(top) || !Number.isFinite(bottom) || top < 0 || bottom < 0) return null;
   return { top, bottom };
 }

@@ -36,7 +36,7 @@ import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
 import { captureSentenceAudio, seekAndWaitReady } from '@/features/cardCreator';
 import { emitWordStatusChanged, onWordStatusChanged, type WordStatusChangedDetail } from '@/features/dictionary';
 import { CURRENT_SCHEMA_VERSION } from '@/shared/lib/storage/settingsStore';
-import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/cellUiHosts';
+import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/TihokaUiHosts';
 import type { LookupResult, LookupRequest } from '@/entities/dictionary';
 import type { DictionaryPopupSettings, CardCreatorSettings, LanguageProfile, Settings } from '@/entities/settings/types';
 import {
@@ -151,9 +151,9 @@ function makeRequest(overrides: Partial<LookupRequest> = {}): LookupRequest {
 
 function tokenizedRange(text: string): Range {
   const token = document.createElement('span');
-  token.className = 'js-cell-token';
+  token.className = 'js-Tihoka-token';
   const word = document.createElement('span');
-  word.className = 'js-cell-token-word';
+  word.className = 'js-Tihoka-token-word';
   word.textContent = text;
   token.appendChild(word);
   document.body.appendChild(token);
@@ -240,7 +240,7 @@ describe('createWebTextDictionaryController', () => {
     await Promise.resolve();
     });
 
-    const popupHost = document.querySelector('.js-cell-popup-host');
+    const popupHost = document.querySelector('.js-Tihoka-popup-host');
     expect(popupHost).not.toBeNull();
     act(() => { ctrl.destroy() });
   });
@@ -265,10 +265,10 @@ describe('createWebTextDictionaryController', () => {
       payload: { requestId: 'req-dismiss' },
     });
     // Popup dismiss is delayed — not cleared yet.
-    expect(document.querySelector('span.js-cell-word-highlight')).not.toBeNull();
+    expect(document.querySelector('span.js-Tihoka-word-highlight')).not.toBeNull();
     // Flush the 500ms dismiss timer.
     act(() => { jest.advanceTimersByTime(500) });
-    expect(document.querySelector('span.js-cell-word-highlight')).toBeNull();
+    expect(document.querySelector('span.js-Tihoka-word-highlight')).toBeNull();
 
     act(() => { ctrl.destroy() });
     jest.useRealTimers();
@@ -291,7 +291,7 @@ describe('createWebTextDictionaryController', () => {
     await Promise.resolve();
     await Promise.resolve();
     });
-    expect(document.querySelector('span.js-cell-word-highlight')).not.toBeNull();
+    expect(document.querySelector('span.js-Tihoka-word-highlight')).not.toBeNull();
 
     ctrl.dismissLookup(); // schedules dismiss in 500ms
 
@@ -305,7 +305,7 @@ describe('createWebTextDictionaryController', () => {
 
     // Flush past the original 500ms — dismiss should NOT have fired.
     act(() => { jest.advanceTimersByTime(300) });
-    expect(document.querySelector('span.js-cell-word-highlight')).not.toBeNull();
+    expect(document.querySelector('span.js-Tihoka-word-highlight')).not.toBeNull();
 
     act(() => { ctrl.destroy() });
     jest.useRealTimers();
@@ -337,12 +337,12 @@ describe('createWebTextDictionaryController', () => {
 
     // Popup host should be removed after the delayed destroy; no term should
     // render from the stale response.
-    const host = document.querySelector('.js-cell-popup-host');
+    const host = document.querySelector('.js-Tihoka-popup-host');
     if (host && host.shadowRoot) {
-      const popup = host.shadowRoot.querySelector('[data-cell-id="popup-dictionary"]');
+      const popup = host.shadowRoot.querySelector('[data-tihoka-id="popup-dictionary"]');
       expect(popup).toBeNull();
     }
-    const termEl = host && host.shadowRoot ? host.shadowRoot.querySelector('[data-cell-id="dictionary-term"]') : null;
+    const termEl = host && host.shadowRoot ? host.shadowRoot.querySelector('[data-tihoka-id="dictionary-term"]') : null;
     expect(termEl?.textContent).not.toBe(result.term);
 
     act(() => { ctrl.destroy() });
@@ -371,11 +371,11 @@ describe('createWebTextDictionaryController', () => {
     });
 
     // Click the status badge inside the popup to cycle unknown → known.
-    const popupHost = document.querySelector('.js-cell-popup-host') as Element & { shadowRoot?: ShadowRoot };
+    const popupHost = document.querySelector('.js-Tihoka-popup-host') as Element & { shadowRoot?: ShadowRoot };
     await waitFor(() => expect(popupHost).not.toBeNull());
     const shadow = popupHost.shadowRoot!;
     const statusBadge = await waitFor(() => {
-      const el = shadow.querySelector('[data-cell-id="dictionary-status-cycle"]') as HTMLButtonElement | null;
+      const el = shadow.querySelector('[data-tihoka-id="dictionary-status-cycle"]') as HTMLButtonElement | null;
       if (!el) throw new Error('status badge not found');
       return el;
     });
@@ -541,7 +541,7 @@ describe('createWebTextDictionaryController', () => {
     await Promise.resolve();
     });
 
-    const popupHost = document.querySelector('.js-cell-popup-host');
+    const popupHost = document.querySelector('.js-Tihoka-popup-host');
     expect(popupHost).not.toBeNull();
     act(() => { ctrl.destroy() });
   });
@@ -604,7 +604,7 @@ describe('createWebTextDictionaryController', () => {
     // Prefetch for 'off' is skipped because it is already cached.
     expect(offCalls()).toHaveLength(1);
 
-    const popupHost = document.querySelector('.js-cell-popup-host');
+    const popupHost = document.querySelector('.js-Tihoka-popup-host');
     expect(popupHost).not.toBeNull();
     act(() => { ctrl.destroy() });
   });
@@ -624,8 +624,8 @@ describe('createWebTextDictionaryController', () => {
       subtitleOverlayAutoLoadAsr: false,
       subtitleOverlayAutoTranslate: false,
       dictionaryPopup: DEFAULT_DICTIONARY_POPUP_SETTINGS,
-      showReadings: false,
-      showWordTranslations: false,
+      readingDisplay: 'off',
+      glossDisplay: 'off',
     });
     const settingsFor = (profileId: string, target: string): { settings: Settings } => ({
       settings: {
@@ -708,10 +708,10 @@ describe('createWebTextDictionaryController', () => {
     range.selectNodeContents(p.firstChild as Text);
 
     act(() => { ctrl.showHighlight(range) });
-    expect(document.querySelector('span.js-cell-word-highlight')).not.toBeNull();
+    expect(document.querySelector('span.js-Tihoka-word-highlight')).not.toBeNull();
 
     ctrl.clearHighlight();
-    expect(document.querySelector('span.js-cell-word-highlight')).toBeNull();
+    expect(document.querySelector('span.js-Tihoka-word-highlight')).toBeNull();
 
     act(() => { ctrl.destroy() });
   });
@@ -740,10 +740,10 @@ describe('createWebTextDictionaryController', () => {
       subtitleOverlayNativeLanguage: 'vi',
     };
     await act(async () => { ctrl.updateSettings(settings); });
-    const host = document.querySelector('.js-cell-orbital-badge-host');
+    const host = document.querySelector('.js-Tihoka-orbital-badge-host');
     expect(host).not.toBeNull();
     await waitFor(() => {
-      const badge = host && (host as HTMLElement).shadowRoot?.querySelector('.js-cell-orbital-badge');
+      const badge = host && (host as HTMLElement).shadowRoot?.querySelector('.js-Tihoka-orbital-badge');
       expect(badge).not.toBeNull();
     });
     act(() => { ctrl.destroy() });
@@ -757,7 +757,7 @@ describe('createWebTextDictionaryController', () => {
       subtitleOverlayNativeLanguage: 'vi',
     };
     await act(async () => { ctrl.updateSettings(settings); });
-    const host1 = document.querySelector('.js-cell-orbital-badge-host');
+    const host1 = document.querySelector('.js-Tihoka-orbital-badge-host');
     expect(host1).not.toBeNull();
 
     await act(async () => {
@@ -769,7 +769,7 @@ describe('createWebTextDictionaryController', () => {
       });
     });
 
-    const hosts = document.querySelectorAll('.js-cell-orbital-badge-host');
+    const hosts = document.querySelectorAll('.js-Tihoka-orbital-badge-host');
     expect(hosts.length).toBe(1);
     expect(hosts[0]).toBe(host1);
     act(() => { ctrl.destroy() });
@@ -799,7 +799,7 @@ describe('createWebTextDictionaryController', () => {
         });
       });
       // No badge in a child frame while the top-frame badge covers the viewport.
-      expect(document.querySelector('.js-cell-orbital-badge-host')).toBeNull();
+      expect(document.querySelector('.js-Tihoka-orbital-badge-host')).toBeNull();
       act(() => { ctrl.destroy() });
     } finally {
       jest.mocked(isChildFrame).mockReturnValue(false);
@@ -822,7 +822,7 @@ describe('createWebTextDictionaryController', () => {
         });
         });
       });
-      const host = document.querySelector('.js-cell-orbital-badge-host');
+      const host = document.querySelector('.js-Tihoka-orbital-badge-host');
       expect(host).not.toBeNull();
       act(() => { ctrl.destroy() });
     } finally {
@@ -839,8 +839,8 @@ describe('createWebTextDictionaryController', () => {
     jest.mocked(isChildFrame).mockReturnValue(true);
     setFullscreenElement(null);
     const pmHost = document.createElement('div');
-    pmHost.id = 'cell-subtitle-root';
-    pmHost.setAttribute('data-cell-player-mode', 'true');
+    pmHost.id = 'Tihoka-subtitle-root';
+    pmHost.setAttribute('data-tihoka-player-mode', 'true');
     pmHost.attachShadow({ mode: 'open' });
     document.body.appendChild(pmHost);
     try {
@@ -854,7 +854,7 @@ describe('createWebTextDictionaryController', () => {
         });
         });
       });
-      const host = pmHost.shadowRoot!.querySelector('.js-cell-orbital-badge-host');
+      const host = pmHost.shadowRoot!.querySelector('.js-Tihoka-orbital-badge-host');
       expect(host).not.toBeNull();
       act(() => { ctrl.destroy() });
     } finally {
@@ -878,7 +878,7 @@ describe('createWebTextDictionaryController', () => {
       });
       });
     });
-    const host = document.querySelector('.js-cell-orbital-badge-host') as HTMLElement;
+    const host = document.querySelector('.js-Tihoka-orbital-badge-host') as HTMLElement;
     expect(host).not.toBeNull();
     expect(host.style.display).toBe(''); // visible before fullscreen
 
@@ -933,7 +933,7 @@ describe('createWebTextDictionaryController', () => {
 
     document.caretRangeFromPoint = original;
 
-    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).not.toBeNull();
     act(() => { ctrl.destroy() });
     jest.useRealTimers();
   });
@@ -970,19 +970,19 @@ describe('createWebTextDictionaryController', () => {
     document.caretRangeFromPoint = original;
 
     const host = await waitFor(() => {
-      const el = document.querySelector('.js-cell-popup-host') as HTMLElement | null;
+      const el = document.querySelector('.js-Tihoka-popup-host') as HTMLElement | null;
       if (!el) throw new Error('popup host not found');
       return el;
     });
     const shadow = host.shadowRoot!;
     const activeBtn = await waitFor(() => {
-      const el = shadow.querySelector('[data-cell-id="dictionary-tab-image"][aria-selected="true"]');
+      const el = shadow.querySelector('[data-tihoka-id="dictionary-tab-image"][aria-selected="true"]');
       if (!el) throw new Error('image tab not active');
       return el;
     });
     expect(activeBtn).not.toBeNull();
-    expect(activeBtn.getAttribute('data-cell-id')).toBe('dictionary-tab-image');
-    await waitFor(() => expect(shadow.querySelector('[data-cell-id="dictionary-image-panel"]')).not.toBeNull());
+    expect(activeBtn.getAttribute('data-tihoka-id')).toBe('dictionary-tab-image');
+    await waitFor(() => expect(shadow.querySelector('[data-tihoka-id="dictionary-image-panel"]')).not.toBeNull());
     act(() => { ctrl.destroy() });
   });
 
@@ -1025,19 +1025,19 @@ describe('createWebTextDictionaryController', () => {
     document.caretRangeFromPoint = original;
 
     const host = await waitFor(() => {
-      const el = document.querySelector('.js-cell-popup-host') as HTMLElement | null;
+      const el = document.querySelector('.js-Tihoka-popup-host') as HTMLElement | null;
       if (!el) throw new Error('popup host not found');
       return el;
     });
     const shadow = host.shadowRoot!;
     const activeBtn = await waitFor(() => {
-      const el = shadow.querySelector('[data-cell-id="dictionary-tab-image"][aria-selected="true"]');
+      const el = shadow.querySelector('[data-tihoka-id="dictionary-tab-image"][aria-selected="true"]');
       if (!el) throw new Error('image tab not active');
       return el;
     });
     expect(activeBtn).not.toBeNull();
-    expect(activeBtn.getAttribute('data-cell-id')).toBe('dictionary-tab-image');
-    await waitFor(() => expect(shadow.querySelector('[data-cell-id="dictionary-image-panel"]')).not.toBeNull());
+    expect(activeBtn.getAttribute('data-tihoka-id')).toBe('dictionary-tab-image');
+    await waitFor(() => expect(shadow.querySelector('[data-tihoka-id="dictionary-image-panel"]')).not.toBeNull());
     act(() => { ctrl.destroy() });
   });
 
@@ -1079,11 +1079,11 @@ describe('createWebTextDictionaryController', () => {
     await Promise.resolve();
     });
 
-    const host = document.querySelector('.js-cell-popup-host') as HTMLElement | null;
+    const host = document.querySelector('.js-Tihoka-popup-host') as HTMLElement | null;
     expect(host).not.toBeNull();
     const shadow = host?.shadowRoot;
-    expect(shadow?.querySelector('[data-cell-id^="dictionary-tab-"][aria-selected="true"]')).toBeNull();
-    expect(shadow?.querySelector('[data-cell-id="dictionary-image-panel"]')).toBeNull();
+    expect(shadow?.querySelector('[data-tihoka-id^="dictionary-tab-"][aria-selected="true"]')).toBeNull();
+    expect(shadow?.querySelector('[data-tihoka-id="dictionary-image-panel"]')).toBeNull();
     act(() => { ctrl.destroy() });
   });
 
@@ -1142,7 +1142,7 @@ describe('createWebTextDictionaryController', () => {
 
     act(() => { ctrl.destroy() });
 
-    expect(document.querySelector('span.js-cell-word-highlight')).toBeNull();
+    expect(document.querySelector('span.js-Tihoka-word-highlight')).toBeNull();
   });
 
   it('Send to Card routes to the integrated panel when panelController is present', async () => {
@@ -1161,9 +1161,9 @@ describe('createWebTextDictionaryController', () => {
     act(() => { ctrl.handleLookup(makeRequest(), 'req-send', new DOMRect(0, 0, 0, 0), range) });
     await new Promise((r) => setTimeout(r, 0));
 
-    const popupHost = document.querySelector('.js-cell-popup-host')!;
+    const popupHost = document.querySelector('.js-Tihoka-popup-host')!;
     const sendBtn = await waitFor(() => {
-      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      const el = popupHost.shadowRoot!.querySelector('[data-tihoka-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
       if (!el) throw new Error('send to card button not found');
       return el;
     });
@@ -1175,7 +1175,7 @@ describe('createWebTextDictionaryController', () => {
     expect(prefill.contextSentence).toBe('Take off your shoes.');
 
     // Popup closes on click — media collection continues in the background.
-    expect(document.querySelector('.js-cell-popup-host')).toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).toBeNull();
 
     act(() => { ctrl.destroy() });
   });
@@ -1196,18 +1196,18 @@ describe('createWebTextDictionaryController', () => {
     act(() => { ctrl.handleLookup(makeRequest(), 'req-send-selection', new DOMRect(0, 0, 0, 0), range) });
     await new Promise((r) => setTimeout(r, 0));
 
-    const popupHost = document.querySelector('.js-cell-popup-host')!;
+    const popupHost = document.querySelector('.js-Tihoka-popup-host')!;
 
     // Tick the only definition checkbox in the popup.
     const defEl = await waitFor(() => {
-      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-definition"]') as HTMLElement | null;
+      const el = popupHost.shadowRoot!.querySelector('[data-tihoka-id="dictionary-definition"]') as HTMLElement | null;
       if (!el) throw new Error('definition row not found');
       return el;
     });
     act(() => { defEl.click() });
 
     const sendBtn = await waitFor(() => {
-      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      const el = popupHost.shadowRoot!.querySelector('[data-tihoka-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
       if (!el) throw new Error('send to card button not found');
       return el;
     });
@@ -1249,12 +1249,12 @@ describe('createWebTextDictionaryController', () => {
     mockSendMessage.mockResolvedValue({ success: true, data: { url: 'https://tts.example/sentence.mp3' } } as unknown as never);
 
     const block = document.createElement('div');
-    block.dataset.cellId = 'subtitle-block';
+    block.dataset.tihokaId = 'subtitle-block';
     const line = document.createElement('div');
     line.dataset.role = 'target';
     const lineText = document.createElement('span');
     const token = document.createElement('span');
-    token.className = 'js-cell-token';
+    token.className = 'js-Tihoka-token';
     token.textContent = 'Take off your shoes.';
     lineText.appendChild(token);
     line.appendChild(lineText);
@@ -1266,9 +1266,9 @@ describe('createWebTextDictionaryController', () => {
     act(() => { ctrl.handleLookup(makeRequest(), 'req-video-send', new DOMRect(0, 0, 0, 0), range) });
     await new Promise((r) => setTimeout(r, 0));
 
-    const popupHost = document.querySelector('.js-cell-popup-host')!;
+    const popupHost = document.querySelector('.js-Tihoka-popup-host')!;
     const sendBtn = await waitFor(() => {
-      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      const el = popupHost.shadowRoot!.querySelector('[data-tihoka-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
       if (!el) throw new Error('send to card button not found');
       return el;
     });
@@ -1317,9 +1317,9 @@ describe('createWebTextDictionaryController', () => {
     act(() => { ctrl.handleLookup(makeRequest(), 'req-web-send', new DOMRect(0, 0, 0, 0), range) });
     await new Promise((r) => setTimeout(r, 0));
 
-    const popupHost = document.querySelector('.js-cell-popup-host')!;
+    const popupHost = document.querySelector('.js-Tihoka-popup-host')!;
     const sendBtn = await waitFor(() => {
-      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      const el = popupHost.shadowRoot!.querySelector('[data-tihoka-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
       if (!el) throw new Error('send to card button not found');
       return el;
     });
@@ -1357,7 +1357,7 @@ describe('createWebTextDictionaryController', () => {
     mockSendMessage.mockResolvedValue({ success: true, data: { url: 'https://tts.example/sentence.mp3' } } as unknown as never);
 
     const item = document.createElement('div');
-    item.dataset.cellId = 'cue-item';
+    item.dataset.tihokaId = 'cue-item';
     item.dataset.cueStart = '10000';
     item.dataset.cueEnd = '12000';
     const text = document.createElement('div');
@@ -1371,9 +1371,9 @@ describe('createWebTextDictionaryController', () => {
     act(() => { ctrl.handleLookup(makeRequest(), 'req-panel-send', new DOMRect(0, 0, 0, 0), range) });
     await new Promise((r) => setTimeout(r, 0));
 
-    const popupHost = document.querySelector('.js-cell-popup-host')!;
+    const popupHost = document.querySelector('.js-Tihoka-popup-host')!;
     const sendBtn = await waitFor(() => {
-      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      const el = popupHost.shadowRoot!.querySelector('[data-tihoka-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
       if (!el) throw new Error('send to card button not found');
       return el;
     });
@@ -1416,7 +1416,7 @@ describe('createWebTextDictionaryController', () => {
     mockSendMessage.mockResolvedValue({ success: true, data: { url: 'https://tts.example/sentence.mp3' } } as unknown as never);
 
     const item = document.createElement('div');
-    item.dataset.cellId = 'cue-item';
+    item.dataset.tihokaId = 'cue-item';
     item.dataset.cueStart = '10000';
     item.dataset.cueEnd = '12000';
     const text = document.createElement('div');
@@ -1430,9 +1430,9 @@ describe('createWebTextDictionaryController', () => {
     act(() => { ctrl.handleLookup(makeRequest(), 'req-panel-current', new DOMRect(0, 0, 0, 0), range) });
     await new Promise((r) => setTimeout(r, 0));
 
-    const popupHost = document.querySelector('.js-cell-popup-host')!;
+    const popupHost = document.querySelector('.js-Tihoka-popup-host')!;
     const sendBtn = await waitFor(() => {
-      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      const el = popupHost.shadowRoot!.querySelector('[data-tihoka-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
       if (!el) throw new Error('send to card button not found');
       return el;
     });
@@ -1468,7 +1468,7 @@ describe('createWebTextDictionaryController', () => {
     mockSendMessage.mockResolvedValue({ success: true, data: { url: 'https://tts.example/sentence.mp3' } } as unknown as never);
 
     const item = document.createElement('div');
-    item.dataset.cellId = 'cue-item';
+    item.dataset.tihokaId = 'cue-item';
     item.dataset.cueStart = '10000';
     item.dataset.cueEnd = '12000';
     const text = document.createElement('div');
@@ -1482,9 +1482,9 @@ describe('createWebTextDictionaryController', () => {
     act(() => { ctrl.handleLookup(makeRequest(), 'req-panel-seekfail', new DOMRect(0, 0, 0, 0), range) });
     await new Promise((r) => setTimeout(r, 0));
 
-    const popupHost = document.querySelector('.js-cell-popup-host')!;
+    const popupHost = document.querySelector('.js-Tihoka-popup-host')!;
     const sendBtn = await waitFor(() => {
-      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      const el = popupHost.shadowRoot!.querySelector('[data-tihoka-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
       if (!el) throw new Error('send to card button not found');
       return el;
     });
@@ -1513,16 +1513,16 @@ describe('createWebTextDictionaryController', () => {
     act(() => { ctrl.handleLookup(makeRequest(), 'req-fallback', new DOMRect(0, 0, 0, 0), range) });
     await new Promise((r) => setTimeout(r, 0));
 
-    const popupHost = document.querySelector('.js-cell-popup-host')!;
+    const popupHost = document.querySelector('.js-Tihoka-popup-host')!;
     const sendBtn = await waitFor(() => {
-      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      const el = popupHost.shadowRoot!.querySelector('[data-tihoka-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
       if (!el) throw new Error('send to card button not found');
       return el;
     });
     await act(async () => { sendBtn.click(); });
 
     // Popup should hide after the async React send-to-card flow completes.
-    await waitFor(() => expect(popupHost.shadowRoot?.querySelector('[data-cell-id="popup-dictionary"]')).toBeNull());
+    await waitFor(() => expect(popupHost.shadowRoot?.querySelector('[data-tihoka-id="popup-dictionary"]')).toBeNull());
 
     act(() => { ctrl.destroy() });
   });
@@ -1758,20 +1758,20 @@ describe('createWebTextDictionaryController', () => {
     ctrl.configureVideo({ hasVideo: true, video: mockVideo, getTargetCues: () => [] });
 
     const token1 = document.createElement('span');
-    token1.className = 'js-cell-token';
-    token1.dataset.cellTerm = 'over';
-    token1.dataset.cellStart = '0';
-    token1.dataset.cellEnd = '4';
-    token1.dataset.cellBlockId = 'b1';
+    token1.className = 'js-Tihoka-token';
+    token1.dataset.tihokaTerm = 'over';
+    token1.dataset.tihokaStart = '0';
+    token1.dataset.tihokaEnd = '4';
+    token1.dataset.tihokaBlockId = 'b1';
     token1.textContent = 'over';
     document.body.appendChild(token1);
 
     const token2 = document.createElement('span');
-    token2.className = 'js-cell-token';
-    token2.dataset.cellTerm = 'all';
-    token2.dataset.cellStart = '5';
-    token2.dataset.cellEnd = '8';
-    token2.dataset.cellBlockId = 'b1';
+    token2.className = 'js-Tihoka-token';
+    token2.dataset.tihokaTerm = 'all';
+    token2.dataset.tihokaStart = '5';
+    token2.dataset.tihokaEnd = '8';
+    token2.dataset.tihokaBlockId = 'b1';
     token2.textContent = 'all';
     document.body.appendChild(token2);
 
@@ -1784,12 +1784,12 @@ describe('createWebTextDictionaryController', () => {
     await act(async () => { await new Promise((resolve) => { setTimeout(resolve, 30); }); });
 
     expect(mockVideo.pause).toHaveBeenCalledTimes(1);
-    const popup = document.querySelector('.js-cell-popup-host');
+    const popup = document.querySelector('.js-Tihoka-popup-host');
     expect(popup).not.toBeNull();
 
     // Pointerdown on another token should not close the popup.
     act(() => { token2.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true })); });
-    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).not.toBeNull();
     expect(mockVideo.play).not.toHaveBeenCalled();
 
     // The new lookup reuses the same popup host and re-anchors it.
@@ -1801,13 +1801,13 @@ describe('createWebTextDictionaryController', () => {
       await Promise.resolve();
     });
 
-    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).not.toBeNull();
     expect(mockVideo.pause).toHaveBeenCalledTimes(1);
     expect(mockVideo.play).not.toHaveBeenCalled();
 
     // A true outside click still dismisses and resumes once.
     act(() => { document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true })); });
-    expect(document.querySelector('.js-cell-popup-host')).toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).toBeNull();
     await act(async () => { await new Promise((resolve) => { setTimeout(resolve, 300); }); });
     expect(mockVideo.play).toHaveBeenCalledTimes(1);
 
@@ -1822,17 +1822,17 @@ describe('createWebTextDictionaryController', () => {
     const ctrl = createWebTextDictionaryController(makeDeps());
 
     const token1 = document.createElement('span');
-    token1.className = 'js-cell-token';
-    token1.dataset.cellTerm = 'over';
-    token1.dataset.cellStart = '0';
-    token1.dataset.cellEnd = '4';
-    token1.dataset.cellBlockId = 'b1';
+    token1.className = 'js-Tihoka-token';
+    token1.dataset.tihokaTerm = 'over';
+    token1.dataset.tihokaStart = '0';
+    token1.dataset.tihokaEnd = '4';
+    token1.dataset.tihokaBlockId = 'b1';
     token1.textContent = 'over';
     document.body.appendChild(token1);
 
     const hitbox = document.createElement('span');
-    hitbox.className = 'cell-ocr-hitbox';
-    hitbox.dataset.cellTerm = 'all';
+    hitbox.className = 'Tihoka-ocr-hitbox';
+    hitbox.dataset.tihokaTerm = 'all';
     hitbox.textContent = 'all';
     document.body.appendChild(hitbox);
 
@@ -1843,10 +1843,10 @@ describe('createWebTextDictionaryController', () => {
       await Promise.resolve();
     });
 
-    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).not.toBeNull();
 
     act(() => { hitbox.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true })); });
-    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).not.toBeNull();
 
     token1.remove();
     hitbox.remove();
@@ -1867,11 +1867,11 @@ describe('createWebTextDictionaryController', () => {
     ctrl.configureVideo({ hasVideo: true, video: mockVideo, getTargetCues: () => [] });
 
     const token1 = document.createElement('span');
-    token1.className = 'js-cell-token';
-    token1.dataset.cellTerm = 'over';
-    token1.dataset.cellStart = '0';
-    token1.dataset.cellEnd = '4';
-    token1.dataset.cellBlockId = 'b1';
+    token1.className = 'js-Tihoka-token';
+    token1.dataset.tihokaTerm = 'over';
+    token1.dataset.tihokaStart = '0';
+    token1.dataset.tihokaEnd = '4';
+    token1.dataset.tihokaBlockId = 'b1';
     token1.textContent = 'over';
     document.body.appendChild(token1);
 
@@ -1895,12 +1895,12 @@ describe('createWebTextDictionaryController', () => {
       await Promise.resolve();
     });
 
-    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).not.toBeNull();
     await act(async () => { await new Promise((resolve) => { setTimeout(resolve, 30); }); });
     expect(mockVideo.pause).toHaveBeenCalledTimes(1);
 
     act(() => { line.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true, clientX: 30, clientY: 10 })); });
-    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).not.toBeNull();
     expect(mockVideo.play).not.toHaveBeenCalled();
 
     const caretOnWhitespace = document.createRange();
@@ -1909,7 +1909,7 @@ describe('createWebTextDictionaryController', () => {
     docWithCaret.caretRangeFromPoint = () => caretOnWhitespace;
 
     act(() => { line.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true, clientX: 30, clientY: 10 })); });
-    expect(document.querySelector('.js-cell-popup-host')).toBeNull();
+    expect(document.querySelector('.js-Tihoka-popup-host')).toBeNull();
     await act(async () => { await new Promise((resolve) => { setTimeout(resolve, 300); }); });
     expect(mockVideo.play).toHaveBeenCalledTimes(1);
 
@@ -1952,7 +1952,7 @@ describe('nested popup stack', () => {
   }
 
   function popupHosts(): HTMLElement[] {
-    return Array.from(document.querySelectorAll('.js-cell-popup-host'));
+    return Array.from(document.querySelectorAll('.js-Tihoka-popup-host'));
   }
 
   async function flushLookup(): Promise<void> {
@@ -1981,7 +1981,7 @@ describe('nested popup stack', () => {
   });
 
   function trailOf(host: HTMLElement): HTMLElement | null {
-    return host.shadowRoot!.querySelector('[data-cell-id="lookup-trail"]');
+    return host.shadowRoot!.querySelector('[data-tihoka-id="lookup-trail"]');
   }
 
   function crumbTexts(host: HTMLElement): string[] {
@@ -2004,6 +2004,25 @@ describe('nested popup stack', () => {
     const hosts = popupHosts();
     expect(hosts).toHaveLength(1);
     expect(hosts[0]).toBe(lv1);
+    expect(crumbTexts(lv1)).toEqual(['lock', 'fasten']);
+    act(() => { ctrl.destroy() });
+  });
+
+  it('a popup-internal lookup keeps the mount at the same position', async () => {
+    makeLookupForTerms();
+    const ctrl = createWebTextDictionaryController(makeDeps());
+
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'lock' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('lock')) });
+    await flushLookup();
+    const lv1 = popupHosts()[0]!;
+    const popup = lv1.shadowRoot!.querySelector<HTMLElement>('[data-tihoka-id="popup-dictionary"]')!;
+    const posBefore = `${popup.style.left}|${popup.style.top}|${popup.style.transform}`;
+
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'fasten' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'fasten')) });
+    await flushLookup();
+
+    const popup2 = lv1.shadowRoot!.querySelector<HTMLElement>('[data-tihoka-id="popup-dictionary"]')!;
+    expect(`${popup2.style.left}|${popup2.style.top}|${popup2.style.transform}`).toBe(posBefore);
     expect(crumbTexts(lv1)).toEqual(['lock', 'fasten']);
     act(() => { ctrl.destroy() });
   });
@@ -2057,7 +2076,7 @@ describe('nested popup stack', () => {
     const lv1 = popupHosts()[0]!;
     act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
     await flushLookup();
-    const surface = lv1.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]') as HTMLElement;
+    const surface = lv1.shadowRoot!.querySelector('[data-tihoka-id="popup-dictionary"]') as HTMLElement;
     expect(surface).not.toBeNull();
 
     await act(async () => {
@@ -2120,7 +2139,7 @@ describe('nested popup stack', () => {
 
     const hosts = popupHosts();
     expect(hosts).toHaveLength(1);
-    const termEl = hosts[0]!.shadowRoot!.querySelector('[data-cell-id="dictionary-term"]');
+    const termEl = hosts[0]!.shadowRoot!.querySelector('[data-tihoka-id="dictionary-term"]');
     if (termEl) expect(termEl.textContent).toBe('second');
     act(() => { ctrl.destroy() });
   });
@@ -2153,7 +2172,7 @@ describe('nested popup stack', () => {
 
       // Escape dismisses the whole chain at once — the video resumes as soon
       // as the last level is gone.
-      const surface = lv1.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]') as HTMLElement;
+      const surface = lv1.shadowRoot!.querySelector('[data-tihoka-id="popup-dictionary"]') as HTMLElement;
       await act(async () => {
         surface.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }));
       });
@@ -2189,11 +2208,11 @@ describe('nested popup stack', () => {
     }
 
     function sheetOf(host: HTMLElement): HTMLElement {
-      return host.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]') as HTMLElement;
+      return host.shadowRoot!.querySelector('[data-tihoka-id="popup-dictionary"]') as HTMLElement;
     }
 
     function termOf(host: HTMLElement): string | null {
-      return host.shadowRoot!.querySelector('[data-cell-id="dictionary-term"]')?.textContent ?? null;
+      return host.shadowRoot!.querySelector('[data-tihoka-id="dictionary-term"]')?.textContent ?? null;
     }
 
     // prefetchAdjacentTerms also emits LOOKUP_REQUESTs — count only the terms

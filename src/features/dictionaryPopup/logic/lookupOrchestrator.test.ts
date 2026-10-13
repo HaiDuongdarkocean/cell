@@ -132,8 +132,8 @@ function makeProfile(id: string, target: string): LanguageProfile {
     subtitleOverlayAutoLoad: true,
     subtitleOverlayAutoLoadAsr: false,
     subtitleOverlayAutoTranslate: false,
-    showReadings: false,
-    showWordTranslations: false,
+    readingDisplay: 'off',
+    glossDisplay: 'off',
     dictionaryPopup: DEFAULT_DICTIONARY_POPUP_SETTINGS,
   };
 }
@@ -1635,5 +1635,39 @@ describe('lookupOrchestrator — pos variants (pos-dictionary-variants)', () => 
     });
 
     expect(result.variants).toBeUndefined();
+  });
+
+  it('keeps each homograph\'s word origin inside its own pos variant', async () => {
+    await seedEnglishDictionary([
+      {
+        term: 'present', definition: 'existing now', pos: 'adjective',
+        etymology: { chain: 'adjective Middle English: from Latin praesent-' },
+      },
+      {
+        term: 'present', definition: 'to give formally', pos: 'verb',
+        etymology: { chain: 'verb Middle English: from presenter' },
+      },
+      {
+        term: 'present', definition: 'a gift', pos: 'noun',
+        etymology: { chain: 'noun Middle English: from Old French' },
+      },
+    ]);
+
+    const result = await lookupOrchestrator({
+      term: 'present',
+      langCode: 'en',
+      contextSentence: 'present',
+      cursorOffset: 0,
+    });
+
+    expect(result.variants).toHaveLength(3);
+    const [adj, verb, noun] = result.variants!;
+    const originOf = (v: (typeof adj)) =>
+      v!.definitions.filter((d) => d.labels?.includes('word origin')).map((d) => d.text);
+    expect(originOf(adj)).toEqual(['adjective Middle English: from Latin praesent-']);
+    expect(originOf(verb)).toEqual(['verb Middle English: from presenter']);
+    expect(originOf(noun)).toEqual(['noun Middle English: from Old French']);
+    expect(result.variants!.every((v) => v.pos !== '')).toBe(true);
+    expect(result.etymology?.chain).toBe('adjective Middle English: from Latin praesent-');
   });
 });

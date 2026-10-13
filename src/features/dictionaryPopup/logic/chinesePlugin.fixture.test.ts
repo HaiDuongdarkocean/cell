@@ -32,13 +32,13 @@ interface MoedictEntry {
 
 const FIXTURE_PATH = path.resolve(
   __dirname,
-  process.env.CELL_FIXTURE_FULL === '1'
+  process.env.Tihoka_FIXTURE_FULL === '1'
     ? '../../../../data/resource/zh/MoedictSimplified.json'
     : '../../../../tests/data-test/resource/zh/MoedictSimplified.json',
 );
-const FIXTURE_MISSING = process.env.CELL_FIXTURE_FULL === '1' && !existsSync(FIXTURE_PATH);
+const FIXTURE_MISSING = process.env.Tihoka_FIXTURE_FULL === '1' && !existsSync(FIXTURE_PATH);
 if (FIXTURE_MISSING) {
-  console.warn('[fixture] full MoedictSimplified fixture missing — run without CELL_FIXTURE_FULL or restore data/resource/');
+  console.warn('[fixture] full MoedictSimplified fixture missing — run without Tihoka_FIXTURE_FULL or restore data/resource/');
 }
 
 const CJK_RE = /^[\u4e00-\u9fff\u3400-\u4dbf]+$/;

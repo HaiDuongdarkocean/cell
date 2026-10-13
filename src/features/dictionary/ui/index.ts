@@ -1,5 +1,5 @@
 export { ResourcesPanel } from './ResourcesPanel';
-export { Dropzone } from './Dropzone';
+export { Dropzone } from '@/shared/ui';
 export { ResourceCard, ResourceCardSkeleton } from './ResourceCard';
 export { ImportProgress } from './ImportProgress';
 export { DeleteConfirmModal } from './DeleteConfirmModal';

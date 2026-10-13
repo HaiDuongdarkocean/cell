@@ -54,7 +54,7 @@ function QueueRow({
   readonly onDiscard: (id: string) => void;
 }) {
   return (
-    <li className={styles.row} data-cell-id="queue-row" data-queue-id={row.id}>
+    <li className={styles.row} data-tihoka-id="queue-row" data-queue-id={row.id}>
       <div className={styles.rowMain}>
         <div className={styles.rowTerm}>
           <Chip size="sm" color={row.kind === 'term' ? 'primary' : undefined} as="span">
@@ -83,7 +83,7 @@ function QueueRow({
           aria-label={t('queue.action.cardify')}
           title={t('queue.action.cardify')}
           onClick={() => onCardify(row.id)}
-          data-cell-id="queue-cardify"
+          data-tihoka-id="queue-cardify"
         >
           <Icon name="pencil" />
         </IconButton>
@@ -93,7 +93,7 @@ function QueueRow({
             aria-label={t('queue.action.quickAdd')}
             title={t('queue.action.quickAdd')}
             onClick={() => onQuickAdd(row.id)}
-            data-cell-id="queue-quick-add"
+            data-tihoka-id="queue-quick-add"
           >
             <Icon name="zap" />
           </IconButton>
@@ -103,7 +103,7 @@ function QueueRow({
           aria-label={t('queue.action.discard')}
           title={t('queue.action.discard')}
           onClick={() => onDiscard(row.id)}
-          data-cell-id="queue-discard"
+          data-tihoka-id="queue-discard"
         >
           <Icon name="trash2" />
         </IconButton>
@@ -172,7 +172,7 @@ export function QueueTab({ onCardify, onQuickAdd, onActionError }: QueueTabProps
   );
 
   return (
-    <div className={styles.tabPane} data-cell-id="queue-tab">
+    <div className={styles.tabPane} data-tihoka-id="queue-tab">
       <div className={styles.tabHeader}>
         <SectionHeader
           title={t('queue.title')}
@@ -193,7 +193,7 @@ export function QueueTab({ onCardify, onQuickAdd, onActionError }: QueueTabProps
               title={t('queue.error.loadTitle')}
               description={loadError}
             />
-            <Button variant="outline" size="sm" onClick={refresh} data-cell-id="queue-retry">
+            <Button variant="outline" size="sm" onClick={refresh} data-tihoka-id="queue-retry">
               {t('queue.action.retry')}
             </Button>
           </div>

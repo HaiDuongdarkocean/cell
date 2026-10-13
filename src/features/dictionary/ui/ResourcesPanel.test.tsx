@@ -117,6 +117,11 @@ function pickFile(inputIndex: number, file: File): void {
   pickFiles(inputIndex, [file]);
 }
 
+// Toasts mount into a page-level shadow root (`.js-Tihoka-toast-host`), outside
+// the panel — RTL queries can't pierce it, so read its text directly.
+const toastText = (): string =>
+  document.body.querySelector('.js-Tihoka-toast-host')?.shadowRoot?.textContent ?? '';
+
 beforeEach(() => {
   jest.clearAllMocks();
   setRegistryJobs([]);
@@ -169,7 +174,7 @@ describe('ResourcesPanel', () => {
     expect(opts.getComponents()).toBeUndefined();
   });
 
-  it('sends a components subset only after the user narrows detection', async () => {
+  it('imports all detected components — rows no longer offer a picker', async () => {
     const { detectComponents } = jest.requireMock<typeof import('@/features/dictionary/logic/formatDetector')>(
       '@/features/dictionary/logic/formatDetector',
     );
@@ -190,16 +195,14 @@ describe('ResourcesPanel', () => {
       new File(['zip'], 'mixed.zip'),
     ]);
 
-    const freqChip = await screen.findByRole('button', { name: /frequency/i });
-    act(() => { fireEvent.click(freqChip); });
+    await waitFor(() => expect(importFile.mock.calls.length).toBeGreaterThanOrEqual(1));
     act(() => resolveFirst({ jobId: 'job-1' }));
-
     await waitFor(() => expect(importFile).toHaveBeenCalledTimes(3));
     const [, opts] = importFile.mock.calls[2] as unknown as [
       unknown,
       { getComponents: () => readonly string[] | undefined },
     ];
-    expect(opts.getComponents()).toEqual(['definitions']);
+    expect(opts.getComponents()).toBeUndefined();
     act(() => resolveThird({ jobId: 'job-3' }));
   });
 
@@ -236,22 +239,25 @@ describe('ResourcesPanel', () => {
     expect(screen.getByText('Waiting')).toBeInTheDocument();
   });
 
-  it('hands the row to the registry job after upload, then shows its done state', async () => {
+  it('hands the row to the registry job after upload, then drops the done row for the resource card', async () => {
     importFile.mockResolvedValue({ jobId: 'j-freq' });
+    listResources.mockResolvedValue([makeResource({ id: 9, name: 'test.txt' })]);
     const view = render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
-    pickFile(0, new File(['hello\nworld\n'], 'test.txt', { type: 'text/plain' }));
+    pickFile(0, new File(['hello\nworld\n'], 'new.txt', { type: 'text/plain' }));
     await waitFor(() => expect(importFile).toHaveBeenCalled());
-    await waitFor(() => expect(screen.queryByText('test.txt')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('new.txt')).not.toBeInTheDocument());
     setRegistryJobs([makeJob({
       id: 'j-freq',
       kind: 'resource-import',
-      label: 'test.txt',
+      label: 'new.txt',
       status: 'done',
+      resourceId: 9,
       result: { wordCount: 2 },
     })]);
     view.rerender(<ResourcesPanel langCode="en" />);
-    await waitFor(() => expect(screen.getByText('Done · 2')).toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText(/Done · 2/)).not.toBeInTheDocument());
+    expect(screen.getByText('test')).toBeInTheDocument();
   });
 
   it('shows the error on the failing job row only', async () => {
@@ -322,10 +328,10 @@ describe('ResourcesPanel', () => {
     await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFile(0, new File(['a\nb\n'], 'test.txt', { type: 'text/plain' }));
 
-    await waitFor(() => expect(screen.getByText(/"existing\.txt" already exists/)).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
+    await waitFor(() => expect(screen.getByText(/installed as "existing\.txt"/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Keep' }));
 
-    await waitFor(() => expect(screen.getByText(/Skipped/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('test.txt')).not.toBeInTheDocument());
     expect(importFile).toHaveBeenCalledTimes(1);
   });
 
@@ -342,7 +348,7 @@ describe('ResourcesPanel', () => {
     await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFile(0, new File(['a\nb\n'], 'test.txt', { type: 'text/plain' }));
 
-    await waitFor(() => expect(screen.getByText(/"existing\.txt" already exists/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/installed as "existing\.txt"/)).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: 'Replace' }));
 
     await waitFor(() => expect(screen.queryByText('test.txt')).not.toBeInTheDocument());
@@ -570,7 +576,7 @@ describe('ResourcesPanel', () => {
     view.rerender(<ResourcesPanel langCode="en" />);
 
     await waitFor(() => expect(screen.getByTestId('deleting-1')).toBeInTheDocument());
-    expect(screen.getByTestId('delete-meta-1')).toHaveTextContent('Removing… 3,000 / 12,000 items');
+    expect(screen.getByTestId('delete-meta-1')).toHaveTextContent('Removing…');
     expect(screen.queryByTestId('job-row-del-1')).not.toBeInTheDocument();
     expect(screen.queryByTestId('enable-toggle-1')).not.toBeInTheDocument();
     expect(screen.queryByTestId('resource-components-1')).not.toBeInTheDocument();
@@ -585,7 +591,7 @@ describe('ResourcesPanel', () => {
     view.rerender(<ResourcesPanel langCode="en" />);
 
     await waitFor(() => expect(screen.queryByTestId('resource-card-1')).not.toBeInTheDocument());
-    await waitFor(() => expect(screen.getByTestId('panel-alert')).toHaveTextContent('Deleted "words.txt"'));
+    await waitFor(() => expect(toastText()).toContain('Deleted "words.txt"'));
     expect(screen.queryByTestId('job-row-del-1')).not.toBeInTheDocument();
   });
 
@@ -701,7 +707,7 @@ describe('ResourcesPanel', () => {
     fireEvent.click(screen.getByTestId('confirm-delete'));
 
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledTimes(2));
-    await waitFor(() => expect(screen.getByTestId('panel-alert')).toHaveTextContent("Couldn't delete: Error: boom"));
+    await waitFor(() => expect(toastText()).toContain("Couldn't delete: Error: boom"));
     expect(listResources.mock.calls.length).toBeGreaterThan(1);
   });
 
@@ -737,7 +743,7 @@ describe('ResourcesPanel', () => {
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByTestId('resource-card-7')).toBeInTheDocument());
     expect(screen.queryByTestId('job-row-imp-1')).not.toBeInTheDocument();
-    expect(screen.getByText('Adding… 12 / 100 items')).toBeInTheDocument();
+    expect(screen.getByText('Adding…')).toBeInTheDocument();
   });
 
   it('suppresses the done job row once its resource card is in the list', async () => {
@@ -782,8 +788,8 @@ describe('ResourcesPanel', () => {
     const { container } = render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByTestId('resource-card-2')).toBeInTheDocument());
     pickFile(0, new File(['a\n'], 'fresh.txt', { type: 'text/plain' }));
-    await waitFor(() => expect(container.querySelector('[data-cell-id^="import-job-"]')).not.toBeNull());
-    const jobRow = container.querySelector('[data-cell-id^="import-job-"]')!;
+    await waitFor(() => expect(container.querySelector('[data-tihoka-id^="import-job-"]')).not.toBeNull());
+    const jobRow = container.querySelector('[data-tihoka-id^="import-job-"]')!;
     const card1 = screen.getByTestId('resource-card-1');
     const card2 = screen.getByTestId('resource-card-2');
     // New resource lands first among no-priority rows — the pending row sits
@@ -1065,7 +1071,7 @@ describe('ResourcesPanel — import flow hardening', () => {
     render(<ResourcesPanel langCode="en" />);
     await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFile(0, new File(['x\n'], 'dup.txt', { type: 'text/plain' }));
-    await waitFor(() => expect(screen.getByText(/skipped/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('dup.txt')).not.toBeInTheDocument());
     expect(importFile).not.toHaveBeenCalled();
   });
 
@@ -1076,7 +1082,7 @@ describe('ResourcesPanel — import flow hardening', () => {
     await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
     pickFile(0, new File(['a\n'], 'bad.txt', { type: 'text/plain' }));
     const dismiss = await screen.findByTestId(/^job-dismiss-/);
-    const jobId = dismiss.getAttribute('data-cell-id')!.slice('job-dismiss-'.length);
+    const jobId = dismiss.getAttribute('data-tihoka-id')!.slice('job-dismiss-'.length);
     fireEvent.click(dismiss);
     await waitFor(() => expect(dismissJob).toHaveBeenCalledWith(jobId));
     expect(screen.queryByText('bad.txt')).not.toBeInTheDocument();
@@ -1097,5 +1103,21 @@ describe('ResourcesPanel — import flow hardening', () => {
     await waitFor(() => expect(screen.getByText('slow.txt')).toBeInTheDocument());
     act(() => resolveDetect(['frequency']));
     await waitFor(() => expect(importFile).toHaveBeenCalledTimes(1));
+  });
+});
+
+describe('dictionary lookup slot', () => {
+  it('renders the lookup column only when lookupPanel is provided', async () => {
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
+    expect(document.querySelector('[data-tihoka-id="resources-lookup-column"]')).not.toBeInTheDocument();
+  });
+
+  it('renders the provided lookupPanel inside the lookup column', async () => {
+    render(<ResourcesPanel langCode="en" lookupPanel={<div data-tihoka-id="lookup-stub">stub</div>} />);
+    await waitFor(() => expect(screen.getByText('Add resource')).toBeInTheDocument());
+    const el = document.querySelector('[data-tihoka-id="resources-lookup-column"]');
+    expect(el).toBeInTheDocument();
+    expect(el?.querySelector('[data-tihoka-id="lookup-stub"]')).toBeInTheDocument();
   });
 });

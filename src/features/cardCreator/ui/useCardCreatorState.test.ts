@@ -34,7 +34,7 @@ jest.mock('../media/mediaFile', () => ({
     item.audioBytes
       ? {
           kind: 'audio',
-          filename: 'cell-audio.wav',
+          filename: 'Tihoka-audio.wav',
           mimeType: 'audio/wav',
           data: item.audioBytes.buffer,
           sourceUrl: `audio-bytes://${item.id}`,
@@ -45,7 +45,7 @@ jest.mock('../media/mediaFile', () => ({
     item.src
       ? {
           kind: 'image',
-          filename: 'cell-image.png',
+          filename: 'Tihoka-image.png',
           mimeType: 'image/png',
           data: new ArrayBuffer(0),
           sourceUrl: item.src,

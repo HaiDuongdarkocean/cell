@@ -38,49 +38,34 @@
   outline: none;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-bottom: var(--border-width-hairline) solid var(--color-divider);
-  cursor: grab;
-  user-select: none;
-  touch-action: none;
-}
-
-.header:active {
-  cursor: grabbing;
-}
-
-.grip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--space-5);
-  height: var(--space-5);
-  color: var(--color-text-secondary);
-  transform: rotate(90deg);
-}
-
-.title {
-  flex: 1;
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  text-align: center;
-}
-
 .trailWrap {
   flex: 0 0 auto;
   padding-top: var(--space-2);
-  border-bottom: var(--border-width-hairline) solid var(--color-divider);
 }
 
-/* The strip's own negative margin counters the sheet header's padding —
-   the popup card has none, so pin it flush. */
+.trailWrapHidden {
+  padding-top: 0;
+}
+
+/* The strip's own negative margin + bottom padding counter the sheet
+   header's padding — the popup card has none, so pin it flush and let the
+   content's top padding own the trail→content gap. */
 .trailWrap > div {
   margin: 0;
+  padding-bottom: 0;
+}
+
+/* When the trail is visible it becomes the visual header — tighten the
+   content's top padding so the chips→content gap matches the popup's
+   internal rhythm (space-2), not the bare-content 12px top padding. */
+.trailWrap:not(.trailWrapHidden) + .content {
+  padding-top: var(--space-2);
+}
+
+/* Scroll-down collapse leaves no strip behind — drop the wrap's top
+   padding so no dead gap remains above the content. */
+[data-dict-collapsed] .trailWrap {
+  padding-top: 0;
 }
 
 .content {

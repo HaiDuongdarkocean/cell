@@ -60,11 +60,11 @@ describe('QueueTab', () => {
     onCardify.mockReset();
     onQuickAdd.mockReset();
     onActionError.mockReset();
-    (globalThis as { __cellSendMessage?: typeof sendMessage }).__cellSendMessage = sendMessage;
+    (globalThis as { __TihokaSendMessage?: typeof sendMessage }).__TihokaSendMessage = sendMessage;
   });
 
   afterEach(() => {
-    delete (globalThis as { __cellSendMessage?: typeof sendMessage }).__cellSendMessage;
+    delete (globalThis as { __TihokaSendMessage?: typeof sendMessage }).__TihokaSendMessage;
   });
 
   it('lists rows with kind chip, sentence, and relative age', async () => {
@@ -81,15 +81,15 @@ describe('QueueTab', () => {
     await waitFor(() => expect(screen.getByText('sentence row')).toBeInTheDocument());
     const termRow = document.querySelector('[data-queue-id="q1"]')!;
     const sentenceRow = document.querySelector('[data-queue-id="q2"]')!;
-    expect(termRow.querySelector('[data-cell-id="queue-quick-add"]')).not.toBeNull();
-    expect(sentenceRow.querySelector('[data-cell-id="queue-quick-add"]')).toBeNull();
+    expect(termRow.querySelector('[data-tihoka-id="queue-quick-add"]')).not.toBeNull();
+    expect(sentenceRow.querySelector('[data-tihoka-id="queue-quick-add"]')).toBeNull();
   });
 
   it('fetches the full item before cardify so the row is removed only after success', async () => {
     render(<QueueTab onCardify={onCardify} onQuickAdd={onQuickAdd} onActionError={onActionError} />);
     await waitFor(() => expect(screen.getByText('猫 · n')).toBeInTheDocument());
     const termRow = document.querySelector('[data-queue-id="q1"]')!;
-    fireEvent.click(termRow.querySelector('[data-cell-id="queue-cardify"]')!);
+    fireEvent.click(termRow.querySelector('[data-tihoka-id="queue-cardify"]')!);
     await waitFor(() => expect(onCardify).toHaveBeenCalledWith(FULL_ITEM));
     expect(calls(sendMessage, MESSAGE_TYPES.QUEUE_REMOVE)).toBe(0);
   });
@@ -105,7 +105,7 @@ describe('QueueTab', () => {
       return Promise.resolve({ success: true, data: { rows: ROWS } });
     });
     const termRow = document.querySelector('[data-queue-id="q1"]')!;
-    fireEvent.click(termRow.querySelector('[data-cell-id="queue-cardify"]')!);
+    fireEvent.click(termRow.querySelector('[data-tihoka-id="queue-cardify"]')!);
     await waitFor(() => expect(onActionError).toHaveBeenCalled());
     expect(onCardify).not.toHaveBeenCalled();
   });
@@ -124,7 +124,7 @@ describe('QueueTab', () => {
       return Promise.resolve({ success: true, data: {} });
     });
     const sentenceRow = document.querySelector('[data-queue-id="q2"]')!;
-    fireEvent.click(sentenceRow.querySelector('[data-cell-id="queue-discard"]')!);
+    fireEvent.click(sentenceRow.querySelector('[data-tihoka-id="queue-discard"]')!);
     await waitFor(() => expect(onActionError).toHaveBeenCalledWith('nope'));
     await waitFor(() => expect(screen.getByText('sentence row')).toBeInTheDocument());
   });

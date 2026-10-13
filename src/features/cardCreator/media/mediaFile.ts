@@ -51,7 +51,7 @@ export function joinAnkiFieldRefs(files: readonly MediaFile[]): string {
 export function generateMediaFilename(prefix: string, ext: string): string {
   const ts = Date.now();
   const rand = Math.random().toString(36).slice(2, 8);
-  return `cell-${prefix}-${ts}-${rand}.${ext}`;
+  return `Tihoka-${prefix}-${ts}-${rand}.${ext}`;
 }
 
 /** MIME type → file extension lookup for common media types. */

@@ -1,12 +1,12 @@
 /* TranslatePanel — translation blocks, target/native text, skeleton.
-   Shared checkbox contract (cellTranslateBlock / cellDefCheckBox / --selected)
+   Shared checkbox contract (TihokaTranslateBlock / TihokaDefCheckBox / --selected)
    lives in DictionaryCheckable.module.css. */
 
-.cellTranslate {
+.TihokaTranslate {
   padding: 0 var(--space-2);
 }
 
-.cellTranslateText {
+.TihokaTranslateText {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -14,20 +14,20 @@
   gap: var(--space-0-5);
 }
 
-.cellTranslateTarget {
+.TihokaTranslateTarget {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
 }
 
-.cellTranslateNative {
+.TihokaTranslateNative {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
 }
 
-/* Mirrors .cellTranslateBlock metrics — same padding/border/radius so the
+/* Mirrors .TihokaTranslateBlock metrics — same padding/border/radius so the
    skeleton occupies the exact box the loaded block will. */
-.cellTranslateSkeletonBlock {
+.TihokaTranslateSkeletonBlock {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -38,7 +38,7 @@
   background: var(--color-surface);
 }
 
-.cellTranslateSkeletonText {
+.TihokaTranslateSkeletonText {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -49,15 +49,15 @@
 /* --color-muted is nearly invisible on light surfaces and 10-16% text was
    too faint on dark — the pulse also halves opacity at its low point, so
    22% text keeps even the dim end perceptible in both themes. */
-.cellTranslateSkeletonLine,
-.cellTranslateSkeletonCheck {
+.TihokaTranslateSkeletonLine,
+.TihokaTranslateSkeletonCheck {
   max-width: 100%;
   background: color-mix(in srgb, var(--color-text) 22%, var(--color-surface));
 }
 
 /* Placeholder for the 16px checkbox — same radius + top offset as
-   .cellTranslateBlock .cellDefCheckBox. */
-.cellTranslateSkeletonCheck {
+   .TihokaTranslateBlock .TihokaDefCheckBox. */
+.TihokaTranslateSkeletonCheck {
   border-radius: var(--radius-sm);
   margin-top: var(--space-0-5);
   flex-shrink: 0;

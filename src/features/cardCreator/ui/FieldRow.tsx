@@ -48,7 +48,7 @@ export function FieldRow({
   dataId,
 }: FieldRowProps): ReactElement {
   return (
-    <div className={styles.fieldRow} data-cell-id={dataId ? `${dataId}-row` : undefined}>
+    <div className={styles.fieldRow} data-tihoka-id={dataId ? `${dataId}-row` : undefined}>
       <div className={styles.fieldRow__header}>
         <Label className={styles.fieldRow__label}>{label}</Label>
         {trailing && (
@@ -146,7 +146,7 @@ export function FieldAutoGrowInput({
   const controlClass = [styles.fieldInput__control, className ?? ''].filter(Boolean).join(' ');
 
   return (
-    <div className={styles.fieldInput} data-cell-id={dataId ? `${dataId}-input` : undefined}>
+    <div className={styles.fieldInput} data-tihoka-id={dataId ? `${dataId}-input` : undefined}>
       <Textarea
         variant="unstyled"
         ref={controlRef}
@@ -243,13 +243,13 @@ export function TagInput({
   return (
     <div
       className={styles.tagInput}
-      data-cell-id={dataId ? `${dataId}-input` : undefined}
+      data-tihoka-id={dataId ? `${dataId}-input` : undefined}
     >
       {tags.map((tag, index) => (
         <span
           key={`${tag}-${index}`}
           className={styles.tagInput__chip}
-          data-cell-id={dataId ? `${dataId}-chip-${index}` : undefined}
+          data-tihoka-id={dataId ? `${dataId}-chip-${index}` : undefined}
         >
           <span className={styles.tagInput__label}>{tag}</span>
           <Button
@@ -259,7 +259,7 @@ export function TagInput({
             aria-label={t('cardCreator.media.remove', [tag])}
             onClick={() => removeTag(index)}
             className={styles.tagInput__remove}
-            data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
+            data-tihoka-id={dataId ? `${dataId}-remove-${index}` : undefined}
           >
             <Icon name="x" size="sm" />
           </Button>

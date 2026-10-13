@@ -235,7 +235,7 @@ export function CardCreatorSettingsPanel({
   ];
 
   return (
-    <div className={styles.container} data-cell-id="card-creator-settings-panel">
+    <div className={styles.container} data-tihoka-id="card-creator-settings-panel">
       <div className={styles.field}>
         <label className={styles.fieldLabel} htmlFor="cc-srs-destination">
           {t('cardCreator.settings.destination.label')}
@@ -246,30 +246,13 @@ export function CardCreatorSettingsPanel({
           onChange={handleDestinationChange}
           options={destinationOptions}
           aria-label={t('cardCreator.settings.destination.aria')}
-          data-cell-id="cc-srs-destination"
-        />
-      </div>
-
-      <div className={styles.field}>
-        <label className={styles.fieldLabel} htmlFor="cc-frequency-display">
-          {t('cardCreator.settings.frequencyDisplay.label')}
-        </label>
-        <Select
-          id="cc-frequency-display"
-          value={settings.frequencyDisplay ?? 'stars'}
-          onChange={(v) => onChange({ frequencyDisplay: v as 'stars' | 'rank' })}
-          options={[
-            { value: 'stars', label: t('cardCreator.settings.frequencyDisplay.stars') },
-            { value: 'rank', label: t('cardCreator.settings.frequencyDisplay.rank') },
-          ]}
-          aria-label={t('cardCreator.settings.frequencyDisplay.aria')}
-          data-cell-id="cc-frequency-display"
+          data-tihoka-id="cc-srs-destination"
         />
       </div>
 
       {!isAnki && (
         <>
-          <div className={styles.pairGroup} data-cell-id="cc-srs-destination-pair">
+          <div className={styles.pairGroup} data-tihoka-id="cc-srs-destination-pair">
             <div className={styles.field}>
               <label className={styles.fieldLabel} htmlFor="cc-srs-note-type">
                 {t('cardCreator.destination.noteType')}
@@ -282,7 +265,7 @@ export function CardCreatorSettingsPanel({
                 placeholder={t('cardCreator.settings.noteTypePlaceholder')}
                 disabled={!srsSchema || srsSchema.notetypes.length === 0}
                 aria-label={t('cardCreator.destination.noteType')}
-                data-cell-id="cc-srs-note-type-select"
+                data-tihoka-id="cc-srs-note-type-select"
               />
             </div>
 
@@ -298,12 +281,12 @@ export function CardCreatorSettingsPanel({
                 placeholder={t('cardCreator.settings.deckPlaceholder')}
                 disabled={!srsSchema || srsSchema.decks.length === 0}
                 aria-label={t('cardCreator.destination.deck')}
-                data-cell-id="cc-srs-deck-select"
+                data-tihoka-id="cc-srs-deck-select"
               />
             </div>
           </div>
 
-          <Text as="p" color="secondary" className={styles.hint} data-cell-id="cc-ocean-srs-hint">
+          <Text as="p" color="secondary" className={styles.hint} data-tihoka-id="cc-ocean-srs-hint">
             {t('cardCreator.settings.destination.oceanHint')}
           </Text>
         </>
@@ -311,7 +294,7 @@ export function CardCreatorSettingsPanel({
 
       {isAnki && (
         <>
-          <div className={styles.pairGroup} data-cell-id="cc-destination-pair">
+          <div className={styles.pairGroup} data-tihoka-id="cc-destination-pair">
             <div className={styles.field}>
               <label className={styles.fieldLabel} htmlFor="cc-note-type">
                 {t('cardCreator.destination.noteType')}
@@ -324,7 +307,7 @@ export function CardCreatorSettingsPanel({
                 placeholder={t('cardCreator.settings.noteTypePlaceholder')}
                 disabled={models.length === 0}
                 aria-label={t('cardCreator.destination.noteType')}
-                data-cell-id="cc-note-type-select"
+                data-tihoka-id="cc-note-type-select"
               />
             </div>
 
@@ -340,7 +323,7 @@ export function CardCreatorSettingsPanel({
                 placeholder={t('cardCreator.settings.deckPlaceholder')}
                 disabled={decks.length === 0}
                 aria-label={t('cardCreator.destination.deck')}
-                data-cell-id="cc-deck-select"
+                data-tihoka-id="cc-deck-select"
               />
             </div>
           </div>
@@ -352,13 +335,13 @@ export function CardCreatorSettingsPanel({
                 {t('cardCreator.settings.mapping.loading')}
               </Text>
             ) : fields.length === 0 ? (
-              <Text as="p" color="secondary" className={styles.hint} data-cell-id="cc-mapping-empty">
+              <Text as="p" color="secondary" className={styles.hint} data-tihoka-id="cc-mapping-empty">
                 {t('cardCreator.settings.mapping.empty')}
               </Text>
             ) : (
-              <div className={styles.mappingList} data-cell-id="cc-mapping-list">
+              <div className={styles.mappingList} data-tihoka-id="cc-mapping-list">
                 {SOURCE_FIELD_ORDER.map((sourceKey) => (
-                  <div key={sourceKey} className={styles.mappingRow} data-cell-id={`cc-mapping-row-${sourceKey}`}>
+                  <div key={sourceKey} className={styles.mappingRow} data-tihoka-id={`cc-mapping-row-${sourceKey}`}>
                     <span className={styles.mappingLabel}>{t(sourceFieldI18n[sourceKey]!)}</span>
                     <Select
                       className={styles.mappingSelect}
@@ -369,7 +352,7 @@ export function CardCreatorSettingsPanel({
                         ...fields.map((f) => ({ value: f, label: f })),
                       ]}
                       aria-label={t('cardCreator.settings.mapping.aria', [t(sourceFieldI18n[sourceKey]!)])}
-                      data-cell-id={`cc-mapping-select-${sourceKey}`}
+                      data-tihoka-id={`cc-mapping-select-${sourceKey}`}
                     />
                   </div>
                 ))}
@@ -383,13 +366,13 @@ export function CardCreatorSettingsPanel({
               className={styles.advancedToggle}
               aria-expanded={advancedOpen}
               onClick={() => setAdvancedOpen((v) => !v)}
-              data-cell-id="cc-advanced-toggle"
+              data-tihoka-id="cc-advanced-toggle"
             >
               <Icon name="chevronDown" size="xs" className={styles.advancedChevron} />
               {t('settings.profiles.form.advanced')}
             </button>
             {advancedOpen && (
-              <div className={styles.advancedBody} data-cell-id="cc-advanced-body">
+              <div className={styles.advancedBody} data-tihoka-id="cc-advanced-body">
                 <div className={styles.field}>
                   <label className={styles.fieldLabel} htmlFor="cc-anki-url">
                     {t('cardCreator.settings.ankiUrl')}
@@ -401,7 +384,7 @@ export function CardCreatorSettingsPanel({
                     onChange={handleUrlChange}
                     placeholder={t('cardCreator.settings.ankiUrlPlaceholder')}
                     aria-label={t('cardCreator.settings.ankiUrlAria')}
-                    data-cell-id="cc-anki-url-input"
+                    data-tihoka-id="cc-anki-url-input"
                   />
                   <Text as="p" color="secondary" className={styles.hint}>
                     {t('cardCreator.settings.ankiUrlHint')}
@@ -412,7 +395,7 @@ export function CardCreatorSettingsPanel({
                   <div
                     className={`${styles.statusIndicator} ${indicatorClass}`}
                     aria-live="polite"
-                    data-cell-id="cc-connection-status"
+                    data-tihoka-id="cc-connection-status"
                   >
                     <span className={styles.statusDot} aria-hidden="true" />
                     <span className={styles.statusLabel}>{statusLabel(status)}</span>
@@ -428,7 +411,7 @@ export function CardCreatorSettingsPanel({
                     onClick={() => { void handleTest(); }}
                     disabled={status === 'testing'}
                     aria-label={t('cardCreator.settings.test.againAria')}
-                    data-cell-id="cc-test-again-button"
+                    data-tihoka-id="cc-test-again-button"
                   >
                     {status === 'testing' ? t('cardCreator.settings.test.testing') : t('cardCreator.settings.test.again')}
                   </Button>

@@ -1,8 +1,8 @@
 /* PronunciationAudioPanel — audio subtab bar, item rows, play button, skeleton.
-   Shared checkbox contract (cellAudioItem / cellDefCheckBox / --checked) lives
+   Shared checkbox contract (TihokaAudioItem / TihokaDefCheckBox / --checked) lives
    in DictionaryCheckable.module.css — the unified checkbox SSOT block. */
 
-.cellAudio {
+.TihokaAudio {
   padding: 0 var(--space-2);
 }
 
@@ -10,13 +10,13 @@
    (src/shared/ui/InkTabs), liquid ink-bar animation included. */
 
 /* Item list — gap drives row spacing; no margins on items. */
-.cellAudioItems {
+.TihokaAudioItems {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
 }
 
-.cellAudioReconnect {
+.TihokaAudioReconnect {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -32,25 +32,25 @@
   text-align: left;
 }
 
-.cellAudioReconnectLabel {
+.TihokaAudioReconnectLabel {
   flex: 1;
   min-width: 0;
 }
 
-.cellAudioSkeleton {
+.TihokaAudioSkeleton {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
 }
 
-.cellAudioSkeletonSubtabs {
+.TihokaAudioSkeletonSubtabs {
   display: flex;
   gap: var(--space-2);
   padding: var(--space-0-5) 0 var(--space-1);
 }
 
-/* Mirrors .cellAudioItem: same padding + transparent border box. */
-.cellAudioSkeletonRow {
+/* Mirrors .TihokaAudioItem: same padding + transparent border box. */
+.TihokaAudioSkeletonRow {
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -62,17 +62,17 @@
 /* --color-muted is nearly invisible on light surfaces and 10-16% text was
    too faint on dark — the pulse also halves opacity at its low point, so
    22% text keeps even the dim end perceptible in both themes. */
-.cellAudioSkeletonPart {
+.TihokaAudioSkeletonPart {
   background: color-mix(in srgb, var(--color-text) 22%, var(--color-surface));
   flex-shrink: 0;
 }
 
-/* Mirrors .cellDefCheckBox — 16px square, radius-sm. */
-.cellAudioSkeletonCheck {
+/* Mirrors .TihokaDefCheckBox — 16px square, radius-sm. */
+.TihokaAudioSkeletonCheck {
   border-radius: var(--radius-sm);
 }
 
-.cellAudioSkeletonLabel {
+.TihokaAudioSkeletonLabel {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -80,7 +80,7 @@
   min-width: 0;
 }
 
-.cellAudioPlay {
+.TihokaAudioPlay {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -93,21 +93,21 @@
   opacity: var(--button-primary-dimmed-opacity);
 }
 
-.cellAudioPlay svg {
+.TihokaAudioPlay svg {
   width: var(--iconbutton-icon-sm);
   height: var(--iconbutton-icon-sm);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .cellAudioPlay:hover {
+  .TihokaAudioPlay:hover {
     opacity: 1;
   }
 }
 
-/* Plain text label — the row (.cellAudioItem) is the checkable host, so
+/* Plain text label — the row (.TihokaAudioItem) is the checkable host, so
    this is a non-interactive span. flex:1 keeps the name/meta stack filling
    the space right of the play button; text stays left-aligned. */
-.cellAudioItems .cellAudioLabel {
+.TihokaAudioItems .TihokaAudioLabel {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -116,19 +116,19 @@
   text-align: left;
 }
 
-.cellAudioLabelName,
-.cellAudioLabelMeta {
+.TihokaAudioLabelName,
+.TihokaAudioLabelMeta {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.cellAudioLabelName {
+.TihokaAudioLabelName {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
 }
 
-.cellAudioLabelMeta {
+.TihokaAudioLabelMeta {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
 }

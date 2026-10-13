@@ -62,7 +62,7 @@ export function NoteFieldsEditor({
                 title={t('cardCreator.action.generateFor', [field.label])}
                 trailingIcon={<Icon name="zap" size="sm" />}
                 collapseLabel
-                data-cell-id={`${dataId}-generate`}
+                data-tihoka-id={`${dataId}-generate`}
               >
                 {t('cardCreator.action.create')}
               </Button>
@@ -113,7 +113,7 @@ export function GenerateAllButton({ onClick, disabled, dataId, className }: {
       trailingIcon={<Icon name="zap" size="sm" />}
       collapseLabel
       className={className}
-      data-cell-id={dataId}
+      data-tihoka-id={dataId}
     >
       {t('cardCreator.action.generateAll')}
     </Button>

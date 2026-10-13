@@ -96,7 +96,7 @@ function ImagePreview({ file, onClose }: { file: MediaFile; onClose: () => void 
       role="dialog"
       aria-modal="true"
       aria-label={t('cardCreator.media.preview')}
-      data-cell-id="media-image-preview"
+      data-tihoka-id="media-image-preview"
     >
       <Button
         size="sm"
@@ -131,7 +131,7 @@ function EmptyDropzone({
       className={styles['cc-media__empty']}
       onClick={onAdd}
       disabled={addDisabled}
-      data-cell-id={dataId ? `${dataId}-empty` : undefined}
+      data-tihoka-id={dataId ? `${dataId}-empty` : undefined}
     >
       <Icon name="plus" size="sm" />
       <span>{addLabel}</span>
@@ -195,7 +195,7 @@ function ImageThumb({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       data-index={index}
-      data-cell-id={dataId ? `${dataId}-thumb-${index}` : undefined}
+      data-tihoka-id={dataId ? `${dataId}-thumb-${index}` : undefined}
     >
       {url && <img className={styles['cc-media__img']} src={url} alt={file.filename} />}
       <Button
@@ -208,7 +208,7 @@ function ImageThumb({
           e.stopPropagation();
           onRemove(index);
         }}
-        data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
+        data-tihoka-id={dataId ? `${dataId}-remove-${index}` : undefined}
       >
         <Icon name="x" size="xs" />
       </Button>
@@ -445,7 +445,7 @@ function AudioList({
               className={styles['cc-media__play']}
               onClick={() => onPlay(file)}
               aria-label={t('cardCreator.media.play', [file.filename])}
-              data-cell-id={dataId ? `${dataId}-view-${index}` : undefined}
+              data-tihoka-id={dataId ? `${dataId}-view-${index}` : undefined}
             >
               <Icon name="audioWave" size="xs" />
             </Button>
@@ -457,7 +457,7 @@ function AudioList({
               className={styles['cc-media__row-remove']}
               onClick={() => onRemove(index)}
               aria-label={t('cardCreator.media.remove', [file.filename])}
-              data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
+              data-tihoka-id={dataId ? `${dataId}-remove-${index}` : undefined}
             >
               <Icon name="x" size="sm" />
             </Button>
@@ -581,7 +581,7 @@ export function MediaList({
     >
       <div
         className={dropzoneClass}
-        data-cell-id={dataId}
+        data-tihoka-id={dataId}
         onDragEnter={onFilesDrop ? handleDragEnter : undefined}
         onDragLeave={onFilesDrop ? handleDragLeave : undefined}
         onDragOver={onFilesDrop ? handleDragOver : undefined}
@@ -619,7 +619,7 @@ export function MediaList({
             onClick={onAdd}
             disabled={addDisabled}
             leadingIcon={<Icon name="plus" size="sm" />}
-            data-cell-id={dataId ? `${dataId}-add` : undefined}
+            data-tihoka-id={dataId ? `${dataId}-add` : undefined}
           >
             {addLabel}
           </Button>

@@ -6,9 +6,12 @@ import { DEFAULT_ANKI_STATUS_SYNC_SETTINGS } from '@/shared/config/config';
 import type { Settings } from '@/entities/settings';
 import type {
   AnkiCardLink,
+  AnkiRunEntry,
   AnkiStatusSyncState,
+  AnkiStatusSyncView,
   AnkiSyncTrigger,
 } from '@/entities/ankiStatusSync';
+import { ANKI_RUN_HISTORY_CAP } from '@/entities/ankiStatusSync';
 import type { SrsCard, SrsNote } from '@/entities/srs/types';
 import {
   createDirectInvoker,
@@ -40,13 +43,14 @@ import {
   getAllLinks,
   getLinksByTerm,
   getSyncState,
+  listWriteBackLog,
   listWriteBackQueue,
   putLinks,
   putSyncState,
 } from '../repositories/statusSyncStorage';
 import { ANKI_QUEUE } from '../lib/statusRules';
 
-export const ANKI_STATUS_SYNC_ALARM = 'cell.ankiStatusSync.tick';
+export const ANKI_STATUS_SYNC_ALARM = 'Tihoka.ankiStatusSync.tick';
 export const ANKI_SYNC_PERIOD_MINUTES = 5;
 
 interface CardsInfoRow {
@@ -478,10 +482,35 @@ async function changedCardsViaPoll(
   return changed;
 }
 
+let syncRunning = false;
+
+export function ankiSyncRunning(): boolean {
+  return syncRunning;
+}
+
+function recordRun(
+  state: AnkiStatusSyncState,
+  entry: AnkiRunEntry,
+): readonly AnkiRunEntry[] {
+  return [entry, ...state.history].slice(0, ANKI_RUN_HISTORY_CAP);
+}
+
 /** Run one sync pass (REQ-3/6 + write-back flush). Never throws. */
 export async function runAnkiStatusSync(
   trigger: AnkiSyncTrigger,
   deps: RunDeps = {},
+): Promise<SyncRunResult> {
+  syncRunning = true;
+  try {
+    return await runAnkiStatusSyncInner(trigger, deps);
+  } finally {
+    syncRunning = false;
+  }
+}
+
+async function runAnkiStatusSyncInner(
+  trigger: AnkiSyncTrigger,
+  deps: RunDeps,
 ): Promise<SyncRunResult> {
   const settings = deps.settings ?? (await loadSettings());
   const cfg = settings?.ankiStatusSync ?? DEFAULT_ANKI_STATUS_SYNC_SETTINGS;
@@ -512,6 +541,16 @@ export async function runAnkiStatusSync(
       lastTrigger: trigger,
       consecutiveFailures: state.consecutiveFailures + 1,
       errors: state.errors + 1,
+      history: recordRun(state, {
+        at: now,
+        trigger,
+        cardsSeen: 0,
+        changed: 0,
+        errors: 1,
+        writeBacksFlushed: 0,
+        addonOnline: false,
+        langCode,
+      }),
     });
     if (trigger === 'manual') throw err;
     return { ...empty, ok: true, offline: true };
@@ -621,6 +660,16 @@ export async function runAnkiStatusSync(
     consecutiveFailures: errors > 0 ? state.consecutiveFailures + 1 : 0,
     addonOnline,
     addonCursor: nextCursor,
+    history: recordRun(state, {
+      at: now,
+      trigger,
+      cardsSeen: cards.length,
+      changed,
+      errors,
+      writeBacksFlushed,
+      addonOnline,
+      langCode,
+    }),
   });
 
   return {
@@ -636,6 +685,31 @@ export async function runAnkiStatusSync(
 }
 
 export { getSyncState };
+
+const WB_QUEUE_VIEW_CAP = 50;
+const WB_LOG_VIEW_CAP = 30;
+
+/** Rich view for the settings UI: persisted state + queue + recent log. */
+export async function ankiStatusSyncView(): Promise<AnkiStatusSyncView> {
+  const [state, links, queue, log] = await Promise.all([
+    getSyncState(),
+    getAllLinks(),
+    listWriteBackQueue(Date.now()),
+    listWriteBackLog(),
+  ]);
+  return {
+    ...state,
+    running: syncRunning,
+    linkedCards: links.length,
+    pendingWriteBacks: queue.length,
+    writeBackQueue: [...queue]
+      .sort((a, b) => b.enqueuedAt - a.enqueuedAt)
+      .slice(0, WB_QUEUE_VIEW_CAP),
+    writeBackLog: [...log]
+      .sort((a, b) => b.at - a.at)
+      .slice(0, WB_LOG_VIEW_CAP),
+  };
+}
 
 /** Post-import seed: map every Tihoka SRS card's maturity to wordStatus
  *  (REQ-4 alt flow). Runs after an Anki import completes; never throws. */

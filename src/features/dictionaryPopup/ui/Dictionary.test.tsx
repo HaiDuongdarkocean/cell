@@ -51,7 +51,7 @@ jest.mock('../controller/lookupTargetDom', () => ({
   isReanchorPointerDown: jest.fn(() => false),
   levelIndexForTarget: jest.fn(() => -1),
   setPopupTokenId: jest.fn(),
-  POPUP_OPEN_CLASS: 'cell-popup-open',
+  POPUP_OPEN_CLASS: 'Tihoka-popup-open',
 }));
 jest.mock('../controller/phraseHighlight', () => ({
   computeTextOffset: jest.fn(() => 0),
@@ -64,11 +64,12 @@ jest.mock('./DictionaryPanelView', () => ({
   DictionaryPanelView: function DictionaryPanelViewMock(props: Record<string, unknown>) {
     return (
       <div
-        data-cell-id="dictionary-panel"
+        data-tihoka-id="dictionary-panel"
         data-mock-is-open={String(props.isOpen)}
         data-mock-lang={props.langCode as string}
+        data-mock-header-drag={typeof props.onHeaderPointerDown}
       >
-        {props.initialTerm ? <span data-cell-id="dictionary-mock-initial">{props.initialTerm as string}</span> : null}
+        {props.initialTerm ? <span data-tihoka-id="dictionary-mock-initial">{props.initialTerm as string}</span> : null}
       </div>
     );
   },
@@ -101,6 +102,21 @@ describe('Dictionary', () => {
     expect(panel).toBeInTheDocument();
     expect(panel).toHaveAttribute('data-mock-is-open', 'true');
     expect(panel).toHaveAttribute('data-mock-lang', 'en');
+  });
+
+  it('wires the candidate header row as the drag surface in popup mode', () => {
+    render(
+      <Dictionary
+        variant="popup"
+        langCode="en"
+        sourceLang="en"
+        targetLang="vi"
+        anchor={defaultAnchor}
+        onClose={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('dictionary-panel')).toHaveAttribute('data-mock-header-drag', 'function');
   });
 
   it('passes the search term to the popup panel', () => {

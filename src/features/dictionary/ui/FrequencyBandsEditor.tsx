@@ -63,14 +63,7 @@ export function FrequencyBandsEditor({ value, onChange }: FrequencyBandsEditorPr
   const isDefault = FIELDS.every(({ key }) => bands[key] === DEFAULT_FREQUENCY_BANDS[key]);
 
   return (
-    <div className={styles.bands} data-cell-id="frequency-bands-editor">
-      <div className={styles.bandsHead}>
-        <span className={styles.bandsTitle}>{t('resources.bands.title')}</span>
-        <p className={styles.bandsHint}>
-          {t('resources.bands.hint')}
-        </p>
-      </div>
-
+    <div className={styles.bands} data-tihoka-id="frequency-bands-editor">
       <div className={styles.bandRows}>
         {FIELDS.map(({ key, label, hint }) => (
           <div key={key} className={styles.bandRow}>
@@ -87,7 +80,7 @@ export function FrequencyBandsEditor({ value, onChange }: FrequencyBandsEditorPr
                 value={bands[key]}
                 onChange={(e) => commit(key, e.target.value)}
                 aria-label={t('resources.bands.aria', [t(label)])}
-                data-cell-id={`band-input-${key}`}
+                data-tihoka-id={`band-input-${key}`}
               />
             </span>
           </div>
@@ -99,7 +92,7 @@ export function FrequencyBandsEditor({ value, onChange }: FrequencyBandsEditorPr
           variant="ghost"
           size="sm"
           onClick={reset}
-          data-cell-id="bands-reset"
+          data-tihoka-id="bands-reset"
         >
           {t('resources.bands.reset')}
         </Button>

@@ -65,7 +65,7 @@ export function CardCreatorSettingsSidePanel({
       onClose={onClose}
       side="left"
       ariaLabel={t('settings.title')}
-      dataCellId="card-creator-settings-layer"
+      dataTihokaId="card-creator-settings-layer"
       dataSection="cardCreator"
     >
       <CardCreatorSettingsPanel

@@ -1,15 +1,15 @@
 /* Panel owns no padding — each region sets its own 16px so the divider
  * and footer border run full width without negative-margin hacks. */
-[data-cell-id='delete-confirm-modal'] > [role='dialog'] {
+[data-tihoka-id='delete-confirm-modal'] > [role='dialog'] {
   padding: 0;
 }
 
-[data-cell-id='delete-confirm-modal'] > [role='dialog'] > :first-child {
+[data-tihoka-id='delete-confirm-modal'] > [role='dialog'] > :first-child {
   margin-bottom: 0;
   padding: var(--space-4) var(--space-4) 0;
 }
 
-[data-cell-id='delete-confirm-modal'] > [role='dialog'] > :last-child {
+[data-tihoka-id='delete-confirm-modal'] > [role='dialog'] > :last-child {
   margin-top: 0;
   padding: var(--space-4);
 }

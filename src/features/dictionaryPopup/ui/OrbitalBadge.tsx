@@ -378,7 +378,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
 
   return (
     <div
-      className={[styles.host, 'js-cell-orbital-badge', expanded ? styles.expanded : styles.collapsed, dragging && styles.dragging].filter(Boolean).join(' ')}
+      className={[styles.host, 'js-Tihoka-orbital-badge', expanded ? styles.expanded : styles.collapsed, dragging && styles.dragging].filter(Boolean).join(' ')}
       style={{
         left: 0,
         top: 0,
@@ -387,8 +387,8 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
         transform: `translate3d(${displayedCenter.x - badgeSize / 2}px, ${displayedCenter.y - badgeSize / 2}px, 0)`,
       }}
       data-edge={isAtEdge ? edge : undefined}
-      data-cell-id="orbital-badge"
-      data-cell-no-ripple
+      data-tihoka-id="orbital-badge"
+      data-tihoka-no-ripple
       aria-label={t('dict.badge.aria')}
       role="button"
       onPointerDown={gesture.onPointerDown}
@@ -400,7 +400,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
         className={styles.badge}
         style={{ width: badgeSize, height: badgeSize }}
         aria-label={expanded ? t('dict.badge.drag') : t('dict.badge.open')}
-        data-cell-id="orbital-badge-button"
+        data-tihoka-id="orbital-badge-button"
       />
       {(expanded || !isAtEdge || collapsedAtEdge) && (
         <div
@@ -414,7 +414,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
               ? `translate3d(${edge === 'left' ? iconShift : edge === 'right' ? -iconShift : 0}px, ${edge === 'top' ? iconShift : edge === 'bottom' ? -iconShift : 0}px, 0)`
               : `translate3d(${pointerCenter.x - displayedCenter.x}px, ${pointerCenter.y - displayedCenter.y}px, 0)`,
           }}
-          data-cell-id="orbital-pointer"
+          data-tihoka-id="orbital-pointer"
           aria-hidden="true"
         >
           {collapsedAtEdge && (

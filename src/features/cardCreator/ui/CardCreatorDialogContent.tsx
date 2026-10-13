@@ -175,7 +175,7 @@ export function CardCreatorDialogContent({
       onClick={() => setSettingsOpen(true)}
       aria-label={t('settings.title')}
       title={t('settings.title')}
-      data-cell-id="cc-settings"
+      data-tihoka-id="cc-settings"
     >
       <Icon name="settings" />
     </Button>
@@ -189,7 +189,7 @@ export function CardCreatorDialogContent({
       disabled={!hasQueue}
       aria-label={hasQueue ? (queueSidebarOpen ? t('cardCreator.queue.hide') : t('cardCreator.queue.show')) : t('cardCreator.queue.empty')}
       title={hasQueue ? (queueSidebarOpen ? t('cardCreator.queue.hide') : t('cardCreator.queue.show')) : t('cardCreator.queue.empty')}
-      data-cell-id="cc-queue-toggle"
+      data-tihoka-id="cc-queue-toggle"
     >
       <Icon name="panelRight" />
     </Button>
@@ -199,7 +199,7 @@ export function CardCreatorDialogContent({
     <div className={containerClass}>
       {/* Alert: no recent card */}
       {showNoRecentAlert && (
-        <div className={styles['cc-dialog__alert']} role="status" data-cell-id="cc-alert-no-recent">
+        <div className={styles['cc-dialog__alert']} role="status" data-tihoka-id="cc-alert-no-recent">
           <Icon name="info" className={styles['cc-dialog__alert-icon']} />
           <span>{t('cardCreator.alert.noRecent')}</span>
         </div>
@@ -209,7 +209,7 @@ export function CardCreatorDialogContent({
         <div
           className={`${styles['cc-dialog__alert']} ${styles['cc-dialog__alert--error']}`}
           role="alert"
-          data-cell-id="cc-alert-error"
+          data-tihoka-id="cc-alert-error"
         >
           <Icon name="alertCircle" className={styles['cc-dialog__alert-icon']} />
           <span>{t('cardCreator.alert.error', [loadError])}</span>
@@ -250,7 +250,7 @@ export function CardCreatorDialogContent({
         langCode={state.sourceLang}
         onTokenClick={state.lookupTerm}
         dataId="cc-preview"
-        showReadings={appSettings?.showReadings}
+        readingDisplay={appSettings?.readingDisplay}
       />
 
       {/* Section: Fields */}
@@ -285,7 +285,7 @@ export function CardCreatorDialogContent({
               aria-label={t('cardCreator.updateMode.label')}
               menuAlign="auto"
               className={styles['cc-dialog__select']}
-              data-cell-id="cc-update-mode"
+              data-tihoka-id="cc-update-mode"
             />
           </div>
         )}
@@ -295,7 +295,7 @@ export function CardCreatorDialogContent({
             size="sm"
             onClick={() => setConfirmOpen(true)}
             disabled={submitting}
-            data-cell-id="cc-clear"
+            data-tihoka-id="cc-clear"
           >
             {t('cardCreator.action.clear')}
           </Button>
@@ -304,7 +304,7 @@ export function CardCreatorDialogContent({
             size="sm"
             onClick={() => { void submit('add'); }}
             disabled={submitting}
-            data-cell-id="cc-add"
+            data-tihoka-id="cc-add"
           >
             {t('cardCreator.action.add')}
           </Button>
@@ -314,7 +314,7 @@ export function CardCreatorDialogContent({
               size="sm"
               onClick={() => { void submit('update'); }}
               disabled={submitting || recentNoteId === null}
-              data-cell-id="cc-update"
+              data-tihoka-id="cc-update"
             >
               {t('cardCreator.action.update')}
             </Button>
@@ -326,12 +326,12 @@ export function CardCreatorDialogContent({
           undo button lives inside the queue panel, so they are filtered out
           here to avoid a dead-end duplicate message. */}
       {toasts.some((toast) => !toast.undoable) && (
-        <div className={styles['cc-toast-stack']} role="status" data-cell-id="cc-toast-stack">
+        <div className={styles['cc-toast-stack']} role="status" data-tihoka-id="cc-toast-stack">
           {toasts.filter((toast) => !toast.undoable).map((toast) => (
             <div
               key={toast.id}
               className={`${styles['cc-toast']} ${styles[`cc-toast--${toast.kind}`]}`}
-              data-cell-id={`cc-toast-${toast.id}`}
+              data-tihoka-id={`cc-toast-${toast.id}`}
               data-toast-kind={toast.kind}
             >
               <Icon
@@ -355,14 +355,14 @@ export function CardCreatorDialogContent({
         title={t('cardCreator.clearConfirm.title')}
         description={t('cardCreator.clearConfirm.description')}
         showCloseButton
-        data-cell-id="cc-clear-confirm-dialog"
+        data-tihoka-id="cc-clear-confirm-dialog"
         footer={
           <>
             <Button
               variant="secondary"
               size="sm"
               onClick={() => setConfirmOpen(false)}
-              data-cell-id="cc-clear-confirm-cancel"
+              data-tihoka-id="cc-clear-confirm-cancel"
             >
               {t('cardCreator.clearConfirm.cancel')}
             </Button>
@@ -370,7 +370,7 @@ export function CardCreatorDialogContent({
               variant="destructive"
               size="sm"
               onClick={handleClear}
-              data-cell-id="cc-clear-confirm-confirm"
+              data-tihoka-id="cc-clear-confirm-confirm"
             >
               {t('cardCreator.clearConfirm.confirm')}
             </Button>
@@ -401,7 +401,7 @@ export function CardCreatorDialogContent({
         <div
           ref={contentRef}
           className={styles['cc-dialog--panel']}
-          data-cell-id="card-creator-content"
+          data-tihoka-id="card-creator-content"
         >
           <div className={styles['cc-dialog__panel-header']}>
             {headerSettings}
@@ -444,7 +444,7 @@ export function CardCreatorDialogContent({
       <div
         ref={contentRef}
         className={hasQueue ? withQueueClass : undefined}
-        data-cell-id="card-creator-content"
+        data-tihoka-id="card-creator-content"
       >
         {body}
         {queueItems.length > 0 && queueSidebarOpen && (
