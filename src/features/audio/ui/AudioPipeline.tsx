@@ -2,8 +2,6 @@ import { type ReactElement } from 'react';
 import { t, type MessageKey } from '@/shared/i18n';
 import type { AudioEngineKind } from '@/entities/settings/types';
 import { Button } from '@/shared/ui/Button';
-import { Icon } from '@/shared/ui/Icon';
-import type { ICON_CATALOG } from '@/shared/icons';
 import styles from './AudioPipeline.module.css';
 
 export interface AudioPipelineProps {
@@ -28,18 +26,10 @@ const STATUS_LABEL_KEYS: Record<'ready' | 'missing' | 'disabled', MessageKey> = 
   disabled: 'audio.engine.status.disabled',
 };
 
-/** Icon name from the design system catalog for each engine. */
-const ENGINE_ICONS: Record<AudioEngineKind, keyof typeof ICON_CATALOG> = {
-  localFile: 'folderOpen',
-  native: 'audioWave',
-  supertonic: 'download',
-  browserTts: 'play',
-  espeak: 'settings',
-};
-
 /**
- * Renders a horizontal audio source pipeline where each step is a clickable
- * pill showing an icon, label, and status dot.
+ * Renders the audio source order as a numbered rail: circles 1..n joined by a
+ * line, labels alternating above/below so they never collide. The whole column
+ * (label + node) is the click target; the node fill carries the status color.
  */
 export function AudioPipeline({
   engines,
@@ -52,30 +42,37 @@ export function AudioPipeline({
       {engines.map((engine, index) => {
         const status = statuses[engine] ?? 'disabled';
         const isSelected = selected === engine;
+        const label = t(ENGINE_LABEL_KEYS[engine]);
+        const above = index % 2 === 1;
+        const labelEl = (
+          <span className={`${styles.label} ${isSelected ? styles.labelSelected : ''}`}>
+            {label}
+          </span>
+        );
 
         return (
           <div key={engine} className={styles.stepWrapper} role="listitem">
             <Button
-              variant="transparent"
-              ripple={false}
+              variant="unstyled"
               className={`${styles.step} ${isSelected ? styles.selected : ''}`}
               onClick={() => onSelect(engine)}
               aria-pressed={isSelected}
-              aria-label={`${t(ENGINE_LABEL_KEYS[engine])} (${t(STATUS_LABEL_KEYS[status])})`}
+              aria-label={`${index + 1}. ${label} (${t(STATUS_LABEL_KEYS[status])})`}
             >
-              <span
-                className={`${styles.dot} ${styles[status]}`}
-                data-status={status}
-                aria-hidden="true"
-              />
-              <Icon name={ENGINE_ICONS[engine]} size="sm" />
-              <span className={styles.label}>{t(ENGINE_LABEL_KEYS[engine])}</span>
-            </Button>
-            {index < engines.length - 1 && (
-              <span className={styles.arrow} aria-hidden="true">
-                →
+              <span className={styles.slot}>{above ? labelEl : null}</span>
+              <span className={styles.railRow} aria-hidden="true">
+                <span
+                  className={styles.lead}
+                  style={{ visibility: index === 0 ? 'hidden' : undefined }}
+                />
+                <span className={`${styles.node} ${styles[status]}`}>{index + 1}</span>
+                <span
+                  className={styles.lead}
+                  style={{ visibility: index === engines.length - 1 ? 'hidden' : undefined }}
+                />
               </span>
-            )}
+              <span className={styles.slot}>{above ? null : labelEl}</span>
+            </Button>
           </div>
         );
       })}

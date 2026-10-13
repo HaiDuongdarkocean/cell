@@ -1,16 +1,33 @@
+/* Panel owns no padding — each region sets its own 16px so the divider
+ * and footer border run full width without negative-margin hacks. */
+[data-cell-id='delete-confirm-modal'] > [role='dialog'] {
+  padding: 0;
+}
+
+[data-cell-id='delete-confirm-modal'] > [role='dialog'] > :first-child {
+  margin-bottom: 0;
+  padding: var(--space-4) var(--space-4) 0;
+}
+
+[data-cell-id='delete-confirm-modal'] > [role='dialog'] > :last-child {
+  margin-top: 0;
+  padding: var(--space-4);
+}
+
 .divider {
-  margin: 0 calc(-1 * var(--dialog-padding)) var(--space-4);
+  margin: var(--space-4) 0;
   border-top-color: var(--color-border-emphasized);
 }
 
 .description {
-  margin: 0;
+  margin: 0 0 var(--space-4);
+  padding: 0 var(--space-4);
   color: var(--color-text-secondary);
   line-height: var(--leading-normal);
 }
 
 .subject {
-  margin-top: var(--space-4);
+  margin: var(--space-4);
   padding: var(--space-3) var(--space-4);
   border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-lg);

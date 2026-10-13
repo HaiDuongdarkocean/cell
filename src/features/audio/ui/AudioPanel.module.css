@@ -1,14 +1,72 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  /* Sibling groups get their rhythm from SettingsGroup's `.group + .group`
+     margin (16px) — same as Resources — so this container must not add gap. */
 }
 
-/* Proximity groups — related controls sit closer than unrelated ones. */
-.group {
+.groupLabel {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+}
+
+.subLabel {
+  color: var(--color-text-primary);
+}
+
+/* The ⓘ hint must stay visually below the row title it annotates — the
+   shared button is sm; shrink the glyph so it reads as a footnote, not a
+   peer of the label. */
+.panel [data-cell-id='audio-mode-hint'] svg {
+  /* Button's sm-circle icon rules out-specify a plain descendant selector;
+     this local size override must win to keep the hint smaller than the
+     label it annotates. */
+  width: var(--font-size-sm) !important;
+  height: var(--font-size-sm) !important;
+  color: var(--color-text-disabled);
+}
+
+.advancedToggle {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-1) 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.advancedToggle:hover {
+  color: var(--color-text-primary);
+}
+
+.advancedToggle:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.advancedLabel {
+  color: var(--color-text-primary);
+  font-size: var(--text-label-font-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--text-label-line-height);
+  letter-spacing: var(--text-label-letter-spacing);
+}
+
+.advancedToggle svg {
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.advancedToggle[data-open="true"] svg {
+  transform: rotate(180deg);
+}
+
+.advancedModes {
+  padding-block-start: var(--space-2);
 }
 
 .status {

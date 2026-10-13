@@ -6,9 +6,9 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-3);
-  border: none;
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
-  background: var(--color-field);
+  background: var(--color-surface);
 }
 
 .header {

@@ -17,8 +17,8 @@
 // inside the Audio card rendered by SettingsDialogContent.
 
 import { useMemo, useState, type ReactElement } from 'react';
-import { t } from '@/shared/i18n';
-import { Button, Icon, Input, SegmentedControl, Select, SettingsGroup, SettingsRow } from '@/shared/ui';
+import { t, type MessageKey } from '@/shared/i18n';
+import { Button, Collapsible, Icon, Input, SegmentedControl, Select, SettingsGroup, SettingsRow } from '@/shared/ui';
 import type {
   AudioEngineKind,
   PronunciationSettings,
@@ -54,14 +54,16 @@ const ALL_ENGINES: readonly AudioEngineKind[] = [
 ];
 
 /** Autoplay count options (matches DEFAULT_TTS_SETTINGS range 0–3). */
-const AUTOPLAY_OPTIONS = [
-  { value: '0', label: '0' },
-  { value: '1', label: '1' },
-  { value: '2', label: '2' },
-  { value: '3', label: '3' },
-];
+const AUTOPLAY_OPTION_KEYS = [
+  { value: '0', label: 'audio.autoplay.option.off' },
+  { value: '1', label: 'audio.autoplay.option.one' },
+  { value: '2', label: 'audio.autoplay.option.two' },
+  { value: '3', label: 'audio.autoplay.option.three' },
+] as const satisfies readonly { value: string; label: MessageKey }[];
 
-/** Voice character is a UI-only concept for now (no persisted field). */
+const AUTO_MODE = OUTPUT_MODES.find((m) => m.value === 'auto')!;
+const ADVANCED_MODES = OUTPUT_MODES.filter((m) => m.value !== 'auto');
+
 /** Language used by the compact tester. */
 const TEST_LANG_CODE = 'en';
 
@@ -85,6 +87,7 @@ export function AudioPanel({
 }: AudioPanelProps): ReactElement {
   const engines = pronunciation.fallbackEngines;
   const [selected, setSelected] = useState<AudioEngineKind | null>(null);
+  const [modesOpen, setModesOpen] = useState(false);
   const [testText, setTestText] = useState('');
   const [testStatus, setTestStatus] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
@@ -95,6 +98,8 @@ export function AudioPanel({
     selected && engines.includes(selected) ? selected : (engines[0] ?? null);
 
   const activeMode = detectMode(engines);
+  const advancedActive = activeMode !== null && activeMode !== 'auto';
+  const advancedVisible = modesOpen || advancedActive;
 
   const statuses = useMemo(() => {
     const map = {} as Record<AudioEngineKind, EngineStatus>;
@@ -150,8 +155,11 @@ export function AudioPanel({
 
   return (
     <div className={styles.panel} data-cell-id="audio-panel">
-      {/* Sources group: output mode → pipeline → selected source detail. */}
-      <div className={styles.group}>
+      {/* Sources: pick a mode → see the order → configure a source → hear it. */}
+      <SettingsGroup
+        label={<span className={styles.groupLabel}>{t('audio.group.sources')}</span>}
+        description={t('audio.group.sources.desc')}
+      >
         <SettingsRow
           dense
           stacked
@@ -161,20 +169,52 @@ export function AudioPanel({
           hintTestId="audio-mode-hint"
         >
           <SegmentedControl
-            variant="filled"
+            variant="raised"
             ariaLabel={t('audio.outputMode.aria')}
-            options={OUTPUT_MODES.map((mode) => ({
-              value: mode.value,
-              label: t(mode.label),
-              title: t(mode.desc),
-              testId: `audio-mode-${mode.value}`,
-            }))}
-            value={activeMode}
+            options={[
+              {
+                value: AUTO_MODE.value,
+                label: t(AUTO_MODE.label),
+                title: t(AUTO_MODE.desc),
+                testId: `audio-mode-${AUTO_MODE.value}`,
+              },
+            ]}
+            value={activeMode === 'auto' ? 'auto' : null}
             onChange={handleModeChange}
           />
+          <button
+            type="button"
+            className={styles.advancedToggle}
+            onClick={() => setModesOpen((o) => !o)}
+            aria-expanded={advancedVisible}
+            data-open={advancedVisible}
+            data-cell-id="audio-advanced-toggle"
+          >
+            <span className={styles.advancedLabel}>
+              {t('audio.modes.advanced')}
+              {advancedActive ? ` · ${t(ADVANCED_MODES.find((m) => m.value === activeMode)!.label)}` : ''}
+            </span>
+            <Icon name="chevronDown" size={16} />
+          </button>
+          <Collapsible collapsed={!advancedVisible}>
+            <div className={styles.advancedModes}>
+              <SegmentedControl
+              variant="raised"
+              ariaLabel={t('audio.modes.advanced.aria')}
+              options={ADVANCED_MODES.map((mode) => ({
+                value: mode.value,
+                label: t(mode.label),
+                title: t(mode.desc),
+                testId: `audio-mode-${mode.value}`,
+              }))}
+              value={advancedActive ? activeMode : null}
+              onChange={handleModeChange}
+            />
+            </div>
+          </Collapsible>
         </SettingsRow>
 
-        <SettingsGroup label={t('audio.pipeline.title')}>
+        <SettingsGroup label={<span className={styles.subLabel}>{t('audio.pipeline.title')}</span>}>
           <AudioPipeline
             engines={[...engines]}
             selected={selectedEngine}
@@ -193,10 +233,9 @@ export function AudioPanel({
             onTtsChange={onTtsChange}
           />
         )}
-      </div>
 
-      {/* Playback group: tester + autoplay. */}
-      <div className={styles.group}>
+        {/* Try it closes the pick→hear loop; it sits right after the source
+            detail so the user does not scroll past it to test a change. */}
         <SettingsRow dense stacked title={t('audio.tester.label')} labelFor="audio-tester-input">
           <Input
             id="audio-tester-input"
@@ -208,7 +247,7 @@ export function AudioPanel({
             placeholder={t('audio.tester.placeholder')}
             aria-label={t('audio.tester.inputAria')}
             data-cell-id="audio-tester-input"
-            size="lg"
+            size="md"
             suffix={
               <Button
                 variant="primary"
@@ -230,18 +269,21 @@ export function AudioPanel({
             </p>
           )}
         </SettingsRow>
+      </SettingsGroup>
 
+      {/* Playback: behaviour applied after the sources are decided. */}
+      <SettingsGroup label={<span className={styles.groupLabel}>{t('audio.group.playback')}</span>}>
         <SettingsRow dense stacked title={t('audio.autoplay.label')} labelFor="audio-autoplay">
           <Select
             id="audio-autoplay"
             value={String(tts.autoplayCount)}
-            options={AUTOPLAY_OPTIONS}
+            options={AUTOPLAY_OPTION_KEYS.map((o) => ({ value: o.value, label: t(o.label) }))}
             onChange={(v) => onTtsChange({ ...tts, autoplayCount: Number(v) })}
             data-cell-id="audio-autoplay"
             aria-label={t('audio.autoplay.aria')}
           />
         </SettingsRow>
-      </div>
+      </SettingsGroup>
     </div>
   );
 }

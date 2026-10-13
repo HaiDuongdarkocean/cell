@@ -92,7 +92,7 @@ describe('AudioPanel', () => {
     expect(screen.getByTestId('audio-tester-play')).toBeInTheDocument();
 
     // Autoplay.
-    expect(screen.getByText('Autoplay')).toBeInTheDocument();
+    expect(screen.getByText('Autoplay up to')).toBeInTheDocument();
 
     // Pipeline + detail pane for the first engine in the fallback chain.
     expect(screen.getByRole('list', { name: 'Audio source order' })).toBeInTheDocument();
@@ -146,10 +146,33 @@ describe('AudioPanel', () => {
     );
   });
 
+  it('keeps advanced modes behind a disclosure that opens on demand', () => {
+    renderPanel();
+
+    const toggle = screen.getByTestId('audio-advanced-toggle');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveTextContent('More modes');
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('stays open and names the mode when an advanced mode is active', () => {
+    renderPanel({
+      pronunciation: makePronunciation({
+        fallbackEngines: ['localFile', 'espeak', 'supertonic'],
+      }),
+    });
+
+    const toggle = screen.getByTestId('audio-advanced-toggle');
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(toggle).toHaveTextContent('More modes · Offline');
+  });
+
   it('updates the detail pane when a pipeline step is selected', () => {
     renderPanel();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Browser voice (ready)' }));
+    fireEvent.click(screen.getByRole('button', { name: /Browser voice \(/ }));
 
     expect(screen.getByTestId('source-detail-panel')).toHaveAttribute(
       'data-engine',
@@ -165,7 +188,7 @@ describe('AudioPanel', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Number of audios to autoplay' }),
     );
-    fireEvent.click(screen.getByRole('option', { name: '2' }));
+    fireEvent.click(screen.getByRole('option', { name: '2 times' }));
 
     expect(onTtsChange).toHaveBeenCalledWith(
       expect.objectContaining({ autoplayCount: 2 }),
