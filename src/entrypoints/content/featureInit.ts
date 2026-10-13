@@ -1,4 +1,4 @@
-declare const __CELL_FAST_BUILD__: boolean;
+declare const __Tihoka_FAST_BUILD__: boolean;
 
 import { onStorageChanged } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
@@ -15,7 +15,7 @@ import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigg
 import { modifierMatches, type LookupRequest, type TriggerMode } from '@/entities/dictionary';
 import { findAndInitOverlay } from './videoOverlay';
 import { isEditableTarget } from '@/shared/lib/dom/isEditable';
-import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/cellUiHosts';
+import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/TihokaUiHosts';
 import type { KeyboardShortcut, ShortcutAction } from '@/entities/settings/types';
 import { startMediaScoreSource } from '@/features/subtitle/logic/mediaScoreSource';
 import { startTextScoreSource } from '@/features/tokenize/services/textScoreSource';
@@ -92,7 +92,7 @@ function focusDictionarySearchInput(attempts = 20): void {
   const input = document
     .getElementById(UNIVERSAL_PANEL_HOST_ID)
     ?.shadowRoot
-    ?.querySelector<HTMLInputElement>('[data-cell-id="dictionary-search-input"]');
+    ?.querySelector<HTMLInputElement>('[data-tihoka-id="dictionary-search-input"]');
   if (input) {
     input.focus();
   } else if (attempts > 0) {
@@ -130,7 +130,7 @@ export function installUniversalPanelShortcut(): void {
     );
     if (!binding?.key) return;
     const realTarget = e.composedPath()[0] ?? e.target;
-    if (realTarget instanceof HTMLElement && realTarget.closest('[data-cell-keycapture]')) return;
+    if (realTarget instanceof HTMLElement && realTarget.closest('[data-tihoka-keycapture]')) return;
     // Ctrl/Alt combos can't produce a character — safe inside editable fields
     // (the panel autofocuses its search input). Bare keys and Shift combos do
     // type characters, so they stay editable-guarded.
@@ -249,14 +249,14 @@ export async function initTokenize(): Promise<void> {
     const settings = await loadSettings();
     const langCode = getActiveProfileSettings(settings)?.resourceLangCode
       ?? (settings.subtitleOverlayTargetLanguage || 'en');
-    const showReadings = settings.showReadings ?? false;
-    const showGlosses = settings.showWordTranslations ?? false;
+    const readingDisplay = settings.readingDisplay ?? 'off';
+    const glossDisplay = settings.glossDisplay ?? 'off';
     const glossTargetLanguage = settings.subtitleOverlayNativeLanguage ?? '';
     if (webTokenizeCtrl && tokenizeLang === langCode) {
-      // Settings change mid-session: push the annotation toggles into the live
+      // Settings change mid-session: push the annotation modes into the live
       // controller instead of rebuilding it (same path local-player takes).
-      webTokenizeCtrl.setShowReadings?.(showReadings);
-      webTokenizeCtrl.setShowGlosses?.(showGlosses);
+      webTokenizeCtrl.setReadingDisplay?.(readingDisplay);
+      webTokenizeCtrl.setGlossDisplay?.(glossDisplay);
       webTokenizeCtrl.setGlossTargetLanguage?.(glossTargetLanguage);
       return;
     }
@@ -269,13 +269,13 @@ export async function initTokenize(): Promise<void> {
       url: window.location.href,
       root: document.body,
       langCode,
-      showReadings,
-      showGlosses,
+      readingDisplay,
+      glossDisplay,
       glossTargetLanguage,
       onOpenDictionary: (term, element, contextSentence, event, cursorOffset) => {
         const ctrl = ensureWebTextCtrl();
         if (!tokenLookupEnabled || !modifierMatches(tokenLookupMode, event)) return;
-        const wordEl = element.querySelector('.js-cell-token-word');
+        const wordEl = element.querySelector('.js-Tihoka-token-word');
         const range = document.createRange();
         if (wordEl) {
           range.selectNodeContents(wordEl);
@@ -329,9 +329,9 @@ export function installSettingsReloader(): void {
 
 // === OCR (Orca) + study mode — lazily loaded at runtime.
 // `build:fast` skips these heavy optional features entirely at build time
-// via the __CELL_FAST_BUILD__ compile-time flag.
+// via the __Tihoka_FAST_BUILD__ compile-time flag.
 export async function initHeavyFeatures(isTopFrame: boolean): Promise<void> {
-  if (__CELL_FAST_BUILD__) return;
+  if (__Tihoka_FAST_BUILD__) return;
   window.addEventListener('vite:preloadError', (e) => e.preventDefault());
   const studyModeInit = import('@/features/studyModes/content/studyModeController')
     .then(({ initializeStudyModeController }) => initializeStudyModeController());

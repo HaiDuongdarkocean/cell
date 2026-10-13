@@ -163,16 +163,16 @@ export function Showcase(): ReactElement {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const g = globalThis as { __cellSendMessage?: (m: unknown) => Promise<unknown> };
-    const previous = g.__cellSendMessage;
-    g.__cellSendMessage = handleWordStatusMessage;
+    const g = globalThis as { __TihokaSendMessage?: (m: unknown) => Promise<unknown> };
+    const previous = g.__TihokaSendMessage;
+    g.__TihokaSendMessage = handleWordStatusMessage;
     let cancelled = false;
     void seedVocabulary(LANG).then(() => {
       if (!cancelled) setReady(true);
     });
     return () => {
       cancelled = true;
-      g.__cellSendMessage = previous;
+      g.__TihokaSendMessage = previous;
     };
   }, []);
 

@@ -86,7 +86,7 @@ export function VideoCard({
     <Card
       variant={selected ? 'selected' : downloading ? 'default' : 'interactive'}
       className={`${styles.card} ${cardAnimations.fadeIn} ${downloading ? styles.downloading : ''}`}
-      data-cell-id="video-card"
+      data-tihoka-id="video-card"
       data-id={video.id}
     >
       <VStack>
@@ -108,18 +108,18 @@ export function VideoCard({
 
         {/* Body */}
         <div className={styles.body}>
-          <div className={styles.title} data-cell-id="video-title">{displayTitle ?? video.title}</div>
+          <div className={styles.title} data-tihoka-id="video-title">{displayTitle ?? video.title}</div>
           <Flex align="center" gap="1" wrap="wrap" className={styles.tagRow}>
-            <span className={styles.formatTag} data-cell-id="video-format">{video.format}</span>
+            <span className={styles.formatTag} data-tihoka-id="video-format">{video.format}</span>
             {selectedVariant?.quality && selectedVariant.quality !== 'auto' && (
-              <span className={styles.qualityTag} data-cell-id="video-quality">{selectedVariant.quality}</span>
+              <span className={styles.qualityTag} data-tihoka-id="video-quality">{selectedVariant.quality}</span>
             )}
             {downloading ? (
               <span className={styles.meta}>{t('downloads.media.downloading')}</span>
             ) : (
               <>
                 {selectedVariant?.size && (
-                  <span className={styles.meta} data-cell-id="video-size">
+                  <span className={styles.meta} data-tihoka-id="video-size">
                     {formatFileSizeOrUnknown(selectedVariant.size)}
                   </span>
                 )}
@@ -159,7 +159,7 @@ export function VideoCard({
             onClick={handleExpandClick}
             aria-label={urlExpanded ? t('downloads.media.hideUrl') : t('downloads.media.showUrl')}
             aria-expanded={urlExpanded}
-            data-cell-id="expand-url-btn"
+            data-tihoka-id="expand-url-btn"
           >
             <Icon
               name="chevronDown"
@@ -178,7 +178,7 @@ export function VideoCard({
                 variant="ghost"
                 onClick={handleActionClick}
                 aria-label={t('downloads.action.download')}
-                data-cell-id="download-button"
+                data-tihoka-id="download-button"
               >
                 <Icon name="download" size={18}  />
               </Button>
@@ -189,20 +189,20 @@ export function VideoCard({
 
       {/* === URL panel — only when expanded === */}
       {urlExpanded && (
-        <HStack align="center" gap="2" className={`${styles.urlPanel} ${cardAnimations.urlPanel}`} data-cell-id="url-row">
+        <HStack align="center" gap="2" className={`${styles.urlPanel} ${cardAnimations.urlPanel}`} data-tihoka-id="url-row">
           <Button
             variant="ghost"
             size="xs"
             className={styles.copyBtn}
             trailingIcon={<Icon name="copy" size={18}  />}
             onClick={(e) => { void handleUrlClick(e); }}
-            data-cell-id="video-url"
+            data-tihoka-id="video-url"
             title={t('downloads.media.copyUrl')}
             aria-label={t('downloads.media.copyUrl')}
           >
             <span className={styles.urlText}>{video.url}</span>
           </Button>
-          {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-cell-id="copied-toast">{t('downloads.media.copied')}</span>}
+          {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-tihoka-id="copied-toast">{t('downloads.media.copied')}</span>}
         </HStack>
       )}
       </VStack>

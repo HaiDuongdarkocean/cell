@@ -2,7 +2,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis';
 import { cacheSubtitleBody } from '@/features/subtitle/logic/subtitleResponseCache';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { subtitleSignalSchema } from '@/features/detection/subtitleDiscovery/schema';
-import { isCellDebug } from './debugLog';
+import { isTihokaDebug } from './debugLog';
 import { isResolvableHttpOrigin } from '@/shared/lib/dom/frameOrigin';
 
 // Dedup state for the MAIN-world re-post handshakes (ADR-020/028/029). The
@@ -63,7 +63,7 @@ export function installMainWorldBridge(): void {
     // iframes (playembed.vip, vidnest, etc.) also post to window.parent.
     // Both paths are untrusted: validate the signal schema and take the origin
     // from event.origin (browser-enforced), never the self-reported fields.
-    if (dataEarly?.type === '__CELL_SUBTITLE_DISCOVERY') {
+    if (dataEarly?.type === '__Tihoka_SUBTITLE_DISCOVERY') {
       try {
         if (!isResolvableHttpOrigin(event.origin)) return;
         const parsed = subtitleSignalSchema.safeParse(
@@ -77,12 +77,12 @@ export function installMainWorldBridge(): void {
         if (signal.kind === 'network-response' && signal.body) {
           cacheSubtitleBody(signal.url, signal.body);
         }
-        if (isCellDebug() && event.source !== window) {
-          const raw = document.documentElement.getAttribute('data-cell-iframe-discovery-log');
+        if (isTihokaDebug() && event.source !== window) {
+          const raw = document.documentElement.getAttribute('data-tihoka-iframe-discovery-log');
           const arr: unknown[] = raw ? JSON.parse(raw) : [];
           arr.push({ t: Date.now(), kind: signal.kind, origin: trustedOrigin });
           if (arr.length > 200) arr.splice(0, arr.length - 200);
-          document.documentElement.setAttribute('data-cell-iframe-discovery-log', JSON.stringify(arr));
+          document.documentElement.setAttribute('data-tihoka-iframe-discovery-log', JSON.stringify(arr));
         }
         const nonce = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
           ? crypto.randomUUID()
@@ -114,17 +114,17 @@ export function installMainWorldBridge(): void {
       return;
     }
     // Fetch-interceptor diagnostics reply (audit 12 residual). Only requested
-    // under isCellDebug() below; the reply carries miss counters + buffer
+    // under isTihokaDebug() below; the reply carries miss counters + buffer
     // state, no page-private data. Mirror to a debug attribute like the other
-    // data-cell-* markers so E2E can read it without DevTools.
-    if (data?.type === '__CELL_FETCH_INTERCEPTOR_DIAG' && isCellDebug()) {
+    // data-tihoka-* markers so E2E can read it without DevTools.
+    if (data?.type === '__Tihoka_FETCH_INTERCEPTOR_DIAG' && isTihokaDebug()) {
       const diag = data as {
         misses?: Record<string, number>;
         pending?: number;
         ready?: boolean;
       };
       document.documentElement.setAttribute(
-        'data-cell-fetch-interceptor-diag',
+        'data-tihoka-fetch-interceptor-diag',
         JSON.stringify({
           t: Date.now(),
           misses: diag.misses ?? {},
@@ -145,7 +145,7 @@ export function installMainWorldBridge(): void {
       // duplicate auto-load (ADR-020 race fix).
       if (videoId && lastRelayedVideoId === videoId) return;
       lastRelayedVideoId = videoId;
-      if (isCellDebug()) {
+      if (isTihokaDebug()) {
         (window as unknown as Record<string, unknown>).__YT_LAST_RELAYED_VIDEO_ID = videoId;
       }
       relayToBackground(
@@ -189,7 +189,7 @@ export function installMainWorldBridge(): void {
       // video identifier; `vid` is a streaming session ID reused across videos.
       if (tvid && lastRelayedTvid === tvid) return;
       lastRelayedTvid = tvid;
-      if (isCellDebug()) {
+      if (isTihokaDebug()) {
         (window as unknown as Record<string, unknown>).__IQ_LAST_RELAYED_TVID = tvid;
       }
       relayToBackground(
@@ -219,7 +219,7 @@ export function installMainWorldBridge(): void {
       // pattern — NOT `?? 0` which is falsy and would re-post for movieId 0).
       if (movieId !== '' && lastRelayedMovieId === movieId) return;
       lastRelayedMovieId = movieId;
-      if (isCellDebug()) {
+      if (isTihokaDebug()) {
         (window as unknown as Record<string, unknown>).__NF_LAST_RELAYED_MOVIE_ID = movieId;
       }
       relayToBackground(
@@ -243,12 +243,12 @@ export function installMainWorldBridge(): void {
   // posted signals before this isolated listener was registered (bundler async
   // loader delays content script registration past document_start).
   // See learning-and-apply: messaging-receiver-announces-readiness-handshake.
-  window.postMessage({ type: '__CELL_CS_READY' }, '*');
+  window.postMessage({ type: '__Tihoka_CS_READY' }, '*');
 
   // Debug-only: ask the MAIN-world fetch interceptor to relay its miss
-  // counters. The MAIN world only replies when __CELL_DEBUG__ is compiled in,
+  // counters. The MAIN world only replies when __Tihoka_DEBUG__ is compiled in,
   // so production builds neither request nor answer.
-  if (isCellDebug()) {
-    window.postMessage({ type: '__CELL_FETCH_INTERCEPTOR_DIAG_REQUEST' }, '*');
+  if (isTihokaDebug()) {
+    window.postMessage({ type: '__Tihoka_FETCH_INTERCEPTOR_DIAG_REQUEST' }, '*');
   }
 }

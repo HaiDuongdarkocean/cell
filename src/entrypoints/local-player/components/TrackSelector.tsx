@@ -25,7 +25,7 @@ function TrackSelectorInner({
   return (
     <div
       className={styles.panel}
-      data-cell-id="track-selector"
+      data-tihoka-id="track-selector"
       role="dialog"
       aria-modal="true"
       aria-label={t('player.tracks.title')}

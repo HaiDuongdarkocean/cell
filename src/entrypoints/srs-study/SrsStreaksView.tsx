@@ -50,11 +50,11 @@ export function SrsStreaksView({ onBack }: SrsStreaksViewProps): React.JSX.Eleme
           {t('srs.home.streakDays', [stats?.currentStreak ?? 0])}
         </Heading>
         <Box className={styles.statRow}>
-          <Box className={styles.statCell}>
+          <Box className={styles.statTihoka}>
             <Text className={styles.statLabel}>{t('srs.streaks.personalBest')}</Text>
             <Text className={styles.statValue}>{t('srs.streaks.daysValue', [stats?.bestStreak ?? 0])}</Text>
           </Box>
-          <Box className={styles.statCell}>
+          <Box className={styles.statTihoka}>
             <Text className={styles.statLabel}>{t('srs.streaks.avg14')}</Text>
             <Text className={styles.statValue}>{t('srs.streaks.reviewsValue', [stats?.avgReviews14 ?? 0])}</Text>
           </Box>

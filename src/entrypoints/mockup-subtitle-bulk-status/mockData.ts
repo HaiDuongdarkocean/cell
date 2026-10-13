@@ -68,13 +68,13 @@ export function bandFor(word: string): TokenFrequencyBand | null {
   return BAND_BY_WORD[word.toLowerCase()] ?? null;
 }
 
-export interface MatrixCell {
+export interface MatrixTihoka {
   label: string;
   status: WordStatus;
   band: TokenFrequencyBand | null;
 }
 
-export const MATRIX: MatrixCell[] = [
+export const MATRIX: MatrixTihoka[] = [
   { label: 'unknown', status: 'unknown', band: null },
   { label: 'tracking', status: 'tracking', band: null },
   { label: 'known', status: 'known', band: null },

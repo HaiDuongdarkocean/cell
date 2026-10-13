@@ -15,7 +15,7 @@ export function Showcase(): ReactElement {
           <span className={styles.browserDot} />
           <span className={styles.browserDot} />
           <span className={styles.browserDot} />
-          <span className={styles.browserUrl}>chrome://side-panel · Cell</span>
+          <span className={styles.browserUrl}>chrome://side-panel · Tihoka</span>
         </div>
         <div className={styles.panelBody}>
           <CueList

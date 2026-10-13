@@ -5,11 +5,11 @@ import styles from './mockup.module.css';
 function tokenClass(word: string, selected: boolean): string {
   const band = bandFor(word);
   return [
-    'js-cell-token',
-    'js-cell-token--word',
-    `js-cell-token--status-${statusFor(word)}`,
-    band ? `js-cell-token--frequency-${band}` : '',
-    selected ? 'js-cell-token--selected' : '',
+    'js-Tihoka-token',
+    'js-Tihoka-token--word',
+    `js-Tihoka-token--status-${statusFor(word)}`,
+    band ? `js-Tihoka-token--frequency-${band}` : '',
+    selected ? 'js-Tihoka-token--selected' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -60,11 +60,11 @@ export function ConceptC(): React.ReactElement {
                     {i > 0 && ' '}
                     <span
                       className={tokenClass(word, selected.has(key))}
-                      data-cell-term={word.toLowerCase()}
+                      data-tihoka-term={word.toLowerCase()}
                       onClick={(event) => onTokenClick(key, word, event)}
                     >
-                      <span className="js-cell-token-word">{word}</span>
-                      <span className="js-cell-token-status" aria-hidden="true" />
+                      <span className="js-Tihoka-token-word">{word}</span>
+                      <span className="js-Tihoka-token-status" aria-hidden="true" />
                     </span>
                   </span>
                 );
@@ -76,33 +76,33 @@ export function ConceptC(): React.ReactElement {
       </div>
 
       <div className={styles.matrix}>
-        {MATRIX.map((cell) => (
-          <div key={cell.label} className={styles.matrixRow}>
-            <span className={styles.matrixLabel}>{cell.label}</span>
+        {MATRIX.map((Tihoka) => (
+          <div key={Tihoka.label} className={styles.matrixRow}>
+            <span className={styles.matrixLabel}>{Tihoka.label}</span>
             <span
               className={[
-                'js-cell-token',
-                'js-cell-token--word',
-                `js-cell-token--status-${cell.status}`,
-                cell.band ? `js-cell-token--frequency-${cell.band}` : '',
+                'js-Tihoka-token',
+                'js-Tihoka-token--word',
+                `js-Tihoka-token--status-${Tihoka.status}`,
+                Tihoka.band ? `js-Tihoka-token--frequency-${Tihoka.band}` : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
             >
-              <span className="js-cell-token-word">{cell.label}</span>
+              <span className="js-Tihoka-token-word">{Tihoka.label}</span>
             </span>
             <span
               className={[
-                'js-cell-token',
-                'js-cell-token--word',
-                `js-cell-token--status-${cell.status}`,
-                cell.band ? `js-cell-token--frequency-${cell.band}` : '',
-                'js-cell-token--selected',
+                'js-Tihoka-token',
+                'js-Tihoka-token--word',
+                `js-Tihoka-token--status-${Tihoka.status}`,
+                Tihoka.band ? `js-Tihoka-token--frequency-${Tihoka.band}` : '',
+                'js-Tihoka-token--selected',
               ]
                 .filter(Boolean)
                 .join(' ')}
             >
-              <span className="js-cell-token-word">{cell.label}</span>
+              <span className="js-Tihoka-token-word">{Tihoka.label}</span>
             </span>
           </div>
         ))}

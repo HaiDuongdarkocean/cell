@@ -24,11 +24,11 @@
 // Ceiling: if YouTube blocks ANDROID client or renames `ytcfg`, detection
 // fails silently. Upgrade: try IOS client as fallback (also returns tracks
 // without PO Token — verified 2026-07-04).
-declare const __CELL_DEBUG__: string | undefined;
+declare const __Tihoka_DEBUG__: string | undefined;
 
 (() => {
   function isDebug(): boolean {
-    return typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true';
+    return typeof __Tihoka_DEBUG__ !== 'undefined' && __Tihoka_DEBUG__ === 'true';
   }
 
   // Marker for injection verification (visible from DevTools evaluate_script).
@@ -189,22 +189,22 @@ declare const __CELL_DEBUG__: string | undefined;
   // Other MAIN-world scripts (uBlock scriptlets, YouTube itself) re-wrap
   // XHR/fetch after document_start, silently dropping ours from the chain.
   // Re-install just-in-time: wrap whatever impl is current, marked via
-  // __cellTt so repeated calls stay idempotent.
-  type Marked<T> = T & { __cellTt?: true };
+  // __TihokaTt so repeated calls stay idempotent.
+  type Marked<T> = T & { __TihokaTt?: true };
   function installTimedtextHooks(): void {
     const proto = XMLHttpRequest.prototype as {
       open: Marked<typeof XMLHttpRequest.prototype.open>;
       send: Marked<typeof XMLHttpRequest.prototype.send>;
     };
-    if (!proto.open.__cellTt) {
+    if (!proto.open.__TihokaTt) {
       const prevOpen = proto.open;
       const open = function (
-        this: XMLHttpRequest & { __cellTtUrl?: string },
+        this: XMLHttpRequest & { __TihokaTtUrl?: string },
         method: string,
         url: string | URL,
         ...rest: unknown[]
       ): void {
-        this.__cellTtUrl = String(url);
+        this.__TihokaTtUrl = String(url);
         return (prevOpen as unknown as (...a: unknown[]) => void).call(
           this,
           method,
@@ -212,16 +212,16 @@ declare const __CELL_DEBUG__: string | undefined;
           ...rest,
         );
       } as Marked<typeof XMLHttpRequest.prototype.open>;
-      open.__cellTt = true;
+      open.__TihokaTt = true;
       proto.open = open;
     }
-    if (!proto.send.__cellTt) {
+    if (!proto.send.__TihokaTt) {
       const prevSend = proto.send;
       const send = function (
-        this: XMLHttpRequest & { __cellTtUrl?: string },
+        this: XMLHttpRequest & { __TihokaTtUrl?: string },
         ...args: unknown[]
       ): void {
-        const url = this.__cellTtUrl;
+        const url = this.__TihokaTtUrl;
         if (url && /\/api\/timedtext/.test(url)) {
           captureTimedtextUrl(url);
           this.addEventListener('load', () => {
@@ -236,11 +236,11 @@ declare const __CELL_DEBUG__: string | undefined;
         }
         return (prevSend as unknown as (...a: unknown[]) => void).apply(this, args);
       } as Marked<typeof XMLHttpRequest.prototype.send>;
-      send.__cellTt = true;
+      send.__TihokaTt = true;
       proto.send = send;
     }
     const w = window as { fetch: Marked<typeof window.fetch> };
-    if (!w.fetch.__cellTt) {
+    if (!w.fetch.__TihokaTt) {
       const prevFetch = w.fetch;
       const fetchWrap = function (
         this: unknown,
@@ -271,7 +271,7 @@ declare const __CELL_DEBUG__: string | undefined;
           return response;
         });
       } as Marked<typeof window.fetch>;
-      fetchWrap.__cellTt = true;
+      fetchWrap.__TihokaTt = true;
       w.fetch = fetchWrap;
     }
   }
@@ -515,10 +515,10 @@ declare const __CELL_DEBUG__: string | undefined;
   // YouTube-specific CSS overrides for split view layout. These selectors
   // (.ytp-*, .html5-video-container) are YouTube-internal — they belong in
   // the YouTube adapter, not in generic React UI code (SubtitlePanels.tsx).
-  // The stage element ([data-cell-split-view="stage"]) is created by the
+  // The stage element ([data-tihoka-split-view="stage"]) is created by the
   // isolated world React component but lives in the light DOM, so MAIN world
   // CSS can target it.
-  const YT_SPLIT_STYLE_ID = '__yt_cell_split_view_css';
+  const YT_SPLIT_STYLE_ID = '__yt_Tihoka_split_view_css';
   const YT_SPLIT_CSS = [
     // m.youtube: #player.player-size derives its box from
     // padding-top:56.25% with content height 0 — % heights below it resolve
@@ -527,31 +527,31 @@ declare const __CELL_DEBUG__: string | undefined;
     // .player-size → #movie_player → .html5-video-container → video fills
     // the stage height; desktop YouTube has no .player-size in the stage,
     // so these rules no-op there.
-    '[data-cell-split-view="stage"] .player-size{padding-top:0!important;height:100%!important}',
-    '[data-cell-split-view="stage"] #movie_player{height:100%!important;width:100%!important;inset:0!important}',
-    '[data-cell-split-view="stage"] .html5-video-container{height:100%!important;width:100%!important}',
-    '[data-cell-split-view="stage"] video{width:100%!important;height:100%!important;object-fit:contain!important;top:0!important;left:0!important}',
+    '[data-tihoka-split-view="stage"] .player-size{padding-top:0!important;height:100%!important}',
+    '[data-tihoka-split-view="stage"] #movie_player{height:100%!important;width:100%!important;inset:0!important}',
+    '[data-tihoka-split-view="stage"] .html5-video-container{height:100%!important;width:100%!important}',
+    '[data-tihoka-split-view="stage"] video{width:100%!important;height:100%!important;object-fit:contain!important;top:0!important;left:0!important}',
     // YouTube sets left:12px inline on .ytp-chrome-bottom; width:100% would
     // overflow the stage by 12px. calc(100% - 24px) preserves 12px padding
     // on both sides.
-    '[data-cell-split-view="stage"] .ytp-chrome-bottom{width:calc(100% - 24px)!important}',
+    '[data-tihoka-split-view="stage"] .ytp-chrome-bottom{width:calc(100% - 24px)!important}',
     // YouTube JS sizes these to movie_player width (full viewport), not
-    // stageCell width. Force 100% so they fit inside chromeBottom.
-    '[data-cell-split-view="stage"] .ytp-progress-bar-container,',
-    '[data-cell-split-view="stage"] .ytp-progress-bar,',
-    '[data-cell-split-view="stage"] .ytp-heat-map-container,',
-    '[data-cell-split-view="stage"] .ytp-chapters-container,',
-    '[data-cell-split-view="stage"] .ytp-timed-markers-container,',
-    '[data-cell-split-view="stage"] .ytp-chrome-controls{width:100%!important}',
+    // stageTihoka width. Force 100% so they fit inside chromeBottom.
+    '[data-tihoka-split-view="stage"] .ytp-progress-bar-container,',
+    '[data-tihoka-split-view="stage"] .ytp-progress-bar,',
+    '[data-tihoka-split-view="stage"] .ytp-heat-map-container,',
+    '[data-tihoka-split-view="stage"] .ytp-chapters-container,',
+    '[data-tihoka-split-view="stage"] .ytp-timed-markers-container,',
+    '[data-tihoka-split-view="stage"] .ytp-chrome-controls{width:100%!important}',
     // Progress bar internals get explicit pixel widths from YouTube JS
     // (e.g. 2536px = movie_player width - 24). Override to 100% of parent.
     // Per-chapter segments (.ytp-heat-map-chapter, .ytp-chapter-hover-container)
     // must NOT be forced to 100%: YouTube sets inline px widths per chapter and
     // tiles them via float:left — at 100% each chapter wraps to its own line,
     // stacking into a striped block that overflows below the video.
-    '[data-cell-split-view="stage"] .ytp-progress-bar-padding,',
-    '[data-cell-split-view="stage"] .ytp-progress-list,',
-    '[data-cell-split-view="stage"] .ytp-progress-linear-live-buffer{width:100%!important}',
+    '[data-tihoka-split-view="stage"] .ytp-progress-bar-padding,',
+    '[data-tihoka-split-view="stage"] .ytp-progress-list,',
+    '[data-tihoka-split-view="stage"] .ytp-progress-linear-live-buffer{width:100%!important}',
   ].join('');
 
   document.addEventListener('__YT_SPLIT_VIEW_APPLY_CSS', () => {

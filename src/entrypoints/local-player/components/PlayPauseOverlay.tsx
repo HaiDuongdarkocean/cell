@@ -18,7 +18,7 @@ export function PlayPauseOverlay({ icon, pulseKey }: PlayPauseOverlayProps): Rea
   // Transient visual feedback — decorative; the control bar buttons already
   // announce play/pause state, so the flash is hidden from the a11y tree.
   return (
-    <div className={styles.overlay} data-cell-id="play-pause-flash" key={pulseKey} aria-hidden="true">
+    <div className={styles.overlay} data-tihoka-id="play-pause-flash" key={pulseKey} aria-hidden="true">
       <div className={styles.iconWrap}>
         <Icon name={icon} size="lg" />
       </div>

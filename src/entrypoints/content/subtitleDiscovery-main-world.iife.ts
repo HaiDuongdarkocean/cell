@@ -2,7 +2,7 @@
 //
 // Runs in every frame (all_frames: true, world: MAIN, document_idle) and polls
 // an allow-list of player-global variables. When it finds one, it posts a
-// `__CELL_SUBTITLE_DISCOVERY` message to the isolated content-script in the
+// `__Tihoka_SUBTITLE_DISCOVERY` message to the isolated content-script in the
 // same frame, which relays it to the background pipeline.
 //
 // Also scans `<track>` elements. Track `src` may be a `blob:` URL created by the
@@ -101,19 +101,19 @@
   function postDiscovery(signal: object): void {
     try {
       window.postMessage(
-        { type: '__CELL_SUBTITLE_DISCOVERY', signal },
+        { type: '__Tihoka_SUBTITLE_DISCOVERY', signal },
         '*',
       );
       // Also notify the parent frame when running inside a cross-origin
       // player iframe. The parent's isolated content script may be the only
-      // Cell context with a live runtime connection (some player iframes
+      // Tihoka context with a live runtime connection (some player iframes
       // load too quickly for their own content script to register before the
       // player state is set, or anti-bot frames block child-frame injection).
       if (window.parent && window.parent !== window) {
         const parentOrigin = resolveParentOrigin();
         if (!parentOrigin) return;
         window.parent.postMessage(
-          { type: '__CELL_SUBTITLE_DISCOVERY', signal },
+          { type: '__Tihoka_SUBTITLE_DISCOVERY', signal },
           parentOrigin,
         );
       }

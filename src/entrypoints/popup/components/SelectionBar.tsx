@@ -18,24 +18,24 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
       justify="between"
       gap="2"
       className={styles.selectionBar}
-      data-cell-id="selection-bar"
+      data-tihoka-id="selection-bar"
     >
       <Button shape="circle"
         size="sm"
         onClick={onClear}
         aria-label={t('downloads.action.deselectAll')}
-        data-cell-id="selection-clear-btn"
+        data-tihoka-id="selection-clear-btn"
       >
         <Icon name="x" size={18}  />
       </Button>
-      <span className={styles.count} data-cell-id="selection-count">
+      <span className={styles.count} data-tihoka-id="selection-count">
         {t('downloads.selection.count', [selectionCount])}
       </span>
       <Button
         variant="primary"
         size="sm"
         onClick={onDownload}
-        data-cell-id="selection-download-btn"
+        data-tihoka-id="selection-download-btn"
         leadingIcon={<Icon name="download" size={18} className={styles.downloadIcon} />}
       >
         {t('downloads.action.download')}

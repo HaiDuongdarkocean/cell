@@ -62,7 +62,7 @@ function DeckRow({
       <button
         type="button"
         className={styles.deckMain}
-        data-cell-no-ripple
+        data-tihoka-no-ripple
         onPointerDown={(e) => {
           if (e.button === 0 && e.currentTarget.parentElement) {
             spawnRipple(e.currentTarget.parentElement as HTMLElement, e.clientX, e.clientY);
@@ -365,7 +365,7 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
         <Button variant="primary" className={styles.continueButton} fullWidth onClick={() => { void start(); }} disabled={loading}>
           {loading ? t('srs.action.loading') : t('srs.home.continue')}
         </Button>
-        <Button variant="secondary" fullWidth onClick={onOpenPump} data-cell-id="srs-home-pump">
+        <Button variant="secondary" fullWidth onClick={onOpenPump} data-tihoka-id="srs-home-pump">
           <Icon name="audioWave" /> {t('pump.launcher')}
         </Button>
       </Box>
@@ -476,7 +476,7 @@ export function SrsHome({ onOpenSettings, onOpenStreaks, onOpenVocabulary, onOpe
         <SelectionBar
           open={selectMode}
           label={<Text className={styles.selectCount}>{t('srs.deck.selectedCount', [selected.size])}</Text>}
-          data-cell-id="srs-select-bar"
+          data-tihoka-id="srs-select-bar"
         >
           <Button variant="destructive" size="sm" onClick={() => { void handleDeleteSelected(); }} disabled={selected.size === 0}>
             {t('srs.manage.delete')}

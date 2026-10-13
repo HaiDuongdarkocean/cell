@@ -5937,7 +5937,7 @@ export const REAL_ENTRIES: Record<string, ProtoEntry> ={
               },
               {
                 "role": "example",
-                "text": "Now is the time for the Chancellor to take the bull by the horns and announce a two per cent cut in interest rates."
+                "text": "Now is the time for the chancellor to take the bull by the horns and announce a two per cent cut in interest rates."
               }
             ]
           }

@@ -9,7 +9,7 @@ jest.mock('@/features/subtitle/logic/subtitleResponseCache', () => ({
 }));
 
 jest.mock('./debugLog', () => ({
-  isCellDebug: jest.fn(() => false),
+  isTihokaDebug: jest.fn(() => false),
 }));
 
 import { installMainWorldBridge } from './subtitleBridges';
@@ -26,7 +26,7 @@ const FRAME_ORIGIN = 'https://player.example';
 function dispatchDiscovery(signal: unknown, origin: string): void {
   window.dispatchEvent(
     new MessageEvent('message', {
-      data: { type: '__CELL_SUBTITLE_DISCOVERY', signal },
+      data: { type: '__Tihoka_SUBTITLE_DISCOVERY', signal },
       origin,
     }),
   );
@@ -57,7 +57,7 @@ function lastDiscoveryPayload(): {
   return call!.payload;
 }
 
-describe('installMainWorldBridge __CELL_SUBTITLE_DISCOVERY', () => {
+describe('installMainWorldBridge __Tihoka_SUBTITLE_DISCOVERY', () => {
   beforeAll(() => {
     installMainWorldBridge();
   });

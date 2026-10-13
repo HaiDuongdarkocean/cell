@@ -38,8 +38,8 @@ function toRealProfile(m: MockProfile, order: number): LanguageProfile {
     subtitleOverlayAutoLoad: m.subtitleOverlay.autoLoad,
     subtitleOverlayAutoLoadAsr: m.subtitleOverlay.asr,
     subtitleOverlayAutoTranslate: m.subtitleOverlay.autoTranslate,
-    showReadings: false,
-    showWordTranslations: false,
+    readingDisplay: 'off',
+    glossDisplay: 'off',
     dictionaryPopup: { ...DEFAULT_DICTIONARY_POPUP_SETTINGS, enabled: m.dictPopup.enabled },
   };
 }

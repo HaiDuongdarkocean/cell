@@ -16,7 +16,7 @@ export function DropOverlay(): React.JSX.Element {
   return (
     <div
       className={styles.overlay}
-      data-cell-id="drop-overlay"
+      data-tihoka-id="drop-overlay"
       role="region"
       aria-label={t('player.drop.aria')}
     >

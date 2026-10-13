@@ -20,11 +20,11 @@ function CueCard({ cue, active }: { cue: (typeof MOCK_CUES)[number]; active?: bo
         </span>
       </footer>
       {active && (
-        <div className={styles.cardRail} data-cell-id="pm-card-actions">
-          <Button variant="primarySubtle" size="md" elevation="low" aria-label="Quick add" data-cell-id="quick-add-btn">
+        <div className={styles.cardRail} data-tihoka-id="pm-card-actions">
+          <Button variant="primarySubtle" size="md" elevation="low" aria-label="Quick add" data-tihoka-id="quick-add-btn">
             <Icon name="zap" />
           </Button>
-          <Button variant="errorSubtle" size="md" elevation="low" aria-label="Send to Card Creator" data-cell-id="edit-card-btn">
+          <Button variant="errorSubtle" size="md" elevation="low" aria-label="Send to Card Creator" data-tihoka-id="edit-card-btn">
             <Icon name="pencil" />
           </Button>
         </div>
@@ -54,17 +54,17 @@ export function ConceptTarget(): React.ReactElement {
         </div>
         <div className={styles.pmAnchorBand}>
           <div className={styles.pmAnchorRow}>
-            <Button variant="neutralSubtle" size="lg" aria-label="Subtitle Manager" data-cell-id="manager-toggle-btn">
+            <Button variant="neutralSubtle" size="lg" aria-label="Subtitle Manager" data-tihoka-id="manager-toggle-btn">
               <Icon name="captions" />
             </Button>
-            <span className={styles.pmPill} data-cell-id="comprehension-pill">
+            <span className={styles.pmPill} data-tihoka-id="comprehension-pill">
               <span className={styles.pmPillDot} /> Excellent 96%
             </span>
-            <div className={styles.pmRail} data-cell-id="player-mode-actions">
-              <Button variant="neutralSubtle" size="lg" elevation="low" aria-label="Filter cues" data-cell-id="cue-filter-fab" className={styles.pmRailFab}>
+            <div className={styles.pmRail} data-tihoka-id="player-mode-actions">
+              <Button variant="neutralSubtle" size="lg" elevation="low" aria-label="Filter cues" data-tihoka-id="cue-filter-fab" className={styles.pmRailFab}>
                 <Icon name="slidersHorizontal" />
               </Button>
-              <Button variant="neutralSubtle" size="lg" elevation="low" aria-label="Generate subtitle" data-cell-id="generate-native-btn">
+              <Button variant="neutralSubtle" size="lg" elevation="low" aria-label="Generate subtitle" data-tihoka-id="generate-native-btn">
                 <Icon name="generateNative" />
               </Button>
             </div>
@@ -72,15 +72,15 @@ export function ConceptTarget(): React.ReactElement {
           <p className={styles.pmCaption}>Subtitles: English (United States)</p>
         </div>
       </div>
-      <nav className={styles.pmBottomBar} data-cell-id="pm-bottom-bar" aria-label="Player controls">
-        <Button variant="ghost" size="md" aria-label="Exit Player Mode" data-cell-id="player-mode-exit-btn">
+      <nav className={styles.pmBottomBar} data-tihoka-id="pm-bottom-bar" aria-label="Player controls">
+        <Button variant="ghost" size="md" aria-label="Exit Player Mode" data-tihoka-id="player-mode-exit-btn">
           <Icon name="x" />
         </Button>
-        <div className={styles.barTransport} data-cell-id="nav-cluster">
-          <Button variant="primarySubtle" size="lg" aria-label="Previous cue" data-cell-id="nav-prev">
+        <div className={styles.barTransport} data-tihoka-id="nav-cluster">
+          <Button variant="primarySubtle" size="lg" aria-label="Previous cue" data-tihoka-id="nav-prev">
             <Icon name="chevronLeft" />
           </Button>
-          <Button variant="primarySubtle" size="lg" aria-label="Repeat cue" data-cell-id="nav-repeat">
+          <Button variant="primarySubtle" size="lg" aria-label="Repeat cue" data-tihoka-id="nav-repeat">
             <Icon name="rotateCcw" />
           </Button>
           <Button
@@ -89,12 +89,12 @@ export function ConceptTarget(): React.ReactElement {
             elevation="low"
             className={styles.barHero}
             aria-label={playing ? 'Pause' : 'Play'}
-            data-cell-id="nav-play"
+            data-tihoka-id="nav-play"
             onClick={() => setPlaying((p) => !p)}
           >
             <Icon name={playing ? 'pause' : 'play'} />
           </Button>
-          <Button variant="primarySubtle" size="lg" aria-label="Next cue" data-cell-id="nav-next">
+          <Button variant="primarySubtle" size="lg" aria-label="Next cue" data-tihoka-id="nav-next">
             <Icon name="chevronRight" />
           </Button>
         </div>
@@ -105,7 +105,7 @@ export function ConceptTarget(): React.ReactElement {
           aria-label="More actions"
           aria-haspopup="menu"
           aria-expanded={menuOpen}
-          data-cell-id="pm-more-btn"
+          data-tihoka-id="pm-more-btn"
           onClick={() => setMenuOpen((v) => !v)}
         >
           <Icon name="ellipsis" />

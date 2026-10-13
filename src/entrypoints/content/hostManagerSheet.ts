@@ -81,7 +81,7 @@ export function installHostManagerSheet(): void {
       currentState = state;
 
       hostSheetHost = document.createElement('div');
-      hostSheetHost.id = 'cell-host-manager-sheet';
+      hostSheetHost.id = 'Tihoka-host-manager-sheet';
       hostSheetHost.style.cssText =
         'position:fixed;inset:0;pointer-events:auto;z-index:2147483647;';
       document.body.appendChild(hostSheetHost);
@@ -128,7 +128,7 @@ export function installHostManagerSheet(): void {
   // Bridge lives for the page lifecycle — never cleaned up (the accidental
   // reuse of the old `hostSheetCleanup` variable for both bridge + CSS cleanup
   // was the root cause of the subtitle manager sheet not closing: onOpen called
-  // the bridge cleanup, removing the message listener, so __CELL_MANAGER_CLOSED
+  // the bridge cleanup, removing the message listener, so __Tihoka_MANAGER_CLOSED
   // from the child never reached the host and the sheet stayed mounted forever).
   installManagerSheetBridge();
 }

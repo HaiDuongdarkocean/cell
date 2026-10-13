@@ -20,7 +20,7 @@
   color: var(--color-text);
   text-align: center;
   pointer-events: none;
-  animation: cell-drop-fade-in var(--duration-fast) var(--ease-standard) forwards;
+  animation: Tihoka-drop-fade-in var(--duration-fast) var(--ease-standard) forwards;
 }
 
 .badge {
@@ -44,7 +44,7 @@
   line-height: var(--leading-normal);
 }
 
-@keyframes cell-drop-fade-in {
+@keyframes Tihoka-drop-fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
 }

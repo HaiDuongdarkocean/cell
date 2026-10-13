@@ -153,10 +153,10 @@ export function LibraryCard({
     >
       <div className={styles.row} onClick={handleRowClick} role="button" tabIndex={0}
         aria-pressed={isActive}
-        data-cell-id="library-card"
+        data-tihoka-id="library-card"
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleRowClick(); } }}
       >
-        <span className={styles.leading} data-cell-id="library-card-resume" data-pct={pct}>
+        <span className={styles.leading} data-tihoka-id="library-card-resume" data-pct={pct}>
           <svg className={styles.ring} viewBox="0 0 40 40">
             <circle className={styles.ringTrack} cx="20" cy="20" r={RING_R} />
             <circle
@@ -172,11 +172,11 @@ export function LibraryCard({
         </span>
 
         <span className={styles.body}>
-          <span className={styles.name} data-cell-id="library-card-title">
+          <span className={styles.name} data-tihoka-id="library-card-title">
             {video.title}
           </span>
           <span className={styles.meta}>
-            <span className={styles.metaItem} data-cell-id="library-card-watched">
+            <span className={styles.metaItem} data-tihoka-id="library-card-watched">
               {watchedLabel}
             </span>
             {comprehensionStats && (
@@ -190,7 +190,7 @@ export function LibraryCard({
           size="sm"
           aria-label={t('library.card.delete')}
           onClick={handleDeleteClick}
-          data-cell-id="library-card-delete"
+          data-tihoka-id="library-card-delete"
           className={styles.deleteBtn}
         >
           <Icon name="trash" size="xs" />
@@ -201,7 +201,7 @@ export function LibraryCard({
           aria-expanded={expanded}
           aria-label={t('library.card.expand')}
           onClick={handleExpandClick}
-          data-cell-id="library-card-expand"
+          data-tihoka-id="library-card-expand"
           className={styles.expandBtn}
         >
           <Icon name="chevronDown" size="xs" />
@@ -209,7 +209,7 @@ export function LibraryCard({
       </div>
 
       {expanded && (
-        <div className={styles.subs} data-cell-id="library-card-subs">
+        <div className={styles.subs} data-tihoka-id="library-card-subs">
           <div className={styles.subField}>
             <span className={styles.subLabel}>
               <Icon name="captions" size="xs" />
@@ -222,7 +222,7 @@ export function LibraryCard({
               placeholder={t('player.subtitle.noMatch')}
               onChange={handleSelectTrack}
               aria-label={t('library.card.targetAria')}
-              data-cell-id="library-card-subtitle-target"
+              data-tihoka-id="library-card-subtitle-target"
             />
           </div>
 
@@ -238,7 +238,7 @@ export function LibraryCard({
               placeholder={t('player.subtitle.noMatch')}
               onChange={handleSelectTrack}
               aria-label={t('library.card.nativeAria')}
-              data-cell-id="library-card-subtitle-native"
+              data-tihoka-id="library-card-subtitle-native"
             />
           </div>
         </div>

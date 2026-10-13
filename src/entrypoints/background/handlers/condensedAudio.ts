@@ -443,7 +443,7 @@ export function registerCondensedAudioHandlers(ctx: BackgroundContext): void {
         }
         blobUrl = blobResponse.data.url;
         const ext = extOfMime(record.mimeType);
-        const filename = `cell-condensed/${generateFileName(record.title, ext)}`;
+        const filename = `Tihoka-condensed/${generateFileName(record.title, ext)}`;
         const downloadId = await chromeDownload({ url: blobUrl, filename, saveAs: true });
         const terminal = await new Promise<'complete' | 'interrupted'>((resolve) => {
           const onDelta = (delta: chrome.downloads.DownloadDelta): void => {

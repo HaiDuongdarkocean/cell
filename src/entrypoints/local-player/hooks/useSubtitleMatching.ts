@@ -44,22 +44,22 @@ async function resolveLibrarySubtitleFiles(
     if (sub.fileHandle) {
       try {
         const granted = await verifyPermission(sub.fileHandle, false);
-        logger.debug('[Cell:autoMatch] lib sub permission', sub.filename, granted);
+        logger.debug('[Tihoka:autoMatch] lib sub permission', sub.filename, granted);
         if (granted) {
           const f = await sub.fileHandle.getFile();
           fileMap.set(sub.filename, f);
-          logger.debug('[Cell:autoMatch] lib sub file resolved', sub.filename, f.size);
+          logger.debug('[Tihoka:autoMatch] lib sub file resolved', sub.filename, f.size);
         }
       } catch (e) {
-        logger.debug('[Cell:autoMatch] lib sub permission error', sub.filename, String(e));
+        logger.debug('[Tihoka:autoMatch] lib sub permission error', sub.filename, String(e));
       }
     } else {
       const cached = cachedMap.get(sub.filename);
       if (cached) {
         fileMap.set(sub.filename, cached);
-        logger.debug('[Cell:autoMatch] lib sub file from cache', sub.filename, cached.size);
+        logger.debug('[Tihoka:autoMatch] lib sub file from cache', sub.filename, cached.size);
       } else {
-        logger.debug('[Cell:autoMatch] lib sub no fileHandle + no cache', sub.filename);
+        logger.debug('[Tihoka:autoMatch] lib sub no fileHandle + no cache', sub.filename);
       }
     }
   }
@@ -70,10 +70,10 @@ async function matchFromLibrarySubs(
   videoFile_: File,
   ctx: MatchContext,
 ): Promise<void> {
-  logger.debug('[Cell:autoMatch] FALLBACK: matching against library subtitles');
+  logger.debug('[Tihoka:autoMatch] FALLBACK: matching against library subtitles');
   const libSubs = await getAllSubtitles();
   logger.debug(
-    '[Cell:autoMatch] library subtitles count',
+    '[Tihoka:autoMatch] library subtitles count',
     libSubs.length,
     libSubs.map((s) => s.filename),
   );
@@ -85,7 +85,7 @@ async function matchFromLibrarySubs(
       TARGET_LANG,
       NATIVE_LANG,
     );
-    logger.debug('[Cell:autoMatch] library match result', {
+    logger.debug('[Tihoka:autoMatch] library match result', {
       target: result.target?.filename,
       native: result.native?.filename,
       others: result.others.length,
@@ -98,7 +98,7 @@ async function matchFromLibrarySubs(
       );
       ctx.caches.subtitleFileMapRef.current = fileMap;
       logger.debug(
-        '[Cell:autoMatch] lib subtitleFileMap built',
+        '[Tihoka:autoMatch] lib subtitleFileMap built',
         fileMap.size,
         Array.from(fileMap.keys()),
       );
@@ -108,13 +108,13 @@ async function matchFromLibrarySubs(
         others: result.others,
       });
       const targetFile = fileMap.get(result.target.filename);
-      logger.debug('[Cell:autoMatch] target file from map?', !!targetFile, result.target.filename);
+      logger.debug('[Tihoka:autoMatch] target file from map?', !!targetFile, result.target.filename);
       if (targetFile) {
         const nativeFile = result.native?.filename
           ? fileMap.get(result.native.filename)
           : undefined;
         await ctx.loadAndParseSubtitle(targetFile, nativeFile);
-        logger.debug('[Cell:autoMatch] loadAndParseSubtitle DONE (library match)');
+        logger.debug('[Tihoka:autoMatch] loadAndParseSubtitle DONE (library match)');
       }
       return;
     }
@@ -144,7 +144,7 @@ async function matchFromLibrarySubs(
     }
   }
 
-  logger.debug('[Cell:autoMatch] NO MATCH — not-found');
+  logger.debug('[Tihoka:autoMatch] NO MATCH — not-found');
   ctx.setSubtitleStatus('not-found');
   ctx.setSubtitles(EMPTY_SUBTITLES);
 }
@@ -245,19 +245,19 @@ export function useSubtitleMatching(deps: SubtitleMatchingDeps): SubtitleMatchin
 
   const autoMatchSubtitles = useCallback(
     async (videoFile_: File): Promise<void> => {
-      logger.debug('[Cell:autoMatch] autoMatchSubtitles ENTER', { filename: videoFile_.name });
+      logger.debug('[Tihoka:autoMatch] autoMatchSubtitles ENTER', { filename: videoFile_.name });
       setSubtitleStatus('searching');
       const ctx: MatchContext = { caches, setSubtitles, setSubtitleStatus, loadAndParseSubtitle };
 
       let fileMap = caches.subtitleFileMapRef.current;
-      logger.debug('[Cell:autoMatch] cached subtitleFileMap size', fileMap.size);
+      logger.debug('[Tihoka:autoMatch] cached subtitleFileMap size', fileMap.size);
 
       if (fileMap.size === 0) {
         let dirHandle = caches.dirHandleRef.current;
-        logger.debug('[Cell:autoMatch] dirHandle cached?', !!dirHandle);
+        logger.debug('[Tihoka:autoMatch] dirHandle cached?', !!dirHandle);
         if (dirHandle) {
           const granted = await verifyPermission(dirHandle, false);
-          logger.debug('[Cell:autoMatch] dirHandle permission granted?', granted);
+          logger.debug('[Tihoka:autoMatch] dirHandle permission granted?', granted);
           if (!granted) dirHandle = null;
         }
 
@@ -266,7 +266,7 @@ export function useSubtitleMatching(deps: SubtitleMatchingDeps): SubtitleMatchin
           return;
         }
 
-        logger.debug('[Cell:autoMatch] scanning dirHandle for subtitles...');
+        logger.debug('[Tihoka:autoMatch] scanning dirHandle for subtitles...');
         const scanned = await scanDirForSubtitles(dirHandle);
         if (!scanned) {
           setSubtitleStatus('error');
@@ -278,11 +278,11 @@ export function useSubtitleMatching(deps: SubtitleMatchingDeps): SubtitleMatchin
       }
 
       const subtitleFilenames = Array.from(fileMap.keys());
-      logger.debug('[Cell:autoMatch] subtitleFilenames', subtitleFilenames);
+      logger.debug('[Tihoka:autoMatch] subtitleFilenames', subtitleFilenames);
       caches.subtitleFileMapRef.current = fileMap;
 
       if (subtitleFilenames.length === 0) {
-        logger.debug('[Cell:autoMatch] no subtitles found — not-found');
+        logger.debug('[Tihoka:autoMatch] no subtitles found — not-found');
         setSubtitleStatus('not-found');
         setSubtitles(EMPTY_SUBTITLES);
         return;
@@ -294,7 +294,7 @@ export function useSubtitleMatching(deps: SubtitleMatchingDeps): SubtitleMatchin
         TARGET_LANG,
         NATIVE_LANG,
       );
-      logger.debug('[Cell:autoMatch] dirScan match result', {
+      logger.debug('[Tihoka:autoMatch] dirScan match result', {
         target: result.target?.filename,
         native: result.native?.filename,
         others: result.others.length,

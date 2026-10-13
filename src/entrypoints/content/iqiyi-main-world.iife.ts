@@ -12,7 +12,7 @@
 //   reproduces on free ep56 or VIP ep51, 2026-07-12).
 // - Direct subtitle fetch from page context with `credentials:'omit'` works
 //   (CORS `access-control-allow-origin:*`). Background SW fetch needs
-//   `declarativeNetRequest` to set `Referer: https://www.iq.com/` (Cell has
+//   `declarativeNetRequest` to set `Referer: https://www.iq.com/` (Tihoka has
 //   this pattern from commit 700b901).
 //
 // Architecture: MAIN world polls `playerObject` → extracts `stl[]` →
@@ -25,11 +25,11 @@
 // CRXJS emits this as a standalone bundle via the `.iife.ts` suffix.
 // Ceiling: if iQIYI renames `playerObject` or restructures the deep path,
 // detection fails silently. Upgrade: re-verify via MCP + update path.
-declare const __CELL_DEBUG__: string | undefined;
+declare const __Tihoka_DEBUG__: string | undefined;
 
 (() => {
   function isDebug(): boolean {
-    return typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true';
+    return typeof __Tihoka_DEBUG__ !== 'undefined' && __Tihoka_DEBUG__ === 'true';
   }
 
   // Marker for injection verification (visible from DevTools evaluate_script).

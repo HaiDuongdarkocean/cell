@@ -55,7 +55,7 @@ postSiteReadyHandshakes(csInjectTime);
 installRuntimeMessageListener();
 
 // Registers the MAIN→ISOLATED postMessage listener BEFORE any potentially-
-// throwing initialization, then announces __CELL_CS_READY (functional —
+// throwing initialization, then announces __Tihoka_CS_READY (functional —
 // fetchInterceptor.iife.ts re-posts captured signals on it).
 installMainWorldBridge();
 

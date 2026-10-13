@@ -249,7 +249,7 @@ export function ShowcaseGallery(): ReactElement | null {
   );
 
   const presetSwitcher = (
-    <PresetSwitcher value={preset} onChange={setPreset} data-cell-id="showcase-preset-switcher" />
+    <PresetSwitcher value={preset} onChange={setPreset} data-tihoka-id="showcase-preset-switcher" />
   );
 
   const stageControls = (
@@ -259,7 +259,7 @@ export function ShowcaseGallery(): ReactElement | null {
         options={dataOptions}
         onChange={(value) => applyData(value as DataVariant)}
         aria-label="Mock data mode"
-        data-cell-id="showcase-data-select"
+        data-tihoka-id="showcase-data-select"
         size="sm"
       />
       <Select
@@ -267,7 +267,7 @@ export function ShowcaseGallery(): ReactElement | null {
         options={viewportOptions}
         onChange={(value) => applyViewport(value as ViewportWidth)}
         aria-label="Preview viewport"
-        data-cell-id="showcase-viewport-select"
+        data-tihoka-id="showcase-viewport-select"
         size="sm"
       />
     </>
@@ -289,7 +289,7 @@ export function ShowcaseGallery(): ReactElement | null {
                 size="sm"
                 onClick={() => setNavOpen(true)}
                 aria-label="Browse components"
-                data-cell-id="showcase-nav-trigger"
+                data-tihoka-id="showcase-nav-trigger"
               >
                 <Icon name="layers" size={18} />
               </Button>
@@ -353,7 +353,7 @@ export function ShowcaseGallery(): ReactElement | null {
                     <div
                       className={styles.stageViewport}
                       style={stageStyle}
-                      data-cell-id="showcase-stage-viewport"
+                      data-tihoka-id="showcase-stage-viewport"
                     >
                       <activeShowcase.Component />
                     </div>

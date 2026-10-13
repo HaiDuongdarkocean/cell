@@ -31,7 +31,7 @@ interface Segment {
 /**
  * Per-tab wall-clock watch-time accumulator for streaming sites
  * (immersion-clock). Fed by the VIDEO_TIME_UPDATE/VIDEO_PLAY_STATE relay in
- * sidePanelRelay — only counts while `hasSession(tabId)` (Cell cues exist for
+ * sidePanelRelay — only counts while `hasSession(tabId)` (Tihoka cues exist for
  * the tab). Segments upsert one HistoryRecord each (`stream-<tabId>-<start>`);
  * pause/close ends a segment, resume starts a new one. Fail-closed: write
  * failures keep accumulating, SW death loses < FLUSH_INTERVAL_MS.

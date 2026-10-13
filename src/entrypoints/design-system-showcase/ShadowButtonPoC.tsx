@@ -7,7 +7,7 @@ import componentsCss from '@/shared/styles/components.css?raw';
 import scrollbarsShadowCss from '@/shared/styles/scrollbars-shadow.css?raw';
 import buttonCss from '@/shared/ui/Button.module.css?inline';
 
-const HOST_ID = 'cell-shadow-button-poc-host';
+const HOST_ID = 'Tihoka-shadow-button-poc-host';
 
 function mountShadowButton(host: HTMLElement): () => void {
   const shadow = host.attachShadow({ mode: 'open' });

@@ -7,6 +7,8 @@ import type { CycleLock } from '@/features/sync/app/cycleLock';
 import { SYNC_DIRECTORY_STORAGE_KEY, readRouting } from '@/features/sync/app/routing';
 import { SyncEngine } from '@/features/sync/app/SyncEngine';
 import type { CycleResult, EngineStatus, SyncAppliedPayload } from '@/features/sync/app/SyncEngine';
+import { appendRunRecord, listRunHistory } from '@/features/sync/app/runHistory';
+import type { SyncRunKind } from '@/features/sync/app/runHistory';
 import { createSyncDbStore } from '@/features/sync/app/syncDbStore';
 import { migrateProfileIdentity } from '@/features/sync/app/profileIdentityMigration';
 import { setActiveProfileAfterRestore } from '@/features/sync/app/reconciliation';
@@ -252,12 +254,54 @@ async function persistClockWall(built: BuiltRuntime): Promise<void> {
   }
 }
 
+async function recordRun(
+  built: BuiltRuntime,
+  kind: SyncRunKind,
+  result: CycleResult,
+): Promise<void> {
+  const worthRecording =
+    result.ackedKeys > 0 ||
+    result.scopesPushed.length > 0 ||
+    result.scopesPulled.length > 0 ||
+    result.appliedDataClasses.length > 0 ||
+    result.failed.length > 0 ||
+    result.obligationErrors.length > 0 ||
+    result.retryAt !== undefined ||
+    result.lockLost;
+  if (!result.acquired || !worthRecording) return;
+  await appendRunRecord(built.kv, {
+    id: crypto.randomUUID(),
+    at: Date.now(),
+    kind,
+    ok:
+      result.failed.length === 0 &&
+      result.obligationErrors.length === 0 &&
+      result.retryAt === undefined &&
+      !result.lockLost,
+    pushed: result.scopesPushed,
+    pulled: result.scopesPulled,
+    appliedDataClasses: result.appliedDataClasses,
+    ackedKeys: result.ackedKeys,
+    failed: result.failed.map((f) => ({
+      connectionId: f.connectionId,
+      state: f.state,
+    })),
+    errors: result.obligationErrors,
+  }).catch((error) =>
+    logger.warn('sync: run history append failed', {
+      error: error instanceof Error ? error.message : String(error),
+    }),
+  );
+}
+
 async function afterPass(
   built: BuiltRuntime,
   result: CycleResult,
+  kind: SyncRunKind,
   updatedAtBefore?: number,
 ): Promise<void> {
   await persistClockWall(built).catch(() => undefined);
+  await recordRun(built, kind, result);
   if (result.appliedDataClasses.length > 0) {
     await setActiveProfileAfterRestore().catch((error) =>
       logger.warn('sync: post-restore profile activation failed', {
@@ -309,21 +353,21 @@ export function createSyncRuntime(deps: SyncRuntimeDeps): SyncRuntime {
     async runCycle() {
       const built = await ensureBuilt();
       const result = await built.engine.runCycle();
-      await afterPass(built, result);
+      await afterPass(built, result, 'full');
       return result;
     },
     async runPush() {
       const built = await ensureBuilt();
       const updatedAt = built.engine.current.updatedAt;
       const result = await built.engine.runPush();
-      await afterPass(built, result, updatedAt);
+      await afterPass(built, result, 'push', updatedAt);
       return result;
     },
     async checkRemote() {
       const built = await ensureBuilt();
       const updatedAt = built.engine.current.updatedAt;
       const result = await built.engine.checkRemote();
-      await afterPass(built, result, updatedAt);
+      await afterPass(built, result, 'check', updatedAt);
       return result;
     },
     async status() {
@@ -408,5 +452,6 @@ async function statusOf(built: BuiltRuntime): Promise<SyncStatusView> {
     fence: async () => undefined,
     connectionHealth: () => built.engine.connectionHealth(),
   });
-  return { engine: built.engine.current, directory };
+  const history = await listRunHistory(built.kv).catch(() => []);
+  return { engine: built.engine.current, directory, history };
 }

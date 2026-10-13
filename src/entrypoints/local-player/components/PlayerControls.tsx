@@ -137,7 +137,7 @@ export function PlayerControls({
   return (
     <div
       className={styles.bar}
-      data-cell-id="player-controls"
+      data-tihoka-id="player-controls"
       hidden={isHidden || undefined}
     >
       <div className={styles.seekRow}>

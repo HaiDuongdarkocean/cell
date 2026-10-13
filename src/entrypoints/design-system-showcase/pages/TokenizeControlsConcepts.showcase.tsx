@@ -254,7 +254,7 @@ function ConceptPanel({ variant, label }: ConceptPanelProps): ReactElement {
               variant="ghost"
               aria-label="Close panel"
               onClick={() => {}}
-              data-cell-id="universal-panel-close"
+              data-tihoka-id="universal-panel-close"
             >
               <Icon name="x" />
             </IconButton>

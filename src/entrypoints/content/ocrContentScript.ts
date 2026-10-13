@@ -4,7 +4,7 @@
 // T19: Reacts to settings changes (toggle ON/OFF → init/dispose).
 // T20: Auto-start on page load + SPA nav handling.
 // Task 7 (spec ocr-split-dual-stream): split dual-stream — region chia đôi,
-// 2 engine keys, detections → cues → window.postMessage('__CELL_OCR_TRACKS').
+// 2 engine keys, detections → cues → window.postMessage('__Tihoka_OCR_TRACKS').
 
 import { OcrController } from './ocrController';
 import { OcrOverlay, createHitboxes, wireOcrHitboxesToTrigger } from '@/features/ocr/overlay/ocrOverlay';
@@ -28,7 +28,7 @@ import { STORAGE_KEYS } from '@/shared/config/config';
 import { t } from '@/shared/i18n';
 import { logger } from '@/shared/lib/logger';
 
-import { isCellDebug as cellDebug } from '@/shared/lib/cellDebug';
+import { isTihokaDebug as TihokaDebug } from '@/shared/lib/TihokaDebug';
 
 /** Session pipeline config = shared pipeline config + split dual-stream fields. */
 interface OcrSessionConfig extends OcrPipelineConfig {
@@ -180,16 +180,16 @@ export class OcrSession {
         await this.initSplitEngines(originState, systemLangs);
       } else {
         const initResult = await this.controller.init(originState.languageMode, 'webgpu');
-        if (cellDebug()) document.body.dataset.ocrInitResult = JSON.stringify(initResult);
+        if (TihokaDebug()) document.body.dataset.ocrInitResult = JSON.stringify(initResult);
       }
     } catch (e) {
-      if (cellDebug()) document.body.dataset.ocrInitError = String(e);
+      if (TihokaDebug()) document.body.dataset.ocrInitError = String(e);
       throw e;
     }
 
-    if (cellDebug()) document.body.dataset.ocrDebugAttach = `video=${video?.tagName},parent=${video?.parentElement?.tagName}`;
+    if (TihokaDebug()) document.body.dataset.ocrDebugAttach = `video=${video?.tagName},parent=${video?.parentElement?.tagName}`;
     this.overlay.attach(video);
-    if (cellDebug()) document.body.dataset.ocrDebugAfterAttach = `container=${(this.overlay as unknown as { container?: HTMLElement }).container?.tagName}`;
+    if (TihokaDebug()) document.body.dataset.ocrDebugAfterAttach = `container=${(this.overlay as unknown as { container?: HTMLElement }).container?.tagName}`;
 
     // Attach region selector in view mode (green rectangle showing scan area).
     const initialRegion = originState.customRegion ?? defaultBottomRegion(this.config.subtitleRegionPct, originState.subtitleRegionWidthPct);
@@ -246,7 +246,7 @@ export class OcrSession {
     }
 
     this.loopCount = (this.loopCount ?? 0) + 1;
-    if (cellDebug()) document.body.dataset.ocrLoopCount = String(this.loopCount);
+    if (TihokaDebug()) document.body.dataset.ocrLoopCount = String(this.loopCount);
 
     try {
       const captureStart = performance.now();
@@ -258,12 +258,12 @@ export class OcrSession {
       const frameTimeMs = this.video.currentTime * 1000;
 
       const region = computeSubtitleRegion(frame.width, frame.height, this.config.subtitleRegionPct, this.config.subtitleRegionWidthPct, this.config.customRegion);
-      if (cellDebug()) document.body.dataset.ocrCropRegion = JSON.stringify(region);
+      if (TihokaDebug()) document.body.dataset.ocrCropRegion = JSON.stringify(region);
 
       this.processing = true;
       void this.processFrame(frame, frameTimeMs).finally(() => {
         this.processing = false;
-        if (cellDebug()) {
+        if (TihokaDebug()) {
           const totalMs = performance.now() - captureStart;
           const prev = (globalThis as { __ocrLatencyLog?: number[] }).__ocrLatencyLog ?? [];
           prev.push(totalMs);
@@ -274,7 +274,7 @@ export class OcrSession {
         }
       });
     } catch (e) {
-      if (cellDebug()) document.body.dataset.ocrLoopError = String(e)?.slice(0, 200);
+      if (TihokaDebug()) document.body.dataset.ocrLoopError = String(e)?.slice(0, 200);
       this.processing = false;
     }
 
@@ -300,7 +300,7 @@ export class OcrSession {
         this.config,
       );
 
-      if (cellDebug()) {
+      if (TihokaDebug()) {
         const statuses = (document.body.dataset.ocrPipelineStatuses || '').split(',').filter(Boolean);
         statuses.push(result.status);
         document.body.dataset.ocrPipelineStatuses = statuses.slice(-20).join(',');
@@ -326,7 +326,7 @@ export class OcrSession {
 
       if (result.status === 'drm_detected') {
         // Stop OCR — DRM-protected content.
-        if (cellDebug()) document.body.dataset.ocrDrmDetected = `meanLuma=${result.meanLuma}`;
+        if (TihokaDebug()) document.body.dataset.ocrDrmDetected = `meanLuma=${result.meanLuma}`;
         void this.stop();
         return;
       }
@@ -344,7 +344,7 @@ export class OcrSession {
 
       if (result.status === 'ocr' && this.video) {
         const hitboxes = createHitboxes(result.results, result.scriptRuns);
-        if (cellDebug()) logger.debug(`[OCR] t=${(frameTimeMs / 1000).toFixed(2)}s text=${JSON.stringify(result.results.map(r => r.text))} hitboxes=${hitboxes.length}`);
+        if (TihokaDebug()) logger.debug(`[OCR] t=${(frameTimeMs / 1000).toFixed(2)}s text=${JSON.stringify(result.results.map(r => r.text))} hitboxes=${hitboxes.length}`);
         this.overlay.updateHitboxes(hitboxes, this.video.videoWidth, this.video.videoHeight);
 
         // T16: Wire hitbox clicks → SubtitleTriggerController → dictionary popup.
@@ -359,7 +359,7 @@ export class OcrSession {
       }
     } catch (e) {
       // Dev debug: expose errors via DOM dataset (visible from MAIN world).
-      if (cellDebug()) {
+      if (TihokaDebug()) {
         const errs = (document.body.dataset.ocrErrors || '').split('\n').filter(Boolean);
         errs.push(String(e));
         document.body.dataset.ocrErrors = errs.slice(-10).join('\n');
@@ -396,14 +396,14 @@ export class OcrSession {
           undefined,
           half,
         );
-        if (cellDebug()) {
+        if (TihokaDebug()) {
           const statuses = (document.body.dataset.ocrPipelineStatuses || '').split(',').filter(Boolean);
           statuses.push(result.status);
           document.body.dataset.ocrPipelineStatuses = statuses.slice(-20).join(',');
         }
         if (result.status === 'drm_detected') {
           // Stop OCR — DRM-protected content (either stream).
-          if (cellDebug()) document.body.dataset.ocrDrmDetected = `meanLuma=${result.meanLuma}`;
+          if (TihokaDebug()) document.body.dataset.ocrDrmDetected = `meanLuma=${result.meanLuma}`;
           await this.stop();
           return;
         }
@@ -417,10 +417,10 @@ export class OcrSession {
           this.markProcessed(frameTimeMs);
           hasUpdate = true;
         } else if (result.status === 'error') {
-          if (cellDebug()) document.body.dataset.ocrLastError = (result as { error?: string }).error?.slice(0, 200);
+          if (TihokaDebug()) document.body.dataset.ocrLastError = (result as { error?: string }).error?.slice(0, 200);
         }
       } catch (e) {
-        if (cellDebug()) {
+        if (TihokaDebug()) {
           const errs = (document.body.dataset.ocrErrors || '').split('\n').filter(Boolean);
           errs.push(String(e));
           document.body.dataset.ocrErrors = errs.slice(-10).join('\n');
@@ -438,12 +438,12 @@ export class OcrSession {
     const nativeLang = resolveOcrLang(originState.nativeLangOverride ?? null, systemLangs.native);
     const plan = planSplitEngines(targetLang, nativeLang, deviceMemoryGb());
     const targetInit = await this.controller.init(targetLang, 'webgpu', plan.targetKey);
-    if (cellDebug()) document.body.dataset.ocrInitResult = JSON.stringify(targetInit);
+    if (TihokaDebug()) document.body.dataset.ocrInitResult = JSON.stringify(targetInit);
     if (plan.dualEngine) {
       const nativeInit = await this.controller.init(nativeLang, 'webgpu', plan.nativeKey);
       if (nativeInit.status !== 'ready') {
         // Graceful: native stream falls back to the target engine (low-memory behavior).
-        if (cellDebug()) document.body.dataset.ocrNativeInitError = nativeInit.error ?? 'unknown';
+        if (TihokaDebug()) document.body.dataset.ocrNativeInitError = nativeInit.error ?? 'unknown';
         this.splitEngineKeys = { target: plan.targetKey, native: plan.targetKey };
         return;
       }
@@ -490,7 +490,7 @@ export class OcrSession {
       cues[cues.length - 1] = { ...last, end: Math.max(last.end, nowMs + 30000) };
       return cues;
     };
-    window.postMessage({ type: '__CELL_OCR_TRACKS', targetCues: extendLastCue(targetCues), nativeCues: extendLastCue(nativeCues) }, window.location.origin);
+    window.postMessage({ type: '__Tihoka_OCR_TRACKS', targetCues: extendLastCue(targetCues), nativeCues: extendLastCue(nativeCues) }, window.location.origin);
     this.splitTracksPosted = true;
   }
 
@@ -502,7 +502,7 @@ export class OcrSession {
   /** Tell the subtitle controller the OCR tracks are gone (session stop / split off). */
   private endOcrTracks(): void {
     if (!this.splitTracksPosted) return;
-    window.postMessage({ type: '__CELL_OCR_TRACKS_END' }, window.location.origin);
+    window.postMessage({ type: '__Tihoka_OCR_TRACKS_END' }, window.location.origin);
     this.splitTracksPosted = false;
   }
 
@@ -769,7 +769,7 @@ export async function stopOcrSession(): Promise<void> {
 
 /** Post OCR enabled state to other content scripts (subtitle overlay toolbar). */
 function postOcrState(enabled: boolean): void {
-  window.postMessage({ type: '__CELL_OCR_STATE', enabled }, '*');
+  window.postMessage({ type: '__Tihoka_OCR_STATE', enabled }, '*');
 }
 
 /** T19+T20: Initialize OCR content script. */
@@ -807,7 +807,7 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
   window.addEventListener('message', (e) => {
     if (e.source !== window) return;
     const data = e.data as { type?: string };
-    if (data?.type !== '__CELL_OCR_TOGGLE') return;
+    if (data?.type !== '__Tihoka_OCR_TOGGLE') return;
     void (async () => {
       if (!currentOrigin) {
         currentOrigin = extractOriginFromUrl(window.location.href);
@@ -827,7 +827,7 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
   window.addEventListener('message', (e) => {
     if (e.source !== window) return;
     const data = e.data as { type?: string };
-    if (data?.type !== '__CELL_OCR_QUERY_STATE') return;
+    if (data?.type !== '__Tihoka_OCR_QUERY_STATE') return;
     const running = activeSession?.isRunning() ?? false;
     postOcrState(running);
     if (running) activeSession?.repostCues();
@@ -867,7 +867,7 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
   window.addEventListener('message', (e) => {
     if (e.source !== window) return;
     const data = e.data as { type?: string; mode?: RegionSelectorMode | 'reset' };
-    if (data?.type !== '__CELL_OCR_REGION_COMMAND') return;
+    if (data?.type !== '__Tihoka_OCR_REGION_COMMAND') return;
     if (!activeSession?.isRunning()) return;
     if (data.mode === 'reset') {
       activeSession.resetRegion();
@@ -894,9 +894,9 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
   });
 
   // Dev debug hook: page can request OCR init via postMessage (used by MCP browser tests).
-  // Usage: postMessage({ type: '__CELL_OCR_DEBUG_INIT', origin: '127.0.0.1', languageMode: 'auto', splitEnabled: true, splitRatio: 0.5, splitTopIsTarget: true, customRegion: {xPct,yPct,widthPct,heightPct} }, '*')
-  // Only compiled in for E2E builds (CELL_E2E=1) — production builds skip it.
-  if (cellDebug()) {
+  // Usage: postMessage({ type: '__Tihoka_OCR_DEBUG_INIT', origin: '127.0.0.1', languageMode: 'auto', splitEnabled: true, splitRatio: 0.5, splitTopIsTarget: true, customRegion: {xPct,yPct,widthPct,heightPct} }, '*')
+  // Only compiled in for E2E builds (Tihoka_E2E=1) — production builds skip it.
+  if (TihokaDebug()) {
   window.addEventListener('message', (e) => {
     if (e.source !== window) return;
     const data = e.data as {
@@ -908,7 +908,7 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
       splitTopIsTarget?: boolean;
       customRegion?: { xPct: number; yPct: number; widthPct: number; heightPct: number };
     };
-    if (data?.type !== '__CELL_OCR_DEBUG_INIT' || !data.origin) return;
+    if (data?.type !== '__Tihoka_OCR_DEBUG_INIT' || !data.origin) return;
     void (async () => {
       try {
         if (activeSession?.isRunning()) {

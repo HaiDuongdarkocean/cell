@@ -1,0 +1,647 @@
+/* Sync redesign mockup — shell + redesigned blocks. Tokens only. */
+
+html,
+body {
+  background: var(--color-background);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* === Shell === */
+
+.msrPage {
+  min-height: 100vh;
+  padding: var(--space-6) var(--space-4);
+}
+
+.msrHeader {
+  max-width: 960px;
+  margin: 0 auto var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.msrTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.msrSubtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+  max-width: 72ch;
+}
+
+.msrControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  align-items: center;
+}
+
+.msrControl {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.msrControl select {
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-1-5) var(--space-2);
+}
+
+.msrSeg {
+  display: inline-flex;
+  gap: var(--space-0-5);
+  padding: var(--space-0-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.msrSeg button {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  padding: var(--space-1-5) var(--space-3);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.msrSeg button[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+}
+
+/* === Fake settings frame (sidebar + content) === */
+
+.msrFrame {
+  margin: 0 auto;
+  display: flex;
+  gap: var(--space-4);
+  max-width: 900px;
+  transition: max-width var(--duration-normal) var(--ease-out);
+}
+
+.msrFrame[data-width='narrow'] {
+  max-width: 420px;
+}
+
+.msrNav {
+  flex: 0 0 auto;
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  padding-top: var(--space-6);
+}
+
+.msrNavItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: start;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  min-width: 0;
+}
+
+.msrNavItem-btn {
+  cursor: pointer;
+}
+
+.msrNavItem[data-active='true'] {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+  box-shadow: inset var(--space-0-5) 0 0 0 var(--color-primary);
+}
+
+.msrNavLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.msrContent {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  text-align: start;
+}
+
+/* Explicit divider between the two systems in single-page mode —
+   requirement: a new user must see they are different systems. */
+.msrDivider {
+  border: 0;
+  border-top: var(--border-width-hairline) solid var(--color-divider);
+  margin: var(--space-2) 0;
+  width: 100%;
+}
+
+.msrFrame[data-width='narrow'] .msrNav {
+  width: auto;
+}
+
+.msrFrame[data-width='narrow'] .msrNavLabel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* === Section title with icon (matches SettingsSection header) === */
+
+.msrSectionTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* === Status hero — the "where am I / what now" block, always on top === */
+
+.msrHero {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  text-align: start;
+}
+
+.msrHeroDot {
+  margin-top: var(--space-1-5);
+  flex: 0 0 auto;
+}
+
+.msrHeroText {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.msrHeroTitle {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  text-align: start;
+}
+
+.msrHeroDesc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
+  text-align: start;
+}
+
+.msrHeroAction {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  align-self: center;
+}
+
+.msrHero-warn {
+  border-color: var(--color-warning-muted);
+  background: var(--color-warning-subtle);
+}
+
+.msrHero-error {
+  border-color: var(--color-error-muted);
+  background: var(--color-error-subtle);
+}
+
+.msrHero-info {
+  border-color: var(--color-tint-blue-border);
+  background: var(--color-primary-subtle);
+}
+
+.msrProgress {
+  display: block;
+  height: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-field);
+  overflow: hidden;
+  margin-top: var(--space-1);
+}
+
+.msrProgressFill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  transition: width var(--duration-slow) var(--ease-out);
+}
+
+/* === Setup steps (empty state) === */
+
+.msrSetup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+  text-align: start;
+}
+
+.msrSteps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.msrStep {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.msrStepNum {
+  display: inline-grid;
+  place-items: center;
+  width: var(--space-5);
+  height: var(--space-5);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-emphasized);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  flex: 0 0 auto;
+}
+
+.msrStep-current {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.msrStep-current .msrStepNum {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.msrSetupLead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.msrSetupLead p {
+  margin: 0;
+}
+
+/* === Chart cards === */
+
+.msrChartCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  text-align: start;
+}
+
+.msrChartEmpty {
+  border-style: dashed;
+  background: transparent;
+}
+
+.msrChartEmpty p {
+  margin: 0;
+}
+
+.msrChartHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  text-align: start;
+}
+
+.msrStatGrid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.msrStatTihoka {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.msrStatTihoka:last-child {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+}
+
+.msrLegend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-align: start;
+}
+
+.msrLegendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  white-space: nowrap;
+}
+
+.msrLegendKey {
+  display: inline-block;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-xs);
+  flex: 0 0 auto;
+}
+
+.msrLegendKey-primary {
+  background: var(--color-primary);
+}
+
+.msrLegendKey-error {
+  background: var(--color-error);
+}
+
+.msrLegendKey-muted {
+  background: var(--color-data-neutral);
+}
+
+/* === Inline-SVG charts === */
+
+.msrSpark {
+  width: 100%;
+  height: var(--space-8);
+  display: block;
+}
+
+.msrSparkLine {
+  stroke: var(--color-primary);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.msrSparkArea {
+  fill: var(--color-primary-subtle);
+  stroke: none;
+}
+
+.msrSparkDot {
+  fill: var(--color-primary);
+}
+
+.msrSpark-error .msrSparkLine {
+  stroke: var(--color-error);
+}
+
+.msrSpark-error .msrSparkArea {
+  fill: var(--color-error-subtle);
+}
+
+.msrSpark-error .msrSparkDot {
+  fill: var(--color-error);
+}
+
+.msrDonut {
+  width: calc(var(--space-16) + var(--space-8));
+  height: calc(var(--space-16) + var(--space-8));
+  flex: 0 0 auto;
+}
+
+.msrDonutTrack {
+  stroke: var(--color-field);
+  stroke-width: 3.5;
+}
+
+.msrDonutSeg {
+  stroke-width: 3.5;
+  stroke-linecap: round;
+}
+
+.msrDonut-primary {
+  stroke: var(--color-primary);
+}
+
+.msrDonut-success {
+  stroke: var(--color-success);
+}
+
+.msrDonut-warning {
+  stroke: var(--color-warning);
+}
+
+.msrDonut-error {
+  stroke: var(--color-error);
+}
+
+.msrDonut-muted {
+  stroke: var(--color-data-neutral);
+}
+
+.msrDonutCenter {
+  font-size: 7px;
+  font-weight: var(--font-weight-semibold);
+  fill: var(--color-text);
+}
+
+.msrDonutCaption {
+  font-size: 3.4px;
+  fill: var(--color-text-secondary);
+}
+
+.msrBars {
+  width: 100%;
+  height: var(--space-10);
+  display: block;
+}
+
+.msrBar {
+  fill: var(--color-primary-subtle);
+  stroke: none;
+}
+
+.msrBar-last {
+  fill: var(--color-primary);
+}
+
+.msrBar-zero {
+  fill: var(--color-field);
+}
+
+/* === Bridge status line === */
+
+.msrBridgeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: start;
+}
+
+.msrBridgeMeta {
+  margin-inline-start: auto;
+}
+
+/* === Accounts / profile rows === */
+
+.msrList {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.msrAccountRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  flex-wrap: wrap;
+  min-width: 0;
+  text-align: start;
+}
+
+.msrAccountIcon {
+  flex: 0 0 auto;
+}
+
+.msrAccountText {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  text-align: start;
+}
+
+.msrGroupAction {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.msrDestSelect {
+  min-width: calc(var(--space-5) * 7);
+  max-width: 100%;
+  flex: 0 1 auto;
+}
+
+.msrFallback {
+  margin: 0;
+}
+
+/* === Muted disclosure trigger — same recipe as production .flat overrides:
+   transparent background, no border, no ripple, left-aligned, secondary color. */
+
+.msrFlat [data-value] {
+  border-bottom: none;
+}
+
+.msrFlat button[aria-expanded],
+.msrFlat button[aria-expanded]:hover,
+.msrFlat button[aria-expanded]:active {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: var(--color-text-secondary);
+  justify-content: flex-start;
+  width: 100%;
+  text-align: start;
+}
+
+.msrFlat button[aria-expanded] > span:not([data-Tihoka-ripple]) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.msrFlat button[aria-expanded]::after {
+  display: none;
+}
+
+.msrFlat button[aria-expanded] [data-Tihoka-ripple] {
+  display: none;
+}
+
+.msrFlat button[aria-expanded]:hover,
+.msrFlat button[aria-expanded]:hover svg {
+  color: var(--color-text);
+}
+
+.msrAdvTrigger {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  min-width: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+/* === Narrow adjustments === */
+
+.msrFrame[data-width='narrow'] .msrHero {
+  flex-wrap: wrap;
+}
+
+.msrFrame[data-width='narrow'] .msrHeroAction {
+  align-self: flex-start;
+}
+
+.msrFrame[data-width='narrow'] .msrStatGrid {
+  grid-template-columns: 1fr;
+}
+
+.msrFrame[data-width='narrow'] .msrBridgeMeta {
+  margin-inline-start: 0;
+  flex-basis: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .msrFrame,
+  .msrSeg button,
+  .msrProgressFill {
+    transition: none;
+  }
+}

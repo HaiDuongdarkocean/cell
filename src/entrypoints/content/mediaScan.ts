@@ -2,7 +2,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis';
 import { PageScanner } from './pageScanner';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { findLargestPlayableVideo } from '@/shared/lib/dom/videoFinder';
-import { isCellDebug } from './debugLog';
+import { isTihokaDebug } from './debugLog';
 import { resolveParentFrameOrigin } from '@/shared/lib/dom/frameOrigin';
 
 // ponytail: content script không có chrome.tabs API — gửi message không tabId,
@@ -42,14 +42,14 @@ export function runPageScan(): void {
   const urls = scanner.scan();
 
   // Debug: surface scan results so browser tests can verify the content script
-  // is finding media. Only enabled for E2E builds via CELL_E2E=1.
-  if (isCellDebug()) {
+  // is finding media. Only enabled for E2E builds via Tihoka_E2E=1.
+  if (isTihokaDebug()) {
     const isTop = window.self === window.top;
     const debugTarget = isTop ? window : window.parent;
     const targetOrigin = isTop ? '*' : resolveParentFrameOrigin();
     if (targetOrigin) {
       debugTarget.postMessage({
-        type: '__CELL_DEBUG_PAGE_SCAN',
+        type: '__Tihoka_DEBUG_PAGE_SCAN',
         pageUrl: window.location.href,
         videoUrls: urls.videoUrls,
         subtitleUrls: urls.subtitleUrls,
@@ -57,7 +57,7 @@ export function runPageScan(): void {
       }, targetOrigin);
     }
     document.documentElement.setAttribute(
-      'data-cell-runscan',
+      'data-tihoka-runscan',
       JSON.stringify({ pageUrl: window.location.href, videos: urls.videoUrls.length, subtitles: urls.subtitleUrls.length, tracks: urls.trackSubtitles.length }),
     );
   }
@@ -194,9 +194,9 @@ function runSubtitleDiscoveryScan(): void {
         },
       },
     });
-    if (isCellDebug()) {
+    if (isTihokaDebug()) {
       document.documentElement.setAttribute(
-        'data-cell-subtitle-discovery-scan',
+        'data-tihoka-subtitle-discovery-scan',
         JSON.stringify({
           kinds: ['document-html'],
           variable: hasPlayerjsSubtitle ? 'playerjsSubtitle' : hasSubtitleTracks ? 'subtitleTracks' : null,

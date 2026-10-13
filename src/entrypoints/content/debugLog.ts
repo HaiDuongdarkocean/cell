@@ -1,14 +1,14 @@
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 
-export { isCellDebug } from '@/shared/lib/cellDebug';
-import { isCellDebug } from '@/shared/lib/cellDebug';
+export { isTihokaDebug } from '@/shared/lib/TihokaDebug';
+import { isTihokaDebug } from '@/shared/lib/TihokaDebug';
 
 // ISOLATED content-script marker (verify injection from DevTools — MAIN world
 // cannot see this because ISOLATED world globals are not shared with MAIN).
 export function markContentScriptInjected(): number {
   const csInjectTime = performance.now();
-  if (isCellDebug()) {
+  if (isTihokaDebug()) {
     const win = window as unknown as Record<string, unknown>;
     win.__YT_CS_INJECTED = true;
     win.__YT_CS_INJECT_TIME = csInjectTime;
@@ -22,19 +22,19 @@ export function markContentScriptInjected(): number {
 export function installDebugFrameMessageListener(): void {
   if (window.self === window.top) {
     window.addEventListener('message', (e) => {
-      // Debug-only DOM markers (E2E builds, CELL_E2E=1): autoload acknowledgements
+      // Debug-only DOM markers (E2E builds, Tihoka_E2E=1): autoload acknowledgements
       // from player iframes + PAGE_SCAN signals from non-own frames.
-      if (isCellDebug()) {
-        if (e.data?.type === '__CELL_AUTOLOAD_HANDLED') {
+      if (isTihokaDebug()) {
+        if (e.data?.type === '__Tihoka_AUTOLOAD_HANDLED') {
           document.documentElement.setAttribute(
-            'data-cell-autoload-handled',
+            'data-tihoka-autoload-handled',
             JSON.stringify({ href: e.data.href, target: e.data.target }),
           );
         }
         const isOwnFrame = e.source === window || e.origin === window.location.origin;
-        if (e.data?.type === '__CELL_DEBUG_PAGE_SCAN' && e.data?.pageUrl && !isOwnFrame) {
+        if (e.data?.type === '__Tihoka_DEBUG_PAGE_SCAN' && e.data?.pageUrl && !isOwnFrame) {
           document.documentElement.setAttribute(
-            'data-cell-iframe-scan',
+            'data-tihoka-iframe-scan',
             JSON.stringify({ pageUrl: e.data.pageUrl, videos: e.data.videoUrls?.length ?? 0, subtitles: e.data.subtitleUrls?.length ?? 0 }),
           );
         }
@@ -50,7 +50,7 @@ const MAX_MEDIA_LOG_ATTEMPTS = 12;
  * do not require an extension page or DevTools. Runs in the top frame only. */
 async function logDetectedMedia(isTopFrame: boolean): Promise<void> {
   if (!isTopFrame) return;
-  if (!isCellDebug()) return;
+  if (!isTihokaDebug()) return;
   try {
     const res: { success?: boolean; data?: { subtitles?: unknown[]; videos?: unknown[] }; error?: string } | undefined =
       await sendMessage({
@@ -73,10 +73,10 @@ async function logDetectedMedia(isTopFrame: boolean): Promise<void> {
         : undefined,
       error: res?.success ? undefined : (res?.error ?? 'no response'),
     };
-    document.documentElement.setAttribute('data-cell-debug-media', JSON.stringify(value));
+    document.documentElement.setAttribute('data-tihoka-debug-media', JSON.stringify(value));
   } catch (err) {
     document.documentElement.setAttribute(
-      'data-cell-debug-media',
+      'data-tihoka-debug-media',
       JSON.stringify({ t: Date.now(), error: String(err).slice(0, 200) }),
     );
   }
@@ -84,7 +84,7 @@ async function logDetectedMedia(isTopFrame: boolean): Promise<void> {
 
 export function scheduleMediaLog(isTopFrame: boolean): void {
   if (!isTopFrame) return;
-  if (!isCellDebug()) return;
+  if (!isTihokaDebug()) return;
   setTimeout(() => {
     mediaLogAttempts++;
     void logDetectedMedia(isTopFrame);

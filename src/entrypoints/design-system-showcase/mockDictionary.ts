@@ -281,7 +281,7 @@ const base64ToBytes = (base64: string): Uint8Array => {
 };
 
 function pushMessage(message: unknown): void {
-  const listeners = (globalThis as { __cellOnMessageListeners?: Set<(m: unknown) => void> }).__cellOnMessageListeners;
+  const listeners = (globalThis as { __TihokaOnMessageListeners?: Set<(m: unknown) => void> }).__TihokaOnMessageListeners;
   listeners?.forEach((cb) => { cb(message); });
 }
 
@@ -569,7 +569,7 @@ export function installMockDictionarySendMessage(): void {
   if (installed) return;
   installed = true;
 
-  (globalThis as unknown as { __cellSendMessage?: (message: unknown) => Promise<unknown> }).__cellSendMessage =
+  (globalThis as unknown as { __TihokaSendMessage?: (message: unknown) => Promise<unknown> }).__TihokaSendMessage =
     mockSendMessage;
 }
 

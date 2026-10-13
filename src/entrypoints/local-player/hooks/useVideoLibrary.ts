@@ -112,7 +112,7 @@ export function useVideoLibrary(deps: VideoLibraryDeps): VideoLibrary {
 
   const loadVideo = useCallback(
     async (file: File, handle?: FileSystemFileHandle): Promise<void> => {
-      logger.debug('[Cell:autoMatch] loadVideo ENTER', {
+      logger.debug('[Tihoka:autoMatch] loadVideo ENTER', {
         filename: file.name,
         hasHandle: !!handle,
         fileSize: file.size,
@@ -258,26 +258,26 @@ export function useVideoLibrary(deps: VideoLibraryDeps): VideoLibrary {
 
   const handleVideoSelect = useCallback(
     async (videoId_: string): Promise<void> => {
-      logger.debug('[Cell:autoMatch] handleVideoSelect ENTER', { videoId_ });
+      logger.debug('[Tihoka:autoMatch] handleVideoSelect ENTER', { videoId_ });
       const cachedFile = caches.videoFileCacheRef.current.get(videoId_);
       if (cachedFile) {
-        logger.debug('[Cell:autoMatch] handleVideoSelect: cached file', cachedFile.name);
+        logger.debug('[Tihoka:autoMatch] handleVideoSelect: cached file', cachedFile.name);
         await loadVideo(cachedFile);
         return;
       }
       const record = await getVideo(videoId_);
-      logger.debug('[Cell:autoMatch] handleVideoSelect: record', {
+      logger.debug('[Tihoka:autoMatch] handleVideoSelect: record', {
         found: !!record,
         hasHandle: !!record?.fileHandle,
       });
       if (!record?.fileHandle) return;
       const granted = await verifyPermission(record.fileHandle, false);
-      logger.debug('[Cell:autoMatch] handleVideoSelect: permission', granted);
+      logger.debug('[Tihoka:autoMatch] handleVideoSelect: permission', granted);
       if (!granted) return;
       const file = await record.fileHandle.getFile();
       if (record.dirHandle) {
         caches.dirHandleRef.current = record.dirHandle;
-        logger.debug('[Cell:autoMatch] handleVideoSelect: dirHandle restored from record');
+        logger.debug('[Tihoka:autoMatch] handleVideoSelect: dirHandle restored from record');
       }
       await loadVideo(file, record.fileHandle);
     },

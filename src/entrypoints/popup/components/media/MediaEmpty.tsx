@@ -56,7 +56,7 @@ export function MediaEmpty({ type, scanning = false }: MediaEmptyProps): React.J
       className={`${styles.empty} ${isScanning ? styles.scanning : ''}`}
       role="status"
       aria-live="polite"
-      data-cell-id="empty-media"
+      data-tihoka-id="empty-media"
     >
       <EmptyState
         icon={isScanning ? config.scanningIcon : config.icon}

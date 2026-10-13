@@ -4,7 +4,7 @@ import type { VideoEpisodeChangedPayload } from '@/entities/message';
 import { getFirstVideo } from '@/shared/lib/dom/videoFinder';
 import { findAndInitOverlay } from './videoOverlay';
 import { scanAndReportIfFound } from './mediaScan';
-import { isCellDebug } from './debugLog';
+import { isTihokaDebug } from './debugLog';
 
 // === In-page episode/movie switch detection (ADR-010) ===
 // SPA sites (themoviebox.org) switch episodes by REPLACING the `<video>`
@@ -62,9 +62,9 @@ function reportEpisodeChanged(
   if (!hasSeenFirstVideo) return; // first video/iframe — baseline, not a switch
   // Debug marker visible in the page so DevTools / E2E can verify the top frame
   // saw the provider/episode switch.
-  if (isCellDebug()) {
-    document.documentElement.setAttribute('data-cell-episode-changed', reason);
-    document.documentElement.setAttribute('data-cell-episode-time', String(Date.now()));
+  if (isTihokaDebug()) {
+    document.documentElement.setAttribute('data-tihoka-episode-changed', reason);
+    document.documentElement.setAttribute('data-tihoka-episode-time', String(Date.now()));
   }
   // Tell the background to clear the previous episode's media before the new
   // episode's media is detected.

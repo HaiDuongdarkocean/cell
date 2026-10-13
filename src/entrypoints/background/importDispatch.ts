@@ -2,7 +2,7 @@
  * Resource-import executor dispatch — runs importFile in the offscreen
  * document so parse + IndexedDB insert bursts leave the SW responsive.
  *
- * SW → offscreen: one `import-run` message on BroadcastChannel('cell-import')
+ * SW → offscreen: one `import-run` message on BroadcastChannel('Tihoka-import')
  * (structured clone carries the File; runtime messages are JSON-only).
  * Offscreen → SW: accepted/progress/resource/done/failed events on the same
  * channel — mapped back onto the JobRegistry so progress and terminal state

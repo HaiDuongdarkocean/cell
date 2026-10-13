@@ -4,9 +4,11 @@ import { listCardSourceTerms, srsDeckLangCode } from '@/features/ankiStatusSync'
 import { broadcastSrsCardsChanged } from './srsCardsBroadcast';
 
 jest.mock('@/features/ankiStatusSync', () => ({
-  ANKI_STATUS_SYNC_ALARM: 'cell.ankiStatusSync.tick',
+  ANKI_STATUS_SYNC_ALARM: 'Tihoka.ankiStatusSync.tick',
   ANKI_SYNC_PERIOD_MINUTES: 5,
   getSyncState: jest.fn(async () => ({})),
+  ankiStatusSyncView: jest.fn(async () => ({})),
+  ankiSyncRunning: jest.fn(() => false),
   listCardSourceTerms: jest.fn(),
   srsDeckLangCode: jest.fn(),
   runAnkiStatusSync: jest.fn(),

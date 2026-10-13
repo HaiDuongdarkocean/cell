@@ -92,7 +92,7 @@ export function Showcase(): ReactElement {
               <Spinner ariaLabel="Searching" />
               <Text>Searching…</Text>
             </HStack>
-            <VStack gap="2" data-cell-id="skeleton-list">
+            <VStack gap="2" data-tihoka-id="skeleton-list">
               <Skeleton width="100%" height={40} />
               <Skeleton width="80%" height={40} />
               <Skeleton width="60%" height={40} />

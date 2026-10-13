@@ -44,11 +44,11 @@ const PALETTES: Palette[] = [
 function tokenEl(word: Word): HTMLSpanElement {
   const [text, status] = word;
   const span = document.createElement('span');
-  span.className = 'js-cell-token';
+  span.className = 'js-Tihoka-token';
   if (status) {
-    span.classList.add(`js-cell-token--status-${status}`);
+    span.classList.add(`js-Tihoka-token--status-${status}`);
     if (status === 'known' || status === 'ignore') {
-      span.classList.add('js-cell-token--popup-open');
+      span.classList.add('js-Tihoka-token--popup-open');
     }
   }
   span.textContent = text;

@@ -73,7 +73,7 @@ export function DownloadCard({
           size="xs"
           onClick={() => onResume(download.id)}
           aria-label={t('downloads.action.resume')}
-          data-cell-id="resume-btn"
+          data-tihoka-id="resume-btn"
         >
           <Icon name="play" size={18}  />
         </Button>,
@@ -85,7 +85,7 @@ export function DownloadCard({
           size="xs"
           onClick={() => onPause(download.id)}
           aria-label={t('downloads.action.pause')}
-          data-cell-id="pause-btn"
+          data-tihoka-id="pause-btn"
         >
           <Icon name="pause" size={18}  />
         </Button>,
@@ -99,7 +99,7 @@ export function DownloadCard({
         size="xs"
         onClick={() => onRetry(download.id)}
         aria-label={t('jobs.action.retry')}
-        data-cell-id="retry-btn"
+        data-tihoka-id="retry-btn"
       >
         <Icon name="rotateCcw" size={18}  />
       </Button>,
@@ -113,7 +113,7 @@ export function DownloadCard({
         variant="destructive"
         onClick={() => onCancel(download.id)}
         aria-label={t('downloads.action.cancel')}
-        data-cell-id="cancel-btn"
+        data-tihoka-id="cancel-btn"
       >
         <Icon name="x" size={18}  />
       </Button>,
@@ -126,7 +126,7 @@ export function DownloadCard({
         variant="destructive"
         onClick={() => onRemove(download.id)}
         aria-label={t('downloads.action.remove')}
-        data-cell-id="remove-btn"
+        data-tihoka-id="remove-btn"
       >
         <Icon name="trash" size={18}  />
       </Button>,
@@ -235,7 +235,7 @@ export function DownloadCard({
     <Card
       variant="default"
       className={`${styles.card} ${isError ? styles.error : ''} ${isQueued ? styles.queued : ''}`}
-      data-cell-id="download-item"
+      data-tihoka-id="download-item"
     >
       <VStack gap="2">
         {/* Header */}

@@ -146,7 +146,7 @@ export function Showcase(): ReactElement {
                   className={styles.candidate}
                   onClick={() => { if (status !== 'acquiring') handleSelect(candidate); }}
                   onKeyDown={(e) => handleKeySelect(e, candidate)}
-                  data-cell-id={`candidate-${candidate.id}`}
+                  data-tihoka-id={`candidate-${candidate.id}`}
                 >
                   <HStack gap="3" align="center" className={styles.candidateRow}>
                     <StatusDot

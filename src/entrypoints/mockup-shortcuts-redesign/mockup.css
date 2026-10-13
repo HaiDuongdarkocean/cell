@@ -1,0 +1,201 @@
+/* Shortcuts redesign mockup — shell + redesigned section. Tokens only. */
+
+html,
+body {
+  background: var(--color-background);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* === Shell === */
+
+.scrPage {
+  min-height: 100vh;
+  padding: var(--space-6) var(--space-4);
+}
+
+.scrHeader {
+  max-width: 960px;
+  margin: 0 auto var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.scrTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.scrSubtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+  max-width: 72ch;
+}
+
+.scrControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  align-items: center;
+}
+
+.scrControl {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.scrControl select {
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-1-5) var(--space-2);
+}
+
+.scrSeg {
+  display: inline-flex;
+  gap: var(--space-0-5);
+  padding: var(--space-0-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.scrSeg button {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  padding: var(--space-1-5) var(--space-3);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.scrSeg button[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+}
+
+/* === Content frame — the constrained column the section lives in === */
+
+.scrFrame {
+  margin: 0 auto;
+  max-width: 960px;
+  transition: max-width var(--duration-normal) var(--ease-out);
+}
+
+.scrFrame[data-width='narrow'] {
+  max-width: 380px;
+}
+
+.scrContent {
+  min-width: 0;
+  container-type: inline-size;
+  text-align: start;
+}
+
+/* === Group cards — masonry inside the section card === */
+
+.scrMasonry {
+  columns: 1;
+  column-gap: var(--space-4);
+}
+
+@container (min-width: 880px) {
+  .scrMasonry {
+    columns: 2;
+  }
+}
+
+.scrCard {
+  break-inside: avoid;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3) var(--space-3);
+  background: var(--color-surface-elevated);
+  border: var(--border-width-hairline) solid var(--color-border);
+  min-width: 0;
+}
+
+/* Group header reads as the card header — existing group-label recipe
+   (secondary label, semibold) from SettingsGroup, plus a little extra
+   breathing room below it. */
+.scrGroup {
+  gap: 0;
+}
+
+.scrGroup > *:first-child {
+  margin-bottom: var(--space-1);
+}
+
+/* === Rows — label left, pill pinned to the card's right rail === */
+
+.scrRow {
+  gap: var(--space-3);
+}
+
+.scrInputWrap {
+  flex: 0 0 auto;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Conflict badge — out of flow so the pill stays on the card's key rail. */
+.scrConflictDot {
+  position: absolute;
+  inset-inline-end: calc(-1 * var(--space-0-5));
+  top: calc(-1 * var(--space-0-5));
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-destructive);
+}
+
+/* Conflict state — scoped mockup override; shared ShortcutInput CSS untouched. */
+.scrPage button[aria-invalid='true'],
+.scrPage button[aria-invalid='true']:hover {
+  border-color: var(--color-destructive);
+}
+
+/* === Design notes === */
+
+.scrNotes {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-2) var(--space-1) var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.scrNotesTitle {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-2);
+}
+
+.scrNotesList {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrFrame,
+  .scrSeg button {
+    transition: none;
+  }
+}

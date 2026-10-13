@@ -8,7 +8,7 @@
   justify-content: center;
   pointer-events: none;
   z-index: var(--z-popover);
-  animation: cell-flash var(--duration-normal) var(--ease-standard) forwards;
+  animation: Tihoka-flash var(--duration-normal) var(--ease-standard) forwards;
 }
 
 .iconWrap {
@@ -22,16 +22,16 @@
   color: var(--color-overlay-text);
   opacity: 0;
   transform: scale(0.6);
-  animation: cell-flash-icon var(--duration-normal) var(--ease-spring) forwards;
+  animation: Tihoka-flash-icon var(--duration-normal) var(--ease-spring) forwards;
 }
 
-@keyframes cell-flash {
+@keyframes Tihoka-flash {
   0%   { opacity: 1; }
   70%  { opacity: 1; }
   100% { opacity: 0; }
 }
 
-@keyframes cell-flash-icon {
+@keyframes Tihoka-flash-icon {
   0%   { opacity: 0; transform: scale(0.6); }
   30%  { opacity: 1; transform: scale(1.1); }
   60%  { opacity: 1; transform: scale(1); }

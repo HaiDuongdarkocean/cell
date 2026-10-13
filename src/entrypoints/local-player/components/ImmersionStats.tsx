@@ -50,7 +50,7 @@ export function ImmersionStats(): React.JSX.Element {
     : undefined;
 
   return (
-    <Card className={styles.card} data-cell-id="immersion-stats">
+    <Card className={styles.card} data-tihoka-id="immersion-stats">
       <div className={styles.row}>
         <Icon name="clock" size="sm" className={styles.icon} />
         <span className={styles.total} title={sourceTitle}>

@@ -41,7 +41,7 @@ export function Showcase(): ReactElement {
               <Spinner ariaLabel="Loading results" />
               <Text>Loading results…</Text>
             </HStack>
-            <VStack gap="2" className={styles.skeletonList} data-cell-id="skeleton-list">
+            <VStack gap="2" className={styles.skeletonList} data-tihoka-id="skeleton-list">
               <Skeleton width="100%" height={40} />
               <Skeleton width="80%" height={40} />
               <Skeleton width="90%" height={40} />
@@ -113,7 +113,7 @@ export function Showcase(): ReactElement {
             key={btn.value}
             variant={state === btn.value ? 'primary' : 'secondary'}
             onClick={() => setState(btn.value)}
-            data-cell-id={`state-${btn.value}`}
+            data-tihoka-id={`state-${btn.value}`}
           >
             {btn.label}
           </Button>

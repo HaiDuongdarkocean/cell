@@ -6,7 +6,7 @@
  * NavCluster actions (prev/next/repeat/rewind/forward/play-pause), AB-loop
  * state, and subtitle offset control.
  *
- * The engine dispatches `cell:cues:updated` events on `document` → the global
+ * The engine dispatches `Tihoka:cues:updated` events on `document` → the global
  * `cuesStore` listener syncs cues + active indices → `SubtitleBlock` re-renders.
  * No direct coupling between this hook and SubtitleBlock.
  */

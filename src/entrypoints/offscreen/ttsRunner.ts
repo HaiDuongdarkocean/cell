@@ -8,7 +8,7 @@ import { t } from '@/shared/i18n';
 import { registerOffscreenListener, sendMessage } from '@/shared/lib/chrome-apis';
 import { TtsSpeakLocalPayloadSchema, TtsDownloadVoicePayloadSchema } from '@/entities/message/dictionarySchemas';
 import { createSupertonicTtsEngine } from '@/features/tts/services/supertonicTtsEngine';
-import { downloadVoicePack, isVoicePackDownloaded } from '@/features/tts/services/ttsDownloadManager';
+import { downloadVoice, downloadVoicePack, isVoiceDownloaded, isVoicePackDownloaded } from '@/features/tts/services/ttsDownloadManager';
 import type { MessageResponse } from '@/entities/message';
 
 const engine = createSupertonicTtsEngine();
@@ -61,14 +61,21 @@ registerOffscreenListener((message, sender, sendResponse) => {
 
     void (async () => {
       try {
-        const { language, jobId } = parsed.data;
-        await downloadVoicePack(language, ({ loaded, total }) => {
+        const { language, jobId, voice } = parsed.data;
+        const onProgress = ({ loaded, total }: { loaded: number; total: number }) => {
           void sendMessage({
             type: MESSAGE_TYPES.TTS_DOWNLOAD_PROGRESS,
             payload: { language, loaded, total, jobId },
           });
-        });
-        const installed = await isVoicePackDownloaded();
+        };
+        let installed: boolean;
+        if (voice) {
+          await downloadVoice(voice, onProgress);
+          installed = await isVoiceDownloaded(voice);
+        } else {
+          await downloadVoicePack(language, onProgress);
+          installed = await isVoicePackDownloaded();
+        }
         sendResponse({ success: true, data: installed } as MessageResponse<boolean>);
       } catch (err) {
         const msgText = err instanceof Error ? err.message : String(err);

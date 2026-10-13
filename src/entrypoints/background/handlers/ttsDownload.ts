@@ -14,13 +14,13 @@ import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import { JobDuplicateError } from '@/features/jobs/logic/jobRegistry';
 import { getJobRegistry, whenJobsReady } from './jobs';
-import { isVoicePackDownloaded } from '@/features/tts/services/ttsDownloadManager';
+import { isVoiceDownloaded, isVoicePackDownloaded } from '@/features/tts/services/ttsDownloadManager';
 import {
   DEFAULT_DICTIONARY_POPUP_SETTINGS,
   DEFAULT_TTS_SETTINGS,
 } from '@/shared/config/config';
 
-async function applyVoiceDownloadEffect(ctx: BackgroundContext, language: string): Promise<void> {
+async function applyVoiceDownloadEffect(ctx: BackgroundContext, language: string, voice?: string): Promise<void> {
   const settings = await ctx.loadSettings();
   const popup = settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS;
   const tts = popup.tts ?? DEFAULT_TTS_SETTINGS;
@@ -28,11 +28,17 @@ async function applyVoiceDownloadEffect(ctx: BackgroundContext, language: string
     ...settings,
     dictionaryPopup: {
       ...popup,
-      tts: {
-        ...tts,
-        downloadedLanguages: Array.from(new Set([...tts.downloadedLanguages, language])),
-        localTtsLanguage: language,
-      },
+      tts: voice
+        ? {
+            ...tts,
+            supertonicDownloadedVoices: Array.from(new Set([...tts.supertonicDownloadedVoices, voice])),
+          }
+        : {
+            ...tts,
+            downloadedLanguages: Array.from(new Set([...tts.downloadedLanguages, language])),
+            localTtsLanguage: language,
+            supertonicDownloadedVoices: Array.from(new Set([...tts.supertonicDownloadedVoices, 'M1'])),
+          },
     },
   });
 }
@@ -43,15 +49,16 @@ export function registerTtsDownloadHandlers(ctx: BackgroundContext): void {
   registry.registerExecutor('voice-download', {
     start: async (job) => {
       const language = job.params.language as string;
+      const voice = job.params.voice as string | undefined;
       const response = await ctx.offscreenManager.sendToOffscreen<MessageResponse<boolean>>({
         type: MESSAGE_TYPES.TTS_DOWNLOAD_VOICE,
-        payload: { language, jobId: job.id },
+        payload: { language, jobId: job.id, voice },
       });
       if (!response?.success) {
         throw new Error(response?.error ?? t('tts.local.downloadFailed'));
       }
       try {
-        await applyVoiceDownloadEffect(ctx, language);
+        await applyVoiceDownloadEffect(ctx, language, voice);
         registry.markDone(job.id, { language });
       } catch (err) {
         registry.markFailed(job.id, err instanceof Error ? err.message : String(err), true);
@@ -59,9 +66,10 @@ export function registerTtsDownloadHandlers(ctx: BackgroundContext): void {
     },
     reconcile: async (job) => {
       const language = job.params.language as string;
-      const installed = await isVoicePackDownloaded();
+      const voice = job.params.voice as string | undefined;
+      const installed = voice ? await isVoiceDownloaded(voice) : await isVoicePackDownloaded();
       if (!installed) return 'interrupted';
-      await applyVoiceDownloadEffect(ctx, language);
+      await applyVoiceDownloadEffect(ctx, language, voice);
       return 'done';
     },
   });
@@ -72,24 +80,25 @@ export function registerTtsDownloadHandlers(ctx: BackgroundContext): void {
     if (!parsed.success) {
       return { success: false, error: `Invalid TTS_DOWNLOAD_VOICE payload: ${parsed.error.message}` } as MessageResponse<{ jobId: string }>;
     }
-    const { language } = parsed.data;
+    const { language, voice } = parsed.data;
+    const params = voice ? { language, voice } : { language };
     try {
-      const existing = registry.findActive('voice-download', { language });
+      const existing = registry.findActive('voice-download', params);
       if (existing) return { success: true, data: { jobId: existing.id } };
 
       const job = registry.register({
-        id: `tts-${language}-${Date.now().toString(36)}`,
+        id: `tts-${language}${voice ? `-${voice}` : ''}-${Date.now().toString(36)}`,
         kind: 'voice-download',
-        label: language,
+        label: voice ? `${language} · ${voice}` : language,
         status: 'queued',
-        params: { language },
+        params,
         retryable: true,
       });
       registry.startIfSlotFree(job);
       return { success: true, data: { jobId: job.id } };
     } catch (err) {
       if (err instanceof JobDuplicateError) {
-        const existing = registry.findActive('voice-download', { language });
+        const existing = registry.findActive('voice-download', params);
         if (existing) return { success: true, data: { jobId: existing.id } };
       }
       const msg = err instanceof Error ? err.message : String(err);

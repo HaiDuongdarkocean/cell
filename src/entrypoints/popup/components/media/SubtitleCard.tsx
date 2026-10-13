@@ -78,7 +78,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
     <Card
       variant={selected ? 'selected' : downloading ? 'default' : 'interactive'}
       className={`${styles.card} ${cardAnimations.fadeIn} ${downloading ? styles.downloading : ''}`}
-      data-cell-id="subtitle-item"
+      data-tihoka-id="subtitle-item"
       data-id={subtitle.id}
     >
       <VStack>
@@ -100,9 +100,9 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
 
           {/* Body */}
           <div className={styles.body}>
-            <div className={styles.title} data-cell-id="subtitle-title">{displayTitle ?? displayLanguage}</div>
+            <div className={styles.title} data-tihoka-id="subtitle-title">{displayTitle ?? displayLanguage}</div>
             <HStack align="center" gap="1" className={styles.tagRow}>
-              <span className={styles.languageTag} data-cell-id="subtitle-language">{displayLanguage}</span>
+              <span className={styles.languageTag} data-tihoka-id="subtitle-language">{displayLanguage}</span>
               <span className={styles.meta}>
                 {downloading ? t('downloads.media.downloading') : `${subtitle.format}${subtitle.size ? ` · ${formatFileSize(subtitle.size)}` : ''}`}
               </span>
@@ -117,7 +117,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
               onClick={handleExpandClick}
               aria-label={urlExpanded ? t('downloads.media.hideUrl') : t('downloads.media.showUrl')}
               aria-expanded={urlExpanded}
-              data-cell-id="subtitle-expand-url-btn"
+              data-tihoka-id="subtitle-expand-url-btn"
             >
               <Icon
                 name="chevronDown"
@@ -136,7 +136,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
                   variant="ghost"
                   onClick={handleActionClick}
                   aria-label={t('downloads.action.download')}
-                  data-cell-id="subtitle-download"
+                  data-tihoka-id="subtitle-download"
                 >
                   <Icon name="download" size={18}  />
                 </Button>
@@ -147,20 +147,20 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
 
         {/* === URL panel — only when expanded === */}
         {urlExpanded && (
-          <HStack align="center" gap="2" className={`${styles.urlPanel} ${cardAnimations.urlPanel}`} data-cell-id="subtitle-url-row">
+          <HStack align="center" gap="2" className={`${styles.urlPanel} ${cardAnimations.urlPanel}`} data-tihoka-id="subtitle-url-row">
             <Button
               variant="ghost"
               size="xs"
               className={styles.copyBtn}
               trailingIcon={<Icon name="copy" size={18}  />}
               onClick={(e) => { void handleUrlClick(e); }}
-              data-cell-id="subtitle-url"
+              data-tihoka-id="subtitle-url"
               title={t('downloads.media.copyUrl')}
               aria-label={t('downloads.media.copyUrl')}
             >
               <span className={styles.urlText}>{subtitle.url}</span>
             </Button>
-            {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-cell-id="subtitle-copied-toast">{t('downloads.media.copied')}</span>}
+            {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-tihoka-id="subtitle-copied-toast">{t('downloads.media.copied')}</span>}
           </HStack>
         )}
       </VStack>

@@ -31,6 +31,7 @@ import type { SubtitleActionContext } from '@/features/subtitle/actions/subtitle
 import type { CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
 import { useCuesStore } from '@/features/subtitle/cuesStore';
 import type { SrtCue } from '@/entities/media';
+import type { AnnotationDisplayMode } from '@/entities/settings';
 
 const EMPTY_SELECTED_TERMS: ReadonlySet<string> = new Set();
 
@@ -116,7 +117,7 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
         term,
         langCode,
         contextSentence,
-        cursorOffset: cursorOffset ?? Number(element.getAttribute('data-cell-start') ?? 0),
+        cursorOffset: cursorOffset ?? Number(element.getAttribute('data-tihoka-start') ?? 0),
       };
       const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       webTextCtrlRef.current?.handleLookup(
@@ -129,8 +130,8 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
 
     const ensureSubtitleTokenize = (
       langCode: string,
-      showReadings: boolean,
-      showGlosses: boolean,
+      readingDisplay: AnnotationDisplayMode,
+      glossDisplay: AnnotationDisplayMode,
       glossTargetLanguage: string,
     ): void => {
       if (subtitleLang === langCode) return;
@@ -142,15 +143,15 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
       if (langCode === '') return;
       const subtitleCtrl = createSubtitleTokenizeController({
         langCode,
-        showReadings,
-        showGlosses,
+        readingDisplay,
+        glossDisplay,
         glossTargetLanguage,
         getLineElements: () => ({
           target: document.querySelector<HTMLElement>(
-            '[data-cell-id="subtitle-block"] [data-role="target"] > span:not([data-cell-id])',
+            '[data-tihoka-id="subtitle-block"] [data-role="target"] > span:not([data-tihoka-id])',
           ),
           native: document.querySelector<HTMLElement>(
-            '[data-cell-id="subtitle-block"] [data-role="native"] > span:not([data-cell-id])',
+            '[data-tihoka-id="subtitle-block"] [data-role="native"] > span:not([data-tihoka-id])',
           ),
         }),
         getExtraShadowRoots: () => {
@@ -175,13 +176,13 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
       });
       const langCode = getActiveProfileSettings(settings)?.resourceLangCode
         ?? (settings.subtitleOverlayTargetLanguage || '');
-      const showReadings = settings.showReadings ?? false;
-      const showGlosses = settings.showWordTranslations ?? false;
+      const readingDisplay = settings.readingDisplay ?? 'off';
+      const glossDisplay = settings.glossDisplay ?? 'off';
       const glossTargetLanguage = settings.subtitleOverlayNativeLanguage ?? '';
-      ensureSubtitleTokenize(langCode, showReadings, showGlosses, glossTargetLanguage);
-      // Live-toggle caps on an existing controller when only the flag moved.
-      subtitleTokenizeRef.current?.setShowReadings(showReadings);
-      subtitleTokenizeRef.current?.setShowGlosses(showGlosses);
+      ensureSubtitleTokenize(langCode, readingDisplay, glossDisplay, glossTargetLanguage);
+      // Live-switch modes on an existing controller when only the mode moved.
+      subtitleTokenizeRef.current?.setReadingDisplay(readingDisplay);
+      subtitleTokenizeRef.current?.setGlossDisplay(glossDisplay);
       subtitleTokenizeRef.current?.setGlossTargetLanguage(glossTargetLanguage);
       if (langCode === '') {
         setCueListTokenize(null);
@@ -190,14 +191,14 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
       setCueListTokenize((prev) => {
         if (
           prev?.langCode === langCode &&
-          prev.showReadings === showReadings &&
-          prev.showGlosses === showGlosses &&
+          prev.readingDisplay === readingDisplay &&
+          prev.glossDisplay === glossDisplay &&
           prev.glossTargetLanguage === glossTargetLanguage
         ) return prev;
         return {
           langCode,
-          showReadings,
-          showGlosses,
+          readingDisplay,
+          glossDisplay,
           glossTargetLanguage,
           onTokenClick: (term, element, contextSentence, event, cursorOffset) =>
             openTokenDictionary(langCode, term, element, contextSentence, event, cursorOffset),

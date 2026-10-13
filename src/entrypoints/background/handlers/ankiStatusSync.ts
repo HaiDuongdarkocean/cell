@@ -13,7 +13,7 @@ import {
 import {
   ANKI_STATUS_SYNC_ALARM,
   ANKI_SYNC_PERIOD_MINUTES,
-  getSyncState,
+  ankiStatusSyncView,
   listCardSourceTerms,
   srsDeckLangCode,
   runAnkiStatusSync,
@@ -55,8 +55,8 @@ export function registerAnkiStatusSyncHandlers(ctx: BackgroundContext): void {
     }
     try {
       await runOnce('manual', ctx);
-      const state = await getSyncState();
-      return { success: true, data: state };
+      const view = await ankiStatusSyncView();
+      return { success: true, data: view };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return { success: false, error: t('vocabulary.error.actionFailed', [message]) };
@@ -65,8 +65,8 @@ export function registerAnkiStatusSyncHandlers(ctx: BackgroundContext): void {
 
   ctx.on(MESSAGE_TYPES.ANKI_STATUS_SYNC_STATE, async (): Promise<MessageResponse> => {
     try {
-      const state = await getSyncState();
-      return { success: true, data: state };
+      const view = await ankiStatusSyncView();
+      return { success: true, data: view };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return { success: false, error: t('vocabulary.error.actionFailed', [message]) };

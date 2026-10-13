@@ -1,7 +1,7 @@
 import { waitForCachedSubtitleBody } from '@/features/subtitle/logic/subtitleResponseCache';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { messagePayload } from '@/entities/message/payload';
-import { isCellDebug } from './debugLog';
+import { isTihokaDebug } from './debugLog';
 import { getLastRelayedVideoId } from './subtitleBridges';
 import {
   isCondensedAudioSessionActive,
@@ -25,13 +25,13 @@ export function installRuntimeMessageListener(): void {
         csInjected: true,
         readyState: document.readyState,
         url: location.href,
-        ...(isCellDebug()
+        ...(isTihokaDebug()
           ? {
               hasYtDebug: typeof win.__YT_DEBUG !== 'undefined',
               csInjectTime: win.__YT_CS_INJECT_TIME,
               msgListenerRegistered: true,
               lastRelayedVideoId: getLastRelayedVideoId(),
-              scanInfo: win.__CELL_SCAN_INFO,
+              scanInfo: win.__Tihoka_SCAN_INFO,
             }
           : {}),
       });

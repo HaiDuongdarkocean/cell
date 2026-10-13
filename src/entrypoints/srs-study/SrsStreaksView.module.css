@@ -61,7 +61,7 @@
   gap: var(--space-10);
 }
 
-.statCell {
+.statTihoka {
   display: flex;
   flex-direction: column;
   align-items: center;

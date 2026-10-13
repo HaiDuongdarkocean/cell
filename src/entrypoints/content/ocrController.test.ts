@@ -18,8 +18,8 @@ function imageDataToBase64(data: Uint8ClampedArray | number[]): string {
 }
 
 beforeAll(() => {
-  const g = global as unknown as { __cellSendMessage?: unknown };
-  g.__cellSendMessage = sendMessageMock;
+  const g = global as unknown as { __TihokaSendMessage?: unknown };
+  g.__TihokaSendMessage = sendMessageMock;
 });
 
 beforeEach(() => {

@@ -51,7 +51,6 @@ export default function PronunciationShowcase() {
       {error && <div style={{ color: 'red' }}>{error}</div>}
       <PronunciationPanel
         pronunciation={SAMPLE}
-        audioSource="espeak"
         onPlayPhoneme={playPhoneme}
       />
     </div>

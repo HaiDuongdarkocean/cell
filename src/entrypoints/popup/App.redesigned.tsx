@@ -15,7 +15,8 @@ import { SubtitleCard } from './components/media/SubtitleCard';
 import { MediaEmpty } from './components/media/MediaEmpty';
 import { DownloadCard } from './components/media/DownloadCard';
 import { SettingsDialog } from '@/features/settings';
-import { sendMessage } from '@/shared/lib/chrome-apis';
+import { sendMessage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import { t } from '@/shared/i18n';
 import type { VideoQuality, Settings, DownloadItem } from '@/entities/media';
 import type { MessageRequest, MessageResponse } from '@/entities/message';
@@ -61,6 +62,18 @@ export function AppRedesigned(): React.JSX.Element {
     };
     void load();
   }, [loadPersistedSettings, loadExtensionStatus]);
+
+  // Settings the background writes (job completion effects, sync pulls) must
+  // reach this page — the dialog stays open while offscreen downloads finish.
+  useEffect(() => {
+    const handleStorageChange = (changes: Record<string, chrome.storage.StorageChange>, area: string): void => {
+      if (area === 'local' && STORAGE_KEYS.SETTINGS in changes) {
+        void loadPersistedSettings();
+      }
+    };
+    onStorageChanged(handleStorageChange);
+    return () => { removeOnStorageChangedListener(handleStorageChange); };
+  }, [loadPersistedSettings]);
 
   useEffect(() => {
     if (!isSettingsLoaded) return;
@@ -311,7 +324,7 @@ export function AppRedesigned(): React.JSX.Element {
   const selectionCount = selectedIds.size;
 
   return (
-    <div className={styles.popup} data-Tihoka-id="app-root">
+    <div className={styles.popup} data-tihoka-id="app-root">
       <Header
         isActive={isActive}
         onToggleExtension={toggle}
@@ -344,15 +357,15 @@ export function AppRedesigned(): React.JSX.Element {
           <div className={styles.tabContent} role="tabpanel">
             {hasMedia && (
               <div className={styles.actionsRow}>
-                <Button variant="link" size="sm" onClick={handleSelectAll} data-Tihoka-id="select-all-btn">
+                <Button variant="link" size="sm" onClick={handleSelectAll} data-tihoka-id="select-all-btn">
                   {allSelected ? t('downloads.action.deselectAll') : t('downloads.action.selectAll')}
                 </Button>
-                <Button variant="link" size="sm" onClick={handleDownload} data-Tihoka-id="download-button">
+                <Button variant="link" size="sm" onClick={handleDownload} data-tihoka-id="download-button">
                   {selectionCount > 0 ? t('downloads.action.downloadSelected', [selectionCount]) : t('downloads.action.downloadAll')}
                 </Button>
               </div>
             )}
-            <div className={styles.mediaList} role="list" data-Tihoka-id="media-section">
+            <div className={styles.mediaList} role="list" data-tihoka-id="media-section">
               {hasMedia ? (
                 <>
                   {videos.map((video) => (
@@ -389,7 +402,7 @@ export function AppRedesigned(): React.JSX.Element {
 
         {activeTab === 'downloads' && (
           <div className={styles.tabContent} role="tabpanel">
-            <div className={styles.downloadsList} role="list" data-Tihoka-id="downloads-section">
+            <div className={styles.downloadsList} role="list" data-tihoka-id="downloads-section">
               {downloads.length > 0 ? (
                 downloads.map((download) => (
                   <DownloadCard

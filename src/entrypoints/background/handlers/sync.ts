@@ -36,7 +36,7 @@ import { configureSyncTriggers } from '../syncTriggers';
 import { logger } from '@/shared/lib/logger';
 import type { BackgroundContext } from '../context';
 
-export const SYNC_TICK_ALARM = 'cell.sync.tick';
+export const SYNC_TICK_ALARM = 'Tihoka.sync.tick';
 const SYNC_TICK_PERIOD_MINUTES = 15;
 const CHANGE_DEBOUNCE_MS = 300;
 const CHANGE_MAX_WAIT_MS = 1_500;

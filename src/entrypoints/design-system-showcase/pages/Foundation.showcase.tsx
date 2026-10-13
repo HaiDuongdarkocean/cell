@@ -63,7 +63,7 @@ function Overview() {
     <div className={styles.section}>
       <SectionTitle>Quiet Confidence</SectionTitle>
       <SectionLead>
-        Cell is a learning companion, not a loud tool. The foundation is designed to feel calm,
+        Tihoka is a learning companion, not a loud tool. The foundation is designed to feel calm,
         focused, and trustworthy while still encouraging curiosity.
       </SectionLead>
       <div className={styles.principles}>

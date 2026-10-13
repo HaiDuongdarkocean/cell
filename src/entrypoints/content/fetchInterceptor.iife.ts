@@ -6,7 +6,7 @@
 //  1. Catch subtitle file fetches and forward the URL to the isolated content
 //     script (`__DETECTED_SUBTITLE_FETCH`) — these are real subtitle URLs.
 //  2. Catch listing / HLS playlist fetches, read a bounded clone of the response
-//     body, and forward a `__CELL_SUBTITLE_DISCOVERY` `network-response` signal.
+//     body, and forward a `__Tihoka_SUBTITLE_DISCOVERY` `network-response` signal.
 //
 // The response body is needed for APIs whose tokens expire (lookmovie hash,
 // videasy seed, onflix HLS) and for players whose Service Worker serves from
@@ -16,12 +16,12 @@
 // learning-and-apply/messaging-receiver-announces-readiness-handshake):
 // the isolated content script may register its `message` listener later than
 // the first intercepted fetch. We cache the last signals and re-post them
-// when the content script announces `__CELL_CS_READY`.
+// when the content script announces `__Tihoka_CS_READY`.
 //
 // Ceiling: only `fetch` is patched; `XMLHttpRequest` is not. Sites using XHR
 // for listing fetches will not have their bodies captured.
 
-declare const __CELL_DEBUG__: string;
+declare const __Tihoka_DEBUG__: string;
 
 (() => {
   // Skip only hidden (likely challenge) iframes. Player iframes are normally
@@ -65,18 +65,18 @@ declare const __CELL_DEBUG__: string;
   const originalFetch = window.fetch;
 
   function isDebug(): boolean {
-    return typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true';
+    return typeof __Tihoka_DEBUG__ !== 'undefined' && __Tihoka_DEBUG__ === 'true';
   }
 
   function countMiss(key: string): void {
     if (!isDebug()) return;
-    const g = globalThis as { __cellFetchInterceptorMisses?: Record<string, number> };
-    const misses = g.__cellFetchInterceptorMisses ?? (g.__cellFetchInterceptorMisses = {});
+    const g = globalThis as { __TihokaFetchInterceptorMisses?: Record<string, number> };
+    const misses = g.__TihokaFetchInterceptorMisses ?? (g.__TihokaFetchInterceptorMisses = {});
     misses[key] = (misses[key] ?? 0) + 1;
   }
 
   // Cache the last few signals until the isolated content script is ready.
-  // Re-post when we receive `__CELL_CS_READY`.
+  // Re-post when we receive `__Tihoka_CS_READY`.
   const pendingSignals: { type: string; payload: Record<string, unknown> }[] = [];
   const MAX_PENDING = 20;
   let contentScriptReady = false;
@@ -113,25 +113,25 @@ declare const __CELL_DEBUG__: string;
   }
 
   // Diagnostics relay (debug builds only): the isolated content script posts
-  // `__CELL_FETCH_INTERCEPTOR_DIAG_REQUEST` when `__CELL_DEBUG__` is compiled
+  // `__Tihoka_FETCH_INTERCEPTOR_DIAG_REQUEST` when `__Tihoka_DEBUG__` is compiled
   // in; we reply through the same post() channel with the miss counters and
   // buffer state. The snapshot is counts-only — no URLs or page-private data —
   // and the reply itself is gated so production builds never emit it.
   function diagSnapshot(): Record<string, unknown> {
-    const g = globalThis as { __cellFetchInterceptorMisses?: Record<string, number> };
+    const g = globalThis as { __TihokaFetchInterceptorMisses?: Record<string, number> };
     return {
-      misses: { ...(g.__cellFetchInterceptorMisses ?? {}) },
+      misses: { ...(g.__TihokaFetchInterceptorMisses ?? {}) },
       pending: pendingSignals.length,
       ready: contentScriptReady,
     };
   }
 
   window.addEventListener('message', (e) => {
-    if (e.data?.type === '__CELL_CS_READY') {
+    if (e.data?.type === '__Tihoka_CS_READY') {
       flushPending();
     }
-    if (e.data?.type === '__CELL_FETCH_INTERCEPTOR_DIAG_REQUEST' && isDebug()) {
-      post('__CELL_FETCH_INTERCEPTOR_DIAG', diagSnapshot());
+    if (e.data?.type === '__Tihoka_FETCH_INTERCEPTOR_DIAG_REQUEST' && isDebug()) {
+      post('__Tihoka_FETCH_INTERCEPTOR_DIAG', diagSnapshot());
     }
   });
 
@@ -166,7 +166,7 @@ declare const __CELL_DEBUG__: string;
 
     return originalFetch.call(this, input, init).then((response) => {
       // A URL can be either a direct subtitle file or a listing, not both.
-      // Listings are handled via __CELL_SUBTITLE_DISCOVERY with a captured body.
+      // Listings are handled via __Tihoka_SUBTITLE_DISCOVERY with a captured body.
       // For direct subtitle fetches, peek at the body: some APIs (e.g. OnzLoad
       // /api/embed/.../subtitle/<uuid>) return an encrypted payload, not a real
       // subtitle. Treating that as a subtitle URL would add an unplayable item
@@ -198,7 +198,7 @@ declare const __CELL_DEBUG__: string;
                     return '';
                   }
                 })();
-                post('__CELL_SUBTITLE_DISCOVERY', {
+                post('__Tihoka_SUBTITLE_DISCOVERY', {
                   signal: {
                     kind: 'network-response',
                     url,
@@ -249,7 +249,7 @@ declare const __CELL_DEBUG__: string;
               })();
 
               post(
-                '__CELL_SUBTITLE_DISCOVERY',
+                '__Tihoka_SUBTITLE_DISCOVERY',
                 {
                   signal: {
                     kind: 'network-response',

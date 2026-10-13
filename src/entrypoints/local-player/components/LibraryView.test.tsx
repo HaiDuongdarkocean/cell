@@ -149,7 +149,7 @@ describe('LibraryView — real sample data (26 entries)', () => {
         currentSubtitles={emptySubs}
       />,
     );
-    expect(document.querySelector('[data-cell-id="immersion-stats"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-tihoka-id="immersion-stats"]')).toBeInTheDocument();
     expect(screen.getByText('Level 1')).toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });

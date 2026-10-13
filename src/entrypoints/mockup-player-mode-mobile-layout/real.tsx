@@ -61,7 +61,7 @@ export function RealPanel(): React.ReactElement {
         open={managerOpen}
         onClose={() => setManagerOpen(false)}
         aria-label="Subtitle Manager"
-        data-cell-id="subtitle-manager-layer"
+        data-tihoka-id="subtitle-manager-layer"
       >
         <SubtitleManagerPanel
           targetItems={MOCK_TARGET_ITEMS}

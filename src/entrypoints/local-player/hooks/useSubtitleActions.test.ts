@@ -59,7 +59,7 @@ describe('useSubtitleActions cueListTokenize', () => {
     await waitFor(() => expect(result.current.cueListTokenize).not.toBeNull());
 
     const element = document.createElement('span');
-    element.setAttribute('data-cell-start', '5');
+    element.setAttribute('data-tihoka-start', '5');
     element.setAttribute('data-cue-start', '1000');
     element.setAttribute('data-cue-end', '2000');
     const rect = { x: 1, y: 2, width: 3, height: 4, top: 2, left: 1, right: 4, bottom: 6, toJSON: () => ({}) } as DOMRect;
@@ -80,7 +80,7 @@ describe('useSubtitleActions cueListTokenize', () => {
     expect(highlightTarget).toBe(element);
   });
 
-  it('falls back to cursorOffset 0 when the element lacks data-cell-start', async () => {
+  it('falls back to cursorOffset 0 when the element lacks data-tihoka-start', async () => {
     const { result } = renderActions();
     await waitFor(() => expect(result.current.cueListTokenize).not.toBeNull());
 

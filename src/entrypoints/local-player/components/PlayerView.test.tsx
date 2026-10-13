@@ -38,15 +38,15 @@ jest.mock('@/entrypoints/local-player/hooks/useLocalVideo', () => ({
 }));
 
 jest.mock('./PlayerControls', () => ({
-  PlayerControls: () => <div data-cell-id="player-controls" />,
+  PlayerControls: () => <div data-tihoka-id="player-controls" />,
 }));
 
 jest.mock('./EmptyState', () => ({
   EmptyState: (props: {
     onOpenFile: () => void;
   }) => (
-    <div data-cell-id="empty-state">
-      <button data-cell-id="empty-open-file" onClick={props.onOpenFile}>
+    <div data-tihoka-id="empty-state">
+      <button data-tihoka-id="empty-open-file" onClick={props.onOpenFile}>
         Open
       </button>
     </div>
@@ -58,11 +58,11 @@ jest.mock('./LibraryView', () => ({
     onVideoSelect: (id: string) => void;
     onSortChange: (sortBy: SortBy) => void;
   }) => (
-    <div data-cell-id="library-view">
-      <button data-cell-id="library-select" onClick={() => props.onVideoSelect('v1')}>
+    <div data-tihoka-id="library-view">
+      <button data-tihoka-id="library-select" onClick={() => props.onVideoSelect('v1')}>
         Select
       </button>
-      <button data-cell-id="library-sort" onClick={() => props.onSortChange('title')}>
+      <button data-tihoka-id="library-sort" onClick={() => props.onSortChange('title')}>
         Sort
       </button>
     </div>
@@ -70,23 +70,23 @@ jest.mock('./LibraryView', () => ({
 }));
 
 jest.mock('@/features/subtitle/ui/SubtitleBlock', () => ({
-  SubtitleBlock: () => <div data-cell-id="subtitle-block" />,
+  SubtitleBlock: () => <div data-tihoka-id="subtitle-block" />,
 }));
 
 jest.mock('@/features/subtitle/ui/NavCluster', () => ({
-  NavCluster: () => <div data-cell-id="nav-cluster" />,
+  NavCluster: () => <div data-tihoka-id="nav-cluster" />,
 }));
 
 jest.mock('@/features/subtitle/ui/SubtitleOffsetPanel', () => ({
-  SubtitleOffsetPanel: () => <div data-cell-id="subtitle-offset-panel" />,
+  SubtitleOffsetPanel: () => <div data-tihoka-id="subtitle-offset-panel" />,
 }));
 
 jest.mock('@/features/subtitle/ui/SubtitlePanels', () => ({
-  SubtitlePanels: () => <div data-cell-id="subtitle-panels-root" />,
+  SubtitlePanels: () => <div data-tihoka-id="subtitle-panels-root" />,
 }));
 
 jest.mock('./TrackSelector', () => ({
-  TrackSelector: () => <div data-cell-id="track-selector" />,
+  TrackSelector: () => <div data-tihoka-id="track-selector" />,
 }));
 
 let mockTargetCues: unknown[] = [];
@@ -434,7 +434,7 @@ describe('PlayerView', () => {
 
   it('wires onFilesDrop when a file is dropped on the video stage (no video loaded)', () => {
     const { mocks, container } = renderPlayerViewWithContainer({ videoFile: null });
-    const stage = container.querySelector('[data-cell-id="video-stage"]') as HTMLElement;
+    const stage = container.querySelector('[data-tihoka-id="video-stage"]') as HTMLElement;
     const videoFile = new File(['dummy'], 'movie.mp4', { type: 'video/mp4' });
     fireEvent.drop(stage, { dataTransfer: { files: [videoFile], types: ['Files'] } });
     expect(mocks.onFilesDrop).toHaveBeenCalledTimes(1);
@@ -446,7 +446,7 @@ describe('PlayerView', () => {
     const { mocks, container } = renderPlayerViewWithContainer({
       videoFile: new File([], 'movie.mp4', { type: 'video/mp4' }),
     });
-    const stage = container.querySelector('[data-cell-id="video-stage"]') as HTMLElement;
+    const stage = container.querySelector('[data-tihoka-id="video-stage"]') as HTMLElement;
     const subFile = new File(['sub'], 'movie.en.srt', { type: 'text/plain' });
     fireEvent.drop(stage, { dataTransfer: { files: [subFile], types: ['Files'] } });
     expect(mocks.onFilesDrop).toHaveBeenCalledTimes(1);
@@ -455,21 +455,21 @@ describe('PlayerView', () => {
 
   it('renders DropOverlay while dragging a file over the stage', () => {
     const { container } = renderPlayerViewWithContainer({ videoFile: null });
-    const stage = container.querySelector('[data-cell-id="video-stage"]') as HTMLElement;
-    expect(container.querySelector('[data-cell-id="drop-overlay"]')).toBeNull();
+    const stage = container.querySelector('[data-tihoka-id="video-stage"]') as HTMLElement;
+    expect(container.querySelector('[data-tihoka-id="drop-overlay"]')).toBeNull();
     fireEvent.dragEnter(stage, { dataTransfer: { files: [], types: ['Files'] } });
-    expect(container.querySelector('[data-cell-id="drop-overlay"]')).not.toBeNull();
+    expect(container.querySelector('[data-tihoka-id="drop-overlay"]')).not.toBeNull();
   });
 
   it('removes DropOverlay after the file is dropped', () => {
     const { container } = renderPlayerViewWithContainer({ videoFile: null });
-    const stage = container.querySelector('[data-cell-id="video-stage"]') as HTMLElement;
+    const stage = container.querySelector('[data-tihoka-id="video-stage"]') as HTMLElement;
     fireEvent.dragEnter(stage, { dataTransfer: { files: [], types: ['Files'] } });
-    expect(container.querySelector('[data-cell-id="drop-overlay"]')).not.toBeNull();
+    expect(container.querySelector('[data-tihoka-id="drop-overlay"]')).not.toBeNull();
     fireEvent.drop(stage, {
       dataTransfer: { files: [new File([], 'x.mp4', { type: 'video/mp4' })], types: ['Files'] },
     });
-    expect(container.querySelector('[data-cell-id="drop-overlay"]')).toBeNull();
+    expect(container.querySelector('[data-tihoka-id="drop-overlay"]')).toBeNull();
   });
 
   // ─── Bug 1: click on the video toggles play/pause ──────────────────────

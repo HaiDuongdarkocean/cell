@@ -14,7 +14,7 @@ const LANGUAGE_OPTIONS = OVERLAY_LANGUAGE_OPTIONS.filter((o) => o.value !== '');
  * Color architecture: blue lives only in OUTLINES — the active card keeps its
  * white elevated surface and is marked by a primary border + small accent
  * dot. No fills anywhere, so the eye travels border-first. The two-tone chip
- * is the one interior accent (primary-subtle key cell).
+ * is the one interior accent (primary-subtle key Tihoka).
  * Journey: compare card summaries → pick → done.
  */
 export function ConceptC({

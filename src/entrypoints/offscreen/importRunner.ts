@@ -2,7 +2,7 @@
  * Offscreen import runner — dictionary parse + IndexedDB inserts off the
  * service-worker thread.
  *
- * Joins `BroadcastChannel('cell-import')` at module load (statically imported
+ * Joins `BroadcastChannel('Tihoka-import')` at module load (statically imported
  * by ffmpegRunner, so the channel is live before the offscreen ping listener
  * answers). The SW posts one `import-run` request carrying the assembled
  * File; this runner executes importFile against the same extension-origin

@@ -166,7 +166,7 @@ function Popup({ entry, onNavigate, stacked }: { entry: ProtoEntry; onNavigate: 
   const toggle = (id: string) => setChecked((c) => ({ ...c, [id]: !c[id] }));
 
   return (
-    <article className={stacked ? 'mkCandidate' : 'cell'}>
+    <article className={stacked ? 'mkCandidate' : 'Tihoka'}>
       {/* ── header ── */}
       <div className="mkHead">
         <span className="mkWord">{entry.term}</span>
@@ -331,7 +331,7 @@ function MultiPopup({ onNavigate }: { onNavigate: (term: string) => void }) {
     setActive(best);
   };
   return (
-    <div className="cell mkFrame">
+    <div className="Tihoka mkFrame">
       <div className="mkStack" ref={stackRef} onScroll={onScroll}>
         {MULTI_TERMS.map((t) => (
           <Popup key={t} stacked entry={ENTRIES[t] ?? TAKE_FALLBACK} onNavigate={onNavigate} />

@@ -328,11 +328,11 @@ export function PlayerView({
   const effectiveNativeStyle: OverlayStyleConfig = { ...nativeStyle, visible: overlayVisible };
 
   return (
-    <div className={styles.root} ref={containerRef} data-cell-id="player-view">
+    <div className={styles.root} ref={containerRef} data-tihoka-id="player-view">
       <div
         className={styles.stage}
         ref={stageRef}
-        data-cell-id="video-stage"
+        data-tihoka-id="video-stage"
         data-dropzone="true"
         data-dragging={dragging}
         onDragEnter={dropHandlers.onDragEnter}
@@ -356,7 +356,7 @@ export function PlayerView({
             )}
 
             {showNoSubtitle && (
-              <div className={styles.noSubtitleBanner} data-cell-id="no-subtitle-banner">
+              <div className={styles.noSubtitleBanner} data-tihoka-id="no-subtitle-banner">
                 <Icon name="captions" size={20} />
                 <span>{t('player.subtitle.noMatch')}</span>
                 <Button variant="secondary" size="sm" onClick={onOpenSubtitle} leadingIcon={<Icon name="fileVideo" size={16} />}>
@@ -366,7 +366,7 @@ export function PlayerView({
             )}
 
             {showSubtitleError && (
-              <div className={styles.noSubtitleBanner} data-cell-id="subtitle-error-banner">
+              <div className={styles.noSubtitleBanner} data-tihoka-id="subtitle-error-banner">
                 <Icon name="triangleAlert" size={16} />
                 <span>{t('player.subtitle.error')}</span>
                 <Button variant="secondary" size="sm" onClick={onOpenSubtitle} leadingIcon={<Icon name="fileVideo" size={16} />}>
@@ -387,7 +387,7 @@ export function PlayerView({
               />
             )}
 
-            <div className={styles.controlsOverlay} data-cell-id="controls-overlay"
+            <div className={styles.controlsOverlay} data-tihoka-id="controls-overlay"
               data-visible={controlsVisible}
             >
               <PlayerControls

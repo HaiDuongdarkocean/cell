@@ -153,40 +153,40 @@
  * mirror of the status underline on the bottom edge. Both channels coexist.
  * ------------------------------------------------------------------------- */
 
-.scopeA :global(.js-cell-token--selected) {
+.scopeA :global(.js-Tihoka-token--selected) {
   box-shadow:
     inset 0 var(--border-width-thick, 2px) 0 0 var(--color-ring),
     var(--shadow-sm) !important;
 }
 
-.scopeA :global(.js-cell-token--selected[class*="js-cell-token--frequency"]) {
+.scopeA :global(.js-Tihoka-token--selected[class*="js-Tihoka-token--frequency"]) {
   box-shadow:
     inset 0 var(--border-width-thick, 2px) 0 0 var(--color-ring),
-    inset 0 0 0 var(--border-width-hairline, 1px) var(--cell-token-freq-border) !important;
+    inset 0 0 0 var(--border-width-hairline, 1px) var(--Tihoka-token-freq-border) !important;
 }
 
-.scopeA :global(.js-cell-token--selected.js-cell-token--status-unknown) {
+.scopeA :global(.js-Tihoka-token--selected.js-Tihoka-token--status-unknown) {
   box-shadow:
     inset 0 var(--border-width-thick, 2px) 0 0 var(--color-ring),
-    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--cell-token-status-unknown) !important;
+    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--Tihoka-token-status-unknown) !important;
 }
 
-.scopeA :global(.js-cell-token--selected.js-cell-token--status-tracking) {
+.scopeA :global(.js-Tihoka-token--selected.js-Tihoka-token--status-tracking) {
   box-shadow:
     inset 0 var(--border-width-thick, 2px) 0 0 var(--color-ring),
-    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--cell-token-status-tracking) !important;
+    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--Tihoka-token-status-tracking) !important;
 }
 
-.scopeA :global(.js-cell-token--selected.js-cell-token--status-known) {
+.scopeA :global(.js-Tihoka-token--selected.js-Tihoka-token--status-known) {
   box-shadow:
     inset 0 var(--border-width-thick, 2px) 0 0 var(--color-ring),
-    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--cell-token-status-known) !important;
+    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--Tihoka-token-status-known) !important;
 }
 
-.scopeA :global(.js-cell-token--selected.js-cell-token--status-ignore) {
+.scopeA :global(.js-Tihoka-token--selected.js-Tihoka-token--status-ignore) {
   box-shadow:
     inset 0 var(--border-width-thick, 2px) 0 0 var(--color-ring),
-    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--cell-token-status-ignore) !important;
+    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--Tihoka-token-status-ignore) !important;
 }
 
 /* ---------------------------------------------------------------------------
@@ -194,7 +194,7 @@
  * underline stays untouched since it lives in box-shadow).
  * ------------------------------------------------------------------------- */
 
-.scopeB :global(.js-cell-token--selected) {
+.scopeB :global(.js-Tihoka-token--selected) {
   background-image: linear-gradient(
     color-mix(in srgb, var(--color-primary) 18%, transparent) 0 0
   ) !important;
@@ -205,39 +205,39 @@
  * stays listed first so it paints over the ring's bottom segment.
  * ------------------------------------------------------------------------- */
 
-.scopeC :global(.js-cell-token--selected) {
+.scopeC :global(.js-Tihoka-token--selected) {
   box-shadow:
     var(--shadow-sm),
     inset 0 0 0 var(--border-width-thick, 2px) var(--color-ring) !important;
 }
 
-.scopeC :global(.js-cell-token--selected[class*="js-cell-token--frequency"]) {
+.scopeC :global(.js-Tihoka-token--selected[class*="js-Tihoka-token--frequency"]) {
   box-shadow:
-    inset 0 0 0 var(--border-width-hairline, 1px) var(--cell-token-freq-border),
+    inset 0 0 0 var(--border-width-hairline, 1px) var(--Tihoka-token-freq-border),
     inset 0 0 0 var(--border-width-thick, 2px) var(--color-ring) !important;
 }
 
-.scopeC :global(.js-cell-token--selected.js-cell-token--status-unknown) {
+.scopeC :global(.js-Tihoka-token--selected.js-Tihoka-token--status-unknown) {
   box-shadow:
-    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--cell-token-status-unknown),
+    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--Tihoka-token-status-unknown),
     inset 0 0 0 var(--border-width-thick, 2px) var(--color-ring) !important;
 }
 
-.scopeC :global(.js-cell-token--selected.js-cell-token--status-tracking) {
+.scopeC :global(.js-Tihoka-token--selected.js-Tihoka-token--status-tracking) {
   box-shadow:
-    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--cell-token-status-tracking),
+    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--Tihoka-token-status-tracking),
     inset 0 0 0 var(--border-width-thick, 2px) var(--color-ring) !important;
 }
 
-.scopeC :global(.js-cell-token--selected.js-cell-token--status-known) {
+.scopeC :global(.js-Tihoka-token--selected.js-Tihoka-token--status-known) {
   box-shadow:
-    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--cell-token-status-known),
+    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--Tihoka-token-status-known),
     inset 0 0 0 var(--border-width-thick, 2px) var(--color-ring) !important;
 }
 
-.scopeC :global(.js-cell-token--selected.js-cell-token--status-ignore) {
+.scopeC :global(.js-Tihoka-token--selected.js-Tihoka-token--status-ignore) {
   box-shadow:
-    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--cell-token-status-ignore),
+    inset 0 calc(var(--border-width-status, 2px) * -1) 0 0 var(--Tihoka-token-status-ignore),
     inset 0 0 0 var(--border-width-thick, 2px) var(--color-ring) !important;
 }
 

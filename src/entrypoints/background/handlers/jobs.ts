@@ -19,6 +19,7 @@ import {
 import type { Job } from '@/entities/job/types';
 import { isTerminalJob } from '@/entities/job/types';
 import { broadcastDictionaryChanged } from './dictionaryBroadcast';
+import { broadcastJobEvent } from './jobBroadcast';
 
 const JOB_KEY_PREFIX = 'cellJob:';
 const KEEP_ALIVE_INTERVAL_MS = 20_000;
@@ -114,7 +115,7 @@ function makeDeps(ctx: BackgroundContext): JobRegistryDeps {
       return jobs;
     },
     broadcast: (job) => {
-      ctx.messageBus.broadcast({ type: MESSAGE_TYPES.JOB_EVENT, payload: { job } });
+      broadcastJobEvent(ctx, { job });
       // Terminal resource jobs change the dictionary corpus — notify token
       // surfaces so readings/frequency bands re-resolve (reading-annotation).
       if (
@@ -128,7 +129,7 @@ function makeDeps(ctx: BackgroundContext): JobRegistryDeps {
       }
     },
     broadcastRemoved: (id) => {
-      ctx.messageBus.broadcast({ type: MESSAGE_TYPES.JOB_EVENT, payload: { removedId: id } });
+      broadcastJobEvent(ctx, { removedId: id });
     },
     onActiveCountChange: pinKeepAlive,
     now: () => Date.now(),

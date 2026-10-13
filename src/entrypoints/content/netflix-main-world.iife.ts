@@ -21,11 +21,11 @@
 // Ceiling: if Netflix renames `cadmiumPlayerRepository` or changes the
 // `type === 'timedtext'` node shape, traversal returns empty → hookMiss.
 // Diagnostic: `__NF_DEBUG.hookMiss` + console.warn after 30s.
-declare const __CELL_DEBUG__: string | undefined;
+declare const __Tihoka_DEBUG__: string | undefined;
 
 (() => {
   function isDebug(): boolean {
-    return typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true';
+    return typeof __Tihoka_DEBUG__ !== 'undefined' && __Tihoka_DEBUG__ === 'true';
   }
 
   // === Types (erased at runtime) ===

@@ -19,7 +19,7 @@ export interface EmptyStateProps {
  */
 export function EmptyState({ onOpenFile, onOpenFolder }: EmptyStateProps): React.JSX.Element {
   return (
-    <div className={styles.dropzone} data-cell-id="empty-state-content">
+    <div className={styles.dropzone} data-tihoka-id="empty-state-content">
       <div className={styles.iconBadge}>
         <Icon name="video" size="lg" />
       </div>
@@ -31,7 +31,7 @@ export function EmptyState({ onOpenFile, onOpenFolder }: EmptyStateProps): React
           size="md"
           onClick={onOpenFile}
           leadingIcon={<Icon name="plus" size="sm" />}
-          data-cell-id="empty-open-file"
+          data-tihoka-id="empty-open-file"
         >
           {t('library.action.addFiles')}
         </Button>
@@ -40,7 +40,7 @@ export function EmptyState({ onOpenFile, onOpenFolder }: EmptyStateProps): React
           size="md"
           onClick={onOpenFolder}
           leadingIcon={<Icon name="folderOpen" size="sm" />}
-          data-cell-id="empty-open-folder"
+          data-tihoka-id="empty-open-folder"
         >
           {t('library.action.addFolder')}
         </Button>

@@ -177,7 +177,7 @@ export function Showcase(): ReactElement {
       </header>
 
       <Card className={styles.sentence}>
-        <Text as="p" variant="body" data-cell-id="subtitle-sentence">
+        <Text as="p" variant="body" data-tihoka-id="subtitle-sentence">
           {SENTENCE.map((word, index) => (
             <span key={`${word}-${index}`}>
               {index > 0 && ' '}

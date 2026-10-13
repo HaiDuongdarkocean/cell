@@ -100,9 +100,9 @@ const mockOnChanged: MockOnChanged = {
 };
 
 const mockRuntime = {
-  id: 'cell-design-system-showcase',
+  id: 'Tihoka-design-system-showcase',
   getURL(path: string): string {
-    return `chrome-extension://cell-design-system-showcase/${path.replace(/^\//, '')}`;
+    return `chrome-extension://Tihoka-design-system-showcase/${path.replace(/^\//, '')}`;
   },
 };
 

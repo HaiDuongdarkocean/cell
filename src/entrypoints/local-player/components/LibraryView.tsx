@@ -110,7 +110,7 @@ export function LibraryView({
           icon={<Icon name="video" size="lg" />}
           title={t('library.empty.title')}
           description={t('library.empty.desc')}
-          data-cell-id="library-empty"
+          data-tihoka-id="library-empty"
         />
       ) : (
         <div className={styles.list} role="list">
@@ -140,7 +140,7 @@ export function LibraryView({
           value={sortBy}
           onChange={(value) => onSortChange(value as SortBy)}
           aria-label={t('library.sort.aria')}
-          data-cell-id="library-sort-select"
+          data-tihoka-id="library-sort-select"
           className={styles.sortSelect}
         />
         <div className={styles.buttonRow}>
@@ -149,7 +149,7 @@ export function LibraryView({
             size="sm"
             onClick={onOpenFile}
             leadingIcon={<Icon name="plus" size="xs" />}
-            data-cell-id="playlist-add-files"
+            data-tihoka-id="playlist-add-files"
           >
             <span className={styles.btnLabel}>{t('library.action.addFiles')}</span>
           </Button>
@@ -158,7 +158,7 @@ export function LibraryView({
             size="sm"
             onClick={onOpenFolder}
             leadingIcon={<Icon name="folderOpen" size="xs" />}
-            data-cell-id="playlist-add-folder"
+            data-tihoka-id="playlist-add-folder"
           >
             <span className={styles.btnLabel}>{t('library.action.addFolder')}</span>
           </Button>
@@ -168,7 +168,7 @@ export function LibraryView({
               size="sm"
               onClick={onClearAll}
               leadingIcon={<Icon name="trash" size="xs" />}
-              data-cell-id="playlist-clear-all"
+              data-tihoka-id="playlist-clear-all"
             >
               <span className={styles.btnLabel}>{t('library.action.clearAll')}</span>
             </Button>

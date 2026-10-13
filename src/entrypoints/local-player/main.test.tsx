@@ -257,15 +257,15 @@ jest.mock('./components/PlayerView', () => ({
   PlayerView: (props: CapturedProps): React.JSX.Element => {
     capturedPlayerViewProps = props;
     return (
-      <div data-cell-id="player-view">
+      <div data-tihoka-id="player-view">
         <button
-          data-cell-id="mock-open-file"
+          data-tihoka-id="mock-open-file"
           onClick={() => props.onOpenFile()}
         >
           Open
         </button>
         <button
-          data-cell-id="mock-file-drop"
+          data-tihoka-id="mock-file-drop"
           onClick={() =>
             props.onFilesDrop([new File([], 'dropped.mp4', { type: 'video/mp4' })])
           }
@@ -273,25 +273,25 @@ jest.mock('./components/PlayerView', () => ({
           Drop
         </button>
         <button
-          data-cell-id="mock-video-select"
+          data-tihoka-id="mock-video-select"
           onClick={() => props.onVideoSelect('v1')}
         >
           Select
         </button>
         <button
-          data-cell-id="mock-sort-change"
+          data-tihoka-id="mock-sort-change"
           onClick={() => props.onSortChange('title')}
         >
           Sort
         </button>
         <button
-          data-cell-id="mock-time-update"
+          data-tihoka-id="mock-time-update"
           onClick={() => props.onTimeUpdate?.(30)}
         >
           TimeUpdate
         </button>
         <button
-          data-cell-id="mock-subtitle-select"
+          data-tihoka-id="mock-subtitle-select"
           onClick={() => props.onSubtitleSelect('sub1')}
         >
           SubSelect
