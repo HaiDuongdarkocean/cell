@@ -74,6 +74,31 @@ export async function dispatchImportToOffscreen(
   payload: ImportJobPayload,
   port: ImportChannelPort,
 ): Promise<ImportResult> {
+  const run = awaitImportRunEvents(offscreen, registry, job, payload.langCode, port);
+  const request: ImportRunRequest = {
+    type: 'import-run',
+    jobId: job.id,
+    file: payload.file,
+    langCode: payload.langCode,
+    components: payload.components,
+    signature: signatureOf(job),
+    duplicateDecision: payload.duplicateDecision,
+  };
+  port.postMessage(request);
+  return run;
+}
+
+/** Listen-side of a dispatch: heartbeat + ack timeout + event → registry
+ *  mapping, resolving on import-done. Split out so a direct-upload sender
+ *  can post `import-run` itself while the SW keeps ownership of the job —
+ *  the listener must be attached before the sender is told to post. */
+export async function awaitImportRunEvents(
+  offscreen: OffscreenManager,
+  registry: JobRegistry,
+  job: Job,
+  langCode: string,
+  port: ImportChannelPort,
+): Promise<ImportResult> {
   let resourceId: number | undefined;
   let runnerFailed = false;
   let interrupt = (): void => {};
@@ -125,23 +150,12 @@ export async function dispatchImportToOffscreen(
             break;
         }
       });
-
-      const request: ImportRunRequest = {
-        type: 'import-run',
-        jobId: job.id,
-        file: payload.file,
-        langCode: payload.langCode,
-        components: payload.components,
-        signature: signatureOf(job),
-        duplicateDecision: payload.duplicateDecision,
-      };
-      port.postMessage(request);
     });
   } catch (err) {
     // The runner rolls back its own failures; only a dead transport needs the
     // SW to clean up a half-installed resource itself.
     if (!runnerFailed && resourceId !== undefined) {
-      await rollbackImport(payload.langCode, resourceId).catch(() => undefined);
+      await rollbackImport(langCode, resourceId).catch(() => undefined);
     }
     throw err;
   } finally {

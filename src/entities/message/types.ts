@@ -154,6 +154,7 @@ export type MessageType =
   | 'RESOURCE_SAMPLE'
   | 'RESOURCE_FIND'
   | 'RESOURCE_IMPORT_CHUNK'
+  | 'RESOURCE_IMPORT_BEGIN'
 
   // Durable job registry (spec durable-job-registry)
   | 'JOB_LIST'

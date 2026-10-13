@@ -931,6 +931,10 @@ export function useSplitView({
     // Drag resize: measure the flex container (wrapper or playerShell).
     const flexContainer = wrapper ?? playerShell;
     let dragStart: { x: number; startPct: number; wrapperW: number } | null = null;
+    // The width read for --Tihoka-split-panel-w is rAF-coalesced — reading
+    // getBoundingClientRect right after the flexBasis write on every
+    // pointermove forced a synchronous layout per event.
+    let panelWidthRaf = 0;
     const onPointerDown = (e: PointerEvent): void => {
       // Column (narrow) layout has no horizontal split to drag.
       if (isNarrowLayout) return;
@@ -944,10 +948,15 @@ export function useSplitView({
       const next = Math.min(Math.max(dragStart.startPct + deltaPct, 20), 60);
       panel.style.flexBasis = `${next}%`;
       splitViewPctRef.current = next;
-      document.documentElement.style.setProperty(
-        '--Tihoka-split-panel-w',
-        `${Math.round(panel.getBoundingClientRect().width)}px`,
-      );
+      if (panelWidthRaf === 0) {
+        panelWidthRaf = requestAnimationFrame(() => {
+          panelWidthRaf = 0;
+          document.documentElement.style.setProperty(
+            '--Tihoka-split-panel-w',
+            `${Math.round(panel.getBoundingClientRect().width)}px`,
+          );
+        });
+      }
       // CSS handles video sizing (height:100%!important, object-fit:contain).
       // No setSize needed — the video fills the stage via CSS automatically.
     };
@@ -1028,6 +1037,7 @@ export function useSplitView({
       if (onPageScrollRef) window.removeEventListener('scroll', onPageScrollRef, true);
       window.removeEventListener('resize', scheduleLayoutRecalc);
       cancelAnimationFrame(layoutRaf);
+      cancelAnimationFrame(panelWidthRaf);
       themeSyncCleanup();
       svLog('cleanup START', { splitViewOpen, isPlayerFullscreen, playerShellTag: playerShell.tagName, playerShellInDom: document.body.contains(playerShell) });
       handle.removeEventListener('pointerdown', onPointerDown);

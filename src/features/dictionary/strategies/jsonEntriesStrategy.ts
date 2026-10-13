@@ -5,7 +5,7 @@
 
 import { BaseDictionaryStrategy } from './baseImportStrategy';
 import type { StrategyOptions, StrategyResult, RawDictionaryEntry } from './baseImportStrategy';
-import { decodeText, isGzip, gunzipFile, isZip, unzipAll } from '../logic/fileDetector';
+import { decodeText, isGzip, gunzipFile, isZip, unzipAll, isImportZipEntry } from '../logic/fileDetector';
 import { selectZipDataJson } from '../logic/formatDetector';
 import { ParseError } from '../logic/importErrors';
 import { scanTopLevelJsonObjectRanges, MalformedJsonArrayError } from '../logic/jsonObjectScanner';
@@ -73,7 +73,7 @@ export class JsonEntriesStrategy extends BaseDictionaryStrategy {
     let data = this.data;
     if (isGzip(data)) data = gunzipFile(data);
     if (isZip(data)) {
-      const files = unzipAll(data);
+      const files = unzipAll(data, isImportZipEntry);
       const entry = selectZipDataJson(files);
       if (!entry) throw new ParseError('entry-object JSON zip: no .json entry found.');
       data = entry.bytes;

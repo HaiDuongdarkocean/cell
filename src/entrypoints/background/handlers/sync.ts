@@ -33,6 +33,8 @@ import { migrateProfileIdentity } from '@/features/sync/app/profileIdentityMigra
 import { createSrsSyncAccess } from '@/features/srs/sync/srsSyncAccess';
 import { setOutboxDirtyNotifier } from '@/features/sync/adapters/local/idb/capture';
 import { configureSyncTriggers } from '../syncTriggers';
+import { getJobRegistry } from './jobs';
+import { isActiveJob } from '@/entities/job/types';
 import { logger } from '@/shared/lib/logger';
 import type { BackgroundContext } from '../context';
 
@@ -329,6 +331,16 @@ export function wireSyncScheduling(ctx: BackgroundContext): Array<() => void> {
     ...configureSyncTriggers({
       hasConnections: () => rt.hasConnections(),
       checkRemote: () => rt.checkRemote(),
+      hasActiveResourceJob: () => {
+        try {
+          const registry = getJobRegistry();
+          return (['resource-import', 'resource-delete'] as const).some((kind) =>
+            registry.list(kind).some(isActiveJob),
+          );
+        } catch {
+          return false;
+        }
+      },
     }),
   );
 

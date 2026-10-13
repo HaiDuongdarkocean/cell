@@ -206,7 +206,9 @@ export async function createWebTokenizeController(
   // washed sentence releases it.
   let highlightedSpans: HTMLElement[] = [];
   let pinnedSentenceKey: string | null = null;
+  let washedSentenceKey: string | null = null;
   let lastCopiedSentence: string | null = null;
+  let preparedNotifyTimer: number | null = null;
 
   /** Release the pinned wash on a click that lands outside the washed sentence
    *  and outside Tihoka's own UI (popup, panel) — clicking the popup keeps it. */
@@ -219,6 +221,7 @@ export async function createWebTokenizeController(
     pinnedSentenceKey = null;
     clearSentenceHighlight(highlightedSpans);
     highlightedSpans = [];
+    washedSentenceKey = null;
   }
   document.addEventListener('pointerdown', onPointerDownOutside, true);
 
@@ -897,8 +900,6 @@ export async function createWebTokenizeController(
     });
   }
 
-  let preparedNotifyTimer: number | null = null;
-
   function schedulePreparedNotify(): void {
     if (preparedNotifyTimer !== null) return;
     preparedNotifyTimer = window.setTimeout(() => {
@@ -920,11 +921,15 @@ export async function createWebTokenizeController(
   function clearSentenceWash(): void {
     clearSentenceHighlight(highlightedSpans);
     highlightedSpans = [];
+    washedSentenceKey = null;
   }
 
-  function washSentence(element: HTMLElement): void {
+  function washSentence(block: TokenBlock, element: HTMLElement): void {
+    const key = sentenceKey(block, element);
+    if (washedSentenceKey === key && highlightedSpans[0]?.isConnected) return;
     clearSentenceWash();
     highlightedSpans = highlightSentence(element);
+    washedSentenceKey = key;
   }
 
   function getDisplayOptions(): TokenSpanBindOptions {
@@ -938,7 +943,7 @@ export async function createWebTokenizeController(
         stateStore.setHoveredTerm(term);
         const key = sentenceKey(block, element);
         if (pinnedSentenceKey && pinnedSentenceKey !== key) pinnedSentenceKey = null;
-        washSentence(element);
+        washSentence(block, element);
       },
       onTokenLeave: (term) => {
         if (stateStore.getState().hoveredTerm === term) {
@@ -948,7 +953,7 @@ export async function createWebTokenizeController(
       },
       onTokenClick: (term, block, element, token, event) => {
         pinnedSentenceKey = sentenceKey(block, element);
-        washSentence(element);
+        washSentence(block, element);
         const ctx = sentenceContextForSpan(element)
           ?? sentenceContextForIndex(block.tokens ?? [], block.originalText, token.sentenceIndex, token.start);
         options.onOpenDictionary?.(term, element, ctx?.sentence ?? block.originalText, event, ctx?.cursorOffset ?? 0);
@@ -956,14 +961,14 @@ export async function createWebTokenizeController(
       onSeparatorEnter: (block, element) => {
         const key = sentenceKey(block, element);
         if (pinnedSentenceKey && pinnedSentenceKey !== key) pinnedSentenceKey = null;
-        washSentence(element);
+        washSentence(block, element);
       },
       onSeparatorLeave: () => {
         if (!pinnedSentenceKey) clearSentenceWash();
       },
       onSeparatorClick: (block, element) => {
         pinnedSentenceKey = sentenceKey(block, element);
-        washSentence(element);
+        washSentence(block, element);
       },
       onTokenCtrlClick: (term) => stateStore.toggleSelectedTerm(term),
       isSelected: (term) => stateStore.getState().selectedTerms.has(term),

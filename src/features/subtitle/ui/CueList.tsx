@@ -4,7 +4,7 @@ import type { BilingualCue } from '@/entities/media';
 import type { ClickModifierState, WordStatus } from '@/entities/dictionary';
 import type { AnnotationDisplayMode } from '@/entities/settings';
 import type { Token } from '@/features/tokenize';
-import { isNotKnown, onDictionaryChanged, onWordStatusChanged } from '@/features/dictionary';
+import { isNotKnown, onDictionaryChangedVisible, onWordStatusChanged } from '@/features/dictionary';
 import { getWordTranslations } from '@/features/translate';
 import { getSrsCardTermSet, invalidateSrsCardTermSet, onSrsCardsChanged } from '@/features/srs';
 import {
@@ -396,7 +396,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
 
   useEffect(() => {
     if (!tokenizeLangCode) return;
-    return onDictionaryChanged(({ langCode }) => {
+    return onDictionaryChangedVisible(({ langCode }) => {
       if (langCode && langCode !== tokenizeLangCode) return;
       setDictEpoch((n) => n + 1);
     });

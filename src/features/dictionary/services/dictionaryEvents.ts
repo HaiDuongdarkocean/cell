@@ -17,3 +17,32 @@ export function onDictionaryChanged(listener: (detail: DictionaryChangedDetail) 
 export function emitDictionaryChanged(detail: DictionaryChangedDetail): void {
   for (const listener of [...listeners]) listener(detail);
 }
+
+/** Subscribe like onDictionaryChanged but skip the re-resolve work while the
+ *  document is hidden: DICTIONARY_CHANGED fans out to every open tab, and
+ *  background tabs must not stampede the service worker for updates they do
+ *  not display. The last event is held and flushed on visibilitychange. */
+export function onDictionaryChangedVisible(
+  listener: (detail: DictionaryChangedDetail) => void,
+): () => void {
+  if (typeof document === 'undefined') return onDictionaryChanged(listener);
+  let pending: DictionaryChangedDetail | null = null;
+  const flush = (): void => {
+    if (pending === null || document.visibilityState !== 'visible') return;
+    const detail = pending;
+    pending = null;
+    listener(detail);
+  };
+  const unsubscribe = onDictionaryChanged((detail) => {
+    if (document.visibilityState === 'visible') {
+      listener(detail);
+      return;
+    }
+    pending = detail;
+  });
+  document.addEventListener('visibilitychange', flush);
+  return () => {
+    unsubscribe();
+    document.removeEventListener('visibilitychange', flush);
+  };
+}

@@ -4,9 +4,11 @@
  *
  * Joins `BroadcastChannel('Tihoka-import')` at module load (statically imported
  * by ffmpegRunner, so the channel is live before the offscreen ping listener
- * answers). The SW posts one `import-run` request carrying the assembled
- * File; this runner executes importFile against the same extension-origin
- * IndexedDB and streams accepted/progress/resource/done/failed events back.
+ * answers). One `import-run` request carries the File — posted by the SW for
+ * chunk uploads, or by an extension-page sender directly (RESOURCE_IMPORT_BEGIN
+ * handoff); requests queue serially. This runner executes importFile against
+ * the same extension-origin IndexedDB and streams
+ * accepted/progress/resource/done/failed events back.
  */
 
 import { importFile } from '@/features/dictionary/logic/importOrchestrator';
@@ -17,16 +19,32 @@ import {
   type ImportRunRequest,
 } from '@/features/dictionary/logic/importChannel';
 
-let running = false;
+const queue: ImportRunRequest[] = [];
+let draining = false;
 
 export function startImportRunner(port: ImportChannelPort): void {
   port.listen((message) => {
-    if (!isImportRunRequest(message) || running) return;
-    running = true;
-    void executeImportRun(port, message).finally(() => {
-      running = false;
-    });
+    if (!isImportRunRequest(message)) return;
+    // Ack on receipt, not on execution start: direct-upload senders post
+    // import-run themselves, so requests can arrive while another import
+    // runs — queue them serially instead of dropping them into an ack
+    // timeout on the SW side.
+    port.postMessage({ type: 'import-accepted', jobId: message.jobId });
+    queue.push(message);
+    void drainQueue(port);
   });
+}
+
+async function drainQueue(port: ImportChannelPort): Promise<void> {
+  if (draining) return;
+  draining = true;
+  try {
+    for (let request = queue.shift(); request !== undefined; request = queue.shift()) {
+      await executeImportRun(port, request);
+    }
+  } finally {
+    draining = false;
+  }
 }
 
 async function executeImportRun(
@@ -34,7 +52,6 @@ async function executeImportRun(
   request: ImportRunRequest,
 ): Promise<void> {
   const { jobId } = request;
-  port.postMessage({ type: 'import-accepted', jobId });
   try {
     const result = await importFile(request.file, {
       langCode: request.langCode,
