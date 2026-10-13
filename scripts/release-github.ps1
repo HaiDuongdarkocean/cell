@@ -1,6 +1,6 @@
 # Release Tihoka to GitHub Releases (tihoka-official/tihoka) — artifacts only, no source.
 #
-#   Chrome lane: packs dist/ -> tihoka.crx (signed with tihoka-key.pem), generates
+#   Chrome lane: packs dist/ -> Tihoka_<version>.crx (signed with tihoka-key.pem), generates
 #     updates.xml whose codebase points at the release asset, injects
 #     update_url=https://github.com/<repo>/releases/latest/download/updates.xml
 #     into the packed manifest (restored afterwards). Chrome clients poll that
@@ -59,7 +59,8 @@ $ghAuthed = $true
 try { & gh auth status *>$null; if ($LASTEXITCODE -ne 0) { $ghAuthed = $false } } catch { $ghAuthed = $false }
 if (-not $ghAuthed) { throw "gh not authenticated — run 'gh auth login' first" }
 
-$crxURL = "https://github.com/$repo/releases/download/$tag/tihoka.crx"
+$crxAssetName = (($ship.crxAssetName) ? $ship.crxAssetName : 'Tihoka_{version}.crx') -replace '\{version\}', $version
+$crxURL = "https://github.com/$repo/releases/download/$tag/$crxAssetName"
 $updateURL = "https://github.com/$repo/releases/latest/download/updates.xml"
 $bsdtar = "$env:WINDIR\System32\tar.exe"
 $keyFile = Join-Path $root 'tihoka-key.pem'
@@ -85,7 +86,7 @@ try {
   $manifest | Add-Member -Name 'update_url' -Value $updateURL -MemberType NoteProperty -Force
   [IO.File]::WriteAllText($manifestPath, ($manifest | ConvertTo-Json -Depth 100), (New-Object Text.UTF8Encoding $false))
 
-  $crx = Join-Path $work 'tihoka.crx'
+  $crx = Join-Path $work $crxAssetName
   $updates = Join-Path $work 'updates.xml'
   $crx3 = Join-Path $root 'node_modules\.bin\crx3.cmd'
   if (Test-Path $crx3) {
@@ -98,7 +99,7 @@ try {
   Move-Item $manifestBackup $manifestPath -Force
 }
 
-$ffZip = Join-Path $work "tihoka-firefox-$version.zip"
+$ffZip = Join-Path $work "Tihoka_firefox-$version.zip"
 Push-Location dist-firefox
 & $bsdtar -a -cf $ffZip *
 Pop-Location
@@ -125,7 +126,7 @@ if (-not $refs) {
   Write-Output '  [OK] bootstrapped repo with README + LICENSE (no source)'
 }
 
-$notes = "Tihoka $version`n`n- Chrome (self-hosted): tihoka.crx — auto-update via updates.xml`n- Firefox: tihoka-firefox-$version.zip — install/update via addons.mozilla.org`n"
+$notes = "Tihoka $version`n`n- Chrome (self-hosted): $crxAssetName — auto-update via updates.xml`n- Firefox: Tihoka_firefox-$version.zip — install/update via addons.mozilla.org`n"
 & gh release create $tag $crx $updates $ffZip --repo $repo --title "Tihoka $version" --notes $notes
 if ($LASTEXITCODE -ne 0) { throw 'gh release create failed' }
 

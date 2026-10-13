@@ -17,12 +17,12 @@
 1. **Video is detected and playing**
    - Given: page loaded
    - Then: `document.querySelector('video')` exists and `paused === false` after start
-2. **Cell overlay mounted with subtitle shadow root**
+2. **Tihoka overlay mounted with subtitle shadow root**
    - Given: video playing
-   - Then: `document.querySelector('#cell-subtitle-root')?.shadowRoot` exists
+   - Then: `document.querySelector('#Tihoka-subtitle-root')?.shadowRoot` exists
 3. **Player Mode button accessible**
    - Given: overlay mounted
-   - Then: shadow DOM contains `[data-cell-id="player-mode-btn"]` or equivalent
+   - Then: shadow DOM contains `[data-tihoka-id="player-mode-btn"]` or equivalent
 4. **Player Mode enters successfully**
    - When: Player Mode button clicked
    - Then: either `document.fullscreenElement` set (child frame) OR overlay is fixed full-viewport (top frame)

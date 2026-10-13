@@ -51,7 +51,7 @@ Flag a structural problem → propose the move, not just the problem: typed mode
 - **No rubber-stamping:** no LGTM without evidence; quantify problems ("~50ms per item"); push back on flawed approaches; accept override gracefully — comment on code, not people.
 - **"I'll clean it up later" is not accepted** — cleanup before merge or file a self-assigned bug.
 - **Dead code:** list orphaned code explicitly, ask before deleting.
-- **Multi-model review** catches blind spots: Model A writes → Model B reviews → A addresses → human decides. For Cell pipelines, use a fresh-context `subagent_explore` as Model B (see `autonomous-pipeline` Phase 3). Subagent spawn rules: `.agents/skills/autonomous-pipeline/references/orchestration-patterns.md`.
+- **Multi-model review** catches blind spots: Model A writes → Model B reviews → A addresses → human decides. For Tihoka pipelines, use a fresh-context `subagent_explore` as Model B (see `autonomous-pipeline` Phase 3). Subagent spawn rules: `.agents/skills/autonomous-pipeline/references/orchestration-patterns.md`.
 - **Dependencies are liabilities:** existing stack first; check bundle size, maintenance, `npm audit`, license. Upgrades: one per change, read the changelog not just the version, green suite before+after, review the lockfile diff, never hand-edit it. Security verdicts → `security-and-hardening`.
 - **Disagreement hierarchy:** technical facts > style guides > engineering principles > codebase consistency (if it doesn't degrade health).
 

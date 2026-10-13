@@ -1,6 +1,6 @@
 # Plan — firefox-port (spike → compat report)
 
-Spec: `docs/specs/firefox-port.md` · Intent: `docs/intent/firefox-port.md` · Worktree: `cell-worktrees/firefox-port` · Branch: `feature/firefox-port`
+Spec: `docs/specs/firefox-port.md` · Intent: `docs/intent/firefox-port.md` · Worktree: `Tihoka-worktrees/firefox-port` · Branch: `feature/firefox-port`
 
 ## Task breakdown
 

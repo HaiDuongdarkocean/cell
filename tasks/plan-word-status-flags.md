@@ -30,7 +30,7 @@
 
 ## T4 — Token gradient CSS
 
-- [ ] `tokenSpanCss.ts` + `buildTokenSpanCssForShadow`: `--status-tracking` capsule → `linear-gradient(90deg, var(--cell-token-status-tracking), var(--cell-token-status-unknown))`; same for learning. Keep `html body … !important` specificity.
+- [ ] `tokenSpanCss.ts` + `buildTokenSpanCssForShadow`: `--status-tracking` capsule → `linear-gradient(90deg, var(--Tihoka-token-status-tracking), var(--Tihoka-token-status-unknown))`; same for learning. Keep `html body … !important` specificity.
 - [ ] Test: assert both builders emit the gradient rules.
 - AC: AC-2
 
@@ -38,7 +38,7 @@
 
 - [ ] `StatusRow.tsx`: default `statusControl` → new `StatusSegmented` — `[base pill | flag segment]` (Concept B): left = `StatusPill` cycling via `nextBaseStatus`; right segment renders only when flag ≠ none — tracking → `eye` `Button` (click = toggleTracking, key-4 semantics); learning → `layers` `Button` disabled/read-only.
 - [ ] `useCandidate.ts`: add `toggleTracking` (same write path as `cycleStatus` but `toggleTrackingFlag(variantStatus)`); expose `srsState` derived from `statusFlag(status)` (`none|learning`) for the header button.
-- [ ] `CandidateView.tsx`: SRS `Button` (icon `layers`, `shape="circle"`) in `cellHeaderActions`: flag ≠ learning → ghost/dashed → click runs `panel.addToSrs()` (buildPrefill → `addToOceanSrs` → optimistic `learning`); flag === learning → filled learning class → click `openSrsStudyPage()`; disabled when `baseStatus(status) !== 'unknown'`.
+- [ ] `CandidateView.tsx`: SRS `Button` (icon `layers`, `shape="circle"`) in `TihokaHeaderActions`: flag ≠ learning → ghost/dashed → click runs `panel.addToSrs()` (buildPrefill → `addToOceanSrs` → optimistic `learning`); flag === learning → filled learning class → click `openSrsStudyPage()`; disabled when `baseStatus(status) !== 'unknown'`.
 - [ ] CSS: segmented + SRS state classes in `CandidateView.module.css` using `--chip-status-*` tokens.
 - [ ] i18n: `dict.status.cycle` wording, new keys flag segment title + `dict.action.srs` (en+vi).
 - Verify: `npx jest CandidateView` + mockup-style visual check on real popup.

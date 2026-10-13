@@ -21,7 +21,7 @@ Research workflow, not implementation — do not modify `src/`. Never invent URL
 Report separately:
 
 - **Player-side discovery:** the browser/player exposes a subtitle list.
-- **Extension delivery:** Cell discovers, normalizes, replays, and stores every entry in background inventory.
+- **Extension delivery:** Tihoka discovers, normalizes, replays, and stores every entry in background inventory.
 
 DevTools/page-JS seeing a list is not extension support until the actual background inventory is checked.
 
@@ -41,7 +41,7 @@ Never label a site supported without E4. Otherwise write: `player-side verified;
 
 ```text
 0. Scope → 1. Browser → 2. Topology → 3. Activate → 4. List source
-→ 5. Validate entries → 6. Audit Cell delivery → 7. Root cause + adapter → 8. Report
+→ 5. Validate entries → 6. Audit Tihoka delivery → 7. Root cause + adapter → 8. Report
 ```
 
 | Step | Done when |
@@ -52,7 +52,7 @@ Never label a site supported without E4. Otherwise write: `player-side verified;
 | 3. Activate | Clicked only observed controls; subtitle control opened; languages/variants/auto-captions recorded. No visible control ≠ no subtitles |
 | 4. List source | One signal family identified with exact URL/initiator/frame/method/body source (signal table in detail ref) |
 | 5. Validate entries | Every entry has label/lang/format/URL-type/flags/source/auth-context/status; `blob:` is player-local, `http(s)` only are download URLs; signed params preserved; UI-vs-API count discrepancy reported unresolved |
-| 6. Cell delivery | `networkInterceptor.getSubtitles(tabId)` count checked; Network-panel request is never delivery evidence; E4 requires background inventory |
+| 6. Tihoka delivery | `networkInterceptor.getSubtitles(tabId)` count checked; Network-panel request is never delivery evidence; E4 requires background inventory |
 | 7. Root cause | Classified to one adapter family; adapter contract written; prefer registry of protocol adapters over site branches in `NetworkInterceptor` |
 | 8. Report | Report template filled; verified/assumed/not-verified split |
 

@@ -656,7 +656,7 @@ return {
   readyState: document.readyState,
   hasBody: Boolean(document.body),
   hasAppRoot: Boolean(document.querySelector('app-root')),
-  tokenCount: document.querySelectorAll('.js-cell-token').length,
+  tokenCount: document.querySelectorAll('.js-Tihoka-token').length,
   challengeText: (document.body?.innerText ?? '').includes('enable JavaScript'),
   iframeCount: document.querySelectorAll('iframe').length,
 };

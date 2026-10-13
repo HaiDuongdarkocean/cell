@@ -7,8 +7,8 @@
 
 - [x] T1 `existsSync` guard `phraseMatchBenchmark.test.ts` + fix 4 unused vars `e2e/stage2/*` — `fa925589`
 - [x] T2 Remove storage-write + injected debug seams (runtime.ts, ffmpegRunner.ts, patch-ocr-csp.mjs) — `eeb0e211`
-- [x] T3 Remove `__cellBg` + `__CELL_SPLIT_VIEW_LOG` relay — `eeb0e211`
-- [x] T4 Gate `data-cell-debug-media`, `__CELL_OCR_DEBUG_INIT`, `__CELL_OCR_TRACKS` sau `__CELL_DEBUG__` — `eeb0e211`; + `svLog` gate `a353a6e5`
+- [x] T3 Remove `__TihokaBg` + `__Tihoka_SPLIT_VIEW_LOG` relay — `eeb0e211`
+- [x] T4 Gate `data-tihoka-debug-media`, `__Tihoka_OCR_DEBUG_INIT`, `__Tihoka_OCR_TRACKS` sau `__Tihoka_DEBUG__` — `eeb0e211`; + `svLog` gate `a353a6e5`
 - [x] T5 eslint `recommendedTypeChecked` + 66 fixes — `f89dd43e`
 - [x] T6 Remove dead `USE_LEGACY_SUBTITLE` flag — `d662b108`
 

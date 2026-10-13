@@ -57,7 +57,7 @@ git worktree remove ../project-feature-a                      # cleanup after me
 
 Each worktree is a separate directory with its own branch — parallel agents without interference. For the full orchestration contract (provision/integrate/cleanup), see `autonomous-pipeline`.
 
-**Ownership markers (multi-agent):** khi tạo worktree cho pipeline item, ghi `.cell-owner` (untracked) ở root — `{"agent":"<CELL_AGENT_ID>","slug":"<item>"}` — và `pipeline-state.mjs set <slug> worktree=<path>`. Trước khi viết bất kỳ file nào trong `cell-worktrees/*` hay `../project-*`, đọc `.cell-owner`: owner khác mình → không ghi, kể cả "chỉ thêm test" hay "chỉ sửa nhỏ"; cần đóng góp → worktree riêng hoặc `request-handoff`. Tương tự trong main tree: dirty/uncommitted files không phải mình tạo = in-flight của agent khác — không stash/commit/edit đè; shield merge chỉ qua stash tên `wip-shield:<agent-id>` của chính mình, không pop stash người khác.
+**Ownership markers (multi-agent):** khi tạo worktree cho pipeline item, ghi `.Tihoka-owner` (untracked) ở root — `{"agent":"<Tihoka_AGENT_ID>","slug":"<item>"}` — và `pipeline-state.mjs set <slug> worktree=<path>`. Trước khi viết bất kỳ file nào trong `Tihoka-worktrees/*` hay `../project-*`, đọc `.Tihoka-owner`: owner khác mình → không ghi, kể cả "chỉ thêm test" hay "chỉ sửa nhỏ"; cần đóng góp → worktree riêng hoặc `request-handoff`. Tương tự trong main tree: dirty/uncommitted files không phải mình tạo = in-flight của agent khác — không stash/commit/edit đè; shield merge chỉ qua stash tên `wip-shield:<agent-id>` của chính mình, không pop stash người khác.
 
 ## Versioning (for anything with consumers)
 

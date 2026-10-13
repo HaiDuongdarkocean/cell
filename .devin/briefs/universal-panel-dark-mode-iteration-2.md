@@ -13,8 +13,8 @@ Address the P1/P2 visual-hierarchy and contrast issues remaining after iteration
    - `color-text-tertiary`, `color-text-disabled`, `color-skeleton`, `color-track`, `color-scrollbar-thumb`, `color-glass-*`, and `color-overlay-hover/pressed` all now derive from `var(--color-text)` or `var(--color-surface)`, removing hardcoded warm neutrals.
 
 2. **Status and frequency pill CSS** (`src/features/dictionaryPopup/ui/DictionaryPanelView.module.css`)
-   - Swapped `.cellHeaderStatus--*` to use `*-bg` tokens for the background and `*-fg/status` tokens for the text, fixing the light-on-light contrast mismatch in dark mode.
-   - `.cellHeaderFrequencyRank` now uses `color-text-secondary` with a transparent background, so the frequency count reads as metadata instead of a third semantic pill.
+   - Swapped `.TihokaHeaderStatus--*` to use `*-bg` tokens for the background and `*-fg/status` tokens for the text, fixing the light-on-light contrast mismatch in dark mode.
+   - `.TihokaHeaderFrequencyRank` now uses `color-text-secondary` with a transparent background, so the frequency count reads as metadata instead of a third semantic pill.
 
 3. **Card Creator right panel** (`src/features/universalPanel/tabs/CardCreatorPanel.module.css`)
    - Background: `var(--color-background)` → `var(--color-surface-elevated)`.

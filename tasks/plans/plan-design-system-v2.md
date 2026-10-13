@@ -1,4 +1,4 @@
-# Implementation Plan: Cell Design System v2
+# Implementation Plan: Tihoka Design System v2
 
 > Canonical roadmap: `docs/design-system/ROADMAP.md`  
 > Execution checklist: `tasks/todo-design-system-v2.md`  
@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-Nâng Cell Design System từ baseline vận hành 62/100 lên tối thiểu 85/100 mà không redesign sản phẩm hoặc tăng component count vô mục đích. Plan ưu tiên theo dependency:
+Nâng Tihoka Design System từ baseline vận hành 62/100 lên tối thiểu 85/100 mà không redesign sản phẩm hoặc tăng component count vô mục đích. Plan ưu tiên theo dependency:
 
 1. Khôi phục SSOT và ranh giới source/generated.
 2. Tạo deterministic quality gates bằng tool đang có.
@@ -196,7 +196,7 @@ Final maturity audit ≥85/100
 
 **Acceptance criteria:**
 - [x] Detector phân biệt production, showcase, mock-site và documented exceptions.
-- [x] Detect hardcoded color/spacing/radius/z-index và undefined token theo Cell rules, không theo M3 visual language.
+- [x] Detect hardcoded color/spacing/radius/z-index và undefined token theo Tihoka rules, không theo M3 visual language.
 - [ ] False-positive rate <5% trên sample review tối thiểu 100 findings hoặc toàn scope nếu ít hơn.
 
 **Verification:**
@@ -315,7 +315,7 @@ Final maturity audit ≥85/100
 
 ### Task 2.1: Create one contrast engine
 
-**Description:** Tách contrast/color parsing thành pure module dùng chung cho build và runtime; hỗ trợ hex, rgb, rgba, CSS alpha compositing trong phạm vi token format Cell.
+**Description:** Tách contrast/color parsing thành pure module dùng chung cho build và runtime; hỗ trợ hex, rgb, rgba, CSS alpha compositing trong phạm vi token format Tihoka.
 
 **Acceptance criteria:**
 - [x] Một implementation luminance/contrast canonical.
@@ -689,7 +689,7 @@ Không giao hai agent sửa cùng một file shared (`package.json`, Playwright 
 
 ## 8. Explicitly out of scope
 
-- Redesigning Cell visual direction.
+- Redesigning Tihoka visual direction.
 - Adopting Material 3 token names or visual style.
 - Figma/Code Connect integration before operational maturity ≥85.
 - Building components to reach a numeric inventory target.

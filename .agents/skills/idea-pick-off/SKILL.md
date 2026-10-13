@@ -60,12 +60,12 @@ One item per run by default. `/idea-pick-off all` drains the queue — see **Loo
 
 **Guard — active held elsewhere:** `init` fails `item '<other>' already active` when another agent/session is driving a different item → never touch that item's files or state; `init <slug> --mode <m> --force` takes the `active` pointer instead (the held item's entry stays intact — `transition`/`set`/`gates` are slug-scoped and `active` is only the loop's claim marker). `activate <slug>` re-points to an existing non-terminal item; `seed --force` does the same for artifact-first items.
 
-**Guard — item ownership:** every item has `owner` (set at `init`/`activate`/first mutation via `CELL_AGENT_ID` env or `--owner <id>`). Mutations (`set`/`gates`/`resolve`/`transition`/`activate`) on an item owned by another agent fail hard — that is the signal to STOP touching it entirely (its files, worktree, docs). If the user redirects you to an owned item, use `request-handoff <slug> --note` instead of mutating; the owner or a human decides (`handoff --to`/`release --force --note`). Always pass the same `CELL_AGENT_ID` for the whole session — subagent shells inherit it, so lanes under your session still count as you.
+**Guard — item ownership:** every item has `owner` (set at `init`/`activate`/first mutation via `Tihoka_AGENT_ID` env or `--owner <id>`). Mutations (`set`/`gates`/`resolve`/`transition`/`activate`) on an item owned by another agent fail hard — that is the signal to STOP touching it entirely (its files, worktree, docs). If the user redirects you to an owned item, use `request-handoff <slug> --note` instead of mutating; the owner or a human decides (`handoff --to`/`release --force --note`). Always pass the same `Tihoka_AGENT_ID` for the whole session — subagent shells inherit it, so lanes under your session still count as you.
 
 ### Step 3 — ANALYZE (invoke `pipeline-analyze`)
 
 - Seed with row: `Pain`/`Nhóm`/`Infra`/`Source` + slug.
-- Outcome `go` → `transition --to specify`; backlog `Status: analyzed`, `Spec:` cell += intent link.
+- Outcome `go` → `transition --to specify`; backlog `Status: analyzed`, `Spec:` Tihoka += intent link.
 - Outcome `no-go`/`defer` → `transition --to dropped`; backlog `Status: dropped` + reason (the CLI updates the row itself when it can match it); pick next item in `all` mode, stop in single mode.
 
 **Guard:** `awaiting` non-null → surface to user, resolve via `resolve <slug> --note`, never proceed past it.

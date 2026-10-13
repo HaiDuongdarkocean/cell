@@ -55,7 +55,7 @@
 ### Checkpoint 1: Repository Skeleton
 - [ ] `npm run typecheck` passes.
 - [ ] All repository unit tests pass.
-- [ ] Manual DevTools check of `cell-srs-{hash}` stores/indexes.
+- [ ] Manual DevTools check of `Tihoka-srs-{hash}` stores/indexes.
 
 ## Phase 2: Asset Repositories & Defaults
 

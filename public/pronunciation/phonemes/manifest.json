@@ -1,0 +1,205 @@
+{
+  "name": "English IPA — Wikimedia community recordings",
+  "version": 1,
+  "license": "CC BY-SA 3.0 / CC BY 3.0 / CC0 / Public domain — see ATTRIBUTION.md",
+  "files": {
+    "p": {
+      "d": "p.opus"
+    },
+    "b": {
+      "d": "b.opus"
+    },
+    "t": {
+      "d": "t.opus"
+    },
+    "d": {
+      "d": "d.opus"
+    },
+    "k": {
+      "d": "k.opus"
+    },
+    "ɡ": {
+      "d": "u261.opus"
+    },
+    "tʃ": {
+      "d": "tu283.opus"
+    },
+    "dʒ": {
+      "d": "du292.opus"
+    },
+    "f": {
+      "d": "f.opus"
+    },
+    "v": {
+      "d": "v.opus"
+    },
+    "θ": {
+      "d": "u3b8.opus"
+    },
+    "ð": {
+      "d": "uf0.opus"
+    },
+    "s": {
+      "d": "s.opus"
+    },
+    "z": {
+      "d": "z.opus"
+    },
+    "ʃ": {
+      "d": "u283.opus"
+    },
+    "ʒ": {
+      "d": "u292.opus"
+    },
+    "h": {
+      "d": "h.opus"
+    },
+    "x": {
+      "d": "x.opus"
+    },
+    "m": {
+      "d": "m.opus"
+    },
+    "n": {
+      "d": "n.opus"
+    },
+    "ŋ": {
+      "d": "u14b.opus"
+    },
+    "l": {
+      "d": "l.opus"
+    },
+    "r": {
+      "d": "r.opus"
+    },
+    "ɹ": {
+      "d": "u279.opus"
+    },
+    "ɾ": {
+      "d": "u27e.opus"
+    },
+    "j": {
+      "d": "j.opus"
+    },
+    "w": {
+      "d": "w.opus"
+    },
+    "ʔ": {
+      "d": "u294.opus"
+    },
+    "i": {
+      "d": "i.opus"
+    },
+    "ɪ": {
+      "d": "u26a.opus"
+    },
+    "e": {
+      "d": "e.opus"
+    },
+    "ɛ": {
+      "d": "u25b.opus"
+    },
+    "æ": {
+      "d": "ue6.opus"
+    },
+    "a": {
+      "d": "a.opus"
+    },
+    "ɑ": {
+      "d": "u251.opus"
+    },
+    "ɒ": {
+      "d": "u252.opus",
+      "us": "u251.opus"
+    },
+    "ɔ": {
+      "d": "u254.opus"
+    },
+    "o": {
+      "d": "o.opus"
+    },
+    "ʊ": {
+      "d": "u28a.opus"
+    },
+    "u": {
+      "d": "u.opus"
+    },
+    "ʌ": {
+      "d": "u28c.opus"
+    },
+    "ə": {
+      "d": "u259.opus"
+    },
+    "ɜ": {
+      "d": "u25c.opus"
+    },
+    "ɐ": {
+      "d": "u250.opus"
+    },
+    "iː": {
+      "d": "i.opus"
+    },
+    "uː": {
+      "d": "u.opus"
+    },
+    "ɑː": {
+      "d": "u251.opus"
+    },
+    "ɔː": {
+      "d": "u254.opus"
+    },
+    "ɜː": {
+      "d": "u25c.opus",
+      "us": "us-er.opus"
+    },
+    "eɪ": {
+      "d": "us-a.opus"
+    },
+    "aɪ": {
+      "d": "us-eye.opus"
+    },
+    "ɔɪ": {
+      "d": "uk-oi.opus"
+    },
+    "aʊ": {
+      "d": "ll-au.opus"
+    },
+    "əʊ": {
+      "d": "us-owe.opus"
+    },
+    "oʊ": {
+      "d": "us-owe.opus"
+    },
+    "ɪə": {
+      "br": "uk-ear.opus",
+      "us": "us-ear.opus"
+    },
+    "eə": {
+      "br": "uk-air.opus",
+      "us": "us-air.opus"
+    },
+    "ʊə": {
+      "br": "ll-ua.opus",
+      "us": "us-tour.opus"
+    },
+    "ɚ": {
+      "br": "u259.opus",
+      "us": "us-er.opus"
+    },
+    "ɝ": {
+      "br": "u25c.opus",
+      "us": "us-er.opus"
+    },
+    "ɝː": {
+      "br": "u25c.opus",
+      "us": "us-er.opus"
+    },
+    "oː": {
+      "d": "o.opus"
+    },
+    "iə": {
+      "br": "uk-ear.opus",
+      "us": "us-ear.opus"
+    }
+  }
+}

@@ -7,7 +7,7 @@
 Declare the contract once in the shell, let every tab opt in by construction:
 
 1. `.scrollport` in `src/shared/ui/Scrollable.module.css` — `composes: themed` + `flex:1; min-width:0; min-height:0; overflow-y:auto; overscroll-behavior:contain`. Mechanics-only, zero padding.
-2. `.body` in `UniversalPanel.module.css` owns `--universal-panel-tab-gutter` (`--space-3 --space-4`), `--universal-panel-tab-scroll-inset` (`--space-4`), and the single `--card-background`/`--color-surface-card` → `surface-elevated` remap. `.content` becomes a pure flush `overflow:hidden` flex host — padding + the `[data-cell-id]` carve-out + both media-query padding overrides deleted.
+2. `.body` in `UniversalPanel.module.css` owns `--universal-panel-tab-gutter` (`--space-3 --space-4`), `--universal-panel-tab-scroll-inset` (`--space-4`), and the single `--card-background`/`--color-surface-card` → `surface-elevated` remap. `.content` becomes a pure flush `overflow:hidden` flex host — padding + the `[data-tihoka-id]` carve-out + both media-query padding overrides deleted.
 3. `isActive := open && currentTab === tab` bound at the `mountUniversalPanel` render fns (`renderPlaylistPanel`, `renderRecapPanel`) — precedent `renderDictionaryPanel(open)`.
 4. All six panes ride identical `.tabPane[hidden]` keep-alive mounts — recap joins the pattern.
 5. `EmptyState .root` gains `flex:1 1 auto`; `.root.bordered` keeps `flex:none`.
@@ -41,4 +41,4 @@ Declare the contract once in the shell, let every tab opt in by construction:
 
 ## Boundaries respected
 
-No `data-cell-id`-keyed CSS added (the attribute stays as test hook). No nav chrome/hit-target/subnav/recipe changes (items 30–33). No `setVisitedTabs`-during-render fix (item 29). No new deps, no `tokens.json`/`tokens.css`/`manifest.json` changes. `composes: themed` inside `.scrollport` mirrors the in-file `.themedWide` precedent — Vite accepts it.
+No `data-tihoka-id`-keyed CSS added (the attribute stays as test hook). No nav chrome/hit-target/subnav/recipe changes (items 30–33). No `setVisitedTabs`-during-render fix (item 29). No new deps, no `tokens.json`/`tokens.css`/`manifest.json` changes. `composes: themed` inside `.scrollport` mirrors the in-file `.themedWide` precedent — Vite accepts it.

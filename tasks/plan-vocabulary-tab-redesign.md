@@ -15,7 +15,7 @@
 | 6 | `wordStatusClient.ts` + `features/dictionary/index.ts`: `trashWordStatus`, `listWordTrash`, `restoreWordStatus`, `deleteWordTrash` | P0 | after 5 | — | AC-1,3,4 |
 | 7 | `vocabularyList.ts`: segment filter model (`'all'\|status\|'trash'`) replacing statuses Set; keep sort/paginate | P0 | after 2 | — | AC-9,12 |
 | 8 | `vocabularySource.ts`: += trash entries state, `refresh`, `trash`, `restore`, `purge` methods; `changed{status:'unknown'}` removes in-memory entry | P0 | after 6,7 | — | AC-1,3,4,13 |
-| 9 | `VocabularyTab.tsx` + module.css rewrite: segment rail (tablist+counts, InkTabs/Dictionary-toolbar language), full-width SearchField, sort+Edit row, view/edit modes, remove/purge Dialogs, trash rows (prev-status, countdown, Restore, delete-forever), EmptyStates ×3, Pagination, data-cell-ids per spec | P0 | after 8 | — | AC-7,8,9,10 |
+| 9 | `VocabularyTab.tsx` + module.css rewrite: segment rail (tablist+counts, InkTabs/Dictionary-toolbar language), full-width SearchField, sort+Edit row, view/edit modes, remove/purge Dialogs, trash rows (prev-status, countdown, Restore, delete-forever), EmptyStates ×3, Pagination, data-tihoka-ids per spec | P0 | after 8 | — | AC-7,8,9,10 |
 | 10 | i18n: all new keys in `en.json` + `vi.json` (segments, edit/done, restore, trash copy, countdown, dialogs) | P0 | with 9 | — | AC-10 |
 | 11 | Tests: `wordTrashStore.test.ts` (tx, TTL clock-mock, reconcile, idempotent, fallback) + update `wordStatusStore`/`vocabularyList`/`vocabularySource`/`VocabularyTab`/`baseRepository` tests | P0 | after 9 | — | AC-1..13 |
 | 12 | Gates: typecheck + lint + test:unit + build; delete `src/entrypoints/mockup-vocabulary-tab-redesign/` | P0 | after 11 | — | AC-11 |

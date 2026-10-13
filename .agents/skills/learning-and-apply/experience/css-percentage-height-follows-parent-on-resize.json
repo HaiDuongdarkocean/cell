@@ -14,7 +14,7 @@
     {
       "context": "Video element sized via JS setSize(w, h) API — pixels set once, frozen on resize.",
       "bad": "player.setSize(stageWidth, stageHeight); // frozen px, needs resize listener to update",
-      "good": "// CSS: [data-cell-split-view=\"stage\"] video{width:100%!important;height:100%!important;object-fit:contain!important}\n// Video fills stage via CSS, adapts to resize automatically"
+      "good": "// CSS: [data-tihoka-split-view=\"stage\"] video{width:100%!important;height:100%!important;object-fit:contain!important}\n// Video fills stage via CSS, adapts to resize automatically"
     }
   ],
   "applyFor": ["Split view layouts", "Video player containers in host pages", "Any injected container that must match host element height", "Resize-responsive layouts without JS listeners"]

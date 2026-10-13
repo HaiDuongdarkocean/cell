@@ -63,7 +63,7 @@ Non-negotiables carried over:
 
 - **Design from function and feeling, not inventory** — `src/shared/ui/*` is not read before Step 8; ideation isn't anchored on what exists.
 - **Three genuinely different concepts** — different IA mental model + visual archetype + layout; not three skins of one idea. (`all` mode: single justified variant — see below.)
-- **Mobile-first**, touch ≥44px, all states render, dark mode works.
+- **Mobile-first**, touch ≥40px, all states render, dark mode works.
 - **Mockups are decision tools** — real production panel mounted + concept/viewport/theme switchers, interactive not static.
 - **No Liquid Glass** — solid/filled surfaces + standard tokens.
 - Every user-facing interaction in the mockup maps back to a journey step + REQ id.

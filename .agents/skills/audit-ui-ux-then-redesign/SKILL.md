@@ -38,13 +38,13 @@ Every finding must: start with a question naming the design tension → name the
 - External sources allowed when the codebase is silent — state why you used them and reconcile conflicts (default: codebase).
 - **SSOT check before any proposal:** if a fix requires editing >1 file, it probably belongs in the shared token/component, not the page.
 
-## Audit taxonomy — 9 aspects
+## Audit taxonomy — 10 aspects
 
 Run every aspect through the L1→L3 ladder; classify non-applicable ones in one sentence instead of skipping:
 
-Strategy & Purpose · Information Architecture · Visual System · Layout & Responsive · Components & States · Motion & Feedback · Accessibility · Craft & Polish · SSOT & Maintainability
+Strategy & Purpose · Interaction Flow · Information Architecture · Visual System · Layout & Responsive · Components & States · Motion & Feedback · Accessibility · Craft & Polish · SSOT & Maintainability
 
-→ Per-aspect question ladders and common failures: `references/audit-details.md`
+→ Per-aspect question ladders, 30-question screening checklist, and common failures: `references/audit-details.md`
 
 ## Decision pipeline
 

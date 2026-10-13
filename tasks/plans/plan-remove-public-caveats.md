@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `cell` repository is now public, has a clean history, and ships `v0.1.1`. Two caveats remain from the audit:
+The `Tihoka` repository is now public, has a clean history, and ships `v0.1.1`. Two caveats remain from the audit:
 
 1. **Clone size:** `main` is ~263 MB because dictionary/model/ffmpeg/showcase data are committed as Git blobs.
 2. **AI tooling in public tree:** `.devin/`, `.agents/`, `.continue/`, and vendor-specific `AGENTS.md` references are still tracked in the public repository.
@@ -19,14 +19,14 @@ This plan removes both caveats while keeping the project buildable, installable,
 ## Architecture decisions
 
 1. **Data is externalized, not deleted.**
-   - Large runtime assets (`data/resource/`, `public/models/`, `public/ffmpeg/`, design-system showcase videos) move to a companion `cell-assets` GitHub repository.
+   - Large runtime assets (`data/resource/`, `public/models/`, `public/ffmpeg/`, design-system showcase videos) move to a companion `Tihoka-assets` GitHub repository.
    - The source repo stores only a manifest (`data/assets.json`) and a downloader (`scripts/download-data.mjs`).
    - `npm run build` automatically downloads missing assets before Vite runs.
    - The shipped `.crx` still bundles the data; end users see no difference.
 
 2. **AI tooling becomes a private overlay.**
-   - Create a private `cell-ai-tools` repository that contains `.devin/`, `.agents/`, `.continue/`, and the maintainer-specific `AGENTS.md`.
-   - The public `cell` repo removes these folders and uses a minimal, vendor-neutral `AGENTS.md`.
+   - Create a private `Tihoka-ai-tools` repository that contains `.devin/`, `.agents/`, `.continue/`, and the maintainer-specific `AGENTS.md`.
+   - The public `Tihoka` repo removes these folders and uses a minimal, vendor-neutral `AGENTS.md`.
    - The maintainer overlays the private tooling with a sync script (`tools/overlay-ai-tools.ps1`) that creates temporary junctions/symlinks or copies files into the working tree before an AI session, and cleans them afterward.
    - CI and public clone never see the AI tooling.
 
@@ -44,7 +44,7 @@ This plan removes both caveats while keeping the project buildable, installable,
   - Acceptance: A complete list with sizes and consumers.
 
 - [ ] **Task 1.2:** Choose asset hosting.
-  - Option A: `HaiDuongdarkocean/cell-assets` GitHub repo with release assets.
+  - Option A: `HaiDuongdarkocean/Tihoka-assets` GitHub repo with release assets.
   - Option B: Google Drive public folder (manual share link).
   - Acceptance: Decision recorded in ADR; the maintainer approves the host.
 
@@ -71,7 +71,7 @@ This plan removes both caveats while keeping the project buildable, installable,
   - Acceptance: `git log --all` is linear and old large blobs are not reachable.
 
 - [ ] **Task 2.4:** Upload data to the chosen asset host.
-  - Package the removed files into `cell-data-v1.zip` and publish a release in `cell-assets`.
+  - Package the removed files into `Tihoka-data-v1.zip` and publish a release in `Tihoka-assets`.
   - Generate `data/assets.json` pointing to the release URL.
   - Acceptance: `scripts/download-data.mjs` can populate a fresh clone.
 
@@ -87,7 +87,7 @@ This plan removes both caveats while keeping the project buildable, installable,
 
 - [ ] **Task 3.3:** Update `ship-dist.ps1`.
   - Ensure the script runs `npm run build` (which will download data) before packing.
-  - Acceptance: `npm run ship:dist` still produces a valid `cell.crx` and `updates.xml`.
+  - Acceptance: `npm run ship:dist` still produces a valid `Tihoka.crx` and `updates.xml`.
 
 - [ ] **Task 3.4:** Update `README.md` and ADR.
   - Document the `npm run download-data` step and the first-time clone process.
@@ -95,7 +95,7 @@ This plan removes both caveats while keeping the project buildable, installable,
 
 ### Phase 4: Remove AI tooling from public tree
 
-- [ ] **Task 4.1:** Create a private `cell-ai-tools` repository.
+- [ ] **Task 4.1:** Create a private `Tihoka-ai-tools` repository.
   - Move `.devin/`, `.agents/`, `.continue/`, and the current `AGENTS.md` into it.
   - Acceptance: The private repo is not public, and the maintainer can clone it.
 
@@ -104,11 +104,11 @@ This plan removes both caveats while keeping the project buildable, installable,
   - Acceptance: The public file has no `.devin`, `.agents`, `Windsurf`, `Devin`, or `Claude` references.
 
 - [ ] **Task 4.3:** Add `.gitignore` for private overlay folders.
-  - Ignore `.devin/`, `.agents/`, `.continue/`, `AGENTS.md` in the public `cell` repo.
+  - Ignore `.devin/`, `.agents/`, `.continue/`, `AGENTS.md` in the public `Tihoka` repo.
   - Acceptance: `git status` stays clean even when the overlay is present locally.
 
 - [ ] **Task 4.4:** Write `tools/overlay-ai-tools.ps1`.
-  - Pulls `cell-ai-tools` into a `tools/ai-tools/` subfolder.
+  - Pulls `Tihoka-ai-tools` into a `tools/ai-tools/` subfolder.
   - Optionally creates junctions/symlinks (or copies) into the repo root before an AI session.
   - Restores the public state after the session.
   - Acceptance: Running the script before an AI session gives the agent the same skill context as before; running it with `-Restore` leaves the public tree clean.
@@ -133,7 +133,7 @@ This plan removes both caveats while keeping the project buildable, installable,
 - [ ] **Task 5.3:** Ship `v0.1.2`.
   - `npm run build && npm run ship:dist`.
   - Verify extension ID and `update_url` inside the `.crx`.
-  - Acceptance: `v0.1.2` release has `cell.crx` and `updates.xml`; `updates.xml` points to the `v0.1.2` asset.
+  - Acceptance: `v0.1.2` release has `Tihoka.crx` and `updates.xml`; `updates.xml` points to the `v0.1.2` asset.
 
 - [ ] **Task 5.4:** Test install and update in Chrome.
   - Install the old `v0.1.1` `.crx`, then press Update and verify it updates to `v0.1.2`.
@@ -161,14 +161,14 @@ This plan removes both caveats while keeping the project buildable, installable,
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Data download fails on slow/unmetered connections | High | Allow `npm run build` to fail gracefully; provide manual download instructions; cache data in `~/.cache/cell-assets`. |
-| `cell-assets` release unavailable | High | Keep a local backup; mirror to Google Drive; pin manifest to multiple URLs. |
-| AI tooling overlay breaks agent skill loading | High | Test overlay in a fresh clone; keep `cell-ai-tools` private but documented. |
+| Data download fails on slow/unmetered connections | High | Allow `npm run build` to fail gracefully; provide manual download instructions; cache data in `~/.cache/Tihoka-assets`. |
+| `Tihoka-assets` release unavailable | High | Keep a local backup; mirror to Google Drive; pin manifest to multiple URLs. |
+| AI tooling overlay breaks agent skill loading | High | Test overlay in a fresh clone; keep `Tihoka-ai-tools` private but documented. |
 | Rewriting history invalidates open branches/PRs | Medium | Only `main` is public; notify any collaborators; archive old `main` in `pre-cleanup` branch. |
 | `v0.1.1` users cannot update | Medium | Keep `v0.1.1` release and ensure `v0.1.2` uses the same extension ID. |
 
 ## Open questions
 
 - Which data assets must be in the source repo for tests (`tests/data-test/**/*.mp4`) vs. which are only for runtime?
-- Should `cell-assets` be public (for open source contributors) or private (for maintainer only)?
-- Is the maintainer comfortable with a private `cell-ai-tools` repo and an overlay script, or should we keep a public but vendor-neutral `AGENTS.md` only?
+- Should `Tihoka-assets` be public (for open source contributors) or private (for maintainer only)?
+- Is the maintainer comfortable with a private `Tihoka-ai-tools` repo and an overlay script, or should we keep a public but vendor-neutral `AGENTS.md` only?

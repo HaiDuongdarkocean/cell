@@ -7,14 +7,14 @@
   "principle": "flex-basis always resolves along the flex parent's MAIN axis. On a flex-row parent it sets width; on a flex-column parent it sets height — and a non-auto flex-basis WINS over the height/width property. A wrapper styled 'flex:1 1 100%; height:389px' inside a column parent collapses to content height (the % basis resolves against an indefinite container height → falls back to content). Fix pattern: only apply a width-intended basis when the insert parent is verified flex-row; non-row parents get flex:0 0 auto (basis auto → the height property governs; on non-flex parents flex is inert anyway).",
   "cases": [
     {
-      "context": "Split View wrapper inserted into StreamFlix .playerSection (display:flex; flex-direction:column). wrapper cssText 'flex:1 1 100%; height:389px' → basis 100% applies to height axis, container height indefinite → resolves to content height → wrapper 49px (panel header only), stageCell+video 0px — video disappears.",
+      "context": "Split View wrapper inserted into StreamFlix .playerSection (display:flex; flex-direction:column). wrapper cssText 'flex:1 1 100%; height:389px' → basis 100% applies to height axis, container height indefinite → resolves to content height → wrapper 49px (panel header only), stageTihoka+video 0px — video disappears.",
       "bad": "// same flex value for every parent axis\nwrapper.style.cssText = `display:flex;flex-direction:row;width:100%;height:${h}px;flex:1 1 100%;...`;\n// column parent: flex-basis:100% → height axis → collapse to ~49px",
       "good": "const isRow = cs.display === 'flex' && /row/.test(cs.flexDirection);\nconst wrapperFlex = !isRow ? '0 0 auto' : hasSiblings ? `0 0 ${w}px` : '1 1 100%';\n// column/block parent: basis auto → height property rules → wrapper 389px, video visible"
     },
     {
       "context": "Same fix site, sibling symptom: wrapper height was set to parentPixelHeight for all parents — correct only for flex-row parents whose height is sibling-stretch-driven (kisskh .row taller than the video col). On column/block parents the parent height contains unrelated page content → panel towers over the page.",
       "bad": "height:`${Math.round(parentPixelHeight)}px` // all parents → 2500px wrapper on a content column",
-      "good": "height: isRowParent ? parentPx : playerShellPx // row: fill stretched cell; else match the player's own box"
+      "good": "height: isRowParent ? parentPx : playerShellPx // row: fill stretched Tihoka; else match the player's own box"
     }
   ],
   "applyFor": [

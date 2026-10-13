@@ -4,7 +4,7 @@
   "category": ["ux", "rendering"],
   "tags": ["fullscreen", "shared-container", "side-panel", "overlay", "content-script", "reparenting", "top-layer", "replaced-element"],
   "trigger": "Multiple UI pieces must stay visible together in fullscreen but the browser API fullscreens only one element, or a layout wrapper must arrange the fullscreen element's children.",
-  "principle": "When sibling UI must stay visible in fullscreen, the fullscreen element must be their common ancestor, not the media element. Moving the fullscreen element itself (reparenting it into a wrapper) exits fullscreen — Chrome's top-layer detaches on DOM removal. Transform the fullscreen element IN-PLACE into a flex container and move its CHILDREN into a stage cell instead. If the fullscreen element is a replaced element (<video>) that can't host siblings, exit fullscreen and re-request on its parent container — better than fixed overlay because the parent can host real flex siblings.",
+  "principle": "When sibling UI must stay visible in fullscreen, the fullscreen element must be their common ancestor, not the media element. Moving the fullscreen element itself (reparenting it into a wrapper) exits fullscreen — Chrome's top-layer detaches on DOM removal. Transform the fullscreen element IN-PLACE into a flex container and move its CHILDREN into a stage Tihoka instead. If the fullscreen element is a replaced element (<video>) that can't host siblings, exit fullscreen and re-request on its parent container — better than fixed overlay because the parent can host real flex siblings.",
   "cases": [
     {
       "context": "Player fullscreen button targets the video element — sibling subtitle panel disappears because it's outside the fullscreen layer",
@@ -13,8 +13,8 @@
     },
     {
       "context": "Split View wants to wrap the fullscreen player container in a flex row (video stage + CueList panel). Moving the fullscreen element into a new wrapper exits fullscreen.",
-      "bad": "// Wrap playerShell in a flex row wrapper (normal-page pattern)\nconst wrapper = document.createElement('div');\nwrapper.style.display = 'flex';\nstageCell.appendChild(playerShell); // REPARENTING fullscreen element → browser exits fullscreen\nwrapper.appendChild(stageCell);\nwrapper.appendChild(panel);\noriginalParent.appendChild(wrapper);",
-      "good": "// Transform fullscreen element IN-PLACE into flex container, move children\nconst children = Array.from(playerShell.children).filter(c => c.id !== 'cell-subtitle-root');\nfor (const child of children) stageCell.appendChild(child); // move children, NOT playerShell\nplayerShell.style.display = 'flex';\nplayerShell.style.flexDirection = 'row';\nplayerShell.appendChild(stageCell);\nplayerShell.appendChild(handle);\nplayerShell.appendChild(panel); // playerShell stays top-layer, no exit"
+      "bad": "// Wrap playerShell in a flex row wrapper (normal-page pattern)\nconst wrapper = document.createElement('div');\nwrapper.style.display = 'flex';\nstageTihoka.appendChild(playerShell); // REPARENTING fullscreen element → browser exits fullscreen\nwrapper.appendChild(stageTihoka);\nwrapper.appendChild(panel);\noriginalParent.appendChild(wrapper);",
+      "good": "// Transform fullscreen element IN-PLACE into flex container, move children\nconst children = Array.from(playerShell.children).filter(c => c.id !== 'Tihoka-subtitle-root');\nfor (const child of children) stageTihoka.appendChild(child); // move children, NOT playerShell\nplayerShell.style.display = 'flex';\nplayerShell.style.flexDirection = 'row';\nplayerShell.appendChild(stageTihoka);\nplayerShell.appendChild(handle);\nplayerShell.appendChild(panel); // playerShell stays top-layer, no exit"
     },
     {
       "context": "Fullscreen element is a bare <video> (replaced element) that can't host rendered siblings — need fallback",

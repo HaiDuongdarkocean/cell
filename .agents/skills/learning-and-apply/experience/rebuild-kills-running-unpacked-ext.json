@@ -3,13 +3,13 @@
   "title": "Rebuilding dist/ under a running unpacked extension silently kills content-script injection — reload the SW before re-verifying; SPA mocks may need a click before a <video> exists",
   "category": ["testing", "build"],
   "tags": ["unpacked-extension", "service-worker", "hashed-loader", "content-script", "cdp", "chrome-runtime-reload", "mock-youtube", "spa-navigation"],
-  "trigger": "Live verification shows zero Cell elements (no #cell-subtitle-root, no universal-panel host) on a page where the extension previously mounted — page has <video> + <track> but nothing injects",
+  "trigger": "Live verification shows zero Tihoka elements (no #Tihoka-subtitle-root, no universal-panel host) on a page where the extension previously mounted — page has <video> + <track> but nothing injects",
   "principle": "An unpacked extension's content-script loader is pinned to hashed filenames captured at load. Running `npm run build`/`test:e2e:build` overwrites dist/ with new hashes; the running extension then injects a loader pointing at deleted files and fails silently — no error in the page, just absence. Fix is not a code change: attach CDP to the `service_worker` target matching the extension id and `chrome.runtime.reload()`, then reload/navigate the page. Second trap on SPA mocks: the overlay only inits once `findLargestPlayableVideo` sees a rendered <video>; mock-youtube's home page has none — the watch view must be opened first (click `[class*=videoCard]`, wait readyState>=1).",
   "cases": [
     {
-      "context": "Split-view responsive verify: StreamFlix worked, YouTube mock showed video:true + track[blob:] but root:false and cellEls:0 on BOTH mocks after an intervening `npm run test:e2e:build` rebuilt dist/.",
+      "context": "Split-view responsive verify: StreamFlix worked, YouTube mock showed video:true + track[blob:] but root:false and TihokaEls:0 on BOTH mocks after an intervening `npm run test:e2e:build` rebuilt dist/.",
       "bad": "Assume the mock or detection pipeline is broken; start patching pageScanner/subtitleDiscovery for a non-bug.",
-      "good": "Check `document.querySelectorAll('[id^=cell-]').length === 0` → injection dead → CDP `/json` → find `service_worker` target `chrome-extension://<id>/service-worker-loader.js` → `Runtime.evaluate` `chrome.runtime.reload()` → sleep → re-navigate → on the youtube mock click `[class*=videoCard]` before waiting for `#cell-subtitle-root`."
+      "good": "Check `document.querySelectorAll('[id^=Tihoka-]').length === 0` → injection dead → CDP `/json` → find `service_worker` target `chrome-extension://<id>/service-worker-loader.js` → `Runtime.evaluate` `chrome.runtime.reload()` → sleep → re-navigate → on the youtube mock click `[class*=videoCard]` before waiting for `#Tihoka-subtitle-root`."
     }
   ],
   "applyFor": ["live Brave/CDP verification after any dist rebuild", "any 'extension suddenly does nothing' on a page it used to instrument", "mock-youtube / other SPA mock pages without an initial <video>"],

@@ -1,6 +1,6 @@
 """
-stealth-cell-browser.py — launch real Chrome via nodriver (undetected) with
-Cell + uBOLite session-loaded through CDP Extensions.loadUnpacked.
+stealth-Tihoka-browser.py — launch real Chrome via nodriver (undetected) with
+Tihoka + uBOLite session-loaded through CDP Extensions.loadUnpacked.
 
 Why not --load-extension: Google Chrome 137+ blocks it; Playwright Chromium
 loads it fine but gets bot-flagged by YouTube (playability=LOGIN_REQUIRED).
@@ -9,7 +9,7 @@ bypasses the flag block (session-only, gone on next launch).
 
 Usage:
     uv run --with nodriver python <your-script>.py
-    from stealth_cell_browser import launch, ev, gate_extension
+    from stealth_Tihoka_browser import launch, ev, gate_extension
 """
 import json
 from pathlib import Path
@@ -17,7 +17,7 @@ from pathlib import Path
 import nodriver as uc
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-CELL_DIST = REPO_ROOT / "dist"
+Tihoka_DIST = REPO_ROOT / "dist"
 UBOLITE = REPO_ROOT / "data" / "extension" / "uBOLite"
 
 
@@ -38,11 +38,11 @@ async def ev(tab, js):
 
 
 async def launch(headless=False, urls=("chrome://newtab/",)):
-    """Start stealth Chrome, session-load Cell + uBOLite, open urls.
+    """Start stealth Chrome, session-load Tihoka + uBOLite, open urls.
     Returns (browser, tab | [tabs])."""
     cfg = uc.Config(headless=headless)
     browser = await uc.start(cfg)
-    for p in (CELL_DIST, UBOLITE):
+    for p in (Tihoka_DIST, UBOLITE):
         try:
             res = await browser.send(uc.cdp.extensions.load_unpacked(str(p)))
             print("LOAD:", p.name, "->", res)
@@ -55,12 +55,12 @@ async def launch(headless=False, urls=("chrome://newtab/",)):
 
 
 async def gate_extension(tab, required=True):
-    """Contract gate: Cell main-world IIFE set __YT_MAIN_WORLD_INJECTED.
+    """Contract gate: Tihoka main-world IIFE set __YT_MAIN_WORLD_INJECTED.
     xhrPatched/fetchPatched toString() checks are UNRELIABLE — uBOLite re-wraps
     after document_start while still calling ours underneath."""
     g = await ev(tab, "({i:!!window.__YT_MAIN_WORLD_INJECTED})")
     ok = bool(g and g.get("i"))
     print("GATE:", json.dumps(g))
     if required and not ok:
-        raise RuntimeError("Cell main-world script not injected")
+        raise RuntimeError("Tihoka main-world script not injected")
     return ok

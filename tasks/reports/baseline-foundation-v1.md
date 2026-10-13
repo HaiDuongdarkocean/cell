@@ -1,4 +1,4 @@
-# Cell Foundation v1 — Baseline snapshot
+# Tihoka Foundation v1 — Baseline snapshot
 
 Captured on branch `feature/foundation-v1` before any foundation edits.
 

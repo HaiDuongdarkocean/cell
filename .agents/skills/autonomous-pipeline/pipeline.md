@@ -13,10 +13,10 @@
 - **Verify failure:** dispatch the fix to the owning lane. After 2 failed fix cycles on the same blocker, stop and escalate to the human with evidence.
 - **Diverse-lens verify:** `P0` tasks and lanes touching security/state/migrations get 2–3 verifier lenses; pass on majority (pattern owned by `doubt-driven-development`). Single-lens verify for the rest.
 - **Worktree threshold:** provision a worktree per parallel lane of scope M or larger. XS/S parallel lanes run sequentially in the main session — they are already disjoint on files and the setup cost exceeds the benefit.
-- **Worktree location:** `../cell-worktrees/<feature-slug>/lane-<task-N>` — outside the repo so eslint/jest/`git status` never scan it.
+- **Worktree location:** `../Tihoka-worktrees/<feature-slug>/lane-<task-N>` — outside the repo so eslint/jest/`git status` never scan it.
 - **Lane dependencies:** junction `node_modules` into the worktree (Windows: `mklink /J`). Lanes must not run `npm install` — any task touching `package.json`, lockfiles, or `manifest.json` is `parallel: false` by rule (shared state cannot be mocked).
 - **Pipeline state:** lanes never run `pipeline-state.mjs` — the CLI refuses writes outside the main worktree. Stage transitions happen in the main session only, after merge.
-- **Ownership:** the orchestrator's `CELL_AGENT_ID` owns the item (claimed at `init`/`activate`); lane shells inherit the env, so hook-recorded gates still count as the same owner. Write `.cell-owner` (`{"agent","slug"}`) at each provisioned worktree root — agents outside this orchestration must not write into it at all. An item owned by another `CELL_AGENT_ID` refuses all mutations; redirect goes through `request-handoff`, never a direct `transition`.
+- **Ownership:** the orchestrator's `Tihoka_AGENT_ID` owns the item (claimed at `init`/`activate`); lane shells inherit the env, so hook-recorded gates still count as the same owner. Write `.Tihoka-owner` (`{"agent","slug"}`) at each provisioned worktree root — agents outside this orchestration must not write into it at all. An item owned by another `Tihoka_AGENT_ID` refuses all mutations; redirect goes through `request-handoff`, never a direct `transition`.
 
 ## Phase 1 — Load
 
@@ -43,7 +43,7 @@
 For each parallel lane of scope M or larger:
 
 ```
-git worktree add ../cell-worktrees/<feature-slug>/lane-<task-N> -b lane/<feature>/<task-N>
+git worktree add ../Tihoka-worktrees/<feature-slug>/lane-<task-N> -b lane/<feature>/<task-N>
 # junction node_modules — no npm install per lane
 ```
 

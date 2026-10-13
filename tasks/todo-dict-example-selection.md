@@ -8,7 +8,7 @@
 | 4 | useCandidate example state + cascades + setting load | AC-3..AC-7 | done |
 | 5 | buildCandidatePrefill selectedExamples/selectedExampleIds | AC-7, AC-8 | done |
 | 6 | DefinitionItem sibling example rows + a11y | AC-1, AC-2, AC-14 | done |
-| 7 | DictionaryCheckable cellDefExampleItem + CandidateView css | AC-1 | done |
+| 7 | DictionaryCheckable TihokaDefExampleItem + CandidateView css | AC-1 | done |
 | 8 | Skeleton mirror update | AC-1 | done |
 | 9 | cardCreatorBridge + addToOceanSrs sinks | AC-10, AC-13 | done |
 | 10 | Settings pill step + i18n en/vi | AC-11, AC-12 | done |

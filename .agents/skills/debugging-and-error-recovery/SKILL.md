@@ -35,7 +35,7 @@ Worked-before? `git log -p` / `git blame` the failing region first — most regr
 BAD:  el.getBoundingClientRect() → rect correct → "element is fine" → write spec
 GOOD: el.getAttribute('style')        → 'overflow: hidden' — inline mutation, no stylesheet shows this
       getComputedStyle + ancestor walk for overflow/clip-path/contain/opacity
-      document.elementFromPoint(x,y)  → js-cell-popup-host — something is on top
+      document.elementFromPoint(x,y)  → js-Tihoka-popup-host — something is on top
       screenshot + pixel scan         → 67 blue pixels / 0 — DOM rect ≠ painted output
       console / storage / network
 ```
@@ -65,7 +65,7 @@ GOOD: page.evaluate: host.style.overflow='visible' → dot paints → culprit co
 
 ```text
 BAD:  if (caller === 'orbital-badge') skipRipple()          → per-caller patch, sibling still broken
-GOOD: data-cell-no-ripple on the host                        → one guard at the shared mechanism
+GOOD: data-tihoka-no-ripple on the host                        → one guard at the shared mechanism
 
 BAD:  setTimeout(() => close(), 400)                         → races slower devices
 GOOD: listen for the real signal (animationend / state event)
@@ -94,7 +94,7 @@ Regression test that **fails without the fix, passes with it** — prove it by r
 - DOM correct ≠ painted: right rect, zero pixels (ancestor `overflow:hidden`, `clip-path`, higher-z cover, contrast blend)
 - Symptom fixed but a second hidden root cause remains — re-probe after each fix
 - Snippet works, source fix doesn't → it patched a different path, re-localize
-- `role="button"` containers pick up delegated effects (ripple permanently sets `overflow:hidden` on its host) — opt out via `data-cell-no-ripple`
+- `role="button"` containers pick up delegated effects (ripple permanently sets `overflow:hidden` on its host) — opt out via `data-tihoka-no-ripple`
 - Extension: service worker terminated (MV3), script in wrong world, `all_frames` hits ad frames
 
 Task đổi hoặc không rõ skill nào phù hợp? Invoke /using-agent-skills để re-route.

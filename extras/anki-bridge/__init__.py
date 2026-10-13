@@ -1,8 +1,8 @@
-"""Cell Bridge — Anki add-on.
+"""Tihoka Bridge — Anki add-on.
 
 Watches card state changes (reviews, edits, suspend toggles) and serves a
 cursor-based event feed on http://127.0.0.1:<port>/events?since=<cursor>
-for the Cell browser extension's anki-status-sync feature.
+for the Tihoka browser extension's anki-status-sync feature.
 
 Events are appended to events.jsonl next to this file (max 10k rows or
 7 days, whichever bound is hit first). The feed is read-only and bound to

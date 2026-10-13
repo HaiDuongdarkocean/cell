@@ -31,7 +31,7 @@ Never ask what the codebase can answer. ≥1 grep must run before any question.
 
 | DON'T | DO |
 |---|---|
-| "Anh muốn giải quyết vấn đề gì?" | "Em thấy Cell đã có subtitle-search. Idea 'OCR sub' — sub không có file riêng, hay sub có file nhưng không tìm được?" |
+| "Anh muốn giải quyết vấn đề gì?" | "Em thấy Tihoka đã có subtitle-search. Idea 'OCR sub' — sub không có file riêng, hay sub có file nhưng không tìm được?" |
 
 ## Want vs should-want
 

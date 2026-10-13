@@ -15,7 +15,6 @@
     "tabs",
     "sidePanel",
     "webNavigation",
-    "cookies",
     "tts",
     "unlimitedStorage",
     "alarms",
@@ -114,7 +113,9 @@
   },
   "icons": {
     "16": "public/icons/icon-16.png",
+    "32": "public/icons/icon-32.png",
     "48": "public/icons/icon-48.png",
+    "64": "public/icons/icon-64.png",
     "128": "public/icons/icon-128.png"
   },
   "content_security_policy": {
@@ -124,7 +125,8 @@
     {
       "resources": [
         "assets/*",
-        "sql-wasm.wasm"
+        "sql-wasm.wasm",
+        "pronunciation/phonemes/*"
       ],
       "matches": [
         "<all_urls>"

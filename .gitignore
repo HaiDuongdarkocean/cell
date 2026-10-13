@@ -160,7 +160,7 @@ docs/design-system/HEALTH_REPORT.json
 docs/design-system/HEALTH_REPORT.md
 
 # Debug / one-off logs.
-cell-debug-log.json
+Tihoka-debug-log.json
 ocr-csp-debug.json
 
 # Audit evidence / scratch images (not source).

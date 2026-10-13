@@ -52,7 +52,7 @@ Quét reference trên→dưới, trái→phải. Mỗi vùng → 1 dòng:
 | vùng nội dung lớn | surface | bo góc, inset, tỷ lệ khung |
 | nút tròn đè mép card | control | glyph trong, floating |
 
-Phân biệt 3 lớp cho mỗi element: **painted surface** (vùng màu thấy được), **hit target** (vùng chạm — lớn hơn, suy ra từ spacing, ≥44px mobile), **decoration** (border/shadow/fade). Reference chỉ show painted — hit target phải suy.
+Phân biệt 3 lớp cho mỗi element: **painted surface** (vùng màu thấy được), **hit target** (vùng chạm — lớn hơn, suy ra từ spacing, ≥40px — `--touch-target`), **decoration** (border/shadow/fade). Reference chỉ show painted — hit target phải suy.
 
 Ghi thêm per element: **state ngụ ý** (ảnh không show hover/disabled — nhưng chúng tồn tại), elevation bóng đổ, glyph style (outline/fill/stroke).
 
@@ -91,7 +91,7 @@ Per vùng quyết định:
 4. **Icon-in-button:** icon ≈ 45–55% container, ramp theo size. DS giữ 1 icon px cho mọi size = bug DS — sửa token gốc, không override local.
 5. **Type:** đo cap-height → font-size; line-height như ratio của size; weight, letter-spacing, truncation — snap vào type ramp, không px rời.
 6. **Proportion > absolute:** khi token buộc lệch, giữ *tỷ lệ giữa elements* và *nhịp spacing lặp lại* (cùng gap xuất hiện nhiều lần = một nhịp). Màn giữ đúng rhythm đọc là khớp dù size snap lệch.
-7. **Hit target** ≥44px mobile — tách khỏi visible size trong bảng.
+7. **Hit target** ≥40px (`--touch-target`) — tách khỏi visible size trong bảng.
 
 **Output:** bảng `element → px đo → logical → token → hit target` + type table + elevation map (`shadow-*`/`elevation=`; floating không có shadow spec = defect).
 

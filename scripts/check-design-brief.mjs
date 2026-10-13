@@ -78,8 +78,8 @@ function componentRefs(text) {
     const colIdx = cols.findIndex((c) => /component/.test(c));
     if (colIdx > 0) {
       for (let i = headerIdx + 2; i < lines.length && /^\s*\|/.test(lines[i]); i += 1) {
-        const cells = lines[i].split('|').map((c) => c.trim().replace(/`/g, ''));
-        for (const n of (cells[colIdx] || '').matchAll(/\b([A-Z][A-Za-z0-9]*)\b/g)) names.add(n[1]);
+        const Tihokas = lines[i].split('|').map((c) => c.trim().replace(/`/g, ''));
+        for (const n of (Tihokas[colIdx] || '').matchAll(/\b([A-Z][A-Za-z0-9]*)\b/g)) names.add(n[1]);
       }
     }
   }

@@ -1,4 +1,4 @@
-# Cell Design System v2 — Execution Checklist
+# Tihoka Design System v2 — Execution Checklist
 
 > Plan: `tasks/plan-design-system-v2.md`  
 > Canonical audit/roadmap: `docs/design-system/ROADMAP.md`  
@@ -34,7 +34,7 @@
 ## Phase 1 — Deterministic quality gates
 
 - [x] **T1.1 Replace noisy M3 shell audit with scoped parser audit**
-  - [x] Cell-specific parser gate có fixtures.
+  - [x] Tihoka-specific parser gate có fixtures.
   - [ ] False-positive rate <5% trên reviewed sample.
 - [x] **T1.2 Extend icon integrity gate**
   - [x] SVG ↔ catalog 1:1.

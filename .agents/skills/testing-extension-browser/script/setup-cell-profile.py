@@ -1,4 +1,4 @@
-"""setup-cell-profile.py — Pack Cell .crx + clone master + write External Extensions JSON.
+"""setup-Tihoka-profile.py — Pack Tihoka .crx + clone master + write External Extensions JSON.
 
 Workflow: pack .crx (one-time per build) → clone master → write External Extensions
 JSON → print clone path. On Linux/macOS, real Chrome can install from External
@@ -7,10 +7,10 @@ merge-gate verification uses Playwright bundled Chromium with `--load-extension`
 and a warm-up launch (first open/close primes the clone).
 
 Usage:
-  python setup-cell-profile.py                    # pack if .crx missing, clone, setup
-  python setup-cell-profile.py --rebuild          # force re-pack .crx (after code change)
-  python setup-cell-profile.py --no-ublock        # skip uBlock
-  python setup-cell-profile.py --keep-profile     # don't auto-cleanup clone on exit
+  python setup-Tihoka-profile.py                    # pack if .crx missing, clone, setup
+  python setup-Tihoka-profile.py --rebuild          # force re-pack .crx (after code change)
+  python setup-Tihoka-profile.py --no-ublock        # skip uBlock
+  python setup-Tihoka-profile.py --keep-profile     # don't auto-cleanup clone on exit
 
 After this prints CLONE_PATH=..., use Playwright:
   const context = await chromium.launchPersistentContext(
@@ -32,13 +32,13 @@ from pathlib import Path
 
 # --- SSOT config ---
 CHROME_EXE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-SESSION_ROOT = Path(r"C:\cell-browser-sessions")
+SESSION_ROOT = Path(r"C:\Tihoka-browser-sessions")
 MASTER_PROFILE = SESSION_ROOT / "master"
 SESSIONS_DIR = SESSION_ROOT / "sessions"
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
-CELL_EXT = PROJECT_ROOT / "dist"
-CELL_KEY = PROJECT_ROOT / "cell-key.pem"
-CELL_CRX = PROJECT_ROOT / "cell.crx"
+Tihoka_EXT = PROJECT_ROOT / "dist"
+Tihoka_KEY = PROJECT_ROOT / "Tihoka-key.pem"
+Tihoka_CRX = PROJECT_ROOT / "Tihoka.crx"
 UBLOCK_EXT = PROJECT_ROOT / "data" / "extension" / "uBOLite"
 UBLOCK_KEY = PROJECT_ROOT / "ublock-key.pem"
 UBLOCK_CRX = PROJECT_ROOT / "ublock.crx"
@@ -106,7 +106,7 @@ def ensure_key(key_path: Path) -> None:
 
 def clone_master() -> Path:
     """Clone essential files from master → sessions/<uuid>."""
-    clone_id = f"cell-{uuid.uuid4().hex[:12]}"
+    clone_id = f"Tihoka-{uuid.uuid4().hex[:12]}"
     clone_dir = SESSIONS_DIR / clone_id
     clone_dir.mkdir(parents=True, exist_ok=True)
     for fname in KEEP_ROOT_FILES:
@@ -147,28 +147,28 @@ def read_version(ext_dir: Path) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Pack Cell .crx + setup clone profile for Playwright.")
+    parser = argparse.ArgumentParser(description="Pack Tihoka .crx + setup clone profile for Playwright.")
     parser.add_argument("--rebuild", action="store_true", help="Force re-pack .crx (after code change + npm run build)")
     parser.add_argument("--no-ublock", action="store_true", help="Skip uBlock")
     parser.add_argument("--keep-profile", action="store_true", help="Don't auto-cleanup clone on exit (for debugging)")
     args = parser.parse_args()
 
     # --- 0. Verify dist exists ---
-    if not CELL_EXT.exists():
-        print(f"[FAIL] {CELL_EXT} not found — run 'npm run build' first.", flush=True)
+    if not Tihoka_EXT.exists():
+        print(f"[FAIL] {Tihoka_EXT} not found — run 'npm run build' first.", flush=True)
         return 1
 
-    cell_version = read_version(CELL_EXT)
-    print(f"[..] Cell version: {cell_version}")
+    Tihoka_version = read_version(Tihoka_EXT)
+    print(f"[..] Tihoka version: {Tihoka_version}")
 
     # --- 1. Pack .crx (if missing or --rebuild) ---
-    ensure_key(CELL_KEY)
-    need_pack = args.rebuild or not CELL_CRX.exists()
+    ensure_key(Tihoka_KEY)
+    need_pack = args.rebuild or not Tihoka_CRX.exists()
     if need_pack:
-        cell_id = pack_crx(CELL_EXT, CELL_KEY, CELL_CRX)
+        Tihoka_id = pack_crx(Tihoka_EXT, Tihoka_KEY, Tihoka_CRX)
     else:
-        cell_id = ext_id_from_pem(CELL_KEY)
-        print(f"[OK] Cell .crx exists (ID={cell_id}), use --rebuild to re-pack")
+        Tihoka_id = ext_id_from_pem(Tihoka_KEY)
+        print(f"[OK] Tihoka .crx exists (ID={Tihoka_id}), use --rebuild to re-pack")
 
     # --- 2. Pack uBlock .crx (optional) ---
     ublock_id = None
@@ -186,7 +186,7 @@ def main() -> int:
     clone_dir = clone_master()
 
     # --- 4. Write External Extensions JSON ---
-    write_external_extensions(clone_dir, cell_id, CELL_CRX, cell_version)
+    write_external_extensions(clone_dir, Tihoka_id, Tihoka_CRX, Tihoka_version)
     if ublock_id:
         write_external_extensions(clone_dir, ublock_id, UBLOCK_CRX, ublock_version)
 

@@ -11,7 +11,7 @@ Guard: ambiguous episode or test mode → ask one focused question.
 ## 1. Start the browser
 
 1. Use `testing-extension-browser` (Playwright persistent Chromium with packed .crx + clone profile) for anti-bot sites.
-2. Use `cell-profile` only when explicitly requested; otherwise a disposable profile.
+2. Use `Tihoka-profile` only when explicitly requested; otherwise a disposable profile.
 3. Enable network body capture before navigation when supported.
 4. Navigate, wait for settlement, capture one screenshot/state snapshot.
 5. Cloudflare/login/popup/play blocks → ask for the exact user action once; record the blocker if it remains.
@@ -68,7 +68,7 @@ Rules:
 
 Guard: UI and API counts differ → compare entries + built-in/auto tracks; report both; discrepancy stays unresolved until explained.
 
-## 6. Audit actual Cell delivery
+## 6. Audit actual Tihoka delivery
 
 - Does the URL match the file detector or only a listing endpoint?
 - Is a resolver wired to background? Can body/state reach the isolated content script + background?
@@ -136,7 +136,7 @@ Prefer a registry of protocol adapters over site branches in `NetworkInterceptor
 - Token/cookie/expiry:
 - Fetch verification:
 
-## Cell delivery
+## Tihoka delivery
 - Discovery:
 - Normalization:
 - Replay:

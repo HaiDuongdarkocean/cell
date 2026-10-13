@@ -36,7 +36,7 @@ Loop state lives in `loop/<name>/state/NN-stage.md`; evidence in `loop/<name>/im
 
 Use Playwright for live evidence.
 
-**Default: `testing-with-playwright`** — the reusable `cellEnvironment` fixture loads Cell + uBOLite, opens StreamFlix, and exposes `streamFlixPage` plus feature actors (`universalPanel`, etc.). This gives reproducible screenshots, DOM measures, console logs, and journey runs for every audit cycle.
+**Default: `testing-with-playwright`** — the reusable `TihokaEnvironment` fixture loads Tihoka + uBOLite, opens StreamFlix, and exposes `streamFlixPage` plus feature actors (`universalPanel`, etc.). This gives reproducible screenshots, DOM measures, console logs, and journey runs for every audit cycle.
 
 ```bash
 bash scripts/e2e.sh --stage2 <audit-spec>

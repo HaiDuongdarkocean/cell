@@ -82,7 +82,7 @@ if (Test-Path $ConfigPath) {
 $githubRepo    = $shipConfig.githubRepo
 $releaseBranch = if ($shipConfig.releaseBranch) { $shipConfig.releaseBranch } else { 'main' }
 $updateXmlPath = if ($shipConfig.updateXmlPath) { $shipConfig.updateXmlPath } else { 'updates.xml' }
-$crxAssetName  = if ($shipConfig.crxAssetName)  { $shipConfig.crxAssetName }  else { 'tihoka.crx' }
+$crxAssetName  = if ($shipConfig.crxAssetName)  { $shipConfig.crxAssetName }  else { 'Tihoka_{version}.crx' }
 $publishToGitHub = [bool]$shipConfig.publishToGitHub
 
 if (-not (Test-Path $keyFile)) {
@@ -93,6 +93,7 @@ if (-not (Test-Path $keyFile)) {
 $packageJsonPath = Join-Path $SourceRoot 'package.json'
 $packageJson = Get-Content $packageJsonPath | ConvertFrom-Json
 $version = $packageJson.version
+$crxAssetName = $crxAssetName -replace '\{version\}', $version
 
 $manifestPath = Join-Path $sourceDist 'manifest.json'
 $distManifest = Get-Content $manifestPath | ConvertFrom-Json

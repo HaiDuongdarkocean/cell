@@ -1,10 +1,10 @@
-"""Pack Cell dist/ into a .crx with a stable key and compute the extension ID."""
+"""Pack Tihoka dist/ into a .crx with a stable key and compute the extension ID."""
 import base64, hashlib, subprocess, sys, shutil, json
 from pathlib import Path
 
 DIST = Path(__file__).resolve().parents[4] / "dist"
-KEY = Path(__file__).resolve().parents[4] / "cell-key.pem"
-CRX_OUT = Path(__file__).resolve().parents[4] / "cell.crx"
+KEY = Path(__file__).resolve().parents[4] / "Tihoka-key.pem"
+CRX_OUT = Path(__file__).resolve().parents[4] / "Tihoka.crx"
 CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 
 # Compute extension ID from public key (Chrome algorithm)

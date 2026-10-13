@@ -1,7 +1,7 @@
 # Plan: srs-flashcard-redesign
 
 Spec: `docs/specs/srs-flashcard-redesign.md` · mode: interactive · uiSurface: yes
-Design authority: user-supplied screenshots. Clone structure, Cell tokens only.
+Design authority: user-supplied screenshots. Clone structure, Tihoka tokens only.
 
 | # | Slice | Delivers | AC | Depends |
 |---|---|---|---|---|

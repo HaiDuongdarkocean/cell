@@ -1,0 +1,61 @@
+# Phoneme audio attributions
+
+Human phoneme recordings bundled for offline IPA chip playback.
+All files are redistributable under the licenses noted per file; names link to the Wikimedia Commons file page.
+
+- `a.opus` — Open front unrounded vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `b.opus` — Voiced bilabial plosive — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `d.opus` — Voiced alveolar plosive — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `du292.opus` — Voiced palato-alveolar affricate — Octane, Public domain, Wikimedia Commons
+- `e.opus` — Close-mid front unrounded vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `f.opus` — Voiceless labiodental fricative — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `h.opus` — Voiceless glottal fricative — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `i.opus` — Close front unrounded vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `j.opus` — Palatal approximant — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `k.opus` — Voiceless velar plosive — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `l.opus` — Alveolar lateral approximant — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `ll-au.opus` — aʊ diphthong — Pvanp7, Lingua Libre, CC0
+- `ll-ua.opus` — ʊə diphthong — Pvanp7, Lingua Libre, CC0
+- `m.opus` — Bilabial nasal — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `n.opus` — Alveolar nasal — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `o.opus` — Close-mid back rounded vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `p.opus` — Voiceless bilabial plosive — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `r.opus` — Alveolar trill — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `s.opus` — Voiceless alveolar sibilant — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `t.opus` — Voiceless alveolar plosive — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `tu283.opus` — Voiceless palato-alveolar affricate — Peter Isotalo, CC BY-SA 3.0, Wikimedia Commons
+- `u.opus` — Close back rounded vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u14b.opus` — Velar nasal — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u250.opus` — Near-open central vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u251.opus` — Open back unrounded vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u252.opus` — Open back rounded vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u254.opus` — Open-mid back rounded vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u259.opus` — Mid central vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u25b.opus` — Open-mid front unrounded vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u25c.opus` — Open-mid central unrounded vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u261.opus` — Voiced velar plosive — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u26a.opus` — Near-close near-front unrounded vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u279.opus` — Alveolar approximant — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u27e.opus` — Alveolar tap — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u283.opus` — Voiceless postalveolar fricative — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u28a.opus` — Near-close near-back rounded vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u28c.opus` — Open-mid back unrounded vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u292.opus` — Voiced postalveolar fricative — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u294.opus` — Glottal stop — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `u3b8.opus` — Voiceless dental fricative — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `ue6.opus` — Near-open front unrounded vowel — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `uf0.opus` — Voiced dental fricative — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `uk-air.opus` — En-uk-air — Shtooka/Judith Franck, CC BY 3.0, Wikimedia Commons
+- `uk-ear.opus` — En-uk-ear — Public domain, Wikimedia Commons
+- `uk-oi.opus` — En-uk-oi — CC BY-SA 3.0, Wikimedia Commons
+- `us-a.opus` — En-us-A — Public domain, Wikimedia Commons
+- `us-air.opus` — En-us-air — Dvortygirl, CC BY-SA 3.0, Wikimedia Commons
+- `us-ear.opus` — En-us-ear — Dvortygirl, CC BY-SA 3.0, Wikimedia Commons
+- `us-er.opus` — En-us-er — Dvortygirl, CC BY-SA 3.0, Wikimedia Commons
+- `us-eye.opus` — En-us-eye — Public domain, Wikimedia Commons
+- `us-owe.opus` — En-us-owe — Dvortygirl, CC BY-SA 3.0, Wikimedia Commons
+- `us-tour.opus` — En-us-tour — Dvortygirl, CC BY-SA 3.0, Wikimedia Commons
+- `v.opus` — Voiced labiodental fricative — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `w.opus` — Voiced labio-velar approximant — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `x.opus` — Voiceless velar fricative — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons
+- `z.opus` — Voiced alveolar sibilant — Peter Isotalo / Denelson83 et al., CC BY-SA 3.0, Wikimedia Commons

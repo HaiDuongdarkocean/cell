@@ -1,5 +1,5 @@
 {
-  "active": null,
+  "active": "sync-settings-redesign",
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -449,7 +449,7 @@
       ],
       "loops": 0,
       "owner": null,
-      "worktree": "../cell-worktrees/firefox-port",
+      "worktree": "../Tihoka-worktrees/firefox-port",
       "updated": "2026-09-26T05:51:10.631Z"
     },
     "dict-links-manager": {
@@ -542,7 +542,7 @@
       ],
       "loops": 2,
       "owner": null,
-      "worktree": "../cell-worktrees/user-data-sync",
+      "worktree": "../Tihoka-worktrees/user-data-sync",
       "updated": "2026-09-27T23:45:48.762Z"
     },
     "durable-job-registry": {
@@ -2270,7 +2270,7 @@
       ],
       "loops": 0,
       "owner": null,
-      "worktree": "../cell-worktrees/session-recap",
+      "worktree": "../Tihoka-worktrees/session-recap",
       "updated": "2026-10-04T04:57:26.307Z"
     },
     "unified-resource-import": {
@@ -2335,7 +2335,7 @@
       ],
       "loops": 0,
       "owner": null,
-      "worktree": "../cell-worktrees/unified-resource-import",
+      "worktree": "../Tihoka-worktrees/unified-resource-import",
       "updated": "2026-10-04T06:38:19.802Z"
     },
     "--help": {
@@ -6103,6 +6103,33 @@
       "owner": null,
       "worktree": null,
       "updated": "2026-10-11T18:16:47.257Z"
+    },
+    "sync-settings-redesign": {
+      "stage": "analyze",
+      "mode": "interactive",
+      "uiSurface": "yes",
+      "artifacts": {
+        "intent": "docs/intent/sync-settings-redesign.md"
+      },
+      "gates": {},
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [
+        {
+          "flag": "user-approval:intent",
+          "note": "user approved intent; then asked to skip pipeline ceremony and implement directly",
+          "at": "2026-10-13T03:29:19.861Z"
+        },
+        {
+          "flag": "ownership-released",
+          "note": "devin-sync-redesign-161094 released by devin-sync-redesign-161094 — user: skip pipeline ceremony, implement directly",
+          "at": "2026-10-13T03:29:25.572Z"
+        }
+      ],
+      "loops": 0,
+      "owner": null,
+      "worktree": null,
+      "updated": "2026-10-13T03:29:25.573Z"
     }
   }
 }

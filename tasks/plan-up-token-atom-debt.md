@@ -20,7 +20,7 @@ Files:
 ### T2 — REQ-3: `panelTabs.ts` registry (AC-3)
 
 - New `src/features/universalPanel/panelTabs.ts` exporting `PanelTabEntry` + `PANEL_TABS` (`key`/`icon`/`label`/`shortLabel`, sidebar order).
-- `UniversalPanel.tsx` sidebar items consume `tab.label`; `UniversalPanelBottomNav.tsx` consumes `tab.shortLabel`; both local `TABS` deleted; `data-cell-id` values unchanged; `TOOLS` stays in `UniversalPanel.tsx`.
+- `UniversalPanel.tsx` sidebar items consume `tab.label`; `UniversalPanelBottomNav.tsx` consumes `tab.shortLabel`; both local `TABS` deleted; `data-tihoka-id` values unchanged; `TOOLS` stays in `UniversalPanel.tsx`.
 
 ### T3 — REQ-4: native controls → shared atoms (AC-4, AC-5)
 

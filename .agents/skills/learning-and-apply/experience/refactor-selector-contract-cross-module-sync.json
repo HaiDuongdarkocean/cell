@@ -7,19 +7,19 @@
   "principle": "Một selector (data-attribute hoặc class) là contract giữa element creator và consumer. Khi đổi creator sang selector mới, phải grep toàn bộ consumer cùng lúc — nếu không, closest/querySelector trả null và logic vỡ im lặng (no error, chỉ sai behavior).",
   "cases": [
     {
-      "context": "Refactor popupShell: đổi host element từ setAttribute('data-dp-popup-host','') sang className='js-cell-popup-host'. webTriggerController ở module khác check target.closest('[data-dp-popup-host]') để skip click trên popup.",
-      "bad": "// popupShell.ts (creator)\nthis.host.className = 'js-cell-popup-host';\n// webTriggerController.ts (consumer — NOT updated)\nif (target.closest('[data-dp-popup-host]')) return; // luôn false → click-outside dismiss popup sai",
-      "good": "// popupShell.ts (creator)\nthis.host.className = 'js-cell-popup-host';\n// webTriggerController.ts (consumer — updated cùng commit)\nif (target.closest('.js-cell-popup-host')) return;"
+      "context": "Refactor popupShell: đổi host element từ setAttribute('data-dp-popup-host','') sang className='js-Tihoka-popup-host'. webTriggerController ở module khác check target.closest('[data-dp-popup-host]') để skip click trên popup.",
+      "bad": "// popupShell.ts (creator)\nthis.host.className = 'js-Tihoka-popup-host';\n// webTriggerController.ts (consumer — NOT updated)\nif (target.closest('[data-dp-popup-host]')) return; // luôn false → click-outside dismiss popup sai",
+      "good": "// popupShell.ts (creator)\nthis.host.className = 'js-Tihoka-popup-host';\n// webTriggerController.ts (consumer — updated cùng commit)\nif (target.closest('.js-Tihoka-popup-host')) return;"
     },
     {
-      "context": "Refactor subtitle token spans: đổi data-dp-term sang data-cell-term. popupShell onClickOutside check closest('[data-dp-term]') để không dismiss khi click subtitle token.",
-      "bad": "// subtitleTriggerController.ts (creator)\nconst DATA_TERM = 'data-cell-term';\n// popupShell.ts (consumer — NOT updated)\nif (target?.closest?.('[data-dp-term]')) return; // click subtitle token → dismiss popup sai",
-      "good": "// subtitleTriggerController.ts (creator)\nconst DATA_TERM = 'data-cell-term';\n// popupShell.ts (consumer — updated cùng commit)\nif (target?.closest?.('[data-cell-term]')) return;"
+      "context": "Refactor subtitle token spans: đổi data-dp-term sang data-tihoka-term. popupShell onClickOutside check closest('[data-dp-term]') để không dismiss khi click subtitle token.",
+      "bad": "// subtitleTriggerController.ts (creator)\nconst DATA_TERM = 'data-tihoka-term';\n// popupShell.ts (consumer — NOT updated)\nif (target?.closest?.('[data-dp-term]')) return; // click subtitle token → dismiss popup sai",
+      "good": "// subtitleTriggerController.ts (creator)\nconst DATA_TERM = 'data-tihoka-term';\n// popupShell.ts (consumer — updated cùng commit)\nif (target?.closest?.('[data-tihoka-term]')) return;"
     },
     {
-      "context": "Migration xóa file creator: legacy vanilla SubtitleBlockDom (class 'subtitle-line') bị delete khi overlay chuyển React (data-role='target' trong data-cell-id='subtitle-block'). Consumer webTextDictionaryController.isLookupFromSubtitle vẫn check closest('.subtitle-line') → luôn false → gate 'chỉ record media khi lookup từ subtitle' silently off → Send to Card/Quick Add bỏ qua captureSentenceAudio, card chỉ có TTS. Test cũng fail vì fixture vẫn dựng markup legacy.",
+      "context": "Migration xóa file creator: legacy vanilla SubtitleBlockDom (class 'subtitle-line') bị delete khi overlay chuyển React (data-role='target' trong data-tihoka-id='subtitle-block'). Consumer webTextDictionaryController.isLookupFromSubtitle vẫn check closest('.subtitle-line') → luôn false → gate 'chỉ record media khi lookup từ subtitle' silently off → Send to Card/Quick Add bỏ qua captureSentenceAudio, card chỉ có TTS. Test cũng fail vì fixture vẫn dựng markup legacy.",
       "bad": "// subtitleBlockDom.ts — DELETED trong commit React migration\n// webTextDictionaryController.ts (consumer — không ai grep selector này)\nreturn token.closest('.subtitle-line') !== null; // luôn false",
-      "good": "// trước khi xóa/rewrite markup: grep mọi class/attr creator render ra\n// consumer update cùng commit:\nconst node = target instanceof Range ? target.startContainer : target;\nconst el = node instanceof Element ? node : node.parentElement;\nreturn el?.closest('[data-cell-id=\"subtitle-block\"]') !== null;"
+      "good": "// trước khi xóa/rewrite markup: grep mọi class/attr creator render ra\n// consumer update cùng commit:\nconst node = target instanceof Range ? target.startContainer : target;\nconst el = node instanceof Element ? node : node.parentElement;\nreturn el?.closest('[data-tihoka-id=\"subtitle-block\"]') !== null;"
     }
   ],
   "applyFor": ["BEM refactor (data-attr → class)", "JS hook rename (js-* prefix)", "Shadow DOM host selector", "Click-outside detection", "Event delegation closest()"]

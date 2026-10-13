@@ -20,7 +20,7 @@ Domain rules live in their owning skills, not here: the edge test (dependency = 
 ## Worktree rules
 
 - **Provision only when needed:** ≥ 2 `parallel: true` tasks at the same dependency level, scope ≥ M. XS/S lanes and all `parallel: false` work runs in the main session.
-- **Location:** outside the repo (`../cell-worktrees/<feature>/lane-<N>`) so lint/test/git tooling never scans it.
+- **Location:** outside the repo (`../Tihoka-worktrees/<feature>/lane-<N>`) so lint/test/git tooling never scans it.
 - **Dependencies:** junction `node_modules` — never `npm install` per lane. Tasks touching `package.json`, lockfiles, or `manifest.json` are `parallel: false` by definition (shared state cannot be mocked).
 - **Merge order:** dependency order, one lane at a time, full gates after each merge. Conflicts are resolved by the dependent task's lane — it holds the contract context.
 - **Cleanup is unconditional:** `git worktree remove` in a finally path. A leftover worktree corrupts the next run.

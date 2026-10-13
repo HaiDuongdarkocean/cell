@@ -2,12 +2,12 @@
 
 | Date | Scope | Score | Issues | Mutation applied |
 |---|---|---|---|---|
-| 2025-06-22 | `cell` src/ + toolchain | 26/30 | 5 gaps (file-size signal, scoring example, business estimate, flaky tests, owner/cadence guard) | Yes — SKILL.md v2 |
-| 2025-06-22 | `cell` toàn bộ codebase (sau StudyMode/removeBracketed/benchmark threshold) | 28/30 | 2 minor (could include more build timing data; business translation could name days) | No — skill đã đủ |
+| 2025-06-22 | `Tihoka` src/ + toolchain | 26/30 | 5 gaps (file-size signal, scoring example, business estimate, flaky tests, owner/cadence guard) | Yes — SKILL.md v2 |
+| 2025-06-22 | `Tihoka` toàn bộ codebase (sau StudyMode/removeBracketed/benchmark threshold) | 28/30 | 2 minor (could include more build timing data; business translation could name days) | No — skill đã đủ |
 
 ---
 
-## Run 2025-06-22 — Project `cell`
+## Run 2025-06-22 — Project `Tihoka`
 
 ### Scope
 Audit `src/` and the project toolchain for technical debt blocking feature velocity in the dictionary popup, OCR, and subtitle modules.
@@ -89,10 +89,10 @@ Audit `src/` and the project toolchain for technical debt blocking feature veloc
 
 ---
 
-## Run 2025-06-22 (re-audit) — Toàn bộ `cell` sau StudyMode/removeBracketed/benchmark threshold
+## Run 2025-06-22 (re-audit) — Toàn bộ `Tihoka` sau StudyMode/removeBracketed/benchmark threshold
 
 ### Scope
-Audit toàn bộ codebase `cell` (src/, tests/, build, dependencies, process) để tìm tất cả nợ kỹ thuật hiện có.
+Audit toàn bộ codebase `Tihoka` (src/, tests/, build, dependencies, process) để tìm tất cả nợ kỹ thuật hiện có.
 
 ### Signals collected
 

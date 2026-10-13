@@ -10,7 +10,7 @@ const url = process.argv[2] ?? DEFAULT_URL;
 const outDir = resolve('test-results');
 
 const extPath = resolve('dist');
-const profile = mkdtempSync(resolve(tmpdir(), 'cell-playwright-'));
+const profile = mkdtempSync(resolve(tmpdir(), 'Tihoka-playwright-'));
 
 const context = await chromium.launchPersistentContext(profile, {
   headless: false,
@@ -31,7 +31,7 @@ await page.waitForTimeout(3000);
 
 const result = await page.evaluate(() => ({
   url: location.href,
-  root: !!document.getElementById('cell-subtitle-root'),
+  root: !!document.getElementById('Tihoka-subtitle-root'),
   video: !!document.querySelector('video'),
   ready: document.querySelector('video')?.readyState,
 }));

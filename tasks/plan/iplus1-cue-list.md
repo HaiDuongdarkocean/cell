@@ -3,14 +3,14 @@
 ## Problem
 
 The cue list (`CueList.tsx`, `CueTokenText` React renderer at L144-225) stamps
-`js-cell-token--status-*` and `js-cell-token--frequency-*` on every word but
-never `js-cell-token--i1-off`. The i+1 gate only exists on the imperative DOM
+`js-Tihoka-token--status-*` and `js-Tihoka-token--frequency-*` on every word but
+never `js-Tihoka-token--i1-off`. The i+1 gate only exists on the imperative DOM
 bind path (`markIPlus1Runs` → `applyRunMark`, `tokenSpanRenderer.ts:112-127`).
 Result: every cue token renders its full status/frequency capsule — a "wall of
 pills" the i+1 gate was built to prevent.
 
 Secondary drift (same root): the React path also omits the
-`data-cell-block-id` / `data-cell-sentence` attributes the marking machinery
+`data-tihoka-block-id` / `data-tihoka-sentence` attributes the marking machinery
 keys on (`tokenSpanRenderer.ts:38,45`).
 
 ## Decisions (resolved — do not re-litigate)
@@ -25,7 +25,7 @@ keys on (`tokenSpanRenderer.ts:38,45`).
    class set minus `i1-off` (`PreviewBlock.tsx:108-125`), but the preview is a
    mining surface, not a reading surface: the mined word must keep its
    capsule, and i+1 hiding would fight the `<strong>` target-phrase emphasis.
-   It also stamps no `data-cell-block-id`, so `refreshIPlus1Marking` stays
+   It also stamps no `data-tihoka-block-id`, so `refreshIPlus1Marking` stays
    inert there (see hidden-writer note) — leave untouched. Mockups excluded.
 3. **No `--status-off`/`--frequency-off` work.** The old Step 4 ships nothing:
    the subtitle tokenize store always runs `showStatus=showFrequency=true`
@@ -35,7 +35,7 @@ keys on (`tokenSpanRenderer.ts:38,45`).
    unconditional status/frequency classes already match. Follow-up logged
    below.
 4. **Stamping the attrs arms a hidden writer — deliberately.** Today
-   `refreshIPlus1Marking` is a no-op on cue-list spans (no `data-cell-block-id`
+   `refreshIPlus1Marking` is a no-op on cue-list spans (no `data-tihoka-block-id`
    → `readSegments` finds nothing). Once stamped, popup status writes
    (`applyTokenStatus` → `lookupTargetDom.ts:108-116`, called from
    `popupLifecycle.ts:325,447`) re-mark the cue's spans via the DOM rule. The
@@ -43,7 +43,7 @@ keys on (`tokenSpanRenderer.ts:38,45`).
    finds no `p/li/...` ancestor inside the shadow panel (CueCard is all divs),
    so `span.parentElement` = `.targetText` holding exactly one cue's spans —
    same scope as the React rule. The two writers converge IFF (a) both share
-   one marking rule and (b) separator `data-cell-sentence` follows the binder
+   one marking rule and (b) separator `data-tihoka-sentence` follows the binder
    convention. The parity test below is LOAD-BEARING — it is the only guard
    against drift between React marks and DOM re-marks.
 5. **Known remaining divergence — documented, out of scope:**
@@ -66,7 +66,7 @@ which words keep color.
 ### Step 1 — NEW `src/features/tokenize/logic/iPlus1Marking.ts` (pure)
 
 ```ts
-export const IPLUS1_OFF_CLASS = 'js-cell-token--i1-off';
+export const IPLUS1_OFF_CLASS = 'js-Tihoka-token--i1-off';
 export const IPLUS1_MIN_SCORABLE = 3;
 const NUMERIC_RE = /^\p{N}+$/u;
 
@@ -99,7 +99,7 @@ export function markedTokenIndexes(tokens: readonly Token[]): ReadonlySet<number
 - `applyRunMark` (L112-127): keep collecting `words` = all
   non-`SEPARATOR_CLASS` spans in the run (punct token spans included —
   behavior preserved, decision 5). Build descriptors
-  `{ term: span.getAttribute('data-cell-term') ?? '', isNew: isNewWordSpan(span) }`,
+  `{ term: span.getAttribute('data-tihoka-term') ?? '', isNew: isNewWordSpan(span) }`,
   call `pickIPlus1Index`, map the result index back to the span, then keep the
   existing `classList.toggle(IPLUS1_OFF_CLASS, span !== marked)` loop.
   `isNewWordSpan` (L105-110) stays — it is the DOM-class equivalent of
@@ -116,9 +116,9 @@ export function markedTokenIndexes(tokens: readonly Token[]): ReadonlySet<number
   `sentenceContextForIndex` at L205). O(tokens) — fine.
 - Word spans: add `IPLUS1_OFF_CLASS` to the className when the token's index
   in the full `tokens` array is not in `marked`; stamp
-  `data-cell-sentence={token.sentenceIndex}` and `data-cell-block-id={blockId}`.
-- Gap/separator spans (leading/mid/tail): stamp `data-cell-block-id` and
-  `data-cell-sentence` replicating the binder convention
+  `data-tihoka-sentence={token.sentenceIndex}` and `data-tihoka-block-id={blockId}`.
+- Gap/separator spans (leading/mid/tail): stamp `data-tihoka-block-id` and
+  `data-tihoka-sentence` replicating the binder convention
   (`tokenSpanRenderer.ts:329-351`): a gap inherits the PRECEDING token's
   `sentenceIndex`; the leading gap gets
   `max(0, first.sentenceIndex - (hasSentenceEnd(text.slice(0, first.start)) ? 1 : 0))`;
@@ -150,7 +150,7 @@ export function markedTokenIndexes(tokens: readonly Token[]): ReadonlySet<number
   `isNotKnown` semantics); a numeric token gets `i1-off` but is not scorable.
 - **Parity test (load-bearing):** for identical fixtures, build the DOM the
   way `CueTokenText` renders it (word spans only for non-separator tokens,
-  gap spans, `data-cell-block-id`/`data-cell-sentence`/`data-cell-term`/
+  gap spans, `data-tihoka-block-id`/`data-tihoka-sentence`/`data-tihoka-term`/
   status classes stamped), run `markIPlus1Runs` on the container, and assert
   the DOM-marked set equals `markedTokenIndexes(tokens)`. Include a
   status-change fixture (flip one word known→unknown) simulating the
@@ -159,7 +159,7 @@ export function markedTokenIndexes(tokens: readonly Token[]): ReadonlySet<number
 - `CueTokenText` render (jsdom, in `CueList.test.tsx`): cue with 1 unknown →
   only that token lacks `i1-off`; cue with 2 unknowns → all `i1-off`;
   known-heavy cue → all `i1-off`; gap spans carry
-  `data-cell-sentence`/`data-cell-block-id`.
+  `data-tihoka-sentence`/`data-tihoka-block-id`.
 - Existing `tokenSpanRenderer.test.ts` unchanged — must pass as-is
   (behavior preserved).
 
@@ -182,7 +182,7 @@ path unchanged). Subtitle split-view change → re-verify AC at
   thread through `SubtitleCueEngineTokenizeOptions` (subtitleCueEngine.ts:48)
   → `CueListTokenize` (CueList.tsx:97) → `CueTokenText`, mirroring the
   `showReadings`/`showGlosses` hops at `reactSubtitleController.ts:806-815`.
-- Pre-existing, newly more visible: `js-cell-token--popup-open` is a DOM-set
+- Pre-existing, newly more visible: `js-Tihoka-token--popup-open` is a DOM-set
   class on React-managed spans (`lookupTargetDom.ts:96`) — any React
   re-render wipes it (status underline vanishes mid-lookup). With `i1-off`,
   more tokens rely on `:hover`/`.popup-open` to reveal status. Log a

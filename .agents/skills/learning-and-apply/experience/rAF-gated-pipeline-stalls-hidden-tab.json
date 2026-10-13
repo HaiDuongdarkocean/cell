@@ -17,12 +17,12 @@
     {
       "context": "Subtitle tokenize: syncSubtitleTokenize chạy lúc init khi cues còn rỗng → setCues([]) → render(-1). Cues load sau → onCuesUpdated → rAF → render → bindLine → schedule prepare qua TokenizeScheduler PRIORITY_VIEWPORT (rAF). Tab bị occluded (automation mở popup, hoặc user chuyển tab) → rAF không fire → prepare không bao giờ chạy → 0 tokens vĩnh viễn dù enabled=true và cues đã hiển thị. CueList (React render, không cần rAF) vẫn tokenize bình thường → triệu chứng 'panel có token, overlay không'.",
       "bad": "scheduler.schedule(async () => { await prepareCue(cache, cues, idx); if (enabled && isActive()) bindLine(...); }, PRIORITY_VIEWPORT); // rAF-gated — chết trong hidden tab",
-      "good": "void prepareCue(cache, cues, idx).then(() => { if (enabled && isActive() && !element.querySelector('[data-cell-block-id]')) bindLine(...); }); // frame-independent cho active cue"
+      "good": "void prepareCue(cache, cues, idx).then(() => { if (enabled && isActive() && !element.querySelector('[data-tihoka-block-id]')) bindLine(...); }); // frame-independent cho active cue"
     },
     {
       "context": "Cùng feature: nhiều render call khi cue chưa prepare → nhiều scheduled task cùng cue. Task đầu bind xong (text node thay bằng token spans). Task sau re-invoke bindLine → createBlock capture element.firstChild = token span (element node) làm sourceNode → bindTokenBlock replaceChild(fragment, span) → 11 spans mới thế 1 span → nội dung tích lũy ×3 (text lặp, childNodes 31).",
       "bad": "const textNode = element.firstChild as Text | null; // cast mù — có thể là token span từ bind trước\nif (!textNode) return null;",
-      "good": "const textNode = element.firstChild;\nif (!(textNode instanceof Text)) return null; // element đã tokenized → bỏ\n// + trong bindLine: if (element.querySelector('[data-cell-block-id]')) return; // giữ tracking block hiện tại"
+      "good": "const textNode = element.firstChild;\nif (!(textNode instanceof Text)) return null; // element đã tokenized → bỏ\n// + trong bindLine: if (element.querySelector('[data-tihoka-block-id]')) return; // giữ tracking block hiện tại"
     }
   ],
   "applyFor": [

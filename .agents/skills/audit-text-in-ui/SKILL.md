@@ -6,13 +6,13 @@ description: Audit and rewrite user-visible UI text against the copy standard, r
 # Audit Text in UI — audit + rewrite chữ trên màn hình, chuẩn i18n
 
 > **Chữ trong UI là một phần của bài học, không phải đồ trang trí.**
-> Cell phục vụ người học ngoại ngữ 5→80 tuổi: người dùng đang tốn sức giải mã ngôn ngữ — UI copy không được phép thành từ vựng ngoài chương trình.
+> Tihoka phục vụ người học ngoại ngữ 5→80 tuổi: người dùng đang tốn sức giải mã ngôn ngữ — UI copy không được phép thành từ vựng ngoài chương trình.
 
 Skill này trả lời 2 câu hỏi cho mọi chuỗi text trên màn hình:
 1. **Viết đúng chuẩn chưa?** (clarity, tone giáo dục, bề mặt)
 2. **Nằm đúng chỗ chưa?** (i18n — không hardcode literal)
 
-**Nếu repo chưa có hạ tầng i18n, skill này PHẢI bootstrap rồi migrate — không được chỉ flag rồi dừng.** Cell hỗ trợ 2 locale: `en` (default) và `vi`.
+**Nếu repo chưa có hạ tầng i18n, skill này PHẢI bootstrap rồi migrate — không được chỉ flag rồi dừng.** Tihoka hỗ trợ 2 locale: `en` (default) và `vi`.
 
 ## When to Use
 
@@ -59,7 +59,7 @@ Nguồn: NN/g (3 C's, copy sizes), Microsoft Writing Style, Material Content Des
 | Link | Mang information scent | `Bấm đây` → `Xem lịch sử tra` |
 | aria-label | Ngắn, định danh control — không dồn cả nội dung | `aria-label="Select definition: <cả câu dài>"` → nhãn ngắn + `aria-describedby` |
 
-### Nhóm E — lớp giáo dục (đặc thù Cell)
+### Nhóm E — lớp giáo dục (đặc thù Tihoka)
 
 | # | Luật |
 |---|---|
@@ -123,7 +123,7 @@ Khi chuẩn bị viết lại một chuỗi, hãy chạy 16 câu hỏi này. Câ
 **Actions:**
 1. Xác định scope (file/thư mục). Không rõ → hỏi.
 2. Grep pattern: `aria-label=|title=|placeholder=|alt=|label:|title:|description=|>[A-Za-zÀ-ỹ]` trong `*.tsx` của scope; thêm string literal trong `.ts` controller nếu nó bubble ra UI (vd `panel.error`).
-3. Bỏ qua: `*.test.*`, `*.showcase.tsx` (demo copy — ghi "out of scope"), className, data-cell-id, key nội bộ.
+3. Bỏ qua: `*.test.*`, `*.showcase.tsx` (demo copy — ghi "out of scope"), className, data-tihoka-id, key nội bộ.
 
 **Guard:** Có bảng `file:line → chuỗi → loại`. Thiếu nguồn string nào (vd error text phát sinh ở hook) → grep ngược theo prop.
 

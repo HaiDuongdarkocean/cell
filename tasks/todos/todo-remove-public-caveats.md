@@ -3,7 +3,7 @@
 ## Phase 1: Prepare data externalization
 
 - [ ] 1.1 Inventory large runtime/test/showcase assets
-- [ ] 1.2 Choose asset hosting (`cell-assets` repo vs. Google Drive)
+- [ ] 1.2 Choose asset hosting (`Tihoka-assets` repo vs. Google Drive)
 - [ ] 1.3 Design `data/assets.json` manifest schema
 - [ ] 1.4 Write `scripts/download-data.mjs`
 
@@ -23,7 +23,7 @@
 
 ## Phase 4: Remove AI tooling from public tree
 
-- [ ] 4.1 Create private `cell-ai-tools` repository
+- [ ] 4.1 Create private `Tihoka-ai-tools` repository
 - [ ] 4.2 Write vendor-neutral public `AGENTS.md`
 - [ ] 4.3 Add `.gitignore` for private overlay folders
 - [ ] 4.4 Write `tools/overlay-ai-tools.ps1`

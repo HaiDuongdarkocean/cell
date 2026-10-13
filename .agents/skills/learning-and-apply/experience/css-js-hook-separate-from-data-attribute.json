@@ -8,18 +8,18 @@
   "cases": [
     {
       "context": "JS tìm panel đang mở để replace — cần hook (bind) + payload filter (audio vs image)",
-      "bad": "container.querySelector('[data-cell-panel=\"audio\"]')",
-      "good": "// .js-cell-panel is the hook, [data-cell-panel=\"audio\"] is a payload filter\ncontainer.querySelector('.js-cell-panel[data-cell-panel=\"audio\"]')\n// or split: query by hook, filter by payload\n// const panel = [...container.querySelectorAll('.js-cell-panel')].find(p => p.dataset.cellPanel === 'audio');"
+      "bad": "container.querySelector('[data-tihoka-panel=\"audio\"]')",
+      "good": "// .js-Tihoka-panel is the hook, [data-tihoka-panel=\"audio\"] is a payload filter\ncontainer.querySelector('.js-Tihoka-panel[data-tihoka-panel=\"audio\"]')\n// or split: query by hook, filter by payload\n// const panel = [...container.querySelectorAll('.js-Tihoka-panel')].find(p => p.dataset.tihokaPanel === 'audio');"
     },
     {
       "context": "JS detect click outside popup, skip if click trên subtitle token",
-      "bad": "target.closest('[data-cell-term]')",
-      "good": "target.closest('.js-cell-token')"
+      "bad": "target.closest('[data-tihoka-term]')",
+      "good": "target.closest('.js-Tihoka-token')"
     },
     {
       "context": "Token span DOM creation — cần cả JS hook (để closest tìm) và data (để đọc term/start/end)",
-      "bad": "span.setAttribute('data-cell-term', token.text);\n// JS sau đó: target.closest('[data-cell-term]')",
-      "good": "span.className = 'js-cell-token';\nspan.setAttribute('data-cell-term', token.text);\n// JS targeting: target.closest('.js-cell-token')\n// payload read: span.getAttribute('data-cell-term')"
+      "bad": "span.setAttribute('data-tihoka-term', token.text);\n// JS sau đó: target.closest('[data-tihoka-term]')",
+      "good": "span.className = 'js-Tihoka-token';\nspan.setAttribute('data-tihoka-term', token.text);\n// JS targeting: target.closest('.js-Tihoka-token')\n// payload read: span.getAttribute('data-tihoka-term')"
     }
   ],
   "applyFor": [

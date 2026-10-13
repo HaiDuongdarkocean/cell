@@ -12,9 +12,9 @@
       "good": ".root { pointer-events: none; } /* band click-through on ALL devices */\n// hook: drag starts on subtitle-block/nav-expand for every pointer type —\n// deferred capture after |deltaY| >= 8px: tap still fires click for word\n// lookup / expand, horizontal mouse drag still selects text"
     },
     {
-      "context": "Verification probe: document.elementFromPoint inside the video rect returned #cell-subtitle-root (retargeted from the .root shadow child); shadowRoot.elementFromPoint revealed the real hit (band vs button vs subtitle .layer).",
+      "context": "Verification probe: document.elementFromPoint inside the video rect returned #Tihoka-subtitle-root (retargeted from the .root shadow child); shadowRoot.elementFromPoint revealed the real hit (band vs button vs subtitle .layer).",
       "bad": "// assumed host pointer-events:none meant click-through — but a shadow child with\n// pointer-events:auto still intercepts; document.elementFromPoint only shows the host",
-      "good": "// probe both levels:\nconst el = document.elementFromPoint(x, y);        // → #cell-subtitle-root\nconst deep = el?.shadowRoot?.elementFromPoint(x, y); // → real interceptor (.root band)\n// post-fix: band points resolve to the <video> element; only the subtitle\n// .layer text box + cluster buttons remain Cell hit targets"
+      "good": "// probe both levels:\nconst el = document.elementFromPoint(x, y);        // → #Tihoka-subtitle-root\nconst deep = el?.shadowRoot?.elementFromPoint(x, y); // → real interceptor (.root band)\n// post-fix: band points resolve to the <video> element; only the subtitle\n// .layer text box + cluster buttons remain Tihoka hit targets"
     }
   ],
   "applyFor": [

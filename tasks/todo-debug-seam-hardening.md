@@ -4,18 +4,18 @@ Plan: `tasks/plan-debug-seam-hardening.md` · Spec: `docs/specs/debug-seam-harde
 
 | # | Task | Priority | Parallel | Blocked strategy | Status |
 |---|---|---|---|---|---|
-| 1 | Shared `src/shared/lib/cellDebug.ts` SSOT + replace helper copies/inline checks | P0 | yes (with 3) | — | done |
+| 1 | Shared `src/shared/lib/TihokaDebug.ts` SSOT + replace helper copies/inline checks | P0 | yes (with 3) | — | done |
 | 2 | Gate ungated debug writes (ocrController/ocrPipeline/frameCapture/AUTOLOAD_HANDLED/3 site-IIFE `__*_DEBUG`) | P0 | no — needs 1 | wait 1 | done |
 | 3 | `shared/lib/dom/frameOrigin.ts` — `isResolvableHttpOrigin`, `resolveParentFrameOrigin`, `resolveIframeOrigin` | P0 | yes (with 1) | — | done |
 | 4 | Explicit-origin sends + minimized `initiator`/`frameSrc` (subtitleDiscovery iife, fetchInterceptor, mediaScan, PM bridge, MGR child/host) | P0 | no — needs 3 | wait 3 | done |
-| 5 | Unified inbound `__CELL_SUBTITLE_DISCOVERY` validation + receiver-generated nonce relay | P0 | yes | — | done |
+| 5 | Unified inbound `__Tihoka_SUBTITLE_DISCOVERY` validation + receiver-generated nonce relay | P0 | yes | — | done |
 | 6 | PM/MGR inbound source/origin/frameSrc checks (top + child sides) | P0 | no — needs 3 | wait 3 | done |
-| 7 | Unit tests: cellDebug, frameOrigin, subtitleBridges validation/nonce, PM/MGR forged drops | P1 | no — needs 1-6 | wait | done |
+| 7 | Unit tests: TihokaDebug, frameOrigin, subtitleBridges validation/nonce, PM/MGR forged drops | P1 | no — needs 1-6 | wait | done |
 | 8 | Gates + real-Chrome verify (iframe relay, PM, MGR sheet, debug markers) + arch doc + verify artifact | P0 | no — needs all | wait | done |
 
 ## Discovered during build
 
-- `subtitleDiscovery-main-world.iife.ts` `scanTracks` missed a `<track>` added as a direct mutation node (`querySelectorAll` only scans descendants) — dynamic blob tracks never produced `network-response`. Fixed: added-node-is-TRACK early branch. Verified in real Chrome via `data-cell-iframe-discovery-log`.
+- `subtitleDiscovery-main-world.iife.ts` `scanTracks` missed a `<track>` added as a direct mutation node (`querySelectorAll` only scans descendants) — dynamic blob tracks never produced `network-response`. Fixed: added-node-is-TRACK early branch. Verified in real Chrome via `data-tihoka-iframe-discovery-log`.
 - Existing `iframeManagerBridgeChild.test.ts`/`contentScriptMessages.test.ts` updated for explicit origins + debug gate.
 - `playwright.stream.config.ts` gained the `--stream-iframe` webServer (ports 4323/4324 hardcoded by `streamFlixData.PLAYER_ORIGIN`).
 

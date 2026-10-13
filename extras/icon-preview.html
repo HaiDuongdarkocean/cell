@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Tihoka icon preview</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 32px; background: #f3f3f3; color: #111; }
+  h1 { font-size: 18px; }
+  h2 { font-size: 14px; margin: 24px 0 8px; color: #555; }
+  .row { display: flex; gap: 32px; align-items: end; }
+  .cell { text-align: center; }
+  .cell img { display: block; margin: 0 auto 4px; }
+  .cell small { color: #777; }
+  .dark { background: #1f1f1f; padding: 24px; border-radius: 8px; }
+  .dark small { color: #aaa; }
+  .light { background: #fff; padding: 24px; border-radius: 8px; }
+  .zoom img { image-rendering: pixelated; }
+</style>
+</head>
+<body>
+<h1>Tihoka icons — bộ PNG mới trong public/icons/ (không nền đen)</h1>
+
+<h2>Nền trắng (store listing, extensions light)</h2>
+<div class="light">
+  <div class="row">
+    <div class="cell"><img src="../public/icons/icon-128.png" width="128" height="128"><small>128</small></div>
+    <div class="cell"><img src="../public/icons/icon-48.png" width="48" height="48"><small>48</small></div>
+    <div class="cell"><img src="../public/icons/icon-32.png" width="32" height="32"><small>32</small></div>
+    <div class="cell"><img src="../public/icons/icon-16.png" width="16" height="16"><small>16</small></div>
+    <div class="cell zoom"><img src="../public/icons/icon-16.png" width="64" height="64"><small>16 ×4</small></div>
+    <div class="cell zoom"><img src="../public/icons/icon-32.png" width="96" height="96"><small>32 ×3</small></div>
+  </div>
+</div>
+
+<h2>Nền tối (chrome://extensions dark)</h2>
+<div class="dark">
+  <div class="row">
+    <div class="cell"><img src="../public/icons/icon-128.png" width="128" height="128"><small>128</small></div>
+    <div class="cell"><img src="../public/icons/icon-48.png" width="48" height="48"><small>48</small></div>
+    <div class="cell"><img src="../public/icons/icon-32.png" width="32" height="32"><small>32</small></div>
+    <div class="cell"><img src="../public/icons/icon-16.png" width="16" height="16"><small>16</small></div>
+    <div class="cell zoom"><img src="../public/icons/icon-16.png" width="64" height="64"><small>16 ×4</small></div>
+    <div class="cell zoom"><img src="../public/icons/icon-32.png" width="96" height="96"><small>32 ×3</small></div>
+  </div>
+</div>
+
+<h2>Master SVG — phẳng (icon-circle.svg) vs shadow (icon-circle-shadow.svg)</h2>
+<div class="light" style="margin-bottom:12px">
+  <div class="row">
+    <div class="cell"><img src="icon-circle.svg" width="256" height="256"><small>phẳng</small></div>
+    <div class="cell"><img src="icon-circle-shadow.svg" width="256" height="256"><small>shadow</small></div>
+    <div class="cell"><img src="icon-circle.svg" width="64" height="64"><small>phẳng 64</small></div>
+    <div class="cell"><img src="icon-circle-shadow.svg" width="64" height="64"><small>shadow 64</small></div>
+    <div class="cell"><img src="icon-circle.svg" width="32" height="32"><small>phẳng 32</small></div>
+    <div class="cell"><img src="icon-circle-shadow.svg" width="32" height="32"><small>shadow 32</small></div>
+    <div class="cell"><img src="icon-circle.svg" width="16" height="16"><small>phẳng 16</small></div>
+    <div class="cell"><img src="icon-circle-shadow.svg" width="16" height="16"><small>shadow 16</small></div>
+  </div>
+</div>
+<div class="dark">
+  <div class="row">
+    <div class="cell"><img src="icon-circle.svg" width="256" height="256"><small>phẳng</small></div>
+    <div class="cell"><img src="icon-circle-shadow.svg" width="256" height="256"><small>shadow</small></div>
+    <div class="cell"><img src="icon-circle.svg" width="64" height="64"><small>phẳng 64</small></div>
+    <div class="cell"><img src="icon-circle-shadow.svg" width="64" height="64"><small>shadow 64</small></div>
+    <div class="cell"><img src="icon-circle.svg" width="32" height="32"><small>phẳng 32</small></div>
+    <div class="cell"><img src="icon-circle-shadow.svg" width="32" height="32"><small>shadow 32</small></div>
+    <div class="cell"><img src="icon-circle.svg" width="16" height="16"><small>phẳng 16</small></div>
+    <div class="cell"><img src="icon-circle-shadow.svg" width="16" height="16"><small>shadow 16</small></div>
+  </div>
+</div>
+</body>
+</html>

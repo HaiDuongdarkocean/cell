@@ -1,6 +1,6 @@
 # Plan — session-recap
 
-> Spec: `docs/specs/session-recap.md` · Design: `docs/intent/session-recap-design-brief.md` + `*-component-mapping.md` · Worktree: `../cell-worktrees/session-recap` · Mode: all
+> Spec: `docs/specs/session-recap.md` · Design: `docs/intent/session-recap-design-brief.md` + `*-component-mapping.md` · Worktree: `../Tihoka-worktrees/session-recap` · Mode: all
 
 ## Architecture decisions (from spec + review)
 

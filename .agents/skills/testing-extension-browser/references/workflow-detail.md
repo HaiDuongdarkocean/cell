@@ -10,7 +10,7 @@ When: <exact user or system action — click, seek, dispatch event>
 Then: <exact measurable DOM outcome — element count, text, class>
 ```
 
-Example: `Given: video playing at t=190s, subtitle overlay visible / When: click word on target line / Then: #cell-universal-panel-host shadow children > 2`.
+Example: `Given: video playing at t=190s, subtitle overlay visible / When: click word on target line / Then: #Tihoka-universal-panel-host shadow children > 2`.
 
 Loop back: request vague → invoke `/pipeline-analyze` (interactive) on yourself; only ask the user if that fails.
 
@@ -23,7 +23,7 @@ Loop back: request vague → invoke `/pipeline-analyze` (interactive) on yoursel
 ## Step 2: Pack .crx + clone profile
 
 ```powershell
-python .agents\skills\testing-extension-browser\script\setup-cell-profile.py
+python .agents\skills\testing-extension-browser\script\setup-Tihoka-profile.py
 ```
 
 Flags: `--rebuild` (re-pack after build) · `--no-ublock` (almost never wanted) · `--keep-profile`.
@@ -31,35 +31,35 @@ Flags: `--rebuild` (re-pack after build) · `--no-ublock` (almost never wanted) 
 From a test script, use the helper — do not spawn python by hand:
 
 ```js
-import { prepareCellEnvironment } from '../.agents/skills/testing-extension-browser/script/launch-cell-context.mjs';
-const CLONE_PATH = await prepareCellEnvironment({ rebuild: true });
+import { prepareTihokaEnvironment } from '../.agents/skills/testing-extension-browser/script/launch-Tihoka-context.mjs';
+const CLONE_PATH = await prepareTihokaEnvironment({ rebuild: true });
 ```
 
-**Guard:** output shows `[OK] Packed cell.crx` → `[OK] Packed ublock.crx` → `[OK] Cloned master → <clone>` → `CLONE_PATH=...`.
+**Guard:** output shows `[OK] Packed Tihoka.crx` → `[OK] Packed ublock.crx` → `[OK] Cloned master → <clone>` → `CLONE_PATH=...`.
 
 **Loop back:** `Pack failed` → missing `dist/` or `openssl` → Step 1. Missing `*-key.pem` → auto-generated once; copy from the main repo for stable extension IDs across worktrees. `data/extension/uBOLite` is gitignored — copy into fresh worktrees or uBlock won't pack.
 
 ## Step 3: Connect (Playwright persistent)
 
 ```ts
-import { warmUpCellContext, launchCellContext } from '../.agents/skills/testing-extension-browser/script/launch-cell-context.mjs';
+import { warmUpTihokaContext, launchTihokaContext } from '../.agents/skills/testing-extension-browser/script/launch-Tihoka-context.mjs';
 
-await warmUpCellContext(CLONE_PATH);              // primes the clone
-const context = await launchCellContext(CLONE_PATH); // headless by default
+await warmUpTihokaContext(CLONE_PATH);              // primes the clone
+const context = await launchTihokaContext(CLONE_PATH); // headless by default
 const page = await context.newPage();
 ```
 
-The launcher loads Cell AND uBlock via `--load-extension=${DIST},${UBOLITE}` (comma-separated, same `--disable-extensions-except` list) with `channel: 'chromium'` (new headless supports extensions). Pass `{ headless: false }` only when a visible window is needed. On Windows the External Extensions JSON installs nothing — uBlock exists ONLY because of this flag.
+The launcher loads Tihoka AND uBlock via `--load-extension=${DIST},${UBOLITE}` (comma-separated, same `--disable-extensions-except` list) with `channel: 'chromium'` (new headless supports extensions). Pass `{ headless: false }` only when a visible window is needed. On Windows the External Extensions JSON installs nothing — uBlock exists ONLY because of this flag.
 
-**Guard:** context resolves; confirm via `chrome://extensions` or `fetchPatched: true` in `page.evaluate`. **Loop back:** profile locked → `context.close()` old, wait 3s, retry; Cell not listed → Step 2.
+**Guard:** context resolves; confirm via `chrome://extensions` or `fetchPatched: true` in `page.evaluate`. **Loop back:** profile locked → `context.close()` old, wait 3s, retry; Tihoka not listed → Step 2.
 
 ## Step 4: Navigate
 
 ```ts
 await page.goto('https://...');
 const result = await page.evaluate(() => ({
-  fetchPatched: !!document.documentElement.getAttribute('data-cell-fetch-patched'),
-  subtitleRoot: !!document.getElementById('cell-subtitle-root'),
+  fetchPatched: !!document.documentElement.getAttribute('data-tihoka-fetch-patched'),
+  subtitleRoot: !!document.getElementById('Tihoka-subtitle-root'),
 }));
 await page.screenshot({ path: 'tmp/real-chrome/screenshot.png' });
 ```
@@ -75,7 +75,7 @@ Shadow DOM inspection — guard `hasShadow: true` before reading children:
 
 ```js
 (() => {
-  const root = document.querySelector('#cell-subtitle-root');
+  const root = document.querySelector('#Tihoka-subtitle-root');
   const sr = root?.shadowRoot;
   const target = sr?.querySelector('[data-role="target"] span');
   return { hasRoot: !!root, hasShadow: !!sr, targetText: target?.textContent };
@@ -88,7 +88,7 @@ Shadow DOM inspection — guard `hasShadow: true` before reading children:
 
 ```js
 (() => {
-  const target = document.querySelector('#cell-subtitle-root')?.shadowRoot
+  const target = document.querySelector('#Tihoka-subtitle-root')?.shadowRoot
     ?.querySelector('[data-role="target"] span');
   const rect = target.getBoundingClientRect();
   document.dispatchEvent(new MouseEvent('mouseup', {
@@ -105,7 +105,7 @@ Shadow DOM inspection — guard `hasShadow: true` before reading children:
 
 ```js
 (() => {
-  const panel = document.querySelector('#cell-universal-panel-host');
+  const panel = document.querySelector('#Tihoka-universal-panel-host');
   return { totalEls: panel?.shadowRoot?.querySelectorAll('*').length };
 })()
 ```
@@ -126,7 +126,7 @@ fs.rmSync(CLONE_PATH, { recursive: true, force: true }); // unless inspecting
 ```text
 Known facts:
 - Build: <dist/manifest.json timestamp>
-- Clone: <cell-<uuid> path>
+- Clone: <Tihoka-<uuid> path>
 - Page: <URL + title>
 - Target: <selector + text + bounding rect>
 - Trigger: <what was dispatched/clicked>

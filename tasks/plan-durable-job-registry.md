@@ -6,7 +6,7 @@
 
 | # | Task | AC traced | Files |
 |---|---|---|---|
-| S1 | JobRegistry core: Job types, registry (memory mirror + `cellJob:<id>` session persist + serialized write queue + 500ms throttle), dedup `JOB_DUPLICATE`, `retryable` per kind, scheduler cap (`resource-import` max 2 running), `reconcile` hooks, JOB_EVENT broadcast | REQ-1,2,3,7,8 · AC-3,4,9,14,16 | `src/entities/job/types.ts`, `src/features/jobs/logic/jobRegistry.ts` |
+| S1 | JobRegistry core: Job types, registry (memory mirror + `TihokaJob:<id>` session persist + serialized write queue + 500ms throttle), dedup `JOB_DUPLICATE`, `retryable` per kind, scheduler cap (`resource-import` max 2 running), `reconcile` hooks, JOB_EVENT broadcast | REQ-1,2,3,7,8 · AC-3,4,9,14,16 | `src/entities/job/types.ts`, `src/features/jobs/logic/jobRegistry.ts` |
 | S2 | Message plumbing: `JOB_LIST`/`JOB_EVENT`/`JOB_DISMISS`/`JOB_ACTION` types + zod + registry entries + `handlers/jobs.ts` | REQ-2,3,7,8 · AC-3,4 | `src/shared/config/messages.ts`, `src/entities/message/{types,registry,jobSchemas}.ts`, `src/entrypoints/background/handlers/jobs.ts` |
 | S3 | Keep-alive pin (20s `getPlatformInfo` while active jobs) + boot sweep (queued/uploading/running → reconcile → done|interrupted; failed+pendingEffect retry) wired at SW start | REQ-5,9 · AC-5 | `src/features/jobs/logic/keepAlive.ts`, wire in `handlers/jobs.ts`/index |
 | S4 | `resource-import` migration: job on first chunk (uploading), detached `importFile` on final chunk → `{jobId}` response, 30s stall → interrupted, terminal/unknown-jobId chunk rejected, `resourceId` immediate persist, cap 2 | REQ-1,10,11 · AC-1,2,5,16 | `handlers/resources.ts` |

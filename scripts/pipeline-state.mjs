@@ -86,7 +86,7 @@ function takeFlag(args, name) {
 function callerId(args) {
   const explicit = takeFlag(args, '--owner');
   if (explicit) return explicit;
-  return process.env.CELL_AGENT_ID || 'human';
+  return process.env.Tihoka_AGENT_ID || 'human';
 }
 
 function claimIfUnowned(item, slug, caller) {
@@ -229,12 +229,12 @@ function markBacklogDropped(slug, reason) {
   const lines = readFileSync(p, 'utf8').split('\n');
   const idx = lines.findIndex((l) => l.startsWith('|') && l.includes(`\`${slug}\``));
   if (idx < 0) return false;
-  const cells = lines[idx].split('|');
-  const statusIdx = cells.findIndex((c) =>
+  const Tihokas = lines[idx].split('|');
+  const statusIdx = Tihokas.findIndex((c) =>
     /^\s*(icebox|analyzed|specced|designed|planned|in-progress|shipped)\s*$/.test(c));
   if (statusIdx < 0) return false;
-  cells[statusIdx] = ` dropped — ${reason.slice(0, 80)} `;
-  lines[idx] = cells.join('|');
+  Tihokas[statusIdx] = ` dropped — ${reason.slice(0, 80)} `;
+  lines[idx] = Tihokas.join('|');
   writeFileSync(p, lines.join('\n'));
   return true;
 }
@@ -543,7 +543,7 @@ function doRequestHandoff(slug, args) {
   const note = takeFlag(args, '--note');
   const caller = callerId(args);
   if (!slug || !note) fail('usage: pipeline-state.mjs request-handoff <slug> --note "<reason>" [--owner <id>]');
-  if (caller === 'human') fail('pipeline-state: request-handoff needs an agent identity (--owner or CELL_AGENT_ID); humans can run handoff directly');
+  if (caller === 'human') fail('pipeline-state: request-handoff needs an agent identity (--owner or Tihoka_AGENT_ID); humans can run handoff directly');
   const state = readState();
   const item = getItem(state, slug);
   if (TERMINAL.has(item.stage)) fail(`pipeline-state: '${slug}' is ${item.stage} — nothing to hand off`);

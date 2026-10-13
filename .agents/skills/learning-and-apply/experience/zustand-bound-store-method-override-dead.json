@@ -7,9 +7,9 @@
   "principle": "React hooks subscribe through the library's internal store api, not the overridden property on the bound-store function object — so subscriber-counted side effects silently never fire. Attach event listeners unconditionally at module init (guard `typeof document`), or use the library's supported subscribe API; never infer React mount state from an exported-method override.",
   "cases": [
     {
-      "context": "Subtitle block stuck on 'Loading EN-US #1…' while panel renders fine — cell:cues:updated listener was attached inside an overridden useCuesStore.subscribe that only ran on first external subscriber, but zustand v5 hooks call the internal api.subscribe, leaving the count at 0 forever.",
+      "context": "Subtitle block stuck on 'Loading EN-US #1…' while panel renders fine — Tihoka:cues:updated listener was attached inside an overridden useCuesStore.subscribe that only ran on first external subscriber, but zustand v5 hooks call the internal api.subscribe, leaving the count at 0 forever.",
       "bad": "useCuesStore.subscribe = ((...args) => { if (count === 0) document.addEventListener(EVT, h); count++; const u = base(...args); return () => { u(); if (--count === 0) document.removeEventListener(EVT, h); }; })",
-      "good": "if (typeof document !== 'undefined') { document.addEventListener(CELL_CUES_UPDATED, handleCuesUpdated); }"
+      "good": "if (typeof document !== 'undefined') { document.addEventListener(Tihoka_CUES_UPDATED, handleCuesUpdated); }"
     }
   ],
   "applyFor": ["zustand create() bound stores", "any external-store lib wrapped with useSyncExternalStore", "monkey-patching exported functions to detect framework lifecycle", "DOM event bridges feeding a store"],

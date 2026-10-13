@@ -27,9 +27,9 @@
 - Programmatic align records `expected` scrollTop (ref, not state); divergence = user scroll
   — catches scrollbar drags, external `scrollPositionPreserve` restores.
 - Pill: `Button variant="overlay" shape="pill" size="sm" elevation="med"` +
-  `Icon name="crosshair"` + `data-cell-id="cue-list-sync"`, absolute bottom-center inside a
+  `Icon name="crosshair"` + `data-tihoka-id="cue-list-sync"`, absolute bottom-center inside a
   new `position:relative` wrapper sibling-owning the scroller; list bottom-pads while shown.
-- `data-cell-id="cue-list-scroll"` stays on the scroller element — selectors unchanged.
+- `data-tihoka-id="cue-list-scroll"` stays on the scroller element — selectors unchanged.
 
 ## Blocked / risk
 

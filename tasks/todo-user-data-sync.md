@@ -1,6 +1,6 @@
 # Todo: User data sync
 
-Plan: `tasks/plan-user-data-sync.md` · Spec: `docs/specs/user-data-sync.md` · Worktree: `../cell-worktrees/user-data-sync` (`feature/user-data-sync`)
+Plan: `tasks/plan-user-data-sync.md` · Spec: `docs/specs/user-data-sync.md` · Worktree: `../Tihoka-worktrees/user-data-sync` (`feature/user-data-sync`)
 
 - [ ] T1 Domain core — types + HLC + scope (feature worktree, direct)
 - [ ] T2 Flattening + settings registry + opaque records — lane-2

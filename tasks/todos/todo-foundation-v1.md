@@ -1,4 +1,4 @@
-# Cell Foundation v1 — Task Checklist
+# Tihoka Foundation v1 — Task Checklist
 
 ## Phase 0 — Evidence baseline
 

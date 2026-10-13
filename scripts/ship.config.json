@@ -2,6 +2,6 @@
   "githubRepo": "tihoka-official/tihoka",
   "releaseBranch": "main",
   "updateXmlPath": "updates.xml",
-  "crxAssetName": "tihoka.crx",
+  "crxAssetName": "Tihoka_{version}.crx",
   "publishToGitHub": true
 }

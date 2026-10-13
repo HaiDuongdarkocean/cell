@@ -2,7 +2,7 @@
 
 - [x] REQ-1: recap pane mounts via `.tabPane` + `visitedTabs` identical to siblings (`UniversalPanel.tsx`)
 - [x] REQ-2: `.scrollport` in `Scrollable.module.css`; composed by playlist `.list`, recap `.body`, vocabulary `.list`, studyModes `.tab`; settings `.mainCol` + dictionary internal scrollers verified conformant
-- [x] REQ-3: `.content` flush (padding + `[data-cell-id]` carve-out + media-query padding removed); `--universal-panel-tab-gutter` on `.body`; per-tab `padding:` consumes the var
+- [x] REQ-3: `.content` flush (padding + `[data-tihoka-id]` carve-out + media-query padding removed); `--universal-panel-tab-gutter` on `.body`; per-tab `padding:` consumes the var
 - [x] REQ-4: `padding-block-end: var(--universal-panel-tab-scroll-inset)` on scrollports/page containers; dictionary `.integratedMode` inset covers the collapsed MobileSheet peek
 - [x] REQ-5: `isActive` prop bound at `mountUniversalPanel` render fns (`open && currentTab === tab`)
 - [x] REQ-6: playlist teardown effect `[isActive, previewUrl]` — unmount audio + revoke URL, incl. mid-read resolution

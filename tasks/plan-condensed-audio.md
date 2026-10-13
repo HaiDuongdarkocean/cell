@@ -4,7 +4,7 @@
 
 ## Architecture decisions
 
-- **IDB**: new standalone DB `cell-condensed-audio` v1, store `items` — decoupled from `orca-local-player` schema, no migration risk.
+- **IDB**: new standalone DB `Tihoka-condensed-audio` v1, store `items` — decoupled from `orca-local-player` schema, no migration risk.
 - **Leg A decode path**: offscreen `ffmpegRunner` gains `condenseAudio` op. `public/ffmpeg/ffmpeg.js` (UMD `FFmpegWASM`) loaded via `<script src>` in `ffmpeg.html`; `new FFmpegWASM.FFmpeg()` + `load({coreURL, wasmURL})` pointing at `/ffmpeg/ffmpeg-core.{js,wasm}`; input mounted via WORKERFS (lazy reads, no MEMFS blowup); filtergraph `[0:a]atrim=…asetpts…[ai];…concat=n=N:v=0:a=1[out]` → `-map [out] -codec:a libmp3lame -q:a 4 out.mp3`; output MEMFS → read → OPFS `condensed/{id}.mp3`.
 - **File access**: offscreen opens `orca-local-player` IDB directly (same chrome-extension origin) → `VideoRecord.fileHandle`; OPFS downloads read via existing `ensureDownloadSubdir`. Handle permission loss → job failed `needs-access` reason (user re-opens local player to re-grant).
 - **Leg B**: content-script recorder session — `video.captureStream()` → `MediaRecorder({mimeType:'audio/webm;codecs=opus', audioBitsPerSecond:96000})` timeslice 5000 → chunks base64 → `CONDENSE_CHUNK` → background → offscreen appends OPFS `condensed/{id}.part.webm` (chunks concatenate into valid webm) → on finalize offscreen transcodes to mp3 same exec path. Gap-skip driver: seek over gaps between padded cue ranges (session-scoped, không đụng `advanced.skipNoDialogue`). DRM detect: no audio tracks / all muted → fail reason `capture-blocked`.

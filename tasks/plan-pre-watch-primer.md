@@ -10,7 +10,7 @@
 
 ## T2 — `PrimerTab` UI component + tests
 
-- [x] `src/features/subtitle/ui/PrimerTab.tsx` + `.module.css`: header count + unknown/tracking breakdown; row `div role="button"` with `data-cue-start`/`data-cue-end`; term span `.js-cell-token` + `data-cell-term` + `data-cell-start`; band chip (dot + `aria-hidden` + `title` + `VisuallyHidden`); status chip; `×count`; seek `Button shape="circle"` + `Icon name="playRoundedRect"`; EmptyState "All words known"; i18n `primer.*` (en+vi)
+- [x] `src/features/subtitle/ui/PrimerTab.tsx` + `.module.css`: header count + unknown/tracking breakdown; row `div role="button"` with `data-cue-start`/`data-cue-end`; term span `.js-Tihoka-token` + `data-tihoka-term` + `data-tihoka-start`; band chip (dot + `aria-hidden` + `title` + `VisuallyHidden`); status chip; `×count`; seek `Button shape="circle"` + `Icon name="playRoundedRect"`; EmptyState "All words known"; i18n `primer.*` (en+vi)
 - [x] `PrimerTab.test.tsx`: render rows/chips/header · row click → `onTokenClick(term, el, contextText)` + attrs · seek → `onSeek` + stopPropagation · empty state
 
 ## T3 — `SubtitlePanel` integration + tests
@@ -23,7 +23,7 @@
 
 ## T4 — Local-player tokenize wiring + tests
 
-- [x] `useSubtitleActions` += `cueListTokenize: CueListTokenize | null` (null when `subtitleOverlayTargetLanguage` unset; adapter → `webTextCtrlRef.handleLookup` with `cursorOffset` from `data-cell-start`)
+- [x] `useSubtitleActions` += `cueListTokenize: CueListTokenize | null` (null when `subtitleOverlayTargetLanguage` unset; adapter → `webTextCtrlRef.handleLookup` with `cursorOffset` from `data-tihoka-start`)
 - [x] `PlayerView`: `tokenize` prop → `useEffect` → `subtitlePanelsRef.current.setTokenize(...)` (imperative, reactSubtitleController precedent); PlayerView reads `subtitleActions.cueListTokenize` from the existing prop (no main.tsx change)
 - [x] Tests: null-when-unset · built-when-set · `onTokenClick` → `handleLookup` correct args
 

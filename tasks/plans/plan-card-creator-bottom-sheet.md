@@ -46,7 +46,7 @@ Replace the stacked mobile `DictionaryTab` with a bottom-sheet-based `CardCreato
 
 - [ ] **Task 2: Convert `CardCreatorPanel` to a bottom sheet on mobile**
   - Add a `Sheet` shell inside `CardCreatorPanel.tsx` that wraps `CardCreatorDialogContent`.
-  - Add a pill drag handle, `data-cell-id="card-creator-sheet-pill"`.
+  - Add a pill drag handle, `data-tihoka-id="card-creator-sheet-pill"`.
   - Implement collapse (`56px`), half (`50%`), full (`100%`) snap states and tap-to-toggle.
   - Acceptance: Sheet can be tapped/ dragged; collapsed state only shows a pill header with term + icon; expanded state shows the full form.
   - Verify: Manual showcase at `viewport=390`.
@@ -54,7 +54,7 @@ Replace the stacked mobile `DictionaryTab` with a bottom-sheet-based `CardCreato
   - Dependencies: Task 1
   - Parallel: false
 
-- [x] **Task 3: Extend or reuse `BottomSheet` with drag handle + snap points** — implemented as new `src/shared/ui/MobileSheet.tsx` + `MobileSheet.module.css` (existing `BottomSheet` is a modal dialog; `MobileSheet` is a container-anchored snap sheet with pill handle, `data-cell-id="card-creator-sheet-pill"`, snap points 56px/50%/100%, controlled `snap` prop + `onSnapChange`).
+- [x] **Task 3: Extend or reuse `BottomSheet` with drag handle + snap points** — implemented as new `src/shared/ui/MobileSheet.tsx` + `MobileSheet.module.css` (existing `BottomSheet` is a modal dialog; `MobileSheet` is a container-anchored snap sheet with pill handle, `data-tihoka-id="card-creator-sheet-pill"`, snap points 56px/50%/100%, controlled `snap` prop + `onSnapChange`).
   - If `BottomSheet` is reusable, add optional `snapPoints`, `pill`, and `onSnapChange` props.
   - If not, create a small `MobileSheet` wrapper in `src/shared/ui/`.
   - Acceptance: Shared component supports the three snap points and a drag handle.

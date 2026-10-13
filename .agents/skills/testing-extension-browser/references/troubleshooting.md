@@ -4,8 +4,8 @@
 
 | Symptom | Likely cause | Falsify by |
 |---|---|---|
-| `[PASS]` but feature missing | Stale `dist/` — built before the change | Rebuild + `setup-cell-profile.py --rebuild` |
-| Cell absent in `chrome://extensions` | External Extensions JSON missing/.crx path wrong | Re-run setup; check `<clone>/Default/External Extensions/<id>.json` |
+| `[PASS]` but feature missing | Stale `dist/` — built before the change | Rebuild + `setup-Tihoka-profile.py --rebuild` |
+| Tihoka absent in `chrome://extensions` | External Extensions JSON missing/.crx path wrong | Re-run setup; check `<clone>/Default/External Extensions/<id>.json` |
 | `Pack failed` | `openssl` missing or no `dist/` | `npm run build`; `openssl version` |
 | `extensions.settings` empty | Chrome strips hand-written `location=4` unpacked entries | Use .crx + External Extensions (the setup script) |
 | Spawn fails (profile locked) | Old Playwright context not closed | `context.close()`, wait 3s, retry — one Chrome per clone |
@@ -18,23 +18,23 @@
 | Popup `totalEls === 2` | Feature didn't trigger or failed | Re-check trigger + capture DOM |
 | Clone leak after hard kill | `Stop-Process`/`taskkill` skips `context.close()` | `Remove-Item` sessions manually — never hard-kill Chrome |
 | Python encoding error | Wrong Python version | `uv run --python 3.11` |
-| uBlock blocks test resource | Ad/resource filtered | `--no-ublock` for isolated Cell test |
+| uBlock blocks test resource | Ad/resource filtered | `--no-ublock` for isolated Tihoka test |
 
 ## SSOT paths
 
 | Key | Value |
 |---|---|
-| Cell ext (unpacked) | `<repo-root>\dist` (build first) |
-| Cell .crx / key | `<repo-root>\cell.crx` / `cell-key.pem` (auto-generated once) |
+| Tihoka ext (unpacked) | `<repo-root>\dist` (build first) |
+| Tihoka .crx / key | `<repo-root>\Tihoka.crx` / `Tihoka-key.pem` (auto-generated once) |
 | uBlock ext / .crx | `<repo-root>\data\extension\uBOLite` / `ublock.crx` |
-| Master profile | `C:\cell-browser-sessions\master` |
-| Clones | `C:\cell-browser-sessions\sessions\cell-<uuid>` |
-| Python | 3.11+ (only for `setup-cell-profile.py`) |
+| Master profile | `C:\Tihoka-browser-sessions\master` |
+| Clones | `C:\Tihoka-browser-sessions\sessions\Tihoka-<uuid>` |
+| Python | 3.11+ (only for `setup-Tihoka-profile.py`) |
 
 ## Setup check
 
 ```
-Test-Path "C:\cell-browser-sessions\master\Local State","<repo-root>\dist\manifest.json","<repo-root>\data\extension\uBOLite\manifest.json"
+Test-Path "C:\Tihoka-browser-sessions\master\Local State","<repo-root>\dist\manifest.json","<repo-root>\data\extension\uBOLite\manifest.json"
 ```
 
 All true → Step 1. Any false → `SETUP.md` one-time step.

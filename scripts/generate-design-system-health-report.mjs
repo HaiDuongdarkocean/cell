@@ -407,7 +407,7 @@ async function main() {
   await writeFile(REPORT_JSON, JSON.stringify(report, null, 2) + '\n', 'utf8');
 
   const lines = [
-    '# Cell Design System Health Report',
+    '# Tihoka Design System Health Report',
     '',
     '> Generated at ' + report.generatedAt,
     '> Overall status: **' + summary.status.toUpperCase() + '**',

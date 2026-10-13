@@ -7,9 +7,9 @@
   "principle": "getElementById and document.querySelector only search connected DOM. If a teardown removes an ancestor (wrapper.remove(), innerHTML reset, framework re-render) before you look up a child that must survive, the lookup returns null and the element is orphaned forever — the UI surface vanishes with no error. Fix ordering: capture the element reference while it is still connected (refs survive detachment; queries do not), move it to its restore target, THEN remove the ancestor. When the restore target itself may have been re-rendered away, fall back to a connected alternative before appendChild (target.isConnected guard).",
   "cases": [
     {
-      "context": "Split View close on m.youtube (any site): cleanup ran wrapper.remove() — detaching stageCell which held #cell-subtitle-root — then read document.getElementById('cell-subtitle-root') to move it back. Null → restore skipped → subtitle overlay permanently gone until next full re-mount.",
-      "bad": "wrapper?.remove(); // detaches stageCell + cellRoot\nconst cellRoot = document.getElementById('cell-subtitle-root'); // null!\nif (cellRoot) target.appendChild(cellRoot); // never runs",
-      "good": "const cellRoot = document.getElementById('cell-subtitle-root'); // capture first,\n// while still connected inside the wrapper\nwrapper?.remove();\nif (cellRoot && target.isConnected) target.appendChild(cellRoot);"
+      "context": "Split View close on m.youtube (any site): cleanup ran wrapper.remove() — detaching stageTihoka which held #Tihoka-subtitle-root — then read document.getElementById('Tihoka-subtitle-root') to move it back. Null → restore skipped → subtitle overlay permanently gone until next full re-mount.",
+      "bad": "wrapper?.remove(); // detaches stageTihoka + TihokaRoot\nconst TihokaRoot = document.getElementById('Tihoka-subtitle-root'); // null!\nif (TihokaRoot) target.appendChild(TihokaRoot); // never runs",
+      "good": "const TihokaRoot = document.getElementById('Tihoka-subtitle-root'); // capture first,\n// while still connected inside the wrapper\nwrapper?.remove();\nif (TihokaRoot && target.isConnected) target.appendChild(TihokaRoot);"
     }
   ],
   "applyFor": [

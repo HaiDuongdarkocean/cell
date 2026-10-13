@@ -12,7 +12,7 @@
   - [x] `FieldRow.module.css` — `--input-focus-border` → `--color-border-focus`
   - [x] `QueueSidebar.module.css` — `--color-background-hover` → `--color-surface-hover`
   - [x] `ApiKeyManager.module.css` — `--color-primary-subtle-hover` → `--button-primary-subtle-hover-bg` + full tokenize (cubic-bezier/px outlines/rgba fallbacks → `--duration-*`/`--ease-standard`/`--space-*`/`--iconbutton-size-sm`/`--color-error-subtle`)
-  - [x] `TtsLanguagePanel.module.css` — full `cell-*` rewrite to `--space-*`/`--font-size-*`/`--color-*` tokens
+  - [x] `TtsLanguagePanel.module.css` — full `Tihoka-*` rewrite to `--space-*`/`--font-size-*`/`--color-*` tokens
   - [x] `tokens.json` — added `static.strokeWidth.sm`/`md` (used by `MediaList`), regenerated `tokens.css`
   - [x] `components.css` — `--color-fixed-white` → `--color-text-on-primary`
   - [x] Verified: zero undefined `var(--*)` references in all audited paths
@@ -46,7 +46,7 @@
   - [x] Tokenize `6em`→`calc(--space-3 * 7)` (exact 84px), `192px`→`calc(--space-6 * 8)`, `18px`→`--space-4-5`, `2px`→`--border-width-thick`, `9999px`→`--radius-full` (OrbitalBadge ×6), `320/420px`→space calc (PopupDictionary), `280/600px`→space calc ✅; `590px` breakpoint — media queries can't take `var()`
   - [x] `npm run test:unit` — 3123 tests pass ✅
   - [x] Test hygiene — `webTextDictionaryController.test.ts`: `act()` warnings 231 → 10 (all `handleLookup`/`dismissLookup`/`destroy`/`dispatchEvent`/`advanceTimers`/`updateSettings`/`Promise.resolve` flushes wrapped; residual 10 are promise-`.then` deferred mounts during `waitFor` polling — cosmetic); `phraseMatchBenchmark` flaky `<1ms` single-shot → best-of-5 ✅
-  - [x] `DictionaryPanelView.module.css` (972 → 239 lines) split → `AudioPanel`/`ImagePanel`/`TranslatePanel`/`LinksPanel`/`DictionaryToolbar`/`CandidateView` own modules + `DictionaryCheckable.module.css` owns the unified checkbox contract (`cellDefCheck*` + host classes + cross-panel compounds); parent keeps chrome/popupMode/search/chips/shared-error ✅
+  - [x] `DictionaryPanelView.module.css` (972 → 239 lines) split → `AudioPanel`/`ImagePanel`/`TranslatePanel`/`LinksPanel`/`DictionaryToolbar`/`CandidateView` own modules + `DictionaryCheckable.module.css` owns the unified checkbox contract (`TihokaDefCheck*` + host classes + cross-panel compounds); parent keeps chrome/popupMode/search/chips/shared-error ✅
 
 - [~] **T4** — Study Modes *(partial)*
   - [x] `StudyModesTab` double padding — `universal-panel-content-studyModes` added to the `.content` flush rule (was dictionary+settings only; studyModes stacked space-4 + space-6) ✅
@@ -87,8 +87,8 @@
   - [x] `ThemePanel.showcase.tsx` wrapped in `ThemeProvider` (standalone context)
 
 - [x] **T9** — WebTrigger shield ✅ 2026-09-05
-  - [x] `UniversalPanel` backdrop root carries `.js-cell-universal-panel` (`.js-` hook per htmlcss-032 — not `data-*`)
-  - [x] SSOT `src/shared/lib/dom/cellUiHosts.ts` — `CELL_UI_HOST_SELECTORS` + `CELL_UI_POINTER_EVENT_HOST_SELECTORS` now shared by `webTriggerController.ts`, `tokenizeBlock.ts`, `subtitleShortcuts.ts` (3 copies had already drifted: `tokenizeBlock` was missing `#cell-subtitle-root`)
+  - [x] `UniversalPanel` backdrop root carries `.js-Tihoka-universal-panel` (`.js-` hook per htmlcss-032 — not `data-*`)
+  - [x] SSOT `src/shared/lib/dom/TihokaUiHosts.ts` — `Tihoka_UI_HOST_SELECTORS` + `Tihoka_UI_POINTER_EVENT_HOST_SELECTORS` now shared by `webTriggerController.ts`, `tokenizeBlock.ts`, `subtitleShortcuts.ts` (3 copies had already drifted: `tokenizeBlock` was missing `#Tihoka-subtitle-root`)
   - [x] Per-component `data-no-lookup` unnecessary — `closest()`/`composedPath()` via the root hook covers the whole subtree; `[data-allow-lookup]` regions still work
   - [x] e2e covers nav clicks (vacuous in showcase without content script — real verification is the host-shield contract test)
   - [x] `npm run test:unit` (webTrigger/tokenize/subtitleShortcuts) — all pass
@@ -96,7 +96,7 @@
 ## Phase 4: Showcase & inventory
 
 - [x] **T6** — Showcase updates ✅ 2026-09-05
-  - [x] `UniversalPanelPage.showcase.tsx` — real `StudyModesTab`, `.js-cell-universal-panel` via component root, `data-theme`/`data-preset` boundary (mirrors `ShadowThemeProvider` shadow container)
+  - [x] `UniversalPanelPage.showcase.tsx` — real `StudyModesTab`, `.js-Tihoka-universal-panel` via component root, `data-theme`/`data-preset` boundary (mirrors `ShadowThemeProvider` shadow container)
   - [x] `mode`/`preset`/`tab`/`open` query params all respected (`mode`/`preset` were dead before)
   - [x] `npm run build:design-system` ✅ + e2e 7/7 ✅ + manual screenshots light+dark ✅
   - [x] `SettingsDialog.module.css` — `.sidebarWidth` definite width ≥840px (fixes container-query + `max-content` collapse loop introduced by NavItem parent-container refactor)

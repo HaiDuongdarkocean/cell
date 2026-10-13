@@ -2780,8 +2780,8 @@
     },
     {
       "type": "experience",
-      "id": "playwright-cell-extension-id-service-worker-loader",
-      "title": "Resolve Cell extension id bằng SW url service-worker-loader.js, không phải extension id đầu tiên",
+      "id": "playwright-Tihoka-extension-id-service-worker-loader",
+      "title": "Resolve Tihoka extension id bằng SW url service-worker-loader.js, không phải extension id đầu tiên",
       "category": [
         "testing"
       ],
@@ -2792,7 +2792,7 @@
         "uBOLite",
         "extension-id"
       ],
-      "trigger": "Playwright context có nhiều extension SW (Cell + uBOLite); lấy sai id → chrome-extension://<id>/... ERR_FILE_NOT_FOUND"
+      "trigger": "Playwright context có nhiều extension SW (Tihoka + uBOLite); lấy sai id → chrome-extension://<id>/... ERR_FILE_NOT_FOUND"
     },
     {
       "type": "experience",
@@ -3155,7 +3155,7 @@
     {
       "type": "experience",
       "id": "e2e-shadow-dom-deep-traversal",
-      "title": "Cell subtitle surfaces live in shadow roots — e2e specs need recursive deep-query helpers, attribute matching for term selectors, and composed dispatch when page layout occludes tokens",
+      "title": "Tihoka subtitle surfaces live in shadow roots — e2e specs need recursive deep-query helpers, attribute matching for term selectors, and composed dispatch when page layout occludes tokens",
       "category": [
         "testing",
         "e2e"
@@ -3577,7 +3577,7 @@
         "mock-youtube",
         "spa-navigation"
       ],
-      "trigger": "Live verification shows zero Cell elements (no #cell-subtitle-root, no universal-panel host) on a page where the extension previously mounted — page has <video> + <track> but nothing injects"
+      "trigger": "Live verification shows zero Tihoka elements (no #Tihoka-subtitle-root, no universal-panel host) on a page where the extension previously mounted — page has <video> + <track> but nothing injects"
     },
     {
       "type": "experience",

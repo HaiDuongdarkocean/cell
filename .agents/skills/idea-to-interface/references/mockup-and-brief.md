@@ -27,7 +27,7 @@ Loop back: real panel can't mount → fix mock wiring, never skip it.
 
 **Real panel:** import production component from `src/features/[topic]/ui/[Component].tsx`; mock `Settings`/props matching production shapes; wire all mutations (add/edit/delete/reorder/activate).
 
-**Each variant:** standalone interactive wireframe on the same mock data; expresses its archetype; project tokens only; no shared layout pieces; new structural components allowed when existing ones can't express the archetype (mapped in Step 8); all states; `@container`/`@media` for desktop; touch ≥44px; motion per dial + `prefers-reduced-motion`.
+**Each variant:** standalone interactive wireframe on the same mock data; expresses its archetype; project tokens only; no shared layout pieces; new structural components allowed when existing ones can't express the archetype (mapped in Step 8); all states; `@container`/`@media` for desktop; touch ≥40px; motion per dial + `prefers-reduced-motion`.
 
 Loop back: breaks below 375px or in dark mode → fix before presenting.
 
@@ -74,7 +74,7 @@ Loop back: chosen concept would be flattened to reuse an existing component → 
 | "Just make it look nice" | "Nice for whom, doing what, on which screen?" |
 | "Like Material Design" | "Which principle: color, elevation, motion, or layout?" |
 | "I want it minimal" | "Minimal means removing something. What should this not do?" |
-| "Copy YouTube" | "What specific feeling, and what must we change to fit Cell?" |
+| "Copy YouTube" | "What specific feeling, and what must we change to fit Tihoka?" |
 | "Use blue and green" | "Which is dominant, which is accent, what neutral ties them?" |
 | "I don't know the design system" | "The project context and tokens already define it. Let's read those first." |
 | "I want to fix this button" | "Do you have an audit brief, or should we run `audit-ui-ux-then-redesign` first?" |

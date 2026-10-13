@@ -70,7 +70,7 @@ Same loop, no user. Before writing the doc:
 
 - [ ] Every inference cites `file:line` evidence or is tagged `[assumption]`
 - [ ] Need ≠ value ≠ solution for every entry
-- [ ] All 5 stakeholder groups addressed (empty cell = explicit "none — why")
+- [ ] All 5 stakeholder groups addressed (empty Tihoka = explicit "none — why")
 - [ ] TO-BE journey ends where the promised value lands
 - [ ] Decision lean justified by the risk register, not by enthusiasm
 - [ ] Conservative option chosen for every genuine fork; recorded as accepted risk

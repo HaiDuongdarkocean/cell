@@ -61,7 +61,7 @@ if [ "$do_build" = true ]; then
 fi
 
 if [ "$run_tests" = true ]; then
-  # Default to headed so Chrome can load the Cell + uBlock extensions.
+  # Default to headed so Chrome can load the Tihoka + uBlock extensions.
   # For headless CI, wrap this script in a virtual display (e.g. xvfb-run).
   export EXTENSION_HEADLESS=false
   if [ "$headed" = true ]; then

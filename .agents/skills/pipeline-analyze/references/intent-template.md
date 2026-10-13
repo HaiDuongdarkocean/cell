@@ -1,6 +1,6 @@
 # Intent Doc Template — `docs/intent/<slug>.md`
 
-> Contract enforced by `pipeline-state.mjs transition analyze→specify`: `## Journey` must exist with as-is + to-be markers and ≥3 step lines each, and `## Decision` must read `go`. Everything else is reviewed by the gate, not the parser — write it as if the auditor will check each cell against evidence.
+> Contract enforced by `pipeline-state.mjs transition analyze→specify`: `## Journey` must exist with as-is + to-be markers and ≥3 step lines each, and `## Decision` must read `go`. Everything else is reviewed by the gate, not the parser — write it as if the auditor will check each Tihoka against evidence.
 
 ```markdown
 # Intent: <title>
@@ -11,7 +11,7 @@
 
 ## Business Case
 
-BACCM inference — every cell cites evidence (`file:line`) or `[assumption]` + confidence.
+BACCM inference — every Tihoka cites evidence (`file:line`) or `[assumption]` + confidence.
 
 | Concept | Statement | Evidence | Confidence |
 |---|---|---|---|
@@ -32,7 +32,7 @@ BACCM inference — every cell cites evidence (`file:line`) or `[assumption]` + 
 | Organization | <maintainers, future contributors> | | |
 | Regulator | <licensing, legal, store policy> | | |
 
-Empty cell → write "none — <why>", never leave silent.
+Empty Tihoka → write "none — <why>", never leave silent.
 
 ## Needs
 

@@ -1,12 +1,12 @@
-# Cell — Chrome Extension for Video & Subtitle
+# Tihoka — Chrome Extension for Video & Subtitle
 
-Cell is a Manifest V3 Chrome extension that helps you download videos, detect/capture subtitles, and learn languages while you watch.
+Tihoka is a Manifest V3 Chrome extension that helps you download videos, detect/capture subtitles, and learn languages while you watch.
 
 ## Install from release (end user)
 
-1. Download `cell.crx` from the [latest GitHub release](https://github.com/HaiDuongdarkocean/cell/releases/latest).
+1. Download `Tihoka.crx` from the [latest GitHub release](https://github.com/HaiDuongdarkocean/Tihoka/releases/latest).
 2. Open Chrome → `chrome://extensions/` → enable **Developer mode**.
-3. Drag `cell.crx` onto the extensions page to install.
+3. Drag `Tihoka.crx` onto the extensions page to install.
 
 Chrome checks the extension against the `updates.xml` hosted in this repository and offers to update automatically when a newer release is available.
 
@@ -15,8 +15,8 @@ Chrome checks the extension against the `updates.xml` hosted in this repository 
 > **Note:** dictionary/language packs under `data/` and showcase sample videos are **not committed** (licensed third-party content, see `.gitignore`). They are only needed for dev-mode seeding and the design-system showcase — `npm run build` works without them.
 
 ```bash
-git clone --depth=1 https://github.com/HaiDuongdarkocean/cell.git
-cd cell
+git clone --depth=1 https://github.com/HaiDuongdarkocean/Tihoka.git
+cd Tihoka
 
 # Install dependencies
 npm ci
@@ -44,7 +44,7 @@ npm run ship:dist
 This produces:
 
 - `dist/`
-- `cell.crx` (signed extension package)
+- `Tihoka.crx` (signed extension package)
 - `updates.xml`
 - `dist.zip`
 
@@ -52,20 +52,20 @@ This produces:
 
 The CRX must be signed with the same private key for every release, otherwise the extension ID changes and Chrome treats it as a different extension.
 
-- `cell-key.pem` is the expected key file at the repository root.
+- `Tihoka-key.pem` is the expected key file at the repository root.
 - It is **not** committed (see `.gitignore`).
 - End users installing the pre-built `.crx` do **not** need the key.
 - Do **not** generate a new key unless you are prepared to migrate to a new extension ID.
 
 ## Current release
 
-- Repository: `https://github.com/HaiDuongdarkocean/cell`
-- Update manifest: `https://raw.githubusercontent.com/HaiDuongdarkocean/cell/main/updates.xml`
-- Latest release: `https://github.com/HaiDuongdarkocean/cell/releases/latest`
+- Repository: `https://github.com/HaiDuongdarkocean/Tihoka`
+- Update manifest: `https://raw.githubusercontent.com/HaiDuongdarkocean/Tihoka/main/updates.xml`
+- Latest release: `https://github.com/HaiDuongdarkocean/Tihoka/releases/latest`
 
 ## Security
 
-- Never commit `cell-key.pem` or other credentials.
+- Never commit `Tihoka-key.pem` or other credentials.
 - Report security issues privately to the repository owner.
 
 ## License

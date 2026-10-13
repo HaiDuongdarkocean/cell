@@ -1,4 +1,4 @@
-# Implementation Plan: Cell Foundation v1
+# Implementation Plan: Tihoka Foundation v1
 
 ## Objective
 
@@ -273,7 +273,7 @@ Accept ADRs and remove duplicated docs
 
 **Acceptance criteria:**
 - A value is numerically specified in one canonical location.
-- `design-system-from-scratch-loop.md` remains learning material, not Cell's operational SSOT.
+- `design-system-from-scratch-loop.md` remains learning material, not Tihoka's operational SSOT.
 - `docs/0-wiki.md` and `docs/2-architechture-system.md` are updated according to repository protocol.
 
 **Dependencies:** Tasks 3-12.

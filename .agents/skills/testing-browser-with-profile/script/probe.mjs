@@ -4,10 +4,13 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
 
+import { requireSession } from './session.mjs';
+
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(SCRIPT_DIR, '../../../..');
-const PORT = process.env.CELL_DEBUG_PORT ?? '9223';
-const OUT = path.join(ROOT, 'tmp', process.env.CELL_DEBUG_OUT ?? 'debug-brave');
+const session = requireSession();
+const PORT = String(session.port);
+const OUT = path.join(ROOT, 'tmp', session.out);
 const args = process.argv.slice(2);
 const targets = await (await fetch(`http://127.0.0.1:${PORT}/json`)).json();
 
@@ -55,6 +58,15 @@ if (fi >= 0) {
 
 const ei = args.indexOf('--eval');
 if (ei >= 0) console.log(JSON.stringify(await target.evaluate(args[ei + 1]), null, 1));
+const ci = args.indexOf('--click');
+if (ci >= 0) {
+  const [cx, cy] = args[ci + 1].split(',').map(Number);
+  const cdp = await ctx.newCDPSession(page);
+  for (const type of ['mousePressed', 'mouseReleased']) {
+    await cdp.send('Input.dispatchMouseEvent', { type, x: cx, y: cy, button: 'left', clickCount: 1 });
+  }
+  console.log(`clicked ${cx},${cy}`);
+}
 const si = args.indexOf('--shot');
 if (si >= 0) {
   fs.mkdirSync(OUT, { recursive: true });

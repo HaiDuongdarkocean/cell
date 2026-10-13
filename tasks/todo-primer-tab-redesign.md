@@ -1,6 +1,6 @@
 # Todo — primer-tab-redesign (REQ-5 + REQ-6)
 
-- [ ] T1 worktree `../cell-worktrees/primer-tab-redesign` + branch `feat/primer-tab-redesign` + junction node_modules
+- [ ] T1 worktree `../Tihoka-worktrees/primer-tab-redesign` + branch `feat/primer-tab-redesign` + junction node_modules
 - [ ] T2 `crosshair` icon in catalog + `svg/crosshair.svg` (mirror main edit)
 - [ ] T3 `cueList.syncToVideo` in en.json + vi.json
 - [ ] T4 REQ-5: `SubtitlePanel.tsx` — strip iff ≥2 renderable tabs (AC: SC-11)

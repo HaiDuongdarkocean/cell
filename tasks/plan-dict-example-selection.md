@@ -19,10 +19,10 @@
 
 ## Slice 3 — UI rows + CSS
 
-- `CandidateView.tsx` `DefinitionItem`: examples as sibling `cellDefExampleItem` rows (role=checkbox, aria-checked, tabIndex, Space/Enter, stopPropagation-on-consume, `cellDefExampleText` guard, `getSelection` guard); def `onClick` drops dead `.cellDefExamples` guard.
-- `DictionaryCheckable.module.css`: `cellDefExampleItem` host + compounds (idle dot hide, hover/focus reveal, active, checked fill + draw) co-located per file warning.
-- `CandidateView.module.css`: `cellDefExampleText` (flex/min-width/wrap), `cellDefExamples` padding-left → `space-4` (dot column ~under old `•` position).
-- `DictionaryPanelView.tsx` skeleton: mirror new DOM (examples sibling of `cellDefItem`).
+- `CandidateView.tsx` `DefinitionItem`: examples as sibling `TihokaDefExampleItem` rows (role=checkbox, aria-checked, tabIndex, Space/Enter, stopPropagation-on-consume, `TihokaDefExampleText` guard, `getSelection` guard); def `onClick` drops dead `.TihokaDefExamples` guard.
+- `DictionaryCheckable.module.css`: `TihokaDefExampleItem` host + compounds (idle dot hide, hover/focus reveal, active, checked fill + draw) co-located per file warning.
+- `CandidateView.module.css`: `TihokaDefExampleText` (flex/min-width/wrap), `TihokaDefExamples` padding-left → `space-4` (dot column ~under old `•` position).
+- `DictionaryPanelView.tsx` skeleton: mirror new DOM (examples sibling of `TihokaDefItem`).
 - Tests: `CandidateView.test.tsx` — check/uncheck/cascade/reset/keyboard/aria. AC: 1–7, 14.
 
 ## Slice 4 — sinks

@@ -1,4 +1,4 @@
-# Implementation Plan: Cell Design System Enforcement
+# Implementation Plan: Tihoka Design System Enforcement
 
 > Vấn đề: Agent tạo UI xấu, mất thời gian sửa. Mất cả tuần chỉ để chỉnh design.
 > Mục tiêu: SSOT, reuse component, agent biết cách tạo pages đẹp.
@@ -6,7 +6,7 @@
 
 ## Overview
 
-Xây dựng hệ thống thiết kế **agent-enforceable** cho Cell:
+Xây dựng hệ thống thiết kế **agent-enforceable** cho Tihoka:
 1. `DESIGN.md` tập trung — agent-facing source of truth, rút gọn từ `STANDARD.md` + `tokens.json`.
 2. `design-system-guardian` skill — kiểm tra tự động trước khi agent merge UI change.
 3. Refactor `ClipboardPage.showcase.tsx` — dùng 100% `src/shared/ui/*` + token SSOT, làm mẫu pages đẹp.
@@ -32,7 +32,7 @@ Mỗi task có acceptance criteria + verification. Mỗi task ≤5 files.
   - Description: Liệt kê tất cả `var(--md-sys-color-*)` trong `ClipboardPage.module.css` (và toàn `src/` nếu cần).
   - Acceptance:
     - [ ] Có danh sách file + dòng dùng `var(--md-sys-color-*)`
-    - [ ] Có mapping từ M3 token sang Cell token tương đương
+    - [ ] Có mapping từ M3 token sang Tihoka token tương đương
   - Verify: `grep -rn 'md-sys-color' src/ --include="*.css"`
   - Files: `ClipboardPage.module.css`
   - Scope: S
@@ -57,7 +57,7 @@ Mỗi task có acceptance criteria + verification. Mỗi task ≤5 files.
   - Description: Tạo agent-facing design reference — rút gọn từ `STANDARD.md` + `tokens.json`. Gồm: color tokens, spacing, radius, typography, component map, layout rules, audit commands.
   - Acceptance:
     - [ ] File tồn tại ở `docs/design-system/DESIGN.md`
-    - [ ] Có bảng mapping `--md-sys-color-*` → Cell token
+    - [ ] Có bảng mapping `--md-sys-color-*` → Tihoka token
     - [ ] Có bảng `prototype element → src/shared/ui/* component`
     - [ ] Có 5 lệnh audit cuối section
   - Verify: `cat docs/design-system/DESIGN.md | head -50`
@@ -96,7 +96,7 @@ Mỗi task có acceptance criteria + verification. Mỗi task ≤5 files.
 
 ### Phase 4: Refactor ClipboardPage prototype
 
-- [ ] **Task 6: Thay M3 tokens thành Cell tokens trong `ClipboardPage.module.css`**
+- [ ] **Task 6: Thay M3 tokens thành Tihoka tokens trong `ClipboardPage.module.css`**
   - Description: Thay tất cả `var(--md-sys-color-*)` thành `var(--color-*)` tương đương. Dùng token SSOT từ `tokens.json`.
   - Acceptance:
     - [ ] `grep 'md-sys-color' src/.../ClipboardPage.module.css` trả về 0
@@ -158,7 +158,7 @@ Mỗi task có acceptance criteria + verification. Mỗi task ≤5 files.
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Cell tokens chưa đủ cho tất cả M3 use case (vd `--md-sys-color-secondary-container`) | Medium | Thêm semantic token vào `tokens.json`, regenerate `tokens.css` |
+| Tihoka tokens chưa đủ cho tất cả M3 use case (vd `--md-sys-color-secondary-container`) | Medium | Thêm semantic token vào `tokens.json`, regenerate `tokens.css` |
 | Component cần cho pagination chưa có, tạo mới tốn thời gian | High | Tái sử dụng `Button` + `IconButton` + `Input` + `Dialog` thay vì tạo mới `Pagination` component |
 | Refactor prototype break HMR hoặc typecheck | Medium | Refactor từng phần: token trước, component sau, test sau mỗi bước |
 | DESIGN.md bị agent bỏ qua | High | Tích hợp vào skill `redesign-in-showcase` và `using-agent-skills` router |

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Tích hợp `@jocelyn-stericker/espeak-phonemes` vào Cell để biến text tiếng Anh thành IPA + phoneme sequence, hiển thị trong dictionary popup, và cho phép user nhấn từng phoneme để play/highlight. Audio cả từ/sentence dùng fallback chain user-selectable: native → Supertonic → browser TTS → eSpeak.
+Tích hợp `@jocelyn-stericker/espeak-phonemes` vào Tihoka để biến text tiếng Anh thành IPA + phoneme sequence, hiển thị trong dictionary popup, và cho phép user nhấn từng phoneme để play/highlight. Audio cả từ/sentence dùng fallback chain user-selectable: native → Supertonic → browser TTS → eSpeak.
 
 ## Architecture Decisions
 

@@ -7,7 +7,7 @@ description: "Run a confirmed spec end-to-end: plan, parallel subagent build lan
 
 ## Overview
 
-Chains the Cell skill pipeline into one orchestrated run: spec → plan → parallel subagent build → subagent verify → ship. This is the orchestrator that turns a confirmed spec into delivered work without the human approving each phase.
+Chains the Tihoka skill pipeline into one orchestrated run: spec → plan → parallel subagent build → subagent verify → ship. This is the orchestrator that turns a confirmed spec into delivered work without the human approving each phase.
 
 ## When to Use
 
@@ -39,7 +39,7 @@ Run `pipeline.md` top to bottom. It encodes no-question defaults, per-phase guar
 
 Hard rules for spawning lanes (disjoint file ownership, no nested spawning, generation ≠ review): `references/orchestration-patterns.md`.
 
-Parallel lanes of scope M+ run in isolated **git worktrees** (`../cell-worktrees/<feature>/lane-<N>`) so concurrent builds, tests, and git operations never collide — collisions surface as explicit merge conflicts at integration, never as silent overwrites.
+Parallel lanes of scope M+ run in isolated **git worktrees** (`../Tihoka-worktrees/<feature>/lane-<N>`) so concurrent builds, tests, and git operations never collide — collisions surface as explicit merge conflicts at integration, never as silent overwrites.
 
 ## Router boomerang
 

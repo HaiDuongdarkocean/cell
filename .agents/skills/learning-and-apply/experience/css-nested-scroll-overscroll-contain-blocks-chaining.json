@@ -7,9 +7,9 @@
   "principle": "overscroll-behavior:contain trên child scroll container chặn scroll chaining lên parent. Khi child content fit vừa (scrollHeight === clientHeight), child không scroll được nhưng vẫn nuốt wheel/drag event — parent không bao giờ nhận scroll. Fix: set overflow:visible trên child trong context chỉ có 1 real scroll container (parent), biến child thành non-scroll-container → events propagate lên parent tự nhiên.",
   "cases": [
     {
-      "context": "Dictionary popup: .content (overflow-y:auto) là real scroll container. Bên trong có .candidateList và .cellDef cũng overflow-y:auto + overscroll-behavior:contain. Khi candidate content fit vừa, wheel/drag scroll bị nuốt — user không scroll được popup content.",
-      "bad": ".candidateList {\n  overflow-y: auto;\n  overscroll-behavior: contain;\n}\n.cellDef {\n  overflow-y: auto;\n  overscroll-behavior: contain;\n}\n/* Khi scrollHeight === clientHeight, wheel event bị nuốt, .content không scroll */",
-      "good": "/* Popup mode: parent .content là sole scroll container */\n.popupMode .candidateList,\n.popupMode .cellDef {\n  overflow: visible;\n  overscroll-behavior: auto;\n}\n/* overflow:visible → child không phải scroll container → wheel propagate lên .content */"
+      "context": "Dictionary popup: .content (overflow-y:auto) là real scroll container. Bên trong có .candidateList và .TihokaDef cũng overflow-y:auto + overscroll-behavior:contain. Khi candidate content fit vừa, wheel/drag scroll bị nuốt — user không scroll được popup content.",
+      "bad": ".candidateList {\n  overflow-y: auto;\n  overscroll-behavior: contain;\n}\n.TihokaDef {\n  overflow-y: auto;\n  overscroll-behavior: contain;\n}\n/* Khi scrollHeight === clientHeight, wheel event bị nuốt, .content không scroll */",
+      "good": "/* Popup mode: parent .content là sole scroll container */\n.popupMode .candidateList,\n.popupMode .TihokaDef {\n  overflow: visible;\n  overscroll-behavior: auto;\n}\n/* overflow:visible → child không phải scroll container → wheel propagate lên .content */"
     },
     {
       "context": "Sheet mode: onPointerDownContent gọi preventDefault() + setPointerCapture() ở scrollTop=0, kill native touch scroll. applyPointerUpdate chỉ xử lý downward drag (dismiss), ignore upward drag → content stuck ở top.",

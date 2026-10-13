@@ -8,7 +8,7 @@ Chạy file này CHỈ khi guard trong SKILL.md FAIL. Không chạy nếu đã s
 npm --version
 node scripts/real-chrome-verify.mjs --help
 Test-Path "<repo-root>\dist\manifest.json"
-Test-Path "C:\cell-browser-sessions\master\Local State"
+Test-Path "C:\Tihoka-browser-sessions\master\Local State"
 ```
 
 Tất cả PASS → dừng, không cần setup. Chỉ chạy bước nào FAIL.
@@ -21,7 +21,7 @@ Tải từ https://nodejs.org/ hoặc dùng winget:
 winget install OpenJS.NodeJS
 ```
 
-## Bước 2: Build extension Cell (nếu `dist\manifest.json` FAIL)
+## Bước 2: Build extension Tihoka (nếu `dist\manifest.json` FAIL)
 
 ```
 cd "<repo-root>"
@@ -34,23 +34,23 @@ Mở Chrome với master profile, login các site cần test (YouTube, Google, s
 
 ```
 npx playwright install chromium
-node -e "const { chromium } = require('@playwright/test'); (async () => { const ctx = await chromium.launchPersistentContext('C:\\cell-browser-sessions\\master', { headless: false, executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' }); const p = await ctx.newPage(); console.log('Master open. Ctrl+C to close.'); })();"
+node -e "const { chromium } = require('@playwright/test'); (async () => { const ctx = await chromium.launchPersistentContext('C:\\Tihoka-browser-sessions\\master', { headless: false, executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' }); const p = await ctx.newPage(); console.log('Master open. Ctrl+C to close.'); })();"
 ```
 
-## Bước 4: Chuẩn bị .crx (nếu `cell.crx` FAIL)
+## Bước 4: Chuẩn bị .crx (nếu `Tihoka.crx` FAIL)
 
 ```
-python .agents/skills/testing-extension-browser/script/setup-cell-profile.py
+python .agents/skills/testing-extension-browser/script/setup-Tihoka-profile.py
 ```
 
-Script sẽ pack `dist/` thành `cell.crx`, clone master, và in `CLONE_PATH`.
+Script sẽ pack `dist/` thành `Tihoka.crx`, clone master, và in `CLONE_PATH`.
 
 ## Prerequisites
 
 - Node.js + npm
 - Playwright (`npm install` đã cài; `npx playwright install chromium` để tải binary)
 - Chrome/Chromium bất kỳ được hỗ trợ (merge gate dùng Playwright bundled Chromium/Chrome-for-Testing)
-- Python 3.11+ (chỉ để chạy `setup-cell-profile.py` pack .crx)
+- Python 3.11+ (chỉ để chạy `setup-Tihoka-profile.py` pack .crx)
 
 ## Không cần
 

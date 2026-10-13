@@ -9,7 +9,7 @@
     {
       "context": "Dictionary popup (Shadow DOM, pointer-events:auto when visible) covers page text. User clicks on text behind popup — mouseup target is the popup host, not the page text.",
       "bad": "if (target?.closest(UI_HOST_SELECTORS)) { return; } // swallows ALL clicks on popup, including non-interactive areas covering page text",
-      "good": "if (target?.closest(UI_HOST_SELECTORS)) {\n  if (!target.closest('.js-cell-popup-host')) return; // non-popup UI hosts: never lookup\n  const actual = e.composedPath()[0] as HTMLElement | null; // retargeted → get real shadow child\n  if (actual?.closest?.('button, a, input, .cell-header, .cell-popup__resize')) return; // interactive: let UI handle\n  // non-interactive: fall through to caretRangeFromPoint with pointer-events disabled\n}\n// ... later: withUiHostsPointerEventsDisabled(() => document.caretRangeFromPoint(cx, cy))"
+      "good": "if (target?.closest(UI_HOST_SELECTORS)) {\n  if (!target.closest('.js-Tihoka-popup-host')) return; // non-popup UI hosts: never lookup\n  const actual = e.composedPath()[0] as HTMLElement | null; // retargeted → get real shadow child\n  if (actual?.closest?.('button, a, input, .Tihoka-header, .Tihoka-popup__resize')) return; // interactive: let UI handle\n  // non-interactive: fall through to caretRangeFromPoint with pointer-events disabled\n}\n// ... later: withUiHostsPointerEventsDisabled(() => document.caretRangeFromPoint(cx, cy))"
     }
   ],
   "applyFor": [

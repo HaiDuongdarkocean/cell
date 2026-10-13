@@ -2,7 +2,7 @@
 
 ## Overview
 
-Trả nợ kỹ thuật đã audit của `cell` theo thứ tự: quick wins trước để lấy đà, sau đó pay-down theo từng island (subtitle → dictionary → build/infra). Mỗi task phải qua `pre-commit-gate` trước khi commit.
+Trả nợ kỹ thuật đã audit của `Tihoka` theo thứ tự: quick wins trước để lấy đà, sau đó pay-down theo từng island (subtitle → dictionary → build/infra). Mỗi task phải qua `pre-commit-gate` trước khi commit.
 
 ## Architecture Decisions
 

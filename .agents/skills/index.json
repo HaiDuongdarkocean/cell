@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generated": "2026-10-06T09:07:26.388Z",
+  "generated": "2026-10-11T17:45:36.106Z",
   "count": 54,
   "skills": [
     {
@@ -75,7 +75,7 @@
     },
     {
       "name": "design-system-guardian",
-      "description": "Audit UI changes against Cell's design system - tokens, shared components, hardcoded values. Use before merging UI work.",
+      "description": "Audit UI changes against Tihoka's design system - tokens, shared components, hardcoded values. Use before merging UI work.",
       "path": ".agents/skills/design-system-guardian/SKILL.md"
     },
     {
@@ -150,7 +150,7 @@
     },
     {
       "name": "learning-and-apply",
-      "description": "Cell's accumulated lessons - grep before coding, distill principles after fixing. Use on every DELIVER/Verify/Review task — inside pipeline-deliver build and on standalone fixes.",
+      "description": "Tihoka's accumulated lessons - grep before coding, distill principles after fixing. Use on every DELIVER/Verify/Review task — inside pipeline-deliver build and on standalone fixes.",
       "path": ".agents/skills/learning-and-apply/SKILL.md"
     },
     {
@@ -240,17 +240,17 @@
     },
     {
       "name": "testing-browser-with-profile",
-      "description": "Brave debug browser for intermittent bugs.",
+      "description": "Brave debug browser for intermittent bugs - one isolated window per agent session.",
       "path": ".agents/skills/testing-browser-with-profile/SKILL.md"
     },
     {
       "name": "testing-extension-browser",
-      "description": "Real-Chrome Playwright verification for the Cell extension via packed .crx + cloned profile. Use for ad-hoc real-browser verification.",
+      "description": "Real-Chrome Playwright verification for the Tihoka extension via packed .crx + cloned profile. Use for ad-hoc real-browser verification.",
       "path": ".agents/skills/testing-extension-browser/SKILL.md"
     },
     {
       "name": "testing-with-playwright",
-      "description": "Playwright E2E for Cell - fixtures, shadow-DOM actors, stage2 specs. Use for automated browser tests, not interactive sessions.",
+      "description": "Playwright E2E for Tihoka - fixtures, shadow-DOM actors, stage2 specs. Use for automated browser tests, not interactive sessions.",
       "path": ".agents/skills/testing-with-playwright/SKILL.md"
     },
     {

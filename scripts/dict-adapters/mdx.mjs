@@ -71,13 +71,17 @@ export async function* iterMdx(mdxPath, only) {
       const key = s.term.toLowerCase();
       const ex = spawnedMap.get(key);
       if (!ex) {
-        spawnedMap.set(key, { term: s.term, senses: [...s.senses] });
+        spawnedMap.set(key, { term: s.term, senses: [...s.senses], prons: s.prons ? [...s.prons] : undefined });
         continue;
       }
       for (const sen of s.senses) {
-        const g = sen.lines?.find((l) => l.role === 'gloss')?.text?.toLowerCase();
-        if (g && ex.senses.some((x) => x.lines?.find((l) => l.role === 'gloss')?.text?.toLowerCase() === g)) continue;
+        const g = sen.lines?.[0]?.text?.toLowerCase();
+        if (g && ex.senses.some((x) => x.lines?.[0]?.text?.toLowerCase() === g)) continue;
         ex.senses.push(sen);
+      }
+      for (const p of s.prons ?? []) {
+        ex.prons ??= [];
+        if (!ex.prons.some((x) => x.accent === p.accent && x.ipa === p.ipa)) ex.prons.push(p);
       }
     }
     if (parsed.entries?.length) {
@@ -93,8 +97,8 @@ export async function* iterMdx(mdxPath, only) {
           related: i === 0 && parsed.related?.length ? parsed.related : undefined,
           inflections: e.inflections,
           frequencyStars: e.frequencyStars,
-          level: i === 0 ? parsed.level : undefined,
-          etymology: i === 0 ? parsed.etymology : undefined,
+          level: e.level ?? (i === 0 ? parsed.level : undefined),
+          etymology: e.etymology ?? (i === 0 ? parsed.etymology : undefined),
           wordFamily: i === 0 ? parsed.wordFamily : undefined,
           wordNet: i === 0 ? parsed.wordNet : undefined,
           derivedTerms: i === 0 ? parsed.derivedTerms : undefined,
@@ -124,6 +128,13 @@ export async function* iterMdx(mdxPath, only) {
   }
   for (const s of spawnedMap.values()) {
     if (only && !only.has(s.term.toLowerCase())) continue;
-    yield { term: s.term, reading: s.term, senses: s.senses, spawned: true };
+    yield {
+      term: s.term,
+      reading: s.term,
+      senses: s.senses,
+      pronunciation: s.prons?.[0]?.ipa ?? '',
+      prons: s.prons,
+      spawned: true,
+    };
   }
 }

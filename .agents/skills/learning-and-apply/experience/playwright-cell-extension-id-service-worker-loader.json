@@ -1,6 +1,6 @@
 {
-  "id": "playwright-cell-extension-id-service-worker-loader",
-  "title": "Resolve Cell extension id bằng SW url `service-worker-loader.js`, không phải extension id đầu tiên",
+  "id": "playwright-Tihoka-extension-id-service-worker-loader",
+  "title": "Resolve Tihoka extension id bằng SW url `service-worker-loader.js`, không phải extension id đầu tiên",
   "category": [
     "testing"
   ],
@@ -11,17 +11,17 @@
     "uBOLite",
     "extension-id"
   ],
-  "trigger": "Playwright context có nhiều extension SW (Cell + uBOLite); lấy serviceWorkers()[0] hoặc quét chrome://extensions DOM trả sai id → chrome-extension://<id>/... ERR_FILE_NOT_FOUND",
-  "principle": "context.serviceWorkers() liệt kê mọi extension worker (uBOLite cũng có js/background.js). Cell được nhận diện chắc chắn qua SW url kết thúc `/service-worker-loader.js` (do build phát sinh). chrome://extensions item listing cần đi qua extensions-manager > extensions-item-list shadow DOM lồng nhau — xpath đơn giản trả rỗng. goto chrome-extension://<id>/... không trả HTTP response object đáng tin — assert DOM element thay vì res.ok().",
+  "trigger": "Playwright context có nhiều extension SW (Tihoka + uBOLite); lấy serviceWorkers()[0] hoặc quét chrome://extensions DOM trả sai id → chrome-extension://<id>/... ERR_FILE_NOT_FOUND",
+  "principle": "context.serviceWorkers() liệt kê mọi extension worker (uBOLite cũng có js/background.js). Tihoka được nhận diện chắc chắn qua SW url kết thúc `/service-worker-loader.js` (do build phát sinh). chrome://extensions item listing cần đi qua extensions-manager > extensions-item-list shadow DOM lồng nhau — xpath đơn giản trả rỗng. goto chrome-extension://<id>/... không trả HTTP response object đáng tin — assert DOM element thay vì res.ok().",
   "cases": [
     {
-      "context": "verify-sync.mjs thử popup.html trên id của uBOLite → ERR_FILE_NOT_FOUND; id Cell (service-worker-loader.js) mới resolve được",
+      "context": "verify-sync.mjs thử popup.html trên id của uBOLite → ERR_FILE_NOT_FOUND; id Tihoka (service-worker-loader.js) mới resolve được",
       "bad": "const id = context.serviceWorkers()[0].url().match(...)[1]",
       "good": "const id = context.serviceWorkers().find(s => s.url().endsWith('/service-worker-loader.js')).url().match(/^chrome-extension:\\/\\/([^/]+)/)[1]"
     }
   ],
   "applyFor": [
-    "mọi script Playwright mở trang extension Cell (popup/options/sidepanel)",
+    "mọi script Playwright mở trang extension Tihoka (popup/options/sidepanel)",
     "multi-extension profiles"
   ],
   "related": [],

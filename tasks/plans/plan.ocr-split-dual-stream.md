@@ -484,11 +484,11 @@ async function getOrInitEngine(engineKey: string, languageMode: OcrLanguageMode)
 - EDIT `src/features/ocr/overlay/regionSelector.test.ts`
 
 **Yêu cầu (ADR-081 node-reuse — TUYỆT ĐỐI):**
-1. `setSplit(enabled: boolean, ratio: number): void` — bật/tắt split; tạo 1 lần: `.cell-ocr-split-top`, `.cell-ocr-split-bottom` (tinted fill, pointer-events none), `.cell-ocr-split-divider` (draggable bar, pointer-events auto) — divider mousedown listener bind LÚC TẠO.
+1. `setSplit(enabled: boolean, ratio: number): void` — bật/tắt split; tạo 1 lần: `.Tihoka-ocr-split-top`, `.Tihoka-ocr-split-bottom` (tinted fill, pointer-events none), `.Tihoka-ocr-split-divider` (draggable bar, pointer-events auto) — divider mousedown listener bind LÚC TẠO.
 2. `updateSplitRatio(ratio): void` — cập nhật vị trí divider + halves (render update, KHÔNG tạo lại node).
 3. Constructor callbacks thêm optional: `onSplitRatioChange?: (ratio: number) => void` — gọi khi drag divider kết thúc (mouseup) với ratio clamp 0.1-0.9. Real-time trong drag chỉ update UI.
 4. Divider chỉ ở **view mode** (select/edit: ẩn divider — user đang chỉnh parent).
-5. CSS thêm vào stylesheet inject sẵn (`#cell-ocr-region-style`): `.cell-ocr-split-divider` (height 14px, full width, cursor ns-resize, grip line giữa), halves fill `rgba(255,255,255,0.08)` + label nhỏ "Target"/"Native" góc trái mỗi half (theo `splitTopIsTarget` — set qua `setSplit(enabled, ratio, topLabel, bottomLabel)`).
+5. CSS thêm vào stylesheet inject sẵn (`#Tihoka-ocr-region-style`): `.Tihoka-ocr-split-divider` (height 14px, full width, cursor ns-resize, grip line giữa), halves fill `rgba(255,255,255,0.08)` + label nhỏ "Target"/"Native" góc trái mỗi half (theo `splitTopIsTarget` — set qua `setSplit(enabled, ratio, topLabel, bottomLabel)`).
 
 **Code mẫu — phần chính (chèn vào class, theo pattern handles hiện tại):**
 
@@ -513,11 +513,11 @@ setSplit(enabled: boolean, ratio: number, topLabel = '', bottomLabel = ''): void
   if (!this.splitTop && this.rect) {
     // Tạo 1 lần — bind divider mousedown tại đây (ADR-081)
     this.splitTop = document.createElement('div');
-    this.splitTop.className = 'cell-ocr-split-half';
+    this.splitTop.className = 'Tihoka-ocr-split-half';
     this.splitBottom = document.createElement('div');
-    this.splitBottom.className = 'cell-ocr-split-half';
+    this.splitBottom.className = 'Tihoka-ocr-split-half';
     this.divider = document.createElement('div');
-    this.divider.className = 'cell-ocr-split-divider';
+    this.divider.className = 'Tihoka-ocr-split-divider';
     this.divider.addEventListener('mousedown', (e) => {
       e.preventDefault(); e.stopPropagation();
       this.splitDrag = { startY: e.clientY, startRatio: this.splitRatio };
@@ -559,10 +559,10 @@ Trong `render()`: nếu `splitEnabled && mode === 'view'` → set style cho top/
 
 **CSS thêm vào stylesheet string:**
 ```css
-.cell-ocr-split-half { position: absolute; background: rgba(255,255,255,0.08); pointer-events: none; }
-.cell-ocr-split-half[data-label]::after { content: attr(data-label); position: absolute; left: 4px; top: 2px; font-size: 10px; color: rgba(255,255,255,0.85); font-family: ${FONT}; }
-.cell-ocr-split-divider { position: absolute; left: 0; width: 100%; height: 14px; transform: translateY(-50%); cursor: ns-resize; pointer-events: auto; }
-.cell-ocr-split-divider::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: rgba(255,255,255,0.9); border-radius: 1px; }
+.Tihoka-ocr-split-half { position: absolute; background: rgba(255,255,255,0.08); pointer-events: none; }
+.Tihoka-ocr-split-half[data-label]::after { content: attr(data-label); position: absolute; left: 4px; top: 2px; font-size: 10px; color: rgba(255,255,255,0.85); font-family: ${FONT}; }
+.Tihoka-ocr-split-divider { position: absolute; left: 0; width: 100%; height: 14px; transform: translateY(-50%); cursor: ns-resize; pointer-events: auto; }
+.Tihoka-ocr-split-divider::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: rgba(255,255,255,0.9); border-radius: 1px; }
 ```
 
 **Test thêm (regionSelector.test.ts):**
@@ -572,16 +572,16 @@ it('split: setSplit renders halves + divider; divider drag updates ratio & fires
   const sel2 = new RegionSelector({ onRegionChange(){}, onApply(){}, onCancel(){}, onSplitRatioChange });
   sel2.attach(video, REGION, 'view');
   sel2.setSplit(true, 0.5, 'Target', 'Native');
-  expect(parent.querySelectorAll('.cell-ocr-split-half')).toHaveLength(2);
-  expect(parent.querySelector('.cell-ocr-split-divider')).not.toBeNull();
-  const divider = parent.querySelector('.cell-ocr-split-divider') as HTMLElement;
+  expect(parent.querySelectorAll('.Tihoka-ocr-split-half')).toHaveLength(2);
+  expect(parent.querySelector('.Tihoka-ocr-split-divider')).not.toBeNull();
+  const divider = parent.querySelector('.Tihoka-ocr-split-divider') as HTMLElement;
   fire(divider, 'mousedown', 500, 500);
   fire(document, 'mousemove', 500, 600); // +10% height
   fire(document, 'mouseup', 500, 600);
   expect(onSplitRatioChange).toHaveBeenCalledWith(expect.closeTo(0.6, 1)); // jest.closeTo custom hoặc 0.6 ± epsilon
   // node reuse:
   sel2.updateSplitRatio(0.3);
-  expect(parent.querySelector('.cell-ocr-split-divider')).toBe(divider);
+  expect(parent.querySelector('.Tihoka-ocr-split-divider')).toBe(divider);
   sel2.detach();
 });
 ```
@@ -663,7 +663,7 @@ if (this.config.splitEnabled && this.splitPipelineStates) {
 ```
 
 **Bridge sang contentScriptController — module nhỏ NEW trong cùng file hoặc file riêng `src/features/ocr/pipeline/ocrTrackBridge.ts`:**
-Content script chính (contentScriptController context) export 2 hàm; ocrContentScript gọi qua callback được inject từ `initOcrContentScript(triggerFactory?, ocrTrackBridge?)`. THIẾT KẾ ĐƠN GIẢN NHẤT: event `window.dispatchEvent(new CustomEvent('__cell-ocr-tracks', { detail: { targetCues, nativeCues } }))` + contentScriptController listen (main world↔isolated world chia window events? — CustomEvent KHÔNG cross world an toàn cho detail objects... isolated↔main: window.postMessage an toàn hơn). DÙNG `window.postMessage({ type: '__CELL_OCR_TRACKS', targetCues, nativeCues }, '*')` từ ocrContentScript; contentScriptController thêm listener `window.addEventListener('message', ...)` cùng world (CẢ HAI đều isolated world — postMessage trong cùng world VẪN fire listener; đúng: postMessage từ isolated đến chính isolated listener hoạt động vì cùng window object). Revert khi split off: postMessage `{ type: '__CELL_OCR_TRACKS_END' }`.
+Content script chính (contentScriptController context) export 2 hàm; ocrContentScript gọi qua callback được inject từ `initOcrContentScript(triggerFactory?, ocrTrackBridge?)`. THIẾT KẾ ĐƠN GIẢN NHẤT: event `window.dispatchEvent(new CustomEvent('__Tihoka-ocr-tracks', { detail: { targetCues, nativeCues } }))` + contentScriptController listen (main world↔isolated world chia window events? — CustomEvent KHÔNG cross world an toàn cho detail objects... isolated↔main: window.postMessage an toàn hơn). DÙNG `window.postMessage({ type: '__Tihoka_OCR_TRACKS', targetCues, nativeCues }, '*')` từ ocrContentScript; contentScriptController thêm listener `window.addEventListener('message', ...)` cùng world (CẢ HAI đều isolated world — postMessage trong cùng world VẪN fire listener; đúng: postMessage từ isolated đến chính isolated listener hoạt động vì cùng window object). Revert khi split off: postMessage `{ type: '__Tihoka_OCR_TRACKS_END' }`.
 
 **contentScriptController (theo translatedNativeSlot pattern — đọc file, chỗ định nghĩa slot + mergedPanelItems + activeNativeSource):**
 ```typescript
@@ -676,7 +676,7 @@ let preOcrSources: { target: string; native: string } | null = null;
 window.addEventListener('message', (e) => {
   if (e.source !== window) return;
   const d = e.data as { type?: string; targetCues?: SrtCue[]; nativeCues?: SrtCue[] };
-  if (d?.type === '__CELL_OCR_TRACKS' && d.targetCues && d.nativeCues) {
+  if (d?.type === '__Tihoka_OCR_TRACKS' && d.targetCues && d.nativeCues) {
     if (!ocrTargetSlot) {
       preOcrSources = { target: activeTargetSource, native: activeNativeSource };
       ocrTargetSlot = { item: makeOcrItem('ocr-target', 'OCR Target (live)', 'target'), cues: [] };
@@ -688,7 +688,7 @@ window.addEventListener('message', (e) => {
     activeTargetSource = 'ocr'; activeNativeSource = 'ocr'; // theo mechanism active source hiện có
     refreshPanel('target'); refreshPanel('native');
   }
-  if (d?.type === '__CELL_OCR_TRACKS_END') {
+  if (d?.type === '__Tihoka_OCR_TRACKS_END') {
     ocrTargetSlot = ocrNativeSlot = null;
     if (preOcrSources) { activeTargetSource = preOcrSources.target; activeNativeSource = preOcrSources.native; preOcrSources = null; }
     refreshPanel('target'); refreshPanel('native');
@@ -702,7 +702,7 @@ window.addEventListener('message', (e) => {
 
 **AC:**
 - [ ] `npm run typecheck && npm run test:unit && npm run build` pass TOÀN BỘ
-- [ ] Unit test mới: bridge message format (`__CELL_OCR_TRACKS` / END) — test nhỏ cho event flow nếu testable; tối thiểu: split config plumb qua OcrSession start (mock controller) — đụng ocrContentScript.test.ts nếu hiện có
+- [ ] Unit test mới: bridge message format (`__Tihoka_OCR_TRACKS` / END) — test nhỏ cho event flow nếu testable; tối thiểu: split config plumb qua OcrSession start (mock controller) — đụng ocrContentScript.test.ts nếu hiện có
 - [ ] Split OFF (toggle) → postMessage END → slots null, revert sources (đọc code xác nhận)
 
 **Dependencies:** T1, T2, T3, T5. **Forbidden:** không break single-stream hiện có (splitEnabled=false → code path cũ y nguyên).

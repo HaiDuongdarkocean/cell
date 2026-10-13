@@ -12,7 +12,7 @@ Player lives in a cross-origin iframe (e.g. `moviepire` → `vidnest`): the subt
 3. Confirm tracks/sources appear and the page scanner re-scans after they appear.
 4. Confirm the player frame asks for REQUEST_AUTO_LOAD_SUBTITLES.
 5. Confirm AUTO_LOAD_SUBTITLES is sent to the exact frameId of the player frame.
-6. Confirm the top frame receives __CELL_AUTOLOAD_HANDLED from the player frame.
+6. Confirm the top frame receives __Tihoka_AUTOLOAD_HANDLED from the player frame.
 ```
 
 Guards per step:
@@ -26,7 +26,7 @@ Guards per step:
 
 Some players (videasy, React/Next.js players) don't create `<video>` on load — it appears AFTER the user clicks play, possibly past the `findVideoObserver` 10s timeout. The encrypted listing fetch also fires on play, not iframe load.
 
-**Symptom:** inventory shows subtitles (E4) but the overlay never initializes — `data-cell-autoload-handled` stale/absent, no `#cell-subtitle-shadow-host` in the player frame.
+**Symptom:** inventory shows subtitles (E4) but the overlay never initializes — `data-tihoka-autoload-handled` stale/absent, no `#Tihoka-subtitle-shadow-host` in the player frame.
 
 ```text
 1. Navigate to the player URL directly (not via parent page).
@@ -34,7 +34,7 @@ Some players (videasy, React/Next.js players) don't create `<video>` on load —
    - No  → play-on-demand. Continue.
    - Yes → different timing issue; don't apply this flow.
 3. Click play. Does <video> appear now?
-4. Is #cell-subtitle-root present with a shadow root?
+4. Is #Tihoka-subtitle-root present with a shadow root?
    - No → findVideoObserver timed out before the click. Root cause confirmed.
 5. After fix: overlay inits within 1s of the click.
 ```
@@ -53,7 +53,7 @@ Player iframe with its own episode navigation (videasy's next-episode button): `
 1. Click the in-player next-episode button (inside the iframe).
 2. Does location.href change inside the iframe?
 3. Is <video> replaced (different element identity)?
-4. Does data-cell-episode-changed appear on the iframe's documentElement?
+4. Does data-tihoka-episode-changed appear on the iframe's documentElement?
    - No → the iframe's episodeChangeWatcher isn't running. Root cause confirmed.
 5. After fix: episodeChanged=replacement fires inside the iframe; overlay re-inits with new subtitles.
 ```

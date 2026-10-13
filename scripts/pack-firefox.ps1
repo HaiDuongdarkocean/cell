@@ -29,7 +29,7 @@ if (Test-Path $srcZip) { Remove-Item $srcZip -Force }
   --exclude=$srcZip --exclude=$extZip `
   --exclude=node_modules --exclude=.git --exclude=dist --exclude=dist-firefox `
   --exclude=build --exclude=coverage --exclude=e2e-results --exclude=.playwright-mcp `
-  --exclude=tmp --exclude=data --exclude=loop --exclude=cell-worktrees `
+  --exclude=tmp --exclude=data --exclude=loop --exclude=Tihoka-worktrees `
   --exclude='*.pem' --exclude='.env.local' --exclude='*.crx' --exclude='*.zip' --exclude='*.rar' .
 if ($LASTEXITCODE -ne 0) { throw "source archive failed" }
 

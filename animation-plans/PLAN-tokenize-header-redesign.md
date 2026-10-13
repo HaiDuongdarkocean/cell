@@ -56,7 +56,7 @@ Universal panel header (`aria-label="Tokenize controls"`) cần redesign theo 2 
 ### Accessibility
 - Container: `role="group"` + `aria-label="Tokenize sources"` / `aria-label="Tokenize display"`
 - Pill: `role="switch"` + `aria-checked={checked}` + `aria-label={...}` + `title="{Label}: {ON|OFF}"`
-- `data-cell-id="universal-panel-header-toggle-{key}"` (giữ nguyên test ID convention)
+- `data-tihoka-id="universal-panel-header-toggle-{key}"` (giữ nguyên test ID convention)
 
 ## Logic Spec
 
@@ -99,7 +99,7 @@ interface TokenizePanelState {
 3. Two pill-group containers with `role="group"`:
    - Sources group: `aria-label="Tokenize sources"`, contains Page + Subtitle pills
    - Display group: `aria-label="Tokenize display"`, contains Status + Frequency pills
-4. Each pill = `<button>` with `role="switch"`, `aria-checked`, `aria-label`, `title`, `data-cell-id`
+4. Each pill = `<button>` with `role="switch"`, `aria-checked`, `aria-label`, `title`, `data-tihoka-id`
 5. Each pill has a `<span class={styles.pillDot}>` before the label text
 6. Vertical divider `<span>` between the two groups
 7. Close button = existing `IconButton` (ghost sm) with `margin-left: auto`
@@ -115,7 +115,7 @@ interface TokenizePanelState {
 
 **Exact TSX structure:**
 ```tsx
-<header className={styles.header} data-cell-id="universal-panel-header">
+<header className={styles.header} data-tihoka-id="universal-panel-header">
   <div className={styles.pillGroup} role="group" aria-label="Tokenize sources">
     {SOURCE_ITEMS.map(item => (
       <button
@@ -126,7 +126,7 @@ interface TokenizePanelState {
         aria-checked={tokenizeState[item.key]}
         aria-label={item.ariaLabel}
         title={`${item.label}: ${tokenizeState[item.key] ? 'ON' : 'OFF'}`}
-        data-cell-id={`universal-panel-header-toggle-${item.key}`}
+        data-tihoka-id={`universal-panel-header-toggle-${item.key}`}
         onClick={() => onToggleTokenize(item.key)}
       >
         <span className={styles.pillDot} />
@@ -140,7 +140,7 @@ interface TokenizePanelState {
   </div>
   <IconButton size="sm" variant="ghost" aria-label="Close panel"
     className={styles.closeButton} onClick={onClose}
-    data-cell-id="universal-panel-close">
+    data-tihoka-id="universal-panel-close">
     <Icon name="x" />
   </IconButton>
 </header>

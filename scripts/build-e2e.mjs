@@ -2,8 +2,8 @@
 /**
  * Build all artifacts needed for E2E testing.
  *
- * Sets CELL_E2E=1 before the extension build so test-only debug markers
- * (data-cell-runscan, __CELL_DEBUG_PAGE_SCAN) are compiled in. The flag is
+ * Sets Tihoka_E2E=1 before the extension build so test-only debug markers
+ * (data-tihoka-runscan, __Tihoka_DEBUG_PAGE_SCAN) are compiled in. The flag is
  * NOT set for the mock/pages/design-system builds, which do not need it.
  */
 import { execSync } from 'node:child_process';
@@ -22,11 +22,11 @@ function run(cmd, label, extraEnv = {}) {
   });
 }
 
-process.env.CELL_E2E = '1';
+process.env.Tihoka_E2E = '1';
 run('npm run build', 'Building extension with E2E debug markers');
 
 // Clear the flag for the other builds — they do not need it.
-delete process.env.CELL_E2E;
+delete process.env.Tihoka_E2E;
 run('npm run build:mock', 'Building mock streaming pages');
 run('npm run build:design-system', 'Building design-system showcase');
 run('npm run build:pages', 'Building standalone test pages');

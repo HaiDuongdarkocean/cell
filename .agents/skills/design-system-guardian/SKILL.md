@@ -1,6 +1,6 @@
 ---
 name: design-system-guardian
-description: Audit UI changes against Cell's design system - tokens, shared components, hardcoded values. Use before merging UI work.
+description: Audit UI changes against Tihoka's design system - tokens, shared components, hardcoded values. Use before merging UI work.
 ---
 
 # Design System Guardian

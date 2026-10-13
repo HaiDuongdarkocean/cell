@@ -64,7 +64,7 @@ Statuses: `works` / `degraded` / `broken` / `untested`. Evidence is verbatim pro
 - All Chrome-only divergence lives behind capability checks inside `src/shared/lib/chrome-apis/*` adapters or `OffscreenManager`; Chrome manifest untouched (transform writes `dist-firefox/`, never `dist/`).
 - `package.json` `dependencies` unchanged; `web-ext` invoked via `npx` only (NFR-3).
 - Note: `dist/manifest.json` differs from a pre-change build only in hashed asset names (bundles re-emitted); key set and values unchanged (SC-7 modulo-hash clause).
-- Chrome real-browser verify: `npx playwright test e2e/extension-subtitle-manager.spec.ts` (Chromium, `--load-extension=dist`) — **PASS**: content script injects, `#cell-subtitle-root` mounts, manager toggle opens the in-page panel. This covers the exact surfaces the diff touches (content-script init, message flow, in-page UI). A real-youtube.com headed smoke is still worthwhile before merge (ad-hoc probe showed MAIN-world inject + SW alive; `fetchPatched`/`portal` markers inconclusive under headless YouTube consent variance — not a regression signal, harness limitation).
+- Chrome real-browser verify: `npx playwright test e2e/extension-subtitle-manager.spec.ts` (Chromium, `--load-extension=dist`) — **PASS**: content script injects, `#Tihoka-subtitle-root` mounts, manager toggle opens the in-page panel. This covers the exact surfaces the diff touches (content-script init, message flow, in-page UI). A real-youtube.com headed smoke is still worthwhile before merge (ad-hoc probe showed MAIN-world inject + SW alive; `fetchPatched`/`portal` markers inconclusive under headless YouTube consent variance — not a regression signal, harness limitation).
 
 ## AMO-readiness
 

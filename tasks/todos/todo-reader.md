@@ -1,4 +1,4 @@
-# Todo: Cell Reader
+# Todo: Tihoka Reader
 
 > Spec: `docs/specs/reader.md`  
 > Plan: `tasks/plan-reader.md`
@@ -12,7 +12,7 @@
   - Dependencies: None
   - Scope: M
 
-- [ ] T2: `readerDb.ts` (IndexedDB `cell-reader`) + `readerOpfs.ts` (OPFS)
+- [ ] T2: `readerDb.ts` (IndexedDB `Tihoka-reader`) + `readerOpfs.ts` (OPFS)
   - AC: IndexedDB stores `books`, `progress`, `savedWords`, `savedSentences` sẵn sàng. OPFS helpers `importBookBinary(bookId, buffer)`, `readBookText(bookId)`, `deleteBook(bookId)`.
   - Verify: `npm run test:unit` với fake IndexedDB/OPFS; CRUD book và progress pass.
   - Files: `src/features/reader/services/readerDb.ts`, `readerDb.test.ts`, `readerOpfs.ts`, `readerOpfs.test.ts`.

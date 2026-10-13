@@ -1,4 +1,4 @@
-# Implementation Plan: Cell Reader
+# Implementation Plan: Tihoka Reader
 
 > Spec: `docs/specs/reader.md`  
 > Intent: `docs/intent/reader.md`  
@@ -7,7 +7,7 @@
 
 ## Overview
 
-Xây dựng tính năng Reader trong Cell MV3 để người học ngoại ngữ import và đọc sách EPUB/PDF/TXT/HTML. Tái sử dụng tokenizer, dictionary popup, TTS engine, card creator, storage đã có. Plan chia làm 4 slice, tập trung ship **Slice 1 (TXT/HTML MVP)** trước.
+Xây dựng tính năng Reader trong Tihoka MV3 để người học ngoại ngữ import và đọc sách EPUB/PDF/TXT/HTML. Tái sử dụng tokenizer, dictionary popup, TTS engine, card creator, storage đã có. Plan chia làm 4 slice, tập trung ship **Slice 1 (TXT/HTML MVP)** trước.
 
 ## Architecture Decisions
 
@@ -18,7 +18,7 @@ Xây dựng tính năng Reader trong Cell MV3 để người học ngoại ngữ
 
 ### AD2 — Reader storage: OPFS + IndexedDB + settings slice
 - OPFS lưu binary sách và text trích xuất.
-- IndexedDB `cell-reader` lưu metadata sách, progress, saved words/sentences.
+- IndexedDB `Tihoka-reader` lưu metadata sách, progress, saved words/sentences.
 - `chrome.storage.local` chỉ lưu reader settings (rate, pitch, voice, auto-advance).
 
 ### AD3 — Format parser abstraction
@@ -40,7 +40,7 @@ Xây dựng tính năng Reader trong Cell MV3 để người học ngoại ngữ
 ### Slice 1 — TXT/HTML MVP (ship first)
 
 - [ ] T1: Scaffold `src/entrypoints/reader/` entrypoint + manifest update
-- [ ] T2: `readerDb.ts` (IndexedDB `cell-reader`) + `readerOpfs.ts` (OPFS helpers)
+- [ ] T2: `readerDb.ts` (IndexedDB `Tihoka-reader`) + `readerOpfs.ts` (OPFS helpers)
 - [ ] T3: `textHtmlParser.ts` + import flow
 - [ ] T4: `ReaderLibraryView` + `readerStore` Zustand
 - [ ] T5: `ReaderView` + `TokenizedParagraph`

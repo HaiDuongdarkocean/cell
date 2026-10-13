@@ -18,7 +18,7 @@
   "cases": [
     {
       "context": "debug-push verify: d2 SYNC_NOW trả pulled:['global'] nhưng themeMode không đổi; meta node cả 2 device đều 67faf4fc-…",
-      "bad": "copy profile cell-e42d… → clone-device2 nguyên trạng rồi verify pull",
+      "bad": "copy profile Tihoka-e42d… → clone-device2 nguyên trạng rồi verify pull",
       "good": "wipe extension storage của clone → deviceId mới cấp lúc runtime init → pull apply recordsApplied>0, themeMode='light' (VERIFY-PASS)"
     }
   ],

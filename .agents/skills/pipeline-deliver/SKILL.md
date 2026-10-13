@@ -49,7 +49,7 @@ node scripts/pipeline-state.mjs set <slug> artifacts.plan=tasks/plan-<slug>.md
 node scripts/pipeline-state.mjs transition <slug> --to shipped
 ```
 
-All mutations require ownership: `owner` is claimed at `init`/`activate`/first mutation via `CELL_AGENT_ID` env (set once per session; subagent shells inherit it) or `--owner <id>` per command. `owned by '<other>'` failure = another agent's item — do NOT touch its state, files, or worktree; if the user redirects you, `request-handoff <slug> --note` and wait for the owner/human to `handoff --to` or `release --force --note`.
+All mutations require ownership: `owner` is claimed at `init`/`activate`/first mutation via `Tihoka_AGENT_ID` env (set once per session; subagent shells inherit it) or `--owner <id>` per command. `owned by '<other>'` failure = another agent's item — do NOT touch its state, files, or worktree; if the user redirects you, `request-handoff <slug> --note` and wait for the owner/human to `handoff --to` or `release --force --note`.
 
 ## Sequence
 

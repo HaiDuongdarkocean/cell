@@ -2,7 +2,7 @@
 
 ## Overview
 
-Build **Ocean Language Acquisition SRS** — a Chrome extension MV3, offline-first spaced-repetition feature for the Cell extension. Each *Learning Object* (word/phrase) is split into three independent memory components (**Meaning, Sound, Spelling**) with per-component FSRS state, progress, and scheduling. The system schedules the component most in need of reinforcement, renders a minimal *Front* stimulus (text / audio / image / typed input), reveals a full *Back* verification surface, and records a binary *Forget/Remember* judgment. V1 supports English, reuses the existing Card Creator for note creation, and adds a new `srs-study` extension entrypoint.
+Build **Ocean Language Acquisition SRS** — a Chrome extension MV3, offline-first spaced-repetition feature for the Tihoka extension. Each *Learning Object* (word/phrase) is split into three independent memory components (**Meaning, Sound, Spelling**) with per-component FSRS state, progress, and scheduling. The system schedules the component most in need of reinforcement, renders a minimal *Front* stimulus (text / audio / image / typed input), reveals a full *Back* verification surface, and records a binary *Forget/Remember* judgment. V1 supports English, reuses the existing Card Creator for note creation, and adds a new `srs-study` extension entrypoint.
 
 The work is sliced into 11 phases with 36 tasks. Each task is sized **M** (≤5 files) or smaller, with explicit acceptance criteria, verification steps, and dependencies so subagents can execute them in parallel and in order.
 
@@ -11,7 +11,7 @@ The work is sliced into 11 phases with 36 tasks. Each task is sized **M** (≤5 
 1. **Note vs Card split.** `SrsNote` holds immutable content; `SrsCard` holds the mutable 3-component state. A note can be re-added to a different deck as a new card, and resetting a card does not delete its note.
 2. **Three independent memory components.** `meaning`, `sound`, `spelling` each have their own `progress`, `exploreCount`, `fsrsState`, and `reviewCount`. `Card.nextDue` is the minimum of all effective due dates.
 3. **FSRS boundary.** Vendors `ts-fsrs@5.4.1` behind a project-owned `SrsFsrsAdapter` interface. `SrsFsrsSerializedState` is opaque; only the adapter reads `due`/`state`. If the T0 spike shows bundle/compat issues, fall back to a minimal vendored port.
-4. **Storage isolation.** SRS data lives in a dedicated IndexedDB named `cell-srs-{hash}`, modeled after `src/features/dictionary/repositories/baseRepository.ts`, with compound index `by_deck_due` for O(1) bounded scheduling scans.
+4. **Storage isolation.** SRS data lives in a dedicated IndexedDB named `Tihoka-srs-{hash}`, modeled after `src/features/dictionary/repositories/baseRepository.ts`, with compound index `by_deck_due` for O(1) bounded scheduling scans.
 5. **Single data-owning entrypoint.** The `srs-study` page is the only context that opens and writes to the SRS IndexedDB. Other extension contexts (dictionary popup, Card Creator, background) communicate via typed MV3 messages.
 6. **Card Creator reuse.** Add `'ocean-srs'` to `DictionaryPopupSettings.srsDestination` and open the existing Card Creator with an SRS prefill path; Card Creator emits `SRS_ADD_NOTE` to create `Note + Card`.
 7. **Zod at boundaries.** Every message payload and IndexedDB write is validated. Domain logic uses TypeScript; no `any`.
@@ -131,7 +131,7 @@ E2E + pre-commit gate + docs
 
 #### Task 3: `SrsDatabase` IndexedDB bootstrap
 
-**Description:** Create the new `cell-srs-{hash}` IndexedDB wrapper following `baseRepository` pattern. Define object stores `collections`, `decks`, `studyConfigs`, `notetypes`, `notes`, `cards`, `audioAssets`, `imageAssets`, `reviewEvents` with the indexes listed in the spec, and expose `getDB`, `closeDB`, `deleteDB`, and test helpers.
+**Description:** Create the new `Tihoka-srs-{hash}` IndexedDB wrapper following `baseRepository` pattern. Define object stores `collections`, `decks`, `studyConfigs`, `notetypes`, `notes`, `cards`, `audioAssets`, `imageAssets`, `reviewEvents` with the indexes listed in the spec, and expose `getDB`, `closeDB`, `deleteDB`, and test helpers.
 
 **parallel:** true
 
@@ -273,7 +273,7 @@ E2E + pre-commit gate + docs
 
 - [ ] `npm run typecheck` passes.
 - [ ] All repository unit tests pass.
-- [ ] Manual: open `cell-srs-{hash}` in DevTools, verify stores and indexes.
+- [ ] Manual: open `Tihoka-srs-{hash}` in DevTools, verify stores and indexes.
 
 ### Phase 2: Asset Repositories & Defaults
 

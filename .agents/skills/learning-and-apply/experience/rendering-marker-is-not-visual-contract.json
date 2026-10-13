@@ -7,9 +7,9 @@
   "principle": "Reusing a base DOM marker does not reproduce a visual component. Mirror every CSS-driving modifier class and required child node, then assert that semantic structure in regression tests; otherwise DOM tests can pass while the UI remains visually plain.",
   "cases": [
     {
-      "context": "A subtitle cue emitted .js-cell-token[data-cell-term], so the E2E selector passed, but omitted word/status/frequency classes and inner/status children required by token CSS.",
-      "bad": "<span className=\"js-cell-token\" data-cell-term={term}>{text}</span>\nexpect(token).toBeVisible();",
-      "good": "<span className=\"js-cell-token js-cell-token--word js-cell-token--status-unknown\"><span className=\"js-cell-token-word\">{text}</span><span className=\"js-cell-token-status\" /></span>\nexpect(token).toHaveClass(/js-cell-token--status-/);\nexpect(token.querySelector('.js-cell-token-status')).not.toBeNull();"
+      "context": "A subtitle cue emitted .js-Tihoka-token[data-tihoka-term], so the E2E selector passed, but omitted word/status/frequency classes and inner/status children required by token CSS.",
+      "bad": "<span className=\"js-Tihoka-token\" data-tihoka-term={term}>{text}</span>\nexpect(token).toBeVisible();",
+      "good": "<span className=\"js-Tihoka-token js-Tihoka-token--word js-Tihoka-token--status-unknown\"><span className=\"js-Tihoka-token-word\">{text}</span><span className=\"js-Tihoka-token-status\" /></span>\nexpect(token).toHaveClass(/js-Tihoka-token--status-/);\nexpect(token.querySelector('.js-Tihoka-token-status')).not.toBeNull();"
     }
   ],
   "applyFor": ["CSS modifier-class components", "Shadow DOM renderers", "Design-system primitives", "Visual regression tests"]

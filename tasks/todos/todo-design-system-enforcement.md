@@ -1,4 +1,4 @@
-# Todo: Cell Design System Enforcement
+# Todo: Tihoka Design System Enforcement
 
 ## Phase 1: Audit
 - [ ] Task 1: Audit M3 tokens trong prototype

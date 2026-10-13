@@ -74,7 +74,7 @@
 
 | Risk | Mitigation |
 |---|---|
-| Test cũ `UniversalPanel.test.tsx` fail do selector cũ | Update selectors theo `data-cell-id` mới trong Task 3. |
+| Test cũ `UniversalPanel.test.tsx` fail do selector cũ | Update selectors theo `data-tihoka-id` mới trong Task 3. |
 | `TokenizeControls` layout cũ bị ảnh hưởng | Thay CSS module, không đổi props. |
 | CSS token thiếu | Task 1 sinh token trước; `check-design-system-css` fail fast. |
 | Collapse persistence chưa rõ | Mặc định không persist; có thể thêm `chrome.storage.session` sau nếu cần. |

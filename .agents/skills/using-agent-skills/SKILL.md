@@ -9,7 +9,7 @@ description: Meta-router that picks the right skill for a task. Use at session s
 
 Agent Skills is a collection of engineering workflow skills organized by development phase. Each skill encodes a specific process that senior engineers follow. This meta-skill helps you discover and apply the right skill for your current task.
 
-## Router Protocol (Cell-specific)
+## Router Protocol (Tihoka-specific)
 
 Skill này là **router** — entry point duy nhất để chọn skill:
 
@@ -231,7 +231,7 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 | Verify | design-system-guardian | Audit UI against DESIGN.md (token, component, layout) |
 | Verify | test-driven-development | Failing test first, then make it pass |
 | Verify | pre-commit-gate | Deterministic local checks (lint, typecheck, test, build, debt smell) before commit |
-| Verify | testing-with-playwright | Playwright E2E — fixtures + actors + stage2 specs, Cell + uBOLite loaded in Chromium |
+| Verify | testing-with-playwright | Playwright E2E — fixtures + actors + stage2 specs, Tihoka + uBOLite loaded in Chromium |
 | Verify | testing-extension-browser | Interactive real-Chrome Playwright session (packed .crx + clone profile) cho ad-hoc verify |
 | Verify | vision-reader | Delegate image reading to a vision subagent when the coding model is blind |
 | Verify | debugging-and-error-recovery | Reproduce → localize → fix → guard |

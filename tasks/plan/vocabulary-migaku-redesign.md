@@ -1,8 +1,8 @@
 # Vocabulary tab — Migaku-style redesign
 
 Reference: `C:\Users\The0cean\Documents\ShareX\Screenshots\2026-10\Zalo_JWx7GtVj28.png` (Migaku "Known Words", Android, 692px wide).
-Rule from Anh: clone hierarchy / layout / shape / spacing / features exactly; **colors come from Cell tokens only**.
-Decisions confirmed by Anh: bulk bar lifted to `shared/ui`; card indicator shows **both** Anki-sync and Tihoka SRS; labels sentence case (Cell copy standard, not UPPERCASE).
+Rule from Anh: clone hierarchy / layout / shape / spacing / features exactly; **colors come from Tihoka tokens only**.
+Decisions confirmed by Anh: bulk bar lifted to `shared/ui`; card indicator shows **both** Anki-sync and Tihoka SRS; labels sentence case (Tihoka copy standard, not UPPERCASE).
 Not a pipeline item (Anh: unrelated to pipeline). Owner: `devin-vocab-redesign-1791372569`.
 
 ## 1. Design read
@@ -13,7 +13,7 @@ The reference turns the vocabulary list from a "data table with tools on top" in
 
 Calibration: top circle buttons = 68px physical ≈ 40 logical → scale ≈ 1.7 (not a standard DPR → treat measures as ±2px and snap to tokens).
 
-| Element | px phys | logical | Cell token target |
+| Element | px phys | logical | Tihoka token target |
 |---|---|---|---|
 | Outer gutter | 12 | 7 | `space-2` |
 | Top-bar circle buttons | 68 | 40 | circle `Button size="md"` (hit ≥44 on touch) |
@@ -42,11 +42,11 @@ Calibration: top circle buttons = 68px physical ≈ 40 logical → scale ≈ 1.7
 
 Proportions to keep when snapping: status circle = top-bar circle size; pill rows are 2 equal columns with the same gap (`space-4`); hero and list card share the same radius and gutter.
 
-## 3. Atom → component → Cell mapping
+## 3. Atom → component → Tihoka mapping
 
 Top to bottom. Close (X) from the reference is **dropped**: both hosts already own close/back (UniversalPanel header, SrsVocabularyView back button).
 
-| # | Reference atom | Function | Cell component | Notes |
+| # | Reference atom | Function | Tihoka component | Notes |
 |---|---|---|---|---|
 | A1 | ↺ circle | Undo last vocabulary action | `Button variant="secondary" shape="circle"` + `rotateCcw` | disabled when nothing to undo; `aria-label` "Undo" |
 | A2 | "Deselect all" pill | Select all / deselect all | `Button variant="secondary"` pill | label = "Select all" when 0 selected, "Deselect all" when ≥1; hidden in Trash view and when the visible list is empty |
@@ -54,17 +54,17 @@ Top to bottom. Close (X) from the reference is **dropped**: both hosts already o
 | A4 | ⋯ circle | More actions | circle Button + `ellipsis` → `<Menu align="right">` | items: "Trash" (`trash2`, trailing count) · "Sync with Anki" (`repeat`, runs `ANKI_STATUS_SYNC_RUN`, item disabled + spinner text while running, refreshes card sources after) |
 | B | Hero card | Collection identity + progress | `Box bg="card"` card | flag `FlagIcon`; headline `<number> Known words`; breakdown `<n> learning  <n> tracked  <n> ignored` |
 | C | Sort / Filter pills | Slice the list | existing filter/sort `<Menu>`s, triggers restyled as 2 equal `secondary` pills | trigger label shows the **current value** (e.g. "Recently marked ▾", "All ▾") with leading icon — deviation: reference shows static "Sort by"; current value keeps state visible |
-| D | "2 selected" | Selection / result meta | `Text variant="supporting"` centered | ≥1 selected → "N selected"; else "N words" for the current filtered result. Migaku's legacy-count note is dropped (no Cell equivalent) |
+| D | "2 selected" | Selection / result meta | `Text variant="supporting"` centered | ≥1 selected → "N selected"; else "N words" for the current filtered result. Migaku's legacy-count note is dropped (no Tihoka equivalent) |
 | E | List card | The words | `<ul>` inside `Box bg="card"`, radius-lg, rows divided by hairline | whole tab scrolls (hero scrolls away), list is **not** its own scrollport |
 | E1 | Checkbox | Select row | shared `Checkbox`, `aria-label` "Select <term>" | |
 | E2 | Word | Open dictionary lookup | existing ghost term `Button` → `onLookup` | ellipsis truncation, `title` = term |
 | E3 | Small blue cards glyph | "Has a card" | non-interactive icons, `aria-label`/`title` | `import` icon = linked Anki card ("In Anki"); `layers` icon = Tihoka SRS note ("In Memory") — same `layers` glyph as the "Open Memory" tool; both can show. Color `--color-text-accent-strong` |
-| E4 | Status circle | Cycle status | circle `Button`, bg/fg from `--chip-status-<status>-bg/-fg`, icon per status | keeps `data-cell-id="vocabulary-cycle-<term>"` + `aria-label` "Cycle status for <term>" |
+| E4 | Status circle | Cycle status | circle `Button`, bg/fg from `--chip-status-<status>-bg/-fg`, icon per status | keeps `data-tihoka-id="vocabulary-cycle-<term>"` + `aria-label` "Cycle status for <term>" |
 | F | Floating "Change status" + "Delete" | Bulk actions | **new shared `SelectionBar`** | appears only when ≥1 selected; sticky to the bottom of the tab scroll area; elevated |
 
 Status icon map (collision-checked against the catalog): `known → circleCheck`, `learning → clock`, `tracking → eye`, `ignore → eyeOff`. Put it in one `STATUS_ICON: Record<MarkedStatus, IconName>` next to `STATUS_LABEL` in the vocabulary feature and reuse it in the Change-status menu items.
 
-## 4. Color map (semantics → Cell tokens)
+## 4. Color map (semantics → Tihoka tokens)
 
 | Use | Token |
 |---|---|
@@ -120,7 +120,7 @@ export interface SelectionBarProps {
   readonly label?: ReactNode;
   readonly children: ReactNode;
   readonly className?: string;
-  readonly 'data-cell-id'?: string;
+  readonly 'data-tihoka-id'?: string;
 }
 ```
 
@@ -153,14 +153,14 @@ export interface SelectionBarProps {
 
 | Deviation | Why |
 |---|---|
-| Colors | Cell status + surface tokens, by Anh's rule |
-| Sentence case labels | Anh's decision (Cell copy standard) |
+| Colors | Tihoka status + surface tokens, by Anh's rule |
+| Sentence case labels | Anh's decision (Tihoka copy standard) |
 | No close (X) | host surfaces own close/back |
 | Sort/Filter trigger shows current value | keeps state visible |
-| Migaku legacy-count note removed | no Cell equivalent |
-| Learning/tracking colors differ from Migaku (Cell: tracking orange, learning blue) | Cell status semantics are SSOT |
+| Migaku legacy-count note removed | no Tihoka equivalent |
+| Learning/tracking colors differ from Migaku (Tihoka: tracking orange, learning blue) | Tihoka status semantics are SSOT |
 | Content max-width on desktop | reference is a phone column; panel is wide |
 | Top bar is `position: sticky` | Undo/search/more stay reachable while the list scrolls; reference scrolls them away |
 | Meta line shows the result count when nothing is selected | reference has no equivalent slot; keeps the "how many words am I looking at" signal |
-| Card-source icons are non-interactive badges | Cell has no per-card jump target from the vocabulary row yet |
+| Card-source icons are non-interactive badges | Tihoka has no per-card jump target from the vocabulary row yet |
 | Bulk bar is sticky inside the tab scroll (not fixed to the viewport) | panel scrollport owns the scroll; keeps the bar above the mobile bottom nav |

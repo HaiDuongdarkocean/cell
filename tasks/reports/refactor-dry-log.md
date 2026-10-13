@@ -1,7 +1,7 @@
 # UI DRY / SSOT Refactor — Loop Log
 
 ## Goal
-Refactor UI code in the Cell codebase to preserve correctness, maintainability, updatability, and performance. Approach: discover duplicated UI patterns, extract SSOT components/utilities, verify, and loop until the system has no avoidable duplicate UI code.
+Refactor UI code in the Tihoka codebase to preserve correctness, maintainability, updatability, and performance. Approach: discover duplicated UI patterns, extract SSOT components/utilities, verify, and loop until the system has no avoidable duplicate UI code.
 
 ## Feature inventory
 
@@ -75,7 +75,7 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
 - **AC:**
   1. `EmptyState` supports `size` prop and passes `data-*`/extra props to the root.
   2. `DictionaryPanelView`, `TranslatePanel`, `LinksPanel` use `EmptyState`.
-  3. No `.cellTranslateEmpty`, `.cellLinksEmpty`, `.cellAudioEmpty`, or visual `.dictionaryEmpty` CSS remains.
+  3. No `.TihokaTranslateEmpty`, `.TihokaLinksEmpty`, `.TihokaAudioEmpty`, or visual `.dictionaryEmpty` CSS remains.
   4. Tests and build pass.
 - **Do:**
   - Extended `EmptyState` with `size` prop, `HTMLAttributes` passthrough, and compact/sm CSS variants.
@@ -169,12 +169,12 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
 - **Status:** Complete. `design-system-showcase/index.html` vẫn còn inline scrollbar vì là standalone page không load `global.css`; đánh dấu out-of-scope cho loop này.
 
 ### Loop 8 — Remaining empty states SSOT
-- **Discovery:** `ImagePanel.tsx` và `CandidateView.tsx` vẫn dùng markup + CSS thủ công cho empty state (`cellImageEmpty`, `cellImageEmptyIcon`, `cellImageEmptyTitle`, `cellDefEmpty`) thay vì `EmptyState` component đã có từ Loop 3.
-- **Plan:** Thay thế bằng `<EmptyState size="sm" ...>`; xóa các class CSS dư thừa trong `DictionaryPanelView.module.css`. Giữ lại `.cellImageEmptyAction` vì nó là style riêng cho link `Google Images`.
+- **Discovery:** `ImagePanel.tsx` và `CandidateView.tsx` vẫn dùng markup + CSS thủ công cho empty state (`TihokaImageEmpty`, `TihokaImageEmptyIcon`, `TihokaImageEmptyTitle`, `TihokaDefEmpty`) thay vì `EmptyState` component đã có từ Loop 3.
+- **Plan:** Thay thế bằng `<EmptyState size="sm" ...>`; xóa các class CSS dư thừa trong `DictionaryPanelView.module.css`. Giữ lại `.TihokaImageEmptyAction` vì nó là style riêng cho link `Google Images`.
 - **AC:**
   1. `ImagePanel.tsx` dùng `EmptyState`.
   2. `CandidateView.tsx` dùng `EmptyState`.
-  3. Không còn `.cellImageEmpty`, `.cellImageEmptyIcon`, `.cellImageEmptyTitle`, `.cellDefEmpty`.
+  3. Không còn `.TihokaImageEmpty`, `.TihokaImageEmptyIcon`, `.TihokaImageEmptyTitle`, `.TihokaDefEmpty`.
   4. Build + tests pass.
 - **Do:**
   - Updated `ImagePanel.tsx` to use `EmptyState` with `icon`, `title`, and `action`.

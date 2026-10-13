@@ -7,7 +7,7 @@
   "principle": "Chrome's performance timeline is per-document, shared across isolated worlds — marks emitted by a content script appear in performance.getEntriesByType('mark'|'measure') when read via page.evaluate on the main world (verified on real Chromium, e2e/extension-latency-marks.spec.ts). No postMessage relay needed. In jsdom, performance.mark/measure/clearMarks do not exist — Object.assign stubs onto the performance object, don't jest.spyOn (spyOn throws 'property does not exist').",
   "cases": [
     {
-      "context": "lookup-latency-marks ship: dev-only cell:lookup:*/cell:audio:* marks emitted in popupLifecycle/useDictionaryToolbar (isolated world) were read directly by streamFlixPage.evaluate → real durations 30–300ms. The console.debug '[perf] <name>: <ms>ms' summary emitted alongside the measure doubles as a Playwright page.on('console') fallback surface.",
+      "context": "lookup-latency-marks ship: dev-only Tihoka:lookup:*/Tihoka:audio:* marks emitted in popupLifecycle/useDictionaryToolbar (isolated world) were read directly by streamFlixPage.evaluate → real durations 30–300ms. The console.debug '[perf] <name>: <ms>ms' summary emitted alongside the measure doubles as a Playwright page.on('console') fallback surface.",
       "bad": "jest.spyOn(performance, 'mark') → TypeError: Property mark does not exist in the provided object",
       "good": "Object.assign(performance, { mark: markMock, measure: measureMock, clearMarks: clearMarksMock })"
     }

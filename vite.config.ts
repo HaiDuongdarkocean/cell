@@ -195,13 +195,13 @@ export default defineConfig(({ mode }) => {
     define: {
       // Compile-time flag so the content script can skip heavy optional
       // features (OCR, study mode) during `build:fast`.
-      __CELL_FAST_BUILD__: isFast ? 'true' : 'false',
-      // Compile-time flag for test-only debug markers (data-cell-runscan,
-      // __CELL_DEBUG_PAGE_SCAN). Only enabled when `CELL_E2E=1` is set,
+      __Tihoka_FAST_BUILD__: isFast ? 'true' : 'false',
+      // Compile-time flag for test-only debug markers (data-tihoka-runscan,
+      // __Tihoka_DEBUG_PAGE_SCAN). Only enabled when `Tihoka_E2E=1` is set,
       // so production builds do not expose page scan metadata to the host.
       // The surrounding quotes are required: esbuild `define` treats the value
       // as raw JS code, so "true" (with quotes) becomes the string literal.
-      __CELL_DEBUG__: process.env.CELL_E2E === '1' ? '"true"' : '"false"',
+      __Tihoka_DEBUG__: process.env.Tihoka_E2E === '1' ? '"true"' : '"false"',
     },
     plugins: [
       ...(isExtension ? [crx({ manifest })] : []),

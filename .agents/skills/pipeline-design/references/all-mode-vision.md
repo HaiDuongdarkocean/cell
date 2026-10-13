@@ -34,7 +34,7 @@ Judge design-system faithfulness ONLY — do not redesign:
 2. Shape: corner radii consistent with the system's quiet-confidence language
    (small radius on lists/menus — the FAB failure was "too round")
 3. Typography rhythm matches sibling panels
-4. Touch targets ≥44px; spacing not cramped at 375px
+4. Touch targets ≥40px; spacing not cramped at 375px
 5. States visible: hover/focus/pressed/disabled/empty/error where applicable
 6. Deviations vs the shipped panel — list each with severity (P0 breaks job /
    P1 noticeable / P2 polish)

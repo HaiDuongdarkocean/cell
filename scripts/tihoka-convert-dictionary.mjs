@@ -115,7 +115,7 @@ async function main() {
   const stats = { entries: 0, skipped: 0, senses: 0, gloss: 0, example: 0, note: 0, translations: 0, redirects: 0 };
   const out = [];
   const outByTerm = new Map();
-  const glossKey = (s) => s.lines?.find((l) => l.role === 'gloss')?.text?.toLowerCase() ?? '';
+  const glossKey = (s) => s.lines?.[0]?.text?.toLowerCase() ?? '';
   for await (const raw of readRawEntries(resolve(input), only)) {
     if (stats.entries >= limit) break;
     const term = normWord(raw.term);
@@ -135,6 +135,15 @@ async function main() {
         const g = glossKey(s);
         if (g && existing.senses.some((x) => glossKey(x) === g)) continue;
         existing.senses.push(s);
+      }
+      if (raw.prons?.length) {
+        const seen = new Set((existing.prons ?? []).map((p) => `${p.accent}|${p.ipa}`));
+        for (const p of raw.prons) {
+          if (!seen.has(`${p.accent}|${p.ipa}`)) {
+            seen.add(`${p.accent}|${p.ipa}`);
+            (existing.prons ??= []).push(p);
+          }
+        }
       }
       continue;
     }

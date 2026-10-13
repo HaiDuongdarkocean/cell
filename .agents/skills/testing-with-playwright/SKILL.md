@@ -1,6 +1,6 @@
 ---
 name: testing-with-playwright
-description: Playwright E2E for Cell - fixtures, shadow-DOM actors, stage2 specs. Use for automated browser tests, not interactive sessions.
+description: Playwright E2E for Tihoka - fixtures, shadow-DOM actors, stage2 specs. Use for automated browser tests, not interactive sessions.
 ---
 
 # testing-with-playwright
@@ -8,7 +8,7 @@ description: Playwright E2E for Cell - fixtures, shadow-DOM actors, stage2 specs
 ## Core concepts
 
 - **Fixture**: Playwright mechanism tự setup/teardown và inject object vào test.
-  - `cellEnvironment.fixture.ts` (worker-scoped): launch Chromium, load Cell + uBOLite, mở StreamFlix, tạo `streamFlixPage`.
+  - `TihokaEnvironment.fixture.ts` (worker-scoped): launch Chromium, load Tihoka + uBOLite, mở StreamFlix, tạo `streamFlixPage`.
   - `universalPanel.fixture.ts` (test-scoped): tạo `universalPanel` actor từ `streamFlixPage`.
 - **Actor**: typed object chứa hành động của một feature. Test gọi actor thay vì viết `page.evaluate` + selector.
   - Ví dụ: `universalPanel.open()`, `universalPanel.search('exclamation')`.
@@ -27,7 +27,7 @@ description: Playwright E2E for Cell - fixtures, shadow-DOM actors, stage2 specs
 ```text
 e2e/
 ├── fixtures/
-│   ├── cellEnvironment.fixture.ts       # worker context + streamFlixPage
+│   ├── TihokaEnvironment.fixture.ts       # worker context + streamFlixPage
 │   └── actors/
 │       └── universalPanel.fixture.ts    # actor + SELECTORS map
 ├── stage2/
@@ -53,8 +53,8 @@ e2e/
 ## How fixtures chain
 
 ```ts
-// cellEnvironment.fixture.ts
-cellContext    → worker-scoped Chromium context with extensions
+// TihokaEnvironment.fixture.ts
+TihokaContext    → worker-scoped Chromium context with extensions
 streamFlixPage → page navigated to StreamFlix, video + overlay ready
 
 // actors/universalPanel.fixture.ts
@@ -156,5 +156,5 @@ Lưu evidence vào `loop/<audit>/image/` và state vào `loop/<audit>/state/NN-s
 
 - Default **headless** for speed and CI reproducibility. Use `--headed` or `npm run test:e2e:headed` when visual debugging or when the specific test requires a visible browser (some extension loading paths still require headed mode).
 - Playwright 1.61 may not load Chrome extensions in headless; if a test fails because the extension context is missing, re-run with `--headed` before debugging the code.
-- Worker teardown: `cellEnvironment.fixture.ts` tự `close()` context sau khi worker chạy xong.
+- Worker teardown: `TihokaEnvironment.fixture.ts` tự `close()` context sau khi worker chạy xong.
 - `scripts/e2e.sh` thu thập nhiều positional args vào array, chạy 1 lần Playwright.

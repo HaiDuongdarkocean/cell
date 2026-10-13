@@ -10,8 +10,8 @@
 
 ### 2. Selected-state CSS (Water wash) — REQ-4
 - `src/features/tokenize/ui/tokenSpanCss.ts`:
-  - `CELL_TOKEN_MAP` += `--cell-token-selected-bg` → resolved primary-subtle-ish wash (~18% `color-mix` of primary, resolved like existing entries).
-  - `buildTokenSpanCss` + `buildTokenSpanCssForShadow`: `.js-cell-token` + selected modifier → `background-image` wash overlay; add selected to the known/ignore underline-reveal selector group.
+  - `Tihoka_TOKEN_MAP` += `--Tihoka-token-selected-bg` → resolved primary-subtle-ish wash (~18% `color-mix` of primary, resolved like existing entries).
+  - `buildTokenSpanCss` + `buildTokenSpanCssForShadow`: `.js-Tihoka-token` + selected modifier → `background-image` wash overlay; add selected to the known/ignore underline-reveal selector group.
 - Tests: CSS builder emits the rule in both variants; `tokenSpanCss.test.ts` extension.
 
 ### 3. Selection API on subtitle controller — REQ-3
@@ -27,7 +27,7 @@
 - Tests: message content, dedupe.
 
 ### 6. Local-player subtitle tokenize controller — REQ-1, REQ-6
-- Composition root wiring (`src/entrypoints/local-player/`): `createSubtitleTokenizeController` with `getLineElements` (live overlay only, exclude `OverlayPreview`), `getExtraShadowRoots` → `[data-cell-split-view="panel"].shadowRoot`, `onOpenDictionary` → `webTextCtrl.handleLookup`, `getPopupStatusTarget` → `webTextCtrl.getPopupStatusTarget`; `cuesStore` subscription → `setCues`/`render`; destroy on language change/teardown; selection cleared on destroy.
+- Composition root wiring (`src/entrypoints/local-player/`): `createSubtitleTokenizeController` with `getLineElements` (live overlay only, exclude `OverlayPreview`), `getExtraShadowRoots` → `[data-tihoka-split-view="panel"].shadowRoot`, `onOpenDictionary` → `webTextCtrl.handleLookup`, `getPopupStatusTarget` → `webTextCtrl.getPopupStatusTarget`; `cuesStore` subscription → `setCues`/`render`; destroy on language change/teardown; selection cleared on destroy.
 - Tests: lifecycle, wiring, cue-driven render.
 
 ### 7. Gates + verification

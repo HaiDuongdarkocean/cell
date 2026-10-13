@@ -2,7 +2,7 @@
 
 ## Overview
 
-Gộp dictionary + frequency thành một resource architecture: một dropzone, content-derived component detection, một entry store (`langDictionaryEntry` giữ tên vật lý, freq rows stamp `kind:'freq'`), migration v14, `type` còn là derived label. Spec: `docs/specs/unified-resource-import.md`. Concept đã chọn: A (flat unified list). Worktree: `../cell-worktrees/unified-resource-import`, branch `unified-resource-import`.
+Gộp dictionary + frequency thành một resource architecture: một dropzone, content-derived component detection, một entry store (`langDictionaryEntry` giữ tên vật lý, freq rows stamp `kind:'freq'`), migration v14, `type` còn là derived label. Spec: `docs/specs/unified-resource-import.md`. Concept đã chọn: A (flat unified list). Worktree: `../Tihoka-worktrees/unified-resource-import`, branch `unified-resource-import`.
 
 ## Architecture Decisions
 
@@ -58,7 +58,7 @@ Gộp dictionary + frequency thành một resource architecture: một dropzone,
 | Migration copy trong versionchange tx chậm | Med | cursor-copy + test trên fixture lớn; abort-safe atomic |
 | `ResourcesPanel.test.tsx` rewrite lớn | Med | rewrite theo hành vi mới, giữ coverage các flows (dedupe, duplicate prompt, scheduler) |
 | sync-on-use (deliver, agent khác) đụng dictLocalSource | Med | branch riêng; merge-time conflict expected → rebase khi ship |
-| Dirty files agent khác trong main worktree | Low | đã cách ly bằng worktree riêng + `.cell-owner` |
+| Dirty files agent khác trong main worktree | Low | đã cách ly bằng worktree riêng + `.Tihoka-owner` |
 | Sót type-branch trong sweep | Med | grep-gate SC-14: `type === 'DICTIONARY'|'FREQUENCY'` và `resourceType` |
 
 ## Open Questions

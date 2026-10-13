@@ -49,7 +49,7 @@ Inventory current APIs, computed geometry, tests, Shadow DOM CSS injection and b
 
 **AC**
 - Existing Button/IconButton props and variant matrix documented in tests.
-- All subtitle native action/tab selectors and `data-cell-id` hooks listed.
+- All subtitle native action/tab selectors and `data-tihoka-id` hooks listed.
 - Overlay selectors that own material are identified.
 
 **Verify**

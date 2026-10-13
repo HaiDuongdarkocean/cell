@@ -1,26 +1,26 @@
 ---
 name: testing-extension-browser
-description: Real-Chrome Playwright verification for the Cell extension via packed .crx + cloned profile. Use for ad-hoc real-browser verification.
+description: Real-Chrome Playwright verification for the Tihoka extension via packed .crx + cloned profile. Use for ad-hoc real-browser verification.
 ---
 
 # Testing Extension Browser
 
 ## Overview
 
-**Two-phase workflow: `setup-cell-profile.py` packs the extension + clones the profile; Playwright persistent Chromium with that clone launches, navigates, and tests.**
+**Two-phase workflow: `setup-Tihoka-profile.py` packs the extension + clones the profile; Playwright persistent Chromium with that clone launches, navigates, and tests.**
 
 Four principles:
 
-1. **Environment prep is always step 1.** `script/launch-cell-context.mjs` owns build→pack+clone→warm-up→launch — test scripts `import { prepareCellEnvironment, warmUpCellContext, launchCellContext }` instead of writing a new launcher.
-2. **uBlock rides with Cell.** Both are loaded via `--load-extension=<dist>,<uBOLite>` — never rely on External Extensions JSON on Windows.
+1. **Environment prep is always step 1.** `script/launch-Tihoka-context.mjs` owns build→pack+clone→warm-up→launch — test scripts `import { prepareTihokaEnvironment, warmUpTihokaContext, launchTihokaContext }` instead of writing a new launcher.
+2. **uBlock rides with Tihoka.** Both are loaded via `--load-extension=<dist>,<uBOLite>` — never rely on External Extensions JSON on Windows.
 3. **Clone, don't share.** Each run clones from master — parallel agents never collide on the profile lock.
 4. **Contract before click.** Define "pass" as a concrete DOM state before interacting. "It works" is not a contract.
 
-**Stealth path when Chromium is bot-flagged or real Chrome is required** (YouTube, Netflix): `script/stealth_cell_browser.py` (`uv run --with nodriver`, import the `stealth_cell_browser` module) launches the installed Chrome and session-loads Cell + uBOLite via **CDP `Extensions.loadUnpacked`** — bypasses the Chrome 137+ `--load-extension` block without a profile clone. Same loop applies: `launch()` → `gate_extension()` → navigate/trigger/verify.
+**Stealth path when Chromium is bot-flagged or real Chrome is required** (YouTube, Netflix): `script/stealth_Tihoka_browser.py` (`uv run --with nodriver`, import the `stealth_Tihoka_browser` module) launches the installed Chrome and session-loads Tihoka + uBOLite via **CDP `Extensions.loadUnpacked`** — bypasses the Chrome 137+ `--load-extension` block without a profile clone. Same loop applies: `launch()` → `gate_extension()` → navigate/trigger/verify.
 
 ## When to Use
 
-- Any Cell browser test; verifying a fix on a real page; shadow DOM inspection or event dispatch; bugs that only appear on a specific host page
+- Any Tihoka browser test; verifying a fix on a real page; shadow DOM inspection or event dispatch; bugs that only appear on a specific host page
 
 **When NOT to use:** non-extension pages → Playwright with a temporary profile; performance traces → `chrome-devtools` MCP; headless CI → `npm run test:e2e` (Playwright fixtures); unit tests → `npm run test:unit`; persistent/interactive debug session where the user browses manually and the agent inspects on demand (intermittent bugs) → `testing-browser-with-profile`.
 
@@ -36,9 +36,9 @@ Each arrow has a guard — do not advance until it passes.
 |---|---|
 | 0. Contract | Given/When/Then names concrete DOM element, count, text, or class + ALL preconditions |
 | 1. Build | Build exits 0 + `dist/manifest.json` exists (+ `dist/seed/` when dictionary seed needed → `npx vite build --mode development`) |
-| 2. Pack + Clone | `prepareCellEnvironment()` (wraps `setup-cell-profile.py`) prints `CLONE_PATH=C:\cell-browser-sessions\sessions\cell-<uuid>` |
-| 3. Warm-up | `warmUpCellContext(CLONE_PATH)` — first open/close primes the clone so the extension is fully installed on the next launch. |
-| 4. Connect | `launchCellContext(CLONE_PATH)` resolves + Cell listed in `chrome://extensions` (or `fetchPatched: true`) |
+| 2. Pack + Clone | `prepareTihokaEnvironment()` (wraps `setup-Tihoka-profile.py`) prints `CLONE_PATH=C:\Tihoka-browser-sessions\sessions\Tihoka-<uuid>` |
+| 3. Warm-up | `warmUpTihokaContext(CLONE_PATH)` — first open/close primes the clone so the extension is fully installed on the next launch. |
+| 4. Connect | `launchTihokaContext(CLONE_PATH)` resolves + Tihoka listed in `chrome://extensions` (or `fetchPatched: true`) |
 | 4. Navigate | `page.goto(url)` resolves + target element visible |
 | 5. Trigger | `page.evaluate(...)` / `locator.click()` succeeds + target has non-empty text |
 | 6. Verify | Contract's "Then" passes with DOM evidence — repeated 2–3× |
@@ -46,17 +46,17 @@ Each arrow has a guard — do not advance until it passes.
 
 ## Hard-won rules (do not relearn the hard way)
 
-- **Google Chrome 137+ blocks `--load-extension` and `external_crx` on Windows.** Two paths: **Playwright bundled Chromium** + clone + `--load-extension` (merge gate, but bot-flagged by YouTube), or **nodriver + CDP `Extensions.loadUnpacked`** (`stealth_cell_browser.py`, stealth session, extensions gone on exit — re-load per launch). Packed `.crx` + External Extensions JSON is for Linux/macOS only. After each `npm run build`, re-pack with `--rebuild`.
+- **Google Chrome 137+ blocks `--load-extension` and `external_crx` on Windows.** Two paths: **Playwright bundled Chromium** + clone + `--load-extension` (merge gate, but bot-flagged by YouTube), or **nodriver + CDP `Extensions.loadUnpacked`** (`stealth_Tihoka_browser.py`, stealth session, extensions gone on exit — re-load per launch). Packed `.crx` + External Extensions JSON is for Linux/macOS only. After each `npm run build`, re-pack with `--rebuild`.
 - **Stealth/nodriver evaluate quirks:** `evaluate()` doesn't await promises → stash async results in `window.__r_*` and poll; returns CDP `[[key,{type,value}]]` pairs → normalize (`ev()` handles both). Inline `<script>` injection is CSP-blocked on YouTube — `evaluate()` the source directly instead. `xhrPatched`/`fetchPatched` toString() probes are false-negative: uBOLite re-wraps after `document_start` while still calling ours — gate on `__YT_MAIN_WORLD_INJECTED`, verify hooks functionally.
-- **uBlock is ALWAYS loaded alongside Cell via `--load-extension=dist,data/extension/uBOLite`** (comma-separated, same flag + same `--disable-extensions-except` list). The External Extensions JSON written by `setup-cell-profile.py` does NOT install anything on Windows — the uBlock .crx packs fine yet silently never loads. `data/extension/uBOLite` + `ublock-key.pem` are gitignored — copy them from the main repo into a fresh worktree before setup.
-- **Never hand-roll a launcher.** `script/launch-cell-context.mjs` exposes `prepareCellEnvironment({rebuild})`, `warmUpCellContext(clonePath)`, `launchCellContext(clonePath)` — new test scripts import these and start at navigate/trigger/verify.
+- **uBlock is ALWAYS loaded alongside Tihoka via `--load-extension=dist,data/extension/uBOLite`** (comma-separated, same flag + same `--disable-extensions-except` list). The External Extensions JSON written by `setup-Tihoka-profile.py` does NOT install anything on Windows — the uBlock .crx packs fine yet silently never loads. `data/extension/uBOLite` + `ublock-key.pem` are gitignored — copy them from the main repo into a fresh worktree before setup.
+- **Never hand-roll a launcher.** `script/launch-Tihoka-context.mjs` exposes `prepareTihokaEnvironment({rebuild})`, `warmUpTihokaContext(clonePath)`, `launchTihokaContext(clonePath)` — new test scripts import these and start at navigate/trigger/verify.
 - **Autoplay blocks `video.play()` from script** — click the play button first, then seek via `page.evaluate`.
 - **Shadow DOM:** `page.evaluate` CAN reach open `shadowRoot`s; `caretRangeFromPoint` CANNOT (use `shadowRoot.elementFromPoint`); events need `composed: true` dispatched on `document`.
 - **`page.evaluate` does not await promises in the page** — use sync IIFEs, or `page.evaluate` with an async arrow and wait for the returned Promise.
 - **`chrome.storage` is undefined in page world** — inspect DOM attributes instead.
 - **One Chrome per clone** — launch fails with profile lock → `context.close()` the old one, wait 3s, retry.
 - **Verify probe:** `fetchPatched: true` is the strongest liveness signal (runs `document_start`, MAIN world, `<all_urls>`). `subtitleRoot` false on a video-less page is not a failure.
-- **Extension paths with spaces silently break `--load-extension` when launched via `Start-Process`/raw command line** — inner quotes get stripped, the arg splits at the space, and Chrome-family opens the fragments as bogus `http://...` tabs while loading no extension. Always use the no-space junctions `C:\cell-browser-sessions\ext-dist` + `ext-ublock` (junctions → live `dist/`/`uBOLite`, never stale). Verify via `GET /json` targets: any `http://ecosystem/...`-style junk tab means the arg split. (Playwright `launchPersistentContext` is immune — Node spawn quotes argv correctly; this only bites shell launches.)
+- **Extension paths with spaces silently break `--load-extension` when launched via `Start-Process`/raw command line** — inner quotes get stripped, the arg splits at the space, and Chrome-family opens the fragments as bogus `http://...` tabs while loading no extension. Always use the no-space junctions `C:\Tihoka-browser-sessions\ext-dist` + `ext-ublock` (junctions → live `dist/`/`uBOLite`, never stale). Verify via `GET /json` targets: any `http://ecosystem/...`-style junk tab means the arg split. (Playwright `launchPersistentContext` is immune — Node spawn quotes argv correctly; this only bites shell launches.)
 - **`browser.close()` on a `connectOverCDP` connection closes the real browser**, not just the socket. To keep a debug browser alive, end probe scripts with `process.exit(0)`; call `close()` only to intentionally end the session.
 - **Console/exceptions can't be recovered by attaching CDP after the bug** — for intermittent bugs, a watcher must log `Runtime.consoleAPICalled`/`exceptionThrown`/`Log.entryAdded` from t=0 (see `testing-browser-with-profile/script/watch.mjs`).
 
@@ -69,7 +69,7 @@ Forbidden unless justified with evidence:
 
 - Launching without building first; editing `dist/` directly; copying `dist/` elsewhere
 - `--load-extension` on **Google Chrome** 137+ or `external_crx` on Windows; CDP `loadUnpacked` is session-only; Preferences `location=4` gets stripped. Use Playwright Chromium + warm-up.
-- Writing a new Playwright launcher instead of importing `script/launch-cell-context.mjs`; loading Cell alone without uBlock
+- Writing a new Playwright launcher instead of importing `script/launch-Tihoka-context.mjs`; loading Tihoka alone without uBlock
 - Killing the Chrome process with `Stop-Process` / `taskkill` (skips `context.close()` → clone leak)
 - Declaring pass after one successful test — repeat ≥2×
 - Treating DOM text as user-visible behavior — check rendered rect, opacity, display

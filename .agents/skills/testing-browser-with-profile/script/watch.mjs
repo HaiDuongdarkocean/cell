@@ -1,11 +1,13 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { requireSession } from './session.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(SCRIPT_DIR, '../../../..');
-const PORT = process.env.CELL_DEBUG_PORT ?? '9223';
-const LOG_DIR = path.join(ROOT, 'tmp', process.env.CELL_DEBUG_OUT ?? 'debug-brave');
+const session = requireSession();
+const PORT = String(session.port);
+const LOG_DIR = path.join(ROOT, 'tmp', session.out);
 const LOG = path.join(LOG_DIR, 'console.jsonl');
 const CDP_HTTP = `http://127.0.0.1:${PORT}`;
 

@@ -12,9 +12,9 @@
       "good": ".subtitle-block {\n  cursor: grab;\n  pointer-events: auto;\n  touch-action: none; /* browser không scroll/zoom ở đây, JS nhận trọn gesture */\n}"
     },
     {
-      "context": "Floating Action Button (.cell-token-fab) drag-to-reposition. Shadow DOM, pointer events, setPointerCapture. Trên touch screen drag giật.",
-      "bad": ".cell-token-fab {\n  position: fixed !important;\n  cursor: pointer !important;\n  /* thiếu touch-action — pointercancel bắn khi browser bắt đầu scroll */\n}",
-      "good": ".cell-token-fab {\n  position: fixed !important;\n  cursor: pointer !important;\n  touch-action: none !important; /* !important vì .btn--primary có thể override */\n}"
+      "context": "Floating Action Button (.Tihoka-token-fab) drag-to-reposition. Shadow DOM, pointer events, setPointerCapture. Trên touch screen drag giật.",
+      "bad": ".Tihoka-token-fab {\n  position: fixed !important;\n  cursor: pointer !important;\n  /* thiếu touch-action — pointercancel bắn khi browser bắt đầu scroll */\n}",
+      "good": ".Tihoka-token-fab {\n  position: fixed !important;\n  cursor: pointer !important;\n  touch-action: none !important; /* !important vì .btn--primary có thể override */\n}"
     }
   ],
   "applyFor": [
