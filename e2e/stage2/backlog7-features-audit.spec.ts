@@ -1,5 +1,5 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
 const OUT = 'tmp/backlog7-audit/img';
 const VIDEO = '#player-wrapper video';
@@ -56,7 +56,7 @@ function panelQuery(page: Page) {
       page.evaluate(
         (s) =>
           document
-            .querySelector('[data-cell-split-view="panel"]')
+            .querySelector('[data-tihoka-split-view="panel"]')
             ?.shadowRoot?.querySelectorAll(s).length ?? -1,
         sel,
       ),
@@ -64,14 +64,14 @@ function panelQuery(page: Page) {
       page.evaluate(
         (s) =>
           document
-            .querySelector('[data-cell-split-view="panel"]')
+            .querySelector('[data-tihoka-split-view="panel"]')
             ?.shadowRoot?.querySelector(s)
             ?.textContent?.trim() ?? null,
         sel,
       ),
     click: (sel: string) =>
       page.evaluate((s) => {
-        const panel = document.querySelector('[data-cell-split-view="panel"]');
+        const panel = document.querySelector('[data-tihoka-split-view="panel"]');
         const el = panel?.shadowRoot?.querySelector<HTMLElement>(s);
         if (!el) return false;
         el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }));
@@ -80,7 +80,7 @@ function panelQuery(page: Page) {
     eval: <R>(fn: (root: ShadowRoot | null) => R) =>
       page.evaluate(
         (f) => {
-          const panel = document.querySelector('[data-cell-split-view="panel"]');
+          const panel = document.querySelector('[data-tihoka-split-view="panel"]');
           const fnBody = new Function(`return (${f})`)() as (r: ShadowRoot | null) => R;
           return fnBody(panel?.shadowRoot ?? null);
         },
@@ -91,14 +91,14 @@ function panelQuery(page: Page) {
 
 async function collectCueTerms(page: Page): Promise<{ cueKey: string; terms: string[] }[]> {
   return page.evaluate(() => {
-    const panel = document.querySelector('[data-cell-split-view="panel"]');
+    const panel = document.querySelector('[data-tihoka-split-view="panel"]');
     const root = panel?.shadowRoot;
     if (!root) return [];
-    const items = [...root.querySelectorAll('[data-cell-id="cue-item"]')];
+    const items = [...root.querySelectorAll('[data-tihoka-id="cue-item"]')];
     return items.map((item) => {
       const start = item.getAttribute('data-cue-start') ?? '?';
-      const terms = [...item.querySelectorAll('.js-cell-token[data-cell-term]')]
-        .map((t) => (t.getAttribute('data-cell-term') ?? '').toLowerCase())
+      const terms = [...item.querySelectorAll('.js-Tihoka-token[data-tihoka-term]')]
+        .map((t) => (t.getAttribute('data-tihoka-term') ?? '').toLowerCase())
         .filter(Boolean);
       return { cueKey: start, terms };
     });
@@ -148,7 +148,7 @@ async function pauseAt(page: Page, t: number): Promise<void> {
 
 test.describe('Stage 2: Backlog-7 features audit on StreamFlix', () => {
   test('full journey: tokenize → heat + FAB + adaptive + i1-replay → local player', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage: page,
   }) => {
     const consoleErrors: string[] = [];
@@ -157,24 +157,24 @@ test.describe('Stage 2: Backlog-7 features audit on StreamFlix', () => {
     });
     page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
 
-    await seedOverlaySettings(cellContext);
-    await writeStudyModes(cellContext, 'normal');
+    await seedOverlaySettings(TihokaContext);
+    await writeStudyModes(TihokaContext, 'normal');
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page.locator('#cell-subtitle-root')).toBeAttached({ timeout: 30_000 });
+    await expect(page.locator('#Tihoka-subtitle-root')).toBeAttached({ timeout: 30_000 });
     await pauseAt(page, 20.6);
 
     const panel = panelQuery(page);
 
     await test.step('open split view + wait for tokenize/cues', async () => {
       await page.keyboard.press('t');
-      await expect(page.locator('[data-cell-split-view="panel"]')).toBeVisible({
+      await expect(page.locator('[data-tihoka-split-view="panel"]')).toBeVisible({
         timeout: 15_000,
       });
       await expect
-        .poll(() => panel.count('[data-cell-id="cue-item"]'), { timeout: 30_000 })
+        .poll(() => panel.count('[data-tihoka-id="cue-item"]'), { timeout: 30_000 })
         .toBeGreaterThan(0);
       await expect
-        .poll(() => panel.count('.js-cell-token[data-cell-term]'), { timeout: 30_000 })
+        .poll(() => panel.count('.js-Tihoka-token[data-tihoka-term]'), { timeout: 30_000 })
         .toBeGreaterThan(0);
       await shot(page, '01-split-view-cues');
     });
@@ -186,9 +186,9 @@ test.describe('Stage 2: Backlog-7 features audit on StreamFlix', () => {
     );
 
     await test.step('seed mixed statuses so bands vary', async () => {
-      const lp = await cellContext.newPage();
-      const sw = cellContext.serviceWorkers()[0];
-      const extId = new URL(sw?.url() ?? (await cellContext.waitForEvent('serviceworker').then((w) => w.url()))).host;
+      const lp = await TihokaContext.newPage();
+      const sw = TihokaContext.serviceWorkers()[0];
+      const extId = new URL(sw?.url() ?? (await TihokaContext.waitForEvent('serviceworker').then((w) => w.url()))).host;
       await lp.goto(`chrome-extension://${extId}/src/entrypoints/local-player/index.html`);
       await lp.waitForLoadState('domcontentloaded');
 
@@ -210,7 +210,7 @@ test.describe('Stage 2: Backlog-7 features audit on StreamFlix', () => {
         term,
         status: keepUnknown.has(term) ? 'unknown' : denseKeep.has(term) ? 'unknown' : 'known',
       }));
-      const ok = await seedStatuses(cellContext, rows);
+      const ok = await seedStatuses(TihokaContext, rows);
       console.log(`[audit] WORD_STATUS_SET ok=${ok}/${rows.length}`);
       await page.waitForTimeout(2000);
       console.log(
@@ -221,13 +221,13 @@ test.describe('Stage 2: Backlog-7 features audit on StreamFlix', () => {
     await test.step('cue-difficulty-map: heat bars render', async () => {
       const heat = await panel.eval((root) => {
         if (!root) return null;
-        const items = [...root.querySelectorAll('[data-cell-id="cue-item"]')];
+        const items = [...root.querySelectorAll('[data-tihoka-id="cue-item"]')];
         const dist: Record<string, number> = {};
         for (const it of items) {
           const h = it.getAttribute('data-heat') ?? 'none';
           dist[h] = (dist[h] ?? 0) + 1;
         }
-        const bars = root.querySelectorAll('[data-cell-id="cue-heat"]').length;
+        const bars = root.querySelectorAll('[data-tihoka-id="cue-heat"]').length;
         return { dist, bars, items: items.length };
       });
       console.log(`[audit] heat: ${JSON.stringify(heat)}`);
@@ -237,8 +237,8 @@ test.describe('Stage 2: Backlog-7 features audit on StreamFlix', () => {
     await test.step('cue-recommend-fab: badge + menu + filter', async () => {
       const fabInfo = await panel.eval((root) => {
         if (!root) return null;
-        const fab = root.querySelector('[data-cell-id="cue-filter-fab"]');
-        const badge = root.querySelector('[data-cell-id="cue-filter-badge"]');
+        const fab = root.querySelector('[data-tihoka-id="cue-filter-fab"]');
+        const badge = root.querySelector('[data-tihoka-id="cue-filter-badge"]');
         const rect = fab?.getBoundingClientRect();
         return {
           fab: !!fab,
@@ -249,7 +249,7 @@ test.describe('Stage 2: Backlog-7 features audit on StreamFlix', () => {
       });
       console.log(`[audit] fab: ${JSON.stringify(fabInfo)}`);
       if (fabInfo?.fab) {
-        await panel.click('[data-cell-id="cue-filter-fab"]');
+        await panel.click('[data-tihoka-id="cue-filter-fab"]');
         await page.waitForTimeout(400);
         const menu = await panel.eval((root) => {
           if (!root) return null;
@@ -278,9 +278,9 @@ test.describe('Stage 2: Backlog-7 features audit on StreamFlix', () => {
         await page.waitForTimeout(800);
         const after = await panel.eval((root) => {
           if (!root) return null;
-          const strip = root.querySelector('[data-cell-id="cue-filter-strip"]');
-          const items = root.querySelectorAll('[data-cell-id="cue-item"]').length;
-          const empty = root.querySelector('[data-cell-id="cue-filter-empty"]');
+          const strip = root.querySelector('[data-tihoka-id="cue-filter-strip"]');
+          const items = root.querySelectorAll('[data-tihoka-id="cue-item"]').length;
+          const empty = root.querySelector('[data-tihoka-id="cue-filter-empty"]');
           return {
             stripText: strip?.textContent?.trim() ?? null,
             items,
@@ -293,11 +293,11 @@ test.describe('Stage 2: Backlog-7 features audit on StreamFlix', () => {
     });
 
     await test.step('adaptive-subtitles: visibility follows band', async () => {
-      await writeStudyModes(cellContext, 'adaptive');
+      await writeStudyModes(TihokaContext, 'adaptive');
       await page.waitForTimeout(500);
       const overlayState = async () =>
         page.evaluate(() => {
-          const root = document.getElementById('cell-subtitle-root')?.shadowRoot;
+          const root = document.getElementById('Tihoka-subtitle-root')?.shadowRoot;
           const vis = (role: string) => {
             const el = root?.querySelector(`[data-role="${role}"]`) as HTMLElement | null;
             if (!el) return 'absent';
@@ -323,7 +323,7 @@ test.describe('Stage 2: Backlog-7 features audit on StreamFlix', () => {
     });
 
     await test.step('dense-cue-replay: i1-replay skips easy cues', async () => {
-      await writeStudyModes(cellContext, 'i1-replay');
+      await writeStudyModes(TihokaContext, 'i1-replay');
       const v = page.locator(VIDEO).first();
       const samples: { t: number; paused: boolean }[] = [];
       await playFrom(page, 0);
@@ -333,17 +333,17 @@ test.describe('Stage 2: Backlog-7 features audit on StreamFlix', () => {
       }
       console.log(`[audit] i1-replay timeline: ${JSON.stringify(samples)}`);
       await shot(page, '07-i1-replay');
-      await writeStudyModes(cellContext, 'normal');
+      await writeStudyModes(TihokaContext, 'normal');
       await pauseAt(page, 20.6);
     });
 
     await test.step('local player: ImmersionStats + fit sort', async () => {
-      const lp = cellContext.pages().find((p) => p.url().includes('local-player'));
+      const lp = TihokaContext.pages().find((p) => p.url().includes('local-player'));
       expect(lp).toBeTruthy();
       await lp!.bringToFront();
       await lp!.waitForTimeout(1000);
       const stats = await lp!.evaluate(() => {
-        const statsEl = document.querySelector('[data-cell-id="immersion-stats"], [class*="ImmersionStats"], [role="progressbar"]');
+        const statsEl = document.querySelector('[data-tihoka-id="immersion-stats"], [class*="ImmersionStats"], [role="progressbar"]');
         const selects = [...document.querySelectorAll('select')].map((s) => ({
           options: [...s.options].map((o) => o.textContent),
           value: s.value,

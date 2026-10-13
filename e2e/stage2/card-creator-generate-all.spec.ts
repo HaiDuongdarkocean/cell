@@ -162,8 +162,8 @@ async function seedDictionary(
 function fieldValue(page: Page, dataId: string): Promise<string | null> {
   return page.evaluate(
     (id) => {
-      const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-      const area = root?.querySelector(`[data-cell-id="${id}-input"] textarea`) as HTMLTextAreaElement | null;
+      const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+      const area = root?.querySelector(`[data-tihoka-id="${id}-input"] textarea`) as HTMLTextAreaElement | null;
       return area?.value ?? null;
     },
     dataId,
@@ -174,10 +174,10 @@ function fieldValue(page: Page, dataId: string): Promise<string | null> {
 function mediaCount(page: Page, dataId: string, kind: 'audio' | 'image'): Promise<number> {
   return page.evaluate(
     ({ id, k }) => {
-      const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
+      const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
       const selector = k === 'audio'
-        ? `[data-cell-id="${id}"] [data-cell-id^="${id}-view-"]`
-        : `[data-cell-id="${id}"] [data-cell-id^="${id}-thumb-"]`;
+        ? `[data-tihoka-id="${id}"] [data-tihoka-id^="${id}-view-"]`
+        : `[data-tihoka-id="${id}"] [data-tihoka-id^="${id}-thumb-"]`;
       return root?.querySelectorAll(selector)?.length ?? 0;
     },
     { id: dataId, k: kind },
@@ -194,12 +194,12 @@ function mediaCount(page: Page, dataId: string, kind: 'audio' | 'image'): Promis
  */
 test.describe('Stage 2: Card Creator > Generate all from a typed target word', () => {
   test('looks the word up in the dictionary and fills the card', async ({
-    cellContext,
+    TihokaContext,
     universalPanel,
     streamFlixPage,
   }, testInfo) => {
-    await seedStorage(cellContext, { settings: makeSettings() });
-    await seedDictionary(cellContext, 'en', [
+    await seedStorage(TihokaContext, { settings: makeSettings() });
+    await seedDictionary(TihokaContext, 'en', [
       {
         term: 'exclamation',
         pos: 'n.',
@@ -217,8 +217,8 @@ test.describe('Stage 2: Card Creator > Generate all from a typed target word', (
         new Promise<boolean>((resolve) => {
           const start = Date.now();
           const tick = (): void => {
-            const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-            if (root?.querySelector('[data-cell-id="card-creator-content"]')) return resolve(true);
+            const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+            if (root?.querySelector('[data-tihoka-id="card-creator-content"]')) return resolve(true);
             if (Date.now() - start > maxWait) return resolve(false);
             setTimeout(tick, 100);
           };
@@ -229,12 +229,12 @@ test.describe('Stage 2: Card Creator > Generate all from a typed target word', (
     expect(contentReady, 'Card Creator pane did not mount').toBe(true);
 
     // User types the target word manually (no prefill — context is null).
-    const targetArea = streamFlixPage.locator('[data-cell-id="cc-target-word-input"] textarea');
+    const targetArea = streamFlixPage.locator('[data-tihoka-id="cc-target-word-input"] textarea');
     await targetArea.fill('exclamation');
     await expect.poll(() => fieldValue(streamFlixPage, 'cc-target-word')).toBe('exclamation');
 
     // User clicks Generate all → dictionary lookup → data flows back.
-    await streamFlixPage.locator('[data-cell-id="cc-generate-all"]').click();
+    await streamFlixPage.locator('[data-tihoka-id="cc-generate-all"]').click();
 
     // Definitions must be populated from the seeded dictionary entry.
     await expect
@@ -245,7 +245,7 @@ test.describe('Stage 2: Card Creator > Generate all from a typed target word', (
     expect(definitions, 'definitions stayed empty after Generate all').toContain('sudden cry');
 
     // A feedback toast is visible in the card creator body.
-    const toast = streamFlixPage.locator('[data-cell-id="cc-toast-stack"] [data-toast-kind]');
+    const toast = streamFlixPage.locator('[data-tihoka-id="cc-toast-stack"] [data-toast-kind]');
     await expect(toast.first()).toBeVisible({ timeout: 5_000 });
 
     // Media fetched from dictionary sources lands in the card (word audio).

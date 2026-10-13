@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
 test.describe('Stage 2: Split View on StreamFlix', () => {
   test('pressing t keeps the video visible beside the subtitle panel', async ({ streamFlixPage }) => {
@@ -8,8 +8,8 @@ test.describe('Stage 2: Split View on StreamFlix', () => {
     expect(before).not.toBeNull();
 
     await streamFlixPage.keyboard.press('t');
-    const wrapper = streamFlixPage.locator('[data-cell-split-view="wrapper"]');
-    const panel = streamFlixPage.locator('[data-cell-split-view="panel"]');
+    const wrapper = streamFlixPage.locator('[data-tihoka-split-view="wrapper"]');
+    const panel = streamFlixPage.locator('[data-tihoka-split-view="panel"]');
     await expect(wrapper).toBeVisible({ timeout: 10_000 });
     await expect(panel).toBeVisible();
 

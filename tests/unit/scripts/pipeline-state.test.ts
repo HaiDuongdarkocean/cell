@@ -27,7 +27,7 @@ function run(root: string, ...args: string[]): Result {
   const r = spawnSync(process.execPath, [SCRIPT, ...args], {
     cwd: root,
     encoding: 'utf8',
-    env: { ...process.env, CELL_AGENT_ID: '' },
+    env: { ...process.env, Tihoka_AGENT_ID: '' },
   });
   return { status: r.status, stdout: r.stdout ?? '', stderr: r.stderr ?? '' };
 }
@@ -642,11 +642,11 @@ describe('ownership', () => {
     expect(r.status).toBe(0);
   });
 
-  it('CELL_AGENT_ID env identifies the caller', () => {
+  it('Tihoka_AGENT_ID env identifies the caller', () => {
     const root = makeRoot();
-    runEnv(root, { CELL_AGENT_ID: A }, 'init', SLUG, '--mode', 'interactive');
+    runEnv(root, { Tihoka_AGENT_ID: A }, 'init', SLUG, '--mode', 'interactive');
     expect(stateOf(root).items[SLUG].owner.id).toBe(A);
-    const r = runEnv(root, { CELL_AGENT_ID: B }, 'set', SLUG, 'uiSurface=yes');
+    const r = runEnv(root, { Tihoka_AGENT_ID: B }, 'set', SLUG, 'uiSurface=yes');
     expect(r.status).toBe(1);
     expect(r.stderr).toMatch(/owned by 'agent-a'/);
   });
@@ -654,7 +654,7 @@ describe('ownership', () => {
   it('human caller (no id) may mutate owned item with a warning', () => {
     const root = makeRoot();
     initOwned(root);
-    const r = runEnv(root, { CELL_AGENT_ID: '' }, 'set', SLUG, 'uiSurface=yes');
+    const r = runEnv(root, { Tihoka_AGENT_ID: '' }, 'set', SLUG, 'uiSurface=yes');
     expect(r.status).toBe(0);
     expect(r.stderr).toMatch(/human override/);
     expect(stateOf(root).items[SLUG].owner.id).toBe(A);
@@ -705,7 +705,7 @@ describe('ownership', () => {
   it('request-handoff requires an agent identity', () => {
     const root = makeRoot();
     initOwned(root);
-    const r = runEnv(root, { CELL_AGENT_ID: '' }, 'request-handoff', SLUG, '--note', 'x');
+    const r = runEnv(root, { Tihoka_AGENT_ID: '' }, 'request-handoff', SLUG, '--note', 'x');
     expect(r.status).toBe(1);
     expect(r.stderr).toMatch(/agent identity/);
   });
@@ -729,7 +729,7 @@ describe('ownership', () => {
     initOwned(root);
     const r = run(root, 'handoff', SLUG, '--to', B, '--owner', 'agent-c');
     expect(r.status).toBe(1);
-    const h = runEnv(root, { CELL_AGENT_ID: '' }, 'handoff', SLUG, '--to', B);
+    const h = runEnv(root, { Tihoka_AGENT_ID: '' }, 'handoff', SLUG, '--to', B);
     expect(h.status).toBe(0);
     expect(stateOf(root).items[SLUG].owner.id).toBe(B);
   });
@@ -757,8 +757,8 @@ describe('ownership', () => {
   it('worktree is settable by owner', () => {
     const root = makeRoot();
     initOwned(root);
-    expect(run(root, 'set', SLUG, 'worktree=../cell-worktrees/feat-x', '--owner', A).status).toBe(0);
-    expect(stateOf(root).items[SLUG].worktree).toBe('../cell-worktrees/feat-x');
+    expect(run(root, 'set', SLUG, 'worktree=../Tihoka-worktrees/feat-x', '--owner', A).status).toBe(0);
+    expect(stateOf(root).items[SLUG].worktree).toBe('../Tihoka-worktrees/feat-x');
   });
 
   it('bind attaches sessionId to the current owner; handoff resets it', () => {

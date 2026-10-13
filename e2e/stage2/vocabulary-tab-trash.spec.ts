@@ -106,7 +106,7 @@ async function shadowClick(page: Page, selector: string, timeout = 10_000): Prom
         const startTime = Date.now();
         const tick = (): void => {
           const el = document
-            .getElementById('cell-universal-panel-host')
+            .getElementById('Tihoka-universal-panel-host')
             ?.shadowRoot?.querySelector(sel) as HTMLElement | null;
           if (el) {
             el.click();
@@ -130,7 +130,7 @@ async function shadowCount(page: Page, selector: string): Promise<number> {
   return page.evaluate(
     (sel) =>
       document
-        .getElementById('cell-universal-panel-host')
+        .getElementById('Tihoka-universal-panel-host')
         ?.shadowRoot?.querySelectorAll(sel).length ?? 0,
     selector,
   );
@@ -140,7 +140,7 @@ async function shadowText(page: Page, selector: string): Promise<string | null> 
   return page.evaluate(
     (sel) =>
       (document
-        .getElementById('cell-universal-panel-host')
+        .getElementById('Tihoka-universal-panel-host')
         ?.shadowRoot?.querySelector(sel)?.textContent ?? null),
     selector,
   );
@@ -150,7 +150,7 @@ async function shadowType(page: Page, selector: string, value: string): Promise<
   const ok = await page.evaluate(
     ({ sel, text }) => {
       const input = document
-        .getElementById('cell-universal-panel-host')
+        .getElementById('Tihoka-universal-panel-host')
         ?.shadowRoot?.querySelector(sel) as HTMLInputElement | null;
       if (!input) return false;
       input.focus();
@@ -163,22 +163,22 @@ async function shadowType(page: Page, selector: string, value: string): Promise<
   if (!ok) throw new Error(`shadow input target not found: ${selector}`);
 }
 
-const row = (term: string): string => `[data-cell-id="vocabulary-row-${term}"]`;
-const trashRow = (term: string): string => `[data-cell-id="vocabulary-trash-row-${term}"]`;
-const segCount = (s: string): string => `[data-cell-id="vocabulary-segment-count-${s}"]`;
+const row = (term: string): string => `[data-tihoka-id="vocabulary-row-${term}"]`;
+const trashRow = (term: string): string => `[data-tihoka-id="vocabulary-trash-row-${term}"]`;
+const segCount = (s: string): string => `[data-tihoka-id="vocabulary-segment-count-${s}"]`;
 const openFilter = (page: Page): Promise<void> =>
-  shadowClick(page, '[data-cell-id="vocabulary-filter"]');
+  shadowClick(page, '[data-tihoka-id="vocabulary-filter"]');
 const openMore = (page: Page): Promise<void> =>
-  shadowClick(page, '[data-cell-id="vocabulary-more"]');
+  shadowClick(page, '[data-tihoka-id="vocabulary-more"]');
 const openTrash = async (page: Page): Promise<void> => {
   await openMore(page);
-  await shadowClick(page, '[data-cell-id="vocabulary-more-trash"]');
+  await shadowClick(page, '[data-tihoka-id="vocabulary-more-trash"]');
 };
 const backToLive = (page: Page): Promise<void> =>
-  shadowClick(page, '[data-cell-id="vocabulary-trash-back"]');
+  shadowClick(page, '[data-tihoka-id="vocabulary-trash-back"]');
 
 test('vocabulary tab: hero, segments, bulk delete, trash restore/purge, persistence', async ({
-  cellContext,
+  TihokaContext,
   streamFlixPage,
   universalPanel,
 }) => {
@@ -188,11 +188,11 @@ test('vocabulary tab: hero, segments, bulk delete, trash restore/purge, persiste
   await universalPanel.open();
   await universalPanel.openTab('vocabulary');
   await expect
-    .poll(() => shadowCount(page, '[data-cell-id="vocabulary-tab"]'), { timeout: 15_000 })
+    .poll(() => shadowCount(page, '[data-tihoka-id="vocabulary-tab"]'), { timeout: 15_000 })
     .toBe(1);
 
   await seedVocabulary(
-    cellContext,
+    TihokaContext,
     [
       { term: 'alpha', status: 'tracking' },
       { term: 'beta', status: 'known' },
@@ -211,7 +211,7 @@ test('vocabulary tab: hero, segments, bulk delete, trash restore/purge, persiste
     .toBe(1);
 
   // Hero reports the known count; legacy 'unknown' zeta row is swept.
-  expect(await shadowText(page, '[data-cell-id="vocabulary-hero"]')).toContain('1 Known words');
+  expect(await shadowText(page, '[data-tihoka-id="vocabulary-hero"]')).toContain('1 Known words');
   expect(await shadowCount(page, row('zeta'))).toBe(0);
 
   // Filter menu counts.
@@ -223,72 +223,72 @@ test('vocabulary tab: hero, segments, bulk delete, trash restore/purge, persiste
   await expect.poll(() => shadowText(page, segCount('learning'))).toBe('0');
 
   // Segment filter (menu already open).
-  await shadowClick(page, '[data-cell-id="vocabulary-segment-tracking"]');
-  await expect.poll(() => shadowCount(page, '[data-cell-id^="vocabulary-row-"]')).toBe(2);
+  await shadowClick(page, '[data-tihoka-id="vocabulary-segment-tracking"]');
+  await expect.poll(() => shadowCount(page, '[data-tihoka-id^="vocabulary-row-"]')).toBe(2);
   expect(await shadowCount(page, row('alpha'))).toBe(1);
   expect(await shadowCount(page, row('delta'))).toBe(1);
   await openFilter(page);
-  await shadowClick(page, '[data-cell-id="vocabulary-segment-all"]');
+  await shadowClick(page, '[data-tihoka-id="vocabulary-segment-all"]');
 
   // Search lives behind the top-bar toggle and filters the live view.
-  await shadowClick(page, '[data-cell-id="vocabulary-search-toggle"]');
-  await shadowType(page, 'input[data-cell-id="vocabulary-search"]', 'alph');
-  await expect.poll(() => shadowCount(page, '[data-cell-id^="vocabulary-row-"]')).toBe(1);
+  await shadowClick(page, '[data-tihoka-id="vocabulary-search-toggle"]');
+  await shadowType(page, 'input[data-tihoka-id="vocabulary-search"]', 'alph');
+  await expect.poll(() => shadowCount(page, '[data-tihoka-id^="vocabulary-row-"]')).toBe(1);
   expect(await shadowCount(page, row('alpha'))).toBe(1);
-  await shadowType(page, 'input[data-cell-id="vocabulary-search"]', '');
-  await shadowClick(page, '[data-cell-id="vocabulary-search-toggle"]');
+  await shadowType(page, 'input[data-tihoka-id="vocabulary-search"]', '');
+  await shadowClick(page, '[data-tihoka-id="vocabulary-search-toggle"]');
 
   // Selection drives the bulk bar; confirmed Delete soft-deletes into Trash.
-  expect(await shadowText(page, '[data-cell-id="vocabulary-meta"]')).toBe('4 words');
-  await shadowClick(page, '[data-cell-id="vocabulary-select-alpha"]');
-  await expect.poll(() => shadowText(page, '[data-cell-id="vocabulary-meta"]')).toBe('1 selected');
-  await shadowClick(page, '[data-cell-id="vocabulary-bulk-delete"]');
+  expect(await shadowText(page, '[data-tihoka-id="vocabulary-meta"]')).toBe('4 words');
+  await shadowClick(page, '[data-tihoka-id="vocabulary-select-alpha"]');
+  await expect.poll(() => shadowText(page, '[data-tihoka-id="vocabulary-meta"]')).toBe('1 selected');
+  await shadowClick(page, '[data-tihoka-id="vocabulary-bulk-delete"]');
   await expect
-    .poll(() => shadowCount(page, '[data-cell-id="vocabulary-bulk-delete-dialog"]'), { timeout: 10_000 })
+    .poll(() => shadowCount(page, '[data-tihoka-id="vocabulary-bulk-delete-dialog"]'), { timeout: 10_000 })
     .toBe(1);
-  await shadowClick(page, '[data-cell-id="vocabulary-bulk-delete-confirm"]');
+  await shadowClick(page, '[data-tihoka-id="vocabulary-bulk-delete-confirm"]');
   await expect.poll(() => shadowCount(page, row('alpha')), { timeout: 10_000 }).toBe(0);
 
   // Trash opens from the more menu: no hero, no sort, no selection.
   await openMore(page);
   await expect
-    .poll(() => shadowText(page, '[data-cell-id="vocabulary-trash-count"]'), { timeout: 10_000 })
+    .poll(() => shadowText(page, '[data-tihoka-id="vocabulary-trash-count"]'), { timeout: 10_000 })
     .toBe('2');
-  await shadowClick(page, '[data-cell-id="vocabulary-more-trash"]');
+  await shadowClick(page, '[data-tihoka-id="vocabulary-more-trash"]');
   await expect.poll(() => shadowCount(page, trashRow('alpha')), { timeout: 10_000 }).toBe(1);
   expect(await shadowCount(page, trashRow('epsilon'))).toBe(1);
-  expect(await shadowCount(page, '[data-cell-id="vocabulary-sort"]')).toBe(0);
-  expect(await shadowCount(page, '[data-cell-id="vocabulary-hero"]')).toBe(0);
-  expect(await shadowCount(page, '[data-cell-id="vocabulary-select-alpha"]')).toBe(0);
+  expect(await shadowCount(page, '[data-tihoka-id="vocabulary-sort"]')).toBe(0);
+  expect(await shadowCount(page, '[data-tihoka-id="vocabulary-hero"]')).toBe(0);
+  expect(await shadowCount(page, '[data-tihoka-id="vocabulary-select-alpha"]')).toBe(0);
 
   // Restore alpha → returns to live list with previous status.
-  await shadowClick(page, '[data-cell-id="vocabulary-restore-alpha"]');
+  await shadowClick(page, '[data-tihoka-id="vocabulary-restore-alpha"]');
   await expect.poll(() => shadowCount(page, trashRow('alpha')), { timeout: 10_000 }).toBe(0);
   await backToLive(page);
   await expect.poll(() => shadowCount(page, row('alpha')), { timeout: 10_000 }).toBe(1);
 
   // Delete forever purges epsilon from trash.
   await openTrash(page);
-  await shadowClick(page, '[data-cell-id="vocabulary-trash-delete-epsilon"]');
+  await shadowClick(page, '[data-tihoka-id="vocabulary-trash-delete-epsilon"]');
   await expect
-    .poll(() => shadowCount(page, '[data-cell-id="vocabulary-trash-delete-dialog"]'), { timeout: 10_000 })
+    .poll(() => shadowCount(page, '[data-tihoka-id="vocabulary-trash-delete-dialog"]'), { timeout: 10_000 })
     .toBe(1);
-  await shadowClick(page, '[data-cell-id="vocabulary-trash-delete-confirm"]');
+  await shadowClick(page, '[data-tihoka-id="vocabulary-trash-delete-confirm"]');
   await expect
-    .poll(() => shadowCount(page, '[data-cell-id="vocabulary-trash-empty"]'), { timeout: 10_000 })
+    .poll(() => shadowCount(page, '[data-tihoka-id="vocabulary-trash-empty"]'), { timeout: 10_000 })
     .toBe(1);
   await backToLive(page);
 
   // Cycle beta known→ignore→tracking (3-status loop; row stays in live list).
-  await shadowClick(page, '[data-cell-id="vocabulary-cycle-beta"]');
+  await shadowClick(page, '[data-tihoka-id="vocabulary-cycle-beta"]');
   await openFilter(page);
   await expect.poll(() => shadowText(page, segCount('ignore')), { timeout: 10_000 }).toBe('2');
-  await shadowClick(page, '[data-cell-id="vocabulary-segment-all"]');
-  await shadowClick(page, '[data-cell-id="vocabulary-cycle-beta"]');
+  await shadowClick(page, '[data-tihoka-id="vocabulary-segment-all"]');
+  await shadowClick(page, '[data-tihoka-id="vocabulary-cycle-beta"]');
   await openFilter(page);
   await expect.poll(() => shadowText(page, segCount('tracking')), { timeout: 10_000 }).toBe('3');
   await expect.poll(() => shadowText(page, segCount('all'))).toBe('4');
-  await shadowClick(page, '[data-cell-id="vocabulary-segment-all"]');
+  await shadowClick(page, '[data-tihoka-id="vocabulary-segment-all"]');
   await expect.poll(() => shadowCount(page, row('beta'))).toBe(1);
 
   // Persistence: reload the page, reopen panel — state survives.
@@ -297,10 +297,10 @@ test('vocabulary tab: hero, segments, bulk delete, trash restore/purge, persiste
   await universalPanel.openTab('vocabulary');
   await openFilter(page);
   await expect.poll(() => shadowText(page, segCount('all')), { timeout: 15_000 }).toBe('4');
-  await shadowClick(page, '[data-cell-id="vocabulary-segment-all"]');
+  await shadowClick(page, '[data-tihoka-id="vocabulary-segment-all"]');
   await openMore(page);
   await expect
-    .poll(() => shadowText(page, '[data-cell-id="vocabulary-trash-count"]'), { timeout: 10_000 })
+    .poll(() => shadowText(page, '[data-tihoka-id="vocabulary-trash-count"]'), { timeout: 10_000 })
     .toBe('0');
   await page.keyboard.press('Escape');
   expect(await shadowCount(page, row('zeta'))).toBe(0);

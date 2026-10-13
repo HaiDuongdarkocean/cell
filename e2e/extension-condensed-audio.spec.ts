@@ -69,12 +69,12 @@ async function condenseEnabled(page: Page): Promise<boolean> {
       }
       return null;
     };
-    const btn = deepFind(document, '[data-cell-id="manager-condense-audio"]');
+    const btn = deepFind(document, '[data-tihoka-id="manager-condense-audio"]');
     return btn !== null && !(btn as HTMLButtonElement).disabled;
   });
 }
 
-test.describe('Cell condensed audio', () => {
+test.describe('Tihoka condensed audio', () => {
   test('record leg: trigger → pill → playlist ready', async ({ context }) => {
     test.setTimeout(180_000);
     const page = await context.newPage();
@@ -92,28 +92,28 @@ test.describe('Cell condensed audio', () => {
     await page.goto(STREAM_MOCK_URL, { waitUntil: 'domcontentloaded' });
 
     await expect(page.locator('video')).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator('#cell-subtitle-root')).toBeAttached({ timeout: 15_000 });
+    await expect(page.locator('#Tihoka-subtitle-root')).toBeAttached({ timeout: 15_000 });
 
     await page.evaluate(() => {
-      const host = document.getElementById('cell-subtitle-root');
+      const host = document.getElementById('Tihoka-subtitle-root');
       const btn = host?.shadowRoot?.querySelector<HTMLButtonElement>(
-        '[data-cell-id="manager-toggle-btn"]',
+        '[data-tihoka-id="manager-toggle-btn"]',
       );
       if (!btn) throw new Error('manager-toggle-btn not found');
       btn.dispatchEvent(
         new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }),
       );
     });
-    await waitDeep(page, '[data-cell-id="subtitle-manager-layer"]', 10_000);
+    await waitDeep(page, '[data-tihoka-id="subtitle-manager-layer"]', 10_000);
 
     await expect
       .poll(() => condenseEnabled(page), { timeout: 30_000 })
       .toBe(true);
     await page.screenshot({ path: 'tmp/condensed-audio/manager-condense-trigger.png' });
 
-    await deepClick(page, '[data-cell-id="manager-condense-audio"]');
+    await deepClick(page, '[data-tihoka-id="manager-condense-audio"]');
     try {
-      await waitDeep(page, '[data-cell-id="condensed-audio-pill"]', 20_000);
+      await waitDeep(page, '[data-tihoka-id="condensed-audio-pill"]', 20_000);
     } catch (err) {
       const sw = context.serviceWorkers()[0];
       if (sw) {
@@ -140,9 +140,9 @@ test.describe('Cell condensed audio', () => {
       throw err;
     }
     await page.waitForTimeout(1_500);
-    await waitDeep(page, '[data-cell-id="condensed-audio-pause"]', 5_000);
-    await waitDeep(page, '[data-cell-id="condensed-audio-stop"]', 5_000);
-    await waitDeep(page, '[data-cell-id="condensed-audio-discard"]', 5_000);
+    await waitDeep(page, '[data-tihoka-id="condensed-audio-pause"]', 5_000);
+    await waitDeep(page, '[data-tihoka-id="condensed-audio-stop"]', 5_000);
+    await waitDeep(page, '[data-tihoka-id="condensed-audio-discard"]', 5_000);
     await page.screenshot({ path: 'tmp/condensed-audio/recording-pill.png' });
 
     const isPlaying = await page.evaluate(() => {
@@ -151,7 +151,7 @@ test.describe('Cell condensed audio', () => {
     });
     expect(isPlaying).toBe(true);
 
-    await deepClick(page, '[data-cell-id="condensed-audio-pause"]');
+    await deepClick(page, '[data-tihoka-id="condensed-audio-pause"]');
     await expect
       .poll(
         () => page.evaluate(() => document.querySelector('video')?.paused ?? false),
@@ -160,7 +160,7 @@ test.describe('Cell condensed audio', () => {
       .toBe(true);
     await page.screenshot({ path: 'tmp/condensed-audio/recording-pill-paused.png' });
 
-    await deepClick(page, '[data-cell-id="condensed-audio-pause"]');
+    await deepClick(page, '[data-tihoka-id="condensed-audio-pause"]');
     await expect
       .poll(
         () => page.evaluate(() => !(document.querySelector('video')?.paused ?? true)),
@@ -168,34 +168,34 @@ test.describe('Cell condensed audio', () => {
       )
       .toBe(true);
 
-    await deepClick(page, '[data-cell-id="condensed-audio-discard"]');
-    await waitDeep(page, '[data-cell-id="condensed-audio-discard-dialog"] [role="dialog"]', 5_000);
+    await deepClick(page, '[data-tihoka-id="condensed-audio-discard"]');
+    await waitDeep(page, '[data-tihoka-id="condensed-audio-discard-dialog"] [role="dialog"]', 5_000);
     await page.screenshot({ path: 'tmp/condensed-audio/recording-pill-discard-confirm.png' });
     await deepClick(
       page,
-      '[data-cell-id="condensed-audio-discard-dialog"] [role="dialog"] button:first-of-type',
+      '[data-tihoka-id="condensed-audio-discard-dialog"] [role="dialog"] button:first-of-type',
     );
     await page.waitForTimeout(300);
-    expect(await deepQuery(page, '[data-cell-id="condensed-audio-pill"]')).toBe(true);
+    expect(await deepQuery(page, '[data-tihoka-id="condensed-audio-pill"]')).toBe(true);
 
     await page.waitForTimeout(4_000);
-    await deepClick(page, '[data-cell-id="condensed-audio-stop"]');
+    await deepClick(page, '[data-tihoka-id="condensed-audio-stop"]');
 
     await waitDeep(
       page,
-      '[data-cell-id="condensed-audio-pill-done"], [data-cell-id="condensed-audio-pill-ready"]',
+      '[data-tihoka-id="condensed-audio-pill-done"], [data-tihoka-id="condensed-audio-pill-ready"]',
       10_000,
     );
     await page.screenshot({ path: 'tmp/condensed-audio/recording-done.png' });
 
-    await waitDeep(page, '[data-cell-id="condensed-audio-open-playlist"]', 60_000);
+    await waitDeep(page, '[data-tihoka-id="condensed-audio-open-playlist"]', 60_000);
     await page.screenshot({ path: 'tmp/condensed-audio/recording-ready-invite.png' });
-    await deepClick(page, '[data-cell-id="condensed-audio-open-playlist"]');
-    await waitDeep(page, '[data-cell-id="universal-panel"]', 15_000);
+    await deepClick(page, '[data-tihoka-id="condensed-audio-open-playlist"]');
+    await waitDeep(page, '[data-tihoka-id="universal-panel"]', 15_000);
 
     const pillOpenedPlaylist = await deepQuery(
       page,
-      '[data-cell-id="universal-panel-content-playlist"]',
+      '[data-tihoka-id="universal-panel-content-playlist"]',
     );
 
     if (!pillOpenedPlaylist) {
@@ -211,14 +211,14 @@ test.describe('Cell condensed audio', () => {
         }
         return null;
       };
-      const host = deepFind(document, '[data-cell-id="orbital-badge"]');
+      const host = deepFind(document, '[data-tihoka-id="orbital-badge"]');
       if (!host) throw new Error('orbital-badge not found');
       const opts = { bubbles: true, cancelable: true, composed: true, pointerId: 1 };
       host.dispatchEvent(new PointerEvent('pointerdown', opts));
       host.dispatchEvent(new PointerEvent('pointerup', opts));
     });
     try {
-      await waitDeep(page, '[data-cell-id="universal-panel"]', 15_000);
+      await waitDeep(page, '[data-tihoka-id="universal-panel"]', 15_000);
     } catch (err) {
       const hosts = await page.evaluate(() => {
         const ids: string[] = [];
@@ -243,13 +243,13 @@ test.describe('Cell condensed audio', () => {
         }
         return null;
       };
-      return deepFind(document, '[data-cell-id="universal-panel-content-playlist"]') !== null;
+      return deepFind(document, '[data-tihoka-id="universal-panel-content-playlist"]') !== null;
     });
 
     if (!onPlaylist) {
       const navTargets = [
-        '[data-cell-id="universal-panel-mobile-tab-playlist"]',
-        '[data-cell-id="universal-panel-tab-playlist"]',
+        '[data-tihoka-id="universal-panel-mobile-tab-playlist"]',
+        '[data-tihoka-id="universal-panel-tab-playlist"]',
       ];
       for (const sel of navTargets) {
         if (await deepQuery(page, sel)) {
@@ -258,9 +258,9 @@ test.describe('Cell condensed audio', () => {
         }
       }
     }
-      await waitDeep(page, '[data-cell-id="universal-panel-content-playlist"]', 10_000);
+      await waitDeep(page, '[data-tihoka-id="universal-panel-content-playlist"]', 10_000);
     }
-    await waitDeep(page, '[data-cell-id="universal-panel-content-playlist"]', 10_000);
+    await waitDeep(page, '[data-tihoka-id="universal-panel-content-playlist"]', 10_000);
     await page.screenshot({ path: 'tmp/condensed-audio/playlist-tab.png' });
 
     const dumpRecords = async (): Promise<void> => {
@@ -289,7 +289,7 @@ test.describe('Cell condensed audio', () => {
     try {
       await expect
         .poll(
-          () => deepQuery(page, '[data-cell-id^="playlist-preview-btn-"]'),
+          () => deepQuery(page, '[data-tihoka-id^="playlist-preview-btn-"]'),
           { timeout: 60_000 },
         )
         .toBe(true);
@@ -308,25 +308,25 @@ test.describe('Cell condensed audio', () => {
     await page.goto(STREAM_MOCK_URL, { waitUntil: 'domcontentloaded' });
 
     await expect(page.locator('video')).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator('#cell-subtitle-root')).toBeAttached({ timeout: 15_000 });
+    await expect(page.locator('#Tihoka-subtitle-root')).toBeAttached({ timeout: 15_000 });
 
     await page.evaluate(() => {
-      const host = document.getElementById('cell-subtitle-root');
+      const host = document.getElementById('Tihoka-subtitle-root');
       const btn = host?.shadowRoot?.querySelector<HTMLButtonElement>(
-        '[data-cell-id="manager-toggle-btn"]',
+        '[data-tihoka-id="manager-toggle-btn"]',
       );
       if (!btn) throw new Error('manager-toggle-btn not found');
       btn.dispatchEvent(
         new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }),
       );
     });
-    await waitDeep(page, '[data-cell-id="subtitle-manager-layer"]', 10_000);
+    await waitDeep(page, '[data-tihoka-id="subtitle-manager-layer"]', 10_000);
     await expect
       .poll(() => condenseEnabled(page), { timeout: 30_000 })
       .toBe(true);
 
-    await deepClick(page, '[data-cell-id="manager-condense-audio"]');
-    await waitDeep(page, '[data-cell-id="condensed-audio-pill"]', 20_000);
+    await deepClick(page, '[data-tihoka-id="manager-condense-audio"]');
+    await waitDeep(page, '[data-tihoka-id="condensed-audio-pill"]', 20_000);
 
     await expect
       .poll(
@@ -338,8 +338,8 @@ test.describe('Cell condensed audio', () => {
     await expect
       .poll(
         async () =>
-          (await deepQuery(page, '[data-cell-id="condensed-audio-pill-done"]')) ||
-          (await deepQuery(page, '[data-cell-id="condensed-audio-pill-ready"]')),
+          (await deepQuery(page, '[data-tihoka-id="condensed-audio-pill-done"]')) ||
+          (await deepQuery(page, '[data-tihoka-id="condensed-audio-pill-ready"]')),
         { timeout: 330_000, intervals: [5_000] },
       )
       .toBe(true);
@@ -384,7 +384,7 @@ test.describe('Cell condensed audio', () => {
       throw err;
     }
     expect(record!.durationMs).toBeGreaterThan(60_000);
-    await waitDeep(page, '[data-cell-id="condensed-audio-pill-ready"]', 30_000);
+    await waitDeep(page, '[data-tihoka-id="condensed-audio-pill-ready"]', 30_000);
     await page.screenshot({ path: 'tmp/condensed-audio/recording-ready-invite-full-run.png' });
 
     await page.close();

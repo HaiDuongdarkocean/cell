@@ -305,10 +305,10 @@ describe('syncElementTheme (ADR-024)', () => {
 describe('findThemeCarrier', () => {
   beforeEach(() => {
     // Earlier suites leave themed containers appended to body — remove them.
-    document.querySelectorAll('[data-theme], [data-preset], [data-cell-theme-carrier]').forEach((el) => {
+    document.querySelectorAll('[data-theme], [data-preset], [data-tihoka-theme-carrier]').forEach((el) => {
       el.removeAttribute('data-theme');
       el.removeAttribute('data-preset');
-      el.removeAttribute('data-cell-theme-carrier');
+      el.removeAttribute('data-tihoka-theme-carrier');
       el.remove();
     });
   });
@@ -318,7 +318,7 @@ describe('findThemeCarrier', () => {
     hostThemed.setAttribute('data-theme', 'dark');
     hostThemed.setAttribute('data-preset', 'host-preset');
     const carrier = document.createElement('div');
-    carrier.setAttribute('data-cell-theme-carrier', '');
+    carrier.setAttribute('data-tihoka-theme-carrier', '');
     carrier.setAttribute('data-theme', 'light');
     carrier.setAttribute('data-preset', 'dawn');
     document.body.appendChild(hostThemed);

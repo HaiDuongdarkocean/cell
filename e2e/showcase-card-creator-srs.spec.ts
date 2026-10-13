@@ -1,13 +1,13 @@
 import { expect } from '@playwright/test';
 import { test } from './showcase.fixture';
 
-const CONTENT = '[data-cell-id="card-creator-content"]';
-const UPDATE_MODE = '[data-cell-id="cc-update-mode"]';
-const UPDATE_BTN = '[data-cell-id="cc-update"]';
-const ADD_BTN = '[data-cell-id="cc-add"]';
-const NOTETYPE = '[data-cell-id="cc-note-type"]';
-const DECK = '[data-cell-id="cc-deck"]';
-const QUEUE_PANEL = '[data-cell-id="cc-queue-panel"]';
+const CONTENT = '[data-tihoka-id="card-creator-content"]';
+const UPDATE_MODE = '[data-tihoka-id="cc-update-mode"]';
+const UPDATE_BTN = '[data-tihoka-id="cc-update"]';
+const ADD_BTN = '[data-tihoka-id="cc-add"]';
+const NOTETYPE = '[data-tihoka-id="cc-note-type"]';
+const DECK = '[data-tihoka-id="cc-deck"]';
+const QUEUE_PANEL = '[data-tihoka-id="cc-queue-panel"]';
 
 async function closeQueue(page: import('./showcase.fixture').Page): Promise<void> {
   const panel = page.locator(QUEUE_PANEL);

@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import type { BrowserContext } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
 const DB_SCHEMA_VERSION = 13;
 const WORD_RE = /[A-Za-zÀ-ɏ']+/;
@@ -134,10 +134,10 @@ async function nestedWordPoint(
   return page.evaluate(
     async ([i, w]) => {
       const hosts = [
-        ...Array.from(document.querySelectorAll('.js-cell-popup-host')),
+        ...Array.from(document.querySelectorAll('.js-Tihoka-popup-host')),
         ...Array.from(
-          document.getElementById('cell-subtitle-root')?.shadowRoot
-            ?.querySelectorAll('.js-cell-popup-host') ?? [],
+          document.getElementById('Tihoka-subtitle-root')?.shadowRoot
+            ?.querySelectorAll('.js-Tihoka-popup-host') ?? [],
         ),
       ];
       const shadow = (hosts[i as number] as HTMLElement | undefined)?.shadowRoot;
@@ -212,11 +212,11 @@ async function wordPoint(locator: Locator, word?: string): Promise<{ x: number; 
     // pointer-events while probing, like the extension's own caret resolver
     // (withUiHostsPointerEventsDisabled).
     const uiHosts: HTMLElement[] = [
-      ...Array.from(document.querySelectorAll<HTMLElement>('.js-cell-popup-host')),
+      ...Array.from(document.querySelectorAll<HTMLElement>('.js-Tihoka-popup-host')),
       ...Array.from(
         document
-          .getElementById('cell-subtitle-root')
-          ?.shadowRoot?.querySelectorAll<HTMLElement>('.js-cell-popup-host') ?? [],
+          .getElementById('Tihoka-subtitle-root')
+          ?.shadowRoot?.querySelectorAll<HTMLElement>('.js-Tihoka-popup-host') ?? [],
       ),
     ];
     const savedPe = uiHosts.map((h) => h.style.pointerEvents);
@@ -281,17 +281,17 @@ async function wordPoint(locator: Locator, word?: string): Promise<{ x: number; 
   }, { wordReSource: WORD_RE.source, word });
 }
 
-const popupHosts = (page: Page) => page.locator('.js-cell-popup-host');
+const popupHosts = (page: Page) => page.locator('.js-Tihoka-popup-host');
 const sheetOf = (page: Page, index: number) =>
-  popupHosts(page).nth(index).locator('[data-cell-id="popup-dictionary"]');
+  popupHosts(page).nth(index).locator('[data-tihoka-id="popup-dictionary"]');
 const trailOf = (page: Page, index: number) =>
-  popupHosts(page).nth(index).locator('[data-cell-id="lookup-trail"]');
+  popupHosts(page).nth(index).locator('[data-tihoka-id="lookup-trail"]');
 const winnerOf = (page: Page, index: number) =>
-  popupHosts(page).nth(index).locator('[data-cell-id="dictionary-candidate-0"]');
+  popupHosts(page).nth(index).locator('[data-tihoka-id="dictionary-candidate-0"]');
 
 test.describe('Stage 2: Sheet-mode lookup trail', () => {
-  test.beforeEach(async ({ cellContext, streamFlixPage }) => {
-    await seedDictionary(cellContext, 'en', [
+  test.beforeEach(async ({ TihokaContext, streamFlixPage }) => {
+    await seedDictionary(TihokaContext, 'en', [
       { term: 'silence', pos: 'noun', definition: 'the complete absence of sound or noise' },
       { term: 'absence', pos: 'noun', definition: 'the state of being away from a place' },
       { term: 'state', pos: 'noun', definition: 'the condition of a thing at a time' },
@@ -306,7 +306,7 @@ test.describe('Stage 2: Sheet-mode lookup trail', () => {
   test('nested lookups repaint one sheet with a navigable breadcrumb trail', async ({ streamFlixPage }) => {
     await streamFlixPage.keyboard.press('g');
 
-    const cueTexts = streamFlixPage.locator('[data-cell-id="cue-target-text"]');
+    const cueTexts = streamFlixPage.locator('[data-tihoka-id="cue-target-text"]');
     await expect(cueTexts.first()).toBeVisible({ timeout: 15_000 });
 
     // Level 1 — sheet opens without a trail (depth < 2).
@@ -378,15 +378,15 @@ test.describe('Stage 2: Sheet-mode lookup trail', () => {
     await expect(winnerOf(streamFlixPage, 0)).toContainText(/absence/i);
     await streamFlixPage.screenshot({ path: 'tmp/dict-sheet-breadcrumb/e2e-after-crumb-nav.png' });
 
-    // Player Mode runs in native fullscreen (#cell-subtitle-root) — in a real
+    // Player Mode runs in native fullscreen (#Tihoka-subtitle-root) — in a real
     // browser the first Escape exits fullscreen natively before page code sees
     // the key (Player Mode then unmounts on fullscreenchange). CDP delivers
     // Escape to page JS instead, so emulate the browser step with
     // exitFullscreen(); the next Escape reaches the sheet and closes the
     // WHOLE chain at once.
     await streamFlixPage.evaluate(() => document.exitFullscreen());
-    await expect(streamFlixPage.locator('#cell-subtitle-root')).not.toHaveAttribute(
-      'data-cell-player-mode',
+    await expect(streamFlixPage.locator('#Tihoka-subtitle-root')).not.toHaveAttribute(
+      'data-tihoka-player-mode',
       'true',
       { timeout: 10_000 },
     );
@@ -415,15 +415,15 @@ test.describe('Stage 2: Sheet-mode lookup trail', () => {
 
     await streamFlixPage.evaluate(() => {
       const host = document
-        .getElementById('cell-subtitle-root')
-        ?.shadowRoot?.querySelectorAll('.js-cell-popup-host')[0] as HTMLElement | undefined;
+        .getElementById('Tihoka-subtitle-root')
+        ?.shadowRoot?.querySelectorAll('.js-Tihoka-popup-host')[0] as HTMLElement | undefined;
       const handle = host?.shadowRoot?.querySelector('[role="separator"]');
       for (let p = 0; p < 10; p++) {
         handle?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
       }
       const scroller = document
-        .getElementById('cell-subtitle-root')
-        ?.shadowRoot?.querySelector<HTMLElement>('[data-cell-id="cue-list-scroll"]');
+        .getElementById('Tihoka-subtitle-root')
+        ?.shadowRoot?.querySelector<HTMLElement>('[data-tihoka-id="cue-list-scroll"]');
       if (scroller) scroller.scrollTop = 0;
     });
 
@@ -444,7 +444,7 @@ test.describe('Stage 2: Sheet-mode lookup trail', () => {
   test('crossing the breakpoint materializes one popup per level and back', async ({ streamFlixPage }) => {
     await streamFlixPage.keyboard.press('g');
 
-    const cueTexts = streamFlixPage.locator('[data-cell-id="cue-target-text"]');
+    const cueTexts = streamFlixPage.locator('[data-tihoka-id="cue-target-text"]');
     await expect(cueTexts.first()).toBeVisible({ timeout: 15_000 });
 
     const silenceCue = cueTexts.filter({ hasText: /silence/i }).first();

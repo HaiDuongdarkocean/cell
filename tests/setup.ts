@@ -1,9 +1,9 @@
 import '@testing-library/jest-dom';
 import { configure } from '@testing-library/dom';
 
-// Use the project's stable `data-cell-id` attribute as the test id selector
+// Use the project's stable `data-tihoka-id` attribute as the test id selector
 // instead of the default `data-testid`.
-configure({ testIdAttribute: 'data-cell-id' });
+configure({ testIdAttribute: 'data-tihoka-id' });
 
 // One retry for load-sensitive tests: several suites assert after fixed
 // real-time sleeps or single-shot perf measurements, which race under
@@ -49,6 +49,21 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
     unobserve: jest.fn(),
     disconnect: jest.fn(),
   })) as unknown as typeof ResizeObserver;
+}
+
+// Polyfill window.matchMedia for jsdom (used by ThemeProvider — mounted by
+// every shadow-root surface incl. the toast stack).
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as typeof window.matchMedia;
 }
 
 // Polyfill crypto.subtle for jsdom (used by signatureGenerator SHA-256).

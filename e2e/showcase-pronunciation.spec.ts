@@ -14,14 +14,14 @@ test.describe('PronunciationPanel e2e', () => {
     const button = page.getByRole('button', { name: /play espeak word/i });
     await expect(button).toBeVisible();
 
-    const phonemes = page.locator('[data-cell-id="pronunciation-phoneme"]');
+    const phonemes = page.locator('[data-tihoka-id="pronunciation-phoneme"]');
     await expect(phonemes).toHaveCount(5);
   });
 
   test('clicking a phoneme does not crash and shows no error', async ({ page }) => {
-    const phoneme = page.locator('[data-cell-id="pronunciation-phoneme"]').first();
+    const phoneme = page.locator('[data-tihoka-id="pronunciation-phoneme"]').first();
     await phoneme.click();
-    const error = page.locator('[data-cell-id="pronunciation-audio-error"]');
+    const error = page.locator('[data-tihoka-id="pronunciation-audio-error"]');
     await expect(error).not.toBeVisible();
   });
 });

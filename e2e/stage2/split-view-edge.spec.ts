@@ -1,21 +1,21 @@
 import { expect } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
-const WRAPPER = '[data-cell-split-view="wrapper"]';
-const PANEL = '[data-cell-split-view="panel"]';
-const HANDLE = '[data-cell-split-view="handle"]';
-// Player Mode renders the same data-cell-split-view contract INSIDE the
+const WRAPPER = '[data-tihoka-split-view="wrapper"]';
+const PANEL = '[data-tihoka-split-view="panel"]';
+const HANDLE = '[data-tihoka-split-view="handle"]';
+// Player Mode renders the same data-tihoka-split-view contract INSIDE the
 // subtitle shadow root, and Playwright locators pierce shadow — assertions
 // about page-DOM split-view chrome must query the light DOM directly.
 const lightDomSplitCount = (page: import('@playwright/test').Page) =>
-  page.evaluate(() => document.querySelectorAll('[data-cell-split-view]').length);
+  page.evaluate(() => document.querySelectorAll('[data-tihoka-split-view]').length);
 const lightDomWrapperCount = (page: import('@playwright/test').Page) =>
   page.evaluate(
-    () => document.querySelectorAll('[data-cell-split-view="wrapper"]').length,
+    () => document.querySelectorAll('[data-tihoka-split-view="wrapper"]').length,
   );
 const VIDEO = '#player-wrapper video';
-const CUE_ITEM = '[data-cell-id="cue-item"]';
-const CUE_LIST = '[data-cell-id="cue-list-scroll"]';
+const CUE_ITEM = '[data-tihoka-id="cue-item"]';
+const CUE_LIST = '[data-tihoka-id="cue-list-scroll"]';
 
 const waitStable = (page: import('@playwright/test').Page) => page.waitForTimeout(600);
 
@@ -64,7 +64,7 @@ test.describe('Stage 2: Split View edge — fullscreen', () => {
     const logs: string[] = [];
     streamFlixPage.on('console', (msg) => {
       const t = msg.text();
-      if (t.includes('[Cell:SplitView')) logs.push(t.slice(0, 200));
+      if (t.includes('[Tihoka:SplitView')) logs.push(t.slice(0, 200));
     });
     await openSplitView(streamFlixPage);
 
@@ -76,7 +76,7 @@ test.describe('Stage 2: Split View edge — fullscreen', () => {
     // element — the old normal-branch panel stays in the wrapper, so a plain
     // toBeVisible would resolve on the closing panel before the settle fires.
     await streamFlixPage.waitForFunction(
-      () => !!document.fullscreenElement?.querySelector('[data-cell-split-view="panel"]'),
+      () => !!document.fullscreenElement?.querySelector('[data-tihoka-split-view="panel"]'),
       null,
       { timeout: 12_000 },
     );
@@ -89,8 +89,8 @@ test.describe('Stage 2: Split View edge — fullscreen', () => {
     await streamFlixPage.keyboard.press('t');
     await streamFlixPage.waitForTimeout(1500);
     const remaining = await streamFlixPage.evaluate(() =>
-      Array.from(document.querySelectorAll('[data-cell-split-view]'))
-        .map((el) => el.getAttribute('data-cell-split-view'))
+      Array.from(document.querySelectorAll('[data-tihoka-split-view]'))
+        .map((el) => el.getAttribute('data-tihoka-split-view'))
         .join(',')
     );
     console.log('--- svlog ---\n' + logs.join('\n') + '\n--- remaining: ' + remaining);
@@ -103,7 +103,7 @@ test.describe('Stage 2: Split View edge — fullscreen', () => {
     await streamFlixPage.waitForFunction(() => !document.fullscreenElement, null, { timeout: 5_000 });
     await streamFlixPage.waitForTimeout(2000);
     // No resurrect AND no zombie wrapper/stage left behind.
-    expect(await streamFlixPage.locator('[data-cell-split-view]').count()).toBe(0);
+    expect(await streamFlixPage.locator('[data-tihoka-split-view]').count()).toBe(0);
     const video = await streamFlixPage.locator(VIDEO).boundingBox();
     expect(video!.height).toBeGreaterThan(0);
   });
@@ -116,7 +116,7 @@ test.describe('Stage 2: Split View edge — player mode interplay', () => {
     const logs: string[] = [];
     streamFlixPage.on('console', (msg) => {
       const t = msg.text();
-      if (t.includes('[Cell:SplitView')) logs.push(t.slice(0, 200));
+      if (t.includes('[Tihoka:SplitView')) logs.push(t.slice(0, 200));
     });
     await openSplitView(streamFlixPage);
 
@@ -153,9 +153,9 @@ test.describe('Stage 2: Split View edge — player mode interplay', () => {
     await streamFlixPage.keyboard.press('g');
     await streamFlixPage.waitForTimeout(1500);
     // querySelectorAll does not pierce shadow roots — PM's own wrapper/stage
-    // (inside #cell-subtitle-root) are excluded; only leaked page-DOM nodes count.
+    // (inside #Tihoka-subtitle-root) are excluded; only leaked page-DOM nodes count.
     const lightDomNodes = await streamFlixPage.evaluate(
-      () => document.querySelectorAll('[data-cell-split-view]').length,
+      () => document.querySelectorAll('[data-tihoka-split-view]').length,
     );
     expect(lightDomNodes).toBe(0);
   });
@@ -172,14 +172,14 @@ test.describe('Stage 2: Split View edge — layout integrity', () => {
     const wrapperChildren = await streamFlixPage
       .locator(WRAPPER)
       .evaluate((el) =>
-        Array.from(el.children).map((c) => c.getAttribute('data-cell-split-view')),
+        Array.from(el.children).map((c) => c.getAttribute('data-tihoka-split-view')),
       );
     expect(wrapperChildren).toEqual(['stage', 'panel']);
 
     // The handle lives inside the panel shadow at the left edge: finger-sized
     // hit zone, col-resize cursor, no painted surface.
     const handleInfo = await streamFlixPage.locator(PANEL).evaluate((el) => {
-      const h = el.shadowRoot?.querySelector('[data-cell-split-view="handle"]');
+      const h = el.shadowRoot?.querySelector('[data-tihoka-split-view="handle"]');
       if (!h) return null;
       const r = h.getBoundingClientRect();
       const cs = getComputedStyle(h);
@@ -199,10 +199,10 @@ test.describe('Stage 2: Split View edge — layout integrity', () => {
     // No divider lane between stage and panel — the panel border is the seam.
     const seam = await streamFlixPage.evaluate(() => {
       const stage = document
-        .querySelector('[data-cell-split-view="stage"]')!
+        .querySelector('[data-tihoka-split-view="stage"]')!
         .getBoundingClientRect();
       const panel = document
-        .querySelector('[data-cell-split-view="panel"]')!
+        .querySelector('[data-tihoka-split-view="panel"]')!
         .getBoundingClientRect();
       return panel.left - stage.right;
     });
@@ -237,10 +237,10 @@ test.describe('Stage 2: Split View edge — layout integrity', () => {
     // Sheet mode: the panel leaves the page flow and docks to the viewport
     // bottom so the video keeps its natural slot instead of sharing the
     // wrapper height with an inline panel. Measure the light-DOM host —
-    // MobileCueChrome renders an inner data-cell-split-view="panel" in the
+    // MobileCueChrome renders an inner data-tihoka-split-view="panel" in the
     // sheet shadow that locator() would also match.
     const panelState = await streamFlixPage.evaluate(() => {
-      const el = document.querySelector<HTMLElement>('[data-cell-split-view="panel"]');
+      const el = document.querySelector<HTMLElement>('[data-tihoka-split-view="panel"]');
       if (!el) return null;
       const r = el.getBoundingClientRect();
       return {
@@ -280,7 +280,7 @@ test.describe('Stage 2: Split View edge — layout integrity', () => {
 
     const lightPanel = () =>
       streamFlixPage.evaluate(() => {
-        const el = document.querySelector<HTMLElement>('[data-cell-split-view="panel"]');
+        const el = document.querySelector<HTMLElement>('[data-tihoka-split-view="panel"]');
         if (!el) return null;
         const r = el.getBoundingClientRect();
         return {
@@ -326,7 +326,7 @@ test.describe('Stage 2: Split View edge — panel content', () => {
     expect(await cues.count()).toBeGreaterThan(1);
 
     const idx = Math.min(4, (await cues.count()) - 1);
-    await cues.nth(idx).locator('[data-cell-id="cue-timestamp"]').click();
+    await cues.nth(idx).locator('[data-tihoka-id="cue-timestamp"]').click();
     await streamFlixPage.waitForTimeout(300);
     const currentTime = await streamFlixPage.locator(VIDEO).evaluate((v) => (v as HTMLVideoElement).currentTime);
     expect(currentTime).toBeGreaterThan(0);
@@ -404,10 +404,10 @@ test.describe('Stage 2: Split View edge — input guards & persistence', () => {
     await streamFlixPage.reload({ waitUntil: 'networkidle' });
     const video = streamFlixPage.locator(VIDEO);
     await expect(video).toBeVisible({ timeout: 30_000 });
-    await expect(streamFlixPage.locator('#cell-subtitle-root')).toBeAttached({ timeout: 30_000 });
+    await expect(streamFlixPage.locator('#Tihoka-subtitle-root')).toBeAttached({ timeout: 30_000 });
     await streamFlixPage.waitForTimeout(800);
 
-    expect(await streamFlixPage.locator('[data-cell-split-view]').count()).toBe(0);
+    expect(await streamFlixPage.locator('[data-tihoka-split-view]').count()).toBe(0);
     await openSplitView(streamFlixPage);
     expect(await streamFlixPage.locator(WRAPPER).count()).toBe(1);
   });

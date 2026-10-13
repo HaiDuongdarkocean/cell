@@ -31,10 +31,10 @@ function makeSettings(overrides: Record<string, unknown> = {}): Record<string, u
 }
 
 async function seedStorage(
-  cellContext: BrowserContext,
+  TihokaContext: BrowserContext,
   payload: { ankiSchemaCache?: Record<string, unknown>; settings?: Record<string, unknown> },
 ): Promise<void> {
-  const worker = cellContext.serviceWorkers()[0] ?? (await cellContext.waitForEvent('serviceworker'));
+  const worker = TihokaContext.serviceWorkers()[0] ?? (await TihokaContext.waitForEvent('serviceworker'));
   await worker.evaluate(
     async (args: {
       settingsKey: string;
@@ -68,8 +68,8 @@ async function seedStorage(
   );
 }
 
-async function readSettings(cellContext: BrowserContext): Promise<Record<string, unknown>> {
-  const worker = cellContext.serviceWorkers()[0] ?? (await cellContext.waitForEvent('serviceworker'));
+async function readSettings(TihokaContext: BrowserContext): Promise<Record<string, unknown>> {
+  const worker = TihokaContext.serviceWorkers()[0] ?? (await TihokaContext.waitForEvent('serviceworker'));
   return worker.evaluate(
     (key: string) =>
       new Promise<Record<string, unknown>>((resolve) => {
@@ -88,7 +88,7 @@ async function openCardCreatorSettings(universalPanel: UniversalPanelActor): Pro
       new Promise<boolean>((resolve) => {
         const start = Date.now();
         const tick = (): void => {
-          const host = document.getElementById('cell-universal-panel-host');
+          const host = document.getElementById('Tihoka-universal-panel-host');
           const root = host?.shadowRoot;
           const card = root?.querySelector('[data-section="cardCreator"]') as HTMLElement | null;
           if (card) {
@@ -119,9 +119,9 @@ async function waitForSelectValue(
   expected: string,
   timeout = 10_000,
 ): Promise<void> {
-  const host = universalPanel.page.locator('#cell-universal-panel-host');
+  const host = universalPanel.page.locator('#Tihoka-universal-panel-host');
   const section = host.locator('[data-section="cardCreator"]');
-  const selectRoot = section.locator(`[data-cell-id="${selectDataId}"]`);
+  const selectRoot = section.locator(`[data-tihoka-id="${selectDataId}"]`);
   const trigger = selectRoot.locator('button[aria-haspopup="listbox"]');
   await expect(trigger).toHaveText(expected, { timeout });
 }
@@ -134,9 +134,9 @@ async function selectInCardCreatorSettings(
   selectDataId: string,
   optionLabel: string,
 ): Promise<void> {
-  const host = universalPanel.page.locator('#cell-universal-panel-host');
+  const host = universalPanel.page.locator('#Tihoka-universal-panel-host');
   const section = host.locator('[data-section="cardCreator"]');
-  const selectRoot = section.locator(`[data-cell-id="${selectDataId}"]`);
+  const selectRoot = section.locator(`[data-tihoka-id="${selectDataId}"]`);
   const trigger = selectRoot.locator('button[aria-haspopup="listbox"]');
   await trigger.click();
 
@@ -145,7 +145,7 @@ async function selectInCardCreatorSettings(
 }
 
 test.describe('Stage 2: Card Creator > Anki config in settings', () => {
-  test('renders from the persisted schema cache while AnkiConnect is offline', async ({ cellContext, universalPanel }) => {
+  test('renders from the persisted schema cache while AnkiConnect is offline', async ({ TihokaContext, universalPanel }) => {
     const ankiSchemaCache = {
       url: 'http://offline.invalid',
       fetchedAt: Date.now(),
@@ -174,7 +174,7 @@ test.describe('Stage 2: Card Creator > Anki config in settings', () => {
       },
     });
 
-    await seedStorage(cellContext, { ankiSchemaCache, settings });
+    await seedStorage(TihokaContext, { ankiSchemaCache, settings });
     await openCardCreatorSettings(universalPanel);
 
     await waitForSelectValue(universalPanel, 'cc-note-type-select', 'Basic');
@@ -184,36 +184,36 @@ test.describe('Stage 2: Card Creator > Anki config in settings', () => {
     await waitForSelectValue(universalPanel, 'cc-mapping-select-targetWord', 'Front');
   });
 
-  test('settings destination picker switches Anki / Ocean SRS and persists', async ({ cellContext, universalPanel }) => {
+  test('settings destination picker switches Anki / Ocean SRS and persists', async ({ TihokaContext, universalPanel }) => {
     const settings = makeSettings({
       dictionaryPopup: { srsDestination: 'anki' },
     });
 
-    await seedStorage(cellContext, { settings });
+    await seedStorage(TihokaContext, { settings });
     await openCardCreatorSettings(universalPanel);
 
     // Switch to Ocean SRS
     await waitForSelectValue(universalPanel, 'cc-srs-destination', 'Anki');
     await selectInCardCreatorSettings(universalPanel, 'cc-srs-destination', 'Ocean SRS');
 
-    const after = await readSettings(cellContext);
+    const after = await readSettings(TihokaContext);
     expect((after.dictionaryPopup as Record<string, unknown>).srsDestination).toBe('ocean-srs');
 
     // The Anki-specific inputs should be hidden
     await universalPanel.page.waitForFunction(() => {
-      const host = document.getElementById('cell-universal-panel-host');
+      const host = document.getElementById('Tihoka-universal-panel-host');
       const root = host?.shadowRoot;
       const section = root?.querySelector('[data-section="cardCreator"]') as HTMLElement | null;
-      return !section?.querySelector('[data-cell-id="cc-anki-url-input"]');
+      return !section?.querySelector('[data-tihoka-id="cc-anki-url-input"]');
     }, { timeout: 5_000 });
 
     // Switch back to Anki
     await selectInCardCreatorSettings(universalPanel, 'cc-srs-destination', 'Anki');
-    const afterBack = await readSettings(cellContext);
+    const afterBack = await readSettings(TihokaContext);
     expect((afterBack.dictionaryPopup as Record<string, unknown>).srsDestination).toBe('anki');
   });
 
-  test('settings field mapping editor writes per-note-type mappings', async ({ cellContext, universalPanel }) => {
+  test('settings field mapping editor writes per-note-type mappings', async ({ TihokaContext, universalPanel }) => {
     const ankiSchemaCache = {
       url: 'http://offline.invalid',
       fetchedAt: Date.now(),
@@ -244,14 +244,14 @@ test.describe('Stage 2: Card Creator > Anki config in settings', () => {
       },
     });
 
-    await seedStorage(cellContext, { ankiSchemaCache, settings });
+    await seedStorage(TihokaContext, { ankiSchemaCache, settings });
     await openCardCreatorSettings(universalPanel);
 
     await waitForSelectValue(universalPanel, 'cc-mapping-select-targetWord', 'Front');
 
     await selectInCardCreatorSettings(universalPanel, 'cc-mapping-select-targetWord', 'Back');
 
-    const after = await readSettings(cellContext);
+    const after = await readSettings(TihokaContext);
     expect((after.cardCreator as Record<string, unknown>).fieldMappings).toEqual(
       expect.objectContaining({
         Basic: expect.objectContaining({ targetWord: 'Back' }),

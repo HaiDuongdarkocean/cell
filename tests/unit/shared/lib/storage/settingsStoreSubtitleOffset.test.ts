@@ -30,8 +30,8 @@ describe('settingsStore schema v3 migration (ADR-019 subtitleOffset)', () => {
     expect(DEFAULT_SETTINGS.subtitleOffset).toEqual({});
   });
 
-  it('CURRENT_SCHEMA_VERSION is 40 (V40 adds open-dictionary-search shortcut)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(40);
+  it('CURRENT_SCHEMA_VERSION is 41 (V41 adds word-display modes)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(43);
   });
 
   it('migrates v2 settings (no subtitleOffset) to v3 with default {}', async () => {

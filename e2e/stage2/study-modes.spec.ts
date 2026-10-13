@@ -1,7 +1,7 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test';
 import { test } from '../fixtures/actors/universalPanel.fixture';
 
-const OVERLAY_TARGET_SELECTOR = '[data-cell-id="subtitle-block"] [data-role="target"] span';
+const OVERLAY_TARGET_SELECTOR = '[data-tihoka-id="subtitle-block"] [data-role="target"] span';
 const VIDEO_SELECTOR = '#player-wrapper video';
 
 const CUE2_START_S = 20.2;
@@ -79,7 +79,7 @@ async function play(page: Page): Promise<void> {
 
 async function isTargetHidden(page: Page): Promise<boolean> {
   return page.evaluate(() => {
-    const root = document.getElementById('cell-subtitle-root')?.shadowRoot;
+    const root = document.getElementById('Tihoka-subtitle-root')?.shadowRoot;
     const layer = root?.querySelector('[data-role="target"]');
     if (!layer) return true;
     const text = (layer.textContent ?? '').trim();
@@ -100,27 +100,27 @@ async function waitForCue2(page: Page): Promise<void> {
 
 test.describe('Stage 2: Study Modes on StreamFlix', () => {
   test('listen hides subtitles and normal restores them via storage sync', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
-    await seedOverlaySettings(cellContext);
-    await writeStudyModes(cellContext, 'normal');
+    await seedOverlaySettings(TihokaContext);
+    await writeStudyModes(TihokaContext, 'normal');
     await seekPaused(streamFlixPage, CUE2_START_S + 0.4);
     await waitForCue2(streamFlixPage);
 
-    await writeStudyModes(cellContext, 'listen');
+    await writeStudyModes(TihokaContext, 'listen');
     await expect.poll(() => isTargetHidden(streamFlixPage), { timeout: 10_000 }).toBe(true);
 
-    await writeStudyModes(cellContext, 'normal');
+    await writeStudyModes(TihokaContext, 'normal');
     await expect(targetLine(streamFlixPage)).toContainText(/silence/i, { timeout: 10_000 });
   });
 
   test('dictation slows to 0.75x, repeats the cue, and normal restores baseline rate', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
-    await seedOverlaySettings(cellContext);
-    await writeStudyModes(cellContext, 'normal');
+    await seedOverlaySettings(TihokaContext);
+    await writeStudyModes(TihokaContext, 'normal');
 
     const video = streamFlixPage.locator(VIDEO_SELECTOR).first();
     await video.evaluate((v: HTMLVideoElement, t: number) => {
@@ -134,7 +134,7 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
       .toBe(true);
     await waitForCue2(streamFlixPage);
 
-    await writeStudyModes(cellContext, 'dictation');
+    await writeStudyModes(TihokaContext, 'dictation');
     await expect
       .poll(() => video.evaluate((v: HTMLVideoElement) => v.playbackRate), { timeout: 10_000 })
       .toBe(0.75);
@@ -144,7 +144,7 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
       .poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime), { timeout: 20_000 })
       .toBeLessThan(CUE2_START_S + 2);
 
-    await writeStudyModes(cellContext, 'normal');
+    await writeStudyModes(TihokaContext, 'normal');
     await expect
       .poll(() => video.evaluate((v: HTMLVideoElement) => v.playbackRate), { timeout: 10_000 })
       .toBe(1.25);
@@ -152,17 +152,17 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
   });
 
   test('read pauses at cue start, resumes on user play, then pauses at the next cue start', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
-    await seedOverlaySettings(cellContext);
-    await writeStudyModes(cellContext, 'normal');
+    await seedOverlaySettings(TihokaContext);
+    await writeStudyModes(TihokaContext, 'normal');
     await seekPaused(streamFlixPage, CUE2_START_S + 0.4);
     await waitForCue2(streamFlixPage);
     await play(streamFlixPage);
 
     const video = streamFlixPage.locator(VIDEO_SELECTOR).first();
-    await writeStudyModes(cellContext, 'read');
+    await writeStudyModes(TihokaContext, 'read');
     await expect
       .poll(() => video.evaluate((v: HTMLVideoElement) => v.paused), { timeout: 10_000 })
       .toBe(true);
@@ -184,20 +184,20 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
       )
       .toBe(true);
 
-    await writeStudyModes(cellContext, 'normal');
+    await writeStudyModes(TihokaContext, 'normal');
   });
 
   test('listen-check pauses after a blind listen, then replays the cue with subtitles', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
-    await seedOverlaySettings(cellContext);
-    await writeStudyModes(cellContext, 'normal');
+    await seedOverlaySettings(TihokaContext);
+    await writeStudyModes(TihokaContext, 'normal');
     await seekPaused(streamFlixPage, CUE2_START_S + 0.4);
     await waitForCue2(streamFlixPage);
 
     const video = streamFlixPage.locator(VIDEO_SELECTOR).first();
-    await writeStudyModes(cellContext, 'listen-check');
+    await writeStudyModes(TihokaContext, 'listen-check');
     await expect.poll(() => isTargetHidden(streamFlixPage), { timeout: 10_000 }).toBe(true);
 
     await play(streamFlixPage);
@@ -234,16 +234,16 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
       .toBe(true);
     await expect(targetLine(streamFlixPage)).toContainText(/silence/i, { timeout: 5_000 });
 
-    await writeStudyModes(cellContext, 'normal');
+    await writeStudyModes(TihokaContext, 'normal');
   });
 
   test('panel listen-check click runs the full blind-listen and review flow', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
     universalPanel,
   }) => {
-    await seedOverlaySettings(cellContext);
-    await writeStudyModes(cellContext, 'normal');
+    await seedOverlaySettings(TihokaContext);
+    await writeStudyModes(TihokaContext, 'normal');
     await seekPaused(streamFlixPage, CUE2_START_S + 0.4);
     await waitForCue2(streamFlixPage);
 
@@ -251,9 +251,9 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
     await universalPanel.openTab('studyModes');
 
     const clickModeCard = (id: string) =>
-      streamFlixPage.evaluate((cellId) => {
-        const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-        const card = root?.querySelector(`[data-cell-id="${cellId}"]`) as HTMLElement | null;
+      streamFlixPage.evaluate((TihokaId) => {
+        const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+        const card = root?.querySelector(`[data-tihoka-id="${TihokaId}"]`) as HTMLElement | null;
         card?.click();
         return !!card;
       }, `mode-card-${id}`);
@@ -301,12 +301,12 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
   });
 
   test('panel preset click applies to the player in-process', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
     universalPanel,
   }) => {
-    await seedOverlaySettings(cellContext);
-    await writeStudyModes(cellContext, 'normal');
+    await seedOverlaySettings(TihokaContext);
+    await writeStudyModes(TihokaContext, 'normal');
     await seekPaused(streamFlixPage, CUE2_START_S + 0.4);
     await waitForCue2(streamFlixPage);
 
@@ -314,9 +314,9 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
     await universalPanel.openTab('studyModes');
 
     const clickModeCard = (id: string) =>
-      streamFlixPage.evaluate((cellId) => {
-        const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-        const card = root?.querySelector(`[data-cell-id="${cellId}"]`) as HTMLElement | null;
+      streamFlixPage.evaluate((TihokaId) => {
+        const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+        const card = root?.querySelector(`[data-tihoka-id="${TihokaId}"]`) as HTMLElement | null;
         card?.click();
         return !!card;
       }, `mode-card-${id}`);
@@ -335,61 +335,61 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
     const shadowQuery = (sel: string) =>
       streamFlixPage.evaluate(
         (s) =>
-          document.getElementById('cell-universal-panel-host')?.shadowRoot?.querySelector(s) != null,
+          document.getElementById('Tihoka-universal-panel-host')?.shadowRoot?.querySelector(s) != null,
         sel,
       );
     const toggleChecked = () =>
       streamFlixPage.evaluate(
         () =>
           document
-            .getElementById('cell-universal-panel-host')
-            ?.shadowRoot?.querySelector('[data-cell-id="advanced-toggle"]')
+            .getElementById('Tihoka-universal-panel-host')
+            ?.shadowRoot?.querySelector('[data-tihoka-id="advanced-toggle"]')
             ?.getAttribute('aria-checked') === 'true',
       );
 
     await universalPanel.open();
     await universalPanel.openTab('studyModes');
-    await expect.poll(() => shadowQuery('[data-cell-id="advanced-toggle"]')).toBe(true);
+    await expect.poll(() => shadowQuery('[data-tihoka-id="advanced-toggle"]')).toBe(true);
 
     await streamFlixPage.evaluate(() => {
       const el = document
-        .getElementById('cell-universal-panel-host')
-        ?.shadowRoot?.querySelector('[data-cell-id="advanced-toggle"]') as HTMLElement | null;
+        .getElementById('Tihoka-universal-panel-host')
+        ?.shadowRoot?.querySelector('[data-tihoka-id="advanced-toggle"]') as HTMLElement | null;
       el?.click();
     });
     await expect.poll(toggleChecked).toBe(true);
-    await expect.poll(() => shadowQuery('[data-cell-id="advanced-settings"]')).toBe(true);
+    await expect.poll(() => shadowQuery('[data-tihoka-id="advanced-settings"]')).toBe(true);
 
     const closeRect = await streamFlixPage.evaluate(() => {
       const btn = document
-        .getElementById('cell-universal-panel-host')
-        ?.shadowRoot?.querySelector('[data-cell-id="universal-panel-close"]');
+        .getElementById('Tihoka-universal-panel-host')
+        ?.shadowRoot?.querySelector('[data-tihoka-id="universal-panel-close"]');
       const r = btn?.getBoundingClientRect();
       return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null;
     });
     if (!closeRect) throw new Error('close button not found');
     await streamFlixPage.mouse.click(closeRect.x, closeRect.y);
     await expect
-      .poll(() => shadowQuery('[data-cell-id="universal-panel"]'))
+      .poll(() => shadowQuery('[data-tihoka-id="universal-panel"]'))
       .toBe(false);
 
     await universalPanel.open();
     await universalPanel.openTab('studyModes');
-    await expect.poll(() => shadowQuery('[data-cell-id="advanced-toggle"]')).toBe(true);
+    await expect.poll(() => shadowQuery('[data-tihoka-id="advanced-toggle"]')).toBe(true);
     await expect.poll(toggleChecked).toBe(true);
-    await expect.poll(() => shadowQuery('[data-cell-id="advanced-settings"]')).toBe(true);
+    await expect.poll(() => shadowQuery('[data-tihoka-id="advanced-settings"]')).toBe(true);
   });
 
   test('JUMP silence skip seeks to the next cue instead of replaying the gap', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
-    await seedOverlaySettings(cellContext);
-    await writeStudyModes(cellContext, 'normal');
+    await seedOverlaySettings(TihokaContext);
+    await writeStudyModes(TihokaContext, 'normal');
     await seekPaused(streamFlixPage, CUE2_START_S + 0.4);
     await waitForCue2(streamFlixPage);
 
-    await writeStudyModes(cellContext, 'listen', {
+    await writeStudyModes(TihokaContext, 'listen', {
       skipNoDialogue: 'JUMP',
       removeBracketed: false,
     });
@@ -410,20 +410,20 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
       .poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime), { timeout: 10_000 })
       .toBeGreaterThanOrEqual(CUE3_START_S);
 
-    await writeStudyModes(cellContext, 'normal');
+    await writeStudyModes(TihokaContext, 'normal');
   });
 
   test('external seek aborts the in-flight cue chain instead of snapping back', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
-    await seedOverlaySettings(cellContext);
-    await writeStudyModes(cellContext, 'normal');
+    await seedOverlaySettings(TihokaContext);
+    await writeStudyModes(TihokaContext, 'normal');
     await seekPaused(streamFlixPage, CUE2_START_S + 0.4);
     await waitForCue2(streamFlixPage);
 
     const video = streamFlixPage.locator(VIDEO_SELECTOR).first();
-    await writeStudyModes(cellContext, 'dictation');
+    await writeStudyModes(TihokaContext, 'dictation');
     await expect
       .poll(() => video.evaluate((v: HTMLVideoElement) => v.playbackRate), { timeout: 10_000 })
       .toBe(0.75);
@@ -440,6 +440,6 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
     );
     expect(stayed).toBe(true);
 
-    await writeStudyModes(cellContext, 'normal');
+    await writeStudyModes(TihokaContext, 'normal');
   });
 });

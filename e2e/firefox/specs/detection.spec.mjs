@@ -78,7 +78,7 @@ export async function run(ctx) {
   const d2 = await pollDet('after &t= replaceState');
   if (!((d2?.subs ?? 0) > 0)) return { pass: false, detail: 'cosmetic &t= replaceState wiped detected media' };
 
-  await rdp.evalOn(cs, `history.pushState({}, '', '/watch?v=CELL_E2E_OTHER_VID'); 'x'`);
+  await rdp.evalOn(cs, `history.pushState({}, '', '/watch?v=Tihoka_E2E_OTHER_VID'); 'x'`);
   await sleep(4000);
   const d3 = await pollDet('after ?v= pushState');
   if ((d3?.subs ?? 0) !== 0) return { pass: false, detail: 'real ?v= switch did not clear stale media' };

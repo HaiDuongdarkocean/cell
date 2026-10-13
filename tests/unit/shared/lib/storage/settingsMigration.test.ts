@@ -89,3 +89,126 @@ describe('settingsStore v21→v22 migration (localPlayerSettings)', () => {
     expect(loaded.localPlayerSettings.lastDirectoryId).toBeNull();
   });
 });
+
+describe('settingsStore v40→v41 migration (word display modes)', () => {
+  beforeEach(() => {
+    Object.keys(storage).forEach((k) => delete storage[k]);
+    chromeMock.storage.local.get.mockClear();
+    chromeMock.storage.local.set.mockClear();
+  });
+
+  it('maps persisted booleans to display modes on flat settings and every profile', async () => {
+    const v40 = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 40,
+      showReadings: true,
+      showWordTranslations: false,
+      languageProfiles: [
+        { id: 'p1', target: 'en', native: '', name: 'a', order: 1, showReadings: true, showWordTranslations: true },
+        { id: 'p2', target: 'ja', native: '', name: 'b', order: 2, showReadings: false, showWordTranslations: false },
+      ],
+      activeProfileId: 'p1',
+    } as Record<string, unknown>;
+    delete v40.readingDisplay;
+    delete v40.glossDisplay;
+    storage[STORAGE_KEYS.SETTINGS] = v40;
+
+    const loaded = await loadSettings();
+
+    expect(loaded.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect('showReadings' in loaded).toBe(false);
+    expect('showWordTranslations' in loaded).toBe(false);
+    const [p1, p2] = loaded.languageProfiles as unknown as Record<string, unknown>[];
+    expect(p1.readingDisplay).toBe('always');
+    expect(p1.glossDisplay).toBe('always');
+    expect('showReadings' in p1).toBe(false);
+    expect('showWordTranslations' in p1).toBe(false);
+    expect(p2.readingDisplay).toBe('off');
+    expect(p2.glossDisplay).toBe('off');
+    // Flat mirror resolves from the active profile.
+    expect(loaded.readingDisplay).toBe('always');
+    expect(loaded.glossDisplay).toBe('always');
+  });
+
+  it('maps missing booleans to off', async () => {
+    const v40 = { ...DEFAULT_SETTINGS, schemaVersion: 40 } as Record<string, unknown>;
+    delete v40.readingDisplay;
+    delete v40.glossDisplay;
+    storage[STORAGE_KEYS.SETTINGS] = v40;
+
+    const loaded = await loadSettings();
+
+    expect(loaded.readingDisplay).toBe('off');
+    expect(loaded.glossDisplay).toBe('off');
+  });
+});
+
+describe('settingsStore v41→v42 migration (frequency display pref)', () => {
+  beforeEach(() => {
+    Object.keys(storage).forEach((k) => delete storage[k]);
+    chromeMock.storage.local.get.mockClear();
+    chromeMock.storage.local.set.mockClear();
+  });
+
+  it('moves cardCreator.frequencyDisplay to dictionaryPopup and drops the old key', async () => {
+    // dictionaryPopup is a per-profile flat field — the active profile's
+    // slice wins over the top-level object after load, so the migrated value
+    // must land on the profile too.
+    const v41 = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 41,
+      cardCreator: { ...DEFAULT_SETTINGS.cardCreator, frequencyDisplay: 'rank' },
+      dictionaryPopup: { ...DEFAULT_SETTINGS.dictionaryPopup },
+      languageProfiles: [
+        {
+          id: 'p-en',
+          target: 'en',
+          native: '',
+          name: 'English',
+          order: 1,
+          dictionaryPopup: { ...DEFAULT_SETTINGS.dictionaryPopup },
+        },
+      ],
+      activeProfileId: 'p-en',
+    } as Record<string, unknown>;
+    delete (v41.dictionaryPopup as Record<string, unknown>).frequencyDisplay;
+    delete ((v41.languageProfiles as Record<string, unknown>[])[0].dictionaryPopup as Record<string, unknown>).frequencyDisplay;
+    storage[STORAGE_KEYS.SETTINGS] = v41;
+
+    const loaded = await loadSettings();
+
+    expect(loaded.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(loaded.dictionaryPopup?.frequencyDisplay).toBe('rank');
+    const profiles = loaded.languageProfiles as unknown as Record<string, unknown>[];
+    expect((profiles[0].dictionaryPopup as Record<string, unknown>).frequencyDisplay).toBe('rank');
+    expect('frequencyDisplay' in (loaded.cardCreator as unknown as Record<string, unknown>)).toBe(false);
+  });
+
+  it('defaults to stars when the old key was never stored', async () => {
+    const v41 = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 41,
+      dictionaryPopup: { ...DEFAULT_SETTINGS.dictionaryPopup },
+    } as Record<string, unknown>;
+    delete (v41.dictionaryPopup as Record<string, unknown>).frequencyDisplay;
+    storage[STORAGE_KEYS.SETTINGS] = v41;
+
+    const loaded = await loadSettings();
+
+    expect(loaded.dictionaryPopup?.frequencyDisplay).toBe('stars');
+  });
+
+  it('keeps an already-migrated dictionaryPopup.frequencyDisplay over the old key', async () => {
+    const v41 = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 41,
+      cardCreator: { ...DEFAULT_SETTINGS.cardCreator, frequencyDisplay: 'rank' },
+      dictionaryPopup: { ...DEFAULT_SETTINGS.dictionaryPopup, frequencyDisplay: 'stars' },
+    } as Record<string, unknown>;
+    storage[STORAGE_KEYS.SETTINGS] = v41;
+
+    const loaded = await loadSettings();
+
+    expect(loaded.dictionaryPopup?.frequencyDisplay).toBe('stars');
+  });
+});

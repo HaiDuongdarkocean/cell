@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, type BrowserContext, type Page } from '@playwright/test';
-import { test } from './fixtures/cellEnvironment.fixture';
+import { test } from './fixtures/TihokaEnvironment.fixture';
 
 const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
 const STREAM_ORIGIN = `http://127.0.0.1:${4321 + portOffset}`;
@@ -14,12 +14,12 @@ const EXTENSION_ID = 'ifceodogdeeaacmdigljgmafnhkbfnia';
 const VIDEO_PATH = resolve('build/mock-pages/assets/apologize-Brjj1x7A.mp4');
 const SRT_PATH = resolve('tests/data-test/auto-match-test/test-video.en.srt');
 
-const PANEL_SEL = '[data-cell-split-view="panel"]';
+const PANEL_SEL = '[data-tihoka-split-view="panel"]';
 const OVERLAY_TOKEN_SEL =
-  '[data-cell-id="subtitle-block"] [data-role="target"] .js-cell-token';
-const CUE_TOKEN_SEL = '[data-cell-id="cue-target-text"] .js-cell-token';
-const SELECTED_CLASS = 'js-cell-token--selected';
-const ANNOUNCER = '#cell-token-selection-announcer';
+  '[data-tihoka-id="subtitle-block"] [data-role="target"] .js-Tihoka-token';
+const CUE_TOKEN_SEL = '[data-tihoka-id="cue-target-text"] .js-Tihoka-token';
+const SELECTED_CLASS = 'js-Tihoka-token--selected';
+const ANNOUNCER = '#Tihoka-token-selection-announcer';
 const SHOTS = 'tmp/audit-bulk-status';
 
 // Cue 1 spans 0-30s so playback can run long enough for player controls to
@@ -74,7 +74,7 @@ async function pauseVideo(page: Page): Promise<void> {
   });
 }
 
-async function seedCellSettings(context: BrowserContext): Promise<void> {
+async function seedTihokaSettings(context: BrowserContext): Promise<void> {
   const worker = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker'));
   await worker.evaluate(async (origin: string) => {
     const storage = await chrome.storage.local.get(['settings', 'tokenizeSettings']);
@@ -99,7 +99,7 @@ async function selectedTerms(page: Page): Promise<string[]> {
     const out: string[] = [];
     const walk = (root: Document | ShadowRoot): void => {
       for (const el of Array.from(root.querySelectorAll(`.${cls}`))) {
-        const term = el.getAttribute('data-cell-term');
+        const term = el.getAttribute('data-tihoka-term');
         if (term) out.push(term);
       }
       for (const child of Array.from(root.querySelectorAll('*'))) {
@@ -136,11 +136,11 @@ async function panelTokenBoxes(page: Page): Promise<TermBox[]> {
     const scope = host?.shadowRoot;
     if (!scope) return [];
     const pr = host!.getBoundingClientRect();
-    return Array.from(scope.querySelectorAll('.js-cell-token[data-cell-term]'))
+    return Array.from(scope.querySelectorAll('.js-Tihoka-token[data-tihoka-term]'))
       .map((el) => {
         const r = el.getBoundingClientRect();
         return {
-          term: el.getAttribute('data-cell-term') ?? '',
+          term: el.getAttribute('data-tihoka-term') ?? '',
           x: r.x,
           y: r.y,
           width: r.width,
@@ -168,15 +168,15 @@ async function panelTokenBoxesInCue(page: Page, cueDomIndex: number): Promise<Te
       const host = document.querySelector(panelSel);
       const scope = host?.shadowRoot;
       if (!scope) return [];
-      const items = Array.from(scope.querySelectorAll('[data-cell-id="cue-item"]'));
+      const items = Array.from(scope.querySelectorAll('[data-tihoka-id="cue-item"]'));
       const item = items[idx];
       if (!item) return [];
       const pr = host!.getBoundingClientRect();
-      return Array.from(item.querySelectorAll('.js-cell-token[data-cell-term]'))
+      return Array.from(item.querySelectorAll('.js-Tihoka-token[data-tihoka-term]'))
         .map((el) => {
           const r = el.getBoundingClientRect();
           return {
-            term: el.getAttribute('data-cell-term') ?? '',
+            term: el.getAttribute('data-tihoka-term') ?? '',
             x: r.x,
             y: r.y,
             width: r.width,
@@ -202,8 +202,8 @@ async function panelTermClasses(page: Page, term: string): Promise<string[]> {
       const host = document.querySelector(panelSel);
       const scope = host?.shadowRoot;
       if (!scope) return [];
-      return Array.from(scope.querySelectorAll('.js-cell-token[data-cell-term]'))
-        .filter((el) => el.getAttribute('data-cell-term') === t)
+      return Array.from(scope.querySelectorAll('.js-Tihoka-token[data-tihoka-term]'))
+        .filter((el) => el.getAttribute('data-tihoka-term') === t)
         .map((el) => el.className);
     },
     { panelSel: PANEL_SEL, t: term },
@@ -216,8 +216,8 @@ async function panelTokenSnapshot(page: Page): Promise<string> {
     const host = document.querySelector(panelSel);
     const scope = host?.shadowRoot;
     if (!scope) return '';
-    return Array.from(scope.querySelectorAll('.js-cell-token[data-cell-term]'))
-      .map((el) => `${el.getAttribute('data-cell-term')}=${el.className}`)
+    return Array.from(scope.querySelectorAll('.js-Tihoka-token[data-tihoka-term]'))
+      .map((el) => `${el.getAttribute('data-tihoka-term')}=${el.className}`)
       .join(';');
   }, PANEL_SEL);
 }
@@ -226,12 +226,12 @@ async function overlayTokenBoxes(page: Page): Promise<TermBox[]> {
   return page.evaluate(() =>
     Array.from(
       document.querySelectorAll(
-        '[data-cell-id="subtitle-block"] [data-role="target"] .js-cell-token[data-cell-term]',
+        '[data-tihoka-id="subtitle-block"] [data-role="target"] .js-Tihoka-token[data-tihoka-term]',
       ),
     ).map((el) => {
       const r = el.getBoundingClientRect();
       return {
-        term: el.getAttribute('data-cell-term') ?? '',
+        term: el.getAttribute('data-tihoka-term') ?? '',
         x: r.x,
         y: r.y,
         width: r.width,
@@ -246,10 +246,10 @@ async function overlayTermClasses(page: Page, term: string): Promise<string[]> {
     (t) =>
       Array.from(
         document.querySelectorAll(
-          '[data-cell-id="subtitle-block"] [data-role="target"] .js-cell-token[data-cell-term]',
+          '[data-tihoka-id="subtitle-block"] [data-role="target"] .js-Tihoka-token[data-tihoka-term]',
         ),
       )
-        .filter((el) => el.getAttribute('data-cell-term') === t)
+        .filter((el) => el.getAttribute('data-tihoka-term') === t)
         .map((el) => el.className),
     term,
   );
@@ -279,7 +279,7 @@ async function hitStack(page: Page, x: number, y: number): Promise<string[]> {
         .slice(0, 6)
         .map(
           (el) =>
-            `${el.tagName}#${el.id}.${String(el.className).slice(0, 40)} sv=${el.getAttribute('data-cell-split-view')} term=${el.getAttribute('data-cell-term')}`,
+            `${el.tagName}#${el.id}.${String(el.className).slice(0, 40)} sv=${el.getAttribute('data-tihoka-split-view')} term=${el.getAttribute('data-tihoka-term')}`,
         ),
     { px: x, py: y },
   );
@@ -444,7 +444,7 @@ async function setupLocalPlayer(page: Page, opts: SetupOptions = {}): Promise<vo
  *  visible (paused), so a center-surface click never reaches it — a real
  *  user clicks the play button or hits Space. */
 async function playViaVideoClick(page: Page): Promise<void> {
-  const btn = page.locator('[data-cell-id="controls-overlay"] button[aria-label="Play"]');
+  const btn = page.locator('[data-tihoka-id="controls-overlay"] button[aria-label="Play"]');
   if (await btn.isVisible().catch(() => false)) {
     await btn.click();
   } else {
@@ -456,15 +456,15 @@ async function playViaVideoClick(page: Page): Promise<void> {
 }
 
 test.describe('audit: subtitle bulk status — local player (real-user)', () => {
-  test.beforeEach(async ({ cellContext }) => {
-    await seedCellSettings(cellContext);
+  test.beforeEach(async ({ TihokaContext }) => {
+    await seedTihokaSettings(TihokaContext);
   });
 
   test('AC-1: real mouse drag-select in shadow-DOM cue list + key 3 applies known', async ({
-    cellContext,
+    TihokaContext,
   }) => {
     test.setTimeout(120_000);
-    const page = await cellContext.newPage();
+    const page = await TihokaContext.newPage();
     page.on('console', (msg) => {
       if (msg.type() === 'error') process.stderr.write(`[ac1:err] ${msg.text()}\n`);
     });
@@ -506,16 +506,16 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
     for (const term of dragTerms) {
       await expect
         .poll(async () => (await panelTermClasses(page, term)).join('|'), { timeout: 10_000 })
-        .toContain('js-cell-token--status-known');
+        .toContain('js-Tihoka-token--status-known');
     }
     await page.screenshot({ path: `${SHOTS}/local-cuelist-applied.png`, clip: clip ?? undefined });
   });
 
   test('AC-3 + AC-4 + AC-8: real ctrl+click multi-select, visible wash, announcer, apply + deselect', async ({
-    cellContext,
+    TihokaContext,
   }) => {
     test.setTimeout(120_000);
-    const page = await cellContext.newPage();
+    const page = await TihokaContext.newPage();
     page.on('console', (msg) => {
       if (msg.type() === 'error') process.stderr.write(`[ac3:err] ${msg.text()}\n`);
     });
@@ -535,7 +535,7 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
 
     const zoom = await page.evaluate((panelSel) => {
       const host = document.querySelector(panelSel);
-      const sel = host?.shadowRoot?.querySelector('.js-cell-token--selected');
+      const sel = host?.shadowRoot?.querySelector('.js-Tihoka-token--selected');
       if (!sel) return null;
       sel.scrollIntoView({ block: 'nearest' });
       const r = sel.getBoundingClientRect();
@@ -555,8 +555,8 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
     const styleCheck = await page.evaluate((panelSel) => {
       const host = document.querySelector(panelSel);
       const scope = host?.shadowRoot;
-      const selected = scope?.querySelector('.js-cell-token--selected');
-      const plain = scope?.querySelector('.js-cell-token--word:not(.js-cell-token--selected)');
+      const selected = scope?.querySelector('.js-Tihoka-token--selected');
+      const plain = scope?.querySelector('.js-Tihoka-token--word:not(.js-Tihoka-token--selected)');
       if (!selected || !plain) return null;
       return {
         selectedBg: getComputedStyle(selected).backgroundImage,
@@ -580,7 +580,7 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
     for (const tb of [a!, b!]) {
       await expect
         .poll(async () => (await panelTermClasses(page, tb.term)).join('|'), { timeout: 10_000 })
-        .toContain('js-cell-token--status-tracking');
+        .toContain('js-Tihoka-token--status-tracking');
     }
     const cleared = await announcerInfo(page);
     expect(cleared.text).toMatch(/cleared|bỏ/i);
@@ -593,9 +593,9 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
     await expect.poll(() => uniqueSelectedTerms(page)).toBe(0);
   });
 
-  test('AC-2: overlay tokenization + real-gesture reachability', async ({ cellContext }) => {
+  test('AC-2: overlay tokenization + real-gesture reachability', async ({ TihokaContext }) => {
     test.setTimeout(150_000);
-    const page = await cellContext.newPage();
+    const page = await TihokaContext.newPage();
     page.on('console', (msg) => {
       if (msg.type() === 'error') process.stderr.write(`[ac2:err] ${msg.text()}\n`);
     });
@@ -614,7 +614,7 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
     const stackPanelOpen = await hitStack(page, cx, cy);
     process.stderr.write(`[ac2] hit stack (panel open): ${JSON.stringify(stackPanelOpen)}\n`);
     expect
-      .soft((stackPanelOpen[0] ?? '').includes('js-cell-token'), 'panel-open: token is the hit target')
+      .soft((stackPanelOpen[0] ?? '').includes('js-Tihoka-token'), 'panel-open: token is the hit target')
       .toBe(true);
 
     // Close the cue panel → stage returns to full height; the token must stay
@@ -633,7 +633,7 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
     );
     process.stderr.write(`[ac2] hit stack (panel closed): ${JSON.stringify(stackClosed)}\n`);
     expect
-      .soft((stackClosed[0] ?? '').includes('js-cell-token'), 'panel-closed: token is the hit target')
+      .soft((stackClosed[0] ?? '').includes('js-Tihoka-token'), 'panel-closed: token is the hit target')
       .toBe(true);
 
     // Real ctrl+click attempt — record where the click actually lands.
@@ -675,7 +675,7 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
     await page.waitForTimeout(600);
     const appliedCount = (
       await Promise.all(dragTerms.map((t) => overlayTermClasses(page, t)))
-    ).filter((cls) => cls.some((c) => c.includes('js-cell-token--status-unknown'))).length;
+    ).filter((cls) => cls.some((c) => c.includes('js-Tihoka-token--status-unknown'))).length;
     process.stderr.write(`[ac2] drag-select→1 applied ${appliedCount}/${dragTerms.length}\n`);
     expect.soft(appliedCount, 'overlay drag-select + key 1 applies unknown').toBe(dragTerms.length);
 
@@ -693,9 +693,9 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
     await page.screenshot({ path: `${SHOTS}/local-overlay-manager-reachable.png` });
   });
 
-  test('AC-5: dictionary popup term wins over an active selection', async ({ cellContext }) => {
+  test('AC-5: dictionary popup term wins over an active selection', async ({ TihokaContext }) => {
     test.setTimeout(120_000);
-    const page = await cellContext.newPage();
+    const page = await TihokaContext.newPage();
     page.on('console', (msg) => {
       const t = msg.text();
       if (t.includes('lookup') || msg.type() === 'error' || msg.type() === 'warning') {
@@ -715,12 +715,12 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
 
     // Plain click on a DIFFERENT token → dictionary popup.
     await realClick(page, popupTarget!);
-    await expect.poll(() => deepExists(page, '.js-cell-popup-host'), { timeout: 10_000 }).toBe(true);
+    await expect.poll(() => deepExists(page, '.js-Tihoka-popup-host'), { timeout: 10_000 }).toBe(true);
     const popupOpenedOnTerm = await expect
       .poll(
         async () =>
           (await panelTermClasses(page, popupTarget!.term)).some((c) =>
-            c.includes('js-cell-token--popup-open'),
+            c.includes('js-Tihoka-token--popup-open'),
           ),
         { timeout: 10_000 },
       )
@@ -735,7 +735,7 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
     // status key during the loading window falls through to the selection by
     // design, so the priority assertion must come after resolution.
     const resolved = await expect
-      .poll(() => deepExists(page, '[data-cell-id="dictionary-candidate-0"]'), { timeout: 15_000 })
+      .poll(() => deepExists(page, '[data-tihoka-id="dictionary-candidate-0"]'), { timeout: 15_000 })
       .toBe(true)
       .then(() => true)
       .catch(() => false);
@@ -751,7 +751,7 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
       .poll(async () => (await panelTermClasses(page, popupTarget!.term)).join('|'), {
         timeout: 10_000,
       })
-      .toContain('js-cell-token--status-ignore');
+      .toContain('js-Tihoka-token--status-ignore');
 
     // The active selection survives a popup-targeted apply.
     process.stderr.write(
@@ -760,7 +760,7 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
     expect(await uniqueSelectedTerms(page)).toBe(2);
     for (const tb of [s1!, s2!]) {
       const cls = await panelTermClasses(page, tb.term);
-      expect(cls.some((c) => c.includes('js-cell-token--status-ignore'))).toBe(false);
+      expect(cls.some((c) => c.includes('js-Tihoka-token--status-ignore'))).toBe(false);
     }
     await page.screenshot({ path: `${SHOTS}/local-popup-priority-applied.png` });
     await page.keyboard.press('Escape');
@@ -768,10 +768,10 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
   });
 
   test('AC-6: lifecycle — Escape clears, cue boundary clears, reload drops store', async ({
-    cellContext,
+    TihokaContext,
   }) => {
     test.setTimeout(180_000);
-    const page = await cellContext.newPage();
+    const page = await TihokaContext.newPage();
     page.on('console', (msg) => {
       if (msg.type() === 'error') process.stderr.write(`[ac6:err] ${msg.text()}\n`);
     });
@@ -831,10 +831,10 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
   });
 
   test('stress + editable inertness: 7-term select, empty keypress, 4x toggle, mixed surfaces', async ({
-    cellContext,
+    TihokaContext,
   }) => {
     test.setTimeout(180_000);
-    const page = await cellContext.newPage();
+    const page = await TihokaContext.newPage();
     page.on('console', (msg) => {
       if (msg.type() === 'error') process.stderr.write(`[stress:err] ${msg.text()}\n`);
     });
@@ -853,8 +853,8 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
     }
     if (managerReachable) {
       await mgrBtn.click({ timeout: 10_000 });
-      await waitDeep(page, '[data-cell-id="subtitle-manager-panel"]', 10_000);
-      const offsetInput = page.locator('[data-cell-id="manager-offset-input-target"]');
+      await waitDeep(page, '[data-tihoka-id="subtitle-manager-panel"]', 10_000);
+      const offsetInput = page.locator('[data-tihoka-id="manager-offset-input-target"]');
       await offsetInput.click();
       const statusBefore = await panelTokenSnapshot(page);
       await page.keyboard.press('1');
@@ -865,9 +865,9 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
         '[stress] editable inertness: key 1 inside offset input → no status change\n',
       );
       await offsetInput.fill('0');
-      await page.locator('[data-cell-id="subtitle-manager-close"]').click();
+      await page.locator('[data-tihoka-id="subtitle-manager-close"]').click();
       await expect
-        .poll(() => deepExists(page, '[data-cell-id="subtitle-manager-panel"]'), { timeout: 10_000 })
+        .poll(() => deepExists(page, '[data-tihoka-id="subtitle-manager-panel"]'), { timeout: 10_000 })
         .toBe(false);
     } else {
       process.stderr.write(
@@ -900,7 +900,7 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
     for (const tb of batch) {
       await expect
         .poll(async () => (await panelTermClasses(page, tb.term)).join('|'), { timeout: 10_000 })
-        .toContain('js-cell-token--status-known');
+        .toContain('js-Tihoka-token--status-known');
     }
     await page.screenshot({
       path: `${SHOTS}/local-stress-7term.png`,
@@ -935,7 +935,7 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
           overlayToks[0]!.y + overlayToks[0]!.height / 2,
         )
       : [];
-    const overlayReachable = (overlayHit[0] ?? '').includes('js-cell-token');
+    const overlayReachable = (overlayHit[0] ?? '').includes('js-Tihoka-token');
     process.stderr.write(
       `[stress] mixed-surface overlay hit: ${JSON.stringify(overlayHit)} reachable=${overlayReachable}\n`,
     );
@@ -949,12 +949,12 @@ test.describe('audit: subtitle bulk status — local player (real-user)', () => 
         .poll(async () => (await panelTermClasses(page, panelPick.term)).join('|'), {
           timeout: 10_000,
         })
-        .toContain('js-cell-token--status-tracking');
+        .toContain('js-Tihoka-token--status-tracking');
       await expect
         .poll(async () => (await overlayTermClasses(page, overlayToks[0]!.term)).join('|'), {
           timeout: 10_000,
         })
-        .toContain('js-cell-token--status-tracking');
+        .toContain('js-Tihoka-token--status-tracking');
       await page.screenshot({ path: `${SHOTS}/local-mixed-surfaces.png` });
     } else {
       process.stderr.write(

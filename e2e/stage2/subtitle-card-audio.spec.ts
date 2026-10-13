@@ -1,5 +1,5 @@
 import { expect, type BrowserContext, type Locator } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
 const SETTINGS_KEY = 'settings';
 const DB_SCHEMA_VERSION = 12;
@@ -172,11 +172,11 @@ async function pointForWord(locator: Locator, wordReSource: string): Promise<{ x
 
 test.describe('Stage 2: Subtitle lookup > Card Creator media source on StreamFlix', () => {
   test('send to card from a target cue word records the video audio instead of TTS', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }, testInfo) => {
-    await seedStorage(cellContext, { settings: makeSettings() });
-    await seedDictionary(cellContext, 'en', [
+    await seedStorage(TihokaContext, { settings: makeSettings() });
+    await seedDictionary(TihokaContext, 'en', [
       {
         term: 'silence',
         pos: 'n.',
@@ -196,7 +196,7 @@ test.describe('Stage 2: Subtitle lookup > Card Creator media source on StreamFli
     });
 
     const targetLayer = streamFlixPage
-      .locator('[data-cell-id="subtitle-block"] [data-role="target"]')
+      .locator('[data-tihoka-id="subtitle-block"] [data-role="target"]')
       .first();
     await expect(targetLayer).toBeVisible({ timeout: 15_000 });
     await expect(targetLayer).toContainText(/silence/i, { timeout: 15_000 });
@@ -213,36 +213,36 @@ test.describe('Stage 2: Subtitle lookup > Card Creator media source on StreamFli
     await streamFlixPage.mouse.click(point!.x, point!.y);
 
     const sendButton = streamFlixPage.locator(
-      '.js-cell-popup-host [data-cell-id="dictionary-send-to-card"]',
+      '.js-Tihoka-popup-host [data-tihoka-id="dictionary-send-to-card"]',
     );
     await expect(sendButton).toBeVisible({ timeout: 15_000 });
     await sendButton.click();
 
     // The popup hides on click so the recording chip is visible over the video.
-    await expect(streamFlixPage.locator('.js-cell-popup-host')).toHaveCount(0);
+    await expect(streamFlixPage.locator('.js-Tihoka-popup-host')).toHaveCount(0);
 
     // The progress chip floats bottom-center over the video while the cue
     // audio is being recorded ("Preparing card…" then "Recording…").
-    const chip = streamFlixPage.locator('[data-cell-id="subtitle-toast"]');
+    const chip = streamFlixPage.locator('[data-tihoka-id="subtitle-toast"]');
     await expect(chip).toContainText(/recording|preparing/i, { timeout: 15_000 });
 
     // collectCardCreatorMedia seeks the video back to the cue start and
     // records ~5.3s of cue audio before the panel mounts — wait generously.
     const sentenceRows = streamFlixPage.locator(
-      '[data-cell-id="cc-sentence-audios-list"] [data-cell-id^="cc-sentence-audios-list-view-"]',
+      '[data-tihoka-id="cc-sentence-audios-list"] [data-tihoka-id^="cc-sentence-audios-list-view-"]',
     );
     await expect(sentenceRows.first()).toBeVisible({ timeout: 30_000 });
 
-    // A recorded cue clip is named cell-sentence-<ts>-<rand>.<ext>; fetched
-    // TTS/URL audio is named cell-audio-<ts>-<rand>.<ext>.
+    // A recorded cue clip is named Tihoka-sentence-<ts>-<rand>.<ext>; fetched
+    // TTS/URL audio is named Tihoka-audio-<ts>-<rand>.<ext>.
     const labels = await sentenceRows.evaluateAll((els) =>
       els.map((el) => el.getAttribute('aria-label') ?? ''),
     );
-    expect(labels.some((l) => /cell-sentence-\d+-[a-z0-9]+\./i.test(l))).toBe(true);
-    expect(labels.every((l) => !/cell-audio-/.test(l))).toBe(true);
+    expect(labels.some((l) => /Tihoka-sentence-\d+-[a-z0-9]+\./i.test(l))).toBe(true);
+    expect(labels.every((l) => !/Tihoka-audio-/.test(l))).toBe(true);
 
     const thumbs = streamFlixPage.locator(
-      '[data-cell-id="cc-images-list"] [data-cell-id^="cc-images-list-thumb-"]',
+      '[data-tihoka-id="cc-images-list"] [data-tihoka-id^="cc-images-list-thumb-"]',
     );
     await expect(thumbs.first()).toBeVisible({ timeout: 5_000 });
 
@@ -253,11 +253,11 @@ test.describe('Stage 2: Subtitle lookup > Card Creator media source on StreamFli
   });
 
   test('send to card from a non-current panel cue seeks to and records that cue', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }, testInfo) => {
-    await seedStorage(cellContext, { settings: makeSettings() });
-    await seedDictionary(cellContext, 'en', [
+    await seedStorage(TihokaContext, { settings: makeSettings() });
+    await seedDictionary(TihokaContext, 'en', [
       {
         term: 'good',
         pos: 'adj.',
@@ -277,10 +277,10 @@ test.describe('Stage 2: Subtitle lookup > Card Creator media source on StreamFli
     // Open the Player Mode cue list — its items carry data-cue-start/end.
     await streamFlixPage.keyboard.press('g');
     const cueItem = streamFlixPage.locator(
-      '[data-cell-id="cue-item"][data-cue-start="47233"]',
+      '[data-tihoka-id="cue-item"][data-cue-start="47233"]',
     );
     await expect(cueItem).toBeAttached({ timeout: 15_000 });
-    const targetText = cueItem.locator('[data-cell-id="cue-target-text"]');
+    const targetText = cueItem.locator('[data-tihoka-id="cue-target-text"]');
     await expect(targetText).toContainText(/good/i, { timeout: 5_000 });
     await targetText.scrollIntoViewIfNeeded();
 
@@ -289,13 +289,13 @@ test.describe('Stage 2: Subtitle lookup > Card Creator media source on StreamFli
     await streamFlixPage.mouse.click(point!.x, point!.y);
 
     const sendButton = streamFlixPage.locator(
-      '.js-cell-popup-host [data-cell-id="dictionary-send-to-card"]',
+      '.js-Tihoka-popup-host [data-tihoka-id="dictionary-send-to-card"]',
     );
     await expect(sendButton).toBeVisible({ timeout: 15_000 });
     await sendButton.click();
-    await expect(streamFlixPage.locator('.js-cell-popup-host')).toHaveCount(0);
+    await expect(streamFlixPage.locator('.js-Tihoka-popup-host')).toHaveCount(0);
 
-    const chip = streamFlixPage.locator('[data-cell-id="subtitle-toast"]');
+    const chip = streamFlixPage.locator('[data-tihoka-id="subtitle-toast"]');
     await expect(chip).toContainText(/recording|preparing/i, { timeout: 15_000 });
 
     // The video must have been seeked INTO the clicked cue's range — not left
@@ -307,17 +307,17 @@ test.describe('Stage 2: Subtitle lookup > Card Creator media source on StreamFli
       .toBeGreaterThan(46);
 
     const sentenceRows = streamFlixPage.locator(
-      '[data-cell-id="cc-sentence-audios-list"] [data-cell-id^="cc-sentence-audios-list-view-"]',
+      '[data-tihoka-id="cc-sentence-audios-list"] [data-tihoka-id^="cc-sentence-audios-list-view-"]',
     );
     await expect(sentenceRows.first()).toBeVisible({ timeout: 30_000 });
     const labels = await sentenceRows.evaluateAll((els) =>
       els.map((el) => el.getAttribute('aria-label') ?? ''),
     );
-    expect(labels.some((l) => /cell-sentence-\d+-[a-z0-9]+\./i.test(l))).toBe(true);
-    expect(labels.every((l) => !/cell-audio-/.test(l))).toBe(true);
+    expect(labels.some((l) => /Tihoka-sentence-\d+-[a-z0-9]+\./i.test(l))).toBe(true);
+    expect(labels.every((l) => !/Tihoka-audio-/.test(l))).toBe(true);
 
     const thumbs = streamFlixPage.locator(
-      '[data-cell-id="cc-images-list"] [data-cell-id^="cc-images-list-thumb-"]',
+      '[data-tihoka-id="cc-images-list"] [data-tihoka-id^="cc-images-list-thumb-"]',
     );
     await expect(thumbs.first()).toBeVisible({ timeout: 5_000 });
 

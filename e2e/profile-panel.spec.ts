@@ -11,17 +11,17 @@ import { test, expect, type Page } from '@playwright/test';
 const PANEL = {
   bannerChange: 'Change',
   newProfile: 'New profile',
-  targetTrigger: '[data-cell-id="profile-target-language"]',
-  nativeTrigger: '[data-cell-id="profile-native-language"]',
-  universalTrigger: '[data-cell-id="universal-native-language"]',
-  save: '[data-cell-id="save-language-profile"]',
+  targetTrigger: '[data-tihoka-id="profile-target-language"]',
+  nativeTrigger: '[data-tihoka-id="profile-native-language"]',
+  universalTrigger: '[data-tihoka-id="universal-native-language"]',
+  save: '[data-tihoka-id="save-language-profile"]',
 };
 
 const PROFILE_CARD = (id: string) => `language-profile-card-${id}`;
 
-async function pickOption(page: Page, trigger: string, optionCellId: string): Promise<void> {
+async function pickOption(page: Page, trigger: string, optionTihokaId: string): Promise<void> {
   await page.locator(trigger).click();
-  await page.locator(`[data-cell-id="${optionCellId}"]`).click();
+  await page.locator(`[data-tihoka-id="${optionTihokaId}"]`).click();
 }
 
 function profileMenuButton(page: Page, id: string) {
@@ -106,7 +106,7 @@ test.describe('LanguageProfilePanel — cards', () => {
     await page.getByRole('button', { name: PANEL.newProfile }).click();
     await pickOption(page, PANEL.targetTrigger, 'profile-target-language-option-en');
     await page.locator(PANEL.save).click();
-    await expect(page.locator('[data-cell-id="language-profile-validation"]')).toContainText(
+    await expect(page.locator('[data-tihoka-id="language-profile-validation"]')).toContainText(
       'already exists',
     );
   });

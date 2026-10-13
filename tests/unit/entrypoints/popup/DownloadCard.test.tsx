@@ -242,9 +242,9 @@ describe('DownloadCard', () => {
     expect(screen.getByText(/2.0s/)).toBeInTheDocument();
   });
 
-  // === data-cell-id ===
+  // === data-tihoka-id ===
 
-  it('has data-cell-id="download-item" on the card root', () => {
+  it('has data-tihoka-id="download-item" on the card root', () => {
     render(<DownloadCard download={makeDownload()} {...noopHandlers} />);
     expect(screen.getByTestId('download-item')).toBeInTheDocument();
   });

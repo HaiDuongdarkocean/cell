@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
-const WRAPPER = '[data-cell-split-view="wrapper"]';
+const WRAPPER = '[data-tihoka-split-view="wrapper"]';
 
 const KISSKH_URL =
   'https://kisskh.co/Drama/Perfect-Crown/Episode-1?id=11923&ep=207851&page=0&pageSize=100';
@@ -31,17 +31,17 @@ const gotoOrSkip = async (
 
 const splitViewState = (page: Page) =>
   page.evaluate(() => {
-    const wrapper = document.querySelector('[data-cell-split-view="wrapper"]');
-    const panel = document.querySelector('[data-cell-split-view="panel"]');
+    const wrapper = document.querySelector('[data-tihoka-split-view="wrapper"]');
+    const panel = document.querySelector('[data-tihoka-split-view="panel"]');
     const video = document.querySelector('video');
     const vr = video?.getBoundingClientRect();
     const pr = panel?.getBoundingClientRect();
     const wr = wrapper?.getBoundingClientRect();
     return {
-      wrappers: document.querySelectorAll('[data-cell-split-view="wrapper"]').length,
-      panels: document.querySelectorAll('[data-cell-split-view="panel"]').length,
-      handles: document.querySelectorAll('[data-cell-split-view="handle"]').length,
-      total: document.querySelectorAll('[data-cell-split-view]').length,
+      wrappers: document.querySelectorAll('[data-tihoka-split-view="wrapper"]').length,
+      panels: document.querySelectorAll('[data-tihoka-split-view="panel"]').length,
+      handles: document.querySelectorAll('[data-tihoka-split-view="handle"]').length,
+      total: document.querySelectorAll('[data-tihoka-split-view]').length,
       video: vr ? { w: Math.round(vr.width), h: Math.round(vr.height) } : null,
       panel: pr ? { w: Math.round(pr.width), h: Math.round(pr.height) } : null,
       wrapper: wr ? { w: Math.round(wr.width), h: Math.round(wr.height) } : null,
@@ -53,14 +53,14 @@ test.describe('Stage 2: Split View on real sites', () => {
   test.setTimeout(180_000);
 
   test('SV-62R: kisskh — split view keeps video + sibling columns rendered', async ({
-    cellContext,
+    TihokaContext,
   }) => {
-    const page = await cellContext.newPage();
+    const page = await TihokaContext.newPage();
     try {
       const loaded = await gotoOrSkip(page, KISSKH_URL);
       test.skip(!loaded, 'kisskh unreachable or anti-bot blocked (no <video> within 30s)');
 
-      await page.waitForSelector('#cell-subtitle-root', { state: 'attached', timeout: 30_000 });
+      await page.waitForSelector('#Tihoka-subtitle-root', { state: 'attached', timeout: 30_000 });
       await page.waitForTimeout(1500);
 
       // Sibling footprint before split view (kisskh uses a flex row: video col
@@ -93,9 +93,9 @@ test.describe('Stage 2: Split View on real sites', () => {
   });
 
   test('SV-20R: youtube — split view survives native fullscreen enter+exit', async ({
-    cellContext,
+    TihokaContext,
   }) => {
-    const page = await cellContext.newPage();
+    const page = await TihokaContext.newPage();
     try {
       const loaded = await gotoOrSkip(page, YOUTUBE_URL, 'video.html5-main-video');
       test.skip(!loaded, 'youtube unreachable or consent wall blocked (no video within 30s)');
@@ -106,7 +106,7 @@ test.describe('Stage 2: Split View on real sites', () => {
         await consent.first().click().catch(() => undefined);
         await page.waitForLoadState('domcontentloaded');
       }
-      await page.waitForSelector('#cell-subtitle-root', { state: 'attached', timeout: 30_000 });
+      await page.waitForSelector('#Tihoka-subtitle-root', { state: 'attached', timeout: 30_000 });
       await page.waitForTimeout(2000);
 
       await page.keyboard.press('t');
@@ -125,7 +125,7 @@ test.describe('Stage 2: Split View on real sites', () => {
       await page.waitForFunction(() => !!document.fullscreenElement, null, { timeout: 8_000 });
       // Auto-close + settle + auto-reopen inside the fs element.
       await page.waitForFunction(
-        () => !!document.fullscreenElement?.querySelector('[data-cell-split-view="panel"]'),
+        () => !!document.fullscreenElement?.querySelector('[data-tihoka-split-view="panel"]'),
         null,
         { timeout: 15_000 },
       );
@@ -145,14 +145,14 @@ test.describe('Stage 2: Split View on real sites', () => {
   });
 
   test('SV-61R: themoviebox — broad shell keeps resources panel; close restores', async ({
-    cellContext,
+    TihokaContext,
   }) => {
-    const page = await cellContext.newPage();
+    const page = await TihokaContext.newPage();
     try {
       const loaded = await gotoOrSkip(page, THEMOVIEBOX_URL);
       test.skip(!loaded, 'themoviebox unreachable or blocked (no <video> within 30s)');
 
-      await page.waitForSelector('#cell-subtitle-root', { state: 'attached', timeout: 30_000 });
+      await page.waitForSelector('#Tihoka-subtitle-root', { state: 'attached', timeout: 30_000 });
       await page.waitForTimeout(1500);
 
       await page.keyboard.press('t');

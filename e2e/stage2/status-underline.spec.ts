@@ -1,5 +1,5 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
 const STREAMFLIX_KEYS = [
   'http://127.0.0.1:4321/',
@@ -36,15 +36,15 @@ async function writeTokenizeSettings(context: BrowserContext): Promise<void> {
 
 async function tokenState(page: Page, scope: TokenScope, term: string): Promise<TokenState> {
   return page.evaluate(({ scope, term }) => {
-    const subtitleRoot = document.getElementById('cell-subtitle-root')?.shadowRoot;
+    const subtitleRoot = document.getElementById('Tihoka-subtitle-root')?.shadowRoot;
     let element: Element | null | undefined;
     if (scope === 'web') {
-      element = Array.from(document.querySelectorAll('.js-cell-token[data-cell-term]'))
-        .find((candidate) => candidate.getAttribute('data-cell-term') === term && !candidate.closest('#cell-subtitle-root'));
+      element = Array.from(document.querySelectorAll('.js-Tihoka-token[data-tihoka-term]'))
+        .find((candidate) => candidate.getAttribute('data-tihoka-term') === term && !candidate.closest('#Tihoka-subtitle-root'));
     } else if (scope === 'overlay') {
-      element = subtitleRoot?.querySelector(`[data-role="target"] .js-cell-token[data-cell-term="${term}"]`);
+      element = subtitleRoot?.querySelector(`[data-role="target"] .js-Tihoka-token[data-tihoka-term="${term}"]`);
     } else {
-      element = subtitleRoot?.querySelector(`[data-cell-id="cue-item"][data-current="true"] .js-cell-token[data-cell-term="${term}"]`);
+      element = subtitleRoot?.querySelector(`[data-tihoka-id="cue-item"][data-current="true"] .js-Tihoka-token[data-tihoka-term="${term}"]`);
     }
     if (!element) return null;
     const style = getComputedStyle(element as HTMLElement);
@@ -59,7 +59,7 @@ async function tokenState(page: Page, scope: TokenScope, term: string): Promise<
 
 function expectStatusUnderline(state: TokenState, status: string): void {
   expect(state).not.toBeNull();
-  expect(state?.className).toContain(`js-cell-token--status-${status}`);
+  expect(state?.className).toContain(`js-Tihoka-token--status-${status}`);
   expect(state?.rect.width).toBeGreaterThan(0);
   expect(state?.rect.height).toBeGreaterThan(0);
   expect(state?.boxShadow).toContain('inset');
@@ -69,25 +69,25 @@ function expectStatusUnderline(state: TokenState, status: string): void {
 async function setOverlayTermStatus(page: Page, term: string, key: string, status: string): Promise<void> {
   await expect.poll(async () => tokenState(page, 'overlay', term), { timeout: 30_000 }).not.toBeNull();
   await page.evaluate((term) => {
-    const token = document.getElementById('cell-subtitle-root')
+    const token = document.getElementById('Tihoka-subtitle-root')
       ?.shadowRoot
-      ?.querySelector(`[data-role="target"] .js-cell-token[data-cell-term="${term}"]`);
+      ?.querySelector(`[data-role="target"] .js-Tihoka-token[data-tihoka-term="${term}"]`);
     token?.dispatchEvent(new MouseEvent('mouseenter'));
   }, term);
   await page.keyboard.press(key);
   await expect.poll(
     async () => (await tokenState(page, 'overlay', term))?.className ?? '',
     { timeout: 30_000 },
-  ).toContain(`js-cell-token--status-${status}`);
+  ).toContain(`js-Tihoka-token--status-${status}`);
 }
 
 test.describe('status underline', () => {
-  test('keeps known and ignored word underlines on web, overlay, and cue list', async ({ cellContext, streamFlixPage }) => {
-    await writeTokenizeSettings(cellContext);
+  test('keeps known and ignored word underlines on web, overlay, and cue list', async ({ TihokaContext, streamFlixPage }) => {
+    await writeTokenizeSettings(TihokaContext);
     await streamFlixPage.reload({ waitUntil: 'networkidle' });
     await expect(streamFlixPage.locator('#player-wrapper video').first()).toBeVisible({ timeout: 30_000 });
-    await expect.poll(async () => streamFlixPage.locator('.js-cell-token[data-cell-term="the"]').count()).toBeGreaterThan(0);
-    await expect.poll(async () => streamFlixPage.locator('.js-cell-token[data-cell-term="at"]').count()).toBeGreaterThan(0);
+    await expect.poll(async () => streamFlixPage.locator('.js-Tihoka-token[data-tihoka-term="the"]').count()).toBeGreaterThan(0);
+    await expect.poll(async () => streamFlixPage.locator('.js-Tihoka-token[data-tihoka-term="at"]').count()).toBeGreaterThan(0);
 
     const video = streamFlixPage.locator('#player-wrapper video').first();
     await video.evaluate((v: HTMLVideoElement) => {
@@ -96,7 +96,7 @@ test.describe('status underline', () => {
       v.currentTime = 20.6;
       void v.play();
     });
-    const targetLine = streamFlixPage.locator('[data-cell-id="subtitle-block"] [data-role="target"] span').first();
+    const targetLine = streamFlixPage.locator('[data-tihoka-id="subtitle-block"] [data-role="target"] span').first();
     await expect(targetLine).toContainText(/silence/i, { timeout: 30_000 });
     await video.evaluate((v: HTMLVideoElement) => {
       v.currentTime = 43;
@@ -104,7 +104,7 @@ test.describe('status underline', () => {
     await expect(targetLine).toContainText(/end/i, { timeout: 30_000 });
 
     await expect.poll(async () => streamFlixPage.evaluate(() => {
-      const button = document.getElementById('cell-subtitle-root')?.shadowRoot?.querySelector<HTMLElement>('[data-cell-id="player-mode-btn"]');
+      const button = document.getElementById('Tihoka-subtitle-root')?.shadowRoot?.querySelector<HTMLElement>('[data-tihoka-id="player-mode-btn"]');
       if (!button) return false;
       button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }));
       return true;
@@ -117,29 +117,29 @@ test.describe('status underline', () => {
 
     for (const [term, status] of [['the', 'known'], ['at', 'ignore']] as const) {
       for (const scope of ['web', 'overlay', 'cue'] as const) {
-        await expect.poll(async () => (await tokenState(streamFlixPage, scope, term))?.className ?? '').toContain(`js-cell-token--status-${status}`);
+        await expect.poll(async () => (await tokenState(streamFlixPage, scope, term))?.className ?? '').toContain(`js-Tihoka-token--status-${status}`);
         expectStatusUnderline(await tokenState(streamFlixPage, scope, term), status);
       }
     }
     await video.evaluate((v: HTMLVideoElement) => v.pause());
   });
 
-  test('native text selection outranks the hovered token on web tokens', async ({ cellContext, streamFlixPage }) => {
-    await writeTokenizeSettings(cellContext);
+  test('native text selection outranks the hovered token on web tokens', async ({ TihokaContext, streamFlixPage }) => {
+    await writeTokenizeSettings(TihokaContext);
     await streamFlixPage.reload({ waitUntil: 'networkidle' });
     await expect(streamFlixPage.locator('#player-wrapper video').first()).toBeVisible({ timeout: 30_000 });
-    await expect.poll(async () => streamFlixPage.locator('.js-cell-token[data-cell-term="the"]').count()).toBeGreaterThan(0);
-    await expect.poll(async () => streamFlixPage.locator('.js-cell-token[data-cell-term="first"]').count()).toBeGreaterThan(0);
+    await expect.poll(async () => streamFlixPage.locator('.js-Tihoka-token[data-tihoka-term="the"]').count()).toBeGreaterThan(0);
+    await expect.poll(async () => streamFlixPage.locator('.js-Tihoka-token[data-tihoka-term="first"]').count()).toBeGreaterThan(0);
 
-    const description = streamFlixPage.locator('.js-cell-token[data-cell-term="humanity"]').first();
+    const description = streamFlixPage.locator('.js-Tihoka-token[data-tihoka-term="humanity"]').first();
     await description.scrollIntoViewIfNeeded();
 
     const dragBounds = await streamFlixPage.evaluate(() => {
-      const tokens = Array.from(document.querySelectorAll('.js-cell-token[data-cell-term]'))
-        .filter((el) => !el.closest('#cell-subtitle-root'));
-      const first = tokens.find((el) => el.getAttribute('data-cell-term') === 'humanity');
-      const last = tokens.find((el) => el.getAttribute('data-cell-term') === 'first');
-      const hovered = tokens.find((el) => el.getAttribute('data-cell-term') === 'gates');
+      const tokens = Array.from(document.querySelectorAll('.js-Tihoka-token[data-tihoka-term]'))
+        .filter((el) => !el.closest('#Tihoka-subtitle-root'));
+      const first = tokens.find((el) => el.getAttribute('data-tihoka-term') === 'humanity');
+      const last = tokens.find((el) => el.getAttribute('data-tihoka-term') === 'first');
+      const hovered = tokens.find((el) => el.getAttribute('data-tihoka-term') === 'gates');
       if (!first || !last || !hovered) return null;
       if ((first.compareDocumentPosition(last) & Node.DOCUMENT_POSITION_FOLLOWING) === 0) {
         return null;
@@ -166,11 +166,11 @@ test.describe('status underline', () => {
       await expect.poll(
         async () => (await tokenState(streamFlixPage, 'web', term))?.className ?? '',
         { timeout: 30_000 },
-      ).toContain('js-cell-token--status-tracking');
+      ).toContain('js-Tihoka-token--status-tracking');
       expectStatusUnderline(await tokenState(streamFlixPage, 'web', term), 'tracking');
     }
     await expect.poll(
       async () => (await tokenState(streamFlixPage, 'web', 'gates'))?.className ?? '',
-    ).not.toContain('js-cell-token--status-tracking');
+    ).not.toContain('js-Tihoka-token--status-tracking');
   });
 });

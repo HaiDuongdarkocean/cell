@@ -5,7 +5,7 @@ test.describe('Local pronunciation audio settings', () => {
   test('popup settings dialog has a Pronunciation card and can reorder engines', async ({
     popupPage,
   }) => {
-    await expect(popupPage.getByRole('heading', { name: 'Cell' })).toBeVisible();
+    await expect(popupPage.getByRole('heading', { name: 'Tihoka' })).toBeVisible();
 
     popupPage.on('console', (msg) => console.log(`[popup console] ${msg.type()}: ${msg.text()}`));
     popupPage.on('pageerror', (err) => console.error(`[popup pageerror] ${err.message}`));

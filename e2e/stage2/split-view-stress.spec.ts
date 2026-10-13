@@ -1,9 +1,9 @@
 import { expect } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
-const WRAPPER = '[data-cell-split-view="wrapper"]';
-const PANEL = '[data-cell-split-view="panel"]';
-const HANDLE = '[data-cell-split-view="handle"]';
+const WRAPPER = '[data-tihoka-split-view="wrapper"]';
+const PANEL = '[data-tihoka-split-view="panel"]';
+const HANDLE = '[data-tihoka-split-view="handle"]';
 const VIDEO = '#player-wrapper video';
 const PLAYER = '#player-wrapper';
 
@@ -130,10 +130,10 @@ test.describe('Stage 2: Split View stress — page lifecycle', () => {
 
     // Contract: no split-view artifacts survive the host removing the player
     // subtree — the MutationObserver self-closes the session.
-    expect(await streamFlixPage.locator('[data-cell-split-view]').count()).toBe(0);
+    expect(await streamFlixPage.locator('[data-tihoka-split-view]').count()).toBe(0);
 
     // Known ceiling: React removes #player-wrapper from the parent it
-    // expects while the node lives inside our stageCell → NotFoundError →
+    // expects while the node lives inside our stageTihoka → NotFoundError →
     // host root unmount (content scripts cannot patch main-world DOM
     // methods). Record it; the contract above still must hold.
     const appAlive = await streamFlixPage.locator('#root > *').count();

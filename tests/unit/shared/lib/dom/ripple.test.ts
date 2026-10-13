@@ -21,7 +21,7 @@ describe('spawnRipple', () => {
       width: 40, height: 20, left: 10, top: 50, right: 50, bottom: 70, x: 10, y: 50, toJSON: () => ({}),
     } as DOMRect);
     spawnRipple(host, 30, 60);
-    const span = host.querySelector('[data-cell-ripple]') as HTMLElement;
+    const span = host.querySelector('[data-tihoka-ripple]') as HTMLElement;
     expect(span).not.toBeNull();
     expect(span.style.width).toBe('80px');
     expect(span.style.height).toBe('80px');
@@ -33,13 +33,13 @@ describe('spawnRipple', () => {
     const host = document.createElement('button');
     document.body.appendChild(host);
     spawnRipple(host, 0, 0);
-    const span = host.querySelector('[data-cell-ripple]') as HTMLElement;
+    const span = host.querySelector('[data-tihoka-ripple]') as HTMLElement;
     span.dispatchEvent(new Event('animationend'));
-    expect(host.querySelector('[data-cell-ripple]')).toBeNull();
+    expect(host.querySelector('[data-tihoka-ripple]')).toBeNull();
 
     spawnRipple(host, 0, 0);
     jest.advanceTimersByTime(1300);
-    expect(host.querySelector('[data-cell-ripple]')).toBeNull();
+    expect(host.querySelector('[data-tihoka-ripple]')).toBeNull();
   });
 });
 
@@ -56,7 +56,7 @@ describe('installRippleDelegation', () => {
     shadow.appendChild(btn);
     const cleanup = installRippleDelegation(shadow);
     press(btn);
-    expect(btn.querySelector('[data-cell-ripple]')).not.toBeNull();
+    expect(btn.querySelector('[data-tihoka-ripple]')).not.toBeNull();
     cleanup();
   });
 
@@ -69,7 +69,7 @@ describe('installRippleDelegation', () => {
     shadow.appendChild(div);
     installRippleDelegation(shadow);
     press(div);
-    expect(div.querySelector('[data-cell-ripple]')).not.toBeNull();
+    expect(div.querySelector('[data-tihoka-ripple]')).not.toBeNull();
   });
 
   it('skips disabled and aria-disabled buttons', () => {
@@ -84,8 +84,8 @@ describe('installRippleDelegation', () => {
     installRippleDelegation(shadow);
     press(disabled);
     press(ariaDisabled);
-    expect(disabled.querySelector('[data-cell-ripple]')).toBeNull();
-    expect(ariaDisabled.querySelector('[data-cell-ripple]')).toBeNull();
+    expect(disabled.querySelector('[data-tihoka-ripple]')).toBeNull();
+    expect(ariaDisabled.querySelector('[data-tihoka-ripple]')).toBeNull();
   });
 
   it('defers to components that manage their own ripple', () => {
@@ -93,23 +93,23 @@ describe('installRippleDelegation', () => {
     document.body.appendChild(host);
     const shadow = host.attachShadow({ mode: 'open' });
     const btn = document.createElement('button');
-    btn.setAttribute('data-cell-ripple-self', '');
+    btn.setAttribute('data-tihoka-ripple-self', '');
     shadow.appendChild(btn);
     installRippleDelegation(shadow);
     press(btn);
-    expect(btn.querySelector('[data-cell-ripple]')).toBeNull();
+    expect(btn.querySelector('[data-tihoka-ripple]')).toBeNull();
   });
 
-  it('honors data-cell-no-ripple opt-out', () => {
+  it('honors data-tihoka-no-ripple opt-out', () => {
     const host = document.createElement('div');
     document.body.appendChild(host);
     const shadow = host.attachShadow({ mode: 'open' });
     const btn = document.createElement('button');
-    btn.setAttribute('data-cell-no-ripple', '');
+    btn.setAttribute('data-tihoka-no-ripple', '');
     shadow.appendChild(btn);
     installRippleDelegation(shadow);
     press(btn);
-    expect(btn.querySelector('[data-cell-ripple]')).toBeNull();
+    expect(btn.querySelector('[data-tihoka-ripple]')).toBeNull();
   });
 
   it('ignores non-primary pointer buttons and installs only once per root', () => {
@@ -121,9 +121,9 @@ describe('installRippleDelegation', () => {
     installRippleDelegation(shadow);
     installRippleDelegation(shadow);
     btn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true, button: 2 }));
-    expect(btn.querySelector('[data-cell-ripple]')).toBeNull();
+    expect(btn.querySelector('[data-tihoka-ripple]')).toBeNull();
     press(btn);
-    expect(btn.querySelectorAll('[data-cell-ripple]')).toHaveLength(1);
+    expect(btn.querySelectorAll('[data-tihoka-ripple]')).toHaveLength(1);
   });
 
   it('does not double-ripple buttons inside a nested delegated shadow root', () => {
@@ -138,7 +138,7 @@ describe('installRippleDelegation', () => {
     installRippleDelegation(outerShadow);
     installRippleDelegation(innerShadow);
     press(btn);
-    expect(btn.querySelectorAll('[data-cell-ripple]')).toHaveLength(1);
+    expect(btn.querySelectorAll('[data-tihoka-ripple]')).toHaveLength(1);
   });
 
   it('cleanup removes the listener', () => {
@@ -150,6 +150,6 @@ describe('installRippleDelegation', () => {
     const cleanup = installRippleDelegation(shadow);
     cleanup();
     press(btn);
-    expect(btn.querySelector('[data-cell-ripple]')).toBeNull();
+    expect(btn.querySelector('[data-tihoka-ripple]')).toBeNull();
   });
 });

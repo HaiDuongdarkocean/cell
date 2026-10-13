@@ -17,7 +17,7 @@ test.describe('Pattern: Async states', () => {
   test('loading state renders spinner and skeleton placeholders', async ({ showcasePage }) => {
     await showcasePage.getByRole('button', { name: 'Loading' }).click();
     await expect(showcasePage.locator('[aria-label="Loading results"]')).toBeVisible();
-    await expect(showcasePage.locator('[data-cell-id="skeleton-list"] [aria-hidden="true"]')).toHaveCount(3);
+    await expect(showcasePage.locator('[data-tihoka-id="skeleton-list"] [aria-hidden="true"]')).toHaveCount(3);
     const results = await runAxe(showcasePage);
     expect(results.violations).toEqual([]);
   });

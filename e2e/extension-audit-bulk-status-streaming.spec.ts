@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { expect, type BrowserContext, type Page } from '@playwright/test';
-import { test } from './fixtures/cellEnvironment.fixture';
+import { test } from './fixtures/TihokaEnvironment.fixture';
 
 /**
  * Audit: subtitle-bulk-status on STREAMING surfaces (mock StreamFlix) using
@@ -23,15 +23,15 @@ const STREAM_ORIGIN = `http://127.0.0.1:${4321 + portOffset}`;
 const SHOT_DIR = 'tmp/audit-bulk-status';
 mkdirSync(SHOT_DIR, { recursive: true });
 
-const SELECTED_CLASS = 'js-cell-token--selected';
-const ANNOUNCER = '#cell-token-selection-announcer';
-const PANEL_SEL = '[data-cell-split-view="panel"]';
-const PANEL_TOKENS = `${PANEL_SEL} [data-cell-id="cue-target-text"] .js-cell-token`;
-const PM_OVERLAY = '[data-cell-id="player-mode-overlay"]';
-const PM_TOKENS = `${PM_OVERLAY} [data-cell-id="cue-target-text"] .js-cell-token`;
+const SELECTED_CLASS = 'js-Tihoka-token--selected';
+const ANNOUNCER = '#Tihoka-token-selection-announcer';
+const PANEL_SEL = '[data-tihoka-split-view="panel"]';
+const PANEL_TOKENS = `${PANEL_SEL} [data-tihoka-id="cue-target-text"] .js-Tihoka-token`;
+const PM_OVERLAY = '[data-tihoka-id="player-mode-overlay"]';
+const PM_TOKENS = `${PM_OVERLAY} [data-tihoka-id="cue-target-text"] .js-Tihoka-token`;
 const OVERLAY_TOKENS =
-  '[data-cell-id="subtitle-block"] [data-role="target"] .js-cell-token';
-const POPUP_HOST = '.js-cell-popup-host';
+  '[data-tihoka-id="subtitle-block"] [data-role="target"] .js-Tihoka-token';
+const POPUP_HOST = '.js-Tihoka-popup-host';
 const VOLUME_INPUT = 'input[aria-label="Volume level"]';
 
 // [audit] console markers are scraped into tmp/audit-bulk-status/notes.txt by
@@ -76,7 +76,7 @@ async function raiseSplitViewForScreenshot(page: Page): Promise<void> {
       }
       return null;
     };
-    const panel = deepFind(document, '[data-cell-split-view="panel"]');
+    const panel = deepFind(document, '[data-tihoka-split-view="panel"]');
     if (panel instanceof HTMLElement) {
       panel.style.position = 'fixed';
       panel.style.top = '90px';
@@ -141,8 +141,8 @@ async function dispatchTermClick(
       const scopeRoot: ParentNode = scope
         ? (deepFind(document, scope)?.shadowRoot ?? deepFind(document, scope) ?? document)
         : document;
-      const tok = Array.from(scopeRoot.querySelectorAll('.js-cell-token')).find(
-        (e) => e.getAttribute('data-cell-term') === t,
+      const tok = Array.from(scopeRoot.querySelectorAll('.js-Tihoka-token')).find(
+        (e) => e.getAttribute('data-tihoka-term') === t,
       );
       if (!tok) return false;
       tok.dispatchEvent(
@@ -161,7 +161,7 @@ async function dispatchTermClick(
   if (!found) throw new Error(`dispatchTermClick: not found: ${term}`);
 }
 
-async function seedCellSettings(context: BrowserContext): Promise<void> {
+async function seedTihokaSettings(context: BrowserContext): Promise<void> {
   const worker = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker'));
   await worker.evaluate(async (origin: string) => {
     const storage = await chrome.storage.local.get(['settings', 'tokenizeSettings']);
@@ -285,7 +285,7 @@ async function selectedTerms(page: Page): Promise<string[]> {
     const out: string[] = [];
     const walk = (root: Document | ShadowRoot): void => {
       for (const el of Array.from(root.querySelectorAll(`.${cls}`))) {
-        const term = el.getAttribute('data-cell-term');
+        const term = el.getAttribute('data-tihoka-term');
         if (term) out.push(term);
       }
       for (const child of Array.from(root.querySelectorAll('*'))) {
@@ -305,15 +305,15 @@ async function uniqueSelectedTerms(page: Page): Promise<number> {
   return new Set(await selectedTerms(page)).size;
 }
 
-/** Count tokens (any root) carrying BOTH data-cell-term=term and the status
+/** Count tokens (any root) carrying BOTH data-tihoka-term=term and the status
  *  modifier — proves the applied status repainted live surfaces. */
 async function termStatusTokenCount(page: Page, term: string, status: string): Promise<number> {
   return page.evaluate(
     ({ t, cls }) => {
       let n = 0;
       const walk = (root: Document | ShadowRoot): void => {
-        for (const el of Array.from(root.querySelectorAll(`.js-cell-token--status-${cls}`))) {
-          if (el.getAttribute('data-cell-term') === t) n += 1;
+        for (const el of Array.from(root.querySelectorAll(`.js-Tihoka-token--status-${cls}`))) {
+          if (el.getAttribute('data-tihoka-term') === t) n += 1;
         }
         for (const child of Array.from(root.querySelectorAll('*'))) {
           if (child.shadowRoot) walk(child.shadowRoot);
@@ -345,7 +345,7 @@ async function scopedTokenCount(page: Page, scopeSel: string): Promise<number> {
     };
     const el = deepFind(document, scope);
     const root: ParentNode | null = el?.shadowRoot ?? el;
-    return root ? root.querySelectorAll('.js-cell-token').length : -1;
+    return root ? root.querySelectorAll('.js-Tihoka-token').length : -1;
   }, scopeSel);
 }
 
@@ -354,7 +354,7 @@ async function totalStatusTokens(page: Page): Promise<number> {
     let n = 0;
     const walk = (root: Document | ShadowRoot): void => {
       n += root.querySelectorAll(
-        '.js-cell-token--status-unknown, .js-cell-token--status-tracking, .js-cell-token--status-known, .js-cell-token--status-ignore, .js-cell-token--status-learning',
+        '.js-Tihoka-token--status-unknown, .js-Tihoka-token--status-tracking, .js-Tihoka-token--status-known, .js-Tihoka-token--status-ignore, .js-Tihoka-token--status-learning',
       ).length;
       for (const child of Array.from(root.querySelectorAll('*'))) {
         if (child.shadowRoot) walk(child.shadowRoot);
@@ -377,7 +377,7 @@ async function announcerInfo(page: Page): Promise<{ exists: boolean; live: strin
   }, ANNOUNCER);
 }
 
-/** First-occurrence index of each distinct data-cell-term under a piercing
+/** First-occurrence index of each distinct data-tihoka-term under a piercing
  *  locator — indices feed locator.nth() for REAL clicks. DOM order of
  *  querySelectorAll inside the single shadow scope matches locator order. */
 async function pickDistinctTokens(
@@ -391,7 +391,7 @@ async function pickDistinctTokens(
   const seen = new Set<string>();
   const picks: { term: string; index: number }[] = [];
   for (let i = 0; i < total && picks.length < n; i += 1) {
-    const term = await loc.nth(i).getAttribute('data-cell-term');
+    const term = await loc.nth(i).getAttribute('data-tihoka-term');
     if (!term || seen.has(term) || /["\\\s]/.test(term)) continue;
     seen.add(term);
     picks.push({ term, index: i });
@@ -452,8 +452,8 @@ async function selectedTokenClip(page: Page, scopeSel: string): Promise<{ x: num
 async function reloadAfterSeeds(page: Page): Promise<void> {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.locator('#player-wrapper video').first()).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator('#cell-subtitle-root')).toBeAttached({ timeout: 30_000 });
-  await expect(page.locator('[data-cell-id="orbital-badge"]')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('#Tihoka-subtitle-root')).toBeAttached({ timeout: 30_000 });
+  await expect(page.locator('[data-tihoka-id="orbital-badge"]')).toBeVisible({ timeout: 15_000 });
 }
 
 /** Open the split-view panel, wait for tokens, pause, and pin the panel when
@@ -480,13 +480,13 @@ async function openPinnedPanel(page: Page): Promise<{ occluded: boolean }> {
         }
         return null;
       };
-      const panel = deepFind(document, '[data-cell-split-view="panel"]') as HTMLElement | null;
+      const panel = deepFind(document, '[data-tihoka-split-view="panel"]') as HTMLElement | null;
       const scope: ParentNode | null = panel?.shadowRoot ?? null;
-      const cells: string[] = [];
+      const Tihokas: string[] = [];
       if (scope) {
-        for (const el of Array.from(scope.querySelectorAll('[data-cell-id]'))) {
-          const id = el.getAttribute('data-cell-id')!;
-          if (!cells.includes(id)) cells.push(id);
+        for (const el of Array.from(scope.querySelectorAll('[data-tihoka-id]'))) {
+          const id = el.getAttribute('data-tihoka-id')!;
+          if (!Tihokas.includes(id)) Tihokas.push(id);
         }
       }
       return {
@@ -494,9 +494,9 @@ async function openPinnedPanel(page: Page): Promise<{ occluded: boolean }> {
         panelDisplay: panel ? getComputedStyle(panel).display : null,
         hasShadow: Boolean(panel?.shadowRoot),
         shadowChildren: scope ? (scope as ShadowRoot).childElementCount : -1,
-        cellIds: cells.slice(0, 30),
-        tokenCount: scope ? scope.querySelectorAll('.js-cell-token').length : -1,
-        cueRows: scope ? scope.querySelectorAll('[data-cell-id="cue-target-text"]').length : -1,
+        TihokaIds: Tihokas.slice(0, 30),
+        tokenCount: scope ? scope.querySelectorAll('.js-Tihoka-token').length : -1,
+        cueRows: scope ? scope.querySelectorAll('[data-tihoka-id="cue-target-text"]').length : -1,
         videoTime: document.querySelector('video')?.currentTime ?? -1,
         videoPaused: document.querySelector('video')?.paused ?? null,
       };
@@ -523,9 +523,9 @@ async function openPinnedPanel(page: Page): Promise<{ occluded: boolean }> {
 }
 
 test.describe('audit: subtitle bulk status — streaming (real input)', () => {
-  test.beforeEach(async ({ cellContext }) => {
-    await seedCellSettings(cellContext);
-    await seedEnglishDictionary(cellContext);
+  test.beforeEach(async ({ TihokaContext }) => {
+    await seedTihokaSettings(TihokaContext);
+    await seedEnglishDictionary(TihokaContext);
   });
 
   test('cue list: real ctrl+click select → key 3 applies → toggle & Escape (AC-3/4/6/8)', async ({
@@ -631,9 +631,9 @@ test.describe('audit: subtitle bulk status — streaming (real input)', () => {
               }
               return null;
             };
-            const host = deepFind(document, '.js-cell-popup-host');
+            const host = deepFind(document, '.js-Tihoka-popup-host');
             const scope: ParentNode | null = host?.shadowRoot ?? host;
-            return scope?.querySelector('[data-cell-id="dictionary-term"]')?.textContent?.trim() ?? null;
+            return scope?.querySelector('[data-tihoka-id="dictionary-term"]')?.textContent?.trim() ?? null;
           });
           return popupTerm;
         },
@@ -646,8 +646,8 @@ test.describe('audit: subtitle bulk status — streaming (real input)', () => {
     const diag = await page.evaluate(() => {
       const tracking: string[] = [];
       const walk = (root: Document | ShadowRoot): void => {
-        for (const el of Array.from(root.querySelectorAll('.js-cell-token--status-tracking'))) {
-          const t = el.getAttribute('data-cell-term');
+        for (const el of Array.from(root.querySelectorAll('.js-Tihoka-token--status-tracking'))) {
+          const t = el.getAttribute('data-tihoka-term');
           if (t && !tracking.includes(t)) tracking.push(t);
         }
         for (const child of Array.from(root.querySelectorAll('*'))) {
@@ -655,7 +655,7 @@ test.describe('audit: subtitle bulk status — streaming (real input)', () => {
         }
       };
       walk(document);
-      const host = document.querySelector('.js-cell-popup-host');
+      const host = document.querySelector('.js-Tihoka-popup-host');
       return {
         trackingTerms: tracking,
         activeEl: document.activeElement?.tagName ?? null,
@@ -754,7 +754,7 @@ test.describe('audit: subtitle bulk status — streaming (real input)', () => {
       } catch (err) {
         usedSynthetic = true;
         note(`overlay real ctrl+click failed for "${term}" → SYNTHETIC FALLBACK dispatchTermClick: ${String(err).split('\n')[0]}`);
-        await dispatchTermClick(page, term, { ctrl: true }, '#cell-subtitle-root');
+        await dispatchTermClick(page, term, { ctrl: true }, '#Tihoka-subtitle-root');
       }
     };
 
@@ -784,7 +784,7 @@ test.describe('audit: subtitle bulk status — streaming (real input)', () => {
           found: true,
           rect: r.toJSON(),
           pointerEvents: getComputedStyle(tok).pointerEvents,
-          tokenCount: document.querySelectorAll('#cell-subtitle-root').length,
+          tokenCount: document.querySelectorAll('#Tihoka-subtitle-root').length,
           hits: hits.slice(0, 5).map((h) => `${h.tagName}.${(h as HTMLElement).className}`.slice(0, 80)),
         };
       }, `${OVERLAY_TOKENS}`);
@@ -803,7 +803,7 @@ test.describe('audit: subtitle bulk status — streaming (real input)', () => {
           }
           return null;
         };
-        const block = deepFind(document, '[data-cell-id="subtitle-block"]');
+        const block = deepFind(document, '[data-tihoka-id="subtitle-block"]');
         if (block instanceof HTMLElement) {
           block.style.position = 'fixed';
           block.style.left = '40px';
@@ -822,13 +822,13 @@ test.describe('audit: subtitle bulk status — streaming (real input)', () => {
       } catch (err2) {
         usedSynthetic = true;
         note(`overlay real ctrl+click still blocked after pin → SYNTHETIC FALLBACK dispatchTermClick("${picks[0].term}"): ${String(err2).split('\n')[0]}`);
-        await dispatchTermClick(page, picks[0].term, { ctrl: true }, '#cell-subtitle-root');
+        await dispatchTermClick(page, picks[0].term, { ctrl: true }, '#Tihoka-subtitle-root');
       }
     }
     note(`overlay first click: real=${realWorked} synthetic=${usedSynthetic}`);
     await expect.poll(() => uniqueSelectedTerms(page)).toBe(1);
     await page.screenshot({ path: `${SHOT_DIR}/streaming-overlay-selected.png` });
-    const clip = await selectedTokenClip(page, '#cell-subtitle-root');
+    const clip = await selectedTokenClip(page, '#Tihoka-subtitle-root');
     if (clip) {
       await page.screenshot({ path: `${SHOT_DIR}/streaming-overlay-selected-zoom.png`, clip });
     }
@@ -873,7 +873,7 @@ test.describe('audit: subtitle bulk status — streaming (real input)', () => {
       const scope: ParentNode | null = host?.shadowRoot ?? null;
       if (!scope) return null;
       const tokens = Array.from(
-        scope.querySelectorAll('.js-cell-token[data-cell-term]'),
+        scope.querySelectorAll('.js-Tihoka-token[data-tihoka-term]'),
       ) as HTMLElement[];
       const rows = new Map<number, HTMLElement[]>();
       for (const tok of tokens) {
@@ -894,7 +894,7 @@ test.describe('audit: subtitle bulk status — streaming (real input)', () => {
           endX: b.right - 1,
           endY: b.top + b.height / 2,
           terms: row
-            .map((t) => t.getAttribute('data-cell-term')!)
+            .map((t) => t.getAttribute('data-tihoka-term')!)
             .filter((t, i, arr) => arr.indexOf(t) === i),
         };
       }

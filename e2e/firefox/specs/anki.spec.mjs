@@ -1,7 +1,7 @@
 export const name = 'cardcreator-ankiconnect';
 
-const PROBE_DECK = '__CellE2EProbe__';
-const PROBE_MEDIA = 'cell-e2e-probe.wav';
+const PROBE_DECK = '__TihokaE2EProbe__';
+const PROBE_MEDIA = 'Tihoka-e2e-probe.wav';
 
 async function invoke(rdp, actor, action, params) {
   return rdp.evalAsync(
@@ -34,7 +34,7 @@ export async function run(ctx) {
     const modelName = models.result?.[0];
     if (!modelName) return { pass: false, detail: `modelNames empty: ${JSON.stringify(models)}` };
     const fieldNames = await invoke(rdp, found.consoleActor, 'modelFieldNames', { modelName });
-    const fields = Object.fromEntries((fieldNames.result ?? []).map((f, i) => [f, i === 0 ? 'cell-e2e-probe' : 'firefox-live']));
+    const fields = Object.fromEntries((fieldNames.result ?? []).map((f, i) => [f, i === 0 ? 'Tihoka-e2e-probe' : 'firefox-live']));
     if (!fields || Object.keys(fields).length === 0) {
       return { pass: false, detail: `modelFieldNames empty for ${modelName}` };
     }
@@ -45,7 +45,7 @@ export async function run(ctx) {
         modelName,
         fields,
         options: { allowDuplicate: true },
-        tags: ['cell-e2e'],
+        tags: ['Tihoka-e2e'],
       },
     });
     console.log(`  addNote: ${JSON.stringify(note)}`);

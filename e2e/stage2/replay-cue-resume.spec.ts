@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
 const CUE2_START_S = 20.2;
 
@@ -17,7 +17,7 @@ test("'s' replay-cue resumes playback when the video is paused", async ({
 
   // Cue items in Player Mode prove bilingual cues finished loading.
   await page.keyboard.press('g');
-  await expect(page.locator('[data-cell-id="cue-item"]').first()).toBeVisible({
+  await expect(page.locator('[data-tihoka-id="cue-item"]').first()).toBeVisible({
     timeout: 15_000,
   });
   await page.keyboard.press('g');

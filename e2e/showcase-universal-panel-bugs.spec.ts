@@ -16,19 +16,19 @@ test.describe('Universal Panel — regression bugs from atomic design + visual a
   });
 
   test('panel root is shielded from dictionary lookup (data-no-lookup or host selector)', async ({ showcasePage }) => {
-    const panel = showcasePage.locator('[data-cell-id="universal-panel"]');
+    const panel = showcasePage.locator('[data-tihoka-id="universal-panel"]');
     await expect(panel).toBeVisible();
 
     // The panel must be marked so WebTriggerController skips it even when the
-    // component is used outside #cell-universal-panel-host (e.g. in the
+    // component is used outside #Tihoka-universal-panel-host (e.g. in the
     // design-system showcase or any third-party mount).
-    // Mirrors CELL_UI_HOST_SELECTORS in src/shared/lib/dom/cellUiHosts.ts.
+    // Mirrors Tihoka_UI_HOST_SELECTORS in src/shared/lib/dom/TihokaUiHosts.ts.
     const isShielded = await panel.evaluate((el) => {
       const hostSelectors =
-        '.js-cell-popup-host, .js-cell-orbital-badge-host, .js-cell-token-badge-host, ' +
-        '.js-cell-universal-panel, ' +
-        '#cell-settings-dialog-host, #cell-card-creator-host, #cell-universal-panel-host, ' +
-        '#cell-subtitle-root';
+        '.js-Tihoka-popup-host, .js-Tihoka-orbital-badge-host, .js-Tihoka-token-badge-host, ' +
+        '.js-Tihoka-universal-panel, ' +
+        '#Tihoka-settings-dialog-host, #Tihoka-card-creator-host, #Tihoka-universal-panel-host, ' +
+        '#Tihoka-subtitle-root';
       return (
         el.matches('[data-no-lookup]') ||
         el.matches(hostSelectors) ||
@@ -41,12 +41,12 @@ test.describe('Universal Panel — regression bugs from atomic design + visual a
 
   test('clicking nav items inside the panel does not open a dictionary popup overlay', async ({ showcasePage }) => {
     await showcasePage.setViewportSize({ width: 1200, height: 800 });
-    const popup = showcasePage.locator('[data-cell-id="popup-dictionary"]');
+    const popup = showcasePage.locator('[data-tihoka-id="popup-dictionary"]');
 
     // Click each panel tab (desktop sidebar).
     const tabIds = ['universal-panel-tab-dictionary', 'universal-panel-tab-studyModes', 'universal-panel-tab-settings'];
     for (const id of tabIds) {
-      const tab = showcasePage.locator(`[data-cell-id="${id}"]`);
+      const tab = showcasePage.locator(`[data-tihoka-id="${id}"]`);
       if ((await tab.count()) === 0) continue;
       await tab.click();
       await showcasePage.waitForTimeout(200);
@@ -54,11 +54,11 @@ test.describe('Universal Panel — regression bugs from atomic design + visual a
     }
 
     // Click each Settings nav item (inner sidebar).
-    await showcasePage.click('[data-cell-id="universal-panel-tab-settings"]');
-    await expect(showcasePage.locator('[data-cell-id="settings-tab"]')).toBeVisible();
+    await showcasePage.click('[data-tihoka-id="universal-panel-tab-settings"]');
+    await expect(showcasePage.locator('[data-tihoka-id="settings-tab"]')).toBeVisible();
     const sectionIds = ['media', 'block', 'languageProfile', 'shortcuts', 'download', 'cardCreator', 'dictionaryPopup', 'pronunciation', 'localPronunciation', 'localPlayer', 'theme', 'tts', 'resources'];
     for (const sectionId of sectionIds) {
-      const item = showcasePage.locator(`[data-cell-id="settings-tab"] [data-section-id="${sectionId}"]`);
+      const item = showcasePage.locator(`[data-tihoka-id="settings-tab"] [data-section-id="${sectionId}"]`);
       if ((await item.count()) === 0) continue;
       await item.click();
       await showcasePage.waitForTimeout(100);
@@ -72,8 +72,8 @@ test.describe('Universal Panel — regression bugs from atomic design + visual a
       document.documentElement.setAttribute('data-preset', 'dawn');
     });
 
-    await showcasePage.click('[data-cell-id="universal-panel-tab-settings"]');
-    await expect(showcasePage.locator('[data-cell-id="settings-tab"]')).toBeVisible();
+    await showcasePage.click('[data-tihoka-id="universal-panel-tab-settings"]');
+    await expect(showcasePage.locator('[data-tihoka-id="settings-tab"]')).toBeVisible();
 
     const themeAfter = await showcasePage.evaluate(() => document.documentElement.getAttribute('data-theme'));
     const presetAfter = await showcasePage.evaluate(() => document.documentElement.getAttribute('data-preset'));
@@ -86,34 +86,34 @@ test.describe('Universal Panel — regression bugs from atomic design + visual a
 
   test('Settings tab shows at most one "Settings" heading inside the panel', async ({ showcasePage }) => {
     await showcasePage.goto('?showcase=Universal%20Panel%20Page&tab=settings');
-    await expect(showcasePage.locator('[data-cell-id="settings-tab"]')).toBeVisible();
+    await expect(showcasePage.locator('[data-tihoka-id="settings-tab"]')).toBeVisible();
 
     // The outer CollapsibleSidebar already shows "Settings" as the active tab.
     // The inner SettingsDialogContent sidebar must not repeat it.
     const settingsHeadings = showcasePage
-      .locator('[data-cell-id="settings-tab"]')
+      .locator('[data-tihoka-id="settings-tab"]')
       .getByText('Settings', { exact: true });
     await expect(settingsHeadings).toHaveCount(0);
   });
 
   test('Study Modes tab renders the real StudyModesTab (not a placeholder)', async ({ showcasePage }) => {
     await showcasePage.goto('?showcase=Universal%20Panel%20Page&tab=studyModes');
-    await expect(showcasePage.locator('[data-cell-id="universal-panel-content-studyModes"]')).toBeVisible();
+    await expect(showcasePage.locator('[data-tihoka-id="universal-panel-content-studyModes"]')).toBeVisible();
 
     // Real StudyModesTab contains these sections; the current placeholder only
     // shows a bare "Study Modes" text.
     await expect(showcasePage.locator('text=Play mode')).toBeVisible();
     await expect(showcasePage.locator('text=Custom')).toBeVisible();
     await expect(showcasePage.locator('text=Advanced')).toBeVisible();
-    await expect(showcasePage.locator('[data-cell-id="study-modes-tab"]')).toBeVisible();
+    await expect(showcasePage.locator('[data-tihoka-id="study-modes-tab"]')).toBeVisible();
   });
 
   test('NavItem active and hover states are visually distinguishable', async ({ showcasePage }) => {
     await showcasePage.goto('?showcase=Universal%20Panel%20Page&tab=settings');
-    await expect(showcasePage.locator('[data-cell-id="settings-tab"]')).toBeVisible();
+    await expect(showcasePage.locator('[data-tihoka-id="settings-tab"]')).toBeVisible();
 
-    const activeItem = showcasePage.locator('[data-cell-id="universal-panel-tab-settings"]');
-    const inactiveItem = showcasePage.locator('[data-cell-id="universal-panel-tab-dictionary"]');
+    const activeItem = showcasePage.locator('[data-tihoka-id="universal-panel-tab-settings"]');
+    const inactiveItem = showcasePage.locator('[data-tihoka-id="universal-panel-tab-dictionary"]');
 
     // Compare computed styles for active vs inactive nav item.
     const activeStyles = await activeItem.evaluate((el) => {
@@ -132,11 +132,11 @@ test.describe('Universal Panel — regression bugs from atomic design + visual a
 
   test('sidebar tokens --sidebar-bg/--sidebar-fg are actually consumed by the sidebar', async ({ showcasePage }) => {
     await showcasePage.goto('?showcase=Universal%20Panel%20Page&tab=settings');
-    await expect(showcasePage.locator('[data-cell-id="settings-tab"]')).toBeVisible();
+    await expect(showcasePage.locator('[data-tihoka-id="settings-tab"]')).toBeVisible();
 
     // The user added --sidebar-bg / --sidebar-fg in tokens.json. The inner
     // Settings sidebar must resolve its background/color to those tokens.
-    const sidebar = showcasePage.locator('[data-cell-id="settings-tab"] aside').first();
+    const sidebar = showcasePage.locator('[data-tihoka-id="settings-tab"] aside').first();
     await expect(sidebar).toBeVisible();
 
     const { sidebarBg, sidebarColor, expectedBg, expectedColor } = await sidebar.evaluate((el) => {

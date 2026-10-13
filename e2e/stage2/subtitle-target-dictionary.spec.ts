@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
 const WORD_RE = /[A-Za-zÀ-ɏ']+/;
 
@@ -37,12 +37,12 @@ test.describe('Stage 2: Dictionary lookup on subtitle target text', () => {
   test('click a target word in the Player Mode cue list opens the dictionary popup', async ({ streamFlixPage }) => {
     await streamFlixPage.keyboard.press('g');
 
-    const cueTexts = streamFlixPage.locator('[data-cell-id="cue-target-text"]');
+    const cueTexts = streamFlixPage.locator('[data-tihoka-id="cue-target-text"]');
     await expect(cueTexts.first()).toBeVisible({ timeout: 15_000 });
 
     await clickFirstWordAcross(streamFlixPage, cueTexts);
 
-    const popup = streamFlixPage.locator('.js-cell-popup-host');
+    const popup = streamFlixPage.locator('.js-Tihoka-popup-host');
     await expect(popup).toBeAttached({ timeout: 10_000 });
   });
 
@@ -55,7 +55,7 @@ test.describe('Stage 2: Dictionary lookup on subtitle target text', () => {
       void v.play();
     });
 
-    const targetLayer = streamFlixPage.locator('[data-cell-id="subtitle-block"] [data-role="target"]').first();
+    const targetLayer = streamFlixPage.locator('[data-tihoka-id="subtitle-block"] [data-role="target"]').first();
     await expect(targetLayer).toBeVisible({ timeout: 15_000 });
     const targetLine = targetLayer.locator('span').first();
     await expect(targetLine).toContainText(/[A-Za-z]/, { timeout: 15_000 });
@@ -69,7 +69,7 @@ test.describe('Stage 2: Dictionary lookup on subtitle target text', () => {
       .not.toBeNull();
     await streamFlixPage.mouse.click(point!.x, point!.y);
 
-    const popup = streamFlixPage.locator('.js-cell-popup-host');
+    const popup = streamFlixPage.locator('.js-Tihoka-popup-host');
     await expect(popup).toBeAttached({ timeout: 10_000 });
     expect(await video.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
   });

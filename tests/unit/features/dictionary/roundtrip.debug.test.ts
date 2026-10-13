@@ -9,7 +9,7 @@ import {
 import { parsePhraseTemplate } from '@/features/dictionary/logic/phraseTemplateParser';
 
 describe('DEBUG roundtrip Cambridge fixture', () => {
-  const fullFixture = process.env.CELL_FIXTURE_FULL === '1';
+  const fullFixture = process.env.Tihoka_FIXTURE_FULL === '1';
   const fixturePath = path.resolve(
     __dirname,
     fullFixture
@@ -18,7 +18,7 @@ describe('DEBUG roundtrip Cambridge fixture', () => {
   );
   const FIXTURE_MISSING = fullFixture && !existsSync(fixturePath);
   if (FIXTURE_MISSING) {
-    console.warn('[fixture] full Cambridge fixture missing — run without CELL_FIXTURE_FULL or restore data/resource/');
+    console.warn('[fixture] full Cambridge fixture missing — run without Tihoka_FIXTURE_FULL or restore data/resource/');
   }
 
   (FIXTURE_MISSING ? it.skip : it)('serializes and deserializes without throwing', () => {

@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
 const STREAMFLIX_URL = 'http://127.0.0.1:4321/index.html';
 
@@ -136,14 +136,14 @@ async function seekToCue(page: Page, time: number): Promise<{ currentTime: numbe
   }, time);
 }
 
-test('subtitle overlay Send to Card opens lazy queue', async ({ streamFlixPage, cellContext }) => {
+test('subtitle overlay Send to Card opens lazy queue', async ({ streamFlixPage, TihokaContext }) => {
   // Seed extension storage before reload so the content script picks it up.
-  await setTestStorage(cellContext, STREAMFLIX_URL);
+  await setTestStorage(TihokaContext, STREAMFLIX_URL);
   await streamFlixPage.reload({ waitUntil: 'networkidle' });
 
-  // Confirm the Cell overlay is mounted.
-  await expect(streamFlixPage.locator('[data-cell-id="orbital-badge"]')).toBeVisible({ timeout: 30_000 });
-  await expect.poll(() => streamFlixPage.evaluate(() => !!document.getElementById('cell-subtitle-root')), {
+  // Confirm the Tihoka overlay is mounted.
+  await expect(streamFlixPage.locator('[data-tihoka-id="orbital-badge"]')).toBeVisible({ timeout: 30_000 });
+  await expect.poll(() => streamFlixPage.evaluate(() => !!document.getElementById('Tihoka-subtitle-root')), {
     timeout: 30_000,
   }).toBe(true);
 
@@ -163,7 +163,7 @@ test('subtitle overlay Send to Card opens lazy queue', async ({ streamFlixPage, 
     const target = await queryDeepText(page, '[data-role="target"] span');
     const tokenByShadow = await page.evaluate(() => {
       const search = (root: Document | ShadowRoot | Element): Element | null => {
-        const hit = root.querySelector('[data-cell-term^="floatin"]');
+        const hit = root.querySelector('[data-tihoka-term^="floatin"]');
         if (hit) return hit;
         for (const el of root.querySelectorAll('*')) {
           const sr = (el as HTMLElement).shadowRoot;
@@ -182,42 +182,42 @@ test('subtitle overlay Send to Card opens lazy queue', async ({ streamFlixPage, 
 
   // Click the token to open the popup dictionary.
   // The native play button overlay intercepts pointer events, so use JS click.
-  await clickDeep(page, '[data-cell-term^="floatin"]');
-  await waitForDeepVisible(page, '[data-cell-id="popup-dictionary"]', 15_000);
+  await clickDeep(page, '[data-tihoka-term^="floatin"]');
+  await waitForDeepVisible(page, '[data-tihoka-id="popup-dictionary"]', 15_000);
 
   // Click Send to Card in the popup dictionary.
-  await clickDeep(page, '[data-cell-id="dictionary-send-to-card"]');
+  await clickDeep(page, '[data-tihoka-id="dictionary-send-to-card"]');
 
   // Wait for the universal panel and the queue sidebar.
-  await waitForDeepVisible(page, '#cell-universal-panel-host', 15_000);
-  await waitForDeepVisible(page, '[data-cell-id="cc-queue-sidebar"]', 15_000);
+  await waitForDeepVisible(page, '#Tihoka-universal-panel-host', 15_000);
+  await waitForDeepVisible(page, '[data-tihoka-id="cc-queue-sidebar"]', 15_000);
 
   // Queue should contain the unknown/tracking words from the cue.
-  const queueText = await queryDeepText(page, '[data-cell-id="cc-queue-sidebar"]');
+  const queueText = await queryDeepText(page, '[data-tihoka-id="cc-queue-sidebar"]');
   expect(queueText).toMatch(/floatin/);
 
   // Click a queue item and verify the Dictionary looks it up.
-  await clickDeep(page, '[data-cell-id="cc-queue-item-0"]');
-  await expect.poll(() => queryDeepText(page, '[data-cell-id="dictionary-term"]'), {
+  await clickDeep(page, '[data-tihoka-id="cc-queue-item-0"]');
+  await expect.poll(() => queryDeepText(page, '[data-tihoka-id="dictionary-term"]'), {
     timeout: 30_000,
   }).toBeTruthy();
 
   // Click the integrated Dictionary's Send to Card and verify the Card Creator form.
-  await waitForDeepVisible(page, '[data-cell-id="dictionary-send-to-card"]', 10_000);
-  await clickDeep(page, '[data-cell-id="dictionary-send-to-card"]');
+  await waitForDeepVisible(page, '[data-tihoka-id="dictionary-send-to-card"]', 10_000);
+  await clickDeep(page, '[data-tihoka-id="dictionary-send-to-card"]');
 
   // Verify the Card Creator form is filled with the looked-up term.
-  await waitForDeepVisible(page, '[data-cell-id="cc-target-word-input"]', 15_000);
-  const targetWord = await getInputValueDeep(page, '[data-cell-id="cc-target-word-input"] textarea');
+  await waitForDeepVisible(page, '[data-tihoka-id="cc-target-word-input"]', 15_000);
+  const targetWord = await getInputValueDeep(page, '[data-tihoka-id="cc-target-word-input"] textarea');
   expect(targetWord).toMatch(/floatin/i);
 });
 
-test('subtitle overlay Quick Add opens lazy queue', async ({ streamFlixPage, cellContext }) => {
-  await setTestStorage(cellContext, STREAMFLIX_URL);
+test('subtitle overlay Quick Add opens lazy queue', async ({ streamFlixPage, TihokaContext }) => {
+  await setTestStorage(TihokaContext, STREAMFLIX_URL);
   await streamFlixPage.reload({ waitUntil: 'networkidle' });
 
-  await expect(streamFlixPage.locator('[data-cell-id="orbital-badge"]')).toBeVisible({ timeout: 30_000 });
-  await expect.poll(() => streamFlixPage.evaluate(() => !!document.getElementById('cell-subtitle-root')), {
+  await expect(streamFlixPage.locator('[data-tihoka-id="orbital-badge"]')).toBeVisible({ timeout: 30_000 });
+  await expect.poll(() => streamFlixPage.evaluate(() => !!document.getElementById('Tihoka-subtitle-root')), {
     timeout: 30_000,
   }).toBe(true);
 
@@ -234,7 +234,7 @@ test('subtitle overlay Quick Add opens lazy queue', async ({ streamFlixPage, cel
     const target = await queryDeepText(page, '[data-role="target"] span');
     const tokenByShadow = await page.evaluate(() => {
       const search = (root: Document | ShadowRoot | Element): Element | null => {
-        const hit = root.querySelector('[data-cell-term^="floatin"]');
+        const hit = root.querySelector('[data-tihoka-term^="floatin"]');
         if (hit) return hit;
         for (const el of root.querySelectorAll('*')) {
           const sr = (el as HTMLElement).shadowRoot;
@@ -251,13 +251,13 @@ test('subtitle overlay Quick Add opens lazy queue', async ({ streamFlixPage, cel
     return { target, token: tokenByShadow };
   }, { timeout: 30_000 }).toEqual(expect.objectContaining({ target: expect.stringMatching(/floatin/i), token: expect.stringMatching(/^floatin/i) }));
 
-  await clickDeep(page, '[data-cell-term^="floatin"]');
-  await waitForDeepVisible(page, '[data-cell-id="popup-dictionary"]', 15_000);
+  await clickDeep(page, '[data-tihoka-term^="floatin"]');
+  await waitForDeepVisible(page, '[data-tihoka-id="popup-dictionary"]', 15_000);
 
-  await clickDeep(page, '[data-cell-id="dictionary-quick-add"]');
-  await waitForDeepVisible(page, '#cell-universal-panel-host', 15_000);
-  await waitForDeepVisible(page, '[data-cell-id="cc-queue-sidebar"]', 15_000);
+  await clickDeep(page, '[data-tihoka-id="dictionary-quick-add"]');
+  await waitForDeepVisible(page, '#Tihoka-universal-panel-host', 15_000);
+  await waitForDeepVisible(page, '[data-tihoka-id="cc-queue-sidebar"]', 15_000);
 
-  const queueText = await queryDeepText(page, '[data-cell-id="cc-queue-sidebar"]');
+  const queueText = await queryDeepText(page, '[data-tihoka-id="cc-queue-sidebar"]');
   expect(queueText).toMatch(/floatin/i);
 });

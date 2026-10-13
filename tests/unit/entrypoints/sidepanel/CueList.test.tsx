@@ -189,9 +189,9 @@ describe('CueList', () => {
       const renderCueContent = jest.fn(
         (_cue: BilingualCue, _index: number, isCurrent: boolean) =>
           isCurrent ? (
-            <div data-cell-id="practice-active-cue">exercise</div>
+            <div data-tihoka-id="practice-active-cue">exercise</div>
           ) : (
-            <div data-cell-id="cue-masked-target" />
+            <div data-tihoka-id="cue-masked-target" />
           ),
       );
       render(
@@ -203,13 +203,13 @@ describe('CueList', () => {
         />,
       );
       const items = screen.getAllByTestId('cue-item');
-      expect(items[0].querySelector('[data-cell-id="practice-active-cue"]')).toBeTruthy();
-      expect(items[0].querySelector('[data-cell-id="cue-target-text"]')).toBeNull();
-      expect(items[1].querySelector('[data-cell-id="practice-active-cue"]')).toBeNull();
-      expect(items[1].querySelector('[data-cell-id="cue-target-text"]')).toBeNull();
-      expect(items[1].querySelector('[data-cell-id="cue-masked-target"]')).toBeTruthy();
+      expect(items[0].querySelector('[data-tihoka-id="practice-active-cue"]')).toBeTruthy();
+      expect(items[0].querySelector('[data-tihoka-id="cue-target-text"]')).toBeNull();
+      expect(items[1].querySelector('[data-tihoka-id="practice-active-cue"]')).toBeNull();
+      expect(items[1].querySelector('[data-tihoka-id="cue-target-text"]')).toBeNull();
+      expect(items[1].querySelector('[data-tihoka-id="cue-masked-target"]')).toBeTruthy();
       expect(screen.queryByText('How are you?')).toBeNull();
-      expect(items[1].querySelector('[data-cell-id="cue-timestamp"]')).toBeTruthy();
+      expect(items[1].querySelector('[data-tihoka-id="cue-timestamp"]')).toBeTruthy();
       expect(renderCueContent).toHaveBeenCalledWith(sampleCues[0], 0, true);
       expect(renderCueContent).toHaveBeenCalledWith(sampleCues[1], 1, false);
     });
@@ -245,14 +245,14 @@ describe('CueList', () => {
       );
 
       const target = screen.getAllByTestId('cue-target-text')[0];
-      const tokens = target.querySelectorAll('.js-cell-token');
+      const tokens = target.querySelectorAll('.js-Tihoka-token');
       expect(tokens.length).toBeGreaterThan(0);
       expect(target.textContent).toBe('Hello world');
       // 'Hello' and 'world' are word tokens with term/start/end attributes.
-      const hello = target.querySelector('[data-cell-term="hello"]');
+      const hello = target.querySelector('[data-tihoka-term="hello"]');
       expect(hello).not.toBeNull();
-      expect(hello?.getAttribute('data-cell-start')).toBe('0');
-      expect(hello?.getAttribute('data-cell-end')).toBe('5');
+      expect(hello?.getAttribute('data-tihoka-start')).toBe('0');
+      expect(hello?.getAttribute('data-tihoka-end')).toBe('5');
       // Native text stays plain.
       expect(screen.getByText('Xin chào')).toBeTruthy();
     });
@@ -269,7 +269,7 @@ describe('CueList', () => {
       );
 
       const target = screen.getAllByTestId('cue-target-text')[0];
-      const world = target.querySelector('[data-cell-term="world"]') as HTMLElement;
+      const world = target.querySelector('[data-tihoka-term="world"]') as HTMLElement;
       fireEvent.click(world);
 
       expect(onTokenClick).toHaveBeenCalledWith('world', world, 'Hello world', expect.objectContaining({ type: 'click' }), 6);
@@ -287,7 +287,7 @@ describe('CueList', () => {
       );
 
       const target = screen.getAllByTestId('cue-target-text')[0];
-      const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
+      const hello = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
       fireEvent.mouseEnter(hello);
       expect(onTokenHover).toHaveBeenLastCalledWith('hello');
       fireEvent.mouseLeave(hello);
@@ -306,7 +306,7 @@ describe('CueList', () => {
       );
 
       const target = screen.getAllByTestId('cue-target-text')[0];
-      fireEvent.mouseEnter(target.querySelector('[data-cell-term="hello"]') as HTMLElement);
+      fireEvent.mouseEnter(target.querySelector('[data-tihoka-term="hello"]') as HTMLElement);
       unmount();
       expect(onTokenHover).toHaveBeenLastCalledWith(null);
     });
@@ -323,16 +323,16 @@ describe('CueList', () => {
 
       const target = screen.getAllByTestId('cue-target-text')[0];
       await waitFor(() => {
-        expect(target.querySelector('[data-cell-term="hello"]')?.className).toContain('js-cell-token--status-unknown');
+        expect(target.querySelector('[data-tihoka-term="hello"]')?.className).toContain('js-Tihoka-token--status-unknown');
       });
 
       act(() => {
         emitWordStatusChanged({ langCode: 'en', term: 'hello', status: 'known' });
       });
 
-      const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
-      expect(hello.className).toContain('js-cell-token--status-known');
-      expect(hello.className).not.toContain('js-cell-token--status-unknown');
+      const hello = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
+      expect(hello.className).toContain('js-Tihoka-token--status-known');
+      expect(hello.className).not.toContain('js-Tihoka-token--status-unknown');
     });
 
     it('emits the resolved frequency band class on word tokens', async () => {
@@ -349,15 +349,15 @@ describe('CueList', () => {
       // No frequency data in the test env → rarest-band fallback, but the
       // frequency modifier must be emitted so the background layer renders.
       await waitFor(() => {
-        const hello = target.querySelector('[data-cell-term="hello"]');
-        expect(hello?.className).toContain('js-cell-token--frequency-rare');
+        const hello = target.querySelector('[data-tihoka-term="hello"]');
+        expect(hello?.className).toContain('js-Tihoka-token--frequency-rare');
       });
-      const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
-      expect(hello.className).not.toContain('js-cell-token--frequency-off');
-      expect(hello.className).toContain('js-cell-token--status-unknown');
+      const hello = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
+      expect(hello.className).not.toContain('js-Tihoka-token--frequency-off');
+      expect(hello.className).toContain('js-Tihoka-token--status-unknown');
 
-      for (const sep of target.querySelectorAll('.js-cell-token--separator')) {
-        expect(sep.className).not.toContain('js-cell-token--frequency-');
+      for (const sep of target.querySelectorAll('.js-Tihoka-token--separator')) {
+        expect(sep.className).not.toContain('js-Tihoka-token--frequency-');
       }
     });
 
@@ -373,7 +373,7 @@ describe('CueList', () => {
 
       const target = screen.getAllByTestId('cue-target-text')[0];
       await waitFor(() => {
-        expect(target.querySelector('[data-cell-term="hello"]')).not.toBeNull();
+        expect(target.querySelector('[data-tihoka-term="hello"]')).not.toBeNull();
       });
 
       rerender(
@@ -389,8 +389,8 @@ describe('CueList', () => {
         emitWordStatusChanged({ langCode: 'en', term: 'hello', status: 'known' });
       });
 
-      const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
-      expect(hello.className).toContain('js-cell-token--status-known');
+      const hello = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
+      expect(hello.className).toContain('js-Tihoka-token--status-known');
     });
 
     it('renders plain text when tokenize is null', () => {
@@ -399,7 +399,7 @@ describe('CueList', () => {
       );
 
       const target = screen.getAllByTestId('cue-target-text')[0];
-      expect(target.querySelectorAll('.js-cell-token')).toHaveLength(0);
+      expect(target.querySelectorAll('.js-Tihoka-token')).toHaveLength(0);
       expect(target.textContent).toBe('Hello world');
     });
 
@@ -410,7 +410,7 @@ describe('CueList', () => {
       );
 
       const target = screen.getAllByTestId('cue-target-text')[0];
-      expect(target.querySelectorAll('.js-cell-token')).toHaveLength(0);
+      expect(target.querySelectorAll('.js-Tihoka-token')).toHaveLength(0);
 
       rerender(
         <CueList
@@ -422,13 +422,13 @@ describe('CueList', () => {
       );
 
       await waitFor(() => {
-        expect(target.querySelector('[data-cell-term="hello"]')).not.toBeNull();
+        expect(target.querySelector('[data-tihoka-term="hello"]')).not.toBeNull();
       });
-      const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
-      expect(hello.className).toContain('js-cell-token--word');
-      expect(hello.className).toContain('js-cell-token--status-unknown');
-      expect(hello.querySelector('.js-cell-token-word')?.textContent).toBe('Hello');
-      expect(hello.querySelector('.js-cell-token-status')).not.toBeNull();
+      const hello = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
+      expect(hello.className).toContain('js-Tihoka-token--word');
+      expect(hello.className).toContain('js-Tihoka-token--status-unknown');
+      expect(hello.querySelector('.js-Tihoka-token-word')?.textContent).toBe('Hello');
+      expect(hello.querySelector('.js-Tihoka-token-status')).not.toBeNull();
     });
 
     it('re-tokenizes after tokenize toggles off then back on', async () => {
@@ -443,13 +443,13 @@ describe('CueList', () => {
 
       const target = screen.getAllByTestId('cue-target-text')[0];
       await waitFor(() => {
-        expect(target.querySelector('[data-cell-term="hello"]')).not.toBeNull();
+        expect(target.querySelector('[data-tihoka-term="hello"]')).not.toBeNull();
       });
 
       rerender(
         <CueList cues={sampleCues} currentTimeMs={0} onSeek={jest.fn()} tokenize={null} />,
       );
-      expect(target.querySelectorAll('.js-cell-token')).toHaveLength(0);
+      expect(target.querySelectorAll('.js-Tihoka-token')).toHaveLength(0);
 
       rerender(
         <CueList
@@ -460,7 +460,7 @@ describe('CueList', () => {
         />,
       );
       await waitFor(() => {
-        expect(target.querySelector('[data-cell-term="hello"]')).not.toBeNull();
+        expect(target.querySelector('[data-tihoka-term="hello"]')).not.toBeNull();
       });
     });
   });
@@ -776,7 +776,7 @@ describe('CueList', () => {
 
       const pill = screen.getByRole('button', { name: 'Sync to video' });
       expect(pill).toBeTruthy();
-      expect(pill.getAttribute('data-cell-id')).toBe('cue-list-sync');
+      expect(pill.getAttribute('data-tihoka-id')).toBe('cue-list-sync');
     });
 
     it('resumes following when a cue timestamp is clicked while desynced', () => {

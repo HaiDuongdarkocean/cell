@@ -1,29 +1,29 @@
 import { expect, type Page } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
-const PRACTICE = '[data-cell-id="subtitle-practice"]';
-const ACTIVE_CUE = '[data-cell-id="practice-active-cue"]';
-const FOOTER = '[data-cell-id="practice-footer"]';
-const INPUT = '[data-cell-id="practice-input"]';
-const CLOZE_BLANK = '[data-cell-id="cloze-blank"]';
-const FEEDBACK = '[data-cell-id="practice-feedback"]';
-const MORE_BTN = '[data-cell-id="subtitle-panel-more-btn"]';
-const STUDY_MENU = '[data-cell-id="study-mode-action-bar"]';
-const MODE_OFF = '[data-cell-id="study-mode-normal"]';
-const MODE_DICTATION = '[data-cell-id="study-mode-dictation"]';
-const MODE_CLOZE = '[data-cell-id="study-mode-cloze"]';
-const SPEED_VALUE = '[data-cell-id="speed-value"]';
-const SPEED_INC = '[data-cell-id="speed-inc"]';
-const SPEED_DEC = '[data-cell-id="speed-dec"]';
-const SPEED_RESET = '[data-cell-id="speed-reset"]';
+const PRACTICE = '[data-tihoka-id="subtitle-practice"]';
+const ACTIVE_CUE = '[data-tihoka-id="practice-active-cue"]';
+const FOOTER = '[data-tihoka-id="practice-footer"]';
+const INPUT = '[data-tihoka-id="practice-input"]';
+const CLOZE_BLANK = '[data-tihoka-id="cloze-blank"]';
+const FEEDBACK = '[data-tihoka-id="practice-feedback"]';
+const MORE_BTN = '[data-tihoka-id="subtitle-panel-more-btn"]';
+const STUDY_MENU = '[data-tihoka-id="study-mode-action-bar"]';
+const MODE_OFF = '[data-tihoka-id="study-mode-normal"]';
+const MODE_DICTATION = '[data-tihoka-id="study-mode-dictation"]';
+const MODE_CLOZE = '[data-tihoka-id="study-mode-cloze"]';
+const SPEED_VALUE = '[data-tihoka-id="speed-value"]';
+const SPEED_INC = '[data-tihoka-id="speed-inc"]';
+const SPEED_DEC = '[data-tihoka-id="speed-dec"]';
+const SPEED_RESET = '[data-tihoka-id="speed-reset"]';
 
 const CUE2_START_S = 20.2;
 const CUE2_NEXT_START_S = 29.266;
 
-test.afterEach(async ({ cellContext }) => {
+test.afterEach(async ({ TihokaContext }) => {
   const worker =
-    cellContext.serviceWorkers().find((sw) => sw.url().startsWith('chrome-extension://')) ??
-    (await cellContext.waitForEvent('serviceworker', { timeout: 5000 }).catch(() => null));
+    TihokaContext.serviceWorkers().find((sw) => sw.url().startsWith('chrome-extension://')) ??
+    (await TihokaContext.waitForEvent('serviceworker', { timeout: 5000 }).catch(() => null));
   if (!worker) return;
   await worker.evaluate(() =>
     chrome.storage.local.set({
@@ -53,7 +53,7 @@ async function videoTime(page: Page): Promise<number> {
 
 async function enterPlayerMode(page: Page): Promise<void> {
   await page.keyboard.press('g');
-  await expect(page.locator('[data-cell-id="cue-item"]').first()).toBeVisible({
+  await expect(page.locator('[data-tihoka-id="cue-item"]').first()).toBeVisible({
     timeout: 15_000,
   });
 }
@@ -114,7 +114,7 @@ async function checkPanelGeometry(page: Page, label = ''): Promise<void> {
         if (element.shadowRoot) collectDeep(element.shadowRoot, output);
       }
     };
-    const panel = findDeep(document, '[data-cell-id="subtitle-panel"]');
+    const panel = findDeep(document, '[data-tihoka-id="subtitle-panel"]');
     if (!panel) return { violations: ['panel not found'] };
     const panelRect = panel.getBoundingClientRect();
     const isRendered = (element: Element): boolean => {
@@ -123,7 +123,7 @@ async function checkPanelGeometry(page: Page, label = ''): Promise<void> {
       return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
     };
     const elementName = (element: Element): string =>
-      element.getAttribute('data-cell-id') ?? `${element.tagName.toLowerCase()}.${element.getAttribute('class') ?? ''}`;
+      element.getAttribute('data-tihoka-id') ?? `${element.tagName.toLowerCase()}.${element.getAttribute('class') ?? ''}`;
     const inside = (inner: DOMRect, outer: DOMRect): boolean =>
       inner.left >= outer.left - 1 && inner.right <= outer.right + 1 && inner.top >= outer.top - 1 && inner.bottom <= outer.bottom + 1;
     const clippingAncestors = (element: Element): Element[] => {
@@ -170,14 +170,14 @@ async function checkPanelGeometry(page: Page, label = ''): Promise<void> {
       }
     }
     const criticalSelectors = [
-      '[data-cell-id="subtitle-panel-more-btn"]',
-      '[data-cell-id="cue-list-scroll"]',
-      '[data-cell-id="practice-active-cue"]',
-      '[data-cell-id="practice-footer"]',
-      '[data-cell-id="practice-input"]',
-      '[data-cell-id="practice-previous"]',
-      '[data-cell-id="practice-replay"]',
-      '[data-cell-id="practice-next"]',
+      '[data-tihoka-id="subtitle-panel-more-btn"]',
+      '[data-tihoka-id="cue-list-scroll"]',
+      '[data-tihoka-id="practice-active-cue"]',
+      '[data-tihoka-id="practice-footer"]',
+      '[data-tihoka-id="practice-input"]',
+      '[data-tihoka-id="practice-previous"]',
+      '[data-tihoka-id="practice-replay"]',
+      '[data-tihoka-id="practice-next"]',
     ];
     for (const selector of criticalSelectors) {
       const element = findDeep(panel, selector);
@@ -187,8 +187,8 @@ async function checkPanelGeometry(page: Page, label = ''): Promise<void> {
       const element = findDeep(panel, selector);
       return element && isRendered(element) ? element.getBoundingClientRect() : null;
     };
-    const list = rectOf('[data-cell-id="cue-list-scroll"]');
-    const footer = rectOf('[data-cell-id="practice-footer"]');
+    const list = rectOf('[data-tihoka-id="cue-list-scroll"]');
+    const footer = rectOf('[data-tihoka-id="practice-footer"]');
     if (list && footer && list.bottom > footer.top + 1) violations.push('list overlaps footer');
     return { violations: [...new Set(violations)] };
   });
@@ -197,9 +197,9 @@ async function checkPanelGeometry(page: Page, label = ''): Promise<void> {
 
 async function checkFooterArrangement(page: Page, stacked: boolean): Promise<void> {
   const input = await page.locator(INPUT).boundingBox();
-  const previous = await page.locator('[data-cell-id="practice-previous"]').boundingBox();
-  const replay = await page.locator('[data-cell-id="practice-replay"]').boundingBox();
-  const next = await page.locator('[data-cell-id="practice-next"]').boundingBox();
+  const previous = await page.locator('[data-tihoka-id="practice-previous"]').boundingBox();
+  const replay = await page.locator('[data-tihoka-id="practice-replay"]').boundingBox();
+  const next = await page.locator('[data-tihoka-id="practice-next"]').boundingBox();
   expect(input).not.toBeNull();
   expect(previous).not.toBeNull();
   expect(replay).not.toBeNull();
@@ -273,7 +273,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     await expect(streamFlixPage.locator(`${FOOTER} ${INPUT}`)).toBeVisible();
     await expect(streamFlixPage.locator(`${ACTIVE_CUE} input`)).toHaveCount(0);
 
-    await streamFlixPage.locator('[data-cell-id="practice-replay"]').click();
+    await streamFlixPage.locator('[data-tihoka-id="practice-replay"]').click();
     await expect
       .poll(() => videoTime(streamFlixPage))
       .toBeGreaterThanOrEqual(CUE2_START_S - 0.5);
@@ -306,7 +306,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     const input = streamFlixPage.locator(INPUT);
     await expect(input).toBeVisible();
     const currentCue = streamFlixPage.locator(
-      `${PRACTICE} [data-cell-id="cue-item"][data-current="true"]`,
+      `${PRACTICE} [data-tihoka-id="cue-item"][data-current="true"]`,
     );
     await expect(currentCue).toHaveCount(1);
     const cueIndex = await currentCue.getAttribute('data-cue-index');
@@ -402,13 +402,13 @@ test.describe('Stage 2: Subtitle panel practice', () => {
       await expect(streamFlixPage.locator(`${ACTIVE_CUE} ${FEEDBACK}`)).not.toContainText('100 percent');
     }
 
-    await streamFlixPage.locator('[data-cell-id="practice-replay"]').click();
+    await streamFlixPage.locator('[data-tihoka-id="practice-replay"]').click();
 
     await expect(streamFlixPage.locator(PRACTICE)).toHaveCount(1);
     await expect(streamFlixPage.locator(INPUT)).toHaveCount(1);
     await expect(streamFlixPage.locator(`${ACTIVE_CUE} input`)).toHaveCount(0);
     for (const id of ['practice-previous', 'practice-replay', 'practice-next']) {
-      await expect(streamFlixPage.locator(`[data-cell-id="${id}"]`)).toBeVisible();
+      await expect(streamFlixPage.locator(`[data-tihoka-id="${id}"]`)).toBeVisible();
     }
     await checkPanelGeometry(streamFlixPage);
     const panelOverflow = await streamFlixPage.evaluate(() => {
@@ -423,7 +423,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
         }
         return null;
       };
-      const panel = findDeep(document, '[data-cell-id="subtitle-panel"]');
+      const panel = findDeep(document, '[data-tihoka-id="subtitle-panel"]');
       return panel ? panel.scrollWidth - panel.clientWidth : -1;
     });
     expect(panelOverflow).toBeLessThanOrEqual(1);
@@ -463,8 +463,8 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     await expect(streamFlixPage.locator('#player-wrapper video').first()).toBeVisible({
       timeout: 30_000,
     });
-    await expect(streamFlixPage.locator('#cell-subtitle-root')).toBeAttached({ timeout: 30_000 });
-    await expect(streamFlixPage.locator('[data-cell-id="orbital-badge"]')).toBeVisible({
+    await expect(streamFlixPage.locator('#Tihoka-subtitle-root')).toBeAttached({ timeout: 30_000 });
+    await expect(streamFlixPage.locator('[data-tihoka-id="orbital-badge"]')).toBeVisible({
       timeout: 15_000,
     });
 
@@ -500,10 +500,10 @@ test.describe('Stage 2: Subtitle panel practice', () => {
       .toBeGreaterThanOrEqual(CUE2_NEXT_START_S - 0.5);
 
     await seek(streamFlixPage, CUE2_NEXT_START_S + 0.3);
-    const historyCue = streamFlixPage.locator('[data-cell-id="practice-history-cue"]').first();
+    const historyCue = streamFlixPage.locator('[data-tihoka-id="practice-history-cue"]').first();
     await expect(historyCue).toBeVisible();
     await expect(historyCue.locator('[data-state]')).not.toHaveCount(0);
-    await expect(historyCue.locator('[data-cell-id="cue-native-text"]')).toBeVisible();
+    await expect(historyCue.locator('[data-tihoka-id="cue-native-text"]')).toBeVisible();
     expect(pageErrors).toEqual([]);
   });
 
@@ -525,8 +525,8 @@ test.describe('Stage 2: Subtitle panel practice', () => {
         streamFlixPage.locator(`${PRACTICE}[data-practice-mode="dictation"]`),
       ).toBeVisible();
       if (width === 320) {
-        await expect(streamFlixPage.locator('[data-cell-id="speed-value"]')).toBeVisible();
-        await expect(streamFlixPage.locator('[data-cell-id="speed-decrease"]')).toBeHidden();
+        await expect(streamFlixPage.locator('[data-tihoka-id="speed-value"]')).toBeVisible();
+        await expect(streamFlixPage.locator('[data-tihoka-id="speed-decrease"]')).toBeHidden();
       }
       await streamFlixPage.locator(INPUT).fill('x'.repeat(1500));
       await checkPanelGeometry(streamFlixPage, `w${width} dictation`);
@@ -584,21 +584,21 @@ test.describe('Stage 2: Subtitle panel practice', () => {
 
     for (const scale of [80, 125, 150, 200]) {
       await streamFlixPage.evaluate((s) => {
-        const host = document.getElementById('cell-subtitle-root');
+        const host = document.getElementById('Tihoka-subtitle-root');
         const root = host?.shadowRoot?.firstElementChild as HTMLElement | null;
         if (root) root.style.fontSize = `${s}%`;
       }, scale);
       await checkPanelGeometry(streamFlixPage);
     }
     await streamFlixPage.evaluate(() => {
-      const host = document.getElementById('cell-subtitle-root');
+      const host = document.getElementById('Tihoka-subtitle-root');
       const root = host?.shadowRoot?.firstElementChild as HTMLElement | null;
       if (root) root.style.fontSize = '';
     });
     expect(pageErrors).toEqual([]);
   });
 
-  test('dictation and cloze input: typing keys do not leak to host or Cell shortcuts', async ({
+  test('dictation and cloze input: typing keys do not leak to host or Tihoka shortcuts', async ({
     streamFlixPage,
   }) => {
     const pageErrors: string[] = [];

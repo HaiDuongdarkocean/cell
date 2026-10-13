@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import type { BrowserContext } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
 const DB_SCHEMA_VERSION = 13;
 const WORD_RE = /[A-Za-zÀ-ɏ']+/;
@@ -130,10 +130,10 @@ async function nestedWordPoint(
   return page.evaluate(
     ([i, w]) => {
       const hosts = [
-        ...Array.from(document.querySelectorAll('.js-cell-popup-host')),
+        ...Array.from(document.querySelectorAll('.js-Tihoka-popup-host')),
         ...Array.from(
-          document.getElementById('cell-subtitle-root')?.shadowRoot
-            ?.querySelectorAll('.js-cell-popup-host') ?? [],
+          document.getElementById('Tihoka-subtitle-root')?.shadowRoot
+            ?.querySelectorAll('.js-Tihoka-popup-host') ?? [],
         ),
       ];
       const shadow = (hosts[i as number] as HTMLElement | undefined)?.shadowRoot;
@@ -219,11 +219,11 @@ async function wordPoint(locator: Locator, word?: string): Promise<{ x: number; 
   }, { wordReSource: WORD_RE.source, word });
 }
 
-const popupHosts = (page: Page) => page.locator('.js-cell-popup-host');
+const popupHosts = (page: Page) => page.locator('.js-Tihoka-popup-host');
 
 test.describe('Stage 2: Nested dictionary popup stack', () => {
-  test.beforeEach(async ({ cellContext }) => {
-    await seedDictionary(cellContext, 'en', [
+  test.beforeEach(async ({ TihokaContext }) => {
+    await seedDictionary(TihokaContext, 'en', [
       { term: 'silence', pos: 'noun', definition: 'the complete absence of sound or noise' },
       { term: 'absence', pos: 'noun', definition: 'the state of being away from a place' },
       { term: 'state', pos: 'noun', definition: 'the condition of a thing at a time' },
@@ -236,7 +236,7 @@ test.describe('Stage 2: Nested dictionary popup stack', () => {
   test('lookup inside definitions opens a nested popup while ancestors stay visible', async ({ streamFlixPage }) => {
     await streamFlixPage.keyboard.press('g');
 
-    const cueTexts = streamFlixPage.locator('[data-cell-id="cue-target-text"]');
+    const cueTexts = streamFlixPage.locator('[data-tihoka-id="cue-target-text"]');
     await expect(cueTexts.first()).toBeVisible({ timeout: 15_000 });
 
     // Level 1: click "SILENCE" in the cue list.
@@ -313,7 +313,7 @@ test.describe('Stage 2: Nested dictionary popup stack', () => {
   test('Escape closes the top level and focuses the exposed parent', async ({ streamFlixPage }) => {
     await streamFlixPage.keyboard.press('g');
 
-    const cueTexts = streamFlixPage.locator('[data-cell-id="cue-target-text"]');
+    const cueTexts = streamFlixPage.locator('[data-tihoka-id="cue-target-text"]');
     await expect(cueTexts.first()).toBeVisible({ timeout: 15_000 });
 
     const silenceCue = cueTexts.filter({ hasText: /silence/i }).first();
@@ -346,10 +346,10 @@ test.describe('Stage 2: Nested dictionary popup stack', () => {
         const root = active?.getRootNode();
         const focusedHost = root instanceof ShadowRoot ? root.host : active;
         const hosts = [
-          ...Array.from(document.querySelectorAll('.js-cell-popup-host')),
+          ...Array.from(document.querySelectorAll('.js-Tihoka-popup-host')),
           ...Array.from(
-            document.getElementById('cell-subtitle-root')?.shadowRoot
-              ?.querySelectorAll('.js-cell-popup-host') ?? [],
+            document.getElementById('Tihoka-subtitle-root')?.shadowRoot
+              ?.querySelectorAll('.js-Tihoka-popup-host') ?? [],
           ),
         ];
         return hosts.indexOf(focusedHost as HTMLElement);

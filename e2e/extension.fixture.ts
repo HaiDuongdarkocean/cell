@@ -145,8 +145,8 @@ export const test = base.extend<ExtensionFixtures>({
     await expect(video).toBeVisible({ timeout: 30_000 });
 
     // Give the content script time to discover the video, finish overlay
-    // initialization, and mount the Cell subtitle overlay host.
-    const overlayHost = page.locator('#cell-subtitle-root');
+    // initialization, and mount the Tihoka subtitle overlay host.
+    const overlayHost = page.locator('#Tihoka-subtitle-root');
     await expect(overlayHost).toBeAttached({ timeout: 15_000 });
 
     await use(page);

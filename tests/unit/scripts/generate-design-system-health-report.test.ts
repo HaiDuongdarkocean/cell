@@ -28,7 +28,7 @@ describe('generate-design-system-health-report', () => {
 
   it('includes a markdown report', async () => {
     const raw = await readFile(mdPath, 'utf-8');
-    expect(raw).toContain('Cell Design System Health Report');
+    expect(raw).toContain('Tihoka Design System Health Report');
     expect(raw).toContain('Shared UI adoption');
     expect(raw).toContain('Token & drift health');
     expect(raw).toContain('Bundle impact');

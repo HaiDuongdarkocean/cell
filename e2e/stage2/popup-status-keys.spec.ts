@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import type { BrowserContext } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
 const STREAMFLIX_PORT = 4321 + parseInt(process.env.PW_PORT_OFFSET || '0', 10);
 const STREAMFLIX_KEYS = [
@@ -144,18 +144,18 @@ async function seedDictionary(
 async function overlayTerms(page: Page): Promise<string[]> {
   return page.evaluate(() =>
     Array.from(
-      document.getElementById('cell-subtitle-root')
+      document.getElementById('Tihoka-subtitle-root')
         ?.shadowRoot
-        ?.querySelectorAll('[data-role="target"] .js-cell-token--word[data-cell-term]') ?? [],
-    ).map((el) => el.getAttribute('data-cell-term') ?? ''),
+        ?.querySelectorAll('[data-role="target"] .js-Tihoka-token--word[data-tihoka-term]') ?? [],
+    ).map((el) => el.getAttribute('data-tihoka-term') ?? ''),
   );
 }
 
 async function overlayTokenClass(page: Page, term: string): Promise<string | null> {
   return page.evaluate((t) => {
-    const el = document.getElementById('cell-subtitle-root')
+    const el = document.getElementById('Tihoka-subtitle-root')
       ?.shadowRoot
-      ?.querySelector(`[data-role="target"] .js-cell-token[data-cell-term="${t}"]`);
+      ?.querySelector(`[data-role="target"] .js-Tihoka-token[data-tihoka-term="${t}"]`);
     return el ? (el as HTMLElement).className : null;
   }, term);
 }
@@ -163,10 +163,10 @@ async function overlayTokenClass(page: Page, term: string): Promise<string | nul
 async function panelWordTerms(page: Page): Promise<string[]> {
   return page.evaluate(() =>
     Array.from(
-      document.querySelector('[data-cell-split-view="panel"]')
+      document.querySelector('[data-tihoka-split-view="panel"]')
         ?.shadowRoot
-        ?.querySelectorAll('[data-cell-id="cue-target-text"] .js-cell-token--word[data-cell-term]') ?? [],
-    ).map((el) => el.getAttribute('data-cell-term') ?? ''),
+        ?.querySelectorAll('[data-tihoka-id="cue-target-text"] .js-Tihoka-token--word[data-tihoka-term]') ?? [],
+    ).map((el) => el.getAttribute('data-tihoka-term') ?? ''),
   );
 }
 
@@ -174,9 +174,9 @@ async function panelTokenClasses(page: Page, term: string): Promise<string[]> {
   return page.evaluate(
     (t) =>
       Array.from(
-        document.querySelector('[data-cell-split-view="panel"]')
+        document.querySelector('[data-tihoka-split-view="panel"]')
           ?.shadowRoot
-          ?.querySelectorAll(`.js-cell-token--word[data-cell-term="${t}"]`) ?? [],
+          ?.querySelectorAll(`.js-Tihoka-token--word[data-tihoka-term="${t}"]`) ?? [],
       ).map((el) => (el as HTMLElement).className),
     term,
   );
@@ -203,16 +203,16 @@ async function selectFirstPanelCue(
 ): Promise<{ cueIndex: string; terms: string[] } | null> {
   return page.evaluate(() => {
     const cues = Array.from(
-      document.querySelector('[data-cell-split-view="panel"]')
+      document.querySelector('[data-tihoka-split-view="panel"]')
         ?.shadowRoot
-        ?.querySelectorAll('[data-cell-id="cue-target-text"]') ?? [],
+        ?.querySelectorAll('[data-tihoka-id="cue-target-text"]') ?? [],
     );
     const cue = cues.find(
-      (el) => el.querySelectorAll('.js-cell-token--word[data-cell-term]').length >= 2,
+      (el) => el.querySelectorAll('.js-Tihoka-token--word[data-tihoka-term]').length >= 2,
     );
     if (!cue || !cue.firstChild) return null;
-    const terms = Array.from(cue.querySelectorAll('.js-cell-token--word[data-cell-term]'))
-      .map((el) => el.getAttribute('data-cell-term') ?? '');
+    const terms = Array.from(cue.querySelectorAll('.js-Tihoka-token--word[data-tihoka-term]'))
+      .map((el) => el.getAttribute('data-tihoka-term') ?? '');
     const range = document.createRange();
     range.selectNodeContents(cue);
     const sel = window.getSelection()!;
@@ -231,9 +231,9 @@ async function selectFirstPanelCue(
 async function selectPanelToken(page: Page, term: string): Promise<string | null> {
   return page.evaluate((t) => {
     const el = document
-      .querySelector('[data-cell-split-view="panel"]')
+      .querySelector('[data-tihoka-split-view="panel"]')
       ?.shadowRoot
-      ?.querySelector<HTMLElement>(`.js-cell-token--word[data-cell-term="${t}"]`);
+      ?.querySelector<HTMLElement>(`.js-Tihoka-token--word[data-tihoka-term="${t}"]`);
     if (!el) return null;
     const sel = window.getSelection()!;
     sel.removeAllRanges();
@@ -288,13 +288,13 @@ async function wordPoint(
 }
 
 test('popup dictionary keys 1-4 set the looked-up word status', async ({
-  cellContext,
+  TihokaContext,
   streamFlixPage,
 }) => {
-  await seedDictionary(cellContext, 'en', [
+  await seedDictionary(TihokaContext, 'en', [
     { term: 'silence', pos: 'noun', definition: 'the complete absence of sound or noise' },
   ]);
-  await writeTokenizeSettings(cellContext);
+  await writeTokenizeSettings(TihokaContext);
   await streamFlixPage.reload({ waitUntil: 'networkidle' });
 
   const video = streamFlixPage.locator('#player-wrapper video').first();
@@ -314,7 +314,7 @@ test('popup dictionary keys 1-4 set the looked-up word status', async ({
     .toBe(true);
 
   const targetLine = streamFlixPage
-    .locator('[data-cell-id="subtitle-block"] [data-role="target"]')
+    .locator('[data-tihoka-id="subtitle-block"] [data-role="target"]')
     .first();
   // Mock controls auto-hide ~3s into playback; the hit-tested wordPoint stays
   // null while they cover the line, so poll until the word is clickable.
@@ -324,9 +324,9 @@ test('popup dictionary keys 1-4 set the looked-up word status', async ({
     .not.toBeNull();
   await streamFlixPage.mouse.click(point!.x, point!.y);
 
-  const popup = streamFlixPage.locator('.js-cell-popup-host');
+  const popup = streamFlixPage.locator('.js-Tihoka-popup-host');
   await expect(popup).toBeAttached({ timeout: 10_000 });
-  const statusBadge = popup.locator('[data-cell-id="dictionary-status-cycle"]');
+  const statusBadge = popup.locator('[data-tihoka-id="dictionary-status-cycle"]');
   await expect(statusBadge).toContainText('unknown', { timeout: 15_000 });
 
   const presses: ReadonlyArray<readonly [string, string]> = [
@@ -340,15 +340,15 @@ test('popup dictionary keys 1-4 set the looked-up word status', async ({
     await expect(statusBadge).toContainText(status, { timeout: 10_000 });
     await expect
       .poll(async () => overlayTokenClass(streamFlixPage, 'silence'), { timeout: 10_000 })
-      .toContain(`js-cell-token--status-${status}`);
+      .toContain(`js-Tihoka-token--status-${status}`);
   }
 });
 
 test('split-view cue tokens render frequency band backgrounds', async ({
-  cellContext,
+  TihokaContext,
   streamFlixPage,
 }) => {
-  await writeTokenizeSettings(cellContext);
+  await writeTokenizeSettings(TihokaContext);
   await streamFlixPage.reload({ waitUntil: 'networkidle' });
   await prepareVideo(streamFlixPage);
 
@@ -362,9 +362,9 @@ test('split-view cue tokens render frequency band backgrounds', async ({
         streamFlixPage.evaluate(
           () =>
             document
-              .querySelector('[data-cell-split-view="panel"]')
+              .querySelector('[data-tihoka-split-view="panel"]')
               ?.shadowRoot?.querySelectorAll(
-                '.js-cell-token--word[class*="js-cell-token--frequency-"]:not(.js-cell-token--resolving)',
+                '.js-Tihoka-token--word[class*="js-Tihoka-token--frequency-"]:not(.js-Tihoka-token--resolving)',
               ).length ?? 0,
         ),
       { timeout: 15_000 },
@@ -372,15 +372,15 @@ test('split-view cue tokens render frequency band backgrounds', async ({
     .toBeGreaterThan(0);
 
   const tokens = await streamFlixPage.evaluate(() => {
-    const root = document.querySelector('[data-cell-split-view="panel"]')?.shadowRoot;
+    const root = document.querySelector('[data-tihoka-split-view="panel"]')?.shadowRoot;
     return Array.from(
-      root?.querySelectorAll<HTMLElement>('.js-cell-token--word[data-cell-term]') ?? [],
+      root?.querySelectorAll<HTMLElement>('.js-Tihoka-token--word[data-tihoka-term]') ?? [],
     ).map((el) => ({ cls: el.className, bg: getComputedStyle(el).backgroundColor }));
   });
   expect(tokens.length).toBeGreaterThan(0);
   for (const t of tokens) {
-    expect(t.cls).not.toContain('js-cell-token--frequency-off');
-    expect(t.cls).toMatch(/js-cell-token--frequency-(core|common|general|advanced|rare)/);
+    expect(t.cls).not.toContain('js-Tihoka-token--frequency-off');
+    expect(t.cls).toMatch(/js-Tihoka-token--frequency-(core|common|general|advanced|rare)/);
     if (t.cls.includes('status-unknown') || t.cls.includes('status-tracking')) {
       expect(t.bg).not.toBe('rgba(0, 0, 0, 0)');
       expect(t.bg).not.toBe('transparent');
@@ -389,10 +389,10 @@ test('split-view cue tokens render frequency band backgrounds', async ({
 });
 
 test('i+1 filter includes a cue whose only new word is tracking', async ({
-  cellContext,
+  TihokaContext,
   streamFlixPage,
 }) => {
-  await writeTokenizeSettings(cellContext);
+  await writeTokenizeSettings(TihokaContext);
   await streamFlixPage.reload({ waitUntil: 'networkidle' });
   await prepareVideo(streamFlixPage);
 
@@ -413,7 +413,7 @@ test('i+1 filter includes a cue whose only new word is tracking', async ({
         const classes = await panelTokenClasses(streamFlixPage, terms[0]!);
         return (
           classes.length > 0 &&
-          classes.every((c) => c.includes('js-cell-token--status-known'))
+          classes.every((c) => c.includes('js-Tihoka-token--status-known'))
         );
       },
       { timeout: 15_000 },
@@ -427,13 +427,13 @@ test('i+1 filter includes a cue whose only new word is tracking', async ({
     .poll(
       async () => {
         const classes = await panelTokenClasses(streamFlixPage, terms[0]!);
-        return classes.every((c) => c.includes('js-cell-token--status-tracking'));
+        return classes.every((c) => c.includes('js-Tihoka-token--status-tracking'));
       },
       { timeout: 15_000 },
     )
     .toBe(true);
 
-  const fab = streamFlixPage.locator('[data-cell-id="cue-filter-fab"]');
+  const fab = streamFlixPage.locator('[data-tihoka-id="cue-filter-fab"]');
   await expect(fab).toBeVisible({ timeout: 10_000 });
   await expect(fab).toHaveAttribute('aria-label', /[1-9]\d* i\+1 cues/, { timeout: 15_000 });
   await fab.click();
@@ -442,10 +442,10 @@ test('i+1 filter includes a cue whose only new word is tracking', async ({
   await expect(i1Item).toBeVisible({ timeout: 10_000 });
   await i1Item.click();
 
-  await expect(streamFlixPage.locator('[data-cell-id="cue-filter-strip"]')).toBeVisible({
+  await expect(streamFlixPage.locator('[data-tihoka-id="cue-filter-strip"]')).toBeVisible({
     timeout: 10_000,
   });
   await expect(
-    streamFlixPage.locator(`[data-cell-id="cue-item"][data-cue-index="${cue!.cueIndex}"]`),
+    streamFlixPage.locator(`[data-tihoka-id="cue-item"][data-cue-index="${cue!.cueIndex}"]`),
   ).toBeVisible({ timeout: 10_000 });
 });

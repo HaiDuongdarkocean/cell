@@ -229,19 +229,19 @@ test.describe('Ocean SRS smoke', () => {
     await page.getByRole('button', { name: 'Edit card' }).click();
 
     await expect(page.getByRole('heading', { name: 'Edit card' })).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('[data-cell-id="srs-edit-wordAudio-view-0"]')).toBeVisible();
-    await expect(page.locator('[data-cell-id="srs-edit-sentAudio-view-0"]')).toBeVisible();
-    await expect(page.locator('[data-cell-id="srs-edit-image-thumb-0"]')).toBeVisible();
-    await expect(page.locator('[data-cell-id="srs-edit-tags-row"]').getByText('smoke-tag')).toBeVisible();
-    await expect(page.locator('[data-cell-id="srs-edit-tags-row"]').getByText('e2e')).toBeVisible();
+    await expect(page.locator('[data-tihoka-id="srs-edit-wordAudio-view-0"]')).toBeVisible();
+    await expect(page.locator('[data-tihoka-id="srs-edit-sentAudio-view-0"]')).toBeVisible();
+    await expect(page.locator('[data-tihoka-id="srs-edit-image-thumb-0"]')).toBeVisible();
+    await expect(page.locator('[data-tihoka-id="srs-edit-tags-row"]').getByText('smoke-tag')).toBeVisible();
+    await expect(page.locator('[data-tihoka-id="srs-edit-tags-row"]').getByText('e2e')).toBeVisible();
 
-    await expect(page.locator('[data-cell-id="srs-edit-image-add"]')).toHaveText('Add');
+    await expect(page.locator('[data-tihoka-id="srs-edit-image-add"]')).toHaveText('Add');
     await expect(page.getByRole('button', { name: 'Delete card' })).toBeVisible();
     await page.screenshot({ path: 'tmp/srs-edit/top.png' });
 
-    await page.locator('[data-cell-id="srs-edit-tags-row"] input').fill('persisted-tag');
-    await page.locator('[data-cell-id="srs-edit-tags-row"] input').press('Enter');
-    await expect(page.locator('[data-cell-id="srs-edit-tags-row"]').getByText('persisted-tag')).toBeVisible();
+    await page.locator('[data-tihoka-id="srs-edit-tags-row"] input').fill('persisted-tag');
+    await page.locator('[data-tihoka-id="srs-edit-tags-row"] input').press('Enter');
+    await expect(page.locator('[data-tihoka-id="srs-edit-tags-row"]').getByText('persisted-tag')).toBeVisible();
 
     await page.screenshot({ path: 'tmp/srs-edit/evidence.png', fullPage: true });
 
@@ -250,9 +250,9 @@ test.describe('Ocean SRS smoke', () => {
     await expect(page.getByRole('heading', { name: 'Edit card' })).toBeHidden({ timeout: 10_000 });
 
     await page.getByRole('button', { name: 'Edit card' }).click();
-    await expect(page.locator('[data-cell-id="srs-edit-tags-row"]').getByText('persisted-tag')).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('[data-cell-id="srs-edit-wordAudio-view-0"]')).toBeVisible();
-    await expect(page.locator('[data-cell-id="srs-edit-image-thumb-0"]')).toBeVisible();
+    await expect(page.locator('[data-tihoka-id="srs-edit-tags-row"]').getByText('persisted-tag')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-tihoka-id="srs-edit-wordAudio-view-0"]')).toBeVisible();
+    await expect(page.locator('[data-tihoka-id="srs-edit-image-thumb-0"]')).toBeVisible();
 
     await page.close();
   });

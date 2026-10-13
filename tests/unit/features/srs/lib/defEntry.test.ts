@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { formatDefEntry, formatDefFromLookup, joinDefEntries, parseDefEntries } from '@/features/srs/lib/defEntry';
+import { cardLookupResult, formatDefEntry, formatDefFromLookup, joinDefEntries, parseDefEntries } from '@/features/srs/lib/defEntry';
 import type { LookupResult } from '@/entities/dictionary';
 
 const lookup = {
@@ -46,6 +46,29 @@ describe('defEntry', () => {
       senses: '[v] sense',
     });
     expect(text).toBe('Resettle [standard:75]\n\n[v] sense');
+  });
+
+  it('stars mode derives the star scale from the best rank when no star rating exists', () => {
+    const text = formatDefEntry({
+      term: 'resettle',
+      frequencies: [{ rank: 4500, source: 'standard' }],
+      frequencyFormat: 'stars',
+      senses: '[v] sense',
+    });
+    // rank 4500 → 'common' band → ★★★★☆
+    expect(text).toBe('Resettle ★★★★☆\n\n[v] sense');
+  });
+
+  it('stars mode honors custom band thresholds for the rank → ★ conversion', () => {
+    const text = formatDefEntry({
+      term: 'resettle',
+      frequencies: [{ rank: 4500, source: 'standard' }],
+      frequencyFormat: 'stars',
+      frequencyThresholds: { core: 1000, common: 2000, general: 5000, advanced: 10000 },
+      senses: '[v] sense',
+    });
+    // custom bands: 4500 → 'general' → ★★★☆☆
+    expect(text).toBe('Resettle ★★★☆☆\n\n[v] sense');
   });
 
   it('rank mode falls back to stars when no frequency lists exist', () => {
@@ -100,6 +123,27 @@ describe('defEntry', () => {
       'phrasal verbs: settle down, settle in\n' +
       'collocations: new home',
     );
+  });
+
+  it('cardLookupResult merges the selected variant frequency rows over the result', () => {
+    const withVariants = {
+      ...lookup,
+      frequencies: [],
+      frequencyStars: undefined,
+      variants: [{ pos: 'v', frequencies: [{ rank: 42, source: 'coca' }], frequencyStars: { count: 4, source: 'coca' } }],
+    } as unknown as LookupResult;
+    const merged = cardLookupResult({
+      lookupResult: withVariants,
+      frequencies: [{ rank: 42, source: 'coca' }],
+      frequencyStars: { count: 4, source: 'coca' },
+    });
+    const text = formatDefFromLookup(merged!, '[v] sense', undefined, 'rank');
+    expect(text).toBe('Resettle /ˌriːˈsetl/ [coca:42]\nOther forms: past resettled | progressive resettling\n\n[v] sense\n\nword family: noun resettlement | verb resettle\nphrasal verbs: settle down, settle in\ncollocations: new home');
+  });
+
+  it('cardLookupResult returns the result untouched when no variant freq is carried', () => {
+    expect(cardLookupResult({ lookupResult: lookup })).toBe(lookup);
+    expect(cardLookupResult({ lookupResult: undefined })).toBeUndefined();
   });
 
   it('joins multiple entries with --- and parses them back', () => {

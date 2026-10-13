@@ -1,7 +1,7 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
-const PILL_HOST_SELECTOR = '.js-cell-comprehension-pill-host';
+const PILL_HOST_SELECTOR = '.js-Tihoka-comprehension-pill-host';
 
 type PillSnapshot = {
   badgeText: string | null;
@@ -33,9 +33,9 @@ async function readPill(page: Page): Promise<PillSnapshot> {
     const host = document.querySelector<HTMLElement>(hostSelector);
     const root = host?.shadowRoot;
     if (!root) return null;
-    const badge = root.querySelector('[data-cell-id="comprehension-badge"]');
+    const badge = root.querySelector('[data-tihoka-id="comprehension-badge"]');
     if (!badge) return null;
-    const rect = (root.querySelector('[data-cell-id="comprehension-pill"]') ?? badge).getBoundingClientRect();
+    const rect = (root.querySelector('[data-tihoka-id="comprehension-pill"]') ?? badge).getBoundingClientRect();
     return {
       badgeText: badge.textContent,
       band: badge.getAttribute('data-band'),
@@ -47,10 +47,10 @@ async function readPill(page: Page): Promise<PillSnapshot> {
 
 test.describe('Stage 2: Comprehension score > floating pill on StreamFlix', () => {
   test('media score pill appears with coverage and band once cues load', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
-    await seedOverlaySettings(cellContext);
+    await seedOverlaySettings(TihokaContext);
 
     const video = streamFlixPage.locator('#player-wrapper video').first();
     await video.evaluate((v: HTMLVideoElement) => {

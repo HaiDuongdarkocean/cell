@@ -22,21 +22,21 @@ test.describe('debug-seam-hardening — cross-origin iframe flows', () => {
     if (!child) throw new Error('cross-origin player frame not found');
 
     // Child-frame content script mounts its overlay (all_frames injection).
-    await expect(frameLocator.locator('#cell-subtitle-root')).toBeAttached({ timeout: 20_000 });
+    await expect(frameLocator.locator('#Tihoka-subtitle-root')).toBeAttached({ timeout: 20_000 });
 
     // E2E debug marker on the top document — proves debug gating still emits
-    // in CELL_E2E builds.
+    // in Tihoka_E2E builds.
     await page.waitForFunction(
-      () => document.documentElement.hasAttribute('data-cell-runscan'),
+      () => document.documentElement.hasAttribute('data-tihoka-runscan'),
       null,
       { timeout: 20_000 },
     );
 
-    // Cross-frame debug relay: the child's __CELL_DEBUG_PAGE_SCAN post is
+    // Cross-frame debug relay: the child's __Tihoka_DEBUG_PAGE_SCAN post is
     // delivered to the top at the resolved parent origin (ancestorOrigins /
-    // referrer) and mirrored to data-cell-iframe-scan.
+    // referrer) and mirrored to data-tihoka-iframe-scan.
     await page.waitForFunction(
-      () => document.documentElement.hasAttribute('data-cell-iframe-scan'),
+      () => document.documentElement.hasAttribute('data-tihoka-iframe-scan'),
       null,
       { timeout: 20_000 },
     );
@@ -46,25 +46,25 @@ test.describe('debug-seam-hardening — cross-origin iframe flows', () => {
     await page.evaluate(() => {
       window.postMessage(
         {
-          type: '__CELL_PLAYER_MODE_ENTER',
+          type: '__Tihoka_PLAYER_MODE_ENTER',
           frameSrc: `${location.origin}/index.html`,
         },
         '*',
       );
     });
     await page.waitForTimeout(500);
-    expect(await page.locator('[data-cell-player-mode-host]').count()).toBe(0);
+    expect(await page.locator('[data-tihoka-player-mode-host]').count()).toBe(0);
 
     // Forged ENTER from the real iframe but with a lying frameSrc — origin
     // corroboration fails → dropped.
     await child.evaluate((parent) => {
       window.parent.postMessage(
-        { type: '__CELL_PLAYER_MODE_ENTER', frameSrc: 'https://evil.example/embed' },
+        { type: '__Tihoka_PLAYER_MODE_ENTER', frameSrc: 'https://evil.example/embed' },
         parent,
       );
     }, PARENT_ORIGIN);
     await page.waitForTimeout(500);
-    expect(await page.locator('[data-cell-player-mode-host]').count()).toBe(0);
+    expect(await page.locator('[data-tihoka-player-mode-host]').count()).toBe(0);
 
     // Legitimate ENTER from the real iframe contentWindow with matching
     // frameSrc → top enters Player Mode (fullscreen or fixed fallback) and
@@ -72,7 +72,7 @@ test.describe('debug-seam-hardening — cross-origin iframe flows', () => {
     const entered = await child.evaluate((parent) => {
       return new Promise<boolean>((resolve) => {
         const onMsg = (e: MessageEvent): void => {
-          if (e.data?.type === '__CELL_PLAYER_MODE_ENTERED') {
+          if (e.data?.type === '__Tihoka_PLAYER_MODE_ENTERED') {
             window.removeEventListener('message', onMsg);
             resolve(true);
           }
@@ -80,7 +80,7 @@ test.describe('debug-seam-hardening — cross-origin iframe flows', () => {
         window.addEventListener('message', onMsg);
         window.parent.postMessage(
           {
-            type: '__CELL_PLAYER_MODE_ENTER',
+            type: '__Tihoka_PLAYER_MODE_ENTER',
             frameSrc: location.origin + location.pathname,
           },
           parent,
@@ -90,7 +90,7 @@ test.describe('debug-seam-hardening — cross-origin iframe flows', () => {
     }, PARENT_ORIGIN);
     await page.waitForFunction(
       () =>
-        document.querySelector('[data-cell-player-mode-host]') !== null ||
+        document.querySelector('[data-tihoka-player-mode-host]') !== null ||
         document.fullscreenElement !== null,
       null,
       { timeout: 10_000 },
@@ -101,7 +101,7 @@ test.describe('debug-seam-hardening — cross-origin iframe flows', () => {
     await child.evaluate((parent) => {
       window.parent.postMessage(
         {
-          type: '__CELL_PLAYER_MODE_EXIT',
+          type: '__Tihoka_PLAYER_MODE_EXIT',
           frameSrc: location.origin + location.pathname,
         },
         parent,
@@ -109,7 +109,7 @@ test.describe('debug-seam-hardening — cross-origin iframe flows', () => {
     }, PARENT_ORIGIN);
     await page.waitForFunction(
       () =>
-        document.querySelector('[data-cell-player-mode-host]') === null &&
+        document.querySelector('[data-tihoka-player-mode-host]') === null &&
         document.fullscreenElement === null,
       null,
       { timeout: 10_000 },
@@ -118,11 +118,11 @@ test.describe('debug-seam-hardening — cross-origin iframe flows', () => {
     // Subtitle discovery relay — <track> mode mounts a blob: track; the
     // MAIN-world discovery script fetches it and posts a network-response
     // signal to the parent at the resolved origin. The top bridge validates
-    // the schema and records it under data-cell-iframe-discovery-log.
+    // the schema and records it under data-tihoka-iframe-discovery-log.
     await page.getByRole('tab', { name: '<track>' }).click();
     await page.waitForFunction(
       () => {
-        const raw = document.documentElement.getAttribute('data-cell-iframe-discovery-log');
+        const raw = document.documentElement.getAttribute('data-tihoka-iframe-discovery-log');
         if (!raw) return false;
         try {
           return (JSON.parse(raw) as { kind?: string; origin?: string }[]).some(
@@ -139,21 +139,21 @@ test.describe('debug-seam-hardening — cross-origin iframe flows', () => {
     // Forged malformed discovery signal — schema-invalid → silently dropped;
     // the discovery log must not grow.
     const before = await page.evaluate(() => {
-      const raw = document.documentElement.getAttribute('data-cell-iframe-discovery-log') ?? '[]';
+      const raw = document.documentElement.getAttribute('data-tihoka-iframe-discovery-log') ?? '[]';
       const len = (JSON.parse(raw) as unknown[]).length;
       window.postMessage(
-        { type: '__CELL_SUBTITLE_DISCOVERY', signal: { kind: 'bogus', data: 'x' } },
+        { type: '__Tihoka_SUBTITLE_DISCOVERY', signal: { kind: 'bogus', data: 'x' } },
         '*',
       );
       window.postMessage(
-        { type: '__CELL_SUBTITLE_DISCOVERY', signal: null },
+        { type: '__Tihoka_SUBTITLE_DISCOVERY', signal: null },
         '*',
       );
       return len;
     });
     await page.waitForTimeout(800);
     const after = await page.evaluate(() => {
-      const raw = document.documentElement.getAttribute('data-cell-iframe-discovery-log') ?? '[]';
+      const raw = document.documentElement.getAttribute('data-tihoka-iframe-discovery-log') ?? '[]';
       return (JSON.parse(raw) as unknown[]).length;
     });
     expect(after).toBe(before);

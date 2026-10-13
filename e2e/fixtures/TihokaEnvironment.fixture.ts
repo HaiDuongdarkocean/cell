@@ -16,8 +16,8 @@ const sourceExtensionPath = resolve(projectRoot, 'dist');
 const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
 const STREAMFLIX_URL = `http://127.0.0.1:${4321 + portOffset}/index.html`;
 
-type CellEnvironmentFixtures = {
-  cellContext: BrowserContext;
+type TihokaEnvironmentFixtures = {
+  TihokaContext: BrowserContext;
   streamFlixPage: Page;
 };
 
@@ -35,12 +35,12 @@ const launchContext = async (
     ],
   });
 
-export const test = base.extend<CellEnvironmentFixtures>({
-  cellContext: [
+export const test = base.extend<TihokaEnvironmentFixtures>({
+  TihokaContext: [
     async ({}, use, workerInfo) => {
       const profileDir = resolve(
         staging,
-        `.cell-profile-${workerInfo.workerIndex}-${Date.now()}-${randomUUID().slice(0, 8)}`,
+        `.Tihoka-profile-${workerInfo.workerIndex}-${Date.now()}-${randomUUID().slice(0, 8)}`,
       );
       const extensionDir = resolve(
         staging,
@@ -68,18 +68,18 @@ export const test = base.extend<CellEnvironmentFixtures>({
     { scope: 'worker' },
   ],
 
-  streamFlixPage: async ({ cellContext }, use) => {
-    const page = await cellContext.newPage();
+  streamFlixPage: async ({ TihokaContext }, use) => {
+    const page = await TihokaContext.newPage();
     await page.goto(STREAMFLIX_URL, { waitUntil: 'networkidle' });
 
-    // Wait for the mock video and the Cell content-script overlay to mount.
+    // Wait for the mock video and the Tihoka content-script overlay to mount.
     const video = page.locator('#player-wrapper video').first();
     await expect(video).toBeVisible({ timeout: 30_000 });
-    const overlayHost = page.locator('#cell-subtitle-root');
+    const overlayHost = page.locator('#Tihoka-subtitle-root');
     await expect(overlayHost).toBeAttached({ timeout: 30_000 });
 
     // Orbital badge is the user-facing entry point for the Universal Panel.
-    const badge = page.locator('[data-cell-id="orbital-badge"]');
+    const badge = page.locator('[data-tihoka-id="orbital-badge"]');
     await expect(badge).toBeVisible({ timeout: 15_000 });
 
     await use(page);

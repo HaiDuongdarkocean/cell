@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
-const HOST_ID = 'cell-subtitle-root';
+const HOST_ID = 'Tihoka-subtitle-root';
 const MOBILE_VIEWPORT = { width: 390, height: 780 };
 const AXIS_TOLERANCE_PX = 1.5;
 
@@ -38,17 +38,17 @@ test.describe('Stage 2: Player Mode mobile <600px > anchor alignment', () => {
     await streamFlixPage.setViewportSize(MOBILE_VIEWPORT);
 
     await streamFlixPage.keyboard.press('g');
-    const anchorRow = streamFlixPage.locator('[data-cell-id="pm-anchor-row"]');
+    const anchorRow = streamFlixPage.locator('[data-tihoka-id="pm-anchor-row"]');
     await expect(anchorRow).toBeAttached({ timeout: 15_000 });
     await expect(
-      streamFlixPage.locator('[data-cell-id="pm-anchor-band"]'),
+      streamFlixPage.locator('[data-tihoka-id="pm-anchor-band"]'),
     ).toBeAttached({ timeout: 15_000 });
 
-    const manager = await shadowRect(streamFlixPage, '[data-cell-id="manager-toggle-btn"]');
-    const exit = await shadowRect(streamFlixPage, '[data-cell-id="player-mode-exit-btn"]');
-    const generate = await shadowRect(streamFlixPage, '[data-cell-id="generate-native-btn"]');
-    const more = await shadowRect(streamFlixPage, '[data-cell-id="pm-more-btn"]');
-    const rail = await shadowRect(streamFlixPage, '[data-cell-id="player-mode-actions"]');
+    const manager = await shadowRect(streamFlixPage, '[data-tihoka-id="manager-toggle-btn"]');
+    const exit = await shadowRect(streamFlixPage, '[data-tihoka-id="player-mode-exit-btn"]');
+    const generate = await shadowRect(streamFlixPage, '[data-tihoka-id="generate-native-btn"]');
+    const more = await shadowRect(streamFlixPage, '[data-tihoka-id="pm-more-btn"]');
+    const rail = await shadowRect(streamFlixPage, '[data-tihoka-id="player-mode-actions"]');
 
     for (const [name, rect] of Object.entries({ manager, exit, generate, more, rail })) {
       expect(rect, `${name} must render`).not.toBeNull();
@@ -66,7 +66,7 @@ test.describe('Stage 2: Player Mode mobile <600px > anchor alignment', () => {
       AXIS_TOLERANCE_PX,
     );
 
-    const play = await shadowRect(streamFlixPage, '[data-cell-id="nav-play"]');
+    const play = await shadowRect(streamFlixPage, '[data-tihoka-id="nav-play"]');
     expect(play!.w, 'play matches the sibling buttons').toBe(40);
     expect(play!.h, 'play matches the sibling buttons').toBe(40);
 
@@ -74,10 +74,10 @@ test.describe('Stage 2: Player Mode mobile <600px > anchor alignment', () => {
       ({ host }: { host: string }) => {
         const root = document.getElementById(host)?.shadowRoot;
         return Array.from(
-          root?.querySelectorAll<HTMLElement>('[data-cell-id="nav-cluster"] [data-cell-id]') ?? [],
+          root?.querySelectorAll<HTMLElement>('[data-tihoka-id="nav-cluster"] [data-tihoka-id]') ?? [],
         ).map((el) => {
           const r = el.getBoundingClientRect();
-          return { id: el.dataset.cellId, cy: Math.round(r.y + r.height / 2) };
+          return { id: el.dataset.tihokaId, cy: Math.round(r.y + r.height / 2) };
         });
       },
       { host: HOST_ID },
@@ -95,21 +95,21 @@ test.describe('Stage 2: Player Mode mobile <600px > anchor alignment', () => {
   }) => {
     await streamFlixPage.setViewportSize(MOBILE_VIEWPORT);
     await streamFlixPage.keyboard.press('g');
-    await expect(streamFlixPage.locator('[data-cell-id="pm-anchor-band"]')).toBeAttached({
+    await expect(streamFlixPage.locator('[data-tihoka-id="pm-anchor-band"]')).toBeAttached({
       timeout: 15_000,
     });
 
-    await expect(streamFlixPage.locator('[data-cell-id="pm-caption"]')).toHaveCount(0);
+    await expect(streamFlixPage.locator('[data-tihoka-id="pm-caption"]')).toHaveCount(0);
     await expect(
-      streamFlixPage.locator('[data-cell-id="cue-item"]').first(),
+      streamFlixPage.locator('[data-tihoka-id="cue-item"]').first(),
     ).toBeAttached({ timeout: 15_000 });
 
     const cardIcons = await streamFlixPage.evaluate(
       ({ host }: { host: string }) => {
         const root = document.getElementById(host)?.shadowRoot;
-        const cards = Array.from(root?.querySelectorAll('[data-cell-id="cue-item"]') ?? []);
+        const cards = Array.from(root?.querySelectorAll('[data-tihoka-id="cue-item"]') ?? []);
         return cards.map((card) => ({
-          hasActions: card.querySelector('[data-cell-id="pm-card-actions"]') !== null,
+          hasActions: card.querySelector('[data-tihoka-id="pm-card-actions"]') !== null,
           svgs: card.querySelectorAll('svg').length,
         }));
       },
@@ -128,19 +128,19 @@ test.describe('Stage 2: Player Mode mobile <600px > anchor alignment', () => {
   }) => {
     await streamFlixPage.setViewportSize(MOBILE_VIEWPORT);
     await streamFlixPage.keyboard.press('g');
-    await expect(streamFlixPage.locator('[data-cell-id="pm-anchor-band"]')).toBeAttached({
+    await expect(streamFlixPage.locator('[data-tihoka-id="pm-anchor-band"]')).toBeAttached({
       timeout: 15_000,
     });
 
-    await expect(streamFlixPage.locator('[data-cell-id="pm-speed-btn"]')).toHaveCount(0);
+    await expect(streamFlixPage.locator('[data-tihoka-id="pm-speed-btn"]')).toHaveCount(0);
 
-    await streamFlixPage.locator('[data-cell-id="pm-more-btn"]').click();
-    const sheet = streamFlixPage.locator('[data-cell-id="pm-more-menu"]');
+    await streamFlixPage.locator('[data-tihoka-id="pm-more-btn"]').click();
+    const sheet = streamFlixPage.locator('[data-tihoka-id="pm-more-menu"]');
     await expect(sheet).toBeVisible({ timeout: 15_000 });
-    await expect(streamFlixPage.locator('[data-cell-id="pm-practice-off"]')).toHaveCount(0);
-    await expect(streamFlixPage.locator('[data-cell-id="pm-practice-dictation"]')).toHaveCount(0);
-    await expect(streamFlixPage.locator('[data-cell-id="pm-speed-stepper"]')).toBeVisible();
-    const speedValue = streamFlixPage.locator('[data-cell-id="pm-speed-value"]');
+    await expect(streamFlixPage.locator('[data-tihoka-id="pm-practice-off"]')).toHaveCount(0);
+    await expect(streamFlixPage.locator('[data-tihoka-id="pm-practice-dictation"]')).toHaveCount(0);
+    await expect(streamFlixPage.locator('[data-tihoka-id="pm-speed-stepper"]')).toBeVisible();
+    const speedValue = streamFlixPage.locator('[data-tihoka-id="pm-speed-value"]');
     await expect(speedValue).toBeVisible();
     const initialSpeed = (await speedValue.textContent())?.trim();
 
@@ -155,7 +155,7 @@ test.describe('Stage 2: Player Mode mobile <600px > anchor alignment', () => {
       .toBeLessThanOrEqual(MOBILE_VIEWPORT.height);
 
     const sheetBox = await sheet.boundingBox();
-    const stepperBox = await streamFlixPage.locator('[data-cell-id="pm-speed-stepper"]').boundingBox();
+    const stepperBox = await streamFlixPage.locator('[data-tihoka-id="pm-speed-stepper"]').boundingBox();
     expect(sheetBox).not.toBeNull();
     expect(stepperBox).not.toBeNull();
     expect(
@@ -163,8 +163,8 @@ test.describe('Stage 2: Player Mode mobile <600px > anchor alignment', () => {
       'stepper pinned to the sheet bottom',
     ).toBeLessThanOrEqual(40);
 
-    await streamFlixPage.locator('[data-cell-id="pm-speed-inc"]').click();
-    await expect(streamFlixPage.locator('[data-cell-id="pm-speed-value"]')).not.toHaveText(
+    await streamFlixPage.locator('[data-tihoka-id="pm-speed-inc"]').click();
+    await expect(streamFlixPage.locator('[data-tihoka-id="pm-speed-value"]')).not.toHaveText(
       initialSpeed ?? '1×',
     );
 
@@ -180,17 +180,17 @@ test.describe('Stage 2: Player Mode mobile <600px > anchor alignment', () => {
 
     await streamFlixPage.keyboard.press('g');
     await expect(
-      streamFlixPage.locator('[data-cell-id="pm-anchor-row"]'),
+      streamFlixPage.locator('[data-tihoka-id="pm-anchor-row"]'),
     ).toBeAttached({ timeout: 15_000 });
 
     await expect
-      .poll(() => shadowClick(streamFlixPage, '[data-cell-id="manager-toggle-btn"]'), { timeout: 15_000 })
+      .poll(() => shadowClick(streamFlixPage, '[data-tihoka-id="manager-toggle-btn"]'), { timeout: 15_000 })
       .toBe(true);
 
-    const managerLayer = streamFlixPage.locator('[data-cell-id="subtitle-manager-layer"]');
+    const managerLayer = streamFlixPage.locator('[data-tihoka-id="subtitle-manager-layer"]');
     await expect(managerLayer).toBeVisible({ timeout: 15_000 });
     await expect(
-      streamFlixPage.locator('[data-cell-id="pm-anchor-band"]'),
+      streamFlixPage.locator('[data-tihoka-id="pm-anchor-band"]'),
     ).toBeAttached();
 
     await streamFlixPage.waitForTimeout(400);
@@ -198,10 +198,10 @@ test.describe('Stage 2: Player Mode mobile <600px > anchor alignment', () => {
       path: 'docs/mockups/player-mode-mobile-layout-impl-v4-manager.png',
     });
 
-    await streamFlixPage.locator('[data-cell-id="subtitle-manager-close"]').click();
+    await streamFlixPage.locator('[data-tihoka-id="subtitle-manager-close"]').click();
     await expect(managerLayer).not.toBeVisible({ timeout: 15_000 });
     await expect(
-      streamFlixPage.locator('[data-cell-id="pm-anchor-band"]'),
+      streamFlixPage.locator('[data-tihoka-id="pm-anchor-band"]'),
     ).toBeAttached();
   });
 });

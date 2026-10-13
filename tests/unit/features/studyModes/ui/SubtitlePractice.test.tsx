@@ -87,7 +87,7 @@ describe('SubtitlePracticeSession — layout', () => {
     for (const item of screen.getAllByTestId('cue-item')) {
       expect(item.querySelector('input')).toBeNull();
     }
-    expect(document.querySelectorAll('[data-cell-id="practice-input"]')).toHaveLength(1);
+    expect(document.querySelectorAll('[data-tihoka-id="practice-input"]')).toHaveLength(1);
   });
 
   it('renders navigation buttons and a shortcut legend', () => {
@@ -105,7 +105,7 @@ describe('SubtitlePracticeSession — layout', () => {
     expect(screen.queryByText('AT THE END OF EVERY ROAD')).toBeNull();
     expect(screen.queryByText('FAR AWAY NOW')).toBeNull();
     for (const item of screen.getAllByTestId('cue-item')) {
-      expect(item.querySelector('[data-cell-id="cue-timestamp"]')).toBeTruthy();
+      expect(item.querySelector('[data-tihoka-id="cue-timestamp"]')).toBeTruthy();
     }
   });
 
@@ -175,7 +175,7 @@ describe('SubtitlePracticeSession — dictation', () => {
     const cue = screen.getByTestId('practice-active-cue');
     expect(cue.querySelector('[data-state="incorrect"]')).toBeTruthy();
     expect(cue.querySelector('[data-word-state]')).toBeTruthy();
-    expect(cue.querySelector('[data-cell-id="practice-active-cue-content"]')?.textContent).not.toContain('extra');
+    expect(cue.querySelector('[data-tihoka-id="practice-active-cue-content"]')?.textContent).not.toContain('extra');
   });
 
   it('shows 100% live feedback for a normalized-correct answer', () => {
@@ -186,7 +186,7 @@ describe('SubtitlePracticeSession — dictation', () => {
     const correctChars = cue.querySelectorAll('[data-state="correct"]');
     expect(correctChars.length).toBeGreaterThan(0);
     expect(cue.querySelector('[data-state="incorrect"], [data-state="missing"]')).toBeNull();
-    expect(cue.querySelectorAll('[data-cell-id="dictation-word"]').length).toBe(5);
+    expect(cue.querySelectorAll('[data-tihoka-id="dictation-word"]').length).toBe(5);
   });
 
   it('hides native text on the active cue regardless of translation setting', () => {
@@ -306,7 +306,7 @@ describe('SubtitlePracticeSession — dictation', () => {
     expect(screen.getByTestId('practice-feedback')).toBeTruthy();
     rerender(<SubtitlePracticeSession {...props} currentTimeMs={52000} />);
     expect((screen.getByTestId('practice-input') as HTMLInputElement).value).toBe('');
-    expect(screen.getByTestId('practice-active-cue').querySelector('[data-cell-id="practice-feedback"]')).toBeNull();
+    expect(screen.getByTestId('practice-active-cue').querySelector('[data-tihoka-id="practice-feedback"]')).toBeNull();
   });
 });
 
@@ -315,7 +315,7 @@ describe('SubtitlePracticeSession — cloze', () => {
     renderSession({ mode: 'cloze' });
     const exercise = createClozeExercise(cues[1]);
     const active = screen.getByTestId('practice-active-cue');
-    expect(active.querySelectorAll('[data-cell-id="cloze-blank"]')).toHaveLength(exercise.blanks.length);
+    expect(active.querySelectorAll('[data-tihoka-id="cloze-blank"]')).toHaveLength(exercise.blanks.length);
     const input = screen.getByTestId('practice-input') as HTMLInputElement;
     const n = exercise.blanks.length;
     expect(input.getAttribute('aria-label')).toBe(`Type ${n} missing word${n === 1 ? '' : 's'}`);
@@ -329,7 +329,7 @@ describe('SubtitlePracticeSession — cloze', () => {
     const answers = exercise.blanks.map((b) => b.answer).join(' ');
     fireEvent.change(input, { target: { value: answers.toLowerCase() } });
     const active = screen.getByTestId('practice-active-cue');
-    const blanks = active.querySelectorAll('[data-cell-id="cloze-blank"]');
+    const blanks = active.querySelectorAll('[data-tihoka-id="cloze-blank"]');
     expect(blanks).toHaveLength(exercise.blanks.length);
     for (const blank of blanks) {
       expect(blank.getAttribute('data-state')).toBe('correct');
@@ -343,7 +343,7 @@ describe('SubtitlePracticeSession — cloze', () => {
     fireEvent.change(input, { target: { value: 'wrong' } });
     const blank = screen
       .getByTestId('practice-active-cue')
-      .querySelector('[data-cell-id="cloze-blank"][data-state="incorrect"]');
+      .querySelector('[data-tihoka-id="cloze-blank"][data-state="incorrect"]');
     expect(blank).toBeTruthy();
     expect(blank?.textContent).toContain(exercise.blanks[0].answer);
     expect(blank?.textContent).not.toContain('wrong');
@@ -371,11 +371,11 @@ describe('SubtitlePracticeSession — cloze', () => {
   it('renders a preview for non-active cloze cues and hides target text for them', () => {
     renderSession({ mode: 'cloze' });
     const items = screen.getAllByTestId('cue-item');
-    expect(items[0].querySelector('[data-cell-id="practice-preview-cue"]')).toBeTruthy();
-    expect(items[0].querySelector('[data-cell-id="cue-target-text"]')).toBeNull();
+    expect(items[0].querySelector('[data-tihoka-id="practice-preview-cue"]')).toBeTruthy();
+    expect(items[0].querySelector('[data-tihoka-id="cue-target-text"]')).toBeNull();
     expect(items[0].textContent).not.toContain('AT THE END OF EVERY ROAD');
-    expect(items[2].querySelector('[data-cell-id="practice-preview-cue"]')).toBeTruthy();
-    expect(items[3].querySelector('[data-cell-id="practice-preview-cue"]')).toBeTruthy();
+    expect(items[2].querySelector('[data-tihoka-id="practice-preview-cue"]')).toBeTruthy();
+    expect(items[3].querySelector('[data-tihoka-id="practice-preview-cue"]')).toBeTruthy();
     expect(items[3].textContent).not.toContain('FAR AWAY NOW');
   });
 

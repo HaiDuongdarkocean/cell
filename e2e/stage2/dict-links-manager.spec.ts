@@ -8,7 +8,7 @@ async function shadowClick(page: Page, selector: string, timeout = 10_000): Prom
         const startTime = Date.now();
         const tick = (): void => {
           const el = document
-            .getElementById('cell-universal-panel-host')
+            .getElementById('Tihoka-universal-panel-host')
             ?.shadowRoot?.querySelector(sel) as HTMLElement | null;
           if (el) {
             el.click();
@@ -31,7 +31,7 @@ async function shadowClick(page: Page, selector: string, timeout = 10_000): Prom
 async function shadowCount(page: Page, selector: string): Promise<number> {
   return page.evaluate(
     (sel) =>
-      document.getElementById('cell-universal-panel-host')?.shadowRoot?.querySelectorAll(sel)
+      document.getElementById('Tihoka-universal-panel-host')?.shadowRoot?.querySelectorAll(sel)
         .length ?? 0,
     selector,
   );
@@ -42,7 +42,7 @@ async function shadowTexts(page: Page, selector: string): Promise<string[]> {
     (sel) =>
       Array.from(
         document
-          .getElementById('cell-universal-panel-host')
+          .getElementById('Tihoka-universal-panel-host')
           ?.shadowRoot?.querySelectorAll(sel) ?? [],
       ).map((el) => el.textContent?.trim() ?? ''),
     selector,
@@ -53,11 +53,11 @@ async function shadowIdByName(page: Page, name: string): Promise<string | null> 
   return page.evaluate(
     (linkName) => {
       const buttons = document
-        .getElementById('cell-universal-panel-host')
-        ?.shadowRoot?.querySelectorAll('[data-cell-id^="dict-link-name-"]') ?? [];
+        .getElementById('Tihoka-universal-panel-host')
+        ?.shadowRoot?.querySelectorAll('[data-tihoka-id^="dict-link-name-"]') ?? [];
       for (const el of buttons) {
         if (el.textContent?.trim() === linkName) {
-          return (el.getAttribute('data-cell-id') ?? '').replace('dict-link-name-', '');
+          return (el.getAttribute('data-tihoka-id') ?? '').replace('dict-link-name-', '');
         }
       }
       return null;
@@ -70,7 +70,7 @@ async function shadowType(page: Page, selector: string, value: string): Promise<
   const ok = await page.evaluate(
     ({ sel, text }) => {
       const input = document
-        .getElementById('cell-universal-panel-host')
+        .getElementById('Tihoka-universal-panel-host')
         ?.shadowRoot?.querySelector(sel) as HTMLInputElement | null;
       if (!input) return false;
       input.focus();
@@ -91,13 +91,13 @@ async function openDictLinksManager(
   await universalPanel.open();
   await universalPanel.openTab('settings');
   await expect
-    .poll(() => shadowCount(page, '[data-cell-id="dict-links-manager"]'), { timeout: 20_000 })
+    .poll(() => shadowCount(page, '[data-tihoka-id="dict-links-manager"]'), { timeout: 20_000 })
     .toBe(1);
   await shadowClick(page, '[data-section-id="dictionaryPopup"]');
 }
 
-const NAMES = '[data-cell-id^="dict-link-name-"]';
-const ROWS = '[data-cell-id^="dict-link-slot-"]';
+const NAMES = '[data-tihoka-id^="dict-link-name-"]';
+const ROWS = '[data-tihoka-id^="dict-link-slot-"]';
 
 test('dict-links-manager: defaults render, add/validate/delete, persists across reload', async ({
   universalPanel,
@@ -113,15 +113,15 @@ test('dict-links-manager: defaults render, add/validate/delete, persists across 
     .toEqual(['Cambridge Dictionary', 'Wiktionary', 'Google Translate']);
 
   // Invalid template (no {term}) is rejected and the dialog stays open.
-  await shadowClick(page, '[data-cell-id="dict-link-add"]');
+  await shadowClick(page, '[data-tihoka-id="dict-link-add"]');
   await expect
-    .poll(() => shadowCount(page, '[data-cell-id="dict-link-editor"]'), { timeout: 10_000 })
+    .poll(() => shadowCount(page, '[data-tihoka-id="dict-link-editor"]'), { timeout: 10_000 })
     .toBe(1);
-  await shadowType(page, '[data-cell-id="dict-link-editor-name"]', 'Bad Link');
-  await shadowType(page, '[data-cell-id="dict-link-editor-url"]', 'https://example.com/no-placeholder');
-  await shadowClick(page, '[data-cell-id="dict-link-editor-save"]');
+  await shadowType(page, '[data-tihoka-id="dict-link-editor-name"]', 'Bad Link');
+  await shadowType(page, '[data-tihoka-id="dict-link-editor-url"]', 'https://example.com/no-placeholder');
+  await shadowClick(page, '[data-tihoka-id="dict-link-editor-save"]');
   await expect
-    .poll(() => shadowCount(page, '[data-cell-id="dict-link-editor"] [role="alert"]'), {
+    .poll(() => shadowCount(page, '[data-tihoka-id="dict-link-editor"] [role="alert"]'), {
       timeout: 5_000,
     })
     .toBe(1);
@@ -130,8 +130,8 @@ test('dict-links-manager: defaults render, add/validate/delete, persists across 
   // Close the rejected editor via its footer Cancel button.
   const cancelled = await page.evaluate(() => {
     const dialog = document
-      .getElementById('cell-universal-panel-host')
-      ?.shadowRoot?.querySelector('[data-cell-id="dict-link-editor"]');
+      .getElementById('Tihoka-universal-panel-host')
+      ?.shadowRoot?.querySelector('[data-tihoka-id="dict-link-editor"]');
     const cancel = Array.from(dialog?.querySelectorAll('button') ?? []).find(
       (b) => b.textContent?.trim() === 'Cancel',
     ) as HTMLElement | undefined;
@@ -140,25 +140,25 @@ test('dict-links-manager: defaults render, add/validate/delete, persists across 
   });
   expect(cancelled).toBe(true);
   await expect
-    .poll(() => shadowCount(page, '[data-cell-id="dict-link-editor"]'), { timeout: 5_000 })
+    .poll(() => shadowCount(page, '[data-tihoka-id="dict-link-editor"]'), { timeout: 5_000 })
     .toBe(0);
 
   // Valid template is accepted.
-  await shadowClick(page, '[data-cell-id="dict-link-add"]');
-  await shadowType(page, '[data-cell-id="dict-link-editor-name"]', 'E2E Dict');
+  await shadowClick(page, '[data-tihoka-id="dict-link-add"]');
+  await shadowType(page, '[data-tihoka-id="dict-link-editor-name"]', 'E2E Dict');
   await shadowType(
     page,
-    '[data-cell-id="dict-link-editor-url"]',
+    '[data-tihoka-id="dict-link-editor-url"]',
     'https://example.com/{term}?lang={lang}',
   );
-  await shadowClick(page, '[data-cell-id="dict-link-editor-save"]');
+  await shadowClick(page, '[data-tihoka-id="dict-link-editor-save"]');
   await expect
     .poll(() => shadowTexts(page, NAMES), { timeout: 10_000 })
     .toEqual(['Cambridge Dictionary', 'Wiktionary', 'Google Translate', 'E2E Dict']);
 
   // Persisted: reload the page and re-open the manager.
   await page.reload({ waitUntil: 'networkidle' });
-  const badge = page.locator('[data-cell-id="orbital-badge"]');
+  const badge = page.locator('[data-tihoka-id="orbital-badge"]');
   await expect(badge).toBeVisible({ timeout: 30_000 });
   await openDictLinksManager(page, universalPanel);
   await expect
@@ -168,11 +168,11 @@ test('dict-links-manager: defaults render, add/validate/delete, persists across 
   // Delete the added link via the confirm dialog.
   const id = await shadowIdByName(page, 'E2E Dict');
   expect(id).toBeTruthy();
-  await shadowClick(page, `[data-cell-id="dict-link-delete-${id}"]`);
+  await shadowClick(page, `[data-tihoka-id="dict-link-delete-${id}"]`);
   await expect
-    .poll(() => shadowCount(page, '[data-cell-id="dict-link-delete-dialog"]'), { timeout: 5_000 })
+    .poll(() => shadowCount(page, '[data-tihoka-id="dict-link-delete-dialog"]'), { timeout: 5_000 })
     .toBe(1);
-  await shadowClick(page, '[data-cell-id="dict-link-delete-confirm"]');
+  await shadowClick(page, '[data-tihoka-id="dict-link-delete-confirm"]');
   await expect
     .poll(() => shadowTexts(page, NAMES), { timeout: 10_000 })
     .toEqual(['Cambridge Dictionary', 'Wiktionary', 'Google Translate']);

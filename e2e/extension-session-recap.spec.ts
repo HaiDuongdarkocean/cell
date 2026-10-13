@@ -1,5 +1,5 @@
 import { expect, type BrowserContext, type Page, type Worker } from '@playwright/test';
-import { test } from './fixtures/cellEnvironment.fixture';
+import { test } from './fixtures/TihokaEnvironment.fixture';
 import { UniversalPanelActor } from './fixtures/actors/universalPanel.fixture';
 
 type MsgResponse<T> = { success: boolean; data?: T; error?: string };
@@ -24,7 +24,7 @@ function sendMsg<T>(page: Page, type: string, payload: unknown): Promise<MsgResp
 }
 
 function panelRoot(page: Page) {
-  return page.locator('#cell-universal-panel-host');
+  return page.locator('#Tihoka-universal-panel-host');
 }
 
 async function extensionWorker(context: BrowserContext): Promise<Worker> {
@@ -204,11 +204,11 @@ async function clearSessionData(
 
 test.describe('Session Recap tab', () => {
   test('Recap tab shows empty state when no history exists', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
-    const extPage = await openExtensionPage(cellContext);
-    await clearSessionData(cellContext, extPage);
+    const extPage = await openExtensionPage(TihokaContext);
+    await clearSessionData(TihokaContext, extPage);
     await extPage.close();
 
     const page = streamFlixPage;
@@ -224,10 +224,10 @@ test.describe('Session Recap tab', () => {
   });
 
   test('GET_SESSION_RECAP composes a session from seeded records + events', async ({
-    cellContext,
+    TihokaContext,
   }) => {
-    const extPage = await openExtensionPage(cellContext);
-    await seedLocalSession(cellContext, extPage);
+    const extPage = await openExtensionPage(TihokaContext);
+    await seedLocalSession(TihokaContext, extPage);
     const res = await sendMsg<{ sessions: unknown[] }>(extPage, 'GET_SESSION_RECAP', {});
     await extPage.close();
 
@@ -251,11 +251,11 @@ test.describe('Session Recap tab', () => {
   });
 
   test('Recap tab renders hero + chips; term chip navigates to Dictionary', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
-    const extPage = await openExtensionPage(cellContext);
-    await seedLocalSession(cellContext, extPage);
+    const extPage = await openExtensionPage(TihokaContext);
+    await seedLocalSession(TihokaContext, extPage);
     await extPage.close();
 
     const page = streamFlixPage;
@@ -263,7 +263,7 @@ test.describe('Session Recap tab', () => {
     await panel.open();
     await panel.openTab('recap');
 
-    const hero = panelRoot(page).locator('[data-cell-id="recap-hero"]');
+    const hero = panelRoot(page).locator('[data-tihoka-id="recap-hero"]');
     await expect(hero).toBeVisible({ timeout: 15_000 });
     await expect(hero).toContainText('Episode 01 — Seeded');
     await expect(hero).toContainText('72%');
@@ -272,7 +272,7 @@ test.describe('Session Recap tab', () => {
     await hero.screenshot({ path: 'e2e-results/default/session-recap-hero.png' });
 
     await nekoChip.click();
-    const dictInput = panelRoot(page).locator('input[data-cell-id="dictionary-search-input"]');
+    const dictInput = panelRoot(page).locator('input[data-tihoka-id="dictionary-search-input"]');
     await expect(dictInput).toBeVisible({ timeout: 15_000 });
     await panelRoot(page).screenshot({
       path: 'e2e-results/default/session-recap-dict.png',

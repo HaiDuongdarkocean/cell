@@ -3,8 +3,8 @@ import { test } from '../fixtures/actors/universalPanel.fixture';
 
 async function clickClose(page: Page): Promise<void> {
   const rect = await page.evaluate(() => {
-    const host = document.getElementById('cell-universal-panel-host');
-    const btn = host?.shadowRoot?.querySelector('[data-cell-id="universal-panel-close"]');
+    const host = document.getElementById('Tihoka-universal-panel-host');
+    const btn = host?.shadowRoot?.querySelector('[data-tihoka-id="universal-panel-close"]');
     const r = btn?.getBoundingClientRect();
     return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null;
   });
@@ -18,8 +18,8 @@ async function expectPanelGone(page: Page): Promise<void> {
       page.evaluate(
         () =>
           document
-            .getElementById('cell-universal-panel-host')
-            ?.shadowRoot?.querySelector('[data-cell-id="universal-panel"]') != null,
+            .getElementById('Tihoka-universal-panel-host')
+            ?.shadowRoot?.querySelector('[data-tihoka-id="universal-panel"]') != null,
       ),
     )
     .toBe(false);

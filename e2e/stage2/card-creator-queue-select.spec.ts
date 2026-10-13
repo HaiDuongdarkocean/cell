@@ -162,8 +162,8 @@ async function seedDictionary(
 function fieldValue(page: Page, dataId: string): Promise<string | null> {
   return page.evaluate(
     (id) => {
-      const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-      const area = root?.querySelector(`[data-cell-id="${id}-input"] textarea`) as HTMLTextAreaElement | null;
+      const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+      const area = root?.querySelector(`[data-tihoka-id="${id}-input"] textarea`) as HTMLTextAreaElement | null;
       return area?.value ?? null;
     },
     dataId,
@@ -174,10 +174,10 @@ function fieldValue(page: Page, dataId: string): Promise<string | null> {
 function mediaCount(page: Page, dataId: string, kind: 'audio' | 'image'): Promise<number> {
   return page.evaluate(
     ({ id, k }) => {
-      const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
+      const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
       const selector = k === 'audio'
-        ? `[data-cell-id="${id}"] [data-cell-id^="${id}-view-"]`
-        : `[data-cell-id="${id}"] [data-cell-id^="${id}-thumb-"]`;
+        ? `[data-tihoka-id="${id}"] [data-tihoka-id^="${id}-view-"]`
+        : `[data-tihoka-id="${id}"] [data-tihoka-id^="${id}-thumb-"]`;
       return root?.querySelectorAll(selector)?.length ?? 0;
     },
     { id: dataId, k: kind },
@@ -203,8 +203,8 @@ function shadowClick(page: Page, hostId: string, selector: string): Promise<bool
 /** Read all queue item terms (row order) from the queue panel. */
 function queueTerms(page: Page): Promise<string[]> {
   return page.evaluate(() => {
-    const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-    const rows = root?.querySelectorAll('[data-cell-id^="cc-queue-item-"]') ?? [];
+    const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+    const rows = root?.querySelectorAll('[data-tihoka-id^="cc-queue-item-"]') ?? [];
     return Array.from(rows).map((r) => r.textContent?.trim() ?? '');
   });
 }
@@ -222,11 +222,11 @@ function queueTerms(page: Page): Promise<string[]> {
  */
 test.describe('Stage 2: Card Creator > queue item select runs dictionary generate', () => {
   test('clicking a queue item looks up its term and fills the card', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }, testInfo) => {
-    await seedStorage(cellContext, { settings: makeSettings() });
-    await seedDictionary(cellContext, 'en', [
+    await seedStorage(TihokaContext, { settings: makeSettings() });
+    await seedDictionary(TihokaContext, 'en', [
       {
         term: 'better',
         pos: 'adj.',
@@ -259,23 +259,23 @@ test.describe('Stage 2: Card Creator > queue item select runs dictionary generat
     await expect
       .poll(async () => {
         return streamFlixPage.evaluate(() => {
-          const root = document.getElementById('cell-subtitle-root')?.shadowRoot;
-          const text = root?.querySelector('[data-cell-id="subtitle-block"]')?.textContent ?? '';
+          const root = document.getElementById('Tihoka-subtitle-root')?.shadowRoot;
+          const text = root?.querySelector('[data-tihoka-id="subtitle-block"]')?.textContent ?? '';
           return /better|silence/i.test(text);
         });
       }, { timeout: 30_000 })
       .toBe(true);
 
     // Click "Edit card" → capture + build queue → sendToCard opens the panel.
-    await shadowClick(streamFlixPage, 'cell-subtitle-root', '[data-cell-id="edit-card-btn"]');
+    await shadowClick(streamFlixPage, 'Tihoka-subtitle-root', '[data-tihoka-id="edit-card-btn"]');
 
     // The panel opens (dictionary tab + card creator) and the queue slide-over
     // auto-opens when the cue yields ≥ 2 unknown/tracking words.
     await expect
       .poll(async () => {
         return streamFlixPage.evaluate(() => {
-          const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-          return !!root?.querySelector('[data-cell-id="cc-queue-panel"] [data-cell-id^="cc-queue-item-"]');
+          const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+          return !!root?.querySelector('[data-tihoka-id="cc-queue-panel"] [data-tihoka-id^="cc-queue-item-"]');
         });
       }, { timeout: 30_000 })
       .toBe(true);
@@ -291,8 +291,8 @@ test.describe('Stage 2: Card Creator > queue item select runs dictionary generat
     // Click the "silence" item's select button → panel closes → select+generate runs.
     await shadowClick(
       streamFlixPage,
-      'cell-universal-panel-host',
-      `[data-cell-id="cc-queue-item-${silenceIdx}"] button`,
+      'Tihoka-universal-panel-host',
+      `[data-tihoka-id="cc-queue-item-${silenceIdx}"] button`,
     );
 
     await expect
@@ -309,7 +309,7 @@ test.describe('Stage 2: Card Creator > queue item select runs dictionary generat
 
     // Switch to "better" → the card must swap to that term (stale-term media
     // was cleared, the new term's own lookup applies).
-    await shadowClick(streamFlixPage, 'cell-universal-panel-host', '[data-cell-id="cc-queue-toggle"]');
+    await shadowClick(streamFlixPage, 'Tihoka-universal-panel-host', '[data-tihoka-id="cc-queue-toggle"]');
     await expect
       .poll(async () => (await queueTerms(streamFlixPage)).length, { timeout: 10_000 })
       .toBeGreaterThanOrEqual(2);
@@ -317,8 +317,8 @@ test.describe('Stage 2: Card Creator > queue item select runs dictionary generat
     expect(betterIdx).toBeGreaterThanOrEqual(0);
     await shadowClick(
       streamFlixPage,
-      'cell-universal-panel-host',
-      `[data-cell-id="cc-queue-item-${betterIdx}"] button`,
+      'Tihoka-universal-panel-host',
+      `[data-tihoka-id="cc-queue-item-${betterIdx}"] button`,
     );
 
     await expect

@@ -63,7 +63,7 @@ function clickInPanel(page: Page, selector: string, timeout = 10_000): Promise<b
       new Promise<boolean>((resolve) => {
         const start = Date.now();
         const tick = (): void => {
-          const host = document.getElementById('cell-universal-panel-host');
+          const host = document.getElementById('Tihoka-universal-panel-host');
           const root = host?.shadowRoot;
           const el = root?.querySelector(sel) as HTMLElement | null;
           if (el) {
@@ -98,7 +98,7 @@ function queryInPanel(page: Page, selector: string, timeout = 10_000): Promise<P
       new Promise<PanelElementInfo | null>((resolve) => {
         const start = Date.now();
         const tick = (): void => {
-          const host = document.getElementById('cell-universal-panel-host');
+          const host = document.getElementById('Tihoka-universal-panel-host');
           const root = host?.shadowRoot;
           const el = root?.querySelector(sel) as HTMLElement | null;
           if (el) {
@@ -134,7 +134,7 @@ function waitForPanelSelector(
       new Promise<boolean>((resolve) => {
         const start = Date.now();
         const tick = (): void => {
-          const host = document.getElementById('cell-universal-panel-host');
+          const host = document.getElementById('Tihoka-universal-panel-host');
           const root = host?.shadowRoot;
           const exists = !!root?.querySelector(sel);
           if (exists === shouldExist) {
@@ -160,33 +160,33 @@ async function openCardCreatorInDictionary(universalPanel: UniversalPanelActor):
 
   const clicked = await clickInPanel(
     universalPanel.page,
-    '[data-cell-id="dictionary-send-to-card"]',
+    '[data-tihoka-id="dictionary-send-to-card"]',
   );
   expect(clicked, 'Send to Card button did not appear').toBe(true);
 
   const content = await queryInPanel(
     universalPanel.page,
-    '[data-cell-id="card-creator-content"]',
+    '[data-tihoka-id="card-creator-content"]',
   );
   expect(content, 'Card Creator content did not mount').toBeTruthy();
 }
 
 test.describe('Stage 2: Card Creator > Settings side panel in Dictionary', () => {
   test('opens and closes the Card Creator settings panel inside the integrated view', async ({
-    cellContext,
+    TihokaContext,
     universalPanel,
   }) => {
     const settings = makeSettings();
-    await seedStorage(cellContext, { settings });
+    await seedStorage(TihokaContext, { settings });
     await openCardCreatorInDictionary(universalPanel);
 
-    const settingsButtonVisible = await queryInPanel(universalPanel.page, '[data-cell-id="cc-settings"]');
+    const settingsButtonVisible = await queryInPanel(universalPanel.page, '[data-tihoka-id="cc-settings"]');
     expect(settingsButtonVisible, 'Card Creator settings button did not render').toBeTruthy();
-    await clickInPanel(universalPanel.page, '[data-cell-id="cc-settings"]');
+    await clickInPanel(universalPanel.page, '[data-tihoka-id="cc-settings"]');
 
     const layer = await queryInPanel(
       universalPanel.page,
-      '[data-cell-id="card-creator-settings-layer"]',
+      '[data-tihoka-id="card-creator-settings-layer"]',
     );
     expect(layer, 'Settings layer did not open').toBeTruthy();
     expect(layer?.section, 'Settings layer section').toBe('cardCreator');
@@ -195,7 +195,7 @@ test.describe('Stage 2: Card Creator > Settings side panel in Dictionary', () =>
 
     const closed = await waitForPanelSelector(
       universalPanel.page,
-      '[data-cell-id="card-creator-settings-layer"]',
+      '[data-tihoka-id="card-creator-settings-layer"]',
       false,
       5_000,
     );
@@ -203,36 +203,36 @@ test.describe('Stage 2: Card Creator > Settings side panel in Dictionary', () =>
   });
 
   test('reopens the Card Creator settings panel after closing it', async ({
-    cellContext,
+    TihokaContext,
     universalPanel,
   }) => {
     const settings = makeSettings();
-    await seedStorage(cellContext, { settings });
+    await seedStorage(TihokaContext, { settings });
     await openCardCreatorInDictionary(universalPanel);
 
-    const settingsButtonVisible = await queryInPanel(universalPanel.page, '[data-cell-id="cc-settings"]');
+    const settingsButtonVisible = await queryInPanel(universalPanel.page, '[data-tihoka-id="cc-settings"]');
     expect(settingsButtonVisible, 'Card Creator settings button did not render').toBeTruthy();
-    await clickInPanel(universalPanel.page, '[data-cell-id="cc-settings"]');
+    await clickInPanel(universalPanel.page, '[data-tihoka-id="cc-settings"]');
 
     const firstLayer = await queryInPanel(
       universalPanel.page,
-      '[data-cell-id="card-creator-settings-layer"]',
+      '[data-tihoka-id="card-creator-settings-layer"]',
     );
     expect(firstLayer, 'Settings layer did not open on first click').toBeTruthy();
     await universalPanel.page.keyboard.press('Escape');
 
     await waitForPanelSelector(
       universalPanel.page,
-      '[data-cell-id="card-creator-settings-layer"]',
+      '[data-tihoka-id="card-creator-settings-layer"]',
       false,
       5_000,
     );
 
-    await clickInPanel(universalPanel.page, '[data-cell-id="cc-settings"]');
+    await clickInPanel(universalPanel.page, '[data-tihoka-id="cc-settings"]');
 
     const layer = await queryInPanel(
       universalPanel.page,
-      '[data-cell-id="card-creator-settings-layer"]',
+      '[data-tihoka-id="card-creator-settings-layer"]',
     );
     expect(layer, 'Settings layer did not reopen').toBeTruthy();
   });

@@ -1,5 +1,5 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
 const STREAMFLIX_PORT = 4321 + parseInt(process.env.PW_PORT_OFFSET || '0', 10);
 const STREAMFLIX_KEYS = [
@@ -31,25 +31,25 @@ async function writeTokenizeSettings(context: BrowserContext): Promise<void> {
 async function overlayTerms(page: Page): Promise<string[]> {
   return page.evaluate(() =>
     Array.from(
-      document.getElementById('cell-subtitle-root')
+      document.getElementById('Tihoka-subtitle-root')
         ?.shadowRoot
-        ?.querySelectorAll('[data-role="target"] .js-cell-token--word[data-cell-term]') ?? [],
-    ).map((el) => el.getAttribute('data-cell-term') ?? ''),
+        ?.querySelectorAll('[data-role="target"] .js-Tihoka-token--word[data-tihoka-term]') ?? [],
+    ).map((el) => el.getAttribute('data-tihoka-term') ?? ''),
   );
 }
 
 async function overlayTokenClass(page: Page, term: string): Promise<string | null> {
   return page.evaluate((t) => {
-    const el = document.getElementById('cell-subtitle-root')
+    const el = document.getElementById('Tihoka-subtitle-root')
       ?.shadowRoot
-      ?.querySelector(`[data-role="target"] .js-cell-token[data-cell-term="${t}"]`);
+      ?.querySelector(`[data-role="target"] .js-Tihoka-token[data-tihoka-term="${t}"]`);
     return el ? (el as HTMLElement).className : null;
   }, term);
 }
 
 async function selectOverlayText(page: Page): Promise<boolean> {
   return page.evaluate(() => {
-    const line = document.getElementById('cell-subtitle-root')
+    const line = document.getElementById('Tihoka-subtitle-root')
       ?.shadowRoot
       ?.querySelector('[data-role="target"] span');
     if (!line || !line.firstChild) return false;
@@ -65,24 +65,24 @@ async function selectOverlayText(page: Page): Promise<boolean> {
 async function panelWordTerms(page: Page): Promise<string[]> {
   return page.evaluate(() =>
     Array.from(
-      document.querySelector('[data-cell-split-view="panel"]')
+      document.querySelector('[data-tihoka-split-view="panel"]')
         ?.shadowRoot
-        ?.querySelectorAll('[data-cell-id="cue-target-text"] .js-cell-token--word[data-cell-term]') ?? [],
-    ).map((el) => el.getAttribute('data-cell-term') ?? ''),
+        ?.querySelectorAll('[data-tihoka-id="cue-target-text"] .js-Tihoka-token--word[data-tihoka-term]') ?? [],
+    ).map((el) => el.getAttribute('data-tihoka-term') ?? ''),
   );
 }
 
 async function selectPanelCueWithWords(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const cues = Array.from(
-      document.querySelector('[data-cell-split-view="panel"]')
+      document.querySelector('[data-tihoka-split-view="panel"]')
         ?.shadowRoot
-        ?.querySelectorAll('[data-cell-id="cue-target-text"]') ?? [],
+        ?.querySelectorAll('[data-tihoka-id="cue-target-text"]') ?? [],
     );
-    const cue = cues.find((el) => el.querySelector('.js-cell-token--word[data-cell-term]'));
+    const cue = cues.find((el) => el.querySelector('.js-Tihoka-token--word[data-tihoka-term]'));
     if (!cue || !cue.firstChild) return [];
-    const terms = Array.from(cue.querySelectorAll('.js-cell-token--word[data-cell-term]'))
-      .map((el) => el.getAttribute('data-cell-term') ?? '');
+    const terms = Array.from(cue.querySelectorAll('.js-Tihoka-token--word[data-tihoka-term]'))
+      .map((el) => el.getAttribute('data-tihoka-term') ?? '');
     const range = document.createRange();
     range.selectNodeContents(cue);
     const sel = window.getSelection()!;
@@ -95,8 +95,8 @@ async function selectPanelCueWithWords(page: Page): Promise<string[]> {
 async function panelWordPoint(page: Page, term: string): Promise<{ x: number; y: number } | null> {
   return page.evaluate((t) => {
     const el = document
-      .querySelector('[data-cell-split-view="panel"]')
-      ?.shadowRoot?.querySelector(`.js-cell-token--word[data-cell-term="${t}"]`);
+      .querySelector('[data-tihoka-split-view="panel"]')
+      ?.shadowRoot?.querySelector(`.js-Tihoka-token--word[data-tihoka-term="${t}"]`);
     if (!el) return null;
     const rect = (el as HTMLElement).getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return null;
@@ -108,9 +108,9 @@ async function panelTokenClasses(page: Page, term: string): Promise<string[]> {
   return page.evaluate(
     (t) =>
       Array.from(
-        document.querySelector('[data-cell-split-view="panel"]')
+        document.querySelector('[data-tihoka-split-view="panel"]')
           ?.shadowRoot
-          ?.querySelectorAll(`.js-cell-token--word[data-cell-term="${t}"]`) ?? [],
+          ?.querySelectorAll(`.js-Tihoka-token--word[data-tihoka-term="${t}"]`) ?? [],
       ).map((el) => (el as HTMLElement).className),
     term,
   );
@@ -129,8 +129,8 @@ async function prepareVideo(page: Page): Promise<void> {
 }
 
 test.describe('bulk status via selection', () => {
-  test('selecting subtitle overlay tokens + status key updates them', async ({ cellContext, streamFlixPage }) => {
-    await writeTokenizeSettings(cellContext);
+  test('selecting subtitle overlay tokens + status key updates them', async ({ TihokaContext, streamFlixPage }) => {
+    await writeTokenizeSettings(TihokaContext);
     await streamFlixPage.reload({ waitUntil: 'networkidle' });
     await prepareVideo(streamFlixPage);
 
@@ -144,12 +144,12 @@ test.describe('bulk status via selection', () => {
       await expect.poll(
         async () => (await overlayTokenClass(streamFlixPage, term)) ?? '',
         { timeout: 15_000 },
-      ).toContain('js-cell-token--status-tracking');
+      ).toContain('js-Tihoka-token--status-tracking');
     }
   });
 
-  test('selecting split-view panel cue tokens + status key updates them', async ({ cellContext, streamFlixPage }) => {
-    await writeTokenizeSettings(cellContext);
+  test('selecting split-view panel cue tokens + status key updates them', async ({ TihokaContext, streamFlixPage }) => {
+    await writeTokenizeSettings(TihokaContext);
     await streamFlixPage.reload({ waitUntil: 'networkidle' });
     await prepareVideo(streamFlixPage);
 
@@ -165,7 +165,7 @@ test.describe('bulk status via selection', () => {
       await expect.poll(
         async () => {
           const classes = await panelTokenClasses(streamFlixPage, term);
-          return classes.length > 0 && classes.every((c) => c.includes('js-cell-token--status-known'));
+          return classes.length > 0 && classes.every((c) => c.includes('js-Tihoka-token--status-known'));
         },
         { timeout: 15_000 },
       ).toBe(true);
@@ -174,8 +174,8 @@ test.describe('bulk status via selection', () => {
     expect(await streamFlixPage.evaluate(() => window.getSelection()?.isCollapsed ?? true)).toBe(true);
   });
 
-  test('hovering a split-view panel token + status key updates that word', async ({ cellContext, streamFlixPage }) => {
-    await writeTokenizeSettings(cellContext);
+  test('hovering a split-view panel token + status key updates that word', async ({ TihokaContext, streamFlixPage }) => {
+    await writeTokenizeSettings(TihokaContext);
     await streamFlixPage.reload({ waitUntil: 'networkidle' });
     await prepareVideo(streamFlixPage);
 
@@ -194,7 +194,7 @@ test.describe('bulk status via selection', () => {
     await expect.poll(
       async () => {
         const classes = await panelTokenClasses(streamFlixPage, term!);
-        return classes.length > 0 && classes.every((c) => c.includes('js-cell-token--status-known'));
+        return classes.length > 0 && classes.every((c) => c.includes('js-Tihoka-token--status-known'));
       },
       { timeout: 15_000 },
     ).toBe(true);

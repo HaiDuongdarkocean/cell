@@ -41,13 +41,13 @@ test.describe('Design System Showcase', () => {
 
     // Custom section visible and the "New mode" button is offered.
     await expect(showcasePage.getByRole('heading', { name: 'Custom' })).toBeVisible();
-    await expect(showcasePage.locator('[data-cell-id="new-mode-button"]')).toBeVisible();
+    await expect(showcasePage.locator('[data-tihoka-id="new-mode-button"]')).toBeVisible();
 
     // Advanced section is collapsed by default; toggle it on.
-    const advancedToggle = showcasePage.locator('[data-cell-id="advanced-toggle"]');
+    const advancedToggle = showcasePage.locator('[data-tihoka-id="advanced-toggle"]');
     await expect(advancedToggle).toBeVisible();
 
-    const advancedSection = showcasePage.locator('[data-cell-id="advanced-settings"]');
+    const advancedSection = showcasePage.locator('[data-tihoka-id="advanced-settings"]');
     await expect(advancedSection).not.toBeVisible();
 
     await advancedToggle.click();
@@ -63,22 +63,22 @@ test.describe('Design System Showcase', () => {
 
     await expect(showcasePage.getByRole('heading', { name: 'Study Modes Panel', level: 1 })).toBeVisible();
 
-    await showcasePage.locator('[data-cell-id="new-mode-button"]').click();
+    await showcasePage.locator('[data-tihoka-id="new-mode-button"]').click();
 
     await expect(showcasePage.getByRole('dialog')).toBeVisible();
 
-    await showcasePage.locator('[data-cell-id="builder-title-input"]').fill('Shadowing');
+    await showcasePage.locator('[data-tihoka-id="builder-title-input"]').fill('Shadowing');
 
     // Add an extra step via the cue strip, then save.
-    await showcasePage.locator('[data-cell-id="cue-add-step"]').click();
+    await showcasePage.locator('[data-tihoka-id="cue-add-step"]').click();
 
-    await showcasePage.locator('[data-cell-id="builder-save"]').click();
+    await showcasePage.locator('[data-tihoka-id="builder-save"]').click();
 
     await expect(showcasePage.getByRole('dialog')).not.toBeVisible();
 
     await expect(showcasePage.getByLabel('Custom study modes')).toContainText('Shadowing');
     await expect(
-      showcasePage.locator('[data-cell-id^="mode-card-custom-"]', { hasText: 'Shadowing' }),
+      showcasePage.locator('[data-tihoka-id^="mode-card-custom-"]', { hasText: 'Shadowing' }),
     ).toHaveCount(1);
   });
 });

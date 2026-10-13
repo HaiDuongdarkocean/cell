@@ -1,19 +1,19 @@
 import { expect, type Page } from '@playwright/test';
 import type { BrowserContext } from '@playwright/test';
-import { test } from './fixtures/cellEnvironment.fixture';
+import { test } from './fixtures/TihokaEnvironment.fixture';
 
 /**
  * Contract (spec docs/specs/lookup-latency-marks.md):
- *   Given: the E2E build (CELL_E2E=1 → isCellDebug gate on)
+ *   Given: the E2E build (Tihoka_E2E=1 → isTihokaDebug gate on)
  *   When:  a lookup completes and the audio tab renders rows
- *   Then:  User Timing measures `cell:lookup:*` and `cell:audio:*` exist with
+ *   Then:  User Timing measures `Tihoka:lookup:*` and `Tihoka:audio:*` exist with
  *          duration >= 0 — read from the page's performance buffer, with the
  *          helper's console.debug summary as fallback if the isolated world
  *          does not share the page timeline.
  */
 
 const WORD_RE = /[A-Za-zÀ-ɏ']+/;
-const PERF_LINE = /\[perf\] (cell:(?:lookup|audio):[^\s]+): ([\d.]+)ms/;
+const PERF_LINE = /\[perf\] (Tihoka:(?:lookup|audio):[^\s]+): ([\d.]+)ms/;
 
 async function seedDictionary(
   context: BrowserContext,
@@ -139,7 +139,7 @@ async function seedEspeakAudioSettings(context: BrowserContext): Promise<void> {
 }
 
 async function wordPoint(page: Page, word: string): Promise<{ x: number; y: number } | null> {
-  const cue = page.locator('[data-cell-id="cue-target-text"]').filter({ hasText: new RegExp(word, 'i') }).first();
+  const cue = page.locator('[data-tihoka-id="cue-target-text"]').filter({ hasText: new RegExp(word, 'i') }).first();
   return cue.evaluate((el, args) => {
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     const re = new RegExp(args.wordReSource, 'g');
@@ -163,14 +163,14 @@ async function wordPoint(page: Page, word: string): Promise<{ x: number; y: numb
 }
 
 /** Click through shadow DOM: find the first element matching `selector` inside
- *  any `.js-cell-popup-host` shadow root and dispatch a real click point. */
+ *  any `.js-Tihoka-popup-host` shadow root and dispatch a real click point. */
 async function clickInPopupShadow(page: Page, selector: string): Promise<boolean> {
   const point = await page.evaluate((sel) => {
     const hosts = [
-      ...Array.from(document.querySelectorAll('.js-cell-popup-host')),
+      ...Array.from(document.querySelectorAll('.js-Tihoka-popup-host')),
       ...Array.from(
-        document.getElementById('cell-subtitle-root')?.shadowRoot
-          ?.querySelectorAll('.js-cell-popup-host') ?? [],
+        document.getElementById('Tihoka-subtitle-root')?.shadowRoot
+          ?.querySelectorAll('.js-Tihoka-popup-host') ?? [],
       ),
     ];
     for (const host of hosts) {
@@ -187,24 +187,24 @@ async function clickInPopupShadow(page: Page, selector: string): Promise<boolean
   return true;
 }
 
-async function cellMeasures(page: Page, prefix: 'lookup' | 'audio'): Promise<Array<{ name: string; duration: number }>> {
+async function TihokaMeasures(page: Page, prefix: 'lookup' | 'audio'): Promise<Array<{ name: string; duration: number }>> {
   return page.evaluate((p) => {
     return performance
       .getEntriesByType('measure')
-      .filter((e) => e.name.startsWith(`cell:${p}:`))
+      .filter((e) => e.name.startsWith(`Tihoka:${p}:`))
       .map((e) => ({ name: e.name, duration: e.duration }));
   }, prefix);
 }
 
 test.describe('lookup + audio latency marks', () => {
-  test.beforeEach(async ({ cellContext }) => {
-    await seedDictionary(cellContext, 'en', [
+  test.beforeEach(async ({ TihokaContext }) => {
+    await seedDictionary(TihokaContext, 'en', [
       { term: 'silence', pos: 'noun', definition: 'the complete absence of sound or noise' },
     ]);
-    await seedEspeakAudioSettings(cellContext);
+    await seedEspeakAudioSettings(TihokaContext);
   });
 
-  test('emits cell:lookup:* and cell:audio:* measures on the real hot path', async ({ streamFlixPage }) => {
+  test('emits Tihoka:lookup:* and Tihoka:audio:* measures on the real hot path', async ({ streamFlixPage }) => {
     test.setTimeout(180_000);
     const consoleMeasures = new Map<string, number>();
     streamFlixPage.on('console', (msg) => {
@@ -213,41 +213,41 @@ test.describe('lookup + audio latency marks', () => {
     });
 
     await streamFlixPage.keyboard.press('g');
-    const cueTexts = streamFlixPage.locator('[data-cell-id="cue-target-text"]');
+    const cueTexts = streamFlixPage.locator('[data-tihoka-id="cue-target-text"]');
     await expect(cueTexts.first()).toBeVisible({ timeout: 15_000 });
 
     const point = await wordPoint(streamFlixPage, 'silence');
     expect(point).not.toBeNull();
     await streamFlixPage.mouse.click(point!.x, point!.y);
-    await expect(streamFlixPage.locator('.js-cell-popup-host')).toHaveCount(1, { timeout: 10_000 });
+    await expect(streamFlixPage.locator('.js-Tihoka-popup-host')).toHaveCount(1, { timeout: 10_000 });
     await expect(
-      streamFlixPage.locator('.js-cell-popup-host').locator('[data-allow-lookup]'),
+      streamFlixPage.locator('.js-Tihoka-popup-host').locator('[data-allow-lookup]'),
     ).toContainText(/absence/i, { timeout: 15_000 });
 
     const lookupDone = async () => {
-      const entries = await cellMeasures(streamFlixPage, 'lookup');
-      return entries.length > 0 || [...consoleMeasures.keys()].some((k) => k.startsWith('cell:lookup:'));
+      const entries = await TihokaMeasures(streamFlixPage, 'lookup');
+      return entries.length > 0 || [...consoleMeasures.keys()].some((k) => k.startsWith('Tihoka:lookup:'));
     };
     await expect.poll(lookupDone, { timeout: 15_000 }).toBe(true);
 
-    const clicked = await clickInPopupShadow(streamFlixPage, '[data-cell-id="dictionary-tab-audio"]');
+    const clicked = await clickInPopupShadow(streamFlixPage, '[data-tihoka-id="dictionary-tab-audio"]');
     expect(clicked).toBe(true);
 
     const audioDone = async () => {
-      const entries = await cellMeasures(streamFlixPage, 'audio');
-      return entries.length > 0 || [...consoleMeasures.keys()].some((k) => k.startsWith('cell:audio:'));
+      const entries = await TihokaMeasures(streamFlixPage, 'audio');
+      return entries.length > 0 || [...consoleMeasures.keys()].some((k) => k.startsWith('Tihoka:audio:'));
     };
     await expect.poll(audioDone, { timeout: 90_000 }).toBe(true);
 
-    const lookupEntries = await cellMeasures(streamFlixPage, 'lookup');
-    const audioEntries = await cellMeasures(streamFlixPage, 'audio');
+    const lookupEntries = await TihokaMeasures(streamFlixPage, 'lookup');
+    const audioEntries = await TihokaMeasures(streamFlixPage, 'audio');
     const all = [
       ...lookupEntries,
       ...audioEntries,
       ...[...consoleMeasures.entries()].map(([name, duration]) => ({ name, duration })),
     ];
-    expect(all.some((e) => e.name.startsWith('cell:lookup:') && e.duration >= 0)).toBe(true);
-    expect(all.some((e) => e.name.startsWith('cell:audio:') && e.duration >= 0)).toBe(true);
+    expect(all.some((e) => e.name.startsWith('Tihoka:lookup:') && e.duration >= 0)).toBe(true);
+    expect(all.some((e) => e.name.startsWith('Tihoka:audio:') && e.duration >= 0)).toBe(true);
     for (const e of all) {
       console.log(`[latency-marks] ${e.name} = ${e.duration.toFixed(1)}ms`);
     }

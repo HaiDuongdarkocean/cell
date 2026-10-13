@@ -1,21 +1,21 @@
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { test as base } from '../cellEnvironment.fixture';
+import { test as base } from '../TihokaEnvironment.fixture';
 
 /**
- * Stable data-cell-id selectors for the Universal Panel and its sub-features.
+ * Stable data-tihoka-id selectors for the Universal Panel and its sub-features.
  */
 export const SELECTORS = {
-  orbitalBadge: '[data-cell-id="orbital-badge"]',
-  host: '#cell-universal-panel-host',
-  tabDictionary: '[data-cell-id="universal-panel-tab-dictionary"]',
-  tabStudyModes: '[data-cell-id="universal-panel-tab-studyModes"]',
-  tabSettings: '[data-cell-id="universal-panel-tab-settings"]',
-  tabVocabulary: '[data-cell-id="universal-panel-tab-vocabulary"]',
-  tabPlaylist: '[data-cell-id="universal-panel-tab-playlist"]',
-  tabRecap: '[data-cell-id="universal-panel-tab-recap"]',
-  dictionarySearchInput: 'input[data-cell-id="dictionary-search-input"]',
-  cardCreatorMobileSheet: '[data-cell-id="card-creator-mobile-sheet"]',
+  orbitalBadge: '[data-tihoka-id="orbital-badge"]',
+  host: '#Tihoka-universal-panel-host',
+  tabDictionary: '[data-tihoka-id="universal-panel-tab-dictionary"]',
+  tabStudyModes: '[data-tihoka-id="universal-panel-tab-studyModes"]',
+  tabSettings: '[data-tihoka-id="universal-panel-tab-settings"]',
+  tabVocabulary: '[data-tihoka-id="universal-panel-tab-vocabulary"]',
+  tabPlaylist: '[data-tihoka-id="universal-panel-tab-playlist"]',
+  tabRecap: '[data-tihoka-id="universal-panel-tab-recap"]',
+  dictionarySearchInput: 'input[data-tihoka-id="dictionary-search-input"]',
+  cardCreatorMobileSheet: '[data-tihoka-id="card-creator-mobile-sheet"]',
 } as const;
 
 export type UniversalPanelTab = 'dictionary' | 'studyModes' | 'settings' | 'vocabulary' | 'playlist' | 'recap';
@@ -62,7 +62,7 @@ export class UniversalPanelActor {
         new Promise<boolean>((resolve) => {
           const startTime = Date.now();
           const tick = (): void => {
-            const host = document.getElementById('cell-universal-panel-host');
+            const host = document.getElementById('Tihoka-universal-panel-host');
             const root = host?.shadowRoot;
             const tabEl = root?.querySelector(sel) as HTMLElement | null;
             if (tabEl) {
@@ -95,10 +95,10 @@ export class UniversalPanelActor {
         new Promise<boolean>((resolve) => {
           const startTime = Date.now();
           const tick = (): void => {
-            const host = document.getElementById('cell-universal-panel-host');
+            const host = document.getElementById('Tihoka-universal-panel-host');
             const root = host?.shadowRoot;
             const input = root?.querySelector(
-              'input[data-cell-id="dictionary-search-input"]',
+              'input[data-tihoka-id="dictionary-search-input"]',
             ) as HTMLInputElement | null;
             if (input) {
               input.focus();
@@ -141,10 +141,10 @@ export class UniversalPanelActor {
         new Promise<boolean>((resolve) => {
           const startTime = Date.now();
           const tick = (): void => {
-            const host = document.getElementById('cell-universal-panel-host');
+            const host = document.getElementById('Tihoka-universal-panel-host');
             const root = host?.shadowRoot;
             const input = root?.querySelector(
-              'input[data-cell-id="dictionary-search-input"]',
+              'input[data-tihoka-id="dictionary-search-input"]',
             ) as HTMLInputElement | null;
             if (input) {
               input.focus();
@@ -172,10 +172,10 @@ export class UniversalPanelActor {
    */
   async getDictionarySearchValue(): Promise<string | null> {
     return this.page.evaluate(() => {
-      const host = document.getElementById('cell-universal-panel-host');
+      const host = document.getElementById('Tihoka-universal-panel-host');
       const root = host?.shadowRoot;
       const input = root?.querySelector(
-        'input[data-cell-id="dictionary-search-input"]',
+        'input[data-tihoka-id="dictionary-search-input"]',
       ) as HTMLInputElement | null;
       return input?.value ?? null;
     });
@@ -196,10 +196,10 @@ export class UniversalPanelActor {
     left: number;
   } | null> {
     return this.page.evaluate(() => {
-      const host = document.getElementById('cell-universal-panel-host');
+      const host = document.getElementById('Tihoka-universal-panel-host');
       const root = host?.shadowRoot;
       const sheet = root?.querySelector(
-        '[data-cell-id="card-creator-mobile-sheet"]',
+        '[data-tihoka-id="card-creator-mobile-sheet"]',
       ) as HTMLElement | null;
       return sheet?.getBoundingClientRect() ?? null;
     });

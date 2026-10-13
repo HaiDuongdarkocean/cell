@@ -25,7 +25,7 @@ const METRIC_VIEWPORTS = new Set(['1440x900', '390x844']);
 interface TriggerInfo {
   idx: number;
   kind: string;
-  cellId: string;
+  TihokaId: string;
   label: string;
 }
 
@@ -60,8 +60,8 @@ async function shot(page: Page, dir: string, name: string): Promise<string> {
 async function panelOpen(page: Page): Promise<boolean> {
   return page.evaluate(() => {
     const el = document
-      .getElementById('cell-universal-panel-host')
-      ?.shadowRoot?.querySelector('[data-cell-id="universal-panel"]');
+      .getElementById('Tihoka-universal-panel-host')
+      ?.shadowRoot?.querySelector('[data-tihoka-id="universal-panel"]');
     if (!el) return false;
     const r = el.getBoundingClientRect();
     return r.width > 50 && r.height > 50;
@@ -81,11 +81,11 @@ async function ensurePanelOpen(
 
 async function clickTab(page: Page, tab: Tab): Promise<string | null> {
   const used = await page.evaluate((t) => {
-    const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
+    const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
     if (!root) return null;
     const candidates = [
-      `[data-cell-id="universal-panel-tab-${t}"]`,
-      `[data-cell-id="universal-panel-mobile-tab-${t}"]`,
+      `[data-tihoka-id="universal-panel-tab-${t}"]`,
+      `[data-tihoka-id="universal-panel-mobile-tab-${t}"]`,
     ];
     for (const sel of candidates) {
       const el = root.querySelector(sel) as HTMLElement | null;
@@ -103,8 +103,8 @@ async function clickTab(page: Page, tab: Tab): Promise<string | null> {
         page.evaluate(
           (t) =>
             !!document
-              .getElementById('cell-universal-panel-host')
-              ?.shadowRoot?.querySelector(`[data-cell-id="universal-panel-content-${t}"]`),
+              .getElementById('Tihoka-universal-panel-host')
+              ?.shadowRoot?.querySelector(`[data-tihoka-id="universal-panel-content-${t}"]`),
           tab,
         ),
       { timeout: 10_000 },
@@ -116,8 +116,8 @@ async function clickTab(page: Page, tab: Tab): Promise<string | null> {
 
 async function scrollPaneToBottom(page: Page, tab: Tab): Promise<string> {
   const result = await page.evaluate((t) => {
-    const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-    const pane = root?.querySelector(`[data-cell-id="universal-panel-content-${t}"]`);
+    const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+    const pane = root?.querySelector(`[data-tihoka-id="universal-panel-content-${t}"]`);
     if (!pane) return null;
     const all: Element[] = [pane, ...Array.from(pane.querySelectorAll('*'))];
     let best: Element | null = null;
@@ -134,7 +134,7 @@ async function scrollPaneToBottom(page: Page, tab: Tab): Promise<string> {
     if (!best) return 'none';
     best.scrollTop = best.scrollHeight;
     const el = best as HTMLElement;
-    return el.getAttribute('data-cell-id') ?? `${el.tagName.toLowerCase()}.${String(el.className).slice(0, 60)}`;
+    return el.getAttribute('data-tihoka-id') ?? `${el.tagName.toLowerCase()}.${String(el.className).slice(0, 60)}`;
   }, tab);
   if (result === null) return 'missing';
   await page.waitForTimeout(300);
@@ -143,8 +143,8 @@ async function scrollPaneToBottom(page: Page, tab: Tab): Promise<string> {
 
 async function discoverMenuTriggers(page: Page, tab: Tab): Promise<TriggerInfo[]> {
   return page.evaluate((t) => {
-    const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-    const pane = root?.querySelector(`[data-cell-id="universal-panel-content-${t}"]`);
+    const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+    const pane = root?.querySelector(`[data-tihoka-id="universal-panel-content-${t}"]`);
     if (!pane || !root) return [];
     root.querySelectorAll('[data-uxa-idx]').forEach((el) => el.removeAttribute('data-uxa-idx'));
     const vis = (el: Element): boolean => {
@@ -153,7 +153,7 @@ async function discoverMenuTriggers(page: Page, tab: Tab): Promise<TriggerInfo[]
       return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden';
     };
     const resolved = new Set<Element>();
-    const out: { idx: number; kind: string; cellId: string; label: string }[] = [];
+    const out: { idx: number; kind: string; TihokaId: string; label: string }[] = [];
     const add = (el: Element | null, kind: string): void => {
       if (!el || resolved.has(el) || !vis(el)) return;
       resolved.add(el);
@@ -162,18 +162,18 @@ async function discoverMenuTriggers(page: Page, tab: Tab): Promise<TriggerInfo[]
       out.push({
         idx,
         kind,
-        cellId: el.getAttribute('data-cell-id') ?? '',
+        TihokaId: el.getAttribute('data-tihoka-id') ?? '',
         label: (el.getAttribute('aria-label') ?? el.textContent ?? '').trim().slice(0, 60),
       });
     };
     pane.querySelectorAll('[aria-haspopup]').forEach((el) => add(el, `haspopup:${el.getAttribute('aria-haspopup')}`));
     pane
-      .querySelectorAll('[data-cell-id$="-menu"],[data-cell-id$="-select"],[data-cell-id$="-filter"],[data-cell-id$="-sort"]')
+      .querySelectorAll('[data-tihoka-id$="-menu"],[data-tihoka-id$="-select"],[data-tihoka-id$="-filter"],[data-tihoka-id$="-sort"]')
       .forEach((el) => {
         const inner = el.matches('button,[role="button"],[aria-haspopup]')
           ? el
           : el.querySelector('button,[aria-haspopup],[role="button"]');
-        add(inner ?? el, `cell-id:${el.getAttribute('data-cell-id') ?? ''}`);
+        add(inner ?? el, `Tihoka-id:${el.getAttribute('data-tihoka-id') ?? ''}`);
       });
     pane.querySelectorAll('button[aria-expanded]').forEach((el) => add(el, 'expander'));
     return out;
@@ -182,13 +182,13 @@ async function discoverMenuTriggers(page: Page, tab: Tab): Promise<TriggerInfo[]
 
 async function overlayOpen(page: Page): Promise<boolean> {
   return page.evaluate(() => {
-    const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
+    const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
     if (!root) return false;
     const sels = [
       '[role="menu"]',
       '[role="listbox"]',
-      '[data-cell-id="universal-panel-profile-dialog"]',
-      '[data-cell-id="universal-panel-tools-sheet"]',
+      '[data-tihoka-id="universal-panel-profile-dialog"]',
+      '[data-tihoka-id="universal-panel-tools-sheet"]',
     ];
     return sels.some((sel) => {
       const el = root.querySelector(sel);
@@ -210,7 +210,7 @@ async function collectMetrics(page: Page, tab: Tab, viewportLabel: string): Prom
   const data = await page.evaluate(
     ({ t }) => {
       const coarse = window.matchMedia('(pointer: coarse)').matches;
-      const host = document.getElementById('cell-universal-panel-host');
+      const host = document.getElementById('Tihoka-universal-panel-host');
       const root = host?.shadowRoot;
       if (!root) return null;
       // Element box intersected with the padding boxes of every clipping
@@ -247,7 +247,7 @@ async function collectMetrics(page: Page, tab: Tab, viewportLabel: string): Prom
         const s = getComputedStyle(el);
         const r = el.getBoundingClientRect();
         return {
-          cellId: el.getAttribute('data-cell-id') ?? '',
+          TihokaId: el.getAttribute('data-tihoka-id') ?? '',
           tag: el.tagName.toLowerCase(),
           fontSize: s.fontSize,
           fontWeight: s.fontWeight,
@@ -263,13 +263,13 @@ async function collectMetrics(page: Page, tab: Tab, viewportLabel: string): Prom
         };
       };
       const describe = (el: Element): string =>
-        `${el.getAttribute('data-cell-id') || el.tagName.toLowerCase()} "${(el.getAttribute('aria-label') ?? el.textContent ?? '').trim().slice(0, 40)}"`;
-      const panel = root.querySelector('[data-cell-id="universal-panel"]');
-      const header = root.querySelector('[data-cell-id="universal-panel-header"]');
-      const pane = root.querySelector(`[data-cell-id="universal-panel-content-${t}"]`);
+        `${el.getAttribute('data-tihoka-id') || el.tagName.toLowerCase()} "${(el.getAttribute('aria-label') ?? el.textContent ?? '').trim().slice(0, 40)}"`;
+      const panel = root.querySelector('[data-tihoka-id="universal-panel"]');
+      const header = root.querySelector('[data-tihoka-id="universal-panel-header"]');
+      const pane = root.querySelector(`[data-tihoka-id="universal-panel-content-${t}"]`);
       if (!panel || !pane) return null;
-      const desktopBar = root.querySelector('[data-cell-id="universal-panel-tab-bar"]');
-      const bottomNav = root.querySelector('[data-cell-id="universal-panel-bottom-nav"]');
+      const desktopBar = root.querySelector('[data-tihoka-id="universal-panel-tab-bar"]');
+      const bottomNav = root.querySelector('[data-tihoka-id="universal-panel-bottom-nav"]');
       const nav = desktopBar && vis(desktopBar) ? desktopBar : bottomNav;
       const navItems = nav ? Array.from(nav.querySelectorAll('button,[role="tab"]')).filter(vis).map(snap) : [];
       const cardCandidates = Array.from(
@@ -344,7 +344,7 @@ async function collectMetrics(page: Page, tab: Tab, viewportLabel: string): Prom
 }
 
 interface A11yStructure {
-  navs?: { cellId: string | null; tag: string; ariaLabel: string | null; visible: boolean; itemCount: number; currentValue: string | null }[];
+  navs?: { TihokaId: string | null; tag: string; ariaLabel: string | null; visible: boolean; itemCount: number; currentValue: string | null }[];
   panes?: { role: string | null; ariaLabel: string | null; hidden: boolean }[];
   domOrder?: { sidebarBeforeBody: string; bodyBeforeBottomNav: string; lastFocusableInBottomNav: boolean };
   advancedSwitch?: {
@@ -358,18 +358,18 @@ interface A11yStructure {
     controlledLabel: string | null;
   } | null;
   radiogroups?: { ariaLabel: string | null; ariaLabelledby: string | null; radios: number }[];
-  statusRegions?: { cellId: string | null; ariaAtomic: string | null; visible: boolean; text: string }[];
+  statusRegions?: { TihokaId: string | null; ariaAtomic: string | null; visible: boolean; text: string }[];
   ariaLiveInActivePane?: number | null;
-  initialFocus?: { insidePanel: boolean; visible: boolean; cellId: string | null; label: string };
+  initialFocus?: { insidePanel: boolean; visible: boolean; TihokaId: string | null; label: string };
   error?: string;
   [key: string]: unknown;
 }
 
 async function collectA11yStructure(page: Page): Promise<A11yStructure> {
   return page.evaluate(() => {
-    const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
+    const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
     if (!root) return { error: 'no shadow root' } as A11yStructure;
-    const panel = root.querySelector('[data-cell-id="universal-panel"]');
+    const panel = root.querySelector('[data-tihoka-id="universal-panel"]');
     if (!panel) return { error: 'no panel' } as A11yStructure;
     const vis = (el: Element): boolean => {
       const r = el.getBoundingClientRect();
@@ -381,7 +381,7 @@ async function collectA11yStructure(page: Page): Promise<A11yStructure> {
     const navs = Array.from(panel.querySelectorAll('nav,[role="navigation"]')).map((el) => {
       const current = el.querySelector('[aria-current]');
       return {
-        cellId: attr(el, 'data-cell-id'),
+        TihokaId: attr(el, 'data-tihoka-id'),
         tag: el.tagName.toLowerCase(),
         ariaLabel: attr(el, 'aria-label'),
         visible: vis(el),
@@ -389,7 +389,7 @@ async function collectA11yStructure(page: Page): Promise<A11yStructure> {
         currentValue: attr(current, 'aria-current'),
       };
     });
-    const contentWrap = panel.querySelector('[data-cell-id^="universal-panel-content-"]');
+    const contentWrap = panel.querySelector('[data-tihoka-id^="universal-panel-content-"]');
     const panes = contentWrap
       ? Array.from(contentWrap.children).map((el) => ({
           role: attr(el, 'role'),
@@ -397,9 +397,9 @@ async function collectA11yStructure(page: Page): Promise<A11yStructure> {
           hidden: el.hasAttribute('hidden'),
         }))
       : [];
-    const sidebar = panel.querySelector('[data-cell-id="universal-panel-tab-bar"]');
-    const bottomNav = panel.querySelector('[data-cell-id="universal-panel-bottom-nav"]');
-    const headerEl = panel.querySelector('[data-cell-id="universal-panel-header"]');
+    const sidebar = panel.querySelector('[data-tihoka-id="universal-panel-tab-bar"]');
+    const bottomNav = panel.querySelector('[data-tihoka-id="universal-panel-bottom-nav"]');
+    const headerEl = panel.querySelector('[data-tihoka-id="universal-panel-header"]');
     const body = headerEl?.parentElement ?? null;
     const pos = (a: Element | null, b: Element | null): string => {
       if (!a || !b) return 'unknown';
@@ -432,7 +432,7 @@ async function collectA11yStructure(page: Page): Promise<A11yStructure> {
       radios: el.querySelectorAll('[role="radio"]').length,
     }));
     const statusRegions = Array.from(panel.querySelectorAll('[role="status"]')).map((el) => ({
-      cellId: attr(el, 'data-cell-id'),
+      TihokaId: attr(el, 'data-tihoka-id'),
       ariaAtomic: attr(el, 'aria-atomic'),
       visible: vis(el),
       text: (el.textContent ?? '').trim().slice(0, 120),
@@ -442,10 +442,10 @@ async function collectA11yStructure(page: Page): Promise<A11yStructure> {
       ? {
           insidePanel: panel.contains(ae),
           visible: vis(ae),
-          cellId: attr(ae, 'data-cell-id'),
+          TihokaId: attr(ae, 'data-tihoka-id'),
           label: (attr(ae, 'aria-label') ?? ae.textContent ?? '').trim().slice(0, 60),
         }
-      : { insidePanel: false, visible: false, cellId: null, label: '' };
+      : { insidePanel: false, visible: false, TihokaId: null, label: '' };
     return {
       navs,
       panes,
@@ -471,12 +471,12 @@ async function focusTrail(page: Page, steps: number): Promise<string[]> {
   const seq: string[] = [];
   for (let i = 0; i < steps; i += 1) {
     const label = await page.evaluate(() => {
-      const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-      const panel = root?.querySelector('[data-cell-id="universal-panel"]');
+      const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+      const panel = root?.querySelector('[data-tihoka-id="universal-panel"]');
       const ae = root?.activeElement as HTMLElement | null;
       if (!ae) return 'none';
       if (panel && !panel.contains(ae)) return 'OUTSIDE-PANEL';
-      const id = ae.getAttribute('data-cell-id') || ae.tagName.toLowerCase();
+      const id = ae.getAttribute('data-tihoka-id') || ae.tagName.toLowerCase();
       const txt = (ae.getAttribute('aria-label') ?? ae.textContent ?? '').trim().slice(0, 40);
       return `${id}|${txt}`;
     });
@@ -492,8 +492,8 @@ async function hoverFirstPrimaryButton(
   tab: Tab,
 ): Promise<{ x: number; y: number; id: string; label: string } | null> {
   return page.evaluate((t) => {
-    const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-    const pane = root?.querySelector(`[data-cell-id="universal-panel-content-${t}"]`);
+    const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+    const pane = root?.querySelector(`[data-tihoka-id="universal-panel-content-${t}"]`);
     if (!pane) return null;
     const btns = Array.from(pane.querySelectorAll('button')).filter((b) => {
       const r = b.getBoundingClientRect();
@@ -510,7 +510,7 @@ async function hoverFirstPrimaryButton(
     return {
       x: r.x + r.width / 2,
       y: r.y + r.height / 2,
-      id: target.getAttribute('data-cell-id') ?? '',
+      id: target.getAttribute('data-tihoka-id') ?? '',
       label: (target.getAttribute('aria-label') ?? target.textContent ?? '').trim().slice(0, 60),
     };
   }, tab);
@@ -542,7 +542,7 @@ test.describe('universal panel UX audit', () => {
       if (list.length === 0) lines.push('- none found');
       for (const trg of list) {
         lines.push(
-          `- kind=\`${trg.kind}\` cell-id=\`${trg.cellId || '(none)'}\` label="${trg.label}"`,
+          `- kind=\`${trg.kind}\` Tihoka-id=\`${trg.TihokaId || '(none)'}\` label="${trg.label}"`,
         );
       }
       lines.push('');
@@ -613,7 +613,7 @@ test.describe('universal panel UX audit', () => {
     await ensurePanelOpen(page, universalPanel);
 
     // Sidebar tab hover (desktop sidebar only).
-    const sideTab = page.locator('[data-cell-id="universal-panel-tab-vocabulary"]');
+    const sideTab = page.locator('[data-tihoka-id="universal-panel-tab-vocabulary"]');
     if (await sideTab.isVisible().catch(() => false)) {
       await sideTab.hover();
       await page.waitForTimeout(250);
@@ -644,7 +644,7 @@ test.describe('universal panel UX audit', () => {
 
       // Focus: real click on the nav item, then Tab → :focus-visible on next control.
       try {
-        const navSel = `[data-cell-id="universal-panel-tab-${tab}"]`;
+        const navSel = `[data-tihoka-id="universal-panel-tab-${tab}"]`;
         const navItem = page.locator(navSel);
         if (await navItem.isVisible().catch(() => false)) {
           await navItem.click();
@@ -683,7 +683,7 @@ test.describe('universal panel UX audit', () => {
             await clickTab(page, tab);
           }
         } catch (err) {
-          failures.push(`desktop/${tab}: trigger ${trg.idx} (${trg.cellId || trg.kind}) failed — ${String(err)}`);
+          failures.push(`desktop/${tab}: trigger ${trg.idx} (${trg.TihokaId || trg.kind}) failed — ${String(err)}`);
           if (!(await panelOpen(page))) {
             await ensurePanelOpen(page, universalPanel);
             await clickTab(page, tab);
@@ -693,7 +693,7 @@ test.describe('universal panel UX audit', () => {
     }
 
     // Collapsed sidebar.
-    const collapse = page.locator('[data-cell-id="collapsible-sidebar-toggle"]');
+    const collapse = page.locator('[data-tihoka-id="collapsible-sidebar-toggle"]');
     if (await collapse.isVisible().catch(() => false)) {
       await collapse.click();
       await page.waitForTimeout(400);
@@ -705,7 +705,7 @@ test.describe('universal panel UX audit', () => {
     }
 
     // Profile dialog (only rendered when language profiles exist).
-    const profileBtn = page.locator('[data-cell-id="universal-panel-profile-button"]');
+    const profileBtn = page.locator('[data-tihoka-id="universal-panel-profile-button"]');
     if (await profileBtn.isVisible().catch(() => false)) {
       await profileBtn.click();
       await page.waitForTimeout(400);
@@ -729,7 +729,7 @@ test.describe('universal panel UX audit', () => {
     await page.waitForTimeout(400);
     await ensurePanelOpen(page, universalPanel);
 
-    const toolsBtn = page.locator('[data-cell-id="universal-panel-mobile-tools"]');
+    const toolsBtn = page.locator('[data-tihoka-id="universal-panel-mobile-tools"]');
     if (await toolsBtn.isVisible().catch(() => false)) {
       await toolsBtn.click();
       await page.waitForTimeout(500);
@@ -737,8 +737,8 @@ test.describe('universal panel UX audit', () => {
       const sheetOpen = await page.evaluate(
         () =>
           !!document
-            .getElementById('cell-universal-panel-host')
-            ?.shadowRoot?.querySelector('[data-cell-id="universal-panel-tools-sheet"]'),
+            .getElementById('Tihoka-universal-panel-host')
+            ?.shadowRoot?.querySelector('[data-tihoka-id="universal-panel-tools-sheet"]'),
       );
       if (!sheetOpen) failures.push('mobile: tools sheet did not render');
       await page.keyboard.press('Escape');
@@ -751,7 +751,7 @@ test.describe('universal panel UX audit', () => {
       failures.push('mobile: universal-panel-mobile-tools not visible at 390x844');
     }
 
-    const profileBtn = page.locator('[data-cell-id="universal-panel-profile-button"]');
+    const profileBtn = page.locator('[data-tihoka-id="universal-panel-profile-button"]');
     if (await profileBtn.isVisible().catch(() => false)) {
       await profileBtn.click();
       await page.waitForTimeout(400);
@@ -786,7 +786,7 @@ test.describe('universal panel UX audit', () => {
     await clickTab(page, 'studyModes');
     const desktop = await collectA11yStructure(page);
     metricsStore['a11y'] = { desktop };
-    const desktopNav = desktop.navs?.find((n) => n.cellId === 'universal-panel-tab-bar');
+    const desktopNav = desktop.navs?.find((n) => n.TihokaId === 'universal-panel-tab-bar');
     expect(desktopNav?.tag).toBe('nav');
     expect(desktopNav?.ariaLabel).toBeTruthy();
     expect(desktopNav?.currentValue).toBe('page');
@@ -816,7 +816,7 @@ test.describe('universal panel UX audit', () => {
     await clickTab(page, 'playlist');
     const playlist = await collectA11yStructure(page);
     metricsStore['a11y'] = { ...(metricsStore['a11y'] ?? {}), playlist };
-    const announcers = playlist.statusRegions?.filter((s) => s.cellId === 'playlist-status-announcer') ?? [];
+    const announcers = playlist.statusRegions?.filter((s) => s.TihokaId === 'playlist-status-announcer') ?? [];
     expect(announcers).toHaveLength(1);
     expect(announcers[0]?.ariaAtomic).toBe('true');
     expect(playlist.ariaLiveInActivePane).toBe(0);
@@ -827,7 +827,7 @@ test.describe('universal panel UX audit', () => {
     await ensurePanelOpen(page, universalPanel);
     const mobile = await collectA11yStructure(page);
     metricsStore['a11y'] = { ...(metricsStore['a11y'] ?? {}), mobile };
-    const mobileNav = mobile.navs?.find((n) => n.cellId === 'universal-panel-bottom-nav');
+    const mobileNav = mobile.navs?.find((n) => n.TihokaId === 'universal-panel-bottom-nav');
     expect(mobileNav?.visible).toBe(true);
     expect(mobileNav?.ariaLabel).toBeTruthy();
     expect(mobileNav?.currentValue).toBe('page');

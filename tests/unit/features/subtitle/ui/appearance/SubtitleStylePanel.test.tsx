@@ -15,7 +15,7 @@ describe('SubtitleStylePanel', () => {
     jest.clearAllMocks();
   });
 
-  it('renders panel with role data-cell-id', () => {
+  it('renders panel with role data-tihoka-id', () => {
     render(<SubtitleStylePanel {...defaultProps} />);
     expect(screen.getByTestId('subtitle-style-panel-target')).toBeTruthy();
   });

@@ -23,8 +23,8 @@ test.describe('Stage 2: Universal Panel > Dictionary audio panel on StreamFlix',
         new Promise<boolean>((resolve) => {
           const start = Date.now();
           const tick = (): void => {
-            const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-            const tab = root?.querySelector('[data-cell-id="dictionary-tab-audio"]') as HTMLElement | null;
+            const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+            const tab = root?.querySelector('[data-tihoka-id="dictionary-tab-audio"]') as HTMLElement | null;
             if (tab) {
               tab.click();
               resolve(true);
@@ -44,8 +44,8 @@ test.describe('Stage 2: Universal Panel > Dictionary audio panel on StreamFlix',
         new Promise<boolean>((resolve) => {
           const start = Date.now();
           const tick = (): void => {
-            const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-            const panel = root?.querySelector('[data-cell-id="dictionary-audio-panel"]');
+            const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+            const panel = root?.querySelector('[data-tihoka-id="dictionary-audio-panel"]');
             const row = panel?.querySelector('[role="checkbox"]');
             if (row) return resolve(true);
             if (Date.now() - start > maxWait) return resolve(false);
@@ -59,8 +59,8 @@ test.describe('Stage 2: Universal Panel > Dictionary audio panel on StreamFlix',
 
     // Structural assertions on the first audio row.
     const structure = await streamFlixPage.evaluate(() => {
-      const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-      const panel = root?.querySelector('[data-cell-id="dictionary-audio-panel"]');
+      const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+      const panel = root?.querySelector('[data-tihoka-id="dictionary-audio-panel"]');
       const row = panel?.querySelector('[role="checkbox"]') as HTMLElement | null;
       if (!panel || !row) return null;
 
@@ -102,17 +102,17 @@ test.describe('Stage 2: Universal Panel > Dictionary audio panel on StreamFlix',
     // Playwright locators pierce open shadow roots, so this captures the
     // audio panel element itself, not the whole page.
     await streamFlixPage
-      .locator('[data-cell-id="dictionary-audio-panel"]')
+      .locator('[data-tihoka-id="dictionary-audio-panel"]')
       .screenshot({ path: resolve(getE2EAgentPaths().agentRoot, 'dictionary-audio-panel.png') });
 
     // Behavior: clicking the row toggles aria-checked; clicking play does not.
     // Read via polling — React re-renders the attribute asynchronously.
     const checkedOf = (): Promise<string | null> =>
       streamFlixPage.evaluate(() => {
-        const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
+        const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
         return (
           root
-            ?.querySelector('[data-cell-id="dictionary-audio-panel"] [role="checkbox"]')
+            ?.querySelector('[data-tihoka-id="dictionary-audio-panel"] [role="checkbox"]')
             ?.getAttribute('aria-checked') ?? null
         );
       });
@@ -121,8 +121,8 @@ test.describe('Stage 2: Universal Panel > Dictionary audio panel on StreamFlix',
     expect(before).not.toBeNull();
 
     await streamFlixPage.evaluate(() => {
-      const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-      (root?.querySelector('[data-cell-id="dictionary-audio-panel"] [role="checkbox"]') as HTMLElement | null)?.click();
+      const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+      (root?.querySelector('[data-tihoka-id="dictionary-audio-panel"] [role="checkbox"]') as HTMLElement | null)?.click();
     });
     await expect
       .poll(checkedOf, { timeout: 5_000 })
@@ -130,8 +130,8 @@ test.describe('Stage 2: Universal Panel > Dictionary audio panel on StreamFlix',
     const afterRowClick = await checkedOf();
 
     await streamFlixPage.evaluate(() => {
-      const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-      const row = root?.querySelector('[data-cell-id="dictionary-audio-panel"] [role="checkbox"]');
+      const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+      const row = root?.querySelector('[data-tihoka-id="dictionary-audio-panel"] [role="checkbox"]');
       (row?.querySelector('button[aria-label^="Play"]') as HTMLElement | null)?.click();
     });
     await streamFlixPage.waitForTimeout(500);

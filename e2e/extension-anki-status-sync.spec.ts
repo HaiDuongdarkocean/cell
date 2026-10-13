@@ -188,24 +188,24 @@ test.describe('Anki status sync', () => {
         }
         return null;
       };
-      const host = deepFind(document, '[data-cell-id="orbital-badge"]');
+      const host = deepFind(document, '[data-tihoka-id="orbital-badge"]');
       if (!host) throw new Error('orbital-badge not found');
       const opts = { bubbles: true, cancelable: true, composed: true, pointerId: 1 };
       host.dispatchEvent(new PointerEvent('pointerdown', opts));
       host.dispatchEvent(new PointerEvent('pointerup', opts));
     });
-    await waitDeep(page, '[data-cell-id="universal-panel"]', 15_000);
+    await waitDeep(page, '[data-tihoka-id="universal-panel"]', 15_000);
 
     for (const sel of [
-      '[data-cell-id="universal-panel-tab-settings"]',
-      '[data-cell-id="universal-panel-mobile-tab-settings"]',
+      '[data-tihoka-id="universal-panel-tab-settings"]',
+      '[data-tihoka-id="universal-panel-mobile-tab-settings"]',
     ]) {
       if (await deepQuery(page, sel)) {
         await deepClick(page, sel);
         break;
       }
     }
-    await waitDeep(page, '[data-cell-id="anki-status-sync"]', 15_000);
+    await waitDeep(page, '[data-tihoka-id="anki-status-sync"]', 15_000);
     const section = page.locator('[data-section="sync"]');
     await section.scrollIntoViewIfNeeded();
     await section.screenshot({ path: 'e2e-results/default/anki-status-sync-settings.png' });

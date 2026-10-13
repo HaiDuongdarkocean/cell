@@ -17,8 +17,8 @@ test.describe('Stage 2: Universal Panel > Dictionary header audio buttons', () =
         new Promise<boolean>((resolve) => {
           const start = Date.now();
           const tick = (): void => {
-            const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-            if (root?.querySelector('[data-cell-id="dictionary-content"]')) {
+            const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+            if (root?.querySelector('[data-tihoka-id="dictionary-content"]')) {
               resolve(true);
               return;
             }
@@ -32,11 +32,11 @@ test.describe('Stage 2: Universal Panel > Dictionary header audio buttons', () =
     expect(candidateReady).toBe(true);
 
     const leftovers = await streamFlixPage.evaluate(() => {
-      const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
-      const content = root?.querySelector('[data-cell-id="dictionary-content"]');
+      const root = document.getElementById('Tihoka-universal-panel-host')?.shadowRoot;
+      const content = root?.querySelector('[data-tihoka-id="dictionary-content"]');
       if (!content) return ['<candidate missing>'];
-      return [...content.querySelectorAll('[data-cell-id^="dictionary-play-"]')].map(
-        (el) => el.getAttribute('data-cell-id'),
+      return [...content.querySelectorAll('[data-tihoka-id^="dictionary-play-"]')].map(
+        (el) => el.getAttribute('data-tihoka-id'),
       );
     });
     expect(leftovers).toEqual([]);

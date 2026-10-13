@@ -11,7 +11,7 @@ describe('PlayerModeOverlay.module.css', () => {
   });
 
   it('slotted player in video stage is interactive', () => {
-    expect(css).toMatch(/\.videoStage\s+::slotted\(\[slot=['"]cell-video['"]\]\)\s*\{[^}]*pointer-events:\s*auto/s);
+    expect(css).toMatch(/\.videoStage\s+::slotted\(\[slot=['"]Tihoka-video['"]\]\)\s*\{[^}]*pointer-events:\s*auto/s);
   });
 
   it('does not use a transparent click-through child-frame overlay', () => {

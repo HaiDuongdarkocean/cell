@@ -1,11 +1,11 @@
 import { expect } from '@playwright/test';
 import { test } from './showcase.fixture';
 
-const CONTENT = '[data-cell-id="card-creator-content"]';
-const QUEUE_PANEL = '[data-cell-id="cc-queue-panel"]';
-const QUEUE_TOGGLE = '[data-cell-id="cc-queue-toggle"]';
-const QUEUE_UNDO = '[data-cell-id="cc-queue-undo"]';
-const TARGET_WORD = '[data-cell-id="cc-target-word-input"] textarea';
+const CONTENT = '[data-tihoka-id="card-creator-content"]';
+const QUEUE_PANEL = '[data-tihoka-id="cc-queue-panel"]';
+const QUEUE_TOGGLE = '[data-tihoka-id="cc-queue-toggle"]';
+const QUEUE_UNDO = '[data-tihoka-id="cc-queue-undo"]';
+const TARGET_WORD = '[data-tihoka-id="cc-target-word-input"] textarea';
 
 test.describe('Showcase — Card Creator queue slide-over', () => {
   test.beforeEach(async ({ showcasePage }) => {
@@ -75,9 +75,9 @@ test.describe('Showcase — Card Creator queue slide-over', () => {
     const panel = showcasePage.locator(QUEUE_PANEL);
     await expect(panel).toBeVisible();
 
-    const item = panel.locator('[data-cell-id="cc-queue-item-1"]');
+    const item = panel.locator('[data-tihoka-id="cc-queue-item-1"]');
     await item.hover();
-    await panel.locator('[data-cell-id="cc-queue-delete-1"]').click();
+    await panel.locator('[data-tihoka-id="cc-queue-delete-1"]').click();
 
     // Still open — pruning several items must not bounce the user out.
     await expect(panel).toBeVisible();
@@ -96,7 +96,7 @@ test.describe('Showcase — Card Creator queue slide-over', () => {
     const panel = showcasePage.locator(QUEUE_PANEL);
     await expect(panel).toBeVisible();
 
-    const deleteBtn = panel.locator('[data-cell-id="cc-queue-delete-0"]');
+    const deleteBtn = panel.locator('[data-tihoka-id="cc-queue-delete-0"]');
     // Pointer devices hide it until hover/focus.
     await expect(deleteBtn).toHaveCSS('opacity', '0');
 
@@ -112,20 +112,20 @@ test.describe('Showcase — Card Creator queue slide-over', () => {
 
     // 3 items → delete 2 → 1 item left: panel must not unmount abruptly.
     for (const i of [0, 0]) {
-      const item = panel.locator(`[data-cell-id="cc-queue-item-${i}"]`);
+      const item = panel.locator(`[data-tihoka-id="cc-queue-item-${i}"]`);
       await item.hover();
-      await panel.locator(`[data-cell-id="cc-queue-delete-${i}"]`).click();
+      await panel.locator(`[data-tihoka-id="cc-queue-delete-${i}"]`).click();
     }
     await expect(panel.locator('h2')).toHaveText('Queue (1/1)');
     await expect(panel).toBeVisible();
     await expect(showcasePage.locator(QUEUE_UNDO)).toBeVisible();
 
     // Delete the last item → empty state keeps the panel + undo reachable.
-    await panel.locator('[data-cell-id="cc-queue-item-0"]').hover();
-    await panel.locator('[data-cell-id="cc-queue-delete-0"]').click();
+    await panel.locator('[data-tihoka-id="cc-queue-item-0"]').hover();
+    await panel.locator('[data-tihoka-id="cc-queue-delete-0"]').click();
     await expect(panel).toBeVisible();
     await expect(panel.locator('h2')).toHaveText('Queue is empty');
-    await expect(panel.locator('[data-cell-id="cc-queue-empty"]')).toBeVisible();
+    await expect(panel.locator('[data-tihoka-id="cc-queue-empty"]')).toBeVisible();
     await expect(showcasePage.locator(QUEUE_UNDO)).toBeVisible();
   });
 
@@ -148,7 +148,7 @@ test.describe('Showcase — Card Creator queue slide-over', () => {
     await expect(panel).toBeVisible();
     await expect(panel.locator('h2')).toHaveText('Queue (1/50)');
 
-    const list = panel.locator('[data-cell-id="cc-queue-sidebar"]');
+    const list = panel.locator('[data-tihoka-id="cc-queue-sidebar"]');
     const metrics = await list.evaluate((el) => ({
       scrollHeight: el.scrollHeight,
       clientHeight: el.clientHeight,
@@ -156,7 +156,7 @@ test.describe('Showcase — Card Creator queue slide-over', () => {
     expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
 
     // Last item is reachable by scrolling the list container.
-    await panel.locator('[data-cell-id="cc-queue-item-49"]').scrollIntoViewIfNeeded();
-    await expect(panel.locator('[data-cell-id="cc-queue-item-49"]')).toBeInViewport();
+    await panel.locator('[data-tihoka-id="cc-queue-item-49"]').scrollIntoViewIfNeeded();
+    await expect(panel.locator('[data-tihoka-id="cc-queue-item-49"]')).toBeInViewport();
   });
 });

@@ -2,8 +2,8 @@ import { expect, type BrowserContext, type Page } from '@playwright/test';
 import { test } from '../fixtures/actors/universalPanel.fixture';
 
 const VIDEO_SELECTOR = '#player-wrapper video';
-const OVERLAY_TARGET_SELECTOR = '[data-cell-id="subtitle-block"] [data-role="target"] span';
-const POPUP_HOST_SELECTOR = '.js-cell-popup-host';
+const OVERLAY_TARGET_SELECTOR = '[data-tihoka-id="subtitle-block"] [data-role="target"] span';
+const POPUP_HOST_SELECTOR = '.js-Tihoka-popup-host';
 const STREAMFLIX_SUBTITLE_KEYS = [
   'http://127.0.0.1:4321/',
   'http://127.0.0.1:4321/index.html',
@@ -271,13 +271,13 @@ async function expectPausedAtCueEnd(page: Page): Promise<void> {
 
 test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
   test('auto-pause at cue end opens the dictionary popup on the pausable token (tokenize on)', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
-    await seedSettings(cellContext);
-    await seedDictionaryAndFrequency(cellContext, [{ term: 'silence', rank: 15000 }]);
-    await writeTokenize(cellContext, true);
-    await writeStudyModes(cellContext, 'normal', IMMERSION_ADVANCED);
+    await seedSettings(TihokaContext);
+    await seedDictionaryAndFrequency(TihokaContext, [{ term: 'silence', rank: 15000 }]);
+    await writeTokenize(TihokaContext, true);
+    await writeStudyModes(TihokaContext, 'normal', IMMERSION_ADVANCED);
 
     await seekPaused(streamFlixPage, CUE2_START_S + 0.4);
     await expect(targetLine(streamFlixPage)).toContainText(/silence/i, { timeout: 30_000 });
@@ -299,13 +299,13 @@ test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
   });
 
   test('auto-pause still pauses but opens no popup when tokenize is off', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
-    await seedSettings(cellContext);
-    await seedDictionaryAndFrequency(cellContext, [{ term: 'silence', rank: 15000 }]);
-    await writeTokenize(cellContext, false);
-    await writeStudyModes(cellContext, 'normal', IMMERSION_ADVANCED);
+    await seedSettings(TihokaContext);
+    await seedDictionaryAndFrequency(TihokaContext, [{ term: 'silence', rank: 15000 }]);
+    await writeTokenize(TihokaContext, false);
+    await writeStudyModes(TihokaContext, 'normal', IMMERSION_ADVANCED);
 
     await seekPaused(streamFlixPage, CUE2_START_S + 0.4);
     await expect(targetLine(streamFlixPage)).toContainText(/silence/i, { timeout: 30_000 });
@@ -319,15 +319,15 @@ test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
   });
 
   test('selected frequency level gates which cues pause', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
     // 'silence' sits at rank 15000: inside 'advanced' (≤20k) but outside
     // 'common' (≤5k). Every other cue-2 word is unlisted → never pausable.
-    await seedSettings(cellContext);
-    await seedDictionaryAndFrequency(cellContext, [{ term: 'silence', rank: 15000 }]);
-    await writeTokenize(cellContext, false);
-    await writeStudyModes(cellContext, 'normal', {
+    await seedSettings(TihokaContext);
+    await seedDictionaryAndFrequency(TihokaContext, [{ term: 'silence', rank: 15000 }]);
+    await writeTokenize(TihokaContext, false);
+    await writeStudyModes(TihokaContext, 'normal', {
       ...IMMERSION_ADVANCED,
       unknownLevel: 'common',
       popupOnAutoPause: false,
@@ -352,7 +352,7 @@ test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
     expect(await video.evaluate((v: HTMLVideoElement) => v.paused)).toBe(false);
 
     // Switching to 'advanced' (≤20k) brings silence into level → pauses.
-    await writeStudyModes(cellContext, 'normal', {
+    await writeStudyModes(TihokaContext, 'normal', {
       ...IMMERSION_ADVANCED,
       unknownLevel: 'advanced',
       popupOnAutoPause: false,
@@ -363,15 +363,15 @@ test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
   });
 
   test('x/z step through the active cue’s vocab tokens, opening the popup on each', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
     // x/z = per-token navigation inside the CURRENT cue — each press opens the
     // dictionary popup on the next/prev token span, exactly like clicking it.
-    await seedSettings(cellContext);
-    await seedDictionaryAndFrequency(cellContext, [{ term: 'silence', rank: 100 }]);
-    await writeTokenize(cellContext, true);
-    await writeStudyModes(cellContext, 'normal', {
+    await seedSettings(TihokaContext);
+    await seedDictionaryAndFrequency(TihokaContext, [{ term: 'silence', rank: 100 }]);
+    await writeTokenize(TihokaContext, true);
+    await writeStudyModes(TihokaContext, 'normal', {
       ...IMMERSION_ADVANCED,
       pauseOnUnknown: 'OFF',
       popupOnAutoPause: false,
@@ -385,44 +385,44 @@ test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
     }, CUE2_START_S + 0.4);
     await expect(targetLine(streamFlixPage)).toContainText(/silence/i, { timeout: 30_000 });
 
-    const openToken = streamFlixPage.locator('.js-cell-token--popup-open');
+    const openToken = streamFlixPage.locator('.js-Tihoka-token--popup-open');
 
     // No popup yet → first 'x' opens the dictionary on the FIRST vocab token.
     await streamFlixPage.keyboard.press('x');
     await expect(openToken).toHaveCount(1, { timeout: 15_000 });
-    const firstTerm = await openToken.first().getAttribute('data-cell-term');
+    const firstTerm = await openToken.first().getAttribute('data-tihoka-term');
     expect(firstTerm).toBeTruthy();
     await expect(popupHosts(streamFlixPage).first()).toBeAttached({ timeout: 15_000 });
 
     // 'x' again advances to the NEXT token (popup repositions onto it).
     await streamFlixPage.keyboard.press('x');
     await expect
-      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .poll(async () => openToken.first().getAttribute('data-tihoka-term'), { timeout: 10_000 })
       .not.toBe(firstTerm);
-    const secondTerm = await openToken.first().getAttribute('data-cell-term');
+    const secondTerm = await openToken.first().getAttribute('data-tihoka-term');
     expect(secondTerm).toBeTruthy();
 
     // 'z' steps back to the previous token.
     await streamFlixPage.keyboard.press('z');
     await expect
-      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .poll(async () => openToken.first().getAttribute('data-tihoka-term'), { timeout: 10_000 })
       .toBe(firstTerm);
 
     // 'z' on the FIRST token wraps around to the LAST token of the cue.
     const lastTerm = await streamFlixPage
-      .locator('[data-role="target"]:has(.js-cell-token--popup-open) [data-cell-term]:not([data-cell-term=""])')
+      .locator('[data-role="target"]:has(.js-Tihoka-token--popup-open) [data-tihoka-term]:not([data-tihoka-term=""])')
       .last()
-      .getAttribute('data-cell-term');
+      .getAttribute('data-tihoka-term');
     expect(lastTerm).toBeTruthy();
     await streamFlixPage.keyboard.press('z');
     await expect
-      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .poll(async () => openToken.first().getAttribute('data-tihoka-term'), { timeout: 10_000 })
       .toBe(lastTerm);
 
     // 'x' on the LAST token wraps back to the FIRST token.
     await streamFlixPage.keyboard.press('x');
     await expect
-      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .poll(async () => openToken.first().getAttribute('data-tihoka-term'), { timeout: 10_000 })
       .toBe(firstTerm);
 
     // Playback resuming closes the popup instantly (no dismiss delay) — Space
@@ -435,15 +435,15 @@ test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
   });
 
   test('x/z skip known tokens; Shift+x/z force-lookups them', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
     // Plain x/z never opens a lookup on a token already marked known/ignore —
     // Shift+x/z forces the lookup regardless of word status.
-    await seedSettings(cellContext);
-    await seedDictionaryAndFrequency(cellContext, [{ term: 'silence', rank: 100 }]);
-    await writeTokenize(cellContext, true);
-    await writeStudyModes(cellContext, 'normal', {
+    await seedSettings(TihokaContext);
+    await seedDictionaryAndFrequency(TihokaContext, [{ term: 'silence', rank: 100 }]);
+    await writeTokenize(TihokaContext, true);
+    await writeStudyModes(TihokaContext, 'normal', {
       ...IMMERSION_ADVANCED,
       pauseOnUnknown: 'OFF',
       popupOnAutoPause: false,
@@ -453,10 +453,10 @@ test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
     await expect(targetLine(streamFlixPage)).toContainText(/silence/i, { timeout: 30_000 });
 
     const tokens = streamFlixPage.locator(
-      '[data-role="target"] [data-cell-term]:not([data-cell-term=""])',
+      '[data-role="target"] [data-tihoka-term]:not([data-tihoka-term=""])',
     );
     const terms = await tokens.evaluateAll((els) =>
-      els.map((el) => el.getAttribute('data-cell-term')),
+      els.map((el) => el.getAttribute('data-tihoka-term')),
     );
     expect(terms.length).toBeGreaterThanOrEqual(3);
 
@@ -465,33 +465,33 @@ test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
     // moves) and mark it known via the '3' status key.
     await tokens.nth(1).dispatchEvent('mouseenter');
     await streamFlixPage.keyboard.press('3');
-    await expect(tokens.nth(1)).toHaveClass(/js-cell-token--status-known/, { timeout: 15_000 });
+    await expect(tokens.nth(1)).toHaveClass(/js-Tihoka-token--status-known/, { timeout: 15_000 });
 
-    const openToken = streamFlixPage.locator('.js-cell-token--popup-open');
+    const openToken = streamFlixPage.locator('.js-Tihoka-token--popup-open');
 
     // 'x' lands on the first token…
     await streamFlixPage.keyboard.press('x');
     await expect(openToken).toHaveCount(1, { timeout: 15_000 });
     await expect
-      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .poll(async () => openToken.first().getAttribute('data-tihoka-term'), { timeout: 10_000 })
       .toBe(terms[0]);
 
     // …then 'x' again SKIPS the known second token and lands on the third.
     await streamFlixPage.keyboard.press('x');
     await expect
-      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .poll(async () => openToken.first().getAttribute('data-tihoka-term'), { timeout: 10_000 })
       .toBe(terms[2]);
 
     // Shift+z steps back onto the known token — status is ignored.
     await streamFlixPage.keyboard.press('Shift+z');
     await expect
-      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .poll(async () => openToken.first().getAttribute('data-tihoka-term'), { timeout: 10_000 })
       .toBe(terms[1]);
 
     // Plain 'z' from a known token still skips it going backward.
     await streamFlixPage.keyboard.press('z');
     await expect
-      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .poll(async () => openToken.first().getAttribute('data-tihoka-term'), { timeout: 10_000 })
       .toBe(terms[0]);
   });
 });

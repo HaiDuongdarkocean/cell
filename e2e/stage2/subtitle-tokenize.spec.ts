@@ -1,15 +1,15 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test';
-import { test } from '../fixtures/cellEnvironment.fixture';
+import { test } from '../fixtures/TihokaEnvironment.fixture';
 
-const SUBTITLE_HOST_ID = 'cell-subtitle-root';
+const SUBTITLE_HOST_ID = 'Tihoka-subtitle-root';
 const STREAMFLIX_SUBTITLE_KEYS = [
   'http://127.0.0.1:4321/',
   'http://127.0.0.1:4321/index.html',
 ] as const;
 const WORDY_CUE_START_MS = '20200';
 const WORDY_CUE_TEXT = "♪ LYIN' ISN'T BETTER THAN SILENCE ♪";
-const OVERLAY_TARGET_SELECTOR = '[data-cell-id="subtitle-block"] [data-role="target"] span';
-const TOKEN_SELECTOR = '.js-cell-token[data-cell-term]';
+const OVERLAY_TARGET_SELECTOR = '[data-tihoka-id="subtitle-block"] [data-role="target"] span';
+const TOKEN_SELECTOR = '.js-Tihoka-token[data-tihoka-term]';
 
 async function seedOverlaySettings(context: BrowserContext): Promise<void> {
   const worker = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker'));
@@ -69,19 +69,19 @@ async function overlayWordTokenCount(page: Page): Promise<number> {
     .locator(OVERLAY_TARGET_SELECTOR)
     .first()
     .evaluate((el) =>
-      Array.from(el.querySelectorAll('.js-cell-token[data-cell-term]')).filter(
-        (t) => (t.getAttribute('data-cell-term') ?? '').length > 0,
+      Array.from(el.querySelectorAll('.js-Tihoka-token[data-tihoka-term]')).filter(
+        (t) => (t.getAttribute('data-tihoka-term') ?? '').length > 0,
       ).length,
     );
 }
 
 test.describe('Stage 2: Subtitle tokenize > token spans on StreamFlix', () => {
   test('enabling subtitle tokenize renders token spans in the overlay and the Player Mode cue list', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
-    await seedOverlaySettings(cellContext);
-    await writeTokenizeSettings(cellContext, true);
+    await seedOverlaySettings(TihokaContext);
+    await writeTokenizeSettings(TihokaContext, true);
 
     const video = streamFlixPage.locator('#player-wrapper video').first();
     await video.evaluate((v: HTMLVideoElement) => {
@@ -106,30 +106,30 @@ test.describe('Stage 2: Subtitle tokenize > token spans on StreamFlix', () => {
 
     await expect
       .poll(
-        () => shadowClick(streamFlixPage, SUBTITLE_HOST_ID, '[data-cell-id="player-mode-btn"]'),
+        () => shadowClick(streamFlixPage, SUBTITLE_HOST_ID, '[data-tihoka-id="player-mode-btn"]'),
         { timeout: 15_000 },
       )
       .toBe(true);
 
     const cueTargetText = streamFlixPage.locator(
-      `[data-cell-id="cue-item"][data-cue-start="${WORDY_CUE_START_MS}"] [data-cell-id="cue-target-text"]`,
+      `[data-tihoka-id="cue-item"][data-cue-start="${WORDY_CUE_START_MS}"] [data-tihoka-id="cue-target-text"]`,
     );
     await expect(cueTargetText).toBeAttached({ timeout: 15_000 });
     await expect(cueTargetText).toContainText(/silence/i, { timeout: 15_000 });
     const firstCueToken = cueTargetText.locator(TOKEN_SELECTOR).first();
     await expect(firstCueToken).toBeVisible({ timeout: 15_000 });
-    await expect(firstCueToken).toHaveClass(/js-cell-token--word/);
-    await expect(firstCueToken).toHaveClass(/js-cell-token--status-[a-z]+/);
-    await expect(firstCueToken.locator('.js-cell-token-word')).toHaveCount(1);
-    await expect(firstCueToken.locator('.js-cell-token-status')).toHaveCount(1);
+    await expect(firstCueToken).toHaveClass(/js-Tihoka-token--word/);
+    await expect(firstCueToken).toHaveClass(/js-Tihoka-token--status-[a-z]+/);
+    await expect(firstCueToken.locator('.js-Tihoka-token-word')).toHaveCount(1);
+    await expect(firstCueToken.locator('.js-Tihoka-token-status')).toHaveCount(1);
   });
 
   test('disabling subtitle tokenize restores plain subtitle text', async ({
-    cellContext,
+    TihokaContext,
     streamFlixPage,
   }) => {
-    await seedOverlaySettings(cellContext);
-    await writeTokenizeSettings(cellContext, true);
+    await seedOverlaySettings(TihokaContext);
+    await writeTokenizeSettings(TihokaContext, true);
 
     const video = streamFlixPage.locator('#player-wrapper video').first();
     await video.evaluate((v: HTMLVideoElement) => {
@@ -152,12 +152,12 @@ test.describe('Stage 2: Subtitle tokenize > token spans on StreamFlix', () => {
       v.currentTime = 20.6;
     });
 
-    await writeTokenizeSettings(cellContext, false);
+    await writeTokenizeSettings(TihokaContext, false);
 
     await expect
       .poll(
         () =>
-          targetLine.evaluate((el) => el.querySelectorAll('.js-cell-token').length),
+          targetLine.evaluate((el) => el.querySelectorAll('.js-Tihoka-token').length),
         { timeout: 15_000 },
       )
       .toBe(0);
