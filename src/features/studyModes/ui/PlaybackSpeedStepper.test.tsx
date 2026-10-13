@@ -12,30 +12,30 @@ const renderStepper = (value: PlaybackSpeed = 1) => {
 };
 
 describe('PlaybackSpeedStepper', () => {
-  it('steps through PLAYBACK_SPEEDS and prefixes cell ids', () => {
+  it('steps through PLAYBACK_SPEEDS and prefixes Tihoka ids', () => {
     const { onChange, container } = renderStepper(1);
-    expect(container.querySelector('[data-cell-id="speed-stepper"]')).toBeInTheDocument();
-    expect(container.querySelector('[data-cell-id="speed-value"]')).toHaveTextContent('1×');
+    expect(container.querySelector('[data-tihoka-id="speed-stepper"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-tihoka-id="speed-value"]')).toHaveTextContent('1×');
 
-    fireEvent.click(container.querySelector('[data-cell-id="speed-inc"]')!);
+    fireEvent.click(container.querySelector('[data-tihoka-id="speed-inc"]')!);
     expect(onChange).toHaveBeenLastCalledWith(1.25);
-    fireEvent.click(container.querySelector('[data-cell-id="speed-dec"]')!);
+    fireEvent.click(container.querySelector('[data-tihoka-id="speed-dec"]')!);
     expect(onChange).toHaveBeenLastCalledWith(0.75);
   });
 
   it('disables the bounds of the speed list', () => {
     const { container, rerender } = renderStepper(0.25);
-    expect(container.querySelector('[data-cell-id="speed-dec"]')).toBeDisabled();
+    expect(container.querySelector('[data-tihoka-id="speed-dec"]')).toBeDisabled();
 
     rerender(
       <PlaybackSpeedStepper value={10} onChange={jest.fn()} idPrefix="speed" />,
     );
-    expect(container.querySelector('[data-cell-id="speed-inc"]')).toBeDisabled();
+    expect(container.querySelector('[data-tihoka-id="speed-inc"]')).toBeDisabled();
   });
 
   it('resets to 1× and disables reset while already at 1×', () => {
     const { onChange, container, rerender } = renderStepper(1.5);
-    const reset = container.querySelector('[data-cell-id="speed-reset"]')!;
+    const reset = container.querySelector('[data-tihoka-id="speed-reset"]')!;
     expect(reset).not.toBeDisabled();
 
     fireEvent.click(reset);
@@ -44,6 +44,6 @@ describe('PlaybackSpeedStepper', () => {
     rerender(
       <PlaybackSpeedStepper value={1} onChange={onChange} idPrefix="speed" />,
     );
-    expect(container.querySelector('[data-cell-id="speed-reset"]')).toBeDisabled();
+    expect(container.querySelector('[data-tihoka-id="speed-reset"]')).toBeDisabled();
   });
 });

@@ -96,7 +96,7 @@ function SessionMetrics({ session, onLookup }: MetricsProps): React.JSX.Element 
 
 function HeroSession({ session, onLookup }: MetricsProps): React.JSX.Element {
   return (
-    <Card className={styles.hero} data-cell-id="recap-hero">
+    <Card className={styles.hero} data-tihoka-id="recap-hero">
       <div className={styles.heroTop}>
         <Heading level={3} size={2} className={styles.duration}>
           {formatMinutes(session.durationMs)}

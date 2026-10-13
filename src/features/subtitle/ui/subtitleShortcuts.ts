@@ -3,19 +3,19 @@
 // ADR-005 D3: pure function in content script, guard input/textarea/contenteditable.
 
 import type { KeyboardShortcut, ShortcutAction } from '@/entities/media';
-import { CELL_UI_HOST_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
+import { Tihoka_UI_HOST_SELECTORS } from '@/shared/lib/dom/TihokaUiHosts';
 import { isEditableTarget } from '@/shared/lib/dom/isEditable';
 
 export { isEditableTarget, isEditableEvent, isActivatableTarget } from '@/shared/lib/dom/isEditable';
 
 /**
- * Check if a keyboard event originated from inside a Cell UI shadow host.
+ * Check if a keyboard event originated from inside a Tihoka UI shadow host.
  * Uses `composedPath()` to cross shadow DOM boundaries — `e.target` is
  * retargeted to the shadow host, so `target.closest()` can't see inside.
  */
-export function isInsideCellUi(e: KeyboardEvent): boolean {
+export function isInsideTihokaUi(e: KeyboardEvent): boolean {
   return e.composedPath().some(
-    (el) => el instanceof Element && el.matches(CELL_UI_HOST_SELECTORS),
+    (el) => el instanceof Element && el.matches(Tihoka_UI_HOST_SELECTORS),
   );
 }
 

@@ -15,10 +15,10 @@ describe('suppressNativeCaptions', () => {
   it('injects the caption-hide style and removes it on cleanup', () => {
     const video = document.createElement('video');
     const restore = suppressNativeCaptions(document, video);
-    const style = document.getElementById('cell-native-caption-hide');
+    const style = document.getElementById('Tihoka-native-caption-hide');
     expect(style?.textContent).toContain('.ytp-caption-window-container');
     restore();
-    expect(document.getElementById('cell-native-caption-hide')).toBeNull();
+    expect(document.getElementById('Tihoka-native-caption-hide')).toBeNull();
   });
 
   it('hides showing text tracks and restores their mode on cleanup', () => {

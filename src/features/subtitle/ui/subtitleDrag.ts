@@ -17,8 +17,8 @@ export interface SubtitleBlockDrag {
 }
 
 const DRAG_START_THRESHOLD_PX = 8;
-const SUBTITLE_BLOCK_SELECTOR = '[data-cell-id="subtitle-block"]';
-const COLLAPSED_CLUSTER_SELECTOR = '[data-cell-id="nav-expand"]';
+const SUBTITLE_BLOCK_SELECTOR = '[data-tihoka-id="subtitle-block"]';
+const COLLAPSED_CLUSTER_SELECTOR = '[data-tihoka-id="nav-expand"]';
 
 // ADR-025: drag-to-reposition theo trục Y. Pointer Events + rAF throttle +
 // transform (atom ux-drag-transform-willchange-raf). touch-action:none trên .root

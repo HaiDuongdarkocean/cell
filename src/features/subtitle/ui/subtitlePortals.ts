@@ -37,11 +37,11 @@ export function useOverlayPortals({ rootRef, managerShadowCss, isMobile }: Overl
   }, [rootRef]);
 
   // Manager panel shadow host — mounted in the video player container
-  // (same parent as #cell-subtitle-root) so it shares the overlay's
+  // (same parent as #Tihoka-subtitle-root) so it shares the overlay's
   // positioning strategy: absolute within the container, no body-level
   // portal, no videoRect tracking. Fullscreen reparenting reuses the
   // same attachFullscreenReparenting helper as the overlay shadow host.
-  // Local-player fallback: #cell-subtitle-root doesn't exist (only
+  // Local-player fallback: #Tihoka-subtitle-root doesn't exist (only
   // mountSubtitle creates it for content-script). Use rootRef's parent
   // (.subtitleOverlay div, position:absolute+inset:0 inside .videoWrapper)
   // so the manager overlays the video stage, not document.body.
@@ -56,17 +56,17 @@ export function useOverlayPortals({ rootRef, managerShadowCss, isMobile }: Overl
     if (!managerShadowCss || managerShadowCss.length === 0) return;
     // Timing gotcha (ADR-097): this effect runs during mountSubtitle's
     // flushSync commit, BEFORE mountSubtitle assigns host.id, so
-    // getElementById('cell-subtitle-root') is null here and the fallback
+    // getElementById('Tihoka-subtitle-root') is null here and the fallback
     // below places the portal inside the overlay's shadow root. The panel
     // renders correctly there (verified by the e2e spec); if the portal
     // ever needs to live in the light-DOM video container, assign the host
     // id before the flush instead of changing this fallback order.
-    const overlayHost = document.getElementById('cell-subtitle-root');
+    const overlayHost = document.getElementById('Tihoka-subtitle-root');
     const container = isMobile
       ? document.body
       : (overlayHost?.parentElement ?? rootRef.current?.parentElement ?? document.body);
     const host = document.createElement('div');
-    host.id = 'cell-manager-portal';
+    host.id = 'Tihoka-manager-portal';
     host.style.cssText = 'position:absolute;inset:0;pointer-events:none;/* max-int: intentional top-most overlay */z-index:2147483647;';
     container.appendChild(host);
     const shadow = host.attachShadow({ mode: 'open' });

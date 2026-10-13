@@ -23,7 +23,7 @@ describe('OffsetLayer', () => {
     expect(screen.getAllByTestId('offset-value')[1]).toHaveTextContent('-0.5s');
   });
 
-  it('has data-cell-id="subtitle-offset-layer"', () => {
+  it('has data-tihoka-id="subtitle-offset-layer"', () => {
     render(<OffsetLayer offset={makeOffset()} />);
     expect(screen.getByTestId('subtitle-offset-layer')).toBeInTheDocument();
   });

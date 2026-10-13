@@ -15,6 +15,7 @@ import {
   type FrequencyBandOptions,
   type FrequencyBandThresholds,
 } from '@/features/tokenize/utils/frequencyBand';
+import { resolveEspeakReadings } from './espeakReadings';
 import {
   applyTokenListStatus,
   createTokenList,
@@ -274,6 +275,14 @@ export async function resolveCueListTokenMetadata(
     rankByTerm.set(term, pickBestFrequencyEntry(enabled)?.frequency ?? null);
   }
 
+  const espeakReadings = dictReadings
+    ? await resolveEspeakReadings(
+        langCode,
+        termList,
+        (term) => dictReadings.get(term) ?? pickFrequencyReading(term, freqMaps.get(term) ?? []),
+      )
+    : null;
+
   const resolved = new Map<number, readonly Token[]>();
   for (const [cueIndex, tokens] of tokenMap) {
     resolved.set(
@@ -286,7 +295,9 @@ export async function resolveCueListTokenMetadata(
           status: failed ? token.status : (statusMap.get(token.term) ?? 'unknown'),
           frequencyBand: entriesToBand(freqEntries, bandOpts),
           reading: dictReadings
-            ? dictReadings.get(token.term) ?? pickFrequencyReading(token.term, freqEntries)
+            ? dictReadings.get(token.term)
+                ?? pickFrequencyReading(token.term, freqEntries)
+                ?? espeakReadings?.get(token.term)
             : token.reading,
           gloss: dictGlosses ? dictGlosses.get(token.term) : token.gloss,
           hasCard: cardTerms ? cardTerms.has(token.term) : token.hasCard,

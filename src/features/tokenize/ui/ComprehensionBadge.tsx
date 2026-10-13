@@ -26,7 +26,7 @@ export function ComprehensionBadge({ stats, size = 'sm' }: ComprehensionBadgePro
       variant={BAND_VARIANT[stats.band]}
       size={size}
       title={title}
-      data-cell-id="comprehension-badge"
+      data-tihoka-id="comprehension-badge"
       data-band={stats.band}
     >
       {stats.coverage.toFixed(1)}%

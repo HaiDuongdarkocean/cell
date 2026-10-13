@@ -413,7 +413,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         ref={rootRef}
         className={`${styles.root}${dragging ? ` ${styles.dragging}` : ''}`}
         style={{ '--sb-y': yOffsetPercent } as React.CSSProperties}
-        data-cell-id="subtitle-panels-root"
+        data-tihoka-id="subtitle-panels-root"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -481,7 +481,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         </div>
 
         {hintOpen && (
-          <div className={styles.hintLayer} data-cell-id="subtitle-hint-layer">
+          <div className={styles.hintLayer} data-tihoka-id="subtitle-hint-layer">
             <SubtitleHint onClick={() => setHintOpen(false)} />
           </div>
         )}

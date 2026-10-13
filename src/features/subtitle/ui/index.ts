@@ -4,7 +4,7 @@ export {
   isActivatableTarget,
   isEditableEvent,
   isEditableTarget,
-  isInsideCellUi,
+  isInsideTihokaUi,
 } from './subtitleShortcuts';
 export {
   applyStyle,

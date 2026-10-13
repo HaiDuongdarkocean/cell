@@ -70,7 +70,7 @@ export function CueRecommendFab({
   };
 
   return (
-    <div className={styles.fab} data-cell-id="cue-filter">
+    <div className={styles.fab} data-tihoka-id="cue-filter">
       <Button
         ref={triggerRef}
         variant={variant ?? (mode === 'all' ? 'secondary' : 'primary')}
@@ -87,11 +87,11 @@ export function CueRecommendFab({
         title={t('cueFilter.fabTooltip')}
         onClick={() => (isOpen ? closeMenu() : setIsOpen(true))}
         onKeyDown={handleTriggerKeyDown}
-        data-cell-id="cue-filter-fab"
+        data-tihoka-id="cue-filter-fab"
       >
         <Icon name="slidersHorizontal" aria-hidden="true" />
       </Button>
-      <span className={styles.badge} aria-hidden="true" data-cell-id="cue-filter-badge">
+      <span className={styles.badge} aria-hidden="true" data-tihoka-id="cue-filter-badge">
         {badgeText}
       </span>
       <Menu

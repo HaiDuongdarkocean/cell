@@ -29,11 +29,11 @@ describe('RecapTab', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     sendMessage.mockReset().mockResolvedValue({ success: true, data: { sessions: [SESSION] } });
-    (globalThis as { __cellSendMessage?: typeof sendMessage }).__cellSendMessage = sendMessage;
+    (globalThis as { __TihokaSendMessage?: typeof sendMessage }).__TihokaSendMessage = sendMessage;
   });
 
   afterEach(() => {
-    delete (globalThis as { __cellSendMessage?: typeof sendMessage }).__cellSendMessage;
+    delete (globalThis as { __TihokaSendMessage?: typeof sendMessage }).__TihokaSendMessage;
   });
 
   it('loads the recap on activation', async () => {

@@ -49,7 +49,7 @@ beforeEach(() => {
 });
 
 describe('ManagerLayer', () => {
-  it('renders mobile branch inside Sheet with data-cell-id', () => {
+  it('renders mobile branch inside Sheet with data-tihoka-id', () => {
     const { container } = render(
       <ManagerLayer
         manager={createManager()}
@@ -59,12 +59,12 @@ describe('ManagerLayer', () => {
       />,
     );
     expect(container.querySelector('.sheet')).toBeTruthy();
-    expect(container.querySelector('[data-cell-id="subtitle-manager-layer"]')).toBeTruthy();
+    expect(container.querySelector('[data-tihoka-id="subtitle-manager-layer"]')).toBeTruthy();
     // Mobile branch forwards inSheet.
     expect(lastPanelProps().inSheet).toBe(true);
   });
 
-  it('renders desktop branch inside .panelLayer with data-cell-id', () => {
+  it('renders desktop branch inside .panelLayer with data-tihoka-id', () => {
     const { container } = render(
       <ManagerLayer
         manager={createManager()}
@@ -75,7 +75,7 @@ describe('ManagerLayer', () => {
     );
     // Desktop renders a div (not a Sheet).
     expect(container.querySelector('.sheet')).toBeFalsy();
-    expect(container.querySelector('[data-cell-id="subtitle-manager-layer"]')).toBeTruthy();
+    expect(container.querySelector('[data-tihoka-id="subtitle-manager-layer"]')).toBeTruthy();
     // Desktop branch does NOT set inSheet.
     expect(lastPanelProps().inSheet).toBeUndefined();
   });
@@ -90,7 +90,7 @@ describe('ManagerLayer', () => {
         generateNativeEnabled
       />,
     );
-    const layer = container.querySelector('[data-cell-id="subtitle-manager-layer"]') as HTMLElement;
+    const layer = container.querySelector('[data-tihoka-id="subtitle-manager-layer"]') as HTMLElement;
     fireEvent.click(layer);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -107,7 +107,7 @@ describe('ManagerLayer', () => {
     );
     // SubtitleManagerPanel mock renders null, so simulate a child click by
     // dispatching a click whose target differs from currentTarget.
-    const layer = document.querySelector('[data-cell-id="subtitle-manager-layer"]') as HTMLElement;
+    const layer = document.querySelector('[data-tihoka-id="subtitle-manager-layer"]') as HTMLElement;
     const child = document.createElement('div');
     layer.appendChild(child);
     fireEvent.click(child);

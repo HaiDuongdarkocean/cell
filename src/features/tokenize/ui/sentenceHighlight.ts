@@ -4,17 +4,17 @@ import { SENTENCE_ATTR, SEPARATOR_CLASS, CONTAINER_SELECTOR, readSegments, type 
 /** Marks the spans of the washed sentence. The wash itself is painted by band
  *  overlays (see paintSentenceBands) — --sentence stays a pure marker so the
  *  band edges stay geometrically straight instead of summing per-token boxes. */
-export const SENTENCE_CLASS = 'js-cell-token--sentence';
+export const SENTENCE_CLASS = 'js-Tihoka-token--sentence';
 
-const WORD_LANE_CLASS = 'js-cell-token-word';
-const OVERLAY_ID = 'cell-sentence-overlay';
+const WORD_LANE_CLASS = 'js-Tihoka-token-word';
+const OVERLAY_ID = 'Tihoka-sentence-overlay';
 /** Horizontal run split: a gap wider than this many em ends the band segment. */
 const BAND_GAP_EM = 2;
 /** The dictionary popup host (mountPopupDictionary) — wash bands are clipped
  *  out of its surface rect so a translucent popup skin never shows the wash
  *  bleeding through as if it painted over the card. */
-const POPUP_HOST_CLASS = 'js-cell-popup-host';
-const POPUP_SURFACE_SELECTOR = '[data-cell-id="popup-dictionary"]';
+const POPUP_HOST_CLASS = 'js-Tihoka-popup-host';
+const POPUP_SURFACE_SELECTOR = '[data-tihoka-id="popup-dictionary"]';
 
 export interface BandBox {
   readonly top: number;
@@ -139,7 +139,7 @@ export function subtractRects(band: BandBox, holes: readonly BandBox[]): BandBox
 function popupRects(doc: Document): BandBox[] {
   const rects: BandBox[] = [];
   const roots: ParentNode[] = [doc];
-  const subtitleShadow = doc.getElementById('cell-subtitle-root')?.shadowRoot;
+  const subtitleShadow = doc.getElementById('Tihoka-subtitle-root')?.shadowRoot;
   if (subtitleShadow) roots.push(subtitleShadow);
   for (const root of roots) {
     for (const host of root.querySelectorAll<HTMLElement>(`.${POPUP_HOST_CLASS}`)) {
@@ -262,7 +262,7 @@ function paintSentenceBandsInto(host: HTMLElement, spans: readonly HTMLElement[]
   const scrollY = view?.scrollY ?? 0;
   for (const band of visible) {
     const el = doc.createElement('div');
-    el.className = 'js-cell-sentence-band';
+    el.className = 'js-Tihoka-sentence-band';
     el.setAttribute('aria-hidden', 'true');
     el.style.left = `${band.left + scrollX}px`;
     el.style.top = `${band.top + scrollY}px`;
@@ -285,7 +285,7 @@ function paintSentenceBands(spans: readonly HTMLElement[]): void {
   overlay = host;
   overlaySpans = spans;
   paintSentenceBandsInto(host, spans);
-  watchPopupGeometry(doc, doc.getElementById('cell-subtitle-root')?.shadowRoot ?? null);
+  watchPopupGeometry(doc, doc.getElementById('Tihoka-subtitle-root')?.shadowRoot ?? null);
 }
 
 /** Remove the wash from every span of the previous run. */

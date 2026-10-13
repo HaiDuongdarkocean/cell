@@ -2,11 +2,11 @@
 //
 // Used by the keyboard status shortcuts (1/2/3/4) so the user can select a
 // passage of text and batch-change the status of every token inside it.
-// Reuses the .js-cell-token spans emitted by the tokenize controllers; terms
-// are read from the data-cell-term attribute and de-duplicated (status is
+// Reuses the .js-Tihoka-token spans emitted by the tokenize controllers; terms
+// are read from the data-tihoka-term attribute and de-duplicated (status is
 // keyed by term in the DB, so one apply covers every occurrence on the page).
 
-const TOKEN_SELECTOR = '.js-cell-token';
+const TOKEN_SELECTOR = '.js-Tihoka-token';
 
 interface ComposedRangeOptions {
   readonly shadowRoots?: readonly ShadowRoot[];
@@ -56,7 +56,7 @@ function rectsIntersect(a: DOMRect, b: DOMRect): boolean {
   return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 }
 
-/** Extract unique terms from token spans (.js-cell-token) intersecting the
+/** Extract unique terms from token spans (.js-Tihoka-token) intersecting the
  *  given text selection. Returns an empty array when there is no selection,
  *  the selection is collapsed, or no token spans overlap it.
  *
@@ -117,7 +117,7 @@ export function extractTermsFromSelection(
     const selectionRects =
       typeof range.getClientRects === 'function' ? Array.from(range.getClientRects()) : [];
     for (const token of scoped) {
-      const term = token.getAttribute('data-cell-term');
+      const term = token.getAttribute('data-tihoka-term');
       if (!term || terms.has(term)) continue;
       const hit =
         selectionRects.length > 0
@@ -134,7 +134,7 @@ export function extractTermsFromSelection(
     if (allRects.length > 0) {
       for (const root of shadowRoots) {
         for (const token of root.querySelectorAll(TOKEN_SELECTOR)) {
-          const term = token.getAttribute('data-cell-term');
+          const term = token.getAttribute('data-tihoka-term');
           if (!term || terms.has(term)) continue;
           const tokenRect = token.getBoundingClientRect();
           if (allRects.some((rect) => rectsIntersect(rect, tokenRect))) terms.add(term);

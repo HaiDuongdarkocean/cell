@@ -68,7 +68,7 @@ export function CueStrip({
           className={`${styles.cueBlock} ${index === selectedIndex ? styles.cueBlockSelected : ''}`}
           onClick={() => onSelect(index)}
           onKeyDown={(e) => handleKeyDown(index, e)}
-          data-cell-id={`cue-step-${index}`}
+          data-tihoka-id={`cue-step-${index}`}
           aria-current={index === selectedIndex ? 'true' : undefined}
           tabIndex={index === selectedIndex ? 0 : -1}
         >
@@ -92,7 +92,7 @@ export function CueStrip({
         type="button"
         className={styles.cueAdd}
         onClick={onAdd}
-        data-cell-id="cue-add-step"
+        data-tihoka-id="cue-add-step"
       >
         <Icon name="plus" size="xs" />
         <Text as="span">{t('studyModes.builder.addStep')}</Text>

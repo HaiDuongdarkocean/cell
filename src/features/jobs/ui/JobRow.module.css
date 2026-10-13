@@ -14,14 +14,13 @@
 
 .row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-2);
 }
 
 .lead {
   display: inline-flex;
   align-items: center;
-  min-height: var(--space-6);
   flex-shrink: 0;
 }
 
@@ -33,12 +32,38 @@
   gap: var(--space-0-5);
 }
 
+.nameLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
 .name {
   font-weight: var(--font-weight-medium);
+  min-width: 0;
+}
+
+.metaSep {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
 }
 
 .meta {
   margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.rowPct {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.deletingText {
+  color: var(--color-error);
 }
 
 .errorText {

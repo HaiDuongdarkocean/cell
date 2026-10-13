@@ -5,6 +5,7 @@ import { getWordStatuses } from '@/features/dictionary';
 import { getFrequencyEntries } from '@/features/dictionary';
 import { getReadings } from '@/features/dictionary';
 import { getSrsCardTermSet } from '@/features/srs';
+import { resolveEspeakReadings } from './espeakReadings';
 import {
   entriesToBand,
   loadFrequencyBandOptions,
@@ -72,13 +73,23 @@ export async function resolveTokenListMetadata(
       getSrsCardTermSet(langCode).catch(() => null),
     ]);
 
+    const espeakReadings = dictReadings
+      ? await resolveEspeakReadings(
+          langCode,
+          termList,
+          (term) => dictReadings.get(term) ?? pickFrequencyReading(term, freqMaps.get(term) ?? []),
+        )
+      : null;
+
     return tokens.map((token) => {
       if (token.isSeparator) return token;
       const freqEntries = freqMaps.get(token.term) ?? [];
       // null = reading fetch failed → keep the existing reading rather than
       // flicker to blank; a resolved map is authoritative.
       const reading = dictReadings
-        ? dictReadings.get(token.term) ?? pickFrequencyReading(token.term, freqEntries)
+        ? dictReadings.get(token.term)
+            ?? pickFrequencyReading(token.term, freqEntries)
+            ?? espeakReadings?.get(token.term)
         : token.reading;
       return {
         ...token,

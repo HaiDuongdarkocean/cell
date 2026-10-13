@@ -2,8 +2,8 @@ import { extractTermsFromSelection } from './selectionTerms';
 
 function makeToken(term: string): HTMLSpanElement {
   const span = document.createElement('span');
-  span.className = 'js-cell-token';
-  span.setAttribute('data-cell-term', term);
+  span.className = 'js-Tihoka-token';
+  span.setAttribute('data-tihoka-term', term);
   span.textContent = term;
   return span;
 }

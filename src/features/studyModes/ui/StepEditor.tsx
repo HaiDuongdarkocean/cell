@@ -60,7 +60,7 @@ export function StepEditor({ index, step, onChange, onRemove }: StepEditorProps)
             size="sm"
             selected={current === option}
             onClick={() => onChange({ ...step, [field]: option })}
-            data-cell-id={`step-${index}-${field}-${option}`}
+            data-tihoka-id={`step-${index}-${field}-${option}`}
           >
             {optionLabel(option)}
           </Chip>
@@ -70,7 +70,7 @@ export function StepEditor({ index, step, onChange, onRemove }: StepEditorProps)
   );
 
   return (
-    <div className={styles.stepRow} data-cell-id={`step-row-${index}`}>
+    <div className={styles.stepRow} data-tihoka-id={`step-row-${index}`}>
       <VStack gap="2" className={styles.stepOptions}>
         {OptionGroup(
           t('studyModes.step.subtitle'),
@@ -108,7 +108,7 @@ export function StepEditor({ index, step, onChange, onRemove }: StepEditorProps)
                   size="sm"
                   selected={(step.skip ?? 'never') === option}
                   onClick={() => onChange({ ...step, skip: option === 'never' ? undefined : option })}
-                  data-cell-id={`step-${index}-skip-${option}`}
+                  data-tihoka-id={`step-${index}-skip-${option}`}
                 >
                   {t(SKIP_OPTION_KEYS[option])}
                 </Chip>
@@ -123,7 +123,7 @@ export function StepEditor({ index, step, onChange, onRemove }: StepEditorProps)
           variant="ghost"
           onClick={onRemove}
           aria-label={t('studyModes.builder.removeStepAria', [index + 1])}
-          data-cell-id={`remove-step-${index}`}
+          data-tihoka-id={`remove-step-${index}`}
           leadingIcon={<Icon name="trash" size="xs" />}
         />
       )}

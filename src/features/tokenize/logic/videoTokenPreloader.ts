@@ -8,6 +8,7 @@ import { getWordStatuses } from '@/features/dictionary';
 import { getFrequencyEntries } from '@/features/dictionary';
 import { getReadings } from '@/features/dictionary';
 import { getWordTranslations } from '@/features/translate';
+import { resolveEspeakReadings } from './espeakReadings';
 import {
   entriesToBand,
   loadFrequencyBandOptions,
@@ -164,6 +165,12 @@ export function createVideoTokenPreloader(
             readings.set(term, pickFrequencyReading(term, freqMaps.get(term) ?? []) ?? '');
           }
         }
+        const espeakReadings = await resolveEspeakReadings(
+          langCode,
+          terms,
+          (term) => readings!.get(term) || undefined,
+        );
+        for (const [term, ipa] of espeakReadings) readings.set(term, ipa);
       }
 
       for (const term of terms) {

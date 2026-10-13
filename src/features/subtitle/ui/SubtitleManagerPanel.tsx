@@ -130,7 +130,7 @@ function ItemRow({
 }): React.JSX.Element {
   return (
     <div
-      data-cell-id={`manager-item-${role}-${index}`}
+      data-tihoka-id={`manager-item-${role}-${index}`}
       role="option"
       aria-selected={active}
       tabIndex={0}
@@ -166,7 +166,7 @@ function ItemRow({
             size="md"
             variant="ghost"
             aria-label={t('subtitle.manager.downloadItem', [item.name])}
-            data-cell-id={`manager-download-${role}-${index}`}
+            data-tihoka-id={`manager-download-${role}-${index}`}
             onClick={(e) => {
               e.stopPropagation();
               onDownload(role, index);
@@ -255,7 +255,7 @@ function OffsetStepper({
     <StepperSection
       label={t('subtitle.offset.latency')}
       status={
-        <span role="status" data-cell-id={`manager-offset-save-${role}`}>
+        <span role="status" data-tihoka-id={`manager-offset-save-${role}`}>
           {saveLabel}
         </span>
       }
@@ -266,15 +266,15 @@ function OffsetStepper({
       increaseAriaLabel={t('subtitle.offset.increase', [label, OFFSET_STEP])}
       onDecrease={() => bump(-OFFSET_STEP)}
       onIncrease={() => bump(OFFSET_STEP)}
-      decreaseDataCellId={`manager-offset-dec-${role}`}
-      increaseDataCellId={`manager-offset-inc-${role}`}
+      decreaseDataTihokaId={`manager-offset-dec-${role}`}
+      increaseDataTihokaId={`manager-offset-inc-${role}`}
       trailing={
         <Button
           shape="circle"
           size="md"
           variant="ghost"
           aria-label={t('subtitle.offset.resetAria')}
-          data-cell-id={`manager-offset-reset-${role}`}
+          data-tihoka-id={`manager-offset-reset-${role}`}
           onClick={handleReset}
           className={styles.resetBtn}
         >
@@ -294,7 +294,7 @@ function OffsetStepper({
           onKeyDown={handleKeyDown}
           aria-label={t('subtitle.offset.inputAria', [label])}
           variant="ghost"
-          data-cell-id={`manager-offset-input-${role}`}
+          data-tihoka-id={`manager-offset-input-${role}`}
         />
       </Label>
     </StepperSection>
@@ -315,13 +315,13 @@ function TrackList({
   onDownload?: (role: 'target' | 'native', index: number) => void;
 }): React.JSX.Element {
   return (
-    <div className={styles.trackList} role="listbox" data-cell-id="manager-section-body" data-role={role}>
+    <div className={styles.trackList} role="listbox" data-tihoka-id="manager-section-body" data-role={role}>
       <Button variant="secondary"
         role="option"
         aria-selected={activeIndex === -1}
         className={[styles.track, styles.offRow, activeIndex === -1 && styles.trackActive].filter(Boolean).join(' ')}
         onClick={() => onSelect(role, -1)}
-        data-cell-id={`manager-off-${role}`}
+        data-tihoka-id={`manager-off-${role}`}
         data-testid={`manager-off-${role}`}
       >
         <span
@@ -501,7 +501,7 @@ export function SubtitleManagerPanel({
             ref={backBtnRef}
             variant="ghost"
             aria-label={t('subtitle.manager.back')}
-            data-cell-id="manager-back-to-subtitles"
+            data-tihoka-id="manager-back-to-subtitles"
             onClick={handleBack}
           >
             <ChevronLeft size={ICON_SIZE_PX} aria-hidden="true" />
@@ -522,7 +522,7 @@ export function SubtitleManagerPanel({
       className={inSheet ? `${styles.panel} ${styles.inSheet}` : styles.panel}
       role="dialog"
       aria-label={t('subtitle.manager.aria')}
-      data-cell-id="subtitle-manager-panel"
+      data-tihoka-id="subtitle-manager-panel"
       data-view={view}
       data-direction={viewDirection}
       data-scrolled={scrolledDir}
@@ -556,7 +556,7 @@ export function SubtitleManagerPanel({
           variant="ghost"
           aria-label={t('subtitle.manager.close')}
           onClick={onClose}
-          data-cell-id="subtitle-manager-close"
+          data-tihoka-id="subtitle-manager-close"
         >
           <X size={ICON_SIZE_PX} aria-hidden="true" />
         </Button>
@@ -566,7 +566,7 @@ export function SubtitleManagerPanel({
       {view === 'tracks' && (
         <div key="tracks" className={styles.viewContent}>
           <div className={styles.tracksBody} ref={tracksBodyRef}>
-            <div className={styles.sectionBar} data-cell-id="manager-section-header">
+            <div className={styles.sectionBar} data-tihoka-id="manager-section-header">
               <InkTabs
                 className={styles.inkTabs}
                 aria-label={t('subtitle.manager.sectionsAria')}
@@ -583,7 +583,7 @@ export function SubtitleManagerPanel({
                     size="md"
                     variant="ghost"
                     aria-label={t('subtitle.manager.importAria', [activeLabel])}
-                    data-cell-id={`manager-import-${activeTab}`}
+                    data-tihoka-id={`manager-import-${activeTab}`}
                     onClick={() => onImport(activeTab)}
                   >
                     <Plus size={ICON_SIZE_PX} aria-hidden="true" />
@@ -595,7 +595,7 @@ export function SubtitleManagerPanel({
                     variant="ghost"
                     active={activeHidden}
                     aria-label={activeHidden ? t('subtitle.manager.showSection', [activeLabel]) : t('subtitle.manager.hideSection', [activeLabel])}
-                    data-cell-id={`manager-hide-section-${activeTab}`}
+                    data-tihoka-id={`manager-hide-section-${activeTab}`}
                     onClick={() => onHideSection(activeTab)}
                   >
                     <EyeOff size={ICON_SIZE_PX} aria-hidden="true" />
@@ -608,7 +608,7 @@ export function SubtitleManagerPanel({
                     disabled={!condenseAudioEnabled}
                     aria-label={t('condensedAudio.trigger.label')}
                     title={condenseAudioEnabled ? t('condensedAudio.trigger.label') : t('condensedAudio.trigger.needCues')}
-                    data-cell-id="manager-condense-audio"
+                    data-tihoka-id="manager-condense-audio"
                     onClick={onCondenseAudio}
                   >
                     <AudioLines size={ICON_SIZE_PX} aria-hidden="true" />
@@ -656,7 +656,7 @@ export function SubtitleManagerPanel({
             )}
           </div>
 
-          <div className={styles.displayModeRow} data-cell-id="pm-cue-display-row">
+          <div className={styles.displayModeRow} data-tihoka-id="pm-cue-display-row">
             <span className={styles.displayModeLabel}>
               {t('subtitle.playerMode.displayMode')}
             </span>

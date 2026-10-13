@@ -18,9 +18,9 @@ function paragraph(blocks: readonly (readonly Piece[])[]): HTMLElement {
   blocks.forEach((pieces, i) => {
     for (const [text, sentence, separator] of pieces) {
       const span = document.createElement('span');
-      span.className = separator ? 'js-cell-token js-cell-token--separator' : 'js-cell-token js-cell-token--word';
-      span.setAttribute('data-cell-block-id', `b${i}`);
-      span.setAttribute('data-cell-sentence', String(sentence));
+      span.className = separator ? 'js-Tihoka-token js-Tihoka-token--separator' : 'js-Tihoka-token js-Tihoka-token--word';
+      span.setAttribute('data-tihoka-block-id', `b${i}`);
+      span.setAttribute('data-tihoka-sentence', String(sentence));
       span.textContent = text;
       p.appendChild(span);
     }
@@ -42,7 +42,7 @@ describe('highlightSentence', () => {
       [[' ', 0, true], ['Another', 0], [' ', 0, true], ['sentence', 0], ['.', 0, true]],
     ]);
     document.body.appendChild(p);
-    const hovered = [...p.querySelectorAll<HTMLElement>('[data-cell-block-id="b3"]')][0]!;
+    const hovered = [...p.querySelectorAll<HTMLElement>('[data-tihoka-block-id="b3"]')][0]!;
 
     const washed = highlightSentence(hovered);
     const text = washed.map((el) => el.textContent).join('');
@@ -76,7 +76,7 @@ describe('sentenceTextForSpan', () => {
       [[' ', 0, true], ['Another', 0], [' ', 0, true], ['sentence', 0], ['.', 0, true]],
     ]);
     document.body.appendChild(p);
-    const hovered = [...p.querySelectorAll<HTMLElement>('[data-cell-block-id="b3"]')][0]!;
+    const hovered = [...p.querySelectorAll<HTMLElement>('[data-tihoka-block-id="b3"]')][0]!;
 
     expect(sentenceTextForSpan(hovered)).toBe('Other words Chinese or more support.');
   });

@@ -1,6 +1,8 @@
 import type { Token, TokenBlock } from '@/features/tokenize/types';
+import type { AnnotationDisplayMode } from '@/entities/settings';
 import { collectSentenceRun, type SentenceRunEntry, type SentenceSegment } from '@/features/tokenize/logic/sentenceRun';
 import { IPLUS1_OFF_CLASS, pickIPlus1Index } from '@/features/tokenize/logic/iPlus1Marking';
+import { isNotKnown } from '@/features/dictionary';
 import { hasSentenceEnd } from '@/shared/lib/sentencePunct';
 import { injectTokenSpanStyle } from './tokenSpanCss';
 
@@ -9,12 +11,12 @@ export interface TokenSpanBindOptions {
   readonly showStatus: boolean;
   /** Show frequency background/text layer. */
   readonly showFrequency: boolean;
-  /** Show the reading cap above tokens. Absent → caps hidden; web-tokenize
+  /** Reading cap display mode above tokens. Absent → 'off'; web-tokenize
    *  surfaces omit this (v1 renders on controlled surfaces only). */
-  readonly showReadings?: boolean;
-  /** Show the native-language gloss below tokens. Absent → glosses hidden;
+  readonly readingDisplay?: AnnotationDisplayMode;
+  /** Native-language gloss display mode below tokens. Absent → 'off';
    *  subtitle overlay only in v1. */
-  readonly showGlosses?: boolean;
+  readonly glossDisplay?: AnnotationDisplayMode;
   /** Hover a word token (desktop). */
   readonly onTokenEnter?: (term: string, block: TokenBlock, element: HTMLElement) => void;
   /** Leave a word token (desktop). */
@@ -32,17 +34,21 @@ export interface TokenSpanBindOptions {
   readonly isSelected?: (term: string) => boolean;
 }
 
-export const TOKEN_CLASS = 'js-cell-token';
-const WORD_CLASS = 'js-cell-token--word';
-export const SEPARATOR_CLASS = 'js-cell-token--separator';
+export const TOKEN_CLASS = 'js-Tihoka-token';
+const WORD_CLASS = 'js-Tihoka-token--word';
+export const SEPARATOR_CLASS = 'js-Tihoka-token--separator';
 /** Sentence index of the token/gap, stamped at bind time. */
-export const SENTENCE_ATTR = 'data-cell-sentence';
-const WORD_INNER_CLASS = 'js-cell-token-word';
-const STATUS_CLASS = 'js-cell-token-status';
-const READING_OFF_CLASS = 'js-cell-token--reading-off';
-const GLOSS_OFF_CLASS = 'js-cell-token--gloss-off';
-const HAS_CARD_CLASS = 'js-cell-token--has-card';
-const BLOCK_ATTR = 'data-cell-block-id';
+export const SENTENCE_ATTR = 'data-tihoka-sentence';
+const WORD_INNER_CLASS = 'js-Tihoka-token-word';
+const STATUS_CLASS = 'js-Tihoka-token-status';
+const READING_OFF_CLASS = 'js-Tihoka-token--reading-off';
+const GLOSS_OFF_CLASS = 'js-Tihoka-token--gloss-off';
+const READING_HOVER_CLASS = 'js-Tihoka-token--reading-hover';
+const GLOSS_HOVER_CLASS = 'js-Tihoka-token--gloss-hover';
+const READING_I1_CLASS = 'js-Tihoka-token--reading-i1';
+const GLOSS_I1_CLASS = 'js-Tihoka-token--gloss-i1';
+const HAS_CARD_CLASS = 'js-Tihoka-token--has-card';
+const BLOCK_ATTR = 'data-tihoka-block-id';
 
 /** Paragraph-ish container: a sentence never reaches past one visual
  *  paragraph, so runs and i+1 marks are scoped to the spans inside it. */
@@ -114,11 +120,16 @@ function applyRunMark(segments: readonly RenderedSentenceSegment[], entries: rea
     }
   }
   const markedIndex = pickIPlus1Index(
-    words.map((span) => ({ term: span.getAttribute('data-cell-term') ?? '', isNew: isNewWordSpan(span) })),
+    words.map((span) => ({ term: span.getAttribute('data-tihoka-term') ?? '', isNew: isNewWordSpan(span) })),
   );
   const marked = markedIndex === null ? null : words[markedIndex];
   for (const span of words) {
-    span.classList.toggle(IPLUS1_OFF_CLASS, span !== marked);
+    const off = span !== marked;
+    span.classList.toggle(IPLUS1_OFF_CLASS, off);
+    // Annotation lanes in 'i1' display mode gate their --*-off class off the
+    // same mark — the single new word shows the lane, every other token is flat.
+    if (span.classList.contains(READING_I1_CLASS)) span.classList.toggle(READING_OFF_CLASS, off);
+    if (span.classList.contains(GLOSS_I1_CLASS)) span.classList.toggle(GLOSS_OFF_CLASS, off);
   }
 }
 
@@ -177,7 +188,7 @@ function passThroughInteractiveClick(e: MouseEvent, span: HTMLElement): boolean 
 function createSeparatorSpan(text: string, block: TokenBlock, sentenceIndex: number, options: TokenSpanBindOptions): HTMLSpanElement {
   const span = document.createElement('span');
   span.className = `${TOKEN_CLASS} ${SEPARATOR_CLASS}`;
-  span.setAttribute('data-cell-block-id', block.id);
+  span.setAttribute('data-tihoka-block-id', block.id);
   span.setAttribute(SENTENCE_ATTR, String(sentenceIndex));
   span.textContent = text;
 
@@ -223,15 +234,36 @@ function applyTokenClasses(span: HTMLElement, token: Token, options: TokenSpanBi
   if (!options.showFrequency) {
     span.classList.add(`${TOKEN_CLASS}--frequency-off`);
   }
-  if (!options.showReadings) {
-    span.classList.add(READING_OFF_CLASS);
-  } else {
-    span.classList.remove(READING_OFF_CLASS);
-  }
-  if (!options.showGlosses) {
-    span.classList.add(GLOSS_OFF_CLASS);
-  } else {
-    span.classList.remove(GLOSS_OFF_CLASS);
+  applyAnnotationClasses(span, token, options.readingDisplay ?? 'off', READING_OFF_CLASS, READING_HOVER_CLASS, READING_I1_CLASS);
+  applyAnnotationClasses(span, token, options.glossDisplay ?? 'off', GLOSS_OFF_CLASS, GLOSS_HOVER_CLASS, GLOSS_I1_CLASS);
+}
+
+/** Map a display mode onto the token's annotation classes. 'i1' skips the
+ *  --*-off write — the sentence-level mark pass (applyRunMark) owns it and
+ *  runs on every bind/restyle/status change. */
+function applyAnnotationClasses(
+  span: HTMLElement,
+  token: Token,
+  mode: AnnotationDisplayMode,
+  offClass: string,
+  hoverClass: string,
+  i1Class: string,
+): void {
+  span.classList.toggle(hoverClass, mode === 'hover');
+  span.classList.toggle(i1Class, mode === 'i1');
+  switch (mode) {
+    case 'off':
+      span.classList.add(offClass);
+      break;
+    case 'always':
+    case 'hover':
+      span.classList.remove(offClass);
+      break;
+    case 'unknown':
+      span.classList.toggle(offClass, !isNotKnown(token.status ?? 'unknown'));
+      break;
+    case 'i1':
+      break;
   }
 }
 
@@ -256,10 +288,10 @@ function applyTokenReading(span: HTMLElement, token: Token): void {
 function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBindOptions): HTMLSpanElement {
   const span = document.createElement('span');
   span.className = TOKEN_CLASS;
-  span.setAttribute('data-cell-term', token.term);
-  span.setAttribute('data-cell-block-id', block.id);
-  span.setAttribute('data-cell-start', String(token.start));
-  span.setAttribute('data-cell-end', String(token.end));
+  span.setAttribute('data-tihoka-term', token.term);
+  span.setAttribute('data-tihoka-block-id', block.id);
+  span.setAttribute('data-tihoka-start', String(token.start));
+  span.setAttribute('data-tihoka-end', String(token.end));
   span.setAttribute(SENTENCE_ATTR, String(token.sentenceIndex));
 
   if (!token.isSeparator && (options.onTokenEnter || options.onTokenLeave || options.onTokenClick || options.onTokenCtrlClick)) {
@@ -311,7 +343,7 @@ export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions)
   // If already bound, verify the rendered spans are still present. SPA re-renders
   // can wipe them while leaving block.isBound=true, which would no-op rebinding.
   if (block.isBound) {
-    if (parent.querySelector(`[data-cell-block-id="${block.id}"]`)) return;
+    if (parent.querySelector(`[data-tihoka-block-id="${block.id}"]`)) return;
     block.isBound = false;
   }
 
@@ -362,15 +394,15 @@ export function restyleTokenBlock(block: TokenBlock, options: TokenSpanBindOptio
     .sort((a, b) => a.start - b.start)
     .filter((token) => !token.isSeparator);
   const spans = Array.from(
-    block.element.querySelectorAll<HTMLElement>(`.${TOKEN_CLASS}[data-cell-block-id="${block.id}"]`),
+    block.element.querySelectorAll<HTMLElement>(`.${TOKEN_CLASS}[data-tihoka-block-id="${block.id}"]`),
   ).filter((el) => !el.classList.contains(SEPARATOR_CLASS));
   if (spans.length !== tokens.length) return false;
   for (let i = 0; i < spans.length; i++) {
     const span = spans[i]!;
     const token = tokens[i]!;
     if (
-      span.getAttribute('data-cell-start') !== String(token.start) ||
-      span.getAttribute('data-cell-end') !== String(token.end)
+      span.getAttribute('data-tihoka-start') !== String(token.start) ||
+      span.getAttribute('data-tihoka-end') !== String(token.end)
     ) {
       return false;
     }
@@ -387,7 +419,7 @@ export function unbindTokenBlock(block: TokenBlock): void {
 
   const parent = block.element;
   let sourceNode = block.sourceNodes[0]!;
-  const selector = `[data-cell-block-id="${block.id}"]`;
+  const selector = `[data-tihoka-block-id="${block.id}"]`;
   const rendered = Array.from(parent.querySelectorAll(selector));
   if (rendered.length === 0) {
     block.isBound = false;

@@ -75,10 +75,10 @@ export function SubtitleOffsetPanel({
   };
 
   return (
-    <div className={styles.panel} data-cell-id="subtitle-offset-panel">
+    <div className={styles.panel} data-tihoka-id="subtitle-offset-panel">
       <div className={styles.header}>
         <span className={styles.title}>{t('subtitle.offsetPanel.title')}</span>
-        <span className={styles.value} data-cell-id="offset-value">
+        <span className={styles.value} data-tihoka-id="offset-value">
           {String(formatOffsetDisplay(clamped))}
         </span>
       </div>
@@ -91,13 +91,13 @@ export function SubtitleOffsetPanel({
           step={0.5}
           value={clamped / 1000}
           onChange={handleSlider}
-          data-cell-id="offset-slider"
+          data-tihoka-id="offset-slider"
         />
       </div>
 
       <div className={styles.steppers}>
         {STEPS.map((step) => (
-          <Button key={step.label} size="sm" variant="outline" onClick={() => adjust(step.value)} data-cell-id={`offset-step-${step.label}`}>
+          <Button key={step.label} size="sm" variant="outline" onClick={() => adjust(step.value)} data-tihoka-id={`offset-step-${step.label}`}>
             {step.label}
           </Button>
         ))}
@@ -112,13 +112,13 @@ export function SubtitleOffsetPanel({
           onBlur={handleInputCommit}
           onKeyDown={handleKeyDown}
           aria-label={t('subtitle.offsetPanel.inputAria')}
-          data-cell-id="offset-input"
+          data-tihoka-id="offset-input"
           className={styles.offsetInput}
         />
-        <Button size="sm" variant="primary" onClick={handleInputCommit} data-cell-id="offset-apply">
+        <Button size="sm" variant="primary" onClick={handleInputCommit} data-tihoka-id="offset-apply">
           {t('subtitle.action.apply')}
         </Button>
-        <Button size="sm" variant="ghost" onClick={handleReset} data-cell-id="offset-reset">
+        <Button size="sm" variant="ghost" onClick={handleReset} data-tihoka-id="offset-reset">
           {t('subtitle.action.reset')}
         </Button>
       </div>

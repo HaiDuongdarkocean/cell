@@ -1,5 +1,5 @@
 // Player Mode overlay — fixed full-viewport layout that slots the host player
-// container into the video stage via the "cell-video" slot. The container stays
+// container into the video stage via the "Tihoka-video" slot. The container stays
 // in the document's light DOM (so its CSS and controls keep working) while the
 // <slot> projects it into the shadow DOM video stage. The container is restored
 // to its original parent on unmount.
@@ -21,6 +21,7 @@ import { LockShield } from './LockShield';
 import { resolvePlayerModeLayout, PM_MOBILE_BAR_HEIGHT_PX } from '../logic/playerModeGeometry';
 import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { videoAncestorChain } from '@/shared/lib/dom/videoAncestorChain';
+import { pinLayerInsideStage } from '@/shared/lib/dom/pinLayerInsideStage';
 import { startHostOverlayHoist } from '@/shared/lib/dom/hostOverlayHoist';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { useSubtitleBlockDrag } from './subtitleDrag';
@@ -229,7 +230,7 @@ function PlayerModeOverlayInner({
   }, []);
 
   // Move the host player container into the shadow host's light DOM and assign
-  // it to the "cell-video" slot. The container stays in the document's CSS scope
+  // it to the "Tihoka-video" slot. The container stays in the document's CSS scope
   // (so controls + their CSS keep working) while the <slot> projects it into the
   // shadow DOM video stage. Saved state (parent, nextSibling, inline styles) is
   // restored on cleanup so exiting Player Mode puts the player back exactly.
@@ -246,9 +247,9 @@ function PlayerModeOverlayInner({
     if (!player) return;
     if (document.fullscreenElement) return;
     if (player.contains(shadowHost) && shadowHost.parentElement !== document.body) {
-      const hostWithProp = shadowHost as HTMLElement & { __cellOriginalParent?: HTMLElement };
-      if (!hostWithProp.__cellOriginalParent && shadowHost.parentElement) {
-        hostWithProp.__cellOriginalParent = shadowHost.parentElement;
+      const hostWithProp = shadowHost as HTMLElement & { __TihokaOriginalParent?: HTMLElement };
+      if (!hostWithProp.__TihokaOriginalParent && shadowHost.parentElement) {
+        hostWithProp.__TihokaOriginalParent = shadowHost.parentElement;
       }
       document.body.appendChild(shadowHost);
     }
@@ -256,14 +257,14 @@ function PlayerModeOverlayInner({
 
     const originalParent = player.parentElement;
     const originalNextSibling = player.nextSibling;
-    // If the player still sits inside a split-view stage cell, the split view's
+    // If the player still sits inside a split-view stage Tihoka, the split view's
     // deferred teardown (410ms after the playerMode state flip) will detach the
-    // wrapper — including this cell — AFTER we snapshot it. Record the
+    // wrapper — including this Tihoka — AFTER we snapshot it. Record the
     // wrapper's live parent + sibling so the exit-restore can fall back to a
     // connected anchor instead of inserting the player into a detached subtree
     // (which would remove the video from the page permanently).
-    const svStage = player.closest('[data-cell-split-view="stage"]');
-    const svWrapper = svStage ? svStage.closest('[data-cell-split-view="wrapper"]') : null;
+    const svStage = player.closest('[data-tihoka-split-view="stage"]');
+    const svWrapper = svStage ? svStage.closest('[data-tihoka-split-view="wrapper"]') : null;
     const liveAnchorParent = svWrapper ? svWrapper.parentElement : null;
     const liveAnchorSibling = svWrapper ? svWrapper.nextSibling : null;
     const savedStyle = {
@@ -311,12 +312,12 @@ function PlayerModeOverlayInner({
       savedDescendantStyles.push({ el: desc, props });
     }
 
-    player.setAttribute('slot', 'cell-video');
+    player.setAttribute('slot', 'Tihoka-video');
     shadowHost.style.width = '100%';
     shadowHost.style.height = '100%';
     shadowHost.style.display = 'block';
     const centerStyle = document.createElement('style');
-    centerStyle.setAttribute('data-cell-player-mode', 'center');
+    centerStyle.setAttribute('data-tihoka-player-mode', 'center');
     centerStyle.textContent = 'video{position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:contain!important}';
     player.appendChild(centerStyle);
     shadowHost.appendChild(player);
@@ -368,9 +369,9 @@ function PlayerModeOverlayInner({
           targetParent.appendChild(player);
         }
       }
-      const hostWithProp = shadowHost as HTMLElement & { __cellOriginalParent?: HTMLElement };
-      const originalHostParent = hostWithProp.__cellOriginalParent;
-      hostWithProp.__cellOriginalParent = undefined;
+      const hostWithProp = shadowHost as HTMLElement & { __TihokaOriginalParent?: HTMLElement };
+      const originalHostParent = hostWithProp.__TihokaOriginalParent;
+      hostWithProp.__TihokaOriginalParent = undefined;
       if (
         originalHostParent?.isConnected
         && shadowHost.parentElement !== originalHostParent
@@ -384,7 +385,7 @@ function PlayerModeOverlayInner({
   // Host popups (settings sheets, menus, dialogs) can't render while our
   // host owns native fullscreen — document-level ones are outside the
   // fullscreen subtree, and player-internal ones are clipped/mispositioned
-  // by the stage wrap. Hoist overlay roots into the host's "cell-host-popup"
+  // by the stage wrap. Hoist overlay roots into the host's "Tihoka-host-popup"
   // slot so they project into the popup stage at viewport level.
   useEffect(() => {
     const stage = videoStageRef.current;
@@ -405,7 +406,7 @@ function PlayerModeOverlayInner({
     const root = stage.getRootNode();
     const shadowHost = root instanceof ShadowRoot ? root.host : null;
     if (!(shadowHost instanceof HTMLElement)) return;
-    const slot = stage.querySelector('slot[name="cell-video"]') as HTMLSlotElement | null;
+    const slot = stage.querySelector('slot[name="Tihoka-video"]') as HTMLSlotElement | null;
     const player = slot?.assignedElements()[0] as HTMLElement | undefined;
     if (!player) return;
     const stageRect = stage.getBoundingClientRect();
@@ -430,18 +431,15 @@ function PlayerModeOverlayInner({
     player.style.setProperty('inset', '0', 'important');
     player.style.setProperty('overflow', 'hidden', 'important');
     player.style.setProperty('transform', 'translateZ(0)', 'important');
-    // Wrap every direct child layer inside the stage box: viewport-anchored
-    // layers (m.youtube #player-control-container is position:fixed at full
-    // viewport height — its action menu covered the cue region) re-pin inside;
-    // bottom-anchored host chrome lands on the video's bottom edge instead.
+    // Re-pin viewport-anchored layers inside the stage box (m.youtube
+    // #player-control-container is position:fixed at full viewport height —
+    // its action menu covered the cue region). Already-absolute chrome keeps
+    // its authored anchors; forcing inset:0 turned YouTube's bottom control
+    // bar (.ytp-chrome-bottom, bottom:0) into a top bar.
     for (const child of Array.from(player.children)) {
       if (!(child instanceof HTMLElement)) continue;
-      if (child.matches('[data-cell-id],[data-cell-player-mode]')) continue;
-      const pos = getComputedStyle(child).position;
-      if (pos === 'fixed' || pos === 'sticky') {
-        child.style.setProperty('position', 'absolute', 'important');
-      }
-      child.style.setProperty('inset', '0', 'important');
+      if (child.matches('[data-tihoka-id],[data-tihoka-player-mode]')) continue;
+      pinLayerInsideStage(child);
     }
     for (const child of videoAncestorChain(player)) {
       child.style.setProperty('width', `${stageW}px`, 'important');
@@ -477,15 +475,15 @@ function PlayerModeOverlayInner({
 
   // Body-level floating chrome (comprehension pill) anchors to the video
   // stage edge via this inset so it never covers the side panel header.
-  // Shared contract with subtitleSplitView's --cell-split-panel-w.
+  // Shared contract with subtitleSplitView's --Tihoka-split-panel-w.
   useEffect(() => {
     const root = document.documentElement;
     const measure = () => {
       const panel = splitRef.current?.querySelector<HTMLElement>(
-        '[data-cell-split-view="panel"]',
+        '[data-tihoka-split-view="panel"]',
       );
       root.style.setProperty(
-        '--cell-split-panel-w',
+        '--Tihoka-split-panel-w',
         panel && !isMobilePm
           ? `${Math.round(panel.getBoundingClientRect().width)}px`
           : '0px',
@@ -495,7 +493,7 @@ function PlayerModeOverlayInner({
     window.addEventListener('resize', measure);
     return () => {
       window.removeEventListener('resize', measure);
-      root.style.removeProperty('--cell-split-panel-w');
+      root.style.removeProperty('--Tihoka-split-panel-w');
     };
   }, [contentPct, cueListOpen, isMobilePm]);
 
@@ -607,20 +605,20 @@ function PlayerModeOverlayInner({
     return (
       <div
         className={`${styles.overlay} ${styles.overlayMobile}`}
-        data-cell-id="player-mode-overlay"
+        data-tihoka-id="player-mode-overlay"
         data-practice-active={practiceMode && practiceMode !== 'off' ? 'true' : 'false'}
         role="application"
         aria-label={t('subtitle.playerMode.aria')}
       >
-        <div className={styles.split} data-cell-split-view="wrapper">
+        <div className={styles.split} data-tihoka-split-view="wrapper">
           <div
             className={`${styles.videoStage} ${!cueListOpen || !onSeek ? styles.videoStageFill : ''}`}
             style={cueListOpen && onSeek ? { height: `${layout.videoStageHeight}px` } : undefined}
-            data-cell-split-view="stage"
+            data-tihoka-split-view="stage"
             aria-hidden="true"
             ref={videoStageRef}
           >
-            <slot name="cell-video" />
+            <slot name="Tihoka-video" />
             {interactionLocked && <LockShield className={styles.lockLayer} />}
           </div>
           <MobileCueChrome
@@ -668,10 +666,10 @@ function PlayerModeOverlayInner({
           />
         </div>
 
-        <slot name="cell-host-chrome" />
+        <slot name="Tihoka-host-chrome" />
 
         <div className={styles.popupStage}>
-          <slot name="cell-host-popup" />
+          <slot name="Tihoka-host-popup" />
         </div>
       </div>
     );
@@ -680,7 +678,7 @@ function PlayerModeOverlayInner({
   return (
     <div
       className={styles.overlay}
-      data-cell-id="player-mode-overlay"
+      data-tihoka-id="player-mode-overlay"
       data-practice-active={practiceMode && practiceMode !== 'off' ? 'true' : 'false'}
       role="application"
       aria-label={t('subtitle.playerMode.aria')}
@@ -688,15 +686,15 @@ function PlayerModeOverlayInner({
       {/* Player Mode split — video-stage + content.
           >480px: row (video left, content right, resizable).
           <480px: column (video top, content bottom). */}
-      <div className={styles.split} ref={splitRef} data-cell-split-view="wrapper">
+      <div className={styles.split} ref={splitRef} data-tihoka-split-view="wrapper">
         <div
           className={styles.videoStage}
           style={{ height: `${layout.videoStageHeight}px` }}
-          data-cell-split-view="stage"
+          data-tihoka-split-view="stage"
           aria-hidden="true"
           ref={videoStageRef}
         >
-          <slot name="cell-video" />
+          <slot name="Tihoka-video" />
           {interactionLocked && <LockShield className={styles.lockLayer} />}
         </div>
 
@@ -704,7 +702,7 @@ function PlayerModeOverlayInner({
           <>
             <div
               className={styles.resizeHandle}
-              data-cell-split-view="handle"
+              data-tihoka-split-view="handle"
               onPointerDown={onResizePointerDown}
               onPointerMove={onResizePointerMove}
               onPointerUp={onResizePointerUp}
@@ -721,7 +719,7 @@ function PlayerModeOverlayInner({
             <div
               className={styles.contentOther}
               style={{ '--content-pct': `${contentPct}%` } as React.CSSProperties}
-              data-cell-split-view="panel"
+              data-tihoka-split-view="panel"
             >
               <SubtitlePanel
                 cues={cues ?? []}
@@ -756,13 +754,13 @@ function PlayerModeOverlayInner({
       <div
         className={styles.subtitleOverlay}
         style={{ right: cueListOpen && onSeek ? `calc(${contentPct}% + var(--space-1-5))` : 'var(--space-1-5)' }}
-        data-cell-id="pm-subtitle-overlay"
+        data-tihoka-id="pm-subtitle-overlay"
       >
         <div
           ref={floatRowRef}
           className={`${panelStyles.root}${floatDragging ? ` ${panelStyles.dragging}` : ''}`}
           style={{ '--sb-y': floatY } as React.CSSProperties}
-          data-cell-id="pm-subtitle-row"
+          data-tihoka-id="pm-subtitle-row"
           onPointerDown={onFloatPointerDown}
           onPointerMove={onFloatPointerMove}
           onPointerUp={onFloatPointerUp}
@@ -813,10 +811,10 @@ function PlayerModeOverlayInner({
         </div>
       </div>
 
-      <slot name="cell-host-chrome" />
+      <slot name="Tihoka-host-chrome" />
 
       <div className={styles.popupStage}>
-        <slot name="cell-host-popup" />
+        <slot name="Tihoka-host-popup" />
       </div>
     </div>
   );

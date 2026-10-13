@@ -104,7 +104,7 @@ export function init(
     anchorContainer();
     themeTokensCleanup();
     themeTokensCleanup = injectThemeTokens(container, [navClusterModuleCss]);
-    const host = document.getElementById('cell-subtitle-root');
+    const host = document.getElementById('Tihoka-subtitle-root');
     if (host) container.appendChild(host);
   });
   reparentObserver.observe(document.documentElement, { childList: true, subtree: true });
@@ -166,13 +166,13 @@ export function init(
   );
 
   blockController.onToggleOcr = () => {
-    window.postMessage({ type: '__CELL_OCR_TOGGLE' }, '*');
+    window.postMessage({ type: '__Tihoka_OCR_TOGGLE' }, '*');
   };
 
   function onOcrStateMessage(e: MessageEvent): void {
     if (e.source !== window) return;
     const d = e.data as { type?: string; enabled?: boolean };
-    if (d?.type === '__CELL_OCR_STATE' && typeof d.enabled === 'boolean') {
+    if (d?.type === '__Tihoka_OCR_STATE' && typeof d.enabled === 'boolean') {
       blockController?.setOcrEnabled(d.enabled);
     }
   }
@@ -280,12 +280,12 @@ export function init(
     const sentence = cue?.text ?? '';
     // Mimic the real click path: anchor + highlight the token span itself so
     // the popup opens next to the word, not the whole line. Token spans carry
-    // data-cell-start (both tokenize status spans and .js-cell-token trigger
+    // data-tihoka-start (both tokenize status spans and .js-Tihoka-token trigger
     // spans); fall back to a term match when tokenizers disagree on offsets.
     let span: HTMLElement | null = null;
     let termFallback: HTMLElement | null = null;
-    for (const el of target.querySelectorAll<HTMLElement>('[data-cell-start], .js-cell-token')) {
-      if (Number(el.getAttribute('data-cell-start')) === termOffset) { span = el; break; }
+    for (const el of target.querySelectorAll<HTMLElement>('[data-tihoka-start], .js-Tihoka-token')) {
+      if (Number(el.getAttribute('data-tihoka-start')) === termOffset) { span = el; break; }
       if (!termFallback && (el.textContent ?? '').toLowerCase() === term) termFallback = el;
     }
     span ??= termFallback;
@@ -295,7 +295,7 @@ export function init(
       term,
       langCode,
       contextSentence: ctx?.sentence ?? sentence,
-      cursorOffset: ctx?.cursorOffset ?? (span ? Number(span.getAttribute('data-cell-start') ?? termOffset) : termOffset),
+      cursorOffset: ctx?.cursorOffset ?? (span ? Number(span.getAttribute('data-tihoka-start') ?? termOffset) : termOffset),
     };
     const requestId = `autopause-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     sharedWebTextCtrl.handleLookup(request, requestId, anchorEl.getBoundingClientRect(), anchorEl);
@@ -352,7 +352,7 @@ export function init(
       }
       void syncUnknownResolver();
       // Every cue-list load funnels through here — broadcast so background's
-      // lastCuesByTab reflects "this tab has Cell cues" on all paths
+      // lastCuesByTab reflects "this tab has Tihoka cues" on all paths
       // (auto-load, manual import, manager switch). Previously only
       // generate-native/manager/visibility flows sent SUBTITLE_CUES_LOADED,
       // so the background cue map stayed empty on the common auto-load path.
@@ -380,7 +380,7 @@ export function init(
       term,
       langCode,
       contextSentence,
-      cursorOffset: cursorOffset ?? Number(element.getAttribute('data-cell-start') ?? 0),
+      cursorOffset: cursorOffset ?? Number(element.getAttribute('data-tihoka-start') ?? 0),
     };
     const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     sharedWebTextCtrl.handleLookup(request, requestId, element.getBoundingClientRect(), element);
@@ -417,8 +417,8 @@ export function init(
             onOpenDictionary: (term, element, contextSentence, event, cursorOffset) =>
               openDictionaryFromToken(settings.subtitleOverlayTargetLanguage, term, element, contextSentence, event, cursorOffset),
             getPopupStatusTarget: () => sharedWebTextCtrl?.getPopupStatusTarget?.() ?? null,
-            showReadings: settings.showReadings,
-            showGlosses: settings.showWordTranslations,
+            readingDisplay: settings.readingDisplay,
+            glossDisplay: settings.glossDisplay,
             glossTargetLanguage: settings.subtitleOverlayNativeLanguage ?? '',
           });
         }
@@ -432,8 +432,8 @@ export function init(
         subtitleTokenizeCtrl.render(activeTarget, activeNative);
         blockController.enableTokenize({
           langCode: settings.subtitleOverlayTargetLanguage,
-          showReadings: settings.showReadings,
-          showGlosses: settings.showWordTranslations,
+          readingDisplay: settings.readingDisplay,
+          glossDisplay: settings.glossDisplay,
           glossTargetLanguage: settings.subtitleOverlayNativeLanguage ?? '',
           onOpenDictionary: (term, element, contextSentence, event, cursorOffset) =>
             openDictionaryFromToken(settings.subtitleOverlayTargetLanguage, term, element, contextSentence, event, cursorOffset),
@@ -663,19 +663,19 @@ export function init(
         void syncSubtitleTokenize();
       }
 
-      // Reading caps are a profile-level toggle — live-update overlay tokens
-      // and the cue list when the profile setting flips (reading-annotation).
-      if (newSettings?.showReadings !== undefined) {
-        subtitleTokenizeCtrl?.setShowReadings(newSettings.showReadings);
-        blockController.setTokenizeShowReadings(newSettings.showReadings);
+      // Reading caps are a profile-level display mode — live-update overlay
+      // tokens and the cue list when the profile setting changes (word-display).
+      if (newSettings?.readingDisplay !== undefined) {
+        subtitleTokenizeCtrl?.setReadingDisplay(newSettings.readingDisplay);
+        blockController.setTokenizeReadingDisplay(newSettings.readingDisplay);
       }
 
-      // Word-translation glosses (spec word-translation): live-toggle display
-      // and re-resolve when the native target language changes — the cue list
-      // lane follows the same profile flag via the block controller.
-      if (newSettings?.showWordTranslations !== undefined) {
-        subtitleTokenizeCtrl?.setShowGlosses(newSettings.showWordTranslations);
-        blockController.setTokenizeShowGlosses(newSettings.showWordTranslations);
+      // Word-translation glosses (spec word-display): live-switch the display
+      // mode and re-resolve when the native target language changes — the cue
+      // list lane follows the same profile mode via the block controller.
+      if (newSettings?.glossDisplay !== undefined) {
+        subtitleTokenizeCtrl?.setGlossDisplay(newSettings.glossDisplay);
+        blockController.setTokenizeGlossDisplay(newSettings.glossDisplay);
       }
       if (newSettings?.subtitleOverlayNativeLanguage !== undefined) {
         subtitleTokenizeCtrl?.setGlossTargetLanguage(newSettings.subtitleOverlayNativeLanguage);
@@ -890,14 +890,14 @@ export function init(
     const langCode = currentSettings?.subtitleOverlayTargetLanguage;
     const { target } = blockController.getLineElements();
     if (!sharedWebTextCtrl || !langCode || !target) return;
-    const spans = Array.from(target.querySelectorAll<HTMLElement>('[data-cell-term]')).filter(
-      (el) => (el.getAttribute('data-cell-term') ?? '').trim() !== '',
+    const spans = Array.from(target.querySelectorAll<HTMLElement>('[data-tihoka-term]')).filter(
+      (el) => (el.getAttribute('data-tihoka-term') ?? '').trim() !== '',
     );
     if (spans.length === 0) return;
-    const openIdx = spans.findIndex((el) => el.classList.contains('js-cell-token--popup-open'));
+    const openIdx = spans.findIndex((el) => el.classList.contains('js-Tihoka-token--popup-open'));
     const mastered = (el: HTMLElement) =>
-      el.classList.contains('js-cell-token--status-known') ||
-      el.classList.contains('js-cell-token--status-ignore');
+      el.classList.contains('js-Tihoka-token--status-known') ||
+      el.classList.contains('js-Tihoka-token--status-ignore');
     const idx = forceLookup
       ? openIdx >= 0
         ? (openIdx + dir + spans.length) % spans.length
@@ -911,10 +911,10 @@ export function init(
     const cue = blockController.getTargetCues()[cueIndex];
     const ctx = sentenceContextForSpan(span);
     const request: LookupRequest = {
-      term: (span.getAttribute('data-cell-term') ?? '').trim(),
+      term: (span.getAttribute('data-tihoka-term') ?? '').trim(),
       langCode,
       contextSentence: ctx?.sentence ?? cue?.text ?? '',
-      cursorOffset: ctx?.cursorOffset ?? Number(span.getAttribute('data-cell-start') ?? 0),
+      cursorOffset: ctx?.cursorOffset ?? Number(span.getAttribute('data-tihoka-start') ?? 0),
     };
     const requestId = `vocabnav-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     sharedWebTextCtrl.handleLookup(request, requestId, span.getBoundingClientRect(), span);
@@ -927,15 +927,15 @@ export function init(
   const { onVisibilityChange, onSpaNav, onOcrTracksMessage } = createContentScriptLifecycleHandlers(ctx);
 
   window.addEventListener('message', onOcrTracksMessage);
-  window.postMessage({ type: '__CELL_OCR_QUERY_STATE' }, '*');
+  window.postMessage({ type: '__Tihoka_OCR_QUERY_STATE' }, '*');
 
-  // ADR-034: listen on window capture (not document capture) so Cell fires
+  // ADR-034: listen on window capture (not document capture) so Tihoka fires
   // BEFORE host keydown listeners (e.g. YouTube space = play/pause). window is
   // the topmost ancestor — capture phase runs window → document → target.
   // stopImmediatePropagation here blocks ALL downstream listeners (document,
-  // body, target, bubble) so host's space handler never runs when Cell handles it.
+  // body, target, bubble) so host's space handler never runs when Tihoka handles it.
   // ponytail ceiling: if a host listens on window capture AND registers before
-  // Cell, it runs first. Upgrade: CDP Input.dispatchKeyEvent interception.
+  // Tihoka, it runs first. Upgrade: CDP Input.dispatchKeyEvent interception.
   window.addEventListener('keydown', onKeydown, true);
   window.addEventListener('keyup', onKeyup, true);
 

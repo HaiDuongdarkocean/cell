@@ -161,7 +161,7 @@ describe('createWebTokenizeController', () => {
     });
 
     expect(MockIntersectionObserver.callbacks.has(paragraph)).toBe(false);
-    expect(paragraph.querySelector('.js-cell-token')).toBeNull();
+    expect(paragraph.querySelector('.js-Tihoka-token')).toBeNull();
 
     controller.enable();
 
@@ -357,7 +357,7 @@ describe('createWebTokenizeController', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const spans = paragraph.querySelectorAll('.js-cell-token');
+    const spans = paragraph.querySelectorAll('.js-Tihoka-token');
     expect(spans.length).toBeGreaterThan(0);
     expect(paragraph.textContent).toBe('Hello world.');
 
@@ -384,15 +384,15 @@ describe('createWebTokenizeController', () => {
     MockIntersectionObserver.trigger(p1);
     MockIntersectionObserver.trigger(p2);
     await waitFor(() => {
-      expect(p1.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
-      expect(p2.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
+      expect(p1.querySelectorAll('.js-Tihoka-token').length).toBeGreaterThan(0);
+      expect(p2.querySelectorAll('.js-Tihoka-token').length).toBeGreaterThan(0);
     });
 
     // OFF
     controller.disable();
     await waitFor(() => {
-      expect(p1.querySelectorAll('.js-cell-token').length).toBe(0);
-      expect(p2.querySelectorAll('.js-cell-token').length).toBe(0);
+      expect(p1.querySelectorAll('.js-Tihoka-token').length).toBe(0);
+      expect(p2.querySelectorAll('.js-Tihoka-token').length).toBe(0);
     });
 
     // ON again
@@ -400,14 +400,14 @@ describe('createWebTokenizeController', () => {
     MockIntersectionObserver.trigger(p1);
     MockIntersectionObserver.trigger(p2);
     await waitFor(() => {
-      expect(p1.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
-      expect(p2.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
+      expect(p1.querySelectorAll('.js-Tihoka-token').length).toBeGreaterThan(0);
+      expect(p2.querySelectorAll('.js-Tihoka-token').length).toBeGreaterThan(0);
     });
 
     // OFF again — ALL spans must be gone (no orphans)
     controller.disable();
     await waitFor(() => {
-      expect(root.querySelectorAll('.js-cell-token').length).toBe(0);
+      expect(root.querySelectorAll('.js-Tihoka-token').length).toBe(0);
     });
     expect(p1.textContent).toBe('Hello world.');
     expect(p2.textContent).toBe('Foo bar baz.');
@@ -420,7 +420,7 @@ describe('createWebTokenizeController', () => {
     const p1 = document.createElement('p');
     p1.textContent = 'Orphan span here.';
     const injected = document.createElement('span');
-    injected.className = 'js-cell-token';
+    injected.className = 'js-Tihoka-token';
     injected.textContent = 'orphan';
     p1.appendChild(injected);
     root.appendChild(p1);
@@ -437,7 +437,7 @@ describe('createWebTokenizeController', () => {
     // OFF must remove the injected orphan span too.
     controller.disable();
     await new Promise((resolve) => setTimeout(resolve, 20));
-    const remainingSpans = root.querySelectorAll('.js-cell-token');
+    const remainingSpans = root.querySelectorAll('.js-Tihoka-token');
     expect(remainingSpans.length).toBe(0);
     expect(p1.textContent).toBe('Orphan span here.orphan');
 
@@ -460,7 +460,7 @@ describe('createWebTokenizeController', () => {
     MockIntersectionObserver.trigger(paragraph);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const hello = paragraph.querySelector('[data-cell-term="hello"]');
+    const hello = paragraph.querySelector('[data-tihoka-term="hello"]');
     expect(hello).not.toBeNull();
     hello!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
 
@@ -492,7 +492,7 @@ describe('createWebTokenizeController', () => {
     MockIntersectionObserver.trigger(paragraph);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const hello = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    const hello = paragraph.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
     expect(hello).not.toBeNull();
     hello!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
 
@@ -529,8 +529,8 @@ describe('createWebTokenizeController', () => {
     MockIntersectionObserver.trigger(paragraph);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const hello = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
-    const world = paragraph.querySelector('[data-cell-term="world"]') as HTMLElement;
+    const hello = paragraph.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
+    const world = paragraph.querySelector('[data-tihoka-term="world"]') as HTMLElement;
     expect(hello).not.toBeNull();
     expect(world).not.toBeNull();
 
@@ -585,7 +585,7 @@ describe('createWebTokenizeController', () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
     // Flush is now blocked on the 80ms background read.
 
-    const hello = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    const hello = paragraph.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
     expect(hello).not.toBeNull();
     hello!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
 
@@ -597,9 +597,9 @@ describe('createWebTokenizeController', () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // rebind recreates the span, so re-query by term after the flush settles.
-    const helloAfter = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
-    expect(helloAfter.classList.contains('js-cell-token--status-known')).toBe(true);
-    expect(helloAfter.classList.contains('js-cell-token--status-unknown')).toBe(false);
+    const helloAfter = paragraph.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
+    expect(helloAfter.classList.contains('js-Tihoka-token--status-known')).toBe(true);
+    expect(helloAfter.classList.contains('js-Tihoka-token--status-unknown')).toBe(false);
     expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'known');
 
     controller.destroy();
@@ -621,18 +621,18 @@ describe('createWebTokenizeController', () => {
     MockIntersectionObserver.trigger(paragraph);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const helloBefore = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    const helloBefore = paragraph.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
     expect(helloBefore).not.toBeNull();
     // showFrequency defaults to true, status unknown -> frequency layer visible
-    expect(helloBefore.classList.contains('js-cell-token--frequency-off')).toBe(false);
+    expect(helloBefore.classList.contains('js-Tihoka-token--frequency-off')).toBe(false);
 
     controller.setShowFrequency(false);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const helloAfter = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    const helloAfter = paragraph.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
     expect(helloAfter).not.toBeNull();
     // toggle off must re-bind so the frequency-off class is now applied
-    expect(helloAfter.classList.contains('js-cell-token--frequency-off')).toBe(true);
+    expect(helloAfter.classList.contains('js-Tihoka-token--frequency-off')).toBe(true);
 
     controller.destroy();
   });
@@ -653,16 +653,16 @@ describe('createWebTokenizeController', () => {
     MockIntersectionObserver.trigger(paragraph);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const helloBefore = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    const helloBefore = paragraph.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
     expect(helloBefore).not.toBeNull();
-    expect(helloBefore.classList.contains('js-cell-token--status-off')).toBe(false);
+    expect(helloBefore.classList.contains('js-Tihoka-token--status-off')).toBe(false);
 
     controller.setShowStatus(false);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const helloAfter = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    const helloAfter = paragraph.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
     expect(helloAfter).not.toBeNull();
-    expect(helloAfter.classList.contains('js-cell-token--status-off')).toBe(true);
+    expect(helloAfter.classList.contains('js-Tihoka-token--status-off')).toBe(true);
 
     controller.destroy();
   });
@@ -683,7 +683,7 @@ describe('createWebTokenizeController', () => {
     MockIntersectionObserver.trigger(target);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const spans = target.querySelectorAll('.js-cell-token');
+    const spans = target.querySelectorAll('.js-Tihoka-token');
     expect(spans.length).toBeGreaterThan(0);
     expect(target.textContent).toBe('Hello world.');
 
@@ -706,7 +706,7 @@ describe('createWebTokenizeController', () => {
     MockIntersectionObserver.trigger(native);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    expect(native.querySelectorAll('.js-cell-token').length).toBe(0);
+    expect(native.querySelectorAll('.js-Tihoka-token').length).toBe(0);
     expect(native.textContent).toBe('Xin chào.');
 
     controller.destroy();
@@ -727,9 +727,9 @@ describe('createWebTokenizeController', () => {
     controller.enable();
     MockIntersectionObserver.trigger(paragraph);
     await waitFor(() => {
-      const helloSpansBefore = paragraph.querySelectorAll('[data-cell-term="hello"]');
+      const helloSpansBefore = paragraph.querySelectorAll('[data-tihoka-term="hello"]');
       expect(helloSpansBefore.length).toBe(2);
-      expect(Array.from(helloSpansBefore[0]!.classList).some((c) => c === 'js-cell-token--status-unknown')).toBe(true);
+      expect(Array.from(helloSpansBefore[0]!.classList).some((c) => c === 'js-Tihoka-token--status-unknown')).toBe(true);
     });
 
     // Simulate popup status cycle: applyStatusForTerm must NOT call setWordStatus
@@ -737,20 +737,20 @@ describe('createWebTokenizeController', () => {
     setWordStatus.mockClear();
     controller.applyStatusForTerm('hello', 'known');
     await waitFor(() => {
-      const helloSpansAfter = paragraph.querySelectorAll('[data-cell-term="hello"]');
+      const helloSpansAfter = paragraph.querySelectorAll('[data-tihoka-term="hello"]');
       for (const span of helloSpansAfter) {
-        expect(span.classList.contains('js-cell-token--status-known')).toBe(true);
+        expect(span.classList.contains('js-Tihoka-token--status-known')).toBe(true);
       }
     });
 
     expect(setWordStatus).not.toHaveBeenCalled();
-    const helloSpansAfter = paragraph.querySelectorAll('[data-cell-term="hello"]');
+    const helloSpansAfter = paragraph.querySelectorAll('[data-tihoka-term="hello"]');
     expect(helloSpansAfter.length).toBe(2);
     for (const span of helloSpansAfter) {
-      expect(span.classList.contains('js-cell-token--status-known')).toBe(true);
-      expect(span.classList.contains('js-cell-token--status-unknown')).toBe(false);
+      expect(span.classList.contains('js-Tihoka-token--status-known')).toBe(true);
+      expect(span.classList.contains('js-Tihoka-token--status-unknown')).toBe(false);
       // showFrequency is on by default; known/ignore no longer forces frequency-off.
-      expect(span.classList.contains('js-cell-token--frequency-off')).toBe(false);
+      expect(span.classList.contains('js-Tihoka-token--frequency-off')).toBe(false);
     }
 
     controller.destroy();
@@ -772,15 +772,15 @@ describe('createWebTokenizeController', () => {
     controller.enable();
     MockIntersectionObserver.trigger(paragraph);
     await waitFor(() => {
-      const before = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
-      expect(before?.className).toContain('js-cell-token--status-unknown');
+      const before = paragraph.querySelector('[data-tihoka-term="hello"]') as HTMLElement | null;
+      expect(before?.className).toContain('js-Tihoka-token--status-unknown');
     });
 
     emitWordStatusChanged({ langCode: 'en', term: 'hello', status: 'known' });
     await waitFor(() => {
-      const after = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
-      expect(after?.className).toContain('js-cell-token--status-known');
-      expect(after?.className).not.toContain('js-cell-token--status-unknown');
+      const after = paragraph.querySelector('[data-tihoka-term="hello"]') as HTMLElement | null;
+      expect(after?.className).toContain('js-Tihoka-token--status-known');
+      expect(after?.className).not.toContain('js-Tihoka-token--status-unknown');
     });
 
     controller.destroy();
@@ -802,16 +802,16 @@ describe('createWebTokenizeController', () => {
     controller.enable();
     MockIntersectionObserver.trigger(paragraph);
     await waitFor(() => {
-      const before = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
-      expect(before?.className).toContain('js-cell-token--status-unknown');
+      const before = paragraph.querySelector('[data-tihoka-term="hello"]') as HTMLElement | null;
+      expect(before?.className).toContain('js-Tihoka-token--status-unknown');
     });
 
     getWordStatuses.mockResolvedValue(new Map([['hello', 'known']]));
     emitWordStatusesReload('en');
     await waitFor(() => {
-      const after = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
-      expect(after?.className).toContain('js-cell-token--status-known');
-      expect(after?.className).not.toContain('js-cell-token--status-unknown');
+      const after = paragraph.querySelector('[data-tihoka-term="hello"]') as HTMLElement | null;
+      expect(after?.className).toContain('js-Tihoka-token--status-known');
+      expect(after?.className).not.toContain('js-Tihoka-token--status-unknown');
     });
 
     controller.destroy();
@@ -836,7 +836,7 @@ describe('createWebTokenizeController', () => {
     controller.enable();
     // Cold-start viewport-first: viewport blocks bind synchronously via
     // bindViewportNow, before any IntersectionObserver callback fires.
-    const spans = paragraph.querySelectorAll('.js-cell-token');
+    const spans = paragraph.querySelectorAll('.js-Tihoka-token');
     expect(spans.length).toBeGreaterThan(0);
 
     controller.destroy();
@@ -868,13 +868,13 @@ describe('createWebTokenizeController', () => {
       });
 
       // Before load: nothing bound yet.
-      expect(paragraph.querySelectorAll('.js-cell-token').length).toBe(0);
+      expect(paragraph.querySelectorAll('.js-Tihoka-token').length).toBe(0);
 
       window.dispatchEvent(new Event('load'));
 
       // FR4: viewport blocks bind immediately after load, before the 500ms
       // hydration quiet window fires the full activate (observe + mutation).
-      const spansAfterLoad = paragraph.querySelectorAll('.js-cell-token');
+      const spansAfterLoad = paragraph.querySelectorAll('.js-Tihoka-token');
       expect(spansAfterLoad.length).toBeGreaterThan(0);
 
       // Observer is NOT connected yet (quiet window has not elapsed).
@@ -943,8 +943,8 @@ describe('createWebTokenizeController', () => {
     const controller = await createWebTokenizeController({
       url: 'https://example.com/',
       root,
-      showReadings: true,
-      showGlosses: true,
+      readingDisplay: 'always',
+      glossDisplay: 'always',
       glossTargetLanguage: 'vi',
     });
 
@@ -955,16 +955,16 @@ describe('createWebTokenizeController', () => {
     expect(getReadings).toHaveBeenCalledWith('en', expect.arrayContaining(['hello', 'world']));
     expect(getWordTranslations).toHaveBeenCalledWith('en', 'vi', expect.arrayContaining(['hello', 'world']));
 
-    const hello = paragraph.querySelector<HTMLElement>('.js-cell-token[data-cell-term="hello"]');
+    const hello = paragraph.querySelector<HTMLElement>('.js-Tihoka-token[data-tihoka-term="hello"]');
     expect(hello?.getAttribute('data-reading')).toBe('həˈloʊ');
     expect(hello?.getAttribute('data-gloss')).toBe('xin chào');
-    expect(hello?.classList.contains('js-cell-token--reading-off')).toBe(false);
-    expect(hello?.classList.contains('js-cell-token--gloss-off')).toBe(false);
+    expect(hello?.classList.contains('js-Tihoka-token--reading-off')).toBe(false);
+    expect(hello?.classList.contains('js-Tihoka-token--gloss-off')).toBe(false);
 
     controller.destroy();
   });
 
-  it('skips annotation requests entirely while the toggles stay off', async () => {
+  it('skips annotation requests entirely while the display modes stay off', async () => {
     getReadings.mockClear();
     getWordTranslations.mockClear();
     const root = document.createElement('div');
@@ -980,14 +980,14 @@ describe('createWebTokenizeController', () => {
 
     expect(getReadings).not.toHaveBeenCalled();
     expect(getWordTranslations).not.toHaveBeenCalled();
-    const hello = paragraph.querySelector<HTMLElement>('.js-cell-token[data-cell-term="hello"]');
-    expect(hello?.classList.contains('js-cell-token--reading-off')).toBe(true);
-    expect(hello?.classList.contains('js-cell-token--gloss-off')).toBe(true);
+    const hello = paragraph.querySelector<HTMLElement>('.js-Tihoka-token[data-tihoka-term="hello"]');
+    expect(hello?.classList.contains('js-Tihoka-token--reading-off')).toBe(true);
+    expect(hello?.classList.contains('js-Tihoka-token--gloss-off')).toBe(true);
 
     controller.destroy();
   });
 
-  it('fills annotation lanes for already-bound blocks when a toggle turns on mid-session', async () => {
+  it('fills annotation lanes for already-bound blocks when a mode turns on mid-session', async () => {
     const root = document.createElement('div');
     const paragraph = document.createElement('p');
     paragraph.textContent = 'Hello world.';
@@ -1000,12 +1000,12 @@ describe('createWebTokenizeController', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     getReadings.mockResolvedValue(new Map([['hello', 'həˈloʊ'], ['world', 'wɜːld']]));
-    controller.setShowReadings?.(true);
+    controller.setReadingDisplay?.('always');
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const hello = paragraph.querySelector<HTMLElement>('.js-cell-token[data-cell-term="hello"]');
+    const hello = paragraph.querySelector<HTMLElement>('.js-Tihoka-token[data-tihoka-term="hello"]');
     expect(hello?.getAttribute('data-reading')).toBe('həˈloʊ');
-    expect(hello?.classList.contains('js-cell-token--reading-off')).toBe(false);
+    expect(hello?.classList.contains('js-Tihoka-token--reading-off')).toBe(false);
 
     controller.destroy();
   });
@@ -1021,7 +1021,7 @@ describe('createWebTokenizeController', () => {
     const controller = await createWebTokenizeController({
       url: 'https://example.com/',
       root,
-      showGlosses: true,
+      glossDisplay: 'always',
       glossTargetLanguage: 'vi',
     });
     controller.enable();
@@ -1035,7 +1035,7 @@ describe('createWebTokenizeController', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(getWordTranslations).toHaveBeenCalledWith('en', 'ja', expect.arrayContaining(['hello']));
-    const hello = paragraph.querySelector<HTMLElement>('.js-cell-token[data-cell-term="hello"]');
+    const hello = paragraph.querySelector<HTMLElement>('.js-Tihoka-token[data-tihoka-term="hello"]');
     expect(hello?.getAttribute('data-gloss')).toBe('こんにちは');
 
     controller.destroy();

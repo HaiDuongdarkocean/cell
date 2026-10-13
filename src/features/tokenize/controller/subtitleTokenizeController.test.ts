@@ -68,8 +68,8 @@ describe('createSubtitleTokenizeController', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    expect(target.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
-    expect(native.querySelectorAll('.js-cell-token').length).toBe(0);
+    expect(target.querySelectorAll('.js-Tihoka-token').length).toBeGreaterThan(0);
+    expect(native.querySelectorAll('.js-Tihoka-token').length).toBe(0);
     expect(target.textContent).toBe('Hello world.');
     expect(native.textContent).toBe('Hello world.');
 
@@ -86,7 +86,7 @@ describe('createSubtitleTokenizeController', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const hello = target.querySelector('[data-cell-term="hello"]');
+    const hello = target.querySelector('[data-tihoka-term="hello"]');
     expect(hello).not.toBeNull();
     hello!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
@@ -107,7 +107,7 @@ describe('createSubtitleTokenizeController', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    const hello = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement | null;
     expect(hello).not.toBeNull();
     hello!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
 
@@ -134,7 +134,7 @@ describe('createSubtitleTokenizeController', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    const hello = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement | null;
     expect(hello).not.toBeNull();
     hello!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
 
@@ -164,8 +164,8 @@ describe('createSubtitleTokenizeController', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
-    const world = target.querySelector('[data-cell-term="world"]') as HTMLElement | null;
+    const hello = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement | null;
+    const world = target.querySelector('[data-tihoka-term="world"]') as HTMLElement | null;
     expect(hello).not.toBeNull();
     expect(world).not.toBeNull();
 
@@ -192,16 +192,16 @@ describe('createSubtitleTokenizeController', () => {
 
   it('applies status to tokens selected inside an extra shadow root (split-view panel)', async () => {
     const panelHost = document.createElement('div');
-    panelHost.setAttribute('data-cell-split-view', 'panel');
+    panelHost.setAttribute('data-tihoka-split-view', 'panel');
     const shadow = panelHost.attachShadow({ mode: 'open' });
     const cueText = document.createElement('span');
     const alpha = document.createElement('span');
-    alpha.className = 'js-cell-token';
-    alpha.setAttribute('data-cell-term', 'alpha');
+    alpha.className = 'js-Tihoka-token';
+    alpha.setAttribute('data-tihoka-term', 'alpha');
     alpha.textContent = 'alpha';
     const beta = document.createElement('span');
-    beta.className = 'js-cell-token';
-    beta.setAttribute('data-cell-term', 'beta');
+    beta.className = 'js-Tihoka-token';
+    beta.setAttribute('data-tihoka-term', 'beta');
     beta.textContent = 'beta';
     cueText.append(alpha, document.createTextNode(' '), beta);
     shadow.appendChild(cueText);
@@ -250,12 +250,12 @@ describe('createSubtitleTokenizeController', () => {
     const shadow = panelHost.attachShadow({ mode: 'open' });
     const cueText = document.createElement('span');
     const alpha = document.createElement('span');
-    alpha.className = 'js-cell-token';
-    alpha.setAttribute('data-cell-term', 'alpha');
+    alpha.className = 'js-Tihoka-token';
+    alpha.setAttribute('data-tihoka-term', 'alpha');
     alpha.textContent = 'alpha';
     const beta = document.createElement('span');
-    beta.className = 'js-cell-token';
-    beta.setAttribute('data-cell-term', 'beta');
+    beta.className = 'js-Tihoka-token';
+    beta.setAttribute('data-tihoka-term', 'beta');
     beta.textContent = 'beta';
     cueText.append(alpha, document.createTextNode(' '), beta);
     shadow.appendChild(cueText);
@@ -349,7 +349,7 @@ describe('createSubtitleTokenizeController', () => {
     controller.render(0, -1);
 
     await new Promise((resolve) => setTimeout(resolve, 50));
-    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    const hello = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement | null;
     hello!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
 
     setWordStatus.mockClear();
@@ -383,7 +383,7 @@ describe('createSubtitleTokenizeController', () => {
     controller.render(0, -1);
 
     await new Promise((resolve) => setTimeout(resolve, 50));
-    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    const hello = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement | null;
     hello!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
 
     setWordStatus.mockClear();
@@ -404,13 +404,13 @@ describe('createSubtitleTokenizeController', () => {
     controller.render(0, -1);
 
     await new Promise((resolve) => setTimeout(resolve, 50));
-    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    const hello = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement | null;
     hello?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
 
     expect(controller.handleStatusKey('4')).toBe(true);
 
-    const after = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
-    expect(after?.className).toContain('js-cell-token--status-tracking');
+    const after = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement | null;
+    expect(after?.className).toContain('js-Tihoka-token--status-tracking');
     expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
 
     controller.destroy();
@@ -425,14 +425,14 @@ describe('createSubtitleTokenizeController', () => {
     controller.render(0, -1);
 
     await new Promise((resolve) => setTimeout(resolve, 50));
-    const before = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
-    expect(before?.className).toContain('js-cell-token--status-unknown');
+    const before = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement | null;
+    expect(before?.className).toContain('js-Tihoka-token--status-unknown');
 
     emitWordStatusChanged({ langCode: 'en', term: 'hello', status: 'ignore' });
 
-    const after = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
-    expect(after?.className).toContain('js-cell-token--status-ignore');
-    expect(after?.className).not.toContain('js-cell-token--status-unknown');
+    const after = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement | null;
+    expect(after?.className).toContain('js-Tihoka-token--status-ignore');
+    expect(after?.className).not.toContain('js-Tihoka-token--status-unknown');
 
     controller.destroy();
   });
@@ -446,16 +446,16 @@ describe('createSubtitleTokenizeController', () => {
     controller.render(0, -1);
 
     await new Promise((resolve) => setTimeout(resolve, 50));
-    const before = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
-    expect(before?.className).toContain('js-cell-token--status-unknown');
+    const before = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement | null;
+    expect(before?.className).toContain('js-Tihoka-token--status-unknown');
 
     getWordStatuses.mockResolvedValue(new Map([['hello', 'ignore']]));
     emitWordStatusesReload('en');
     await new Promise((resolve) => setTimeout(resolve, 20));
 
-    const after = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
-    expect(after?.className).toContain('js-cell-token--status-ignore');
-    expect(after?.className).not.toContain('js-cell-token--status-unknown');
+    const after = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement | null;
+    expect(after?.className).toContain('js-Tihoka-token--status-ignore');
+    expect(after?.className).not.toContain('js-Tihoka-token--status-unknown');
 
     controller.destroy();
   });
@@ -470,16 +470,16 @@ describe('createSubtitleTokenizeController', () => {
     controller.render(0, -1);
 
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(target.querySelector('[data-cell-term="hello"]')!.className).toContain('js-cell-token--has-card');
-    expect(target.querySelector('[data-cell-term="world"]')!.className).not.toContain('js-cell-token--has-card');
+    expect(target.querySelector('[data-tihoka-term="hello"]')!.className).toContain('js-Tihoka-token--has-card');
+    expect(target.querySelector('[data-tihoka-term="world"]')!.className).not.toContain('js-Tihoka-token--has-card');
 
     getSrsCardTerms.mockResolvedValue(new Set(['world']));
     emitSrsCardsChanged('en');
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(getSrsCardTerms).toHaveBeenCalledTimes(2);
-    expect(target.querySelector('[data-cell-term="hello"]')!.className).not.toContain('js-cell-token--has-card');
-    expect(target.querySelector('[data-cell-term="world"]')!.className).toContain('js-cell-token--has-card');
+    expect(target.querySelector('[data-tihoka-term="hello"]')!.className).not.toContain('js-Tihoka-token--has-card');
+    expect(target.querySelector('[data-tihoka-term="world"]')!.className).toContain('js-Tihoka-token--has-card');
 
     controller.destroy();
   });
@@ -512,11 +512,11 @@ describe('createSubtitleTokenizeController', () => {
     controller.render(0, -1);
 
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(target.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
+    expect(target.querySelectorAll('.js-Tihoka-token').length).toBeGreaterThan(0);
 
     controller.disable();
 
-    expect(target.querySelectorAll('.js-cell-token').length).toBe(0);
+    expect(target.querySelectorAll('.js-Tihoka-token').length).toBe(0);
     expect(target.textContent).toBe('Hello world.');
 
     controller.destroy();
@@ -531,8 +531,8 @@ describe('createSubtitleTokenizeController', () => {
     controller.render(0, -1);
 
     await new Promise((resolve) => setTimeout(resolve, 50));
-    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
-    const world = target.querySelector('[data-cell-term="world"]') as HTMLElement;
+    const hello = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
+    const world = target.querySelector('[data-tihoka-term="world"]') as HTMLElement;
     expect(hello).not.toBeNull();
     expect(world).not.toBeNull();
 
@@ -541,8 +541,8 @@ describe('createSubtitleTokenizeController', () => {
 
     expect(onOpenDictionary).not.toHaveBeenCalled();
     expect(controller.getState().selectedTerms.size).toBe(2);
-    expect(hello.className).toContain('js-cell-token--selected');
-    expect(world.className).toContain('js-cell-token--selected');
+    expect(hello.className).toContain('js-Tihoka-token--selected');
+    expect(world.className).toContain('js-Tihoka-token--selected');
 
     setWordStatus.mockClear();
     expect(controller.handleStatusKey('3')).toBe(true);
@@ -552,8 +552,8 @@ describe('createSubtitleTokenizeController', () => {
     expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'ignore');
     expect(setWordStatus).toHaveBeenCalledWith('en', 'world', 'ignore');
     expect(controller.getState().selectedTerms.size).toBe(0);
-    expect(hello.className).not.toContain('js-cell-token--selected');
-    expect(world.className).not.toContain('js-cell-token--selected');
+    expect(hello.className).not.toContain('js-Tihoka-token--selected');
+    expect(world.className).not.toContain('js-Tihoka-token--selected');
 
     controller.destroy();
   });
@@ -597,14 +597,14 @@ describe('createSubtitleTokenizeController', () => {
     controller.render(0, -1);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    const hello = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
     hello.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
-    expect(hello.className).toContain('js-cell-token--selected');
+    expect(hello.className).toContain('js-Tihoka-token--selected');
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
     expect(controller.getState().selectedTerms.size).toBe(0);
-    expect(hello.className).not.toContain('js-cell-token--selected');
+    expect(hello.className).not.toContain('js-Tihoka-token--selected');
 
     controller.destroy();
   });
@@ -618,7 +618,7 @@ describe('createSubtitleTokenizeController', () => {
     controller.render(0, -1);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    const hello = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
     hello.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
     expect(controller.getState().selectedTerms.size).toBe(1);
 
@@ -639,10 +639,10 @@ describe('createSubtitleTokenizeController', () => {
     controller.render(0, -1);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    const hello = target.querySelector('[data-tihoka-term="hello"]') as HTMLElement;
     hello.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
 
-    const region = document.getElementById('cell-token-selection-announcer');
+    const region = document.getElementById('Tihoka-token-selection-announcer');
     expect(region?.getAttribute('aria-live')).toBe('polite');
     expect(region?.textContent).toBe('1 selected');
 

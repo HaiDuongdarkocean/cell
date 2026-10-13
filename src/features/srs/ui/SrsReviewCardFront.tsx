@@ -55,7 +55,7 @@ function StimulusView({
                   asset: imageCache.get(imageAssetId(noteId, fieldId, i)) ?? repoImages.get(`${fieldId}:${i}`),
                 }))}
                 alt={stimulusLabel(stimulus.type)}
-                dataCellId={`srs-front-images-${fieldId}`}
+                dataTihokaId={`srs-front-images-${fieldId}`}
               />
             )
             : value.kind === 'audio'
@@ -177,7 +177,7 @@ export function SrsReviewCardFront({
       className={styles.front}
       role="button"
       tabIndex={0}
-      data-cell-no-ripple
+      data-tihoka-no-ripple
       onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => {
         if ((e.target as HTMLElement).closest('input,button,audio')) return;
         e.preventDefault();

@@ -46,7 +46,7 @@ function Toast({ item, onRemove }: { item: ToastItem; onRemove?: (id: string) =>
   return (
     <div
       className={[styles.toast, styles[variant], exiting && styles.exiting].filter(Boolean).join(' ')}
-      data-cell-id="subtitle-toast"
+      data-tihoka-id="subtitle-toast"
       data-variant={variant}
       role="status"
       aria-live="polite"
@@ -65,7 +65,7 @@ function Toast({ item, onRemove }: { item: ToastItem; onRemove?: (id: string) =>
 
 export function SubtitleToast({ toasts, onRemove }: SubtitleToastProps): React.JSX.Element {
   return (
-    <div className={styles.container} data-cell-id="subtitle-toast-container" aria-label={t('subtitle.toast.aria')}>
+    <div className={styles.container} data-tihoka-id="subtitle-toast-container" aria-label={t('subtitle.toast.aria')}>
       {toasts.map((item) => (
         <Toast key={item.id} item={item} onRemove={onRemove} />
       ))}

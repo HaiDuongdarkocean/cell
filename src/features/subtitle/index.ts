@@ -86,7 +86,7 @@ export {
   isActivatableTarget,
   isEditableEvent,
   isEditableTarget,
-  isInsideCellUi,
+  isInsideTihokaUi,
   isNetflixPage,
   loadSettingsOrToast,
   ManagerLayer,

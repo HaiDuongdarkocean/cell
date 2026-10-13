@@ -22,7 +22,7 @@ describe('StudyModesTab', () => {
       },
       runtime: { sendMessage: jest.fn() },
     } as unknown as typeof chrome;
-    (globalThis as { __cellSendMessage?: typeof sendMessage }).__cellSendMessage = sendMessage;
+    (globalThis as { __TihokaSendMessage?: typeof sendMessage }).__TihokaSendMessage = sendMessage;
   });
 
   beforeEach(() => {
@@ -39,7 +39,7 @@ describe('StudyModesTab', () => {
 
   afterAll(() => {
     delete (global as { chrome?: unknown }).chrome;
-    delete (globalThis as { __cellSendMessage?: typeof sendMessage }).__cellSendMessage;
+    delete (globalThis as { __TihokaSendMessage?: typeof sendMessage }).__TihokaSendMessage;
   });
 
   it('renders preset cards and custom modes section', async () => {
@@ -87,7 +87,7 @@ describe('level chips', () => {
       },
       runtime: { sendMessage: jest.fn() },
     } as unknown as typeof chrome;
-    (globalThis as { __cellSendMessage?: unknown }).__cellSendMessage = jest.fn();
+    (globalThis as { __TihokaSendMessage?: unknown }).__TihokaSendMessage = jest.fn();
   });
 
   beforeEach(() => {

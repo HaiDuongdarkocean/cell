@@ -23,7 +23,7 @@ export function ComprehensionPill({ state, onSelect }: ComprehensionPillProps): 
   const both = Boolean(state.media && state.text);
 
   return (
-    <div className={styles.pill} role="group" aria-label={t('comprehension.aria')} data-cell-id="comprehension-pill">
+    <div className={styles.pill} role="group" aria-label={t('comprehension.aria')} data-tihoka-id="comprehension-pill">
       {both ? (
         <span className={styles.toggle} role="radiogroup" aria-label={t('comprehension.toggle')}>
           {KINDS.map((kind) => (

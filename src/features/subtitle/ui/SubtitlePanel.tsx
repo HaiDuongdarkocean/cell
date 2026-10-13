@@ -354,7 +354,7 @@ function SubtitlePanelImpl({
       className={styles.cueFilterStrip}
       role="status"
       aria-live="polite"
-      data-cell-id="cue-filter-strip"
+      data-tihoka-id="cue-filter-strip"
     >
       <span className={styles.cueFilterStripLabel}>
         {t('cueFilter.indicator.active', [
@@ -367,7 +367,7 @@ function SubtitlePanelImpl({
         type="button"
         className={styles.cueFilterStripReset}
         onClick={() => handleFilterModeChange('all')}
-        data-cell-id="cue-filter-reset"
+        data-tihoka-id="cue-filter-reset"
       >
         {t('cueFilter.indicator.showAll')}
       </button>
@@ -376,7 +376,7 @@ function SubtitlePanelImpl({
 
   const cueFilterOverlay =
     showCueFilterStrip && cueCounts[filterMode] === 0 ? (
-      <div className={styles.cueFilterEmpty} data-cell-id="cue-filter-empty">
+      <div className={styles.cueFilterEmpty} data-tihoka-id="cue-filter-empty">
         <EmptyState
           size="compact"
           title={t('cueFilter.emptyTitle')}
@@ -385,7 +385,7 @@ function SubtitlePanelImpl({
               variant="secondary"
               size="sm"
               onClick={() => handleFilterModeChange('all')}
-              data-cell-id="cue-filter-empty-reset"
+              data-tihoka-id="cue-filter-empty-reset"
             >
               {t('cueFilter.emptyAction')}
             </Button>
@@ -404,7 +404,7 @@ function SubtitlePanelImpl({
             onModeChange={handleFilterModeChange}
             variant="neutralSubtle"
             size="md"
-            menuContainer={fabPortalTarget.closest('[data-cell-id="player-mode-overlay"]')}
+            menuContainer={fabPortalTarget.closest('[data-tihoka-id="player-mode-overlay"]')}
           />,
           fabPortalTarget,
         )
@@ -422,18 +422,18 @@ function SubtitlePanelImpl({
   return (
     <div
       className={styles.panel}
-      data-cell-id="subtitle-panel"
-      data-cell-pm-mobile={pmMobile ? 'true' : 'false'}
+      data-tihoka-id="subtitle-panel"
+      data-tihoka-pm-mobile={pmMobile ? 'true' : 'false'}
       data-practice-mode={practiceMode}
       data-has-close={onClose ? 'true' : 'false'}
     >
       {!pmMobile && (
-      <div className={styles.header} data-cell-id="subtitle-panel-header">
+      <div className={styles.header} data-tihoka-id="subtitle-panel-header">
         {onClose && (
           <Button shape="circle" variant="transparent"
             aria-label={t('subtitle.panel.collapse')}
             title={t('subtitle.panel.collapseTitle')}
-            data-cell-id="subtitle-panel-close"
+            data-tihoka-id="subtitle-panel-close"
             size="sm"
             onClick={onClose}
           >
@@ -450,7 +450,7 @@ function SubtitlePanelImpl({
             aria-label={t('studyModes.actionBar.aria')}
             aria-haspopup="menu"
             aria-expanded={studyMenuOpen}
-            data-cell-id="subtitle-panel-more-btn"
+            data-tihoka-id="subtitle-panel-more-btn"
             onClick={() => setStudyMenuOpen((v) => !v)}
           >
             <Icon name="ellipsis" />
@@ -465,7 +465,7 @@ function SubtitlePanelImpl({
           triggerRef={moreBtnRef}
           ariaLabel={t('studyModes.actionBar.aria')}
           align="right"
-          data-cell-id="study-mode-action-bar"
+          data-tihoka-id="study-mode-action-bar"
         >
           {studyModes.map((mode) => (
             <MenuItem
@@ -473,7 +473,7 @@ function SubtitlePanelImpl({
               radio
               icon={<Icon name={mode.icon} />}
               selected={resolvedModeId === mode.id}
-              data-cell-id={`study-mode-${mode.id}`}
+              data-tihoka-id={`study-mode-${mode.id}`}
               onSelect={() => onStudyModeChange(mode.id)}
             >
               {mode.titleKey ? t(mode.titleKey) : mode.title}
@@ -498,11 +498,11 @@ function SubtitlePanelImpl({
       {showTabs ? (
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as PanelTab)}>
           <Tabs.List className={styles.tabList}>
-            <Tabs.Trigger value="subtitles" data-cell-id="subtitle-panel-tab-subtitles">
+            <Tabs.Trigger value="subtitles" data-tihoka-id="subtitle-panel-tab-subtitles">
               {t('subtitle.panel.title')}
             </Tabs.Trigger>
             {hasPlaylist && (
-              <Tabs.Trigger value="playlist" data-cell-id="subtitle-panel-tab-playlist">
+              <Tabs.Trigger value="playlist" data-tihoka-id="subtitle-panel-tab-playlist">
                 {t('subtitle.panel.playlist')}
               </Tabs.Trigger>
             )}
@@ -521,7 +521,7 @@ function SubtitlePanelImpl({
               {panelBlurred && visibleCues.length > 0 && (
                 <div
                   className={styles.blurOverlay}
-                  data-cell-id="subtitle-panel-blur-overlay"
+                  data-tihoka-id="subtitle-panel-blur-overlay"
                   aria-hidden="true"
                 />
               )}
@@ -547,7 +547,7 @@ function SubtitlePanelImpl({
           {panelBlurred && visibleCues.length > 0 && (
             <div
               className={styles.blurOverlay}
-              data-cell-id="subtitle-panel-blur-overlay"
+              data-tihoka-id="subtitle-panel-blur-overlay"
               aria-hidden="true"
             />
           )}

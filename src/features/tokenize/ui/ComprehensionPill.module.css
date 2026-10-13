@@ -1,9 +1,9 @@
 .pill {
   position: fixed;
   top: var(--space-3);
-  /* --cell-split-panel-w is set by subtitleSplitView while a side panel is
+  /* --Tihoka-split-panel-w is set by subtitleSplitView while a side panel is
      open so the pill anchors to the video stage, not the panel header. */
-  right: calc(var(--space-3) + var(--cell-split-panel-w, 0px));
+  right: calc(var(--space-3) + var(--Tihoka-split-panel-w, 0px));
   z-index: var(--z-overlay-top);
   display: flex;
   align-items: center;
@@ -16,13 +16,13 @@
   font-family: var(--font-family-body);
 }
 
-/* Player Mode mobile (<600px): the overlay sets data-cell-player-mode-mobile
+/* Player Mode mobile (<600px): the overlay sets data-tihoka-player-mode-mobile
    on <html> and --pm-anchor-bottom = distance from viewport bottom to the
    anchor row's vertical center. The pill re-anchors to that center — the
    translateY(50%) makes `bottom` describe the pill's center, not its bottom
    edge, so it shares the row axis with the CC and generate-native buttons.
    Pure CSS: remount-safe, self-restoring when the attribute is removed. */
-:host-context([data-cell-player-mode-mobile='true']) .pill {
+:host-context([data-tihoka-player-mode-mobile='true']) .pill {
   top: auto;
   right: auto;
   left: 50%;
@@ -35,7 +35,7 @@
 /* The pill is a body-level floating host — it cannot join the z-order of
    surfaces that live inside other stacking contexts, so it steps aside
    whenever an extension surface (menu, sheet, dialog) is open. */
-:host-context([data-cell-surface-open]) .pill {
+:host-context([data-tihoka-surface-open]) .pill {
   display: none;
 }
 

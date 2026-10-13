@@ -6,7 +6,7 @@ import { t } from '@/shared/i18n';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
 
-import { isCellDebug } from '@/shared/lib/cellDebug';
+import { isTihokaDebug } from '@/shared/lib/TihokaDebug';
 
 export function createContentScriptLifecycleHandlers(ctx: ContentScriptContext): {
   onVisibilityChange: () => void;
@@ -54,8 +54,8 @@ export function createContentScriptLifecycleHandlers(ctx: ContentScriptContext):
     const currentNavUrl = canonicalNavUrl(location.href);
     if ((lastAutoLoadUrl ?? navBaseline) === currentNavUrl) return;
     navBaseline = currentNavUrl;
-    if (isCellDebug()) {
-      try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'spaNav-clear', lastAutoLoadUrl, navUrl: currentNavUrl, href: location.href, t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
+    if (isTihokaDebug()) {
+      try { const a = JSON.parse(document.documentElement.getAttribute('data-tihoka-debug-autoload-arr') ?? '[]'); a.push({ step: 'spaNav-clear', lastAutoLoadUrl, navUrl: currentNavUrl, href: location.href, t: Date.now() }); document.documentElement.setAttribute('data-tihoka-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
     }
     blockController?.clearCues();
     ctx.getOffsetController()?.loadCues(false);
@@ -78,14 +78,14 @@ export function createContentScriptLifecycleHandlers(ctx: ContentScriptContext):
   };
 
   // OCR dual-stream bridge (spec ocr-split-dual-stream): the OCR content script
-  // (same isolated world) posts '__CELL_OCR_TRACKS' with growing target/native cue
-  // lists and '__CELL_OCR_TRACKS_END' when the split session stops or split turns
+  // (same isolated world) posts '__Tihoka_OCR_TRACKS' with growing target/native cue
+  // lists and '__Tihoka_OCR_TRACKS_END' when the split session stops or split turns
   // off. First message snapshots the active sources (restored on END), creates the
   // two virtual slots and auto-switches both roles to the OCR source.
   const onOcrTracksMessage = (e: MessageEvent): void => {
     if (e.source !== window) return;
     const d = e.data as { type?: string; targetCues?: SrtCue[]; nativeCues?: SrtCue[] };
-    if (d?.type === '__CELL_OCR_TRACKS' && d.targetCues && d.nativeCues) {
+    if (d?.type === '__Tihoka_OCR_TRACKS' && d.targetCues && d.nativeCues) {
       if (!syncController.ocrTargetSlot || !syncController.ocrNativeSlot) {
         syncController.preOcrSources = { target: syncController.activeTargetSource, native: syncController.activeNativeSource };
         syncController.ocrTargetSlot = { item: syncController.makeOcrPanelItem('ocr-target', t('subtitle.ocr.targetLive'), 'target'), cues: [] };
@@ -106,7 +106,7 @@ export function createContentScriptLifecycleHandlers(ctx: ContentScriptContext):
       ctx.refreshPanel('native');
       return;
     }
-    if (d?.type === '__CELL_OCR_TRACKS_END') {
+    if (d?.type === '__Tihoka_OCR_TRACKS_END') {
       syncController.ocrTargetSlot = null;
       syncController.ocrNativeSlot = null;
       if (syncController.preOcrSources) {

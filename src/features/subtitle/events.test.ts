@@ -1,4 +1,4 @@
-import { dispatchCuesUpdated, CELL_CUES_UPDATED, type CuesUpdatedEvent } from './events';
+import { dispatchCuesUpdated, Tihoka_CUES_UPDATED, type CuesUpdatedEvent } from './events';
 import type { SrtCue } from '@/entities/media/types';
 
 const makeCue = (index: number): SrtCue => ({
@@ -9,10 +9,10 @@ const makeCue = (index: number): SrtCue => ({
 });
 
 describe('subtitle events', () => {
-  it('dispatches cell:cues:updated with correct detail', () => {
+  it('dispatches Tihoka:cues:updated with correct detail', () => {
     const target = document.createElement('div');
     const handler = jest.fn();
-    target.addEventListener(CELL_CUES_UPDATED, handler);
+    target.addEventListener(Tihoka_CUES_UPDATED, handler);
 
     const detail = {
       targetCues: [makeCue(1)],

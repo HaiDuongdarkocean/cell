@@ -53,7 +53,7 @@ export function closeYoutubeSplitView(hostname: string = location.hostname): voi
  * After Split View layout is in the DOM, measure `stage` and tell YouTube
  * to setSize to that box. Returns a restore that asks YouTube to undo it.
  * Uses double-rAF so flex layout settles before measuring (fullscreen
- * stageCell is 0px until flex resolves).
+ * stageTihoka is 0px until flex resolves).
  */
 export function applyYoutubeSplitViewLayout(
   stage: HTMLElement,

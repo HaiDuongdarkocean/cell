@@ -112,7 +112,7 @@ describe('markedTokenIndexes', () => {
   });
 
   it('exports the i1-off class and minimum the renderers share', () => {
-    expect(IPLUS1_OFF_CLASS).toBe('js-cell-token--i1-off');
+    expect(IPLUS1_OFF_CLASS).toBe('js-Tihoka-token--i1-off');
     expect(IPLUS1_MIN_SCORABLE).toBe(3);
   });
 });
@@ -149,9 +149,9 @@ function renderCueTokenTextDom(text: string, tokens: readonly Token[], blockId =
   let lastEnd = 0;
   const appendGap = (from: number, to: number): void => {
     const gap = document.createElement('span');
-    gap.className = 'js-cell-token js-cell-token--separator';
-    gap.setAttribute('data-cell-block-id', blockId);
-    gap.setAttribute('data-cell-sentence', String(lastSentence));
+    gap.className = 'js-Tihoka-token js-Tihoka-token--separator';
+    gap.setAttribute('data-tihoka-block-id', blockId);
+    gap.setAttribute('data-tihoka-sentence', String(lastSentence));
     gap.textContent = text.slice(from, to);
     container.appendChild(gap);
   };
@@ -161,24 +161,24 @@ function renderCueTokenTextDom(text: string, tokens: readonly Token[], blockId =
     if (token.start > lastEnd) appendGap(lastEnd, token.start);
     const span = document.createElement('span');
     span.className = [
-      'js-cell-token',
-      'js-cell-token--word',
-      `js-cell-token--status-${token.status ?? 'unknown'}`,
+      'js-Tihoka-token',
+      'js-Tihoka-token--word',
+      `js-Tihoka-token--status-${token.status ?? 'unknown'}`,
       marked.has(i) ? '' : IPLUS1_OFF_CLASS,
     ]
       .filter(Boolean)
       .join(' ');
-    span.setAttribute('data-cell-term', token.term);
-    span.setAttribute('data-cell-block-id', blockId);
-    span.setAttribute('data-cell-sentence', String(token.sentenceIndex));
-    span.setAttribute('data-cell-start', String(token.start));
-    span.setAttribute('data-cell-end', String(token.end));
+    span.setAttribute('data-tihoka-term', token.term);
+    span.setAttribute('data-tihoka-block-id', blockId);
+    span.setAttribute('data-tihoka-sentence', String(token.sentenceIndex));
+    span.setAttribute('data-tihoka-start', String(token.start));
+    span.setAttribute('data-tihoka-end', String(token.end));
     const word = document.createElement('span');
-    word.className = 'js-cell-token-word';
+    word.className = 'js-Tihoka-token-word';
     word.textContent = token.text;
     span.appendChild(word);
     const status = document.createElement('span');
-    status.className = 'js-cell-token-status';
+    status.className = 'js-Tihoka-token-status';
     span.appendChild(status);
     container.appendChild(span);
     lastEnd = token.end;
@@ -189,9 +189,9 @@ function renderCueTokenTextDom(text: string, tokens: readonly Token[], blockId =
 }
 
 function domMarkedStarts(container: HTMLElement): number[] {
-  return Array.from(container.querySelectorAll<HTMLElement>('.js-cell-token--word'))
+  return Array.from(container.querySelectorAll<HTMLElement>('.js-Tihoka-token--word'))
     .filter((span) => !span.classList.contains(IPLUS1_OFF_CLASS))
-    .map((span) => Number(span.getAttribute('data-cell-start')));
+    .map((span) => Number(span.getAttribute('data-tihoka-start')));
 }
 
 function expectedMarkedStarts(tokens: readonly Token[]): number[] {
@@ -253,9 +253,9 @@ describe('i+1 parity: markedTokenIndexes vs markIPlus1Runs on cue DOM', () => {
     expect(domMarkedStarts(container)).toEqual([6]);
 
     // applyTokenStatus writes a class then re-marks via the DOM rule.
-    const bb = container.querySelector<HTMLElement>('[data-cell-term="bb"]')!;
-    bb.classList.remove('js-cell-token--status-known');
-    bb.classList.add('js-cell-token--status-unknown');
+    const bb = container.querySelector<HTMLElement>('[data-tihoka-term="bb"]')!;
+    bb.classList.remove('js-Tihoka-token--status-known');
+    bb.classList.add('js-Tihoka-token--status-unknown');
     markIPlus1Runs(container);
 
     const flipped = tokens.map((t) => (t.term === 'bb' ? { ...t, status: 'unknown' as const } : t));

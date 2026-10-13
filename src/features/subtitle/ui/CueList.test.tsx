@@ -107,7 +107,7 @@ describe('CueList scroll desync (REQ-6)', () => {
     rerender(<CueList cues={CUES} currentTimeMs={1500} onSeek={jest.fn()} />);
     await waitFor(() =>
       expect(
-        document.querySelector('[data-cell-id="cue-item"][data-current="true"]'),
+        document.querySelector('[data-tihoka-id="cue-item"][data-current="true"]'),
       ).toHaveAttribute('data-cue-index', '2'),
     );
     expect(syncPill()).toBeInTheDocument();
@@ -140,7 +140,7 @@ describe('CueList bulk selection', () => {
   }
 
   function firstToken(): HTMLElement | null {
-    return document.querySelector<HTMLElement>('.js-cell-token[data-cell-term="first"]');
+    return document.querySelector<HTMLElement>('.js-Tihoka-token[data-tihoka-term="first"]');
   }
 
   async function waitForFirstToken(): Promise<HTMLElement> {
@@ -160,7 +160,7 @@ describe('CueList bulk selection', () => {
 
     expect(tokenize.onTokenCtrlClick).toHaveBeenCalledWith('first');
     expect(tokenize.onTokenClick).not.toHaveBeenCalled();
-    await waitFor(() => expect(token.className).toContain('js-cell-token--selected'));
+    await waitFor(() => expect(token.className).toContain('js-Tihoka-token--selected'));
   });
 
   it('plain click still opens the dictionary', async () => {
@@ -210,29 +210,29 @@ describe('CueList word glosses', () => {
     );
   });
 
-  it('renders data-gloss under tokens and drops the gloss-off lane when showGlosses is on', async () => {
+  it('renders data-gloss under tokens and drops the gloss-off lane when glossDisplay is always', async () => {
     renderList({
       tokenize: {
         langCode: 'en',
         onTokenClick: jest.fn(),
-        showGlosses: true,
+        glossDisplay: 'always',
         glossTargetLanguage: 'vi',
       },
     });
 
     await waitFor(() => {
       expect(
-        document.querySelector<HTMLElement>('.js-cell-token[data-cell-term="first"]'),
+        document.querySelector<HTMLElement>('.js-Tihoka-token[data-tihoka-term="first"]'),
       ).toHaveAttribute('data-gloss', 'đầu tiên');
     });
-    expect(document.querySelector('.js-cell-token--gloss-off')).toBeNull();
+    expect(document.querySelector('.js-Tihoka-token--gloss-off')).toBeNull();
   });
 
-  it('keeps the gloss lane suppressed and sends no translate request when showGlosses is off', async () => {
+  it('keeps the gloss lane suppressed and sends no translate request when glossDisplay is off', async () => {
     renderList({ tokenize: { langCode: 'en', onTokenClick: jest.fn() } });
 
     await waitFor(() =>
-      expect(document.querySelector('.js-cell-token--gloss-off')).not.toBeNull(),
+      expect(document.querySelector('.js-Tihoka-token--gloss-off')).not.toBeNull(),
     );
     expect(document.querySelector('[data-gloss]')).toBeNull();
     expect(getWordTranslations).not.toHaveBeenCalled();
@@ -242,21 +242,21 @@ describe('CueList word glosses', () => {
 describe('CueList mobile PM mode', () => {
   it('renders all cues as cards in list mode', () => {
     renderList({ mobile: true, displayMode: 'list', showAllCues: true });
-    const items = document.querySelectorAll('[data-cell-id="cue-item"]');
+    const items = document.querySelectorAll('[data-tihoka-id="cue-item"]');
     expect(items.length).toBe(3);
-    expect(document.querySelector('[data-cell-id="cue-list-scroll"]')).not.toBeNull();
+    expect(document.querySelector('[data-tihoka-id="cue-list-scroll"]')).not.toBeNull();
   });
 
   it('active mode renders only the current cue', () => {
     renderList({ mobile: true, displayMode: 'active' });
-    const items = document.querySelectorAll('[data-cell-id="cue-item"]');
+    const items = document.querySelectorAll('[data-tihoka-id="cue-item"]');
     expect(items.length).toBe(1);
     expect(items[0].textContent).toContain('first line');
   });
 
   it('active mode falls back to the next upcoming cue after the last', () => {
     renderList({ mobile: true, displayMode: 'active', currentTimeMs: 5000 });
-    const items = document.querySelectorAll('[data-cell-id="cue-item"]');
+    const items = document.querySelectorAll('[data-tihoka-id="cue-item"]');
     expect(items.length).toBeLessThanOrEqual(1);
   });
 
@@ -265,20 +265,20 @@ describe('CueList mobile PM mode', () => {
       mobile: true,
       displayMode: 'list',
       showAllCues: true,
-      cardActions: <button data-cell-id="quick-add-btn" />,
+      cardActions: <button data-tihoka-id="quick-add-btn" />,
     });
-    const actions = document.querySelectorAll('[data-cell-id="pm-card-actions"]');
+    const actions = document.querySelectorAll('[data-tihoka-id="pm-card-actions"]');
     expect(actions.length).toBe(1);
-    expect(actions[0].querySelector('[data-cell-id="quick-add-btn"]')).not.toBeNull();
+    expect(actions[0].querySelector('[data-tihoka-id="quick-add-btn"]')).not.toBeNull();
   });
 
   it('shows the sync pill when the user scrolls away in mobile mode', async () => {
     renderList({ mobile: true, displayMode: 'list', showAllCues: true });
-    await waitFor(() => expect(document.querySelector('[data-cell-id="cue-list-scroll"]')).not.toBeNull());
-    expect(document.querySelector('[data-cell-id="cue-list-sync"]')).toBeNull();
+    await waitFor(() => expect(document.querySelector('[data-tihoka-id="cue-list-scroll"]')).not.toBeNull());
+    expect(document.querySelector('[data-tihoka-id="cue-list-sync"]')).toBeNull();
 
     userScrollTo(100);
-    await waitFor(() => expect(document.querySelector('[data-cell-id="cue-list-sync"]')).not.toBeNull());
+    await waitFor(() => expect(document.querySelector('[data-tihoka-id="cue-list-sync"]')).not.toBeNull());
   });
 
   it('list mode mounts the full cue list for scrolling', () => {
@@ -298,16 +298,16 @@ describe('CueList mobile PM mode', () => {
         displayMode="list"
       />,
     );
-    const items = document.querySelectorAll('[data-cell-id="cue-item"]');
+    const items = document.querySelectorAll('[data-tihoka-id="cue-item"]');
     expect(items.length).toBe(20);
     expect(document.querySelector('[data-cue-index="11"][data-current="true"]')).not.toBeNull();
   });
 
   it('marks the active card with pm-cue-active-card', () => {
     renderList({ mobile: true, displayMode: 'list' });
-    const marker = document.querySelector('[data-cell-id="pm-cue-active-card"]');
+    const marker = document.querySelector('[data-tihoka-id="pm-cue-active-card"]');
     expect(marker).not.toBeNull();
-    expect(marker!.closest('[data-cell-id="cue-item"]')).toHaveAttribute('data-cue-index', '1');
+    expect(marker!.closest('[data-tihoka-id="cue-item"]')).toHaveAttribute('data-cue-index', '1');
   });
 });
 
@@ -325,11 +325,11 @@ describe('CueTokenText i+1 marking', () => {
   }
 
   function wordSpan(term: string): HTMLElement | null {
-    return document.querySelector<HTMLElement>(`.js-cell-token--word[data-cell-term="${term}"]`);
+    return document.querySelector<HTMLElement>(`.js-Tihoka-token--word[data-tihoka-term="${term}"]`);
   }
 
   async function waitForWordSpans(): Promise<void> {
-    await waitFor(() => expect(document.querySelector('.js-cell-token--word')).not.toBeNull());
+    await waitFor(() => expect(document.querySelector('.js-Tihoka-token--word')).not.toBeNull());
   }
 
   it('keeps the capsule only on the single unknown word of a scorable sentence', async () => {
@@ -369,14 +369,14 @@ describe('CueTokenText i+1 marking', () => {
     renderMarkedCue('alpha beta gamma delta.');
     await waitForWordSpans();
     const cue = document.querySelector('[data-cue-index="7"]')!;
-    const delta = cue.querySelector<HTMLElement>('.js-cell-token--word[data-cell-term="delta"]')!;
-    expect(delta).toHaveAttribute('data-cell-block-id', 'cue-7');
-    expect(delta).toHaveAttribute('data-cell-sentence', '0');
-    const gaps = Array.from(cue.querySelectorAll<HTMLElement>('.js-cell-token--separator'));
+    const delta = cue.querySelector<HTMLElement>('.js-Tihoka-token--word[data-tihoka-term="delta"]')!;
+    expect(delta).toHaveAttribute('data-tihoka-block-id', 'cue-7');
+    expect(delta).toHaveAttribute('data-tihoka-sentence', '0');
+    const gaps = Array.from(cue.querySelectorAll<HTMLElement>('.js-Tihoka-token--separator'));
     expect(gaps.length).toBeGreaterThan(0);
     for (const gap of gaps) {
-      expect(gap).toHaveAttribute('data-cell-block-id', 'cue-7');
-      expect(gap).toHaveAttribute('data-cell-sentence', '0');
+      expect(gap).toHaveAttribute('data-tihoka-block-id', 'cue-7');
+      expect(gap).toHaveAttribute('data-tihoka-sentence', '0');
     }
   });
 });

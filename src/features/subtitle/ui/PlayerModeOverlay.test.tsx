@@ -7,15 +7,15 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { BilingualCue } from '@/entities/media';
 
 jest.mock('./SubtitleBlock', () => ({
-  SubtitleBlock: () => <div data-cell-id="subtitle-block" />,
+  SubtitleBlock: () => <div data-tihoka-id="subtitle-block" />,
 }));
 
 jest.mock('./NavCluster', () => ({
-  NavCluster: () => <div data-cell-id="nav-cluster" />,
+  NavCluster: () => <div data-tihoka-id="nav-cluster" />,
 }));
 
 jest.mock('./CueList', () => ({
-  CueList: () => <div data-cell-id="cue-list" />,
+  CueList: () => <div data-tihoka-id="cue-list" />,
 }));
 
 // Mock chrome.storage.local for contentPct persistence.
@@ -81,7 +81,7 @@ function PlayerModeHarness(props: HarnessProps): React.JSX.Element {
   return <PlayerModeOverlay {...props} cueListOpen={cueListOpen} onCueListOpenChange={setCueListOpen} />;
 }
 
-const splitViewPanel = (): HTMLElement | null => document.querySelector<HTMLElement>('[data-cell-split-view="panel"]');
+const splitViewPanel = (): HTMLElement | null => document.querySelector<HTMLElement>('[data-tihoka-split-view="panel"]');
 
 function renderPlayerMode(): HTMLElement {
   render(
@@ -196,14 +196,14 @@ describe('PlayerModeOverlay', () => {
     renderPlayerModeWithCues(sampleCues);
 
     expect(splitViewPanel()).not.toBeNull();
-    expect(document.querySelector('[data-cell-split-view="handle"]')).not.toBeNull();
+    expect(document.querySelector('[data-tihoka-split-view="handle"]')).not.toBeNull();
 
     fireEvent.keyDown(window, { key: 't' });
 
     expect(splitViewPanel()).toBeNull();
-    expect(document.querySelector('[data-cell-split-view="handle"]')).toBeNull();
-    expect(document.querySelector('[data-cell-split-view="wrapper"]')).not.toBeNull();
-    expect(document.querySelector('[data-cell-split-view="stage"]')).not.toBeNull();
+    expect(document.querySelector('[data-tihoka-split-view="handle"]')).toBeNull();
+    expect(document.querySelector('[data-tihoka-split-view="wrapper"]')).not.toBeNull();
+    expect(document.querySelector('[data-tihoka-split-view="stage"]')).not.toBeNull();
 
     fireEvent.keyDown(window, { key: 't' });
 
@@ -224,7 +224,7 @@ describe('PlayerModeOverlay', () => {
     });
 
     // Stub the split container's rect so drag math has a non-zero splitWidth.
-    const split = document.querySelector<HTMLElement>('[data-cell-split-view="wrapper"]');
+    const split = document.querySelector<HTMLElement>('[data-tihoka-split-view="wrapper"]');
     expect(split).not.toBeNull();
     const rectStub = { width: 1000, height: 600, left: 0, top: 0, right: 1000, bottom: 600, x: 0, y: 0, toJSON: () => '' };
     Object.defineProperty(split!, 'getBoundingClientRect', { value: () => rectStub, configurable: true });
@@ -330,7 +330,7 @@ describe('mobile layout (<600px)', () => {
     expect(screen.queryByTestId('pm-subtitle-overlay')).toBeNull();
     expect(splitViewPanel()).not.toBeNull();
     expect(screen.queryByTestId('subtitle-block')).toBeNull();
-    expect(document.documentElement.getAttribute('data-cell-player-mode-mobile')).toBe('true');
+    expect(document.documentElement.getAttribute('data-tihoka-player-mode-mobile')).toBe('true');
   });
 
   it('removes the mobile attribute on unmount', () => {
@@ -360,9 +360,9 @@ describe('mobile layout (<600px)', () => {
         onExit={noop}
       />,
     );
-    expect(document.documentElement.getAttribute('data-cell-player-mode-mobile')).toBe('true');
+    expect(document.documentElement.getAttribute('data-tihoka-player-mode-mobile')).toBe('true');
     unmount();
-    expect(document.documentElement.getAttribute('data-cell-player-mode-mobile')).toBeNull();
+    expect(document.documentElement.getAttribute('data-tihoka-player-mode-mobile')).toBeNull();
   });
 
   it('shows prev/next with cues, rewind/forward without', () => {
@@ -398,9 +398,9 @@ describe('mobile layout (<600px)', () => {
     expect(menu).toContainElement(screen.getByTestId('study-mode-normal'));
     expect(menu).toContainElement(screen.getByTestId('pm-speed-stepper'));
     expect(screen.getByTestId('pm-speed-value')).toHaveTextContent('1×');
-    expect(menu.querySelector('[data-cell-id="pm-practice-off"]')).toBeNull();
+    expect(menu.querySelector('[data-tihoka-id="pm-practice-off"]')).toBeNull();
     for (const id of ['nav-prev', 'nav-next', 'nav-rewind', 'nav-forward', 'nav-repeat', 'nav-play']) {
-      expect(menu.querySelector(`[data-cell-id="${id}"]`)).toBeNull();
+      expect(menu.querySelector(`[data-tihoka-id="${id}"]`)).toBeNull();
     }
   });
 

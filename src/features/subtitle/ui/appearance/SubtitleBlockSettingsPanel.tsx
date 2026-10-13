@@ -22,7 +22,7 @@ export function SubtitleBlockSettingsPanel({
   onChange,
 }: SubtitleBlockSettingsPanelProps): ReactElement {
   return (
-    <div className={styles.container} data-cell-id="subtitle-block-settings-panel">
+    <div className={styles.container} data-tihoka-id="subtitle-block-settings-panel">
       <div className={styles.card}>
         {/* Position */}
         <div className={styles.row}>
@@ -40,7 +40,7 @@ export function SubtitleBlockSettingsPanel({
             step={1}
             onChange={(v) => onChange({ yOffsetPercent: v })}
             aria-label={t('subtitle.blockSettings.positionAria')}
-            data-cell-id="block-y-offset"
+            data-tihoka-id="block-y-offset"
           />
           <p className={styles.hint}>{t('subtitle.blockSettings.positionHint')}</p>
         </div>
@@ -61,7 +61,7 @@ export function SubtitleBlockSettingsPanel({
             step={0.1}
             onChange={(v) => onChange({ globalScale: v })}
             aria-label={t('subtitle.blockSettings.scaleAria')}
-            data-cell-id="block-global-scale"
+            data-tihoka-id="block-global-scale"
           />
         </div>
 
@@ -81,7 +81,7 @@ export function SubtitleBlockSettingsPanel({
             step={0.1}
             onChange={(v) => onChange({ bgOpacity: v })}
             aria-label={t('subtitle.blockSettings.bgOpacityAria')}
-            data-cell-id="block-bg-opacity"
+            data-tihoka-id="block-bg-opacity"
           />
         </div>
       </div>

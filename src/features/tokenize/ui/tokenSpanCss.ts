@@ -3,9 +3,9 @@ import { loadThemeConfig, DEFAULT_THEME_CONFIG } from '@/features/theme';
 import { onStorageChanged } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 
-const TOKEN_STYLE_ID = 'cell-token-span-style';
-const SENTENCE_WASH_VAR = '--cell-sentence-wash';
-const SENTENCE_WASH_STYLE_ID = 'cell-sentence-wash-var';
+const TOKEN_STYLE_ID = 'Tihoka-token-span-style';
+const SENTENCE_WASH_VAR = '--Tihoka-sentence-wash';
+const SENTENCE_WASH_STYLE_ID = 'Tihoka-sentence-wash-var';
 let sentenceWashSyncStarted = false;
 
 /** Static design tokens that token-span CSS references via var() but that are
@@ -31,33 +31,33 @@ const STATIC_TOKENS_NEEDED: readonly string[] = [
   '--z-overlay-orbital',
 ];
 
-/** Map cell-token variables to canonical design tokens from tokens.json.
+/** Map Tihoka-token variables to canonical design tokens from tokens.json.
  *  buildVariables() injects the resolved values so every token is SSOT.
  *  Frequency + status đều là absolute hex (1 set cho cả dark & light) —
  *  variant A "Tint vs Solid": pill tint nhạt + status capsule solid đậm đặc. */
-const CELL_TOKEN_MAP: Record<string, string> = {
+const Tihoka_TOKEN_MAP: Record<string, string> = {
   // Status bar colors — absolute hex, theme-agnostic (1 set cho cả dark & light).
-  // Painted as a capsule background on the in-flow .js-cell-token-status lane.
-  '--cell-token-status-unknown': '--color-token-status-unknown',
-  '--cell-token-status-tracking': '--color-token-status-tracking',
-  '--cell-token-status-learning': '--color-token-status-learning',
-  '--cell-token-status-known': '--color-token-status-known',
-  '--cell-token-status-ignore': '--color-token-status-ignore',
+  // Painted as a capsule background on the in-flow .js-Tihoka-token-status lane.
+  '--Tihoka-token-status-unknown': '--color-token-status-unknown',
+  '--Tihoka-token-status-tracking': '--color-token-status-tracking',
+  '--Tihoka-token-status-learning': '--color-token-status-learning',
+  '--Tihoka-token-status-known': '--color-token-status-known',
+  '--Tihoka-token-status-ignore': '--color-token-status-ignore',
   // Frequency bands — absolute hex tint pill + contrasting fg (variant A).
-  '--cell-token-freq-core-bg': '--color-token-freq-core-bg',
-  '--cell-token-freq-core-fg': '--color-token-freq-core-fg',
-  '--cell-token-freq-common-bg': '--color-token-freq-common-bg',
-  '--cell-token-freq-common-fg': '--color-token-freq-common-fg',
-  '--cell-token-freq-general-bg': '--color-token-freq-general-bg',
-  '--cell-token-freq-general-fg': '--color-token-freq-general-fg',
-  '--cell-token-freq-advanced-bg': '--color-token-freq-advanced-bg',
-  '--cell-token-freq-advanced-fg': '--color-token-freq-advanced-fg',
-  '--cell-token-freq-rare-bg': '--color-token-freq-rare-bg',
-  '--cell-token-freq-rare-fg': '--color-token-freq-rare-fg',
-  '--cell-token-freq-border': '--color-token-freq-border',
+  '--Tihoka-token-freq-core-bg': '--color-token-freq-core-bg',
+  '--Tihoka-token-freq-core-fg': '--color-token-freq-core-fg',
+  '--Tihoka-token-freq-common-bg': '--color-token-freq-common-bg',
+  '--Tihoka-token-freq-common-fg': '--color-token-freq-common-fg',
+  '--Tihoka-token-freq-general-bg': '--color-token-freq-general-bg',
+  '--Tihoka-token-freq-general-fg': '--color-token-freq-general-fg',
+  '--Tihoka-token-freq-advanced-bg': '--color-token-freq-advanced-bg',
+  '--Tihoka-token-freq-advanced-fg': '--color-token-freq-advanced-fg',
+  '--Tihoka-token-freq-rare-bg': '--color-token-freq-rare-bg',
+  '--Tihoka-token-freq-rare-fg': '--color-token-freq-rare-fg',
+  '--Tihoka-token-freq-border': '--color-token-freq-border',
   // Bulk-selection wash — layered as background-image so the status capsule
   // and frequency pill survive underneath (Concept B "water wash").
-  '--cell-token-selected': '--color-primary',
+  '--Tihoka-token-selected': '--color-primary',
 };
 
 /** Sentence-highlight wash color. Resolved at build time to the default
@@ -76,8 +76,8 @@ function resolveMappedTokenValue(tokens: TokenRecord, designName: string): strin
 
 function buildVariables(rootSelector = ':root'): string {
   const lightDecls = [
-    ...Object.entries(CELL_TOKEN_MAP).map(
-      ([cellName, designName]) => `  ${cellName}: ${resolveMappedTokenValue(DEFAULT_LIGHT_TOKENS, designName)};`,
+    ...Object.entries(Tihoka_TOKEN_MAP).map(
+      ([TihokaName, designName]) => `  ${TihokaName}: ${resolveMappedTokenValue(DEFAULT_LIGHT_TOKENS, designName)};`,
     ),
     `  ${SENTENCE_WASH_VAR}: ${SENTENCE_WASH_FALLBACK};`,
   ].join('\n');
@@ -90,7 +90,7 @@ function buildVariables(rootSelector = ':root'): string {
   // tokens.css is never loaded. Without this, --border-width-status used by
   // the status capsule is an invalid declaration and silently dropped,
   // leaving the bar invisible while the frequency band (which only uses
-  // --cell-token-* color vars) still shows.
+  // --Tihoka-token-* color vars) still shows.
   const staticDecls = STATIC_TOKENS_NEEDED.map((name) => `  ${name}: ${STATIC_TOKENS[name]};`).join('\n');
 
   return `
@@ -124,7 +124,7 @@ ${buildVariables()}
 
 /* Tokens are wrapped inline and kept visually lightweight.  No padding,
    margin, or line-height is added so the host page box model is preserved. */
-.js-cell-token {
+.js-Tihoka-token {
   display: inline !important;
   vertical-align: baseline !important;
   /* Inherit the host page's white-space instead of forcing "normal". Forcing
@@ -161,7 +161,7 @@ ${buildVariables()}
    breathing so stacked annotation columns never touch the neighbouring
    line. Annotation-off tokens degrade to a single-item column, visually
    identical to the original inline word. */
-html body .js-cell-token--word {
+html body .js-Tihoka-token--word {
   display: inline-flex !important;
   flex-direction: column !important;
   align-items: center !important;
@@ -174,8 +174,8 @@ html body .js-cell-token--word {
 /* Lane spacing exists only while an annotation lane can render (reading cap
    or gloss footnote enabled); with both off the token must be flat inline
    text — no gap, no block margin inflating the host's line box. */
-html body .js-cell-token--word:not(.js-cell-token--reading-off),
-html body .js-cell-token--word:not(.js-cell-token--gloss-off) {
+html body .js-Tihoka-token--word:not(.js-Tihoka-token--reading-off),
+html body .js-Tihoka-token--word:not(.js-Tihoka-token--gloss-off) {
   gap: 0.14em !important;
   margin: 0.55em 0 !important;
 }
@@ -186,7 +186,7 @@ html body .js-cell-token--word:not(.js-cell-token--gloss-off) {
    relative to any inline ancestor (<a>, <sup>, separators), on both host
    pages and subtitle surfaces. 1.19em = cap lane (0.62em × 1.15) + lane gap
    (0.14em) + word ascent; calibrated on real layout to <0.2px error. */
-html body .js-cell-token--word:not(.js-cell-token--reading-off) {
+html body .js-Tihoka-token--word:not(.js-Tihoka-token--reading-off) {
   vertical-align: 1.19em !important;
 }
 
@@ -194,7 +194,7 @@ html body .js-cell-token--word:not(.js-cell-token--reading-off) {
    and square — painted visuals target either the column (frequency pill,
    selected wash parent) or the status span (capsule bar). line-height 1.1
    keeps the lane at the glyph cap height so the cap lane sits tight. */
-.js-cell-token-word {
+.js-Tihoka-token-word {
   display: inline !important;
   line-height: 1.1 !important;
   background: transparent !important;
@@ -209,7 +209,7 @@ html body .js-cell-token--word:not(.js-cell-token--reading-off) {
    trailing zero-width space keeps a line box inside the lane when
    data-reading is absent — without it the empty item's baseline is
    synthesized from its bottom edge and the whole column rides ~3px high. */
-html body .js-cell-token--word:not(.js-cell-token--reading-off)::before {
+html body .js-Tihoka-token--word:not(.js-Tihoka-token--reading-off)::before {
   content: attr(data-reading) '\\200B';
   min-height: 1.15em;
   font-size: 0.62em;
@@ -227,7 +227,7 @@ html body .js-cell-token--word:not(.js-cell-token--reading-off)::before {
 /* Gloss footnote (spec word-translation): in-flow lane below the word — the
    lane's natural width widens the unit instead of overflowing it, so glosses
    never ellipsis and never collide. Never selectable, never copied. */
-html body .js-cell-token--word:not(.js-cell-token--gloss-off)::after {
+html body .js-Tihoka-token--word:not(.js-Tihoka-token--gloss-off)::after {
   content: attr(data-gloss);
   min-height: 1.15em;
   font-size: 0.62em;
@@ -242,11 +242,30 @@ html body .js-cell-token--word:not(.js-cell-token--gloss-off)::after {
   user-select: none;
 }
 
+/* Hover display mode (spec word-display): the lane stays bound with its
+   metadata attrs, but its content is suppressed until the token is hovered —
+   no fetch happens at hover time. */
+html body .js-Tihoka-token--word.js-Tihoka-token--reading-hover:not(:hover)::before {
+  content: none !important;
+}
+html body .js-Tihoka-token--word.js-Tihoka-token--gloss-hover:not(:hover)::after {
+  content: none !important;
+}
+
+/* When every lane is off-or-hover-hidden the column flattens to plain inline
+   text — same collapse the --*-off classes produce via the base rules above,
+   so hover-mode paragraphs keep the host's native line spacing. */
+html body .js-Tihoka-token--word:is(.js-Tihoka-token--reading-hover:not(:hover), .js-Tihoka-token--reading-off):is(.js-Tihoka-token--gloss-hover:not(:hover), .js-Tihoka-token--gloss-off) {
+  gap: 0 !important;
+  margin: 0 !important;
+  vertical-align: baseline !important;
+}
+
 /* Status bar: the span sits between word lane and gloss lane in DOM order,
    rendered as a rounded capsule — column 'gap' provides the breathing room
    on both sides. Transparent until a status rule paints it; the lane itself
    stays reserved so toggling a status color never reflows. */
-.js-cell-token-status {
+.js-Tihoka-token-status {
   display: block !important;
   width: 100% !important;
   height: var(--border-width-status) !important;
@@ -262,7 +281,7 @@ html body .js-cell-token--word:not(.js-cell-token--gloss-off)::after {
 /* Resolving: tokens are clickable word spans but status/frequency visuals are
    suppressed until metadata resolves, preventing the whole panel from flashing
    as colors pop in. */
-html body .js-cell-token.js-cell-token--resolving {
+html body .js-Tihoka-token.js-Tihoka-token--resolving {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
   background-color: transparent !important;
@@ -270,15 +289,15 @@ html body .js-cell-token.js-cell-token--resolving {
   text-shadow: none !important;
   transition: none !important;
 }
-html body .js-cell-token.js-cell-token--resolving .js-cell-token-word {
+html body .js-Tihoka-token.js-Tihoka-token--resolving .js-Tihoka-token-word {
   background-color: transparent !important;
   box-shadow: none !important;
 }
-html body .js-cell-token.js-cell-token--resolving .js-cell-token-status {
+html body .js-Tihoka-token.js-Tihoka-token--resolving .js-Tihoka-token-status {
   background: transparent !important;
 }
 
-.js-cell-token--separator {
+.js-Tihoka-token--separator {
   display: inline !important;
   cursor: auto !important;
   background: transparent !important;
@@ -289,93 +308,93 @@ html body .js-cell-token.js-cell-token--resolving .js-cell-token-status {
    inherit it) and the pill — background, hairline, radius and inner padding —
    painted on the column itself so the box wraps all three lanes. The word
    lane stays transparent inside the pill.
-   Quadruple-specificity (html body .js-cell-token.js-cell-token--frequency-*)
+   Quadruple-specificity (html body .js-Tihoka-token.js-Tihoka-token--frequency-*)
    so host pages with high-specificity box-shadow:none!important rules (e.g.
    GeeksforGeeks Next.js resets at (0,2,1)) cannot override our !important.
-   Band colors resolve from the injected --cell-token-* variables, which
+   Band colors resolve from the injected --Tihoka-token-* variables, which
    cascade from :root, prefers-color-scheme, or a [data-theme] ancestor. */
-html body .js-cell-token.js-cell-token--frequency-core,
-html body .js-cell-token.js-cell-token--frequency-common,
-html body .js-cell-token.js-cell-token--frequency-general,
-html body .js-cell-token.js-cell-token--frequency-advanced,
-html body .js-cell-token.js-cell-token--frequency-rare {
+html body .js-Tihoka-token.js-Tihoka-token--frequency-core,
+html body .js-Tihoka-token.js-Tihoka-token--frequency-common,
+html body .js-Tihoka-token.js-Tihoka-token--frequency-general,
+html body .js-Tihoka-token.js-Tihoka-token--frequency-advanced,
+html body .js-Tihoka-token.js-Tihoka-token--frequency-rare {
   border-radius: var(--radius-md) !important;
   padding: 0.15em 0.3em !important;
-  box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
+  box-shadow: inset 0 0 0 var(--border-width-hairline) var(--Tihoka-token-freq-border) !important;
 }
-html body .js-cell-token.js-cell-token--frequency-core {
-  color: var(--cell-token-freq-core-fg) !important;
-  -webkit-text-fill-color: var(--cell-token-freq-core-fg) !important;
-  background-color: var(--cell-token-freq-core-bg) !important;
+html body .js-Tihoka-token.js-Tihoka-token--frequency-core {
+  color: var(--Tihoka-token-freq-core-fg) !important;
+  -webkit-text-fill-color: var(--Tihoka-token-freq-core-fg) !important;
+  background-color: var(--Tihoka-token-freq-core-bg) !important;
 }
-html body .js-cell-token.js-cell-token--frequency-common {
-  color: var(--cell-token-freq-common-fg) !important;
-  -webkit-text-fill-color: var(--cell-token-freq-common-fg) !important;
-  background-color: var(--cell-token-freq-common-bg) !important;
+html body .js-Tihoka-token.js-Tihoka-token--frequency-common {
+  color: var(--Tihoka-token-freq-common-fg) !important;
+  -webkit-text-fill-color: var(--Tihoka-token-freq-common-fg) !important;
+  background-color: var(--Tihoka-token-freq-common-bg) !important;
 }
-html body .js-cell-token.js-cell-token--frequency-general {
-  color: var(--cell-token-freq-general-fg) !important;
-  -webkit-text-fill-color: var(--cell-token-freq-general-fg) !important;
-  background-color: var(--cell-token-freq-general-bg) !important;
+html body .js-Tihoka-token.js-Tihoka-token--frequency-general {
+  color: var(--Tihoka-token-freq-general-fg) !important;
+  -webkit-text-fill-color: var(--Tihoka-token-freq-general-fg) !important;
+  background-color: var(--Tihoka-token-freq-general-bg) !important;
 }
-html body .js-cell-token.js-cell-token--frequency-advanced {
-  color: var(--cell-token-freq-advanced-fg) !important;
-  -webkit-text-fill-color: var(--cell-token-freq-advanced-fg) !important;
-  background-color: var(--cell-token-freq-advanced-bg) !important;
+html body .js-Tihoka-token.js-Tihoka-token--frequency-advanced {
+  color: var(--Tihoka-token-freq-advanced-fg) !important;
+  -webkit-text-fill-color: var(--Tihoka-token-freq-advanced-fg) !important;
+  background-color: var(--Tihoka-token-freq-advanced-bg) !important;
 }
-html body .js-cell-token.js-cell-token--frequency-rare {
-  color: var(--cell-token-freq-rare-fg) !important;
-  -webkit-text-fill-color: var(--cell-token-freq-rare-fg) !important;
-  background-color: var(--cell-token-freq-rare-bg) !important;
+html body .js-Tihoka-token.js-Tihoka-token--frequency-rare {
+  color: var(--Tihoka-token-freq-rare-fg) !important;
+  -webkit-text-fill-color: var(--Tihoka-token-freq-rare-fg) !important;
+  background-color: var(--Tihoka-token-freq-rare-bg) !important;
 }
 
 /* Status capsule: single-color background on the status span between word
    and gloss — no halo, no ring, just the semantic fill. Quadruple-specificity
    (html body ancestor) so host box-shadow:none!important resets cannot
    override our !important. */
-html body .js-cell-token.js-cell-token--status-unknown .js-cell-token-status {
-  background: var(--cell-token-status-unknown) !important;
+html body .js-Tihoka-token.js-Tihoka-token--status-unknown .js-Tihoka-token-status {
+  background: var(--Tihoka-token-status-unknown) !important;
 }
-html body .js-cell-token.js-cell-token--status-tracking .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-tracking), var(--cell-token-status-unknown)) !important;
+html body .js-Tihoka-token.js-Tihoka-token--status-tracking .js-Tihoka-token-status {
+  background: linear-gradient(90deg, var(--Tihoka-token-status-tracking), var(--Tihoka-token-status-unknown)) !important;
 }
-html body .js-cell-token.js-cell-token--status-known:hover:not(.js-cell-token--status-off) .js-cell-token-status,
-html body .js-cell-token.js-cell-token--status-known.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-status {
-  background: var(--cell-token-status-known) !important;
+html body .js-Tihoka-token.js-Tihoka-token--status-known:hover:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status,
+html body .js-Tihoka-token.js-Tihoka-token--status-known.js-Tihoka-token--popup-open:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status {
+  background: var(--Tihoka-token-status-known) !important;
 }
-html body .js-cell-token.js-cell-token--status-ignore:hover:not(.js-cell-token--status-off) .js-cell-token-status,
-html body .js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-status {
-  background: var(--cell-token-status-ignore) !important;
+html body .js-Tihoka-token.js-Tihoka-token--status-ignore:hover:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status,
+html body .js-Tihoka-token.js-Tihoka-token--status-ignore.js-Tihoka-token--popup-open:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status {
+  background: var(--Tihoka-token-status-ignore) !important;
 }
 
 /* Card layer: a term with ≥1 flashcard (Ocean SRS note or stored Anki link)
-   appends the card color (--cell-token-status-learning) as the last gradient
+   appends the card color (--Tihoka-token-status-learning) as the last gradient
    stop — card presence is orthogonal to the status, so every status gets the
    gradient suffix. The :not(--status-off) keeps
    the global status toggle winning despite the extra class raising
    specificity, and these rules stay before the i1-off gate so it can still
    hide the capsule at rest. */
-html body .js-cell-token.js-cell-token--status-unknown.js-cell-token--has-card:not(.js-cell-token--status-off) .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-unknown), var(--cell-token-status-learning)) !important;
+html body .js-Tihoka-token.js-Tihoka-token--status-unknown.js-Tihoka-token--has-card:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status {
+  background: linear-gradient(90deg, var(--Tihoka-token-status-unknown), var(--Tihoka-token-status-learning)) !important;
 }
-html body .js-cell-token.js-cell-token--status-tracking.js-cell-token--has-card:not(.js-cell-token--status-off) .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-tracking), var(--cell-token-status-unknown), var(--cell-token-status-learning)) !important;
+html body .js-Tihoka-token.js-Tihoka-token--status-tracking.js-Tihoka-token--has-card:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status {
+  background: linear-gradient(90deg, var(--Tihoka-token-status-tracking), var(--Tihoka-token-status-unknown), var(--Tihoka-token-status-learning)) !important;
 }
-html body .js-cell-token.js-cell-token--status-known.js-cell-token--has-card:hover:not(.js-cell-token--status-off) .js-cell-token-status,
-html body .js-cell-token.js-cell-token--status-known.js-cell-token--has-card.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-known), var(--cell-token-status-learning)) !important;
+html body .js-Tihoka-token.js-Tihoka-token--status-known.js-Tihoka-token--has-card:hover:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status,
+html body .js-Tihoka-token.js-Tihoka-token--status-known.js-Tihoka-token--has-card.js-Tihoka-token--popup-open:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status {
+  background: linear-gradient(90deg, var(--Tihoka-token-status-known), var(--Tihoka-token-status-learning)) !important;
 }
-html body .js-cell-token.js-cell-token--status-ignore.js-cell-token--has-card:hover:not(.js-cell-token--status-off) .js-cell-token-status,
-html body .js-cell-token.js-cell-token--status-ignore.js-cell-token--has-card.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-ignore), var(--cell-token-status-learning)) !important;
+html body .js-Tihoka-token.js-Tihoka-token--status-ignore.js-Tihoka-token--has-card:hover:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status,
+html body .js-Tihoka-token.js-Tihoka-token--status-ignore.js-Tihoka-token--has-card.js-Tihoka-token--popup-open:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status {
+  background: linear-gradient(90deg, var(--Tihoka-token-status-ignore), var(--Tihoka-token-status-learning)) !important;
 }
 
-.js-cell-token.js-cell-token--status-unknown,
-.js-cell-token.js-cell-token--status-tracking,
-.js-cell-token.js-cell-token--status-known:hover,
-.js-cell-token.js-cell-token--status-known.js-cell-token--popup-open,
-.js-cell-token.js-cell-token--status-ignore:hover,
-.js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open {
+.js-Tihoka-token.js-Tihoka-token--status-unknown,
+.js-Tihoka-token.js-Tihoka-token--status-tracking,
+.js-Tihoka-token.js-Tihoka-token--status-known:hover,
+.js-Tihoka-token.js-Tihoka-token--status-known.js-Tihoka-token--popup-open,
+.js-Tihoka-token.js-Tihoka-token--status-ignore:hover,
+.js-Tihoka-token.js-Tihoka-token--status-ignore.js-Tihoka-token--popup-open {
   text-shadow: var(--shadow-sm) !important;
 }
 
@@ -384,8 +403,8 @@ html body .js-cell-token.js-cell-token--status-ignore.js-cell-token--has-card.js
    is indistinguishable from surrounding text. Hover or popup-open reveals
    only the status capsule, never the frequency background. status-off keeps
    the bar hidden even then; frequency-off keeps the pill hidden globally. */
-html body .js-cell-token.js-cell-token--status-known,
-html body .js-cell-token.js-cell-token--status-ignore {
+html body .js-Tihoka-token.js-Tihoka-token--status-known,
+html body .js-Tihoka-token.js-Tihoka-token--status-ignore {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
   background-color: transparent !important;
@@ -393,8 +412,8 @@ html body .js-cell-token.js-cell-token--status-ignore {
   padding: 0 !important;
   border-radius: 0 !important;
 }
-html body .js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-status,
-html body .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-status {
+html body .js-Tihoka-token.js-Tihoka-token--status-known:not(:hover):not(.js-Tihoka-token--popup-open) .js-Tihoka-token-status,
+html body .js-Tihoka-token.js-Tihoka-token--status-ignore:not(:hover):not(.js-Tihoka-token--popup-open) .js-Tihoka-token-status {
   background: transparent !important;
 }
 
@@ -405,7 +424,7 @@ html body .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-t
    every unknown-family word (unknown + tracking flag) keeps its bar at rest so
    learners can always spot unlearned words. known/ignore stay hidden at rest
    via their own rules above and reveal on hover/popup-open. */
-html body .js-cell-token.js-cell-token--i1-off {
+html body .js-Tihoka-token.js-Tihoka-token--i1-off {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
   background-color: transparent !important;
@@ -414,8 +433,8 @@ html body .js-cell-token.js-cell-token--i1-off {
   border-radius: 0 !important;
 }
 
-html body .js-cell-token.js-cell-token--selected .js-cell-token-word {
-  background-image: linear-gradient(color-mix(in srgb, var(--cell-token-selected) 18%, transparent) 0 0) !important;
+html body .js-Tihoka-token.js-Tihoka-token--selected .js-Tihoka-token-word {
+  background-image: linear-gradient(color-mix(in srgb, var(--Tihoka-token-selected) 18%, transparent) 0 0) !important;
 }
 
 /* Sentence highlight: while a word is hovered (or its popup is open) the whole
@@ -424,23 +443,23 @@ html body .js-cell-token.js-cell-token--selected .js-cell-token-word {
    one snapped rectangle per visual line keeps the edges straight. A plain alpha
    wash of the theme's dark-palette primary works on light AND dark host pages:
    multiply can only darken and vanishes on dark backgrounds. */
-html body .js-cell-sentence-band {
+html body .js-Tihoka-sentence-band {
   position: absolute !important;
   pointer-events: none !important;
   z-index: var(--z-overlay-base) !important;
-  background: color-mix(in srgb, var(--cell-sentence-wash) 32%, transparent) !important;
+  background: color-mix(in srgb, var(--Tihoka-sentence-wash) 32%, transparent) !important;
 }
 
 /* Global layer toggles (applied per token).
    Quadruple-specificity (html body ancestor) so host box-shadow:none!important
    resets cannot override our !important. */
-html body .js-cell-token.js-cell-token--status-off {
+html body .js-Tihoka-token.js-Tihoka-token--status-off {
   text-shadow: var(--shadow-sm) !important;
 }
-html body .js-cell-token.js-cell-token--status-off .js-cell-token-status {
+html body .js-Tihoka-token.js-Tihoka-token--status-off .js-Tihoka-token-status {
   background: transparent !important;
 }
-html body .js-cell-token.js-cell-token--frequency-off {
+html body .js-Tihoka-token.js-Tihoka-token--frequency-off {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
   background-color: transparent !important;
@@ -450,7 +469,7 @@ html body .js-cell-token.js-cell-token--frequency-off {
 `.trim();
 }
 
-/** Re-resolve --cell-sentence-wash from the active theme config and write it to
+/** Re-resolve --Tihoka-sentence-wash from the active theme config and write it to
  *  a tiny :root override in the host document head. Custom properties inherit
  *  through shadow boundaries, so the same var also reaches shadow-DOM token
  *  spans (subtitle panel, card creator, ...). */
@@ -496,7 +515,7 @@ export function buildTokenSpanCssForShadow(): string {
   return `
 ${buildVariables(':host')}
 
-.js-cell-token {
+.js-Tihoka-token {
   display: inline !important;
   vertical-align: baseline !important;
   white-space: inherit !important;
@@ -517,7 +536,7 @@ ${buildVariables(':host')}
 /* Self-sizing annotation column — same mechanism as the light-DOM builder:
    cap/word/status/gloss lanes stacked in flow, spaced by 'gap' alone; margin
    adds inter-row breathing so stacked columns never touch. */
-.js-cell-token--word {
+.js-Tihoka-token--word {
   display: inline-flex !important;
   flex-direction: column !important;
   align-items: center !important;
@@ -527,19 +546,19 @@ ${buildVariables(':host')}
   border: 0 !important;
 }
 
-.js-cell-token--word:not(.js-cell-token--reading-off),
-.js-cell-token--word:not(.js-cell-token--gloss-off) {
+.js-Tihoka-token--word:not(.js-Tihoka-token--reading-off),
+.js-Tihoka-token--word:not(.js-Tihoka-token--gloss-off) {
   gap: 0.14em !important;
   margin: 0.55em 0 !important;
 }
 
 /* Column baseline = cap lane baseline; lift by the cap-to-word distance so
    the word lands back on the parent text baseline (see light-DOM rule). */
-.js-cell-token--word:not(.js-cell-token--reading-off) {
+.js-Tihoka-token--word:not(.js-Tihoka-token--reading-off) {
   vertical-align: 1.19em !important;
 }
 
-.js-cell-token-word {
+.js-Tihoka-token-word {
   display: inline !important;
   line-height: 1.1 !important;
   background: transparent !important;
@@ -551,7 +570,7 @@ ${buildVariables(':host')}
 /* Ruby cap (spec reading-annotation): in-flow lane above the word — never
    selectable, never copied. The trailing zero-width space keeps a line box
    inside the lane when data-reading is absent (see light-DOM rule). */
-.js-cell-token--word:not(.js-cell-token--reading-off)::before {
+.js-Tihoka-token--word:not(.js-Tihoka-token--reading-off)::before {
   content: attr(data-reading) '\\200B';
   min-height: 1.15em;
   font-size: 0.62em;
@@ -568,7 +587,7 @@ ${buildVariables(':host')}
 
 /* Gloss footnote (spec word-translation): in-flow lane below the word — its
    natural width widens the unit so glosses never ellipsis or collide. */
-.js-cell-token--word:not(.js-cell-token--gloss-off)::after {
+.js-Tihoka-token--word:not(.js-Tihoka-token--gloss-off)::after {
   content: attr(data-gloss);
   min-height: 1.15em;
   font-size: 0.62em;
@@ -583,9 +602,24 @@ ${buildVariables(':host')}
   user-select: none;
 }
 
+/* Hover display mode (spec word-display) — shadow-DOM twin of the light-DOM
+   rules above: lane content suppressed until the token is hovered, and the
+   column flattens when every lane is off-or-hover-hidden. */
+.js-Tihoka-token--word.js-Tihoka-token--reading-hover:not(:hover)::before {
+  content: none !important;
+}
+.js-Tihoka-token--word.js-Tihoka-token--gloss-hover:not(:hover)::after {
+  content: none !important;
+}
+.js-Tihoka-token--word:is(.js-Tihoka-token--reading-hover:not(:hover), .js-Tihoka-token--reading-off):is(.js-Tihoka-token--gloss-hover:not(:hover), .js-Tihoka-token--gloss-off) {
+  gap: 0 !important;
+  margin: 0 !important;
+  vertical-align: baseline !important;
+}
+
 /* Status bar: real capsule lane between word and gloss — transparent until a
    status rule paints it (see light-DOM rule). */
-.js-cell-token-status {
+.js-Tihoka-token-status {
   display: block !important;
   width: 100% !important;
   height: var(--border-width-status) !important;
@@ -599,7 +633,7 @@ ${buildVariables(':host')}
 }
 
 /* Resolving: suppress status/frequency visuals while metadata is loading. */
-.js-cell-token.js-cell-token--resolving {
+.js-Tihoka-token.js-Tihoka-token--resolving {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
   background-color: transparent !important;
@@ -607,98 +641,98 @@ ${buildVariables(':host')}
   text-shadow: none !important;
   transition: none !important;
 }
-.js-cell-token.js-cell-token--resolving .js-cell-token-word {
+.js-Tihoka-token.js-Tihoka-token--resolving .js-Tihoka-token-word {
   background-color: transparent !important;
   box-shadow: none !important;
 }
-.js-cell-token.js-cell-token--resolving .js-cell-token-status {
+.js-Tihoka-token.js-Tihoka-token--resolving .js-Tihoka-token-status {
   background: transparent !important;
 }
 
-.js-cell-token--separator {
+.js-Tihoka-token--separator {
   display: inline !important;
   cursor: auto !important;
   background: transparent !important;
   color: inherit !important;
 }
 
-.js-cell-token.js-cell-token--frequency-core,
-.js-cell-token.js-cell-token--frequency-common,
-.js-cell-token.js-cell-token--frequency-general,
-.js-cell-token.js-cell-token--frequency-advanced,
-.js-cell-token.js-cell-token--frequency-rare {
+.js-Tihoka-token.js-Tihoka-token--frequency-core,
+.js-Tihoka-token.js-Tihoka-token--frequency-common,
+.js-Tihoka-token.js-Tihoka-token--frequency-general,
+.js-Tihoka-token.js-Tihoka-token--frequency-advanced,
+.js-Tihoka-token.js-Tihoka-token--frequency-rare {
   border-radius: var(--radius-md) !important;
   padding: 0.15em 0.3em !important;
-  box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
+  box-shadow: inset 0 0 0 var(--border-width-hairline) var(--Tihoka-token-freq-border) !important;
 }
-.js-cell-token.js-cell-token--frequency-core {
-  color: var(--cell-token-freq-core-fg) !important;
-  -webkit-text-fill-color: var(--cell-token-freq-core-fg) !important;
-  background-color: var(--cell-token-freq-core-bg) !important;
+.js-Tihoka-token.js-Tihoka-token--frequency-core {
+  color: var(--Tihoka-token-freq-core-fg) !important;
+  -webkit-text-fill-color: var(--Tihoka-token-freq-core-fg) !important;
+  background-color: var(--Tihoka-token-freq-core-bg) !important;
 }
-.js-cell-token.js-cell-token--frequency-common {
-  color: var(--cell-token-freq-common-fg) !important;
-  -webkit-text-fill-color: var(--cell-token-freq-common-fg) !important;
-  background-color: var(--cell-token-freq-common-bg) !important;
+.js-Tihoka-token.js-Tihoka-token--frequency-common {
+  color: var(--Tihoka-token-freq-common-fg) !important;
+  -webkit-text-fill-color: var(--Tihoka-token-freq-common-fg) !important;
+  background-color: var(--Tihoka-token-freq-common-bg) !important;
 }
-.js-cell-token.js-cell-token--frequency-general {
-  color: var(--cell-token-freq-general-fg) !important;
-  -webkit-text-fill-color: var(--cell-token-freq-general-fg) !important;
-  background-color: var(--cell-token-freq-general-bg) !important;
+.js-Tihoka-token.js-Tihoka-token--frequency-general {
+  color: var(--Tihoka-token-freq-general-fg) !important;
+  -webkit-text-fill-color: var(--Tihoka-token-freq-general-fg) !important;
+  background-color: var(--Tihoka-token-freq-general-bg) !important;
 }
-.js-cell-token.js-cell-token--frequency-advanced {
-  color: var(--cell-token-freq-advanced-fg) !important;
-  -webkit-text-fill-color: var(--cell-token-freq-advanced-fg) !important;
-  background-color: var(--cell-token-freq-advanced-bg) !important;
+.js-Tihoka-token.js-Tihoka-token--frequency-advanced {
+  color: var(--Tihoka-token-freq-advanced-fg) !important;
+  -webkit-text-fill-color: var(--Tihoka-token-freq-advanced-fg) !important;
+  background-color: var(--Tihoka-token-freq-advanced-bg) !important;
 }
-.js-cell-token.js-cell-token--frequency-rare {
-  color: var(--cell-token-freq-rare-fg) !important;
-  -webkit-text-fill-color: var(--cell-token-freq-rare-fg) !important;
-  background-color: var(--cell-token-freq-rare-bg) !important;
+.js-Tihoka-token.js-Tihoka-token--frequency-rare {
+  color: var(--Tihoka-token-freq-rare-fg) !important;
+  -webkit-text-fill-color: var(--Tihoka-token-freq-rare-fg) !important;
+  background-color: var(--Tihoka-token-freq-rare-bg) !important;
 }
 
-.js-cell-token.js-cell-token--status-unknown .js-cell-token-status {
-  background: var(--cell-token-status-unknown) !important;
+.js-Tihoka-token.js-Tihoka-token--status-unknown .js-Tihoka-token-status {
+  background: var(--Tihoka-token-status-unknown) !important;
 }
-.js-cell-token.js-cell-token--status-tracking .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-tracking), var(--cell-token-status-unknown)) !important;
+.js-Tihoka-token.js-Tihoka-token--status-tracking .js-Tihoka-token-status {
+  background: linear-gradient(90deg, var(--Tihoka-token-status-tracking), var(--Tihoka-token-status-unknown)) !important;
 }
-.js-cell-token.js-cell-token--status-known:hover:not(.js-cell-token--status-off) .js-cell-token-status,
-.js-cell-token.js-cell-token--status-known.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-status {
-  background: var(--cell-token-status-known) !important;
+.js-Tihoka-token.js-Tihoka-token--status-known:hover:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status,
+.js-Tihoka-token.js-Tihoka-token--status-known.js-Tihoka-token--popup-open:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status {
+  background: var(--Tihoka-token-status-known) !important;
 }
-.js-cell-token.js-cell-token--status-ignore:hover:not(.js-cell-token--status-off) .js-cell-token-status,
-.js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-status {
-  background: var(--cell-token-status-ignore) !important;
+.js-Tihoka-token.js-Tihoka-token--status-ignore:hover:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status,
+.js-Tihoka-token.js-Tihoka-token--status-ignore.js-Tihoka-token--popup-open:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status {
+  background: var(--Tihoka-token-status-ignore) !important;
 }
 
 /* Card layer — same gradient stops as the light-DOM builder (see above). */
-.js-cell-token.js-cell-token--status-unknown.js-cell-token--has-card:not(.js-cell-token--status-off) .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-unknown), var(--cell-token-status-learning)) !important;
+.js-Tihoka-token.js-Tihoka-token--status-unknown.js-Tihoka-token--has-card:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status {
+  background: linear-gradient(90deg, var(--Tihoka-token-status-unknown), var(--Tihoka-token-status-learning)) !important;
 }
-.js-cell-token.js-cell-token--status-tracking.js-cell-token--has-card:not(.js-cell-token--status-off) .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-tracking), var(--cell-token-status-unknown), var(--cell-token-status-learning)) !important;
+.js-Tihoka-token.js-Tihoka-token--status-tracking.js-Tihoka-token--has-card:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status {
+  background: linear-gradient(90deg, var(--Tihoka-token-status-tracking), var(--Tihoka-token-status-unknown), var(--Tihoka-token-status-learning)) !important;
 }
-.js-cell-token.js-cell-token--status-known.js-cell-token--has-card:hover:not(.js-cell-token--status-off) .js-cell-token-status,
-.js-cell-token.js-cell-token--status-known.js-cell-token--has-card.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-known), var(--cell-token-status-learning)) !important;
+.js-Tihoka-token.js-Tihoka-token--status-known.js-Tihoka-token--has-card:hover:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status,
+.js-Tihoka-token.js-Tihoka-token--status-known.js-Tihoka-token--has-card.js-Tihoka-token--popup-open:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status {
+  background: linear-gradient(90deg, var(--Tihoka-token-status-known), var(--Tihoka-token-status-learning)) !important;
 }
-.js-cell-token.js-cell-token--status-ignore.js-cell-token--has-card:hover:not(.js-cell-token--status-off) .js-cell-token-status,
-.js-cell-token.js-cell-token--status-ignore.js-cell-token--has-card.js-cell-token--popup-open:not(.js-cell-token--status-off) .js-cell-token-status {
-  background: linear-gradient(90deg, var(--cell-token-status-ignore), var(--cell-token-status-learning)) !important;
+.js-Tihoka-token.js-Tihoka-token--status-ignore.js-Tihoka-token--has-card:hover:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status,
+.js-Tihoka-token.js-Tihoka-token--status-ignore.js-Tihoka-token--has-card.js-Tihoka-token--popup-open:not(.js-Tihoka-token--status-off) .js-Tihoka-token-status {
+  background: linear-gradient(90deg, var(--Tihoka-token-status-ignore), var(--Tihoka-token-status-learning)) !important;
 }
 
-.js-cell-token.js-cell-token--status-unknown,
-.js-cell-token.js-cell-token--status-tracking,
-.js-cell-token.js-cell-token--status-known:hover,
-.js-cell-token.js-cell-token--status-known.js-cell-token--popup-open,
-.js-cell-token.js-cell-token--status-ignore:hover,
-.js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open {
+.js-Tihoka-token.js-Tihoka-token--status-unknown,
+.js-Tihoka-token.js-Tihoka-token--status-tracking,
+.js-Tihoka-token.js-Tihoka-token--status-known:hover,
+.js-Tihoka-token.js-Tihoka-token--status-known.js-Tihoka-token--popup-open,
+.js-Tihoka-token.js-Tihoka-token--status-ignore:hover,
+.js-Tihoka-token.js-Tihoka-token--status-ignore.js-Tihoka-token--popup-open {
   text-shadow: var(--shadow-sm) !important;
 }
 
-.js-cell-token.js-cell-token--status-known,
-.js-cell-token.js-cell-token--status-ignore {
+.js-Tihoka-token.js-Tihoka-token--status-known,
+.js-Tihoka-token.js-Tihoka-token--status-ignore {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
   background-color: transparent !important;
@@ -706,12 +740,12 @@ ${buildVariables(':host')}
   padding: 0 !important;
   border-radius: 0 !important;
 }
-.js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-status,
-.js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) .js-cell-token-status {
+.js-Tihoka-token.js-Tihoka-token--status-known:not(:hover):not(.js-Tihoka-token--popup-open) .js-Tihoka-token-status,
+.js-Tihoka-token.js-Tihoka-token--status-ignore:not(:hover):not(.js-Tihoka-token--popup-open) .js-Tihoka-token-status {
   background: transparent !important;
 }
 
-.js-cell-token.js-cell-token--i1-off {
+.js-Tihoka-token.js-Tihoka-token--i1-off {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
   background-color: transparent !important;
@@ -720,24 +754,24 @@ ${buildVariables(':host')}
   border-radius: 0 !important;
 }
 
-.js-cell-token.js-cell-token--selected .js-cell-token-word {
-  background-image: linear-gradient(color-mix(in srgb, var(--cell-token-selected) 18%, transparent) 0 0) !important;
+.js-Tihoka-token.js-Tihoka-token--selected .js-Tihoka-token-word {
+  background-image: linear-gradient(color-mix(in srgb, var(--Tihoka-token-selected) 18%, transparent) 0 0) !important;
 }
 
-.js-cell-sentence-band {
+.js-Tihoka-sentence-band {
   position: absolute !important;
   pointer-events: none !important;
   z-index: var(--z-overlay-base) !important;
-  background: color-mix(in srgb, var(--cell-sentence-wash) 32%, transparent) !important;
+  background: color-mix(in srgb, var(--Tihoka-sentence-wash) 32%, transparent) !important;
 }
 
-.js-cell-token.js-cell-token--status-off {
+.js-Tihoka-token.js-Tihoka-token--status-off {
   text-shadow: var(--shadow-sm) !important;
 }
-.js-cell-token.js-cell-token--status-off .js-cell-token-status {
+.js-Tihoka-token.js-Tihoka-token--status-off .js-Tihoka-token-status {
   background: transparent !important;
 }
-.js-cell-token.js-cell-token--frequency-off {
+.js-Tihoka-token.js-Tihoka-token--frequency-off {
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
   background-color: transparent !important;

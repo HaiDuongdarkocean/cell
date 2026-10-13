@@ -4,7 +4,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { BackgroundPrefillController } from '@/features/translate';
 import {
   isEditableEvent,
-  isInsideCellUi,
+  isInsideTihokaUi,
   isActivatableTarget,
   handleShortcutKey,
   navigateCue,
@@ -38,15 +38,15 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
   const onKeydown = (e: KeyboardEvent) => {
     const offsetController = ctx.getOffsetController();
     const shortcuts = ctx.getShortcuts();
-    // Rule: when focus is inside Cell UI (shadow DOM), block ALL host shortcuts
-    // so the host page doesn't react to keys the user intends for Cell UI.
-    // Cell's own shortcuts are processed below before this guard returns.
+    // Rule: when focus is inside Tihoka UI (shadow DOM), block ALL host shortcuts
+    // so the host page doesn't react to keys the user intends for Tihoka UI.
+    // Tihoka's own shortcuts are processed below before this guard returns.
     // Escape is always allowed through so panels can close.
-    const insideCellUi = isInsideCellUi(e);
+    const insideTihokaUi = isInsideTihokaUi(e);
     const realTarget = e.composedPath()[0] ?? e.target;
     const key = e.key.toLowerCase();
 
-    if (insideCellUi && realTarget instanceof HTMLElement && realTarget.closest('[data-cell-keycapture]')) {
+    if (insideTihokaUi && realTarget instanceof HTMLElement && realTarget.closest('[data-tihoka-keycapture]')) {
       return;
     }
 
@@ -67,8 +67,8 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
     // ADR-019: fixed parallel offset shortcuts `[` `]` `{` `}` `\` (ponytail: not in
     // ShortcutAction union — avoid config UI bloat, like NavCluster fixed shortcuts).
     // Guard: skip when focus in editable (input/textarea/contenteditable) — avoid YouTube search conflict.
-    // Guard: skip when focus inside Cell UI — user is interacting with panel, not video.
-    if (!isEditableEvent(e) && !insideCellUi) {
+    // Guard: skip when focus inside Tihoka UI — user is interacting with panel, not video.
+    if (!isEditableEvent(e) && !insideTihokaUi) {
       if (key === '[' || key === ']' || key === '{' || key === '}' || key === '\\') {
         if (offsetController) {
           e.preventDefault();
@@ -94,8 +94,8 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
     }
 
     // In Player Mode the video/overlay is the focus, so allow configured
-    // shortcuts even if the event path passes through a Cell UI host. In normal
-    // mode, allow shortcuts inside Cell UI too — if a panel shortcut conflicts
+    // shortcuts even if the event path passes through a Tihoka UI host. In normal
+    // mode, allow shortcuts inside Tihoka UI too — if a panel shortcut conflicts
     // with the host the panel must win while it has focus. Skip when focus is in
     // an editable element, and skip Enter/Space on buttons/links so those
     // controls still activate with the keyboard.
@@ -165,12 +165,12 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
         e.stopImmediatePropagation();
         return;
       }
-      // Cell UI: block host shortcuts when focus is inside Cell UI panels. Let
+      // Tihoka UI: block host shortcuts when focus is inside Tihoka UI panels. Let
       // Escape through so panels can close. Don't stop when focus is in an
       // editable or activatable control — those own Enter/Space and typing;
-      // the Cell UI root (Surface/Sheet) will stop the event from reaching the
+      // the Tihoka UI root (Surface/Sheet) will stop the event from reaching the
       // host after the focused control handles it.
-      if (insideCellUi && e.key !== 'Escape' && !shouldSkipShortcut) {
+      if (insideTihokaUi && e.key !== 'Escape' && !shouldSkipShortcut) {
         e.stopImmediatePropagation();
       }
       return;
@@ -287,7 +287,7 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
   };
 
   // ADR-034 D2: also block keyup for configured actions. YouTube handles
-  // space on keyup (not keydown) — if Cell pauses on keydown but lets keyup
+  // space on keyup (not keydown) — if Tihoka pauses on keydown but lets keyup
   // through, YouTube's keyup handler plays the video again (double-toggle).
   // Same guard as keydown: skip editable targets, only block configured keys.
   const onKeyup = (e: KeyboardEvent) => {
@@ -304,14 +304,14 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
     const realTarget = e.composedPath()[0] ?? e.target;
     const key = e.key.toLowerCase();
 
-    if (realTarget instanceof HTMLElement && realTarget.closest('[data-cell-keycapture]')) {
+    if (realTarget instanceof HTMLElement && realTarget.closest('[data-tihoka-keycapture]')) {
       return;
     }
 
     const isActivationKey = key === ' ' || key === 'enter';
 
     // In Player Mode the overlay owns the keyboard; otherwise, let buttons and
-    // links handle Enter/Space themselves. The Cell UI root stops the event
+    // links handle Enter/Space themselves. The Tihoka UI root stops the event
     // from leaking to the host after the focused control consumes it.
     if (isActivatableTarget(realTarget) && isActivationKey && !blockController.isPlayerModeActive) {
       return;
@@ -333,10 +333,10 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
       return;
     }
 
-    // Block host keyup when focus is inside Cell UI and the key wasn't handled
+    // Block host keyup when focus is inside Tihoka UI and the key wasn't handled
     // by a focused control. Escape is allowed through so panels/escape layers
     // can close; don't preventDefault here so activatable controls still work.
-    if (isInsideCellUi(e) && e.key !== 'Escape') {
+    if (isInsideTihokaUi(e) && e.key !== 'Escape') {
       e.stopImmediatePropagation();
     }
   };

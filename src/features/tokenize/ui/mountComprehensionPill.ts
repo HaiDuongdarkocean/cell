@@ -36,7 +36,7 @@ export function mountComprehensionPill(options: MountComprehensionPillOptions = 
         reparentOnFullscreen: true,
         chromeLayer: true,
       });
-      mount.host.classList.add('js-cell-comprehension-pill-host');
+      mount.host.classList.add('js-Tihoka-comprehension-pill-host');
       mount.host.style.zIndex = 'var(--z-overlay-settings)';
     }
     mount.root.render(createElement(

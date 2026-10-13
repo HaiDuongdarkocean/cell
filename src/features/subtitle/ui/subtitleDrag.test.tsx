@@ -16,21 +16,21 @@ function Harness({ onDragReposition }: { readonly onDragReposition?: (y: number)
     onDragReposition,
   });
   return (
-    <div data-cell-id="drag-test-host">
+    <div data-tihoka-id="drag-test-host">
       <div
         ref={rootRef}
-        data-cell-id="drag-test-root"
+        data-tihoka-id="drag-test-root"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        <div data-cell-id="subtitle-block">
-          <div data-cell-id="drag-test-layer">
-            <span data-cell-id="drag-test-text">subtitle line</span>
+        <div data-tihoka-id="subtitle-block">
+          <div data-tihoka-id="drag-test-layer">
+            <span data-tihoka-id="drag-test-text">subtitle line</span>
           </div>
         </div>
-        <button type="button" data-cell-id="nav-expand">expand</button>
+        <button type="button" data-tihoka-id="nav-expand">expand</button>
       </div>
     </div>
   );

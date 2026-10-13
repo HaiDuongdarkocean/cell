@@ -1,4 +1,5 @@
 import type { SrtCue } from '@/entities/media';
+import type { AnnotationDisplayMode } from '@/entities/settings';
 import type { Token, TokenBlock, TokenizeController, TokenizeState } from '@/features/tokenize/types';
 import type { ClickModifierState, WordStatus } from '@/entities/dictionary';
 import { createTokenizeStateStore, type TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
@@ -27,10 +28,10 @@ export interface SubtitleTokenizeController extends TokenizeController {
   render(activeTargetIndex: number, activeNativeIndex: number): void;
   /** Force rebind with current state (used after showStatus/showFrequency changes). */
   rebind(): void;
-  /** Toggle reading caps — mirrors store + preloader then rebinds. */
-  setShowReadings(show: boolean): void;
-  /** Toggle native-language glosses — mirrors store + preloader then rebinds. */
-  setShowGlosses(show: boolean): void;
+  /** Reading-cap display mode — mirrors store + preloader then rebinds. */
+  setReadingDisplay(mode: AnnotationDisplayMode): void;
+  /** Native-language gloss display mode — mirrors store + preloader then rebinds. */
+  setGlossDisplay(mode: AnnotationDisplayMode): void;
   /** Native subtitle language changed — drops cached glosses and re-fetches. */
   setGlossTargetLanguage(tl: string): void;
   handleStatusKey(key: string): boolean;
@@ -62,10 +63,10 @@ export interface SubtitleTokenizeControllerOptions {
   readonly getPopupStatusTarget?: () => PopupStatusTarget | null;
   /** Number of cues before/after the active cue to keep prepared. */
   readonly windowSize?: number;
-  /** Show reading caps above tokens (profile setting `showReadings`). */
-  readonly showReadings?: boolean;
-  /** Show native-language glosses below tokens (profile setting `showWordTranslations`). */
-  readonly showGlosses?: boolean;
+  /** Reading-cap display mode (profile setting `readingDisplay`). */
+  readonly readingDisplay?: AnnotationDisplayMode;
+  /** Native-language gloss display mode (profile setting `glossDisplay`). */
+  readonly glossDisplay?: AnnotationDisplayMode;
   /** Gloss destination language — `subtitleOverlayNativeLanguage`. */
   readonly glossTargetLanguage?: string;
 }
@@ -93,8 +94,8 @@ export function createSubtitleTokenizeController(
   const scheduler = new TokenizeScheduler();
   const stateStore: TokenizeStateStore = createTokenizeStateStore({
     initialEnabled: false,
-    initialShowReadings: options.showReadings ?? false,
-    initialShowGlosses: options.showGlosses ?? false,
+    initialReadingDisplay: options.readingDisplay ?? 'off',
+    initialGlossDisplay: options.glossDisplay ?? 'off',
   });
   const videoTokenMap: VideoTokenMap = createVideoTokenMap(langCode);
   const preloader: VideoTokenPreloader = createVideoTokenPreloader({
@@ -102,8 +103,8 @@ export function createSubtitleTokenizeController(
     map: videoTokenMap,
     scheduler,
     bufferSize: windowSize,
-    showReadings: options.showReadings ?? false,
-    showGlosses: options.showGlosses ?? false,
+    showReadings: (options.readingDisplay ?? 'off') !== 'off',
+    showGlosses: (options.glossDisplay ?? 'off') !== 'off',
     glossTargetLanguage: options.glossTargetLanguage ?? '',
   });
   let targetCues: readonly SrtCue[] = [];
@@ -115,8 +116,8 @@ export function createSubtitleTokenizeController(
     return {
       showStatus: state.showStatus,
       showFrequency: state.showFrequency,
-      showReadings: state.showReadings,
-      showGlosses: state.showGlosses,
+      readingDisplay: state.readingDisplay,
+      glossDisplay: state.glossDisplay,
       onTokenEnter: (term) => stateStore.setHoveredTerm(term),
       onTokenLeave: (term) => {
         if (stateStore.getState().hoveredTerm === term) {
@@ -207,7 +208,7 @@ export function createSubtitleTokenizeController(
 
   function forceUnbindStaleTokens(element: Element | null, text: string): void {
     if (!element) return;
-    const rendered = Array.from(element.querySelectorAll('[data-cell-block-id]'));
+    const rendered = Array.from(element.querySelectorAll('[data-tihoka-block-id]'));
     if (rendered.length === 0) return;
     for (const node of rendered) {
       node.remove();
@@ -240,7 +241,7 @@ export function createSubtitleTokenizeController(
       }
       return;
     }
-    if (element.querySelector('[data-cell-block-id]')) return;
+    if (element.querySelector('[data-tihoka-block-id]')) return;
     if (!prepared) {
       // Not prepared yet; prepare inline so the viewport cue binds immediately.
       videoTokenMap.prepare(cueIndex, text);
@@ -307,17 +308,17 @@ export function createSubtitleTokenizeController(
       this.rebind();
     },
 
-    setShowReadings(show: boolean) {
-      if (stateStore.getState().showReadings === show) return;
-      stateStore.setShowReadings(show);
-      preloader.setShowReadings(show);
+    setReadingDisplay(mode: AnnotationDisplayMode) {
+      if (stateStore.getState().readingDisplay === mode) return;
+      stateStore.setReadingDisplay(mode);
+      preloader.setShowReadings(mode !== 'off');
       this.rebind();
     },
 
-    setShowGlosses(show: boolean) {
-      if (stateStore.getState().showGlosses === show) return;
-      stateStore.setShowGlosses(show);
-      preloader.setShowGlosses(show);
+    setGlossDisplay(mode: AnnotationDisplayMode) {
+      if (stateStore.getState().glossDisplay === mode) return;
+      stateStore.setGlossDisplay(mode);
+      preloader.setShowGlosses(mode !== 'off');
       this.rebind();
     },
 

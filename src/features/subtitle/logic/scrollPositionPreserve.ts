@@ -1,5 +1,5 @@
-export const CUE_LIST_SCROLL_SELECTOR = '[data-cell-id="cue-list-scroll"]';
-export const SPLIT_VIEW_PANEL_SELECTOR = '[data-cell-split-view="panel"]';
+export const CUE_LIST_SCROLL_SELECTOR = '[data-tihoka-id="cue-list-scroll"]';
+export const SPLIT_VIEW_PANEL_SELECTOR = '[data-tihoka-split-view="panel"]';
 
 export function findScrollElement(
   root: Document | ShadowRoot | HTMLElement = document,

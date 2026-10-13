@@ -1,7 +1,7 @@
 /**
  * Reader repository — IndexedDB persistence for books + progress.
  *
- * DB name: cell-reader, version 2. Object stores: books (keyPath id),
+ * DB name: Tihoka-reader, version 2. Object stores: books (keyPath id),
  * progress (keyPath bookId), syncOutbox, syncMeta.
  */
 

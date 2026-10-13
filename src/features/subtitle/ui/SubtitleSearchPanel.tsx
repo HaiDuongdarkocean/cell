@@ -90,11 +90,11 @@ function SearchResultRow({ result, index, onClick }: {
   readonly onClick: () => void;
 }): React.JSX.Element {
   return (
-    <li className={styles.resultItem} role="option" data-cell-id={`search-result-${index}`}>
+    <li className={styles.resultItem} role="option" data-tihoka-id={`search-result-${index}`}>
       <Button variant="secondary"
         className={styles.resultButton}
         onClick={onClick}
-        data-cell-id={`search-result-button-${index}`}
+        data-tihoka-id={`search-result-button-${index}`}
       >
         <span className={styles.resultName}>{result.name}</span>
         <span className={styles.resultMeta}>
@@ -252,9 +252,9 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
   const nativeLabel = nativeLang ? languageShortLabel(nativeLang) : t('library.card.native');
 
   return (
-    <section className={styles.section} data-cell-id="search-section">
+    <section className={styles.section} data-tihoka-id="search-section">
       {/* Search row — Manage keys (left) + search bar (input + clear + search inside) + Advanced (right) */}
-      <div className={styles.searchInputWrap} data-cell-id="search-input-wrap">
+      <div className={styles.searchInputWrap} data-tihoka-id="search-input-wrap">
         {hasSearchKeys && (
           <Button shape="circle"
             variant="ghost"
@@ -263,12 +263,12 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             onClick={() => setManageKeysOpen((v) => !v)}
             aria-expanded={manageKeysOpen}
             aria-label={t('subtitle.search.manageKeys')}
-            data-cell-id="search-manage-keys-toggle"
+            data-tihoka-id="search-manage-keys-toggle"
           >
             <Wrench size={ICON_SIZE_PX} aria-hidden="true" />
           </Button>
         )}
-        <div className={styles.searchBar} data-cell-id="search-bar">
+        <div className={styles.searchBar} data-tihoka-id="search-bar">
           <Input
             type="text"
             value={query}
@@ -279,7 +279,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             className={styles.searchInput}
             disabled={formDisabled}
             variant="ghost"
-            data-cell-id="search-query-input"
+            data-tihoka-id="search-query-input"
           />
           <div className={styles.searchActions}>
             {query && (
@@ -288,7 +288,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
                 size="md"
                 onClick={handleClearQuery}
                 aria-label={t('subtitle.search.clear')}
-                data-cell-id="search-clear"
+                data-tihoka-id="search-clear"
               >
                 <X size={ICON_SIZE_PX} aria-hidden="true" />
               </Button>
@@ -299,7 +299,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
               onClick={handleSearchClick}
               disabled={formDisabled || !query.trim() || loading}
               aria-label={t('subtitle.search.submit')}
-              data-cell-id="search-button"
+              data-tihoka-id="search-button"
             >
               <Search size={ICON_SIZE_PX} aria-hidden="true" />
             </Button>
@@ -312,14 +312,14 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
           onClick={() => setAdvancedOpen((v) => !v)}
           aria-expanded={advancedOpen}
           aria-label={t('subtitle.search.advancedAria')}
-          data-cell-id="search-advanced-toggle"
+          data-tihoka-id="search-advanced-toggle"
         >
           <SlidersHorizontal size={ICON_SIZE_PX} aria-hidden="true" />
         </Button>
       </div>
 
       {advancedOpen && (
-        <div className={styles.advancedBody} data-cell-id="search-advanced-body">
+        <div className={styles.advancedBody} data-tihoka-id="search-advanced-body">
           <label className={styles.numberField}>
             <span className={styles.numberLabel}>{t('subtitle.search.season')}</span>
             <Input
@@ -330,7 +330,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
               aria-label={t('subtitle.search.seasonAria')}
               className={styles.numberInput}
               disabled={formDisabled}
-              data-cell-id="search-season-input"
+              data-tihoka-id="search-season-input"
             />
           </label>
           <label className={styles.numberField}>
@@ -343,7 +343,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
               aria-label={t('subtitle.search.episodeAria')}
               className={styles.numberInput}
               disabled={formDisabled}
-              data-cell-id="search-episode-input"
+              data-tihoka-id="search-episode-input"
             />
           </label>
         </div>
@@ -351,7 +351,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
 
       {/* API key hint — replaces status chip, actionable when no keys */}
       {!hasSearchKeys && (
-        <div className={styles.apiHint} data-cell-id="search-api-hint">
+        <div className={styles.apiHint} data-tihoka-id="search-api-hint">
           <Wrench size={ICON_SIZE_PX} className={styles.apiHintIcon} aria-hidden="true" />
           <span className={styles.apiHintText}>{t('subtitle.search.addKeyHint')}</span>
           <Button
@@ -359,7 +359,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             size="sm"
             onClick={() => setManageKeysOpen((v) => !v)}
             aria-expanded={manageKeysOpen}
-            data-cell-id="search-manage-keys-toggle"
+            data-tihoka-id="search-manage-keys-toggle"
           >
             {manageKeysOpen ? t('subtitle.action.hide') : t('subtitle.keys.add')}
           </Button>
@@ -367,7 +367,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       )}
 
       {manageKeysOpen && (
-        <div className={styles.manageKeysPanel} data-cell-id="search-manage-keys">
+        <div className={styles.manageKeysPanel} data-tihoka-id="search-manage-keys">
           <ApiKeyManager keys={[...apiKeys]} onChange={onApiKeysChange} />
         </div>
       )}
@@ -375,14 +375,14 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       {/* Target / Native tabs — filter results by language, only after search */}
       {hasSearched && !loading && !error && (
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as SubtitleRole)}>
-          <Tabs.List data-cell-id="search-tabs" role="tablist">
-            <Tabs.Trigger value="target" data-cell-id="search-tab-target">
+          <Tabs.List data-tihoka-id="search-tabs" role="tablist">
+            <Tabs.Trigger value="target" data-tihoka-id="search-tab-target">
               <span>{targetLabel}</span>
               {activeTab === 'target' && filteredResults.length > 0 && (
                 <span className={styles.tabCount}>{filteredResults.length}</span>
               )}
             </Tabs.Trigger>
-            <Tabs.Trigger value="native" data-cell-id="search-tab-native">
+            <Tabs.Trigger value="native" data-tihoka-id="search-tab-native">
               <span>{nativeLabel}</span>
               {activeTab === 'native' && filteredResults.length > 0 && (
                 <span className={styles.tabCount}>{filteredResults.length}</span>
@@ -392,10 +392,10 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         </Tabs>
       )}
 
-      <div className={styles.resultsArea} data-cell-id="search-results-area">
+      <div className={styles.resultsArea} data-tihoka-id="search-results-area">
         {/* Hint + icon — fills empty space before search, hidden when manage keys open */}
         {!loading && !error && !hasSearched && hasSearchKeys && !manageKeysOpen && (
-          <div className={styles.hintState} data-cell-id="search-hint">
+          <div className={styles.hintState} data-tihoka-id="search-hint">
             <Captions size={ICON_SIZE_PX} className={styles.hintIcon} aria-hidden="true" />
             <span className={styles.hintText}>{t('subtitle.search.hint')}</span>
           </div>
@@ -413,16 +413,16 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         )}
 
         {!loading && error && (
-          <div className={styles.errorState} role="alert" data-cell-id="search-error">
+          <div className={styles.errorState} role="alert" data-tihoka-id="search-error">
             <span className={styles.errorText}>{error}</span>
-            <Button variant="outline" size="sm" onClick={handleRetry} data-cell-id="search-retry">
+            <Button variant="outline" size="sm" onClick={handleRetry} data-tihoka-id="search-retry">
               {t('subtitle.action.retry')}
             </Button>
           </div>
         )}
 
         {!loading && !error && hasSearched && filteredResults.length === 0 && (
-          <div className={styles.emptyState} data-cell-id="search-empty">
+          <div className={styles.emptyState} data-tihoka-id="search-empty">
             {results.length > 0
               ? t('subtitle.search.emptyLang', [languageLabel(tabLang)])
               : t('common.noResults')}
@@ -430,7 +430,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         )}
 
         {!loading && !error && filteredResults.length > 0 && (
-          <ul className={styles.resultsList} role="listbox" data-cell-id="search-results-list">
+          <ul className={styles.resultsList} role="listbox" data-tihoka-id="search-results-list">
             {filteredResults.map((result, index) => (
               <SearchResultRow
                 key={result.id}

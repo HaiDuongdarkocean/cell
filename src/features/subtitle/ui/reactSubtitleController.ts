@@ -27,7 +27,7 @@ import { displayableCueRanges } from '@/features/condensedAudio';
 import type { SubtitleSearchResult } from '@/entities/subtitle/searchTypes';
 import { resolvePlayerModeLayout, resolveVideoAspectRatio, DOCK_MIN_HEIGHT_PX } from '@/features/subtitle/logic/playerModeGeometry';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
-import type { SubtitleApiKey } from '@/entities/settings';
+import type { SubtitleApiKey, AnnotationDisplayMode } from '@/entities/settings';
 import { pauseVideo, playVideo, seekToCue } from '@/shared/lib/dom/netflixPlayback';
 import { createPlayerModeHostController, type PlayerModeHostController } from './playerModeHost';
 import { practiceModeFromStudyModeId, setSubtitlePracticeMode } from '@/features/studyModes';
@@ -821,28 +821,28 @@ export class ReactSubtitleController {
       onTokenHover: options.onTokenHover,
       onTokenCtrlClick: options.onTokenCtrlClick,
       selection: options.selection,
-      showReadings: options.showReadings,
-      showGlosses: options.showGlosses,
+      readingDisplay: options.readingDisplay,
+      glossDisplay: options.glossDisplay,
       glossTargetLanguage: options.glossTargetLanguage,
     });
   }
 
-  /** Live-toggle reading caps on the cue list without rebuilding the
-   *  tokenize wiring (spec reading-annotation). */
-  setTokenizeShowReadings(show: boolean): void {
+  /** Live-switch the cue-list reading-cap mode without rebuilding the
+   *  tokenize wiring (spec word-display). */
+  setTokenizeReadingDisplay(mode: AnnotationDisplayMode): void {
     if (!this.engine.isTokenizeEnabled()) return;
     const options = this.engine.getTokenizeOptions();
-    if (!options || options.showReadings === show) return;
-    this.enableTokenize({ ...options, showReadings: show });
+    if (!options || options.readingDisplay === mode) return;
+    this.enableTokenize({ ...options, readingDisplay: mode });
   }
 
-  /** Live-toggle the cue-list gloss lane without rebuilding the tokenize
-   *  wiring (spec word-translation — cue-list follow-up). */
-  setTokenizeShowGlosses(show: boolean): void {
+  /** Live-switch the cue-list gloss-lane mode without rebuilding the
+   *  tokenize wiring (spec word-display). */
+  setTokenizeGlossDisplay(mode: AnnotationDisplayMode): void {
     if (!this.engine.isTokenizeEnabled()) return;
     const options = this.engine.getTokenizeOptions();
-    if (!options || options.showGlosses === show) return;
-    this.enableTokenize({ ...options, showGlosses: show });
+    if (!options || options.glossDisplay === mode) return;
+    this.enableTokenize({ ...options, glossDisplay: mode });
   }
 
   /** Native language changed — glosses re-resolve against the new target. */
@@ -890,16 +890,16 @@ export class ReactSubtitleController {
 
   private setPlayerModeBounds(videoStageHeight: number): void {
     const root = document.documentElement;
-    root.dataset.cellPlayerMode = 'true';
-    root.style.setProperty('--cell-player-mode-video-height', `${videoStageHeight}px`);
-    root.style.setProperty('--cell-player-mode-dock-height', `${DOCK_MIN_HEIGHT_PX}px`);
+    root.dataset.tihokaPlayerMode = 'true';
+    root.style.setProperty('--Tihoka-player-mode-video-height', `${videoStageHeight}px`);
+    root.style.setProperty('--Tihoka-player-mode-dock-height', `${DOCK_MIN_HEIGHT_PX}px`);
   }
 
   private clearPlayerModeBounds(): void {
     const root = document.documentElement;
-    delete root.dataset.cellPlayerMode;
-    root.style.removeProperty('--cell-player-mode-video-height');
-    root.style.removeProperty('--cell-player-mode-dock-height');
+    delete root.dataset.tihokaPlayerMode;
+    root.style.removeProperty('--Tihoka-player-mode-video-height');
+    root.style.removeProperty('--Tihoka-player-mode-dock-height');
   }
 
   private handlePlayerModeToggle(active: boolean): void {

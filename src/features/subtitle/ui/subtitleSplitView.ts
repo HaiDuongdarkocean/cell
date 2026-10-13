@@ -25,11 +25,11 @@ import { t } from '@/shared/i18n';
 import { logger } from '@/shared/lib/logger';
 
 // --- Split View diagnostic logging ---
-// Structured log with [Cell:SplitView] prefix so it's easy to filter in console.
-// Gated to CELL_E2E=1 builds via logger — no-ops in production.
+// Structured log with [Tihoka:SplitView] prefix so it's easy to filter in console.
+// Gated to Tihoka_E2E=1 builds via logger — no-ops in production.
 function svLog(event: string, data?: Record<string, unknown>): void {
   const ts = new Date().toISOString().slice(11, 23);
-  logger.debug(`[Cell:SplitView ${ts}] ${event}`, data ?? '');
+  logger.debug(`[Tihoka:SplitView ${ts}] ${event}`, data ?? '');
 }
 function rectLog(el: Element | null | undefined): Record<string, number> | null {
   if (!el) return null;
@@ -55,7 +55,7 @@ const SPLIT_VIEW_MIN_HEIGHT = 160;
 const SPLIT_VIEW_VIEWPORT_MARGIN = 8;
 // Below this width the row layout cannot keep both the video and the panel
 // usable. A narrow viewport (mobile) mounts the panel as a bottom sheet
-// overlay — the Cell Sheet pattern (edge-to-edge, top radius-element,
+// overlay — the Tihoka Sheet pattern (edge-to-edge, top radius-element,
 // surface-popover) — so the video keeps its slot and the cue list gets a
 // proper height instead of an inline panel squeezing both. A narrow slot
 // inside a wide viewport still stacks column-in-place.
@@ -107,7 +107,7 @@ export function useSplitView({
   const splitViewWrapperRef = useRef<HTMLDivElement | null>(null);
   // Deferred cleanup restore (slide-out animation window). A new effect run
   // drains it synchronously so the restore can't fire mid-session and strip
-  // the fresh overrides / move cellRoot out of the live stageCell.
+  // the fresh overrides / move TihokaRoot out of the live stageTihoka.
   const splitViewPendingRestoreRef = useRef<(() => void) | null>(null);
 
   // Toggle split view off on fullscreenchange, wait for player dims to
@@ -179,7 +179,7 @@ export function useSplitView({
   //
   // Fullscreen: when playerShell IS document.fullscreenElement, moving it
   // exits fullscreen (Chrome reparenting behavior). Instead, transform
-  // playerShell into a flex container and move its children into stageCell.
+  // playerShell into a flex container and move its children into stageTihoka.
   // playerShell stays as the top-layer fullscreen element — no exit.
   useEffect(() => {
     if (!splitViewOpen || playerMode) {
@@ -190,7 +190,7 @@ export function useSplitView({
     // window: run its teardown NOW (synchronously, before we snapshot and
     // rewrap) instead of letting its timer fire mid-session. Otherwise the
     // stale timer would strip this run's fresh !important overrides, move
-    // cellRoot out of the live stageCell, and null the live wrapper ref.
+    // TihokaRoot out of the live stageTihoka, and null the live wrapper ref.
     const pendingRestore = splitViewPendingRestoreRef.current;
     if (pendingRestore) {
       splitViewPendingRestoreRef.current = null;
@@ -270,12 +270,12 @@ export function useSplitView({
     if (!originalParent) return;
     const originalNextSibling = playerShell.nextSibling;
 
-    // Save #cell-subtitle-root's current parent BEFORE Split View moves it
-    // into stageCell. On cleanup, cellRoot must return to THIS parent (e.g.
+    // Save #Tihoka-subtitle-root's current parent BEFORE Split View moves it
+    // into stageTihoka. On cleanup, TihokaRoot must return to THIS parent (e.g.
     // .art-video-player with position:relative), NOT to playerShell —
     // playerShell can be position:static (e.g. themoviebox .w-full h-[203px]),
-    // which lets cellRoot's position:absolute+inset:0 escape to the viewport.
-    const cellRootOriginalParent = document.getElementById('cell-subtitle-root')?.parentElement ?? null;
+    // which lets TihokaRoot's position:absolute+inset:0 escape to the viewport.
+    const TihokaRootOriginalParent = document.getElementById('Tihoka-subtitle-root')?.parentElement ?? null;
 
     const playerRect = playerShell.getBoundingClientRect();
     const playerComputedStyle = getComputedStyle(playerShell);
@@ -308,12 +308,12 @@ export function useSplitView({
     }
     const chainStyleProps = ['width', 'height', 'min-height'];
     const savedChainStyles: Array<{ el: HTMLElement; values: Record<string, string> }> = [];
-    const stageCell = document.createElement('div');
-    stageCell.setAttribute('data-cell-split-view', 'stage');
-    stageCell.style.cssText = `flex:1 1 0;min-width:min(${SPLIT_VIEW_MIN_STAGE_WIDTH}px,55%);min-height:0;height:100%;position:relative;overflow:hidden;`;
+    const stageTihoka = document.createElement('div');
+    stageTihoka.setAttribute('data-tihoka-split-view', 'stage');
+    stageTihoka.style.cssText = `flex:1 1 0;min-width:min(${SPLIT_VIEW_MIN_STAGE_WIDTH}px,55%);min-height:0;height:100%;position:relative;overflow:hidden;`;
 
     const panel = document.createElement('div');
-    panel.setAttribute('data-cell-split-view', 'panel');
+    panel.setAttribute('data-tihoka-split-view', 'panel');
     // Apple §7: enter from right, exit to right — symmetric path.
     // §4: critically damped spring feel (no overshoot).
     // flex-basis animates so the video expands smoothly as the panel slides out.
@@ -341,7 +341,7 @@ export function useSplitView({
     // (stage + panel). touch-action:pan-y keeps vertical swipe scrolling the
     // cue list while horizontal drags resize.
     const handle = document.createElement('div');
-    handle.setAttribute('data-cell-split-view', 'handle');
+    handle.setAttribute('data-tihoka-split-view', 'handle');
     handle.style.cssText = `position:absolute;top:0;bottom:0;left:0;width:${SPLIT_VIEW_HANDLE_HIT_PX}px;cursor:col-resize;touch-action:pan-y;z-index:2;`;
     panelShadow.appendChild(handle);
 
@@ -349,7 +349,7 @@ export function useSplitView({
     // children of the host would not render) as an in-flow first child, so
     // it reserves its band instead of overlaying the cue chrome.
     const sheetHandle = document.createElement('div');
-    sheetHandle.setAttribute('data-cell-split-view', 'sheet-handle');
+    sheetHandle.setAttribute('data-tihoka-split-view', 'sheet-handle');
     sheetHandle.setAttribute('role', 'separator');
     sheetHandle.setAttribute('aria-orientation', 'horizontal');
     sheetHandle.setAttribute('aria-label', t('subtitle.playerMode.resizeList'));
@@ -374,8 +374,8 @@ export function useSplitView({
     if (isPlayerFullscreen) {
       // FULLSCREEN: playerShell is the top-layer fullscreen element. Moving
       // it exits fullscreen. Instead, move playerShell's children (including
-      // #cell-subtitle-root) into stageCell and transform playerShell into a
-      // flex row. The overlay fills stageCell via position:absolute+inset:0.
+      // #Tihoka-subtitle-root) into stageTihoka and transform playerShell into a
+      // flex row. The overlay fills stageTihoka via position:absolute+inset:0.
       // When fsEl is an ANCESTOR of playerShell (e.g. document.documentElement),
       // playerShell is NOT the top-layer element. The old wrapper from a
       // previous normal run constrains its height (overflow:hidden + fixed
@@ -398,22 +398,22 @@ export function useSplitView({
           svLog('FULLSCREEN: unwrapped old wrapper');
         }
       }
-      // Move ALL children (including #cell-subtitle-root) into stageCell.
-      // stageCell is position:relative, so #cell-subtitle-root's existing
+      // Move ALL children (including #Tihoka-subtitle-root) into stageTihoka.
+      // stageTihoka is position:relative, so #Tihoka-subtitle-root's existing
       // position:absolute + inset:0 fills exactly the video stage — no
       // inline left/right/width overrides needed.
       const childrenToMove = Array.from(playerShell.children);
       for (const child of childrenToMove) {
-        stageCell.appendChild(child);
+        stageTihoka.appendChild(child);
       }
       playerShell.style.setProperty('display', 'flex', 'important');
       playerShell.style.setProperty('flex-direction', 'row', 'important');
       playerShell.style.setProperty('padding', '0', 'important');
-      playerShell.appendChild(stageCell);
+      playerShell.appendChild(stageTihoka);
       playerShell.appendChild(panel);
       svLog('FULLSCREEN branch done', {
         playerShellRect: rectLog(playerShell),
-        stageCellRect: rectLog(stageCell),
+        stageTihokaRect: rectLog(stageTihoka),
         panelRect: rectLog(panel),
         childrenMoved: childrenToMove.length,
       });
@@ -425,7 +425,7 @@ export function useSplitView({
     } else {
       // NORMAL: wrap playerShell in a flex row wrapper.
       wrapper = document.createElement('div');
-      wrapper.setAttribute('data-cell-split-view', 'wrapper');
+      wrapper.setAttribute('data-tihoka-split-view', 'wrapper');
       // Wrapper height: preserve the slot the container occupied before
       // split — the page layout was built around exactly that box.
       //
@@ -453,8 +453,8 @@ export function useSplitView({
         && playerRect.width > videoRect.width * 1.2;
 
       // When transitioning from fullscreen back to normal, playerShell
-      // is still inside the old wrapper's stageCell. originalParent is
-      // that stageCell — which is inside the old wrapper. Removing the
+      // is still inside the old wrapper's stageTihoka. originalParent is
+      // that stageTihoka — which is inside the old wrapper. Removing the
       // old wrapper before inserting the new one would detach the new
       // wrapper too. Resolve the real insertion point: if originalParent
       // is inside the old wrapper, use the old wrapper's parent instead.
@@ -476,7 +476,7 @@ export function useSplitView({
       // selector disappears. Instead, use the playerShell's original pixel
       // width as flex-basis so the wrapper takes only the video column's
       // space. Must check insertParent (the actual flex row), NOT
-      // originalParent (which may be an old stageCell inside the old
+      // originalParent (which may be an old stageTihoka inside the old
       // wrapper — not a flex row, causing hasFlexSiblings=false after
       // fullscreen exit).
       // The % basis only applies to flex-row parents: on a column parent
@@ -494,7 +494,7 @@ export function useSplitView({
         && Array.from(insertParent.children)
           .filter((c) => c !== playerShell
             && c !== oldWrapper
-            && !(c as HTMLElement).hasAttribute?.('data-cell-split-view')
+            && !(c as HTMLElement).hasAttribute?.('data-tihoka-split-view')
             && c.getBoundingClientRect().width > 0)
           .length > 0;
       const wrapperFlex = !insertParentIsFlexRow
@@ -602,13 +602,13 @@ export function useSplitView({
       // jwplayer/megaplay sets overflow:hidden on #megaplay-player, which
       // clips the control bar (especially right-side controls like the
       // fullscreen button) at the player bounds. Override to visible so
-      // controls render outside the player's content box. stageCell still
+      // controls render outside the player's content box. stageTihoka still
       // has overflow:hidden, so the video itself is clipped to the stage.
       playerShell.style.setProperty('overflow', 'visible', 'important');
 
-      // Move playerShell into new stageCell FIRST (detaches from old
-      // wrapper's stageCell if transitioning from a previous normal run).
-      stageCell.appendChild(playerShell);
+      // Move playerShell into new stageTihoka FIRST (detaches from old
+      // wrapper's stageTihoka if transitioning from a previous normal run).
+      stageTihoka.appendChild(playerShell);
 
       // Re-link the "video fills shell" percentage chain between video and
       // shell — WITHOUT changing display. An intermediate that is already
@@ -640,12 +640,12 @@ export function useSplitView({
         videoEl.style.setProperty('width', '100%', 'important');
         videoEl.style.setProperty('height', '100%', 'important');
       }
-      // Move #cell-subtitle-root into stageCell so its position:absolute +
-      // inset:0 fills the video stage (stageCell is position:relative),
+      // Move #Tihoka-subtitle-root into stageTihoka so its position:absolute +
+      // inset:0 fills the video stage (stageTihoka is position:relative),
       // not the subtitle panel. No inline overrides needed.
-      const cellRootNormal = document.getElementById('cell-subtitle-root');
-      if (cellRootNormal) stageCell.appendChild(cellRootNormal);
-      wrapper.appendChild(stageCell);
+      const TihokaRootNormal = document.getElementById('Tihoka-subtitle-root');
+      if (TihokaRootNormal) stageTihoka.appendChild(TihokaRootNormal);
+      wrapper.appendChild(stageTihoka);
       wrapper.appendChild(panel);
 
       // Insert new wrapper at the resolved position BEFORE removing the
@@ -706,10 +706,10 @@ export function useSplitView({
         };
         if (narrow) {
           wrapper.style.flexDirection = 'column';
-          stageCell.style.flex = '0 0 auto';
-          stageCell.style.minWidth = '0';
-          stageCell.style.width = '100%';
-          stageCell.style.height = `${stageH}px`;
+          stageTihoka.style.flex = '0 0 auto';
+          stageTihoka.style.minWidth = '0';
+          stageTihoka.style.width = '100%';
+          stageTihoka.style.height = `${stageH}px`;
           if (sheetMode) {
             handle.style.display = 'none';
             sheetHandle.style.display = 'block';
@@ -718,7 +718,7 @@ export function useSplitView({
             if (panel.parentElement !== document.body) {
               document.body.appendChild(panel);
               // The entry transform was translateX(100%) — retarget it to
-              // slide up so the sheet enters like every other Cell sheet.
+              // slide up so the sheet enters like every other Tihoka sheet.
               if (panel.style.transform === 'translateX(100%)') {
                 panel.style.transform = 'translateY(100%)';
               }
@@ -752,10 +752,10 @@ export function useSplitView({
         } else {
           restorePanelIntoWrapper();
           wrapper.style.flexDirection = 'row';
-          stageCell.style.flex = '1 1 0';
-          stageCell.style.minWidth = `min(${SPLIT_VIEW_MIN_STAGE_WIDTH}px,55%)`;
-          stageCell.style.width = '';
-          stageCell.style.height = '100%';
+          stageTihoka.style.flex = '1 1 0';
+          stageTihoka.style.minWidth = `min(${SPLIT_VIEW_MIN_STAGE_WIDTH}px,55%)`;
+          stageTihoka.style.width = '';
+          stageTihoka.style.height = '100%';
           handle.style.display = '';
           panel.style.flex = `0 0 ${splitViewPctRef.current}%`;
           panel.style.minWidth = 'min(200px,45%)';
@@ -823,7 +823,7 @@ export function useSplitView({
           }
           const cappedH = clampToVisibleViewport(cachedContentH, rect.top);
           const videoForRatio = playerShell.querySelector('video')?.getBoundingClientRect();
-          const stageW = stageCell.getBoundingClientRect().width;
+          const stageW = stageTihoka.getBoundingClientRect().width;
           const targetW = cappedH < cachedContentH && videoForRatio && videoForRatio.height > 0
             ? Math.floor(cappedH * (videoForRatio.width / videoForRatio.height))
             : 0;
@@ -840,7 +840,7 @@ export function useSplitView({
         // Right-inset for body-level floating chrome (comprehension pill) —
         // keeps it over the video stage instead of covering the panel header.
         document.documentElement.style.setProperty(
-          '--cell-split-panel-w',
+          '--Tihoka-split-panel-w',
           narrow ? '0px' : `${Math.round(panel.getBoundingClientRect().width)}px`,
         );
         if (narrow) {
@@ -855,7 +855,7 @@ export function useSplitView({
             - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
           const siblingW = Array.from(insertParent.children)
             .filter((c) => c !== wrapper
-              && !(c as HTMLElement).hasAttribute?.('data-cell-split-view'))
+              && !(c as HTMLElement).hasAttribute?.('data-tihoka-split-view'))
             .reduce((sum, c) => sum + c.getBoundingClientRect().width, 0);
           const basis = Math.round(parentContentW - siblingW);
           // Siblings may have wrapped to their own rows after a viewport
@@ -884,7 +884,7 @@ export function useSplitView({
       window.addEventListener('resize', scheduleLayoutRecalc);
       svLog('NORMAL wrapper inserted', {
         wrapperRect: rectLog(wrapper),
-        stageCellRect: rectLog(stageCell),
+        stageTihokaRect: rectLog(stageTihoka),
         panelRect: rectLog(panel),
         playerShellRect: rectLog(playerShell),
         oldWrapperPresent: !!oldWrapper,
@@ -923,7 +923,7 @@ export function useSplitView({
     // before the first ResizeObserver tick in the normal branch.
     requestAnimationFrame(() => {
       document.documentElement.style.setProperty(
-        '--cell-split-panel-w',
+        '--Tihoka-split-panel-w',
         `${Math.round(panel.getBoundingClientRect().width)}px`,
       );
     });
@@ -945,7 +945,7 @@ export function useSplitView({
       panel.style.flexBasis = `${next}%`;
       splitViewPctRef.current = next;
       document.documentElement.style.setProperty(
-        '--cell-split-panel-w',
+        '--Tihoka-split-panel-w',
         `${Math.round(panel.getBoundingClientRect().width)}px`,
       );
       // CSS handles video sizing (height:100%!important, object-fit:contain).
@@ -1042,7 +1042,7 @@ export function useSplitView({
       // Apple §7: exit along the same path as entry — slide out to right.
       // §8: hint in the direction of the gesture — rotate chevron to point right.
       // §1: start the animation immediately, defer DOM removal until it settles.
-      const subtitlePanelEl = panelInner.querySelector('[data-cell-id="subtitle-panel"]') as HTMLElement | null;
+      const subtitlePanelEl = panelInner.querySelector('[data-tihoka-id="subtitle-panel"]') as HTMLElement | null;
       if (subtitlePanelEl) subtitlePanelEl.setAttribute('data-closing', 'true');
       panel.style.transform = panel.parentElement === document.body
         ? 'translateY(100%)'
@@ -1055,15 +1055,15 @@ export function useSplitView({
       const restoreNow = (): void => {
       if (restoreDone) return;
       restoreDone = true;
-      document.documentElement.style.removeProperty('--cell-split-panel-w');
-      // Capture #cell-subtitle-root BEFORE wrapper.remove() detaches it —
+      document.documentElement.style.removeProperty('--Tihoka-split-panel-w');
+      // Capture #Tihoka-subtitle-root BEFORE wrapper.remove() detaches it —
       // getElementById only searches connected nodes, so reading it after
       // the wrapper is gone returns null and the restore below never runs,
       // leaving the subtitle host permanently detached.
-      const cellRootCleanup = document.getElementById('cell-subtitle-root');
+      const TihokaRootCleanup = document.getElementById('Tihoka-subtitle-root');
       if (isPlayerFullscreen) {
-        // Move children back from stageCell to playerShell (preserving order).
-        const childrenToRestore = Array.from(stageCell.children);
+        // Move children back from stageTihoka to playerShell (preserving order).
+        const childrenToRestore = Array.from(stageTihoka.children);
         // If playerShell was detached by the site's React re-render (common
         // when exiting fullscreen — the site recreates the player shell),
         // skip moving children back. They're in a detached subtree anyway;
@@ -1075,7 +1075,7 @@ export function useSplitView({
             playerShell.appendChild(child);
           }
         }
-        stageCell.remove();
+        stageTihoka.remove();
         handle.remove();
         panel.remove();
         svLog('cleanup FULLSCREEN done', { playerShellRect: rectLog(playerShell), playerShellInDom: document.body.contains(playerShell) });
@@ -1084,7 +1084,7 @@ export function useSplitView({
         // the wrapper would exit fullscreen (browser exits fullscreen when
         // the fullscreen element's ancestor is re-parented). Check if
         // playerShell now contains the fullscreen element — if so, leave
-        // it in place (inside the wrapper/stageCell) and only remove
+        // it in place (inside the wrapper/stageTihoka) and only remove
         // handle/panel. The FULLSCREEN branch (after defer+settle) will
         // transform playerShell in place. On close (no fullscreen), do
         // full restore: move playerShell back to originalParent + remove
@@ -1094,7 +1094,7 @@ export function useSplitView({
           && (currentFs === playerShell || playerShell.contains(currentFs));
         if (playerNowFullscreen) {
           // Don't move playerShell (would exit fullscreen). Remove
-          // handle/panel but keep wrapper+stageCell — FULLSCREEN branch
+          // handle/panel but keep wrapper+stageTihoka — FULLSCREEN branch
           // will unwrap playerShell from old wrapper and rebuild.
           handle.remove();
           panel.remove();
@@ -1103,7 +1103,7 @@ export function useSplitView({
             fsEl: { tag: currentFs.tagName, id: currentFs.id || null },
           });
         } else {
-          if (originalParent && playerShell.parentElement === stageCell) {
+          if (originalParent && playerShell.parentElement === stageTihoka) {
             if (originalNextSibling && originalNextSibling.parentElement === originalParent) {
               originalParent.insertBefore(playerShell, originalNextSibling);
             } else {
@@ -1121,7 +1121,7 @@ export function useSplitView({
       // normal-branch wrapper still wraps the fullscreen element. Removing
       // it now would detach the fs element and force-exit fullscreen, so
       // the unwrap is deferred to the first fullscreenchange that reports
-      // no fullscreen element. Without this, a zombie wrapper + stage cell
+      // no fullscreen element. Without this, a zombie wrapper + stage Tihoka
       // (flex row, hardcoded height) stays in the page forever.
       const leftoverWrapper = splitViewWrapperRef.current;
       if (leftoverWrapper && document.fullscreenElement && leftoverWrapper.contains(document.fullscreenElement)) {
@@ -1152,20 +1152,20 @@ export function useSplitView({
           if (value) el.style.setProperty(property, value);
         }
       }
-      // Move #cell-subtitle-root back to its pre-Split-View parent (e.g.
+      // Move #Tihoka-subtitle-root back to its pre-Split-View parent (e.g.
       // .art-video-player with position:relative), NOT to playerShell.
       // playerShell can be position:static (themoviebox .w-full h-[203px]),
-      // which lets cellRoot's position:absolute+inset:0 escape to the
+      // which lets TihokaRoot's position:absolute+inset:0 escape to the
       // viewport → subtitle overlay covers the whole page instead of the
       // video. Fall back to playerShell only when the original parent is
-      // unavailable (cellRoot didn't exist when Split View opened).
+      // unavailable (TihokaRoot didn't exist when Split View opened).
       // attachFullscreenReparenting will reposition it on the next
       // fullscreenchange if needed.
-      const cellRootTarget = cellRootOriginalParent?.isConnected
-        ? cellRootOriginalParent
+      const TihokaRootTarget = TihokaRootOriginalParent?.isConnected
+        ? TihokaRootOriginalParent
         : playerShell;
-      if (cellRootCleanup && cellRootTarget.isConnected && cellRootCleanup.parentElement !== cellRootTarget) {
-        cellRootTarget.appendChild(cellRootCleanup);
+      if (TihokaRootCleanup && TihokaRootTarget.isConnected && TihokaRootCleanup.parentElement !== TihokaRootTarget) {
+        TihokaRootTarget.appendChild(TihokaRootCleanup);
       }
       // Remove YouTube CSS overrides in both branches (normal + fullscreen).
       // The MAIN-world listener removes the <style> tag.

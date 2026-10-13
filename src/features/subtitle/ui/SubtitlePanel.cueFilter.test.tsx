@@ -164,7 +164,7 @@ describe('SubtitlePanel cue filter', () => {
 
     fireEvent.click(screen.getByTestId('cue-filter-fab'));
     fireEvent.click(
-      screen.getAllByRole('menuitemradio').find((el) => el.textContent?.includes('i+1'))!,
+      screen.getAllByRole('menuitemradio').find((el) => el.textContent?.includes('One new word'))!,
     );
     await waitFor(() => expect(screen.getByTestId('cue-filter-strip')).toBeInTheDocument());
 

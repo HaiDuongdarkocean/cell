@@ -15,13 +15,13 @@ import {
 import styles from './SubtitlePractice.module.css';
 
 export function MaskedCueContent(): React.JSX.Element {
-  return <div className={styles.maskedTarget} data-cell-id="cue-masked-target" aria-hidden="true" />;
+  return <div className={styles.maskedTarget} data-tihoka-id="cue-masked-target" aria-hidden="true" />;
 }
 
 interface PracticeWordProps {
   readonly word: WordProgress;
-  readonly cellId: string;
-  readonly charCellId?: string;
+  readonly TihokaId: string;
+  readonly charTihokaId?: string;
   readonly wordIndex?: number;
   readonly blankId?: string;
   readonly className?: string;
@@ -36,8 +36,8 @@ const wordDataState = (word: WordProgress): PracticeTokenState | '' => {
 
 export function PracticeWord({
   word,
-  cellId,
-  charCellId,
+  TihokaId,
+  charTihokaId,
   wordIndex,
   blankId,
   className = '',
@@ -50,7 +50,7 @@ export function PracticeWord({
   return (
     <span
       className={baseClass}
-      data-cell-id={cellId}
+      data-tihoka-id={TihokaId}
       data-word-state={word.state}
       data-state={wordDataState(word)}
       data-current={word.state === 'active' ? 'true' : 'false'}
@@ -62,7 +62,7 @@ export function PracticeWord({
       ) : (
         <>
           {word.visibleChars?.map((char, j) => (
-            <span key={j} className={styles[`token-${char.state}`]} data-cell-id={charCellId} data-state={char.state}>
+            <span key={j} className={styles[`token-${char.state}`]} data-tihoka-id={charTihokaId} data-state={char.state}>
               {char.char}
             </span>
           ))}
@@ -80,43 +80,43 @@ export function DictationActiveCue({
   draft,
   result: providedResult,
   showTranslation,
-  dataCellId = 'practice-active-cue',
+  dataTihokaId = 'practice-active-cue',
 }: {
   readonly cue: BilingualCue;
   readonly draft: string;
   readonly result?: PracticeResult | null;
   readonly showTranslation: boolean;
-  readonly dataCellId?: string;
+  readonly dataTihokaId?: string;
 }): React.JSX.Element {
   const progress = useMemo(() => buildDictationProgress(cue.targetText, draft), [cue.targetText, draft]);
   const result = useMemo(
     () => providedResult ?? (draft.trim().length === 0 ? null : evaluateDictation(cue.targetText, draft)),
     [providedResult, cue.targetText, draft],
   );
-  const showCurrent = dataCellId === 'practice-active-cue';
+  const showCurrent = dataTihokaId === 'practice-active-cue';
   return (
-    <div className={styles.activeCue} data-cell-id={dataCellId} data-allow-lookup>
-      <div className={styles.guides} aria-label={t('studyModes.practice.typeWhatYouHear')} data-cell-id="practice-active-cue-content">
+    <div className={styles.activeCue} data-tihoka-id={dataTihokaId} data-allow-lookup>
+      <div className={styles.guides} aria-label={t('studyModes.practice.typeWhatYouHear')} data-tihoka-id="practice-active-cue-content">
         {progress.words.map((word, i) => (
           <PracticeWord
             key={i}
             word={word}
-            cellId="dictation-word"
-            charCellId="dictation-char"
+            TihokaId="dictation-word"
+            charTihokaId="dictation-char"
             wordIndex={i}
             showCurrent={showCurrent}
           />
         ))}
       </div>
       {result ? (
-        <div className={styles.feedback} data-cell-id="practice-feedback" role="status" aria-live="polite">
+        <div className={styles.feedback} data-tihoka-id="practice-feedback" role="status" aria-live="polite">
           <VisuallyHidden as="div">
             {t('studyModes.practice.result', [result.correctCount, result.totalCount, result.score])}
           </VisuallyHidden>
         </div>
       ) : null}
       {showTranslation && cue.nativeText ? (
-        <div className={styles.nativeText} data-cell-id="cue-native-text">{cue.nativeText}</div>
+        <div className={styles.nativeText} data-tihoka-id="cue-native-text">{cue.nativeText}</div>
       ) : null}
     </div>
   );
@@ -126,26 +126,26 @@ export function ClozeActiveCue({
   cue,
   clozeDraft,
   showTranslation,
-  dataCellId = 'practice-active-cue',
+  dataTihokaId = 'practice-active-cue',
 }: {
   readonly cue: BilingualCue;
   readonly clozeDraft: string;
   readonly showTranslation: boolean;
-  readonly dataCellId?: string;
+  readonly dataTihokaId?: string;
 }): React.JSX.Element {
   const exercise = useMemo(() => createClozeExercise(cue), [cue]);
   const progress = useMemo(() => buildClozeProgress(exercise, clozeDraft), [exercise, clozeDraft]);
   if (exercise.blanks.length === 0) {
     return (
-      <div className={styles.activeCue} data-cell-id={dataCellId}>
+      <div className={styles.activeCue} data-tihoka-id={dataTihokaId}>
         <Text variant="supporting" color="secondary">{t('studyModes.practice.noBlanks')}</Text>
       </div>
     );
   }
-  const showCurrent = dataCellId === 'practice-active-cue';
+  const showCurrent = dataTihokaId === 'practice-active-cue';
   const blankById = new Map(exercise.blanks.map((b, i) => [b.id, i]));
   return (
-    <div className={styles.activeCue} data-cell-id={dataCellId} data-allow-lookup>
+    <div className={styles.activeCue} data-tihoka-id={dataTihokaId} data-allow-lookup>
       <div className={styles.clozeText}>
         {exercise.parts.map((part, i) => {
           if (part.type === 'text') {
@@ -158,8 +158,8 @@ export function ClozeActiveCue({
             <PracticeWord
               key={part.id}
               word={word}
-              cellId="cloze-blank"
-              charCellId="cloze-char"
+              TihokaId="cloze-blank"
+              charTihokaId="cloze-char"
               blankId={part.id}
               className={styles.blank}
               showCurrent={showCurrent}
@@ -168,7 +168,7 @@ export function ClozeActiveCue({
         })}
       </div>
       {clozeDraft.trim().length > 0 && (
-        <div className={styles.feedback} data-cell-id="practice-feedback" role="status" aria-live="polite">
+        <div className={styles.feedback} data-tihoka-id="practice-feedback" role="status" aria-live="polite">
           <VisuallyHidden as="div">
             {t('studyModes.practice.progress', [progress.correctCount, exercise.blanks.length]) +
               (progress.extraCount > 0 ? t('studyModes.practice.progressExtra', [progress.extraCount]) : '')}
@@ -176,7 +176,7 @@ export function ClozeActiveCue({
         </div>
       )}
       {showTranslation && cue.nativeText ? (
-        <div className={styles.nativeText} data-cell-id="cue-native-text">{cue.nativeText}</div>
+        <div className={styles.nativeText} data-tihoka-id="cue-native-text">{cue.nativeText}</div>
       ) : null}
     </div>
   );

@@ -4,7 +4,7 @@ import { LockShield } from './LockShield';
 describe('LockShield', () => {
   it('renders a shield element with the lock-shield marker', () => {
     const { container } = render(<LockShield />);
-    const shield = container.querySelector('[data-cell-id="lock-shield"]');
+    const shield = container.querySelector('[data-tihoka-id="lock-shield"]');
     expect(shield).not.toBeNull();
     expect(shield?.getAttribute('aria-hidden')).toBe('true');
   });
@@ -22,7 +22,7 @@ describe('LockShield', () => {
         <LockShield />
       </div>,
     );
-    const shield = container.querySelector('[data-cell-id="lock-shield"]');
+    const shield = container.querySelector('[data-tihoka-id="lock-shield"]');
     expect(shield).not.toBeNull();
 
     for (const type of ['pointerdown', 'pointerup', 'click', 'dblclick', 'contextmenu', 'wheel', 'mousedown', 'mouseup']) {
@@ -35,7 +35,7 @@ describe('LockShield', () => {
 
   it('prevents the default action of cancelable events', () => {
     const { container } = render(<LockShield />);
-    const shield = container.querySelector('[data-cell-id="lock-shield"]')!;
+    const shield = container.querySelector('[data-tihoka-id="lock-shield"]')!;
     const click = new MouseEvent('click', { bubbles: true, cancelable: true });
     shield.dispatchEvent(click);
     expect(click.defaultPrevented).toBe(true);
@@ -50,7 +50,7 @@ describe('LockShield', () => {
         <LockShield />
       </div>,
     );
-    const shield = container.querySelector('[data-cell-id="lock-shield"]')!;
+    const shield = container.querySelector('[data-tihoka-id="lock-shield"]')!;
     unmount();
     const seen: string[] = [];
     document.addEventListener('click', () => seen.push('doc:click'), { once: true });

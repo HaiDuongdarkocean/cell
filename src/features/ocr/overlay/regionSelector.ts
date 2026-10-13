@@ -3,13 +3,13 @@
 // Emits region changes via callback. Apply/Cancel/Reset controlled by caller.
 //
 // DOM contract (verified by browser tests):
-// - .cell-ocr-region-selector  container (pointer-events none)
-// - .cell-ocr-region-rect      rectangle; data-mode=view|select|edit; % position inline
-// - .cell-ocr-region-label     dimension readout (rounded %)
+// - .Tihoka-ocr-region-selector  container (pointer-events none)
+// - .Tihoka-ocr-region-rect      rectangle; data-mode=view|select|edit; % position inline
+// - .Tihoka-ocr-region-label     dimension readout (rounded %)
 // - [data-handle]              8 resize handles in edit mode (created once, listener bound at creation)
-// - .cell-ocr-region-btn       Apply / Cancel toolbar buttons
-// - .cell-ocr-split-half       split stream halves, data-label (view mode only, pointer-events none)
-// - .cell-ocr-split-divider    draggable split divider (view mode only, listener bound at creation)
+// - .Tihoka-ocr-region-btn       Apply / Cancel toolbar buttons
+// - .Tihoka-ocr-split-half       split stream halves, data-label (view mode only, pointer-events none)
+// - .Tihoka-ocr-split-divider    draggable split divider (view mode only, listener bound at creation)
 
 import { STATIC_TOKENS } from '@/shared/lib/tokens';
 import { t, type MessageKey } from '@/shared/i18n';
@@ -87,69 +87,69 @@ function injectOverlayCss(): void {
   if (overlayCssInjected) return;
   overlayCssInjected = true;
   const style = document.createElement('style');
-  style.id = 'cell-ocr-region-style';
+  style.id = 'Tihoka-ocr-region-style';
   style.textContent = `
-body[data-ocr-region-selecting="true"] #cell-universal-panel-host { display: none !important; }
-.cell-ocr-region-selector, .cell-ocr-region-selector * { box-sizing: border-box; }
-.cell-ocr-region-rect {
+body[data-ocr-region-selecting="true"] #Tihoka-universal-panel-host { display: none !important; }
+.Tihoka-ocr-region-selector, .Tihoka-ocr-region-selector * { box-sizing: border-box; }
+.Tihoka-ocr-region-rect {
   position: absolute; border: 2px dashed ${ACCENT}; background: ${FILL};
   pointer-events: none; z-index: 99998; transition: background 120ms ease;
 }
-.cell-ocr-region-rect[data-mode="select"] { background: ${FILL_ACTIVE}; pointer-events: auto; cursor: move; }
-.cell-ocr-region-rect[data-mode="edit"] { background: ${FILL_ACTIVE}; pointer-events: auto; cursor: move; }
-.cell-ocr-region-selector { pointer-events: none; }
-.cell-ocr-region-selector[data-mode="select"] { pointer-events: auto; cursor: crosshair; }
-.cell-ocr-region-label {
+.Tihoka-ocr-region-rect[data-mode="select"] { background: ${FILL_ACTIVE}; pointer-events: auto; cursor: move; }
+.Tihoka-ocr-region-rect[data-mode="edit"] { background: ${FILL_ACTIVE}; pointer-events: auto; cursor: move; }
+.Tihoka-ocr-region-selector { pointer-events: none; }
+.Tihoka-ocr-region-selector[data-mode="select"] { pointer-events: auto; cursor: crosshair; }
+.Tihoka-ocr-region-label {
   position: absolute; top: -22px; left: -2px; padding: 2px 8px;
   font-family: ${FONT}; font-size: 11px; font-weight: 500; line-height: 1.4; letter-spacing: 0.2px;
   color: ${ACCENT}; background: rgba(${OVL_BG_RGB}, 0.75); border-radius: 5px;
   white-space: nowrap; pointer-events: none;
 }
-.cell-ocr-region-handle {
+.Tihoka-ocr-region-handle {
   position: absolute; width: 10px; height: 10px;
   background: ${ACCENT}; border: 1px solid rgba(${OVL_BG_RGB}, 0.55); border-radius: 3px;
   pointer-events: auto;
 }
-.cell-ocr-region-handle:hover { box-shadow: 0 0 0 3px rgba(${OVL_TEXT_RGB}, 0.35); }
-.cell-ocr-region-handle[data-handle="nw"] { left: -5px; top: -5px; cursor: nwse-resize; }
-.cell-ocr-region-handle[data-handle="n"]  { left: 50%; top: -5px; transform: translateX(-50%); cursor: ns-resize; }
-.cell-ocr-region-handle[data-handle="ne"] { right: -5px; top: -5px; cursor: nesw-resize; }
-.cell-ocr-region-handle[data-handle="e"]  { right: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
-.cell-ocr-region-handle[data-handle="se"] { right: -5px; bottom: -5px; cursor: nwse-resize; }
-.cell-ocr-region-handle[data-handle="s"]  { left: 50%; bottom: -5px; transform: translateX(-50%); cursor: ns-resize; }
-.cell-ocr-region-handle[data-handle="sw"] { left: -5px; bottom: -5px; cursor: nesw-resize; }
-.cell-ocr-region-handle[data-handle="w"]  { left: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
-.cell-ocr-region-btn {
+.Tihoka-ocr-region-handle:hover { box-shadow: 0 0 0 3px rgba(${OVL_TEXT_RGB}, 0.35); }
+.Tihoka-ocr-region-handle[data-handle="nw"] { left: -5px; top: -5px; cursor: nwse-resize; }
+.Tihoka-ocr-region-handle[data-handle="n"]  { left: 50%; top: -5px; transform: translateX(-50%); cursor: ns-resize; }
+.Tihoka-ocr-region-handle[data-handle="ne"] { right: -5px; top: -5px; cursor: nesw-resize; }
+.Tihoka-ocr-region-handle[data-handle="e"]  { right: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+.Tihoka-ocr-region-handle[data-handle="se"] { right: -5px; bottom: -5px; cursor: nwse-resize; }
+.Tihoka-ocr-region-handle[data-handle="s"]  { left: 50%; bottom: -5px; transform: translateX(-50%); cursor: ns-resize; }
+.Tihoka-ocr-region-handle[data-handle="sw"] { left: -5px; bottom: -5px; cursor: nesw-resize; }
+.Tihoka-ocr-region-handle[data-handle="w"]  { left: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+.Tihoka-ocr-region-btn {
   appearance: none; -webkit-appearance: none; display: inline-flex; align-items: center; gap: 5px;
   padding: 0 12px; height: 28px; margin: 0; border: none; border-radius: ${RADIUS_PILL};
   font-family: ${FONT}; font-size: 12px; font-weight: 600; line-height: 1; letter-spacing: 0.2px;
   cursor: pointer; pointer-events: auto; transition: filter 120ms ease, background 120ms ease;
 }
-.cell-ocr-region-btn svg { width: 18px; height: 18px; display: block; }
-.cell-ocr-region-btn--apply { background: ${ACCENT}; color: ${OVL_TEXT}; }
-.cell-ocr-region-btn--apply:hover { filter: brightness(1.15); }
-.cell-ocr-region-btn--cancel { background: rgba(${OVL_BG_RGB}, 0.6); color: ${OVL_TEXT}; box-shadow: inset 0 0 0 1px rgba(${OVL_TEXT_RGB}, 0.35); }
-.cell-ocr-region-btn--cancel:hover { background: rgba(170, 0, 0, 0.85); box-shadow: none; }
-.cell-ocr-split-half { position: absolute; background: rgba(${OVL_TEXT_RGB}, 0.08); pointer-events: none; }
-.cell-ocr-split-half[data-label]::after { content: attr(data-label); position: absolute; left: 4px; top: 2px; font-size: 10px; color: rgba(${OVL_TEXT_RGB}, 0.85); font-family: ${FONT}; }
-.cell-ocr-split-divider { position: absolute; left: 0; width: 100%; height: 14px; transform: translateY(-50%); cursor: ns-resize; pointer-events: auto; }
-.cell-ocr-split-divider::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: rgba(${OVL_TEXT_RGB}, 0.9); border-radius: 1px; }
-.cell-ocr-action-bar { position: absolute; bottom: 4px; right: 4px; display: flex; align-items: center; gap: 4px; pointer-events: auto; z-index: 99999; }
-.cell-ocr-action-bar-inner { display: flex; align-items: center; gap: 4px; overflow: hidden; transition: max-width 200ms ease, opacity 150ms ease; }
-.cell-ocr-action-bar-inner[data-collapsed="true"] { max-width: 0; opacity: 0; }
-.cell-ocr-action-bar-inner[data-collapsed="false"] { max-width: 200px; opacity: 1; }
-.cell-ocr-action-btn {
+.Tihoka-ocr-region-btn svg { width: 18px; height: 18px; display: block; }
+.Tihoka-ocr-region-btn--apply { background: ${ACCENT}; color: ${OVL_TEXT}; }
+.Tihoka-ocr-region-btn--apply:hover { filter: brightness(1.15); }
+.Tihoka-ocr-region-btn--cancel { background: rgba(${OVL_BG_RGB}, 0.6); color: ${OVL_TEXT}; box-shadow: inset 0 0 0 1px rgba(${OVL_TEXT_RGB}, 0.35); }
+.Tihoka-ocr-region-btn--cancel:hover { background: rgba(170, 0, 0, 0.85); box-shadow: none; }
+.Tihoka-ocr-split-half { position: absolute; background: rgba(${OVL_TEXT_RGB}, 0.08); pointer-events: none; }
+.Tihoka-ocr-split-half[data-label]::after { content: attr(data-label); position: absolute; left: 4px; top: 2px; font-size: 10px; color: rgba(${OVL_TEXT_RGB}, 0.85); font-family: ${FONT}; }
+.Tihoka-ocr-split-divider { position: absolute; left: 0; width: 100%; height: 14px; transform: translateY(-50%); cursor: ns-resize; pointer-events: auto; }
+.Tihoka-ocr-split-divider::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: rgba(${OVL_TEXT_RGB}, 0.9); border-radius: 1px; }
+.Tihoka-ocr-action-bar { position: absolute; bottom: 4px; right: 4px; display: flex; align-items: center; gap: 4px; pointer-events: auto; z-index: 99999; }
+.Tihoka-ocr-action-bar-inner { display: flex; align-items: center; gap: 4px; overflow: hidden; transition: max-width 200ms ease, opacity 150ms ease; }
+.Tihoka-ocr-action-bar-inner[data-collapsed="true"] { max-width: 0; opacity: 0; }
+.Tihoka-ocr-action-bar-inner[data-collapsed="false"] { max-width: 200px; opacity: 1; }
+.Tihoka-ocr-action-btn {
   appearance: none; -webkit-appearance: none; display: inline-flex; align-items: center; justify-content: center;
   width: 26px; height: 26px; margin: 0; border: none; border-radius: ${RADIUS_PILL};
   background: rgba(${OVL_BG_RGB}, 0.6); color: ${OVL_TEXT}; cursor: pointer; pointer-events: auto;
   transition: filter 120ms ease, background 120ms ease; flex-shrink: 0;
 }
-.cell-ocr-action-btn svg { width: 18px; height: 18px; display: block; }
-.cell-ocr-action-btn:hover { filter: brightness(1.3); }
-.cell-ocr-action-btn[data-active="true"] { background: ${ACCENT}; }
-.cell-ocr-action-toggle { width: 26px; height: 26px; flex-shrink: 0; }
-.cell-ocr-action-toggle svg { transition: transform 200ms ease; }
-.cell-ocr-action-toggle[data-collapsed="true"] svg { transform: rotate(180deg); }
+.Tihoka-ocr-action-btn svg { width: 18px; height: 18px; display: block; }
+.Tihoka-ocr-action-btn:hover { filter: brightness(1.3); }
+.Tihoka-ocr-action-btn[data-active="true"] { background: ${ACCENT}; }
+.Tihoka-ocr-action-toggle { width: 26px; height: 26px; flex-shrink: 0; }
+.Tihoka-ocr-action-toggle svg { transition: transform 200ms ease; }
+.Tihoka-ocr-action-toggle[data-collapsed="true"] svg { transform: rotate(180deg); }
 `;
   document.head.appendChild(style);
 }
@@ -231,12 +231,12 @@ export class RegionSelector {
     if (getComputedStyle(parent).display === 'inline') parent.style.display = 'inline-block';
 
     this.container = document.createElement('div');
-    this.container.className = 'cell-ocr-region-selector';
+    this.container.className = 'Tihoka-ocr-region-selector';
     this.container.style.cssText = 'position:absolute;inset:0;z-index:99998;';
     parent.appendChild(this.container);
 
     this.rect = document.createElement('div');
-    this.rect.className = 'cell-ocr-region-rect';
+    this.rect.className = 'Tihoka-ocr-region-rect';
     this.container.appendChild(this.rect);
 
     this.toolbar = document.createElement('div');
@@ -246,7 +246,7 @@ export class RegionSelector {
 
     // Action bar: inside rect at bottom-right (view mode only, collapsible).
     this.actionBar = document.createElement('div');
-    this.actionBar.className = 'cell-ocr-action-bar';
+    this.actionBar.className = 'Tihoka-ocr-action-bar';
     this.rect.appendChild(this.actionBar);
 
     // Collapse/expand toggle button (always visible when action bar is shown).
@@ -254,13 +254,13 @@ export class RegionSelector {
       this.actionBarCollapsed = !this.actionBarCollapsed;
       this.renderActionBar();
     });
-    toggleBtn.classList.add('cell-ocr-action-toggle');
+    toggleBtn.classList.add('Tihoka-ocr-action-toggle');
     toggleBtn.dataset.collapsed = 'false';
     this.actionBar.appendChild(toggleBtn);
 
     // Inner container for the action buttons (collapsible).
     this.actionBarInner = document.createElement('div');
-    this.actionBarInner.className = 'cell-ocr-action-bar-inner';
+    this.actionBarInner.className = 'Tihoka-ocr-action-bar-inner';
     this.actionBarInner.dataset.collapsed = 'false';
     this.actionBar.appendChild(this.actionBarInner);
 
@@ -268,28 +268,28 @@ export class RegionSelector {
     const editBtn = this.makeActionButton(pencilIcon, t('ocr.actionbar.edit'), () => {
       this.callbacks.onEditRegion?.();
     });
-    editBtn.dataset.cellId = 'ocr-action-edit';
+    editBtn.dataset.tihokaId = 'ocr-action-edit';
     this.actionBarInner.appendChild(editBtn);
 
     // Split toggle button.
     const splitBtn = this.makeActionButton(moveVerticalIcon, t('ocr.actionbar.split'), () => {
       this.callbacks.onToggleSplit?.();
     });
-    splitBtn.dataset.cellId = 'ocr-action-split';
+    splitBtn.dataset.tihokaId = 'ocr-action-split';
     this.actionBarInner.appendChild(splitBtn);
 
     // Select Region button.
     const selectBtn = this.makeActionButton(cropIcon, t('ocr.actionbar.select'), () => {
       this.callbacks.onSelectRegion?.();
     });
-    selectBtn.dataset.cellId = 'ocr-action-select';
+    selectBtn.dataset.tihokaId = 'ocr-action-select';
     this.actionBarInner.appendChild(selectBtn);
 
     // Reset Region button.
     const resetBtn = this.makeActionButton(rotateCcwIcon, t('ocr.actionbar.reset'), () => {
       this.callbacks.onResetRegion?.();
     });
-    resetBtn.dataset.cellId = 'ocr-action-reset';
+    resetBtn.dataset.tihokaId = 'ocr-action-reset';
     this.actionBarInner.appendChild(resetBtn);
 
     // Convert intrinsic-space → shell-space AFTER container + video are set, so
@@ -370,11 +370,11 @@ export class RegionSelector {
     }
     if (!this.splitTop && this.rect) {
       this.splitTop = document.createElement('div');
-      this.splitTop.className = 'cell-ocr-split-half';
+      this.splitTop.className = 'Tihoka-ocr-split-half';
       this.splitBottom = document.createElement('div');
-      this.splitBottom.className = 'cell-ocr-split-half';
+      this.splitBottom.className = 'Tihoka-ocr-split-half';
       this.divider = document.createElement('div');
-      this.divider.className = 'cell-ocr-split-divider';
+      this.divider.className = 'Tihoka-ocr-split-divider';
       this.divider.addEventListener('mousedown', this.onSplitDragStart);
       this.container?.append(this.splitTop, this.splitBottom, this.divider);
     }
@@ -403,7 +403,7 @@ export class RegionSelector {
       this.container = null;
     }
     // Safety: remove any orphaned selectors (e.g. from re-attach race).
-    document.querySelectorAll('.cell-ocr-region-selector').forEach(el => {
+    document.querySelectorAll('.Tihoka-ocr-region-selector').forEach(el => {
       if (el !== this.container) el.remove();
     });
     this.rect = null;
@@ -528,10 +528,10 @@ export class RegionSelector {
     this.rect.style.width = `${r.widthPct}%`;
     this.rect.style.height = `${r.heightPct}%`;
 
-    let label = this.rect.querySelector<HTMLElement>('.cell-ocr-region-label');
+    let label = this.rect.querySelector<HTMLElement>('.Tihoka-ocr-region-label');
     if (!label) {
       label = document.createElement('span');
-      label.className = 'cell-ocr-region-label';
+      label.className = 'Tihoka-ocr-region-label';
       this.rect.appendChild(label);
     }
     // Label shows the INTRINSIC-space dims (what the user actually scans), not
@@ -550,7 +550,7 @@ export class RegionSelector {
     } else if (this.handles.length === 0) {
       for (const pos of ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']) {
         const h = document.createElement('div');
-        h.className = 'cell-ocr-region-handle';
+        h.className = 'Tihoka-ocr-region-handle';
         h.dataset.handle = pos;
         h.setAttribute('role', 'separator');
         h.setAttribute('tabindex', '0');
@@ -625,7 +625,7 @@ export class RegionSelector {
   private makeButton(text: string, variant: 'apply' | 'cancel', iconSvg: string, onClick: () => void): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `cell-ocr-region-btn cell-ocr-region-btn--${variant}`;
+    btn.className = `Tihoka-ocr-region-btn Tihoka-ocr-region-btn--${variant}`;
     btn.appendChild(this.iconElement(iconSvg));
     btn.appendChild(document.createTextNode(text));
     btn.addEventListener('click', (e) => { e.stopPropagation(); onClick(); });
@@ -636,7 +636,7 @@ export class RegionSelector {
   private makeActionButton(iconSvg: string, ariaLabel: string, onClick: () => void): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'cell-ocr-action-btn';
+    btn.className = 'Tihoka-ocr-action-btn';
     btn.setAttribute('aria-label', ariaLabel);
     btn.title = ariaLabel;
     btn.appendChild(this.iconElement(iconSvg));
@@ -650,13 +650,13 @@ export class RegionSelector {
     const visible = this.mode === 'view';
     this.actionBar.style.display = visible ? '' : 'none';
     this.actionBarInner.dataset.collapsed = String(this.actionBarCollapsed);
-    const toggleBtn = this.actionBar.querySelector('.cell-ocr-action-toggle');
+    const toggleBtn = this.actionBar.querySelector('.Tihoka-ocr-action-toggle');
     if (toggleBtn) {
       (toggleBtn as HTMLButtonElement).dataset.collapsed = String(this.actionBarCollapsed);
       toggleBtn.setAttribute('aria-expanded', String(!this.actionBarCollapsed));
     }
     // Update split button active state.
-    const splitBtn = this.actionBarInner.querySelector('[data-cell-id="ocr-action-split"]');
+    const splitBtn = this.actionBarInner.querySelector('[data-tihoka-id="ocr-action-split"]');
     if (splitBtn) {
       (splitBtn as HTMLButtonElement).dataset.active = String(this.splitEnabled);
       splitBtn.setAttribute('aria-pressed', String(this.splitEnabled));

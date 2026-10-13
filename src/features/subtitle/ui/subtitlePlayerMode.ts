@@ -31,9 +31,9 @@ export function usePlayerMode({
     const parentOrigin = resolveParentFrameOrigin();
     const onMessage = (e: MessageEvent): void => {
       if (e.origin !== parentOrigin) return;
-      if (e.data?.type === '__CELL_PLAYER_MODE_ENTERED') {
+      if (e.data?.type === '__Tihoka_PLAYER_MODE_ENTERED') {
         setPlayerMode(true);
-      } else if (e.data?.type === '__CELL_PLAYER_MODE_EXITED') {
+      } else if (e.data?.type === '__Tihoka_PLAYER_MODE_EXITED') {
         setPlayerMode(false);
       }
     };
@@ -44,7 +44,7 @@ export function usePlayerMode({
   const handleTogglePlayerMode = useCallback(async (): Promise<void> => {
     if (isChildFrame()) {
       // Guard: if the iframe (or video inside) is currently in fullscreen,
-      // exit it first so the top frame can enter Cell Player Mode fullscreen
+      // exit it first so the top frame can enter Tihoka Player Mode fullscreen
       // on the host container. Fullscreen is from the child browsing context,
       // so we must exit it from the child, then ask the top frame.
       if (document.fullscreenElement) {
@@ -69,7 +69,7 @@ export function usePlayerMode({
     // exiting fullscreen. await ensures the document is no longer fullscreen
     // when PlayerModeOverlay mounts, so the player-move effect runs the normal
     // flow (reparent into video stage). After mount, the native-fullscreen
-    // effect requests fullscreen on #cell-subtitle-root — SSOT with Flow 2.
+    // effect requests fullscreen on #Tihoka-subtitle-root — SSOT with Flow 2.
     // If the site was already in fullscreen, the exit consumed the user
     // gesture, so requestFullscreen() may fail → CSS fallback covers this.
     if (document.fullscreenElement) {
@@ -77,8 +77,8 @@ export function usePlayerMode({
     }
     // Drain a pending split-view restore BEFORE PM mounts: otherwise PM's
     // findPlayerContainer runs while the shell is still inside the doomed
-    // stageCell — PM snapshots that as its originalParent, the deferred
-    // restore then removes the wrapper (detaching the stageCell), and PM's
+    // stageTihoka — PM snapshots that as its originalParent, the deferred
+    // restore then removes the wrapper (detaching the stageTihoka), and PM's
     // exit-restore strands the player in a detached subtree (video lost,
     // findPlayerContainer returns null forever).
     drainPendingRestore();
@@ -91,21 +91,21 @@ export function usePlayerMode({
 
   // Player Mode: live inside document.fullscreenElement when host is
   // fullscreen (top layer renders above everything — no z-index hack needed).
-  // attachFullscreenReparenting (mountReactShadow) already moves #cell-subtitle-root
+  // attachFullscreenReparenting (mountReactShadow) already moves #Tihoka-subtitle-root
   // into document.fullscreenElement on fullscreenchange. Player Mode just needs
-  // to NOT override that by moving cell root to document.body.
+  // to NOT override that by moving Tihoka root to document.body.
   //
   // When NOT fullscreen: fall back to body reparenting (escape video container
   // stacking context). PlayerModeOverlay moves host <video> into the video stage.
   //
-  // When fullscreen: keep cell root inside fullscreen element. Host <video>
+  // When fullscreen: keep Tihoka root inside fullscreen element. Host <video>
   // moves into the video stage (shadow DOM child). Seamless UX: exiting
   // Player Mode does NOT exit host fullscreen.
   const playerModeOriginalParent = useRef<HTMLElement | null>(null);
   const playerModeSavedStyles = useRef<{ zIndex: string; position: string; inset: string } | null>(null);
 
   useEffect(() => {
-    const host = document.querySelector('#cell-subtitle-root');
+    const host = document.querySelector('#Tihoka-subtitle-root');
     if (!(host instanceof HTMLElement)) return;
     if (playerMode) {
       playerModeSavedStyles.current = {
@@ -117,21 +117,21 @@ export function usePlayerMode({
       host.style.zIndex = '2147483647';
       host.style.position = 'fixed';
       host.style.inset = '0';
-      host.setAttribute('data-cell-player-mode', 'true');
+      host.setAttribute('data-tihoka-player-mode', 'true');
       if (host.parentElement && host.parentElement !== document.body) {
         playerModeOriginalParent.current = host.parentElement;
         // Also save on the host element itself — PlayerModeOverlay (child)
         // effect may run before or after this effect depending on React's
         // effect ordering. Storing on the host ensures the exit branch can
         // always recover the original parent regardless of who moved it.
-        const hostWithProp = host as HTMLElement & { __cellOriginalParent?: HTMLElement };
-        if (!hostWithProp.__cellOriginalParent) {
-          hostWithProp.__cellOriginalParent = host.parentElement;
+        const hostWithProp = host as HTMLElement & { __TihokaOriginalParent?: HTMLElement };
+        if (!hostWithProp.__TihokaOriginalParent) {
+          hostWithProp.__TihokaOriginalParent = host.parentElement;
         }
         document.body.appendChild(host);
       }
     } else {
-      host.removeAttribute('data-cell-player-mode');
+      host.removeAttribute('data-tihoka-player-mode');
       const saved = playerModeSavedStyles.current;
       if (saved) {
         host.style.zIndex = saved.zIndex;
@@ -139,25 +139,25 @@ export function usePlayerMode({
         host.style.inset = saved.inset;
         playerModeSavedStyles.current = null;
       }
-      const hostWithProp = host as HTMLElement & { __cellOriginalParent?: HTMLElement };
+      const hostWithProp = host as HTMLElement & { __TihokaOriginalParent?: HTMLElement };
       const originalParent = playerModeOriginalParent.current
-        ?? hostWithProp.__cellOriginalParent
+        ?? hostWithProp.__TihokaOriginalParent
         ?? null;
       if (originalParent && host.parentElement !== originalParent) {
         if (!host.contains(originalParent)) {
           originalParent.appendChild(host);
           playerModeOriginalParent.current = null;
-          hostWithProp.__cellOriginalParent = undefined;
+          hostWithProp.__TihokaOriginalParent = undefined;
         }
       } else {
         playerModeOriginalParent.current = null;
-        hostWithProp.__cellOriginalParent = undefined;
+        hostWithProp.__TihokaOriginalParent = undefined;
       }
     }
   }, [playerMode]);
 
   // Native fullscreen — SSOT with Flow 2 (iframe bridge). After Player Mode
-  // mounts and the host reparenting effect above moves #cell-subtitle-root to
+  // mounts and the host reparenting effect above moves #Tihoka-subtitle-root to
   // document.body with position:fixed;inset:0 (CSS fallback), request native
   // fullscreen on the host. Top-layer rendering guarantees nothing can
   // z-index over it — no z-index:2147483647 hack needed.
@@ -173,7 +173,7 @@ export function usePlayerMode({
   // fullscreen so the browser can process the exit.
   useEffect(() => {
     if (!playerMode) return;
-    const host = document.querySelector('#cell-subtitle-root');
+    const host = document.querySelector('#Tihoka-subtitle-root');
     if (!(host instanceof HTMLElement)) return;
 
     let ourFullscreenActive = false;

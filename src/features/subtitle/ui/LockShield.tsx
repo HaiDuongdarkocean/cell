@@ -29,7 +29,7 @@ export interface LockShieldProps {
  * Transparent pointer shield for the interaction-lock state: covers the
  * video area with pointer-events:auto and swallows every input event so
  * host player controls/overlays underneath can never be hovered or
- * activated. Only Cell surfaces rendered above the shield stay interactive.
+ * activated. Only Tihoka surfaces rendered above the shield stay interactive.
  */
 export function LockShield({ className }: LockShieldProps): React.JSX.Element {
   const ref = useRef<HTMLDivElement>(null);
@@ -56,7 +56,7 @@ export function LockShield({ className }: LockShieldProps): React.JSX.Element {
       ref={ref}
       className={className}
       aria-hidden="true"
-      data-cell-id="lock-shield"
+      data-tihoka-id="lock-shield"
     />
   );
 }

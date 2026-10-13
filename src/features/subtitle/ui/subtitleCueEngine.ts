@@ -12,6 +12,7 @@ import { prevSentence, nextSentence, seekBy } from './navClusterActions';
 import { seekVideo } from '@/shared/lib/dom/netflixPlayback';
 import { t } from '@/shared/i18n';
 import type { ClickModifierState, TriggerMode } from '@/entities/dictionary';
+import type { AnnotationDisplayMode } from '@/entities/settings';
 import type { IconCatalogKey } from '@/shared/icons';
 
 export interface SubtitleCueEngineUpdate {
@@ -70,10 +71,10 @@ export interface SubtitleCueEngineTokenizeOptions {
   onTokenCtrlClick?: (term: string) => void;
   /** Live bulk-selection handle shared with the cue list. */
   selection?: import('./CueList').CueListTokenSelection;
-  /** Profile `showReadings` — cue-list tokens render reading caps. */
-  showReadings?: boolean;
-  /** Profile `showWordTranslations` — cue-list tokens render the gloss lane. */
-  showGlosses?: boolean;
+  /** Profile `readingDisplay` — cue-list token reading-cap mode. */
+  readingDisplay?: AnnotationDisplayMode;
+  /** Profile `glossDisplay` — cue-list token gloss-lane mode. */
+  glossDisplay?: AnnotationDisplayMode;
   /** Gloss destination language (`subtitleOverlayNativeLanguage`). */
   glossTargetLanguage?: string;
   windowSize?: number;
@@ -107,7 +108,7 @@ function cuesEqual(a: readonly SrtCue[], b: readonly SrtCue[]): boolean {
  *
  * Owns cue/offset/video/time/repeat state and the pure actions that drive it.
  * No DOM access — rendering is the caller's responsibility via callbacks or
- * the `cell:cues:updated` custom event.
+ * the `Tihoka:cues:updated` custom event.
  */
 export class SubtitleCueEngine {
   private targetCues: SrtCue[] = [];

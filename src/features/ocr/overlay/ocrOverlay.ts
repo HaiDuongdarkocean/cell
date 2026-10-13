@@ -98,9 +98,9 @@ export function createHitboxElement(
 ): HTMLSpanElement {
   const el = document.createElement('span');
   el.id = hitbox.id;
-  el.className = 'cell-ocr-hitbox';
-  el.dataset.cellTerm = hitbox.text.trim();
-  el.dataset.cellLang = hitbox.langCode;
+  el.className = 'Tihoka-ocr-hitbox';
+  el.dataset.tihokaTerm = hitbox.text.trim();
+  el.dataset.tihokaLang = hitbox.langCode;
   el.setAttribute('role', 'button');
   el.setAttribute('tabindex', '0');
   el.setAttribute('aria-label', t('ocr.hitbox.aria', [hitbox.text.trim()]));
@@ -123,7 +123,7 @@ export class OcrOverlay {
    *  Uses findVideoOverlayContainer — same algorithm as the subtitle/drag-drop
    *  layer — so the overlay covers the real player shell, not a thin wrapper.
    *  z 10001 sits one step above the subtitle host (--z-overlay-video 10000):
-   *  Cell overlays order above the subtitle panel, below dialogs. */
+   *  Tihoka overlays order above the subtitle panel, below dialogs. */
   attach(video: HTMLVideoElement): void {
     if (this.container) return;
     const parent = findVideoOverlayContainer(video);
@@ -131,7 +131,7 @@ export class OcrOverlay {
     parent.style.position = 'relative';
     if (getComputedStyle(parent).display === 'inline') parent.style.display = 'inline-block';
     this.container = document.createElement('div');
-    this.container.className = 'cell-ocr-overlay';
+    this.container.className = 'Tihoka-ocr-overlay';
     this.container.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10001;user-select:none;-webkit-user-select:none;';
     parent.appendChild(this.container);
   }
@@ -192,7 +192,7 @@ export function wireOcrHitboxesToTrigger(
   // Group by langCode — attach() takes a single langCode per call.
   const byLang = new Map<string, HTMLSpanElement[]>();
   for (const span of spans) {
-    const lang = span.dataset.cellLang ?? 'en';
+    const lang = span.dataset.tihokaLang ?? 'en';
     const group = byLang.get(lang);
     if (group) group.push(span);
     else byLang.set(lang, [span]);
@@ -200,12 +200,12 @@ export function wireOcrHitboxesToTrigger(
   for (const [langCode, groupSpans] of byLang) {
     // sentence = full text of all spans in this lang group (for context lookup).
     // Stamp each span's offset so lookups slice the sentence at the token.
-    const sentence = groupSpans.map(s => s.dataset.cellTerm ?? '').join(' ');
+    const sentence = groupSpans.map(s => s.dataset.tihokaTerm ?? '').join(' ');
     let offset = 0;
     for (const span of groupSpans) {
-      const term = span.dataset.cellTerm ?? '';
-      span.dataset.cellStart = String(offset);
-      span.dataset.cellEnd = String(offset + term.length);
+      const term = span.dataset.tihokaTerm ?? '';
+      span.dataset.tihokaStart = String(offset);
+      span.dataset.tihokaEnd = String(offset + term.length);
       offset += term.length + 1;
     }
     triggerController.attach(groupSpans, sentence, langCode);

@@ -35,8 +35,8 @@ describe('subtitle block annotations', () => {
       getLineElements: () => ({ target, native }),
       onOpenDictionary: jest.fn(),
       windowSize: 1,
-      showReadings: true,
-      showGlosses: true,
+      readingDisplay: 'always',
+      glossDisplay: 'always',
       glossTargetLanguage: 'vi',
     });
     target.textContent = cues[0]!.text;
@@ -44,7 +44,7 @@ describe('subtitle block annotations', () => {
     controller.enable();
     controller.render(0, -1);
     await new Promise((r) => setTimeout(r, 120));
-    const wait = target.querySelector('[data-cell-term="wait"]') as HTMLElement | null;
+    const wait = target.querySelector('[data-tihoka-term="wait"]') as HTMLElement | null;
     expect(getReadings).toHaveBeenCalled();
     expect(getWordTranslations).toHaveBeenCalled();
     expect(wait?.getAttribute('data-reading')).toBe('weɪt');

@@ -26,7 +26,7 @@ export interface ClusterRightToolbarProps {
   /** Overlay only: player mode toggle */
   onTogglePlayerMode?: () => void;
   playerMode?: boolean;
-  /** Interaction lock — blocks host video input, keeps Cell UI usable. */
+  /** Interaction lock — blocks host video input, keeps Tihoka UI usable. */
   interactionLocked?: boolean;
   onToggleInteractionLock?: () => void;
   /** Player only: exit */
@@ -35,7 +35,7 @@ export interface ClusterRightToolbarProps {
 
 /**
  * ClusterRightToolbar molecule — right-side toolbar shared by overlay + player mode.
- * SSOT for toolbar CSS (subtitlePanelsShared.module.css) + data-cell-id selectors.
+ * SSOT for toolbar CSS (subtitlePanelsShared.module.css) + data-tihoka-id selectors.
  * Spec: docs/specs/subtitle-panels-atom-decomposition.md (D5).
  */
 export function ClusterRightToolbar({
@@ -63,14 +63,14 @@ export function ClusterRightToolbar({
   const wrapperClass = `${sharedStyles.clusterRight} ${wrapperClassName ?? ''}`.trim();
 
   return (
-    <div className={wrapperClass} style={clusterRightStyle} data-cell-id={wrapperId}>
+    <div className={wrapperClass} style={clusterRightStyle} data-tihoka-id={wrapperId}>
       <div className={sharedStyles.primaryCol}>
         {onQuickAdd && (
           <Button shape="circle"
             variant="overlay"
             aria-label={t('subtitle.toolbar.quickAdd')}
             title={t('subtitle.toolbar.quickAddTitle')}
-            data-cell-id="quick-add-btn"
+            data-tihoka-id="quick-add-btn"
             size="sm"
             onClick={onQuickAdd}
           >
@@ -82,7 +82,7 @@ export function ClusterRightToolbar({
             variant="overlay"
             aria-label={t('subtitle.toolbar.editCard')}
             title={t('subtitle.toolbar.editCardTitle')}
-            data-cell-id="edit-card-btn"
+            data-tihoka-id="edit-card-btn"
             size="sm"
             onClick={onEditCard}
           >
@@ -92,14 +92,14 @@ export function ClusterRightToolbar({
         <div className={sharedStyles.toggleWrap}>
           <div
             className={`${sharedStyles.extraCol} ${toolsExpanded ? sharedStyles.expanded : ''}`}
-            data-cell-id="subtitle-tools-extra"
+            data-tihoka-id="subtitle-tools-extra"
           >
             {onToggleSidePanel && (
               <Button shape="circle"
                 variant="overlay"
                 aria-label={sidePanelLabel}
                 title={t('subtitle.toolbar.toggleListTitle')}
-                data-cell-id="panel-toggle-btn"
+                data-tihoka-id="panel-toggle-btn"
                 size="sm"
                 onClick={onToggleSidePanel}
               >
@@ -111,7 +111,7 @@ export function ClusterRightToolbar({
                 variant="overlay"
                 aria-label={t('subtitle.toolbar.generateNative')}
                 title={t('subtitle.toolbar.generateNativeTitle')}
-                data-cell-id="generate-native-btn"
+                data-tihoka-id="generate-native-btn"
                 size="sm"
                 onClick={onGenerateNative}
                 disabled={!generateNativeEnabled}
@@ -124,7 +124,7 @@ export function ClusterRightToolbar({
                 variant="overlay"
                 aria-label={interactionLocked ? t('subtitle.toolbar.unlockInteraction') : t('subtitle.toolbar.lockInteraction')}
                 title={interactionLocked ? t('subtitle.toolbar.unlockInteraction') : t('subtitle.toolbar.lockInteraction')}
-                data-cell-id="interaction-lock-btn"
+                data-tihoka-id="interaction-lock-btn"
                 size="sm"
                 onClick={onToggleInteractionLock}
                 active={interactionLocked}
@@ -137,7 +137,7 @@ export function ClusterRightToolbar({
             variant="overlay"
             aria-label={toolsExpanded ? t('subtitle.toolbar.collapseTools') : t('subtitle.toolbar.expandTools')}
             title={toolsExpanded ? t('subtitle.toolbar.collapseTools') : t('subtitle.toolbar.expandTools')}
-            data-cell-id="tools-toggle-btn"
+            data-tihoka-id="tools-toggle-btn"
             size="sm"
             onClick={onToggleTools}
           >
@@ -151,7 +151,7 @@ export function ClusterRightToolbar({
             variant="overlay"
             aria-label={ocrEnabled ? t('subtitle.toolbar.disableOcr') : t('subtitle.toolbar.enableOcr')}
             title={ocrEnabled ? t('subtitle.toolbar.disableOcr') : t('subtitle.toolbar.enableOcr')}
-            data-cell-id="ocr-toggle-btn"
+            data-tihoka-id="ocr-toggle-btn"
             size="sm"
             onClick={onToggleOcr}
             active={ocrEnabled}
@@ -164,7 +164,7 @@ export function ClusterRightToolbar({
             variant="overlay"
             aria-label={t('subtitle.toolbar.openManager')}
             title={t('subtitle.toolbar.openManager')}
-            data-cell-id="manager-toggle-btn"
+            data-tihoka-id="manager-toggle-btn"
             size="sm"
             onClick={onToggleManager}
           >
@@ -176,7 +176,7 @@ export function ClusterRightToolbar({
             variant="overlay"
             aria-label={playerMode ? t('subtitle.toolbar.exitPlayerMode') : t('subtitle.toolbar.enterPlayerMode')}
             title={playerMode ? t('subtitle.toolbar.exitPlayerModeTitle') : t('subtitle.toolbar.enterPlayerModeTitle')}
-            data-cell-id="player-mode-btn"
+            data-tihoka-id="player-mode-btn"
             size="sm"
             onClick={onTogglePlayerMode}
             active={playerMode}
@@ -188,7 +188,7 @@ export function ClusterRightToolbar({
             variant="overlay"
             aria-label={t('subtitle.toolbar.exitPlayerMode')}
             title={t('subtitle.toolbar.exitPlayerModeTitle')}
-            data-cell-id="player-mode-exit-btn"
+            data-tihoka-id="player-mode-exit-btn"
             size="sm"
             onClick={onExit}
           >

@@ -11,12 +11,12 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { SubtitleBlockSettings, NavClusterSettings, SubtitleApiKey } from '@/entities/settings';
 
 // Message type constants — used as the `type` field of every postMessage payload.
-export const MGR_OPEN_MSG = '__CELL_MANAGER_OPEN';
-export const MGR_CLOSE_MSG = '__CELL_MANAGER_CLOSE';
-export const MGR_STATE_MSG = '__CELL_MANAGER_STATE';
-export const MGR_ACTION_MSG = '__CELL_MANAGER_ACTION';
-export const MGR_OPENED_MSG = '__CELL_MANAGER_OPENED';
-export const MGR_CLOSED_MSG = '__CELL_MANAGER_CLOSED';
+export const MGR_OPEN_MSG = '__Tihoka_MANAGER_OPEN';
+export const MGR_CLOSE_MSG = '__Tihoka_MANAGER_CLOSE';
+export const MGR_STATE_MSG = '__Tihoka_MANAGER_STATE';
+export const MGR_ACTION_MSG = '__Tihoka_MANAGER_ACTION';
+export const MGR_OPENED_MSG = '__Tihoka_MANAGER_OPENED';
+export const MGR_CLOSED_MSG = '__Tihoka_MANAGER_CLOSED';
 
 /**
  * Serialized manager state — JSON-serializable mirror of `ManagerState`

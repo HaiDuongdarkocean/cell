@@ -209,7 +209,7 @@ export function OcrSettingsPanel({
                 className={styles.infoBtn}
                 aria-label={t('ocr.toggle.infoAria')}
                 aria-expanded={hintOpen}
-                data-cell-id="ocr-info-btn"
+                data-tihoka-id="ocr-info-btn"
                 onClick={() => setHintOpen((v) => !v)}
               >
                 <Icon name="info" size="sm" />
@@ -248,7 +248,7 @@ export function OcrSettingsPanel({
               <Button shape="circle" variant="ghost"
                 className={styles.resetBtn}
                 aria-label={t('ocr.lang.resetTargetAria')}
-                data-cell-id="ocr-target-lang-reset"
+                data-tihoka-id="ocr-target-lang-reset"
                 disabled={targetLangOverride == null}
                 onClick={() => handleLangReset('targetLangOverride')}
               >
@@ -260,7 +260,7 @@ export function OcrSettingsPanel({
               options={languageOptions()}
               onChange={(v) => handleLangOverrideChange('targetLangOverride', v)}
               aria-label={t('ocr.lang.targetAria')}
-              data-cell-id="ocr-target-language"
+              data-tihoka-id="ocr-target-language"
               menuAlign="right"
               className={styles.langSelect}
             />
@@ -275,7 +275,7 @@ export function OcrSettingsPanel({
               <Button shape="circle" variant="ghost"
                 className={styles.resetBtn}
                 aria-label={t('ocr.lang.resetNativeAria')}
-                data-cell-id="ocr-native-lang-reset"
+                data-tihoka-id="ocr-native-lang-reset"
                 disabled={nativeLangOverride == null}
                 onClick={() => handleLangReset('nativeLangOverride')}
               >
@@ -287,7 +287,7 @@ export function OcrSettingsPanel({
               options={languageOptions()}
               onChange={(v) => handleLangOverrideChange('nativeLangOverride', v)}
               aria-label={t('ocr.lang.nativeAria')}
-              data-cell-id="ocr-native-language"
+              data-tihoka-id="ocr-native-language"
               menuAlign="right"
               className={styles.langSelect}
             />
@@ -330,7 +330,7 @@ export function OcrSettingsPanel({
                     fullWidth
                     active={splitTopIsTarget}
                     onClick={() => void patchOcrState({ splitTopIsTarget: true })}
-                    data-cell-id="ocr-split-top-target"
+                    data-tihoka-id="ocr-split-top-target"
                   >
                     {t('ocr.split.topTarget')}
                   </Button>
@@ -340,7 +340,7 @@ export function OcrSettingsPanel({
                     fullWidth
                     active={!splitTopIsTarget}
                     onClick={() => void patchOcrState({ splitTopIsTarget: false })}
-                    data-cell-id="ocr-split-top-native"
+                    data-tihoka-id="ocr-split-top-native"
                   >
                     {t('ocr.split.topNative')}
                   </Button>
@@ -449,7 +449,7 @@ export function OcrSettingsPanel({
                 collapseLabel
                 leadingIcon={<Icon name="crop" size="sm" />}
                 onClick={() => sendRegionCommand('select')}
-                data-cell-id="ocr-region-select"
+                data-tihoka-id="ocr-region-select"
               >
                 {t('ocr.region.select')}
               </Button>
@@ -460,7 +460,7 @@ export function OcrSettingsPanel({
                   collapseLabel
                   leadingIcon={<Icon name="move" size="sm" />}
                   onClick={() => sendRegionCommand('edit')}
-                  data-cell-id="ocr-region-edit"
+                  data-tihoka-id="ocr-region-edit"
                 >
                   {t('ocr.region.edit')}
                 </Button>
@@ -471,7 +471,7 @@ export function OcrSettingsPanel({
                 collapseLabel
                 leadingIcon={<Icon name="rotateCcw" size="sm" />}
                 onClick={() => void handleResetRegion()}
-                data-cell-id="ocr-region-reset"
+                data-tihoka-id="ocr-region-reset"
               >
                 {t('ocr.region.reset')}
               </Button>

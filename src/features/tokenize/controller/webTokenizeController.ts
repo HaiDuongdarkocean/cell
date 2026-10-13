@@ -1,4 +1,5 @@
 import type { ClickModifierState } from '@/entities/dictionary';
+import type { AnnotationDisplayMode } from '@/entities/settings';
 import { findTextBlocks, findTextBlocksInNodes } from '@/features/tokenize/logic/tokenizeBlock';
 import { TokenizeCache } from '@/features/tokenize/logic/tokenizeCache';
 import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_PREPARE, PRIORITY_BUFFER } from '@/features/tokenize/logic/tokenizeScheduler';
@@ -15,8 +16,9 @@ import {
   isTokenizeEnabledForUrl,
   setTokenizeEnabledForUrl,
 } from '@/features/tokenize/services/tokenizeSettingsStore';
-import { isCellDebug } from '@/shared/lib/cellDebug';
+import { isTihokaDebug } from '@/shared/lib/TihokaDebug';
 import { getFrequencyEntries, getReadings } from '@/features/dictionary';
+import { resolveEspeakReadings } from '@/features/tokenize/logic/espeakReadings';
 import { getWordStatuses, setWordStatus, toggleTrackingFlag } from '@/features/dictionary';
 import { getWordTranslations } from '@/features/translate';
 import { getSrsCardTermSet, invalidateSrsCardTermSet, onSrsCardsChanged } from '@/features/srs';
@@ -30,7 +32,7 @@ import { entriesToBand, loadFrequencyBandOptions, pickFrequencyReading, DEFAULT_
 import { createStatusKeyControls, type PopupStatusTarget } from '@/features/tokenize/logic/statusKeyControls';
 import { SENTENCE_CLASS, clearSentenceHighlight, highlightSentence } from '@/features/tokenize/ui/sentenceHighlight';
 import { showCopyToast } from '@/features/tokenize/ui/mountCopyToast';
-import { CELL_UI_HOST_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
+import { Tihoka_UI_HOST_SELECTORS } from '@/shared/lib/dom/TihokaUiHosts';
 import { isEditableEvent } from '@/shared/lib/dom/isEditable';
 import type { Token, TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
@@ -93,12 +95,12 @@ export interface WebTokenizeControllerOptions {
   readonly onBlocksChanged?: () => void;
   /** Open popup's looked-up term — status keys target it before selection/hover. */
   readonly getPopupStatusTarget?: () => PopupStatusTarget | null;
-  /** Render reading caps (IPA/pinyin) above word tokens — mirrors the
-   *  profile showReadings setting; seeds the session toggle. */
-  readonly showReadings?: boolean;
-  /** Render native-language glosses below word tokens — mirrors the profile
-   *  showWordTranslations setting; seeds the session toggle. */
-  readonly showGlosses?: boolean;
+  /** Reading caps (IPA/pinyin) display mode above word tokens — mirrors the
+   *  profile readingDisplay setting; seeds the session state. */
+  readonly readingDisplay?: AnnotationDisplayMode;
+  /** Native-language gloss display mode below word tokens — mirrors the
+   *  profile glossDisplay setting; seeds the session state. */
+  readonly glossDisplay?: AnnotationDisplayMode;
   /** Target language for gloss lanes (settings.subtitleOverlayNativeLanguage). */
   readonly glossTargetLanguage?: string;
 }
@@ -112,8 +114,8 @@ export interface WebTokenizeController extends TokenizeController {
   readonly toggleEnabled: () => void;
   readonly toggleShowStatus: () => void;
   readonly toggleShowFrequency: () => void;
-  readonly toggleShowReadings: () => void;
-  readonly toggleShowGlosses: () => void;
+  readonly toggleReadingDisplay: () => void;
+  readonly toggleGlossDisplay: () => void;
   /** Retarget the gloss lane language — re-resolves glosses for bound blocks. */
   readonly setGlossTargetLanguage: (tl: string) => void;
   /** Pick a dictionary term from current state (for "Open Dictionary" btn). */
@@ -152,8 +154,8 @@ export async function createWebTokenizeController(
     initialEnabled,
     initialShowStatus: true,
     initialShowFrequency: true,
-    initialShowReadings: options.showReadings ?? false,
-    initialShowGlosses: options.showGlosses ?? false,
+    initialReadingDisplay: options.readingDisplay ?? 'off',
+    initialGlossDisplay: options.glossDisplay ?? 'off',
   });
   let glossTargetLanguage = options.glossTargetLanguage ?? '';
 
@@ -207,12 +209,12 @@ export async function createWebTokenizeController(
   let lastCopiedSentence: string | null = null;
 
   /** Release the pinned wash on a click that lands outside the washed sentence
-   *  and outside Cell's own UI (popup, panel) — clicking the popup keeps it. */
+   *  and outside Tihoka's own UI (popup, panel) — clicking the popup keeps it. */
   function onPointerDownOutside(event: Event): void {
     if (!pinnedSentenceKey) return;
     for (const node of event.composedPath()) {
       if (node instanceof HTMLElement && node.classList.contains(SENTENCE_CLASS)) return;
-      if (node instanceof Element && node.matches(CELL_UI_HOST_SELECTORS)) return;
+      if (node instanceof Element && node.matches(Tihoka_UI_HOST_SELECTORS)) return;
     }
     pinnedSentenceKey = null;
     clearSentenceHighlight(highlightedSpans);
@@ -255,9 +257,9 @@ export async function createWebTokenizeController(
     return new ViewportTracker({ rootMargin });
   }
 
-  function displayFlags(state: TokenizeState): Pick<TokenizeState, 'showStatus' | 'showFrequency' | 'showReadings' | 'showGlosses'> {
-    const { showStatus, showFrequency, showReadings, showGlosses } = state;
-    return { showStatus, showFrequency, showReadings, showGlosses };
+  function displayFlags(state: TokenizeState): Pick<TokenizeState, 'showStatus' | 'showFrequency' | 'readingDisplay' | 'glossDisplay'> {
+    const { showStatus, showFrequency, readingDisplay, glossDisplay } = state;
+    return { showStatus, showFrequency, readingDisplay, glossDisplay };
   }
 
   /** Recreate the ViewportTracker with a new rootMargin and re-observe all connected blocks. */
@@ -313,7 +315,7 @@ export async function createWebTokenizeController(
       return;
     }
     const termList = [...terms];
-    const { showReadings, showGlosses } = stateStore.getState();
+    const { readingDisplay, glossDisplay } = stateStore.getState();
     const tl = glossTargetLanguage;
     const [statusMap, freqMaps, bandOpts, dictReadings, termGlosses, cardTerms] = await Promise.all([
       getWordStatuses(langCode, termList),
@@ -321,9 +323,9 @@ export async function createWebTokenizeController(
       frequencyBandOptions ??= loadFrequencyBandOptions(langCode)
         .catch(() => ({ thresholds: DEFAULT_BAND_THRESHOLDS, resourcePriority: [] })),
       // Annotation lanes ride the same batched flush — skipped entirely when
-      // their display toggles are off so annotation-off pages cost nothing.
-      showReadings ? getReadings(langCode, termList).catch(() => null) : Promise.resolve(null),
-      showGlosses && tl
+      // their display mode is off so annotation-off pages cost nothing.
+      readingDisplay !== 'off' ? getReadings(langCode, termList).catch(() => null) : Promise.resolve(null),
+      glossDisplay !== 'off' && tl
         ? getWordTranslations(langCode, tl, termList)
             // Drop results that resolve after a target-language switch —
             // writing them would persist the old language's glosses.
@@ -334,6 +336,13 @@ export async function createWebTokenizeController(
       // flicker the third layer off.
       getSrsCardTermSet(langCode).catch(() => null),
     ]);
+    const espeakReadings = dictReadings !== null
+      ? await resolveEspeakReadings(
+          langCode,
+          termList,
+          (term) => dictReadings.get(term) ?? pickFrequencyReading(term, freqMaps.get(term) ?? []),
+        )
+      : null;
     for (const block of batch) {
       if (!block.tokens) {
         metadataPending.delete(block);
@@ -352,6 +361,7 @@ export async function createWebTokenizeController(
           if (dictReadings !== null) {
             token.reading = dictReadings.get(token.term)
               ?? pickFrequencyReading(token.term, freqMaps.get(token.term) ?? [])
+              ?? espeakReadings?.get(token.term)
               ?? '';
           }
           if (termGlosses !== null) {
@@ -495,13 +505,13 @@ export async function createWebTokenizeController(
     for (const block of blocks) {
       if (block.element.isConnected) observeBlock(block);
     }
-    if (isCellDebug()) {
+    if (isTihokaDebug()) {
       const tagDistribution: Record<string, number> = {};
       for (const block of scanned) {
         const tag = block.element.tagName;
         tagDistribution[tag] = (tagDistribution[tag] ?? 0) + 1;
       }
-      (window as unknown as Record<string, unknown>).__CELL_SCAN_INFO = {
+      (window as unknown as Record<string, unknown>).__Tihoka_SCAN_INFO = {
         scanned: scanned.length,
         blocks: blocks.length,
         tags: tagDistribution,
@@ -638,11 +648,11 @@ export async function createWebTokenizeController(
     const flagsChanged =
       state.showStatus !== prevDisplay.showStatus ||
       state.showFrequency !== prevDisplay.showFrequency ||
-      state.showReadings !== prevDisplay.showReadings ||
-      state.showGlosses !== prevDisplay.showGlosses;
+      state.readingDisplay !== prevDisplay.readingDisplay ||
+      state.glossDisplay !== prevDisplay.glossDisplay;
     const annotationsEnabled =
-      (state.showReadings && !prevDisplay.showReadings) ||
-      (state.showGlosses && !prevDisplay.showGlosses);
+      (state.readingDisplay !== 'off' && prevDisplay.readingDisplay === 'off') ||
+      (state.glossDisplay !== 'off' && prevDisplay.glossDisplay === 'off');
     prevDisplay = displayFlags(state);
     if (!flagsChanged && !annotationsEnabled) return;
     for (const block of blocks) {
@@ -904,7 +914,7 @@ export async function createWebTokenizeController(
   }
 
   function sentenceKey(block: TokenBlock, element: HTMLElement): string {
-    return `${block.id}:${element.getAttribute('data-cell-sentence') ?? '0'}`;
+    return `${block.id}:${element.getAttribute('data-tihoka-sentence') ?? '0'}`;
   }
 
   function clearSentenceWash(): void {
@@ -922,8 +932,8 @@ export async function createWebTokenizeController(
     return {
       showStatus: state.showStatus,
       showFrequency: state.showFrequency,
-      showReadings: state.showReadings,
-      showGlosses: state.showGlosses,
+      readingDisplay: state.readingDisplay,
+      glossDisplay: state.glossDisplay,
       onTokenEnter: (term, block, element) => {
         stateStore.setHoveredTerm(term);
         const key = sentenceKey(block, element);
@@ -1206,8 +1216,8 @@ export async function createWebTokenizeController(
 
     setShowStatus: (show) => stateStore.setShowStatus(show),
     setShowFrequency: (show) => stateStore.setShowFrequency(show),
-    setShowReadings: (show) => stateStore.setShowReadings(show),
-    setShowGlosses: (show) => stateStore.setShowGlosses(show),
+    setReadingDisplay: (mode) => stateStore.setReadingDisplay(mode),
+    setGlossDisplay: (mode) => stateStore.setGlossDisplay(mode),
 
     /** Subscribe to tokenize state changes (for orbital panel sync). */
     subscribe: (cb: (state: TokenizeState) => void) => stateStore.subscribe(cb),
@@ -1216,13 +1226,13 @@ export async function createWebTokenizeController(
     toggleEnabled: () => toggleEnabled(),
     toggleShowStatus: () => stateStore.setShowStatus(!stateStore.getState().showStatus),
     toggleShowFrequency: () => stateStore.setShowFrequency(!stateStore.getState().showFrequency),
-    toggleShowReadings: () => stateStore.setShowReadings(!stateStore.getState().showReadings),
-    toggleShowGlosses: () => stateStore.setShowGlosses(!stateStore.getState().showGlosses),
+    toggleReadingDisplay: () => stateStore.setReadingDisplay(stateStore.getState().readingDisplay === 'off' ? 'always' : 'off'),
+    toggleGlossDisplay: () => stateStore.setGlossDisplay(stateStore.getState().glossDisplay === 'off' ? 'always' : 'off'),
 
     setGlossTargetLanguage: (tl) => {
       if (glossTargetLanguage === tl) return;
       glossTargetLanguage = tl;
-      if (!stateStore.getState().showGlosses) return;
+      if (stateStore.getState().glossDisplay === 'off') return;
       for (const block of blocks) requeueForAnnotations(block);
       scheduleMetadataFlush();
     },

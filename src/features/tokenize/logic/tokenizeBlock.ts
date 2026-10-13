@@ -1,6 +1,6 @@
 import type { TokenBlock } from '@/features/tokenize/types';
 import { languageMatches } from '@/shared/config/languageRegistry';
-import { CELL_UI_HOST_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
+import { Tihoka_UI_HOST_SELECTORS } from '@/shared/lib/dom/TihokaUiHosts';
 
 const FORBIDDEN_TAGS = new Set([
   'SCRIPT',
@@ -27,14 +27,14 @@ const SUBTITLE_LINE_CLASS = 'subtitle-line';
 const SUBTITLE_NATIVE_CLASS = 'native';
 
 /** Extension UI host selectors — text inside these must NOT be tokenized.
- *  Light-DOM hosts (#cell-settings-dialog-host, #cell-card-creator-host,
- *  .js-cell-popup-host, #cell-universal-panel-host) contain React-rendered text
- *  that TreeWalker can reach. Shadow-DOM hosts (.js-cell-orbital-badge-host,
- *  .js-cell-token-badge-host) are included for safety even though TreeWalker
+ *  Light-DOM hosts (#Tihoka-settings-dialog-host, #Tihoka-card-creator-host,
+ *  .js-Tihoka-popup-host, #Tihoka-universal-panel-host) contain React-rendered text
+ *  that TreeWalker can reach. Shadow-DOM hosts (.js-Tihoka-orbital-badge-host,
+ *  .js-Tihoka-token-badge-host) are included for safety even though TreeWalker
  *  doesn't cross shadow boundaries.
  *  Sub-trees marked `data-allow-tokenize` are whitelisted (e.g. card creator
  *  preview inside the universal panel). */
-const EXTENSION_UI_HOST_SELECTORS = CELL_UI_HOST_SELECTORS;
+const EXTENSION_UI_HOST_SELECTORS = Tihoka_UI_HOST_SELECTORS;
 
 // 'link' is intentionally NOT forbidden: <a href> is already implicit link and
 // is tokenized (see test). Many sites (Facebook, Twitter) add explicit
@@ -151,7 +151,7 @@ function createBlock(textNode: Text, idPrefix: string, text: string): TokenBlock
 
 function insideTokenSpan(element: Element | null): boolean {
   if (!element) return false;
-  return element.closest('.js-cell-token') !== null;
+  return element.closest('.js-Tihoka-token') !== null;
 }
 
 /**

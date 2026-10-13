@@ -7,10 +7,10 @@ import {
 function setupPanel(scrollTop: number): { panel: HTMLElement; scrollEl: HTMLElement } {
   document.body.innerHTML = '';
   const panel = document.createElement('div');
-  panel.setAttribute('data-cell-split-view', 'panel');
+  panel.setAttribute('data-tihoka-split-view', 'panel');
   const shadow = panel.attachShadow({ mode: 'open' });
   const scrollEl = document.createElement('div');
-  scrollEl.setAttribute('data-cell-id', 'cue-list-scroll');
+  scrollEl.setAttribute('data-tihoka-id', 'cue-list-scroll');
   scrollEl.style.cssText = 'height:200px;overflow:scroll;';
   // jsdom doesn't layout, so scrollHeight/clientHeight are 0.
   // Mock scrollTop as a plain property to test save/restore logic.
@@ -38,7 +38,7 @@ describe('findScrollElement', () => {
   it('returns null when panel has no shadow root', () => {
     document.body.innerHTML = '';
     const panel = document.createElement('div');
-    panel.setAttribute('data-cell-split-view', 'panel');
+    panel.setAttribute('data-tihoka-split-view', 'panel');
     document.body.appendChild(panel);
     expect(findScrollElement()).toBeNull();
   });
@@ -60,7 +60,7 @@ describe('restoreScrollPosition', () => {
   it('restores scrollTop to saved value', () => {
     let scrollTop = 0;
     const { panel } = setupPanel(0);
-    const scrollEl = panel.shadowRoot!.querySelector<HTMLElement>('[data-cell-id="cue-list-scroll"]')!;
+    const scrollEl = panel.shadowRoot!.querySelector<HTMLElement>('[data-tihoka-id="cue-list-scroll"]')!;
     Object.defineProperty(scrollEl, 'scrollTop', {
       get: () => scrollTop,
       set: (v: number) => { scrollTop = v; },

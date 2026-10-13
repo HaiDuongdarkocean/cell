@@ -4,7 +4,7 @@
 import type { ImageSource, OcrResult, OcrResultItem } from '@/features/ocr/engine/types';
 import type { CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import { checkDrmGuard } from './drmGuard';
-import { isCellDebug } from '@/shared/lib/cellDebug';
+import { isTihokaDebug } from '@/shared/lib/TihokaDebug';
 import { computeSubtitleRegion, cropImage } from './cropRegion';
 import type { SplitHalf } from './splitRegion';
 import { scriptRunSegmenter, type ScriptRun } from '../language/scriptRunSegmenter';
@@ -252,7 +252,7 @@ export async function runPipelineStep(
   }
 
   const ocrMetrics = ocrResults[0]?.metrics;
-  if (isCellDebug()) {
+  if (isTihokaDebug()) {
     (globalThis as { __ocrStepTimings?: string }).__ocrStepTimings = JSON.stringify({
     drmMs: Math.round(tDrm - t0),
     cropMs: Math.round(tCrop - tDrm),

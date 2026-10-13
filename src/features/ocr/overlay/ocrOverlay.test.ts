@@ -88,9 +88,9 @@ describe('createHitboxElement (T13)', () => {
     const el = createHitboxElement(hitbox, rect);
     expect(el.tagName).toBe('SPAN');
     expect(el.id).toBe('test-1');
-    expect(el.className).toBe('cell-ocr-hitbox');
-    expect(el.dataset.cellTerm).toBe('Hello');
-    expect(el.dataset.cellLang).toBe('en');
+    expect(el.className).toBe('Tihoka-ocr-hitbox');
+    expect(el.dataset.tihokaTerm).toBe('Hello');
+    expect(el.dataset.tihokaLang).toBe('en');
     expect(el.style.left).toBe('10px');
   });
 });
@@ -124,7 +124,7 @@ describe('OcrOverlay (T13-T16)', () => {
   it('attach creates overlay container', () => {
     const overlay = new OcrOverlay();
     overlay.attach(video);
-    const container = parent.querySelector('.cell-ocr-overlay');
+    const container = parent.querySelector('.Tihoka-ocr-overlay');
     expect(container).toBeTruthy();
     expect(parent.style.position).toBe('relative');
   });
@@ -138,7 +138,7 @@ describe('OcrOverlay (T13-T16)', () => {
     );
     overlay.updateHitboxes(hitboxes, 1280, 720);
     expect(overlay.getHitboxElements()).toHaveLength(2);
-    expect(parent.querySelectorAll('span.cell-ocr-hitbox')).toHaveLength(2);
+    expect(parent.querySelectorAll('span.Tihoka-ocr-hitbox')).toHaveLength(2);
   });
 
   it('clear removes all hitboxes', () => {
@@ -162,14 +162,14 @@ describe('OcrOverlay (T13-T16)', () => {
     const overlay = new OcrOverlay();
     overlay.attach(video);
     overlay.detach();
-    expect(parent.querySelector('.cell-ocr-overlay')).toBeNull();
+    expect(parent.querySelector('.Tihoka-ocr-overlay')).toBeNull();
   });
 
   it('attach is idempotent', () => {
     const overlay = new OcrOverlay();
     overlay.attach(video);
     overlay.attach(video);
-    expect(parent.querySelectorAll('.cell-ocr-overlay')).toHaveLength(1);
+    expect(parent.querySelectorAll('.Tihoka-ocr-overlay')).toHaveLength(1);
   });
 });
 

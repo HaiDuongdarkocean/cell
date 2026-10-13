@@ -8,7 +8,7 @@ export interface OffsetLayerProps {
 
 export function OffsetLayer({ offset }: OffsetLayerProps): React.JSX.Element {
   return (
-    <div className={sharedStyles.panelLayer} data-cell-id="subtitle-offset-layer">
+    <div className={sharedStyles.panelLayer} data-tihoka-id="subtitle-offset-layer">
       <div className={sharedStyles.offsetRow}>
         <SubtitleOffsetPanel offsetMs={offset.targetMs} onOffsetChange={offset.onTargetChange} />
         <SubtitleOffsetPanel offsetMs={offset.nativeMs} onOffsetChange={offset.onNativeChange} />

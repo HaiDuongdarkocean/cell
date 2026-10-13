@@ -288,7 +288,7 @@ export function SrsReviewCardBack({
       className={styles.back}
       role="button"
       tabIndex={0}
-      data-cell-no-ripple
+      data-tihoka-no-ripple
       onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => {
         if ((e.target as HTMLElement).closest('button,input,audio,a,textarea,select')) return;
         e.preventDefault();
@@ -329,7 +329,7 @@ export function SrsReviewCardBack({
         <DefList text={fieldText(note.fields.def)} />
       )}
 
-      <ReviewImageGallery items={imageItems} alt={note.targetWord} dataCellId="srs-card-images" />
+      <ReviewImageGallery items={imageItems} alt={note.targetWord} dataTihokaId="srs-card-images" />
 
       {note.fields.examples && fieldText(note.fields.examples).trim() && (
         <FieldTextBlock label={fieldLabel('examples')} text={fieldText(note.fields.examples)} />

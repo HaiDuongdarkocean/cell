@@ -1,6 +1,8 @@
+import { bandToStars, rankToBand, type FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 import type {
   InflectionGroup,
   LookupResult,
+  PopupCardCreatorPrefill,
   ReadingKind,
   RelatedEntry,
   WordFamily,
@@ -30,9 +32,13 @@ export interface DefEntryInput {
   readonly reading?: string;
   readonly readingKind?: ReadingKind;
   readonly frequencyStars?: number;
-  /** Per-list frequency — rendered `[source:rank]` in the header. */
+  /** Per-list frequency — rendered `[source:rank]` in the header. In 'stars'
+   *  format without `frequencyStars`, the best rank converts to ★ via
+   *  `frequencyThresholds`. */
   readonly frequencies?: readonly { readonly rank: number; readonly source: string }[];
   readonly frequencyFormat?: FrequencyDisplay;
+  /** Band thresholds for rank → ★ conversion (settings.frequencyBands). */
+  readonly frequencyThresholds?: FrequencyBandThresholds;
   /** Inflection groups — `type forms | type forms`, flat list when untyped. */
   readonly inflections?: readonly InflectionGroup[];
   /** formatDefinitions output — `[pos]`-headed senses, `-` example lines. */
@@ -118,7 +124,11 @@ function metaLines(input: DefEntryInput): string[] {
  * Multiple entries are joined by `\n---\n`.
  */
 export function formatDefEntry(entry: DefEntryInput): string {
-  const starCount = entry.frequencyStars ? Math.min(5, Math.max(1, entry.frequencyStars)) : 0;
+  const derivedStars = entry.frequencyStars ??
+    (entry.frequencies?.length
+      ? bandToStars(rankToBand(Math.min(...entry.frequencies.map((f) => f.rank)), entry.frequencyThresholds))
+      : 0);
+  const starCount = derivedStars ? Math.min(5, Math.max(1, derivedStars)) : 0;
   const stars = starCount ? '★'.repeat(starCount) + '☆'.repeat(5 - starCount) : '';
   const ranks = (entry.frequencies ?? []).map((f) => `[${f.source}:${f.rank}]`).join(' ');
   const freq = entry.frequencyFormat === 'rank' ? ranks || stars : stars;
@@ -144,6 +154,21 @@ export function formatDefEntry(entry: DefEntryInput): string {
   return [headBlock.join('\n'), senses, meta.join('\n')].filter(Boolean).join('\n\n');
 }
 
+/** The prefill's lookup result with the selected variant's frequency rows
+ *  merged over the term-level ones — the same chips the popup status row
+ *  showed (pos-dictionary-variants keep freq per variant, not on the result). */
+export function cardLookupResult(
+  prefill: Pick<PopupCardCreatorPrefill, 'lookupResult' | 'frequencies' | 'frequencyStars'>,
+): LookupResult | undefined {
+  const result = prefill.lookupResult;
+  if (!result || (!prefill.frequencies && !prefill.frequencyStars)) return result;
+  return {
+    ...result,
+    frequencies: prefill.frequencies ?? result.frequencies,
+    frequencyStars: prefill.frequencyStars ?? result.frequencyStars,
+  };
+}
+
 export function joinDefEntries(entries: readonly string[]): string {
   return entries.map((e) => e.trim()).filter(Boolean).join('\n---\n');
 }
@@ -156,6 +181,7 @@ export function formatDefFromLookup(
   senses: string,
   fallbackTerm?: string,
   frequencyFormat?: FrequencyDisplay,
+  frequencyThresholds?: FrequencyBandThresholds,
 ): string {
   return formatDefEntry({
     term: result.term || fallbackTerm || '',
@@ -164,6 +190,7 @@ export function formatDefFromLookup(
     frequencyStars: result.frequencyStars?.count,
     frequencies: result.frequencies,
     frequencyFormat,
+    frequencyThresholds,
     inflections: result.inflections,
     senses,
     wordFamily: result.wordFamily,

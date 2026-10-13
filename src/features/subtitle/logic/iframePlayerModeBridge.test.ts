@@ -52,14 +52,14 @@ describe('iframePlayerModeBridge top-side listener', () => {
   afterEach(() => {
     cleanup();
     document.body.innerHTML = '';
-    document.head.querySelectorAll('[data-cell-player-mode]').forEach((el) => el.remove());
+    document.head.querySelectorAll('[data-tihoka-player-mode]').forEach((el) => el.remove());
     jest.restoreAllMocks();
   });
 
   function dispatchEnter(iframe: HTMLIFrameElement, frameSrc: string, origin = CHILD_ORIGIN): void {
     window.dispatchEvent(
       new MessageEvent('message', {
-        data: { type: '__CELL_PLAYER_MODE_ENTER', frameSrc },
+        data: { type: '__Tihoka_PLAYER_MODE_ENTER', frameSrc },
         origin,
         source: iframe.contentWindow,
       }),
@@ -71,14 +71,14 @@ describe('iframePlayerModeBridge top-side listener', () => {
     const postSpy = jest.spyOn(window, 'postMessage');
     window.dispatchEvent(
       new MessageEvent('message', {
-        data: { type: '__CELL_PLAYER_MODE_ENTER', frameSrc: `${CHILD_ORIGIN}${CHILD_PATH}` },
+        data: { type: '__Tihoka_PLAYER_MODE_ENTER', frameSrc: `${CHILD_ORIGIN}${CHILD_PATH}` },
         origin: CHILD_ORIGIN,
         source: null,
       }),
     );
     await Promise.resolve();
     expect(postSpy).not.toHaveBeenCalledWith(
-      expect.objectContaining({ type: '__CELL_PLAYER_MODE_ENTERED' }),
+      expect.objectContaining({ type: '__Tihoka_PLAYER_MODE_ENTERED' }),
       expect.anything(),
     );
   });
@@ -87,7 +87,7 @@ describe('iframePlayerModeBridge top-side listener', () => {
     const iframe = addIframe(`${CHILD_ORIGIN}${CHILD_PATH}`);
     dispatchEnter(iframe, `https://other.example${CHILD_PATH}`, CHILD_ORIGIN);
     await Promise.resolve();
-    expect(document.querySelector('[data-cell-player-mode-host]')).toBeNull();
+    expect(document.querySelector('[data-tihoka-player-mode-host]')).toBeNull();
   });
 
   it('accepts ENTER from a real iframe and replies at its origin', async () => {
@@ -99,7 +99,7 @@ describe('iframePlayerModeBridge top-side listener', () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(postSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: '__CELL_PLAYER_MODE_ENTERED' }),
+      expect.objectContaining({ type: '__Tihoka_PLAYER_MODE_ENTERED' }),
       CHILD_ORIGIN,
     );
   });
@@ -120,7 +120,7 @@ describe('iframePlayerModeBridge child-side', () => {
     void requestIframePlayerModeEnter(50);
     expect(window.parent.postMessage).toHaveBeenCalledWith(
       {
-        type: '__CELL_PLAYER_MODE_ENTER',
+        type: '__Tihoka_PLAYER_MODE_ENTER',
         frameSrc: window.location.origin + window.location.pathname,
       },
       PARENT_ORIGIN,
@@ -131,7 +131,7 @@ describe('iframePlayerModeBridge child-side', () => {
     const promise = requestIframePlayerModeEnter(500);
     window.dispatchEvent(
       new MessageEvent('message', {
-        data: { type: '__CELL_PLAYER_MODE_ENTERED' },
+        data: { type: '__Tihoka_PLAYER_MODE_ENTERED' },
         origin: PARENT_ORIGIN,
       }),
     );
@@ -143,7 +143,7 @@ describe('iframePlayerModeBridge child-side', () => {
     const promise = requestIframePlayerModeEnter(100);
     window.dispatchEvent(
       new MessageEvent('message', {
-        data: { type: '__CELL_PLAYER_MODE_ENTERED' },
+        data: { type: '__Tihoka_PLAYER_MODE_ENTERED' },
         origin: 'https://evil.example',
       }),
     );
@@ -155,7 +155,7 @@ describe('iframePlayerModeBridge child-side', () => {
     requestIframePlayerModeExit();
     expect(window.parent.postMessage).toHaveBeenCalledWith(
       {
-        type: '__CELL_PLAYER_MODE_EXIT',
+        type: '__Tihoka_PLAYER_MODE_EXIT',
         frameSrc: window.location.origin + window.location.pathname,
       },
       PARENT_ORIGIN,

@@ -97,23 +97,23 @@ const AUTO_LOAD_MSG = {
 
 describe('createContentScriptMessageHandlers AUTO_LOAD_SUBTITLES', () => {
   beforeEach(() => {
-    document.documentElement.removeAttribute('data-cell-debug-autoload-arr');
+    document.documentElement.removeAttribute('data-tihoka-debug-autoload-arr');
   });
 
   afterEach(() => {
-    delete (globalThis as Record<string, unknown>).__CELL_DEBUG__;
+    delete (globalThis as Record<string, unknown>).__Tihoka_DEBUG__;
     jest.restoreAllMocks();
   });
 
-  it('posts __CELL_AUTOLOAD_HANDLED to the resolved parent origin when debug is on', () => {
-    (globalThis as Record<string, unknown>).__CELL_DEBUG__ = 'true';
+  it('posts __Tihoka_AUTOLOAD_HANDLED to the resolved parent origin when debug is on', () => {
+    (globalThis as Record<string, unknown>).__Tihoka_DEBUG__ = 'true';
     const postSpy = jest.spyOn(window, 'postMessage').mockImplementation(() => {});
     const { onRuntimeMessage2 } = createContentScriptMessageHandlers(createCtx());
 
     void onRuntimeMessage2(AUTO_LOAD_MSG, {}, jest.fn());
 
     const calls = postSpy.mock.calls as unknown as [unknown, string | undefined][];
-    const handled = calls.find((c) => (c[0] as { type?: string })?.type === '__CELL_AUTOLOAD_HANDLED');
+    const handled = calls.find((c) => (c[0] as { type?: string })?.type === '__Tihoka_AUTOLOAD_HANDLED');
     expect(handled?.[0]).toEqual(
       expect.objectContaining({
         target: 'https://example.com/target.srt',
@@ -124,32 +124,32 @@ describe('createContentScriptMessageHandlers AUTO_LOAD_SUBTITLES', () => {
     expect(calls.every((c) => c[1] !== '*')).toBe(true);
   });
 
-  it('does not post __CELL_AUTOLOAD_HANDLED when debug is off', () => {
+  it('does not post __Tihoka_AUTOLOAD_HANDLED when debug is off', () => {
     const postSpy = jest.spyOn(window, 'postMessage').mockImplementation(() => {});
     const { onRuntimeMessage2 } = createContentScriptMessageHandlers(createCtx());
 
     void onRuntimeMessage2(AUTO_LOAD_MSG, {}, jest.fn());
 
     const calls = postSpy.mock.calls as unknown as [unknown, string | undefined][];
-    expect(calls.find((c) => (c[0] as { type?: string })?.type === '__CELL_AUTOLOAD_HANDLED')).toBeUndefined();
+    expect(calls.find((c) => (c[0] as { type?: string })?.type === '__Tihoka_AUTOLOAD_HANDLED')).toBeUndefined();
   });
 
-  it('does not write data-cell-debug-autoload-arr when __CELL_DEBUG__ is off', () => {
+  it('does not write data-tihoka-debug-autoload-arr when __Tihoka_DEBUG__ is off', () => {
     const { onRuntimeMessage2 } = createContentScriptMessageHandlers(createCtx());
 
     void onRuntimeMessage2(AUTO_LOAD_MSG, {}, jest.fn());
 
-    expect(document.documentElement.getAttribute('data-cell-debug-autoload-arr')).toBeNull();
+    expect(document.documentElement.getAttribute('data-tihoka-debug-autoload-arr')).toBeNull();
   });
 
-  it('writes data-cell-debug-autoload-arr when __CELL_DEBUG__ is on', () => {
-    (globalThis as Record<string, unknown>).__CELL_DEBUG__ = 'true';
+  it('writes data-tihoka-debug-autoload-arr when __Tihoka_DEBUG__ is on', () => {
+    (globalThis as Record<string, unknown>).__Tihoka_DEBUG__ = 'true';
     jest.spyOn(window, 'postMessage').mockImplementation(() => {});
     const { onRuntimeMessage2 } = createContentScriptMessageHandlers(createCtx());
 
     void onRuntimeMessage2(AUTO_LOAD_MSG, {}, jest.fn());
 
-    const attr = document.documentElement.getAttribute('data-cell-debug-autoload-arr');
+    const attr = document.documentElement.getAttribute('data-tihoka-debug-autoload-arr');
     expect(attr).not.toBeNull();
     expect(JSON.parse(attr!)).toEqual([
       expect.objectContaining({ step: 'msg-received', hasTarget: true, hasNative: true }),

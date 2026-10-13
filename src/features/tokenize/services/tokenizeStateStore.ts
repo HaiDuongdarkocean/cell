@@ -5,12 +5,14 @@
  * state for the current page (selected terms, hover, layer toggles). The
  * controller subscribes and re-binds visible blocks when toggles change.
  */
+import type { AnnotationDisplayMode } from '@/entities/settings';
+
 export interface TokenizeState {
   enabled: boolean;
   showStatus: boolean;
   showFrequency: boolean;
-  showReadings: boolean;
-  showGlosses: boolean;
+  readingDisplay: AnnotationDisplayMode;
+  glossDisplay: AnnotationDisplayMode;
   hoveredTerm: string | null;
   selectedTerms: ReadonlySet<string>;
 }
@@ -20,8 +22,8 @@ export interface TokenizeStateStore {
   setEnabled(enabled: boolean): void;
   setShowStatus(show: boolean): void;
   setShowFrequency(show: boolean): void;
-  setShowReadings(show: boolean): void;
-  setShowGlosses(show: boolean): void;
+  setReadingDisplay(mode: AnnotationDisplayMode): void;
+  setGlossDisplay(mode: AnnotationDisplayMode): void;
   setHoveredTerm(term: string | null): void;
   toggleSelectedTerm(term: string): void;
   addSelectedTerm(term: string): void;
@@ -34,8 +36,8 @@ export interface CreateTokenizeStateStoreOptions {
   initialEnabled?: boolean;
   initialShowStatus?: boolean;
   initialShowFrequency?: boolean;
-  initialShowReadings?: boolean;
-  initialShowGlosses?: boolean;
+  initialReadingDisplay?: AnnotationDisplayMode;
+  initialGlossDisplay?: AnnotationDisplayMode;
 }
 
 export function createTokenizeStateStore(options: CreateTokenizeStateStoreOptions = {}): TokenizeStateStore {
@@ -43,8 +45,8 @@ export function createTokenizeStateStore(options: CreateTokenizeStateStoreOption
     enabled: options.initialEnabled ?? false,
     showStatus: options.initialShowStatus ?? true,
     showFrequency: options.initialShowFrequency ?? true,
-    showReadings: options.initialShowReadings ?? false,
-    showGlosses: options.initialShowGlosses ?? false,
+    readingDisplay: options.initialReadingDisplay ?? 'off',
+    glossDisplay: options.initialGlossDisplay ?? 'off',
     hoveredTerm: null,
     selectedTerms: new Set<string>(),
   };
@@ -69,8 +71,8 @@ export function createTokenizeStateStore(options: CreateTokenizeStateStoreOption
     setEnabled: (enabled) => set('enabled', enabled),
     setShowStatus: (show) => set('showStatus', show),
     setShowFrequency: (show) => set('showFrequency', show),
-    setShowReadings: (show) => set('showReadings', show),
-    setShowGlosses: (show) => set('showGlosses', show),
+    setReadingDisplay: (mode) => set('readingDisplay', mode),
+    setGlossDisplay: (mode) => set('glossDisplay', mode),
     setHoveredTerm: (term) => set('hoveredTerm', term),
 
     toggleSelectedTerm(term) {

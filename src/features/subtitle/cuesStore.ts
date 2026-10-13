@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type { SrtCue } from '@/entities/media/types';
-import { CELL_CUES_UPDATED, type CuesUpdatedEvent } from './events';
+import { Tihoka_CUES_UPDATED, type CuesUpdatedEvent } from './events';
 
 export type LoadState = 'idle' | 'loading' | 'loaded' | 'error' | 'none' | 'translating';
 
@@ -68,7 +68,7 @@ export const useCuesStore = create<CuesState>()(
         nativeActiveIndex: -1,
         // Only transition → 'loaded' when the previous state was an active
         // operation ('loading' or 'translating'). setCues fires on EVERY
-        // timeupdate (via CELL_CUES_UPDATED), so transitioning from 'idle'
+        // timeupdate (via Tihoka_CUES_UPDATED), so transitioning from 'idle'
         // (after auto-clear) would re-show "Subtitle loaded" every time the
         // video enters a cue gap. Once auto-clear sets 'idle', stay 'idle'.
         // ponytail: this guard is the single fix for the "status flickers on
@@ -104,5 +104,5 @@ const handleCuesUpdated = (event: Event): void => {
 };
 
 if (typeof document !== 'undefined') {
-  document.addEventListener(CELL_CUES_UPDATED, handleCuesUpdated);
+  document.addEventListener(Tihoka_CUES_UPDATED, handleCuesUpdated);
 }

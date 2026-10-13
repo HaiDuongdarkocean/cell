@@ -27,7 +27,7 @@ import {
   seekVideo,
   handleAutoLoadSubtitles,
   isActivatableTarget,
-  isInsideCellUi,
+  isInsideTihokaUi,
   isEditableEvent,
   broadcastCues,
   mergeCuesForPanel,
@@ -116,7 +116,7 @@ jest.mock('@/features/subtitle', () => ({
   handleShortcutKey: jest.fn().mockReturnValue(null),
   isEditableTarget: jest.fn().mockReturnValue(false),
   isEditableEvent: jest.fn().mockReturnValue(false),
-  isInsideCellUi: jest.fn().mockReturnValue(false),
+  isInsideTihokaUi: jest.fn().mockReturnValue(false),
   isActivatableTarget: jest.fn().mockReturnValue(false),
   formatSubtitleName: jest.fn().mockReturnValue('Subtitle'),
   seekVideo: jest.fn(),
@@ -153,8 +153,8 @@ interface MockController {
   init: jest.Mock;
   disableTokenize: jest.Mock;
   enableTokenize: jest.Mock;
-  setTokenizeShowReadings: jest.Mock;
-  setTokenizeShowGlosses: jest.Mock;
+  setTokenizeReadingDisplay: jest.Mock;
+  setTokenizeGlossDisplay: jest.Mock;
   setTokenizeGlossTargetLanguage: jest.Mock;
   enableDictionaryPopup: jest.Mock;
   disableDictionaryPopup: jest.Mock;
@@ -206,7 +206,7 @@ const mockLoadTokenizeSettings = jest.mocked(loadTokenizeSettings);
 const mockIsSubtitleTokenizeEnabledForUrl = jest.mocked(isSubtitleTokenizeEnabledForUrl);
 const mockHandleShortcutKey = jest.mocked(handleShortcutKey);
 const mockIsActivatableTarget = jest.mocked(isActivatableTarget);
-const mockIsInsideCellUi = jest.mocked(isInsideCellUi);
+const mockIsInsideTihokaUi = jest.mocked(isInsideTihokaUi);
 const mockIsEditableEvent = jest.mocked(isEditableEvent);
 const mockHandleAutoLoadSubtitles = jest.mocked(handleAutoLoadSubtitles);
 
@@ -244,8 +244,8 @@ function createMockController(): MockController {
     init: jest.fn(),
     disableTokenize: jest.fn(),
     enableTokenize: jest.fn(),
-    setTokenizeShowReadings: jest.fn(),
-    setTokenizeShowGlosses: jest.fn(),
+    setTokenizeReadingDisplay: jest.fn(),
+    setTokenizeGlossDisplay: jest.fn(),
     setTokenizeGlossTargetLanguage: jest.fn(),
     enableDictionaryPopup: jest.fn(),
     disableDictionaryPopup: jest.fn(),
@@ -303,7 +303,7 @@ describe('contentScriptController', () => {
     jest.useRealTimers();
     jest.clearAllMocks();
 
-    mockIsInsideCellUi.mockReturnValue(false);
+    mockIsInsideTihokaUi.mockReturnValue(false);
     mockIsEditableEvent.mockReturnValue(false);
     mockIsActivatableTarget.mockReturnValue(false);
     mockHandleShortcutKey.mockReturnValue(null);
@@ -407,17 +407,17 @@ describe('contentScriptController', () => {
     expect(typeof blockController.onToggleOcr).toBe('function');
     blockController.onToggleOcr!();
     expect(postMessageSpy).toHaveBeenCalledWith(
-      { type: '__CELL_OCR_TOGGLE' },
+      { type: '__Tihoka_OCR_TOGGLE' },
       '*',
     );
 
     expect(postMessageSpy).toHaveBeenCalledWith(
-      { type: '__CELL_OCR_QUERY_STATE' },
+      { type: '__Tihoka_OCR_QUERY_STATE' },
       '*',
     );
 
     window.dispatchEvent(new MessageEvent('message', {
-      data: { type: '__CELL_OCR_STATE', enabled: true },
+      data: { type: '__Tihoka_OCR_STATE', enabled: true },
       source: window,
     }));
     expect(blockController.setOcrEnabled).toHaveBeenCalledWith(true);
@@ -427,7 +427,7 @@ describe('contentScriptController', () => {
     cleanupCalled = true;
   });
 
-  it('__CELL_OCR_TRACKS loads OCR cues, broadcasts merged panel cues, and refreshes panel', async () => {
+  it('__Tihoka_OCR_TRACKS loads OCR cues, broadcasts merged panel cues, and refreshes panel', async () => {
     cleanup = init(video);
     await flushPromises();
 
@@ -439,7 +439,7 @@ describe('contentScriptController', () => {
     jest.mocked(mergeCuesForPanel).mockReturnValueOnce(merged);
 
     window.dispatchEvent(new MessageEvent('message', {
-      data: { type: '__CELL_OCR_TRACKS', targetCues, nativeCues },
+      data: { type: '__Tihoka_OCR_TRACKS', targetCues, nativeCues },
       source: window,
       origin: window.location.origin,
     }));
@@ -770,21 +770,21 @@ describe('contentScriptController', () => {
     },
   );
 
-  describe('keyboard event routing inside Cell UI', () => {
+  describe('keyboard event routing inside Tihoka UI', () => {
     beforeEach(() => {
-      mockIsInsideCellUi.mockReturnValue(true);
+      mockIsInsideTihokaUi.mockReturnValue(true);
       mockIsEditableEvent.mockReturnValue(false);
       mockIsActivatableTarget.mockReturnValue(false);
       mockHandleShortcutKey.mockReturnValue(null);
     });
 
     afterEach(() => {
-      mockIsInsideCellUi.mockReturnValue(false);
+      mockIsInsideTihokaUi.mockReturnValue(false);
       mockIsEditableEvent.mockReturnValue(false);
       mockIsActivatableTarget.mockReturnValue(false);
     });
 
-    it('non-input inside Cell UI still triggers a configured shortcut and stops host', async () => {
+    it('non-input inside Tihoka UI still triggers a configured shortcut and stops host', async () => {
       cleanup = init(video);
       await flushPromises();
 
@@ -806,7 +806,7 @@ describe('contentScriptController', () => {
       cleanupCalled = true;
     });
 
-    it('typing in an input inside Cell UI does not trigger shortcuts or stop the event', async () => {
+    it('typing in an input inside Tihoka UI does not trigger shortcuts or stop the event', async () => {
       cleanup = init(video);
       await flushPromises();
 
@@ -826,7 +826,7 @@ describe('contentScriptController', () => {
       cleanupCalled = true;
     });
 
-    it('unhandled key inside Cell UI stops host without preventDefault', async () => {
+    it('unhandled key inside Tihoka UI stops host without preventDefault', async () => {
       cleanup = init(video);
       await flushPromises();
 
@@ -842,14 +842,14 @@ describe('contentScriptController', () => {
       cleanupCalled = true;
     });
 
-    it('key-capture controls inside Cell UI receive every key untouched', async () => {
+    it('key-capture controls inside Tihoka UI receive every key untouched', async () => {
       cleanup = init(video);
       await flushPromises();
 
       mockHandleShortcutKey.mockReturnValue('toggle-overlay' as ReturnType<typeof handleShortcutKey>);
 
       const captureEl = document.createElement('button');
-      captureEl.setAttribute('data-cell-keycapture', '');
+      captureEl.setAttribute('data-tihoka-keycapture', '');
       document.body.appendChild(captureEl);
 
       const event = new KeyboardEvent('keydown', { key: 'w', bubbles: true, cancelable: true });
@@ -871,7 +871,7 @@ describe('contentScriptController', () => {
       await flushPromises();
 
       const captureEl = document.createElement('button');
-      captureEl.setAttribute('data-cell-keycapture', '');
+      captureEl.setAttribute('data-tihoka-keycapture', '');
       document.body.appendChild(captureEl);
 
       const event = new KeyboardEvent('keyup', { key: 'w', bubbles: true, cancelable: true });
@@ -906,7 +906,7 @@ describe('contentScriptController', () => {
       cleanupCalled = true;
     });
 
-    it('keyup inside Cell UI editable does not trigger shortcuts', async () => {
+    it('keyup inside Tihoka UI editable does not trigger shortcuts', async () => {
       cleanup = init(video);
       await flushPromises();
 
@@ -925,7 +925,7 @@ describe('contentScriptController', () => {
       cleanupCalled = true;
     });
 
-    it('keyup configured shortcut inside Cell UI stops without re-executing', async () => {
+    it('keyup configured shortcut inside Tihoka UI stops without re-executing', async () => {
       cleanup = init(video);
       await flushPromises();
 

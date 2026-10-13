@@ -32,7 +32,7 @@ export function PracticeOptions({
   onPlaybackSpeedChange,
 }: PracticeOptionsProps): React.JSX.Element {
   return (
-    <VStack className={styles.practiceOptions} data-cell-id="practice-options" gap="2">
+    <VStack className={styles.practiceOptions} data-tihoka-id="practice-options" gap="2">
       <HStack align="center" gap="2" className={styles.row} role="radiogroup" aria-label={t('studyModes.practice.optionsAria')}>
         <Text variant="label" color="secondary" className={styles.eyebrow} as="span">
           {t('studyModes.practice.title')}
@@ -45,7 +45,7 @@ export function PracticeOptions({
               size="sm"
               selected={mode === candidate}
               ripple={false}
-              data-cell-id={`practice-mode-${candidate}`}
+              data-tihoka-id={`practice-mode-${candidate}`}
               role="radio"
               aria-checked={mode === candidate}
               aria-pressed={undefined}
@@ -64,7 +64,7 @@ export function PracticeOptions({
         <div className={styles.speedSelect}>
           <Select
             id="practice-speed"
-            data-cell-id="practice-speed"
+            data-tihoka-id="practice-speed"
             aria-label={t('studyModes.speed.aria')}
             size="sm"
             value={String(playbackSpeed)}

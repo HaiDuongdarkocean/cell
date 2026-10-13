@@ -45,8 +45,8 @@ afterAll(() => {
 
 describe('srsDatabase', () => {
   describe('getSrsDbName', () => {
-    it('returns cell-srs-{hash}', async () => {
-      await expect(getSrsDbName()).resolves.toBe('cell-srs-devmode0');
+    it('returns Tihoka-srs-{hash}', async () => {
+      await expect(getSrsDbName()).resolves.toBe('Tihoka-srs-devmode0');
     });
   });
 

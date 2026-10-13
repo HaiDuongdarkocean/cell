@@ -50,8 +50,8 @@ export function OverlayPreview({
   const toolbarStyle = buildClusterCssVars(clusterSettings);
 
   return (
-    <div className={styles.frame} data-cell-id="overlay-preview">
-      <div className={styles.overlayRoot} style={rootStyle} data-cell-id="overlay-preview-root">
+    <div className={styles.frame} data-tihoka-id="overlay-preview">
+      <div className={styles.overlayRoot} style={rootStyle} data-tihoka-id="overlay-preview-root">
         <div className={styles.navLayer}>
           <NavCluster
             collapsed={false}
@@ -78,7 +78,7 @@ export function OverlayPreview({
           />
         </div>
 
-        <div className={styles.clusterRight} style={toolbarStyle} data-cell-id="overlay-preview-toolbar">
+        <div className={styles.clusterRight} style={toolbarStyle} data-tihoka-id="overlay-preview-toolbar">
           <div className={styles.primaryCol}>
             <Button shape="circle" variant="overlay" aria-label={t('subtitle.toolbar.quickAdd')} size="sm" onClick={noop}>
               <Icon name="zap"  />

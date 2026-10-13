@@ -101,7 +101,7 @@ export function CleanupRulesSection({ setting, onChange }: CleanupRulesSectionPr
             variant="ghost"
             leadingIcon={<Icon name="pencil" size="xs" />}
             onClick={() => openEdit(rule)}
-            data-cell-id={`edit-rule-${rule.id}`}
+            data-tihoka-id={`edit-rule-${rule.id}`}
           >
             {t('settings.profiles.menu.edit')}
           </Button>
@@ -110,7 +110,7 @@ export function CleanupRulesSection({ setting, onChange }: CleanupRulesSectionPr
             variant="ghost"
             leadingIcon={<Icon name="trash" size="xs" />}
             onClick={() => setDeleteId(rule.id)}
-            data-cell-id={`delete-rule-${rule.id}`}
+            data-tihoka-id={`delete-rule-${rule.id}`}
           >
             {t('settings.profiles.menu.delete')}
           </Button>
@@ -136,7 +136,7 @@ export function CleanupRulesSection({ setting, onChange }: CleanupRulesSectionPr
           onClick={openAdd}
           className={styles.addButton}
           disabled={atLimit}
-          data-cell-id="add-cleanup-rule"
+          data-tihoka-id="add-cleanup-rule"
         >
           {t('cleanup.addRule')}
         </Button>
@@ -153,13 +153,13 @@ export function CleanupRulesSection({ setting, onChange }: CleanupRulesSectionPr
         open={editorOpen}
         onOpenChange={setEditorOpen}
         title={editingId ? t('cleanup.editDialog.title') : t('cleanup.addDialog.title')}
-        data-cell-id="cleanup-rule-editor"
+        data-tihoka-id="cleanup-rule-editor"
         footer={
           <>
-            <Button variant="ghost" size="sm" onClick={() => setEditorOpen(false)} data-cell-id="cleanup-rule-cancel">
+            <Button variant="ghost" size="sm" onClick={() => setEditorOpen(false)} data-tihoka-id="cleanup-rule-cancel">
               {t('settings.profiles.form.cancel')}
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={Boolean(errors.name || errors.pattern || errors.replacement)} data-cell-id="cleanup-rule-save">
+            <Button size="sm" onClick={handleSave} disabled={Boolean(errors.name || errors.pattern || errors.replacement)} data-tihoka-id="cleanup-rule-save">
               {t('settings.profiles.form.save')}
             </Button>
           </>
@@ -177,7 +177,7 @@ export function CleanupRulesSection({ setting, onChange }: CleanupRulesSectionPr
               placeholder={t('cleanup.field.namePlaceholder')}
               error={Boolean(shownErrors.name)}
               errorMessage={shownErrors.name ? t(shownErrors.name.key, shownErrors.name.params) : undefined}
-              data-cell-id="cleanup-rule-name"
+              data-tihoka-id="cleanup-rule-name"
             />
           </FormGroup>
           <FormGroup label={t('cleanup.field.description')} htmlFor="cleanup-rule-desc">
@@ -186,7 +186,7 @@ export function CleanupRulesSection({ setting, onChange }: CleanupRulesSectionPr
               value={draft.description}
               onChange={(e) => setDraft({ ...draft, description: e.target.value })}
               placeholder={t('cleanup.field.descPlaceholder')}
-              data-cell-id="cleanup-rule-desc"
+              data-tihoka-id="cleanup-rule-desc"
             />
           </FormGroup>
           <FormGroup label={t('cleanup.field.pattern')} required htmlFor="cleanup-rule-pattern">
@@ -200,7 +200,7 @@ export function CleanupRulesSection({ setting, onChange }: CleanupRulesSectionPr
               placeholder={t('cleanup.field.patternPlaceholder')}
               error={Boolean(shownErrors.pattern)}
               errorMessage={shownErrors.pattern ? t(shownErrors.pattern.key, shownErrors.pattern.params) : undefined}
-              data-cell-id="cleanup-rule-pattern"
+              data-tihoka-id="cleanup-rule-pattern"
             />
           </FormGroup>
           <FormGroup label={t('cleanup.field.replacement')} htmlFor="cleanup-rule-replacement">
@@ -214,7 +214,7 @@ export function CleanupRulesSection({ setting, onChange }: CleanupRulesSectionPr
               placeholder={t('cleanup.field.replacementPlaceholder')}
               error={Boolean(shownErrors.replacement)}
               errorMessage={shownErrors.replacement ? t(shownErrors.replacement.key, shownErrors.replacement.params) : undefined}
-              data-cell-id="cleanup-rule-replacement"
+              data-tihoka-id="cleanup-rule-replacement"
             />
           </FormGroup>
         </VStack>
@@ -227,13 +227,13 @@ export function CleanupRulesSection({ setting, onChange }: CleanupRulesSectionPr
         }}
         title={t('cleanup.deleteDialog.title')}
         description={deleting ? t('cleanup.deleteDialog.description', [deleting.name]) : undefined}
-        data-cell-id="cleanup-rule-delete-dialog"
+        data-tihoka-id="cleanup-rule-delete-dialog"
         footer={
           <>
-            <Button variant="ghost" size="sm" onClick={() => setDeleteId(null)} data-cell-id="cleanup-rule-delete-cancel">
+            <Button variant="ghost" size="sm" onClick={() => setDeleteId(null)} data-tihoka-id="cleanup-rule-delete-cancel">
               {t('settings.profiles.form.cancel')}
             </Button>
-            <Button variant="destructive" size="sm" onClick={handleDelete} data-cell-id="cleanup-rule-delete-ok">
+            <Button variant="destructive" size="sm" onClick={handleDelete} data-tihoka-id="cleanup-rule-delete-ok">
               {t('settings.profiles.menu.delete')}
             </Button>
           </>

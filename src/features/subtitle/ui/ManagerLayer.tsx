@@ -122,7 +122,7 @@ export function ManagerLayer({
             () => undefined,
           );
         }}
-        data-cell-id="subtitle-manager-layer"
+        data-tihoka-id="subtitle-manager-layer"
       >
         <SubtitleManagerPanel {...managerProps} inSheet />
       </Sheet>
@@ -132,7 +132,7 @@ export function ManagerLayer({
   return (
     <div
       className={sharedStyles.panelLayer}
-      data-cell-id="subtitle-manager-layer"
+      data-tihoka-id="subtitle-manager-layer"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

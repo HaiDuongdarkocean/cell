@@ -1,6 +1,6 @@
-// srsDatabase — IndexedDB bootstrap cho Ocean SRS (cell-srs-{hash}).
+// srsDatabase — IndexedDB bootstrap cho Ocean SRS (Tihoka-srs-{hash}).
 //
-// DB name: cell-srs-{hash}. Singleton getSrsDB() với cache per runtime.
+// DB name: Tihoka-srs-{hash}. Singleton getSrsDB() với cache per runtime.
 // V1 schema version = 1. onupgradeneeded create-all.
 
 import { getDbHash } from '@/shared/lib/storage/dbHash';
@@ -44,7 +44,7 @@ const dbCache = new Map<string, IDBDatabase>();
 /** Get DB name for the current runtime hash. */
 export async function getSrsDbName(): Promise<string> {
   const hash = await getDbHash();
-  return `cell-srs-${hash}`;
+  return `Tihoka-srs-${hash}`;
 }
 
 /** Open (or return cached) SRS IndexedDB connection. */

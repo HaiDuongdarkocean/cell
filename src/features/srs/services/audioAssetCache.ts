@@ -1,11 +1,7 @@
-import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
-import { MESSAGE_TYPES } from '@/shared/config/messages';
-import type { MessageResponse } from '@/entities/message/types';
-import type { TtsFetchAudioResponse } from '@/entities/dictionary';
 import type { PronunciationSettings } from '@/entities/settings/types';
 import type { SrsAudioAsset } from '@/entities/srs/types';
 import { generateId } from '@/features/srs/lib/helpers';
-import { PronunciationAudioOrchestrator } from '@/features/pronunciation';
+import { PronunciationAudioOrchestrator, resolveSentenceAudioItems } from '@/features/pronunciation';
 import { getAudioAssetsByNote, putAudioAsset } from '@/features/srs/repositories/audioAssetRepository';
 import { evictAudioIfNeeded, touchAudioAsset } from './quotaManager';
 import { fetchMediaAsArrayBuffer } from './fetchMedia';
@@ -95,7 +91,8 @@ export async function fetchAndCacheWordAudio(
   return storeAudioAsset(noteId, fieldId, bytes, mime, source);
 }
 
-/** Fetch sentence audio through the TTS fallback and store it. */
+/** Fetch sentence audio through the pronunciation chain (cloud voices +
+ *  browser voice only) and store it. */
 export async function fetchAndCacheSentenceAudio(
   noteId: string,
   fieldId: string,
@@ -105,12 +102,13 @@ export async function fetchAndCacheSentenceAudio(
   const cached = await getCachedAudioAsset(noteId, fieldId);
   if (cached) return cached;
 
-  const res = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
-    type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
-    payload: { tabId: 0, text, langCode },
-  });
-  if (!res?.success || !res.data?.url) return undefined;
+  const items = await resolveSentenceAudioItems(text, langCode);
+  const selected = items[0];
+  if (!selected || (!selected.audioBytes && !selected.url)) return undefined;
 
-  const bytes = await fetchMediaAsArrayBuffer(res.data.url);
-  return storeAudioAsset(noteId, fieldId, bytes, 'audio/mpeg', 'tts');
+  const bytes = selected.audioBytes
+    ? selected.audioBytes.slice().buffer
+    : await fetchMediaAsArrayBuffer(selected.url!);
+  const mime = selected.audioBytes ? 'audio/wav' : makeSrsMimeType('tts', '');
+  return storeAudioAsset(noteId, fieldId, bytes, mime, 'tts');
 }

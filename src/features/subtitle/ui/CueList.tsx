@@ -2,8 +2,9 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import type { ClickModifierState, WordStatus } from '@/entities/dictionary';
+import type { AnnotationDisplayMode } from '@/entities/settings';
 import type { Token } from '@/features/tokenize';
-import { onDictionaryChanged, onWordStatusChanged } from '@/features/dictionary';
+import { isNotKnown, onDictionaryChanged, onWordStatusChanged } from '@/features/dictionary';
 import { getWordTranslations } from '@/features/translate';
 import { getSrsCardTermSet, invalidateSrsCardTermSet, onSrsCardsChanged } from '@/features/srs';
 import {
@@ -109,10 +110,10 @@ export interface CueListTokenize {
   onTokenCtrlClick?: (term: string) => void;
   /** Live bulk-selection set shared with the owning controller. */
   selection?: CueListTokenSelection;
-  /** Profile `showReadings` — fetch + render reading caps on word tokens. */
-  showReadings?: boolean;
-  /** Profile `showWordTranslations` — fetch + render gloss lane under word tokens. */
-  showGlosses?: boolean;
+  /** Profile `readingDisplay` — fetch + render reading caps on word tokens. */
+  readingDisplay?: AnnotationDisplayMode;
+  /** Profile `glossDisplay` — fetch + render gloss lane under word tokens. */
+  glossDisplay?: AnnotationDisplayMode;
   /** Gloss destination language (`subtitleOverlayNativeLanguage`). */
   glossTargetLanguage?: string;
 }
@@ -145,6 +146,22 @@ interface CueListProps {
 
 const formatTimestamp = formatCueTimestamp;
 
+/** Map an annotation display mode onto the token's lane class. 'i1'/'unknown'
+ *  gate per-token eligibility; 'hover' defers visibility to CSS :hover. */
+function annotationClass(
+  mode: AnnotationDisplayMode,
+  eligible: boolean,
+  offClass: string,
+  hoverClass: string,
+): string {
+  switch (mode) {
+    case 'always': return '';
+    case 'hover': return hoverClass;
+    case 'off': return offClass;
+    default: return eligible ? '' : offClass;
+  }
+}
+
 const CueTokenText = memo(function CueTokenText({
   text,
   tokens,
@@ -153,8 +170,8 @@ const CueTokenText = memo(function CueTokenText({
   onTokenHover,
   onTokenCtrlClick,
   selectedTerms,
-  showReadings = false,
-  showGlosses = false,
+  readingDisplay = 'off',
+  glossDisplay = 'off',
   resolving = false,
 }: {
   text: string;
@@ -164,8 +181,8 @@ const CueTokenText = memo(function CueTokenText({
   onTokenHover?: (term: string | null) => void;
   onTokenCtrlClick?: (term: string) => void;
   selectedTerms?: ReadonlySet<string>;
-  showReadings?: boolean;
-  showGlosses?: boolean;
+  readingDisplay?: AnnotationDisplayMode;
+  glossDisplay?: AnnotationDisplayMode;
   resolving?: boolean;
 }) {
   const marked = markedTokenIndexes(tokens);
@@ -185,40 +202,43 @@ const CueTokenText = memo(function CueTokenText({
       children.push(
         <span
           key={`gap-${token.start}`}
-          className="js-cell-token js-cell-token--separator"
-          data-cell-block-id={blockId}
-          data-cell-sentence={lastSentence}
+          className="js-Tihoka-token js-Tihoka-token--separator"
+          data-tihoka-block-id={blockId}
+          data-tihoka-sentence={lastSentence}
         >
           {text.slice(lastEnd, token.start)}
         </span>,
       );
     }
+    const notKnown = isNotKnown(token.status ?? 'unknown');
+    const readingEligible = readingDisplay === 'unknown' ? notKnown : marked.has(tokenIndex);
+    const glossEligible = glossDisplay === 'unknown' ? notKnown : marked.has(tokenIndex);
     children.push(
       <span
         key={`tok-${token.start}`}
         className={[
-          'js-cell-token',
-          'js-cell-token--word',
-          resolving ? 'js-cell-token--resolving' : '',
-          `js-cell-token--status-${token.status ?? 'unknown'}`,
+          'js-Tihoka-token',
+          'js-Tihoka-token--word',
+          resolving ? 'js-Tihoka-token--resolving' : '',
+          `js-Tihoka-token--status-${token.status ?? 'unknown'}`,
           token.frequencyBand && token.frequencyBand !== 'none'
-            ? `js-cell-token--frequency-${token.frequencyBand}`
+            ? `js-Tihoka-token--frequency-${token.frequencyBand}`
             : '',
-          selectedTerms?.has(token.term) ? 'js-cell-token--selected' : '',
-          token.hasCard ? 'js-cell-token--has-card' : '',
+          selectedTerms?.has(token.term) ? 'js-Tihoka-token--selected' : '',
+          token.hasCard ? 'js-Tihoka-token--has-card' : '',
           marked.has(tokenIndex) ? '' : IPLUS1_OFF_CLASS,
-          showReadings ? '' : 'js-cell-token--reading-off',
-          showGlosses ? '' : 'js-cell-token--gloss-off',
+          annotationClass(readingDisplay, readingEligible, 'js-Tihoka-token--reading-off', 'js-Tihoka-token--reading-hover'),
+          annotationClass(glossDisplay, glossEligible, 'js-Tihoka-token--gloss-off', 'js-Tihoka-token--gloss-hover'),
         ]
           .filter(Boolean)
           .join(' ')}
-        data-cell-term={token.term}
-        data-cell-block-id={blockId}
-        data-cell-sentence={token.sentenceIndex}
-        data-cell-start={token.start}
-        data-cell-end={token.end}
-        data-reading={showReadings ? token.reading : undefined}
-        data-gloss={showGlosses ? token.gloss || undefined : undefined}
+        data-tihoka-term={token.term}
+        data-tihoka-block-id={blockId}
+        data-tihoka-sentence={token.sentenceIndex}
+        data-tihoka-start={token.start}
+        data-tihoka-end={token.end}
+        data-reading={readingDisplay !== 'off' ? token.reading : undefined}
+        data-gloss={glossDisplay !== 'off' ? token.gloss || undefined : undefined}
         onClick={(event) => {
           if ((event.ctrlKey || event.metaKey) && onTokenCtrlClick) {
             event.preventDefault();
@@ -231,8 +251,8 @@ const CueTokenText = memo(function CueTokenText({
         onMouseEnter={onTokenHover ? () => onTokenHover(token.term) : undefined}
         onMouseLeave={onTokenHover ? () => onTokenHover(null) : undefined}
       >
-        <span className="js-cell-token-word">{token.text}</span>
-        <span className="js-cell-token-status" aria-hidden="true" />
+        <span className="js-Tihoka-token-word">{token.text}</span>
+        <span className="js-Tihoka-token-status" aria-hidden="true" />
       </span>,
     );
     lastEnd = token.end;
@@ -242,9 +262,9 @@ const CueTokenText = memo(function CueTokenText({
     children.push(
       <span
         key="tail"
-        className="js-cell-token js-cell-token--separator"
-        data-cell-block-id={blockId}
-        data-cell-sentence={lastSentence}
+        className="js-Tihoka-token js-Tihoka-token--separator"
+        data-tihoka-block-id={blockId}
+        data-tihoka-sentence={lastSentence}
       >
         {text.slice(lastEnd)}
       </span>,
@@ -334,16 +354,16 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   const tokenizeLangCode = tokenize?.langCode;
   const onTokenHover = tokenize?.onTokenHover;
   const selection = tokenize?.selection;
-  const showReadings = tokenize?.showReadings ?? false;
-  const showGlosses = tokenize?.showGlosses ?? false;
+  const readingDisplay = tokenize?.readingDisplay ?? 'off';
+  const glossDisplay = tokenize?.glossDisplay ?? 'off';
   const glossTargetLanguage = tokenize?.glossTargetLanguage;
   const [selectedTerms, setSelectedTerms] = useState<ReadonlySet<string>>(
     () => selection?.getTerms() ?? EMPTY_SELECTED_TERMS,
   );
   const lastCuesRef = useRef<readonly BilingualCue[] | null>(null);
   const lastLangCodeRef = useRef<string | null>(null);
-  const lastShowReadingsRef = useRef<boolean>(showReadings);
-  const lastShowGlossesRef = useRef<boolean>(showGlosses);
+  const lastReadingDisplayRef = useRef<AnnotationDisplayMode>(readingDisplay);
+  const lastGlossDisplayRef = useRef<AnnotationDisplayMode>(glossDisplay);
   const lastGlossTargetLanguageRef = useRef<string | undefined>(glossTargetLanguage);
   // Bumped when the dictionary corpus changes → full metadata re-resolve so
   // readings/frequency bands reflect imported/toggled resources.
@@ -419,8 +439,8 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       lastCuesRef.current === null ||
       !cuesAreEqual(visibleCues, lastCuesRef.current) ||
       tokenizeLangCode !== lastLangCodeRef.current ||
-      showReadings !== lastShowReadingsRef.current ||
-      showGlosses !== lastShowGlossesRef.current ||
+      readingDisplay !== lastReadingDisplayRef.current ||
+      glossDisplay !== lastGlossDisplayRef.current ||
       glossTargetLanguage !== lastGlossTargetLanguageRef.current ||
       dictEpoch !== lastDictEpochRef.current;
     if (scopeChanged) {
@@ -430,8 +450,8 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       glossPendingRef.current.clear();
       lastCuesRef.current = visibleCues;
       lastLangCodeRef.current = tokenizeLangCode;
-      lastShowReadingsRef.current = showReadings;
-      lastShowGlossesRef.current = showGlosses;
+      lastReadingDisplayRef.current = readingDisplay;
+      lastGlossDisplayRef.current = glossDisplay;
       lastGlossTargetLanguageRef.current = glossTargetLanguage;
       lastDictEpochRef.current = dictEpoch;
       coveredCueIndicesRef.current.clear();
@@ -463,7 +483,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       resolvingRef.current = true;
       setResolving(true);
       void resolveCueListTokenMetadata(chunkMap, tokenizeLangCode, {
-        includeReadings: showReadings,
+        includeReadings: readingDisplay !== 'off',
         includeGlosses: false,
         glossTargetLanguage,
         cache: resolveCache,
@@ -541,7 +561,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       if (chunkTimer !== undefined) clearTimeout(chunkTimer);
       if (idleHandle && typeof cancelIdleCallback === 'function') cancelIdleCallback(idleHandle);
     };
-  }, [visibleCues, renderedCues, tokenizeLangCode, showReadings, showGlosses, glossTargetLanguage, dictEpoch, currentCueIndex]);
+  }, [visibleCues, renderedCues, tokenizeLangCode, readingDisplay, glossDisplay, glossTargetLanguage, dictEpoch, currentCueIndex]);
 
   useEffect(() => {
     if (resolvingRef.current || !onTokensResolved) return;
@@ -565,7 +585,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   }, [tokenMap, resolving, onTokensResolved]);
 
   useEffect(() => {
-    if (!tokenizeLangCode || !showGlosses || !glossTargetLanguage) return;
+    if (!tokenizeLangCode || glossDisplay === 'off' || !glossTargetLanguage) return;
     const cache = glossCacheRef.current;
     const pending = glossPendingRef.current;
     const needed = new Set<string>();
@@ -607,7 +627,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       .catch(() => {
         for (const term of needed) pending.delete(term);
       });
-  }, [tokenMap, vStart, vEnd, renderedCues, tokenizeLangCode, showGlosses, glossTargetLanguage]);
+  }, [tokenMap, vStart, vEnd, renderedCues, tokenizeLangCode, glossDisplay, glossTargetLanguage]);
 
   useEffect(() => {
     if (!virtualized) return;
@@ -765,7 +785,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
         ref={listRef}
         className={`${styles.list} ${desynced ? styles.listDesynced : ''}`}
         role="list"
-        data-cell-id="cue-list-scroll"
+        data-tihoka-id="cue-list-scroll"
         onScroll={handleListScroll}
       >
       {renderedCues.length === 0 && (
@@ -805,11 +825,11 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
               }
             }}
             role="listitem"
-            data-cell-id="cue-item"
+            data-tihoka-id="cue-item"
             data-cue-index={cue.index}
             data-cue-start={cue.start}
             data-cue-end={cue.end}
-            data-cell-ripple-self={mobile ? undefined : ''}
+            data-tihoka-ripple-self={mobile ? undefined : ''}
             onPointerDown={(event) => {
               if (!mobile && event.button === 0) spawnRipple(event.currentTarget, event.clientX, event.clientY);
             }}
@@ -826,8 +846,8 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                   onTokenHover={onTokenHover}
                   onTokenCtrlClick={tokenize.onTokenCtrlClick}
                   selectedTerms={selectedTerms}
-                  showReadings={tokenize?.showReadings ?? false}
-                  showGlosses={showGlosses}
+                  readingDisplay={readingDisplay}
+                  glossDisplay={glossDisplay}
                   resolving={resolving}
                 />
               ) : (
@@ -835,12 +855,12 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
               )
             }
             subtitle={showNative && cue.nativeText ? cue.nativeText : undefined}
-            textProps={mobile && isCurrent ? { 'data-cell-id': 'pm-cue-active-card' } : undefined}
+            textProps={mobile && isCurrent ? { 'data-tihoka-id': 'pm-cue-active-card' } : undefined}
             actions={
               <>
                 <button
                   type="button"
-                  data-cell-id="cue-timestamp"
+                  data-tihoka-id="cue-timestamp"
                   data-cue-index={cue.index}
                   data-no-lookup
                   onClick={() => {
@@ -860,7 +880,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                   <Button
                     variant="ghost"
                     size="xs"
-                    data-cell-id="cue-save"
+                    data-tihoka-id="cue-save"
                     data-cue-index={cue.index}
                     data-no-lookup
                     aria-label={t('queue.action.saveSentence')}
@@ -874,7 +894,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                   </Button>
                 )}
                 {mobile && isCurrent && cardActions && (
-                  <div className={styles.cardActions} data-cell-id="pm-card-actions">
+                  <div className={styles.cardActions} data-tihoka-id="pm-card-actions">
                     {cardActions}
                   </div>
                 )}
@@ -898,7 +918,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
           className={styles.syncPill}
           leadingIcon={<Icon name="crosshair" size="xs" />}
           onClick={() => resumeFollow(true)}
-          data-cell-id="cue-list-sync"
+          data-tihoka-id="cue-list-sync"
         >
           {t('cueList.syncToVideo')}
         </Button>

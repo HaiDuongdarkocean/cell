@@ -232,15 +232,15 @@ export function SubtitlePracticeSession({
     if (attempts.has(key)) {
       const attempt = attempts.get(key) ?? { draft: '', result: null };
       return mode === 'dictation' ? (
-        <DictationActiveCue cue={cue} draft={attempt.draft} result={attempt.result} showTranslation={translationEnabled} dataCellId="practice-history-cue" />
+        <DictationActiveCue cue={cue} draft={attempt.draft} result={attempt.result} showTranslation={translationEnabled} dataTihokaId="practice-history-cue" />
       ) : (
-        <ClozeActiveCue cue={cue} clozeDraft={attempt.draft} showTranslation={translationEnabled} dataCellId="practice-history-cue" />
+        <ClozeActiveCue cue={cue} clozeDraft={attempt.draft} showTranslation={translationEnabled} dataTihokaId="practice-history-cue" />
       );
     }
     return mode === 'dictation' ? (
-      <DictationActiveCue cue={cue} draft="" showTranslation={translationEnabled} dataCellId="practice-preview-cue" />
+      <DictationActiveCue cue={cue} draft="" showTranslation={translationEnabled} dataTihokaId="practice-preview-cue" />
     ) : (
-      <ClozeActiveCue cue={cue} clozeDraft="" showTranslation={translationEnabled} dataCellId="practice-preview-cue" />
+      <ClozeActiveCue cue={cue} clozeDraft="" showTranslation={translationEnabled} dataTihokaId="practice-preview-cue" />
     );
   };
 
@@ -251,7 +251,7 @@ export function SubtitlePracticeSession({
       : t('studyModes.practice.typeMissingMany', [blankCount]);
 
   return (
-    <div className={styles.session} data-cell-id="subtitle-practice" data-practice-mode={mode}>
+    <div className={styles.session} data-tihoka-id="subtitle-practice" data-practice-mode={mode}>
       <CueListComponent
         cues={cues}
         currentTimeMs={activeCue ? activeCue.start - offsetMs : currentTimeMs}
@@ -260,8 +260,8 @@ export function SubtitlePracticeSession({
         renderCueContent={renderCueContent}
         showNative={false}
       />
-      <div className={styles.footer} data-cell-id="practice-footer">
-        <div className={styles.shortcuts} data-cell-id="practice-shortcuts">
+      <div className={styles.footer} data-tihoka-id="practice-footer">
+        <div className={styles.shortcuts} data-tihoka-id="practice-shortcuts">
           <span><Kbd>Ctrl</Kbd> {t('studyModes.practice.hintReplay')}</span>
           <span><Kbd>Enter</Kbd> {t('studyModes.practice.hintNext')}</span>
           <span><Kbd>Shift+Enter</Kbd> {t('studyModes.practice.hintPrev')}</span>
@@ -273,7 +273,7 @@ export function SubtitlePracticeSession({
             variant="secondary"
             ripple={false}
             className={styles.navButton}
-            data-cell-id="practice-previous"
+            data-tihoka-id="practice-previous"
             aria-label={t('studyModes.practice.prevCue')}
             disabled={!activeCue}
             onClick={() => activeCue && onPrevious(activeCue)}
@@ -285,7 +285,7 @@ export function SubtitlePracticeSession({
             variant="secondary"
             ripple={false}
             className={styles.navButton}
-            data-cell-id="practice-replay"
+            data-tihoka-id="practice-replay"
             aria-label={t('studyModes.practice.replayCue')}
             disabled={!activeCue}
             onClick={() => activeCue && onReplay(activeCue)}
@@ -297,7 +297,7 @@ export function SubtitlePracticeSession({
               ref={inputRef}
               size="sm"
               className={styles.answerInput}
-              data-cell-id="practice-input"
+              data-tihoka-id="practice-input"
               aria-label={inputLabel}
               placeholder={mode === 'dictation' ? t('studyModes.practice.typeWhatYouHear') : inputLabel}
               maxLength={mode === 'dictation' ? DICTATION_MAX_LENGTH : CLOZE_MAX_LENGTH}
@@ -314,7 +314,7 @@ export function SubtitlePracticeSession({
             variant="secondary"
             ripple={false}
             className={styles.navButton}
-            data-cell-id="practice-next"
+            data-tihoka-id="practice-next"
             aria-label={t('studyModes.practice.nextCue')}
             disabled={!activeCue}
             onClick={() => activeCue && onContinue(activeCue)}

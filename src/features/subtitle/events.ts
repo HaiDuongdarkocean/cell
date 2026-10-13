@@ -1,6 +1,6 @@
 import type { SrtCue } from '@/entities/media/types';
 
-export const CELL_CUES_UPDATED = 'cell:cues:updated' as const;
+export const Tihoka_CUES_UPDATED = 'Tihoka:cues:updated' as const;
 
 export interface CuesUpdatedDetail {
   /** Target language cues for the active video. */
@@ -19,11 +19,11 @@ export interface CuesUpdatedDetail {
 export type CuesUpdatedEvent = CustomEvent<CuesUpdatedDetail>;
 
 /**
- * Helper to dispatch a `cell:cues:updated` event from any target.
+ * Helper to dispatch a `Tihoka:cues:updated` event from any target.
  */
 export function dispatchCuesUpdated(
   target: EventTarget,
   detail: CuesUpdatedDetail,
 ): void {
-  target.dispatchEvent(new CustomEvent<CuesUpdatedDetail>(CELL_CUES_UPDATED, { detail }));
+  target.dispatchEvent(new CustomEvent<CuesUpdatedDetail>(Tihoka_CUES_UPDATED, { detail }));
 }

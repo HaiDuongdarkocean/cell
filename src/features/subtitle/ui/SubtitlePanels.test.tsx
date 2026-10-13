@@ -7,11 +7,11 @@ let navClusterRenders = 0;
 jest.mock('./NavCluster', () => ({
   NavCluster: () => {
     navClusterRenders += 1;
-    return <div data-cell-id="nav-cluster-mock" />;
+    return <div data-tihoka-id="nav-cluster-mock" />;
   },
 }));
-jest.mock('./SubtitleBlock', () => ({ SubtitleBlock: () => <div data-cell-id="subtitle-block-mock" /> }));
-jest.mock('./ClusterRightToolbar', () => ({ ClusterRightToolbar: () => <div data-cell-id="right-toolbar-mock" /> }));
+jest.mock('./SubtitleBlock', () => ({ SubtitleBlock: () => <div data-tihoka-id="subtitle-block-mock" /> }));
+jest.mock('./ClusterRightToolbar', () => ({ ClusterRightToolbar: () => <div data-tihoka-id="right-toolbar-mock" /> }));
 jest.mock('./OffsetLayer', () => ({ OffsetLayer: () => null }));
 jest.mock('./SubtitleToast', () => ({ SubtitleToast: () => null }));
 jest.mock('./SubtitleHint', () => ({ SubtitleHint: () => null }));
@@ -19,14 +19,14 @@ let mockPanelProps: { currentTimeMs?: number } | null = null;
 jest.mock('./SubtitlePanel', () => ({
   SubtitlePanel: (props: { currentTimeMs?: number }) => {
     mockPanelProps = props;
-    return <div data-cell-id="subtitle-panel-mock" />;
+    return <div data-tihoka-id="subtitle-panel-mock" />;
   },
 }));
 let mockChromeProps: Record<string, unknown> | null = null;
 jest.mock('./MobileCueChrome', () => ({
   MobileCueChrome: (props: Record<string, unknown>) => {
     mockChromeProps = props;
-    return <div data-cell-id="mobile-cue-chrome" />;
+    return <div data-tihoka-id="mobile-cue-chrome" />;
   },
 }));
 let mockPmProps: {
@@ -37,11 +37,11 @@ let mockPmProps: {
 jest.mock('./PlayerModeLayer', () => ({
   PlayerModeLayer: (props: { cueListOpen: boolean; onCueListOpenChange: (open: boolean) => void; currentTimeMs?: number }) => {
     mockPmProps = props;
-    return <div data-cell-id="pm-layer" />;
+    return <div data-tihoka-id="pm-layer" />;
   },
 }));
 jest.mock('./ManagerLayer', () => ({
-  ManagerLayer: () => <div data-cell-id="subtitle-manager-layer" />,
+  ManagerLayer: () => <div data-tihoka-id="subtitle-manager-layer" />,
 }));
 
 jest.mock('./subtitlePlayerMode', () => ({

@@ -147,19 +147,19 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
         onOpenChange={handleCloseAttempt}
         title={isNew ? t('studyModes.builder.titleNew') : t('studyModes.builder.titleEdit')}
         hideDragHandle
-        data-cell-id="custom-mode-builder"
+        data-tihoka-id="custom-mode-builder"
         footer={
           <HStack gap="3" justify="between" className={styles.builderFooter}>
             {!isNew && (
-              <Button variant="destructive" size="sm" onClick={handleDeleteMode} data-cell-id="builder-delete">
+              <Button variant="destructive" size="sm" onClick={handleDeleteMode} data-tihoka-id="builder-delete">
                 {t('studyModes.builder.delete')}
               </Button>
             )}
             <HStack gap="3" className={styles.builderFooterRight}>
-              <Button variant="ghost" size="sm" onClick={handleCloseAttempt} data-cell-id="builder-cancel">
+              <Button variant="ghost" size="sm" onClick={handleCloseAttempt} data-tihoka-id="builder-cancel">
                 {t('studyModes.builder.cancel')}
               </Button>
-              <Button size="sm" onClick={handleSave} data-cell-id="builder-save">
+              <Button size="sm" onClick={handleSave} data-tihoka-id="builder-save">
                 {t('studyModes.builder.save')}
               </Button>
             </HStack>
@@ -174,7 +174,7 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t('studyModes.builder.namePlaceholder')}
               maxLength={50}
-              data-cell-id="builder-title-input"
+              data-tihoka-id="builder-title-input"
             />
           </FormGroup>
           <FormGroup label={t('studyModes.builder.descLabel')} htmlFor={descId}>
@@ -184,7 +184,7 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t('studyModes.builder.descPlaceholder')}
               maxLength={120}
-              data-cell-id="builder-desc-input"
+              data-tihoka-id="builder-desc-input"
             />
           </FormGroup>
           {errorKey && (
@@ -224,17 +224,17 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
           onOpenChange={setDiscardOpen}
           title={t('studyModes.builder.discardTitle')}
           description={t('studyModes.builder.discardDesc')}
-          data-cell-id="builder-discard-dialog"
+          data-tihoka-id="builder-discard-dialog"
           footer={
             <HStack gap="3" justify="end">
-              <Button variant="ghost" size="sm" onClick={() => setDiscardOpen(false)} data-cell-id="builder-discard-cancel">
+              <Button variant="ghost" size="sm" onClick={() => setDiscardOpen(false)} data-tihoka-id="builder-discard-cancel">
                 {t('studyModes.builder.cancel')}
               </Button>
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={() => { setDiscardOpen(false); onOpenChange(false); }}
-                data-cell-id="builder-discard-ok"
+                data-tihoka-id="builder-discard-ok"
               >
                 {t('studyModes.builder.discardConfirm')}
               </Button>

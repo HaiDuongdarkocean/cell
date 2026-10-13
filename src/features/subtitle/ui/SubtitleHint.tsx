@@ -15,7 +15,7 @@ export function SubtitleHint({
   return (
     <div
       className={styles.hint}
-      data-cell-id="subtitle-hint"
+      data-tihoka-id="subtitle-hint"
       onClick={onClick}
       onKeyDown={(e) => {
         if ((e.key === 'Enter' || e.key === ' ') && onClick) {
@@ -26,7 +26,7 @@ export function SubtitleHint({
       role="button"
       tabIndex={0}
       aria-label={title}
-      data-cell-no-ripple
+      data-tihoka-no-ripple
     >
       <div className={styles.dashedBox}>
         <span className={styles.title}>{title}</span>

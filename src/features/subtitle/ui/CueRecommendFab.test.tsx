@@ -63,7 +63,7 @@ describe('CueRecommendFab', () => {
     expect(items).toHaveLength(5);
     const checked = items.filter((el) => el.getAttribute('aria-checked') === 'true');
     expect(checked).toHaveLength(1);
-    expect(checked[0].textContent).toContain('i+1');
+    expect(checked[0].textContent).toContain('One new word');
     expect(checked[0].textContent).toContain('4');
     expect(screen.getByTestId('cue-filter-fab')).toHaveAttribute('aria-expanded', 'true');
   });

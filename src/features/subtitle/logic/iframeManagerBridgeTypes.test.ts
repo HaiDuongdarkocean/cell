@@ -3,7 +3,7 @@
  *
  * Co-located with iframeManagerBridgeTypes.ts (repo convention).
  * Covers:
- *  - Message constants all share the __CELL_MANAGER_ prefix
+ *  - Message constants all share the __Tihoka_MANAGER_ prefix
  *  - SerializedManagerState is JSON-serializable
  *  - SerializedAppearanceState is JSON-serializable
  *  - ManagerAction covers all 14 action types
@@ -26,13 +26,13 @@ import type {
 
 describe('iframeManagerBridgeTypes', () => {
   describe('message constants', () => {
-    it('all constants start with __CELL_MANAGER_', () => {
-      expect(MGR_OPEN_MSG).toMatch(/^__CELL_MANAGER_/);
-      expect(MGR_CLOSE_MSG).toMatch(/^__CELL_MANAGER_/);
-      expect(MGR_STATE_MSG).toMatch(/^__CELL_MANAGER_/);
-      expect(MGR_ACTION_MSG).toMatch(/^__CELL_MANAGER_/);
-      expect(MGR_OPENED_MSG).toMatch(/^__CELL_MANAGER_/);
-      expect(MGR_CLOSED_MSG).toMatch(/^__CELL_MANAGER_/);
+    it('all constants start with __Tihoka_MANAGER_', () => {
+      expect(MGR_OPEN_MSG).toMatch(/^__Tihoka_MANAGER_/);
+      expect(MGR_CLOSE_MSG).toMatch(/^__Tihoka_MANAGER_/);
+      expect(MGR_STATE_MSG).toMatch(/^__Tihoka_MANAGER_/);
+      expect(MGR_ACTION_MSG).toMatch(/^__Tihoka_MANAGER_/);
+      expect(MGR_OPENED_MSG).toMatch(/^__Tihoka_MANAGER_/);
+      expect(MGR_CLOSED_MSG).toMatch(/^__Tihoka_MANAGER_/);
     });
   });
 

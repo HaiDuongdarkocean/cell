@@ -169,12 +169,12 @@ export function MobileCueChrome({
   // remount-safe and self-restoring when the attribute is removed.
   useEffect(() => {
     const root = document.documentElement;
-    root.setAttribute('data-cell-player-mode-mobile', 'true');
+    root.setAttribute('data-tihoka-player-mode-mobile', 'true');
     const bar = bottomBarRef.current?.offsetHeight ?? 0;
     const row = anchorRowRef.current?.offsetHeight ?? 0;
     root.style.setProperty('--pm-anchor-bottom', `${Math.round(bar + row / 2)}px`);
     return () => {
-      root.removeAttribute('data-cell-player-mode-mobile');
+      root.removeAttribute('data-tihoka-player-mode-mobile');
       root.style.removeProperty('--pm-anchor-bottom');
     };
   }, [cueListOpen, cues]);
@@ -206,7 +206,7 @@ export function MobileCueChrome({
           const badgeTop = badgeCy - size / 2;
           const badgeBottom = badgeCy + size / 2;
           const railRect = anchorRowRef.current
-            ?.querySelector<HTMLElement>('[data-cell-id="player-mode-actions"]')
+            ?.querySelector<HTMLElement>('[data-tihoka-id="player-mode-actions"]')
             ?.getBoundingClientRect();
           const railTop = railRect?.top ?? 0;
           const fabZoneTop = railTop - (railRect?.height ?? 0) - FAB_GAP_PX;
@@ -243,7 +243,7 @@ export function MobileCueChrome({
             elevation="low"
             aria-label={t('subtitle.toolbar.quickAdd')}
             title={t('subtitle.toolbar.quickAddTitle')}
-            data-cell-id="quick-add-btn"
+            data-tihoka-id="quick-add-btn"
             onClick={onQuickAdd}
           >
             <Icon name="zap" />
@@ -256,7 +256,7 @@ export function MobileCueChrome({
             elevation="low"
             aria-label={t('subtitle.toolbar.editCard')}
             title={t('subtitle.toolbar.editCardTitle')}
-            data-cell-id="edit-card-btn"
+            data-tihoka-id="edit-card-btn"
             onClick={onEditCard}
           >
             <Icon name="pencil" />
@@ -275,10 +275,10 @@ export function MobileCueChrome({
     >
       <div
         className={`${styles.pmCueWrap} ${!cueListOpen || !onSeek ? styles.pmCueWrapCollapsed : ''}`}
-        data-cell-split-view="panel"
+        data-tihoka-split-view="panel"
       >
         {cueListOpen && onSeek && (
-          <div className={styles.pmCueRegion} data-cell-id="pm-cue-region">
+          <div className={styles.pmCueRegion} data-tihoka-id="pm-cue-region">
             <SubtitlePanel
               cues={cues ?? []}
               currentTimeMs={currentTimeMs ?? 0}
@@ -307,22 +307,22 @@ export function MobileCueChrome({
             />
           </div>
         )}
-        <div className={styles.anchorBand} data-cell-id="pm-anchor-band">
-          <div className={styles.anchorRow} ref={anchorRowRef} data-cell-id="pm-anchor-row">
+        <div className={styles.anchorBand} data-tihoka-id="pm-anchor-band">
+          <div className={styles.anchorRow} ref={anchorRowRef} data-tihoka-id="pm-anchor-row">
             {onToggleManager && (
               <Button
                 variant="neutralSubtle"
                 size="md"
                 aria-label={t('subtitle.toolbar.openManager')}
                 title={t('subtitle.toolbar.openManager')}
-                data-cell-id="manager-toggle-btn"
+                data-tihoka-id="manager-toggle-btn"
                 onClick={onToggleManager}
               >
                 <Icon name="captions" />
               </Button>
             )}
-            <div className={styles.pmRail} data-cell-id="player-mode-actions">
-              <div ref={setFabSlot} data-cell-id="pm-fab-slot" />
+            <div className={styles.pmRail} data-tihoka-id="player-mode-actions">
+              <div ref={setFabSlot} data-tihoka-id="pm-fab-slot" />
               {onGenerateNative && (
                 <Button
                   variant="neutralSubtle"
@@ -330,7 +330,7 @@ export function MobileCueChrome({
                   elevation="low"
                   aria-label={t('subtitle.toolbar.generateNative')}
                   title={t('subtitle.toolbar.generateNativeTitle')}
-                  data-cell-id="generate-native-btn"
+                  data-tihoka-id="generate-native-btn"
                   onClick={onGenerateNative}
                   disabled={!generateNativeEnabled}
                 >
@@ -345,7 +345,7 @@ export function MobileCueChrome({
       <nav
         className={styles.bottomBar}
         ref={bottomBarRef}
-        data-cell-id="pm-bottom-bar"
+        data-tihoka-id="pm-bottom-bar"
         aria-label={t('subtitle.playerMode.menuLabel')}
       >
         <div className={styles.barEdge}>
@@ -354,20 +354,20 @@ export function MobileCueChrome({
             size="md"
             aria-label={exitLabel}
             title={exitTitle ?? exitLabel}
-            data-cell-id="player-mode-exit-btn"
+            data-tihoka-id="player-mode-exit-btn"
             onClick={onExit}
           >
             <Icon name="x" />
           </Button>
         </div>
-        <div className={styles.transport} data-cell-id="nav-cluster">
+        <div className={styles.transport} data-tihoka-id="nav-cluster">
           {hasCues
             ? onPrev && (
                 <Button
                   variant="primarySubtle"
                   size="md"
                   aria-label={t('settings.shortcuts.action.prevCue')}
-                  data-cell-id="nav-prev"
+                  data-tihoka-id="nav-prev"
                   onClick={onPrev}
                 >
                   <Icon name={NAV_CLUSTER_ICONS.prev} />
@@ -378,7 +378,7 @@ export function MobileCueChrome({
                   variant="primarySubtle"
                   size="md"
                   aria-label={t('subtitle.nav.rewind')}
-                  data-cell-id="nav-rewind"
+                  data-tihoka-id="nav-rewind"
                   onClick={onRewind}
                 >
                   <Icon name={NAV_CLUSTER_ICONS.rewind} />
@@ -389,7 +389,7 @@ export function MobileCueChrome({
               variant="primarySubtle"
               size="md"
               aria-label={repeatActive ? t('subtitle.nav.repeatCancel') : repeatLabel ?? t('player.nav.repeat')}
-              data-cell-id="nav-repeat"
+              data-tihoka-id="nav-repeat"
               active={repeatActive}
               onClick={onRepeat}
             >
@@ -401,7 +401,7 @@ export function MobileCueChrome({
               variant="primarySubtle"
               size="md"
               aria-label={isPlaying ? t('subtitle.nav.pause') : t('subtitle.nav.play')}
-              data-cell-id="nav-play"
+              data-tihoka-id="nav-play"
               onClick={onPlayPause}
             >
               <Icon name={isPlaying ? NAV_CLUSTER_ICONS.pause : NAV_CLUSTER_ICONS.play} />
@@ -413,7 +413,7 @@ export function MobileCueChrome({
                   variant="primarySubtle"
                   size="md"
                   aria-label={t('settings.shortcuts.action.nextCue')}
-                  data-cell-id="nav-next"
+                  data-tihoka-id="nav-next"
                   onClick={onNext}
                 >
                   <Icon name={NAV_CLUSTER_ICONS.next} />
@@ -424,7 +424,7 @@ export function MobileCueChrome({
                   variant="primarySubtle"
                   size="md"
                   aria-label={t('subtitle.nav.forward')}
-                  data-cell-id="nav-forward"
+                  data-tihoka-id="nav-forward"
                   onClick={onForward}
                 >
                   <Icon name={NAV_CLUSTER_ICONS.forward} />
@@ -438,7 +438,7 @@ export function MobileCueChrome({
             aria-label={t('subtitle.playerMode.more')}
             aria-haspopup="dialog"
             aria-expanded={moreMenuOpen}
-            data-cell-id="pm-more-btn"
+            data-tihoka-id="pm-more-btn"
             onClick={() => setMoreMenuOpen((v) => !v)}
           >
             <Icon name="ellipsis" />
@@ -451,7 +451,7 @@ export function MobileCueChrome({
         onClose={closeMoreMenu}
         aria-label={t('subtitle.playerMode.menuLabel')}
         initialHeight={Math.round(window.innerHeight * SHEET_HEIGHT_RATIO)}
-        data-cell-id="pm-more-menu"
+        data-tihoka-id="pm-more-menu"
         footer={
           <PlaybackSpeedStepper
             value={playbackSpeed ?? 1}
@@ -464,7 +464,7 @@ export function MobileCueChrome({
           {onToggleCueList && (
             <MenuItem
               icon={<Icon name="sidePanel" />}
-              data-cell-id="panel-toggle-btn"
+              data-tihoka-id="panel-toggle-btn"
               onSelect={() => { onToggleCueList(); closeMoreMenu(); }}
             >
               {cueListOpen ? t('subtitle.playerMode.hideCueList') : t('subtitle.playerMode.showCueList')}
@@ -474,7 +474,7 @@ export function MobileCueChrome({
             <MenuItem
               icon={<Icon name="scanText" />}
               selected={ocrEnabled}
-              data-cell-id="ocr-toggle-btn"
+              data-tihoka-id="ocr-toggle-btn"
               onSelect={() => { onToggleOcr(); closeMoreMenu(); }}
             >
               {ocrEnabled ? t('subtitle.toolbar.disableOcr') : t('subtitle.toolbar.enableOcr')}
@@ -484,7 +484,7 @@ export function MobileCueChrome({
             <MenuItem
               icon={<Icon name={interactionLocked ? 'lock' : 'lockOpen'} />}
               selected={interactionLocked}
-              data-cell-id="interaction-lock-btn"
+              data-tihoka-id="interaction-lock-btn"
               onSelect={() => { onToggleInteractionLock(); closeMoreMenu(); }}
             >
               {interactionLocked ? t('subtitle.toolbar.unlockInteraction') : t('subtitle.toolbar.lockInteraction')}
@@ -493,7 +493,7 @@ export function MobileCueChrome({
           {cueDisplayMode === 'active' && !showAllCues && (
             <MenuItem
               icon={<Icon name="captions" />}
-              data-cell-id="pm-show-all-cues"
+              data-tihoka-id="pm-show-all-cues"
               onSelect={() => { setShowAllCues(true); closeMoreMenu(); }}
             >
               {t('subtitle.playerMode.showAllCues')}
@@ -508,7 +508,7 @@ export function MobileCueChrome({
                   radio
                   icon={<Icon name={mode.icon} />}
                   selected={activeModeId === mode.id || (!activeModeId && mode.id === 'normal')}
-                  data-cell-id={`study-mode-${mode.id}`}
+                  data-tihoka-id={`study-mode-${mode.id}`}
                   onSelect={() => onStudyModeChange(mode.id)}
                 >
                   {mode.titleKey ? t(mode.titleKey) : mode.title}

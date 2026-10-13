@@ -105,7 +105,7 @@ export function createOverlayLayer(
 ): { overlay: HTMLDivElement; textSpan: HTMLSpanElement } {
   const overlay = document.createElement('div');
   overlay.setAttribute('data-role', role);
-  overlay.setAttribute('data-cell-id', `subtitle-overlay-${role}`);
+  overlay.setAttribute('data-tihoka-id', `subtitle-overlay-${role}`);
   overlay.className = 'subtitle-overlay';
 
   // ARIA slider on overlay div (ADR-015 D2 — moved from handle button)
@@ -117,7 +117,7 @@ export function createOverlayLayer(
 
   // Text span: user-select text (copy word), pointer-events auto
   const textSpan = document.createElement('span');
-  textSpan.setAttribute('data-cell-id', `overlay-${role}-text`);
+  textSpan.setAttribute('data-tihoka-id', `overlay-${role}-text`);
   textSpan.className = 'subtitle-overlay-text';
   overlay.appendChild(textSpan);
 
@@ -156,11 +156,11 @@ export function applyStyle(config: OverlayStyleConfig, overlay: HTMLDivElement):
 
 /**
  * Update overlay text and show it.
- * ADR-013: finds text span in overlay layer (data-cell-id="overlay-{role}-text").
+ * ADR-013: finds text span in overlay layer (data-tihoka-id="overlay-{role}-text").
  * Falls back to overlay.textContent if span not found (legacy compat).
  */
 export function updateOverlayText(overlay: HTMLDivElement, text: string): void {
-  const span = overlay.querySelector('span[data-cell-id]') as HTMLSpanElement | null;
+  const span = overlay.querySelector('span[data-tihoka-id]') as HTMLSpanElement | null;
   if (span) {
     span.textContent = text;
   } else {
@@ -174,7 +174,7 @@ export function updateOverlayText(overlay: HTMLDivElement, text: string): void {
  * Clears text span (bilingual-safe — each overlay layer has 1 span).
  */
 export function hideOverlay(overlay: HTMLDivElement): void {
-  const span = overlay.querySelector('span[data-cell-id]') as HTMLSpanElement | null;
+  const span = overlay.querySelector('span[data-tihoka-id]') as HTMLSpanElement | null;
   if (span) {
     span.textContent = '';
   }
@@ -195,7 +195,7 @@ export function removeOverlay(overlay: HTMLDivElement): void {
  */
 export function createDragHint(container: HTMLElement): HTMLDivElement {
   const hint = document.createElement('div');
-  hint.setAttribute('data-cell-id', 'subtitle-drag-hint');
+  hint.setAttribute('data-tihoka-id', 'subtitle-drag-hint');
   hint.className = 'subtitle-drag-hint';
   hint.textContent = t('subtitle.dropHint');
 
@@ -233,7 +233,7 @@ function buildToastEl(
   variant: ToastVariant,
 ): { toast: HTMLDivElement; icon: HTMLSpanElement; text: HTMLSpanElement } {
   const toast = document.createElement('div');
-  toast.setAttribute('data-cell-id', 'subtitle-toast');
+  toast.setAttribute('data-tihoka-id', 'subtitle-toast');
   toast.setAttribute('data-variant', variant);
   toast.className = 'subtitle-toast';
   toast.style.setProperty('--toast-variant-color', VARIANT_COLORS[variant]);

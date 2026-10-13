@@ -19,7 +19,7 @@ export interface SrsUiPrefs {
   readonly variantToggles: Readonly<Record<VariantId, SrsVariantToggles>>;
 }
 
-const STORAGE_KEY = 'cell.srs.uiPrefs';
+const STORAGE_KEY = 'Tihoka.srs.uiPrefs';
 
 export const SRS_UI_PREF_DEFAULTS: SrsUiPrefs = {
   dayStartHour: 4,

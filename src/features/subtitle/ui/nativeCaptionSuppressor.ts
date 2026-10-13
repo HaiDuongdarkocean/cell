@@ -1,4 +1,4 @@
-const HIDE_STYLE_ID = 'cell-native-caption-hide';
+const HIDE_STYLE_ID = 'Tihoka-native-caption-hide';
 
 const NATIVE_CAPTION_SELECTORS = [
   '.ytp-caption-window-container',
@@ -9,8 +9,8 @@ const NATIVE_CAPTION_SELECTORS = [
 ];
 
 /**
- * Suppresses the host player's own caption rendering while Cell's subtitle
- * overlay is active, so native tracks never double-render over Cell cues.
+ * Suppresses the host player's own caption rendering while Tihoka's subtitle
+ * overlay is active, so native tracks never double-render over Tihoka cues.
  * Two rendering paths are covered:
  * - DOM caption windows (YouTube `.ytp-caption-window-container`, Netflix
  *   `.player-timedtext`, JWPlayer/Video.js layers) — hidden via an injected

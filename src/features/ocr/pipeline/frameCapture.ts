@@ -2,7 +2,7 @@
 // spec §AD5: ImageData (Uint8ClampedArray) via structured clone, NOT ImageBitmap.
 
 import type { ImageSource } from '@/features/ocr/engine/types';
-import { isCellDebug } from '@/shared/lib/cellDebug';
+import { isTihokaDebug } from '@/shared/lib/TihokaDebug';
 
 /** Capture a single video frame as ImageSource (RGBA Uint8ClampedArray).
  *  If a sibling canvas overlay exists (e.g. mock hard-sub page), composite it
@@ -29,8 +29,8 @@ export function captureFrame(
   const siblingCanvas = video.parentElement?.querySelector('canvas');
   if (siblingCanvas && siblingCanvas !== (video as unknown as Element) && siblingCanvas.width > 0) {
     ctx.drawImage(siblingCanvas, 0, 0, width, height);
-    if (isCellDebug()) (globalThis as { __ocrCaptureDbg?: string }).__ocrCaptureDbg = `composited canvas ${siblingCanvas.width}x${siblingCanvas.height}`;
-  } else if (isCellDebug()) {
+    if (isTihokaDebug()) (globalThis as { __ocrCaptureDbg?: string }).__ocrCaptureDbg = `composited canvas ${siblingCanvas.width}x${siblingCanvas.height}`;
+  } else if (isTihokaDebug()) {
     (globalThis as { __ocrCaptureDbg?: string }).__ocrCaptureDbg = `no sibling canvas (parent=${video.parentElement?.tagName}, children=${video.parentElement?.children.length})`;
   }
 

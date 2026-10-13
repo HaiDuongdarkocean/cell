@@ -25,7 +25,7 @@ import type {
   ShortcutActionPayload,
 } from '@/entities/message';
 
-import { isCellDebug as cellDebug } from '@/shared/lib/cellDebug';
+import { isTihokaDebug as TihokaDebug } from '@/shared/lib/TihokaDebug';
 import { resolveParentFrameOrigin } from '@/shared/lib/dom/frameOrigin';
 
 export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
@@ -141,8 +141,8 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
           // Malformed pageUrl — fall through to the key/URL guards below.
         }
       }
-      if (cellDebug()) {
-        try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'msg-received', hasTarget: !!payload?.target, hasNative: !!payload?.native, targetUrl: payload?.target?.url?.slice(0, 60), nativeUrl: payload?.native?.url?.slice(0, 60), t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
+      if (TihokaDebug()) {
+        try { const a = JSON.parse(document.documentElement.getAttribute('data-tihoka-debug-autoload-arr') ?? '[]'); a.push({ step: 'msg-received', hasTarget: !!payload?.target, hasNative: !!payload?.native, targetUrl: payload?.target?.url?.slice(0, 60), nativeUrl: payload?.native?.url?.slice(0, 60), t: Date.now() }); document.documentElement.setAttribute('data-tihoka-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
       }
 
       // Skip duplicate payloads to avoid re-loading the same subtitle and
@@ -166,12 +166,12 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
 
       // Debug: notify the top frame that this iframe's controller received the
       // auto-load message. Helps verify broadcast-to-all-frames on moviepire.
-      if (cellDebug()) {
+      if (TihokaDebug()) {
         const parentOrigin = resolveParentFrameOrigin();
         if (parentOrigin) {
           try {
             window.parent.postMessage({
-              type: '__CELL_AUTOLOAD_HANDLED',
+              type: '__Tihoka_AUTOLOAD_HANDLED',
               href: location.href,
               target: payload?.target?.url,
               native: payload?.native?.url,
@@ -244,8 +244,8 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
         tabUrl: window.location.href,
         onPanelRender: (targetCues: SrtCue[], nativeCues: SrtCue[]) => {
           if (isStaleAutoLoad()) return;
-          if (cellDebug()) {
-            try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'rendered', t: targetCues.length, n: nativeCues.length, time: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
+          if (TihokaDebug()) {
+            try { const a = JSON.parse(document.documentElement.getAttribute('data-tihoka-debug-autoload-arr') ?? '[]'); a.push({ step: 'rendered', t: targetCues.length, n: nativeCues.length, time: Date.now() }); document.documentElement.setAttribute('data-tihoka-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
           }
           ctx.setBilingualCues(mergeCuesForPanel(targetCues, nativeCues));
           // ADR-018: keep nav cluster cue source in sync with auto-loaded subtitles
@@ -263,8 +263,8 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
         },
         onLoadStatus: (role, status) => {
           if (isStaleAutoLoad()) return;
-          if (cellDebug()) {
-            try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'status', role, state: status.state, err: status.errorType, t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
+          if (TihokaDebug()) {
+            try { const a = JSON.parse(document.documentElement.getAttribute('data-tihoka-debug-autoload-arr') ?? '[]'); a.push({ step: 'status', role, state: status.state, err: status.errorType, t: Date.now() }); document.documentElement.setAttribute('data-tihoka-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
           }
           useCuesStore.getState().setLoadStatus(role, status);
         },

@@ -1,4 +1,5 @@
 import type { WordStatus } from '@/entities/dictionary';
+import type { AnnotationDisplayMode } from '@/entities/settings';
 import type { TokenFrequencyBand } from '@/shared/lib/frequencyBand';
 
 export type { TokenFrequencyBand };
@@ -61,10 +62,10 @@ export interface TokenizeDisplayOptions {
   readonly showStatus: boolean;
   /** Show frequency background/text color. */
   readonly showFrequency: boolean;
-  /** Show reading annotation above tokens (controlled surfaces only). */
-  readonly showReadings: boolean;
-  /** Show native-language gloss below tokens (subtitle overlay only). */
-  readonly showGlosses?: boolean;
+  /** Reading cap display mode above tokens (controlled surfaces only). */
+  readonly readingDisplay: AnnotationDisplayMode;
+  /** Native-language gloss display mode below tokens (subtitle overlay only). */
+  readonly glossDisplay: AnnotationDisplayMode;
 }
 
 export interface TokenizeSettings {
@@ -103,8 +104,8 @@ export interface TokenizeController {
   readonly disable: () => void;
   readonly setShowStatus: (show: boolean) => void;
   readonly setShowFrequency: (show: boolean) => void;
-  readonly setShowReadings?: (show: boolean) => void;
-  readonly setShowGlosses?: (show: boolean) => void;
+  readonly setReadingDisplay?: (mode: AnnotationDisplayMode) => void;
+  readonly setGlossDisplay?: (mode: AnnotationDisplayMode) => void;
   readonly destroy: () => void;
 }
 

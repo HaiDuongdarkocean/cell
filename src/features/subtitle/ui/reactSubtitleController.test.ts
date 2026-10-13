@@ -632,8 +632,8 @@ describe('ReactSubtitleController', () => {
       onTokenHover: tokenizeOptions.onTokenHover,
       onTokenCtrlClick: undefined,
       selection: undefined,
-      showReadings: undefined,
-      showGlosses: undefined,
+      readingDisplay: undefined,
+      glossDisplay: undefined,
       glossTargetLanguage: undefined,
     });
 
@@ -643,30 +643,30 @@ describe('ReactSubtitleController', () => {
     expect(controller.isTokenizeEnabled()).toBe(false);
   });
 
-  it('setTokenizeShowGlosses / setTokenizeGlossTargetLanguage re-enable tokenize with updated options', () => {
+  it('setTokenizeGlossDisplay / setTokenizeGlossTargetLanguage re-enable tokenize with updated options', () => {
     const tokenizeOptions: SubtitleCueEngineTokenizeOptions = {
       langCode: 'en',
       onOpenDictionary: jest.fn(),
-      showGlosses: false,
+      glossDisplay: 'off',
       glossTargetLanguage: 'vi',
     };
     fakeEngine.isTokenizeEnabled.mockReturnValue(true);
     fakeEngine.getTokenizeOptions.mockReturnValue(tokenizeOptions);
 
-    controller.setTokenizeShowGlosses(true);
-    expect(fakeEngine.enableTokenize).toHaveBeenCalledWith({ ...tokenizeOptions, showGlosses: true });
+    controller.setTokenizeGlossDisplay('always');
+    expect(fakeEngine.enableTokenize).toHaveBeenCalledWith({ ...tokenizeOptions, glossDisplay: 'always' });
     expect(fakeMount.setTokenize).toHaveBeenLastCalledWith(
-      expect.objectContaining({ showGlosses: true, glossTargetLanguage: 'vi' }),
+      expect.objectContaining({ glossDisplay: 'always', glossTargetLanguage: 'vi' }),
     );
 
     controller.setTokenizeGlossTargetLanguage('ja');
     expect(fakeEngine.enableTokenize).toHaveBeenCalledWith({ ...tokenizeOptions, glossTargetLanguage: 'ja' });
 
     // No-ops: same values → no re-enable; tokenize disabled → early return.
-    controller.setTokenizeShowGlosses(false);
+    controller.setTokenizeGlossDisplay('off');
     expect(fakeEngine.enableTokenize).toHaveBeenCalledTimes(2);
     fakeEngine.isTokenizeEnabled.mockReturnValue(false);
-    controller.setTokenizeShowGlosses(true);
+    controller.setTokenizeGlossDisplay('always');
     controller.setTokenizeGlossTargetLanguage('fr');
     expect(fakeEngine.enableTokenize).toHaveBeenCalledTimes(2);
   });

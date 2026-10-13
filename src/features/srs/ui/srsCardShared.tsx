@@ -92,10 +92,10 @@ function galleryItemsEqual(a: readonly GalleryItem[], b: readonly GalleryItem[])
   return a.length === b.length && a.every((x, i) => x.key === b[i].key && x.src === b[i].src && x.asset === b[i].asset);
 }
 
-function ReviewImageGalleryInner({ items, alt, dataCellId }: {
+function ReviewImageGalleryInner({ items, alt, dataTihokaId }: {
   readonly items: readonly GalleryItem[];
   readonly alt: string;
-  readonly dataCellId?: string;
+  readonly dataTihokaId?: string;
 }): React.JSX.Element | null {
   const urls = useResolvedImageUrls(items);
   const [stripEl, setStripEl] = useState<HTMLDivElement | null>(null);
@@ -302,7 +302,7 @@ function ReviewImageGalleryInner({ items, alt, dataCellId }: {
       <div
         ref={setStripEl}
         className={`${styles.imageStrip} ${dragging ? styles.imageStripDragging : ''}`}
-        data-cell-id={dataCellId}
+        data-tihoka-id={dataTihokaId}
         onPointerDown={(e) => {
           if (ringLen <= 1 || e.button !== 0) return;
           settleTween();
@@ -385,7 +385,7 @@ function ReviewImageGalleryInner({ items, alt, dataCellId }: {
           <Portal>
             <Overlay
               elevation="high"
-              data-cell-id="srs-image-zoom"
+              data-tihoka-id="srs-image-zoom"
               onClick={(e) => { if (e.target === e.currentTarget) setZoomIdx(null); }}
               onClose={() => setZoomIdx(null)}
             >
@@ -484,7 +484,7 @@ function ReviewImageGalleryInner({ items, alt, dataCellId }: {
 }
 
 export const ReviewImageGallery = memo(ReviewImageGalleryInner, (prev, next) =>
-  prev.alt === next.alt && prev.dataCellId === next.dataCellId && galleryItemsEqual(prev.items, next.items));
+  prev.alt === next.alt && prev.dataTihokaId === next.dataTihokaId && galleryItemsEqual(prev.items, next.items));
 
 export function formatFieldValue(value: SrsFieldValue): string {
   if (value.kind === 'list') return value.value.join(', ');

@@ -98,7 +98,7 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
   label.setAttribute('tabindex', '0');
   label.setAttribute('aria-label', t('player.action.openSubtitle'));
   label.setAttribute('title', t('player.action.openSubtitle'));
-  label.setAttribute('data-cell-id', 'subtitle-import-button');
+  label.setAttribute('data-tihoka-id', 'subtitle-import-button');
   label.style.cssText = `
     position: relative;
     overflow: hidden;

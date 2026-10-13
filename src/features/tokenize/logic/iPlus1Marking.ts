@@ -2,7 +2,7 @@ import type { Token } from '@/features/tokenize/types';
 import { isNotKnown } from '@/features/dictionary';
 import { isScorableToken } from './comprehensionScore';
 
-export const IPLUS1_OFF_CLASS = 'js-cell-token--i1-off';
+export const IPLUS1_OFF_CLASS = 'js-Tihoka-token--i1-off';
 export const IPLUS1_MIN_SCORABLE = 3;
 const NUMERIC_RE = /^\p{N}+$/u;
 

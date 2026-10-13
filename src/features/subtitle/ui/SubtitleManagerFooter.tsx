@@ -34,7 +34,7 @@ export function SubtitleManagerFooter({
       label: t('subtitle.search.title'),
       onClick: onSearch,
       ref: searchBtnRef,
-      buttonProps: { title: t('subtitle.search.submit'), 'data-cell-id': 'manager-search-subtitles' },
+      buttonProps: { title: t('subtitle.search.submit'), 'data-tihoka-id': 'manager-search-subtitles' },
     },
     ...(onOcr
       ? [{
@@ -42,7 +42,7 @@ export function SubtitleManagerFooter({
           icon: <Icon name="captions"  />,
           label: t('subtitle.ocr.label'),
           onClick: onOcr,
-          buttonProps: { title: t('subtitle.ocr.settingsTitle'), 'data-cell-id': 'manager-ocr-settings' },
+          buttonProps: { title: t('subtitle.ocr.settingsTitle'), 'data-tihoka-id': 'manager-ocr-settings' },
         }]
       : []),
     ...(onCustomize
@@ -52,7 +52,7 @@ export function SubtitleManagerFooter({
           label: t('subtitle.customize.title'),
           onClick: onCustomize,
           ref: customizeBtnRef,
-          buttonProps: { title: t('subtitle.customize.buttonTitle'), 'data-cell-id': 'manager-customize-appearance' },
+          buttonProps: { title: t('subtitle.customize.buttonTitle'), 'data-tihoka-id': 'manager-customize-appearance' },
         }]
       : []),
     ...(onHideBoth
@@ -62,7 +62,7 @@ export function SubtitleManagerFooter({
           label: bothHidden ? t('subtitle.action.show') : t('subtitle.action.hide'),
           active: bothHidden,
           onClick: onHideBoth,
-          buttonProps: { title: bothHidden ? t('subtitle.manager.showBoth') : t('subtitle.manager.hideBoth'), 'data-cell-id': 'manager-hide-both' },
+          buttonProps: { title: bothHidden ? t('subtitle.manager.showBoth') : t('subtitle.manager.hideBoth'), 'data-tihoka-id': 'manager-hide-both' },
         }]
       : []),
     ...(onGenerateNative
@@ -73,7 +73,7 @@ export function SubtitleManagerFooter({
           ripplePulse: true,
           disabled: generateNativeDisabled,
           onClick: onGenerateNative,
-          buttonProps: { title: t('subtitle.generate.buttonTitle'), 'data-cell-id': 'manager-generate-native' },
+          buttonProps: { title: t('subtitle.generate.buttonTitle'), 'data-tihoka-id': 'manager-generate-native' },
         }]
       : []),
   ];

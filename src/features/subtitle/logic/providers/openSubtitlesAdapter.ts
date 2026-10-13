@@ -17,7 +17,7 @@ import type {
 } from '@/entities/subtitle/searchTypes';
 
 const OS_BASE = 'https://api.opensubtitles.com/api/v1';
-const USER_AGENT = 'Cell v1.0';
+const USER_AGENT = 'Tihoka v1.0';
 
 /** OpenSubtitles language code → ISO 639-1 (verified from /infos/languages, 95 codes). */
 const OS_LANG_TO_ISO: Readonly<Record<string, string>> = {

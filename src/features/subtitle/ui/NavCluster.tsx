@@ -64,11 +64,11 @@ function NavClusterInner({
 
   if (collapsed) {
     return (
-      <div className={rootClass} style={clusterStyle} data-cell-id="nav-cluster" aria-label={t('subtitle.nav.aria')}>
+      <div className={rootClass} style={clusterStyle} data-tihoka-id="nav-cluster" aria-label={t('subtitle.nav.aria')}>
         <Button shape="circle" variant="overlay"
           className={styles.collapsedBtn}
           aria-label={t('subtitle.nav.expand')}
-          data-cell-id="nav-expand"
+          data-tihoka-id="nav-expand"
           onClick={onToggleCollapsed}
         >
           <Icon name={NAV_CLUSTER_ICONS.repeat}  />
@@ -78,31 +78,31 @@ function NavClusterInner({
   }
 
   return (
-    <div className={rootClass} style={clusterStyle} data-cell-id="nav-cluster" aria-label={t('subtitle.nav.aria')}>
-      <div className={styles.main} data-cell-id="nav-main">
-        <Button shape="circle" variant="overlay" aria-label={t('settings.shortcuts.action.prevCue')} data-cell-id="nav-prev" onClick={onPrev}>
+    <div className={rootClass} style={clusterStyle} data-tihoka-id="nav-cluster" aria-label={t('subtitle.nav.aria')}>
+      <div className={styles.main} data-tihoka-id="nav-main">
+        <Button shape="circle" variant="overlay" aria-label={t('settings.shortcuts.action.prevCue')} data-tihoka-id="nav-prev" onClick={onPrev}>
           <Icon name={NAV_CLUSTER_ICONS.prev}  />
         </Button>
         <Button shape="circle" variant="overlay"
           aria-label={repeatActive ? t('subtitle.nav.repeatCancel') : repeatLabel}
-          data-cell-id="nav-repeat"
+          data-tihoka-id="nav-repeat"
           onClick={onRepeat}
           active={repeatActive}
         >
           <Icon name={repeatIcon}  />
         </Button>
-        <Button shape="circle" variant="overlay" aria-label={t('settings.shortcuts.action.nextCue')} data-cell-id="nav-next" onClick={onNext}>
+        <Button shape="circle" variant="overlay" aria-label={t('settings.shortcuts.action.nextCue')} data-tihoka-id="nav-next" onClick={onNext}>
           <Icon name={NAV_CLUSTER_ICONS.next}  />
         </Button>
       </div>
-      <div className={styles.secondary} data-cell-id="nav-secondary">
-        <Button shape="circle" variant="overlay" aria-label={t('subtitle.nav.rewind')} data-cell-id="nav-rewind" onClick={onRewind}>
+      <div className={styles.secondary} data-tihoka-id="nav-secondary">
+        <Button shape="circle" variant="overlay" aria-label={t('subtitle.nav.rewind')} data-tihoka-id="nav-rewind" onClick={onRewind}>
           <Icon name={NAV_CLUSTER_ICONS.rewind}  />
         </Button>
-        <Button shape="circle" variant="overlay" aria-label={isPlaying ? t('subtitle.nav.pause') : t('subtitle.nav.play')} data-cell-id="nav-play" onClick={onPlayPause}>
+        <Button shape="circle" variant="overlay" aria-label={isPlaying ? t('subtitle.nav.pause') : t('subtitle.nav.play')} data-tihoka-id="nav-play" onClick={onPlayPause}>
           <Icon name={isPlaying ? NAV_CLUSTER_ICONS.pause : NAV_CLUSTER_ICONS.play}  />
         </Button>
-        <Button shape="circle" variant="overlay" aria-label={t('subtitle.nav.forward')} data-cell-id="nav-forward" onClick={onForward}>
+        <Button shape="circle" variant="overlay" aria-label={t('subtitle.nav.forward')} data-tihoka-id="nav-forward" onClick={onForward}>
           <Icon name={NAV_CLUSTER_ICONS.forward}  />
         </Button>
       </div>

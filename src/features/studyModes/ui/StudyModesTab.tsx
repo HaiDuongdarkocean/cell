@@ -117,14 +117,14 @@ export function StudyModesTab(): ReactElement {
 
   if (!store.isLoaded) {
     return (
-      <div className={styles.tab} data-cell-id="study-modes-tab">
+      <div className={styles.tab} data-tihoka-id="study-modes-tab">
         <Text color="secondary">{t('studyModes.loading')}</Text>
       </div>
     );
   }
 
   return (
-    <div className={styles.tab} data-cell-id="study-modes-tab">
+    <div className={styles.tab} data-tihoka-id="study-modes-tab">
       <VStack gap="3">
         <section>
           <Heading level={3} size={3} className={styles.blockHeading}>
@@ -154,7 +154,7 @@ export function StudyModesTab(): ReactElement {
             <Button
               size="sm"
               onClick={handleNewMode}
-              data-cell-id="new-mode-button"
+              data-tihoka-id="new-mode-button"
               leadingIcon={<Icon name="plus" size="xs" />}
             >
               {t('studyModes.custom.newMode')}
@@ -197,14 +197,14 @@ export function StudyModesTab(): ReactElement {
         }}
         title={t('studyModes.deleteDialog.title')}
         description={t('studyModes.deleteDialog.description')}
-        data-cell-id="delete-confirm-dialog"
+        data-tihoka-id="delete-confirm-dialog"
         footer={
           <HStack gap="3" justify="end">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleCancelDelete}
-              data-cell-id="delete-confirm-cancel"
+              data-tihoka-id="delete-confirm-cancel"
             >
               {t('studyModes.deleteDialog.cancel')}
             </Button>
@@ -212,7 +212,7 @@ export function StudyModesTab(): ReactElement {
               variant="destructive"
               size="sm"
               onClick={handleConfirmDelete}
-              data-cell-id="delete-confirm-ok"
+              data-tihoka-id="delete-confirm-ok"
             >
               {t('studyModes.deleteDialog.confirm')}
             </Button>
@@ -245,7 +245,7 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
         role="radio"
         className={styles.modeCard}
         onSelect={() => onSelect(mode)}
-        data-cell-id={`mode-card-${mode.id}`}
+        data-tihoka-id={`mode-card-${mode.id}`}
       >
         <Icon name={mode.icon} size="lg" className={styles.modeIcon} />
         <Text variant="heading-3" as="p" className={styles.modeTitle}>
@@ -270,7 +270,7 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
             aria-label={t('studyModes.card.actions')}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
-            data-cell-id={`mode-actions-${mode.id}`}
+            data-tihoka-id={`mode-actions-${mode.id}`}
           >
             <Icon name="ellipsisVertical" size="sm" />
           </Button>
@@ -282,7 +282,7 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
             ariaLabel={t('studyModes.card.actions')}
           >
             <MenuItem
-              data-cell-id={`edit-mode-${mode.id}`}
+              data-tihoka-id={`edit-mode-${mode.id}`}
               icon={<Icon name="pencil" size="sm" />}
               onSelect={() => {
                 setMenuOpen(false);
@@ -292,7 +292,7 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
               {t('studyModes.card.edit')}
             </MenuItem>
             <MenuItem
-              data-cell-id={`delete-mode-${mode.id}`}
+              data-tihoka-id={`delete-mode-${mode.id}`}
               icon={<Icon name="trash" size="sm" />}
               onSelect={() => {
                 setMenuOpen(false);
@@ -344,7 +344,7 @@ function AdvancedSection({
         id="advanced-settings-region"
         role="region"
         aria-label={t('studyModes.advancedToggle.regionAria')}
-        data-cell-id="advanced-settings"
+        data-tihoka-id="advanced-settings"
         hidden={!open}
       >
           <SegmentedField
@@ -392,14 +392,14 @@ function AdvancedSection({
                 label={t('studyModes.advanced.popupOnAutoPause')}
                 checked={advanced.popupOnAutoPause}
                 onChange={(e) => onChange({ ...advanced, popupOnAutoPause: e.target.checked })}
-                data-cell-id="popup-on-autopause-checkbox"
+                data-tihoka-id="popup-on-autopause-checkbox"
               />
               {advanced.popupOnAutoPause && (
                 <Checkbox
                   label={t('studyModes.advanced.popupCloseOnResume')}
                   checked={advanced.popupCloseOnResume}
                   onChange={(e) => onChange({ ...advanced, popupCloseOnResume: e.target.checked })}
-                  data-cell-id="popup-close-on-resume-checkbox"
+                  data-tihoka-id="popup-close-on-resume-checkbox"
                 />
               )}
             </>

@@ -20,7 +20,7 @@ describe('studyModeStore', () => {
       },
       runtime: { sendMessage: jest.fn() },
     } as unknown as typeof chrome;
-    (globalThis as { __cellSendMessage?: typeof sendMessage }).__cellSendMessage = sendMessage;
+    (globalThis as { __TihokaSendMessage?: typeof sendMessage }).__TihokaSendMessage = sendMessage;
   });
 
   beforeEach(() => {
@@ -40,7 +40,7 @@ describe('studyModeStore', () => {
 
   afterAll(() => {
     delete (global as { chrome?: unknown }).chrome;
-    delete (globalThis as { __cellSendMessage?: typeof sendMessage }).__cellSendMessage;
+    delete (globalThis as { __TihokaSendMessage?: typeof sendMessage }).__TihokaSendMessage;
   });
 
   it('findActiveMode returns preset by id', () => {

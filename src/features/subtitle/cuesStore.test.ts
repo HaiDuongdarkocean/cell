@@ -50,7 +50,7 @@ describe('cuesStore', () => {
     unsubscribe();
   });
 
-  it('listens to cell:cues:updated event with no store subscribers', () => {
+  it('listens to Tihoka:cues:updated event with no store subscribers', () => {
     // Regression: the listener used to attach on first store.subscribe() call,
     // but zustand v5 hooks subscribe via the internal api (not the overridden
     // property), so the listener never attached in production and the block
@@ -59,7 +59,7 @@ describe('cuesStore', () => {
     const nativeCues = [makeCue(0, 'native 0')];
     useCuesStore.getState().setLoadStatus('target', { state: 'loading', languageLabel: 'EN-US #1' });
     document.dispatchEvent(
-      new CustomEvent('cell:cues:updated', {
+      new CustomEvent('Tihoka:cues:updated', {
         detail: { targetCues, nativeCues, targetActiveIndex: 0, nativeActiveIndex: 0 },
       }),
     );

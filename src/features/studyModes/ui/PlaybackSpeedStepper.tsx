@@ -25,15 +25,15 @@ export function PlaybackSpeedStepper({
   return (
     <StepperSection
       label={t('studyModes.speed.aria')}
-      dataCellId={`${idPrefix}-stepper`}
+      dataTihokaId={`${idPrefix}-stepper`}
       decreaseLabel={<Icon name="minus" />}
       increaseLabel={<Icon name="plus" />}
       decreaseAriaLabel={t('studyModes.speed.decrease', [String(value)])}
       increaseAriaLabel={t('studyModes.speed.increase', [String(value)])}
       decreaseDisabled={index <= 0}
       increaseDisabled={index >= PLAYBACK_SPEEDS.length - 1}
-      decreaseDataCellId={`${idPrefix}-dec`}
-      increaseDataCellId={`${idPrefix}-inc`}
+      decreaseDataTihokaId={`${idPrefix}-dec`}
+      increaseDataTihokaId={`${idPrefix}-inc`}
       onDecrease={() => step(-1)}
       onIncrease={() => step(1)}
       trailing={
@@ -42,14 +42,14 @@ export function PlaybackSpeedStepper({
           size="md"
           aria-label={t('studyModes.speed.reset')}
           disabled={value === RESET_SPEED}
-          data-cell-id={`${idPrefix}-reset`}
+          data-tihoka-id={`${idPrefix}-reset`}
           onClick={() => onChange(RESET_SPEED)}
         >
           <Icon name="rotateCcw" />
         </Button>
       }
     >
-      <StepperValue dataCellId={`${idPrefix}-value`}>{`${value}×`}</StepperValue>
+      <StepperValue dataTihokaId={`${idPrefix}-value`}>{`${value}×`}</StepperValue>
     </StepperSection>
   );
 }

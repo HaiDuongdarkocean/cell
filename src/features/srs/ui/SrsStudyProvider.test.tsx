@@ -77,10 +77,10 @@ function TestHarness() {
     void start();
   }, [start]);
 
-  if (!ready) return <div data-cell-id="loading">loading</div>;
-  if (finished) return <div data-cell-id="finished">finished</div>;
-  if (session) return <div data-cell-id="session">{session.variant.id}</div>;
-  return <div data-cell-id="empty">empty</div>;
+  if (!ready) return <div data-tihoka-id="loading">loading</div>;
+  if (finished) return <div data-tihoka-id="finished">finished</div>;
+  if (session) return <div data-tihoka-id="session">{session.variant.id}</div>;
+  return <div data-tihoka-id="empty">empty</div>;
 }
 
 async function seedCollectionAndDeck() {
@@ -163,10 +163,10 @@ describe('SrsStudyProvider', () => {
         void start();
       }, [start]);
 
-      if (error) return <div data-cell-id="error">{error}</div>;
-      if (!ready || !session) return <div data-cell-id={finished ? 'finished' : 'loading'}>{finished ? 'finished' : 'loading'}</div>;
+      if (error) return <div data-tihoka-id="error">{error}</div>;
+      if (!ready || !session) return <div data-tihoka-id={finished ? 'finished' : 'loading'}>{finished ? 'finished' : 'loading'}</div>;
       return (
-        <button data-cell-id="session" onClick={() => { void submit('remember'); }}>
+        <button data-tihoka-id="session" onClick={() => { void submit('remember'); }}>
           {session.variant.id}
         </button>
       );

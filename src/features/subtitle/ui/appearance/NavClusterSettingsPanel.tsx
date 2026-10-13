@@ -37,7 +37,7 @@ export function NavClusterSettingsPanel({
   };
 
   return (
-    <div className={styles.container} data-cell-id="nav-cluster-settings-panel">
+    <div className={styles.container} data-tihoka-id="nav-cluster-settings-panel">
       {/* ─── Controls card ─── */}
       <div className={styles.card}>
         {/* Button size */}
@@ -54,7 +54,7 @@ export function NavClusterSettingsPanel({
             step={1}
             onChange={(v) => onChange({ buttonSize: v })}
             aria-label={t('subtitle.navSettings.buttonSize')}
-            data-cell-id="nav-cluster-button-size"
+            data-tihoka-id="nav-cluster-button-size"
           />
         </div>
 
@@ -72,7 +72,7 @@ export function NavClusterSettingsPanel({
             step={0.05}
             onChange={(v) => onChange({ textOpacity: v })}
             aria-label={t('subtitle.navSettings.iconOpacityAria')}
-            data-cell-id="nav-cluster-text-opacity"
+            data-tihoka-id="nav-cluster-text-opacity"
           />
         </div>
 
@@ -90,7 +90,7 @@ export function NavClusterSettingsPanel({
             step={0.05}
             onChange={(v) => onChange({ bgOpacity: v })}
             aria-label={t('subtitle.navSettings.buttonOpacityAria')}
-            data-cell-id="nav-cluster-bg-opacity"
+            data-tihoka-id="nav-cluster-bg-opacity"
           />
         </div>
       </div>
@@ -110,7 +110,7 @@ export function NavClusterSettingsPanel({
               active={isActive}
               aria-pressed={isActive}
               onClick={() => handlePreset(preset)}
-              data-cell-id={`nav-cluster-preset-${preset.id}`}
+              data-tihoka-id={`nav-cluster-preset-${preset.id}`}
             >
               {t(preset.key)}
             </Button>

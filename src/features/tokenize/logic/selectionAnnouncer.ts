@@ -1,14 +1,14 @@
 import { t } from '@/shared/i18n';
 import type { TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 
-const ANNOUNCER_ID = 'cell-token-selection-announcer';
+const ANNOUNCER_ID = 'Tihoka-token-selection-announcer';
 
 function ensureRegion(doc: Document): HTMLElement {
   const existing = doc.getElementById(ANNOUNCER_ID);
   if (existing) return existing;
   const region = doc.createElement('div');
   region.id = ANNOUNCER_ID;
-  region.setAttribute('data-cell-id', 'token-selection-announcer');
+  region.setAttribute('data-tihoka-id', 'token-selection-announcer');
   region.setAttribute('role', 'status');
   region.setAttribute('aria-live', 'polite');
   region.setAttribute(

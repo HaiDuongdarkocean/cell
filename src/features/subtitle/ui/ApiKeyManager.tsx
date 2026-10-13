@@ -209,7 +209,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
   const totalKeys = keys.length;
 
   return (
-    <div className={styles.root} data-cell-id="api-key-manager">
+    <div className={styles.root} data-tihoka-id="api-key-manager">
       {/* Header row — count + add toggle */}
       <div className={styles.headerRow}>
         <span className={styles.headerCount}>
@@ -220,7 +220,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
           onClick={() => setAddOpen((v) => !v)}
           aria-expanded={addOpen}
           aria-label={addOpen ? t('subtitle.keys.closeForm') : t('subtitle.keys.addAria')}
-          data-cell-id="akm-add-toggle"
+          data-tihoka-id="akm-add-toggle"
         >
           <Icon name={addOpen ? 'x' : 'plus'}  />
           <span>{addOpen ? t('subtitle.action.cancel') : t('subtitle.keys.add')}</span>
@@ -229,10 +229,10 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
 
       {/* Add-key form — collapsible, slides down */}
       {addOpen && (
-        <div className={styles.addForm} data-cell-id="add-key-form">
+        <div className={styles.addForm} data-tihoka-id="add-key-form">
           <div className={styles.addFormRow}>
             <Select
-              data-cell-id="akm-provider-select"
+              data-tihoka-id="akm-provider-select"
               aria-label={t('subtitle.keys.providerAria')}
               value={addProvider}
               options={PROVIDER_OPTIONS}
@@ -247,7 +247,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
             onChange={(e) => setAddKey(e.target.value)}
             placeholder={t('subtitle.keys.keyPlaceholder')}
             aria-label={t('subtitle.keys.keyAria')}
-            data-cell-id="akm-key-input"
+            data-tihoka-id="akm-key-input"
           />
           <Input
             type="text"
@@ -256,14 +256,14 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
             onChange={(e) => setAddLabel(e.target.value)}
             placeholder={t('subtitle.keys.labelPlaceholder')}
             aria-label={t('subtitle.keys.labelAria')}
-            data-cell-id="akm-label-input"
+            data-tihoka-id="akm-label-input"
           />
           <a
             className={styles.helpLink}
             href={PROVIDER_URLS[addProvider]}
             target="_blank"
             rel="noopener noreferrer"
-            data-cell-id="akm-get-key-link"
+            data-tihoka-id="akm-get-key-link"
           >
             <Icon name="externalLink"  />
             <span>{t('subtitle.keys.getKey', [PROVIDER_LABELS[addProvider]])}</span>
@@ -274,7 +274,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
             onClick={handleAdd}
             disabled={!canAdd}
             className={styles.addBtn}
-            data-cell-id="akm-add-btn"
+            data-tihoka-id="akm-add-btn"
           >
             {t('subtitle.keys.add')}
           </Button>
@@ -286,7 +286,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
         const groupKeys = grouped[provider];
         if (groupKeys.length === 0 && totalKeys > 0) return null;
         return (
-          <div key={provider} className={styles.providerGroup} data-cell-id={`provider-${provider}`}>
+          <div key={provider} className={styles.providerGroup} data-tihoka-id={`provider-${provider}`}>
             <div className={styles.providerHeader}>
               <span>{PROVIDER_LABELS[provider]}</span>
               {groupKeys.length > 0 && (
@@ -305,7 +305,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
               const q = quota.get(k.id);
               const isEditing = editingId === k.id;
               return (
-                <div key={k.id} className={styles.keyCard} data-cell-id={`key-card-${k.id}`}>
+                <div key={k.id} className={styles.keyCard} data-tihoka-id={`key-card-${k.id}`}>
                   {isEditing ? (
                     <InlineEdit
                       label={editLabel}
@@ -323,13 +323,13 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
                           <span className={styles.keyMasked}>{maskKey(k.key)}</span>
                           <span
                             className={`${styles.statusDot} ${statusDotClass(k.status)}`}
-                            data-cell-id={`key-status-${k.id}`}
+                            data-tihoka-id={`key-status-${k.id}`}
                             aria-label={t(STATUS_KEY[k.status])}
                           />
                           <span className={styles.statusText}>{t(STATUS_KEY[k.status])}</span>
                         </div>
                         {q && (
-                          <span className={styles.keyQuota} data-cell-id={`key-quota-${k.id}`}>
+                          <span className={styles.keyQuota} data-tihoka-id={`key-quota-${k.id}`}>
                             {t('subtitle.keys.downloadsLeft', [q.remainingDownloads])}
                           </span>
                         )}
@@ -344,7 +344,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
                           className={styles.iconAction}
                           onClick={() => startEdit(k)}
                           aria-label={t('subtitle.keys.editAria', [k.label ?? k.id])}
-                          data-cell-id={`key-edit-${k.id}`}
+                          data-tihoka-id={`key-edit-${k.id}`}
                         >
                           <Icon name="pencil"  />
                         </Button>
@@ -352,7 +352,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
                           className={`${styles.iconAction} ${styles.iconActionDanger}`}
                           onClick={() => setDeleteTarget(k)}
                           aria-label={t('subtitle.keys.deleteAria', [k.label ?? k.id])}
-                          data-cell-id={`key-delete-${k.id}`}
+                          data-tihoka-id={`key-delete-${k.id}`}
                         >
                           <Icon name="trash"  />
                         </Button>
@@ -378,12 +378,12 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
               variant="primary"
               size="md"
               onClick={() => setAddOpen(true)}
-              data-cell-id="akm-empty-add"
+              data-tihoka-id="akm-empty-add"
             >
               {t('subtitle.keys.addFirst')}
             </Button>
           }
-          data-cell-id="akm-empty"
+          data-tihoka-id="akm-empty"
         />
       )}
 
@@ -394,13 +394,13 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
           if (!open) setDeleteTarget(null);
         }}
         title={t('subtitle.keys.deleteTitle')}
-        data-cell-id="delete-key-confirm"
+        data-tihoka-id="delete-key-confirm"
         footer={
           <div className={styles.confirmFooter}>
             <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(null)}>
               {t('subtitle.action.cancel')}
             </Button>
-            <Button variant="destructive" size="sm" onClick={confirmDelete} data-cell-id="confirm-delete">
+            <Button variant="destructive" size="sm" onClick={confirmDelete} data-tihoka-id="confirm-delete">
               {t('subtitle.action.delete')}
             </Button>
           </div>
@@ -434,14 +434,14 @@ function InlineEdit({
   onCancel,
 }: InlineEditProps): React.JSX.Element {
   return (
-    <div className={styles.editRow} data-cell-id="inline-edit">
+    <div className={styles.editRow} data-tihoka-id="inline-edit">
       <Input
         type="text"
         value={label}
         onChange={(e) => onLabelChange(e.target.value)}
         placeholder={t('subtitle.keys.labelPlaceholder')}
         aria-label={t('subtitle.keys.editLabelAria')}
-        data-cell-id="akm-edit-label-input"
+        data-tihoka-id="akm-edit-label-input"
       />
       <Input
         type="password"
@@ -451,13 +451,13 @@ function InlineEdit({
         onChange={(e) => onKeyChange(e.target.value)}
         placeholder={t('subtitle.keys.newKeyPlaceholder')}
         aria-label={t('subtitle.keys.newKeyAria')}
-        data-cell-id="akm-edit-key-input"
+        data-tihoka-id="akm-edit-key-input"
       />
       <div className={styles.editActions}>
-        <Button variant="ghost" size="sm" onClick={onCancel} data-cell-id="akm-edit-cancel">
+        <Button variant="ghost" size="sm" onClick={onCancel} data-tihoka-id="akm-edit-cancel">
           {t('subtitle.action.cancel')}
         </Button>
-        <Button variant="primary" size="sm" onClick={onSave} data-cell-id="akm-edit-save">
+        <Button variant="primary" size="sm" onClick={onSave} data-tihoka-id="akm-edit-save">
           {t('subtitle.action.save')}
         </Button>
       </div>

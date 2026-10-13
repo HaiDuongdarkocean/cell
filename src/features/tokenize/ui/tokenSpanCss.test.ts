@@ -5,7 +5,7 @@ import { buildTokenSpanCss, buildTokenSpanCssForShadow } from './tokenSpanCss';
 // On host pages tokens.css is never loaded, so buildTokenSpanCss() must
 // inject the resolved static-token values into :root. Without them the
 // height declaration is invalid and the status capsule silently collapses
-// (while the frequency band, which only uses --cell-token-* color vars,
+// (while the frequency band, which only uses --Tihoka-token-* color vars,
 // still renders).
 describe('buildTokenSpanCss — static token injection (status bar visibility)', () => {
   const css = buildTokenSpanCss();
@@ -41,44 +41,44 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
   // The fix prefixes status/frequency rules with `html body` to raise
   // specificity to (0,2,2) so host resets cannot override.
   it('status/frequency rules use html body ancestor for (0,2,2) specificity', () => {
-    expect(css).toContain('html body .js-cell-token.js-cell-token--status-unknown');
-    expect(css).toContain('html body .js-cell-token.js-cell-token--frequency-core');
-    expect(css).toContain('html body .js-cell-token.js-cell-token--status-off');
+    expect(css).toContain('html body .js-Tihoka-token.js-Tihoka-token--status-unknown');
+    expect(css).toContain('html body .js-Tihoka-token.js-Tihoka-token--frequency-core');
+    expect(css).toContain('html body .js-Tihoka-token.js-Tihoka-token--status-off');
   });
 
   describe('buildTokenSpanCssForShadow — self-contained variables', () => {
     const shadowCss = buildTokenSpanCssForShadow();
 
     it.each([
-      '--cell-token-status-unknown',
-      '--cell-token-status-tracking',
-      '--cell-token-status-known',
-      '--cell-token-status-ignore',
-      '--cell-token-freq-core-bg',
-      '--cell-token-freq-core-fg',
-      '--cell-token-freq-common-bg',
-      '--cell-token-freq-common-fg',
-      '--cell-token-freq-general-bg',
-      '--cell-token-freq-general-fg',
-      '--cell-token-freq-advanced-bg',
-      '--cell-token-freq-advanced-fg',
-      '--cell-token-freq-rare-bg',
-      '--cell-token-freq-rare-fg',
-      '--cell-token-freq-border',
+      '--Tihoka-token-status-unknown',
+      '--Tihoka-token-status-tracking',
+      '--Tihoka-token-status-known',
+      '--Tihoka-token-status-ignore',
+      '--Tihoka-token-freq-core-bg',
+      '--Tihoka-token-freq-core-fg',
+      '--Tihoka-token-freq-common-bg',
+      '--Tihoka-token-freq-common-fg',
+      '--Tihoka-token-freq-general-bg',
+      '--Tihoka-token-freq-general-fg',
+      '--Tihoka-token-freq-advanced-bg',
+      '--Tihoka-token-freq-advanced-fg',
+      '--Tihoka-token-freq-rare-bg',
+      '--Tihoka-token-freq-rare-fg',
+      '--Tihoka-token-freq-border',
     ])('declares %s inside the shadow sheet', (name) => {
       expect(shadowCss).toContain(`${name}:`);
     });
 
     it('scopes declarations to :host and [data-theme] so fullscreen reparenting cannot break them', () => {
-      expect(shadowCss).toMatch(/:host\s*\{[^}]*--cell-token-status-unknown:/);
-      expect(shadowCss).toMatch(/\[data-theme="dark"\]\s*\{[^}]*--cell-token-status-unknown:/);
-      expect(shadowCss).toMatch(/\[data-theme="light"\]\s*\{[^}]*--cell-token-status-unknown:/);
+      expect(shadowCss).toMatch(/:host\s*\{[^}]*--Tihoka-token-status-unknown:/);
+      expect(shadowCss).toMatch(/\[data-theme="dark"\]\s*\{[^}]*--Tihoka-token-status-unknown:/);
+      expect(shadowCss).toMatch(/\[data-theme="light"\]\s*\{[^}]*--Tihoka-token-status-unknown:/);
     });
   });
 
   it.each(['host', 'shadow'])('keeps the %s status capsule in-flow and rounded', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
-    const bar = source.match(/\.js-cell-token-status\s*\{([^}]*)\}/)?.[1] ?? '';
+    const bar = source.match(/\.js-Tihoka-token-status\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(bar).toContain('display: block');
     expect(bar).toContain('width: 100%');
     expect(bar).toContain('height: var(--border-width-status)');
@@ -92,9 +92,9 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
       for (const source of [buildTokenSpanCss(), buildTokenSpanCssForShadow()]) {
         const rule = source.match(
           new RegExp(`status-${status}[^{]*\\{([^}]*)\\}`, 'g'),
-        )?.find((r) => r.includes('js-cell-token-status'));
+        )?.find((r) => r.includes('js-Tihoka-token-status'));
         expect(rule).toBeDefined();
-        expect(rule).toContain(`background: var(--cell-token-status-${status})`);
+        expect(rule).toContain(`background: var(--Tihoka-token-status-${status})`);
         expect(rule).not.toContain('box-shadow');
         expect(rule).not.toContain('overlay-text-rgb');
       }
@@ -107,10 +107,10 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
       for (const source of [buildTokenSpanCss(), buildTokenSpanCssForShadow()]) {
         const rule = source.match(
           new RegExp(`status-${status}[^{]*\\{([^}]*)\\}`, 'g'),
-        )?.find((r) => r.includes('js-cell-token-status'));
+        )?.find((r) => r.includes('js-Tihoka-token-status'));
         expect(rule).toBeDefined();
         expect(rule).toContain(
-          `background: linear-gradient(90deg, var(--cell-token-status-${status}), var(--cell-token-status-unknown))`,
+          `background: linear-gradient(90deg, var(--Tihoka-token-status-${status}), var(--Tihoka-token-status-unknown))`,
         );
         expect(rule).not.toContain('box-shadow');
         expect(rule).not.toContain('overlay-text-rgb');
@@ -121,10 +121,10 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
   it.each(['known', 'ignore'])('gates the %s status capsule behind hover or popup-open', (status) => {
     for (const source of [buildTokenSpanCss(), buildTokenSpanCssForShadow()]) {
       expect(source).toMatch(
-        new RegExp(`status-${status}:hover:not\\(\\.js-cell-token--status-off\\) \\.js-cell-token-status[^}]*background:\\s*var\\(--cell-token-status-${status}\\)`),
+        new RegExp(`status-${status}:hover:not\\(\\.js-Tihoka-token--status-off\\) \\.js-Tihoka-token-status[^}]*background:\\s*var\\(--Tihoka-token-status-${status}\\)`),
       );
       expect(source).toMatch(
-        new RegExp(`status-${status}\\.js-cell-token--popup-open:not\\(\\.js-cell-token--status-off\\) \\.js-cell-token-status[^}]*background:\\s*var\\(--cell-token-status-${status}\\)`),
+        new RegExp(`status-${status}\\.js-Tihoka-token--popup-open:not\\(\\.js-Tihoka-token--status-off\\) \\.js-Tihoka-token-status[^}]*background:\\s*var\\(--Tihoka-token-status-${status}\\)`),
       );
     }
   });
@@ -141,14 +141,14 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
       // The pill must never come back on hover/popup-open — only the status
       // capsule is gated behind those states (see the gating test above).
       expect(source).not.toMatch(
-        new RegExp(`status-${status}:(?:hover|\\.)[^,{]*\\{[^}]*background-color:\\s*var\\(--cell-token-freq`),
+        new RegExp(`status-${status}:(?:hover|\\.)[^,{]*\\{[^}]*background-color:\\s*var\\(--Tihoka-token-freq`),
       );
     }
   });
 
   it.each(['host', 'shadow'])('gates the frequency pill — but never the status capsule — behind i+1 in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
-    const rule = source.match(/\.js-cell-token--i1-off\s*\{[^}]*\}/)?.[0] ?? '';
+    const rule = source.match(/\.js-Tihoka-token--i1-off\s*\{[^}]*\}/)?.[0] ?? '';
     expect(rule).toContain('background-color: transparent');
     expect(rule).toContain('box-shadow: none');
     expect(rule).toContain('padding: 0');
@@ -157,16 +157,16 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     // every unknown-family word (unknown + tracking flag) keeps its bar at rest
     // so learners can always spot unlearned words; known/ignore keep their own
     // hover/popup-open reveal rules.
-    expect(source).not.toMatch(/i1-off[^\n}]*\.js-cell-token-status/);
+    expect(source).not.toMatch(/i1-off[^\n}]*\.js-Tihoka-token-status/);
     // The gate must sit after the frequency/status paint rules so equal
     // specificity resolves in its favour.
-    expect(source.indexOf('.js-cell-token--i1-off')).toBeGreaterThan(source.indexOf('frequency-rare {'));
+    expect(source.indexOf('.js-Tihoka-token--i1-off')).toBeGreaterThan(source.indexOf('frequency-rare {'));
   });
 
   it.each(['unknown', 'tracking'])('paints the %s capsule at rest — no hover/popup-open gate', (status) => {
     for (const source of [buildTokenSpanCss(), buildTokenSpanCssForShadow()]) {
       const paintRule = source.match(
-        new RegExp(`status-${status} \\.js-cell-token-status\\s*\\{[^}]*\\}`),
+        new RegExp(`status-${status} \\.js-Tihoka-token-status\\s*\\{[^}]*\\}`),
       )?.[0] ?? '';
       expect(paintRule).toContain('background');
       expect(paintRule).not.toContain(':hover');
@@ -179,26 +179,26 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     // Per-token --sentence backgrounds could never produce straight edges —
     // the wash is one snapped overlay rect per line (see sentenceHighlight.ts).
     expect(source).toMatch(
-      /\.js-cell-sentence-band\s*\{[^}]*color-mix\(in srgb, var\(--cell-sentence-wash\) 32%, transparent\)/,
+      /\.js-Tihoka-sentence-band\s*\{[^}]*color-mix\(in srgb, var\(--Tihoka-sentence-wash\) 32%, transparent\)/,
     );
-    expect(source).not.toContain('.js-cell-token--sentence .js-cell-token-word');
-    expect(source).not.toContain('--separator.js-cell-token--sentence');
+    expect(source).not.toContain('.js-Tihoka-token--sentence .js-Tihoka-token-word');
+    expect(source).not.toContain('--separator.js-Tihoka-token--sentence');
   });
 
   it.each(['host', 'shadow'])('frequency pill wraps the whole column in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
     // Pill background + padding + radius target the token column itself, not
     // the inner word lane, so the box encloses cap + word + status + gloss.
-    expect(source).toMatch(/frequency-core\s*\{[^}]*background-color:\s*var\(--cell-token-freq-core-bg\)/);
+    expect(source).toMatch(/frequency-core\s*\{[^}]*background-color:\s*var\(--Tihoka-token-freq-core-bg\)/);
     expect(source).toMatch(/frequency-rare\s*\{[^}]*padding:\s*0\.15em 0\.3em/);
     expect(source).toMatch(/frequency-rare\s*\{[^}]*border-radius:\s*var\(--radius-md\)/);
     expect(source).toMatch(/frequency-rare\s*\{[^}]*box-shadow:\s*inset 0 0 0 var\(--border-width-hairline\)/);
-    expect(source).not.toMatch(/frequency-\w+ \.js-cell-token-word\s*\{[^}]*background-color/);
+    expect(source).not.toMatch(/frequency-\w+ \.js-Tihoka-token-word\s*\{[^}]*background-color/);
   });
 
   it.each(['host', 'shadow'])('keeps the word lane transparent and unpainted in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
-    const lane = source.match(/\.js-cell-token-word\s*\{([^}]*)\}/)?.[1] ?? '';
+    const lane = source.match(/\.js-Tihoka-token-word\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(lane).toContain('line-height: 1.1');
     expect(lane).toContain('background: transparent');
     expect(lane).not.toContain('box-shadow');
@@ -206,18 +206,18 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
 
   it.each(['host', 'shadow'])('blocks host padding/border/margin leakage into token lanes in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
-    for (const sel of ['.js-cell-token--word {', '.js-cell-token-word {', '.js-cell-token-status {']) {
+    for (const sel of ['.js-Tihoka-token--word {', '.js-Tihoka-token-word {', '.js-Tihoka-token-status {']) {
       const body = source.match(new RegExp(sel.replace(/[.{}]/g, (c) => `\\${c}`) + '([^}]*)\\}'))?.[1] ?? '';
       expect(body).toContain('padding: 0');
       expect(body).toContain('border: 0');
     }
-    const status = source.match(/\.js-cell-token-status\s*\{([^}]*)\}/)?.[1] ?? '';
+    const status = source.match(/\.js-Tihoka-token-status\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(status).toContain('margin: 0');
   });
 
   it.each(['host', 'shadow'])('spaces the annotation stack by column gap alone in %s CSS', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
-    const column = source.match(/\.js-cell-token--word\s*\{([^}]*)\}/)?.[1] ?? '';
+    const column = source.match(/\.js-Tihoka-token--word\s*\{([^}]*)\}/)?.[1] ?? '';
     // With both annotation lanes off the token must stay flat inline text —
     // lane gap/margin only apply while a cap or gloss lane can render.
     expect(column).toContain('gap: 0');
@@ -226,7 +226,7 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     expect(annotated).toContain('gap: 0.14em');
     expect(annotated).toContain('margin: 0.55em 0');
     expect(source).toMatch(/vertical-align:\s*1\.19em/);
-    expect(source).not.toMatch(/\.js-cell-token-word\s*\{[^}]*padding-bottom/);
+    expect(source).not.toMatch(/\.js-Tihoka-token-word\s*\{[^}]*padding-bottom/);
     expect(source).not.toMatch(/::after\s*\{[^}]*margin-top/);
   });
 
@@ -248,22 +248,22 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     }
   });
 
-  it.each(['host', 'shadow'])('emits self-contained --cell-token-* values in %s CSS (no unresolved var(--color-text))', (variant) => {
+  it.each(['host', 'shadow'])('emits self-contained --Tihoka-token-* values in %s CSS (no unresolved var(--color-text))', (variant) => {
     const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
-    const values = [...source.matchAll(/--cell-token-[\w-]+:\s*([^;]+);/g)].map((match) => match[1]);
+    const values = [...source.matchAll(/--Tihoka-token-[\w-]+:\s*([^;]+);/g)].map((match) => match[1]);
     expect(values.length).toBeGreaterThan(0);
     for (const value of values) {
       expect(value).not.toContain('var(--color-text)');
     }
   });
 
-  it('pins every --cell-token-* selector to the light palette (tokens never flip dark)', () => {
+  it('pins every --Tihoka-token-* selector to the light palette (tokens never flip dark)', () => {
     const darkBlock = buildTokenSpanCss().split('[data-theme="dark"]')[1];
-    expect(darkBlock).toContain('--cell-token-selected: #5EA5E9'); // dawn light primary
+    expect(darkBlock).toContain('--Tihoka-token-selected: #5EA5E9'); // dawn light primary
     // Pills stay light-pinned; only the sentence wash intentionally carries
     // the dark-palette primary — it must read on both light and dark hosts.
     expect(darkBlock.match(/#6AB2F5/g) ?? []).toHaveLength(1);
-    expect(darkBlock).toContain('--cell-sentence-wash: #6AB2F5');
+    expect(darkBlock).toContain('--Tihoka-sentence-wash: #6AB2F5');
   });
 
   it('keeps a line box in the empty cap lane so missing readings never lift the word', () => {
@@ -280,10 +280,10 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
       (variant) => {
         const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
         const rule = source.match(
-          /status-unknown\.js-cell-token--has-card[^{]*\{([^}]*)\}/,
+          /status-unknown\.js-Tihoka-token--has-card[^{]*\{([^}]*)\}/,
         )?.[1] ?? '';
         expect(rule).toContain(
-          'background: linear-gradient(90deg, var(--cell-token-status-unknown), var(--cell-token-status-learning))',
+          'background: linear-gradient(90deg, var(--Tihoka-token-status-unknown), var(--Tihoka-token-status-learning))',
         );
       },
     );
@@ -293,10 +293,10 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
       (variant) => {
         const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
         const rule = source.match(
-          /status-tracking\.js-cell-token--has-card[^{]*\{([^}]*)\}/,
+          /status-tracking\.js-Tihoka-token--has-card[^{]*\{([^}]*)\}/,
         )?.[1] ?? '';
         expect(rule).toContain(
-          'background: linear-gradient(90deg, var(--cell-token-status-tracking), var(--cell-token-status-unknown), var(--cell-token-status-learning))',
+          'background: linear-gradient(90deg, var(--Tihoka-token-status-tracking), var(--Tihoka-token-status-unknown), var(--Tihoka-token-status-learning))',
         );
       },
     );
@@ -314,17 +314,17 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
       (variant) => {
         const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
         for (const status of ['known', 'ignore']) {
-          const gradient = `background: linear-gradient(90deg, var(--cell-token-status-${status}), var(--cell-token-status-learning))`;
+          const gradient = `background: linear-gradient(90deg, var(--Tihoka-token-status-${status}), var(--Tihoka-token-status-learning))`;
           expect(source).toMatch(
-            new RegExp(`status-${status}\\.js-cell-token--has-card:hover:not\\(\\.js-cell-token--status-off\\) \\.js-cell-token-status[^}]*${gradient.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
+            new RegExp(`status-${status}\\.js-Tihoka-token--has-card:hover:not\\(\\.js-Tihoka-token--status-off\\) \\.js-Tihoka-token-status[^}]*${gradient.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
           );
           expect(source).toMatch(
-            new RegExp(`status-${status}\\.js-cell-token--has-card\\.js-cell-token--popup-open:not\\(\\.js-cell-token--status-off\\) \\.js-cell-token-status[^}]*${gradient.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
+            new RegExp(`status-${status}\\.js-Tihoka-token--has-card\\.js-Tihoka-token--popup-open:not\\(\\.js-Tihoka-token--status-off\\) \\.js-Tihoka-token-status[^}]*${gradient.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
           );
           // No ungated carded rule — a known/ignore carded word must stay
           // plain at rest exactly like the uncarded one.
           expect(source).not.toMatch(
-            new RegExp(`status-${status}\\.js-cell-token--has-card:not\\([^)]*\\) \\.js-cell-token-status\\s*\\{`),
+            new RegExp(`status-${status}\\.js-Tihoka-token--has-card:not\\([^)]*\\) \\.js-Tihoka-token-status\\s*\\{`),
           );
         }
       },
@@ -338,9 +338,9 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
         // still wins on equal specificity. The card layer rides the status
         // capsule, which is no longer gated — unknown-family carded words keep
         // their gradient bar at rest.
-        const gateIndex = source.indexOf('.js-cell-token--i1-off');
+        const gateIndex = source.indexOf('.js-Tihoka-token--i1-off');
         for (const status of ['unknown', 'tracking', 'known', 'ignore']) {
-          const cardIndex = source.indexOf(`status-${status}.js-cell-token--has-card`);
+          const cardIndex = source.indexOf(`status-${status}.js-Tihoka-token--has-card`);
           expect(cardIndex).toBeGreaterThan(-1);
           expect(cardIndex).toBeLessThan(gateIndex);
         }

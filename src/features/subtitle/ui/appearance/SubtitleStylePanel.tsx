@@ -71,7 +71,7 @@ export function SubtitleStylePanel({
   };
 
   return (
-    <div className={styles.container} data-cell-id={`subtitle-style-panel-${role}`}>
+    <div className={styles.container} data-tihoka-id={`subtitle-style-panel-${role}`}>
       {/* ─── Text section ─── */}
       <span className={styles.sectionHeader}>{t('subtitle.style.sectionText')}</span>
       <div className={styles.card}>
@@ -138,7 +138,7 @@ export function SubtitleStylePanel({
               placeholder={t('subtitle.style.fontCustomPlaceholder')}
               onChange={(e) => onChange({ fontFamily: e.target.value })}
               aria-label={t('subtitle.style.fontCustomAria')}
-              data-cell-id={`style-${role}-font-family-custom`}
+              data-tihoka-id={`style-${role}-font-family-custom`}
             />
           )}
         </div>
@@ -316,12 +316,12 @@ export function SubtitleStylePanel({
             size="sm"
             onClick={() => setShowResetConfirm(true)}
             aria-label={t('subtitle.style.resetAria', [role === 'target' ? t('library.card.target') : t('library.card.native')])}
-            data-cell-id={`style-${role}-reset`}
+            data-tihoka-id={`style-${role}-reset`}
           >
             {t('subtitle.action.reset')}
           </Button>
         ) : (
-          <div className={styles.confirmRow} data-cell-id={`style-${role}-reset-confirm`}>
+          <div className={styles.confirmRow} data-tihoka-id={`style-${role}-reset-confirm`}>
             <span>{t('subtitle.style.resetConfirm')}</span>
             <Button variant="destructive" size="sm" onClick={() => { onReset(); setShowResetConfirm(false); }}>
               {t('subtitle.action.reset')}

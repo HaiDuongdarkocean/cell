@@ -22,7 +22,7 @@ function fire(target: EventTarget, type: string, x: number, y: number): void {
 
 /** Drag math reads the CONTAINER box (a separate node from parent) — mock it too. */
 function containerOf(scope: HTMLElement): HTMLDivElement {
-  const c = scope.querySelector('.cell-ocr-region-selector') as HTMLDivElement;
+  const c = scope.querySelector('.Tihoka-ocr-region-selector') as HTMLDivElement;
   c.getBoundingClientRect = fakeBox;
   return c;
 }
@@ -71,28 +71,28 @@ describe('RegionSelector', () => {
 
   it('attach renders view-mode rectangle with rounded label', () => {
     selector.attach(video, REGION, 'view');
-    const rect = parent.querySelector('.cell-ocr-region-rect') as HTMLDivElement;
+    const rect = parent.querySelector('.Tihoka-ocr-region-rect') as HTMLDivElement;
     expect(rect).not.toBeNull();
     expect(rect.dataset.mode).toBe('view');
     expect(rect.style.left).toBe('20%');
     expect(rect.style.width).toBe('50%');
-    expect(rect.querySelector('.cell-ocr-region-label')?.textContent).toBe('OCR region (50%×30%)');
+    expect(rect.querySelector('.Tihoka-ocr-region-label')?.textContent).toBe('OCR region (50%×30%)');
     expect(parent.querySelectorAll('[data-handle]')).toHaveLength(0);
-    expect(parent.querySelectorAll('.cell-ocr-region-btn')).toHaveLength(0);
+    expect(parent.querySelectorAll('.Tihoka-ocr-region-btn')).toHaveLength(0);
   });
 
   it('edit mode creates 8 handles and Apply/Cancel buttons', () => {
     selector.attach(video, REGION, 'edit');
     const handles = [...parent.querySelectorAll('[data-handle]')] as HTMLDivElement[];
     expect(handles.map(h => h.dataset.handle)).toEqual(['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']);
-    const btns = [...parent.querySelectorAll('.cell-ocr-region-btn')].map(b => b.textContent);
+    const btns = [...parent.querySelectorAll('.Tihoka-ocr-region-btn')].map(b => b.textContent);
     expect(btns).toEqual(['Apply', 'Cancel']);
   });
 
   it('regression: resize handles stay live AFTER a move drag (bug: render() recreated handles without rebinding)', () => {
     selector.attach(video, REGION, 'edit');
     containerOf(parent);
-    const rect = parent.querySelector('.cell-ocr-region-rect') as HTMLDivElement;
+    const rect = parent.querySelector('.Tihoka-ocr-region-rect') as HTMLDivElement;
     const handleBefore = parent.querySelector('[data-handle="se"]') as HTMLDivElement;
 
     // Move drag: press rect center, move +10%/+10% (1000px box → 100px = 10%)
@@ -120,7 +120,7 @@ describe('RegionSelector', () => {
   it('select mode drag draws a new region from the press point', () => {
     selector.attach(video, REGION, 'select');
     const container = containerOf(parent);
-    const rect = parent.querySelector('.cell-ocr-region-rect') as HTMLDivElement;
+    const rect = parent.querySelector('.Tihoka-ocr-region-rect') as HTMLDivElement;
     // Draw starts on a container press OUTSIDE the rect (pressing the rect body moves it).
     fire(container, 'mousedown', 250, 500);
     fire(document, 'mousemove', 750, 850);
@@ -135,17 +135,17 @@ describe('RegionSelector', () => {
   it('Apply commits pending region and fires callback; Cancel reverts render', () => {
     selector.attach(video, REGION, 'edit');
     containerOf(parent);
-    const rect = parent.querySelector('.cell-ocr-region-rect') as HTMLDivElement;
+    const rect = parent.querySelector('.Tihoka-ocr-region-rect') as HTMLDivElement;
     fire(rect, 'mousedown', 450, 450);
     fire(document, 'mousemove', 550, 550);
     fire(document, 'mouseup', 550, 550);
 
-    const apply = [...parent.querySelectorAll('.cell-ocr-region-btn')].find(b => b.textContent === 'Apply') as HTMLButtonElement;
+    const apply = [...parent.querySelectorAll('.Tihoka-ocr-region-btn')].find(b => b.textContent === 'Apply') as HTMLButtonElement;
     apply.click();
     expect(applied).toBe(1);
     expect(changes.at(-1)).toEqual({ xPct: 30, yPct: 40, widthPct: 50, heightPct: 30 });
     // RegionSelector stays in edit mode — OcrSession switches to view on Apply.
-    expect(rect.querySelector('.cell-ocr-region-label')?.textContent).toBe('Edit: 50%×30%');
+    expect(rect.querySelector('.Tihoka-ocr-region-label')?.textContent).toBe('Edit: 50%×30%');
   });
 
   it('Esc fires cancel and view mode clears toolbar + handles', () => {
@@ -155,15 +155,15 @@ describe('RegionSelector', () => {
     expect(cancelled).toBe(1);
     selector.setMode('view');
     expect(parent.querySelectorAll('[data-handle]')).toHaveLength(0);
-    expect(parent.querySelectorAll('.cell-ocr-region-btn')).toHaveLength(0);
+    expect(parent.querySelectorAll('.Tihoka-ocr-region-btn')).toHaveLength(0);
     expect(document.body.dataset.ocrRegionSelecting).toBeUndefined();
   });
 
   it('label node is reused across renders (no recreate → no flicker)', () => {
     selector.attach(video, REGION, 'view');
-    const label1 = parent.querySelector('.cell-ocr-region-label');
+    const label1 = parent.querySelector('.Tihoka-ocr-region-label');
     selector.updateRegion({ xPct: 10, yPct: 20, widthPct: 33.3, heightPct: 29.72222222222222 });
-    const label2 = parent.querySelector('.cell-ocr-region-label');
+    const label2 = parent.querySelector('.Tihoka-ocr-region-label');
     expect(label2).toBe(label1);
     expect(label2?.textContent).toBe('OCR region (33%×30%)');
   });
@@ -181,14 +181,14 @@ describe('RegionSelector', () => {
     // the divider drag reads the CONTAINER's parent box, i.e. the video here.
     video.getBoundingClientRect = fakeBox;
     sel2.setSplit(true, 0.5, 'Target', 'Native');
-    const halves = [...parent.querySelectorAll('.cell-ocr-split-half')] as HTMLDivElement[];
+    const halves = [...parent.querySelectorAll('.Tihoka-ocr-split-half')] as HTMLDivElement[];
     expect(halves).toHaveLength(2);
     expect(halves[0]?.dataset.label).toBe('Target');
     expect(halves[1]?.dataset.label).toBe('Native');
     // 50/50 of a full-height region → halves at 0%/50%, divider centered on the split line.
     expect(halves[0]?.style.height).toBe('50%');
     expect(halves[1]?.style.top).toBe('50%');
-    const divider = parent.querySelector('.cell-ocr-split-divider') as HTMLDivElement;
+    const divider = parent.querySelector('.Tihoka-ocr-split-divider') as HTMLDivElement;
     expect(divider).not.toBeNull();
     expect(divider.style.top).toBe('50%');
 
@@ -202,8 +202,8 @@ describe('RegionSelector', () => {
 
     // Node identity (ADR-081): updateSplitRatio repositions, never recreates.
     sel2.updateSplitRatio(0.3);
-    expect(parent.querySelector('.cell-ocr-split-divider')).toBe(divider);
-    expect(parent.querySelector('.cell-ocr-split-half')).toBe(halves[0]);
+    expect(parent.querySelector('.Tihoka-ocr-split-divider')).toBe(divider);
+    expect(parent.querySelector('.Tihoka-ocr-split-half')).toBe(halves[0]);
     expect(divider.style.top).toBe('30%');
     sel2.detach();
   });
@@ -212,8 +212,8 @@ describe('RegionSelector', () => {
     const sel2 = new RegionSelector({ onRegionChange: () => {}, onApply: () => {}, onCancel: () => {} });
     sel2.attach(video, FULL_HEIGHT, 'view');
     sel2.setSplit(true, 0.5, 'Target', 'Native');
-    const divider = parent.querySelector('.cell-ocr-split-divider') as HTMLDivElement;
-    const halves = [...parent.querySelectorAll('.cell-ocr-split-half')] as HTMLDivElement[];
+    const divider = parent.querySelector('.Tihoka-ocr-split-divider') as HTMLDivElement;
+    const halves = [...parent.querySelectorAll('.Tihoka-ocr-split-half')] as HTMLDivElement[];
     expect(divider.style.display).not.toBe('none');
 
     // edit mode: split stays visible so user can see target/native while adjusting.
@@ -231,8 +231,8 @@ describe('RegionSelector', () => {
     for (const h of halves) expect(h.style.display).not.toBe('none');
 
     sel2.setSplit(false, 0.5);
-    expect(parent.querySelectorAll('.cell-ocr-split-half')).toHaveLength(0);
-    expect(parent.querySelector('.cell-ocr-split-divider')).toBeNull();
+    expect(parent.querySelectorAll('.Tihoka-ocr-split-half')).toHaveLength(0);
+    expect(parent.querySelector('.Tihoka-ocr-split-divider')).toBeNull();
     sel2.detach();
   });
 });
@@ -282,7 +282,7 @@ describe('RegionSelector intrinsic-space contract (letterbox)', () => {
     mode: 'view' | 'select' | 'edit' = 'view',
   ): HTMLDivElement {
     sel.attach(vid, region, mode);
-    const container = shell.querySelector('.cell-ocr-region-selector') as HTMLDivElement;
+    const container = shell.querySelector('.Tihoka-ocr-region-selector') as HTMLDivElement;
     container.getBoundingClientRect = shell.getBoundingClientRect;
     // Re-render with the now-correct container rect (attach's internal render
     // ran while the container rect was still 0×0 → identity).
@@ -295,7 +295,7 @@ describe('RegionSelector intrinsic-space contract (letterbox)', () => {
     const intrinsicBottom: CustomRegion = { xPct: 0, yPct: 85, widthPct: 100, heightPct: 15 };
     const sel = new RegionSelector({ onRegionChange: () => {}, onApply: () => {}, onCancel: () => {} });
     attachWithGeometry(sel, intrinsicBottom, 'view');
-    const rect = shell.querySelector('.cell-ocr-region-rect') as HTMLDivElement;
+    const rect = shell.querySelector('.Tihoka-ocr-region-rect') as HTMLDivElement;
     // Shell-space: content bottom-15% sits at y 76.25% (not 85%) because of the
     // 112.5px top bar; height 11.25% (not 15%) because content is shorter than shell.
     expect(parseFloat(rect.style.top)).toBeCloseTo(76.25, 3);
@@ -340,7 +340,7 @@ describe('RegionSelector intrinsic-space contract (letterbox)', () => {
     const r: CustomRegion = { xPct: 20, yPct: 30, widthPct: 50, heightPct: 30 };
     const sel = new RegionSelector({ onRegionChange: () => {}, onApply: () => {}, onCancel: () => {} });
     attachWithGeometry(sel, r, 'view');
-    const rect = shell.querySelector('.cell-ocr-region-rect') as HTMLDivElement;
+    const rect = shell.querySelector('.Tihoka-ocr-region-rect') as HTMLDivElement;
     expect(parseFloat(rect.style.left)).toBeCloseTo(20, 3);
     expect(parseFloat(rect.style.top)).toBeCloseTo(30, 3);
     expect(parseFloat(rect.style.width)).toBeCloseTo(50, 3);
@@ -366,7 +366,7 @@ describe('RegionSelector intrinsic-space contract (letterbox)', () => {
     const intrinsicBottom: CustomRegion = { xPct: 0, yPct: 85, widthPct: 100, heightPct: 15 };
     const sel = new RegionSelector({ onRegionChange: () => {}, onApply: () => {}, onCancel: () => {} });
     attachWithGeometry(sel, intrinsicBottom, 'view');
-    const rect = shell.querySelector('.cell-ocr-region-rect') as HTMLDivElement;
+    const rect = shell.querySelector('.Tihoka-ocr-region-rect') as HTMLDivElement;
     // Vertical 1:1 (no top/bottom bar): top=85%, height=15%.
     expect(parseFloat(rect.style.top)).toBeCloseTo(85, 3);
     expect(parseFloat(rect.style.height)).toBeCloseTo(15, 3);

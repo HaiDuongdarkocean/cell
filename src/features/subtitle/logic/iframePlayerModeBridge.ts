@@ -9,28 +9,28 @@ export { isChildFrame };
 // Iframe Player Mode bridge — top-frame coordinator.
 //
 // When the host video lives inside a cross-origin iframe (AnimeKai/megaplay,
-// moviepire/vidnest, etc.), the child-frame Cell overlay cannot cover the
+// moviepire/vidnest, etc.), the child-frame Tihoka overlay cannot cover the
 // top-level viewport because `position:fixed` is bounded by the iframe's
 // browsing context. The top frame uses the native Fullscreen API on the host
 // container (e.g. `.player-wrap`) — no DOM move, no iframe reload, and the
 // browser top-layer guarantees nothing can z-index over it. The iframe fills
-// the fullscreen element → the child-frame Cell overlay (already
+// the fullscreen element → the child-frame Tihoka overlay (already
 // `position:fixed; inset:0` inside the iframe) covers the full viewport.
 //
 // Message protocol (postMessage, cross-origin safe):
-//   child → top:  { type: '__CELL_PLAYER_MODE_ENTER', frameSrc: string }
-//   child → top:  { type: '__CELL_PLAYER_MODE_EXIT',  frameSrc: string }
-//   top → child:  { type: '__CELL_PLAYER_MODE_ENTERED' }
-//   top → child:  { type: '__CELL_PLAYER_MODE_EXITED' }
+//   child → top:  { type: '__Tihoka_PLAYER_MODE_ENTER', frameSrc: string }
+//   child → top:  { type: '__Tihoka_PLAYER_MODE_EXIT',  frameSrc: string }
+//   top → child:  { type: '__Tihoka_PLAYER_MODE_ENTERED' }
+//   top → child:  { type: '__Tihoka_PLAYER_MODE_EXITED' }
 //
 // The bridge is a no-op when the current frame IS the top frame and no child
 // ever requests entry — same-origin sites (YouTube, themoviebox) keep using
 // the existing in-frame Player Mode flow unchanged.
 
-const ENTER_MSG = '__CELL_PLAYER_MODE_ENTER';
-const EXIT_MSG = '__CELL_PLAYER_MODE_EXIT';
-const ENTERED_MSG = '__CELL_PLAYER_MODE_ENTERED';
-const EXITED_MSG = '__CELL_PLAYER_MODE_EXITED';
+const ENTER_MSG = '__Tihoka_PLAYER_MODE_ENTER';
+const EXIT_MSG = '__Tihoka_PLAYER_MODE_EXIT';
+const ENTERED_MSG = '__Tihoka_PLAYER_MODE_ENTERED';
+const EXITED_MSG = '__Tihoka_PLAYER_MODE_EXITED';
 
 // Manager sheet — child iframe requests host page to render a bottom sheet.
 // The host page creates a portal on document.body and the child sends manager
@@ -108,11 +108,11 @@ async function enterTopFramePlayerMode(frameSrc: string): Promise<boolean> {
   const host = findFarthestSameSizeContainer(iframe);
 
   // Force the player container chain to fill the fullscreen host. Scope to
-  // .player-main + iframe only — Cell's own overlay hosts (#cell-universal-
-  // panel-host, .js-cell-orbital-badge-host) must NOT be stretched, otherwise
+  // .player-main + iframe only — Tihoka's own overlay hosts (#Tihoka-universal-
+  // panel-host, .js-Tihoka-orbital-badge-host) must NOT be stretched, otherwise
   // they cover the iframe and block pointer events on the video.
   const fillStyle = document.createElement('style');
-  fillStyle.setAttribute('data-cell-player-mode', 'fill');
+  fillStyle.setAttribute('data-tihoka-player-mode', 'fill');
   fillStyle.textContent = [
     ':fullscreen .player-main,',
     ':fullscreen .player-main iframe,',
@@ -134,11 +134,11 @@ async function enterTopFramePlayerMode(frameSrc: string): Promise<boolean> {
     // A child iframe's `postMessage` cannot carry the user's activation to the
     // top frame. Keep the same carefully selected host and use a reversible
     // fixed fallback instead of showing a failure toast. This path is scoped to
-    // the matched player container, not body/html or Cell's own hosts.
+    // the matched player container, not body/html or Tihoka's own hosts.
     const fallbackStyle = document.createElement('style');
-    fallbackStyle.setAttribute('data-cell-player-mode', 'fallback');
+    fallbackStyle.setAttribute('data-tihoka-player-mode', 'fallback');
     fallbackStyle.textContent = [
-      '[data-cell-player-mode-host] {',
+      '[data-tihoka-player-mode-host] {',
       '  position:fixed!important;inset:0!important;',
       '  width:100vw!important;height:100dvh!important;',
       '  max-width:none!important;max-height:none!important;',
@@ -146,13 +146,13 @@ async function enterTopFramePlayerMode(frameSrc: string): Promise<boolean> {
       '  z-index:2147483647!important /* max-int: intentional top-most overlay vs host page */;',
       '  overflow:hidden!important;',
       '}',
-      '[data-cell-player-mode-host] iframe {',
+      '[data-tihoka-player-mode-host] iframe {',
       '  position:absolute!important;inset:0!important;',
       '  width:100%!important;height:100%!important;',
       '  border:none!important;display:block!important;',
       '}',
     ].join('');
-    host.setAttribute('data-cell-player-mode-host', '');
+    host.setAttribute('data-tihoka-player-mode-host', '');
     document.head.appendChild(fallbackStyle);
     topState = { host, fillStyle, fallbackStyle };
     return true;
@@ -170,7 +170,7 @@ async function exitTopFramePlayerMode(): Promise<boolean> {
     catch { /* best effort */ }
   }
   s.fallbackStyle?.remove();
-  s.host.removeAttribute('data-cell-player-mode-host');
+  s.host.removeAttribute('data-tihoka-player-mode-host');
   s.fillStyle.remove();
   return true;
 }

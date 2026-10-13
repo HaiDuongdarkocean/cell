@@ -1,9 +1,10 @@
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import type { FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 import { t } from '@/shared/i18n';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { formatDefinitions } from '@/features/dictionary'
-import { formatDefEntry, formatDefFromLookup } from '../lib/defEntry';
+import { cardLookupResult, formatDefEntry, formatDefFromLookup } from '../lib/defEntry';
 import type { PopupCardCreatorPrefill } from '@/entities/dictionary';
 import type { SrsFieldValue } from '@/entities/srs/types';
 import type { MessageResponse, SrsAddNotePayload, SrsAddNoteResult, SrsCardsTermsResult, SrsOpenStudyPagePayload, SrsTermCardsResult } from '@/entities/message/types';
@@ -19,6 +20,7 @@ import type { MessageResponse, SrsAddNotePayload, SrsAddNoteResult, SrsCardsTerm
 export function buildSrsFieldsFromPrefill(
   prefill: PopupCardCreatorPrefill,
   frequencyFormat: 'stars' | 'rank' = 'stars',
+  frequencyThresholds?: FrequencyBandThresholds,
 ): Record<string, SrsFieldValue> {
   const fields: Record<string, SrsFieldValue> = {};
 
@@ -28,11 +30,12 @@ export function buildSrsFieldsFromPrefill(
   }
   if (prefill.definitions.length) {
     const senses = formatDefinitions(prefill.definitions);
+    const lookupResult = cardLookupResult(prefill);
     fields['def'] = {
       kind: 'text',
-      value: prefill.lookupResult
-        ? formatDefFromLookup(prefill.lookupResult, senses, prefill.term, frequencyFormat)
-        : formatDefEntry({ term: prefill.term, reading: prefill.reading, readingKind: prefill.readingKind, frequencyFormat, senses }),
+      value: lookupResult
+        ? formatDefFromLookup(lookupResult, senses, prefill.term, frequencyFormat, frequencyThresholds)
+        : formatDefEntry({ term: prefill.term, reading: prefill.reading, readingKind: prefill.readingKind, frequencyStars: prefill.frequencyStars?.count, frequencies: prefill.frequencies, frequencyFormat, frequencyThresholds, senses }),
     };
   }
   if (prefill.wordAudioUrls?.length) {
@@ -56,7 +59,7 @@ export async function addToOceanSrs(prefill: PopupCardCreatorPrefill): Promise<S
   const payload: SrsAddNotePayload = {
     targetLanguage: prefill.langCode,
     targetWord: prefill.term,
-    fields: buildSrsFieldsFromPrefill(prefill, settings?.cardCreator?.frequencyDisplay),
+    fields: buildSrsFieldsFromPrefill(prefill, settings?.dictionaryPopup?.frequencyDisplay, settings?.frequencyBands),
   };
   const response = await sendMessage<MessageResponse<SrsAddNoteResult>>({
     type: MESSAGE_TYPES.SRS_ADD_NOTE,

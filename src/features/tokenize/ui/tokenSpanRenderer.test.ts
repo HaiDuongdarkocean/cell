@@ -27,14 +27,14 @@ describe('tokenSpanRenderer', () => {
     ]);
     bindTokenBlock(block, { showStatus: true, showFrequency: true });
 
-    const spans = Array.from(block.element.querySelectorAll('.js-cell-token'));
+    const spans = Array.from(block.element.querySelectorAll('.js-Tihoka-token'));
     expect(spans).toHaveLength(4); // 2 words + 2 separators (space + period)
 
-    const hello = spans.find((s) => s.getAttribute('data-cell-term') === 'hello');
+    const hello = spans.find((s) => s.getAttribute('data-tihoka-term') === 'hello');
     expect(hello).toBeTruthy();
-    expect(hello!.classList.contains('js-cell-token--status-unknown')).toBe(true);
-    expect(hello!.classList.contains('js-cell-token--frequency-core')).toBe(true);
-    expect(hello!.querySelector('.js-cell-token-status')).not.toBeNull();
+    expect(hello!.classList.contains('js-Tihoka-token--status-unknown')).toBe(true);
+    expect(hello!.classList.contains('js-Tihoka-token--frequency-core')).toBe(true);
+    expect(hello!.querySelector('.js-Tihoka-token-status')).not.toBeNull();
   });
 
   it('marks only the single unknown word of a sentence as i+1', () => {
@@ -48,11 +48,11 @@ describe('tokenSpanRenderer', () => {
     bindTokenBlock(block, { showStatus: true, showFrequency: true });
 
     const cls = (term: string) =>
-      block.element.querySelector<HTMLElement>(`[data-cell-term="${term}"]`)!.classList;
-    expect(cls('durian').contains('js-cell-token--i1-off')).toBe(false);
-    expect(cls('aardvark').contains('js-cell-token--i1-off')).toBe(true);
-    expect(cls('platypus').contains('js-cell-token--i1-off')).toBe(true);
-    expect(cls('ate').contains('js-cell-token--i1-off')).toBe(true);
+      block.element.querySelector<HTMLElement>(`[data-tihoka-term="${term}"]`)!.classList;
+    expect(cls('durian').contains('js-Tihoka-token--i1-off')).toBe(false);
+    expect(cls('aardvark').contains('js-Tihoka-token--i1-off')).toBe(true);
+    expect(cls('platypus').contains('js-Tihoka-token--i1-off')).toBe(true);
+    expect(cls('ate').contains('js-Tihoka-token--i1-off')).toBe(true);
   });
 
   it('counts the i+1 gap over the cross-block sentence, not the link fragment', () => {
@@ -81,15 +81,15 @@ describe('tokenSpanRenderer', () => {
     bindTokenBlock(b2, { showStatus: true, showFrequency: true });
     bindTokenBlock(b3, { showStatus: true, showFrequency: true });
 
-    const cls = (term: string) => p.querySelector<HTMLElement>(`[data-cell-term="${term}"]`)!.classList;
+    const cls = (term: string) => p.querySelector<HTMLElement>(`[data-tihoka-term="${term}"]`)!.classList;
     // The real sentence "I like durian today." has exactly one gap → durian marked.
-    expect(cls('durian').contains('js-cell-token--i1-off')).toBe(false);
-    expect(cls('like').contains('js-cell-token--i1-off')).toBe(true);
+    expect(cls('durian').contains('js-Tihoka-token--i1-off')).toBe(false);
+    expect(cls('like').contains('js-Tihoka-token--i1-off')).toBe(true);
 
     // A second unknown in the same run makes it dense — nothing stays marked.
     b3.tokens![0]!.status = 'unknown';
     restyleTokenBlock(b3, { showStatus: true, showFrequency: true });
-    expect(cls('durian').contains('js-cell-token--i1-off')).toBe(true);
+    expect(cls('durian').contains('js-Tihoka-token--i1-off')).toBe(true);
   });
 
   it('ends the sentence at an untokenized terminator text node between blocks', () => {
@@ -145,8 +145,8 @@ describe('tokenSpanRenderer', () => {
       lastAccessedAt: 0,
     };
     bindTokenBlock(block, { showStatus: true, showFrequency: true });
-    const span = a.querySelector<HTMLElement>('[data-cell-term="intermediate"]')!;
-    expect(span.classList.contains('js-cell-token--i1-off')).toBe(true);
+    const span = a.querySelector<HTMLElement>('[data-tihoka-term="intermediate"]')!;
+    expect(span.classList.contains('js-Tihoka-token--i1-off')).toBe(true);
   });
 
   it('stamps the sentence index on word and gap spans', () => {
@@ -158,13 +158,13 @@ describe('tokenSpanRenderer', () => {
     bindTokenBlock(block, { showStatus: true, showFrequency: true });
 
     const sentenceOf = (term: string) =>
-      block.element.querySelector(`[data-cell-term="${term}"]`)!.getAttribute('data-cell-sentence');
+      block.element.querySelector(`[data-tihoka-term="${term}"]`)!.getAttribute('data-tihoka-sentence');
     expect(sentenceOf('one')).toBe('0');
     expect(sentenceOf('two')).toBe('1');
     // The gap holding the sentence-closing period belongs to sentence 0.
-    const gap = block.element.querySelector('.js-cell-token--separator')!;
+    const gap = block.element.querySelector('.js-Tihoka-token--separator')!;
     expect(gap.textContent).toBe('. ');
-    expect(gap.getAttribute('data-cell-sentence')).toBe('0');
+    expect(gap.getAttribute('data-tihoka-sentence')).toBe('0');
   });
 
   it('unbind restores original text node', () => {
@@ -175,7 +175,7 @@ describe('tokenSpanRenderer', () => {
     expect(block.element.textContent).toBe('Hello world.');
     unbindTokenBlock(block);
     expect(block.element.textContent).toBe('Hello world.');
-    expect(block.element.querySelectorAll('.js-cell-token')).toHaveLength(0);
+    expect(block.element.querySelectorAll('.js-Tihoka-token')).toHaveLength(0);
     expect(block.isBound).toBe(false);
   });
 
@@ -200,27 +200,90 @@ describe('tokenSpanRenderer', () => {
       { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'core', reading: undefined },
     ]);
     bindTokenBlock(block, { showStatus: false, showFrequency: false });
-    const span = block.element.querySelector('.js-cell-token');
-    expect(span!.classList.contains('js-cell-token--status-off')).toBe(true);
-    expect(span!.classList.contains('js-cell-token--frequency-off')).toBe(true);
+    const span = block.element.querySelector('.js-Tihoka-token');
+    expect(span!.classList.contains('js-Tihoka-token--status-off')).toBe(true);
+    expect(span!.classList.contains('js-Tihoka-token--frequency-off')).toBe(true);
   });
 
   it('mirrors token.gloss onto data-gloss and marks gloss-off when hidden', () => {
     const block = makeBlock('Hello.', [
       { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'none', reading: undefined, gloss: 'xin chào' },
     ]);
-    bindTokenBlock(block, { showStatus: true, showFrequency: true, showGlosses: true });
-    const span = block.element.querySelector('.js-cell-token');
+    bindTokenBlock(block, { showStatus: true, showFrequency: true, glossDisplay: 'always' });
+    const span = block.element.querySelector('.js-Tihoka-token');
     expect(span!.getAttribute('data-gloss')).toBe('xin chào');
-    expect(block.element.querySelector('.js-cell-token--gloss-off')).toBeNull();
+    expect(block.element.querySelector('.js-Tihoka-token--gloss-off')).toBeNull();
 
     unbindTokenBlock(block);
     bindTokenBlock(block, { showStatus: true, showFrequency: true });
-    const off = block.element.querySelector('.js-cell-token--gloss-off');
+    const off = block.element.querySelector('.js-Tihoka-token--gloss-off');
     expect(off).not.toBeNull();
   });
 
-  it('marks carded terms with js-cell-token--has-card and leaves uncarded terms clean', () => {
+  describe('annotation display modes', () => {
+    const sentence = (statuses: readonly ['unknown' | 'known', 'unknown' | 'known', 'unknown' | 'known']): TokenBlock =>
+      makeBlock('Alpha beta gamma.', [
+        { text: 'Alpha', term: 'alpha', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: statuses[0], frequencyBand: 'none', reading: 'ɑ', gloss: 'a' },
+        { text: 'beta', term: 'beta', start: 6, end: 10, isSeparator: false, sentenceIndex: 0, status: statuses[1], frequencyBand: 'none', reading: 'β', gloss: 'b' },
+        { text: 'gamma', term: 'gamma', start: 11, end: 16, isSeparator: false, sentenceIndex: 0, status: statuses[2], frequencyBand: 'none', reading: 'γ', gloss: 'g' },
+      ]);
+
+    const cls = (block: TokenBlock, term: string) =>
+      block.element.querySelector<HTMLElement>(`[data-tihoka-term="${term}"]`)!.classList;
+
+    it('always shows both lanes on every token', () => {
+      const block = sentence(['unknown', 'known', 'known']);
+      bindTokenBlock(block, { showStatus: true, showFrequency: true, readingDisplay: 'always', glossDisplay: 'always' });
+      expect(block.element.querySelector('.js-Tihoka-token--reading-off')).toBeNull();
+      expect(block.element.querySelector('.js-Tihoka-token--gloss-off')).toBeNull();
+      expect(cls(block, 'alpha').contains('js-Tihoka-token--reading-hover')).toBe(false);
+    });
+
+    it('off hides both lanes on every token', () => {
+      const block = sentence(['unknown', 'known', 'known']);
+      bindTokenBlock(block, { showStatus: true, showFrequency: true });
+      expect(cls(block, 'alpha').contains('js-Tihoka-token--reading-off')).toBe(true);
+      expect(cls(block, 'alpha').contains('js-Tihoka-token--gloss-off')).toBe(true);
+    });
+
+    it('hover marks the lane for CSS hover-gating without suppressing it', () => {
+      const block = sentence(['unknown', 'known', 'known']);
+      bindTokenBlock(block, { showStatus: true, showFrequency: true, readingDisplay: 'hover', glossDisplay: 'hover' });
+      expect(cls(block, 'beta').contains('js-Tihoka-token--reading-hover')).toBe(true);
+      expect(cls(block, 'beta').contains('js-Tihoka-token--gloss-hover')).toBe(true);
+      expect(cls(block, 'beta').contains('js-Tihoka-token--reading-off')).toBe(false);
+      const span = block.element.querySelector<HTMLElement>('[data-tihoka-term="beta"]');
+      expect(span!.getAttribute('data-reading')).toBe('β');
+    });
+
+    it('unknown shows lanes only on not-known tokens', () => {
+      const block = sentence(['unknown', 'known', 'known']);
+      bindTokenBlock(block, { showStatus: true, showFrequency: true, readingDisplay: 'unknown', glossDisplay: 'unknown' });
+      expect(cls(block, 'alpha').contains('js-Tihoka-token--reading-off')).toBe(false);
+      expect(cls(block, 'alpha').contains('js-Tihoka-token--gloss-off')).toBe(false);
+      expect(cls(block, 'beta').contains('js-Tihoka-token--reading-off')).toBe(true);
+      expect(cls(block, 'beta').contains('js-Tihoka-token--gloss-off')).toBe(true);
+      expect(cls(block, 'gamma').contains('js-Tihoka-token--reading-off')).toBe(true);
+    });
+
+    it('i1 shows lanes only on the single i+1 word of the sentence', () => {
+      const block = sentence(['known', 'unknown', 'known']);
+      bindTokenBlock(block, { showStatus: true, showFrequency: true, readingDisplay: 'i1', glossDisplay: 'i1' });
+      expect(cls(block, 'beta').contains('js-Tihoka-token--reading-i1')).toBe(true);
+      expect(cls(block, 'beta').contains('js-Tihoka-token--reading-off')).toBe(false);
+      expect(cls(block, 'beta').contains('js-Tihoka-token--gloss-off')).toBe(false);
+      expect(cls(block, 'alpha').contains('js-Tihoka-token--reading-off')).toBe(true);
+      expect(cls(block, 'gamma').contains('js-Tihoka-token--gloss-off')).toBe(true);
+    });
+
+    it('i1 hides every lane when the sentence has more than one new word', () => {
+      const block = sentence(['unknown', 'unknown', 'known']);
+      bindTokenBlock(block, { showStatus: true, showFrequency: true, readingDisplay: 'i1' });
+      expect(block.element.querySelectorAll('.js-Tihoka-token--reading-off')).toHaveLength(3);
+    });
+  });
+
+  it('marks carded terms with js-Tihoka-token--has-card and leaves uncarded terms clean', () => {
     const block = makeBlock('Hello world.', [
       { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'core', reading: undefined, hasCard: true },
       { text: 'world', term: 'world', start: 6, end: 11, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'common', reading: undefined },
@@ -228,24 +291,24 @@ describe('tokenSpanRenderer', () => {
     bindTokenBlock(block, { showStatus: true, showFrequency: true });
 
     const cls = (term: string) =>
-      block.element.querySelector<HTMLElement>(`[data-cell-term="${term}"]`)!.classList;
-    expect(cls('hello').contains('js-cell-token--has-card')).toBe(true);
-    expect(cls('world').contains('js-cell-token--has-card')).toBe(false);
+      block.element.querySelector<HTMLElement>(`[data-tihoka-term="${term}"]`)!.classList;
+    expect(cls('hello').contains('js-Tihoka-token--has-card')).toBe(true);
+    expect(cls('world').contains('js-Tihoka-token--has-card')).toBe(false);
   });
 
   it('applies and clears the has-card class on in-place restyle', () => {
     const token: Token = { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'core', reading: undefined };
     const block = makeBlock('Hello.', [token]);
     bindTokenBlock(block, { showStatus: true, showFrequency: true });
-    const span = block.element.querySelector<HTMLElement>('[data-cell-term="hello"]')!;
+    const span = block.element.querySelector<HTMLElement>('[data-tihoka-term="hello"]')!;
 
     token.hasCard = true;
     expect(restyleTokenBlock(block, { showStatus: true, showFrequency: true })).toBe(true);
-    expect(span.classList.contains('js-cell-token--has-card')).toBe(true);
+    expect(span.classList.contains('js-Tihoka-token--has-card')).toBe(true);
 
     token.hasCard = false;
     expect(restyleTokenBlock(block, { showStatus: true, showFrequency: true })).toBe(true);
-    expect(span.classList.contains('js-cell-token--has-card')).toBe(false);
+    expect(span.classList.contains('js-Tihoka-token--has-card')).toBe(false);
   });
 
   it('fires separator handlers so gaps can wash the sentence on hover/click', () => {
@@ -261,22 +324,22 @@ describe('tokenSpanRenderer', () => {
       onSeparatorLeave: () => fired.push('leave'),
       onSeparatorClick: () => fired.push('click'),
     });
-    const sep = block.element.querySelector('.js-cell-token--separator')!;
+    const sep = block.element.querySelector('.js-Tihoka-token--separator')!;
     sep.dispatchEvent(new MouseEvent('mouseenter'));
     sep.dispatchEvent(new MouseEvent('mouseleave'));
     sep.dispatchEvent(new MouseEvent('click'));
     expect(fired).toEqual(['enter', 'leave', 'click']);
     // The separator must carry its sentence index so the controller can key
     // the pinned wash off it.
-    expect(sep.getAttribute('data-cell-sentence')).toBe('0');
+    expect(sep.getAttribute('data-tihoka-sentence')).toBe('0');
   });
 });
 
 describe('tokenSpanCss', () => {
   it('produces css with token classes and status colors', () => {
     const css = buildTokenSpanCss();
-    expect(css).toContain('.js-cell-token');
-    expect(css).toContain('--cell-token-status-known');
-    expect(css).toContain('--cell-token-freq-core-bg');
+    expect(css).toContain('.js-Tihoka-token');
+    expect(css).toContain('--Tihoka-token-status-known');
+    expect(css).toContain('--Tihoka-token-freq-core-bg');
   });
 });

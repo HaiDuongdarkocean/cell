@@ -21,7 +21,7 @@ describe('SubtitlePanel blur overlay', () => {
       <SubtitlePanel cues={cues} currentTimeMs={0} onSeek={jest.fn()} panelBlurred />,
     );
 
-    expect(container.querySelector('[data-cell-id="subtitle-panel-blur-overlay"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-tihoka-id="subtitle-panel-blur-overlay"]')).toBeInTheDocument();
     expect(container.querySelector('[data-panel-blurred="true"]')).toBeInTheDocument();
   });
 
@@ -30,7 +30,7 @@ describe('SubtitlePanel blur overlay', () => {
       <SubtitlePanel cues={cues} currentTimeMs={0} onSeek={jest.fn()} />,
     );
 
-    expect(container.querySelector('[data-cell-id="subtitle-panel-blur-overlay"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-tihoka-id="subtitle-panel-blur-overlay"]')).not.toBeInTheDocument();
     expect(container.querySelector('[data-panel-blurred="true"]')).not.toBeInTheDocument();
   });
 });
@@ -49,9 +49,9 @@ describe('SubtitlePanel tab strip', () => {
       <SubtitlePanel cues={cues} currentTimeMs={0} onSeek={jest.fn()} />,
     );
 
-    expect(container.querySelector('[data-cell-id="subtitle-panel-tab-subtitles"]')).not.toBeInTheDocument();
-    expect(container.querySelector('[data-cell-id^="subtitle-panel-tab-"]')).not.toBeInTheDocument();
-    expect(container.querySelector('[data-cell-id="cue-list-scroll"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-tihoka-id="subtitle-panel-tab-subtitles"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-tihoka-id^="subtitle-panel-tab-"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-tihoka-id="cue-list-scroll"]')).toBeInTheDocument();
   });
 
   it('renders no tab strip when tokenize is set without a playlist', () => {
@@ -64,8 +64,8 @@ describe('SubtitlePanel tab strip', () => {
       />,
     );
 
-    expect(container.querySelector('[data-cell-id="subtitle-panel-tab-subtitles"]')).not.toBeInTheDocument();
-    expect(container.querySelector('[data-cell-id="cue-list-scroll"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-tihoka-id="subtitle-panel-tab-subtitles"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-tihoka-id="cue-list-scroll"]')).toBeInTheDocument();
   });
 
   it('renders the tab strip when a Playlist tab exists', () => {
@@ -78,9 +78,9 @@ describe('SubtitlePanel tab strip', () => {
       />,
     );
 
-    expect(container.querySelector('[data-cell-id="subtitle-panel-tab-subtitles"]')).toBeInTheDocument();
-    expect(container.querySelector('[data-cell-id="subtitle-panel-tab-playlist"]')).toBeInTheDocument();
-    expect(container.querySelector('[data-cell-id="cue-list-scroll"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-tihoka-id="subtitle-panel-tab-subtitles"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-tihoka-id="subtitle-panel-tab-playlist"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-tihoka-id="cue-list-scroll"]')).toBeInTheDocument();
   });
 });
 
@@ -103,16 +103,16 @@ describe('SubtitlePanel practice cues', () => {
       <SubtitlePanel cues={mixed} currentTimeMs={1500} onSeek={jest.fn()} practiceMode="dictation" />,
     );
 
-    expect(container.querySelectorAll('[data-cell-id="cue-item"]')).toHaveLength(2);
-    const current = container.querySelector('[data-cell-id="cue-item"][data-current="true"]');
+    expect(container.querySelectorAll('[data-tihoka-id="cue-item"]')).toHaveLength(2);
+    const current = container.querySelector('[data-tihoka-id="cue-item"][data-current="true"]');
     expect(current).not.toBeNull();
     expect(current?.getAttribute('data-cue-index')).toBe('1');
   });
 });
 
 describe('SubtitlePanel study menu', () => {
-  const MORE_BTN = '[data-cell-id="subtitle-panel-more-btn"]';
-  const MENU = '[data-cell-id="study-mode-action-bar"]';
+  const MORE_BTN = '[data-tihoka-id="subtitle-panel-more-btn"]';
+  const MENU = '[data-tihoka-id="study-mode-action-bar"]';
 
   beforeEach(() => {
     global.ResizeObserver = class ResizeObserverMock {
@@ -132,7 +132,7 @@ describe('SubtitlePanel study menu', () => {
       <SubtitlePanel cues={cues} currentTimeMs={0} onSeek={jest.fn()} onStudyModeChange={jest.fn()} />,
     );
 
-    const header = container.querySelector('[data-cell-id="subtitle-panel-header"]')!;
+    const header = container.querySelector('[data-tihoka-id="subtitle-panel-header"]')!;
     const btn = header.querySelector(MORE_BTN);
     expect(btn).toBeInTheDocument();
     expect(btn).toBe(header.lastElementChild);
@@ -163,8 +163,8 @@ describe('SubtitlePanel study menu', () => {
 
     const menu = openMenu(container);
     expect(menu).toHaveAttribute('role', 'menu');
-    const normal = menu.querySelector('[data-cell-id="study-mode-normal"]')!;
-    const dictation = menu.querySelector('[data-cell-id="study-mode-dictation"]')!;
+    const normal = menu.querySelector('[data-tihoka-id="study-mode-normal"]')!;
+    const dictation = menu.querySelector('[data-tihoka-id="study-mode-dictation"]')!;
     expect(normal).toHaveAttribute('role', 'menuitemradio');
     expect(normal).toHaveAttribute('aria-checked', 'true');
     expect(dictation).toHaveAttribute('aria-checked', 'false');
@@ -191,7 +191,7 @@ describe('SubtitlePanel study menu', () => {
     );
 
     const menu = openMenu(container);
-    expect(menu.querySelector('[data-cell-id="study-mode-cloze"]')).toHaveAttribute(
+    expect(menu.querySelector('[data-tihoka-id="study-mode-cloze"]')).toHaveAttribute(
       'aria-checked',
       'true',
     );
@@ -216,7 +216,7 @@ describe('SubtitlePanel study menu', () => {
       />,
     );
 
-    expect(openMenu(container).querySelector('[data-cell-id="study-mode-my-mode"]')).toBeInTheDocument();
+    expect(openMenu(container).querySelector('[data-tihoka-id="study-mode-my-mode"]')).toBeInTheDocument();
   });
 
   it('steps playback speed via the menu stepper', () => {
@@ -233,10 +233,10 @@ describe('SubtitlePanel study menu', () => {
     );
 
     const menu = openMenu(container);
-    expect(menu.querySelector('[data-cell-id="speed-value"]')).toHaveTextContent('1×');
-    fireEvent.click(menu.querySelector('[data-cell-id="speed-inc"]')!);
+    expect(menu.querySelector('[data-tihoka-id="speed-value"]')).toHaveTextContent('1×');
+    fireEvent.click(menu.querySelector('[data-tihoka-id="speed-inc"]')!);
     expect(onSpeed).toHaveBeenCalledWith(1.25);
-    fireEvent.click(menu.querySelector('[data-cell-id="speed-dec"]')!);
+    fireEvent.click(menu.querySelector('[data-tihoka-id="speed-dec"]')!);
     expect(onSpeed).toHaveBeenCalledWith(0.75);
   });
 });

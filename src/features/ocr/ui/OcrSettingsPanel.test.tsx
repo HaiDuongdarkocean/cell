@@ -31,7 +31,7 @@ beforeEach(() => {
   Object.keys(storageData).forEach((k) => delete storageData[k]);
 });
 
-// Toggle uses data-cell-id (not data-testid) — query by role + aria-label.
+// Toggle uses data-tihoka-id (not data-testid) — query by role + aria-label.
 function getOcrToggle(): HTMLElement {
   return screen.getByRole('switch', { name: 'Toggle OCR for this site' });
 }
@@ -72,7 +72,7 @@ describe('OcrSettingsPanel (T17-T20)', () => {
     }, { timeout: 3000 });
     // Config should now be visible — query within container.
     await waitFor(() => {
-      const select = container.querySelector('[data-cell-id="ocr-target-language"]');
+      const select = container.querySelector('[data-tihoka-id="ocr-target-language"]');
       expect(select).toBeTruthy();
     }, { timeout: 3000 });
   });
@@ -92,7 +92,7 @@ describe('OcrSettingsPanel (T17-T20)', () => {
     await waitFor(() => {
       expect(getOcrToggle().getAttribute('aria-checked')).toBe('false');
     }, { timeout: 3000 });
-    expect(container.querySelector('[data-cell-id="ocr-target-language"]')).toBeNull();
+    expect(container.querySelector('[data-tihoka-id="ocr-target-language"]')).toBeNull();
   });
 });
 
@@ -122,7 +122,7 @@ async function renderEnabled(): Promise<{ container: HTMLElement }> {
   });
   fireEvent.click(getOcrToggle());
   await waitFor(() => {
-    expect(container.querySelector('[data-cell-id="ocr-target-language"]')).toBeTruthy();
+    expect(container.querySelector('[data-tihoka-id="ocr-target-language"]')).toBeTruthy();
   });
   return { container };
 }
@@ -130,8 +130,8 @@ async function renderEnabled(): Promise<{ container: HTMLElement }> {
 describe('OcrSettingsPanel language dropdowns (Task 8)', () => {
   it('renders target + native language selects', async () => {
     const { container } = await renderEnabled();
-    expect(container.querySelector('[data-cell-id="ocr-target-language"]')).toBeTruthy();
-    expect(container.querySelector('[data-cell-id="ocr-native-language"]')).toBeTruthy();
+    expect(container.querySelector('[data-tihoka-id="ocr-target-language"]')).toBeTruthy();
+    expect(container.querySelector('[data-tihoka-id="ocr-native-language"]')).toBeTruthy();
   });
 
   it('offers ≥100 language options (auto + full PaddleOCR catalog)', async () => {
@@ -157,7 +157,7 @@ describe('OcrSettingsPanel language dropdowns (Task 8)', () => {
   it('reset button always visible; disabled when no override, enabled when override set', async () => {
     const { container } = await renderEnabled();
     // Reset button always present, disabled by default (no override).
-    const resetBtn = container.querySelector('[data-cell-id="ocr-target-lang-reset"]') as HTMLButtonElement;
+    const resetBtn = container.querySelector('[data-tihoka-id="ocr-target-lang-reset"]') as HTMLButtonElement;
     expect(resetBtn).toBeTruthy();
     expect(resetBtn.disabled).toBe(true);
     // Set an override → reset enabled.
@@ -167,16 +167,16 @@ describe('OcrSettingsPanel language dropdowns (Task 8)', () => {
       expect(getSavedOrigin()?.targetLangOverride).toBe('vi');
     });
     await waitFor(() => {
-      const btn = container.querySelector('[data-cell-id="ocr-target-lang-reset"]') as HTMLButtonElement;
+      const btn = container.querySelector('[data-tihoka-id="ocr-target-lang-reset"]') as HTMLButtonElement;
       expect(btn.disabled).toBe(false);
     });
     // Click reset → override null + button disabled again.
-    fireEvent.click(container.querySelector('[data-cell-id="ocr-target-lang-reset"]') as HTMLElement);
+    fireEvent.click(container.querySelector('[data-tihoka-id="ocr-target-lang-reset"]') as HTMLElement);
     await waitFor(() => {
       expect(getSavedOrigin()?.targetLangOverride).toBeNull();
     });
     await waitFor(() => {
-      const btn = container.querySelector('[data-cell-id="ocr-target-lang-reset"]') as HTMLButtonElement;
+      const btn = container.querySelector('[data-tihoka-id="ocr-target-lang-reset"]') as HTMLButtonElement;
       expect(btn.disabled).toBe(true);
     });
   });
@@ -239,13 +239,13 @@ describe('OcrSettingsPanel 4-card redesign (UI e2e)', () => {
 
   it('language fields are stacked (label row + select, not inline)', async () => {
     const { container } = await renderEnabled();
-    // Each langField contains a langLabelRow + a Select (by data-cell-id).
+    // Each langField contains a langLabelRow + a Select (by data-tihoka-id).
     const langFields = container.querySelectorAll('[class*="langField"]');
     expect(langFields.length).toBe(2);
     const selectIds = ['ocr-target-language', 'ocr-native-language'];
     langFields.forEach((field, i) => {
       const labelRow = field.querySelector('[class*="langLabelRow"]');
-      const select = field.querySelector(`[data-cell-id="${selectIds[i]}"]`);
+      const select = field.querySelector(`[data-tihoka-id="${selectIds[i]}"]`);
       expect(labelRow).toBeTruthy();
       expect(select).toBeTruthy();
       // Select should NOT be inside the labelRow (stacked, not inline).
@@ -255,15 +255,15 @@ describe('OcrSettingsPanel 4-card redesign (UI e2e)', () => {
 
   it('region buttons are horizontal (icon + label inline, not vertical)', async () => {
     const { container } = await renderEnabled();
-    const selectBtn = container.querySelector('[data-cell-id="ocr-region-select"]') as HTMLButtonElement;
-    const resetBtn = container.querySelector('[data-cell-id="ocr-region-reset"]') as HTMLButtonElement;
+    const selectBtn = container.querySelector('[data-tihoka-id="ocr-region-select"]') as HTMLButtonElement;
+    const resetBtn = container.querySelector('[data-tihoka-id="ocr-region-reset"]') as HTMLButtonElement;
     expect(selectBtn).toBeTruthy();
     expect(resetBtn).toBeTruthy();
     // Labels present: "Select", "Reset" (horizontal = icon + label inline).
     expect(selectBtn.textContent?.trim()).toBe('Select');
     expect(resetBtn.textContent?.trim()).toBe('Reset');
     // Edit button hidden by default (no custom region).
-    expect(container.querySelector('[data-cell-id="ocr-region-edit"]')).toBeNull();
+    expect(container.querySelector('[data-tihoka-id="ocr-region-edit"]')).toBeNull();
   });
 
   it('edit button appears when custom region is set', async () => {
@@ -283,9 +283,9 @@ describe('OcrSettingsPanel 4-card redesign (UI e2e)', () => {
       expect(getOcrToggle().getAttribute('aria-checked')).toBe('true');
     });
     await waitFor(() => {
-      expect(container.querySelector('[data-cell-id="ocr-region-edit"]')).toBeTruthy();
+      expect(container.querySelector('[data-tihoka-id="ocr-region-edit"]')).toBeTruthy();
     });
-    const editBtn = container.querySelector('[data-cell-id="ocr-region-edit"]') as HTMLButtonElement;
+    const editBtn = container.querySelector('[data-tihoka-id="ocr-region-edit"]') as HTMLButtonElement;
     expect(editBtn.textContent?.trim()).toBe('Edit');
   });
 
@@ -294,7 +294,7 @@ describe('OcrSettingsPanel 4-card redesign (UI e2e)', () => {
     await waitFor(() => {
       expect(getOcrToggle()).toBeTruthy();
     });
-    const infoBtn = container.querySelector('[data-cell-id="ocr-info-btn"]') as HTMLButtonElement;
+    const infoBtn = container.querySelector('[data-tihoka-id="ocr-info-btn"]') as HTMLButtonElement;
     expect(infoBtn).toBeTruthy();
     expect(infoBtn.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(infoBtn);

@@ -218,7 +218,7 @@ export function SrsVariantFront({
       className={styles.front}
       role={flippable ? 'button' : undefined}
       tabIndex={flippable ? 0 : undefined}
-      data-cell-no-ripple
+      data-tihoka-no-ripple
       onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => {
         if ((e.target as HTMLElement).closest('input,button,audio')) return;
         e.preventDefault();
@@ -350,7 +350,7 @@ export function SrsVariantFront({
                   asset: imageCache.get(imageAssetId(note.id, fieldId, i)) ?? repoImages.get(`${fieldId}:${i}`),
                 }))}
                 alt={variantLabel(variant)}
-                dataCellId={`srs-front-images-${fieldId}`}
+                dataTihokaId={`srs-front-images-${fieldId}`}
               />
             ) : value.kind === 'audio' ? (
               mediaFieldValues(value).map((v, i) => (

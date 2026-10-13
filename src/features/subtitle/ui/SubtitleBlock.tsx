@@ -180,7 +180,7 @@ function SubtitleBlockInner({
   };
 
   return (
-    <div className={styles.block} style={blockStyle} data-cell-id="subtitle-block">
+    <div className={styles.block} style={blockStyle} data-tihoka-id="subtitle-block">
       <div
         className={styles.layer}
         data-role="target"
@@ -195,7 +195,7 @@ function SubtitleBlockInner({
       >
         <span
           className={showTargetStatus ? styles.statusText : styles.text}
-          data-cell-id={editable ? 'overlay-preview-target-line' : undefined}
+          data-tihoka-id={editable ? 'overlay-preview-target-line' : undefined}
           data-allow-lookup={editable ? undefined : true}
           contentEditable={editable}
           suppressContentEditableWarning={editable}
@@ -217,7 +217,7 @@ function SubtitleBlockInner({
         >
           <span
             className={showNativeStatus ? styles.statusText : styles.text}
-            data-cell-id={editable ? 'overlay-preview-native-line' : undefined}
+            data-tihoka-id={editable ? 'overlay-preview-native-line' : undefined}
             data-allow-lookup={editable ? undefined : true}
             contentEditable={editable}
             suppressContentEditableWarning={editable}
